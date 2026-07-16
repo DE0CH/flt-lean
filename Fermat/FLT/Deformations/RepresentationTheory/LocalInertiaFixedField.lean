@@ -83,11 +83,20 @@ instance instIsScalarTowerValuationSubringIntermediateField
     IsScalarTower O K M :=
   IsScalarTower.of_algebraMap_eq' rfl
 
+/-- A valuation subring, its field, and any algebra over the field form
+a scalar tower. This general form enables `IntermediateField.algebra'`
+as a second route to `Algebra O ↥M` (divergent `IntegralClosure`
+elaborations); consumers hitting the resulting synthesis failures apply
+`set_option backward.isDefEq.respectTransparency false in`. -/
+instance instIsScalarTowerValuationSubring {K L : Type*} [Field K] [Semiring L]
+    (O : ValuationSubring K) [Algebra K L] :
+    IsScalarTower O K L :=
+  IsScalarTower.of_algebraMap_eq' rfl
+
 section FiniteLevel
 
-variable (N : IntermediateField
-    (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
-    (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
+variable (N : Type*) [Field N]
+  [Algebra (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
   [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
 
 /-- The maximal ideal of the integral closure at a finite level lies over
@@ -173,9 +182,16 @@ instance isDiscreteValuationRing_integralClosure :
   intro hbot
   exact hnf ((IsLocalRing.isField_iff_maximalIdeal_eq).mpr hbot)
 
-/-- The tower `𝒪ᵥ ⊆ ↥N ⊆ Kᵥᵃˡᵍ` (middle term an intermediate-field
-subtype; the ambient-middle shape `𝒪ᵥ ⊆ Kᵥ ⊆ Kᵥᵃˡᵍ` is deliberately
-NOT declared — see the previous instance's docstring). -/
+end FiniteLevel
+
+section FiniteLevelSubextension
+
+variable (N : IntermediateField
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+    (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
+  [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
+
+/-- The tower `𝒪ᵥ ⊆ ↥M ⊆ E` for an intermediate field `M` of `E/Kᵥ`. -/
 instance instIsScalarTowerValuationSubringIntermediateFieldAmbient
     {K E : Type*} [Field K] [Field E] [Algebra K E]
     (O : ValuationSubring K) (M : IntermediateField K E) :
@@ -196,6 +212,14 @@ noncomputable def integralClosureInclusion :
     (fun x => (Algebra.IsIntegral.isIntegral (R := 𝒪ᵥ) x).map
       ((IsScalarTower.toAlgHom 𝒪ᵥ N (Kᵥᵃˡᵍ)).comp
         (IsScalarTower.toAlgHom 𝒪ᵥ (IntegralClosure 𝒪ᵥ N) N)))
+
+end FiniteLevelSubextension
+
+section FiniteLevel
+
+variable (N : Type*) [Field N]
+  [Algebra (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
+  [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **`e = 1` gives the ideal equality**: if the ramification index of
@@ -249,6 +273,15 @@ theorem maximalIdeal_map_eq_of_ramificationIdx_eq_one
   have hn_eq : n = 1 := by omega
   rw [hn, hn_eq, pow_one, hmax]
 
+end FiniteLevel
+
+section FiniteLevelSubextension
+
+variable (N : IntermediateField
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+    (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
+  [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
+
 /-- **Restriction maps the local inertia group into the finite-level
 inertia**: if `σ ∈ Γ Kᵥ` lies in `localInertiaGroup v`, then its
 restriction to a finite Galois subextension `N` lies in the inertia
@@ -289,7 +322,7 @@ theorem restrictNormalHom_mem_inertia_of_mem_localInertiaGroup
   rw [Submodule.mem_toAddSubgroup] at hbig ⊢
   exact hle (Ideal.mem_comap.mpr hbig)
 
-end FiniteLevel
+end FiniteLevelSubextension
 
 set_option warn.sorry false in
 /-- **The fixed field of the local inertia group is unramified** (the
