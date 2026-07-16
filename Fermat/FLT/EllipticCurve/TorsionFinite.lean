@@ -38,6 +38,7 @@ universe u
 
 variable {k : Type u} [Field k] (E : WeierstrassCurve k) [E.IsElliptic] [DecidableEq k]
 
+set_option warn.sorry false in
 /-- **Torsion points are cut out by division polynomials** (sorry node):
 if a nonzero affine point `(x, y)` of the base change `E⁄k` is killed by
 `n ≠ 0`, then `x` is a root of the univariate division polynomial `ΨSq n`.
@@ -52,6 +53,7 @@ theorem eval_ΨSq_eq_zero_of_smul_eq_zero {n : ℤ} (hn : n ≠ 0) {x y : k}
     (WeierstrassCurve.ΨSq (E⁄k) n).IsRoot x :=
   sorry
 
+set_option warn.sorry false in
 /-- **Nonvanishing of division polynomials in the char-divides case**
 (sorry node): `ΨSq n ≠ 0` for `n ≠ 0` even when the characteristic of `k`
 divides `n` (so that mathlib's leading-coefficient argument fails; here

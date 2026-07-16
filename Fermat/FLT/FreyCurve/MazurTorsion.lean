@@ -60,6 +60,7 @@ public import Fermat.FLT.EllipticCurve.Torsion
 
 open WeierstrassCurve WeierstrassCurve.Affine
 
+set_option warn.sorry false in
 /-- **Mazur's torsion theorem** (sorry node): the torsion subgroup of the
 rational points of an elliptic curve over `ℚ` is isomorphic to one of the
 fifteen groups `ℤ/n` with `n ∈ {1, …, 10, 12}` or `ℤ/2 × ℤ/2m` with
@@ -124,6 +125,7 @@ theorem WeierstrassCurve.mazur_torsion_bound (E : WeierstrassCurve ℚ) [E.IsEll
       Nat.card_prod, Nat.card_zmod, Nat.card_zmod] at hcard
     omega
 
+set_option warn.sorry false in
 /-- **Serre's reducible-case analysis for the Frey curve** (sorry node): if
 the mod-`p` Galois representation on the `p`-torsion of the Frey curve is
 not irreducible, then some elliptic curve over `ℚ` (the Frey curve itself or

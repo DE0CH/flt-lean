@@ -86,6 +86,7 @@ structure HardlyRamifiedLift (ρbar : GaloisRep ℚ (ZMod ℓ) V) where
     (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
       ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat
 
+set_option warn.sorry false in
 /-- **B6a** (sorry node): an irreducible hardly ramified mod-`ℓ`
 representation with `ℓ ≥ 5` admits a hardly ramified `ℓ`-adic lift.
 
@@ -98,6 +99,7 @@ theorem exists_hardlyRamifiedLift (hℓ5 : 5 ≤ ℓ)
     Nonempty (HardlyRamifiedLift hℓOdd ρbar) :=
   sorry
 
+set_option warn.sorry false in
 /-- **B6b + B6c** (sorry node, to be split by a later layer): the residual
 characteristic polynomials of Frobenius of a liftable hardly ramified
 representation are those of `1 ⊕ χ̄`, i.e. `X² − (q+1)X + q` at `Frob_q`.
@@ -115,6 +117,7 @@ theorem residual_charFrob_eq (hℓ5 : 5 ≤ ℓ)
         X ^ 2 - C ((q : ZMod ℓ) + 1) * X + C (q : ZMod ℓ) :=
   sorry
 
+set_option warn.sorry false in
 /-- **Chebotarev + Brauer–Nesbitt** (sorry node): a continuous mod-`ℓ`
 representation of `Gal(ℚ̄/ℚ)` whose characteristic polynomials of Frobenius
 away from `{2, 3, ℓ}` are those of `1 ⊕ χ̄` is not irreducible. -/

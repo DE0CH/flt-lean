@@ -62,9 +62,22 @@ map where helpful.
         — now DERIVED (2026-07-16) from two explicit nodes, mirroring the
         FLT project's hardly-ramified plan (their B5/B6, stated in Lean here
         before upstream):
-        - ✗ `FreyCurve.torsion_isHardlyRamified`
-          (`GaloisRepresentation/HardlyRamified/Frey.lean`) — Serre §4.1 +
-          Tate curve theory.
+        - ✓ `FreyCurve.torsion_isHardlyRamified`
+          (`GaloisRepresentation/HardlyRamified/Frey.lean`) — now DERIVED
+          (2026-07-16) as the structure constructor applied to the four
+          defining conditions, each an explicit node in
+          `HardlyRamified/FreyConditions.lean` (own work):
+          - ✗ `FreyCurve.torsion_det` — det ρ̄ = mod-p cyclotomic
+            character (the Weil pairing; not yet in mathlib).
+          - ✗ `FreyCurve.torsion_isUnramified` — unramified outside
+            {2, p}: Néron–Ogg–Shafarevich at good primes; Tate curve +
+            p ∣ v_q(j) (`j_valuation_of_bad_prime`, proven) at the
+            multiplicative primes.
+          - ✗ `FreyCurve.torsion_isFlat` — flat at p (finite flat group
+            scheme over ℤ_p; Néron model / Tate curve at p).
+          - ✗ `FreyCurve.torsion_isTameAtTwo` — at 2: rank-1 quotient
+            with unramified character squaring to 1 (multiplicative
+            reduction at 2, Tate uniformization, quadratic twist).
         - ✓ **B5** `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
           (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work) —
           now DERIVED (2026-07-16) from three explicit nodes in
@@ -227,3 +240,22 @@ assumed. Axiom invariant: every declaration must use at most
   `torsion_isHardlyRamified`, B6a, B6bc, Chebotarev–Brauer–Nesbitt,
   `n_torsion_card`, `eval_ΨSq_eq_zero_of_smul_eq_zero`,
   `ΨSq_ne_zero_of_charDvd`.
+- 2026-07-16 (session 3, cont.): **`torsion_isHardlyRamified` decomposed
+  and derived** — new file `HardlyRamified/FreyConditions.lean` (own work)
+  states the four defining conditions of `IsHardlyRamified` for the Frey
+  curve as separate nodes (`torsion_det` — Weil pairing;
+  `torsion_isUnramified` — Néron–Ogg–Shafarevich + Tate curve;
+  `torsion_isFlat` — finite flat group scheme at p; `torsion_isTameAtTwo`
+  — Tate curve at 2), and `Frey.lean` assembles them by the structure
+  constructor. **Sorry gate installed** (`Fermat/SorryGate.lean`, root
+  `Fermat.lean`): `lake build` now FAILS with `SORRY GATE FAILED` while
+  `fermat_last_theorem` depends on `sorryAx` (and enforces the axiom
+  invariant); a gate failure is the expected outcome during development —
+  the continue-signal for the loop. Scratch audits import `Fermat.Basic` +
+  leaf modules, never root `Fermat`. Axiom audit clean. Sorry frontier
+  (11, all Props): `exists_torsion_embedding_of_not_isIrreducible`,
+  `mazur_classification`, `torsion_det`, `torsion_isUnramified`,
+  `torsion_isFlat`, `torsion_isTameAtTwo`, B6a, B6bc,
+  Chebotarev–Brauer–Nesbitt, `n_torsion_card` +
+  `eval_ΨSq_eq_zero_of_smul_eq_zero`, `ΨSq_ne_zero_of_charDvd` (12 with
+  both division-polynomial nodes counted).

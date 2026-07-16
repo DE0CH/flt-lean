@@ -9,6 +9,9 @@ public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 -- VENDORING ADDITION: B5 (hardly ramified ⇒ not irreducible), backing
 -- `torsion_not_isIrreducible` below.
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Reducible
+-- VENDORING ADDITION: the four defining conditions as explicit sorry nodes,
+-- backing `torsion_isHardlyRamified`.
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.FreyConditions
 public import Fermat.FLT.FreyCurve.Basic
 public import Fermat.FLT.EllipticCurve.Torsion
 import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
@@ -45,7 +48,16 @@ theorem FreyCurve.torsion_isHardlyRamified :
       ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).p_torsion_rank
         (Nat.cast_ne_zero.mpr P.hp0))
       (P.freyCurve.galoisRep P.p (show 0 < P.p from P.hppos)) :=
-  sorry
+  -- VENDORING CHANGE: the former `sorry` is replaced by the structure
+  -- constructor applied to the four defining conditions, each an explicit
+  -- sorry node in `FreyConditions.lean` (Weil-pairing determinant,
+  -- Néron–Ogg–Shafarevich/Tate unramifiedness outside 2p, flatness at p,
+  -- tame quotient character at 2).
+  haveI : Fact (P.p.Prime) := ⟨P.pp⟩
+  { det := FreyCurve.torsion_det P
+    isUnramified := FreyCurve.torsion_isUnramified P
+    isFlat := FreyCurve.torsion_isFlat P
+    isTameAtTwo := FreyCurve.torsion_isTameAtTwo P }
 
 -- VENDORING CHANGE: the `sorry` is replaced by the reduction to **B5**
 -- (`GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`, in
