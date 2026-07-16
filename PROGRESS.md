@@ -1062,7 +1062,11 @@ assumed. Axiom invariant: every declaration must use at most
   instances; note `IsDedekindDomainDvr.is_dvr_at_nonzero_prime` needed
   explicit `@`-application — instance-synthesis stalls on its
   `IsDomain (𝓞 ℚ)` argument even though direct synthesis succeeds).
-  Frontier: 21.
+  Frontier: 21. Audit
+  (2026-07-16): `inertia_eq_bot_of_exists_prime_over` is UNCONDITIONAL
+  (`[propext, Classical.choice, Quot.sound]`); the chain above
+  (`transport → dictionary → subgroup form`) correctly roots through
+  the single surjectivity sorry only.
 - 2026-07-16 (session 4, cont.): **`freyCurve_hasGoodReduction_of_not_dvd`
   PROVEN** — the good-reduction arithmetic node is closed:
   `q`-integrality via the integral model (`freyCurveInt` and
