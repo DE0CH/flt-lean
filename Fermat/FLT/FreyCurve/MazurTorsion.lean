@@ -65,6 +65,13 @@ public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 -- and the going-up prime lifting, used in the Minkowski assembly proof.
 import Mathlib.NumberTheory.NumberField.ExistsRamified
 import Mathlib.RingTheory.Ideal.GoingUp
+-- The local inertia-fixed-field node (`e(M/ℚ_q) = 1` for finite
+-- subextensions of `ℚ_qᵃˡᵍ` fixed by the local inertia), consumed by
+-- the transport proof of the Minkowski surjectivity theorem below.
+import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
+-- `adicCompletion.maximalIdeal_eq_span_uniformizer`, used to identify
+-- the maximal ideal of `ℤ_q` with the span of `q`.
+import Fermat.FLT.DedekindDomain.AdicValuation
 
 @[expose] public section
 
@@ -135,18 +142,68 @@ theorem WeierstrassCurve.mazur_torsion_bound (E : WeierstrassCurve ℚ) [E.IsEll
       Nat.card_prod, Nat.card_zmod, Nat.card_zmod] at hcard
     omega
 
-set_option warn.sorry false in
-/-- **Minkowski, subgroup form** (sorry node): an open normal subgroup
-of `G_ℚ` containing the image of the local inertia group at every prime
-is everything. This is `ℚ` has no nontrivial finite Galois extension
-unramified at all finite primes: the fixed field of `H` is such an
-extension, and mathlib's discriminant bound
-(`NumberField.exists_not_isUnramifiedAt_int_of_isGalois`, resting on
-`NumberField.abs_discr_gt_two`) forbids it. See the session-4
-reconnaissance in `PROGRESS.md` for the verified mathlib route; the
-remaining content is the fixed field of the open subgroup (infinite
-Galois correspondence) and the dictionary between `localInertiaGroup`
-and classical ramification. -/
+/-- The prime of `𝓞 ℚ` attached to the prime number `q` is the span of
+`q`: unfolding `toHeightOneSpectrumRingOfIntegersRat`, the ideal is the
+comap of `span {(q : ℤ)}` along `Rat.ringOfIntegersEquiv`, and a ring
+isomorphism carries spans of singletons to spans of singletons while
+preserving the naturals. -/
+lemma asIdeal_toHeightOneSpectrumRingOfIntegersRat {q : ℕ} (hq : q.Prime) :
+    hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal =
+      Ideal.span {(q : NumberField.RingOfIntegers ℚ)} := by
+  have h1 : hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal =
+      Ideal.comap (Rat.ringOfIntegersEquiv.symm.symm) (Ideal.span {(q : ℤ)}) := rfl
+  rw [h1, RingEquiv.symm_symm, ← Ideal.map_symm, Ideal.map_span, Set.image_singleton,
+    map_natCast]
+
+open IsDedekindDomain.HeightOneSpectrum in
+set_option maxHeartbeats 1000000 in
+/-- `q` is a uniformizer of the completed integer ring `ℤ_q`: the maximal
+ideal of `(ℤ_q)ˆ = 𝒪ᵥ` (for `v = v_q` the place of `ℚ` at `q`) is the
+span of `q`. Via `maximalIdeal_eq_span_uniformizer` it suffices that the
+valuation of `q` in `ℚ_q` is exactly `ofAdd (-1)`, which reduces through
+`valuedAdicCompletion_eq_valuation` and `valuation_of_algebraMap` to the
+`intValuation` of `q` in `𝓞 ℚ`, computed by `intValuation_singleton`
+from `v_q = span {q}`. -/
+lemma maximalIdeal_adicCompletionIntegers_eq_span {q : ℕ} (hq : q.Prime) :
+    IsLocalRing.maximalIdeal
+        (adicCompletionIntegers ℚ hq.toHeightOneSpectrumRingOfIntegersRat) =
+      Ideal.span
+        {(q : adicCompletionIntegers ℚ hq.toHeightOneSpectrumRingOfIntegersRat)} := by
+  have hq0 : ((q : NumberField.RingOfIntegers ℚ)) ≠ 0 :=
+    Nat.cast_ne_zero.mpr hq.ne_zero
+  have hval : hq.toHeightOneSpectrumRingOfIntegersRat.intValuation
+      ((q : NumberField.RingOfIntegers ℚ)) = Multiplicative.ofAdd (-1 : ℤ) :=
+    hq.toHeightOneSpectrumRingOfIntegersRat.intValuation_singleton hq0
+      (asIdeal_toHeightOneSpectrumRingOfIntegersRat hq)
+  apply adicCompletion.maximalIdeal_eq_span_uniformizer
+  -- the valuation of `q` in `ℚ_q`, assembled entirely in the mathlib
+  -- lemmas' own coercion spelling (avoiding any cross-spelling defeq)
+  have h := (valuedAdicCompletion_eq_valuation
+      (v := hq.toHeightOneSpectrumRingOfIntegersRat) (K := ℚ)
+      ((q : NumberField.RingOfIntegers ℚ))).trans
+    ((valuation_of_algebraMap
+      (v := hq.toHeightOneSpectrumRingOfIntegersRat) (K := ℚ)
+      ((q : NumberField.RingOfIntegers ℚ))).trans hval)
+  convert h using 2
+  norm_cast
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Minkowski surjectivity transport** (DERIVED 2026-07-16 from the
+local inertia-fixed-field node
+`maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`): if the image
+in `G_ℚ` of the local inertia group at `q` fixes the finite Galois
+extension `L/ℚ` pointwise, then SOME prime `Q₀` of `𝓞 L` above `q` has
+trivial ideal-inertia in `Gal(L/ℚ)`. Construction: the chosen embedding
+`ι : ℚᵃˡᵍ → (ℚ_q)ᵃˡᵍ` (the one underlying `absoluteGaloisGroup.map`)
+carries `L` into the finite subextension `M := ℚ_q(ι(L))`, which the
+hypothesis and `lift_map` place inside the fixed field of the local
+inertia; the local node then makes `q` a uniformizer of the integral
+closure `𝒪_M`. Pulling the maximal ideal of `𝒪_M` back along
+`ι : 𝓞 L → 𝒪_M` yields a prime `Q₀ ∋ q` with `e(Q₀|q) = 1` (if `e ≥ 2`
+then `q ∈ Q₀²`, so `q ∈ 𝔪_M² = (q²)`, making `q` a unit of `𝒪_M` —
+absurd), and `#I(Q₀) = e = 1` closes by
+`card_inertia_eq_ramificationIdxIn`. No decomposition-group theory or
+henselian lifting is used. -/
 theorem exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup
     (L : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ L]
     [NumberField L] [IsGalois ℚ L]
@@ -158,8 +215,253 @@ theorem exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup
       ≤ L.fixingSubgroup) :
     ∃ (Q₀ : Ideal (NumberField.RingOfIntegers L)) (_ : Q₀.IsPrime)
       (_ : (q : NumberField.RingOfIntegers L) ∈ Q₀),
-      Q₀.inertia (L ≃ₐ[ℚ] L) = ⊥ :=
-  sorry
+      Q₀.inertia (L ≃ₐ[ℚ] L) = ⊥ := by
+  classical
+  -- the chosen embedding of algebraic closures underlying the map of
+  -- absolute Galois groups
+  set f : ℚ →+* IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat :=
+    algebraMap ℚ _ with hf
+  set ι : AlgebraicClosure ℚ →+* AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat) :=
+    AlgebraicClosure.map f with hι
+  -- a finite generating set for `L/ℚ`
+  obtain ⟨s, hs⟩ := L.fg_iff_finiteType.mpr (inferInstanceAs (Algebra.FiniteType ℚ L))
+  have hL : L = IntermediateField.adjoin ℚ ↑s :=
+    IntermediateField.eq_adjoin_of_eq_algebra_adjoin _ _ _ hs.symm
+  -- the image field `M := ℚ_q(ι(s)) = ℚ_q(ι(L))`
+  set M : IntermediateField
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) :=
+    IntermediateField.adjoin _ (ι '' ↑s) with hM
+  -- `ι` carries all of `L` into `M`
+  have hsub : ∀ x ∈ L, ι x ∈ M := by
+    intro x hx
+    rw [hL] at hx
+    induction hx using IntermediateField.adjoin_induction with
+    | mem y hy => exact IntermediateField.subset_adjoin _ _ ⟨y, hy, rfl⟩
+    | algebraMap c =>
+        rw [AlgebraicClosure.map_algebraMap]
+        exact M.algebraMap_mem _
+    | add x y hx hy ihx ihy => rw [map_add]; exact add_mem ihx ihy
+    | inv x hx ihx => rw [map_inv₀]; exact inv_mem ihx
+    | mul x y hx hy ihx ihy => rw [map_mul]; exact mul_mem ihx ihy
+  -- `M/ℚ_q` is finite: it is generated by the finite set `ι '' s` of
+  -- integral (= algebraic) elements
+  haveI hfdM : FiniteDimensional
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat) M := by
+    haveI : Finite (ι '' (↑s : Set (AlgebraicClosure ℚ))) :=
+      (s.finite_toSet.image ι).to_subtype
+    exact IntermediateField.finiteDimensional_adjoin
+      fun x _ => Algebra.IsIntegral.isIntegral x
+  -- the hypothesis places `M` inside the fixed field of the local inertia
+  have hMfix : M ≤ IntermediateField.fixedField
+      (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat) := by
+    rw [hM, IntermediateField.adjoin_le_iff]
+    rintro _ ⟨y, hy, rfl⟩
+    rw [SetLike.mem_coe, IntermediateField.mem_fixedField_iff]
+    intro σ hσ
+    -- `σ (ι y) = ι ((map f σ) y) = ι y` by `lift_map` and the hypothesis
+    have hmem : (Field.absoluteGaloisGroup.map f) σ ∈ L.fixingSubgroup :=
+      hle (Subgroup.mem_map_of_mem _ hσ)
+    have hfixy : (Field.absoluteGaloisGroup.map f σ) y = y :=
+      (IntermediateField.mem_fixingSubgroup_iff L ((Field.absoluteGaloisGroup.map f) σ)).mp
+        hmem y (hL ▸ IntermediateField.subset_adjoin _ _ hy)
+    calc σ (ι y) = ι ((Field.absoluteGaloisGroup.map f σ) y) :=
+          (Field.absoluteGaloisGroup.lift_map f σ y).symm
+      _ = ι y := by rw [hfixy]
+  -- the local node: `q` generates the maximal ideal of `𝒪_M`
+  have hmax := maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup
+    hq.toHeightOneSpectrumRingOfIntegersRat M hMfix
+  have hspan : IsLocalRing.maximalIdeal
+      (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat) M) =
+      Ideal.span {(q : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat) M)} := by
+    rw [← hmax, maximalIdeal_adicCompletionIntegers_eq_span hq, Ideal.map_span,
+      Set.image_singleton, map_natCast]
+  -- the ring homomorphism `ψ : L → M` induced by `ι`
+  let ψ : L →+* M :=
+    { toFun := fun y => ⟨ι (y : AlgebraicClosure ℚ), hsub _ y.2⟩
+      map_one' := by
+        apply Subtype.ext
+        simp
+      map_mul' := fun a b => by
+        apply Subtype.ext
+        simp
+      map_zero' := by
+        apply Subtype.ext
+        simp
+      map_add' := fun a b => by
+        apply Subtype.ext
+        simp }
+  -- `ψ` carries the ring of integers of `L` into `𝒪_M`
+  have hψint : ∀ x : NumberField.RingOfIntegers L,
+      ψ (algebraMap (NumberField.RingOfIntegers L) L x) ∈
+        integralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat) M := by
+    intro x
+    have h1 : IsIntegral ℤ (algebraMap (NumberField.RingOfIntegers L) L x) :=
+      NumberField.RingOfIntegers.isIntegral_coe x
+    -- promote `ψ` to a `ℤ`-algebra homomorphism with the AMBIENT `ℤ`-algebra
+    -- structures (all ring homs from `ℤ` agree, so `commutes'` is by
+    -- uniqueness of `ℤ →+* ·`)
+    let ψℤ : L →ₐ[ℤ] M :=
+      { toRingHom := ψ
+        commutes' := fun n => by
+          rw [RingHom.eq_intCast' (algebraMap ℤ L), RingHom.eq_intCast' (algebraMap ℤ M)]
+          exact map_intCast ψ n }
+    have h2 : IsIntegral ℤ (ψ (algebraMap (NumberField.RingOfIntegers L) L x)) :=
+      h1.map ψℤ
+    -- pass from `ℤ`-integrality to `𝒪ᵥ`-integrality by pushing the monic
+    -- witness through `ℤ → 𝒪ᵥ` (instance-agnostic: all ring homs from `ℤ`
+    -- agree)
+    obtain ⟨p, hp, hpeval⟩ := h2
+    refine ⟨p.map (Int.castRingHom
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)), hp.map _, ?_⟩
+    rw [Polynomial.eval₂_map, Subsingleton.elim
+      ((algebraMap
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat) M).comp
+        (Int.castRingHom
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)))
+      (algebraMap ℤ M)]
+    exact hpeval
+  let φ : NumberField.RingOfIntegers L →+*
+      IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat) M :=
+    (ψ.comp (algebraMap (NumberField.RingOfIntegers L) L)).codRestrict
+      (integralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat) M) hψint
+  -- the embedding prime: the pullback of the maximal ideal of `𝒪_M`
+  haveI hmaxprime : (IsLocalRing.maximalIdeal
+      (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat) M)).IsPrime :=
+    (IsLocalRing.maximalIdeal.isMaximal _).isPrime
+  refine ⟨Ideal.comap φ (IsLocalRing.maximalIdeal _), Ideal.IsPrime.comap φ, ?_, ?_⟩
+  · -- `q` lands in the pullback: `φ q = q ∈ 𝔪_M = (q)`
+    rw [Ideal.mem_comap, map_natCast, hspan]
+    exact Ideal.mem_span_singleton_self _
+  -- inertia is trivial: `#I(Q₀) = e(Q₀|q) = 1`
+  have hQ₀mem : (q : NumberField.RingOfIntegers L) ∈
+      Ideal.comap φ (IsLocalRing.maximalIdeal _) := by
+    rw [Ideal.mem_comap, map_natCast, hspan]
+    exact Ideal.mem_span_singleton_self _
+  haveI hQ₀prime : (Ideal.comap φ (IsLocalRing.maximalIdeal _)).IsPrime :=
+    Ideal.IsPrime.comap φ
+  -- instance pack for `card_inertia_eq_ramificationIdxIn` (mirrors the
+  -- inertia dictionary proof below)
+  haveI := IsIntegralClosure.isIntegral_algebra ℤ (A := NumberField.RingOfIntegers L) L
+  have hqZ : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
+  haveI hsp : (Ideal.span {((q : ℤ))} : Ideal ℤ).IsPrime :=
+    (Ideal.span_singleton_prime (by exact_mod_cast hq.ne_zero)).mpr hqZ
+  have hne : (Ideal.span {((q : ℤ))} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hlies : (Ideal.comap φ (IsLocalRing.maximalIdeal _)).LiesOver
+      (Ideal.span {((q : ℤ))}) :=
+    (Ideal.liesOver_span_iff hQ₀prime.ne_top hqZ).mpr (by exact_mod_cast hQ₀mem)
+  haveI hfinq : Finite (ℤ ⧸ (Ideal.span {((q : ℤ))} : Ideal ℤ)) :=
+    Ring.HasFiniteQuotients.finiteQuotient hne
+  haveI hmaxZ : (Ideal.span {((q : ℤ))} : Ideal ℤ).IsMaximal :=
+    hsp.isMaximal_of_ne_bot hne
+  have hsurjZ : Function.Surjective
+      (algebraMap (ℤ ⧸ (Ideal.span {((q : ℤ))} : Ideal ℤ))
+        ((Ideal.span {((q : ℤ))} : Ideal ℤ).ResidueField)) :=
+    IsFractionRing.surjective_iff_isField.mpr
+      ((Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp hmaxZ)
+  haveI : Finite ((Ideal.span {((q : ℤ))} : Ideal ℤ).ResidueField) :=
+    Finite.of_surjective _ hsurjZ
+  -- the ramification index (old spelling) is `1`
+  have hple : Ideal.map (algebraMap ℤ (NumberField.RingOfIntegers L))
+      (Ideal.span {((q : ℤ))}) ≤ Ideal.comap φ (IsLocalRing.maximalIdeal _) := by
+    rw [Ideal.map_span, Set.image_singleton]
+    rw [Ideal.span_le, Set.singleton_subset_iff]
+    exact_mod_cast hQ₀mem
+  have he1 : Ideal.ramificationIdx' (Ideal.span {((q : ℤ))})
+      (Ideal.comap φ (IsLocalRing.maximalIdeal _)) = 1 := by
+    by_contra hne1
+    have hsq := (Ideal.ramificationIdx'_ne_one_iff hple).mp hne1
+    -- then `q ∈ Q₀²`, so `φ q = q ∈ 𝔪_M² = (q²)`, making `q` a unit
+    have hqQ2 : (q : NumberField.RingOfIntegers L) ∈
+        (Ideal.comap φ (IsLocalRing.maximalIdeal _)) ^ 2 := by
+      refine hsq ?_
+      have : algebraMap ℤ (NumberField.RingOfIntegers L) (q : ℤ) ∈
+          Ideal.map (algebraMap ℤ (NumberField.RingOfIntegers L))
+            (Ideal.span {((q : ℤ))}) :=
+        Ideal.mem_map_of_mem _ (Ideal.mem_span_singleton_self _)
+      simpa using this
+    have hcomap2 : (Ideal.comap φ (IsLocalRing.maximalIdeal _)) ^ 2 ≤
+        Ideal.comap φ ((IsLocalRing.maximalIdeal _) ^ 2) := by
+      rw [pow_two, pow_two]
+      exact Ideal.mul_le.mpr fun r hr t ht => Ideal.mem_comap.mpr
+        (by rw [map_mul]; exact Ideal.mul_mem_mul hr ht)
+    have hφq := Ideal.mem_comap.mp (hcomap2 hqQ2)
+    rw [map_natCast, hspan, Ideal.span_singleton_pow, Ideal.mem_span_singleton] at hφq
+    obtain ⟨c, hc⟩ := hφq
+    -- `q ≠ 0` in `𝒪_M` (its image in `(ℚ_q)ᵃˡᵍ` is `q ≠ 0` by char zero)
+    haveI : CharZero (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) :=
+      charZero_of_injective_algebraMap (algebraMap
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat) _).injective
+    have hq0 : ((q : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat) M)) ≠ 0 := by
+      intro h0
+      have h1 := congrArg (fun z => (algebraMap M (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))
+        ((algebraMap (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat) M) M) z))) h0
+      simp only [map_natCast, map_zero] at h1
+      exact Nat.cast_ne_zero.mpr hq.ne_zero h1
+    -- cancel one factor of `q`: `q · c = 1`
+    have hcancel : (q : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat) M) * c = 1 := by
+      have hmul : (q : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat) M) *
+          ((q : IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat) M) * c) =
+          (q : IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat) M) * 1 := by
+        rw [mul_one, ← mul_assoc, ← pow_two]
+        exact hc.symm
+      exact mul_left_cancel₀ hq0 hmul
+    -- but `q` lies in the proper maximal ideal — contradiction
+    have hqmem : (q : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat) M) ∈
+        IsLocalRing.maximalIdeal _ := by
+      rw [hspan]; exact Ideal.mem_span_singleton_self _
+    exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+      (Ideal.eq_top_of_isUnit_mem _ hqmem
+        (isUnit_iff_exists.mpr ⟨c, hcancel, by rwa [mul_comm] at hcancel⟩))
+  -- bridge to the `Module.length` spelling and conclude via
+  -- `#I(Q₀) = e = 1`
+  have h2 : (Ideal.comap φ (IsLocalRing.maximalIdeal _)).ramificationIdx ℤ = 1 := by
+    rw [← Ideal.ramificationIdx'_eq_ramificationIdx (Ideal.span {((q : ℤ))})
+      (Ideal.comap φ (IsLocalRing.maximalIdeal _)) hne]
+    exact he1
+  have hcard := Ideal.card_inertia_eq_ramificationIdxIn
+    (G := (L ≃ₐ[ℚ] L)) (Ideal.span {((q : ℤ))})
+    (Ideal.comap φ (IsLocalRing.maximalIdeal _))
+  rw [Ideal.ramificationIdxIn_eq_ramificationIdx (Ideal.span {((q : ℤ))})
+    (Ideal.comap φ (IsLocalRing.maximalIdeal _)) (L ≃ₐ[ℚ] L), h2] at hcard
+  exact Subgroup.eq_bot_of_card_eq _ hcard
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Conjugacy propagation of trivial inertia** (PROVEN 2026-07-16): if ONE

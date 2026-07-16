@@ -70,27 +70,56 @@ map where helpful.
                     `card_inertia_eq_ramificationIdxIn`,
                     `ramificationIdxIn_eq_ramificationIdx`,
                     `ramificationIdx_eq_one_iff.mp`).
-                    - ✗ `inertia_eq_bot_of_le_fixingSubgroup` — **the
-                      inertia transport** (sole remaining leaf of the
-                      Minkowski chain): the image of
+                    - ✓ `inertia_eq_bot_of_le_fixingSubgroup` — **the
+                      inertia transport** (DERIVED; whole chain now
+                      rests on the ONE local node below): the image of
                       `localInertiaGroup q` fixing `L` pointwise
-                      trivializes `Q.inertia (L ≃ₐ[ℚ] L)`. VERIFIED
-                      (2026-07-16): neither mathlib nor the vendored
-                      tree has local-global inertia surjectivity (only
-                      the generic `inertia_map_subtype`); this node's
-                      TRUE content is the classical
-                      decomposition-group comparison (Neukirch II.9 /
-                      Serre Local Fields II): the local inertia at the
-                      embedding-determined prime surjects onto the
-                      global ideal-inertia, plus Galois-conjugacy of
-                      inertia for the other primes above `q`
-                      (`Gal(L/ℚ)` transitive on `primesOver`,
-                      `I(gQ) = g I(Q) g⁻¹`). SPLIT EXECUTED (2026-07-16): the
-                      transport is now DERIVED from
-                      ✗ `exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup`
-                      (SOME prime above `q` has trivial inertia — the
-                      embedding-prime/decomposition-group surjectivity
-                      content, Neukirch II.9) and
+                      trivializes `Q.inertia (L ≃ₐ[ℚ] L)`.
+                      SPLIT EXECUTED (2026-07-16): the
+                      transport is DERIVED from
+                      ✓ `exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup`
+                      (SOME prime above `q` has trivial inertia —
+                      DERIVED 2026-07-16 via the VALUATION route, no
+                      decomposition groups and no henselian lifting:
+                      the chosen embedding `ι` carries `L` into the
+                      finite subextension `M = ℚ_q(ι L)` of `ℚ_qᵃˡᵍ`;
+                      `hle` + the PROVEN `lift_map` put `M` inside the
+                      fixed field of the local inertia; the local node
+                      below then makes `q` a uniformizer of `𝒪_M`;
+                      pulling `𝔪_M` back along the ring hom
+                      `𝓞 L → 𝒪_M` induced by `ι` gives a prime
+                      `Q₀ ∋ q` with `e(Q₀|q) = 1` — if `e ≠ 1` then
+                      `q ∈ Q₀²` (`ramificationIdx'_ne_one_iff`), so
+                      `q = q²c` in `𝒪_M`, making `q` a unit in a
+                      proper ideal — and `#I(Q₀) = e = 1` closes via
+                      `card_inertia_eq_ramificationIdxIn`. Helper
+                      lemmas PROVEN unconditionally:
+                      `asIdeal_toHeightOneSpectrumRingOfIntegersRat`
+                      (`v_q = span q` in `𝓞 ℚ`) and
+                      `maximalIdeal_adicCompletionIntegers_eq_span`
+                      (`𝔪(ℤ_qˆ) = span q`, via
+                      `intValuation_singleton` +
+                      `maximalIdeal_eq_span_uniformizer`); rests on
+                      ✗ `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`
+                      (`Deformations/RepresentationTheory/LocalInertiaFixedField.lean`
+                      — THE new local node: a finite subextension
+                      `M/Kᵥ` of `Kᵥᵃˡᵍ` fixed pointwise by
+                      `localInertiaGroup v` has `e(M/Kᵥ) = 1`, i.e.
+                      `𝔪ᵥ` generates `𝔪(IntegralClosure 𝒪ᵥ M)`;
+                      classical: the fixed field of inertia is the
+                      maximal unramified extension, Neukirch II.9.11.
+                      Planned proof: pass to the Galois closure `N/Kᵥ`;
+                      `|I(N/Kᵥ)| = e(N/Kᵥ)` at each finite level via
+                      `card_inertia_eq_ramificationIdxIn` — the
+                      integral closure at every finite level is LOCAL
+                      because it is a valuation ring by the vendored
+                      spectral-norm argument, with finite residue
+                      field — plus tower multiplicativity of `e` and a
+                      compactness lifting of finite-level inertia
+                      elements to `localInertiaGroup v`, whose
+                      finite-level surjectivity along towers is a
+                      counting argument from the same two
+                      ingredients) and
                       ✓ `inertia_eq_bot_of_exists_prime_over`
                       (conjugacy propagation — PROVEN 2026-07-16:
                       `exists_smul_eq_of_isGaloisGroup` gives
@@ -1275,3 +1304,38 @@ assumed. Axiom invariant: every declaration must use at most
   points (formal: `N•[u] = [u^N]` and the class of `q` is zero).
   These serve the multiplicative/tame glue nodes, which analyze `E[p]`
   through the uniformization's torsion.
+- 2026-07-16 (session 5): **MINKOWSKI SURJECTIVITY LEAF DERIVED —
+  the entire Minkowski branch now rests on ONE purely local node.**
+  `exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup` is PROVEN
+  via the valuation route (NO decomposition-group theory, NO henselian
+  lifting): embed `L` into `M := ℚ_q(ι L) ⊆ ℚ_qᵃˡᵍ` along the
+  `absoluteGaloisGroup.map` embedding (`lift_map` transports `hle` to
+  "local inertia fixes `M` pointwise"); the NEW sorry node
+  `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`
+  (`LocalInertiaFixedField.lean`, stated for GENERAL number fields
+  `K` and places `v`) gives `e(M/ℚ_q) = 1`, i.e. `𝔪_M = (q)`; the
+  comap prime `Q₀` of `𝔪_M` under the integrality-restricted
+  `𝓞 L → 𝒪_M` then has `e(Q₀|q) = 1` (else `q ∈ Q₀²` forces
+  `q ∈ (q²)`, a unit in a proper ideal), and
+  `#I(Q₀) = e = 1` (`card_inertia_eq_ramificationIdxIn` +
+  `ramificationIdx'_ne_one_iff` + the old/new-spelling bridge
+  `ramificationIdx'_eq_ramificationIdx`). Helper lemmas PROVEN
+  unconditionally: `asIdeal_toHeightOneSpectrumRingOfIntegersRat`,
+  `maximalIdeal_adicCompletionIntegers_eq_span`. Axiom audit: both
+  helpers `[propext, Classical.choice, Quot.sound]`; the chain
+  `exists_prime_over…` → `inertia_eq_bot_of_le_fixingSubgroup` →
+  `isUnramifiedAt_of_inertia_le_fixingSubgroup` →
+  `open_normal_subgroup_eq_top_of_inertia_le` carries `sorryAx` ONLY
+  through the local node. Frontier stays at 22 by count, but the
+  Neukirch II.9 content strictly shrank to the local statement, whose
+  planned proof (Galois closure + finite-level `|I| = e` counting +
+  compactness lifting) needs no new mathematical inputs beyond
+  vendored/mathlib API. Lean gotchas recorded: the scoped-`algebraMap`
+  coercion is `Algebra.cast` (NOT syntactically `algebraMap _ _ _` —
+  build cross-spelling equalities via `.trans`-chained lemma instances
+  + `convert … using 2` + `norm_cast`, never `rw`); `↥M`'s ℤ-algebra
+  instance is ambiguous (`Ring.toIntAlgebra` vs
+  `IntermediateField.algebra'`) — avoid `RingHom.toIntAlgHom` and
+  `IsIntegral.tower_top` across the ambiguity; instead push the monic
+  witness through `Polynomial.eval₂_map` + `Subsingleton.elim` on
+  `ℤ →+* ·`.
