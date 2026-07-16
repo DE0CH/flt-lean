@@ -1430,3 +1430,28 @@ assumed. Axiom invariant: every declaration must use at most
   gymnastics + `𝒪_M` residue finiteness), `e`-tower application,
   compactness lifting of finite-level inertia to `localInertiaGroup`,
   final assembly.
+- 2026-07-16 (session 5, design note for the M-based counting):
+  mathlib's `stabilizerHom_surjective` (Frobenius lifting) requires
+  `[Finite G]` — NO profinite shortcut; the compactness plan stands.
+  For the second `card_inertia` (base `𝒪_M`, group `Gal(N/M)`), the
+  clean formulation avoids `letI` inclusion-algebras: reify `M` inside
+  `↥N` as `M' : IntermediateField Kᵥ ↥N` (via
+  `IntermediateField.comap N.val` from `M ≤ N`, or by generalizing the
+  whole `FiniteLevel` section from subextensions of `Kᵥᵃˡᵍ` to an
+  arbitrary finite extension `E/Kᵥ`); then `Algebra ↥M' ↥N`,
+  `IsGalois ↥M' ↥N` (tower-top), and
+  `IntermediateField.fixingSubgroupEquiv : fixingSubgroup M' ≃* Gal(N/M')`
+  are all CANONICAL instances. Generalizing the section to arbitrary
+  `E` is the right move (all inputs — vendored `valuationRing`,
+  `IsIntegralClosure.finite`, Bézout-PID, `not_isField` — are already
+  ambient-free); the only IntermediateField-specific pieces are my two
+  tower instances, whose subtype-restriction guards the `algebra'`
+  ambiguity — for a general-`E` section the guard concern moves to the
+  INSTANTIATION sites, where the proven
+  `backward.isDefEq.respectTransparency false` fix applies. The
+  assembly chain: `τ ∈ I(𝔪_N/Gal(N/Kᵥ))` fixing `M` ⟹ `τ` upgrades
+  through `fixingSubgroupEquiv` to `Gal(N/M')`, lands in
+  `I(𝔪_N/Gal(N/M'))` (`Ideal.coe_mem_inertia`-style), so
+  `e(N/Kᵥ) = |I(𝔪_N/GalKᵥ)| ≤ |I(𝔪_N/Gal(N/M'))| = e(N/M')`; with
+  `e(N/Kᵥ) = e(N/M')·e(M/Kᵥ)` (`ramificationIdx'_algebra_tower`,
+  Dedekind ✓ both DVRs) and `e ≠ 0`, conclude `e(M/Kᵥ) = 1`.
