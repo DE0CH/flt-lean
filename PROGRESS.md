@@ -588,7 +588,12 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   COMPILED with one fix round (missing imports). The Minkowski node is
   now DERIVED; the open sorry is
   `isUnramifiedAt_of_inertia_le_fixingSubgroup` — the pure inertia
-  dictionary, shared with the five glue nodes.**;
+  dictionary, shared with the five glue nodes. Post-derivation audit:
+  `open_normal_subgroup_eq_top_of_inertia_le`,
+  `minkowski_character_trivial`, and
+  `exists_torsion_embedding_of_not_isIrreducible` all show exactly
+  `[propext, sorryAx, Classical.choice, Quot.sound]` — correctly
+  rooted through the dictionary, no foreign axioms.**;
   (3) conclude `ker χ = ⊤` from `fixedField χ.ker = ⊥` by the infinite
   Galois correspondence, hence `χ = 1`. Estimated: one focused session;
   start from a FRESH context.
