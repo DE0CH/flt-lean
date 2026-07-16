@@ -29,6 +29,7 @@ tree, to be decomposed further (B6a/B6b/B6c) in subsequent layers.
 module
 
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
+public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift
 public import Mathlib.Topology.Instances.ZMod
 
 @[expose] public section
@@ -52,5 +53,13 @@ theorem GaloisRepresentation.not_isIrreducible_of_isHardlyRamified
     (hdim : Module.rank (ZMod ℓ) V = 2)
     {ρ : GaloisRep ℚ (ZMod ℓ) V}
     (h : IsHardlyRamified hℓOdd hdim ρ) :
-    ¬ ρ.IsIrreducible :=
-  sorry
+    ¬ ρ.IsIrreducible := by
+  -- B5 from B6a + (B6b ∘ B6c) + Chebotarev–Brauer–Nesbitt: suppose `ρ` is
+  -- irreducible; lift it (B6a), pin the residual Frobenius characteristic
+  -- polynomials to those of `1 ⊕ χ̄` through the compatible family and the
+  -- 3-adic classification (B6bc), and conclude that `ρ` cannot have been
+  -- irreducible.
+  intro hirr
+  obtain ⟨L⟩ := exists_hardlyRamifiedLift hℓOdd hdim hℓ5 h hirr
+  exact not_isIrreducible_of_charFrob_eq
+    (residual_charFrob_eq hℓOdd hℓ5 L) hirr

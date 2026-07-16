@@ -41,11 +41,26 @@ map where helpful.
         - ✗ `FreyCurve.torsion_isHardlyRamified`
           (`GaloisRepresentation/HardlyRamified/Frey.lean`) — Serre §4.1 +
           Tate curve theory.
-        - ✗ **B5** `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
+        - ✓ **B5** `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
           (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work) —
-          hardly ramified mod-ℓ (ℓ ≥ 5) ⇒ not irreducible. To be decomposed
-          into B6a (lift to char 0) / B6b (compatible family) / B6c (3-adic
-          classification).
+          now DERIVED (2026-07-16) from three explicit nodes in
+          `HardlyRamified/Lift.lean` (own work), following Buzzard's 2026
+          EPSRC Lecture 4 (his B5a/B5b/B5c):
+          - ✗ **B6a** `exists_hardlyRamifiedLift` — an irreducible hardly
+            ramified mod-ℓ rep (ℓ ≥ 5) lifts to a hardly ramified ℓ-adic
+            rep over the integers `O` of a finite extension of `ℚ_ℓ`
+            (bundled in `structure HardlyRamifiedLift`: `O` + framed rep +
+            reduction map + Frobenius-charpoly compatibility). Deformation
+            theory / modularity lifting without residual modularity.
+          - ✗ **B6bc** `residual_charFrob_eq` — the residual Frobenius
+            charpolys of a liftable rep are those of `1 ⊕ χ̄`
+            (`X² − (q+1)X + q`). Folds B6b (spread out to a weakly
+            compatible family over a number field's completions) and B6c
+            (3-adic hardly ramified ⇒ extension of trivial by cyclotomic);
+            a later layer must split it into faithful B6b/B6c statements.
+          - ✗ `not_isIrreducible_of_charFrob_eq` — Chebotarev + Brauer–
+            Nesbitt: Frobenius charpolys of `1 ⊕ χ̄` away from `{2,3,ℓ}`
+            force reducibility.
       - Supporting sorries in vendored infrastructure
         (`Fermat/FLT/EllipticCurve/Torsion.lean`):
         - ✓ `n_torsion_finite` — now DERIVED (2026-07-16) in
@@ -152,4 +167,12 @@ assumed. Axiom invariant: every declaration must use at most
   polynomial sorry nodes (`eval_ΨSq_eq_zero_of_smul_eq_zero`,
   `ΨSq_ne_zero_of_charDvd`). Sorry frontier (6, all Props):
   `mazur`, `torsion_isHardlyRamified`, B5, `n_torsion_card`,
+  `eval_ΨSq_eq_zero_of_smul_eq_zero`, `ΨSq_ne_zero_of_charDvd`.
+- 2026-07-16 (session 2, cont.): **B5 decomposed and derived** — new file
+  `HardlyRamified/Lift.lean` (own work) states B6a (ℓ-adic lift, bundled
+  `HardlyRamifiedLift` structure), B6bc (residual Frobenius charpolys are
+  those of `1 ⊕ χ̄`; to be split into faithful B6b/B6c), and the
+  Chebotarev–Brauer–Nesbitt node; B5 proven from them. Sorry frontier
+  (8, all Props): `mazur`, `torsion_isHardlyRamified`, B6a, B6bc,
+  Chebotarev–Brauer–Nesbitt, `n_torsion_card`,
   `eval_ΨSq_eq_zero_of_smul_eq_zero`, `ΨSq_ne_zero_of_charDvd`.
