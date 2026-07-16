@@ -147,6 +147,44 @@ reconnaissance in `PROGRESS.md` for the verified mathlib route; the
 remaining content is the fixed field of the open subgroup (infinite
 Galois correspondence) and the dictionary between `localInertiaGroup`
 and classical ramification. -/
+theorem exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup
+    (L : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ L]
+    [NumberField L] [IsGalois ℚ L]
+    {q : ℕ} (hq : q.Prime)
+    (hle : Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+        (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat)
+      ≤ L.fixingSubgroup) :
+    ∃ (Q₀ : Ideal (NumberField.RingOfIntegers L)) (_ : Q₀.IsPrime)
+      (_ : (q : NumberField.RingOfIntegers L) ∈ Q₀),
+      Q₀.inertia (L ≃ₐ[ℚ] L) = ⊥ :=
+  sorry
+
+set_option warn.sorry false in
+/-- **Conjugacy propagation of trivial inertia** (sorry node): if ONE
+prime of `𝓞 L` above `q` has trivial ideal-inertia in `Gal(L/ℚ)`, then
+EVERY prime above `q` does. Classical: `Gal(L/ℚ)` acts transitively on
+the primes above `q` (`Ideal.IsInvariant.orbit_eq_primesOver` /
+going-up), and inertia groups at conjugate primes are conjugate
+(`I(g • Q) = g I(Q) g⁻¹`), so triviality propagates along the orbit. -/
+theorem inertia_eq_bot_of_exists_prime_over
+    (L : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ L]
+    [NumberField L] [IsGalois ℚ L]
+    {q : ℕ} (hq : q.Prime)
+    (Q₀ : Ideal (NumberField.RingOfIntegers L)) [Q₀.IsPrime]
+    (hQ₀mem : (q : NumberField.RingOfIntegers L) ∈ Q₀)
+    (hQ₀ : Q₀.inertia (L ≃ₐ[ℚ] L) = ⊥)
+    (Q : Ideal (NumberField.RingOfIntegers L)) [Q.IsPrime]
+    (hQmem : (q : NumberField.RingOfIntegers L) ∈ Q) :
+    Q.inertia (L ≃ₐ[ℚ] L) = ⊥ :=
+  sorry
+
+/-- **The inertia transport** (DERIVED 2026-07-16 from the two nodes
+above): the image of `localInertiaGroup q` fixing `L` pointwise
+trivializes the global ideal-inertia at EVERY prime above `q` — the
+embedding-determined prime has trivial inertia by the surjectivity
+node, and conjugacy propagates it. -/
 theorem inertia_eq_bot_of_le_fixingSubgroup
     (L : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ L]
     [NumberField L] [IsGalois ℚ L]
@@ -158,8 +196,10 @@ theorem inertia_eq_bot_of_le_fixingSubgroup
       ≤ L.fixingSubgroup)
     (Q : Ideal (NumberField.RingOfIntegers L)) [Q.IsPrime]
     (hQmem : (q : NumberField.RingOfIntegers L) ∈ Q) :
-    Q.inertia (L ≃ₐ[ℚ] L) = ⊥ :=
-  sorry
+    Q.inertia (L ≃ₐ[ℚ] L) = ⊥ := by
+  obtain ⟨Q₀, hQ₀p, hQ₀mem, hQ₀⟩ :=
+    exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup L hq hle
+  exact inertia_eq_bot_of_exists_prime_over L hq Q₀ hQ₀mem hQ₀ Q hQmem
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The inertia dictionary** (DERIVED 2026-07-16 from the transport

@@ -85,10 +85,20 @@ map where helpful.
                       global ideal-inertia, plus Galois-conjugacy of
                       inertia for the other primes above `q`
                       (`Gal(L/ℚ)` transitive on `primesOver`,
-                      `I(gQ) = g I(Q) g⁻¹`). Split accordingly when
-                      attacked: [surjectivity node at the
-                      embedding-prime] + [conjugation bookkeeping,
-                      provable].
+                      `I(gQ) = g I(Q) g⁻¹`). SPLIT EXECUTED (2026-07-16): the
+                      transport is now DERIVED from
+                      ✗ `exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup`
+                      (SOME prime above `q` has trivial inertia — the
+                      embedding-prime/decomposition-group surjectivity
+                      content, Neukirch II.9) and
+                      ✗ `inertia_eq_bot_of_exists_prime_over`
+                      (conjugacy propagation — provable:
+                      `exists_smul_eq_of_isGaloisGroup` gives
+                      transitivity on primes over `q`; the conjugation
+                      identity `g ∈ inertia (σ • Q) ↔ σ⁻¹gσ ∈ inertia
+                      Q` is a short definitional argument from
+                      `mem_inertia` + the pointwise-smul API
+                      `Ideal.IsPrime.smul`/`pointwise_smul_eq_comap`).
               - ✗ `FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski`
                 — Serre's analysis with the Minkowski input as a
                 hypothesis: stable line ⟹ characters χ₁χ₂ = ω̄;
