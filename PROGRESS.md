@@ -629,9 +629,15 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   for ideals under group actions, with
   `IsInertiaField.of_isGaloisGroup` and the `rank_left`/`rank_right`
   theorems tying its fixed field's degrees to `e` and `f`) — a THIRD
-  inertia presentation, probably the shortest classical route: trivial
-  `inertia Gal(L/ℚ) Q` forces the inertia field to be all of `L`,
-  whence `e = 1` by `rank` bookkeeping. The dictionary then only needs
+  inertia presentation, and the SHORTEST route — no field bookkeeping
+  needed: **`card_inertia_eq_ramificationIdxIn p : Nat.card (inertia
+  Gal(L/K) P) = p.ramificationIdxIn B`** (used inside `rank_left`)
+  gives `e` DIRECTLY as the inertia group's cardinality; trivial
+  inertia ⟹ card 1 ⟹ `ramificationIdxIn = 1`, then
+  `ramificationIdxIn_eq_ramificationIdx` (the lemma ExistsRamified.lean
+  itself uses) lands at the specific prime and
+  `ramificationIdx_eq_one_iff.mp` (scratch-compiled) finishes. The
+  dictionary then only needs the transport:
   `localInertiaGroup`-image-fixes-`L` ⟹ `inertia Gal(L/ℚ) Q` trivial
   (via `lift_map` and surjectivity of restriction to `L`).
   Post-derivation audit:
