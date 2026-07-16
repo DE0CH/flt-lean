@@ -227,11 +227,20 @@ map where helpful.
                 (`AbsoluteGaloisGroup.lean`), and `AlgebraicClosure.map`
                 is definitionally `IsAlgClosed.lift`
                 (`Deformations/Lemmas.lean`);
-                (ii) ✗ `natCard_residue_quotient_toHeightOneSpectrum`
-                (STATED 2026-07-16): the `IsArithFrobAt` exponent at the
-                q-place of ℚ is q — the residue field of `ℤ_q` is `𝔽_q`
-                (the quotient by the contraction of the maximal ideal of
-                the integral closure); (ii′) ✗
+                (ii) ✓ `natCard_residue_quotient_toHeightOneSpectrum`
+                — PROVEN sorry-free (2026-07-16): the contraction of the
+                maximal ideal is the maximal ideal
+                (`Ideal.IsMaximal.under` on the integral closure + local
+                uniqueness); transport to `ℤ_[q]` by
+                `adicCompletionIntegers.padicIntEquiv` (maximal ideals
+                correspond via `Ideal.comap_symm`), the `ℤ_[p]` residue
+                count is `p` (`toZMod` surjective with kernel `𝔪`), and
+                `natGenerator (q-place) = q` via `span_natGenerator` and
+                the `ringOfIntegersEquiv` bridge. WITH THIS,
+                `cyclotomicCharacter_globalFrob` and its mod-ℓ corollary
+                are UNCONDITIONALLY PROVEN ([propext, Classical.choice,
+                Quot.sound]); the Chebotarev–Brauer–Nesbitt chain now
+                rests on the single leaf `exists_frobenius_conj_mem_coset`; (ii′) ✗
                 `isUnit_natCast_adicCompletionIntegers` — PROVEN
                 sorry-free (2026-07-16): a valuation-subring unit is an
                 element of valuation one; the completion's valuation
