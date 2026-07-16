@@ -165,9 +165,23 @@ map where helpful.
                 with `p ∣ v_p(j)` makes the Tate-curve extension
                 `0 → μ_p → E[p] → ℤ/p → 0` peu ramifiée, which
                 prolongs to a finite flat group scheme over `ℤ_p`.
-          - ✗ `FreyCurve.torsion_isTameAtTwo` — at 2: rank-1 quotient
-            with unramified character squaring to 1 (multiplicative
-            reduction at 2, Tate uniformization, quadratic twist).
+          - ✓ `FreyCurve.torsion_isTameAtTwo` — DERIVED (2026-07-16)
+            from the PROVEN arithmetic and the tame glue node below.
+            - ✓ `FreyPackage.freyCurve_hasMultiplicativeReduction_at_two`
+              (`FreyCurve/Semistable.lean`, own work): PROVEN
+              (2026-07-16) — the Frey model is semistable at 2 by
+              design: `c₄ = c^{2p} - (ab)^p` is odd (`a ≡ 3 mod 4`,
+              `b` even force `c` odd), giving `v(c₄) = 1` and
+              Kraus–Laska minimality; `Δ = 2^{2p-8}(ab'c)^{2p}` (with
+              `b = 2b'`) is in the maximal ideal since `2p > 8`.
+            - ✗ `WeierstrassCurve.isTameAtTwo_of_hasMultiplicativeReduction`
+              (stated in `FreyConditions.lean` for a general elliptic
+              curve over ℚ): the Tate glue at 2 — multiplicative
+              reduction at 2 and `p` odd give the rank-1 unramified
+              quotient with character squaring to 1; to be closed
+              against the quadratic-twist (vendored PROVEN) and
+              Tate-uniformization (`exists_tateEquivSepClosure`)
+              nodes.
             - ✓ `TateParameter.lean` vendored (2026-07-16, ZERO
               sorries — fully proven): the formal q-expansion machinery
               (formal `c₄`, `Δ`, `j⁻¹` power series and the Tate
@@ -802,3 +816,15 @@ assumed. Axiom invariant: every declaration must use at most
   (peu-ramifiée glue at `p`). All four FreyConditions reduction-type
   cases now rest exclusively on local-global glue nodes; the Frey-curve
   semistability arithmetic is complete. Frontier: 20.
+- 2026-07-16 (session 4, cont.): **Frey multiplicative reduction AT 2
+  PROVEN; `torsion_isTameAtTwo` DERIVED** —
+  `freyCurve_hasMultiplicativeReduction_at_two` is PROVEN (this is
+  where the Frey model's defining congruences `a ≡ 3 mod 4`, `b ≡ 0
+  mod 2` are consumed: they force `c` odd, so `c₄` is odd and
+  `v(c₄) = 1`, while `Δ = 2^{2p-8}(ab'c)^{2p}` is in the maximal ideal
+  as `2p > 8`); `torsion_isTameAtTwo` is DERIVED from it through the
+  new glue node ✗ `isTameAtTwo_of_hasMultiplicativeReduction` (stated
+  for a general elliptic curve over ℚ — the Tate/quadratic-twist glue
+  at 2). ALL FOUR conditions of `IsHardlyRamified` for the Frey curve
+  now rest exclusively on generic local-global glue nodes; every
+  Frey-specific computation is sorry-free. Frontier: 20.

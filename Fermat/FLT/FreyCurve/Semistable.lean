@@ -262,6 +262,105 @@ theorem FreyPackage.freyCurve_hasMultiplicativeReduction_of_dvd (P : FreyPackage
           badReduction := hvalΔ
           multiplicativeReduction := hvalc₄ }
 
+open WeierstrassCurve in
+/-- **Multiplicative reduction of the Frey curve at `2`** (PROVEN
+2026-07-16): the Frey model
+`y² + xy = x³ + ((b^p-1-a^p)/4)x² - (a^p b^p/16)x` — chosen precisely to
+be semistable at `2` — has multiplicative reduction over `ℤ_(2)`: the
+equation is `2`-integral; `c₄ = c^{2p} - (ab)^p` is odd (`a ≡ 3 mod 4`
+makes `a` odd, `b` is even, so `c` is odd and `(ab)^p` is even), giving
+`v(c₄) = 1` and minimality by the unit-`c₄` Kraus–Laska criterion; and
+`Δ = (abc)^{2p}/2⁸ = 2^{2p-8}·(ab'c)^{2p}` (where `b = 2b'`) lies in the
+maximal ideal since `2p > 8`. -/
+theorem FreyPackage.freyCurve_hasMultiplicativeReduction_at_two (P : FreyPackage) :
+    P.freyCurve.HasMultiplicativeReduction
+      (Localization.AtPrime Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat.asIdeal) := by
+  set R := Localization.AtPrime Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat.asIdeal
+    with hR
+  have h2Z : Prime (2 : ℤ) := Int.prime_two
+  -- `2`-integrality: every coefficient of the Frey equation is an integer
+  haveI hInt : IsIntegral R P.freyCurve := by
+    rw [← FreyCurve.map P]
+    refine isIntegral_of_exists_lift R ?_ ?_ ?_ ?_ ?_ <;>
+      exact ⟨_, (map_intCast (algebraMap R ℚ) _).trans
+        (eq_intCast (algebraMap ℤ ℚ) _).symm⟩
+  -- parities: `b` even, `a` odd, `c` odd
+  have hb2 : (2 : ℤ) ∣ P.b := (ZMod.intCast_zmod_eq_zero_iff_dvd P.b 2).mp P.hb2
+  have ha4' : P.a % 4 = 3 := by
+    have h := (ZMod.intCast_eq_intCast_iff P.a 3 4).mp (by exact_mod_cast P.ha4)
+    simpa [Int.ModEq] using h
+  have ha_odd : ¬((2 : ℤ) ∣ P.a) := by omega
+  have hc_odd : ¬((2 : ℤ) ∣ P.c) := by
+    intro h
+    have h1 : (2 : ℤ) ∣ P.c ^ P.p := dvd_pow h P.hp0
+    have h2 : (2 : ℤ) ∣ P.b ^ P.p := dvd_pow hb2 P.hp0
+    have h3 : (2 : ℤ) ∣ P.a ^ P.p := by
+      have hFLT := P.hFLT
+      have : P.a ^ P.p = P.c ^ P.p - P.b ^ P.p := by linarith
+      rw [this]
+      exact dvd_sub h1 h2
+    exact ha_odd (h2Z.dvd_of_dvd_pow h3)
+  -- `c₄ = c^{2p} - (ab)^p` is odd
+  have hc₄ndvd : ¬((2 : ℤ) ∣ P.c ^ (2 * P.p) - (P.a * P.b) ^ P.p) := by
+    intro h
+    have hab : (2 : ℤ) ∣ (P.a * P.b) ^ P.p :=
+      dvd_pow (Dvd.dvd.mul_left hb2 P.a) P.hp0
+    have hcpow : (2 : ℤ) ∣ P.c ^ (2 * P.p) := (dvd_sub_left hab).mp h
+    exact hc_odd (h2Z.dvd_of_dvd_pow hcpow)
+  -- `v(c₄) = 1`
+  have hc₄cast : P.freyCurve.c₄ =
+      ((P.c ^ (2 * P.p) - (P.a * P.b) ^ P.p : ℤ) : ℚ) := by
+    rw [FreyCurve.c₄']
+    push_cast
+    ring
+  have huc₄ : IsUnit ((P.c ^ (2 * P.p) - (P.a * P.b) ^ P.p : ℤ) : R) :=
+    isUnit_intCast_localizationAtPrime Nat.prime_two hc₄ndvd
+  have hvalc₄ : IsDedekindDomain.HeightOneSpectrum.valuation ℚ
+      (IsDiscreteValuationRing.maximalIdeal R) P.freyCurve.c₄ = 1 := by
+    have hmem : P.freyCurve.c₄ ∈ MonoidHom.mker
+        ((IsDiscreteValuationRing.maximalIdeal R).valuation ℚ) := by
+      rw [IsDiscreteValuationRing.mker_valuation_eq_isUnitSubmonoid]
+      exact Submonoid.mem_map.mpr
+        ⟨_, huc₄, (hc₄cast.trans (map_intCast (algebraMap R ℚ) _).symm).symm⟩
+    exact MonoidHom.mem_mker.mp hmem
+  -- `v(Δ) < 1`: with `b = 2b'`, `Δ = 2^{2p-8}·(ab'c)^{2p}` and `2p > 8`
+  obtain ⟨b', hb'⟩ := hb2
+  have h2p8 : 8 ≤ 2 * P.p := by
+    have := P.hp5
+    omega
+  have hΔeq2 : P.freyCurve.Δ = algebraMap R ℚ
+      ((((2 : ℤ) : R)) ^ (2 * P.p - 8) * (((P.a * b' * P.c : ℤ) : R)) ^ (2 * P.p)) := by
+    rw [FreyCurve.Δ, map_mul, map_pow, map_pow, map_intCast, map_intCast, hb']
+    push_cast
+    rw [show (P.a : ℚ) * (2 * (b' : ℚ)) * (P.c : ℚ)
+        = 2 * ((P.a : ℚ) * (b' : ℚ) * (P.c : ℚ)) by ring, mul_pow,
+      show (2 : ℚ) ^ (2 * P.p) = 2 ^ (2 * P.p - 8) * 2 ^ 8 by
+        rw [← pow_add]; congr 1; omega]
+    field_simp
+  have h2mem : (((2 : ℤ) : R)) ∈ IsLocalRing.maximalIdeal R := by
+    have h1 : ((2 : ℤ) : NumberField.RingOfIntegers ℚ) ∈
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat.asIdeal :=
+      (intCast_mem_toHeightOneSpectrumRingOfIntegersRat_iff Nat.prime_two _).mpr
+        (by norm_num)
+    have h2' := (IsLocalization.AtPrime.to_map_mem_maximal_iff
+      R Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat.asIdeal
+      ((2 : ℤ) : NumberField.RingOfIntegers ℚ)).mpr h1
+    rwa [map_intCast] at h2'
+  have hΔmem : (((2 : ℤ) : R)) ^ (2 * P.p - 8) *
+      (((P.a * b' * P.c : ℤ) : R)) ^ (2 * P.p) ∈ IsLocalRing.maximalIdeal R := by
+    have hpos : 0 < 2 * P.p - 8 := by
+      have := P.hp5
+      omega
+    exact Ideal.mul_mem_right _ _ (Ideal.pow_mem_of_mem _ h2mem _ hpos)
+  have hvalΔ : IsDedekindDomain.HeightOneSpectrum.valuation ℚ
+      (IsDiscreteValuationRing.maximalIdeal R) P.freyCurve.Δ < 1 := by
+    rw [hΔeq2]
+    exact (IsDedekindDomain.HeightOneSpectrum.valuation_lt_one_iff_mem
+      (IsDiscreteValuationRing.maximalIdeal R) _).mpr hΔmem
+  exact { toIsMinimal := isMinimal_of_valuation_c₄_eq_one (R := R) P.freyCurve hvalc₄
+          badReduction := hvalΔ
+          multiplicativeReduction := hvalc₄ }
+
 set_option warn.sorry false in
 /-- **Local-global glue for the Tate curve at multiplicative primes**
 (sorry node): an elliptic curve over `ℚ` with multiplicative reduction at

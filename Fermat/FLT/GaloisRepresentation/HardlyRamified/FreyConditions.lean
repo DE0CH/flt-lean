@@ -45,9 +45,12 @@ public import Fermat.FLT.EllipticCurve.Torsion
 -- The Weil pairing node and the determinant-of-pairing linear algebra,
 -- used to derive `torsion_det`.
 import Fermat.FLT.EllipticCurve.WeilPairing
--- The Frey good-reduction node and the NOS local-global glue node, used
--- to derive `torsion_isUnramified_of_good`.
-import Fermat.FLT.FreyCurve.Semistable
+-- The Frey reduction-type nodes and the local-global glue nodes
+-- (public: the tame-at-2 glue node stated in this file mentions
+-- `HasMultiplicativeReduction` over the localization, whose instance
+-- package lives in `Semistable`).
+public import Fermat.FLT.FreyCurve.Semistable
+public import Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 
 @[expose] public section
 
@@ -203,14 +206,44 @@ theorem FreyCurve.torsion_isFlat :
   · exact FreyCurve.torsion_isFlat_of_good P hdvd
 
 set_option warn.sorry false in
-/-- **Tameness of the Frey torsion representation at `2`** (sorry node):
-restricted to `G_{ℚ_2}`, the mod-`p` representation on the `p`-torsion of
-the Frey curve has a surjection onto a rank-1 quotient on which the action
-is through an unramified character whose square is trivial. The Frey curve
-has multiplicative reduction at `2` (using `b ≡ 0 mod 2`, `a ≡ 3 mod 4`),
-so the Tate-curve uniformization at `2` gives the exact sequence
-`0 → μ_p → E[p] → ℤ/p → 0` over `G_{ℚ_2}` up to the unramified quadratic
-twist, whose quotient character squares to `1`. -/
+/-- **Tame quotient at `2` from multiplicative reduction** (sorry node —
+the local-global Tate glue at `2`, stated for a general elliptic curve
+over `ℚ`): if `E` has multiplicative reduction at `2` and `p` is an odd
+prime, then restricted to `G_{ℚ_2}` the mod-`p` torsion representation
+has a surjection onto a rank-1 quotient on which the action is through
+an unramified character whose square is trivial. Content: after the
+unramified quadratic twist making the reduction split (vendored PROVEN
+`exists_quadraticTwist_hasSplitMultiplicativeReduction`), Tate's
+uniformization (`exists_tateEquivSepClosure`) presents `E[p]` as an
+extension `0 → μ_p → E[p] → ℤ/p → 0` over `G_{ℚ_2}` up to the quadratic
+twist character; the quotient `ℤ/p` (the image of the `p`-th roots of
+the Tate parameter) carries the unramified quadratic character, which
+squares to `1`. -/
+theorem WeierstrassCurve.isTameAtTwo_of_hasMultiplicativeReduction
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} [Fact p.Prime] (hp : 0 < p)
+    (hp2 : p ≠ 2)
+    [E.HasMultiplicativeReduction
+      (Localization.AtPrime Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat.asIdeal)] :
+    ∃ (π : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p
+        →ₗ[ZMod p] ZMod p)
+      (_ : Function.Surjective π)
+      (δ : GaloisRep ℚ_[2] (ZMod p) (ZMod p)),
+      ∀ g : Field.absoluteGaloisGroup ℚ_[2],
+        ∀ v : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p,
+          π ((E.galoisRep p hp).map (algebraMap ℚ ℚ_[2]) g v)
+              = δ g (π v) ∧
+            (AddSubgroup.inertia
+              ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+              (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+            (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1) :=
+  sorry
+
+/-- **Tameness of the Frey torsion representation at `2`** (DERIVED
+2026-07-16): the Frey curve has multiplicative reduction at `2`
+(`FreyPackage.freyCurve_hasMultiplicativeReduction_at_two`, PROVEN —
+this is where `b ≡ 0 mod 2` and `a ≡ 3 mod 4` are used), and the Tate
+glue at `2` (`isTameAtTwo_of_hasMultiplicativeReduction`) produces the
+rank-1 unramified quotient with character squaring to `1`. -/
 theorem FreyCurve.torsion_isTameAtTwo :
     haveI : Fact P.p.Prime := ⟨P.pp⟩
     ∃ (π : (P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p
@@ -224,5 +257,11 @@ theorem FreyCurve.torsion_isTameAtTwo :
             (AddSubgroup.inertia
               ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
               (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
-            (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1) :=
-  sorry
+            (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1) := by
+  haveI : Fact P.p.Prime := ⟨P.pp⟩
+  have hp2 : P.p ≠ 2 := by
+    have := P.hp5
+    omega
+  haveI := P.freyCurve_hasMultiplicativeReduction_at_two
+  exact WeierstrassCurve.isTameAtTwo_of_hasMultiplicativeReduction
+    P.freyCurve P.hppos hp2
