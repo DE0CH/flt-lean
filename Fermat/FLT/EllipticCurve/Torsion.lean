@@ -10,9 +10,6 @@ public import Mathlib.Topology.Instances.ZMod
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
 -- VENDORING ADDITION: the counting lemma backing `group_theory_lemma`.
 public import Fermat.FLT.EllipticCurve.TorsionCounting
--- VENDORING ADDITION: finiteness of torsion via division polynomials,
--- backing `n_torsion_finite`.
-public import Fermat.FLT.EllipticCurve.TorsionFinite
 -- VENDORING ADDITION: the torsion count via divisibility + the
 -- prime-level count, backing `n_torsion_card`.
 public import Fermat.FLT.EllipticCurve.TorsionCard
@@ -51,13 +48,20 @@ noncomputable instance (n : ℕ) : Module (ZMod n) (E.nTorsion n) :=
 
 -- This theorem needs e.g. a theory of division polynomials. It's ongoing work of David Angdinata.
 -- Please do not work on it without talking to KB and David first.
--- VENDORING CHANGE: the `sorry` is replaced by the reduction in
--- `TorsionFinite.lean`: torsion points are cut out by the division
--- polynomial `ΨSq n` (that relation is now the explicit sorry node
--- `TorsionFinite.eval_ΨSq_eq_zero_of_smul_eq_zero`), which is a nonzero
--- polynomial, and each abscissa carries at most two ordinates.
-theorem WeierstrassCurve.n_torsion_finite {n : ℕ} (hn : 0 < n) : Finite (E.nTorsion n) :=
-  TorsionFinite.finite_torsionBy E (n := (n : ℤ)) (Int.natCast_ne_zero.mpr hn.ne')
+-- VENDORING CHANGE (2026-07-16): finiteness is now DERIVED from the
+-- torsion count (`TorsionCard.card_torsionBy`): the count is `n² > 0`,
+-- and a type of positive `Nat.card` is finite. The hypotheses are
+-- specialized to separably closed fields of characteristic zero — the
+-- only fields at which the tree uses finiteness (the division-polynomial
+-- route of the former `TorsionFinite.lean`, which covered arbitrary
+-- characteristic, is superseded and removed).
+theorem WeierstrassCurve.n_torsion_finite [IsSepClosed k] [CharZero k]
+    {n : ℕ} (hn : 0 < n) : Finite (E.nTorsion n) := by
+  have hcard := TorsionCard.card_torsionBy E n (Nat.cast_ne_zero.mpr hn.ne')
+  have hpos : 0 < Nat.card (E.nTorsion n) := by
+    rw [hcard]
+    positivity
+  exact (Nat.card_pos_iff.mp hpos).2
 
 -- This theorem needs e.g. a theory of division polynomials. It's ongoing work of David Angdinata.
 -- Please do not work on it without talking to KB and David first.
@@ -111,7 +115,8 @@ theorem WeierstrassCurve.p_torsion_rank [IsSepClosed k] {p : ℕ} [Fact p.Prime]
 -- `0`-torsion is the whole group of points, which is typically infinite), so
 -- the instance now requires `[NeZero n]`; it is then immediate from
 -- `n_torsion_finite`, consolidating the sorry into that single node.
-noncomputable instance (n : ℕ) [NeZero n] : Module.Finite (ZMod n) (E.nTorsion n) :=
+noncomputable instance [IsSepClosed k] [CharZero k] (n : ℕ) [NeZero n] :
+    Module.Finite (ZMod n) (E.nTorsion n) :=
   haveI : Finite (E.nTorsion n) := E.n_torsion_finite (Nat.pos_of_ne_zero (NeZero.ne n))
   Module.Finite.of_finite
 
@@ -171,7 +176,8 @@ noncomputable instance : DecidableEq (AlgebraicClosure ℚ) := Classical.typeDec
 -- representation kills the open subgroup `Gal(Kᵃˡᵍ/F)`, hence every fiber is a
 -- union of left cosets of an open subgroup, hence open — so the map is
 -- continuous for ANY topology on the target.
-noncomputable def WeierstrassCurve.galoisRep {K : Type u} [Field K] (E : WeierstrassCurve K)
+noncomputable def WeierstrassCurve.galoisRep {K : Type u} [Field K] [CharZero K]
+    (E : WeierstrassCurve K)
     [E.IsElliptic] [DecidableEq K] [DecidableEq (AlgebraicClosure K)] (n : ℕ) (hn : 0 < n) :
     GaloisRep K (ZMod n) ((E.map (algebraMap K (AlgebraicClosure K))).nTorsion n) :=
   letI := moduleTopology (ZMod n) (Module.End (ZMod n)

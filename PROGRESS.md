@@ -223,16 +223,16 @@ map where helpful.
               lemmas.
       - Supporting sorries in vendored infrastructure
         (`Fermat/FLT/EllipticCurve/Torsion.lean`):
-        - ✓ `n_torsion_finite` — now DERIVED (2026-07-16) in
-          `TorsionFinite.lean` (own work) from two explicit polynomial
-          nodes: a nonzero torsion point's abscissa is a root of the
-          division polynomial `ΨSq n` (✗
-          `TorsionFinite.eval_ΨSq_eq_zero_of_smul_eq_zero` — the
-          multiplication-by-`n` formulas, D. Angdinata's thesis
-          material), and ✗ `TorsionFinite.ΨSq_ne_zero_of_charDvd`
-          (nonvanishing when char ∣ n; the `(n : k) ≠ 0` case is mathlib's
-          `ΨSq_ne_zero`). Given these, finiteness is elementary: finitely
-          many abscissae, ≤ 2 ordinates each (monic quadratic).
+        - ✓ `n_torsion_finite` — DERIVED (re-derived 2026-07-16, second
+          route): the torsion count `card_torsionBy` is `n² > 0`, and
+          positive `Nat.card` forces finiteness. Statement specialized
+          (VENDORING CHANGE) to separably closed characteristic-zero
+          fields — the only fields at which the tree uses it (`galoisRep`
+          gained `[CharZero K]`). The former division-polynomial route
+          (`TorsionFinite.lean` with nodes
+          `eval_ΨSq_eq_zero_of_smul_eq_zero`, `ΨSq_ne_zero_of_charDvd`,
+          covering arbitrary characteristic) is SUPERSEDED and removed —
+          the frontier shrinks by two nodes.
         - ✓ `n_torsion_card` (= n² over sep. closed fields, `(n : k) ≠ 0`)
           — now DERIVED (2026-07-16, `TorsionCard.lean`, own work):
           `card_torsionBy` PROVEN by strong induction peeling off the
