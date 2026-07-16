@@ -31,6 +31,8 @@ module
 
 public import Mathlib.LinearAlgebra.Charpoly.Basic
 public import Mathlib.LinearAlgebra.Dimension.Free
+public import Mathlib.LinearAlgebra.FiniteDimensional.Basic
+public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 
 @[expose] public section
 
@@ -50,18 +52,94 @@ theorem exists_fixed_of_unipotent (hrank : Module.rank F V = 2)
     ∃ v : V, v ≠ 0 ∧ ∀ g, ρ g v = v :=
   sorry
 
-set_option warn.sorry false in
-/-- **Common eigenvector of a commuting split family** (sorry node): a
-commuting family of endomorphisms of a 2-dimensional space, each
-annihilated by a split quadratic, has a common eigenvector. (Elementary:
-if every member is scalar, any nonzero vector works; otherwise a
-non-scalar member has a 1-dimensional eigenspace, which every member
-preserves and hence acts on by a scalar.) -/
+set_option backward.isDefEq.respectTransparency false in
+/-- **Common eigenvector of a commuting split family**: a commuting
+family of endomorphisms of a 2-dimensional space, each annihilated by a
+split quadratic, has a common eigenvector. PROVEN: if every member is
+scalar, any nonzero vector works; otherwise a non-scalar member `f₀` with
+`(f₀ − a)(f₀ − b) = 0` has `ker (f₀ − a)` nonzero (else `f₀ − b = 0` by
+injectivity) and proper (else `f₀ = a`), hence 1-dimensional; every
+member preserves it by commutativity and therefore acts on its generator
+by a scalar. -/
 theorem exists_common_eigenvector_of_commuting (hrank : Module.rank F V = 2)
     (S : Set (V →ₗ[F] V)) (hcomm : ∀ f ∈ S, ∀ g ∈ S, Commute f g)
     (hsplit : ∀ f ∈ S, ∃ a b : F,
       (f - algebraMap F (V →ₗ[F] V) a) * (f - algebraMap F (V →ₗ[F] V) b) = 0) :
-    ∃ v : V, v ≠ 0 ∧ ∀ f ∈ S, ∃ c : F, f v = c • v :=
-  sorry
+    ∃ v : V, v ≠ 0 ∧ ∀ f ∈ S, ∃ c : F, f v = c • v := by
+  classical
+  haveI : Module.Finite F V :=
+    Module.finite_of_rank_eq_nat (by exact_mod_cast hrank)
+  haveI : Nontrivial V := by
+    rw [← rank_pos_iff_nontrivial (R := F), hrank]
+    norm_num
+  have hfr : Module.finrank F V = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hrank)
+  by_cases hscal : ∀ f ∈ S, ∃ c : F, f = algebraMap F (V →ₗ[F] V) c
+  · -- every member is scalar: any nonzero vector is a common eigenvector
+    obtain ⟨v, hv⟩ := exists_ne (0 : V)
+    refine ⟨v, hv, fun f hf => ?_⟩
+    obtain ⟨c, rfl⟩ := hscal f hf
+    exact ⟨c, by simp [Module.algebraMap_end_apply]⟩
+  · push Not at hscal
+    obtain ⟨f₀, hf₀S, hf₀⟩ := hscal
+    obtain ⟨a, b, hab⟩ := hsplit f₀ hf₀S
+    -- the eigenspace `W = ker (f₀ − a)` is nonzero …
+    have hWne : LinearMap.ker (f₀ - algebraMap F (V →ₗ[F] V) a) ≠ ⊥ := by
+      intro h
+      have hinj : Function.Injective (f₀ - algebraMap F (V →ₗ[F] V) a) :=
+        LinearMap.ker_eq_bot.mp h
+      apply hf₀ b
+      have hz : ∀ v, (f₀ - algebraMap F (V →ₗ[F] V) b) v = 0 := by
+        intro v
+        apply hinj
+        have := congrArg (fun φ : V →ₗ[F] V => φ v) hab
+        simpa [Module.End.mul_apply] using this
+      ext v
+      have := hz v
+      rw [LinearMap.sub_apply, sub_eq_zero] at this
+      simpa using this
+    -- … and proper
+    have hWtop : LinearMap.ker (f₀ - algebraMap F (V →ₗ[F] V) a) ≠ ⊤ := by
+      intro h
+      apply hf₀ a
+      ext v
+      have hv : v ∈ LinearMap.ker (f₀ - algebraMap F (V →ₗ[F] V) a) :=
+        h ▸ Submodule.mem_top
+      rw [LinearMap.mem_ker, LinearMap.sub_apply, sub_eq_zero] at hv
+      simpa using hv
+    -- hence 1-dimensional; pick a generator
+    have hWfr : Module.finrank F
+        (LinearMap.ker (f₀ - algebraMap F (V →ₗ[F] V) a)) = 1 := by
+      have hlt : Module.finrank F
+          (LinearMap.ker (f₀ - algebraMap F (V →ₗ[F] V) a)) < 2 :=
+        hfr ▸ Submodule.finrank_lt hWtop
+      have hpos : 0 < Module.finrank F
+          (LinearMap.ker (f₀ - algebraMap F (V →ₗ[F] V) a)) := by
+        rw [Module.finrank_pos_iff]
+        exact (Submodule.nontrivial_iff_ne_bot).mpr hWne
+      omega
+    haveI : Nontrivial (LinearMap.ker (f₀ - algebraMap F (V →ₗ[F] V) a)) :=
+      (Submodule.nontrivial_iff_ne_bot).mpr hWne
+    obtain ⟨w₀, hw₀ne⟩ :=
+      exists_ne (0 : LinearMap.ker (f₀ - algebraMap F (V →ₗ[F] V) a))
+    have hgen := (finrank_eq_one_iff_of_nonzero' w₀ hw₀ne).mp hWfr
+    -- every member of `S` preserves the eigenspace
+    have hinv : ∀ g ∈ S, ∀ w ∈ LinearMap.ker (f₀ - algebraMap F (V →ₗ[F] V) a),
+        g w ∈ LinearMap.ker (f₀ - algebraMap F (V →ₗ[F] V) a) := by
+      intro g hg w hw
+      have hc : Commute (f₀ - algebraMap F (V →ₗ[F] V) a) g :=
+        ((hcomm f₀ hf₀S g hg)).sub_left (Algebra.commute_algebraMap_left a g)
+      rw [LinearMap.mem_ker] at hw ⊢
+      have := congrArg (fun φ : V →ₗ[F] V => φ w) hc.eq
+      simp only [Module.End.mul_apply] at this
+      rw [this, hw, map_zero]
+    -- conclude: the generator is a common eigenvector
+    refine ⟨(w₀ : V), by simpa using hw₀ne, fun g hg => ?_⟩
+    have hgw : g (w₀ : V) ∈ LinearMap.ker (f₀ - algebraMap F (V →ₗ[F] V) a) :=
+      hinv g hg _ w₀.2
+    obtain ⟨c, hc⟩ := hgen ⟨g (w₀ : V), hgw⟩
+    refine ⟨c, ?_⟩
+    have := congrArg (Subtype.val) hc
+    simpa using this.symm
 
 end BrauerNesbitt

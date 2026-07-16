@@ -142,9 +142,15 @@ map where helpful.
               - ✗ `BrauerNesbitt.exists_fixed_of_unipotent` — Kolchin,
                 2-dim: a group of unipotent endomorphisms has a common
                 nonzero fixed vector.
-              - ✗ `BrauerNesbitt.exists_common_eigenvector_of_commuting`
+              - ✓ `BrauerNesbitt.exists_common_eigenvector_of_commuting`
                 — a commuting family annihilated by split quadratics on
-                a 2-dim space has a common eigenvector.
+                a 2-dim space has a common eigenvector — PROVEN
+                (2026-07-16, sorry-free): all-scalar case is trivial;
+                otherwise a non-scalar member's eigenspace
+                `ker (f₀ − a)` is nonzero (else `f₀ − b = 0` by
+                injectivity), proper, hence 1-dimensional, preserved by
+                commutativity, and its generator is the common
+                eigenvector.
             - ✓ `cyclotomicCharacterModL_globalFrob` — χ̄(Frob_q) = q
               for q ≠ ℓ — now DERIVED (2026-07-16) by mod-ℓ reduction
               (`cyclotomicCharacter.spec` at n = 1 +
