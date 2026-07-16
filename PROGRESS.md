@@ -465,6 +465,27 @@ map where helpful.
         ramified, Serre §4.1 + Tate curve theory; the former second sorry,
         the rank hypothesis, was discharged by `p_torsion_rank`).
 
+## Canonical frontier (2026-07-16, session 4 close — audit-verified)
+
+The 21 open nodes, by declaration name (grep-verified against the tree):
+`exists_frobenius_conj_mem_coset` (finite Chebotarev),
+`exists_hardlyRamifiedLift` (B6a), `exists_weilPairing`,
+`FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski` (Serre
+core), `mem_isCompatible` (B6b), `mod_three`,
+`open_normal_subgroup_eq_top_of_inertia_le` (Minkowski),
+`prime_torsion_card`, `smul_surjective`, `three_adic` (B6c),
+`WeierstrassCurve.exists_tateEquivSepClosure`,
+`WeierstrassCurve.exists_variableChange_tateCurve`,
+`WeierstrassCurve.isFlatAt_of_hasGoodReduction`,
+`WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction`,
+`WeierstrassCurve.isTameAtTwo_of_hasMultiplicativeReduction`,
+`WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction`,
+`WeierstrassCurve.isUnramifiedAt_of_hasMultiplicativeReduction`,
+`WeierstrassCurve.mazur_classification`,
+`WeierstrassCurve.resultant_Φ_ΨSq`,
+`WeierstrassCurve.torsion_flat_of_good_reduction` (Hopf package),
+`WeierstrassCurve.torsion_unramified_of_good_reduction` (NOS).
+
 ## Next-step reconnaissance (2026-07-16, session 4 close)
 
 - **`minkowski_character_trivial` — the mathlib route is VERIFIED to
