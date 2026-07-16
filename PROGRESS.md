@@ -232,10 +232,12 @@ map where helpful.
                 q-place of ℚ is q — the residue field of `ℤ_q` is `𝔽_q`
                 (the quotient by the contraction of the maximal ideal of
                 the integral closure); (ii′) ✗
-                `isUnit_natCast_adicCompletionIntegers` (STATED
-                2026-07-16): a prime `p ≠ q` is a unit in the completed
-                integers at the q-place, giving `ℓ^k ∉ Q` in the
-                roots-of-unity argument;
+                `isUnit_natCast_adicCompletionIntegers` — PROVEN
+                sorry-free (2026-07-16): a valuation-subring unit is an
+                element of valuation one; the completion's valuation
+                restricts to the global one, which on integers is the
+                `intValuation`, equal to one iff `p ∉ v` — i.e. `p ≠ q`
+                by `natCast_mem_toHeightOneSpectrum_iff`;
                 (iii) `AlgHom.IsArithFrobAt.apply_of_pow_eq_one`
                 (vendored `Frobenius.lean`): a Frobenius sends m-th
                 roots of unity to their q-th powers when q ∤ m — apply
