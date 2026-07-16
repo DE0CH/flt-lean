@@ -211,9 +211,12 @@ map where helpful.
                 (q ≠ ℓ); this single node also serves the glue
                 (`residual_charFrob_eq_of_family`) at ℓ = 3.
                 DERIVATION MAPPED (2026-07-16), all ingredients in-tree:
-                (i) equivariance of `absoluteGaloisGroup.map` along
-                `IsAlgClosed.lift` (from `restrictNormal'`, cf. the
-                `map_one'` proof in `AbsoluteGaloisGroup.lean`);
+                (i) equivariance of `absoluteGaloisGroup.map` along the
+                chosen embedding — ALREADY PROVEN in the vendored tree
+                as `Field.absoluteGaloisGroup.lift_map`
+                (`AbsoluteGaloisGroup.lean`), and `AlgebraicClosure.map`
+                is definitionally `IsAlgClosed.lift`
+                (`Deformations/Lemmas.lean`);
                 (ii) the residue field of the completed integers at the
                 q-place of ℚ has cardinality q (bridging layer to
                 build); (iii) `AlgHom.IsArithFrobAt.apply_of_pow_eq_one`
