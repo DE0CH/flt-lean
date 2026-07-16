@@ -141,6 +141,38 @@ theorem card_inertia_finite_level [IsGalois Kᵥ N] :
   exact Ideal.card_inertia_eq_ramificationIdxIn (G := N ≃ₐ[Kᵥ] N)
     (𝔪 𝒪ᵥ) (𝔪 (IntegralClosure 𝒪ᵥ N))
 
+/-- The completed integer ring is a PROPER valuation subring of `Kᵥ`
+(otherwise it would be a field, contradicting `𝔪ᵥ ≠ ⊥` from its DVR
+structure). -/
+theorem adicCompletionIntegers_ne_top :
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) ≠ ⊤ := by
+  intro h
+  have hfield : IsField 𝒪ᵥ :=
+    { exists_pair_ne := ⟨0, 1, zero_ne_one⟩
+      mul_comm := mul_comm
+      mul_inv_cancel := by
+        intro a ha
+        have ha0 : (a : Kᵥ) ≠ 0 := fun h0 => ha (Subtype.ext h0)
+        refine ⟨⟨(a : Kᵥ)⁻¹, (SetLike.ext_iff.mp h ((a : Kᵥ)⁻¹)).mpr trivial⟩, ?_⟩
+        exact Subtype.ext (mul_inv_cancel₀ ha0) }
+  exact IsDiscreteValuationRing.not_a_field 𝒪ᵥ
+    ((IsLocalRing.isField_iff_maximalIdeal_eq).mp hfield)
+
+/-- The integral closure of `𝒪ᵥ` in a finite subextension of `Kᵥᵃˡᵍ`
+is a discrete valuation ring: it is a valuation ring (spectral-norm
+argument), Noetherian (finite separable extension of the Noetherian
+integrally closed `𝒪ᵥ`), hence a PID (Bézout + Noetherian), local, and
+not a field (`not_isField_integralClosure`, since `𝒪ᵥ` is proper). -/
+instance isDiscreteValuationRing_integralClosure :
+    IsDiscreteValuationRing (IntegralClosure 𝒪ᵥ N) := by
+  haveI : IsNoetherianRing (IntegralClosure 𝒪ᵥ N) :=
+    IsIntegralClosure.isNoetherianRing 𝒪ᵥ Kᵥ N (IntegralClosure 𝒪ᵥ N)
+  have hnf : ¬ IsField (IntegralClosure 𝒪ᵥ N) :=
+    not_isField_integralClosure 𝒪ᵥ (adicCompletionIntegers_ne_top v)
+  refine { not_a_field' := ?_ }
+  intro hbot
+  exact hnf ((IsLocalRing.isField_iff_maximalIdeal_eq).mpr hbot)
+
 /-- The tower `𝒪ᵥ ⊆ ↥N ⊆ Kᵥᵃˡᵍ` (middle term an intermediate-field
 subtype; the ambient-middle shape `𝒪ᵥ ⊆ Kᵥ ⊆ Kᵥᵃˡᵍ` is deliberately
 NOT declared — see the previous instance's docstring). -/
@@ -165,7 +197,6 @@ noncomputable def integralClosureInclusion :
       ((IsScalarTower.toAlgHom 𝒪ᵥ N (Kᵥᵃˡᵍ)).comp
         (IsScalarTower.toAlgHom 𝒪ᵥ (IntegralClosure 𝒪ᵥ N) N)))
 
-omit [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N] in
 /-- **Restriction maps the local inertia group into the finite-level
 inertia**: if `σ ∈ Γ Kᵥ` lies in `localInertiaGroup v`, then its
 restriction to a finite Galois subextension `N` lies in the inertia

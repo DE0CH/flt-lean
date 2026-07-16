@@ -1399,3 +1399,22 @@ assumed. Axiom invariant: every declaration must use at most
   `IsDiscreteValuationRing 𝒪_N` (ValuationRing + Noetherian ⟹ PID),
   finite-to-finite restriction + counting surjectivity, compactness
   lifting, `e(M) = 1` assembly.
+- 2026-07-16 (session 5): **`isDiscreteValuationRing_integralClosure`
+  PROVEN** (instance; unconditional) — `𝒪_N` is a DVR for every finite
+  subextension `N/Kᵥ`: ValuationRing (vendored spectral-norm) + PID
+  (mathlib's Bézout+Noetherian instance, Noetherian via
+  `IsIntegralClosure.isNoetherianRing`) + local + not-a-field (vendored
+  `not_isField_integralClosure` + the newly proven
+  `adicCompletionIntegers_ne_top`, itself from `𝒪ᵥ = ⊤` forcing
+  `IsField 𝒪ᵥ` against the DVR's `not_a_field`). This unlocks the
+  M-based instance pack for the second `card_inertia` application
+  (base `𝒪_M`, Dedekind for the `e`-tower lemma). ASSEMBLY MAP refined:
+  `e(M)=1` follows from `I(𝔪_N/Gal(N/Kᵥ)) ≤ Gal(N/M)` (surjectivity +
+  `hM`), `|I over Kᵥ| = e(N/Kᵥ)` (proven), `|inertia over M| = e(N/M)`
+  (M-based card_inertia, needs `letI Algebra ↥M ↥N` inclusion
+  gymnastics + residue finiteness of `𝒪_M`), and
+  `e(N/Kᵥ) = e(N/M)·e(M)` (mathlib `ramificationIdx'_algebra_tower`,
+  Dedekind hypotheses now available). Then compactness lifting
+  (`Γ Kᵥ` profinite; `localInertiaGroup` closed via locally-constant
+  evaluation; finite-to-finite surjectivity by the same counting) and
+  the `map 𝔪ᵥ = 𝔪_M ↔ e(M) = 1` conversion.
