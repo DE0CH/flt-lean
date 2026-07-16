@@ -617,7 +617,13 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   `EssFiniteType.of_finiteType` is an INSTANCE
   (`EssentialFiniteness.lean:95`), fed by `FiniteType.of_finite` from
   the module-finiteness of rings of integers, and `PerfectField` of
-  finite fields is instance-automatic. Post-derivation audit:
+  finite fields is instance-automatic. SCRATCH-COMPILED (2026-07-16):
+  `Ideal.ramificationIdx_eq_one_iff.mp` elaborates at `ℤ → 𝓞 L` given
+  only `haveI := IsIntegralClosure.isIntegral_algebra ℤ (A := 𝓞 L) L`
+  and the transparency option — so the dictionary node may be proven
+  by establishing `Q.ramificationIdx ℤ = 1` from the inertia
+  hypothesis, with the conversion to `IsUnramifiedAt` a one-liner.
+  Post-derivation audit:
   `open_normal_subgroup_eq_top_of_inertia_le`,
   `minkowski_character_trivial`, and
   `exists_torsion_embedding_of_not_isIrreducible` all show exactly
