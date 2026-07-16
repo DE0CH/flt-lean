@@ -217,9 +217,11 @@ map where helpful.
                 (`AbsoluteGaloisGroup.lean`), and `AlgebraicClosure.map`
                 is definitionally `IsAlgClosed.lift`
                 (`Deformations/Lemmas.lean`);
-                (ii) the residue field of the completed integers at the
-                q-place of ℚ has cardinality q (bridging layer to
-                build); (iii) `AlgHom.IsArithFrobAt.apply_of_pow_eq_one`
+                (ii) ✗ `natCard_residue_quotient_toHeightOneSpectrum`
+                (STATED 2026-07-16): the `IsArithFrobAt` exponent at the
+                q-place of ℚ is q — the residue field of `ℤ_q` is `𝔽_q`
+                (the quotient by the contraction of the maximal ideal of
+                the integral closure); (iii) `AlgHom.IsArithFrobAt.apply_of_pow_eq_one`
                 (vendored `Frobenius.lean`): a Frobenius sends m-th
                 roots of unity to their q-th powers when q ∤ m — apply
                 at m = ℓ^k via `isArithFrobAt_adicArithFrob`;

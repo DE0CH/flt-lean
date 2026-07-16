@@ -507,6 +507,27 @@ lemma discreteTopology_moduleTopology (R M : Type*) [CommRing R]
   rw [ModuleTopology.eq_coinduced_of_surjective hf,
     DiscreteTopology.eq_bot (α := Fin n → R), coinduced_bot]
 
+set_option warn.sorry false in
+/-- **Residue cardinality at a prime's place** (sorry node): for the
+place of `ℚ` attached to a prime `q`, the contraction of the maximal
+ideal of the integral closure of the completed integers in `ℚ_qᵃˡᵍ` cuts
+out a quotient of cardinality `q` — the residue field of `ℤ_q` is `𝔽_q`.
+This identifies the exponent of `IsArithFrobAt` (which is
+`Nat.card (𝒪ᵥ ⧸ Q.under 𝒪ᵥ)`) with `q` in the derivation of
+`cyclotomicCharacter_globalFrob`. -/
+theorem natCard_residue_quotient_toHeightOneSpectrum {q : ℕ} (hq : q.Prime) :
+    Nat.card ((IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)) ⧸
+      ((IsLocalRing.maximalIdeal (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))))).under
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)))) = q :=
+  sorry
+
 set_option backward.isDefEq.respectTransparency false in
 /-- Membership of a prime in a prime's place: `p` lies in the height-one
 prime of `𝓞 ℚ` attached to `q` iff `p = q`. (Used for the
