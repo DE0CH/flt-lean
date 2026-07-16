@@ -10,6 +10,9 @@ public import Mathlib.Topology.Instances.ZMod
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
 -- VENDORING ADDITION: the counting lemma backing `group_theory_lemma`.
 public import Fermat.FLT.EllipticCurve.TorsionCounting
+-- VENDORING ADDITION: finiteness of torsion via division polynomials,
+-- backing `n_torsion_finite`.
+public import Fermat.FLT.EllipticCurve.TorsionFinite
 
 /-!
 
@@ -45,7 +48,13 @@ noncomputable instance (n : ℕ) : Module (ZMod n) (E.nTorsion n) :=
 
 -- This theorem needs e.g. a theory of division polynomials. It's ongoing work of David Angdinata.
 -- Please do not work on it without talking to KB and David first.
-theorem WeierstrassCurve.n_torsion_finite {n : ℕ} (hn : 0 < n) : Finite (E.nTorsion n) := sorry
+-- VENDORING CHANGE: the `sorry` is replaced by the reduction in
+-- `TorsionFinite.lean`: torsion points are cut out by the division
+-- polynomial `ΨSq n` (that relation is now the explicit sorry node
+-- `TorsionFinite.eval_ΨSq_eq_zero_of_smul_eq_zero`), which is a nonzero
+-- polynomial, and each abscissa carries at most two ordinates.
+theorem WeierstrassCurve.n_torsion_finite {n : ℕ} (hn : 0 < n) : Finite (E.nTorsion n) :=
+  TorsionFinite.finite_torsionBy E (n := (n : ℤ)) (Int.natCast_ne_zero.mpr hn.ne')
 
 -- This theorem needs e.g. a theory of division polynomials. It's ongoing work of David Angdinata.
 -- Please do not work on it without talking to KB and David first.

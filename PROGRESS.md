@@ -48,7 +48,19 @@ map where helpful.
           classification).
       - Supporting sorries in vendored infrastructure
         (`Fermat/FLT/EllipticCurve/Torsion.lean`):
-        `n_torsion_finite`, `n_torsion_card` (division polynomials needed).
+        - ✓ `n_torsion_finite` — now DERIVED (2026-07-16) in
+          `TorsionFinite.lean` (own work) from two explicit polynomial
+          nodes: a nonzero torsion point's abscissa is a root of the
+          division polynomial `ΨSq n` (✗
+          `TorsionFinite.eval_ΨSq_eq_zero_of_smul_eq_zero` — the
+          multiplication-by-`n` formulas, D. Angdinata's thesis
+          material), and ✗ `TorsionFinite.ΨSq_ne_zero_of_charDvd`
+          (nonvanishing when char ∣ n; the `(n : k) ≠ 0` case is mathlib's
+          `ΨSq_ne_zero`). Given these, finiteness is elementary: finitely
+          many abscissae, ≤ 2 ordinates each (monic quadratic).
+        - ✗ `n_torsion_card` (= n² over sep. closed fields, `(n : k) ≠ 0`) —
+          needs the full division-polynomial biconditional + multiplicity
+          analysis.
         - ✓ `WeierstrassCurve.galoisRep` — CONSTRUCTED (2026-07-16). The
           formerly sorry-d DATA is now the genuine representation: the
           Galois action on points (`Point.map`, via the `DistribMulAction`
@@ -135,3 +147,9 @@ assumed. Axiom invariant: every declaration must use at most
   (`HardlyRamified/Reducible.lean`). Sorry frontier (5, all Props):
   `mazur`, `torsion_isHardlyRamified`, B5, `n_torsion_finite`,
   `n_torsion_card`.
+- 2026-07-16 (session 2, cont.): `n_torsion_finite` decomposed and derived —
+  new file `TorsionFinite.lean` (own work) proves finiteness from two
+  polynomial sorry nodes (`eval_ΨSq_eq_zero_of_smul_eq_zero`,
+  `ΨSq_ne_zero_of_charDvd`). Sorry frontier (6, all Props):
+  `mazur`, `torsion_isHardlyRamified`, B5, `n_torsion_card`,
+  `eval_ΨSq_eq_zero_of_smul_eq_zero`, `ΨSq_ne_zero_of_charDvd`.
