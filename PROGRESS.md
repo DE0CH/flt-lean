@@ -106,9 +106,11 @@ map where helpful.
               - ✗ **B6c** `IsHardlyRamified.three_adic`
                 (`HardlyRamified/Threeadic.lean`, vendored) — a 3-adic
                 hardly ramified rep has trace(Frob_q) = 1 + q for q ≥ 5.
-                - □ mod-3 classification (`ModThree.lean` upstream:
-                  extension of trivial by mod-3 cyclotomic) — to vendor
-                  when B6c is decomposed.
+                - ✗ `IsHardlyRamified.mod_three` (`ModThree.lean`,
+                  vendored 2026-07-16) — a mod-3 hardly ramified rep has
+                  a Γℚ-equivariant surjection onto the trivial character
+                  (extension of trivial by cyclotomic); B6c's eventual
+                  proof lifts this 3-adically.
             - NB the lift structure gained an `IsModuleTopology ℤ_[ℓ] O`
               field (statement strengthening of B6a's conclusion, true for
               integers of finite extensions of ℚ_ℓ; required by B6b).
