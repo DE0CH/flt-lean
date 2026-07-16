@@ -442,3 +442,30 @@ theorem WeierstrassCurve.isFlatAt_of_hasGoodReduction
       (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)] :
     (E.galoisRep p hp).IsFlatAt hp'.toHeightOneSpectrumRingOfIntegersRat :=
   sorry
+
+/-- **`p` is nonzero in the residue field of `ℤ_(q)` for `q ≠ p`**
+(PROVEN 2026-07-16): `p` is a unit of the localization (its integer
+representative is prime to `q`), and units have nonzero residue. This
+discharges the `NeZero (n : ResidueField R)` hypothesis of the vendored
+Néron–Ogg–Shafarevich and finite-flat-prolongation nodes when the glue
+nodes (`isUnramifiedAt_of_hasGoodReduction`,
+`isFlatAt_of_hasGoodReduction`) are eventually closed against them. -/
+theorem neZero_natCast_residueField {q p : ℕ} (hq : q.Prime) (hp : p.Prime)
+    (hqp : q ≠ p) :
+    NeZero ((p : ℕ) : IsLocalRing.ResidueField
+      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)) := by
+  have hndvd : ¬((q : ℤ) ∣ (p : ℤ)) := by
+    intro h
+    exact hqp ((Nat.prime_dvd_prime_iff_eq hq hp).mp (by exact_mod_cast h))
+  have hu : IsUnit ((p : ℤ) :
+      Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) :=
+    isUnit_intCast_localizationAtPrime hq hndvd
+  refine ⟨?_⟩
+  have h1 : (((p : ℕ)) : IsLocalRing.ResidueField
+      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)) =
+      IsLocalRing.residue _ (((p : ℤ) :
+        Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)) := by
+    rw [map_intCast]
+    norm_cast
+  rw [h1]
+  exact (hu.map (IsLocalRing.residue _)).ne_zero

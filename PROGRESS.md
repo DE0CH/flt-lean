@@ -978,3 +978,10 @@ assumed. Axiom invariant: every declaration must use at most
   `freyCurve_two_torsion_embedding`, `embedding_assembly`.
   Correctly sorry-rooted (derived from open nodes):
   `minkowski_character_trivial`, `isCoprime_Φ_ΨSq`. Invariant intact.
+- 2026-07-16 (session 4 close): **`neZero_natCast_residueField`
+  PROVEN** (unconditional) — for distinct primes `q ≠ p`, `p` is
+  nonzero in the residue field of `ℤ_(q)` (`p` is a unit of the
+  localization; units have nonzero residue). This pre-discharges the
+  `NeZero (n : ResidueField R)` hypothesis of the vendored NOS and
+  finite-flat nodes for when the good-reduction glue nodes are closed
+  against them.
