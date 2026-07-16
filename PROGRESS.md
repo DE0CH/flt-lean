@@ -648,10 +648,14 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   CAVEAT: that scratch took `[PerfectField (span {p}).ResidueField]`
   as a HYPOTHESIS; the derived proof must supply it via
   `PerfectField.ofFinite` + finiteness of `(span {q} : Ideal
-  ℤ).ResidueField` ≅ 𝔽_q — locate or prove that finiteness bridge
-  first (compare `Ring.HasFiniteQuotients.finiteQuotient`, which gives
-  `Finite (ℤ ⧸ span {q})`; the `Ideal.ResidueField` is the localized
-  quotient). Also confirmed: `Ideal.liesOver_span_iff (hP : P ≠ ⊤)
+  ℤ).ResidueField` ≅ 𝔽_q — BRIDGE FOUND
+  (`LocalRing/ResidueField/Ideal.lean:110`):
+  `instance : IsFractionRing (R ⧸ I) I.ResidueField`; for maximal
+  `I = span {q}` the quotient `ℤ ⧸ I` is already a (finite) field, so
+  the fraction-ring algebraMap is bijective and `Finite I.ResidueField`
+  transfers along the resulting equiv (finiteness of `ℤ ⧸ span {q}`
+  from `Int.instFiniteQuotientSpan`-style instances or
+  `Ring.HasFiniteQuotients.finiteQuotient` with `span {q} ≠ ⊥`). Also confirmed: `Ideal.liesOver_span_iff (hP : P ≠ ⊤)
   (hp : Prime p) : P.LiesOver (span {p}) ↔ algebraMap R S p ∈ P`
   (`KrullDimension/Basic.lean:202`) supplies the `LiesOver` instance
   from the membership hypothesis)
