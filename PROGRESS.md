@@ -553,9 +553,19 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   the `ClosedSubgroup` correspondence) and
   `IntermediateField.finrank_eq_one_iff : finrank F K = 1 ↔ K = ⊥`
   (`Adjoin/Basic.lean:275`, for extracting `1 < finrank` from
-  `H ≠ ⊤`). The derivation is mechanically specified, every name
-  compilation- or grep-verified; write it as [dictionary node, sorry] +
-  [assembly, proven] in one sitting;
+  `H ≠ ⊤`). Exact correspondence forms:
+  `InfiniteGalois.fixingSubgroup_fixedField (H : ClosedSubgroup
+  Gal(K/k)) [IsGalois k K] : (fixedField H).fixingSubgroup = H.1`
+  (apply at `⟨H, Subgroup.isClosed_of_isOpen H hopen⟩`) and
+  `IntermediateField.fixingSubgroup_bot : fixingSubgroup ⊥ = ⊤`
+  (@[simp], `Galois/Basic.lean:258`) for the nontriviality step. The
+  derivation is mechanically specified, every name compilation- or
+  grep-verified; write it as [dictionary node, sorry] + [assembly,
+  proven] in one sitting. The dictionary node should be stated with
+  the `{𝒪 : Type*} [IsIntegralClosure 𝒪 ℤ L]` parametrization of
+  `ExistsRamified.lean` (avoids constructing `NumberField L` inside
+  the statement; provide `haveI : NumberField L := ⟨⟩` in the
+  assembly);
   (3) conclude `ker χ = ⊤` from `fixedField χ.ker = ⊥` by the infinite
   Galois correspondence, hence `χ = 1`. Estimated: one focused session;
   start from a FRESH context.
