@@ -8,6 +8,8 @@ module
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.Topology.Instances.ZMod
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
+-- VENDORING ADDITION: the counting lemma backing `group_theory_lemma`.
+public import Fermat.FLT.EllipticCurve.TorsionCounting
 
 /-!
 
@@ -52,9 +54,13 @@ theorem WeierstrassCurve.n_torsion_card [IsSepClosed k] {n : ℕ} (hn : (n : k) 
     Nat.card (E.nTorsion n) = n^2 := sorry
 
 -- This theorem was well-known in the early part of the 20th century.
+-- VENDORING CHANGE: the `sorry` is replaced by the counting argument in
+-- `Fermat/FLT/EllipticCurve/TorsionCounting.lean` (structure theorem for
+-- finite abelian groups + torsion counting + CRT).
 theorem group_theory_lemma {A : Type*} [AddCommGroup A] {n : ℕ} (hn : 0 < n) (r : ℕ)
     (h : ∀ d : ℕ, d ∣ n → Nat.card (Submodule.torsionBy ℤ A d) = d ^ r) :
-    Nonempty ((Submodule.torsionBy ℤ A n) ≃+ (Fin r → (ZMod n))) := sorry
+    Nonempty ((Submodule.torsionBy ℤ A n) ≃+ (Fin r → (ZMod n))) :=
+  TorsionCounting.nonempty_torsionBy_addEquiv_pi_zmod hn r h
 
 -- I only need this if n is prime but there's no harm thinking about it in general I guess.
 -- It follows from the previous theorem using pure group theory (possibly including the
@@ -84,8 +90,13 @@ theorem WeierstrassCurve.p_torsion_rank [IsSepClosed k] {p : ℕ} [Fact p.Prime]
   simpa [one_add_one_eq_two] using h
 
 -- follows easily from the above
-noncomputable instance (n : ℕ) : Module.Finite (ZMod n) (E.nTorsion n) := by
-  sorry
+-- VENDORING CHANGE: the unrestricted statement is FALSE for `n = 0` (the
+-- `0`-torsion is the whole group of points, which is typically infinite), so
+-- the instance now requires `[NeZero n]`; it is then immediate from
+-- `n_torsion_finite`, consolidating the sorry into that single node.
+noncomputable instance (n : ℕ) [NeZero n] : Module.Finite (ZMod n) (E.nTorsion n) :=
+  haveI : Finite (E.nTorsion n) := E.n_torsion_finite (Nat.pos_of_ne_zero (NeZero.ne n))
+  Module.Finite.of_finite
 
 -- This should be a straightforward but perhaps long unravelling of the definition
 /-- The map on points for an elliptic curve over `k` induced by a morphism of `k`-algebras

@@ -40,14 +40,25 @@ map where helpful.
         (their B5/B6, hardly-ramified route, not yet stated in Lean there).
       - Supporting sorries in vendored infrastructure
         (`Fermat/FLT/EllipticCurve/Torsion.lean`):
-        `n_torsion_finite`, `n_torsion_card`, `group_theory_lemma`,
-        `Module.Finite` instance, `galoisRepresentation` DistribMulAction
-        fields ("should all be easy" per FLT project), and — nota bene —
+        `n_torsion_finite`, `n_torsion_card`, and — nota bene —
         `WeierstrassCurve.galoisRep` itself, which is **sorry-d DATA** (the
         continuous Galois representation on p-torsion); the FLT project has
         it sorry-d too. Statements about sorry-d data are about an
         unspecified representation; this must eventually be filled with the
         real construction for B4/Mazur to mean what they should.
+        - ✓ `group_theory_lemma` — PROVEN (2026-07-16) in
+          `Fermat/FLT/EllipticCurve/TorsionCounting.lean` (own work, not
+          vendored): structure theorem for finite abelian groups + torsion
+          counting in `ZMod m` (`#torsionBy d (ZMod m) = gcd d m`, via the
+          first isomorphism theorem) + multiset determination (each prime
+          `q ∣ n` occurs exactly `r` times, each exponent forced to
+          `v_q(n)`) + CRT reassembly (`ZMod.equivPi`). Axioms:
+          `[propext, Classical.choice, Quot.sound]` — sorry-free.
+        - ✓ `Module.Finite (ZMod n) (nTorsion n)` instance — statement was
+          FALSE for `n = 0`; now requires `[NeZero n]` (marked VENDORING
+          CHANGE) and is derived from `n_torsion_finite`, consolidating the
+          sorry into that single node.
+        - ✓ `galoisRepresentation` DistribMulAction fields (earlier layer).
       - `Fermat/FLT/GaloisRepresentation/HardlyRamified/Frey.lean`: 2 sorries
         (the Frey curve's rep is hardly ramified — Serre §4.1).
 
@@ -90,3 +101,11 @@ assumed. Axiom invariant: every declaration must use at most
   NB: the main checkout at ~/Documents/cs/dissertation was hit by an iCloud
   eviction incident (see chat log); pushes go through the rescue clone in the
   session scratchpad until the main .git re-materializes.
+- 2026-07-16 (session 2): `group_theory_lemma` PROVEN sorry-free in new file
+  `Fermat/FLT/EllipticCurve/TorsionCounting.lean` (~350 lines: torsionBy
+  transfer equivs, torsion of Pi, `#torsionBy d (ZMod m) = gcd d m`,
+  structure-theorem + counting + CRT assembly). `Module.Finite (ZMod n)`
+  instance in Torsion.lean fixed (`[NeZero n]`, was false for n = 0) and
+  derived from `n_torsion_finite`. Axiom audit clean. Sorry frontier now:
+  Mazur, B4, `torsion_isHardlyRamified` (2 in HardlyRamified/Frey.lean),
+  `n_torsion_finite`, `n_torsion_card`, `galoisRep` (data).
