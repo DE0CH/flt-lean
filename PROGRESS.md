@@ -498,11 +498,14 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   some prime has ALL primes above it ramified — the right form for the
   abelian fixed field), `NumberField.not_dvd_discr_iff_isUnramifiedIn`,
   `NumberField.abs_discr_gt_two`. What remains is the **dictionary**:
-  (1) `K := IntermediateField.fixedField χ.ker` is finite over ℚ (open
-  subgroup of the compact `Γ ℚ` has finite index; vendored
-  `FLT.Mathlib.FieldTheory.Galois.Infinite` +
-  `InfiniteGalois.fixedField_fixingSubgroup` for the correspondence;
-  `χ.ker` is open hence closed), giving `NumberField K`;
+  (1) `K := IntermediateField.fixedField H` is finite over ℚ (VERIFIED
+  in mathlib: `instance [IsGalois k K] : CompactSpace Gal(K/k)`
+  in `FieldTheory/Galois/Profinite.lean` gives compactness of `Γ ℚ`,
+  and `Subgroup.quotient_finite_of_isOpen` in
+  `Topology/Algebra/OpenSubgroup.lean` gives finite index of the open
+  subgroup; the vendored `FLT.Mathlib.FieldTheory.Galois.Infinite` +
+  `InfiniteGalois.fixedField_fixingSubgroup` supply the correspondence;
+  an open subgroup is closed), giving `NumberField K`;
   (2) `localInertiaGroup q ≤ ker (χ ∘ res_q)` for all `q` transfers to
   `Algebra.IsUnramifiedAt ℤ P` for every prime `P` of `𝓞 K` — the
   local-global inertia dictionary (same flavor as the NOS glue node
