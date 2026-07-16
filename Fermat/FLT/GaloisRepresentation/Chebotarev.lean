@@ -714,8 +714,9 @@ charpoly-level statements of the tree with trace/determinant data (used
 by the compatibility bookkeeping of `residual_charFrob_eq_of_family`,
 where B6c supplies traces and `IsHardlyRamified.det` supplies
 determinants). -/
-lemma charpoly_eq_quadratic_of_finrank_two {F : Type*} [Field F]
-    {V : Type*} [AddCommGroup V] [Module F V] [Module.Finite F V]
+lemma charpoly_eq_quadratic_of_finrank_two {F : Type*} [CommRing F]
+    [Nontrivial F] {V : Type*} [AddCommGroup V] [Module F V]
+    [Module.Finite F V] [Module.Free F V]
     (hfr : Module.finrank F V = 2) (f : V →ₗ[F] V) :
     f.charpoly = X ^ 2 - C (LinearMap.trace F V f) * X
       + C (LinearMap.det f) := by

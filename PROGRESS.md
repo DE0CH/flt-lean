@@ -120,10 +120,19 @@ map where helpful.
               weak for the charpoly descent (algebraMap from a domain to
               a field need not be injective); true for the intended
               subrings of `ℚ̄_p`.
-            - ✗ `residual_charFrob_eq_of_family` (own work, `Lift.lean`)
-              — compatibility BOOKKEEPING: family membership ⇒ residual
-              charpolys are `X² − (q+1)X + q`; its eventual proof consumes
-              B6c. AUDIT RESTATEMENT (2026-07-16): the conclusion (and
+            - ✓ `residual_charFrob_eq_of_family` (own work, `Lift.lean`)
+              — compatibility BOOKKEEPING — now PROVEN (2026-07-16):
+              extract the 3-adic member via the number-field embedding;
+              its charpoly at Frob_q is `X² − (1+q)X + q` by B6c's trace
+              + the cyclotomic determinant at Frobenius + the 2-dim
+              reconstruction (generalized to comm rings); transport
+              through baseChange-conj to the family, descend to the
+              coefficient field by injectivity of the embedding, ride
+              compatibility to the ℓ-adic member, descend to `O` by the
+              strengthened-B6b injectivity, and reduce through
+              `charFrob_compat`. Exceptional set: `S₀ ∪ {2-place,
+              3-place}`. Consumes B6c and the ℓ-adic Frobenius-value
+              node. AUDIT RESTATEMENT (2026-07-16): the conclusion (and
               B6bc's, and the Chebotarev–Brauer–Nesbitt hypothesis) now
               carries a finite exceptional set `S` of places — the
               family's `isCompatible` only pins charpolys outside an

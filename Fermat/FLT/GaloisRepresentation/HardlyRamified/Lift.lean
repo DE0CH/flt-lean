@@ -40,6 +40,7 @@ public import Mathlib.Topology.Instances.ZMod
 -- Chebotarev density, the mod-ℓ cyclotomic character, Brauer–Nesbitt and
 -- the bridge lemmas, used in the proof of `not_isIrreducible_of_charFrob_eq`.
 import Fermat.FLT.GaloisRepresentation.Chebotarev
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic
 import Mathlib.LinearAlgebra.FreeModule.Finite.Matrix
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
 import Mathlib.LinearAlgebra.Charpoly.BaseChange
@@ -170,7 +171,7 @@ polynomials outside an unspecified finite set of places, so the former
 `∀ q ∉ {2,3,ℓ}` form was unprovable from the stated hypotheses. The
 downstream Chebotarev–Brauer–Nesbitt argument is insensitive to any
 finite exceptional set. -/
-theorem residual_charFrob_eq_of_family (hℓ5 : 5 ≤ ℓ)
+theorem residual_charFrob_eq_of_family (_hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ (ZMod ℓ) V} (L : HardlyRamifiedLift hℓOdd ρbar)
     (hfam :
       letI := L.commRing; letI := L.isDomain; letI := L.topologicalSpace
@@ -182,8 +183,133 @@ theorem residual_charFrob_eq_of_family (hℓ5 : 5 ≤ ℓ)
       ∀ q (hq : q.Prime),
         Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq ∉ S → q ≠ ℓ →
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
-          X ^ 2 - C ((q : ZMod ℓ) + 1) * X + C (q : ZMod ℓ) :=
-  sorry
+          X ^ 2 - C ((q : ZMod ℓ) + 1) * X + C (q : ZMod ℓ) := by
+  classical
+  letI := L.commRing; letI := L.isDomain; letI := L.topologicalSpace
+  letI := L.isTopologicalRing; letI := L.isLocalRing; letI := L.algebra
+  letI := L.moduleFinite; letI := L.isModuleTopology
+  obtain ⟨E, iF, iNF, σ, ⟨S₀, Pv, hPv⟩, hodd, iAlgR, iCSR, hinjR, ψ, r', hψ⟩ :=
+    hfam
+  letI := iF; letI := iNF; letI := iAlgR; letI := iCSR
+  haveI h3fact : Fact (Nat.Prime 3) := ⟨by decide⟩
+  obtain ⟨φ₃⟩ := nonempty_ringHom_to_padicAlgClosure E 3
+  obtain ⟨A, iA1, iA2, iA3, iA4, iA5, iA6, iA7, iA8, iA9, iA10, iA11, iA12,
+      hinjA, W, iW1, iW2, iW3, iW4, hW, τ, r, hτHR, hτeq⟩ :=
+    hodd h3fact (by decide) φ₃
+  letI := iA1; letI := iA2; letI := iA3; letI := iA4; letI := iA5
+  letI := iA6; letI := iA7; letI := iA8; letI := iA9; letI := iA10
+  letI := iA11; letI := iA12
+  letI := iW1; letI := iW2; letI := iW3; letI := iW4
+  refine ⟨insert Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat
+    (insert Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat S₀), ?_⟩
+  intro q hq hqS hqℓ
+  -- unpack the exceptional-set membership
+  have hq2 : q ≠ 2 := by
+    rintro rfl
+    exact hqS (Finset.mem_insert.mpr (Or.inl rfl))
+  have hq3 : q ≠ 3 := by
+    rintro rfl
+    exact hqS (Finset.mem_insert.mpr (Or.inr (Finset.mem_insert.mpr
+      (Or.inl rfl))))
+  have hqS₀ : Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq ∉ S₀ :=
+    fun hmem => hqS (Finset.mem_insert_of_mem (Finset.mem_insert_of_mem hmem))
+  have hq5 : 5 ≤ q := by
+    have h2 := hq.two_le
+    rcases Nat.lt_or_ge q 5 with h5 | h5
+    · interval_cases q
+      · omega
+      · omega
+      · exact absurd hq (by decide)
+    · exact h5
+  -- side conditions: the place has residue characteristic ≠ 3 and ≠ ℓ
+  have hside3 : ((3 : ℕ) : NumberField.RingOfIntegers ℚ) ∉
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq).asIdeal := by
+    rw [natCast_mem_toHeightOneSpectrum_iff (by decide) hq]
+    omega
+  have hsideℓ : ((ℓ : ℕ) : NumberField.RingOfIntegers ℚ) ∉
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq).asIdeal := by
+    rw [natCast_mem_toHeightOneSpectrum_iff (Fact.out : ℓ.Prime) hq]
+    exact fun h => hqℓ h.symm
+  obtain ⟨-, hcomp3⟩ := hPv (p := 3) h3fact φ₃
+    (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq) hqS₀ hside3
+  obtain ⟨-, hcompℓ⟩ := hPv (p := ℓ) ‹Fact ℓ.Prime› ψ
+    (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq) hqS₀ hsideℓ
+  -- the 3-adic member's characteristic polynomial at Frobenius
+  haveI : Nontrivial A := inferInstance
+  have hτcp : (τ (globalFrob
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))).charpoly =
+      X ^ 2 - C ((q : A) + 1) * X + C (q : A) := by
+    have hfin : Module.finrank A W = 2 := by
+      unfold Module.finrank
+      rw [hW]
+      simp
+    have hrec := charpoly_eq_quadratic_of_finrank_two (F := A) (V := W) hfin
+      (τ (globalFrob (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)))
+    have htrace := IsHardlyRamified.three_adic W hW hτHR q hq hq5
+    have hdet0 := hτHR.det (globalFrob
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))
+    rw [cyclotomicCharacter_globalFrob (ℓ := 3) hq hq3, map_natCast] at hdet0
+    have hdet1 : LinearMap.det (τ (globalFrob
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))) = (q : A) :=
+      hdet0
+    have htrace1 : LinearMap.trace A W (τ (globalFrob
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))) = 1 + (q : A) :=
+      htrace
+    rw [hrec, hdet1, htrace1, add_comm (1 : A) (q : A)]
+  -- transport to the family member over `ℚ̄₃` and descend to `E`
+  have h3top : ((σ h3fact φ₃) (globalFrob
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))).charpoly =
+      ((τ (globalFrob
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))).charpoly).map
+        (algebraMap A (AlgebraicClosure ℚ_[3])) := by
+    rw [← hτeq]
+    exact charpoly_baseChange_conj τ r _
+  have hPvq : Pv (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq) =
+      X ^ 2 - C ((q : E) + 1) * X + C (q : E) := by
+    apply Polynomial.map_injective φ₃ φ₃.injective
+    rw [← hcomp3]
+    show ((σ h3fact φ₃) (globalFrob
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))).charpoly = _
+    rw [h3top, hτcp]
+    simp [Polynomial.map_sub, Polynomial.map_add, Polynomial.map_mul,
+      Polynomial.map_pow, Polynomial.map_X, map_natCast,
+      map_add, map_one]
+  -- transport the `ℓ`-adic member and descend to the lift's coefficients
+  have hℓtop : ((σ ‹Fact ℓ.Prime› ψ) (globalFrob
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))).charpoly =
+      ((L.ρ (globalFrob
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))).charpoly).map
+        (algebraMap L.O (AlgebraicClosure ℚ_[ℓ])) := by
+    rw [← hψ]
+    exact charpoly_baseChange_conj L.ρ r' _
+  have hOcp : (L.ρ (globalFrob
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))).charpoly =
+      X ^ 2 - C ((q : L.O) + 1) * X + C (q : L.O) := by
+    apply Polynomial.map_injective (algebraMap L.O (AlgebraicClosure ℚ_[ℓ]))
+      hinjR
+    rw [← hℓtop]
+    show ((σ ‹Fact ℓ.Prime› ψ) (globalFrob
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))).charpoly = _
+    rw [show ((σ ‹Fact ℓ.Prime› ψ) (globalFrob
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))).charpoly =
+        ((σ ‹Fact ℓ.Prime› ψ).toLocal
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)
+          (Field.AbsoluteGaloisGroup.adicArithFrob
+            (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))).charpoly
+        from rfl, hcompℓ, hPvq]
+    simp [Polynomial.map_sub, Polynomial.map_add, Polynomial.map_mul,
+      Polynomial.map_pow, Polynomial.map_X, map_natCast,
+      map_add, map_one]
+  -- reduce through the lift's compatibility
+  have hred := L.charFrob_compat q hq hq2 hqℓ
+  rw [show L.ρ.charFrob (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq) =
+    (L.ρ (globalFrob
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))).charpoly
+    from rfl, hOcp] at hred
+  rw [← hred]
+  simp [Polynomial.map_sub, Polynomial.map_add, Polynomial.map_mul,
+    Polynomial.map_pow, Polynomial.map_X, map_natCast,
+    map_add, map_one]
 
 /-- **B6b + B6c**: the residual characteristic polynomials of Frobenius of
 a liftable hardly ramified representation are those of `1 ⊕ χ̄`, i.e.
