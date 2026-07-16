@@ -528,6 +528,17 @@ theorem natCard_residue_quotient_toHeightOneSpectrum {q : ℕ} (hq : q.Prime) :
           (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)))) = q :=
   sorry
 
+set_option warn.sorry false in
+/-- **Units away from the residue characteristic** (sorry node): a prime
+`p ≠ q` is a unit in the completed integers at the `q`-place of `ℚ` (its
+`q`-adic valuation is `1`). Ensures `ℓ^k ∉ Q` in the Frobenius
+roots-of-unity argument of `cyclotomicCharacter_globalFrob`. -/
+theorem isUnit_natCast_adicCompletionIntegers {p q : ℕ} (hp : p.Prime)
+    (hq : q.Prime) (hne : p ≠ q) :
+    IsUnit ((p : ℕ) : (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))) :=
+  sorry
+
 set_option backward.isDefEq.respectTransparency false in
 /-- Membership of a prime in a prime's place: `p` lies in the height-one
 prime of `𝓞 ℚ` attached to `q` iff `p = q`. (Used for the
