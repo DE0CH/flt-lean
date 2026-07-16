@@ -1067,6 +1067,20 @@ assumed. Axiom invariant: every declaration must use at most
   (`[propext, Classical.choice, Quot.sound]`); the chain above
   (`transport → dictionary → subgroup form`) correctly roots through
   the single surjectivity sorry only.
+- 2026-07-16 (session 4 close): **UNIFICATION — the glue nodes share
+  the Minkowski transport's exact shape.** `GaloisRep.ker_map` is
+  `rfl`: `(ρ.map f).ker = ρ.ker.comap (absoluteGaloisGroup.map f)`.
+  Hence `IsUnramifiedAt v` (`localInertiaGroup v ≤ (ρ.toLocal v).ker`)
+  is equivalent, by the same `Subgroup.map_le_iff_le_comap` dance used
+  in `minkowski_character_trivial`, to
+  `Subgroup.map (absoluteGaloisGroup.map f) (localInertiaGroup v) ≤
+  ρ.ker` — the Minkowski hypothesis `hle` with `L.fixingSubgroup`
+  replaced by `ρ.ker` (whose membership = acting trivially on the
+  torsion module). So the five glue nodes decompose as
+  [content node: inertia of the appropriate local object acts
+  trivially on the torsion — NOS / Tate / peu-ramifiée] + [the SAME
+  embedding-prime transport family as the surjectivity leaf]. Attack
+  the transport family ONCE, in the form serving both.
 - 2026-07-16 (session 4, cont.): **`freyCurve_hasGoodReduction_of_not_dvd`
   PROVEN** — the good-reduction arithmetic node is closed:
   `q`-integrality via the integral model (`freyCurveInt` and
