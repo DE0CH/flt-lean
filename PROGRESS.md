@@ -1080,7 +1080,18 @@ assumed. Axiom invariant: every declaration must use at most
   [content node: inertia of the appropriate local object acts
   trivially on the torsion — NOS / Tate / peu-ramifiée] + [the SAME
   embedding-prime transport family as the surjectivity leaf]. Attack
-  the transport family ONCE, in the form serving both.
+  the transport family ONCE, in the form serving both. The
+  four inertia spellings, fully mapped (2026-07-16): (1)
+  `localInertiaGroup` = generic `AddSubgroup.inertia` of `𝔪` upstairs
+  in `ℚ̄_q`, membership `.rfl`; (2) `ValuationSubring.inertiaSubgroup`
+  (the vendored NOS node's spelling) = kernel of the residue action of
+  the DECOMPOSITION subgroup (`RamificationGroup.lean:50` — the file
+  has NO theorems, so the bridge "trivial residue action ⟺ σx − x ∈ 𝔪
+  ∀x ∈ A" is a short definitional unfolding to write); (3)
+  HilbertTheory's subgroup inertia; (4) `Ideal.inertia`
+  (MulSemiringAction), membership `.rfl`, connected to `e` by
+  `card_inertia_eq_ramificationIdxIn` and to (3) by the HilbertTheory
+  file itself.
 - 2026-07-16 (session 4, cont.): **`freyCurve_hasGoodReduction_of_not_dvd`
   PROVEN** — the good-reduction arithmetic node is closed:
   `q`-integrality via the integral model (`freyCurveInt` and
