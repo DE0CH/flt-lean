@@ -230,6 +230,51 @@ lemma not_isIrreducible_of_invariant_submodule {ℓ : ℕ} [Fact ℓ.Prime]
   · exact htop (congrArg Subrepresentation.toSubmodule hP)
 
 set_option backward.isDefEq.respectTransparency false in
+/-- **Stable-line extraction**: a non-irreducible 2-dimensional mod-`ℓ`
+representation has a Galois-stable line. (Converse direction to
+`not_isIrreducible_of_invariant_submodule`; the first step of the Serre
+§4.1 analysis of the reducible Frey representation — the stable line is
+the rational subgroup of order `ℓ`.) -/
+lemma exists_stable_line_of_not_isIrreducible {ℓ : ℕ} [Fact ℓ.Prime]
+    {V : Type*} [AddCommGroup V] [Module (ZMod ℓ) V]
+    [Module.Finite (ZMod ℓ) V] [Module.Free (ZMod ℓ) V]
+    (hdim : Module.rank (ZMod ℓ) V = 2)
+    (ρbar : GaloisRep ℚ (ZMod ℓ) V) (hirr : ¬ ρbar.IsIrreducible) :
+    ∃ W : Submodule (ZMod ℓ) V, Module.finrank (ZMod ℓ) W = 1 ∧
+      ∀ g v, v ∈ W → ρbar g v ∈ W := by
+  classical
+  have hfr : Module.finrank (ZMod ℓ) V = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hdim)
+  haveI : Nontrivial V := by
+    rw [← rank_pos_iff_nontrivial (R := (ZMod ℓ)), hdim]
+    norm_num
+  -- the subrepresentation lattice is nontrivial …
+  haveI : Nontrivial (Subrepresentation ρbar.toRepresentation) := by
+    refine ⟨⊥, ⊤, fun hbt => ?_⟩
+    have := congrArg Subrepresentation.toSubmodule hbt
+    exact bot_ne_top (α := Submodule (ZMod ℓ) V) this
+  -- … so non-simplicity produces a proper nonzero subrepresentation
+  obtain ⟨P, hPbot, hPtop⟩ : ∃ P : Subrepresentation ρbar.toRepresentation,
+      P ≠ ⊥ ∧ P ≠ ⊤ := by
+    by_contra hall
+    push Not at hall
+    exact hirr ⟨fun P => or_iff_not_imp_left.mpr (hall P)⟩
+  have hbot' : P.toSubmodule ≠ ⊥ := fun h =>
+    hPbot (Subrepresentation.toSubmodule_injective
+      (h.trans (rfl : (⊥ : Subrepresentation _).toSubmodule = ⊥).symm))
+  have htop' : P.toSubmodule ≠ ⊤ := fun h =>
+    hPtop (Subrepresentation.toSubmodule_injective
+      (h.trans (rfl : (⊤ : Subrepresentation _).toSubmodule = ⊤).symm))
+  refine ⟨P.toSubmodule, ?_, fun g v hv => P.apply_mem_toSubmodule g hv⟩
+  -- the dimension sandwich forces a line
+  have hlt : Module.finrank (ZMod ℓ) P.toSubmodule < 2 :=
+    hfr ▸ Submodule.finrank_lt htop'
+  have hpos : 0 < Module.finrank (ZMod ℓ) P.toSubmodule := by
+    rw [Module.finrank_pos_iff]
+    exact (Submodule.nontrivial_iff_ne_bot).mpr hbot'
+  omega
+
+set_option backward.isDefEq.respectTransparency false in
 /-- **Brauer–Nesbitt, 2-dimensional mod-`ℓ` instance**: a 2-dimensional
 mod-`ℓ` representation of `Γ ℚ` whose characteristic polynomials agree
 *everywhere* with those of `1 ⊕ χ̄` is not irreducible.

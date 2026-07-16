@@ -45,6 +45,11 @@ map where helpful.
           Folds the quotient-curve construction into an existential:
           - □ quotients of elliptic curves by finite rational subgroups
             (Vélu) — needed to split this node faithfully.
+          - ✓ `exists_stable_line_of_not_isIrreducible`
+            (`Chebotarev.lean`, PROVEN sorry-free 2026-07-16) — the first
+            step of this node's eventual proof: a non-irreducible 2-dim
+            mod-ℓ rep has a Galois-stable line (non-simplicity of the
+            `Subrepresentation` lattice + dimension sandwich).
         - ✓ `WeierstrassCurve.mazur_torsion_bound` — Mazur's torsion
           theorem, weak form: no elliptic curve over ℚ has a subgroup of
           rational points ≅ ℤ/2 × ℤ/2p for p ≥ 5 (primality dropped as
