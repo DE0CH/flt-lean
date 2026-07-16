@@ -655,7 +655,15 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   the fraction-ring algebraMap is bijective and `Finite I.ResidueField`
   transfers along the resulting equiv (finiteness of `ℤ ⧸ span {q}`
   from `Int.instFiniteQuotientSpan`-style instances or
-  `Ring.HasFiniteQuotients.finiteQuotient` with `span {q} ≠ ⊥`). Also confirmed: `Ideal.liesOver_span_iff (hP : P ≠ ⊤)
+  `Ring.HasFiniteQuotients.finiteQuotient` with `span {q} ≠ ⊥`).
+  SCRATCH-COMPILED (2026-07-16), full fragment: `Prime (q:ℤ)` →
+  `span_singleton_prime` → `isMaximal_of_ne_bot` →
+  `Ring.HasFiniteQuotients.finiteQuotient` →
+  `IsFractionRing.surjective_iff_isField.mpr
+  ((Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp hmax)` →
+  `Finite.of_surjective` → `PerfectField` by `inferInstance`. (Do NOT
+  introduce `haveI : Field (ℤ⧸I)` — it creates an instance diamond
+  against the quotient's CommRing path; go through `IsField` instead.) Also confirmed: `Ideal.liesOver_span_iff (hP : P ≠ ⊤)
   (hp : Prime p) : P.LiesOver (span {p}) ↔ algebraMap R S p ∈ P`
   (`KrullDimension/Basic.lean:202`) supplies the `LiesOver` instance
   from the membership hypothesis)
