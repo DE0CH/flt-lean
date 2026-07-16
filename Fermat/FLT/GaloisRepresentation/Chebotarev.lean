@@ -304,6 +304,28 @@ lemma coeff_zero_comparisonQuadratic (a : R) :
 
 end ComparisonQuadratic
 
+set_option backward.isDefEq.respectTransparency false in
+/-- The residue map `PadicInt.toZMod` agrees with `toZModPow 1` composed
+with the canonical `ZMod (p ^ 1) ≃+* ZMod p`: ring homomorphisms into
+`ZMod p` are determined by their kernels, and both sides have kernel the
+maximal ideal. This bridges the residue map used in the
+`IsHardlyRamified` statements (via the `Algebra ℤ_[p] (ZMod p)` instance)
+with the `toZModPow` tower of `cyclotomicCharacter.toZModPow`. -/
+lemma toZMod_eq_ringEquivCongr_comp_toZModPow (p : ℕ) [Fact p.Prime] :
+    (PadicInt.toZMod : ℤ_[p] →+* ZMod p) =
+      ((ZMod.ringEquivCongr (pow_one p)).toRingHom).comp
+        (PadicInt.toZModPow 1) := by
+  apply ZMod.ringHom_eq_of_ker_eq
+  rw [PadicInt.ker_toZMod]
+  have hker : RingHom.ker (((ZMod.ringEquivCongr (pow_one p)).toRingHom).comp
+      (PadicInt.toZModPow 1)) = RingHom.ker (PadicInt.toZModPow (p := p) 1) := by
+    ext x
+    simp only [RingHom.mem_ker, RingHom.coe_comp, Function.comp_apply,
+      RingEquiv.toRingHom_eq_coe, RingEquiv.coe_toRingHom,
+      EmbeddingLike.map_eq_zero_iff]
+  rw [hker, PadicInt.ker_toZModPow, pow_one]
+  exact PadicInt.maximalIdeal_eq_span_p
+
 /-- Two monic polynomials of degree `2` with equal linear and constant
 coefficients are equal. -/
 lemma monic_quadratic_ext {R : Type*} [CommRing R] {p q : Polynomial R}
