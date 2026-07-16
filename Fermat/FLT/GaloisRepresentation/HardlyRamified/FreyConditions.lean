@@ -42,6 +42,9 @@ module
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 public import Fermat.FLT.FreyCurve.Basic
 public import Fermat.FLT.EllipticCurve.Torsion
+-- The Weil pairing node and the determinant-of-pairing linear algebra,
+-- used to derive `torsion_det`.
+import Fermat.FLT.EllipticCurve.WeilPairing
 
 @[expose] public section
 
@@ -56,19 +59,29 @@ noncomputable local instance instAlgebraPadicIntZModFreyConditions
     (p : ℕ) [Fact p.Prime] : Algebra ℤ_[p] (ZMod p) :=
   RingHom.toAlgebra PadicInt.toZMod
 
-set_option warn.sorry false in
-/-- **Determinant of the Frey torsion representation** (sorry node): the
-determinant of the mod-`p` Galois representation on the `p`-torsion of the
-Frey curve is the mod-`p` cyclotomic character. Content: the Weil pairing
-`E[p] × E[p] → μ_p` is a perfect alternating Galois-equivariant pairing, so
-the determinant of the action on the rank-2 module `E[p]` is the action on
-`μ_p`, i.e. the cyclotomic character. -/
+set_option backward.isDefEq.respectTransparency false in
+/-- **Determinant of the Frey torsion representation**: the determinant of
+the mod-`p` Galois representation on the `p`-torsion of the Frey curve is
+the mod-`p` cyclotomic character. DERIVED (2026-07-16) from the Weil
+pairing node (`WeilPairing.exists_weilPairing`: a perfect alternating
+Galois-equivariant pairing on `E[p]`, scaled by the cyclotomic character)
+and the proven linear algebra (`WeilPairing.det_eq_of_conj`: on the rank-2
+torsion, an endomorphism scaling a nonzero alternating pairing by `c` has
+determinant `c`). -/
 theorem FreyCurve.torsion_det :
     haveI : Fact P.p.Prime := ⟨P.pp⟩
     ∀ g, (P.freyCurve.galoisRep P.p P.hppos).det g =
       algebraMap ℤ_[P.p] (ZMod P.p)
-        (cyclotomicCharacter (AlgebraicClosure ℚ) P.p g.toRingEquiv) :=
-  sorry
+        (cyclotomicCharacter (AlgebraicClosure ℚ) P.p g.toRingEquiv) := by
+  haveI : Fact P.p.Prime := ⟨P.pp⟩
+  intro g
+  obtain ⟨e, halt, hnd, hequiv⟩ :=
+    WeilPairing.exists_weilPairing P.freyCurve P.p P.hppos
+  have hrank : Module.rank (ZMod P.p)
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) = 2 :=
+    (P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).p_torsion_rank
+      (Nat.cast_ne_zero.mpr P.hp0)
+  exact WeilPairing.det_eq_of_conj hrank e halt hnd (hequiv g)
 
 set_option warn.sorry false in
 /-- **Unramifiedness of the Frey torsion representation outside `2p`**

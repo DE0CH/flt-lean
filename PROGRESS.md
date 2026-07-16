@@ -67,8 +67,18 @@ map where helpful.
           (2026-07-16) as the structure constructor applied to the four
           defining conditions, each an explicit node in
           `HardlyRamified/FreyConditions.lean` (own work):
-          - ✗ `FreyCurve.torsion_det` — det ρ̄ = mod-p cyclotomic
-            character (the Weil pairing; not yet in mathlib).
+          - ✓ `FreyCurve.torsion_det` — det ρ̄ = mod-p cyclotomic
+            character — now DERIVED (2026-07-16) via the Weil pairing
+            route (`EllipticCurve/WeilPairing.lean`, own work):
+            - ✗ `WeilPairing.exists_weilPairing` — **the Weil pairing**:
+              an alternating, nondegenerate, `ZMod p`-bilinear pairing on
+              `E[p]` scaled by the Galois action through the cyclotomic
+              character (`E[p] ∧ E[p] ≅ μ_p`).
+            - ✓ `WeilPairing.pairing_map_eq_det_smul` +
+              `WeilPairing.det_eq_of_conj` — PROVEN (sorry-free): on a
+              2-dimensional space an alternating form transforms under
+              any endomorphism by the determinant (basis + 2×2
+              computation), so scaling by `c` forces `det = c`.
           - ✗ `FreyCurve.torsion_isUnramified` — unramified outside
             {2, p}: Néron–Ogg–Shafarevich at good primes; Tate curve +
             p ∣ v_q(j) (`j_valuation_of_bad_prime`, proven) at the
