@@ -84,16 +84,25 @@ map where helpful.
               2-dimensional space an alternating form transforms under
               any endomorphism by the determinant (basis + 2×2
               computation), so scaling by `c` forces `det = c`.
-          - ✗ `FreyCurve.torsion_isUnramified` — unramified outside
-            {2, p}: Néron–Ogg–Shafarevich at good primes; Tate curve +
-            p ∣ v_q(j) (`j_valuation_of_bad_prime`, proven) at the
-            multiplicative primes.
-            - ✗ `torsion_unramified_of_good_reduction`
-              (`KnownIn1980s/EllipticCurves/GoodReduction.lean`,
-              vendored 2026-07-16): the NOS easy direction — good
-              reduction over a DVR makes the inertia action on
-              `n`-torsion trivial; the first stated ingredient of this
-              node's decomposition.
+          - ✓ `FreyCurve.torsion_isUnramified` — unramified outside
+            {2, p}: DERIVED (2026-07-16) by the case split `q ∣ abc` or
+            not, from the two nodes below.
+            - ✗ `FreyCurve.torsion_isUnramified_of_good` — at `q ∤ abc`
+              the Frey curve has good reduction (Δ = (abc)^{2p}/2⁸ is a
+              `q`-adic unit) and Néron–Ogg–Shafarevich applies.
+              - ✗ `torsion_unramified_of_good_reduction`
+                (`KnownIn1980s/EllipticCurves/GoodReduction.lean`,
+                vendored 2026-07-16): the NOS easy direction — good
+                reduction over a DVR makes the inertia action on
+                `n`-torsion trivial.
+            - ✗ `FreyCurve.torsion_isUnramified_of_multiplicative` — at
+              `q ∣ abc` odd the reduction is multiplicative with
+              `p ∣ v_q(j)` (`j_valuation_of_bad_prime`, proven);
+              quadratic twist to split reduction
+              (`exists_quadraticTwist_hasSplitMultiplicativeReduction`,
+              vendored PROVEN) + Tate uniformization
+              (`exists_tateEquivSepClosure`) make the inertia action on
+              `E[p]` trivial.
           - ✗ `FreyCurve.torsion_isFlat` — flat at p (finite flat group
             scheme over ℤ_p; Néron model / Tate curve at p).
             - ✗ `torsion_flat_of_good_reduction`
@@ -671,3 +680,14 @@ assumed. Axiom invariant: every declaration must use at most
   resultant node evaluates this to `±Δ^k`, a unit when `Δ` is, and
   scaling the Bézout identity by its inverse closes `IsCoprime`.
   Frontier: 18.
+- 2026-07-16 (session 4, cont.): **`torsion_isUnramified` DECOMPOSED
+  by reduction type** — the node is now DERIVED from two new faithful
+  nodes via the case split on `q ∣ abc`:
+  ✗ `torsion_isUnramified_of_good` (good reduction at `q ∤ abc`, to be
+  closed against the vendored NOS node) and
+  ✗ `torsion_isUnramified_of_multiplicative` (`q ∣ abc`: multiplicative
+  reduction, `p ∣ v_q(j)`, quadratic twist to split reduction, Tate
+  uniformization). Each new node isolates one mechanism; the vendored
+  infrastructure for both (GoodReduction.lean;
+  SplitMultiplicativeReduction.lean + TateCurve.lean) is in place.
+  Frontier: 19.
