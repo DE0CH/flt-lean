@@ -40,19 +40,31 @@ map where helpful.
           analysis produces full 2-torsion plus a rational point of
           order p on some curve; the PROVEN `embedding_assembly`
           combines them into an injective ℤ/2 × ℤ/2p via CRT.
-          - ✗ `FreyPackage.exists_two_torsion_and_p_point_of_not_isIrreducible`
-            — Serre's reducible-case core: reducibility gives a
-            rational order-p subgroup; semistability + Minkowski force
-            a trivial character (rational p-point on E or E/C), and
-            full 2-torsion is rational on both (visible Weierstrass
-            form resp. odd-degree rational isogeny). Folds the
-            quotient-curve construction into an existential:
-            - □ quotients of elliptic curves by finite rational
-              subgroups (Vélu) — needed to split this node faithfully.
-            - ✓ `exists_stable_line_of_not_isIrreducible`
-              (`Chebotarev.lean`, PROVEN sorry-free 2026-07-16) — the
-              first step of this node's eventual proof: a
-              non-irreducible 2-dim mod-ℓ rep has a Galois-stable line.
+          - ✓ `FreyPackage.exists_two_torsion_and_p_point_of_not_isIrreducible`
+            — DERIVED (2026-07-16) from the disjunction node below plus
+            the PROVEN Frey 2-torsion.
+            - ✗ `FreyPackage.exists_p_point_of_not_isIrreducible` —
+              Serre's reducible-case core as a disjunction: either the
+              Frey curve ITSELF has a rational point of order p
+              (χ₁ = 1 case), or some other curve (the Vélu quotient
+              E/C, χ₂ = 1 case) carries both the p-point and
+              transported full 2-torsion. Semistability + Minkowski
+              force one trivial character. Remaining deep content:
+              - □ Minkowski (no unramified extension of ℚ; an
+                everywhere-unramified character of G_ℚ is trivial).
+              - □ quotients of elliptic curves by finite rational
+                subgroups (Vélu) — needed for the χ₂ = 1 case.
+              - ✓ `exists_stable_line_of_not_isIrreducible`
+                (`Chebotarev.lean`, PROVEN sorry-free 2026-07-16) — the
+                first step: a non-irreducible 2-dim mod-ℓ rep has a
+                Galois-stable line.
+            - ✓ `FreyPackage.freyCurve_two_torsion_embedding` — PROVEN
+              (2026-07-16): the Frey model has rational 2-torsion
+              points (0, 0) and (aᵖ/4, −aᵖ/8) (the quadratic factors
+              as (x − aᵖ/4)(x + bᵖ/4)); they are distinct, of order 2
+              (fixed by negation `negY`), and generate an injective
+              (ℤ/2)² →+ E(ℚ) via two `ZMod.lift`s and a coprod, with
+              injectivity by the four-element case analysis.
           - ✓ `embedding_assembly` (PROVEN 2026-07-16): in an abelian
             group, an injective (ℤ/2)² and an element of order exactly
             p (odd prime) assemble into an injective ℤ/2 × ℤ/2p
@@ -848,3 +860,16 @@ assumed. Axiom invariant: every declaration must use at most
   `p•u = u` for 2-torsion u with p odd). Frontier: 20 (one closed, one
   opened; the remaining Serre node no longer contains the group
   theory).
+- 2026-07-16 (session 4, cont.): **Frey full rational 2-torsion PROVEN;
+  Serre core split by character case** —
+  `freyCurve_two_torsion_embedding` is PROVEN: the transformed Frey
+  model has visible rational 2-torsion at `(0,0)` and `(aᵖ/4, −aᵖ/8)`
+  (equation checks by `field_simp`/`ring`; nonsingularity from
+  `equation_iff_nonsingular` since the curve is elliptic; order 2 via
+  the negation formula `negY`; the two points differ in
+  `x`-coordinate), assembled into an injective `(ℤ/2)² →+ E(ℚ)`.
+  `exists_two_torsion_and_p_point_of_not_isIrreducible` is now DERIVED
+  from the new disjunction node ✗ `exists_p_point_of_not_isIrreducible`
+  (χ₁ = 1: p-point on the Frey curve itself, 2-torsion supplied by the
+  proven lemma; χ₂ = 1: the full package on the Vélu quotient). The
+  remaining Serre node isolates exactly Minkowski + Vélu. Frontier: 20.
