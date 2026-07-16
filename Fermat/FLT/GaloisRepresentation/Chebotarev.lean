@@ -508,6 +508,23 @@ lemma discreteTopology_moduleTopology (R M : Type*) [CommRing R]
     DiscreteTopology.eq_bot (α := Fin n → R), coinduced_bot]
 
 set_option backward.isDefEq.respectTransparency false in
+/-- Membership of a prime in a prime's place: `p` lies in the height-one
+prime of `𝓞 ℚ` attached to `q` iff `p = q`. (Used for the
+different-residue-characteristic side conditions of the compatible-family
+compatibility in `residual_charFrob_eq_of_family`.) -/
+lemma natCast_mem_toHeightOneSpectrum_iff {p q : ℕ}
+    (hp : p.Prime) (hq : q.Prime) :
+    (p : NumberField.RingOfIntegers ℚ) ∈
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq).asIdeal ↔ p = q := by
+  have h1 : (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq).asIdeal =
+      Ideal.comap (Rat.ringOfIntegersEquiv.symm.symm)
+        (Ideal.span {(q : ℤ)}) := rfl
+  rw [h1, Ideal.mem_comap, map_natCast, Ideal.mem_span_singleton,
+    Int.natCast_dvd_natCast]
+  exact ⟨fun hdvd => ((Nat.prime_dvd_prime_iff_eq hq hp).mp hdvd).symm,
+    fun h => h ▸ dvd_rfl⟩
+
+set_option backward.isDefEq.respectTransparency false in
 /-- Distinct primes give distinct finite places of `ℚ`: the associated
 height-one primes of `ℤ` are the distinct span ideals. -/
 lemma toHeightOneSpectrumRingOfIntegersRat_injective {p q : ℕ}
