@@ -91,8 +91,8 @@ map where helpful.
                       (SOME prime above `q` has trivial inertia — the
                       embedding-prime/decomposition-group surjectivity
                       content, Neukirch II.9) and
-                      ✗ `inertia_eq_bot_of_exists_prime_over`
-                      (conjugacy propagation — provable:
+                      ✓ `inertia_eq_bot_of_exists_prime_over`
+                      (conjugacy propagation — PROVEN 2026-07-16:
                       `exists_smul_eq_of_isGaloisGroup` gives
                       transitivity on primes over `q`; the conjugation
                       identity `g ∈ inertia (σ • Q) ↔ σ⁻¹gσ ∈ inertia

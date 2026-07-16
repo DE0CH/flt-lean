@@ -161,8 +161,8 @@ theorem exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup
       Q₀.inertia (L ≃ₐ[ℚ] L) = ⊥ :=
   sorry
 
-set_option warn.sorry false in
-/-- **Conjugacy propagation of trivial inertia** (sorry node): if ONE
+set_option backward.isDefEq.respectTransparency false in
+/-- **Conjugacy propagation of trivial inertia** (PROVEN 2026-07-16): if ONE
 prime of `𝓞 L` above `q` has trivial ideal-inertia in `Gal(L/ℚ)`, then
 EVERY prime above `q` does. Classical: `Gal(L/ℚ)` acts transitively on
 the primes above `q` (`Ideal.IsInvariant.orbit_eq_primesOver` /
@@ -177,8 +177,41 @@ theorem inertia_eq_bot_of_exists_prime_over
     (hQ₀ : Q₀.inertia (L ≃ₐ[ℚ] L) = ⊥)
     (Q : Ideal (NumberField.RingOfIntegers L)) [Q.IsPrime]
     (hQmem : (q : NumberField.RingOfIntegers L) ∈ Q) :
-    Q.inertia (L ≃ₐ[ℚ] L) = ⊥ :=
-  sorry
+    Q.inertia (L ≃ₐ[ℚ] L) = ⊥ := by
+  haveI := IsIntegralClosure.isIntegral_algebra ℤ (A := NumberField.RingOfIntegers L) L
+  have hqZ : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
+  haveI hsp : (Ideal.span {((q : ℤ))} : Ideal ℤ).IsPrime :=
+    (Ideal.span_singleton_prime (by exact_mod_cast hq.ne_zero)).mpr hqZ
+  have hne : (Ideal.span {((q : ℤ))} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hmax : (Ideal.span {((q : ℤ))} : Ideal ℤ).IsMaximal :=
+    hsp.isMaximal_of_ne_bot hne
+  haveI hlies₀ : Q₀.LiesOver (Ideal.span {((q : ℤ))}) :=
+    (Ideal.liesOver_span_iff (Ideal.IsPrime.ne_top ‹Q₀.IsPrime›) hqZ).mpr
+      (by exact_mod_cast hQ₀mem)
+  haveI hlies : Q.LiesOver (Ideal.span {((q : ℤ))}) :=
+    (Ideal.liesOver_span_iff (Ideal.IsPrime.ne_top ‹Q.IsPrime›) hqZ).mpr
+      (by exact_mod_cast hQmem)
+  haveI := IsGaloisGroup.of_isFractionRing (L ≃ₐ[ℚ] L) ℤ
+    (NumberField.RingOfIntegers L) ℚ L
+  obtain ⟨σ, hσ⟩ := Ideal.exists_smul_eq_of_isGaloisGroup
+    (Ideal.span {((q : ℤ))}) Q₀ Q ((L ≃ₐ[ℚ] L))
+  rw [← hσ]
+  rw [Subgroup.eq_bot_iff_forall] at hQ₀ ⊢
+  intro g hg
+  have hconj : σ⁻¹ * g * σ ∈ Q₀.inertia (L ≃ₐ[ℚ] L) := by
+    intro y
+    have h1 := hg (σ • y)
+    rw [Submodule.mem_toAddSubgroup,
+      Ideal.mem_pointwise_smul_iff_inv_smul_mem] at h1
+    rw [Submodule.mem_toAddSubgroup]
+    have h2 : σ⁻¹ • (g • σ • y - σ • y) = (σ⁻¹ * g * σ) • y - y := by
+      rw [smul_sub, inv_smul_smul, ← mul_smul, ← mul_smul]
+    rwa [h2] at h1
+  have h3 : σ⁻¹ * g * σ = 1 := hQ₀ _ hconj
+  have h4 : g = σ * (σ⁻¹ * g * σ) * σ⁻¹ := by group
+  rw [h4, h3, mul_one, mul_inv_cancel]
 
 /-- **The inertia transport** (DERIVED 2026-07-16 from the two nodes
 above): the image of `localInertiaGroup q` fixing `L` pointwise
