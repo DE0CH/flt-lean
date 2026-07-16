@@ -1383,3 +1383,19 @@ assumed. Axiom invariant: every declaration must use at most
   `ramificationIdx'_algebra_tower`), counting surjectivity
   `I(N'/Kᵥ) ↠ I(N/Kᵥ)`, compactness lifting to `localInertiaGroup`,
   and the `e(M) = 1` Galois-closure assembly.
+- 2026-07-16 (session 5):
+  **`restrictNormalHom_mem_inertia_of_mem_localInertiaGroup` PROVEN**
+  (unconditional) — the restriction of a `localInertiaGroup` element
+  to a finite Galois subextension `N` lies in the inertia of `𝔪_N` in
+  `Gal(N/Kᵥ)`. Supporting pieces PROVEN: `integralClosureInclusion`
+  (`𝒪_N →+* 𝒪_{Kᵥᵃˡᵍ}` by codRestrict + integrality transport along
+  the `𝒪ᵥ`-algebra tower) and the tower instance
+  `IsScalarTower 𝒪ᵥ ↥M E` (ambient-target form, middle an
+  intermediate-field subtype — still avoids the `algebra'` ambiguity).
+  KEY SIMPLIFICATION discovered: `ι⁻¹(𝔪_big) ≤ 𝔪_N` is FREE from
+  locality of `𝒪_N` (a proper ideal of a local ring sits under the
+  maximal ideal — `IsLocalRing.le_maximalIdeal`; no integrality, no
+  comap-maximality needed for the INTO direction). Next pieces:
+  `IsDiscreteValuationRing 𝒪_N` (ValuationRing + Noetherian ⟹ PID),
+  finite-to-finite restriction + counting surjectivity, compactness
+  lifting, `e(M) = 1` assembly.
