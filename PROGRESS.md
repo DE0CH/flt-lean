@@ -88,6 +88,12 @@ map where helpful.
             {2, p}: Néron–Ogg–Shafarevich at good primes; Tate curve +
             p ∣ v_q(j) (`j_valuation_of_bad_prime`, proven) at the
             multiplicative primes.
+            - ✗ `torsion_unramified_of_good_reduction`
+              (`KnownIn1980s/EllipticCurves/GoodReduction.lean`,
+              vendored 2026-07-16): the NOS easy direction — good
+              reduction over a DVR makes the inertia action on
+              `n`-torsion trivial; the first stated ingredient of this
+              node's decomposition.
           - ✗ `FreyCurve.torsion_isFlat` — flat at p (finite flat group
             scheme over ℤ_p; Néron model / Tate curve at p).
           - ✗ `FreyCurve.torsion_isTameAtTwo` — at 2: rank-1 quotient
