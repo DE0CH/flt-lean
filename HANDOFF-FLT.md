@@ -1,7 +1,7 @@
 # HANDOFF: FLT formalization — context for the successor agent
 
 You are taking over a long-running autonomous project (last updated
-2026-07-16, session 3). Read this file plus `PROGRESS.md` (same directory)
+2026-07-16, session 4). Read this file plus `PROGRESS.md` (same directory)
 fully before doing anything. `PROGRESS.md` is the single source of truth
 for the tree state; this file covers mission, policies, and mechanics.
 
@@ -64,23 +64,45 @@ Method — resolve a dependency tree top-down:
 
 ## Current state — read PROGRESS.md for the authoritative tree
 
-Everything through the boss-theorem spine is DERIVED down to ~17 leaf
-sorry nodes (all Props; grep for the live list). Highlights of what is
-already proven sorry-free: group_theory_lemma / torsion counting; the
-galoisRep construction with continuity; Mazur weak torsion bound from the
-classification; the four IsHardlyRamified conditions assembled; B5 → B6
-chain assembled; B6bc from B6b + glue; the Chebotarev–Brauer–Nesbitt node
-fully derived from density + BN + Frobenius-value (with proven bridges:
-mod-ℓ cyclotomic character + continuity, End-discreteness,
-place↔prime, monic-quadratic ext); torsion_det from the Weil pairing
-node + proven determinant linear algebra.
+Session 4 (2026-07-16) closed with **21 leaf sorry nodes** (all Props;
+grep for the live list). Session-4 headlines: the entire Tate-curve /
+QuadraticTwists / reduction infrastructure is vendored SORRY-FREE (28
+files; TateCurve.lean's sorry-d data reformulated as two existential
+Prop nodes); the Frey curve's ENTIRE semistability arithmetic is PROVEN
+(good reduction at q ∤ abc, multiplicative reduction at odd q ∣ abc AND
+at 2 — the last consuming the model's defining congruences); all four
+IsHardlyRamified conditions and both Mazur-side Serre steps now rest
+exclusively on GENERIC glue nodes; Frey full rational 2-torsion PROVEN;
+isCoprime_Φ_ΨSq derived from the resultant node; Minkowski extracted
+down to its character-free subgroup form.
 
-The remaining leaves are deep: Mazur classification, Serre §4.1
-reducible-case, NOS/Tate unramifiedness, flatness at p, tameness at 2,
-B6a (deformation lifting), B6b (compatible families), the glue
-bookkeeping, B6c/mod_three, Chebotarev density, Brauer–Nesbitt,
-χ̄(Frob_q) = q, Weil pairing existence, division-polynomial nodes
-(n_torsion_card, eval_ΨSq, ΨSq_ne_zero_of_charDvd).
+The 21 leaves, grouped:
+- **Five local-global glue nodes** (`FreyCurve/Semistable.lean` +
+  `FreyConditions.lean`): isUnramifiedAt/isFlatAt at good primes (close
+  against the vendored NOS/Flat nodes), isUnramifiedAt/isFlatAt at
+  multiplicative primes and isTameAtTwo (close against the vendored
+  quadratic-twist theorem + `exists_tateEquivSepClosure`). All need the
+  SAME localInertiaGroup ↔ classical-inertia dictionary.
+- **Two vendored reduction-theory leaves**: `torsion_unramified_of_good_reduction`
+  (NOS), `torsion_flat_of_good_reduction` (Hopf package), plus
+  `resultant_Φ_ΨSq`.
+- **Two Tate existentials**: `exists_variableChange_tateCurve`,
+  `exists_tateEquivSepClosure`.
+- **Mazur branch**: `mazur_classification` (Mazur's theorem),
+  `exists_p_point_of_not_isIrreducible_of_minkowski` (Serre core —
+  remaining content: Vélu quotients + character bookkeeping),
+  `open_normal_subgroup_eq_top_of_inertia_le` (**Minkowski, subgroup
+  form — the mapped next attack**: the full mathlib route is verified
+  and recorded in PROGRESS.md session-4 reconnaissance; needs a fresh
+  session).
+- **Torsion/pairing**: `smul_surjective`, `prime_torsion_card` (blocked
+  on isogeny theory or a division-polynomial↔[n] bridge, neither in
+  mathlib at our pin), `exists_weilPairing`.
+- **Galois-representation deep end**: `exists_frobenius_conj_mem_coset`
+  (finite-level Chebotarev), B6a `exists_hardlyRamifiedLift`, B6b
+  `mem_isCompatible`, B6c `three_adic`, `mod_three` (NB: upstream's
+  fully-proven `Slop/PGL2` Dickson classification + `OddAbsIrred` may
+  feed these — unvendored, mapped).
 
 ## Workflow
 
