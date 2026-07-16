@@ -985,3 +985,11 @@ assumed. Axiom invariant: every declaration must use at most
   `NeZero (n : ResidueField R)` hypothesis of the vendored NOS and
   finite-flat nodes for when the good-reduction glue nodes are closed
   against them.
+- 2026-07-16 (session 4 close): **Tate torsion-membership lemmas
+  PROVEN** — `WeierstrassCurve.mem_torsionBy_of_mem_rootsOfUnity` and
+  `mem_torsionBy_of_pow_eq` (in `TateCurve.lean`): under ANY witness
+  `e : Ωˣ/qᶻ ≃+ E(Ω)` of `exists_tateEquivSepClosure`, `N`-th roots of
+  unity and `N`-th roots of the Tate parameter map to `N`-torsion
+  points (formal: `N•[u] = [u^N]` and the class of `q` is zero).
+  These serve the multiplicative/tame glue nodes, which analyze `E[p]`
+  through the uniformization's torsion.

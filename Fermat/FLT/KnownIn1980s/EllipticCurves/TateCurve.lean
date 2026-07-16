@@ -388,3 +388,37 @@ theorem WeierstrassCurve.exists_tateEquivSepClosure :
         WeierstrassCurve.Affine.Point.map (W' := E) σ.toAlgHom (e (Additive.ofMul ↑u)) =
           e (Additive.ofMul ↑(Units.map σ.toAlgHom.toRingHom.toMonoidHom u)) :=
   sorry
+
+omit [E.IsMinimal 𝒪[k]] [IsSepClosed Ω] [Algebra.IsSeparable k Ω] in
+/-- `N`-th roots of unity give `N`-torsion points of `E` under ANY Tate
+uniformization (PROVEN — a formal consequence of the group-isomorphism
+property, stated for the witnesses of `exists_tateEquivSepClosure`):
+`N • [ζ] = [ζ^N] = [1] = 0`, and `e` transports annihilation. -/
+theorem WeierstrassCurve.mem_torsionBy_of_mem_rootsOfUnity
+    (e : Additive (Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω)) ≃+ ((E⁄Ω)).Point)
+    {N : ℕ} {ζ : Ωˣ} (hζ : ζ ∈ rootsOfUnity N Ω) :
+    e (Additive.ofMul ↑ζ) ∈ AddSubgroup.torsionBy ((E⁄Ω)).Point (N : ℤ) := by
+  have hζN : ζ ^ N = 1 := hζ
+  have hann : ((N : ℤ)) • (Additive.ofMul
+      (↑ζ : Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω))) = 0 := by
+    rw [← ofMul_zpow, ← QuotientGroup.mk_zpow, zpow_natCast, hζN,
+      QuotientGroup.mk_one, ofMul_one]
+  refine (Submodule.mem_torsionBy_iff _ _).mpr ?_
+  rw [← map_zsmul e, hann, map_zero]
+
+omit [E.IsMinimal 𝒪[k]] [IsSepClosed Ω] [Algebra.IsSeparable k Ω] in
+/-- `N`-th roots of the Tate parameter give `N`-torsion points of `E`
+under ANY Tate uniformization (PROVEN, as above): `N • [r] = [r^N] = [q]
+= 0` since `q` generates the subgroup that is quotiented out. -/
+theorem WeierstrassCurve.mem_torsionBy_of_pow_eq
+    (e : Additive (Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω)) ≃+ ((E⁄Ω)).Point)
+    {N : ℕ} {r : Ωˣ} (hr : r ^ N = E.qUnitSepClosure Ω) :
+    e (Additive.ofMul ↑r) ∈ AddSubgroup.torsionBy ((E⁄Ω)).Point (N : ℤ) := by
+  have hann : ((N : ℤ)) • (Additive.ofMul
+      (↑r : Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω))) = 0 := by
+    rw [← ofMul_zpow, ← QuotientGroup.mk_zpow, zpow_natCast, hr]
+    rw [show ((E.qUnitSepClosure Ω : Ωˣ) :
+        Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω)) = 1 from
+      (QuotientGroup.eq_one_iff _).mpr (Subgroup.mem_zpowers _), ofMul_one]
+  refine (Submodule.mem_torsionBy_iff _ _).mpr ?_
+  rw [← map_zsmul e, hann, map_zero]
