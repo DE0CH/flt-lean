@@ -115,12 +115,29 @@ The 21 leaves, grouped:
   - In `module` files, some legacy mathlib instances (e.g.
     `AlgebraicClosure.isAlgebraic`) only synthesize under
     `set_option backward.isDefEq.respectTransparency false in`.
-  - `set_option ... in` lines go ABOVE a declaration's docstring.
+  - `set_option ... in` AND `omit [...] in` lines go ABOVE a
+    declaration's docstring.
   - Non-public imports are proof-only and NOT re-exported; each module
     needs its own imports for statement-level names AND instances.
   - Auto-generated instance names collide across vendored files — name
     local instances explicitly.
-  - `set`-bound local abbreviations hide instances; inline the types.
+  - `set`-bound local abbreviations hide instances; inline the types
+    (e.g. `IsLocalRing.ResidueField R` with `set R := Localization...`
+    fails instance resolution; write the localization type out).
+  - `hq.foo` dot-notation on `hq : Nat.Prime q` resolves via the
+    `Irreducible` namespace ("Invalid field" error) when the module
+    DEFINING `Nat.Prime.foo` is not imported — fix the import, not the
+    name.
+  - Instance-synthesis can stall on an argument (e.g. `IsDomain (𝓞 ℚ)`
+    inside `IsDedekindDomainDvr.is_dvr_at_nonzero_prime`) even when
+    direct synthesis of the same instance succeeds — pass it explicitly
+    with `@` and a `haveI`-bound witness.
+  - `zsh` does not word-split unquoted `$var` — a for-loop over a
+    space-separated list needs the literal list in the `for` line (a
+    quoted-variable loop creates ONE bogus space-containing path).
+  - Vendored upstream files that import a Defs file you are inlining
+    proofs into create build CYCLES — split the shared definitions into
+    a `Basic.lean` (as done for `PGL2/Basic.lean`).
 - Vendoring from `~/cs/FLT` (reference clone, never build there): keep
   Apache headers, rewrite `FLT.` → `Fermat.FLT.`, replace their
   assumption mechanisms with tracked sorry nodes, mark VENDORING CHANGEs.
