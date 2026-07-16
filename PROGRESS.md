@@ -548,7 +548,14 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   `K`), and `IsGalois ℚ ℚ̄` + `CompactSpace (Γ ℚ)` BOTH synthesize —
   but ONLY under `set_option backward.isDefEq.respectTransparency
   false` (the known module-system gotcha; without it `IsGalois`
-  synthesis fails). The derivation is mechanically specified;
+  synthesis fails). Remaining derivation names also verified:
+  `Subgroup.isClosed_of_isOpen` (`OpenSubgroup.lean:273`, for feeding
+  the `ClosedSubgroup` correspondence) and
+  `IntermediateField.finrank_eq_one_iff : finrank F K = 1 ↔ K = ⊥`
+  (`Adjoin/Basic.lean:275`, for extracting `1 < finrank` from
+  `H ≠ ⊤`). The derivation is mechanically specified, every name
+  compilation- or grep-verified; write it as [dictionary node, sorry] +
+  [assembly, proven] in one sitting;
   (3) conclude `ker χ = ⊤` from `fixedField χ.ker = ⊥` by the infinite
   Galois correspondence, hence `χ = 1`. Estimated: one focused session;
   start from a FRESH context.
