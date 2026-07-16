@@ -139,9 +139,18 @@ map where helpful.
               (2026-07-16, `BrauerNesbitt.lean`, own work) along the
               elementary Cayley–Hamilton route; the derivation from the
               two stated nodes is the next step on this branch:
-              - ✗ `BrauerNesbitt.exists_fixed_of_unipotent` — Kolchin,
+              - ✓ `BrauerNesbitt.exists_fixed_of_unipotent` — Kolchin,
                 2-dim: a group of unipotent endomorphisms has a common
-                nonzero fixed vector.
+                nonzero fixed vector — PROVEN (2026-07-16, sorry-free).
+                Route: matrix helpers
+                `trace_eq_zero_and_det_eq_zero_of_sq_eq_zero` (square-zero
+                2×2 has zero trace/det, entry computation) and
+                `sandwich_of_det_eq_zero` (rank-one identity
+                `N₀NN₀ = tr(NN₀)•N₀`); unipotency of `ρ g`, `ρ g₀`,
+                `ρ (g g₀)` forces `tr(NN₀) = 0`, so
+                `n₀ (ρ g − 1) n₀ = 0`; the line `range n₀ = ker n₀` is
+                preserved with square-zero scalar action, hence fixed
+                pointwise.
               - ✓ `BrauerNesbitt.exists_common_eigenvector_of_commuting`
                 — a commuting family annihilated by split quadratics on
                 a 2-dim space has a common eigenvector — PROVEN
