@@ -516,8 +516,18 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   `Algebra.IsUnramifiedAt ℤ P` for every prime `P` of `𝓞 K` — the
   local-global inertia dictionary (same flavor as the NOS glue node
   `isUnramifiedAt_of_hasGoodReduction`; whichever is built first should
-  factor out the common bridge between `localInertiaGroup` and
-  classical inertia/ramification of number fields);
+  factor out the common bridge). The dictionary's two endpoints are now
+  precisely identified: `localInertiaGroup v` is mathlib's GENERIC
+  `AddSubgroup.inertia` (`Algebra/Group/Subgroup/Basic.lean:1123`,
+  membership DEFINITIONAL: `σ ∈ I.inertia G ↔ ∀ x, σ • x - x ∈ I`)
+  applied to `(𝔪 (IntegralClosure 𝒪ᵥ Kᵥᵃˡᵍ)).toAddSubgroup` acting via
+  `Γ Kᵥ`; the NOS node speaks `ValuationSubring.inertiaSubgroup`
+  (`RingTheory/Valuation/RamificationGroup.lean:50`) of valuation
+  subrings of `kˢᵉᵖ`; the classical side is `Algebra.IsUnramifiedAt` ↔
+  `Ideal.ramificationIdx = 1` (`Ideal.ramificationIdx_eq_one_iff`, used
+  in `ExistsRamified.lean`). The dictionary = compatibility of the two
+  inertia presentations along the embedding `ℚ̄ ↪ ℚ̄_q` + the
+  inertia-trivial ⟹ unramified direction for the finite quotient;
   (3) conclude `ker χ = ⊤` from `fixedField χ.ker = ⊥` by the infinite
   Galois correspondence, hence `χ = 1`. Estimated: one focused session;
   start from a FRESH context.
