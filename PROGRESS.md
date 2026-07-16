@@ -1339,3 +1339,31 @@ assumed. Axiom invariant: every declaration must use at most
   `IsIntegral.tower_top` across the ambiguity; instead push the monic
   witness through `Polynomial.eval₂_map` + `Subsingleton.elim` on
   `ℤ →+* ·`.
+- 2026-07-16 (session 5): **local node decomposition started —
+  finite-level `|I| = e` stated; supporting instances PROVEN.** In
+  `LocalInertiaFixedField.lean`: PROVEN unconditionally —
+  `isIntegralClosure_integralClosure` (the type synonym is an
+  `IsIntegralClosure`), `smulDistribClass_integralClosure` (the Galois
+  action distributes over `𝒪_N`-scalars), the intermediate-field-
+  restricted tower `IsScalarTower 𝒪ᵥ Kᵥ ↥M` (deliberately NOT the
+  general form: a general instance enables `IntermediateField.algebra'`
+  as a second route to `Algebra 𝒪ᵥ ↥M` and poisons every
+  `IntegralClosure` elaboration), and
+  `liesOver_maximalIdeal_integralClosure` (`𝔪_N` lies over `𝔪ᵥ`, via
+  comap-maximality under integrality + locality). NEW sorry node
+  `card_inertia_finite_level` (finite Galois `N/Kᵥ` has
+  `#I(𝔪_N/Gal(N/Kᵥ)) = e`): the full instance pack for mathlib's
+  `card_inertia_eq_ramificationIdxIn` is verified EXCEPT
+  `Module.Flat 𝒪ᵥ 𝒪_N` — the PID/free route fails to SYNTHESIZE
+  because different elaboration sites of `IntegralClosure 𝒪ᵥ ↥N`
+  embed non-reducibly-unifiable `CommRing ↥N`/`Algebra 𝒪ᵥ ↥N`
+  instance arguments (`Field.toCommRing ∘ IntermediateField.toField`
+  vs the direct path; verified by `pp.all` on the failing goal, which
+  contains `instAlgebraSubtypeMemValuationSubringVendored` while
+  direct synthesis in a clean context succeeds). Fix strategy for the
+  next attack: an abstract `(R S G)`-wrapper taking `Module.Free R S`
+  as a hypothesis, instantiated once with a `letI`-pinned instance
+  pack. Remaining plan for the L1 assembly unchanged (restriction maps
+  inertia to inertia; counting surjectivity; compactness lifting; then
+  `e(M) = 1` via the Galois closure). Frontier: 23 by count; the
+  finite-level node is a strict sub-piece of L1's content.
