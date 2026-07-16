@@ -43,21 +43,29 @@ map where helpful.
           - ✓ `FreyPackage.exists_two_torsion_and_p_point_of_not_isIrreducible`
             — DERIVED (2026-07-16) from the disjunction node below plus
             the PROVEN Frey 2-torsion.
-            - ✗ `FreyPackage.exists_p_point_of_not_isIrreducible` —
-              Serre's reducible-case core as a disjunction: either the
-              Frey curve ITSELF has a rational point of order p
-              (χ₁ = 1 case), or some other curve (the Vélu quotient
-              E/C, χ₂ = 1 case) carries both the p-point and
-              transported full 2-torsion. Semistability + Minkowski
-              force one trivial character. Remaining deep content:
-              - □ Minkowski (no unramified extension of ℚ; an
-                everywhere-unramified character of G_ℚ is trivial).
-              - □ quotients of elliptic curves by finite rational
-                subgroups (Vélu) — needed for the χ₂ = 1 case.
-              - ✓ `exists_stable_line_of_not_isIrreducible`
-                (`Chebotarev.lean`, PROVEN sorry-free 2026-07-16) — the
-                first step: a non-irreducible 2-dim mod-ℓ rep has a
-                Galois-stable line.
+            - ✓ `FreyPackage.exists_p_point_of_not_isIrreducible` —
+              DERIVED (2026-07-16): the Minkowski input is discharged
+              by the node below.
+              - ✗ `minkowski_character_trivial` — **Minkowski** as a
+                faithful node: a mod-`p` character of G_ℚ with open
+                kernel, unramified at every finite place
+                (`localInertiaGroup q ≤ ker (χ ∘ res_q)`), is trivial.
+                Route: fixed field of ker χ is finite abelian
+                unramified everywhere; mathlib's
+                `NumberField.abs_discr_gt_one` forbids nontrivial such.
+              - ✗ `FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski`
+                — Serre's analysis with the Minkowski input as a
+                hypothesis: stable line ⟹ characters χ₁χ₂ = ω̄;
+                semistability ⟹ one character everywhere unramified ⟹
+                trivial by hypothesis; χ₁ = 1: p-point on the Frey
+                curve; χ₂ = 1: package on the Vélu quotient.
+                Remaining deep content:
+                - □ quotients of elliptic curves by finite rational
+                  subgroups (Vélu) — needed for the χ₂ = 1 case.
+                - ✓ `exists_stable_line_of_not_isIrreducible`
+                  (`Chebotarev.lean`, PROVEN sorry-free 2026-07-16) —
+                  the first step: a non-irreducible 2-dim mod-ℓ rep
+                  has a Galois-stable line.
             - ✓ `FreyPackage.freyCurve_two_torsion_embedding` — PROVEN
               (2026-07-16): the Frey model has rational 2-torsion
               points (0, 0) and (aᵖ/4, −aᵖ/8) (the quadratic factors
@@ -873,3 +881,15 @@ assumed. Axiom invariant: every declaration must use at most
   (χ₁ = 1: p-point on the Frey curve itself, 2-torsion supplied by the
   proven lemma; χ₂ = 1: the full package on the Vélu quotient). The
   remaining Serre node isolates exactly Minkowski + Vélu. Frontier: 20.
+- 2026-07-16 (session 4, cont.): **Minkowski EXTRACTED as a faithful
+  node** — `exists_p_point_of_not_isIrreducible` is now DERIVED from
+  ✗ `minkowski_character_trivial` (a mod-`p` character of G_ℚ with open
+  kernel unramified at every finite place — stated with
+  `localInertiaGroup` and the restriction along
+  `Field.absoluteGaloisGroup.map` — is trivial; to be closed against
+  mathlib's `NumberField.abs_discr_gt_one` via the fixed field of the
+  kernel) and ✗ `exists_p_point_of_not_isIrreducible_of_minkowski`
+  (Serre's analysis with the Minkowski input as an explicit
+  hypothesis; its remaining deep content is exactly Vélu quotients +
+  the character bookkeeping). Frontier: 21 (one closed, two opened —
+  the generic number theory now lives in its own node).

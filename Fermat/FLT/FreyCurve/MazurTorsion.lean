@@ -55,6 +55,12 @@ module
 
 public import Fermat.FLT.FreyCurve.Basic
 public import Fermat.FLT.EllipticCurve.Torsion
+-- `localInertiaGroup` and the restriction `Γ ℚ_q → Γ ℚ`, used to state
+-- the Minkowski node.
+public import Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup
+-- `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`, the place of `ℚ`
+-- attached to a prime number.
+public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 
 @[expose] public section
 
@@ -126,22 +132,70 @@ theorem WeierstrassCurve.mazur_torsion_bound (E : WeierstrassCurve ℚ) [E.IsEll
     omega
 
 set_option warn.sorry false in
-/-- **Serre's reducible-case analysis for the Frey curve** (sorry node): if
-the mod-`p` Galois representation on the `p`-torsion of the Frey curve is
-not irreducible, then some elliptic curve over `ℚ` (the Frey curve itself or
-its quotient by the resulting rational subgroup of order `p`) has full
-rational `2`-torsion — an injective `(ℤ/2)² →+ E'(ℚ)` — together with a
-rational point of order exactly `p`. Serre, Duke 1987, §4.1: semistability
-forces one of the two characters of the reducible representation to be
-everywhere unramified, hence trivial (Minkowski), so `E` or `E/C` has a
-rational point of order `p`; both curves have full rational `2`-torsion
-(the Frey curve visibly — its untransformed model is
-`y² = x(x - aᵖ)(x + bᵖ)` — and `E/C` because the quotient isogeny has odd
-degree `p`, hence is injective on `E[2]`, and is defined over `ℚ`). The
-quotient-curve construction (Vélu) is not yet available in mathlib, so the
-statement quantifies existentially over Weierstrass models; a later layer
-must construct quotients by finite rational subgroups and split this node
-accordingly. -/
+/-- **Minkowski for mod-`p` characters** (sorry node): a character
+`χ : G_ℚ → (ℤ/p)ˣ` with open kernel that is unramified at every finite
+place (the local inertia group at every prime `q` is killed by the
+restriction of `χ` to `G_{ℚ_q}`) is trivial. Proof route: the fixed
+field of `ker χ` is a finite abelian extension of `ℚ` unramified at all
+finite primes; by Minkowski's discriminant bound (`ℚ` has no nontrivial
+extension unramified everywhere; mathlib:
+`NumberField.abs_discr_gt_one`) it equals `ℚ`, so `χ = 1`. (Archimedean
+ramification is invisible to a character of odd prime-power order
+target... the statement asks only finite unramifiedness, which suffices
+since the target `(ℤ/p)ˣ` is abelian and the narrow/wide class group of
+`ℚ` is trivial.) -/
+theorem minkowski_character_trivial {p : ℕ}
+    (χ : Field.absoluteGaloisGroup ℚ →* (ZMod p)ˣ)
+    (hker : IsOpen (χ.ker : Set (Field.absoluteGaloisGroup ℚ)))
+    (hunram : ∀ (q : ℕ) (hq : q.Prime),
+      localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤
+        (χ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) :
+    χ = 1 :=
+  sorry
+
+set_option warn.sorry false in
+/-- **Serre's reducible-case analysis for the Frey curve, given
+Minkowski** (sorry node): if the mod-`p` Galois representation on the
+`p`-torsion of the Frey curve is not irreducible, and every finite-order
+mod-`p` character of `G_ℚ` unramified at all finite places is trivial
+(the Minkowski input, taken as a hypothesis — see
+`minkowski_character_trivial`), then either the Frey curve itself has a
+rational point of order `p`, or some elliptic curve over `ℚ` (the Vélu
+quotient `E/C` by the rational subgroup of order `p`) has full rational
+`2`-torsion together with a rational point of order `p`. Serre, Duke
+1987, §4.1: the stable line gives an extension `0 → χ₁ → E[p] → χ₂ → 0`
+with `χ₁χ₂ = ω̄`; semistability makes both characters unramified away
+from `p` and one of them unramified at `p`; the Minkowski hypothesis
+makes that character trivial; `χ₁ = 1` puts the `p`-point on `E`
+itself, `χ₂ = 1` on the quotient (whose full `2`-torsion comes through
+the odd-degree rational isogeny). The quotient-curve construction
+(Vélu) is not yet available in mathlib, so the second disjunct
+quantifies existentially over Weierstrass models. -/
+theorem FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski
+    (P : FreyPackage)
+    (hmink : ∀ χ : Field.absoluteGaloisGroup ℚ →* (ZMod P.p)ˣ,
+      IsOpen (χ.ker : Set (Field.absoluteGaloisGroup ℚ)) →
+      (∀ (q : ℕ) (hq : q.Prime),
+        localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤
+          (χ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) →
+      χ = 1)
+    (h : ¬ (let E := P.freyCurve
+            let p := P.p
+            have : Fact p.Prime := ⟨P.pp⟩
+            GaloisRep.IsIrreducible (E.galoisRep p P.hppos))) :
+    (∃ Q : ((P.freyCurve)⁄ℚ).Point, addOrderOf Q = P.p) ∨
+    (∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic)
+      (φ₂ : (ZMod 2 × ZMod 2) →+ (E'⁄ℚ).Point) (_ : Function.Injective φ₂)
+      (Q : (E'⁄ℚ).Point), addOrderOf Q = P.p) :=
+  sorry
+
+/-- **Serre's reducible-case analysis for the Frey curve** (DERIVED
+2026-07-16 from the two preceding nodes, by discharging the Minkowski
+hypothesis with `minkowski_character_trivial`). -/
 theorem FreyPackage.exists_p_point_of_not_isIrreducible
     (P : FreyPackage)
     (h : ¬ (let E := P.freyCurve
@@ -152,7 +206,8 @@ theorem FreyPackage.exists_p_point_of_not_isIrreducible
     (∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic)
       (φ₂ : (ZMod 2 × ZMod 2) →+ (E'⁄ℚ).Point) (_ : Function.Injective φ₂)
       (Q : (E'⁄ℚ).Point), addOrderOf Q = P.p) :=
-  sorry
+  P.exists_p_point_of_not_isIrreducible_of_minkowski
+    (fun χ hker hunram => minkowski_character_trivial χ hker hunram) h
 
 /-- **Assembly of coprime torsion** (PROVEN 2026-07-16): in an abelian
 group, an injective `(ℤ/2)²` and an element of order exactly `p` (an odd
