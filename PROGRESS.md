@@ -270,8 +270,10 @@ map where helpful.
 - `residual_charFrob_eq_of_family` (glue): the eventual proof needs an
   embedding `E →+* ℚ̄₃` (DONE 2026-07-16:
   `nonempty_ringHom_to_padicAlgClosure`, proven sorry-free in
-  `Lift.lean` via `IsAlgClosed.lift`), charpoly-vs-baseChange (`LinearMap.charpoly_baseChange`) and
-  conj (`LinearEquiv.charpoly_conj`), trace/det-to-coefficients for
+  `Lift.lean` via `IsAlgClosed.lift`), charpoly-vs-baseChange and conj (DONE 2026-07-16:
+  `charpoly_baseChange_conj`, proven sorry-free in `Lift.lean` — the
+  family-membership equation transports charpolys along
+  `algebraMap A B`), trace/det-to-coefficients for
   2-dim (DONE 2026-07-16: `charpoly_eq_quadratic_of_finrank_two` +
   generic quadratic coefficient lemmas, proven sorry-free in
   `Chebotarev.lean`), and a 3-adic Frobenius value for the cyclotomic

@@ -42,6 +42,7 @@ public import Mathlib.Topology.Instances.ZMod
 import Fermat.FLT.GaloisRepresentation.Chebotarev
 import Mathlib.LinearAlgebra.FreeModule.Finite.Matrix
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
+import Mathlib.LinearAlgebra.Charpoly.BaseChange
 
 @[expose] public section
 
@@ -122,6 +123,28 @@ lemma nonempty_ringHom_to_padicAlgClosure
   haveI : Algebra.IsAlgebraic ℚ E := Algebra.IsAlgebraic.of_finite ℚ E
   exact ⟨(IsAlgClosed.lift (R := ℚ) (S := E)
     (M := AlgebraicClosure ℚ_[p])).toRingHom⟩
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- Characteristic-polynomial transport through base change and framing:
+the family-membership equation `(τ.baseChange B).conj e = σ_φ` identifies
+the characteristic polynomials of the family member with the images of
+those of `τ` under the coefficient map. (Ingredient of the proof of
+`residual_charFrob_eq_of_family`.) -/
+lemma charpoly_baseChange_conj {A : Type*} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing A] {B : Type*} [CommRing B] [TopologicalSpace B]
+    [IsTopologicalRing B] [Algebra A B] [ContinuousSMul A B]
+    {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W]
+    [Module.Free A W] {N : Type*} [AddCommGroup N] [Module B N]
+    [Module.Finite B N] [Module.Free B N]
+    (τ : GaloisRep ℚ A W) (e : (B ⊗[A] W) ≃ₗ[B] N)
+    (g : Field.absoluteGaloisGroup ℚ) :
+    (((τ.baseChange B).conj e) g).charpoly =
+      ((τ g).charpoly).map (algebraMap A B) := by
+  rw [GaloisRep.conj_apply, LinearEquiv.charpoly_conj]
+  show ((Module.End.baseChangeHom A B W) (τ g)).charpoly = _
+  rw [show (Module.End.baseChangeHom A B W) (τ g) =
+    LinearMap.baseChange B (τ g) from rfl, LinearMap.charpoly_baseChange]
 
 set_option warn.sorry false in
 /-- **Compatibility bookkeeping** (sorry node): if the hardly ramified
