@@ -96,6 +96,13 @@ map where helpful.
               node's decomposition.
           - ✗ `FreyCurve.torsion_isFlat` — flat at p (finite flat group
             scheme over ℤ_p; Néron model / Tate curve at p).
+            - ✗ `torsion_flat_of_good_reduction`
+              (`KnownIn1980s/EllipticCurves/Flat.lean`, vendored
+              2026-07-16): good reduction over a DVR makes the
+              `n`-torsion a finite flat group scheme (Hopf algebra,
+              finite flat, étale generic fibre, equivariant points
+              isomorphism). Plus two division-polynomial nodes:
+              ✗ `resultant_Φ_ΨSq` and ✗ `isCoprime_Φ_ΨSq`.
           - ✗ `FreyCurve.torsion_isTameAtTwo` — at 2: rank-1 quotient
             with unramified character squaring to 1 (multiplicative
             reduction at 2, Tate uniformization, quadratic twist).
