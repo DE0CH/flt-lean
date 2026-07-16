@@ -163,17 +163,49 @@ lemma continuous_cyclotomicCharacterModL (ℓ : ℕ) [Fact ℓ.Prime] :
   · exact ⟨1, Subgroup.one_mem _, mul_one σ⟩
 
 set_option warn.sorry false in
-/-- **The cyclotomic character at Frobenius** (sorry node): the mod-`ℓ`
-cyclotomic character evaluates to `q` at the global arithmetic Frobenius
-of a prime `q ≠ ℓ` — the arithmetic Frobenius at `q` acts on the `ℓ`-th
-roots of unity by `ζ ↦ ζ^q` (`μ_ℓ` is unramified at `q`, and Frobenius
-reduces to the `q`-power map on the residue field). -/
+/-- **The `ℓ`-adic cyclotomic character at Frobenius** (sorry node): the
+`ℓ`-adic cyclotomic character evaluates to `q` at the global arithmetic
+Frobenius of a prime `q ≠ ℓ` — the arithmetic Frobenius at `q` acts on
+all `ℓ`-power roots of unity by `ζ ↦ ζ^q` (`μ_{ℓ^∞}` is unramified at
+`q`, and Frobenius reduces to the `q`-power map on the residue field).
+The mod-`ℓ` statement `cyclotomicCharacterModL_globalFrob` is DERIVED
+from this below. -/
+theorem cyclotomicCharacter_globalFrob {ℓ q : ℕ} [Fact ℓ.Prime]
+    (hq : q.Prime) (hne : q ≠ ℓ) :
+    ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
+        (globalFrob (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          hq)).toRingEquiv : ℤ_[ℓ]ˣ) : ℤ_[ℓ]) = (q : ℤ_[ℓ]) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The mod-`ℓ` cyclotomic character at Frobenius**: evaluates to `q`
+at the global arithmetic Frobenius of a prime `q ≠ ℓ`. DERIVED from the
+`ℓ`-adic statement `cyclotomicCharacter_globalFrob` by reduction: on an
+`ℓ`-th root of unity `t`, `cyclotomicCharacter.spec` (at `n = 1`) makes
+Frobenius act by the exponent `((q : ℤ_[ℓ]).toZModPow 1).val = q % ℓ`,
+which is the defining property of the value `(q : ZMod ℓ)` of the
+modular character (`modularCyclotomicCharacter.unique`). -/
 theorem cyclotomicCharacterModL_globalFrob {ℓ q : ℕ} [Fact ℓ.Prime]
     (hq : q.Prime) (hne : q ≠ ℓ) :
     ((cyclotomicCharacterModL ℓ
         (globalFrob (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)) :
-      (ZMod ℓ)ˣ) : ZMod ℓ) = (q : ZMod ℓ) :=
-  sorry
+      (ZMod ℓ)ˣ) : ZMod ℓ) = (q : ZMod ℓ) := by
+  have hpadic := cyclotomicCharacter_globalFrob (ℓ := ℓ) hq hne
+  refine (modularCyclotomicCharacter.unique (AlgebraicClosure ℚ)
+    (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) ℓ)
+    _ (c := (q : ZMod ℓ)) ?_).symm
+  intro t ht
+  have ht1 : (t : AlgebraicClosure ℚ) ^ ℓ ^ 1 = 1 := by
+    rw [pow_one, ← Units.val_pow_eq_pow_val, (mem_rootsOfUnity ℓ t).mp ht,
+      Units.val_one]
+  have hspec := cyclotomicCharacter.spec ℓ
+    (globalFrob (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+      hq)).toRingEquiv (t : AlgebraicClosure ℚ) ht1
+  rw [hpadic] at hspec
+  have hval : ((q : ℤ_[ℓ]).toZModPow 1).val = ((q : ZMod ℓ)).val := by
+    rw [map_natCast, ZMod.val_natCast, ZMod.val_natCast, pow_one]
+  rw [hval] at hspec
+  exact hspec
 
 set_option warn.sorry false in
 /-- **Brauer–Nesbitt, 2-dimensional mod-`ℓ` instance** (sorry node): a

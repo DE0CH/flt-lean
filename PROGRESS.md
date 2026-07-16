@@ -136,8 +136,16 @@ map where helpful.
             - ✗ `not_isIrreducible_of_charpoly_eq` — **Brauer–Nesbitt**,
               2-dim mod-ℓ instance: charpolys everywhere those of
               `1 ⊕ χ̄` ⇒ not irreducible.
-            - ✗ `cyclotomicCharacterModL_globalFrob` — χ̄(Frob_q) = q
-              for q ≠ ℓ.
+            - ✓ `cyclotomicCharacterModL_globalFrob` — χ̄(Frob_q) = q
+              for q ≠ ℓ — now DERIVED (2026-07-16) by mod-ℓ reduction
+              (`cyclotomicCharacter.spec` at n = 1 +
+              `modularCyclotomicCharacter.unique`) from:
+              - ✗ `cyclotomicCharacter_globalFrob` — the **ℓ-adic**
+                cyclotomic character evaluates to q at `globalFrob q`
+                (q ≠ ℓ); this single node also serves the future glue
+                (`residual_charFrob_eq_of_family`) at ℓ = 3.
+              - ✓ `toZMod_eq_ringEquivCongr_comp_toZModPow` — PROVEN
+                (kernel rigidity of ring homs into `ZMod p`).
             - ✓ sorry-free bridges (own work, `Chebotarev.lean`):
               `cyclotomicCharacterModL` (the mod-ℓ cyclotomic character,
               constructed + continuity PROVEN), `globalFrob` (+ `charFrob`
