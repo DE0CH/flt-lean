@@ -1016,6 +1016,85 @@ theorem restrictNormalHom_reify_compat (h : N ≤ N')
         rw [h5]
     _ = _ := rfl
 
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- If the restriction of `σ : Γ Kᵥ` to the LARGER finite Galois
+subextension `N'` is inertial, so is its restriction to `N`:
+factor through the reification (`restrictNormalHom_reify_compat`),
+restrict into the intermediate level
+(`restrictNormalHom_mem_inertia_intermediate`), and transport along
+`reifyEquiv` (`autCongr_mem_inertia`). -/
+theorem restrict_mem_inertia_of_le (h : N ≤ N')
+    [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
+    [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N']
+    [IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
+    [IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N']
+    (σ : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+      ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v]
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+    (hσ : AlgEquiv.restrictNormalHom N' σ ∈
+      (𝔪 (IntegralClosure 𝒪ᵥ N')).inertia
+        (N' ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N')) :
+    AlgEquiv.restrictNormalHom N σ ∈
+      (𝔪 (IntegralClosure 𝒪ᵥ N)).inertia
+        (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N) := by
+  haveI := normal_reifySubextension v N N' h
+  haveI : Normal (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N' :=
+    IsGalois.to_normal
+  rw [restrictNormalHom_reify_compat v N N' h σ]
+  exact autCongr_mem_inertia v (reifySubextension v N N') (reifyEquiv v N N' h) _
+    (restrictNormalHom_mem_inertia_intermediate v N' (reifySubextension v N N')
+      (AlgEquiv.restrictNormalHom N' σ) hσ)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Lifting inertia one finite level up**: an inertia element `τ` at
+level `N` is the restriction of some `σ : Γ Kᵥ` whose restriction to
+the larger level `N'` is also inertial. Combines the reverse
+`autCongr` transport, the finite-level surjectivity, the full-group
+lifting `restrictNormalHom_surjective`, and the reification
+compatibility. -/
+theorem exists_inertia_restrict_of_le (h : N ≤ N')
+    [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
+    [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N']
+    [IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
+    [IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N']
+    (τ : N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N)
+    (hτ : τ ∈ (𝔪 (IntegralClosure 𝒪ᵥ N)).inertia
+      (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N)) :
+    ∃ σ : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+      ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v]
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v),
+      AlgEquiv.restrictNormalHom N' σ ∈
+        (𝔪 (IntegralClosure 𝒪ᵥ N')).inertia
+          (N' ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N') ∧
+      AlgEquiv.restrictNormalHom N σ = τ := by
+  haveI := normal_reifySubextension v N N' h
+  -- transport `τ` backward to the reification
+  have hτ' := autCongr_mem_inertia v N (reifyEquiv v N N' h).symm τ hτ
+  -- lift to an inertia element at level `N'`
+  obtain ⟨ρ, hρI, hρres⟩ := restrictNormalHom_inertia_surjective v N'
+    (reifySubextension v N N')
+    (AlgEquiv.autCongr (reifyEquiv v N N' h).symm τ) hτ'
+  -- lift `ρ` to the absolute group
+  obtain ⟨σ, hσ⟩ := AlgEquiv.restrictNormalHom_surjective
+    (K₁ := ↥N')
+    (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) ρ
+  refine ⟨σ, ?_, ?_⟩
+  · rw [hσ]
+    exact hρI
+  · rw [restrictNormalHom_reify_compat v N N' h σ, hσ, hρres]
+    -- `autCongr j (autCongr j.symm τ) = τ`
+    apply AlgEquiv.ext
+    intro x
+    show (reifyEquiv v N N' h)
+      ((AlgEquiv.autCongr (reifyEquiv v N N' h).symm τ)
+        ((reifyEquiv v N N' h).symm x)) = τ x
+    show (reifyEquiv v N N' h) ((reifyEquiv v N N' h).symm
+      (τ ((reifyEquiv v N N' h).symm.symm ((reifyEquiv v N N' h).symm x)))) = τ x
+    rw [AlgEquiv.apply_symm_apply, AlgEquiv.symm_symm, AlgEquiv.apply_symm_apply]
+
 end Reify
 
 set_option warn.sorry false in
