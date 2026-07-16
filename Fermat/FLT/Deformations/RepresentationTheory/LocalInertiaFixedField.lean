@@ -9,6 +9,10 @@ public import Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup
 -- `Ideal.ramificationIdxIn` and `card_inertia_eq_ramificationIdxIn`,
 -- used to state and prove the finite-level `|I| = e` theorem.
 public import Mathlib.NumberTheory.RamificationInertia.Galois
+-- `Ring.HasFiniteQuotients` and `Submodule.finite_quotient_smul`, for
+-- residue finiteness over intermediate bases.
+public import Mathlib.RingTheory.Ideal.Quotient.HasFiniteQuotients
+import Mathlib.RingTheory.Ideal.Quotient.Index
 
 /-!
 # The fixed field of the local inertia group is unramified
@@ -191,6 +195,35 @@ variable (N : IntermediateField
     (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
   [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
 
+/-- The completed integer ring has finite quotients: every nonzero
+ideal is a power `𝔪ᵥⁿ` (DVR ideal classification), and `𝒪ᵥ ⧸ 𝔪ᵥⁿ` is
+finite by induction on `n` (`Submodule.finite_quotient_smul` against
+the finite residue field). -/
+theorem hasFiniteQuotients_adicCompletionIntegers :
+    Ring.HasFiniteQuotients
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) := by
+  constructor
+  intro I hI
+  obtain ⟨ϖ, hirr⟩ := IsDiscreteValuationRing.exists_irreducible 𝒪ᵥ
+  obtain ⟨n, hn⟩ := IsDiscreteValuationRing.ideal_eq_span_pow_irreducible hI hirr
+  rw [hn, ← Ideal.span_singleton_pow, ← hirr.maximalIdeal_eq]
+  clear hn hI
+  induction n with
+  | zero =>
+      rw [pow_zero, Ideal.one_eq_top]
+      haveI : Subsingleton (𝒪ᵥ ⧸ (⊤ : Ideal 𝒪ᵥ)) :=
+        Ideal.Quotient.subsingleton_iff.mpr rfl
+      infer_instance
+  | succ k ih =>
+      haveI : Finite (𝒪ᵥ ⧸ (𝔪 𝒪ᵥ)) :=
+        inferInstanceAs (Finite (IsLocalRing.ResidueField 𝒪ᵥ))
+      haveI := ih
+      have hfin := Submodule.finite_quotient_smul (I := 𝔪 𝒪ᵥ)
+        (N := ((𝔪 𝒪ᵥ) ^ k : Ideal 𝒪ᵥ))
+        (IsNoetherian.noetherian _)
+      rw [smul_eq_mul, ← pow_succ'] at hfin
+      exact hfin
+
 /-- The tower `𝒪ᵥ ⊆ ↥M ⊆ E` for an intermediate field `M` of `E/Kᵥ`. -/
 instance instIsScalarTowerValuationSubringIntermediateFieldAmbient
     {K E : Type*} [Field K] [Field E] [Algebra K E]
@@ -317,6 +350,94 @@ instance : IsScalarTower 𝒪ᵥ (IntegralClosure 𝒪ᵥ M') (IntegralClosure �
     show algebraMap 𝒪ᵥ N x = algebraMap (IntegralClosure 𝒪ᵥ M') N
       (algebraMap 𝒪ᵥ (IntegralClosure 𝒪ᵥ M') x)
     rw [← IsScalarTower.algebraMap_apply 𝒪ᵥ (IntegralClosure 𝒪ᵥ M') N])
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 2000000 in
+/-- **`|I| = e` over the intermediate base**: for a finite Galois
+`N/Kᵥ` and an intermediate field `M'`, the inertia subgroup of `𝔪_N`
+inside `Gal(N/M')` has cardinality the ramification index of `𝔪_{M'}`
+in `𝒪_N`. Same assembly as `card_inertia_finite_level`, with base ring
+`𝒪_{M'}` (a DVR by the generalized instance) and the intermediate-base
+algebra layer above. -/
+theorem card_inertia_intermediate [IsGalois Kᵥ N] :
+    Nat.card ((𝔪 (IntegralClosure 𝒪ᵥ N)).inertia (N ≃ₐ[M'] N)) =
+      Ideal.ramificationIdxIn (𝔪 (IntegralClosure 𝒪ᵥ M'))
+        (IntegralClosure 𝒪ᵥ N) := by
+  -- the Galois action of `Gal(N/M')` commutes with `Kᵥ`-scalars (they
+  -- factor through `M'`-scalars)
+  haveI hscc : SMulCommClass (N ≃ₐ[M'] N)
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N := by
+    constructor
+    intro g k x
+    show g (k • x) = k • g x
+    rw [Algebra.smul_def, Algebra.smul_def, map_mul]
+    congr 1
+    rw [IsScalarTower.algebraMap_apply
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) M' N]
+    exact g.commutes _
+  -- fraction-ring structure on both integral closures
+  haveI : IsFractionRing (IntegralClosure 𝒪ᵥ M') M' :=
+    IsIntegralClosure.isFractionRing_of_finite_extension 𝒪ᵥ Kᵥ M'
+      (IntegralClosure 𝒪ᵥ M')
+  haveI : IsFractionRing (IntegralClosure 𝒪ᵥ N) N :=
+    IsIntegralClosure.isFractionRing_of_finite_extension 𝒪ᵥ Kᵥ N
+      (IntegralClosure 𝒪ᵥ N)
+  -- `𝒪_N` is integral over `𝒪_{M'}`
+  haveI : Algebra.IsIntegral (IntegralClosure 𝒪ᵥ M') (IntegralClosure 𝒪ᵥ N) :=
+    Algebra.IsIntegral.tower_top (R := 𝒪ᵥ)
+  -- the Galois group of `N/M'` with invariants `𝒪_{M'}`
+  haveI : IsGaloisGroup (N ≃ₐ[M'] N) (IntegralClosure 𝒪ᵥ M')
+      (IntegralClosure 𝒪ᵥ N) :=
+    IsGaloisGroup.of_isFractionRing (N ≃ₐ[M'] N) (IntegralClosure 𝒪ᵥ M')
+      (IntegralClosure 𝒪ᵥ N) M' N
+  -- finite free over the DVR `𝒪_{M'}`
+  haveI : Module.Finite 𝒪ᵥ (IntegralClosure 𝒪ᵥ N) :=
+    IsIntegralClosure.finite 𝒪ᵥ Kᵥ N (IntegralClosure 𝒪ᵥ N)
+  haveI : Module.Finite (IntegralClosure 𝒪ᵥ M') (IntegralClosure 𝒪ᵥ N) :=
+    Module.Finite.of_restrictScalars_finite 𝒪ᵥ (IntegralClosure 𝒪ᵥ M')
+      (IntegralClosure 𝒪ᵥ N)
+  haveI : FaithfulSMul (IntegralClosure 𝒪ᵥ M') (IntegralClosure 𝒪ᵥ N) := by
+    rw [faithfulSMul_iff_algebraMap_injective]
+    intro a b hab
+    have h1 := congrArg (algebraMap (IntegralClosure 𝒪ᵥ N) N) hab
+    rw [← IsScalarTower.algebraMap_apply, ← IsScalarTower.algebraMap_apply] at h1
+    have h2 : Function.Injective
+        (algebraMap (IntegralClosure 𝒪ᵥ M') N) := by
+      rw [IsScalarTower.algebraMap_eq (IntegralClosure 𝒪ᵥ M') M' N]
+      exact (algebraMap M' N).injective.comp
+        (IsFractionRing.injective (IntegralClosure 𝒪ᵥ M') M')
+    exact h2 h1
+  haveI : Module.Free (IntegralClosure 𝒪ᵥ M') (IntegralClosure 𝒪ᵥ N) :=
+    Module.free_of_finite_type_torsion_free'
+  -- `𝔪_N` lies over `𝔪_{M'}`
+  haveI hlies : (𝔪 (IntegralClosure 𝒪ᵥ N)).LiesOver
+      (𝔪 (IntegralClosure 𝒪ᵥ M')) := by
+    constructor
+    have hmax : ((𝔪 (IntegralClosure 𝒪ᵥ N)).comap
+        (algebraMap (IntegralClosure 𝒪ᵥ M') (IntegralClosure 𝒪ᵥ N))).IsMaximal :=
+      Ideal.isMaximal_comap_of_isIntegral_of_isMaximal (𝔪 (IntegralClosure 𝒪ᵥ N))
+    exact (hmax.eq_of_le
+      (IsLocalRing.maximalIdeal.isMaximal (IntegralClosure 𝒪ᵥ M')).ne_top
+      (IsLocalRing.le_maximalIdeal hmax.ne_top)).symm
+  -- the residue field of `𝔪_{M'}` is finite hence perfect
+  haveI : Module.Finite 𝒪ᵥ (IntegralClosure 𝒪ᵥ M') :=
+    IsIntegralClosure.finite 𝒪ᵥ Kᵥ M' (IntegralClosure 𝒪ᵥ M')
+  haveI := hasFiniteQuotients_adicCompletionIntegers v
+  haveI : Ring.HasFiniteQuotients (IntegralClosure 𝒪ᵥ M') :=
+    Ring.HasFiniteQuotients.of_module_finite 𝒪ᵥ (IntegralClosure 𝒪ᵥ M')
+  haveI : Finite ((IntegralClosure 𝒪ᵥ M') ⧸ (𝔪 (IntegralClosure 𝒪ᵥ M'))) :=
+    Ring.HasFiniteQuotients.finiteQuotient
+      (IsDiscreteValuationRing.not_a_field _)
+  have hsurj : Function.Surjective
+      (algebraMap ((IntegralClosure 𝒪ᵥ M') ⧸ (𝔪 (IntegralClosure 𝒪ᵥ M')))
+        ((𝔪 (IntegralClosure 𝒪ᵥ M')).ResidueField)) :=
+    IsFractionRing.surjective_iff_isField.mpr
+      ((Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp
+        (IsLocalRing.maximalIdeal.isMaximal _))
+  haveI : Finite ((𝔪 (IntegralClosure 𝒪ᵥ M')).ResidueField) :=
+    Finite.of_surjective _ hsurj
+  exact Ideal.card_inertia_eq_ramificationIdxIn (G := N ≃ₐ[M'] N)
+    (𝔪 (IntegralClosure 𝒪ᵥ M')) (𝔪 (IntegralClosure 𝒪ᵥ N))
 
 end IntermediateBase
 

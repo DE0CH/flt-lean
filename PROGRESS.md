@@ -1455,3 +1455,19 @@ assumed. Axiom invariant: every declaration must use at most
   `e(N/Kᵥ) = |I(𝔪_N/GalKᵥ)| ≤ |I(𝔪_N/Gal(N/M'))| = e(N/M')`; with
   `e(N/Kᵥ) = e(N/M')·e(M/Kᵥ)` (`ramificationIdx'_algebra_tower`,
   Dedekind ✓ both DVRs) and `e ≠ 0`, conclude `e(M/Kᵥ) = 1`.
+- 2026-07-17 (session 5): **`card_inertia_intermediate` PROVEN**
+  (unconditional) — `|I(𝔪_N/Gal(N/M'))| = e(𝔪_{M'} in 𝒪_N)` for any
+  intermediate `M'` of a finite Galois `N/Kᵥ`, using the
+  intermediate-base algebra layer and the new
+  `hasFiniteQuotients_adicCompletionIntegers` (every nonzero ideal of
+  the DVR `𝒪ᵥ` is `𝔪ᵥⁿ`; finite quotients by induction with
+  `Submodule.finite_quotient_smul`; then
+  `Ring.HasFiniteQuotients.of_module_finite` transports to `𝒪_{M'}`).
+  Debug notes: `Submodule.mkQ`-based `Module.Finite` haveI's EXPLODE
+  under respectTransparency-false (module-structure unification) — use
+  ring-level routes (`Module.Finite.trans`, `HasFiniteQuotients`);
+  `of_module_finite` takes `R` EXPLICITLY. Both counting inputs for the
+  L1 assembly are now in place; remaining: the `e`-tower application
+  (`ramificationIdx'_algebra_tower` over `𝒪ᵥ → 𝒪_{M'} → 𝒪_N`), the
+  fixing-subgroup upgrade `I(𝔪_N/GalKᵥ) ∩ fix(M') ↪ I(𝔪_N/Gal(N/M'))`,
+  compactness lifting, and the final assembly.
