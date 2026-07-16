@@ -31,6 +31,11 @@ module
 
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
 public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
+-- Kolchin (2-dim) and the commuting-split common-eigenvector lemma,
+-- used in the proof of `not_isIrreducible_of_charpoly_eq`.
+import Fermat.FLT.GaloisRepresentation.BrauerNesbitt
+import Mathlib.RepresentationTheory.Subrepresentation
+import Mathlib.RepresentationTheory.Irreducible
 public import Mathlib.NumberTheory.Cyclotomic.CyclotomicCharacter
 public import Mathlib.RingTheory.RootsOfUnity.AlgebraicallyClosed
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
@@ -207,14 +212,38 @@ theorem cyclotomicCharacterModL_globalFrob {ℓ q : ℕ} [Fact ℓ.Prime]
   rw [hval] at hspec
   exact hspec
 
-set_option warn.sorry false in
-/-- **Brauer–Nesbitt, 2-dimensional mod-`ℓ` instance** (sorry node): a
-2-dimensional mod-`ℓ` representation of `Γ ℚ` whose characteristic
-polynomials agree *everywhere* with those of `1 ⊕ χ̄` (the direct sum of
-the trivial character and the mod-`ℓ` cyclotomic character) is not
-irreducible: an irreducible representation is semisimple, two semisimple
-representations with equal characteristic polynomials are isomorphic
-(Brauer–Nesbitt; here `ℓ ∤ dim = 2`), and `1 ⊕ χ̄` is reducible. -/
+set_option backward.isDefEq.respectTransparency false in
+/-- A nonzero proper invariant submodule refutes irreducibility. -/
+lemma not_isIrreducible_of_invariant_submodule {ℓ : ℕ} [Fact ℓ.Prime]
+    {V : Type*} [AddCommGroup V] [Module (ZMod ℓ) V]
+    (ρbar : GaloisRep ℚ (ZMod ℓ) V) (W : Submodule (ZMod ℓ) V)
+    (hne : W ≠ ⊥) (htop : W ≠ ⊤)
+    (hinv : ∀ g v, v ∈ W → ρbar g v ∈ W) :
+    ¬ ρbar.IsIrreducible := by
+  intro hirr
+  haveI : IsSimpleOrder (Subrepresentation
+      ρbar.toRepresentation) := hirr
+  rcases eq_bot_or_eq_top
+    (⟨W, fun g v hv => hinv g v hv⟩ :
+      Subrepresentation ρbar.toRepresentation) with hP | hP
+  · exact hne (congrArg Subrepresentation.toSubmodule hP)
+  · exact htop (congrArg Subrepresentation.toSubmodule hP)
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Brauer–Nesbitt, 2-dimensional mod-`ℓ` instance**: a 2-dimensional
+mod-`ℓ` representation of `Γ ℚ` whose characteristic polynomials agree
+*everywhere* with those of `1 ⊕ χ̄` is not irreducible.
+
+DERIVED (elementary route, no semisimplification): Cayley–Hamilton turns
+the charpoly hypothesis into `(ρ g − 1)(ρ g − χ̄ g) = 0`. On the kernel
+`H` of `χ̄` every element is unipotent, so Kolchin's theorem in dimension
+2 (`BrauerNesbitt.exists_fixed_of_unipotent`) gives a nonzero `H`-fixed
+subspace `W`; `W` is Galois-stable because `H` is normal. If `W` is
+proper, done. If `W = ⊤` then `ρ` kills `H`, hence has commuting image
+(commutators land in `H`), each member annihilated by a split quadratic;
+the common-eigenvector lemma
+(`BrauerNesbitt.exists_common_eigenvector_of_commuting`) produces an
+invariant line. -/
 theorem not_isIrreducible_of_charpoly_eq {ℓ : ℕ} [Fact ℓ.Prime]
     {V : Type*} [AddCommGroup V] [Module (ZMod ℓ) V]
     [Module.Finite (ZMod ℓ) V] [Module.Free (ZMod ℓ) V]
@@ -225,8 +254,152 @@ theorem not_isIrreducible_of_charpoly_eq {ℓ : ℕ} [Fact ℓ.Prime]
         - Polynomial.C (((cyclotomicCharacterModL ℓ g : (ZMod ℓ)ˣ) : ZMod ℓ) + 1)
             * Polynomial.X
         + Polynomial.C ((cyclotomicCharacterModL ℓ g : (ZMod ℓ)ˣ) : ZMod ℓ)) :
-    ¬ ρbar.IsIrreducible :=
-  sorry
+    ¬ ρbar.IsIrreducible := by
+  classical
+  have hfr : Module.finrank (ZMod ℓ) V = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hdim)
+  -- Cayley–Hamilton: `(ρ g − 1)(ρ g − χ̄ g) = 0`
+  have hCH : ∀ g, (ρbar g - 1) * (ρbar g - algebraMap (ZMod ℓ)
+      (Module.End (ZMod ℓ) V)
+      ((cyclotomicCharacterModL ℓ g : (ZMod ℓ)ˣ) : ZMod ℓ)) = 0 := by
+    intro g
+    have hch := LinearMap.aeval_self_charpoly (ρbar g)
+    rw [h g] at hch
+    simp only [map_add, map_sub, map_mul, map_pow, Polynomial.aeval_X,
+      Polynomial.aeval_C] at hch
+    have hcomm : Commute (ρbar g) (algebraMap (ZMod ℓ)
+        (Module.End (ZMod ℓ) V)
+        ((cyclotomicCharacterModL ℓ g : (ZMod ℓ)ˣ) : ZMod ℓ)) :=
+      (Algebra.commute_algebraMap_right _ _)
+    have hexp : (ρbar g - 1) * (ρbar g - algebraMap (ZMod ℓ)
+        (Module.End (ZMod ℓ) V)
+        ((cyclotomicCharacterModL ℓ g : (ZMod ℓ)ˣ) : ZMod ℓ)) =
+        (ρbar g) ^ 2 - (algebraMap (ZMod ℓ) (Module.End (ZMod ℓ) V)
+          ((cyclotomicCharacterModL ℓ g : (ZMod ℓ)ˣ) : ZMod ℓ)
+          + algebraMap (ZMod ℓ) (Module.End (ZMod ℓ) V) 1) * ρbar g
+        + algebraMap (ZMod ℓ) (Module.End (ZMod ℓ) V)
+          ((cyclotomicCharacterModL ℓ g : (ZMod ℓ)ˣ) : ZMod ℓ) := by
+      have e1 : (ρbar g - 1) * (ρbar g - algebraMap (ZMod ℓ)
+          (Module.End (ZMod ℓ) V)
+          ((cyclotomicCharacterModL ℓ g : (ZMod ℓ)ˣ) : ZMod ℓ)) =
+          ρbar g * ρbar g - ρbar g * algebraMap (ZMod ℓ)
+            (Module.End (ZMod ℓ) V)
+            ((cyclotomicCharacterModL ℓ g : (ZMod ℓ)ˣ) : ZMod ℓ)
+          - ρbar g + algebraMap (ZMod ℓ) (Module.End (ZMod ℓ) V)
+            ((cyclotomicCharacterModL ℓ g : (ZMod ℓ)ˣ) : ZMod ℓ) := by
+        noncomm_ring
+      rw [e1, hcomm.eq, map_one]
+      noncomm_ring
+    rw [hexp]
+    exact hch
+  -- the kernel of the character acts unipotently
+  by_cases hWtop : (⨅ hH : (cyclotomicCharacterModL ℓ).ker,
+      LinearMap.ker (ρbar (hH : Field.absoluteGaloisGroup ℚ) - 1)) = ⊤
+  · -- `ρ` kills the kernel of `χ̄`: commuting image, split quadratics
+    have hker1 : ∀ hH : (cyclotomicCharacterModL ℓ).ker,
+        ρbar (hH : Field.absoluteGaloisGroup ℚ) = 1 := by
+      intro hH
+      ext v
+      have hv : v ∈ (⨅ hH : (cyclotomicCharacterModL ℓ).ker,
+          LinearMap.ker (ρbar (hH : Field.absoluteGaloisGroup ℚ) - 1)) :=
+        hWtop ▸ Submodule.mem_top
+      have := (Submodule.mem_iInf _).mp hv hH
+      rw [LinearMap.mem_ker, LinearMap.sub_apply, sub_eq_zero] at this
+      simpa using this
+    have hcommim : ∀ g₁ g₂, Commute (ρbar g₁) (ρbar g₂) := by
+      intro g₁ g₂
+      have hc : g₁⁻¹ * g₂⁻¹ * g₁ * g₂ ∈ (cyclotomicCharacterModL ℓ).ker := by
+        rw [MonoidHom.mem_ker]
+        simp only [map_mul, map_inv]
+        rw [mul_comm ((cyclotomicCharacterModL ℓ) g₁)⁻¹
+          ((cyclotomicCharacterModL ℓ) g₂)⁻¹, mul_assoc, mul_assoc,
+          ← mul_assoc ((cyclotomicCharacterModL ℓ) g₁)⁻¹,
+          inv_mul_cancel, one_mul, inv_mul_cancel]
+      have h1 := hker1 ⟨g₁⁻¹ * g₂⁻¹ * g₁ * g₂, hc⟩
+      have h2 : ρbar (g₁ * (g₁⁻¹ * g₂⁻¹ * g₁ * g₂)) = ρbar g₁ := by
+        rw [map_mul]
+        simp only at h1
+        rw [h1, mul_one]
+      have h3 : g₁ * (g₁⁻¹ * g₂⁻¹ * g₁ * g₂) = g₂⁻¹ * g₁ * g₂ := by
+        group
+      rw [h3, map_mul, map_mul] at h2
+      unfold Commute SemiconjBy
+      have hcancel : ρbar g₂ * ρbar g₂⁻¹ = 1 := by
+        rw [← map_mul, mul_inv_cancel, map_one]
+      calc ρbar g₁ * ρbar g₂
+          = ρbar g₂ * ρbar g₂⁻¹ * (ρbar g₁ * ρbar g₂) := by
+            rw [hcancel, one_mul]
+      _ = ρbar g₂ * (ρbar g₂⁻¹ * ρbar g₁ * ρbar g₂) := by
+            noncomm_ring
+      _ = ρbar g₂ * ρbar g₁ := by rw [h2]
+    obtain ⟨v, hv, heig⟩ :=
+      BrauerNesbitt.exists_common_eigenvector_of_commuting hdim
+        (Set.range fun g => ρbar g)
+        (by rintro _ ⟨g₁, rfl⟩ _ ⟨g₂, rfl⟩; exact hcommim g₁ g₂)
+        (by
+          rintro _ ⟨g, rfl⟩
+          exact ⟨1, ((cyclotomicCharacterModL ℓ g : (ZMod ℓ)ˣ) : ZMod ℓ),
+            by rw [map_one]; exact hCH g⟩)
+    refine not_isIrreducible_of_invariant_submodule ρbar
+      (Submodule.span (ZMod ℓ) {v}) ?_ ?_ ?_
+    · simpa [Submodule.span_singleton_eq_bot] using hv
+    · intro htop
+      have h1 : Module.finrank (ZMod ℓ) (Submodule.span (ZMod ℓ) {v}) = 1 :=
+        finrank_span_singleton hv
+      rw [htop] at h1
+      rw [finrank_top] at h1
+      omega
+    · intro g x hx
+      obtain ⟨a, rfl⟩ := Submodule.mem_span_singleton.mp hx
+      obtain ⟨c, hc⟩ := heig (ρbar g) ⟨g, rfl⟩
+      rw [map_smul, hc]
+      exact Submodule.smul_mem _ _ (Submodule.smul_mem _ _
+        (Submodule.mem_span_singleton_self v))
+  · -- the `H`-fixed space is nonzero (Kolchin), proper, and Galois-stable
+    let ρH : (cyclotomicCharacterModL ℓ).ker →* Module.End (ZMod ℓ) V :=
+      { toFun := fun hH => ρbar (hH : Field.absoluteGaloisGroup ℚ)
+        map_one' := map_one ρbar
+        map_mul' := fun x y => map_mul ρbar _ _ }
+    have huni : ∀ hH : (cyclotomicCharacterModL ℓ).ker,
+        (ρH hH - 1) ^ 2 = 0 := by
+      intro hH
+      have hχ1 : ((cyclotomicCharacterModL ℓ
+          (hH : Field.absoluteGaloisGroup ℚ) : (ZMod ℓ)ˣ) : ZMod ℓ) = 1 := by
+        rw [MonoidHom.mem_ker.mp hH.2]
+        rfl
+      have hthis := hCH (hH : Field.absoluteGaloisGroup ℚ)
+      rw [hχ1, map_one] at hthis
+      rw [pow_two]
+      exact hthis
+    obtain ⟨v₀, hv₀ne, hv₀fix⟩ :=
+      BrauerNesbitt.exists_fixed_of_unipotent hdim ρH huni
+    refine not_isIrreducible_of_invariant_submodule ρbar
+      (⨅ hH : (cyclotomicCharacterModL ℓ).ker,
+        LinearMap.ker (ρbar (hH : Field.absoluteGaloisGroup ℚ) - 1))
+      ?_ hWtop ?_
+    · refine Submodule.ne_bot_iff _ |>.mpr ⟨v₀, ?_, hv₀ne⟩
+      refine (Submodule.mem_iInf _).mpr fun hH => ?_
+      rw [LinearMap.mem_ker, LinearMap.sub_apply, sub_eq_zero]
+      exact hv₀fix hH
+    · intro g v hv
+      refine (Submodule.mem_iInf _).mpr fun hH => ?_
+      rw [LinearMap.mem_ker, LinearMap.sub_apply, sub_eq_zero]
+      have hconj : (g⁻¹ * (hH : Field.absoluteGaloisGroup ℚ) * g) ∈
+          (cyclotomicCharacterModL ℓ).ker := by
+        rw [MonoidHom.mem_ker]
+        simp only [map_mul, map_inv, MonoidHom.mem_ker.mp hH.2]
+        rw [mul_one, inv_mul_cancel]
+      have hfix := (Submodule.mem_iInf _).mp hv ⟨_, hconj⟩
+      rw [LinearMap.mem_ker, LinearMap.sub_apply, sub_eq_zero,
+        Module.End.one_apply] at hfix
+      have hrw : (hH : Field.absoluteGaloisGroup ℚ) * g =
+          g * (g⁻¹ * (hH : Field.absoluteGaloisGroup ℚ) * g) := by group
+      calc ρbar (hH : Field.absoluteGaloisGroup ℚ) (ρbar g v)
+          = ρbar ((hH : Field.absoluteGaloisGroup ℚ) * g) v := by
+            rw [map_mul]; rfl
+      _ = ρbar g (ρbar (g⁻¹ * (hH : Field.absoluteGaloisGroup ℚ) * g) v) := by
+            rw [hrw, map_mul]; rfl
+      _ = ρbar g v := by rw [hfix]
 
 /-!
 ## Bridge lemmas for the derivation of `not_isIrreducible_of_charFrob_eq`

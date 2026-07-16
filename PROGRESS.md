@@ -133,12 +133,16 @@ map where helpful.
             - ✗ `dense_conjClasses_globalFrob` — **Chebotarev density**,
               topological form: conjugates of `globalFrob v`, `v ∉ S`,
               are dense in `Γ K`.
-            - ○ `not_isIrreducible_of_charpoly_eq` — **Brauer–Nesbitt**,
-              2-dim mod-ℓ instance: charpolys everywhere those of
-              `1 ⊕ χ̄` ⇒ not irreducible. Decomposition STARTED
-              (2026-07-16, `BrauerNesbitt.lean`, own work) along the
-              elementary Cayley–Hamilton route; the derivation from the
-              two stated nodes is the next step on this branch:
+            - ✓ `not_isIrreducible_of_charpoly_eq` — **Brauer–Nesbitt**,
+              2-dim mod-ℓ instance — PROVEN SORRY-FREE (2026-07-16):
+              Cayley–Hamilton turns the charpoly hypothesis into
+              `(ρg − 1)(ρg − χ̄g) = 0`; on `H := ker χ̄` every element is
+              unipotent, Kolchin gives a nonzero `H`-fixed space, stable
+              under Γ (H normal); if proper it refutes irreducibility
+              (`not_isIrreducible_of_invariant_submodule`, via
+              `Subrepresentation`); if everything, the image commutes
+              (commutators die in H) and the common-eigenvector lemma
+              yields an invariant line. Children (both proven):
               - ✓ `BrauerNesbitt.exists_fixed_of_unipotent` — Kolchin,
                 2-dim: a group of unipotent endomorphisms has a common
                 nonzero fixed vector — PROVEN (2026-07-16, sorry-free).
