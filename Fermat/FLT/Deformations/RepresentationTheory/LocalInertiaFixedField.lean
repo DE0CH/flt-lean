@@ -453,6 +453,47 @@ theorem card_inertia_intermediate [IsGalois Kᵥ N] :
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 2000000 in
+/-- **Restriction into the intermediate-level inertia**: an inertia
+element of `𝔪_N` in `Gal(N/Kᵥ)` restricts to an inertia element of
+`𝔪_{M'}` in `Gal(M'/Kᵥ)` (for normal `M'`). Same two ingredients as
+the `Γ`-level restriction lemma: `restrictNormal_commutes` and the
+locality of `𝒪_{M'}`. -/
+theorem restrictNormalHom_mem_inertia_intermediate [Normal
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) M']
+    (σ : N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N)
+    (hσ : σ ∈ (𝔪 (IntegralClosure 𝒪ᵥ N)).inertia
+      (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N)) :
+    AlgEquiv.restrictNormalHom M' σ ∈
+      (𝔪 (IntegralClosure 𝒪ᵥ M')).inertia
+        (M' ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] M') := by
+  rw [AddSubgroup.mem_inertia]
+  intro x
+  rw [AddSubgroup.mem_inertia] at hσ
+  have hcomm : algebraMap (IntegralClosure 𝒪ᵥ M') (IntegralClosure 𝒪ᵥ N)
+      ((AlgEquiv.restrictNormalHom M' σ) • x - x) =
+      σ • (algebraMap (IntegralClosure 𝒪ᵥ M') (IntegralClosure 𝒪ᵥ N) x) -
+        algebraMap (IntegralClosure 𝒪ᵥ M') (IntegralClosure 𝒪ᵥ N) x := by
+    rw [map_sub]
+    congr 1
+    apply Subtype.ext
+    exact AlgEquiv.restrictNormal_commutes σ M'
+      (algebraMap (IntegralClosure 𝒪ᵥ M') M' x)
+  have hbig := hσ (algebraMap (IntegralClosure 𝒪ᵥ M') (IntegralClosure 𝒪ᵥ N) x)
+  rw [← hcomm] at hbig
+  have hproper : (𝔪 (IntegralClosure 𝒪ᵥ N)).comap
+      (algebraMap (IntegralClosure 𝒪ᵥ M') (IntegralClosure 𝒪ᵥ N)) ≠ ⊤ := by
+    intro htop
+    have h1 : (1 : IntegralClosure 𝒪ᵥ M') ∈ (𝔪 (IntegralClosure 𝒪ᵥ N)).comap
+        (algebraMap (IntegralClosure 𝒪ᵥ M') (IntegralClosure 𝒪ᵥ N)) :=
+      htop ▸ Submodule.mem_top
+    rw [Ideal.mem_comap, map_one] at h1
+    exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+      (Ideal.eq_top_of_isUnit_mem _ h1 isUnit_one)
+  rw [Submodule.mem_toAddSubgroup] at hbig ⊢
+  exact IsLocalRing.le_maximalIdeal hproper (Ideal.mem_comap.mpr hbig)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 2000000 in
 /-- **The counting step**: if the inertia subgroup of `𝔪_N` in
 `Gal(N/Kᵥ)` fixes the intermediate field `M'` pointwise, then `M'/Kᵥ`
 is unramified (`e(𝔪ᵥ at 𝔪_{M'}) = 1`). Proof:
