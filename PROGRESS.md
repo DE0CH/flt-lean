@@ -233,9 +233,16 @@ map where helpful.
           (nonvanishing when char ∣ n; the `(n : k) ≠ 0` case is mathlib's
           `ΨSq_ne_zero`). Given these, finiteness is elementary: finitely
           many abscissae, ≤ 2 ordinates each (monic quadratic).
-        - ✗ `n_torsion_card` (= n² over sep. closed fields, `(n : k) ≠ 0`) —
-          needs the full division-polynomial biconditional + multiplicity
-          analysis.
+        - ○ `n_torsion_card` (= n² over sep. closed fields, `(n : k) ≠ 0`)
+          — decomposition STARTED (2026-07-16, `TorsionCard.lean`, own
+          work); derivation (prime-power tower + CRT, plan in the file
+          header) is the next step on this branch:
+          - ✗ `TorsionCard.smul_surjective` — divisibility of the points
+            group: `[n]` is surjective on points over a separably closed
+            field for `(n : k) ≠ 0` (separable isogeny).
+          - ✗ `TorsionCard.prime_torsion_card` — `#E[p] = p²` for prime
+            `p` with `(p : k) ≠ 0` (kernel of the separable degree-`p²`
+            isogeny).
         - ✓ `WeierstrassCurve.galoisRep` — CONSTRUCTED (2026-07-16). The
           formerly sorry-d DATA is now the genuine representation: the
           Galois action on points (`Point.map`, via the `DistribMulAction`

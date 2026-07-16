@@ -5,6 +5,7 @@ import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic
 import Fermat.FLT.GaloisRepresentation.Chebotarev
 import Fermat.FLT.GaloisRepresentation.BrauerNesbitt
+import Fermat.FLT.EllipticCurve.TorsionCard
 import Fermat.SorryGate
 
 /-!
