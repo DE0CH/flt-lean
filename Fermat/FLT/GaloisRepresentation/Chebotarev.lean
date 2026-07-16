@@ -34,6 +34,8 @@ public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 -- Kolchin (2-dim) and the commuting-split common-eigenvector lemma,
 -- used in the proof of `not_isIrreducible_of_charpoly_eq`.
 import Fermat.FLT.GaloisRepresentation.BrauerNesbitt
+import Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup
+import Mathlib.RingTheory.Frobenius
 import Mathlib.RepresentationTheory.Subrepresentation
 import Mathlib.RepresentationTheory.Irreducible
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
@@ -204,6 +206,38 @@ lemma continuous_cyclotomicCharacterModL (ℓ : ℕ) [Fact ℓ.Prime] :
   · exact ⟨1, Subgroup.one_mem _, mul_one σ⟩
 
 set_option warn.sorry false in
+/-- **Residue cardinality at a prime's place** (sorry node): for the
+place of `ℚ` attached to a prime `q`, the contraction of the maximal
+ideal of the integral closure of the completed integers in `ℚ_qᵃˡᵍ` cuts
+out a quotient of cardinality `q` — the residue field of `ℤ_q` is `𝔽_q`.
+This identifies the exponent of `IsArithFrobAt` (which is
+`Nat.card (𝒪ᵥ ⧸ Q.under 𝒪ᵥ)`) with `q` in the derivation of
+`cyclotomicCharacter_globalFrob`. -/
+theorem natCard_residue_quotient_toHeightOneSpectrum {q : ℕ} (hq : q.Prime) :
+    Nat.card ((IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)) ⧸
+      ((IsLocalRing.maximalIdeal (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))))).under
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)))) = q :=
+  sorry
+
+set_option warn.sorry false in
+/-- **Units away from the residue characteristic** (sorry node): a prime
+`p ≠ q` is a unit in the completed integers at the `q`-place of `ℚ` (its
+`q`-adic valuation is `1`). Ensures `ℓ^k ∉ Q` in the Frobenius
+roots-of-unity argument of `cyclotomicCharacter_globalFrob`. -/
+theorem isUnit_natCast_adicCompletionIntegers {p q : ℕ} (hp : p.Prime)
+    (hq : q.Prime) (hne : p ≠ q) :
+    IsUnit ((p : ℕ) : (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))) :=
+  sorry
+
+set_option warn.sorry false in
 /-- **The `ℓ`-adic cyclotomic character at Frobenius** (sorry node): the
 `ℓ`-adic cyclotomic character evaluates to `q` at the global arithmetic
 Frobenius of a prime `q ≠ ℓ` — the arithmetic Frobenius at `q` acts on
@@ -215,8 +249,93 @@ theorem cyclotomicCharacter_globalFrob {ℓ q : ℕ} [Fact ℓ.Prime]
     (hq : q.Prime) (hne : q ≠ ℓ) :
     ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
         (globalFrob (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-          hq)).toRingEquiv : ℤ_[ℓ]ˣ) : ℤ_[ℓ]) = (q : ℤ_[ℓ]) :=
-  sorry
+          hq)).toRingEquiv : ℤ_[ℓ]ˣ) : ℤ_[ℓ]) = (q : ℤ_[ℓ]) := by
+  -- Core: the global Frobenius raises every `ℓ^k`-th root of unity to
+  -- its `q`-th power.
+  have hfrob : ∀ (k : ℕ) (ζ : AlgebraicClosure ℚ), ζ ^ ℓ ^ k = 1 →
+      globalFrob (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq) ζ =
+        ζ ^ q := by
+    intro k ζ hζ
+    set v := Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq with hv
+    -- transport along the chosen embedding of algebraic closures
+    have hι := Field.absoluteGaloisGroup.lift_map
+      (@algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) _ _
+        (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+          (NumberField.RingOfIntegers ℚ) ℚ v))
+      (Field.AbsoluteGaloisGroup.adicArithFrob v) ζ
+    set η := AlgebraicClosure.map
+      (@algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) _ _
+        (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+          (NumberField.RingOfIntegers ℚ) ℚ v))
+      ζ with hηdef
+    have hη : η ^ ℓ ^ k = 1 := by
+      rw [hηdef, ← map_pow, hζ, map_one]
+    -- the root of unity is integral over the completed integers
+    have hint : IsIntegral
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v) η := by
+      refine IsIntegral.of_pow (n := ℓ ^ k)
+        (pow_pos (Fact.out : ℓ.Prime).pos k) ?_
+      rw [hη]
+      exact isIntegral_one
+    -- Frobenius action on the integral element
+    have harith := Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob (v := v)
+    have hnotmem : ((ℓ ^ k : ℕ) : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) ∉
+        IsLocalRing.maximalIdeal _ := by
+      have hu : IsUnit ((ℓ : ℕ) :
+          IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v) :=
+        isUnit_natCast_adicCompletionIntegers (Fact.out : ℓ.Prime) hq
+          (fun h => hne h.symm)
+      have hu2 : IsUnit ((ℓ ^ k : ℕ) : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+        rw [Nat.cast_pow]
+        exact (hu.map (algebraMap _ _)).pow k
+      exact fun hmem => ((IsLocalRing.mem_maximalIdeal _).mp hmem) hu2
+    -- apply the Frobenius property to the integral root of unity
+    have hpow : (⟨η, hint⟩ : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) ^ ℓ ^ k
+        = 1 := by
+      apply Subtype.ext
+      show η ^ ℓ ^ k = 1
+      exact hη
+    have happ := AlgHom.IsArithFrobAt.apply_of_pow_eq_one harith hpow hnotmem
+    rw [natCard_residue_quotient_toHeightOneSpectrum hq] at happ
+    have hcoord := congrArg Subtype.val happ
+    have hact : Field.AbsoluteGaloisGroup.adicArithFrob v η = η ^ q :=
+      hcoord
+    -- descend through the injective embedding
+    apply (AlgebraicClosure.map
+      (@algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) _ _
+        (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+          (NumberField.RingOfIntegers ℚ) ℚ v))).injective
+    rw [map_pow]
+    unfold globalFrob
+    exact hι.trans hact
+  -- conclude by `ℓ`-adic uniqueness across all levels
+  haveI : ∀ i : ℕ, NeZero (ℓ ^ i) :=
+    fun i => ⟨pow_ne_zero i (Fact.out : ℓ.Prime).ne_zero⟩
+  refine PadicInt.ext_of_toZModPow.mp fun k => ?_
+  rw [cyclotomicCharacter.toZModPow, map_natCast]
+  have huniq := modularCyclotomicCharacter.unique (AlgebraicClosure ℚ)
+    (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) (ℓ ^ k))
+    (g := (globalFrob (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+      hq)).toRingEquiv) (c := ((q : ZMod (ℓ ^ k)))) ?_
+  · exact huniq.symm
+  · intro t ht
+    have h1 : (t : AlgebraicClosure ℚ) ^ ℓ ^ k = 1 := by
+      rw [← Units.val_pow_eq_pow_val, (mem_rootsOfUnity _ t).mp ht,
+        Units.val_one]
+    have h2 : (globalFrob (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+        hq)).toRingEquiv (t : AlgebraicClosure ℚ) = (t : AlgebraicClosure ℚ) ^ q :=
+      hfrob k (t : AlgebraicClosure ℚ) h1
+    rw [h2, ZMod.val_natCast]
+    exact pow_eq_pow_mod q h1
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The mod-`ℓ` cyclotomic character at Frobenius**: evaluates to `q`
@@ -507,37 +626,7 @@ lemma discreteTopology_moduleTopology (R M : Type*) [CommRing R]
   rw [ModuleTopology.eq_coinduced_of_surjective hf,
     DiscreteTopology.eq_bot (α := Fin n → R), coinduced_bot]
 
-set_option warn.sorry false in
-/-- **Residue cardinality at a prime's place** (sorry node): for the
-place of `ℚ` attached to a prime `q`, the contraction of the maximal
-ideal of the integral closure of the completed integers in `ℚ_qᵃˡᵍ` cuts
-out a quotient of cardinality `q` — the residue field of `ℤ_q` is `𝔽_q`.
-This identifies the exponent of `IsArithFrobAt` (which is
-`Nat.card (𝒪ᵥ ⧸ Q.under 𝒪ᵥ)`) with `q` in the derivation of
-`cyclotomicCharacter_globalFrob`. -/
-theorem natCard_residue_quotient_toHeightOneSpectrum {q : ℕ} (hq : q.Prime) :
-    Nat.card ((IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)) ⧸
-      ((IsLocalRing.maximalIdeal (IntegralClosure
-          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-            (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))
-          (AlgebraicClosure
-            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-              (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))))).under
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)))) = q :=
-  sorry
 
-set_option warn.sorry false in
-/-- **Units away from the residue characteristic** (sorry node): a prime
-`p ≠ q` is a unit in the completed integers at the `q`-place of `ℚ` (its
-`q`-adic valuation is `1`). Ensures `ℓ^k ∉ Q` in the Frobenius
-roots-of-unity argument of `cyclotomicCharacter_globalFrob`. -/
-theorem isUnit_natCast_adicCompletionIntegers {p q : ℕ} (hp : p.Prime)
-    (hq : q.Prime) (hne : p ≠ q) :
-    IsUnit ((p : ℕ) : (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))) :=
-  sorry
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Membership of a prime in a prime's place: `p` lies in the height-one

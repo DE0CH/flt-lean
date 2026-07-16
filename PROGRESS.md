@@ -206,10 +206,20 @@ map where helpful.
               for q ≠ ℓ — now DERIVED (2026-07-16) by mod-ℓ reduction
               (`cyclotomicCharacter.spec` at n = 1 +
               `modularCyclotomicCharacter.unique`) from:
-              - ✗ `cyclotomicCharacter_globalFrob` — the **ℓ-adic**
+              - ✓ `cyclotomicCharacter_globalFrob` — the **ℓ-adic**
                 cyclotomic character evaluates to q at `globalFrob q`
-                (q ≠ ℓ); this single node also serves the glue
-                (`residual_charFrob_eq_of_family`) at ℓ = 3.
+                (q ≠ ℓ) — now DERIVED (2026-07-16, the hardest assembly
+                of the session): `lift_map` transports the action to
+                `ℚ_qᵃˡᵍ`; `ℓ^k`-th roots of unity are integral
+                (`IsIntegral.of_pow`); `apply_of_pow_eq_one` at the
+                maximal ideal of the integral closure gives the q-power
+                action (exponent = q by the residue node, side condition
+                by the unit node); descend by injectivity of the chosen
+                embedding (forcing the adic-completion algebra instance
+                against the `ratAlgebra` diamond); conclude by
+                `modularCyclotomicCharacter.unique` at every level and
+                `PadicInt.ext_of_toZModPow`. Serves the glue at ℓ = 3
+                and ChebBN at ℓ. Children:
                 DERIVATION MAPPED (2026-07-16), all ingredients in-tree:
                 (i) equivariance of `absoluteGaloisGroup.map` along the
                 chosen embedding — ALREADY PROVEN in the vendored tree
