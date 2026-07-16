@@ -858,6 +858,48 @@ theorem restrictNormalHom_mem_inertia_of_mem_localInertiaGroup
   rw [Submodule.mem_toAddSubgroup] at hbig ⊢
   exact hle (Ideal.mem_comap.mpr hbig)
 
+set_option backward.isDefEq.respectTransparency false in
+/-- The inclusion of a finite-level integral closure into the full one
+carries `𝔪_N` into `𝔪_big`: the pullback of `𝔪_big` is EQUAL to `𝔪_N`
+(`≤` by locality of `𝒪_N`, `⊇` by comap-maximality under integrality —
+`𝔪_big` is maximal since the big integral closure is a local valuation
+ring). -/
+theorem integralClosureInclusion_mem_maximalIdeal
+    (m : IntegralClosure 𝒪ᵥ N) (hm : m ∈ 𝔪 (IntegralClosure 𝒪ᵥ N)) :
+    integralClosureInclusion v N m ∈
+      𝔪 (IntegralClosure 𝒪ᵥ
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) := by
+  letI : Algebra (IntegralClosure 𝒪ᵥ N)
+      (IntegralClosure 𝒪ᵥ
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) :=
+    (integralClosureInclusion v N).toAlgebra
+  haveI : IsScalarTower 𝒪ᵥ (IntegralClosure 𝒪ᵥ N)
+      (IntegralClosure 𝒪ᵥ
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) := by
+    refine IsScalarTower.of_algebraMap_eq' ?_
+    ext x
+    apply Subtype.ext
+    show algebraMap 𝒪ᵥ
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) x =
+      algebraMap N _ (algebraMap 𝒪ᵥ N x)
+    rw [← IsScalarTower.algebraMap_apply]
+  haveI : Algebra.IsIntegral (IntegralClosure 𝒪ᵥ N)
+      (IntegralClosure 𝒪ᵥ
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) :=
+    Algebra.IsIntegral.tower_top (R := 𝒪ᵥ)
+  have hcomap_max : ((𝔪 (IntegralClosure 𝒪ᵥ
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))).comap
+      (algebraMap (IntegralClosure 𝒪ᵥ N)
+        (IntegralClosure 𝒪ᵥ
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))))).IsMaximal :=
+    Ideal.isMaximal_comap_of_isIntegral_of_isMaximal _
+  have heq := hcomap_max.eq_of_le
+    (IsLocalRing.maximalIdeal.isMaximal (IntegralClosure 𝒪ᵥ N)).ne_top
+    (IsLocalRing.le_maximalIdeal hcomap_max.ne_top)
+  rw [← heq] at hm
+  exact Ideal.mem_comap.mp hm
+
 end FiniteLevelSubextension
 
 section Reify
