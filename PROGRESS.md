@@ -233,10 +233,13 @@ map where helpful.
           (nonvanishing when char ∣ n; the `(n : k) ≠ 0` case is mathlib's
           `ΨSq_ne_zero`). Given these, finiteness is elementary: finitely
           many abscissae, ≤ 2 ordinates each (monic quadratic).
-        - ○ `n_torsion_card` (= n² over sep. closed fields, `(n : k) ≠ 0`)
-          — decomposition STARTED (2026-07-16, `TorsionCard.lean`, own
-          work); derivation (prime-power tower + CRT, plan in the file
-          header) is the next step on this branch:
+        - ✓ `n_torsion_card` (= n² over sep. closed fields, `(n : k) ≠ 0`)
+          — now DERIVED (2026-07-16, `TorsionCard.lean`, own work):
+          `card_torsionBy` PROVEN by strong induction peeling off the
+          minimal prime factor — multiplication by `p := n.minFac`
+          restricts to a surjection `E[n] → E[n/p]` with kernel `E[p]`,
+          so Lagrange + the first isomorphism theorem give
+          `#E[n] = p²·(n/p)²`; no CRT needed. Faithful leaves:
           - ✗ `TorsionCard.smul_surjective` — divisibility of the points
             group: `[n]` is surjective on points over a separably closed
             field for `(n : k) ≠ 0` (separable isogeny).

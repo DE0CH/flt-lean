@@ -13,6 +13,9 @@ public import Fermat.FLT.EllipticCurve.TorsionCounting
 -- VENDORING ADDITION: finiteness of torsion via division polynomials,
 -- backing `n_torsion_finite`.
 public import Fermat.FLT.EllipticCurve.TorsionFinite
+-- VENDORING ADDITION: the torsion count via divisibility + the
+-- prime-level count, backing `n_torsion_card`.
+public import Fermat.FLT.EllipticCurve.TorsionCard
 
 /-!
 
@@ -59,9 +62,13 @@ theorem WeierstrassCurve.n_torsion_finite {n : ℕ} (hn : 0 < n) : Finite (E.nTo
 -- This theorem needs e.g. a theory of division polynomials. It's ongoing work of David Angdinata.
 -- Please do not work on it without talking to KB and David first.
 -- This theorem was well-known in the early part of the 20th century.
-set_option warn.sorry false in
+-- VENDORING CHANGE: the `sorry` is replaced by the derivation in
+-- `TorsionCard.lean`: strong induction peeling off the minimal prime
+-- factor, from the divisibility node (`TorsionCard.smul_surjective`) and
+-- the prime-level count (`TorsionCard.prime_torsion_card`).
 theorem WeierstrassCurve.n_torsion_card [IsSepClosed k] {n : ℕ} (hn : (n : k) ≠ 0) :
-    Nat.card (E.nTorsion n) = n^2 := sorry
+    Nat.card (E.nTorsion n) = n^2 :=
+  TorsionCard.card_torsionBy E n hn
 
 -- This theorem was well-known in the early part of the 20th century.
 -- VENDORING CHANGE: the `sorry` is replaced by the counting argument in
