@@ -1531,3 +1531,36 @@ assumed. Axiom invariant: every declaration must use at most
   `ι(𝔪_{N'}) ⊆ 𝔪_big` (the comap EQUALITY: `≤` by locality — proven
   pattern — and `⊇` by `isMaximal_comap_of_isIntegral`, `𝔪_big`
   maximal since `IC-big` is a local valuation ring).
+- 2026-07-17 (session 5): **compactness arc: ALL FINITE-LEVEL PIECES
+  PROVEN** (each unconditional): `autCongr_mem_inertia` (inertia
+  transport along `Kᵥ`-isos, via two-sided-inverse codRestrict pair),
+  `reifySubextension`/`reifyEquiv`/`normal_reifySubextension`
+  (reification of `N ≤ N'` with `Normal.of_algEquiv`; the FORWARD map
+  preserves ambient values definitionally, `.symm` is choice-opaque —
+  always route value computations through `apply_symm_apply`),
+  `restrictNormalHom_reify_compat` (`π_N = autCongr ∘ res_reify ∘
+  π_{N'}`, three `restrictNormal_commutes` chases),
+  `integralClosureInclusion_mem_maximalIdeal` (`ι(𝔪_N) ⊆ 𝔪_big`),
+  `restrict_mem_inertia_of_le` (directedness content),
+  `exists_inertia_restrict_of_le` (D-set nonemptiness content).
+  GOTCHA: explicit `haveI : Normal ... := IsGalois.to_normal` needed
+  at use sites — the general valuation-subring tower instance makes
+  failing instance searches explode on metavariable goals. REMAINING
+  FOR L1 (two pieces): (i) the topological intersection theorem —
+  index `ι := {N' // N ≤ N' ∧ FD ∧ IsGalois}` (nonempty: `⟨N, le_rfl,
+  ..⟩`), `D N' := π_N⁻¹{τ} ∩ π_{N'}⁻¹(I(𝔪_{N'}))`, closed
+  (`InfiniteGalois.restrictNormalHom_continuous` + T1 finite),
+  nonempty (`exists_inertia_restrict_of_le`), directed (compositum
+  `N'₁ ⊔ N'₂`, `normal_sup` + FD-sup instances,
+  `restrict_mem_inertia_of_le`), then
+  `IsCompact.nonempty_iInter_of_directed_nonempty_isCompact_isClosed`
+  (`CompactSpace (Γ Kᵥ)` vendored) and membership in
+  `localInertiaGroup` via `normalClosure Kᵥ (N ⊔ Kᵥ⟮x⟯) Kᵥᵃˡᵍ` +
+  `restrictNormal_commutes` + `integralClosureInclusion_mem_maximalIdeal`;
+  (ii) L1 assembly — `N := normalClosure Kᵥ M Kᵥᵃˡᵍ`, `hfix` from (i)
+  + `hM`, `ramificationIdx_eq_one_of_inertia_le_fixingSubgroup`
+  (counting combiner) at `M' := reify M`, transport `e = 1` back
+  across `reifyEquiv` (extract the `f₁/f₂` pair of
+  `autCongr_mem_inertia` as a named `RingEquiv` and use
+  `ramificationIdx'_comap_eq`, or transport the final map-equality
+  directly), then `maximalIdeal_map_eq_of_ramificationIdx_eq_one`.
