@@ -115,6 +115,38 @@ instance liesOver_maximalIdeal_integralClosure :
   exact (hmax.eq_of_le (IsLocalRing.maximalIdeal.isMaximal 𝒪ᵥ).ne_top
     (IsLocalRing.le_maximalIdeal hmax.ne_top)).symm
 
+/-- The completed integer ring is a PROPER valuation subring of `Kᵥ`
+(otherwise it would be a field, contradicting `𝔪ᵥ ≠ ⊥` from its DVR
+structure). -/
+theorem adicCompletionIntegers_ne_top :
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) ≠ ⊤ := by
+  intro h
+  have hfield : IsField 𝒪ᵥ :=
+    { exists_pair_ne := ⟨0, 1, zero_ne_one⟩
+      mul_comm := mul_comm
+      mul_inv_cancel := by
+        intro a ha
+        have ha0 : (a : Kᵥ) ≠ 0 := fun h0 => ha (Subtype.ext h0)
+        refine ⟨⟨(a : Kᵥ)⁻¹, (SetLike.ext_iff.mp h ((a : Kᵥ)⁻¹)).mpr trivial⟩, ?_⟩
+        exact Subtype.ext (mul_inv_cancel₀ ha0) }
+  exact IsDiscreteValuationRing.not_a_field 𝒪ᵥ
+    ((IsLocalRing.isField_iff_maximalIdeal_eq).mp hfield)
+
+/-- The integral closure of `𝒪ᵥ` in a finite extension of `Kᵥ`
+is a discrete valuation ring: it is a valuation ring (spectral-norm
+argument), Noetherian (finite separable extension of the Noetherian
+integrally closed `𝒪ᵥ`), hence a PID (Bézout + Noetherian), local, and
+not a field (`not_isField_integralClosure`, since `𝒪ᵥ` is proper). -/
+instance isDiscreteValuationRing_integralClosure :
+    IsDiscreteValuationRing (IntegralClosure 𝒪ᵥ N) := by
+  haveI : IsNoetherianRing (IntegralClosure 𝒪ᵥ N) :=
+    IsIntegralClosure.isNoetherianRing 𝒪ᵥ Kᵥ N (IntegralClosure 𝒪ᵥ N)
+  have hnf : ¬ IsField (IntegralClosure 𝒪ᵥ N) :=
+    not_isField_integralClosure 𝒪ᵥ (adicCompletionIntegers_ne_top v)
+  refine { not_a_field' := ?_ }
+  intro hbot
+  exact hnf ((IsLocalRing.isField_iff_maximalIdeal_eq).mpr hbot)
+
 set_option backward.isDefEq.respectTransparency false in
 /-- **Finite-level `|I| = e`** (Hilbert; PROVEN 2026-07-16 —
 instance-assembly around mathlib's
@@ -131,7 +163,7 @@ perfect. The `respectTransparency` option is REQUIRED: without it the
 arguments across `IntegralClosure` elaboration sites. -/
 theorem card_inertia_finite_level [IsGalois Kᵥ N] :
     Nat.card ((𝔪 (IntegralClosure 𝒪ᵥ N)).inertia (N ≃ₐ[Kᵥ] N)) =
-      Ideal.ramificationIdxIn (𝔪 𝒪ᵥ) (IntegralClosure 𝒪ᵥ N) := by
+      Ideal.ramificationIdx' (𝔪 𝒪ᵥ) (𝔪 (IntegralClosure 𝒪ᵥ N)) := by
   haveI : IsFractionRing (IntegralClosure 𝒪ᵥ N) N :=
     IsIntegralClosure.isFractionRing_of_finite_extension 𝒪ᵥ Kᵥ N
       (IntegralClosure 𝒪ᵥ N)
@@ -151,40 +183,12 @@ theorem card_inertia_finite_level [IsGalois Kᵥ N] :
       ((Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp
         (IsLocalRing.maximalIdeal.isMaximal _))
   haveI : Finite ((𝔪 𝒪ᵥ).ResidueField) := Finite.of_surjective _ hsurj
-  exact Ideal.card_inertia_eq_ramificationIdxIn (G := N ≃ₐ[Kᵥ] N)
-    (𝔪 𝒪ᵥ) (𝔪 (IntegralClosure 𝒪ᵥ N))
-
-/-- The completed integer ring is a PROPER valuation subring of `Kᵥ`
-(otherwise it would be a field, contradicting `𝔪ᵥ ≠ ⊥` from its DVR
-structure). -/
-theorem adicCompletionIntegers_ne_top :
-    (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) ≠ ⊤ := by
-  intro h
-  have hfield : IsField 𝒪ᵥ :=
-    { exists_pair_ne := ⟨0, 1, zero_ne_one⟩
-      mul_comm := mul_comm
-      mul_inv_cancel := by
-        intro a ha
-        have ha0 : (a : Kᵥ) ≠ 0 := fun h0 => ha (Subtype.ext h0)
-        refine ⟨⟨(a : Kᵥ)⁻¹, (SetLike.ext_iff.mp h ((a : Kᵥ)⁻¹)).mpr trivial⟩, ?_⟩
-        exact Subtype.ext (mul_inv_cancel₀ ha0) }
-  exact IsDiscreteValuationRing.not_a_field 𝒪ᵥ
-    ((IsLocalRing.isField_iff_maximalIdeal_eq).mp hfield)
-
-/-- The integral closure of `𝒪ᵥ` in a finite subextension of `Kᵥᵃˡᵍ`
-is a discrete valuation ring: it is a valuation ring (spectral-norm
-argument), Noetherian (finite separable extension of the Noetherian
-integrally closed `𝒪ᵥ`), hence a PID (Bézout + Noetherian), local, and
-not a field (`not_isField_integralClosure`, since `𝒪ᵥ` is proper). -/
-instance isDiscreteValuationRing_integralClosure :
-    IsDiscreteValuationRing (IntegralClosure 𝒪ᵥ N) := by
-  haveI : IsNoetherianRing (IntegralClosure 𝒪ᵥ N) :=
-    IsIntegralClosure.isNoetherianRing 𝒪ᵥ Kᵥ N (IntegralClosure 𝒪ᵥ N)
-  have hnf : ¬ IsField (IntegralClosure 𝒪ᵥ N) :=
-    not_isField_integralClosure 𝒪ᵥ (adicCompletionIntegers_ne_top v)
-  refine { not_a_field' := ?_ }
-  intro hbot
-  exact hnf ((IsLocalRing.isField_iff_maximalIdeal_eq).mpr hbot)
+  rw [Ideal.card_inertia_eq_ramificationIdxIn (G := N ≃ₐ[Kᵥ] N)
+      (𝔪 𝒪ᵥ) (𝔪 (IntegralClosure 𝒪ᵥ N)),
+    Ideal.ramificationIdxIn_eq_ramificationIdx (𝔪 𝒪ᵥ)
+      (𝔪 (IntegralClosure 𝒪ᵥ N)) (N ≃ₐ[Kᵥ] N),
+    ← Ideal.ramificationIdx'_eq_ramificationIdx (𝔪 𝒪ᵥ)
+      (𝔪 (IntegralClosure 𝒪ᵥ N)) (IsDiscreteValuationRing.not_a_field 𝒪ᵥ)]
 
 end FiniteLevel
 
@@ -361,8 +365,8 @@ in `𝒪_N`. Same assembly as `card_inertia_finite_level`, with base ring
 algebra layer above. -/
 theorem card_inertia_intermediate [IsGalois Kᵥ N] :
     Nat.card ((𝔪 (IntegralClosure 𝒪ᵥ N)).inertia (N ≃ₐ[M'] N)) =
-      Ideal.ramificationIdxIn (𝔪 (IntegralClosure 𝒪ᵥ M'))
-        (IntegralClosure 𝒪ᵥ N) := by
+      Ideal.ramificationIdx' (𝔪 (IntegralClosure 𝒪ᵥ M'))
+        (𝔪 (IntegralClosure 𝒪ᵥ N)) := by
   -- the Galois action of `Gal(N/M')` commutes with `Kᵥ`-scalars (they
   -- factor through `M'`-scalars)
   haveI hscc : SMulCommClass (N ≃ₐ[M'] N)
@@ -436,8 +440,13 @@ theorem card_inertia_intermediate [IsGalois Kᵥ N] :
         (IsLocalRing.maximalIdeal.isMaximal _))
   haveI : Finite ((𝔪 (IntegralClosure 𝒪ᵥ M')).ResidueField) :=
     Finite.of_surjective _ hsurj
-  exact Ideal.card_inertia_eq_ramificationIdxIn (G := N ≃ₐ[M'] N)
-    (𝔪 (IntegralClosure 𝒪ᵥ M')) (𝔪 (IntegralClosure 𝒪ᵥ N))
+  rw [Ideal.card_inertia_eq_ramificationIdxIn (G := N ≃ₐ[M'] N)
+      (𝔪 (IntegralClosure 𝒪ᵥ M')) (𝔪 (IntegralClosure 𝒪ᵥ N)),
+    Ideal.ramificationIdxIn_eq_ramificationIdx (𝔪 (IntegralClosure 𝒪ᵥ M'))
+      (𝔪 (IntegralClosure 𝒪ᵥ N)) (N ≃ₐ[M'] N),
+    ← Ideal.ramificationIdx'_eq_ramificationIdx (𝔪 (IntegralClosure 𝒪ᵥ M'))
+      (𝔪 (IntegralClosure 𝒪ᵥ N))
+      (IsDiscreteValuationRing.not_a_field (IntegralClosure 𝒪ᵥ M'))]
 
 end IntermediateBase
 
