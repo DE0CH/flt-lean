@@ -102,35 +102,44 @@ instance liesOver_maximalIdeal_integralClosure :
   exact (hmax.eq_of_le (IsLocalRing.maximalIdeal.isMaximal 𝒪ᵥ).ne_top
     (IsLocalRing.le_maximalIdeal hmax.ne_top)).symm
 
-set_option warn.sorry false in
-/-- **Finite-level `|I| = e`** (Hilbert; instance-assembly around
-mathlib's `card_inertia_eq_ramificationIdxIn`): for a finite Galois
-subextension `N/Kᵥ` of `Kᵥᵃˡᵍ`, the inertia subgroup of the maximal
-ideal of `𝒪_N = IntegralClosure 𝒪ᵥ N` inside `Gal(N/Kᵥ)` has
-cardinality the ramification index of `𝔪ᵥ` in `𝒪_N`.
-
-(Sorry node.) Route mapped and partially verified 2026-07-16: apply
-`Ideal.card_inertia_eq_ramificationIdxIn` with `R := 𝒪ᵥ`,
-`S := IntegralClosure 𝒪ᵥ N`, `G := Gal(N/Kᵥ)`. Verified available:
-`IsFractionRing S N` (`isFractionRing_of_finite_extension`),
-`IsGaloisGroup G 𝒪ᵥ S` (`IsGaloisGroup.of_isFractionRing` — its
-`SMulDistribClass`/tower inputs are the instances above),
-`Module.Finite 𝒪ᵥ S` (`IsIntegralClosure.finite`, via the
-`isIntegralClosure_integralClosure` instance above), residue
-finiteness of `𝔪ᵥ` (surjection from `κ(𝒪ᵥ)`, which is finite).
-BLOCKED on `Module.Flat 𝒪ᵥ S`: the PID route
-(`Module.free_of_finite_type_torsion_free'`) fails to synthesize —
-elaborations of `IntegralClosure 𝒪ᵥ ↥N` at different sites embed
-non-reducibly-unifiable instance arguments (the `CommRing ↥N` /
-`Algebra 𝒪ᵥ ↥N` spellings diverge), so the `Module`-classes over the
-synonym do not line up. Fix path for a later iteration: an abstract
-wrapper lemma over `(R S G)` with the flatness HYPOTHESIS taken as
-`Module.Free R S`, instantiated once with a `letI`-pinned instance
-pack. -/
+set_option backward.isDefEq.respectTransparency false in
+/-- **Finite-level `|I| = e`** (Hilbert; PROVEN 2026-07-16 —
+instance-assembly around mathlib's
+`card_inertia_eq_ramificationIdxIn`): for a finite Galois subextension
+`N/Kᵥ` of `Kᵥᵃˡᵍ`, the inertia subgroup of the maximal ideal of
+`𝒪_N = IntegralClosure 𝒪ᵥ N` inside `Gal(N/Kᵥ)` has cardinality the
+ramification index of `𝔪ᵥ` in `𝒪_N`. The assembly: `𝒪_N` is a
+fraction ring of `N` (integral closure in a finite separable
+extension), the Galois action restricts with invariants `𝒪ᵥ`
+(`IsGaloisGroup.of_isFractionRing`), `𝒪_N` is finite free over the
+DVR `𝒪ᵥ` (hence flat), and the residue field of `𝔪ᵥ` is finite hence
+perfect. The `respectTransparency` option is REQUIRED: without it the
+`Module.Free` synthesis fails on non-reducibly-unifiable instance
+arguments across `IntegralClosure` elaboration sites. -/
 theorem card_inertia_finite_level [IsGalois Kᵥ N] :
     Nat.card ((𝔪 (IntegralClosure 𝒪ᵥ N)).inertia (N ≃ₐ[Kᵥ] N)) =
-      Ideal.ramificationIdxIn (𝔪 𝒪ᵥ) (IntegralClosure 𝒪ᵥ N) :=
-  sorry
+      Ideal.ramificationIdxIn (𝔪 𝒪ᵥ) (IntegralClosure 𝒪ᵥ N) := by
+  haveI : IsFractionRing (IntegralClosure 𝒪ᵥ N) N :=
+    IsIntegralClosure.isFractionRing_of_finite_extension 𝒪ᵥ Kᵥ N
+      (IntegralClosure 𝒪ᵥ N)
+  haveI : IsGaloisGroup (N ≃ₐ[Kᵥ] N) 𝒪ᵥ (IntegralClosure 𝒪ᵥ N) :=
+    IsGaloisGroup.of_isFractionRing (N ≃ₐ[Kᵥ] N) 𝒪ᵥ (IntegralClosure 𝒪ᵥ N) Kᵥ N
+  haveI : Module.Finite 𝒪ᵥ (IntegralClosure 𝒪ᵥ N) :=
+    IsIntegralClosure.finite 𝒪ᵥ Kᵥ N (IntegralClosure 𝒪ᵥ N)
+  haveI : Module.Free 𝒪ᵥ (IntegralClosure 𝒪ᵥ N) :=
+    Module.free_of_finite_type_torsion_free'
+  -- the residue field of `𝔪ᵥ` is finite (surjective image of `κ(𝒪ᵥ)`),
+  -- hence perfect
+  haveI : Finite (𝒪ᵥ ⧸ (𝔪 𝒪ᵥ)) :=
+    inferInstanceAs (Finite (IsLocalRing.ResidueField 𝒪ᵥ))
+  have hsurj : Function.Surjective
+      (algebraMap (𝒪ᵥ ⧸ (𝔪 𝒪ᵥ)) ((𝔪 𝒪ᵥ).ResidueField)) :=
+    IsFractionRing.surjective_iff_isField.mpr
+      ((Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp
+        (IsLocalRing.maximalIdeal.isMaximal _))
+  haveI : Finite ((𝔪 𝒪ᵥ).ResidueField) := Finite.of_surjective _ hsurj
+  exact Ideal.card_inertia_eq_ramificationIdxIn (G := N ≃ₐ[Kᵥ] N)
+    (𝔪 𝒪ᵥ) (𝔪 (IntegralClosure 𝒪ᵥ N))
 
 end FiniteLevel
 

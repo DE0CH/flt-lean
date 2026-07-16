@@ -1367,3 +1367,19 @@ assumed. Axiom invariant: every declaration must use at most
   inertia to inertia; counting surjectivity; compactness lifting; then
   `e(M) = 1` via the Galois closure). Frontier: 23 by count; the
   finite-level node is a strict sub-piece of L1's content.
+- 2026-07-16 (session 5): **`card_inertia_finite_level` PROVEN**
+  (unconditional; `[propext, Classical.choice, Quot.sound]`). The
+  entire blocked synthesis was fixed by ONE line:
+  `set_option backward.isDefEq.respectTransparency false in` on the
+  theorem — the option makes the `Module.Free`/`Flat` instance
+  unifications succeed across the divergent `IntegralClosure`
+  elaboration spellings (the abstract-wrapper strategy was NOT
+  needed). GOTCHA for the file: every theorem here that synthesizes
+  module-structure classes over `IntegralClosure 𝒪ᵥ ↥N` likely needs
+  the same option. Frontier back to 22. Local-node remaining pieces:
+  finite-level restriction maps inertia into inertia (uses the proven
+  `liesOver` instance + `𝔪_{N'} ∩ 𝒪_N = 𝔪_N`), tower
+  multiplicativity of `e` (mathlib
+  `ramificationIdx'_algebra_tower`), counting surjectivity
+  `I(N'/Kᵥ) ↠ I(N/Kᵥ)`, compactness lifting to `localInertiaGroup`,
+  and the `e(M) = 1` Galois-closure assembly.
