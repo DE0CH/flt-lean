@@ -74,11 +74,21 @@ map where helpful.
                       inertia transport** (sole remaining leaf of the
                       Minkowski chain): the image of
                       `localInertiaGroup q` fixing `L` pointwise
-                      trivializes `Q.inertia (L ≃ₐ[ℚ] L)`. Mechanism:
-                      `lift_map` (vendored PROVEN) + surjectivity of
-                      restriction `Γ ℚ → Gal(L/ℚ)` + matching the
-                      `MulSemiringAction` inertia against pointwise
-                      fixing.
+                      trivializes `Q.inertia (L ≃ₐ[ℚ] L)`. VERIFIED
+                      (2026-07-16): neither mathlib nor the vendored
+                      tree has local-global inertia surjectivity (only
+                      the generic `inertia_map_subtype`); this node's
+                      TRUE content is the classical
+                      decomposition-group comparison (Neukirch II.9 /
+                      Serre Local Fields II): the local inertia at the
+                      embedding-determined prime surjects onto the
+                      global ideal-inertia, plus Galois-conjugacy of
+                      inertia for the other primes above `q`
+                      (`Gal(L/ℚ)` transitive on `primesOver`,
+                      `I(gQ) = g I(Q) g⁻¹`). Split accordingly when
+                      attacked: [surjectivity node at the
+                      embedding-prime] + [conjugation bookkeeping,
+                      provable].
               - ✗ `FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski`
                 — Serre's analysis with the Minkowski input as a
                 hypothesis: stable line ⟹ characters χ₁χ₂ = ω̄;
