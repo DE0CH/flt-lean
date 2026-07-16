@@ -503,9 +503,15 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   in `FieldTheory/Galois/Profinite.lean` gives compactness of `Γ ℚ`,
   and `Subgroup.quotient_finite_of_isOpen` in
   `Topology/Algebra/OpenSubgroup.lean` gives finite index of the open
-  subgroup; the vendored `FLT.Mathlib.FieldTheory.Galois.Infinite` +
-  `InfiniteGalois.fixedField_fixingSubgroup` supply the correspondence;
-  an open subgroup is closed), giving `NumberField K`;
+  subgroup; the correspondence is in MATHLIB proper
+  (`Mathlib/FieldTheory/Galois/Infinite.lean`):
+  `InfiniteGalois.fixingSubgroup_fixedField (H : ClosedSubgroup _)
+  [IsGalois k K] : fixingSubgroup (fixedField H) = H` — exactly the
+  recovery direction needed (`H` open ⟹ closed; `fixedField H = ⊥` ⟹
+  `H = fixingSubgroup ⊥ = ⊤` via `IntermediateField.fixingSubgroup_bot`)
+  — and `IsGalois ℚ ℚ̄` synthesizes via the priority-100 instance
+  `IsAlgClosure.isGalois` (`Galois/Basic.lean:594`)), giving
+  `NumberField K`;
   (2) `localInertiaGroup q ≤ ker (χ ∘ res_q)` for all `q` transfers to
   `Algebra.IsUnramifiedAt ℤ P` for every prime `P` of `𝓞 K` — the
   local-global inertia dictionary (same flavor as the NOS glue node
