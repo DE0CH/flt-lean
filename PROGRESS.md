@@ -46,13 +46,19 @@ map where helpful.
             - ✓ `FreyPackage.exists_p_point_of_not_isIrreducible` —
               DERIVED (2026-07-16): the Minkowski input is discharged
               by the node below.
-              - ✗ `minkowski_character_trivial` — **Minkowski** as a
-                faithful node: a mod-`p` character of G_ℚ with open
-                kernel, unramified at every finite place
-                (`localInertiaGroup q ≤ ker (χ ∘ res_q)`), is trivial.
-                Route: fixed field of ker χ is finite abelian
-                unramified everywhere; mathlib's
-                `NumberField.abs_discr_gt_one` forbids nontrivial such.
+              - ✓ `minkowski_character_trivial` — DERIVED (2026-07-16)
+                from the subgroup form below: the kernel is an open
+                normal subgroup containing every inertia image
+                (`Subgroup.map_le_iff_le_comap` + `ker (χ∘res) =
+                comap res (ker χ)`), hence everything, so χ = 1.
+                - ✗ `open_normal_subgroup_eq_top_of_inertia_le` —
+                  **Minkowski, subgroup form** (character-free): an
+                  open normal subgroup of G_ℚ containing the image of
+                  `localInertiaGroup q` for every prime q is ⊤. To be
+                  closed against mathlib's
+                  `exists_not_isUnramifiedAt_int_of_isGalois` via the
+                  fixed field of the open subgroup (see the session-4
+                  reconnaissance for the verified route).
               - ✗ `FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski`
                 — Serre's analysis with the Minkowski input as a
                 hypothesis: stable line ⟹ characters χ₁χ₂ = ω̄;
@@ -927,3 +933,12 @@ assumed. Axiom invariant: every declaration must use at most
   remains is the fixed-field construction from the open kernel and the
   inertia dictionary. No node change this iteration; the frontier
   stays 21 with the next attack mapped in detail.
+- 2026-07-16 (session 4, cont.): **Minkowski reduced to its
+  character-free subgroup form** — `minkowski_character_trivial` is
+  DERIVED (the kernel of an everywhere-unramified character is an open
+  normal subgroup containing every inertia image, via
+  `Subgroup.map_le_iff_le_comap`); the sorry now lives in
+  ✗ `open_normal_subgroup_eq_top_of_inertia_le`, a pure
+  Galois/number-theoretic statement with no characters or `ZMod p`
+  in sight — exactly the statement the mathlib discriminant route
+  closes. Frontier: 21 (sorry relocated, interface simplified).

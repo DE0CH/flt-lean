@@ -132,18 +132,34 @@ theorem WeierstrassCurve.mazur_torsion_bound (E : WeierstrassCurve ℚ) [E.IsEll
     omega
 
 set_option warn.sorry false in
-/-- **Minkowski for mod-`p` characters** (sorry node): a character
-`χ : G_ℚ → (ℤ/p)ˣ` with open kernel that is unramified at every finite
-place (the local inertia group at every prime `q` is killed by the
-restriction of `χ` to `G_{ℚ_q}`) is trivial. Proof route: the fixed
-field of `ker χ` is a finite abelian extension of `ℚ` unramified at all
-finite primes; by Minkowski's discriminant bound (`ℚ` has no nontrivial
-extension unramified everywhere; mathlib:
-`NumberField.abs_discr_gt_one`) it equals `ℚ`, so `χ = 1`. (Archimedean
-ramification is invisible to a character of odd prime-power order
-target... the statement asks only finite unramifiedness, which suffices
-since the target `(ℤ/p)ˣ` is abelian and the narrow/wide class group of
-`ℚ` is trivial.) -/
+/-- **Minkowski, subgroup form** (sorry node): an open normal subgroup
+of `G_ℚ` containing the image of the local inertia group at every prime
+is everything. This is `ℚ` has no nontrivial finite Galois extension
+unramified at all finite primes: the fixed field of `H` is such an
+extension, and mathlib's discriminant bound
+(`NumberField.exists_not_isUnramifiedAt_int_of_isGalois`, resting on
+`NumberField.abs_discr_gt_two`) forbids it. See the session-4
+reconnaissance in `PROGRESS.md` for the verified mathlib route; the
+remaining content is the fixed field of the open subgroup (infinite
+Galois correspondence) and the dictionary between `localInertiaGroup`
+and classical ramification. -/
+theorem open_normal_subgroup_eq_top_of_inertia_le
+    (H : Subgroup (Field.absoluteGaloisGroup ℚ)) [H.Normal]
+    (hopen : IsOpen (H : Set (Field.absoluteGaloisGroup ℚ)))
+    (hinertia : ∀ (q : ℕ) (hq : q.Prime),
+      Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+        (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat) ≤ H) :
+    H = ⊤ :=
+  sorry
+
+/-- **Minkowski for mod-`p` characters** (DERIVED 2026-07-16 from the
+subgroup form): a character `χ : G_ℚ → (ℤ/p)ˣ` with open kernel that is
+unramified at every finite place (the local inertia group at every
+prime `q` is killed by the restriction of `χ` to `G_{ℚ_q}`) is trivial.
+The kernel is an open normal subgroup containing every inertia image,
+hence everything. -/
 theorem minkowski_character_trivial {p : ℕ}
     (χ : Field.absoluteGaloisGroup ℚ →* (ZMod p)ˣ)
     (hker : IsOpen (χ.ker : Set (Field.absoluteGaloisGroup ℚ)))
@@ -152,8 +168,19 @@ theorem minkowski_character_trivial {p : ℕ}
         (χ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
             hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) :
-    χ = 1 :=
-  sorry
+    χ = 1 := by
+  have hker_top : χ.ker = ⊤ := by
+    refine open_normal_subgroup_eq_top_of_inertia_le χ.ker hker ?_
+    intro q hq
+    rw [Subgroup.map_le_iff_le_comap]
+    intro σ hσ
+    have h := hunram q hq hσ
+    rw [MonoidHom.mem_ker] at h
+    rw [Subgroup.mem_comap, MonoidHom.mem_ker]
+    exact h
+  ext g
+  have hg : g ∈ χ.ker := hker_top ▸ Subgroup.mem_top g
+  simpa [MonoidHom.mem_ker] using hg
 
 set_option warn.sorry false in
 /-- **Serre's reducible-case analysis for the Frey curve, given
