@@ -860,6 +860,46 @@ theorem restrictNormalHom_mem_inertia_of_mem_localInertiaGroup
 
 end FiniteLevelSubextension
 
+section Reify
+
+variable (N N' : IntermediateField
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+    (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
+
+/-- `N` reified as an intermediate field of `↥N'` (the pullback of `N`
+along the inclusion of `N'`). -/
+noncomputable def reifySubextension : IntermediateField
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N' :=
+  IntermediateField.comap N'.val N
+
+/-- The canonical `Kᵥ`-isomorphism between the reification of `N`
+inside `↥N'` and `N` itself. -/
+noncomputable def reifyEquiv (h : N ≤ N') :
+    ↥(reifySubextension v N N') ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v]
+      ↥N :=
+  AlgEquiv.ofBijective
+    { toFun := fun x => ⟨(x.1 : AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)), x.2⟩
+      map_one' := rfl
+      map_mul' := fun _ _ => rfl
+      map_zero' := rfl
+      map_add' := fun _ _ => rfl
+      commutes' := fun _ => rfl }
+    ⟨fun _ _ hab => Subtype.ext (Subtype.ext (congrArg
+      (fun (y : ↥N) => (y : AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) hab)),
+     fun y => ⟨⟨⟨(y : AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)), h y.2⟩, y.2⟩,
+      rfl⟩⟩
+
+theorem normal_reifySubextension (h : N ≤ N') [IsGalois
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N] :
+    Normal (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+      ↥(reifySubextension v N N') :=
+  Normal.of_algEquiv (reifyEquiv v N N' h).symm
+
+end Reify
+
 set_option warn.sorry false in
 /-- **The fixed field of the local inertia group is unramified** (the
 local half of the embedding-prime transport; Neukirch II.9.11): if a
