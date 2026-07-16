@@ -942,3 +942,13 @@ assumed. Axiom invariant: every declaration must use at most
   Galois/number-theoretic statement with no characters or `ZMod p`
   in sight — exactly the statement the mathlib discriminant route
   closes. Frontier: 21 (sorry relocated, interface simplified).
+- 2026-07-16 (session 4, cont.): **OddAbsIrred vendored, ZERO
+  sorries** — `KnownIn1980s/RepresentationTheory/OddAbsIrred.lean` +
+  `Slop/RepresentationTheory/OddAbsIrredSlop.lean` (495 lines, fully
+  proven): for a finite-dimensional representation with some `g` having
+  a one-dimensional fixed space (e.g. complex conjugation on an odd
+  2-dim Galois rep), irreducible ⟺ absolutely irreducible
+  (`OddRep.isIrreducible_iff_isAbsolutelyIrreducible`). Wired into the
+  root. Mapped feed for the B6 chain / `mod_three` (together with the
+  still-unvendored `Slop/PGL2` Dickson classification). Frontier
+  unchanged: 21.

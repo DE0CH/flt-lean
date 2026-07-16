@@ -15,6 +15,7 @@ import Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange
 import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists
 import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.SplitMultiplicativeReduction
 import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve
+import Fermat.FLT.KnownIn1980s.RepresentationTheory.OddAbsIrred
 import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 import Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal
 import Fermat.SorryGate
