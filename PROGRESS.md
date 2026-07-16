@@ -1418,3 +1418,15 @@ assumed. Axiom invariant: every declaration must use at most
   (`Γ Kᵥ` profinite; `localInertiaGroup` closed via locally-constant
   evaluation; finite-to-finite surjectivity by the same counting) and
   the `map 𝔪ᵥ = 𝔪_M ↔ e(M) = 1` conversion.
+- 2026-07-16 (session 5):
+  **`maximalIdeal_map_eq_of_ramificationIdx_eq_one` PROVEN**
+  (unconditional) — `e = 1 ⟹ map 𝔪ᵥ = 𝔪_N`, via the DVR ideal
+  classification (`ideal_eq_span_pow_irreducible`: the mapped ideal is
+  `(ϖⁿ)`; `n ≥ 1` from the proven `LiesOver`, `n < 2` from
+  `ramificationIdx'_ne_one_iff`). This is the L1 endgame conversion:
+  the final assembly now reduces to producing
+  `ramificationIdx' (𝔪ᵥ) (𝔪_M) = 1` from `hM` via the Galois closure
+  counting. Remaining for L1: M-based `card_inertia` (inclusion-algebra
+  gymnastics + `𝒪_M` residue finiteness), `e`-tower application,
+  compactness lifting of finite-level inertia to `localInertiaGroup`,
+  final assembly.

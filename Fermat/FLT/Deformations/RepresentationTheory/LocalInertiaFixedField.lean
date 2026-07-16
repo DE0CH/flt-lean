@@ -197,6 +197,58 @@ noncomputable def integralClosureInclusion :
       ((IsScalarTower.toAlgHom 𝒪ᵥ N (Kᵥᵃˡᵍ)).comp
         (IsScalarTower.toAlgHom 𝒪ᵥ (IntegralClosure 𝒪ᵥ N) N)))
 
+set_option backward.isDefEq.respectTransparency false in
+/-- **`e = 1` gives the ideal equality**: if the ramification index of
+`𝔪ᵥ` at `𝔪_N` is `1`, then `𝔪ᵥ` generates `𝔪_N`. In the DVR `𝒪_N`
+the mapped ideal is a nonzero power `(ϖⁿ)` of the uniformizer; it is
+contained in `𝔪_N = (ϖ)` (so `n ≥ 1`) and not contained in `𝔪_N²`
+(`ramificationIdx'_ne_one_iff`, so `n < 2`); hence `n = 1`. -/
+theorem maximalIdeal_map_eq_of_ramificationIdx_eq_one
+    (he : Ideal.ramificationIdx' (𝔪 𝒪ᵥ) (𝔪 (IntegralClosure 𝒪ᵥ N)) = 1) :
+    (𝔪 𝒪ᵥ).map (algebraMap 𝒪ᵥ (IntegralClosure 𝒪ᵥ N)) =
+      𝔪 (IntegralClosure 𝒪ᵥ N) := by
+  -- the mapped ideal is nonzero: a nonzero element of `𝔪ᵥ` has nonzero
+  -- image (the algebra map is injective)
+  have hne0 : (𝔪 𝒪ᵥ).map (algebraMap 𝒪ᵥ (IntegralClosure 𝒪ᵥ N)) ≠ ⊥ := by
+    obtain ⟨x, hxmem, hx0⟩ :=
+      Submodule.exists_mem_ne_zero_of_ne_bot (IsDiscreteValuationRing.not_a_field 𝒪ᵥ)
+    intro hbot
+    have himg : algebraMap 𝒪ᵥ (IntegralClosure 𝒪ᵥ N) x ∈
+        (𝔪 𝒪ᵥ).map (algebraMap 𝒪ᵥ (IntegralClosure 𝒪ᵥ N)) :=
+      Ideal.mem_map_of_mem _ hxmem
+    rw [hbot, Ideal.mem_bot] at himg
+    exact hx0 ((injective_iff_map_eq_zero _).mp
+      (FaithfulSMul.algebraMap_injective 𝒪ᵥ (IntegralClosure 𝒪ᵥ N)) x himg)
+  -- the mapped ideal sits inside `𝔪_N` (the proven `LiesOver`)
+  have hle1 : (𝔪 𝒪ᵥ).map (algebraMap 𝒪ᵥ (IntegralClosure 𝒪ᵥ N)) ≤
+      𝔪 (IntegralClosure 𝒪ᵥ N) :=
+    Ideal.map_le_iff_le_comap.mpr
+      (le_of_eq (liesOver_maximalIdeal_integralClosure v N).over)
+  -- but not inside `𝔪_N²`, since `e = 1`
+  have hnotsq : ¬ (𝔪 𝒪ᵥ).map (algebraMap 𝒪ᵥ (IntegralClosure 𝒪ᵥ N)) ≤
+      (𝔪 (IntegralClosure 𝒪ᵥ N)) ^ 2 := fun hsq =>
+    ((Ideal.ramificationIdx'_ne_one_iff hle1).mpr hsq) he
+  -- classify the mapped ideal as a power of the uniformizer
+  obtain ⟨ϖ, hirr⟩ := IsDiscreteValuationRing.exists_irreducible
+    (IntegralClosure 𝒪ᵥ N)
+  obtain ⟨n, hn⟩ := IsDiscreteValuationRing.ideal_eq_span_pow_irreducible hne0 hirr
+  have hmax : 𝔪 (IntegralClosure 𝒪ᵥ N) = Ideal.span {ϖ} := hirr.maximalIdeal_eq
+  -- `n ≥ 1`: otherwise the mapped ideal is everything, forcing `𝔪_N = ⊤`
+  have hn1 : 1 ≤ n := by
+    by_contra hn0
+    have h0 : n = 0 := by omega
+    rw [h0, pow_zero, Ideal.span_singleton_one] at hn
+    exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+      (top_le_iff.mp (hn ▸ hle1))
+  -- `n < 2`: otherwise the mapped ideal sits inside `𝔪_N²`
+  have hn2 : n < 2 := by
+    by_contra hge
+    refine hnotsq ?_
+    rw [hn, hmax, ← Ideal.span_singleton_pow]
+    exact Ideal.pow_le_pow_right (by omega)
+  have hn_eq : n = 1 := by omega
+  rw [hn, hn_eq, pow_one, hmax]
+
 /-- **Restriction maps the local inertia group into the finite-level
 inertia**: if `σ ∈ Γ Kᵥ` lies in `localInertiaGroup v`, then its
 restriction to a finite Galois subextension `N` lies in the inertia
