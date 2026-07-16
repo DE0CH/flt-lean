@@ -192,6 +192,35 @@ map where helpful.
         ramified, Serre §4.1 + Tate curve theory; the former second sorry,
         the rank hypothesis, was discharged by `p_torsion_rank`).
 
+## Next-step reconnaissance (2026-07-16, session 3 close)
+
+- `torsion_isUnramified` / `torsion_isTameAtTwo` / `torsion_isFlat`: the
+  natural source is the FLT repo's
+  `FLT/KnownIn1980s/EllipticCurves/TateCurve.lean` (512 lines): Tate
+  curve, Tate parameter `q` with valuation lemmas, and Tate's
+  uniformization `tateEquiv` — NB the latter is **sorry-d DATA** (a
+  `def`), so vendoring must track it as meaning-poisoning until its
+  existence node closes (cf. the old `galoisRep` situation). Check
+  whether the file uses `knownin1980s` before vendoring.
+- `residual_charFrob_eq_of_family` (glue): the eventual proof needs an
+  embedding `E →+* ℚ̄₃` (`IsAlgClosed.lift` on the algebraic extension
+  E/ℚ), charpoly-vs-baseChange (`LinearMap.charpoly_baseChange`) and
+  conj (`LinearEquiv.charpoly_conj`), trace/det-to-coefficients for
+  2-dim, and a 3-adic Frobenius value for the cyclotomic character
+  (consider stating a single ℤ_p-adic Frobenius-value node
+  `cyclotomicCharacter` at `globalFrob q` = `q`, from which
+  `cyclotomicCharacterModL_globalFrob` follows via
+  `cyclotomicCharacter.toZModPow` — bridging `PadicInt.toZMod` with
+  `toZModPow 1` needs a small proven lemma).
+- `not_isIrreducible_of_charpoly_eq` (Brauer–Nesbitt): an elementary
+  route avoiding semisimplification: Cayley–Hamilton gives
+  `(ρg − 1)(ρg − χg) = 0`; on `H := ker χ̄` every element is unipotent
+  (`(ρh − 1)² = 0`), so a 2-dim Kolchin argument yields an `H`-fixed
+  line; its Galois orbit analysis (H normal) plus, in the ρ|H-trivial
+  case, simultaneous triangularization of a commuting split family,
+  produces an invariant line. Both ingredients are candidate stated
+  nodes if the direct proof stalls.
+
 ## Policy: no citation-terminal nodes (Deyao, 2026-07-16)
 
 The FLT project's `knownin1980s` mechanism (an axiom proving any proposition
