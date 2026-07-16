@@ -898,6 +898,82 @@ theorem normal_reifySubextension (h : N ≤ N') [IsGalois
       ↥(reifySubextension v N N') :=
   Normal.of_algEquiv (reifyEquiv v N N' h).symm
 
+set_option backward.isDefEq.respectTransparency false in
+/-- **Restriction compatibility through the reification**: restricting
+`σ : Γ Kᵥ` to `N` agrees with restricting first to `N'`, then to the
+reification of `N` inside `↥N'`, then transporting along `reifyEquiv`.
+Three applications of `restrictNormal_commutes`. -/
+theorem restrictNormalHom_reify_compat (h : N ≤ N')
+    [IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
+    [IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N']
+    [Normal (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+      ↥(reifySubextension v N N')]
+    (σ : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+      ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v]
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) :
+    AlgEquiv.restrictNormalHom N σ =
+      AlgEquiv.autCongr (reifyEquiv v N N' h)
+        (AlgEquiv.restrictNormalHom (reifySubextension v N N')
+          (AlgEquiv.restrictNormalHom N' σ)) := by
+  apply AlgEquiv.ext
+  intro x
+  apply Subtype.val_injective
+  have hL : ((AlgEquiv.restrictNormalHom N σ x : ↥N) :
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) =
+      σ (x : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) :=
+    AlgEquiv.restrictNormal_commutes σ N x
+  rw [hL]
+  -- unfold the right-hand side value by value
+  have h1 := AlgEquiv.restrictNormal_commutes
+    (AlgEquiv.restrictNormalHom N' σ) (reifySubextension v N N')
+    ((reifyEquiv v N N' h).symm x)
+  have h2 := AlgEquiv.restrictNormal_commutes σ N'
+    (algebraMap ↥(reifySubextension v N N') N' ((reifyEquiv v N N' h).symm x))
+  -- the value of the RHS in the ambient closure
+  show _ = ((AlgEquiv.autCongr (reifyEquiv v N N' h)
+      (AlgEquiv.restrictNormalHom (reifySubextension v N N')
+        (AlgEquiv.restrictNormalHom N' σ)) x : ↥N) :
+    AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+  have h3 : ((AlgEquiv.autCongr (reifyEquiv v N N' h)
+      (AlgEquiv.restrictNormalHom (reifySubextension v N N')
+        (AlgEquiv.restrictNormalHom N' σ)) x : ↥N) :
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) =
+      ((algebraMap ↥(reifySubextension v N N') N'
+        ((AlgEquiv.restrictNormalHom (reifySubextension v N N')
+          (AlgEquiv.restrictNormalHom N' σ)) ((reifyEquiv v N N' h).symm x)) : ↥N') :
+        AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) :=
+    rfl
+  have hbridge1 : (AlgEquiv.restrictNormalHom (reifySubextension v N N')
+      (AlgEquiv.restrictNormalHom N' σ)) ((reifyEquiv v N N' h).symm x) =
+      ((AlgEquiv.restrictNormalHom N' σ).restrictNormal (reifySubextension v N N'))
+        ((reifyEquiv v N N' h).symm x) := rfl
+  rw [h3, hbridge1, h1]
+  have hbridge2 : (AlgEquiv.restrictNormalHom N' σ)
+      (algebraMap ↥(reifySubextension v N N') N'
+        ((reifyEquiv v N N' h).symm x)) =
+      (σ.restrictNormal N')
+        (algebraMap ↥(reifySubextension v N N') N'
+          ((reifyEquiv v N N' h).symm x)) := rfl
+  rw [hbridge2]
+  rw [show (((σ.restrictNormal N')
+      (algebraMap ↥(reifySubextension v N N') N'
+        ((reifyEquiv v N N' h).symm x)) : ↥N') :
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) =
+      σ ((algebraMap ↥(reifySubextension v N N') N'
+        ((reifyEquiv v N N' h).symm x) : ↥N') :
+        AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+    from h2]
+  congr 1
+  -- `↑x = ↑(aM (j.symm x))`: go through `j (j.symm x) = x`; the FORWARD
+  -- map of `reifyEquiv` preserves the ambient value definitionally
+  -- (`.symm` alone is choice-based and opaque)
+  have h5 := (reifyEquiv v N N' h).apply_symm_apply x
+  calc (x : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+      = (((reifyEquiv v N N' h) ((reifyEquiv v N N' h).symm x) : ↥N) :
+        AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) := by
+        rw [h5]
+    _ = _ := rfl
+
 end Reify
 
 set_option warn.sorry false in
