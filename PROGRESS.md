@@ -542,7 +542,13 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   by these named lemmas, giving `NumberField L` and activating
   `exists_not_isUnramifiedAt_int_of_isGalois` directly. Every step of
   the Minkowski node except the inertia dictionary is now named
-  mathlib API;
+  mathlib API. Assembly facts (scratch-COMPILED 2026-07-16):
+  `IntermediateField.fixedField (E := AlgebraicClosure ℚ) H`
+  typechecks for `H : Subgroup (Γ ℚ)` (the parameter is named `E`, not
+  `K`), and `IsGalois ℚ ℚ̄` + `CompactSpace (Γ ℚ)` BOTH synthesize —
+  but ONLY under `set_option backward.isDefEq.respectTransparency
+  false` (the known module-system gotcha; without it `IsGalois`
+  synthesis fails). The derivation is mechanically specified;
   (3) conclude `ker χ = ⊤` from `fixedField χ.ker = ⊥` by the infinite
   Galois correspondence, hence `χ = 1`. Estimated: one focused session;
   start from a FRESH context.
