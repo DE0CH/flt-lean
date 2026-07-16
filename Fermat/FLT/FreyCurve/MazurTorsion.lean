@@ -31,15 +31,21 @@ sorry nodes, following Serre's argument (Duke Math. J. 54 (1987), §4.1):
   an existential over Weierstrass models; a later layer must construct
   quotients by finite rational subgroups and split this node accordingly.
 
-* `WeierstrassCurve.mazur_torsion_bound` (sorry node): **Mazur's torsion
-  theorem, weak form.** No elliptic curve over `ℚ` has a subgroup of
-  rational points isomorphic to `ℤ/2 × ℤ/2p` for a prime `p ≥ 5`. This
-  follows from Mazur's classification of the possible torsion subgroups of
-  `E(ℚ)` (the fifteen groups `ℤ/n` for `1 ≤ n ≤ 10` or `n = 12`, and
-  `ℤ/2 × ℤ/2m` for `1 ≤ m ≤ 4`): a subgroup isomorphic to `ℤ/2 × ℤ/2p`
-  is finite of order `4p ≥ 20 > 16`, while every group in the list has
-  order at most `16`. A later layer must state the full classification
-  faithfully and derive this weak form from it.
+* `WeierstrassCurve.mazur_classification` (sorry node): **Mazur's torsion
+  theorem** (Mazur, 1977/1978), stated faithfully: the torsion subgroup of
+  the rational points of an elliptic curve over `ℚ` is isomorphic to one of
+  the fifteen groups `ℤ/n` for `n ∈ {1, …, 10, 12}` or `ℤ/2 × ℤ/2m` for
+  `m ∈ {1, 2, 3, 4}`.
+
+* `WeierstrassCurve.mazur_torsion_bound` (PROVEN from the classification):
+  **Mazur's torsion theorem, weak form.** No elliptic curve over `ℚ` has a
+  subgroup of rational points isomorphic to `ℤ/2 × ℤ/2p` for a prime
+  `p ≥ 5`. Derivation: the image of an injective homomorphism
+  `ℤ/2 × ℤ/2p →+ E(ℚ)` consists of torsion points (every element of the
+  finite source has finite additive order), so the homomorphism corestricts
+  to an injection into the torsion subgroup; by the classification the
+  torsion subgroup is finite of order at most `16`, while the source has
+  order `4p ≥ 20`.
 
 Given the two nodes, `FreyPackage.mazur` is immediate: if the representation
 were reducible, the first node produces a curve whose rational points contain
@@ -54,18 +60,69 @@ public import Fermat.FLT.EllipticCurve.Torsion
 
 open WeierstrassCurve WeierstrassCurve.Affine
 
-/-- **Mazur's torsion theorem, weak form** (sorry node): the rational points
-of an elliptic curve over `ℚ` contain no subgroup isomorphic to
-`ℤ/2 × ℤ/2p` for a prime `p ≥ 5` — equivalently, no additive homomorphism
-`ℤ/2 × ℤ/2p →+ E(ℚ)` is injective. A consequence of Mazur's classification
-of torsion subgroups of elliptic curves over `ℚ` (fifteen groups, all of
-order at most `16 < 4p`); a later layer must state that classification
-faithfully and derive this from it. -/
-theorem WeierstrassCurve.mazur_torsion_bound (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    {p : ℕ} (hp : p.Prime) (h5 : 5 ≤ p)
-    (φ : (ZMod 2 × ZMod (2 * p)) →+ (E⁄ℚ).Point) :
-    ¬ Function.Injective φ :=
+/-- **Mazur's torsion theorem** (sorry node): the torsion subgroup of the
+rational points of an elliptic curve over `ℚ` is isomorphic to one of the
+fifteen groups `ℤ/n` with `n ∈ {1, …, 10, 12}` or `ℤ/2 × ℤ/2m` with
+`m ∈ {1, 2, 3, 4}`. Mazur, "Modular curves and the Eisenstein ideal"
+(Publ. Math. IHÉS 47, 1977) and "Rational isogenies of prime degree"
+(Invent. Math. 44, 1978). -/
+theorem WeierstrassCurve.mazur_classification (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    (∃ n ∈ ({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12} : Finset ℕ),
+      Nonempty ((Submodule.torsion ℤ (E⁄ℚ).Point) ≃+ ZMod n)) ∨
+    (∃ m ∈ ({1, 2, 3, 4} : Finset ℕ),
+      Nonempty ((Submodule.torsion ℤ (E⁄ℚ).Point) ≃+ (ZMod 2 × ZMod (2 * m)))) :=
   sorry
+
+/-- **Mazur's torsion theorem, weak form**: the rational points of an
+elliptic curve over `ℚ` contain no subgroup isomorphic to `ℤ/2 × ℤ/2p` for
+any `p ≥ 5` (primality is not needed: the order comparison `4p ≥ 20 > 16`
+alone suffices) — equivalently, no additive homomorphism
+`ℤ/2 × ℤ/2p →+ E(ℚ)` is injective. Derived from `mazur_classification`:
+the image consists of torsion points, so the homomorphism corestricts to an
+injection into the torsion subgroup, which by the classification is finite
+of order at most `16 < 4p`. -/
+theorem WeierstrassCurve.mazur_torsion_bound (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    {p : ℕ} (h5 : 5 ≤ p)
+    (φ : (ZMod 2 × ZMod (2 * p)) →+ (E⁄ℚ).Point) :
+    ¬ Function.Injective φ := by
+  intro hφ
+  haveI : NeZero (2 * p) := ⟨by omega⟩
+  -- every image point is torsion: `x` has finite additive order in the
+  -- finite group `ℤ/2 × ℤ/2p`, and `φ` transports the annihilation
+  have hmem : ∀ x : ZMod 2 × ZMod (2 * p),
+      φ x ∈ Submodule.torsion ℤ (E⁄ℚ).Point := by
+    intro x
+    rw [Submodule.mem_torsion_iff]
+    refine ⟨⟨(addOrderOf x : ℤ),
+      mem_nonZeroDivisors_of_ne_zero (by exact_mod_cast (addOrderOf_pos x).ne')⟩, ?_⟩
+    show (addOrderOf x : ℤ) • φ x = 0
+    rw [natCast_zsmul, ← map_nsmul, addOrderOf_nsmul_eq_zero, map_zero]
+  -- corestrict to the torsion subgroup, preserving injectivity
+  let φ' : (ZMod 2 × ZMod (2 * p)) →+ (Submodule.torsion ℤ (E⁄ℚ).Point) :=
+    φ.codRestrict (Submodule.torsion ℤ (E⁄ℚ).Point) hmem
+  have hφ' : Function.Injective φ' := fun a b hab => hφ (Subtype.ext_iff.mp hab)
+  -- compare cardinalities against the fifteen groups
+  rcases E.mazur_classification with ⟨n, hn, ⟨e⟩⟩ | ⟨m, hm, ⟨e⟩⟩
+  · have hn12 : 1 ≤ n ∧ n ≤ 12 := by
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hn
+      omega
+    haveI : NeZero n := ⟨by omega⟩
+    haveI : Finite (Submodule.torsion ℤ (E⁄ℚ).Point) :=
+      Finite.of_equiv (ZMod n) e.symm.toEquiv
+    have hcard := Nat.card_le_card_of_injective φ' hφ'
+    rw [Nat.card_prod, Nat.card_zmod, Nat.card_zmod,
+      Nat.card_congr e.toEquiv, Nat.card_zmod] at hcard
+    omega
+  · have hm4 : 1 ≤ m ∧ m ≤ 4 := by
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hm
+      omega
+    haveI : NeZero (2 * m) := ⟨by omega⟩
+    haveI : Finite (Submodule.torsion ℤ (E⁄ℚ).Point) :=
+      Finite.of_equiv (ZMod 2 × ZMod (2 * m)) e.symm.toEquiv
+    have hcard := Nat.card_le_card_of_injective φ' hφ'
+    rw [Nat.card_prod, Nat.card_zmod, Nat.card_zmod, Nat.card_congr e.toEquiv,
+      Nat.card_prod, Nat.card_zmod, Nat.card_zmod] at hcard
+    omega
 
 /-- **Serre's reducible-case analysis for the Frey curve** (sorry node): if
 the mod-`p` Galois representation on the `p`-torsion of the Frey curve is

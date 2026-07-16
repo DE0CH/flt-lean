@@ -44,4 +44,4 @@ theorem FreyPackage.mazur (P : FreyPackage) :
   by_contra hred
   obtain ⟨E', hE', φ, hφ⟩ := P.exists_torsion_embedding_of_not_isIrreducible hred
   haveI := hE'
-  exact WeierstrassCurve.mazur_torsion_bound E' P.pp P.hp5 φ hφ
+  exact WeierstrassCurve.mazur_torsion_bound E' P.hp5 φ hφ

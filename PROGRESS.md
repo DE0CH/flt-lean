@@ -45,12 +45,19 @@ map where helpful.
           Folds the quotient-curve construction into an existential:
           - □ quotients of elliptic curves by finite rational subgroups
             (Vélu) — needed to split this node faithfully.
-        - ✗ `WeierstrassCurve.mazur_torsion_bound` — Mazur's torsion
+        - ✓ `WeierstrassCurve.mazur_torsion_bound` — Mazur's torsion
           theorem, weak form: no elliptic curve over ℚ has a subgroup of
-          rational points ≅ ℤ/2 × ℤ/2p for prime p ≥ 5 (order 4p ≥ 20 > 16
-          exceeds every group in Mazur's list).
-          - □ Mazur's full classification (the fifteen torsion groups),
-            from which the weak form is to be derived.
+          rational points ≅ ℤ/2 × ℤ/2p for p ≥ 5 (primality dropped as
+          unneeded) — now PROVEN (2026-07-16) from the faithful
+          classification below: images of an injective hom from the finite
+          group ℤ/2 × ℤ/2p are torsion (finite additive order), the hom
+          corestricts into the torsion submodule, and 4p ≥ 20 > 16 ≥ the
+          order of every group in Mazur's list (`Nat.card` comparison).
+          - ✗ `WeierstrassCurve.mazur_classification` — **Mazur's torsion
+            theorem**, stated faithfully: the torsion submodule
+            (`Submodule.torsion ℤ E(ℚ)`) is ≃+ to one of the fifteen
+            groups ℤ/n (n ∈ {1,…,10,12}) or ℤ/2 × ℤ/2m (m ∈ {1,…,4}).
+            Mazur, Publ. Math. IHÉS 47 (1977); Invent. Math. 44 (1978).
       - ✓ `FreyPackage.galoisRep_not_irreducible` (B4, `Fermat/PrimeFive.lean`)
         — now DERIVED (2026-07-16) from two explicit nodes, mirroring the
         FLT project's hardly-ramified plan (their B5/B6, stated in Lean here
@@ -208,3 +215,15 @@ assumed. Axiom invariant: every declaration must use at most
   `mazur_torsion_bound`, `torsion_isHardlyRamified`, B6a, B6bc,
   Chebotarev–Brauer–Nesbitt, `n_torsion_card`,
   `eval_ΨSq_eq_zero_of_smul_eq_zero`, `ΨSq_ne_zero_of_charDvd`.
+- 2026-07-16 (session 3, cont.): **`mazur_torsion_bound` PROVEN** from the
+  new faithful sorry node `WeierstrassCurve.mazur_classification` (Mazur's
+  fifteen-group torsion theorem, stated on `Submodule.torsion ℤ E(ℚ)`),
+  closing the □ for the classification. Proof: torsion corestriction of an
+  injective hom + `Nat.card` comparison against each of the fifteen groups
+  (`Nat.card_zmod`, `Nat.card_prod`, omega). The unused primality
+  hypothesis was dropped from `mazur_torsion_bound` (only `5 ≤ p` is
+  needed). Axiom audit clean. Sorry frontier (9, all Props):
+  `exists_torsion_embedding_of_not_isIrreducible`, `mazur_classification`,
+  `torsion_isHardlyRamified`, B6a, B6bc, Chebotarev–Brauer–Nesbitt,
+  `n_torsion_card`, `eval_ΨSq_eq_zero_of_smul_eq_zero`,
+  `ΨSq_ne_zero_of_charDvd`.
