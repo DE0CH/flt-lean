@@ -106,6 +106,12 @@ map where helpful.
           - ✗ `FreyCurve.torsion_isTameAtTwo` — at 2: rank-1 quotient
             with unramified character squaring to 1 (multiplicative
             reduction at 2, Tate uniformization, quadratic twist).
+            - ✓ `TateParameter.lean` vendored (2026-07-16, ZERO
+              sorries — fully proven): the formal q-expansion machinery
+              (formal `c₄`, `Δ`, `j⁻¹` power series and the Tate
+              parameter as evaluation), plus the two ValuativeRel
+              `FLT.Mathlib` prerequisites (also sorry-free). Feeds the
+              Tate-curve chain (`TateCurve.lean` etc.) next.
         - ✓ **B5** `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
           (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work) —
           now DERIVED (2026-07-16) from three explicit nodes in
