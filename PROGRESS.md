@@ -208,8 +208,21 @@ map where helpful.
               `modularCyclotomicCharacter.unique`) from:
               - ✗ `cyclotomicCharacter_globalFrob` — the **ℓ-adic**
                 cyclotomic character evaluates to q at `globalFrob q`
-                (q ≠ ℓ); this single node also serves the future glue
+                (q ≠ ℓ); this single node also serves the glue
                 (`residual_charFrob_eq_of_family`) at ℓ = 3.
+                DERIVATION MAPPED (2026-07-16), all ingredients in-tree:
+                (i) equivariance of `absoluteGaloisGroup.map` along
+                `IsAlgClosed.lift` (from `restrictNormal'`, cf. the
+                `map_one'` proof in `AbsoluteGaloisGroup.lean`);
+                (ii) the residue field of the completed integers at the
+                q-place of ℚ has cardinality q (bridging layer to
+                build); (iii) `AlgHom.IsArithFrobAt.apply_of_pow_eq_one`
+                (vendored `Frobenius.lean`): a Frobenius sends m-th
+                roots of unity to their q-th powers when q ∤ m — apply
+                at m = ℓ^k via `isArithFrobAt_adicArithFrob`;
+                (iv) transport through the embedding and conclude by
+                `cyclotomicCharacter.unique`-mod-ℓ^k plus
+                `PadicInt.ext_of_toZModPow`.
               - ✓ `toZMod_eq_ringEquivCongr_comp_toZModPow` — PROVEN
                 (kernel rigidity of ring homs into `ZMod p`).
             - ✓ sorry-free bridges (own work, `Chebotarev.lean`):
