@@ -221,7 +221,12 @@ map where helpful.
                 (STATED 2026-07-16): the `IsArithFrobAt` exponent at the
                 q-place of ℚ is q — the residue field of `ℤ_q` is `𝔽_q`
                 (the quotient by the contraction of the maximal ideal of
-                the integral closure); (iii) `AlgHom.IsArithFrobAt.apply_of_pow_eq_one`
+                the integral closure); (ii′) ✗
+                `isUnit_natCast_adicCompletionIntegers` (STATED
+                2026-07-16): a prime `p ≠ q` is a unit in the completed
+                integers at the q-place, giving `ℓ^k ∉ Q` in the
+                roots-of-unity argument;
+                (iii) `AlgHom.IsArithFrobAt.apply_of_pow_eq_one`
                 (vendored `Frobenius.lean`): a Frobenius sends m-th
                 roots of unity to their q-th powers when q ∤ m — apply
                 at m = ℓ^k via `isArithFrobAt_adicArithFrob`;
