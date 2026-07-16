@@ -62,13 +62,23 @@ map where helpful.
                   `exists_not_isUnramifiedAt_int_of_isGalois` gives an
                   everywhere-ramified prime `p`; going-up lifts it;
                   the dictionary contradicts).
-                  - ✗ `isUnramifiedAt_of_inertia_le_fixingSubgroup` —
-                    **THE inertia dictionary** (the shared bridge; also
-                    what the five glue nodes need): if the image of
-                    `localInertiaGroup q` in G_ℚ fixes the finite
-                    extension `L` pointwise, every prime of `𝒪 ⊇ ℤ`
-                    (integral closure in `L`) above `q` is
-                    `Algebra.IsUnramifiedAt ℤ`.
+                  - ✓ `isUnramifiedAt_of_inertia_le_fixingSubgroup` —
+                    **THE inertia dictionary**: DERIVED (2026-07-16,
+                    compiled in ONE shot from the pre-verified chain:
+                    `liesOver_span_iff` for `LiesOver`, residue-field
+                    finiteness via the fraction-ring bridge,
+                    `card_inertia_eq_ramificationIdxIn`,
+                    `ramificationIdxIn_eq_ramificationIdx`,
+                    `ramificationIdx_eq_one_iff.mp`).
+                    - ✗ `inertia_eq_bot_of_le_fixingSubgroup` — **the
+                      inertia transport** (sole remaining leaf of the
+                      Minkowski chain): the image of
+                      `localInertiaGroup q` fixing `L` pointwise
+                      trivializes `Q.inertia (L ≃ₐ[ℚ] L)`. Mechanism:
+                      `lift_map` (vendored PROVEN) + surjectivity of
+                      restriction `Γ ℚ → Gal(L/ℚ)` + matching the
+                      `MulSemiringAction` inertia against pointwise
+                      fixing.
               - ✗ `FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski`
                 — Serre's analysis with the Minkowski input as a
                 hypothesis: stable line ⟹ characters χ₁χ₂ = ω̄;

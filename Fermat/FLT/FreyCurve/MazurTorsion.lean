@@ -147,18 +147,78 @@ reconnaissance in `PROGRESS.md` for the verified mathlib route; the
 remaining content is the fixed field of the open subgroup (infinite
 Galois correspondence) and the dictionary between `localInertiaGroup`
 and classical ramification. -/
-theorem isUnramifiedAt_of_inertia_le_fixingSubgroup
+theorem inertia_eq_bot_of_le_fixingSubgroup
     (L : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ L]
-    {𝒪 : Type*} [CommRing 𝒪] [Algebra 𝒪 L] [IsIntegralClosure 𝒪 ℤ L]
+    [NumberField L] [IsGalois ℚ L]
     {q : ℕ} (hq : q.Prime)
     (hle : Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
         (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat)
       ≤ L.fixingSubgroup)
-    (P : Ideal 𝒪) [P.IsPrime] (hP : (q : 𝒪) ∈ P) :
-    Algebra.IsUnramifiedAt ℤ P :=
+    (Q : Ideal (NumberField.RingOfIntegers L)) [Q.IsPrime]
+    (hQmem : (q : NumberField.RingOfIntegers L) ∈ Q) :
+    Q.inertia (L ≃ₐ[ℚ] L) = ⊥ :=
   sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The inertia dictionary** (DERIVED 2026-07-16 from the transport
+node above): if the image in `G_ℚ` of the local inertia group at `q`
+fixes the finite Galois extension `L/ℚ` pointwise, then every prime of
+`𝓞 L` above `q` is unramified over `ℤ`. Chain: the transport node
+trivializes the global ideal-inertia `Q.inertia Gal(L/ℚ)`; its
+cardinality IS the ramification index
+(`card_inertia_eq_ramificationIdxIn`); `ramificationIdxIn` transfers to
+the specific prime; and `ramificationIdx_eq_one_iff` converts `e = 1`
+to `Algebra.IsUnramifiedAt` (the `PerfectField` side condition comes
+from finiteness of the residue field, via the fraction-ring bridge and
+`maximal_ideal_iff_isField_quotient`). -/
+theorem isUnramifiedAt_of_inertia_le_fixingSubgroup
+    (L : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ L]
+    [NumberField L] [IsGalois ℚ L]
+    {q : ℕ} (hq : q.Prime)
+    (hle : Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+        (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat)
+      ≤ L.fixingSubgroup)
+    (Q : Ideal (NumberField.RingOfIntegers L)) [Q.IsPrime]
+    (hQmem : (q : NumberField.RingOfIntegers L) ∈ Q) :
+    Algebra.IsUnramifiedAt ℤ Q := by
+  haveI := IsIntegralClosure.isIntegral_algebra ℤ (A := NumberField.RingOfIntegers L) L
+  have hqZ : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
+  haveI hsp : (Ideal.span {((q : ℤ))} : Ideal ℤ).IsPrime :=
+    (Ideal.span_singleton_prime (by exact_mod_cast hq.ne_zero)).mpr hqZ
+  have hne : (Ideal.span {((q : ℤ))} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hlies : Q.LiesOver (Ideal.span {((q : ℤ))}) :=
+    (Ideal.liesOver_span_iff (Ideal.IsPrime.ne_top ‹Q.IsPrime›) hqZ).mpr
+      (by exact_mod_cast hQmem)
+  haveI hfinq : Finite (ℤ ⧸ (Ideal.span {((q : ℤ))} : Ideal ℤ)) :=
+    Ring.HasFiniteQuotients.finiteQuotient hne
+  haveI hmax : (Ideal.span {((q : ℤ))} : Ideal ℤ).IsMaximal :=
+    hsp.isMaximal_of_ne_bot hne
+  have hsurj : Function.Surjective
+      (algebraMap (ℤ ⧸ (Ideal.span {((q : ℤ))} : Ideal ℤ))
+        ((Ideal.span {((q : ℤ))} : Ideal ℤ).ResidueField)) :=
+    IsFractionRing.surjective_iff_isField.mpr
+      ((Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp hmax)
+  haveI : Finite ((Ideal.span {((q : ℤ))} : Ideal ℤ).ResidueField) :=
+    Finite.of_surjective _ hsurj
+  -- `e = |inertia| = |⊥| = 1`
+  have hcard := Ideal.card_inertia_eq_ramificationIdxIn
+    (G := (L ≃ₐ[ℚ] L)) (Ideal.span {((q : ℤ))}) Q
+  rw [inertia_eq_bot_of_le_fixingSubgroup L hq hle Q hQmem] at hcard
+  have h1 : Ideal.ramificationIdxIn (Ideal.span {((q : ℤ))})
+      (NumberField.RingOfIntegers L) = 1 := by
+    rw [← hcard]
+    simp
+  have h2 : Q.ramificationIdx ℤ = 1 := by
+    rw [← Ideal.ramificationIdxIn_eq_ramificationIdx
+      (Ideal.span {((q : ℤ))}) Q (L ≃ₐ[ℚ] L)]
+    exact h1
+  exact Ideal.ramificationIdx_eq_one_iff.mp h2
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Minkowski, subgroup form** (DERIVED 2026-07-16 from the inertia
