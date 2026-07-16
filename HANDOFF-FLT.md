@@ -1,131 +1,110 @@
 # HANDOFF: FLT formalization — context for the successor agent
 
-You are taking over a long-running autonomous project from a previous Claude
-session (2026-07-16). Read this file plus `PROGRESS.md` (same directory)
-fully before doing anything.
+You are taking over a long-running autonomous project (last updated
+2026-07-16, session 3). Read this file plus `PROGRESS.md` (same directory)
+fully before doing anything. `PROGRESS.md` is the single source of truth
+for the tree state; this file covers mission, policies, and mechanics.
 
 ## The mission (from Deyao)
 
 Formalize **Fermat's Last Theorem completely in Lean 4** in this `fermat/`
-project. This is an enormous, deliberately maximalist academic project — it
-is expected to take **weeks of continuous autonomous work**. Do not stop
-until it is done or Deyao stops you. Work autonomously; commit and push
-frequently.
+project. Deliberately maximalist; expected to take weeks of continuous
+autonomous work. Work autonomously; commit and push frequently.
 
-Method — treat it as resolving a software dependency tree:
+Method — resolve a dependency tree top-down:
 1. The top-level theorem is proven; every gap is an explicit `sorry`-d
-   theorem (the "open nodes").
-2. Walk the tree: pick an open node, decompose it into further statements
-   (write them, `sorry` their proofs) or prove it outright.
-3. After every change: `lake build` must succeed, and check axioms with
-   `#print axioms <decl>` — every declaration must use at most
-   `[propext, Classical.choice, Quot.sound, sorryAx]`. **Never introduce an
-   `axiom`.** Never let a statement silently change meaning.
+   theorem (the open nodes). Walk the tree: pick a node, decompose it into
+   further stated-and-sorried nodes or prove it outright.
+2. After every change: `lake build`, axiom audit, commit/push, update
+   `PROGRESS.md` (tree + log), re-check the frontier, continue.
 
-## Non-negotiable policies (Deyao, verbatim intent)
+## THE LOOP (Deyao, non-negotiable)
+
+- **One exit condition**: `lake build` passes the sorry gate AND
+  `grep -rn "sorry" Fermat --include="*.lean"` finds zero proof-position
+  sorries. Until then the loop runs forever; continue every iteration
+  regardless of how stuck the previous one was.
+- **No giving-up prose.** Incapability must surface as repeatedly failed
+  attempts (compiler errors, failing builds) inside a loop that cannot
+  exit — never as "I can't continue / here's what's missing" text. Deyao
+  terminates externally; that is his prerogative, not the program's.
+- **Enforcement mechanisms** (all live; see CLAUDE.md for details):
+  - *Stop hook*: `.claude/check-sorries.py` (registered in
+    `.claude/settings.json`) vetoes every attempt to end the turn while
+    the exit condition is unmet, feeding the next open nodes back.
+    `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP=1000`.
+  - *Sorry gate*: root `Fermat.lean` ends with `#assert_no_sorry
+    fermat_last_theorem` (`Fermat/SorryGate.lean`) — `lake build` FAILS
+    with `SORRY GATE FAILED` while nodes remain and also enforces the
+    axiom invariant. A gate failure is the EXPECTED build outcome; any
+    other error is a genuine defect.
+  - *warningAsError*: the lakefile makes every warning a hard error; each
+    deliberate sorry node opts out with `set_option warn.sorry false in`
+    placed ABOVE its docstring. A sorry without the opt-out fails the
+    build by design.
+
+## Non-negotiable policies (Deyao)
 
 - **No citation-terminal nodes.** The FLT project's `knownin1980s` axiom
-  ("an expert could deduce this from pre-1990 literature") is BANNED. No
-  node may be closed by appeal to expert knowledge or literature. A node is
-  closed only when Lean compiles its proof. Scope ballooning is accepted —
-  it is Deyao's explicit aesthetic/academic choice; do not relitigate it.
-  Rationale: the trust boundary must be the Lean kernel + the visible sorry
-  list, never a human assertion.
-- **`git push --force` is banned** in all forms. Ordinary commits/pushes are
-  fine and expected.
-- **Multiple agents work on this repo.** This worktree
-  (`~/cs/flt-worktree`, branch `flt-formalization`) is YOURS; the main
-  checkout `~/cs/dissertation` and other worktrees belong to other agents —
-  do not touch them.
-- **NEVER build Lean (or put any `.lake`) under `~/Documents`** — it is
-  iCloud-synced; a 7.2G/200k-file build tree there caused a catastrophic
-  eviction of the old repo copy on 2026-07-16 (that's why the repo was
-  re-cloned to `~/cs/dissertation`). `~/cs` is safe (not iCloud).
+  is BANNED. A node closes only when Lean compiles its proof. Scope
+  ballooning is accepted; do not relitigate.
+- **No deferral**: nothing is "below" anything; every sorry is an active
+  frontier node.
+- **Never introduce an `axiom`.** Axiom invariant: every declaration uses
+  at most `[propext, Classical.choice, Quot.sound, sorryAx]` (the gate
+  checks this at the root).
+- **`git push --force` banned** in all forms. Ordinary commit/push
+  expected every iteration.
+- **Multiple agents share this repo.** This worktree (`~/cs/flt-worktree`,
+  branch `flt-formalization`) is YOURS; other worktrees/main checkout
+  belong to other agents. tmux session names: pick unique ones (a session
+  named `hooktest` belongs to the W* agent — do not touch).
+- **NEVER build Lean under `~/Documents`** (iCloud eviction hazard);
+  `~/cs` is safe.
 
-## Current state (branch flt-formalization @ d7a0162, pushed)
+## Current state — read PROGRESS.md for the authoritative tree
 
-- `Fermat/Basic.lean` — `fermat_last_theorem : FermatLastTheorem` PROVEN
-  from mathlib (n=3,4, `of_odd_primes`) + `fermatLastTheoremFor_of_five_le`.
-- `Fermat/PrimeFive.lean` — the p ≥ 5 case PROVEN from `FreyPackage.false`,
-  which is PROVEN from Mazur + B4 (see below).
-- `Fermat/FLT/**` — 31 modules vendored from Buzzard's FLT project
-  (github.com/ImperialCollegeLondon/FLT, Apache 2.0, imports rewritten
-  `FLT.*` → `Fermat.FLT.*`; keep attribution headers when adding more).
-  Reference clone for further vendoring: `~/cs/FLT` (read-only, never build
-  there). Their architecture (Proof.lean "boss theorems" B1–B12) is the map;
-  their sorries/`knownin1980s` become OUR sorries.
-- mathlib pinned to the FLT project's exact rev `a3364faec429...`
-  (lakefile.lean), toolchain `leanprover/lean4:v4.32.0-rc1`.
+Everything through the boss-theorem spine is DERIVED down to ~17 leaf
+sorry nodes (all Props; grep for the live list). Highlights of what is
+already proven sorry-free: group_theory_lemma / torsion counting; the
+galoisRep construction with continuity; Mazur weak torsion bound from the
+classification; the four IsHardlyRamified conditions assembled; B5 → B6
+chain assembled; B6bc from B6b + glue; the Chebotarev–Brauer–Nesbitt node
+fully derived from density + BN + Frobenius-value (with proven bridges:
+mod-ℓ cyclotomic character + continuity, End-discreteness,
+place↔prime, monic-quadratic ext); torsion_det from the Weil pairing
+node + proven determinant linear algebra.
 
-### Open sorry nodes (8) — the frontier
-
-| Node | File | Notes |
-|---|---|---|
-| `FreyPackage.mazur` | `Fermat/FLT/FreyCurve/Mazur.lean` | Mazur's theorem + Serre §4.1; deep. |
-| `FreyCurve.torsion_not_isIrreducible` (B4) | `Fermat/FLT/GaloisRepresentation/HardlyRamified/Frey.lean` | = Wiles + Ribet + no weight-2 level-2 cusp forms. Decompose via B5/B6 (hardly-ramified route, see FLT Proof.lean comments + 2026 EPSRC course PDFs in `~/cs/FLT/2026_EPSRC_TCC_course/`). |
-| `FreyCurve.torsion_isHardlyRamified` | same file | Serre §4.1 + Tate curve theory. |
-| `n_torsion_finite` | `Fermat/FLT/EllipticCurve/Torsion.lean` | needs division polynomials. |
-| `n_torsion_card` | same | #E(k̄)[n] = n²; division polynomials; David Angdinata's PhD work covers this — but per policy it must be IN THIS TREE, so formalize it here. |
-| `group_theory_lemma` | same | pure algebra, most tractable next node. Plan sketched below. |
-| `Module.Finite (ZMod n)` instance | same | ⚠ FALSE as stated for n=0 (nTorsion 0 = whole group). Fix the statement (e.g. require 0 < n or [NeZero n]) as a marked VENDORING CHANGE, then prove. |
-| `WeierstrassCurve.galoisRep` | same, line ~137 | ⚠ sorry-d DATA (a def!). Statements about it (Mazur, B4) are about an unspecified rep until this is constructed. High priority conceptually; needs the action's continuity. |
-
-### Plan already worked out for `group_theory_lemma`
-
-Hypothesis: `Nat.card (torsionBy ℤ A d) = d ^ r` for all `d ∣ n`, `0 < n`.
-Goal: `torsionBy ℤ A n ≃+ (Fin r → ZMod n)`.
-1. `Nat.card` positive ⇒ the n-torsion `T` is finite
-   (`Nat.card_pos_iff`).
-2. Structure theorem `AddCommGroup.equiv_directSum_zmod_of_finite`:
-   `T ≃+ ⨁ i, ZMod (p i ^ e i)`; each `p i ^ e i ∣ n` (T is killed by n).
-3. Torsion counting: `torsionBy` of a finite product ≅ product of
-   `torsionBy`s (easy hand-rolled AddEquiv, componentwise);
-   `Nat.card (torsionBy ℤ (ZMod m) d) = Nat.gcd d m`.
-4. Count with d = q (each prime q ∣ n): forces #{i : p i = q} = r; with
-   d = n and total card n^r: forces e_i = v_q(n) on those. So the multiset
-   of factors is exactly r copies of q^{v_q(n)} for each q ∣ n.
-5. Reassemble: `(⨁_{q ∣ n} ZMod q^{v_q(n)})^r ≃+ (ZMod n)^r` by CRT
-   (`ZMod.chineseRemainder` / prime-factorization Pi equiv).
-Suggested new file: `Fermat/FLT/EllipticCurve/TorsionCounting.lean` (own
-work, not vendored — no FLT-project header).
+The remaining leaves are deep: Mazur classification, Serre §4.1
+reducible-case, NOS/Tate unramifiedness, flatness at p, tameness at 2,
+B6a (deformation lifting), B6b (compatible families), the glue
+bookkeeping, B6c/mod_three, Chebotarev density, Brauer–Nesbitt,
+χ̄(Frob_q) = q, Weil pairing existence, division-polynomial nodes
+(n_torsion_card, eval_ΨSq, ΨSq_ne_zero_of_charDvd).
 
 ## Workflow
 
-- Build: `cd ~/cs/flt-worktree/fermat && lake build` (the `.lake` cache is
-  already populated; a clean no-change build takes ~1 min).
-- Axiom audit (run after every layer):
-  write a scratch file `import Fermat` + `#print axioms fermat_last_theorem`
-  (and the changed decls), run `lake env lean <file>`. Required result:
-  subsets of `[propext, sorryAx, Classical.choice, Quot.sound]`.
-- Commit in this worktree, push with `git push` (branch tracks
-  `origin/flt-formalization`). Commit messages: end with the Claude
-  co-author trailer as in `git log`.
-- Update `PROGRESS.md` (tree + log) with every push.
-- Sources for statements/proofs: (1) web search; (2) `~/cs/FLT` (their repo
-  evolves — `git -C ~/cs/FLT pull` occasionally); (3) SOLO Oxford via
-  claude-in-chrome browser automation (best-effort; captcha ⇒ abandon; see
-  memory `solo-oxford-download-workflow`); (4) Anna's Archive MCP
-  (`download_annas`; retry same md5 with different domain_index on TLS
-  errors, never disable cert verification); (5) papers under
-  `~/cs/dissertation/{papers,Books,Lecture Notes}` if materialized.
-- **SOLO keepalive**: arm a session cron (e.g. every 6h at an off-minute):
-  open solo.bodleian.ox.ac.uk in a NEW tab via claude-in-chrome, run one
-  search, verify signed-in, close tab; if logged out/captcha, push-notify
-  Deyao, never attempt login/captcha yourself. (The previous session's cron
-  died with it.)
-- Ping Deyao by push notification only for: blocked-on-user decisions,
-  SOLO login expiry, or milestone completions. He reads pushes on his phone.
-
-## Known hazards
-
-- The old repo at `~/Documents/cs/dissertation` is iCloud-evicted and
-  possibly unrecoverable locally; do NOT work there. Its uncommitted
-  changes (CLAUDE.md edits, repo-memory files) may be lost — not your
-  problem unless Deyao asks.
-- Concurrent edits: other agents may edit files in OTHER worktrees; your
-  branch is yours alone. If `git push` is rejected (non-fast-forward),
-  `git pull --rebase` — never force-push.
-- Lean gotcha: auto-generated instance names from the FLT project embed
-  their module root (`..._fLT`); when vendoring a file that references one,
-  name the instance explicitly (see `Deformations/Lemmas.lean`,
-  `instAlgebraSubtypeMemValuationSubringVendored`).
+- Build: `cd ~/cs/flt-worktree/fermat && lake build` — EXPECT the sorry
+  gate error; anything else is a defect.
+- Axiom audit: scratch file importing `Fermat.Basic` + the touched leaf
+  modules (NEVER root `Fermat` — its olean does not exist while the gate
+  fails), `#print axioms <decls>`, run `lake env lean <file>`.
+- Lean module-system gotchas (hard-won):
+  - In `module` files, some legacy mathlib instances (e.g.
+    `AlgebraicClosure.isAlgebraic`) only synthesize under
+    `set_option backward.isDefEq.respectTransparency false in`.
+  - `set_option ... in` lines go ABOVE a declaration's docstring.
+  - Non-public imports are proof-only and NOT re-exported; each module
+    needs its own imports for statement-level names AND instances.
+  - Auto-generated instance names collide across vendored files — name
+    local instances explicitly.
+  - `set`-bound local abbreviations hide instances; inline the types.
+- Vendoring from `~/cs/FLT` (reference clone, never build there): keep
+  Apache headers, rewrite `FLT.` → `Fermat.FLT.`, replace their
+  assumption mechanisms with tracked sorry nodes, mark VENDORING CHANGEs.
+- Sources: `~/cs/FLT` (git pull occasionally; their newer layers are a
+  map), web search, SOLO Oxford via browser automation (captcha ⇒
+  abandon), Anna's Archive MCP (retry same md5 with different
+  domain_index on TLS errors; never disable cert verification).
+- Ping Deyao by push notification only for blocked-on-user decisions or
+  milestone completions.
