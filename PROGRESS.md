@@ -622,3 +622,19 @@ assumed. Axiom invariant: every declaration must use at most
   `isCoprime_Φ_ΨSq`. Next: reformulate `TateCurve.lean`'s sorry-d data
   (`tateCurveEquiv`) existentially, then decompose `torsion_isTameAtTwo`
   against the now-complete Tate-curve infrastructure.
+- 2026-07-16 (session 4, cont.): **QuadraticTwists closure vendored,
+  ZERO new sorries** — nineteen files, all fully proven:
+  `QuadraticTwists/QuadraticTwists.lean` (793 lines, quadratic twists
+  of Weierstrass curves + Galois descent of points) and
+  `QuadraticTwists/SplitMultiplicativeReduction.lean` (486 lines: every
+  curve with multiplicative reduction has a quadratic twist with SPLIT
+  multiplicative reduction — the twist step of the tame-at-2 argument),
+  plus seventeen `FLT.Mathlib` prerequisites (EllipticCurve
+  Aut/Affine.Point/GaloisDescent/VariableChange overlays, quadratic
+  norms, unramified local rings, DVR AdjoinRoot/Separable, Galois
+  basics, Gauss lemma, etc.). Wired into the root module; full
+  `lake build` fails only at the sorry gate. Frontier unchanged at 17.
+  The remaining Tate-curve gap is exactly upstream `TateCurve.lean`
+  (512 lines, 12 sorries incl. sorry-d DATA `tateCurveEquiv`/
+  `tateEquiv`/`tateEquivSepClosure`) — next: existential
+  reformulation, as done for the Weil pairing.
