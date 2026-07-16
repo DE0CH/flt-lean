@@ -613,7 +613,11 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   (`RamificationInertia/Ramification.lean:105`) — for `R = ℤ` the
   residue field of `q.under ℤ` is `𝔽_p` (perfect ✓), so the dictionary
   may equivalently prove `ramificationIdx = 1`, the purely
-  ideal-theoretic form. Post-derivation audit:
+  ideal-theoretic form. Its instance chain is complete:
+  `EssFiniteType.of_finiteType` is an INSTANCE
+  (`EssentialFiniteness.lean:95`), fed by `FiniteType.of_finite` from
+  the module-finiteness of rings of integers, and `PerfectField` of
+  finite fields is instance-automatic. Post-derivation audit:
   `open_normal_subgroup_eq_top_of_inertia_le`,
   `minkowski_character_trivial`, and
   `exists_torsion_embedding_of_not_isIrreducible` all show exactly
