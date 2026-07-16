@@ -459,7 +459,34 @@ map where helpful.
         ramified, Serre §4.1 + Tate curve theory; the former second sorry,
         the rank hypothesis, was discharged by `p_torsion_rank`).
 
-## Next-step reconnaissance (2026-07-16, session 3 close)
+## Next-step reconnaissance (2026-07-16, session 4 close)
+
+- **`minkowski_character_trivial` — the mathlib route is VERIFIED to
+  exist at our pin** (all names checked in
+  `Mathlib/NumberTheory/NumberField/ExistsRamified.lean` and
+  `Discriminant/Different.lean`):
+  `NumberField.finrank_eq_one_of_unramified` ([Algebra.Unramified ℤ 𝒪]
+  ⟹ finrank ℚ K = 1), `NumberField.exists_not_isUnramifiedIn`,
+  `NumberField.exists_not_isUnramifiedAt_int_of_isGalois` (Galois case:
+  some prime has ALL primes above it ramified — the right form for the
+  abelian fixed field), `NumberField.not_dvd_discr_iff_isUnramifiedIn`,
+  `NumberField.abs_discr_gt_two`. What remains is the **dictionary**:
+  (1) `K := IntermediateField.fixedField χ.ker` is finite over ℚ (open
+  subgroup of the compact `Γ ℚ` has finite index; vendored
+  `FLT.Mathlib.FieldTheory.Galois.Infinite` +
+  `InfiniteGalois.fixedField_fixingSubgroup` for the correspondence;
+  `χ.ker` is open hence closed), giving `NumberField K`;
+  (2) `localInertiaGroup q ≤ ker (χ ∘ res_q)` for all `q` transfers to
+  `Algebra.IsUnramifiedAt ℤ P` for every prime `P` of `𝓞 K` — the
+  local-global inertia dictionary (same flavor as the NOS glue node
+  `isUnramifiedAt_of_hasGoodReduction`; whichever is built first should
+  factor out the common bridge between `localInertiaGroup` and
+  classical inertia/ramification of number fields);
+  (3) conclude `ker χ = ⊤` from `fixedField χ.ker = ⊥` by the infinite
+  Galois correspondence, hence `χ = 1`. Estimated: one focused session;
+  start from a FRESH context.
+
+## Previous reconnaissance (2026-07-16, session 3 close)
 
 - `torsion_isUnramified` / `torsion_isTameAtTwo` / `torsion_isFlat` /
   `exists_weilPairing`: the natural source is the FLT repo's
@@ -893,3 +920,10 @@ assumed. Axiom invariant: every declaration must use at most
   hypothesis; its remaining deep content is exactly Vélu quotients +
   the character bookkeeping). Frontier: 21 (one closed, two opened —
   the generic number theory now lives in its own node).
+- 2026-07-16 (session 4 close): **Minkowski route verified in mathlib**
+  — reconnaissance recorded (see the session-4 reconnaissance section):
+  the discriminant side of `minkowski_character_trivial` is entirely in
+  mathlib at our pin (`finrank_eq_one_of_unramified` etc.); what
+  remains is the fixed-field construction from the open kernel and the
+  inertia dictionary. No node change this iteration; the frontier
+  stays 21 with the next attack mapped in detail.
