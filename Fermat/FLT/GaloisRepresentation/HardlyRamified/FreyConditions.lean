@@ -137,16 +137,49 @@ theorem FreyCurve.torsion_isUnramified :
   · exact FreyCurve.torsion_isUnramified_of_good P q hq hq2p hdvd
 
 set_option warn.sorry false in
-/-- **Flatness of the Frey torsion representation at `p`** (sorry node):
+/-- **Flatness at `p`, good-reduction case** (sorry node): if `p ∤ abc`
+then the Frey curve has good reduction at `p` (its discriminant
+`(abc)^{2p}/2⁸` is a `p`-adic unit and the Frey equation is minimal at
+`p`), and the `p`-torsion of the Néron model — a finite flat group scheme
+over `ℤ_p` (the vendored node `torsion_flat_of_good_reduction` in
+`KnownIn1980s/EllipticCurves/Flat.lean`) — exhibits the flatness. -/
+theorem FreyCurve.torsion_isFlat_of_good :
+    haveI : Fact P.p.Prime := ⟨P.pp⟩
+    ¬((P.p : ℤ) ∣ P.a * P.b * P.c) →
+      (P.freyCurve.galoisRep P.p P.hppos).IsFlatAt
+        P.pp.toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
+
+set_option warn.sorry false in
+/-- **Flatness at `p`, multiplicative case** (sorry node): if `p ∣ abc`
+then the Frey curve has multiplicative reduction at `p` with
+`p ∣ v_p(j)` (`FreyCurve.j_valuation_of_bad_prime`), so after the
+unramified quadratic twist making the reduction split, the Tate
+uniformization identifies `E[p]` over `ℚ_p` with an extension of `ℤ/p` by
+`μ_p` that is *peu ramifiée* (the Tate parameter is a `p`-th power times
+a unit, as `p ∣ v_p(q_E)`), and such extensions prolong to finite flat
+group schemes over `ℤ_p`. -/
+theorem FreyCurve.torsion_isFlat_of_multiplicative :
+    haveI : Fact P.p.Prime := ⟨P.pp⟩
+    (P.p : ℤ) ∣ P.a * P.b * P.c →
+      (P.freyCurve.galoisRep P.p P.hppos).IsFlatAt
+        P.pp.toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
+
+/-- **Flatness of the Frey torsion representation at `p`** (DERIVED
+2026-07-16 from the two preceding nodes by the case split on `p ∣ abc`):
 the mod-`p` representation on the `p`-torsion of the Frey curve is flat at
 `p`, i.e. arises from a finite flat group scheme over `ℤ_p`. From the
-Néron model at good reduction, or from the Tate curve at `p` together with
-`p ∣ v_p(j)` in the multiplicative case. -/
+Néron model at good reduction (`torsion_isFlat_of_good`), or from the
+Tate curve at `p` together with `p ∣ v_p(j)` in the multiplicative case
+(`torsion_isFlat_of_multiplicative`). -/
 theorem FreyCurve.torsion_isFlat :
     haveI : Fact P.p.Prime := ⟨P.pp⟩
     (P.freyCurve.galoisRep P.p P.hppos).IsFlatAt
-      P.pp.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+      P.pp.toHeightOneSpectrumRingOfIntegersRat := by
+  by_cases hdvd : (P.p : ℤ) ∣ P.a * P.b * P.c
+  · exact FreyCurve.torsion_isFlat_of_multiplicative P hdvd
+  · exact FreyCurve.torsion_isFlat_of_good P hdvd
 
 set_option warn.sorry false in
 /-- **Tameness of the Frey torsion representation at `2`** (sorry node):

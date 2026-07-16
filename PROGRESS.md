@@ -103,17 +103,24 @@ map where helpful.
               vendored PROVEN) + Tate uniformization
               (`exists_tateEquivSepClosure`) make the inertia action on
               `E[p]` trivial.
-          - ✗ `FreyCurve.torsion_isFlat` — flat at p (finite flat group
-            scheme over ℤ_p; Néron model / Tate curve at p).
-            - ✗ `torsion_flat_of_good_reduction`
-              (`KnownIn1980s/EllipticCurves/Flat.lean`, vendored
-              2026-07-16): good reduction over a DVR makes the
-              `n`-torsion a finite flat group scheme (Hopf algebra,
-              finite flat, étale generic fibre, equivariant points
-              isomorphism). Plus two division-polynomial nodes:
-              ✗ `resultant_Φ_ΨSq` and ✓ `isCoprime_Φ_ΨSq` (DERIVED
-              2026-07-16 from the resultant node via mathlib's
-              `exists_mul_add_mul_eq_C_resultant` Bézout identity).
+          - ✓ `FreyCurve.torsion_isFlat` — flat at p: DERIVED
+            (2026-07-16) by the case split `p ∣ abc` or not, from the
+            two nodes below.
+            - ✗ `FreyCurve.torsion_isFlat_of_good` — at `p ∤ abc` good
+              reduction; the Néron-model torsion is finite flat.
+              - ✗ `torsion_flat_of_good_reduction`
+                (`KnownIn1980s/EllipticCurves/Flat.lean`, vendored
+                2026-07-16): good reduction over a DVR makes the
+                `n`-torsion a finite flat group scheme (Hopf algebra,
+                finite flat, étale generic fibre, equivariant points
+                isomorphism). Plus two division-polynomial nodes:
+                ✗ `resultant_Φ_ΨSq` and ✓ `isCoprime_Φ_ΨSq` (DERIVED
+                2026-07-16 from the resultant node via mathlib's
+                `exists_mul_add_mul_eq_C_resultant` Bézout identity).
+            - ✗ `FreyCurve.torsion_isFlat_of_multiplicative` — at
+              `p ∣ abc` multiplicative reduction with `p ∣ v_p(j)`:
+              the Tate-curve extension is peu ramifiée, hence prolongs
+              to a finite flat group scheme over ℤ_p.
           - ✗ `FreyCurve.torsion_isTameAtTwo` — at 2: rank-1 quotient
             with unramified character squaring to 1 (multiplicative
             reduction at 2, Tate uniformization, quadratic twist).
@@ -691,3 +698,11 @@ assumed. Axiom invariant: every declaration must use at most
   infrastructure for both (GoodReduction.lean;
   SplitMultiplicativeReduction.lean + TateCurve.lean) is in place.
   Frontier: 19.
+- 2026-07-16 (session 4, cont.): **`torsion_isFlat` DECOMPOSED by
+  reduction type** — same pattern as `torsion_isUnramified`: DERIVED
+  from ✗ `torsion_isFlat_of_good` (`p ∤ abc`: Néron-model torsion is
+  finite flat, to be closed against the vendored
+  `torsion_flat_of_good_reduction`) and
+  ✗ `torsion_isFlat_of_multiplicative` (`p ∣ abc`: `p ∣ v_p(j)` makes
+  the Tate-curve extension peu ramifiée, which prolongs finite-flatly)
+  via the case split on `p ∣ abc`. Frontier: 20.
