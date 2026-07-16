@@ -605,7 +605,15 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   over `p` ⟺ `κ(q)/κ(p)` separable (automatic here — finite fields)
   ∧ `pS_q = qS_q`. So the dictionary reduces to the ideal equality
   `q·(𝓞 L)_Q = Q·(𝓞 L)_Q`, i.e. `e = 1`, from the trivial inertia
-  action — the classical argument. Post-derivation audit:
+  action — the classical argument. Hypothesis-exact bridging form:
+  `Ideal.ramificationIdx_eq_one_iff [q.IsPrime]
+  [Algebra.EssFiniteType R S] [Algebra.IsIntegral R S]
+  [PerfectField (q.under R).ResidueField] :
+  q.ramificationIdx R = 1 ↔ Algebra.IsUnramifiedAt R q`
+  (`RamificationInertia/Ramification.lean:105`) — for `R = ℤ` the
+  residue field of `q.under ℤ` is `𝔽_p` (perfect ✓), so the dictionary
+  may equivalently prove `ramificationIdx = 1`, the purely
+  ideal-theoretic form. Post-derivation audit:
   `open_normal_subgroup_eq_top_of_inertia_le`,
   `minkowski_character_trivial`, and
   `exists_torsion_embedding_of_not_isIrreducible` all show exactly
