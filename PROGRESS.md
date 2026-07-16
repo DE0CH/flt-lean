@@ -638,3 +638,25 @@ assumed. Axiom invariant: every declaration must use at most
   (512 lines, 12 sorries incl. sorry-d DATA `tateCurveEquiv`/
   `tateEquiv`/`tateEquivSepClosure`) — next: existential
   reformulation, as done for the Weil pairing.
+- 2026-07-16 (session 4, cont.): **TateCurve.lean vendored with the
+  sorry-d data reformulated existentially** — the fully proven upstream
+  material (Tate curve series `tateA₄`/`tateA₆`/`tateCurve` with their
+  `evalInt` identities, the valuation lemmas `valuation_Δ_lt_one`,
+  `valuation_c₄_eq_one`, `valuation_j_eq`, `one_lt_valuation_j`, the
+  Tate parameter `q`/`qUnit` with `q_ne_zero`/`valuation_q_lt_one`,
+  base-change functoriality `tateCurve_baseChange`,
+  `tateParameter_map`, `q_baseChange`, and the reduction-preserving
+  instances) is vendored verbatim. The upstream sorry-d DATA
+  (`tateCurveEquiv`, `tateEquiv`, `tateEquivSepClosure`, `tatePoint`)
+  and its satellite lemmas are replaced by TWO honest Prop nodes:
+  ✗ `exists_variableChange_tateCurve` (Tate's theorem ATAEC V.5.3:
+  `E ≅ E_{q(E)}` by a variable change) and
+  ✗ `exists_tateEquivSepClosure` (a Galois-equivariant group iso
+  `Ωˣ/qᶻ ≅ E(Ω)` over a separable closure — an existential Prop, since
+  the iso is canonical only up to sign). The upstream import of the
+  sorry-d WeilPairing data file is dropped; `weilPairing_tatePoint`
+  (sign coherence between the two packages) is NOT vendored — if a
+  consumer appears it must be stated as a joint existential. Frontier:
+  19 (17 + the 2 new Tate nodes). Next: decompose
+  `torsion_isTameAtTwo` against `exists_tateEquivSepClosure` +
+  `exists_quadraticTwist_hasSplitMultiplicativeReduction`.
