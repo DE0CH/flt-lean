@@ -87,14 +87,26 @@ map where helpful.
           - ✓ `FreyCurve.torsion_isUnramified` — unramified outside
             {2, p}: DERIVED (2026-07-16) by the case split `q ∣ abc` or
             not, from the two nodes below.
-            - ✗ `FreyCurve.torsion_isUnramified_of_good` — at `q ∤ abc`
-              the Frey curve has good reduction (Δ = (abc)^{2p}/2⁸ is a
-              `q`-adic unit) and Néron–Ogg–Shafarevich applies.
-              - ✗ `torsion_unramified_of_good_reduction`
-                (`KnownIn1980s/EllipticCurves/GoodReduction.lean`,
-                vendored 2026-07-16): the NOS easy direction — good
-                reduction over a DVR makes the inertia action on
-                `n`-torsion trivial.
+            - ✓ `FreyCurve.torsion_isUnramified_of_good` — DERIVED
+              (2026-07-16) from the two `FreyCurve/Semistable.lean`
+              nodes below.
+              - ✗ `FreyPackage.freyCurve_hasGoodReduction_of_not_dvd`
+                (`FreyCurve/Semistable.lean`, own work): at odd
+                `q ∤ abc` the Frey equation is `q`-integral with unit
+                discriminant `(abc)^{2p}/2⁸`, hence minimal with good
+                reduction over `ℤ_(q) = Localization.AtPrime`.
+              - ✗ `WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction`
+                (`FreyCurve/Semistable.lean`, own work): the NOS
+                local-global glue — good reduction at `q ≠ p` gives
+                `IsUnramifiedAt q` for the mod-`p` torsion rep; to be
+                closed against the vendored NOS node below (inertia
+                dictionary between `localInertiaGroup` and valuation
+                subrings of `ℚ̄`).
+                - ✗ `torsion_unramified_of_good_reduction`
+                  (`KnownIn1980s/EllipticCurves/GoodReduction.lean`,
+                  vendored 2026-07-16): the NOS easy direction — good
+                  reduction over a DVR makes the inertia action on
+                  `n`-torsion trivial.
             - ✗ `FreyCurve.torsion_isUnramified_of_multiplicative` — at
               `q ∣ abc` odd the reduction is multiplicative with
               `p ∣ v_q(j)` (`j_valuation_of_bad_prime`, proven);
@@ -706,3 +718,20 @@ assumed. Axiom invariant: every declaration must use at most
   ✗ `torsion_isFlat_of_multiplicative` (`p ∣ abc`: `p ∣ v_p(j)` makes
   the Tate-curve extension peu ramifiée, which prolongs finite-flatly)
   via the case split on `p ∣ abc`. Frontier: 20.
+- 2026-07-16 (session 4, cont.): **`torsion_isUnramified_of_good`
+  DECOMPOSED into arithmetic + glue** — new own-work file
+  `FreyCurve/Semistable.lean`: the node is DERIVED from
+  ✗ `freyCurve_hasGoodReduction_of_not_dvd` (the arithmetic: at odd
+  `q ∤ abc` the Frey equation is `q`-integral with `q`-unit
+  discriminant, so minimal with good reduction over
+  `Localization.AtPrime v_q`) and
+  ✗ `isUnramifiedAt_of_hasGoodReduction` (the local-global glue:
+  good reduction at `q ≠ p` ⟹ `IsUnramifiedAt q`, to be closed against
+  the vendored NOS node). The `ℤ_(q)`-as-DVR-with-fraction-field-ℚ
+  instance package (Algebra/IsScalarTower/IsFractionRing/
+  IsDiscreteValuationRing for `Localization.AtPrime v.asIdeal`) is
+  PROVEN as public named instances (mathlib has the lemmas but no
+  instances; note `IsDedekindDomainDvr.is_dvr_at_nonzero_prime` needed
+  explicit `@`-application — instance-synthesis stalls on its
+  `IsDomain (𝓞 ℚ)` argument even though direct synthesis succeeds).
+  Frontier: 21.

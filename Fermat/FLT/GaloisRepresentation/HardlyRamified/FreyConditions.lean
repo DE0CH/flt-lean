@@ -45,6 +45,9 @@ public import Fermat.FLT.EllipticCurve.Torsion
 -- The Weil pairing node and the determinant-of-pairing linear algebra,
 -- used to derive `torsion_det`.
 import Fermat.FLT.EllipticCurve.WeilPairing
+-- The Frey good-reduction node and the NOS local-global glue node, used
+-- to derive `torsion_isUnramified_of_good`.
+import Fermat.FLT.FreyCurve.Semistable
 
 @[expose] public section
 
@@ -83,21 +86,23 @@ theorem FreyCurve.torsion_det :
       (Nat.cast_ne_zero.mpr P.hp0)
   exact WeilPairing.det_eq_of_conj hrank e halt hnd (hequiv g)
 
-set_option warn.sorry false in
-/-- **Unramifiedness at good primes** (sorry node): at a prime `q ∉ {2, p}`
-not dividing `abc`, the Frey curve has good reduction (its discriminant
+/-- **Unramifiedness at good primes** (DERIVED 2026-07-16 from the two
+nodes of `FreyCurve/Semistable.lean`): at a prime `q ∉ {2, p}` not
+dividing `abc`, the Frey curve has good reduction over `ℤ_(q)`
+(`FreyPackage.freyCurve_hasGoodReduction_of_not_dvd` — the discriminant
 `(abc)^{2p}/2⁸` is a `q`-adic unit and the Frey equation is minimal at
-`q`), and the criterion of **Néron–Ogg–Shafarevich**
-(`WeierstrassCurve.torsion_unramified_of_good_reduction`, the vendored
-node in `KnownIn1980s/EllipticCurves/GoodReduction.lean`) makes the
-`p`-torsion unramified at `q`: inertia at `q` acts trivially on the
-torsion of the reduction-comparison, hence on `E[p]`. -/
+`q`), and the Néron–Ogg–Shafarevich local-global glue
+(`WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction`) makes the
+`p`-torsion unramified at `q`. -/
 theorem FreyCurve.torsion_isUnramified_of_good :
     haveI : Fact P.p.Prime := ⟨P.pp⟩
     ∀ q (hq : q.Prime), q ≠ 2 ∧ q ≠ P.p → ¬((q : ℤ) ∣ P.a * P.b * P.c) →
       (P.freyCurve.galoisRep P.p P.hppos).IsUnramifiedAt
-        hq.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+        hq.toHeightOneSpectrumRingOfIntegersRat := by
+  haveI : Fact P.p.Prime := ⟨P.pp⟩
+  intro q hq hq2p hndvd
+  haveI := P.freyCurve_hasGoodReduction_of_not_dvd hq hq2p.1 hndvd
+  exact WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction P.freyCurve P.hppos hq hq2p.2
 
 set_option warn.sorry false in
 /-- **Unramifiedness at multiplicative primes** (sorry node): at a prime
