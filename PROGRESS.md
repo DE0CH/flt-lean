@@ -1505,3 +1505,29 @@ assumed. Axiom invariant: every declaration must use at most
   ONLY: profinite compactness lifting (Γ compact, `localInertiaGroup`
   closed, directed system over finite Galois levels — all finite-level
   inputs now proven) and the final normalClosure/reification glue.
+- 2026-07-17 (session 5, compactness-arc plan): `CompactSpace (Γ Kᵥ)`
+  is a vendored GLOBAL instance
+  (`Fermat/FLT/Mathlib/FieldTheory/Galois/Infinite.lean`, any algebraic
+  extension). Target:
+  `∃ σ ∈ localInertiaGroup v, restrictNormalHom N σ = τ` for
+  `τ ∈ I(𝔪_N)`, `N` finite Galois subextension of `Kᵥᵃˡᵍ`. Plan:
+  (1) TRANSPORT LAYER for `N ≤ N'` subextensions: reify
+  `M' := comap N'.val N : IntermediateField Kᵥ ↥N'`, build the
+  `Kᵥ`-AlgEquiv `↥M' ≃ₐ[Kᵥ] ↥N`, conjugate `IC`/`𝔪`/inertia across
+  it (`ramificationIdx'_comap_eq` for `e`-invariance if needed), and
+  intertwine `restrictNormalHom` with the two restriction maps
+  (`AlgEquiv.restrictNormal_trans`-family for
+  `res_N = res_{N'→N} ∘ π_{N'}`); this turns the proven `(E, M')`
+  surjectivity into subextension-pair surjectivity
+  `I(𝔪_{N'}) ↠ I(𝔪_N)`. (2) CLOSED SETS
+  `D_{N'} := π_N⁻¹{τ} ∩ π_{N'}⁻¹(I(𝔪_{N'}))` for finite Galois
+  `N' ⊇ N`: closed via continuity of `restrictNormalHom` into finite
+  discrete targets (check mathlib `continuous_restrictNormalHom`);
+  nonempty via (1) + `restrictNormalHom_surjective`; DIRECTED via
+  restriction-into + compositum (finite Galois subextensions are
+  directed). (3) `IsCompact.nonempty_iInter_of_directed_nonempty_...`
+  gives `σ*`; `σ* ∈ localInertiaGroup` because every `x ∈ IC-big`
+  lies in some finite Galois `N'` (normal closure of `Kᵥ⟮x⟯`) and
+  `ι(𝔪_{N'}) ⊆ 𝔪_big` (the comap EQUALITY: `≤` by locality — proven
+  pattern — and `⊇` by `isMaximal_comap_of_isIntegral`, `𝔪_big`
+  maximal since `IC-big` is a local valuation ring).
