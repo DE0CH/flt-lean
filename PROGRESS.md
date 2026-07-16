@@ -1083,7 +1083,15 @@ assumed. Axiom invariant: every declaration must use at most
   flat/tame glue nodes use the transport as an ingredient but carry
   additional content (flat prolongation resp. the quotient-character
   package). Attack the transport family ONCE, in the form serving the
-  three direct consumers. The
+  three direct consumers.
+- 2026-07-16 (session 4 close): **`mod_three` DECOMPOSED** — DERIVED
+  from ✗ `mod_three_reducible` (a mod-3 hardly ramified rep has a
+  stable line — the Dickson/OddAbsIrred/discriminant content, with
+  both classification inputs vendored PROVEN) and
+  ✗ `mod_three_of_stable_line` (the quotient character of the
+  resulting extension is trivial — det condition + everywhere
+  unramifiedness + the already-derived Minkowski machinery; Serre
+  §5.4 bookkeeping). Frontier: 22. The
   four inertia spellings, fully mapped (2026-07-16): (1)
   `localInertiaGroup` = generic `AddSubgroup.inertia` of `𝔪` upstairs
   in `ℚ̄_q`, membership `.rfl`; (2) `ValuationSubring.inertiaSubgroup`
