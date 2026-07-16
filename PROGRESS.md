@@ -1091,7 +1091,11 @@ assumed. Axiom invariant: every declaration must use at most
   ✗ `mod_three_of_stable_line` (the quotient character of the
   resulting extension is trivial — det condition + everywhere
   unramifiedness + the already-derived Minkowski machinery; Serre
-  §5.4 bookkeeping). Frontier: 22. The
+  §5.4 bookkeeping). Frontier: 22. Final interface check (2026-07-16):
+  `IntermediateField.mem_fixingSubgroup_iff` exists (KrullTopology.lean
+  usage) — the transport construction's source-side membership
+  (`σ ∈ L.fixingSubgroup ↔ ∀ x ∈ L, σ x = x`) is available; with it,
+  every interface of the shared transport is name-verified. The
   four inertia spellings, fully mapped (2026-07-16): (1)
   `localInertiaGroup` = generic `AddSubgroup.inertia` of `𝔪` upstairs
   in `ℚ̄_q`, membership `.rfl`; (2) `ValuationSubring.inertiaSubgroup`
