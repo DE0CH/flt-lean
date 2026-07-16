@@ -313,6 +313,65 @@ theorem maximalIdeal_map_eq_of_ramificationIdx_eq_one
   have hn_eq : n = 1 := by omega
   rw [hn, hn_eq, pow_one, hmax]
 
+section Transport
+
+variable {N₂ : Type*} [Field N₂]
+  [Algebra (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N₂]
+  [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N₂]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Transport of the inertia condition along a `Kᵥ`-isomorphism**: if
+`j : N ≃ₐ[Kᵥ] N₂`, then conjugating an inertia element of `𝔪_N` by `j`
+(`AlgEquiv.autCongr`) gives an inertia element of `𝔪_{N₂}`. The induced
+map on integral closures carries `𝔪` into `𝔪` because a ring map with a
+two-sided inverse reflects units. -/
+theorem autCongr_mem_inertia
+    (j : N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N₂)
+    (σ : N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N)
+    (hσ : σ ∈ (𝔪 (IntegralClosure 𝒪ᵥ N)).inertia
+      (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N)) :
+    AlgEquiv.autCongr j σ ∈ (𝔪 (IntegralClosure 𝒪ᵥ N₂)).inertia
+      (N₂ ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N₂) := by
+  -- the forward and backward ring maps between the integral closures
+  let f₁ : IntegralClosure 𝒪ᵥ N →+* IntegralClosure 𝒪ᵥ N₂ :=
+    RingHom.codRestrict
+      ((j : N →+* N₂).comp (algebraMap (IntegralClosure 𝒪ᵥ N) N))
+      (integralClosure 𝒪ᵥ N₂)
+      (fun x => (Algebra.IsIntegral.isIntegral (R := 𝒪ᵥ) x).map
+        ((j.toAlgHom.restrictScalars 𝒪ᵥ).comp
+          (IsScalarTower.toAlgHom 𝒪ᵥ (IntegralClosure 𝒪ᵥ N) N)))
+  let f₂ : IntegralClosure 𝒪ᵥ N₂ →+* IntegralClosure 𝒪ᵥ N :=
+    RingHom.codRestrict
+      ((j.symm : N₂ →+* N).comp (algebraMap (IntegralClosure 𝒪ᵥ N₂) N₂))
+      (integralClosure 𝒪ᵥ N)
+      (fun x => (Algebra.IsIntegral.isIntegral (R := 𝒪ᵥ) x).map
+        ((j.symm.toAlgHom.restrictScalars 𝒪ᵥ).comp
+          (IsScalarTower.toAlgHom 𝒪ᵥ (IntegralClosure 𝒪ᵥ N₂) N₂)))
+  have hf21 : ∀ y : IntegralClosure 𝒪ᵥ N₂, f₁ (f₂ y) = y := fun y =>
+    Subtype.ext (j.apply_symm_apply _)
+  have hf12 : ∀ y : IntegralClosure 𝒪ᵥ N, f₂ (f₁ y) = y := fun y =>
+    Subtype.ext (j.symm_apply_apply _)
+  -- `f₁` carries the maximal ideal into the maximal ideal
+  have hmax : ∀ m ∈ 𝔪 (IntegralClosure 𝒪ᵥ N), f₁ m ∈ 𝔪 (IntegralClosure 𝒪ᵥ N₂) := by
+    intro m hm
+    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+    intro hu
+    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff] at hm
+    exact hm (by simpa [hf12] using hu.map f₂)
+  refine AddSubgroup.mem_inertia.mpr fun x => ?_
+  have hσ' := AddSubgroup.mem_inertia.mp hσ (f₂ x)
+  have hpush := hmax _ hσ'
+  rw [map_sub] at hpush
+  have h1 : f₁ (σ • f₂ x) = (AlgEquiv.autCongr j σ) • x := by
+    apply Subtype.ext
+    show j (σ (j.symm x.1)) = _
+    rfl
+  rw [Submodule.mem_toAddSubgroup]
+  rw [h1, hf21] at hpush
+  exact hpush
+
+end Transport
+
 section IntermediateBase
 
 variable (M' : IntermediateField
