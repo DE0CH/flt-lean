@@ -14,12 +14,17 @@ public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRepFamily
 We show that the property of being hardly ramified is preserved within
 compatible families of Galois representations.
 
-VENDORING CHANGE: the conclusion of `mem_isCompatible` (originally an
-anonymous `∃`-package) is extracted into the named predicate
+VENDORING CHANGES: (1) the conclusion of `mem_isCompatible` (originally
+an anonymous `∃`-package) is extracted into the named predicate
 `IsInHardlyRamifiedFamily`, so that downstream nodes (the compatibility
 bookkeeping in `Lift.lean`) can take it as a hypothesis without
-duplicating the package verbatim. The mathematical content is unchanged:
-`mem_isCompatible` states exactly the original statement.
+duplicating the package verbatim. (2) 2026-07-16: the package is
+STRENGTHENED by recording that the coefficient rings embed into the
+`p`-adic algebraic closures (`Function.Injective (algebraMap ...)`, two
+occurrences below): the upstream statement omits this, but the charpoly
+descent in `residual_charFrob_eq_of_family` requires it and it holds for
+the intended coefficient rings (subrings of `ℚ̄_p`). This strengthens
+what B6b must prove, deliberately.
 -/
 
 @[expose] public section
@@ -62,6 +67,12 @@ def IsInHardlyRamifiedFamily (ρ : GaloisRep ℚ R V) : Prop :=
         (_ : Module.Free ℤ_[ℓ] A) (_ : IsDomain A) (_ : Algebra A (AlgebraicClosure ℚ_[ℓ]))
         (_ : IsScalarTower ℤ_[ℓ] A (AlgebraicClosure ℚ_[ℓ])) (_ : IsModuleTopology ℤ_[ℓ] A)
         (_ : ContinuousSMul A (AlgebraicClosure ℚ_[ℓ]))
+        -- VENDORING CHANGE (2026-07-16): the coefficient ring embeds into
+        -- `ℚ̄_ℓ` — recorded explicitly because the charpoly descent in the
+        -- compatibility bookkeeping (`residual_charFrob_eq_of_family`)
+        -- needs it, and it is true for the intended `A` (a subring of
+        -- `ℚ̄_ℓ`). The upstream statement omits it.
+        (_ : Function.Injective (algebraMap A (AlgebraicClosure ℚ_[ℓ])))
         (W : Type v) (_ : AddCommGroup W) (_ : Module A W) (_ : Module.Finite A W)
         (_ : Module.Free A W) (hW : Module.rank A W = 2)
         (τ : GaloisRep ℚ A W)
@@ -72,6 +83,9 @@ def IsInHardlyRamifiedFamily (ρ : GaloisRep ℚ R V) : Prop :=
         (τ.baseChange (AlgebraicClosure ℚ_[ℓ])).conj r = σ hℓ φ) ∧
     -- and `ρ` is part of the family.
     (∃ (_ : Algebra R (AlgebraicClosure ℚ_[p])) (_ : ContinuousSMul R (AlgebraicClosure ℚ_[p]))
+      -- VENDORING CHANGE (2026-07-16): same injectivity strengthening as
+      -- for the family members above, for the same reason.
+      (_ : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
       (ψ : E →+* AlgebraicClosure ℚ_[p])
       (r' : AlgebraicClosure ℚ_[p] ⊗[R] V ≃ₗ[AlgebraicClosure ℚ_[p]]
         Fin 2 → AlgebraicClosure ℚ_[p]),

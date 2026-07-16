@@ -113,7 +113,13 @@ map where helpful.
               `IsInHardlyRamifiedFamily` as a marked VENDORING CHANGE) — a
               hardly ramified ℓ-adic rep lives in a compatible family
               (`GaloisRepFamily.lean`, vendored defs, sorry-free) all of
-              whose odd members are hardly ramified.
+              whose odd members are hardly ramified. STRENGTHENED
+              (2026-07-16): the package now records injectivity of the
+              coefficient-ring embeddings into `ℚ̄_p` — an audit of the
+              glue's proof skeleton showed the upstream statement is too
+              weak for the charpoly descent (algebraMap from a domain to
+              a field need not be injective); true for the intended
+              subrings of `ℚ̄_p`.
             - ✗ `residual_charFrob_eq_of_family` (own work, `Lift.lean`)
               — compatibility BOOKKEEPING: family membership ⇒ residual
               charpolys are `X² − (q+1)X + q`; its eventual proof consumes
