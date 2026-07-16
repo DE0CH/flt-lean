@@ -34,10 +34,18 @@ map where helpful.
       - ✗ `FreyPackage.mazur` (`Fermat/FLT/FreyCurve/Mazur.lean`) — the mod-p
         rep of the Frey curve is irreducible (Mazur + Serre §4.1); plain
         `sorry`, an open node like any other.
-      - ✗ `FreyPackage.galoisRep_not_irreducible` (B4, `Fermat/PrimeFive.lean`)
-        — Wiles modularity + Ribet level lowering + no weight-2 level-2 cusp
-        forms. This is also the current frontier of the FLT project itself
-        (their B5/B6, hardly-ramified route, not yet stated in Lean there).
+      - ✓ `FreyPackage.galoisRep_not_irreducible` (B4, `Fermat/PrimeFive.lean`)
+        — now DERIVED (2026-07-16) from two explicit nodes, mirroring the
+        FLT project's hardly-ramified plan (their B5/B6, stated in Lean here
+        before upstream):
+        - ✗ `FreyCurve.torsion_isHardlyRamified`
+          (`GaloisRepresentation/HardlyRamified/Frey.lean`) — Serre §4.1 +
+          Tate curve theory.
+        - ✗ **B5** `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
+          (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work) —
+          hardly ramified mod-ℓ (ℓ ≥ 5) ⇒ not irreducible. To be decomposed
+          into B6a (lift to char 0) / B6b (compatible family) / B6c (3-adic
+          classification).
       - Supporting sorries in vendored infrastructure
         (`Fermat/FLT/EllipticCurve/Torsion.lean`):
         `n_torsion_finite`, `n_torsion_card` (division polynomials needed).
@@ -122,3 +130,8 @@ assumed. Axiom invariant: every declaration must use at most
   subgroups, Krull topology). sorryAx now enters `galoisRep` only through
   `n_torsion_finite`. Sorry frontier: Mazur, B4, 2× HardlyRamified/Frey,
   `n_torsion_finite`, `n_torsion_card` — 6 sorries total, all Props.
+- 2026-07-16 (session 2, cont.): B4 decomposed — `torsion_not_isIrreducible`
+  now proven from `torsion_isHardlyRamified` + new node **B5**
+  (`HardlyRamified/Reducible.lean`). Sorry frontier (5, all Props):
+  `mazur`, `torsion_isHardlyRamified`, B5, `n_torsion_finite`,
+  `n_torsion_card`.

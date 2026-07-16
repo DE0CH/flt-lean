@@ -6,6 +6,9 @@ Authors: Kevin Buzzard
 module
 
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
+-- VENDORING ADDITION: B5 (hardly ramified ⇒ not irreducible), backing
+-- `torsion_not_isIrreducible` below.
+public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Reducible
 public import Fermat.FLT.FreyCurve.Basic
 public import Fermat.FLT.EllipticCurve.Torsion
 import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
@@ -44,7 +47,16 @@ theorem FreyCurve.torsion_isHardlyRamified :
       (P.freyCurve.galoisRep P.p (show 0 < P.p from P.hppos)) :=
   sorry
 
+-- VENDORING CHANGE: the `sorry` is replaced by the reduction to **B5**
+-- (`GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`, in
+-- `Reducible.lean`): the torsion representation is hardly ramified
+-- (`torsion_isHardlyRamified` above), and hardly ramified mod-`ℓ`
+-- representations with `ℓ ≥ 5` are not irreducible.
 theorem FreyCurve.torsion_not_isIrreducible :
     haveI : Fact (P.p.Prime) := ⟨P.pp⟩
     ¬ GaloisRep.IsIrreducible (P.freyCurve.galoisRep P.p P.hppos) :=
-  sorry -- TODO prove this
+  haveI : Fact (P.p.Prime) := ⟨P.pp⟩
+  GaloisRepresentation.not_isIrreducible_of_isHardlyRamified P.hp_odd P.hp5
+    ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).p_torsion_rank
+      (Nat.cast_ne_zero.mpr P.hp0))
+    (FreyCurve.torsion_isHardlyRamified P)
