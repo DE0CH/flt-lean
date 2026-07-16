@@ -135,9 +135,17 @@ map where helpful.
             is closed (module topology on `End` over `ZMod ℓ` is discrete
             — PROVEN; coefficient maps continuous) and contains the dense
             Frobenius conjugates, so Brauer–Nesbitt applies. Children:
-            - ✗ `dense_conjClasses_globalFrob` — **Chebotarev density**,
-              topological form: conjugates of `globalFrob v`, `v ∉ S`,
-              are dense in `Γ K`.
+            - ✓ `dense_conjClasses_globalFrob` — **Chebotarev density**,
+              topological form — now DERIVED (2026-07-16) by the
+              profinite limit argument (PROVEN: cosets of fixing
+              subgroups of finite subextensions are a neighborhood basis,
+              `krullTopology_mem_nhds_one_iff`; the finite-level
+              statement puts a Frobenius conjugate in every coset):
+              - ✗ `exists_frobenius_conj_mem_coset` — **Chebotarev,
+                finite level**: for every finite subextension `E` of
+                `K̄/K` and every `σ`, the coset `σ·Gal(K̄/E)` contains a
+                conjugate of a `globalFrob v` with `v ∉ S` (existence
+                form of Chebotarev for the Galois closure of `E/K`).
             - ✓ `not_isIrreducible_of_charpoly_eq` — **Brauer–Nesbitt**,
               2-dim mod-ℓ instance — PROVEN SORRY-FREE (2026-07-16):
               Cayley–Hamilton turns the charpoly hypothesis into

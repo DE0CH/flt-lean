@@ -78,14 +78,49 @@ lemma GaloisRep.charFrob_eq_charpoly_globalFrob {A : Type*} [CommRing A]
   rfl
 
 set_option warn.sorry false in
-/-- **Chebotarev density, topological form** (sorry node): for a finite
-set `S` of finite places of a number field `K`, the union of the conjugacy
-classes of the global Frobenius elements at the places outside `S` is
-dense in the absolute Galois group. -/
+/-- **Chebotarev, finite level** (sorry node): modulo the fixing subgroup
+of any finite subextension `E` of `K̄/K`, every element of the absolute
+Galois group is a conjugate of a global Frobenius at a place outside any
+given finite set `S`. This is the existence form of the Chebotarev
+density theorem for the finite Galois closure of `E/K` (every element of
+`Gal(E'/K)` is a Frobenius at infinitely many places), stated without
+finite-quotient vocabulary: the coset `σ · Gal(K̄/E)` meets the Frobenius
+conjugates. -/
+theorem exists_frobenius_conj_mem_coset (S : Finset (Ω K))
+    (E : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K E]
+    (σ : Γ K) :
+    ∃ v : Ω K, v ∉ S ∧ ∃ g : Γ K,
+      σ⁻¹ * (g * globalFrob v * g⁻¹) ∈ E.fixingSubgroup :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Chebotarev density, topological form**: for a finite set `S` of
+finite places of a number field `K`, the union of the conjugacy classes
+of the global Frobenius elements at the places outside `S` is dense in
+the absolute Galois group. DERIVED from the finite-level node
+`exists_frobenius_conj_mem_coset` by the profinite limit argument: the
+cosets of fixing subgroups of finite subextensions form a neighborhood
+basis of the Krull topology (`krullTopology_mem_nhds_one_iff`), and the
+finite-level statement puts a Frobenius conjugate in every such coset. -/
 theorem dense_conjClasses_globalFrob (S : Finset (Ω K)) :
     Dense {x : Γ K | ∃ v : Ω K, v ∉ S ∧ ∃ g : Γ K,
-      x = g * globalFrob v * g⁻¹} :=
-  sorry
+      x = g * globalFrob v * g⁻¹} := by
+  classical
+  rw [dense_iff_inter_open]
+  rintro U hU ⟨σ, hσ⟩
+  open Pointwise in
+  have hUnhds : (σ⁻¹ • U : Set (Γ K)) ∈ nhds (1 : Γ K) := by
+    have hopen : IsOpen (σ⁻¹ • U : Set (Γ K)) := hU.smul σ⁻¹
+    exact hopen.mem_nhds ⟨σ, hσ, by simp⟩
+  obtain ⟨E, hEfin, hEsub⟩ :=
+    (krullTopology_mem_nhds_one_iff K (AlgebraicClosure K) _).mp hUnhds
+  haveI := hEfin
+  obtain ⟨v, hvS, g, hg⟩ := exists_frobenius_conj_mem_coset S E σ
+  refine ⟨g * globalFrob v * g⁻¹, ?_, v, hvS, g, rfl⟩
+  obtain ⟨u, hu, huv⟩ := hEsub hg
+  have hue : u = g * globalFrob v * g⁻¹ :=
+    mul_left_cancel (by rw [← smul_eq_mul]; exact huv)
+  rwa [← hue]
 
 /-!
 ## The mod-`ℓ` cyclotomic character as a continuous character of `Γ ℚ`
