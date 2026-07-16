@@ -532,7 +532,17 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   (`MazurTorsion.lean`, unconditional) — an open subgroup of `Γ ℚ` has
   finite quotient; the full instance chain (`IsAlgClosure.isGalois` →
   `CompactSpace Gal` → `Subgroup.quotient_finite_of_isOpen`)
-  synthesizes without intervention;
+  synthesizes without intervention. MOREOVER mathlib has the COMPLETE
+  group↔field transfer (`FieldTheory/Galois/Infinite.lean`):
+  `InfiniteGalois.isOpen_iff_finite` (`IsOpen L.fixingSubgroup ↔
+  FiniteDimensional k L`), `InfiniteGalois.normal_iff_isGalois`, and
+  the combined `isOpen_and_normal_iff_finite_and_isGalois` — so for
+  `H` open normal, `L := fixedField H` has `fixingSubgroup L = H`
+  (correspondence, `H` closed) and is a FINITE GALOIS extension of ℚ
+  by these named lemmas, giving `NumberField L` and activating
+  `exists_not_isUnramifiedAt_int_of_isGalois` directly. Every step of
+  the Minkowski node except the inertia dictionary is now named
+  mathlib API;
   (3) conclude `ker χ = ⊤` from `fixedField χ.ker = ⊥` by the infinite
   Galois correspondence, hence `χ = 1`. Estimated: one focused session;
   start from a FRESH context.
