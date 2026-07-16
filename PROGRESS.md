@@ -527,7 +527,12 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   `Ideal.ramificationIdx = 1` (`Ideal.ramificationIdx_eq_one_iff`, used
   in `ExistsRamified.lean`). The dictionary = compatibility of the two
   inertia presentations along the embedding `ℚ̄ ↪ ℚ̄_q` + the
-  inertia-trivial ⟹ unramified direction for the finite quotient;
+  inertia-trivial ⟹ unramified direction for the finite quotient.
+  **Step (1) is now PROVEN in-tree**: `finite_quotient_of_isOpen`
+  (`MazurTorsion.lean`, unconditional) — an open subgroup of `Γ ℚ` has
+  finite quotient; the full instance chain (`IsAlgClosure.isGalois` →
+  `CompactSpace Gal` → `Subgroup.quotient_finite_of_isOpen`)
+  synthesizes without intervention;
   (3) conclude `ker χ = ⊤` from `fixedField χ.ker = ⊥` by the infinite
   Galois correspondence, hence `χ = 1`. Estimated: one focused session;
   start from a FRESH context.
