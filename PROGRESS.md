@@ -596,7 +596,16 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   `ℚ̄ ↪ ℚ̄_q` intertwines the restricted action with the original, so
   a σ in the local inertia (trivial mod `𝔪` on the integral closure
   upstairs) transports its congruence to the embedded `𝓞 L`, giving
-  trivial residue action at the induced prime. Post-derivation audit:
+  trivial residue action at the induced prime. Target shape:
+  `Algebra.IsUnramifiedAt R q` is an ABBREV for
+  `FormallyUnramified R (Localization.AtPrime q)`
+  (`Unramified/Locus.lean:45`), with the concrete characterization
+  `Algebra.isUnramifiedAt_iff_map_eq` (`Unramified/LocalRing.lean:134`,
+  the file whose FLT overlay is ALREADY VENDORED): unramified at `q`
+  over `p` ⟺ `κ(q)/κ(p)` separable (automatic here — finite fields)
+  ∧ `pS_q = qS_q`. So the dictionary reduces to the ideal equality
+  `q·(𝓞 L)_Q = Q·(𝓞 L)_Q`, i.e. `e = 1`, from the trivial inertia
+  action — the classical argument. Post-derivation audit:
   `open_normal_subgroup_eq_top_of_inertia_le`,
   `minkowski_character_trivial`, and
   `exists_torsion_embedding_of_not_isIrreducible` all show exactly
