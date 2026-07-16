@@ -112,6 +112,22 @@ map where helpful.
               parameter as evaluation), plus the two ValuativeRel
               `FLT.Mathlib` prerequisites (also sorry-free). Feeds the
               Tate-curve chain (`TateCurve.lean` etc.) next.
+            - ✓ Tate-curve/reduction batch vendored (2026-07-16, ZERO
+              sorries — all fully proven): `TateCurveConstruction.lean`
+              (1551 lines: the Tate curve `E_q` over a nonarchimedean
+              local field, its q-expansions via
+              `Slop/NumberTheory/TsumDivisorsAntidiagonal.lean`),
+              `TateCurveBaseChange.lean` (E_q commutes with base
+              change), `ReductionBaseChange.lean` (multiplicative
+              reduction transfers along finite extensions; Kraus–Laska
+              minimality criterion), the mathlib overlay
+              `Mathlib/AlgebraicGeometry/EllipticCurve/Reduction.lean`,
+              and four `FLT.Mathlib` prerequisites
+              (QuadraticDiscriminant, Splits, Weierstrass DVR overlay,
+              IsDiscreteValuationRing). Remaining for this branch:
+              `TateCurve.lean` (upstream `tateCurveEquiv` is sorry-d
+              DATA — must be reformulated existentially before
+              vendoring, as done for the Weil pairing).
         - ✓ **B5** `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
           (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work) —
           now DERIVED (2026-07-16) from three explicit nodes in
@@ -584,3 +600,25 @@ assumed. Axiom invariant: every declaration must use at most
   `not_isIrreducible_of_charpoly_eq`, `cyclotomicCharacterModL_globalFrob`,
   `n_torsion_card`, `eval_ΨSq_eq_zero_of_smul_eq_zero`,
   `ΨSq_ne_zero_of_charDvd`.
+- 2026-07-16 (session 4): **Tate-curve/reduction batch vendored, ZERO
+  new sorries** — nine files from the FLT repo (import-rewritten), all
+  fully proven: `TateCurveConstruction.lean` (1551 lines, the Tate
+  curve `E_q` with its q-expansions), `TateCurveBaseChange.lean`,
+  `ReductionBaseChange.lean` (multiplicative-reduction transfer +
+  Kraus–Laska minimality; the upstream copy is sorry-free, so the
+  planned opt-out was dropped), the mathlib overlay
+  `Mathlib/AlgebraicGeometry/EllipticCurve/Reduction.lean`,
+  `Slop/NumberTheory/TsumDivisorsAntidiagonal.lean`, and four
+  `FLT.Mathlib` prerequisites discovered during the build
+  (QuadraticDiscriminant, Splits, Weierstrass DVR overlay,
+  IsDiscreteValuationRing). All wired into the root module; full
+  `lake build` fails only at the sorry gate. Frontier unchanged at 17:
+  `smul_surjective`, `prime_torsion_card`, `exists_weilPairing`,
+  `exists_frobenius_conj_mem_coset`, B6a, B6b, B6c, `mod_three`,
+  `mazur_classification`, `exists_torsion_embedding_of_not_isIrreducible`,
+  `torsion_isUnramified`, `torsion_isFlat`, `torsion_isTameAtTwo`,
+  `torsion_unramified_of_good_reduction`,
+  `torsion_flat_of_good_reduction`, `resultant_Φ_ΨSq`,
+  `isCoprime_Φ_ΨSq`. Next: reformulate `TateCurve.lean`'s sorry-d data
+  (`tateCurveEquiv`) existentially, then decompose `torsion_isTameAtTwo`
+  against the now-complete Tate-curve infrastructure.
