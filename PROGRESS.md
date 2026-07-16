@@ -1491,3 +1491,17 @@ assumed. Axiom invariant: every declaration must use at most
   glue: `N := normalClosure`, reify `M` as `M' ⊆ ↥N`, transport
   `e(M') = 1` back to the subextension `M` (ring iso
   `𝒪_{M'} ≅ 𝒪_M` from `M' ≅ M` as `Kᵥ`-extensions).
+- 2026-07-17 (session 5): **FINITE-LEVEL INERTIA SURJECTIVITY PROVEN**
+  (`restrictNormalHom_inertia_surjective`, unconditional) — for normal
+  `M' ⊆ N` finite over `Kᵥ`, the restriction maps `I(𝔪_N/Gal(N/Kᵥ))`
+  ONTO `I(𝔪_{M'}/Gal(M'/Kᵥ))`. First-isomorphism counting:
+  `|A| = |ker f|·|range f|`; `|ker f| = |I(𝔪_N/Gal(N/M'))|` via
+  TWO-WAY INJECTIONS + `Nat.le_antisymm` (round-trip `Equiv`
+  coherence proofs kept failing on beta-redex/`Subtype.ext` layers —
+  the two-injection pattern is far more robust); the counts and tower
+  from the previous lemmas; `Subgroup.eq_of_le_of_card_ge` closes.
+  Also PROVEN: `restrictNormalHom_mem_inertia_intermediate`
+  (restriction-into at the (E, M') level). The local node now needs
+  ONLY: profinite compactness lifting (Γ compact, `localInertiaGroup`
+  closed, directed system over finite Galois levels — all finite-level
+  inputs now proven) and the final normalClosure/reification glue.

@@ -494,6 +494,171 @@ theorem restrictNormalHom_mem_inertia_intermediate [Normal
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 2000000 in
+/-- **Finite-level inertia surjectivity**: for normal `M' ⊆ N` over
+`Kᵥ`, the restriction `Gal(N/Kᵥ) → Gal(M'/Kᵥ)` maps the inertia of
+`𝔪_N` ONTO the inertia of `𝔪_{M'}`. Counting: with
+`f := restriction ∘ inclusion` on `A := I(𝔪_N/Gal(N/Kᵥ))`,
+`|A| = |ker f|·|range f|` (first isomorphism theorem); `ker f`
+biject with `I(𝔪_N/Gal(N/M'))` (kernel of restriction is the fixing
+subgroup, and the upgrade preserves the inertia condition), which has
+cardinality `e(N/M')`; `|A| = e(N/Kᵥ) = e(M'/Kᵥ)·e(N/M')` (tower), so
+`|range f| = e(M'/Kᵥ) = |I(𝔪_{M'})|`, and `range f ≤ I(𝔪_{M'})` by
+the restriction-into lemma — hence equality. No henselian input. -/
+theorem restrictNormalHom_inertia_surjective [IsGalois
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
+    [Normal (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) M']
+    (τ : M' ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] M')
+    (hτ : τ ∈ (𝔪 (IntegralClosure 𝒪ᵥ M')).inertia
+      (M' ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] M')) :
+    ∃ σ : N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N,
+      σ ∈ (𝔪 (IntegralClosure 𝒪ᵥ N)).inertia
+        (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N) ∧
+      AlgEquiv.restrictNormalHom M' σ = τ := by
+  classical
+  -- the restricted homomorphism on the inertia subgroup
+  set A : Subgroup (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N) :=
+    (𝔪 (IntegralClosure 𝒪ᵥ N)).inertia
+      (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N) with hA
+  set f : A →* (M' ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] M') :=
+    (AlgEquiv.restrictNormalHom M').comp A.subtype with hf
+  -- the range of `f` sits inside the target inertia
+  have hrange : f.range ≤ (𝔪 (IntegralClosure 𝒪ᵥ M')).inertia
+      (M' ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] M') := by
+    rintro _ ⟨σ, rfl⟩
+    exact restrictNormalHom_mem_inertia_intermediate v N M' σ.1 σ.2
+  -- the kernel of `f` bijects with the inertia over `M'`
+  have hker : Nat.card f.ker =
+      Nat.card ((𝔪 (IntegralClosure 𝒪ᵥ N)).inertia (N ≃ₐ[M'] N)) := by
+    refine Nat.le_antisymm ?_ ?_
+    · -- forward injection: a kernel element fixes `M'`, upgrade it
+      refine Nat.card_le_card_of_injective (fun σ =>
+        ⟨IntermediateField.fixingSubgroupEquiv M'
+          ⟨σ.1.1, (IntermediateField.restrictNormalHom_ker M') ▸ σ.2⟩, ?_⟩) ?_
+      · refine AddSubgroup.mem_inertia.mpr fun x => ?_
+        have hσ := AddSubgroup.mem_inertia.mp σ.1.2
+        have h2 : (IntermediateField.fixingSubgroupEquiv M'
+            ⟨σ.1.1, (IntermediateField.restrictNormalHom_ker M') ▸ σ.2⟩ :
+            N ≃ₐ[M'] N) • x = σ.1.1 • x := by
+          apply Subtype.ext
+          rfl
+        rw [h2]
+        exact hσ x
+      · intro a b hab
+        have h3 := (IntermediateField.fixingSubgroupEquiv M').injective
+          (Subtype.ext_iff.mp hab)
+        exact Subtype.ext (Subtype.ext (congrArg
+          (fun (x : M'.fixingSubgroup) =>
+            (x : N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N)) h3))
+    · -- backward injection: an inertia element over `M'` is in the kernel
+      refine Nat.card_le_card_of_injective (fun ρ =>
+        ⟨⟨((IntermediateField.fixingSubgroupEquiv M').symm ρ.1 :
+          M'.fixingSubgroup).1, ?_⟩, ?_⟩) ?_
+      · refine AddSubgroup.mem_inertia.mpr fun x => ?_
+        have hρ := AddSubgroup.mem_inertia.mp ρ.2
+        have h2 : (((IntermediateField.fixingSubgroupEquiv M').symm ρ.1 :
+            M'.fixingSubgroup).1) • x = ρ.1 • x := by
+          apply Subtype.ext
+          show (((IntermediateField.fixingSubgroupEquiv M').symm ρ.1 :
+            M'.fixingSubgroup).1) x.1 = (ρ.1 : N ≃ₐ[M'] N) x.1
+          have h3 := (IntermediateField.fixingSubgroupEquiv M').apply_symm_apply ρ.1
+          exact congrFun (congrArg (fun (g : N ≃ₐ[M'] N) => (g : N → N)) h3) x.1
+        rw [h2]
+        exact hρ x
+      · show AlgEquiv.restrictNormalHom M' _ = 1
+        rw [← MonoidHom.mem_ker, IntermediateField.restrictNormalHom_ker M']
+        exact ((IntermediateField.fixingSubgroupEquiv M').symm ρ.1).2
+      · intro a b hab
+        have h3 : ((IntermediateField.fixingSubgroupEquiv M').symm a.1 :
+            M'.fixingSubgroup) = (IntermediateField.fixingSubgroupEquiv M').symm b.1 :=
+          Subtype.ext (congrArg (fun (x : ↥f.ker) =>
+            ((x : A) : N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N))
+            hab)
+        exact Subtype.ext
+          ((IntermediateField.fixingSubgroupEquiv M').symm.injective h3)
+  -- first isomorphism: `|A| = |ker f| · |range f|`
+  have hiso : Nat.card A = Nat.card f.ker * Nat.card f.range := by
+    rw [Subgroup.card_eq_card_quotient_mul_card_subgroup f.ker,
+      Nat.card_congr (QuotientGroup.quotientKerEquivRange f).toEquiv, mul_comm]
+  -- the three ramification counts
+  have hcA : Nat.card A = Ideal.ramificationIdx' (𝔪 𝒪ᵥ)
+      (𝔪 (IntegralClosure 𝒪ᵥ N)) := card_inertia_finite_level v N
+  haveI : Algebra.IsSeparable
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) M' :=
+    Algebra.isSeparable_tower_bot_of_isSeparable
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) M' N
+  haveI : IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) M' :=
+    { }
+  have hcM : Nat.card ((𝔪 (IntegralClosure 𝒪ᵥ M')).inertia
+      (M' ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] M')) =
+      Ideal.ramificationIdx' (𝔪 𝒪ᵥ) (𝔪 (IntegralClosure 𝒪ᵥ M')) :=
+    card_inertia_finite_level v M'
+  have hcJ := card_inertia_intermediate v N M'
+  -- tower and positivity (as in the counting step)
+  haveI hlies : (𝔪 (IntegralClosure 𝒪ᵥ N)).LiesOver
+      (𝔪 (IntegralClosure 𝒪ᵥ M')) := by
+    constructor
+    haveI : Algebra.IsIntegral (IntegralClosure 𝒪ᵥ M') (IntegralClosure 𝒪ᵥ N) :=
+      Algebra.IsIntegral.tower_top (R := 𝒪ᵥ)
+    have hmax : ((𝔪 (IntegralClosure 𝒪ᵥ N)).comap
+        (algebraMap (IntegralClosure 𝒪ᵥ M') (IntegralClosure 𝒪ᵥ N))).IsMaximal :=
+      Ideal.isMaximal_comap_of_isIntegral_of_isMaximal (𝔪 (IntegralClosure 𝒪ᵥ N))
+    exact (hmax.eq_of_le
+      (IsLocalRing.maximalIdeal.isMaximal (IntegralClosure 𝒪ᵥ M')).ne_top
+      (IsLocalRing.le_maximalIdeal hmax.ne_top)).symm
+  haveI : FaithfulSMul (IntegralClosure 𝒪ᵥ M') (IntegralClosure 𝒪ᵥ N) := by
+    rw [faithfulSMul_iff_algebraMap_injective]
+    intro a b hab
+    have h1 := congrArg (algebraMap (IntegralClosure 𝒪ᵥ N) N) hab
+    rw [← IsScalarTower.algebraMap_apply, ← IsScalarTower.algebraMap_apply] at h1
+    haveI : IsFractionRing (IntegralClosure 𝒪ᵥ M') M' :=
+      IsIntegralClosure.isFractionRing_of_finite_extension 𝒪ᵥ Kᵥ M'
+        (IntegralClosure 𝒪ᵥ M')
+    have h2 : Function.Injective
+        (algebraMap (IntegralClosure 𝒪ᵥ M') N) := by
+      rw [IsScalarTower.algebraMap_eq (IntegralClosure 𝒪ᵥ M') M' N]
+      exact (algebraMap M' N).injective.comp
+        (IsFractionRing.injective (IntegralClosure 𝒪ᵥ M') M')
+    exact h2 h1
+  have htower := Ideal.ramificationIdx'_algebra_tower'
+    (𝔪 𝒪ᵥ) (𝔪 (IntegralClosure 𝒪ᵥ M')) (𝔪 (IntegralClosure 𝒪ᵥ N))
+  have hne2 : Ideal.ramificationIdx' (𝔪 (IntegralClosure 𝒪ᵥ M'))
+      (𝔪 (IntegralClosure 𝒪ᵥ N)) ≠ 0 :=
+    Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver _
+      (IsDiscreteValuationRing.not_a_field (IntegralClosure 𝒪ᵥ M'))
+  -- conclude `|range f| = |I(𝔪_{M'})|`, hence equality of subgroups
+  have hcard_range : Nat.card f.range =
+      Nat.card ((𝔪 (IntegralClosure 𝒪ᵥ M')).inertia
+        (M' ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] M')) := by
+    have h4 : Ideal.ramificationIdx' (𝔪 (IntegralClosure 𝒪ᵥ M'))
+        (𝔪 (IntegralClosure 𝒪ᵥ N)) * Nat.card f.range =
+        Ideal.ramificationIdx' (𝔪 (IntegralClosure 𝒪ᵥ M'))
+          (𝔪 (IntegralClosure 𝒪ᵥ N)) *
+          Ideal.ramificationIdx' (𝔪 𝒪ᵥ) (𝔪 (IntegralClosure 𝒪ᵥ M')) :=
+      calc Ideal.ramificationIdx' (𝔪 (IntegralClosure 𝒪ᵥ M'))
+            (𝔪 (IntegralClosure 𝒪ᵥ N)) * Nat.card f.range
+          = Nat.card f.ker * Nat.card f.range := by rw [hker, hcJ]
+        _ = Nat.card A := hiso.symm
+        _ = Ideal.ramificationIdx' (𝔪 𝒪ᵥ) (𝔪 (IntegralClosure 𝒪ᵥ N)) := hcA
+        _ = Ideal.ramificationIdx' (𝔪 𝒪ᵥ) (𝔪 (IntegralClosure 𝒪ᵥ M')) *
+            Ideal.ramificationIdx' (𝔪 (IntegralClosure 𝒪ᵥ M'))
+              (𝔪 (IntegralClosure 𝒪ᵥ N)) := htower
+        _ = Ideal.ramificationIdx' (𝔪 (IntegralClosure 𝒪ᵥ M'))
+              (𝔪 (IntegralClosure 𝒪ᵥ N)) *
+            Ideal.ramificationIdx' (𝔪 𝒪ᵥ) (𝔪 (IntegralClosure 𝒪ᵥ M')) :=
+          mul_comm _ _
+    rw [hcM]
+    exact Nat.eq_of_mul_eq_mul_left (Nat.pos_of_ne_zero hne2) h4
+  have heq : f.range = (𝔪 (IntegralClosure 𝒪ᵥ M')).inertia
+      (M' ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] M') := by
+    haveI : Finite ((𝔪 (IntegralClosure 𝒪ᵥ M')).inertia
+        (M' ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] M')) :=
+      Subtype.finite
+    exact Subgroup.eq_of_le_of_card_ge hrange (le_of_eq hcard_range.symm)
+  obtain ⟨σ, hσ⟩ := heq ▸ hτ
+  exact ⟨σ.1, σ.2, hσ⟩
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 2000000 in
 /-- **The counting step**: if the inertia subgroup of `𝔪_N` in
 `Gal(N/Kᵥ)` fixes the intermediate field `M'` pointwise, then `M'/Kᵥ`
 is unramified (`e(𝔪ᵥ at 𝔪_{M'}) = 1`). Proof:
