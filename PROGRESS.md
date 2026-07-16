@@ -202,14 +202,24 @@ map where helpful.
 
 ## Next-step reconnaissance (2026-07-16, session 3 close)
 
-- `torsion_isUnramified` / `torsion_isTameAtTwo` / `torsion_isFlat`: the
-  natural source is the FLT repo's
-  `FLT/KnownIn1980s/EllipticCurves/TateCurve.lean` (512 lines): Tate
-  curve, Tate parameter `q` with valuation lemmas, and Tate's
-  uniformization `tateEquiv` — NB the latter is **sorry-d DATA** (a
-  `def`), so vendoring must track it as meaning-poisoning until its
-  existence node closes (cf. the old `galoisRep` situation). Check
-  whether the file uses `knownin1980s` before vendoring.
+- `torsion_isUnramified` / `torsion_isTameAtTwo` / `torsion_isFlat` /
+  `exists_weilPairing`: the natural source is the FLT repo's
+  `FLT/KnownIn1980s/EllipticCurves/` directory (TateCurve.lean 512
+  lines, plus WeilPairing.lean, Torsion.lean, GoodReduction.lean,
+  Flat.lean, TateParameter.lean, TateCurveBaseChange.lean,
+  ReductionBaseChange.lean, TateCurveConstruction.lean) — exactly the
+  remaining Frey-condition vocabulary. **BLOCKER (2026-07-16): these
+  depend on `Mathlib.AlgebraicGeometry.EllipticCurve.Reduction` and
+  `Mathlib.NumberTheory.LocalField.Basic`, which do not exist at our
+  pinned mathlib rev (a3364faec429).** The unlock is a **mathlib pin
+  bump** to the FLT project's current rev (`git -C ~/cs/FLT log` for
+  their lakefile pin) — a major migration (all vendored files + own
+  work re-compile; expect module-system and API breakage; budget a full
+  session). Alternative (worse): vendor the missing mathlib files or
+  hand-roll minimal statements. NB `tateEquiv` (Tate's uniformization)
+  is **sorry-d DATA** (a `def`), so vendoring must track it as
+  meaning-poisoning until its existence node closes (cf. the old
+  `galoisRep` situation).
 - `residual_charFrob_eq_of_family` (glue): the eventual proof needs an
   embedding `E →+* ℚ̄₃` (`IsAlgClosed.lift` on the algebraic extension
   E/ℚ), charpoly-vs-baseChange (`LinearMap.charpoly_baseChange`) and
