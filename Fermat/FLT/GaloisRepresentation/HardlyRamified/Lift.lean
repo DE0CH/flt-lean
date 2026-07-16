@@ -161,7 +161,15 @@ determinant, part of `IsHardlyRamified`); compatibility transports the
 resulting characteristic polynomial `X² − (q+1)X + q` from the `3`-adic
 member to the `ℓ`-adic member, and the lift's `charFrob_compat` reduces it
 to `ρbar`. No arithmetic-geometric content remains in this node — only
-linear-algebra and base-change bookkeeping. -/
+linear-algebra and base-change bookkeeping.
+
+AUDIT RESTATEMENT (2026-07-16): the conclusion allows a finite
+exceptional set `S` of places — the compatibility of the family
+(`GaloisRepFamily.isCompatible`) only pins the characteristic
+polynomials outside an unspecified finite set of places, so the former
+`∀ q ∉ {2,3,ℓ}` form was unprovable from the stated hypotheses. The
+downstream Chebotarev–Brauer–Nesbitt argument is insensitive to any
+finite exceptional set. -/
 theorem residual_charFrob_eq_of_family (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ (ZMod ℓ) V} (L : HardlyRamifiedLift hℓOdd ρbar)
     (hfam :
@@ -169,9 +177,12 @@ theorem residual_charFrob_eq_of_family (hℓ5 : 5 ≤ ℓ)
       letI := L.isTopologicalRing; letI := L.isLocalRing; letI := L.algebra
       letI := L.moduleFinite; letI := L.isModuleTopology
       IsHardlyRamified.IsInHardlyRamifiedFamily (p := ℓ) L.ρ) :
-    ∀ q (hq : q.Prime), q ≠ 2 → q ≠ 3 → q ≠ ℓ →
-      ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
-        X ^ 2 - C ((q : ZMod ℓ) + 1) * X + C (q : ZMod ℓ) :=
+    ∃ S : Finset (IsDedekindDomain.HeightOneSpectrum
+        (NumberField.RingOfIntegers ℚ)),
+      ∀ q (hq : q.Prime),
+        Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq ∉ S → q ≠ ℓ →
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+          X ^ 2 - C ((q : ZMod ℓ) + 1) * X + C (q : ZMod ℓ) :=
   sorry
 
 /-- **B6b + B6c**: the residual characteristic polynomials of Frobenius of
@@ -183,9 +194,12 @@ compatibility bookkeeping node above (which consumes **B6c**,
 `IsHardlyRamified.three_adic`). -/
 theorem residual_charFrob_eq (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ (ZMod ℓ) V} (L : HardlyRamifiedLift hℓOdd ρbar) :
-    ∀ q (hq : q.Prime), q ≠ 2 → q ≠ 3 → q ≠ ℓ →
-      ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
-        X ^ 2 - C ((q : ZMod ℓ) + 1) * X + C (q : ZMod ℓ) :=
+    ∃ S : Finset (IsDedekindDomain.HeightOneSpectrum
+        (NumberField.RingOfIntegers ℚ)),
+      ∀ q (hq : q.Prime),
+        Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq ∉ S → q ≠ ℓ →
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+          X ^ 2 - C ((q : ZMod ℓ) + 1) * X + C (q : ZMod ℓ) :=
   residual_charFrob_eq_of_family hℓOdd hℓ5 L
     (letI := L.commRing; letI := L.isDomain; letI := L.topologicalSpace
      letI := L.isTopologicalRing; letI := L.isLocalRing; letI := L.algebra
@@ -209,19 +223,47 @@ closed (both coefficient functions are continuous into the discrete
 dense set of Frobenius conjugates, hence is everything. -/
 theorem not_isIrreducible_of_charFrob_eq
     {ρbar : GaloisRep ℚ (ZMod ℓ) V}
-    (h : ∀ q (hq : q.Prime), q ≠ 2 → q ≠ 3 → q ≠ ℓ →
+    (S : Finset (IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers ℚ)))
+    (h : ∀ q (hq : q.Prime),
+      Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq ∉ S → q ≠ ℓ →
       ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
         X ^ 2 - C ((q : ZMod ℓ) + 1) * X + C (q : ZMod ℓ)) :
     ¬ ρbar.IsIrreducible := by
   classical
-  -- an auxiliary prime `q₀ ∉ {2, 3, ℓ}` pins the rank at 2
-  obtain ⟨q₀, hq₀p, hq₀2, hq₀3, hq₀ℓ⟩ :
-      ∃ q₀ : ℕ, q₀.Prime ∧ q₀ ≠ 2 ∧ q₀ ≠ 3 ∧ q₀ ≠ ℓ := by
-    by_cases h5 : ℓ = 5
-    · exact ⟨7, by decide, by decide, by decide, by omega⟩
-    · exact ⟨5, by decide, by decide, by decide, fun hc => h5 hc.symm⟩
+  -- an auxiliary prime avoiding the exceptional places pins the rank at 2:
+  -- distinct primes give distinct places, so a finite set of places
+  -- excludes only finitely many primes
+  obtain ⟨q₀, hq₀p, hq₀S, hq₀ℓ⟩ :
+      ∃ q₀ : ℕ, ∃ hq₀ : q₀.Prime,
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq₀ ∉ S) ∧ q₀ ≠ ℓ := by
+    set T : Finset ℕ := (insert
+        ((Fact.out : ℓ.Prime).toHeightOneSpectrumRingOfIntegersRat)
+        S).attach.image
+      (fun v => (exists_prime_toHeightOneSpectrum v.1).choose) with hT
+    obtain ⟨q₀, hq₀ge, hq₀p⟩ := Nat.exists_infinite_primes (T.sup id + 1)
+    have hq₀T : q₀ ∉ T := by
+      intro hmem
+      have := Finset.le_sup (f := id) hmem
+      simp only [id] at this
+      omega
+    have hq₀S' : Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq₀p ∉
+        insert ((Fact.out : ℓ.Prime).toHeightOneSpectrumRingOfIntegersRat)
+          S := by
+      intro hmem
+      apply hq₀T
+      obtain ⟨hcp, hceq⟩ := (exists_prime_toHeightOneSpectrum
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq₀p)).choose_spec
+      have hch : (exists_prime_toHeightOneSpectrum
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq₀p)).choose = q₀ :=
+        toHeightOneSpectrumRingOfIntegersRat_injective hcp hq₀p hceq.symm
+      rw [hT]
+      exact Finset.mem_image.mpr ⟨⟨_, hmem⟩, Finset.mem_attach _ _, hch⟩
+    refine ⟨q₀, hq₀p, fun hmem => hq₀S' (Finset.mem_insert_of_mem hmem), ?_⟩
+    rintro rfl
+    exact hq₀S' (Finset.mem_insert.mpr (Or.inl rfl))
   have hfr : Module.finrank (ZMod ℓ) V = 2 := by
-    have h0 := congrArg Polynomial.natDegree (h q₀ hq₀p hq₀2 hq₀3 hq₀ℓ)
+    have h0 := congrArg Polynomial.natDegree (h q₀ hq₀p hq₀S hq₀ℓ)
     rwa [GaloisRep.charFrob_eq_charpoly_globalFrob,
       LinearMap.charpoly_natDegree, natDegree_comparisonQuadratic] at h0
   have hrank : Module.rank (ZMod ℓ) V = 2 := by
@@ -258,10 +300,8 @@ theorem not_isIrreducible_of_charFrob_eq
   -- … and contains the dense set of Frobenius conjugates
   have hsub : {x : Field.absoluteGaloisGroup ℚ |
       ∃ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ),
-        v ∉ ({Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
-          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
-          (Fact.out : ℓ.Prime).toHeightOneSpectrumRingOfIntegersRat} :
-            Finset _) ∧
+        v ∉ insert
+          ((Fact.out : ℓ.Prime).toHeightOneSpectrumRingOfIntegersRat) S ∧
         ∃ g, x = g * globalFrob v * g⁻¹} ⊆
       {g : Field.absoluteGaloisGroup ℚ |
         (ρbar g).charpoly.coeff 1 =
@@ -270,17 +310,11 @@ theorem not_isIrreducible_of_charFrob_eq
           ((cyclotomicCharacterModL ℓ g : (ZMod ℓ)ˣ) : ZMod ℓ)} := by
     rintro x ⟨v, hvS, g, rfl⟩
     obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrum v
-    have hq2 : q ≠ 2 := by
-      rintro rfl
-      exact hvS (Finset.mem_insert.mpr (Or.inl rfl))
-    have hq3 : q ≠ 3 := by
-      rintro rfl
-      exact hvS (Finset.mem_insert.mpr (Or.inr
-        (Finset.mem_insert.mpr (Or.inl rfl))))
+    have hqS : Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq ∉ S :=
+      fun hmem => hvS (Finset.mem_insert_of_mem hmem)
     have hqℓ : q ≠ ℓ := by
       rintro rfl
-      exact hvS (Finset.mem_insert.mpr (Or.inr
-        (Finset.mem_insert.mpr (Or.inr (Finset.mem_singleton.mpr rfl)))))
+      exact hvS (Finset.mem_insert.mpr (Or.inl rfl))
     -- conjugation invariance of the characteristic polynomial
     have hgu : (ρbar g).comp (ρbar g⁻¹) = LinearMap.id := by
       have : ρbar g * ρbar g⁻¹ = 1 := by rw [← map_mul, mul_inv_cancel, map_one]
@@ -306,7 +340,7 @@ theorem not_isIrreducible_of_charFrob_eq
         cyclotomicCharacterModL ℓ (globalFrob
           (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)) := by
       rw [map_mul, map_mul, map_inv, mul_right_comm, mul_inv_cancel, one_mul]
-    have hval := h q hq hq2 hq3 hqℓ
+    have hval := h q hq hqS hqℓ
     rw [GaloisRep.charFrob_eq_charpoly_globalFrob] at hval
     have hfrob := cyclotomicCharacterModL_globalFrob (ℓ := ℓ) hq hqℓ
     constructor
@@ -322,9 +356,7 @@ theorem not_isIrreducible_of_charFrob_eq
         ((cyclotomicCharacterModL ℓ g : (ZMod ℓ)ˣ) : ZMod ℓ) := by
     intro g
     have hdense := dense_conjClasses_globalFrob (K := ℚ)
-      ({Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
-        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
-        (Fact.out : ℓ.Prime).toHeightOneSpectrumRingOfIntegersRat} : Finset _)
+      (insert ((Fact.out : ℓ.Prime).toHeightOneSpectrumRingOfIntegersRat) S)
     have : (Set.univ : Set (Field.absoluteGaloisGroup ℚ)) ⊆ _ :=
       hdense.closure_eq ▸ hDclosed.closure_subset_iff.mpr hsub
     exact this (Set.mem_univ g)

@@ -123,7 +123,17 @@ map where helpful.
             - ✗ `residual_charFrob_eq_of_family` (own work, `Lift.lean`)
               — compatibility BOOKKEEPING: family membership ⇒ residual
               charpolys are `X² − (q+1)X + q`; its eventual proof consumes
-              B6c:
+              B6c. AUDIT RESTATEMENT (2026-07-16): the conclusion (and
+              B6bc's, and the Chebotarev–Brauer–Nesbitt hypothesis) now
+              carries a finite exceptional set `S` of places — the
+              family's `isCompatible` only pins charpolys outside an
+              unspecified finite set, so the `∀ q ∉ {2,3,ℓ}` form was
+              unprovable; the density argument absorbs any finite `S`
+              (new sorry-free bridge:
+              `toHeightOneSpectrumRingOfIntegersRat_injective`, distinct
+              primes give distinct places, so a finite set of places
+              excludes only finitely many primes in the auxiliary-prime
+              selection). Proof ingredients consumed:
               - ✗ **B6c** `IsHardlyRamified.three_adic`
                 (`HardlyRamified/Threeadic.lean`, vendored) — a 3-adic
                 hardly ramified rep has trace(Frob_q) = 1 + q for q ≥ 5.

@@ -61,5 +61,5 @@ theorem GaloisRepresentation.not_isIrreducible_of_isHardlyRamified
   -- irreducible.
   intro hirr
   obtain ⟨L⟩ := exists_hardlyRamifiedLift hℓOdd hdim hℓ5 h hirr
-  exact not_isIrreducible_of_charFrob_eq
-    (residual_charFrob_eq hℓOdd hℓ5 L) hirr
+  obtain ⟨S, hS⟩ := residual_charFrob_eq hℓOdd hℓ5 L
+  exact not_isIrreducible_of_charFrob_eq S hS hirr
