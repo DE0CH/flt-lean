@@ -1076,11 +1076,14 @@ assumed. Axiom invariant: every declaration must use at most
   `Subgroup.map (absoluteGaloisGroup.map f) (localInertiaGroup v) ≤
   ρ.ker` — the Minkowski hypothesis `hle` with `L.fixingSubgroup`
   replaced by `ρ.ker` (whose membership = acting trivially on the
-  torsion module). So the five glue nodes decompose as
+  torsion module). So the TWO `IsUnramifiedAt` glue nodes decompose as
   [content node: inertia of the appropriate local object acts
-  trivially on the torsion — NOS / Tate / peu-ramifiée] + [the SAME
-  embedding-prime transport family as the surjectivity leaf]. Attack
-  the transport family ONCE, in the form serving both. The
+  trivially on the torsion — NOS resp. Tate] + [the SAME
+  embedding-prime transport family as the surjectivity leaf]; the
+  flat/tame glue nodes use the transport as an ingredient but carry
+  additional content (flat prolongation resp. the quotient-character
+  package). Attack the transport family ONCE, in the form serving the
+  three direct consumers. The
   four inertia spellings, fully mapped (2026-07-16): (1)
   `localInertiaGroup` = generic `AddSubgroup.inertia` of `𝔪` upstairs
   in `ℚ̄_q`, membership `.rfl`; (2) `ValuationSubring.inertiaSubgroup`

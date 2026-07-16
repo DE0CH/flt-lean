@@ -85,9 +85,12 @@ The 21 leaves, grouped:
   **UNIFICATION (session-4 close)**: `GaloisRep.ker_map` is `rfl`, so
   each glue node's `IsUnramifiedAt` conclusion is EXACTLY the Minkowski
   transport hypothesis with `ρ.ker` in place of `L.fixingSubgroup` —
-  the five glue nodes and the Minkowski surjectivity leaf all consume
-  ONE embedding-prime transport family. Build that transport once, in
-  the generality serving all six (see the session-4 reconnaissance in
+  the TWO `IsUnramifiedAt` glue nodes and the Minkowski surjectivity
+  leaf consume ONE embedding-prime transport family directly (the
+  flat/tame glue nodes have additional content — flat prolongation
+  resp. the quotient-character package — with the transport as an
+  ingredient, not the whole). Build that transport once, in the
+  generality serving the three direct consumers (see the session-4 reconnaissance in
   PROGRESS.md for the full verified chain around it).
 - **Two vendored reduction-theory leaves**: `torsion_unramified_of_good_reduction`
   (NOS), `torsion_flat_of_good_reduction` (Hopf package), plus
