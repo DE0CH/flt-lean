@@ -81,8 +81,14 @@ The 21 leaves, grouped:
   `FreyConditions.lean`): isUnramifiedAt/isFlatAt at good primes (close
   against the vendored NOS/Flat nodes), isUnramifiedAt/isFlatAt at
   multiplicative primes and isTameAtTwo (close against the vendored
-  quadratic-twist theorem + `exists_tateEquivSepClosure`). All need the
-  SAME localInertiaGroup ↔ classical-inertia dictionary.
+  quadratic-twist theorem + `exists_tateEquivSepClosure`).
+  **UNIFICATION (session-4 close)**: `GaloisRep.ker_map` is `rfl`, so
+  each glue node's `IsUnramifiedAt` conclusion is EXACTLY the Minkowski
+  transport hypothesis with `ρ.ker` in place of `L.fixingSubgroup` —
+  the five glue nodes and the Minkowski surjectivity leaf all consume
+  ONE embedding-prime transport family. Build that transport once, in
+  the generality serving all six (see the session-4 reconnaissance in
+  PROGRESS.md for the full verified chain around it).
 - **Two vendored reduction-theory leaves**: `torsion_unramified_of_good_reduction`
   (NOS), `torsion_flat_of_good_reduction` (Hopf package), plus
   `resultant_Φ_ΨSq`.
