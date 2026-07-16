@@ -11,7 +11,6 @@ import Fermat.FLT.GaloisRepresentation.HardlyRamified.Frey
 import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
 import Mathlib.Data.Nat.Factorial.DoubleFactorial
 import Mathlib.NumberTheory.ArithmeticFunction.Misc
-import Fermat.FLT.Assumptions.KnownIn1980s
 /-!
 
 # Irreducibility of the p-torsion of the Frey curve
@@ -32,5 +31,9 @@ theorem FreyPackage.mazur (P : FreyPackage) :
     let p := P.p
     have : Fact p.Prime := ⟨P.pp⟩
     GaloisRep.IsIrreducible (E.galoisRep p P.hppos) := by
-  -- this is in Serre's 1987 Duke paper.
-  knownin1980s
+  -- VENDORING CHANGE: the original proof is `knownin1980s`, the FLT
+  -- project's universal axiom for pre-1990 results ("this is in Serre's
+  -- 1987 Duke paper"). Per project policy no such terminal citation nodes
+  -- are allowed — this is an ordinary open obligation, to be decomposed and
+  -- proven (Mazur's isogeny theorem + Serre §4.1) like every other node.
+  sorry

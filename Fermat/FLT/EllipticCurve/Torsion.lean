@@ -70,6 +70,19 @@ theorem WeierstrassCurve.n_torsion_dimension [IsSepClosed k] {n : ℕ} (hn : (n 
     simp [hn]
   exact ⟨φ.trans (RingEquiv.piFinTwo _).toAddEquiv⟩
 
+-- VENDORING ADDITION: the `p`-torsion is 2-dimensional as a `ZMod p`-module.
+-- This discharges the rank hypothesis of `IsHardlyRamified` for the Frey
+-- curve (previously a `sorry` in statement position in
+-- `GaloisRepresentation/HardlyRamified/Frey.lean`).
+theorem WeierstrassCurve.p_torsion_rank [IsSepClosed k] {p : ℕ} [Fact p.Prime]
+    (hp : (p : k) ≠ 0) : Module.rank (ZMod p) (E.nTorsion p) = 2 := by
+  obtain ⟨φ⟩ := E.n_torsion_dimension hp
+  let ψ : E.nTorsion p ≃ₗ[ZMod p] (ZMod p × ZMod p) :=
+    { φ with map_smul' := ZMod.map_smul φ.toAddMonoidHom }
+  have h := ψ.lift_rank_eq
+  rw [rank_prod', Module.rank_self] at h
+  simpa [one_add_one_eq_two] using h
+
 -- follows easily from the above
 noncomputable instance (n : ℕ) : Module.Finite (ZMod n) (E.nTorsion n) := by
   sorry

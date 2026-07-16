@@ -4,6 +4,7 @@ The proof spine here is adapted from the FLT project's `FLT/Proof.lean`
 Buzzard, released under the Apache 2.0 license.
 -/
 import Fermat.FLT.FreyCurve.Mazur
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.Frey
 
 /-!
 # Fermat's Last Theorem for prime exponents `p ≥ 5`
@@ -19,7 +20,7 @@ The chain (mirroring the "boss theorems" B2–B4 of the FLT project's
   (`Fermat/FLT/FreyCurve/FreyPackage.lean`, proven);
 * the mod-`p` Galois representation on the `p`-torsion of the Frey curve of a
   Frey package is irreducible — Mazur (`Fermat/FLT/FreyCurve/Mazur.lean`,
-  currently `sorry`-rooted via `knownin1980s`);
+  an open `sorry` node: to be fully formalized, no citation shortcuts);
 * that representation is *not* irreducible — Wiles' modularity theorem plus
   Ribet's level lowering plus the absence of weight-2 level-2 cusp forms
   (`FreyPackage.galoisRep_not_irreducible` below, the CURRENT SORRY ROOT,
@@ -41,8 +42,8 @@ theorem FreyPackage.galoisRep_not_irreducible (P : FreyPackage) :
     let E := P.freyCurve
     let p := P.p
     have : Fact p.Prime := ⟨P.pp⟩
-    ¬ GaloisRep.IsIrreducible (E.galoisRep p P.hppos) := by
-  sorry
+    ¬ GaloisRep.IsIrreducible (E.galoisRep p P.hppos) :=
+  FreyCurve.torsion_not_isIrreducible P
 
 /-- **There is no Frey package**: the `p`-torsion of its Frey curve would be
 both irreducible (Mazur) and not irreducible (Wiles, Taylor–Wiles, Ribet). -/

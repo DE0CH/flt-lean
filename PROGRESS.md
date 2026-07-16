@@ -32,9 +32,8 @@ map where helpful.
     - ✓ `FreyPackage.false : FreyPackage → False` — now PROVEN from Mazur +
       B4 (mirroring the FLT project's `Proof.lean` boss-theorem spine):
       - ✗ `FreyPackage.mazur` (`Fermat/FLT/FreyCurve/Mazur.lean`) — the mod-p
-        rep of the Frey curve is irreducible; proof = `knownin1980s`, which we
-        vendored as a sorry-backed theorem (NOT their `axiom`), file
-        `Fermat/FLT/Assumptions/KnownIn1980s.lean`.
+        rep of the Frey curve is irreducible (Mazur + Serre §4.1); plain
+        `sorry`, an open node like any other.
       - ✗ `FreyPackage.galoisRep_not_irreducible` (B4, `Fermat/PrimeFive.lean`)
         — Wiles modularity + Ribet level lowering + no weight-2 level-2 cusp
         forms. This is also the current frontier of the FLT project itself
@@ -51,6 +50,18 @@ map where helpful.
         real construction for B4/Mazur to mean what they should.
       - `Fermat/FLT/GaloisRepresentation/HardlyRamified/Frey.lean`: 2 sorries
         (the Frey curve's rep is hardly ramified — Serre §4.1).
+
+## Policy: no citation-terminal nodes (Deyao, 2026-07-16)
+
+The FLT project's `knownin1980s` mechanism (an axiom proving any proposition
+"an expert could deduce from pre-1990 literature") is **banned** here — first
+vendored as a sorry-backed theorem, then removed altogether. No node of the
+tree may be closed by appeal to expert knowledge or the literature; a node is
+closed only when Lean compiles its proof. The full tree, including Mazur,
+Ribet, Wiles–Taylor–Wiles and all supporting theory, is to be brought into
+Lean and checked mechanically. This increases the scope enormously and that
+is an explicit, accepted choice: the point is that the trust boundary is the
+Lean kernel plus the (shrinking) list of `sorry`s — never a human assertion.
 
 ## Vendored material
 

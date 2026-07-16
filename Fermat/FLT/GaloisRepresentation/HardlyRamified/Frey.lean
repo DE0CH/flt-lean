@@ -36,7 +36,11 @@ noncomputable instance : DecidableEq (AlgebraicClosure ℚ) := Classical.typeDec
 
 theorem FreyCurve.torsion_isHardlyRamified :
     haveI : Fact (P.p.Prime) := ⟨P.pp⟩
-    IsHardlyRamified P.hp_odd sorry
+    -- VENDORING CHANGE: the rank-2 hypothesis (a `sorry` in statement
+    -- position upstream) is discharged by `p_torsion_rank`.
+    IsHardlyRamified P.hp_odd
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).p_torsion_rank
+        (Nat.cast_ne_zero.mpr P.hp0))
       (P.freyCurve.galoisRep P.p (show 0 < P.p from P.hppos)) :=
   sorry
 
