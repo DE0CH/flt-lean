@@ -44,6 +44,8 @@ public import Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 public import Mathlib.NumberTheory.NumberField.Basic
 public import Mathlib.RingTheory.DedekindDomain.Dvr
 import Mathlib.RingTheory.Localization.LocalizationLocalization
+-- the unit-`c₄` Kraus–Laska minimality criterion, for the multiplicative case
+import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 
 @[expose] public section
 
@@ -167,6 +169,139 @@ theorem FreyPackage.freyCurve_hasGoodReduction_of_not_dvd (P : FreyPackage)
         WithZero (Multiplicative ℤ)) = 1 := by
       rw [one_smul, valuation_Δ_aux_eq_of_isIntegral R P.freyCurve, hval]
     exact Subtype.coe_le_coe.mp (le_of_le_of_eq hle h1.symm)
+
+open WeierstrassCurve in
+/-- **Multiplicative reduction of the Frey curve at odd bad primes**
+(PROVEN 2026-07-16): at an odd prime `q ∣ abc`, the Frey curve has
+multiplicative reduction over `ℤ_(q)`: the equation is `q`-integral;
+`c₄ = c^{2p} - (ab)^p` is prime to `q` (by pairwise coprimality exactly
+one of `ab`, `c` is divisible by `q`, so the difference is not), giving
+`v(c₄) = 1` — whence minimality by the unit-`c₄` Kraus–Laska criterion
+(`isMinimal_of_valuation_c₄_eq_one`) — while `Δ = (abc)^{2p}/2⁸` lies in
+the maximal ideal, giving `v(Δ) < 1`. -/
+theorem FreyPackage.freyCurve_hasMultiplicativeReduction_of_dvd (P : FreyPackage)
+    {q : ℕ} (hq : q.Prime) (hq2 : q ≠ 2) (hdvd : (q : ℤ) ∣ P.a * P.b * P.c) :
+    P.freyCurve.HasMultiplicativeReduction
+      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) := by
+  set R := Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal with hR
+  have hqZ : Prime (q : ℤ) := Nat.prime_iff_prime_int.mp hq
+  -- `q`-integrality: every coefficient of the Frey equation is an integer
+  haveI hInt : IsIntegral R P.freyCurve := by
+    rw [← FreyCurve.map P]
+    refine isIntegral_of_exists_lift R ?_ ?_ ?_ ?_ ?_ <;>
+      exact ⟨_, (map_intCast (algebraMap R ℚ) _).trans
+        (eq_intCast (algebraMap ℤ ℚ) _).symm⟩
+  -- exactly one of `ab`, `c` is divisible by `q`
+  have hxor : Xor ((q : ℤ) ∣ P.a * P.b) ((q : ℤ) ∣ P.c) := by
+    rw [xor_iff_not_iff, iff_iff_and_or_not_and_not]
+    rintro (⟨hab, hc⟩ | ⟨hab, hc⟩)
+    · rw [hqZ.dvd_mul] at hab
+      apply hqZ.not_dvd_one
+      cases hab with
+      | inl ha => rw [← P.hgcdac]; exact dvd_gcd ha hc
+      | inr hb => rw [← P.hgcdbc]; exact dvd_gcd hb hc
+    · rw [hqZ.dvd_mul] at hdvd
+      exact hdvd.rec hab hc
+  -- `q` does not divide the integer `c^{2p} - (ab)^p`
+  have hc₄ndvd : ¬((q : ℤ) ∣ P.c ^ (2 * P.p) - (P.a * P.b) ^ P.p) := by
+    have h2p0 : 2 * P.p ≠ 0 := mul_ne_zero two_ne_zero P.hp0
+    cases hxor with
+    | inl h =>
+      rw [dvd_sub_left (dvd_pow h.1 P.hp0), hqZ.dvd_pow_iff_dvd h2p0]
+      exact h.2
+    | inr h =>
+      rw [dvd_sub_right (dvd_pow h.1 h2p0), hqZ.dvd_pow_iff_dvd P.hp0]
+      exact h.2
+  -- `v(c₄) = 1`: `c₄` is the image of a unit of `ℤ_(q)`
+  have hc₄cast : P.freyCurve.c₄ =
+      ((P.c ^ (2 * P.p) - (P.a * P.b) ^ P.p : ℤ) : ℚ) := by
+    rw [FreyCurve.c₄']
+    push_cast
+    ring
+  have huc₄ : IsUnit ((P.c ^ (2 * P.p) - (P.a * P.b) ^ P.p : ℤ) : R) :=
+    isUnit_intCast_localizationAtPrime hq hc₄ndvd
+  have hvalc₄ : IsDedekindDomain.HeightOneSpectrum.valuation ℚ
+      (IsDiscreteValuationRing.maximalIdeal R) P.freyCurve.c₄ = 1 := by
+    have hmem : P.freyCurve.c₄ ∈ MonoidHom.mker
+        ((IsDiscreteValuationRing.maximalIdeal R).valuation ℚ) := by
+      rw [IsDiscreteValuationRing.mker_valuation_eq_isUnitSubmonoid]
+      exact Submonoid.mem_map.mpr
+        ⟨_, huc₄, (hc₄cast.trans (map_intCast (algebraMap R ℚ) _).symm).symm⟩
+    exact MonoidHom.mem_mker.mp hmem
+  -- `v(Δ) < 1`: `Δ` is the image of an element of the maximal ideal
+  have h2 : ¬((q : ℤ) ∣ (2 : ℤ)) := by
+    intro h
+    have hq2' : q ∣ 2 := by exact_mod_cast h
+    exact hq2 ((Nat.prime_dvd_prime_iff_eq hq Nat.prime_two).mp hq2')
+  have hu2 : IsUnit (((2 : ℤ) : R)) := isUnit_intCast_localizationAtPrime hq h2
+  have hΔeq : P.freyCurve.Δ = algebraMap R ℚ
+      ((((P.a * P.b * P.c : ℤ) : R)) ^ (2 * P.p) * (↑hu2.unit⁻¹ : R) ^ 8) := by
+    rw [FreyCurve.Δ, map_mul, map_pow, map_intCast, map_pow, map_units_inv,
+      IsUnit.unit_spec, map_intCast]
+    push_cast
+    rw [div_eq_mul_inv, inv_pow]
+  have habcmem : ((P.a * P.b * P.c : ℤ) : R) ∈ IsLocalRing.maximalIdeal R := by
+    have h1 : ((P.a * P.b * P.c : ℤ) : NumberField.RingOfIntegers ℚ) ∈
+        hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal :=
+      (intCast_mem_toHeightOneSpectrumRingOfIntegersRat_iff hq _).mpr hdvd
+    have h2' := (IsLocalization.AtPrime.to_map_mem_maximal_iff
+      R hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal
+      ((P.a * P.b * P.c : ℤ) : NumberField.RingOfIntegers ℚ)).mpr h1
+    rwa [map_intCast] at h2'
+  have hΔmem : (((P.a * P.b * P.c : ℤ) : R)) ^ (2 * P.p) * (↑hu2.unit⁻¹ : R) ^ 8 ∈
+      IsLocalRing.maximalIdeal R :=
+    Ideal.mul_mem_right _ _
+      (Ideal.pow_mem_of_mem _ habcmem _ (mul_pos (by norm_num) P.hppos))
+  have hvalΔ : IsDedekindDomain.HeightOneSpectrum.valuation ℚ
+      (IsDiscreteValuationRing.maximalIdeal R) P.freyCurve.Δ < 1 := by
+    rw [hΔeq]
+    exact (IsDedekindDomain.HeightOneSpectrum.valuation_lt_one_iff_mem
+      (IsDiscreteValuationRing.maximalIdeal R) _).mpr hΔmem
+  -- assemble: minimality is the unit-`c₄` Kraus–Laska criterion
+  exact { toIsMinimal := isMinimal_of_valuation_c₄_eq_one (R := R) P.freyCurve hvalc₄
+          badReduction := hvalΔ
+          multiplicativeReduction := hvalc₄ }
+
+set_option warn.sorry false in
+/-- **Local-global glue for the Tate curve at multiplicative primes**
+(sorry node): an elliptic curve over `ℚ` with multiplicative reduction at
+the odd place `q ≠ p` whose `j`-invariant has `q`-adic valuation
+divisible by `p` has unramified mod-`p` torsion representation at `q`.
+The mathematical content: after the unramified quadratic twist making
+the reduction split
+(`exists_quadraticTwist_hasSplitMultiplicativeReduction`, vendored
+PROVEN), Tate's uniformization (`exists_tateEquivSepClosure`) presents
+`E[p]` inside `ℚ̄_qˣ/q_E^ℤ` as generated by `μ_p` (unramified, as
+`q ≠ p`) and a `p`-th root of the Tate parameter `q_E`; since
+`p ∣ v_q(j) = -v_q(q_E)`, the parameter is a `p`-th power times a unit,
+so the root can be chosen with inertia acting trivially. -/
+theorem WeierstrassCurve.isUnramifiedAt_of_hasMultiplicativeReduction
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} [Fact p.Prime] (hp : 0 < p)
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hq2 : q ≠ 2)
+    [E.HasMultiplicativeReduction
+      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
+    (hj : (p : ℤ) ∣ padicValRat q E.j) :
+    (E.galoisRep p hp).IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
+
+set_option warn.sorry false in
+/-- **Local-global glue for flatness at multiplicative primes** (sorry
+node): an elliptic curve over `ℚ` with multiplicative reduction at the
+odd place `p` whose `j`-invariant has `p`-adic valuation divisible by
+`p` has flat mod-`p` torsion representation at `p`. The mathematical
+content: the Tate parameter is a `p`-th power times a unit
+(`p ∣ v_p(j) = -v_p(q_E)`), so the Tate-curve extension
+`0 → μ_p → E[p] → ℤ/p → 0` over `ℚ_p` is *peu ramifiée* in the sense of
+Serre, and such extensions prolong to finite flat group schemes over
+`ℤ_p`. -/
+theorem WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp' : p.Prime) (hp : 0 < p)
+    [Fact p.Prime] (hp2 : p ≠ 2)
+    [E.HasMultiplicativeReduction
+      (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
+    (hj : (p : ℤ) ∣ padicValRat p E.j) :
+    (E.galoisRep p hp).IsFlatAt hp'.toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
 
 set_option warn.sorry false in
 /-- **Local-global glue for Néron–Ogg–Shafarevich** (sorry node): an

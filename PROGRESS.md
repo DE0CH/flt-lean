@@ -112,14 +112,25 @@ map where helpful.
                   vendored 2026-07-16): the NOS easy direction — good
                   reduction over a DVR makes the inertia action on
                   `n`-torsion trivial.
-            - ✗ `FreyCurve.torsion_isUnramified_of_multiplicative` — at
-              `q ∣ abc` odd the reduction is multiplicative with
-              `p ∣ v_q(j)` (`j_valuation_of_bad_prime`, proven);
-              quadratic twist to split reduction
-              (`exists_quadraticTwist_hasSplitMultiplicativeReduction`,
-              vendored PROVEN) + Tate uniformization
-              (`exists_tateEquivSepClosure`) make the inertia action on
-              `E[p]` trivial.
+            - ✓ `FreyCurve.torsion_isUnramified_of_multiplicative` —
+              DERIVED (2026-07-16) from the PROVEN arithmetic
+              (`freyCurve_hasMultiplicativeReduction_of_dvd` +
+              `j_valuation_of_bad_prime`) and the Tate glue node below.
+              - ✓ `FreyPackage.freyCurve_hasMultiplicativeReduction_of_dvd`
+                (`FreyCurve/Semistable.lean`, own work): PROVEN
+                (2026-07-16) — at odd `q ∣ abc` the equation is
+                `q`-integral, `c₄ = c^{2p} - (ab)^p` is prime to `q`
+                (pairwise coprimality forces exactly one of `ab`, `c`
+                divisible by `q`), so `v(c₄) = 1` (minimality by the
+                vendored unit-`c₄` Kraus–Laska criterion) while
+                `Δ = (abc)^{2p}/2⁸` lies in the maximal ideal.
+              - ✗ `WeierstrassCurve.isUnramifiedAt_of_hasMultiplicativeReduction`
+                (`FreyCurve/Semistable.lean`, own work): the Tate glue
+                — multiplicative reduction at odd `q ≠ p` with
+                `p ∣ v_q(j)` ⟹ `IsUnramifiedAt q`; to be closed
+                against the quadratic-twist (vendored PROVEN) and
+                Tate-uniformization (`exists_tateEquivSepClosure`)
+                nodes.
           - ✓ `FreyCurve.torsion_isFlat` — flat at p: DERIVED
             (2026-07-16) by the case split `p ∣ abc` or not, from the
             two nodes below.
@@ -143,10 +154,17 @@ map where helpful.
                 ✗ `resultant_Φ_ΨSq` and ✓ `isCoprime_Φ_ΨSq` (DERIVED
                 2026-07-16 from the resultant node via mathlib's
                 `exists_mul_add_mul_eq_C_resultant` Bézout identity).
-            - ✗ `FreyCurve.torsion_isFlat_of_multiplicative` — at
-              `p ∣ abc` multiplicative reduction with `p ∣ v_p(j)`:
-              the Tate-curve extension is peu ramifiée, hence prolongs
-              to a finite flat group scheme over ℤ_p.
+            - ✓ `FreyCurve.torsion_isFlat_of_multiplicative` — DERIVED
+              (2026-07-16) from the PROVEN arithmetic
+              (`freyCurve_hasMultiplicativeReduction_of_dvd` at
+              `q := p` + `j_valuation_of_bad_prime`) and the glue node
+              below.
+              - ✗ `WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction`
+                (`FreyCurve/Semistable.lean`, own work): the
+                peu-ramifiée glue — multiplicative reduction at `p`
+                with `p ∣ v_p(j)` makes the Tate-curve extension
+                `0 → μ_p → E[p] → ℤ/p → 0` peu ramifiée, which
+                prolongs to a finite flat group scheme over `ℤ_p`.
           - ✗ `FreyCurve.torsion_isTameAtTwo` — at 2: rank-1 quotient
             with unramified character squaring to 1 (multiplicative
             reduction at 2, Tate uniformization, quadratic twist).
@@ -769,3 +787,18 @@ assumed. Axiom invariant: every declaration must use at most
   `IsFlatAt p`, to be closed against the vendored
   `torsion_flat_of_good_reduction` Hopf-package node) completes the
   derivation. Frontier: 20 (one closed, one opened).
+- 2026-07-16 (session 4, cont.): **multiplicative arithmetic PROVEN;
+  both multiplicative consumers DERIVED** —
+  `freyCurve_hasMultiplicativeReduction_of_dvd` is PROVEN (integrality;
+  `c₄ = c^{2p} - (ab)^p` prime to `q` by the pairwise-coprimality Xor;
+  minimality by the vendored unit-`c₄` Kraus–Laska criterion
+  `isMinimal_of_valuation_c₄_eq_one`; `v(Δ) < 1` via
+  `valuation_lt_one_iff_mem` since `abc` lands in the maximal ideal).
+  `torsion_isUnramified_of_multiplicative` and
+  `torsion_isFlat_of_multiplicative` are DERIVED from it (+ the proven
+  `j_valuation_of_bad_prime`) through two new glue nodes:
+  ✗ `isUnramifiedAt_of_hasMultiplicativeReduction` (Tate glue at
+  `q ≠ p`) and ✗ `isFlatAt_of_hasMultiplicativeReduction`
+  (peu-ramifiée glue at `p`). All four FreyConditions reduction-type
+  cases now rest exclusively on local-global glue nodes; the Frey-curve
+  semistability arithmetic is complete. Frontier: 20.
