@@ -640,7 +640,11 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   holds since torsion-free over a PID; note the inertia here is
   `P.inertia G` — `Ideal.inertia`, a FOURTH spelling, for a
   `MulSemiringAction` of `G = Gal(L/ℚ)` via `IsGaloisGroup`); trivial
-  inertia ⟹ card 1 ⟹ `ramificationIdxIn = 1`, then
+  inertia ⟹ card 1 ⟹ `ramificationIdxIn = 1`, then (SCRATCH-COMPILED
+  2026-07-16: `Ideal.card_inertia_eq_ramificationIdxIn (G := (L ≃ₐ[ℚ]
+  L)) (Ideal.span {p}) Q` elaborates at `ℤ → 𝓞 L` — the `Flat` and
+  `MulSemiringAction` instances synthesize automatically given the
+  standing `isIntegral_algebra` haveI and the transparency option)
   `ramificationIdxIn_eq_ramificationIdx` (the lemma ExistsRamified.lean
   itself uses) lands at the specific prime and
   `ramificationIdx_eq_one_iff.mp` (scratch-compiled) finishes. The
