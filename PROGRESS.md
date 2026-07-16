@@ -565,7 +565,16 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   the `{𝒪 : Type*} [IsIntegralClosure 𝒪 ℤ L]` parametrization of
   `ExistsRamified.lean` (avoids constructing `NumberField L` inside
   the statement; provide `haveI : NumberField L := ⟨⟩` in the
-  assembly);
+  assembly). The prime-above-`p` existence step:
+  `Ideal.exists_ideal_over_prime_of_isIntegral_of_isDomain
+  [Algebra.IsIntegral ℤ 𝒪] (P) [IsPrime P] (hker : ker ≤ P) :
+  ∃ Q, IsPrime Q ∧ Q.comap (algebraMap ℤ 𝒪) = P`
+  (`RingTheory/Ideal/GoingUp.lean:280`) at `P := span {(p : ℤ)}`;
+  `(p : 𝒪) ∈ Q` follows from the comap equation; the integrality and
+  injectivity instances come from the `IsIntegralClosure` invocations
+  used verbatim in `ExistsRamified.lean` (`isIntegral_algebra`,
+  `algebraMap_injective`). NOTHING in the assembly plan remains
+  unverified;
   (3) conclude `ker χ = ⊤` from `fixedField χ.ker = ⊥` by the infinite
   Galois correspondence, hence `χ = 1`. Estimated: one focused session;
   start from a FRESH context.
