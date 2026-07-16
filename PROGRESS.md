@@ -89,12 +89,29 @@ map where helpful.
             (bundled in `structure HardlyRamifiedLift`: `O` + framed rep +
             reduction map + Frobenius-charpoly compatibility). Deformation
             theory / modularity lifting without residual modularity.
-          - ✗ **B6bc** `residual_charFrob_eq` — the residual Frobenius
+          - ✓ **B6bc** `residual_charFrob_eq` — the residual Frobenius
             charpolys of a liftable rep are those of `1 ⊕ χ̄`
-            (`X² − (q+1)X + q`). Folds B6b (spread out to a weakly
-            compatible family over a number field's completions) and B6c
-            (3-adic hardly ramified ⇒ extension of trivial by cyclotomic);
-            a later layer must split it into faithful B6b/B6c statements.
+            (`X² − (q+1)X + q`) — now DERIVED (2026-07-16) from the
+            faithful split (vendored from the FLT project's newer layer):
+            - ✗ **B6b** `IsHardlyRamified.mem_isCompatible`
+              (`HardlyRamified/Family.lean`, vendored; conclusion named
+              `IsInHardlyRamifiedFamily` as a marked VENDORING CHANGE) — a
+              hardly ramified ℓ-adic rep lives in a compatible family
+              (`GaloisRepFamily.lean`, vendored defs, sorry-free) all of
+              whose odd members are hardly ramified.
+            - ✗ `residual_charFrob_eq_of_family` (own work, `Lift.lean`)
+              — compatibility BOOKKEEPING: family membership ⇒ residual
+              charpolys are `X² − (q+1)X + q`; its eventual proof consumes
+              B6c:
+              - ✗ **B6c** `IsHardlyRamified.three_adic`
+                (`HardlyRamified/Threeadic.lean`, vendored) — a 3-adic
+                hardly ramified rep has trace(Frob_q) = 1 + q for q ≥ 5.
+                - □ mod-3 classification (`ModThree.lean` upstream:
+                  extension of trivial by mod-3 cyclotomic) — to vendor
+                  when B6c is decomposed.
+            - NB the lift structure gained an `IsModuleTopology ℤ_[ℓ] O`
+              field (statement strengthening of B6a's conclusion, true for
+              integers of finite extensions of ℚ_ℓ; required by B6b).
           - ✗ `not_isIrreducible_of_charFrob_eq` — Chebotarev + Brauer–
             Nesbitt: Frobenius charpolys of `1 ⊕ χ̄` away from `{2,3,ℓ}`
             force reducibility.
@@ -259,3 +276,21 @@ assumed. Axiom invariant: every declaration must use at most
   Chebotarev–Brauer–Nesbitt, `n_torsion_card` +
   `eval_ΨSq_eq_zero_of_smul_eq_zero`, `ΨSq_ne_zero_of_charDvd` (12 with
   both division-polynomial nodes counted).
+- 2026-07-16 (session 3, cont.): **B6bc split and derived** — vendored the
+  FLT project's newer compatible-family layer
+  (`Deformations/RepresentationTheory/GaloisRepFamily.lean`, defs,
+  sorry-free; `HardlyRamified/Family.lean` = B6b `mem_isCompatible`, with
+  the conclusion extracted into the named predicate
+  `IsInHardlyRamifiedFamily` as a marked VENDORING CHANGE;
+  `HardlyRamified/Threeadic.lean` = B6c `three_adic`). New own-work glue
+  node `residual_charFrob_eq_of_family` in `Lift.lean` (compatibility
+  bookkeeping; consumes B6c in its eventual proof); `residual_charFrob_eq`
+  (B6bc) now PROVEN from B6b + glue. `HardlyRamifiedLift` gained an
+  `IsModuleTopology ℤ_[ℓ] O` field (B6a statement strengthening, needed by
+  B6b's instance context). Axiom audit clean. Sorry frontier (14, all
+  Props): `exists_torsion_embedding_of_not_isIrreducible`,
+  `mazur_classification`, `torsion_det`, `torsion_isUnramified`,
+  `torsion_isFlat`, `torsion_isTameAtTwo`, B6a, B6b,
+  `residual_charFrob_eq_of_family`, B6c, Chebotarev–Brauer–Nesbitt,
+  `n_torsion_card`, `eval_ΨSq_eq_zero_of_smul_eq_zero`,
+  `ΨSq_ne_zero_of_charDvd`.

@@ -35,6 +35,7 @@ Given these, B5 is proven in `Reducible.lean`.
 module
 
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
+public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Family
 public import Mathlib.Topology.Instances.ZMod
 
 @[expose] public section
@@ -73,6 +74,10 @@ structure HardlyRamifiedLift (ρbar : GaloisRep ℚ (ZMod ℓ) V) where
   [isLocalRing : IsLocalRing O]
   [algebra : Algebra ℤ_[ℓ] O]
   [moduleFinite : Module.Finite ℤ_[ℓ] O]
+  -- The topology is the `ℤ_ℓ`-module topology (true for the integers of a
+  -- finite extension of `ℚ_ℓ`; added so the lift can be fed to the
+  -- compatible-family layer `Family.lean`, whose statements require it).
+  [isModuleTopology : IsModuleTopology ℤ_[ℓ] O]
   /-- The lifted representation, framed by the standard basis. -/
   ρ : FramedGaloisRep ℚ O (Fin 2)
   /-- The lift is hardly ramified. -/
@@ -100,22 +105,51 @@ theorem exists_hardlyRamifiedLift (hℓ5 : 5 ≤ ℓ)
   sorry
 
 set_option warn.sorry false in
-/-- **B6b + B6c** (sorry node, to be split by a later layer): the residual
-characteristic polynomials of Frobenius of a liftable hardly ramified
-representation are those of `1 ⊕ χ̄`, i.e. `X² − (q+1)X + q` at `Frob_q`.
+/-- **Compatibility bookkeeping** (sorry node): if the hardly ramified
+`ℓ`-adic lift of `ρbar` lives in a compatible family of hardly ramified
+representations, then the residual characteristic polynomials of Frobenius
+of `ρbar` at `q ∉ {2, 3, ℓ}` are those of `1 ⊕ χ̄`, i.e.
+`X² − (q+1)X + q` at `Frob_q`.
 
-Route: the `ℓ`-adic lift spreads out into a weakly compatible family of
-hardly ramified `p`-adic representations over the completions of a number
-field (B6b); the `3`-adic member is an extension of the trivial character
-by the cyclotomic character (B6c), so its Frobenius traces at `q ∉ {2,3}`
-are `q + 1`; by compatibility the same holds for the `ℓ`-adic member and
-hence residually. -/
+The eventual proof is bookkeeping around **B6c**
+(`IsHardlyRamified.three_adic`, `Threeadic.lean`): the family's `3`-adic
+member is hardly ramified, so by B6c its Frobenius traces at primes
+`q ≥ 5` are `1 + q`; its Frobenius determinants are `q` (cyclotomic
+determinant, part of `IsHardlyRamified`); compatibility transports the
+resulting characteristic polynomial `X² − (q+1)X + q` from the `3`-adic
+member to the `ℓ`-adic member, and the lift's `charFrob_compat` reduces it
+to `ρbar`. No arithmetic-geometric content remains in this node — only
+linear-algebra and base-change bookkeeping. -/
+theorem residual_charFrob_eq_of_family (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ (ZMod ℓ) V} (L : HardlyRamifiedLift hℓOdd ρbar)
+    (hfam :
+      letI := L.commRing; letI := L.isDomain; letI := L.topologicalSpace
+      letI := L.isTopologicalRing; letI := L.isLocalRing; letI := L.algebra
+      letI := L.moduleFinite; letI := L.isModuleTopology
+      IsHardlyRamified.IsInHardlyRamifiedFamily (p := ℓ) L.ρ) :
+    ∀ q (hq : q.Prime), q ≠ 2 → q ≠ 3 → q ≠ ℓ →
+      ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+        X ^ 2 - C ((q : ZMod ℓ) + 1) * X + C (q : ZMod ℓ) :=
+  sorry
+
+/-- **B6b + B6c**: the residual characteristic polynomials of Frobenius of
+a liftable hardly ramified representation are those of `1 ⊕ χ̄`, i.e.
+`X² − (q+1)X + q` at `Frob_q`. Derived from **B6b**
+(`IsHardlyRamified.mem_isCompatible`, `Family.lean`: the lift spreads out
+into a compatible family of hardly ramified representations) and the
+compatibility bookkeeping node above (which consumes **B6c**,
+`IsHardlyRamified.three_adic`). -/
 theorem residual_charFrob_eq (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ (ZMod ℓ) V} (L : HardlyRamifiedLift hℓOdd ρbar) :
     ∀ q (hq : q.Prime), q ≠ 2 → q ≠ 3 → q ≠ ℓ →
       ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
         X ^ 2 - C ((q : ZMod ℓ) + 1) * X + C (q : ZMod ℓ) :=
-  sorry
+  residual_charFrob_eq_of_family hℓOdd hℓ5 L
+    (letI := L.commRing; letI := L.isDomain; letI := L.topologicalSpace
+     letI := L.isTopologicalRing; letI := L.isLocalRing; letI := L.algebra
+     letI := L.moduleFinite; letI := L.isModuleTopology
+     IsHardlyRamified.mem_isCompatible hℓOdd (rank_finTwoFun L.O)
+       L.isHardlyRamified)
 
 set_option warn.sorry false in
 /-- **Chebotarev + Brauer–Nesbitt** (sorry node): a continuous mod-`ℓ`
