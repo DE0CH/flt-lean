@@ -632,7 +632,14 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   inertia presentation, and the SHORTEST route — no field bookkeeping
   needed: **`card_inertia_eq_ramificationIdxIn p : Nat.card (inertia
   Gal(L/K) P) = p.ramificationIdxIn B`** (used inside `rank_left`)
-  gives `e` DIRECTLY as the inertia group's cardinality; trivial
+  gives `e` DIRECTLY as the inertia group's cardinality (exact form:
+  `Ideal.card_inertia_eq_ramificationIdxIn` at `Galois.lean:317`,
+  hypotheses `[IsDomain R] [IsDomain S] [Module.Finite R S] [Flat R S]
+  [P.LiesOver p] [p.IsPrime] [P.IsPrime] [PerfectField p.ResidueField]`
+  — for `ℤ → 𝓞 L` the only nonobvious one is `Flat ℤ (𝓞 L)`, which
+  holds since torsion-free over a PID; note the inertia here is
+  `P.inertia G` — `Ideal.inertia`, a FOURTH spelling, for a
+  `MulSemiringAction` of `G = Gal(L/ℚ)` via `IsGaloisGroup`); trivial
   inertia ⟹ card 1 ⟹ `ramificationIdxIn = 1`, then
   `ramificationIdxIn_eq_ramificationIdx` (the lemma ExistsRamified.lean
   itself uses) lands at the specific prime and
