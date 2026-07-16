@@ -273,6 +273,53 @@ theorem maximalIdeal_map_eq_of_ramificationIdx_eq_one
   have hn_eq : n = 1 := by omega
   rw [hn, hn_eq, pow_one, hmax]
 
+section IntermediateBase
+
+variable (M' : IntermediateField
+  (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N)
+
+/-- The composite `𝒪_{M'} → ↥M' → N` as an algebra structure (the
+canonical way `N` is an algebra over the integral closure of `𝒪ᵥ` in an
+intermediate field). -/
+noncomputable instance algebraIntegralClosureIntermediateAmbient :
+    Algebra (IntegralClosure 𝒪ᵥ M') N :=
+  ((algebraMap M' N).comp
+    (algebraMap (IntegralClosure 𝒪ᵥ M') M')).toAlgebra
+
+instance : IsScalarTower (IntegralClosure 𝒪ᵥ M') M' N :=
+  IsScalarTower.of_algebraMap_eq' rfl
+
+/-- `𝒪_N` is an algebra over `𝒪_{M'}` (elements of the smaller integral
+closure are integral over `𝒪ᵥ`, hence land in the bigger one). -/
+noncomputable instance algebraIntegralClosureOfIntermediate :
+    Algebra (IntegralClosure 𝒪ᵥ M') (IntegralClosure 𝒪ᵥ N) :=
+  (RingHom.codRestrict
+    (algebraMap (IntegralClosure 𝒪ᵥ M') N)
+    (integralClosure 𝒪ᵥ N)
+    (fun x => (Algebra.IsIntegral.isIntegral (R := 𝒪ᵥ) x).map
+      ((IsScalarTower.toAlgHom 𝒪ᵥ M' N).comp
+        (IsScalarTower.toAlgHom 𝒪ᵥ (IntegralClosure 𝒪ᵥ M') M')))).toAlgebra
+
+instance : IsScalarTower (IntegralClosure 𝒪ᵥ M') (IntegralClosure 𝒪ᵥ N) N :=
+  IsScalarTower.of_algebraMap_eq' rfl
+
+instance : IsScalarTower 𝒪ᵥ (IntegralClosure 𝒪ᵥ M') N :=
+  IsScalarTower.of_algebraMap_eq' (by
+    rw [IsScalarTower.algebraMap_eq 𝒪ᵥ M' N,
+      IsScalarTower.algebraMap_eq 𝒪ᵥ (IntegralClosure 𝒪ᵥ M') M',
+      ← RingHom.comp_assoc]
+    rfl)
+
+instance : IsScalarTower 𝒪ᵥ (IntegralClosure 𝒪ᵥ M') (IntegralClosure 𝒪ᵥ N) :=
+  IsScalarTower.of_algebraMap_eq' (by
+    ext x
+    apply Subtype.ext
+    show algebraMap 𝒪ᵥ N x = algebraMap (IntegralClosure 𝒪ᵥ M') N
+      (algebraMap 𝒪ᵥ (IntegralClosure 𝒪ᵥ M') x)
+    rw [← IsScalarTower.algebraMap_apply 𝒪ᵥ (IntegralClosure 𝒪ᵥ M') N])
+
+end IntermediateBase
+
 end FiniteLevel
 
 section FiniteLevelSubextension
