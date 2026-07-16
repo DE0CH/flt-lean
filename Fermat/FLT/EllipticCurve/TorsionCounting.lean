@@ -77,6 +77,17 @@ def torsionByPi {ι : Type*} (M : ι → Type*) [∀ i, AddCommGroup (M i)] (z :
   right_inv f := funext fun i => Subtype.ext rfl
   map_add' x y := rfl
 
+/-- An additive endomorphism restricts to the `z`-torsion submodule. -/
+def endRestrict (f : A →+ A) (z : ℤ) :
+    torsionBy ℤ A z →+ torsionBy ℤ A z where
+  toFun x := ⟨f x.1, show z • f x.1 = 0 by
+    rw [← map_zsmul, show z • (x.1 : A) = 0 from x.2, map_zero]⟩
+  map_zero' := Subtype.ext (map_zero f)
+  map_add' x y := Subtype.ext (map_add f x.1 y.1)
+
+@[simp] lemma endRestrict_apply (f : A →+ A) (z : ℤ) (x : torsionBy ℤ A z) :
+    (endRestrict f z x : A) = f x.1 := rfl
+
 /-- Drop the factors of a product that are trivial: if `M i` is a
 subsingleton whenever `¬ P i`, the product over all of `ι` is the product
 over the subtype `{j // P j}`. -/

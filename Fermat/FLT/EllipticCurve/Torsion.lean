@@ -145,6 +145,102 @@ no hope of a constructive one with the current definition of algebraic closure. 
 noncomputable instance : DecidableEq (AlgebraicClosure ℚ) := Classical.typeDecidableEq _
 
 /-- The continuous Galois representation associated to an elliptic curve over a field. -/
-def WeierstrassCurve.galoisRep {K : Type u} [Field K] (E : WeierstrassCurve K) [E.IsElliptic]
-    [DecidableEq K] [DecidableEq (AlgebraicClosure K)] (n : ℕ) (hn : 0 < n) :
-  GaloisRep K (ZMod n) ((E.map (algebraMap K (AlgebraicClosure K))).nTorsion n) := sorry
+-- VENDORING CHANGE: the `sorry`-d data is replaced by the genuine construction.
+-- The representation is the natural Galois action on the `n`-torsion (via
+-- `WeierstrassCurve.Affine.Point.map`, packaged through the `DistribMulAction`
+-- instance above), made `ZMod n`-linear by `ZMod.toZModLinearMap`. Continuity:
+-- the `n`-torsion is finite (`n_torsion_finite`, still sorry-rooted), so the
+-- coordinates of all torsion points generate a finite extension `F/K`; the
+-- representation kills the open subgroup `Gal(Kᵃˡᵍ/F)`, hence every fiber is a
+-- union of left cosets of an open subgroup, hence open — so the map is
+-- continuous for ANY topology on the target.
+noncomputable def WeierstrassCurve.galoisRep {K : Type u} [Field K] (E : WeierstrassCurve K)
+    [E.IsElliptic] [DecidableEq K] [DecidableEq (AlgebraicClosure K)] (n : ℕ) (hn : 0 < n) :
+    GaloisRep K (ZMod n) ((E.map (algebraMap K (AlgebraicClosure K))).nTorsion n) :=
+  letI := moduleTopology (ZMod n) (Module.End (ZMod n)
+    ((E.map (algebraMap K (AlgebraicClosure K))).nTorsion n))
+  -- the ambient Galois action on points, as a monoid hom into additive
+  -- endomorphisms; the ascription typechecks because the double base change
+  -- `(E.map (algebraMap K Kᵃˡᵍ))⁄Kᵃˡᵍ` is definitionally `E⁄Kᵃˡᵍ`
+  let ρamb : Field.absoluteGaloisGroup K →*
+      AddMonoid.End (((E.map (algebraMap K (AlgebraicClosure K)))⁄(AlgebraicClosure K)).Point) :=
+    DistribMulAction.toAddMonoidEnd (AlgebraicClosure K ≃ₐ[K] AlgebraicClosure K)
+      ((E⁄(AlgebraicClosure K)).Point)
+  -- the induced `ZMod n`-linear action on the `n`-torsion
+  let ρm : Field.absoluteGaloisGroup K →*
+      Module.End (ZMod n) ((E.map (algebraMap K (AlgebraicClosure K))).nTorsion n) :=
+    { toFun := fun σ =>
+        AddMonoidHom.toZModLinearMap n (TorsionCounting.endRestrict (ρamb σ) n)
+      map_one' := by
+        ext P
+        rw [map_one ρamb]
+        rfl
+      map_mul' := fun σ τ => by
+        ext P
+        rw [map_mul ρamb]
+        rfl }
+  { toMonoidHom := ρm
+    continuous_toFun := by
+      haveI : NeZero n := ⟨hn.ne'⟩
+      haveI hMfin : Finite ((E.map (algebraMap K (AlgebraicClosure K))).nTorsion n) :=
+        WeierstrassCurve.n_torsion_finite _ hn
+      -- the coordinates of a point
+      let coords : ((E.map (algebraMap K (AlgebraicClosure K)))⁄(AlgebraicClosure K)).Point →
+          Set (AlgebraicClosure K) := fun P =>
+        match P with
+        | .zero => ∅
+        | .some x y _ => {x, y}
+      have hcoordsFin : ∀ P, (coords P).Finite := by
+        intro P
+        cases P with
+        | zero => exact Set.finite_empty
+        | some x y h => exact (Set.finite_singleton y).insert x
+      -- the (finite) set of coordinates of all `n`-torsion points
+      set S : Set (AlgebraicClosure K) :=
+        ⋃ P : (E.map (algebraMap K (AlgebraicClosure K))).nTorsion n, coords P.1 with hSdef
+      have hSFin : S.Finite := Set.finite_iUnion fun P => hcoordsFin P.1
+      haveI := hSFin.to_subtype
+      haveI : FiniteDimensional K (IntermediateField.adjoin K S) :=
+        IntermediateField.finiteDimensional_adjoin fun x _ =>
+          (Algebra.IsAlgebraic.isAlgebraic x).isIntegral
+      have hHopen : IsOpen ((IntermediateField.adjoin K S).fixingSubgroup :
+          Set (Field.absoluteGaloisGroup K)) :=
+        (IntermediateField.adjoin K S).fixingSubgroup_isOpen
+      -- the representation kills the fixing subgroup
+      have hker : ∀ τ ∈ (IntermediateField.adjoin K S).fixingSubgroup, ρm τ = 1 := by
+        intro τ hτ
+        have hfixmem : ∀ x ∈ S,
+            (τ : AlgebraicClosure K →ₐ[K] AlgebraicClosure K) x = x := fun x hx =>
+          ((IntermediateField.mem_fixingSubgroup_iff _ _).mp hτ) x
+            (IntermediateField.subset_adjoin K S hx)
+        ext P
+        show (ρamb τ) P.1 = (P.1 :
+          ((E.map (algebraMap K (AlgebraicClosure K)))⁄(AlgebraicClosure K)).Point)
+        obtain ⟨P0, hP0⟩ := P
+        show (ρamb τ) P0 = P0
+        cases P0 with
+        | zero => rfl
+        | some x y hxy =>
+          have hx : (τ : AlgebraicClosure K →ₐ[K] AlgebraicClosure K) x = x :=
+            hfixmem x (Set.mem_iUnion.mpr
+              ⟨⟨WeierstrassCurve.Affine.Point.some x y hxy, hP0⟩,
+              show x ∈ ({x, y} : Set (AlgebraicClosure K)) from Set.mem_insert x {y}⟩)
+          have hy : (τ : AlgebraicClosure K →ₐ[K] AlgebraicClosure K) y = y :=
+            hfixmem y (Set.mem_iUnion.mpr
+              ⟨⟨WeierstrassCurve.Affine.Point.some x y hxy, hP0⟩,
+              show y ∈ ({x, y} : Set (AlgebraicClosure K)) from
+                Set.mem_insert_of_mem x rfl⟩)
+          show WeierstrassCurve.Affine.Point.map (W' := E)
+            (τ : AlgebraicClosure K →ₐ[K] AlgebraicClosure K) (.some x y hxy) = .some x y hxy
+          rw [WeierstrassCurve.Affine.Point.map_some]
+          simp only [hx, hy]
+      -- continuity: every fiber is a union of left cosets of the open subgroup
+      refine continuous_def.mpr fun U _ => isOpen_iff_forall_mem_open.mpr fun σ hσ => ?_
+      open Pointwise in
+      refine ⟨σ • ((IntermediateField.adjoin K S).fixingSubgroup :
+        Set (Field.absoluteGaloisGroup K)), ?_, hHopen.leftCoset σ, ?_⟩
+      · rintro τ' ⟨u, hu, rfl⟩
+        show ρm (σ * u) ∈ U
+        rw [map_mul, hker u hu, mul_one]
+        exact hσ
+      · exact ⟨1, Subgroup.one_mem _, mul_one σ⟩ }

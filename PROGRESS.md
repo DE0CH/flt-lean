@@ -40,12 +40,19 @@ map where helpful.
         (their B5/B6, hardly-ramified route, not yet stated in Lean there).
       - Supporting sorries in vendored infrastructure
         (`Fermat/FLT/EllipticCurve/Torsion.lean`):
-        `n_torsion_finite`, `n_torsion_card`, and — nota bene —
-        `WeierstrassCurve.galoisRep` itself, which is **sorry-d DATA** (the
-        continuous Galois representation on p-torsion); the FLT project has
-        it sorry-d too. Statements about sorry-d data are about an
-        unspecified representation; this must eventually be filled with the
-        real construction for B4/Mazur to mean what they should.
+        `n_torsion_finite`, `n_torsion_card` (division polynomials needed).
+        - ✓ `WeierstrassCurve.galoisRep` — CONSTRUCTED (2026-07-16). The
+          formerly sorry-d DATA is now the genuine representation: the
+          Galois action on points (`Point.map`, via the `DistribMulAction`
+          instance) restricted to the `n`-torsion and made `ZMod n`-linear
+          (`AddMonoidHom.toZModLinearMap`). Continuity: the coordinates of
+          the (finitely many, via `n_torsion_finite`) torsion points
+          generate a finite extension `F/K`; the rep kills the open
+          subgroup `Gal(Kᵃˡᵍ/F)` (`fixingSubgroup_isOpen`), so every fiber
+          is a union of open cosets — continuous into any topology on the
+          target. `#print axioms`: sorryAx enters only through
+          `n_torsion_finite`. Mazur/B4 are now statements about the REAL
+          representation.
         - ✓ `group_theory_lemma` — PROVEN (2026-07-16) in
           `Fermat/FLT/EllipticCurve/TorsionCounting.lean` (own work, not
           vendored): structure theorem for finite abelian groups + torsion
@@ -109,3 +116,9 @@ assumed. Axiom invariant: every declaration must use at most
   derived from `n_torsion_finite`. Axiom audit clean. Sorry frontier now:
   Mazur, B4, `torsion_isHardlyRamified` (2 in HardlyRamified/Frey.lean),
   `n_torsion_finite`, `n_torsion_card`, `galoisRep` (data).
+- 2026-07-16 (session 2, cont.): `WeierstrassCurve.galoisRep` CONSTRUCTED —
+  the sorry-d data node is closed; the Galois action on `n`-torsion is the
+  real one, continuity via finite-extension stabilizers (open fixing
+  subgroups, Krull topology). sorryAx now enters `galoisRep` only through
+  `n_torsion_finite`. Sorry frontier: Mazur, B4, 2× HardlyRamified/Frey,
+  `n_torsion_finite`, `n_torsion_card` — 6 sorries total, all Props.
