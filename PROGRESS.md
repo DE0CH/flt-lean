@@ -1095,7 +1095,24 @@ assumed. Axiom invariant: every declaration must use at most
   `IntermediateField.mem_fixingSubgroup_iff` exists (KrullTopology.lean
   usage) — the transport construction's source-side membership
   (`σ ∈ L.fixingSubgroup ↔ ∀ x ∈ L, σ x = x`) is available; with it,
-  every interface of the shared transport is name-verified. The
+  every interface of the shared transport is name-verified.
+- 2026-07-16 (session 4 close): **surjectivity-leaf scoping** —
+  mathlib at our pin has NO decomposition-group ↔ local-Galois theory
+  (`decompositionSubgroup` appears only in its defining file), so the
+  Neukirch II.9 route is from-scratch construction. ALTERNATE ROUTE
+  (likely shorter, avoids group surjectivity entirely): to show the
+  embedding prime `Q₀` has trivial inertia it suffices to show
+  `e(Q₀|q) = 1` DIRECTLY (then `card (inertia) = e = 1` forces ⊥ by
+  `card_inertia_eq_ramificationIdxIn` + `Subgroup.eq_bot_of_card_eq`):
+  the hypothesis "local inertia image fixes L" says exactly that `L`
+  embeds into the inertia-fixed field of `ℚ̄_q`, i.e. `L ⊆ ℚ_q^{unr}`
+  along the chosen embedding, and unramified local extensions have
+  `e = 1` — provable through the VALUATION side (the vendored
+  `IsNonarchimedeanLocalField`/`ValuativeExtension` machinery and
+  mathlib's `Ideal.ramificationIdx` ↔ valuation comparison), no
+  decomposition groups needed. Evaluate both routes at fresh context;
+  the valuation route reuses the session's Tate-infrastructure
+  instances. The
   four inertia spellings, fully mapped (2026-07-16): (1)
   `localInertiaGroup` = generic `AddSubgroup.inertia` of `𝔪` upstairs
   in `ℚ̄_q`, membership `.rfl`; (2) `ValuationSubring.inertiaSubgroup`
