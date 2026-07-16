@@ -205,6 +205,23 @@ lemma continuous_cyclotomicCharacterModL (ℓ : ℕ) [Fact ℓ.Prime] :
     exact hσ
   · exact ⟨1, Subgroup.one_mem _, mul_one σ⟩
 
+set_option backward.isDefEq.respectTransparency false in
+/-- Membership of a prime in a prime's place: `p` lies in the height-one
+prime of `𝓞 ℚ` attached to `q` iff `p = q`. (Used for the
+different-residue-characteristic side conditions of the compatible-family
+compatibility in `residual_charFrob_eq_of_family`.) -/
+lemma natCast_mem_toHeightOneSpectrum_iff {p q : ℕ}
+    (hp : p.Prime) (hq : q.Prime) :
+    (p : NumberField.RingOfIntegers ℚ) ∈
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq).asIdeal ↔ p = q := by
+  have h1 : (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq).asIdeal =
+      Ideal.comap (Rat.ringOfIntegersEquiv.symm.symm)
+        (Ideal.span {(q : ℤ)}) := rfl
+  rw [h1, Ideal.mem_comap, map_natCast, Ideal.mem_span_singleton,
+    Int.natCast_dvd_natCast]
+  exact ⟨fun hdvd => ((Nat.prime_dvd_prime_iff_eq hq hp).mp hdvd).symm,
+    fun h => h ▸ dvd_rfl⟩
+
 set_option warn.sorry false in
 /-- **Residue cardinality at a prime's place** (sorry node): for the
 place of `ℚ` attached to a prime `q`, the contraction of the maximal
@@ -234,8 +251,28 @@ roots-of-unity argument of `cyclotomicCharacter_globalFrob`. -/
 theorem isUnit_natCast_adicCompletionIntegers {p q : ℕ} (hp : p.Prime)
     (hq : q.Prime) (hne : p ≠ q) :
     IsUnit ((p : ℕ) : (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))) :=
-  sorry
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))) := by
+  -- DERIVED (2026-07-16): a unit of the valuation subring is an element of
+  -- valuation one; the completion's valuation restricts to the global
+  -- `v`-adic valuation, which on the integer `p` is the `intValuation`,
+  -- equal to one exactly when `p ∉ v` — i.e. `p ≠ q` by
+  -- `natCast_mem_toHeightOneSpectrum_iff`.
+  have hints : (Valued.v).Integers
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)) :=
+    Valuation.valuationSubring.integers _
+  refine hints.isUnit_iff_valuation_eq_one.mpr ?_
+  rw [map_natCast]
+  have h2 := IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation
+    (K := ℚ) (v := Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)
+    ((p : ℕ) : NumberField.RingOfIntegers ℚ)
+  push_cast at h2
+  rw [h2, show ((p : ℕ) : ℚ) = algebraMap (NumberField.RingOfIntegers ℚ) ℚ
+      ((p : ℕ) : NumberField.RingOfIntegers ℚ) from (map_natCast _ p).symm,
+    IsDedekindDomain.HeightOneSpectrum.valuation_of_algebraMap,
+    IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff,
+    natCast_mem_toHeightOneSpectrum_iff hp hq]
+  exact hne
 
 set_option warn.sorry false in
 /-- **The `ℓ`-adic cyclotomic character at Frobenius** (sorry node): the
@@ -628,22 +665,6 @@ lemma discreteTopology_moduleTopology (R M : Type*) [CommRing R]
 
 
 
-set_option backward.isDefEq.respectTransparency false in
-/-- Membership of a prime in a prime's place: `p` lies in the height-one
-prime of `𝓞 ℚ` attached to `q` iff `p = q`. (Used for the
-different-residue-characteristic side conditions of the compatible-family
-compatibility in `residual_charFrob_eq_of_family`.) -/
-lemma natCast_mem_toHeightOneSpectrum_iff {p q : ℕ}
-    (hp : p.Prime) (hq : q.Prime) :
-    (p : NumberField.RingOfIntegers ℚ) ∈
-      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq).asIdeal ↔ p = q := by
-  have h1 : (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq).asIdeal =
-      Ideal.comap (Rat.ringOfIntegersEquiv.symm.symm)
-        (Ideal.span {(q : ℤ)}) := rfl
-  rw [h1, Ideal.mem_comap, map_natCast, Ideal.mem_span_singleton,
-    Int.natCast_dvd_natCast]
-  exact ⟨fun hdvd => ((Nat.prime_dvd_prime_iff_eq hq hp).mp hdvd).symm,
-    fun h => h ▸ dvd_rfl⟩
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Distinct primes give distinct finite places of `ℚ`: the associated
