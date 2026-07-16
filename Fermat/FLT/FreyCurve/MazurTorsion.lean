@@ -338,6 +338,13 @@ section TwoTorsion
 
 open WeierstrassCurve.Affine
 
+/-- The trivial base change of the Frey curve to `ℚ` is elliptic. (Mathlib
+has this instance for `E.map f`, but `WeierstrassCurve.baseChange` is a
+non-reducible `def`, so instance search cannot see through it; several
+derivations in this branch of the tree need the instance.) -/
+instance (P : FreyPackage) : ((P.freyCurve)⁄ℚ).IsElliptic :=
+  inferInstanceAs (P.freyCurve.map (algebraMap ℚ ℚ)).IsElliptic
+
 /-- **Full rational 2-torsion of the Frey curve** (PROVEN 2026-07-16): the
 Frey model has rational 2-torsion points `(0, 0)` and `(aᵖ/4, -aᵖ/8)` (in
 the untransformed model `y² = x(x - aᵖ)(x + bᵖ)` the full 2-torsion is
@@ -346,8 +353,6 @@ visible; the transformed model retains it rationally, the quadratic
 two points generate an injective `(ℤ/2)² →+ E(ℚ)`. -/
 theorem FreyPackage.freyCurve_two_torsion_embedding (P : FreyPackage) :
     ∃ φ₂ : (ZMod 2 × ZMod 2) →+ ((P.freyCurve)⁄ℚ).Point, Function.Injective φ₂ := by
-  haveI hell : ((P.freyCurve)⁄ℚ).IsElliptic :=
-    inferInstanceAs (P.freyCurve.map (algebraMap ℚ ℚ)).IsElliptic
   -- the coefficients of the base-changed model
   have h1 : ((P.freyCurve)⁄ℚ).a₁ = 1 := by
     simp [WeierstrassCurve.baseChange, FreyPackage.freyCurve]
