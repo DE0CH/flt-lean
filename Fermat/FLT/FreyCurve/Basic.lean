@@ -1,19 +1,25 @@
 /-
-Adapted from the FLT project, `FLT/FreyCurve/Basic.lean`
-(https://github.com/ImperialCollegeLondon/FLT), Copyright (c) 2025 Kevin
-Buzzard, released under the Apache 2.0 license.
-Authors of the original: Kevin Buzzard, Ruben Van de Velde, Pietro Monticone.
-Adapted for this project: module-system syntax removed.
+Copyright (c) 2025 Kevin Buzzard. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Kevin Buzzard, Ruben Van de Velde, Pietro Monticone
 -/
-import Fermat.FreyPackage
+module
 
+public import Fermat.FLT.FreyCurve.FreyPackage
 /-!
+
 # The Frey curve associated to a Frey package
 
-In this file we define the elliptic curve `E : Y² = X(X - aᵖ)(X + bᵖ)`
-associated to a Frey package — in the twisted coordinates (`X = 4x`,
-`Y = 8y + 4x`, dividing by 64) that make the equation semistable at 2 —
-and compute its discriminant, `c₄`, and `j`-invariant.
+Recall that a Frey package is a triple of nonzero integers `a`, `b`, `c`
+and a prime `p` satisfying some conditions, most notably
+that `a^p+b^p=c^p`.
+
+In this file we define the elliptic curve `E : Y^2=X(X-a^p)(X+b^p)`
+associated to the Frey package.
+
+All the results in Section 4.1
+of Serre's 1987 Duke paper [Serre] apply to this elliptic
+curve `Y^2=X(X-a^p)(X+b^p)`.
 
 # Main definition
 
@@ -21,18 +27,23 @@ and compute its discriminant, `c₄`, and `j`-invariant.
 
 # Main theorem
 
-* `FreyCurve.j_valuation_of_bad_prime` : the `q`-adic valuation of the
-  `j`-invariant of the Frey curve is a multiple of `p` if `q > 2` is a prime
-  of bad reduction.
+* `FreyCurve.j_valuation_of_bad_prime` : The q-adic valuation of the j-invariant of the Frey
+curve is a multiple of q if 2 < q is a prime of bad reduction.
+
 -/
+
+@[expose] public section
 
 namespace FreyPackage
 
-/-- The Weierstrass curve over `ℤ` associated to a Frey package, in the form
-that is semistable at 2 rather than the usual `Y² = X(X - aᵖ)(X + bᵖ)` form.
-The change of variables is `X = 4x` and `Y = 8y + 4x`, then divide through by
-64. That `p` is odd, `a ≡ 3 mod 4`, and `b` is even together show the new
-curve still has coefficients in `ℤ`. -/
+/-- The Weierstrass curve over `ℤ` associated to a Frey package. The conditions imposed
+upon a Frey package guarantee that the running hypotheses in
+Section 4.1 of [Serre] all hold. We put the curve into the form where the
+equation is semistable at 2, rather than the usual `Y^2=X(X-a^p)(X+b^p)` form.
+The change of variables is `X=4x` and `Y=8y+4x`, and then divide through by 64.
+The fact that p is odd, a=3 mod 4 and b is even are enough to show that
+this new curve still has coefficients in `ℤ`.
+-/
 def freyCurveInt (P : FreyPackage) : WeierstrassCurve ℤ where
   a₁ := 1
   -- Note that the numerator of a₂ is a multiple of 4
@@ -41,10 +52,11 @@ def freyCurveInt (P : FreyPackage) : WeierstrassCurve ℤ where
   a₄ := -(P.a ^ P.p) * (P.b ^ P.p) / 16 -- Note: numerator is multiple of 16
   a₆ := 0
 
-/-- The elliptic curve over `ℚ` associated to a Frey package, in the form
-that is semistable at 2. The change of variables from
-`Y² = X(X - aᵖ)(X + bᵖ)` is `X = 4x` and `Y = 8y + 4x`, then divide through
-by 64. -/
+/-- The elliptic curve over `ℚ` associated to a Frey package. The conditions imposed
+upon a Frey package guarantee that the running hypotheses in
+Section 4.1 of [Serre] all hold. We put the curve into the form where the
+equation is semistable at 2, rather than the usual `Y^2=X(X-a^p)(X+b^p)` form.
+The change of variables is `X=4x` and `Y=8y+4x`, and then divide through by 64. -/
 def freyCurve (P : FreyPackage) : WeierstrassCurve ℚ where
   a₁ := 1
   -- a₂ is an integer because of the congruences assumed e.g. P.ha4
@@ -89,7 +101,7 @@ theorem map (P : FreyPackage) : (freyCurveInt P).map (algebraMap ℤ ℚ) = frey
         _        ∣ _         := Int.dvd_mul_left _ _
   · rfl
 
-lemma Δ (P : FreyPackage) : P.freyCurve.Δ = (P.a * P.b * P.c) ^ (2 * P.p) / 2 ^ 8 := by
+lemma Δ (P : FreyPackage) : P.freyCurve.Δ = (P.a*P.b*P.c)^(2*P.p) / 2 ^ 8 := by
   trans (P.a ^ P.p) ^ 2 * (P.b ^ P.p) ^ 2 * (P.c ^ P.p) ^ 2 / 2 ^ 8
   · field_simp
     norm_cast
@@ -127,12 +139,11 @@ lemma c₄' (P : FreyPackage) :
   ring
 
 lemma Δ'inv (P : FreyPackage) :
-    (↑(P.freyCurve.Δ'⁻¹) : ℚ) = 2 ^ 8 / (P.a * P.b * P.c) ^ (2 * P.p) := by
+    (↑(P.freyCurve.Δ'⁻¹) : ℚ) = 2 ^ 8 / (P.a*P.b*P.c)^(2*P.p) := by
   simp [Δ]
 
 lemma j (P : FreyPackage) :
-    P.freyCurve.j = 2 ^ 8 * (P.c ^ (2 * P.p) - (P.a * P.b) ^ P.p) ^ 3
-      / (P.a * P.b * P.c) ^ (2 * P.p) := by
+    P.freyCurve.j = 2^8*(P.c^(2*P.p)-(P.a*P.b)^P.p) ^ 3 /(P.a*P.b*P.c)^(2*P.p) := by
   rw [mul_div_right_comm, WeierstrassCurve.j, FreyCurve.Δ'inv, FreyCurve.c₄']
 
 private lemma j_pos_aux (a b : ℤ) (hb : b ≠ 0) : 0 < (a + b) ^ 2 - a * b := by
@@ -141,8 +152,8 @@ private lemma j_pos_aux (a b : ℤ) (hb : b ≠ 0) : 0 < (a + b) ^ 2 - a * b := 
     (0 : ℝ) < (a ^ 2 + (a + b) ^ 2 + b ^ 2) / 2 := by positivity
     _ = (a + b) ^ 2 - a * b := by ring
 
-/-- The `q`-adic valuation of the `j`-invariant of the Frey curve is a
-multiple of `p` if `2 < q` is a prime of bad reduction. -/
+/-- The q-adic valuation of the j-invariant of the Frey curve is a multiple of p if 2 < q is
+a prime of bad reduction. -/
 lemma j_valuation_of_bad_prime (P : FreyPackage) {q : ℕ} (hqPrime : q.Prime)
     (hqbad : (q : ℤ) ∣ P.a * P.b * P.c) (hqodd : 2 < q) :
     (P.p : ℤ) ∣ padicValRat q P.freyCurve.j := by
@@ -155,7 +166,7 @@ lemma j_valuation_of_bad_prime (P : FreyPackage) {q : ℕ} (hqPrime : q.Prime)
   rw [FreyCurve.j, padicValRat.div (mul_ne_zero (by norm_num) h₀) (pow_ne_zero _ (mod_cast h₁)),
     padicValRat.mul (by norm_num) h₀, padicValRat.pow, ← Nat.cast_two,
     ← padicValRat_of_nat, padicValNat_primes hqodd.ne', Nat.cast_zero, mul_zero, zero_add]
-  have : ¬ (q : ℤ) ∣ (P.c ^ (2 * P.p) - (P.a * P.b) ^ P.p) ^ 3 := by
+  have : ¬ (q : ℤ) ∣ (P.c^(2*P.p)-(P.a*P.b)^P.p) ^ 3 := by
     rw [hqPrime'.dvd_pow_iff_dvd three_ne_zero]
     have hq' : Xor ((q : ℤ) ∣ P.a * P.b) ((q : ℤ) ∣ P.c) := by
       rw [xor_iff_not_iff, iff_iff_and_or_not_and_not]

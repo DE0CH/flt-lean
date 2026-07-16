@@ -1,36 +1,77 @@
 /-
-Adapted from the FLT project, `FLT/FreyCurve/FreyPackage.lean`
-(https://github.com/ImperialCollegeLondon/FLT), Copyright (c) 2025 Kevin
-Buzzard, released under the Apache 2.0 license.
-Authors of the original: Kevin Buzzard, Ruben Van de Velde, Pietro Monticone.
-Adapted for this project: module-system syntax removed, casts adjusted to the
-pinned mathlib (v4.32.0-rc1).
+Copyright (c) 2025 Kevin Buzzard. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Kevin Buzzard, Ruben Van de Velde, Pietro Monticone
 -/
-import Mathlib
+module
+
+public import Mathlib.AlgebraicGeometry.EllipticCurve.Weierstrass
+public import Mathlib.Algebra.Field.ZMod
+public import Mathlib.Analysis.Normed.Field.Lemmas
+public import Mathlib.Data.Matrix.Mul
+public import Mathlib.NumberTheory.FLT.Basic
+public import Mathlib.NumberTheory.Padics.PadicVal.Basic
+import Mathlib.Algebra.Lie.OfAssociative
+import Mathlib.NumberTheory.FLT.Four
+import Mathlib.NumberTheory.FLT.Three
+import Mathlib.Tactic.ModCases
+public import Fermat.FLT.Basic.Lemmas
 
 /-!
+
 # Frey packages
 
-A *Frey package* is a bundle of data consisting of nonzero pairwise coprime
-integers `a`, `b`, `c` and a prime `p ≥ 5` such that `a ≡ 3 [ZMOD 4]`,
-`b` is even, and `a ^ p + b ^ p = c ^ p`.
+A "Frey package" is a bundle of data consisting of nonzero pairwise coprime
+integers `a`, `b`, and `c`, and a prime `p ≥ 5`, such that `a` is 3 mod 4,
+`b` is even, and `a^p+b^p=c^p`.
 
-The main result of this file is that a counterexample to Fermat's Last
-Theorem for a prime exponent `p ≥ 5` yields a Frey package
-(`FreyPackage.of_not_FermatLastTheoremFor_p_ge_5`), and hence that if there
-are no Frey packages then Fermat's Last Theorem holds for all primes `p ≥ 5`
-(`FreyPackage.fermatLastTheoremFor_p_ge_5`).
+The main result of this file is that if Fermat's Last Theorem is false,
+then there exists a Frey package.
 
-The point of the normalization is that all results of Section 4.1 of Serre's
-1987 Duke paper apply to the Frey curve `Y² = X(X - aᵖ)(X + bᵖ)` of a Frey
-package.
+The motivation behind this definition is that then all the results in Section 4.1
+of Serre's paper [Serre] apply to the elliptic curve $Y^2=X(X-a^p)(X+b^p)$; this
+is the Frey curve associated to the Frey package.
+
+# Main definition
+
+* `FreyPackage` : A Frey package is a triple `(a,b,c)` of nonzero, pairwise coprime
+integers and a prime `p ≥ 5` such that `a` is 3 mod 4, `b` is even, and `a^p+b^p=c^p`.
+* `FreyPackage.freyCurve` : The Frey curve associated to a Frey package.
+
+# Main theorem
+
+* `FreyPackage.of_not_FermatLastTheorem` : A counterexample to `FermatLastTheorem` gives
+  rise to a Frey Package.
+
+The proof is an elementary arithmetic argument, assuming Fermat's result that FLT is true
+for n=4 and Euler's result that it's true for n=3.
 -/
 
-/-- A *Frey Package* is a 4-tuple `(a, b, c, p)` of integers satisfying
-`a ^ p + b ^ p = c ^ p` together with nonvanishing, coprimality, and
-congruence conditions guaranteeing that the results in Section 4.1 of Serre's
-1987 Duke paper apply to the corresponding Frey curve
-`Y² = X(X - aᵖ)(X + bᵖ)`. -/
+@[expose] public section
+
+/-!
+
+We start by reducing the version of Fermat's Last Theorem for positive naturals to
+Lean's version `FermatLastTheorem` of the theorem.
+
+-/
+
+/--
+A *Frey Package* is a 4-tuple (a,b,c,p) of integers
+satisfying $a^p+b^p=c^p$ and some other inequalities
+and congruences. These facts guarantee that all of
+the all the results in section 4.1 of Serre's paper [serre]
+apply to the corresponding Frey curve, the
+elliptic curve $Y^2=X(X-a^p)(X+b^p).$
+In particular the $p$-torsion of this curve is a highly
+suspicious object. Serre could already prove in 1987
+(using Mazur's theorem) that the $p$-torsion had to be
+an irreducible Galois representation; in 1990 Ribet
+proved that the $p$-torsion could not be irreducible,
+assuming modularity of the Frey curve. In 1993 Wiles
+showed that the Frey curve was modular, completing the
+proof.
+-/
 structure FreyPackage where
   /-- The integer `a` in the Frey package. -/
   a : ℤ
@@ -94,13 +135,13 @@ lemma gcdab_eq_gcdac {a b c : ℤ} {p : ℕ} (hp : 0 < p) (h : a ^ p + b ^ p = c
 lemma hgcdac (P : FreyPackage) : gcd P.a P.c = 1 := by
   rw [← gcdab_eq_gcdac P.hppos P.hFLT, P.hgcdab]
 
-lemma hgcdbc (P : FreyPackage) : gcd P.b P.c = 1 := by
+lemma hgcdbc (P : FreyPackage) : gcd P.b P.c = 1 :=  by
   rw [← gcdab_eq_gcdac P.hppos, gcd_comm, P.hgcdab]
   rw [add_comm]
   exact P.hFLT
 
-/-- Given a counterexample `a ^ p + b ^ p = c ^ p` to Fermat's Last Theorem
-with `p ≥ 5` and prime, there exists a Frey package. -/
+/-- Given a counterexample a^p+b^p=c^p to Fermat's Last Theorem with p>=5
+    and prime, there exists a Frey package. -/
 lemma of_not_FermatLastTheoremFor_p_ge_5
     {p : ℕ} (pp : p.Prime) (hp5 : 5 ≤ p) (H : ¬ FermatLastTheoremFor p) :
     Nonempty FreyPackage := by
@@ -116,12 +157,10 @@ lemma of_not_FermatLastTheoremFor_p_ge_5
   have hA : A ≠ 0 := Int.ofNat_ne_zero.mpr ha
   have hB : B ≠ 0 := Int.ofNat_ne_zero.mpr hb
   have hC : C ≠ 0 := Int.ofNat_ne_zero.mpr hc
-  have H : A ^ p + B ^ p = C ^ p := by
-    show (a : ℤ) ^ p + (b : ℤ) ^ p = (c : ℤ) ^ p
-    exact_mod_cast hflt
+  have H : A^p + B^p = C^p := Nat.ToInt.of_eq rfl rfl hflt
   -- First, show that we can make a,b coprime by dividing through by gcd a b
   have ⟨a, b, c, a0, b0, c0, ab, H⟩ :
-      ∃ (a b c : ℤ), a ≠ 0 ∧ b ≠ 0 ∧ c ≠ 0 ∧ Int.gcd a b = 1 ∧ a ^ p + b ^ p = c ^ p := by
+      ∃ (a b c : ℤ), a ≠ 0 ∧ b ≠ 0 ∧ c ≠ 0 ∧ Int.gcd a b = 1 ∧ a^p + b^p = c^p := by
     obtain ⟨d, a', b', d0, cop, a_eq, b_eq⟩ :=
       Int.exists_gcd_one' (Int.gcd_pos_of_ne_zero_left B hA)
     simp only [a_eq, mul_pow, b_eq] at H
@@ -136,8 +175,7 @@ lemma of_not_FermatLastTheoremFor_p_ge_5
   -- Then show that WLOG we can take b to be even,
   -- because at least one of a,b,c is even and we can permute if needed
   have ⟨a, b, c, a0, b0, c0, ab, eb, H⟩ :
-      ∃ (a b c : ℤ), a ≠ 0 ∧ b ≠ 0 ∧ c ≠ 0 ∧ Int.gcd a b = 1 ∧ Even b ∧
-        a ^ p + b ^ p = c ^ p := by
+      ∃ (a b c : ℤ), a ≠ 0 ∧ b ≠ 0 ∧ c ≠ 0 ∧ Int.gcd a b = 1 ∧ Even b ∧ a^p + b^p = c^p := by
     if eb : Even b then
       exact ⟨a, b, c, a0, b0, c0, ab, eb, H⟩
     else if ea : Even a then
@@ -153,11 +191,11 @@ lemma of_not_FermatLastTheoremFor_p_ge_5
   -- We can ensure additionally that a ≡ 3 [ZMOD 4] by negating everything if necessary
   have ⟨a, b, c, ha0, hb0, hc0, ab, ha3, eb, hFLT⟩ :
       ∃ (a b c : ℤ), a ≠ 0 ∧ b ≠ 0 ∧ c ≠ 0 ∧ Int.gcd a b = 1 ∧
-        a ≡ 3 [ZMOD 4] ∧ Even b ∧ a ^ p + b ^ p = c ^ p := by
+        a ≡ 3 [ZMOD 4] ∧ Even b ∧ a^p + b^p = c^p := by
     -- Since b is even, a cannot also be even
     have a_odd' : ∀ {i}, a ≡ i [ZMOD 4] → ¬2 ∣ i := fun ai ei => by
       have ea := (dvd_sub_right ei).1 (.trans (by decide) (Int.modEq_iff_dvd.1 ai))
-      simpa +decide [gcd, ab] using dvd_gcd ea (even_iff_two_dvd.1 eb)
+      simpa (config := {decide := true}) [gcd, ab] using dvd_gcd ea (even_iff_two_dvd.1 eb)
     mod_cases a_mod : a % 4
     · cases a_odd' a_mod (by decide)
     · exact ⟨-a, -b, -c, neg_ne_zero.2 a0, neg_ne_zero.2 b0, neg_ne_zero.2 c0,
@@ -173,15 +211,17 @@ lemma of_not_FermatLastTheoremFor_p_ge_5
     hb2 := (ZMod.intCast_zmod_eq_zero_iff_dvd ..).2 (even_iff_two_dvd.1 eb)
   }⟩
 
-/-- If there is no Frey package, then Fermat's Last Theorem is true for all
-primes `p ≥ 5`. -/
+/-- If there is no Frey package, then Fermat's Last Theorem
+is true for all primes p≥5.
+-/
 lemma fermatLastTheoremFor_p_ge_5 (h : IsEmpty FreyPackage) :
     ∀ p ≥ 5, p.Prime → FermatLastTheoremFor p := by
-  -- assume for a contradiction that we have a counterexample a^p+b^p=c^p
+  -- assume for a contradiction that we have a counterexample
+  -- a^p+b^p=c^p
   intro p hp5 hpp
-  by_contra hcon
+  by_contra!
   -- by the previous result, we can make a Frey package `f`
-  obtain ⟨f⟩ := of_not_FermatLastTheoremFor_p_ge_5 hpp hp5 hcon
+  obtain ⟨f⟩ := of_not_FermatLastTheoremFor_p_ge_5 hpp hp5 this
   -- This contradicts our assumption.
   exact IsEmpty.false f
 

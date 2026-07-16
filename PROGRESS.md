@@ -29,15 +29,28 @@ map where helpful.
       instance, `Δ`, `b₂`, `b₄`, `c₄`, `j`, and
       `FreyCurve.j_valuation_of_bad_prime` (`Fermat/FreyCurve.lean`, adapted
       from the FLT project). Fully proven, no sorry.
-    - ✗ `FreyPackage.false : FreyPackage → False` — CURRENT SORRY ROOT.
-      To be decomposed into (following Wiles/Taylor–Wiles via the FLT
-      project's architecture):
-      - Galois representation on the p-torsion of the Frey curve
-        (needs: torsion infrastructure — FLT project `EllipticCurve/Torsion`)
-      - Mazur: irreducibility of that representation
-      - Wiles–Taylor–Wiles: modularity of semistable elliptic curves over ℚ
-      - Ribet: level lowering to level 2
-      - No nonzero cusp forms of weight 2, level Γ₀(2)
+    - ✓ `FreyPackage.false : FreyPackage → False` — now PROVEN from Mazur +
+      B4 (mirroring the FLT project's `Proof.lean` boss-theorem spine):
+      - ✗ `FreyPackage.mazur` (`Fermat/FLT/FreyCurve/Mazur.lean`) — the mod-p
+        rep of the Frey curve is irreducible; proof = `knownin1980s`, which we
+        vendored as a sorry-backed theorem (NOT their `axiom`), file
+        `Fermat/FLT/Assumptions/KnownIn1980s.lean`.
+      - ✗ `FreyPackage.galoisRep_not_irreducible` (B4, `Fermat/PrimeFive.lean`)
+        — Wiles modularity + Ribet level lowering + no weight-2 level-2 cusp
+        forms. This is also the current frontier of the FLT project itself
+        (their B5/B6, hardly-ramified route, not yet stated in Lean there).
+      - Supporting sorries in vendored infrastructure
+        (`Fermat/FLT/EllipticCurve/Torsion.lean`):
+        `n_torsion_finite`, `n_torsion_card`, `group_theory_lemma`,
+        `Module.Finite` instance, `galoisRepresentation` DistribMulAction
+        fields ("should all be easy" per FLT project), and — nota bene —
+        `WeierstrassCurve.galoisRep` itself, which is **sorry-d DATA** (the
+        continuous Galois representation on p-torsion); the FLT project has
+        it sorry-d too. Statements about sorry-d data are about an
+        unspecified representation; this must eventually be filled with the
+        real construction for B4/Mazur to mean what they should.
+      - `Fermat/FLT/GaloisRepresentation/HardlyRamified/Frey.lean`: 2 sorries
+        (the Frey curve's rep is hardly ramified — Serre §4.1).
 
 ## Vendored material
 
@@ -56,6 +69,13 @@ assumed. Axiom invariant: every declaration must use at most
   worktree `/tmp/flt-worktree`. Layer 1 (reduction to odd primes ≥ 5) built.
 - 2026-07-16: layer 2 — FreyPackage normalization + Frey curve with Δ, c₄, j
   computations, all sorry-free; sorry root moved to `FreyPackage.false`.
+- 2026-07-16: layer 3 — vendored the FLT project's 32-module closure under
+  `Fermat/FLT/` (import-rewritten; `knownin1980s` axiom → sorry-backed
+  theorem; one auto-generated instance name fixed). mathlib re-pinned to the
+  FLT project's exact rev a3364faec429. `FreyPackage.false` proven from
+  `mazur` + B4; sorry frontier now: B4, knownin1980s (Mazur), Torsion
+  infrastructure (6), HardlyRamified/Frey (2). FLT repo cloned to
+  ~/Documents/cs/FLT for reference (never build there).
   NB: the main checkout at ~/Documents/cs/dissertation was hit by an iCloud
   eviction incident (see chat log); pushes go through the rescue clone in the
   session scratchpad until the main .git re-materializes.
