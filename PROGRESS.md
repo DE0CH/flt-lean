@@ -313,3 +313,23 @@ assumed. Axiom invariant: every declaration must use at most
   through tmux (it answered, was blocked with the node list, resumed loop
   work). Sorry frontier (15, all Props): the 14 above +
   `dense_conjClasses_globalFrob`.
+- 2026-07-16 (session 3, cont.): **mod-ℓ cyclotomic character CONSTRUCTED,
+  sorry-free** (`Chebotarev.lean`): `cyclotomicCharacterModL ℓ : Γ ℚ →*
+  (ZMod ℓ)ˣ` (mathlib's `modularCyclotomicCharacter` precomposed with
+  `Γ ℚ → (ℚ̄ ≃+* ℚ̄)`), PROVEN trivial on the fixing subgroup of ℚ(μ_ℓ)
+  (`cyclotomicCharacterModL_eq_one`) and PROVEN continuous into the
+  discrete `ZMod ℓ` (`continuous_cyclotomicCharacterModL`, Krull-open
+  kernel + coset covering). Two new faithful sorry nodes stated:
+  ✗ `cyclotomicCharacterModL_globalFrob` (χ̄(Frob_q) = q for q ≠ ℓ) and
+  ✗ `not_isIrreducible_of_charpoly_eq` (Brauer–Nesbitt, 2-dim mod-ℓ
+  instance: charpolys everywhere equal to those of 1 ⊕ χ̄ ⇒ not
+  irreducible). Chebotarev.lean added to the root import graph.
+  Module-system gotcha recorded: in `module` files, some legacy mathlib
+  instances (e.g. `AlgebraicClosure.isAlgebraic`) only synthesize under
+  `set_option backward.isDefEq.respectTransparency false in`. Axiom audit
+  clean. Sorry frontier (17, all Props): the 15 above +
+  `cyclotomicCharacterModL_globalFrob`, `not_isIrreducible_of_charpoly_eq`.
+  Next: derive `not_isIrreducible_of_charFrob_eq` (the parent) from
+  density + Brauer–Nesbitt + Frobenius value + continuity (needs
+  discreteness of the module topology on `End` over `ZMod ℓ` and the
+  place ↔ prime-number bridge for `Ω ℚ`).

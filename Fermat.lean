@@ -3,6 +3,7 @@ import Fermat.FLT.FreyCurve.Mazur
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Frey
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic
+import Fermat.FLT.GaloisRepresentation.Chebotarev
 import Fermat.SorryGate
 
 /-!
