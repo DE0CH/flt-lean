@@ -36,6 +36,7 @@ public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 import Fermat.FLT.GaloisRepresentation.BrauerNesbitt
 import Mathlib.RepresentationTheory.Subrepresentation
 import Mathlib.RepresentationTheory.Irreducible
+import Mathlib.LinearAlgebra.Charpoly.ToMatrix
 public import Mathlib.NumberTheory.Cyclotomic.CyclotomicCharacter
 public import Mathlib.RingTheory.RootsOfUnity.AlgebraicallyClosed
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
@@ -587,7 +588,48 @@ lemma coeff_zero_comparisonQuadratic (a : R) :
   simp [Polynomial.coeff_sub, Polynomial.coeff_add, Polynomial.coeff_X_pow,
     Polynomial.coeff_C]
 
+/-- The degree of a linear-plus-constant remainder is below two
+(parametrized form). -/
+private lemma degree_quadraticRest_lt (t d : R) :
+    (-(C t * X) + C d : R[X]).degree < ((2 : ℕ) : WithBot ℕ) := by
+  apply lt_of_le_of_lt (Polynomial.degree_add_le _ _)
+  apply max_lt
+  · rw [Polynomial.degree_neg]
+    exact lt_of_le_of_lt (Polynomial.degree_C_mul_X_le _) (by norm_num)
+  · exact lt_of_le_of_lt Polynomial.degree_C_le (by norm_num)
+
+/-- The generic monic quadratic `X² − tX + d` is monic. -/
+lemma monic_quadratic (t d : R) : (X ^ 2 - C t * X + C d).Monic := by
+  have := Polynomial.monic_X_pow_add (n := 2) (degree_quadraticRest_lt t d)
+  have heq : X ^ 2 + (-(C t * X) + C d) = X ^ 2 - C t * X + C d := by ring
+  rwa [heq] at this
+
+/-- The generic monic quadratic has `natDegree` two. -/
+lemma natDegree_quadratic [Nontrivial R] (t d : R) :
+    (X ^ 2 - C t * X + C d).natDegree = 2 := by
+  have heq : X ^ 2 - C t * X + C d = X ^ 2 + (-(C t * X) + C d) := by ring
+  have hdeg : (X ^ 2 + (-(C t * X) + C d) : R[X]).degree =
+      ((2 : ℕ) : WithBot ℕ) := by
+    rw [Polynomial.degree_add_eq_left_of_degree_lt
+      (by rw [Polynomial.degree_X_pow]; exact degree_quadraticRest_lt t d),
+      Polynomial.degree_X_pow]
+  rw [heq]
+  exact Polynomial.natDegree_eq_of_degree_eq_some hdeg
+
+/-- The linear coefficient of the generic monic quadratic. -/
+lemma coeff_one_quadratic (t d : R) :
+    (X ^ 2 - C t * X + C d).coeff 1 = -t := by
+  simp [Polynomial.coeff_sub, Polynomial.coeff_add, Polynomial.coeff_X_pow,
+    Polynomial.coeff_C]
+
+/-- The constant coefficient of the generic monic quadratic. -/
+lemma coeff_zero_quadratic (t d : R) :
+    (X ^ 2 - C t * X + C d).coeff 0 = d := by
+  simp [Polynomial.coeff_sub, Polynomial.coeff_add, Polynomial.coeff_X_pow,
+    Polynomial.coeff_C]
+
 end ComparisonQuadratic
+
 
 set_option backward.isDefEq.respectTransparency false in
 /-- The residue map `PadicInt.toZMod` agrees with `toZModPow 1` composed
@@ -628,5 +670,36 @@ lemma monic_quadratic_ext {R : Type*} [CommRing R] {p q : Polynomial R}
   | (n + 3) =>
     rw [p.coeff_eq_zero_of_natDegree_lt (by omega),
       q.coeff_eq_zero_of_natDegree_lt (by omega)]
+
+set_option backward.isDefEq.respectTransparency false in
+open Polynomial in
+/-- **Characteristic polynomial of a 2-dimensional endomorphism**: on a
+2-dimensional space, `charpoly f = X² − (tr f)·X + det f`. Bridges the
+charpoly-level statements of the tree with trace/determinant data (used
+by the compatibility bookkeeping of `residual_charFrob_eq_of_family`,
+where B6c supplies traces and `IsHardlyRamified.det` supplies
+determinants). -/
+lemma charpoly_eq_quadratic_of_finrank_two {F : Type*} [Field F]
+    {V : Type*} [AddCommGroup V] [Module F V] [Module.Finite F V]
+    (hfr : Module.finrank F V = 2) (f : V →ₗ[F] V) :
+    f.charpoly = X ^ 2 - C (LinearMap.trace F V f) * X
+      + C (LinearMap.det f) := by
+  classical
+  let b : Module.Basis (Fin 2) F V := Module.finBasisOfFinrankEq F V hfr
+  have hM : (LinearMap.toMatrix b b f).charpoly = f.charpoly :=
+    LinearMap.charpoly_toMatrix f b
+  have htr : LinearMap.trace F V f = -(f.charpoly.coeff 1) := by
+    rw [LinearMap.trace_eq_matrix_trace F b,
+      Matrix.trace_eq_neg_charpoly_coeff, hM]
+    norm_num
+  have hdet : LinearMap.det f = f.charpoly.coeff 0 := by
+    rw [← LinearMap.det_toMatrix b, Matrix.det_eq_sign_charpoly_coeff, hM]
+    norm_num
+  refine monic_quadratic_ext (LinearMap.charpoly_monic f)
+    (monic_quadratic _ _)
+    (by rw [LinearMap.charpoly_natDegree, hfr]) (natDegree_quadratic _ _)
+    ?_ ?_
+  · rw [coeff_one_quadratic, htr, neg_neg]
+  · rw [coeff_zero_quadratic, hdet]
 
 end GaloisRepresentation

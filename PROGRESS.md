@@ -265,7 +265,10 @@ map where helpful.
   embedding `E →+* ℚ̄₃` (`IsAlgClosed.lift` on the algebraic extension
   E/ℚ), charpoly-vs-baseChange (`LinearMap.charpoly_baseChange`) and
   conj (`LinearEquiv.charpoly_conj`), trace/det-to-coefficients for
-  2-dim, and a 3-adic Frobenius value for the cyclotomic character
+  2-dim (DONE 2026-07-16: `charpoly_eq_quadratic_of_finrank_two` +
+  generic quadratic coefficient lemmas, proven sorry-free in
+  `Chebotarev.lean`), and a 3-adic Frobenius value for the cyclotomic
+  character
   (consider stating a single ℤ_p-adic Frobenius-value node
   `cyclotomicCharacter` at `globalFrob q` = `q`, from which
   `cyclotomicCharacterModL_globalFrob` follows via
