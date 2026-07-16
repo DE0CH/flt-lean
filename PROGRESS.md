@@ -967,3 +967,14 @@ assumed. Axiom invariant: every declaration must use at most
   `Defs.lean`, so the whole tree is sorry-free. Wired into the root.
   Feed for `mod_three` (image-of-Galois analysis in PGL₂(𝔽₃)).
   Frontier unchanged: 21.
+- 2026-07-16 (session 4 close): **explicit axiom audit of the
+  session's harvest** — UNCONDITIONALLY proven (`[propext,
+  Classical.choice, Quot.sound]`, zero `sorryAx`):
+  `Dickson.classification_tame`, `Dickson.classification_wild`,
+  `OddRep.isIrreducible_iff_isAbsolutelyIrreducible`,
+  `freyCurve_hasGoodReduction_of_not_dvd`,
+  `freyCurve_hasMultiplicativeReduction_of_dvd`,
+  `freyCurve_hasMultiplicativeReduction_at_two`,
+  `freyCurve_two_torsion_embedding`, `embedding_assembly`.
+  Correctly sorry-rooted (derived from open nodes):
+  `minkowski_character_trivial`, `isCoprime_Φ_ΨSq`. Invariant intact.
