@@ -294,3 +294,22 @@ assumed. Axiom invariant: every declaration must use at most
   `residual_charFrob_eq_of_family`, B6c, Chebotarev–Brauer–Nesbitt,
   `n_torsion_card`, `eval_ΨSq_eq_zero_of_smul_eq_zero`,
   `ΨSq_ne_zero_of_charDvd`.
+- 2026-07-16 (session 3, cont.): **Chebotarev–Brauer–Nesbitt decomposition
+  STARTED** (○ in progress) — new own-work file
+  `GaloisRepresentation/Chebotarev.lean`: `globalFrob v : Γ K` defined
+  (image of the local arithmetic Frobenius under `Γ Kᵥ → Γ K`; proven
+  `charFrob v = charpoly at globalFrob v` by `rfl`), and the topological
+  Chebotarev density node stated (✗ `dense_conjClasses_globalFrob`: the
+  conjugacy classes of `globalFrob` outside any finite `S` are dense).
+  Remaining pieces of this decomposition (Brauer–Nesbitt for 2-dim mod-ℓ,
+  the mod-ℓ cyclotomic character as a continuous character via mathlib's
+  `modularCyclotomicCharacter`, its value `q` at `globalFrob q`, and the
+  re-derivation of `not_isIrreducible_of_charFrob_eq`) are the next
+  layer. **Loop mechanics finalized**: the 30-min cron is REPLACED by a
+  `Stop` hook (`.claude/check-sorries.py`, registered in
+  `.claude/settings.json`): every attempt by Claude to end its turn is
+  vetoed (exit 2) while proof-position sorries remain or `lake build`
+  fails the gate; verified live by driving a scratch Claude Code instance
+  through tmux (it answered, was blocked with the node list, resumed loop
+  work). Sorry frontier (15, all Props): the 14 above +
+  `dense_conjClasses_globalFrob`.
