@@ -35,21 +35,29 @@ map where helpful.
         rep of the Frey curve is irreducible — now DERIVED (2026-07-16) from
         two explicit nodes in `Fermat/FLT/FreyCurve/MazurTorsion.lean` (own
         work), following Serre (Duke 1987, §4.1):
-        - ✗ `FreyPackage.exists_torsion_embedding_of_not_isIrreducible` —
-          if the rep is reducible, some elliptic curve over ℚ (the Frey
-          curve or its quotient by the rational order-p subgroup cut out by
-          the stable line) has rational points containing ℤ/2 × ℤ/2p:
-          semistability + Minkowski force a trivial character (rational
-          p-point on E or E/C), and full 2-torsion is rational on both
-          (visible Weierstrass form resp. odd-degree rational isogeny).
-          Folds the quotient-curve construction into an existential:
-          - □ quotients of elliptic curves by finite rational subgroups
-            (Vélu) — needed to split this node faithfully.
-          - ✓ `exists_stable_line_of_not_isIrreducible`
-            (`Chebotarev.lean`, PROVEN sorry-free 2026-07-16) — the first
-            step of this node's eventual proof: a non-irreducible 2-dim
-            mod-ℓ rep has a Galois-stable line (non-simplicity of the
-            `Subrepresentation` lattice + dimension sandwich).
+        - ✓ `FreyPackage.exists_torsion_embedding_of_not_isIrreducible` —
+          DERIVED (2026-07-16) from the two nodes below: Serre's
+          analysis produces full 2-torsion plus a rational point of
+          order p on some curve; the PROVEN `embedding_assembly`
+          combines them into an injective ℤ/2 × ℤ/2p via CRT.
+          - ✗ `FreyPackage.exists_two_torsion_and_p_point_of_not_isIrreducible`
+            — Serre's reducible-case core: reducibility gives a
+            rational order-p subgroup; semistability + Minkowski force
+            a trivial character (rational p-point on E or E/C), and
+            full 2-torsion is rational on both (visible Weierstrass
+            form resp. odd-degree rational isogeny). Folds the
+            quotient-curve construction into an existential:
+            - □ quotients of elliptic curves by finite rational
+              subgroups (Vélu) — needed to split this node faithfully.
+            - ✓ `exists_stable_line_of_not_isIrreducible`
+              (`Chebotarev.lean`, PROVEN sorry-free 2026-07-16) — the
+              first step of this node's eventual proof: a
+              non-irreducible 2-dim mod-ℓ rep has a Galois-stable line.
+          - ✓ `embedding_assembly` (PROVEN 2026-07-16): in an abelian
+            group, an injective (ℤ/2)² and an element of order exactly
+            p (odd prime) assemble into an injective ℤ/2 × ℤ/2p
+            (`ZMod.chineseRemainder`; the parts are separated by the
+            coprime annihilators 2 and p).
         - ✓ `WeierstrassCurve.mazur_torsion_bound` — Mazur's torsion
           theorem, weak form: no elliptic curve over ℚ has a subgroup of
           rational points ≅ ℤ/2 × ℤ/2p for p ≥ 5 (primality dropped as
@@ -828,3 +836,15 @@ assumed. Axiom invariant: every declaration must use at most
   at 2). ALL FOUR conditions of `IsHardlyRamified` for the Frey curve
   now rest exclusively on generic local-global glue nodes; every
   Frey-specific computation is sorry-free. Frontier: 20.
+- 2026-07-16 (session 4, cont.): **Serre's reducible-case node
+  DECOMPOSED; the CRT assembly PROVEN** —
+  `exists_torsion_embedding_of_not_isIrreducible` is now DERIVED from
+  ✗ `exists_two_torsion_and_p_point_of_not_isIrreducible` (Serre's
+  core: reducibility ⟹ some curve has full rational 2-torsion AND a
+  rational point of order exactly p — the Minkowski/Vélu content) and
+  ✓ `embedding_assembly` (PROVEN: injective (ℤ/2)² + element of order
+  p assemble into injective ℤ/2 × ℤ/2p, via `ZMod.chineseRemainder`,
+  `ZMod.lift` for the p-part, and the coprime-annihilator separation
+  `p•u = u` for 2-torsion u with p odd). Frontier: 20 (one closed, one
+  opened; the remaining Serre node no longer contains the group
+  theory).
