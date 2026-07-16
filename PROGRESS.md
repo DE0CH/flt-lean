@@ -1471,3 +1471,23 @@ assumed. Axiom invariant: every declaration must use at most
   (`ramificationIdx'_algebra_tower` over `𝒪ᵥ → 𝒪_{M'} → 𝒪_N`), the
   fixing-subgroup upgrade `I(𝔪_N/GalKᵥ) ∩ fix(M') ↪ I(𝔪_N/Gal(N/M'))`,
   compactness lifting, and the final assembly.
+- 2026-07-17 (session 5): **THE COUNTING COMBINER
+  `ramificationIdx_eq_one_of_inertia_le_fixingSubgroup` PROVEN**
+  (unconditional) — the mathematical HEART of the local node: if
+  `I(𝔪_N/Gal(N/Kᵥ))` fixes the intermediate field `M'` pointwise, then
+  `e(𝔪ᵥ at 𝔪_{M'}) = 1`. Both card lemmas were upgraded to conclude in
+  `ramificationIdx'` form (conversions inside their own instance
+  packs); the combiner chains the `fixingSubgroupEquiv` upgrade
+  injection, `Ideal.ramificationIdx'_algebra_tower'` (Dedekind ✓ both
+  DVRs), and
+  `Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver`
+  (NOTE the namespace: it lives inside `namespace IsDedekindDomain`
+  within `namespace Ideal`). With
+  `maximalIdeal_map_eq_of_ramificationIdx_eq_one`, L1 now reduces to:
+  (a) the COMPACTNESS LIFTING — `I(𝔪_N/Gal(N/Kᵥ)) ⊆ π_N(I_v)` for the
+  Galois closure `N` (finite-to-finite surjectivity comes from the
+  SAME combiner pattern applied to towers `N ⊆ N'` + the proven
+  restriction lemma; then profinite compactness) — and (b) the final
+  glue: `N := normalClosure`, reify `M` as `M' ⊆ ↥N`, transport
+  `e(M') = 1` back to the subextension `M` (ring iso
+  `𝒪_{M'} ≅ 𝒪_M` from `M' ≅ M` as `Kᵥ`-extensions).

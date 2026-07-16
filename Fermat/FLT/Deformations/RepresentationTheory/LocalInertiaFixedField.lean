@@ -13,6 +13,9 @@ public import Mathlib.NumberTheory.RamificationInertia.Galois
 -- residue finiteness over intermediate bases.
 public import Mathlib.RingTheory.Ideal.Quotient.HasFiniteQuotients
 import Mathlib.RingTheory.Ideal.Quotient.Index
+-- `ramificationIdx'_algebra_tower'` and
+-- `ramificationIdx'_ne_zero_of_liesOver`, for the counting step.
+import Mathlib.NumberTheory.RamificationInertia.Ramification
 
 /-!
 # The fixed field of the local inertia group is unramified
@@ -447,6 +450,97 @@ theorem card_inertia_intermediate [IsGalois Kᵥ N] :
     ← Ideal.ramificationIdx'_eq_ramificationIdx (𝔪 (IntegralClosure 𝒪ᵥ M'))
       (𝔪 (IntegralClosure 𝒪ᵥ N))
       (IsDiscreteValuationRing.not_a_field (IntegralClosure 𝒪ᵥ M'))]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 2000000 in
+/-- **The counting step**: if the inertia subgroup of `𝔪_N` in
+`Gal(N/Kᵥ)` fixes the intermediate field `M'` pointwise, then `M'/Kᵥ`
+is unramified (`e(𝔪ᵥ at 𝔪_{M'}) = 1`). Proof:
+`e(N/Kᵥ) = |I(𝔪_N/Gal(N/Kᵥ))| ≤ |I(𝔪_N/Gal(N/M'))| = e(N/M')` — the
+middle step upgrades inertia elements through `fixingSubgroupEquiv` —
+while `e(N/Kᵥ) = e(M'/Kᵥ) · e(N/M')` by tower multiplicativity; since
+`e(N/M') ≠ 0`, this forces `e(M'/Kᵥ) ≤ 1`, and `e ≠ 0` always. -/
+theorem ramificationIdx_eq_one_of_inertia_le_fixingSubgroup [IsGalois Kᵥ N]
+    (hfix : ((𝔪 (IntegralClosure 𝒪ᵥ N)).inertia (N ≃ₐ[Kᵥ] N) : Set (N ≃ₐ[Kᵥ] N)) ⊆
+      (M'.fixingSubgroup : Set (N ≃ₐ[Kᵥ] N))) :
+    Ideal.ramificationIdx' (𝔪 𝒪ᵥ) (𝔪 (IntegralClosure 𝒪ᵥ M')) = 1 := by
+  -- the two counted inertia groups
+  have hc1 := card_inertia_finite_level v N
+  have hc2 := card_inertia_intermediate v N M'
+  -- upgrade: an inertia element over `Kᵥ` fixing `M'` is an inertia
+  -- element over `M'` (same underlying map)
+  have hinj : Nat.card ((𝔪 (IntegralClosure 𝒪ᵥ N)).inertia (N ≃ₐ[Kᵥ] N)) ≤
+      Nat.card ((𝔪 (IntegralClosure 𝒪ᵥ N)).inertia (N ≃ₐ[M'] N)) := by
+    have hmem : ∀ σ : ((𝔪 (IntegralClosure 𝒪ᵥ N)).inertia (N ≃ₐ[Kᵥ] N)),
+        (IntermediateField.fixingSubgroupEquiv M' ⟨σ.1, hfix σ.2⟩ :
+          N ≃ₐ[M'] N) ∈ (𝔪 (IntegralClosure 𝒪ᵥ N)).inertia (N ≃ₐ[M'] N) := by
+      intro σ
+      rw [AddSubgroup.mem_inertia]
+      intro x
+      have hσ := σ.2
+      rw [AddSubgroup.mem_inertia] at hσ
+      have h1 := hσ x
+      -- the two actions have the same underlying function
+      have h2 : (IntermediateField.fixingSubgroupEquiv M' ⟨σ.1, hfix σ.2⟩ :
+          N ≃ₐ[M'] N) • x = σ.1 • x := by
+        apply Subtype.ext
+        rfl
+      rwa [h2]
+    refine Nat.card_le_card_of_injective
+      (fun σ => ⟨IntermediateField.fixingSubgroupEquiv M' ⟨σ.1, hfix σ.2⟩, hmem σ⟩) ?_
+    intro a b hab
+    have h3 : (⟨a.1, hfix a.2⟩ : M'.fixingSubgroup) = ⟨b.1, hfix b.2⟩ :=
+      (IntermediateField.fixingSubgroupEquiv M').injective (Subtype.ext_iff.mp hab)
+    exact Subtype.ext (congrArg
+      (fun (x : M'.fixingSubgroup) => (x : N ≃ₐ[Kᵥ] N)) h3)
+  -- tower multiplicativity
+  haveI hlies : (𝔪 (IntegralClosure 𝒪ᵥ N)).LiesOver
+      (𝔪 (IntegralClosure 𝒪ᵥ M')) := by
+    constructor
+    haveI : Algebra.IsIntegral (IntegralClosure 𝒪ᵥ M') (IntegralClosure 𝒪ᵥ N) :=
+      Algebra.IsIntegral.tower_top (R := 𝒪ᵥ)
+    have hmax : ((𝔪 (IntegralClosure 𝒪ᵥ N)).comap
+        (algebraMap (IntegralClosure 𝒪ᵥ M') (IntegralClosure 𝒪ᵥ N))).IsMaximal :=
+      Ideal.isMaximal_comap_of_isIntegral_of_isMaximal (𝔪 (IntegralClosure 𝒪ᵥ N))
+    exact (hmax.eq_of_le
+      (IsLocalRing.maximalIdeal.isMaximal (IntegralClosure 𝒪ᵥ M')).ne_top
+      (IsLocalRing.le_maximalIdeal hmax.ne_top)).symm
+  haveI : FaithfulSMul (IntegralClosure 𝒪ᵥ M') (IntegralClosure 𝒪ᵥ N) := by
+    rw [faithfulSMul_iff_algebraMap_injective]
+    intro a b hab
+    have h1 := congrArg (algebraMap (IntegralClosure 𝒪ᵥ N) N) hab
+    rw [← IsScalarTower.algebraMap_apply, ← IsScalarTower.algebraMap_apply] at h1
+    haveI : IsFractionRing (IntegralClosure 𝒪ᵥ M') M' :=
+      IsIntegralClosure.isFractionRing_of_finite_extension 𝒪ᵥ Kᵥ M'
+        (IntegralClosure 𝒪ᵥ M')
+    have h2 : Function.Injective
+        (algebraMap (IntegralClosure 𝒪ᵥ M') N) := by
+      rw [IsScalarTower.algebraMap_eq (IntegralClosure 𝒪ᵥ M') M' N]
+      exact (algebraMap M' N).injective.comp
+        (IsFractionRing.injective (IntegralClosure 𝒪ᵥ M') M')
+    exact h2 h1
+  have htower := Ideal.ramificationIdx'_algebra_tower'
+    (𝔪 𝒪ᵥ) (𝔪 (IntegralClosure 𝒪ᵥ M')) (𝔪 (IntegralClosure 𝒪ᵥ N))
+  -- positivity of the upper ramification index
+  have hne2 : Ideal.ramificationIdx' (𝔪 (IntegralClosure 𝒪ᵥ M'))
+      (𝔪 (IntegralClosure 𝒪ᵥ N)) ≠ 0 :=
+    Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver _
+      (IsDiscreteValuationRing.not_a_field (IntegralClosure 𝒪ᵥ M'))
+  have hne1 : Ideal.ramificationIdx' (𝔪 𝒪ᵥ)
+      (𝔪 (IntegralClosure 𝒪ᵥ M')) ≠ 0 :=
+    Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver _
+      (IsDiscreteValuationRing.not_a_field 𝒪ᵥ)
+  -- combine: `e₁ · e₂ = e ≤ e₂` with `e₂ ≠ 0` forces `e₁ = 1`
+  rw [hc1, hc2, htower] at hinj
+  have hle : Ideal.ramificationIdx' (𝔪 𝒪ᵥ) (𝔪 (IntegralClosure 𝒪ᵥ M')) *
+      Ideal.ramificationIdx' (𝔪 (IntegralClosure 𝒪ᵥ M'))
+        (𝔪 (IntegralClosure 𝒪ᵥ N)) ≤
+      1 * Ideal.ramificationIdx' (𝔪 (IntegralClosure 𝒪ᵥ M'))
+        (𝔪 (IntegralClosure 𝒪ᵥ N)) := by
+    rw [one_mul]
+    exact hinj
+  have hle1 := Nat.le_of_mul_le_mul_right hle (Nat.pos_of_ne_zero hne2)
+  omega
 
 end IntermediateBase
 
