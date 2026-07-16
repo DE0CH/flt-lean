@@ -64,8 +64,14 @@ Method — resolve a dependency tree top-down:
 
 ## Current state — read PROGRESS.md for the authoritative tree
 
-Session 4 (2026-07-16) closed with **21 leaf sorry nodes** (all Props;
-grep for the live list). Session-4 headlines: the entire Tate-curve /
+Session 4 (2026-07-16) closed with **22 leaf sorry nodes** (all Props;
+grep for the live list — PROGRESS.md's canonical enumeration plus the
+late-session splits: the Minkowski transport is now
+[`exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup`, surjectivity]
+with conjugacy propagation PROVEN, and `mod_three` is now
+[`mod_three_reducible`, Dickson/discriminant] +
+[`mod_three_of_stable_line`, quotient character] with the composition
+derived). Session-4 headlines: the entire Tate-curve /
 QuadraticTwists / reduction infrastructure is vendored SORRY-FREE (28
 files; TateCurve.lean's sorry-d data reformulated as two existential
 Prop nodes); the Frey curve's ENTIRE semistability arithmetic is PROVEN
@@ -112,9 +118,11 @@ The 21 leaves, grouped:
   mathlib at our pin), `exists_weilPairing`.
 - **Galois-representation deep end**: `exists_frobenius_conj_mem_coset`
   (finite-level Chebotarev), B6a `exists_hardlyRamifiedLift`, B6b
-  `mem_isCompatible`, B6c `three_adic`, `mod_three` (NB: upstream's
-  fully-proven `Slop/PGL2` Dickson classification + `OddAbsIrred` may
-  feed these — unvendored, mapped).
+  `mem_isCompatible`, B6c `three_adic`, and the `mod_three` pair
+  `mod_three_reducible` + `mod_three_of_stable_line` (their inputs —
+  the `Slop/PGL2` Dickson classification and `OddAbsIrred` — are NOW
+  VENDORED sorry-free, and the second node reuses the derived
+  Minkowski machinery).
 
 ## Workflow
 
