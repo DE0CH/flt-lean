@@ -61,6 +61,10 @@ public import Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup
 -- `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`, the place of `ℚ`
 -- attached to a prime number.
 public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
+-- Minkowski's discriminant theorem (`exists_not_isUnramifiedAt_int_of_isGalois`)
+-- and the going-up prime lifting, used in the Minkowski assembly proof.
+import Mathlib.NumberTheory.NumberField.ExistsRamified
+import Mathlib.RingTheory.Ideal.GoingUp
 
 @[expose] public section
 
@@ -143,16 +147,93 @@ reconnaissance in `PROGRESS.md` for the verified mathlib route; the
 remaining content is the fixed field of the open subgroup (infinite
 Galois correspondence) and the dictionary between `localInertiaGroup`
 and classical ramification. -/
+theorem isUnramifiedAt_of_inertia_le_fixingSubgroup
+    (L : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ L]
+    {𝒪 : Type*} [CommRing 𝒪] [Algebra 𝒪 L] [IsIntegralClosure 𝒪 ℤ L]
+    {q : ℕ} (hq : q.Prime)
+    (hle : Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+        (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat)
+      ≤ L.fixingSubgroup)
+    (P : Ideal 𝒪) [P.IsPrime] (hP : (q : 𝒪) ∈ P) :
+    Algebra.IsUnramifiedAt ℤ P :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Minkowski, subgroup form** (DERIVED 2026-07-16 from the inertia
+dictionary and mathlib's discriminant theory): an open normal subgroup
+of `G_ℚ` containing the image of the local inertia group at every prime
+is everything. Assembly: the fixed field `L` of `H` recovers `H` by the
+infinite Galois correspondence (`H` is closed since open); `L` is a
+finite Galois number field (`isOpen_iff_finite`, `normal_iff_isGalois`);
+if `H ≠ ⊤` then `L ≠ ⊥` so `1 < finrank ℚ L`, and
+`exists_not_isUnramifiedAt_int_of_isGalois` produces a prime `p` all of
+whose primes in `𝓞 L` are ramified; but the inertia hypothesis plus the
+dictionary make the lifted prime above `p` unramified — contradiction. -/
 theorem open_normal_subgroup_eq_top_of_inertia_le
-    (H : Subgroup (Field.absoluteGaloisGroup ℚ)) [H.Normal]
+    (H : Subgroup (Field.absoluteGaloisGroup ℚ)) [hnorm : H.Normal]
     (hopen : IsOpen (H : Set (Field.absoluteGaloisGroup ℚ)))
     (hinertia : ∀ (q : ℕ) (hq : q.Prime),
       Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
         (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat) ≤ H) :
-    H = ⊤ :=
-  sorry
+    H = ⊤ := by
+  haveI hgal : IsGalois ℚ (AlgebraicClosure ℚ) := inferInstance
+  by_contra hne
+  have hclosed : IsClosed (H : Set (Field.absoluteGaloisGroup ℚ)) :=
+    Subgroup.isClosed_of_isOpen H hopen
+  set L : IntermediateField ℚ (AlgebraicClosure ℚ) :=
+    IntermediateField.fixedField (E := AlgebraicClosure ℚ) H with hLdef
+  have hfix : L.fixingSubgroup = H :=
+    InfiniteGalois.fixingSubgroup_fixedField ⟨H, hclosed⟩
+  haveI hfd : FiniteDimensional ℚ L :=
+    (InfiniteGalois.isOpen_iff_finite L).mp (by rw [hfix]; exact hopen)
+  haveI hgalL : IsGalois ℚ L := (InfiniteGalois.normal_iff_isGalois L).mp
+    (by rw [hfix]; exact hnorm)
+  haveI : NumberField L := ⟨⟩
+  have hrank : 1 < Module.finrank ℚ L := by
+    rcases Nat.lt_or_ge 1 (Module.finrank ℚ L) with h | h
+    · exact h
+    · exfalso
+      have h0 : 0 < Module.finrank ℚ L := Module.finrank_pos
+      have h1 : Module.finrank ℚ L = 1 := by omega
+      apply hne
+      rw [← hfix, IntermediateField.finrank_eq_one_iff.mp h1,
+        IntermediateField.fixingSubgroup_bot]
+  obtain ⟨p, hp, hram⟩ := NumberField.exists_not_isUnramifiedAt_int_of_isGalois
+    (K := L) (𝒪 := NumberField.RingOfIntegers L) hrank
+  -- lift `p` to a prime of `𝓞 L`
+  haveI := IsIntegralClosure.isIntegral_algebra ℤ (A := NumberField.RingOfIntegers L) L
+  have hpZ : Prime ((p : ℤ)) := Nat.prime_iff_prime_int.mp hp
+  haveI hPspan : (Ideal.span {((p : ℤ))} : Ideal ℤ).IsPrime :=
+    (Ideal.span_singleton_prime (by exact_mod_cast hp.ne_zero)).mpr hpZ
+  have hker : RingHom.ker (algebraMap ℤ (NumberField.RingOfIntegers L)) ≤
+      Ideal.span {((p : ℤ))} := by
+    intro x hx
+    have hx0 : algebraMap ℤ (NumberField.RingOfIntegers L) x = 0 := hx
+    have hxL : algebraMap ℤ L x = 0 := by
+      rw [IsScalarTower.algebraMap_eq ℤ (NumberField.RingOfIntegers L) L, RingHom.comp_apply,
+        hx0, map_zero]
+    have : (x : ℤ) = 0 := by
+      have := congrArg (fun y => y) hxL
+      exact_mod_cast (by simpa using hxL : ((x : ℤ) : L) = 0)
+    rw [this]
+    exact Ideal.zero_mem _
+  obtain ⟨Q, hQprime, hQcomap⟩ :=
+    Ideal.exists_ideal_over_prime_of_isIntegral_of_isDomain
+      (S := NumberField.RingOfIntegers L) (Ideal.span {((p : ℤ))}) hker
+  haveI := hQprime
+  have hpQ : ((p : ℕ) : NumberField.RingOfIntegers L) ∈ Q := by
+    have hmem : ((p : ℤ)) ∈ Ideal.span {((p : ℤ))} :=
+      Ideal.subset_span rfl
+    rw [← hQcomap] at hmem
+    have := Ideal.mem_comap.mp hmem
+    simpa using this
+  exact hram Q hQprime hpQ
+    (isUnramifiedAt_of_inertia_le_fixingSubgroup L hp
+      (le_trans (hinertia p hp) (le_of_eq hfix.symm)) Q hpQ)
 
 /-- **Minkowski for mod-`p` characters** (DERIVED 2026-07-16 from the
 subgroup form): a character `χ : G_ℚ → (ℤ/p)ˣ` with open kernel that is

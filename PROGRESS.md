@@ -51,14 +51,24 @@ map where helpful.
                 normal subgroup containing every inertia image
                 (`Subgroup.map_le_iff_le_comap` + `ker (χ∘res) =
                 comap res (ker χ)`), hence everything, so χ = 1.
-                - ✗ `open_normal_subgroup_eq_top_of_inertia_le` —
-                  **Minkowski, subgroup form** (character-free): an
-                  open normal subgroup of G_ℚ containing the image of
-                  `localInertiaGroup q` for every prime q is ⊤. To be
-                  closed against mathlib's
-                  `exists_not_isUnramifiedAt_int_of_isGalois` via the
-                  fixed field of the open subgroup (see the session-4
-                  reconnaissance for the verified route).
+                - ✓ `open_normal_subgroup_eq_top_of_inertia_le` —
+                  **Minkowski, subgroup form**: DERIVED (2026-07-16)
+                  from the inertia dictionary below plus mathlib's
+                  discriminant theory (fixed field of the open normal
+                  kernel via the infinite Galois correspondence;
+                  finite Galois number field by
+                  `isOpen_iff_finite`/`normal_iff_isGalois`;
+                  `1 < finrank` from `H ≠ ⊤`;
+                  `exists_not_isUnramifiedAt_int_of_isGalois` gives an
+                  everywhere-ramified prime `p`; going-up lifts it;
+                  the dictionary contradicts).
+                  - ✗ `isUnramifiedAt_of_inertia_le_fixingSubgroup` —
+                    **THE inertia dictionary** (the shared bridge; also
+                    what the five glue nodes need): if the image of
+                    `localInertiaGroup q` in G_ℚ fixes the finite
+                    extension `L` pointwise, every prime of `𝒪 ⊇ ℤ`
+                    (integral closure in `L`) above `q` is
+                    `Algebra.IsUnramifiedAt ℤ`.
               - ✗ `FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski`
                 — Serre's analysis with the Minkowski input as a
                 hypothesis: stable line ⟹ characters χ₁χ₂ = ω̄;
@@ -574,7 +584,11 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   injectivity instances come from the `IsIntegralClosure` invocations
   used verbatim in `ExistsRamified.lean` (`isIntegral_algebra`,
   `algebraMap_injective`). NOTHING in the assembly plan remains
-  unverified;
+  unverified. **EXECUTED (2026-07-16, same session): the assembly
+  COMPILED with one fix round (missing imports). The Minkowski node is
+  now DERIVED; the open sorry is
+  `isUnramifiedAt_of_inertia_le_fixingSubgroup` — the pure inertia
+  dictionary, shared with the five glue nodes.**;
   (3) conclude `ker χ = ⊤` from `fixedField χ.ker = ⊥` by the infinite
   Galois correspondence, hence `χ = 1`. Estimated: one focused session;
   start from a FRESH context.
