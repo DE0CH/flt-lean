@@ -328,15 +328,19 @@ map where helpful.
   lines, plus WeilPairing.lean, Torsion.lean, GoodReduction.lean,
   Flat.lean, TateParameter.lean, TateCurveBaseChange.lean,
   ReductionBaseChange.lean, TateCurveConstruction.lean) — exactly the
-  remaining Frey-condition vocabulary. **BLOCKER (2026-07-16): these
-  depend on `Mathlib.AlgebraicGeometry.EllipticCurve.Reduction` and
-  `Mathlib.NumberTheory.LocalField.Basic`, which do not exist at our
-  pinned mathlib rev (a3364faec429).** The unlock is a **mathlib pin
-  bump** to the FLT project's current rev (`git -C ~/cs/FLT log` for
-  their lakefile pin) — a major migration (all vendored files + own
-  work re-compile; expect module-system and API breakage; budget a full
-  session). Alternative (worse): vendor the missing mathlib files or
-  hand-roll minimal statements. NB `tateEquiv` (Tate's uniformization)
+  remaining Frey-condition vocabulary. **BLOCKER WITHDRAWN
+  (2026-07-16, later the same day): the earlier check was faulty —
+  `Mathlib.AlgebraicGeometry.EllipticCurve.Reduction` and
+  `Mathlib.NumberTheory.LocalField.Basic` BOTH exist at our pinned rev
+  (a3364faec429), and the FLT repo pins the SAME rev. No pin bump is
+  needed.** The vendoring closure (verified): the KnownIn1980s
+  EllipticCurves files plus the FLT-repo Mathlib-additions
+  `FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction`,
+  `FLT.Mathlib.RingTheory.Valuation.ValuativeRel.Basic`,
+  `FLT.Mathlib.Topology.Algebra.ValuativeRel.ValuativeTopology`,
+  `FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal`, and their recursive
+  imports — a multi-file vendoring workstream, now fully unblocked at
+  the current pin. NB `tateEquiv` (Tate's uniformization)
   is **sorry-d DATA** (a `def`), so vendoring must track it as
   meaning-poisoning until its existence node closes (cf. the old
   `galoisRep` situation).
