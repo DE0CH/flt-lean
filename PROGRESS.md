@@ -952,3 +952,18 @@ assumed. Axiom invariant: every declaration must use at most
   root. Mapped feed for the B6 chain / `mod_three` (together with the
   still-unvendored `Slop/PGL2` Dickson classification). Frontier
   unchanged: 21.
+- 2026-07-16 (session 4, cont.): **Dickson classification vendored,
+  ZERO sorries (13 files, ~11.5k lines)** — the full
+  `Slop/PGL2/FiniteSubgroups` development plus
+  `KnownIn1980s/PGL2/Defs.lean` with the classification theorems
+  (`Dickson.classification_tame`: a nontrivial finite subgroup of
+  `PGL₂(𝔽̄_p)` of order prime to `p` is cyclic, dihedral, A₄, S₄ or A₅;
+  `Dickson.classification_wild`: order divisible by `p` gives
+  elementary-abelian-by-cyclic, PSL₂/PGL₂ of a subfield, or A₅ at
+  `p = 3`). VENDORING CHANGE: upstream leaves the Defs statements
+  sorry-d and proves copies in `Proofs.lean`; here the shared
+  definitions are split into `PGL2/Basic.lean` (breaking the import
+  cycle with the Slop development) and the proofs are inlined into
+  `Defs.lean`, so the whole tree is sorry-free. Wired into the root.
+  Feed for `mod_three` (image-of-Galois analysis in PGL₂(𝔽₃)).
+  Frontier unchanged: 21.
