@@ -64,6 +64,43 @@ Method — resolve a dependency tree top-down:
 
 ## Current state — read PROGRESS.md for the authoritative tree
 
+**Session 5 (2026-07-16) headline:** the Minkowski surjectivity leaf
+`exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup` is DERIVED (the
+valuation route: embed `L` into `M = ℚ_q(ι L)`, the local node makes
+`q` a uniformizer of `𝒪_M`, the comap prime has `e = 1`, and
+`#I = e` closes; NO decomposition groups, NO henselian lifting). The
+entire Minkowski branch now rests on ONE local node,
+`maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`
+(`Deformations/RepresentationTheory/LocalInertiaFixedField.lean`): a
+finite subextension `M/Kᵥ` of `Kᵥᵃˡᵍ` fixed pointwise by
+`localInertiaGroup v` has `e(M/Kᵥ) = 1`. Around it, PROVEN
+unconditionally: `card_inertia_finite_level` (`|I| = e` at finite
+Galois levels over `𝒪ᵥ`), `restrictNormalHom_mem_inertia_of_mem_localInertiaGroup`
+(restriction of local inertia into finite-level inertia),
+`isDiscreteValuationRing_integralClosure` (`𝒪_N` is a DVR),
+`maximalIdeal_map_eq_of_ramificationIdx_eq_one` (`e = 1 ⟹` ideal
+equality), `adicCompletionIntegers_ne_top`, plus the instance layer
+(IsIntegralClosure for the synonym, SMulDistribClass, two restricted
+towers, LiesOver of `𝔪_N`). CRITICAL LEAN GOTCHA discovered:
+`set_option backward.isDefEq.respectTransparency false in` fixes the
+otherwise-unsynthesizable `Module.Free/Flat` instances over
+`IntegralClosure 𝒪ᵥ ↥N` (divergent embedded instance arguments) — any
+lemma synthesizing module-structure classes over the synonym likely
+needs it. Remaining for the local node (full design in PROGRESS.md
+session-5 log): generalize the `FiniteLevel` section to arbitrary
+finite `E/Kᵥ`, declare the canonical
+`Algebra (IC 𝒪ᵥ ↥M') (IC 𝒪ᵥ E)` instance for
+`M' : IntermediateField Kᵥ E` (codRestrict, NO `≤`-hypothesis needed),
+prove the M-based counting
+(`e(E/Kᵥ) = |I(𝔪_E/Gal(E/Kᵥ))| ≤ |I(𝔪_E/Gal(E/M'))| = e(E/M')` via
+`fixingSubgroupEquiv`, then `ramificationIdx'_algebra_tower` forces
+`e(M') = 1`), the compactness lifting of finite-level inertia to
+`localInertiaGroup` (Γ profinite, `localInertiaGroup` closed via
+locally-constant evaluation, finite-to-finite surjectivity by the same
+counting), and the final assembly. mathlib's
+`stabilizerHom_surjective` is `[Finite G]`-only — no profinite
+shortcut.
+
 Session 4 (2026-07-16) closed with **22 leaf sorry nodes** (all Props;
 grep for the live list — PROGRESS.md's canonical enumeration plus the
 late-session splits: the Minkowski transport is now
