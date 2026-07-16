@@ -7,6 +7,7 @@ module
 
 public import Fermat.FLT.FreyCurve.Basic
 public import Fermat.FLT.EllipticCurve.Torsion
+import Fermat.FLT.FreyCurve.MazurTorsion
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Frey
 import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
 import Mathlib.Data.Nat.Factorial.DoubleFactorial
@@ -34,6 +35,13 @@ theorem FreyPackage.mazur (P : FreyPackage) :
   -- VENDORING CHANGE: the original proof is `knownin1980s`, the FLT
   -- project's universal axiom for pre-1990 results ("this is in Serre's
   -- 1987 Duke paper"). Per project policy no such terminal citation nodes
-  -- are allowed — this is an ordinary open obligation, to be decomposed and
-  -- proven (Mazur's isogeny theorem + Serre §4.1) like every other node.
-  sorry
+  -- are allowed. The theorem is now DERIVED from the two explicit sorry
+  -- nodes of `Fermat/FLT/FreyCurve/MazurTorsion.lean`: were the
+  -- representation reducible, Serre's §4.1 analysis
+  -- (`exists_torsion_embedding_of_not_isIrreducible`) would produce an
+  -- elliptic curve over ℚ whose rational points contain ℤ/2 × ℤ/2p,
+  -- contradicting Mazur's torsion theorem (`mazur_torsion_bound`).
+  by_contra hred
+  obtain ⟨E', hE', φ, hφ⟩ := P.exists_torsion_embedding_of_not_isIrreducible hred
+  haveI := hE'
+  exact WeierstrassCurve.mazur_torsion_bound E' P.pp P.hp5 φ hφ

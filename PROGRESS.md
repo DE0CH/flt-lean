@@ -12,7 +12,7 @@ recurse into the gaps. Follow the Wiles/Taylor–Wiles route as organized by the
 Frey–Serre–Ribet reduction; use Buzzard's FLT project (Imperial) blueprint as a
 map where helpful.
 
-## Tree (✓ = proven here or in mathlib, ✗ = sorry, ○ = in progress)
+## Tree (✓ = proven here or in mathlib, ✗ = sorry, ○ = in progress, □ = not yet started)
 
 - `fermat_last_theorem : FermatLastTheorem`
   - ✓ `FermatLastTheorem.of_odd_primes` (mathlib, NumberTheory/FLT/Four.lean)
@@ -31,9 +31,26 @@ map where helpful.
       from the FLT project). Fully proven, no sorry.
     - ✓ `FreyPackage.false : FreyPackage → False` — now PROVEN from Mazur +
       B4 (mirroring the FLT project's `Proof.lean` boss-theorem spine):
-      - ✗ `FreyPackage.mazur` (`Fermat/FLT/FreyCurve/Mazur.lean`) — the mod-p
-        rep of the Frey curve is irreducible (Mazur + Serre §4.1); plain
-        `sorry`, an open node like any other.
+      - ✓ `FreyPackage.mazur` (`Fermat/FLT/FreyCurve/Mazur.lean`) — the mod-p
+        rep of the Frey curve is irreducible — now DERIVED (2026-07-16) from
+        two explicit nodes in `Fermat/FLT/FreyCurve/MazurTorsion.lean` (own
+        work), following Serre (Duke 1987, §4.1):
+        - ✗ `FreyPackage.exists_torsion_embedding_of_not_isIrreducible` —
+          if the rep is reducible, some elliptic curve over ℚ (the Frey
+          curve or its quotient by the rational order-p subgroup cut out by
+          the stable line) has rational points containing ℤ/2 × ℤ/2p:
+          semistability + Minkowski force a trivial character (rational
+          p-point on E or E/C), and full 2-torsion is rational on both
+          (visible Weierstrass form resp. odd-degree rational isogeny).
+          Folds the quotient-curve construction into an existential:
+          - □ quotients of elliptic curves by finite rational subgroups
+            (Vélu) — needed to split this node faithfully.
+        - ✗ `WeierstrassCurve.mazur_torsion_bound` — Mazur's torsion
+          theorem, weak form: no elliptic curve over ℚ has a subgroup of
+          rational points ≅ ℤ/2 × ℤ/2p for prime p ≥ 5 (order 4p ≥ 20 > 16
+          exceeds every group in Mazur's list).
+          - □ Mazur's full classification (the fifteen torsion groups),
+            from which the weak form is to be derived.
       - ✓ `FreyPackage.galoisRep_not_irreducible` (B4, `Fermat/PrimeFive.lean`)
         — now DERIVED (2026-07-16) from two explicit nodes, mirroring the
         FLT project's hardly-ramified plan (their B5/B6, stated in Lean here
@@ -101,8 +118,10 @@ map where helpful.
           CHANGE) and is derived from `n_torsion_finite`, consolidating the
           sorry into that single node.
         - ✓ `galoisRepresentation` DistribMulAction fields (earlier layer).
-      - `Fermat/FLT/GaloisRepresentation/HardlyRamified/Frey.lean`: 2 sorries
-        (the Frey curve's rep is hardly ramified — Serre §4.1).
+      - `Fermat/FLT/GaloisRepresentation/HardlyRamified/Frey.lean`: 1 sorry
+        (`torsion_isHardlyRamified` — the Frey curve's rep is hardly
+        ramified, Serre §4.1 + Tate curve theory; the former second sorry,
+        the rank hypothesis, was discharged by `p_torsion_rank`).
 
 ## Policy: no citation-terminal nodes (Deyao, 2026-07-16)
 
@@ -174,5 +193,18 @@ assumed. Axiom invariant: every declaration must use at most
   those of `1 ⊕ χ̄`; to be split into faithful B6b/B6c), and the
   Chebotarev–Brauer–Nesbitt node; B5 proven from them. Sorry frontier
   (8, all Props): `mazur`, `torsion_isHardlyRamified`, B6a, B6bc,
+  Chebotarev–Brauer–Nesbitt, `n_torsion_card`,
+  `eval_ΨSq_eq_zero_of_smul_eq_zero`, `ΨSq_ne_zero_of_charDvd`.
+- 2026-07-16 (session 3): **`mazur` decomposed and derived** — new file
+  `FreyCurve/MazurTorsion.lean` (own work) states Serre's §4.1
+  reducible-case analysis (`exists_torsion_embedding_of_not_isIrreducible`:
+  reducibility yields an elliptic curve over ℚ with rational points ⊇
+  ℤ/2 × ℤ/2p) and Mazur's torsion theorem in weak form
+  (`mazur_torsion_bound`: no such curve exists for prime p ≥ 5);
+  `FreyPackage.mazur` proven from them by contradiction. Axiom audit clean.
+  Tree legend gains □ (not yet started) for planned-but-unstated deeper
+  nodes (Vélu quotients, Mazur's full fifteen-group classification).
+  Sorry frontier (9, all Props): `exists_torsion_embedding_of_not_isIrreducible`,
+  `mazur_torsion_bound`, `torsion_isHardlyRamified`, B6a, B6bc,
   Chebotarev–Brauer–Nesbitt, `n_torsion_card`,
   `eval_ΨSq_eq_zero_of_smul_eq_zero`, `ΨSq_ne_zero_of_charDvd`.
