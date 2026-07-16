@@ -90,11 +90,16 @@ map where helpful.
             - ✓ `FreyCurve.torsion_isUnramified_of_good` — DERIVED
               (2026-07-16) from the two `FreyCurve/Semistable.lean`
               nodes below.
-              - ✗ `FreyPackage.freyCurve_hasGoodReduction_of_not_dvd`
-                (`FreyCurve/Semistable.lean`, own work): at odd
-                `q ∤ abc` the Frey equation is `q`-integral with unit
-                discriminant `(abc)^{2p}/2⁸`, hence minimal with good
-                reduction over `ℤ_(q) = Localization.AtPrime`.
+              - ✓ `FreyPackage.freyCurve_hasGoodReduction_of_not_dvd`
+                (`FreyCurve/Semistable.lean`, own work): PROVEN
+                (2026-07-16) — at odd `q ∤ abc` the Frey equation is
+                `q`-integral (integrality via `freyCurveInt` +
+                `FreyCurve.map`) with unit discriminant
+                `(abc)^{2p}/2⁸` (numerator and denominator prime to
+                `q`, hence a unit of `ℤ_(q)`; adic valuation `1` via
+                `mker_valuation_eq_isUnitSubmonoid`), hence minimal
+                (valuation `1` is maximal among integral models) with
+                good reduction over `ℤ_(q) = Localization.AtPrime`.
               - ✗ `WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction`
                 (`FreyCurve/Semistable.lean`, own work): the NOS
                 local-global glue — good reduction at `q ≠ p` gives
@@ -735,3 +740,16 @@ assumed. Axiom invariant: every declaration must use at most
   explicit `@`-application — instance-synthesis stalls on its
   `IsDomain (𝓞 ℚ)` argument even though direct synthesis succeeds).
   Frontier: 21.
+- 2026-07-16 (session 4, cont.): **`freyCurve_hasGoodReduction_of_not_dvd`
+  PROVEN** — the good-reduction arithmetic node is closed:
+  `q`-integrality via the integral model (`freyCurveInt` and
+  `FreyCurve.map`, each coefficient an integer, lifted through
+  `map_intCast`); the discriminant `(abc)^{2p}/2⁸` is exhibited as the
+  image of the explicit unit `(abc)^{2p}·(2⁸)⁻¹` of `ℤ_(q)` (both
+  factors prime to `q`, inverted via `IsLocalization.AtPrime.
+  isUnit_to_map_iff` and the new PROVEN bridge lemmas
+  `intCast_mem_toHeightOneSpectrumRingOfIntegersRat_iff` and
+  `isUnit_intCast_localizationAtPrime`), so the adic valuation of Δ is
+  `1` by `mker_valuation_eq_isUnitSubmonoid`; minimality follows since
+  valuation `1` is the maximum over integral models (the
+  `valuation_Δ_aux` subtype bound). Frontier: 20.
