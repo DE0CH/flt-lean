@@ -644,7 +644,17 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   2026-07-16: `Ideal.card_inertia_eq_ramificationIdxIn (G := (L ≃ₐ[ℚ]
   L)) (Ideal.span {p}) Q` elaborates at `ℤ → 𝓞 L` — the `Flat` and
   `MulSemiringAction` instances synthesize automatically given the
-  standing `isIntegral_algebra` haveI and the transparency option)
+  standing `isIntegral_algebra` haveI and the transparency option —
+  CAVEAT: that scratch took `[PerfectField (span {p}).ResidueField]`
+  as a HYPOTHESIS; the derived proof must supply it via
+  `PerfectField.ofFinite` + finiteness of `(span {q} : Ideal
+  ℤ).ResidueField` ≅ 𝔽_q — locate or prove that finiteness bridge
+  first (compare `Ring.HasFiniteQuotients.finiteQuotient`, which gives
+  `Finite (ℤ ⧸ span {q})`; the `Ideal.ResidueField` is the localized
+  quotient). Also confirmed: `Ideal.liesOver_span_iff (hP : P ≠ ⊤)
+  (hp : Prime p) : P.LiesOver (span {p}) ↔ algebraMap R S p ∈ P`
+  (`KrullDimension/Basic.lean:202`) supplies the `LiesOver` instance
+  from the membership hypothesis)
   `ramificationIdxIn_eq_ramificationIdx` (the lemma ExistsRamified.lean
   itself uses) lands at the specific prime and
   `ramificationIdx_eq_one_iff.mp` (scratch-compiled) finishes. The
