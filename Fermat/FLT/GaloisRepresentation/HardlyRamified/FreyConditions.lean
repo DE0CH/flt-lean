@@ -141,19 +141,26 @@ theorem FreyCurve.torsion_isUnramified :
   · exact FreyCurve.torsion_isUnramified_of_multiplicative P q hq hq2p hdvd
   · exact FreyCurve.torsion_isUnramified_of_good P q hq hq2p hdvd
 
-set_option warn.sorry false in
-/-- **Flatness at `p`, good-reduction case** (sorry node): if `p ∤ abc`
-then the Frey curve has good reduction at `p` (its discriminant
-`(abc)^{2p}/2⁸` is a `p`-adic unit and the Frey equation is minimal at
-`p`), and the `p`-torsion of the Néron model — a finite flat group scheme
-over `ℤ_p` (the vendored node `torsion_flat_of_good_reduction` in
-`KnownIn1980s/EllipticCurves/Flat.lean`) — exhibits the flatness. -/
+/-- **Flatness at `p`, good-reduction case** (DERIVED 2026-07-16): if
+`p ∤ abc` then the Frey curve has good reduction at `p`
+(`FreyPackage.freyCurve_hasGoodReduction_of_not_dvd`, PROVEN — the
+discriminant `(abc)^{2p}/2⁸` is a `p`-adic unit and the Frey equation is
+minimal at `p`), and the flatness glue
+(`WeierstrassCurve.isFlatAt_of_hasGoodReduction`, to be closed against
+the vendored `torsion_flat_of_good_reduction`) exhibits the `p`-torsion
+as a finite flat group scheme over `ℤ_p`. -/
 theorem FreyCurve.torsion_isFlat_of_good :
     haveI : Fact P.p.Prime := ⟨P.pp⟩
     ¬((P.p : ℤ) ∣ P.a * P.b * P.c) →
       (P.freyCurve.galoisRep P.p P.hppos).IsFlatAt
-        P.pp.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+        P.pp.toHeightOneSpectrumRingOfIntegersRat := by
+  haveI : Fact P.p.Prime := ⟨P.pp⟩
+  intro hndvd
+  have hp2 : P.p ≠ 2 := by
+    have := P.hp5
+    omega
+  haveI := P.freyCurve_hasGoodReduction_of_not_dvd P.pp hp2 hndvd
+  exact WeierstrassCurve.isFlatAt_of_hasGoodReduction P.freyCurve P.pp P.hppos
 
 set_option warn.sorry false in
 /-- **Flatness at `p`, multiplicative case** (sorry node): if `p ∣ abc`

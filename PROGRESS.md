@@ -123,8 +123,17 @@ map where helpful.
           - ✓ `FreyCurve.torsion_isFlat` — flat at p: DERIVED
             (2026-07-16) by the case split `p ∣ abc` or not, from the
             two nodes below.
-            - ✗ `FreyCurve.torsion_isFlat_of_good` — at `p ∤ abc` good
-              reduction; the Néron-model torsion is finite flat.
+            - ✓ `FreyCurve.torsion_isFlat_of_good` — DERIVED
+              (2026-07-16) from the PROVEN arithmetic node
+              `freyCurve_hasGoodReduction_of_not_dvd` (applied at
+              `q := p`) and the flat glue node below.
+              - ✗ `WeierstrassCurve.isFlatAt_of_hasGoodReduction`
+                (`FreyCurve/Semistable.lean`, own work): good reduction
+                at `p` ⟹ `IsFlatAt p` for the mod-`p` torsion rep; to
+                be closed against the vendored
+                `torsion_flat_of_good_reduction` (transport of the
+                Hopf-algebra prolongation package along
+                `ℤ_(p) → ℤ_p`).
               - ✗ `torsion_flat_of_good_reduction`
                 (`KnownIn1980s/EllipticCurves/Flat.lean`, vendored
                 2026-07-16): good reduction over a DVR makes the
@@ -753,3 +762,10 @@ assumed. Axiom invariant: every declaration must use at most
   `1` by `mker_valuation_eq_isUnitSubmonoid`; minimality follows since
   valuation `1` is the maximum over integral models (the
   `valuation_Δ_aux` subtype bound). Frontier: 20.
+- 2026-07-16 (session 4, cont.): **`torsion_isFlat_of_good` DERIVED** —
+  the PROVEN arithmetic node applies verbatim at `q := p` (`p ≠ 2`
+  since `p ≥ 5`), and a new glue node
+  ✗ `isFlatAt_of_hasGoodReduction` (good reduction at `p` ⟹
+  `IsFlatAt p`, to be closed against the vendored
+  `torsion_flat_of_good_reduction` Hopf-package node) completes the
+  derivation. Frontier: 20 (one closed, one opened).

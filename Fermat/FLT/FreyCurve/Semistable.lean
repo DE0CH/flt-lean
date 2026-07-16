@@ -187,3 +187,24 @@ theorem WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction
       (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)] :
     (E.galoisRep p hp).IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
   sorry
+
+set_option warn.sorry false in
+/-- **Local-global glue for flatness at good primes** (sorry node): an
+elliptic curve over `ℚ` with good reduction at the place `p` has flat
+mod-`p` torsion representation at `p`, in the `GaloisRep.IsFlatAt` sense.
+To be closed against the vendored finite-flat-prolongation node
+`WeierstrassCurve.torsion_flat_of_good_reduction`
+(`KnownIn1980s/EllipticCurves/Flat.lean`, stated for an arbitrary DVR:
+the `p`-torsion of a curve with good reduction prolongs to a finite flat
+group scheme, presented as a Hopf algebra with étale generic fibre and
+equivariant points isomorphism — exactly the `HasFlatProlongationAt`
+package); what remains on top of it is transporting that package along
+`ℤ_(p) → ℤ_p = 𝒪ᵥ` and the identification of the local torsion with
+`(ρ.toLocal p).Space`. -/
+theorem WeierstrassCurve.isFlatAt_of_hasGoodReduction
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp' : p.Prime) (hp : 0 < p)
+    [Fact p.Prime]
+    [E.HasGoodReduction
+      (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)] :
+    (E.galoisRep p hp).IsFlatAt hp'.toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
