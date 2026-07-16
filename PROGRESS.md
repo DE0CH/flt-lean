@@ -623,6 +623,17 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   and the transparency option — so the dictionary node may be proven
   by establishing `Q.ramificationIdx ℤ = 1` from the inertia
   hypothesis, with the conversion to `IsUnramifiedAt` a one-liner.
+  For the `e = 1` step itself, mathlib's
+  `NumberTheory/RamificationInertia/HilbertTheory.lean` provides the
+  group side: `inertia G P` (the `MulSemiringAction` inertia subgroup
+  for ideals under group actions, with
+  `IsInertiaField.of_isGaloisGroup` and the `rank_left`/`rank_right`
+  theorems tying its fixed field's degrees to `e` and `f`) — a THIRD
+  inertia presentation, probably the shortest classical route: trivial
+  `inertia Gal(L/ℚ) Q` forces the inertia field to be all of `L`,
+  whence `e = 1` by `rank` bookkeeping. The dictionary then only needs
+  `localInertiaGroup`-image-fixes-`L` ⟹ `inertia Gal(L/ℚ) Q` trivial
+  (via `lift_map` and surjectivity of restriction to `L`).
   Post-derivation audit:
   `open_normal_subgroup_eq_top_of_inertia_le`,
   `minkowski_character_trivial`, and
