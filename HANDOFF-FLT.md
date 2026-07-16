@@ -90,11 +90,14 @@ The 21 leaves, grouped:
   `exists_tateEquivSepClosure`.
 - **Mazur branch**: `mazur_classification` (Mazur's theorem),
   `exists_p_point_of_not_isIrreducible_of_minkowski` (Serre core —
-  remaining content: Vélu quotients + character bookkeeping),
-  `open_normal_subgroup_eq_top_of_inertia_le` (**Minkowski, subgroup
-  form — the mapped next attack**: the full mathlib route is verified
-  and recorded in PROGRESS.md session-4 reconnaissance; needs a fresh
-  session).
+  remaining content: Vélu quotients + character bookkeeping), and
+  `isUnramifiedAt_of_inertia_le_fixingSubgroup` (**THE inertia
+  dictionary — the highest-leverage node**: the Minkowski subgroup
+  form was DERIVED from it late in session 4 via mathlib's
+  discriminant theory, and the SAME dictionary is what all five glue
+  nodes need; closing it unlocks six nodes' structure. Its endpoints
+  are reduced to definitional membership — see the session-4
+  reconnaissance).
 - **Torsion/pairing**: `smul_surjective`, `prime_torsion_card` (blocked
   on isogeny theory or a division-polynomial↔[n] bridge, neither in
   mathlib at our pin), `exists_weilPairing`.
