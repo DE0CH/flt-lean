@@ -588,7 +588,15 @@ core), `mem_isCompatible` (B6b), `mod_three`,
   COMPILED with one fix round (missing imports). The Minkowski node is
   now DERIVED; the open sorry is
   `isUnramifiedAt_of_inertia_le_fixingSubgroup` — the pure inertia
-  dictionary, shared with the five glue nodes. Post-derivation audit:
+  dictionary, shared with the five glue nodes. The dictionary's core
+  mechanism is already vendored PROVEN:
+  `Field.absoluteGaloisGroup.lift_map (f) (σ : Γ L) (x : Kᵃˡᵍ) :
+  AlgebraicClosure.map f (map f σ x) = σ (AlgebraicClosure.map f x)`
+  (`AbsoluteGaloisGroup.lean:101`) — the chosen embedding
+  `ℚ̄ ↪ ℚ̄_q` intertwines the restricted action with the original, so
+  a σ in the local inertia (trivial mod `𝔪` on the integral closure
+  upstairs) transports its congruence to the embedded `𝓞 L`, giving
+  trivial residue action at the induced prime. Post-derivation audit:
   `open_normal_subgroup_eq_top_of_inertia_le`,
   `minkowski_character_trivial`, and
   `exists_torsion_embedding_of_not_isIrreducible` all show exactly
