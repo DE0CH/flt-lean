@@ -109,6 +109,20 @@ theorem exists_hardlyRamifiedLift (hℓ5 : 5 ≤ ℓ)
     Nonempty (HardlyRamifiedLift hℓOdd ρbar) :=
   sorry
 
+set_option backward.isDefEq.respectTransparency false in
+/-- Any number field embeds into the algebraic closure of `ℚ_p` — the
+coefficient field of a compatible family can be evaluated at every prime
+(an ingredient of the proof of `residual_charFrob_eq_of_family`, where
+the `3`-adic member of the family is extracted). The target is an
+algebraically closed field of characteristic zero, so `IsAlgClosed.lift`
+applies to the algebraic extension `E/ℚ`. -/
+lemma nonempty_ringHom_to_padicAlgClosure
+    (E : Type*) [Field E] [NumberField E] (p : ℕ) [Fact p.Prime] :
+    Nonempty (E →+* AlgebraicClosure ℚ_[p]) := by
+  haveI : Algebra.IsAlgebraic ℚ E := Algebra.IsAlgebraic.of_finite ℚ E
+  exact ⟨(IsAlgClosed.lift (R := ℚ) (S := E)
+    (M := AlgebraicClosure ℚ_[p])).toRingHom⟩
+
 set_option warn.sorry false in
 /-- **Compatibility bookkeeping** (sorry node): if the hardly ramified
 `ℓ`-adic lift of `ρbar` lives in a compatible family of hardly ramified
