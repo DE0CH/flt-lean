@@ -67,6 +67,7 @@ theorem psi23_not_both_zero (hΔ : W.Δ ≠ 0) (x₀ : K)
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 40000000 in
+set_option maxRecDepth 16000 in
 /-- **The `(3,4)` Bézout certificate** (PROVEN, sympy-extracted
 Sylvester-cofactor column): `F ⬝ Ψ₃ + G ⬝ preΨ₄ = Δ⁴` modulo the
 `b`-invariant relation, so `Ψ₃` and `preΨ₄` cannot vanish together
