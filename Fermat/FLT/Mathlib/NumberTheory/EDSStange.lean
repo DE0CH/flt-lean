@@ -368,4 +368,192 @@ theorem normEDS_sum_companion {R : Type*} [CommRing R] (b c d : R)
     Matrix.cons_val_one, Matrix.cons_val_two, Matrix.tail_cons,
     Matrix.head_cons] using h
 
+set_option backward.isDefEq.respectTransparency false in
+/-- `T(p, q)` is invariant under `q ↦ -q`. -/
+theorem ellSeq_symm_q {p q : ℤ}
+    (h : E (p + q) * E (p - q) =
+      E (p + 1) * E (p - 1) * E q ^ 2 - E (q + 1) * E (q - 1) * E p ^ 2) :
+    E (p + -q) * E (p - -q) =
+      E (p + 1) * E (p - 1) * E (-q) ^ 2 -
+        E (-q + 1) * E (-q - 1) * E p ^ 2 := by
+  rw [show p + -q = p - q from by ring, show p - -q = p + q from by ring,
+    show -q + 1 = -(q - 1) from by ring,
+    show -q - 1 = -(q + 1) from by ring, normEDS_neg, normEDS_neg,
+    normEDS_neg]
+  linear_combination h
+
+set_option backward.isDefEq.respectTransparency false in
+/-- `T(p, q)` is invariant under `p ↦ -p`. -/
+theorem ellSeq_symm_p {p q : ℤ}
+    (h : E (p + q) * E (p - q) =
+      E (p + 1) * E (p - 1) * E q ^ 2 - E (q + 1) * E (q - 1) * E p ^ 2) :
+    E (-p + q) * E (-p - q) =
+      E (-p + 1) * E (-p - 1) * E q ^ 2 -
+        E (q + 1) * E (q - 1) * E (-p) ^ 2 := by
+  rw [show -p + q = -(p - q) from by ring,
+    show -p - q = -(p + q) from by ring,
+    show -p + 1 = -(p - 1) from by ring,
+    show -p - 1 = -(p + 1) from by ring, normEDS_neg, normEDS_neg,
+    normEDS_neg, normEDS_neg, normEDS_neg]
+  linear_combination h
+
+set_option backward.isDefEq.respectTransparency false in
+/-- `T(p, q)` follows from `T(q, p)` (antisymmetry of both sides). -/
+theorem ellSeq_swap {p q : ℤ}
+    (h : E (q + p) * E (q - p) =
+      E (q + 1) * E (q - 1) * E p ^ 2 - E (p + 1) * E (p - 1) * E q ^ 2) :
+    E (p + q) * E (p - q) =
+      E (p + 1) * E (p - 1) * E q ^ 2 - E (q + 1) * E (q - 1) * E p ^ 2 := by
+  rw [show q + p = p + q from by ring,
+    show q - p = -(p - q) from by ring, normEDS_neg] at h
+  linear_combination -h
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxRecDepth 16000 in
+/-- **The generic inductive step** (van der Poorten–Swart Theorem 3):
+`T(p, q+1)` from `T(p±1, q)` and `T(p, q-1)`, the proven `T(·, 2)` and
+sum-companion families at the two clusters (the polynomial form of
+their Proposition 1 symmetry (15)), and generic cancellation of
+`bc·W(p+q-1)W(p-q+1)`. -/
+theorem ellSeq_step {p q : ℤ}
+    (hI1 : E (p + 1 + q) * E (p + 1 - q) =
+      E (p + 2) * E p * E q ^ 2 - E (q + 1) * E (q - 1) * E (p + 1) ^ 2)
+    (hI2 : E (p - 1 + q) * E (p - 1 - q) =
+      E p * E (p - 2) * E q ^ 2 - E (q + 1) * E (q - 1) * E (p - 1) ^ 2)
+    (hI4 : E (p + q - 1) * E (p - q + 1) =
+      E (p + 1) * E (p - 1) * E (q - 1) ^ 2 -
+        E q * E (q - 2) * E p ^ 2)
+    (hb1 : p + q - 1 ≠ 0) (hb2 : p - q + 1 ≠ 0) :
+    E (p + (q + 1)) * E (p - (q + 1)) =
+      E (p + 1) * E (p - 1) * E (q + 1) ^ 2 -
+        E (q + 1 + 1) * E (q + 1 - 1) * E p ^ 2 := by
+  have hES2u := normEDS_quadratic_generic p
+  have hES2v := normEDS_quadratic_generic q
+  have hSTARu := normEDS_sum_companion_generic p
+  have hSTARv := normEDS_sum_companion_generic q
+  rw [show p + (q + 1) = p + q + 1 from by ring,
+    show p - (q + 1) = p - q - 1 from by ring,
+    show q + 1 + 1 = q + 2 from by ring,
+    show q + 1 - 1 = q from by ring]
+  have hkey : (E (p + q + 1) * E (p - q - 1) -
+      (E (p + 1) * E (p - 1) * E (q + 1) ^ 2 -
+        E (q + 2) * E q * E p ^ 2)) *
+      (E (p + q - 1) * E (p - q + 1) * (genB * genC)) = 0 := by
+    rw [show p + 1 + q = p + q + 1 from by ring,
+      show p + 1 - q = p - q + 1 from by ring] at hI1
+    rw [show p - 1 + q = p + q - 1 from by ring,
+      show p - 1 - q = p - q - 1 from by ring] at hI2
+    linear_combination
+      (genB * genC * E (p + q - 1) * E (p - q - 1)) * hI1 +
+      (genB * genC * (E (p + 2) * E p * E q ^ 2 -
+        E (q + 1) * E (q - 1) * E (p + 1) ^ 2)) * hI2 -
+      (genB * genC * (E (p + 1) * E (p - 1) * E (q + 1) ^ 2 -
+        E (q + 2) * E q * E p ^ 2)) * hI4 +
+      (genB * genC * E p ^ 2 * E q ^ 4) * hES2u -
+      (E p * E q ^ 2 * E (q - 1) * E (q + 1)) * hSTARu -
+      (genB * genC * E p ^ 4 * E q ^ 2) * hES2v +
+      (E q * E p ^ 2 * E (p - 1) * E (p + 1)) * hSTARv
+  rcases mul_eq_zero.mp hkey with hz | hz
+  · exact sub_eq_zero.mp hz
+  · exfalso
+    rcases mul_eq_zero.mp hz with hz2 | hz2
+    · rcases mul_eq_zero.mp hz2 with hz3 | hz3
+      · exact normEDS_generic_ne_zero hb1 hz3
+      · exact normEDS_generic_ne_zero hb2 hz3
+    · rcases mul_eq_zero.mp hz2 with hz3 | hz3
+      · exact MvPolynomial.X_ne_zero 0 hz3
+      · exact MvPolynomial.X_ne_zero 1 hz3
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxRecDepth 16000 in
+/-- **Stange's theorem for the generic normalised EDS** (PROVEN): the
+two-parameter elliptic-sequence relation `T(p, q)` for all `p, q`,
+by induction on `q` with the van der Poorten–Swart step, boundary
+cases by the three symmetries, and `q < 0` by the `q`-symmetry. -/
+theorem normEDS_ellSequence_generic (p q : ℤ) :
+    E (p + q) * E (p - q) =
+      E (p + 1) * E (p - 1) * E q ^ 2 -
+        E (q + 1) * E (q - 1) * E p ^ 2 := by
+  have base0 : ∀ r : ℤ, E (r + 0) * E (r - 0) =
+      E (r + 1) * E (r - 1) * E (0 : ℤ) ^ 2 -
+        E ((0 : ℤ) + 1) * E ((0 : ℤ) - 1) * E r ^ 2 := by
+    intro r
+    norm_num [normEDS_zero, normEDS_one, normEDS_neg]
+    ring1
+  have base1 : ∀ r : ℤ, E (r + 1) * E (r - 1) =
+      E (r + 1) * E (r - 1) * E (1 : ℤ) ^ 2 -
+        E ((1 : ℤ) + 1) * E ((1 : ℤ) - 1) * E r ^ 2 := by
+    intro r
+    norm_num [normEDS_zero, normEDS_one]
+  have basep0 : ∀ Q : ℤ, E (0 + Q) * E (0 - Q) =
+      E ((0 : ℤ) + 1) * E ((0 : ℤ) - 1) * E Q ^ 2 -
+        E (Q + 1) * E (Q - 1) * E (0 : ℤ) ^ 2 := by
+    intro Q
+    rw [zero_add, zero_sub, normEDS_neg]
+    norm_num [normEDS_zero, normEDS_one, normEDS_neg]
+    ring1
+  have key : ∀ N : ℕ, ∀ q : ℤ, 0 ≤ q → q ≤ (N : ℤ) → ∀ p : ℤ,
+      E (p + q) * E (p - q) =
+        E (p + 1) * E (p - 1) * E q ^ 2 -
+          E (q + 1) * E (q - 1) * E p ^ 2 := by
+    intro N
+    induction N with
+    | zero =>
+      intro q hq hle p
+      rw [show q = 0 from by omega]
+      exact base0 p
+    | succ N IHN =>
+      intro q hq hle p
+      by_cases h0 : q = 0
+      · rw [h0]; exact base0 p
+      by_cases h1 : q = 1
+      · rw [h1]; exact base1 p
+      obtain ⟨q', rfl⟩ : ∃ q', q = q' + 1 := ⟨q - 1, by ring⟩
+      have hq'1 : 1 ≤ q' := by omega
+      have hIHq := IHN q' (by omega) (by omega)
+      have hIHq1 := IHN (q' - 1) (by omega) (by omega)
+      by_cases hp0 : p = 0
+      · rw [hp0]; exact basep0 (q' + 1)
+      by_cases hpb1 : p = q' - 1
+      · subst hpb1
+        exact ellSeq_swap (hIHq1 (q' + 1))
+      by_cases hpb2 : p = 1 - q'
+      · have hpb2' : p = -(q' - 1) := by omega
+        rw [hpb2']
+        exact ellSeq_symm_p (ellSeq_swap (hIHq1 (q' + 1)))
+      -- the generic van der Poorten–Swart step
+      have h1 := hIHq (p + 1)
+      rw [show p + 1 + 1 = p + 2 from by ring,
+        show p + 1 - 1 = p from by ring] at h1
+      have h2 := hIHq (p - 1)
+      rw [show p - 1 + 1 = p from by ring,
+        show p - 1 - 1 = p - 2 from by ring] at h2
+      have h4 := hIHq1 p
+      rw [show p + (q' - 1) = p + q' - 1 from by ring,
+        show p - (q' - 1) = p - q' + 1 from by ring,
+        show q' - 1 + 1 = q' from by ring,
+        show q' - 1 - 1 = q' - 2 from by ring] at h4
+      exact ellSeq_step h1 h2 h4 (by omega) (by omega)
+  rcases le_or_gt 0 q with hq | hq
+  · exact key q.toNat q hq (by omega) p
+  · have h := key (-q).toNat (-q) (by omega) (by omega) p
+    simpa only [neg_neg] using ellSeq_symm_q h
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Stange's theorem for any normalised EDS** (PROVEN, formerly the
+sorried node): `W(p+q)W(p-q) = W(p+1)W(p-1)W(q)² - W(q+1)W(q-1)W(p)²`
+for `W = normEDS b c d` over any commutative ring. -/
+theorem normEDS_ellSequence {R : Type*} [CommRing R] (b c d : R)
+    (p q : ℤ) :
+    normEDS b c d (p + q) * normEDS b c d (p - q) =
+      normEDS b c d (p + 1) * normEDS b c d (p - 1) *
+        normEDS b c d q ^ 2 -
+      normEDS b c d (q + 1) * normEDS b c d (q - 1) *
+        normEDS b c d p ^ 2 := by
+  have h := congrArg (MvPolynomial.eval₂Hom (Int.castRingHom R) ![b, c, d])
+    (normEDS_ellSequence_generic p q)
+  simpa only [map_mul, map_sub, map_pow, map_normEDS, genB, genC, genD,
+    MvPolynomial.eval₂Hom_X', Matrix.cons_val_zero, Matrix.cons_val_one,
+    Matrix.cons_val_two, Matrix.tail_cons, Matrix.head_cons] using h
+
 end EllipticDivisibilitySequence

@@ -22,7 +22,6 @@ its exact quantitative form, proven here MODULO the Stange node
 -/
 module
 
-public import Fermat.FLT.Mathlib.NumberTheory.EllipticDivisibilitySequence
 public import Fermat.FLT.Mathlib.NumberTheory.EDSStange
 
 @[expose] public section
