@@ -2409,3 +2409,21 @@ assumed. Axiom invariant: every declaration must use at most
   s = 0 branch at d = 2 with the Res(Ψ₂Sq,Ψ₃) = −Δ² seed) + degenerate-
   window certificates (universal-ideal members with Wₙ₋₁ resp. Wₙ₋₂ as
   extra generators — same machinery).
+- 2026-07-17 (session 5 cont., Ward pattern wired `b5e9887`): the
+  rigidity insight — `ψⱼ = ψⱼ₊₁ = 0` forces `φⱼ(x) = 0` (φ-difference
+  identity), a common root of `Φ j`/`ΨSq j` against the Bézout node —
+  makes adjacent-nonvanishing FREE. `psi_eq_zero_iff_dvd` is now WIRED:
+  backward from the new universal divisibility node
+  `normEDS_mul_complEDS` (mathlib-TODO-shaped; even case already in
+  mathlib), forward by the T(m−d, d)-climb (c_d ≠ 0 from minimality +
+  rigidity). New DERIVED bridges: `evalEval_ψ_normEDS` (ψ-values ARE a
+  normEDS — universal identities specialise pointwise with no curve
+  input), `evalEval_ψ_T`, `evalEval_ψ_quadratic`. The remaining
+  frontier below `n_torsion_card` is now EXACTLY: three universal EDS
+  nodes (`normEDS_sum_companion` (★s′), `normEDS_ellSequence` (Stange
+  T-family), `normEDS_mul_complEDS` (divisibility)) + two degenerate
+  tracking certificates (C1/C2, provable from the universal nodes +
+  the c₃ = 0 torsion sub-case) + `separable_preΨ'` +
+  `resultant_Φ_ΨSq` + `exists_point_x_smul` + `smul_surjective`.
+  T-descent Groebner experiments still running (plain 9-generator and
+  cross-generator variants).
