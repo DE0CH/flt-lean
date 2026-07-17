@@ -1647,4 +1647,18 @@ assumed. Axiom invariant: every declaration must use at most
   `Localization.AtPrime v.asIdeal` by mirroring its
   `IsLocalization.surj` + factor-count argument at the single place,
   or through the `IsLocalization.AtPrime` unit-criteria already used
-  in `Semistable.lean`.
+  in `Semistable.lean`. BETTER (verified): mathlib ALREADY HAS the
+  one-place criterion —
+  `IsDedekindDomain.HeightOneSpectrum.valuationSubringAtPrime` (the
+  localization at `v` as a `ValuationSubring K`) with
+  `valuationSubringAtPrime_eq_valuationSubring` (equality with
+  `(valuation K v).valuationSubring`, `AdicValuation.lean:~509`). So
+  `h𝒪` is pure assembly: `x ∈ 𝒪.comap (aM ℚ ℚ̄)` ⟺ (via
+  `map_algebraMap`) `aM Kᵥ Kᵥᵃˡᵍ (f x) ∈ IC-big` ⟺ `f x ∈ 𝒪ᵥ`
+  (`IsIntegrallyClosed.isIntegral_iff` — integral closure of `𝒪ᵥ` in
+  its OWN fraction field) ⟺ `Valued.v (f x) ≤ 1`
+  (`mem_adicCompletionIntegers`) ⟺ `v.valuation ℚ x ≤ 1`
+  (`valuedAdicCompletion_eq_valuation'`) ⟺
+  `x ∈ valuationSubringAtPrime ℚ v` (mathlib equality) ⟺
+  `x ∈ range (Localization.AtPrime → ℚ)` (IsLocalization
+  uniqueness/`algEquiv` between the two localization models).
