@@ -698,5 +698,12 @@
   "wip": false,
   "fullname": "WeierstrassCurve.tate_inertia_unipotent",
   "text": "local unipotence of inertia on Tate torsion, for ANY uniformization witness: the torsion class is represented by `u` with `u^p` a power of the Tate parameter; the parameter is base-field-fixed so `σ(u)/u` is a `p`-th root of unity; inertia fixes it (residue characteristic prime to `p`)."
+ },
+ {
+  "name": "WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic",
+  "module": "Fermat.FLT.FreyCurve.Semistable",
+  "wip": false,
+  "fullname": "WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic",
+  "text": "the nonsplit half of the unipotence leaf: the unramified quadratic twist (`exists_quadraticTwist_hasSplitMultiplicativeReduction`) reduces to the split case; the twist isomorphism is defined over the unramified quadratic extension, which inertia fixes, so the two inertia actions on the `p`-torsion agree."
  }
 ]

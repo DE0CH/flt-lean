@@ -199,13 +199,39 @@ entries file). To add/remove/annotate a node, edit
                     `σ`-applied) over `Rat.subsingleton_ringHom`
                     - ✅✅· `FreyPackage` (see above)
                     - ✅✅· `FreyPackage.freyCurve` (see above)
-                    - ❌· `WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction` — (`FreyCurve/Semistable.lean`, stated 2026-07-17) —
+                    - ✅· `WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction` — (`FreyCurve/Semistable.lean`, stated 2026-07-17) —
                       pointwise Tate unipotence: multiplicative
                       reduction at `q ≠ p` (`q = 2` allowed, no `p ∣
                       v(j)`) makes every inertia element at a valuation
                       subring over `ℤ_(q)` act with `σ(σP) − σP − σP + P
                       = 0` on the `p`-torsion (to be closed against the
                       Tate-uniformization leaves)
+                      - ✅· `torsion_unipotent_of_split_multiplicative_adic` — pointwise unipotence in the split case: the Tate
+                        uniformization witness feeds
+                        `tate_inertia_unipotent` at the local valuation
+                        subring, pulled back to `E(ℚ̄)` along the
+                        equivariant embedding; the remaining content is
+                        the base-change instance identification of the
+                        two `Ω`-stage curve spellings.
+                        - ❌· `WeierstrassCurve.exists_tateEquivSepClosure` — Tate's uniformisation over a separable closure
+                          (Silverman ATAEC V.3.1 + V.5.3): a Galois-
+                          equivariant group isomorphism `Ωˣ/q_Eᶻ ≅ E(Ω)`
+                          for a curve with split multiplicative
+                          reduction over a nonarchimedean local field.
+                        - ✅✅· `WeierstrassCurve.tate_inertia_unipotent` — local unipotence of inertia on Tate torsion,
+                          for ANY uniformization witness: the torsion
+                          class is represented by `u` with `u^p` a power
+                          of the Tate parameter; the parameter is base-
+                          field-fixed so `σ(u)/u` is a `p`-th root of
+                          unity; inertia fixes it (residue
+                          characteristic prime to `p`).
+                      - ❌· `WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic` — the nonsplit half of the unipotence leaf: the
+                        unramified quadratic twist (`exists_quadraticTwi
+                        st_hasSplitMultiplicativeReduction`) reduces to
+                        the split case; the twist isomorphism is defined
+                        over the unramified quadratic extension, which
+                        inertia fixes, so the two inertia actions on the
+                        `p`-torsion agree.
                     - ✅✅· `FreyPackage.freyCurve_hasMultiplicativeReduction_at_two` — (`FreyCurve/Semistable.lean`, own work):
                       (2026-07-16) — the Frey model is semistable at 2
                       by design: `c₄ = c^{2p} - (ab)^p` is odd (`a ≡ 3
@@ -879,20 +905,6 @@ entries file). To add/remove/annotate a node, edit
       `2`). - NB the lift structure gained an `IsModuleTopology ℤ_[ℓ] O`
       field (statement strengthening of B6a's conclusion, true for
       integers of finite extensions of ℚ_ℓ; required by B6b)
-- ✅· `torsion_unipotent_of_split_multiplicative_adic` — pointwise unipotence in the split case: the Tate uniformization
-  witness feeds `tate_inertia_unipotent` at the local valuation subring,
-  pulled back to `E(ℚ̄)` along the equivariant embedding; the remaining
-  content is the base-change instance identification of the two
-  `Ω`-stage curve spellings.
-  - ❌· `WeierstrassCurve.exists_tateEquivSepClosure` — Tate's uniformisation over a separable closure (Silverman ATAEC
-    V.3.1 + V.5.3): a Galois-equivariant group isomorphism `Ωˣ/q_Eᶻ ≅
-    E(Ω)` for a curve with split multiplicative reduction over a
-    nonarchimedean local field.
-  - ✅✅· `WeierstrassCurve.tate_inertia_unipotent` — local unipotence of inertia on Tate torsion, for ANY uniformization
-    witness: the torsion class is represented by `u` with `u^p` a power
-    of the Tate parameter; the parameter is base-field-fixed so `σ(u)/u`
-    is a `p`-th root of unity; inertia fixes it (residue characteristic
-    prime to `p`).
 - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC V.5.3): a curve with split
   multiplicative reduction is a change of Weierstrass coordinates of the
   Tate curve of its Tate parameter.

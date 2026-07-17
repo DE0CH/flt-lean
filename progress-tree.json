@@ -19,7 +19,7 @@
   "FreyPackage.stable_line_dichotomy_of_not_isIrreducible": "✅",
   "FreyPackage.subquotient_character_unramified": "✅",
   "FreyPackage.inertia_two_unipotent": "✅",
-  "WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction": "❌",
+  "WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction": "✅",
   "FreyPackage.subquotient_character_unramified_at_p": "❌",
   "FreyPackage.exists_quotient_curve_point": "❌",
   "WeierstrassCurve.exists_point_eq_baseChange_of_fixed": "✅✅",
@@ -99,7 +99,8 @@
   "torsion_unipotent_of_split_multiplicative_adic": "✅",
   "WeierstrassCurve.exists_tateEquivSepClosure": "❌",
   "WeierstrassCurve.exists_variableChange_tateCurve": "❌",
-  "WeierstrassCurve.tate_inertia_unipotent": "✅✅"
+  "WeierstrassCurve.tate_inertia_unipotent": "✅✅",
+  "WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic": "❌"
  },
  "children": {
   "fermat_last_theorem": [
@@ -196,7 +197,10 @@
    "WeierstrassCurve.galoisRep",
    "WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction"
   ],
-  "WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction": [],
+  "WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction": [
+   "torsion_unipotent_of_split_multiplicative_adic",
+   "WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic"
+  ],
   "FreyPackage.subquotient_character_unramified_at_p": [
    "FreyPackage",
    "FreyPackage.freyCurve",
@@ -488,12 +492,12 @@
   ],
   "WeierstrassCurve.exists_tateEquivSepClosure": [],
   "WeierstrassCurve.exists_variableChange_tateCurve": [],
-  "WeierstrassCurve.tate_inertia_unipotent": []
+  "WeierstrassCurve.tate_inertia_unipotent": [],
+  "WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic": []
  },
  "roots": [
   "fermat_last_theorem",
   "GaloisRepresentation.IsHardlyRamified.mod_three",
-  "torsion_unipotent_of_split_multiplicative_adic",
   "WeierstrassCurve.exists_variableChange_tateCurve"
  ]
 }

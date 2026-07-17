@@ -923,8 +923,54 @@ theorem torsion_unipotent_of_split_multiplicative_adic
   exact hloc
 
 
+open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
 set_option warn.sorry false in
+/-- **Pointwise inertia-unipotence, nonsplit case** (sorry node — the
+remaining Tate-theoretic content of the unipotence leaf): as the split
+case, but the completed base change has NONSPLIT multiplicative
+reduction; the unramified quadratic twist
+(`exists_quadraticTwist_hasSplitMultiplicativeReduction`) reduces it to
+the split case — the twist isomorphism is defined over the unramified
+quadratic extension, which inertia fixes, so the twisted and untwisted
+inertia actions on the `p`-torsion agree. -/
+theorem WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} [Fact p.Prime]
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
+    [E.HasMultiplicativeReduction
+      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
+    (hnonsplit : ¬ (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))).HasSplitMultiplicativeReduction
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat]) :
+    ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      ∀ P ∈ AddSubgroup.torsionBy
+        (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ),
+      WeierstrassCurve.Affine.Point.map
+          (((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))) σ :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom
+          (WeierstrassCurve.Affine.Point.map
+            (((Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))) σ :
+              AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P) -
+        WeierstrassCurve.Affine.Point.map
+          (((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))) σ :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P -
+        WeierstrassCurve.Affine.Point.map
+          (((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))) σ :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P +
+        P = 0 :=
+  sorry
+
+open scoped WeierstrassCurve.Affine in
+open ValuativeRel in
 /-- **Pointwise inertia-unipotence on torsion at multiplicative primes**
 (sorry node — the TATE-THEORETIC content, WITHOUT the `p ∣ v_q(j)`
 hypothesis and with the conclusion weakened to unipotence; `q = 2` is
@@ -967,8 +1013,17 @@ theorem WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction
             (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
               hq.toHeightOneSpectrumRingOfIntegersRat))) σ :
             AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P +
-        P = 0 :=
-  sorry
+        P = 0 := by
+  classical
+  haveI := hasMultiplicativeReduction_adicCompletion hq E
+  by_cases hsp : (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))).HasSplitMultiplicativeReduction
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat]
+  · haveI := hsp
+    exact torsion_unipotent_of_split_multiplicative_adic E hq hqp
+  · exact WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic
+      E hq hqp hsp
 
 open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
