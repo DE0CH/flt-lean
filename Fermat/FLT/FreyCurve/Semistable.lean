@@ -54,6 +54,14 @@ public import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
 -- the embedded valuation subring, its `h𝒪`-compatibility, and the
 -- inertia spelling bridge (all PROVEN), consumed by the same glue
 import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
+-- the vendored finite-flat leaf and the shared flat transport node,
+-- consumed by the flatness glue; the convolution monoid and the
+-- tensor-product Hopf instance are needed to STATE the peu-ramifiée
+-- leaf, hence public
+import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
+import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
+public import Mathlib.RingTheory.Bialgebra.Convolution
+public import Mathlib.RingTheory.HopfAlgebra.TensorProduct
 
 @[expose] public section
 
@@ -444,24 +452,89 @@ theorem WeierstrassCurve.isUnramifiedAt_of_hasMultiplicativeReduction
     exact_mod_cast h1
   exact hNOS _ hmem P.1 hP
 
+open TensorProduct in
+open scoped WeierstrassCurve.Affine in
 set_option warn.sorry false in
-/-- **Local-global glue for flatness at multiplicative primes** (sorry
-node): an elliptic curve over `ℚ` with multiplicative reduction at the
-odd place `p` whose `j`-invariant has `p`-adic valuation divisible by
-`p` has flat mod-`p` torsion representation at `p`. The mathematical
-content: the Tate parameter is a `p`-th power times a unit
-(`p ∣ v_p(j) = -v_p(q_E)`), so the Tate-curve extension
-`0 → μ_p → E[p] → ℤ/p → 0` over `ℚ_p` is *peu ramifiée* in the sense of
-Serre, and such extensions prolong to finite flat group schemes over
-`ℤ_p`. -/
+/-- **The peu-ramifiée finite-flat package at multiplicative primes**
+(sorry node — the TATE-THEORETIC content, stated in the SAME
+DVR-package shape as the vendored good-reduction leaf so that the
+shared transport `GaloisRep.isFlatAt_of_dvr_package` applies
+verbatim): for an elliptic curve over `ℚ` with multiplicative
+reduction at the odd place `p` whose `j`-invariant has `p`-adic
+valuation divisible by `p`, the `p`-torsion prolongs to a finite flat
+group scheme over `ℤ_(p)`. Content: the Tate parameter is a `p`-th
+power times a unit (`p ∣ v_p(j) = -v_p(q_E)`), so the Tate-curve
+extension `0 → μ_p → E[p] → ℤ/p → 0` over `ℚ_p` is *peu ramifiée* in
+the sense of Serre, and such extensions prolong to finite flat group
+schemes over `ℤ_p`. -/
+theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp' : p.Prime)
+    [Fact p.Prime] (hp2 : p ≠ 2)
+    [E.HasMultiplicativeReduction
+      (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
+    (hj : (p : ℤ) ∣ padicValRat p E.j) :
+    ∃ (H : Type) (_ : CommRing H)
+      (_ : HopfAlgebra
+        (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H)
+      (_ : Module.Finite
+        (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H)
+      (_ : Module.Flat
+        (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H)
+      (_ : Algebra.Etale ℚ
+        (ℚ ⊗[Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H))
+      (f : Additive (WithConv
+        ((ℚ ⊗[Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H)
+          →ₐ[ℚ] AlgebraicClosure ℚ)) ≃+
+        AddSubgroup.torsionBy (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ)),
+      ∀ (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+        (φ : (ℚ ⊗[Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H)
+          →ₐ[ℚ] AlgebraicClosure ℚ),
+        (f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) :
+          (E⁄(AlgebraicClosure ℚ)).Point) =
+          WeierstrassCurve.Affine.Point.map σ.toAlgHom
+            (f (Additive.ofMul (WithConv.toConv φ))) :=
+  sorry
+
+open TensorProduct in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Local-global glue for flatness at multiplicative primes**
+(DERIVED 2026-07-17 from the peu-ramifiée leaf above and the shared
+flat transport, by the same assembly as the good-reduction case). -/
 theorem WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp' : p.Prime) (hp : 0 < p)
     [Fact p.Prime] (hp2 : p ≠ 2)
     [E.HasMultiplicativeReduction
       (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
     (hj : (p : ℤ) ∣ padicValRat p E.j) :
-    (E.galoisRep p hp).IsFlatAt hp'.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+    (E.galoisRep p hp).IsFlatAt hp'.toHeightOneSpectrumRingOfIntegersRat := by
+  classical
+  haveI : NeZero p := ⟨hp.ne'⟩
+  obtain ⟨H, hCR, hHopf, hFin, hFlat, hEt, f, hf⟩ :=
+    WeierstrassCurve.torsion_flat_of_multiplicative_reduction E hp' hp2 hj
+  letI := hCR
+  letI := hHopf
+  letI := hFin
+  letI := hFlat
+  letI := hEt
+  haveI : Finite ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) :=
+    WeierstrassCurve.n_torsion_finite _ hp
+  haveI : Module.Finite (ZMod p)
+      ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) :=
+    Module.Finite.of_finite
+  let e : (AddSubgroup.torsionBy (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ)) ≃+
+      ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) :=
+    { toFun := fun x => ⟨x.1, x.2⟩
+      invFun := fun x => ⟨x.1, x.2⟩
+      left_inv := fun _ => rfl
+      right_inv := fun _ => rfl
+      map_add' := fun _ _ => rfl }
+  refine (E.galoisRep p hp).isFlatAt_of_dvr_package hp' H (f.trans e) ?_
+  intro σ φ
+  apply Subtype.ext
+  exact hf σ φ
 
 /-- **`p` is nonzero in the residue field of `ℤ_(q)` for `q ≠ p`**
 (PROVEN 2026-07-16): `p` is a unit of the localization (its integer
@@ -541,24 +614,51 @@ theorem WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction
     exact_mod_cast h1
   exact hNOS _ hmem P.1 hP
 
-set_option warn.sorry false in
-/-- **Local-global glue for flatness at good primes** (sorry node): an
-elliptic curve over `ℚ` with good reduction at the place `p` has flat
-mod-`p` torsion representation at `p`, in the `GaloisRep.IsFlatAt` sense.
-To be closed against the vendored finite-flat-prolongation node
-`WeierstrassCurve.torsion_flat_of_good_reduction`
-(`KnownIn1980s/EllipticCurves/Flat.lean`, stated for an arbitrary DVR:
-the `p`-torsion of a curve with good reduction prolongs to a finite flat
-group scheme, presented as a Hopf algebra with étale generic fibre and
-equivariant points isomorphism — exactly the `HasFlatProlongationAt`
-package); what remains on top of it is transporting that package along
-`ℤ_(p) → ℤ_p = 𝒪ᵥ` and the identification of the local torsion with
-`(ρ.toLocal p).Space`. -/
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Local-global glue for flatness at good primes** (DERIVED
+2026-07-17 from the vendored finite-flat leaf and the shared flat
+transport): an elliptic curve over `ℚ` with good reduction at the
+place `p` has flat mod-`p` torsion representation at `p`. The vendored
+leaf `torsion_flat_of_good_reduction` provides the DVR package over
+`ℤ_(p)`; the shared transport node
+`GaloisRep.isFlatAt_of_dvr_package` carries it to `IsFlatAt`. The
+remaining `sorryAx` flows only through those two tracked nodes. -/
 theorem WeierstrassCurve.isFlatAt_of_hasGoodReduction
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp' : p.Prime) (hp : 0 < p)
     [Fact p.Prime]
     [E.HasGoodReduction
       (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)] :
-    (E.galoisRep p hp).IsFlatAt hp'.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+    (E.galoisRep p hp).IsFlatAt hp'.toHeightOneSpectrumRingOfIntegersRat := by
+  classical
+  haveI : NeZero p := ⟨hp.ne'⟩
+  obtain ⟨H, hCR, hHopf, hFin, hFlat, hEt, f, hf⟩ :=
+    WeierstrassCurve.torsion_flat_of_good_reduction
+      (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ E p
+      (AlgebraicClosure ℚ)
+  letI := hCR
+  letI := hHopf
+  letI := hFin
+  letI := hFlat
+  letI := hEt
+  -- the space of the representation is finite free over `ZMod p`
+  haveI : Finite ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) :=
+    WeierstrassCurve.n_torsion_finite _ hp
+  haveI : Module.Finite (ZMod p)
+      ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) :=
+    Module.Finite.of_finite
+  -- the identity-underlying bridge between the two torsion spellings
+  let e : (AddSubgroup.torsionBy (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ)) ≃+
+      ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) :=
+    { toFun := fun x => ⟨x.1, x.2⟩
+      invFun := fun x => ⟨x.1, x.2⟩
+      left_inv := fun _ => rfl
+      right_inv := fun _ => rfl
+      map_add' := fun _ _ => rfl }
+  refine (E.galoisRep p hp).isFlatAt_of_dvr_package hp' H (f.trans e) ?_
+  intro σ φ
+  apply Subtype.ext
+  exact hf σ φ
 

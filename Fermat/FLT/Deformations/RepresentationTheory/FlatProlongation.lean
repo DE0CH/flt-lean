@@ -6,6 +6,12 @@ Authors: Deyao Chen
 module
 
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
+-- `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`, used to state the
+-- shared flat transport at a rational prime
+public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
+-- `WithConv` and its convolution monoid, the group structure on the
+-- points of the vendored DVR-package
+public import Mathlib.RingTheory.HopfAlgebra.Convolution
 
 /-!
 # Transport layers for flat prolongations
@@ -33,6 +39,53 @@ local notation3 "Γ" K:max => Field.absoluteGaloisGroup K
 local notation3 K:max "ᵃˡᵍ" => AlgebraicClosure K
 local notation "Kᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion K v
 local notation "𝒪ᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v
+
+set_option warn.sorry false in
+/-- (Sorry node — **the shared flat-prolongation transport**.) A mod-`p`
+Galois representation of `ℚ` whose space is presented, equivariantly,
+as the `ℚ̄`-points of the generic fibre of a finite flat Hopf algebra
+over the localization `ℤ_(q)` is flat at `q` in the
+`GaloisRep.IsFlatAt` sense. This is the local-global/base-change
+transport common to BOTH flat glue nodes: pass to
+`G := 𝒪ᵥ ⊗[ℤ_(q)] H` (Hopf/flat/finite by base change — instance
+availability scratch-verified), identify the generic fibre through
+`Algebra.TensorProduct.cancelBaseChange` and the `Kᵥ`-points with the
+`ℚ̄`-points through the tensor-hom adjunction and the factorization of
+finite `ℚ`-algebra maps through `ι(ℚ̄) ⊆ Kᵥᵃˡᵍ`, transporting the
+convolution structures (the vendored bare-hom `Monoid` instance vs
+mathlib's `WithConv`) and the Galois equivariance through `lift_map`;
+the open-ideal quantifier of `IsFlatAt` is handled by the two ideals
+of the field `A` (`⊤` via `hasFlatProlongationAt_of_subsingleton`
+below, `⊥` via the package itself). See PROGRESS.md (flat-transport
+design) for the verified ingredient list. -/
+theorem GaloisRep.isFlatAt_of_dvr_package
+    {A : Type} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A]
+    {M : Type} [AddCommGroup M] [Module A M] [Module.Free A M] [Module.Finite A M]
+    (ρ : GaloisRep ℚ A M)
+    {q : ℕ} (hq : q.Prime)
+    [Algebra (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ]
+    [IsScalarTower (NumberField.RingOfIntegers ℚ)
+      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ]
+    (H : Type) [CommRing H]
+    [HopfAlgebra
+      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H]
+    [Module.Finite
+      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H]
+    [Module.Flat
+      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H]
+    [Algebra.Etale ℚ
+      (ℚ ⊗[Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H)]
+    (f : Additive (WithConv
+      ((ℚ ⊗[Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H)
+        →ₐ[ℚ] AlgebraicClosure ℚ)) ≃+ M)
+    (hf : ∀ (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+      (φ : (ℚ ⊗[Localization.AtPrime
+        hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H) →ₐ[ℚ] AlgebraicClosure ℚ),
+      f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
+        ρ σ (f (Additive.ofMul (WithConv.toConv φ)))) :
+    ρ.IsFlatAt hq.toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in

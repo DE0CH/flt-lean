@@ -1813,3 +1813,26 @@ assumed. Axiom invariant: every declaration must use at most
   fibre by `cancelBaseChange`, the three-layer points comparison with
   equivariance, and the `IsFlatAt` assembly over the two open ideals
   of `ZMod p`).
+- 2026-07-17 (session 5): **BOTH `IsFlatAt` GLUE NODES DERIVED — all
+  five original local-global glue nodes are now closed onto content
+  leaves plus ONE shared transport.** New sorry node
+  `GaloisRep.isFlatAt_of_dvr_package` (`FlatProlongation.lean` — the
+  shared flat transport: DVR-package over `ℤ_(q)` with equivariant
+  `WithConv`-points iso onto the rep's space ⟹ `IsFlatAt`; all
+  ingredients proven or scratch-verified per the design log above).
+  `isFlatAt_of_hasGoodReduction` DERIVED from
+  [`torsion_flat_of_good_reduction` (vendored leaf) + the transport]:
+  the `AddSubgroup.torsionBy`/`nTorsion` bridge is an
+  identity-underlying `AddEquiv` (`AddSubgroup.torsionBy` is
+  REDUCIBLY `(Submodule.torsionBy ℤ A n).toAddSubgroup`), and the
+  equivariance transports by `Subtype.ext` + the leaf's statement
+  verbatim. `isFlatAt_of_hasMultiplicativeReduction` DERIVED from the
+  NEW leaf `torsion_flat_of_multiplicative_reduction` (pure
+  peu-ramifiée Tate content, stated in the SAME DVR-package `∃`-shape
+  so the shared transport applies verbatim) + the transport. Frontier
+  stays 20 by count; the transport content of both flat glue nodes is
+  now concentrated in ONE node whose design is fully de-risked.
+  GOTCHAS: the `⊗[R]` notation needs `open TensorProduct`; the
+  `WithConv`-monoid needs `Mathlib.RingTheory.Bialgebra.Convolution`
+  + `HopfAlgebra.TensorProduct` PUBLIC (statement-level); `∃ (_ : C)`
+  binders DO provide instances for the rest of the `∃`-body.
