@@ -582,19 +582,28 @@ the START and END of each block of work.
               (2026-07-17) from `zsmul_some_aux` (negative `n` via
               negating the point, `Φ_neg`/`ΨSq_neg`); characteristic
               hypothesis dropped.
-            - ✗○ `TorsionCard.zsmul_some_aux` — **the multiplication
-              formula** (Washington Thm 3.6): for `n > 0`, either
-              `ψₙ(x,y) = 0` and `n•P = 0`, or `n•P` is affine with
-              `x'·ψₙ² = φₙ(x,y)`. INTERIOR COMPLETE except wiring:
-              base cases proven (`zsmul_some_aux_one`/`_two`), the
-              parity-free consecutive step `zsmul_consec_step` PROVEN
-              (2026-07-17) with the FULL IH package output — point +
-              `x`-formula + `ψ₂`-tracking `t₃ψₙ⁴ = ψ₂ₙ` (via
-              `two_point_trace_identity` + the `(★s)` node + even
-              recurrence, cancelling `ψ₂ψₙ₋₁²`; no window widening).
-              Remains: the strong-induction skeleton (ℕ-reduction,
-              collision branch via `smul_collision`, 2-torsion branch
-              `s = 0` seeded by `Res(Ψ₂Sq, Ψ₃) = -Δ²`).
+            - ✓· `TorsionCard.zsmul_some_aux` — **the multiplication
+              formula** (Washington Thm 3.6) — WIRED (2026-07-17):
+              full strong induction `zsmul_some_aux_strong`
+              (iff-strengthened, x-formula + ψ₂-tracking package;
+              generic case `zsmul_consec_step`, `ψₘ₋₁ = 0` case,
+              collision cases, all closed) + the 2-torsion branch
+              (`evalEval_ψ_of_even` + parity + `d = 2` Ward pattern).
+              Rests on the four sharp nodes below.
+            - ✗· `TorsionCard.evalEval_ψ_quadratic` — the `T(n,2)`
+              elliptic-sequence relation on the curve
+              `ψₙ₊₂ψₙ₋₂ = ψₙ₊₁ψₙ₋₁ψ₂² - ψ₃ψₙ²` (pure specialisation
+              of the universal `T`-family, no curve input).
+            - ✗· `TorsionCard.psi_tracking_prev_zero` — degenerate
+              tracking `ψ₂ψₙ⁴ = ψ₂ₙ` at `ψₙ₋₁ = 0` (fixed-window
+              consequence of the T-family + sum-companion;
+              numerically verified).
+            - ✗· `TorsionCard.psi_tracking_prev2_zero` — degenerate
+              tracking `ψ₄ψₙ⁴ = ψ₂ₙψ₂⁴` at `ψₙ₋₂ = 0` (ditto).
+            - ✗· `TorsionCard.psi_eq_zero_iff_dvd` — the Ward
+              rank-of-apparition pattern: minimal vanishing index `d`
+              ⟹ vanishing set is `dℤ`; `d = 2` instance seeded by
+              `Res(Ψ₂Sq, Ψ₃) = -Δ²` (where `IsElliptic` enters).
             - ✓· `TorsionCard.evalEval_ψ_sum` — DERIVED (2026-07-17)
               from the universal EDS route (`PsiSumCompanion`: anchor
               identity + coordinate-ring membership + domain
