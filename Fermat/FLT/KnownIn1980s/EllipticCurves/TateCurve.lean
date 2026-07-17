@@ -422,3 +422,64 @@ theorem WeierstrassCurve.mem_torsionBy_of_pow_eq
       (QuotientGroup.eq_one_iff _).mpr (Subgroup.mem_zpowers _), ofMul_one]
   refine (Submodule.mem_torsionBy_iff _ _).mpr ?_
   rw [← map_zsmul e, hann, map_zero]
+
+/-- **Representatives of torsion in the Tate quotient** (PROVEN — pure
+group theory): every `N`-torsion class of `Gˣ/q^ℤ` is represented by an
+element whose `N`-th power is an integer power of `q`. This is step (a)
+of the derivation of the multiplicative-reduction inertia statements
+from `exists_tateEquivSepClosure`. -/
+theorem exists_rep_pow_eq_zpow_of_torsion {G : Type*} [CommGroup G]
+    (q : G) {N : ℕ} (t : Additive (G ⧸ Subgroup.zpowers q))
+    (ht : ((N : ℤ)) • t = 0) :
+    ∃ (u : G) (a : ℤ),
+      Additive.ofMul ((u : G ⧸ Subgroup.zpowers q)) = t ∧ u ^ N = q ^ a := by
+  obtain ⟨u, hu⟩ := QuotientGroup.mk_surjective (Additive.toMul t)
+  have h1 : ((u : G ⧸ Subgroup.zpowers q)) ^ N = 1 := by
+    have h2 := congrArg Additive.toMul ht
+    rw [toMul_zsmul, toMul_zero, zpow_natCast] at h2
+    rw [hu]
+    exact h2
+  have h3 : (u ^ N : G) ∈ Subgroup.zpowers q := by
+    rw [← QuotientGroup.eq_one_iff, QuotientGroup.mk_pow]
+    exact h1
+  obtain ⟨a, ha⟩ := Subgroup.mem_zpowers_iff.mp h3
+  exact ⟨u, a, by rw [hu, ofMul_toMul], ha.symm⟩
+
+/-- **The inertia-difference of a Tate-parameter root is a root of
+unity** (PROVEN): if `σ` fixes `u^N`, then `σ(u)·u⁻¹` is an `N`-th root
+of unity. Step (c) of the multiplicative-reduction derivation: for a
+torsion representative `u` with `u^N = q_E^a`, every `σ ∈ Gal(Ω/k)`
+fixes `u^N` (the Tate parameter comes from the base field), so `σ`
+moves `u` by at most an `N`-th root of unity. -/
+theorem map_mul_inv_mem_rootsOfUnity_of_pow_fixed
+    {k Ω : Type*} [Field k] [Field Ω] [Algebra k Ω]
+    (σ : Ω ≃ₐ[k] Ω) (u : Ωˣ) {N : ℕ}
+    (hfix : Units.map σ.toAlgHom.toRingHom.toMonoidHom (u ^ N) = u ^ N) :
+    Units.map σ.toAlgHom.toRingHom.toMonoidHom u * u⁻¹ ∈
+      rootsOfUnity N Ω := by
+  rw [mem_rootsOfUnity]
+  calc (Units.map σ.toAlgHom.toRingHom.toMonoidHom u * u⁻¹) ^ N
+      = Units.map σ.toAlgHom.toRingHom.toMonoidHom (u ^ N) * (u ^ N)⁻¹ := by
+        rw [mul_pow, map_pow, inv_pow]
+    _ = 1 := by rw [hfix, mul_inv_cancel]
+
+omit [E.IsMinimal 𝒪[k]] [IsSepClosed Ω] [Algebra.IsSeparable k Ω]
+  [DecidableEq Ω] in
+/-- Every `k`-automorphism of `Ω` fixes the Tate parameter (PROVEN): it
+comes from the base field. -/
+theorem WeierstrassCurve.map_qUnitSepClosure_eq (σ : Ω ≃ₐ[k] Ω) :
+    Units.map σ.toAlgHom.toRingHom.toMonoidHom (E.qUnitSepClosure Ω) =
+      E.qUnitSepClosure Ω := by
+  apply Units.ext
+  show σ ((algebraMap k Ω) E.q) = (algebraMap k Ω) E.q
+  exact σ.commutes E.q
+
+omit [E.IsMinimal 𝒪[k]] [IsSepClosed Ω] [Algebra.IsSeparable k Ω]
+  [DecidableEq Ω] in
+/-- Every `k`-automorphism of `Ω` fixes all integer powers of the Tate
+parameter (PROVEN). -/
+theorem WeierstrassCurve.map_zpow_qUnitSepClosure_eq (σ : Ω ≃ₐ[k] Ω)
+    (a : ℤ) :
+    Units.map σ.toAlgHom.toRingHom.toMonoidHom (E.qUnitSepClosure Ω ^ a) =
+      E.qUnitSepClosure Ω ^ a := by
+  rw [map_zpow, E.map_qUnitSepClosure_eq]
