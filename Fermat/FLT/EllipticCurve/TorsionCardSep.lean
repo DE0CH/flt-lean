@@ -31,22 +31,57 @@ variable {k : Type u} [Field k] (E : WeierstrassCurve k) [E.IsElliptic]
   [DecidableEq k]
 
 set_option warn.sorry false in
+/-- **A fibre of `[p]` of size `p²`** (sorry node): over an
+algebraically closed field, pick a generic chord value `c` — avoiding
+the finitely many roots of the Wronskian `Φₚ′ΨSqₚ − ΦₚΨSqₚ′ = p⬝preΨ₂ₚ
+≠ 0`, of `Ψ₂Sq`, and the `2`-torsion line — so that `Φₚ − c⬝ΨSqₚ` is
+separable of degree `p²`; each of its `p²` roots carries two points of
+the curve (`yQuad` separable there), giving `2p²` points `P` with
+`x(p•P) = c`, i.e. `p•P ∈ {R, −R}`; the involution `P ↦ −P` swaps the
+two classes, so the fibre of `R` has exactly `p²` elements. -/
+theorem exists_large_fibre {p : ℕ} (hp : p.Prime) (hodd : Odd p)
+    (hpk : (p : k) ≠ 0) :
+    ∃ (R : (E⁄k).Point) (S : Finset (E⁄k).Point),
+      S.card = p ^ 2 ∧ ∀ P ∈ S, (p : ℤ) • P = R :=
+  sorry
+
+set_option warn.sorry false in
+/-- **Torsion lower bound from a large fibre** (sorry node): fibres of
+the group homomorphism `[p]` are cosets of the kernel, so a fibre with
+`p²` elements forces `p² ≤ #E[p]`. (The map `P ↦ P − P₀` for a fixed
+`P₀` in the fibre injects the fibre into the kernel.) -/
+theorem card_torsion_ge_of_fibre {p : ℕ}
+    (h : ∃ (R : (E⁄k).Point) (S : Finset (E⁄k).Point),
+      S.card = p ^ 2 ∧ ∀ P ∈ S, (p : ℤ) • P = R) :
+    p ^ 2 ≤ Nat.card (Submodule.torsionBy ℤ (E⁄k).Point (p : ℤ)) :=
+  sorry
+
+set_option warn.sorry false in
+/-- **Separability from the torsion count, backwards** (sorry node):
+if `p² ≤ #E[p]`, the `p² − 1` nonzero `p`-torsion points map to roots
+of `preΨ' p` (the dictionary) with fibres of size at most `2` (the
+`y`-quadratic), so `preΨ' p` has at least `(p²−1)/2 = natDegree`
+distinct roots; a polynomial with `natDegree`-many distinct roots over
+a perfect field is separable. -/
+theorem separable_of_card_torsion {p : ℕ} (hp : p.Prime) (hodd : Odd p)
+    (hpk : (p : k) ≠ 0)
+    (hcard : p ^ 2 ≤ Nat.card
+      (Submodule.torsionBy ℤ (E⁄k).Point (p : ℤ))) :
+    ((E⁄k).preΨ' p).Separable :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
 /-- **Separability in characteristic two over an algebraically closed
-field** (sorry node): the core case of `separable_preΨ'_char_two`
-after the base-change reduction. Over a perfect field the Frobenius
-decomposition `f = u² + X ⬝ v²`, `f′ = v²` is available, so a common
-factor of `f, f′` is a common factor of `u, v`. Candidate routes: the
-Gunji char-2 discriminant formula for `ψₚ`, or the universal
-discriminant specialization (the generic-fiber separability over
-`ℚ(A₁,…,A₅)` is now a THEOREM — `separable_preΨ'` at the generic
-curve — so `disc(preΨ'ₚ) ≠ 0` in `ℤ[A]`; what is missing is the
-`±pˢΔᵗ`-structure of the discriminant). -/
+field** (DECOMPOSED 2026-07-17 into the three generic-fibre-counting
+nodes above; the characteristic-two hypothesis is not even needed on
+this route). -/
 theorem separable_preΨ'_char_two_closed {K : Type u} [Field K]
     [IsAlgClosed K] (E' : WeierstrassCurve K) [E'.IsElliptic]
     [DecidableEq K] {p : ℕ} (hp : p.Prime) (hodd : Odd p)
     (hpk : (p : K) ≠ 0) (hchar2 : (2 : K) = 0) :
     ((E'⁄K).preΨ' p).Separable :=
-  sorry
+  separable_of_card_torsion E' hp hodd hpk
+    (card_torsion_ge_of_fibre E' (exists_large_fibre E' hp hodd hpk))
 
 set_option backward.isDefEq.respectTransparency false in
 omit [DecidableEq k] in
