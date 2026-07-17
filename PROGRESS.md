@@ -2582,6 +2582,29 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6 final, UNIFICATION INSIGHT): the two
+  remaining torsion-cone blockers — `resultant_Φ_ΨSq` and
+  `separable_preΨ'_char_two` — are instances of ONE technique: a
+  universal identity in ℤ[A₁..A₅] whose specialization is controlled
+  by (p, Δ)-powers. Concretely for the discriminant route:
+  disc(preΨ'ₚ) ∈ ℤ[A] is NONZERO because the char-≠2 separability
+  PROOF NOW APPLIES OVER ℚ(A₁..A₅) — the generic curve over the
+  fraction field of the polynomial ring (char 0, Δ ≠ 0 a unit there
+  after inverting, (p) ≠ 0). The structure disc = ±p^s·Δ^t·(monomial
+  unit?) then follows if one shows disc vanishes only on the
+  Δ = 0-locus (Nullstellensatz + irreducibility/radicality of (Δ) in
+  ℚ̄[A]) with multiplicity bookkeeping; the same scheme gives
+  resultant_Φ_ΨSq = ±Δ^k. ALTERNATIVE cheaper for char-2-only: the
+  consumer of separable_preΨ' is prime_torsion_card [IsSepClosed k]
+  — over sep-closed k one may normalize the char-2 curve (kill
+  coefficients by the standard char-2 variable changes: a₁ ≠ 0 ⟹
+  (a₁,a₂,a₃,a₄,a₆) → (1,a₂',0,0,a₆'); a₁ = 0 supersingular ⟹
+  (0,0,a₃',a₄',a₆')) and re-run the ν-endgame with the explicit
+  simplified b-invariants (b₂ = 1/0, Ψ₂Sq = X²-ish/b₆-const) where
+  the [2]/[3]-composition H₁-terms can be analyzed term-by-term.
+  Sharpest known classical statement: Gunji (1976) computes disc(ψₚ)
+  in char 2; Washington Ch. 3 exercises give disc(ψₙ) = ±n^{...}Δ^{...}
+  integrally — download and mine these next session (annas-mcp).
 - 2026-07-17 (session 6 coda, char-2 CAUTION): re-deriving the
   `separable_preΨ'_char_two` plan shows the PREVIOUSLY RECORDED
   [3]-composition count is NOT by itself contradictory: with
