@@ -183,12 +183,7 @@ def check_cross_tracking() -> None:
     print("cross-tracking (iii): numeric check OK for n = 2..5")
 
 
-if __name__ == "__main__":
-    certificate_duplication_y()
-    check_tracked_pair()
-    check_step_targets()
-    check_cross_tracking()
-    certificate_odd_step_x()
+
 
 
 def certificate_odd_step_x() -> None:
@@ -216,3 +211,11 @@ def certificate_odd_step_x() -> None:
     iii = sp.expand(sp.fraction(sp.cancel(sp.together(iii)))[0])
     assert sp.expand(num + iii + C**6 * cm + B**6 * cm1) == 0
     print("odd-step x-target: exact closure with unit cofactors OK")
+
+
+if __name__ == "__main__":
+    certificate_duplication_y()
+    check_tracked_pair()
+    check_step_targets()
+    check_cross_tracking()
+    certificate_odd_step_x()
