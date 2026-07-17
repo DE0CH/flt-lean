@@ -817,20 +817,404 @@ theorem sum_diff_X_identity {x₁ y₁ x₂ y₂ x₃ x₄ : k}
   linear_combination (-(1 : k)) * hX₃ + (-(1 : k)) * hX₄ +
     (-2 : k) * heq₁ + (-2 : k) * heq₂
 
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] [DecidableEq k] in
+/-- **Even-index division-polynomial values factor through `ψ₂`**
+(PROVEN 2026-07-17): for even `n`, `ψₙ(x,y) = preΨₙ(x) ⬝ ψ₂(x,y)` on
+the curve — the parity structure of `Ψ`. In particular every
+even-index value vanishes at a `2`-torsion point. -/
+theorem evalEval_ψ_of_even {n : ℤ} (hn : Even n) {x y : k}
+    (h : (E⁄k).toAffine.Equation x y) :
+    ((E⁄k).ψ n).evalEval x y =
+      ((E⁄k).preΨ n).eval x * ((E⁄k).ψ 2).evalEval x y := by
+  rw [WeierstrassCurve.evalEval_ψ n h,
+    show (E⁄k).Ψ n = Polynomial.C ((E⁄k).preΨ n) * (E⁄k).ψ₂ from by
+      rw [WeierstrassCurve.Ψ, if_pos hn],
+    WeierstrassCurve.ψ_two]
+  simp only [Polynomial.evalEval_mul, Polynomial.evalEval_C]
+
 set_option warn.sorry false in
-/-- (Sorry node — **the multiplication-by-`n` formula**, Washington
-*Elliptic curves* Theorem 3.6.) For `n > 0` and an affine point
+omit [E.IsElliptic] [DecidableEq k] in
+/-- (Sorry node — **the `T(n, 2)` elliptic-sequence relation on the
+curve**.) `ψₙ₊₂ψₙ₋₂ = ψₙ₊₁ψₙ₋₁ψ₂² - ψ₃ψₙ²` at any point — the
+`q = 2` instance of the two-parameter elliptic-sequence family
+`T(p, q)` for `normEDS` (Stange's theorem, the mathlib TODO
+`IsEllipticSequence normEDS`); to be specialised through
+`evalEvalRingHom` with no curve input at all. -/
+theorem evalEval_ψ_quadratic (n : ℤ) (x y : k) :
+    ((E⁄k).ψ (n + 2)).evalEval x y * ((E⁄k).ψ (n - 2)).evalEval x y =
+      ((E⁄k).ψ (n + 1)).evalEval x y * ((E⁄k).ψ (n - 1)).evalEval x y *
+        ((E⁄k).ψ 2).evalEval x y ^ 2 -
+      ((E⁄k).ψ 3).evalEval x y * ((E⁄k).ψ n).evalEval x y ^ 2 :=
+  sorry
+
+set_option warn.sorry false in
+omit [E.IsElliptic] [DecidableEq k] in
+/-- (Sorry node — **the degenerate tracking certificate at
+`ψₙ₋₁ = 0`**.) If `ψₙ₋₁(x,y) = 0` then `ψ₂ ⬝ ψₙ⁴ = ψ₂ₙ` on the curve
+(the `ψ₂`-tracking of `n ⬝ P = P` when `(n-1) ⬝ P = 0`). A
+fixed-window consequence of the elliptic-sequence family and the
+sum-companion; numerically verified (e.g. `s ⬝ ψ₄⁴ = ψ₈` at the
+`3`-torsion point of `y² + y = x³`). -/
+theorem psi_tracking_prev_zero (n : ℤ) {x y : k}
+    (h : (E⁄k).toAffine.Equation x y)
+    (h1 : ((E⁄k).ψ (n - 1)).evalEval x y = 0) :
+    ((E⁄k).ψ 2).evalEval x y * ((E⁄k).ψ n).evalEval x y ^ 4 =
+      ((E⁄k).ψ (2 * n)).evalEval x y :=
+  sorry
+
+set_option warn.sorry false in
+omit [E.IsElliptic] [DecidableEq k] in
+/-- (Sorry node — **the degenerate tracking certificate at
+`ψₙ₋₂ = 0`**.) If `ψₙ₋₂(x,y) = 0` then `ψ₄ ⬝ ψₙ⁴ = ψ₂ₙ ⬝ ψ₂⁴` on the
+curve (the `ψ₂`-tracking of `n ⬝ P = 2 ⬝ P` when `(n-2) ⬝ P = 0`). A
+fixed-window consequence of the elliptic-sequence family and the
+sum-companion; numerically verified (e.g. `ψ₄ ⬝ ψ₅⁴ = ψ₁₀ ⬝ s⁴` at
+the `3`-torsion point of `y² + y = x³`). -/
+theorem psi_tracking_prev2_zero (n : ℤ) {x y : k}
+    (h : (E⁄k).toAffine.Equation x y)
+    (h2 : ((E⁄k).ψ (n - 2)).evalEval x y = 0) :
+    ((E⁄k).ψ 4).evalEval x y * ((E⁄k).ψ n).evalEval x y ^ 4 =
+      ((E⁄k).ψ (2 * n)).evalEval x y * ((E⁄k).ψ 2).evalEval x y ^ 4 :=
+  sorry
+
+set_option warn.sorry false in
+/-- (Sorry node — **the Ward vanishing pattern**.) If `d ≥ 2` is a
+MINIMAL positive index with `ψ_d(x,y) = 0`, then the vanishing set of
+the division-polynomial values at the point is exactly `dℤ`. This is
+Ward's rank-of-apparition theorem for the EDS of a curve point; the
+`d = 2` instance rests on `Res(Ψ₂Sq, Ψ₃) = -Δ² ≠ 0` (which is where
+`E.IsElliptic` enters), and the general case on the elliptic-sequence
+family (periodicity of the EDS at a torsion point). -/
+theorem psi_eq_zero_iff_dvd {d : ℤ} (hd : 2 ≤ d) {x y : k}
+    (h : (E⁄k).toAffine.Nonsingular x y)
+    (hd0 : ((E⁄k).ψ d).evalEval x y = 0)
+    (hmin : ∀ m : ℤ, 0 < m → m < d → ((E⁄k).ψ m).evalEval x y ≠ 0)
+    (n : ℤ) (hn : 0 < n) :
+    ((E⁄k).ψ n).evalEval x y = 0 ↔ d ∣ n :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] in
+/-- **Extraction of the minimal vanishing index** (PROVEN 2026-07-17):
+from any positive vanishing index, there is a minimal one, which is
+`≥ 2` when `ψ₂(x,y) ≠ 0` would otherwise... more precisely `≥ 2`
+because `ψ₁ = 1`. -/
+theorem exists_minimal_psi_zero {m : ℤ} (hm : 0 < m) {x y : k}
+    (hm0 : ((E⁄k).ψ m).evalEval x y = 0) :
+    ∃ d : ℤ, 2 ≤ d ∧ ((E⁄k).ψ d).evalEval x y = 0 ∧
+      ∀ j : ℤ, 0 < j → j < d → ((E⁄k).ψ j).evalEval x y ≠ 0 := by
+  classical
+  have hQ : ∃ j : ℕ, 0 < j ∧ ((E⁄k).ψ (j : ℤ)).evalEval x y = 0 :=
+    ⟨m.toNat, by omega, by rwa [show ((m.toNat : ℤ)) = m from by omega]⟩
+  obtain ⟨hd₀pos, hd₀zero⟩ := Nat.find_spec hQ
+  have hne1 : Nat.find hQ ≠ 1 := by
+    intro hone
+    have h1 := hd₀zero
+    rw [hone, show ((1 : ℕ) : ℤ) = 1 from rfl,
+      WeierstrassCurve.ψ_one] at h1
+    simp at h1
+  refine ⟨(Nat.find hQ : ℤ), by omega, hd₀zero, fun j hj hjd => ?_⟩
+  have hmin := Nat.find_min hQ (m := j.toNat) (by omega)
+  rw [not_and_or] at hmin
+  rcases hmin with hc | hc
+  · omega
+  · rwa [show ((j.toNat : ℤ)) = j from by omega] at hc
+
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] in
+/-- **The `n = 2` case of the torsion dictionary** (PROVEN 2026-07-17,
+the base case of the Washington Thm 3.6 induction): `2 • (x, y) = 0`
+iff `Ψ₂Sq (x) = 0`. On the curve the discriminant identity specialises
+to `Ψ₂Sq (x) = (2y + a₁x + a₃)²`, and `2 • P = 0` iff `P = -P` iff
+`y` is `negY`-fixed iff `2y + a₁x + a₃ = 0`. -/
+theorem two_smul_some_eq_zero_iff {x y : k}
+    (h : (E⁄k).toAffine.Nonsingular x y) :
+    ((2 : ℤ) • (Affine.Point.some x y h : (E⁄k).Point) = 0) ↔
+      ((E⁄k).Ψ₂Sq).eval x = 0 := by
+  classical
+  have hΨval := eval_Ψ₂Sq_eq_sq E h.1
+  constructor
+  · intro h2
+    rw [two_smul ℤ (Affine.Point.some x y h), add_eq_zero_iff_eq_neg,
+      Affine.Point.neg_some] at h2
+    have hy : y = (E⁄k).toAffine.negY x y := by
+      have := h2
+      injection this with h1 h2'
+    rw [hΨval]
+    have : 2 * y + ((E⁄k).a₁ * x + (E⁄k).a₃) = 0 := by
+      rw [Affine.negY] at hy
+      linear_combination hy
+    rw [this]
+    ring
+  · intro hΨ
+    rw [hΨval] at hΨ
+    have h2y : 2 * y + ((E⁄k).a₁ * x + (E⁄k).a₃) = 0 :=
+      pow_eq_zero_iff two_ne_zero |>.mp hΨ
+    have hnegY : (E⁄k).toAffine.negY x y = y := by
+      rw [Affine.negY]
+      linear_combination -h2y
+    rw [two_smul ℤ (Affine.Point.some x y h), add_eq_zero_iff_eq_neg,
+      Affine.Point.neg_some]
+    have : ∀ (y' : k) (h' : (E⁄k).toAffine.Nonsingular x y'), y = y' →
+        (Affine.Point.some x y h : (E⁄k).Point) = Affine.Point.some x y' h' := by
+      intro y' h' hy
+      subst hy
+      rfl
+    exact this _ _ hnegY.symm
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxRecDepth 8000 in
+/-- **The strengthened multiplication formula, main branch** (PROVEN
+2026-07-17 modulo the division-polynomial nodes `evalEval_ψ_sum`
+(via `zsmul_consec_step`), `evalEval_ψ_quadratic`,
+`psi_tracking_prev_zero`, `psi_tracking_prev2_zero` and
+`psi_eq_zero_iff_dvd`): for an affine point with `ψ₂(x,y) ≠ 0` and
+`n > 0`, `ψₙ(x,y) = 0` iff `n • P = 0`, and if `ψₙ(x,y) ≠ 0` then
+`n • P` is affine with the `x`-formula and the `ψ₂`-tracking. Strong
+induction: the generic case is `zsmul_consec_step`; the case
+`ψₙ₋₁ = 0` gives `n•P = P` (Ward pattern for nonvanishing, `φ`-diff
+for the formula, the degenerate certificate for the tracking); a
+collision `x₁ = x` gives `[n-1]P = ±P`, i.e. `n•P = 2•P` (duplication
+formulas + the `T(n,2)` relation + the second degenerate certificate)
+or `n•P = 0` (gap-1 forces `ψₙ = 0`). -/
+theorem zsmul_some_aux_strong {x y : k}
+    (h : (E⁄k).toAffine.Nonsingular x y)
+    (hs : ((E⁄k).ψ 2).evalEval x y ≠ 0) (n : ℤ) (hn : 0 < n) :
+    (((E⁄k).ψ n).evalEval x y = 0 ↔
+      n • (Affine.Point.some x y h : (E⁄k).Point) = 0) ∧
+    (((E⁄k).ψ n).evalEval x y ≠ 0 →
+      ∃ (x' y' : k) (h' : (E⁄k).toAffine.Nonsingular x' y'),
+        n • (Affine.Point.some x y h : (E⁄k).Point) =
+          Affine.Point.some x' y' h' ∧
+        x' * ((E⁄k).ψ n).evalEval x y ^ 2 = ((E⁄k).φ n).evalEval x y ∧
+        (2 * y' + (E⁄k).a₁ * x' + (E⁄k).a₃) *
+            ((E⁄k).ψ n).evalEval x y ^ 4 =
+          ((E⁄k).ψ (2 * n)).evalEval x y) := by
+  classical
+  have key : ∀ N : ℕ, ∀ m : ℤ, 0 < m → m ≤ (N : ℤ) →
+      (((E⁄k).ψ m).evalEval x y = 0 ↔
+        m • (Affine.Point.some x y h : (E⁄k).Point) = 0) ∧
+      (((E⁄k).ψ m).evalEval x y ≠ 0 →
+        ∃ (x' y' : k) (h' : (E⁄k).toAffine.Nonsingular x' y'),
+          m • (Affine.Point.some x y h : (E⁄k).Point) =
+            Affine.Point.some x' y' h' ∧
+          x' * ((E⁄k).ψ m).evalEval x y ^ 2 = ((E⁄k).φ m).evalEval x y ∧
+          (2 * y' + (E⁄k).a₁ * x' + (E⁄k).a₃) *
+              ((E⁄k).ψ m).evalEval x y ^ 4 =
+            ((E⁄k).ψ (2 * m)).evalEval x y) := by
+    intro N
+    induction N with
+    | zero => intro m hm hle; exact absurd hle (by omega)
+    | succ N IHN =>
+      intro m hm hle
+      by_cases hm1 : m = 1
+      · -- base case `m = 1`
+        subst hm1
+        have hone : ((E⁄k).ψ (1 : ℤ)).evalEval x y = 1 := by
+          rw [WeierstrassCurve.ψ_one, Polynomial.evalEval_one]
+        refine ⟨⟨fun h0 => absurd (hone ▸ h0) one_ne_zero, fun h0 => ?_⟩,
+          fun _ => zsmul_some_aux_one E h⟩
+        rw [one_smul] at h0
+        exact nomatch h0.trans
+          (show (0 : (E⁄k).Point) = Affine.Point.zero from rfl)
+      by_cases hm2 : m = 2
+      · -- base case `m = 2`
+        subst hm2
+        obtain ⟨x', y', h', heq, hxf, htr⟩ := zsmul_some_aux_two E h hs
+        refine ⟨⟨fun h0 => absurd h0 hs, fun h0 => ?_⟩,
+          fun _ => ⟨x', y', h', heq, hxf, htr⟩⟩
+        rw [heq] at h0
+        exact nomatch h0.trans
+          (show (0 : (E⁄k).Point) = Affine.Point.zero from rfl)
+      -- the step: `m ≥ 3`
+      have hm3 : 3 ≤ m := by omega
+      have IH1 := IHN (m - 1) (by omega) (by omega)
+      have IH2 := IHN (m - 2) (by omega) (by omega)
+      have hψ₂v := evalEval_ψ_two E x y
+      by_cases hψ1 : ((E⁄k).ψ (m - 1)).evalEval x y = 0
+      · -- CASE A: `ψₘ₋₁ = 0`, so `(m-1)•P = 0` and `m•P = P`
+        have h0m1 := IH1.1.mp hψ1
+        have hmP : m • (Affine.Point.some x y h : (E⁄k).Point) =
+            Affine.Point.some x y h := by
+          have hsplit : m • (Affine.Point.some x y h : (E⁄k).Point) =
+              ((m - 1) + 1) • (Affine.Point.some x y h : (E⁄k).Point) := by
+            congr 1
+            ring
+          rw [hsplit, add_smul, h0m1, one_smul, zero_add]
+        obtain ⟨d, hd2, hd0, hdmin⟩ :=
+          exists_minimal_psi_zero E (show (0 : ℤ) < m - 1 by omega) hψ1
+        have hdvd1 : d ∣ (m - 1) :=
+          (psi_eq_zero_iff_dvd E hd2 h hd0 hdmin (m - 1) (by omega)).mp hψ1
+        have hψm : ((E⁄k).ψ m).evalEval x y ≠ 0 := by
+          intro hc
+          have hdvdm : d ∣ m :=
+            (psi_eq_zero_iff_dvd E hd2 h hd0 hdmin m (by omega)).mp hc
+          have hone : d ∣ 1 := by
+            have := dvd_sub hdvdm hdvd1
+            rwa [show m - (m - 1) = 1 from by ring] at this
+          have := Int.le_of_dvd one_pos hone
+          omega
+        have hφm := evalEval_φ_eq E m h.1
+        refine ⟨⟨fun h0 => absurd h0 hψm, fun h0 => ?_⟩, fun _ =>
+          ⟨x, y, h, hmP, ?_, ?_⟩⟩
+        · rw [hmP] at h0
+          exact nomatch h0.trans
+            (show (0 : (E⁄k).Point) = Affine.Point.zero from rfl)
+        · linear_combination -hφm + ((E⁄k).ψ (m + 1)).evalEval x y * hψ1
+        · have hC1 := psi_tracking_prev_zero E m h.1 hψ1
+          linear_combination hC1 - ((E⁄k).ψ m).evalEval x y ^ 4 * hψ₂v
+      -- CASE B: `ψₘ₋₁ ≠ 0`, so `[m-1]P` is affine with the full package
+      obtain ⟨x₁, y₁, h₁, heq₁, hx₁, ht₁⟩ := IH1.2 hψ1
+      by_cases hxx : x₁ = x
+      · -- CASE B-i: collision `x₁ = x`
+        rcases eq_or_add_eq_zero_of_X_eq E h₁ h hxx with heqP | haddP
+        · -- CASE B-i-1: `[m-1]P = P`, so `(m-2)•P = 0` and `m•P = 2•P`
+          have h0m2 : (m - 2) • (Affine.Point.some x y h : (E⁄k).Point) =
+              0 := by
+            have hsub : (m - 2) •
+                (Affine.Point.some x y h : (E⁄k).Point) =
+                (m - 1) • (Affine.Point.some x y h : (E⁄k).Point) -
+                  (1 : ℤ) • (Affine.Point.some x y h : (E⁄k).Point) := by
+              rw [← sub_smul]
+              congr 1
+              ring
+            rw [hsub, one_smul, heq₁, heqP, sub_self]
+          have hψ2z : ((E⁄k).ψ (m - 2)).evalEval x y = 0 := IH2.1.mpr h0m2
+          obtain ⟨x₂', y₂', h₂', heq2P, hx2P, ht2P⟩ :=
+            zsmul_some_aux_two E h hs
+          have hmP : m • (Affine.Point.some x y h : (E⁄k).Point) =
+              Affine.Point.some x₂' y₂' h₂' := by
+            have hsplit : m • (Affine.Point.some x y h : (E⁄k).Point) =
+                ((m - 2) + 2) • (Affine.Point.some x y h : (E⁄k).Point) := by
+              congr 1
+              ring
+            rw [hsplit, add_smul, h0m2, zero_add, heq2P]
+          obtain ⟨d, hd2, hd0, hdmin⟩ :=
+            exists_minimal_psi_zero E (show (0 : ℤ) < m - 2 by omega) hψ2z
+          have hdvd2 : d ∣ (m - 2) :=
+            (psi_eq_zero_iff_dvd E hd2 h hd0 hdmin (m - 2) (by omega)).mp hψ2z
+          have hψm : ((E⁄k).ψ m).evalEval x y ≠ 0 := by
+            intro hc
+            have hdvdm : d ∣ m :=
+              (psi_eq_zero_iff_dvd E hd2 h hd0 hdmin m (by omega)).mp hc
+            have htwo : d ∣ 2 := by
+              have := dvd_sub hdvdm hdvd2
+              rwa [show m - (m - 2) = 2 from by ring] at this
+            have := Int.le_of_dvd two_pos htwo
+            have hdeq : d = 2 := by omega
+            rw [hdeq] at hd0
+            exact hs hd0
+          have hφm := evalEval_φ_eq E m h.1
+          have hφ2 := evalEval_φ_eq E 2 h.1
+          rw [show (2 : ℤ) + 1 = 3 from rfl, show (2 : ℤ) - 1 = 1 from rfl,
+            WeierstrassCurve.ψ_one, Polynomial.evalEval_one, mul_one] at hφ2
+          have hq := evalEval_ψ_quadratic E m x y
+          refine ⟨⟨fun h0 => absurd h0 hψm, fun h0 => ?_⟩, fun _ =>
+            ⟨x₂', y₂', h₂', hmP, ?_, ?_⟩⟩
+          · rw [hmP] at h0
+            exact nomatch h0.trans
+              (show (0 : (E⁄k).Point) = Affine.Point.zero from rfl)
+          · -- the `x`-formula via the `T(m,2)` relation
+            have hxf : (x₂' * ((E⁄k).ψ m).evalEval x y ^ 2 -
+                ((E⁄k).φ m).evalEval x y) *
+                ((E⁄k).ψ 2).evalEval x y ^ 2 = 0 := by
+              linear_combination ((E⁄k).ψ m).evalEval x y ^ 2 * hx2P +
+                ((E⁄k).ψ m).evalEval x y ^ 2 * hφ2 -
+                ((E⁄k).ψ 2).evalEval x y ^ 2 * hφm - hq +
+                ((E⁄k).ψ (m + 2)).evalEval x y * hψ2z
+            rcases mul_eq_zero.mp hxf with h0 | h0
+            · exact sub_eq_zero.mp h0
+            · exact absurd (pow_eq_zero_iff two_ne_zero |>.mp h0) hs
+          · -- the tracking via the second degenerate certificate
+            have hC2 := psi_tracking_prev2_zero E m h.1 hψ2z
+            rw [show (2 : ℤ) * 2 = 4 from rfl] at ht2P
+            have htf : ((2 * y₂' + (E⁄k).a₁ * x₂' + (E⁄k).a₃) *
+                ((E⁄k).ψ m).evalEval x y ^ 4 -
+                ((E⁄k).ψ (2 * m)).evalEval x y) *
+                ((E⁄k).ψ 2).evalEval x y ^ 4 = 0 := by
+              linear_combination ((E⁄k).ψ m).evalEval x y ^ 4 * ht2P + hC2
+            rcases mul_eq_zero.mp htf with h0 | h0
+            · exact sub_eq_zero.mp h0
+            · exact absurd (pow_eq_zero_iff (by norm_num) |>.mp h0) hs
+        · -- CASE B-i-2: `[m-1]P = -P`, so `m•P = 0` and `ψₘ = 0`
+          have hm0 : m • (Affine.Point.some x y h : (E⁄k).Point) = 0 := by
+            have hsplit : m • (Affine.Point.some x y h : (E⁄k).Point) =
+                ((m - 1) + 1) • (Affine.Point.some x y h : (E⁄k).Point) := by
+              congr 1
+              ring
+            rw [hsplit, add_smul, one_smul, heq₁, haddP]
+          -- gap-1 forces `ψₘψₘ₋₂ = 0`; `ψₘ₋₂ = 0` would give `2•P = 0`
+          have hφ₁ := evalEval_φ_eq E (m - 1) h.1
+          rw [show m - 1 + 1 = m from by ring,
+            show m - 1 - 1 = m - 2 from by ring] at hφ₁
+          have hgap : (x - x₁) * ((E⁄k).ψ (m - 1)).evalEval x y ^ 2 =
+              ((E⁄k).ψ m).evalEval x y * ((E⁄k).ψ (m - 2)).evalEval x y := by
+            linear_combination -hφ₁ - hx₁
+          rw [hxx, sub_self, zero_mul] at hgap
+          have hψm0 : ((E⁄k).ψ m).evalEval x y = 0 := by
+            rcases mul_eq_zero.mp hgap.symm with h0 | h0
+            · exact h0
+            · exfalso
+              have h0m2 := IH2.1.mp h0
+              have h2P : (2 : ℤ) •
+                  (Affine.Point.some x y h : (E⁄k).Point) = 0 := by
+                have hsub : (2 : ℤ) •
+                    (Affine.Point.some x y h : (E⁄k).Point) =
+                    m • (Affine.Point.some x y h : (E⁄k).Point) -
+                      (m - 2) • (Affine.Point.some x y h : (E⁄k).Point) := by
+                  rw [← sub_smul]
+                  congr 1
+                  ring
+                rw [hsub, hm0, h0m2, sub_self]
+              obtain ⟨x₂', y₂', h₂', heq2P, -, -⟩ :=
+                zsmul_some_aux_two E h hs
+              rw [heq2P] at h2P
+              exact nomatch h2P.trans
+                (show (0 : (E⁄k).Point) = Affine.Point.zero from rfl)
+          exact ⟨⟨fun _ => hm0, fun _ => hψm0⟩,
+            fun hne => absurd hψm0 hne⟩
+      · -- CASE B-ii: `x₁ ≠ x` — the generic consecutive step
+        have hφ₁ := evalEval_φ_eq E (m - 1) h.1
+        rw [show m - 1 + 1 = m from by ring,
+          show m - 1 - 1 = m - 2 from by ring] at hφ₁
+        have hgap : (x - x₁) * ((E⁄k).ψ (m - 1)).evalEval x y ^ 2 =
+            ((E⁄k).ψ m).evalEval x y * ((E⁄k).ψ (m - 2)).evalEval x y := by
+          linear_combination -hφ₁ - hx₁
+        have hL : (x - x₁) * ((E⁄k).ψ (m - 1)).evalEval x y ^ 2 ≠ 0 :=
+          mul_ne_zero (sub_ne_zero.mpr fun hxe => hxx hxe.symm)
+            (pow_ne_zero 2 hψ1)
+        have hψ2 : ((E⁄k).ψ (m - 2)).evalEval x y ≠ 0 := by
+          intro hc
+          rw [hgap, hc, mul_zero] at hL
+          exact hL rfl
+        have hψm : ((E⁄k).ψ m).evalEval x y ≠ 0 := by
+          intro hc
+          rw [hgap, hc, zero_mul] at hL
+          exact hL rfl
+        obtain ⟨x₂, y₂, h₂, heq₂, hx₂, -⟩ := IH2.2 hψ2
+        obtain ⟨x', y', h', heq', hxf', htr'⟩ :=
+          zsmul_consec_step E h h₁ h₂ heq₁ heq₂ hx₁ hx₂ ht₁ hψ2 hψ1 hs hxx
+        refine ⟨⟨fun h0 => absurd h0 hψm, fun h0 => ?_⟩, fun _ =>
+          ⟨x', y', h', heq', hxf', htr'⟩⟩
+        rw [heq'] at h0
+        exact nomatch h0.trans
+          (show (0 : (E⁄k).Point) = Affine.Point.zero from rfl)
+  exact key n.toNat n hn (by omega)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxRecDepth 8000 in
+/-- **The multiplication-by-`n` formula** (WIRED 2026-07-17, Washington
+*Elliptic curves* Theorem 3.6; rests on the division-polynomial nodes
+listed at `zsmul_some_aux_strong`). For `n > 0` and an affine point
 `P = (x, y)`: (a) if `ψₙ(x, y) = 0` then `n • P = 0`; (b) if
 `ψₙ(x, y) ≠ 0` then `n • P` is affine with `x' ⬝ ψₙ² = φₙ(x, y)`.
-To be proven by strong induction: steps `[2m+1]P = [m+1]P + [m]P` and
-`[2m]P = [m+1]P + [m-1]P` via `add_some_coords`, secant denominators
-from `x_sub_gap_one`/`x_sub_gap_two`, collision branches via
-`smul_collision`, `y`-data pinned by `two_point_cross_identity` (whose
-`(1, j)`-instances solve for the `ψ₂`-values `2yⱼ + a₁xⱼ + a₃` in
-closed form — no tracking component is carried), certificates with
-unit cofactors (see `scripts/division_polynomial_certificates.py`),
-base cases `zsmul_some_aux_one`/`zsmul_some_aux_two`, and the
-2-torsion branch (`ψ₂(x,y) = 0`) seeded by `Res(Ψ₂Sq, Ψ₃) = -Δ²`. -/
+The main branch (`ψ₂(x,y) ≠ 0`) is the strong induction
+`zsmul_some_aux_strong`; at a `2`-torsion point (`ψ₂(x,y) = 0`),
+even-index values vanish (`evalEval_ψ_of_even`) while `n • P = 0` by
+parity, and odd-index values are nonzero by the `d = 2` Ward pattern
+while `n • P = P` satisfies the `x`-formula because `ψₙ₊₁` has even
+index. -/
 theorem zsmul_some_aux (n : ℤ) (hn : 0 < n) {x y : k}
     (h : (E⁄k).toAffine.Nonsingular x y) :
     (((E⁄k).ψ n).evalEval x y = 0 →
@@ -839,8 +1223,53 @@ theorem zsmul_some_aux (n : ℤ) (hn : 0 < n) {x y : k}
       ∃ (x' y' : k) (h' : (E⁄k).toAffine.Nonsingular x' y'),
         n • (Affine.Point.some x y h : (E⁄k).Point) =
           Affine.Point.some x' y' h' ∧
-        x' * ((E⁄k).ψ n).evalEval x y ^ 2 = ((E⁄k).φ n).evalEval x y) :=
-  sorry
+        x' * ((E⁄k).ψ n).evalEval x y ^ 2 = ((E⁄k).φ n).evalEval x y) := by
+  classical
+  by_cases hs : ((E⁄k).ψ 2).evalEval x y = 0
+  · -- the 2-torsion branch: `2 • P = 0`
+    have hψ₂v := evalEval_ψ_two E x y
+    have h2P : (2 : ℤ) • (Affine.Point.some x y h : (E⁄k).Point) = 0 := by
+      rw [two_smul_some_eq_zero_iff E h, eval_Ψ₂Sq_eq_sq E h.1]
+      rw [hψ₂v] at hs
+      linear_combination (2 * y + ((E⁄k).a₁ * x + (E⁄k).a₃)) * hs
+    rcases Int.even_or_odd n with heven | hodd
+    · -- even `n`: `ψₙ = 0` and `n • P = 0`
+      have hψn : ((E⁄k).ψ n).evalEval x y = 0 := by
+        rw [evalEval_ψ_of_even E heven h.1, hs, mul_zero]
+      obtain ⟨mm, hmm⟩ := heven
+      have hn0 : n • (Affine.Point.some x y h : (E⁄k).Point) = 0 := by
+        rw [hmm, show mm + mm = mm * 2 from by ring, mul_smul, h2P,
+          smul_zero]
+      exact ⟨fun _ => hn0, fun hne => absurd hψn hne⟩
+    · -- odd `n`: `n • P = P` and `ψₙ ≠ 0`
+      obtain ⟨mm, hmm⟩ := hodd
+      have hnP : n • (Affine.Point.some x y h : (E⁄k).Point) =
+          Affine.Point.some x y h := by
+        rw [hmm, add_smul, one_smul, show 2 * mm = mm * 2 from by ring,
+          mul_smul, h2P, smul_zero, zero_add]
+      have hmin : ∀ j : ℤ, 0 < j → j < 2 →
+          ((E⁄k).ψ j).evalEval x y ≠ 0 := by
+        intro j hj hj2
+        rw [show j = 1 from by omega, WeierstrassCurve.ψ_one,
+          Polynomial.evalEval_one]
+        exact one_ne_zero
+      have hpat := psi_eq_zero_iff_dvd E le_rfl h hs hmin n hn
+      have hψn : ((E⁄k).ψ n).evalEval x y ≠ 0 := by
+        intro hc
+        have h2dvd := hpat.mp hc
+        rw [hmm] at h2dvd
+        omega
+      refine ⟨fun h0 => absurd h0 hψn, fun _ => ⟨x, y, h, hnP, ?_⟩⟩
+      have hφn := evalEval_φ_eq E n h.1
+      have hψp : ((E⁄k).ψ (n + 1)).evalEval x y = 0 := by
+        rw [evalEval_ψ_of_even E (by rw [hmm]; exact ⟨mm + 1, by ring⟩)
+          h.1, hs, mul_zero]
+      linear_combination -hφn + ((E⁄k).ψ (n - 1)).evalEval x y * hψp
+  · -- the main branch: the strong induction
+    obtain ⟨hiff, hb⟩ := zsmul_some_aux_strong E h hs n hn
+    refine ⟨hiff.mp, fun hne => ?_⟩
+    obtain ⟨x', y', h', heq, hxf, -⟩ := hb hne
+    exact ⟨x', y', h', heq, hxf⟩
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The division-polynomial torsion dictionary** (DERIVED 2026-07-17
@@ -1125,47 +1554,6 @@ theorem yQuad_separable {x₀ : k} (hx₀ : ((E⁄k).Ψ₂Sq).eval x₀ ≠ 0) :
     _ = 1 := by
         rw [hkey, ← Polynomial.C_mul, hD, Polynomial.C_1]
 
-set_option backward.isDefEq.respectTransparency false in
-omit [E.IsElliptic] in
-/-- **The `n = 2` case of the torsion dictionary** (PROVEN 2026-07-17,
-the base case of the Washington Thm 3.6 induction): `2 • (x, y) = 0`
-iff `Ψ₂Sq (x) = 0`. On the curve the discriminant identity specialises
-to `Ψ₂Sq (x) = (2y + a₁x + a₃)²`, and `2 • P = 0` iff `P = -P` iff
-`y` is `negY`-fixed iff `2y + a₁x + a₃ = 0`. -/
-theorem two_smul_some_eq_zero_iff {x y : k}
-    (h : (E⁄k).toAffine.Nonsingular x y) :
-    ((2 : ℤ) • (Affine.Point.some x y h : (E⁄k).Point) = 0) ↔
-      ((E⁄k).Ψ₂Sq).eval x = 0 := by
-  classical
-  have hΨval := eval_Ψ₂Sq_eq_sq E h.1
-  constructor
-  · intro h2
-    rw [two_smul ℤ (Affine.Point.some x y h), add_eq_zero_iff_eq_neg,
-      Affine.Point.neg_some] at h2
-    have hy : y = (E⁄k).toAffine.negY x y := by
-      have := h2
-      injection this with h1 h2'
-    rw [hΨval]
-    have : 2 * y + ((E⁄k).a₁ * x + (E⁄k).a₃) = 0 := by
-      rw [Affine.negY] at hy
-      linear_combination hy
-    rw [this]
-    ring
-  · intro hΨ
-    rw [hΨval] at hΨ
-    have h2y : 2 * y + ((E⁄k).a₁ * x + (E⁄k).a₃) = 0 :=
-      pow_eq_zero_iff two_ne_zero |>.mp hΨ
-    have hnegY : (E⁄k).toAffine.negY x y = y := by
-      rw [Affine.negY]
-      linear_combination -h2y
-    rw [two_smul ℤ (Affine.Point.some x y h), add_eq_zero_iff_eq_neg,
-      Affine.Point.neg_some]
-    have : ∀ (y' : k) (h' : (E⁄k).toAffine.Nonsingular x y'), y = y' →
-        (Affine.Point.some x y h : (E⁄k).Point) = Affine.Point.some x y' h' := by
-      intro y' h' hy
-      subst hy
-      rfl
-    exact this _ _ hnegY.symm
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
