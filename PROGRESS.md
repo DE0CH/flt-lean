@@ -2100,3 +2100,20 @@ assumed. Axiom invariant: every declaration must use at most
   the giant `linear_combination` against the curve equation; the
   step `[2n]P = 2·[n]P` needs the duplication identity. These two
   identities are the remaining mountain; everything else is plumbing.
+- 2026-07-17 (session 5, Thm 3.6 ingredients COMPLETE): everything the
+  `zsmul_some_aux` step cases consume is now PROVEN and audits clean:
+  `evalEval_φ_eq` (`φₙ = x·ψₙ² − ψₙ₊₁ψₙ₋₁` on the curve — equivalently
+  `x − x([n]P) = ψₙ₊₁ψₙ₋₁/ψₙ²`, the difference form), `evalEval_ψ_even`
+  (`ψ₂ₘ·ψ₂ = ψₘ₋₁²ψₘψₘ₊₂ − ψₘ₋₂ψₘψₘ₊₁²`), `evalEval_ψ_odd`
+  (`ψ₂ₘ₊₁ = ψₘ₊₂ψₘ³ − ψₘ₋₁ψₘ₊₁³`; the `Ψ_odd` correction dies on
+  points since it carries `W.polynomial` as a factor), the base cases
+  `zsmul_some_aux_one` and `two_smul_some_eq_zero_iff`, and the
+  vendored evaluation bridges. What remains inside the node is the
+  strong-induction assembly: cases `[n+1]P = [n]P + P` and
+  `[2n]P = 2·[n]P` via `Affine.Point.add_some`/`add_of_Y_eq`, where
+  the coordinate identities reduce, after `field_simp`, to
+  `linear_combination`s of the curve equations of `(x,y)`/`(x',y')`,
+  the IH identities, and the two on-curve recurrences above. GOTCHA:
+  `Polynomial.evalEval_mul/sub/add/pow` are the working simp set for
+  pushing `evalEval` through `Ψ`-identities (the
+  `coe_evalEvalRingHom`+`map_*` route stalls).
