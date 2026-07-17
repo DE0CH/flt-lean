@@ -2582,6 +2582,33 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6 coda, char-2 CAUTION): re-deriving the
+  `separable_preΨ'_char_two` plan shows the PREVIOUSLY RECORDED
+  [3]-composition count is NOT by itself contradictory: with
+  ν := ν_π, f = πᵃg, in char 2 (W) reads Φₚ′f² = p·preΨ₂ₚ (ΨSq′ = 0),
+  and the m = 3 cross Φ₃ₚ·S·Ψ₃hom² = ΨSq₃ₚ·Φ₃hom (S := ΨSqₚ,
+  homogeneous degrees 9 = 1 + 2·4) with Ψ₃hom ≡ Φₚ⁴, Φ₃hom ≡ Φₚ⁹
+  (mod π) gives ν(Φ₃ₚ) + 2a = ν(ΨSq₃ₚ), which the EDS-divisibility
+  ν(preΨ'₃ₚ) ≥ a matches EXACTLY (ν(ΨSq₃ₚ) = 2a, ν(Φ₃ₚ) = 0) — no
+  contradiction without using π | f′. The char-2 argument must
+  inject the hypothesis π | (preΨ'ₚ)′ elsewhere: candidate routes:
+  (i) differentiate the m = 3 cross identity itself (the derivative
+  of ΨSq₃ₚ = (preΨ'₃ₚ)² is again 0 in char 2 — but the derivative of
+  the CROSS identity relates Φ₃ₚ′ to Wronskian-type combinations
+  where (W)-at-3p and (W)-at-p interact: in char 2,
+  (W)ₚ: Φₚ′f² = p·preΨ₂ₚ and (W)₃ₚ: Φ₃ₚ′ΨSq₃ₚ = 3p·preΨ₆ₚ, and
+  ν-counts of preΨ₂ₚ/preΨ₆ₚ through the even-index structure
+  ΨSq₂ₚ = preΨ'₂ₚ²Ψ₂Sq may force ν(Φₚ′) contradictions);
+  (ii) the char-2 Frobenius structure: in char 2, f′ = (odd-part)′ and
+  f′ = 0 ⟺ f ∈ k[X²] = (k[X])²-Frobenius-image; π | f, π | f′ with
+  π ∤ ... — work with the derivation d/dX directly on the
+  ψ₂-normalized forms (Ψ₂Sq = b₂X² + b₆ is itself a square in char 2:
+  Ψ₂Sq = (a₁X + c)² when b₆ = c², i.e. AFTER adjoining √b₆ — over
+  the separable-closure-bound fields the argument may simplify);
+  (iii) check Washington's or Gunji's char-2 treatment of division-
+  polynomial discriminants (literature check needed). NEXT SESSION:
+  resolve this honestly — the char-2 node is NOT mechanical from the
+  current identities alone.
 - 2026-07-17 (session 6, MAJOR): **(W) PROVEN and `separable_preΨ'`
   RESOLVED (char ≠ 2)**. The full derivation chain, all committed:
   (1) InvariantDerivation.lean — dX/dY/Dham (Hamiltonian derivation
