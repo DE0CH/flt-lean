@@ -302,6 +302,74 @@ theorem map_smul_embeddedValuationSubring
   · intro h1
     exact hstab σ⁻¹ _ h1
 
+/-- The comparison map from the embedded valuation subring into the big
+integral closure (the restriction of the chosen embedding). -/
+noncomputable def embeddedComparison :
+    (embeddedValuationSubring v) →+*
+      IntegralClosure 𝒪ᵥ (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) :=
+  RingHom.codRestrict
+    ((AlgebraicClosure.map
+      (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))).comp
+      (embeddedValuationSubring v).subtype)
+    (integralClosure 𝒪ᵥ (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
+    (fun u => u.2)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Maximal-ideal membership in the embedded valuation subring is
+DETECTED by the big integral closure: the comparison map reflects
+units (an inverse upstairs restricts to an inverse downstairs, since
+the embedded subring is a `comap`). -/
+theorem mem_maximalIdeal_iff_embeddedComparison
+    (u : embeddedValuationSubring v) :
+    u ∈ 𝔪 (embeddedValuationSubring v) ↔
+      embeddedComparison v u ∈
+        𝔪 (IntegralClosure 𝒪ᵥ (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) := by
+  rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff,
+    IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+  constructor
+  · -- unit reflection: contrapositive
+    intro h1 h2
+    apply h1
+    rw [isUnit_iff_exists] at h2
+    obtain ⟨w, hw1, hw2⟩ := h2
+    -- push the unit equation down to the ambient field
+    have h3 := congrArg (algebraMap
+      (IntegralClosure 𝒪ᵥ (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) hw1
+    rw [map_mul, map_one] at h3
+    have hι : algebraMap
+        (IntegralClosure 𝒪ᵥ (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+        (embeddedComparison v u) =
+        AlgebraicClosure.map
+          (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) u.1 := rfl
+    rw [hι] at h3
+    -- the value of `u` is nonzero
+    have hu0 : (u.1 : AlgebraicClosure K) ≠ 0 := by
+      intro h0
+      rw [h0, map_zero, zero_mul] at h3
+      exact zero_ne_one h3
+    -- the inverse of the value lies in the embedded subring
+    have hinvmem : (u.1)⁻¹ ∈ embeddedValuationSubring v := by
+      show AlgebraicClosure.map
+        (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) (u.1)⁻¹ ∈
+        integralClosure 𝒪ᵥ (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+      rw [map_inv₀, inv_eq_of_mul_eq_one_right h3]
+      exact w.2
+    refine isUnit_iff_exists.mpr ⟨⟨(u.1)⁻¹, hinvmem⟩, ?_, ?_⟩
+    · exact Subtype.ext (mul_inv_cancel₀ hu0)
+    · exact Subtype.ext (inv_mul_cancel₀ hu0)
+  · intro h1 h2
+    exact h1 (h2.map (embeddedComparison v))
+
 section FiniteLevel
 
 variable (N : Type*) [Field N]
