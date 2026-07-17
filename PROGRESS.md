@@ -2135,3 +2135,30 @@ assumed. Axiom invariant: every declaration must use at most
   (secant slope, same certificate workflow against the IH identities —
   ideal membership via sympy Groebner if plain division does not
   suffice) and the strong-induction assembly.
+- 2026-07-17 (session 5, `zsmul_some_aux` assembly design COMPLETE —
+  numerically validated): the induction proceeds on the tracked pair
+  ((i) `xₙψₙ² = φₙ`, (ii) `tₙψₙ⁴ = ψ₂ₙ` with `tₙ` the `ψ₂`-value at
+  `n•P`), steps `[2m+1]P = [m+1]P + [m]P` and `[2m]P = [m+1]P +
+  [m-1]P` (NOT duplication — compositions like `Ψ₃(xₘ)` would intrude).
+  PROVEN inputs: the secant denominators are exactly `x_sub_gap_one`
+  (`(xₘ₊₁−xₘ)(ψₘψₘ₊₁)² = −ψ₂ₘ₊₁`) and `x_sub_gap_two`
+  (`(xₘ₋₁−xₘ₊₁)(ψₘ₋₁ψₘ₊₁)² = ψ₂ₘψ₂`), both derived from
+  `evalEval_φ_eq` + the on-curve recurrences; the collision branches
+  divert through `smul_collision`/`eq_or_add_eq_zero_of_X_eq` to the
+  dictionary side; `add_some_coords` gives the sum's coordinates in
+  multiplied form; the `y`-differences come from the trackings via
+  `2(yᵢ−yⱼ) = (tᵢ−tⱼ) − a₁(xᵢ−xⱼ)` — THE ONLY place `(2:k) ≠ 0`
+  enters (thread it through `zsmul_some_aux` and consumers when
+  assembling; the FLT pipeline consumes torsion counts at char 0
+  only). REMAINING (one focused session): per-step certificates in the
+  window variables `ψₘ₋₂..ψₘ₊₃` — the targets' double-index values
+  (`φ₂ₘ₊₁`, `ψ₂ₘ`, `ψ₄ₘ₊₂`, …) reduce to the window through the
+  recurrences, but the recurrence instances are PARITY-SPECIFIC, so
+  the assembly needs the classical four-fold case split (`n = 2m`,
+  `2m+1` with `m` even/odd) with per-case sympy-computed
+  `linear_combination` certificates (Groebner/ideal-membership against
+  the curve equation, the IH relations, and the parity-instantiated
+  recurrences; the validated workflow and a worked model are in the
+  proofs of `zsmul_some_aux_two` and the gap lemmas). Boundary values
+  `ψ₀ = 0`, `ψ₁ = 1`, `ψ₋₁ = −1` are inline-available from mathlib
+  (`ψ_zero`/`ψ_one`/`ψ_neg`) for the small-`m` instantiations.
