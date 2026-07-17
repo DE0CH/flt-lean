@@ -231,6 +231,25 @@ def resultant_Psi2Sq_Psi3() -> None:
     assert sp.simplify(r) == 0 and sp.simplify(q + 1) == 0
     print("Res(Ψ₂Sq, Ψ₃) = -Δ²: verified")
 
+def check_even_step_targets() -> None:
+    """Numeric validation of the even step [2m]P = [m+1]P + [m-1]P:
+    the gap-2 secant denominator, and both targets at 2m."""
+    psi, pts = numeric_model()
+    x0 = sp.Rational(3)
+    m = 3
+    A_, C_ = psi[m - 1], psi[m + 1]
+    s_ = 2 * sp.Rational(6)
+    xm1v, xmm1v = pts[m + 1][0], pts[m - 1][0]
+    assert sp.simplify((xmm1v - xm1v) * (A_ * C_) ** 2 - psi[2 * m] * s_) == 0
+    dx = xm1v - xmm1v
+    dy = pts[m + 1][1] - pts[m - 1][1]
+    x_out = (dy**2 - (xm1v + xmm1v) * dx**2) / dx**2
+    t_out = (-2 * dy * (x_out - xm1v) - 2 * pts[m + 1][1] * dx) / dx
+    assert sp.simplify((x0 - x_out) * psi[2 * m] ** 2
+                       - psi[2 * m + 1] * psi[2 * m - 1]) == 0
+    assert sp.simplify(t_out * psi[2 * m] ** 4 - psi[4 * m]) == 0
+    print("even-step targets (gap-2 secant): numeric check OK at m = 3")
+
 
 if __name__ == "__main__":
     certificate_duplication_y()
@@ -239,3 +258,4 @@ if __name__ == "__main__":
     check_cross_tracking()
     certificate_odd_step_x()
     resultant_Psi2Sq_Psi3()
+    check_even_step_targets()
