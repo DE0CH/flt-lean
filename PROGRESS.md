@@ -2358,3 +2358,39 @@ assumed. Axiom invariant: every declaration must use at most
   vanish at 2-torsion x, odd-index don't — seeded by
   Res(Ψ₂Sq, Ψ₃) = -Δ², to be phrased via
   `exists_mul_add_mul_eq_C_resultant`).
+- 2026-07-17 (session 5 cont., (★s) ROUTE DISCOVERED — universal EDS):
+  (★s) is EQUIVALENT (per unit ψ₂Ψ₃, via the anchor identity
+  `Ψ₃(6x²+b₂x+b₄) = preΨ₄ + Ψ₂Sq²` [ring-verified] and `Ψ₂Sq = ψ₂²`
+  on-curve) to the UNIVERSAL EDS identity (★s′):
+  `bc(Wₙ₋₁²Wₙ₊₂ + Wₙ₋₂Wₙ₊₁²) = Wₙ₋₁WₙWₙ₊₁(db + b⁵) − Wₙ³b³c` for
+  `W = normEDS b c d` — verified numerically for generic (b,c,d), so
+  provable from the defining recursions alone with NO curve geometry.
+  Deduction chain: (★s′) in ℤ[A₁..A₆]-coordinate ring (a DOMAIN where
+  ψ₂ ≠ 0, Ψ₃ ≠ 0) ⟹ cancel ⟹ (★s) universally ⟹ specialize to any
+  (E, k, x, y). Descent experiments (scripts/eds/, sympy Groebner over
+  window symbols, specialized b,c,d): the parity descents of the fixed
+  families CLOSE — F_odd over F-instances alone (SYMBOLIC certificate
+  extracted, certs.pkl), F_even over {F, ES2±3, ES3±2, ES4±1, ES5},
+  ES2/ES3/ES4 even+odd all close, ES5_odd open (needs ES6-ish).
+  STRUCTURAL REDUCTION: the general elliptic-sequence relator
+  `rel(p,q,r,0)` follows RING-TRIVIALLY (alternating 3×3 expansion) 
+  from the two-parameter family
+  `T(p,q): W(p+q)W(p−q) = W(p+1)W(p−1)W(q)² − W(q+1)W(q−1)W(p)²`,
+  so the right theorem is STANGE'S THEOREM for normEDS (a declared
+  mathlib TODO: `IsEllipticSequence (normEDS b c d)`): prove T(p,q) by
+  double parity descent over 4 clusters {W(a+j), W(e+j), W(a+e+j),
+  W(a−e+j)}, |j| ≤ 2 — 4 fixed-size certificates; then ES-k = T(·,k),
+  then F(n) descends over T-instances, then (★s′) ⟹ (★s) ⟹ tracking.
+  Even-even T-descent Groebner test running. NEXT: (1) finish the 4
+  T-descent membership tests + extract certificates; (2) Lean file
+  Fermat/FLT/Mathlib/NumberTheory/EllipticDivisibilitySequence.lean:
+  T(p,q) by strong induction (base |p|,|q| small via normEDS_zero..four
+  + recursions; step via the 4 certificates), rel(p,q,r,0) trivially,
+  F(n) by its descent, (★s′); (3) coordinate-ring domain argument +
+  specialization ⟹ close `evalEval_ψ_sum`; (4) the zsmul skeleton
+  (design DONE, in the log above): generic branch via zsmul_consec_step
+  + IH-iff; collision via smul_collision + gap-1; torsion sub-cases via
+  the Ward-pattern node `psi_nonzero_of_not_dvd` (N2, subsumes the
+  s = 0 branch at d = 2 with the Res(Ψ₂Sq,Ψ₃) = −Δ² seed) + degenerate-
+  window certificates (universal-ideal members with Wₙ₋₁ resp. Wₙ₋₂ as
+  extra generators — same machinery).
