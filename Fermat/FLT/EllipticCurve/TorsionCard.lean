@@ -83,6 +83,53 @@ theorem zsmul_some_aux_one {x y : k} (h : (E⁄k).toAffine.Nonsingular x y) :
       simp [Polynomial.evalEval_add, Polynomial.evalEval_C, Polynomial.evalEval_X]]
     ring
 
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] [DecidableEq k] in
+/-- **The `φ`-difference identity on the curve** (PROVEN 2026-07-17):
+`φₙ(x,y) = x ⬝ ψₙ(x,y)² - ψₙ₊₁(x,y) ⬝ ψₙ₋₁(x,y)` — the value-level
+form of the definition `Φ n = X ⬝ ΨSq n - preΨ (n+1) ⬝ preΨ (n-1) ⬝
+(1 or Ψ₂Sq)`, with the parity factor absorbed into the `ψ`s via
+`ψ₂² = Ψ₂Sq` on the curve. Equivalently `x - x([n]P) =
+ψₙ₊₁ψₙ₋₁/ψₙ²`, the form of the multiplication formula the induction
+steps consume. -/
+theorem evalEval_φ_eq (n : ℤ) {x y : k} (h : (E⁄k).toAffine.Equation x y) :
+    ((E⁄k).φ n).evalEval x y =
+      x * ((E⁄k).ψ n).evalEval x y ^ 2 -
+        ((E⁄k).ψ (n + 1)).evalEval x y * ((E⁄k).ψ (n - 1)).evalEval x y := by
+  rw [WeierstrassCurve.evalEval_φ n h, WeierstrassCurve.evalEval_ψ n h,
+    WeierstrassCurve.evalEval_ψ (n + 1) h, WeierstrassCurve.evalEval_ψ (n - 1) h,
+    WeierstrassCurve.evalEval_Ψ_sq n h, WeierstrassCurve.Φ]
+  have hψ₂ := WeierstrassCurve.evalEval_ψ₂_sq (W := (E⁄k)) h
+  rcases Int.even_or_odd n with hev | hodd
+  · have h1 : ¬ Even (n + 1) := by
+      rw [Int.even_add_one]
+      exact fun h' => h' hev
+    have h2 : ¬ Even (n - 1) := by
+      rw [Int.even_sub_one]
+      exact fun h' => h' hev
+    rw [show (E⁄k).Ψ (n + 1) = Polynomial.C ((E⁄k).preΨ (n + 1)) * 1 from by
+        rw [WeierstrassCurve.Ψ, if_neg h1],
+      show (E⁄k).Ψ (n - 1) = Polynomial.C ((E⁄k).preΨ (n - 1)) * 1 from by
+        rw [WeierstrassCurve.Ψ, if_neg h2],
+      if_pos hev]
+    simp only [mul_one, Polynomial.evalEval_C, Polynomial.eval_sub,
+      Polynomial.eval_mul, Polynomial.eval_X]
+  · have h1 : Even (n + 1) := by
+      rw [Int.even_add_one]
+      exact fun h' => (Int.not_even_iff_odd.mpr hodd) h'
+    have h2 : Even (n - 1) := by
+      rw [Int.even_sub_one]
+      exact fun h' => (Int.not_even_iff_odd.mpr hodd) h'
+    rw [show (E⁄k).Ψ (n + 1) = Polynomial.C ((E⁄k).preΨ (n + 1)) * (E⁄k).ψ₂ from by
+        rw [WeierstrassCurve.Ψ, if_pos h1],
+      show (E⁄k).Ψ (n - 1) = Polynomial.C ((E⁄k).preΨ (n - 1)) * (E⁄k).ψ₂ from by
+        rw [WeierstrassCurve.Ψ, if_pos h2],
+      if_neg (Int.not_even_iff_odd.mpr hodd)]
+    simp only [Polynomial.evalEval_mul, Polynomial.evalEval_C,
+      Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_X]
+    linear_combination (((E⁄k).preΨ (n + 1)).eval x *
+      ((E⁄k).preΨ (n - 1)).eval x) * hψ₂
+
 set_option warn.sorry false in
 /-- (Sorry node — **the multiplication-by-`n` formula**, Washington
 *Elliptic curves* Theorem 3.6, the strengthened simultaneous induction
