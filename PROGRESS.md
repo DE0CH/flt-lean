@@ -573,12 +573,25 @@ the START and END of each block of work.
             formula node computes `n • (x₀, y₀)` with `x`-coordinate
             `ξ`; `Y_eq_of_X_eq` gives `y = η` or `negY`, negating the
             preimage in the latter case.
-            - ✗○ `TorsionCard.smul_some_eq_zero_iff` — **the
-              division-polynomial torsion dictionary**: `n • (x,y) = 0
-              ↔ ΨSq n (x) = 0` (Washington Thm 3.6 territory).
-            - ✗· `TorsionCard.exists_smul_some_eq` — **the
-              `x([n]P) = Φₙ/ψₙ²` formula** in multiplied-out,
-              `ω`-free existence form.
+            - ✓· `TorsionCard.smul_some_eq_zero_iff` — DERIVED
+              (2026-07-17) from `zsmul_some_aux` via the vendored
+              evaluation bridges (`ψₙ(x,y)² = ΨSqₙ(x)` on the curve)
+              and the `ΨSq_neg`/`neg_smul` reduction to positive `n`;
+              the characteristic hypothesis dropped (not needed).
+            - ✓· `TorsionCard.exists_smul_some_eq` — DERIVED
+              (2026-07-17) from `zsmul_some_aux` (negative `n` via
+              negating the point, `Φ_neg`/`ΨSq_neg`); characteristic
+              hypothesis dropped.
+            - ✗○ `TorsionCard.zsmul_some_aux` — **the multiplication
+              formula, strengthened simultaneous induction statement**
+              (Washington Thm 3.6): for `n > 0`, either `ψₙ(x,y) = 0`
+              and `n•P = 0`, or `n•P` is affine with
+              `x'·ψₙ² = φₙ(x,y)` and the `ω`-free `y`-tracking
+              `(2y' + a₁x' + a₃)·ψₙ⁴ = ψ₂ₙ(x,y)`. Base cases proven
+              (`n = 1` trivial, `n = 2` = `two_smul_some_eq_zero_iff`);
+              step cases `[n+1]P = [n]P + P`, `[2n]P = 2[n]P` via
+              `Affine.slope`/`addX` + `normEDS` recurrences (attack
+              map in the log).
             - ✗· `TorsionCard.exists_point_x_smul` — **rational points
               in multiplication fibres** over a separably closed
               field (where separability of `[n]` enters).

@@ -37,6 +37,9 @@ import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
 -- `WeierstrassCurve.isCoprime_Φ_ΨSq` (Bézout from the resultant node),
 -- used to rule out common roots of `Φ n` and `ΨSq n` in the proofs
 import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
+-- the evaluation bridges `evalEval_ψ`, `evalEval_Ψ_sq`, `evalEval_φ`
+-- between bivariate and univariate division polynomials on the curve
+import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Points
 import Mathlib.GroupTheory.QuotientGroup.Basic
 import Mathlib.GroupTheory.Coset.Card
 -- `Set.ncard` bridging between `Nat.card` of the torsion submodule and
@@ -55,33 +58,126 @@ variable {k : Type u} [Field k] (E : WeierstrassCurve k) [E.IsElliptic]
   [DecidableEq k]
 
 set_option warn.sorry false in
-/-- **The division-polynomial torsion dictionary** (sorry node): an
-affine point `P = (x, y)` satisfies `n • P = 0` precisely when its
-`x`-coordinate is a root of the division polynomial `ΨSq n`
-(classically: the roots of `ψₙ` are exactly the `x`-coordinates of the
-nonzero `n`-torsion points; Washington, *Elliptic curves*, Lemma
-combined with the recursion of Theorem 3.6). -/
-theorem smul_some_eq_zero_iff {n : ℤ} (hn : n ≠ 0) (hnk : (n : k) ≠ 0)
-    {x y : k} (h : (E⁄k).toAffine.Nonsingular x y) :
-    (n • (Affine.Point.some x y h : (E⁄k).Point) = 0) ↔
-      ((E⁄k).ΨSq n).eval x = 0 :=
+/-- (Sorry node — **the multiplication-by-`n` formula**, Washington
+*Elliptic curves* Theorem 3.6, the strengthened simultaneous induction
+statement.) For `n > 0` and an affine point `P = (x, y)`:
+(a) if `ψₙ(x, y) = 0` then `n • P = 0`; (b) if `ψₙ(x, y) ≠ 0` then
+`n • P` is affine, with `x`-coordinate satisfying
+`x' ⬝ ψₙ² = φₙ(x, y)` and `y`-coordinate tracked through the value of
+`ψ₂` at `n • P`: `(2y' + a₁x' + a₃) ⬝ ψₙ⁴ = ψ₂ₙ(x, y)` (the `ω`-free
+substitute for `y([n]P) = ωₙ/ψₙ³`, which keeps the strong induction
+`[n+1]P = [n]P + P`, `[2n]P = 2 ⬝ [n]P` self-contained). To be proven
+by strong induction with mathlib's `Affine.slope`/`addX` addition
+formulas and the `normEDS` recurrences; base cases `n = 1` (trivial)
+and `n = 2` (`two_smul_some_eq_zero_iff` below). -/
+theorem zsmul_some_aux (n : ℤ) (hn : 0 < n) {x y : k}
+    (h : (E⁄k).toAffine.Nonsingular x y) :
+    (((E⁄k).ψ n).evalEval x y = 0 →
+      n • (Affine.Point.some x y h : (E⁄k).Point) = 0) ∧
+    (((E⁄k).ψ n).evalEval x y ≠ 0 →
+      ∃ (x' y' : k) (h' : (E⁄k).toAffine.Nonsingular x' y'),
+        n • (Affine.Point.some x y h : (E⁄k).Point) =
+          Affine.Point.some x' y' h' ∧
+        x' * ((E⁄k).ψ n).evalEval x y ^ 2 = ((E⁄k).φ n).evalEval x y ∧
+        (2 * y' + (E⁄k).a₁ * x' + (E⁄k).a₃) * ((E⁄k).ψ n).evalEval x y ^ 4 =
+          ((E⁄k).ψ (2 * n)).evalEval x y) :=
   sorry
 
-set_option warn.sorry false in
-/-- **The multiplication-by-`n` `x`-coordinate formula** (sorry node):
-if `P = (x, y)` is an affine point with `ΨSq n` not vanishing at `x`
-(so `n • P ≠ 0` by the dictionary above), then `n • P` is an affine
-point whose `x`-coordinate `x'` satisfies `x' ⬝ ΨSq n (x) = Φ n (x)` —
-the classical `x([n]P) = Φₙ(x)/ψₙ²(x)` (Washington, *Elliptic curves*,
-Theorem 3.6), stated in multiplied-out form to avoid division. -/
-theorem exists_smul_some_eq {n : ℤ} (hn : n ≠ 0) (hnk : (n : k) ≠ 0)
+set_option backward.isDefEq.respectTransparency false in
+/-- **The division-polynomial torsion dictionary** (DERIVED 2026-07-17
+from the multiplication formula `zsmul_some_aux`): an affine point
+`P = (x, y)` satisfies `n • P = 0` precisely when its `x`-coordinate
+is a root of the division polynomial `ΨSq n`. The bivariate/univariate
+translation is `ψₙ(x,y)² = ΨSqₙ(x)` on the curve (`evalEval_Ψ_sq`),
+and negative `n` reduces to positive `n` by `ΨSq_neg` and
+`neg_smul`. -/
+theorem smul_some_eq_zero_iff {n : ℤ} (hn : n ≠ 0)
+    {x y : k} (h : (E⁄k).toAffine.Nonsingular x y) :
+    (n • (Affine.Point.some x y h : (E⁄k).Point) = 0) ↔
+      ((E⁄k).ΨSq n).eval x = 0 := by
+  classical
+  -- the bivariate/univariate translation on the curve
+  have hbridge : ∀ m : ℤ, ((E⁄k).ψ m).evalEval x y = 0 ↔
+      ((E⁄k).ΨSq m).eval x = 0 := by
+    intro m
+    rw [← WeierstrassCurve.evalEval_Ψ_sq m h.1, ← WeierstrassCurve.evalEval_ψ m h.1,
+      pow_eq_zero_iff two_ne_zero]
+  -- reduce to positive `n`
+  rcases hn.lt_or_gt with hneg | hpos
+  · have hpos' : 0 < -n := by omega
+    have := zsmul_some_aux E (-n) hpos' h
+    rw [show (n • (Affine.Point.some x y h : (E⁄k).Point) = 0) ↔
+        ((-n) • (Affine.Point.some x y h : (E⁄k).Point) = 0) from by
+      rw [neg_smul, neg_eq_zero],
+      show ((E⁄k).ΨSq n).eval x = ((E⁄k).ΨSq (-n)).eval x from by
+        rw [WeierstrassCurve.ΨSq_neg]]
+    constructor
+    · intro h0
+      by_contra hΨ
+      obtain ⟨x', y', h', heq, -, -⟩ := this.2 fun hz => hΨ ((hbridge _).mp hz)
+      rw [h0] at heq
+      exact nomatch heq.symm.trans
+        (show (0 : (E⁄k).Point) = Affine.Point.zero from rfl)
+    · intro hΨ
+      exact this.1 ((hbridge _).mpr hΨ)
+  · have := zsmul_some_aux E n hpos h
+    constructor
+    · intro h0
+      by_contra hΨ
+      obtain ⟨x', y', h', heq, -, -⟩ := this.2 fun hz => hΨ ((hbridge _).mp hz)
+      rw [h0] at heq
+      exact nomatch heq.symm.trans
+        (show (0 : (E⁄k).Point) = Affine.Point.zero from rfl)
+    · intro hΨ
+      exact this.1 ((hbridge _).mpr hΨ)
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The multiplication-by-`n` `x`-coordinate formula** (DERIVED
+2026-07-17 from `zsmul_some_aux`): if `P = (x, y)` is an affine point
+with `ΨSq n` not vanishing at `x`, then `n • P` is an affine point
+whose `x`-coordinate `x'` satisfies `x' ⬝ ΨSq n (x) = Φ n (x)` — the
+classical `x([n]P) = Φₙ(x)/ψₙ²(x)`, in multiplied-out form. Negative
+`n` reduces to positive `n` (`x(-Q) = x(Q)` and the division
+polynomials are even/odd appropriately). -/
+theorem exists_smul_some_eq {n : ℤ} (hn : n ≠ 0)
     {x y : k} (h : (E⁄k).toAffine.Nonsingular x y)
     (hΨ : ((E⁄k).ΨSq n).eval x ≠ 0) :
     ∃ (x' y' : k) (h' : (E⁄k).toAffine.Nonsingular x' y'),
       n • (Affine.Point.some x y h : (E⁄k).Point) =
         Affine.Point.some x' y' h' ∧
-      x' * ((E⁄k).ΨSq n).eval x = ((E⁄k).Φ n).eval x :=
-  sorry
+      x' * ((E⁄k).ΨSq n).eval x = ((E⁄k).Φ n).eval x := by
+  classical
+  have hbridgeSq : ∀ m : ℤ, ((E⁄k).ψ m).evalEval x y ^ 2 =
+      ((E⁄k).ΨSq m).eval x := by
+    intro m
+    rw [← WeierstrassCurve.evalEval_Ψ_sq m h.1, WeierstrassCurve.evalEval_ψ m h.1]
+  have hbridgeφ : ((E⁄k).φ n).evalEval x y = ((E⁄k).Φ n).eval x :=
+    WeierstrassCurve.evalEval_φ n h.1
+  rcases hn.lt_or_gt with hneg | hpos
+  · -- negative `n`: apply the formula at `-n` and negate the point
+    have hpos' : 0 < -n := by omega
+    have hΨ' : ((E⁄k).ψ (-n)).evalEval x y ≠ 0 := by
+      intro hz
+      apply hΨ
+      rw [← WeierstrassCurve.ΨSq_neg, ← hbridgeSq, hz]
+      ring
+    obtain ⟨x', y', h', heq, hx', -⟩ := (zsmul_some_aux E (-n) hpos' h).2 hΨ'
+    refine ⟨x', (E⁄k).toAffine.negY x' y',
+      (Affine.nonsingular_neg ..).mpr h', ?_, ?_⟩
+    · have : n • (Affine.Point.some x y h : (E⁄k).Point) =
+          -((-n) • (Affine.Point.some x y h : (E⁄k).Point)) := by
+        rw [← neg_smul, neg_neg]
+      rw [this, heq, Affine.Point.neg_some]
+    · have hΨeq : ((E⁄k).ΨSq n).eval x = ((E⁄k).ΨSq (-n)).eval x := by
+        rw [WeierstrassCurve.ΨSq_neg]
+      have hΦeq : ((E⁄k).Φ n).eval x = ((E⁄k).Φ (-n)).eval x := by
+        rw [WeierstrassCurve.Φ_neg]
+      rw [hΨeq, hΦeq, ← hbridgeSq,
+        ← WeierstrassCurve.evalEval_φ (-n) h.1]
+      exact hx'
+  · obtain ⟨x', y', h', heq, hx', -⟩ := (zsmul_some_aux E n hpos h).2
+      (fun hz => hΨ (by rw [← hbridgeSq, hz]; ring))
+    exact ⟨x', y', h', heq, by rw [← hbridgeSq, ← hbridgeφ]; exact hx'⟩
 
 set_option warn.sorry false in
 /-- **Rational points in the multiplication fibres** (sorry node): over
@@ -140,7 +236,7 @@ theorem smul_surjective [IsSepClosed k] {n : ℕ} (hn : (n : k) ≠ 0) :
         Polynomial.eval_one, hrel, h0] at hev
       simp at hev
     obtain ⟨x', y', h', hsmul, hx'⟩ :=
-      exists_smul_some_eq E hnZ (by exact_mod_cast hn) hns hΨ
+      exists_smul_some_eq E hnZ hns hΨ
     -- the `x`-coordinate of `n • (x₀, y₀)` is `ξ`
     have hx : x' = ξ := by
       rw [hrel] at hx'
@@ -448,13 +544,10 @@ theorem isCoprime_Ψ₂Sq_preΨ' {p : ℕ} (hp : p.Prime) (hodd : Odd p)
   have hpP : ((p : ℕ) : ℤ) • (Affine.Point.some α y₀ hns :
       ((E.baseChange (AlgebraicClosure k))⁄(AlgebraicClosure k)).Point) = 0 := by
     rw [smul_some_eq_zero_iff (E.baseChange (AlgebraicClosure k))
-      (Int.natCast_ne_zero.mpr hp.ne_zero) ?_ hns]
-    · rw [WeierstrassCurve.ΨSq_ofNat, if_neg (Nat.not_even_iff_odd.mpr hodd),
-        mul_one, Polynomial.eval_pow, pow_eq_zero_iff two_ne_zero]
-      exact hpreα
-    · rw [show (((p : ℕ) : ℤ) : AlgebraicClosure k) = algebraMap k (AlgebraicClosure k) (p : k)
-        by push_cast; rfl]
-      exact fun h0 => hpk ((map_eq_zero _).mp h0)
+      (Int.natCast_ne_zero.mpr hp.ne_zero) hns]
+    rw [WeierstrassCurve.ΨSq_ofNat, if_neg (Nat.not_even_iff_odd.mpr hodd),
+      mul_one, Polynomial.eval_pow, pow_eq_zero_iff two_ne_zero]
+    exact hpreα
   -- `gcd(2, p) = 1` kills the point, contradiction
   obtain ⟨m, hm⟩ := hodd
   have hP0 : (Affine.Point.some α y₀ hns :
@@ -649,8 +742,7 @@ theorem prime_torsion_card [IsSepClosed k] {p : ℕ} (hp : p.Prime)
     · norm_num
     · -- the dictionary at `2` is `ΨSq 2 = Ψ₂Sq`
       intro x₀ y h
-      have := smul_some_eq_zero_iff E (by norm_num : (2 : ℤ) ≠ 0)
-        (by exact_mod_cast h2) h
+      have := smul_some_eq_zero_iff E (by norm_num : (2 : ℤ) ≠ 0) h
       rw [show ((2 : ℕ) : ℤ) = (2 : ℤ) from rfl, this, WeierstrassCurve.ΨSq_two]
     · -- one `y` above each two-torsion `x`-coordinate
       intro x₀ hx₀
@@ -703,7 +795,7 @@ theorem prime_torsion_card [IsSepClosed k] {p : ℕ} (hp : p.Prime)
       omega
     · -- the dictionary
       intro x₀ y h
-      rw [smul_some_eq_zero_iff E hpZ hpkZ h, hΨodd]
+      rw [smul_some_eq_zero_iff E hpZ h, hΨodd]
     · -- two `y`s above each root of `preΨ' p`
       intro x₀ hx₀
       have hΨ₂ : ((E⁄k).Ψ₂Sq).eval x₀ ≠ 0 := by
