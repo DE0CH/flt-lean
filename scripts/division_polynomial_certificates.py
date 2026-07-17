@@ -117,6 +117,45 @@ def check_tracked_pair() -> None:
     print("tracked pair (i)+(ii): numeric check OK for n = 2..5")
 
 
+
+
+
+def check_step_targets() -> None:
+    """Numeric validation of both induction step targets (signs as in
+    the Lean statement of `zsmul_some_aux`):
+    odd  [2m+1]P = [m+1]P + [m]P   (secant denominator: gap-1),
+    even [2m]P   = [m+1]P + [m-1]P (secant denominator: gap-2)."""
+    psi, pts = numeric_model()
+    x0 = sp.Rational(3)
+    m = 3
+    # odd step
+    n = 2 * m + 1
+    xn, yn = pts[n]
+    W = psi[m + 2] * psi[m] ** 3 - psi[m - 1] * psi[m + 1] ** 3
+    assert sp.simplify(W - psi[n]) == 0
+    assert sp.simplify(2 * yn * psi[n] ** 4 - psi[2 * n]) == 0  # (ii)
+    xm, ym = pts[m]
+    xm1, ym1 = pts[m + 1]
+    dx = xm1 - xm
+    assert sp.simplify(
+        2 * yn * dx - (-(2 * (ym1 - ym)) * (xn - xm1) - 2 * ym1 * dx)
+    ) == 0  # secant t-identity route
+    # even step
+    n = 2 * m
+    xn, yn = pts[n]
+    xmm1, ymm1 = pts[m - 1]
+    dx = xm1 - xmm1
+    dy = ym1 - ymm1
+    x_out = (dy**2 - (xm1 + xmm1) * dx**2) / dx**2
+    assert sp.simplify(x_out - xn) == 0
+    assert sp.simplify(
+        xn * psi[n] ** 2 - (x0 * psi[n] ** 2 - psi[n + 1] * psi[n - 1])
+    ) == 0  # (i)
+    assert sp.simplify(2 * yn * psi[n] ** 4 - psi[2 * n]) == 0  # (ii)
+    print("step targets (odd + even): numeric check OK at m = 3")
+
+
 if __name__ == "__main__":
     certificate_duplication_y()
     check_tracked_pair()
+    check_step_targets()
