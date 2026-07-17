@@ -2582,3 +2582,13 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 5 coda): the tautological-point VALUE BRIDGE is
+  proven (`taut_evalEval_mk`: evalEval at `(tautX, tautY)` = the
+  quotient map; `taut_psi_ne_zero`: all `ψₙ`-values nonzero at the
+  generic point) — both axiom-clean. The (C)-composition derivation at
+  the generic point is now purely mechanical: instantiate
+  `exists_smul_some_eq`/tracking at `(tautX, tautY)` over `Kuniv`,
+  compose, cross-multiply, and pull back along `taut_evalEval_mk` +
+  basis-injectivity. Then the UFD multiplicity endgame closes
+  `separable_preΨ'` (modulo the (W)-differentiated-descent for the
+  Wronskian at primes and `resultant_Φ_ΨSq`).
