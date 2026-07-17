@@ -688,6 +688,81 @@ theorem natCast_residueField_localValuationSubring_ne_zero
   rw [map_natCast] at h2
   exact h2.ne_zero
 
+open IsDedekindDomain in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- A classical decidable-equality instance on the local algebraic
+closures, mirroring the global one in `Torsion.lean` (needed for the
+group law on `(E⁄Ω)`-points). -/
+noncomputable instance instDecidableEqAlgClosureAdicCompletionRat
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    DecidableEq (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) :=
+  Classical.typeDecidableEq _
+
+/-- **The chosen embedding of algebraic closures, as a `ℚ`-algebra
+homomorphism** (PROVEN — step (C3) packaging): `AlgebraicClosure.map`
+along `ℚ → ℚ_qˆ` is `ℚ`-linear, the base square closing by uniqueness
+of ring homomorphisms out of `ℚ`. -/
+noncomputable def algClosureEmbeddingRat
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    (AlgebraicClosure ℚ) →ₐ[ℚ]
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) :=
+  { AlgebraicClosure.map (algebraMap ℚ
+      (HeightOneSpectrum.adicCompletion ℚ v)) with
+    commutes' := fun r => by
+      have h1 := AlgebraicClosure.map_algebraMap
+        (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v)) r
+      exact h1.trans (congrFun (congrArg DFunLike.coe (Subsingleton.elim
+        ((algebraMap (HeightOneSpectrum.adicCompletion ℚ v)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))).comp
+          (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v)))
+        (algebraMap ℚ (AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion ℚ v))))) r) }
+
+open IsDedekindDomain WeierstrassCurve in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **Equivariance of the point transport** (PROVEN — step (C3)): for
+`σ` in the local absolute Galois group, transporting a `ℚ̄`-point along
+the chosen embedding and then acting by `σ` is the same as acting first
+by the mapped global element. `Point.map_map` on both sides reduces
+this to the field-level equivariance
+`Field.absoluteGaloisGroup.lift_map`. -/
+theorem point_map_algClosureEmbeddingRat_comm
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ v))
+    (P : ((E)⁄(AlgebraicClosure ℚ)).Point) :
+    WeierstrassCurve.Affine.Point.map (W' := E) (algClosureEmbeddingRat v)
+      (WeierstrassCurve.Affine.Point.map (W' := E)
+        (((Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ v))) σ :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P) =
+    WeierstrassCurve.Affine.Point.map (W' := E)
+      ((σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))
+          ≃ₐ[HeightOneSpectrum.adicCompletion ℚ v]
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          v))).toAlgHom.restrictScalars ℚ)
+      (WeierstrassCurve.Affine.Point.map (W' := E)
+        (algClosureEmbeddingRat v) P) := by
+  rw [WeierstrassCurve.Affine.Point.map_map, WeierstrassCurve.Affine.Point.map_map]
+  have hhomeq : (algClosureEmbeddingRat v).comp
+      (((Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ v))) σ :
+        AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom =
+      ((σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))
+          ≃ₐ[HeightOneSpectrum.adicCompletion ℚ v]
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          v))).toAlgHom.restrictScalars ℚ).comp
+        (algClosureEmbeddingRat v) := by
+    apply AlgHom.ext
+    intro x
+    exact Field.absoluteGaloisGroup.lift_map
+      (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v)) σ x
+  rw [hhomeq]
+
 open scoped WeierstrassCurve.Affine in
 set_option warn.sorry false in
 /-- **Pointwise inertia-unipotence on torsion at multiplicative primes**
