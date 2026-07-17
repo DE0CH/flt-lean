@@ -2582,6 +2582,37 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6, RESULTANT-NODE ATTACK PLAN): the consumers
+  only use `isCoprime_Φ_ΨSq` (Bézout with Δ-unit), never the actual
+  resultant VALUE — so the node can be REPLACED by a direct
+  coprimality proof, eliminating the ±Δ^k-formula entirely. Route:
+  over k̄ (field-reduction of IsCoprime along faithfully-flat/field
+  extension — for k → k̄ use gcd-descent), a common root x₀ of
+  (Φₙ, ΨSqₙ) lifts to a curve point P = (x₀, y₀); the ψ-values
+  wₖ := ψₖ(P) form an elliptic sequence (evalEval_ψ_T, PROVEN) with
+  w₁ = 1; ΨSq-vanishing gives wₙ = 0; Φ-vanishing + the Φ-definition
+  Φₙ = XΨSqₙ − preΨₙ₊₁preΨₙ₋₁(parity) gives wₙ₊₁wₙ₋₁-vanishing
+  (2-torsion x₀ handled separately), so an ADJACENT PAIR of zeros
+  (wₙ, wₙ₊₁) or (wₙ, wₙ₋₁). CLAIM (rigidity WITHOUT Bézout —
+  breaking the old circularity): adjacent zeros are impossible, by
+  the T(·,2)-quadratic recursion run as a two-sided induction: with
+  w_d = w_{d+1} = 0 (d minimal ≥ 2, so w_{d−1} ≠ 0), the instances
+  w_{m+2}w_{m−2} = b²w_{m+1}w_{m−1} − c·w_m² at m = d+1, d+2, …
+  propagate zeros forward (w_{d+3}w_{d−1} = 0 ⟹ w_{d+3} = 0, then
+  c·w_{d+2}² = 0, …) and the case-analysis on the seed values
+  b = ψ₂(P), c = ψ₃(P) (using the PROVEN c=0-closed-forms
+  normEDS_c_zero_closed and the ★-companion) forces w₁ = 0 or an
+  explicit contradiction. All ingredients are proven EDS-machinery;
+  no new certificates expected. This closes resultant_Φ_ΨSq's
+  consumer (isCoprime_Φ_ΨSq gets a direct proof; the stated
+  resultant-formula node can then be DELETED or left as a
+  historical remark — prefer restating the node file to make
+  isCoprime the primitive). CAUTION: check where in TorsionCard the
+  dictionary/climb machinery itself uses isCoprime — the new proof
+  must sit UPSTREAM (in the EDS-files or a new file importing only
+  Points + EDSStange), then Flat.lean's isCoprime_Φ_ΨSq becomes a
+  re-export. NEXT: implement, starting with the value-level
+  adjacent-zeros-impossible lemma over a field.
 - 2026-07-17 (session 6, SEPARABILITY COMPLETE `8d1108e`): the
   generic-fibre plan is fully EXECUTED — `exists_good_chord`,
   `exists_large_fibre`, `torsion_finset_of_fibre`,
