@@ -141,6 +141,90 @@ noncomputable def algHomEquivOfFinite (B : Type*) [CommRing B] [Algebra K B]
     apply Subtype.ext
     rfl
 
+section AlgHomEquivConv
+
+open WithConv
+
+section PlainAlgebra
+
+variable {B : Type*} [CommRing B] [Algebra K B] [Module.Finite K B]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- The inverse of `algHomEquivOfFinite` is postcomposition with the
+embedding `ι = algebraicClosureMapAlgHom`. -/
+theorem algHomEquivOfFinite_symm_apply (ψ : B →ₐ[K] (AlgebraicClosure K)) :
+    (algHomEquivOfFinite v B).symm ψ = (algebraicClosureMapAlgHom v).comp ψ :=
+  rfl
+
+end PlainAlgebra
+
+variable {B : Type*} [CommRing B] [Bialgebra K B] [Module.Finite K B]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- `algHomEquivOfFinite` preserves the convolution unit. -/
+theorem algHomEquivOfFinite_convOne :
+    algHomEquivOfFinite v B
+      ((1 : WithConv (B →ₐ[K] (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))).ofConv) =
+      (1 : WithConv (B →ₐ[K] (AlgebraicClosure K))).ofConv := by
+  apply (algHomEquivOfFinite v B).symm.injective
+  rw [Equiv.symm_apply_apply, algHomEquivOfFinite_symm_apply]
+  refine AlgHom.ext fun b => ?_
+  rw [AlgHom.comp_apply, AlgHom.convOne_apply, AlgHom.convOne_apply,
+    AlgHom.commutes]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- `algHomEquivOfFinite` preserves the convolution product
+(postcomposition with the algebra hom `ι` distributes over
+convolution, `AlgHom.comp_convMul_distrib`). -/
+theorem algHomEquivOfFinite_convMul
+    (ψ₁ ψ₂ : WithConv (B →ₐ[K] (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))) :
+    algHomEquivOfFinite v B ((ψ₁ * ψ₂).ofConv) =
+      (toConv (algHomEquivOfFinite v B ψ₁.ofConv) *
+        toConv (algHomEquivOfFinite v B ψ₂.ofConv)).ofConv := by
+  apply (algHomEquivOfFinite v B).symm.injective
+  rw [Equiv.symm_apply_apply, algHomEquivOfFinite_symm_apply,
+    AlgHom.comp_convMul_distrib,
+    ← algHomEquivOfFinite_symm_apply v (algHomEquivOfFinite v B ψ₁.ofConv),
+    ← algHomEquivOfFinite_symm_apply v (algHomEquivOfFinite v B ψ₂.ofConv),
+    Equiv.symm_apply_apply, Equiv.symm_apply_apply]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- `algHomEquivOfFinite` intertwines postcomposition with a local
+Galois element `σ : Γ Kᵥ` and postcomposition with its restriction
+`map σ : Γ K` (through `Field.absoluteGaloisGroup.lift_map`). -/
+theorem algHomEquivOfFinite_comp
+    (σ : Γ(IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+    (ψ : B →ₐ[K] (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) :
+    algHomEquivOfFinite v B ((σ.toAlgHom.restrictScalars K).comp ψ) =
+      (Field.absoluteGaloisGroup.map (algebraMap K
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) σ).toAlgHom.comp
+        (algHomEquivOfFinite v B ψ) := by
+  apply (algHomEquivOfFinite v B).symm.injective
+  rw [Equiv.symm_apply_apply, algHomEquivOfFinite_symm_apply]
+  have h2 : (algebraicClosureMapAlgHom v).comp (algHomEquivOfFinite v B ψ) = ψ := by
+    rw [← algHomEquivOfFinite_symm_apply, Equiv.symm_apply_apply]
+  refine AlgHom.ext fun b => ?_
+  refine Eq.symm ?_
+  calc ((algebraicClosureMapAlgHom v).comp
+        ((Field.absoluteGaloisGroup.map (algebraMap K
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) σ).toAlgHom.comp
+          (algHomEquivOfFinite v B ψ))) b
+      = σ (AlgebraicClosure.map (algebraMap K
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+          ((algHomEquivOfFinite v B ψ) b)) :=
+        Field.absoluteGaloisGroup.lift_map _ σ _
+    _ = σ (ψ b) := congrArg σ congr($(h2) b)
+    _ = ((σ.toAlgHom.restrictScalars K).comp ψ) b := rfl
+
+end AlgHomEquivConv
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
@@ -173,6 +257,117 @@ theorem GaloisRep.HasFlatProlongationAt.of_addEquiv
       map_zero' := by rw [map_zero, map_zero]
       map_add' := fun a b => by rw [map_add, map_add] },
     e.bijective.comp hbij⟩
+
+section LiftEquivConv
+
+open WithConv
+
+variable {R S H₀ B₀ : Type*} [CommRing R] [CommRing S] [Algebra R S]
+variable [CommRing H₀] [Bialgebra R H₀]
+variable [CommRing B₀] [Algebra R B₀] [Algebra S B₀] [IsScalarTower R S B₀]
+
+/-- The unit of the convolution monoid is preserved by the tensor-hom
+adjunction `AlgHom.liftEquiv` (inverse direction): restricting the
+counit-unit of `S ⊗[R] H₀` along `includeRight` gives the counit-unit
+of `H₀`. -/
+theorem liftEquiv_symm_convOne :
+    (AlgHom.liftEquiv R S H₀ B₀).symm
+      ((1 : WithConv (S ⊗[R] H₀ →ₐ[S] B₀)).ofConv) =
+      (1 : WithConv (H₀ →ₐ[R] B₀)).ofConv := by
+  refine AlgHom.ext fun a => ?_
+  rw [AlgHom.liftEquiv_symm_apply]
+  rw [AlgHom.convOne_apply, AlgHom.convOne_apply]
+  rw [congr($(Bialgebra.TensorProduct.counit_eq_algHom_toLinearMap R S S H₀)
+    (1 ⊗ₜ[R] a))]
+  simp [Algebra.algebraMap_eq_smul_one]
+
+/-- The convolution product is preserved by the tensor-hom adjunction
+`AlgHom.liftEquiv` (inverse direction, mixed base rings `R ⊆ S`): the
+comultiplication of the base-changed bialgebra `S ⊗[R] H₀` restricts
+along `includeRight` to the comultiplication of `H₀`. -/
+theorem liftEquiv_symm_convMul (f g : WithConv (S ⊗[R] H₀ →ₐ[S] B₀)) :
+    (AlgHom.liftEquiv R S H₀ B₀).symm ((f * g).ofConv) =
+      (toConv ((AlgHom.liftEquiv R S H₀ B₀).symm f.ofConv) *
+        toConv ((AlgHom.liftEquiv R S H₀ B₀).symm g.ofConv)).ofConv := by
+  refine AlgHom.ext fun a => ?_
+  rw [AlgHom.liftEquiv_symm_apply, AlgHom.convMul_apply, AlgHom.convMul_apply]
+  -- compute `comul (1 ⊗ₜ a)` on the base-changed bialgebra
+  have hcomul : (Coalgebra.comul (R := S) (A := S ⊗[R] H₀)) (1 ⊗ₜ[R] a) =
+      (Algebra.TensorProduct.tensorTensorTensorComm R S R S S S H₀ H₀).toAlgHom
+        ((1 : S ⊗[S] S) ⊗ₜ[R] (Coalgebra.comul (R := R) a)) := by
+    rw [congr($(Bialgebra.TensorProduct.comul_eq_algHom_toLinearMap R S S H₀)
+      (1 ⊗ₜ[R] a))]
+    simp [Algebra.TensorProduct.one_def]
+  rw [hcomul]
+  induction Coalgebra.comul (R := R) a with
+  | zero => simp
+  | add x y hx hy => simp only [TensorProduct.tmul_add, map_add, hx, hy]
+  | tmul x y =>
+    rw [Algebra.TensorProduct.one_def]
+    simp [AlgHom.liftEquiv_symm_apply]
+
+/-- The tensor-hom adjunction commutes with postcomposition (inverse
+direction): both sides precompose with `includeRight`. -/
+theorem liftEquiv_symm_comp (h : B₀ →ₐ[S] B₀) (f : S ⊗[R] H₀ →ₐ[S] B₀) :
+    (AlgHom.liftEquiv R S H₀ B₀).symm (h.comp f) =
+      (h.restrictScalars R).comp ((AlgHom.liftEquiv R S H₀ B₀).symm f) :=
+  rfl
+
+/-- Forward direction of `liftEquiv_symm_convOne`, by injectivity of
+the inverse. -/
+theorem liftEquiv_convOne :
+    AlgHom.liftEquiv R S H₀ B₀ ((1 : WithConv (H₀ →ₐ[R] B₀)).ofConv) =
+      (1 : WithConv (S ⊗[R] H₀ →ₐ[S] B₀)).ofConv := by
+  apply (AlgHom.liftEquiv R S H₀ B₀).symm.injective
+  rw [Equiv.symm_apply_apply, liftEquiv_symm_convOne]
+
+/-- Forward direction of `liftEquiv_symm_convMul`, by injectivity of
+the inverse. -/
+theorem liftEquiv_convMul (χ₁ χ₂ : WithConv (H₀ →ₐ[R] B₀)) :
+    AlgHom.liftEquiv R S H₀ B₀ ((χ₁ * χ₂).ofConv) =
+      (toConv (AlgHom.liftEquiv R S H₀ B₀ χ₁.ofConv) *
+        toConv (AlgHom.liftEquiv R S H₀ B₀ χ₂.ofConv)).ofConv := by
+  apply (AlgHom.liftEquiv R S H₀ B₀).symm.injective
+  rw [Equiv.symm_apply_apply, liftEquiv_symm_convMul]
+  simp
+
+/-- Forward direction of `liftEquiv_symm_comp`, by injectivity of the
+inverse. -/
+theorem liftEquiv_comp (h : B₀ →ₐ[S] B₀) (χ : H₀ →ₐ[R] B₀) :
+    AlgHom.liftEquiv R S H₀ B₀ ((h.restrictScalars R).comp χ) =
+      h.comp (AlgHom.liftEquiv R S H₀ B₀ χ) := by
+  apply (AlgHom.liftEquiv R S H₀ B₀).symm.injective
+  rw [Equiv.symm_apply_apply, liftEquiv_symm_comp, Equiv.symm_apply_apply]
+
+end LiftEquivConv
+
+section VendoredConvBridge
+
+open WithConv
+
+universe uv
+
+variable {K₀ L₀ : Type uv} [Field K₀] [Field L₀] [Algebra K₀ L₀]
+variable {A₀ : Type*} [CommRing A₀] [Bialgebra K₀ A₀]
+
+/-- The vendored bare-hom convolution monoid on `A₀ →ₐ[K₀] L₀` (the
+instance in `Deformations/RepresentationTheory/Etale.lean`, used by
+`GaloisRep.HasFlatProlongationAt`) has the SAME unit as mathlib's
+`WithConv` convolution monoid. -/
+theorem vendored_one_eq_convOne :
+    (1 : A₀ →ₐ[K₀] L₀) = (1 : WithConv (A₀ →ₐ[K₀] L₀)).ofConv :=
+  rfl
+
+/-- The vendored bare-hom convolution monoid on `A₀ →ₐ[K₀] L₀` has the
+SAME multiplication as mathlib's `WithConv` convolution monoid: both
+are `lift φ ψ ∘ comul`. -/
+theorem vendored_mul_eq_convMul (φ ψ : A₀ →ₐ[K₀] L₀) :
+    φ * ψ = (toConv φ * toConv ψ).ofConv := by
+  refine AlgHom.ext fun x => ?_
+  rw [AlgHom.convMul_apply]
+  rfl
+
+end VendoredConvBridge
 
 set_option warn.sorry false in
 /-- (Sorry node — **the shared flat-prolongation transport, core**.)
