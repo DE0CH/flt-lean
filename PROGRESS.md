@@ -1618,4 +1618,18 @@ assumed. Axiom invariant: every declaration must use at most
   Then `IsUnramifiedAt` = `localInertiaGroup ≤ ker` follows. The
   `IsFlatAt` glue is the same pattern against
   `torsion_flat_of_good_reduction` plus the `ℤ_(p) → ℤ_p` base
-  change of the prolongation package.
+  change of the prolongation package. VERIFIED (2026-07-17):
+  `E.galoisRep`'s action is `DistribMulAction.toAddMonoidEnd` of the
+  ambient `(Kᵃˡᵍ ≃ₐ[K] Kᵃˡᵍ)`-action on `(E⁄Kᵃˡᵍ).Point` restricted
+  to `nTorsion` (`Torsion.lean:179-194`), and
+  `GaloisRep.toLocal ρ v = ρ ∘ absoluteGaloisGroup.map` (abbrev,
+  `GaloisRep.lean:309`) — so for `σ ∈ localInertiaGroup`,
+  `(ρ.toLocal v) σ = 1` UNFOLDS to "`map σ` fixes every `p`-torsion
+  point via `Point.map`", which is EXACTLY the NOS conclusion at
+  `σ' := map σ`. The glue therefore reduces to: (a) the 𝒪-construction
+  + `h𝒪`, (b) `map σ ∈ 𝒪.inertiaSubgroup`-form (the spelling bridge:
+  `inertiaSubgroup` is the kernel of the decomposition-subgroup action
+  on `κ(𝒪)` — relate to the `𝔪(IC)`-inertia through `ι` and
+  `lift_map`), (c) the `DistribMulAction`-vs-`Point.map` and
+  `ker`-membership unfoldings (`AddMonoidHom.ext` on torsion
+  generators).
