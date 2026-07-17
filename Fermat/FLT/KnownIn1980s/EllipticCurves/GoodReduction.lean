@@ -238,6 +238,91 @@ theorem WeierstrassCurve.torsion_abscissa_mem
     exact hmem
   exact 𝒪.mem_of_root_of_inv_leadingCoeff_mem hne hcoeffmem hlcinv hΨ0
 
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+omit [IsSepClosure k ksep] in
+open Polynomial WeierstrassCurve WeierstrassCurve.Affine in
+/-- **Torsion ordinates are integral**: the ordinate satisfies the
+monic `y`-quadratic whose coefficients are integral once the abscissa
+is. -/
+theorem WeierstrassCurve.torsion_ordinate_mem
+    (h𝒪 : (𝒪.comap (algebraMap k ksep)).toSubring = (algebraMap R k).range)
+    {x y : ksep} (h : (E⁄ksep).toAffine.Nonsingular x y)
+    (htor : (n : ℤ) • (Affine.Point.some x y h : (E⁄ksep).Point) = 0) :
+    y ∈ 𝒪 := by
+  classical
+  have hx := WeierstrassCurve.torsion_abscissa_mem R k E n ksep 𝒪 h𝒪 h htor
+  haveI : E.IsIntegral R := inferInstance
+  obtain ⟨Eint, hEint⟩ := (inferInstance : E.IsIntegral R).integral
+  have hamem : ∀ z : R, algebraMap k ksep (algebraMap R k z) ∈ 𝒪 := by
+    intro z
+    have hmem : algebraMap R k z ∈ (algebraMap R k).range := ⟨_, rfl⟩
+    rw [← h𝒪] at hmem
+    exact hmem
+  have ha1 : (E⁄ksep).a₁ ∈ 𝒪 := by
+    rw [show (E⁄ksep) = ((Eint⁄k)⁄ksep) from by rw [hEint]]
+    exact hamem _
+  have ha2 : (E⁄ksep).a₂ ∈ 𝒪 := by
+    rw [show (E⁄ksep) = ((Eint⁄k)⁄ksep) from by rw [hEint]]
+    exact hamem _
+  have ha3 : (E⁄ksep).a₃ ∈ 𝒪 := by
+    rw [show (E⁄ksep) = ((Eint⁄k)⁄ksep) from by rw [hEint]]
+    exact hamem _
+  have ha4 : (E⁄ksep).a₄ ∈ 𝒪 := by
+    rw [show (E⁄ksep) = ((Eint⁄k)⁄ksep) from by rw [hEint]]
+    exact hamem _
+  have ha6 : (E⁄ksep).a₆ ∈ 𝒪 := by
+    rw [show (E⁄ksep) = ((Eint⁄k)⁄ksep) from by rw [hEint]]
+    exact hamem _
+  set f : Polynomial ksep := Polynomial.X ^ 2 +
+    Polynomial.C ((E⁄ksep).a₁ * x + (E⁄ksep).a₃) * Polynomial.X -
+    Polynomial.C (x ^ 3 + (E⁄ksep).a₂ * x ^ 2 + (E⁄ksep).a₄ * x +
+      (E⁄ksep).a₆) with hfdef
+  have hd2 : f.natDegree = 2 := by
+    rw [hfdef]
+    compute_degree!
+  have hfne : f ≠ 0 := by
+    intro h0
+    rw [h0, Polynomial.natDegree_zero] at hd2
+    exact two_ne_zero hd2.symm
+  have hroot : f.eval y = 0 := by
+    have heq := (Affine.equation_iff _ _).mp h.1
+    rw [hfdef]
+    simp only [Polynomial.eval_sub, Polynomial.eval_add,
+      Polynomial.eval_mul, Polynomial.eval_pow, Polynomial.eval_C,
+      Polynomial.eval_X]
+    linear_combination heq
+  have hcoeff : ∀ i, f.coeff i ∈ 𝒪 := by
+    intro i
+    rw [hfdef]
+    simp only [Polynomial.coeff_add, Polynomial.coeff_sub,
+      Polynomial.coeff_X_pow, Polynomial.coeff_C_mul,
+      Polynomial.coeff_X, Polynomial.coeff_C]
+    match i with
+    | 0 =>
+      norm_num
+      exact add_mem (neg_mem ha6) (add_mem (neg_mem (mul_mem ha4 hx))
+        (add_mem (neg_mem (mul_mem ha2 (pow_mem hx 2)))
+          (neg_mem (pow_mem hx 3))))
+    | 1 =>
+      norm_num
+      exact add_mem (mul_mem ha1 hx) ha3
+    | 2 =>
+      norm_num
+    | (j + 3) =>
+      norm_num
+      exact zero_mem _
+  have hlc : (f.leadingCoeff)⁻¹ ∈ 𝒪 := by
+    have h1 : f.leadingCoeff = 1 := by
+      rw [Polynomial.leadingCoeff, hd2, hfdef]
+      simp only [Polynomial.coeff_add, Polynomial.coeff_sub,
+        Polynomial.coeff_X_pow, Polynomial.coeff_C_mul,
+        Polynomial.coeff_X, Polynomial.coeff_C]
+      norm_num
+    rw [h1, inv_one]
+    exact one_mem _
+  exact 𝒪.mem_of_root_of_inv_leadingCoeff_mem hfne hcoeff hlc hroot
+
 set_option warn.sorry false in
 /-- (Sorry node; vendored from the FLT project.) If `E` is an elliptic curve
 over `k` (given by a minimal Weierstrass equation)
