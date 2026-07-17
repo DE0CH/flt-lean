@@ -1,0 +1,122 @@
+#!/usr/bin/env python3
+"""Certificate generator for the division-polynomial identities in
+`Fermat/FLT/EllipticCurve/TorsionCard.lean` (the Washington Thm 3.6
+induction, node `zsmul_some_aux`).
+
+Workflow (validated on `zsmul_some_aux_two`, the duplication formula):
+an identity of curve-point values, after slope-elimination through the
+multiplied slope equation, reduces to a polynomial identity modulo the
+curve equation `g = y² + a₁xy + a₃y − (x³ + a₂x² + a₄x + a₆)` (and, for
+the induction step cases, the IH relations and the parity-instantiated
+recurrences).  This script computes the exact cofactors by polynomial
+division / Groebner reduction; the cofactors are then pasted into Lean
+as `linear_combination` certificates.
+
+Run: python3 scripts/division_polynomial_certificates.py
+(needs sympy: pip3 install --break-system-packages --user sympy)
+"""
+
+import sympy as sp
+
+x, y, a1, a2, a3, a4, a6 = sp.symbols("x y a1 a2 a3 a4 a6")
+
+# ---------------------------------------------------------------------------
+# curve data
+# ---------------------------------------------------------------------------
+g = y**2 + a1 * x * y + a3 * y - (x**3 + a2 * x**2 + a4 * x + a6)
+
+d = 2 * y + a1 * x + a3  # ψ₂-value at (x, y)
+T = 3 * x**2 + 2 * a2 * x + a4 - a1 * y  # tangent-slope numerator
+
+b2 = a1**2 + 4 * a2
+b4 = 2 * a4 + a1 * a3
+b6 = a3**2 + 4 * a6
+b8 = a1**2 * a6 + 4 * a2 * a6 - a1 * a3 * a4 + a2 * a3**2 - a4**2
+
+Psi3 = 3 * x**4 + b2 * x**3 + 3 * b4 * x**2 + 3 * b6 * x + b8
+prePsi4 = (
+    2 * x**6 + b2 * x**5 + 5 * b4 * x**4 + 10 * b6 * x**3 + 10 * b8 * x**2
+    + (b2 * b8 - b4 * b6) * x + (b4 * b8 - b6**2)
+)
+
+
+def certificate_duplication_y() -> None:
+    """The heq-cofactor of the duplication formula's y-identity
+    (already installed in `zsmul_some_aux_two`)."""
+    Qd4 = (
+        -2 * T**3 * d - 3 * a1 * T**2 * d**2
+        + (2 * a2 + 6 * x - a1**2) * T * d**3
+        + (-2 * y + a1 * a2 + 2 * a1 * x - a3) * d**4
+    )
+    R = sp.expand(Qd4 - prePsi4 * d)
+    q, r = sp.div(R, g, y)
+    assert sp.simplify(r) == 0, "duplication y-identity: remainder nonzero!"
+    print("duplication y-identity heq-cofactor:")
+    print(" ", sp.factor(q))
+
+
+def numeric_model():
+    """Exact-arithmetic model of a concrete curve/point for sign checks:
+    y² = x³ + 2x + 3, P = (3, 6).  Returns (psi-values dict, points dict)."""
+    A1, A2, A3, A4, A6 = 0, 0, 0, 2, 3
+    x0, y0 = sp.Rational(3), sp.Rational(6)
+
+    def neg_y(px, py):
+        return -py - A1 * px - A3
+
+    def add(P, Q):
+        if P is None:
+            return Q
+        if Q is None:
+            return P
+        (x1, y1), (x2, y2) = P, Q
+        if x1 == x2 and y1 == neg_y(x2, y2):
+            return None
+        if x1 == x2:
+            lam = (3 * x1**2 + 2 * A2 * x1 + A4 - A1 * y1) / (2 * y1 + A1 * x1 + A3)
+        else:
+            lam = (y1 - y2) / (x1 - x2)
+        x3 = lam**2 + A1 * lam - A2 - x1 - x2
+        y3 = -(lam * (x3 - x1) + y1) - A1 * x3 - A3
+        return (sp.nsimplify(x3), sp.nsimplify(y3))
+
+    B2, B4, B6 = A1**2 + 4 * A2, 2 * A4 + A1 * A3, A3**2 + 4 * A6
+    B8 = A1**2 * A6 + 4 * A2 * A6 - A1 * A3 * A4 + A2 * A3**2 - A4**2
+    psi = {0: sp.Integer(0), 1: sp.Integer(1)}
+    psi[2] = 2 * y0 + A1 * x0 + A3
+    psi[3] = 3 * x0**4 + B2 * x0**3 + 3 * B4 * x0**2 + 3 * B6 * x0 + B8
+    psi[4] = psi[2] * (
+        2 * x0**6 + B2 * x0**5 + 5 * B4 * x0**4 + 10 * B6 * x0**3
+        + 10 * B8 * x0**2 + (B2 * B8 - B4 * B6) * x0 + (B4 * B8 - B6**2)
+    )
+    for m in range(2, 9):
+        if 2 * m not in psi:
+            psi[2 * m] = (
+                psi[m] * (psi[m + 2] * psi[m - 1] ** 2 - psi[m - 2] * psi[m + 1] ** 2)
+                / psi[2]
+            )
+        if 2 * m + 1 not in psi:
+            psi[2 * m + 1] = psi[m + 2] * psi[m] ** 3 - psi[m - 1] * psi[m + 1] ** 3
+    pts = {1: (x0, y0)}
+    for n in range(2, 13):
+        pts[n] = add(pts[n - 1], pts[1])
+    return psi, pts
+
+
+def check_tracked_pair() -> None:
+    """Numeric check of the induction package (i) x([n]P)ψₙ² = φₙ,
+    (ii) (2yₙ + a₁xₙ + a₃)ψₙ⁴ = ψ₂ₙ, with φₙ = xψₙ² − ψₙ₊₁ψₙ₋₁."""
+    psi, pts = numeric_model()
+    x0 = sp.Rational(3)
+    for n in range(2, 6):
+        xn, yn = pts[n]
+        phi_n = x0 * psi[n] ** 2 - psi[n + 1] * psi[n - 1]
+        assert sp.simplify(xn * psi[n] ** 2 - phi_n) == 0, (n, "x-formula")
+        tn = 2 * yn  # a1 = a3 = 0 in the model
+        assert sp.simplify(tn * psi[n] ** 4 - psi[2 * n]) == 0, (n, "tracking")
+    print("tracked pair (i)+(ii): numeric check OK for n = 2..5")
+
+
+if __name__ == "__main__":
+    certificate_duplication_y()
+    check_tracked_pair()
