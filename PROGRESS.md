@@ -2483,3 +2483,14 @@ assumed. Axiom invariant: every declaration must use at most
   polynomials, (c) universal-curve + Δ-irreducibility + Nullstellensatz.
   Remaining cone of `n_torsion_card`: resultant_Φ_ΨSq,
   separable_preΨ', exists_point_x_smul, smul_surjective.
+- 2026-07-17 (session 5 cont., fibre node PROVEN `cf0cb95`): 
+  `exists_root_of_derivative_ne_zero` (general: nonzero derivative ⟹
+  root over a separably closed field; expand-factorization argument)
+  and `exists_point_x_smul` (the fibre polynomial `Φₙ − ξΨSqₙ` has
+  derivative with `(n²−1)`-st coefficient `n² ≠ 0`; y-lifting via the
+  separable y-quadratic, the char ≠ 2 double root, or the char-2
+  `Φ`-definition collapse forcing `ξ = x₀`). `smul_surjective` is now
+  DERIVED end-to-end. The `n_torsion_card` cone rests on exactly TWO
+  sorries: `resultant_Φ_ΨSq` (rigidity/coprimality) and
+  `separable_preΨ'` (the p-division discriminant) — the
+  resultant/discriminant cluster for division polynomials.
