@@ -2582,6 +2582,19 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6, NOS (a)-plumbing PROVEN `7f590b5`): RtoO
+  (the structural R → 𝒪 hom from h𝒪), RtoO_coe, isLocalHom_RtoO
+  (unit inverses descend through 𝒪 ∩ k = R). With
+  IsLocalRing.ResidueField.map (RtoO) : κ_R → κ_𝒪 available, the
+  REMAINING (a)-assembly is: f₀ := (integralModel.preΨ' p).map RtoO;
+  its ksep-image is (E⁄ksep).preΨ' p (map_preΨ' chain), so torsion
+  abscissas are f₀-roots in 𝒪; its residue image is
+  ((E.reduction R).map (ResidueField.map RtoO)).preΨ' p — elliptic
+  by hasGoodReduction_iff_isElliptic_reduction + the map-instance —
+  and separable by separable_preΨ' at κ_𝒪 (needs (p : κ_𝒪) ≠ 0 from
+  the p-R-unit through the local hom, and p odd prime threaded into
+  the node statement). Then residue_ne_of_roots_ne closes the
+  x-level; yQuad handles the y-level; the inertia endgame finishes.
 - 2026-07-17 (session 6, NOS (iii) CORE PROVEN `c672d54`):
   `ValuationSubring.residue_ne_of_roots_ne` — distinct roots keep
   distinct residues under separable reduction (double-root
