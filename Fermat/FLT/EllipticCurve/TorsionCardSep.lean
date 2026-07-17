@@ -69,19 +69,114 @@ theorem torsion_finset_of_fibre {p : ℕ}
     obtain ⟨P, hP, rfl⟩ := Finset.mem_image.mp hQ
     rw [smul_sub, hall P hP, hall P₀ hP₀, sub_self]
 
-set_option warn.sorry false in
-/-- **Separability from the torsion count, backwards** (sorry node):
-a `p`-torsion finset of size `p²` has `p² − 1` nonzero points, which
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **Separability from the torsion count, backwards** (PROVEN): a
+`p`-torsion finset of size `p²` has `p² − 1` nonzero points, which
 map to roots of `preΨ' p` (the dictionary) with fibres of size at
 most `2` (the `y`-quadratic), so `preΨ' p` has at least
-`(p²−1)/2 = natDegree` distinct roots; a polynomial with
-`natDegree`-many distinct roots over a perfect field is separable. -/
+`(p²−1)/2 = natDegree`-many distinct roots — hence exactly that many,
+so it splits with no repeated roots and is separable. -/
 theorem separable_of_torsion_finset {p : ℕ} (hp : p.Prime)
     (hodd : Odd p) (hpk : (p : k) ≠ 0)
     (hT : ∃ T : Finset (E⁄k).Point, T.card = p ^ 2 ∧
       ∀ P ∈ T, (p : ℤ) • P = 0) :
-    ((E⁄k).preΨ' p).Separable :=
-  sorry
+    ((E⁄k).preΨ' p).Separable := by
+  classical
+  obtain ⟨T, hcard, hall⟩ := hT
+  set f := (E⁄k).preΨ' p with hfdef
+  have hpz : ((p : ℕ) : ℤ) ≠ 0 := by exact_mod_cast hp.ne_zero
+  have hfne : f ≠ 0 := by
+    intro h0
+    apply WeierstrassCurve.coeff_preΨ'_ne_zero (W := (E⁄k)) hpk
+    rw [← hfdef, h0, Polynomial.coeff_zero]
+  -- the total coordinate functions
+  let xc : (E⁄k).Point → k := fun P =>
+    match P with
+    | .zero => 0
+    | @Affine.Point.some _ _ _ x _ _ => x
+  let yc : (E⁄k).Point → k := fun P =>
+    match P with
+    | .zero => 0
+    | @Affine.Point.some _ _ _ _ y _ => y
+  -- nonzero torsion maps into the roots of `f`
+  have hmaps : ∀ P ∈ T.erase 0, xc P ∈ f.roots.toFinset := by
+    intro P hP
+    have hPne : P ≠ 0 := Finset.ne_of_mem_erase hP
+    have hPT : P ∈ T := Finset.mem_of_mem_erase hP
+    cases P with
+    | zero => exact absurd rfl hPne
+    | @some x y h =>
+      rw [Multiset.mem_toFinset, Polynomial.mem_roots hfne]
+      have h0 := hall _ hPT
+      rw [smul_some_eq_zero_iff E hpz h] at h0
+      rw [WeierstrassCurve.ΨSq_ofNat,
+        if_neg (Nat.not_even_iff_odd.mpr hodd), mul_one,
+        Polynomial.eval_pow] at h0
+      exact pow_eq_zero_iff two_ne_zero |>.mp h0
+  -- fibres of the `x`-coordinate have at most two elements
+  have hfibre : ∀ x₀ ∈ f.roots.toFinset,
+      ((T.erase 0).filter (fun P => xc P = x₀)).card ≤ 2 := by
+    intro x₀ _
+    have hstep : ((T.erase 0).filter (fun P => xc P = x₀)).card ≤
+        (yQuad E x₀).roots.toFinset.card :=
+      Finset.card_le_card_of_injOn yc ?_ ?_
+    · refine hstep.trans ?_
+      calc (yQuad E x₀).roots.toFinset.card
+          ≤ Multiset.card (yQuad E x₀).roots :=
+            Multiset.toFinset_card_le _
+        _ ≤ (yQuad E x₀).natDegree := Polynomial.card_roots' _
+        _ = 2 := yQuad_natDegree E x₀
+    · intro P hP
+      obtain ⟨hP', hx⟩ := Finset.mem_filter.mp hP
+      have hPne : P ≠ 0 := Finset.ne_of_mem_erase hP'
+      cases P with
+      | zero => exact absurd rfl hPne
+      | @some x y h =>
+        have hxx : x = x₀ := hx
+        subst hxx
+        rw [Finset.mem_coe, Multiset.mem_toFinset,
+          Polynomial.mem_roots (yQuad_ne_zero E x)]
+        exact (eval_yQuad_eq_zero_iff_equation E x y).mpr h.1
+    · intro P hP Q hQ hy
+      obtain ⟨hP', hxP⟩ := Finset.mem_filter.mp hP
+      obtain ⟨hQ', hxQ⟩ := Finset.mem_filter.mp hQ
+      have hPne : P ≠ 0 := Finset.ne_of_mem_erase hP'
+      have hQne : Q ≠ 0 := Finset.ne_of_mem_erase hQ'
+      cases P with
+      | zero => exact absurd rfl hPne
+      | @some xP yP hP'' =>
+        cases Q with
+        | zero => exact absurd rfl hQne
+        | @some xQ yQ hQ'' =>
+          have h1 : xP = x₀ := hxP
+          have h2 : xQ = x₀ := hxQ
+          have hxx : xQ = xP := h2.trans h1.symm
+          have h3 : yP = yQ := hy
+          subst hxx
+          subst h3
+          rfl
+  have hcount := Finset.card_le_mul_card_image_of_maps_to hmaps 2 hfibre
+  have herase : p ^ 2 - 1 ≤ (T.erase 0).card := by
+    have h := Finset.pred_card_le_card_erase (s := T) (a := 0)
+    omega
+  have hnoteven : ¬ Even p := Nat.not_even_iff_odd.mpr hodd
+  have hdeg : f.natDegree = (p ^ 2 - 1) / 2 := by
+    rw [hfdef, WeierstrassCurve.natDegree_preΨ' (W := (E⁄k)) hpk,
+      if_neg hnoteven]
+  have hle : f.roots.toFinset.card ≤ Multiset.card f.roots :=
+    Multiset.toFinset_card_le _
+  have hle2 : Multiset.card f.roots ≤ f.natDegree :=
+    Polynomial.card_roots' _
+  have hp2 : p ^ 2 - 1 = 2 * ((p ^ 2 - 1) / 2) := by
+    obtain ⟨s, hs⟩ := hodd.pow (n := 2)
+    omega
+  have h1 : f.roots.toFinset.card = f.natDegree := by omega
+  have h2 : Multiset.card f.roots = f.natDegree := by omega
+  have hnodup : f.roots.Nodup :=
+    Multiset.toFinset_card_eq_card_iff_nodup.mp (by omega)
+  have hsplits : f.Splits := Polynomial.splits_iff_card_roots.mpr h2
+  exact (Polynomial.nodup_roots_iff_of_splits hfne hsplits).mp hnodup
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Separability in characteristic two over an algebraically closed
