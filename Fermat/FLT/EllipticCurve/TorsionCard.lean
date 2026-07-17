@@ -734,6 +734,21 @@ theorem yQuad_separable {x₀ : k} (hx₀ : ((E⁄k).Ψ₂Sq).eval x₀ ≠ 0) :
         rw [hkey, ← Polynomial.C_mul, hD, Polynomial.C_1]
 
 set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] [DecidableEq k] in
+/-- **The membership identity** (PROVEN 2026-07-17): on the curve,
+`Ψ₂Sq (x) = (2y + a₁x + a₃)²` — the square of the `ψ₂`-value. This is
+the `linear_combination` input the induction certificates call the
+"membership" of a point; it comes free from the point's `Equation`. -/
+theorem eval_Ψ₂Sq_eq_sq {x y : k} (h : (E⁄k).toAffine.Equation x y) :
+    ((E⁄k).Ψ₂Sq).eval x = (2 * y + ((E⁄k).a₁ * x + (E⁄k).a₃)) ^ 2 := by
+  have hyQ : (yQuad E x).eval y = 0 :=
+    (eval_yQuad_eq_zero_iff_equation E x y).mpr h
+  have hkey := congrArg (Polynomial.eval y) (derivative_yQuad_sq_sub E x)
+  rw [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_pow,
+    Polynomial.eval_C, hyQ, mul_zero, sub_zero, derivative_yQuad_eval] at hkey
+  exact hkey.symm
+
+set_option backward.isDefEq.respectTransparency false in
 omit [E.IsElliptic] in
 /-- **The `n = 2` case of the torsion dictionary** (PROVEN 2026-07-17,
 the base case of the Washington Thm 3.6 induction): `2 • (x, y) = 0`
@@ -745,15 +760,7 @@ theorem two_smul_some_eq_zero_iff {x y : k}
     ((2 : ℤ) • (Affine.Point.some x y h : (E⁄k).Point) = 0) ↔
       ((E⁄k).Ψ₂Sq).eval x = 0 := by
   classical
-  -- on the curve, `Ψ₂Sq (x) = (2y + a₁x + a₃)²`
-  have hyQ : (yQuad E x).eval y = 0 :=
-    (eval_yQuad_eq_zero_iff_equation E x y).mpr h.1
-  have hΨval : ((E⁄k).Ψ₂Sq).eval x =
-      (2 * y + ((E⁄k).a₁ * x + (E⁄k).a₃)) ^ 2 := by
-    have hkey := congrArg (Polynomial.eval y) (derivative_yQuad_sq_sub E x)
-    rw [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_pow,
-      Polynomial.eval_C, hyQ, mul_zero, sub_zero, derivative_yQuad_eval] at hkey
-    exact hkey.symm
+  have hΨval := eval_Ψ₂Sq_eq_sq E h.1
   constructor
   · intro h2
     rw [two_smul ℤ (Affine.Point.some x y h), add_eq_zero_iff_eq_neg,
