@@ -112,34 +112,55 @@ has_parent = {k for n in names for k in children[n]}
 roots = [n for n in names if n not in has_parent]
 
 lines_out = []
-seen = set()
 def render(n, depth):
-    e = by_name[n]
-    state = "🟪" if e.get("wip") else "·"
-    repeat = n in seen
-    seen.add(n)
-    ref = " (see above)" if repeat else ""
-    head = f"{'  ' * depth}- {mark[n]}{state} `{disp[n]}`{ref}"
-    if repeat:
-        lines_out.append(head)
-    else:
-        body = e["text"]
-        # drop the leading name-echo from the prose if present
-        body = re.sub(rf"^`?{re.escape(n)}`?\s*[—:-]?\s*", "", body)
-        wrapped = textwrap.wrap(body, width=72 - 2 * depth - 2) if body else []
-        lines_out.append(head + (" — " + wrapped[0] if wrapped else ""))
-        for w in wrapped[1:]:
-            lines_out.append(f"{'  ' * depth}  {w}")
-    # a double-ticked subtree is completely proven: trim it from the display
+    # fully proven nodes are HIDDEN from the display entirely (Deyao,
+    # 2026-07-17: the tree shows only the missing parts); the data still
+    # lives in progress-entries.json / progress-tree.json.
     if mark[n] == "✅✅":
         return
-    # otherwise ALWAYS show the children (also on repeats): a single-ticked
-    # node must exhibit the ❌-descendants its remaining sorries flow through
+    e = by_name[n]
+    state = "🟪" if e.get("wip") else "·"
+    head = f"{'  ' * depth}- {mark[n]}{state} `{disp[n]}`"
+    body = e["text"]
+    # drop the leading name-echo from the prose if present
+    body = re.sub(rf"^`?{re.escape(n)}`?\s*[—:-]?\s*", "", body)
+    wrapped = textwrap.wrap(body, width=72 - 2 * depth - 2) if body else []
+    lines_out.append(head + (" — " + wrapped[0] if wrapped else ""))
+    for w in wrapped[1:]:
+        lines_out.append(f"{'  ' * depth}  {w}")
+    # a node with several dependents appears once under EACH of them, with
+    # its full text and subtree duplicated (no "(see above)" references —
+    # Deyao, 2026-07-17); the dependency graph is acyclic, so this
+    # terminates.
     for k in sorted(children[n], key=lambda x: names.index(x)):
         render(k, depth + 1)
 
 for r in roots:
     render(r, 0)
+
+# ------------------------------------------------- display invariant checks
+# 1. no single-tick item may be rendered without children (its remaining
+#    sorries must be visibly attributable to ❌ descendants);
+# 2. no double-tick item may be rendered with children (proven subtrees
+#    are trimmed).
+_items = [(i, l) for i, l in enumerate(lines_out) if l.lstrip().startswith("- ")]
+def _depth(l):
+    return len(l) - len(l.lstrip())
+_viol = []
+for _j, (_i, _l) in enumerate(_items):
+    _ls = _l.lstrip()
+    _d = _depth(_l)
+    _nxt = _items[_j + 1][1] if _j + 1 < len(_items) else None
+    _haskids = _nxt is not None and _depth(_nxt) > _d
+    if _ls.startswith("- ✅✅"):
+        _viol.append(f"double-tick displayed at all: {_l.strip()[:80]}")
+    elif _ls.startswith("- ✅"):
+        if not _haskids:
+            _viol.append(f"single-tick without children: {_l.strip()[:80]}")
+if _viol:
+    for _v in _viol:
+        print("INVARIANT VIOLATION:", _v, file=sys.stderr)
+    sys.exit(1)
 
 # ------------------------------------------------------------- splice + dump
 json.dump({"marks": mark, "children": children, "roots": roots},
@@ -159,10 +180,12 @@ legend = [
     "`sorry`; ✅ the source is a complete proof but its dependency cone",
     "still contains a `sorry`; ✅✅ the whole cone is sorry-free",
     "(`#print axioms` shows only propext/Classical.choice/Quot.sound).",
-    "Subtrees of ✅✅ nodes are TRIMMED from the display (fully proven, no",
-    "open content below); every ✅ node shows its children — also when it",
-    "is a repeat — so the ❌ nodes its remaining sorries flow through are",
-    "always visible beneath it.",
+    "✅✅ nodes are HIDDEN from this display entirely — the tree shows",
+    "only the open work (they remain in `progress-entries.json` and",
+    "`progress-tree.json`). A node with several dependents is shown in",
+    "full (text and subtree) under each dependent — no back references —",
+    "so beneath every ✅ node the ❌ nodes its remaining sorries flow",
+    "through are directly visible.",
     "Second symbol: `·` normal, `🟪` currently being worked on (from the",
     "entries file). To add/remove/annotate a node, edit",
     "`progress-entries.json` and re-run the generator.",
