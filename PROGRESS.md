@@ -475,19 +475,56 @@ entries file). To add/remove/annotate a node, edit
                         `IsUnramifiedAt q`, by the same embedded-subring
                         transport as the good case, against the new
                         pure-Tate content leaf below
-                        - ❌· `torsion_unramified_of_multiplicative_reduction` — `torsion_unramified_of_multiplicative_reductio
-                          n` (`FreyCurve/Semistable.lean`, stated
-                          2026-07-17): multiplicative reduction over
-                          `ℤ_(q)` with `p ∣ v_q(j)` makes the
-                          `𝒪.inertiaSubgroup` action on the `p`-torsion
-                          of `E(ℚ̄)` trivial (pure Tate-curve content,
-                          stated in the same `inertiaSubgroup`/
-                          `Point.map` shape as the NOS leaf, with the
-                          `h𝒪` pullback hypothesis); to be closed
-                          against the quadratic-twist and Tate-
-                          uniformization (`exists_tateEquivSepClosure`)
-                          nodes
                         - ✅✅· `WeierstrassCurve.galoisRep` (see above)
+                        - ✅· `WeierstrassCurve.torsion_trivial_of_multiplicative_reduction` — pointwise inertia-triviality on torsion at
+                          multiplicative primes with `p ∣ v_q(j)` — the
+                          split/nonsplit case split; the local input to
+                          `isUnramifiedAt_of_hasMultiplicativeReduction`
+                          .
+                          - ✅· `torsion_trivial_of_split_multiplicative_adic` — pointwise inertia-TRIVIALITY in the split
+                            case with `p ∣ v_q(j)`: the Tate
+                            uniformization witness feeds
+                            `tate_inertia_trivial` at the local
+                            valuation subring with the step-(d) witness,
+                            pulled back to `E(ℚ̄)` along the equivariant
+                            embedding.
+                            - ❌· `WeierstrassCurve.exists_tateEquivSepClosure` (see above)
+                            - ✅✅· `WeierstrassCurve.tate_inertia_trivial` — local TRIVIALITY of inertia on Tate
+                              torsion when the parameter is a `p`-th
+                              power up to units, for ANY uniformization
+                              witness: the torsion representative is
+                              recentred by a base-field unit power so
+                              that its `p`-th power is a σ-fixed unit
+                              constant of the valuation subring;
+                              `inertia_fixes_of_pow_eq` then fixes it
+                              outright.
+                              - ✅✅· `ValuationSubring.inertia_fixes_of_pow_eq` — step (b′), the generalized root-fixing
+                                lemma: if `x^p` is a σ-fixed constant of
+                                the valuation subring with nonzero
+                                residue (and `p` prime to the residue
+                                characteristic), inertia fixes `x` —
+                                `X^p − c` is separable over the residue
+                                field, so distinct roots have distinct
+                                residues.
+                            - ✅✅· `exists_unit_qUnit_mul_inv_pow_isUnit` — the step-(d) witness: with `p ∣ v_q(j)`,
+                              the Tate parameter of the completed base
+                              change is a unit of the completed integers
+                              times the `p`-th power of the image of
+                              `q^m` — via `|q_E| = |j|⁻¹`, the reduced-
+                              fraction dictionary, and the
+                              `Valued`/canonical valuation equivalence.
+                              - ✅✅· `valuation_eq_one_of_padicValRat_eq_zero` — the reduced-fraction dictionary at `q`:
+                                a nonzero rational with vanishing
+                                `q`-adic `padicValRat` has `v_q`-adic
+                                valuation `1` (equal multiplicities on
+                                coprime numerator/denominator force both
+                                to vanish).
+                          - ❌· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality leaf:
+                            the unramified quadratic twist (`exists_quad
+                            raticTwist_hasSplitMultiplicativeReduction`)
+                            reduces to the split case; the twist
+                            isomorphism is defined over the unramified
+                            quadratic extension, which inertia fixes.
                       - ✅✅· `WeierstrassCurve.galoisRep` (see above)
                     - ✅✅· `WeierstrassCurve.galoisRep` (see above)
                   - ✅✅· `TorsionCard.smul_surjective` (see above)

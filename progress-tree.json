@@ -43,7 +43,6 @@
   "FreyCurve.torsion_isUnramified_of_multiplicative": "✅",
   "FreyPackage.freyCurve_hasMultiplicativeReduction_of_dvd": "✅✅",
   "WeierstrassCurve.isUnramifiedAt_of_hasMultiplicativeReduction": "✅",
-  "WeierstrassCurve.torsion_unramified_of_multiplicative_reduction": "❌",
   "FreyCurve.torsion_isFlat": "✅",
   "FreyCurve.torsion_isFlat_of_good": "✅",
   "WeierstrassCurve.isFlatAt_of_hasGoodReduction": "✅",
@@ -100,7 +99,14 @@
   "WeierstrassCurve.exists_tateEquivSepClosure": "❌",
   "WeierstrassCurve.exists_variableChange_tateCurve": "❌",
   "WeierstrassCurve.tate_inertia_unipotent": "✅✅",
-  "WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic": "❌"
+  "WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic": "❌",
+  "ValuationSubring.inertia_fixes_of_pow_eq": "✅✅",
+  "WeierstrassCurve.tate_inertia_trivial": "✅✅",
+  "valuation_eq_one_of_padicValRat_eq_zero": "✅✅",
+  "exists_unit_qUnit_mul_inv_pow_isUnit": "✅✅",
+  "torsion_trivial_of_split_multiplicative_adic": "✅",
+  "WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic": "❌",
+  "WeierstrassCurve.torsion_trivial_of_multiplicative_reduction": "✅"
  },
  "children": {
   "fermat_last_theorem": [
@@ -311,10 +317,9 @@
    "FreyPackage.freyCurve"
   ],
   "WeierstrassCurve.isUnramifiedAt_of_hasMultiplicativeReduction": [
-   "WeierstrassCurve.galoisRep",
-   "WeierstrassCurve.torsion_unramified_of_multiplicative_reduction"
+   "WeierstrassCurve.torsion_trivial_of_multiplicative_reduction",
+   "WeierstrassCurve.galoisRep"
   ],
-  "WeierstrassCurve.torsion_unramified_of_multiplicative_reduction": [],
   "FreyCurve.torsion_isFlat": [
    "FreyCurve.torsion_isFlat_of_multiplicative",
    "FreyPackage",
@@ -493,7 +498,25 @@
   "WeierstrassCurve.exists_tateEquivSepClosure": [],
   "WeierstrassCurve.exists_variableChange_tateCurve": [],
   "WeierstrassCurve.tate_inertia_unipotent": [],
-  "WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic": []
+  "WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic": [],
+  "ValuationSubring.inertia_fixes_of_pow_eq": [],
+  "WeierstrassCurve.tate_inertia_trivial": [
+   "ValuationSubring.inertia_fixes_of_pow_eq"
+  ],
+  "valuation_eq_one_of_padicValRat_eq_zero": [],
+  "exists_unit_qUnit_mul_inv_pow_isUnit": [
+   "valuation_eq_one_of_padicValRat_eq_zero"
+  ],
+  "torsion_trivial_of_split_multiplicative_adic": [
+   "WeierstrassCurve.tate_inertia_trivial",
+   "WeierstrassCurve.exists_tateEquivSepClosure",
+   "exists_unit_qUnit_mul_inv_pow_isUnit"
+  ],
+  "WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic": [],
+  "WeierstrassCurve.torsion_trivial_of_multiplicative_reduction": [
+   "torsion_trivial_of_split_multiplicative_adic",
+   "WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic"
+  ]
  },
  "roots": [
   "fermat_last_theorem",
