@@ -165,16 +165,9 @@ theorem separable_preΨ' {p : ℕ} (hp : p.Prime) (hodd : Odd p)
     ((E⁄k).preΨ' p).Separable :=
   sorry
 
-set_option warn.sorry false in
-/-- **`2`-torsion and `p`-torsion have disjoint `x`-coordinates**
-(sorry node): for an odd prime `p` invertible in `k`, the two-torsion
-polynomial `Ψ₂Sq` and the reduced `p`-division polynomial `preΨ' p`
-are coprime — classically `gcd(ψ₂, ψₚ) = ψ_{gcd(2,p)} = ψ₁ = 1`
-(strong divisibility of the elliptic divisibility sequence). -/
-theorem isCoprime_Ψ₂Sq_preΨ' {p : ℕ} (hp : p.Prime) (hodd : Odd p)
-    (hpk : (p : k) ≠ 0) :
-    IsCoprime ((E⁄k).Ψ₂Sq) ((E⁄k).preΨ' p) :=
-  sorry
+-- (The coprimality of `Ψ₂Sq` and `preΨ' p` — classically the strong
+-- divisibility `gcd(ψ₂, ψₚ) = ψ₁ = 1` — is DERIVED from the torsion
+-- dictionary further below, after the `y`-fibre quadratic machinery.)
 
 /-! ### The `y`-fibre above a fixed `x`-coordinate
 
@@ -211,6 +204,20 @@ theorem eval_yQuad_eq_zero_iff_equation (x₀ y : k) :
   constructor
   · intro h; linear_combination h
   · intro h; linear_combination h
+
+omit [E.IsElliptic] [DecidableEq k] in
+/-- The derivative of the `y`-fibre quadratic, evaluated. -/
+theorem derivative_yQuad_eval (x₀ y : k) :
+    (Polynomial.derivative (yQuad E x₀)).eval y =
+      2 * y + ((E⁄k).a₁ * x₀ + (E⁄k).a₃) := by
+  rw [yQuad]
+  simp only [Polynomial.derivative_sub, Polynomial.derivative_add,
+    Polynomial.derivative_mul, Polynomial.derivative_C,
+    Polynomial.derivative_X, Polynomial.derivative_X_pow, Nat.cast_ofNat]
+  simp only [Polynomial.eval_add, Polynomial.eval_sub, Polynomial.eval_mul,
+    Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X,
+    Polynomial.eval_zero, Polynomial.eval_one]
+  ring
 
 omit [E.IsElliptic] [DecidableEq k] in
 /-- The characteristic-free discriminant identity for the `y`-fibre
@@ -262,6 +269,161 @@ theorem yQuad_separable {x₀ : k} (hx₀ : ((E⁄k).Ψ₂Sq).eval x₀ ≠ 0) :
         ring
     _ = 1 := by
         rw [hkey, ← Polynomial.C_mul, hD, Polynomial.C_1]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **`2`-torsion and `p`-torsion have disjoint `x`-coordinates**
+(DERIVED 2026-07-17 from the torsion dictionary): for an odd prime `p`
+invertible in `k`, the two-torsion polynomial `Ψ₂Sq` and the reduced
+`p`-division polynomial `preΨ' p` are coprime — classically
+`gcd(ψ₂, ψₚ) = ψ_{gcd(2,p)} = ψ₁ = 1`. A common root `α` over the
+algebraic closure would carry a curve point `(α, y₀)` (any root `y₀`
+of the `y`-fibre quadratic) that is `2`-torsion (by the discriminant
+identity `(∂Q)² - 4Q = C (Ψ₂Sq α) = 0`, the derivative vanishes at
+`y₀`, so `y₀` is `negY`-fixed) and `p`-torsion (by the dictionary),
+hence trivial as `gcd(2, p) = 1` — contradicting that it is affine. -/
+theorem isCoprime_Ψ₂Sq_preΨ' {p : ℕ} (hp : p.Prime) (hodd : Odd p)
+    (hpk : (p : k) ≠ 0) :
+    IsCoprime ((E⁄k).Ψ₂Sq) ((E⁄k).preΨ' p) := by
+  classical
+  by_contra hnc
+  rw [← EuclideanDomain.gcd_isUnit_iff] at hnc
+  -- the would-be common divisor has a root over the algebraic closure
+  have hpre0 : (E⁄k).preΨ' p ≠ 0 := by
+    intro h0
+    refine WeierstrassCurve.coeff_preΨ'_ne_zero (W := (E⁄k)) hpk ?_
+    rw [h0, Polynomial.coeff_zero]
+  have hg0 : EuclideanDomain.gcd ((E⁄k).Ψ₂Sq) ((E⁄k).preΨ' p) ≠ 0 := by
+    intro h0
+    exact hpre0 (EuclideanDomain.gcd_eq_zero_iff.mp h0).2
+  have hgdeg : (EuclideanDomain.gcd ((E⁄k).Ψ₂Sq) ((E⁄k).preΨ' p)).degree ≠ 0 := by
+    intro h0
+    exact hnc (Polynomial.isUnit_iff_degree_eq_zero.mpr h0)
+  obtain ⟨α, hα⟩ := IsAlgClosed.exists_root
+    ((EuclideanDomain.gcd ((E⁄k).Ψ₂Sq) ((E⁄k).preΨ' p)).map
+      (algebraMap k (AlgebraicClosure k)))
+    (by rwa [Polynomial.degree_map])
+  have hα' := Polynomial.root_gcd_iff_root_left_right
+    (ϕ := algebraMap k (AlgebraicClosure k)) (α := α) |>.mp
+    (by rwa [Polynomial.eval₂_eq_eval_map])
+  -- transfer the two vanishing statements to the base-changed curve
+  haveI : (E.baseChange (AlgebraicClosure k)).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap k (AlgebraicClosure k))).IsElliptic)
+  have hmapself : ∀ (F : Type u) [inst : Field F] (q : Polynomial F),
+      q.map (algebraMap F F) = q := by
+    intro F _ q
+    rw [show algebraMap F F = RingHom.id F from rfl, Polynomial.map_id]
+  have hΨ₂α : (((E.baseChange (AlgebraicClosure k))⁄(AlgebraicClosure k)).Ψ₂Sq).eval α
+      = 0 := by
+    show ((((E.baseChange (AlgebraicClosure k)).map
+      (algebraMap (AlgebraicClosure k) (AlgebraicClosure k))).Ψ₂Sq)).eval α = 0
+    rw [WeierstrassCurve.map_Ψ₂Sq, hmapself]
+    show (((E.map (algebraMap k (AlgebraicClosure k))).Ψ₂Sq)).eval α = 0
+    rw [WeierstrassCurve.map_Ψ₂Sq]
+    have h1 := hα'.1
+    rw [Polynomial.eval₂_eq_eval_map,
+      show (E⁄k).Ψ₂Sq = E.Ψ₂Sq from by
+        show (E.map (algebraMap k k)).Ψ₂Sq = E.Ψ₂Sq
+        rw [WeierstrassCurve.map_Ψ₂Sq, hmapself]] at h1
+    exact h1
+  have hpreα : (((E.baseChange (AlgebraicClosure k))⁄(AlgebraicClosure k)).preΨ' p).eval α
+      = 0 := by
+    show ((((E.baseChange (AlgebraicClosure k)).map
+      (algebraMap (AlgebraicClosure k) (AlgebraicClosure k))).preΨ' p)).eval α = 0
+    rw [WeierstrassCurve.map_preΨ', hmapself]
+    show (((E.map (algebraMap k (AlgebraicClosure k))).preΨ' p)).eval α = 0
+    rw [WeierstrassCurve.map_preΨ']
+    have h1 := hα'.2
+    rw [Polynomial.eval₂_eq_eval_map,
+      show (E⁄k).preΨ' p = E.preΨ' p from by
+        show (E.map (algebraMap k k)).preΨ' p = E.preΨ' p
+        rw [WeierstrassCurve.map_preΨ', hmapself]] at h1
+    exact h1
+  -- a curve point above `α`
+  obtain ⟨y₀, hy₀⟩ := IsAlgClosed.exists_root
+    (yQuad (E.baseChange (AlgebraicClosure k)) α)
+    (by
+      intro h0
+      have := yQuad_natDegree (E.baseChange (AlgebraicClosure k)) α
+      rw [Polynomial.degree_eq_natDegree
+        (yQuad_ne_zero (E.baseChange (AlgebraicClosure k)) α), this] at h0
+      exact two_ne_zero (by exact_mod_cast h0))
+  have hy₀' : (yQuad (E.baseChange (AlgebraicClosure k)) α).eval y₀ = 0 := hy₀
+  have heq : ((E.baseChange (AlgebraicClosure k))⁄(AlgebraicClosure k)).toAffine.Equation
+      α y₀ := (eval_yQuad_eq_zero_iff_equation _ α y₀).mp hy₀'
+  have hns : ((E.baseChange (AlgebraicClosure k))⁄(AlgebraicClosure k)).toAffine.Nonsingular
+      α y₀ := by
+    haveI : ((E.baseChange (AlgebraicClosure k))⁄(AlgebraicClosure k)).IsElliptic :=
+      inferInstanceAs (((E.baseChange (AlgebraicClosure k)).map
+        (algebraMap (AlgebraicClosure k) (AlgebraicClosure k))).IsElliptic)
+    exact Affine.equation_iff_nonsingular.mp heq
+  -- the point is `negY`-fixed: the derivative of the `y`-quadratic
+  -- vanishes at `y₀`
+  have h2y : 2 * y₀ + ((E.baseChange (AlgebraicClosure k)).a₁ * α +
+      (E.baseChange (AlgebraicClosure k)).a₃) = 0 := by
+    have hkey := congrArg (Polynomial.eval y₀)
+      (derivative_yQuad_sq_sub (E.baseChange (AlgebraicClosure k)) α)
+    rw [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_pow,
+      Polynomial.eval_C, hΨ₂α, hy₀', mul_zero, sub_zero,
+      derivative_yQuad_eval] at hkey
+    exact pow_eq_zero_iff two_ne_zero |>.mp hkey
+  have hnegY : ((E.baseChange (AlgebraicClosure k))⁄(AlgebraicClosure k)).toAffine.negY
+      α y₀ = y₀ := by
+    rw [Affine.negY]
+    show -y₀ - ((E.baseChange (AlgebraicClosure k))⁄(AlgebraicClosure k)).a₁ * α -
+      ((E.baseChange (AlgebraicClosure k))⁄(AlgebraicClosure k)).a₃ = y₀
+    have ha₁ : ((E.baseChange (AlgebraicClosure k))⁄(AlgebraicClosure k)).a₁ =
+        (E.baseChange (AlgebraicClosure k)).a₁ := rfl
+    have ha₃ : ((E.baseChange (AlgebraicClosure k))⁄(AlgebraicClosure k)).a₃ =
+        (E.baseChange (AlgebraicClosure k)).a₃ := rfl
+    rw [ha₁, ha₃]
+    linear_combination -h2y
+  -- the point is `2`-torsion …
+  have h2P : (2 : ℤ) • (Affine.Point.some α y₀ hns :
+      ((E.baseChange (AlgebraicClosure k))⁄(AlgebraicClosure k)).Point) = 0 := by
+    rw [two_smul ℤ (Affine.Point.some α y₀ hns), add_eq_zero_iff_eq_neg,
+      Affine.Point.neg_some]
+    have : ∀ (y' : AlgebraicClosure k)
+        (h' : ((E.baseChange (AlgebraicClosure k))⁄(AlgebraicClosure k)).toAffine.Nonsingular
+          α y'), y₀ = y' →
+        (Affine.Point.some α y₀ hns :
+          ((E.baseChange (AlgebraicClosure k))⁄(AlgebraicClosure k)).Point) =
+          Affine.Point.some α y' h' := by
+      intro y' h' hy
+      subst hy
+      rfl
+    exact this _ _ hnegY.symm
+  -- … and `p`-torsion, by the dictionary
+  have hpP : ((p : ℕ) : ℤ) • (Affine.Point.some α y₀ hns :
+      ((E.baseChange (AlgebraicClosure k))⁄(AlgebraicClosure k)).Point) = 0 := by
+    rw [smul_some_eq_zero_iff (E.baseChange (AlgebraicClosure k))
+      (Int.natCast_ne_zero.mpr hp.ne_zero) ?_ hns]
+    · rw [WeierstrassCurve.ΨSq_ofNat, if_neg (Nat.not_even_iff_odd.mpr hodd),
+        mul_one, Polynomial.eval_pow, pow_eq_zero_iff two_ne_zero]
+      exact hpreα
+    · rw [show (((p : ℕ) : ℤ) : AlgebraicClosure k) = algebraMap k (AlgebraicClosure k) (p : k)
+        by push_cast; rfl]
+      exact fun h0 => hpk ((map_eq_zero _).mp h0)
+  -- `gcd(2, p) = 1` kills the point, contradiction
+  obtain ⟨m, hm⟩ := hodd
+  have hP0 : (Affine.Point.some α y₀ hns :
+      ((E.baseChange (AlgebraicClosure k))⁄(AlgebraicClosure k)).Point) = 0 := by
+    have h1 : (1 : ℤ) = ((p : ℕ) : ℤ) - 2 * m := by
+      have : (p : ℤ) = 2 * m + 1 := by exact_mod_cast hm
+      omega
+    calc (Affine.Point.some α y₀ hns :
+        ((E.baseChange (AlgebraicClosure k))⁄(AlgebraicClosure k)).Point)
+        = (1 : ℤ) • Affine.Point.some α y₀ hns := (one_smul _ _).symm
+      _ = (((p : ℕ) : ℤ) - 2 * m) • Affine.Point.some α y₀ hns := by rw [← h1]
+      _ = ((p : ℕ) : ℤ) • Affine.Point.some α y₀ hns -
+          (m : ℤ) • ((2 : ℤ) • Affine.Point.some α y₀ hns) := by
+          rw [sub_smul, smul_smul]
+          norm_num [mul_comm]
+      _ = 0 := by rw [hpP, h2P]; simp
+  exact nomatch hP0.trans
+    (show (0 : ((E.baseChange (AlgebraicClosure k))⁄(AlgebraicClosure k)).Point)
+      = Affine.Point.zero from rfl)
 
 set_option backward.isDefEq.respectTransparency false in
 omit [DecidableEq k] in

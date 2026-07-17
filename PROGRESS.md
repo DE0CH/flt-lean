@@ -602,9 +602,19 @@ the START and END of each block of work.
             - ✗· `TorsionCard.separable_preΨ'` — separability of the
               odd-`p` division polynomial (disc companion identity,
               `disc(ψₚ) = ±pᵃΔᵇ`).
-            - ✗· `TorsionCard.isCoprime_Ψ₂Sq_preΨ'` — coprimality of
-              `ψ₂²` and `ψₚ` (strong divisibility of the EDS,
-              `gcd(ψ₂,ψₚ) = ψ₁ = 1`).
+            - ✓· `TorsionCard.isCoprime_Ψ₂Sq_preΨ'` — DERIVED
+              (2026-07-17) from the dictionary node, NOT from EDS
+              strong divisibility: a common root `α` over `k̄` would
+              carry a curve point `(α, y₀)` that is `negY`-fixed
+              (the discriminant identity `(∂Q)² - 4Q = C (Ψ₂Sq α) =
+              0` forces `2y₀ + a₁α + a₃ = 0`, uniformly in the
+              characteristic), hence `2`-torsion, and `p`-torsion by
+              the dictionary — trivial by `gcd(2,p) = 1`,
+              contradicting affineness. Route: `¬coprime → gcd
+              non-unit → root of the mapped gcd over `k̄`
+              (`IsAlgClosed.exists_root`) → common root
+              (`root_gcd_iff_root_left_right`)`, with the division
+              polynomials transferred by `map_Ψ₂Sq`/`map_preΨ'`.
             - ✓· `TorsionCard.separable_Ψ₂Sq` — PROVEN (2026-07-17):
               disc = 16Δ ≠ 0
               (`twoTorsionPolynomial_discr_ne_zero_of_isElliptic`),
