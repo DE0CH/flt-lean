@@ -698,24 +698,138 @@ theorem minkowski_character_trivial {p : ℕ}
   have hg : g ∈ χ.ker := hker_top ▸ Subgroup.mem_top g
   simpa [MonoidHom.mem_ker] using hg
 
+set_option backward.isDefEq.respectTransparency false in
+/-- **Galois descent for points** (PROVEN 2026-07-17): a point of
+`E(ℚ̄)` fixed by every element of the absolute Galois group is the base
+change of a rational point. The coordinates are fixed by all
+automorphisms of the Galois extension `ℚ̄/ℚ`, hence lie in `ℚ`
+(`InfiniteGalois.mem_range_algebraMap_iff_fixed`), and nonsingularity
+descends along the injective base change
+(`baseChange_nonsingular`). -/
+theorem WeierstrassCurve.exists_point_eq_baseChange_of_fixed
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (Pt : (E⁄(AlgebraicClosure ℚ)).Point)
+    (hfix : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt = Pt) :
+    ∃ Q : (E⁄ℚ).Point,
+      Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q = Pt := by
+  cases Pt with
+  | zero => exact ⟨0, rfl⟩
+  | some x y h =>
+    have hx : x ∈ Set.range (algebraMap ℚ (AlgebraicClosure ℚ)) := by
+      refine (InfiniteGalois.mem_range_algebraMap_iff_fixed x).mpr fun σ => ?_
+      have h1 := hfix σ
+      rw [Affine.Point.map_some] at h1
+      exact (Affine.Point.some.inj h1).left
+    have hy : y ∈ Set.range (algebraMap ℚ (AlgebraicClosure ℚ)) := by
+      refine (InfiniteGalois.mem_range_algebraMap_iff_fixed y).mpr fun σ => ?_
+      have h1 := hfix σ
+      rw [Affine.Point.map_some] at h1
+      exact (Affine.Point.some.inj h1).right
+    obtain ⟨x₀, hx₀⟩ := hx
+    obtain ⟨y₀, hy₀⟩ := hy
+    have h₀ : (E⁄ℚ).Nonsingular x₀ y₀ := by
+      have h2 := h
+      rw [← hx₀, ← hy₀] at h2
+      exact (Affine.baseChange_nonsingular (W := E)
+        (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))
+        (algebraMap ℚ (AlgebraicClosure ℚ)).injective x₀ y₀).mp h2
+    refine ⟨Affine.Point.some x₀ y₀ h₀, ?_⟩
+    have hmap := Affine.Point.map_some
+      (f := Algebra.ofId ℚ (AlgebraicClosure ℚ)) h₀
+    rw [show Affine.Point.baseChange ℚ (AlgebraicClosure ℚ)
+        (Affine.Point.some x₀ y₀ h₀) =
+      Affine.Point.map (Algebra.ofId ℚ (AlgebraicClosure ℚ))
+        (Affine.Point.some x₀ y₀ h₀) from rfl, hmap]
+    subst hx₀ hy₀
+    rfl
+
 set_option warn.sorry false in
+/-- **Serre's stable-line dichotomy for the Frey curve** (sorry node —
+the character/semistability analysis of Serre, Duke 1987, §4.1): if the
+mod-`p` representation of the Frey curve is not irreducible, then (given
+the Minkowski input) after replacing the stable line by its complement
+where necessary, one of the two characters of the extension
+`0 → χ₁ → E[p] → χ₂ → 0` is trivial. The two disjuncts record the two
+outcomes at the level of the torsion module: either the SUB-character is
+trivial — a Galois-FIXED point of exact order `p` in `E(ℚ̄)` — or the
+QUOTIENT-character is trivial — a stable line `W` with the induced
+action on `E[p]/W` trivial (`ρ g v − v ∈ W`). Content: `χ₁χ₂ = ω̄` (the
+determinant is the cyclotomic character, the PROVEN
+`det_galoisRep_eq_cyclotomic`); semistability of the Frey curve makes
+both characters unramified away from `p` (triviality of inertia at good
+primes is the PROVEN Néron–Ogg–Shafarevich node; unipotence at
+multiplicative primes is the Tate-curve description) and one of them
+unramified at `p` (flat/ordinary analysis at `p`); the Minkowski
+hypothesis then kills that character. -/
+theorem FreyPackage.stable_line_dichotomy_of_not_isIrreducible
+    (P : FreyPackage)
+    (hmink : ∀ χ : Field.absoluteGaloisGroup ℚ →* (ZMod P.p)ˣ,
+      IsOpen (χ.ker : Set (Field.absoluteGaloisGroup ℚ)) →
+      (∀ (q : ℕ) (hq : q.Prime),
+        localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤
+          (χ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) →
+      χ = 1)
+    (h : ¬ (let E := P.freyCurve
+            let p := P.p
+            have : Fact p.Prime := ⟨P.pp⟩
+            GaloisRep.IsIrreducible (E.galoisRep p P.hppos))) :
+    (∃ Pt : ((P.freyCurve)⁄(AlgebraicClosure ℚ)).Point,
+      addOrderOf Pt = P.p ∧
+      ∀ σ : Field.absoluteGaloisGroup ℚ,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt = Pt) ∨
+    (∃ W : Submodule (ZMod P.p)
+        ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p),
+      W ≠ ⊥ ∧ W ≠ ⊤ ∧
+      (∀ g : Field.absoluteGaloisGroup ℚ,
+        ∀ v ∈ W, P.freyCurve.galoisRep P.p P.hppos g v ∈ W) ∧
+      (∀ (g : Field.absoluteGaloisGroup ℚ)
+        (v : (P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p),
+        W.mkQ (P.freyCurve.galoisRep P.p P.hppos g v) = W.mkQ v)) :=
+  sorry
+
+set_option warn.sorry false in
+/-- **The Vélu quotient leaf** (sorry node): given a Galois-stable line
+`W` in the `p`-torsion of the Frey curve on whose quotient the Galois
+action is trivial, the quotient curve `E/C` by the rational subgroup
+`C` corresponding to `W` (a `ℚ`-rational cyclic subgroup of order `p`)
+is an elliptic curve over `ℚ` carrying a rational point of order `p`
+(the image of any torsion point mapping to a generator of the trivial
+quotient) and full rational `2`-torsion (the image of the Frey curve's
+full `2`-torsion through the odd-degree rational isogeny, injective on
+`2`-torsion). The quotient-curve construction (Vélu) is not yet
+available in mathlib, so the statement quantifies existentially over
+Weierstrass models. -/
+theorem FreyPackage.exists_quotient_curve_point
+    (P : FreyPackage)
+    (W : Submodule (ZMod P.p)
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p))
+    (hW0 : W ≠ ⊥) (hWtop : W ≠ ⊤)
+    (hstable : ∀ g : Field.absoluteGaloisGroup ℚ,
+      ∀ v ∈ W, P.freyCurve.galoisRep P.p P.hppos g v ∈ W)
+    (hquot : ∀ (g : Field.absoluteGaloisGroup ℚ)
+      (v : (P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p),
+      W.mkQ (P.freyCurve.galoisRep P.p P.hppos g v) = W.mkQ v) :
+    ∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic)
+      (φ₂ : (ZMod 2 × ZMod 2) →+ (E'⁄ℚ).Point) (_ : Function.Injective φ₂)
+      (Q : (E'⁄ℚ).Point), addOrderOf Q = P.p :=
+  sorry
+
 /-- **Serre's reducible-case analysis for the Frey curve, given
-Minkowski** (sorry node): if the mod-`p` Galois representation on the
-`p`-torsion of the Frey curve is not irreducible, and every finite-order
-mod-`p` character of `G_ℚ` unramified at all finite places is trivial
-(the Minkowski input, taken as a hypothesis — see
-`minkowski_character_trivial`), then either the Frey curve itself has a
-rational point of order `p`, or some elliptic curve over `ℚ` (the Vélu
-quotient `E/C` by the rational subgroup of order `p`) has full rational
-`2`-torsion together with a rational point of order `p`. Serre, Duke
-1987, §4.1: the stable line gives an extension `0 → χ₁ → E[p] → χ₂ → 0`
-with `χ₁χ₂ = ω̄`; semistability makes both characters unramified away
-from `p` and one of them unramified at `p`; the Minkowski hypothesis
-makes that character trivial; `χ₁ = 1` puts the `p`-point on `E`
-itself, `χ₂ = 1` on the quotient (whose full `2`-torsion comes through
-the odd-degree rational isogeny). The quotient-curve construction
-(Vélu) is not yet available in mathlib, so the second disjunct
-quantifies existentially over Weierstrass models. -/
+Minkowski** (DERIVED 2026-07-17 from the stable-line dichotomy, the
+PROVEN Galois descent for points, and the Vélu quotient leaf): if the
+mod-`p` Galois representation on the `p`-torsion of the Frey curve is
+not irreducible, and every finite-order mod-`p` character of `G_ℚ`
+unramified at all finite places is trivial (the Minkowski input, taken
+as a hypothesis — see `minkowski_character_trivial`), then either the
+Frey curve itself has a rational point of order `p`, or some elliptic
+curve over `ℚ` (the Vélu quotient `E/C` by the rational subgroup of
+order `p`) has full rational `2`-torsion together with a rational point
+of order `p`. -/
 theorem FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski
     (P : FreyPackage)
     (hmink : ∀ χ : Field.absoluteGaloisGroup ℚ →* (ZMod P.p)ˣ,
@@ -733,8 +847,20 @@ theorem FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski
     (∃ Q : ((P.freyCurve)⁄ℚ).Point, addOrderOf Q = P.p) ∨
     (∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic)
       (φ₂ : (ZMod 2 × ZMod 2) →+ (E'⁄ℚ).Point) (_ : Function.Injective φ₂)
-      (Q : (E'⁄ℚ).Point), addOrderOf Q = P.p) :=
-  sorry
+      (Q : (E'⁄ℚ).Point), addOrderOf Q = P.p) := by
+  rcases P.stable_line_dichotomy_of_not_isIrreducible hmink h with
+    ⟨Pt, hord, hfix⟩ | ⟨W, hW0, hWtop, hstable, hquot⟩
+  · -- the fixed point of order `p` descends to a rational point
+    left
+    obtain ⟨Q, hQ⟩ :=
+      WeierstrassCurve.exists_point_eq_baseChange_of_fixed P.freyCurve Pt hfix
+    refine ⟨Q, ?_⟩
+    rw [← hord, ← hQ]
+    exact (addOrderOf_injective _
+      (Affine.Point.map_injective (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))) Q).symm
+  · -- the trivial-quotient line goes through the Vélu leaf
+    right
+    exact P.exists_quotient_curve_point W hW0 hWtop hstable hquot
 
 /-- **Serre's reducible-case analysis for the Frey curve** (DERIVED
 2026-07-16 from the two preceding nodes, by discharging the Minkowski

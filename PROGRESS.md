@@ -126,20 +126,42 @@ the START and END of each block of work.
                       Q` is a short definitional argument from
                       `mem_inertia` + the pointwise-smul API
                       `Ideal.IsPrime.smul`/`pointwise_smul_eq_comap`).
-              - ✗· `FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski`
-                — Serre's analysis with the Minkowski input as a
-                hypothesis: stable line ⟹ characters χ₁χ₂ = ω̄;
-                semistability ⟹ one character everywhere unramified ⟹
-                trivial by hypothesis; χ₁ = 1: p-point on the Frey
-                curve; χ₂ = 1: package on the Vélu quotient.
-                Remaining deep content:
-                - ✗· quotients of elliptic curves by finite rational
-                  subgroups (Vélu) — needed for the χ₂ = 1 case (not
-                  yet stated in Lean).
+              - ✓· `FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski`
+                — DERIVED (2026-07-17) from the stable-line dichotomy
+                leaf, the PROVEN Galois descent for points, and the
+                Vélu quotient leaf (all `MazurTorsion.lean`).
+                - ✗· `FreyPackage.stable_line_dichotomy_of_not_isIrreducible`
+                  (stated 2026-07-17) — **Serre's
+                  character/semistability analysis**: not irreducible ⟹
+                  (Galois-FIXED point of exact order `p` in `E(ℚ̄)`) ∨
+                  (stable line `W` with trivial quotient action,
+                  `W.mkQ (ρ g v) = W.mkQ v`). Content: χ₁χ₂ = ω̄ (the
+                  DERIVED `det_galoisRep_eq_cyclotomic`), semistability
+                  (NOS at good primes PROVEN, Tate at multiplicative,
+                  flat/ordinary at `p`), Minkowski hypothesis kills the
+                  unramified character. SPELLING GOTCHA: the
+                  quotient-triviality clause must be phrased via
+                  `W.mkQ` — the subtraction form `ρ g v − v ∈ W`
+                  fails elaboration (HSub instance search sticks on
+                  the nTorsion subtype when the LHS is a
+                  galoisRep application with unknown expected type).
+                - ✗· `FreyPackage.exists_quotient_curve_point`
+                  (stated 2026-07-17) — **the Vélu quotient leaf**:
+                  a stable line with trivial quotient action produces
+                  `E'/ℚ` with full rational 2-torsion and a rational
+                  `p`-point (quotient by the rational subgroup;
+                  quantified over Weierstrass models).
+                - ✓· `WeierstrassCurve.exists_point_eq_baseChange_of_fixed`
+                  — **PROVEN (2026-07-17): Galois descent for points**:
+                  a point of `E(ℚ̄)` fixed by every `σ ∈ Γℚ` is the
+                  base change of a rational point
+                  (`InfiniteGalois.mem_range_algebraMap_iff_fixed` on
+                  the coordinates + `baseChange_nonsingular` descent +
+                  `Point.map_injective` order transfer).
                 - ✓· `exists_stable_line_of_not_isIrreducible`
                   (`Chebotarev.lean`, PROVEN sorry-free 2026-07-16) —
-                  the first step: a non-irreducible 2-dim mod-ℓ rep
-                  has a Galois-stable line.
+                  a non-irreducible 2-dim mod-ℓ rep has a
+                  Galois-stable line.
             - ✓· `FreyPackage.freyCurve_two_torsion_embedding` — PROVEN
               (2026-07-16): the Frey model has rational 2-torsion
               points (0, 0) and (aᵖ/4, −aᵖ/8) (the quadratic factors
