@@ -458,17 +458,18 @@ theorem two_point_cross_identity {x₁ y₁ x₂ y₂ : k}
 
 set_option warn.sorry false in
 /-- (Sorry node — **the multiplication-by-`n` formula**, Washington
-*Elliptic curves* Theorem 3.6, the strengthened simultaneous induction
-statement.) For `n > 0` and an affine point `P = (x, y)`:
-(a) if `ψₙ(x, y) = 0` then `n • P = 0`; (b) if `ψₙ(x, y) ≠ 0` then
-`n • P` is affine, with `x`-coordinate satisfying
-`x' ⬝ ψₙ² = φₙ(x, y)` and `y`-coordinate tracked through the value of
-`ψ₂` at `n • P`: `(2y' + a₁x' + a₃) ⬝ ψₙ⁴ = ψ₂ₙ(x, y)` (the `ω`-free
-substitute for `y([n]P) = ωₙ/ψₙ³`, which keeps the strong induction
-`[n+1]P = [n]P + P`, `[2n]P = 2 ⬝ [n]P` self-contained). To be proven
-by strong induction with mathlib's `Affine.slope`/`addX` addition
-formulas and the `normEDS` recurrences; base cases `n = 1` (trivial)
-and `n = 2` (`two_smul_some_eq_zero_iff` below). -/
+*Elliptic curves* Theorem 3.6.) For `n > 0` and an affine point
+`P = (x, y)`: (a) if `ψₙ(x, y) = 0` then `n • P = 0`; (b) if
+`ψₙ(x, y) ≠ 0` then `n • P` is affine with `x' ⬝ ψₙ² = φₙ(x, y)`.
+To be proven by strong induction: steps `[2m+1]P = [m+1]P + [m]P` and
+`[2m]P = [m+1]P + [m-1]P` via `add_some_coords`, secant denominators
+from `x_sub_gap_one`/`x_sub_gap_two`, collision branches via
+`smul_collision`, `y`-data pinned by `two_point_cross_identity` (whose
+`(1, j)`-instances solve for the `ψ₂`-values `2yⱼ + a₁xⱼ + a₃` in
+closed form — no tracking component is carried), certificates with
+unit cofactors (see `scripts/division_polynomial_certificates.py`),
+base cases `zsmul_some_aux_one`/`zsmul_some_aux_two`, and the
+2-torsion branch (`ψ₂(x,y) = 0`) seeded by `Res(Ψ₂Sq, Ψ₃) = -Δ²`. -/
 theorem zsmul_some_aux (n : ℤ) (hn : 0 < n) {x y : k}
     (h : (E⁄k).toAffine.Nonsingular x y) :
     (((E⁄k).ψ n).evalEval x y = 0 →
@@ -477,9 +478,7 @@ theorem zsmul_some_aux (n : ℤ) (hn : 0 < n) {x y : k}
       ∃ (x' y' : k) (h' : (E⁄k).toAffine.Nonsingular x' y'),
         n • (Affine.Point.some x y h : (E⁄k).Point) =
           Affine.Point.some x' y' h' ∧
-        x' * ((E⁄k).ψ n).evalEval x y ^ 2 = ((E⁄k).φ n).evalEval x y ∧
-        (2 * y' + (E⁄k).a₁ * x' + (E⁄k).a₃) * ((E⁄k).ψ n).evalEval x y ^ 4 =
-          ((E⁄k).ψ (2 * n)).evalEval x y) :=
+        x' * ((E⁄k).ψ n).evalEval x y ^ 2 = ((E⁄k).φ n).evalEval x y) :=
   sorry
 
 set_option backward.isDefEq.respectTransparency false in
@@ -513,7 +512,7 @@ theorem smul_some_eq_zero_iff {n : ℤ} (hn : n ≠ 0)
     constructor
     · intro h0
       by_contra hΨ
-      obtain ⟨x', y', h', heq, -, -⟩ := this.2 fun hz => hΨ ((hbridge _).mp hz)
+      obtain ⟨x', y', h', heq, -⟩ := this.2 fun hz => hΨ ((hbridge _).mp hz)
       rw [h0] at heq
       exact nomatch heq.symm.trans
         (show (0 : (E⁄k).Point) = Affine.Point.zero from rfl)
@@ -523,7 +522,7 @@ theorem smul_some_eq_zero_iff {n : ℤ} (hn : n ≠ 0)
     constructor
     · intro h0
       by_contra hΨ
-      obtain ⟨x', y', h', heq, -, -⟩ := this.2 fun hz => hΨ ((hbridge _).mp hz)
+      obtain ⟨x', y', h', heq, -⟩ := this.2 fun hz => hΨ ((hbridge _).mp hz)
       rw [h0] at heq
       exact nomatch heq.symm.trans
         (show (0 : (E⁄k).Point) = Affine.Point.zero from rfl)
@@ -560,7 +559,7 @@ theorem exists_smul_some_eq {n : ℤ} (hn : n ≠ 0)
       apply hΨ
       rw [← WeierstrassCurve.ΨSq_neg, ← hbridgeSq, hz]
       ring
-    obtain ⟨x', y', h', heq, hx', -⟩ := (zsmul_some_aux E (-n) hpos' h).2 hΨ'
+    obtain ⟨x', y', h', heq, hx'⟩ := (zsmul_some_aux E (-n) hpos' h).2 hΨ'
     refine ⟨x', (E⁄k).toAffine.negY x' y',
       (Affine.nonsingular_neg ..).mpr h', ?_, ?_⟩
     · have : n • (Affine.Point.some x y h : (E⁄k).Point) =
@@ -574,7 +573,7 @@ theorem exists_smul_some_eq {n : ℤ} (hn : n ≠ 0)
       rw [hΨeq, hΦeq, ← hbridgeSq,
         ← WeierstrassCurve.evalEval_φ (-n) h.1]
       exact hx'
-  · obtain ⟨x', y', h', heq, hx', -⟩ := (zsmul_some_aux E n hpos h).2
+  · obtain ⟨x', y', h', heq, hx'⟩ := (zsmul_some_aux E n hpos h).2
       (fun hz => hΨ (by rw [← hbridgeSq, hz]; ring))
     exact ⟨x', y', h', heq, by rw [← hbridgeSq, ← hbridgeφ]; exact hx'⟩
 
