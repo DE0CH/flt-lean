@@ -2582,6 +2582,29 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6, NOS (iii) COMPLETE `49b0112`): the y-level
+  `torsion_ordinate_eq_of_residue_eq` — equation-difference
+  factorization gives y₂ = negY, the difference is ψ₂ with
+  ψ₂² = Ψ₂Sq(x) on-curve, congruent ordinates force the
+  Ψ₂Sq(x)-residue to vanish, and the residue-curve Bézout
+  (isCoprime_Ψ₂Sq_preΨ' at the abscissa residue, a residue-preΨ'ₚ
+  root via the packaged two-face principle) yields 1 = 0.
+  Axiom-clean. ONLY (iv) REMAINS for the NOS node: restate
+  torsion_unramified_of_good_reduction with (hp : n.Prime)
+  (hodd : Odd n) [thread hp2/hp5 at Semistable:592 — it has
+  Fact p.Prime and can get oddness from the caller chain]; proof:
+  intro σ hσ P hP; P = some x y (zero-case trivial); σP =
+  some (σ x) (σ y) via Affine.Point.map-some; σP is n-torsion
+  (map-additivity: n•σP = σ(n•P) = 0 — mathlib Point.map is a
+  group hom or prove smul-commute directly); coordinates of σP in 𝒪
+  (torsion_abscissa/ordinate_mem); inertia σ fixes residues:
+  ValuationSubring.inertiaSubgroup-def gives residue(σ z) =
+  residue z for z ∈ 𝒪 (unfold the mathlib RamificationGroup
+  definition of inertia — CHECK its exact form: likely
+  'σ acts trivially on the residue field of 𝒪'); then
+  torsion_abscissa_residue_ne forces σx = x (else distinct residues,
+  but inertia gives equal) and torsion_ordinate_eq_of_residue_eq
+  forces σy = y; Point-ext concludes σP = P.
 - 2026-07-17 (session 6, NOS x-LEVEL PROVEN `ec4425b`):
   `torsion_abscissa_residue_ne` — the complete x-level of the
   injectivity: torsion abscissas at good reduction have distinct
