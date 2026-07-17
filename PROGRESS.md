@@ -211,11 +211,25 @@ the START and END of each block of work.
                 machinery + spelling bridge
                 (`map_mem_inertiaSubgroup_of_mem_localInertiaGroup`,
                 `LocalInertiaFixedField.lean`).
-                - ✗· `torsion_unramified_of_good_reduction`
-                  (`KnownIn1980s/EllipticCurves/GoodReduction.lean`,
-                  vendored 2026-07-16): the NOS easy direction — good
-                  reduction over a DVR makes the inertia action on
-                  `n`-torsion trivial.
+                - ✓· `torsion_unramified_of_good_reduction`
+                  (`KnownIn1980s/EllipticCurves/GoodReduction.lean`):
+                  **PROVEN 2026-07-17, AXIOM-CLEAN** — the NOS easy
+                  direction for odd primes `n` (hypotheses
+                  `(hp : n.Prime) (hodd : Odd n)` added and threaded
+                  through `isUnramifiedAt_of_hasGoodReduction` and
+                  `FreyCurve.torsion_isUnramified_of_good`; Frey
+                  callers supply oddness from `P.hp5`). Proof: inertia
+                  fixes residues (`MonoidHom.mem_ker` +
+                  `toRingAut` + `ResidueField.residue_smul`); a
+                  torsion point `some x y h` has integral coordinates
+                  (`torsion_abscissa_mem`/`torsion_ordinate_mem`,
+                  Cassels); `σP` is again `n`-torsion with the same
+                  residues, so `torsion_abscissa_residue_ne`
+                  (separable reduction of `preΨ'ₙ`) forces `σx = x`
+                  and `torsion_ordinate_eq_of_residue_eq` (the
+                  `ψ₂`-Bézout y-quadratic argument) forces `σy = y`;
+                  `congr 1` closes the `Point.some` equality via
+                  `Affine.Point.map_some _ h`.
             - ✓· `FreyCurve.torsion_isUnramified_of_multiplicative` —
               DERIVED (2026-07-16) from the PROVEN arithmetic
               (`freyCurve_hasMultiplicativeReduction_of_dvd` +

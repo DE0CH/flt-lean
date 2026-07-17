@@ -734,17 +734,101 @@ theorem WeierstrassCurve.torsion_ordinate_eq_of_residue_eq
     add_zero] at hev
   exact zero_ne_one hev
 
-set_option warn.sorry false in
-/-- (Sorry node; vendored from the FLT project.) If `E` is an elliptic curve
-over `k` (given by a minimal Weierstrass equation)
-with good reduction over `R`, and if `𝒪` is a valuation subring of `kˢᵉᵖ` lying above `R`,
-then the inertia subgroup of `Gal(kˢᵉᵖ/k)` at `𝒪` acts trivially on the `n`-torsion
-of `E(kˢᵉᵖ)`. In other words, the Galois representation on the `n`-torsion points
-is unramified. -/
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+omit [IsSepClosure k ksep] in
+open Polynomial WeierstrassCurve WeierstrassCurve.Affine in
+/-- **The Néron–Ogg–Shafarevich criterion, easy direction** (PROVEN
+2026-07-17 for odd primes, which is what the tree consumes): if `E`
+has good reduction over `R` and the odd prime `n` is invertible in
+the residue field, the inertia subgroup at any valuation subring `𝒪`
+of `kˢᵉᵖ` above `R` acts trivially on the `n`-torsion: torsion
+coordinates are integral, inertia fixes their residues, and the
+mod-`𝔪` injectivity through the residue curve's separability forces
+fixed points. -/
 theorem WeierstrassCurve.torsion_unramified_of_good_reduction
-    -- Assume 𝒪 lies above R, i.e. 𝒪 ∩ k = R
+    (hp : n.Prime) (hodd : Odd n)
     (h𝒪 : (𝒪.comap (algebraMap k ksep)).toSubring = (algebraMap R k).range) :
-    -- Then every element of the inertia subgroup at 𝒪 fixes every n-torsion point of E(ksep)
-    ∀ σ ∈ 𝒪.inertiaSubgroup k, ∀ P ∈ AddSubgroup.torsionBy (E⁄ksep).Point (n : ℤ),
-      Affine.Point.map (σ : ksep ≃ₐ[k] ksep).toAlgHom P = P :=
-  sorry
+    ∀ σ ∈ 𝒪.inertiaSubgroup k,
+      ∀ P ∈ AddSubgroup.torsionBy (E⁄ksep).Point (n : ℤ),
+      Affine.Point.map (σ : ksep ≃ₐ[k] ksep).toAlgHom P = P := by
+  classical
+  haveI : (E⁄ksep).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap k ksep)).IsElliptic)
+  intro σ hσ P hP
+  have hres : ∀ z : 𝒪, IsLocalRing.residue 𝒪 (σ • z) =
+      IsLocalRing.residue 𝒪 z := by
+    intro z
+    rw [IsLocalRing.ResidueField.residue_smul]
+    have h1 := MonoidHom.mem_ker.mp hσ
+    calc (σ : 𝒪.decompositionSubgroup k) • IsLocalRing.residue 𝒪 z
+        = (MulSemiringAction.toRingAut (𝒪.decompositionSubgroup k)
+            (IsLocalRing.ResidueField 𝒪) σ)
+            (IsLocalRing.residue 𝒪 z) := rfl
+      _ = IsLocalRing.residue 𝒪 z := by rw [h1]; rfl
+  have hcoe : ∀ z : 𝒪, ((σ • z : 𝒪) : ksep) =
+      ((σ : ksep ≃ₐ[k] ksep)).toAlgHom (z : ksep) := fun z => rfl
+  have hPtor : (n : ℤ) • P = 0 := hP
+  cases P with
+  | zero => rfl
+  | @some x y h =>
+    have htor : (n : ℤ) •
+        (Affine.Point.some x y h : (E⁄ksep).Point) = 0 := hPtor
+    have hxm := WeierstrassCurve.torsion_abscissa_mem R k E n ksep 𝒪
+      h𝒪 h htor
+    have hym := WeierstrassCurve.torsion_ordinate_mem R k E n ksep 𝒪
+      h𝒪 h htor
+    set σf := ((σ : ksep ≃ₐ[k] ksep)).toAlgHom with hσfdef
+    rw [Affine.Point.map_some]
+    have hns' : (E⁄ksep).toAffine.Nonsingular (σf x) (σf y) :=
+      (WeierstrassCurve.Affine.baseChange_nonsingular (W := E)
+        σf.injective x y).mpr (show (E⁄ksep).Nonsingular x y from h)
+    -- the image is torsion
+    have h1 : Affine.Point.map σf (Affine.Point.some x y h) =
+        (Affine.Point.some (σf x) (σf y) hns' : (E⁄ksep).Point) :=
+      Affine.Point.map_some _ h
+    have hmaptor : (n : ℤ) • (Affine.Point.some (σf x) (σf y) hns' :
+        (E⁄ksep).Point) = 0 := by
+      rw [← h1, ← map_zsmul, htor, map_zero]
+    -- memberships of the image coordinates
+    have hσxm : σf x ∈ 𝒪 := by
+      have := hcoe ⟨x, hxm⟩
+      rw [← this]
+      exact Subtype.mem _
+    have hσym : σf y ∈ 𝒪 := by
+      have := hcoe ⟨y, hym⟩
+      rw [← this]
+      exact Subtype.mem _
+    -- inertia gives congruent residues
+    have hrx : IsLocalRing.residue 𝒪 ⟨σf x, hσxm⟩ =
+        IsLocalRing.residue 𝒪 ⟨x, hxm⟩ := by
+      have h1 := hres ⟨x, hxm⟩
+      rwa [show (σ • (⟨x, hxm⟩ : 𝒪)) = ⟨σf x, hσxm⟩ from
+        Subtype.ext (hcoe ⟨x, hxm⟩)] at h1
+    have hry : IsLocalRing.residue 𝒪 ⟨σf y, hσym⟩ =
+        IsLocalRing.residue 𝒪 ⟨y, hym⟩ := by
+      have h1 := hres ⟨y, hym⟩
+      rwa [show (σ • (⟨y, hym⟩ : 𝒪)) = ⟨σf y, hσym⟩ from
+        Subtype.ext (hcoe ⟨y, hym⟩)] at h1
+    -- the abscissae agree
+    have hxeq : σf x = x := by
+      by_contra hne
+      exact WeierstrassCurve.torsion_abscissa_residue_ne R k E n ksep 𝒪
+        hp hodd h𝒪 hns' h hmaptor htor hne hσxm hxm hrx
+    -- transport the image point to the common abscissa
+    have hns'' : (E⁄ksep).toAffine.Nonsingular x (σf y) :=
+      hxeq ▸ hns'
+    have hmaptor' : (n : ℤ) • (Affine.Point.some x (σf y) hns'' :
+        (E⁄ksep).Point) = 0 := by
+      have := hmaptor
+      have hpt : (Affine.Point.some (σf x) (σf y) hns' :
+          (E⁄ksep).Point) = Affine.Point.some x (σf y) hns'' := by
+        congr 1
+      rwa [hpt] at this
+    -- the ordinates agree
+    have hyeq : σf y = y :=
+      WeierstrassCurve.torsion_ordinate_eq_of_residue_eq R k E n ksep 𝒪
+        hp hodd h𝒪 hns'' h hmaptor' hxm hσym hym hry
+    -- conclude by congruence
+    congr 1
+

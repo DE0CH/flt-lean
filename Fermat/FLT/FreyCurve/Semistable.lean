@@ -580,6 +580,7 @@ ambient `Point.map`). Remaining `sorryAx` comes ONLY from the NOS node
 itself. -/
 theorem WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} [Fact p.Prime] (hp : 0 < p)
+    (hodd : Odd p)
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
     [E.HasGoodReduction
       (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)] :
@@ -593,6 +594,7 @@ theorem WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction
     (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ E p
     (AlgebraicClosure ℚ)
     (embeddedValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+    (Fact.out : p.Prime) hodd
     (embeddedValuationSubring_comap_toSubring
       hq.toHeightOneSpectrumRingOfIntegersRat)
   have hmem := map_mem_inertiaSubgroup_of_mem_localInertiaGroup

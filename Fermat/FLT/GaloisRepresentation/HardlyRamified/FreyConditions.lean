@@ -105,7 +105,8 @@ theorem FreyCurve.torsion_isUnramified_of_good :
   haveI : Fact P.p.Prime := ⟨P.pp⟩
   intro q hq hq2p hndvd
   haveI := P.freyCurve_hasGoodReduction_of_not_dvd hq hq2p.1 hndvd
-  exact WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction P.freyCurve P.hppos hq hq2p.2
+  exact WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction P.freyCurve P.hppos
+    (P.pp.odd_of_ne_two (by have := P.hp5; omega)) hq hq2p.2
 
 /-- **Unramifiedness at multiplicative primes** (DERIVED 2026-07-16): at
 a prime `q ∉ {2, p}` dividing `abc`, the Frey curve has multiplicative
