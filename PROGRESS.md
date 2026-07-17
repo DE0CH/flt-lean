@@ -2582,6 +2582,23 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6 close, NEXT-NODE PLAN — GoodReduction:65 via
+  division polynomials, Cassels-style, NO formal groups): the torsion
+  tower unlocks an elementary route to
+  torsion_unramified_of_good_reduction: (1) torsion x-coordinates are
+  INTEGRAL at good primes — nP = 0 gives ΨSqₙ(x) = 0 (the PROVEN
+  dictionary), and ΨSqₙ has R-integral coefficients (minimal
+  equation) with leading coefficient n² a UNIT in R (n invertible in
+  the residue field), so roots are integral over R — hence the kernel
+  of reduction (points with v(x) < 0) contains no nonzero n-torsion;
+  (2) for σ in inertia, σP − P is n-torsion AND reduces to zero
+  (inertia is trivial on the residue field; needs the point-reduction
+  map + additivity — check Mathlib.AlgebraicGeometry.EllipticCurve.
+  Reduction for what exists), so σP − P = 0. Ingredients: the
+  dictionary (axiom-clean now), coeff_ΨSq/natDegree_ΨSq (mathlib),
+  integrality of roots of unit-leading-coefficient polynomials over
+  a valuation ring. This node then feeds the WeilPairing det-route
+  (Frobenius-det at good primes + Chebotarev/Dirichlet).
 - 2026-07-17 (session 6, TORSION TOWER AXIOM-CLEAN `498a075`):
   psi34 verified in the exponent-ascribed X-collected form — the
   winning trick: print EVERY power as `a ^ (k : ℕ)`; the shared
