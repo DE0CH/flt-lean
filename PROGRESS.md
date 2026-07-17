@@ -1603,3 +1603,19 @@ assumed. Axiom invariant: every declaration must use at most
   NO decomposition groups, NO henselian lifting, no new axioms.
   Frontier: 21 nodes. The transport family is now available PROVEN for
   the two `IsUnramifiedAt` glue nodes (next consumers).
+- 2026-07-17 (session 5, next-arc setup): the glue node
+  `isUnramifiedAt_of_hasGoodReduction` derivation from the vendored
+  NOS leaf (`torsion_unramified_of_good_reduction`,
+  `GoodReduction.lean`) needs: (1) the valuation subring
+  `𝒪 := comap ι (valuation ring of ℚ̄_q)` of `ℚ̄` over `R = ℤ_(q)`
+  (`h𝒪`-compatibility to verify); (2) the SPELLING BRIDGE between
+  `ValuationSubring.inertiaSubgroup k` (the NOS statement's inertia)
+  and the image of `localInertiaGroup q` under
+  `absoluteGaloisGroup.map` (via `lift_map`, mirroring the proven
+  embedding-prime transport); (3) the identification of
+  `(ρ.toLocal q)`'s action on `E.galoisRep`'s space with
+  `Affine.Point.map` on `p`-torsion (unfold `galoisRep`/`toLocal`).
+  Then `IsUnramifiedAt` = `localInertiaGroup ≤ ker` follows. The
+  `IsFlatAt` glue is the same pattern against
+  `torsion_flat_of_good_reduction` plus the `ℤ_(p) → ℤ_p` base
+  change of the prolongation package.
