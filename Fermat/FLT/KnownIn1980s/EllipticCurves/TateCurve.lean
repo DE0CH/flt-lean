@@ -282,6 +282,46 @@ theorem WeierstrassCurve.tateA₆_eq_evalInt (q : k) (hq : valuation k q < 1) :
   push_cast
   ring
 
+/-- The `a₄`-coefficient of the Tate curve has valuation less than `1`:
+its defining series has vanishing constant term. -/
+theorem WeierstrassCurve.valuation_tateA₄_lt_one (q : k)
+    (hq : valuation k q < 1) : valuation k (tateA₄ q) < 1 := by
+  rw [tateA₄_eq_evalInt q hq]
+  calc valuation k (TateCurve.evalInt q TateCurve.a₄Formal)
+      ≤ valuation k q ^ 1 := TateCurve.valuation_evalInt_le_pow q hq
+        (fun m hm => by
+          interval_cases m
+          rw [TateCurve.coeff_a₄Formal]
+          simp)
+    _ = valuation k q := pow_one _
+    _ < 1 := hq
+
+/-- The `a₆`-coefficient of the Tate curve has valuation less than `1`. -/
+theorem WeierstrassCurve.valuation_tateA₆_lt_one (q : k)
+    (hq : valuation k q < 1) : valuation k (tateA₆ q) < 1 := by
+  rw [tateA₆_eq_evalInt q hq]
+  calc valuation k (TateCurve.evalInt q TateCurve.a₆Formal)
+      ≤ valuation k q ^ 1 := TateCurve.valuation_evalInt_le_pow q hq
+        (fun m hm => by
+          interval_cases m
+          rw [TateCurve.coeff_a₆Formal]
+          simp)
+    _ = valuation k q := pow_one _
+    _ < 1 := hq
+
+/-- The Tate curve as a Weierstrass curve over the ring of integers:
+the coefficients `1, 0, 0, a₄(q), a₆(q)` are all integral. -/
+noncomputable def WeierstrassCurve.tateCurveModel (q : k)
+    (hq : valuation k q < 1) : WeierstrassCurve 𝒪[k] :=
+  ⟨1, 0, 0, ⟨tateA₄ q, le_of_lt (valuation_tateA₄_lt_one q hq)⟩,
+    ⟨tateA₆ q, le_of_lt (valuation_tateA₆_lt_one q hq)⟩⟩
+
+/-- The base change of the integral Tate model is the Tate curve. -/
+theorem WeierstrassCurve.tateCurveModel_baseChange (q : k)
+    (hq : valuation k q < 1) :
+    ((tateCurveModel q hq)⁄k) = tateCurve q := by
+  ext <;> rfl
+
 /-! ### Functoriality
 
 Now let `l` be a second nonarchimedean local field and let `k → l` be a morphism of fields
