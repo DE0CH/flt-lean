@@ -115,7 +115,8 @@
   "WeierstrassCurve.exists_tateTorsionQuotient": "✅✅",
   "hasMultiplicativeReduction_padic": "✅✅",
   "exists_tame_quotient_of_split_padic_two": "✅",
-  "WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two": "❌"
+  "WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two": "❌",
+  "inertia_fixes_algHom_of_unramified_gen_padic_two": "❌"
  },
  "children": {
   "fermat_last_theorem": [
@@ -561,11 +562,13 @@
   ],
   "WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two": [
    "WeierstrassCurve.galoisRep"
-  ]
+  ],
+  "inertia_fixes_algHom_of_unramified_gen_padic_two": []
  },
  "roots": [
   "fermat_last_theorem",
   "GaloisRepresentation.IsHardlyRamified.mod_three",
-  "hasMultiplicativeReduction_padic"
+  "hasMultiplicativeReduction_padic",
+  "inertia_fixes_algHom_of_unramified_gen_padic_two"
  ]
 }
