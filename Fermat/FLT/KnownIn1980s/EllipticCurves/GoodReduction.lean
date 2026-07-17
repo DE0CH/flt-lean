@@ -323,6 +323,45 @@ theorem WeierstrassCurve.torsion_ordinate_mem
     exact one_mem _
   exact 𝒪.mem_of_root_of_inv_leadingCoeff_mem hfne hcoeff hlc hroot
 
+set_option backward.isDefEq.respectTransparency false in
+open Polynomial in
+/-- **Distinct roots keep distinct residues under a separable
+reduction** (NOS step (iii) core): if `f₀` over a valuation subring
+has two distinct roots and its residue polynomial is separable, the
+roots have distinct residues — otherwise the residue polynomial
+acquires a square factor `(X − ξ)²`. -/
+theorem ValuationSubring.residue_ne_of_roots_ne
+    {K : Type*} [Field K] (A : ValuationSubring K)
+    (f₀ : Polynomial A) {x₁ x₂ : A}
+    (hr₁ : f₀.eval x₁ = 0) (hr₂ : f₀.eval x₂ = 0) (hne : x₁ ≠ x₂)
+    (hsep : (f₀.map (IsLocalRing.residue A)).Separable) :
+    IsLocalRing.residue A x₁ ≠ IsLocalRing.residue A x₂ := by
+  intro hcong
+  have h1 : (Polynomial.X - Polynomial.C x₁) ∣ f₀ :=
+    Polynomial.dvd_iff_isRoot.mpr hr₁
+  obtain ⟨g, hg⟩ := h1
+  have hg2 : g.eval x₂ = 0 := by
+    have hev := hr₂
+    rw [hg, Polynomial.eval_mul, Polynomial.eval_sub,
+      Polynomial.eval_X, Polynomial.eval_C] at hev
+    rcases mul_eq_zero.mp hev with h0 | h0
+    · exact absurd (sub_eq_zero.mp h0) (fun hc => hne hc.symm)
+    · exact h0
+  obtain ⟨h, hh⟩ := Polynomial.dvd_iff_isRoot.mpr hg2
+  have hmap := congrArg (Polynomial.map (IsLocalRing.residue A)) hg
+  rw [hh] at hmap
+  simp only [Polynomial.map_mul, Polynomial.map_sub, Polynomial.map_X,
+    Polynomial.map_C] at hmap
+  rw [← hcong] at hmap
+  have hsq := hsep.squarefree
+  have hdvd : (Polynomial.X -
+      Polynomial.C (IsLocalRing.residue A x₁)) *
+      (Polynomial.X - Polynomial.C (IsLocalRing.residue A x₁)) ∣
+      f₀.map (IsLocalRing.residue A) := by
+    rw [hmap]
+    exact ⟨h.map _, by ring⟩
+  exact Polynomial.not_isUnit_X_sub_C _ (hsq _ hdvd)
+
 set_option warn.sorry false in
 /-- (Sorry node; vendored from the FLT project.) If `E` is an elliptic curve
 over `k` (given by a minimal Weierstrass equation)
