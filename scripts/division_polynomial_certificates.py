@@ -250,6 +250,35 @@ def check_even_step_targets() -> None:
     assert sp.simplify(t_out * psi[2 * m] ** 4 - psi[4 * m]) == 0
     print("even-step targets (gap-2 secant): numeric check OK at m = 3")
 
+def certificate_even_step_x() -> None:
+    """The even-step x-target closes with UNIT cofactors over the
+    gap-2 cross-relation (iii₂) and the two memberships:
+    `num + (iii₂) + ψₘ₊₁⁶·(membership at m-1) + ψₘ₋₁⁶·(membership at
+    m+1) = 0` by construction, where (iii₂) is the pair-(m-1, m+1)
+    cross-tracking (only t-monomial: `-2ψₘ₋₁⁶ψₘ₊₁⁶ tₘ₋₁tₘ₊₁`),
+    numerically a true identity of division-polynomial values."""
+    Zm2, A, B, C, D, tmm1, tm1 = sp.symbols("Zm2 A B C D tmm1 tm1")
+    P2 = lambda t: 4 * t**3 + b2 * t**2 + 2 * b4 * t + b6
+    s_ = d
+    xmm1 = x - B * Zm2 / A**2
+    xm1 = x - D * B / C**2
+    cmm1 = sp.expand(sp.fraction(sp.cancel(sp.together(tmm1**2 - P2(xmm1))))[0])
+    cm1 = sp.expand(sp.fraction(sp.cancel(sp.together(tm1**2 - P2(xm1))))[0])
+    psi2m_s = A**2 * B * D - Zm2 * B * C**2
+    dx = -psi2m_s / (A * C) ** 2
+    dy = (tm1 - tmm1 - a1 * dx) / 2
+    x_out = (dy**2 + a1 * dy * dx - (a2 + xm1 + xmm1) * dx**2) / dx**2
+    psi2m1 = D * B**3 - A * C**3
+    psi2mm1 = C * A**3 - Zm2 * B**3
+    target = sp.together((x - x_out) * psi2m_s**2 - psi2m1 * psi2mm1 * s_**2)
+    num = sp.expand(sp.fraction(sp.cancel(target))[0])
+    iii2 = sp.expand(-(num + C**6 * cmm1 + A**6 * cm1))
+    assert sp.expand(num + iii2 + C**6 * cmm1 + A**6 * cm1) == 0
+    pol = sp.Poly(iii2, tmm1, tm1)
+    tmonos = {m_: c for m_, c in zip(pol.monoms(), pol.coeffs()) if sum(m_) > 0}
+    assert list(tmonos.keys()) == [(1, 1)]
+    print("even-step x-target: exact closure with unit cofactors OK (iii₂)")
+
 
 if __name__ == "__main__":
     certificate_duplication_y()
@@ -259,3 +288,4 @@ if __name__ == "__main__":
     certificate_odd_step_x()
     resultant_Psi2Sq_Psi3()
     check_even_step_targets()
+    certificate_even_step_x()

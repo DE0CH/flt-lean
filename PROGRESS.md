@@ -2223,3 +2223,16 @@ assumed. Axiom invariant: every declaration must use at most
   Bézout as in `isCoprime_Φ_ΨSq`). If `s ≠ 0`: the generic two-secant
   machinery with the `s`-divided even-recurrence eliminations is
   fully legal.
+- 2026-07-17 (session 5): **BOTH step x-targets close with unit
+  cofactors.** The even-step residual over (memberships at m−1, m+1)
+  has t-part `−(ψₘ₋₁ψₘ₊₁)⁶(tₘ₊₁−tₘ₋₁)²`, giving the gap-2
+  cross-relation (iii₂) (pair (m−1, m+1); only t-monomial
+  `−2(ψₘ₋₁ψₘ₊₁)⁶tₘ₋₁tₘ₊₁`) with closure BY CONSTRUCTION:
+  `num + (iii₂) + ψₘ₊₁⁶·cmₘ₋₁ + ψₘ₋₁⁶·cmₘ₊₁ = 0`; (iii₂) numerically
+  validated m = 2..5 (validator `certificate_even_step_x`). The
+  induction package therefore carries cross-tracking at BOTH pair
+  gaps: (iii-a) consecutive `(n, n+1)`, (iii-b) gap-2 `(n−1, n+1)`.
+  Certificate inventory remaining: the two t-target closures
+  (odd-step check running with specialized coefficients) and the
+  propagation of (iii-a)/(iii-b) to the output pairs — then the Lean
+  skeleton.
