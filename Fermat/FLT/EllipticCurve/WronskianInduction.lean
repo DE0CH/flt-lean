@@ -217,4 +217,186 @@ theorem DK_smul_taut : ∀ (n : ℕ), 1 ≤ n → ∀ (xn yn : Kuniv)
     rw [← hcast]
     exact hstep
 
+/-! ## The Wronskian identity
+
+Differentiating the multiplication `x`-formula `xₙ ⬝ ΨSqₙ = Φₙ` with
+the invariant derivation and cancelling `DK(x) = ψ₂ ≠ 0` yields
+`Φₙ′ΨSqₙ − ΦₙΨSqₙ′ = n ⬝ preΨ₂ₙ`. -/
+
+set_option backward.isDefEq.respectTransparency false in
+/-- `DK(x)` is the image of the class of `F_Y`. -/
+lemma DK_tautX_repr : DK tautX = algebraMap Buniv Kuniv
+    (CoordinateRing.mk Wuniv Wuniv.toAffine.polynomialY) := by
+  have hrepr : tautX = algebraMap Buniv Kuniv
+      (CoordinateRing.mk Wuniv (Polynomial.C Polynomial.X)) := rfl
+  rw [hrepr, DK_algebraMap, DB_mk]
+  rw [show Dham (Polynomial.C Polynomial.X) =
+      Wuniv.toAffine.polynomialY by
+    rw [Dham_C]
+    simp]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The chain rule at the tautological point**: `DK` of a `y`-free
+value is the derivative value times `DK(x)`. -/
+lemma DK_eval_taut (P : (MvPolynomial (Fin 5) ℤ)[X]) :
+    DK ((P.map coeffHom).eval tautX) =
+      ((Polynomial.derivative P).map coeffHom).eval tautX * DK tautX := by
+  rw [taut_eval_C_mk, DK_algebraMap, DB_mk, Dham_C, map_mul, map_mul,
+    taut_eval_C_mk, DK_tautX_repr]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **The Wronskian identity at the tautological point**:
+`Φₙ′ ⬝ ΨSqₙ − Φₙ ⬝ ΨSqₙ′ = n ⬝ preΨ₂ₙ` as values at `tautX`. -/
+theorem wronskian_taut {n : ℕ} (hn : 1 ≤ n) :
+    ((Polynomial.derivative (Wuniv.Φ (n : ℤ))).map coeffHom).eval tautX *
+        ((Wuniv.ΨSq (n : ℤ)).map coeffHom).eval tautX -
+      ((Wuniv.Φ (n : ℤ)).map coeffHom).eval tautX *
+        ((Polynomial.derivative (Wuniv.ΨSq (n : ℤ))).map coeffHom).eval
+          tautX =
+      (n : Kuniv) *
+        ((Wuniv.preΨ (2 * (n : ℤ))).map coeffHom).eval tautX := by
+  have hnz : ((n : ℤ)) ≠ 0 := by omega
+  have hs : (((WK⁄Kuniv).ψ 2).evalEval tautX tautY : Kuniv) ≠ 0 :=
+    taut_psi_ne_zero' two_ne_zero
+  have hpsin := taut_psi_ne_zero' hnz
+  obtain ⟨x', y', h', hsm, hxf, htr⟩ :=
+    (TorsionCard.zsmul_some_aux_strong WK tautNS' hs (n : ℤ)
+      (by omega)).2 hpsin
+  have hDK := (DK_smul_taut n hn x' y' h' hsm).1
+  -- the bridges to univariate values
+  have hbridgeSq : (((WK⁄Kuniv).ψ (n : ℤ)).evalEval tautX tautY) ^ 2 =
+      ((WK⁄Kuniv).ΨSq (n : ℤ)).eval tautX := by
+    rw [← WeierstrassCurve.evalEval_Ψ_sq _ tautNS'.1,
+      WeierstrassCurve.evalEval_ψ _ tautNS'.1]
+  have hxf' : x' * ((WK⁄Kuniv).ΨSq (n : ℤ)).eval tautX =
+      ((WK⁄Kuniv).Φ (n : ℤ)).eval tautX := by
+    rw [← hbridgeSq, ← WeierstrassCurve.evalEval_φ _ tautNS'.1]
+    exact hxf
+  -- the tracking in univariate form
+  have h2n : Even (2 * (n : ℤ)) := even_two_mul _
+  have htr' : (2 * y' + (WK⁄Kuniv).a₁ * x' + (WK⁄Kuniv).a₃) *
+      ((WK⁄Kuniv).ΨSq (n : ℤ)).eval tautX ^ 2 =
+      ((WK⁄Kuniv).preΨ (2 * (n : ℤ))).eval tautX * DK tautX := by
+    have he := TorsionCard.evalEval_ψ_of_even WK h2n tautNS'.1
+    have hψ2 : (((WK⁄Kuniv).ψ 2).evalEval tautX tautY : Kuniv) =
+        DK tautX := by
+      rw [WeierstrassCurve.ψ_two, WeierstrassCurve.ψ₂,
+        Affine.evalEval_polynomialY, DK_taut_base.1]
+    rw [← hψ2, ← he, ← hbridgeSq]
+    linear_combination htr
+  -- differentiate the x-formula
+  have hxfm : x' * ((Wuniv.ΨSq (n : ℤ)).map coeffHom).eval tautX =
+      ((Wuniv.Φ (n : ℤ)).map coeffHom).eval tautX := by
+    have h0 : ((WK⁄Kuniv).ΨSq (n : ℤ)).eval tautX =
+        ((Wuniv.ΨSq (n : ℤ)).map coeffHom).eval tautX ∧
+        ((WK⁄Kuniv).Φ (n : ℤ)).eval tautX =
+          ((Wuniv.Φ (n : ℤ)).map coeffHom).eval tautX := by
+      constructor
+      · have h1 : ((WK.ΨSq (n : ℤ)).eval tautX : Kuniv) =
+            ((Wuniv.ΨSq (n : ℤ)).map coeffHom).eval tautX := by
+          have h2 : WK.ΨSq (n : ℤ) =
+              (Wuniv.ΨSq (n : ℤ)).map coeffHom := by
+            rw [show WK = Wuniv.map coeffHom from rfl,
+              WeierstrassCurve.map_ΨSq]
+          rw [h2]
+        exact (WK_baseChange_self ▸ h1 : _)
+      · have h1 : ((WK.Φ (n : ℤ)).eval tautX : Kuniv) =
+            ((Wuniv.Φ (n : ℤ)).map coeffHom).eval tautX := by
+          have h2 : WK.Φ (n : ℤ) =
+              (Wuniv.Φ (n : ℤ)).map coeffHom := by
+            rw [show WK = Wuniv.map coeffHom from rfl,
+              WeierstrassCurve.map_Φ]
+          rw [h2]
+        exact (WK_baseChange_self ▸ h1 : _)
+    rw [← h0.1, ← h0.2]
+    exact hxf'
+  have hpre : ((WK⁄Kuniv).preΨ (2 * (n : ℤ))).eval tautX =
+      ((Wuniv.preΨ (2 * (n : ℤ))).map coeffHom).eval tautX := by
+    have h1 : ((WK.preΨ (2 * (n : ℤ))).eval tautX : Kuniv) =
+        ((Wuniv.preΨ (2 * (n : ℤ))).map coeffHom).eval tautX := by
+      have h2 : WK.preΨ (2 * (n : ℤ)) =
+          (Wuniv.preΨ (2 * (n : ℤ))).map coeffHom := by
+        rw [show WK = Wuniv.map coeffHom from rfl,
+          WeierstrassCurve.map_preΨ]
+      rw [h2]
+    exact (WK_baseChange_self ▸ h1 : _)
+  have hSm : ((WK⁄Kuniv).ΨSq (n : ℤ)).eval tautX =
+      ((Wuniv.ΨSq (n : ℤ)).map coeffHom).eval tautX := by
+    have h1 : ((WK.ΨSq (n : ℤ)).eval tautX : Kuniv) =
+        ((Wuniv.ΨSq (n : ℤ)).map coeffHom).eval tautX := by
+      have h2 : WK.ΨSq (n : ℤ) = (Wuniv.ΨSq (n : ℤ)).map coeffHom := by
+        rw [show WK = Wuniv.map coeffHom from rfl,
+          WeierstrassCurve.map_ΨSq]
+      rw [h2]
+    exact (WK_baseChange_self ▸ h1 : _)
+  -- differentiate
+  have hdiff := congrArg DK hxfm
+  have hmul := DK_mul x' (((Wuniv.ΨSq (n : ℤ)).map coeffHom).eval tautX)
+  rw [DK_eval_taut] at hdiff hmul
+  -- assemble; cancel DK tautX
+  have hD : DK tautX ≠ 0 := by
+    rw [DK_taut_base.1]
+    exact taut_s_ne_zero
+  have htr'' : (2 * y' + (WK⁄Kuniv).a₁ * x' + (WK⁄Kuniv).a₃) *
+      (((Wuniv.ΨSq (n : ℤ)).map coeffHom).eval tautX) ^ 2 =
+      ((Wuniv.preΨ (2 * (n : ℤ))).map coeffHom).eval tautX *
+        DK tautX := by
+    rw [← hSm, ← hpre]
+    exact htr'
+  have key : (((Polynomial.derivative (Wuniv.Φ (n : ℤ))).map
+        coeffHom).eval tautX *
+        ((Wuniv.ΨSq (n : ℤ)).map coeffHom).eval tautX -
+      ((Wuniv.Φ (n : ℤ)).map coeffHom).eval tautX *
+        ((Polynomial.derivative (Wuniv.ΨSq (n : ℤ))).map
+          coeffHom).eval tautX -
+      (n : Kuniv) *
+        ((Wuniv.preΨ (2 * (n : ℤ))).map coeffHom).eval tautX) *
+      DK tautX = 0 := by
+    linear_combination
+      (-(((Wuniv.ΨSq (n : ℤ)).map coeffHom).eval tautX)) * hdiff +
+      ((Wuniv.ΨSq (n : ℤ)).map coeffHom).eval tautX * hmul +
+      (((Polynomial.derivative (Wuniv.ΨSq (n : ℤ))).map
+        coeffHom).eval tautX * DK tautX) * hxfm +
+      (n : Kuniv) * htr'' +
+      (((Wuniv.ΨSq (n : ℤ)).map coeffHom).eval tautX) ^ 2 * hDK
+  rcases mul_eq_zero.mp key with h0 | h0
+  · linear_combination h0
+  · exact absurd h0 hD
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **The universal Wronskian identity**: in `ℤ[A₁,…,A₅][X]`,
+`Φₙ′ ⬝ ΨSqₙ − Φₙ ⬝ ΨSqₙ′ = n ⬝ preΨ₂ₙ`. -/
+theorem univ_wronskian {n : ℕ} (hn : 1 ≤ n) :
+    Polynomial.derivative (Wuniv.Φ (n : ℤ)) * Wuniv.ΨSq (n : ℤ) -
+      Wuniv.Φ (n : ℤ) * Polynomial.derivative (Wuniv.ΨSq (n : ℤ)) =
+      (n : (MvPolynomial (Fin 5) ℤ)[X]) * Wuniv.preΨ (2 * (n : ℤ)) := by
+  apply taut_C_injective
+  have h := wronskian_taut hn
+  simp only [taut_eval_C_mk] at h
+  simp only [map_mul, map_sub, map_natCast]
+  linear_combination h
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The Wronskian identity over any commutative ring**:
+`Φₙ′ ⬝ ΨSqₙ − Φₙ ⬝ ΨSqₙ′ = n ⬝ preΨ₂ₙ`. -/
+theorem wronskian {R : Type*} [CommRing R] (W : WeierstrassCurve R)
+    {n : ℕ} (hn : 1 ≤ n) :
+    Polynomial.derivative (W.Φ (n : ℤ)) * W.ΨSq (n : ℤ) -
+      W.Φ (n : ℤ) * Polynomial.derivative (W.ΨSq (n : ℤ)) =
+      (n : R[X]) * W.preΨ (2 * (n : ℤ)) := by
+  set σ : MvPolynomial (Fin 5) ℤ →+* R :=
+    MvPolynomial.eval₂Hom (Int.castRingHom R) ![W.a₁, W.a₂, W.a₃, W.a₄, W.a₆]
+  have hmap : Wuniv.map σ = W := by
+    simp only [Wuniv, WeierstrassCurve.map, MvPolynomial.eval₂Hom_X', σ]
+    rfl
+  have h := congrArg (Polynomial.map σ) (univ_wronskian hn)
+  simp only [Polynomial.map_mul, Polynomial.map_sub,
+    Polynomial.map_natCast, ← Polynomial.derivative_map,
+    ← WeierstrassCurve.map_Φ, ← WeierstrassCurve.map_ΨSq,
+    ← WeierstrassCurve.map_preΨ, hmap] at h
+  exact h
+
 end PsiSumCompanion
