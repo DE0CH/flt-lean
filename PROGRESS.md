@@ -2178,3 +2178,20 @@ assumed. Axiom invariant: every declaration must use at most
   Groebner verification of the closure running; the same structure
   applies to the even step `[2m] = [m+1] + [m−1]` with gap-2 as the
   secant denominator.
+- 2026-07-17 (session 5, `zsmul_some_aux` — THE PACKAGE IS
+  STRUCTURALLY COMPLETE): the odd-step x-target's residual over
+  (curve equation, IH memberships) factors EXACTLY as
+  `W²((b₂+12x)ψₙ²ψₙ₊₁² − 4(ψₙ₋₁ψₙ₊₁³+ψₙ³ψₙ₊₂)) − (ψₙψₙ₊₁)⁶(tₙ+tₙ₊₁)²`
+  — the missing information is the CROSS-TERM `tₙtₙ₊₁` (the relative
+  sign of consecutive trackings, which memberships alone cannot fix).
+  The induction package therefore carries THREE components:
+  (i) `xₙψₙ² = φₙ`; (ii) `tₙψₙ⁴ = ψ₂ₙ`; (iii) the cross-tracking
+  `2tₙtₙ₊₁(ψₙψₙ₊₁)⁶ = ψ₂ₙ₊₁²((b₂+12x)ψₙ²ψₙ₊₁² − 4(ψₙ₋₁ψₙ₊₁³+ψₙ³ψₙ₊₂))
+  − (ψₙψₙ₊₁)⁶(Ψ₂Sq(xₙ)+Ψ₂Sq(xₙ₊₁))` — window-expressible, numerically
+  validated for n = 2..5 (validator in the certificate script). With
+  (iii) as an ideal generator the odd-step x-target closes by
+  construction; (iii) also supersedes the earlier Ward-gap-2 plan
+  (Z, E eliminate via the trackings with only ψₙ, ψₙ₊₁ ≠ 0
+  denominators). Remaining: certify the propagation of (i)+(ii)+(iii)
+  through both steps with the script (mechanical), then write the
+  Lean skeleton.

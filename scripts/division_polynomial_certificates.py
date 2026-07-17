@@ -159,3 +159,29 @@ if __name__ == "__main__":
     certificate_duplication_y()
     check_tracked_pair()
     check_step_targets()
+    check_cross_tracking()
+
+
+def check_cross_tracking() -> None:
+    """Component (iii) of the induction package — the cross-tracking
+    relation binding the relative sign of consecutive trackings:
+    `2 tₙ tₙ₊₁ (ψₙψₙ₊₁)⁶ = ψ₂ₙ₊₁²((b₂+12x)ψₙ²ψₙ₊₁² − 4(ψₙ₋₁ψₙ₊₁³ + ψₙ³ψₙ₊₂))
+       − (ψₙψₙ₊₁)⁶(Ψ₂Sq(xₙ) + Ψ₂Sq(xₙ₊₁))`.
+    This is precisely the residual of the odd-step x-target over
+    (g, memberships); with (iii) as a generator the odd step closes."""
+    psi, pts = numeric_model()
+    x0 = sp.Rational(3)
+    B2, B4, B6 = 0, 4, 12
+    P2 = lambda t: 4 * t**3 + B2 * t**2 + 2 * B4 * t + B6
+    for m in range(2, 6):
+        A_, B_, C_, D_ = psi[m - 1], psi[m], psi[m + 1], psi[m + 2]
+        tm, tm1 = 2 * pts[m][1], 2 * pts[m + 1][1]
+        Wv = D_ * B_**3 - A_ * C_**3
+        xm = x0 - C_ * A_ / B_**2
+        xm1 = x0 - D_ * B_ / C_**2
+        lhs = 2 * tm * tm1 * B_**6 * C_**6
+        rhs = Wv**2 * ((B2 + 12 * x0) * B_**2 * C_**2
+                       - 4 * (A_ * C_**3 + B_**3 * D_)) \
+            - B_**6 * C_**6 * (P2(xm) + P2(xm1))
+        assert sp.simplify(lhs - rhs) == 0, m
+    print("cross-tracking (iii): numeric check OK for n = 2..5")
