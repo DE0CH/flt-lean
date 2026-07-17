@@ -107,8 +107,10 @@
   "torsion_trivial_of_split_multiplicative_adic": "✅",
   "WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic": "✅",
   "WeierstrassCurve.torsion_trivial_of_multiplicative_reduction": "✅",
-  "WeierstrassCurve.tate_inertia_unipotent_of_nonsplit": "❌",
-  "WeierstrassCurve.tate_inertia_trivial_of_nonsplit": "❌"
+  "WeierstrassCurve.tate_inertia_unipotent_of_nonsplit": "✅",
+  "WeierstrassCurve.tate_inertia_trivial_of_nonsplit": "✅",
+  "inertia_fixes_algHom_of_unramified_gen": "✅✅",
+  "ValuationSubring.inertia_fixes_root_of_separable_residue": "✅✅"
  },
  "children": {
   "fermat_last_theorem": [
@@ -523,8 +525,21 @@
    "torsion_trivial_of_split_multiplicative_adic",
    "WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic"
   ],
-  "WeierstrassCurve.tate_inertia_unipotent_of_nonsplit": [],
-  "WeierstrassCurve.tate_inertia_trivial_of_nonsplit": []
+  "WeierstrassCurve.tate_inertia_unipotent_of_nonsplit": [
+   "WeierstrassCurve.tate_inertia_unipotent",
+   "inertia_fixes_algHom_of_unramified_gen",
+   "WeierstrassCurve.exists_tateEquivSepClosure"
+  ],
+  "WeierstrassCurve.tate_inertia_trivial_of_nonsplit": [
+   "inertia_fixes_algHom_of_unramified_gen",
+   "WeierstrassCurve.tate_inertia_trivial",
+   "WeierstrassCurve.exists_tateEquivSepClosure",
+   "exists_unit_qUnit_mul_inv_pow_isUnit"
+  ],
+  "inertia_fixes_algHom_of_unramified_gen": [
+   "ValuationSubring.inertia_fixes_root_of_separable_residue"
+  ],
+  "ValuationSubring.inertia_fixes_root_of_separable_residue": []
  },
  "roots": [
   "fermat_last_theorem",

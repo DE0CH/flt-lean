@@ -230,13 +230,27 @@ entries file). To add/remove/annotate a node, edit
                         `tate_inertia_unipotent_of_nonsplit` by the
                         proven `ℚ̄`-pullback glue (equivariant embedding
                         + `Point.map` injectivity).
-                        - ❌· `WeierstrassCurve.tate_inertia_unipotent_of_nonsplit` — the LOCAL twist-transfer content of the
-                          nonsplit unipotence: the unramified quadratic
-                          twist has split reduction, its minimal model
-                          satisfies `tate_inertia_unipotent`, and the
-                          twist point-equivalence is inertia-equivariant
-                          (trivial quadratic character on the unramified
-                          extension).
+                        - ✅· `WeierstrassCurve.tate_inertia_unipotent_of_nonsplit` — the LOCAL twist-transfer of nonsplit
+                          unipotence, now assembled: the enriched twist
+                          witness, the inertia-fixed embedding of the
+                          unramified quadratic extension, and the
+                          equivariant composite point equivalence
+                          transport `tate_inertia_unipotent` from the
+                          twisted minimal model.
+                          - ❌· `WeierstrassCurve.exists_tateEquivSepClosure` (see above)
+                          - ✅✅· `WeierstrassCurve.tate_inertia_unipotent` (see above)
+                          - ✅✅· `inertia_fixes_algHom_of_unramified_gen` — inertia fixes every embedding of an
+                            unramified extension of `ℚ_qˆ` (generator
+                            with monic integral lift of separable
+                            residue reduction): the master root-fixing
+                            lemma applied to the image of the generator,
+                            extended by the adjoin-⊤ equalizer argument.
+                            - ✅✅· `ValuationSubring.inertia_fixes_root_of_separable_residue` — the master root-fixing lemma: inertia
+                              fixes any `A`-integral root of a
+                              polynomial over `A` with base-field
+                              coefficients and separable residue
+                              reduction (subsumes the `X^p − 1` and `X^p
+                              − c` steps).
                     - ✅✅· `FreyPackage.freyCurve_hasMultiplicativeReduction_at_two` — (`FreyCurve/Semistable.lean`, own work):
                       (2026-07-16) — the Frey model is semistable at 2
                       by design: `c₄ = c^{2p} - (ab)^p` is odd (`a ≡ 3
@@ -529,13 +543,18 @@ entries file). To add/remove/annotate a node, edit
                             node `tate_inertia_trivial_of_nonsplit` by
                             the proven `ℚ̄`-pullback glue; the
                             `j`-hypothesis feeds through `map_j`.
-                            - ❌· `WeierstrassCurve.tate_inertia_trivial_of_nonsplit` — the LOCAL twist-transfer content of the
-                              nonsplit triviality: as the unipotent
-                              analogue via the unramified quadratic
-                              twist and `tate_inertia_trivial` — the
-                              twist has the same `j`-invariant, so the
-                              step-(d) witness applies to its minimal
-                              model.
+                            - ✅· `WeierstrassCurve.tate_inertia_trivial_of_nonsplit` — the LOCAL twist-transfer of nonsplit
+                              triviality, now assembled: as the
+                              unipotent analogue via
+                              `tate_inertia_trivial`, with the step-(d)
+                              witness applied to the twisted minimal
+                              model (same `j`-invariant through
+                              `variableChange_j` and
+                              `j_quadraticTwist`).
+                              - ❌· `WeierstrassCurve.exists_tateEquivSepClosure` (see above)
+                              - ✅✅· `WeierstrassCurve.tate_inertia_trivial` (see above)
+                              - ✅✅· `exists_unit_qUnit_mul_inv_pow_isUnit` (see above)
+                              - ✅✅· `inertia_fixes_algHom_of_unramified_gen` (see above)
                       - ✅✅· `WeierstrassCurve.galoisRep` (see above)
                     - ✅✅· `WeierstrassCurve.galoisRep` (see above)
                   - ✅✅· `TorsionCard.smul_surjective` (see above)
