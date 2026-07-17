@@ -2530,8 +2530,10 @@ assumed. Axiom invariant: every declaration must use at most
   CONFIRMED FURTHER: the (C)-ΨSq-side CLOSES as a value-window ideal
   membership over {even-rec, T(n,2), star, membership, c/d-anchors,
   b₈-relation} (GB size 13, scripts/eds/composition_psisq_certificate
-  .py) — so (C) has BOTH routes (window certificate, tautological
-  point). And the Euler-homogeneity chain rule gives the exact
+  .py) — but plain multivariate DIVISION fails in 500 generator
+  orders, so no easy explicit cofactors: use the TAUTOLOGICAL-POINT
+  route (where (C)-ΨSq is literally tracking² + membership-at-nP,
+  zero new certificates). And the Euler-homogeneity chain rule gives the exact
   doubling law `W(2n) = 2·preΨ₄hom(Φₙ,ΨSqₙ)·W(n)` since the Jacobian
   of the composition pair is `8·preΨ₄hom` (verified). The remaining
   odd-index (W)-steps at primes need the differentiated-recursion
