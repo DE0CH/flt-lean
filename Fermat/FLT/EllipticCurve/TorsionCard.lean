@@ -373,7 +373,7 @@ theorem smul_collision {m : ℤ} {x y xm ym xm1 ym1 : k}
     exact hadd
 
 set_option backward.isDefEq.respectTransparency false in
-omit [E.IsElliptic] in
+omit [E.IsElliptic] [DecidableEq k] in
 /-- **The gap-1 `x`-difference identity** (PROVEN 2026-07-17): from the
 multiplication formulas at `m` and `m+1`, the difference of the
 `x`-coordinates is `x([m+1]P) - x([m]P) = -ψ₂ₘ₊₁/(ψₘψₘ₊₁)²` in
@@ -397,7 +397,7 @@ theorem x_sub_gap_one {m : ℤ} {x y xm xm1 : k}
     ((E⁄k).ψ (m + 1)).evalEval x y ^ 2 * hφm + hodd
 
 set_option backward.isDefEq.respectTransparency false in
-omit [E.IsElliptic] in
+omit [E.IsElliptic] [DecidableEq k] in
 /-- **The gap-2 `x`-difference identity** (PROVEN 2026-07-17): from the
 multiplication formulas at `m-1` and `m+1`, the difference of the
 `x`-coordinates is `x([m-1]P) - x([m+1]P) = ψ₂ₘψ₂/(ψₘ₋₁ψₘ₊₁)²` in
