@@ -282,6 +282,41 @@ theorem zsmul_some_aux_two {x y : k}
           56 * (E⁄k).a₂ * x ^ 2 - 8 * (E⁄k).a₃ ^ 2 - 16 * (E⁄k).a₃ * y +
           8 * (E⁄k).a₄ * x - 16 * (E⁄k).a₆ + 56 * x ^ 3 - 16 * y ^ 2)) * heq
 
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] in
+/-- **The secant addition formula in multiplied form** (PROVEN
+2026-07-17): for two affine points with distinct `x`-coordinates,
+`P₁ + P₂` is affine, its `x`-coordinate satisfies the multiplied
+secant identity, and its `ψ₂`-value satisfies the degree-one tracking
+identity. Characteristic-free and division-free; no curve equation is
+needed (both identities are `λ`-elimination telescopes). -/
+theorem add_some_coords {x₁ y₁ x₂ y₂ : k}
+    (h₁ : (E⁄k).toAffine.Nonsingular x₁ y₁)
+    (h₂ : (E⁄k).toAffine.Nonsingular x₂ y₂) (hx : x₁ ≠ x₂) :
+    ∃ (x₃ y₃ : k) (h₃ : (E⁄k).toAffine.Nonsingular x₃ y₃),
+      (Affine.Point.some x₁ y₁ h₁ : (E⁄k).Point) + Affine.Point.some x₂ y₂ h₂ =
+        Affine.Point.some x₃ y₃ h₃ ∧
+      x₃ * (x₁ - x₂) ^ 2 = (y₁ - y₂) ^ 2 + (E⁄k).a₁ * (y₁ - y₂) * (x₁ - x₂) -
+        ((E⁄k).a₂ + x₁ + x₂) * (x₁ - x₂) ^ 2 ∧
+      (2 * y₃ + (E⁄k).a₁ * x₃ + (E⁄k).a₃) * (x₁ - x₂) =
+        -(2 * (y₁ - y₂)) * (x₃ - x₁) -
+          (2 * y₁ + (E⁄k).a₁ * x₃ + (E⁄k).a₃) * (x₁ - x₂) := by
+  classical
+  have hxy : ¬(x₁ = x₂ ∧ y₁ = (E⁄k).toAffine.negY x₂ y₂) := fun hc => hx hc.1
+  have hd : x₁ - x₂ ≠ 0 := sub_ne_zero.mpr hx
+  have hslope : (E⁄k).toAffine.slope x₁ x₂ y₁ y₂ = (y₁ - y₂) / (x₁ - x₂) := by
+    rw [Affine.slope, if_neg hx]
+  have hS : (E⁄k).toAffine.slope x₁ x₂ y₁ y₂ * (x₁ - x₂) = y₁ - y₂ := by
+    rw [hslope, div_mul_cancel₀ _ hd]
+  refine ⟨_, _, Affine.nonsingular_add h₁ h₂ hxy,
+    Affine.Point.add_some hxy, ?_, ?_⟩
+  · rw [Affine.addX]
+    linear_combination ((E⁄k).toAffine.slope x₁ x₂ y₁ y₂ * (x₁ - x₂) +
+      (y₁ - y₂) + (E⁄k).a₁ * (x₁ - x₂)) * hS
+  · rw [Affine.addY, Affine.negY, Affine.negAddY]
+    linear_combination (-2 : k) * ((E⁄k).toAffine.addX x₁ x₂
+      ((E⁄k).toAffine.slope x₁ x₂ y₁ y₂) - x₁) * hS
+
 set_option warn.sorry false in
 /-- (Sorry node — **the multiplication-by-`n` formula**, Washington
 *Elliptic curves* Theorem 3.6, the strengthened simultaneous induction
