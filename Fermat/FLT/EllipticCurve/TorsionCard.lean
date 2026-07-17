@@ -871,36 +871,6 @@ theorem evalEval_ψ_quadratic (n : ℤ) (x y : k) :
     evalEval_ψ_normEDS E n x y, normEDS_two, normEDS_three]
   linear_combination hT
 
-set_option warn.sorry false in
-omit [E.IsElliptic] [DecidableEq k] in
-/-- (Sorry node — **the degenerate tracking certificate at
-`ψₙ₋₁ = 0`**.) If `ψₙ₋₁(x,y) = 0` then `ψ₂ ⬝ ψₙ⁴ = ψ₂ₙ` on the curve
-(the `ψ₂`-tracking of `n ⬝ P = P` when `(n-1) ⬝ P = 0`). A
-fixed-window consequence of the elliptic-sequence family and the
-sum-companion; numerically verified (e.g. `s ⬝ ψ₄⁴ = ψ₈` at the
-`3`-torsion point of `y² + y = x³`). -/
-theorem psi_tracking_prev_zero (n : ℤ) {x y : k}
-    (h : (E⁄k).toAffine.Equation x y)
-    (h1 : ((E⁄k).ψ (n - 1)).evalEval x y = 0) :
-    ((E⁄k).ψ 2).evalEval x y * ((E⁄k).ψ n).evalEval x y ^ 4 =
-      ((E⁄k).ψ (2 * n)).evalEval x y :=
-  sorry
-
-set_option warn.sorry false in
-omit [E.IsElliptic] [DecidableEq k] in
-/-- (Sorry node — **the degenerate tracking certificate at
-`ψₙ₋₂ = 0`**.) If `ψₙ₋₂(x,y) = 0` then `ψ₄ ⬝ ψₙ⁴ = ψ₂ₙ ⬝ ψ₂⁴` on the
-curve (the `ψ₂`-tracking of `n ⬝ P = 2 ⬝ P` when `(n-2) ⬝ P = 0`). A
-fixed-window consequence of the elliptic-sequence family and the
-sum-companion; numerically verified (e.g. `ψ₄ ⬝ ψ₅⁴ = ψ₁₀ ⬝ s⁴` at
-the `3`-torsion point of `y² + y = x³`). -/
-theorem psi_tracking_prev2_zero (n : ℤ) {x y : k}
-    (h : (E⁄k).toAffine.Equation x y)
-    (h2 : ((E⁄k).ψ (n - 2)).evalEval x y = 0) :
-    ((E⁄k).ψ 4).evalEval x y * ((E⁄k).ψ n).evalEval x y ^ 4 =
-      ((E⁄k).ψ (2 * n)).evalEval x y * ((E⁄k).ψ 2).evalEval x y ^ 4 :=
-  sorry
-
 set_option backward.isDefEq.respectTransparency false in
 omit [DecidableEq k] in
 /-- **Adjacent division-polynomial values cannot both vanish** (PROVEN
@@ -1007,6 +977,229 @@ theorem psi_eq_zero_iff_dvd {d : ℤ} (hd : 2 ≤ d) {x y : k}
       (((E⁄k).Ψ₃).eval x) (((E⁄k).preΨ₄).eval x) d q
     rw [evalEval_ψ_normEDS E n x y, hq, mul_comm d q,
       ← huniv, ← evalEval_ψ_normEDS E d x y, hd0, zero_mul]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxRecDepth 16000 in
+/-- **The degenerate tracking certificate at `ψₙ₋₁ = 0`** (PROVEN
+2026-07-17): if `ψₙ₋₁(x,y) = 0` with `ψ₂(x,y) ≠ 0` and `ψₙ(x,y) ≠ 0`,
+then `ψ₂ ⬝ ψₙ⁴ = ψ₂ₙ` — the `ψ₂`-tracking of `n ⬝ P = P` when
+`(n-1) ⬝ P = 0`. Via the complement sequence
+(`W₂ₙ = Wₙ ⬝ Wᶜ`, `Wᶜ ⬝ b = Wₙ₋₁²Wₙ₊₂ − Wₙ₋₂Wₙ₊₁²`), the statement
+reduces to the crux `b²Wₙ³ + Wₙ₋₂Wₙ₊₁² = 0`: for `Ψ₃(x) ≠ 0` this is
+`normEDS_crux₁` (a multiple of `Wₙ₋₁`) after cancelling `Ψ₃(x) ⬝ ψ₂`;
+for `Ψ₃(x) = 0` the anchor identity pins `preΨ₄(x) = -ψ₂⁴` and the
+`3`-division closed forms `normEDS_c_zero_closed` evaluate both crux
+terms to opposite powers of `ψ₂`. -/
+theorem psi_tracking_prev_zero {n : ℤ} (hn : 1 < n) {x y : k}
+    (h : (E⁄k).toAffine.Nonsingular x y)
+    (hs : ((E⁄k).ψ 2).evalEval x y ≠ 0)
+    (h1 : ((E⁄k).ψ (n - 1)).evalEval x y = 0) :
+    ((E⁄k).ψ 2).evalEval x y * ((E⁄k).ψ n).evalEval x y ^ 4 =
+      ((E⁄k).ψ (2 * n)).evalEval x y := by
+  classical
+  have hval : ∀ m : ℤ, ((E⁄k).ψ m).evalEval x y =
+      normEDS ((E⁄k).ψ₂.evalEval x y) (((E⁄k).Ψ₃).eval x)
+        (((E⁄k).preΨ₄).eval x) m := fun m => evalEval_ψ_normEDS E m x y
+  set bv := (E⁄k).ψ₂.evalEval x y with hbv_def
+  set cv := ((E⁄k).Ψ₃).eval x with hcv_def
+  set dv := ((E⁄k).preΨ₄).eval x with hdv_def
+  have hbv : ((E⁄k).ψ 2).evalEval x y = bv := by rw [hval 2, normEDS_two]
+  have hbne : bv ≠ 0 := hbv ▸ hs
+  have h1' : normEDS bv cv dv (n - 1) = 0 := by rw [← hval (n - 1)]; exact h1
+  -- the crux
+  have hK : bv ^ 2 * normEDS bv cv dv n ^ 3 +
+      normEDS bv cv dv (n - 2) * normEDS bv cv dv (n + 1) ^ 2 = 0 := by
+    by_cases hc3 : cv = 0
+    · -- `Ψ₃(x) = 0`: the 3-division closed forms
+      have hΨ2 : bv ^ 2 = ((E⁄k).Ψ₂Sq).eval x :=
+        WeierstrassCurve.evalEval_ψ₂_sq h.1
+      have hanch := congrArg (Polynomial.eval x) (PsiSumCompanion.anchor (E⁄k))
+      simp only [Polynomial.eval_mul, Polynomial.eval_add,
+        Polynomial.eval_pow] at hanch
+      rw [← hcv_def, ← hdv_def, hc3, zero_mul, ← hΨ2] at hanch
+      have hdv4 : dv = -bv ^ 4 := by linear_combination -hanch
+      have hψ3 : ((E⁄k).ψ 3).evalEval x y = 0 := by
+        rw [hval 3, normEDS_three]; exact hc3
+      have hmin3 : ∀ m : ℤ, 0 < m → m < 3 →
+          ((E⁄k).ψ m).evalEval x y ≠ 0 := by
+        intro m hm hm3
+        rcases (by omega : m = 1 ∨ m = 2) with rfl | rfl
+        · rw [WeierstrassCurve.ψ_one, Polynomial.evalEval_one]
+          exact one_ne_zero
+        · exact hs
+      have h3dvd : (3 : ℤ) ∣ (n - 1) :=
+        (psi_eq_zero_iff_dvd E (by norm_num) h hψ3 hmin3 (n - 1)
+          (by omega)).mp h1
+      obtain ⟨jz, hjz⟩ := h3dvd
+      obtain ⟨j, hn3j⟩ : ∃ j : ℕ, n = 3 * (j : ℤ) + 1 := by
+        refine ⟨jz.toNat, ?_⟩
+        rw [Int.toNat_of_nonneg (by omega : 0 ≤ jz)]
+        omega
+      have hj1 : 1 ≤ j := by omega
+      -- specialise the closed forms along `X ↦ bv`
+      have hmapA : ∀ (jj : ℕ),
+          normEDS bv 0 (-bv ^ 4) (3 * (jj : ℤ) + 1) =
+            (-1) ^ jj * bv ^ (3 * jj ^ 2 + 2 * jj) := by
+        intro jj
+        have hcong := congrArg (Polynomial.eval₂RingHom
+          (Int.castRingHom k) bv) (normEDS_c_zero_closed jj).1
+        simpa only [map_normEDS, Polynomial.coe_eval₂RingHom,
+          Polynomial.eval₂_X, map_zero, map_neg, map_pow, map_mul,
+          map_one, Polynomial.eval₂_neg, Polynomial.eval₂_pow,
+          Polynomial.eval₂_one] using hcong
+      have hmapB : ∀ (jj : ℕ),
+          normEDS bv 0 (-bv ^ 4) (3 * (jj : ℤ) + 2) =
+            (-1) ^ jj * bv ^ (3 * jj ^ 2 + 4 * jj + 1) := by
+        intro jj
+        have hcong := congrArg (Polynomial.eval₂RingHom
+          (Int.castRingHom k) bv) (normEDS_c_zero_closed jj).2
+        simpa only [map_normEDS, Polynomial.coe_eval₂RingHom,
+          Polynomial.eval₂_X, map_zero, map_neg, map_pow, map_mul,
+          map_one, Polynomial.eval₂_neg, Polynomial.eval₂_pow,
+          Polynomial.eval₂_one] using hcong
+      rw [hc3, hdv4]
+      rw [show n = 3 * (j : ℤ) + 1 from hn3j,
+        show 3 * (j : ℤ) + 1 - 2 = 3 * ((j - 1 : ℕ) : ℤ) + 2 from by
+          push_cast [hj1]; ring,
+        show 3 * (j : ℤ) + 1 + 1 = 3 * (j : ℤ) + 2 from by ring,
+        hmapA j, hmapB (j - 1), hmapB j]
+      obtain ⟨jj, rfl⟩ : ∃ jj, j = jj + 1 := ⟨j - 1, by omega⟩
+      rw [show jj + 1 - 1 = jj from rfl, pow_succ]
+      ring
+    · -- `Ψ₃(x) ≠ 0`: the crux is a multiple of `ψₙ₋₁`
+      have hcrux := normEDS_crux₁ bv cv dv n
+      rw [h1', zero_mul] at hcrux
+      rcases mul_eq_zero.mp hcrux with hz | hz
+      · rcases mul_eq_zero.mp hz with hz2 | hz2
+        · exact absurd hz2 hc3
+        · exact absurd hz2 hbne
+      · exact hz
+  -- assemble and cancel `bv`
+  have hcompl := normEDS_mul_complEDS₂ (b := bv) (c := cv) (d := dv) n
+  have hcb := complEDS₂_mul_b (b := bv) (c := cv) (d := dv) n
+  have hfinal : (((E⁄k).ψ 2).evalEval x y *
+      ((E⁄k).ψ n).evalEval x y ^ 4 -
+      ((E⁄k).ψ (2 * n)).evalEval x y) * bv = 0 := by
+    rw [hbv, hval n, hval (2 * n)]
+    linear_combination bv * hcompl -
+      (normEDS bv cv dv n) * hcb + (normEDS bv cv dv n) * hK -
+      (normEDS bv cv dv n * normEDS bv cv dv (n - 1) *
+        normEDS bv cv dv (n + 2)) * h1'
+  rcases mul_eq_zero.mp hfinal with hz | hz
+  · exact sub_eq_zero.mp hz
+  · exact absurd hz hbne
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxRecDepth 16000 in
+/-- **The degenerate tracking certificate at `ψₙ₋₂ = 0`** (PROVEN
+2026-07-17): if `ψₙ₋₂(x,y) = 0` with `ψ₂(x,y) ≠ 0` and `ψₙ(x,y) ≠ 0`,
+then `ψ₄ ⬝ ψₙ⁴ = ψ₂ₙ ⬝ ψ₂⁴` — the `ψ₂`-tracking of `n ⬝ P = 2 ⬝ P`
+when `(n-2) ⬝ P = 0`. Via the complement sequence the statement
+reduces to `dᵥbᵥ²Wₙ³ − bᵥ⁴Wₙ₋₁²Wₙ₊₂ + bᵥ⁴Wₙ₋₂Wₙ₊₁² = 0`: for
+`Ψ₃(x) ≠ 0` this is `normEDS_crux₂` (a multiple of `Wₙ₋₂`) after
+cancelling `Ψ₃(x)`; for `Ψ₃(x) = 0` the anchor pins
+`preΨ₄(x) = -ψ₂⁴` and the `3`-division closed forms evaluate the
+remaining two terms to opposite powers of `ψ₂`. -/
+theorem psi_tracking_prev2_zero {n : ℤ} (hn : 2 < n) {x y : k}
+    (h : (E⁄k).toAffine.Nonsingular x y)
+    (hs : ((E⁄k).ψ 2).evalEval x y ≠ 0)
+    (h2 : ((E⁄k).ψ (n - 2)).evalEval x y = 0) :
+    ((E⁄k).ψ 4).evalEval x y * ((E⁄k).ψ n).evalEval x y ^ 4 =
+      ((E⁄k).ψ (2 * n)).evalEval x y * ((E⁄k).ψ 2).evalEval x y ^ 4 := by
+  classical
+  have hval : ∀ m : ℤ, ((E⁄k).ψ m).evalEval x y =
+      normEDS ((E⁄k).ψ₂.evalEval x y) (((E⁄k).Ψ₃).eval x)
+        (((E⁄k).preΨ₄).eval x) m := fun m => evalEval_ψ_normEDS E m x y
+  set bv := (E⁄k).ψ₂.evalEval x y with hbv_def
+  set cv := ((E⁄k).Ψ₃).eval x with hcv_def
+  set dv := ((E⁄k).preΨ₄).eval x with hdv_def
+  have hbv : ((E⁄k).ψ 2).evalEval x y = bv := by rw [hval 2, normEDS_two]
+  have hbne : bv ≠ 0 := hbv ▸ hs
+  have h2' : normEDS bv cv dv (n - 2) = 0 := by rw [← hval (n - 2)]; exact h2
+  have hK : dv * bv ^ 2 * normEDS bv cv dv n ^ 3 -
+      bv ^ 4 * normEDS bv cv dv (n - 1) ^ 2 * normEDS bv cv dv (n + 2) +
+      bv ^ 4 * normEDS bv cv dv (n - 2) * normEDS bv cv dv (n + 1) ^ 2
+      = 0 := by
+    by_cases hc3 : cv = 0
+    · -- `Ψ₃(x) = 0`: the 3-division closed forms
+      have hΨ2 : bv ^ 2 = ((E⁄k).Ψ₂Sq).eval x :=
+        WeierstrassCurve.evalEval_ψ₂_sq h.1
+      have hanch := congrArg (Polynomial.eval x) (PsiSumCompanion.anchor (E⁄k))
+      simp only [Polynomial.eval_mul, Polynomial.eval_add,
+        Polynomial.eval_pow] at hanch
+      rw [← hcv_def, ← hdv_def, hc3, zero_mul, ← hΨ2] at hanch
+      have hdv4 : dv = -bv ^ 4 := by linear_combination -hanch
+      have hψ3 : ((E⁄k).ψ 3).evalEval x y = 0 := by
+        rw [hval 3, normEDS_three]; exact hc3
+      have hmin3 : ∀ m : ℤ, 0 < m → m < 3 →
+          ((E⁄k).ψ m).evalEval x y ≠ 0 := by
+        intro m hm hm3
+        rcases (by omega : m = 1 ∨ m = 2) with rfl | rfl
+        · rw [WeierstrassCurve.ψ_one, Polynomial.evalEval_one]
+          exact one_ne_zero
+        · exact hs
+      have h3dvd : (3 : ℤ) ∣ (n - 2) :=
+        (psi_eq_zero_iff_dvd E (by norm_num) h hψ3 hmin3 (n - 2)
+          (by omega)).mp h2
+      obtain ⟨jz, hjz⟩ := h3dvd
+      obtain ⟨j, hn3j⟩ : ∃ j : ℕ, n = 3 * (j : ℤ) + 2 := by
+        refine ⟨jz.toNat, ?_⟩
+        rw [Int.toNat_of_nonneg (by omega : 0 ≤ jz)]
+        omega
+      have hmapA : ∀ (jj : ℕ),
+          normEDS bv 0 (-bv ^ 4) (3 * (jj : ℤ) + 1) =
+            (-1) ^ jj * bv ^ (3 * jj ^ 2 + 2 * jj) := by
+        intro jj
+        have hcong := congrArg (Polynomial.eval₂RingHom
+          (Int.castRingHom k) bv) (normEDS_c_zero_closed jj).1
+        simpa only [map_normEDS, Polynomial.coe_eval₂RingHom,
+          Polynomial.eval₂_X, map_zero, map_neg, map_pow, map_mul,
+          map_one, Polynomial.eval₂_neg, Polynomial.eval₂_pow,
+          Polynomial.eval₂_one] using hcong
+      have hmapB : ∀ (jj : ℕ),
+          normEDS bv 0 (-bv ^ 4) (3 * (jj : ℤ) + 2) =
+            (-1) ^ jj * bv ^ (3 * jj ^ 2 + 4 * jj + 1) := by
+        intro jj
+        have hcong := congrArg (Polynomial.eval₂RingHom
+          (Int.castRingHom k) bv) (normEDS_c_zero_closed jj).2
+        simpa only [map_normEDS, Polynomial.coe_eval₂RingHom,
+          Polynomial.eval₂_X, map_zero, map_neg, map_pow, map_mul,
+          map_one, Polynomial.eval₂_neg, Polynomial.eval₂_pow,
+          Polynomial.eval₂_one] using hcong
+      rw [hc3, hdv4] at h2' ⊢
+      rw [show n = 3 * (j : ℤ) + 2 from hn3j,
+        show 3 * (j : ℤ) + 2 - 1 = 3 * (j : ℤ) + 1 from by ring,
+        show 3 * (j : ℤ) + 2 + 2 = 3 * ((j + 1 : ℕ) : ℤ) + 1 from by
+          push_cast; ring,
+        show 3 * (j : ℤ) + 2 - 2 = 3 * (j : ℤ) from by ring,
+        hmapB j, hmapA j, hmapA (j + 1)]
+      rw [show n = 3 * (j : ℤ) + 2 from hn3j,
+        show 3 * (j : ℤ) + 2 - 2 = 3 * (j : ℤ) from by ring] at h2'
+      rw [h2', pow_succ]
+      ring
+    · -- `Ψ₃(x) ≠ 0`: the crux is a multiple of `ψₙ₋₂`
+      have hcrux := normEDS_crux₂ bv cv dv n
+      rw [h2', zero_mul] at hcrux
+      rcases mul_eq_zero.mp hcrux with hz | hz
+      · exact absurd hz hc3
+      · linear_combination hz +
+          (bv ^ 4 * normEDS bv cv dv (n + 1) ^ 2) * h2'
+  -- assemble and cancel `bv`
+  have hcompl := normEDS_mul_complEDS₂ (b := bv) (c := cv) (d := dv) n
+  have hcb := complEDS₂_mul_b (b := bv) (c := cv) (d := dv) n
+  have hψ4 : ((E⁄k).ψ 4).evalEval x y = dv * bv := by
+    rw [hval 4, normEDS_four]
+  have hfinal : (((E⁄k).ψ 4).evalEval x y *
+      ((E⁄k).ψ n).evalEval x y ^ 4 -
+      ((E⁄k).ψ (2 * n)).evalEval x y *
+        ((E⁄k).ψ 2).evalEval x y ^ 4) * bv = 0 := by
+    rw [hbv, hψ4, hval n, hval (2 * n)]
+    linear_combination (bv ^ 5) * hcompl -
+      (bv ^ 4 * normEDS bv cv dv n) * hcb +
+      (normEDS bv cv dv n) * hK
+  rcases mul_eq_zero.mp hfinal with hz | hz
+  · exact sub_eq_zero.mp hz
+  · exact absurd hz hbne
 
 set_option backward.isDefEq.respectTransparency false in
 omit [E.IsElliptic] in
@@ -1176,7 +1369,8 @@ theorem zsmul_some_aux_strong {x y : k}
           exact nomatch h0.trans
             (show (0 : (E⁄k).Point) = Affine.Point.zero from rfl)
         · linear_combination -hφm + ((E⁄k).ψ (m + 1)).evalEval x y * hψ1
-        · have hC1 := psi_tracking_prev_zero E m h.1 hψ1
+        · have hC1 := psi_tracking_prev_zero E
+            (show (1 : ℤ) < m from by omega) h hs hψ1
           linear_combination hC1 - ((E⁄k).ψ m).evalEval x y ^ 4 * hψ₂v
       -- CASE B: `ψₘ₋₁ ≠ 0`, so `[m-1]P` is affine with the full package
       obtain ⟨x₁, y₁, h₁, heq₁, hx₁, ht₁⟩ := IH1.2 hψ1
@@ -1241,7 +1435,8 @@ theorem zsmul_some_aux_strong {x y : k}
             · exact sub_eq_zero.mp h0
             · exact absurd (pow_eq_zero_iff two_ne_zero |>.mp h0) hs
           · -- the tracking via the second degenerate certificate
-            have hC2 := psi_tracking_prev2_zero E m h.1 hψ2z
+            have hC2 := psi_tracking_prev2_zero E
+              (show (2 : ℤ) < m from by omega) h hs hψ2z
             rw [show (2 : ℤ) * 2 = 4 from rfl] at ht2P
             have htf : ((2 * y₂' + (E⁄k).a₁ * x₂' + (E⁄k).a₃) *
                 ((E⁄k).ψ m).evalEval x y ^ 4 -

@@ -640,4 +640,31 @@ theorem normEDS_c_zero_closed (j : ℕ) :
       generalize (-1 : Polynomial ℤ) ^ j = ε at hTB ⊢
       linear_combination hTB
 
+set_option backward.isDefEq.respectTransparency false in
+/-- **The first tracking crux**: `cb(b²Wₙ³ + Wₙ₋₂Wₙ₊₁²)` is a multiple
+of `Wₙ₋₁` — immediate from the sum-companion. -/
+theorem normEDS_crux₁ {R : Type*} [CommRing R] (b c d : R) (n : ℤ) :
+    c * b * (b ^ 2 * normEDS b c d n ^ 3 +
+        normEDS b c d (n - 2) * normEDS b c d (n + 1) ^ 2) =
+      normEDS b c d (n - 1) *
+        (normEDS b c d n * normEDS b c d (n + 1) * (d * b + b ^ 5) -
+          c * b * normEDS b c d (n - 1) * normEDS b c d (n + 2)) := by
+  linear_combination normEDS_sum_companion b c d n
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The second tracking crux**:
+`c(db²Wₙ³ − b⁴Wₙ₋₁²Wₙ₊₂ + b⁴Wₙ₋₂Wₙ₊₁²)` is a multiple of `Wₙ₋₂` —
+from the sum-companion and the `T(·, 2)` relation. -/
+theorem normEDS_crux₂ {R : Type*} [CommRing R] (b c d : R) (n : ℤ) :
+    c * (d * b ^ 2 * normEDS b c d n ^ 3 -
+        b ^ 4 * normEDS b c d (n - 1) ^ 2 * normEDS b c d (n + 2) +
+        b ^ 4 * normEDS b c d (n - 2) * normEDS b c d (n + 1) ^ 2) =
+      normEDS b c d (n - 2) *
+        (2 * c * b ^ 4 * normEDS b c d (n + 1) ^ 2 -
+          b ^ 2 * (d + b ^ 4) * normEDS b c d n * normEDS b c d (n + 2)) := by
+  have hstar := normEDS_sum_companion b c d n
+  have hq := normEDS_quadratic b c d n
+  linear_combination (-(b ^ 3)) * hstar +
+    (b ^ 2 * (d + b ^ 4) * normEDS b c d n) * hq
+
 end EllipticDivisibilitySequence
