@@ -2582,6 +2582,31 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6, RESULTANT REPLACEMENT EXECUTED): the direct
+  coprimality is implemented: (1) `EDSRank.lean` (all proven) — the
+  rank-of-apparition machinery (IsRank, c_eq_zero_of_adjacent via
+  T(·,2) at n = r−1, le_three_of_adjacent, degenerate_of_adjacent:
+  adjacent zeros force (b,c) = (0,0) at rank 2 or (c,d) = (0,0),
+  b ≠ 0 at rank 3, dvd_of_eq_zero: the T(k−r,r)-descent).
+  (2) `PhiPsiCoprime.lean` — no_common_root (alg-closed; the
+  y-quadratic lift, evalEval_ψ_normEDS, the Φ-definition parity
+  bridge, on-curve b² = Ψ₂Sq(x₀), rank-divides-consecutive
+  contradiction; NONSINGULARITY NOT EVEN NEEDED — only the Equation)
+  and isCoprime_Φ_ΨSq_field (natAbs-reduction + gcd-root descent to
+  the algebraic closure). The two degenerate cases are closed by
+  sympy-extracted Sylvester-cofactor Bézout certificates:
+  psi23 (F·Ψ₂Sq + G·Ψ₃ = −Δ², 36/26-term cofactors, PROVEN) and
+  psi34 (F·Ψ₃ + G·preΨ₄ = Δ⁴, 266/164-term cofactors + 55-term
+  b-relation cofactor, elaborating at time of writing). KEY FACTS:
+  res(Ψ₂Sq,Ψ₃) = −Δ² and res(Ψ₃,preΨ₄) = Δ⁴ modulo
+  4b₈ = b₂b₆ − b₄² — pure Δ-powers, no 2-factors, char-2-safe;
+  extraction via integral Sylvester-adjugate columns (NOT naive
+  solve/gcdex — those time out or introduce junk lc-factors).
+  NEXT: verify psi34-elaboration, patch Flat.lean (staged:
+  isCoprime_Φ_ΨSq restated for fields, proven from
+  PhiPsiCoprime; resultant_Φ_ΨSq DELETED), rebuild the cone —
+  separable_preΨ' and the whole torsion machinery then become
+  sorryAx-FREE except Flat.lean:163.
 - 2026-07-17 (session 6, RESULTANT-NODE ATTACK PLAN): the consumers
   only use `isCoprime_Φ_ΨSq` (Bézout with Δ-unit), never the actual
   resultant VALUE — so the node can be REPLACED by a direct
