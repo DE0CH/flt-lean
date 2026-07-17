@@ -2536,8 +2536,20 @@ assumed. Axiom invariant: every declaration must use at most
   of the composition pair is `8·preΨ₄hom` (verified). The remaining
   odd-index (W)-steps at primes need the differentiated-recursion
   descent OR the derivation-on-Frac(B) invariant-differential
-  induction. NEXT SESSION: (1) formalize (C) (either route); (2) the
-  (W)-odd machinery; (3) the multiplicity endgame;
+  induction. MULTIPLICITY ENDGAME (worked out precisely, UFD-valuation
+  form over k[x], no k̄): for an irreducible π ∣ gcd(preΨ'ₚ, (preΨ'ₚ)')
+  with a := ν_π(preΨ'ₚ): in all cases ν_π(ΨSqₚ') ≥ 2 hence
+  ν_π(W) ≥ min(2a, 2a−1) and ν_π(preΨ(2p)) ≥ 2a−1 ((p:k) ≠ 0); the
+  ΨSq-composition gives 2(2a−1) + ν(Ψ₂Sq) = 2a + ν_π(H) with
+  H := 4Φ³ + b₂Φ²ΨSq + 2b₄ΦΨSq² + b₆ΨSq³ ≡ 4Φ³ (mod π) and
+  ν_π(H) = 0 by the Bézout node — contradiction for char ≠ 2. In
+  char 2 with a₁ ≠ 0: H ≡ b₂Φ²ΨSq, same contradiction one level down.
+  Char-2-supersingular (a₁ = 0, Ψ₂Sq = b₆ constant): the [2]-
+  composition degenerates; use the [3]-composition (Ψ₃hom ≡ 3Φ⁴ and
+  3 ≠ 0 in char 2) with the tripling law W(3n) = 3·(factor)·W(n) —
+  needs the [3]-composition pair verified/certified.
+  NEXT SESSION: (1) formalize (C) (either route); (2) the
+  (W)-odd machinery; (3) the multiplicity endgame as above;
   (2) `resultant_Φ_ΨSq` or its `IsCoprime` reformulation; then the
   torsion cone is DONE. Remaining 18 nodes list: see the sorry-grep;
   major fronts: WeilPairing:124, Chebotarev:98, HardlyRamified (5
