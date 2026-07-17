@@ -13,6 +13,7 @@ public import Fermat.FLT.EllipticCurve.TorsionCounting
 -- VENDORING ADDITION: the torsion count via divisibility + the
 -- prime-level count, backing `n_torsion_card`.
 public import Fermat.FLT.EllipticCurve.TorsionCard
+public import Fermat.FLT.EllipticCurve.TorsionCardSep
 
 /-!
 
