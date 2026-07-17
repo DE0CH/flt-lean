@@ -116,20 +116,25 @@ seen = set()
 def render(n, depth):
     e = by_name[n]
     state = "🟪" if e.get("wip") else "·"
-    ref = " (see above)" if n in seen else ""
-    first = n in seen
+    repeat = n in seen
     seen.add(n)
+    ref = " (see above)" if repeat else ""
     head = f"{'  ' * depth}- {mark[n]}{state} `{disp[n]}`{ref}"
-    if first:
+    if repeat:
         lines_out.append(head)
+    else:
+        body = e["text"]
+        # drop the leading name-echo from the prose if present
+        body = re.sub(rf"^`?{re.escape(n)}`?\s*[—:-]?\s*", "", body)
+        wrapped = textwrap.wrap(body, width=72 - 2 * depth - 2) if body else []
+        lines_out.append(head + (" — " + wrapped[0] if wrapped else ""))
+        for w in wrapped[1:]:
+            lines_out.append(f"{'  ' * depth}  {w}")
+    # a double-ticked subtree is completely proven: trim it from the display
+    if mark[n] == "✅✅":
         return
-    body = e["text"]
-    # drop the leading name-echo from the prose if present
-    body = re.sub(rf"^`?{re.escape(n)}`?\s*[—:-]?\s*", "", body)
-    wrapped = textwrap.wrap(body, width=72 - 2 * depth - 2) if body else []
-    lines_out.append(head + (" — " + wrapped[0] if wrapped else ""))
-    for w in wrapped[1:]:
-        lines_out.append(f"{'  ' * depth}  {w}")
+    # otherwise ALWAYS show the children (also on repeats): a single-ticked
+    # node must exhibit the ❌-descendants its remaining sorries flow through
     for k in sorted(children[n], key=lambda x: names.index(x)):
         render(k, depth + 1)
 
@@ -154,6 +159,10 @@ legend = [
     "`sorry`; ✅ the source is a complete proof but its dependency cone",
     "still contains a `sorry`; ✅✅ the whole cone is sorry-free",
     "(`#print axioms` shows only propext/Classical.choice/Quot.sound).",
+    "Subtrees of ✅✅ nodes are TRIMMED from the display (fully proven, no",
+    "open content below); every ✅ node shows its children — also when it",
+    "is a repeat — so the ❌ nodes its remaining sorries flow through are",
+    "always visible beneath it.",
     "Second symbol: `·` normal, `🟪` currently being worked on (from the",
     "entries file). To add/remove/annotate a node, edit",
     "`progress-entries.json` and re-run the generator.",

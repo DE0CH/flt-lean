@@ -22,6 +22,10 @@ by the Lean compiler — ❌ the declaration's own source still contains
 `sorry`; ✅ the source is a complete proof but its dependency cone
 still contains a `sorry`; ✅✅ the whole cone is sorry-free
 (`#print axioms` shows only propext/Classical.choice/Quot.sound).
+Subtrees of ✅✅ nodes are TRIMMED from the display (fully proven, no
+open content below); every ✅ node shows its children — also when it
+is a repeat — so the ❌ nodes its remaining sorries flow through are
+always visible beneath it.
 Second symbol: `·` normal, `🟪` currently being worked on (from the
 entries file). To add/remove/annotate a node, edit
 `progress-entries.json` and re-run the generator.
@@ -29,7 +33,6 @@ entries file). To add/remove/annotate a node, edit
 - ✅· `fermat_last_theorem` — the goal: `FermatLastTheorem`, assembled from the mathlib reductions
   and `fermatLastTheoremFor_of_five_le`.
   - ✅✅· `FermatLastTheorem.of_odd_primes` — (mathlib, NumberTheory/FLT/Four.lean)
-    - ✅✅· `fermatLastTheoremFour` — (mathlib)
   - ✅✅· `fermatLastTheoremThree` — (mathlib)
   - ✅· `fermatLastTheoremFor_of_five_le` — ∀ p, p.Prime → 5 ≤ p → FermatLastTheoremFor p`
     (`Fermat/PrimeFive.lean`) — proven from:
@@ -47,7 +50,6 @@ entries file). To add/remove/annotate a node, edit
         `c₄`, `j`, and `FreyCurve.j_valuation_of_bad_prime`
         (`Fermat/FreyCurve.lean`, adapted from the FLT project). Fully
         proven, no sorry
-        - ✅✅· `FreyPackage` (see above)
       - ✅· `FreyPackage.exists_torsion_embedding_of_not_isIrreducible` — (2026-07-16) from the two nodes below: Serre's analysis produces
         full 2-torsion plus a rational point of order p on some curve;
         the `embedding_assembly` combines them into an injective ℤ/2 ×
@@ -66,68 +68,6 @@ entries file). To add/remove/annotate a node, edit
               an open normal subgroup containing every inertia image
               (`Subgroup.map_le_iff_le_comap` + `ker (χ∘res) = comap res
               (ker χ)`), hence everything, so χ = 1
-              - ✅✅· `open_normal_subgroup_eq_top_of_inertia_le` — Minkowski, subgroup form: (2026-07-16) from the inertia
-                dictionary below plus mathlib's discriminant theory
-                (fixed field of the open normal kernel via the infinite
-                Galois correspondence; finite Galois number field by
-                `isOpen_iff_finite`/`normal_iff_isGalois`; `1 < finrank`
-                from `H ≠ ⊤`;
-                `exists_not_isUnramifiedAt_int_of_isGalois` gives an
-                everywhere-ramified prime `p`; going-up lifts it; the
-                dictionary contradicts)
-                - ✅✅· `isUnramifiedAt_of_inertia_le_fixingSubgroup` — THE inertia dictionary: (2026-07-16, compiled in ONE
-                  shot from the pre-verified chain: `liesOver_span_iff`
-                  for `LiesOver`, residue-field finiteness via the
-                  fraction-ring bridge,
-                  `card_inertia_eq_ramificationIdxIn`,
-                  `ramificationIdxIn_eq_ramificationIdx`,
-                  `ramificationIdx_eq_one_iff.mp`)
-                  - ✅✅· `inertia_eq_bot_of_le_fixingSubgroup` — the inertia transport (; whole chain now rests on
-                    the ONE local node below): the image of
-                    `localInertiaGroup q` fixing `L` pointwise
-                    trivializes `Q.inertia (L ≃ₐ[ℚ] L)`. SPLIT EXECUTED
-                    (2026-07-16): the transport is from `exists_prime_ov
-                    er_inertia_eq_bot_of_le_fixingSubgroup` (SOME prime
-                    above `q` has trivial inertia — 2026-07-16 via the
-                    VALUATION route, no decomposition groups and no
-                    henselian lifting: the chosen embedding `ι` carries
-                    `L` into the finite subextension `M = ℚ_q(ι L)` of
-                    `ℚ_qᵃˡᵍ`; `hle` + the `lift_map` put `M` inside the
-                    fixed field of the local inertia; the local node
-                    below then makes `q` a uniformizer of `𝒪_M`; pulling
-                    `𝔪_M` back along the ring hom `𝓞 L → 𝒪_M` induced by
-                    `ι` gives a prime `Q₀ ∋ q` with `e(Q₀|q) = 1` — if
-                    `e ≠ 1` then `q ∈ Q₀²`
-                    (`ramificationIdx'_ne_one_iff`), so `q = q²c` in
-                    `𝒪_M`, making `q` a unit in a proper ideal — and
-                    `#I(Q₀) = e = 1` closes via
-                    `card_inertia_eq_ramificationIdxIn`. Helper lemmas
-                    unconditionally:
-                    `asIdeal_toHeightOneSpectrumRingOfIntegersRat` (`v_q
-                    = span q` in `𝓞 ℚ`) and
-                    `maximalIdeal_adicCompletionIntegers_eq_span`
-                    (`𝔪(ℤ_qˆ) = span q`, via `intValuation_singleton` +
-                    `maximalIdeal_eq_span_uniformizer`); rests on `maxim
-                    alIdeal_map_eq_of_le_fixedField_localInertiaGroup` (
-                    `Deformations/RepresentationTheory/LocalInertiaFixed
-                    Field.lean` — 2026-07-16/17, Neukirch II.9.11 from
-                    scratch: a finite subextension `M/Kᵥ` of `Kᵥᵃˡᵍ`
-                    fixed pointwise by `localInertiaGroup v` has
-                    `e(M/Kᵥ) = 1`. Proof as planned: Galois closure
-                    `N/Kᵥ`; `|I(N/Kᵥ)| = e(N/Kᵥ)` at each finite level
-                    via `card_inertia_eq_ramificationIdxIn`, tower
-                    multiplicativity of `e`, finite-level inertia
-                    surjectivity by counting, and profinite compactness
-                    lifting of finite-level inertia elements to
-                    `localInertiaGroup v`) and
-                    `inertia_eq_bot_of_exists_prime_over` (conjugacy
-                    propagation — 2026-07-16:
-                    `exists_smul_eq_of_isGaloisGroup` gives transitivity
-                    on primes over `q`; the conjugation identity `g ∈
-                    inertia (σ • Q) ↔ σ⁻¹gσ ∈ inertia Q` is a short
-                    definitional argument from `mem_inertia` + the
-                    pointwise-smul API
-                    `Ideal.IsPrime.smul`/`pointwise_smul_eq_comap`)
             - ✅· `FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski` — (2026-07-17) from the stable-line dichotomy leaf, the
               Galois descent for points, and the Vélu quotient leaf (all
               `MazurTorsion.lean`)
@@ -213,11 +153,24 @@ entries file). To add/remove/annotate a node, edit
                         equivariant embedding; the remaining content is
                         the base-change instance identification of the
                         two `Ω`-stage curve spellings.
-                        - ❌· `WeierstrassCurve.exists_tateEquivSepClosure` — Tate's uniformisation over a separable closure
-                          (Silverman ATAEC V.3.1 + V.5.3): a Galois-
-                          equivariant group isomorphism `Ωˣ/q_Eᶻ ≅ E(Ω)`
-                          for a curve with split multiplicative
-                          reduction over a nonarchimedean local field.
+                        - ✅· `WeierstrassCurve.exists_tateEquivSepClosure` — Tate's uniformisation over a separable
+                          closure, now DERIVED from the choice-free
+                          Tate-curve uniformisation and Tate's variable-
+                          change theorem: the variable change is
+                          `k`-rational, so its base-changed point
+                          equivalence is Galois-equivariant, and the
+                          equivariance transports through the composite.
+                          - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC V.5.3): a
+                            curve with split multiplicative reduction is
+                            a change of Weierstrass coordinates of the
+                            Tate curve of its Tate parameter.
+                          - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
+                            uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ` Galois-
+                            equivariantly ON THE NOSE, by the explicit
+                            series `X(u,q)`, `Y(u,q)` (whose Weierstrass
+                            equation is proven in
+                            `TateCurveConstruction`); glued over the
+                            finite subextensions of `Ω`.
                         - ✅✅· `WeierstrassCurve.tate_inertia_unipotent` — local unipotence of inertia on Tate torsion,
                           for ANY uniformization witness: the torsion
                           class is represented by `u` with `u^p` a power
@@ -237,7 +190,9 @@ entries file). To add/remove/annotate a node, edit
                           equivariant composite point equivalence
                           transport `tate_inertia_unipotent` from the
                           twisted minimal model.
-                          - ❌· `WeierstrassCurve.exists_tateEquivSepClosure` (see above)
+                          - ✅· `WeierstrassCurve.exists_tateEquivSepClosure` (see above)
+                            - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` (see above)
+                            - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` (see above)
                           - ✅✅· `WeierstrassCurve.tate_inertia_unipotent` (see above)
                           - ✅✅· `inertia_fixes_algHom_of_unramified_gen` — inertia fixes every embedding of an
                             unramified extension of `ℚ_qˆ` (generator
@@ -245,12 +200,6 @@ entries file). To add/remove/annotate a node, edit
                             residue reduction): the master root-fixing
                             lemma applied to the image of the generator,
                             extended by the adjoin-⊤ equalizer argument.
-                            - ✅✅· `ValuationSubring.inertia_fixes_root_of_separable_residue` — the master root-fixing lemma: inertia
-                              fixes any `A`-integral root of a
-                              polynomial over `A` with base-field
-                              coefficients and separable residue
-                              reduction (subsumes the `X^p − 1` and `X^p
-                              − c` steps).
                     - ✅✅· `FreyPackage.freyCurve_hasMultiplicativeReduction_at_two` — (`FreyCurve/Semistable.lean`, own work):
                       (2026-07-16) — the Frey model is semistable at 2
                       by design: `c₄ = c^{2p} - (ab)^p` is odd (`a ≡ 3
@@ -258,8 +207,6 @@ entries file). To add/remove/annotate a node, edit
                       1` and Kraus–Laska minimality; `Δ =
                       2^{2p-8}(ab'c)^{2p}` (with `b = 2b'`) is in the
                       maximal ideal since `2p > 8`
-                      - ✅✅· `FreyPackage` (see above)
-                      - ✅✅· `FreyPackage.freyCurve` (see above)
                     - ✅✅· `WeierstrassCurve.galoisRep` — CONSTRUCTED (2026-07-16). The formerly sorry-d
                       DATA is now the genuine representation: the Galois
                       action on points (`Point.map`, via the
@@ -275,140 +222,6 @@ entries file). To add/remove/annotate a node, edit
                       `#print axioms`: sorryAx enters only through
                       `n_torsion_finite`. Mazur/B4 are now statements
                       about the REAL representation
-                      - ✅✅· `n_torsion_finite` — `n_torsion_finite` — (re-derived 2026-07-16,
-                        second route): the torsion count
-                        `card_torsionBy` is `n² > 0`, and positive
-                        `Nat.card` forces finiteness. Statement
-                        specialized to separably closed characteristic-
-                        zero fields — the only fields at which the tree
-                        uses it (`galoisRep` gained `[CharZero K]`). The
-                        former division-polynomial route
-                        (`TorsionFinite.lean` with nodes
-                        `eval_ΨSq_eq_zero_of_smul_eq_zero`,
-                        `ΨSq_ne_zero_of_charDvd`, covering arbitrary
-                        characteristic) is SUPERSEDED and removed — the
-                        frontier shrinks by two nodes
-                        - ✅✅· `TorsionCard.smul_surjective` — (2026-07-17) from the three division-
-                          polynomial point nodes below: the fibre node
-                          gives a curve point `(x₀, y₀)` with `Φ n (x₀)
-                          = ξ·ΨSq n (x₀)`; `ΨSq n (x₀) ≠ 0` by
-                          `isCoprime_Φ_ΨSq` (Bézout, from the resultant
-                          node); the formula node computes `n • (x₀,
-                          y₀)` with `x`-coordinate `ξ`; `Y_eq_of_X_eq`
-                          gives `y = η` or `negY`, negating the preimage
-                          in the latter case
-                          - ✅✅· `TorsionCard.exists_smul_some_eq` — (2026-07-17) from `zsmul_some_aux` (negative
-                            `n` via negating the point,
-                            `Φ_neg`/`ΨSq_neg`); characteristic
-                            hypothesis dropped
-                            - ✅✅· `TorsionCard.zsmul_some_aux` — the multiplication formula (Washington Thm
-                              3.6) — WIRED (2026-07-17): full strong
-                              induction `zsmul_some_aux_strong` (iff-
-                              strengthened, x-formula + ψ₂-tracking
-                              package; generic case `zsmul_consec_step`,
-                              `ψₘ₋₁ = 0` case, collision cases, all
-                              closed) + the 2-torsion branch
-                              (`evalEval_ψ_of_even` + parity + `d = 2`
-                              Ward pattern). Rests on the four sharp
-                              nodes below
-                              - ✅✅· `TorsionCard.evalEval_ψ_quadratic` — the `T(n,2)` elliptic-sequence relation
-                                on the curve `ψₙ₊₂ψₙ₋₂ = ψₙ₊₁ψₙ₋₁ψ₂² -
-                                ψ₃ψₙ²` (pure specialisation of the
-                                universal `T`-family, no curve input)
-                              - ✅✅· `TorsionCard.psi_tracking_prev_zero` — degenerate tracking `ψ₂ψₙ⁴ = ψ₂ₙ` at
-                                `ψₙ₋₁ = 0` (fixed-window consequence of
-                                the T-family + sum-companion;
-                                numerically verified)
-                                - ✅✅· `TorsionCard.psi_eq_zero_iff_dvd` — the Ward rank-of-apparition pattern:
-                                  minimal vanishing index `d` ⟹
-                                  vanishing set is `dℤ`; `d = 2`
-                                  instance seeded by `Res(Ψ₂Sq, Ψ₃) =
-                                  -Δ²` (where `IsElliptic` enters)
-                                - ✅✅· `EllipticDivisibilitySequence.normEDS_sum_companion` — the universal `(★s′)` identity
-                                  `bc(Wₙ₋₁²Wₙ₊₂ + Wₙ₋₂Wₙ₊₁²) =
-                                  Wₙ₋₁WₙWₙ₊₁(db+b⁵) − Wₙ³b³c` for `W =
-                                  normEDS b c d` over any ring — pure
-                                  EDS, no geometry; to be proven by
-                                  Stange-style double parity descent
-                                  through the two-parameter family
-                                  `T(p,q)` (mathlib TODO
-                                  `IsEllipticSequence normEDS`; descent
-                                  certificates verified to exist,
-                                  `scripts/eds/`)
-                              - ✅✅· `TorsionCard.psi_tracking_prev2_zero` — degenerate tracking `ψ₄ψₙ⁴ = ψ₂ₙψ₂⁴` at
-                                `ψₙ₋₂ = 0` (ditto)
-                                - ✅✅· `TorsionCard.psi_eq_zero_iff_dvd` (see above)
-                                - ✅✅· `EllipticDivisibilitySequence.normEDS_sum_companion` (see above)
-                              - ✅✅· `TorsionCard.psi_eq_zero_iff_dvd` (see above)
-                              - ✅✅· `TorsionCard.evalEval_ψ_sum` — `TorsionCard.evalEval_ψ_sum` —
-                                (2026-07-17) from the universal EDS
-                                route (`PsiSumCompanion`: anchor
-                                identity + coordinate-ring membership +
-                                domain cancellation over the universal
-                                curve + base change)
-                                - ✅✅· `EllipticDivisibilitySequence.normEDS_sum_companion` (see above)
-                          - ✅✅· `TorsionCard.exists_point_x_smul` — rational points in multiplication fibres
-                            over a separably closed field (where
-                            separability of `[n]` enters)
-                        - ✅✅· `TorsionCard.prime_torsion_card` — (2026-07-17): the nonzero `p`-torsion is
-                          fibred over the roots of the division
-                          polynomial by the dictionary node; a shared
-                          counting skeleton (`key`) computes `#E[p] = 1
-                          + m·deg g` for a separable `g` cutting out the
-                          torsion `x`-coordinates with uniform `y`-fibre
-                          size `m`. Odd `p`: `g = preΨ' p` (separability
-                          node), `m = 2` (the `y`-fibre quadratic is
-                          separable since `Ψ₂Sq(x₀) ≠ 0` by the
-                          coprimality node), `1 + 2·(p²-1)/2 = p²`. `p =
-                          2`: `g = Ψ₂Sq` (separability node), `m = 1`
-                          (the `y`-quadratic has discriminant `Ψ₂Sq(x₀)
-                          = 0`, hence a unique root `-(a₁x₀+a₃)/2`), `1
-                          + 3 = 4`. infrastructure: `yQuad` (the
-                          `y`-fibre quadratic),
-                          `derivative_yQuad_sq_sub` (the characteristic-
-                          free discriminant identity `(∂Q)² - 4Q = C
-                          (Ψ₂Sq x₀)`), `yQuad_separable` (explicit
-                          Bézout), `pointsAt` finset + biUnion counting
-                          - ✅✅· `TorsionCard.smul_some_eq_zero_iff` — (2026-07-17) from `zsmul_some_aux` via the
-                            evaluation bridges (`ψₙ(x,y)² = ΨSqₙ(x)` on
-                            the curve) and the `ΨSq_neg`/`neg_smul`
-                            reduction to positive `n`; the
-                            characteristic hypothesis dropped (not
-                            needed)
-                            - ✅✅· `TorsionCard.zsmul_some_aux` (see above)
-                          - ✅✅· `TorsionCard.separable_preΨ'` — separability of the odd-`p` division
-                            polynomial (disc companion identity,
-                            `disc(ψₚ) = ±pᵃΔᵇ`)
-                            - ✅✅· `TorsionCard.smul_some_eq_zero_iff` (see above)
-                            - ✅✅· `TorsionCard.exists_smul_some_eq` (see above)
-                            - ✅✅· `TorsionCard.evalEval_ψ_quadratic` (see above)
-                            - ✅✅· `TorsionCard.psi_tracking_prev_zero` (see above)
-                            - ✅✅· `TorsionCard.psi_tracking_prev2_zero` (see above)
-                            - ✅✅· `TorsionCard.psi_eq_zero_iff_dvd` (see above)
-                            - ✅✅· `TorsionCard.evalEval_ψ_sum` (see above)
-                          - ✅✅· `TorsionCard.isCoprime_Ψ₂Sq_preΨ'` — (2026-07-17) from the dictionary node, NOT
-                            from EDS strong divisibility: a common root
-                            `α` over `k̄` would carry a curve point `(α,
-                            y₀)` that is `negY`-fixed (the discriminant
-                            identity `(∂Q)² - 4Q = C (Ψ₂Sq α) = 0`
-                            forces `2y₀ + a₁α + a₃ = 0`, uniformly in
-                            the characteristic), hence `2`-torsion, and
-                            `p`-torsion by the dictionary — trivial by
-                            `gcd(2,p) = 1`, contradicting affineness.
-                            Route: `¬coprime → gcd non-unit → root of
-                            the mapped gcd over `k̄`
-                            (`IsAlgClosed.exists_root`) → common root
-                            (`root_gcd_iff_root_left_right`)`, with the
-                            division polynomials transferred by
-                            `map_Ψ₂Sq`/`map_preΨ'`
-                            - ✅✅· `TorsionCard.smul_some_eq_zero_iff` (see above)
-                          - ✅✅· `TorsionCard.separable_Ψ₂Sq` — (2026-07-17): disc = 16Δ ≠ 0 (`twoTorsionPol
-                            ynomial_discr_ne_zero_of_isElliptic`),
-                            distinct roots over the algebraic closure
-                            (`Cubic.discr_ne_zero_iff_roots_nodup` +
-                            `nodup_roots_iff_of_splits`), separability
-                            descends along `Polynomial.separable_map`.
-                            Audits clean
                   - ❌· `FreyPackage.subquotient_character_unramified_at_p` — (stated 2026-07-17) — flat/ordinary at `p`: one of
                     the two characters is unramified at `p` itself
                     (connected-étale sequence in the ordinary/
@@ -423,55 +236,6 @@ entries file). To add/remove/annotate a node, edit
                     - ✅✅· `FreyPackage.freyCurve` (see above)
                     - ✅✅· `FreyCurve.torsion_isUnramified_of_good` — (2026-07-16) from the two
                       `FreyCurve/Semistable.lean` nodes below
-                      - ✅✅· `FreyPackage` (see above)
-                      - ✅✅· `FreyPackage.freyCurve` (see above)
-                      - ✅✅· `FreyPackage.freyCurve_hasGoodReduction_of_not_dvd` — (`FreyCurve/Semistable.lean`, own work):
-                        (2026-07-16) — at odd `q ∤ abc` the Frey
-                        equation is `q`-integral (integrality via
-                        `freyCurveInt` + `FreyCurve.map`) with unit
-                        discriminant `(abc)^{2p}/2⁸` (numerator and
-                        denominator prime to `q`, hence a unit of
-                        `ℤ_(q)`; adic valuation `1` via
-                        `mker_valuation_eq_isUnitSubmonoid`), hence
-                        minimal (valuation `1` is maximal among integral
-                        models) with good reduction over `ℤ_(q) =
-                        Localization.AtPrime`
-                        - ✅✅· `FreyPackage` (see above)
-                        - ✅✅· `FreyPackage.freyCurve` (see above)
-                      - ✅✅· `WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction` — (`FreyCurve/Semistable.lean`, own work):
-                        (2026-07-17) — the NOS local-global glue: good
-                        reduction at `q ≠ p` gives `IsUnramifiedAt q`
-                        for the mod-`p` torsion rep, closed against the
-                        NOS leaf below via the embedded-valuation-
-                        subring machinery + spelling bridge (`map_mem_in
-                        ertiaSubgroup_of_mem_localInertiaGroup`,
-                        `LocalInertiaFixedField.lean`)
-                        - ✅✅· `torsion_unramified_of_good_reduction` — `torsion_unramified_of_good_reduction` (`Known
-                          In1980s/EllipticCurves/GoodReduction.lean`):
-                          2026-07-17, AXIOM-CLEAN — the NOS easy
-                          direction for odd primes `n` (hypotheses `(hp
-                          : n.Prime) (hodd : Odd n)` added and threaded
-                          through `isUnramifiedAt_of_hasGoodReduction`
-                          and `FreyCurve.torsion_isUnramified_of_good`;
-                          Frey callers supply oddness from `P.hp5`).
-                          Proof: inertia fixes residues
-                          (`MonoidHom.mem_ker` + `toRingAut` +
-                          `ResidueField.residue_smul`); a torsion point
-                          `some x y h` has integral coordinates (`torsio
-                          n_abscissa_mem`/`torsion_ordinate_mem`,
-                          Cassels); `σP` is again `n`-torsion with the
-                          same residues, so
-                          `torsion_abscissa_residue_ne` (separable
-                          reduction of `preΨ'ₙ`) forces `σx = x` and
-                          `torsion_ordinate_eq_of_residue_eq` (the
-                          `ψ₂`-Bézout y-quadratic argument) forces `σy =
-                          y`; `congr 1` closes the `Point.some` equality
-                          via `Affine.Point.map_some _ h`
-                          - ✅✅· `TorsionCard.smul_some_eq_zero_iff` (see above)
-                          - ✅✅· `TorsionCard.separable_preΨ'` (see above)
-                          - ✅✅· `TorsionCard.isCoprime_Ψ₂Sq_preΨ'` (see above)
-                        - ✅✅· `WeierstrassCurve.galoisRep` (see above)
-                      - ✅✅· `WeierstrassCurve.galoisRep` (see above)
                     - ✅· `FreyCurve.torsion_isUnramified_of_multiplicative` — (2026-07-16) from the arithmetic
                       (`freyCurve_hasMultiplicativeReduction_of_dvd` +
                       `j_valuation_of_bad_prime`) and the Tate glue node
@@ -486,8 +250,6 @@ entries file). To add/remove/annotate a node, edit
                         (minimality by the unit-`c₄` Kraus–Laska
                         criterion) while `Δ = (abc)^{2p}/2⁸` lies in the
                         maximal ideal
-                        - ✅✅· `FreyPackage` (see above)
-                        - ✅✅· `FreyPackage.freyCurve` (see above)
                       - ✅· `WeierstrassCurve.isUnramifiedAt_of_hasMultiplicativeReduction` — (`FreyCurve/Semistable.lean`, own work):
                         (2026-07-17) — the Tate glue: multiplicative
                         reduction at odd `q ≠ p` with `p ∣ v_q(j)` ⟹
@@ -507,7 +269,9 @@ entries file). To add/remove/annotate a node, edit
                             valuation subring with the step-(d) witness,
                             pulled back to `E(ℚ̄)` along the equivariant
                             embedding.
-                            - ❌· `WeierstrassCurve.exists_tateEquivSepClosure` (see above)
+                            - ✅· `WeierstrassCurve.exists_tateEquivSepClosure` (see above)
+                              - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` (see above)
+                              - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` (see above)
                             - ✅✅· `WeierstrassCurve.tate_inertia_trivial` — local TRIVIALITY of inertia on Tate
                               torsion when the parameter is a `p`-th
                               power up to units, for ANY uniformization
@@ -517,14 +281,6 @@ entries file). To add/remove/annotate a node, edit
                               constant of the valuation subring;
                               `inertia_fixes_of_pow_eq` then fixes it
                               outright.
-                              - ✅✅· `ValuationSubring.inertia_fixes_of_pow_eq` — step (b′), the generalized root-fixing
-                                lemma: if `x^p` is a σ-fixed constant of
-                                the valuation subring with nonzero
-                                residue (and `p` prime to the residue
-                                characteristic), inertia fixes `x` —
-                                `X^p − c` is separable over the residue
-                                field, so distinct roots have distinct
-                                residues.
                             - ✅✅· `exists_unit_qUnit_mul_inv_pow_isUnit` — the step-(d) witness: with `p ∣ v_q(j)`,
                               the Tate parameter of the completed base
                               change is a unit of the completed integers
@@ -532,12 +288,6 @@ entries file). To add/remove/annotate a node, edit
                               `q^m` — via `|q_E| = |j|⁻¹`, the reduced-
                               fraction dictionary, and the
                               `Valued`/canonical valuation equivalence.
-                              - ✅✅· `valuation_eq_one_of_padicValRat_eq_zero` — the reduced-fraction dictionary at `q`:
-                                a nonzero rational with vanishing
-                                `q`-adic `padicValRat` has `v_q`-adic
-                                valuation `1` (equal multiplicities on
-                                coprime numerator/denominator force both
-                                to vanish).
                           - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality
                             statement, assembled from the LOCAL nonsplit
                             node `tate_inertia_trivial_of_nonsplit` by
@@ -551,14 +301,39 @@ entries file). To add/remove/annotate a node, edit
                               model (same `j`-invariant through
                               `variableChange_j` and
                               `j_quadraticTwist`).
-                              - ❌· `WeierstrassCurve.exists_tateEquivSepClosure` (see above)
+                              - ✅· `WeierstrassCurve.exists_tateEquivSepClosure` (see above)
+                                - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` (see above)
+                                - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` (see above)
                               - ✅✅· `WeierstrassCurve.tate_inertia_trivial` (see above)
                               - ✅✅· `exists_unit_qUnit_mul_inv_pow_isUnit` (see above)
                               - ✅✅· `inertia_fixes_algHom_of_unramified_gen` (see above)
                       - ✅✅· `WeierstrassCurve.galoisRep` (see above)
                     - ✅✅· `WeierstrassCurve.galoisRep` (see above)
-                  - ✅✅· `TorsionCard.smul_surjective` (see above)
-                  - ✅✅· `TorsionCard.prime_torsion_card` (see above)
+                  - ✅✅· `TorsionCard.smul_surjective` — (2026-07-17) from the three division-polynomial
+                    point nodes below: the fibre node gives a curve
+                    point `(x₀, y₀)` with `Φ n (x₀) = ξ·ΨSq n (x₀)`;
+                    `ΨSq n (x₀) ≠ 0` by `isCoprime_Φ_ΨSq` (Bézout, from
+                    the resultant node); the formula node computes `n •
+                    (x₀, y₀)` with `x`-coordinate `ξ`; `Y_eq_of_X_eq`
+                    gives `y = η` or `negY`, negating the preimage in
+                    the latter case
+                  - ✅✅· `TorsionCard.prime_torsion_card` — (2026-07-17): the nonzero `p`-torsion is fibred over
+                    the roots of the division polynomial by the
+                    dictionary node; a shared counting skeleton (`key`)
+                    computes `#E[p] = 1 + m·deg g` for a separable `g`
+                    cutting out the torsion `x`-coordinates with uniform
+                    `y`-fibre size `m`. Odd `p`: `g = preΨ' p`
+                    (separability node), `m = 2` (the `y`-fibre
+                    quadratic is separable since `Ψ₂Sq(x₀) ≠ 0` by the
+                    coprimality node), `1 + 2·(p²-1)/2 = p²`. `p = 2`:
+                    `g = Ψ₂Sq` (separability node), `m = 1` (the
+                    `y`-quadratic has discriminant `Ψ₂Sq(x₀) = 0`, hence
+                    a unique root `-(a₁x₀+a₃)/2`), `1 + 3 = 4`.
+                    infrastructure: `yQuad` (the `y`-fibre quadratic),
+                    `derivative_yQuad_sq_sub` (the characteristic-free
+                    discriminant identity `(∂Q)² - 4Q = C (Ψ₂Sq x₀)`),
+                    `yQuad_separable` (explicit Bézout), `pointsAt`
+                    finset + biUnion counting
                   - ✅✅· `WeierstrassCurve.galoisRep` (see above)
                 - ✅✅· `exists_stable_line_of_not_isIrreducible` — `exists_stable_line_of_not_isIrreducible`
                   (`Chebotarev.lean`, 2026-07-16) — a non-irreducible
@@ -606,62 +381,20 @@ entries file). To add/remove/annotate a node, edit
                     q for q ≠ ℓ — now (2026-07-16) by mod-ℓ reduction
                     (`cyclotomicCharacter.spec` at n = 1 +
                     `modularCyclotomicCharacter.unique`) from:
-                    - ✅✅· `cyclotomicCharacter_globalFrob` — `cyclotomicCharacter_globalFrob` — the ℓ-adic
-                      cyclotomic character evaluates to q at `globalFrob
-                      q` (q ≠ ℓ) — now (2026-07-16, the hardest assembly
-                      of the session): `lift_map` transports the action
-                      to `ℚ_qᵃˡᵍ`; `ℓ^k`-th roots of unity are integral
-                      (`IsIntegral.of_pow`); `apply_of_pow_eq_one` at
-                      the maximal ideal of the integral closure gives
-                      the q-power action (exponent = q by the residue
-                      node, side condition by the unit node); descend by
-                      injectivity of the chosen embedding (forcing the
-                      adic-completion algebra instance against the
-                      `ratAlgebra` diamond); conclude by
-                      `modularCyclotomicCharacter.unique` at every level
-                      and `PadicInt.ext_of_toZModPow`. Serves the glue
-                      at ℓ = 3 and ChebBN at ℓ. Children: DERIVATION
-                      MAPPED (2026-07-16), all ingredients in-tree: (i)
-                      equivariance of `absoluteGaloisGroup.map` along
-                      the chosen embedding — ALREADY in the tree as
-                      `Field.absoluteGaloisGroup.lift_map`
-                      (`AbsoluteGaloisGroup.lean`), and
-                      `AlgebraicClosure.map` is definitionally
-                      `IsAlgClosed.lift` (`Deformations/Lemmas.lean`);
-                      (ii)
-                      `natCard_residue_quotient_toHeightOneSpectrum` —
-                      (2026-07-16): the contraction of the maximal ideal
-                      is the maximal ideal (`Ideal.IsMaximal.under` on
-                      the integral closure + local uniqueness);
-                      transport to `ℤ_[q]` by
-                      `adicCompletionIntegers.padicIntEquiv` (maximal
-                      ideals correspond via `Ideal.comap_symm`), the
-                      `ℤ_[p]` residue count is `p` (`toZMod` surjective
-                      with kernel `𝔪`), and `natGenerator (q-place) = q`
-                      via `span_natGenerator` and the
-                      `ringOfIntegersEquiv` bridge. WITH THIS,
-                      `cyclotomicCharacter_globalFrob` and its mod-ℓ
-                      corollary are UNCONDITIONALLY ([propext,
-                      Classical.choice, Quot.sound]); the
-                      Chebotarev–Brauer–Nesbitt chain now rests on the
-                      single leaf `exists_frobenius_conj_mem_coset`;
-                      (ii′) `isUnit_natCast_adicCompletionIntegers` —
-                      (2026-07-16): a valuation-subring unit is an
-                      element of valuation one; the completion's
-                      valuation restricts to the global one, which on
-                      integers is the `intValuation`, equal to one iff
-                      `p ∉ v` — i.e. `p ≠ q` by
-                      `natCast_mem_toHeightOneSpectrum_iff`; (iii)
-                      `AlgHom.IsArithFrobAt.apply_of_pow_eq_one` (
-                      `Frobenius.lean`): a Frobenius sends m-th roots of
-                      unity to their q-th powers when q ∤ m — apply at m
-                      = ℓ^k via `isArithFrobAt_adicArithFrob`; (iv)
-                      transport through the embedding and conclude by
-                      `cyclotomicCharacter.unique`-mod-ℓ^k plus
-                      `PadicInt.ext_of_toZModPow`
                   - ✅✅· `toZMod_eq_ringEquivCongr_comp_toZModPow` — `toZMod_eq_ringEquivCongr_comp_toZModPow` — (kernel
                     rigidity of ring homs into `ZMod p`)
-                  - ✅✅· `n_torsion_finite` (see above)
+                  - ✅✅· `n_torsion_finite` — `n_torsion_finite` — (re-derived 2026-07-16, second
+                    route): the torsion count `card_torsionBy` is `n² >
+                    0`, and positive `Nat.card` forces finiteness.
+                    Statement specialized to separably closed
+                    characteristic-zero fields — the only fields at
+                    which the tree uses it (`galoisRep` gained
+                    `[CharZero K]`). The former division-polynomial
+                    route (`TorsionFinite.lean` with nodes
+                    `eval_ΨSq_eq_zero_of_smul_eq_zero`,
+                    `ΨSq_ne_zero_of_charDvd`, covering arbitrary
+                    characteristic) is SUPERSEDED and removed — the
+                    frontier shrinks by two nodes
                   - ✅✅· `WeierstrassCurve.galoisRep` (see above)
                 - ✅✅· `toZMod_eq_ringEquivCongr_comp_toZModPow` (see above)
                 - ✅✅· `n_torsion_finite` (see above)
@@ -690,8 +423,6 @@ entries file). To add/remove/annotate a node, edit
             negation `negY`), and generate an injective (ℤ/2)² →+ E(ℚ)
             via two `ZMod.lift`s and a coprod, with injectivity by the
             four-element case analysis
-            - ✅✅· `FreyPackage` (see above)
-            - ✅✅· `FreyPackage.freyCurve` (see above)
           - ✅✅· `WeierstrassCurve.galoisRep` (see above)
         - ✅✅· `embedding_assembly` — ( 2026-07-16): in an abelian group, an injective (ℤ/2)² and an
           element of order exactly p (odd prime) assemble into an
@@ -732,6 +463,14 @@ entries file). To add/remove/annotate a node, edit
             by `det ρ` (`pairing_map_eq_det_smul`) = the cyclotomic
             character by the det node below
             - ✅· `det_galoisRep_eq_cyclotomic` (see above)
+              - ❌· `det_galoisRep_globalFrob` (see above)
+                - ✅✅· `WeierstrassCurve.galoisRep` (see above)
+              - ✅· `dense_conjClasses_globalFrob` (see above)
+                - ❌· `exists_frobenius_conj_mem_coset` (see above)
+              - ✅✅· `cyclotomicCharacterModL_globalFrob` (see above)
+              - ✅✅· `toZMod_eq_ringEquivCongr_comp_toZModPow` (see above)
+              - ✅✅· `n_torsion_finite` (see above)
+              - ✅✅· `WeierstrassCurve.galoisRep` (see above)
             - ✅✅· `WeilPairing.pairing_map_eq_det_smul` — + `WeilPairing.det_eq_of_conj` — : on a 2-dimensional
               space an alternating form transforms under any
               endomorphism by the determinant (basis + 2×2 computation),
@@ -747,8 +486,6 @@ entries file). To add/remove/annotate a node, edit
             to a surjection `E[n] → E[n/p]` with kernel `E[p]`, so
             Lagrange + the first isomorphism theorem give `#E[n] =
             p²·(n/p)²`; no CRT needed. Faithful leaves:
-            - ✅✅· `TorsionCard.smul_surjective` (see above)
-            - ✅✅· `TorsionCard.prime_torsion_card` (see above)
           - ✅✅· `WeierstrassCurve.galoisRep` (see above)
           - ✅✅· `group_theory_lemma` — (2026-07-16) in
             `Fermat/FLT/EllipticCurve/TorsionCounting.lean` (own work,
@@ -759,6 +496,32 @@ entries file). To add/remove/annotate a node, edit
             forced to `v_q(n)`) + CRT reassembly (`ZMod.equivPi`).
             Axioms: `[propext, Classical.choice, Quot.sound]`
         - ✅· `FreyCurve.torsion_isUnramified` (see above)
+          - ✅✅· `FreyPackage` (see above)
+          - ✅✅· `FreyPackage.freyCurve` (see above)
+          - ✅✅· `FreyCurve.torsion_isUnramified_of_good` (see above)
+          - ✅· `FreyCurve.torsion_isUnramified_of_multiplicative` (see above)
+            - ✅✅· `FreyPackage` (see above)
+            - ✅✅· `FreyPackage.freyCurve` (see above)
+            - ✅✅· `FreyPackage.freyCurve_hasMultiplicativeReduction_of_dvd` (see above)
+            - ✅· `WeierstrassCurve.isUnramifiedAt_of_hasMultiplicativeReduction` (see above)
+              - ✅✅· `WeierstrassCurve.galoisRep` (see above)
+              - ✅· `WeierstrassCurve.torsion_trivial_of_multiplicative_reduction` (see above)
+                - ✅· `torsion_trivial_of_split_multiplicative_adic` (see above)
+                  - ✅· `WeierstrassCurve.exists_tateEquivSepClosure` (see above)
+                    - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` (see above)
+                    - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` (see above)
+                  - ✅✅· `WeierstrassCurve.tate_inertia_trivial` (see above)
+                  - ✅✅· `exists_unit_qUnit_mul_inv_pow_isUnit` (see above)
+                - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` (see above)
+                  - ✅· `WeierstrassCurve.tate_inertia_trivial_of_nonsplit` (see above)
+                    - ✅· `WeierstrassCurve.exists_tateEquivSepClosure` (see above)
+                      - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` (see above)
+                      - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` (see above)
+                    - ✅✅· `WeierstrassCurve.tate_inertia_trivial` (see above)
+                    - ✅✅· `exists_unit_qUnit_mul_inv_pow_isUnit` (see above)
+                    - ✅✅· `inertia_fixes_algHom_of_unramified_gen` (see above)
+            - ✅✅· `WeierstrassCurve.galoisRep` (see above)
+          - ✅✅· `WeierstrassCurve.galoisRep` (see above)
         - ✅· `FreyCurve.torsion_isFlat` — flat at p: (2026-07-16) by the case split `p ∣ abc` or not,
           from the two nodes below
           - ✅✅· `FreyPackage` (see above)
@@ -768,7 +531,15 @@ entries file). To add/remove/annotate a node, edit
             p`) and the flat glue node below
             - ✅✅· `FreyPackage` (see above)
             - ✅✅· `FreyPackage.freyCurve` (see above)
-            - ✅✅· `FreyPackage.freyCurve_hasGoodReduction_of_not_dvd` (see above)
+            - ✅✅· `FreyPackage.freyCurve_hasGoodReduction_of_not_dvd` — (`FreyCurve/Semistable.lean`, own work): (2026-07-16) — at
+              odd `q ∤ abc` the Frey equation is `q`-integral
+              (integrality via `freyCurveInt` + `FreyCurve.map`) with
+              unit discriminant `(abc)^{2p}/2⁸` (numerator and
+              denominator prime to `q`, hence a unit of `ℤ_(q)`; adic
+              valuation `1` via `mker_valuation_eq_isUnitSubmonoid`),
+              hence minimal (valuation `1` is maximal among integral
+              models) with good reduction over `ℤ_(q) =
+              Localization.AtPrime`
             - ✅· `WeierstrassCurve.isFlatAt_of_hasGoodReduction` — (`FreyCurve/Semistable.lean`, own work): (2026-07-17) —
               good reduction at `p` ⟹ `IsFlatAt p` for the mod-`p`
               torsion rep, from the leaf below plus the shared flat
@@ -793,26 +564,6 @@ entries file). To add/remove/annotate a node, edit
                 algebra `𝒪ᵥ`), `⊥` via the transport
                 `HasFlatProlongationAt.of_addEquiv` across `M ≃+ (A ⧸ ⊥)
                 ⊗[A] M` (`AlgEquiv.quotientBot` + `baseChange_tmul`)
-                - ✅✅· `GaloisRep.hasFlatProlongationAt_of_dvr_package` — (same file) — the core points comparison,
-                  (2026-07-17): instantiation of the general-`K` core
-                  `hasFlatProlongationAt_of_hopf_package` at the proven
-                  arc `ℤ_(q) → ℚ → Kᵥ`
-                  (`localizationToAdicCompletionIntegers`). The ENTIRE
-                  shared flat transport is now ; the two `IsFlatAt` glue
-                  nodes rest only on the two content leaves
-                  - ✅✅· `hasFlatProlongationAt_of_hopf_package` — `hasFlatProlongationAt_of_hopf_package` (
-                    2026-07-17): `G := 𝒪ᵥ ⊗[R] H` (Hopf/flat/finite by
-                    base change; étale generic fibre by
-                    `cancelBaseChange` twice + étale base change),
-                    points by `dvrPointsEquiv` (`AlgHom.liftEquiv` three
-                    times + `algHomEquivOfFinite`), convolution and `Γ
-                    Kᵥ`-equivariance by the layer lemmas below
-                    - ✅✅· `algHomEquivOfFinite` — layer C `algHomEquivOfFinite` +
-                      `algebraicClosureMapAlgHom` +
-                      `mem_range_algebraicClosureMap_of_isIntegral` (
-                      2026-07-17): postcomposition with the embedding `ι
-                      : ℚ̄ → Kᵥᵃˡᵍ` is a bijection on points of any
-                      finite `ℚ`-algebra
               - ✅✅· `n_torsion_finite` (see above)
               - ✅✅· `WeierstrassCurve.galoisRep` (see above)
             - ✅✅· `n_torsion_finite` (see above)
@@ -909,7 +660,53 @@ entries file). To add/remove/annotate a node, edit
             - ❌· `IsHardlyRamified.three_adic` — B6c `IsHardlyRamified.three_adic`
               (`HardlyRamified/Threeadic.lean`, ) — a 3-adic hardly
               ramified rep has trace(Frob_q) = 1 + q for q ≥ 5
-            - ✅✅· `cyclotomicCharacter_globalFrob` (see above)
+            - ✅✅· `cyclotomicCharacter_globalFrob` — `cyclotomicCharacter_globalFrob` — the ℓ-adic cyclotomic
+              character evaluates to q at `globalFrob q` (q ≠ ℓ) — now
+              (2026-07-16, the hardest assembly of the session):
+              `lift_map` transports the action to `ℚ_qᵃˡᵍ`; `ℓ^k`-th
+              roots of unity are integral (`IsIntegral.of_pow`);
+              `apply_of_pow_eq_one` at the maximal ideal of the integral
+              closure gives the q-power action (exponent = q by the
+              residue node, side condition by the unit node); descend by
+              injectivity of the chosen embedding (forcing the adic-
+              completion algebra instance against the `ratAlgebra`
+              diamond); conclude by `modularCyclotomicCharacter.unique`
+              at every level and `PadicInt.ext_of_toZModPow`. Serves the
+              glue at ℓ = 3 and ChebBN at ℓ. Children: DERIVATION MAPPED
+              (2026-07-16), all ingredients in-tree: (i) equivariance of
+              `absoluteGaloisGroup.map` along the chosen embedding —
+              ALREADY in the tree as
+              `Field.absoluteGaloisGroup.lift_map`
+              (`AbsoluteGaloisGroup.lean`), and `AlgebraicClosure.map`
+              is definitionally `IsAlgClosed.lift`
+              (`Deformations/Lemmas.lean`); (ii)
+              `natCard_residue_quotient_toHeightOneSpectrum` —
+              (2026-07-16): the contraction of the maximal ideal is the
+              maximal ideal (`Ideal.IsMaximal.under` on the integral
+              closure + local uniqueness); transport to `ℤ_[q]` by
+              `adicCompletionIntegers.padicIntEquiv` (maximal ideals
+              correspond via `Ideal.comap_symm`), the `ℤ_[p]` residue
+              count is `p` (`toZMod` surjective with kernel `𝔪`), and
+              `natGenerator (q-place) = q` via `span_natGenerator` and
+              the `ringOfIntegersEquiv` bridge. WITH THIS,
+              `cyclotomicCharacter_globalFrob` and its mod-ℓ corollary
+              are UNCONDITIONALLY ([propext, Classical.choice,
+              Quot.sound]); the Chebotarev–Brauer–Nesbitt chain now
+              rests on the single leaf
+              `exists_frobenius_conj_mem_coset`; (ii′)
+              `isUnit_natCast_adicCompletionIntegers` — (2026-07-16): a
+              valuation-subring unit is an element of valuation one; the
+              completion's valuation restricts to the global one, which
+              on integers is the `intValuation`, equal to one iff `p ∉
+              v` — i.e. `p ≠ q` by
+              `natCast_mem_toHeightOneSpectrum_iff`; (iii)
+              `AlgHom.IsArithFrobAt.apply_of_pow_eq_one` (
+              `Frobenius.lean`): a Frobenius sends m-th roots of unity
+              to their q-th powers when q ∤ m — apply at m = ℓ^k via
+              `isArithFrobAt_adicArithFrob`; (iv) transport through the
+              embedding and conclude by
+              `cyclotomicCharacter.unique`-mod-ℓ^k plus
+              `PadicInt.ext_of_toZModPow`
         - ✅· `not_isIrreducible_of_charFrob_eq` — `not_isIrreducible_of_charFrob_eq` — Chebotarev + Brauer–
           Nesbitt — now (2026-07-16, `Chebotarev.lean` + proof in
           `Lift.lean`): the agreement set with `1 ⊕ χ̄`'s charpolys is
@@ -917,6 +714,7 @@ entries file). To add/remove/annotate a node, edit
           coefficient maps continuous) and contains the dense Frobenius
           conjugates, so Brauer–Nesbitt applies. Children:
           - ✅· `dense_conjClasses_globalFrob` (see above)
+            - ❌· `exists_frobenius_conj_mem_coset` (see above)
           - ✅✅· `not_isIrreducible_of_charpoly_eq` — `not_isIrreducible_of_charpoly_eq` — Brauer–Nesbitt, 2-dim
             mod-ℓ instance — SORRY-FREE (2026-07-16): Cayley–Hamilton
             turns the charpoly hypothesis into `(ρg − 1)(ρg − χ̄g) = 0`;
@@ -927,23 +725,6 @@ entries file). To add/remove/annotate a node, edit
             `Subrepresentation`); if everything, the image commutes
             (commutators die in H) and the common-eigenvector lemma
             yields an invariant line. Children (both proven):
-            - ✅✅· `BrauerNesbitt.exists_fixed_of_unipotent` — Kolchin, 2-dim: a group of unipotent endomorphisms has a
-              common nonzero fixed vector — (2026-07-16, ). Route:
-              matrix helpers
-              `trace_eq_zero_and_det_eq_zero_of_sq_eq_zero` (square-zero
-              2×2 has zero trace/det, entry computation) and
-              `sandwich_of_det_eq_zero` (rank-one identity `N₀NN₀ =
-              tr(NN₀)•N₀`); unipotency of `ρ g`, `ρ g₀`, `ρ (g g₀)`
-              forces `tr(NN₀) = 0`, so `n₀ (ρ g − 1) n₀ = 0`; the line
-              `range n₀ = ker n₀` is preserved with square-zero scalar
-              action, hence fixed pointwise
-            - ✅✅· `BrauerNesbitt.exists_common_eigenvector_of_commuting` — a commuting family annihilated by split quadratics on a
-              2-dim space has a common eigenvector — (2026-07-16, ):
-              all-scalar case is trivial; otherwise a non-scalar
-              member's eigenspace `ker (f₀ − a)` is nonzero (else `f₀ −
-              b = 0` by injectivity), proper, hence 1-dimensional,
-              preserved by commutativity, and its generator is the
-              common eigenvector
           - ✅✅· `cyclotomicCharacterModL_globalFrob` (see above)
       - ✅✅· `n_torsion_finite` (see above)
       - ✅✅· `n_torsion_card` (see above)
@@ -972,9 +753,6 @@ entries file). To add/remove/annotate a node, edit
       `2`). - NB the lift structure gained an `IsModuleTopology ℤ_[ℓ] O`
       field (statement strengthening of B6a's conclusion, true for
       integers of finite extensions of ℚ_ℓ; required by B6b)
-- ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC V.5.3): a curve with split
-  multiplicative reduction is a change of Weierstrass coordinates of the
-  Tate curve of its Tate parameter.
 
 ## Canonical frontier (2026-07-16, session 4 close — audit-verified)
 

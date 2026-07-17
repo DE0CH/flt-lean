@@ -9,6 +9,8 @@ public import Mathlib.RingTheory.Valuation.RamificationGroup
 -- `ValuationSubring.inertia_fixes_of_pow_eq_one` (step (b)), used in the
 -- local unipotence assembly
 import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
+import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
+import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.FieldTheory.IsSepClosed
@@ -377,7 +379,34 @@ noncomputable def WeierstrassCurve.qUnitSepClosure : Ωˣ :=
 variable [DecidableEq Ω]
 
 set_option warn.sorry false in
-/-- **Tate's uniformisation theorem over a separable closure** (sorry node): for `E/k`
+/-- **Tate's uniformisation of the TATE CURVE over a separable closure**
+(sorry node — the choice-free core of the uniformisation): for a unit
+`q` of `k` with `|q| < 1`, the points of the Tate curve `E_q` over a
+separable closure `Ω` are `Ωˣ/q^ℤ`, Galois-equivariantly ON THE NOSE —
+the isomorphism is given by the explicit series `X(u, q)`, `Y(u, q)`
+(whose Weierstrass equation is `TateCurve.weierstrass_equation`,
+PROVEN), so it involves no choices and commutes with every `k`-algebra
+endomorphism of `Ω`. `E(Ω)` is the directed union of the `E(l)` over
+finite subextensions `l/k` (each a nonarchimedean local field, where
+the series converge); the uniformisations glue by the same
+choice-freeness. -/
+theorem WeierstrassCurve.exists_tateCurveEquivSepClosure (q : kˣ)
+    (hq : valuation k (q : k) < 1) :
+    ∃ e : Additive (Ωˣ ⧸ Subgroup.zpowers
+        (Units.map (algebraMap k Ω).toMonoidHom q)) ≃+
+      (((tateCurve ((q : k) : k))⁄Ω)).Point,
+      ∀ (σ : Ω ≃ₐ[k] Ω) (u : Ωˣ),
+        WeierstrassCurve.Affine.Point.map (W' := tateCurve ((q : k) : k))
+            σ.toAlgHom (e (Additive.ofMul ↑u)) =
+          e (Additive.ofMul ↑(Units.map σ.toAlgHom.toRingHom.toMonoidHom u)) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 400000 in
+set_option maxHeartbeats 1000000 in
+/-- **Tate's uniformisation theorem over a separable closure** (derived
+2026-07-17 from the choice-free Tate-curve uniformisation above and
+Tate's theorem `exists_variableChange_tateCurve`): for `E/k`
 an elliptic curve, in minimal Weierstrass form, with split multiplicative reduction
 over a nonarchimedean local field `k`, and `Ω` a separable closure of `k`, there is a
 group isomorphism `Ωˣ/q(E)ᶻ ≅ E(Ω)` that is equivariant for the natural actions of
@@ -390,8 +419,80 @@ theorem WeierstrassCurve.exists_tateEquivSepClosure :
     ∃ e : Additive (Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω)) ≃+ ((E⁄Ω)).Point,
       ∀ (σ : Ω ≃ₐ[k] Ω) (u : Ωˣ),
         WeierstrassCurve.Affine.Point.map (W' := E) σ.toAlgHom (e (Additive.ofMul ↑u)) =
-          e (Additive.ofMul ↑(Units.map σ.toAlgHom.toRingHom.toMonoidHom u)) :=
-  sorry
+          e (Additive.ofMul ↑(Units.map σ.toAlgHom.toRingHom.toMonoidHom u)) := by
+  classical
+  obtain ⟨C, hC⟩ := E.exists_variableChange_tateCurve
+  obtain ⟨e₀, he₀⟩ := WeierstrassCurve.exists_tateCurveEquivSepClosure (k := k) Ω
+    E.qUnit E.valuation_q_lt_one
+  -- the `Ω`-stage curve equality behind the variable change
+  have hEq : (E⁄Ω) = (C.baseChange Ω) •
+      ((tateCurve ((E.qUnit : k) : k))⁄Ω) := by
+    conv_lhs => rw [← hC]
+    exact (baseChange_smul_baseChange _ _ _).symm
+  haveI hTell : (((tateCurve ((E.qUnit : k) : k))⁄Ω)).IsElliptic := by
+    haveI h1 : ((C.baseChange Ω) •
+        ((tateCurve ((E.qUnit : k) : k))⁄Ω)).IsElliptic := by
+      rw [← hEq]
+      infer_instance
+    have h2 : ((C.baseChange Ω)⁻¹ • ((C.baseChange Ω) •
+        ((tateCurve ((E.qUnit : k) : k))⁄Ω))).IsElliptic := inferInstance
+    rw [inv_smul_smul] at h2
+    exact h2
+  let Ψ : ((E⁄Ω)).Point ≃+ (((tateCurve ((E.qUnit : k) : k))⁄Ω)).Point :=
+    (Affine.Point.equivOfEq hEq).trans
+      (Affine.Point.equivVariableChange
+        ((tateCurve ((E.qUnit : k) : k))⁄Ω) (C.baseChange Ω))
+  have hΨapp : ∀ R : ((E⁄Ω)).Point, Ψ R =
+      (Affine.Point.equivVariableChange
+        ((tateCurve ((E.qUnit : k) : k))⁄Ω) (C.baseChange Ω))
+      ((Affine.Point.equivOfEq hEq) R) := fun R => rfl
+  refine ⟨e₀.trans Ψ.symm, ?_⟩
+  intro σ u
+  -- σ fixes the base-changed variable-change data (it is `k`-rational)
+  have hσu : σ.toAlgHom (((C.baseChange Ω).u : Ω)) = ((C.baseChange Ω).u : Ω) := by
+    simp only [VariableChange.baseChange, VariableChange.map, Units.coe_map,
+      MonoidHom.coe_coe]
+    exact σ.toAlgHom.commutes _
+  have hσr : σ.toAlgHom (C.baseChange Ω).r = (C.baseChange Ω).r := by
+    simp only [VariableChange.baseChange, VariableChange.map]
+    exact σ.toAlgHom.commutes _
+  have hσs : σ.toAlgHom (C.baseChange Ω).s = (C.baseChange Ω).s := by
+    simp only [VariableChange.baseChange, VariableChange.map]
+    exact σ.toAlgHom.commutes _
+  have hσt : σ.toAlgHom (C.baseChange Ω).t = (C.baseChange Ω).t := by
+    simp only [VariableChange.baseChange, VariableChange.map]
+    exact σ.toAlgHom.commutes _
+  -- equivariance of `Ψ` under `σ`
+  have h12 : ∀ Q : ((E⁄Ω)).Point,
+      Ψ (WeierstrassCurve.Affine.Point.map (W' := E) σ.toAlgHom Q) =
+      WeierstrassCurve.Affine.Point.map (W' := tateCurve ((E.qUnit : k) : k))
+        σ.toAlgHom (Ψ Q) := by
+    intro Q
+    rw [hΨapp, hΨapp]
+    cases Q with
+    | zero => simp [← WeierstrassCurve.Affine.Point.zero_def]
+    | some x y hxy =>
+      rw [WeierstrassCurve.Affine.Point.map_some,
+        WeierstrassCurve.Affine.Point.equivOfEq_some,
+        WeierstrassCurve.Affine.Point.equivOfEq_some,
+        WeierstrassCurve.Affine.Point.equivVariableChange_some,
+        WeierstrassCurve.Affine.Point.equivVariableChange_some,
+        WeierstrassCurve.Affine.Point.map_some]
+      refine WeierstrassCurve.Affine.Point.some_eq_some _ ?_ ?_
+      · simp only [map_add, map_mul, map_pow, hσu, hσr]
+      · simp only [map_add, map_mul, map_pow, hσu, hσs, hσt]
+  have h12' : ∀ R : (((tateCurve ((E.qUnit : k) : k))⁄Ω)).Point,
+      Ψ.symm (WeierstrassCurve.Affine.Point.map
+        (W' := tateCurve ((E.qUnit : k) : k)) σ.toAlgHom R) =
+      WeierstrassCurve.Affine.Point.map (W' := E) σ.toAlgHom (Ψ.symm R) := by
+    intro R
+    apply Ψ.injective
+    rw [Ψ.apply_symm_apply, h12, Ψ.apply_symm_apply]
+  show WeierstrassCurve.Affine.Point.map (W' := E) σ.toAlgHom
+      (Ψ.symm (e₀ (Additive.ofMul ↑u))) =
+      Ψ.symm (e₀ (Additive.ofMul
+        ↑(Units.map σ.toAlgHom.toRingHom.toMonoidHom u)))
+  rw [← h12', he₀]
 
 omit [E.IsMinimal 𝒪[k]] [IsSepClosed Ω] [Algebra.IsSeparable k Ω] in
 /-- `N`-th roots of unity give `N`-torsion points of `E` under ANY Tate

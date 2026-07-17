@@ -676,7 +676,7 @@
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
   "wip": false,
   "fullname": "WeierstrassCurve.exists_tateEquivSepClosure",
-  "text": "Tate's uniformisation over a separable closure (Silverman ATAEC V.3.1 + V.5.3): a Galois-equivariant group isomorphism `Ωˣ/q_Eᶻ ≅ E(Ω)` for a curve with split multiplicative reduction over a nonarchimedean local field."
+  "text": "Tate's uniformisation over a separable closure, now DERIVED from the choice-free Tate-curve uniformisation and Tate's variable-change theorem: the variable change is `k`-rational, so its base-changed point equivalence is Galois-equivariant, and the equivariance transports through the composite."
  },
  {
   "name": "WeierstrassCurve.exists_variableChange_tateCurve",
@@ -775,5 +775,12 @@
   "wip": false,
   "fullname": "ValuationSubring.inertia_fixes_root_of_separable_residue",
   "text": "the master root-fixing lemma: inertia fixes any `A`-integral root of a polynomial over `A` with base-field coefficients and separable residue reduction (subsumes the `X^p − 1` and `X^p − c` steps)."
+ },
+ {
+  "name": "WeierstrassCurve.exists_tateCurveEquivSepClosure",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
+  "wip": false,
+  "fullname": "WeierstrassCurve.exists_tateCurveEquivSepClosure",
+  "text": "the choice-free core of Tate's uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ` Galois-equivariantly ON THE NOSE, by the explicit series `X(u,q)`, `Y(u,q)` (whose Weierstrass equation is proven in `TateCurveConstruction`); glued over the finite subextensions of `Ω`."
  }
 ]
