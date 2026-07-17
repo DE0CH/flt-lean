@@ -16,6 +16,7 @@ fields `ℚ_[q]` when deriving the multiplicative-reduction leaves of
 module
 
 public import Mathlib.NumberTheory.Padics.ValuativeRel
+public import Mathlib.NumberTheory.Padics.HeightOneSpectrum
 public import Mathlib.NumberTheory.LocalField.Basic
 public import Mathlib.NumberTheory.Padics.ProperSpace
 public import Mathlib.Topology.Algebra.ValuativeRel.ValuativeTopology
@@ -108,3 +109,95 @@ noncomputable instance isNonarchimedeanLocalField : IsNonarchimedeanLocalField �
   toIsNontrivial := inferInstance
 
 end Padic
+
+/-!
+### The adic completions of `ℚ` as nonarchimedean local fields
+
+The same instance package for `IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v`
+directly — this is the spelling in which the local Galois groups
+(`localInertiaGroup`, `GaloisRep.toLocal`) of the tree are phrased, so
+instantiating the Tate-curve framework here avoids any transport
+through `ℚ_[p]`. The `ValuativeRel` is the one induced by the `Valued`
+instance; `IsValuativeTopology` is definitional
+(`Valued.mem_nhds_zero` is already stated in the `ValueGroup₀` form);
+local compactness transports along the continuous algebra isomorphism
+with `ℚ_[p]` (`Rat.HeightOneSpectrum.adicCompletion.padicEquiv`);
+nontriviality is witnessed by any nonzero element of the prime.
+-/
+
+namespace AdicCompletionRat
+
+open ValuativeRel IsDedekindDomain
+
+variable (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+
+noncomputable instance valuativeRelAdicCompletionRat :
+    ValuativeRel (HeightOneSpectrum.adicCompletion ℚ v) :=
+  .ofValuation (Valued.v : Valuation _ ℤᵐ⁰)
+
+instance compatibleValuedAdicCompletionRat :
+    (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ v)
+      ℤᵐ⁰).Compatible :=
+  .ofValuation _
+
+noncomputable instance isValuativeTopologyAdicCompletionRat :
+    IsValuativeTopology (HeightOneSpectrum.adicCompletion ℚ v) := by
+  have H : ∀ {s : Set (HeightOneSpectrum.adicCompletion ℚ v)},
+      s ∈ nhds 0 ↔
+      ∃ (γ : ((MonoidWithZeroHom.ofClass
+        (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ v)
+          ℤᵐ⁰)).ValueGroup₀)ˣ),
+      {z | (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ v)
+        ℤᵐ⁰).restrict z < γ} ⊆ s := by
+    intro s
+    rw [Valued.mem_nhds_zero]
+  exact IsValuativeTopology.of_mem_nhds_zero_iff_vle (v := Valued.v) H
+
+noncomputable instance locallyCompactSpaceAdicCompletionRat :
+    LocallyCompactSpace (HeightOneSpectrum.adicCompletion ℚ v) := by
+  haveI : Fact (Rat.HeightOneSpectrum.primesEquiv v).1.Prime :=
+    ⟨(Rat.HeightOneSpectrum.primesEquiv v).2⟩
+  exact (Rat.HeightOneSpectrum.adicCompletion.padicEquiv
+    v).toHomeomorph.symm.locallyCompactSpace_iff.mp inferInstance
+
+set_option maxHeartbeats 1000000 in
+instance isNontrivialAdicCompletionRat :
+    ValuativeRel.IsNontrivial (HeightOneSpectrum.adicCompletion ℚ v) := by
+  constructor
+  obtain ⟨π, hmem, hne⟩ := Submodule.exists_mem_ne_zero_of_ne_bot v.ne_bot
+  set x : HeightOneSpectrum.adicCompletion ℚ v :=
+    algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v)
+      (algebraMap (NumberField.RingOfIntegers ℚ) ℚ π) with hx
+  have hveq : (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ v)
+      ℤᵐ⁰) x =
+      v.valuation ℚ (algebraMap (NumberField.RingOfIntegers ℚ) ℚ π) :=
+    IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation' v _
+  have hv0 : (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ v)
+      ℤᵐ⁰) x ≠ 0 := by
+    rw [hveq, IsDedekindDomain.HeightOneSpectrum.valuation_of_algebraMap]
+    exact IsDedekindDomain.HeightOneSpectrum.intValuation_ne_zero v π hne
+  have hv1 : (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ v)
+      ℤᵐ⁰) x < 1 := by
+    rw [hveq, IsDedekindDomain.HeightOneSpectrum.valuation_of_algebraMap]
+    exact (IsDedekindDomain.HeightOneSpectrum.intValuation_lt_one_iff_mem
+      _ _).mpr hmem
+  refine ⟨ValuativeRel.valuation _ x, ?_, ?_⟩
+  · intro h
+    exact hv0 ((ValuativeRel.isEquiv (ValuativeRel.valuation _)
+      (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ v)
+        ℤᵐ⁰)).eq_zero.mp h)
+  · exact ne_of_lt ((ValuativeRel.isEquiv (ValuativeRel.valuation _)
+      (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ v)
+        ℤᵐ⁰)).lt_one_iff_lt_one.mpr hv1)
+
+/-- **The adic completions of `ℚ` are nonarchimedean local fields** —
+the gateway that lets the Tate-curve framework be instantiated at
+`k = adicCompletion ℚ v`, the exact spelling of the tree's local
+Galois machinery. -/
+noncomputable instance isNonarchimedeanLocalFieldAdicCompletionRat :
+    IsNonarchimedeanLocalField (HeightOneSpectrum.adicCompletion ℚ v) where
+  toIsValuativeTopology := inferInstance
+  toLocallyCompactSpace := inferInstance
+  toIsNontrivial := inferInstance
+
+end AdicCompletionRat
