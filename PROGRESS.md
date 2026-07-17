@@ -2494,3 +2494,18 @@ assumed. Axiom invariant: every declaration must use at most
   sorries: `resultant_Φ_ΨSq` (rigidity/coprimality) and
   `separable_preΨ'` (the p-division discriminant) — the
   resultant/discriminant cluster for division polynomials.
+- 2026-07-17 (session 5 end, Wronskian lead for `separable_preΨ'`):
+  empirically `Φₙ'ΨSqₙ − ΦₙΨSqₙ' = n ⬝ Wₙ` with `W₂ = 2·preΨ₄`
+  (verified exactly) and `W₃ = 3·Ψ₃·(monic deg-12)` (the deg-12 factor
+  is NOT `P₄P₂² − P₃³`; identify it — likely a preΨ'₅-normalization).
+  This is the invariant-differential/ramification identity; from it,
+  a common root of `preΨ'ₚ` and its derivative forces division-
+  polynomial vanishing patterns that should contradict the Bézout
+  machinery — the route to `separable_preΨ'` WITHOUT the full
+  discriminant formula. NEXT SESSION: (1) pin the general Wronskian
+  closed form (sympy for n = 4, 5, then universal-EDS-style proof);
+  (2) `resultant_Φ_ΨSq` or its `IsCoprime` reformulation; then the
+  torsion cone is DONE. Remaining 18 nodes list: see the sorry-grep;
+  major fronts: WeilPairing:124, Chebotarev:98, HardlyRamified (5
+  nodes), TateCurve (2), MazurTorsion (2), Semistable (2),
+  GoodReduction, Flat:163 (torsion-flat construction).
