@@ -363,6 +363,87 @@ theorem ValuationSubring.residue_ne_of_roots_ne
   exact Polynomial.not_isUnit_X_sub_C _ (hsq _ hdvd)
 
 set_option backward.isDefEq.respectTransparency false in
+/-- **Inertia fixes the `p`-th roots of residually-nonzero constants**
+(generalizing the roots-of-unity case below): if `p` is nonzero in the
+residue field of `A`, `c` is an element of `A` with nonzero residue
+fixed by `σ`, and `x^p = c`, then every inertia element fixes `x`. The
+polynomial `X^p − c` reduces separably (derivative `p·X^{p−1}`, prime
+to it as `c̄ ≠ 0`), the roots are integral, inertia fixes residues, and
+distinct roots would have distinct residues. -/
+theorem ValuationSubring.inertia_fixes_of_pow_eq
+    {k₀ K : Type*} [Field k₀] [Field K] [Algebra k₀ K]
+    (A : ValuationSubring K) {p : ℕ} (hp : p ≠ 0)
+    (hchar : ((p : ℕ) : IsLocalRing.ResidueField A) ≠ 0)
+    (σ : A.decompositionSubgroup k₀) (hσ : σ ∈ A.inertiaSubgroup k₀)
+    {c : K} (hcA : c ∈ A)
+    (hcres : IsLocalRing.residue A (⟨c, hcA⟩ : A) ≠ 0)
+    (hσc : (σ : K ≃ₐ[k₀] K) c = c)
+    {x : K} (hx : x ^ p = c) :
+    (σ : K ≃ₐ[k₀] K) x = x := by
+  classical
+  -- membership of the roots in `A`
+  have hmemA : ∀ {w : K}, w ^ p = c → w ∈ A := by
+    intro w hw
+    rw [← A.valuation_le_one_iff]
+    by_contra hgt
+    rw [not_le] at hgt
+    have h1 : (1 : A.ValueGroup) < A.valuation w ^ p :=
+      one_lt_pow₀ hgt hp
+    rw [← map_pow, hw] at h1
+    exact absurd (lt_of_lt_of_le h1
+      ((A.valuation_le_one_iff c).mpr hcA)) (lt_irrefl _)
+  have hxA : x ∈ A := hmemA hx
+  have hσxpow : ((σ : K ≃ₐ[k₀] K) x) ^ p = c := by
+    rw [← map_pow, hx, hσc]
+  have hσxA : (σ : K ≃ₐ[k₀] K) x ∈ A := hmemA hσxpow
+  -- inertia fixes residues
+  have hres : ∀ z : A, IsLocalRing.residue A (σ • z) =
+      IsLocalRing.residue A z := by
+    intro z
+    rw [IsLocalRing.ResidueField.residue_smul]
+    have h1 := MonoidHom.mem_ker.mp hσ
+    calc (σ : A.decompositionSubgroup k₀) • IsLocalRing.residue A z
+        = (MulSemiringAction.toRingAut (A.decompositionSubgroup k₀)
+            (IsLocalRing.ResidueField A) σ)
+            (IsLocalRing.residue A z) := rfl
+      _ = IsLocalRing.residue A z := by rw [h1]; rfl
+  have hcoe : ((σ • (⟨x, hxA⟩ : A) : A) : K) =
+      (σ : K ≃ₐ[k₀] K) x := rfl
+  by_contra hne
+  have hr₁ : (Polynomial.X ^ p - Polynomial.C (⟨c, hcA⟩ : A) :
+      Polynomial A).eval (⟨(σ : K ≃ₐ[k₀] K) x, hσxA⟩ : A) = 0 := by
+    rw [Polynomial.eval_sub, Polynomial.eval_pow, Polynomial.eval_X,
+      Polynomial.eval_C]
+    apply Subtype.ext
+    show ((σ : K ≃ₐ[k₀] K) x) ^ p - c = (0 : K)
+    rw [hσxpow, sub_self]
+  have hr₂ : (Polynomial.X ^ p - Polynomial.C (⟨c, hcA⟩ : A) :
+      Polynomial A).eval (⟨x, hxA⟩ : A) = 0 := by
+    rw [Polynomial.eval_sub, Polynomial.eval_pow, Polynomial.eval_X,
+      Polynomial.eval_C]
+    apply Subtype.ext
+    show x ^ p - c = (0 : K)
+    rw [hx, sub_self]
+  have hsep : ((Polynomial.X ^ p - Polynomial.C (⟨c, hcA⟩ : A) :
+      Polynomial A).map (IsLocalRing.residue A)).Separable := by
+    have hmap : (Polynomial.X ^ p - Polynomial.C (⟨c, hcA⟩ : A) :
+        Polynomial A).map (IsLocalRing.residue A) =
+        Polynomial.X ^ p - Polynomial.C
+          (IsLocalRing.residue A (⟨c, hcA⟩ : A)) := by
+      rw [Polynomial.map_sub, Polynomial.map_pow, Polynomial.map_X,
+        Polynomial.map_C]
+    rw [hmap]
+    exact Polynomial.separable_X_pow_sub_C _ hchar hcres
+  have hnesub : (⟨(σ : K ≃ₐ[k₀] K) x, hσxA⟩ : A) ≠ ⟨x, hxA⟩ :=
+    fun hc => hne (congrArg Subtype.val hc)
+  have hresne := A.residue_ne_of_roots_ne _ hr₁ hr₂ hnesub hsep
+  apply hresne
+  have h9 : (⟨(σ : K ≃ₐ[k₀] K) x, hσxA⟩ : A) = σ • (⟨x, hxA⟩ : A) :=
+    Subtype.ext hcoe.symm
+  rw [h9]
+  exact hres _
+
+set_option backward.isDefEq.respectTransparency false in
 /-- **Inertia fixes the roots of unity of order prime to the residue
 characteristic** (PROVEN — step (b) of the Tate-multiplicative
 derivation): if `p` is nonzero in the residue field of the valuation
