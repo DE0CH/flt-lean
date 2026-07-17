@@ -1056,12 +1056,7 @@ theorem FreyPackage.inertia_two_unipotent (P : FreyPackage) :
     have := P.hp5
     omega
   have hpt := WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction
-    P.freyCurve Nat.prime_two hp2
-    (embeddedValuationSubring Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
-    (embeddedValuationSubring_comap_toSubring
-      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
-  have hmem := map_mem_inertiaSubgroup_of_mem_localInertiaGroup
-    Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat σ hσ
+    P.freyCurve Nat.prime_two hp2 σ hσ
   set A := P.freyCurve.galoisRep P.p P.hppos
     ((Field.absoluteGaloisGroup.map (algebraMap ℚ
       (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
@@ -1089,7 +1084,7 @@ theorem FreyPackage.inertia_two_unipotent (P : FreyPackage) :
     show ((P.p : ℕ) : ℤ) • (v : ((P.freyCurve.map (algebraMap ℚ
       (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).Point) = 0
     exact_mod_cast h1
-  have hp := hpt _ hmem v.1 hv
+  have hp := hpt v.1 hv
   apply Subtype.ext
   have hb : ∀ w : ((P.freyCurve.map (algebraMap ℚ
       (AlgebraicClosure ℚ))).nTorsion P.p),
@@ -1115,18 +1110,7 @@ theorem FreyPackage.inertia_two_unipotent (P : FreyPackage) :
       ((0 : Module.End (ZMod P.p) ((P.freyCurve.map (algebraMap ℚ
         (AlgebraicClosure ℚ))).nTorsion P.p)) v).1)
   rw [hgoal, hb (A v), hb v]
-  convert hp using 8 <;>
-    first
-      | rfl
-      | exact Subsingleton.elim _ _
-      | exact congrArg (fun f : ℚ →+*
-            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) =>
-            Field.absoluteGaloisGroup.map f) (Subsingleton.elim _ _)
-      | exact congrArg (fun f : ℚ →+*
-            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) =>
-            (Field.absoluteGaloisGroup.map f) σ) (Subsingleton.elim _ _)
+  exact hp
 
 set_option warn.sorry false in
 /-- **The flat/ordinary analysis at `p`** (sorry node — the deepest
