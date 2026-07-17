@@ -2582,6 +2582,26 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6, WEIL PAIRING DECOMPOSED): the
+  `exists_weilPairing` node is now DERIVED from the strictly smaller
+  node `det_galoisRep_eq_cyclotomic` (det of the mod-p representation
+  is the mod-p cyclotomic character). Assembly PROVEN: #E[p] = p²
+  (card_torsionBy at the algebraic closure, now resultant-free) ⟹
+  the torsion is a rank-2 ZMod-p-space (card_eq_pow_finrank +
+  pow-injectivity) ⟹ the coordinate determinant form in a finBasis
+  is alternating and nondegenerate, and transforms by det ρ
+  (pairing_map_eq_det_smul, in-file), which is χ by the det-node.
+  GOTCHA: do NOT `haveI Classical.decEq` over an existing project
+  DecidableEq-instance — nTorsion carries the instance as a type
+  argument and the ∃-type was elaborated with the ambient one.
+  ROUTE FOR THE DET-NODE (sketch, fits existing tree nodes):
+  det ρ̄ and χ̄ are characters G_ℚ → (ZMod p)ˣ; they agree at
+  Frobenius elements of good-reduction primes ℓ ∤ pN (Frobenius has
+  det = ℓ mod p by the reduction/point-counting machinery of
+  GoodReduction.lean) and Chebotarev (the Chebotarev.lean node)
+  makes Frobenii dense, forcing equality. So the Weil-pairing cone
+  reduces to GoodReduction + Chebotarev + a Frobenius-det
+  computation — no elliptic-net/Miller-function layer needed.
 - 2026-07-17 (session 6, RESULTANT NODE ELIMINATED `cb7f744`):
   psi34's certificate elaborated (40M heartbeats, set-staged
   cofactors, inlined 55-term relation-cofactor in the

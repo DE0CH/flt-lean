@@ -106,12 +106,35 @@ noncomputable local instance instAlgebraPadicIntZModWeilPairing
   RingHom.toAlgebra PadicInt.toZMod
 
 set_option warn.sorry false in
-/-- **The Weil pairing** (sorry node): on the `p`-torsion of an elliptic
-curve over `ℚ` there is an alternating, nondegenerate, `ZMod p`-bilinear
-pairing which the absolute Galois group scales by (the mod-`p` reduction
-of) the cyclotomic character — the pairing `E[p] × E[p] → μ_p` after an
-identification `μ_p ≅ ℤ/p`, whose Galois twist is exactly the cyclotomic
-character. -/
+/-- **The determinant of the mod-`p` Galois representation is the
+cyclotomic character** (sorry node): the arithmetic content of the
+Weil pairing. Classically: the pairing `E[p] × E[p] → μ_p` is
+Galois-equivariant with `Gal` acting on `μ_p` by the cyclotomic
+character, and on a rank-`2` space any equivariant alternating
+nondegenerate pairing forces `det ρ = χ`. Conversely `det ρ = χ`
+suffices to CONSTRUCT the abstract pairing (the coordinate
+determinant form), which is how the tree consumes it. -/
+theorem det_galoisRep_eq_cyclotomic (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (p : ℕ) [Fact p.Prime] (hppos : 0 < p)
+    (g : Field.absoluteGaloisGroup ℚ) :
+    LinearMap.det
+      (E.galoisRep p hppos g : Module.End (ZMod p)
+        ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p)) =
+      algebraMap ℤ_[p] (ZMod p)
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **The Weil pairing** (DERIVED 2026-07-17 from the determinant
+node): on the `p`-torsion of an elliptic curve over `ℚ` there is an
+alternating, nondegenerate, `ZMod p`-bilinear pairing which the
+absolute Galois group scales by (the mod-`p` reduction of) the
+cyclotomic character. Constructed as the coordinate determinant form
+in a basis, which exists since `#E[p] = p²` (the torsion count) makes
+the torsion a rank-`2` space; the Galois twist is the determinant of
+the representation (`pairing_map_eq_det_smul`), which is the
+cyclotomic character by the determinant node. -/
 theorem exists_weilPairing (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (p : ℕ) [Fact p.Prime] (hppos : 0 < p) :
     ∃ e : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p
@@ -120,7 +143,54 @@ theorem exists_weilPairing (E : WeierstrassCurve ℚ) [E.IsElliptic]
       (∀ v, e v v = 0) ∧ (∃ x y, e x y ≠ 0) ∧
       ∀ g x y, e (E.galoisRep p hppos g x) (E.galoisRep p hppos g y) =
         algebraMap ℤ_[p] (ZMod p)
-          (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) * e x y :=
-  sorry
+          (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) * e x y := by
+  classical
+  have hp := (Fact.out : p.Prime)
+  -- the torsion count gives rank 2
+  have hcard : Nat.card ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) = p ^ 2 :=
+    TorsionCard.card_torsionBy
+      (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) p
+      (Nat.cast_ne_zero.mpr hp.ne_zero)
+  haveI hfin : Finite ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) := Nat.finite_of_card_ne_zero (by
+    rw [hcard]
+    have := hp.pos
+    positivity)
+  haveI : Fintype ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) := Fintype.ofFinite _
+  haveI : Module.Finite (ZMod p) ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) := Module.Finite.of_finite
+  have hfr : Module.finrank (ZMod p) ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) = 2 := by
+    have h := Module.card_eq_pow_finrank (K := ZMod p) (V := ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p))
+    rw [ZMod.card] at h
+    have h2 : p ^ 2 = p ^ Module.finrank (ZMod p) ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) := by
+      rw [← hcard, Nat.card_eq_fintype_card]
+      exact h
+    exact (Nat.pow_right_injective hp.two_le h2.symm)
+  have hrank : Module.rank (ZMod p) ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) = 2 := by
+    have := Module.finrank_eq_rank (ZMod p) ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p)
+    rw [hfr] at this
+    exact_mod_cast this.symm
+  -- the coordinate determinant pairing
+  let b : Module.Basis (Fin 2) (ZMod p) ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) :=
+    Module.finBasisOfFinrankEq (ZMod p) ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) hfr
+  let e : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) →ₗ[ZMod p] ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) →ₗ[ZMod p] ZMod p :=
+    LinearMap.mk₂ (ZMod p)
+      (fun x y => b.coord 0 x * b.coord 1 y - b.coord 1 x * b.coord 0 y)
+      (by intro m₁ m₂ n; simp only [map_add]; ring)
+      (by intro c m n; simp only [map_smul, smul_eq_mul]; ring)
+      (by intro m n₁ n₂; simp only [map_add]; ring)
+      (by intro c m n; simp only [map_smul, smul_eq_mul]; ring)
+  have halt : ∀ v, e v v = 0 := by
+    intro v
+    show b.coord 0 v * b.coord 1 v - b.coord 1 v * b.coord 0 v = 0
+    ring
+  refine ⟨e, halt, ⟨b 0, b 1, ?_⟩, ?_⟩
+  · show b.coord 0 (b 0) * b.coord 1 (b 1) -
+      b.coord 1 (b 0) * b.coord 0 (b 1) ≠ 0
+    simp only [Module.Basis.coord_apply, Module.Basis.repr_self]
+    norm_num [Finsupp.single_apply]
+  · intro g x y
+    rw [← det_galoisRep_eq_cyclotomic E p hppos g]
+    exact pairing_map_eq_det_smul hrank e halt
+      (E.galoisRep p hppos g) x y
 
 end WeilPairing
+
