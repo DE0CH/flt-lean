@@ -49,6 +49,7 @@ theorem separable_preΨ'_char_two_closed {K : Type u} [Field K]
   sorry
 
 set_option backward.isDefEq.respectTransparency false in
+omit [DecidableEq k] in
 /-- **Separability in characteristic two** (DECOMPOSED 2026-07-17):
 reduced to the algebraically closed case by the separability
 transfer along the base change to `AlgebraicClosure k`. -/
