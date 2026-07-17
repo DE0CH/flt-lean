@@ -2582,6 +2582,22 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6 final refinement, GoodReduction WITHOUT a
+  reduction map): mathlib's Reduction.lean is curve-level only (no
+  point reduction, no additivity) — but the node does not need it:
+  (i) torsion coordinates are INTEGRAL (x: root of ΨSqₙ with
+  R-integral coefficients and unit leading coefficient n²; y:
+  integral via the monic-in-y curve equation); (ii) the reduction of
+  ΨSqₙ is the residue curve's ΨSqₙ (map_ΨSq + good reduction), and
+  the RESIDUE curve's separable_preΨ' (axiom-clean, ALL
+  characteristics — this is where the char-2 case pays off) makes
+  distinct integral torsion-x's stay distinct mod 𝔪 (a double
+  residue root would contradict separability); (iii) same-x points
+  are resolved by yQuad/Ψ₂Sq-coprimality mod 𝔪; (iv) σ in inertia
+  acts trivially on residues, so σP ≡ P coordinatewise mod 𝔪 —
+  hence σP = P by (ii)+(iii). σP is n-torsion since the Galois
+  action is additive (Point.map is a group hom, existing machinery).
+  ~300 lines against the axiom-clean tower; NEXT SESSION EXECUTES.
 - 2026-07-17 (session 6 close, NEXT-NODE PLAN — GoodReduction:65 via
   division polynomials, Cassels-style, NO formal groups): the torsion
   tower unlocks an elementary route to
