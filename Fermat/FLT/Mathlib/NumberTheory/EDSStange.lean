@@ -556,4 +556,88 @@ theorem normEDS_ellSequence {R : Type*} [CommRing R] (b c d : R)
     MvPolynomial.eval₂Hom_X', Matrix.cons_val_zero, Matrix.cons_val_one,
     Matrix.cons_val_two, Matrix.tail_cons, Matrix.head_cons] using h
 
+set_option backward.isDefEq.respectTransparency false in
+set_option maxRecDepth 16000 in
+/-- **Closed forms for the `c = 0, d = -b⁴` EDS over `ℤ[b]`** (the
+division-polynomial values at a `3`-division point, after the anchor
+identity pins `d = -b⁴`): `W(3j+1) = (-1)ʲ b^(3j²+2j)` and
+`W(3j+2) = (-1)ʲ b^(3j²+4j+1)`. By two-step induction on `j` from the
+`T(·, 3)` instances of `normEDS_ellSequence` (which read
+`W(3j+7)W(3j+1) = b⁶W(3j+4)²` here), cancelling in `ℤ[b]`. -/
+theorem normEDS_c_zero_closed (j : ℕ) :
+    normEDS (Polynomial.X : Polynomial ℤ) 0 (-Polynomial.X ^ 4)
+        (3 * (j : ℤ) + 1) =
+      (-1) ^ j * Polynomial.X ^ (3 * j ^ 2 + 2 * j) ∧
+    normEDS (Polynomial.X : Polynomial ℤ) 0 (-Polynomial.X ^ 4)
+        (3 * (j : ℤ) + 2) =
+      (-1) ^ j * Polynomial.X ^ (3 * j ^ 2 + 4 * j + 1) := by
+  induction j using Nat.twoStepInduction with
+  | zero =>
+    refine ⟨?_, ?_⟩
+    · norm_num [normEDS_one]
+    · norm_num [normEDS_two]
+  | one =>
+    refine ⟨?_, ?_⟩
+    · rw [show 3 * ((1 : ℕ) : ℤ) + 1 = 4 from by norm_num, normEDS_four]
+      norm_num
+      ring
+    · rw [show 3 * ((1 : ℕ) : ℤ) + 2 = 2 * 2 + 1 from by norm_num,
+        normEDS_odd, show (2 : ℤ) + 2 = 4 from by norm_num,
+        show (2 : ℤ) - 1 = 1 from by norm_num,
+        show (2 : ℤ) + 1 = 3 from by norm_num, normEDS_four,
+        normEDS_two, normEDS_one, normEDS_three]
+      norm_num
+      ring
+  | more j hj hj1 =>
+    have hTA := normEDS_ellSequence (Polynomial.X : Polynomial ℤ) 0
+      (-Polynomial.X ^ 4) (3 * (j : ℤ) + 4) 3
+    have hTB := normEDS_ellSequence (Polynomial.X : Polynomial ℤ) 0
+      (-Polynomial.X ^ 4) (3 * (j : ℤ) + 5) 3
+    rw [show 3 * (j : ℤ) + 4 + 3 = 3 * ((j + 2 : ℕ) : ℤ) + 1 from by
+        push_cast; ring,
+      show 3 * (j : ℤ) + 4 - 3 = 3 * ((j : ℕ) : ℤ) + 1 from by ring,
+      show 3 * (j : ℤ) + 4 + 1 = 3 * ((j + 1 : ℕ) : ℤ) + 2 from by
+        push_cast; ring,
+      show 3 * (j : ℤ) + 4 - 1 = 3 * (j : ℤ) + 3 from by ring,
+      show (3 : ℤ) + 1 = 4 from by norm_num,
+      show (3 : ℤ) - 1 = 2 from by norm_num,
+      show 3 * (j : ℤ) + 4 = 3 * ((j + 1 : ℕ) : ℤ) + 1 from by
+        push_cast; ring,
+      normEDS_three, normEDS_four, normEDS_two] at hTA
+    rw [show 3 * (j : ℤ) + 5 + 3 = 3 * ((j + 2 : ℕ) : ℤ) + 2 from by
+        push_cast; ring,
+      show 3 * (j : ℤ) + 5 - 3 = 3 * ((j : ℕ) : ℤ) + 2 from by ring,
+      show 3 * (j : ℤ) + 5 + 1 = 3 * (j : ℤ) + 6 from by ring,
+      show 3 * (j : ℤ) + 5 - 1 = 3 * ((j + 1 : ℕ) : ℤ) + 1 from by
+        push_cast; ring,
+      show (3 : ℤ) + 1 = 4 from by norm_num,
+      show (3 : ℤ) - 1 = 2 from by norm_num,
+      show 3 * (j : ℤ) + 5 = 3 * ((j + 1 : ℕ) : ℤ) + 2 from by
+        push_cast; ring,
+      normEDS_three, normEDS_four, normEDS_two] at hTB
+    rw [hj.1, hj1.1, hj1.2] at hTA
+    rw [hj.2, hj1.1, hj1.2] at hTB
+    have hε2 : ((-1 : Polynomial ℤ) ^ (j + 1)) = -((-1) ^ j) := by
+      rw [pow_succ, mul_neg_one]
+    have hε3 : ((-1 : Polynomial ℤ) ^ (j + 2)) = (-1) ^ j := by
+      rw [pow_add, neg_one_sq, mul_one]
+    rw [hε2] at hTA hTB
+    have hAne : ((-1) ^ j * Polynomial.X ^ (3 * j ^ 2 + 2 * j) :
+        Polynomial ℤ) ≠ 0 :=
+      mul_ne_zero (pow_ne_zero j (by norm_num))
+        (pow_ne_zero _ Polynomial.X_ne_zero)
+    have hBne : ((-1) ^ j * Polynomial.X ^ (3 * j ^ 2 + 4 * j + 1) :
+        Polynomial ℤ) ≠ 0 :=
+      mul_ne_zero (pow_ne_zero j (by norm_num))
+        (pow_ne_zero _ Polynomial.X_ne_zero)
+    refine ⟨?_, ?_⟩
+    · refine mul_right_cancel₀ hAne ?_
+      rw [hε3]
+      generalize (-1 : Polynomial ℤ) ^ j = ε at hTA ⊢
+      linear_combination hTA
+    · refine mul_right_cancel₀ hBne ?_
+      rw [hε3]
+      generalize (-1 : Polynomial ℤ) ^ j = ε at hTB ⊢
+      linear_combination hTB
+
 end EllipticDivisibilitySequence
