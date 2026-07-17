@@ -46,6 +46,11 @@ public import Mathlib.RingTheory.DedekindDomain.Dvr
 import Mathlib.RingTheory.Localization.LocalizationLocalization
 -- the unit-`c₄` Kraus–Laska minimality criterion, for the multiplicative case
 import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
+-- the local-field instance package for `adicCompletion ℚ v` (the
+-- `ValuativeRel`/`𝒪[·]` vocabulary of the completion-transfer lemma)
+public import Fermat.FLT.Mathlib.NumberTheory.Padics.LocalField
+-- the adic-vs-canonical valuation bridges over `𝒪[K]`
+public import Fermat.FLT.Mathlib.RingTheory.Valuation.ValuativeRel.Basic
 -- the vendored Néron–Ogg–Shafarevich node, consumed by the
 -- good-reduction unramifiedness glue; PUBLIC because the
 -- multiplicative-reduction pointwise node is STATED in its
@@ -456,6 +461,167 @@ theorem isEquiv_valuation_maximalIdeal_localization {q : ℕ} (hq : q.Prime) :
       hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal
       ((x.den : NumberField.RingOfIntegers ℚ))).mpr hmem
     rwa [map_natCast] at h2
+
+open ValuativeRel IsDedekindDomain WithZero WeierstrassCurve in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Multiplicative reduction transfers to the completion** (PROVEN —
+step (B) of the Tate-multiplicative plumbing): an elliptic curve over
+`ℚ` with multiplicative reduction over `ℤ_(q)` has multiplicative
+reduction over the ring of integers of the completed field
+`adicCompletion ℚ v_q`. The chase: coefficients and `c₄`, `Δ` move
+along `algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)` with `Valued.v ∘ algebraMap = hq.toHeightOneSpectrumRingOfIntegersRat`-adic
+valuation (`valuedAdicCompletion_eq_valuation'`); the `ℤ_(q)`-side
+maximal-ideal valuation converts to the `hq.toHeightOneSpectrumRingOfIntegersRat`-adic valuation by the
+PROVEN dictionary (`isEquiv_valuation_maximalIdeal_localization`); the
+`(HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)`-side `Valued.v` converts to the canonical valuation
+(`ValuativeRel.isEquiv`) and back to the maximal-ideal-adic form
+(`adicValuation_eq_one_iff`/`_lt_one_iff`); minimality over `𝒪[HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat]`
+is the unit-`c₄` Kraus–Laska criterion. -/
+theorem hasMultiplicativeReduction_adicCompletion {q : ℕ} (hq : q.Prime)
+    (E : WeierstrassCurve ℚ)
+    [E.HasMultiplicativeReduction
+      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)] :
+    (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))).HasMultiplicativeReduction
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat] := by
+  classical
+  -- the valuation of a `(algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))`-image is the `hq.toHeightOneSpectrumRingOfIntegersRat`-adic valuation
+  have hval : ∀ x : ℚ, (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰) ((algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)) x) =
+      hq.toHeightOneSpectrumRingOfIntegersRat.valuation ℚ x := by
+    have hcoe : ∀ x : ℚ, (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) x =
+        ({ toCompletion := ↑((WithVal.equiv (HeightOneSpectrum.valuation ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)).symm x) } :
+          HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat) := by
+      intro x
+      have hhom := Subsingleton.elim
+        (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))
+        ((({ toFun := IsDedekindDomain.HeightOneSpectrum.adicCompletion.ofCompletion
+             map_one' := rfl
+             map_mul' := fun _ _ => rfl
+             map_zero' := rfl
+             map_add' := fun _ _ => rfl } :
+            (HeightOneSpectrum.valuation ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat).Completion →+*
+            HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat).comp
+          (UniformSpace.Completion.coeRingHom)).comp
+          ((WithVal.equiv (HeightOneSpectrum.valuation ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)).symm.toRingHom))
+      rw [hhom]
+      rfl
+    intro x
+    rw [hcoe x]
+    exact IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation'
+      hq.toHeightOneSpectrumRingOfIntegersRat x
+  -- the two `ℚ`-side valuations are equivalent
+  have hdict := isEquiv_valuation_maximalIdeal_localization hq
+  -- the two `(HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)`-side valuations are equivalent
+  have hKeq : (ValuativeRel.valuation (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)).IsEquiv
+      (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰) :=
+    ValuativeRel.isEquiv _ _
+  -- `≤ 1`-transfer chain, `ℚ`-side maximal-ideal form to `(HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)` canonical
+  have hle : ∀ x : ℚ,
+      (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)).valuation ℚ x ≤ 1 →
+      ValuativeRel.valuation (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat) ((algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)) x) ≤ 1 := by
+    intro x hx
+    have h1 : hq.toHeightOneSpectrumRingOfIntegersRat.valuation ℚ x ≤ 1 :=
+      (Valuation.isEquiv_iff_val_le_one.mp hdict).mpr hx
+    have h2 : (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰) ((algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)) x) ≤ 1 := by
+      rw [hval]
+      exact h1
+    exact (Valuation.isEquiv_iff_val_le_one.mp hKeq).mpr h2
+  -- the same chains at `= 1` and `< 1`
+  have heq1 : ∀ x : ℚ,
+      (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)).valuation ℚ x = 1 →
+      ValuativeRel.valuation (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat) ((algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)) x) = 1 := by
+    intro x hx
+    have h1 : hq.toHeightOneSpectrumRingOfIntegersRat.valuation ℚ x = 1 :=
+      (Valuation.isEquiv_iff_val_eq_one.mp hdict).mpr hx
+    have h2 : (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰) ((algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)) x) = 1 := by
+      rw [hval]
+      exact h1
+    exact (Valuation.isEquiv_iff_val_eq_one.mp hKeq).mpr h2
+  have hlt1 : ∀ x : ℚ,
+      (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)).valuation ℚ x < 1 →
+      ValuativeRel.valuation (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat) ((algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)) x) < 1 := by
+    intro x hx
+    have h1 : hq.toHeightOneSpectrumRingOfIntegersRat.valuation ℚ x < 1 :=
+      (Valuation.isEquiv_iff_val_lt_one.mp hdict).mpr hx
+    have h2 : (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰) ((algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)) x) < 1 := by
+      rw [hval]
+      exact h1
+    exact (Valuation.isEquiv_iff_val_lt_one.mp hKeq).mpr h2
+  -- integrality of the mapped curve
+  have hRint : IsIntegral (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) E := by
+    have h1 := (HasMultiplicativeReduction.toIsMinimal
+      (R := Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)
+      (W := E)).val_Δ_maximal.1
+    simp only [one_smul] at h1
+    exact h1
+  have hcoeff : ∀ x : ℚ, x ∈ Set.range (algebraMap (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ) →
+      ValuativeRel.valuation (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat) ((algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)) x) ≤ 1 := by
+    rintro x ⟨r, rfl⟩
+    exact hle _ (IsDedekindDomain.HeightOneSpectrum.valuation_le_one
+      (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)) r)
+  haveI hKint : IsIntegral 𝒪[HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat] (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))) := by
+    refine isIntegral_of_exists_lift 𝒪[HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat]
+      ⟨⟨(algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)) E.a₁, ?_⟩, ?_⟩ ⟨⟨(algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)) E.a₂, ?_⟩, ?_⟩ ⟨⟨(algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)) E.a₃, ?_⟩, ?_⟩
+      ⟨⟨(algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)) E.a₄, ?_⟩, ?_⟩ ⟨⟨(algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)) E.a₆, ?_⟩, ?_⟩
+    case _ => exact hcoeff _ ⟨(integralModel (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) E).a₁,
+      integralModel_a₁_eq (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) E⟩
+    case _ => exact rfl
+    case _ => exact hcoeff _ ⟨(integralModel (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) E).a₂,
+      integralModel_a₂_eq (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) E⟩
+    case _ => exact rfl
+    case _ => exact hcoeff _ ⟨(integralModel (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) E).a₃,
+      integralModel_a₃_eq (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) E⟩
+    case _ => exact rfl
+    case _ => exact hcoeff _ ⟨(integralModel (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) E).a₄,
+      integralModel_a₄_eq (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) E⟩
+    case _ => exact rfl
+    case _ => exact hcoeff _ ⟨(integralModel (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) E).a₆,
+      integralModel_a₆_eq (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) E⟩
+    case _ => exact rfl
+  -- `c₄` has canonical valuation `1` upstairs
+  have hc₄R : (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)).valuation ℚ E.c₄ = 1 :=
+    HasMultiplicativeReduction.multiplicativeReduction
+      (R := Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) (W := E)
+  have hc₄K : ValuativeRel.valuation (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat) ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))).c₄) = 1 := by
+    rw [WeierstrassCurve.map_c₄]
+    exact heq1 _ hc₄R
+  -- back to the maximal-ideal-adic form over `𝒪[HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat]`
+  have hc₄mem : (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))).c₄ ∈ (ValuativeRel.valuation (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)).integer := by
+    rw [Valuation.mem_integer_iff, hc₄K]
+  have hc₄adic : (IsDiscreteValuationRing.maximalIdeal
+      (ValuativeRel.valuation (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)).integer).valuation (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat) ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))).c₄) = 1 := by
+    have h1 := (ValuativeRel.adicValuation_eq_one_iff
+      (K := (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)) (x := ⟨(E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))).c₄, hc₄mem⟩)).mpr
+    exact h1 hc₄K
+  -- discriminant strictly small upstairs
+  have hΔR : (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)).valuation ℚ E.Δ < 1 :=
+    HasMultiplicativeReduction.badReduction
+      (R := Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) (W := E)
+  have hΔK : ValuativeRel.valuation (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat) ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))).Δ) < 1 := by
+    rw [WeierstrassCurve.map_Δ]
+    exact hlt1 _ hΔR
+  have hΔmem : (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))).Δ ∈ (ValuativeRel.valuation (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)).integer := by
+    rw [Valuation.mem_integer_iff]
+    exact le_of_lt hΔK
+  have hΔadic : (IsDiscreteValuationRing.maximalIdeal
+      (ValuativeRel.valuation (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)).integer).valuation (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat) ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))).Δ) < 1 := by
+    have h1 := (ValuativeRel.adicValuation_lt_one_iff
+      (K := (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)) (x := ⟨(E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))).Δ, hΔmem⟩)).mpr
+    exact h1 hΔK
+  exact { toIsMinimal := isMinimal_of_valuation_c₄_eq_one
+            (R := 𝒪[HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat]) (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))) hc₄adic
+          badReduction := hΔadic
+          multiplicativeReduction := hc₄adic }
 
 open scoped WeierstrassCurve.Affine in
 set_option warn.sorry false in
