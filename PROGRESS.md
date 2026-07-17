@@ -225,13 +225,18 @@ entries file). To add/remove/annotate a node, edit
                           field-fixed so `σ(u)/u` is a `p`-th root of
                           unity; inertia fixes it (residue
                           characteristic prime to `p`).
-                      - ❌· `WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic` — the nonsplit half of the unipotence leaf: the
-                        unramified quadratic twist (`exists_quadraticTwi
-                        st_hasSplitMultiplicativeReduction`) reduces to
-                        the split case; the twist isomorphism is defined
-                        over the unramified quadratic extension, which
-                        inertia fixes, so the two inertia actions on the
-                        `p`-torsion agree.
+                      - ✅· `WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic` — the nonsplit half of the unipotence statement,
+                        assembled from the LOCAL nonsplit node
+                        `tate_inertia_unipotent_of_nonsplit` by the
+                        proven `ℚ̄`-pullback glue (equivariant embedding
+                        + `Point.map` injectivity).
+                        - ❌· `WeierstrassCurve.tate_inertia_unipotent_of_nonsplit` — the LOCAL twist-transfer content of the
+                          nonsplit unipotence: the unramified quadratic
+                          twist has split reduction, its minimal model
+                          satisfies `tate_inertia_unipotent`, and the
+                          twist point-equivalence is inertia-equivariant
+                          (trivial quadratic character on the unramified
+                          extension).
                     - ✅✅· `FreyPackage.freyCurve_hasMultiplicativeReduction_at_two` — (`FreyCurve/Semistable.lean`, own work):
                       (2026-07-16) — the Frey model is semistable at 2
                       by design: `c₄ = c^{2p} - (ab)^p` is odd (`a ≡ 3
@@ -519,12 +524,18 @@ entries file). To add/remove/annotate a node, edit
                                 valuation `1` (equal multiplicities on
                                 coprime numerator/denominator force both
                                 to vanish).
-                          - ❌· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality leaf:
-                            the unramified quadratic twist (`exists_quad
-                            raticTwist_hasSplitMultiplicativeReduction`)
-                            reduces to the split case; the twist
-                            isomorphism is defined over the unramified
-                            quadratic extension, which inertia fixes.
+                          - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality
+                            statement, assembled from the LOCAL nonsplit
+                            node `tate_inertia_trivial_of_nonsplit` by
+                            the proven `ℚ̄`-pullback glue; the
+                            `j`-hypothesis feeds through `map_j`.
+                            - ❌· `WeierstrassCurve.tate_inertia_trivial_of_nonsplit` — the LOCAL twist-transfer content of the
+                              nonsplit triviality: as the unipotent
+                              analogue via the unramified quadratic
+                              twist and `tate_inertia_trivial` — the
+                              twist has the same `j`-invariant, so the
+                              step-(d) witness applies to its minimal
+                              model.
                       - ✅✅· `WeierstrassCurve.galoisRep` (see above)
                     - ✅✅· `WeierstrassCurve.galoisRep` (see above)
                   - ✅✅· `TorsionCard.smul_surjective` (see above)
