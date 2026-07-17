@@ -2527,8 +2527,17 @@ assumed. Axiom invariant: every declaration must use at most
   back to ℤ[A][x] by the {1,Y}-basis injectivity (both sides y-free).
   (W) at prime indices is NOT composition-reachable — needs the
   differentiated-recursion descent over the joint {P, P'} window.
-  NEXT SESSION: (1) formalize (C) via the tautological point; (2) the
-  (W)-descent; (3) the multiplicity endgame;
+  CONFIRMED FURTHER: the (C)-ΨSq-side CLOSES as a value-window ideal
+  membership over {even-rec, T(n,2), star, membership, c/d-anchors,
+  b₈-relation} (GB size 13, scripts/eds/composition_psisq_certificate
+  .py) — so (C) has BOTH routes (window certificate, tautological
+  point). And the Euler-homogeneity chain rule gives the exact
+  doubling law `W(2n) = 2·preΨ₄hom(Φₙ,ΨSqₙ)·W(n)` since the Jacobian
+  of the composition pair is `8·preΨ₄hom` (verified). The remaining
+  odd-index (W)-steps at primes need the differentiated-recursion
+  descent OR the derivation-on-Frac(B) invariant-differential
+  induction. NEXT SESSION: (1) formalize (C) (either route); (2) the
+  (W)-odd machinery; (3) the multiplicity endgame;
   (2) `resultant_Φ_ΨSq` or its `IsCoprime` reformulation; then the
   torsion cone is DONE. Remaining 18 nodes list: see the sorry-grep;
   major fronts: WeilPairing:124, Chebotarev:98, HardlyRamified (5
