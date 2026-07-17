@@ -1288,16 +1288,139 @@ theorem exists_mem_localInertiaGroup_restrictNormalHom_eq
 
 end CompactnessLifting
 
-set_option warn.sorry false in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **The fixed field of the local inertia group is unramified** (the
-local half of the embedding-prime transport; Neukirch II.9.11): if a
-finite subextension `M/Kᵥ` of `Kᵥᵃˡᵍ` is fixed pointwise by
-`localInertiaGroup v`, then the maximal ideal of `𝒪ᵥ` generates the
-maximal ideal of the integral closure of `𝒪ᵥ` in `M` — that is,
-`e(M/Kᵥ) = 1`. -/
+local half of the embedding-prime transport; Neukirch II.9.11, PROVEN
+2026-07-17): if a finite subextension `M/Kᵥ` of `Kᵥᵃˡᵍ` is fixed
+pointwise by `localInertiaGroup v`, then the maximal ideal of `𝒪ᵥ`
+generates the maximal ideal of the integral closure of `𝒪ᵥ` in `M` —
+that is, `e(M/Kᵥ) = 1`. Assembly: pass to the Galois closure `N`,
+reify `M` inside `↥N`; the compactness lifting turns `hM` into "the
+finite-level inertia fixes the reification pointwise"; the counting
+combiner gives `e = 1` there; transport back along `reifyEquiv` and
+convert to the ideal equality in the DVR. -/
 theorem maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup
     (M : IntermediateField Kᵥ (Kᵥᵃˡᵍ)) [FiniteDimensional Kᵥ M]
     (hM : M ≤ IntermediateField.fixedField (localInertiaGroup v)) :
     (𝔪 𝒪ᵥ).map (algebraMap 𝒪ᵥ (IntegralClosure 𝒪ᵥ M)) =
-      𝔪 (IntegralClosure 𝒪ᵥ M) :=
-  sorry
+      𝔪 (IntegralClosure 𝒪ᵥ M) := by
+  classical
+  -- the Galois closure of `M`
+  haveI hsepbig : Algebra.IsSeparable
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) :=
+    (inferInstance : IsGalois
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+      (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))).to_isSeparable
+  set N : IntermediateField
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) :=
+    IntermediateField.normalClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) M
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+    with hN
+  haveI hfdN : FiniteDimensional
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N := by
+    rw [hN]
+    exact normalClosure.is_finiteDimensional _ _ _
+  haveI hsepN : Algebra.IsSeparable
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N :=
+    Algebra.isSeparable_tower_bot_of_isSeparable
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+  haveI hnormN : Normal
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N := by
+    rw [hN]
+    infer_instance
+  haveI hgalN : IsGalois
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N := { }
+  have hMN : M ≤ N := by
+    rw [hN]
+    exact IntermediateField.le_normalClosure M
+  -- the finite-level inertia fixes the reification of `M` pointwise
+  have hfix : (((𝔪 (IntegralClosure 𝒪ᵥ N)).inertia
+      (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N)) :
+      Set (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N)) ⊆
+      ((reifySubextension v M N).fixingSubgroup :
+        Set (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N)) := by
+    intro τ hτ
+    obtain ⟨σ, hσI, hσres⟩ :=
+      exists_mem_localInertiaGroup_restrictNormalHom_eq v N τ hτ
+    rw [SetLike.mem_coe, IntermediateField.mem_fixingSubgroup_iff]
+    intro z hz
+    -- `z` comes from `M`, on which `σ` acts trivially
+    apply Subtype.val_injective
+    have h1 : ((τ z : ↥N) :
+        AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) =
+        σ ((z : ↥N) :
+          AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) := by
+      rw [← hσres]
+      exact AlgEquiv.restrictNormal_commutes σ N z
+    rw [h1]
+    -- `σ` fixes the value of `z`, which lies in `M`
+    have h2 : ((z : ↥N) :
+        AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) ∈ M := hz
+    have h3 := hM h2
+    rw [IntermediateField.mem_fixedField_iff] at h3
+    exact h3 σ hσI
+  -- the counting combiner at the reification
+  have he1 := ramificationIdx_eq_one_of_inertia_le_fixingSubgroup v N
+    (reifySubextension v M N) hfix
+  -- transport `e = 1` across `reifyEquiv` to `M` itself
+  have he1' : Ideal.ramificationIdx' (𝔪 𝒪ᵥ) (𝔪 (IntegralClosure 𝒪ᵥ M)) = 1 := by
+    -- the `𝒪ᵥ`-algebra isomorphism between the integral closures
+    let j := reifyEquiv v M N hMN
+    let f₁ : IntegralClosure 𝒪ᵥ M →+* IntegralClosure 𝒪ᵥ ↥(reifySubextension v M N) :=
+      RingHom.codRestrict
+        ((j.symm : ↥M →+* ↥(reifySubextension v M N)).comp
+          (algebraMap (IntegralClosure 𝒪ᵥ M) M))
+        (integralClosure 𝒪ᵥ ↥(reifySubextension v M N))
+        (fun x => (Algebra.IsIntegral.isIntegral (R := 𝒪ᵥ) x).map
+          ((j.symm.toAlgHom.restrictScalars 𝒪ᵥ).comp
+            (IsScalarTower.toAlgHom 𝒪ᵥ (IntegralClosure 𝒪ᵥ M) M)))
+    let f₂ : IntegralClosure 𝒪ᵥ ↥(reifySubextension v M N) →+* IntegralClosure 𝒪ᵥ M :=
+      RingHom.codRestrict
+        ((j : ↥(reifySubextension v M N) →+* ↥M).comp
+          (algebraMap (IntegralClosure 𝒪ᵥ ↥(reifySubextension v M N))
+            ↥(reifySubextension v M N)))
+        (integralClosure 𝒪ᵥ ↥M)
+        (fun x => (Algebra.IsIntegral.isIntegral (R := 𝒪ᵥ) x).map
+          ((j.toAlgHom.restrictScalars 𝒪ᵥ).comp
+            (IsScalarTower.toAlgHom 𝒪ᵥ
+              (IntegralClosure 𝒪ᵥ ↥(reifySubextension v M N))
+              ↥(reifySubextension v M N))))
+    let jO : IntegralClosure 𝒪ᵥ M ≃ₐ[𝒪ᵥ]
+        IntegralClosure 𝒪ᵥ ↥(reifySubextension v M N) :=
+      { toFun := f₁
+        invFun := f₂
+        left_inv := fun y => Subtype.ext (j.apply_symm_apply _)
+        right_inv := fun y => Subtype.ext (j.symm_apply_apply _)
+        map_mul' := map_mul f₁
+        map_add' := map_add f₁
+        commutes' := fun r => Subtype.ext (by
+          show j.symm (algebraMap 𝒪ᵥ M r) = algebraMap 𝒪ᵥ _ r
+          rw [IsScalarTower.algebraMap_apply 𝒪ᵥ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) ↥M,
+            AlgEquiv.commutes,
+            IsScalarTower.algebraMap_apply 𝒪ᵥ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+              ↥(reifySubextension v M N)]) }
+    -- the maximal ideal pulls back to the maximal ideal
+    have hcomap : (𝔪 (IntegralClosure 𝒪ᵥ ↥(reifySubextension v M N))).comap jO =
+        𝔪 (IntegralClosure 𝒪ᵥ M) := by
+      ext z
+      rw [Ideal.mem_comap, IsLocalRing.mem_maximalIdeal, mem_nonunits_iff,
+        IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+      constructor
+      · intro h1 h2
+        exact h1 (h2.map jO)
+      · intro h1 h2
+        have h3 := h2.map jO.symm
+        rw [AlgEquiv.symm_apply_apply] at h3
+        exact h1 h3
+    rw [← hcomap, Ideal.ramificationIdx'_comap_eq (𝔪 𝒪ᵥ) jO]
+    exact he1
+  exact maximalIdeal_map_eq_of_ramificationIdx_eq_one v M he1'

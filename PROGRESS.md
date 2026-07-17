@@ -1579,3 +1579,27 @@ assumed. Axiom invariant: every declaration must use at most
   `∃ Nx, N ≤ Nx ∧ z ∈ Nx ∧ FD ∧ IsGalois` and `obtain`). Whole-arc
   axiom audit clean. THE LOCAL NODE L1 NOW NEEDS ONLY ITS FINAL
   ASSEMBLY (piece (ii) above).
+- 2026-07-17 (session 5): ★★★ **THE LOCAL NODE IS PROVEN — THE ENTIRE
+  MINKOWSKI BRANCH IS CLOSED UNCONDITIONALLY.** ★★★
+  `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup` (Neukirch
+  II.9.11, "the fixed field of the local inertia group is unramified")
+  is sorry-free: Galois closure + compactness lifting turns `hM` into
+  finite-level inertia fixing the reified `M`; the counting combiner
+  gives `e = 1`; the `𝒪ᵥ`-algebra isomorphism of integral closures
+  (two-sided codRestrict pair, `comap 𝔪 = 𝔪` by nonunit transport)
+  transports `e = 1` across `reifyEquiv`
+  (`ramificationIdx'_comap_eq`); the DVR conversion closes. AXIOM
+  AUDIT OF THE WHOLE CHAIN — L1 →
+  `exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup` →
+  `inertia_eq_bot_of_le_fixingSubgroup` →
+  `isUnramifiedAt_of_inertia_le_fixingSubgroup` →
+  `open_normal_subgroup_eq_top_of_inertia_le` →
+  `minkowski_character_trivial` — ALL
+  `[propext, Classical.choice, Quot.sound]`, ZERO `sorryAx`.
+  "ℚ has no nontrivial everywhere-unramified extension" (in the
+  subgroup and character forms the tree consumes) is now a THEOREM,
+  via a from-scratch formalization of local ramification theory:
+  finite-level Hilbert `|I| = e` counting + profinite compactness —
+  NO decomposition groups, NO henselian lifting, no new axioms.
+  Frontier: 21 nodes. The transport family is now available PROVEN for
+  the two `IsUnramifiedAt` glue nodes (next consumers).
