@@ -2248,3 +2248,16 @@ assumed. Axiom invariant: every declaration must use at most
   t-linear coefficient, identify it against `s·(window)`-multiples).
   Lean-side: `eval_Ψ₂Sq_eq_sq` (the membership identity) extracted as
   a standalone lemma; `two_smul_some_eq_zero_iff` refactored onto it.
+- 2026-07-17 (session 5): **THE UNIVERSAL TWO-POINT CROSS IDENTITY IS
+  PROVEN IN LEAN** (`two_point_cross_identity`, cofactors −4/−4 on
+  the two curve equations): `2t₁t₂(x₁−x₂)² = (b₂+4x₁+4x₂)(x₁−x₂)⁴ +
+  4X₃ − (Ψ₂Sq(x₁)+Ψ₂Sq(x₂))(x₁−x₂)²` with `X₃` the multiplied secant
+  `x`-form of `Q₁−Q₂`. Numerically verified to subsume ALL
+  cross-tracking instances (pairs `(n,n+1)`: difference `P`;
+  `(m−1,m+1)`: difference `2P`; `(1,m)`: difference `(m−1)P`) — so
+  the induction package collapses back to (i) + (ii), and the
+  t-linear generators the odd t-target needed are the `(1,·)`
+  instances of THIS lemma (the difference x-coordinates are IH-known).
+  Remaining before the skeleton: recompute the t-target closures with
+  the universal-identity instances as generators (mechanical), and
+  the step-output tracking derivations.
