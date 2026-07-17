@@ -52,4 +52,20 @@ theorem normEDS_sum_companion (n : ℤ) :
       (d * b + b ^ 5) - normEDS b c d n ^ 3 * b ^ 3 * c :=
   sorry
 
+set_option warn.sorry false in
+/-- (Sorry node — **Stange's theorem for `normEDS`**: the elliptic-
+sequence relation in its two-parameter three-term form
+`T(p, q) : W(p+q)W(p−q) = W(p+1)W(p−1)W(q)² − W(q+1)W(q−1)W(p)²`.)
+This is the mathlib TODO `IsEllipticSequence (normEDS b c d)` (the
+general relator `rel p q r 0` follows from the `T`-family by an
+alternating `3×3` expansion). To be proven by double parity descent
+over the four symbol clusters `W(a±j), W(e±j), W(a+e±j), W(a−e±j)`
+with the plain and cross `T`-instances as the inductive hypotheses
+(descent experiments in `scripts/eds/`). -/
+theorem normEDS_ellSequence (p q : ℤ) :
+    normEDS b c d (p + q) * normEDS b c d (p - q) =
+      normEDS b c d (p + 1) * normEDS b c d (p - 1) * normEDS b c d q ^ 2 -
+      normEDS b c d (q + 1) * normEDS b c d (q - 1) * normEDS b c d p ^ 2 :=
+  sorry
+
 end EllipticDivisibilitySequence

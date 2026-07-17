@@ -53,7 +53,7 @@ import Mathlib.Data.Set.Card
 
 namespace TorsionCard
 
-open WeierstrassCurve WeierstrassCurve.Affine
+open WeierstrassCurve WeierstrassCurve.Affine EllipticDivisibilitySequence
 
 universe u
 
@@ -833,20 +833,42 @@ theorem evalEval_ψ_of_even {n : ℤ} (hn : Even n) {x y : k}
     WeierstrassCurve.ψ_two]
   simp only [Polynomial.evalEval_mul, Polynomial.evalEval_C]
 
-set_option warn.sorry false in
+set_option backward.isDefEq.respectTransparency false in
 omit [E.IsElliptic] [DecidableEq k] in
-/-- (Sorry node — **the `T(n, 2)` elliptic-sequence relation on the
-curve**.) `ψₙ₊₂ψₙ₋₂ = ψₙ₊₁ψₙ₋₁ψ₂² - ψ₃ψₙ²` at any point — the
-`q = 2` instance of the two-parameter elliptic-sequence family
-`T(p, q)` for `normEDS` (Stange's theorem, the mathlib TODO
-`IsEllipticSequence normEDS`); to be specialised through
-`evalEvalRingHom` with no curve input at all. -/
+/-- **Division-polynomial values are a `normEDS` of the seed values**
+(PROVEN 2026-07-17): `ψₘ(x, y) = normEDS (ψ₂(x,y)) (Ψ₃(x)) (preΨ₄(x)) m`
+at ANY point of the plane — `normEDS` commutes with the evaluation
+ring homomorphism. Every universal EDS identity thereby specialises to
+the values with no curve input. -/
+theorem evalEval_ψ_normEDS (m : ℤ) (x y : k) :
+    ((E⁄k).ψ m).evalEval x y =
+      normEDS ((E⁄k).ψ₂.evalEval x y) (((E⁄k).Ψ₃).eval x)
+        (((E⁄k).preΨ₄).eval x) m := by
+  have h := map_normEDS (Polynomial.evalEvalRingHom x y)
+    ((E⁄k).ψ₂) (Polynomial.C (E⁄k).Ψ₃) (Polynomial.C (E⁄k).preΨ₄) m
+  simpa only [WeierstrassCurve.ψ, Polynomial.coe_evalEvalRingHom,
+    Polynomial.evalEval_C] using h
+
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] [DecidableEq k] in
+/-- **The `T(n, 2)` elliptic-sequence relation on the curve** (DERIVED
+2026-07-17 from the universal Stange node `normEDS_ellSequence`):
+`ψₙ₊₂ψₙ₋₂ = ψₙ₊₁ψₙ₋₁ψ₂² - ψ₃ψₙ²` at any point of the plane — a pure
+specialisation through `evalEval_ψ_normEDS`, no curve input at all. -/
 theorem evalEval_ψ_quadratic (n : ℤ) (x y : k) :
     ((E⁄k).ψ (n + 2)).evalEval x y * ((E⁄k).ψ (n - 2)).evalEval x y =
       ((E⁄k).ψ (n + 1)).evalEval x y * ((E⁄k).ψ (n - 1)).evalEval x y *
         ((E⁄k).ψ 2).evalEval x y ^ 2 -
-      ((E⁄k).ψ 3).evalEval x y * ((E⁄k).ψ n).evalEval x y ^ 2 :=
-  sorry
+      ((E⁄k).ψ 3).evalEval x y * ((E⁄k).ψ n).evalEval x y ^ 2 := by
+  have hT := normEDS_ellSequence ((E⁄k).ψ₂.evalEval x y)
+    (((E⁄k).Ψ₃).eval x) (((E⁄k).preΨ₄).eval x) n 2
+  rw [show (2 : ℤ) + 1 = 3 from rfl, show (2 : ℤ) - 1 = 1 from rfl,
+    normEDS_one, mul_one] at hT
+  rw [evalEval_ψ_normEDS E (n + 2) x y, evalEval_ψ_normEDS E (n - 2) x y,
+    evalEval_ψ_normEDS E (n + 1) x y, evalEval_ψ_normEDS E (n - 1) x y,
+    evalEval_ψ_normEDS E 2 x y, evalEval_ψ_normEDS E 3 x y,
+    evalEval_ψ_normEDS E n x y]
+  linear_combination hT
 
 set_option warn.sorry false in
 omit [E.IsElliptic] [DecidableEq k] in
