@@ -582,10 +582,31 @@ the START and END of each block of work.
             - ✗· `TorsionCard.exists_point_x_smul` — **rational points
               in multiplication fibres** over a separably closed
               field (where separability of `[n]` enters).
-          - ✗○ `TorsionCard.prime_torsion_card` — `#E[p] = p²` for prime
-            `p` with `(p : k) ≠ 0` (kernel of the separable degree-`p²`
-            isogeny); being derived from the dictionary + a `preΨ'`
-            separability node (CURRENT WORK).
+          - ✓· `TorsionCard.prime_torsion_card` — DERIVED (2026-07-17):
+            the nonzero `p`-torsion is fibred over the roots of the
+            division polynomial by the dictionary node; a shared
+            counting skeleton (`key`) computes `#E[p] = 1 + m·deg g`
+            for a separable `g` cutting out the torsion
+            `x`-coordinates with uniform `y`-fibre size `m`. Odd `p`:
+            `g = preΨ' p` (separability node), `m = 2` (the `y`-fibre
+            quadratic is separable since `Ψ₂Sq(x₀) ≠ 0` by the
+            coprimality node), `1 + 2·(p²-1)/2 = p²`. `p = 2`:
+            `g = Ψ₂Sq` (separability node), `m = 1` (the `y`-quadratic
+            has discriminant `Ψ₂Sq(x₀) = 0`, hence a unique root
+            `-(a₁x₀+a₃)/2`), `1 + 3 = 4`. PROVEN infrastructure:
+            `yQuad` (the `y`-fibre quadratic),
+            `derivative_yQuad_sq_sub` (the characteristic-free
+            discriminant identity `(∂Q)² - 4Q = C (Ψ₂Sq x₀)`),
+            `yQuad_separable` (explicit Bézout), `pointsAt` finset +
+            biUnion counting.
+            - ✗· `TorsionCard.separable_preΨ'` — separability of the
+              odd-`p` division polynomial (disc companion identity,
+              `disc(ψₚ) = ±pᵃΔᵇ`).
+            - ✗· `TorsionCard.isCoprime_Ψ₂Sq_preΨ'` — coprimality of
+              `ψ₂²` and `ψₚ` (strong divisibility of the EDS,
+              `gcd(ψ₂,ψₚ) = ψ₁ = 1`).
+            - ✗· `TorsionCard.separable_Ψ₂Sq` — separability of the
+              two-torsion cubic (`disc = 16Δ`).
         - ✓· `WeierstrassCurve.galoisRep` — CONSTRUCTED (2026-07-16). The
           formerly sorry-d DATA is now the genuine representation: the
           Galois action on points (`Point.map`, via the `DistribMulAction`
@@ -1983,3 +2004,31 @@ assumed. Axiom invariant: every declaration must use at most
   when constructing `IsScalarTower Loc ℚ Kᵥ`; (d) `[Algebra K B]` +
   `[Bialgebra K B]` binders together create an `SMul` diamond that
   BREAKS `WithConv` instance synthesis — take only `[Bialgebra K B]`.
+- 2026-07-17 (session 5): **BOTH TORSION-COUNT NODES DERIVED from six
+  sharp division-polynomial leaves** (`TorsionCard.lean`; frontier
+  count 19 → 23, strictly shallower — every remaining leaf is a
+  concrete polynomial identity or a single Washington-Thm-3.6-style
+  point formula). `smul_surjective` DERIVED from [the fibre-point node
+  `exists_point_x_smul` + the `x([n]P)` formula node
+  `exists_smul_some_eq` + `isCoprime_Φ_ΨSq` (Bézout, resultant branch)
+  + `Y_eq_of_X_eq`/negation]. `prime_torsion_card` DERIVED from [the
+  dictionary node `smul_some_eq_zero_iff` + `separable_preΨ'` +
+  `isCoprime_Ψ₂Sq_preΨ'` + `separable_Ψ₂Sq`] via a shared counting
+  skeleton: nonzero torsion = biUnion over roots of the cutting
+  polynomial of the `y`-fibre finsets (`pointsAt`); PROVEN
+  infrastructure includes the characteristic-free discriminant
+  identity `(∂yQuad)² - 4·yQuad = C (Ψ₂Sq x₀)` and the explicit-Bézout
+  separability `yQuad_separable` (audits clean). NOTE mathlib's
+  division polynomials have NO point-level theory (the `zsmul` formula
+  is `sorry` even in Angdinata's public mathlib branch
+  `EllipticCurve.Torsion`; his torsion/Tate-module work with Wu and Xu
+  is unpublished WIP) — the six leaves are exactly the missing
+  arithmetic. GOTCHAS: `Polynomial.mem_roots'` for the unprimed-
+  hypothesis form; `Set.ncard_coe_finset` (lowercase); `Nat.card_coe_
+  set_eq` is root-namespace; `subst` on `hx : x' = ξ` eliminates the
+  WRONG variable when both sides are locals (use an explicit
+  coordinate-equality helper `hpoint` instead); `nomatch hP` for
+  constructor-distinct `Point` equalities (`noConfusion` has universe
+  trouble); `(0 : Point) = Point.zero` needs an explicit `show`/`rw`
+  before `nomatch`; the `∃`-form fibre nodes avoid needing the `ω`
+  division polynomial entirely (not yet defined in mathlib).

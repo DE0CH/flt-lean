@@ -39,6 +39,9 @@ import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
 import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
 import Mathlib.GroupTheory.QuotientGroup.Basic
 import Mathlib.GroupTheory.Coset.Card
+-- `Set.ncard` bridging between `Nat.card` of the torsion submodule and
+-- `Finset.card` of the explicit point finset
+import Mathlib.Data.Set.Card
 
 @[expose] public section
 
@@ -151,17 +154,329 @@ theorem smul_surjective [IsSepClosed k] {n : ℕ} (hn : (n : k) ≠ 0) :
       exact hpoint _ h₀ hx (by rw [hy, hx, Affine.negY_negY])
 
 set_option warn.sorry false in
-/-- **The prime-level count** (sorry node): for a prime `p` with
-`(p : k) ≠ 0`, the `p`-torsion of an elliptic curve over a separably
-closed field has exactly `p²` elements — the kernel of the separable
-degree-`p²` isogeny `[p]` has as many points as its degree. -/
-theorem prime_torsion_card [IsSepClosed k] {p : ℕ} (hp : p.Prime)
-    (hchar : (p : k) ≠ 0) :
-    Nat.card (Submodule.torsionBy ℤ (E⁄k).Point p) = p ^ 2 :=
+/-- **Separability of the division polynomial** (sorry node): for an
+odd prime `p` invertible in `k`, the reduced `p`-division polynomial
+`preΨ' p` (whose square is `ΨSq p`) is separable — its roots, the
+`x`-coordinates of the nonzero `p`-torsion, are simple. Classically
+via the discriminant companion of the resultant identity
+(`disc(ψₚ) = ± pᵃ Δᵇ`). -/
+theorem separable_preΨ' {p : ℕ} (hp : p.Prime) (hodd : Odd p)
+    (hpk : (p : k) ≠ 0) :
+    ((E⁄k).preΨ' p).Separable :=
   sorry
 
+set_option warn.sorry false in
+/-- **`2`-torsion and `p`-torsion have disjoint `x`-coordinates**
+(sorry node): for an odd prime `p` invertible in `k`, the two-torsion
+polynomial `Ψ₂Sq` and the reduced `p`-division polynomial `preΨ' p`
+are coprime — classically `gcd(ψ₂, ψₚ) = ψ_{gcd(2,p)} = ψ₁ = 1`
+(strong divisibility of the elliptic divisibility sequence). -/
+theorem isCoprime_Ψ₂Sq_preΨ' {p : ℕ} (hp : p.Prime) (hodd : Odd p)
+    (hpk : (p : k) ≠ 0) :
+    IsCoprime ((E⁄k).Ψ₂Sq) ((E⁄k).preΨ' p) :=
+  sorry
+
+/-! ### The `y`-fibre above a fixed `x`-coordinate
+
+For a fixed `x₀ : k`, the points of the curve with `x`-coordinate `x₀`
+are cut out by the monic quadratic `yQuad x₀` in the `y`-variable. Its
+key algebraic property is the characteristic-free Bézout identity
+`(yQuad')² - 4 ⬝ yQuad = C (Ψ₂Sq x₀)`, which makes it separable
+whenever `Ψ₂Sq (x₀) ≠ 0`. -/
+
+/-- The monic quadratic cutting out the `y`-coordinates of the curve
+points above `x₀`. -/
+noncomputable def yQuad (x₀ : k) : Polynomial k :=
+  Polynomial.X ^ 2 + Polynomial.C ((E⁄k).a₁ * x₀ + (E⁄k).a₃) * Polynomial.X -
+    Polynomial.C (x₀ ^ 3 + (E⁄k).a₂ * x₀ ^ 2 + (E⁄k).a₄ * x₀ + (E⁄k).a₆)
+
+omit [E.IsElliptic] [DecidableEq k] in
+theorem yQuad_natDegree (x₀ : k) : (yQuad E x₀).natDegree = 2 := by
+  rw [yQuad]
+  compute_degree!
+
+omit [E.IsElliptic] [DecidableEq k] in
+theorem yQuad_ne_zero (x₀ : k) : yQuad E x₀ ≠ 0 := by
+  intro h0
+  have := yQuad_natDegree E x₀
+  rw [h0] at this
+  simp at this
+
+omit [E.IsElliptic] [DecidableEq k] in
+theorem eval_yQuad_eq_zero_iff_equation (x₀ y : k) :
+    (yQuad E x₀).eval y = 0 ↔ (E⁄k).toAffine.Equation x₀ y := by
+  rw [Affine.equation_iff, yQuad]
+  simp only [Polynomial.eval_sub, Polynomial.eval_add, Polynomial.eval_mul,
+    Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X]
+  constructor
+  · intro h; linear_combination h
+  · intro h; linear_combination h
+
+omit [E.IsElliptic] [DecidableEq k] in
+/-- The characteristic-free discriminant identity for the `y`-fibre
+quadratic: `(∂yQuad)² - 4 ⬝ yQuad` is the constant `Ψ₂Sq (x₀)`. -/
+theorem derivative_yQuad_sq_sub (x₀ : k) :
+    (Polynomial.derivative (yQuad E x₀)) ^ 2 - 4 * yQuad E x₀ =
+      Polynomial.C (((E⁄k).Ψ₂Sq).eval x₀) := by
+  have hval : ((E⁄k).Ψ₂Sq).eval x₀ =
+      ((E⁄k).a₁ * x₀ + (E⁄k).a₃) ^ 2 +
+        4 * (x₀ ^ 3 + (E⁄k).a₂ * x₀ ^ 2 + (E⁄k).a₄ * x₀ + (E⁄k).a₆) := by
+    rw [WeierstrassCurve.Ψ₂Sq, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+      WeierstrassCurve.b₆]
+    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow,
+      Polynomial.eval_C, Polynomial.eval_X]
+    ring
+  have hder : Polynomial.derivative (yQuad E x₀) =
+      Polynomial.C 2 * Polynomial.X +
+        Polynomial.C ((E⁄k).a₁ * x₀ + (E⁄k).a₃) := by
+    rw [yQuad]
+    simp only [Polynomial.derivative_sub, Polynomial.derivative_add,
+      Polynomial.derivative_mul, Polynomial.derivative_C,
+      Polynomial.derivative_X, Polynomial.derivative_X_pow,
+      Nat.cast_ofNat]
+    ring
+  rw [hder, hval, yQuad]
+  simp only [map_ofNat, Polynomial.C_add, Polynomial.C_mul, Polynomial.C_pow]
+  ring
+
+omit [E.IsElliptic] [DecidableEq k] in
+/-- The `y`-fibre quadratic is separable whenever `Ψ₂Sq (x₀) ≠ 0`
+(uniformly in the characteristic, by the Bézout identity
+`(1/D) ⬝ ∂Q ⬝ ∂Q + (-4/D) ⬝ Q = 1` from `derivative_yQuad_sq_sub`). -/
+theorem yQuad_separable {x₀ : k} (hx₀ : ((E⁄k).Ψ₂Sq).eval x₀ ≠ 0) :
+    (yQuad E x₀).Separable := by
+  refine ⟨Polynomial.C (-4 / ((E⁄k).Ψ₂Sq).eval x₀),
+    Polynomial.C (1 / ((E⁄k).Ψ₂Sq).eval x₀) *
+      Polynomial.derivative (yQuad E x₀), ?_⟩
+  have hkey := derivative_yQuad_sq_sub E x₀
+  have hD : (1 / ((E⁄k).Ψ₂Sq).eval x₀) * (((E⁄k).Ψ₂Sq).eval x₀) = 1 :=
+    one_div_mul_cancel hx₀
+  calc Polynomial.C (-4 / ((E⁄k).Ψ₂Sq).eval x₀) * yQuad E x₀ +
+        Polynomial.C (1 / ((E⁄k).Ψ₂Sq).eval x₀) *
+          Polynomial.derivative (yQuad E x₀) * Polynomial.derivative (yQuad E x₀)
+      = Polynomial.C (1 / ((E⁄k).Ψ₂Sq).eval x₀) *
+          ((Polynomial.derivative (yQuad E x₀)) ^ 2 - 4 * yQuad E x₀) := by
+        rw [neg_div, Polynomial.C_neg, div_eq_mul_one_div, mul_comm (4 : k),
+          Polynomial.C_mul]
+        simp only [map_ofNat]
+        ring
+    _ = 1 := by
+        rw [hkey, ← Polynomial.C_mul, hD, Polynomial.C_1]
+
 set_option backward.isDefEq.respectTransparency false in
-/-- **The torsion count** (PROVEN from the two nodes above):
+set_option warn.sorry false in
+/-- **Separability of the two-torsion polynomial** (sorry node): for
+`(2 : k) ≠ 0` the two-torsion cubic `Ψ₂Sq` is separable — its
+discriminant is `16 Δ`, a unit on an elliptic curve. -/
+theorem separable_Ψ₂Sq (h2 : (2 : k) ≠ 0) :
+    ((E⁄k).Ψ₂Sq).Separable :=
+  sorry
+
+/-- The points of the curve lying above a fixed `x`-coordinate, as a
+finset (the image of the roots of the `y`-fibre quadratic). -/
+noncomputable def pointsAt (x₀ : k) : Finset ((E⁄k).Point) :=
+  ((yQuad E x₀).roots.toFinset).attach.image fun y =>
+    Affine.Point.some x₀ y.1 <| by
+      haveI : (E⁄k).IsElliptic :=
+        inferInstanceAs ((E.map (algebraMap k k)).IsElliptic)
+      exact (E⁄k).toAffine.equation_iff_nonsingular.mp
+        ((eval_yQuad_eq_zero_iff_equation E x₀ y.1).mp
+          (Polynomial.mem_roots'.mp (Multiset.mem_toFinset.mp y.2)).2)
+
+theorem mem_pointsAt_iff {x₀ : k} {P : (E⁄k).Point} :
+    P ∈ pointsAt E x₀ ↔ ∃ (y : k) (h : (E⁄k).toAffine.Nonsingular x₀ y),
+      P = Affine.Point.some x₀ y h := by
+  constructor
+  · intro hP
+    obtain ⟨y, -, rfl⟩ := Finset.mem_image.mp hP
+    exact ⟨y.1, _, rfl⟩
+  · rintro ⟨y, h, rfl⟩
+    refine Finset.mem_image.mpr ⟨⟨y, ?_⟩, Finset.mem_attach _ _, rfl⟩
+    rw [Multiset.mem_toFinset, Polynomial.mem_roots (yQuad_ne_zero E x₀),
+      Polynomial.IsRoot, eval_yQuad_eq_zero_iff_equation]
+    exact h.1
+
+theorem pointsAt_card (x₀ : k) :
+    (pointsAt E x₀).card = (yQuad E x₀).roots.toFinset.card := by
+  rw [pointsAt, Finset.card_image_of_injective _ ?_, Finset.card_attach]
+  intro y₁ y₂ hy
+  simp only [Affine.Point.some.injEq] at hy
+  exact Subtype.ext hy.2
+
+theorem zero_notMem_pointsAt (x₀ : k) : (0 : (E⁄k).Point) ∉ pointsAt E x₀ := by
+  intro h0
+  obtain ⟨y, h, hP⟩ := (mem_pointsAt_iff E).mp h0
+  rw [show (0 : (E⁄k).Point) = Affine.Point.zero from rfl] at hP
+  exact nomatch hP
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The prime-level count** (DERIVED 2026-07-17 from the dictionary
+node and the three division-polynomial separability/coprimality
+nodes): for a prime `p` with `(p : k) ≠ 0`, the `p`-torsion of an
+elliptic curve over a separably closed field has exactly `p²`
+elements. The nonzero `p`-torsion is fibred over the roots of the
+relevant division polynomial (`preΨ' p` for odd `p`, with two points
+per root since the `y`-fibre quadratic is separable there by the
+coprimality node; `Ψ₂Sq` for `p = 2`, with one point per root since
+the quadratic is then a square), and the separability nodes count the
+roots: `2 ⬝ (p² - 1)/2` resp. `1 ⬝ 3` of them. -/
+theorem prime_torsion_card [IsSepClosed k] {p : ℕ} (hp : p.Prime)
+    (hchar : (p : k) ≠ 0) :
+    Nat.card (Submodule.torsionBy ℤ (E⁄k).Point p) = p ^ 2 := by
+  classical
+  haveI : (E⁄k).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap k k)).IsElliptic)
+  have hpZ : ((p : ℕ) : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr hp.ne_zero
+  have hpkZ : (((p : ℕ) : ℤ) : k) ≠ 0 := by exact_mod_cast hchar
+  -- the counting skeleton, shared between `p = 2` and odd `p`:
+  -- a separable polynomial `g` whose roots are the torsion
+  -- `x`-coordinates, and a uniform `y`-fibre count `m`
+  have key : ∀ (g : Polynomial k) (m : ℕ), g.Separable →
+      (∀ x₀ y (h : (E⁄k).toAffine.Nonsingular x₀ y),
+        ((p : ℤ) • (Affine.Point.some x₀ y h : (E⁄k).Point) = 0 ↔
+          g.eval x₀ = 0)) →
+      (∀ x₀, g.eval x₀ = 0 → (yQuad E x₀).roots.toFinset.card = m) →
+      Nat.card (Submodule.torsionBy ℤ (E⁄k).Point p) =
+        1 + m * g.natDegree := by
+    intro g m hgsep hdict hfib
+    have hg0 : g ≠ 0 := hgsep.ne_zero
+    -- the root finset of `g`
+    have hgroots : g.roots.toFinset.card = g.natDegree := by
+      rw [Multiset.toFinset_card_of_nodup (Polynomial.nodup_roots hgsep)]
+      exact (IsSepClosed.splits_of_separable g hgsep).natDegree_eq_card_roots.symm
+    -- the finset of nonzero `p`-torsion points
+    set F : Finset ((E⁄k).Point) := g.roots.toFinset.biUnion (pointsAt E)
+      with hF
+    have hdisj : ∀ x₁ ∈ g.roots.toFinset, ∀ x₂ ∈ g.roots.toFinset, x₁ ≠ x₂ →
+        Disjoint (pointsAt E x₁) (pointsAt E x₂) := by
+      intro x₁ hx₁ x₂ hx₂ hne
+      refine Finset.disjoint_left.mpr fun P hP₁ hP₂ => ?_
+      obtain ⟨y₁, h₁, rfl⟩ := (mem_pointsAt_iff E).mp hP₁
+      obtain ⟨y₂, h₂, hP⟩ := (mem_pointsAt_iff E).mp hP₂
+      simp only [Affine.Point.some.injEq] at hP
+      exact hne hP.1
+    have hFcard : F.card = m * g.natDegree := by
+      rw [hF, Finset.card_biUnion hdisj,
+        Finset.sum_congr rfl fun x₀ hx₀ => (pointsAt_card E x₀).trans
+          (hfib x₀ (Polynomial.mem_roots'.mp (Multiset.mem_toFinset.mp hx₀)).2),
+        Finset.sum_const, smul_eq_mul, hgroots, mul_comm]
+    -- the torsion submodule is `{0} ∪ F` as a set
+    have hset : (Submodule.torsionBy ℤ (E⁄k).Point p : Set ((E⁄k).Point)) =
+        ↑(insert (0 : (E⁄k).Point) F) := by
+      ext P
+      simp only [SetLike.mem_coe, Submodule.mem_torsionBy_iff,
+        Finset.coe_insert, Set.mem_insert_iff]
+      constructor
+      · intro hP
+        cases P with
+        | zero => exact Or.inl rfl
+        | some x y h =>
+          refine Or.inr (Finset.mem_biUnion.mpr ⟨x, ?_,
+            (mem_pointsAt_iff E).mpr ⟨y, h, rfl⟩⟩)
+          rw [Multiset.mem_toFinset, Polynomial.mem_roots hg0]
+          exact (hdict x y h).mp hP
+      · rintro (rfl | hP)
+        · exact smul_zero _
+        · obtain ⟨x₀, hx₀, hPx⟩ := Finset.mem_biUnion.mp hP
+          obtain ⟨y, h, rfl⟩ := (mem_pointsAt_iff E).mp hPx
+          exact (hdict x₀ y h).mpr
+            (Polynomial.mem_roots'.mp (Multiset.mem_toFinset.mp hx₀)).2
+    -- count
+    calc Nat.card (Submodule.torsionBy ℤ (E⁄k).Point p)
+        = Set.ncard (Submodule.torsionBy ℤ (E⁄k).Point p :
+            Set ((E⁄k).Point)) := (Nat.card_coe_set_eq _)
+      _ = (insert (0 : (E⁄k).Point) F).card := by
+          rw [hset, Set.ncard_coe_finset]
+      _ = 1 + m * g.natDegree := by
+          rw [Finset.card_insert_of_notMem, hFcard, add_comm]
+          intro h0
+          obtain ⟨x₀, -, hPx⟩ := Finset.mem_biUnion.mp h0
+          exact zero_notMem_pointsAt E x₀ hPx
+  rcases hp.eq_two_or_odd' with rfl | hodd
+  · -- `p = 2`: one point per root of the two-torsion cubic
+    have h2 : (2 : k) ≠ 0 := by exact_mod_cast hchar
+    have hdeg : ((E⁄k).Ψ₂Sq).natDegree = 3 := by
+      have h4 : (4 : k) ≠ 0 := by
+        intro h
+        exact h2 (by
+          have : (4 : k) = 2 * 2 := by norm_num
+          rcases mul_eq_zero.mp (this ▸ h) with h' | h' <;> exact h')
+      rw [WeierstrassCurve.Ψ₂Sq]
+      compute_degree!
+    rw [key ((E⁄k).Ψ₂Sq) 1 (separable_Ψ₂Sq E h2) ?_ ?_, hdeg]
+    · norm_num
+    · -- the dictionary at `2` is `ΨSq 2 = Ψ₂Sq`
+      intro x₀ y h
+      have := smul_some_eq_zero_iff E (by norm_num : (2 : ℤ) ≠ 0)
+        (by exact_mod_cast h2) h
+      rw [show ((2 : ℕ) : ℤ) = (2 : ℤ) from rfl, this, WeierstrassCurve.ΨSq_two]
+    · -- one `y` above each two-torsion `x`-coordinate
+      intro x₀ hx₀
+      have hval : ((E⁄k).a₁ * x₀ + (E⁄k).a₃) ^ 2 +
+          4 * (x₀ ^ 3 + (E⁄k).a₂ * x₀ ^ 2 + (E⁄k).a₄ * x₀ + (E⁄k).a₆) = 0 := by
+        have hv : ((E⁄k).Ψ₂Sq).eval x₀ =
+            ((E⁄k).a₁ * x₀ + (E⁄k).a₃) ^ 2 +
+              4 * (x₀ ^ 3 + (E⁄k).a₂ * x₀ ^ 2 + (E⁄k).a₄ * x₀ + (E⁄k).a₆) := by
+          rw [WeierstrassCurve.Ψ₂Sq, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+            WeierstrassCurve.b₆]
+          simp only [Polynomial.eval_add, Polynomial.eval_mul,
+            Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X]
+          ring
+        rw [← hv, hx₀]
+      -- the unique `y`-root is `-(c/2)`
+      have hroot : ∀ y : k, (yQuad E x₀).eval y = 0 ↔
+          y = -(((E⁄k).a₁ * x₀ + (E⁄k).a₃) / 2) := by
+        intro y
+        rw [yQuad]
+        simp only [Polynomial.eval_sub, Polynomial.eval_add, Polynomial.eval_mul,
+          Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X]
+        constructor
+        · intro hy
+          have hsq : (y + ((E⁄k).a₁ * x₀ + (E⁄k).a₃) / 2) ^ 2 = 0 := by
+            field_simp
+            linear_combination (4 : k) * hy + hval
+          have := pow_eq_zero_iff (two_ne_zero) |>.mp hsq
+          exact eq_neg_of_add_eq_zero_left this
+        · rintro rfl
+          field_simp
+          linear_combination -hval
+      rw [show (yQuad E x₀).roots.toFinset =
+          {-(((E⁄k).a₁ * x₀ + (E⁄k).a₃) / 2)} from ?_, Finset.card_singleton]
+      ext y
+      rw [Multiset.mem_toFinset, Finset.mem_singleton,
+        Polynomial.mem_roots (yQuad_ne_zero E x₀), Polynomial.IsRoot, hroot]
+  · -- odd `p`: two points per root of `preΨ' p`
+    have hnoteven : ¬ Even p := Nat.not_even_iff_odd.mpr hodd
+    have hdeg : ((E⁄k).preΨ' p).natDegree = (p ^ 2 - 1) / 2 := by
+      rw [WeierstrassCurve.natDegree_preΨ' (W := (E⁄k)) hchar, if_neg hnoteven]
+    -- `ΨSq p` vanishing is `preΨ' p` vanishing (odd `p`)
+    have hΨodd : ∀ x₀ : k, ((E⁄k).ΨSq ((p : ℕ) : ℤ)).eval x₀ = 0 ↔
+        ((E⁄k).preΨ' p).eval x₀ = 0 := by
+      intro x₀
+      rw [WeierstrassCurve.ΨSq_ofNat, if_neg hnoteven, mul_one,
+        Polynomial.eval_pow, pow_eq_zero_iff two_ne_zero]
+    rw [key ((E⁄k).preΨ' p) 2 (separable_preΨ' E hp hodd hchar) ?_ ?_, hdeg]
+    · -- `1 + 2 ⬝ (p² - 1)/2 = p²`
+      obtain ⟨t, ht⟩ := hodd.pow (n := 2)
+      omega
+    · -- the dictionary
+      intro x₀ y h
+      rw [smul_some_eq_zero_iff E hpZ hpkZ h, hΨodd]
+    · -- two `y`s above each root of `preΨ' p`
+      intro x₀ hx₀
+      have hΨ₂ : ((E⁄k).Ψ₂Sq).eval x₀ ≠ 0 := by
+        intro h0
+        obtain ⟨F, G, hFG⟩ := isCoprime_Ψ₂Sq_preΨ' E hp hodd hchar
+        have hev := congrArg (Polynomial.eval x₀) hFG
+        rw [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_mul,
+          Polynomial.eval_one, h0, hx₀] at hev
+        simp at hev
+      have hsep := yQuad_separable E hΨ₂
+      rw [Multiset.toFinset_card_of_nodup (Polynomial.nodup_roots hsep),
+        ← (IsSepClosed.splits_of_separable _ hsep).natDegree_eq_card_roots,
+        yQuad_natDegree]
+
+/-- **The torsion count** (PROVEN from the nodes above):
 `#E(k̄)[n] = n²` for `(n : k) ≠ 0`, by strong induction peeling off the
 minimal prime factor. -/
 theorem card_torsionBy [IsSepClosed k] :
