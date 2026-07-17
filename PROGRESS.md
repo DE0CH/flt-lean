@@ -1720,3 +1720,25 @@ assumed. Axiom invariant: every declaration must use at most
   action is the ambient `DistribMulAction`, so the NOS conclusion is
   the needed fixing statement at `map σ`). Check the NOS node's exact
   variable pack (R k ksep n E instances) when instantiating.
+- 2026-07-17 (session 5): **`isUnramifiedAt_of_hasGoodReduction`
+  DERIVED — frontier 21 → 20.** The good-reduction unramifiedness glue
+  now rests SOLELY on the vendored NOS leaf
+  (`torsion_unramified_of_good_reduction`): instantiate at
+  `𝒪 := embeddedValuationSubring` with
+  `h𝒪 := embeddedValuationSubring_comap_toSubring` (Semistable's
+  localization pack in scope), inertia membership by the spelling
+  bridge, `NeZero` by `neZero_natCast_residueField` (MOVED before the
+  glue node — single-pass file order), and the `ker`-membership closed
+  by `show (ρ.toLocal v) σ = 1` (the `toLocal`-SPELLED form — the
+  `ρ (map σ)`-spelling is NOT accepted by `show` even though
+  ker-membership itself is defeq to application-eq) +
+  `LinearMap.ext` + `Subtype.ext` + the NOS conclusion verbatim
+  (`Point.map` matches the ambient action definitionally; the
+  torsion-membership bridge is `Submodule.mem_torsionBy_iff` +
+  `exact_mod_cast`). Axiom audit: `sorryAx` ONLY through the NOS
+  leaf. Gate-only full build. NEXT: the same pattern for
+  `isUnramifiedAt_of_hasMultiplicativeReduction` (against the Tate
+  machinery — MORE content: unipotent-not-trivial inertia, quadratic
+  twist; see the node's docstring) and the two `IsFlatAt` glue nodes
+  (against `torsion_flat_of_good_reduction`, plus the `ℤ_(p) → ℤ_p`
+  prolongation base change).

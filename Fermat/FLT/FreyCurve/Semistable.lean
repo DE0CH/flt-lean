@@ -46,6 +46,12 @@ public import Mathlib.RingTheory.DedekindDomain.Dvr
 import Mathlib.RingTheory.Localization.LocalizationLocalization
 -- the unit-`c₄` Kraus–Laska minimality criterion, for the multiplicative case
 import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
+-- the vendored Néron–Ogg–Shafarevich node, consumed by the
+-- good-reduction unramifiedness glue
+import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
+-- the embedded valuation subring, its `h𝒪`-compatibility, and the
+-- inertia spelling bridge (all PROVEN), consumed by the same glue
+import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
 
 @[expose] public section
 
@@ -402,25 +408,83 @@ theorem WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction
     (E.galoisRep p hp).IsFlatAt hp'.toHeightOneSpectrumRingOfIntegersRat :=
   sorry
 
-set_option warn.sorry false in
-/-- **Local-global glue for Néron–Ogg–Shafarevich** (sorry node): an
-elliptic curve over `ℚ` with good reduction at the place `q ≠ p` has
-unramified mod-`p` torsion representation at `q`, in the
-`GaloisRep.IsUnramifiedAt` sense (`localInertiaGroup q` is killed by
-`ρ.toLocal q`). To be closed against the vendored NOS node
-`WeierstrassCurve.torsion_unramified_of_good_reduction` (with
-`R = ℤ_(q)`, `k = ℚ`, `kˢᵉᵖ = AlgebraicClosure ℚ`, and `𝒪` the
-valuation subring induced by the embedding `ℚ̄ ↪ ℚ̄_q` fixed by
-`GaloisRep.toLocal`); the residual content is the inertia dictionary
-described in the module docstring, plus `NeZero (p : 𝔽_q)` from
-`q ≠ p`. -/
+/-- **`p` is nonzero in the residue field of `ℤ_(q)` for `q ≠ p`**
+(PROVEN 2026-07-16): `p` is a unit of the localization (its integer
+representative is prime to `q`), and units have nonzero residue. This
+discharges the `NeZero (n : ResidueField R)` hypothesis of the vendored
+Néron–Ogg–Shafarevich and finite-flat-prolongation nodes in the glue
+nodes below. -/
+theorem neZero_natCast_residueField {q p : ℕ} (hq : q.Prime) (hp : p.Prime)
+    (hqp : q ≠ p) :
+    NeZero ((p : ℕ) : IsLocalRing.ResidueField
+      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)) := by
+  have hndvd : ¬((q : ℤ) ∣ (p : ℤ)) := by
+    intro h
+    exact hqp ((Nat.prime_dvd_prime_iff_eq hq hp).mp (by exact_mod_cast h))
+  have hu : IsUnit ((p : ℤ) :
+      Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) :=
+    isUnit_intCast_localizationAtPrime hq hndvd
+  refine ⟨?_⟩
+  have h1 : (((p : ℕ)) : IsLocalRing.ResidueField
+      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)) =
+      IsLocalRing.residue _ (((p : ℤ) :
+        Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)) := by
+    rw [map_intCast]
+    norm_cast
+  rw [h1]
+  exact (hu.map (IsLocalRing.residue _)).ne_zero
+
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Local-global glue for Néron–Ogg–Shafarevich** (DERIVED
+2026-07-17 from the vendored NOS node): an elliptic curve over `ℚ`
+with good reduction at the place `q ≠ p` has unramified mod-`p`
+torsion representation at `q`, in the `GaloisRep.IsUnramifiedAt` sense.
+Assembly: instantiate `torsion_unramified_of_good_reduction` with
+`R = ℤ_(q)`, `𝒪` the embedded valuation subring (its `h𝒪` is
+`embeddedValuationSubring_comap_toSubring`); the image of a local
+inertia element lies in `𝒪.inertiaSubgroup ℚ` by the spelling bridge,
+and the NOS conclusion is precisely the pointwise fixing statement
+that `ker`-membership unfolds to (the Galois action on torsion is the
+ambient `Point.map`). Remaining `sorryAx` comes ONLY from the NOS node
+itself. -/
 theorem WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} [Fact p.Prime] (hp : 0 < p)
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
     [E.HasGoodReduction
       (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)] :
-    (E.galoisRep p hp).IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+    (E.galoisRep p hp).IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat := by
+  constructor
+  intro σ hσ
+  haveI : NeZero ((p : ℕ) : IsLocalRing.ResidueField
+      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)) :=
+    neZero_natCast_residueField hq (Fact.out : p.Prime) hqp
+  have hNOS := WeierstrassCurve.torsion_unramified_of_good_reduction
+    (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ E p
+    (AlgebraicClosure ℚ)
+    (embeddedValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+    (embeddedValuationSubring_comap_toSubring
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+  have hmem := map_mem_inertiaSubgroup_of_mem_localInertiaGroup
+    hq.toHeightOneSpectrumRingOfIntegersRat σ hσ
+  -- the endomorphism is the identity on the `p`-torsion
+  show ((E.galoisRep p hp).toLocal hq.toHeightOneSpectrumRingOfIntegersRat) σ = 1
+  apply LinearMap.ext
+  intro P
+  apply Subtype.ext
+  -- the underlying point is fixed, which is the NOS conclusion
+  have hP : (P : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).Point) ∈
+      AddSubgroup.torsionBy
+        ((E.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).Point
+        ((p : ℕ) : ℤ) := by
+    have h1 := P.2
+    rw [Submodule.mem_torsionBy_iff] at h1
+    show ((p : ℕ) : ℤ) • (P : ((E.map (algebraMap ℚ
+      (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).Point) = 0
+    exact_mod_cast h1
+  exact hNOS _ hmem P.1 hP
 
 set_option warn.sorry false in
 /-- **Local-global glue for flatness at good primes** (sorry node): an
@@ -443,29 +507,3 @@ theorem WeierstrassCurve.isFlatAt_of_hasGoodReduction
     (E.galoisRep p hp).IsFlatAt hp'.toHeightOneSpectrumRingOfIntegersRat :=
   sorry
 
-/-- **`p` is nonzero in the residue field of `ℤ_(q)` for `q ≠ p`**
-(PROVEN 2026-07-16): `p` is a unit of the localization (its integer
-representative is prime to `q`), and units have nonzero residue. This
-discharges the `NeZero (n : ResidueField R)` hypothesis of the vendored
-Néron–Ogg–Shafarevich and finite-flat-prolongation nodes when the glue
-nodes (`isUnramifiedAt_of_hasGoodReduction`,
-`isFlatAt_of_hasGoodReduction`) are eventually closed against them. -/
-theorem neZero_natCast_residueField {q p : ℕ} (hq : q.Prime) (hp : p.Prime)
-    (hqp : q ≠ p) :
-    NeZero ((p : ℕ) : IsLocalRing.ResidueField
-      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)) := by
-  have hndvd : ¬((q : ℤ) ∣ (p : ℤ)) := by
-    intro h
-    exact hqp ((Nat.prime_dvd_prime_iff_eq hq hp).mp (by exact_mod_cast h))
-  have hu : IsUnit ((p : ℤ) :
-      Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) :=
-    isUnit_intCast_localizationAtPrime hq hndvd
-  refine ⟨?_⟩
-  have h1 : (((p : ℕ)) : IsLocalRing.ResidueField
-      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)) =
-      IsLocalRing.residue _ (((p : ℤ) :
-        Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)) := by
-    rw [map_intCast]
-    norm_cast
-  rw [h1]
-  exact (hu.map (IsLocalRing.residue _)).ne_zero
