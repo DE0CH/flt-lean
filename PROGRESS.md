@@ -2290,3 +2290,15 @@ assumed. Axiom invariant: every declaration must use at most
   `t₃`-derivation — the internal (ii) at the new index, consumed by
   later steps), the collision/degenerate branches (all staged), and
   the skeleton wiring.
+- 2026-07-17 (session 5): **THE CONSECUTIVE STEP IS PROVEN
+  (`zsmul_consec_step_x`) — parity-free, superseding the odd/even
+  split.** `[n]P = [n-1]P + P` with difference `[n-2]P`; the ring core
+  `(x₂−x₃)dx² = t₁s` from the two secants; the conversion
+  `φₙψₙ₋₂² = φₙ₋₂ψₙ² − sψ₂ₙ₋₂` DERIVED from `evalEval_φ_eq` (at n,
+  n−1, n−2) + `evalEval_ψ_even` (at n−1) + `evalEval_ψ_two`,
+  assembled as two small linear_combinations and a `ψₙ₋₂²`-
+  cancellation. IH inputs: points + x-formulas at n−1, n−2, tracking
+  at n−1 only. REMAINING in the node: the per-step TRACKING OUTPUT
+  (tₙ at the new index — the last open certificate), the collision
+  and `s = 0` branches (staged), the base cases (proven), and the
+  strong-induction wiring.
