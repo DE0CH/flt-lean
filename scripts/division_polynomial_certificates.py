@@ -155,11 +155,7 @@ def check_step_targets() -> None:
     print("step targets (odd + even): numeric check OK at m = 3")
 
 
-if __name__ == "__main__":
-    certificate_duplication_y()
-    check_tracked_pair()
-    check_step_targets()
-    check_cross_tracking()
+
 
 
 def check_cross_tracking() -> None:
@@ -185,3 +181,10 @@ def check_cross_tracking() -> None:
             - B_**6 * C_**6 * (P2(xm) + P2(xm1))
         assert sp.simplify(lhs - rhs) == 0, m
     print("cross-tracking (iii): numeric check OK for n = 2..5")
+
+
+if __name__ == "__main__":
+    certificate_duplication_y()
+    check_tracked_pair()
+    check_step_targets()
+    check_cross_tracking()
