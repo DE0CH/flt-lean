@@ -1870,16 +1870,135 @@ theorem exists_root_of_derivative_ne_zero [IsSepClosed k]
     obtain ⟨q, hq, hqf⟩ := WfDvdMonoid.exists_irreducible_factor hfu hf0
     exact hnosep q hq hqf hq.separable
 
-set_option warn.sorry false in
-/-- **Rational points in the multiplication fibres** (sorry node —
-being replaced): over a separably closed field, every fibre of the
+set_option backward.isDefEq.respectTransparency false in
+set_option maxRecDepth 8000 in
+/-- **Rational points in the multiplication fibres** (PROVEN
+2026-07-17): over a separably closed field, the fibre of the
 `x`-coordinate of the multiplication-by-`n` map through a rational
-point contains a rational point. -/
+point contains a rational point. The fibre polynomial
+`F = Φₙ - ξ ⬝ ΨSqₙ` has `F' ≠ 0` (its `(n²-1)`-st coefficient is
+`n² ≠ 0` since `deg ΨSqₙ' < n² - 1`), so it has a root `x₀`
+(`exists_root_of_derivative_ne_zero`); if `Ψ₂Sq(x₀) ≠ 0` the
+`y`-fibre quadratic is separable and gives `y₀`; otherwise, in
+characteristic `≠ 2` the double root `y₀ = -(a₁x₀+a₃)/2` works, and
+in characteristic `2` (where `n` is odd) the definition of `Φ` forces
+`Φₙ(x₀) = x₀ΨSqₙ(x₀)`, hence `ξ = x₀` (using `ΨSqₙ(x₀) ≠ 0` from the
+Bézout identity), and the given point `(ξ, η)` itself witnesses the
+fibre. -/
 theorem exists_point_x_smul [IsSepClosed k] {n : ℤ} (hn : n ≠ 0)
-    (hnk : (n : k) ≠ 0) (ξ : k) :
-    ∃ (x₀ y₀ : k) (h : (E⁄k).toAffine.Nonsingular x₀ y₀),
-      ((E⁄k).Φ n).eval x₀ = ξ * ((E⁄k).ΨSq n).eval x₀ :=
-  sorry
+    (hnk : (n : k) ≠ 0) (ξ η : k)
+    (hQ : (E⁄k).toAffine.Nonsingular ξ η) :
+    ∃ (x₀ y₀ : k) (_ : (E⁄k).toAffine.Nonsingular x₀ y₀),
+      ((E⁄k).Φ n).eval x₀ = ξ * ((E⁄k).ΨSq n).eval x₀ := by
+  classical
+  haveI : (E⁄k).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap k k)).IsElliptic)
+  have hΔ : (E⁄k).Δ ≠ 0 := (WeierstrassCurve.isUnit_Δ (E⁄k)).ne_zero
+  have hD1 : 1 ≤ n.natAbs ^ 2 := by
+    have hna : n.natAbs ≠ 0 := Int.natAbs_ne_zero.mpr hn
+    have := pow_ne_zero 2 hna
+    omega
+  have hcastD : ((n.natAbs ^ 2 : ℕ) : k) ≠ 0 := by
+    have h2 : ((n.natAbs ^ 2 : ℕ) : ℤ) = n ^ 2 := by
+      push_cast
+      exact sq_abs n
+    have h1 : ((n.natAbs ^ 2 : ℕ) : k) = ((n : k)) ^ 2 := by
+      exact_mod_cast congrArg (fun z : ℤ => ((z : ℤ) : k)) h2
+    rw [h1]
+    exact pow_ne_zero 2 hnk
+  have hFd : Polynomial.derivative ((E⁄k).Φ n -
+      Polynomial.C ξ * (E⁄k).ΨSq n) ≠ 0 := by
+    intro hzero
+    have hc := congrArg (fun g => Polynomial.coeff g (n.natAbs ^ 2 - 1))
+      hzero
+    simp only [Polynomial.derivative_sub, Polynomial.derivative_C_mul,
+      Polynomial.coeff_sub, Polynomial.coeff_C_mul,
+      Polynomial.coeff_derivative, Polynomial.coeff_zero] at hc
+    rw [show n.natAbs ^ 2 - 1 + 1 = n.natAbs ^ 2 from by omega,
+      WeierstrassCurve.coeff_Φ,
+      Polynomial.coeff_eq_zero_of_natDegree_lt (lt_of_le_of_lt
+        ((E⁄k).natDegree_ΨSq_le n) (by omega)), zero_mul, mul_zero,
+      sub_zero, one_mul] at hc
+    apply hcastD
+    rw [show (n.natAbs ^ 2 : ℕ) = n.natAbs ^ 2 - 1 + 1 from by omega]
+    exact_mod_cast hc
+  obtain ⟨x₀, hx₀⟩ := exists_root_of_derivative_ne_zero hFd
+  have hrel : ((E⁄k).Φ n).eval x₀ = ξ * ((E⁄k).ΨSq n).eval x₀ := by
+    rw [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C]
+      at hx₀
+    linear_combination hx₀
+  by_cases hΨ2 : ((E⁄k).Ψ₂Sq).eval x₀ ≠ 0
+  · -- separable `y`-quadratic
+    have hdeg : (yQuad E x₀).degree ≠ 0 := by
+      rw [Polynomial.degree_eq_natDegree (yQuad_ne_zero E x₀),
+        yQuad_natDegree]
+      norm_num
+    obtain ⟨y₀, hy₀⟩ := IsSepClosed.exists_root (yQuad E x₀) hdeg
+      (yQuad_separable E hΨ2)
+    exact ⟨x₀, y₀, (Affine.equation_iff_nonsingular_of_Δ_ne_zero hΔ).mp
+      ((eval_yQuad_eq_zero_iff_equation E x₀ y₀).mp hy₀), hrel⟩
+  · rw [not_ne_iff] at hΨ2
+    by_cases h2 : (2 : k) = 0
+    · -- characteristic `2`: `ξ = x₀`, take the given point
+      have hΨne : ((E⁄k).ΨSq n).eval x₀ ≠ 0 := by
+        intro h0
+        obtain ⟨F, G, hFG⟩ := WeierstrassCurve.isCoprime_Φ_ΨSq (E⁄k) hn
+          (WeierstrassCurve.isUnit_Δ _)
+        have hev := congrArg (Polynomial.eval x₀) hFG
+        rw [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_mul,
+          Polynomial.eval_one, h0, hrel, h0] at hev
+        simp at hev
+      have hnodd : ¬Even n := by
+        rintro ⟨m, hm⟩
+        apply hnk
+        rw [hm]
+        push_cast
+        linear_combination ((m : k)) * h2
+      have hΦdef : ((E⁄k).Φ n).eval x₀ = x₀ * ((E⁄k).ΨSq n).eval x₀ := by
+        have hdef := congrArg (Polynomial.eval x₀)
+          (show (E⁄k).Φ n = Polynomial.X * (E⁄k).ΨSq n -
+            (E⁄k).preΨ (n + 1) * (E⁄k).preΨ (n - 1) * (E⁄k).Ψ₂Sq from by
+              rw [WeierstrassCurve.Φ, if_neg hnodd])
+        rw [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_mul,
+          Polynomial.eval_mul, Polynomial.eval_X, hΨ2, mul_zero,
+          sub_zero] at hdef
+        exact hdef
+      have hξ : ξ = x₀ := by
+        have hz : (ξ - x₀) * ((E⁄k).ΨSq n).eval x₀ = 0 := by
+          linear_combination hΦdef - hrel
+        rcases mul_eq_zero.mp hz with hz | hz
+        · exact sub_eq_zero.mp hz
+        · exact absurd hz hΨne
+      refine ⟨ξ, η, hQ, ?_⟩
+      rw [hξ]
+      exact hΦdef
+    · -- characteristic `≠ 2`: the double root
+      have hy₀ : (yQuad E x₀).eval
+          (-(((E⁄k).a₁ * x₀ + (E⁄k).a₃) / 2)) = 0 := by
+        have hid := congrArg (Polynomial.eval
+          (-(((E⁄k).a₁ * x₀ + (E⁄k).a₃) / 2))) (derivative_yQuad_sq_sub E x₀)
+        rw [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_pow,
+          Polynomial.eval_ofNat, Polynomial.eval_C,
+          derivative_yQuad_eval, hΨ2] at hid
+        have h4 : (4 : k) ≠ 0 := by
+          intro hc
+          apply h2
+          have : (2 : k) * 2 = 0 := by linear_combination hc
+          rcases mul_eq_zero.mp this with h | h <;> exact h
+        have hlin : 2 * (-(((E⁄k).a₁ * x₀ + (E⁄k).a₃) / 2)) +
+            ((E⁄k).a₁ * x₀ + (E⁄k).a₃) = 0 := by
+          field_simp
+          ring
+        rw [hlin] at hid
+        have : (4 : k) * (yQuad E x₀).eval
+            (-(((E⁄k).a₁ * x₀ + (E⁄k).a₃) / 2)) = 0 := by
+          linear_combination -hid
+        rcases mul_eq_zero.mp this with h | h
+        · exact absurd h h4
+        · exact h
+      exact ⟨x₀, _, (Affine.equation_iff_nonsingular_of_Δ_ne_zero hΔ).mp
+        ((eval_yQuad_eq_zero_iff_equation E x₀ _).mp hy₀), hrel⟩
+
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Divisibility of the points group** (DERIVED 2026-07-17 from the
@@ -1912,7 +2031,8 @@ theorem smul_surjective [IsSepClosed k] {n : ℕ} (hn : (n : k) ≠ 0) :
   cases P₀ with
   | zero => exact ⟨0, smul_zero _⟩
   | some ξ η h₀ =>
-    obtain ⟨x₀, y₀, hns, hrel⟩ := exists_point_x_smul E hnZ (by exact_mod_cast hn) ξ
+    obtain ⟨x₀, y₀, hns, hrel⟩ :=
+      exists_point_x_smul E hnZ (by exact_mod_cast hn) ξ η h₀
     -- `ΨSq n (x₀) ≠ 0` by coprimality
     have hΨ : ((E⁄k).ΨSq (n : ℤ)).eval x₀ ≠ 0 := by
       intro h0
