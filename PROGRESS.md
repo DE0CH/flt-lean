@@ -583,15 +583,24 @@ the START and END of each block of work.
               negating the point, `Φ_neg`/`ΨSq_neg`); characteristic
               hypothesis dropped.
             - ✗○ `TorsionCard.zsmul_some_aux` — **the multiplication
-              formula, strengthened simultaneous induction statement**
-              (Washington Thm 3.6): for `n > 0`, either `ψₙ(x,y) = 0`
-              and `n•P = 0`, or `n•P` is affine with
-              `x'·ψₙ² = φₙ(x,y)` and the `ω`-free `y`-tracking
-              `(2y' + a₁x' + a₃)·ψₙ⁴ = ψ₂ₙ(x,y)`. Base cases proven
-              (`n = 1` trivial, `n = 2` = `two_smul_some_eq_zero_iff`);
-              step cases `[n+1]P = [n]P + P`, `[2n]P = 2[n]P` via
-              `Affine.slope`/`addX` + `normEDS` recurrences (attack
-              map in the log).
+              formula** (Washington Thm 3.6): for `n > 0`, either
+              `ψₙ(x,y) = 0` and `n•P = 0`, or `n•P` is affine with
+              `x'·ψₙ² = φₙ(x,y)`. INTERIOR COMPLETE except wiring:
+              base cases proven (`zsmul_some_aux_one`/`_two`), the
+              parity-free consecutive step `zsmul_consec_step` PROVEN
+              (2026-07-17) with the FULL IH package output — point +
+              `x`-formula + `ψ₂`-tracking `t₃ψₙ⁴ = ψ₂ₙ` (via
+              `two_point_trace_identity` + the `(★s)` node + even
+              recurrence, cancelling `ψ₂ψₙ₋₁²`; no window widening).
+              Remains: the strong-induction skeleton (ℕ-reduction,
+              collision branch via `smul_collision`, 2-torsion branch
+              `s = 0` seeded by `Res(Ψ₂Sq, Ψ₃) = -Δ²`).
+            - ✗· `TorsionCard.evalEval_ψ_sum` — **the `(★s)`
+              sum-companion of the even recurrence**:
+              `ψₙ₋₁²ψₙ₊₂ + ψₙ₋₂ψₙ₊₁² = ψₙ₋₁ψₙψₙ₊₁(6x²+b₂x+b₄)
+              - ψₙ³Ψ₂Sq(x)` on the curve — the LAST identity input of
+              the induction; mathlib-PR-shaped (`Ψ_even`/`Ψ_odd`
+              family, parity-split `preΨ'`-recursion technique).
             - ✗· `TorsionCard.exists_point_x_smul` — **rational points
               in multiplication fibres** over a separably closed
               field (where separability of `[n]` enters).
@@ -2320,3 +2329,32 @@ assumed. Axiom invariant: every declaration must use at most
   skeleton. The Thm 3.6 node then rests on: (★s) + the fibre node +
   `separable_preΨ'` + `resultant_Φ_ΨSq` — all pure
   division-polynomial statements.
+- 2026-07-17 (session 5 cont.): TRACKING OUTPUT CLOSED (`ad9e21a`).
+  The plan of the previous entry is executed: (★s) is stated as the
+  sharp sorry node `evalEval_ψ_sum`; the pure two-point residue turned
+  out even cleaner than projected — the chain [(★s) with cofactor ψₙ,
+  gap-1 at n scaled by ψₙ₋₁², gap-1 at n-1] collapses the s-multiplied
+  tracking target (t₃ψₙ⁴ - ψ₂ₙ)·s·ψₙ₋₁² to ψₙ⁴ψₙ₋₁²·T₄ where T₄ is the
+  ψ-free TRACE IDENTITY s(t₃+s) = (x-x₃)(6x²+b₂x+b₄) - 2(x-x₁)(x-x₃)²
+  (x₃,t₃ the secant sum-expressions, x₁ the difference x-coordinate =
+  IH point). T₄ = `two_point_trace_identity`, PROVEN: clear (x₁-x₂)⁵,
+  eliminate t₃ by the ψ₂-secant (cofactor s(x₁-x₂)⁴) and x₃ by the
+  x-secant (binomial bookkeeping), reduce by the two curve equations
+  (sympy `sp.div` chain; certificate one-shot in Lean). NO tracking
+  hypothesis at n-2, NO ψₙ₋₃, NO x₂-pinning needed — the sign
+  propagates purely through the y-addition formula. `eval_Ψ₂Sq_eq_sq`
+  relocated with a direct cofactor `-4` proof (yQuad-free).
+  `zsmul_consec_step` (renamed from `_x`) now outputs the FULL IH
+  package; new hypotheses `ψₙ₋₁ ≠ 0`, `ψ₂(x,y) ≠ 0` (both available in
+  the main branch: IH(a)-contrapositive resp. the s ≠ 0 branch guard).
+  Axioms: `two_point_trace_identity`, `eval_Ψ₂Sq_eq_sq` clean;
+  `zsmul_consec_step` inherits sorryAx exactly through (★s).
+  NEXT: (1) attempt (★s) at the Ψ-polynomial level (parity split on n,
+  `Ψ_even`/`Ψ_odd`-style: 4 parity cases, preΨ'-recursion instances,
+  `C_simp; ring1`); (2) wire the `zsmul_some_aux` strong-induction
+  skeleton: ℕ-reduction `⟨(n-1).toNat, by omega⟩` + strong induction,
+  base cases 1/2, main branch via `zsmul_consec_step` + collision via
+  `smul_collision` + dictionary, 2-torsion branch s = 0 (even-index ψ
+  vanish at 2-torsion x, odd-index don't — seeded by
+  Res(Ψ₂Sq, Ψ₃) = -Δ², to be phrased via
+  `exists_mul_add_mul_eq_C_resultant`).
