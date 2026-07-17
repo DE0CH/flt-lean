@@ -789,5 +789,12 @@
   "wip": false,
   "fullname": "WeierstrassCurve.exists_tateTorsionQuotient",
   "text": "the Tate valuation-exponent quotient on `p`-torsion, over any uniformization witness: a Galois-invariant surjection `E[p] → ℤ/p` by the exponent of the Tate parameter in the `p`-th power of any representative — the quotient of `0 → μ_p → E[p] → ℤ/p → 0`, carrying the trivial action in the split case. Step one of the tame-at-2 derivation."
+ },
+ {
+  "name": "hasMultiplicativeReduction_padic",
+  "module": "Fermat.FLT.FreyCurve.Semistable",
+  "wip": false,
+  "fullname": "hasMultiplicativeReduction_padic",
+  "text": "multiplicative reduction transfers from ℤ_(q) to the ring of integers of mathlib's ℚ_[q] (the tame-at-2 interface field): all valuation conversions are IsEquiv-chains through Rat.padicValuation and Padic.mulValuation; minimality is the unit-c₄ Kraus–Laska criterion."
  }
 ]
