@@ -2582,6 +2582,39 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6 FINAL PLAN, the closed-field char-2 node has
+  a COMPLETE ELEMENTARY ROUTE — char-free, no literature needed):
+  prove #E[p](K̄) = p² by GENERIC-FIBRE COUNTING, then read
+  separability backwards. Steps, all with existing machinery:
+  (1) Φₚ′ ≠ 0 in every characteristic with (p:K) ≠ 0: its leading
+  coefficient is p²·(top of f²) — in char 2, Φₚ′ = f² + (AB)′Ψ₂Sq
+  with deg((AB)′Ψ₂Sq) ≤ p²−2 < p²−1 = deg f², and (p²:K) ≠ 0; hence
+  by (W)-char-2 also preΨ₂ₚ = p⁻¹Φₚ′f² ≠ 0.
+  (2) The c-resultant R(c) := Res_x(Φₚ − c·ΨSqₚ, Φₚ′ − c·ΨSqₚ′) is
+  not identically 0 (else every Φ−cS is inseparable; use the
+  Wronskian Φ′S − ΦS′ = p·preΨ₂ₚ ≠ 0 to rule this out — a common
+  factor of Φ−cS and Φ′−cS′ for ALL c would divide the Wronskian).
+  Cheaper equivalent: choose c avoiding the finitely many roots of
+  disc-like data: ∃ c ∈ K with Φ−cS separable, deg = p² (leading
+  coeff 1, monic ✓), and S ∤-vanishing at its roots, c ≠ x-coords of
+  2-torsion images etc. — all finite exclusions, K infinite.
+  (3) Each of the p² distinct roots x of Φ − cS has ΨSq(x) ≠ 0 and
+  x-value of p•(x,y) equal to c (the PROVEN x-formula/dictionary);
+  the y-fibre above each root has exactly 2 points (yQuad separable
+  since the point is not 2-torsion — ψ₂ ≠ 0 there for suitable c).
+  That is 2p² points P with x(p•P) = c, i.e. p•P ∈ {R, −R} where
+  R = (c,d): the involution P ↦ −P swaps the two classes, so
+  #[p]⁻¹(R) = p² for R ≠ −R (generic c avoids ψ₂-locus of R).
+  (4) Fibres of the GROUP HOM [p] are ker-cosets: one fibre of size
+  p² ⟹ #E[p] = p² — no surjectivity of [p] needed.
+  (5) Backwards: #E[p]∖0 = p²−1 maps 2-to-1 onto roots of f (odd
+  p-torsion is never 2-torsion; yQuad-fibres of size 2 via
+  isCoprime_Ψ₂Sq_preΨ' — already in the tail), so f has
+  (p²−1)/2 = deg f DISTINCT roots ⟹ f = unit·∏(X−rᵢ) distinct ⟹
+  Separable via separable_prod_X_sub_C_iff (K = K̄ splits ✓).
+  This closes separable_preΨ'_char_two_closed with ~300 elementary
+  lines and NO new axioms/literature; it is also a template that
+  would re-prove the char ≠ 2 case (not needed). IMPLEMENT NEXT.
 - 2026-07-17 (session 6, char-2 reduction `916e56f`+):
   `separable_preΨ'_char_two` is now DERIVED from the strictly smaller
   node `separable_preΨ'_char_two_closed` (algebraically closed base)
