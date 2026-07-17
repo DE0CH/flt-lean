@@ -529,6 +529,106 @@ theorem zsmul_odd_step_x {m : ℤ}
     (((E⁄k).ψ m).evalEval x y * ((E⁄k).ψ (m + 1)).evalEval x y) ^ 4 * hcore -
     hprod
 
+set_option backward.isDefEq.respectTransparency false in
+set_option maxRecDepth 8000 in
+omit [E.IsElliptic] in
+/-- **The consecutive induction step** (PROVEN 2026-07-17,
+parity-free — supersedes separate odd/even steps): given affine IH
+data at `n-1` (point, `x`-formula, tracking) and `n-2` (point,
+`x`-formula), with `x([n-1]P) ≠ x(P)` and `ψₙ₋₂(x,y) ≠ 0`, the point
+`n•P = [n-1]P + P` is affine and satisfies the `x`-formula. The core
+`(x₂ - x₃)dx² = t₁s` is a pure ring identity from the sum/difference
+secants; the conversion is `φ`-difference at `n, n-1, n-2` + the even
+recurrence at `n-1` + the tracking, cancelling `ψₙ₋₂²`. -/
+theorem zsmul_consec_step_x {n : ℤ} {x y x₁ y₁ x₂ y₂ : k}
+    (h : (E⁄k).toAffine.Nonsingular x y)
+    (h₁ : (E⁄k).toAffine.Nonsingular x₁ y₁)
+    (h₂ : (E⁄k).toAffine.Nonsingular x₂ y₂)
+    (heq₁ : (n - 1) • (Affine.Point.some x y h : (E⁄k).Point) =
+      Affine.Point.some x₁ y₁ h₁)
+    (heq₂ : (n - 2) • (Affine.Point.some x y h : (E⁄k).Point) =
+      Affine.Point.some x₂ y₂ h₂)
+    (hx₁ : x₁ * ((E⁄k).ψ (n - 1)).evalEval x y ^ 2 =
+      ((E⁄k).φ (n - 1)).evalEval x y)
+    (hx₂ : x₂ * ((E⁄k).ψ (n - 2)).evalEval x y ^ 2 =
+      ((E⁄k).φ (n - 2)).evalEval x y)
+    (ht₁ : (2 * y₁ + (E⁄k).a₁ * x₁ + (E⁄k).a₃) *
+      ((E⁄k).ψ (n - 1)).evalEval x y ^ 4 =
+      ((E⁄k).ψ (2 * (n - 1))).evalEval x y)
+    (hψ₂ : ((E⁄k).ψ (n - 2)).evalEval x y ≠ 0)
+    (hne : x₁ ≠ x) :
+    ∃ (x' y' : k) (h' : (E⁄k).toAffine.Nonsingular x' y'),
+      n • (Affine.Point.some x y h : (E⁄k).Point) =
+        Affine.Point.some x' y' h' ∧
+      x' * ((E⁄k).ψ n).evalEval x y ^ 2 = ((E⁄k).φ n).evalEval x y := by
+  classical
+  -- the sum `[n-1]P + P`
+  obtain ⟨x₃, y₃, h₃, hadd, hX₃, -⟩ := add_some_coords E h₁ h hne
+  have hsum : n • (Affine.Point.some x y h : (E⁄k).Point) =
+      Affine.Point.some x₃ y₃ h₃ := by
+    rw [show n = (n - 1) + 1 from by ring, add_smul, one_smul, heq₁, hadd]
+  -- the difference `[n-1]P + (-P) = [n-2]P`
+  have hneg : (E⁄k).toAffine.Nonsingular x ((E⁄k).toAffine.negY x y) :=
+    (Affine.nonsingular_neg ..).mpr h
+  obtain ⟨x₄, y₄, h₄, hadd₄, hX₄, -⟩ := add_some_coords E h₁ hneg hne
+  have hdiff : (Affine.Point.some x₄ y₄ h₄ : (E⁄k).Point) =
+      Affine.Point.some x₂ y₂ h₂ := by
+    rw [← hadd₄, ← Affine.Point.neg_some (h := h)]
+    have hsub : (Affine.Point.some x₁ y₁ h₁ : (E⁄k).Point) -
+        Affine.Point.some x y h = Affine.Point.some x₂ y₂ h₂ := by
+      have hss : ((n - 1) - 1) • (Affine.Point.some x y h : (E⁄k).Point) =
+          (n - 1) • (Affine.Point.some x y h : (E⁄k).Point) -
+            (1 : ℤ) • (Affine.Point.some x y h : (E⁄k).Point) :=
+        sub_smul _ _ _
+      rw [one_smul, heq₁, show n - 1 - 1 = n - 2 from by ring, heq₂] at hss
+      exact hss.symm
+    rw [← hsub, sub_eq_add_neg]
+  have hx₄ : x₄ = x₂ := by injection hdiff
+  -- the ring core: `(x₂ - x₃)·dx² = t₁·s`
+  have hcore : (x₂ - x₃) * (x₁ - x) ^ 2 =
+      (2 * y₁ + (E⁄k).a₁ * x₁ + (E⁄k).a₃) *
+        (2 * y + (E⁄k).a₁ * x + (E⁄k).a₃) := by
+    have hX₄' := hX₄
+    rw [hx₄, Affine.negY] at hX₄'
+    linear_combination hX₄' - hX₃
+  -- gap-1 at `n-1`: `(x - x₁)ψₙ₋₁² = ψₙψₙ₋₂`
+  have hφ₁ := evalEval_φ_eq E (n - 1) h.1
+  rw [show n - 1 + 1 = n from by ring, show n - 1 - 1 = n - 2 from by ring] at hφ₁
+  have hgap : (x - x₁) * ((E⁄k).ψ (n - 1)).evalEval x y ^ 2 =
+      ((E⁄k).ψ n).evalEval x y * ((E⁄k).ψ (n - 2)).evalEval x y := by
+    linear_combination -hφ₁ - hx₁
+  -- `φ`-differences at `n` and `n-2`, even recurrence at `n-1`
+  have hφn := evalEval_φ_eq E n h.1
+  have hφn2 := evalEval_φ_eq E (n - 2) h.1
+  rw [show n - 2 + 1 = n - 1 from by ring,
+    show n - 2 - 1 = n - 3 from by ring] at hφn2
+  have heven := evalEval_ψ_even E (n - 1) h.1
+  rw [show n - 1 - 1 = n - 2 from by ring, show n - 1 + 2 = n + 1 from by ring,
+    show n - 1 - 2 = n - 3 from by ring, show n - 1 + 1 = n from by ring] at heven
+  have hψ₂v := evalEval_ψ_two E x y
+  refine ⟨x₃, y₃, h₃, hsum, ?_⟩
+  -- assemble, then cancel `ψₙ₋₂²`
+  have h1 : (x₂ - x₃) *
+      (((E⁄k).ψ n).evalEval x y * ((E⁄k).ψ (n - 2)).evalEval x y) ^ 2 =
+      (2 * y + (E⁄k).a₁ * x + (E⁄k).a₃) *
+        ((E⁄k).ψ (2 * (n - 1))).evalEval x y := by
+    linear_combination ((E⁄k).ψ (n - 1)).evalEval x y ^ 4 * hcore +
+      (2 * y + (E⁄k).a₁ * x + (E⁄k).a₃) * ht₁ +
+      (x₃ - x₂) * ((x - x₁) * ((E⁄k).ψ (n - 1)).evalEval x y ^ 2 +
+        ((E⁄k).ψ n).evalEval x y * ((E⁄k).ψ (n - 2)).evalEval x y) * hgap
+  have h2 : ((E⁄k).φ n).evalEval x y * ((E⁄k).ψ (n - 2)).evalEval x y ^ 2 =
+      ((E⁄k).φ (n - 2)).evalEval x y * ((E⁄k).ψ n).evalEval x y ^ 2 -
+        (2 * y + (E⁄k).a₁ * x + (E⁄k).a₃) *
+          ((E⁄k).ψ (2 * (n - 1))).evalEval x y := by
+    linear_combination ((E⁄k).ψ (n - 2)).evalEval x y ^ 2 * hφn -
+      ((E⁄k).ψ n).evalEval x y ^ 2 * hφn2 + heven -
+      ((E⁄k).ψ (2 * (n - 1))).evalEval x y * hψ₂v
+  have hmain : (x₃ * ((E⁄k).ψ n).evalEval x y ^ 2 - ((E⁄k).φ n).evalEval x y) *
+      ((E⁄k).ψ (n - 2)).evalEval x y ^ 2 = 0 := by
+    linear_combination -h1 - h2 + ((E⁄k).ψ n).evalEval x y ^ 2 * hx₂
+  rcases mul_eq_zero.mp hmain with h0 | h0
+  · exact sub_eq_zero.mp h0
+  · exact absurd (pow_eq_zero_iff two_ne_zero |>.mp h0) hψ₂
 set_option warn.sorry false in
 /-- (Sorry node — **the multiplication-by-`n` formula**, Washington
 *Elliptic curves* Theorem 3.6.) For `n > 0` and an affine point
