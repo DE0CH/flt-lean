@@ -107,4 +107,110 @@ theorem DK_addition_step
     · linear_combination h0
     · exact absurd h0 (pow_ne_zero 5 hd)
 
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+/-- **The differentiated duplication law**: the tangent case of the
+invariant-differential additivity. Certificates saturated by
+`ψ₂(P₁)⁴` resp. `ψ₂(P₁)⁵`. -/
+theorem DK_doubling_step
+    (a1 a2 a3 a4 a6 x1 y1 l x3 y3 : Kuniv)
+    (hDa1 : DK a1 = 0) (hDa2 : DK a2 = 0) (hDa3 : DK a3 = 0)
+    (hDa4 : DK a4 = 0)
+    (hE1 : y1 ^ 2 + a1 * x1 * y1 + a3 * y1 =
+      x1 ^ 3 + a2 * x1 ^ 2 + a4 * x1 + a6)
+    (hs1 : 2 * y1 + a1 * x1 + a3 ≠ 0)
+    (hl : l = (3 * x1 ^ 2 + 2 * a2 * x1 + a4 - a1 * y1) /
+      (2 * y1 + a1 * x1 + a3))
+    (hDx1 : DK x1 = 2 * y1 + a1 * x1 + a3)
+    (hDy1 : DK y1 = -(a1 * y1 - (3 * x1 ^ 2 + 2 * a2 * x1 + a4)))
+    (hx3 : x3 = l ^ 2 + a1 * l - a2 - 2 * x1)
+    (hy3 : y3 = -(l * (x3 - x1) + y1) - a1 * x3 - a3) :
+    DK x3 = 2 * (2 * y3 + a1 * x3 + a3) ∧
+    DK y3 = -(2 * (a1 * y3 - (3 * x3 ^ 2 + 2 * a2 * x3 + a4))) := by
+  have hD2 : DK (2 : Kuniv) = 0 := by
+    rw [show (2 : Kuniv) = 1 + 1 by norm_num, DK_add, DK_one, add_zero]
+  have hD3 : DK (3 : Kuniv) = 0 := by
+    rw [show (3 : Kuniv) = 1 + 1 + 1 by norm_num, DK_add, DK_add,
+      DK_one, add_zero, add_zero]
+  have hneg : ∀ t : Kuniv, DK (-t) = -DK t := fun t => by
+    have h := DK_sub 0 t
+    rwa [zero_sub, DK_zero, zero_sub] at h
+  have hR3 : l * (2 * y1 + a1 * x1 + a3) =
+      3 * x1 ^ 2 + 2 * a2 * x1 + a4 - a1 * y1 := by
+    rw [hl]
+    exact div_mul_cancel₀ _ hs1
+  have hnum : DK (3 * x1 ^ 2 + 2 * a2 * x1 + a4 - a1 * y1) =
+      (6 * x1 + 2 * a2) * DK x1 - a1 * DK y1 := by
+    have e1 := DK_sub (3 * x1 ^ 2 + 2 * a2 * x1 + a4) (a1 * y1)
+    have e2 := DK_add (3 * x1 ^ 2 + 2 * a2 * x1) a4
+    have e3 := DK_add (3 * x1 ^ 2) (2 * a2 * x1)
+    have e4 := DK_mul (3 : Kuniv) (x1 ^ 2)
+    have e5 := DK_sq x1
+    have e6 := DK_mul (2 * a2) x1
+    have e7 := DK_mul (2 : Kuniv) a2
+    have e8 := DK_mul a1 y1
+    linear_combination e1 + e2 + e3 + e4 + 3 * e5 + e6 + x1 * e7 -
+      e8 + x1 ^ 2 * hD3 + 2 * x1 * hDa2 + a2 * x1 * hD2 + hDa4 -
+      y1 * hDa1
+  have hden : DK (2 * y1 + a1 * x1 + a3) =
+      2 * DK y1 + a1 * DK x1 := by
+    have e1 := DK_add (2 * y1 + a1 * x1) a3
+    have e2 := DK_add (2 * y1) (a1 * x1)
+    have e3 := DK_mul (2 : Kuniv) y1
+    have e4 := DK_mul a1 x1
+    linear_combination e1 + e2 + e3 + e4 + y1 * hD2 + x1 * hDa1 + hDa3
+  have hR5 : DK l * (2 * y1 + a1 * x1 + a3) =
+      ((6 * x1 + 2 * a2) * DK x1 - a1 * DK y1) -
+        l * (2 * DK y1 + a1 * DK x1) := by
+    have h1 := congrArg DK hR3
+    have h2 := DK_mul l (2 * y1 + a1 * x1 + a3)
+    linear_combination h1 - h2 + hnum - l * hden
+  rw [hDx1, hDy1] at hR5
+  have hDx3 : DK x3 = 2 * l * DK l + a1 * DK l - 2 * DK x1 := by
+    rw [hx3]
+    have e1 := DK_sub (l ^ 2 + a1 * l - a2) (2 * x1)
+    have e2 := DK_sub (l ^ 2 + a1 * l) a2
+    have e3 := DK_add (l ^ 2) (a1 * l)
+    have e4 := DK_sq l
+    have e5 := DK_mul a1 l
+    have e6 := DK_mul (2 : Kuniv) x1
+    linear_combination e1 + e2 + e3 + e4 + e5 + l * hDa1 - hDa2 -
+      e6 - x1 * hD2
+  have hDy3 : DK y3 = -(DK l * (x3 - x1) +
+      l * (DK x3 - DK x1) + DK y1) - a1 * DK x3 := by
+    rw [hy3]
+    have e1 := DK_sub (-(l * (x3 - x1) + y1) - a1 * x3) a3
+    have e2 := DK_sub (-(l * (x3 - x1) + y1)) (a1 * x3)
+    have e3 := hneg (l * (x3 - x1) + y1)
+    have e4 := DK_add (l * (x3 - x1)) y1
+    have e5 := DK_mul l (x3 - x1)
+    have e6 := DK_sub x3 x1
+    have e7 := DK_mul a1 x3
+    linear_combination e1 + e2 + e3 - e4 - l * e6 - e5 - e7 -
+      x3 * hDa1 - hDa3
+  rw [hDx1] at hDx3
+  rw [hDx3, hDx1, hDy1] at hDy3
+  constructor
+  · have key : (DK x3 - 2 * (2 * y3 + a1 * x3 + a3)) *
+        (2 * y1 + a1 * x1 + a3) ^ 4 = 0 := by
+      rw [hDx3, hy3, hx3]
+      linear_combination
+        (0) * hE1 +
+        (a1^2*a3^3 + a1^5*x1^3 + 4*a3^3*l^2 + 8*a1^2*y1^3 + 32*l^2*y1^3 + 3*a3*a1^4*x1^2 + 3*x1*a1^3*a3^2 + 4*a1*l*a3^3 + 4*l*a1^4*x1^3 + 4*a1^3*l^2*x1^3 + 6*y1*a1^2*a3^2 + 6*y1*a1^4*x1^2 + 12*a3*a1^2*y1^2 + 12*x1*a1^3*y1^2 + 24*y1*a3^2*l^2 + 32*a1*l*y1^3 + 48*a3*l^2*y1^2 + 12*a1*x1*a3^2*l^2 + 12*a3*l*a1^3*x1^2 + 12*a3*x1*y1*a1^3 + 12*a3*a1^2*l^2*x1^2 + 12*l*x1*a1^2*a3^2 + 24*a1*l*y1*a3^2 + 24*l*y1*a1^3*x1^2 + 24*y1*a1^2*l^2*x1^2 + 48*a1*a3*l*y1^2 + 48*a1*x1*l^2*y1^2 + 48*l*x1*a1^2*y1^2 + 48*a1*a3*x1*y1*l^2 + 48*a3*l*x1*y1*a1^2) * hR3 +
+        (a1*a3^3 + a1^4*x1^3 + 2*l*a3^3 + 8*a1*y1^3 + 16*l*y1^3 + 2*l*a1^3*x1^3 + 3*a3*a1^3*x1^2 + 3*x1*a1^2*a3^2 + 6*a1*y1*a3^2 + 6*y1*a1^3*x1^2 + 12*a1*a3*y1^2 + 12*l*y1*a3^2 + 12*x1*a1^2*y1^2 + 24*a3*l*y1^2 + 6*a1*l*x1*a3^2 + 6*a3*l*a1^2*x1^2 + 12*a3*x1*y1*a1^2 + 12*l*y1*a1^2*x1^2 + 24*a1*l*x1*y1^2 + 24*a1*a3*l*x1*y1) * hR5
+    rcases mul_eq_zero.mp key with h0 | h0
+    · linear_combination h0
+    · exact absurd h0 (pow_ne_zero 4 hs1)
+  · have key : (DK y3 + 2 * (a1 * y3 -
+        (3 * x3 ^ 2 + 2 * a2 * x3 + a4))) *
+        (2 * y1 + a1 * x1 + a3) ^ 5 = 0 := by
+      rw [hDy3, hy3, hx3]
+      linear_combination
+        (0) * hE1 +
+        (3*a3^5 + 96*y1^5 - a1^3*a3^4 - a1^7*x1^4 - 96*l^3*y1^4 - 16*a1^3*y1^4 - 6*a3^4*l^3 + 6*a1^5*x1^5 + 30*y1*a3^4 + 120*a3^3*y1^2 + 240*a3*y1^4 + 240*a3^2*y1^3 + a1*a2*a3^4 + a2*a1^5*x1^4 - 192*a3*l^3*y1^3 - 176*a1*l^2*y1^4 - 144*a3^2*l^3*y1^2 - 96*l*a1^2*y1^4 - 48*y1*a3^3*l^3 - 32*a3*a1^3*y1^3 - 32*x1*a1^4*y1^3 - 24*a1^3*a3^2*y1^2 - 24*a1^5*x1^2*y1^2 - 11*a1*a3^4*l^2 - 11*a1^5*l^2*x1^4 - 8*y1*a1^3*a3^3 - 8*y1*a1^6*x1^3 - 6*l*a1^2*a3^4 - 6*l*a1^6*x1^4 - 6*a1^4*l^3*x1^4 - 6*a1^5*a3^2*x1^2 - 4*a3*a1^6*x1^3 - 4*x1*a1^4*a3^3 + 2*a2*l*a3^4 + 6*l*x1*a3^4 + 6*l*a1^4*x1^5 + 16*a1*a2*y1^4 + 18*a1*x1*a3^4 + 27*a3*a1^4*x1^4 + 32*a2*l*y1^4 + 42*a1^2*a3^3*x1^2 + 48*a1^3*a3^2*x1^3 + 54*y1*a1^4*x1^4 + 96*l*x1*y1^4 + 192*a1^3*x1^3*y1^2 + 288*a1*x1*y1^4 + 336*a1^2*x1^2*y1^3 - 352*a1*a3*l^2*y1^3 - 352*x1*a1^2*l^2*y1^3 - 264*a1*a3^2*l^2*y1^2 - 264*a1^3*l^2*x1^2*y1^2 - 192*a1*x1*l^3*y1^3 - 192*a3*l*a1^2*y1^3 - 192*l*x1*a1^3*y1^3 - 144*l*a1^2*a3^2*y1^2 - 144*l*a1^4*x1^2*y1^2 - 144*a1^2*l^3*x1^2*y1^2 - 88*a1*y1*a3^3*l^2 - 88*y1*a1^4*l^2*x1^3 - 66*a1^3*a3^2*l^2*x1^2 - 48*a3*x1*a1^4*y1^2 - 48*l*y1*a1^2*a3^3 - 48*l*y1*a1^5*x1^3 - 48*y1*a1^3*l^3*x1^3 - 44*a3*a1^4*l^2*x1^3 - 44*x1*a1^2*a3^3*l^2 - 36*l*a1^4*a3^2*x1^2 - 36*a1^2*a3^2*l^3*x1^2 - 24*a1*x1*a3^3*l^3 - 24*a3*l*a1^5*x1^3 - 24*a3*y1*a1^5*x1^2 - 24*a3*a1^3*l^3*x1^3 - 24*l*x1*a1^3*a3^3 - 24*x1*y1*a1^4*a3^2 + 2*a2*l*a1^4*x1^4 + 4*a2*a3*a1^4*x1^3 + 4*a2*x1*a1^2*a3^3 + 6*a2*a1^3*a3^2*x1^2 + 8*a1*a2*y1*a3^3 + 8*a2*y1*a1^4*x1^3 + 16*a2*l*y1*a3^3 + 24*a1*a2*a3^2*y1^2 + 24*a1*l*a3^3*x1^2 + 24*a2*a1^3*x1^2*y1^2 + 24*a3*l*a1^3*x1^4 + 32*a1*a2*a3*y1^3 + 32*a2*x1*a1^2*y1^3 + 36*l*a1^2*a3^2*x1^3 + 48*a2*l*a3^2*y1^2 + 48*l*x1*y1*a3^3 + 48*l*y1*a1^3*x1^4 + 64*a2*a3*l*y1^3 + 144*a1*x1*y1*a3^3 + 144*l*x1*a3^2*y1^2 + 144*l*a1^2*x1^3*y1^2 + 192*a1*l*x1^2*y1^3 + 192*a3*l*x1*y1^3 + 192*a3*y1*a1^3*x1^3 + 252*y1*a1^2*a3^2*x1^2 + 432*a1*x1*a3^2*y1^2 + 504*a3*a1^2*x1^2*y1^2 + 576*a1*a3*x1*y1^3 - 528*a3*x1*a1^2*l^2*y1^2 - 288*a1*a3*x1*l^3*y1^2 - 288*a3*l*x1*a1^3*y1^2 - 264*a3*y1*a1^3*l^2*x1^2 - 264*x1*y1*a1^2*a3^2*l^2 - 144*a1*x1*y1*a3^2*l^3 - 144*a3*l*y1*a1^4*x1^2 - 144*a3*y1*a1^2*l^3*x1^2 - 144*l*x1*y1*a1^3*a3^2 + 8*a1*a2*l*x1*a3^3 + 8*a2*a3*l*a1^3*x1^3 + 12*a2*l*a1^2*a3^2*x1^2 + 16*a2*l*y1*a1^3*x1^3 + 24*a2*a3*y1*a1^3*x1^2 + 24*a2*x1*y1*a1^2*a3^2 + 48*a2*a3*x1*a1^2*y1^2 + 48*a2*l*a1^2*x1^2*y1^2 + 64*a1*a2*l*x1*y1^3 + 144*a1*l*y1*a3^2*x1^2 + 144*a3*l*y1*a1^2*x1^3 + 288*a1*a3*l*x1^2*y1^2 + 48*a1*a2*l*x1*y1*a3^2 + 48*a2*a3*l*y1*a1^2*x1^2 + 96*a1*a2*a3*l*x1*y1^2) * hR3 +
+        (a2*a3^4 - a1^2*a3^4 - a1^6*x1^4 - 48*l^2*y1^4 - 16*a1^2*y1^4 - 3*a3^4*l^2 + 3*x1*a3^4 + 3*a1^4*x1^5 + 16*a2*y1^4 + 48*x1*y1^4 + a2*a1^4*x1^4 - 96*a3*l^2*y1^3 - 72*a3^2*l^2*y1^2 - 64*a1*l*y1^4 - 32*a3*a1^2*y1^3 - 32*x1*a1^3*y1^3 - 24*y1*a3^3*l^2 - 24*a1^2*a3^2*y1^2 - 24*a1^4*x1^2*y1^2 - 8*y1*a1^2*a3^3 - 8*y1*a1^5*x1^3 - 6*a1^4*a3^2*x1^2 - 4*a1*l*a3^4 - 4*a3*a1^5*x1^3 - 4*l*a1^5*x1^4 - 4*x1*a1^3*a3^3 - 3*a1^4*l^2*x1^4 + 8*a2*y1*a3^3 + 12*a1*a3^3*x1^2 + 12*a3*a1^3*x1^4 + 18*a1^2*a3^2*x1^3 + 24*a2*a3^2*y1^2 + 24*x1*y1*a3^3 + 24*y1*a1^3*x1^4 + 32*a2*a3*y1^3 + 72*x1*a3^2*y1^2 + 72*a1^2*x1^3*y1^2 + 96*a1*x1^2*y1^3 + 96*a3*x1*y1^3 - 128*a1*a3*l*y1^3 - 128*l*x1*a1^2*y1^3 - 96*a1*l*a3^2*y1^2 - 96*a1*x1*l^2*y1^3 - 96*l*a1^3*x1^2*y1^2 - 72*a1^2*l^2*x1^2*y1^2 - 48*a3*x1*a1^3*y1^2 - 32*a1*l*y1*a3^3 - 32*l*y1*a1^4*x1^3 - 24*a3*y1*a1^4*x1^2 - 24*l*a1^3*a3^2*x1^2 - 24*x1*y1*a1^3*a3^2 - 24*y1*a1^3*l^2*x1^3 - 18*a1^2*a3^2*l^2*x1^2 - 16*a3*l*a1^4*x1^3 - 16*l*x1*a1^2*a3^3 - 12*a1*x1*a3^3*l^2 - 12*a3*a1^3*l^2*x1^3 + 4*a1*a2*x1*a3^3 + 4*a2*a3*a1^3*x1^3 + 6*a2*a1^2*a3^2*x1^2 + 8*a2*y1*a1^3*x1^3 + 24*a2*a1^2*x1^2*y1^2 + 32*a1*a2*x1*y1^3 + 72*a1*y1*a3^2*x1^2 + 72*a3*y1*a1^2*x1^3 + 144*a1*a3*x1^2*y1^2 - 192*a3*l*x1*a1^2*y1^2 - 144*a1*a3*x1*l^2*y1^2 - 96*a3*l*y1*a1^3*x1^2 - 96*l*x1*y1*a1^2*a3^2 - 72*a1*x1*y1*a3^2*l^2 - 72*a3*y1*a1^2*l^2*x1^2 + 24*a1*a2*x1*y1*a3^2 + 24*a2*a3*y1*a1^2*x1^2 + 48*a1*a2*a3*x1*y1^2) * hR5
+    rcases mul_eq_zero.mp key with h0 | h0
+    · linear_combination h0
+    · exact absurd h0 (pow_ne_zero 5 hs1)
+
 end PsiSumCompanion
