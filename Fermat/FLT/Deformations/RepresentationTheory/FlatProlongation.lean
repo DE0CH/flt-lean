@@ -85,6 +85,62 @@ theorem mem_range_algebraicClosureMap_of_isIntegral
   obtain ⟨r, _, hr⟩ := hroot
   exact ⟨r, hr⟩
 
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- The chosen embedding of algebraic closures, packaged as a
+`K`-algebra homomorphism. -/
+noncomputable def algebraicClosureMapAlgHom :
+    AlgebraicClosure K →ₐ[K]
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) :=
+  { toRingHom := AlgebraicClosure.map
+      (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+    commutes' := fun x => by
+      show AlgebraicClosure.map
+        (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+        (algebraMap K (AlgebraicClosure K) x) = _
+      rw [AlgebraicClosure.map_algebraMap
+        (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) x]
+      exact (IsScalarTower.algebraMap_apply K
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) x).symm }
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Layer C of the flat-transport points comparison**: for a finite
+`K`-algebra `B`, postcomposition with the embedding `ι` is a bijection
+between the `Kᵃˡᵍ`-points and the `Kᵥᵃˡᵍ`-points of `B` (every map to
+`Kᵥᵃˡᵍ` has algebraic image, hence factors through `ι(Kᵃˡᵍ)`). -/
+noncomputable def algHomEquivOfFinite (B : Type*) [CommRing B] [Algebra K B]
+    [Module.Finite K B] :
+    (B →ₐ[K] AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) ≃
+    (B →ₐ[K] AlgebraicClosure K) where
+  toFun φ := (AlgEquiv.ofInjective (algebraicClosureMapAlgHom v)
+      (algebraicClosureMapAlgHom v).toRingHom.injective).symm.toAlgHom.comp
+    (φ.codRestrict (algebraicClosureMapAlgHom v).range (fun b => by
+      obtain ⟨r, hr⟩ := mem_range_algebraicClosureMap_of_isIntegral v (φ b)
+        ((Algebra.IsIntegral.isIntegral (R := K) b).map φ)
+      exact ⟨r, hr⟩))
+  invFun ψ := (algebraicClosureMapAlgHom v).comp ψ
+  left_inv φ := by
+    refine AlgHom.ext fun b => ?_
+    have h1 := congrArg Subtype.val
+      ((AlgEquiv.ofInjective (algebraicClosureMapAlgHom v) (algebraicClosureMapAlgHom v).toRingHom.injective).apply_symm_apply
+        (φ.codRestrict (algebraicClosureMapAlgHom v).range (fun b => by
+          obtain ⟨r, hr⟩ := mem_range_algebraicClosureMap_of_isIntegral v (φ b)
+            ((Algebra.IsIntegral.isIntegral (R := K) b).map φ)
+          exact ⟨r, hr⟩) b))
+    exact h1
+  right_inv ψ := by
+    refine AlgHom.ext fun b => ?_
+    apply (AlgEquiv.ofInjective (algebraicClosureMapAlgHom v) (algebraicClosureMapAlgHom v).toRingHom.injective).injective
+    refine ((AlgEquiv.ofInjective (algebraicClosureMapAlgHom v)
+      (algebraicClosureMapAlgHom v).toRingHom.injective).apply_symm_apply _).trans ?_
+    apply Subtype.ext
+    rfl
+
 set_option warn.sorry false in
 /-- (Sorry node — **the shared flat-prolongation transport**.) A mod-`p`
 Galois representation of `ℚ` whose space is presented, equivariantly,

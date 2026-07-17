@@ -1836,3 +1836,24 @@ assumed. Axiom invariant: every declaration must use at most
   `WithConv`-monoid needs `Mathlib.RingTheory.Bialgebra.Convolution`
   + `HopfAlgebra.TensorProduct` PUBLIC (statement-level); `∃ (_ : C)`
   binders DO provide instances for the rest of the `∃`-body.
+- 2026-07-17 (session 5, flat-transport layer C PROVEN):
+  `mem_range_algebraicClosureMap_of_isIntegral` (integral elements of
+  `Kᵥᵃˡᵍ` over `K` land in `ι(Kᵃˡᵍ)`: minpoly splits over `Kᵃˡᵍ`,
+  `Polynomial.Splits.roots_map` pushes the root multiset through `ι`),
+  `algebraicClosureMapAlgHom` (`ι` as a `K`-AlgHom; `commutes'` by
+  `show`-normalizing to `AlgebraicClosure.map_algebraMap` + the
+  scalar-tower unfolding), and `algHomEquivOfFinite (B) [Module.Finite
+  K B] : (B →ₐ[K] Kᵥᵃˡᵍ) ≃ (B →ₐ[K] Kᵃˡᵍ)` — postcomposition with `ι`
+  is a bijection on points of a finite `K`-algebra. All three audit to
+  the standard axioms. GOTCHAS: `AlgHom.codRestrict` wants a
+  `Subalgebra`, but `AlgHom.fieldRange` is an `IntermediateField` —
+  use `AlgHom.range` + `AlgEquiv.ofInjective` (Subalgebra-valued,
+  injectivity via `.toRingHom.injective`) instead of
+  `ofInjectiveField`; the round-trip `rw [AlgEquiv.apply_symm_apply]`
+  fails through the `AlgHom.comp` coercion layers — `refine
+  (….apply_symm_apply _).trans ?_` unifies up to defeq and works.
+  Remaining for `isFlatAt_of_dvr_package`: layer A (`cancelBaseChange`
+  precomposition equiv), layer B (tensor-hom adjunction
+  `Algebra.TensorProduct.lift`-style points identification),
+  convolution-monoid compatibility of each layer, equivariance, and
+  the `ZMod p` two-open-ideals assembly.
