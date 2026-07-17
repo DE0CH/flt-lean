@@ -244,6 +244,61 @@ theorem embeddedValuationSubring_comap_toSubring
     rw [← hy, ← hys]
     exact (eq_mul_inv_iff_mul_eq₀ hs0).mpr h2
 
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Every element of the localization at `v` lands in the completed
+integer ring: the valuation of `a/s` with `s ∉ v` is at most one. -/
+theorem algebraMap_localization_mem_adicCompletionIntegers
+    [Algebra (Localization.AtPrime v.asIdeal) K]
+    [IsScalarTower (NumberField.RingOfIntegers K)
+      (Localization.AtPrime v.asIdeal) K]
+    (x : Localization.AtPrime v.asIdeal) :
+    algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+      (algebraMap (Localization.AtPrime v.asIdeal) K x) ∈ 𝒪ᵥ := by
+  -- the valuation of the image in `K` is at most one
+  have hv : IsDedekindDomain.HeightOneSpectrum.valuation K v
+      (algebraMap (Localization.AtPrime v.asIdeal) K x) ≤ 1 := by
+    obtain ⟨⟨a, s⟩, hys⟩ :=
+      IsLocalization.mk'_surjective (M := v.asIdeal.primeCompl)
+        (S := Localization.AtPrime v.asIdeal) x
+    have hs0 : algebraMap (NumberField.RingOfIntegers K) K s.1 ≠ 0 := by
+      have hsne : s.1 ≠ 0 := fun h => s.2 (h ▸ v.asIdeal.zero_mem)
+      exact fun h => hsne (FaithfulSMul.algebraMap_injective _ K (by rw [h, map_zero]))
+    have hspec := IsLocalization.mk'_spec (Localization.AtPrime v.asIdeal) a s
+    have h2 := congrArg (algebraMap (Localization.AtPrime v.asIdeal) K) hspec
+    rw [map_mul, ← IsScalarTower.algebraMap_apply, ← IsScalarTower.algebraMap_apply] at h2
+    have hs1 : v.intValuation s.1 = 1 :=
+      (IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff_mem_primeCompl
+        v s.1).mpr s.2
+    rw [← hys, (eq_mul_inv_iff_mul_eq₀ hs0).mpr h2, map_mul, map_inv₀,
+      IsDedekindDomain.HeightOneSpectrum.valuation_of_algebraMap,
+      IsDedekindDomain.HeightOneSpectrum.valuation_of_algebraMap,
+      hs1, inv_one, mul_one]
+    exact IsDedekindDomain.HeightOneSpectrum.intValuation_le_one v a
+  -- bridge to the completed valuation
+  rw [IsDedekindDomain.HeightOneSpectrum.mem_adicCompletionIntegers]
+  have hval := IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation' v
+    (algebraMap (Localization.AtPrime v.asIdeal) K x)
+  rw [← hval] at hv
+  exact hv
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- The canonical map from the localization at `v` into the completed
+integer ring (step (i) of the flat-prolongation transport). -/
+noncomputable def localizationToAdicCompletionIntegers
+    [Algebra (Localization.AtPrime v.asIdeal) K]
+    [IsScalarTower (NumberField.RingOfIntegers K)
+      (Localization.AtPrime v.asIdeal) K] :
+    Localization.AtPrime v.asIdeal →+* 𝒪ᵥ :=
+  RingHom.codRestrict
+    ((algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)).comp
+      (algebraMap (Localization.AtPrime v.asIdeal) K))
+    𝒪ᵥ
+    (algebraMap_localization_mem_adicCompletionIntegers v)
+
 open scoped Pointwise in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
