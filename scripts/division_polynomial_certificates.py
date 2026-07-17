@@ -279,6 +279,28 @@ def certificate_even_step_x() -> None:
     assert list(tmonos.keys()) == [(1, 1)]
     print("even-step x-target: exact closure with unit cofactors OK (iii₂)")
 
+def check_universal_instances() -> None:
+    """The universal two-point cross identity (proven in Lean as
+    `two_point_cross_identity`), in value form
+    `2t₁t₂ = (x₁-x₂)²(b₂ + 4x₃ + 4x₁ + 4x₂) - Ψ₂Sq(x₁) - Ψ₂Sq(x₂)`
+    with `x₃ = x(Q₁-Q₂)`, instantiated at the three pair-shapes the
+    induction consumes."""
+    psi, pts = numeric_model()
+    x0 = sp.Rational(3)
+    B2, B4, B6 = 0, 4, 12
+    P2 = lambda t: 4 * t**3 + B2 * t**2 + 2 * B4 * t + B6
+    m = 3
+    xm, xm1, xmm1 = pts[m][0], pts[m + 1][0], pts[m - 1][0]
+    tm, tm1 = 2 * pts[m][1], 2 * pts[m + 1][1]
+    s_ = 2 * sp.Rational(6)
+    assert sp.simplify(2 * tm * tm1 - ((xm - xm1) ** 2 *
+        (B2 + 4 * x0 + 4 * xm + 4 * xm1) - P2(xm) - P2(xm1))) == 0
+    assert sp.simplify(2 * s_ * tm - ((x0 - xm) ** 2 *
+        (B2 + 4 * xmm1 + 4 * x0 + 4 * xm) - P2(x0) - P2(xm))) == 0
+    assert sp.simplify(2 * s_ * tm1 - ((x0 - xm1) ** 2 *
+        (B2 + 4 * xm + 4 * x0 + 4 * xm1) - P2(x0) - P2(xm1))) == 0
+    print("universal-identity instances (pairs (m,m+1),(1,m),(1,m+1)): OK")
+
 
 if __name__ == "__main__":
     certificate_duplication_y()
@@ -289,3 +311,4 @@ if __name__ == "__main__":
     resultant_Psi2Sq_Psi3()
     check_even_step_targets()
     certificate_even_step_x()
+    check_universal_instances()
