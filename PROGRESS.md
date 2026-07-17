@@ -2582,6 +2582,32 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6): **(C) IS PROVEN** (`ed3752d`,
+  TautMultiplication.lean): `taut_smul_formula` (machinery instance at
+  taut), `taut_cross` (general (m,n) composition cross-identity from
+  `smul_smul` + `some.inj`), `taut_cross_two` (m=2, denominators
+  cleared by field_simp at the generic point), `univ_cross_two`
+  (pulled back to ℤ[A][X] via taut_eval_C_mk + taut_C_injective):
+  `Φ(2n)·Ψ₂Sqhom(Φₙ,ΨSqₙ) = ΨSq(2n)·Φ₂hom(Φₙ,ΨSqₙ)` with the
+  explicit homogenized quartics, and `cross_two` (any curve, any
+  CommRing, via eval₂Hom). The CROSS form suffices for the endgame:
+  ν(Φ₂ₚ)=0 (coprime-node + ν(ΨSq₂ₚ)≥2), so ν(H)=ν(ΨSq₂ₚ)≥2(2a−1)
+  yet H≡4Φₚ³ (mod π) gives ν(H)=0 — no exactness-splitting needed.
+  Also new: `taut_eval_C_mk` + `taut_C_injective` (univariate value
+  bridge + y-free injectivity, axiom-clean). REMAINING for
+  `separable_preΨ'`: (W) at p. PLAN (session 6): Hamiltonian
+  derivation D := Fy·∂X − Fx·∂Y on ℤ[A][X][Y] (D(F)=0 trivially),
+  descend to Buniv via `Derivation.liftOfSurjective`
+  (mk-surjective, ker=(F) D-stable), hand-rolled quotient-rule
+  extension DK to Kuniv (~150 lines; no mathlib fraction-field
+  derivation exists), then INVARIANT-DIFFERENTIAL INDUCTION at the
+  tautological point: Claim A: DK(xₙ) = n·sₙ (sₙ := 2yₙ+a₁xₙ+a₃),
+  Claim B: DK(yₙ) = −n·Fx(xₙ,yₙ), base n=1 is DK(tautX) = ψ₂-value
+  BY CONSTRUCTION, step = differentiate the affine addition law
+  (sympy-verify first), then (W) by differentiating the PROVEN
+  x-formula xₙ·ΨSqₙval = Φₙval and cancelling s₁ via the tracking
+  sₙψₙ⁴ = ψ₂ₙ: n·preΨ(2n)val = (Φₙ'ΨSqₙ − ΦₙΨSqₙ')val, pull back
+  by taut_C_injective, specialize. Then the ν_π endgame.
 - 2026-07-17 (session 5 coda): the tautological-point VALUE BRIDGE is
   proven (`taut_evalEval_mk`: evalEval at `(tautX, tautY)` = the
   quotient map; `taut_psi_ne_zero`: all `ψₙ`-values nonzero at the
