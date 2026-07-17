@@ -186,6 +186,102 @@ theorem evalEval_ψ_odd (m : ℤ) {x y : k}
     WeierstrassCurve.evalEval_ψ (m - 1) h, WeierstrassCurve.evalEval_ψ (m + 1) h]
   exact hkey
 
+set_option backward.isDefEq.respectTransparency false in
+set_option maxRecDepth 8000 in
+omit [E.IsElliptic] in
+/-- **The duplication formula** (PROVEN 2026-07-17, the `n = 2` seed of
+the Washington Thm 3.6 induction, characteristic-free): if
+`ψ₂(x,y) ≠ 0` then `2 • P` is affine with `x' ⬝ ψ₂² = φ₂(x,y)` and
+`(2y' + a₁x' + a₃) ⬝ ψ₂⁴ = ψ₄(x,y)`. The point is the tangent-line
+addition `P + P`; after clearing the slope denominator `ψ₂(x,y)`, both
+coordinate identities are polynomial consequences of the curve
+equation. -/
+theorem zsmul_some_aux_two {x y : k}
+    (h : (E⁄k).toAffine.Nonsingular x y)
+    (hψ : ((E⁄k).ψ 2).evalEval x y ≠ 0) :
+    ∃ (x' y' : k) (h' : (E⁄k).toAffine.Nonsingular x' y'),
+      (2 : ℤ) • (Affine.Point.some x y h : (E⁄k).Point) =
+        Affine.Point.some x' y' h' ∧
+      x' * ((E⁄k).ψ 2).evalEval x y ^ 2 = ((E⁄k).φ 2).evalEval x y ∧
+      (2 * y' + (E⁄k).a₁ * x' + (E⁄k).a₃) * ((E⁄k).ψ 2).evalEval x y ^ 4 =
+        ((E⁄k).ψ (2 * 2)).evalEval x y := by
+  classical
+  have hψ₂v := evalEval_ψ_two E x y
+  have hyne : y ≠ (E⁄k).toAffine.negY x y := by
+    intro hy
+    apply hψ
+    rw [hψ₂v, Affine.negY] at *
+    linear_combination hy
+  have hxy : ¬(x = x ∧ y = (E⁄k).toAffine.negY x y) := fun hc => hyne hc.2
+  -- the slope, cleared of its denominator
+  have hden : y - (E⁄k).toAffine.negY x y = ((E⁄k).ψ 2).evalEval x y := by
+    rw [hψ₂v, Affine.negY]
+    ring
+  have hslope : (E⁄k).toAffine.slope x x y y =
+      (3 * x ^ 2 + 2 * (E⁄k).a₂ * x + (E⁄k).a₄ - (E⁄k).a₁ * y) /
+        ((E⁄k).ψ 2).evalEval x y := by
+    rw [Affine.slope, if_pos rfl, if_neg hyne, hden]
+  -- the equation of the point
+  have heq := (Affine.equation_iff _ _).mp h.1
+  -- the addition
+  have hψ₂ψ2 : ((E⁄k).ψ₂).evalEval x y = ((E⁄k).ψ 2).evalEval x y := by
+    rw [WeierstrassCurve.ψ_two]
+  have hφ2 : ((E⁄k).φ 2).evalEval x y =
+      x * ((E⁄k).ψ 2).evalEval x y ^ 2 - ((E⁄k).Ψ₃).eval x := by
+    rw [WeierstrassCurve.φ_two]
+    simp only [Polynomial.evalEval_sub, Polynomial.evalEval_mul,
+      Polynomial.evalEval_pow, Polynomial.evalEval_C, Polynomial.eval_X]
+    rw [hψ₂ψ2]
+  have hψ4 : ((E⁄k).ψ (2 * 2)).evalEval x y =
+      ((E⁄k).preΨ₄).eval x * ((E⁄k).ψ 2).evalEval x y := by
+    rw [show (2 * 2 : ℤ) = 4 from rfl, WeierstrassCurve.ψ_four]
+    simp only [Polynomial.evalEval_mul, Polynomial.evalEval_C]
+    rw [hψ₂ψ2]
+  -- the multiplied slope equation, avoiding all division
+  rw [hψ₂v] at hψ
+  have hT : (E⁄k).toAffine.slope x x y y * (2 * y + (E⁄k).a₁ * x + (E⁄k).a₃) =
+      3 * x ^ 2 + 2 * (E⁄k).a₂ * x + (E⁄k).a₄ - (E⁄k).a₁ * y := by
+    rw [hslope, hψ₂v, div_mul_cancel₀ _ hψ]
+  refine ⟨_, _, Affine.nonsingular_add h h hxy,
+    by rw [two_smul ℤ]; exact Affine.Point.add_some hxy, ?_, ?_⟩
+  · -- the `x`-coordinate identity
+    rw [Affine.addX, hφ2, hψ₂v, WeierstrassCurve.Ψ₃,
+      WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆,
+      WeierstrassCurve.b₈]
+    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow,
+      Polynomial.eval_C, Polynomial.eval_X, Polynomial.eval_ofNat]
+    linear_combination ((E⁄k).toAffine.slope x x y y *
+        (2 * y + (E⁄k).a₁ * x + (E⁄k).a₃) +
+      (3 * x ^ 2 + 2 * (E⁄k).a₂ * x + (E⁄k).a₄ - (E⁄k).a₁ * y) +
+      (E⁄k).a₁ * (2 * y + (E⁄k).a₁ * x + (E⁄k).a₃)) * hT +
+      (-((E⁄k).a₁ ^ 2) - 4 * (E⁄k).a₂ - 12 * x) * heq
+  · -- the `y`-coordinate identity
+    rw [Affine.addY, Affine.negY, Affine.negAddY, Affine.addX, hψ4,
+      hψ₂v, WeierstrassCurve.preΨ₄, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+      WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow,
+      Polynomial.eval_C, Polynomial.eval_X, Polynomial.eval_ofNat]
+    linear_combination
+      (-2 * (((E⁄k).toAffine.slope x x y y * (2 * y + (E⁄k).a₁ * x + (E⁄k).a₃)) ^ 2 +
+          ((E⁄k).toAffine.slope x x y y * (2 * y + (E⁄k).a₁ * x + (E⁄k).a₃)) *
+            (3 * x ^ 2 + 2 * (E⁄k).a₂ * x + (E⁄k).a₄ - (E⁄k).a₁ * y) +
+          (3 * x ^ 2 + 2 * (E⁄k).a₂ * x + (E⁄k).a₄ - (E⁄k).a₁ * y) ^ 2) *
+          (2 * y + (E⁄k).a₁ * x + (E⁄k).a₃) -
+        3 * (E⁄k).a₁ * ((E⁄k).toAffine.slope x x y y *
+            (2 * y + (E⁄k).a₁ * x + (E⁄k).a₃) +
+          (3 * x ^ 2 + 2 * (E⁄k).a₂ * x + (E⁄k).a₄ - (E⁄k).a₁ * y)) *
+          (2 * y + (E⁄k).a₁ * x + (E⁄k).a₃) ^ 2 +
+        (2 * (E⁄k).a₂ + 6 * x - (E⁄k).a₁ ^ 2) *
+          (2 * y + (E⁄k).a₁ * x + (E⁄k).a₃) ^ 3) * hT +
+      ((2 * y + (E⁄k).a₁ * x + (E⁄k).a₃) *
+        ((E⁄k).a₁ ^ 4 * x + (E⁄k).a₁ ^ 3 * (E⁄k).a₃ +
+          8 * (E⁄k).a₁ ^ 2 * (E⁄k).a₂ * x + 2 * (E⁄k).a₁ ^ 2 * (E⁄k).a₄ +
+          10 * (E⁄k).a₁ ^ 2 * x ^ 2 + 4 * (E⁄k).a₁ * (E⁄k).a₂ * (E⁄k).a₃ -
+          4 * (E⁄k).a₁ * (E⁄k).a₃ * x - 16 * (E⁄k).a₁ * x * y +
+          16 * (E⁄k).a₂ ^ 2 * x + 8 * (E⁄k).a₂ * (E⁄k).a₄ +
+          56 * (E⁄k).a₂ * x ^ 2 - 8 * (E⁄k).a₃ ^ 2 - 16 * (E⁄k).a₃ * y +
+          8 * (E⁄k).a₄ * x - 16 * (E⁄k).a₆ + 56 * x ^ 3 - 16 * y ^ 2)) * heq
+
 set_option warn.sorry false in
 /-- (Sorry node — **the multiplication-by-`n` formula**, Washington
 *Elliptic curves* Theorem 3.6, the strengthened simultaneous induction
