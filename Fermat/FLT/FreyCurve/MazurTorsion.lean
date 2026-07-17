@@ -769,37 +769,37 @@ section CharacterBookkeeping
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Scalar character on a rank-`1` module** (PROVEN): a multiplicative
-family of endomorphisms of a `1`-dimensional space over `ZMod ℓ` is
+family of endomorphisms of a `1`-dimensional space over `F` is
 given by a unit-valued character. -/
-lemma exists_unit_character_of_finrank_one {ℓ : ℕ} [Fact ℓ.Prime]
-    {G : Type*} [Group G] {M : Type*} [AddCommGroup M] [Module (ZMod ℓ) M]
-    [Module.Finite (ZMod ℓ) M] (hM : Module.finrank (ZMod ℓ) M = 1)
-    (F : G → Module.End (ZMod ℓ) M)
-    (hF1 : F 1 = 1) (hFmul : ∀ g h : G, F (g * h) = F g * F h) :
-    ∃ χ : G →* (ZMod ℓ)ˣ, ∀ g v, F g v = (χ g : ZMod ℓ) • v := by
+lemma exists_unit_character_of_finrank_one {F : Type*} [Field F]
+    {G : Type*} [Group G] {M : Type*} [AddCommGroup M] [Module F M]
+    [Module.Finite F M] (hM : Module.finrank F M = 1)
+    (Φ : G → Module.End F M)
+    (hΦ1 : Φ 1 = 1) (hΦmul : ∀ g h : G, Φ (g * h) = Φ g * Φ h) :
+    ∃ χ : G →* Fˣ, ∀ g v, Φ g v = (χ g : F) • v := by
   classical
-  let b : Module.Basis (Fin 1) (ZMod ℓ) M :=
-    Module.finBasisOfFinrankEq (ZMod ℓ) M hM
+  let b : Module.Basis (Fin 1) F M :=
+    Module.finBasisOfFinrankEq F M hM
   have hm₀ne : (b 0 : M) ≠ 0 := b.ne_zero 0
-  have hspan : ∀ v : M, ∃ c : ZMod ℓ, v = c • b 0 := by
+  have hspan : ∀ v : M, ∃ c : F, v = c • b 0 := by
     intro v
     have h1 := b.sum_repr v
     rw [Fin.sum_univ_one] at h1
     exact ⟨b.repr v 0, h1.symm⟩
-  have huniq : ∀ {a c : ZMod ℓ}, a • (b 0 : M) = c • b 0 → a = c := by
+  have huniq : ∀ {a c : F}, a • (b 0 : M) = c • b 0 → a = c := by
     intro a c h
     have h2 : (a - c) • (b 0 : M) = 0 := by rw [sub_smul, h, sub_self]
     rcases smul_eq_zero.mp h2 with h3 | h3
     · exact sub_eq_zero.mp h3
     · exact absurd h3 hm₀ne
-  choose c hc using fun g => hspan (F g (b 0))
+  choose c hc using fun g => hspan (Φ g (b 0))
   have hone : c 1 = 1 := by
     apply huniq
-    rw [← hc 1, hF1, Module.End.one_apply, one_smul]
+    rw [← hc 1, hΦ1, Module.End.one_apply, one_smul]
   have hmul : ∀ g h, c (g * h) = c g * c h := by
     intro g h
     apply huniq
-    rw [← hc (g * h), hFmul, Module.End.mul_apply, hc h, map_smul, hc g,
+    rw [← hc (g * h), hΦmul, Module.End.mul_apply, hc h, map_smul, hc g,
       smul_smul, mul_comm (c h) (c g)]
   have hunit : ∀ g, c g * c g⁻¹ = 1 := fun g => by
     rw [← hmul, mul_inv_cancel, hone]
@@ -808,21 +808,23 @@ lemma exists_unit_character_of_finrank_one {ℓ : ℕ} [Fact ℓ.Prime]
     (fun g h => Units.ext (hmul g h)), ?_⟩
   intro g v
   obtain ⟨a, rfl⟩ := hspan v
-  show F g (a • b 0) = c g • a • b 0
+  show Φ g (a • b 0) = c g • a • b 0
   rw [map_smul, hc g, smul_smul, smul_smul, mul_comm]
 
-variable {ℓ : ℕ} [Fact ℓ.Prime] {V : Type*} [AddCommGroup V]
-  [Module (ZMod ℓ) V] [Module.Finite (ZMod ℓ) V]
+variable {F : Type*} [Field F] [TopologicalSpace F] [IsTopologicalRing F]
+  [DiscreteTopology F] {V : Type*} [AddCommGroup V]
+  [Module F V] [Module.Finite F V]
 
+omit [IsTopologicalRing F] [DiscreteTopology F] in
 set_option backward.isDefEq.respectTransparency false in
 /-- **The sub-character of a stable line** (PROVEN): the restriction of
 the representation to a rank-`1` stable submodule is a unit-valued
 character. -/
-lemma exists_subCharacter (ρbar : GaloisRep ℚ (ZMod ℓ) V)
-    (W : Submodule (ZMod ℓ) V) (hW1 : Module.finrank (ZMod ℓ) W = 1)
+lemma exists_subCharacter (ρbar : GaloisRep ℚ F V)
+    (W : Submodule F V) (hW1 : Module.finrank F W = 1)
     (hstable : ∀ g v, v ∈ W → ρbar g v ∈ W) :
-    ∃ χ₁ : Field.absoluteGaloisGroup ℚ →* (ZMod ℓ)ˣ,
-      ∀ g, ∀ v ∈ W, ρbar g v = (χ₁ g : ZMod ℓ) • v := by
+    ∃ χ₁ : Field.absoluteGaloisGroup ℚ →* Fˣ,
+      ∀ g, ∀ v ∈ W, ρbar g v = (χ₁ g : F) • v := by
   have he : ∀ g, W ≤ W.comap (ρbar g) := fun g v hv => hstable g v hv
   obtain ⟨χ₁, hχ₁⟩ := exists_unit_character_of_finrank_one hW1
     (fun g => (ρbar g).restrict (he g))
@@ -842,16 +844,17 @@ lemma exists_subCharacter (ρbar : GaloisRep ℚ (ZMod ℓ) V)
   rw [LinearMap.coe_restrict_apply] at h2
   exact h2
 
+omit [IsTopologicalRing F] [DiscreteTopology F] in
 set_option backward.isDefEq.respectTransparency false in
 /-- **The quotient-character of a stable line** (PROVEN): the induced
 action on the quotient by a stable submodule with rank-`1` quotient is a
 unit-valued character. -/
-lemma exists_quotCharacter (ρbar : GaloisRep ℚ (ZMod ℓ) V)
-    (W : Submodule (ZMod ℓ) V)
-    (hQ1 : Module.finrank (ZMod ℓ) (V ⧸ W) = 1)
+lemma exists_quotCharacter (ρbar : GaloisRep ℚ F V)
+    (W : Submodule F V)
+    (hQ1 : Module.finrank F (V ⧸ W) = 1)
     (hstable : ∀ g v, v ∈ W → ρbar g v ∈ W) :
-    ∃ χ₂ : Field.absoluteGaloisGroup ℚ →* (ZMod ℓ)ˣ,
-      ∀ g v, W.mkQ (ρbar g v) = (χ₂ g : ZMod ℓ) • W.mkQ v := by
+    ∃ χ₂ : Field.absoluteGaloisGroup ℚ →* Fˣ,
+      ∀ g v, W.mkQ (ρbar g v) = (χ₂ g : F) • W.mkQ v := by
   have he : ∀ g, W ≤ W.comap (ρbar g) := fun g v hv => hstable g v hv
   obtain ⟨χ₂, hχ₂⟩ := exists_unit_character_of_finrank_one hQ1
     (fun g => W.mapQ W (ρbar g) (he g))
@@ -873,31 +876,32 @@ lemma exists_quotCharacter (ρbar : GaloisRep ℚ (ZMod ℓ) V)
   rw [Submodule.mkQ_apply, Submodule.mkQ_apply]
   exact h1
 
+omit [IsTopologicalRing F] [DiscreteTopology F] in
 set_option backward.isDefEq.respectTransparency false in
 /-- **The triangular determinant** (PROVEN): on a stable line, the
 determinant is the product of the sub- and quotient-characters. -/
 lemma det_eq_subCharacter_mul_quotCharacter
-    (ρbar : GaloisRep ℚ (ZMod ℓ) V)
-    (W : Submodule (ZMod ℓ) V) (hW1 : Module.finrank (ZMod ℓ) W = 1)
-    (hQ1 : Module.finrank (ZMod ℓ) (V ⧸ W) = 1)
+    (ρbar : GaloisRep ℚ F V)
+    (W : Submodule F V) (hW1 : Module.finrank F W = 1)
+    (hQ1 : Module.finrank F (V ⧸ W) = 1)
     (hstable : ∀ g v, v ∈ W → ρbar g v ∈ W)
-    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ →* (ZMod ℓ)ˣ)
-    (hχ₁ : ∀ g, ∀ v ∈ W, ρbar g v = (χ₁ g : ZMod ℓ) • v)
-    (hχ₂ : ∀ g v, W.mkQ (ρbar g v) = (χ₂ g : ZMod ℓ) • W.mkQ v)
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ →* Fˣ)
+    (hχ₁ : ∀ g, ∀ v ∈ W, ρbar g v = (χ₁ g : F) • v)
+    (hχ₂ : ∀ g v, W.mkQ (ρbar g v) = (χ₂ g : F) • W.mkQ v)
     (g : Field.absoluteGaloisGroup ℚ) :
-    LinearMap.det (ρbar g : Module.End (ZMod ℓ) V) =
-      (χ₁ g : ZMod ℓ) * (χ₂ g : ZMod ℓ) := by
+    LinearMap.det (ρbar g : Module.End F V) =
+      (χ₁ g : F) * (χ₂ g : F) := by
   have he : W ≤ W.comap (ρbar g) := fun v hv => hstable g v hv
   rw [LinearMap.det_eq_det_mul_det W (ρbar g) he]
   congr 1
   · have hr : (ρbar g).restrict he =
-        (χ₁ g : ZMod ℓ) • (LinearMap.id : W →ₗ[ZMod ℓ] W) := by
+        (χ₁ g : F) • (LinearMap.id : W →ₗ[F] W) := by
       apply LinearMap.ext; intro v; apply Subtype.ext
       rw [LinearMap.coe_restrict_apply, hχ₁ g v.1 v.2]
       rfl
     rw [hr, LinearMap.det_smul, hW1, pow_one, LinearMap.det_id, mul_one]
   · have hr : W.mapQ W (ρbar g) he =
-        (χ₂ g : ZMod ℓ) • (LinearMap.id : (V ⧸ W) →ₗ[ZMod ℓ] (V ⧸ W)) := by
+        (χ₂ g : F) • (LinearMap.id : (V ⧸ W) →ₗ[F] (V ⧸ W)) := by
       apply LinearMap.ext; intro z
       obtain ⟨v, rfl⟩ := W.mkQ_surjective z
       have h2 : (W.mapQ W (ρbar g) he) (W.mkQ v) = W.mkQ (ρbar g v) := by
@@ -907,49 +911,51 @@ lemma det_eq_subCharacter_mul_quotCharacter
     rw [hr, LinearMap.det_smul, hQ1, pow_one, LinearMap.det_id, mul_one]
 
 set_option backward.isDefEq.respectTransparency false in
-/-- **Openness of the kernel-level set of a mod-`ℓ` representation**
+/-- **Openness of the kernel-level set of a mod-`ℓ`-style representation over a discrete field**
 (PROVEN): the set where the representation is trivial is open — the
 endomorphism space is discrete (finite module over the discrete
-`ZMod ℓ`), so the representation is locally constant. Stated with the
+`F`), so the representation is locally constant. Stated with the
 finiteness input as a plain hypothesis so that callers can supply it
 for any definitionally-equal spelling of `V`. -/
-lemma isOpen_setOf_galoisRep_eq_one {ℓ : ℕ} [Fact ℓ.Prime]
-    {V : Type*} [AddCommGroup V] [Module (ZMod ℓ) V]
-    (ρbar : GaloisRep ℚ (ZMod ℓ) V) (hfinV : Finite V) :
+lemma isOpen_setOf_galoisRep_eq_one {F : Type*} [Field F] [TopologicalSpace F] [IsTopologicalRing F]
+    [DiscreteTopology F]
+    {V : Type*} [AddCommGroup V] [Module F V]
+    (ρbar : GaloisRep ℚ F V) (hfinV : Finite V) :
     IsOpen {g : Field.absoluteGaloisGroup ℚ | ρbar g = 1} := by
   haveI := hfinV
-  letI := moduleTopology (ZMod ℓ) (Module.End (ZMod ℓ) V)
-  haveI : Finite (Module.End (ZMod ℓ) V) :=
+  letI := moduleTopology F (Module.End F V)
+  haveI : Finite (Module.End F V) :=
     Finite.of_injective (fun f => (f : V → V)) DFunLike.coe_injective
-  haveI : Module.Finite (ZMod ℓ) (Module.End (ZMod ℓ) V) :=
+  haveI : Module.Finite F (Module.End F V) :=
     Module.Finite.of_finite
-  haveI : DiscreteTopology (Module.End (ZMod ℓ) V) :=
-    GaloisRepresentation.discreteTopology_moduleTopology (ZMod ℓ)
-      (Module.End (ZMod ℓ) V)
+  haveI : DiscreteTopology (Module.End F V) :=
+    GaloisRepresentation.discreteTopology_moduleTopology F
+      (Module.End F V)
   have hcont : Continuous fun g : Field.absoluteGaloisGroup ℚ => ρbar g :=
     ρbar.continuous_toFun
-  exact (isOpen_discrete ({1} : Set (Module.End (ZMod ℓ) V))).preimage hcont
+  exact (isOpen_discrete ({1} : Set (Module.End F V))).preimage hcont
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Unipotent scalars are trivial** (PROVEN): if `(f − 1)² = 0` and
 `f` acts on a nonzero vector by the scalar `c`, then `c = 1` — the
 eigenvalues of a unipotent endomorphism are `1`. -/
-lemma subCharacter_eq_one_of_sq_eq_zero {ℓ : ℕ} [Fact ℓ.Prime]
-    {V : Type*} [AddCommGroup V] [Module (ZMod ℓ) V]
-    (f : Module.End (ZMod ℓ) V) (hf : (f - 1) ^ 2 = 0)
-    {c : ZMod ℓ} {w : V} (hw : w ≠ 0) (hcw : f w = c • w) : c = 1 := by
+lemma subCharacter_eq_one_of_sq_eq_zero {F : Type*} [Field F] [TopologicalSpace F] [IsTopologicalRing F]
+    [DiscreteTopology F]
+    {V : Type*} [AddCommGroup V] [Module F V]
+    (f : Module.End F V) (hf : (f - 1) ^ 2 = 0)
+    {c : F} {w : V} (hw : w ≠ 0) (hcw : f w = c • w) : c = 1 := by
   have h1 : (f - 1) w = (c - 1) • w := by
     rw [LinearMap.sub_apply, Module.End.one_apply, hcw, sub_smul, one_smul]
-  have h2 : ((f - 1) ^ 2 : Module.End (ZMod ℓ) V) w =
-      ((c - 1) ^ 2 : ZMod ℓ) • w := by
+  have h2 : ((f - 1) ^ 2 : Module.End F V) w =
+      ((c - 1) ^ 2 : F) • w := by
     rw [pow_two, Module.End.mul_apply, h1, map_smul, h1, smul_smul,
       ← pow_two]
   rw [hf] at h2
-  have h3 : ((c - 1) ^ 2 : ZMod ℓ) • w = 0 := by
+  have h3 : ((c - 1) ^ 2 : F) • w = 0 := by
     rw [← h2]
     rfl
   rcases smul_eq_zero.mp h3 with h4 | h4
-  · have h5 : (c - 1 : ZMod ℓ) = 0 := pow_eq_zero_iff two_ne_zero |>.mp h4
+  · have h5 : (c - 1 : F) = 0 := pow_eq_zero_iff two_ne_zero |>.mp h4
     have h6 := sub_eq_zero.mp h5
     exact h6
   · exact absurd h4 hw
@@ -958,26 +964,27 @@ set_option backward.isDefEq.respectTransparency false in
 /-- **Unipotent quotient scalars are trivial** (PROVEN): if
 `(f − 1)² = 0` and `f` descends to the scalar `c` on the (nontrivial)
 quotient by a stable submodule, then `c = 1`. -/
-lemma quotCharacter_eq_one_of_sq_eq_zero {ℓ : ℕ} [Fact ℓ.Prime]
-    {V : Type*} [AddCommGroup V] [Module (ZMod ℓ) V]
-    (f : Module.End (ZMod ℓ) V) (hf : (f - 1) ^ 2 = 0)
-    (W : Submodule (ZMod ℓ) V) (hWtop : W ≠ ⊤) {c : ZMod ℓ}
+lemma quotCharacter_eq_one_of_sq_eq_zero {F : Type*} [Field F] [TopologicalSpace F] [IsTopologicalRing F]
+    [DiscreteTopology F]
+    {V : Type*} [AddCommGroup V] [Module F V]
+    (f : Module.End F V) (hf : (f - 1) ^ 2 = 0)
+    (W : Submodule F V) (hWtop : W ≠ ⊤) {c : F}
     (hc : ∀ v, W.mkQ (f v) = c • W.mkQ v) : c = 1 := by
   haveI : Nontrivial (V ⧸ W) := Submodule.Quotient.nontrivial_iff.mpr hWtop
   obtain ⟨z, hz⟩ := exists_ne (0 : V ⧸ W)
   obtain ⟨v, rfl⟩ := W.mkQ_surjective z
-  have h1 : ∀ u, W.mkQ ((f - 1) u) = (c - 1 : ZMod ℓ) • W.mkQ u := by
+  have h1 : ∀ u, W.mkQ ((f - 1) u) = (c - 1 : F) • W.mkQ u := by
     intro u
     rw [LinearMap.sub_apply, Module.End.one_apply, map_sub, hc, sub_smul,
       one_smul]
-  have h2 : W.mkQ (((f - 1) ^ 2 : Module.End (ZMod ℓ) V) v) =
-      ((c - 1) ^ 2 : ZMod ℓ) • W.mkQ v := by
+  have h2 : W.mkQ (((f - 1) ^ 2 : Module.End F V) v) =
+      ((c - 1) ^ 2 : F) • W.mkQ v := by
     rw [pow_two, Module.End.mul_apply, h1 ((f - 1) v), h1 v, smul_smul,
       ← pow_two]
   rw [hf] at h2
-  have h3 : ((c - 1) ^ 2 : ZMod ℓ) • W.mkQ v = 0 := by
+  have h3 : ((c - 1) ^ 2 : F) • W.mkQ v = 0 := by
     rw [← h2]
-    show W.mkQ ((0 : Module.End (ZMod ℓ) V) v) = 0
+    show W.mkQ ((0 : Module.End F V) v) = 0
     rw [LinearMap.zero_apply, map_zero]
   rcases smul_eq_zero.mp h3 with h4 | h4
   · exact sub_eq_zero.mp (pow_eq_zero_iff two_ne_zero |>.mp h4)
@@ -1001,12 +1008,13 @@ the two spellings with `Rat.subsingleton_ringHom` + `convert`): if the
 representation kills the local inertia at `v` and `χ` is trivial
 wherever the representation is, then the restriction of `χ` to the
 local Galois group kills inertia. -/
-lemma character_localInertia_le_ker_of_isUnramifiedAt {ℓ : ℕ}
-    [Fact ℓ.Prime] {V : Type*} [AddCommGroup V] [Module (ZMod ℓ) V]
-    (ρbar : GaloisRep K (ZMod ℓ) V)
+lemma character_localInertia_le_ker_of_isUnramifiedAt {F : Type*}
+    [Field F] [TopologicalSpace F] [IsTopologicalRing F]
+    {V : Type*} [AddCommGroup V] [Module F V]
+    (ρbar : GaloisRep K F V)
     (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers K))
     (hUn : ρbar.IsUnramifiedAt v)
-    (χ : Field.absoluteGaloisGroup K →* (ZMod ℓ)ˣ)
+    (χ : Field.absoluteGaloisGroup K →* Fˣ)
     (htriv : ∀ g, ρbar g = 1 → χ g = 1) :
     localInertiaGroup v ≤ (χ.comp (Field.absoluteGaloisGroup.map
       (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion
