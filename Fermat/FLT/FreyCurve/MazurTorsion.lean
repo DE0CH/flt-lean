@@ -1027,14 +1027,19 @@ lemma character_localInertia_le_ker_of_isUnramifiedAt {F : Type*}
 
 end GenericBridge
 
-set_option warn.sorry false in
-/-- **Unipotence of inertia at `2`** (sorry node — Tate-curve content):
-the Frey curve has multiplicative reduction at `2` (its minimal model —
-after the standard variable change — has a `2`-adic unit `c₄` and
-positive-valuation discriminant), so by Tate's uniformization the
-inertia at `2` acts on the `p`-torsion through the unipotent
-translations of the Tate parameter: `(ρ(σ) − 1)² = 0` for every `σ` in
-the local inertia group at `2`. -/
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Unipotence of inertia at `2`** (DERIVED 2026-07-17 from the
+pointwise Tate unipotence leaf and the PROVEN transport machinery): the
+Frey curve has multiplicative reduction at `2`
+(`freyCurve_hasMultiplicativeReduction_at_two`, PROVEN), so every
+element of the local inertia group at `2` acts on the `p`-torsion with
+`(ρ(σ) − 1)² = 0` — the pointwise statement
+`torsion_unipotent_of_multiplicative_reduction` at the embedded
+valuation subring, carried over by
+`map_mem_inertiaSubgroup_of_mem_localInertiaGroup` and expanded
+`(A − 1)² = A·A − A − A + 1` pointwise on the torsion. -/
 theorem FreyPackage.inertia_two_unipotent (P : FreyPackage) :
     haveI : Fact P.p.Prime := ⟨P.pp⟩
     ∀ σ ∈ localInertiaGroup
@@ -1043,8 +1048,85 @@ theorem FreyPackage.inertia_two_unipotent (P : FreyPackage) :
           ((Field.absoluteGaloisGroup.map (algebraMap ℚ
             (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
               Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) σ) -
-        1) ^ 2 = 0 :=
-  sorry
+        1) ^ 2 = 0 := by
+  haveI : Fact P.p.Prime := ⟨P.pp⟩
+  intro σ hσ
+  haveI := P.freyCurve_hasMultiplicativeReduction_at_two
+  have hp2 : (2 : ℕ) ≠ P.p := by
+    have := P.hp5
+    omega
+  have hpt := WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction
+    P.freyCurve Nat.prime_two hp2
+    (embeddedValuationSubring Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+    (embeddedValuationSubring_comap_toSubring
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+  have hmem := map_mem_inertiaSubgroup_of_mem_localInertiaGroup
+    Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat σ hσ
+  set A := P.freyCurve.galoisRep P.p P.hppos
+    ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) σ) with hA
+  apply LinearMap.ext
+  intro v
+  have hexp : ((A - 1) ^ 2 : Module.End (ZMod P.p)
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p)) v =
+      A (A v) - A v - A v + v := by
+    rw [pow_two, Module.End.mul_apply, LinearMap.sub_apply,
+      Module.End.one_apply, LinearMap.sub_apply, Module.End.one_apply,
+      map_sub]
+    abel
+  rw [hexp]
+  have hv : ((v : ((P.freyCurve.map (algebraMap ℚ
+      (AlgebraicClosure ℚ))).nTorsion P.p)) :
+      ((P.freyCurve.map (algebraMap ℚ
+        (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).Point) ∈
+      AddSubgroup.torsionBy
+        ((P.freyCurve.map (algebraMap ℚ
+          (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).Point
+        ((P.p : ℕ) : ℤ) := by
+    have h1 := v.2
+    rw [Submodule.mem_torsionBy_iff] at h1
+    show ((P.p : ℕ) : ℤ) • (v : ((P.freyCurve.map (algebraMap ℚ
+      (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).Point) = 0
+    exact_mod_cast h1
+  have hp := hpt _ hmem v.1 hv
+  apply Subtype.ext
+  have hb : ∀ w : ((P.freyCurve.map (algebraMap ℚ
+      (AlgebraicClosure ℚ))).nTorsion P.p),
+      (show ((P.freyCurve)⁄(AlgebraicClosure ℚ)).Point from (A w).1) =
+      WeierstrassCurve.Affine.Point.map
+        (((Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) σ :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom
+        (show ((P.freyCurve)⁄(AlgebraicClosure ℚ)).Point from w.1) :=
+    fun w => rfl
+  have hgoal : (show ((P.freyCurve)⁄(AlgebraicClosure ℚ)).Point from
+      (A (A v) - A v - A v + v : ((P.freyCurve.map (algebraMap ℚ
+        (AlgebraicClosure ℚ))).nTorsion P.p)).1) =
+      (show ((P.freyCurve)⁄(AlgebraicClosure ℚ)).Point from (A (A v)).1) -
+      (show ((P.freyCurve)⁄(AlgebraicClosure ℚ)).Point from (A v).1) -
+      (show ((P.freyCurve)⁄(AlgebraicClosure ℚ)).Point from (A v).1) +
+      (show ((P.freyCurve)⁄(AlgebraicClosure ℚ)).Point from v.1) := rfl
+  show (show ((P.freyCurve)⁄(AlgebraicClosure ℚ)).Point from
+    (A (A v) - A v - A v + v : ((P.freyCurve.map (algebraMap ℚ
+      (AlgebraicClosure ℚ))).nTorsion P.p)).1) =
+    (show ((P.freyCurve)⁄(AlgebraicClosure ℚ)).Point from
+      ((0 : Module.End (ZMod P.p) ((P.freyCurve.map (algebraMap ℚ
+        (AlgebraicClosure ℚ))).nTorsion P.p)) v).1)
+  rw [hgoal, hb (A v), hb v]
+  convert hp using 8 <;>
+    first
+      | rfl
+      | exact Subsingleton.elim _ _
+      | exact congrArg (fun f : ℚ →+*
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) =>
+            Field.absoluteGaloisGroup.map f) (Subsingleton.elim _ _)
+      | exact congrArg (fun f : ℚ →+*
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) =>
+            (Field.absoluteGaloisGroup.map f) σ) (Subsingleton.elim _ _)
 
 set_option warn.sorry false in
 /-- **The flat/ordinary analysis at `p`** (sorry node — the deepest
