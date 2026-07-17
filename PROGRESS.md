@@ -301,15 +301,34 @@ the START and END of each block of work.
                   `HasFlatProlongationAt.of_addEquiv` across
                   `M ≃+ (A ⧸ ⊥) ⊗[A] M` (`AlgEquiv.quotientBot` +
                   `baseChange_tmul`).
-                  - ✗○ `GaloisRep.hasFlatProlongationAt_of_dvr_package`
-                    (same file) — **the core points comparison**
-                    (CURRENT WORK): take `G := 𝒪ᵥ ⊗[ℤ_(q)] H`
-                    (Hopf/flat/finite by base change), identify the
-                    generic fibre by `cancelBaseChange` and the points
-                    by the chain `(Kᵥ ⊗[𝒪ᵥ] G →ₐ[Kᵥ] Kᵥᵃˡᵍ) ≃ … ≃
-                    (ℚ ⊗[ℤ_(q)] H →ₐ[ℚ] ℚ̄)` (`AlgHom.liftEquiv`
-                    twice + `algHomEquivOfFinite`), transporting
-                    convolution structures and equivariance.
+                  - ✓· `GaloisRep.hasFlatProlongationAt_of_dvr_package`
+                    (same file) — **the core points comparison**,
+                    PROVEN (2026-07-17): instantiation of the
+                    general-`K` core
+                    `hasFlatProlongationAt_of_hopf_package` at the
+                    proven arc `ℤ_(q) → ℚ → Kᵥ`
+                    (`localizationToAdicCompletionIntegers`). **The
+                    ENTIRE shared flat transport is now sorry-free**;
+                    the two `IsFlatAt` glue nodes rest only on the two
+                    content leaves.
+                    - ✓· `hasFlatProlongationAt_of_hopf_package`
+                      (PROVEN 2026-07-17): `G := 𝒪ᵥ ⊗[R] H`
+                      (Hopf/flat/finite by base change; étale generic
+                      fibre by `cancelBaseChange` twice + étale base
+                      change), points by `dvrPointsEquiv`
+                      (`AlgHom.liftEquiv` three times +
+                      `algHomEquivOfFinite`), convolution and
+                      `Γ Kᵥ`-equivariance by the layer lemmas below.
+                    - ✓· convolution/equivariance layers (PROVEN
+                      2026-07-17): `liftEquiv_symm_convOne/convMul/comp`
+                      (mixed-base adjunction vs convolution, by the
+                      comul computation on the base-changed
+                      bialgebra), forward versions by
+                      symm-injectivity, `vendored_one/mul_eq_conv*`
+                      (the vendored bare-hom monoid IS `WithConv`,
+                      rfl-level), `algHomEquivOfFinite_convOne/
+                      convMul/comp` (`comp_convMul_distrib` +
+                      `lift_map`).
                     - ✓· layer C `algHomEquivOfFinite` +
                       `algebraicClosureMapAlgHom` +
                       `mem_range_algebraicClosureMap_of_isIntegral`
@@ -1905,3 +1924,47 @@ assumed. Axiom invariant: every declaration must use at most
   `Algebra.TensorProduct.lift`-style points identification),
   convolution-monoid compatibility of each layer, equivariance, and
   the `ZMod p` two-open-ideals assembly.
+- 2026-07-17 (session 5): **THE ENTIRE SHARED FLAT TRANSPORT IS
+  SORRY-FREE** (frontier 20 → 19). Completed in three moves. (1)
+  `isFlatAt_of_dvr_package` DERIVED (over a FIELD `A`) from a new
+  smaller core node by the two-ideal split: `⊤` via the subsingleton
+  case, `⊥` via the PROVEN `HasFlatProlongationAt.of_addEquiv`
+  (equivariant transport of the package across an `AddEquiv` of
+  spaces; the identification `M ≃+ (A ⧸ ⊥) ⊗[A] M` via
+  `AlgEquiv.quotientBot` + `baseChange_tmul`). (2) The convolution
+  layer lemmas: mathlib's `AlgHom.liftEquiv` (tensor-hom adjunction)
+  respects the convolution unit/product/postcomposition — the
+  inverse direction by computing `comul` on the base-changed
+  bialgebra (`Bialgebra.TensorProduct.comul_eq_algHom_toLinearMap`,
+  induction over `comul a`), the forward direction by
+  symm-injectivity; the vendored bare-hom `Monoid` of `Etale.lean`
+  agrees with mathlib's `WithConv` monoid at rfl-level
+  (`vendored_one/mul_eq_conv*`); `algHomEquivOfFinite` respects
+  convolution (`AlgHom.comp_convMul_distrib` — postcomposition with
+  `ι` distributes) and intertwines `Γ Kᵥ`-postcomposition with
+  `Γ ℚ`-postcomposition (`Field.absoluteGaloisGroup.lift_map`). (3)
+  `hasFlatProlongationAt_of_hopf_package` (general `K`, abstract
+  coefficient ring `R`): witness `G := 𝒪ᵥ ⊗[R] H` (Hopf/finite/flat
+  by base-change instances — `Mathlib.RingTheory.HopfAlgebra.
+  TensorProduct` must be imported EXPLICITLY, module system does not
+  re-export it through GaloisRep), étale generic fibre via
+  `cancelBaseChange R K Kᵥ Kᵥ H` + `(cancelBaseChange R 𝒪ᵥ Kᵥ Kᵥ
+  H).symm` + `Algebra.Etale.baseChange`, points comparison
+  `dvrPointsEquiv` = `liftEquiv.symm ∘ liftEquiv.symm ∘ liftEquiv ∘
+  algHomEquivOfFinite` (NO cancelBaseChange needed for points), f'
+  assembled with inline `by` blocks. The ℚ-instantiation
+  `hasFlatProlongationAt_of_dvr_package` equips `𝒪ᵥ`/`Kᵥ` with
+  `ℤ_(q)`-algebra structures via `localizationToAdicCompletionIntegers`
+  (composed through `𝒪ᵥ` so the first tower is rfl). ALL audit to
+  standard axioms; the two `IsFlatAt` glue nodes now rest ONLY on
+  the content leaves. GOTCHAS: (a) `∃`-anonymous-constructor
+  `refine` postpones dependent instance metavars — type-ascribe
+  each instance component (`(inferInstance : HopfAlgebra …)`); (b)
+  structure-literal fields with `?_` lose their lambda binders —
+  inline `by` blocks instead; (c) at `K := ℚ` the instance search
+  for `Algebra ℚ Kᵥ` returns `DivisionRing.toRatAlgebra`, NOT the
+  canonical `instAlgebraAdicCompletion` baked into general-`K`
+  statements — pin the canonical instance explicitly in `@`-form
+  when constructing `IsScalarTower Loc ℚ Kᵥ`; (d) `[Algebra K B]` +
+  `[Bialgebra K B]` binders together create an `SMul` diamond that
+  BREAKS `WithConv` instance synthesis — take only `[Bialgebra K B]`.

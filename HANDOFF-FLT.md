@@ -64,7 +64,19 @@ Method — resolve a dependency tree top-down:
 
 ## Current state — read PROGRESS.md for the authoritative tree
 
-**Session 5 FINAL STATE (2026-07-17, frontier 20):**
+**Session 5 FINAL STATE (2026-07-17, frontier 19):**
+0. **THE SHARED FLAT TRANSPORT IS SORRY-FREE** (2026-07-17):
+   `GaloisRep.isFlatAt_of_dvr_package` (two-ideal split over a field
+   `A` + `HasFlatProlongationAt.of_addEquiv`),
+   `hasFlatProlongationAt_of_hopf_package` (general-`K` core:
+   `G := 𝒪ᵥ ⊗[R] H`, `dvrPointsEquiv` = three `liftEquiv`s +
+   `algHomEquivOfFinite`, convolution layers vs mathlib `WithConv`,
+   equivariance via `lift_map`), and the `ℤ_(q)`-instantiation all
+   audit to standard axioms (see PROGRESS.md 2026-07-17 for the four
+   recorded gotchas: postponed ∃-instance metavars, structure-literal
+   `?_` binders, the `DivisionRing.toRatAlgebra` pin at `ℚ`, the
+   `Algebra`+`Bialgebra` SMul diamond). Both `IsFlatAt` glue nodes
+   now rest ONLY on the content leaves.
 1. **THE ENTIRE MINKOWSKI BRANCH IS PROVEN UNCONDITIONALLY** — the
    local node (Neukirch II.9.11) was fully formalized: finite-level
    Hilbert `|I| = e` counting (`card_inertia_finite_level`,
@@ -87,8 +99,8 @@ Method — resolve a dependency tree top-down:
    scratch-verified, `localizationToAdicCompletionIntegers` and the
    subsingleton case PROVEN) against the vendored flat leaf resp. the
    new peu-ramifiée leaf `torsion_flat_of_multiplicative_reduction`.
-3. Remaining frontier (20): the four elliptic content leaves above +
-   the shared flat transport + `mazur_classification`,
+3. Remaining frontier (19): the four elliptic content leaves above +
+   `mazur_classification`,
    `exists_p_point_of_not_isIrreducible_of_minkowski`,
    `mod_three_reducible`, `mod_three_of_stable_line`, `three_adic`,
    `exists_hardlyRamifiedLift`, `mem_isCompatible`,

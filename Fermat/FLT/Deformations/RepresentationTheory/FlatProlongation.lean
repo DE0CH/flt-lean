@@ -12,6 +12,12 @@ public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 -- `WithConv` and its convolution monoid, the group structure on the
 -- points of the vendored DVR-package
 public import Mathlib.RingTheory.HopfAlgebra.Convolution
+-- the Hopf-algebra instance on `𝒪ᵥ ⊗[R] H` (base change), used by the
+-- flat-prolongation transport core
+public import Mathlib.RingTheory.HopfAlgebra.TensorProduct
+-- `localizationToAdicCompletionIntegers` (the arc `ℤ_(q) → 𝒪ᵥ`), used
+-- in the proof of the rational-prime instantiation
+import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
 
 /-!
 # Transport layers for flat prolongations
@@ -30,7 +36,9 @@ case of the open-ideal quantifier in `GaloisRep.IsFlatAt`.
 
 open NumberField TensorProduct
 
-variable {K : Type*} [Field K] [NumberField K]
+universe uKf
+
+variable {K : Type uKf} [Field K] [NumberField K]
 variable (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
 variable {A : Type*} [CommRing A] [TopologicalSpace A]
 variable {M : Type*} [AddCommGroup M] [Module A M]
@@ -369,19 +377,157 @@ theorem vendored_mul_eq_convMul (φ ψ : A₀ →ₐ[K₀] L₀) :
 
 end VendoredConvBridge
 
-set_option warn.sorry false in
-/-- (Sorry node — **the shared flat-prolongation transport, core**.)
-A Galois representation of `ℚ` whose space is presented, equivariantly,
-as the `ℚ̄`-points of the generic fibre of a finite flat Hopf algebra
-over the localization `ℤ_(q)` has a flat prolongation at `q`. Proof
-design (all ingredients scratch-verified; see PROGRESS.md): take
-`G := 𝒪ᵥ ⊗[ℤ_(q)] H` (Hopf/flat/finite by base change), identify the
-generic fibre through `Algebra.TensorProduct.cancelBaseChange`, and
-identify the `Kᵥᵃˡᵍ`-points with the `ℚ̄`-points through the chain
-`(Kᵥ ⊗[𝒪ᵥ] G →ₐ[Kᵥ] Kᵥᵃˡᵍ) ≃ (Kᵥ ⊗[ℤ_(q)] H →ₐ[Kᵥ] Kᵥᵃˡᵍ)
-≃ (H →ₐ[ℤ_(q)] Kᵥᵃˡᵍ) ≃ (ℚ ⊗[ℤ_(q)] H →ₐ[ℚ] Kᵥᵃˡᵍ) ≃ (ℚ ⊗[ℤ_(q)] H
-→ₐ[ℚ] ℚ̄)` (`AlgHom.liftEquiv` twice, then `algHomEquivOfFinite`),
-transporting the convolution structures and the Galois equivariance. -/
+section DVRPackageCore
+
+open WithConv
+
+variable (R : Type uKf) [CommRing R]
+  [Algebra R K]
+  [Algebra R (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)]
+  [Algebra R (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)]
+  [IsScalarTower R (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)]
+  [IsScalarTower R K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)]
+variable (H : Type uKf) [CommRing H] [HopfAlgebra R H] [Module.Finite R H]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The four-layer points comparison** for the flat-prolongation
+transport: the `Kᵥᵃˡᵍ`-points of the generic fibre of the base-changed
+Hopf algebra `𝒪ᵥ ⊗[R] H` are the `Kᵃˡᵍ`-points of `K ⊗[R] H`
+(`AlgHom.liftEquiv` three times, then `algHomEquivOfFinite`). -/
+noncomputable def dvrPointsEquiv :
+    ((Kᵥ ⊗[𝒪ᵥ] (𝒪ᵥ ⊗[R] H)) →ₐ[Kᵥ] (Kᵥᵃˡᵍ)) ≃ ((K ⊗[R] H) →ₐ[K] (Kᵃˡᵍ)) :=
+  (AlgHom.liftEquiv 𝒪ᵥ Kᵥ (𝒪ᵥ ⊗[R] H) (Kᵥᵃˡᵍ)).symm.trans
+    ((AlgHom.liftEquiv R 𝒪ᵥ H (Kᵥᵃˡᵍ)).symm.trans
+      ((AlgHom.liftEquiv R K H (Kᵥᵃˡᵍ)).trans
+        (algHomEquivOfFinite v (K ⊗[R] H))))
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- The points comparison sends the convolution unit (of the vendored
+bare-hom monoid) to the convolution unit. -/
+theorem dvrPointsEquiv_one :
+    dvrPointsEquiv v R H (1 : (Kᵥ ⊗[𝒪ᵥ] (𝒪ᵥ ⊗[R] H)) →ₐ[Kᵥ] (Kᵥᵃˡᵍ)) =
+      (1 : WithConv ((K ⊗[R] H) →ₐ[K] (Kᵃˡᵍ))).ofConv := by
+  show algHomEquivOfFinite v (K ⊗[R] H)
+    ((AlgHom.liftEquiv R K H (Kᵥᵃˡᵍ))
+      ((AlgHom.liftEquiv R 𝒪ᵥ H (Kᵥᵃˡᵍ)).symm
+        ((AlgHom.liftEquiv 𝒪ᵥ Kᵥ (𝒪ᵥ ⊗[R] H) (Kᵥᵃˡᵍ)).symm 1))) = _
+  rw [vendored_one_eq_convOne, liftEquiv_symm_convOne, liftEquiv_symm_convOne,
+    liftEquiv_convOne, algHomEquivOfFinite_convOne]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- The points comparison sends the convolution product (of the
+vendored bare-hom monoid) to the convolution product. -/
+theorem dvrPointsEquiv_mul (φ ψ : (Kᵥ ⊗[𝒪ᵥ] (𝒪ᵥ ⊗[R] H)) →ₐ[Kᵥ] (Kᵥᵃˡᵍ)) :
+    dvrPointsEquiv v R H (φ * ψ) =
+      (toConv (dvrPointsEquiv v R H φ) * toConv (dvrPointsEquiv v R H ψ)).ofConv := by
+  show algHomEquivOfFinite v (K ⊗[R] H)
+    ((AlgHom.liftEquiv R K H (Kᵥᵃˡᵍ))
+      ((AlgHom.liftEquiv R 𝒪ᵥ H (Kᵥᵃˡᵍ)).symm
+        ((AlgHom.liftEquiv 𝒪ᵥ Kᵥ (𝒪ᵥ ⊗[R] H) (Kᵥᵃˡᵍ)).symm (φ * ψ)))) = _
+  rw [vendored_mul_eq_convMul, liftEquiv_symm_convMul, liftEquiv_symm_convMul,
+    liftEquiv_convMul, algHomEquivOfFinite_convMul]
+  rfl
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- The points comparison intertwines the postcomposition action of
+`Γ Kᵥ` with the postcomposition action of its restriction in `Γ K`. -/
+theorem dvrPointsEquiv_smul
+    (σ : Γ(IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+    (φ : (Kᵥ ⊗[𝒪ᵥ] (𝒪ᵥ ⊗[R] H)) →ₐ[Kᵥ] (Kᵥᵃˡᵍ)) :
+    dvrPointsEquiv v R H (σ • φ) =
+      (Field.absoluteGaloisGroup.map (algebraMap K
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) σ).toAlgHom.comp
+        (dvrPointsEquiv v R H φ) := by
+  have h₀ : σ • φ = (σ.toAlgHom : (Kᵥᵃˡᵍ) →ₐ[Kᵥ] (Kᵥᵃˡᵍ)).comp φ :=
+    AlgHom.ext fun _ => rfl
+  show algHomEquivOfFinite v (K ⊗[R] H)
+    ((AlgHom.liftEquiv R K H (Kᵥᵃˡᵍ))
+      ((AlgHom.liftEquiv R 𝒪ᵥ H (Kᵥᵃˡᵍ)).symm
+        ((AlgHom.liftEquiv 𝒪ᵥ Kᵥ (𝒪ᵥ ⊗[R] H) (Kᵥᵃˡᵍ)).symm (σ • φ)))) = _
+  rw [h₀, liftEquiv_symm_comp, liftEquiv_symm_comp]
+  have hrs : ((σ.toAlgHom.restrictScalars 𝒪ᵥ).restrictScalars R :
+      (Kᵥᵃˡᵍ) →ₐ[R] (Kᵥᵃˡᵍ)) =
+      ((σ.toAlgHom.restrictScalars K).restrictScalars R) := rfl
+  rw [hrs, liftEquiv_comp, algHomEquivOfFinite_comp]
+  rfl
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **The core of the shared flat-prolongation transport**, over a
+general number field `K` and abstract coefficient ring `R` mapping
+compatibly into `K` and `𝒪ᵥ`: a Galois representation whose space is
+presented, `Γ K`-equivariantly, as the `Kᵃˡᵍ`-points of the generic
+fibre of a finite flat Hopf algebra `H` over `R` has a flat
+prolongation at `v`, witnessed by the base change `𝒪ᵥ ⊗[R] H`. -/
+theorem GaloisRep.hasFlatProlongationAt_of_hopf_package
+    (ρ : GaloisRep K A M)
+    [Module.Flat R H]
+    [Algebra.Etale K (K ⊗[R] H)]
+    (f : Additive (WithConv ((K ⊗[R] H) →ₐ[K] (Kᵃˡᵍ))) ≃+ M)
+    (hf : ∀ (σ : (Kᵃˡᵍ) ≃ₐ[K] (Kᵃˡᵍ)) (φ : (K ⊗[R] H) →ₐ[K] (Kᵃˡᵍ)),
+      f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
+        ρ σ (f (Additive.ofMul (WithConv.toConv φ)))) :
+    ρ.HasFlatProlongationAt v := by
+  classical
+  refine ⟨𝒪ᵥ ⊗[R] H,
+    (inferInstance : CommRing (𝒪ᵥ ⊗[R] H)),
+    (inferInstance : HopfAlgebra 𝒪ᵥ (𝒪ᵥ ⊗[R] H)),
+    (inferInstance : Module.Flat 𝒪ᵥ (𝒪ᵥ ⊗[R] H)),
+    (inferInstance : Module.Finite 𝒪ᵥ (𝒪ᵥ ⊗[R] H)),
+    Algebra.Etale.of_equiv ((Algebra.TensorProduct.cancelBaseChange R K Kᵥ Kᵥ H).trans
+      (Algebra.TensorProduct.cancelBaseChange R 𝒪ᵥ Kᵥ Kᵥ H).symm),
+    { toFun := fun Φ =>
+        f (Additive.ofMul (WithConv.toConv (dvrPointsEquiv v R H Φ.toMul)))
+      map_smul' := fun σ Φ => by
+        show f (Additive.ofMul (WithConv.toConv
+            (dvrPointsEquiv v R H (Additive.toMul (σ • Φ))))) =
+          ((ρ.toLocal v) σ) (f (Additive.ofMul (WithConv.toConv
+            (dvrPointsEquiv v R H Φ.toMul))))
+        have hΦ : Additive.toMul (σ • Φ) = σ • Φ.toMul := rfl
+        rw [hΦ, dvrPointsEquiv_smul]
+        exact hf (Field.absoluteGaloisGroup.map (algebraMap K
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) σ) _
+      map_zero' := by
+        show f (Additive.ofMul (WithConv.toConv
+            (dvrPointsEquiv v R H (Additive.toMul 0)))) = 0
+        have h0 : Additive.toMul
+            (0 : Additive ((Kᵥ ⊗[𝒪ᵥ] (𝒪ᵥ ⊗[R] H)) →ₐ[Kᵥ] (Kᵥᵃˡᵍ))) = 1 := rfl
+        rw [h0, dvrPointsEquiv_one, WithConv.toConv_ofConv]
+        exact map_zero f
+      map_add' := fun Φ Ψ => by
+        show f (Additive.ofMul (WithConv.toConv
+            (dvrPointsEquiv v R H (Additive.toMul (Φ + Ψ))))) = _
+        have hΦΨ : Additive.toMul (Φ + Ψ) = Φ.toMul * Ψ.toMul := rfl
+        rw [hΦΨ, dvrPointsEquiv_mul, WithConv.toConv_ofConv]
+        exact map_add f _ _ }, ?_⟩
+  -- bijectivity
+  exact f.bijective.comp (Additive.ofMul.bijective.comp
+    (WithConv.toConv_bijective.comp
+      ((dvrPointsEquiv v R H).bijective.comp Additive.toMul.bijective)))
+
+end DVRPackageCore
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The shared flat-prolongation transport, core** (DERIVED
+2026-07-17 from `hasFlatProlongationAt_of_hopf_package`): a Galois
+representation of `ℚ` whose space is presented, equivariantly, as the
+`ℚ̄`-points of the generic fibre of a finite flat Hopf algebra over the
+localization `ℤ_(q)` has a flat prolongation at `q`. The instantiation
+equips `𝒪ᵥ` and `Kᵥ` with their `ℤ_(q)`-algebra structures through the
+proven arc `ℤ_(q) → ℚ → Kᵥ` (`localizationToAdicCompletionIntegers`),
+under which the scalar towers hold definitionally. -/
 theorem GaloisRep.hasFlatProlongationAt_of_dvr_package
     {A : Type} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
     {M : Type} [AddCommGroup M] [Module A M] [Module.Free A M] [Module.Finite A M]
@@ -407,8 +553,53 @@ theorem GaloisRep.hasFlatProlongationAt_of_dvr_package
         hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H) →ₐ[ℚ] AlgebraicClosure ℚ),
       f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
         ρ σ (f (Additive.ofMul (WithConv.toConv φ)))) :
-    ρ.HasFlatProlongationAt hq.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+    ρ.HasFlatProlongationAt hq.toHeightOneSpectrumRingOfIntegersRat := by
+  classical
+  letI : Algebra (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat) :=
+    (localizationToAdicCompletionIntegers hq.toHeightOneSpectrumRingOfIntegersRat).toAlgebra
+  letI : Algebra (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat) :=
+    ((algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)).comp
+      (localizationToAdicCompletionIntegers
+        hq.toHeightOneSpectrumRingOfIntegersRat)).toAlgebra
+  haveI : IsScalarTower (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat) :=
+    IsScalarTower.of_algebraMap_eq fun _ => rfl
+  -- NOTE: the middle `Algebra ℚ Kᵥ` instance must be pinned to the
+  -- canonical `instAlgebraAdicCompletion` (the one baked into the core
+  -- theorem's statement); unpinned search at `ℚ` returns
+  -- `DivisionRing.toRatAlgebra` instead
+  haveI := @IsScalarTower.of_algebraMap_eq
+    (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+    _ _ _ _
+    (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion (𝓞 ℚ) ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+    _
+    fun x => by
+      -- the left side is the value of the codomain-restricted arc
+      -- `ℤ_(q) → ℚ → Kᵥ`; the two `ℚ`-algebra structures on `Kᵥ`
+      -- (the one baked into `localizationToAdicCompletionIntegers` and
+      -- the ambient one) agree since ring homs out of `ℚ` are unique
+      show ((localizationToAdicCompletionIntegers
+        hq.toHeightOneSpectrumRingOfIntegersRat) x :
+          IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat) = _
+      unfold localizationToAdicCompletionIntegers
+      rw [RingHom.codRestrict_apply, RingHom.comp_apply]
+  exact ρ.hasFlatProlongationAt_of_hopf_package
+    (v := hq.toHeightOneSpectrumRingOfIntegersRat)
+    (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H f hf
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
