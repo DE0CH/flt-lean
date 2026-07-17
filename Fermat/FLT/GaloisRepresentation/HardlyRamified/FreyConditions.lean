@@ -46,6 +46,7 @@ public import Fermat.FLT.EllipticCurve.Torsion
 -- used to derive `torsion_det`.
 import Fermat.FLT.EllipticCurve.WeilPairing
 import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.SplitMultiplicativeReduction
+import Mathlib.RingTheory.Valuation.Integral
 -- The Frey reduction-type nodes and the local-global glue nodes
 -- (public: the tame-at-2 glue node stated in this file mentions
 -- `HasMultiplicativeReduction` over the localization, whose instance
@@ -390,9 +391,113 @@ theorem exists_tame_quotient_of_split_padic_two
     show (1 : Module.End (ZMod p) (ZMod p)) * 1 = 1
     rw [one_mul]
 
-set_option warn.sorry false in
-/-- **Inertia fixes unramified embeddings, `Z2bar` spelling** (sorry
-node — the `ℚ_[2]`-analogue of the PROVEN
+open WithZero in
+/-- The multiplicative valuation of `ℚ_[q]` is at most `1` exactly on
+the closed unit ball. -/
+theorem Padic.mulValuation_le_one_iff {q : ℕ} [Fact q.Prime] (x : ℚ_[q]) :
+    Padic.mulValuation x ≤ 1 ↔ ‖x‖ ≤ 1 := by
+  rcases eq_or_ne x 0 with rfl | hx0
+  · simp
+  · rw [Padic.mulValuation_eq hx0, Padic.norm_le_one_iff_val_nonneg,
+      show (1 : ℤᵐ⁰) = WithZero.exp (0 : ℤ) from rfl, WithZero.exp_le_exp]
+    exact neg_nonpos
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Membership in `Z2bar` for base-field images is the closed unit
+ball: the spectral valuation extends the `2`-adic norm. -/
+theorem algebraMap_mem_Z2bar_iff (x : ℚ_[2]) :
+    algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2]) x ∈ Z2bar ↔ ‖x‖ ≤ 1 := by
+  rw [Valuation.mem_valuationSubring_iff]
+  have hkey : ((Valued.v (algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2]) x) :
+      NNReal) : ℝ) = ‖x‖ := by
+    rw [← spectralNorm_extends (K := ℚ_[2]) (L := AlgebraicClosure ℚ_[2]) x]
+    rfl
+  constructor
+  · intro h
+    have h1 : ((Valued.v (algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2]) x) :
+        NNReal) : ℝ) ≤ 1 := by exact_mod_cast h
+    rw [hkey] at h1
+    exact h1
+  · intro h
+    have h1 : ((Valued.v (algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2]) x) :
+        NNReal) : ℝ) ≤ 1 := by rw [hkey]; exact h
+    exact_mod_cast h1
+
+/-- Elements of the canonical integer ring of `ℚ_[2]` have norm at most
+`1`. -/
+theorem norm_le_one_of_mem_integer {x : ℚ_[2]}
+    (hx : x ∈ (ValuativeRel.valuation ℚ_[2]).integer) : ‖x‖ ≤ 1 := by
+  have h1 : Padic.mulValuation x ≤ 1 :=
+    (Valuation.isEquiv_iff_val_le_one.mp
+      (ValuativeRel.isEquiv _ _)).mp ((Valuation.mem_integer_iff _ _).mp hx)
+  exact (Padic.mulValuation_le_one_iff x).mp h1
+
+open scoped Pointwise in
+set_option backward.isDefEq.respectTransparency false in
+/-- Every `ℚ_[2]`-automorphism of the algebraic closure stabilizes
+`Z2bar`: the spectral norm is invariant under such automorphisms. -/
+theorem mem_decompositionSubgroup_Z2bar
+    (σ : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]] (AlgebraicClosure ℚ_[2])) :
+    σ ∈ Z2bar.decompositionSubgroup ℚ_[2] := by
+  rw [MulAction.mem_stabilizer_iff]
+  apply le_antisymm
+  · rintro y ⟨x, hx, rfl⟩
+    have hx' : Valued.v x ≤ 1 := hx
+    show Valued.v (σ x) ≤ 1
+    convert hx' using 1
+    apply NNReal.coe_injective
+    exact (spectralNorm_eq_of_equiv σ x).symm
+  · intro x hx
+    have hx' : Valued.v x ≤ 1 := hx
+    refine ⟨σ⁻¹ x, ?_, ?_⟩
+    · show Valued.v (σ⁻¹ x) ≤ 1
+      convert hx' using 1
+      apply NNReal.coe_injective
+      exact (spectralNorm_eq_of_equiv
+        (σ⁻¹ : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+          (AlgebraicClosure ℚ_[2])) x).symm
+    · show σ (σ⁻¹ x) = x
+      exact σ.apply_symm_apply x
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **The two spellings of inertia at `Z2bar` agree**: an element of the
+mod-`𝔪` inertia lies in the `ValuationSubring.inertiaSubgroup` (trivial
+action on the residue field); the congruence is read through
+`Ideal.Quotient.eq`. -/
+theorem mem_inertiaSubgroup_Z2bar
+    {g : Field.absoluteGaloisGroup ℚ_[2]}
+    (hg : g ∈ AddSubgroup.inertia
+      ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+      (Field.absoluteGaloisGroup ℚ_[2])) :
+    (⟨(g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]] (AlgebraicClosure ℚ_[2])),
+      mem_decompositionSubgroup_Z2bar _⟩ :
+      Z2bar.decompositionSubgroup ℚ_[2]) ∈
+      Z2bar.inertiaSubgroup ℚ_[2] := by
+  rw [ValuationSubring.inertiaSubgroup, MonoidHom.mem_ker]
+  apply RingEquiv.ext
+  intro z
+  obtain ⟨a, rfl⟩ := IsLocalRing.residue_surjective (R := Z2bar) z
+  have h1 : (MulSemiringAction.toRingAut
+      (Z2bar.decompositionSubgroup ℚ_[2])
+      (IsLocalRing.ResidueField Z2bar)
+      (⟨(g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]] (AlgebraicClosure ℚ_[2])),
+        mem_decompositionSubgroup_Z2bar _⟩))
+      (IsLocalRing.residue _ a) =
+      IsLocalRing.residue _
+        ((⟨(g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+            (AlgebraicClosure ℚ_[2])),
+          mem_decompositionSubgroup_Z2bar _⟩ :
+          Z2bar.decompositionSubgroup ℚ_[2]) • a) := rfl
+  rw [h1]
+  show IsLocalRing.residue _ _ = IsLocalRing.residue _ a
+  exact Ideal.Quotient.eq.mpr (hg a)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **Inertia fixes unramified embeddings, `Z2bar` spelling** (the
+`ℚ_[2]`-analogue of the PROVEN
 `inertia_fixes_algHom_of_unramified_gen`, at the spectral-norm
 valuation subring `Z2bar` of `ℚ_[2]ᵃˡᵍ`): for an extension `L/ℚ_[2]`
 generated by `θ` with a monic integral lift `Q` of separable residue
@@ -417,8 +522,169 @@ theorem inertia_fixes_algHom_of_unramified_gen_padic_two
       (Field.absoluteGaloisGroup ℚ_[2]))
     (ι : L →ₐ[ℚ_[2]] (AlgebraicClosure ℚ_[2])) (y : L) :
     (g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]] (AlgebraicClosure ℚ_[2]))
-      (ι y) = ι y :=
-  sorry
+      (ι y) = ι y := by
+  classical
+  -- the coefficient-inclusion hom into `Z2bar`
+  have hmemA : ∀ z : (ValuativeRel.valuation ℚ_[2]).integer,
+      (algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2]))
+        (z : ℚ_[2]) ∈ Z2bar := fun z =>
+    (algebraMap_mem_Z2bar_iff _).mpr (norm_le_one_of_mem_integer z.2)
+  let j₂ : (ValuativeRel.valuation ℚ_[2]).integer →+* Z2bar :=
+    { toFun := fun z => ⟨_, hmemA z⟩
+      map_one' := Subtype.ext (by push_cast; rfl)
+      map_mul' := fun a b => Subtype.ext (by push_cast; rfl)
+      map_zero' := Subtype.ext (by push_cast; rfl)
+      map_add' := fun a b => Subtype.ext (by push_cast; rfl) }
+  -- `j₂` is local: nonunits land in the maximal ideal
+  have hj₂m : ∀ m : (ValuativeRel.valuation ℚ_[2]).integer,
+      m ∈ IsLocalRing.maximalIdeal _ →
+      j₂ m ∈ IsLocalRing.maximalIdeal _ := by
+    intro m hm
+    rw [IsLocalRing.mem_maximalIdeal] at hm ⊢
+    intro hunit
+    apply hm
+    by_cases hm0 : (m : ℚ_[2]) = 0
+    · exfalso
+      have hz : j₂ m = 0 := Subtype.ext (by
+        show (algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2])) (m : ℚ_[2]) = 0
+        rw [hm0, map_zero])
+      rw [hz] at hunit
+      exact not_isUnit_zero hunit
+    · obtain ⟨u, hu⟩ := hunit
+      have huv : ((u : Z2bar) : AlgebraicClosure ℚ_[2]) =
+          (algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2])) (m : ℚ_[2]) := by
+        rw [hu]
+        rfl
+      have hmul : ((algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2]))
+          (m : ℚ_[2])) * (((u⁻¹ : Z2barˣ) : Z2bar) :
+          AlgebraicClosure ℚ_[2]) = 1 := by
+        have h0 : ((u : Z2bar) * ((u⁻¹ : Z2barˣ) : Z2bar) : Z2bar) = 1 :=
+          u.mul_inv
+        calc ((algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2])) (m : ℚ_[2])) *
+              (((u⁻¹ : Z2barˣ) : Z2bar) : AlgebraicClosure ℚ_[2])
+            = (((u : Z2bar) * ((u⁻¹ : Z2barˣ) : Z2bar) : Z2bar) :
+              AlgebraicClosure ℚ_[2]) := by
+              rw [← huv]
+              rfl
+          _ = ((1 : Z2bar) : AlgebraicClosure ℚ_[2]) := by rw [h0]
+          _ = 1 := rfl
+      have hainv : (((u⁻¹ : Z2barˣ) : Z2bar) : AlgebraicClosure ℚ_[2]) =
+          ((algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2]))
+            ((m : ℚ_[2])⁻¹)) := by
+        rw [map_inv₀]
+        exact eq_inv_of_mul_eq_one_right hmul
+      -- the inverse has norm at most `1`, so `m` is a unit downstairs
+      have hinvmem : (algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2]))
+          ((m : ℚ_[2])⁻¹) ∈ Z2bar := by
+        rw [← hainv]
+        exact ((u⁻¹ : Z2barˣ) : Z2bar).2
+      have hninv : ‖(m : ℚ_[2])⁻¹‖ ≤ 1 :=
+        (algebraMap_mem_Z2bar_iff _).mp hinvmem
+      have hn : ‖(m : ℚ_[2])‖ ≤ 1 := norm_le_one_of_mem_integer m.2
+      have hval1 : Padic.mulValuation (m : ℚ_[2]) = 1 := by
+        have h1 : Padic.mulValuation (m : ℚ_[2]) ≤ 1 :=
+          (Padic.mulValuation_le_one_iff _).mpr hn
+        have h2 : (Padic.mulValuation (m : ℚ_[2]))⁻¹ ≤ 1 := by
+          rw [← map_inv₀]
+          exact (Padic.mulValuation_le_one_iff _).mpr hninv
+        have h3 : Padic.mulValuation (m : ℚ_[2]) ≠ 0 :=
+          (Padic.mulValuation).ne_zero_iff.mpr hm0
+        have h4 : 1 ≤ Padic.mulValuation (m : ℚ_[2]) :=
+          (inv_le_one₀ (zero_lt_iff.mpr h3)).mp h2
+        exact le_antisymm h1 h4
+      have hcan1 : ValuativeRel.valuation ℚ_[2] (m : ℚ_[2]) = 1 :=
+        (Valuation.isEquiv_iff_val_eq_one.mp
+          (ValuativeRel.isEquiv _ _)).mpr hval1
+      have hints0 : (ValuativeRel.valuation ℚ_[2]).Integers
+          (ValuativeRel.valuation ℚ_[2]).integer :=
+        Valuation.integer.integers _
+      exact hints0.isUnit_iff_valuation_eq_one.mpr hcan1
+  -- the induced residue-field hom and separability of the reduction
+  let φ := Ideal.Quotient.lift
+    (IsLocalRing.maximalIdeal (ValuativeRel.valuation ℚ_[2]).integer)
+    ((IsLocalRing.residue Z2bar).comp j₂)
+    (fun m hm => by
+      rw [RingHom.comp_apply]
+      exact Ideal.Quotient.eq_zero_iff_mem.mpr (hj₂m m hm))
+  have hfactor : (IsLocalRing.residue Z2bar).comp j₂ =
+      φ.comp (IsLocalRing.residue
+        (ValuativeRel.valuation ℚ_[2]).integer) := by
+    apply RingHom.ext
+    intro z
+    rfl
+  have hsepA : ((Q.map j₂).map (IsLocalRing.residue Z2bar)).Separable := by
+    rw [Polynomial.map_map, hfactor, ← Polynomial.map_map]
+    exact hQsep.map
+  -- the image of `θ` is an integral root, hence lies in `Z2bar`
+  have haevalx : Polynomial.aeval (ι θ) (Q.map (algebraMap
+      (ValuativeRel.valuation ℚ_[2]).integer ℚ_[2])) = 0 := by
+    rw [Polynomial.aeval_algHom_apply, hθQ, map_zero]
+  have hcomp2 : (Z2bar.subtype.comp j₂) =
+      ((algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2])).comp
+        (algebraMap (ValuativeRel.valuation ℚ_[2]).integer ℚ_[2])) := by
+    apply RingHom.ext
+    intro z
+    rfl
+  have hxA : (ι θ) ∈ Z2bar := by
+    have hints : (Valued.v : Valuation (AlgebraicClosure ℚ_[2]) NNReal).Integers
+        (Valued.v.valuationSubring : ValuationSubring
+          (AlgebraicClosure ℚ_[2])) :=
+      Valuation.valuationSubring.integers _
+    have hint : IsIntegral (Z2bar : ValuationSubring
+        (AlgebraicClosure ℚ_[2])) (ι θ) := by
+      refine ⟨Q.map j₂, hQm.map _, ?_⟩
+      rw [← Polynomial.eval_map, Polynomial.map_map]
+      rw [show ((algebraMap (Z2bar : ValuationSubring
+          (AlgebraicClosure ℚ_[2])) (AlgebraicClosure ℚ_[2])).comp j₂) =
+        ((algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2])).comp
+          (algebraMap (ValuativeRel.valuation ℚ_[2]).integer ℚ_[2]))
+        from hcomp2]
+      rw [← Polynomial.map_map, Polynomial.eval_map,
+        ← Polynomial.aeval_def]
+      exact haevalx
+    exact hints.mem_of_integral hint
+  -- the root equation over `Z2bar`
+  have hroot : (Q.map j₂).eval (⟨ι θ, hxA⟩ : Z2bar) = 0 := by
+    apply Subtype.ext
+    have h1 : ((((Q.map j₂).eval (⟨ι θ, hxA⟩ : Z2bar)) : Z2bar) :
+        AlgebraicClosure ℚ_[2]) =
+        ((Q.map j₂).map Z2bar.subtype).eval (ι θ) := by
+      conv_rhs => rw [Polynomial.eval_map]
+      exact (Polynomial.eval₂_at_apply (p := Q.map j₂)
+        Z2bar.subtype (⟨ι θ, hxA⟩ : Z2bar)).symm
+    show ((((Q.map j₂).eval (⟨ι θ, hxA⟩ : Z2bar)) : Z2bar) :
+        AlgebraicClosure ℚ_[2]) =
+      (((0 : Z2bar)) : AlgebraicClosure ℚ_[2])
+    rw [h1, Polynomial.map_map, hcomp2, ← Polynomial.map_map,
+      Polynomial.eval_map, ← Polynomial.aeval_def]
+    exact haevalx
+  -- coefficients come from the base field
+  have hcoeff : ∀ i, (((Q.map j₂).coeff i : Z2bar) :
+      AlgebraicClosure ℚ_[2]) ∈
+      Set.range (algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2])) := by
+    intro i
+    rw [Polynomial.coeff_map]
+    exact ⟨((Q.coeff i : (ValuativeRel.valuation ℚ_[2]).integer) :
+      ℚ_[2]), rfl⟩
+  -- the master root-fixing lemma fixes `ι θ`
+  have hθfix := (Z2bar : ValuationSubring
+    (AlgebraicClosure ℚ_[2])).inertia_fixes_root_of_separable_residue
+    (⟨(g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]] (AlgebraicClosure ℚ_[2])),
+      mem_decompositionSubgroup_Z2bar _⟩)
+    (mem_inertiaSubgroup_Z2bar hg)
+    (Q.map j₂) hcoeff hsepA hxA hroot
+  -- `θ` generates: the embedding is fixed pointwise
+  have hle : Algebra.adjoin ℚ_[2] ({θ} : Set L) ≤
+      AlgHom.equalizer
+        (((g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+          (AlgebraicClosure ℚ_[2]))).toAlgHom.comp ι) ι := by
+    rw [Algebra.adjoin_le_iff]
+    intro z hz
+    rw [Set.mem_singleton_iff] at hz
+    subst hz
+    exact hθfix
+  rw [hθtop] at hle
+  exact hle (Algebra.mem_top)
 
 open WeierstrassCurve in
 open scoped WeierstrassCurve.Affine in
