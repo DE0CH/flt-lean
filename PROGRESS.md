@@ -2496,8 +2496,12 @@ assumed. Axiom invariant: every declaration must use at most
   resultant/discriminant cluster for division polynomials.
 - 2026-07-17 (session 5 end, Wronskian lead for `separable_preΨ'`):
   empirically `Φₙ'ΨSqₙ − ΦₙΨSqₙ' = n ⬝ Wₙ` with `W₂ = 2·preΨ₄`
-  (verified exactly) and `W₃ = 3·Ψ₃·(monic deg-12)` (the deg-12 factor
-  is NOT `P₄P₂² − P₃³`; identify it — likely a preΨ'₅-normalization).
+  (verified exactly) and `W₃ = 3·Ψ₃·(preΨ'₅ − preΨ₄²)` where
+  `preΨ'₅ := preΨ₄Ψ₂Sq² − Ψ₃³` (verified exactly): the deg-12 factor
+  is the 5-division polynomial CORRECTED by `−preΨ₄²` — the pattern
+  suggests `Wₙ = n·(the univariate ψ₂ₙ/ψ₂-companion in its parity
+  normalization)`, i.e. the invariant-differential identity
+  `d(x∘[n])/dx = n·(ψ₂ₙ/ψₙ⁴)·(ψ₂-quotient)` cleared of denominators.
   This is the invariant-differential/ramification identity; from it,
   a common root of `preΨ'ₚ` and its derivative forces division-
   polynomial vanishing patterns that should contradict the Bézout
