@@ -123,6 +123,16 @@ noncomputable def integralClosureValuationSubring
       rw [← spectralNorm_inv] at h1
       exact .inr (isIntegral_of_spectralNorm_le_one h1)⟩
 
+/-- The valuation subring of `Kᵃˡᵍ` induced by the chosen embedding
+into `Kᵥᵃˡᵍ` (the pullback of the big integral closure along
+`AlgebraicClosure.map`). This is the `𝒪` consumed by the vendored
+Néron–Ogg–Shafarevich node. -/
+noncomputable def embeddedValuationSubring : ValuationSubring (AlgebraicClosure K) :=
+  (integralClosureValuationSubring v
+    (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))).comap
+    (AlgebraicClosure.map
+      (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
+
 section FiniteLevel
 
 variable (N : Type*) [Field N]
