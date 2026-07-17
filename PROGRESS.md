@@ -2582,6 +2582,22 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6, SEPARABILITY COMPLETE `8d1108e`): the
+  generic-fibre plan is fully EXECUTED — `exists_good_chord`,
+  `exists_large_fibre`, `torsion_finset_of_fibre`,
+  `separable_of_torsion_finset` all PROVEN; `separable_preΨ'` is
+  resolved in ALL characteristics. 18 → 17 nodes. TorsionCardSep.lean
+  is sorry-free. Key implementation notes: (a) the Wronskian-nonzero
+  case-split (char ≠ 2 via coeff_preΨ_ne_zero at 2p; char 2 via
+  ΨSqₚ′ = 0 and the p²-top-coefficient of Φₚ′); (b) nonvanishing of
+  ΨSqₚ/Ψ₂Sq from IsCoprime-with-zero degeneracy (unit vs natDegree);
+  (c) the abscissa-pinning x′ = c by mul_right_cancel₀ on the proven
+  x-formula; (d) R not 2-torsion via evalEvalRingHom applied to
+  C_Ψ₂Sq with the curve equation; (e) class-halving by
+  Finset.card_bij with the negation involution (pointsAt is
+  neg-closed). The ENTIRE torsion-card cone now rests on exactly TWO
+  upstream nodes: resultant_Φ_ΨSq (Flat.lean:233) and the
+  torsion-flat construction (Flat.lean:163).
 - 2026-07-17 (session 6 FINAL PLAN, the closed-field char-2 node has
   a COMPLETE ELEMENTARY ROUTE — char-free, no literature needed):
   prove #E[p](K̄) = p² by GENERIC-FIBRE COUNTING, then read
