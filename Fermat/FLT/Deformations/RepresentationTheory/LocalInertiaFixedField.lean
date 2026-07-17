@@ -241,6 +241,67 @@ theorem embeddedValuationSubring_comap_toSubring
     rw [← hy, ← hys]
     exact (eq_mul_inv_iff_mul_eq₀ hs0).mpr h2
 
+open scoped Pointwise in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Any element of `Γ K` in the image of `Γ Kᵥ` stabilizes the embedded
+valuation subring: through `lift_map` the action corresponds to the
+local action on the big integral closure, which is stable under
+`Kᵥ`-automorphisms (integrality is preserved both ways). -/
+theorem map_smul_embeddedValuationSubring
+    (σ : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+      ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v]
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) :
+    (Field.absoluteGaloisGroup.map
+      (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) σ) •
+      (embeddedValuationSubring v) = embeddedValuationSubring v := by
+  -- integrality is preserved by any `Kᵥ`-automorphism, in both directions
+  have hstab : ∀ (τ : AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+      ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v]
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+      (y : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)),
+      IsIntegral 𝒪ᵥ y → IsIntegral 𝒪ᵥ (τ y) := fun τ y hy =>
+    hy.map (τ.toAlgHom.restrictScalars 𝒪ᵥ)
+  ext x
+  rw [ValuationSubring.mem_pointwise_smul_iff_inv_smul_mem]
+  -- both memberships unfold to integrality of the `ι`-image
+  show AlgebraicClosure.map
+      (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+      ((Field.absoluteGaloisGroup.map
+        (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) σ)⁻¹ • x) ∈
+      integralClosure 𝒪ᵥ (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) ↔
+    AlgebraicClosure.map
+      (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) x ∈
+      integralClosure 𝒪ᵥ (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+  have hcomm : AlgebraicClosure.map
+      (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+      ((Field.absoluteGaloisGroup.map
+        (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) σ)⁻¹ • x) =
+      σ⁻¹ (AlgebraicClosure.map
+        (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) x) := by
+    rw [show (Field.absoluteGaloisGroup.map
+      (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) σ)⁻¹ =
+      Field.absoluteGaloisGroup.map
+        (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) σ⁻¹
+      from (map_inv _ σ).symm]
+    exact Field.absoluteGaloisGroup.lift_map _ σ⁻¹ x
+  rw [hcomm]
+  constructor
+  · intro h1
+    have h2 := hstab σ _ h1
+    rwa [show σ (σ⁻¹ (AlgebraicClosure.map
+        (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) x)) =
+        AlgebraicClosure.map
+          (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) x from by
+      rw [AlgEquiv.aut_inv]
+      exact σ.apply_symm_apply _] at h2
+  · intro h1
+    exact hstab σ⁻¹ _ h1
+
 section FiniteLevel
 
 variable (N : Type*) [Field N]
