@@ -2466,3 +2466,20 @@ assumed. Axiom invariant: every declaration must use at most
   Δ-formula route); (3) `exists_point_x_smul`, `separable_preΨ'`,
   `smul_surjective`; then the WeilPairing/Chebotarev/hardly-ramified
   branches.
+- 2026-07-17 (session 5 cont., C1/C2 PROVEN `cc90dfb`): both degenerate
+  tracking certificates are sorry-free via the complement sequence +
+  the crux lemmas `normEDS_crux₁/₂` (one-line consequences of the
+  sum-companion/T(·,2) families; multiples of ψₙ₋₁ resp. ψₙ₋₂) for
+  `Ψ₃(x) ≠ 0`, and via the anchor (`preΨ₄(x) = -ψ₂⁴`) + the d = 3 Ward
+  pattern + the 3-division closed forms for `Ψ₃(x) = 0`. THE ENTIRE
+  WASHINGTON THM 3.6 TOWER (zsmul_some_aux, the dictionary,
+  smul_some_eq_zero_iff, exists_smul_some_eq) now rests on EXACTLY ONE
+  sorry: `resultant_Φ_ΨSq` (via isCoprime_Φ_ΨSq → psi_adjacent_ne_zero
+  → the Ward pattern's rigidity). Analysis: the rigidity is genuinely
+  y-geometric (pure-T zero-propagation cannot reach index 1), so the
+  Φ/ΨSq-coprimality is load-bearing; options: (a) prove the resultant
+  formula by recursion-multiplicativity (Ayad-style), (b) restate the
+  node as field-level `IsCoprime` and prove by induction on division
+  polynomials, (c) universal-curve + Δ-irreducibility + Nullstellensatz.
+  Remaining cone of `n_torsion_card`: resultant_Φ_ΨSq,
+  separable_preΨ', exists_point_x_smul, smul_surjective.
