@@ -3320,3 +3320,37 @@ assumed. Axiom invariant: every declaration must use at most
   the pointwise unipotence back to `E(ℚ̄)` along the chosen embedding
   (the `absoluteGaloisGroup.map`/NOS-consumer pattern), handling the
   nonsplit case by the quadratic twist (unramified at inertia).
+- 2026-07-17 (session 8 continued, THE (C)-BLOCKS): the remaining
+  plumbing for the unipotence-leaf derivation, all PROVEN axiom-clean:
+  (B) `hasMultiplicativeReduction_adicCompletion` (Semistable.lean) —
+  reduction type transfers to the completion (coefficient/c₄/Δ chase
+  through the dictionary + `valuedAdicCompletion_eq_valuation'` +
+  `adicValuation_{eq,lt}_one_iff`, integrality by
+  `isIntegral_of_exists_lift`, minimality by unit-`c₄` Kraus–Laska;
+  the `algebraMap ℚ K'`-vs-lemma-spelling wall closed ONCE via
+  `Rat.subsingleton_ringHom` against a hand-bundled
+  `ofCompletion ∘ coeRingHom ∘ WithVal.equiv.symm` composite).
+  (C1) `localValuationSubring v` (AbsoluteGaloisGroup.lean) — the
+  integral closure of `𝒪ᵥ` in `Kᵥᵃˡᵍ` as a ValuationSubring
+  (spectral-norm dichotomy), stabilized by every `Kᵥ`-automorphism
+  (`mem_decompositionSubgroup_localValuationSubring`), with
+  `mem_inertiaSubgroup_localValuationSubring`: `localInertiaGroup v`
+  (mod-𝔪 spelling) lands in the RamificationGroup-style
+  `inertiaSubgroup` (residue-field spelling) — the exact interface of
+  the PROVEN `tate_inertia_unipotent`.
+  (C2) `natCast_residueField_localValuationSubring_ne_zero`
+  (Semistable.lean) — `p ≠ q` is nonzero in the residue field of the
+  local valuation subring (Chebotarev's unit-lemma pushed through the
+  integral-closure inclusion hom) — the `hchar` input of
+  `tate_inertia_unipotent`.
+  REMAINING for `torsion_unipotent_of_multiplicative_reduction`:
+  (C3) the equivariant point transport `E(ℚ̄)[p] ↪ E(Ω)[p]` along the
+  chosen embedding (`Field.absoluteGaloisGroup.lift_map` equivariance +
+  `Point.map`-functoriality + injectivity to pull the unipotence
+  equation back); (C4) the split/nonsplit case split via
+  `exists_quadraticTwist_hasSplitMultiplicativeReduction` (vendored
+  PROVEN) — the twist is by an inertia-trivial character, so
+  unipotence transfers; (C5) assembly: instantiate
+  `exists_tateEquivSepClosure` (leaf) at `k = adicCompletion ℚ v_q`
+  (gateway instances) and feed `tate_inertia_unipotent` at
+  `A = localValuationSubring`, `hσ` via (C1), `hchar` via (C2).
