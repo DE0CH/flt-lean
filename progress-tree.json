@@ -111,7 +111,8 @@
   "WeierstrassCurve.tate_inertia_trivial_of_nonsplit": "✅",
   "inertia_fixes_algHom_of_unramified_gen": "✅✅",
   "ValuationSubring.inertia_fixes_root_of_separable_residue": "✅✅",
-  "WeierstrassCurve.exists_tateCurveEquivSepClosure": "❌"
+  "WeierstrassCurve.exists_tateCurveEquivSepClosure": "❌",
+  "WeierstrassCurve.exists_tateTorsionQuotient": "✅✅"
  },
  "children": {
   "fermat_last_theorem": [
@@ -544,10 +545,12 @@
    "ValuationSubring.inertia_fixes_root_of_separable_residue"
   ],
   "ValuationSubring.inertia_fixes_root_of_separable_residue": [],
-  "WeierstrassCurve.exists_tateCurveEquivSepClosure": []
+  "WeierstrassCurve.exists_tateCurveEquivSepClosure": [],
+  "WeierstrassCurve.exists_tateTorsionQuotient": []
  },
  "roots": [
   "fermat_last_theorem",
-  "GaloisRepresentation.IsHardlyRamified.mod_three"
+  "GaloisRepresentation.IsHardlyRamified.mod_three",
+  "WeierstrassCurve.exists_tateTorsionQuotient"
  ]
 }

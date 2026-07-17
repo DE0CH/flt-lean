@@ -782,5 +782,12 @@
   "wip": false,
   "fullname": "WeierstrassCurve.exists_tateCurveEquivSepClosure",
   "text": "the choice-free core of Tate's uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ` Galois-equivariantly ON THE NOSE, by the explicit series `X(u,q)`, `Y(u,q)` (whose Weierstrass equation is proven in `TateCurveConstruction`); glued over the finite subextensions of `Ω`."
+ },
+ {
+  "name": "WeierstrassCurve.exists_tateTorsionQuotient",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
+  "wip": false,
+  "fullname": "WeierstrassCurve.exists_tateTorsionQuotient",
+  "text": "the Tate valuation-exponent quotient on `p`-torsion, over any uniformization witness: a Galois-invariant surjection `E[p] → ℤ/p` by the exponent of the Tate parameter in the `p`-th power of any representative — the quotient of `0 → μ_p → E[p] → ℤ/p → 0`, carrying the trivial action in the split case. Step one of the tame-at-2 derivation."
  }
 ]

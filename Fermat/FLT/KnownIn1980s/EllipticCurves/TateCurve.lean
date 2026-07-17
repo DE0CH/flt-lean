@@ -589,6 +589,183 @@ theorem WeierstrassCurve.map_zpow_qUnitSepClosure_eq (σ : Ω ≃ₐ[k] Ω)
       E.qUnitSepClosure Ω ^ a := by
   rw [map_zpow, E.map_qUnitSepClosure_eq]
 
+omit [E.IsMinimal 𝒪[k]] [IsSepClosed Ω] [Algebra.IsSeparable k Ω]
+  [DecidableEq Ω] in
+/-- **Integer powers of the Tate parameter are distinct** (PROVEN): the
+Tate parameter has valuation strictly less than `1` in the base field,
+so `a ↦ q^a` is injective — the class group `Ωˣ/q^ℤ` is a genuine
+`ℤ`-quotient. -/
+theorem WeierstrassCurve.qUnitSepClosure_zpow_injective :
+    Function.Injective (fun a : ℤ => E.qUnitSepClosure Ω ^ a) := by
+  intro a b hab
+  -- descend to `k` along the injective algebra map
+  have h1 : E.qUnit ^ a = E.qUnit ^ b := by
+    have h2 : Units.map (algebraMap k Ω).toMonoidHom (E.qUnit ^ a) =
+        Units.map (algebraMap k Ω).toMonoidHom (E.qUnit ^ b) := by
+      rw [map_zpow, map_zpow]
+      exact hab
+    apply Units.ext
+    have h3 := congrArg Units.val h2
+    exact (algebraMap k Ω).injective h3
+  -- valuation freeness in `k`
+  have h4 := congrArg (fun w : kˣ => valuation k ((w : k))) h1
+  rw [Units.val_zpow_eq_zpow_val, Units.val_zpow_eq_zpow_val,
+    map_zpow₀, map_zpow₀] at h4
+  exact zpow_right_injective₀
+    (zero_lt_iff.mpr ((valuation k).ne_zero_iff.mpr E.q_ne_zero))
+    (ne_of_lt E.valuation_q_lt_one) h4
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+omit [E.IsMinimal 𝒪[k]] [Algebra.IsSeparable k Ω] in
+/-- **The Tate valuation-exponent quotient on `p`-torsion** (PROVEN
+over any uniformization witness): the `p`-torsion of a Tate-uniformized
+curve surjects `Galois-invariantly` onto `ℤ/p` by the exponent of the
+Tate parameter in the `p`-th power of any representative — the
+quotient of the filtration `0 → μ_p → E[p] → ℤ/p → 0`. Since every
+`k`-automorphism fixes the Tate parameter, the quotient carries the
+TRIVIAL `Gal(Ω/k)`-action; this is the split-case content of the
+tame-quotient condition at `2`. Surjectivity requires a `p`-th root of
+the Tate parameter, which exists in the separably closed `Ω` when
+`p ≠ 0` there. -/
+theorem WeierstrassCurve.exists_tateTorsionQuotient
+    (e : Additive (Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω)) ≃+ ((E⁄Ω)).Point)
+    (he : ∀ (σ : Ω ≃ₐ[k] Ω) (u : Ωˣ),
+      WeierstrassCurve.Affine.Point.map (W' := E) σ.toAlgHom (e (Additive.ofMul ↑u)) =
+        e (Additive.ofMul ↑(Units.map σ.toAlgHom.toRingHom.toMonoidHom u)))
+    {p : ℕ} (hp : p ≠ 0) (hpΩ : ((p : ℕ) : Ω) ≠ 0) :
+    ∃ π : AddSubgroup.torsionBy ((E⁄Ω)).Point ((p : ℕ) : ℤ) →+ ZMod p,
+      Function.Surjective π ∧
+      ∀ (σ : Ω ≃ₐ[k] Ω)
+        (P Q : AddSubgroup.torsionBy ((E⁄Ω)).Point ((p : ℕ) : ℤ)),
+        (Q : ((E⁄Ω)).Point) =
+          WeierstrassCurve.Affine.Point.map (W' := E) σ.toAlgHom
+            (P : ((E⁄Ω)).Point) →
+        π Q = π P := by
+  classical
+  -- torsion transfers to the quotient side
+  have htors : ∀ P : AddSubgroup.torsionBy ((E⁄Ω)).Point ((p : ℕ) : ℤ),
+      ((p : ℕ) : ℤ) • (e.symm (P : ((E⁄Ω)).Point)) = 0 := fun P => by
+    rw [← map_zsmul e.symm,
+      (show ((p : ℕ) : ℤ) • (P : ((E⁄Ω)).Point) = 0 from P.2), map_zero]
+  -- choose a representative and exponent for each torsion point
+  choose u a hu ha using fun P : AddSubgroup.torsionBy ((E⁄Ω)).Point
+      ((p : ℕ) : ℤ) =>
+    exists_rep_pow_eq_zpow_of_torsion (E.qUnitSepClosure Ω)
+      (e.symm (P : ((E⁄Ω)).Point)) (htors P)
+  -- the exponent is independent of the representative, mod `p`
+  have hindep : ∀ (P : AddSubgroup.torsionBy ((E⁄Ω)).Point ((p : ℕ) : ℤ))
+      (v : Ωˣ) (b : ℤ),
+      Additive.ofMul ((v : Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω))) =
+        e.symm (P : ((E⁄Ω)).Point) →
+      v ^ p = E.qUnitSepClosure Ω ^ b →
+      ((b : ZMod p)) = ((a P : ZMod p)) := by
+    intro P v b hv hvb
+    have h1 : ((u P : Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω))) =
+        ((v : Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω))) :=
+      Additive.ofMul.injective ((hu P).trans hv.symm)
+    obtain ⟨m, hm⟩ := Subgroup.mem_zpowers_iff.mp (QuotientGroup.eq.mp h1)
+    -- `v = u P * q^m`
+    have h2 : v = u P * E.qUnitSepClosure Ω ^ m := by
+      rw [hm]
+      group
+    have h3 : E.qUnitSepClosure Ω ^ b =
+        E.qUnitSepClosure Ω ^ (a P + m * (p : ℤ)) := by
+      rw [← hvb, h2, mul_pow, ha P, ← zpow_natCast
+        (E.qUnitSepClosure Ω ^ m) p, ← zpow_mul, ← zpow_add]
+    have h4 : b = a P + m * (p : ℤ) :=
+      E.qUnitSepClosure_zpow_injective Ω h3
+    rw [h4]
+    push_cast
+    simp
+  -- the exponent function and its additivity
+  have hadd : ∀ P Q : AddSubgroup.torsionBy ((E⁄Ω)).Point ((p : ℕ) : ℤ),
+      ((a (P + Q) : ZMod p)) = ((a P : ZMod p)) + ((a Q : ZMod p)) := by
+    intro P Q
+    have hclass : Additive.ofMul (((u P * u Q : Ωˣ) :
+        Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω))) =
+        e.symm ((P + Q : AddSubgroup.torsionBy ((E⁄Ω)).Point
+          ((p : ℕ) : ℤ)) : ((E⁄Ω)).Point) := by
+      rw [show ((P + Q : AddSubgroup.torsionBy ((E⁄Ω)).Point
+          ((p : ℕ) : ℤ)) : ((E⁄Ω)).Point) =
+          (P : ((E⁄Ω)).Point) + (Q : ((E⁄Ω)).Point) from rfl,
+        map_add e.symm, ← hu P, ← hu Q, QuotientGroup.mk_mul, ofMul_mul]
+    have hpow : (u P * u Q) ^ p =
+        E.qUnitSepClosure Ω ^ (a P + a Q) := by
+      rw [mul_pow, ha P, ha Q, ← zpow_add]
+    have := hindep (P + Q) (u P * u Q) (a P + a Q) hclass hpow
+    rw [← this]
+    push_cast
+    ring
+  let π : AddSubgroup.torsionBy ((E⁄Ω)).Point ((p : ℕ) : ℤ) →+ ZMod p :=
+    AddMonoidHom.mk' (fun P => ((a P : ZMod p))) hadd
+  refine ⟨π, ?_, ?_⟩
+  · -- surjectivity: a `p`-th root of the Tate parameter has exponent `1`
+    have hq0 : (algebraMap k Ω) E.q ≠ 0 := by
+      simp only [map_ne_zero]
+      exact E.q_ne_zero
+    obtain ⟨x, hx⟩ := IsSepClosed.exists_root
+      (Polynomial.X ^ p - Polynomial.C ((algebraMap k Ω) E.q))
+      (by
+        rw [Polynomial.degree_X_pow_sub_C (Nat.pos_of_ne_zero hp)]
+        exact_mod_cast Nat.pos_of_ne_zero hp |>.ne')
+      (Polynomial.separable_X_pow_sub_C _ hpΩ hq0)
+    have hxpow : x ^ p = (algebraMap k Ω) E.q := by
+      have h1 := hx
+      rw [Polynomial.IsRoot, Polynomial.eval_sub, Polynomial.eval_pow,
+        Polynomial.eval_X, Polynomial.eval_C, sub_eq_zero] at h1
+      exact h1
+    have hx0 : x ≠ 0 := by
+      intro h0
+      rw [h0, zero_pow hp] at hxpow
+      exact hq0 hxpow.symm
+    set xu : Ωˣ := Units.mk0 x hx0 with hxu
+    have hxupow : xu ^ p = E.qUnitSepClosure Ω ^ (1 : ℤ) := by
+      apply Units.ext
+      rw [Units.val_pow_eq_pow_val, Units.val_zpow_eq_zpow_val, zpow_one]
+      exact hxpow
+    -- the corresponding torsion point
+    have htor : ((p : ℕ) : ℤ) • (e (Additive.ofMul ((xu :
+        Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω))))) = 0 := by
+      rw [← map_zsmul e, ← ofMul_zpow, ← QuotientGroup.mk_zpow,
+        zpow_natCast, hxupow]
+      rw [show ((E.qUnitSepClosure Ω ^ (1 : ℤ) :
+          Ωˣ) : Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω)) = 1 from
+        (QuotientGroup.eq_one_iff _).mpr (Subgroup.zpow_mem _
+          (Subgroup.mem_zpowers _) _), ofMul_one, map_zero]
+    set P₁ : AddSubgroup.torsionBy ((E⁄Ω)).Point ((p : ℕ) : ℤ) :=
+      ⟨e (Additive.ofMul ((xu : Ωˣ ⧸ Subgroup.zpowers
+        (E.qUnitSepClosure Ω)))), htor⟩ with hP₁
+    have hπ1 : π P₁ = 1 := by
+      have hclass : Additive.ofMul ((xu : Ωˣ ⧸ Subgroup.zpowers
+          (E.qUnitSepClosure Ω))) = e.symm ((P₁ :
+          ((E⁄Ω)).Point)) := by
+        rw [hP₁]
+        exact (e.symm_apply_apply _).symm
+      have := hindep P₁ xu 1 hclass hxupow
+      rw [show π P₁ = ((a P₁ : ZMod p)) from rfl, ← this]
+      norm_num
+    -- `1` generates `ZMod p`
+    haveI : NeZero p := ⟨hp⟩
+    intro c
+    refine ⟨c.val • P₁, ?_⟩
+    rw [map_nsmul, hπ1, nsmul_eq_mul, mul_one, ZMod.natCast_val,
+      ZMod.cast_id]
+  · -- Galois invariance: `σ`-images have the same exponent
+    intro σ P Q hQ
+    have hclass : Additive.ofMul
+        ((Units.map σ.toAlgHom.toRingHom.toMonoidHom (u P) :
+          Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω))) =
+        e.symm ((Q : ((E⁄Ω)).Point)) := by
+      apply e.injective
+      rw [e.apply_symm_apply, ← he, hQ]
+      congr 1
+      rw [hu P, e.apply_symm_apply]
+    have hpow : (Units.map σ.toAlgHom.toRingHom.toMonoidHom (u P)) ^ p =
+        E.qUnitSepClosure Ω ^ (a P) := by
+      rw [← map_pow, ha P, map_zpow_qUnitSepClosure_eq]
+    exact (hindep Q _ _ hclass hpow).symm
+
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
 omit [E.IsMinimal 𝒪[k]] [IsSepClosed Ω] [Algebra.IsSeparable k Ω] in

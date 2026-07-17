@@ -753,6 +753,12 @@ entries file). To add/remove/annotate a node, edit
       `2`). - NB the lift structure gained an `IsModuleTopology ℤ_[ℓ] O`
       field (statement strengthening of B6a's conclusion, true for
       integers of finite extensions of ℚ_ℓ; required by B6b)
+- ✅✅· `WeierstrassCurve.exists_tateTorsionQuotient` — the Tate valuation-exponent quotient on `p`-torsion, over any
+  uniformization witness: a Galois-invariant surjection `E[p] → ℤ/p` by
+  the exponent of the Tate parameter in the `p`-th power of any
+  representative — the quotient of `0 → μ_p → E[p] → ℤ/p → 0`, carrying
+  the trivial action in the split case. Step one of the tame-at-2
+  derivation.
 
 ## Canonical frontier (2026-07-16, session 4 close — audit-verified)
 
