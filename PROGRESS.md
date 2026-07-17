@@ -2047,3 +2047,26 @@ assumed. Axiom invariant: every declaration must use at most
   trouble); `(0 : Point) = Point.zero` needs an explicit `show`/`rw`
   before `nomatch`; the `∃`-form fibre nodes avoid needing the `ω`
   division polynomial entirely (not yet defined in mathlib).
+- 2026-07-17 (session 5, division-polynomial attack map): the three
+  remaining point-level nodes (`smul_some_eq_zero_iff`,
+  `exists_smul_some_eq`, `exists_point_x_smul`) and `separable_preΨ'`
+  are Washington *Elliptic Curves* Thm 3.6 territory. Mapped attack
+  for the dictionary + formula nodes: simultaneous strong induction on
+  `n` proving `x([n]P)·ψ_n²(x,y) = φ_n(x,y)` AND the `y`-coordinate
+  tracked VALUE-wise (define `ωval n P := y(n•P)` on points, avoiding
+  the `ω` polynomial mathlib lacks), with the inductive steps
+  `[n+1]P = [n]P + P` and `[2n]P = 2·[n]P` computed by mathlib's
+  `Affine.slope`/`addX`/`some_add_some` formula API and the EDS
+  recurrences `preΨ'_even/odd` (`Mathlib.NumberTheory.
+  EllipticDivisibilitySequence` + `DivisionPolynomial.Basic`
+  recursion lemmas); each case is a curve-relation polynomial
+  identity dischargeable by `linear_combination (norm := ring1)`
+  against `equation_iff` after denominator clearing (the nonvanishing
+  `ψ_n(x,y) ≠ 0` is exactly the dictionary's other direction, so the
+  induction must prove the dictionary and the formula TOGETHER).
+  `separable_preΨ'` afterwards via the disc-companion resultant
+  identity (same family as `resultant_Φ_ΨSq` — Ayad, Manuscripta
+  Math. 76). NOTE the annas-mcp server is not connected in this
+  session; Washington/Silverman PDFs are not in `Books/` yet —
+  download them when the MCP is available (the argument structure
+  above is standard and self-contained to formalize regardless).
