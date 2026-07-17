@@ -592,3 +592,120 @@ theorem WeierstrassCurve.tate_inertia_unipotent
     rw [QuotientGroup.mk_mul, ofMul_mul, h₂]
   rw [hσσP, hσP, hPu, h₁, h₂, map_add, map_add]
   abel
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+omit [E.IsMinimal 𝒪[k]] [IsSepClosed Ω] [Algebra.IsSeparable k Ω] in
+/-- **Local triviality of inertia on Tate torsion when the parameter is
+a `p`-th power up to units** (steps (a)+(b′)+(d) over any witness of
+the uniformization): if `q_E · w⁻ᵖ` is a unit of the valuation subring
+`A` (with nonzero residue) for some `w ∈ kˣ`, then every inertia
+element FIXES the `p`-torsion pointwise. The torsion class is
+represented by `u` with `uᵖ = q_Eᵃ`; then `x := u·w⁻ᵃ` satisfies
+`xᵖ = (q_E·w⁻ᵖ)ᵃ`, a `σ`-fixed unit constant of `A`, so inertia fixes
+`x` (`inertia_fixes_of_pow_eq`), hence `u`, hence the point. -/
+theorem WeierstrassCurve.tate_inertia_trivial
+    (e : Additive (Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω)) ≃+ ((E⁄Ω)).Point)
+    (he : ∀ (σ : Ω ≃ₐ[k] Ω) (u : Ωˣ),
+      WeierstrassCurve.Affine.Point.map (W' := E) σ.toAlgHom (e (Additive.ofMul ↑u)) =
+        e (Additive.ofMul ↑(Units.map σ.toAlgHom.toRingHom.toMonoidHom u)))
+    (A : ValuationSubring Ω) {p : ℕ} (hp : p ≠ 0)
+    (hchar : ((p : ℕ) : IsLocalRing.ResidueField A) ≠ 0)
+    (σ : A.decompositionSubgroup k) (hσ : σ ∈ A.inertiaSubgroup k)
+    (w : kˣ)
+    (hcA : algebraMap k Ω (((E.qUnit * w⁻¹ ^ p : kˣ) : k)) ∈ A)
+    (hcres : IsLocalRing.residue A
+      (⟨algebraMap k Ω (((E.qUnit * w⁻¹ ^ p : kˣ) : k)), hcA⟩ : A) ≠ 0)
+    (P : ((E⁄Ω)).Point)
+    (hP : P ∈ AddSubgroup.torsionBy ((E⁄Ω)).Point ((p : ℕ) : ℤ)) :
+    WeierstrassCurve.Affine.Point.map (W' := E)
+      ((σ : Ω ≃ₐ[k] Ω)).toAlgHom P = P := by
+  classical
+  set t : Additive (Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω)) :=
+    e.symm P with ht
+  have hPt : e t = P := e.apply_symm_apply P
+  have httor : ((p : ℕ) : ℤ) • t = 0 := by
+    have h1 : ((p : ℕ) : ℤ) • P = 0 := hP
+    rw [ht, ← map_zsmul e.symm, h1, map_zero]
+  obtain ⟨u, a, hut, hupow⟩ :=
+    exists_rep_pow_eq_zpow_of_torsion (E.qUnitSepClosure Ω) t httor
+  -- the recentred representative `x := u · wΩ⁻ᵃ` and its constant power
+  set wΩ : Ωˣ := Units.map (algebraMap k Ω).toMonoidHom w with hwΩ
+  have h1 : (u * wΩ⁻¹ ^ a) ^ (p : ℤ) =
+      (Units.map (algebraMap k Ω).toMonoidHom (E.qUnit * w⁻¹ ^ p)) ^ a := by
+    calc (u * wΩ⁻¹ ^ a) ^ (p : ℤ)
+        = u ^ (p : ℤ) * (wΩ⁻¹ ^ a) ^ (p : ℤ) := mul_zpow _ _ _
+      _ = u ^ p * (wΩ⁻¹ ^ a) ^ (p : ℤ) := by rw [zpow_natCast]
+      _ = E.qUnitSepClosure Ω ^ a * (wΩ⁻¹ ^ a) ^ (p : ℤ) := by rw [hupow]
+      _ = E.qUnitSepClosure Ω ^ a * (wΩ⁻¹ ^ (p : ℤ)) ^ a := by
+          rw [← zpow_mul, ← zpow_mul, mul_comm a ((p : ℤ))]
+      _ = E.qUnitSepClosure Ω ^ a * (wΩ⁻¹ ^ p) ^ a := by rw [zpow_natCast]
+      _ = (E.qUnitSepClosure Ω * wΩ⁻¹ ^ p) ^ a := (mul_zpow _ _ _).symm
+      _ = (Units.map (algebraMap k Ω).toMonoidHom (E.qUnit * w⁻¹ ^ p)) ^ a := by
+          congr 1
+          rw [map_mul, map_pow, map_inv, ← hwΩ]
+          rfl
+  have hxpow : ((u * wΩ⁻¹ ^ a : Ωˣ) : Ω) ^ p =
+      (algebraMap k Ω (((E.qUnit * w⁻¹ ^ p : kˣ) : k))) ^ a := by
+    calc ((u * wΩ⁻¹ ^ a : Ωˣ) : Ω) ^ p
+        = (((u * wΩ⁻¹ ^ a) ^ p : Ωˣ) : Ω) :=
+          (Units.val_pow_eq_pow_val _ _).symm
+      _ = (((u * wΩ⁻¹ ^ a) ^ (p : ℤ) : Ωˣ) : Ω) := by rw [zpow_natCast]
+      _ = (((Units.map (algebraMap k Ω).toMonoidHom
+            (E.qUnit * w⁻¹ ^ p)) ^ a : Ωˣ) : Ω) := by rw [h1]
+      _ = ((Units.map (algebraMap k Ω).toMonoidHom
+            (E.qUnit * w⁻¹ ^ p) : Ωˣ) : Ω) ^ a :=
+          Units.val_zpow_eq_zpow_val _ _
+      _ = (algebraMap k Ω (((E.qUnit * w⁻¹ ^ p : kˣ) : k))) ^ a := rfl
+  -- the constant power is `σ`-fixed (it comes from the base field)
+  have hσc : (σ : Ω ≃ₐ[k] Ω)
+      ((algebraMap k Ω (((E.qUnit * w⁻¹ ^ p : kˣ) : k))) ^ a) =
+      (algebraMap k Ω (((E.qUnit * w⁻¹ ^ p : kˣ) : k))) ^ a := by
+    rw [map_zpow₀]
+    congr 1
+    exact (σ : Ω ≃ₐ[k] Ω).commutes _
+  -- the constant is a unit of `A`, so its integer powers stay in `A`
+  have hcunit : IsUnit (⟨algebraMap k Ω (((E.qUnit * w⁻¹ ^ p : kˣ) : k)),
+      hcA⟩ : A) := by
+    by_contra hnu
+    exact hcres (Ideal.Quotient.eq_zero_iff_mem.mpr
+      ((IsLocalRing.mem_maximalIdeal _).mpr hnu))
+  have hcoe : (((hcunit.unit ^ a : Aˣ) : A) : Ω) =
+      (algebraMap k Ω (((E.qUnit * w⁻¹ ^ p : kˣ) : k))) ^ a := by
+    calc (((hcunit.unit ^ a : Aˣ) : A) : Ω)
+        = ((Units.map A.subtype.toMonoidHom (hcunit.unit ^ a) : Ωˣ) : Ω) := rfl
+      _ = (((Units.map A.subtype.toMonoidHom hcunit.unit) ^ a : Ωˣ) : Ω) := by
+          rw [map_zpow]
+      _ = ((Units.map A.subtype.toMonoidHom hcunit.unit : Ωˣ) : Ω) ^ a :=
+          Units.val_zpow_eq_zpow_val _ _
+      _ = (((hcunit.unit : A) : Ω)) ^ a := rfl
+      _ = (algebraMap k Ω (((E.qUnit * w⁻¹ ^ p : kˣ) : k))) ^ a := by
+          rw [hcunit.unit_spec]
+  have hcApow : (algebraMap k Ω (((E.qUnit * w⁻¹ ^ p : kˣ) : k))) ^ a ∈ A :=
+    hcoe ▸ SetLike.coe_mem _
+  have hcrespow : IsLocalRing.residue A
+      (⟨(algebraMap k Ω (((E.qUnit * w⁻¹ ^ p : kˣ) : k))) ^ a, hcApow⟩ : A) ≠
+      0 := by
+    rw [show (⟨(algebraMap k Ω (((E.qUnit * w⁻¹ ^ p : kˣ) : k))) ^ a,
+        hcApow⟩ : A) = ((hcunit.unit ^ a : Aˣ) : A) from Subtype.ext hcoe.symm]
+    exact ((hcunit.unit ^ a).isUnit.map (IsLocalRing.residue A)).ne_zero
+  -- inertia fixes the recentred representative (step (b′))
+  have hfix : (σ : Ω ≃ₐ[k] Ω) ((u * wΩ⁻¹ ^ a : Ωˣ) : Ω) =
+      ((u * wΩ⁻¹ ^ a : Ωˣ) : Ω) :=
+    A.inertia_fixes_of_pow_eq hp hchar σ hσ hcApow hcrespow hσc hxpow
+  -- `σ` fixes `wΩ` (it comes from the base field), hence fixes `u`
+  have hσw : Units.map ((σ : Ω ≃ₐ[k] Ω)).toAlgHom.toRingHom.toMonoidHom wΩ =
+      wΩ := by
+    apply Units.ext
+    show (σ : Ω ≃ₐ[k] Ω) ((wΩ : Ωˣ) : Ω) = ((wΩ : Ωˣ) : Ω)
+    exact (σ : Ω ≃ₐ[k] Ω).commutes w
+  have h5 : (u * wΩ⁻¹ ^ a) * wΩ ^ a = u := by
+    rw [inv_zpow, inv_mul_cancel_right]
+  have hσu : Units.map ((σ : Ω ≃ₐ[k] Ω)).toAlgHom.toRingHom.toMonoidHom u =
+      u := by
+    rw [← h5, map_mul, map_zpow, hσw]
+    congr 1
+    apply Units.ext
+    exact hfix
+  -- conclude: the point itself is fixed
+  rw [← hPt, ← hut, he (σ : Ω ≃ₐ[k] Ω) u, hσu]
