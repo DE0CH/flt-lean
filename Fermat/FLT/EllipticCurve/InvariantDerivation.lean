@@ -61,8 +61,7 @@ set_option backward.isDefEq.respectTransparency false in
     Derivation.mapCoeffs_monomial]
   ext i
   simp [PolynomialModule.equivPolynomialSelf,
-    PolynomialModule.equivPolynomial, Polynomial.coeff_monomial,
-    PolynomialModule.single_apply, Polynomial.coeff_C]
+    PolynomialModule.coeff_single, Polynomial.coeff_C]
 
 set_option backward.isDefEq.respectTransparency false in
 @[simp] lemma dX_Y :
@@ -70,9 +69,7 @@ set_option backward.isDefEq.respectTransparency false in
   rw [← Polynomial.monomial_one_one_eq_X, dX_apply,
     Derivation.mapCoeffs_monomial]
   ext i
-  simp [PolynomialModule.equivPolynomialSelf,
-    PolynomialModule.equivPolynomial, PolynomialModule.single_apply,
-    Polynomial.coeff_monomial]
+  simp [PolynomialModule.equivPolynomialSelf]
 
 set_option backward.isDefEq.respectTransparency false in
 @[simp] lemma dY_C (p : (MvPolynomial (Fin 5) ℤ)[X]) :
