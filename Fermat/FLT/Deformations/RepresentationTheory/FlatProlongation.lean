@@ -141,27 +141,54 @@ noncomputable def algHomEquivOfFinite (B : Type*) [CommRing B] [Algebra K B]
     apply Subtype.ext
     rfl
 
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Transport of `GaloisRep.HasFlatProlongationAt` along an equivariant
+additive equivalence of the underlying spaces. The flat-prolongation
+package mentions the representation space only through its additive
+group and its `Γ Kᵥ`-action, so any additive identification commuting
+with the two (global) Galois actions carries the package across. -/
+theorem GaloisRep.HasFlatProlongationAt.of_addEquiv
+    {w : IsDedekindDomain.HeightOneSpectrum (𝓞 K)}
+    {A' : Type*} [CommRing A'] [TopologicalSpace A']
+    {M' : Type*} [AddCommGroup M'] [Module A' M']
+    {ρ : GaloisRep K A M} {ρ' : GaloisRep K A' M'}
+    (h : ρ.HasFlatProlongationAt w)
+    (e : M ≃+ M')
+    (he : ∀ (σ : Γ K) (x : M), e (ρ σ x) = ρ' σ (e x)) :
+    ρ'.HasFlatProlongationAt w := by
+  obtain ⟨G, hCR, hHopf, hFlat, hFin, hEt, f, hbij⟩ := h
+  letI := hCR
+  letI := hHopf
+  letI := hFlat
+  letI := hFin
+  refine ⟨G, inferInstance, inferInstance, inferInstance, inferInstance, hEt,
+    { toFun := fun x => e (f x)
+      map_smul' := fun σ x => by
+        show e (f (σ • x)) = (ρ'.toLocal w) σ (e (f x))
+        rw [map_smul f σ x]
+        show e ((ρ.toLocal w) σ (f x)) = (ρ'.toLocal w) σ (e (f x))
+        exact he _ _
+      map_zero' := by rw [map_zero, map_zero]
+      map_add' := fun a b => by rw [map_add, map_add] },
+    e.bijective.comp hbij⟩
+
 set_option warn.sorry false in
-/-- (Sorry node — **the shared flat-prolongation transport**.) A mod-`p`
-Galois representation of `ℚ` whose space is presented, equivariantly,
+/-- (Sorry node — **the shared flat-prolongation transport, core**.)
+A Galois representation of `ℚ` whose space is presented, equivariantly,
 as the `ℚ̄`-points of the generic fibre of a finite flat Hopf algebra
-over the localization `ℤ_(q)` is flat at `q` in the
-`GaloisRep.IsFlatAt` sense. This is the local-global/base-change
-transport common to BOTH flat glue nodes: pass to
-`G := 𝒪ᵥ ⊗[ℤ_(q)] H` (Hopf/flat/finite by base change — instance
-availability scratch-verified), identify the generic fibre through
-`Algebra.TensorProduct.cancelBaseChange` and the `Kᵥ`-points with the
-`ℚ̄`-points through the tensor-hom adjunction and the factorization of
-finite `ℚ`-algebra maps through `ι(ℚ̄) ⊆ Kᵥᵃˡᵍ`, transporting the
-convolution structures (the vendored bare-hom `Monoid` instance vs
-mathlib's `WithConv`) and the Galois equivariance through `lift_map`;
-the open-ideal quantifier of `IsFlatAt` is handled by the two ideals
-of the field `A` (`⊤` via `hasFlatProlongationAt_of_subsingleton`
-below, `⊥` via the package itself). See PROGRESS.md (flat-transport
-design) for the verified ingredient list. -/
-theorem GaloisRep.isFlatAt_of_dvr_package
+over the localization `ℤ_(q)` has a flat prolongation at `q`. Proof
+design (all ingredients scratch-verified; see PROGRESS.md): take
+`G := 𝒪ᵥ ⊗[ℤ_(q)] H` (Hopf/flat/finite by base change), identify the
+generic fibre through `Algebra.TensorProduct.cancelBaseChange`, and
+identify the `Kᵥᵃˡᵍ`-points with the `ℚ̄`-points through the chain
+`(Kᵥ ⊗[𝒪ᵥ] G →ₐ[Kᵥ] Kᵥᵃˡᵍ) ≃ (Kᵥ ⊗[ℤ_(q)] H →ₐ[Kᵥ] Kᵥᵃˡᵍ)
+≃ (H →ₐ[ℤ_(q)] Kᵥᵃˡᵍ) ≃ (ℚ ⊗[ℤ_(q)] H →ₐ[ℚ] Kᵥᵃˡᵍ) ≃ (ℚ ⊗[ℤ_(q)] H
+→ₐ[ℚ] ℚ̄)` (`AlgHom.liftEquiv` twice, then `algHomEquivOfFinite`),
+transporting the convolution structures and the Galois equivariance. -/
+theorem GaloisRep.hasFlatProlongationAt_of_dvr_package
     {A : Type} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
-    [IsLocalRing A]
     {M : Type} [AddCommGroup M] [Module A M] [Module.Free A M] [Module.Finite A M]
     (ρ : GaloisRep ℚ A M)
     {q : ℕ} (hq : q.Prime)
@@ -185,7 +212,7 @@ theorem GaloisRep.isFlatAt_of_dvr_package
         hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H) →ₐ[ℚ] AlgebraicClosure ℚ),
       f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
         ρ σ (f (Additive.ofMul (WithConv.toConv φ)))) :
-    ρ.IsFlatAt hq.toHeightOneSpectrumRingOfIntegersRat :=
+    ρ.HasFlatProlongationAt hq.toHeightOneSpectrumRingOfIntegersRat :=
   sorry
 
 set_option backward.isDefEq.respectTransparency false in
@@ -232,3 +259,70 @@ theorem GaloisRep.hasFlatProlongationAt_of_subsingleton
   · -- surjectivity
     intro y
     exact ⟨Additive.ofMul hne.some, Subsingleton.elim _ _⟩
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The shared flat-prolongation transport** (DERIVED from
+`hasFlatProlongationAt_of_dvr_package` + the two-ideal case split): a
+mod-`p` Galois representation of `ℚ` over a FIELD `A` whose space is
+presented, equivariantly, as the `ℚ̄`-points of the generic fibre of a
+finite flat Hopf algebra over `ℤ_(q)` is flat at `q` in the
+`GaloisRep.IsFlatAt` sense. The open-ideal quantifier runs over the
+two ideals of `A`: at `⊤` the base-changed space is a module over the
+zero ring, hence a singleton, and `hasFlatProlongationAt_of_subsingleton`
+applies; at `⊥` the base change along `A ⧸ ⊥ ≅ A` is carried by
+`HasFlatProlongationAt.of_addEquiv` across the equivariant additive
+identification `M ≃+ (A ⧸ ⊥) ⊗[A] M`, `x ↦ (⋯) ⊗ₜ x`. -/
+theorem GaloisRep.isFlatAt_of_dvr_package
+    {A : Type} [Field A] [TopologicalSpace A] [IsTopologicalRing A]
+    {M : Type} [AddCommGroup M] [Module A M] [Module.Free A M] [Module.Finite A M]
+    (ρ : GaloisRep ℚ A M)
+    {q : ℕ} (hq : q.Prime)
+    [Algebra (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ]
+    [IsScalarTower (NumberField.RingOfIntegers ℚ)
+      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ]
+    (H : Type) [CommRing H]
+    [HopfAlgebra
+      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H]
+    [Module.Finite
+      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H]
+    [Module.Flat
+      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H]
+    [Algebra.Etale ℚ
+      (ℚ ⊗[Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H)]
+    (f : Additive (WithConv
+      ((ℚ ⊗[Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H)
+        →ₐ[ℚ] AlgebraicClosure ℚ)) ≃+ M)
+    (hf : ∀ (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+      (φ : (ℚ ⊗[Localization.AtPrime
+        hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H) →ₐ[ℚ] AlgebraicClosure ℚ),
+      f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
+        ρ σ (f (Additive.ofMul (WithConv.toConv φ)))) :
+    ρ.IsFlatAt hq.toHeightOneSpectrumRingOfIntegersRat := by
+  classical
+  constructor
+  intro I hI
+  rcases I.eq_bot_or_top with rfl | rfl
+  · -- `I = ⊥`: transport the core package along `M ≃+ (A ⧸ ⊥) ⊗[A] M`
+    have hbase : ρ.HasFlatProlongationAt hq.toHeightOneSpectrumRingOfIntegersRat :=
+      ρ.hasFlatProlongationAt_of_dvr_package hq H f hf
+    -- the equivariant additive identification
+    let e₁ : ((A ⧸ (⊥ : Ideal A)) ⊗[A] M) ≃ₗ[A] M :=
+      (TensorProduct.congr (AlgEquiv.quotientBot A A).toLinearEquiv
+        (LinearEquiv.refl A M)).trans (TensorProduct.lid A M)
+    refine hbase.of_addEquiv e₁.symm.toAddEquiv ?_
+    intro σ x
+    show e₁.symm (ρ σ x) = (ρ.baseChange (A ⧸ (⊥ : Ideal A))) σ (e₁.symm x)
+    have hx : ∀ y : M, e₁.symm y =
+        ((AlgEquiv.quotientBot A A).toLinearEquiv.symm 1) ⊗ₜ[A] y := by
+      intro y
+      simp [e₁, TensorProduct.congr_symm_tmul]
+    rw [hx, hx, GaloisRep.baseChange_tmul]
+  · -- `I = ⊤`: the base-changed space is a module over the zero ring
+    haveI : Subsingleton (A ⧸ (⊤ : Ideal A)) :=
+      Ideal.Quotient.subsingleton_iff.mpr rfl
+    haveI : Subsingleton ((A ⧸ (⊤ : Ideal A)) ⊗[A] M) :=
+      Module.subsingleton (A ⧸ (⊤ : Ideal A)) _
+    exact GaloisRep.hasFlatProlongationAt_of_subsingleton
+      hq.toHeightOneSpectrumRingOfIntegersRat (ρ.baseChange (A ⧸ (⊤ : Ideal A)))
