@@ -605,8 +605,13 @@ the START and END of each block of work.
             - ✗· `TorsionCard.isCoprime_Ψ₂Sq_preΨ'` — coprimality of
               `ψ₂²` and `ψₚ` (strong divisibility of the EDS,
               `gcd(ψ₂,ψₚ) = ψ₁ = 1`).
-            - ✗· `TorsionCard.separable_Ψ₂Sq` — separability of the
-              two-torsion cubic (`disc = 16Δ`).
+            - ✓· `TorsionCard.separable_Ψ₂Sq` — PROVEN (2026-07-17):
+              disc = 16Δ ≠ 0
+              (`twoTorsionPolynomial_discr_ne_zero_of_isElliptic`),
+              distinct roots over the algebraic closure
+              (`Cubic.discr_ne_zero_iff_roots_nodup` +
+              `nodup_roots_iff_of_splits`), separability descends
+              along `Polynomial.separable_map`. Audits clean.
         - ✓· `WeierstrassCurve.galoisRep` — CONSTRUCTED (2026-07-16). The
           formerly sorry-d DATA is now the genuine representation: the
           Galois action on points (`Point.map`, via the `DistribMulAction`

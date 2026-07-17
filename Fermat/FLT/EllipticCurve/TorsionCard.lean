@@ -264,13 +264,43 @@ theorem yQuad_separable {x₀ : k} (hx₀ : ((E⁄k).Ψ₂Sq).eval x₀ ≠ 0) :
         rw [hkey, ← Polynomial.C_mul, hD, Polynomial.C_1]
 
 set_option backward.isDefEq.respectTransparency false in
-set_option warn.sorry false in
-/-- **Separability of the two-torsion polynomial** (sorry node): for
-`(2 : k) ≠ 0` the two-torsion cubic `Ψ₂Sq` is separable — its
-discriminant is `16 Δ`, a unit on an elliptic curve. -/
+omit [DecidableEq k] in
+/-- **Separability of the two-torsion polynomial** (PROVEN
+2026-07-17): for `(2 : k) ≠ 0` the two-torsion cubic `Ψ₂Sq` is
+separable — its discriminant is `16 Δ`, nonzero on an elliptic curve
+(`twoTorsionPolynomial_discr_ne_zero_of_isElliptic`), so its roots
+over the algebraic closure are distinct
+(`Cubic.discr_ne_zero_iff_roots_nodup`) and separability descends
+(`Polynomial.separable_map`). -/
 theorem separable_Ψ₂Sq (h2 : (2 : k) ≠ 0) :
-    ((E⁄k).Ψ₂Sq).Separable :=
-  sorry
+    ((E⁄k).Ψ₂Sq).Separable := by
+  haveI : (E⁄k).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap k k)).IsElliptic)
+  have h4 : ((E⁄k).twoTorsionPolynomial).a ≠ 0 := by
+    show (4 : k) ≠ 0
+    intro h
+    apply h2
+    have h22 : (4 : k) = 2 * 2 := by norm_num
+    rcases mul_eq_zero.mp (h22 ▸ h) with h' | h' <;> exact h'
+  have hne : (E⁄k).twoTorsionPolynomial.toPoly.map
+      (algebraMap k (AlgebraicClosure k)) ≠ 0 := by
+    rw [Polynomial.map_ne_zero_iff (algebraMap k (AlgebraicClosure k)).injective]
+    intro h0
+    exact h4 (by rw [show ((E⁄k).twoTorsionPolynomial).a =
+      (E⁄k).twoTorsionPolynomial.toPoly.coeff 3 from
+        Cubic.coeff_eq_a.symm, h0, Polynomial.coeff_zero])
+  have hsplits : ((E⁄k).twoTorsionPolynomial.toPoly.map
+      (algebraMap k (AlgebraicClosure k))).Splits :=
+    IsAlgClosed.splits _
+  have hnodup := (Cubic.discr_ne_zero_iff_roots_nodup
+      (φ := algebraMap k (AlgebraicClosure k)) h4 hsplits).mp
+    ((E⁄k).twoTorsionPolynomial_discr_ne_zero_of_isElliptic
+      (isUnit_iff_ne_zero.mpr h2))
+  rw [Cubic.map_roots] at hnodup
+  rw [WeierstrassCurve.Ψ₂Sq_eq,
+    ← Polynomial.separable_map (algebraMap k (AlgebraicClosure k)),
+    ← Polynomial.nodup_roots_iff_of_splits hne hsplits]
+  exact hnodup
 
 /-- The points of the curve lying above a fixed `x`-coordinate, as a
 finset (the image of the roots of the `y`-fibre quadratic). -/
