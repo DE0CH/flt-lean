@@ -40,6 +40,51 @@ local notation3 K:max "ᵃˡᵍ" => AlgebraicClosure K
 local notation "Kᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion K v
 local notation "𝒪ᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v
 
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- Every element of `Kᵥᵃˡᵍ` that is integral (= algebraic) over `K`
+lies in the image of the chosen embedding `ι : Kᵃˡᵍ → Kᵥᵃˡᵍ`: its
+minimal polynomial over `K` splits already over `Kᵃˡᵍ`, and the roots
+of the pushed-forward polynomial are exactly the `ι`-images of the
+roots upstairs. This is the factorization input for the flat-transport
+points comparison (finite `K`-algebra maps into `Kᵥᵃˡᵍ` land in
+`ι(Kᵃˡᵍ)`). -/
+theorem mem_range_algebraicClosureMap_of_isIntegral
+    (z : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+    (hz : IsIntegral K z) :
+    z ∈ Set.range (AlgebraicClosure.map
+      (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) := by
+  classical
+  have hμ0 : minpoly K z ≠ 0 := minpoly.ne_zero hz
+  -- the minimal polynomial splits over `Kᵃˡᵍ`
+  have hsplit : ((minpoly K z).map
+      (algebraMap K (AlgebraicClosure K))).Splits :=
+    IsAlgClosed.splits ((minpoly K z).map (algebraMap K (AlgebraicClosure K)))
+  -- push the polynomial to `Kᵥᵃˡᵍ` through `ι`
+  have hfactor : (minpoly K z).map (algebraMap K
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) =
+      ((minpoly K z).map (algebraMap K (AlgebraicClosure K))).map
+        (AlgebraicClosure.map
+          (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) := by
+    rw [Polynomial.map_map]
+    congr 1
+    refine RingHom.ext fun x => ?_
+    exact (AlgebraicClosure.map_algebraMap
+      (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) x).symm
+  -- `z` is a root of the pushed polynomial
+  have hroot : z ∈ ((minpoly K z).map (algebraMap K
+      (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))).roots := by
+    rw [Polynomial.mem_roots
+      (Polynomial.map_ne_zero_iff (algebraMap K _).injective |>.mpr hμ0)]
+    rw [Polynomial.IsRoot, Polynomial.eval_map, ← Polynomial.aeval_def]
+    exact minpoly.aeval K z
+  -- the roots downstairs are the `ι`-images of the roots upstairs
+  rw [hfactor, Polynomial.Splits.roots_map hsplit, Multiset.mem_map] at hroot
+  obtain ⟨r, _, hr⟩ := hroot
+  exact ⟨r, hr⟩
+
 set_option warn.sorry false in
 /-- (Sorry node — **the shared flat-prolongation transport**.) A mod-`p`
 Galois representation of `ℚ` whose space is presented, equivariantly,
