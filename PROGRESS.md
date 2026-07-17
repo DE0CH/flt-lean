@@ -2582,6 +2582,28 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6, NOS (iii) CORE PROVEN `c672d54`):
+  `ValuationSubring.residue_ne_of_roots_ne` — distinct roots keep
+  distinct residues under separable reduction (double-root
+  square-factor argument, axiom-clean). REMAINING ASSEMBLY for the
+  node (all mapped): (a) the curve-side instantiation — lift
+  (E⁄ksep).preΨ' p to 𝒪[X] (toSubring with the coefficient
+  membership already established), identify its residue-map with the
+  RESIDUE curve's preΨ' p (map_preΨ' through 𝒪 → κ_𝒪 plus the
+  integral-model chain), and apply the residue curve's
+  separable_preΨ' (elliptic since Δ is a unit of R hence of 𝒪 hence
+  nonzero in κ_𝒪; (p : κ_𝒪) ≠ 0 since p is an R-unit and
+  𝔪_R ⊆ 𝔪_𝒪 via h𝒪; p odd threaded from the Frey package's
+  p ≥ 5 — restate the node with hodd); (b) the y-level: equal
+  abscissas and congruent ordinates via the yQuad-quadratic — its
+  two roots y, negY differ by ψ₂ ≠ 0 whose residue is nonzero unless
+  the reduced point is 2-torsion, excluded for odd p by the
+  reduced-curve dictionary; (c) the inertia endgame: σP has
+  congruent coordinates (inertia trivial on 𝒪-residues — unfold
+  ValuationSubring.inertiaSubgroup), σP is p-torsion (Point.map
+  additive homomorphism, exists in mathlib as Point.map-hom?), and
+  (a)+(b) force σP = P. Each piece is bounded; the node closes in
+  1-2 more sessions of this pace.
 - 2026-07-17 (session 6, NOS (iii) SCOPING): the ΨSq-square structure
   makes x-level mod-𝔪 injectivity subtle for general n (ΨSqₙ is
   never separable — it is preΨ'ₙ²·parity); but the node's ONLY
