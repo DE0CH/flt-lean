@@ -57,6 +57,32 @@ universe u
 variable {k : Type u} [Field k] (E : WeierstrassCurve k) [E.IsElliptic]
   [DecidableEq k]
 
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] in
+/-- **The `n = 1` case of the multiplication formula** (PROVEN
+2026-07-17, the first base case of the Washington Thm 3.6 induction):
+`ψ₁ = 1 ≠ 0`, `1 • P = P`, `x ⬝ 1² = φ₁(x,y) = x`, and the
+`y`-tracking reduces to `ψ₂(x,y) = 2y + a₁x + a₃`, which is its
+definition (`ψ₂ = polynomialY`). -/
+theorem zsmul_some_aux_one {x y : k} (h : (E⁄k).toAffine.Nonsingular x y) :
+    ∃ (x' y' : k) (h' : (E⁄k).toAffine.Nonsingular x' y'),
+      (1 : ℤ) • (Affine.Point.some x y h : (E⁄k).Point) =
+        Affine.Point.some x' y' h' ∧
+      x' * ((E⁄k).ψ 1).evalEval x y ^ 2 = ((E⁄k).φ 1).evalEval x y ∧
+      (2 * y' + (E⁄k).a₁ * x' + (E⁄k).a₃) * ((E⁄k).ψ 1).evalEval x y ^ 4 =
+        ((E⁄k).ψ (2 * 1)).evalEval x y := by
+  refine ⟨x, y, h, one_smul _ _, ?_, ?_⟩
+  · rw [WeierstrassCurve.ψ_one, WeierstrassCurve.φ_one]
+    simp [Polynomial.evalEval_C]
+  · rw [WeierstrassCurve.ψ_one, show (2 : ℤ) * 1 = 2 from rfl,
+      WeierstrassCurve.ψ_two, WeierstrassCurve.ψ₂]
+    simp only [Polynomial.evalEval_one, one_pow, mul_one]
+    rw [show ((E⁄k).toAffine.polynomialY).evalEval x y =
+        2 * y + ((E⁄k).a₁ * x + (E⁄k).a₃) from by
+      rw [Affine.polynomialY]
+      simp [Polynomial.evalEval_add, Polynomial.evalEval_C, Polynomial.evalEval_X]]
+    ring
+
 set_option warn.sorry false in
 /-- (Sorry node — **the multiplication-by-`n` formula**, Washington
 *Elliptic curves* Theorem 3.6, the strengthened simultaneous induction
