@@ -45,6 +45,7 @@ public import Fermat.FLT.EllipticCurve.Torsion
 -- The Weil pairing node and the determinant-of-pairing linear algebra,
 -- used to derive `torsion_det`.
 import Fermat.FLT.EllipticCurve.WeilPairing
+import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.SplitMultiplicativeReduction
 -- The Frey reduction-type nodes and the local-global glue nodes
 -- (public: the tame-at-2 glue node stated in this file mentions
 -- `HasMultiplicativeReduction` over the localization, whose instance
@@ -419,8 +420,12 @@ theorem inertia_fixes_algHom_of_unramified_gen_padic_two
       (ι y) = ι y :=
   sorry
 
-set_option warn.sorry false in
-/-- **Tame quotient at `2`, nonsplit case** (sorry node — the remaining
+open WeierstrassCurve in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **Tame quotient at `2`, nonsplit case** (assembled — the
 Tate-theoretic content of the tame-at-`2` condition): as the split case
 (`exists_tame_quotient_of_split_padic_two`), but the `ℚ_[2]`-base
 change has NONSPLIT multiplicative reduction. The unramified quadratic
@@ -430,7 +435,7 @@ quadratic extension — which is unramified (inertia fixes unramified
 extensions) and squares to `1`. -/
 theorem WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} [Fact p.Prime] (hp : 0 < p)
-    (hp2 : p ≠ 2)
+    (_hp2 : p ≠ 2)
     [E.HasMultiplicativeReduction
       (Localization.AtPrime Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
     (hnonsplit : ¬ (E.map (algebraMap ℚ ℚ_[2])).HasSplitMultiplicativeReduction
@@ -446,8 +451,460 @@ theorem WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two
             ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
               AddSubgroup Z2bar)
             (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
-          (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) :=
-  sorry
+          (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) := by
+  classical
+  letI := algebraRatAlgClosurePadic 2
+  haveI := hasMultiplicativeReduction_padic Nat.prime_two E
+  -- the unramified quadratic twist with split reduction and its witness
+  obtain ⟨L, _, _, _, _, hsplit', θL, Q, hQm, hθtop, hθQ, hQsep⟩ :=
+    WeierstrassCurve.exists_quadraticTwist_hasSplitMultiplicativeReduction
+      (E := E.map (algebraMap ℚ ℚ_[2]))
+      (R := (ValuativeRel.valuation ℚ_[2]).integer) hnonsplit
+  set Tw : WeierstrassCurve ℚ_[2] :=
+    (E.map (algebraMap ℚ ℚ_[2])).quadraticTwist L with hTwdef
+  set Mt : WeierstrassCurve ℚ_[2] :=
+    Tw.minimal (ValuativeRel.valuation ℚ_[2]).integer with hMtdef
+  set Cb : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ_[2]) :=
+    ((Tw.exists_isMinimal
+      (ValuativeRel.valuation ℚ_[2]).integer).choose.baseChange
+      (AlgebraicClosure ℚ_[2])) with hCbdef
+  haveI hMtsplit : Mt.HasSplitMultiplicativeReduction
+      (ValuativeRel.valuation ℚ_[2]).integer := hsplit'
+  haveI hTwell : Tw.IsElliptic :=
+    inferInstanceAs (((E.map (algebraMap ℚ ℚ_[2])).quadraticTwist
+      L).IsElliptic)
+  haveI hMtell : Mt.IsElliptic :=
+    inferInstanceAs (((Tw.exists_isMinimal
+      (ValuativeRel.valuation ℚ_[2]).integer).choose • Tw).IsElliptic)
+  haveI hTwΩell : (Tw⁄(AlgebraicClosure ℚ_[2])).IsElliptic :=
+    inferInstanceAs ((Tw.map (algebraMap ℚ_[2]
+      (AlgebraicClosure ℚ_[2]))).IsElliptic)
+  letI algLΩ : Algebra L (AlgebraicClosure ℚ_[2]) :=
+    (IsAlgClosed.lift (M := AlgebraicClosure ℚ_[2]) (R := ℚ_[2])
+      (S := L)).toAlgebra
+  haveI : IsScalarTower ℚ_[2] L (AlgebraicClosure ℚ_[2]) :=
+    IsScalarTower.of_algebraMap_eq (fun x =>
+      ((IsAlgClosed.lift (M := AlgebraicClosure ℚ_[2]) (R := ℚ_[2])
+        (S := L)).commutes x).symm)
+  -- uniformization witness and exponent quotient for the twisted minimal model
+  obtain ⟨e, he⟩ := WeierstrassCurve.exists_tateEquivSepClosure
+    (k := ℚ_[2]) (E := Mt) (Ω := AlgebraicClosure ℚ_[2])
+  haveI : CharZero (AlgebraicClosure ℚ_[2]) :=
+    charZero_of_injective_algebraMap
+      ((algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2])).injective)
+  obtain ⟨π₀, hπ₀surj, hπ₀inv⟩ :=
+    WeierstrassCurve.exists_tateTorsionQuotient
+      (k := ℚ_[2]) (E := Mt) (Ω := AlgebraicClosure ℚ_[2]) e he
+      (p := p) hp.ne' (Nat.cast_ne_zero.mpr hp.ne')
+  -- the point equivalence to the base change
+  have hEq : (Mt⁄(AlgebraicClosure ℚ_[2])) =
+      Cb • (Tw⁄(AlgebraicClosure ℚ_[2])) :=
+    (WeierstrassCurve.baseChange_smul_baseChange _ _ _).symm
+  let Φ : ((Mt⁄(AlgebraicClosure ℚ_[2])).Point) ≃+
+      (((E.map (algebraMap ℚ ℚ_[2]))⁄(AlgebraicClosure ℚ_[2])).Point) :=
+    ((WeierstrassCurve.Affine.Point.equivOfEq hEq).trans
+      (WeierstrassCurve.Affine.Point.equivVariableChange
+        (Tw⁄(AlgebraicClosure ℚ_[2])) Cb)).trans
+      ((E.map (algebraMap ℚ ℚ_[2])).quadraticTwistPointEquiv L
+        (AlgebraicClosure ℚ_[2]))
+  -- coefficient fixedness under every local automorphism
+  have hσu : ∀ g : Field.absoluteGaloisGroup ℚ_[2],
+      (g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+        (AlgebraicClosure ℚ_[2])).toAlgHom
+        ((Cb.u : AlgebraicClosure ℚ_[2])) =
+      (Cb.u : AlgebraicClosure ℚ_[2]) := by
+    intro g
+    rw [hCbdef]
+    simp only [WeierstrassCurve.VariableChange.baseChange,
+      WeierstrassCurve.VariableChange.map, Units.coe_map, MonoidHom.coe_coe]
+    exact ((g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+      (AlgebraicClosure ℚ_[2])).toAlgHom).commutes _
+  have hσr : ∀ g : Field.absoluteGaloisGroup ℚ_[2],
+      (g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+        (AlgebraicClosure ℚ_[2])).toAlgHom Cb.r = Cb.r := by
+    intro g
+    rw [hCbdef]
+    simp only [WeierstrassCurve.VariableChange.baseChange,
+      WeierstrassCurve.VariableChange.map]
+    exact ((g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+      (AlgebraicClosure ℚ_[2])).toAlgHom).commutes _
+  have hσs : ∀ g : Field.absoluteGaloisGroup ℚ_[2],
+      (g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+        (AlgebraicClosure ℚ_[2])).toAlgHom Cb.s = Cb.s := by
+    intro g
+    rw [hCbdef]
+    simp only [WeierstrassCurve.VariableChange.baseChange,
+      WeierstrassCurve.VariableChange.map]
+    exact ((g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+      (AlgebraicClosure ℚ_[2])).toAlgHom).commutes _
+  have hσt : ∀ g : Field.absoluteGaloisGroup ℚ_[2],
+      (g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+        (AlgebraicClosure ℚ_[2])).toAlgHom Cb.t = Cb.t := by
+    intro g
+    rw [hCbdef]
+    simp only [WeierstrassCurve.VariableChange.baseChange,
+      WeierstrassCurve.VariableChange.map]
+    exact ((g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+      (AlgebraicClosure ℚ_[2])).toAlgHom).commutes _
+  -- Φ-equivariance, twisted by the quadratic character
+  have hcommΦ : ∀ (g : Field.absoluteGaloisGroup ℚ_[2])
+      (Qt : (Mt⁄(AlgebraicClosure ℚ_[2])).Point),
+      Φ (WeierstrassCurve.Affine.Point.map (W' := Mt)
+        (g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+          (AlgebraicClosure ℚ_[2])).toAlgHom Qt) =
+      ((quadraticCharacter ℚ_[2] L (AlgebraicClosure ℚ_[2])
+        (g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+          (AlgebraicClosure ℚ_[2]))) : ℤ) •
+        WeierstrassCurve.Affine.Point.map (W' := E.map (algebraMap ℚ ℚ_[2]))
+          (g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+            (AlgebraicClosure ℚ_[2])).toAlgHom (Φ Qt) := by
+    intro g Qt
+    have h12 : (WeierstrassCurve.Affine.Point.equivVariableChange
+        (Tw⁄(AlgebraicClosure ℚ_[2])) Cb)
+        ((WeierstrassCurve.Affine.Point.equivOfEq hEq)
+          (WeierstrassCurve.Affine.Point.map (W' := Mt)
+            (g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+              (AlgebraicClosure ℚ_[2])).toAlgHom Qt)) =
+        WeierstrassCurve.Affine.Point.map (W' := Tw)
+          (g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+            (AlgebraicClosure ℚ_[2])).toAlgHom
+          ((WeierstrassCurve.Affine.Point.equivVariableChange
+            (Tw⁄(AlgebraicClosure ℚ_[2])) Cb)
+            ((WeierstrassCurve.Affine.Point.equivOfEq hEq) Qt)) := by
+      cases Qt with
+      | zero => simp [← WeierstrassCurve.Affine.Point.zero_def]
+      | some x y hxy =>
+        rw [WeierstrassCurve.Affine.Point.map_some,
+          WeierstrassCurve.Affine.Point.equivOfEq_some,
+          WeierstrassCurve.Affine.Point.equivOfEq_some,
+          WeierstrassCurve.Affine.Point.equivVariableChange_some,
+          WeierstrassCurve.Affine.Point.equivVariableChange_some,
+          WeierstrassCurve.Affine.Point.map_some]
+        refine WeierstrassCurve.Affine.Point.some_eq_some _ ?_ ?_
+        · simp only [map_add, map_mul, map_pow, hσu g, hσr g]
+        · simp only [map_add, map_mul, map_pow, hσu g, hσs g, hσt g]
+    show ((E.map (algebraMap ℚ ℚ_[2])).quadraticTwistPointEquiv L
+        (AlgebraicClosure ℚ_[2]))
+        ((WeierstrassCurve.Affine.Point.equivVariableChange
+          (Tw⁄(AlgebraicClosure ℚ_[2])) Cb)
+          ((WeierstrassCurve.Affine.Point.equivOfEq hEq)
+            (WeierstrassCurve.Affine.Point.map (W' := Mt)
+              (g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+                (AlgebraicClosure ℚ_[2])).toAlgHom Qt))) = _
+    rw [h12]
+    exact (E.map (algebraMap ℚ ℚ_[2])).quadraticTwistPointEquiv_galois L
+      (M := AlgebraicClosure ℚ_[2])
+      ((g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]] (AlgebraicClosure ℚ_[2])))
+      ((WeierstrassCurve.Affine.Point.equivVariableChange
+        (Tw⁄(AlgebraicClosure ℚ_[2])) Cb)
+        ((WeierstrassCurve.Affine.Point.equivOfEq hEq) Qt))
+  -- the global-to-local torsion transport (as in the split case)
+  let T : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p →+
+      AddSubgroup.torsionBy
+        (((E.map (algebraMap ℚ ℚ_[2]))⁄(AlgebraicClosure ℚ_[2]))).Point
+        ((p : ℕ) : ℤ) :=
+    { toFun := fun v => ⟨WeierstrassCurve.Affine.Point.map (W' := E)
+        (algClosureEmbeddingPadic 2)
+        (show ((E⁄(AlgebraicClosure ℚ))).Point from v.1), by
+          have h0 := v.2
+          rw [Submodule.mem_torsionBy_iff] at h0
+          have h1 : ((p : ℕ) : ℤ) • (show ((E⁄(AlgebraicClosure ℚ))).Point
+              from v.1) = 0 := h0
+          show ((p : ℕ) : ℤ) • (WeierstrassCurve.Affine.Point.map (W' := E)
+            (algClosureEmbeddingPadic 2)
+            (show ((E⁄(AlgebraicClosure ℚ))).Point from v.1)) = 0
+          rw [← map_zsmul, h1, map_zero]⟩
+      map_zero' := Subtype.ext (by
+        show WeierstrassCurve.Affine.Point.map (W' := E)
+          (algClosureEmbeddingPadic 2) 0 = 0
+        exact map_zero _)
+      map_add' := fun v w => Subtype.ext (by
+        show WeierstrassCurve.Affine.Point.map (W' := E)
+          (algClosureEmbeddingPadic 2) _ = _
+        exact map_add _ _ _) }
+  have hTinj : Function.Injective T := by
+    intro v w hvw
+    have h1 := congrArg Subtype.val hvw
+    have h2 := WeierstrassCurve.Affine.Point.map_injective
+      (f := algClosureEmbeddingPadic 2) h1
+    exact Subtype.ext h2
+  have hcard₁ : Nat.card ((E.map (algebraMap ℚ
+      (AlgebraicClosure ℚ))).nTorsion p) = p ^ 2 :=
+    WeierstrassCurve.n_torsion_card _ (Nat.cast_ne_zero.mpr hp.ne')
+  have hcard₂ : Nat.card (((E.map (algebraMap ℚ ℚ_[2])).map
+      (algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2]))).nTorsion p) = p ^ 2 :=
+    WeierstrassCurve.n_torsion_card _ (Nat.cast_ne_zero.mpr hp.ne')
+  let eq2 : AddSubgroup.torsionBy
+      (((E.map (algebraMap ℚ ℚ_[2]))⁄(AlgebraicClosure ℚ_[2]))).Point
+      ((p : ℕ) : ℤ) ≃
+      ((E.map (algebraMap ℚ ℚ_[2])).map
+        (algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2]))).nTorsion p :=
+    { toFun := fun x => ⟨x.1, by
+        rw [Submodule.mem_torsionBy_iff]
+        have h0 : ((p : ℕ) : ℤ) • x.1 = 0 := x.2
+        exact_mod_cast h0⟩
+      invFun := fun x => ⟨x.1, by
+        have h1 := x.2
+        rw [Submodule.mem_torsionBy_iff] at h1
+        show ((p : ℕ) : ℤ) • x.1 = 0
+        exact_mod_cast h1⟩
+      left_inv := fun _ => rfl
+      right_inv := fun _ => rfl }
+  have hcard₃ : Nat.card (AddSubgroup.torsionBy
+      (((E.map (algebraMap ℚ ℚ_[2]))⁄(AlgebraicClosure ℚ_[2]))).Point
+      ((p : ℕ) : ℤ)) = p ^ 2 := by
+    rw [Nat.card_congr eq2]
+    exact hcard₂
+  have hTsurj : Function.Surjective T := by
+    haveI hfin : Finite (AddSubgroup.torsionBy
+        (((E.map (algebraMap ℚ ℚ_[2]))⁄(AlgebraicClosure ℚ_[2]))).Point
+        ((p : ℕ) : ℤ)) := by
+      refine Nat.finite_of_card_ne_zero ?_
+      rw [hcard₃]
+      have := (Fact.out : p.Prime).pos
+      positivity
+    have hbij : Function.Bijective T :=
+      (Nat.bijective_iff_injective_and_card T).mpr
+        ⟨hTinj, by rw [hcard₁, hcard₃]⟩
+    exact hbij.surjective
+  -- torsion transport through `Φ.symm`
+  let T' : AddSubgroup.torsionBy
+      (((E.map (algebraMap ℚ ℚ_[2]))⁄(AlgebraicClosure ℚ_[2]))).Point
+      ((p : ℕ) : ℤ) →+
+      AddSubgroup.torsionBy ((Mt⁄(AlgebraicClosure ℚ_[2]))).Point
+      ((p : ℕ) : ℤ) :=
+    { toFun := fun x => ⟨Φ.symm x.1, by
+        have h0 : ((p : ℕ) : ℤ) • x.1 = 0 := x.2
+        show ((p : ℕ) : ℤ) • Φ.symm x.1 = 0
+        rw [← map_zsmul Φ.symm, h0, map_zero]⟩
+      map_zero' := Subtype.ext (by
+        show Φ.symm 0 = 0
+        exact map_zero _)
+      map_add' := fun x y => Subtype.ext (by
+        show Φ.symm (x.1 + y.1) = Φ.symm x.1 + Φ.symm y.1
+        exact map_add _ _ _) }
+  have hT'surj : Function.Surjective T' := by
+    intro y
+    refine ⟨⟨Φ y.1, ?_⟩, Subtype.ext ?_⟩
+    · have h0 : ((p : ℕ) : ℤ) • y.1 = 0 := y.2
+      show ((p : ℕ) : ℤ) • Φ y.1 = 0
+      rw [← map_zsmul Φ, h0, map_zero]
+    · show Φ.symm (Φ y.1) = y.1
+      exact Φ.symm_apply_apply _
+  -- the quadratic-character quotient representation
+  haveI hHfd : FiniteDimensional ℚ_[2]
+      ((IsScalarTower.toAlgHom ℚ_[2] L
+        (AlgebraicClosure ℚ_[2])).fieldRange) :=
+    LinearEquiv.finiteDimensional
+      (AlgEquiv.ofInjectiveField (IsScalarTower.toAlgHom ℚ_[2] L
+        (AlgebraicClosure ℚ_[2]))).toLinearEquiv
+  have hHopen : IsOpen (((IsScalarTower.toAlgHom ℚ_[2] L
+      (AlgebraicClosure ℚ_[2])).fieldRange).fixingSubgroup :
+      Set (Field.absoluteGaloisGroup ℚ_[2])) :=
+    ((IsScalarTower.toAlgHom ℚ_[2] L
+      (AlgebraicClosure ℚ_[2])).fieldRange).fixingSubgroup_isOpen
+  have hfixχ : ∀ h : Field.absoluteGaloisGroup ℚ_[2],
+      h ∈ ((IsScalarTower.toAlgHom ℚ_[2] L
+        (AlgebraicClosure ℚ_[2])).fieldRange).fixingSubgroup →
+      quadraticCharacter ℚ_[2] L (AlgebraicClosure ℚ_[2])
+        (h : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+          (AlgebraicClosure ℚ_[2])) = 1 := by
+    intro h hh
+    rw [quadraticCharacter_eq_one_iff]
+    intro x
+    exact hh ⟨algebraMap L (AlgebraicClosure ℚ_[2]) x, ⟨x, rfl⟩⟩
+  let δ : GaloisRep ℚ_[2] (ZMod p) (ZMod p) :=
+    letI := moduleTopology (ZMod p) (Module.End (ZMod p) (ZMod p))
+    { toFun := fun g =>
+        (((quadraticCharacter ℚ_[2] L (AlgebraicClosure ℚ_[2])
+          (g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+            (AlgebraicClosure ℚ_[2])) : ℤ) : ZMod p)) •
+          (1 : Module.End (ZMod p) (ZMod p))
+      map_one' := by
+        have h1 : ((1 : Field.absoluteGaloisGroup ℚ_[2]) :
+            (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+              (AlgebraicClosure ℚ_[2])) = 1 := rfl
+        rw [h1, map_one]
+        simp
+      map_mul' := fun a b => by
+        have h1 : ((a * b : Field.absoluteGaloisGroup ℚ_[2]) :
+            (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+              (AlgebraicClosure ℚ_[2])) =
+            (a : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+              (AlgebraicClosure ℚ_[2])) *
+            (b : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+              (AlgebraicClosure ℚ_[2])) := rfl
+        rw [h1, map_mul]
+        push_cast
+        rw [smul_mul_smul_comm, one_mul]
+      continuous_toFun := by
+        refine continuous_def.mpr fun U _ =>
+          isOpen_iff_forall_mem_open.mpr fun σ hσ' => ?_
+        open Pointwise in
+        refine ⟨σ • ((((IsScalarTower.toAlgHom ℚ_[2] L
+          (AlgebraicClosure ℚ_[2])).fieldRange).fixingSubgroup :
+          Subgroup (Field.absoluteGaloisGroup ℚ_[2])) :
+          Set (Field.absoluteGaloisGroup ℚ_[2])), ?_, ?_, ?_⟩
+        · rintro τ ⟨u, hu, rfl⟩
+          show (((quadraticCharacter ℚ_[2] L (AlgebraicClosure ℚ_[2])
+            ((σ * u : Field.absoluteGaloisGroup ℚ_[2]) :
+              (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+                (AlgebraicClosure ℚ_[2])) : ℤ) : ZMod p)) •
+            (1 : Module.End (ZMod p) (ZMod p)) ∈ U
+          have h2 : ((σ * u : Field.absoluteGaloisGroup ℚ_[2]) :
+              (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+                (AlgebraicClosure ℚ_[2])) =
+              (σ : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+                (AlgebraicClosure ℚ_[2])) *
+              (u : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+                (AlgebraicClosure ℚ_[2])) := rfl
+          rw [h2, map_mul, hfixχ u hu, mul_one]
+          exact hσ'
+        · exact hHopen.leftCoset σ
+        · exact ⟨1, Subgroup.one_mem _, mul_one σ⟩ }
+  -- assemble
+  refine ⟨AddMonoidHom.toZModLinearMap p (π₀.comp (T'.comp T)), ?_, δ, ?_⟩
+  · show Function.Surjective (π₀.comp (T'.comp T))
+    exact hπ₀surj.comp (hT'surj.comp hTsurj)
+  intro g v
+  refine ⟨?_, ?_, ?_⟩
+  · -- equivariance: the action descends to the quadratic character
+    show π₀ (T' (T ((E.galoisRep p hp).map (algebraMap ℚ ℚ_[2]) g v))) =
+      δ g (π₀ (T' (T v)))
+    -- the acted point transports to the local `σ`-image
+    have hact : ((((E.galoisRep p hp).map (algebraMap ℚ ℚ_[2]) g v) :
+        (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) :
+        ((E.map (algebraMap ℚ
+          (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).Point) =
+        WeierstrassCurve.Affine.Point.map (W' := E)
+          (((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2])) g :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom
+          (show ((E⁄(AlgebraicClosure ℚ))).Point from v.1) :=
+      congrArg (fun f : ℚ →+* ℚ_[2] =>
+        WeierstrassCurve.Affine.Point.map (W' := E)
+          (((Field.absoluteGaloisGroup.map f) g :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom
+          (show ((E⁄(AlgebraicClosure ℚ))).Point from v.1))
+        (Subsingleton.elim _ _)
+    have hbb : ∀ Q : ((E)⁄(AlgebraicClosure ℚ_[2])).Point,
+        WeierstrassCurve.Affine.Point.map (W' := E)
+          (algClosureSigmaPadic 2 g) Q =
+        (show ((E)⁄(AlgebraicClosure ℚ_[2])).Point from
+          WeierstrassCurve.Affine.Point.map
+            (W' := E.map (algebraMap ℚ ℚ_[2]))
+            (((g : (AlgebraicClosure ℚ_[2])
+                ≃ₐ[ℚ_[2]] (AlgebraicClosure ℚ_[2]))).toAlgHom)
+            (show ((E.map (algebraMap ℚ ℚ_[2]))⁄(AlgebraicClosure
+              ℚ_[2])).Point from Q)) := by
+      intro Q
+      cases Q with
+      | zero => rfl
+      | some x y h => rfl
+    have hstep1 : (T ((E.galoisRep p hp).map (algebraMap ℚ ℚ_[2]) g v) :
+        (((E.map (algebraMap ℚ ℚ_[2]))⁄(AlgebraicClosure ℚ_[2]))).Point) =
+        WeierstrassCurve.Affine.Point.map (W' := E.map (algebraMap ℚ ℚ_[2]))
+          ((g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+            (AlgebraicClosure ℚ_[2]))).toAlgHom ((T v).1) := by
+      show WeierstrassCurve.Affine.Point.map (W' := E)
+          (algClosureEmbeddingPadic 2) _ = _
+      rw [hact]
+      have hcomm := point_map_algClosureEmbeddingPadic_comm 2 E g
+        (show ((E⁄(AlgebraicClosure ℚ))).Point from v.1)
+      rw [hcomm]
+      rw [hbb]
+      rfl
+    -- transport through `Φ.symm` picks up the character
+    have hχsq : ∀ x : ((Mt⁄(AlgebraicClosure ℚ_[2])).Point),
+        ((quadraticCharacter ℚ_[2] L (AlgebraicClosure ℚ_[2])
+          (g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+            (AlgebraicClosure ℚ_[2]))) : ℤ) •
+        (((quadraticCharacter ℚ_[2] L (AlgebraicClosure ℚ_[2])
+          (g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+            (AlgebraicClosure ℚ_[2]))) : ℤ) • x) = x := by
+      intro x
+      rw [smul_smul, ← Units.val_mul, Int.units_mul_self, Units.val_one,
+        one_smul]
+    have hΦsymm : ∀ R : (((E.map (algebraMap ℚ
+        ℚ_[2]))⁄(AlgebraicClosure ℚ_[2]))).Point,
+        Φ.symm (WeierstrassCurve.Affine.Point.map
+          (W' := E.map (algebraMap ℚ ℚ_[2]))
+          ((g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+            (AlgebraicClosure ℚ_[2]))).toAlgHom R) =
+        ((quadraticCharacter ℚ_[2] L (AlgebraicClosure ℚ_[2])
+          (g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+            (AlgebraicClosure ℚ_[2]))) : ℤ) •
+          WeierstrassCurve.Affine.Point.map (W' := Mt)
+            ((g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+              (AlgebraicClosure ℚ_[2]))).toAlgHom (Φ.symm R) := by
+      intro R
+      have h1 := hcommΦ g (Φ.symm R)
+      rw [Φ.apply_symm_apply] at h1
+      have h2 := congrArg Φ.symm h1
+      rw [Φ.symm_apply_apply, map_zsmul Φ.symm] at h2
+      rw [h2, hχsq]
+    -- assemble the three steps
+    have htorQ : ((p : ℕ) : ℤ) • (WeierstrassCurve.Affine.Point.map
+        (W' := Mt) ((g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+          (AlgebraicClosure ℚ_[2]))).toAlgHom ((T' (T v)).1)) = 0 := by
+      have h0 : ((p : ℕ) : ℤ) • ((T' (T v)).1) = 0 := (T' (T v)).2
+      rw [← map_zsmul (WeierstrassCurve.Affine.Point.map (W' := Mt)
+        ((g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+          (AlgebraicClosure ℚ_[2]))).toAlgHom), h0, map_zero]
+    have hstep2 : T' (T ((E.galoisRep p hp).map (algebraMap ℚ ℚ_[2]) g v)) =
+        ((quadraticCharacter ℚ_[2] L (AlgebraicClosure ℚ_[2])
+          (g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+            (AlgebraicClosure ℚ_[2]))) : ℤ) •
+        (⟨WeierstrassCurve.Affine.Point.map (W' := Mt)
+          ((g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+            (AlgebraicClosure ℚ_[2]))).toAlgHom ((T' (T v)).1), htorQ⟩ :
+          AddSubgroup.torsionBy ((Mt⁄(AlgebraicClosure ℚ_[2]))).Point
+            ((p : ℕ) : ℤ)) := by
+      apply Subtype.ext
+      show Φ.symm (T ((E.galoisRep p hp).map (algebraMap ℚ ℚ_[2]) g v) :
+        (((E.map (algebraMap ℚ ℚ_[2]))⁄(AlgebraicClosure ℚ_[2]))).Point) = _
+      rw [hstep1, hΦsymm]
+      rfl
+    rw [hstep2, map_zsmul π₀]
+    have hinv := hπ₀inv ((g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+        (AlgebraicClosure ℚ_[2]))) (T' (T v))
+      (⟨WeierstrassCurve.Affine.Point.map (W' := Mt)
+        ((g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+          (AlgebraicClosure ℚ_[2]))).toAlgHom ((T' (T v)).1), htorQ⟩) rfl
+    rw [hinv]
+    show _ = (((quadraticCharacter ℚ_[2] L (AlgebraicClosure ℚ_[2])
+      (g : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+        (AlgebraicClosure ℚ_[2])) : ℤ) : ZMod p)) •
+      (1 : Module.End (ZMod p) (ZMod p)) (π₀ (T' (T v)))
+    rw [Module.End.one_apply, zsmul_eq_mul, smul_eq_mul]
+  · -- the character is unramified: inertia fixes the unramified `L`
+    intro g' hg'
+    show (((quadraticCharacter ℚ_[2] L (AlgebraicClosure ℚ_[2])
+      (g' : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+        (AlgebraicClosure ℚ_[2])) : ℤ) : ZMod p)) •
+      (1 : Module.End (ZMod p) (ZMod p)) = 1
+    have hχ1 : quadraticCharacter ℚ_[2] L (AlgebraicClosure ℚ_[2])
+        (g' : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+          (AlgebraicClosure ℚ_[2])) = 1 := by
+      rw [quadraticCharacter_eq_one_iff]
+      intro x
+      exact inertia_fixes_algHom_of_unramified_gen_padic_two
+        θL hθtop Q hQm hθQ hQsep hg'
+        (IsAlgClosed.lift (M := AlgebraicClosure ℚ_[2]) (R := ℚ_[2])
+          (S := L)) x
+    rw [hχ1]
+    simp
+  · -- and squares to `1`
+    intro g'
+    show ((((quadraticCharacter ℚ_[2] L (AlgebraicClosure ℚ_[2])
+      (g' : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+        (AlgebraicClosure ℚ_[2])) : ℤ) : ZMod p)) •
+      (1 : Module.End (ZMod p) (ZMod p))) *
+      ((((quadraticCharacter ℚ_[2] L (AlgebraicClosure ℚ_[2])
+      (g' : (AlgebraicClosure ℚ_[2]) ≃ₐ[ℚ_[2]]
+        (AlgebraicClosure ℚ_[2])) : ℤ) : ZMod p)) •
+      (1 : Module.End (ZMod p) (ZMod p))) = 1
+    rw [smul_mul_smul_comm, one_mul, ← Int.cast_mul, ← Units.val_mul,
+      Int.units_mul_self, Units.val_one, Int.cast_one, one_smul]
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in

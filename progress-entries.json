@@ -809,7 +809,7 @@
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.FreyConditions",
   "wip": false,
   "fullname": "WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two",
-  "text": "the nonsplit half of the tame-at-2 condition: the exponent quotient of the unramified quadratic twist, with the action twisted by the quadratic character of the unramified quadratic extension (unramified, squares to 1)."
+  "text": "the nonsplit half of the tame-at-2 condition, now ASSEMBLED: the exponent quotient of the twisted minimal model transports through the (χ-twisted) composite point equivalence; δ is the quadratic character of the unramified L as a continuous GaloisRep (locally constant on cosets of the open fixing subgroup of the embedded L), unramified by the Z2bar embedding-fixing leaf, squaring to 1 by Int.units_mul_self."
  },
  {
   "name": "inertia_fixes_algHom_of_unramified_gen_padic_two",
