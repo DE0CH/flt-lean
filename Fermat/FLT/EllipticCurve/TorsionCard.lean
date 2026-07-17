@@ -336,6 +336,42 @@ theorem eq_or_add_eq_zero_of_X_eq {x₁ y₁ x₂ y₂ : k}
   · right
     exact Affine.Point.add_of_Y_eq hx hy
 
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] in
+/-- **The smul-level collision consequence** (PROVEN 2026-07-17): if
+`m • P` and `(m+1) • P` are affine with the same `x`-coordinate, then
+`(2m+1) • P = 0` (they cannot be equal, since their difference is the
+affine point `P`). -/
+theorem smul_collision {m : ℤ} {x y xm ym xm1 ym1 : k}
+    (h : (E⁄k).toAffine.Nonsingular x y)
+    (hm : (E⁄k).toAffine.Nonsingular xm ym)
+    (hm1 : (E⁄k).toAffine.Nonsingular xm1 ym1)
+    (heqm : m • (Affine.Point.some x y h : (E⁄k).Point) =
+      Affine.Point.some xm ym hm)
+    (heqm1 : (m + 1) • (Affine.Point.some x y h : (E⁄k).Point) =
+      Affine.Point.some xm1 ym1 hm1)
+    (hxx : xm1 = xm) :
+    (2 * m + 1) • (Affine.Point.some x y h : (E⁄k).Point) = 0 := by
+  rcases eq_or_add_eq_zero_of_X_eq E hm1 hm hxx with heq | hadd
+  · -- equal points would make `P` zero
+    exfalso
+    have hP : (Affine.Point.some x y h : (E⁄k).Point) = 0 := by
+      have hsub : ((m + 1) - m) • (Affine.Point.some x y h : (E⁄k).Point) =
+          (m + 1) • (Affine.Point.some x y h : (E⁄k).Point) -
+            m • (Affine.Point.some x y h : (E⁄k).Point) := sub_smul _ _ _
+      rw [show (m + 1) - m = 1 from by ring, one_smul, heqm, heqm1, heq,
+        sub_self] at hsub
+      exact hsub
+    exact nomatch hP.trans
+      (show (0 : (E⁄k).Point) = Affine.Point.zero from rfl)
+  · -- opposite points give the vanishing
+    have : (2 * m + 1) • (Affine.Point.some x y h : (E⁄k).Point) =
+        ((m + 1) + m) • (Affine.Point.some x y h : (E⁄k).Point) := by
+      congr 1
+      ring
+    rw [this, add_smul, heqm, heqm1]
+    exact hadd
+
 set_option warn.sorry false in
 /-- (Sorry node — **the multiplication-by-`n` formula**, Washington
 *Elliptic curves* Theorem 3.6, the strengthened simultaneous induction
