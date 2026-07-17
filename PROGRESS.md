@@ -595,12 +595,18 @@ the START and END of each block of work.
               Remains: the strong-induction skeleton (ℕ-reduction,
               collision branch via `smul_collision`, 2-torsion branch
               `s = 0` seeded by `Res(Ψ₂Sq, Ψ₃) = -Δ²`).
-            - ✗· `TorsionCard.evalEval_ψ_sum` — **the `(★s)`
-              sum-companion of the even recurrence**:
-              `ψₙ₋₁²ψₙ₊₂ + ψₙ₋₂ψₙ₊₁² = ψₙ₋₁ψₙψₙ₊₁(6x²+b₂x+b₄)
-              - ψₙ³Ψ₂Sq(x)` on the curve — the LAST identity input of
-              the induction; mathlib-PR-shaped (`Ψ_even`/`Ψ_odd`
-              family, parity-split `preΨ'`-recursion technique).
+            - ✓· `TorsionCard.evalEval_ψ_sum` — DERIVED (2026-07-17)
+              from the universal EDS route (`PsiSumCompanion`: anchor
+              identity + coordinate-ring membership + domain
+              cancellation over the universal curve + base change).
+            - ✗· `EllipticDivisibilitySequence.normEDS_sum_companion`
+              — **the universal `(★s′)` identity**
+              `bc(Wₙ₋₁²Wₙ₊₂ + Wₙ₋₂Wₙ₊₁²) = Wₙ₋₁WₙWₙ₊₁(db+b⁵) − Wₙ³b³c`
+              for `W = normEDS b c d` over any ring — pure EDS, no
+              geometry; to be proven by Stange-style double parity
+              descent through the two-parameter family `T(p,q)`
+              (mathlib TODO `IsEllipticSequence normEDS`; descent
+              certificates verified to exist, `scripts/eds/`).
             - ✗· `TorsionCard.exists_point_x_smul` — **rational points
               in multiplication fibres** over a separably closed
               field (where separability of `[n]` enters).
