@@ -130,6 +130,50 @@ theorem evalEval_φ_eq (n : ℤ) {x y : k} (h : (E⁄k).toAffine.Equation x y) :
     linear_combination (((E⁄k).preΨ (n + 1)).eval x *
       ((E⁄k).preΨ (n - 1)).eval x) * hψ₂
 
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] [DecidableEq k] in
+/-- **The even `ψ`-recurrence on the curve** (PROVEN 2026-07-17):
+`ψ₂ₘ ⬝ ψ₂ = ψₘ₋₁² ψₘ ψₘ₊₂ - ψₘ₋₂ ψₘ ψₘ₊₁²` at a point of the curve
+(the value-level instance of `Ψ_even`). -/
+theorem evalEval_ψ_even (m : ℤ) {x y : k}
+    (h : (E⁄k).toAffine.Equation x y) :
+    ((E⁄k).ψ (2 * m)).evalEval x y * ((E⁄k).ψ 2).evalEval x y =
+      ((E⁄k).ψ (m - 1)).evalEval x y ^ 2 * ((E⁄k).ψ m).evalEval x y *
+        ((E⁄k).ψ (m + 2)).evalEval x y -
+      ((E⁄k).ψ (m - 2)).evalEval x y * ((E⁄k).ψ m).evalEval x y *
+        ((E⁄k).ψ (m + 1)).evalEval x y ^ 2 := by
+  have hkey := congrArg (Polynomial.evalEval x y)
+    (WeierstrassCurve.Ψ_even (W := (E⁄k)) m)
+  simp only [Polynomial.evalEval_mul, Polynomial.evalEval_sub,
+    Polynomial.evalEval_pow] at hkey
+  rw [WeierstrassCurve.evalEval_ψ (2 * m) h, WeierstrassCurve.ψ_two,
+    WeierstrassCurve.evalEval_ψ (m - 1) h, WeierstrassCurve.evalEval_ψ m h,
+    WeierstrassCurve.evalEval_ψ (m + 2) h, WeierstrassCurve.evalEval_ψ (m - 2) h,
+    WeierstrassCurve.evalEval_ψ (m + 1) h]
+  exact hkey
+
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] [DecidableEq k] in
+/-- **The odd `ψ`-recurrence on the curve** (PROVEN 2026-07-17):
+`ψ₂ₘ₊₁ = ψₘ₊₂ ψₘ³ - ψₘ₋₁ ψₘ₊₁³` at a point of the curve — the
+correction term of `Ψ_odd` carries the curve polynomial as a factor
+and dies on points. -/
+theorem evalEval_ψ_odd (m : ℤ) {x y : k}
+    (h : (E⁄k).toAffine.Equation x y) :
+    ((E⁄k).ψ (2 * m + 1)).evalEval x y =
+      ((E⁄k).ψ (m + 2)).evalEval x y * ((E⁄k).ψ m).evalEval x y ^ 3 -
+        ((E⁄k).ψ (m - 1)).evalEval x y * ((E⁄k).ψ (m + 1)).evalEval x y ^ 3 := by
+  have h0 : ((E⁄k).toAffine.polynomial).evalEval x y = 0 := h
+  have hkey := congrArg (Polynomial.evalEval x y)
+    (WeierstrassCurve.Ψ_odd (W := (E⁄k)) m)
+  simp only [Polynomial.evalEval_mul, Polynomial.evalEval_sub,
+    Polynomial.evalEval_add, Polynomial.evalEval_pow] at hkey
+  rw [h0, zero_mul, zero_mul, add_zero] at hkey
+  rw [WeierstrassCurve.evalEval_ψ (2 * m + 1) h,
+    WeierstrassCurve.evalEval_ψ (m + 2) h, WeierstrassCurve.evalEval_ψ m h,
+    WeierstrassCurve.evalEval_ψ (m - 1) h, WeierstrassCurve.evalEval_ψ (m + 1) h]
+  exact hkey
+
 set_option warn.sorry false in
 /-- (Sorry node — **the multiplication-by-`n` formula**, Washington
 *Elliptic curves* Theorem 3.6, the strengthened simultaneous induction
