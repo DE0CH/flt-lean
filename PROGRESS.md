@@ -2582,6 +2582,21 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6, psi34 ELABORATION SAGA — corrective record):
+  the cb7f744 'psi34 verified' claim was PREMATURE (a mid-compile
+  output read — lesson: never read a background compile's output file
+  until the process list is empty). The 266/164-term b-power-form
+  certificate hits HPow-metavariable maxRecDepth in ELABORATION
+  (not proof): neither type-ascription nor maxRecDepth 16000 +
+  40M heartbeats finished within ~40 min. Switched to the
+  X-COLLECTED form: Fc = Σᵢ C(fᵢ)·Xⁱ with 6+4 K-level coefficient
+  expressions (elaborates in K, no polynomial-instance cascade),
+  RHS = C(raw resultant value) so hcert needs NO b-relation (holds
+  over independent b's; the relation enters only in the K-level
+  step det-value = Δ⁴ via a 55-term linear_combination on
+  W.b_relation). Verification of this form in flight. FALLBACK if
+  ring still stalls: park hcert as a mini sorry-node (architecture
+  is sound; certificate is sympy-exact) or prove coefficientwise.
 - 2026-07-17 (session 6, WEIL PAIRING DECOMPOSED): the
   `exists_weilPairing` node is now DERIVED from the strictly smaller
   node `det_galoisRep_eq_cyclotomic` (det of the mod-p representation
