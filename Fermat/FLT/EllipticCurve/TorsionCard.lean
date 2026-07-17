@@ -317,6 +317,25 @@ theorem add_some_coords {x₁ y₁ x₂ y₂ : k}
     linear_combination (-2 : k) * ((E⁄k).toAffine.addX x₁ x₂
       ((E⁄k).toAffine.slope x₁ x₂ y₁ y₂) - x₁) * hS
 
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] in
+/-- **The `x`-collision dichotomy** (PROVEN 2026-07-17): two affine
+points share an `x`-coordinate exactly when they are equal or
+opposite. Used by the induction's addition step to split off the
+`(2m+1) • P = 0` branch. -/
+theorem eq_or_add_eq_zero_of_X_eq {x₁ y₁ x₂ y₂ : k}
+    (h₁ : (E⁄k).toAffine.Nonsingular x₁ y₁)
+    (h₂ : (E⁄k).toAffine.Nonsingular x₂ y₂) (hx : x₁ = x₂) :
+    (Affine.Point.some x₁ y₁ h₁ : (E⁄k).Point) = Affine.Point.some x₂ y₂ h₂ ∨
+      (Affine.Point.some x₁ y₁ h₁ : (E⁄k).Point) + Affine.Point.some x₂ y₂ h₂ = 0 := by
+  rcases Affine.Y_eq_of_X_eq h₁.1 h₂.1 hx with hy | hy
+  · left
+    subst hx
+    subst hy
+    rfl
+  · right
+    exact Affine.Point.add_of_Y_eq hx hy
+
 set_option warn.sorry false in
 /-- (Sorry node — **the multiplication-by-`n` formula**, Washington
 *Elliptic curves* Theorem 3.6, the strengthened simultaneous induction
