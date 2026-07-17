@@ -184,4 +184,36 @@ theorem WK_baseChange_self : WK.baseChange Kuniv = WK := by
   rw [WeierstrassCurve.baseChange, show algebraMap Kuniv Kuniv =
     RingHom.id Kuniv from rfl, WeierstrassCurve.map_id]
 
+set_option backward.isDefEq.respectTransparency false in
+/-- **The univariate value bridge**: evaluating a coefficient-mapped
+univariate polynomial at `tautX` is the quotient-map image of its
+`C`-inclusion. -/
+theorem taut_eval_C_mk (P : (MvPolynomial (Fin 5) ℤ)[X]) :
+    (P.map coeffHom).eval tautX =
+      algebraMap Buniv Kuniv (CoordinateRing.mk Wuniv (Polynomial.C P)) := by
+  have h := taut_evalEval_mk (Polynomial.C P)
+  rwa [Polynomial.map_C, Polynomial.evalEval_C] at h
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Univariate injectivity**: `y`-free elements embed injectively
+into the universal function field. -/
+theorem taut_C_injective {P Q : (MvPolynomial (Fin 5) ℤ)[X]}
+    (h : algebraMap Buniv Kuniv (CoordinateRing.mk Wuniv (Polynomial.C P)) =
+      algebraMap Buniv Kuniv (CoordinateRing.mk Wuniv (Polynomial.C Q))) :
+    P = Q := by
+  have h0 : CoordinateRing.mk Wuniv (Polynomial.C (P - Q)) = 0 := by
+    rw [Polynomial.C_sub, map_sub]
+    exact IsFractionRing.injective Buniv Kuniv
+      (show algebraMap Buniv Kuniv
+          (CoordinateRing.mk Wuniv (Polynomial.C P) -
+            CoordinateRing.mk Wuniv (Polynomial.C Q)) =
+          algebraMap Buniv Kuniv 0 by
+        rw [map_zero, map_sub, h, sub_self])
+  have hsmul : (P - Q) • (1 : Wuniv.toAffine.CoordinateRing) +
+      (0 : (MvPolynomial (Fin 5) ℤ)[X]) •
+        CoordinateRing.mk Wuniv Polynomial.X = 0 := by
+    simp only [CoordinateRing.smul, mul_one, map_zero, zero_mul, add_zero]
+    exact h0
+  exact sub_eq_zero.mp ((CoordinateRing.smul_basis_eq_zero hsmul).1)
+
 end PsiSumCompanion
