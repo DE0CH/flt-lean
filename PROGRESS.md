@@ -12,46 +12,52 @@ recurse into the gaps. Follow the Wiles/Taylor–Wiles route as organized by the
 Frey–Serre–Ribet reduction; use Buzzard's FLT project (Imperial) blueprint as a
 map where helpful.
 
-## Tree (✓ = proven here or in mathlib, ✗ = sorry, ○ = in progress, □ = not yet started)
+## Tree (two symbols per item — first: ✓ = proven here or in mathlib, ✗ = sorry; second: · = normal, ○ = in progress right now)
+
+Every item carries exactly two leading symbols. `✗·` open sorry node;
+`✗○` sorry node actively being worked on in the current block of work;
+`✓·` proven; `✓○` proven but being reworked (rare — e.g. a statement
+change forces revisiting a finished proof). Update the `○` marks at
+the START and END of each block of work.
 
 - `fermat_last_theorem : FermatLastTheorem`
-  - ✓ `FermatLastTheorem.of_odd_primes` (mathlib, NumberTheory/FLT/Four.lean)
-  - ✓ `fermatLastTheoremFour` (mathlib)
-  - ✓ `fermatLastTheoremThree` (mathlib)
-  - ✓ `fermatLastTheoremFor_of_five_le : ∀ p, p.Prime → 5 ≤ p → FermatLastTheoremFor p`
+  - ✓· `FermatLastTheorem.of_odd_primes` (mathlib, NumberTheory/FLT/Four.lean)
+  - ✓· `fermatLastTheoremFour` (mathlib)
+  - ✓· `fermatLastTheoremThree` (mathlib)
+  - ✓· `fermatLastTheoremFor_of_five_le : ∀ p, p.Prime → 5 ≤ p → FermatLastTheoremFor p`
     (`Fermat/PrimeFive.lean`) — proven from:
-    - ✓ `FreyPackage` + `FreyPackage.of_not_FermatLastTheoremFor_p_ge_5` +
+    - ✓· `FreyPackage` + `FreyPackage.of_not_FermatLastTheoremFor_p_ge_5` +
       `FreyPackage.fermatLastTheoremFor_p_ge_5` (`Fermat/FreyPackage.lean`,
       adapted from the FLT project, Apache 2.0) — a counterexample for prime
       `p ≥ 5` normalizes to a Frey package (coprime, `a ≡ 3 mod 4`, `b` even).
       Fully proven, no sorry.
-    - ✓ `FreyPackage.freyCurve : WeierstrassCurve ℚ` with `IsElliptic`
+    - ✓· `FreyPackage.freyCurve : WeierstrassCurve ℚ` with `IsElliptic`
       instance, `Δ`, `b₂`, `b₄`, `c₄`, `j`, and
       `FreyCurve.j_valuation_of_bad_prime` (`Fermat/FreyCurve.lean`, adapted
       from the FLT project). Fully proven, no sorry.
-    - ✓ `FreyPackage.false : FreyPackage → False` — now PROVEN from Mazur +
+    - ✓· `FreyPackage.false : FreyPackage → False` — now PROVEN from Mazur +
       B4 (mirroring the FLT project's `Proof.lean` boss-theorem spine):
-      - ✓ `FreyPackage.mazur` (`Fermat/FLT/FreyCurve/Mazur.lean`) — the mod-p
+      - ✓· `FreyPackage.mazur` (`Fermat/FLT/FreyCurve/Mazur.lean`) — the mod-p
         rep of the Frey curve is irreducible — now DERIVED (2026-07-16) from
         two explicit nodes in `Fermat/FLT/FreyCurve/MazurTorsion.lean` (own
         work), following Serre (Duke 1987, §4.1):
-        - ✓ `FreyPackage.exists_torsion_embedding_of_not_isIrreducible` —
+        - ✓· `FreyPackage.exists_torsion_embedding_of_not_isIrreducible` —
           DERIVED (2026-07-16) from the two nodes below: Serre's
           analysis produces full 2-torsion plus a rational point of
           order p on some curve; the PROVEN `embedding_assembly`
           combines them into an injective ℤ/2 × ℤ/2p via CRT.
-          - ✓ `FreyPackage.exists_two_torsion_and_p_point_of_not_isIrreducible`
+          - ✓· `FreyPackage.exists_two_torsion_and_p_point_of_not_isIrreducible`
             — DERIVED (2026-07-16) from the disjunction node below plus
             the PROVEN Frey 2-torsion.
-            - ✓ `FreyPackage.exists_p_point_of_not_isIrreducible` —
+            - ✓· `FreyPackage.exists_p_point_of_not_isIrreducible` —
               DERIVED (2026-07-16): the Minkowski input is discharged
               by the node below.
-              - ✓ `minkowski_character_trivial` — DERIVED (2026-07-16)
+              - ✓· `minkowski_character_trivial` — DERIVED (2026-07-16)
                 from the subgroup form below: the kernel is an open
                 normal subgroup containing every inertia image
                 (`Subgroup.map_le_iff_le_comap` + `ker (χ∘res) =
                 comap res (ker χ)`), hence everything, so χ = 1.
-                - ✓ `open_normal_subgroup_eq_top_of_inertia_le` —
+                - ✓· `open_normal_subgroup_eq_top_of_inertia_le` —
                   **Minkowski, subgroup form**: DERIVED (2026-07-16)
                   from the inertia dictionary below plus mathlib's
                   discriminant theory (fixed field of the open normal
@@ -62,7 +68,7 @@ map where helpful.
                   `exists_not_isUnramifiedAt_int_of_isGalois` gives an
                   everywhere-ramified prime `p`; going-up lifts it;
                   the dictionary contradicts).
-                  - ✓ `isUnramifiedAt_of_inertia_le_fixingSubgroup` —
+                  - ✓· `isUnramifiedAt_of_inertia_le_fixingSubgroup` —
                     **THE inertia dictionary**: DERIVED (2026-07-16,
                     compiled in ONE shot from the pre-verified chain:
                     `liesOver_span_iff` for `LiesOver`, residue-field
@@ -70,14 +76,14 @@ map where helpful.
                     `card_inertia_eq_ramificationIdxIn`,
                     `ramificationIdxIn_eq_ramificationIdx`,
                     `ramificationIdx_eq_one_iff.mp`).
-                    - ✓ `inertia_eq_bot_of_le_fixingSubgroup` — **the
+                    - ✓· `inertia_eq_bot_of_le_fixingSubgroup` — **the
                       inertia transport** (DERIVED; whole chain now
                       rests on the ONE local node below): the image of
                       `localInertiaGroup q` fixing `L` pointwise
                       trivializes `Q.inertia (L ≃ₐ[ℚ] L)`.
                       SPLIT EXECUTED (2026-07-16): the
                       transport is DERIVED from
-                      ✓ `exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup`
+                      ✓· `exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup`
                       (SOME prime above `q` has trivial inertia —
                       DERIVED 2026-07-16 via the VALUATION route, no
                       decomposition groups and no henselian lifting:
@@ -100,27 +106,19 @@ map where helpful.
                       (`𝔪(ℤ_qˆ) = span q`, via
                       `intValuation_singleton` +
                       `maximalIdeal_eq_span_uniformizer`); rests on
-                      ✗ `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`
+                      ✓· `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`
                       (`Deformations/RepresentationTheory/LocalInertiaFixedField.lean`
-                      — THE new local node: a finite subextension
-                      `M/Kᵥ` of `Kᵥᵃˡᵍ` fixed pointwise by
-                      `localInertiaGroup v` has `e(M/Kᵥ) = 1`, i.e.
-                      `𝔪ᵥ` generates `𝔪(IntegralClosure 𝒪ᵥ M)`;
-                      classical: the fixed field of inertia is the
-                      maximal unramified extension, Neukirch II.9.11.
-                      Planned proof: pass to the Galois closure `N/Kᵥ`;
-                      `|I(N/Kᵥ)| = e(N/Kᵥ)` at each finite level via
-                      `card_inertia_eq_ramificationIdxIn` — the
-                      integral closure at every finite level is LOCAL
-                      because it is a valuation ring by the vendored
-                      spectral-norm argument, with finite residue
-                      field — plus tower multiplicativity of `e` and a
+                      — PROVEN 2026-07-16/17, Neukirch II.9.11 from
+                      scratch: a finite subextension `M/Kᵥ` of `Kᵥᵃˡᵍ`
+                      fixed pointwise by `localInertiaGroup v` has
+                      `e(M/Kᵥ) = 1`. Proof as planned: Galois closure
+                      `N/Kᵥ`; `|I(N/Kᵥ)| = e(N/Kᵥ)` at each finite
+                      level via `card_inertia_eq_ramificationIdxIn`,
+                      tower multiplicativity of `e`, finite-level
+                      inertia surjectivity by counting, and profinite
                       compactness lifting of finite-level inertia
-                      elements to `localInertiaGroup v`, whose
-                      finite-level surjectivity along towers is a
-                      counting argument from the same two
-                      ingredients) and
-                      ✓ `inertia_eq_bot_of_exists_prime_over`
+                      elements to `localInertiaGroup v`) and
+                      ✓· `inertia_eq_bot_of_exists_prime_over`
                       (conjugacy propagation — PROVEN 2026-07-16:
                       `exists_smul_eq_of_isGaloisGroup` gives
                       transitivity on primes over `q`; the conjugation
@@ -128,32 +126,33 @@ map where helpful.
                       Q` is a short definitional argument from
                       `mem_inertia` + the pointwise-smul API
                       `Ideal.IsPrime.smul`/`pointwise_smul_eq_comap`).
-              - ✗ `FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski`
+              - ✗· `FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski`
                 — Serre's analysis with the Minkowski input as a
                 hypothesis: stable line ⟹ characters χ₁χ₂ = ω̄;
                 semistability ⟹ one character everywhere unramified ⟹
                 trivial by hypothesis; χ₁ = 1: p-point on the Frey
                 curve; χ₂ = 1: package on the Vélu quotient.
                 Remaining deep content:
-                - □ quotients of elliptic curves by finite rational
-                  subgroups (Vélu) — needed for the χ₂ = 1 case.
-                - ✓ `exists_stable_line_of_not_isIrreducible`
+                - ✗· quotients of elliptic curves by finite rational
+                  subgroups (Vélu) — needed for the χ₂ = 1 case (not
+                  yet stated in Lean).
+                - ✓· `exists_stable_line_of_not_isIrreducible`
                   (`Chebotarev.lean`, PROVEN sorry-free 2026-07-16) —
                   the first step: a non-irreducible 2-dim mod-ℓ rep
                   has a Galois-stable line.
-            - ✓ `FreyPackage.freyCurve_two_torsion_embedding` — PROVEN
+            - ✓· `FreyPackage.freyCurve_two_torsion_embedding` — PROVEN
               (2026-07-16): the Frey model has rational 2-torsion
               points (0, 0) and (aᵖ/4, −aᵖ/8) (the quadratic factors
               as (x − aᵖ/4)(x + bᵖ/4)); they are distinct, of order 2
               (fixed by negation `negY`), and generate an injective
               (ℤ/2)² →+ E(ℚ) via two `ZMod.lift`s and a coprod, with
               injectivity by the four-element case analysis.
-          - ✓ `embedding_assembly` (PROVEN 2026-07-16): in an abelian
+          - ✓· `embedding_assembly` (PROVEN 2026-07-16): in an abelian
             group, an injective (ℤ/2)² and an element of order exactly
             p (odd prime) assemble into an injective ℤ/2 × ℤ/2p
             (`ZMod.chineseRemainder`; the parts are separated by the
             coprime annihilators 2 and p).
-        - ✓ `WeierstrassCurve.mazur_torsion_bound` — Mazur's torsion
+        - ✓· `WeierstrassCurve.mazur_torsion_bound` — Mazur's torsion
           theorem, weak form: no elliptic curve over ℚ has a subgroup of
           rational points ≅ ℤ/2 × ℤ/2p for p ≥ 5 (primality dropped as
           unneeded) — now PROVEN (2026-07-16) from the faithful
@@ -161,39 +160,39 @@ map where helpful.
           group ℤ/2 × ℤ/2p are torsion (finite additive order), the hom
           corestricts into the torsion submodule, and 4p ≥ 20 > 16 ≥ the
           order of every group in Mazur's list (`Nat.card` comparison).
-          - ✗ `WeierstrassCurve.mazur_classification` — **Mazur's torsion
+          - ✗· `WeierstrassCurve.mazur_classification` — **Mazur's torsion
             theorem**, stated faithfully: the torsion submodule
             (`Submodule.torsion ℤ E(ℚ)`) is ≃+ to one of the fifteen
             groups ℤ/n (n ∈ {1,…,10,12}) or ℤ/2 × ℤ/2m (m ∈ {1,…,4}).
             Mazur, Publ. Math. IHÉS 47 (1977); Invent. Math. 44 (1978).
-      - ✓ `FreyPackage.galoisRep_not_irreducible` (B4, `Fermat/PrimeFive.lean`)
+      - ✓· `FreyPackage.galoisRep_not_irreducible` (B4, `Fermat/PrimeFive.lean`)
         — now DERIVED (2026-07-16) from two explicit nodes, mirroring the
         FLT project's hardly-ramified plan (their B5/B6, stated in Lean here
         before upstream):
-        - ✓ `FreyCurve.torsion_isHardlyRamified`
+        - ✓· `FreyCurve.torsion_isHardlyRamified`
           (`GaloisRepresentation/HardlyRamified/Frey.lean`) — now DERIVED
           (2026-07-16) as the structure constructor applied to the four
           defining conditions, each an explicit node in
           `HardlyRamified/FreyConditions.lean` (own work):
-          - ✓ `FreyCurve.torsion_det` — det ρ̄ = mod-p cyclotomic
+          - ✓· `FreyCurve.torsion_det` — det ρ̄ = mod-p cyclotomic
             character — now DERIVED (2026-07-16) via the Weil pairing
             route (`EllipticCurve/WeilPairing.lean`, own work):
-            - ✗ `WeilPairing.exists_weilPairing` — **the Weil pairing**:
+            - ✗· `WeilPairing.exists_weilPairing` — **the Weil pairing**:
               an alternating, nondegenerate, `ZMod p`-bilinear pairing on
               `E[p]` scaled by the Galois action through the cyclotomic
               character (`E[p] ∧ E[p] ≅ μ_p`).
-            - ✓ `WeilPairing.pairing_map_eq_det_smul` +
+            - ✓· `WeilPairing.pairing_map_eq_det_smul` +
               `WeilPairing.det_eq_of_conj` — PROVEN (sorry-free): on a
               2-dimensional space an alternating form transforms under
               any endomorphism by the determinant (basis + 2×2
               computation), so scaling by `c` forces `det = c`.
-          - ✓ `FreyCurve.torsion_isUnramified` — unramified outside
+          - ✓· `FreyCurve.torsion_isUnramified` — unramified outside
             {2, p}: DERIVED (2026-07-16) by the case split `q ∣ abc` or
             not, from the two nodes below.
-            - ✓ `FreyCurve.torsion_isUnramified_of_good` — DERIVED
+            - ✓· `FreyCurve.torsion_isUnramified_of_good` — DERIVED
               (2026-07-16) from the two `FreyCurve/Semistable.lean`
               nodes below.
-              - ✓ `FreyPackage.freyCurve_hasGoodReduction_of_not_dvd`
+              - ✓· `FreyPackage.freyCurve_hasGoodReduction_of_not_dvd`
                 (`FreyCurve/Semistable.lean`, own work): PROVEN
                 (2026-07-16) — at odd `q ∤ abc` the Frey equation is
                 `q`-integral (integrality via `freyCurveInt` +
@@ -203,23 +202,25 @@ map where helpful.
                 `mker_valuation_eq_isUnitSubmonoid`), hence minimal
                 (valuation `1` is maximal among integral models) with
                 good reduction over `ℤ_(q) = Localization.AtPrime`.
-              - ✗ `WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction`
-                (`FreyCurve/Semistable.lean`, own work): the NOS
-                local-global glue — good reduction at `q ≠ p` gives
-                `IsUnramifiedAt q` for the mod-`p` torsion rep; to be
-                closed against the vendored NOS node below (inertia
-                dictionary between `localInertiaGroup` and valuation
-                subrings of `ℚ̄`).
-                - ✗ `torsion_unramified_of_good_reduction`
+              - ✓· `WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction`
+                (`FreyCurve/Semistable.lean`, own work): DERIVED
+                (2026-07-17) — the NOS local-global glue: good
+                reduction at `q ≠ p` gives `IsUnramifiedAt q` for the
+                mod-`p` torsion rep, closed against the vendored NOS
+                leaf below via the PROVEN embedded-valuation-subring
+                machinery + spelling bridge
+                (`map_mem_inertiaSubgroup_of_mem_localInertiaGroup`,
+                `LocalInertiaFixedField.lean`).
+                - ✗· `torsion_unramified_of_good_reduction`
                   (`KnownIn1980s/EllipticCurves/GoodReduction.lean`,
                   vendored 2026-07-16): the NOS easy direction — good
                   reduction over a DVR makes the inertia action on
                   `n`-torsion trivial.
-            - ✓ `FreyCurve.torsion_isUnramified_of_multiplicative` —
+            - ✓· `FreyCurve.torsion_isUnramified_of_multiplicative` —
               DERIVED (2026-07-16) from the PROVEN arithmetic
               (`freyCurve_hasMultiplicativeReduction_of_dvd` +
               `j_valuation_of_bad_prime`) and the Tate glue node below.
-              - ✓ `FreyPackage.freyCurve_hasMultiplicativeReduction_of_dvd`
+              - ✓· `FreyPackage.freyCurve_hasMultiplicativeReduction_of_dvd`
                 (`FreyCurve/Semistable.lean`, own work): PROVEN
                 (2026-07-16) — at odd `q ∣ abc` the equation is
                 `q`-integral, `c₄ = c^{2p} - (ab)^p` is prime to `q`
@@ -227,57 +228,104 @@ map where helpful.
                 divisible by `q`), so `v(c₄) = 1` (minimality by the
                 vendored unit-`c₄` Kraus–Laska criterion) while
                 `Δ = (abc)^{2p}/2⁸` lies in the maximal ideal.
-              - ✗ `WeierstrassCurve.isUnramifiedAt_of_hasMultiplicativeReduction`
-                (`FreyCurve/Semistable.lean`, own work): the Tate glue
-                — multiplicative reduction at odd `q ≠ p` with
-                `p ∣ v_q(j)` ⟹ `IsUnramifiedAt q`; to be closed
-                against the quadratic-twist (vendored PROVEN) and
-                Tate-uniformization (`exists_tateEquivSepClosure`)
-                nodes.
-          - ✓ `FreyCurve.torsion_isFlat` — flat at p: DERIVED
+              - ✓· `WeierstrassCurve.isUnramifiedAt_of_hasMultiplicativeReduction`
+                (`FreyCurve/Semistable.lean`, own work): DERIVED
+                (2026-07-17) — the Tate glue: multiplicative reduction
+                at odd `q ≠ p` with `p ∣ v_q(j)` ⟹ `IsUnramifiedAt q`,
+                by the same embedded-subring transport as the good
+                case, against the new pure-Tate content leaf below.
+                - ✗· `torsion_unramified_of_multiplicative_reduction`
+                  (`FreyCurve/Semistable.lean`, stated 2026-07-17):
+                  multiplicative reduction over `ℤ_(q)` with
+                  `p ∣ v_q(j)` makes the `𝒪.inertiaSubgroup` action on
+                  the `p`-torsion of `E(ℚ̄)` trivial (pure Tate-curve
+                  content, stated in the same `inertiaSubgroup`/
+                  `Point.map` shape as the NOS leaf, with the `h𝒪`
+                  pullback hypothesis); to be closed against the
+                  quadratic-twist (vendored PROVEN) and
+                  Tate-uniformization (`exists_tateEquivSepClosure`)
+                  nodes.
+          - ✓· `FreyCurve.torsion_isFlat` — flat at p: DERIVED
             (2026-07-16) by the case split `p ∣ abc` or not, from the
             two nodes below.
-            - ✓ `FreyCurve.torsion_isFlat_of_good` — DERIVED
+            - ✓· `FreyCurve.torsion_isFlat_of_good` — DERIVED
               (2026-07-16) from the PROVEN arithmetic node
               `freyCurve_hasGoodReduction_of_not_dvd` (applied at
               `q := p`) and the flat glue node below.
-              - ✗ `WeierstrassCurve.isFlatAt_of_hasGoodReduction`
-                (`FreyCurve/Semistable.lean`, own work): good reduction
-                at `p` ⟹ `IsFlatAt p` for the mod-`p` torsion rep; to
-                be closed against the vendored
-                `torsion_flat_of_good_reduction` (transport of the
-                Hopf-algebra prolongation package along
-                `ℤ_(p) → ℤ_p`).
-              - ✗ `torsion_flat_of_good_reduction`
+              - ✓· `WeierstrassCurve.isFlatAt_of_hasGoodReduction`
+                (`FreyCurve/Semistable.lean`, own work): DERIVED
+                (2026-07-17) — good reduction at `p` ⟹ `IsFlatAt p`
+                for the mod-`p` torsion rep, from the vendored leaf
+                below plus the shared flat transport
+                `GaloisRep.isFlatAt_of_dvr_package` (see its own
+                subtree entry under the multiplicative case).
+              - ✗· `torsion_flat_of_good_reduction`
                 (`KnownIn1980s/EllipticCurves/Flat.lean`, vendored
                 2026-07-16): good reduction over a DVR makes the
                 `n`-torsion a finite flat group scheme (Hopf algebra,
                 finite flat, étale generic fibre, equivariant points
                 isomorphism). Plus two division-polynomial nodes:
-                ✗ `resultant_Φ_ΨSq` and ✓ `isCoprime_Φ_ΨSq` (DERIVED
+                ✗· `resultant_Φ_ΨSq` and ✓· `isCoprime_Φ_ΨSq` (DERIVED
                 2026-07-16 from the resultant node via mathlib's
                 `exists_mul_add_mul_eq_C_resultant` Bézout identity).
-            - ✓ `FreyCurve.torsion_isFlat_of_multiplicative` — DERIVED
+            - ✓· `FreyCurve.torsion_isFlat_of_multiplicative` — DERIVED
               (2026-07-16) from the PROVEN arithmetic
               (`freyCurve_hasMultiplicativeReduction_of_dvd` at
               `q := p` + `j_valuation_of_bad_prime`) and the glue node
               below.
-              - ✗ `WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction`
-                (`FreyCurve/Semistable.lean`, own work): the
-                peu-ramifiée glue — multiplicative reduction at `p`
-                with `p ∣ v_p(j)` makes the Tate-curve extension
-                `0 → μ_p → E[p] → ℤ/p → 0` peu ramifiée, which
-                prolongs to a finite flat group scheme over `ℤ_p`.
-          - ✓ `FreyCurve.torsion_isTameAtTwo` — DERIVED (2026-07-16)
+              - ✓· `WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction`
+                (`FreyCurve/Semistable.lean`, own work): DERIVED
+                (2026-07-17) — the peu-ramifiée glue: multiplicative
+                reduction at `p` with `p ∣ v_p(j)` ⟹ `IsFlatAt p`,
+                from the new content leaf below plus the shared flat
+                transport.
+                - ✗· `torsion_flat_of_multiplicative_reduction`
+                  (`FreyCurve/Semistable.lean`, stated 2026-07-17):
+                  multiplicative reduction over `ℤ_(p)` with
+                  `p ∣ v_p(j)` produces a finite flat Hopf algebra
+                  over `ℤ_(p)` (étale generic fibre) whose `ℚ̄`-points
+                  are `Γ ℚ`-equivariantly the `p`-torsion — the
+                  peu-ramifiée package in the same DVR-`∃`-shape as
+                  the good-reduction leaf (Tate curve + Kummer theory
+                  content).
+                - ✓· `GaloisRep.isFlatAt_of_dvr_package`
+                  (`Deformations/RepresentationTheory/FlatProlongation.lean`)
+                  — **the shared flat transport**, DERIVED
+                  (2026-07-17): a DVR package over `ℤ_(q)` with
+                  equivariant `WithConv`-points iso onto the rep's
+                  space (over a field `A`) gives `IsFlatAt q`. The
+                  open-ideal quantifier runs over the two ideals of
+                  `A`: `⊤` via `hasFlatProlongationAt_of_subsingleton`
+                  (PROVEN — trivial Hopf algebra `𝒪ᵥ`), `⊥` via the
+                  PROVEN transport
+                  `HasFlatProlongationAt.of_addEquiv` across
+                  `M ≃+ (A ⧸ ⊥) ⊗[A] M` (`AlgEquiv.quotientBot` +
+                  `baseChange_tmul`).
+                  - ✗○ `GaloisRep.hasFlatProlongationAt_of_dvr_package`
+                    (same file) — **the core points comparison**
+                    (CURRENT WORK): take `G := 𝒪ᵥ ⊗[ℤ_(q)] H`
+                    (Hopf/flat/finite by base change), identify the
+                    generic fibre by `cancelBaseChange` and the points
+                    by the chain `(Kᵥ ⊗[𝒪ᵥ] G →ₐ[Kᵥ] Kᵥᵃˡᵍ) ≃ … ≃
+                    (ℚ ⊗[ℤ_(q)] H →ₐ[ℚ] ℚ̄)` (`AlgHom.liftEquiv`
+                    twice + `algHomEquivOfFinite`), transporting
+                    convolution structures and equivariance.
+                    - ✓· layer C `algHomEquivOfFinite` +
+                      `algebraicClosureMapAlgHom` +
+                      `mem_range_algebraicClosureMap_of_isIntegral`
+                      (PROVEN 2026-07-17): postcomposition with the
+                      embedding `ι : ℚ̄ → Kᵥᵃˡᵍ` is a bijection on
+                      points of any finite `ℚ`-algebra.
+          - ✓· `FreyCurve.torsion_isTameAtTwo` — DERIVED (2026-07-16)
             from the PROVEN arithmetic and the tame glue node below.
-            - ✓ `FreyPackage.freyCurve_hasMultiplicativeReduction_at_two`
+            - ✓· `FreyPackage.freyCurve_hasMultiplicativeReduction_at_two`
               (`FreyCurve/Semistable.lean`, own work): PROVEN
               (2026-07-16) — the Frey model is semistable at 2 by
               design: `c₄ = c^{2p} - (ab)^p` is odd (`a ≡ 3 mod 4`,
               `b` even force `c` odd), giving `v(c₄) = 1` and
               Kraus–Laska minimality; `Δ = 2^{2p-8}(ab'c)^{2p}` (with
               `b = 2b'`) is in the maximal ideal since `2p > 8`.
-            - ✗ `WeierstrassCurve.isTameAtTwo_of_hasMultiplicativeReduction`
+            - ✗· `WeierstrassCurve.isTameAtTwo_of_hasMultiplicativeReduction`
               (stated in `FreyConditions.lean` for a general elliptic
               curve over ℚ): the Tate glue at 2 — multiplicative
               reduction at 2 and `p` odd give the rank-1 unramified
@@ -285,13 +333,13 @@ map where helpful.
               against the quadratic-twist (vendored PROVEN) and
               Tate-uniformization (`exists_tateEquivSepClosure`)
               nodes.
-            - ✓ `TateParameter.lean` vendored (2026-07-16, ZERO
+            - ✓· `TateParameter.lean` vendored (2026-07-16, ZERO
               sorries — fully proven): the formal q-expansion machinery
               (formal `c₄`, `Δ`, `j⁻¹` power series and the Tate
               parameter as evaluation), plus the two ValuativeRel
               `FLT.Mathlib` prerequisites (also sorry-free). Feeds the
               Tate-curve chain (`TateCurve.lean` etc.) next.
-            - ✓ Tate-curve/reduction batch vendored (2026-07-16, ZERO
+            - ✓· Tate-curve/reduction batch vendored (2026-07-16, ZERO
               sorries — all fully proven): `TateCurveConstruction.lean`
               (1551 lines: the Tate curve `E_q` over a nonarchimedean
               local field, its q-expansions via
@@ -307,22 +355,22 @@ map where helpful.
               `TateCurve.lean` (upstream `tateCurveEquiv` is sorry-d
               DATA — must be reformulated existentially before
               vendoring, as done for the Weil pairing).
-        - ✓ **B5** `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
+        - ✓· **B5** `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
           (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work) —
           now DERIVED (2026-07-16) from three explicit nodes in
           `HardlyRamified/Lift.lean` (own work), following Buzzard's 2026
           EPSRC Lecture 4 (his B5a/B5b/B5c):
-          - ✗ **B6a** `exists_hardlyRamifiedLift` — an irreducible hardly
+          - ✗· **B6a** `exists_hardlyRamifiedLift` — an irreducible hardly
             ramified mod-ℓ rep (ℓ ≥ 5) lifts to a hardly ramified ℓ-adic
             rep over the integers `O` of a finite extension of `ℚ_ℓ`
             (bundled in `structure HardlyRamifiedLift`: `O` + framed rep +
             reduction map + Frobenius-charpoly compatibility). Deformation
             theory / modularity lifting without residual modularity.
-          - ✓ **B6bc** `residual_charFrob_eq` — the residual Frobenius
+          - ✓· **B6bc** `residual_charFrob_eq` — the residual Frobenius
             charpolys of a liftable rep are those of `1 ⊕ χ̄`
             (`X² − (q+1)X + q`) — now DERIVED (2026-07-16) from the
             faithful split (vendored from the FLT project's newer layer):
-            - ✗ **B6b** `IsHardlyRamified.mem_isCompatible`
+            - ✗· **B6b** `IsHardlyRamified.mem_isCompatible`
               (`HardlyRamified/Family.lean`, vendored; conclusion named
               `IsInHardlyRamifiedFamily` as a marked VENDORING CHANGE) — a
               hardly ramified ℓ-adic rep lives in a compatible family
@@ -334,7 +382,7 @@ map where helpful.
               weak for the charpoly descent (algebraMap from a domain to
               a field need not be injective); true for the intended
               subrings of `ℚ̄_p`.
-            - ✓ `residual_charFrob_eq_of_family` (own work, `Lift.lean`)
+            - ✓· `residual_charFrob_eq_of_family` (own work, `Lift.lean`)
               — compatibility BOOKKEEPING — now PROVEN (2026-07-16):
               extract the 3-adic member via the number-field embedding;
               its charpoly at Frob_q is `X² − (1+q)X + q` by B6c's trace
@@ -357,10 +405,10 @@ map where helpful.
               primes give distinct places, so a finite set of places
               excludes only finitely many primes in the auxiliary-prime
               selection). Proof ingredients consumed:
-              - ✗ **B6c** `IsHardlyRamified.three_adic`
+              - ✗· **B6c** `IsHardlyRamified.three_adic`
                 (`HardlyRamified/Threeadic.lean`, vendored) — a 3-adic
                 hardly ramified rep has trace(Frob_q) = 1 + q for q ≥ 5.
-                - ✗ `IsHardlyRamified.mod_three` (`ModThree.lean`,
+                - ✗· `IsHardlyRamified.mod_three` (`ModThree.lean`,
                   vendored 2026-07-16) — a mod-3 hardly ramified rep has
                   a Γℚ-equivariant surjection onto the trivial character
                   (extension of trivial by cyclotomic); B6c's eventual
@@ -368,24 +416,24 @@ map where helpful.
             - NB the lift structure gained an `IsModuleTopology ℤ_[ℓ] O`
               field (statement strengthening of B6a's conclusion, true for
               integers of finite extensions of ℚ_ℓ; required by B6b).
-          - ✓ `not_isIrreducible_of_charFrob_eq` — Chebotarev + Brauer–
+          - ✓· `not_isIrreducible_of_charFrob_eq` — Chebotarev + Brauer–
             Nesbitt — now DERIVED (2026-07-16, `Chebotarev.lean` + proof
             in `Lift.lean`): the agreement set with `1 ⊕ χ̄`'s charpolys
             is closed (module topology on `End` over `ZMod ℓ` is discrete
             — PROVEN; coefficient maps continuous) and contains the dense
             Frobenius conjugates, so Brauer–Nesbitt applies. Children:
-            - ✓ `dense_conjClasses_globalFrob` — **Chebotarev density**,
+            - ✓· `dense_conjClasses_globalFrob` — **Chebotarev density**,
               topological form — now DERIVED (2026-07-16) by the
               profinite limit argument (PROVEN: cosets of fixing
               subgroups of finite subextensions are a neighborhood basis,
               `krullTopology_mem_nhds_one_iff`; the finite-level
               statement puts a Frobenius conjugate in every coset):
-              - ✗ `exists_frobenius_conj_mem_coset` — **Chebotarev,
+              - ✗· `exists_frobenius_conj_mem_coset` — **Chebotarev,
                 finite level**: for every finite subextension `E` of
                 `K̄/K` and every `σ`, the coset `σ·Gal(K̄/E)` contains a
                 conjugate of a `globalFrob v` with `v ∉ S` (existence
                 form of Chebotarev for the Galois closure of `E/K`).
-            - ✓ `not_isIrreducible_of_charpoly_eq` — **Brauer–Nesbitt**,
+            - ✓· `not_isIrreducible_of_charpoly_eq` — **Brauer–Nesbitt**,
               2-dim mod-ℓ instance — PROVEN SORRY-FREE (2026-07-16):
               Cayley–Hamilton turns the charpoly hypothesis into
               `(ρg − 1)(ρg − χ̄g) = 0`; on `H := ker χ̄` every element is
@@ -395,7 +443,7 @@ map where helpful.
               `Subrepresentation`); if everything, the image commutes
               (commutators die in H) and the common-eigenvector lemma
               yields an invariant line. Children (both proven):
-              - ✓ `BrauerNesbitt.exists_fixed_of_unipotent` — Kolchin,
+              - ✓· `BrauerNesbitt.exists_fixed_of_unipotent` — Kolchin,
                 2-dim: a group of unipotent endomorphisms has a common
                 nonzero fixed vector — PROVEN (2026-07-16, sorry-free).
                 Route: matrix helpers
@@ -407,7 +455,7 @@ map where helpful.
                 `n₀ (ρ g − 1) n₀ = 0`; the line `range n₀ = ker n₀` is
                 preserved with square-zero scalar action, hence fixed
                 pointwise.
-              - ✓ `BrauerNesbitt.exists_common_eigenvector_of_commuting`
+              - ✓· `BrauerNesbitt.exists_common_eigenvector_of_commuting`
                 — a commuting family annihilated by split quadratics on
                 a 2-dim space has a common eigenvector — PROVEN
                 (2026-07-16, sorry-free): all-scalar case is trivial;
@@ -416,11 +464,11 @@ map where helpful.
                 injectivity), proper, hence 1-dimensional, preserved by
                 commutativity, and its generator is the common
                 eigenvector.
-            - ✓ `cyclotomicCharacterModL_globalFrob` — χ̄(Frob_q) = q
+            - ✓· `cyclotomicCharacterModL_globalFrob` — χ̄(Frob_q) = q
               for q ≠ ℓ — now DERIVED (2026-07-16) by mod-ℓ reduction
               (`cyclotomicCharacter.spec` at n = 1 +
               `modularCyclotomicCharacter.unique`) from:
-              - ✓ `cyclotomicCharacter_globalFrob` — the **ℓ-adic**
+              - ✓· `cyclotomicCharacter_globalFrob` — the **ℓ-adic**
                 cyclotomic character evaluates to q at `globalFrob q`
                 (q ≠ ℓ) — now DERIVED (2026-07-16, the hardest assembly
                 of the session): `lift_map` transports the action to
@@ -441,7 +489,7 @@ map where helpful.
                 (`AbsoluteGaloisGroup.lean`), and `AlgebraicClosure.map`
                 is definitionally `IsAlgClosed.lift`
                 (`Deformations/Lemmas.lean`);
-                (ii) ✓ `natCard_residue_quotient_toHeightOneSpectrum`
+                (ii) ✓· `natCard_residue_quotient_toHeightOneSpectrum`
                 — PROVEN sorry-free (2026-07-16): the contraction of the
                 maximal ideal is the maximal ideal
                 (`Ideal.IsMaximal.under` on the integral closure + local
@@ -468,9 +516,9 @@ map where helpful.
                 (iv) transport through the embedding and conclude by
                 `cyclotomicCharacter.unique`-mod-ℓ^k plus
                 `PadicInt.ext_of_toZModPow`.
-              - ✓ `toZMod_eq_ringEquivCongr_comp_toZModPow` — PROVEN
+              - ✓· `toZMod_eq_ringEquivCongr_comp_toZModPow` — PROVEN
                 (kernel rigidity of ring homs into `ZMod p`).
-            - ✓ sorry-free bridges (own work, `Chebotarev.lean`):
+            - ✓· sorry-free bridges (own work, `Chebotarev.lean`):
               `cyclotomicCharacterModL` (the mod-ℓ cyclotomic character,
               constructed + continuity PROVEN), `globalFrob` (+ `charFrob`
               = charpoly at `globalFrob`, rfl),
@@ -481,7 +529,7 @@ map where helpful.
               lemmas.
       - Supporting sorries in vendored infrastructure
         (`Fermat/FLT/EllipticCurve/Torsion.lean`):
-        - ✓ `n_torsion_finite` — DERIVED (re-derived 2026-07-16, second
+        - ✓· `n_torsion_finite` — DERIVED (re-derived 2026-07-16, second
           route): the torsion count `card_torsionBy` is `n² > 0`, and
           positive `Nat.card` forces finiteness. Statement specialized
           (VENDORING CHANGE) to separably closed characteristic-zero
@@ -491,20 +539,20 @@ map where helpful.
           `eval_ΨSq_eq_zero_of_smul_eq_zero`, `ΨSq_ne_zero_of_charDvd`,
           covering arbitrary characteristic) is SUPERSEDED and removed —
           the frontier shrinks by two nodes.
-        - ✓ `n_torsion_card` (= n² over sep. closed fields, `(n : k) ≠ 0`)
+        - ✓· `n_torsion_card` (= n² over sep. closed fields, `(n : k) ≠ 0`)
           — now DERIVED (2026-07-16, `TorsionCard.lean`, own work):
           `card_torsionBy` PROVEN by strong induction peeling off the
           minimal prime factor — multiplication by `p := n.minFac`
           restricts to a surjection `E[n] → E[n/p]` with kernel `E[p]`,
           so Lagrange + the first isomorphism theorem give
           `#E[n] = p²·(n/p)²`; no CRT needed. Faithful leaves:
-          - ✗ `TorsionCard.smul_surjective` — divisibility of the points
+          - ✗· `TorsionCard.smul_surjective` — divisibility of the points
             group: `[n]` is surjective on points over a separably closed
             field for `(n : k) ≠ 0` (separable isogeny).
-          - ✗ `TorsionCard.prime_torsion_card` — `#E[p] = p²` for prime
+          - ✗· `TorsionCard.prime_torsion_card` — `#E[p] = p²` for prime
             `p` with `(p : k) ≠ 0` (kernel of the separable degree-`p²`
             isogeny).
-        - ✓ `WeierstrassCurve.galoisRep` — CONSTRUCTED (2026-07-16). The
+        - ✓· `WeierstrassCurve.galoisRep` — CONSTRUCTED (2026-07-16). The
           formerly sorry-d DATA is now the genuine representation: the
           Galois action on points (`Point.map`, via the `DistribMulAction`
           instance) restricted to the `n`-torsion and made `ZMod n`-linear
@@ -516,7 +564,7 @@ map where helpful.
           target. `#print axioms`: sorryAx enters only through
           `n_torsion_finite`. Mazur/B4 are now statements about the REAL
           representation.
-        - ✓ `group_theory_lemma` — PROVEN (2026-07-16) in
+        - ✓· `group_theory_lemma` — PROVEN (2026-07-16) in
           `Fermat/FLT/EllipticCurve/TorsionCounting.lean` (own work, not
           vendored): structure theorem for finite abelian groups + torsion
           counting in `ZMod m` (`#torsionBy d (ZMod m) = gcd d m`, via the
@@ -524,11 +572,11 @@ map where helpful.
           `q ∣ n` occurs exactly `r` times, each exponent forced to
           `v_q(n)`) + CRT reassembly (`ZMod.equivPi`). Axioms:
           `[propext, Classical.choice, Quot.sound]` — sorry-free.
-        - ✓ `Module.Finite (ZMod n) (nTorsion n)` instance — statement was
+        - ✓· `Module.Finite (ZMod n) (nTorsion n)` instance — statement was
           FALSE for `n = 0`; now requires `[NeZero n]` (marked VENDORING
           CHANGE) and is derived from `n_torsion_finite`, consolidating the
           sorry into that single node.
-        - ✓ `galoisRepresentation` DistribMulAction fields (earlier layer).
+        - ✓· `galoisRepresentation` DistribMulAction fields (earlier layer).
       - `Fermat/FLT/GaloisRepresentation/HardlyRamified/Frey.lean`: 1 sorry
         (`torsion_isHardlyRamified` — the Frey curve's rep is hardly
         ramified, Serre §4.1 + Tate curve theory; the former second sorry,
