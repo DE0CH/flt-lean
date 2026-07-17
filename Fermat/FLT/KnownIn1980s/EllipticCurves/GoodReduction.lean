@@ -8,7 +8,7 @@ module
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 public import Mathlib.RingTheory.Valuation.RamificationGroup
-import Fermat.FLT.EllipticCurve.TorsionCard
+import Fermat.FLT.EllipticCurve.TorsionCardSep
 import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
 
 /-!
@@ -431,6 +431,118 @@ instance WeierstrassCurve.isLocalHom_RtoO
     refine IsFractionRing.injective R k ?_
     rw [map_mul, map_one, hs, mul_inv_cancel₀ hkne]
   exact ⟨⟨r, s, hrs, by rw [mul_comm]; exact hrs⟩, rfl⟩
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+omit [IsSepClosure k ksep] in
+open Polynomial WeierstrassCurve WeierstrassCurve.Affine in
+/-- **Distinct torsion abscissas have distinct residues** (NOS step
+(iii), `x`-level): for an odd prime `p` invertible in the residue
+field, via the residue curve's separability of `preΨ'ₚ`. -/
+theorem WeierstrassCurve.torsion_abscissa_residue_ne
+    (hp : n.Prime) (hodd : Odd n)
+    (h𝒪 : (𝒪.comap (algebraMap k ksep)).toSubring = (algebraMap R k).range)
+    {x₁ y₁ x₂ y₂ : ksep}
+    (h₁ : (E⁄ksep).toAffine.Nonsingular x₁ y₁)
+    (h₂ : (E⁄ksep).toAffine.Nonsingular x₂ y₂)
+    (ht₁ : (n : ℤ) • (Affine.Point.some x₁ y₁ h₁ : (E⁄ksep).Point) = 0)
+    (ht₂ : (n : ℤ) • (Affine.Point.some x₂ y₂ h₂ : (E⁄ksep).Point) = 0)
+    (hne : x₁ ≠ x₂) (hm₁ : x₁ ∈ 𝒪) (hm₂ : x₂ ∈ 𝒪) :
+    IsLocalRing.residue 𝒪 ⟨x₁, hm₁⟩ ≠
+      IsLocalRing.residue 𝒪 ⟨x₂, hm₂⟩ := by
+  classical
+  haveI : (E⁄ksep).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap k ksep)).IsElliptic)
+  haveI : DecidableEq k := Classical.decEq k
+  have hnR : IsUnit (n : R) := by
+    by_contra hu
+    have hmem : (n : R) ∈ IsLocalRing.maximalIdeal R :=
+      (IsLocalRing.mem_maximalIdeal _).mpr hu
+    apply NeZero.ne ((n : IsLocalRing.ResidueField R))
+    have h1 : IsLocalRing.residue R ((n : R)) = 0 :=
+      (Ideal.Quotient.eq_zero_iff_mem).mpr hmem
+    rw [← map_natCast (IsLocalRing.residue R) n]
+    exact h1
+  have hnZ : ((n : ℕ) : ℤ) ≠ 0 := by
+    intro h0
+    apply NeZero.ne ((n : IsLocalRing.ResidueField R))
+    have : n = 0 := by exact_mod_cast h0
+    rw [this, Nat.cast_zero]
+  have hroot : ∀ {x y : ksep} (h : (E⁄ksep).toAffine.Nonsingular x y),
+      (n : ℤ) • (Affine.Point.some x y h : (E⁄ksep).Point) = 0 →
+      ((E⁄ksep).preΨ' n).eval x = 0 := by
+    intro x y h ht
+    have hΨ := (TorsionCard.smul_some_eq_zero_iff
+      (E.map (algebraMap k ksep)) hnZ h).mp ht
+    rw [WeierstrassCurve.ΨSq_ofNat,
+      if_neg (Nat.not_even_iff_odd.mpr hodd), mul_one,
+      Polynomial.eval_pow] at hΨ
+    exact pow_eq_zero_iff two_ne_zero |>.mp hΨ
+  set φ := WeierstrassCurve.RtoO R k ksep 𝒪 h𝒪 with hφdef
+  set f₀ : Polynomial 𝒪 :=
+    ((WeierstrassCurve.integralModel R E).preΨ' n).map φ with hf₀def
+  have hcomp : (𝒪.subtype).comp φ =
+      (algebraMap k ksep).comp (algebraMap R k) := by
+    ext r
+    exact WeierstrassCurve.RtoO_coe R k ksep 𝒪 h𝒪 r
+  have hf₀K : f₀.map 𝒪.subtype = (E⁄ksep).preΨ' n := by
+    rw [hf₀def, Polynomial.map_map, hcomp]
+    have hEE : ((WeierstrassCurve.integralModel R E)⁄k) = E :=
+      WeierstrassCurve.baseChange_integralModel_eq R E
+    rw [show (E⁄ksep) = (((WeierstrassCurve.integralModel R E)⁄k)⁄ksep)
+      from by rw [hEE]]
+    show _ = (((WeierstrassCurve.integralModel R E).map
+      (algebraMap R k)).map (algebraMap k ksep)).preΨ' n
+    rw [WeierstrassCurve.map_preΨ', WeierstrassCurve.map_preΨ',
+      Polynomial.map_map]
+  have hrO : ∀ {x y : ksep} (h : (E⁄ksep).toAffine.Nonsingular x y)
+      (_ : (n : ℤ) • (Affine.Point.some x y h : (E⁄ksep).Point) = 0)
+      (hm : x ∈ 𝒪), f₀.eval ⟨x, hm⟩ = 0 := by
+    intro x y h ht hm
+    apply Subtype.ext
+    calc (𝒪.subtype) (f₀.eval ⟨x, hm⟩)
+        = (f₀.map 𝒪.subtype).eval (𝒪.subtype ⟨x, hm⟩) :=
+          (Polynomial.eval_map_apply _ _).symm
+      _ = ((E⁄ksep).preΨ' n).eval x := by rw [hf₀K]; rfl
+      _ = 0 := hroot h ht
+  set ψ := IsLocalRing.ResidueField.map φ with hψdef
+  set Ered := (E.reduction R).map ψ with hEreddef
+  haveI hredell : (E.reduction R).IsElliptic :=
+    (WeierstrassCurve.hasGoodReduction_iff_isElliptic_reduction R).mp
+      inferInstance
+  haveI : Ered.IsElliptic := inferInstanceAs
+    (((E.reduction R).map ψ).IsElliptic)
+  have hf₀res : f₀.map (IsLocalRing.residue 𝒪) = Ered.preΨ' n := by
+    rw [hf₀def, Polynomial.map_map]
+    rw [show (IsLocalRing.residue 𝒪).comp φ =
+        ψ.comp (IsLocalRing.residue R) from by
+      ext r
+      exact (IsLocalRing.ResidueField.map_residue φ r).symm]
+    rw [hEreddef, WeierstrassCurve.map_preΨ',
+      show (E.reduction R).preΨ' n =
+        ((WeierstrassCurve.integralModel R E).preΨ' n).map
+          (IsLocalRing.residue R) from by
+        rw [WeierstrassCurve.reduction, WeierstrassCurve.map_preΨ'],
+      Polynomial.map_map]
+  have hnκ : ((n : ℕ) : IsLocalRing.ResidueField 𝒪) ≠ 0 := by
+    have hunit : IsUnit (IsLocalRing.residue 𝒪 (φ ((n : R)))) :=
+      (hnR.map φ).map (IsLocalRing.residue 𝒪)
+    have hcast : IsLocalRing.residue 𝒪 (φ ((n : R))) =
+        ((n : ℕ) : IsLocalRing.ResidueField 𝒪) := by
+      rw [map_natCast, map_natCast]
+    rw [hcast] at hunit
+    exact hunit.ne_zero
+  have hsepred : (f₀.map (IsLocalRing.residue 𝒪)).Separable := by
+    rw [hf₀res]
+    haveI : DecidableEq (IsLocalRing.ResidueField 𝒪) := Classical.decEq _
+    have hsep' := TorsionCard.separable_preΨ' Ered hp hodd hnκ
+    rwa [show ((Ered⁄(IsLocalRing.ResidueField 𝒪))).preΨ' n =
+        Ered.preΨ' n from by
+      show ((Ered.map (algebraMap _ _)).preΨ' n) = _
+      rw [WeierstrassCurve.map_preΨ', Algebra.algebraMap_self,
+        Polynomial.map_id]] at hsep'
+  exact 𝒪.residue_ne_of_roots_ne f₀ (hrO h₁ ht₁ hm₁) (hrO h₂ ht₂ hm₂)
+    (fun hc => hne (congrArg Subtype.val hc)) hsepred
 
 set_option warn.sorry false in
 /-- (Sorry node; vendored from the FLT project.) If `E` is an elliptic curve
