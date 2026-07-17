@@ -2506,8 +2506,19 @@ assumed. Axiom invariant: every declaration must use at most
   a common root of `preΨ'ₚ` and its derivative forces division-
   polynomial vanishing patterns that should contradict the Bézout
   machinery — the route to `separable_preΨ'` WITHOUT the full
-  discriminant formula. NEXT SESSION: (1) pin the general Wronskian
-  closed form (sympy for n = 4, 5, then universal-EDS-style proof);
+  discriminant formula. VERIFIED (scripts/eds/wronskian_composition.py):
+  (W) `Φₙ'ΨSqₙ − ΦₙΨSqₙ' = n·preΨ(2n)` at n = 2, 3, 4, and
+  (C) `Φ(2n) = Φ₂hom(Φₙ,ΨSqₙ)`, `ΨSq(2n) = Ψ₂Sqhom(Φₙ,ΨSqₙ)` at n = 2
+  (the duplication-composition pair, EXACT, no unit). SEPARABILITY
+  PROOF SHAPE: double root x₀ of preΨ'ₚ ⟹ ΨSqₚ-mult ≥ 4 ⟹ (W)
+  preΨ(2p)-mult ≥ 3 ⟹ ΨSq(2p)-mult ≥ 6; but (C) + Bézout (Φₚ(x₀) ≠ 0)
+  give ΨSq(2p)-mult exactly 4 at x₀ (char ≠ 2 via the 4Φ³-term;
+  char 2 needs its own composition trick). PROOF ROUTES: (C) should be
+  a T-family window-certificate (φ-diff expansions); (W) by parity
+  induction with DIFFERENTIATED recursions over the joint {P, P'}
+  window (same descent machinery, one derivative level up), or via the
+  chain rule through (C) (the Jacobian of the pair is 2·preΨ₄hom).
+  NEXT SESSION: (1) certificates for (C) then (W);
   (2) `resultant_Φ_ΨSq` or its `IsCoprime` reformulation; then the
   torsion cone is DONE. Remaining 18 nodes list: see the sorry-grep;
   major fronts: WeilPairing:124, Chebotarev:98, HardlyRamified (5
