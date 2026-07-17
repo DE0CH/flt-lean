@@ -362,6 +362,76 @@ theorem ValuationSubring.residue_ne_of_roots_ne
     exact ⟨h.map _, by ring⟩
   exact Polynomial.not_isUnit_X_sub_C _ (hsq _ hdvd)
 
+set_option backward.isDefEq.respectTransparency false in
+omit [IsDomain R] [IsDiscreteValuationRing R] [IsFractionRing R k]
+  [IsSepClosure k ksep] [DecidableEq ksep] in
+/-- The structural homomorphism `R → 𝒪` induced by `h𝒪`. -/
+noncomputable def WeierstrassCurve.RtoO
+    (h𝒪 : (𝒪.comap (algebraMap k ksep)).toSubring = (algebraMap R k).range) :
+    R →+* 𝒪 where
+  toFun r := ⟨algebraMap k ksep (algebraMap R k r), by
+    have hmem : algebraMap R k r ∈ (algebraMap R k).range := ⟨r, rfl⟩
+    rw [← h𝒪] at hmem
+    exact hmem⟩
+  map_one' := Subtype.ext (by simp)
+  map_mul' a b := Subtype.ext (by simp)
+  map_zero' := Subtype.ext (by simp)
+  map_add' a b := Subtype.ext (by simp)
+
+set_option backward.isDefEq.respectTransparency false in
+omit [IsDomain R] [IsDiscreteValuationRing R] [IsFractionRing R k]
+  [IsSepClosure k ksep] [DecidableEq ksep] in
+lemma WeierstrassCurve.RtoO_coe
+    (h𝒪 : (𝒪.comap (algebraMap k ksep)).toSubring = (algebraMap R k).range)
+    (r : R) : ((WeierstrassCurve.RtoO R k ksep 𝒪 h𝒪 r : 𝒪) : ksep) =
+      algebraMap k ksep (algebraMap R k r) := rfl
+
+set_option backward.isDefEq.respectTransparency false in
+omit [IsDomain R] [IsDiscreteValuationRing R] [IsSepClosure k ksep]
+  [DecidableEq ksep] in
+/-- `R → 𝒪` is a local homomorphism: a unit inverse in `𝒪` descends
+to `R = 𝒪 ∩ k`. -/
+instance WeierstrassCurve.isLocalHom_RtoO
+    (h𝒪 : (𝒪.comap (algebraMap k ksep)).toSubring = (algebraMap R k).range) :
+    IsLocalHom (WeierstrassCurve.RtoO R k ksep 𝒪 h𝒪) := by
+  constructor
+  intro r hu
+  have hrne : r ≠ 0 := by
+    rintro rfl
+    rw [map_zero] at hu
+    exact not_isUnit_zero hu
+  have hkne : algebraMap R k r ≠ 0 := fun h0 =>
+    hrne (IsFractionRing.injective R k (by rw [h0, map_zero]))
+  obtain ⟨u, hu'⟩ := hu
+  have hval : ((WeierstrassCurve.RtoO R k ksep 𝒪 h𝒪 r : 𝒪) : ksep) *
+      algebraMap k ksep ((algebraMap R k r)⁻¹) = 1 := by
+    rw [WeierstrassCurve.RtoO_coe, ← map_mul, mul_inv_cancel₀ hkne,
+      map_one]
+  have hw : ((WeierstrassCurve.RtoO R k ksep 𝒪 h𝒪 r : 𝒪) : ksep) *
+      (((u⁻¹ : 𝒪ˣ) : 𝒪) : ksep) = 1 := by
+    rw [← hu']
+    have h2 : ((u : 𝒪) * ((u⁻¹ : 𝒪ˣ) : 𝒪)) = 1 := by
+      exact_mod_cast u.mul_inv
+    exact_mod_cast congrArg (fun z : 𝒪 => (z : ksep)) h2
+  have hane : ((WeierstrassCurve.RtoO R k ksep 𝒪 h𝒪 r : 𝒪) : ksep) ≠ 0 := by
+    intro h0
+    rw [h0, zero_mul] at hval
+    exact one_ne_zero hval.symm
+  have heq : algebraMap k ksep ((algebraMap R k r)⁻¹) =
+      (((u⁻¹ : 𝒪ˣ) : 𝒪) : ksep) :=
+    mul_left_cancel₀ hane (hval.trans hw.symm)
+  have hinv𝒪 : algebraMap k ksep ((algebraMap R k r)⁻¹) ∈ 𝒪 := by
+    rw [heq]
+    exact ((u⁻¹ : 𝒪ˣ) : 𝒪).2
+  have hmem : (algebraMap R k r)⁻¹ ∈
+      (𝒪.comap (algebraMap k ksep)).toSubring := hinv𝒪
+  rw [h𝒪] at hmem
+  obtain ⟨s, hs⟩ := hmem
+  have hrs : r * s = 1 := by
+    refine IsFractionRing.injective R k ?_
+    rw [map_mul, map_one, hs, mul_inv_cancel₀ hkne]
+  exact ⟨⟨r, s, hrs, by rw [mul_comm]; exact hrs⟩, rfl⟩
+
 set_option warn.sorry false in
 /-- (Sorry node; vendored from the FLT project.) If `E` is an elliptic curve
 over `k` (given by a minimal Weierstrass equation)
