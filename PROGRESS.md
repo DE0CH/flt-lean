@@ -3277,3 +3277,38 @@ assumed. Axiom invariant: every declaration must use at most
   machinery as NOS; quantify transported statements over
   `localInertiaGroup`-images to avoid needing surjectivity onto
   `𝒪`-inertia.
+- 2026-07-17 (session 8, THE COMPLETION GATEWAY): the local-field
+  instance package is PROVEN (all axiom-clean, `LocalField.lean`):
+  `ℚ_[p]` AND `adicCompletion ℚ v` are `IsNonarchimedeanLocalField`s
+  (`IsValuativeTopology` from the norm/`Valued`-ball correspondence —
+  for the completion it is DEFINITIONAL since `Valued.mem_nhds_zero`
+  is already in `ValueGroup₀` form; local compactness transported from
+  `ℚ_[p]` along `adicCompletion.padicEquiv`; nontriviality from a
+  prime element). The TateCurve framework INSTANTIATES at
+  `k = adicCompletion ℚ v` (smoke-tested), the exact spelling of
+  `localInertiaGroup`/`GaloisRep.toLocal`. Also PROVEN:
+  `isEquiv_valuation_maximalIdeal_localization` (Semistable.lean) —
+  the `v`-adic valuation of `ℚ` is equivalent to the maximal-ideal
+  valuation of `ℤ_(q)` (both `≤1`-sets are "q ∤ denominator" via
+  `Rat.valuation_le_one_iff_den`).
+  ROUTE UPDATE (supersedes part of the session-7 design): the
+  completion transfer of multiplicative reduction should NOT be proven
+  by hand — `ReductionBaseChange.lean` (sorry-free) already proves
+  `hasMultiplicativeReduction_baseChange` and
+  `hasSplitMultiplicativeReduction_baseChange` along ANY
+  `ValuativeExtension k → l` of valuative fields (field-level c₄/Δ
+  valuation chase + the unit-`c₄` Kraus–Laska criterion + residue-map
+  splitness). Remaining plumbing for the unipotence-leaf derivation:
+  (A) `ValuativeExtension (WithVal (v.valuation ℚ)) (adicCompletion ℚ v)`
+  — the completion IS `UniformSpace.Completion` of `WithVal`, mathlib
+  provides `ValuativeRel (WithVal v)` and `valuedCompletion_apply`;
+  (B) the ℚ-side spelling bridge
+  `HasMultiplicativeReduction (Localization.AtPrime v.asIdeal) E` ⟹
+  `HasMultiplicativeReduction 𝒪[WithVal (v.valuation ℚ)] (E-as-WithVal)`
+  (transport the mathlib-Reduction class across `WithVal.equiv` +
+  the PROVEN valuation dictionary); then (C) instantiate
+  `exists_tateEquivSepClosure` + `tate_inertia_unipotent` (PROVEN) at
+  `k = adicCompletion ℚ v`, Ω = its algebraic closure, and transport
+  the pointwise unipotence back to `E(ℚ̄)` along the chosen embedding
+  (the `absoluteGaloisGroup.map`/NOS-consumer pattern), handling the
+  nonsplit case by the quadratic twist (unramified at inertia).
