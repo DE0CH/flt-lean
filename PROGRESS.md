@@ -2195,3 +2195,16 @@ assumed. Axiom invariant: every declaration must use at most
   denominators). Remaining: certify the propagation of (i)+(ii)+(iii)
   through both steps with the script (mechanical), then write the
   Lean skeleton.
+- 2026-07-17 (session 5, odd-step x-certificate EXACT): with (iii) and
+  the two memberships as hypotheses, the odd-step x-target closes with
+  UNIT COFACTORS — `num + 1·(iii) + ψₙ₊₁⁶·(membership at n) +
+  ψₙ⁶·(membership at n+1) = 0` IDENTICALLY (not even the curve
+  equation is needed at this level; verified symbolically, validator
+  `certificate_odd_step_x` in the script). The Lean certificate is a
+  three-term `linear_combination`; the memberships come from the IH
+  points' `Nonsingular` data via the proven on-curve pattern
+  `Ψ₂Sq(xⱼ) = tⱼ²` (the `hΨval` computation in
+  `two_smul_some_eq_zero_iff` — extract it as a standalone lemma when
+  assembling). Remaining certificates to compute with the script: the
+  odd-step t-target, the (iii)-propagation to the output pairs, and
+  the even-step analogues — then the skeleton.

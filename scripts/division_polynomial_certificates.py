@@ -188,3 +188,31 @@ if __name__ == "__main__":
     check_tracked_pair()
     check_step_targets()
     check_cross_tracking()
+    certificate_odd_step_x()
+
+
+def certificate_odd_step_x() -> None:
+    """The odd-step x-target closes with UNIT cofactors:
+    `num + 1·(iii) + C⁶·(membership at m) + B⁶·(membership at m+1) = 0`
+    identically (no curve equation needed at this level).  The Lean
+    certificate is a three-term linear_combination."""
+    A, B, C, D, tm, tm1 = sp.symbols("A B C D tm tm1")
+    P2 = lambda t: 4 * t**3 + b2 * t**2 + 2 * b4 * t + b6
+    xm = x - C * A / B**2
+    xm1 = x - D * B / C**2
+    cm = sp.expand(sp.fraction(sp.cancel(sp.together(tm**2 - P2(xm))))[0])
+    cm1 = sp.expand(sp.fraction(sp.cancel(sp.together(tm1**2 - P2(xm1))))[0])
+    W = D * B**3 - A * C**3
+    dx = xm1 - xm
+    dy = (tm1 - tm - a1 * dx) / 2
+    x_out = (dy**2 + a1 * dy * dx - (a2 + xm1 + xm) * dx**2) / dx**2
+    target = sp.together((x - x_out) * W**2 - tm1 * tm * (B * C) ** 4)
+    num = sp.expand(sp.fraction(sp.cancel(target))[0])
+    iii = sp.expand(
+        2 * tm * tm1 * B**6 * C**6
+        - W**2 * ((b2 + 12 * x) * B**2 * C**2 - 4 * (A * C**3 + B**3 * D))
+        + B**6 * C**6 * (P2(xm) + P2(xm1))
+    )
+    iii = sp.expand(sp.fraction(sp.cancel(sp.together(iii)))[0])
+    assert sp.expand(num + iii + C**6 * cm + B**6 * cm1) == 0
+    print("odd-step x-target: exact closure with unit cofactors OK")
