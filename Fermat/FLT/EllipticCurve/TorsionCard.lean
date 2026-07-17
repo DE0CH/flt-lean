@@ -40,6 +40,9 @@ import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
 -- the evaluation bridges `evalEval_ψ`, `evalEval_Ψ_sq`, `evalEval_φ`
 -- between bivariate and univariate division polynomials on the curve
 import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Points
+-- the sum-companion of the even recurrence, from the universal EDS
+-- identity `normEDS_sum_companion`
+import Fermat.FLT.EllipticCurve.PsiSumCompanion
 import Mathlib.GroupTheory.QuotientGroup.Basic
 import Mathlib.GroupTheory.Coset.Card
 -- `Set.ncard` bridging between `Nat.card` of the torsion submodule and
@@ -615,19 +618,22 @@ theorem two_point_trace_identity {x₁ y₁ x₂ y₂ x₃ t₃ : k}
         - 4*x₂^2*y₁*y₂ + 2*x₂^2*y₂^2) * heq₂
   exact mul_right_cancel₀ (pow_ne_zero 5 (sub_ne_zero.mpr hne)) hkey
 
-set_option warn.sorry false in
+set_option backward.isDefEq.respectTransparency false in
 omit [E.IsElliptic] [DecidableEq k] in
-/-- (Sorry node — **the sum-companion of the even recurrence**.) On
-the curve,
+/-- **The sum-companion of the even recurrence** (DERIVED 2026-07-17
+from the universal EDS identity via `PsiSumCompanion`): on the curve,
 `ψₙ₋₁²ψₙ₊₂ + ψₙ₋₂ψₙ₊₁² = ψₙ₋₁ψₙψₙ₊₁(6x² + b₂x + b₄) - ψₙ³ Ψ₂Sq(x)`.
 This is the additive counterpart of `evalEval_ψ_even` (which gives the
 DIFFERENCE `ψₙ₋₁²ψₙψₙ₊₂ - ψₙ₋₂ψₙψₙ₊₁² = ψ₂ₙψ₂`): together they
 resolve `ψₙ₋₁²ψₙ₊₂` and `ψₙ₋₂ψₙ₊₁²` individually. Classically it is
-the trace form of the addition formulas (`x(Q+P) + x(Q-P)`); at the
-polynomial level it should follow by the parity-split
-`preΨ'`-recursion technique of mathlib's `Ψ_even`/`Ψ_odd` (a
-mathlib-PR-shaped statement). It is the final identity input for the
-multiplication-formula induction's tracking output. -/
+the trace form of the addition formulas (`x(Q+P) + x(Q-P)`). It rests
+on the sharp universal node
+`EllipticDivisibilitySequence.normEDS_sum_companion`, transported to
+the curve by the anchor identity `Ψ₃(6X²+b₂X+b₄) = preΨ₄ + Ψ₂Sq²`,
+the coordinate-ring membership `ψ₂² ≡ Ψ₂Sq`, cancellation of the
+non-zero-divisor `ψ₂Ψ₃` over the universal curve, and base change.
+It is the final identity input for the multiplication-formula
+induction's tracking output. -/
 theorem evalEval_ψ_sum (n : ℤ) {x y : k}
     (h : (E⁄k).toAffine.Equation x y) :
     ((E⁄k).ψ (n - 1)).evalEval x y ^ 2 * ((E⁄k).ψ (n + 2)).evalEval x y +
@@ -636,7 +642,7 @@ theorem evalEval_ψ_sum (n : ℤ) {x y : k}
       ((E⁄k).ψ (n + 1)).evalEval x y *
       (6 * x ^ 2 + (E⁄k).b₂ * x + (E⁄k).b₄) -
     ((E⁄k).ψ n).evalEval x y ^ 3 * ((E⁄k).Ψ₂Sq).eval x :=
-  sorry
+  PsiSumCompanion.evalEval_ψ_sum (E⁄k) n h
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxRecDepth 8000 in
