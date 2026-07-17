@@ -900,21 +900,112 @@ theorem psi_tracking_prev2_zero (n : ℤ) {x y : k}
       ((E⁄k).ψ (2 * n)).evalEval x y * ((E⁄k).ψ 2).evalEval x y ^ 4 :=
   sorry
 
-set_option warn.sorry false in
-/-- (Sorry node — **the Ward vanishing pattern**.) If `d ≥ 2` is a
+set_option backward.isDefEq.respectTransparency false in
+omit [DecidableEq k] in
+/-- **Adjacent division-polynomial values cannot both vanish** (PROVEN
+2026-07-17, resting on the resultant node through `isCoprime_Φ_ΨSq`):
+if `ψⱼ(x,y) = 0 = ψⱼ₊₁(x,y)` for `j ≠ 0` at a point of the curve,
+then `φⱼ(x,y) = xψⱼ² - ψⱼ₊₁ψⱼ₋₁ = 0` too, so `x` would be a common
+root of `Φ j` and `ΨSq j` — impossible by the Bézout identity since
+`Δ` is a unit. -/
+theorem psi_adjacent_ne_zero {j : ℤ} (hj : j ≠ 0) {x y : k}
+    (h : (E⁄k).toAffine.Equation x y)
+    (h0 : ((E⁄k).ψ j).evalEval x y = 0)
+    (h1 : ((E⁄k).ψ (j + 1)).evalEval x y = 0) : False := by
+  haveI : (E⁄k).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap k k)).IsElliptic)
+  have hφ := evalEval_φ_eq E j h
+  rw [h0, h1] at hφ
+  have hΦ0 : ((E⁄k).Φ j).eval x = 0 := by
+    rw [← WeierstrassCurve.evalEval_φ j h, hφ]
+    ring
+  have hΨSq0 : ((E⁄k).ΨSq j).eval x = 0 := by
+    rw [← WeierstrassCurve.evalEval_Ψ_sq j h,
+      ← WeierstrassCurve.evalEval_ψ j h, h0]
+    ring
+  obtain ⟨F, G, hFG⟩ := WeierstrassCurve.isCoprime_Φ_ΨSq (E⁄k) hj
+    (WeierstrassCurve.isUnit_Δ _)
+  have hev := congrArg (Polynomial.eval x) hFG
+  rw [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_mul,
+    Polynomial.eval_one, hΦ0, hΨSq0] at hev
+  simp at hev
+
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] [DecidableEq k] in
+/-- **The general elliptic-sequence relation on the curve** (DERIVED
+2026-07-17 from the universal Stange node `normEDS_ellSequence`
+through `evalEval_ψ_normEDS`):
+`ψₚ₊ₓψₚ₋ₓ = ψₚ₊₁ψₚ₋₁ψₓ² - ψₓ₊₁ψₓ₋₁ψₚ²` at any point of the plane. -/
+theorem evalEval_ψ_T (p q : ℤ) (x y : k) :
+    ((E⁄k).ψ (p + q)).evalEval x y * ((E⁄k).ψ (p - q)).evalEval x y =
+      ((E⁄k).ψ (p + 1)).evalEval x y * ((E⁄k).ψ (p - 1)).evalEval x y *
+        ((E⁄k).ψ q).evalEval x y ^ 2 -
+      ((E⁄k).ψ (q + 1)).evalEval x y * ((E⁄k).ψ (q - 1)).evalEval x y *
+        ((E⁄k).ψ p).evalEval x y ^ 2 := by
+  have hT := normEDS_ellSequence ((E⁄k).ψ₂.evalEval x y)
+    (((E⁄k).Ψ₃).eval x) (((E⁄k).preΨ₄).eval x) p q
+  rw [evalEval_ψ_normEDS E (p + q) x y, evalEval_ψ_normEDS E (p - q) x y,
+    evalEval_ψ_normEDS E (p + 1) x y, evalEval_ψ_normEDS E (p - 1) x y,
+    evalEval_ψ_normEDS E q x y, evalEval_ψ_normEDS E (q + 1) x y,
+    evalEval_ψ_normEDS E (q - 1) x y, evalEval_ψ_normEDS E p x y]
+  linear_combination hT
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxRecDepth 8000 in
+omit [DecidableEq k] in
+/-- **The Ward vanishing pattern** (WIRED 2026-07-17, resting on the
+universal nodes `normEDS_ellSequence` and `normEDS_mul_complEDS` and
+the resultant node through `psi_adjacent_ne_zero`): if `d ≥ 2` is a
 MINIMAL positive index with `ψ_d(x,y) = 0`, then the vanishing set of
-the division-polynomial values at the point is exactly `dℤ`. This is
-Ward's rank-of-apparition theorem for the EDS of a curve point; the
-`d = 2` instance rests on `Res(Ψ₂Sq, Ψ₃) = -Δ² ≠ 0` (which is where
-`E.IsElliptic` enters), and the general case on the elliptic-sequence
-family (periodicity of the EDS at a torsion point). -/
+the division-polynomial values at the point is exactly `dℤ`.
+Backward: `ψ_{qd} = ψ_d ⬝ (complement) = 0` by the divisibility node.
+Forward: contrapositive climb by `d` — the `T(m-d, d)` instance gives
+`ψₘψₘ₋₂d = -ψ_{d+1}ψ_{d-1}ψₘ₋d²` at `ψ_d = 0`, and the right side is
+nonzero by minimality (`ψ_{d-1}`), the adjacent-rigidity lemma
+(`ψ_{d+1}`), and induction (`ψₘ₋d`). -/
 theorem psi_eq_zero_iff_dvd {d : ℤ} (hd : 2 ≤ d) {x y : k}
     (h : (E⁄k).toAffine.Nonsingular x y)
     (hd0 : ((E⁄k).ψ d).evalEval x y = 0)
     (hmin : ∀ m : ℤ, 0 < m → m < d → ((E⁄k).ψ m).evalEval x y ≠ 0)
     (n : ℤ) (hn : 0 < n) :
-    ((E⁄k).ψ n).evalEval x y = 0 ↔ d ∣ n :=
-  sorry
+    ((E⁄k).ψ n).evalEval x y = 0 ↔ d ∣ n := by
+  classical
+  have hcd1 : ((E⁄k).ψ (d - 1)).evalEval x y ≠ 0 :=
+    hmin (d - 1) (by omega) (by omega)
+  have hcd2 : ((E⁄k).ψ (d + 1)).evalEval x y ≠ 0 := fun hc =>
+    psi_adjacent_ne_zero E (show d ≠ 0 from by omega) h.1 hd0 hc
+  constructor
+  · -- forward: the contrapositive climb
+    intro h0
+    by_contra hnd
+    have climb : ∀ N : ℕ, ∀ m : ℤ, 0 < m → ¬ d ∣ m → m ≤ (N : ℤ) →
+        ((E⁄k).ψ m).evalEval x y ≠ 0 := by
+      intro N
+      induction N with
+      | zero => intro m hm _ hle; exact absurd hle (by omega)
+      | succ N IHN =>
+        intro m hm hmd hle
+        by_cases hsmall : m < d
+        · exact hmin m hm hsmall
+        · have hne : m ≠ d := fun he => hmd (he ▸ dvd_refl d)
+          have hgt : d < m := by omega
+          have hprev : ((E⁄k).ψ (m - d)).evalEval x y ≠ 0 := by
+            refine IHN (m - d) (by omega) (fun hc => hmd ?_) (by omega)
+            have := dvd_add hc (dvd_refl d)
+            rwa [sub_add_cancel] at this
+          have hT := evalEval_ψ_T E (m - d) d x y
+          rw [show m - d + d = m from by ring, hd0] at hT
+          intro hc
+          rw [hc, zero_mul] at hT
+          exact (mul_ne_zero (mul_ne_zero hcd2 hcd1)
+            (pow_ne_zero 2 hprev)) (by linear_combination hT)
+    exact climb n.toNat n hn hnd (by omega) h0
+  · -- backward: the divisibility node
+    rintro ⟨q, hq⟩
+    have huniv := normEDS_mul_complEDS ((E⁄k).ψ₂.evalEval x y)
+      (((E⁄k).Ψ₃).eval x) (((E⁄k).preΨ₄).eval x) d q
+    rw [evalEval_ψ_normEDS E n x y, hq, mul_comm d q,
+      ← huniv, ← evalEval_ψ_normEDS E d x y, hd0, zero_mul]
 
 set_option backward.isDefEq.respectTransparency false in
 omit [E.IsElliptic] in
