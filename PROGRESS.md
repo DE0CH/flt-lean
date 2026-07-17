@@ -1779,3 +1779,21 @@ assumed. Axiom invariant: every declaration must use at most
   package `G := 𝒪ᵥ`, one-point homs ≃ zero space); intermediate `I`
   don't occur for prime `p` (or handle by quotient-torsion).
   Multi-iteration arc; start with (i).
+- 2026-07-17 (session 5): flat-arc steps (i) and (v-degenerate) PROVEN
+  (`localizationToAdicCompletionIntegers` +
+  `algebraMap_localization_mem_adicCompletionIntegers`;
+  `GaloisRep.hasFlatProlongationAt_of_subsingleton` in the NEW module
+  `Deformations/RepresentationTheory/FlatProlongation.lean` — trivial
+  Hopf `𝒪ᵥ`, unique generic point via `Algebra.TensorProduct.rid` +
+  `Algebra.Etale.of_equiv`, zero comparison map between singletons).
+  PLUMBING NOTES for (ii)–(iv): use
+  `Algebra.TensorProduct.cancelBaseChange` for
+  `Kᵥ ⊗[𝒪ᵥ] (𝒪ᵥ ⊗[ℤ_(q)] H) ≃ₐ Kᵥ ⊗[ℤ_(q)] H`; MIND THE GROUP
+  STRUCTURES — the vendored leaf's points are
+  `Additive (WithConv (K ⊗ H →ₐ Ksep))` while `HasFlatProlongationAt`
+  uses bare `Additive (Kᵥ ⊗ G →ₐ Kᵥᵃˡᵍ)` (the convolution AddMonoid
+  must come from an instance on hom-sets out of Hopf algebras —
+  reconcile the two spellings when building the comparison); the
+  transport should be stated for `ρ : GaloisRep ℚ A M` with a
+  leaf-shaped equivariant iso onto `M`-with-the-`ρ`-action, then
+  specialized to the elliptic case.
