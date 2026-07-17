@@ -49,6 +49,77 @@ variable (ksep : Type*) [Field ksep] [Algebra k ksep] [IsSepClosure k ksep] [Dec
 -- that it lies above R is `h𝒪` in the theorem below.
 variable (𝒪 : ValuationSubring ksep)
 
+set_option backward.isDefEq.respectTransparency false in
+open Polynomial in
+/-- **Roots of unit-leading-coefficient polynomials are integral**
+(PROVEN 2026-07-17, step (i) of the Néron–Ogg–Shafarevich easy
+direction): if all coefficients of `f` lie in a valuation subring and
+the inverse of the leading coefficient does too, then every root lies
+in the subring — otherwise the leading term of `f(x) = 0` strictly
+dominates the others. -/
+theorem ValuationSubring.mem_of_root_of_inv_leadingCoeff_mem
+    {K : Type*} [Field K] (A : ValuationSubring K) {f : Polynomial K}
+    (hfne : f ≠ 0) (hcoeff : ∀ i, f.coeff i ∈ A)
+    (hlc : (f.leadingCoeff)⁻¹ ∈ A)
+    {x : K} (hroot : f.eval x = 0) : x ∈ A := by
+  by_contra hx
+  rw [← A.valuation_le_one_iff, not_le] at hx
+  set d := f.natDegree with hd
+  have hd1 : 1 ≤ d := by
+    by_contra hd0
+    have hdz : f.natDegree = 0 := by omega
+    have hfC := Polynomial.eq_C_of_natDegree_eq_zero hdz
+    rw [hfC, Polynomial.eval_C] at hroot
+    exact hfne (by rw [hfC, hroot, Polynomial.C_0])
+  have hlcne : f.leadingCoeff ≠ 0 := Polynomial.leadingCoeff_ne_zero.mpr hfne
+  -- the valuation of the leading coefficient is 1
+  have h1 : A.valuation f.leadingCoeff ≤ 1 :=
+    (A.valuation_le_one_iff _).mpr (hcoeff _)
+  have h2 : A.valuation (f.leadingCoeff)⁻¹ ≤ 1 :=
+    (A.valuation_le_one_iff _).mpr hlc
+  have hab : A.valuation f.leadingCoeff *
+      A.valuation (f.leadingCoeff)⁻¹ = 1 := by
+    rw [← map_mul, mul_inv_cancel₀ hlcne, map_one]
+  have hb1 : (1 : A.ValueGroup) ≤ A.valuation (f.leadingCoeff)⁻¹ := by
+    calc (1 : A.ValueGroup) =
+        A.valuation f.leadingCoeff * A.valuation (f.leadingCoeff)⁻¹ :=
+          hab.symm
+      _ ≤ 1 * A.valuation (f.leadingCoeff)⁻¹ := mul_le_mul_left h1 _
+      _ = A.valuation (f.leadingCoeff)⁻¹ := one_mul _
+  have hvlc : A.valuation f.leadingCoeff = 1 := by
+    have hinv1 : A.valuation (f.leadingCoeff)⁻¹ = 1 :=
+      le_antisymm h2 hb1
+    rw [hinv1, mul_one] at hab
+    exact hab
+  -- split off the leading term
+  have hsplit : f.coeff d * x ^ d =
+      -(∑ i ∈ Finset.range d, f.coeff i * x ^ i) := by
+    have hev := hroot
+    rw [Polynomial.eval_eq_sum_range, ← hd, Finset.sum_range_succ]
+      at hev
+    linear_combination hev
+  -- valuations
+  have hL : A.valuation (f.coeff d * x ^ d) = A.valuation x ^ d := by
+    rw [map_mul, map_pow, show f.coeff d = f.leadingCoeff from rfl,
+      hvlc, one_mul]
+  have hR : A.valuation (∑ i ∈ Finset.range d, f.coeff i * x ^ i) ≤
+      A.valuation x ^ (d - 1) := by
+    refine Valuation.map_sum_le _ (fun i hi => ?_)
+    rw [Finset.mem_range] at hi
+    rw [map_mul, map_pow]
+    calc A.valuation (f.coeff i) * A.valuation x ^ i ≤
+        1 * A.valuation x ^ i :=
+          mul_le_mul_left ((A.valuation_le_one_iff _).mpr (hcoeff i)) _
+      _ = A.valuation x ^ i := one_mul _
+      _ ≤ A.valuation x ^ (d - 1) :=
+          pow_le_pow_right₀ (le_of_lt hx) (by omega)
+  have hcombined : A.valuation x ^ d ≤ A.valuation x ^ (d - 1) := by
+    rw [← hL, hsplit, Valuation.map_neg]
+    exact hR
+  have hstrict : A.valuation x ^ (d - 1) < A.valuation x ^ d :=
+    pow_lt_pow_right₀ hx (by omega)
+  exact absurd hcombined (not_le.mpr hstrict)
+
 set_option warn.sorry false in
 /-- (Sorry node; vendored from the FLT project.) If `E` is an elliptic curve
 over `k` (given by a minimal Weierstrass equation)
