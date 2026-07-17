@@ -2083,3 +2083,20 @@ assumed. Axiom invariant: every declaration must use at most
   session; Washington/Silverman PDFs are not in `Books/` yet —
   download them when the MCP is available (the argument structure
   above is standard and self-contained to formalize regardless).
+- 2026-07-17 (session 5, Thm 3.6 state): `zsmul_some_aux` is the ✗○
+  frontier node; BOTH base cases are PROVEN (`zsmul_some_aux_one`,
+  `two_smul_some_eq_zero_iff`) and the consumers (dictionary +
+  formula) are DERIVED. Pinned API for the step cases: mathlib
+  `Affine.Point.add_some (hxy : ¬(x₁ = x₂ ∧ y₁ = negY x₂ y₂)) :
+  some h₁ + some h₂ = some (nonsingular_add h₁ h₂ hxy)` with
+  coordinates `addX x₁ x₂ (slope x₁ x₂ y₁ y₂)` / `addY`;
+  `add_of_Y_eq` for the cancellation case; the `ψ`-recurrences via
+  `normEDS` (`Mathlib.NumberTheory.EllipticDivisibilitySequence`) and
+  `Ψ_even/Ψ_odd/preΨ_even/preΨ_odd` in `DivisionPolynomial.Basic`;
+  evaluation bridges vendored in `Fermat/FLT/Mathlib/.../
+  DivisionPolynomial/Points.lean`. The step `[n+1]P = [n]P + P` needs
+  the x-addition identity `addX(x, x', λ)·ψ_{n+1}² = φ_{n+1}` given
+  the IH identities at `n` (and `n-1` for the slope elimination) —
+  the giant `linear_combination` against the curve equation; the
+  step `[2n]P = 2·[n]P` needs the duplication identity. These two
+  identities are the remaining mountain; everything else is plumbing.
