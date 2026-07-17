@@ -170,4 +170,18 @@ theorem taut_psi_ne_zero {n : ℤ} (hn : n ≠ 0) :
   exact mk_Ψ_univ_ne_zero hn
     (IsFractionRing.injective Buniv Kuniv (by rwa [map_zero]))
 
+/-- The base-changed universal curve is elliptic (its discriminant is
+a nonzero element of the field `Kuniv`). -/
+noncomputable instance : WK.IsElliptic := by
+  rw [WeierstrassCurve.isElliptic_iff]
+  exact isUnit_iff_ne_zero.mpr WK_Δ_ne_zero
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Base-changing `WK` along the identity of `Kuniv` gives `WK` — the
+bridge that lets the `(E⁄k)`-phrased torsion machinery apply to the
+tautological point. -/
+theorem WK_baseChange_self : WK.baseChange Kuniv = WK := by
+  rw [WeierstrassCurve.baseChange, show algebraMap Kuniv Kuniv =
+    RingHom.id Kuniv from rfl, WeierstrassCurve.map_id]
+
 end PsiSumCompanion
