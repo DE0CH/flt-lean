@@ -397,10 +397,32 @@ entries file). To add/remove/annotate a node, edit
                               same DVR-`∃`-shape as the good-reduction leaf (Tate curve + Kummer
                               theory content)
                 - ✅· `FreyCurve.torsion_isTameAtTwo` — (2026-07-16) from the arithmetic and the tame glue node below
-                    - ❌· `WeierstrassCurve.isTameAtTwo_of_hasMultiplicativeReduction` — (stated in `FreyConditions.lean` for a general elliptic curve over ℚ): the
-                      Tate glue at 2 — multiplicative reduction at 2 and `p` odd give the rank-1
-                      unramified quotient with character squaring to 1; to be closed against the
-                      quadratic-twist and Tate-uniformization (`exists_tateEquivSepClosure`) nodes
+                    - ✅· `WeierstrassCurve.isTameAtTwo_of_hasMultiplicativeReduction` — tame quotient at 2 from multiplicative reduction, now assembled by the
+                      split/nonsplit case split over the transferred reduction
+                      (`hasMultiplicativeReduction_padic`): the split half is the Tate exponent
+                      quotient, the nonsplit half is the leaf below.
+                        - ✅· `exists_tame_quotient_of_split_padic_two` — the split half of the tame-at-2 condition: the Tate valuation-exponent
+                          quotient of `exists_tateTorsionQuotient` transported to global torsion
+                          along the (bijective, by torsion counting) embedding into `ℚ_[2]`-torsion;
+                          the quotient carries the TRIVIAL local action, which is unramified and
+                          squares to 1.
+                            - ✅· `WeierstrassCurve.exists_tateEquivSepClosure` — Tate's uniformisation over a separable closure, now DERIVED from the
+                              choice-free Tate-curve uniformisation and Tate's variable-change
+                              theorem: the variable change is `k`-rational, so its base-changed
+                              point equivalence is Galois-equivariant, and the equivariance
+                              transports through the composite.
+                                - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC V.5.3): a curve with split
+                                  multiplicative reduction is a change of Weierstrass coordinates of
+                                  the Tate curve of its Tate parameter.
+                                - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
+                                  Galois-equivariantly ON THE NOSE, by the explicit series `X(u,q)`,
+                                  `Y(u,q)` (whose Weierstrass equation is proven in
+                                  `TateCurveConstruction`); glued over the finite subextensions of
+                                  `Ω`.
+                        - ❌· `WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two` — the nonsplit half of the tame-at-2 condition: the exponent quotient of the
+                          unramified quadratic twist, with the action twisted by the quadratic
+                          character of the unramified quadratic extension (unramified, squares to
+                          1).
             - ✅· `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified` — B5 `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
               (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work) — now (2026-07-16)
               from three explicit nodes in `HardlyRamified/Lift.lean` (own work), following

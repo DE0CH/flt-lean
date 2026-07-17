@@ -395,7 +395,7 @@
   "name": "WeierstrassCurve.isTameAtTwo_of_hasMultiplicativeReduction",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.FreyConditions",
   "wip": false,
-  "text": "`WeierstrassCurve.isTameAtTwo_of_hasMultiplicativeReduction` (stated in `FreyConditions.lean` for a general elliptic curve over ℚ): the Tate glue at 2 — multiplicative reduction at 2 and `p` odd give the rank-1 unramified quotient with character squaring to 1; to be closed against the quadratic-twist and Tate-uniformization (`exists_tateEquivSepClosure`) nodes",
+  "text": "tame quotient at 2 from multiplicative reduction, now assembled by the split/nonsplit case split over the transferred reduction (`hasMultiplicativeReduction_padic`): the split half is the Tate exponent quotient, the nonsplit half is the leaf below.",
   "fullname": "WeierstrassCurve.isTameAtTwo_of_hasMultiplicativeReduction"
  },
  {
@@ -796,5 +796,19 @@
   "wip": false,
   "fullname": "hasMultiplicativeReduction_padic",
   "text": "multiplicative reduction transfers from ℤ_(q) to the ring of integers of mathlib's ℚ_[q] (the tame-at-2 interface field): all valuation conversions are IsEquiv-chains through Rat.padicValuation and Padic.mulValuation; minimality is the unit-c₄ Kraus–Laska criterion."
+ },
+ {
+  "name": "exists_tame_quotient_of_split_padic_two",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.FreyConditions",
+  "wip": false,
+  "fullname": "exists_tame_quotient_of_split_padic_two",
+  "text": "the split half of the tame-at-2 condition: the Tate valuation-exponent quotient of `exists_tateTorsionQuotient` transported to global torsion along the (bijective, by torsion counting) embedding into `ℚ_[2]`-torsion; the quotient carries the TRIVIAL local action, which is unramified and squares to 1."
+ },
+ {
+  "name": "WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.FreyConditions",
+  "wip": false,
+  "fullname": "WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two",
+  "text": "the nonsplit half of the tame-at-2 condition: the exponent quotient of the unramified quadratic twist, with the action twisted by the quadratic character of the unramified quadratic extension (unramified, squares to 1)."
  }
 ]

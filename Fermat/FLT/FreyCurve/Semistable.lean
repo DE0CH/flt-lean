@@ -851,6 +851,7 @@ theorem point_map_algClosureEmbeddingPadic_comm (q : ℕ) [Fact q.Prime]
     exact Field.absoluteGaloisGroup.lift_map (algebraMap ℚ ℚ_[q]) σ x
   rw [hhomeq]
 
+
 open IsDedekindDomain in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in

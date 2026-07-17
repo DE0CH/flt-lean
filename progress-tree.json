@@ -56,7 +56,7 @@
   "algHomEquivOfFinite": "✅✅",
   "FreyCurve.torsion_isTameAtTwo": "✅",
   "FreyPackage.freyCurve_hasMultiplicativeReduction_at_two": "✅✅",
-  "WeierstrassCurve.isTameAtTwo_of_hasMultiplicativeReduction": "❌",
+  "WeierstrassCurve.isTameAtTwo_of_hasMultiplicativeReduction": "✅",
   "GaloisRepresentation.not_isIrreducible_of_isHardlyRamified": "✅",
   "GaloisRepresentation.exists_hardlyRamifiedLift": "❌",
   "GaloisRepresentation.residual_charFrob_eq": "✅",
@@ -113,7 +113,9 @@
   "ValuationSubring.inertia_fixes_root_of_separable_residue": "✅✅",
   "WeierstrassCurve.exists_tateCurveEquivSepClosure": "❌",
   "WeierstrassCurve.exists_tateTorsionQuotient": "✅✅",
-  "hasMultiplicativeReduction_padic": "✅✅"
+  "hasMultiplicativeReduction_padic": "✅✅",
+  "exists_tame_quotient_of_split_padic_two": "✅",
+  "WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two": "❌"
  },
  "children": {
   "fermat_last_theorem": [
@@ -387,7 +389,9 @@
    "FreyPackage.freyCurve"
   ],
   "WeierstrassCurve.isTameAtTwo_of_hasMultiplicativeReduction": [
-   "WeierstrassCurve.galoisRep"
+   "WeierstrassCurve.galoisRep",
+   "exists_tame_quotient_of_split_padic_two",
+   "WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two"
   ],
   "GaloisRepresentation.not_isIrreducible_of_isHardlyRamified": [
    "GaloisRepresentation.not_isIrreducible_of_charFrob_eq",
@@ -548,12 +552,20 @@
   "ValuationSubring.inertia_fixes_root_of_separable_residue": [],
   "WeierstrassCurve.exists_tateCurveEquivSepClosure": [],
   "WeierstrassCurve.exists_tateTorsionQuotient": [],
-  "hasMultiplicativeReduction_padic": []
+  "hasMultiplicativeReduction_padic": [],
+  "exists_tame_quotient_of_split_padic_two": [
+   "WeierstrassCurve.n_torsion_card",
+   "WeierstrassCurve.exists_tateTorsionQuotient",
+   "WeierstrassCurve.galoisRep",
+   "WeierstrassCurve.exists_tateEquivSepClosure"
+  ],
+  "WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two": [
+   "WeierstrassCurve.galoisRep"
+  ]
  },
  "roots": [
   "fermat_last_theorem",
   "GaloisRepresentation.IsHardlyRamified.mod_three",
-  "WeierstrassCurve.exists_tateTorsionQuotient",
   "hasMultiplicativeReduction_padic"
  ]
 }
