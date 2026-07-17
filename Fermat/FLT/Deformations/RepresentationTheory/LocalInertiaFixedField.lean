@@ -103,6 +103,26 @@ instance instIsScalarTowerValuationSubring {K L : Type*} [Field K] [Semiring L]
     IsScalarTower O K L :=
   IsScalarTower.of_algebraMap_eq' rfl
 
+/-- The integral closure of `𝒪ᵥ` in an algebraic extension of `Kᵥ`,
+bundled as a VALUATION SUBRING (the underlying subring is a valuation
+ring by the vendored spectral-norm argument; this is the object whose
+`comap` along a chosen embedding `Kᵃˡᵍ → Kᵥᵃˡᵍ` produces the valuation
+subring `𝒪` of `Kᵃˡᵍ` consumed by the vendored
+Néron–Ogg–Shafarevich node). -/
+noncomputable def integralClosureValuationSubring
+    (L : Type*) [Field L]
+    [Algebra (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) L]
+    [Algebra.IsAlgebraic (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) L] :
+    ValuationSubring L :=
+  ⟨(integralClosure 𝒪ᵥ L).toSubring, by
+    intro x
+    obtain hx | hx := le_total (spectralNorm
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) L x) 1
+    · exact .inl (isIntegral_of_spectralNorm_le_one hx)
+    · have h1 := inv_le_one_of_one_le₀ hx
+      rw [← spectralNorm_inv] at h1
+      exact .inr (isIntegral_of_spectralNorm_le_one h1)⟩
+
 section FiniteLevel
 
 variable (N : Type*) [Field N]
