@@ -424,6 +424,38 @@ theorem x_sub_gap_two {m : ℤ} {x y xm1 xp1 : k}
     ((E⁄k).ψ (m + 1)).evalEval x y ^ 2 * hφm1 -
     ((E⁄k).ψ (m - 1)).evalEval x y ^ 2 * hφp1 - heven
 
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] [DecidableEq k] in
+/-- **The universal two-point cross identity** (PROVEN 2026-07-17):
+for any two points of the curve, with `X₃` the multiplied
+`x`-coordinate expression of `Q₁ - Q₂` (the secant through `Q₁` and
+`-Q₂`), the product of the `ψ₂`-values satisfies
+`2t₁t₂(x₁-x₂)² = (b₂+4x₁+4x₂)(x₁-x₂)⁴ + 4X₃ - (Ψ₂Sq(x₁)+Ψ₂Sq(x₂))(x₁-x₂)²`.
+Every cross-tracking relation of the multiplication-formula induction
+is an instance of this single identity (pairs `(n,n+1)` with
+difference `P`, `(m-1,m+1)` with difference `2P`, `(1,m)` with
+difference `(m-1)P`), so the induction package needs only the
+`x`-formula and the `ψ₂`-tracking. Certificate: cofactors `-4, -4` on
+the two curve equations. -/
+theorem two_point_cross_identity {x₁ y₁ x₂ y₂ : k}
+    (h₁ : (E⁄k).toAffine.Equation x₁ y₁)
+    (h₂ : (E⁄k).toAffine.Equation x₂ y₂) :
+    2 * ((2 * y₁ + (E⁄k).a₁ * x₁ + (E⁄k).a₃) *
+        (2 * y₂ + (E⁄k).a₁ * x₂ + (E⁄k).a₃)) * (x₁ - x₂) ^ 2 =
+      ((E⁄k).b₂ + 4 * x₁ + 4 * x₂) * (x₁ - x₂) ^ 4 +
+        4 * (((y₁ + y₂ + (E⁄k).a₁ * x₂ + (E⁄k).a₃) ^ 2 +
+          (E⁄k).a₁ * (y₁ + y₂ + (E⁄k).a₁ * x₂ + (E⁄k).a₃) * (x₁ - x₂) -
+          ((E⁄k).a₂ + x₁ + x₂) * (x₁ - x₂) ^ 2) * (x₁ - x₂) ^ 2) -
+        (((E⁄k).Ψ₂Sq).eval x₁ + ((E⁄k).Ψ₂Sq).eval x₂) * (x₁ - x₂) ^ 2 := by
+  have heq₁ := (Affine.equation_iff x₁ y₁).mp h₁
+  have heq₂ := (Affine.equation_iff x₂ y₂).mp h₂
+  rw [WeierstrassCurve.Ψ₂Sq, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆]
+  simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow,
+    Polynomial.eval_C, Polynomial.eval_X]
+  linear_combination (-4 : k) * (x₁ - x₂) ^ 2 * heq₁ +
+    (-4 : k) * (x₁ - x₂) ^ 2 * heq₂
+
 set_option warn.sorry false in
 /-- (Sorry node — **the multiplication-by-`n` formula**, Washington
 *Elliptic curves* Theorem 3.6, the strengthened simultaneous induction
