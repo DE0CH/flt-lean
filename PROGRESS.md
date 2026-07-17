@@ -2570,3 +2570,15 @@ assumed. Axiom invariant: every declaration must use at most
   major fronts: WeilPairing:124, Chebotarev:98, HardlyRamified (5
   nodes), TateCurve (2), MazurTorsion (2), Semistable (2),
   GoodReduction, Flat:163 (torsion-flat construction).
+- 2026-07-17 (session 5 end, tautological point built `de9784b`):
+  `TautologicalPoint.lean` (all axiom-clean): `Kuniv = Frac(Buniv)`,
+  the base-changed curve `WK`, `taut_equation`, `Δ_univ_ne_zero`
+  (evaluate at `y² + y = x³`), `coeffHom_injective`,
+  `taut_nonsingular`. The generic-point engine for (C) is ready: next
+  session instantiates the PROVEN multiplication machinery
+  (`exists_smul_some_eq`, trackings) at `(tautX, tautY)` over `Kuniv`
+  — all division-polynomial values there are nonzero by
+  `mk_Ψ_univ_ne_zero` pushed through the fraction field — derives the
+  composition identities at values, pulls back to `ℤ[A][X]` via
+  `coeffHom_injective`-style basis arguments, and then runs the
+  UFD-multiplicity endgame for `separable_preΨ'`.
