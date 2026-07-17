@@ -2582,6 +2582,23 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6, NOS steps (0)+(i) PROVEN `6a2c87f`,
+  `a6b5660`): `ValuationSubring.mem_of_root_of_inv_leadingCoeff_mem`
+  (the general root-integrality: leading term dominates when
+  1 < v(x); leading coefficient valuation pinned by two-sided
+  membership) and `WeierstrassCurve.torsion_abscissa_mem` (the
+  Cassels instantiation at ΨSqₙ: n-unit from nonzero residue,
+  dictionary → root, integral model + double map_ΨSq → coefficients
+  in 𝒪 via h𝒪-comap, (n²)⁻¹ ∈ 𝒪 via Rˣ-arithmetic). Both
+  axiom-clean; GoodReduction.lean builds. REMAINING for the node:
+  (ii) y ∈ 𝒪 (apply the same lemma to the monic y-quadratic
+  X² + (a₁x+a₃)X − cubic with coefficients now known integral);
+  (iii) mod-𝔪 injectivity on torsion (distinct torsion points have
+  distinct residues: x-level via the RESIDUE curve's
+  separable_preΨ' — reduction of ΨSq is the residue ΨSq;
+  y-level via yQuad/Ψ₂Sq coprimality mod 𝔪); (iv) the inertia
+  endgame: σP ≡ P coordinatewise (inertia trivial on residues),
+  σP is n-torsion (Point.map is additive), so σP = P by (iii).
 - 2026-07-17 (session 6 final refinement, GoodReduction WITHOUT a
   reduction map): mathlib's Reduction.lean is curve-level only (no
   point reduction, no additivity) — but the node does not need it:
