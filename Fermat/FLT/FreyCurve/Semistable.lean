@@ -771,6 +771,86 @@ theorem hasMultiplicativeReduction_padic {q : ℕ} (hq : q.Prime)
           badReduction := hΔadic
           multiplicativeReduction := hc₄adic }
 
+/-- The tower `ℚ → ℚ_[q] → ℚ_[q]ᵃˡᵍ` algebra structure on the `p`-adic
+algebraic closure (the `ℚ_[q]`-analogue of `algebraRatAlgClosureAdic`,
+used consistently by the tame-at-`2` transport lemmas so that the two
+spellings of the closure-stage base change are definitionally equal
+curves). Not an instance: installed with `letI` per statement. -/
+@[reducible] noncomputable def algebraRatAlgClosurePadic (q : ℕ)
+    [Fact q.Prime] : Algebra ℚ (AlgebraicClosure ℚ_[q]) :=
+  ((algebraMap ℚ_[q] (AlgebraicClosure ℚ_[q])).comp
+    (algebraMap ℚ ℚ_[q])).toAlgebra
+
+/-- A classical decidable-equality instance on the `p`-adic algebraic
+closure (needed for the group law on points). -/
+noncomputable instance instDecidableEqAlgClosurePadic (q : ℕ)
+    [Fact q.Prime] : DecidableEq (AlgebraicClosure ℚ_[q]) :=
+  Classical.typeDecidableEq _
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- The chosen embedding `ℚ̄ → ℚ_[q]ᵃˡᵍ` as a `ℚ`-algebra homomorphism
+over the tower (`algebraRatAlgClosurePadic`); the `ℚ_[q]`-analogue of
+`algClosureEmbeddingRat`. -/
+noncomputable def algClosureEmbeddingPadic (q : ℕ) [Fact q.Prime] :
+    letI := algebraRatAlgClosurePadic q
+    ((AlgebraicClosure ℚ) →ₐ[ℚ] (AlgebraicClosure ℚ_[q])) :=
+  letI := algebraRatAlgClosurePadic q
+  { AlgebraicClosure.map (algebraMap ℚ ℚ_[q]) with
+    commutes' := fun r => by
+      have h1 := AlgebraicClosure.map_algebraMap (algebraMap ℚ ℚ_[q]) r
+      exact h1 }
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- The action of a local Galois element on the `p`-adic algebraic
+closure, as a `ℚ`-algebra homomorphism over the tower; the
+`ℚ_[q]`-analogue of `algClosureSigmaRat`. -/
+noncomputable def algClosureSigmaPadic (q : ℕ) [Fact q.Prime]
+    (σ : Field.absoluteGaloisGroup ℚ_[q]) :
+    letI := algebraRatAlgClosurePadic q
+    ((AlgebraicClosure ℚ_[q]) →ₐ[ℚ] (AlgebraicClosure ℚ_[q])) :=
+  letI := algebraRatAlgClosurePadic q
+  { ((σ : (AlgebraicClosure ℚ_[q]) ≃ₐ[ℚ_[q]]
+      (AlgebraicClosure ℚ_[q])).toAlgHom.toRingHom) with
+    commutes' := fun r =>
+      (σ : (AlgebraicClosure ℚ_[q]) ≃ₐ[ℚ_[q]]
+        (AlgebraicClosure ℚ_[q])).commutes ((algebraMap ℚ ℚ_[q]) r) }
+
+open WeierstrassCurve in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **Equivariance of the `p`-adic point transport** (the
+`ℚ_[q]`-analogue of `point_map_algClosureEmbeddingRat_comm`): `σ` after
+the transport equals the transport after the global image of `σ`; both
+sides reduce to `Field.absoluteGaloisGroup.lift_map` by
+`Point.map_map`. -/
+theorem point_map_algClosureEmbeddingPadic_comm (q : ℕ) [Fact q.Prime]
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (σ : Field.absoluteGaloisGroup ℚ_[q])
+    (P : ((E)⁄(AlgebraicClosure ℚ)).Point) :
+    letI := algebraRatAlgClosurePadic q
+    WeierstrassCurve.Affine.Point.map (W' := E) (algClosureEmbeddingPadic q)
+      (WeierstrassCurve.Affine.Point.map (W' := E)
+        (((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[q])) σ :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P) =
+    WeierstrassCurve.Affine.Point.map (W' := E) (algClosureSigmaPadic q σ)
+      (WeierstrassCurve.Affine.Point.map (W' := E)
+        (algClosureEmbeddingPadic q) P) := by
+  letI := algebraRatAlgClosurePadic q
+  rw [WeierstrassCurve.Affine.Point.map_map,
+    WeierstrassCurve.Affine.Point.map_map]
+  have hhomeq : (algClosureEmbeddingPadic q).comp
+      (((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[q])) σ :
+        AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom =
+      (algClosureSigmaPadic q σ).comp (algClosureEmbeddingPadic q) := by
+    apply AlgHom.ext
+    intro x
+    exact Field.absoluteGaloisGroup.lift_map (algebraMap ℚ ℚ_[q]) σ x
+  rw [hhomeq]
+
 open IsDedekindDomain in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
