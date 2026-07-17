@@ -43,6 +43,9 @@ import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Poi
 -- the sum-companion of the even recurrence, from the universal EDS
 -- identity `normEDS_sum_companion`
 import Fermat.FLT.EllipticCurve.PsiSumCompanion
+-- the EDS divisibility property (complement sequence), feeding the
+-- backward direction of the Ward pattern
+import Fermat.FLT.Mathlib.NumberTheory.EDSDivisibility
 import Mathlib.GroupTheory.QuotientGroup.Basic
 import Mathlib.GroupTheory.Coset.Card
 -- `Set.ncard` bridging between `Nat.card` of the torsion submodule and

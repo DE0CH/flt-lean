@@ -68,17 +68,5 @@ theorem normEDS_ellSequence (p q : ℤ) :
       normEDS b c d (q + 1) * normEDS b c d (q - 1) * normEDS b c d p ^ 2 :=
   sorry
 
-set_option warn.sorry false in
-/-- (Sorry node — **the divisibility property of `normEDS`**: the
-complement sequence witnesses `W(k) ∣ W(n·k)`.) This is the mathlib
-TODO `IsEllipticDvdSequence (normEDS b c d)` in its exact form: the
-even case is mathlib's `normEDS_mul_complEDS₂`, and the odd case
-follows from the `T((m+1)k, mk)` instance of `normEDS_ellSequence`
-by cancelling one factor of `normEDS b c d k` (a non-zero-divisor
-argument over the universal ring `ℤ[b, c, d]`, then specialisation
-via `map_normEDS`/`map_complEDS`). -/
-theorem normEDS_mul_complEDS (k n : ℤ) :
-    normEDS b c d k * complEDS b c d k n = normEDS b c d (n * k) :=
-  sorry
 
 end EllipticDivisibilitySequence
