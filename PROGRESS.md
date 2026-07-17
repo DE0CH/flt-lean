@@ -2444,3 +2444,25 @@ assumed. Axiom invariant: every declaration must use at most
   cancellation) + the degenerate tracking certificates C1/C2 (crux
   ideal-membership verified; c₃-cancellation via the same generic
   route or the d=3 pattern).
+- 2026-07-17 (session 5 cont., STANGE'S THEOREM PROVEN `7b1c6be`):
+  `normEDS_ellSequence` — the full two-parameter elliptic-sequence
+  relation `T(p,q)` for `normEDS` over any ring (mathlib TODO) — is
+  sorry-free. Key discovery: the vdP–Swart inductive step is a RANK-1
+  product identity `S₁T₋₁·S₋₁T₁ = S₁T₁·S₋₁T₋₁` (ring-trivial), whose
+  residual is their symmetry identity (15) with the tiny hand-derived
+  certificate `bc·K = bcU₀²V₀⁴·ES2ᵤ − U₀V₀²V₋₁V₁·★ᵤ − (u↔v)` over the
+  PROVEN `T(·,2)` + sum-companion families. The universal EDS layer is
+  now COMPLETE and axiom-clean: `normEDS_quadratic`,
+  `normEDS_sum_companion`, `normEDS_ellSequence`,
+  `normEDS_mul_complEDS`, `normEDS_generic_ne_zero`. Downstream now
+  axiom-clean: `evalEval_ψ_sum`, `evalEval_ψ_T`, `evalEval_ψ_quadratic`,
+  `zsmul_consec_step`. `psi_eq_zero_iff_dvd` rests ONLY on
+  `resultant_Φ_ΨSq`; `zsmul_some_aux` additionally on
+  `psi_tracking_prev_zero`/`_prev2_zero` (C1/C2). NEXT: (1) C1/C2 via
+  the generic-cancellation route (crux certificate in the fraction
+  field verified; c₃-cancellation generic; the value-level c₃ = 0
+  subcase via the d = 3 Ward pattern + `normEDS b 0 d` closed forms);
+  (2) `resultant_Φ_ΨSq` (7×7-Sylvester-flavoured, or the
+  Δ-formula route); (3) `exists_point_x_smul`, `separable_preΨ'`,
+  `smul_surjective`; then the WeilPairing/Chebotarev/hardly-ramified
+  branches.
