@@ -387,6 +387,7 @@ theorem hasSplitMultiplicativeReduction_quadraticTwistOf_of_residue
 variable [E.IsElliptic]
 
 open IsLocalRing in
+set_option maxHeartbeats 1000000 in
 /-- If `E` has multiplicative reduction which is not split, then `E` has a quadratic twist with
 split multiplicative reduction — namely the twist by the unramified quadratic extension of `K`:
 the reduction of the twist is the same nodal cubic with the Galois action on the two tangent
@@ -405,7 +406,11 @@ theorem exists_quadraticTwist_hasSplitMultiplicativeReduction [E.HasMultiplicati
     (h : ¬E.HasSplitMultiplicativeReduction R) :
     ∃ (L : Type u) (_ : Field L) (_ : Algebra K L) (_ : Algebra.IsQuadraticExtension K L)
       (_ : Algebra.IsSeparable K L),
-      ((E.quadraticTwist L).minimal R).HasSplitMultiplicativeReduction R := by
+      ((E.quadraticTwist L).minimal R).HasSplitMultiplicativeReduction R
+        ∧ ∃ (θL : L) (Q : Polynomial R), Q.Monic
+            ∧ Algebra.adjoin K ({θL} : Set L) = ⊤
+            ∧ Polynomial.aeval θL (Q.map (algebraMap R K)) = 0
+            ∧ (Q.map (IsLocalRing.residue R)).Separable := by
   -- The node polynomial reduced to the residue field `k`; nonsplitness makes it irreducible
   -- (`irreducible_nodePoly_map`), and multiplicative reduction makes it separable
   -- (`separable_nodePoly_map`). Its root field `k' = k[X]/(P)` is therefore a separable
@@ -420,11 +425,12 @@ theorem exists_quadraticTwist_hasSplitMultiplicativeReduction [E.HasMultiplicati
   have : Algebra.IsSeparable (ResidueField R) (AdjoinRoot P) :=
     AdjoinRoot.isSeparable_of_separable (separable_nodePoly_map E R)
   -- Lift `k'` to the unramified quadratic extension `L/K` (`LiftSeparableExtension`).
-  obtain ⟨L, _, _, _, _, _, _, S, _, _, _, _, _, _, _, _, _, hLrank, ⟨resIso⟩⟩ :=
+  obtain ⟨L, _, _, _, _, _, _, S, _, _, _, _, _, _, _, _, _, hLrank, ⟨resIso⟩,
+      θL, Q, hQmonic, hθtop, hθQ, hQsep⟩ :=
     exists_unramified_extension_of_residueField (R := R) (K := K) (AdjoinRoot P)
   have : Algebra.IsQuadraticExtension K L := ⟨hLrank.trans hk'rank⟩
   refine ⟨L, ‹Field L›, ‹Algebra K L›, ‹Algebra.IsQuadraticExtension K L›,
-    ‹Algebra.IsSeparable K L›, ?_⟩
+    ‹Algebra.IsSeparable K L›, ?_, θL, Q, hQmonic, hθtop, hθQ, hQsep⟩
   -- `S = 𝒪_L` is the integral closure of `R` in `L` (now that `Frac S = L` is proved), so `L` is
   -- the base-change localization of `S`, and `R`-trace/norm are compatible with `K`-trace/norm.
   have : Algebra.IsIntegral R S := Algebra.IsIntegral.of_finite R S

@@ -363,6 +363,92 @@ theorem ValuationSubring.residue_ne_of_roots_ne
   exact Polynomial.not_isUnit_X_sub_C _ (hsq _ hdvd)
 
 set_option backward.isDefEq.respectTransparency false in
+open Polynomial in
+/-- **Inertia fixes `A`-integral roots of base-field polynomials with
+separable reduction** (the master root-fixing lemma, subsuming the
+`X^p − 1` and `X^p − c` cases): let `f` be a polynomial over the
+valuation subring `A` whose coefficients come from the base field `k₀`
+and whose residue reduction is separable. If `x ∈ A` is a root of `f`,
+then every inertia element fixes `x`: the `σ`-image is again a root
+(the coefficients are `σ`-fixed), it has the same residue (inertia
+fixes residues), and distinct roots have distinct residues under a
+separable reduction (`residue_ne_of_roots_ne`). -/
+theorem ValuationSubring.inertia_fixes_root_of_separable_residue
+    {k₀ K : Type*} [Field k₀] [Field K] [Algebra k₀ K]
+    (A : ValuationSubring K)
+    (σ : A.decompositionSubgroup k₀) (hσ : σ ∈ A.inertiaSubgroup k₀)
+    (f : Polynomial A)
+    (hcoeff : ∀ i, ((f.coeff i : A) : K) ∈ Set.range (algebraMap k₀ K))
+    (hsep : (f.map (IsLocalRing.residue A)).Separable)
+    {x : K} (hxA : x ∈ A)
+    (hroot : f.eval (⟨x, hxA⟩ : A) = 0) :
+    (σ : K ≃ₐ[k₀] K) x = x := by
+  classical
+  -- σ fixes every coefficient of `f`
+  have hσc : ∀ i, (σ : K ≃ₐ[k₀] K) ((f.coeff i : A) : K) =
+      ((f.coeff i : A) : K) := by
+    intro i
+    obtain ⟨r, hr⟩ := hcoeff i
+    rw [← hr]
+    exact (σ : K ≃ₐ[k₀] K).commutes r
+  -- the `σ`-image of the root lies in `A`
+  have hcoe : ((σ • (⟨x, hxA⟩ : A) : A) : K) = (σ : K ≃ₐ[k₀] K) x := rfl
+  have hσxA : (σ : K ≃ₐ[k₀] K) x ∈ A := hcoe ▸ (σ • (⟨x, hxA⟩ : A)).2
+  -- the `K`-level polynomial and its two roots
+  set F : Polynomial K := f.map A.subtype with hF
+  have hFx : F.eval x = 0 := by
+    have h1 : F.eval ((⟨x, hxA⟩ : A) : K) = A.subtype (f.eval ⟨x, hxA⟩) := by
+      rw [hF, Polynomial.eval_map]
+      exact Polynomial.eval₂_at_apply A.subtype ⟨x, hxA⟩
+    rw [show x = ((⟨x, hxA⟩ : A) : K) from rfl, h1, hroot, map_zero]
+  -- `σ` fixes `F` coefficientwise
+  have hFσ : F.map ((σ : K ≃ₐ[k₀] K) : K →+* K) = F := by
+    apply Polynomial.ext
+    intro i
+    rw [Polynomial.coeff_map, hF, Polynomial.coeff_map]
+    exact hσc i
+  have hFσx : F.eval ((σ : K ≃ₐ[k₀] K) x) = 0 := by
+    have h1 : (F.map ((σ : K ≃ₐ[k₀] K) : K →+* K)).eval
+        (((σ : K ≃ₐ[k₀] K) : K →+* K) x) =
+        ((σ : K ≃ₐ[k₀] K) : K →+* K) (F.eval x) := by
+      rw [Polynomial.eval_map]
+      exact Polynomial.eval₂_at_apply ((σ : K ≃ₐ[k₀] K) : K →+* K) x
+    rw [hFσ] at h1
+    rw [show ((σ : K ≃ₐ[k₀] K) x) = ((σ : K ≃ₐ[k₀] K) : K →+* K) x from rfl,
+      h1, hFx, map_zero]
+  have hroot' : f.eval (⟨(σ : K ≃ₐ[k₀] K) x, hσxA⟩ : A) = 0 := by
+    apply Subtype.ext
+    have h1 : F.eval ((⟨(σ : K ≃ₐ[k₀] K) x, hσxA⟩ : A) : K) =
+        A.subtype (f.eval ⟨(σ : K ≃ₐ[k₀] K) x, hσxA⟩) := by
+      rw [hF, Polynomial.eval_map]
+      exact Polynomial.eval₂_at_apply A.subtype ⟨(σ : K ≃ₐ[k₀] K) x, hσxA⟩
+    show ((f.eval (⟨(σ : K ≃ₐ[k₀] K) x, hσxA⟩ : A) : A) : K) = ((0 : A) : K)
+    rw [show ((f.eval (⟨(σ : K ≃ₐ[k₀] K) x, hσxA⟩ : A) : A) : K) =
+      A.subtype (f.eval ⟨(σ : K ≃ₐ[k₀] K) x, hσxA⟩) from rfl, ← h1]
+    exact hFσx
+  -- inertia fixes residues
+  have hres : ∀ z : A, IsLocalRing.residue A (σ • z) =
+      IsLocalRing.residue A z := by
+    intro z
+    rw [IsLocalRing.ResidueField.residue_smul]
+    have h1 := MonoidHom.mem_ker.mp hσ
+    calc (σ : A.decompositionSubgroup k₀) • IsLocalRing.residue A z
+        = (MulSemiringAction.toRingAut (A.decompositionSubgroup k₀)
+            (IsLocalRing.ResidueField A) σ)
+            (IsLocalRing.residue A z) := rfl
+      _ = IsLocalRing.residue A z := by rw [h1]; rfl
+  -- conclude by root separation
+  by_contra hne
+  have hnesub : (⟨(σ : K ≃ₐ[k₀] K) x, hσxA⟩ : A) ≠ ⟨x, hxA⟩ :=
+    fun hc => hne (congrArg Subtype.val hc)
+  have hresne := A.residue_ne_of_roots_ne _ hroot' hroot hnesub hsep
+  apply hresne
+  have h9 : (⟨(σ : K ≃ₐ[k₀] K) x, hσxA⟩ : A) = σ • (⟨x, hxA⟩ : A) :=
+    Subtype.ext hcoe.symm
+  rw [h9]
+  exact hres _
+
+set_option backward.isDefEq.respectTransparency false in
 /-- **Inertia fixes the `p`-th roots of residually-nonzero constants**
 (generalizing the roots-of-unity case below): if `p` is nonzero in the
 residue field of `A`, `c` is an element of `A` with nonzero residue

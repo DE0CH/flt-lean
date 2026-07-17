@@ -62,7 +62,11 @@ theorem exists_unramified_extension_of_residueField
       (_ : Module.Finite R S) (_ : Algebra S L) (_ : IsScalarTower R S L) (_ : IsFractionRing S L)
       (_ : IsLocalHom (algebraMap R S)),
       Module.finrank K L = Module.finrank (ResidueField R) k'
-        ∧ Nonempty (ResidueField S ≃ₐ[ResidueField R] k') := by
+        ∧ Nonempty (ResidueField S ≃ₐ[ResidueField R] k')
+        ∧ ∃ (θ : L) (Q : Polynomial R), Q.Monic
+            ∧ Algebra.adjoin K ({θ} : Set L) = ⊤
+            ∧ Polynomial.aeval θ (Q.map (algebraMap R K)) = 0
+            ∧ (Q.map (residue R)).Separable := by
   -- `k' = k[X]/(pbar)` for a monic separable irreducible `pbar` of degree `[k' : k]`.
   obtain ⟨pbar, hpbar_monic, hpbar_sep, hpbar_irr, hpbar_deg, ⟨hk'_equiv⟩⟩ :=
     Field.exists_monic_irreducible_adjoinRoot_algEquiv (ResidueField R) k'
@@ -115,6 +119,9 @@ theorem exists_unramified_extension_of_residueField
     hP_monic.finite_adjoinRoot, algSL, htower,
     isFractionRing_map hPdeg hmaxS
       (by rw [halg]; exact map_comp_mk (algebraMap R K) hpK),
-    hSlocalhom, hLrank, ⟨e.extendScalarsOfSurjective residue_surjective⟩⟩
+    hSlocalhom, hLrank, ⟨e.extendScalarsOfSurjective residue_surjective⟩,
+    AdjoinRoot.root pK, P, hP_monic, AdjoinRoot.adjoinRoot_eq_top,
+    by rw [← hpK, AdjoinRoot.aeval_eq, AdjoinRoot.mk_self],
+    by rw [hP_map]; exact hpbar_sep⟩
 
 end
