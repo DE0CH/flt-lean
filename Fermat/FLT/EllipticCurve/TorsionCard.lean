@@ -855,7 +855,7 @@ theorem evalEval_ψ_normEDS (m : ℤ) (x y : k) :
 set_option backward.isDefEq.respectTransparency false in
 omit [E.IsElliptic] [DecidableEq k] in
 /-- **The `T(n, 2)` elliptic-sequence relation on the curve** (DERIVED
-2026-07-17 from the universal Stange node `normEDS_ellSequence`):
+2026-07-17 from the PROVEN universal family `normEDS_quadratic`):
 `ψₙ₊₂ψₙ₋₂ = ψₙ₊₁ψₙ₋₁ψ₂² - ψ₃ψₙ²` at any point of the plane — a pure
 specialisation through `evalEval_ψ_normEDS`, no curve input at all. -/
 theorem evalEval_ψ_quadratic (n : ℤ) (x y : k) :
@@ -863,14 +863,12 @@ theorem evalEval_ψ_quadratic (n : ℤ) (x y : k) :
       ((E⁄k).ψ (n + 1)).evalEval x y * ((E⁄k).ψ (n - 1)).evalEval x y *
         ((E⁄k).ψ 2).evalEval x y ^ 2 -
       ((E⁄k).ψ 3).evalEval x y * ((E⁄k).ψ n).evalEval x y ^ 2 := by
-  have hT := normEDS_ellSequence ((E⁄k).ψ₂.evalEval x y)
-    (((E⁄k).Ψ₃).eval x) (((E⁄k).preΨ₄).eval x) n 2
-  rw [show (2 : ℤ) + 1 = 3 from rfl, show (2 : ℤ) - 1 = 1 from rfl,
-    normEDS_one, mul_one] at hT
+  have hT := normEDS_quadratic ((E⁄k).ψ₂.evalEval x y)
+    (((E⁄k).Ψ₃).eval x) (((E⁄k).preΨ₄).eval x) n
   rw [evalEval_ψ_normEDS E (n + 2) x y, evalEval_ψ_normEDS E (n - 2) x y,
     evalEval_ψ_normEDS E (n + 1) x y, evalEval_ψ_normEDS E (n - 1) x y,
     evalEval_ψ_normEDS E 2 x y, evalEval_ψ_normEDS E 3 x y,
-    evalEval_ψ_normEDS E n x y]
+    evalEval_ψ_normEDS E n x y, normEDS_two, normEDS_three]
   linear_combination hT
 
 set_option warn.sorry false in
