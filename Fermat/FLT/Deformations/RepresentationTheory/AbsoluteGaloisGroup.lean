@@ -6,6 +6,7 @@ Authors: Andrew Yang, Kevin Buzzard, Ruben Van de Velde
 module
 
 public import Fermat.FLT.Deformations.RepresentationTheory.Frobenius
+public import Mathlib.RingTheory.Valuation.RamificationGroup
 public import Fermat.FLT.Deformations.RepresentationTheory.IntegralClosure
 public import Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite
 public import Mathlib.Analysis.Normed.Unbundled.SpectralNorm
@@ -166,6 +167,70 @@ of the local galois group. -/
 noncomputable
 def localInertiaGroup : Subgroup (Γ Kᵥ) :=
   (𝔪 (IntegralClosure 𝒪ᵥ (Kᵥᵃˡᵍ))).toAddSubgroup.inertia (Γ Kᵥ)
+
+/-- The integral closure of `𝒪ᵥ` in the algebraic closure of `Kᵥ`, as a
+valuation subring: the spectral-norm dichotomy shows every element or
+its inverse is integral. (The subring is the one whose maximal ideal
+defines `localInertiaGroup`; packaging it as a `ValuationSubring` lets
+the decomposition/inertia machinery of
+`Mathlib.RingTheory.Valuation.RamificationGroup` apply.) -/
+noncomputable
+def localValuationSubring : ValuationSubring (Kᵥᵃˡᵍ) :=
+  ⟨(integralClosure 𝒪ᵥ (Kᵥᵃˡᵍ)).toSubring, by
+    intro x
+    obtain hx | hx := le_total (spectralNorm Kᵥ (Kᵥᵃˡᵍ) x) 1
+    · exact .inl (isIntegral_of_spectralNorm_le_one hx)
+    · have := inv_le_one_of_one_le₀ hx
+      rw [← spectralNorm_inv] at this
+      exact .inr (isIntegral_of_spectralNorm_le_one this)⟩
+
+open scoped Pointwise in
+/-- Every `Kᵥ`-automorphism stabilizes the local valuation subring:
+integrality over `𝒪ᵥ` is preserved by automorphisms fixing `Kᵥ`. -/
+theorem mem_decompositionSubgroup_localValuationSubring
+    (σ : (Kᵥᵃˡᵍ) ≃ₐ[Kᵥ] (Kᵥᵃˡᵍ)) :
+    σ ∈ (localValuationSubring v).decompositionSubgroup Kᵥ := by
+  rw [MulAction.mem_stabilizer_iff]
+  apply le_antisymm
+  · rintro y ⟨x, hx, rfl⟩
+    exact IsIntegral.map
+      (σ.toAlgHom.restrictScalars 𝒪ᵥ) (hx : IsIntegral 𝒪ᵥ x)
+  · intro x hx
+    refine ⟨σ⁻¹ x, ?_, ?_⟩
+    · exact IsIntegral.map
+        ((σ⁻¹ : (Kᵥᵃˡᵍ) ≃ₐ[Kᵥ] (Kᵥᵃˡᵍ)).toAlgHom.restrictScalars 𝒪ᵥ)
+        (hx : IsIntegral 𝒪ᵥ x)
+    · show σ (σ⁻¹ x) = x
+      exact σ.apply_symm_apply x
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **The two spellings of local inertia agree** (PROVEN): an element of
+`localInertiaGroup v` (trivial action mod the maximal ideal of the
+integral closure) lies in the `ValuationSubring.inertiaSubgroup` of the
+local valuation subring (trivial action on its residue field). The two
+conditions are the same congruence, read through `Ideal.Quotient.eq`
+and the residue-compatibility of the decomposition action. -/
+theorem mem_inertiaSubgroup_localValuationSubring
+    (σ : (Kᵥᵃˡᵍ) ≃ₐ[Kᵥ] (Kᵥᵃˡᵍ)) (hσ : σ ∈ localInertiaGroup v) :
+    (⟨σ, mem_decompositionSubgroup_localValuationSubring v σ⟩ :
+      (localValuationSubring v).decompositionSubgroup Kᵥ) ∈
+      (localValuationSubring v).inertiaSubgroup Kᵥ := by
+  rw [ValuationSubring.inertiaSubgroup, MonoidHom.mem_ker]
+  apply RingEquiv.ext
+  intro z
+  obtain ⟨a, rfl⟩ := IsLocalRing.residue_surjective (R := localValuationSubring v) z
+  have h1 : (MulSemiringAction.toRingAut
+      ((localValuationSubring v).decompositionSubgroup Kᵥ)
+      (IsLocalRing.ResidueField (localValuationSubring v))
+      (⟨σ, mem_decompositionSubgroup_localValuationSubring v σ⟩))
+      (IsLocalRing.residue _ a) =
+      IsLocalRing.residue _
+        ((⟨σ, mem_decompositionSubgroup_localValuationSubring v σ⟩ :
+          (localValuationSubring v).decompositionSubgroup Kᵥ) • a) := rfl
+  rw [h1]
+  show IsLocalRing.residue _ _ = IsLocalRing.residue _ a
+  exact Ideal.Quotient.eq.mpr (hσ ⟨(a : (Kᵥᵃˡᵍ)), a.2⟩)
 
 open IntermediateField in
 /-- The subgroup of the local galois group which is the kernel of the canonical map `Iᵥ → k(v)ˣ`.
