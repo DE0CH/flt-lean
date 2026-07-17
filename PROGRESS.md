@@ -1760,3 +1760,22 @@ assumed. Axiom invariant: every declaration must use at most
   it definitionally at application time. `GoodReduction` is now a
   PUBLIC import of `Semistable.lean` (the leaf's statement needs the
   `inertiaSubgroup` language).
+- 2026-07-17 (session 5, flat-transport design): mathlib HAS Hopf base
+  change (`Mathlib.RingTheory.HopfAlgebra.TensorProduct`:
+  `HopfAlgebra S (B ⊗[R] A)` under towers). The `IsFlatAt` glue arc:
+  (i) the algebra `ℤ_(p) → 𝒪ᵥ` (codRestrict along the valuation
+  criterion — the `h𝒪`-chain tools apply); (ii)
+  `G := 𝒪ᵥ ⊗[ℤ_(p)] H` from the vendored leaf's package `H`
+  (flat/finite by base change; étale generic fibre by base-change
+  associativity `Kᵥ ⊗[𝒪ᵥ] G ≅ Kᵥ ⊗[ℚ] (ℚ ⊗[ℤ_(p)] H)` + étale base
+  change); (iii) points comparison
+  `Homs_{Kᵥ}(Kᵥ ⊗ G, Kᵥᵃˡᵍ) ≃ Homs_ℚ(ℚ⊗H, Kᵥᵃˡᵍ) ≃ Homs_ℚ(ℚ⊗H, ℚ̄)`
+  — tensor-hom adjunction + "finite ℚ-algebra maps into `Kᵥᵃˡᵍ` land
+  in `ι(ℚ̄)`" (the image is algebraic over ℚ; `ι(ℚ̄)` is the algebraic
+  closure of ℚ inside `Kᵥᵃˡᵍ`); (iv) `Γ Kᵥ`-equivariance through
+  `lift_map` against the leaf's `Gal(ℚ̄/ℚ)`-equivariance; (v) the
+  `∀`-open-ideal quantifier of `IsFlatAt`: for `A = ZMod p`, `I = ⊥`
+  is the leaf package and `I = ⊤` the ZERO module (tiny standalone
+  package `G := 𝒪ᵥ`, one-point homs ≃ zero space); intermediate `I`
+  don't occur for prime `p` (or handle by quotient-torsion).
+  Multi-iteration arc; start with (i).
