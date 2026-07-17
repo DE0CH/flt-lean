@@ -132,6 +132,18 @@ theorem evalEval_φ_eq (n : ℤ) {x y : k} (h : (E⁄k).toAffine.Equation x y) :
 
 set_option backward.isDefEq.respectTransparency false in
 omit [E.IsElliptic] [DecidableEq k] in
+/-- The value of `ψ₂` at any point of the plane: `2y + a₁x + a₃`
+(no curve equation needed — `ψ₂` is the `Y`-derivative polynomial). -/
+theorem evalEval_ψ_two (x y : k) :
+    ((E⁄k).ψ 2).evalEval x y = 2 * y + (E⁄k).a₁ * x + (E⁄k).a₃ := by
+  rw [WeierstrassCurve.ψ_two, WeierstrassCurve.ψ₂, Affine.polynomialY]
+  simp only [Polynomial.evalEval_add, Polynomial.evalEval_C,
+    Polynomial.evalEval_X, Polynomial.evalEval_mul, Polynomial.eval_C,
+    Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_X]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] [DecidableEq k] in
 /-- **The even `ψ`-recurrence on the curve** (PROVEN 2026-07-17):
 `ψ₂ₘ ⬝ ψ₂ = ψₘ₋₁² ψₘ ψₘ₊₂ - ψₘ₋₂ ψₘ ψₘ₊₁²` at a point of the curve
 (the value-level instance of `Ψ_even`). -/
