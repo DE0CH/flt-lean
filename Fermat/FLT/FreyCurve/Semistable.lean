@@ -51,6 +51,9 @@ import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 public import Fermat.FLT.Mathlib.NumberTheory.Padics.LocalField
 -- the adic-vs-canonical valuation bridges over `𝒪[K]`
 public import Fermat.FLT.Mathlib.RingTheory.Valuation.ValuativeRel.Basic
+-- `exists_tateEquivSepClosure` and the PROVEN `tate_inertia_unipotent`,
+-- consumed by the split-case unipotence assembly
+import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve
 -- `isUnit_natCast_adicCompletionIntegers` (a prime `p ≠ q` is a unit of
 -- `ℤ_qˆ`), input to the residue-characteristic fact at the local
 -- valuation subring
@@ -762,6 +765,145 @@ theorem point_map_algClosureEmbeddingRat_comm
     exact Field.absoluteGaloisGroup.lift_map
       (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v)) σ x
   rw [hhomeq]
+
+open IsDedekindDomain WeierstrassCurve ValuativeRel in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+set_option warn.sorry false in
+/-- **Pointwise unipotence in the split case** (step (C5),
+consuming the Tate-uniformization leaf): if the completed base change
+has SPLIT multiplicative reduction, every element of the local inertia
+group acts unipotently on the `p`-torsion of `E(ℚ̄)`. Assembly: the
+uniformization witness (`exists_tateEquivSepClosure` at
+`k = adicCompletion ℚ v_q`, gateway instances) feeds the PROVEN
+`tate_inertia_unipotent` at the local valuation subring ((C1) supplies
+decomposition/inertia membership, (C2) the residue characteristic);
+the resulting equation over the local closure pulls back to `E(ℚ̄)`
+along the equivariant embedding ((C3)) by `Point.map` injectivity. -/
+theorem torsion_unipotent_of_split_multiplicative_adic
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} [Fact p.Prime]
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
+    [hsplit : (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))).HasSplitMultiplicativeReduction
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat]] :
+    ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      ∀ P ∈ AddSubgroup.torsionBy
+        (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ),
+      WeierstrassCurve.Affine.Point.map
+          (((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))) σ :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom
+          (WeierstrassCurve.Affine.Point.map
+            (((Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))) σ :
+              AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P) -
+        WeierstrassCurve.Affine.Point.map
+          (((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))) σ :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P -
+        WeierstrassCurve.Affine.Point.map
+          (((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))) σ :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P +
+        P = 0 := by
+  classical
+  intro σ hσ P hP
+  obtain ⟨e, he⟩ := WeierstrassCurve.exists_tateEquivSepClosure
+    (k := HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+    (E := E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)))
+    (Ω := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))
+  -- transport the point along the chosen embedding
+  have hP' : WeierstrassCurve.Affine.Point.map (W' := E)
+      (algClosureEmbeddingRat hq.toHeightOneSpectrumRingOfIntegersRat) P ∈
+      AddSubgroup.torsionBy
+        ((E)⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ) := by
+    have h1 : ((p : ℕ) : ℤ) • P = 0 := hP
+    show ((p : ℕ) : ℤ) • WeierstrassCurve.Affine.Point.map (W' := E)
+      (algClosureEmbeddingRat hq.toHeightOneSpectrumRingOfIntegersRat) P = 0
+    rw [← map_zsmul, h1, map_zero]
+  -- the decomposition-subgroup element carried by `σ`
+  let σd : (localValuationSubring
+      hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup
+      (HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat) :=
+    ⟨(σ : _ ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat] _),
+      mem_decompositionSubgroup_localValuationSubring _ _⟩
+  -- the local unipotence at the transported point
+  have hloc := WeierstrassCurve.tate_inertia_unipotent
+    (k := HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+    (E := E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)))
+    (Ω := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) e he
+    (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+    (Fact.out : p.Prime).ne_zero
+    (natCast_residueField_localValuationSubring_ne_zero
+      (Fact.out : p.Prime) hq (fun h => hqp h.symm))
+    σd
+    (mem_inertiaSubgroup_localValuationSubring _ _ hσ)
+    (show ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).Point from
+      WeierstrassCurve.Affine.Point.map (W' := E)
+        (algClosureEmbeddingRat hq.toHeightOneSpectrumRingOfIntegersRat) P)
+    hP'
+  -- pull the equation back along the injective equivariant embedding
+  apply WeierstrassCurve.Affine.Point.map_injective
+    (f := algClosureEmbeddingRat hq.toHeightOneSpectrumRingOfIntegersRat)
+  simp only [map_sub, map_add, map_zero]
+  simp only [point_map_algClosureEmbeddingRat_comm]
+  have hbb : ∀ Q : ((E)⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))).Point,
+      WeierstrassCurve.Affine.Point.map (W' := E)
+        ((σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))
+            ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat]
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))).toAlgHom.restrictScalars
+          ℚ) Q =
+      (show ((E)⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).Point from
+        WeierstrassCurve.Affine.Point.map
+          (W' := E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)))
+          ((σd : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))
+              ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat]
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))).toAlgHom)
+          (show ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).Point from Q)) := by
+    intro Q
+    cases Q with
+    | zero => rfl
+    | some x y h => rfl
+  rw [hbb]
+  -- REMAINING WALL (tracked): the two ⁄-spellings of the transported
+  -- sum — `(E⁄Ω)` with the ambient `Algebra ℚ Ω` vs the base-changed
+  -- `((E.map φ)⁄Ω)` — carry group-law instances that are only
+  -- propositionally identified (the two `ℚ → Ω` ring homs are equal by
+  -- `Rat.subsingleton_ringHom` but not definitionally); the atoms match
+  -- after `hbb`, and `hloc` is the `mapφ`-side equation. Close by
+  -- rebasing the internal Ω-stage on the tower instance.
+  sorry
 
 open scoped WeierstrassCurve.Affine in
 set_option warn.sorry false in
