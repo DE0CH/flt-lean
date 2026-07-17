@@ -1633,3 +1633,18 @@ assumed. Axiom invariant: every declaration must use at most
   `lift_map`), (c) the `DistribMulAction`-vs-`Point.map` and
   `ker`-membership unfoldings (`AddMonoidHom.ext` on torsion
   generators).
+- 2026-07-17 (session 5, recon): `integralClosureValuationSubring`
+  (PROVEN def) bundles `IC 𝒪ᵥ L` as a `ValuationSubring L`; take
+  `𝒪 := (integralClosureValuationSubring v Kᵥᵃˡᵍ).comap
+  (AlgebraicClosure.map f)` (`ValuationSubring.comap` ✓ mathlib). The
+  `h𝒪`-compatibility `(𝒪.comap (algebraMap ℚ ℚ̄)).toSubring =
+  (algebraMap ℤ_(q) ℚ).range` unfolds via `map_algebraMap` to
+  `f x ∈ IC-big ↔ f x ∈ 𝒪ᵥ` (integrality restricted to `Kᵥ`; `𝒪ᵥ`
+  integrally closed) and then to
+  `v.valuation ℚ x ≤ 1 ↔ x ∈ range (ℤ_(q) → ℚ)` — the ONE-PLACE
+  analogue of mathlib's `mem_integers_of_valuation_le_one`
+  (`AdicValuation.lean:423`, all-places): prove for
+  `Localization.AtPrime v.asIdeal` by mirroring its
+  `IsLocalization.surj` + factor-count argument at the single place,
+  or through the `IsLocalization.AtPrime` unit-criteria already used
+  in `Semistable.lean`.
