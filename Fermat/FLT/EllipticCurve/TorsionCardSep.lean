@@ -233,20 +233,171 @@ theorem exists_good_chord [IsAlgClosed k] {p : ℕ} (hp : p.Prime)
       linear_combination -hΦx)
   exact ⟨c, hsep, hdeg, hcB3, hroots⟩
 
-set_option warn.sorry false in
-/-- **A fibre of `[p]` of size `p²`** (sorry node): over an
-algebraically closed field, pick a generic chord value `c` — avoiding
-the finitely many roots of the Wronskian `Φₚ′ΨSqₚ − ΦₚΨSqₚ′ = p⬝preΨ₂ₚ
-≠ 0`, of `Ψ₂Sq`, and the `2`-torsion line — so that `Φₚ − c⬝ΨSqₚ` is
-separable of degree `p²`; each of its `p²` roots carries two points of
-the curve (`yQuad` separable there), giving `2p²` points `P` with
-`x(p•P) = c`, i.e. `p•P ∈ {R, −R}`; the involution `P ↦ −P` swaps the
-two classes, so the fibre of `R` has exactly `p²` elements. -/
-theorem exists_large_fibre {p : ℕ} (hp : p.Prime) (hodd : Odd p)
-    (hpk : (p : k) ≠ 0) :
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 2000000 in
+/-- **A fibre of `[p]` of size `p²`** (PROVEN via the generic chord
+value): the `p²` roots of `Φₚ − c ⬝ ΨSqₚ` each carry two curve points,
+all `2p²` of them mapping under `[p]` into `{R, −R}` for the affine
+point `R` with abscissa `c`; the involution `P ↦ −P` exchanges the two
+classes, which therefore have `p²` elements each. -/
+theorem exists_large_fibre [IsAlgClosed k] {p : ℕ} (hp : p.Prime)
+    (hodd : Odd p) (hpk : (p : k) ≠ 0) :
     ∃ (R : (E⁄k).Point) (S : Finset (E⁄k).Point),
-      S.card = p ^ 2 ∧ ∀ P ∈ S, (p : ℤ) • P = R :=
-  sorry
+      S.card = p ^ 2 ∧ ∀ P ∈ S, (p : ℤ) • P = R := by
+  classical
+  haveI : (E⁄k).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap k k)).IsElliptic)
+  obtain ⟨c, hsep, hdeg, hΨ₂c, hroots⟩ := exists_good_chord E hp hodd hpk
+  have hpz : ((p : ℕ) : ℤ) ≠ 0 := by exact_mod_cast hp.ne_zero
+  set g := (E⁄k).Φ (p : ℤ) - Polynomial.C c * (E⁄k).ΨSq (p : ℤ)
+    with hgdef
+  have hgne : g ≠ 0 := fun h0 => by
+    have hd := hdeg
+    rw [h0, Polynomial.natDegree_zero] at hd
+    have := Nat.one_le_pow 2 p hp.pos
+    omega
+  set X := g.roots.toFinset with hXdef
+  have hXcard : X.card = p ^ 2 := by
+    rw [hXdef, Multiset.toFinset_card_of_nodup
+      (Polynomial.nodup_roots hsep),
+      Polynomial.splits_iff_card_roots.mp (IsAlgClosed.splits g)]
+    exact hdeg
+  -- the two points above each root
+  set Spts := X.biUnion (fun x₀ => pointsAt E x₀) with hSptsdef
+  have hdisj : ∀ x₁ ∈ X, ∀ x₂ ∈ X, x₁ ≠ x₂ →
+      Disjoint (pointsAt E x₁) (pointsAt E x₂) := by
+    intro x₁ _ x₂ _ hne
+    rw [Finset.disjoint_left]
+    intro P hP1 hP2
+    obtain ⟨y₁, h₁, rfl⟩ := (mem_pointsAt_iff E).mp hP1
+    obtain ⟨y₂, h₂, hP⟩ := (mem_pointsAt_iff E).mp hP2
+    exact hne (Affine.Point.some.inj hP).1
+  have hroot_mem : ∀ x₀ ∈ X, g.eval x₀ = 0 := by
+    intro x₀ hx₀
+    rw [hXdef, Multiset.mem_toFinset, Polynomial.mem_roots hgne] at hx₀
+    exact hx₀
+  have hpts2 : ∀ x₀ ∈ X, (pointsAt E x₀).card = 2 := by
+    intro x₀ hx₀
+    have hΨ₂x := (hroots x₀ (hroot_mem x₀ hx₀)).2
+    have hsepy := yQuad_separable E hΨ₂x
+    rw [pointsAt_card, Multiset.toFinset_card_of_nodup
+      (Polynomial.nodup_roots hsepy),
+      Polynomial.splits_iff_card_roots.mp
+        (IsAlgClosed.splits (yQuad E x₀)),
+      yQuad_natDegree]
+  have hSpts_card : Spts.card = 2 * p ^ 2 := by
+    rw [hSptsdef, Finset.card_biUnion hdisj,
+      Finset.sum_congr rfl hpts2, Finset.sum_const, hXcard]
+    ring
+  -- the common image abscissa
+  have hkey : ∀ P ∈ Spts, ∃ (y' : k)
+      (h' : (E⁄k).toAffine.Nonsingular c y'),
+      (p : ℤ) • P = Affine.Point.some c y' h' := by
+    intro P hP
+    obtain ⟨x₀, hx₀, hPx⟩ := Finset.mem_biUnion.mp hP
+    obtain ⟨y₀, h₀, rfl⟩ := (mem_pointsAt_iff E).mp hPx
+    have hS0 := (hroots x₀ (hroot_mem x₀ hx₀)).1
+    obtain ⟨x', y', h', heq, hx'⟩ :=
+      exists_smul_some_eq E hpz h₀ hS0
+    have hxc : x' = c := by
+      have hg0 := hroot_mem x₀ hx₀
+      rw [hgdef, Polynomial.eval_sub, Polynomial.eval_mul,
+        Polynomial.eval_C, sub_eq_zero] at hg0
+      exact mul_right_cancel₀ hS0 (hx'.trans hg0)
+    subst hxc
+    exact ⟨y', h', heq⟩
+  -- the base point and its image
+  have hXne : X.Nonempty := by
+    rw [← Finset.card_pos, hXcard]
+    have := Nat.one_le_pow 2 p hp.pos
+    omega
+  obtain ⟨x₁, hx₁⟩ := hXne
+  have hpts1 : (pointsAt E x₁).Nonempty := by
+    rw [← Finset.card_pos, hpts2 x₁ hx₁]
+    norm_num
+  obtain ⟨P₀, hP₀⟩ := hpts1
+  have hP₀S : P₀ ∈ Spts := Finset.mem_biUnion.mpr ⟨x₁, hx₁, hP₀⟩
+  obtain ⟨d, hd, hR⟩ := hkey P₀ hP₀S
+  set R : (E⁄k).Point := Affine.Point.some c d hd with hRdef
+  -- `R` is not `2`-torsion: `ψ₂(R)² = Ψ₂Sq(c) ≠ 0`
+  have hs2 : 2 * d + (E⁄k).a₁ * c + (E⁄k).a₃ ≠ 0 := by
+    intro h0
+    apply hΨ₂c
+    have hsq := congrArg (Polynomial.evalEvalRingHom c d)
+      (WeierstrassCurve.C_Ψ₂Sq (W := (E⁄k)))
+    simp only [map_sub, map_mul, map_pow, map_ofNat] at hsq
+    rw [Polynomial.coe_evalEvalRingHom] at hsq
+    have heq0 : ((E⁄k).toAffine.polynomial).evalEval c d = 0 := hd.1
+    rw [Polynomial.evalEval_C] at hsq
+    rw [show ((E⁄k).ψ₂).evalEval c d =
+        2 * d + (E⁄k).a₁ * c + (E⁄k).a₃ from by
+      rw [WeierstrassCurve.ψ₂, Affine.evalEval_polynomialY], h0,
+      heq0] at hsq
+    rw [hsq]
+    ring
+  have hRneg : R ≠ -R := by
+    rw [hRdef, Affine.Point.neg_some]
+    intro hc
+    obtain ⟨-, hy⟩ := Affine.Point.some.inj hc
+    apply hs2
+    rw [Affine.negY] at hy
+    linear_combination hy
+  -- dichotomy of the images
+  have himg : ∀ P ∈ Spts, (p : ℤ) • P = R ∨ (p : ℤ) • P = -R := by
+    intro P hP
+    obtain ⟨y', h', heq⟩ := hkey P hP
+    rcases Affine.Y_eq_of_X_eq h'.1 hd.1 rfl with hy | hy
+    · left
+      rw [heq, hRdef]
+      subst hy
+      rfl
+    · right
+      rw [heq, hRdef, Affine.Point.neg_some]
+      subst hy
+      rfl
+  set SR := Spts.filter (fun P => (p : ℤ) • P = R) with hSRdef
+  set SN := Spts.filter (fun P => (p : ℤ) • P = -R) with hSNdef
+  have hcover : Spts = SR ∪ SN := by
+    ext P
+    simp only [hSRdef, hSNdef, Finset.mem_union, Finset.mem_filter]
+    constructor
+    · intro hP
+      rcases himg P hP with h | h
+      · exact Or.inl ⟨hP, h⟩
+      · exact Or.inr ⟨hP, h⟩
+    · rintro (⟨hP, -⟩ | ⟨hP, -⟩) <;> exact hP
+  have hdisj2 : Disjoint SR SN := by
+    rw [Finset.disjoint_left]
+    rintro P hP1 hP2
+    rw [hSRdef, Finset.mem_filter] at hP1
+    rw [hSNdef, Finset.mem_filter] at hP2
+    exact hRneg (hP1.2.symm.trans hP2.2)
+  have hsum : SR.card + SN.card = 2 * p ^ 2 := by
+    rw [← Finset.card_union_of_disjoint hdisj2, ← hcover, hSpts_card]
+  have hnegmem : ∀ P ∈ Spts, -P ∈ Spts := by
+    intro P hP
+    obtain ⟨x₀, hx₀, hPx⟩ := Finset.mem_biUnion.mp hP
+    obtain ⟨y₀, h₀, rfl⟩ := (mem_pointsAt_iff E).mp hPx
+    refine Finset.mem_biUnion.mpr ⟨x₀, hx₀, ?_⟩
+    rw [Affine.Point.neg_some]
+    exact (mem_pointsAt_iff E).mpr ⟨_, _, rfl⟩
+  have hbij : SR.card = SN.card := by
+    apply Finset.card_bij (fun P _ => -P)
+    · intro P hP
+      rw [hSNdef, Finset.mem_filter]
+      rw [hSRdef, Finset.mem_filter] at hP
+      exact ⟨hnegmem P hP.1, by rw [smul_neg, hP.2]⟩
+    · intro P hP Q hQ h
+      exact neg_injective h
+    · intro Q hQ
+      rw [hSNdef, Finset.mem_filter] at hQ
+      refine ⟨-Q, ?_, neg_neg Q⟩
+      rw [hSRdef, Finset.mem_filter]
+      exact ⟨hnegmem Q hQ.1, by rw [smul_neg, hQ.2, neg_neg]⟩
+  refine ⟨R, SR, by omega, ?_⟩
+  intro P hP
+  exact (Finset.mem_filter.mp hP).2
+
 
 set_option backward.isDefEq.respectTransparency false in
 omit [E.IsElliptic] in
