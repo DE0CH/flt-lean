@@ -1,0 +1,864 @@
+[
+ {
+  "line": 47,
+  "mark": "✅",
+  "state": "·",
+  "proven": true,
+  "label": "`FermatLastTheorem.of_odd_primes` (mathlib, NumberTheory/FLT/Four.lean)",
+  "children": []
+ },
+ {
+  "line": 48,
+  "mark": "✅",
+  "state": "·",
+  "proven": true,
+  "label": "`fermatLastTheoremFour` (mathlib)",
+  "children": []
+ },
+ {
+  "line": 49,
+  "mark": "✅",
+  "state": "·",
+  "proven": true,
+  "label": "`fermatLastTheoremThree` (mathlib)",
+  "children": []
+ },
+ {
+  "line": 50,
+  "mark": "✅",
+  "state": "·",
+  "proven": false,
+  "label": "`fermatLastTheoremFor_of_five_le : ∀ p, p.Prime → 5 ≤ p → FermatLastTheoremFor p`",
+  "children": [
+   {
+    "line": 52,
+    "mark": "✅",
+    "state": "·",
+    "proven": true,
+    "label": "`FreyPackage` + `FreyPackage.of_not_FermatLastTheoremFor_p_ge_5` +",
+    "children": []
+   },
+   {
+    "line": 57,
+    "mark": "✅",
+    "state": "·",
+    "proven": true,
+    "label": "`FreyPackage.freyCurve : WeierstrassCurve ℚ` with `IsElliptic`",
+    "children": []
+   },
+   {
+    "line": 61,
+    "mark": "✅",
+    "state": "·",
+    "proven": false,
+    "label": "`FreyPackage.false : FreyPackage → False` — now PROVEN from Mazur +",
+    "children": [
+     {
+      "line": 63,
+      "mark": "✅",
+      "state": "·",
+      "proven": false,
+      "label": "`FreyPackage.mazur` (`Fermat/FLT/FreyCurve/Mazur.lean`) — the mod-p",
+      "children": [
+       {
+        "line": 67,
+        "mark": "✅",
+        "state": "·",
+        "proven": false,
+        "label": "`FreyPackage.exists_torsion_embedding_of_not_isIrreducible` —",
+        "children": [
+         {
+          "line": 72,
+          "mark": "✅",
+          "state": "·",
+          "proven": false,
+          "label": "`FreyPackage.exists_two_torsion_and_p_point_of_not_isIrreducible`",
+          "children": [
+           {
+            "line": 75,
+            "mark": "✅",
+            "state": "·",
+            "proven": false,
+            "label": "`FreyPackage.exists_p_point_of_not_isIrreducible` —",
+            "children": [
+             {
+              "line": 78,
+              "mark": "✅",
+              "state": "·",
+              "proven": true,
+              "label": "`minkowski_character_trivial` — DERIVED (2026-07-16)",
+              "children": [
+               {
+                "line": 83,
+                "mark": "✅",
+                "state": "·",
+                "proven": true,
+                "label": "`open_normal_subgroup_eq_top_of_inertia_le` —",
+                "children": [
+                 {
+                  "line": 94,
+                  "mark": "✅",
+                  "state": "·",
+                  "proven": true,
+                  "label": "`isUnramifiedAt_of_inertia_le_fixingSubgroup` —",
+                  "children": [
+                   {
+                    "line": 102,
+                    "mark": "✅",
+                    "state": "·",
+                    "proven": true,
+                    "label": "`inertia_eq_bot_of_le_fixingSubgroup` — **the",
+                    "children": []
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "line": 152,
+              "mark": "✅",
+              "state": "·",
+              "proven": false,
+              "label": "`FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski`",
+              "children": [
+               {
+                "line": 156,
+                "mark": "✅",
+                "state": "·",
+                "proven": false,
+                "label": "`FreyPackage.stable_line_dichotomy_of_not_isIrreducible`",
+                "children": [
+                 {
+                  "line": 186,
+                  "mark": "✅",
+                  "state": "·",
+                  "proven": false,
+                  "label": "`FreyPackage.subquotient_character_unramified` —",
+                  "children": [
+                   {
+                    "line": 202,
+                    "mark": "✅",
+                    "state": "·",
+                    "proven": false,
+                    "label": "`FreyPackage.inertia_two_unipotent` — DERIVED",
+                    "children": [
+                     {
+                      "line": 221,
+                      "mark": "❌",
+                      "state": "·",
+                      "proven": false,
+                      "label": "`WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction`",
+                      "children": []
+                     }
+                    ]
+                   },
+                   {
+                    "line": 230,
+                    "mark": "❌",
+                    "state": "·",
+                    "proven": false,
+                    "label": "`FreyPackage.subquotient_character_unramified_at_p`",
+                    "children": []
+                   }
+                  ]
+                 }
+                ]
+               },
+               {
+                "line": 236,
+                "mark": "❌",
+                "state": "·",
+                "proven": false,
+                "label": "`FreyPackage.exists_quotient_curve_point`",
+                "children": []
+               },
+               {
+                "line": 242,
+                "mark": "✅",
+                "state": "·",
+                "proven": true,
+                "label": "`WeierstrassCurve.exists_point_eq_baseChange_of_fixed`",
+                "children": [
+                 {
+                  "line": 249,
+                  "mark": "✅",
+                  "state": "·",
+                  "proven": true,
+                  "label": "`exists_stable_line_of_not_isIrreducible`",
+                  "children": []
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "line": 253,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "`FreyPackage.freyCurve_two_torsion_embedding` — PROVEN",
+            "children": []
+           }
+          ]
+         },
+         {
+          "line": 260,
+          "mark": "✅",
+          "state": "·",
+          "proven": true,
+          "label": "`embedding_assembly` (PROVEN 2026-07-16): in an abelian",
+          "children": []
+         }
+        ]
+       },
+       {
+        "line": 265,
+        "mark": "✅",
+        "state": "·",
+        "proven": false,
+        "label": "`WeierstrassCurve.mazur_torsion_bound` — Mazur's torsion",
+        "children": [
+         {
+          "line": 273,
+          "mark": "❌",
+          "state": "·",
+          "proven": false,
+          "label": "`WeierstrassCurve.mazur_classification` — **Mazur's torsion",
+          "children": []
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "line": 278,
+      "mark": "✅",
+      "state": "·",
+      "proven": false,
+      "label": "`FreyPackage.galoisRep_not_irreducible` (B4, `Fermat/PrimeFive.lean`)",
+      "children": [
+       {
+        "line": 282,
+        "mark": "✅",
+        "state": "·",
+        "proven": false,
+        "label": "`FreyCurve.torsion_isHardlyRamified`",
+        "children": [
+         {
+          "line": 287,
+          "mark": "✅",
+          "state": "·",
+          "proven": false,
+          "label": "`FreyCurve.torsion_det` — det ρ̄ = mod-p cyclotomic",
+          "children": [
+           {
+            "line": 290,
+            "mark": "✅",
+            "state": "·",
+            "proven": false,
+            "label": "`WeilPairing.exists_weilPairing` — **the Weil pairing**:",
+            "children": [
+             {
+              "line": 295,
+              "mark": "✅",
+              "state": "·",
+              "proven": false,
+              "label": "`det_galoisRep_eq_cyclotomic` — DERIVED (2026-07-17):",
+              "children": [
+               {
+                "line": 310,
+                "mark": "❌",
+                "state": "·",
+                "proven": false,
+                "label": "`det_galoisRep_globalFrob`",
+                "children": []
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "line": 320,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "`WeilPairing.pairing_map_eq_det_smul` +",
+            "children": []
+           }
+          ]
+         },
+         {
+          "line": 325,
+          "mark": "✅",
+          "state": "·",
+          "proven": false,
+          "label": "`FreyCurve.torsion_isUnramified` — unramified outside",
+          "children": [
+           {
+            "line": 328,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "`FreyCurve.torsion_isUnramified_of_good` — DERIVED",
+            "children": [
+             {
+              "line": 331,
+              "mark": "✅",
+              "state": "·",
+              "proven": true,
+              "label": "`FreyPackage.freyCurve_hasGoodReduction_of_not_dvd`",
+              "children": []
+             },
+             {
+              "line": 341,
+              "mark": "✅",
+              "state": "·",
+              "proven": true,
+              "label": "`WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction`",
+              "children": [
+               {
+                "line": 350,
+                "mark": "✅",
+                "state": "·",
+                "proven": true,
+                "label": "`torsion_unramified_of_good_reduction`",
+                "children": []
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "line": 369,
+            "mark": "✅",
+            "state": "·",
+            "proven": false,
+            "label": "`FreyCurve.torsion_isUnramified_of_multiplicative` —",
+            "children": [
+             {
+              "line": 373,
+              "mark": "✅",
+              "state": "·",
+              "proven": true,
+              "label": "`FreyPackage.freyCurve_hasMultiplicativeReduction_of_dvd`",
+              "children": []
+             },
+             {
+              "line": 381,
+              "mark": "✅",
+              "state": "·",
+              "proven": false,
+              "label": "`WeierstrassCurve.isUnramifiedAt_of_hasMultiplicativeReduction`",
+              "children": [
+               {
+                "line": 387,
+                "mark": "❌",
+                "state": "·",
+                "proven": false,
+                "label": "`torsion_unramified_of_multiplicative_reduction`",
+                "children": []
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "line": 398,
+          "mark": "✅",
+          "state": "·",
+          "proven": false,
+          "label": "`FreyCurve.torsion_isFlat` — flat at p: DERIVED",
+          "children": [
+           {
+            "line": 401,
+            "mark": "✅",
+            "state": "·",
+            "proven": false,
+            "label": "`FreyCurve.torsion_isFlat_of_good` — DERIVED",
+            "children": [
+             {
+              "line": 405,
+              "mark": "✅",
+              "state": "·",
+              "proven": false,
+              "label": "`WeierstrassCurve.isFlatAt_of_hasGoodReduction`",
+              "children": [
+               {
+                "line": 412,
+                "mark": "❌",
+                "state": "·",
+                "proven": false,
+                "label": "`torsion_flat_of_good_reduction`",
+                "children": []
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "line": 421,
+            "mark": "✅",
+            "state": "·",
+            "proven": false,
+            "label": "`FreyCurve.torsion_isFlat_of_multiplicative` — DERIVED",
+            "children": [
+             {
+              "line": 426,
+              "mark": "✅",
+              "state": "·",
+              "proven": false,
+              "label": "`WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction`",
+              "children": [
+               {
+                "line": 432,
+                "mark": "❌",
+                "state": "·",
+                "proven": false,
+                "label": "`torsion_flat_of_multiplicative_reduction`",
+                "children": []
+               },
+               {
+                "line": 441,
+                "mark": "✅",
+                "state": "·",
+                "proven": true,
+                "label": "`GaloisRep.isFlatAt_of_dvr_package`",
+                "children": [
+                 {
+                  "line": 454,
+                  "mark": "✅",
+                  "state": "·",
+                  "proven": true,
+                  "label": "`GaloisRep.hasFlatProlongationAt_of_dvr_package`",
+                  "children": [
+                   {
+                    "line": 464,
+                    "mark": "✅",
+                    "state": "·",
+                    "proven": true,
+                    "label": "`hasFlatProlongationAt_of_hopf_package`",
+                    "children": []
+                   },
+                   {
+                    "line": 472,
+                    "mark": "✅",
+                    "state": "·",
+                    "proven": true,
+                    "label": "convolution/equivariance layers (PROVEN",
+                    "children": []
+                   },
+                   {
+                    "line": 482,
+                    "mark": "✅",
+                    "state": "·",
+                    "proven": true,
+                    "label": "layer C `algHomEquivOfFinite` +",
+                    "children": []
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "line": 488,
+          "mark": "✅",
+          "state": "·",
+          "proven": false,
+          "label": "`FreyCurve.torsion_isTameAtTwo` — DERIVED (2026-07-16)",
+          "children": [
+           {
+            "line": 490,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "`FreyPackage.freyCurve_hasMultiplicativeReduction_at_two`",
+            "children": []
+           },
+           {
+            "line": 497,
+            "mark": "❌",
+            "state": "·",
+            "proven": false,
+            "label": "`WeierstrassCurve.isTameAtTwo_of_hasMultiplicativeReduction`",
+            "children": []
+           },
+           {
+            "line": 505,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "`TateParameter.lean` vendored (2026-07-16, ZERO",
+            "children": []
+           },
+           {
+            "line": 511,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "Tate-curve/reduction batch vendored (2026-07-16, ZERO",
+            "children": []
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "line": 527,
+        "mark": "✅",
+        "state": "·",
+        "proven": false,
+        "label": "**B5** `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`",
+        "children": [
+         {
+          "line": 532,
+          "mark": "❌",
+          "state": "·",
+          "proven": false,
+          "label": "**B6a** `exists_hardlyRamifiedLift` — an irreducible hardly",
+          "children": []
+         },
+         {
+          "line": 538,
+          "mark": "✅",
+          "state": "·",
+          "proven": false,
+          "label": "**B6bc** `residual_charFrob_eq` — the residual Frobenius",
+          "children": [
+           {
+            "line": 542,
+            "mark": "❌",
+            "state": "·",
+            "proven": false,
+            "label": "**B6b** `IsHardlyRamified.mem_isCompatible`",
+            "children": []
+           },
+           {
+            "line": 554,
+            "mark": "✅",
+            "state": "·",
+            "proven": false,
+            "label": "`residual_charFrob_eq_of_family` (own work, `Lift.lean`)",
+            "children": [
+             {
+              "line": 577,
+              "mark": "❌",
+              "state": "·",
+              "proven": false,
+              "label": "**B6c** `IsHardlyRamified.three_adic`",
+              "children": [
+               {
+                "line": 580,
+                "mark": "✅",
+                "state": "·",
+                "proven": false,
+                "label": "`IsHardlyRamified.mod_three` (`ModThree.lean`) —",
+                "children": [
+                 {
+                  "line": 584,
+                  "mark": "❌",
+                  "state": "·",
+                  "proven": false,
+                  "label": "`mod_three_reducible` — the Dickson/discriminant",
+                  "children": []
+                 },
+                 {
+                  "line": 586,
+                  "mark": "✅",
+                  "state": "·",
+                  "proven": false,
+                  "label": "`mod_three_of_stable_line` — DERIVED",
+                  "children": [
+                   {
+                    "line": 599,
+                    "mark": "❌",
+                    "state": "·",
+                    "proven": false,
+                    "label": "`exists_line_with_locally_unramified_quotCharacter`",
+                    "children": []
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "line": 609,
+          "mark": "✅",
+          "state": "·",
+          "proven": false,
+          "label": "`not_isIrreducible_of_charFrob_eq` — Chebotarev + Brauer–",
+          "children": [
+           {
+            "line": 615,
+            "mark": "✅",
+            "state": "·",
+            "proven": false,
+            "label": "`dense_conjClasses_globalFrob` — **Chebotarev density**,",
+            "children": [
+             {
+              "line": 621,
+              "mark": "❌",
+              "state": "·",
+              "proven": false,
+              "label": "`exists_frobenius_conj_mem_coset` — **Chebotarev,",
+              "children": []
+             }
+            ]
+           },
+           {
+            "line": 626,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "`not_isIrreducible_of_charpoly_eq` — **Brauer–Nesbitt**,",
+            "children": [
+             {
+              "line": 636,
+              "mark": "✅",
+              "state": "·",
+              "proven": true,
+              "label": "`BrauerNesbitt.exists_fixed_of_unipotent` — Kolchin,",
+              "children": []
+             },
+             {
+              "line": 648,
+              "mark": "✅",
+              "state": "·",
+              "proven": true,
+              "label": "`BrauerNesbitt.exists_common_eigenvector_of_commuting`",
+              "children": []
+             }
+            ]
+           },
+           {
+            "line": 657,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "`cyclotomicCharacterModL_globalFrob` — χ̄(Frob_q) = q",
+            "children": [
+             {
+              "line": 661,
+              "mark": "✅",
+              "state": "·",
+              "proven": true,
+              "label": "`cyclotomicCharacter_globalFrob` — the **ℓ-adic**",
+              "children": []
+             },
+             {
+              "line": 709,
+              "mark": "✅",
+              "state": "·",
+              "proven": true,
+              "label": "`toZMod_eq_ringEquivCongr_comp_toZModPow` — PROVEN",
+              "children": []
+             }
+            ]
+           },
+           {
+            "line": 711,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "sorry-free bridges (own work, `Chebotarev.lean`):",
+            "children": []
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "line": 722,
+        "mark": "✅",
+        "state": "·",
+        "proven": true,
+        "label": "`n_torsion_finite` — DERIVED (re-derived 2026-07-16, second",
+        "children": []
+       },
+       {
+        "line": 732,
+        "mark": "✅",
+        "state": "·",
+        "proven": true,
+        "label": "`n_torsion_card` (= n² over sep. closed fields, `(n : k) ≠ 0`)",
+        "children": [
+         {
+          "line": 739,
+          "mark": "✅",
+          "state": "·",
+          "proven": true,
+          "label": "`TorsionCard.smul_surjective` — DERIVED (2026-07-17)",
+          "children": [
+           {
+            "line": 747,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "`TorsionCard.smul_some_eq_zero_iff` — DERIVED",
+            "children": []
+           },
+           {
+            "line": 752,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "`TorsionCard.exists_smul_some_eq` — DERIVED",
+            "children": []
+           },
+           {
+            "line": 756,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "`TorsionCard.zsmul_some_aux` — **the multiplication",
+            "children": []
+           },
+           {
+            "line": 764,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "`TorsionCard.evalEval_ψ_quadratic` — the `T(n,2)`",
+            "children": []
+           },
+           {
+            "line": 768,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "`TorsionCard.psi_tracking_prev_zero` — degenerate",
+            "children": []
+           },
+           {
+            "line": 772,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "`TorsionCard.psi_tracking_prev2_zero` — degenerate",
+            "children": []
+           },
+           {
+            "line": 774,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "`TorsionCard.psi_eq_zero_iff_dvd` — the Ward",
+            "children": []
+           },
+           {
+            "line": 778,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "`TorsionCard.evalEval_ψ_sum` — DERIVED (2026-07-17)",
+            "children": []
+           },
+           {
+            "line": 782,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "`EllipticDivisibilitySequence.normEDS_sum_companion`",
+            "children": []
+           },
+           {
+            "line": 790,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "`TorsionCard.exists_point_x_smul` — **rational points",
+            "children": []
+           }
+          ]
+         },
+         {
+          "line": 793,
+          "mark": "✅",
+          "state": "·",
+          "proven": true,
+          "label": "`TorsionCard.prime_torsion_card` — DERIVED (2026-07-17):",
+          "children": [
+           {
+            "line": 810,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "`TorsionCard.separable_preΨ'` — separability of the",
+            "children": []
+           },
+           {
+            "line": 813,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "`TorsionCard.isCoprime_Ψ₂Sq_preΨ'` — DERIVED",
+            "children": []
+           },
+           {
+            "line": 826,
+            "mark": "✅",
+            "state": "·",
+            "proven": true,
+            "label": "`TorsionCard.separable_Ψ₂Sq` — PROVEN (2026-07-17):",
+            "children": []
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "line": 833,
+        "mark": "✅",
+        "state": "·",
+        "proven": true,
+        "label": "`WeierstrassCurve.galoisRep` — CONSTRUCTED (2026-07-16). The",
+        "children": []
+       },
+       {
+        "line": 845,
+        "mark": "✅",
+        "state": "·",
+        "proven": true,
+        "label": "`group_theory_lemma` — PROVEN (2026-07-16) in",
+        "children": []
+       },
+       {
+        "line": 853,
+        "mark": "✅",
+        "state": "·",
+        "proven": true,
+        "label": "`Module.Finite (ZMod n) (nTorsion n)` instance — statement was",
+        "children": []
+       },
+       {
+        "line": 857,
+        "mark": "✅",
+        "state": "·",
+        "proven": true,
+        "label": "`galoisRepresentation` DistribMulAction fields (earlier layer).",
+        "children": []
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+]
