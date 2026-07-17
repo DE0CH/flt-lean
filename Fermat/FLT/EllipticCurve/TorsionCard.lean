@@ -456,6 +456,79 @@ theorem two_point_cross_identity {x₁ y₁ x₂ y₂ : k}
   linear_combination (-4 : k) * (x₁ - x₂) ^ 2 * heq₁ +
     (-4 : k) * (x₁ - x₂) ^ 2 * heq₂
 
+set_option backward.isDefEq.respectTransparency false in
+set_option maxRecDepth 8000 in
+omit [E.IsElliptic] in
+/-- **The generic odd induction step** (PROVEN 2026-07-17): given
+affine IH data at `m` and `m+1` (points, `x`-formulas, trackings) with
+distinct `x`-coordinates, `(2m+1) • P` is affine and satisfies the
+`x`-formula. The core `(x - x₃)·dx² = t₁t₂` is a PURE RING consequence
+of the two secant identities (the sum `(m+1)P + mP` and the difference
+`(m+1)P + (-mP) = P`); the conversion to division polynomials uses the
+`φ`-difference identity, the gap-1 identity, and the trackings. -/
+theorem zsmul_odd_step_x {m : ℤ}
+    {x y xm ym xm1 ym1 : k}
+    (h : (E⁄k).toAffine.Nonsingular x y)
+    (hm : (E⁄k).toAffine.Nonsingular xm ym)
+    (hm1 : (E⁄k).toAffine.Nonsingular xm1 ym1)
+    (heqm : m • (Affine.Point.some x y h : (E⁄k).Point) =
+      Affine.Point.some xm ym hm)
+    (heqm1 : (m + 1) • (Affine.Point.some x y h : (E⁄k).Point) =
+      Affine.Point.some xm1 ym1 hm1)
+    (hxm : xm * ((E⁄k).ψ m).evalEval x y ^ 2 = ((E⁄k).φ m).evalEval x y)
+    (hxm1 : xm1 * ((E⁄k).ψ (m + 1)).evalEval x y ^ 2 =
+      ((E⁄k).φ (m + 1)).evalEval x y)
+    (htm : (2 * ym + (E⁄k).a₁ * xm + (E⁄k).a₃) *
+      ((E⁄k).ψ m).evalEval x y ^ 4 = ((E⁄k).ψ (2 * m)).evalEval x y)
+    (htm1 : (2 * ym1 + (E⁄k).a₁ * xm1 + (E⁄k).a₃) *
+      ((E⁄k).ψ (m + 1)).evalEval x y ^ 4 =
+      ((E⁄k).ψ (2 * (m + 1))).evalEval x y)
+    (hne : xm1 ≠ xm) :
+    ∃ (x' y' : k) (h' : (E⁄k).toAffine.Nonsingular x' y'),
+      (2 * m + 1) • (Affine.Point.some x y h : (E⁄k).Point) =
+        Affine.Point.some x' y' h' ∧
+      x' * ((E⁄k).ψ (2 * m + 1)).evalEval x y ^ 2 =
+        ((E⁄k).φ (2 * m + 1)).evalEval x y := by
+  classical
+  -- the sum `(m+1)P + mP`
+  obtain ⟨x₃, y₃, h₃, hadd, hX₃, -⟩ := add_some_coords E hm1 hm hne
+  have hsum : (2 * m + 1) • (Affine.Point.some x y h : (E⁄k).Point) =
+      Affine.Point.some x₃ y₃ h₃ := by
+    rw [show 2 * m + 1 = (m + 1) + m from by ring, add_smul, heqm, heqm1, hadd]
+  -- the difference `(m+1)P + (-mP) = P`
+  have hmneg : (E⁄k).toAffine.Nonsingular xm ((E⁄k).toAffine.negY xm ym) :=
+    (Affine.nonsingular_neg ..).mpr hm
+  obtain ⟨x₄, y₄, h₄, hadd₄, hX₄, -⟩ := add_some_coords E hm1 hmneg hne
+  have hdiff : (Affine.Point.some x₄ y₄ h₄ : (E⁄k).Point) =
+      Affine.Point.some x y h := by
+    rw [← hadd₄, ← Affine.Point.neg_some (h := hm)]
+    have hsub : (Affine.Point.some xm1 ym1 hm1 : (E⁄k).Point) -
+        Affine.Point.some xm ym hm = Affine.Point.some x y h := by
+      rw [← heqm, ← heqm1, ← sub_smul,
+        show (m + 1) - m = 1 from by ring, one_smul]
+    rw [← hsub, sub_eq_add_neg]
+  have hx₄ : x₄ = x := by injection hdiff
+  -- the ring core: `(x - x₃)·dx² = t₁t₂`
+  have hcore : (x - x₃) * (xm1 - xm) ^ 2 =
+      (2 * ym1 + (E⁄k).a₁ * xm1 + (E⁄k).a₃) *
+        (2 * ym + (E⁄k).a₁ * xm + (E⁄k).a₃) := by
+    have hX₄' := hX₄
+    rw [hx₄, Affine.negY] at hX₄'
+    linear_combination hX₄' - hX₃
+  -- assemble: `φ`-difference at `2m+1`, gap-1, trackings
+  have hφ := evalEval_φ_eq E (2 * m + 1) h.1
+  rw [show 2 * m + 1 + 1 = 2 * (m + 1) from by ring,
+    show 2 * m + 1 - 1 = 2 * m from by ring] at hφ
+  have hgap := x_sub_gap_one E h.1 hxm hxm1
+  have hprod := congr(($htm1) * ($htm))
+  refine ⟨x₃, y₃, h₃, hsum, ?_⟩
+  linear_combination -hφ + (x₃ - x) *
+      (((E⁄k).ψ (2 * m + 1)).evalEval x y -
+        (xm1 - xm) * (((E⁄k).ψ m).evalEval x y *
+          ((E⁄k).ψ (m + 1)).evalEval x y) ^ 2) * hgap -
+    (((E⁄k).ψ m).evalEval x y * ((E⁄k).ψ (m + 1)).evalEval x y) ^ 4 * hcore -
+    hprod
+
 set_option warn.sorry false in
 /-- (Sorry node — **the multiplication-by-`n` formula**, Washington
 *Elliptic curves* Theorem 3.6.) For `n > 0` and an affine point
