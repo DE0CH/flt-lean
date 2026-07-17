@@ -3227,3 +3227,53 @@ assumed. Axiom invariant: every declaration must use at most
   basis-injectivity. Then the UFD multiplicity endgame closes
   `separable_preΨ'` (modulo the (W)-differentiated-descent for the
   Wronskian at primes and `resultant_Φ_ΨSq`).
+- 2026-07-17 (session 7, THE BOOKKEEPING SWEEP — commits `1834714` →
+  `a23c757`): the entire "shell" of glue around the deep arithmetic was
+  peeled and PROVEN/DERIVED in one sustained run. In order: (1) **NOS
+  PROVEN** — `torsion_unramified_of_good_reduction` completed and
+  audited axiom-clean (`(hp : n.Prime) (hodd : Odd n)` threaded through
+  both consumers). (2) **det node DERIVED** —
+  `det_galoisRep_eq_cyclotomic` from Chebotarev density + the new
+  Frobenius-det leaf `det_galoisRep_globalFrob`;
+  `cyclotomicCharacterModL_eq_toZMod` PROVEN. (3) **Serre core
+  DECOMPOSED** — `exists_p_point_of_not_isIrreducible_of_minkowski`
+  derived from the stable-line dichotomy + Vélu leaf + PROVEN Galois
+  descent (`exists_point_eq_baseChange_of_fixed`). (4) **dichotomy
+  DERIVED** — full character bookkeeping PROVEN (rank-1 unit
+  characters, triangular determinant via `det_eq_det_mul_det`, kernel
+  openness, Minkowski application); leaf sharpened to
+  `subquotient_character_unramified`. (5) **semistability leaf
+  DERIVED** — reduced to `inertia_two_unipotent` +
+  `subquotient_character_unramified_at_p` via the generic-`K`
+  unramifiedness bridge (the `Rat.subsingleton_ringHom` spelling
+  recipe). (6) bookkeeping GENERALIZED to any discrete field;
+  `minkowski_character_trivial` target-generalized. (7)
+  **`mod_three_of_stable_line` DERIVED** (ModThree imports the
+  machinery; leaf `exists_line_with_locally_unramified_quotCharacter`).
+  (8) **`inertia_two_unipotent` DERIVED** from the new pointwise Tate
+  unipotence leaf `torsion_unipotent_of_multiplicative_reduction`
+  (Semistable.lean) + `freyCurve_hasMultiplicativeReduction_at_two`
+  (PROVEN). Frontier: 17 nodes, ALL now genuinely deep arithmetic
+  (Tate uniformization ×2 + its 3 Semistable consumers-to-derive,
+  Chebotarev finite-level, Frobenius-det, Mazur, Vélu, flat-at-p ×2,
+  mod-3 local leaf, Dickson reducibility, finite-flat Hopf, B6a/b/c,
+  Frey tame-at-2).
+  NEXT-BLOCK DESIGN (Tate-multiplicative derivations): derive
+  `torsion_unramified_of_multiplicative_reduction` (and the unipotence
+  sibling) from `exists_tateEquivSepClosure` +
+  `exists_variableChange_tateCurve` + the vendored quadratic-twist
+  node. Route: (a) the `p`-torsion of `Additive (Ωˣ ⧸ zpowers q_E)` is
+  represented by `u ∈ Ωˣ` with `u^p = q_E^a · 1` — pure group theory
+  over the uniformization; (b) `μ_p` is inertia-fixed for residue char
+  `q ≠ p` (roots of `x^p − w`, `w` a unit, are unramified — the
+  `LocalInertiaFixedField` `e = 1` machinery); (c) `σu/u ∈ μ_p` for
+  inertia `σ` (as `u^p ∈ ℚ_qˣ·μ`-part up to twist), giving the
+  filtration `(σ−1)E[p] ⊆ e(μ_p)`, `(σ−1)e(μ_p) = 0` — unipotence;
+  (d) with `p ∣ v(q_E)` (from `p ∣ v(j)`, via `valuation_j_eq`),
+  `q_E = w·π^{pk}` so the `p`-th root generates an unramified
+  extension and `(σ−1)E[p] = 0` — triviality. The local(`k`-generic)
+  statements should be proven over the nonarchimedean local field of
+  TateCurve.lean and transported by the SAME embedded-subring
+  machinery as NOS; quantify transported statements over
+  `localInertiaGroup`-images to avoid needing surjectivity onto
+  `𝒪`-inertia.
