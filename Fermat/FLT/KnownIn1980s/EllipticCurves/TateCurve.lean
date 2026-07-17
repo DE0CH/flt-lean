@@ -5,6 +5,10 @@ Authors: Kevin Buzzard
 -/
 module
 
+public import Mathlib.RingTheory.Valuation.RamificationGroup
+-- `ValuationSubring.inertia_fixes_of_pow_eq_one` (step (b)), used in the
+-- local unipotence assembly
+import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.FieldTheory.IsSepClosed
@@ -483,3 +487,108 @@ theorem WeierstrassCurve.map_zpow_qUnitSepClosure_eq (σ : Ω ≃ₐ[k] Ω)
     Units.map σ.toAlgHom.toRingHom.toMonoidHom (E.qUnitSepClosure Ω ^ a) =
       E.qUnitSepClosure Ω ^ a := by
   rw [map_zpow, E.map_qUnitSepClosure_eq]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+omit [E.IsMinimal 𝒪[k]] [IsSepClosed Ω] [Algebra.IsSeparable k Ω] in
+/-- **Local unipotence of inertia on Tate torsion** (PROVEN 2026-07-17,
+assembling steps (a), (b), (c) over ANY witness of the uniformization):
+given a Galois-equivariant Tate uniformization `e` of `E` over `Ω` and
+a valuation subring `A` of `Ω` whose residue characteristic does not
+divide `p`, every element of the inertia subgroup of `A` acts
+unipotently on the `p`-torsion: `σ(σP) − σP − σP + P = 0`. The torsion
+class is represented by `u` with `u^p = q_E^a` (step (a)); every
+`k`-automorphism fixes `q_E^a`, so `σ(u)/u =: ζ` is a `p`-th root of
+unity (step (c)) and `σP − P = e[ζ]`; inertia fixes `ζ` (step (b)), so
+a second application of `σ − 1` kills `e[ζ]`. -/
+theorem WeierstrassCurve.tate_inertia_unipotent
+    (e : Additive (Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω)) ≃+ ((E⁄Ω)).Point)
+    (he : ∀ (σ : Ω ≃ₐ[k] Ω) (u : Ωˣ),
+      WeierstrassCurve.Affine.Point.map (W' := E) σ.toAlgHom (e (Additive.ofMul ↑u)) =
+        e (Additive.ofMul ↑(Units.map σ.toAlgHom.toRingHom.toMonoidHom u)))
+    (A : ValuationSubring Ω) {p : ℕ} (hp : p ≠ 0)
+    (hchar : ((p : ℕ) : IsLocalRing.ResidueField A) ≠ 0)
+    (σ : A.decompositionSubgroup k) (hσ : σ ∈ A.inertiaSubgroup k)
+    (P : ((E⁄Ω)).Point)
+    (hP : P ∈ AddSubgroup.torsionBy ((E⁄Ω)).Point ((p : ℕ) : ℤ)) :
+    WeierstrassCurve.Affine.Point.map (W' := E)
+        ((σ : Ω ≃ₐ[k] Ω)).toAlgHom
+        (WeierstrassCurve.Affine.Point.map (W' := E)
+          ((σ : Ω ≃ₐ[k] Ω)).toAlgHom P) -
+      WeierstrassCurve.Affine.Point.map (W' := E)
+        ((σ : Ω ≃ₐ[k] Ω)).toAlgHom P -
+      WeierstrassCurve.Affine.Point.map (W' := E)
+        ((σ : Ω ≃ₐ[k] Ω)).toAlgHom P + P = 0 := by
+  classical
+  -- pull the torsion class back through `e`
+  set t : Additive (Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω)) :=
+    e.symm P with ht
+  have hPt : e t = P := e.apply_symm_apply P
+  have httor : ((p : ℕ) : ℤ) • t = 0 := by
+    have h1 : ((p : ℕ) : ℤ) • P = 0 := hP
+    rw [ht, ← map_zsmul e.symm, h1, map_zero]
+  obtain ⟨u, a, hut, hupow⟩ :=
+    exists_rep_pow_eq_zpow_of_torsion (E.qUnitSepClosure Ω) t httor
+  -- `σ` moves `u` by the root of unity `ζ`
+  have hfixpow : Units.map ((σ : Ω ≃ₐ[k] Ω)).toAlgHom.toRingHom.toMonoidHom
+      (u ^ p) = u ^ p := by
+    rw [hupow]
+    exact E.map_zpow_qUnitSepClosure_eq Ω (σ : Ω ≃ₐ[k] Ω) a
+  have hζmem : Units.map ((σ : Ω ≃ₐ[k] Ω)).toAlgHom.toRingHom.toMonoidHom u
+      * u⁻¹ ∈ rootsOfUnity p Ω :=
+    map_mul_inv_mem_rootsOfUnity_of_pow_fixed (σ : Ω ≃ₐ[k] Ω) u hfixpow
+  set ζ : Ωˣ := Units.map ((σ : Ω ≃ₐ[k] Ω)).toAlgHom.toRingHom.toMonoidHom u
+    * u⁻¹ with hζ
+  -- inertia fixes `ζ`
+  have hζpow : (ζ : Ω) ^ p = 1 := by
+    have h1 : ζ ^ p = 1 := hζmem
+    have h2 := congrArg Units.val h1
+    rwa [Units.val_pow_eq_pow_val, Units.val_one] at h2
+  have hσζ : Units.map ((σ : Ω ≃ₐ[k] Ω)).toAlgHom.toRingHom.toMonoidHom ζ =
+      ζ := by
+    apply Units.ext
+    show (σ : Ω ≃ₐ[k] Ω) (ζ : Ω) = (ζ : Ω)
+    exact A.inertia_fixes_of_pow_eq_one hp hchar σ hσ hζpow
+  -- `σP = P + e[ζ]`
+  have hσu : Units.map ((σ : Ω ≃ₐ[k] Ω)).toAlgHom.toRingHom.toMonoidHom u =
+      ζ * u := by
+    rw [hζ, inv_mul_cancel_right]
+  have hstep : ∀ Q : ((E⁄Ω)).Point,
+      Q = e (Additive.ofMul (↑u : Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω))) →
+      WeierstrassCurve.Affine.Point.map (W' := E)
+        ((σ : Ω ≃ₐ[k] Ω)).toAlgHom Q =
+      e (Additive.ofMul (↑(ζ * u) : Ωˣ ⧸ Subgroup.zpowers
+        (E.qUnitSepClosure Ω))) := by
+    intro Q hQ
+    rw [hQ, he (σ : Ω ≃ₐ[k] Ω) u, hσu]
+  have hPu : P = e (Additive.ofMul (↑u : Ωˣ ⧸ Subgroup.zpowers
+      (E.qUnitSepClosure Ω))) := by
+    rw [hut, hPt]
+  have hσP : WeierstrassCurve.Affine.Point.map (W' := E)
+      ((σ : Ω ≃ₐ[k] Ω)).toAlgHom P =
+      e (Additive.ofMul (↑(ζ * u) : Ωˣ ⧸ Subgroup.zpowers
+        (E.qUnitSepClosure Ω))) := hstep P hPu
+  -- `σ(σP) = σP + e[σζ] − ... = e[ζ·ζ·u]`? — apply equivariance again
+  have hσσP : WeierstrassCurve.Affine.Point.map (W' := E)
+      ((σ : Ω ≃ₐ[k] Ω)).toAlgHom
+      (WeierstrassCurve.Affine.Point.map (W' := E)
+        ((σ : Ω ≃ₐ[k] Ω)).toAlgHom P) =
+      e (Additive.ofMul (↑(ζ * (ζ * u)) : Ωˣ ⧸ Subgroup.zpowers
+        (E.qUnitSepClosure Ω))) := by
+    rw [hσP, he (σ : Ω ≃ₐ[k] Ω) (ζ * u)]
+    congr 2
+    rw [map_mul, hσζ, hσu]
+  -- assemble in the additive quotient
+  have h₂ : (Additive.ofMul (↑(ζ * u) : Ωˣ ⧸ Subgroup.zpowers
+      (E.qUnitSepClosure Ω))) =
+      Additive.ofMul ((ζ : Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω))) +
+      Additive.ofMul ((u : Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω))) := by
+    rw [QuotientGroup.mk_mul, ofMul_mul]
+  have h₁ : (Additive.ofMul (↑(ζ * (ζ * u)) : Ωˣ ⧸ Subgroup.zpowers
+      (E.qUnitSepClosure Ω))) =
+      Additive.ofMul ((ζ : Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω))) +
+      (Additive.ofMul ((ζ : Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω))) +
+       Additive.ofMul ((u : Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω)))) := by
+    rw [QuotientGroup.mk_mul, ofMul_mul, h₂]
+  rw [hσσP, hσP, hPu, h₁, h₂, map_add, map_add]
+  abel
