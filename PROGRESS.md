@@ -2582,6 +2582,28 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6, NOS x-LEVEL PROVEN `ec4425b`):
+  `torsion_abscissa_residue_ne` — the complete x-level of the
+  injectivity: torsion abscissas at good reduction have distinct
+  residues, composing the dictionary, RtoO, the reduction curve, the
+  local-hom residue square, and the CHAR-FREE separable_preΨ' of the
+  axiom-clean tower (this is the payoff moment for the char-2 work:
+  the residue characteristic is arbitrary). Axiom-clean. REMAINING
+  for the node (final stretch): (b) the y-level — same abscissa,
+  congruent ordinates: y and negY-x-y are the two yQuad-roots
+  differing by ψ₂-value; if the ordinates were distinct-but-congruent
+  then ψ₂(P)-residue = 0, making the REDUCED point 2-torsion while
+  also p-torsion-abscissa'd — excluded via the reduced dictionary or
+  directly: ψ₂(P)² = Ψ₂Sq(x)-on-curve and gcd(Ψ₂Sq, preΨ'ₚ)-residue
+  coprimality (isCoprime_Ψ₂Sq_preΨ' exists in TorsionCardSep for the
+  residue curve — check its hypotheses); (c) the inertia endgame:
+  restate the NODE with (hp : n.Prime) (hodd : Odd n) — thread
+  through Semistable's call-site (P.hp5 gives both) — σ ∈ inertia
+  fixes 𝒪-residues (unfold ValuationSubring.inertiaSubgroup /
+  RamificationGroup-defs), Point.map-σ preserves torsion and
+  Nonsingular, coordinates of σP are (σx, σy) (Point.map-some-form),
+  σx ∈ 𝒪 with residue = residue x (inertia), so x-level + y-level
+  force σP = P.
 - 2026-07-17 (session 6, NOS (a)-plumbing PROVEN `7f590b5`): RtoO
   (the structural R → 𝒪 hom from h𝒪), RtoO_coe, isLocalHom_RtoO
   (unit inverses descend through 𝒪 ∩ k = R). With
