@@ -2518,7 +2518,17 @@ assumed. Axiom invariant: every declaration must use at most
   induction with DIFFERENTIATED recursions over the joint {P, P'}
   window (same descent machinery, one derivative level up), or via the
   chain rule through (C) (the Jacobian of the pair is 2·preΨ₄hom).
-  NEXT SESSION: (1) certificates for (C) then (W);
+  KEY SIMPLIFICATION: at the value level (C)'s ΨSq-side is literally
+  tracking² + membership-at-nP: `ψ₂ₙ² = tₙ²ψₙ⁸ = Ψ₂Sq(xₙ)ψₙ⁸ =
+  Ψ₂Sqhom(φₙ, ψₙ²)`, and the Φ-side is the x-formula composed with
+  duplication (`x₂ₙ = x₂(xₙ)`) — both from the PROVEN zsmul-machinery
+  instantiated at the TAUTOLOGICAL POINT of the universal curve over
+  Frac(B_univ) (ψₖ-values ≠ 0 there by mk_Ψ_univ_ne_zero), then pulled
+  back to ℤ[A][x] by the {1,Y}-basis injectivity (both sides y-free).
+  (W) at prime indices is NOT composition-reachable — needs the
+  differentiated-recursion descent over the joint {P, P'} window.
+  NEXT SESSION: (1) formalize (C) via the tautological point; (2) the
+  (W)-descent; (3) the multiplicity endgame;
   (2) `resultant_Φ_ΨSq` or its `IsCoprime` reformulation; then the
   torsion cone is DONE. Remaining 18 nodes list: see the sorry-grep;
   major fronts: WeilPairing:124, Chebotarev:98, HardlyRamified (5
