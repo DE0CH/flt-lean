@@ -694,6 +694,20 @@ theorem natCast_residueField_localValuationSubring_ne_zero
 open IsDedekindDomain in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
+/-- The tower `ℚ → ℚ_qˆ → Ω` algebra structure on the local algebraic
+closure, used CONSISTENTLY throughout the transport lemmas so that the
+two spellings of the `Ω`-stage base change — `E⁄Ω` and `(E⁄ℚ_qˆ)⁄Ω` —
+are definitionally equal curves. (Not an instance: it would clash with
+the ambient `ℚ`-algebra structure; each statement installs it with
+`letI`.) -/
+@[reducible] noncomputable def algebraRatAlgClosureAdic
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    Algebra ℚ (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+  ((algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))).comp
+    (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))).toAlgebra
+
 /-- A classical decidable-equality instance on the local algebraic
 closures, mirroring the global one in `Torsion.lean` (needed for the
 group law on `(E⁄Ω)`-points). -/
@@ -708,58 +722,74 @@ along `ℚ → ℚ_qˆ` is `ℚ`-linear, the base square closing by uniqueness
 of ring homomorphisms out of `ℚ`. -/
 noncomputable def algClosureEmbeddingRat
     (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
-    (AlgebraicClosure ℚ) →ₐ[ℚ]
-      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) :=
+    letI := algebraRatAlgClosureAdic v
+    ((AlgebraicClosure ℚ) →ₐ[ℚ]
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))) :=
+  letI := algebraRatAlgClosureAdic v
   { AlgebraicClosure.map (algebraMap ℚ
       (HeightOneSpectrum.adicCompletion ℚ v)) with
     commutes' := fun r => by
       have h1 := AlgebraicClosure.map_algebraMap
         (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v)) r
-      exact h1.trans (congrFun (congrArg DFunLike.coe (Subsingleton.elim
-        ((algebraMap (HeightOneSpectrum.adicCompletion ℚ v)
-          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))).comp
-          (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v)))
-        (algebraMap ℚ (AlgebraicClosure
-          (HeightOneSpectrum.adicCompletion ℚ v))))) r) }
+      exact h1 }
+
+open IsDedekindDomain in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- The action of a local Galois element on the local algebraic
+closure, packaged as a `ℚ`-algebra homomorphism over the TOWER
+structure (`algebraRatAlgClosureAdic`): `σ` is `ℚ_qˆ`-linear, hence
+fixes the tower images of `ℚ`. -/
+noncomputable def algClosureSigmaRat
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ v)) :
+    letI := algebraRatAlgClosureAdic v
+    ((AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) →ₐ[ℚ]
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))) :=
+  letI := algebraRatAlgClosureAdic v
+  { ((σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))
+        ≃ₐ[HeightOneSpectrum.adicCompletion ℚ v]
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        v))).toAlgHom.toRingHom) with
+    commutes' := fun r =>
+      (σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))
+          ≃ₐ[HeightOneSpectrum.adicCompletion ℚ v]
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          v))).commutes (algebraMap ℚ
+            (HeightOneSpectrum.adicCompletion ℚ v) r) }
 
 open IsDedekindDomain WeierstrassCurve in
 open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 1000000 in
-/-- **Equivariance of the point transport** (PROVEN — step (C3)): for
-`σ` in the local absolute Galois group, transporting a `ℚ̄`-point along
-the chosen embedding and then acting by `σ` is the same as acting first
-by the mapped global element. `Point.map_map` on both sides reduces
-this to the field-level equivariance
-`Field.absoluteGaloisGroup.lift_map`. -/
+/-- **Equivariance of the point transport** (step (C3)): transporting a
+`ℚ̄`-point along the chosen embedding and then acting by `σ` equals
+acting first by the mapped global element; `Point.map_map` on both
+sides reduces this to `Field.absoluteGaloisGroup.lift_map`. All
+`Ω`-stage structure is over the TOWER `ℚ`-algebra
+(`algebraRatAlgClosureAdic`). -/
 theorem point_map_algClosureEmbeddingRat_comm
     (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ v))
     (P : ((E)⁄(AlgebraicClosure ℚ)).Point) :
+    letI := algebraRatAlgClosureAdic v
     WeierstrassCurve.Affine.Point.map (W' := E) (algClosureEmbeddingRat v)
       (WeierstrassCurve.Affine.Point.map (W' := E)
         (((Field.absoluteGaloisGroup.map (algebraMap ℚ
           (HeightOneSpectrum.adicCompletion ℚ v))) σ :
           AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P) =
-    WeierstrassCurve.Affine.Point.map (W' := E)
-      ((σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))
-          ≃ₐ[HeightOneSpectrum.adicCompletion ℚ v]
-        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
-          v))).toAlgHom.restrictScalars ℚ)
+    WeierstrassCurve.Affine.Point.map (W' := E) (algClosureSigmaRat v σ)
       (WeierstrassCurve.Affine.Point.map (W' := E)
         (algClosureEmbeddingRat v) P) := by
+  letI := algebraRatAlgClosureAdic v
   rw [WeierstrassCurve.Affine.Point.map_map, WeierstrassCurve.Affine.Point.map_map]
   have hhomeq : (algClosureEmbeddingRat v).comp
       (((Field.absoluteGaloisGroup.map (algebraMap ℚ
         (HeightOneSpectrum.adicCompletion ℚ v))) σ :
         AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom =
-      ((σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))
-          ≃ₐ[HeightOneSpectrum.adicCompletion ℚ v]
-        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
-          v))).toAlgHom.restrictScalars ℚ).comp
-        (algClosureEmbeddingRat v) := by
+      (algClosureSigmaRat v σ).comp (algClosureEmbeddingRat v) := by
     apply AlgHom.ext
     intro x
     exact Field.absoluteGaloisGroup.lift_map
@@ -771,7 +801,6 @@ open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
-set_option warn.sorry false in
 /-- **Pointwise unipotence in the split case** (step (C5),
 consuming the Tate-uniformization leaf): if the completed base change
 has SPLIT multiplicative reduction, every element of the local inertia
@@ -814,6 +843,7 @@ theorem torsion_unipotent_of_split_multiplicative_adic
             AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P +
         P = 0 := by
   classical
+  letI := algebraRatAlgClosureAdic hq.toHeightOneSpectrumRingOfIntegersRat
   intro σ hσ P hP
   obtain ⟨e, he⟩ := WeierstrassCurve.exists_tateEquivSepClosure
     (k := HeightOneSpectrum.adicCompletion ℚ
@@ -869,24 +899,18 @@ theorem torsion_unipotent_of_split_multiplicative_adic
   have hbb : ∀ Q : ((E)⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
       hq.toHeightOneSpectrumRingOfIntegersRat))).Point,
       WeierstrassCurve.Affine.Point.map (W' := E)
-        ((σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
-            hq.toHeightOneSpectrumRingOfIntegersRat))
-            ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
-              hq.toHeightOneSpectrumRingOfIntegersRat]
-          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
-            hq.toHeightOneSpectrumRingOfIntegersRat))).toAlgHom.restrictScalars
-          ℚ) Q =
+        (algClosureSigmaRat hq.toHeightOneSpectrumRingOfIntegersRat σ) Q =
       (show ((E)⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
           hq.toHeightOneSpectrumRingOfIntegersRat))).Point from
         WeierstrassCurve.Affine.Point.map
           (W' := E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
             hq.toHeightOneSpectrumRingOfIntegersRat)))
-          ((σd : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          (((σd : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
               hq.toHeightOneSpectrumRingOfIntegersRat))
               ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
                 hq.toHeightOneSpectrumRingOfIntegersRat]
             (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
-              hq.toHeightOneSpectrumRingOfIntegersRat))).toAlgHom)
+              hq.toHeightOneSpectrumRingOfIntegersRat))).toAlgHom))
           (show ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
             hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
               (HeightOneSpectrum.adicCompletion ℚ
@@ -895,15 +919,9 @@ theorem torsion_unipotent_of_split_multiplicative_adic
     cases Q with
     | zero => rfl
     | some x y h => rfl
-  rw [hbb]
-  -- REMAINING WALL (tracked): the two ⁄-spellings of the transported
-  -- sum — `(E⁄Ω)` with the ambient `Algebra ℚ Ω` vs the base-changed
-  -- `((E.map φ)⁄Ω)` — carry group-law instances that are only
-  -- propositionally identified (the two `ℚ → Ω` ring homs are equal by
-  -- `Rat.subsingleton_ringHom` but not definitionally); the atoms match
-  -- after `hbb`, and `hloc` is the `mapφ`-side equation. Close by
-  -- rebasing the internal Ω-stage on the tower instance.
-  sorry
+  simp only [hbb]
+  exact hloc
+
 
 open scoped WeierstrassCurve.Affine in
 set_option warn.sorry false in
