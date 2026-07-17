@@ -51,6 +51,10 @@ import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 public import Fermat.FLT.Mathlib.NumberTheory.Padics.LocalField
 -- the adic-vs-canonical valuation bridges over `𝒪[K]`
 public import Fermat.FLT.Mathlib.RingTheory.Valuation.ValuativeRel.Basic
+-- `isUnit_natCast_adicCompletionIntegers` (a prime `p ≠ q` is a unit of
+-- `ℤ_qˆ`), input to the residue-characteristic fact at the local
+-- valuation subring
+import Fermat.FLT.GaloisRepresentation.Chebotarev
 -- the vendored Néron–Ogg–Shafarevich node, consumed by the
 -- good-reduction unramifiedness glue; PUBLIC because the
 -- multiplicative-reduction pointwise node is STATED in its
@@ -622,6 +626,67 @@ theorem hasMultiplicativeReduction_adicCompletion {q : ℕ} (hq : q.Prime)
             (R := 𝒪[HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat]) (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))) hc₄adic
           badReduction := hΔadic
           multiplicativeReduction := hc₄adic }
+
+open IsDedekindDomain in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **The residue characteristic of the local valuation subring**
+(PROVEN): a prime `p ≠ q` is nonzero in the residue field of the
+integral closure of `ℤ_qˆ` in `ℚ_qᵃˡᵍ`. Content: `p` is a unit of
+`ℤ_qˆ` (`isUnit_natCast_adicCompletionIntegers`, PROVEN), its
+valuation-subring image is a unit (the inverse is integral, being an
+`ℤ_qˆ`-element), and units have nonzero residue. This discharges the
+`hchar`-hypothesis of `tate_inertia_unipotent` at `A =
+localValuationSubring v_q` for the `p`-torsion, `p ≠ q`. -/
+theorem natCast_residueField_localValuationSubring_ne_zero
+    {p q : ℕ} (hp : p.Prime) (hq : q.Prime) (hne : p ≠ q) :
+    ((p : ℕ) : IsLocalRing.ResidueField
+      (localValuationSubring (K := ℚ)
+        hq.toHeightOneSpectrumRingOfIntegersRat)) ≠ 0 := by
+  classical
+  -- every `ℤ_qˆ`-element is integral in the algebraic closure
+  have hmem : ∀ z : (HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat),
+      ((algebraMap (HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) (z : _)) ∈
+        localValuationSubring (K := ℚ)
+          hq.toHeightOneSpectrumRingOfIntegersRat := by
+    intro z
+    show IsIntegral (HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) _
+    rw [show ((algebraMap (HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) (z : _)) =
+      (algebraMap (HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) z from
+      (IsScalarTower.algebraMap_apply _ _ _ z).symm]
+    exact isIntegral_algebraMap
+  -- the integral-closure inclusion as a ring homomorphism
+  let j : (HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) →+*
+      (localValuationSubring (K := ℚ)
+        hq.toHeightOneSpectrumRingOfIntegersRat) :=
+    { toFun := fun z => ⟨_, hmem z⟩
+      map_one' := Subtype.ext (by push_cast; rfl)
+      map_mul' := fun a b => Subtype.ext (by push_cast; rfl)
+      map_zero' := Subtype.ext (by push_cast; rfl)
+      map_add' := fun a b => Subtype.ext (by push_cast; rfl) }
+  -- `p` is a unit of `ℤ_qˆ`, hence of the subring, hence of the residue field
+  have hunitA : IsUnit ((p : ℕ) : localValuationSubring (K := ℚ)
+      hq.toHeightOneSpectrumRingOfIntegersRat) := by
+    have h1 := (GaloisRepresentation.isUnit_natCast_adicCompletionIntegers
+      hp hq hne).map j
+    rwa [map_natCast] at h1
+  have h2 := hunitA.map (IsLocalRing.residue
+    (localValuationSubring (K := ℚ) hq.toHeightOneSpectrumRingOfIntegersRat))
+  rw [map_natCast] at h2
+  exact h2.ne_zero
 
 open scoped WeierstrassCurve.Affine in
 set_option warn.sorry false in
