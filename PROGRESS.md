@@ -2208,3 +2208,18 @@ assumed. Axiom invariant: every declaration must use at most
   assembling). Remaining certificates to compute with the script: the
   odd-step t-target, the (iii)-propagation to the output pairs, and
   the even-step analogues — then the skeleton.
+- 2026-07-17 (session 5, degenerate branch closed): the induction's
+  outermost split is on `s := ψ₂(x,y)`. If `s = 0` (`P` is
+  2-torsion): even-index `ψ`-values vanish identically (the `ψ₂`
+  factor), `n•P` alternates `0, P`, and (i)/(ii) hold trivially ONCE
+  odd-index `ψ`-values are known nonzero there — which follows by the
+  odd recurrence (at `s = 0` it degenerates to a product of two
+  smaller odd-index values) seeded by **`Res(Ψ₂Sq, Ψ₃) = −Δ²`
+  EXACTLY** (sympy-verified, validator in the script): 2-torsion and
+  3-torsion `x`-coordinates are disjoint on an elliptic curve in
+  every characteristic. Lean-side this resultant is a concrete
+  identity in `a₁..a₆` (7×7 Sylvester determinant — provable once by
+  computation, then `exists_mul_add_mul_eq_C_resultant` gives the
+  Bézout as in `isCoprime_Φ_ΨSq`). If `s ≠ 0`: the generic two-secant
+  machinery with the `s`-divided even-recurrence eliminations is
+  fully legal.

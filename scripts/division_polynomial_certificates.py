@@ -213,9 +213,29 @@ def certificate_odd_step_x() -> None:
     print("odd-step x-target: exact closure with unit cofactors OK")
 
 
+
+
+
+def resultant_Psi2Sq_Psi3() -> None:
+    """`Res(Ψ₂Sq, Ψ₃) = -Δ²` EXACTLY (no stray 2- or 3-powers) — so on
+    an elliptic curve the 2-torsion and 3-torsion `x`-coordinates are
+    disjoint in EVERY characteristic.  Seeds the `ψ₂ = 0` (2-torsion
+    `P`) degenerate branch of the induction: odd-index `ψ`-values are
+    nonvanishing there."""
+    X = sp.symbols("X")
+    P2 = 4 * X**3 + b2 * X**2 + 2 * b4 * X + b6
+    P3 = 3 * X**4 + b2 * X**3 + 3 * b4 * X**2 + 3 * b6 * X + b8
+    Delta = -(b2**2) * b8 - 8 * b4**3 - 27 * b6**2 + 9 * b2 * b4 * b6
+    R = sp.resultant(P2, P3, X)
+    q, r = sp.div(sp.expand(R), sp.expand(Delta**2), X)
+    assert sp.simplify(r) == 0 and sp.simplify(q + 1) == 0
+    print("Res(Ψ₂Sq, Ψ₃) = -Δ²: verified")
+
+
 if __name__ == "__main__":
     certificate_duplication_y()
     check_tracked_pair()
     check_step_targets()
     check_cross_tracking()
     certificate_odd_step_x()
+    resultant_Psi2Sq_Psi3()
