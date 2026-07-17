@@ -677,5 +677,26 @@
   "wip": false,
   "fullname": "torsion_unipotent_of_split_multiplicative_adic",
   "text": "pointwise unipotence in the split case: the Tate uniformization witness feeds `tate_inertia_unipotent` at the local valuation subring, pulled back to `E(ℚ̄)` along the equivariant embedding; the remaining content is the base-change instance identification of the two `Ω`-stage curve spellings."
+ },
+ {
+  "name": "WeierstrassCurve.exists_tateEquivSepClosure",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
+  "wip": false,
+  "fullname": "WeierstrassCurve.exists_tateEquivSepClosure",
+  "text": "Tate's uniformisation over a separable closure (Silverman ATAEC V.3.1 + V.5.3): a Galois-equivariant group isomorphism `Ωˣ/q_Eᶻ ≅ E(Ω)` for a curve with split multiplicative reduction over a nonarchimedean local field."
+ },
+ {
+  "name": "WeierstrassCurve.exists_variableChange_tateCurve",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
+  "wip": false,
+  "fullname": "WeierstrassCurve.exists_variableChange_tateCurve",
+  "text": "Tate's theorem (Silverman ATAEC V.5.3): a curve with split multiplicative reduction is a change of Weierstrass coordinates of the Tate curve of its Tate parameter."
+ },
+ {
+  "name": "WeierstrassCurve.tate_inertia_unipotent",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
+  "wip": false,
+  "fullname": "WeierstrassCurve.tate_inertia_unipotent",
+  "text": "local unipotence of inertia on Tate torsion, for ANY uniformization witness: the torsion class is represented by `u` with `u^p` a power of the Tate parameter; the parameter is base-field-fixed so `σ(u)/u` is a `p`-th root of unity; inertia fixes it (residue characteristic prime to `p`)."
  }
 ]

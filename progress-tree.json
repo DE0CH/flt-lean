@@ -96,7 +96,10 @@
   "TorsionCard.separable_Ψ₂Sq": "✅✅",
   "WeierstrassCurve.galoisRep": "✅✅",
   "group_theory_lemma": "✅✅",
-  "torsion_unipotent_of_split_multiplicative_adic": "❌"
+  "torsion_unipotent_of_split_multiplicative_adic": "✅",
+  "WeierstrassCurve.exists_tateEquivSepClosure": "❌",
+  "WeierstrassCurve.exists_variableChange_tateCurve": "❌",
+  "WeierstrassCurve.tate_inertia_unipotent": "✅✅"
  },
  "children": {
   "fermat_last_theorem": [
@@ -479,11 +482,18 @@
    "WeierstrassCurve.n_torsion_finite"
   ],
   "group_theory_lemma": [],
-  "torsion_unipotent_of_split_multiplicative_adic": []
+  "torsion_unipotent_of_split_multiplicative_adic": [
+   "WeierstrassCurve.tate_inertia_unipotent",
+   "WeierstrassCurve.exists_tateEquivSepClosure"
+  ],
+  "WeierstrassCurve.exists_tateEquivSepClosure": [],
+  "WeierstrassCurve.exists_variableChange_tateCurve": [],
+  "WeierstrassCurve.tate_inertia_unipotent": []
  },
  "roots": [
   "fermat_last_theorem",
   "GaloisRepresentation.IsHardlyRamified.mod_three",
-  "torsion_unipotent_of_split_multiplicative_adic"
+  "torsion_unipotent_of_split_multiplicative_adic",
+  "WeierstrassCurve.exists_variableChange_tateCurve"
  ]
 }
