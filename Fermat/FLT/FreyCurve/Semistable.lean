@@ -412,6 +412,51 @@ theorem WeierstrassCurve.torsion_unramified_of_multiplicative_reduction
         ((σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P = P :=
   sorry
 
+open IsDedekindDomain in
+set_option backward.isDefEq.respectTransparency false in
+/-- **The `v`-adic valuation of `ℚ` is equivalent to the maximal-ideal
+valuation of its localization** (PROVEN — the dictionary between the
+two spellings of the same place): the place `v_q` of `ℚ` and the
+maximal ideal of `ℤ_(q) = Localization.AtPrime v_q` induce equivalent
+valuations on `ℚ`. Both `≤ 1`-conditions say that `q` does not divide
+the denominator (`Rat.valuation_le_one_iff_den` on either side, with
+`IsLocalization.AtPrime.to_map_mem_maximal_iff` translating maximal-
+ideal membership of the denominator through the localization). This is
+the bridge between the `HasMultiplicativeReduction ℤ_(q)` data of the
+tree and the completed valuation of `adicCompletion ℚ v_q`
+(`valuedAdicCompletion_eq_valuation'`). -/
+theorem isEquiv_valuation_maximalIdeal_localization {q : ℕ} (hq : q.Prime) :
+    (hq.toHeightOneSpectrumRingOfIntegersRat.valuation ℚ).IsEquiv
+      ((IsDiscreteValuationRing.maximalIdeal
+        (Localization.AtPrime
+          hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)).valuation ℚ) := by
+  rw [Valuation.isEquiv_iff_val_le_one]
+  intro x
+  rw [Rat.valuation_le_one_iff_den, Rat.valuation_le_one_iff_den]
+  constructor
+  · intro h hmem
+    apply h
+    have h2 : algebraMap (NumberField.RingOfIntegers ℚ)
+        (Localization.AtPrime
+          hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)
+        ((x.den : NumberField.RingOfIntegers ℚ)) ∈
+        IsLocalRing.maximalIdeal
+          (Localization.AtPrime
+            hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) := by
+      rw [map_natCast]
+      exact hmem
+    exact (IsLocalization.AtPrime.to_map_mem_maximal_iff
+      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)
+      hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal
+      ((x.den : NumberField.RingOfIntegers ℚ))).mp h2
+  · intro h hmem
+    apply h
+    have h2 := (IsLocalization.AtPrime.to_map_mem_maximal_iff
+      (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal)
+      hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal
+      ((x.den : NumberField.RingOfIntegers ℚ))).mpr hmem
+    rwa [map_natCast] at h2
+
 open scoped WeierstrassCurve.Affine in
 set_option warn.sorry false in
 /-- **Pointwise inertia-unipotence on torsion at multiplicative primes**
