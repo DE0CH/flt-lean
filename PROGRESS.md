@@ -1662,3 +1662,23 @@ assumed. Axiom invariant: every declaration must use at most
   `x ∈ valuationSubringAtPrime ℚ v` (mathlib equality) ⟺
   `x ∈ range (Localization.AtPrime → ℚ)` (IsLocalization
   uniqueness/`algEquiv` between the two localization models).
+  IMPLEMENTATION NOTES for `h𝒪` (design fixed, first draft reverted
+  for cleanliness): `valuationSubringAtPrime` membership is BY
+  DEFINITION `∃ a s (_ : s ∈ v.asIdeal.primeCompl), x = aM a *
+  (aM s)⁻¹` (`Localization.subalgebra.ofField` carrier,
+  `AsSubring.lean:127`, membership Iff.rfl after the two mathlib
+  rewrites `Valuation.mem_valuationSubring_iff` +
+  `valuationSubringAtPrime_eq_valuationSubring`). CRUCIAL: there is
+  NO global `Algebra (Localization.AtPrime v.asIdeal) K` instance —
+  state `h𝒪` with the SAME hypothesis pack as the Semistable glue
+  nodes (`[Algebra (Localization.AtPrime v.asIdeal) K]`
+  `[IsScalarTower (𝓞 K) (Localization.AtPrime v.asIdeal) K]`
+  `[IsFractionRing (Localization.AtPrime v.asIdeal) K]`, mirroring
+  `instAlgebraLocalizationAtPrimeRat`'s package), and bridge the
+  `∃`-form to `(algebraMap Loc K).range` with
+  `IsLocalization.mk'_surjective` + `IsLocalization.lift_mk'`/tower
+  compatibility. Steps 1–3 of the chain drafted and typecheck-shaped:
+  step1 `show ... ∈ integralClosure ...; rw [AlgebraicClosure.map_algebraMap]; rfl`;
+  step2 `isIntegral_algebraMap_iff` +
+  `IsIntegrallyClosed.integralClosure_eq_bot`; step3
+  `mem_adicCompletionIntegers` + `valuedAdicCompletion_eq_valuation'`.
