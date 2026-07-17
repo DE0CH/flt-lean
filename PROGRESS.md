@@ -113,7 +113,7 @@ after flipping any `❌`/`✅` mark.
                       trivializes `Q.inertia (L ≃ₐ[ℚ] L)`.
                       SPLIT EXECUTED (2026-07-16): the
                       transport is DERIVED from
-                      ✅· `exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup`
+                      `exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup`
                       (SOME prime above `q` has trivial inertia —
                       DERIVED 2026-07-16 via the VALUATION route, no
                       decomposition groups and no henselian lifting:
@@ -136,7 +136,7 @@ after flipping any `❌`/`✅` mark.
                       (`𝔪(ℤ_qˆ) = span q`, via
                       `intValuation_singleton` +
                       `maximalIdeal_eq_span_uniformizer`); rests on
-                      ✅· `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`
+                      `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`
                       (`Deformations/RepresentationTheory/LocalInertiaFixedField.lean`
                       — PROVEN 2026-07-16/17, Neukirch II.9.11 from
                       scratch: a finite subextension `M/Kᵥ` of `Kᵥᵃˡᵍ`
@@ -148,7 +148,7 @@ after flipping any `❌`/`✅` mark.
                       inertia surjectivity by counting, and profinite
                       compactness lifting of finite-level inertia
                       elements to `localInertiaGroup v`) and
-                      ✅· `inertia_eq_bot_of_exists_prime_over`
+                      `inertia_eq_bot_of_exists_prime_over`
                       (conjugacy propagation — PROVEN 2026-07-16:
                       `exists_smul_eq_of_isGaloisGroup` gives
                       transitivity on primes over `q`; the conjugation
@@ -421,10 +421,10 @@ after flipping any `❌`/`✅` mark.
                   2026-07-16): good reduction over a DVR makes the
                   `n`-torsion a finite flat group scheme (Hopf algebra,
                   finite flat, étale generic fibre, equivariant points
-                  isomorphism). Plus two division-polynomial nodes:
-                  ❌· `resultant_Φ_ΨSq` and ✅· `isCoprime_Φ_ΨSq` (DERIVED
-                  2026-07-16 from the resultant node via mathlib's
-                  `exists_mul_add_mul_eq_C_resultant` Bézout identity).
+                  isomorphism). Plus the division-polynomial node
+                  `isCoprime_Φ_ΨSq` — restated for fields and PROVEN
+                  directly (2026-07-17; the former `resultant_Φ_ΨSq`
+                  node was DELETED, see the session-6 log).
             - ✅· `FreyCurve.torsion_isFlat_of_multiplicative` — DERIVED
               (2026-07-16) from the PROVEN arithmetic
               (`freyCurve_hasMultiplicativeReduction_of_dvd` at
@@ -686,7 +686,7 @@ after flipping any `❌`/`✅` mark.
                 (`AbsoluteGaloisGroup.lean`), and `AlgebraicClosure.map`
                 is definitionally `IsAlgClosed.lift`
                 (`Deformations/Lemmas.lean`);
-                (ii) ✅· `natCard_residue_quotient_toHeightOneSpectrum`
+                (ii) `natCard_residue_quotient_toHeightOneSpectrum`
                 — PROVEN sorry-free (2026-07-16): the contraction of the
                 maximal ideal is the maximal ideal
                 (`Ideal.IsMaximal.under` on the integral closure + local
@@ -699,7 +699,8 @@ after flipping any `❌`/`✅` mark.
                 `cyclotomicCharacter_globalFrob` and its mod-ℓ corollary
                 are UNCONDITIONALLY PROVEN ([propext, Classical.choice,
                 Quot.sound]); the Chebotarev–Brauer–Nesbitt chain now
-                rests on the single leaf `exists_frobenius_conj_mem_coset`; (ii′) ❌
+                rests on the single leaf
+                `exists_frobenius_conj_mem_coset`; (ii′)
                 `isUnit_natCast_adicCompletionIntegers` — PROVEN
                 sorry-free (2026-07-16): a valuation-subring unit is an
                 element of valuation one; the completion's valuation

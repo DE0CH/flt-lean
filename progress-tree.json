@@ -1,6 +1,6 @@
 [
  {
-  "line": 47,
+  "line": 54,
   "mark": "✅",
   "state": "·",
   "proven": true,
@@ -8,7 +8,7 @@
   "children": []
  },
  {
-  "line": 48,
+  "line": 55,
   "mark": "✅",
   "state": "·",
   "proven": true,
@@ -16,7 +16,7 @@
   "children": []
  },
  {
-  "line": 49,
+  "line": 56,
   "mark": "✅",
   "state": "·",
   "proven": true,
@@ -24,14 +24,14 @@
   "children": []
  },
  {
-  "line": 50,
+  "line": 57,
   "mark": "✅",
   "state": "·",
   "proven": false,
   "label": "`fermatLastTheoremFor_of_five_le : ∀ p, p.Prime → 5 ≤ p → FermatLastTheoremFor p`",
   "children": [
    {
-    "line": 52,
+    "line": 59,
     "mark": "✅",
     "state": "·",
     "proven": true,
@@ -39,7 +39,7 @@
     "children": []
    },
    {
-    "line": 57,
+    "line": 64,
     "mark": "✅",
     "state": "·",
     "proven": true,
@@ -47,63 +47,63 @@
     "children": []
    },
    {
-    "line": 61,
+    "line": 68,
     "mark": "✅",
     "state": "·",
     "proven": false,
     "label": "`FreyPackage.false : FreyPackage → False` — now PROVEN from Mazur +",
     "children": [
      {
-      "line": 63,
+      "line": 70,
       "mark": "✅",
       "state": "·",
       "proven": false,
       "label": "`FreyPackage.mazur` (`Fermat/FLT/FreyCurve/Mazur.lean`) — the mod-p",
       "children": [
        {
-        "line": 67,
+        "line": 74,
         "mark": "✅",
         "state": "·",
         "proven": false,
         "label": "`FreyPackage.exists_torsion_embedding_of_not_isIrreducible` —",
         "children": [
          {
-          "line": 72,
+          "line": 79,
           "mark": "✅",
           "state": "·",
           "proven": false,
           "label": "`FreyPackage.exists_two_torsion_and_p_point_of_not_isIrreducible`",
           "children": [
            {
-            "line": 75,
+            "line": 82,
             "mark": "✅",
             "state": "·",
             "proven": false,
             "label": "`FreyPackage.exists_p_point_of_not_isIrreducible` —",
             "children": [
              {
-              "line": 78,
+              "line": 85,
               "mark": "✅",
               "state": "·",
               "proven": true,
               "label": "`minkowski_character_trivial` — DERIVED (2026-07-16)",
               "children": [
                {
-                "line": 83,
+                "line": 90,
                 "mark": "✅",
                 "state": "·",
                 "proven": true,
                 "label": "`open_normal_subgroup_eq_top_of_inertia_le` —",
                 "children": [
                  {
-                  "line": 94,
+                  "line": 101,
                   "mark": "✅",
                   "state": "·",
                   "proven": true,
                   "label": "`isUnramifiedAt_of_inertia_le_fixingSubgroup` —",
                   "children": [
                    {
-                    "line": 102,
+                    "line": 109,
                     "mark": "✅",
                     "state": "·",
                     "proven": true,
@@ -117,35 +117,35 @@
               ]
              },
              {
-              "line": 152,
+              "line": 159,
               "mark": "✅",
               "state": "·",
               "proven": false,
               "label": "`FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski`",
               "children": [
                {
-                "line": 156,
+                "line": 163,
                 "mark": "✅",
                 "state": "·",
                 "proven": false,
                 "label": "`FreyPackage.stable_line_dichotomy_of_not_isIrreducible`",
                 "children": [
                  {
-                  "line": 186,
+                  "line": 193,
                   "mark": "✅",
                   "state": "·",
                   "proven": false,
                   "label": "`FreyPackage.subquotient_character_unramified` —",
                   "children": [
                    {
-                    "line": 202,
+                    "line": 209,
                     "mark": "✅",
                     "state": "·",
                     "proven": false,
                     "label": "`FreyPackage.inertia_two_unipotent` — DERIVED",
                     "children": [
                      {
-                      "line": 221,
+                      "line": 228,
                       "mark": "❌",
                       "state": "·",
                       "proven": false,
@@ -155,7 +155,7 @@
                     ]
                    },
                    {
-                    "line": 230,
+                    "line": 237,
                     "mark": "❌",
                     "state": "·",
                     "proven": false,
@@ -167,7 +167,7 @@
                 ]
                },
                {
-                "line": 236,
+                "line": 243,
                 "mark": "❌",
                 "state": "·",
                 "proven": false,
@@ -175,14 +175,14 @@
                 "children": []
                },
                {
-                "line": 242,
+                "line": 249,
                 "mark": "✅",
                 "state": "·",
                 "proven": true,
                 "label": "`WeierstrassCurve.exists_point_eq_baseChange_of_fixed`",
                 "children": [
                  {
-                  "line": 249,
+                  "line": 256,
                   "mark": "✅",
                   "state": "·",
                   "proven": true,
@@ -196,7 +196,7 @@
             ]
            },
            {
-            "line": 253,
+            "line": 260,
             "mark": "✅",
             "state": "·",
             "proven": true,
@@ -206,7 +206,7 @@
           ]
          },
          {
-          "line": 260,
+          "line": 267,
           "mark": "✅",
           "state": "·",
           "proven": true,
@@ -216,14 +216,14 @@
         ]
        },
        {
-        "line": 265,
+        "line": 272,
         "mark": "✅",
         "state": "·",
         "proven": false,
         "label": "`WeierstrassCurve.mazur_torsion_bound` — Mazur's torsion",
         "children": [
          {
-          "line": 273,
+          "line": 280,
           "mark": "❌",
           "state": "·",
           "proven": false,
@@ -235,42 +235,42 @@
       ]
      },
      {
-      "line": 278,
+      "line": 285,
       "mark": "✅",
       "state": "·",
       "proven": false,
       "label": "`FreyPackage.galoisRep_not_irreducible` (B4, `Fermat/PrimeFive.lean`)",
       "children": [
        {
-        "line": 282,
+        "line": 289,
         "mark": "✅",
         "state": "·",
         "proven": false,
         "label": "`FreyCurve.torsion_isHardlyRamified`",
         "children": [
          {
-          "line": 287,
+          "line": 294,
           "mark": "✅",
           "state": "·",
           "proven": false,
           "label": "`FreyCurve.torsion_det` — det ρ̄ = mod-p cyclotomic",
           "children": [
            {
-            "line": 290,
+            "line": 297,
             "mark": "✅",
             "state": "·",
             "proven": false,
             "label": "`WeilPairing.exists_weilPairing` — **the Weil pairing**:",
             "children": [
              {
-              "line": 295,
+              "line": 302,
               "mark": "✅",
               "state": "·",
               "proven": false,
               "label": "`det_galoisRep_eq_cyclotomic` — DERIVED (2026-07-17):",
               "children": [
                {
-                "line": 310,
+                "line": 317,
                 "mark": "❌",
                 "state": "·",
                 "proven": false,
@@ -282,7 +282,7 @@
             ]
            },
            {
-            "line": 320,
+            "line": 327,
             "mark": "✅",
             "state": "·",
             "proven": true,
@@ -292,21 +292,21 @@
           ]
          },
          {
-          "line": 325,
+          "line": 332,
           "mark": "✅",
           "state": "·",
           "proven": false,
           "label": "`FreyCurve.torsion_isUnramified` — unramified outside",
           "children": [
            {
-            "line": 328,
+            "line": 335,
             "mark": "✅",
             "state": "·",
             "proven": true,
             "label": "`FreyCurve.torsion_isUnramified_of_good` — DERIVED",
             "children": [
              {
-              "line": 331,
+              "line": 338,
               "mark": "✅",
               "state": "·",
               "proven": true,
@@ -314,14 +314,14 @@
               "children": []
              },
              {
-              "line": 341,
+              "line": 348,
               "mark": "✅",
               "state": "·",
               "proven": true,
               "label": "`WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction`",
               "children": [
                {
-                "line": 350,
+                "line": 357,
                 "mark": "✅",
                 "state": "·",
                 "proven": true,
@@ -333,14 +333,14 @@
             ]
            },
            {
-            "line": 369,
+            "line": 376,
             "mark": "✅",
             "state": "·",
             "proven": false,
             "label": "`FreyCurve.torsion_isUnramified_of_multiplicative` —",
             "children": [
              {
-              "line": 373,
+              "line": 380,
               "mark": "✅",
               "state": "·",
               "proven": true,
@@ -348,14 +348,14 @@
               "children": []
              },
              {
-              "line": 381,
+              "line": 388,
               "mark": "✅",
               "state": "·",
               "proven": false,
               "label": "`WeierstrassCurve.isUnramifiedAt_of_hasMultiplicativeReduction`",
               "children": [
                {
-                "line": 387,
+                "line": 394,
                 "mark": "❌",
                 "state": "·",
                 "proven": false,
@@ -369,28 +369,28 @@
           ]
          },
          {
-          "line": 398,
+          "line": 405,
           "mark": "✅",
           "state": "·",
           "proven": false,
           "label": "`FreyCurve.torsion_isFlat` — flat at p: DERIVED",
           "children": [
            {
-            "line": 401,
+            "line": 408,
             "mark": "✅",
             "state": "·",
             "proven": false,
             "label": "`FreyCurve.torsion_isFlat_of_good` — DERIVED",
             "children": [
              {
-              "line": 405,
+              "line": 412,
               "mark": "✅",
               "state": "·",
               "proven": false,
               "label": "`WeierstrassCurve.isFlatAt_of_hasGoodReduction`",
               "children": [
                {
-                "line": 412,
+                "line": 419,
                 "mark": "❌",
                 "state": "·",
                 "proven": false,
@@ -402,21 +402,21 @@
             ]
            },
            {
-            "line": 421,
+            "line": 428,
             "mark": "✅",
             "state": "·",
             "proven": false,
             "label": "`FreyCurve.torsion_isFlat_of_multiplicative` — DERIVED",
             "children": [
              {
-              "line": 426,
+              "line": 433,
               "mark": "✅",
               "state": "·",
               "proven": false,
               "label": "`WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction`",
               "children": [
                {
-                "line": 432,
+                "line": 439,
                 "mark": "❌",
                 "state": "·",
                 "proven": false,
@@ -424,21 +424,21 @@
                 "children": []
                },
                {
-                "line": 441,
+                "line": 448,
                 "mark": "✅",
                 "state": "·",
                 "proven": true,
                 "label": "`GaloisRep.isFlatAt_of_dvr_package`",
                 "children": [
                  {
-                  "line": 454,
+                  "line": 461,
                   "mark": "✅",
                   "state": "·",
                   "proven": true,
                   "label": "`GaloisRep.hasFlatProlongationAt_of_dvr_package`",
                   "children": [
                    {
-                    "line": 464,
+                    "line": 471,
                     "mark": "✅",
                     "state": "·",
                     "proven": true,
@@ -446,7 +446,7 @@
                     "children": []
                    },
                    {
-                    "line": 472,
+                    "line": 479,
                     "mark": "✅",
                     "state": "·",
                     "proven": true,
@@ -454,7 +454,7 @@
                     "children": []
                    },
                    {
-                    "line": 482,
+                    "line": 489,
                     "mark": "✅",
                     "state": "·",
                     "proven": true,
@@ -472,14 +472,14 @@
           ]
          },
          {
-          "line": 488,
+          "line": 495,
           "mark": "✅",
           "state": "·",
           "proven": false,
           "label": "`FreyCurve.torsion_isTameAtTwo` — DERIVED (2026-07-16)",
           "children": [
            {
-            "line": 490,
+            "line": 497,
             "mark": "✅",
             "state": "·",
             "proven": true,
@@ -487,7 +487,7 @@
             "children": []
            },
            {
-            "line": 497,
+            "line": 504,
             "mark": "❌",
             "state": "·",
             "proven": false,
@@ -495,7 +495,7 @@
             "children": []
            },
            {
-            "line": 505,
+            "line": 512,
             "mark": "✅",
             "state": "·",
             "proven": true,
@@ -503,7 +503,7 @@
             "children": []
            },
            {
-            "line": 511,
+            "line": 518,
             "mark": "✅",
             "state": "·",
             "proven": true,
@@ -515,14 +515,14 @@
         ]
        },
        {
-        "line": 527,
+        "line": 534,
         "mark": "✅",
         "state": "·",
         "proven": false,
         "label": "**B5** `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`",
         "children": [
          {
-          "line": 532,
+          "line": 539,
           "mark": "❌",
           "state": "·",
           "proven": false,
@@ -530,14 +530,14 @@
           "children": []
          },
          {
-          "line": 538,
+          "line": 545,
           "mark": "✅",
           "state": "·",
           "proven": false,
           "label": "**B6bc** `residual_charFrob_eq` — the residual Frobenius",
           "children": [
            {
-            "line": 542,
+            "line": 549,
             "mark": "❌",
             "state": "·",
             "proven": false,
@@ -545,28 +545,28 @@
             "children": []
            },
            {
-            "line": 554,
+            "line": 561,
             "mark": "✅",
             "state": "·",
             "proven": false,
             "label": "`residual_charFrob_eq_of_family` (own work, `Lift.lean`)",
             "children": [
              {
-              "line": 577,
+              "line": 584,
               "mark": "❌",
               "state": "·",
               "proven": false,
               "label": "**B6c** `IsHardlyRamified.three_adic`",
               "children": [
                {
-                "line": 580,
+                "line": 587,
                 "mark": "✅",
                 "state": "·",
                 "proven": false,
                 "label": "`IsHardlyRamified.mod_three` (`ModThree.lean`) —",
                 "children": [
                  {
-                  "line": 584,
+                  "line": 591,
                   "mark": "❌",
                   "state": "·",
                   "proven": false,
@@ -574,14 +574,14 @@
                   "children": []
                  },
                  {
-                  "line": 586,
+                  "line": 593,
                   "mark": "✅",
                   "state": "·",
                   "proven": false,
                   "label": "`mod_three_of_stable_line` — DERIVED",
                   "children": [
                    {
-                    "line": 599,
+                    "line": 606,
                     "mark": "❌",
                     "state": "·",
                     "proven": false,
@@ -599,21 +599,21 @@
           ]
          },
          {
-          "line": 609,
+          "line": 616,
           "mark": "✅",
           "state": "·",
           "proven": false,
           "label": "`not_isIrreducible_of_charFrob_eq` — Chebotarev + Brauer–",
           "children": [
            {
-            "line": 615,
+            "line": 622,
             "mark": "✅",
             "state": "·",
             "proven": false,
             "label": "`dense_conjClasses_globalFrob` — **Chebotarev density**,",
             "children": [
              {
-              "line": 621,
+              "line": 628,
               "mark": "❌",
               "state": "·",
               "proven": false,
@@ -623,14 +623,14 @@
             ]
            },
            {
-            "line": 626,
+            "line": 633,
             "mark": "✅",
             "state": "·",
             "proven": true,
             "label": "`not_isIrreducible_of_charpoly_eq` — **Brauer–Nesbitt**,",
             "children": [
              {
-              "line": 636,
+              "line": 643,
               "mark": "✅",
               "state": "·",
               "proven": true,
@@ -638,7 +638,7 @@
               "children": []
              },
              {
-              "line": 648,
+              "line": 655,
               "mark": "✅",
               "state": "·",
               "proven": true,
@@ -648,14 +648,14 @@
             ]
            },
            {
-            "line": 657,
+            "line": 664,
             "mark": "✅",
             "state": "·",
             "proven": true,
             "label": "`cyclotomicCharacterModL_globalFrob` — χ̄(Frob_q) = q",
             "children": [
              {
-              "line": 661,
+              "line": 668,
               "mark": "✅",
               "state": "·",
               "proven": true,
@@ -663,7 +663,7 @@
               "children": []
              },
              {
-              "line": 709,
+              "line": 717,
               "mark": "✅",
               "state": "·",
               "proven": true,
@@ -673,7 +673,7 @@
             ]
            },
            {
-            "line": 711,
+            "line": 719,
             "mark": "✅",
             "state": "·",
             "proven": true,
@@ -685,7 +685,7 @@
         ]
        },
        {
-        "line": 722,
+        "line": 730,
         "mark": "✅",
         "state": "·",
         "proven": true,
@@ -693,21 +693,21 @@
         "children": []
        },
        {
-        "line": 732,
+        "line": 740,
         "mark": "✅",
         "state": "·",
         "proven": true,
         "label": "`n_torsion_card` (= n² over sep. closed fields, `(n : k) ≠ 0`)",
         "children": [
          {
-          "line": 739,
+          "line": 747,
           "mark": "✅",
           "state": "·",
           "proven": true,
           "label": "`TorsionCard.smul_surjective` — DERIVED (2026-07-17)",
           "children": [
            {
-            "line": 747,
+            "line": 755,
             "mark": "✅",
             "state": "·",
             "proven": true,
@@ -715,7 +715,7 @@
             "children": []
            },
            {
-            "line": 752,
+            "line": 760,
             "mark": "✅",
             "state": "·",
             "proven": true,
@@ -723,7 +723,7 @@
             "children": []
            },
            {
-            "line": 756,
+            "line": 764,
             "mark": "✅",
             "state": "·",
             "proven": true,
@@ -731,7 +731,7 @@
             "children": []
            },
            {
-            "line": 764,
+            "line": 772,
             "mark": "✅",
             "state": "·",
             "proven": true,
@@ -739,7 +739,7 @@
             "children": []
            },
            {
-            "line": 768,
+            "line": 776,
             "mark": "✅",
             "state": "·",
             "proven": true,
@@ -747,7 +747,7 @@
             "children": []
            },
            {
-            "line": 772,
+            "line": 780,
             "mark": "✅",
             "state": "·",
             "proven": true,
@@ -755,7 +755,7 @@
             "children": []
            },
            {
-            "line": 774,
+            "line": 782,
             "mark": "✅",
             "state": "·",
             "proven": true,
@@ -763,7 +763,7 @@
             "children": []
            },
            {
-            "line": 778,
+            "line": 786,
             "mark": "✅",
             "state": "·",
             "proven": true,
@@ -771,7 +771,7 @@
             "children": []
            },
            {
-            "line": 782,
+            "line": 790,
             "mark": "✅",
             "state": "·",
             "proven": true,
@@ -779,7 +779,7 @@
             "children": []
            },
            {
-            "line": 790,
+            "line": 798,
             "mark": "✅",
             "state": "·",
             "proven": true,
@@ -789,14 +789,14 @@
           ]
          },
          {
-          "line": 793,
+          "line": 801,
           "mark": "✅",
           "state": "·",
           "proven": true,
           "label": "`TorsionCard.prime_torsion_card` — DERIVED (2026-07-17):",
           "children": [
            {
-            "line": 810,
+            "line": 818,
             "mark": "✅",
             "state": "·",
             "proven": true,
@@ -804,7 +804,7 @@
             "children": []
            },
            {
-            "line": 813,
+            "line": 821,
             "mark": "✅",
             "state": "·",
             "proven": true,
@@ -812,7 +812,7 @@
             "children": []
            },
            {
-            "line": 826,
+            "line": 834,
             "mark": "✅",
             "state": "·",
             "proven": true,
@@ -824,7 +824,7 @@
         ]
        },
        {
-        "line": 833,
+        "line": 841,
         "mark": "✅",
         "state": "·",
         "proven": true,
@@ -832,7 +832,7 @@
         "children": []
        },
        {
-        "line": 845,
+        "line": 853,
         "mark": "✅",
         "state": "·",
         "proven": true,
@@ -840,7 +840,7 @@
         "children": []
        },
        {
-        "line": 853,
+        "line": 861,
         "mark": "✅",
         "state": "·",
         "proven": true,
@@ -848,7 +848,7 @@
         "children": []
        },
        {
-        "line": 857,
+        "line": 865,
         "mark": "✅",
         "state": "·",
         "proven": true,

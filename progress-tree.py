@@ -8,7 +8,7 @@ lines = src.split('\n')
 tree_start = next(i for i,l in enumerate(lines) if l.startswith('## Tree'))
 tree_end = next(i for i in range(tree_start+1, len(lines)) if lines[i].startswith('## '))
 
-marker_re = re.compile(r'^(\s*)- ([✅❌])([·🟪])(.*)$')
+marker_re = re.compile(r'^(\s*)- (✅✅|✅|❌)([·🟪])(.*)$')
 
 # 1. Parse into a structured tree (list of nodes with indent, line no, mark, label head).
 nodes = []
@@ -16,6 +16,7 @@ for i in range(tree_start, tree_end):
     m = marker_re.match(lines[i])
     if m:
         indent, mark, state, rest = m.groups()
+        mark = '✅' if mark.startswith('✅') else mark  # ✅✅ recomputed fresh
         label = rest.strip()[:100]
         nodes.append({'line': i, 'indent': len(indent), 'mark': mark,
                       'state': state, 'label': label, 'children': []})
