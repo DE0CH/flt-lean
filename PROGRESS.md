@@ -2582,6 +2582,45 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6, MAJOR): **(W) PROVEN and `separable_preΨ'`
+  RESOLVED (char ≠ 2)**. The full derivation chain, all committed:
+  (1) InvariantDerivation.lean — dX/dY/Dham (Hamiltonian derivation
+  Fy·∂X − Fx·∂Y on ℤ[A][X][Y], kills F identically), DB (descent to
+  Buniv via liftOfSurjective), DK (hand-rolled fraction-field
+  extension with quotient rule: DK_welldef/spec/rel/add/mul/sub/div/
+  sq/coeffHom + base values DK_tautX = ψ₂, DK_tautY = −Fx — all
+  axiom-clean). MODULE-SYSTEM CAVEAT learned: group-section
+  Derivation lemmas (map_sub/map_neg) have an
+  AddCommGroup.toAddCommMonoid instance path that is NOT
+  defeq-checkable under exposure — stay in the base
+  AddCommMonoid-section lemmas (map_add, leibniz, leibniz_pow) and
+  write negations INSIDE C-coefficients.
+  (2) WronskianStep.lean — DK_addition_step + DK_doubling_step (the
+  differentiated chord and tangent laws), by polynomial certificates
+  saturated by (xn−x1)^4/5 resp. ψ₂(P₁)^4/5, cofactors extracted by
+  explicit linear elimination (L-linear then geometric-series in l;
+  scripts/eds/wronskian_{step,doubling}_cofactors.py) — sympy-verified
+  and accepted by linear_combination essentially on first compile.
+  (3) WronskianInduction.lean — DK_smul_taut ([n]*ω = nω at the
+  tautological point, strong induction n=1/n=2/chord), then
+  wronskian_taut (differentiate xₙ·ΨSqₙ = Φₙ, use the strong-aux
+  TRACKING ψ₂(nP)ψₙ⁴ = ψ₂ₙ and ψ₂ₙ = preΨ₂ₙ·ψ₂, cancel DK x = ψ₂),
+  univ_wronskian (pullback via taut_C_injective), wronskian (any
+  CommRing): **Φₙ′ΨSqₙ − ΦₙΨSqₙ′ = n·preΨ₂ₙ**.
+  (4) TorsionCard SPLIT: separable_preΨ' + prime_torsion_card +
+  card_torsionBy moved to TorsionCardSep.lean (breaks the import
+  cycle; Torsion.lean imports it).
+  (5) separable_preΨ' PROVEN in TorsionCardSep by the ν_π endgame
+  (uniform in a — no case split: π^{a+1} | ΨSqₚ′ ⟹ (W) ⟹
+  π^{a+1} | preΨ₂ₚ ⟹ π^{2a+1} | ΨSq₂ₚ ⟹ (C)+coprime₂ₚ ⟹
+  π^{2a+1} | H = π^{2a}g²H₁ ⟹ π | H₁ ≡ 4Φₚ³ ⟹ π | Φₚ ⟹ ⊥ with
+  coprimeₚ). NEW smaller node: `separable_preΨ'_char_two`
+  (TorsionCardSep.lean) — char-2 case; needs the [3]-composition
+  (taut_cross m=3 specialized like cross_two; Ψ₃hom ≡ 3Φ⁴, 3 ≠ 0 in
+  char 2, b₂-subcase analysis; scripts/eds verified J₃-data).
+  Node count still 18 (one closed, one smaller one opened); the
+  torsion cone now rests on: resultant_Φ_ΨSq, Flat.lean:163,
+  separable_preΨ'_char_two.
 - 2026-07-17 (session 6): **(C) IS PROVEN** (`ed3752d`,
   TautMultiplication.lean): `taut_smul_formula` (machinery instance at
   taut), `taut_cross` (general (m,n) composition cross-identity from
