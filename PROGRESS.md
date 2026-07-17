@@ -1742,3 +1742,21 @@ assumed. Axiom invariant: every declaration must use at most
   twist; see the node's docstring) and the two `IsFlatAt` glue nodes
   (against `torsion_flat_of_good_reduction`, plus the `ℤ_(p) → ℤ_p`
   prolongation base change).
+- 2026-07-17 (session 5):
+  **`isUnramifiedAt_of_hasMultiplicativeReduction` DERIVED** — the
+  multiplicative-prime unramifiedness glue decomposes exactly like the
+  good-reduction one: NEW sorry node
+  `torsion_unramified_of_multiplicative_reduction` (the pure
+  TATE-THEORETIC content — quadratic twist + Tate uniformization +
+  `p ∣ v_q(j)` p-th-power analysis — stated in the SAME
+  `ValuationSubring.inertiaSubgroup`/`Point.map` shape as the vendored
+  NOS node, with the `h𝒪`-hypothesis in the same range-form), and the
+  glue itself is a VERBATIM copy of the good-reduction transport.
+  Frontier stays 20 by count; the transport content of the node is
+  eliminated. NOTE: `E⁄A` is `WeierstrassCurve.baseChange E A`
+  (scoped notation in `VariableChange.lean`/`Weierstrass.lean`) — the
+  leaf must be stated with `(E⁄ℚ̄).Point` (single base change from ℚ,
+  the NOS shape); the glue's `(E.map ..)⁄ℚ̄`-spelled points unify with
+  it definitionally at application time. `GoodReduction` is now a
+  PUBLIC import of `Semistable.lean` (the leaf's statement needs the
+  `inertiaSubgroup` language).
