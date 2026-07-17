@@ -629,6 +629,32 @@ theorem zsmul_consec_step_x {n : ℤ} {x y x₁ y₁ x₂ y₂ : k}
   rcases mul_eq_zero.mp hmain with h0 | h0
   · exact sub_eq_zero.mp h0
   · exact absurd (pow_eq_zero_iff two_ne_zero |>.mp h0) hψ₂
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] [DecidableEq k] in
+/-- **The symmetric addition identity** (PROVEN 2026-07-17): for two
+curve points, the sum of the `x`-coordinates of `Q₁ + Q₂` and
+`Q₁ - Q₂` satisfies
+`(x₁-x₂)²(2x₂ - x₃ - x₄) = 2x₂³ - 6x₁x₂² - b₂x₁x₂ - b₄(x₁+x₂) - b₆`
+(certificate: cofactors `-2, -2` on the two curve equations), where
+`x₃, x₄` are given by the sum/difference secant expressions. -/
+theorem sum_diff_X_identity {x₁ y₁ x₂ y₂ x₃ x₄ : k}
+    (h₁ : (E⁄k).toAffine.Equation x₁ y₁)
+    (h₂ : (E⁄k).toAffine.Equation x₂ y₂)
+    (hX₃ : x₃ * (x₁ - x₂) ^ 2 = (y₁ - y₂) ^ 2 +
+      (E⁄k).a₁ * (y₁ - y₂) * (x₁ - x₂) -
+      ((E⁄k).a₂ + x₁ + x₂) * (x₁ - x₂) ^ 2)
+    (hX₄ : x₄ * (x₁ - x₂) ^ 2 = (y₁ + y₂ + (E⁄k).a₁ * x₂ + (E⁄k).a₃) ^ 2 +
+      (E⁄k).a₁ * (y₁ + y₂ + (E⁄k).a₁ * x₂ + (E⁄k).a₃) * (x₁ - x₂) -
+      ((E⁄k).a₂ + x₁ + x₂) * (x₁ - x₂) ^ 2) :
+    (x₁ - x₂) ^ 2 * (2 * x₂ - x₃ - x₄) =
+      2 * x₂ ^ 3 - 6 * x₁ * x₂ ^ 2 - (E⁄k).b₂ * x₁ * x₂ -
+        (E⁄k).b₄ * (x₁ + x₂) - (E⁄k).b₆ := by
+  have heq₁ := (Affine.equation_iff x₁ y₁).mp h₁
+  have heq₂ := (Affine.equation_iff x₂ y₂).mp h₂
+  rw [WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆]
+  linear_combination (-(1 : k)) * hX₃ + (-(1 : k)) * hX₄ +
+    (-2 : k) * heq₁ + (-2 : k) * heq₂
+
 set_option warn.sorry false in
 /-- (Sorry node — **the multiplication-by-`n` formula**, Washington
 *Elliptic curves* Theorem 3.6.) For `n > 0` and an affine point
