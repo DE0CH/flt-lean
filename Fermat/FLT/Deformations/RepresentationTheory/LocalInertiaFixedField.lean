@@ -16,6 +16,9 @@ import Mathlib.RingTheory.Ideal.Quotient.Index
 -- `ramificationIdx'_algebra_tower'` and
 -- `ramificationIdx'_ne_zero_of_liesOver`, for the counting step.
 import Mathlib.NumberTheory.RamificationInertia.Ramification
+-- `InfiniteGalois.restrictNormalHom_continuous`, for the closedness of
+-- the compactness-lifting sets.
+import Mathlib.FieldTheory.Galois.Profinite
 
 /-!
 # The fixed field of the local inertia group is unramified
@@ -1096,6 +1099,194 @@ theorem exists_inertia_restrict_of_le (h : N ≤ N')
     rw [AlgEquiv.apply_symm_apply, AlgEquiv.symm_symm, AlgEquiv.apply_symm_apply]
 
 end Reify
+
+section CompactnessLifting
+
+variable (N : IntermediateField
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+    (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
+  [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
+  [IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **The compactness lifting** (the profinite half of Neukirch
+II.9.11): every inertia element at a finite Galois level `N` is the
+restriction of an element of the FULL local inertia group. The witness
+is produced by intersecting, over the directed family of finite Galois
+`N' ⊇ N`, the closed sets
+`D_{N'} = π_N⁻¹{τ} ∩ π_{N'}⁻¹(I(𝔪_{N'}))` inside the compact group
+`Γ Kᵥ`: nonempty by the one-level lifting, directed by the downward
+restriction lemma over composita, and any point of the intersection
+lies in `localInertiaGroup v` because every element of the big
+integral closure lives at some finite Galois level. -/
+theorem exists_mem_localInertiaGroup_restrictNormalHom_eq
+    (τ : N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N)
+    (hτ : τ ∈ (𝔪 (IntegralClosure 𝒪ᵥ N)).inertia
+      (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N)) :
+    ∃ σ : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+      ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v]
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v),
+      σ ∈ localInertiaGroup v ∧ AlgEquiv.restrictNormalHom N σ = τ := by
+  classical
+  haveI : Normal (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N :=
+    IsGalois.to_normal
+  haveI hsepbig : Algebra.IsSeparable
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) :=
+    (inferInstance : IsGalois
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+      (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))).to_isSeparable
+  -- the directed index of finite Galois levels above `N`
+  let ι := {N' : IntermediateField
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+    (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) //
+    N ≤ N' ∧ FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N' ∧
+    IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N'}
+  haveI : Nonempty ι := ⟨⟨N, le_rfl, inferInstance, inferInstance⟩⟩
+  -- the closed sets to intersect
+  let D : ι → Set (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+      ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v]
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) :=
+    fun N' =>
+      letI := N'.2.2.1
+      letI := N'.2.2.2
+      letI : Normal (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N'.1 :=
+        IsGalois.to_normal
+      {σ | AlgEquiv.restrictNormalHom N σ = τ} ∩
+      {σ | AlgEquiv.restrictNormalHom N'.1 σ ∈
+        (𝔪 (IntegralClosure 𝒪ᵥ N'.1)).inertia
+          (N'.1 ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N'.1)}
+  -- each `D` is closed
+  have hDclosed : ∀ i, IsClosed (D i) := by
+    rintro ⟨N', hle, hfd, hgal⟩
+    haveI := hfd
+    haveI := hgal
+    haveI : Normal (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N' :=
+      IsGalois.to_normal
+    refine IsClosed.inter ?_ ?_
+    · exact (isClosed_singleton (x := τ)).preimage
+        (InfiniteGalois.restrictNormalHom_continuous N)
+    · refine IsClosed.preimage (InfiniteGalois.restrictNormalHom_continuous N') ?_
+      exact Set.Finite.isClosed (Set.toFinite _)
+  -- each `D` is nonempty
+  have hDnonempty : ∀ i, (D i).Nonempty := by
+    rintro ⟨N', hle, hfd, hgal⟩
+    haveI := hfd
+    haveI := hgal
+    obtain ⟨σ, h1, h2⟩ := exists_inertia_restrict_of_le v N N' hle τ hτ
+    exact ⟨σ, h2, h1⟩
+  -- the family is directed by reverse inclusion (composita)
+  have hDdirected : Directed (· ⊇ ·) D := by
+    rintro ⟨N₁, hle₁, hfd₁, hgal₁⟩ ⟨N₂, hle₂, hfd₂, hgal₂⟩
+    haveI := hfd₁; haveI := hgal₁; haveI := hfd₂; haveI := hgal₂
+    haveI hfdsup : FiniteDimensional
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) ↥(N₁ ⊔ N₂) :=
+      IntermediateField.finiteDimensional_sup N₁ N₂
+    haveI hsepsup : Algebra.IsSeparable
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) ↥(N₁ ⊔ N₂) :=
+      Algebra.isSeparable_tower_bot_of_isSeparable
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) ↥(N₁ ⊔ N₂)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+    haveI hgalsup : IsGalois
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) ↥(N₁ ⊔ N₂) := { }
+    refine ⟨⟨N₁ ⊔ N₂, hle₁.trans le_sup_left, hfdsup, hgalsup⟩, ?_, ?_⟩
+    · rintro σ ⟨hσ1, hσ2⟩
+      exact ⟨hσ1, restrict_mem_inertia_of_le v N₁ (N₁ ⊔ N₂) le_sup_left σ hσ2⟩
+    · rintro σ ⟨hσ1, hσ2⟩
+      exact ⟨hσ1, restrict_mem_inertia_of_le v N₂ (N₁ ⊔ N₂) le_sup_right σ hσ2⟩
+  -- intersect
+  obtain ⟨σ, hσ⟩ := IsCompact.nonempty_iInter_of_directed_nonempty_isCompact_isClosed
+    D hDdirected hDnonempty
+    (fun i => (hDclosed i).isCompact)
+    hDclosed
+  rw [Set.mem_iInter] at hσ
+  refine ⟨σ, ?_, (hσ ⟨N, le_rfl, inferInstance, inferInstance⟩).1⟩
+  -- membership in the full local inertia group
+  refine AddSubgroup.mem_inertia.mpr fun x => ?_
+  -- a finite Galois level containing `N` and (the value of) `x`
+  have hexists : ∀ z : AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v),
+      ∃ Nx : IntermediateField
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)),
+        N ≤ Nx ∧ z ∈ Nx ∧
+        FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) Nx ∧
+        IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) Nx := by
+    intro z
+    haveI hadj : FiniteDimensional
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+        ↥(IntermediateField.adjoin
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) {z}) :=
+      IntermediateField.adjoin.finiteDimensional
+        (Algebra.IsIntegral.isIntegral _)
+    haveI hsupfd : FiniteDimensional
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+        ↥(N ⊔ IntermediateField.adjoin
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) {z}) :=
+      IntermediateField.finiteDimensional_sup _ _
+    haveI hfdx : FiniteDimensional
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+        ↥(IntermediateField.normalClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+          ↥(N ⊔ IntermediateField.adjoin
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) {z})
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) :=
+      normalClosure.is_finiteDimensional _ _ _
+    haveI hsepx : Algebra.IsSeparable
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+        ↥(IntermediateField.normalClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+          ↥(N ⊔ IntermediateField.adjoin
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) {z})
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) :=
+      Algebra.isSeparable_tower_bot_of_isSeparable
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) _
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+    refine ⟨IntermediateField.normalClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+      ↥(N ⊔ IntermediateField.adjoin
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) {z})
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)),
+      ?_, ?_, hfdx, { }⟩
+    · exact le_sup_left.trans (IntermediateField.le_normalClosure _)
+    · exact (le_sup_right.trans (IntermediateField.le_normalClosure _))
+        (IntermediateField.mem_adjoin_simple_self _ _)
+  obtain ⟨Nx, hNle, hxmem, hfdx, hgalx⟩ := hexists
+    (algebraMap (IntegralClosure 𝒪ᵥ
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) x)
+  haveI := hfdx
+  haveI := hgalx
+  -- the element `x` at level `Nx`
+  have hyint : IsIntegral 𝒪ᵥ (⟨_, hxmem⟩ : ↥Nx) := by
+    rw [← isIntegral_algebraMap_iff
+      (algebraMap ↥Nx (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))).injective]
+    exact (Algebra.IsIntegral.isIntegral (R := 𝒪ᵥ) x).algebraMap
+  set y : IntegralClosure 𝒪ᵥ ↥Nx := ⟨⟨_, hxmem⟩, hyint⟩ with hy
+  -- `σ` restricted to `Nx` is inertial there
+  have hσx := (hσ ⟨Nx, hNle, hfdx, hgalx⟩).2
+  have hyin := AddSubgroup.mem_inertia.mp hσx y
+  have hpush := integralClosureInclusion_mem_maximalIdeal v Nx _ hyin
+  -- identify the pushed element with `σ • x - x`
+  have h₁ : integralClosureInclusion v Nx
+      ((AlgEquiv.restrictNormalHom Nx σ) • y) = σ • x := by
+    apply Subtype.ext
+    exact AlgEquiv.restrictNormal_commutes σ Nx ⟨_, hxmem⟩
+  have h₂ : integralClosureInclusion v Nx y = x := by
+    apply Subtype.ext
+    rfl
+  rw [map_sub, h₁, h₂] at hpush
+  rw [Submodule.mem_toAddSubgroup]
+  exact hpush
+
+end CompactnessLifting
 
 set_option warn.sorry false in
 /-- **The fixed field of the local inertia group is unramified** (the

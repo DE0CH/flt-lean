@@ -1564,3 +1564,18 @@ assumed. Axiom invariant: every declaration must use at most
   `autCongr_mem_inertia` as a named `RingEquiv` and use
   `ramificationIdx'_comap_eq`, or transport the final map-equality
   directly), then `maximalIdeal_map_eq_of_ramificationIdx_eq_one`.
+- 2026-07-17 (session 5): **THE COMPACTNESS LIFTING IS PROVEN**
+  (`exists_mem_localInertiaGroup_restrictNormalHom_eq`, unconditional
+  — the PROFINITE half of Neukirch II.9.11): every inertia element at
+  a finite Galois level `N` is the restriction of an element of
+  `localInertiaGroup v`. Directed closed sets
+  `D_{N'} = π_N⁻¹{τ} ∩ π_{N'}⁻¹(I(𝔪_{N'}))` in the compact `Γ Kᵥ`;
+  nonempty by `exists_inertia_restrict_of_le`; directed via composita
+  and `restrict_mem_inertia_of_le`; a point of the intersection lies
+  in `localInertiaGroup` because every element of the big integral
+  closure lives at the finite Galois level
+  `normalClosure Kᵥ (N ⊔ Kᵥ⟮z⟯) Kᵥᵃˡᵍ` (existential-package pattern —
+  `set`-bound `Nx` blocks instance matching; provide
+  `∃ Nx, N ≤ Nx ∧ z ∈ Nx ∧ FD ∧ IsGalois` and `obtain`). Whole-arc
+  axiom audit clean. THE LOCAL NODE L1 NOW NEEDS ONLY ITS FINAL
+  ASSEMBLY (piece (ii) above).
