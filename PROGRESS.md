@@ -2261,3 +2261,17 @@ assumed. Axiom invariant: every declaration must use at most
   Remaining before the skeleton: recompute the t-target closures with
   the universal-identity instances as generators (mechanical), and
   the step-output tracking derivations.
+- 2026-07-17 (session 5): **`zsmul_some_aux` SIMPLIFIED — the tracking
+  conjunct is GONE.** The `(1, j)`-instances of the proven
+  `two_point_cross_identity` solve for the `ψ₂`-values
+  `tⱼ = 2yⱼ + a₁xⱼ + a₃` in closed form (`tⱼ·ψⱼ³·s` = an explicit
+  window expression; sympy-derived), so the induction carries ONLY the
+  `x`-formula — the node's `∃` shrank to
+  `n•P = some x' y' ∧ x'ψₙ² = φₙ`, consumers unchanged (they never
+  used the tracking), downstream builds clean. The t-target
+  certificate obligation CEASES TO EXIST; the induction steps pin all
+  `y`-data through the universal identity and the two proven
+  x-certificates close with unit cofactors. Remaining for the node:
+  the strong-induction skeleton itself (case bookkeeping: parity,
+  collisions via `smul_collision`, the `s = 0` branch via the
+  `Res(Ψ₂Sq, Ψ₃) = -Δ²` seed, and the base cases — all staged).
