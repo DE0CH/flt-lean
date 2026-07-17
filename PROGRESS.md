@@ -2162,3 +2162,19 @@ assumed. Axiom invariant: every declaration must use at most
   proofs of `zsmul_some_aux_two` and the gap lemmas). Boundary values
   `ψ₀ = 0`, `ψ₁ = 1`, `ψ₋₁ = −1` are inline-available from mathlib
   (`ψ_zero`/`ψ_one`/`ψ_neg`) for the small-`m` instantiations.
+- 2026-07-17 (session 5, odd-step certificate structure): the odd-step
+  `x`-target IS numerically true in the free-window model, and the
+  certificate ideal needs THREE generator families: (a) the curve
+  equation `g(x,y)`, (b) the two Ward gap-2 bindings
+  `ψₘ₊₂ψₘ₋₂ = ψₘ₊₁ψₘ₋₁ψ₂² − Ψ₃ψₘ²` (at `m` and `m+1` — these bind the
+  outer window symbols; carried as component (iii) of the simultaneous
+  induction package since mathlib's Ward relation for `normEDS` is an
+  open TODO; base instances `j = 2, 3` are trivial), and (c) the IH
+  points' own curve-membership — in the free-window sympy model this
+  is the cleared `tⱼ² = Ψ₂Sq(xⱼ)` compatibility, but in the LEAN
+  assembly it comes free as `heqₘ : Equation xₘ yₘ` from the IH's
+  `Nonsingular` data (use the points' equations directly as
+  `linear_combination` inputs rather than the eliminated form).
+  Groebner verification of the closure running; the same structure
+  applies to the even step `[2m] = [m+1] + [m−1]` with gap-2 as the
+  secant denominator.
