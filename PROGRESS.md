@@ -2548,8 +2548,21 @@ assumed. Axiom invariant: every declaration must use at most
   composition degenerates; use the [3]-composition (Ψ₃hom ≡ 3Φ⁴ and
   3 ≠ 0 in char 2) with the tripling law W(3n) = 3·(factor)·W(n) —
   needs the [3]-composition pair verified/certified.
-  NEXT SESSION: (1) formalize (C) (either route); (2) the
-  (W)-odd machinery; (3) the multiplicity endgame as above;
+  IMPORTANT: the endgame needs (W) AT p ITSELF, and primes ≥ 5 are
+  not composition-reachable — so the doubling/tripling laws do NOT
+  suffice; (W) requires either the differentiated-recursion descent
+  over the joint {P, P'} window (the parity recursions differentiated,
+  same GB machinery one derivative level up) or the derivation on
+  Frac(B_univ) (D := ∂x − (Fx/Fy)∂y, differentiate the addition
+  formula once — the invariant-differential additivity — then induct;
+  ~200 lines with mathlib's Derivation API). The compositions (C) for
+  m = 2, 3 formalize uniformly via the tautological point:
+  x(m·(nP)) = Φₘ(xₙ)/ΨSqₘ(xₙ) is quotient-arithmetic of the PROVEN
+  x-formulas, cross-multiplied and pulled back by basis-injectivity
+  with exactness from the Degree API leading coefficients.
+  NEXT SESSION: (1) formalize (C) (either route); (2) the (W)
+  machinery (differentiated descent — REQUIRED for primes); (3) the
+  multiplicity endgame as above;
   (2) `resultant_Φ_ΨSq` or its `IsCoprime` reformulation; then the
   torsion cone is DONE. Remaining 18 nodes list: see the sorry-grep;
   major fronts: WeilPairing:124, Chebotarev:98, HardlyRamified (5
