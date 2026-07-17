@@ -2582,6 +2582,18 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6, RESULTANT NODE ELIMINATED `cb7f744`):
+  psi34's certificate elaborated (40M heartbeats, set-staged
+  cofactors, inlined 55-term relation-cofactor in the
+  linear_combination — a set-bound cofactor is an opaque ring-atom,
+  must be inlined); PhiPsiCoprime.lean is SORRY-FREE. Flat.lean
+  patched: resultant_Φ_ΨSq DELETED, isCoprime_Φ_ΨSq restated for
+  fields with the direct proof. 17 → 16 nodes. The full-cone rebuild
+  + axiom audit in flight; expected: the ENTIRE torsion-card
+  machinery becomes sorryAx-free except the finite-flat construction
+  Flat.lean:163. ELABORATION LESSONS: giant certificate statements
+  need set-staged big terms (MVar-synthesis times out otherwise);
+  linear_combination cofactors must be inline expressions.
 - 2026-07-17 (session 6, RESULTANT REPLACEMENT EXECUTED): the direct
   coprimality is implemented: (1) `EDSRank.lean` (all proven) — the
   rank-of-apparition machinery (IsRank, c_eq_zero_of_adjacent via
