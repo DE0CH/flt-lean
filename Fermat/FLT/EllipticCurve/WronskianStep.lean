@@ -29,7 +29,6 @@ set_option maxHeartbeats 4000000 in
 theorem DK_addition_step
     (a1 a2 a3 a4 a6 x1 y1 xn yn m l x3 y3 : Kuniv)
     (hDa1 : DK a1 = 0) (hDa2 : DK a2 = 0) (hDa3 : DK a3 = 0)
-    (hDa4 : DK a4 = 0)
     (hE1 : y1 ^ 2 + a1 * x1 * y1 + a3 * y1 =
       x1 ^ 3 + a2 * x1 ^ 2 + a4 * x1 + a6)
     (hEn : yn ^ 2 + a1 * xn * yn + a3 * yn =
