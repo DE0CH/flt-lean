@@ -31,16 +31,192 @@ variable {k : Type u} [Field k] (E : WeierstrassCurve k) [E.IsElliptic]
   [DecidableEq k]
 
 set_option warn.sorry false in
-/-- **Separability of the division polynomial** (sorry node): for an
-odd prime `p` invertible in `k`, the reduced `p`-division polynomial
-`preΨ' p` (whose square is `ΨSq p`) is separable — its roots, the
-`x`-coordinates of the nonzero `p`-torsion, are simple. Classically
-via the discriminant companion of the resultant identity
-(`disc(ψₚ) = ± pᵃ Δᵇ`). -/
-theorem separable_preΨ' {p : ℕ} (hp : p.Prime) (hodd : Odd p)
-    (hpk : (p : k) ≠ 0) :
+/-- **Separability in characteristic two** (sorry node): the remaining
+case of `separable_preΨ'`. Here `ΨSq′ₚ = 2 preΨ′ₚ (preΨ′ₚ)′ = 0`, so
+the Wronskian route needs the `[3]`-composition (with `Ψ₃ʰᵒᵐ ≡ 3Φ⁴`
+and `3 ≠ 0` in characteristic two) in place of the `[2]`-composition,
+plus the `a₁ ≠ 0` (`b₂`-term) subcase of the `H₁`-analysis. -/
+theorem separable_preΨ'_char_two {p : ℕ} (hp : p.Prime) (hodd : Odd p)
+    (hpk : (p : k) ≠ 0) (hchar2 : (2 : k) = 0) :
     ((E⁄k).preΨ' p).Separable :=
   sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **Separability of the division polynomial** (PROVEN 2026-07-17 in
+characteristic `≠ 2` via the multiplicity endgame; characteristic two
+is the separate node above): for an odd prime `p` invertible in `k`,
+the reduced `p`-division polynomial `preΨ' p` is separable. If `π`
+were a common irreducible factor of `f := preΨ′ₚ` and `f′` with
+`f = πᵃg`, `π ∤ g`, then `π^{a+1} ∣ (ΨSqₚ)′ = 2ff′`, the Wronskian
+identity `(W)` gives `π^{a+1} ∣ preΨ₂ₚ`, hence
+`π^{2a+1} ∣ ΨSq₂ₚ = preΨ′₂ₚ² Ψ₂Sq`; the composition cross-identity
+`(C)` and coprimality of `Φ₂ₚ, ΨSq₂ₚ` push this to
+`π^{2a+1} ∣ H = ΨSqₚ ⬝ H₁`, so `π ∣ H₁ ≡ 4Φₚ³ (mod ΨSqₚ)`, forcing
+`π ∣ Φₚ` — contradicting the coprimality of `Φₚ, ΨSqₚ`. -/
+theorem separable_preΨ' {p : ℕ} (hp : p.Prime) (hodd : Odd p)
+    (hpk : (p : k) ≠ 0) :
+    ((E⁄k).preΨ' p).Separable := by
+  haveI : (E⁄k).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap k k)).IsElliptic)
+  rcases eq_or_ne (2 : k) 0 with hchar2 | hchar2
+  · exact separable_preΨ'_char_two E hp hodd hpk hchar2
+  by_contra hsep
+  set f := (E⁄k).preΨ' p with hfdef
+  -- `f ≠ 0` since its top coefficient is nonzero
+  have hfne : f ≠ 0 := by
+    intro h0
+    apply WeierstrassCurve.coeff_preΨ'_ne_zero (W := (E⁄k)) hpk
+    rw [← hfdef, h0, Polynomial.coeff_zero]
+  -- a common irreducible factor of `f` and `f′`
+  rw [Polynomial.separable_def] at hsep
+  have hgcd : ¬IsUnit (EuclideanDomain.gcd f (Polynomial.derivative f)) :=
+    fun h => hsep (EuclideanDomain.gcd_isUnit_iff.mp h)
+  have hgcdne : EuclideanDomain.gcd f (Polynomial.derivative f) ≠ 0 := by
+    intro h0
+    exact hfne ((EuclideanDomain.gcd_eq_zero_iff.mp h0).1)
+  obtain ⟨π, hπirr, hπgcd⟩ :=
+    WfDvdMonoid.exists_irreducible_factor hgcd hgcdne
+  have hπprime : Prime π := hπirr.prime
+  have hπf : π ∣ f := hπgcd.trans (EuclideanDomain.gcd_dvd_left _ _)
+  have hπf' : π ∣ Polynomial.derivative f :=
+    hπgcd.trans (EuclideanDomain.gcd_dvd_right _ _)
+  -- the exact power decomposition
+  obtain ⟨a, g, hπg, hfg⟩ := WfDvdMonoid.max_power_factor hfne hπirr
+  have ha : 1 ≤ a := by
+    by_contra hc
+    rw [Nat.lt_one_iff.mp (not_le.mp hc), pow_zero, one_mul] at hfg
+    exact hπg (hfg ▸ hπf)
+  -- `ΨSqₚ = f²`
+  have hΨodd : (E⁄k).ΨSq ((p : ℕ) : ℤ) = f ^ 2 := by
+    rw [WeierstrassCurve.ΨSq_ofNat,
+      if_neg (Nat.not_even_iff_odd.mpr hodd), mul_one, hfdef]
+  -- step 3: `π^{a+1} ∣ (ΨSqₚ)′ = f′f + ff′`
+  have hpowf : π ^ a ∣ f := hfg ▸ dvd_mul_right _ _
+  have hΨ' : π ^ (a + 1) ∣ Polynomial.derivative ((E⁄k).ΨSq (p : ℤ)) := by
+    rw [show ((p : ℤ)) = ((p : ℕ) : ℤ) from rfl, hΨodd, sq,
+      Polynomial.derivative_mul]
+    refine dvd_add ?_ ?_
+    · rw [pow_succ']
+      exact mul_dvd_mul hπf' hpowf
+    · rw [pow_succ]
+      exact mul_dvd_mul hpowf hπf'
+  -- step 4–5: the Wronskian identity gives `π^{a+1} ∣ preΨ₂ₚ`
+  have hpsq : π ^ (2 * a) ∣ (E⁄k).ΨSq (p : ℤ) := by
+    rw [show ((p : ℤ)) = ((p : ℕ) : ℤ) from rfl, hΨodd, sq, two_mul,
+      pow_add]
+    exact mul_dvd_mul hpowf hpowf
+  have hW := PsiSumCompanion.wronskian (E⁄k) (n := p) hp.one_lt.le
+  have hpre : π ^ (a + 1) ∣ (p : Polynomial k) * (E⁄k).preΨ (2 * (p : ℤ)) := by
+    rw [← hW]
+    refine dvd_sub ?_ ?_
+    · exact ((pow_dvd_pow π (by omega : a + 1 ≤ 2 * a)).trans
+        hpsq).mul_left _
+    · exact hΨ'.mul_left _
+  have hpre' : π ^ (a + 1) ∣ (E⁄k).preΨ (2 * (p : ℤ)) := by
+    have h2 : π ^ (a + 1) ∣ Polynomial.C (((p : k))⁻¹) *
+        ((p : Polynomial k) * (E⁄k).preΨ (2 * (p : ℤ))) := hpre.mul_left _
+    rwa [← Polynomial.C_eq_natCast, ← mul_assoc, ← Polynomial.C_mul,
+      inv_mul_cancel₀ hpk, Polynomial.C_1, one_mul] at h2
+  -- step 6: `π^{2a+1} ∣ ΨSq₂ₚ`
+  have hΨ2p : π ^ (2 * a + 1) ∣ (E⁄k).ΨSq (2 * (p : ℤ)) := by
+    have hcast : (2 * (p : ℤ)) = ((2 * p : ℕ) : ℤ) := by push_cast; ring
+    rw [hcast, WeierstrassCurve.ΨSq_ofNat, if_pos (even_two_mul p)]
+    have hpre'' : π ^ (a + 1) ∣ (E⁄k).preΨ' (2 * p) := by
+      rw [← WeierstrassCurve.preΨ_ofNat, ← hcast]
+      exact hpre'
+    refine dvd_mul_of_dvd_left ?_ _
+    calc π ^ (2 * a + 1) ∣ π ^ (2 * (a + 1)) :=
+          pow_dvd_pow π (by omega)
+      _ = π ^ (a + 1) * π ^ (a + 1) := by ring
+      _ ∣ (E⁄k).preΨ' (2 * p) ^ 2 := by
+          rw [sq]
+          exact mul_dvd_mul hpre'' hpre''
+  -- step 7: the composition cross-identity pushes it to `H`
+  have hcross := PsiSumCompanion.cross_two (E⁄k)
+    (n := (p : ℤ)) (by exact_mod_cast hp.ne_zero)
+  have hπΨ2p : π ∣ (E⁄k).ΨSq (2 * (p : ℤ)) :=
+    (dvd_pow_self π (by omega : 2 * a + 1 ≠ 0)).trans hΨ2p
+  have hΦ2p : ¬ π ∣ (E⁄k).Φ (2 * (p : ℤ)) := by
+    intro hd
+    exact hπirr.not_isUnit
+      ((WeierstrassCurve.isCoprime_Φ_ΨSq (E⁄k)
+        (by have := hp.pos; omega : (2 * (p : ℤ)) ≠ 0)
+        (WeierstrassCurve.isUnit_Δ _)).isUnit_of_dvd' hd hπΨ2p)
+  have hH : π ^ (2 * a + 1) ∣
+      (4 * (E⁄k).Φ (p : ℤ) ^ 3 * (E⁄k).ΨSq (p : ℤ) +
+        Polynomial.C (E⁄k).b₂ * (E⁄k).Φ (p : ℤ) ^ 2 *
+          (E⁄k).ΨSq (p : ℤ) ^ 2 +
+        2 * Polynomial.C (E⁄k).b₄ * (E⁄k).Φ (p : ℤ) *
+          (E⁄k).ΨSq (p : ℤ) ^ 3 +
+        Polynomial.C (E⁄k).b₆ * (E⁄k).ΨSq (p : ℤ) ^ 4) := by
+    refine hπprime.pow_dvd_of_dvd_mul_left _ hΦ2p ?_
+    rw [hcross]
+    exact (hΨ2p.mul_right _)
+  -- step 8: factor `H = ΨSqₚ ⬝ H₁ = π^{2a} (g² H₁)` and cancel
+  set H₁ : Polynomial k := 4 * (E⁄k).Φ (p : ℤ) ^ 3 +
+    Polynomial.C (E⁄k).b₂ * (E⁄k).Φ (p : ℤ) ^ 2 * (E⁄k).ΨSq (p : ℤ) +
+    2 * Polynomial.C (E⁄k).b₄ * (E⁄k).Φ (p : ℤ) *
+      (E⁄k).ΨSq (p : ℤ) ^ 2 +
+    Polynomial.C (E⁄k).b₆ * (E⁄k).ΨSq (p : ℤ) ^ 3 with hH₁def
+  have hHfac : (4 * (E⁄k).Φ (p : ℤ) ^ 3 * (E⁄k).ΨSq (p : ℤ) +
+      Polynomial.C (E⁄k).b₂ * (E⁄k).Φ (p : ℤ) ^ 2 *
+        (E⁄k).ΨSq (p : ℤ) ^ 2 +
+      2 * Polynomial.C (E⁄k).b₄ * (E⁄k).Φ (p : ℤ) *
+        (E⁄k).ΨSq (p : ℤ) ^ 3 +
+      Polynomial.C (E⁄k).b₆ * (E⁄k).ΨSq (p : ℤ) ^ 4) =
+      π ^ (2 * a) * (g ^ 2 * H₁) := by
+    rw [hH₁def, show (E⁄k).ΨSq (p : ℤ) = π ^ (2 * a) * g ^ 2 by
+      rw [show ((p : ℤ)) = ((p : ℕ) : ℤ) from rfl, hΨodd, hfg]
+      ring]
+    ring
+  have hg2H₁ : π ∣ g ^ 2 * H₁ := by
+    have h1 : π ^ (2 * a) * π ∣ π ^ (2 * a) * (g ^ 2 * H₁) := by
+      rw [← hHfac, ← pow_succ]
+      exact hH
+    exact (mul_dvd_mul_iff_left (pow_ne_zero (2 * a)
+      hπprime.ne_zero)).mp h1
+  have hπH₁ : π ∣ H₁ := by
+    rcases hπprime.dvd_mul.mp hg2H₁ with hd | hd
+    · exact absurd (hπprime.dvd_of_dvd_pow hd) hπg
+    · exact hd
+  -- step 9: `H₁ ≡ 4Φₚ³ (mod ΨSqₚ)`, so `π ∣ Φₚ`
+  have hπΨp : π ∣ (E⁄k).ΨSq (p : ℤ) := by
+    rw [show ((p : ℤ)) = ((p : ℕ) : ℤ) from rfl, hΨodd]
+    exact hπf.trans (dvd_pow_self f two_ne_zero)
+  have hπ4Φ : π ∣ 4 * (E⁄k).Φ (p : ℤ) ^ 3 := by
+    have hdiff : H₁ - 4 * (E⁄k).Φ (p : ℤ) ^ 3 =
+        (E⁄k).ΨSq (p : ℤ) *
+          (Polynomial.C (E⁄k).b₂ * (E⁄k).Φ (p : ℤ) ^ 2 +
+            2 * Polynomial.C (E⁄k).b₄ * (E⁄k).Φ (p : ℤ) *
+              (E⁄k).ΨSq (p : ℤ) +
+            Polynomial.C (E⁄k).b₆ * (E⁄k).ΨSq (p : ℤ) ^ 2) := by
+      rw [hH₁def]
+      ring
+    have h2 : π ∣ H₁ - 4 * (E⁄k).Φ (p : ℤ) ^ 3 :=
+      hdiff ▸ hπΨp.mul_right _
+    have h3 := dvd_sub hπH₁ h2
+    rwa [sub_sub_cancel] at h3
+  have h4unit : IsUnit (4 : Polynomial k) := by
+    have h4 : (4 : k) ≠ 0 := by
+      intro h0
+      apply hchar2
+      have h22 : (2 : k) * 2 = 0 := by
+        rw [show (2 : k) * 2 = 4 by norm_num, h0]
+      exact mul_self_eq_zero.mp h22
+    rw [show (4 : Polynomial k) = Polynomial.C (4 : k) from (map_ofNat _ 4).symm]
+    exact Polynomial.isUnit_C.mpr (isUnit_iff_ne_zero.mpr h4)
+  have hπΦ : π ∣ (E⁄k).Φ (p : ℤ) := by
+    have h3 : π ∣ (E⁄k).Φ (p : ℤ) ^ 3 := by
+      rcases hπprime.dvd_mul.mp hπ4Φ with h | h
+      · exact absurd (isUnit_of_dvd_unit h h4unit) hπirr.not_isUnit
+      · exact h
+    exact hπprime.dvd_of_dvd_pow h3
+  exact hπirr.not_isUnit
+    ((WeierstrassCurve.isCoprime_Φ_ΨSq (E⁄k)
+      (by exact_mod_cast hp.ne_zero : ((p : ℤ)) ≠ 0)
+      (WeierstrassCurve.isUnit_Δ _)).isUnit_of_dvd' hπΦ hπΨp)
+
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The prime-level count** (DERIVED 2026-07-17 from the dictionary
