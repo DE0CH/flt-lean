@@ -530,17 +530,132 @@ theorem zsmul_odd_step_x {m : ℤ}
     hprod
 
 set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] [DecidableEq k] in
+/-- **The membership identity** (PROVEN 2026-07-17): on the curve,
+`Ψ₂Sq (x) = (2y + a₁x + a₃)²` — the square of the `ψ₂`-value. This is
+the `linear_combination` input the induction certificates call the
+"membership" of a point; it comes free from the point's `Equation`
+with cofactor `-4`. -/
+theorem eval_Ψ₂Sq_eq_sq {x y : k} (h : (E⁄k).toAffine.Equation x y) :
+    ((E⁄k).Ψ₂Sq).eval x = (2 * y + ((E⁄k).a₁ * x + (E⁄k).a₃)) ^ 2 := by
+  have heq := (Affine.equation_iff x y).mp h
+  rw [WeierstrassCurve.Ψ₂Sq, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆]
+  simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow,
+    Polynomial.eval_C, Polynomial.eval_X]
+  linear_combination (-4 : k) * heq
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxRecDepth 8000 in
+omit [E.IsElliptic] [DecidableEq k] in
+/-- **The two-point trace identity** (PROVEN 2026-07-17): for two curve
+points with `x₁ ≠ x₂` and `x₃`, `t₃` given by the multiplied secant
+`x`- and `ψ₂`-expressions of `Q₁ + Q₂` (the conclusions of
+`add_some_coords`), the `ψ₂`-value `s = 2y₂ + a₁x₂ + a₃` satisfies
+`s(t₃ + s) = (x₂-x₃)(6x₂² + b₂x₂ + b₄) - 2(x₂-x₁)(x₂-x₃)²`.
+This pins the SIGN of the `ψ₂`-tracking of a sum from the `y`-addition
+formula; it is the pure two-point residue of the multiplication
+formula's tracking output (which then follows from the sum-companion
+recurrence `evalEval_ψ_sum` with no window widening). Certificate:
+clear `(x₁-x₂)⁵`, eliminate `t₃` by the `ψ₂`-secant and `x₃` by the
+`x`-secant, then reduce by the two curve equations. -/
+theorem two_point_trace_identity {x₁ y₁ x₂ y₂ x₃ t₃ : k}
+    (h₁ : (E⁄k).toAffine.Equation x₁ y₁)
+    (h₂ : (E⁄k).toAffine.Equation x₂ y₂)
+    (hX₃ : x₃ * (x₁ - x₂) ^ 2 = (y₁ - y₂) ^ 2 +
+      (E⁄k).a₁ * (y₁ - y₂) * (x₁ - x₂) -
+      ((E⁄k).a₂ + x₁ + x₂) * (x₁ - x₂) ^ 2)
+    (hY₃ : t₃ * (x₁ - x₂) =
+      -(2 * (y₁ - y₂)) * (x₃ - x₁) -
+        (2 * y₁ + (E⁄k).a₁ * x₃ + (E⁄k).a₃) * (x₁ - x₂))
+    (hne : x₁ ≠ x₂) :
+    (2 * y₂ + (E⁄k).a₁ * x₂ + (E⁄k).a₃) *
+        (t₃ + (2 * y₂ + (E⁄k).a₁ * x₂ + (E⁄k).a₃)) =
+      (x₂ - x₃) * (6 * x₂ ^ 2 + (E⁄k).b₂ * x₂ + (E⁄k).b₄) -
+        2 * (x₂ - x₁) * (x₂ - x₃) ^ 2 := by
+  have heq₁ := (Affine.equation_iff x₁ y₁).mp h₁
+  have heq₂ := (Affine.equation_iff x₂ y₂).mp h₂
+  have hkey : ((2 * y₂ + (E⁄k).a₁ * x₂ + (E⁄k).a₃) *
+        (t₃ + (2 * y₂ + (E⁄k).a₁ * x₂ + (E⁄k).a₃))) * (x₁ - x₂) ^ 5 =
+      ((x₂ - x₃) * (6 * x₂ ^ 2 + (E⁄k).b₂ * x₂ + (E⁄k).b₄) -
+        2 * (x₂ - x₁) * (x₂ - x₃) ^ 2) * (x₁ - x₂) ^ 5 := by
+    rw [WeierstrassCurve.b₂, WeierstrassCurve.b₄]
+    linear_combination ((2 * y₂ + (E⁄k).a₁ * x₂ + (E⁄k).a₃) *
+        (x₁ - x₂) ^ 4) * hY₃ +
+      (-2*(E⁄k).a₁*x₁^3*y₁ + 4*(E⁄k).a₁*x₁^2*x₂*y₁
+        + 2*(E⁄k).a₁*x₁^2*x₂*y₂ - 2*(E⁄k).a₁*x₁*x₂^2*y₁
+        - 4*(E⁄k).a₁*x₁*x₂^2*y₂ + 2*(E⁄k).a₁*x₂^3*y₂ + 2*(E⁄k).a₂*x₁^4
+        - 4*(E⁄k).a₂*x₁^3*x₂ + 4*(E⁄k).a₂*x₁*x₂^3 - 2*(E⁄k).a₂*x₂^4
+        - 2*(E⁄k).a₃*x₁^2*y₁ + 2*(E⁄k).a₃*x₁^2*y₂ + 4*(E⁄k).a₃*x₁*x₂*y₁
+        - 4*(E⁄k).a₃*x₁*x₂*y₂ - 2*(E⁄k).a₃*x₂^2*y₁ + 2*(E⁄k).a₃*x₂^2*y₂
+        + 2*(E⁄k).a₄*x₁^3 - 6*(E⁄k).a₄*x₁^2*x₂ + 6*(E⁄k).a₄*x₁*x₂^2
+        - 2*(E⁄k).a₄*x₂^3 + 2*x₁^5 - 2*x₁^4*x₂ - 2*x₁^4*x₃ - 6*x₁^3*x₂^2
+        + 8*x₁^3*x₂*x₃ + 10*x₁^2*x₂^3 - 12*x₁^2*x₂^2*x₃ - 2*x₁^2*y₁^2
+        + 2*x₁^2*y₂^2 - 4*x₁*x₂^4 + 8*x₁*x₂^3*x₃ + 4*x₁*x₂*y₁^2
+        - 4*x₁*x₂*y₂^2 - 2*x₂^4*x₃ - 2*x₂^2*y₁^2 + 2*x₂^2*y₂^2) * hX₃ +
+      (-2*(E⁄k).a₁*x₁^3*y₁ + 2*(E⁄k).a₁*x₁^3*y₂ + 6*(E⁄k).a₁*x₁^2*x₂*y₁
+        - 4*(E⁄k).a₁*x₁^2*x₂*y₂ - 6*(E⁄k).a₁*x₁*x₂^2*y₁
+        + 2*(E⁄k).a₁*x₁*x₂^2*y₂ + 2*(E⁄k).a₁*x₂^3*y₁ + 2*(E⁄k).a₂*x₁^4
+        - 8*(E⁄k).a₂*x₁^3*x₂ + 10*(E⁄k).a₂*x₁^2*x₂^2 - 4*(E⁄k).a₂*x₁*x₂^3
+        + 2*(E⁄k).a₃*x₁^2*y₂ - 4*(E⁄k).a₃*x₁*x₂*y₂ + 2*(E⁄k).a₃*x₂^2*y₂
+        - 2*(E⁄k).a₄*x₁^2*x₂ + 4*(E⁄k).a₄*x₁*x₂^2 - 2*(E⁄k).a₄*x₂^3
+        - 2*(E⁄k).a₆*x₁^2 + 4*(E⁄k).a₆*x₁*x₂ - 2*(E⁄k).a₆*x₂^2 + 2*x₁^5
+        - 4*x₁^4*x₂ - 4*x₁^3*x₂^2 + 14*x₁^2*x₂^3 - 2*x₁^2*y₁^2
+        + 4*x₁^2*y₁*y₂ - 10*x₁*x₂^4 + 4*x₁*x₂*y₁^2 - 8*x₁*x₂*y₁*y₂
+        + 2*x₂^5 - 2*x₂^2*y₁^2 + 4*x₂^2*y₁*y₂) * heq₁ +
+      (-2*(E⁄k).a₁*x₁^3*y₂ - 2*(E⁄k).a₁*x₁^2*x₂*y₁
+        + 6*(E⁄k).a₁*x₁^2*x₂*y₂ + 4*(E⁄k).a₁*x₁*x₂^2*y₁
+        - 6*(E⁄k).a₁*x₁*x₂^2*y₂ - 2*(E⁄k).a₁*x₂^3*y₁ + 2*(E⁄k).a₁*x₂^3*y₂
+        + 4*(E⁄k).a₂*x₁^3*x₂ - 10*(E⁄k).a₂*x₁^2*x₂^2 + 8*(E⁄k).a₂*x₁*x₂^3
+        - 2*(E⁄k).a₂*x₂^4 - 2*(E⁄k).a₃*x₁^2*y₁ + 4*(E⁄k).a₃*x₁*x₂*y₁
+        - 2*(E⁄k).a₃*x₂^2*y₁ + 2*(E⁄k).a₄*x₁^3 - 4*(E⁄k).a₄*x₁^2*x₂
+        + 2*(E⁄k).a₄*x₁*x₂^2 + 2*(E⁄k).a₆*x₁^2 - 4*(E⁄k).a₆*x₁*x₂
+        + 2*(E⁄k).a₆*x₂^2 + 6*x₁^3*x₂^2 - 16*x₁^2*x₂^3 - 4*x₁^2*y₁*y₂
+        + 2*x₁^2*y₂^2 + 14*x₁*x₂^4 + 8*x₁*x₂*y₁*y₂ - 4*x₁*x₂*y₂^2 - 4*x₂^5
+        - 4*x₂^2*y₁*y₂ + 2*x₂^2*y₂^2) * heq₂
+  exact mul_right_cancel₀ (pow_ne_zero 5 (sub_ne_zero.mpr hne)) hkey
+
+set_option warn.sorry false in
+omit [E.IsElliptic] [DecidableEq k] in
+/-- (Sorry node — **the sum-companion of the even recurrence**.) On
+the curve,
+`ψₙ₋₁²ψₙ₊₂ + ψₙ₋₂ψₙ₊₁² = ψₙ₋₁ψₙψₙ₊₁(6x² + b₂x + b₄) - ψₙ³ Ψ₂Sq(x)`.
+This is the additive counterpart of `evalEval_ψ_even` (which gives the
+DIFFERENCE `ψₙ₋₁²ψₙψₙ₊₂ - ψₙ₋₂ψₙψₙ₊₁² = ψ₂ₙψ₂`): together they
+resolve `ψₙ₋₁²ψₙ₊₂` and `ψₙ₋₂ψₙ₊₁²` individually. Classically it is
+the trace form of the addition formulas (`x(Q+P) + x(Q-P)`); at the
+polynomial level it should follow by the parity-split
+`preΨ'`-recursion technique of mathlib's `Ψ_even`/`Ψ_odd` (a
+mathlib-PR-shaped statement). It is the final identity input for the
+multiplication-formula induction's tracking output. -/
+theorem evalEval_ψ_sum (n : ℤ) {x y : k}
+    (h : (E⁄k).toAffine.Equation x y) :
+    ((E⁄k).ψ (n - 1)).evalEval x y ^ 2 * ((E⁄k).ψ (n + 2)).evalEval x y +
+      ((E⁄k).ψ (n - 2)).evalEval x y * ((E⁄k).ψ (n + 1)).evalEval x y ^ 2 =
+    ((E⁄k).ψ (n - 1)).evalEval x y * ((E⁄k).ψ n).evalEval x y *
+      ((E⁄k).ψ (n + 1)).evalEval x y *
+      (6 * x ^ 2 + (E⁄k).b₂ * x + (E⁄k).b₄) -
+    ((E⁄k).ψ n).evalEval x y ^ 3 * ((E⁄k).Ψ₂Sq).eval x :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
 set_option maxRecDepth 8000 in
 omit [E.IsElliptic] in
 /-- **The consecutive induction step** (PROVEN 2026-07-17,
 parity-free — supersedes separate odd/even steps): given affine IH
 data at `n-1` (point, `x`-formula, tracking) and `n-2` (point,
-`x`-formula), with `x([n-1]P) ≠ x(P)` and `ψₙ₋₂(x,y) ≠ 0`, the point
-`n•P = [n-1]P + P` is affine and satisfies the `x`-formula. The core
+`x`-formula), with `x([n-1]P) ≠ x(P)`, `ψₙ₋₂(x,y) ≠ 0`,
+`ψₙ₋₁(x,y) ≠ 0` and `ψ₂(x,y) ≠ 0`, the point `n•P = [n-1]P + P` is
+affine and satisfies the `x`-formula AND the `ψ₂`-tracking formula
+(the full IH package for the next step). The `x`-core
 `(x₂ - x₃)dx² = t₁s` is a pure ring identity from the sum/difference
 secants; the conversion is `φ`-difference at `n, n-1, n-2` + the even
-recurrence at `n-1` + the tracking, cancelling `ψₙ₋₂²`. -/
-theorem zsmul_consec_step_x {n : ℤ} {x y x₁ y₁ x₂ y₂ : k}
+recurrence at `n-1` + the tracking, cancelling `ψₙ₋₂²`. The tracking
+output combines `two_point_trace_identity` (which pins the sign from
+the `y`-addition formula), the sum-companion recurrence
+`evalEval_ψ_sum` and the even recurrence at `n`, cancelling
+`ψ₂ψₙ₋₁²`. -/
+theorem zsmul_consec_step {n : ℤ} {x y x₁ y₁ x₂ y₂ : k}
     (h : (E⁄k).toAffine.Nonsingular x y)
     (h₁ : (E⁄k).toAffine.Nonsingular x₁ y₁)
     (h₂ : (E⁄k).toAffine.Nonsingular x₂ y₂)
@@ -556,14 +671,18 @@ theorem zsmul_consec_step_x {n : ℤ} {x y x₁ y₁ x₂ y₂ : k}
       ((E⁄k).ψ (n - 1)).evalEval x y ^ 4 =
       ((E⁄k).ψ (2 * (n - 1))).evalEval x y)
     (hψ₂ : ((E⁄k).ψ (n - 2)).evalEval x y ≠ 0)
+    (hψ₁ : ((E⁄k).ψ (n - 1)).evalEval x y ≠ 0)
+    (hs : ((E⁄k).ψ 2).evalEval x y ≠ 0)
     (hne : x₁ ≠ x) :
     ∃ (x' y' : k) (h' : (E⁄k).toAffine.Nonsingular x' y'),
       n • (Affine.Point.some x y h : (E⁄k).Point) =
         Affine.Point.some x' y' h' ∧
-      x' * ((E⁄k).ψ n).evalEval x y ^ 2 = ((E⁄k).φ n).evalEval x y := by
+      x' * ((E⁄k).ψ n).evalEval x y ^ 2 = ((E⁄k).φ n).evalEval x y ∧
+      (2 * y' + (E⁄k).a₁ * x' + (E⁄k).a₃) * ((E⁄k).ψ n).evalEval x y ^ 4 =
+        ((E⁄k).ψ (2 * n)).evalEval x y := by
   classical
   -- the sum `[n-1]P + P`
-  obtain ⟨x₃, y₃, h₃, hadd, hX₃, -⟩ := add_some_coords E h₁ h hne
+  obtain ⟨x₃, y₃, h₃, hadd, hX₃, hY₃⟩ := add_some_coords E h₁ h hne
   have hsum : n • (Affine.Point.some x y h : (E⁄k).Point) =
       Affine.Point.some x₃ y₃ h₃ := by
     rw [show n = (n - 1) + 1 from by ring, add_smul, one_smul, heq₁, hadd]
@@ -606,7 +725,6 @@ theorem zsmul_consec_step_x {n : ℤ} {x y x₁ y₁ x₂ y₂ : k}
   rw [show n - 1 - 1 = n - 2 from by ring, show n - 1 + 2 = n + 1 from by ring,
     show n - 1 - 2 = n - 3 from by ring, show n - 1 + 1 = n from by ring] at heven
   have hψ₂v := evalEval_ψ_two E x y
-  refine ⟨x₃, y₃, h₃, hsum, ?_⟩
   -- assemble, then cancel `ψₙ₋₂²`
   have h1 : (x₂ - x₃) *
       (((E⁄k).ψ n).evalEval x y * ((E⁄k).ψ (n - 2)).evalEval x y) ^ 2 =
@@ -626,9 +744,47 @@ theorem zsmul_consec_step_x {n : ℤ} {x y x₁ y₁ x₂ y₂ : k}
   have hmain : (x₃ * ((E⁄k).ψ n).evalEval x y ^ 2 - ((E⁄k).φ n).evalEval x y) *
       ((E⁄k).ψ (n - 2)).evalEval x y ^ 2 = 0 := by
     linear_combination -h1 - h2 + ((E⁄k).ψ n).evalEval x y ^ 2 * hx₂
-  rcases mul_eq_zero.mp hmain with h0 | h0
+  have hxf : x₃ * ((E⁄k).ψ n).evalEval x y ^ 2 = ((E⁄k).φ n).evalEval x y := by
+    rcases mul_eq_zero.mp hmain with h0 | h0
+    · exact sub_eq_zero.mp h0
+    · exact absurd (pow_eq_zero_iff two_ne_zero |>.mp h0) hψ₂
+  -- the tracking output `t₃ψₙ⁴ = ψ₂ₙ`: gap-1 at `n`, even recurrence
+  -- at `n`, the sum-companion recurrence, the trace identity; then
+  -- cancel `ψ₂ψₙ₋₁²`
+  have hgapn : (x - x₃) * ((E⁄k).ψ n).evalEval x y ^ 2 =
+      ((E⁄k).ψ (n + 1)).evalEval x y * ((E⁄k).ψ (n - 1)).evalEval x y := by
+    linear_combination -hφn - hxf
+  have hevenn := evalEval_ψ_even E n h.1
+  have hstar := evalEval_ψ_sum E n h.1
+  have hP2 := eval_Ψ₂Sq_eq_sq E h.1
+  have hT4 := two_point_trace_identity E h₁.1 h.1 hX₃ hY₃ hne
+  rw [evalEval_ψ_two] at hs
+  have hfinal : ((2 * y₃ + (E⁄k).a₁ * x₃ + (E⁄k).a₃) *
+        ((E⁄k).ψ n).evalEval x y ^ 4 - ((E⁄k).ψ (2 * n)).evalEval x y) *
+      ((2 * y + (E⁄k).a₁ * x + (E⁄k).a₃) *
+        ((E⁄k).ψ (n - 1)).evalEval x y ^ 2) = 0 := by
+    linear_combination
+      (-(((E⁄k).ψ (n - 1)).evalEval x y ^ 2)) * hevenn +
+      (((E⁄k).ψ (n - 1)).evalEval x y ^ 2 *
+        ((E⁄k).ψ (2 * n)).evalEval x y) * hψ₂v +
+      (-(((E⁄k).ψ n).evalEval x y *
+        ((E⁄k).ψ (n - 1)).evalEval x y ^ 2)) * hstar +
+      (((E⁄k).ψ n).evalEval x y ^ 4 *
+        ((E⁄k).ψ (n - 1)).evalEval x y ^ 2) * hP2 +
+      (((E⁄k).ψ (n - 1)).evalEval x y ^ 2 * ((E⁄k).ψ n).evalEval x y ^ 2 *
+          (6 * x ^ 2 + (E⁄k).b₂ * x + (E⁄k).b₄) -
+        2 * ((E⁄k).ψ n).evalEval x y * ((E⁄k).ψ (n - 2)).evalEval x y *
+          (((E⁄k).ψ (n - 1)).evalEval x y * ((E⁄k).ψ (n + 1)).evalEval x y +
+            (x - x₃) * ((E⁄k).ψ n).evalEval x y ^ 2)) * hgapn +
+      (-(2 * ((E⁄k).ψ n).evalEval x y ^ 4 * (x - x₃) ^ 2)) * hgap +
+      (((E⁄k).ψ n).evalEval x y ^ 4 *
+        ((E⁄k).ψ (n - 1)).evalEval x y ^ 2) * hT4
+  refine ⟨x₃, y₃, h₃, hsum, hxf, ?_⟩
+  rcases mul_eq_zero.mp hfinal with h0 | h0
   · exact sub_eq_zero.mp h0
-  · exact absurd (pow_eq_zero_iff two_ne_zero |>.mp h0) hψ₂
+  · rcases mul_eq_zero.mp h0 with h0' | h0'
+    · exact absurd h0' hs
+    · exact absurd (pow_eq_zero_iff two_ne_zero |>.mp h0') hψ₁
 set_option backward.isDefEq.respectTransparency false in
 omit [E.IsElliptic] [DecidableEq k] in
 /-- **The symmetric addition identity** (PROVEN 2026-07-17): for two
@@ -962,21 +1118,6 @@ theorem yQuad_separable {x₀ : k} (hx₀ : ((E⁄k).Ψ₂Sq).eval x₀ ≠ 0) :
         ring
     _ = 1 := by
         rw [hkey, ← Polynomial.C_mul, hD, Polynomial.C_1]
-
-set_option backward.isDefEq.respectTransparency false in
-omit [E.IsElliptic] [DecidableEq k] in
-/-- **The membership identity** (PROVEN 2026-07-17): on the curve,
-`Ψ₂Sq (x) = (2y + a₁x + a₃)²` — the square of the `ψ₂`-value. This is
-the `linear_combination` input the induction certificates call the
-"membership" of a point; it comes free from the point's `Equation`. -/
-theorem eval_Ψ₂Sq_eq_sq {x y : k} (h : (E⁄k).toAffine.Equation x y) :
-    ((E⁄k).Ψ₂Sq).eval x = (2 * y + ((E⁄k).a₁ * x + (E⁄k).a₃)) ^ 2 := by
-  have hyQ : (yQuad E x).eval y = 0 :=
-    (eval_yQuad_eq_zero_iff_equation E x y).mpr h
-  have hkey := congrArg (Polynomial.eval y) (derivative_yQuad_sq_sub E x)
-  rw [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_pow,
-    Polynomial.eval_C, hyQ, mul_zero, sub_zero, derivative_yQuad_eval] at hkey
-  exact hkey.symm
 
 set_option backward.isDefEq.respectTransparency false in
 omit [E.IsElliptic] in
