@@ -35,22 +35,6 @@ namespace EllipticDivisibilitySequence
 
 variable {R : Type*} [CommRing R] (b c d : R)
 
-set_option warn.sorry false in
-/-- (Sorry node — **the universal sum-companion identity** for the
-canonical normalised EDS.) For `W = normEDS b c d` and any `n : ℤ`,
-`bc(Wₙ₋₁²Wₙ₊₂ + Wₙ₋₂Wₙ₊₁²) = Wₙ₋₁WₙWₙ₊₁(db + b⁵) − Wₙ³b³c`.
-Verified numerically for generic `(b, c, d)` (a universal identity in
-`ℤ[b, c, d]`), hence provable from the defining recursions alone: to
-be proven via the two-parameter elliptic-sequence family `T(p, q)`
-(Stange's theorem for `normEDS`, by double parity descent — the
-descent certificates were verified to exist by Groebner-basis
-computations, `scripts/eds/`). -/
-theorem normEDS_sum_companion (n : ℤ) :
-    b * c * (normEDS b c d (n - 1) ^ 2 * normEDS b c d (n + 2) +
-      normEDS b c d (n - 2) * normEDS b c d (n + 1) ^ 2) =
-    normEDS b c d (n - 1) * normEDS b c d n * normEDS b c d (n + 1) *
-      (d * b + b ^ 5) - normEDS b c d n ^ 3 * b ^ 3 * c :=
-  sorry
 
 set_option warn.sorry false in
 /-- (Sorry node — **Stange's theorem for `normEDS`**: the elliptic-

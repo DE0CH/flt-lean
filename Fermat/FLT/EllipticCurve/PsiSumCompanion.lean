@@ -30,7 +30,8 @@ module
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Basic
 import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
-public import Fermat.FLT.Mathlib.NumberTheory.EllipticDivisibilitySequence
+public import Fermat.FLT.EllipticCurve.UniversalCurve
+public import Fermat.FLT.Mathlib.NumberTheory.EDSStange
 import Mathlib.Algebra.MvPolynomial.CommRing
 
 @[expose] public section
@@ -99,12 +100,7 @@ theorem mk_psi₂_mul_mk_sumDiff (n : ℤ) :
   rw [← map_mul, psi₂_mul_sumDiff]
   simp only [map_mul, AdjoinRoot.mk_self, mul_zero, zero_mul]
 
-/-! ## The universal curve -/
-
-/-- The universal Weierstrass curve, with generic `a`-coefficients. -/
-noncomputable def Wuniv : WeierstrassCurve (MvPolynomial (Fin 5) ℤ) :=
-  ⟨MvPolynomial.X 0, MvPolynomial.X 1, MvPolynomial.X 2,
-    MvPolynomial.X 3, MvPolynomial.X 4⟩
+/-! ## The universal curve (see `UniversalCurve.lean` for `Wuniv`) -/
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Over the universal curve, `mk (ψ₂ ⬝ CΨ₃) ≠ 0`: its coordinates in

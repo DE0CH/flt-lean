@@ -23,8 +23,7 @@ its exact quantitative form, proven here MODULO the Stange node
 module
 
 public import Fermat.FLT.Mathlib.NumberTheory.EllipticDivisibilitySequence
-public import Fermat.FLT.EllipticCurve.PsiSumCompanion
-import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
+public import Fermat.FLT.Mathlib.NumberTheory.EDSStange
 
 @[expose] public section
 
@@ -33,94 +32,6 @@ namespace EllipticDivisibilitySequence
 open Polynomial WeierstrassCurve WeierstrassCurve.Affine PsiSumCompanion
 
 open scoped Polynomial.Bivariate
-
-local macro "C_simp" : tactic =>
-  `(tactic| simp only [map_ofNat, C_0, C_1, C_neg, C_add, C_sub, C_mul, C_pow])
-
-/-- The generic EDS parameter `b`: a variable of `ℤ[b, c, d]`. -/
-noncomputable abbrev genB : MvPolynomial (Fin 3) ℤ := MvPolynomial.X 0
-/-- The generic EDS parameter `c`. -/
-noncomputable abbrev genC : MvPolynomial (Fin 3) ℤ := MvPolynomial.X 1
-/-- The generic EDS parameter `d`. -/
-noncomputable abbrev genD : MvPolynomial (Fin 3) ℤ := MvPolynomial.X 2
-
-set_option backward.isDefEq.respectTransparency false in
-/-- Nonzero integers stay nonzero in `ℤ[A₁, …, A₅]` (by evaluation). -/
-theorem intCast_mvPoly_ne_zero {k : ℤ} (hk : k ≠ 0) :
-    ((k : ℤ) : MvPolynomial (Fin 5) ℤ) ≠ 0 := by
-  intro hc
-  have h := congrArg (MvPolynomial.eval fun _ => (0 : ℤ)) hc
-  rw [map_intCast, map_zero, Int.cast_id] at h
-  exact hk h
-
-set_option backward.isDefEq.respectTransparency false in
-/-- **`mk (Ψ k) ≠ 0` over the universal curve** for `k ≠ 0`: `Ψ k` has
-`{1, Y}`-basis coordinates built from `preΨ k ≠ 0` (degree theory)
-with an extra unit `2` in the even case. -/
-theorem mk_Ψ_univ_ne_zero {k : ℤ} (hk : k ≠ 0) :
-    CoordinateRing.mk Wuniv (Wuniv.Ψ k) ≠ 0 := by
-  have hpre : Wuniv.preΨ k ≠ 0 := fun hc =>
-    Wuniv.coeff_preΨ_ne_zero (intCast_mvPoly_ne_zero hk)
-      (by rw [hc, Polynomial.coeff_zero])
-  rw [WeierstrassCurve.Ψ]
-  by_cases he : Even k
-  · rw [if_pos he]
-    intro hzero
-    have hrepr : Polynomial.C (Wuniv.preΨ k) * Wuniv.ψ₂ =
-        Polynomial.C (Wuniv.preΨ k * (Polynomial.C Wuniv.a₁ *
-            Polynomial.X + Polynomial.C Wuniv.a₃)) +
-          Polynomial.C (2 * Wuniv.preΨ k) * Polynomial.X := by
-      rw [WeierstrassCurve.ψ₂, Affine.polynomialY]
-      C_simp
-      ring1
-    rw [hrepr] at hzero
-    have hsmul : (Wuniv.preΨ k * (Polynomial.C Wuniv.a₁ * Polynomial.X +
-        Polynomial.C Wuniv.a₃)) •
-          (1 : Wuniv.toAffine.CoordinateRing) +
-        (2 * Wuniv.preΨ k) • CoordinateRing.mk Wuniv Polynomial.X = 0 := by
-      rw [CoordinateRing.smul, CoordinateRing.smul, mul_one, ← map_mul,
-        ← map_add]
-      exact hzero
-    have h2 := (CoordinateRing.smul_basis_eq_zero hsmul).2
-    rcases mul_eq_zero.mp h2 with hc | hc
-    · have h := congrArg (fun p => Polynomial.coeff p 0) hc
-      simp only [Polynomial.coeff_ofNat_zero, Polynomial.coeff_zero] at h
-      have h' := congrArg (MvPolynomial.eval fun _ => (0 : ℤ)) h
-      norm_num [map_ofNat] at h'
-    · exact hpre hc
-  · rw [if_neg he, mul_one]
-    intro hzero
-    have hsmul : (Wuniv.preΨ k) •
-        (1 : Wuniv.toAffine.CoordinateRing) +
-        (0 : (MvPolynomial (Fin 5) ℤ)[X]) •
-          CoordinateRing.mk Wuniv Polynomial.X = 0 := by
-      simp only [CoordinateRing.smul, mul_one, map_zero, zero_mul,
-        add_zero]
-      exact hzero
-    exact hpre (CoordinateRing.smul_basis_eq_zero hsmul).1
-
-set_option backward.isDefEq.respectTransparency false in
-/-- **Generic nonvanishing of `normEDS`**: over `ℤ[b, c, d]`,
-`normEDS b c d k ≠ 0` for `k ≠ 0` — witnessed by the universal curve,
-whose division polynomial `mk (ψ k) = mk (Ψ k)` is nonzero in the
-coordinate ring. -/
-theorem normEDS_generic_ne_zero {k : ℤ} (hk : k ≠ 0) :
-    normEDS genB genC genD k ≠ 0 := by
-  intro hzero
-  have himg := congrArg (MvPolynomial.eval₂Hom
-    (Int.castRingHom Wuniv.toAffine.CoordinateRing)
-    ![CoordinateRing.mk Wuniv Wuniv.ψ₂,
-      CoordinateRing.mk Wuniv (Polynomial.C Wuniv.Ψ₃),
-      CoordinateRing.mk Wuniv (Polynomial.C Wuniv.preΨ₄)]) hzero
-  rw [map_zero, map_normEDS] at himg
-  simp only [genB, genC, genD, MvPolynomial.eval₂Hom_X',
-    Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-    Matrix.tail_cons, Matrix.head_cons] at himg
-  rw [← map_normEDS (CoordinateRing.mk Wuniv),
-    show normEDS Wuniv.ψ₂ (Polynomial.C Wuniv.Ψ₃)
-      (Polynomial.C Wuniv.preΨ₄) k = Wuniv.ψ k from rfl,
-    Affine.CoordinateRing.mk_ψ] at himg
-  exact mk_Ψ_univ_ne_zero hk himg
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The divisibility identity for generic coefficients**: over
