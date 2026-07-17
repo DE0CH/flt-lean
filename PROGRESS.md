@@ -2302,3 +2302,21 @@ assumed. Axiom invariant: every declaration must use at most
   (tₙ at the new index — the last open certificate), the collision
   and `s = 0` branches (staged), the base cases (proven), and the
   strong-induction wiring.
+- 2026-07-17 (session 5, tracking-output design): the per-step
+  tracking `tₙψₙ⁴ = ψ₂ₙ` reduces to the ψ-window identity (★s):
+  `ψₙ₋₁²ψₙ₊₂ + ψₙ₋₂ψₙ₊₁² = ψₙ₋₁ψₙψₙ₊₁(6x²+b₂x+b₄) − ψₙ³Ψ₂Sq(x)` on
+  the curve — the SUM-companion of the even recurrence (numerically
+  V = 0; it was exactly the residue of the tracking-output reduction).
+  At the point level it is the symmetric addition identity
+  `sum_diff_X_identity` (NOW PROVEN, cofactors −2/−2) composed with
+  φ-difference eliminations — but the φ-eliminations return (★s)
+  circularly, so (★s) needs a POLYNOMIAL-level proof by the mathlib
+  `Ψ_even`/`Ψ_odd` technique (parity split on `n`, `preΨ'`
+  recursions, `C_simp; ring1`) — same family, mathlib-PR-shaped.
+  PLAN: state `evalEval_ψ_sum` (★s) as a sharp sorry node (replacing
+  the remaining interior of `zsmul_some_aux` together with the
+  staged pieces), derive the tracking output from it +
+  `sum_diff_X_identity` + the universal identity, then wire the
+  skeleton. The Thm 3.6 node then rests on: (★s) + the fibre node +
+  `separable_preΨ'` + `resultant_Φ_ΨSq` — all pure
+  division-polynomial statements.
