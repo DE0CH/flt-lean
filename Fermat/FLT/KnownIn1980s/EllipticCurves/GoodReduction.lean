@@ -363,6 +363,85 @@ theorem ValuationSubring.residue_ne_of_roots_ne
   exact Polynomial.not_isUnit_X_sub_C _ (hsq _ hdvd)
 
 set_option backward.isDefEq.respectTransparency false in
+/-- **Inertia fixes the roots of unity of order prime to the residue
+characteristic** (PROVEN — step (b) of the Tate-multiplicative
+derivation): if `p` is nonzero in the residue field of the valuation
+subring `A`, every element of the inertia subgroup fixes every `p`-th
+root of unity. The root is `A`-integral (its valuation is `1`), the
+polynomial `X^p − 1` reduces separably
+(`Polynomial.X_pow_sub_one_separable_iff`), inertia fixes residues, and
+distinct roots would have distinct residues
+(`residue_ne_of_roots_ne`). -/
+theorem ValuationSubring.inertia_fixes_of_pow_eq_one
+    {k₀ K : Type*} [Field k₀] [Field K] [Algebra k₀ K]
+    (A : ValuationSubring K) {p : ℕ} (hp : p ≠ 0)
+    (hchar : ((p : ℕ) : IsLocalRing.ResidueField A) ≠ 0)
+    (σ : A.decompositionSubgroup k₀) (hσ : σ ∈ A.inertiaSubgroup k₀)
+    {ζ : K} (hζ : ζ ^ p = 1) :
+    (σ : K ≃ₐ[k₀] K) ζ = ζ := by
+  classical
+  -- membership of the roots in `A`
+  have hmemA : ∀ {w : K}, w ^ p = 1 → w ∈ A := by
+    intro w hw
+    rw [← A.valuation_le_one_iff]
+    by_contra hgt
+    rw [not_le] at hgt
+    have h1 : (1 : A.ValueGroup) < A.valuation w ^ p :=
+      one_lt_pow₀ hgt hp
+    rw [← map_pow, hw, map_one] at h1
+    exact absurd h1 (lt_irrefl _)
+  have hζA : ζ ∈ A := hmemA hζ
+  have hσζpow : ((σ : K ≃ₐ[k₀] K) ζ) ^ p = 1 := by
+    rw [← map_pow, hζ, map_one]
+  have hσζA : (σ : K ≃ₐ[k₀] K) ζ ∈ A := hmemA hσζpow
+  -- inertia fixes residues
+  have hres : ∀ z : A, IsLocalRing.residue A (σ • z) =
+      IsLocalRing.residue A z := by
+    intro z
+    rw [IsLocalRing.ResidueField.residue_smul]
+    have h1 := MonoidHom.mem_ker.mp hσ
+    calc (σ : A.decompositionSubgroup k₀) • IsLocalRing.residue A z
+        = (MulSemiringAction.toRingAut (A.decompositionSubgroup k₀)
+            (IsLocalRing.ResidueField A) σ)
+            (IsLocalRing.residue A z) := rfl
+      _ = IsLocalRing.residue A z := by rw [h1]; rfl
+  have hcoe : ((σ • (⟨ζ, hζA⟩ : A) : A) : K) =
+      (σ : K ≃ₐ[k₀] K) ζ := rfl
+  -- the two roots of `X^p − 1` in `A`
+  by_contra hne
+  have hr₁ : (Polynomial.X ^ p - 1 : Polynomial A).eval
+      (⟨(σ : K ≃ₐ[k₀] K) ζ, hσζA⟩ : A) = 0 := by
+    rw [Polynomial.eval_sub, Polynomial.eval_pow, Polynomial.eval_X,
+      Polynomial.eval_one]
+    apply Subtype.ext
+    show ((σ : K ≃ₐ[k₀] K) ζ) ^ p - 1 = (0 : K)
+    rw [hσζpow, sub_self]
+  have hr₂ : (Polynomial.X ^ p - 1 : Polynomial A).eval
+      (⟨ζ, hζA⟩ : A) = 0 := by
+    rw [Polynomial.eval_sub, Polynomial.eval_pow, Polynomial.eval_X,
+      Polynomial.eval_one]
+    apply Subtype.ext
+    show ζ ^ p - 1 = (0 : K)
+    rw [hζ, sub_self]
+  have hsep : ((Polynomial.X ^ p - 1 : Polynomial A).map
+      (IsLocalRing.residue A)).Separable := by
+    have hmap : (Polynomial.X ^ p - 1 : Polynomial A).map
+        (IsLocalRing.residue A) =
+        Polynomial.X ^ p - 1 := by
+      rw [Polynomial.map_sub, Polynomial.map_pow, Polynomial.map_X,
+        Polynomial.map_one]
+    rw [hmap]
+    exact Polynomial.X_pow_sub_one_separable_iff.mpr hchar
+  have hnesub : (⟨(σ : K ≃ₐ[k₀] K) ζ, hσζA⟩ : A) ≠ ⟨ζ, hζA⟩ :=
+    fun hc => hne (congrArg Subtype.val hc)
+  have hresne := A.residue_ne_of_roots_ne _ hr₁ hr₂ hnesub hsep
+  apply hresne
+  have h9 : (⟨(σ : K ≃ₐ[k₀] K) ζ, hσζA⟩ : A) = σ • (⟨ζ, hζA⟩ : A) :=
+    Subtype.ext hcoe.symm
+  rw [h9]
+  exact hres _
+
+set_option backward.isDefEq.respectTransparency false in
 omit [IsDomain R] [IsDiscreteValuationRing R] [IsFractionRing R k]
   [IsSepClosure k ksep] [DecidableEq ksep] in
 /-- The structural homomorphism `R → 𝒪` induced by `h𝒪`. -/
