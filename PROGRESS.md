@@ -177,10 +177,36 @@ the START and END of each block of work.
           - ✓· `FreyCurve.torsion_det` — det ρ̄ = mod-p cyclotomic
             character — now DERIVED (2026-07-16) via the Weil pairing
             route (`EllipticCurve/WeilPairing.lean`, own work):
-            - ✗· `WeilPairing.exists_weilPairing` — **the Weil pairing**:
-              an alternating, nondegenerate, `ZMod p`-bilinear pairing on
-              `E[p]` scaled by the Galois action through the cyclotomic
-              character (`E[p] ∧ E[p] ≅ μ_p`).
+            - ✓· `WeilPairing.exists_weilPairing` — **the Weil pairing**:
+              DERIVED (2026-07-17) as the coordinate determinant form in
+              a `finBasis` (`#E[p] = p²` ⟹ rank 2), Galois-scaled by
+              `det ρ` (`pairing_map_eq_det_smul`) = the cyclotomic
+              character by the det node below.
+              - ✓· `det_galoisRep_eq_cyclotomic` — DERIVED (2026-07-17):
+                `det ρ̄` and `χ̄` are continuous conjugation-invariant
+                `ZMod p`-valued functions on `Γ ℚ` (continuity of
+                `det ∘ ρ` from discreteness of `End` via
+                `discreteTopology_moduleTopology`; `χ̄`-continuity
+                PROVEN in `Chebotarev.lean`); they agree at `Frob_q`
+                for almost all `q` (the leaf below +
+                `cyclotomicCharacterModL_globalFrob`, PROVEN), and the
+                Frobenius conjugacy classes are dense
+                (`dense_conjClasses_globalFrob`, rooted in the
+                Chebotarev node), so the closed agreement set is
+                everything. Bridge `cyclotomicCharacterModL_eq_toZMod`
+                (`χ̄ = toZMod ∘ χ`) PROVEN via
+                `modularCyclotomicCharacter.unique` +
+                `toZMod_eq_ringEquivCongr_comp_toZModPow`.
+                - ✗· `det_galoisRep_globalFrob`
+                  (`EllipticCurve/WeilPairing.lean`, stated 2026-07-17):
+                  **Frobenius determinant at good primes** — away from a
+                  finite set of places, `det ρ̄(Frob_q) = q mod p` (the
+                  point-counting/Weil computation over the reduced
+                  curve; route: NOS reduction injectivity +
+                  Frobenius-isogeny degree).
+                - (the other root of this derivation is the Chebotarev
+                  node `exists_frobenius_conj_mem_coset`, listed under
+                  the Chebotarev–Brauer–Nesbitt cone.)
             - ✓· `WeilPairing.pairing_map_eq_det_smul` +
               `WeilPairing.det_eq_of_conj` — PROVEN (sorry-free): on a
               2-dimensional space an alternating form transforms under
