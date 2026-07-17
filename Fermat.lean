@@ -20,6 +20,7 @@ import Fermat.FLT.KnownIn1980s.PGL2.Defs
 import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 import Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal
 import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
+import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 import Fermat.SorryGate
 
 /-!
