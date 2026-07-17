@@ -2582,6 +2582,25 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6, TORSION TOWER AXIOM-CLEAN `498a075`):
+  psi34 verified in the exponent-ascribed X-collected form — the
+  winning trick: print EVERY power as `a ^ (k : ℕ)`; the shared
+  HPow-exponent metavariable across hundreds of `^`-occurrences was
+  the recursion driver (not term size). Full cone builds (3568 jobs).
+  AXIOM AUDIT: `isCoprime_Φ_ΨSq_field`, `separable_preΨ'`,
+  `card_torsionBy` (#E[n] = n²) — ALL depend only on
+  propext/Classical.choice/Quot.sound. The complete
+  division-polynomial tower (universal EDS certificates, Washington
+  induction, tautological-point composition (C), invariant-derivation
+  Wronskian (W), separability endgame, EDS-rank coprimality) is
+  FULLY PROVEN, zero sorries. Remaining 16 nodes are all OUTSIDE
+  this tower: Flat:163 (finite-flat construction),
+  WeilPairing-det-node (route: Frobenius-det + Chebotarev),
+  Chebotarev, HardlyRamified×5, MazurTorsion×2, Semistable×2,
+  GoodReduction, TateCurve×2. Elaboration playbook for future giant
+  certificates: X-collect, ascribe exponent types, set-stage big
+  subterms, inline linear_combination cofactors, never trust a
+  background compile before its process exits.
 - 2026-07-17 (session 6, psi34 ELABORATION SAGA — corrective record):
   the cb7f744 'psi34 verified' claim was PREMATURE (a mid-compile
   output read — lesson: never read a background compile's output file
