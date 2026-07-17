@@ -1796,4 +1796,11 @@ assumed. Axiom invariant: every declaration must use at most
   reconcile the two spellings when building the comparison); the
   transport should be stated for `ρ : GaloisRep ℚ A M` with a
   leaf-shaped equivariant iso onto `M`-with-the-`ρ`-action, then
-  specialized to the elliptic case.
+  specialized to the elliptic case. FOUND: the bare-hom `Monoid`
+  instance behind `HasFlatProlongationAt`'s `Additive (… →ₐ …)` is
+  the VENDORED convolution instance in
+  `Deformations/RepresentationTheory/Etale.lean:30`
+  (`Monoid (A →ₐ[K] L)` for `Bialgebra K A`); the leaf's
+  `WithConv`-wrapped structure is mathlib's — the reconciling
+  `MulEquiv` should be identity-underlying (`WithConv` is a
+  def-wrapper).
