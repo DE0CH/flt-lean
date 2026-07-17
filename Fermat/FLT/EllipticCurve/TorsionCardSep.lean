@@ -45,28 +45,41 @@ theorem exists_large_fibre {p : ℕ} (hp : p.Prime) (hodd : Odd p)
       S.card = p ^ 2 ∧ ∀ P ∈ S, (p : ℤ) • P = R :=
   sorry
 
-set_option warn.sorry false in
-/-- **Torsion lower bound from a large fibre** (sorry node): fibres of
-the group homomorphism `[p]` are cosets of the kernel, so a fibre with
-`p²` elements forces `p² ≤ #E[p]`. (The map `P ↦ P − P₀` for a fixed
-`P₀` in the fibre injects the fibre into the kernel.) -/
-theorem card_torsion_ge_of_fibre {p : ℕ}
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] in
+/-- **Torsion lower bound from a large fibre** (PROVEN): fibres of the
+group homomorphism `[p]` are cosets of the kernel — the shift
+`P ↦ P − P₀` carries a fibre of size `p²` into the `p`-torsion. -/
+theorem torsion_finset_of_fibre {p : ℕ}
     (h : ∃ (R : (E⁄k).Point) (S : Finset (E⁄k).Point),
       S.card = p ^ 2 ∧ ∀ P ∈ S, (p : ℤ) • P = R) :
-    p ^ 2 ≤ Nat.card (Submodule.torsionBy ℤ (E⁄k).Point (p : ℤ)) :=
-  sorry
+    ∃ T : Finset (E⁄k).Point, T.card = p ^ 2 ∧
+      ∀ P ∈ T, (p : ℤ) • P = 0 := by
+  obtain ⟨R, S, hcard, hall⟩ := h
+  rcases Nat.eq_zero_or_pos p with rfl | hp
+  · exact ⟨S, hcard, fun P _ => by simp⟩
+  have hne : S.Nonempty := by
+    rw [← Finset.card_pos, hcard]
+    positivity
+  obtain ⟨P₀, hP₀⟩ := hne
+  refine ⟨S.image (fun P => P - P₀), ?_, ?_⟩
+  · rw [Finset.card_image_of_injective _ (sub_left_injective)]
+    exact hcard
+  · intro Q hQ
+    obtain ⟨P, hP, rfl⟩ := Finset.mem_image.mp hQ
+    rw [smul_sub, hall P hP, hall P₀ hP₀, sub_self]
 
 set_option warn.sorry false in
 /-- **Separability from the torsion count, backwards** (sorry node):
-if `p² ≤ #E[p]`, the `p² − 1` nonzero `p`-torsion points map to roots
-of `preΨ' p` (the dictionary) with fibres of size at most `2` (the
-`y`-quadratic), so `preΨ' p` has at least `(p²−1)/2 = natDegree`
-distinct roots; a polynomial with `natDegree`-many distinct roots over
-a perfect field is separable. -/
-theorem separable_of_card_torsion {p : ℕ} (hp : p.Prime) (hodd : Odd p)
-    (hpk : (p : k) ≠ 0)
-    (hcard : p ^ 2 ≤ Nat.card
-      (Submodule.torsionBy ℤ (E⁄k).Point (p : ℤ))) :
+a `p`-torsion finset of size `p²` has `p² − 1` nonzero points, which
+map to roots of `preΨ' p` (the dictionary) with fibres of size at
+most `2` (the `y`-quadratic), so `preΨ' p` has at least
+`(p²−1)/2 = natDegree` distinct roots; a polynomial with
+`natDegree`-many distinct roots over a perfect field is separable. -/
+theorem separable_of_torsion_finset {p : ℕ} (hp : p.Prime)
+    (hodd : Odd p) (hpk : (p : k) ≠ 0)
+    (hT : ∃ T : Finset (E⁄k).Point, T.card = p ^ 2 ∧
+      ∀ P ∈ T, (p : ℤ) • P = 0) :
     ((E⁄k).preΨ' p).Separable :=
   sorry
 
@@ -80,8 +93,8 @@ theorem separable_preΨ'_char_two_closed {K : Type u} [Field K]
     [DecidableEq K] {p : ℕ} (hp : p.Prime) (hodd : Odd p)
     (hpk : (p : K) ≠ 0) (_ : (2 : K) = 0) :
     ((E'⁄K).preΨ' p).Separable :=
-  separable_of_card_torsion E' hp hodd hpk
-    (card_torsion_ge_of_fibre E' (exists_large_fibre E' hp hodd hpk))
+  separable_of_torsion_finset E' hp hodd hpk
+    (torsion_finset_of_fibre E' (exists_large_fibre E' hp hodd hpk))
 
 set_option backward.isDefEq.respectTransparency false in
 omit [DecidableEq k] in
