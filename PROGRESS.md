@@ -2427,3 +2427,20 @@ assumed. Axiom invariant: every declaration must use at most
   `resultant_Φ_ΨSq` + `exists_point_x_smul` + `smul_surjective`.
   T-descent Groebner experiments still running (plain 9-generator and
   cross-generator variants).
+- 2026-07-17 (session 5 cont., (★s′) CLOSED `837d2c7`): the literature
+  hunt paid off — van der Poorten–Swart ("every Somos 4 is a Somos k",
+  arXiv math/0412293) is the certificate-light proof: their Prop 1(4)
+  IS the `T(·,2)` family and Prop 1(5) IS (★s′), with the footnote
+  telescope deriving (5) from (4). Executed in Lean, all sorry-free:
+  ES2-only parity-descent certificates (found by multivariate division
+  after the key discovery that ES2 SELF-descends), generic-domain
+  cancellations powered by `normEDS_generic_ne_zero` (witnessed by the
+  universal curve через mk_Ψ ≠ 0), telescope + antisymmetry induction.
+  AXIOM-CLEAN: `normEDS_quadratic`, `normEDS_sum_companion`,
+  `evalEval_ψ_sum`, `zsmul_consec_step`. Remaining EDS frontier:
+  `normEDS_ellSequence` (general T(p,q) — Stange/Ward; plan: vdP–Swart
+  Thm 3 double-family induction (T and the s=1 net family N) from
+  Prop 1(4)+(5) both now PROVEN, per-step certificates with generic
+  cancellation) + the degenerate tracking certificates C1/C2 (crux
+  ideal-membership verified; c₃-cancellation via the same generic
+  route or the d=3 pattern).
