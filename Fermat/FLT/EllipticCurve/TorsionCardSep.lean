@@ -31,15 +31,56 @@ variable {k : Type u} [Field k] (E : WeierstrassCurve k) [E.IsElliptic]
   [DecidableEq k]
 
 set_option warn.sorry false in
-/-- **Separability in characteristic two** (sorry node): the remaining
-case of `separable_preΨ'`. Here `ΨSq′ₚ = 2 preΨ′ₚ (preΨ′ₚ)′ = 0`, so
-the Wronskian route needs the `[3]`-composition (with `Ψ₃ʰᵒᵐ ≡ 3Φ⁴`
-and `3 ≠ 0` in characteristic two) in place of the `[2]`-composition,
-plus the `a₁ ≠ 0` (`b₂`-term) subcase of the `H₁`-analysis. -/
+/-- **Separability in characteristic two over an algebraically closed
+field** (sorry node): the core case of `separable_preΨ'_char_two`
+after the base-change reduction. Over a perfect field the Frobenius
+decomposition `f = u² + X ⬝ v²`, `f′ = v²` is available, so a common
+factor of `f, f′` is a common factor of `u, v`. Candidate routes: the
+Gunji char-2 discriminant formula for `ψₚ`, or the universal
+discriminant specialization (the generic-fiber separability over
+`ℚ(A₁,…,A₅)` is now a THEOREM — `separable_preΨ'` at the generic
+curve — so `disc(preΨ'ₚ) ≠ 0` in `ℤ[A]`; what is missing is the
+`±pˢΔᵗ`-structure of the discriminant). -/
+theorem separable_preΨ'_char_two_closed {K : Type u} [Field K]
+    [IsAlgClosed K] (E' : WeierstrassCurve K) [E'.IsElliptic]
+    [DecidableEq K] {p : ℕ} (hp : p.Prime) (hodd : Odd p)
+    (hpk : (p : K) ≠ 0) (hchar2 : (2 : K) = 0) :
+    ((E'⁄K).preΨ' p).Separable :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Separability in characteristic two** (DECOMPOSED 2026-07-17):
+reduced to the algebraically closed case by the separability
+transfer along the base change to `AlgebraicClosure k`. -/
 theorem separable_preΨ'_char_two {p : ℕ} (hp : p.Prime) (hodd : Odd p)
     (hpk : (p : k) ≠ 0) (hchar2 : (2 : k) = 0) :
-    ((E⁄k).preΨ' p).Separable :=
-  sorry
+    ((E⁄k).preΨ' p).Separable := by
+  classical
+  set K := AlgebraicClosure k
+  set φ : k →+* K := algebraMap k K with hφ
+  haveI : (E.map φ).IsElliptic :=
+    inferInstanceAs ((E.map φ).IsElliptic)
+  have hpK : (p : K) ≠ 0 := by
+    intro h0
+    apply hpk
+    have : φ ((p : k)) = (p : K) := map_natCast φ p
+    exact (map_eq_zero φ).mp (this.trans h0 : φ ((p : k)) = 0)
+  have hchar2K : (2 : K) = 0 := by
+    have : φ ((2 : k)) = (2 : K) := map_ofNat φ 2
+    rw [← this, hchar2, map_zero]
+  have hclosed := separable_preΨ'_char_two_closed (E.map φ) hp hodd
+    hpK hchar2K
+  have hcurve : (E⁄k).map φ = ((E.map φ)⁄K) := by
+    show (E.map (algebraMap k k)).map φ = (E.map φ).map (algebraMap K K)
+    rw [WeierstrassCurve.map_map, WeierstrassCurve.map_map]
+    congr 1
+  have hpoly : ((E⁄k).preΨ' p).map φ = ((E.map φ)⁄K).preΨ' p :=
+    (WeierstrassCurve.map_preΨ' (W := (E⁄k)) (f := φ) p).symm.trans
+      (congrArg (fun W => WeierstrassCurve.preΨ' W p) hcurve)
+  rw [← Polynomial.separable_map φ, hpoly]
+  exact hclosed
+
+
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
