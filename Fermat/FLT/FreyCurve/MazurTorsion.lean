@@ -61,6 +61,9 @@ public import Fermat.FLT.GaloisRepresentation.Chebotarev
 -- `det_galoisRep_eq_cyclotomic` (the DERIVED determinant node), the
 -- `χ₁χ₂ = ω̄` input of the dichotomy derivation.
 public import Fermat.FLT.EllipticCurve.WeilPairing
+-- `FreyCurve.torsion_isUnramified` (unramifiedness outside `{2, p}`),
+-- consumed by the derivation of the semistability leaf.
+public import Fermat.FLT.GaloisRepresentation.HardlyRamified.FreyConditions
 -- `localInertiaGroup` and the restriction `Γ ℚ_q → Γ ℚ`, used to state
 -- the Minkowski node.
 public import Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup
@@ -927,22 +930,163 @@ lemma isOpen_setOf_galoisRep_eq_one {ℓ : ℕ} [Fact ℓ.Prime]
     ρbar.continuous_toFun
   exact (isOpen_discrete ({1} : Set (Module.End (ZMod ℓ) V))).preimage hcont
 
+set_option backward.isDefEq.respectTransparency false in
+/-- **Unipotent scalars are trivial** (PROVEN): if `(f − 1)² = 0` and
+`f` acts on a nonzero vector by the scalar `c`, then `c = 1` — the
+eigenvalues of a unipotent endomorphism are `1`. -/
+lemma subCharacter_eq_one_of_sq_eq_zero {ℓ : ℕ} [Fact ℓ.Prime]
+    {V : Type*} [AddCommGroup V] [Module (ZMod ℓ) V]
+    (f : Module.End (ZMod ℓ) V) (hf : (f - 1) ^ 2 = 0)
+    {c : ZMod ℓ} {w : V} (hw : w ≠ 0) (hcw : f w = c • w) : c = 1 := by
+  have h1 : (f - 1) w = (c - 1) • w := by
+    rw [LinearMap.sub_apply, Module.End.one_apply, hcw, sub_smul, one_smul]
+  have h2 : ((f - 1) ^ 2 : Module.End (ZMod ℓ) V) w =
+      ((c - 1) ^ 2 : ZMod ℓ) • w := by
+    rw [pow_two, Module.End.mul_apply, h1, map_smul, h1, smul_smul,
+      ← pow_two]
+  rw [hf] at h2
+  have h3 : ((c - 1) ^ 2 : ZMod ℓ) • w = 0 := by
+    rw [← h2]
+    rfl
+  rcases smul_eq_zero.mp h3 with h4 | h4
+  · have h5 : (c - 1 : ZMod ℓ) = 0 := pow_eq_zero_iff two_ne_zero |>.mp h4
+    have h6 := sub_eq_zero.mp h5
+    exact h6
+  · exact absurd h4 hw
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Unipotent quotient scalars are trivial** (PROVEN): if
+`(f − 1)² = 0` and `f` descends to the scalar `c` on the (nontrivial)
+quotient by a stable submodule, then `c = 1`. -/
+lemma quotCharacter_eq_one_of_sq_eq_zero {ℓ : ℕ} [Fact ℓ.Prime]
+    {V : Type*} [AddCommGroup V] [Module (ZMod ℓ) V]
+    (f : Module.End (ZMod ℓ) V) (hf : (f - 1) ^ 2 = 0)
+    (W : Submodule (ZMod ℓ) V) (hWtop : W ≠ ⊤) {c : ZMod ℓ}
+    (hc : ∀ v, W.mkQ (f v) = c • W.mkQ v) : c = 1 := by
+  haveI : Nontrivial (V ⧸ W) := Submodule.Quotient.nontrivial_iff.mpr hWtop
+  obtain ⟨z, hz⟩ := exists_ne (0 : V ⧸ W)
+  obtain ⟨v, rfl⟩ := W.mkQ_surjective z
+  have h1 : ∀ u, W.mkQ ((f - 1) u) = (c - 1 : ZMod ℓ) • W.mkQ u := by
+    intro u
+    rw [LinearMap.sub_apply, Module.End.one_apply, map_sub, hc, sub_smul,
+      one_smul]
+  have h2 : W.mkQ (((f - 1) ^ 2 : Module.End (ZMod ℓ) V) v) =
+      ((c - 1) ^ 2 : ZMod ℓ) • W.mkQ v := by
+    rw [pow_two, Module.End.mul_apply, h1 ((f - 1) v), h1 v, smul_smul,
+      ← pow_two]
+  rw [hf] at h2
+  have h3 : ((c - 1) ^ 2 : ZMod ℓ) • W.mkQ v = 0 := by
+    rw [← h2]
+    show W.mkQ ((0 : Module.End (ZMod ℓ) V) v) = 0
+    rw [LinearMap.zero_apply, map_zero]
+  rcases smul_eq_zero.mp h3 with h4 | h4
+  · exact sub_eq_zero.mp (pow_eq_zero_iff two_ne_zero |>.mp h4)
+  · exact absurd h4 hz
+
 end CharacterBookkeeping
 
+section GenericBridge
+
+variable {K : Type*} [Field K] [NumberField K]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Characters through an unramified representation are unramified**
+(PROVEN, stated over a GENERIC number field so that the `algebraMap`
+spelling agrees definitionally with the one inside `GaloisRep.toLocal`
+— at `K = ℚ` a locally-elaborated `algebraMap` picks `Rat`-specific
+instance paths that instance- and even default-transparency
+unification cannot reconcile with the generic ones, because
+`Field.absoluteGaloisGroup.map` is not exposed; callers at `ℚ` bridge
+the two spellings with `Rat.subsingleton_ringHom` + `convert`): if the
+representation kills the local inertia at `v` and `χ` is trivial
+wherever the representation is, then the restriction of `χ` to the
+local Galois group kills inertia. -/
+lemma character_localInertia_le_ker_of_isUnramifiedAt {ℓ : ℕ}
+    [Fact ℓ.Prime] {V : Type*} [AddCommGroup V] [Module (ZMod ℓ) V]
+    (ρbar : GaloisRep K (ZMod ℓ) V)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hUn : ρbar.IsUnramifiedAt v)
+    (χ : Field.absoluteGaloisGroup K →* (ZMod ℓ)ˣ)
+    (htriv : ∀ g, ρbar g = 1 → χ g = 1) :
+    localInertiaGroup v ≤ (χ.comp (Field.absoluteGaloisGroup.map
+      (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+        K v))).toMonoidHom).ker := by
+  intro σ hσ
+  rw [MonoidHom.mem_ker, MonoidHom.comp_apply]
+  apply htriv
+  have h1 : (ρbar.toLocal v) σ = 1 := hUn.localInertiaGroup_le hσ
+  exact h1
+
+end GenericBridge
+
 set_option warn.sorry false in
-/-- **The semistability-unramifiedness leaf** (sorry node — the
-arithmetic core of Serre's §4.1 analysis, now isolated from the
-character/descent bookkeeping, which is PROVEN): given a stable line in
-the mod-`p` torsion of the Frey curve with its sub- and
-quotient-characters `χ₁`, `χ₂` (multiplying to the mod-`p` cyclotomic
-character), ONE of the two characters is unramified at EVERY finite
-place. Content: at good primes `q ∉ {2, p}` the whole representation is
-unramified (the PROVEN Néron–Ogg–Shafarevich node); at multiplicative
-primes `q ≠ p` the inertia action is unipotent (Tate curve), so both
-diagonal characters are unramified there; at `p` the flat/ordinary
-analysis (the connected-étale sequence of the finite flat prolongation)
-makes one of the two characters unramified; at `2` the Frey package's
-Tate-curve description applies likewise. -/
+/-- **Unipotence of inertia at `2`** (sorry node — Tate-curve content):
+the Frey curve has multiplicative reduction at `2` (its minimal model —
+after the standard variable change — has a `2`-adic unit `c₄` and
+positive-valuation discriminant), so by Tate's uniformization the
+inertia at `2` acts on the `p`-torsion through the unipotent
+translations of the Tate parameter: `(ρ(σ) − 1)² = 0` for every `σ` in
+the local inertia group at `2`. -/
+theorem FreyPackage.inertia_two_unipotent (P : FreyPackage) :
+    haveI : Fact P.p.Prime := ⟨P.pp⟩
+    ∀ σ ∈ localInertiaGroup
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+      (P.freyCurve.galoisRep P.p P.hppos
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) σ) -
+        1) ^ 2 = 0 :=
+  sorry
+
+set_option warn.sorry false in
+/-- **The flat/ordinary analysis at `p`** (sorry node — the deepest
+piece of Serre's §4.1 argument): given the stable line of the reducible
+mod-`p` Frey representation with its characters `χ₁`, `χ₂`
+(multiplying to `ω̄`), one of the two is unramified at `p` itself. The
+Frey curve is semistable at `p`; in the good-ordinary/multiplicative
+case the connected-étale sequence of the `p`-divisible group makes the
+quotient (étale) character unramified; the supersingular case cannot
+occur for a reducible representation (inertia at `p` would act through
+the level-2 fundamental character, irreducibly). -/
+theorem FreyPackage.subquotient_character_unramified_at_p
+    (P : FreyPackage)
+    (W : Submodule (ZMod P.p)
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p))
+    (hW1 : Module.finrank (ZMod P.p) W = 1)
+    (hstable : ∀ g v, v ∈ W → P.freyCurve.galoisRep P.p P.hppos g v ∈ W)
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ →* (ZMod P.p)ˣ)
+    (hχ₁ : ∀ g, ∀ v ∈ W,
+      P.freyCurve.galoisRep P.p P.hppos g v = (χ₁ g : ZMod P.p) • v)
+    (hχ₂ : ∀ g v, W.mkQ (P.freyCurve.galoisRep P.p P.hppos g v) =
+      (χ₂ g : ZMod P.p) • W.mkQ v)
+    (hcyclo : ∀ g : Field.absoluteGaloisGroup ℚ,
+      (χ₁ g : ZMod P.p) * (χ₂ g : ZMod P.p) =
+        ((@GaloisRepresentation.cyclotomicCharacterModL P.p ⟨P.pp⟩ g :
+          (ZMod P.p)ˣ) : ZMod P.p)) :
+    (localInertiaGroup P.pp.toHeightOneSpectrumRingOfIntegersRat ≤
+      (χ₁.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          P.pp.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) ∨
+    (localInertiaGroup P.pp.toHeightOneSpectrumRingOfIntegersRat ≤
+      (χ₂.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          P.pp.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The semistability-unramifiedness statement** (DERIVED 2026-07-17
+from the two leaves above and the PROVEN machinery): given a stable
+line in the mod-`p` torsion of the Frey curve with its sub- and
+quotient-characters `χ₁`, `χ₂`, ONE of the two characters is unramified
+at EVERY finite place. Assembly: away from `{2, p}` the whole
+representation is unramified (`FreyCurve.torsion_isUnramified` — the
+PROVEN Néron–Ogg–Shafarevich node at good primes, the Tate glue at
+multiplicative ones), so both characters are trivial on inertia (the
+unipotent-scalar lemmas at `(ρ(σ) − 1)² = 0`, which holds a fortiori
+when `ρ(σ) = 1`); at `2` inertia is unipotent
+(`inertia_two_unipotent`), so again both characters are unramified; at
+`p` the flat/ordinary leaf selects one character, and that character is
+then unramified everywhere. -/
 theorem FreyPackage.subquotient_character_unramified
     (P : FreyPackage)
     (W : Submodule (ZMod P.p)
@@ -967,8 +1111,139 @@ theorem FreyPackage.subquotient_character_unramified
       localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤
         (χ₂.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-            hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) :=
-  sorry
+            hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) := by
+  classical
+  haveI : Fact P.p.Prime := ⟨P.pp⟩
+  -- rank bookkeeping: a nonzero vector of `W`, and `W ≠ ⊤`
+  have hcard : Nat.card
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) =
+      P.p ^ 2 :=
+    TorsionCard.card_torsionBy
+      (P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))) P.p
+      (Nat.cast_ne_zero.mpr P.pp.ne_zero)
+  haveI hfin : Finite
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) :=
+    Nat.finite_of_card_ne_zero (by
+      rw [hcard]
+      have := P.pp.pos
+      positivity)
+  haveI : Fintype
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) :=
+    Fintype.ofFinite _
+  haveI : Module.Finite (ZMod P.p)
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) :=
+    Module.Finite.of_finite
+  have hfr : Module.finrank (ZMod P.p)
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) =
+      2 := by
+    have h1 := Module.card_eq_pow_finrank (K := ZMod P.p)
+      (V := ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p))
+    rw [ZMod.card] at h1
+    have h2 : P.p ^ 2 = P.p ^ Module.finrank (ZMod P.p)
+        ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) := by
+      rw [← hcard, Nat.card_eq_fintype_card]
+      exact h1
+    exact Nat.pow_right_injective P.pp.two_le h2.symm
+  have hW0 : W ≠ ⊥ := by
+    intro hbot
+    rw [hbot, finrank_bot] at hW1
+    omega
+  have hWtop : W ≠ ⊤ := by
+    intro htop
+    rw [htop, finrank_top, hfr] at hW1
+    omega
+  haveI : Nontrivial W := Submodule.nontrivial_iff_ne_bot.mpr hW0
+  obtain ⟨w₀, hw₀ne⟩ := exists_ne (0 : W)
+  have hw₀V : (w₀ : ((P.freyCurve.map (algebraMap ℚ
+      (AlgebraicClosure ℚ))).nTorsion P.p)) ≠ 0 :=
+    fun hc => hw₀ne (Subtype.ext hc)
+  -- the characters are trivial at any unipotent inertia element
+  have hgen₁ : ∀ (v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers ℚ))
+      (σ : Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)),
+      ((P.freyCurve.galoisRep P.p P.hppos
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) σ) -
+        1) ^ 2 = 0) →
+      (χ₁.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          v))).toMonoidHom) σ = 1 := by
+    intro v σ hsq
+    apply Units.ext
+    rw [Units.val_one, MonoidHom.comp_apply]
+    exact subCharacter_eq_one_of_sq_eq_zero _ hsq hw₀V
+      (hχ₁ _ (w₀ : ((P.freyCurve.map (algebraMap ℚ
+        (AlgebraicClosure ℚ))).nTorsion P.p)) w₀.2)
+  have hgen₂ : ∀ (v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers ℚ))
+      (σ : Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)),
+      ((P.freyCurve.galoisRep P.p P.hppos
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) σ) -
+        1) ^ 2 = 0) →
+      (χ₂.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          v))).toMonoidHom) σ = 1 := by
+    intro v σ hsq
+    apply Units.ext
+    rw [Units.val_one, MonoidHom.comp_apply]
+    exact quotCharacter_eq_one_of_sq_eq_zero _ hsq W hWtop (hχ₂ _)
+  -- triviality of the characters wherever the representation is trivial
+  have htriv₁ : ∀ g, P.freyCurve.galoisRep P.p P.hppos g = 1 → χ₁ g = 1 := by
+    intro g hg
+    apply Units.ext
+    rw [Units.val_one]
+    refine subCharacter_eq_one_of_sq_eq_zero
+      (P.freyCurve.galoisRep P.p P.hppos g) ?_ hw₀V
+      (hχ₁ g (w₀ : ((P.freyCurve.map (algebraMap ℚ
+        (AlgebraicClosure ℚ))).nTorsion P.p)) w₀.2)
+    rw [hg, sub_self]
+    exact zero_pow two_ne_zero
+  have htriv₂ : ∀ g, P.freyCurve.galoisRep P.p P.hppos g = 1 → χ₂ g = 1 := by
+    intro g hg
+    apply Units.ext
+    rw [Units.val_one]
+    refine quotCharacter_eq_one_of_sq_eq_zero
+      (P.freyCurve.galoisRep P.p P.hppos g) ?_ W hWtop (hχ₂ g)
+    rw [hg, sub_self]
+    exact zero_pow two_ne_zero
+  -- assemble via the flat/ordinary leaf at `p`
+  rcases P.subquotient_character_unramified_at_p W hW1 hstable χ₁ χ₂ hχ₁
+    hχ₂ hcyclo with hp | hp
+  · left
+    intro q hq σ hσ
+    by_cases hq2 : q = 2
+    · subst hq2
+      rw [MonoidHom.mem_ker]
+      exact hgen₁ _ σ (P.inertia_two_unipotent σ hσ)
+    · by_cases hqp : q = P.p
+      · subst hqp
+        exact hp hσ
+      · have h4 := character_localInertia_le_ker_of_isUnramifiedAt
+          (P.freyCurve.galoisRep P.p P.hppos)
+          hq.toHeightOneSpectrumRingOfIntegersRat
+          (FreyCurve.torsion_isUnramified P q hq ⟨hq2, hqp⟩) χ₁ htriv₁
+        have h5 := h4 hσ
+        convert h5 using 5
+        exact Subsingleton.elim _ _
+  · right
+    intro q hq σ hσ
+    by_cases hq2 : q = 2
+    · subst hq2
+      rw [MonoidHom.mem_ker]
+      exact hgen₂ _ σ (P.inertia_two_unipotent σ hσ)
+    · by_cases hqp : q = P.p
+      · subst hqp
+        exact hp hσ
+      · have h4 := character_localInertia_le_ker_of_isUnramifiedAt
+          (P.freyCurve.galoisRep P.p P.hppos)
+          hq.toHeightOneSpectrumRingOfIntegersRat
+          (FreyCurve.torsion_isUnramified P q hq ⟨hq2, hqp⟩) χ₂ htriv₂
+        have h5 := h4 hσ
+        convert h5 using 5
+        exact Subsingleton.elim _ _
 
 /-- **Serre's stable-line dichotomy for the Frey curve** (DERIVED
 2026-07-17 from the semistability leaf and the PROVEN character

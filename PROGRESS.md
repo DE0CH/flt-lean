@@ -160,14 +160,34 @@ the START and END of each block of work.
                   are pinned by unification with the `ρbar` argument
                   (pass `ρbar` FIRST, extra finiteness as a plain
                   hypothesis, never an instance binder).
-                - ✗· `FreyPackage.subquotient_character_unramified`
-                  (stated 2026-07-17) — **the semistability leaf**,
-                  the sharpened arithmetic core: given the stable line
-                  and its characters with `χ₁χ₂ = ω̄`, ONE character is
-                  unramified at every finite place (NOS at good primes
-                  PROVEN; Tate unipotence at multiplicative primes;
-                  flat/ordinary analysis at `p`; the `2`-adic Tate
-                  description at `2`).
+                - ✓· `FreyPackage.subquotient_character_unramified` —
+                  DERIVED (2026-07-17): away from `{2, p}` the whole
+                  representation kills inertia
+                  (`FreyCurve.torsion_isUnramified`, transported by the
+                  new generic-`K` bridge
+                  `character_localInertia_le_ker_of_isUnramifiedAt` +
+                  `Rat.subsingleton_ringHom`/`convert using 5` to
+                  reconcile the local-vs-generic `algebraMap`
+                  spellings — the local ℚ-spelling and `toLocal`'s
+                  generic one are NOT defeq-bridgeable because
+                  `Field.absoluteGaloisGroup.map` is unexposed; ring
+                  homs out of `ℚ` are unique, so propositional
+                  bridging works); the unipotent-scalar lemmas
+                  (`subCharacter_eq_one_of_sq_eq_zero`,
+                  `quotCharacter_eq_one_of_sq_eq_zero`, PROVEN) turn
+                  `(ρσ−1)² = 0` into character-triviality.
+                  - ✗· `FreyPackage.inertia_two_unipotent`
+                    (stated 2026-07-17) — **unipotence at `2`**: the
+                    Frey curve's inertia at `2` satisfies
+                    `(ρ(σ) − 1)² = 0` on the `p`-torsion (Tate-curve
+                    content at the multiplicative prime `2`, no
+                    `p ∣ v(j)` needed).
+                  - ✗· `FreyPackage.subquotient_character_unramified_at_p`
+                    (stated 2026-07-17) — **flat/ordinary at `p`**: one
+                    of the two characters is unramified at `p` itself
+                    (connected-étale sequence in the ordinary/
+                    multiplicative case; supersingular excluded by
+                    reducibility).
                 - ✗· `FreyPackage.exists_quotient_curve_point`
                   (stated 2026-07-17) — **the Vélu quotient leaf**:
                   a stable line with trivial quotient action produces
