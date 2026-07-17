@@ -1676,75 +1676,6 @@ theorem exists_smul_some_eq {n : ℤ} (hn : n ≠ 0)
       (fun hz => hΨ (by rw [← hbridgeSq, hz]; ring))
     exact ⟨x', y', h', heq, by rw [← hbridgeSq, ← hbridgeφ]; exact hx'⟩
 
-set_option warn.sorry false in
-/-- **Rational points in the multiplication fibres** (sorry node): over
-a separably closed field, every fibre of the `x`-coordinate of the
-multiplication-by-`n` map contains a rational point — there is a
-nonsingular point `(x₀, y₀)` of the curve with `Φ n (x₀) = ξ ⬝ ΨSq n
-(x₀)`. This is where separability of the multiplication-by-`n` isogeny
-enters (`[n]` is étale for `(n : k) ≠ 0`, so its fibres, cut out by
-`Φ n - ξ ⬝ ΨSq n` on the `x`-line, acquire points over a separably
-closed field). -/
-theorem exists_point_x_smul [IsSepClosed k] {n : ℤ} (hn : n ≠ 0)
-    (hnk : (n : k) ≠ 0) (ξ : k) :
-    ∃ (x₀ y₀ : k) (h : (E⁄k).toAffine.Nonsingular x₀ y₀),
-      ((E⁄k).Φ n).eval x₀ = ξ * ((E⁄k).ΨSq n).eval x₀ :=
-  sorry
-
-set_option backward.isDefEq.respectTransparency false in
-/-- **Divisibility of the points group** (DERIVED 2026-07-17 from the
-three division-polynomial nodes above): over a separably closed field,
-multiplication by `n` with `(n : k) ≠ 0` is surjective on the points of
-an elliptic curve. Given a target affine point `(ξ, η)`, the fibre node
-provides a curve point `(x₀, y₀)` with `Φ n (x₀) = ξ ⬝ ΨSq n (x₀)`;
-`ΨSq n (x₀) ≠ 0` by the Bézout identity `isCoprime_Φ_ΨSq` (a common
-root would contradict `F ⬝ Φ + G ⬝ ΨSq = 1`), so the formula node
-computes `n • (x₀, y₀)` as an affine point with `x`-coordinate `ξ`;
-its `y`-coordinate is `η` or `negY ξ η`, and in the latter case
-negating the preimage fixes it. -/
-theorem smul_surjective [IsSepClosed k] {n : ℕ} (hn : (n : k) ≠ 0) :
-    Function.Surjective (fun P : (E⁄k).Point => (n : ℤ) • P) := by
-  classical
-  have hn0 : n ≠ 0 := fun h => hn (by simp [h])
-  have hnZ : (n : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr hn0
-  have hnk : (((n : ℤ) : ℤ) : k) ≠ 0 := by exact_mod_cast hn
-  haveI : (E⁄k).IsElliptic :=
-    inferInstanceAs ((E.map (algebraMap k k)).IsElliptic)
-  -- points with equal coordinates are equal
-  have hpoint : ∀ {x₁ y₁ x₂ y₂ : k} (h₁ : (E⁄k).toAffine.Nonsingular x₁ y₁)
-      (h₂ : (E⁄k).toAffine.Nonsingular x₂ y₂), x₁ = x₂ → y₁ = y₂ →
-      (Affine.Point.some x₁ y₁ h₁ : (E⁄k).Point) = Affine.Point.some x₂ y₂ h₂ := by
-    intro x₁ y₁ x₂ y₂ h₁ h₂ hx hy
-    subst hx
-    subst hy
-    rfl
-  intro P₀
-  cases P₀ with
-  | zero => exact ⟨0, smul_zero _⟩
-  | some ξ η h₀ =>
-    obtain ⟨x₀, y₀, hns, hrel⟩ := exists_point_x_smul E hnZ (by exact_mod_cast hn) ξ
-    -- `ΨSq n (x₀) ≠ 0` by coprimality
-    have hΨ : ((E⁄k).ΨSq (n : ℤ)).eval x₀ ≠ 0 := by
-      intro h0
-      obtain ⟨F, G, hFG⟩ := WeierstrassCurve.isCoprime_Φ_ΨSq (E⁄k) hnZ
-        (WeierstrassCurve.isUnit_Δ _)
-      have hev := congrArg (Polynomial.eval x₀) hFG
-      rw [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_mul,
-        Polynomial.eval_one, hrel, h0] at hev
-      simp at hev
-    obtain ⟨x', y', h', hsmul, hx'⟩ :=
-      exists_smul_some_eq E hnZ hns hΨ
-    -- the `x`-coordinate of `n • (x₀, y₀)` is `ξ`
-    have hx : x' = ξ := by
-      rw [hrel] at hx'
-      exact mul_right_cancel₀ hΨ hx'
-    -- the `y`-coordinate is `η` or its negation
-    rcases Affine.Y_eq_of_X_eq h'.1 h₀.1 hx with hy | hy
-    · exact ⟨Affine.Point.some x₀ y₀ hns, hsmul.trans (hpoint h' h₀ hx hy)⟩
-    · refine ⟨-(Affine.Point.some x₀ y₀ hns), ?_⟩
-      show (n : ℤ) • (-(Affine.Point.some x₀ y₀ hns) : (E⁄k).Point) = _
-      rw [smul_neg, hsmul, Affine.Point.neg_some]
-      exact hpoint _ h₀ hx (by rw [hy, hx, Affine.negY_negY])
 
 set_option warn.sorry false in
 /-- **Separability of the division polynomial** (sorry node): for an
@@ -1862,6 +1793,148 @@ theorem yQuad_separable {x₀ : k} (hx₀ : ((E⁄k).Ψ₂Sq).eval x₀ ≠ 0) :
         ring
     _ = 1 := by
         rw [hkey, ← Polynomial.C_mul, hD, Polynomial.C_1]
+
+
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] [DecidableEq k] in
+/-- **Root existence from a nonzero derivative over a separably closed
+field** (PROVEN 2026-07-17): if `f' ≠ 0` then `f` has a root — if all
+irreducible factors were inseparable, each would be an `expand` of the
+characteristic (`exists_separable_of_irreducible`), hence so would
+`f`, forcing `f' = 0`. -/
+theorem exists_root_of_derivative_ne_zero [IsSepClosed k]
+    {f : Polynomial k} (hf : Polynomial.derivative f ≠ 0) :
+    ∃ x : k, f.eval x = 0 := by
+  classical
+  by_contra hno
+  have hno' : ∀ x : k, f.eval x ≠ 0 := fun x hx => hno ⟨x, hx⟩
+  have hf0 : f ≠ 0 := fun hc => hf (by rw [hc, map_zero])
+  have hnosep : ∀ q : Polynomial k, Irreducible q → q ∣ f →
+      ¬q.Separable := by
+    intro q hq hqf hsep
+    have hdeg : q.degree ≠ 0 := fun hc =>
+      hq.not_isUnit (Polynomial.isUnit_iff_degree_eq_zero.mpr hc)
+    obtain ⟨x, hx⟩ := IsSepClosed.exists_root q hdeg hsep
+    obtain ⟨g, rfl⟩ := hqf
+    exact hno' x (by rw [Polynomial.eval_mul,
+      show q.eval x = 0 from hx, zero_mul])
+  obtain ⟨p, hp⟩ := CharP.exists k
+  rcases CharP.char_is_prime_or_zero k p with hprime | hzero
+  · -- characteristic `p`: every factor is an `expand`, so `f' = 0`
+    have hmem : ∀ q ∈ UniqueFactorizationMonoid.factors f,
+        ∃ g : Polynomial k, Polynomial.expand k p g = q := by
+      intro q hqmem
+      have hq := UniqueFactorizationMonoid.irreducible_of_factor q hqmem
+      have hqf := UniqueFactorizationMonoid.dvd_of_mem_factors hqmem
+      obtain ⟨m, g, hgsep, hgq⟩ :=
+        Polynomial.exists_separable_of_irreducible (p := p) hq
+          hprime.ne_zero
+      cases m with
+      | zero =>
+        rw [pow_zero, Polynomial.expand_one] at hgq
+        exact absurd (hgq ▸ hgsep) (hnosep q hq hqf)
+      | succ m =>
+        refine ⟨Polynomial.expand k (p ^ m) g, ?_⟩
+        rw [Polynomial.expand_expand, ← pow_succ']
+        exact hgq
+    have hprodmem : ∀ m : Multiset (Polynomial k),
+        (∀ q ∈ m, ∃ g : Polynomial k, Polynomial.expand k p g = q) →
+        ∃ g : Polynomial k, Polynomial.expand k p g = m.prod := by
+      intro m
+      induction m using Multiset.induction with
+      | empty => exact fun _ => ⟨1, by simp⟩
+      | cons a s ih =>
+        intro hm
+        obtain ⟨g, hg⟩ := hm a (Multiset.mem_cons_self a s)
+        obtain ⟨G, hG⟩ := ih fun q hq => hm q (Multiset.mem_cons_of_mem hq)
+        exact ⟨g * G, by rw [map_mul, hg, hG, Multiset.prod_cons]⟩
+    obtain ⟨u, hu⟩ := UniqueFactorizationMonoid.factors_prod hf0
+    obtain ⟨c, hcu, hc⟩ := Polynomial.isUnit_iff.mp u.isUnit
+    obtain ⟨G, hG⟩ := hprodmem (UniqueFactorizationMonoid.factors f) hmem
+    have hfexp : Polynomial.expand k p (G * Polynomial.C c) = f := by
+      rw [map_mul, hG, Polynomial.expand_C, hc, hu]
+    apply hf
+    have hder := congrArg Polynomial.derivative hfexp
+    rw [Polynomial.derivative_expand,
+      show ((p : Polynomial k)) = 0 from by
+        rw [← Polynomial.C_eq_natCast, CharP.cast_eq_zero k p, map_zero],
+      zero_mul, mul_zero] at hder
+    exact hder.symm
+  · -- characteristic zero: irreducible factors are separable
+    subst hzero
+    haveI := CharP.charP_to_charZero k
+    have hfu : ¬IsUnit f := by
+      intro hu
+      obtain ⟨c, hcu, hc⟩ := Polynomial.isUnit_iff.mp hu
+      exact hf (by rw [← hc, Polynomial.derivative_C])
+    obtain ⟨q, hq, hqf⟩ := WfDvdMonoid.exists_irreducible_factor hfu hf0
+    exact hnosep q hq hqf hq.separable
+
+set_option warn.sorry false in
+/-- **Rational points in the multiplication fibres** (sorry node —
+being replaced): over a separably closed field, every fibre of the
+`x`-coordinate of the multiplication-by-`n` map through a rational
+point contains a rational point. -/
+theorem exists_point_x_smul [IsSepClosed k] {n : ℤ} (hn : n ≠ 0)
+    (hnk : (n : k) ≠ 0) (ξ : k) :
+    ∃ (x₀ y₀ : k) (h : (E⁄k).toAffine.Nonsingular x₀ y₀),
+      ((E⁄k).Φ n).eval x₀ = ξ * ((E⁄k).ΨSq n).eval x₀ :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Divisibility of the points group** (DERIVED 2026-07-17 from the
+three division-polynomial nodes above): over a separably closed field,
+multiplication by `n` with `(n : k) ≠ 0` is surjective on the points of
+an elliptic curve. Given a target affine point `(ξ, η)`, the fibre node
+provides a curve point `(x₀, y₀)` with `Φ n (x₀) = ξ ⬝ ΨSq n (x₀)`;
+`ΨSq n (x₀) ≠ 0` by the Bézout identity `isCoprime_Φ_ΨSq` (a common
+root would contradict `F ⬝ Φ + G ⬝ ΨSq = 1`), so the formula node
+computes `n • (x₀, y₀)` as an affine point with `x`-coordinate `ξ`;
+its `y`-coordinate is `η` or `negY ξ η`, and in the latter case
+negating the preimage fixes it. -/
+theorem smul_surjective [IsSepClosed k] {n : ℕ} (hn : (n : k) ≠ 0) :
+    Function.Surjective (fun P : (E⁄k).Point => (n : ℤ) • P) := by
+  classical
+  have hn0 : n ≠ 0 := fun h => hn (by simp [h])
+  have hnZ : (n : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr hn0
+  have hnk : (((n : ℤ) : ℤ) : k) ≠ 0 := by exact_mod_cast hn
+  haveI : (E⁄k).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap k k)).IsElliptic)
+  -- points with equal coordinates are equal
+  have hpoint : ∀ {x₁ y₁ x₂ y₂ : k} (h₁ : (E⁄k).toAffine.Nonsingular x₁ y₁)
+      (h₂ : (E⁄k).toAffine.Nonsingular x₂ y₂), x₁ = x₂ → y₁ = y₂ →
+      (Affine.Point.some x₁ y₁ h₁ : (E⁄k).Point) = Affine.Point.some x₂ y₂ h₂ := by
+    intro x₁ y₁ x₂ y₂ h₁ h₂ hx hy
+    subst hx
+    subst hy
+    rfl
+  intro P₀
+  cases P₀ with
+  | zero => exact ⟨0, smul_zero _⟩
+  | some ξ η h₀ =>
+    obtain ⟨x₀, y₀, hns, hrel⟩ := exists_point_x_smul E hnZ (by exact_mod_cast hn) ξ
+    -- `ΨSq n (x₀) ≠ 0` by coprimality
+    have hΨ : ((E⁄k).ΨSq (n : ℤ)).eval x₀ ≠ 0 := by
+      intro h0
+      obtain ⟨F, G, hFG⟩ := WeierstrassCurve.isCoprime_Φ_ΨSq (E⁄k) hnZ
+        (WeierstrassCurve.isUnit_Δ _)
+      have hev := congrArg (Polynomial.eval x₀) hFG
+      rw [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_mul,
+        Polynomial.eval_one, hrel, h0] at hev
+      simp at hev
+    obtain ⟨x', y', h', hsmul, hx'⟩ :=
+      exists_smul_some_eq E hnZ hns hΨ
+    -- the `x`-coordinate of `n • (x₀, y₀)` is `ξ`
+    have hx : x' = ξ := by
+      rw [hrel] at hx'
+      exact mul_right_cancel₀ hΨ hx'
+    -- the `y`-coordinate is `η` or its negation
+    rcases Affine.Y_eq_of_X_eq h'.1 h₀.1 hx with hy | hy
+    · exact ⟨Affine.Point.some x₀ y₀ hns, hsmul.trans (hpoint h' h₀ hx hy)⟩
+    · refine ⟨-(Affine.Point.some x₀ y₀ hns), ?_⟩
+      show (n : ℤ) • (-(Affine.Point.some x₀ y₀ hns) : (E⁄k).Point) = _
+      rw [smul_neg, hsmul, Affine.Point.neg_some]
+      exact hpoint _ h₀ hx (by rw [hy, hx, Affine.negY_negY])
 
 
 set_option backward.isDefEq.respectTransparency false in
