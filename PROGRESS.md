@@ -32,527 +32,444 @@ Second symbol: `·` normal, `🟪` currently being worked on (from the
 entries file). To add/remove/annotate a node, edit
 `progress-entries.json` and re-run the generator.
 
-- ✅· `fermat_last_theorem` — the goal: `FermatLastTheorem`, assembled from the mathlib reductions
-  and `fermatLastTheoremFor_of_five_le`.
-  - ✅· `fermatLastTheoremFor_of_five_le` — ∀ p, p.Prime → 5 ≤ p → FermatLastTheoremFor p`
-    (`Fermat/PrimeFive.lean`) — proven from:
-    - ✅· `FreyPackage.mazur` — (`Fermat/FLT/FreyCurve/Mazur.lean`) — the mod-p rep of the Frey
-      curve is irreducible — now (2026-07-16) from two explicit nodes in
-      `Fermat/FLT/FreyCurve/MazurTorsion.lean` (own work), following
-      Serre (Duke 1987, §4.1):
-      - ✅· `FreyPackage.exists_torsion_embedding_of_not_isIrreducible` — (2026-07-16) from the two nodes below: Serre's analysis produces
-        full 2-torsion plus a rational point of order p on some curve;
-        the `embedding_assembly` combines them into an injective ℤ/2 ×
-        ℤ/2p via CRT
-        - ✅· `FreyPackage.exists_two_torsion_and_p_point_of_not_isIrreducible` — (2026-07-16) from the disjunction node below plus the Frey
-          2-torsion
-          - ✅· `FreyPackage.exists_p_point_of_not_isIrreducible` — (2026-07-16): the Minkowski input is discharged by the node
-            below
-            - ✅· `FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski` — (2026-07-17) from the stable-line dichotomy leaf, the
-              Galois descent for points, and the Vélu quotient leaf (all
-              `MazurTorsion.lean`)
-              - ✅· `FreyPackage.stable_line_dichotomy_of_not_isIrreducible` — (2026-07-17) from the semistability leaf below + the
-                character bookkeeping: the stable line
-                (`exists_stable_line_of_not_isIrreducible`) carries
-                unit-valued characters
-                (`exists_subCharacter`/`exists_quotCharacter`, the
-                scalar-action-on-rank-1 argument
-                `exists_unit_character_of_finrank_one`), with `det =
-                χ₁χ₂` (`det_eq_subCharacter_mul_quotCharacter` via
-                `LinearMap.det_eq_det_mul_det`) `= ω̄` (the det node +
-                `cyclotomicCharacterModL_eq_toZMod`); kernels are open
-                (they contain the open kernel of ρ,
-                `isOpen_setOf_galoisRep_eq_one` +
-                `Subgroup.isOpen_mono`); Minkowski (hmink) kills the
-                everywhere-unramified character; `χ₁ = 1` fixes a
-                nonzero `w₀ ∈ W` (a fixed point of exact order `p`), `χ₂
-                = 1` trivializes the quotient action. SPELLING GOTCHAS
-                (all resolved): (a) quotient triviality must be phrased
-                via `W.mkQ`, not `ρ g v − v ∈ W` (HSub instance search
-                sticks); (b) `P.freyCurve`-instantiated nTorsion carries
-                `Rat.commRing` vs the `Field.toCommRing` spelling baked
-                into `galoisRep`'s codomain — defeq at DEFAULT
-                transparency but NOT at instance transparency, so
-                `letI`/`haveI` instances for the local spelling are
-                invisible to TC search against the baked spelling; the
-                cure is general-`V` lemmas whose instance binders are
-                pinned by unification with the `ρbar` argument (pass
-                `ρbar` FIRST, extra finiteness as a plain hypothesis,
-                never an instance binder)
-                - ✅· `FreyPackage.subquotient_character_unramified` — (2026-07-17): away from `{2, p}` the whole
-                  representation kills inertia
-                  (`FreyCurve.torsion_isUnramified`, transported by the
-                  new generic-`K` bridge
-                  `character_localInertia_le_ker_of_isUnramifiedAt` +
-                  `Rat.subsingleton_ringHom`/`convert using 5` to
-                  reconcile the local-vs-generic `algebraMap` spellings
-                  — the local ℚ-spelling and `toLocal`'s generic one are
-                  NOT defeq-bridgeable because
-                  `Field.absoluteGaloisGroup.map` is unexposed; ring
-                  homs out of `ℚ` are unique, so propositional bridging
-                  works); the unipotent-scalar lemmas
-                  (`subCharacter_eq_one_of_sq_eq_zero`,
-                  `quotCharacter_eq_one_of_sq_eq_zero`, ) turn `(ρσ−1)²
-                  = 0` into character-triviality
-                  - ✅· `FreyPackage.inertia_two_unipotent` — (2026-07-17): the Frey curve has multiplicative
-                    reduction at `2`
-                    (`freyCurve_hasMultiplicativeReduction_at_two`, ),
-                    and the pointwise Tate unipotence leaf below
-                    transports through
-                    `map_mem_inertiaSubgroup_of_mem_localInertiaGroup`,
-                    the `(A−1)² = A·A − A − A + 1` End-expansion
-                    (pointwise via `abel`), and the show-cast
-                    `⁄`-ambient collapse. SPELLING NOTE: a direct
-                    `exact` across the generic-vs-`Rat` `algebraMap`
-                    spellings is impossible (unexposed
-                    `IsAlgClosed.lift`); the working recipe is atom-
-                    level `rfl`-bridges (`hb`) for the representation-
-                    vs-`Point.map` steps plus `convert hp using 8` with
-                    closers `rfl`, `Subsingleton.elim`, and `congrArg`
-                    of `Field.absoluteGaloisGroup.map` (hom-level AND
-                    `σ`-applied) over `Rat.subsingleton_ringHom`
-                    - ✅· `WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction` — (`FreyCurve/Semistable.lean`, stated 2026-07-17) —
-                      pointwise Tate unipotence: multiplicative
-                      reduction at `q ≠ p` (`q = 2` allowed, no `p ∣
-                      v(j)`) makes every inertia element at a valuation
-                      subring over `ℤ_(q)` act with `σ(σP) − σP − σP + P
-                      = 0` on the `p`-torsion (to be closed against the
-                      Tate-uniformization leaves)
-                      - ✅· `torsion_unipotent_of_split_multiplicative_adic` — pointwise unipotence in the split case: the Tate
-                        uniformization witness feeds
-                        `tate_inertia_unipotent` at the local valuation
-                        subring, pulled back to `E(ℚ̄)` along the
-                        equivariant embedding; the remaining content is
-                        the base-change instance identification of the
-                        two `Ω`-stage curve spellings.
-                        - ✅· `WeierstrassCurve.exists_tateEquivSepClosure` — Tate's uniformisation over a separable
-                          closure, now DERIVED from the choice-free
-                          Tate-curve uniformisation and Tate's variable-
-                          change theorem: the variable change is
-                          `k`-rational, so its base-changed point
-                          equivalence is Galois-equivariant, and the
-                          equivariance transports through the composite.
-                          - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC V.5.3): a
-                            curve with split multiplicative reduction is
-                            a change of Weierstrass coordinates of the
-                            Tate curve of its Tate parameter.
-                          - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
-                            uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ` Galois-
-                            equivariantly ON THE NOSE, by the explicit
-                            series `X(u,q)`, `Y(u,q)` (whose Weierstrass
-                            equation is proven in
-                            `TateCurveConstruction`); glued over the
-                            finite subextensions of `Ω`.
-                      - ✅· `WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic` — the nonsplit half of the unipotence statement,
-                        assembled from the LOCAL nonsplit node
-                        `tate_inertia_unipotent_of_nonsplit` by the
-                        proven `ℚ̄`-pullback glue (equivariant embedding
-                        + `Point.map` injectivity).
-                        - ✅· `WeierstrassCurve.tate_inertia_unipotent_of_nonsplit` — the LOCAL twist-transfer of nonsplit
-                          unipotence, now assembled: the enriched twist
-                          witness, the inertia-fixed embedding of the
-                          unramified quadratic extension, and the
-                          equivariant composite point equivalence
-                          transport `tate_inertia_unipotent` from the
-                          twisted minimal model.
-                          - ✅· `WeierstrassCurve.exists_tateEquivSepClosure` — Tate's uniformisation over a separable
-                            closure, now DERIVED from the choice-free
-                            Tate-curve uniformisation and Tate's
-                            variable-change theorem: the variable change
-                            is `k`-rational, so its base-changed point
-                            equivalence is Galois-equivariant, and the
-                            equivariance transports through the
-                            composite.
-                            - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC V.5.3): a
-                              curve with split multiplicative reduction
-                              is a change of Weierstrass coordinates of
-                              the Tate curve of its Tate parameter.
-                            - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
-                              uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ` Galois-
-                              equivariantly ON THE NOSE, by the explicit
-                              series `X(u,q)`, `Y(u,q)` (whose
-                              Weierstrass equation is proven in
-                              `TateCurveConstruction`); glued over the
-                              finite subextensions of `Ω`.
-                  - ❌· `FreyPackage.subquotient_character_unramified_at_p` — (stated 2026-07-17) — flat/ordinary at `p`: one of
-                    the two characters is unramified at `p` itself
-                    (connected-étale sequence in the ordinary/
-                    multiplicative case; supersingular excluded by
-                    reducibility)
-                  - ✅· `FreyCurve.torsion_isUnramified` — unramified outside {2, p}: (2026-07-16) by the case
-                    split `q ∣ abc` or not, from the two nodes below
+- ✅· `fermat_last_theorem` — the goal: `FermatLastTheorem`, assembled from the mathlib reductions and
+  `fermatLastTheoremFor_of_five_le`.
+    - ✅· `fermatLastTheoremFor_of_five_le` — ∀ p, p.Prime → 5 ≤ p → FermatLastTheoremFor p` (`Fermat/PrimeFive.lean`) — proven from:
+        - ✅· `FreyPackage.mazur` — (`Fermat/FLT/FreyCurve/Mazur.lean`) — the mod-p rep of the Frey curve is irreducible — now
+          (2026-07-16) from two explicit nodes in `Fermat/FLT/FreyCurve/MazurTorsion.lean` (own
+          work), following Serre (Duke 1987, §4.1):
+            - ✅· `FreyPackage.exists_torsion_embedding_of_not_isIrreducible` — (2026-07-16) from the two nodes below: Serre's analysis produces full 2-torsion plus a
+              rational point of order p on some curve; the `embedding_assembly` combines them into
+              an injective ℤ/2 × ℤ/2p via CRT
+                - ✅· `FreyPackage.exists_two_torsion_and_p_point_of_not_isIrreducible` — (2026-07-16) from the disjunction node below plus the Frey 2-torsion
+                    - ✅· `FreyPackage.exists_p_point_of_not_isIrreducible` — (2026-07-16): the Minkowski input is discharged by the node below
+                        - ✅· `FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski` — (2026-07-17) from the stable-line dichotomy leaf, the Galois descent for
+                          points, and the Vélu quotient leaf (all `MazurTorsion.lean`)
+                            - ✅· `FreyPackage.stable_line_dichotomy_of_not_isIrreducible` — (2026-07-17) from the semistability leaf below + the character
+                              bookkeeping: the stable line
+                              (`exists_stable_line_of_not_isIrreducible`) carries unit-valued
+                              characters (`exists_subCharacter`/`exists_quotCharacter`, the scalar-
+                              action-on-rank-1 argument `exists_unit_character_of_finrank_one`),
+                              with `det = χ₁χ₂` (`det_eq_subCharacter_mul_quotCharacter` via
+                              `LinearMap.det_eq_det_mul_det`) `= ω̄` (the det node +
+                              `cyclotomicCharacterModL_eq_toZMod`); kernels are open (they contain
+                              the open kernel of ρ, `isOpen_setOf_galoisRep_eq_one` +
+                              `Subgroup.isOpen_mono`); Minkowski (hmink) kills the everywhere-
+                              unramified character; `χ₁ = 1` fixes a nonzero `w₀ ∈ W` (a fixed point
+                              of exact order `p`), `χ₂ = 1` trivializes the quotient action.
+                              SPELLING GOTCHAS (all resolved): (a) quotient triviality must be
+                              phrased via `W.mkQ`, not `ρ g v − v ∈ W` (HSub instance search
+                              sticks); (b) `P.freyCurve`-instantiated nTorsion carries
+                              `Rat.commRing` vs the `Field.toCommRing` spelling baked into
+                              `galoisRep`'s codomain — defeq at DEFAULT transparency but NOT at
+                              instance transparency, so `letI`/`haveI` instances for the local
+                              spelling are invisible to TC search against the baked spelling; the
+                              cure is general-`V` lemmas whose instance binders are pinned by
+                              unification with the `ρbar` argument (pass `ρbar` FIRST, extra
+                              finiteness as a plain hypothesis, never an instance binder)
+                                - ✅· `FreyPackage.subquotient_character_unramified` — (2026-07-17): away from `{2, p}` the whole representation kills
+                                  inertia (`FreyCurve.torsion_isUnramified`, transported by the new
+                                  generic-`K` bridge
+                                  `character_localInertia_le_ker_of_isUnramifiedAt` +
+                                  `Rat.subsingleton_ringHom`/`convert using 5` to reconcile the
+                                  local-vs-generic `algebraMap` spellings — the local ℚ-spelling and
+                                  `toLocal`'s generic one are NOT defeq-bridgeable because
+                                  `Field.absoluteGaloisGroup.map` is unexposed; ring homs out of `ℚ`
+                                  are unique, so propositional bridging works); the unipotent-scalar
+                                  lemmas (`subCharacter_eq_one_of_sq_eq_zero`,
+                                  `quotCharacter_eq_one_of_sq_eq_zero`, ) turn `(ρσ−1)² = 0` into
+                                  character-triviality
+                                    - ✅· `FreyPackage.inertia_two_unipotent` — (2026-07-17): the Frey curve has multiplicative reduction at
+                                      `2` (`freyCurve_hasMultiplicativeReduction_at_two`, ), and the
+                                      pointwise Tate unipotence leaf below transports through
+                                      `map_mem_inertiaSubgroup_of_mem_localInertiaGroup`, the
+                                      `(A−1)² = A·A − A − A + 1` End-expansion (pointwise via
+                                      `abel`), and the show-cast `⁄`-ambient collapse. SPELLING
+                                      NOTE: a direct `exact` across the generic-vs-`Rat`
+                                      `algebraMap` spellings is impossible (unexposed
+                                      `IsAlgClosed.lift`); the working recipe is atom-level
+                                      `rfl`-bridges (`hb`) for the representation-vs-`Point.map`
+                                      steps plus `convert hp using 8` with closers `rfl`,
+                                      `Subsingleton.elim`, and `congrArg` of
+                                      `Field.absoluteGaloisGroup.map` (hom-level AND `σ`-applied)
+                                      over `Rat.subsingleton_ringHom`
+                                        - ✅· `WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction` — (`FreyCurve/Semistable.lean`, stated 2026-07-17) —
+                                          pointwise Tate unipotence: multiplicative reduction at `q
+                                          ≠ p` (`q = 2` allowed, no `p ∣ v(j)`) makes every inertia
+                                          element at a valuation subring over `ℤ_(q)` act with
+                                          `σ(σP) − σP − σP + P = 0` on the `p`-torsion (to be closed
+                                          against the Tate-uniformization leaves)
+                                            - ✅· `torsion_unipotent_of_split_multiplicative_adic` — pointwise unipotence in the split case: the Tate
+                                              uniformization witness feeds `tate_inertia_unipotent`
+                                              at the local valuation subring, pulled back to `E(ℚ̄)`
+                                              along the equivariant embedding; the remaining content
+                                              is the base-change instance identification of the two
+                                              `Ω`-stage curve spellings.
+                                                - ✅· `WeierstrassCurve.exists_tateEquivSepClosure` — Tate's uniformisation over a separable closure,
+                                                  now DERIVED from the choice-free Tate-curve
+                                                  uniformisation and Tate's variable-change theorem:
+                                                  the variable change is `k`-rational, so its base-
+                                                  changed point equivalence is Galois-equivariant,
+                                                  and the equivariance transports through the
+                                                  composite.
+                                                    - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC V.5.3): a
+                                                      curve with split multiplicative reduction is a
+                                                      change of Weierstrass coordinates of the Tate
+                                                      curve of its Tate parameter.
+                                                    - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation:
+                                                      `E_q(Ω) ≅ Ωˣ/q^ℤ` Galois-equivariantly ON THE
+                                                      NOSE, by the explicit series `X(u,q)`,
+                                                      `Y(u,q)` (whose Weierstrass equation is proven
+                                                      in `TateCurveConstruction`); glued over the
+                                                      finite subextensions of `Ω`.
+                                            - ✅· `WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic` — the nonsplit half of the unipotence statement,
+                                              assembled from the LOCAL nonsplit node
+                                              `tate_inertia_unipotent_of_nonsplit` by the proven
+                                              `ℚ̄`-pullback glue (equivariant embedding +
+                                              `Point.map` injectivity).
+                                                - ✅· `WeierstrassCurve.tate_inertia_unipotent_of_nonsplit` — the LOCAL twist-transfer of nonsplit unipotence,
+                                                  now assembled: the enriched twist witness, the
+                                                  inertia-fixed embedding of the unramified
+                                                  quadratic extension, and the equivariant composite
+                                                  point equivalence transport
+                                                  `tate_inertia_unipotent` from the twisted minimal
+                                                  model.
+                                                    - ✅· `WeierstrassCurve.exists_tateEquivSepClosure` — Tate's uniformisation over a separable
+                                                      closure, now DERIVED from the choice-free
+                                                      Tate-curve uniformisation and Tate's variable-
+                                                      change theorem: the variable change is
+                                                      `k`-rational, so its base-changed point
+                                                      equivalence is Galois-equivariant, and the
+                                                      equivariance transports through the composite.
+                                                        - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC V.5.3): a
+                                                          curve with split multiplicative reduction
+                                                          is a change of Weierstrass coordinates of
+                                                          the Tate curve of its Tate parameter.
+                                                        - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
+                                                          uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ` Galois-
+                                                          equivariantly ON THE NOSE, by the explicit
+                                                          series `X(u,q)`, `Y(u,q)` (whose
+                                                          Weierstrass equation is proven in
+                                                          `TateCurveConstruction`); glued over the
+                                                          finite subextensions of `Ω`.
+                                    - ❌· `FreyPackage.subquotient_character_unramified_at_p` — (stated 2026-07-17) — flat/ordinary at `p`: one of the two
+                                      characters is unramified at `p` itself (connected-étale
+                                      sequence in the ordinary/ multiplicative case; supersingular
+                                      excluded by reducibility)
+                                    - ✅· `FreyCurve.torsion_isUnramified` — unramified outside {2, p}: (2026-07-16) by the case split `q ∣
+                                      abc` or not, from the two nodes below
+                                        - ✅· `FreyCurve.torsion_isUnramified_of_multiplicative` — (2026-07-16) from the arithmetic
+                                          (`freyCurve_hasMultiplicativeReduction_of_dvd` +
+                                          `j_valuation_of_bad_prime`) and the Tate glue node below
+                                            - ✅· `WeierstrassCurve.isUnramifiedAt_of_hasMultiplicativeReduction` — (`FreyCurve/Semistable.lean`, own work): (2026-07-17)
+                                              — the Tate glue: multiplicative reduction at odd `q ≠
+                                              p` with `p ∣ v_q(j)` ⟹ `IsUnramifiedAt q`, by the same
+                                              embedded-subring transport as the good case, against
+                                              the new pure-Tate content leaf below
+                                                - ✅· `WeierstrassCurve.torsion_trivial_of_multiplicative_reduction` — pointwise inertia-triviality on torsion at
+                                                  multiplicative primes with `p ∣ v_q(j)` — the
+                                                  split/nonsplit case split; the local input to
+                                                  `isUnramifiedAt_of_hasMultiplicativeReduction`.
+                                                    - ✅· `torsion_trivial_of_split_multiplicative_adic` — pointwise inertia-TRIVIALITY in the split case
+                                                      with `p ∣ v_q(j)`: the Tate uniformization
+                                                      witness feeds `tate_inertia_trivial` at the
+                                                      local valuation subring with the step-(d)
+                                                      witness, pulled back to `E(ℚ̄)` along the
+                                                      equivariant embedding.
+                                                        - ✅· `WeierstrassCurve.exists_tateEquivSepClosure` — Tate's uniformisation over a separable
+                                                          closure, now DERIVED from the choice-free
+                                                          Tate-curve uniformisation and Tate's
+                                                          variable-change theorem: the variable
+                                                          change is `k`-rational, so its base-
+                                                          changed point equivalence is Galois-
+                                                          equivariant, and the equivariance
+                                                          transports through the composite.
+                                                            - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC
+                                                              V.5.3): a curve with split
+                                                              multiplicative reduction is a change
+                                                              of Weierstrass coordinates of the Tate
+                                                              curve of its Tate parameter.
+                                                            - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
+                                                              uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
+                                                              Galois-equivariantly ON THE NOSE, by
+                                                              the explicit series `X(u,q)`, `Y(u,q)`
+                                                              (whose Weierstrass equation is proven
+                                                              in `TateCurveConstruction`); glued
+                                                              over the finite subextensions of `Ω`.
+                                                    - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality statement,
+                                                      assembled from the LOCAL nonsplit node
+                                                      `tate_inertia_trivial_of_nonsplit` by the
+                                                      proven `ℚ̄`-pullback glue; the `j`-hypothesis
+                                                      feeds through `map_j`.
+                                                        - ✅· `WeierstrassCurve.tate_inertia_trivial_of_nonsplit` — the LOCAL twist-transfer of nonsplit
+                                                          triviality, now assembled: as the
+                                                          unipotent analogue via
+                                                          `tate_inertia_trivial`, with the step-(d)
+                                                          witness applied to the twisted minimal
+                                                          model (same `j`-invariant through
+                                                          `variableChange_j` and
+                                                          `j_quadraticTwist`).
+                                                            - ✅· `WeierstrassCurve.exists_tateEquivSepClosure` — Tate's uniformisation over a separable
+                                                              closure, now DERIVED from the choice-
+                                                              free Tate-curve uniformisation and
+                                                              Tate's variable-change theorem: the
+                                                              variable change is `k`-rational, so
+                                                              its base-changed point equivalence is
+                                                              Galois-equivariant, and the
+                                                              equivariance transports through the
+                                                              composite.
+                                                                - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC
+                                                                  V.5.3): a curve with split
+                                                                  multiplicative reduction is a
+                                                                  change of Weierstrass coordinates
+                                                                  of the Tate curve of its Tate
+                                                                  parameter.
+                                                                - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
+                                                                  uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
+                                                                  Galois-equivariantly ON THE NOSE,
+                                                                  by the explicit series `X(u,q)`,
+                                                                  `Y(u,q)` (whose Weierstrass
+                                                                  equation is proven in
+                                                                  `TateCurveConstruction`); glued
+                                                                  over the finite subextensions of
+                                                                  `Ω`.
+                                - ✅· `det_galoisRep_eq_cyclotomic` — `det_galoisRep_eq_cyclotomic` — (2026-07-17): `det ρ̄` and `χ̄`
+                                  are continuous conjugation-invariant `ZMod p`-valued functions on
+                                  `Γ ℚ` (continuity of `det ∘ ρ` from discreteness of `End` via
+                                  `discreteTopology_moduleTopology`; `χ̄`-continuity in
+                                  `Chebotarev.lean`); they agree at `Frob_q` for almost all `q` (the
+                                  leaf below + `cyclotomicCharacterModL_globalFrob`, ), and the
+                                  Frobenius conjugacy classes are dense
+                                  (`dense_conjClasses_globalFrob`, rooted in the Chebotarev node),
+                                  so the closed agreement set is everything. Bridge
+                                  `cyclotomicCharacterModL_eq_toZMod` (`χ̄ = toZMod ∘ χ`) via
+                                  `modularCyclotomicCharacter.unique` +
+                                  `toZMod_eq_ringEquivCongr_comp_toZModPow`
+                                    - ❌· `det_galoisRep_globalFrob` — `det_galoisRep_globalFrob` (`EllipticCurve/WeilPairing.lean`,
+                                      stated 2026-07-17): Frobenius determinant at good primes —
+                                      away from a finite set of places, `det ρ̄(Frob_q) = q mod p`
+                                      (the point-counting/Weil computation over the reduced curve;
+                                      route: NOS reduction injectivity + Frobenius-isogeny degree).
+                                      - (the other root of this derivation is the Chebotarev node
+                                      `exists_frobenius_conj_mem_coset`, listed under the
+                                      Chebotarev–Brauer–Nesbitt cone.)
+                                    - ✅· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density,
+                                      topological form — now (2026-07-16) by the profinite limit
+                                      argument (: cosets of fixing subgroups of finite subextensions
+                                      are a neighborhood basis, `krullTopology_mem_nhds_one_iff`;
+                                      the finite-level statement puts a Frobenius conjugate in every
+                                      coset):
+                                        - ❌· `exists_frobenius_conj_mem_coset` — `exists_frobenius_conj_mem_coset` — Chebotarev, finite
+                                          level: for every finite subextension `E` of `K̄/K` and
+                                          every `σ`, the coset `σ·Gal(K̄/E)` contains a conjugate of
+                                          a `globalFrob v` with `v ∉ S` (existence form of
+                                          Chebotarev for the Galois closure of `E/K`)
+                            - ❌· `FreyPackage.exists_quotient_curve_point` — (stated 2026-07-17) — the Vélu quotient leaf: a stable line with
+                              trivial quotient action produces `E'/ℚ` with full rational 2-torsion
+                              and a rational `p`-point (quotient by the rational subgroup;
+                              quantified over Weierstrass models)
+            - ✅· `WeierstrassCurve.mazur_torsion_bound` — Mazur's torsion theorem, weak form: no elliptic curve over ℚ has a subgroup of
+              rational points ≅ ℤ/2 × ℤ/2p for p ≥ 5 (primality dropped as unneeded) — now
+              (2026-07-16) from the faithful classification below: images of an injective hom from
+              the finite group ℤ/2 × ℤ/2p are torsion (finite additive order), the hom corestricts
+              into the torsion submodule, and 4p ≥ 20 > 16 ≥ the order of every group in Mazur's
+              list (`Nat.card` comparison)
+                - ❌· `WeierstrassCurve.mazur_classification` — Mazur's torsion theorem, stated faithfully: the torsion submodule
+                  (`Submodule.torsion ℤ E(ℚ)`) is ≃+ to one of the fifteen groups ℤ/n (n ∈
+                  {1,…,10,12}) or ℤ/2 × ℤ/2m (m ∈ {1,…,4}). Mazur, Publ. Math. IHÉS 47 (1977);
+                  Invent. Math. 44 (1978)
+        - ✅· `FreyPackage.galoisRep_not_irreducible` — (B4, `Fermat/PrimeFive.lean`) — now (2026-07-16) from two explicit nodes, mirroring the
+          FLT project's hardly-ramified plan (their B5/B6, stated in Lean here before upstream):
+            - ✅· `FreyCurve.torsion_isHardlyRamified` — (`GaloisRepresentation/HardlyRamified/Frey.lean`) — now (2026-07-16) as the structure
+              constructor applied to the four defining conditions, each an explicit node in
+              `HardlyRamified/FreyConditions.lean` (own work):
+                - ✅· `FreyCurve.torsion_det` — det ρ̄ = mod-p cyclotomic character — now (2026-07-16) via the Weil pairing route
+                  (`EllipticCurve/WeilPairing.lean`, own work):
+                    - ✅· `WeilPairing.exists_weilPairing` — the Weil pairing: (2026-07-17) as the coordinate determinant form in a
+                      `finBasis` (`#E[p] = p²` ⟹ rank 2), Galois-scaled by `det ρ`
+                      (`pairing_map_eq_det_smul`) = the cyclotomic character by the det node below
+                        - ✅· `det_galoisRep_eq_cyclotomic` — `det_galoisRep_eq_cyclotomic` — (2026-07-17): `det ρ̄` and `χ̄` are
+                          continuous conjugation-invariant `ZMod p`-valued functions on `Γ ℚ`
+                          (continuity of `det ∘ ρ` from discreteness of `End` via
+                          `discreteTopology_moduleTopology`; `χ̄`-continuity in `Chebotarev.lean`);
+                          they agree at `Frob_q` for almost all `q` (the leaf below +
+                          `cyclotomicCharacterModL_globalFrob`, ), and the Frobenius conjugacy
+                          classes are dense (`dense_conjClasses_globalFrob`, rooted in the
+                          Chebotarev node), so the closed agreement set is everything. Bridge
+                          `cyclotomicCharacterModL_eq_toZMod` (`χ̄ = toZMod ∘ χ`) via
+                          `modularCyclotomicCharacter.unique` +
+                          `toZMod_eq_ringEquivCongr_comp_toZModPow`
+                            - ❌· `det_galoisRep_globalFrob` — `det_galoisRep_globalFrob` (`EllipticCurve/WeilPairing.lean`, stated
+                              2026-07-17): Frobenius determinant at good primes — away from a finite
+                              set of places, `det ρ̄(Frob_q) = q mod p` (the point-counting/Weil
+                              computation over the reduced curve; route: NOS reduction injectivity +
+                              Frobenius-isogeny degree). - (the other root of this derivation is the
+                              Chebotarev node `exists_frobenius_conj_mem_coset`, listed under the
+                              Chebotarev–Brauer–Nesbitt cone.)
+                            - ✅· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density, topological form
+                              — now (2026-07-16) by the profinite limit argument (: cosets of fixing
+                              subgroups of finite subextensions are a neighborhood basis,
+                              `krullTopology_mem_nhds_one_iff`; the finite-level statement puts a
+                              Frobenius conjugate in every coset):
+                                - ❌· `exists_frobenius_conj_mem_coset` — `exists_frobenius_conj_mem_coset` — Chebotarev, finite level: for
+                                  every finite subextension `E` of `K̄/K` and every `σ`, the coset
+                                  `σ·Gal(K̄/E)` contains a conjugate of a `globalFrob v` with `v ∉
+                                  S` (existence form of Chebotarev for the Galois closure of `E/K`)
+                - ✅· `FreyCurve.torsion_isUnramified` — unramified outside {2, p}: (2026-07-16) by the case split `q ∣ abc` or not, from
+                  the two nodes below
                     - ✅· `FreyCurve.torsion_isUnramified_of_multiplicative` — (2026-07-16) from the arithmetic
-                      (`freyCurve_hasMultiplicativeReduction_of_dvd` +
-                      `j_valuation_of_bad_prime`) and the Tate glue node
-                      below
-                      - ✅· `WeierstrassCurve.isUnramifiedAt_of_hasMultiplicativeReduction` — (`FreyCurve/Semistable.lean`, own work):
-                        (2026-07-17) — the Tate glue: multiplicative
-                        reduction at odd `q ≠ p` with `p ∣ v_q(j)` ⟹
-                        `IsUnramifiedAt q`, by the same embedded-subring
-                        transport as the good case, against the new
-                        pure-Tate content leaf below
-                        - ✅· `WeierstrassCurve.torsion_trivial_of_multiplicative_reduction` — pointwise inertia-triviality on torsion at
-                          multiplicative primes with `p ∣ v_q(j)` — the
-                          split/nonsplit case split; the local input to
-                          `isUnramifiedAt_of_hasMultiplicativeReduction`
-                          .
-                          - ✅· `torsion_trivial_of_split_multiplicative_adic` — pointwise inertia-TRIVIALITY in the split
-                            case with `p ∣ v_q(j)`: the Tate
-                            uniformization witness feeds
-                            `tate_inertia_trivial` at the local
-                            valuation subring with the step-(d) witness,
-                            pulled back to `E(ℚ̄)` along the equivariant
-                            embedding.
-                            - ✅· `WeierstrassCurve.exists_tateEquivSepClosure` — Tate's uniformisation over a separable
-                              closure, now DERIVED from the choice-free
-                              Tate-curve uniformisation and Tate's
-                              variable-change theorem: the variable
-                              change is `k`-rational, so its base-
-                              changed point equivalence is Galois-
-                              equivariant, and the equivariance
-                              transports through the composite.
-                              - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC V.5.3):
-                                a curve with split multiplicative
-                                reduction is a change of Weierstrass
-                                coordinates of the Tate curve of its
-                                Tate parameter.
-                              - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
-                                uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
-                                Galois-equivariantly ON THE NOSE, by the
-                                explicit series `X(u,q)`, `Y(u,q)`
-                                (whose Weierstrass equation is proven in
-                                `TateCurveConstruction`); glued over the
-                                finite subextensions of `Ω`.
-                          - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality
-                            statement, assembled from the LOCAL nonsplit
-                            node `tate_inertia_trivial_of_nonsplit` by
-                            the proven `ℚ̄`-pullback glue; the
-                            `j`-hypothesis feeds through `map_j`.
-                            - ✅· `WeierstrassCurve.tate_inertia_trivial_of_nonsplit` — the LOCAL twist-transfer of nonsplit
-                              triviality, now assembled: as the
-                              unipotent analogue via
-                              `tate_inertia_trivial`, with the step-(d)
-                              witness applied to the twisted minimal
-                              model (same `j`-invariant through
-                              `variableChange_j` and
-                              `j_quadraticTwist`).
-                              - ✅· `WeierstrassCurve.exists_tateEquivSepClosure` — Tate's uniformisation over a separable
-                                closure, now DERIVED from the choice-
-                                free Tate-curve uniformisation and
-                                Tate's variable-change theorem: the
-                                variable change is `k`-rational, so its
-                                base-changed point equivalence is
-                                Galois-equivariant, and the equivariance
-                                transports through the composite.
-                                - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC
-                                  V.5.3): a curve with split
-                                  multiplicative reduction is a change
-                                  of Weierstrass coordinates of the Tate
-                                  curve of its Tate parameter.
-                                - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
-                                  uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
-                                  Galois-equivariantly ON THE NOSE, by
-                                  the explicit series `X(u,q)`, `Y(u,q)`
-                                  (whose Weierstrass equation is proven
-                                  in `TateCurveConstruction`); glued
-                                  over the finite subextensions of `Ω`.
-                - ✅· `det_galoisRep_eq_cyclotomic` — `det_galoisRep_eq_cyclotomic` — (2026-07-17): `det ρ̄`
-                  and `χ̄` are continuous conjugation-invariant `ZMod
-                  p`-valued functions on `Γ ℚ` (continuity of `det ∘ ρ`
-                  from discreteness of `End` via
-                  `discreteTopology_moduleTopology`; `χ̄`-continuity in
-                  `Chebotarev.lean`); they agree at `Frob_q` for almost
-                  all `q` (the leaf below +
-                  `cyclotomicCharacterModL_globalFrob`, ), and the
-                  Frobenius conjugacy classes are dense
-                  (`dense_conjClasses_globalFrob`, rooted in the
-                  Chebotarev node), so the closed agreement set is
-                  everything. Bridge `cyclotomicCharacterModL_eq_toZMod`
-                  (`χ̄ = toZMod ∘ χ`) via
-                  `modularCyclotomicCharacter.unique` +
-                  `toZMod_eq_ringEquivCongr_comp_toZModPow`
-                  - ❌· `det_galoisRep_globalFrob` — `det_galoisRep_globalFrob`
-                    (`EllipticCurve/WeilPairing.lean`, stated
-                    2026-07-17): Frobenius determinant at good primes —
-                    away from a finite set of places, `det ρ̄(Frob_q) =
-                    q mod p` (the point-counting/Weil computation over
-                    the reduced curve; route: NOS reduction injectivity
-                    + Frobenius-isogeny degree). - (the other root of
-                    this derivation is the Chebotarev node
-                    `exists_frobenius_conj_mem_coset`, listed under the
-                    Chebotarev–Brauer–Nesbitt cone.)
-                  - ✅· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density,
-                    topological form — now (2026-07-16) by the profinite
-                    limit argument (: cosets of fixing subgroups of
-                    finite subextensions are a neighborhood basis,
-                    `krullTopology_mem_nhds_one_iff`; the finite-level
-                    statement puts a Frobenius conjugate in every
-                    coset):
-                    - ❌· `exists_frobenius_conj_mem_coset` — `exists_frobenius_conj_mem_coset` — Chebotarev,
-                      finite level: for every finite subextension `E` of
-                      `K̄/K` and every `σ`, the coset `σ·Gal(K̄/E)`
-                      contains a conjugate of a `globalFrob v` with `v ∉
-                      S` (existence form of Chebotarev for the Galois
-                      closure of `E/K`)
-              - ❌· `FreyPackage.exists_quotient_curve_point` — (stated 2026-07-17) — the Vélu quotient leaf: a stable
-                line with trivial quotient action produces `E'/ℚ` with
-                full rational 2-torsion and a rational `p`-point
-                (quotient by the rational subgroup; quantified over
-                Weierstrass models)
-      - ✅· `WeierstrassCurve.mazur_torsion_bound` — Mazur's torsion theorem, weak form: no elliptic curve over ℚ has
-        a subgroup of rational points ≅ ℤ/2 × ℤ/2p for p ≥ 5 (primality
-        dropped as unneeded) — now (2026-07-16) from the faithful
-        classification below: images of an injective hom from the finite
-        group ℤ/2 × ℤ/2p are torsion (finite additive order), the hom
-        corestricts into the torsion submodule, and 4p ≥ 20 > 16 ≥ the
-        order of every group in Mazur's list (`Nat.card` comparison)
-        - ❌· `WeierstrassCurve.mazur_classification` — Mazur's torsion theorem, stated faithfully: the torsion
-          submodule (`Submodule.torsion ℤ E(ℚ)`) is ≃+ to one of the
-          fifteen groups ℤ/n (n ∈ {1,…,10,12}) or ℤ/2 × ℤ/2m (m ∈
-          {1,…,4}). Mazur, Publ. Math. IHÉS 47 (1977); Invent. Math. 44
-          (1978)
-    - ✅· `FreyPackage.galoisRep_not_irreducible` — (B4, `Fermat/PrimeFive.lean`) — now (2026-07-16) from two explicit
-      nodes, mirroring the FLT project's hardly-ramified plan (their
-      B5/B6, stated in Lean here before upstream):
-      - ✅· `FreyCurve.torsion_isHardlyRamified` — (`GaloisRepresentation/HardlyRamified/Frey.lean`) — now
-        (2026-07-16) as the structure constructor applied to the four
-        defining conditions, each an explicit node in
-        `HardlyRamified/FreyConditions.lean` (own work):
-        - ✅· `FreyCurve.torsion_det` — det ρ̄ = mod-p cyclotomic character — now (2026-07-16) via the
-          Weil pairing route (`EllipticCurve/WeilPairing.lean`, own
-          work):
-          - ✅· `WeilPairing.exists_weilPairing` — the Weil pairing: (2026-07-17) as the coordinate determinant
-            form in a `finBasis` (`#E[p] = p²` ⟹ rank 2), Galois-scaled
-            by `det ρ` (`pairing_map_eq_det_smul`) = the cyclotomic
-            character by the det node below
-            - ✅· `det_galoisRep_eq_cyclotomic` — `det_galoisRep_eq_cyclotomic` — (2026-07-17): `det ρ̄` and
-              `χ̄` are continuous conjugation-invariant `ZMod p`-valued
-              functions on `Γ ℚ` (continuity of `det ∘ ρ` from
-              discreteness of `End` via
-              `discreteTopology_moduleTopology`; `χ̄`-continuity in
-              `Chebotarev.lean`); they agree at `Frob_q` for almost all
-              `q` (the leaf below +
-              `cyclotomicCharacterModL_globalFrob`, ), and the Frobenius
-              conjugacy classes are dense
-              (`dense_conjClasses_globalFrob`, rooted in the Chebotarev
-              node), so the closed agreement set is everything. Bridge
-              `cyclotomicCharacterModL_eq_toZMod` (`χ̄ = toZMod ∘ χ`)
-              via `modularCyclotomicCharacter.unique` +
-              `toZMod_eq_ringEquivCongr_comp_toZModPow`
-              - ❌· `det_galoisRep_globalFrob` — `det_galoisRep_globalFrob`
-                (`EllipticCurve/WeilPairing.lean`, stated 2026-07-17):
-                Frobenius determinant at good primes — away from a
-                finite set of places, `det ρ̄(Frob_q) = q mod p` (the
-                point-counting/Weil computation over the reduced curve;
-                route: NOS reduction injectivity + Frobenius-isogeny
-                degree). - (the other root of this derivation is the
-                Chebotarev node `exists_frobenius_conj_mem_coset`,
-                listed under the Chebotarev–Brauer–Nesbitt cone.)
-              - ✅· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density,
-                topological form — now (2026-07-16) by the profinite
-                limit argument (: cosets of fixing subgroups of finite
-                subextensions are a neighborhood basis,
-                `krullTopology_mem_nhds_one_iff`; the finite-level
-                statement puts a Frobenius conjugate in every coset):
-                - ❌· `exists_frobenius_conj_mem_coset` — `exists_frobenius_conj_mem_coset` — Chebotarev, finite
-                  level: for every finite subextension `E` of `K̄/K` and
-                  every `σ`, the coset `σ·Gal(K̄/E)` contains a
-                  conjugate of a `globalFrob v` with `v ∉ S` (existence
-                  form of Chebotarev for the Galois closure of `E/K`)
-        - ✅· `FreyCurve.torsion_isUnramified` — unramified outside {2, p}: (2026-07-16) by the case split `q ∣
-          abc` or not, from the two nodes below
-          - ✅· `FreyCurve.torsion_isUnramified_of_multiplicative` — (2026-07-16) from the arithmetic
-            (`freyCurve_hasMultiplicativeReduction_of_dvd` +
-            `j_valuation_of_bad_prime`) and the Tate glue node below
-            - ✅· `WeierstrassCurve.isUnramifiedAt_of_hasMultiplicativeReduction` — (`FreyCurve/Semistable.lean`, own work): (2026-07-17) —
-              the Tate glue: multiplicative reduction at odd `q ≠ p`
-              with `p ∣ v_q(j)` ⟹ `IsUnramifiedAt q`, by the same
-              embedded-subring transport as the good case, against the
-              new pure-Tate content leaf below
-              - ✅· `WeierstrassCurve.torsion_trivial_of_multiplicative_reduction` — pointwise inertia-triviality on torsion at
-                multiplicative primes with `p ∣ v_q(j)` — the
-                split/nonsplit case split; the local input to
-                `isUnramifiedAt_of_hasMultiplicativeReduction`.
-                - ✅· `torsion_trivial_of_split_multiplicative_adic` — pointwise inertia-TRIVIALITY in the split case with `p
-                  ∣ v_q(j)`: the Tate uniformization witness feeds
-                  `tate_inertia_trivial` at the local valuation subring
-                  with the step-(d) witness, pulled back to `E(ℚ̄)`
-                  along the equivariant embedding.
-                  - ✅· `WeierstrassCurve.exists_tateEquivSepClosure` — Tate's uniformisation over a separable closure, now
-                    DERIVED from the choice-free Tate-curve
-                    uniformisation and Tate's variable-change theorem:
-                    the variable change is `k`-rational, so its base-
-                    changed point equivalence is Galois-equivariant, and
-                    the equivariance transports through the composite.
-                    - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC V.5.3): a curve
-                      with split multiplicative reduction is a change of
-                      Weierstrass coordinates of the Tate curve of its
-                      Tate parameter.
-                    - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation:
-                      `E_q(Ω) ≅ Ωˣ/q^ℤ` Galois-equivariantly ON THE
-                      NOSE, by the explicit series `X(u,q)`, `Y(u,q)`
-                      (whose Weierstrass equation is proven in
-                      `TateCurveConstruction`); glued over the finite
-                      subextensions of `Ω`.
-                - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality statement,
-                  assembled from the LOCAL nonsplit node
-                  `tate_inertia_trivial_of_nonsplit` by the proven
-                  `ℚ̄`-pullback glue; the `j`-hypothesis feeds through
-                  `map_j`.
-                  - ✅· `WeierstrassCurve.tate_inertia_trivial_of_nonsplit` — the LOCAL twist-transfer of nonsplit triviality, now
-                    assembled: as the unipotent analogue via
-                    `tate_inertia_trivial`, with the step-(d) witness
-                    applied to the twisted minimal model (same
-                    `j`-invariant through `variableChange_j` and
-                    `j_quadraticTwist`).
-                    - ✅· `WeierstrassCurve.exists_tateEquivSepClosure` — Tate's uniformisation over a separable closure,
-                      now DERIVED from the choice-free Tate-curve
-                      uniformisation and Tate's variable-change theorem:
-                      the variable change is `k`-rational, so its base-
-                      changed point equivalence is Galois-equivariant,
-                      and the equivariance transports through the
-                      composite.
-                      - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC V.5.3): a curve
-                        with split multiplicative reduction is a change
-                        of Weierstrass coordinates of the Tate curve of
-                        its Tate parameter.
-                      - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation:
-                        `E_q(Ω) ≅ Ωˣ/q^ℤ` Galois-equivariantly ON THE
-                        NOSE, by the explicit series `X(u,q)`, `Y(u,q)`
-                        (whose Weierstrass equation is proven in
-                        `TateCurveConstruction`); glued over the finite
-                        subextensions of `Ω`.
-        - ✅· `FreyCurve.torsion_isFlat` — flat at p: (2026-07-16) by the case split `p ∣ abc` or not,
-          from the two nodes below
-          - ✅· `FreyCurve.torsion_isFlat_of_good` — (2026-07-16) from the arithmetic node
-            `freyCurve_hasGoodReduction_of_not_dvd` (applied at `q :=
-            p`) and the flat glue node below
-            - ✅· `WeierstrassCurve.isFlatAt_of_hasGoodReduction` — (`FreyCurve/Semistable.lean`, own work): (2026-07-17) —
-              good reduction at `p` ⟹ `IsFlatAt p` for the mod-`p`
-              torsion rep, from the leaf below plus the shared flat
-              transport `GaloisRep.isFlatAt_of_dvr_package` (see its own
-              subtree entry under the multiplicative case)
-              - ❌· `torsion_flat_of_good_reduction` — `torsion_flat_of_good_reduction`
-                (`KnownIn1980s/EllipticCurves/Flat.lean`, 2026-07-16):
-                good reduction over a DVR makes the `n`-torsion a finite
-                flat group scheme (Hopf algebra, finite flat, étale
-                generic fibre, equivariant points isomorphism). Plus the
-                division-polynomial node `isCoprime_Φ_ΨSq` — restated
-                for fields and directly (2026-07-17; the former
-                `resultant_Φ_ΨSq` node was DELETED, see the session-6
-                log)
-          - ✅· `FreyCurve.torsion_isFlat_of_multiplicative` — (2026-07-16) from the arithmetic
-            (`freyCurve_hasMultiplicativeReduction_of_dvd` at `q := p` +
-            `j_valuation_of_bad_prime`) and the glue node below
-            - ✅· `WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction` — (`FreyCurve/Semistable.lean`, own work): (2026-07-17) —
-              the peu-ramifiée glue: multiplicative reduction at `p`
-              with `p ∣ v_p(j)` ⟹ `IsFlatAt p`, from the new content
-              leaf below plus the shared flat transport
-              - ❌· `torsion_flat_of_multiplicative_reduction` — `torsion_flat_of_multiplicative_reduction`
-                (`FreyCurve/Semistable.lean`, stated 2026-07-17):
-                multiplicative reduction over `ℤ_(p)` with `p ∣ v_p(j)`
-                produces a finite flat Hopf algebra over `ℤ_(p)` (étale
-                generic fibre) whose `ℚ̄`-points are `Γ ℚ`-equivariantly
-                the `p`-torsion — the peu-ramifiée package in the same
-                DVR-`∃`-shape as the good-reduction leaf (Tate curve +
-                Kummer theory content)
-        - ✅· `FreyCurve.torsion_isTameAtTwo` — (2026-07-16) from the arithmetic and the tame glue node below
-          - ❌· `WeierstrassCurve.isTameAtTwo_of_hasMultiplicativeReduction` — (stated in `FreyConditions.lean` for a general elliptic
-            curve over ℚ): the Tate glue at 2 — multiplicative reduction
-            at 2 and `p` odd give the rank-1 unramified quotient with
-            character squaring to 1; to be closed against the quadratic-
-            twist and Tate-uniformization (`exists_tateEquivSepClosure`)
-            nodes
-      - ✅· `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified` — B5 `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
-        (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work)
-        — now (2026-07-16) from three explicit nodes in
-        `HardlyRamified/Lift.lean` (own work), following Buzzard's 2026
-        EPSRC Lecture 4 (his B5a/B5b/B5c):
-        - ❌· `exists_hardlyRamifiedLift` — B6a `exists_hardlyRamifiedLift` — an irreducible hardly
-          ramified mod-ℓ rep (ℓ ≥ 5) lifts to a hardly ramified ℓ-adic
-          rep over the integers `O` of a finite extension of `ℚ_ℓ`
-          (bundled in `structure HardlyRamifiedLift`: `O` + framed rep +
-          reduction map + Frobenius-charpoly compatibility). Deformation
-          theory / modularity lifting without residual modularity
-        - ✅· `residual_charFrob_eq` — B6bc `residual_charFrob_eq` — the residual Frobenius charpolys
-          of a liftable rep are those of `1 ⊕ χ̄` (`X² − (q+1)X + q`) —
-          now (2026-07-16) from the faithful split ( from the FLT
-          project's newer layer):
-          - ❌· `IsHardlyRamified.mem_isCompatible` — B6b `IsHardlyRamified.mem_isCompatible`
-            (`HardlyRamified/Family.lean`, ; conclusion named
-            `IsInHardlyRamifiedFamily` as a marked ) — a hardly ramified
-            ℓ-adic rep lives in a compatible family
-            (`GaloisRepFamily.lean`, defs, ) all of whose odd members
-            are hardly ramified. STRENGTHENED (2026-07-16): the package
-            now records injectivity of the coefficient-ring embeddings
-            into `ℚ̄_p` — an audit of the glue's proof skeleton showed
-            the upstream statement is too weak for the charpoly descent
-            (algebraMap from a domain to a field need not be injective);
-            true for the intended subrings of `ℚ̄_p`
-          - ✅· `residual_charFrob_eq_of_family` — `residual_charFrob_eq_of_family` (own work, `Lift.lean`) —
-            compatibility BOOKKEEPING — now (2026-07-16): extract the
-            3-adic member via the number-field embedding; its charpoly
-            at Frob_q is `X² − (1+q)X + q` by B6c's trace + the
-            cyclotomic determinant at Frobenius + the 2-dim
-            reconstruction (generalized to comm rings); transport
-            through baseChange-conj to the family, descend to the
-            coefficient field by injectivity of the embedding, ride
-            compatibility to the ℓ-adic member, descend to `O` by the
-            strengthened-B6b injectivity, and reduce through
-            `charFrob_compat`. Exceptional set: `S₀ ∪ {2-place,
-            3-place}`. Consumes B6c and the ℓ-adic Frobenius-value node.
-            AUDIT RESTATEMENT (2026-07-16): the conclusion (and B6bc's,
-            and the Chebotarev–Brauer–Nesbitt hypothesis) now carries a
-            finite exceptional set `S` of places — the family's
-            `isCompatible` only pins charpolys outside an unspecified
-            finite set, so the `∀ q ∉ {2,3,ℓ}` form was unprovable; the
-            density argument absorbs any finite `S` (new bridge:
-            `toHeightOneSpectrumRingOfIntegersRat_injective`, distinct
-            primes give distinct places, so a finite set of places
-            excludes only finitely many primes in the auxiliary-prime
-            selection). Proof ingredients consumed:
-            - ❌· `IsHardlyRamified.three_adic` — B6c `IsHardlyRamified.three_adic`
-              (`HardlyRamified/Threeadic.lean`, ) — a 3-adic hardly
-              ramified rep has trace(Frob_q) = 1 + q for q ≥ 5
-        - ✅· `not_isIrreducible_of_charFrob_eq` — `not_isIrreducible_of_charFrob_eq` — Chebotarev + Brauer–
-          Nesbitt — now (2026-07-16, `Chebotarev.lean` + proof in
-          `Lift.lean`): the agreement set with `1 ⊕ χ̄`'s charpolys is
-          closed (module topology on `End` over `ZMod ℓ` is discrete ;
-          coefficient maps continuous) and contains the dense Frobenius
-          conjugates, so Brauer–Nesbitt applies. Children:
-          - ✅· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density,
-            topological form — now (2026-07-16) by the profinite limit
-            argument (: cosets of fixing subgroups of finite
-            subextensions are a neighborhood basis,
-            `krullTopology_mem_nhds_one_iff`; the finite-level statement
-            puts a Frobenius conjugate in every coset):
-            - ❌· `exists_frobenius_conj_mem_coset` — `exists_frobenius_conj_mem_coset` — Chebotarev, finite
-              level: for every finite subextension `E` of `K̄/K` and
-              every `σ`, the coset `σ·Gal(K̄/E)` contains a conjugate of
-              a `globalFrob v` with `v ∉ S` (existence form of
-              Chebotarev for the Galois closure of `E/K`)
-- ✅· `IsHardlyRamified.mod_three` — `IsHardlyRamified.mod_three` (`ModThree.lean`) — : a mod-3 hardly
-  ramified rep has a Γℚ-equivariant surjection onto the trivial
-  character; B6c's eventual proof lifts this 3-adically. Children:
-  - ❌· `mod_three_reducible` — `mod_three_reducible` — the Dickson/discriminant reducibility
-    content (unchanged)
-  - ✅· `mod_three_of_stable_line` — `mod_three_of_stable_line` — (2026-07-17) from the new local leaf
-    below + the (now field-generic) character bookkeeping of
-    `MazurTorsion.lean`: quotient character `χ₂` of the leaf's line,
-    trivial-on-`ker ρ` (unipotent scalar lemma), open kernel
-    (`isOpen_setOf_galoisRep_eq_one`), unramified outside `{2,3}` from
-    `IsHardlyRamified.isUnramified` via the generic bridge +
-    `Rat.subsingleton_ringHom` convert; `minkowski_character_trivial`
-    (target-generalized to any group) kills `χ₂`; `π` := coordinate of
-    the rank-1 quotient
-    - ❌· `exists_line_with_locally_unramified_quotCharacter` — `exists_line_with_locally_unramified_quotCharacter`
-      (`ModThree.lean`, stated 2026-07-17) — the LOCAL leaf: a reducible
-      mod-3 hardly ramified rep has a stable line whose quotient
-      character is unramified at `2` AND `3` (flat connected-étale
-      analysis at `3` incl. the Serre swap; tame quadratic condition at
-      `2`). - NB the lift structure gained an `IsModuleTopology ℤ_[ℓ] O`
-      field (statement strengthening of B6a's conclusion, true for
-      integers of finite extensions of ℚ_ℓ; required by B6b)
+                      (`freyCurve_hasMultiplicativeReduction_of_dvd` + `j_valuation_of_bad_prime`)
+                      and the Tate glue node below
+                        - ✅· `WeierstrassCurve.isUnramifiedAt_of_hasMultiplicativeReduction` — (`FreyCurve/Semistable.lean`, own work): (2026-07-17) — the Tate glue:
+                          multiplicative reduction at odd `q ≠ p` with `p ∣ v_q(j)` ⟹
+                          `IsUnramifiedAt q`, by the same embedded-subring transport as the good
+                          case, against the new pure-Tate content leaf below
+                            - ✅· `WeierstrassCurve.torsion_trivial_of_multiplicative_reduction` — pointwise inertia-triviality on torsion at multiplicative primes with
+                              `p ∣ v_q(j)` — the split/nonsplit case split; the local input to
+                              `isUnramifiedAt_of_hasMultiplicativeReduction`.
+                                - ✅· `torsion_trivial_of_split_multiplicative_adic` — pointwise inertia-TRIVIALITY in the split case with `p ∣ v_q(j)`:
+                                  the Tate uniformization witness feeds `tate_inertia_trivial` at
+                                  the local valuation subring with the step-(d) witness, pulled back
+                                  to `E(ℚ̄)` along the equivariant embedding.
+                                    - ✅· `WeierstrassCurve.exists_tateEquivSepClosure` — Tate's uniformisation over a separable closure, now DERIVED
+                                      from the choice-free Tate-curve uniformisation and Tate's
+                                      variable-change theorem: the variable change is `k`-rational,
+                                      so its base-changed point equivalence is Galois-equivariant,
+                                      and the equivariance transports through the composite.
+                                        - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC V.5.3): a curve with split
+                                          multiplicative reduction is a change of Weierstrass
+                                          coordinates of the Tate curve of its Tate parameter.
+                                        - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω) ≅
+                                          Ωˣ/q^ℤ` Galois-equivariantly ON THE NOSE, by the explicit
+                                          series `X(u,q)`, `Y(u,q)` (whose Weierstrass equation is
+                                          proven in `TateCurveConstruction`); glued over the finite
+                                          subextensions of `Ω`.
+                                - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality statement, assembled from the
+                                  LOCAL nonsplit node `tate_inertia_trivial_of_nonsplit` by the
+                                  proven `ℚ̄`-pullback glue; the `j`-hypothesis feeds through
+                                  `map_j`.
+                                    - ✅· `WeierstrassCurve.tate_inertia_trivial_of_nonsplit` — the LOCAL twist-transfer of nonsplit triviality, now
+                                      assembled: as the unipotent analogue via
+                                      `tate_inertia_trivial`, with the step-(d) witness applied to
+                                      the twisted minimal model (same `j`-invariant through
+                                      `variableChange_j` and `j_quadraticTwist`).
+                                        - ✅· `WeierstrassCurve.exists_tateEquivSepClosure` — Tate's uniformisation over a separable closure, now
+                                          DERIVED from the choice-free Tate-curve uniformisation and
+                                          Tate's variable-change theorem: the variable change is
+                                          `k`-rational, so its base-changed point equivalence is
+                                          Galois-equivariant, and the equivariance transports
+                                          through the composite.
+                                            - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC V.5.3): a curve with
+                                              split multiplicative reduction is a change of
+                                              Weierstrass coordinates of the Tate curve of its Tate
+                                              parameter.
+                                            - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω)
+                                              ≅ Ωˣ/q^ℤ` Galois-equivariantly ON THE NOSE, by the
+                                              explicit series `X(u,q)`, `Y(u,q)` (whose Weierstrass
+                                              equation is proven in `TateCurveConstruction`); glued
+                                              over the finite subextensions of `Ω`.
+                - ✅· `FreyCurve.torsion_isFlat` — flat at p: (2026-07-16) by the case split `p ∣ abc` or not, from the two nodes
+                  below
+                    - ✅· `FreyCurve.torsion_isFlat_of_good` — (2026-07-16) from the arithmetic node `freyCurve_hasGoodReduction_of_not_dvd`
+                      (applied at `q := p`) and the flat glue node below
+                        - ✅· `WeierstrassCurve.isFlatAt_of_hasGoodReduction` — (`FreyCurve/Semistable.lean`, own work): (2026-07-17) — good reduction at
+                          `p` ⟹ `IsFlatAt p` for the mod-`p` torsion rep, from the leaf below plus
+                          the shared flat transport `GaloisRep.isFlatAt_of_dvr_package` (see its own
+                          subtree entry under the multiplicative case)
+                            - ❌· `torsion_flat_of_good_reduction` — `torsion_flat_of_good_reduction`
+                              (`KnownIn1980s/EllipticCurves/Flat.lean`, 2026-07-16): good reduction
+                              over a DVR makes the `n`-torsion a finite flat group scheme (Hopf
+                              algebra, finite flat, étale generic fibre, equivariant points
+                              isomorphism). Plus the division-polynomial node `isCoprime_Φ_ΨSq` —
+                              restated for fields and directly (2026-07-17; the former
+                              `resultant_Φ_ΨSq` node was DELETED, see the session-6 log)
+                    - ✅· `FreyCurve.torsion_isFlat_of_multiplicative` — (2026-07-16) from the arithmetic
+                      (`freyCurve_hasMultiplicativeReduction_of_dvd` at `q := p` +
+                      `j_valuation_of_bad_prime`) and the glue node below
+                        - ✅· `WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction` — (`FreyCurve/Semistable.lean`, own work): (2026-07-17) — the peu-ramifiée
+                          glue: multiplicative reduction at `p` with `p ∣ v_p(j)` ⟹ `IsFlatAt p`,
+                          from the new content leaf below plus the shared flat transport
+                            - ❌· `torsion_flat_of_multiplicative_reduction` — `torsion_flat_of_multiplicative_reduction`
+                              (`FreyCurve/Semistable.lean`, stated 2026-07-17): multiplicative
+                              reduction over `ℤ_(p)` with `p ∣ v_p(j)` produces a finite flat Hopf
+                              algebra over `ℤ_(p)` (étale generic fibre) whose `ℚ̄`-points are `Γ
+                              ℚ`-equivariantly the `p`-torsion — the peu-ramifiée package in the
+                              same DVR-`∃`-shape as the good-reduction leaf (Tate curve + Kummer
+                              theory content)
+                - ✅· `FreyCurve.torsion_isTameAtTwo` — (2026-07-16) from the arithmetic and the tame glue node below
+                    - ❌· `WeierstrassCurve.isTameAtTwo_of_hasMultiplicativeReduction` — (stated in `FreyConditions.lean` for a general elliptic curve over ℚ): the
+                      Tate glue at 2 — multiplicative reduction at 2 and `p` odd give the rank-1
+                      unramified quotient with character squaring to 1; to be closed against the
+                      quadratic-twist and Tate-uniformization (`exists_tateEquivSepClosure`) nodes
+            - ✅· `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified` — B5 `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
+              (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work) — now (2026-07-16)
+              from three explicit nodes in `HardlyRamified/Lift.lean` (own work), following
+              Buzzard's 2026 EPSRC Lecture 4 (his B5a/B5b/B5c):
+                - ❌· `exists_hardlyRamifiedLift` — B6a `exists_hardlyRamifiedLift` — an irreducible hardly ramified mod-ℓ rep (ℓ ≥ 5)
+                  lifts to a hardly ramified ℓ-adic rep over the integers `O` of a finite extension
+                  of `ℚ_ℓ` (bundled in `structure HardlyRamifiedLift`: `O` + framed rep + reduction
+                  map + Frobenius-charpoly compatibility). Deformation theory / modularity lifting
+                  without residual modularity
+                - ✅· `residual_charFrob_eq` — B6bc `residual_charFrob_eq` — the residual Frobenius charpolys of a liftable rep
+                  are those of `1 ⊕ χ̄` (`X² − (q+1)X + q`) — now (2026-07-16) from the faithful
+                  split ( from the FLT project's newer layer):
+                    - ❌· `IsHardlyRamified.mem_isCompatible` — B6b `IsHardlyRamified.mem_isCompatible` (`HardlyRamified/Family.lean`, ;
+                      conclusion named `IsInHardlyRamifiedFamily` as a marked ) — a hardly ramified
+                      ℓ-adic rep lives in a compatible family (`GaloisRepFamily.lean`, defs, ) all
+                      of whose odd members are hardly ramified. STRENGTHENED (2026-07-16): the
+                      package now records injectivity of the coefficient-ring embeddings into `ℚ̄_p`
+                      — an audit of the glue's proof skeleton showed the upstream statement is too
+                      weak for the charpoly descent (algebraMap from a domain to a field need not be
+                      injective); true for the intended subrings of `ℚ̄_p`
+                    - ✅· `residual_charFrob_eq_of_family` — `residual_charFrob_eq_of_family` (own work, `Lift.lean`) — compatibility
+                      BOOKKEEPING — now (2026-07-16): extract the 3-adic member via the number-field
+                      embedding; its charpoly at Frob_q is `X² − (1+q)X + q` by B6c's trace + the
+                      cyclotomic determinant at Frobenius + the 2-dim reconstruction (generalized to
+                      comm rings); transport through baseChange-conj to the family, descend to the
+                      coefficient field by injectivity of the embedding, ride compatibility to the
+                      ℓ-adic member, descend to `O` by the strengthened-B6b injectivity, and reduce
+                      through `charFrob_compat`. Exceptional set: `S₀ ∪ {2-place, 3-place}`.
+                      Consumes B6c and the ℓ-adic Frobenius-value node. AUDIT RESTATEMENT
+                      (2026-07-16): the conclusion (and B6bc's, and the Chebotarev–Brauer–Nesbitt
+                      hypothesis) now carries a finite exceptional set `S` of places — the family's
+                      `isCompatible` only pins charpolys outside an unspecified finite set, so the
+                      `∀ q ∉ {2,3,ℓ}` form was unprovable; the density argument absorbs any finite
+                      `S` (new bridge: `toHeightOneSpectrumRingOfIntegersRat_injective`, distinct
+                      primes give distinct places, so a finite set of places excludes only finitely
+                      many primes in the auxiliary-prime selection). Proof ingredients consumed:
+                        - ❌· `IsHardlyRamified.three_adic` — B6c `IsHardlyRamified.three_adic` (`HardlyRamified/Threeadic.lean`, ) — a
+                          3-adic hardly ramified rep has trace(Frob_q) = 1 + q for q ≥ 5
+                - ✅· `not_isIrreducible_of_charFrob_eq` — `not_isIrreducible_of_charFrob_eq` — Chebotarev + Brauer– Nesbitt — now
+                  (2026-07-16, `Chebotarev.lean` + proof in `Lift.lean`): the agreement set with `1
+                  ⊕ χ̄`'s charpolys is closed (module topology on `End` over `ZMod ℓ` is discrete ;
+                  coefficient maps continuous) and contains the dense Frobenius conjugates, so
+                  Brauer–Nesbitt applies. Children:
+                    - ✅· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density, topological form — now
+                      (2026-07-16) by the profinite limit argument (: cosets of fixing subgroups of
+                      finite subextensions are a neighborhood basis,
+                      `krullTopology_mem_nhds_one_iff`; the finite-level statement puts a Frobenius
+                      conjugate in every coset):
+                        - ❌· `exists_frobenius_conj_mem_coset` — `exists_frobenius_conj_mem_coset` — Chebotarev, finite level: for every
+                          finite subextension `E` of `K̄/K` and every `σ`, the coset `σ·Gal(K̄/E)`
+                          contains a conjugate of a `globalFrob v` with `v ∉ S` (existence form of
+                          Chebotarev for the Galois closure of `E/K`)
+- ✅· `IsHardlyRamified.mod_three` — `IsHardlyRamified.mod_three` (`ModThree.lean`) — : a mod-3 hardly ramified rep has a Γℚ-
+  equivariant surjection onto the trivial character; B6c's eventual proof lifts this 3-adically.
+  Children:
+    - ❌· `mod_three_reducible` — `mod_three_reducible` — the Dickson/discriminant reducibility content (unchanged)
+    - ✅· `mod_three_of_stable_line` — `mod_three_of_stable_line` — (2026-07-17) from the new local leaf below + the (now field-
+      generic) character bookkeeping of `MazurTorsion.lean`: quotient character `χ₂` of the leaf's
+      line, trivial-on-`ker ρ` (unipotent scalar lemma), open kernel
+      (`isOpen_setOf_galoisRep_eq_one`), unramified outside `{2,3}` from
+      `IsHardlyRamified.isUnramified` via the generic bridge + `Rat.subsingleton_ringHom` convert;
+      `minkowski_character_trivial` (target-generalized to any group) kills `χ₂`; `π` := coordinate
+      of the rank-1 quotient
+        - ❌· `exists_line_with_locally_unramified_quotCharacter` — `exists_line_with_locally_unramified_quotCharacter` (`ModThree.lean`, stated 2026-07-17) —
+          the LOCAL leaf: a reducible mod-3 hardly ramified rep has a stable line whose quotient
+          character is unramified at `2` AND `3` (flat connected-étale analysis at `3` incl. the
+          Serre swap; tame quadratic condition at `2`). - NB the lift structure gained an
+          `IsModuleTopology ℤ_[ℓ] O` field (statement strengthening of B6a's conclusion, true for
+          integers of finite extensions of ℚ_ℓ; required by B6b)
 
 ## Canonical frontier (2026-07-16, session 4 close — audit-verified)
 

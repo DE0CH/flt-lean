@@ -120,14 +120,17 @@ def render(n, depth):
         return
     e = by_name[n]
     state = "🟪" if e.get("wip") else "·"
-    head = f"{'  ' * depth}- {mark[n]}{state} `{disp[n]}`"
+    # 4-space indentation per level: classic Markdown renderers
+    # (Markdown.pl / python-markdown) flatten 2-space-nested lists,
+    # which made every item look childless in such previews.
+    head = f"{'    ' * depth}- {mark[n]}{state} `{disp[n]}`"
     body = e["text"]
     # drop the leading name-echo from the prose if present
     body = re.sub(rf"^`?{re.escape(n)}`?\s*[—:-]?\s*", "", body)
-    wrapped = textwrap.wrap(body, width=72 - 2 * depth - 2) if body else []
+    wrapped = textwrap.wrap(body, width=max(100 - 4 * depth - 2, 30)) if body else []
     lines_out.append(head + (" — " + wrapped[0] if wrapped else ""))
     for w in wrapped[1:]:
-        lines_out.append(f"{'  ' * depth}  {w}")
+        lines_out.append(f"{'    ' * depth}  {w}")
     # a node with several dependents appears once under EACH of them, with
     # its full text and subtree duplicated (no "(see above)" references —
     # Deyao, 2026-07-17); the dependency graph is acyclic, so this
