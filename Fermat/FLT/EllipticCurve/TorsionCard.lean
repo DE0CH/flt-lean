@@ -372,6 +372,58 @@ theorem smul_collision {m : ℤ} {x y xm ym xm1 ym1 : k}
     rw [this, add_smul, heqm, heqm1]
     exact hadd
 
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] in
+/-- **The gap-1 `x`-difference identity** (PROVEN 2026-07-17): from the
+multiplication formulas at `m` and `m+1`, the difference of the
+`x`-coordinates is `x([m+1]P) - x([m]P) = -ψ₂ₘ₊₁/(ψₘψₘ₊₁)²` in
+multiplied form — by the `φ`-difference identity and the odd
+recurrence, with no further input. -/
+theorem x_sub_gap_one {m : ℤ} {x y xm xm1 : k}
+    (h : (E⁄k).toAffine.Equation x y)
+    (hm : xm * ((E⁄k).ψ m).evalEval x y ^ 2 = ((E⁄k).φ m).evalEval x y)
+    (hm1 : xm1 * ((E⁄k).ψ (m + 1)).evalEval x y ^ 2 =
+      ((E⁄k).φ (m + 1)).evalEval x y) :
+    (xm1 - xm) * (((E⁄k).ψ m).evalEval x y * ((E⁄k).ψ (m + 1)).evalEval x y) ^ 2 =
+      -((E⁄k).ψ (2 * m + 1)).evalEval x y := by
+  have hφm := evalEval_φ_eq E m h
+  have hφm1 := evalEval_φ_eq E (m + 1) h
+  have hodd := evalEval_ψ_odd E m h
+  rw [show m + 1 + 1 = m + 2 from by ring] at hφm1
+  rw [show m + 1 - 1 = m from by ring] at hφm1
+  linear_combination ((E⁄k).ψ m).evalEval x y ^ 2 * hm1 -
+    ((E⁄k).ψ (m + 1)).evalEval x y ^ 2 * hm +
+    ((E⁄k).ψ m).evalEval x y ^ 2 * hφm1 -
+    ((E⁄k).ψ (m + 1)).evalEval x y ^ 2 * hφm + hodd
+
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] in
+/-- **The gap-2 `x`-difference identity** (PROVEN 2026-07-17): from the
+multiplication formulas at `m-1` and `m+1`, the difference of the
+`x`-coordinates is `x([m-1]P) - x([m+1]P) = ψ₂ₘψ₂/(ψₘ₋₁ψₘ₊₁)²` in
+multiplied form — by the `φ`-difference identity and the even
+recurrence. -/
+theorem x_sub_gap_two {m : ℤ} {x y xm1 xp1 : k}
+    (h : (E⁄k).toAffine.Equation x y)
+    (hm1 : xm1 * ((E⁄k).ψ (m - 1)).evalEval x y ^ 2 =
+      ((E⁄k).φ (m - 1)).evalEval x y)
+    (hp1 : xp1 * ((E⁄k).ψ (m + 1)).evalEval x y ^ 2 =
+      ((E⁄k).φ (m + 1)).evalEval x y) :
+    (xm1 - xp1) *
+        (((E⁄k).ψ (m - 1)).evalEval x y * ((E⁄k).ψ (m + 1)).evalEval x y) ^ 2 =
+      ((E⁄k).ψ (2 * m)).evalEval x y * ((E⁄k).ψ 2).evalEval x y := by
+  have hφm1 := evalEval_φ_eq E (m - 1) h
+  have hφp1 := evalEval_φ_eq E (m + 1) h
+  have heven := evalEval_ψ_even E m h
+  rw [show m - 1 + 1 = m from by ring] at hφm1
+  rw [show m - 1 - 1 = m - 2 from by ring] at hφm1
+  rw [show m + 1 + 1 = m + 2 from by ring] at hφp1
+  rw [show m + 1 - 1 = m from by ring] at hφp1
+  linear_combination ((E⁄k).ψ (m + 1)).evalEval x y ^ 2 * hm1 -
+    ((E⁄k).ψ (m - 1)).evalEval x y ^ 2 * hp1 +
+    ((E⁄k).ψ (m + 1)).evalEval x y ^ 2 * hφm1 -
+    ((E⁄k).ψ (m - 1)).evalEval x y ^ 2 * hφp1 - heven
+
 set_option warn.sorry false in
 /-- (Sorry node — **the multiplication-by-`n` formula**, Washington
 *Elliptic curves* Theorem 3.6, the strengthened simultaneous induction
