@@ -1803,4 +1803,13 @@ assumed. Axiom invariant: every declaration must use at most
   (`Monoid (A →ₐ[K] L)` for `Bialgebra K A`); the leaf's
   `WithConv`-wrapped structure is mathlib's — the reconciling
   `MulEquiv` should be identity-underlying (`WithConv` is a
-  def-wrapper).
+  def-wrapper). SCRATCH-VERIFIED (2026-07-17): with
+  `letI := (localizationToAdicCompletionIntegers v).toAlgebra`, the
+  instance `HopfAlgebra 𝒪ᵥ (𝒪ᵥ ⊗[ℤ_(q)] H)` SYNTHESIZES from
+  mathlib's tensor-product Hopf instance (needs `noncomputable`,
+  respectTransparency, 1M synth heartbeats) — step (ii)'s core is
+  viable end-to-end. Next session: build the main transport
+  (`G := 𝒪ᵥ ⊗[ℤ_(q)] H`, flat/finite by base change, étale generic
+  fibre by `cancelBaseChange`, the three-layer points comparison with
+  equivariance, and the `IsFlatAt` assembly over the two open ideals
+  of `ZMod p`).
