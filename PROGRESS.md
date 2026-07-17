@@ -2236,3 +2236,15 @@ assumed. Axiom invariant: every declaration must use at most
   (odd-step check running with specialized coefficients) and the
   propagation of (iii-a)/(iii-b) to the output pairs — then the Lean
   skeleton.
+- 2026-07-17 (session 5, odd t-target status): the deterministic
+  elimination chain (tⱼ² → memberships, tₘtₘ₊₁ → (iii-a)) reduces the
+  odd-step t-target to a t-LINEAR residue whose coefficients do NOT
+  vanish mod the curve equation alone (78/78/195 terms) — the t-target
+  needs additional t-linear generators beyond (memberships, iii-a):
+  candidates are the s-coupled cross-instances (pairs `(1, m)`,
+  `(1, m+1)`; note `t₁ = s`, `ψ₁ = 1`) — the general-pair
+  cross-tracking family evaluated at gap `m∓1`... derive the exact
+  shape by the same residual read-off next (extract the 78-term
+  t-linear coefficient, identify it against `s·(window)`-multiples).
+  Lean-side: `eval_Ψ₂Sq_eq_sq` (the membership identity) extracted as
+  a standalone lemma; `two_smul_some_eq_zero_iff` refactored onto it.
