@@ -2582,6 +2582,19 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6, char-2 reduction `916e56f`+):
+  `separable_preΨ'_char_two` is now DERIVED from the strictly smaller
+  node `separable_preΨ'_char_two_closed` (algebraically closed base)
+  via `Polynomial.separable_map` + `map_preΨ'` + the
+  baseChange-composition identity (term-mode `congrArg` to dodge the
+  module-system rw-matching friction). Over K = K̄ char 2 the
+  Frobenius decomposition f = u² + X·v², f′ = v² is available:
+  π | f, f′ ⟹ π | u and π | v. Remaining gap: a structural
+  obstruction to gcd(u,v) ≠ 1 — candidate: Gunji 1976 char-2
+  disc(ψₚ) formula (annas-mcp next session), or the universal
+  discriminant route (generic-fiber separability over ℚ(A) is now a
+  theorem; missing only the ±pˢΔᵗ-structure via Δ-irreducibility +
+  Nullstellensatz — the SAME machinery the resultant node needs).
 - 2026-07-17 (session 6 final, UNIFICATION INSIGHT): the two
   remaining torsion-cone blockers — `resultant_Φ_ΨSq` and
   `separable_preΨ'_char_two` — are instances of ONE technique: a
