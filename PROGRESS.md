@@ -2582,6 +2582,23 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6, NOS step (ii) PROVEN `293e809`):
+  `torsion_ordinate_mem` — the monic y-quadratic instantiation of the
+  root-integrality lemma; coefficient membership by explicit
+  coeff-case analysis (match on the index, norm_num-normalized
+  shapes closed by generic add_mem/neg_mem/mul_mem/pow_mem chains —
+  NOTE the ValuationSubring dot-forms take explicit element
+  arguments, use the _root_ SubringClass lemmas). Axiom-clean, build
+  green. NEXT (iii): mod-𝔪 injectivity — two torsion points with
+  congruent coordinates mod the maximal ideal of 𝒪 coincide; via the
+  residue curve's separable_preΨ' (x-level: two distinct integral
+  roots of ΨSqₙ with equal residues would give the reduced ΨSqₙ a
+  double root, contradicting separability over the residue field of
+  𝒪 — which is a separably-closed?? no: an extension of the residue
+  field of R; separability holds over ANY field ✓ char-free) and the
+  yQuad/Ψ₂Sq-coprimality (y-level). Then (iv): inertia acts
+  trivially on 𝒪-residues, so σP ≡ P coordinatewise; σP is torsion
+  (Point.map additive); conclude σP = P.
 - 2026-07-17 (session 6, NOS steps (0)+(i) PROVEN `6a2c87f`,
   `a6b5660`): `ValuationSubring.mem_of_root_of_inv_leadingCoeff_mem`
   (the general root-integrality: leading term dominates when
