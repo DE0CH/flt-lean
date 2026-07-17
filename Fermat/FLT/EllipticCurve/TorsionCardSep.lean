@@ -30,6 +30,209 @@ universe u
 variable {k : Type u} [Field k] (E : WeierstrassCurve k) [E.IsElliptic]
   [DecidableEq k]
 
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **The generic chord value** (PROVEN): over an algebraically closed
+field there is a value `c` for which `Φₚ − c ⬝ ΨSqₚ` is separable of
+degree `p²`, `c` is not a `2`-torsion abscissa, and every root of
+`Φₚ − c ⬝ ΨSqₚ` avoids the zeros of `ΨSqₚ` and of `Ψ₂Sq`. The bad
+values form a finite set: images under `x ↦ Φₚ(x)/ΨSqₚ(x)` of the
+roots of the Wronskian `Φₚ′ΨSqₚ − ΦₚΨSqₚ′ = p ⬝ preΨ₂ₚ ≠ 0` and of
+`Ψ₂Sq`, together with the roots of `Ψ₂Sq`. -/
+theorem exists_good_chord [IsAlgClosed k] {p : ℕ} (hp : p.Prime)
+    (hodd : Odd p) (hpk : (p : k) ≠ 0) :
+    ∃ c : k,
+      ((E⁄k).Φ (p : ℤ) -
+        Polynomial.C c * (E⁄k).ΨSq (p : ℤ)).Separable ∧
+      ((E⁄k).Φ (p : ℤ) -
+        Polynomial.C c * (E⁄k).ΨSq (p : ℤ)).natDegree = p ^ 2 ∧
+      ((E⁄k).Ψ₂Sq).eval c ≠ 0 ∧
+      ∀ x₀ : k, ((E⁄k).Φ (p : ℤ) -
+          Polynomial.C c * (E⁄k).ΨSq (p : ℤ)).eval x₀ = 0 →
+        ((E⁄k).ΨSq (p : ℤ)).eval x₀ ≠ 0 ∧
+          ((E⁄k).Ψ₂Sq).eval x₀ ≠ 0 := by
+  classical
+  haveI : (E⁄k).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap k k)).IsElliptic)
+  set Φp := (E⁄k).Φ (p : ℤ) with hΦdef
+  set Sp := (E⁄k).ΨSq (p : ℤ) with hSdef
+  have hpz : ((p : ℕ) : ℤ) ≠ 0 := by exact_mod_cast hp.ne_zero
+  -- no common roots of `Φₚ` and `ΨSqₚ`
+  have hnocommon : ∀ x : k, Φp.eval x = 0 → Sp.eval x ≠ 0 := by
+    intro x hΦ0 hS0
+    obtain ⟨F, G, hFG⟩ := WeierstrassCurve.isCoprime_Φ_ΨSq (E⁄k) hpz
+      (WeierstrassCurve.isUnit_Δ _)
+    have hev := congrArg (Polynomial.eval x) hFG
+    rw [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_mul,
+      Polynomial.eval_one, ← hΦdef, ← hSdef, hΦ0, hS0] at hev
+    simp at hev
+  -- `Ψ₂Sq ≠ 0`
+  have hΨ₂ne : (E⁄k).Ψ₂Sq ≠ 0 := by
+    intro h0
+    have hcop := WeierstrassCurve.isCoprime_Φ_ΨSq (E⁄k)
+      (two_ne_zero : (2 : ℤ) ≠ 0) (WeierstrassCurve.isUnit_Δ _)
+    rw [WeierstrassCurve.ΨSq_two, h0] at hcop
+    have hunit := hcop.isUnit_of_dvd' dvd_rfl (dvd_zero _)
+    have hdeg := Polynomial.natDegree_eq_zero_of_isUnit hunit
+    rw [WeierstrassCurve.natDegree_Φ (W := (E⁄k)) 2] at hdeg
+    norm_num at hdeg
+  -- the Wronskian is nonzero
+  set Wr := Polynomial.derivative Φp * Sp - Φp * Polynomial.derivative Sp
+    with hWrdef
+  have hW := PsiSumCompanion.wronskian (E⁄k) (n := p) hp.one_lt.le
+  have hSne : Sp ≠ 0 := by
+    intro h0
+    have hcop := WeierstrassCurve.isCoprime_Φ_ΨSq (E⁄k) hpz
+      (WeierstrassCurve.isUnit_Δ _)
+    rw [← hSdef, h0] at hcop
+    have hunit := hcop.isUnit_of_dvd' dvd_rfl (dvd_zero _)
+    have hdeg := Polynomial.natDegree_eq_zero_of_isUnit hunit
+    rw [WeierstrassCurve.natDegree_Φ (W := (E⁄k))] at hdeg
+    simp only [Int.natAbs_natCast] at hdeg
+    have := hp.pos
+    have hne : p ^ 2 ≠ 0 := by positivity
+    exact hne hdeg
+  have hWrne : Wr ≠ 0 := by
+    rcases eq_or_ne (2 : k) 0 with hchar2 | hchar2
+    · -- char 2 : `Sp′ = 0`, `Wr = Φₚ′ ⬝ Sp ≠ 0`
+      have hSodd : Sp = (E⁄k).preΨ' p ^ 2 := by
+        rw [hSdef, show ((p : ℤ)) = ((p : ℕ) : ℤ) from rfl,
+          WeierstrassCurve.ΨSq_ofNat,
+          if_neg (Nat.not_even_iff_odd.mpr hodd), mul_one]
+      have hS' : Polynomial.derivative Sp = 0 := by
+        rw [hSodd, sq, Polynomial.derivative_mul]
+        have h2 : ∀ q : Polynomial k, Polynomial.derivative q * q +
+            q * Polynomial.derivative q =
+            2 * (q * Polynomial.derivative q) := fun q => by ring
+        rw [h2, show ((2 : Polynomial k)) = Polynomial.C (2 : k) from
+          (map_ofNat _ 2).symm, hchar2, Polynomial.C_0, zero_mul]
+      have hΦ'ne : Polynomial.derivative Φp ≠ 0 := by
+        intro h0
+        have hc := congrArg (fun q => Polynomial.coeff q (p ^ 2 - 1)) h0
+        simp only [Polynomial.coeff_derivative,
+          Polynomial.coeff_zero] at hc
+        rw [show p ^ 2 - 1 + 1 = p ^ 2 from
+            Nat.sub_add_cancel (Nat.one_le_pow 2 p hp.pos)] at hc
+        rw [hΦdef, show (p ^ 2) = ((p : ℤ)).natAbs ^ 2 by
+          simp, WeierstrassCurve.coeff_Φ, one_mul] at hc
+        apply hpk
+        have h2 : ((p ^ 2 - 1 + 1 : ℕ) : k) = 0 := by exact_mod_cast hc
+        rw [show p ^ 2 - 1 + 1 = p * p by
+          rw [Nat.sub_add_cancel (Nat.one_le_pow 2 p hp.pos), sq]] at h2
+        push_cast at h2
+        rcases mul_eq_zero.mp h2 with h | h <;> exact h
+      rw [hWrdef, hS', mul_zero, sub_zero]
+      exact mul_ne_zero hΦ'ne hSne
+    · -- char ≠ 2 : `Wr = p ⬝ preΨ₂ₚ ≠ 0` by the top coefficient
+      rw [hWrdef, hΦdef, hSdef, hW]
+      intro h0
+      rcases mul_eq_zero.mp h0 with h | h
+      · rw [show ((p : Polynomial k)) = Polynomial.C ((p : k)) from
+          (Polynomial.C_eq_natCast p).symm, Polynomial.C_eq_zero] at h
+        exact hpk h
+      · apply WeierstrassCurve.coeff_preΨ_ne_zero (W := (E⁄k))
+          (n := 2 * (p : ℤ)) ?_
+        · rw [h, Polynomial.coeff_zero]
+        · push_cast
+          exact mul_ne_zero hchar2 hpk
+  -- the bad set and the good value
+  set r : k → k := fun x => Φp.eval x / Sp.eval x with hrdef
+  set B : Finset k :=
+    ((Wr.roots.toFinset ∪ ((E⁄k).Ψ₂Sq).roots.toFinset).image r) ∪
+      ((E⁄k).Ψ₂Sq).roots.toFinset with hBdef
+  obtain ⟨c, hc⟩ := Infinite.exists_notMem_finset B
+  have hcB1 : ∀ x : k, Wr.eval x = 0 → Sp.eval x ≠ 0 → c ≠ r x := by
+    intro x hx hSx hcr
+    apply hc
+    rw [hBdef]
+    refine Finset.mem_union_left _ (Finset.mem_image.mpr ⟨x, ?_, hcr.symm⟩)
+    exact Finset.mem_union_left _ (Multiset.mem_toFinset.mpr
+      (Polynomial.mem_roots hWrne |>.mpr hx))
+  have hcB2 : ∀ x : k, ((E⁄k).Ψ₂Sq).eval x = 0 → c ≠ r x := by
+    intro x hx hcr
+    apply hc
+    rw [hBdef]
+    refine Finset.mem_union_left _ (Finset.mem_image.mpr ⟨x, ?_, hcr.symm⟩)
+    exact Finset.mem_union_right _ (Multiset.mem_toFinset.mpr
+      (Polynomial.mem_roots hΨ₂ne |>.mpr hx))
+  have hcB3 : ((E⁄k).Ψ₂Sq).eval c ≠ 0 := by
+    intro hx
+    apply hc
+    rw [hBdef]
+    exact Finset.mem_union_right _ (Multiset.mem_toFinset.mpr
+      (Polynomial.mem_roots hΨ₂ne |>.mpr hx))
+  -- degree
+  have hCS : (Polynomial.C c * Sp).natDegree < Φp.natDegree := by
+    calc (Polynomial.C c * Sp).natDegree ≤ Sp.natDegree :=
+          Polynomial.natDegree_C_mul_le c Sp
+      _ ≤ p ^ 2 - 1 := by
+          rw [hSdef]
+          simpa using WeierstrassCurve.natDegree_ΨSq_le (W := (E⁄k)) (p : ℤ)
+      _ < p ^ 2 := by have h := Nat.one_le_pow 2 p hp.pos; omega
+      _ = Φp.natDegree := by
+          rw [hΦdef, WeierstrassCurve.natDegree_Φ (W := (E⁄k))]
+          simp
+  have hdeg : (Φp - Polynomial.C c * Sp).natDegree = p ^ 2 := by
+    rw [Polynomial.natDegree_sub_eq_left_of_natDegree_lt hCS, hΦdef,
+      WeierstrassCurve.natDegree_Φ (W := (E⁄k))]
+    simp
+  -- roots of `Φ − cS` avoid `S` and `Ψ₂Sq`
+  have hroots : ∀ x₀ : k, (Φp - Polynomial.C c * Sp).eval x₀ = 0 →
+      Sp.eval x₀ ≠ 0 ∧ ((E⁄k).Ψ₂Sq).eval x₀ ≠ 0 := by
+    intro x₀ h0
+    rw [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C,
+      sub_eq_zero] at h0
+    have hSx : Sp.eval x₀ ≠ 0 := by
+      intro hS0
+      exact hnocommon x₀ (by rw [h0, hS0, mul_zero]) hS0
+    refine ⟨hSx, fun hΨ0 => ?_⟩
+    exact hcB2 x₀ hΨ0 (by rw [hrdef]; field_simp [hSx]; linear_combination -h0)
+  -- separability
+  have hsep : (Φp - Polynomial.C c * Sp).Separable := by
+    by_contra hsep
+    set g := Φp - Polynomial.C c * Sp with hgdef
+    have hgne : g ≠ 0 := fun h0 => by
+      have hd := hdeg
+      rw [h0, Polynomial.natDegree_zero] at hd
+      have hp1 := Nat.one_le_pow 2 p hp.pos
+      omega
+    rw [Polynomial.separable_def] at hsep
+    have hgcd : ¬IsUnit (EuclideanDomain.gcd g (Polynomial.derivative g)) :=
+      fun h => hsep (EuclideanDomain.gcd_isUnit_iff.mp h)
+    have hgcdne : EuclideanDomain.gcd g (Polynomial.derivative g) ≠ 0 :=
+      fun h0 => hgne ((EuclideanDomain.gcd_eq_zero_iff.mp h0).1)
+    obtain ⟨x, hx⟩ := IsAlgClosed.exists_root
+      (p := EuclideanDomain.gcd g (Polynomial.derivative g))
+      (fun h0 => hgcd (Polynomial.isUnit_iff_degree_eq_zero.mpr h0))
+    have hgx : g.eval x = 0 :=
+      Polynomial.eval_eq_zero_of_dvd_of_eval_eq_zero
+        (EuclideanDomain.gcd_dvd_left g (Polynomial.derivative g)) hx
+    have hg'x : (Polynomial.derivative g).eval x = 0 :=
+      Polynomial.eval_eq_zero_of_dvd_of_eval_eq_zero
+        (EuclideanDomain.gcd_dvd_right g (Polynomial.derivative g)) hx
+    have hSx : Sp.eval x ≠ 0 := (hroots x hgx).1
+    have hΦx : Φp.eval x = c * Sp.eval x := by
+      have := hgx
+      rw [hgdef, Polynomial.eval_sub, Polynomial.eval_mul,
+        Polynomial.eval_C, sub_eq_zero] at this
+      exact this
+    have hΦ'x : (Polynomial.derivative Φp).eval x =
+        c * (Polynomial.derivative Sp).eval x := by
+      have h1 := hg'x
+      rw [hgdef, Polynomial.derivative_sub, Polynomial.derivative_C_mul,
+        Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C,
+        sub_eq_zero] at h1
+      exact h1
+    have hWrx : Wr.eval x = 0 := by
+      rw [hWrdef, Polynomial.eval_sub, Polynomial.eval_mul,
+        Polynomial.eval_mul, hΦx, hΦ'x]
+      ring
+    exact hcB1 x hWrx hSx (by
+      rw [hrdef]
+      field_simp [hSx]
+      linear_combination -hΦx)
+  exact ⟨c, hsep, hdeg, hcB3, hroots⟩
+
 set_option warn.sorry false in
 /-- **A fibre of `[p]` of size `p²`** (sorry node): over an
 algebraically closed field, pick a generic chord value `c` — avoiding
