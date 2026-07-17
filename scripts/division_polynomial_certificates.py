@@ -301,6 +301,26 @@ def check_universal_instances() -> None:
         (B2 + 4 * xm + 4 * x0 + 4 * xm1) - P2(x0) - P2(xm1))) == 0
     print("universal-identity instances (pairs (m,m+1),(1,m),(1,m+1)): OK")
 
+def certificate_odd_step_core() -> None:
+    """The odd-step CORE certificate in the final Lean hypothesis
+    format: with Hsec the 4-scaled secant-x identity (division-free,
+    `2dy = t₂ - t₁ - a₁dx`), Huniv the universal identity at the pair,
+    and the two memberships, the reduced target
+    `(x - x_out)·dx² = t₁t₂` closes with ALL COFACTORS `-1/4`:
+    `T = -(Hsec + Huniv + Hcm + Hcm1)/4`."""
+    A, B, C, D, tm, tm1, xm, xm1, xo = sp.symbols("A B C D tm tm1 xm xm1 xo")
+    P2 = lambda t: 4 * t**3 + b2 * t**2 + 2 * b4 * t + b6
+    dx = xm1 - xm
+    Hsec = xo * dx**2 * 4 - ((tm1 - tm - a1 * dx) ** 2
+        + 2 * a1 * (tm1 - tm - a1 * dx) * dx - 4 * (a2 + xm1 + xm) * dx**2)
+    Huniv = 2 * tm * tm1 - (dx**2 * (b2 + 4 * x + 4 * xm + 4 * xm1)
+        - P2(xm) - P2(xm1))
+    Hcm = tm**2 - P2(xm)
+    Hcm1 = tm1**2 - P2(xm1)
+    T = (x - xo) * dx**2 - tm * tm1
+    assert sp.expand(4 * T + Hsec + Huniv + Hcm + Hcm1) == 0
+    print("odd-step core certificate: T = -(Hsec+Huniv+Hcm+Hcm1)/4 OK")
+
 
 if __name__ == "__main__":
     certificate_duplication_y()
@@ -312,3 +332,4 @@ if __name__ == "__main__":
     check_even_step_targets()
     certificate_even_step_x()
     check_universal_instances()
+    certificate_odd_step_core()
