@@ -1696,3 +1696,27 @@ assumed. Axiom invariant: every declaration must use at most
   `κ(𝒪)` from `𝔪(IC)`-inertia through `lift_map` and the
   residue-field comparison), (c) the `ker`-unfolding in the glue node
   itself.
+- 2026-07-17 (session 5): **THE SPELLING BRIDGE IS PROVEN** (all
+  unconditional): `map_smul_embeddedValuationSubring` (the image of
+  ANY `Γ Kᵥ`-element stabilizes `𝒪`, via `lift_map` + integrality
+  stability both ways), `embeddedComparison` (the codRestrict
+  comparison hom into the big integral closure),
+  `mem_maximalIdeal_iff_embeddedComparison` (unit REFLECTION: an
+  inverse upstairs restricts along the comap; `𝔪`-membership is
+  detected upstairs), and
+  `map_mem_inertiaSubgroup_of_mem_localInertiaGroup` (THE bridge:
+  the image of a local inertia element lies in
+  `𝒪.inertiaSubgroup K` — residue triviality via
+  `IsLocalRing.ResidueField.residue_smul` (NOTE the full namespace)
+  + `Ideal.Quotient.eq` + the detection lemma; needs
+  `public import Mathlib.RingTheory.Valuation.RamificationGroup`).
+  NOS-glue pieces (a) and (b) DONE. Remaining: (c) assemble
+  `isUnramifiedAt_of_hasGoodReduction` in `Semistable.lean` — apply
+  the vendored NOS node at `𝒪 := embeddedValuationSubring`,
+  `h𝒪 := embeddedValuationSubring_comap_toSubring` (hypothesis pack
+  present there), the bridge for inertia membership, and unfold
+  `(ρ.toLocal q).ker`-membership to the pointwise torsion statement
+  (`AddMonoidHom.ext`-style on the `nTorsion` action; `galoisRep`'s
+  action is the ambient `DistribMulAction`, so the NOS conclusion is
+  the needed fixing statement at `map σ`). Check the NOS node's exact
+  variable pack (R k ksep n E instances) when instantiating.

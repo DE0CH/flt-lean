@@ -19,6 +19,9 @@ import Mathlib.NumberTheory.RamificationInertia.Ramification
 -- `InfiniteGalois.restrictNormalHom_continuous`, for the closedness of
 -- the compactness-lifting sets.
 import Mathlib.FieldTheory.Galois.Profinite
+-- `ValuationSubring.decompositionSubgroup`/`inertiaSubgroup`, the
+-- inertia spelling of the vendored Néron–Ogg–Shafarevich node.
+public import Mathlib.RingTheory.Valuation.RamificationGroup
 
 /-!
 # The fixed field of the local inertia group is unramified
@@ -369,6 +372,58 @@ theorem mem_maximalIdeal_iff_embeddedComparison
     · exact Subtype.ext (inv_mul_cancel₀ hu0)
   · intro h1 h2
     exact h1 (h2.map (embeddedComparison v))
+
+open scoped Pointwise in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The spelling bridge**: the image in `Γ K` of a local inertia
+element lies in the inertia subgroup of the embedded valuation subring
+(in the `ValuationSubring.inertiaSubgroup` sense of the vendored
+Néron–Ogg–Shafarevich node). It stabilizes `𝒪` by
+`map_smul_embeddedValuationSubring`; the residue action is trivial
+because `σ • t - t` lands in `𝔪(IC-big)` (the DEFINING property of
+`localInertiaGroup`) and maximal-ideal membership descends along the
+comparison. -/
+theorem map_mem_inertiaSubgroup_of_mem_localInertiaGroup
+    (σ : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+      ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v]
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+    (hσ : σ ∈ localInertiaGroup v) :
+    (⟨Field.absoluteGaloisGroup.map
+        (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) σ,
+      MulAction.mem_stabilizer_iff.mpr (map_smul_embeddedValuationSubring v σ)⟩ :
+      (embeddedValuationSubring v).decompositionSubgroup K) ∈
+      (embeddedValuationSubring v).inertiaSubgroup K := by
+  rw [ValuationSubring.inertiaSubgroup, MonoidHom.mem_ker]
+  -- the induced automorphism of the residue field is the identity
+  refine RingEquiv.ext fun r => ?_
+  obtain ⟨t, rfl⟩ := Ideal.Quotient.mk_surjective r
+  show (⟨_, _⟩ : (embeddedValuationSubring v).decompositionSubgroup K) •
+    IsLocalRing.residue _ t = IsLocalRing.residue _ t
+  rw [← IsLocalRing.ResidueField.residue_smul]
+  -- the difference lies in the maximal ideal
+  have hdiff : (⟨Field.absoluteGaloisGroup.map
+      (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) σ,
+      MulAction.mem_stabilizer_iff.mpr (map_smul_embeddedValuationSubring v σ)⟩ :
+      (embeddedValuationSubring v).decompositionSubgroup K) • t - t ∈
+      𝔪 (embeddedValuationSubring v) := by
+    rw [mem_maximalIdeal_iff_embeddedComparison]
+    have hcomm : embeddedComparison v
+        ((⟨Field.absoluteGaloisGroup.map
+          (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) σ,
+          MulAction.mem_stabilizer_iff.mpr (map_smul_embeddedValuationSubring v σ)⟩ :
+          (embeddedValuationSubring v).decompositionSubgroup K) • t - t) =
+        σ • (embeddedComparison v t) - embeddedComparison v t := by
+      rw [map_sub]
+      congr 1
+      apply Subtype.ext
+      exact Field.absoluteGaloisGroup.lift_map _ σ t.1
+    rw [hcomm]
+    exact hσ (embeddedComparison v t)
+  -- conclude equality of residues
+  show IsLocalRing.residue _ _ = IsLocalRing.residue _ t
+  exact (Ideal.Quotient.eq).mpr hdiff
 
 section FiniteLevel
 
