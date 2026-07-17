@@ -2435,7 +2435,7 @@ assumed. Axiom invariant: every declaration must use at most
   ES2-only parity-descent certificates (found by multivariate division
   after the key discovery that ES2 SELF-descends), generic-domain
   cancellations powered by `normEDS_generic_ne_zero` (witnessed by the
-  universal curve через mk_Ψ ≠ 0), telescope + antisymmetry induction.
+  universal curve through mk_Ψ ≠ 0), telescope + antisymmetry induction.
   AXIOM-CLEAN: `normEDS_quadratic`, `normEDS_sum_companion`,
   `evalEval_ψ_sum`, `zsmul_consec_step`. Remaining EDS frontier:
   `normEDS_ellSequence` (general T(p,q) — Stange/Ward; plan: vdP–Swart
