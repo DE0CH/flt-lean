@@ -685,8 +685,8 @@ unramified at every finite place (the local inertia group at every
 prime `q` is killed by the restriction of `χ` to `G_{ℚ_q}`) is trivial.
 The kernel is an open normal subgroup containing every inertia image,
 hence everything. -/
-theorem minkowski_character_trivial {p : ℕ}
-    (χ : Field.absoluteGaloisGroup ℚ →* (ZMod p)ˣ)
+theorem minkowski_character_trivial {T : Type*} [Group T]
+    (χ : Field.absoluteGaloisGroup ℚ →* T)
     (hker : IsOpen (χ.ker : Set (Field.absoluteGaloisGroup ℚ)))
     (hunram : ∀ (q : ℕ) (hq : q.Prime),
       localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤

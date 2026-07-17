@@ -532,11 +532,32 @@ the START and END of each block of work.
               - ✗· **B6c** `IsHardlyRamified.three_adic`
                 (`HardlyRamified/Threeadic.lean`, vendored) — a 3-adic
                 hardly ramified rep has trace(Frob_q) = 1 + q for q ≥ 5.
-                - ✗· `IsHardlyRamified.mod_three` (`ModThree.lean`,
-                  vendored 2026-07-16) — a mod-3 hardly ramified rep has
-                  a Γℚ-equivariant surjection onto the trivial character
-                  (extension of trivial by cyclotomic); B6c's eventual
-                  proof lifts this 3-adically.
+                - ✓· `IsHardlyRamified.mod_three` (`ModThree.lean`) —
+                  DERIVED: a mod-3 hardly ramified rep has a
+                  Γℚ-equivariant surjection onto the trivial character;
+                  B6c's eventual proof lifts this 3-adically. Children:
+                  - ✗· `mod_three_reducible` — the Dickson/discriminant
+                    reducibility content (unchanged).
+                  - ✓· `mod_three_of_stable_line` — DERIVED
+                    (2026-07-17) from the new local leaf below + the
+                    (now field-generic) character bookkeeping of
+                    `MazurTorsion.lean`: quotient character `χ₂` of
+                    the leaf's line, trivial-on-`ker ρ` (unipotent
+                    scalar lemma), open kernel
+                    (`isOpen_setOf_galoisRep_eq_one`), unramified
+                    outside `{2,3}` from
+                    `IsHardlyRamified.isUnramified` via the generic
+                    bridge + `Rat.subsingleton_ringHom` convert;
+                    `minkowski_character_trivial` (target-generalized
+                    to any group) kills `χ₂`; `π` := coordinate of the
+                    rank-1 quotient.
+                  - ✗· `exists_line_with_locally_unramified_quotCharacter`
+                    (`ModThree.lean`, stated 2026-07-17) — the LOCAL
+                    leaf: a reducible mod-3 hardly ramified rep has a
+                    stable line whose quotient character is unramified
+                    at `2` AND `3` (flat connected-étale analysis at
+                    `3` incl. the Serre swap; tame quadratic condition
+                    at `2`).
             - NB the lift structure gained an `IsModuleTopology ℤ_[ℓ] O`
               field (statement strengthening of B6a's conclusion, true for
               integers of finite extensions of ℚ_ℓ; required by B6b).
