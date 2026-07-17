@@ -78,7 +78,7 @@ this route). -/
 theorem separable_preΨ'_char_two_closed {K : Type u} [Field K]
     [IsAlgClosed K] (E' : WeierstrassCurve K) [E'.IsElliptic]
     [DecidableEq K] {p : ℕ} (hp : p.Prime) (hodd : Odd p)
-    (hpk : (p : K) ≠ 0) (hchar2 : (2 : K) = 0) :
+    (hpk : (p : K) ≠ 0) (_ : (2 : K) = 0) :
     ((E'⁄K).preΨ' p).Separable :=
   separable_of_card_torsion E' hp hodd hpk
     (card_torsion_ge_of_fibre E' (exists_large_fibre E' hp hodd hpk))
