@@ -1682,3 +1682,17 @@ assumed. Axiom invariant: every declaration must use at most
   step2 `isIntegral_algebraMap_iff` +
   `IsIntegrallyClosed.integralClosure_eq_bot`; step3
   `mem_adicCompletionIntegers` + `valuedAdicCompletion_eq_valuation'`.
+- 2026-07-17 (session 5): **`embeddedValuationSubring_comap_toSubring`
+  PROVEN** (unconditional) — the `h𝒪`-compatibility: the pullback of
+  the embedded valuation subring to `K` equals the range of
+  `Localization.AtPrime v.asIdeal` (with the localization algebra
+  pack as hypotheses). The four-step chain compiled as designed; the
+  range-bridge via `mk'`-calculus (`mk'_surjective` is a
+  `Surjective`-over-PAIRS statement — destructure `⟨⟨a, s⟩, hys⟩`;
+  `mk'_spec` + tower + `eq_mul_inv_iff_mul_eq₀`). NOS-glue piece (a)
+  done. Remaining: (b) the `inertiaSubgroup` spelling bridge (image
+  of `localInertiaGroup` lands in `𝒪.inertiaSubgroup K`:
+  decomposition-membership = stabilizing `𝒪`, then triviality on
+  `κ(𝒪)` from `𝔪(IC)`-inertia through `lift_map` and the
+  residue-field comparison), (c) the `ker`-unfolding in the glue node
+  itself.

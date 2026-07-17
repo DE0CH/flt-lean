@@ -133,6 +133,114 @@ noncomputable def embeddedValuationSubring : ValuationSubring (AlgebraicClosure 
     (AlgebraicClosure.map
       (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
 
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The embedded valuation subring lies over the localization at `v`**
+(the `h𝒪`-compatibility for the Néron–Ogg–Shafarevich glue): pulling
+`embeddedValuationSubring` back to `K` gives exactly the image of
+`Localization.AtPrime v.asIdeal`. The localization algebra structure is
+a HYPOTHESIS, mirroring the glue nodes' instance pack (there is no
+global `Algebra (Localization.AtPrime v.asIdeal) K` instance). Chain:
+integrality of the embedded image over `𝒪ᵥ` collapses inside `Kᵥ` to
+membership in `𝒪ᵥ` (integrally closed), which is the valuation
+criterion `v(x) ≤ 1`, which is mathlib's `valuationSubringAtPrime` —
+whose carrier is definitionally `{a/s | s ∉ v}` — matched with the
+range of the localization by `mk'`-calculus. -/
+theorem embeddedValuationSubring_comap_toSubring
+    [Algebra (Localization.AtPrime v.asIdeal) K]
+    [IsScalarTower (NumberField.RingOfIntegers K)
+      (Localization.AtPrime v.asIdeal) K] :
+    ((embeddedValuationSubring v).comap
+      (algebraMap K (AlgebraicClosure K))).toSubring =
+      (algebraMap (Localization.AtPrime v.asIdeal) K).range := by
+  ext x
+  -- Step 1: membership in the comap-chain is integrality of the
+  -- embedded image.
+  have hstep1 : x ∈ ((embeddedValuationSubring v).comap
+      (algebraMap K (AlgebraicClosure K))).toSubring ↔
+      IsIntegral 𝒪ᵥ (algebraMap
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+        (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) x)) := by
+    show AlgebraicClosure.map
+        (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+        (algebraMap K (AlgebraicClosure K) x) ∈
+        integralClosure 𝒪ᵥ (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) ↔ _
+    rw [AlgebraicClosure.map_algebraMap]
+    rfl
+  -- Step 2: integrality inside `Kᵥᵃˡᵍ` collapses to membership in `𝒪ᵥ`
+  -- (integrally closed in its fraction field).
+  have hstep2 : IsIntegral 𝒪ᵥ (algebraMap
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+      (algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) x)) ↔
+      algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) x ∈ 𝒪ᵥ := by
+    rw [isIntegral_algebraMap_iff
+      (algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))).injective]
+    constructor
+    · intro h1
+      have h2 : algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) x ∈
+          integralClosure 𝒪ᵥ (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) := h1
+      rw [IsIntegrallyClosed.integralClosure_eq_bot, Algebra.mem_bot] at h2
+      obtain ⟨y, hy⟩ := h2
+      rw [← hy]
+      exact y.2
+    · intro h1
+      exact isIntegral_algebraMap (x := (⟨_, h1⟩ : 𝒪ᵥ))
+  -- Step 3: membership in `𝒪ᵥ` is the valuation criterion.
+  have hval := IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation' v x
+  have hstep3 : algebraMap K (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) x ∈ 𝒪ᵥ ↔
+      IsDedekindDomain.HeightOneSpectrum.valuation K v x ≤ 1 := by
+    rw [IsDedekindDomain.HeightOneSpectrum.mem_adicCompletionIntegers]
+    constructor
+    · intro h1
+      rw [← hval]
+      exact h1
+    · intro h1
+      have h2 : IsDedekindDomain.HeightOneSpectrum.valuation K v x ≤ 1 := h1
+      rw [← hval] at h2
+      exact h2
+  -- Step 4: the valuation criterion is membership in the localization
+  -- (mathlib's `valuationSubringAtPrime`, whose carrier is definitional).
+  have hstep4 : IsDedekindDomain.HeightOneSpectrum.valuation K v x ≤ 1 ↔
+      ∃ (a s : NumberField.RingOfIntegers K) (_ : s ∈ v.asIdeal.primeCompl),
+        x = algebraMap (NumberField.RingOfIntegers K) K a *
+          (algebraMap (NumberField.RingOfIntegers K) K s)⁻¹ := by
+    rw [← Valuation.mem_valuationSubring_iff,
+      ← IsDedekindDomain.HeightOneSpectrum.valuationSubringAtPrime_eq_valuationSubring]
+    exact Iff.rfl
+  rw [hstep1, hstep2, hstep3, hstep4]
+  -- the `∃`-form matches the range of the localization by `mk'`-calculus
+  constructor
+  · rintro ⟨a, s, hs, rfl⟩
+    have hs0 : algebraMap (NumberField.RingOfIntegers K) K s ≠ 0 := by
+      have hsne : s ≠ 0 := fun h => hs (h ▸ v.asIdeal.zero_mem)
+      exact fun h => hsne (FaithfulSMul.algebraMap_injective _ K (by rw [h, map_zero]))
+    refine ⟨IsLocalization.mk' (Localization.AtPrime v.asIdeal) a
+      (⟨s, hs⟩ : v.asIdeal.primeCompl), ?_⟩
+    have hspec := IsLocalization.mk'_spec (Localization.AtPrime v.asIdeal) a
+      (⟨s, hs⟩ : v.asIdeal.primeCompl)
+    have h2 := congrArg (algebraMap (Localization.AtPrime v.asIdeal) K) hspec
+    rw [map_mul, ← IsScalarTower.algebraMap_apply, ← IsScalarTower.algebraMap_apply] at h2
+    exact (eq_mul_inv_iff_mul_eq₀ hs0).mpr h2
+  · rintro ⟨y, hy⟩
+    obtain ⟨⟨a, s⟩, hys⟩ :=
+      IsLocalization.mk'_surjective (M := v.asIdeal.primeCompl)
+        (S := Localization.AtPrime v.asIdeal) y
+    have hs0 : algebraMap (NumberField.RingOfIntegers K) K s.1 ≠ 0 := by
+      have hsne : s.1 ≠ 0 := fun h => s.2 (h ▸ v.asIdeal.zero_mem)
+      exact fun h => hsne (FaithfulSMul.algebraMap_injective _ K (by rw [h, map_zero]))
+    refine ⟨a, s.1, s.2, ?_⟩
+    have hspec := IsLocalization.mk'_spec (Localization.AtPrime v.asIdeal) a s
+    have h2 := congrArg (algebraMap (Localization.AtPrime v.asIdeal) K) hspec
+    rw [map_mul, ← IsScalarTower.algebraMap_apply, ← IsScalarTower.algebraMap_apply] at h2
+    rw [← hy, ← hys]
+    exact (eq_mul_inv_iff_mul_eq₀ hs0).mpr h2
+
 section FiniteLevel
 
 variable (N : Type*) [Field N]
