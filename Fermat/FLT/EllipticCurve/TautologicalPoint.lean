@@ -121,4 +121,53 @@ theorem taut_nonsingular : WK.toAffine.Nonsingular tautX tautY :=
   (Affine.equation_iff_nonsingular_of_Δ_ne_zero WK_Δ_ne_zero).mp
     taut_equation
 
+set_option backward.isDefEq.respectTransparency false in
+/-- **Evaluation at the tautological point is the quotient map**: for
+any bivariate polynomial over `ℤ[A]`, mapping the coefficients through
+`coeffHom` and evaluating at `(tautX, tautY)` agrees with reducing
+modulo the Weierstrass polynomial and embedding into the fraction
+field. -/
+theorem taut_evalEval_mk (p : (MvPolynomial (Fin 5) ℤ)[X][Y]) :
+    (p.map (Polynomial.mapRingHom coeffHom)).evalEval tautX tautY =
+      algebraMap Buniv Kuniv (CoordinateRing.mk Wuniv p) := by
+  have hhom : (Polynomial.evalEvalRingHom tautX tautY).comp
+      (Polynomial.mapRingHom (Polynomial.mapRingHom coeffHom)) =
+      ((algebraMap Buniv Kuniv).comp
+        ((CoordinateRing.mk Wuniv) : _ →+* Buniv)) := by
+    apply Polynomial.ringHom_ext'
+    · apply Polynomial.ringHom_ext'
+      · apply MvPolynomial.ringHom_ext
+        · intro s
+          simp only [RingHom.coe_comp, Function.comp_apply,
+            Polynomial.coe_mapRingHom, Polynomial.map_C,
+            Polynomial.coe_evalRingHom, Polynomial.eval_C]
+          rfl
+        · intro s
+          simp only [RingHom.coe_comp, Function.comp_apply,
+            Polynomial.coe_mapRingHom, Polynomial.map_C,
+            Polynomial.coe_evalRingHom, Polynomial.eval_C]
+          rfl
+      · simp only [RingHom.coe_comp, Function.comp_apply,
+          Polynomial.coe_mapRingHom, Polynomial.map_C,
+          Polynomial.map_X, Polynomial.coe_evalRingHom,
+          Polynomial.eval_C, Polynomial.eval_X]
+        rfl
+    · simp only [RingHom.coe_comp, Function.comp_apply,
+        Polynomial.coe_mapRingHom, Polynomial.map_X,
+        Polynomial.coe_evalRingHom, Polynomial.eval_C,
+        Polynomial.eval_X]
+      rfl
+  exact DFunLike.congr_fun hhom p
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Division-polynomial values at the tautological point are
+nonzero** for `n ≠ 0`. -/
+theorem taut_psi_ne_zero {n : ℤ} (hn : n ≠ 0) :
+    ((WK.ψ n).evalEval tautX tautY : Kuniv) ≠ 0 := by
+  rw [WK, WeierstrassCurve.map_ψ, taut_evalEval_mk,
+    Affine.CoordinateRing.mk_ψ]
+  intro hc
+  exact mk_Ψ_univ_ne_zero hn
+    (IsFractionRing.injective Buniv Kuniv (by rwa [map_zero]))
+
 end PsiSumCompanion
