@@ -565,12 +565,27 @@ the START and END of each block of work.
           restricts to a surjection `E[n] → E[n/p]` with kernel `E[p]`,
           so Lagrange + the first isomorphism theorem give
           `#E[n] = p²·(n/p)²`; no CRT needed. Faithful leaves:
-          - ✗· `TorsionCard.smul_surjective` — divisibility of the points
-            group: `[n]` is surjective on points over a separably closed
-            field for `(n : k) ≠ 0` (separable isogeny).
-          - ✗· `TorsionCard.prime_torsion_card` — `#E[p] = p²` for prime
+          - ✓· `TorsionCard.smul_surjective` — DERIVED (2026-07-17)
+            from the three division-polynomial point nodes below: the
+            fibre node gives a curve point `(x₀, y₀)` with
+            `Φ n (x₀) = ξ·ΨSq n (x₀)`; `ΨSq n (x₀) ≠ 0` by
+            `isCoprime_Φ_ΨSq` (Bézout, from the resultant node); the
+            formula node computes `n • (x₀, y₀)` with `x`-coordinate
+            `ξ`; `Y_eq_of_X_eq` gives `y = η` or `negY`, negating the
+            preimage in the latter case.
+            - ✗· `TorsionCard.smul_some_eq_zero_iff` — **the
+              division-polynomial torsion dictionary**: `n • (x,y) = 0
+              ↔ ΨSq n (x) = 0` (Washington Thm 3.6 territory).
+            - ✗· `TorsionCard.exists_smul_some_eq` — **the
+              `x([n]P) = Φₙ/ψₙ²` formula** in multiplied-out,
+              `ω`-free existence form.
+            - ✗· `TorsionCard.exists_point_x_smul` — **rational points
+              in multiplication fibres** over a separably closed
+              field (where separability of `[n]` enters).
+          - ✗○ `TorsionCard.prime_torsion_card` — `#E[p] = p²` for prime
             `p` with `(p : k) ≠ 0` (kernel of the separable degree-`p²`
-            isogeny).
+            isogeny); being derived from the dictionary + a `preΨ'`
+            separability node (CURRENT WORK).
         - ✓· `WeierstrassCurve.galoisRep` — CONSTRUCTED (2026-07-16). The
           formerly sorry-d DATA is now the genuine representation: the
           Galois action on points (`Point.map`, via the `DistribMulAction`

@@ -30,6 +30,13 @@ module
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.Algebra.Module.Torsion.Basic
 public import Mathlib.FieldTheory.IsSepClosed
+-- the division polynomials `Φ`, `ΨSq`, `preΨ'` appearing in the
+-- point-level nodes below
+public import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Basic
+import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
+-- `WeierstrassCurve.isCoprime_Φ_ΨSq` (Bézout from the resultant node),
+-- used to rule out common roots of `Φ n` and `ΨSq n` in the proofs
+import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
 import Mathlib.GroupTheory.QuotientGroup.Basic
 import Mathlib.GroupTheory.Coset.Card
 
@@ -45,14 +52,103 @@ variable {k : Type u} [Field k] (E : WeierstrassCurve k) [E.IsElliptic]
   [DecidableEq k]
 
 set_option warn.sorry false in
-/-- **Divisibility of the points group** (sorry node): over a separably
-closed field, multiplication by `n` with `(n : k) ≠ 0` is surjective on
-the points of an elliptic curve — the multiplication-by-`n` isogeny is
-finite and separable, hence surjective on points of a separably closed
-field. -/
-theorem smul_surjective [IsSepClosed k] {n : ℕ} (hn : (n : k) ≠ 0) :
-    Function.Surjective (fun P : (E⁄k).Point => (n : ℤ) • P) :=
+/-- **The division-polynomial torsion dictionary** (sorry node): an
+affine point `P = (x, y)` satisfies `n • P = 0` precisely when its
+`x`-coordinate is a root of the division polynomial `ΨSq n`
+(classically: the roots of `ψₙ` are exactly the `x`-coordinates of the
+nonzero `n`-torsion points; Washington, *Elliptic curves*, Lemma
+combined with the recursion of Theorem 3.6). -/
+theorem smul_some_eq_zero_iff {n : ℤ} (hn : n ≠ 0) (hnk : (n : k) ≠ 0)
+    {x y : k} (h : (E⁄k).toAffine.Nonsingular x y) :
+    (n • (Affine.Point.some x y h : (E⁄k).Point) = 0) ↔
+      ((E⁄k).ΨSq n).eval x = 0 :=
   sorry
+
+set_option warn.sorry false in
+/-- **The multiplication-by-`n` `x`-coordinate formula** (sorry node):
+if `P = (x, y)` is an affine point with `ΨSq n` not vanishing at `x`
+(so `n • P ≠ 0` by the dictionary above), then `n • P` is an affine
+point whose `x`-coordinate `x'` satisfies `x' ⬝ ΨSq n (x) = Φ n (x)` —
+the classical `x([n]P) = Φₙ(x)/ψₙ²(x)` (Washington, *Elliptic curves*,
+Theorem 3.6), stated in multiplied-out form to avoid division. -/
+theorem exists_smul_some_eq {n : ℤ} (hn : n ≠ 0) (hnk : (n : k) ≠ 0)
+    {x y : k} (h : (E⁄k).toAffine.Nonsingular x y)
+    (hΨ : ((E⁄k).ΨSq n).eval x ≠ 0) :
+    ∃ (x' y' : k) (h' : (E⁄k).toAffine.Nonsingular x' y'),
+      n • (Affine.Point.some x y h : (E⁄k).Point) =
+        Affine.Point.some x' y' h' ∧
+      x' * ((E⁄k).ΨSq n).eval x = ((E⁄k).Φ n).eval x :=
+  sorry
+
+set_option warn.sorry false in
+/-- **Rational points in the multiplication fibres** (sorry node): over
+a separably closed field, every fibre of the `x`-coordinate of the
+multiplication-by-`n` map contains a rational point — there is a
+nonsingular point `(x₀, y₀)` of the curve with `Φ n (x₀) = ξ ⬝ ΨSq n
+(x₀)`. This is where separability of the multiplication-by-`n` isogeny
+enters (`[n]` is étale for `(n : k) ≠ 0`, so its fibres, cut out by
+`Φ n - ξ ⬝ ΨSq n` on the `x`-line, acquire points over a separably
+closed field). -/
+theorem exists_point_x_smul [IsSepClosed k] {n : ℤ} (hn : n ≠ 0)
+    (hnk : (n : k) ≠ 0) (ξ : k) :
+    ∃ (x₀ y₀ : k) (h : (E⁄k).toAffine.Nonsingular x₀ y₀),
+      ((E⁄k).Φ n).eval x₀ = ξ * ((E⁄k).ΨSq n).eval x₀ :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Divisibility of the points group** (DERIVED 2026-07-17 from the
+three division-polynomial nodes above): over a separably closed field,
+multiplication by `n` with `(n : k) ≠ 0` is surjective on the points of
+an elliptic curve. Given a target affine point `(ξ, η)`, the fibre node
+provides a curve point `(x₀, y₀)` with `Φ n (x₀) = ξ ⬝ ΨSq n (x₀)`;
+`ΨSq n (x₀) ≠ 0` by the Bézout identity `isCoprime_Φ_ΨSq` (a common
+root would contradict `F ⬝ Φ + G ⬝ ΨSq = 1`), so the formula node
+computes `n • (x₀, y₀)` as an affine point with `x`-coordinate `ξ`;
+its `y`-coordinate is `η` or `negY ξ η`, and in the latter case
+negating the preimage fixes it. -/
+theorem smul_surjective [IsSepClosed k] {n : ℕ} (hn : (n : k) ≠ 0) :
+    Function.Surjective (fun P : (E⁄k).Point => (n : ℤ) • P) := by
+  classical
+  have hn0 : n ≠ 0 := fun h => hn (by simp [h])
+  have hnZ : (n : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr hn0
+  have hnk : (((n : ℤ) : ℤ) : k) ≠ 0 := by exact_mod_cast hn
+  haveI : (E⁄k).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap k k)).IsElliptic)
+  -- points with equal coordinates are equal
+  have hpoint : ∀ {x₁ y₁ x₂ y₂ : k} (h₁ : (E⁄k).toAffine.Nonsingular x₁ y₁)
+      (h₂ : (E⁄k).toAffine.Nonsingular x₂ y₂), x₁ = x₂ → y₁ = y₂ →
+      (Affine.Point.some x₁ y₁ h₁ : (E⁄k).Point) = Affine.Point.some x₂ y₂ h₂ := by
+    intro x₁ y₁ x₂ y₂ h₁ h₂ hx hy
+    subst hx
+    subst hy
+    rfl
+  intro P₀
+  cases P₀ with
+  | zero => exact ⟨0, smul_zero _⟩
+  | some ξ η h₀ =>
+    obtain ⟨x₀, y₀, hns, hrel⟩ := exists_point_x_smul E hnZ (by exact_mod_cast hn) ξ
+    -- `ΨSq n (x₀) ≠ 0` by coprimality
+    have hΨ : ((E⁄k).ΨSq (n : ℤ)).eval x₀ ≠ 0 := by
+      intro h0
+      obtain ⟨F, G, hFG⟩ := WeierstrassCurve.isCoprime_Φ_ΨSq (E⁄k) hnZ
+        (WeierstrassCurve.isUnit_Δ _)
+      have hev := congrArg (Polynomial.eval x₀) hFG
+      rw [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_mul,
+        Polynomial.eval_one, hrel, h0] at hev
+      simp at hev
+    obtain ⟨x', y', h', hsmul, hx'⟩ :=
+      exists_smul_some_eq E hnZ (by exact_mod_cast hn) hns hΨ
+    -- the `x`-coordinate of `n • (x₀, y₀)` is `ξ`
+    have hx : x' = ξ := by
+      rw [hrel] at hx'
+      exact mul_right_cancel₀ hΨ hx'
+    -- the `y`-coordinate is `η` or its negation
+    rcases Affine.Y_eq_of_X_eq h'.1 h₀.1 hx with hy | hy
+    · exact ⟨Affine.Point.some x₀ y₀ hns, hsmul.trans (hpoint h' h₀ hx hy)⟩
+    · refine ⟨-(Affine.Point.some x₀ y₀ hns), ?_⟩
+      show (n : ℤ) • (-(Affine.Point.some x₀ y₀ hns) : (E⁄k).Point) = _
+      rw [smul_neg, hsmul, Affine.Point.neg_some]
+      exact hpoint _ h₀ hx (by rw [hy, hx, Affine.negY_negY])
 
 set_option warn.sorry false in
 /-- **The prime-level count** (sorry node): for a prime `p` with
