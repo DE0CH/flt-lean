@@ -8,6 +8,8 @@ module
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 public import Mathlib.RingTheory.Valuation.RamificationGroup
+import Fermat.FLT.EllipticCurve.TorsionCard
+import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
 
 /-!
 
@@ -119,6 +121,122 @@ theorem ValuationSubring.mem_of_root_of_inv_leadingCoeff_mem
   have hstrict : A.valuation x ^ (d - 1) < A.valuation x ^ d :=
     pow_lt_pow_right₀ hx (by omega)
   exact absurd hcombined (not_le.mpr hstrict)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+omit [IsSepClosure k ksep] in
+open Polynomial WeierstrassCurve WeierstrassCurve.Affine in
+/-- **Torsion abscissas are integral** (PROVEN 2026-07-17, the
+Cassels division-polynomial argument): at good reduction with `n`
+invertible in the residue field, the `x`-coordinate of every
+`n`-torsion point lies in any valuation subring of `kˢᵉᵖ` above `R` —
+it is a root of `ΨSqₙ`, whose coefficients are integral (the minimal
+model) and whose leading coefficient `n²` is a unit. -/
+theorem WeierstrassCurve.torsion_abscissa_mem
+    (h𝒪 : (𝒪.comap (algebraMap k ksep)).toSubring = (algebraMap R k).range)
+    {x y : ksep} (h : (E⁄ksep).toAffine.Nonsingular x y)
+    (htor : (n : ℤ) • (Affine.Point.some x y h : (E⁄ksep).Point) = 0) :
+    x ∈ 𝒪 := by
+  classical
+  haveI : (E⁄ksep).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap k ksep)).IsElliptic)
+  haveI : DecidableEq k := Classical.decEq k
+  -- `n` is a unit of `R`, hence nonzero in `ksep`
+  have hnR : IsUnit (n : R) := by
+    by_contra hu
+    have hmem : (n : R) ∈ IsLocalRing.maximalIdeal R :=
+      (IsLocalRing.mem_maximalIdeal _).mpr hu
+    apply NeZero.ne ((n : IsLocalRing.ResidueField R))
+    have h1 : IsLocalRing.residue R ((n : R)) = 0 :=
+      (Ideal.Quotient.eq_zero_iff_mem).mpr hmem
+    rw [← map_natCast (IsLocalRing.residue R) n]
+    exact h1
+  have hnk : (n : k) ≠ 0 := by
+    intro h0
+    have h1 : algebraMap R k ((n : R)) = algebraMap R k 0 := by
+      rw [map_natCast, map_zero]
+      exact h0
+    exact hnR.ne_zero ((IsFractionRing.injective R k) h1)
+  have hnksep : (n : ksep) ≠ 0 := by
+    intro h0
+    apply hnk
+    have h1 : algebraMap k ksep ((n : k)) = algebraMap k ksep 0 := by
+      rw [map_natCast, map_zero]
+      exact h0
+    exact (algebraMap k ksep).injective h1
+  have hnZ : ((n : ℕ) : ℤ) ≠ 0 := by
+    have := NeZero.ne ((n : IsLocalRing.ResidueField R))
+    intro h0
+    apply this
+    have : n = 0 := by exact_mod_cast h0
+    rw [this]
+    exact Nat.cast_zero
+  -- the dictionary: the abscissa is a root of `ΨSqₙ`
+  have hΨ0 : ((E⁄ksep).ΨSq (n : ℤ)).eval x = 0 := by
+    have hd := (TorsionCard.smul_some_eq_zero_iff
+      (E.map (algebraMap k ksep)) hnZ h).mp ?_
+    · exact hd
+    · exact htor
+  -- integral coefficients: the curve comes from `R`
+  haveI : E.IsIntegral R := inferInstance
+  obtain ⟨Eint, hEint⟩ := (inferInstance : E.IsIntegral R).integral
+  have hcoeffmem : ∀ i, ((E⁄ksep).ΨSq (n : ℤ)).coeff i ∈ 𝒪 := by
+    intro i
+    have hmap : (E⁄ksep).ΨSq (n : ℤ) =
+        ((Eint.ΨSq (n : ℤ)).map (algebraMap R k)).map
+          (algebraMap k ksep) := by
+      rw [show (E⁄ksep) = ((Eint⁄k)⁄ksep) from by rw [hEint]]
+      show ((Eint⁄k).map (algebraMap k ksep)).ΨSq (n : ℤ) = _
+      rw [WeierstrassCurve.map_ΨSq]
+      congr 1
+      show ((Eint.map (algebraMap R k)).ΨSq (n : ℤ)) = _
+      rw [WeierstrassCurve.map_ΨSq]
+    rw [hmap, Polynomial.coeff_map, Polynomial.coeff_map]
+    have hmem : algebraMap R k ((Eint.ΨSq (n : ℤ)).coeff i) ∈
+        (algebraMap R k).range := ⟨_, rfl⟩
+    rw [← h𝒪] at hmem
+    exact hmem
+  -- the leading coefficient is `n²`, a unit
+  have hne : (E⁄ksep).ΨSq (n : ℤ) ≠ 0 := by
+    intro h0
+    have hc := congrArg (fun q => Polynomial.coeff q
+      (((n : ℤ)).natAbs ^ 2 - 1)) h0
+    simp only [Polynomial.coeff_zero] at hc
+    rw [WeierstrassCurve.coeff_ΨSq] at hc
+    apply hnksep
+    have : ((n : ksep)) ^ 2 = 0 := by exact_mod_cast hc
+    exact pow_eq_zero_iff two_ne_zero |>.mp this
+  have hdeg : ((E⁄ksep).ΨSq (n : ℤ)).natDegree =
+      ((n : ℤ)).natAbs ^ 2 - 1 :=
+    WeierstrassCurve.natDegree_ΨSq (W := (E⁄ksep))
+      (by exact_mod_cast hnksep)
+  have hlcinv : (((E⁄ksep).ΨSq (n : ℤ)).leadingCoeff)⁻¹ ∈ 𝒪 := by
+    have hlc : ((E⁄ksep).ΨSq (n : ℤ)).leadingCoeff = ((n : ksep)) ^ 2 := by
+      rw [Polynomial.leadingCoeff, hdeg, WeierstrassCurve.coeff_ΨSq]
+      push_cast
+      ring
+    rw [hlc]
+    -- `(n²)⁻¹` is the image of the `R`-inverse
+    obtain ⟨u, hu⟩ := hnR
+    have hprod : ((n : ksep)) ^ 2 *
+        algebraMap k ksep (algebraMap R k
+          (((u⁻¹ : Rˣ) : R) * ((u⁻¹ : Rˣ) : R))) = 1 := by
+      rw [show ((n : ksep)) = algebraMap k ksep (algebraMap R k ((n : R)))
+        from by rw [map_natCast, map_natCast]]
+      rw [← map_pow, ← map_pow, ← map_mul, ← map_mul]
+      rw [show ((n : R)) ^ 2 * (((u⁻¹ : Rˣ) : R) * ((u⁻¹ : Rˣ) : R)) =
+        ((u * u⁻¹ : Rˣ) : R) * ((u * u⁻¹ : Rˣ) : R) from by
+          rw [← hu]
+          push_cast
+          ring]
+      simp
+    rw [inv_eq_of_mul_eq_one_right hprod]
+    have hmem : algebraMap R k
+        (((u⁻¹ : Rˣ) : R) * ((u⁻¹ : Rˣ) : R)) ∈
+        (algebraMap R k).range := ⟨_, rfl⟩
+    rw [← h𝒪] at hmem
+    exact hmem
+  exact 𝒪.mem_of_root_of_inv_leadingCoeff_mem hne hcoeffmem hlcinv hΨ0
 
 set_option warn.sorry false in
 /-- (Sorry node; vendored from the FLT project.) If `E` is an elliptic curve
