@@ -2275,3 +2275,18 @@ assumed. Axiom invariant: every declaration must use at most
   the strong-induction skeleton itself (case bookkeeping: parity,
   collisions via `smul_collision`, the `s = 0` branch via the
   `Res(Ψ₂Sq, Ψ₃) = -Δ²` seed, and the base cases — all staged).
+- 2026-07-17 (session 5): **THE GENERIC ODD STEP IS PROVEN IN LEAN**
+  (`zsmul_odd_step_x`, audits clean, characteristic-free): from IH
+  data at `m`, `m+1` (points via `heqm`/`heqm1`, x-formulas,
+  trackings) with `xₘ₊₁ ≠ xₘ`, the point `(2m+1)•P` is affine with
+  the x-formula. KEY DISCOVERY: the core `(x−x₃)dx² = t₁t₂` is a PURE
+  RING identity from the two secant identities (sum and difference
+  additions) — `linear_combination hX₄' − hX₃` — the universal
+  identity and memberships DROP OUT of the x-side entirely (sympy
+  cofactor-solve: c₂ = c₄ = c₅ = 0). The conversion layer:
+  `evalEval_φ_eq` at `2m+1` + `x_sub_gap_one` + the congr-multiplied
+  tracking product. REMAINING in the node: the even-step analogue
+  (same shape with gap-2), the per-step TRACKING OUTPUT (the
+  `t₃`-derivation — the internal (ii) at the new index, consumed by
+  later steps), the collision/degenerate branches (all staged), and
+  the skeleton wiring.
