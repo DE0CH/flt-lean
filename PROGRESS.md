@@ -2117,3 +2117,21 @@ assumed. Axiom invariant: every declaration must use at most
   `Polynomial.evalEval_mul/sub/add/pow` are the working simp set for
   pushing `evalEval` through `Ψ`-identities (the
   `coe_evalEvalRingHom`+`map_*` route stalls).
+- 2026-07-17 (session 5): **THE DUPLICATION FORMULA IS PROVEN**
+  (`zsmul_some_aux_two`, characteristic-free, no `(2:k) ≠ 0` needed):
+  for `ψ₂(x,y) ≠ 0`, `2•P` is affine with `x'·ψ₂² = φ₂(x,y)` and
+  `(2y'+a₁x'+a₃)·ψ₂⁴ = ψ₄(x,y)`. METHOD (now validated, use for the
+  remaining step cases): (1) NO field_simp — work with the multiplied
+  slope equation `hT : ℓ·ψ₂v = 3x²+2a₂x+a₄−a₁y` (from
+  `div_mul_cancel₀`); (2) the goal's `λ`-powers are eliminated by a
+  hand-computed `linear_combination` coefficient on `hT` (telescoping
+  `(λd)^k − T^k` factors); (3) the remaining curve-equation multiplier
+  is computed EXACTLY by sympy polynomial division of the λ-free
+  residual by `g = y² + a₁xy + a₃y − (x³+a₂x²+a₄x+a₆)` in `y`
+  (remainder verified 0) and pasted as the `heq`-coefficient. sympy is
+  now installed (`pip3 install --break-system-packages --user sympy`).
+  Model file pattern in the proof of `zsmul_some_aux_two`. Remaining
+  inside the ✗○ node `zsmul_some_aux`: the two-point addition step
+  (secant slope, same certificate workflow against the IH identities —
+  ideal membership via sympy Groebner if plain division does not
+  suffice) and the strong-induction assembly.
