@@ -64,6 +64,40 @@ Method — resolve a dependency tree top-down:
 
 ## Current state — read PROGRESS.md for the authoritative tree
 
+**Session 5 FINAL STATE (2026-07-17, frontier 20):**
+1. **THE ENTIRE MINKOWSKI BRANCH IS PROVEN UNCONDITIONALLY** — the
+   local node (Neukirch II.9.11) was fully formalized: finite-level
+   Hilbert `|I| = e` counting (`card_inertia_finite_level`,
+   `card_inertia_intermediate`, the counting combiner), finite-level
+   inertia surjectivity, the profinite compactness lifting, and the
+   reification/e-transport assembly. `minkowski_character_trivial`,
+   `open_normal_subgroup_eq_top_of_inertia_le`, the inertia
+   dictionary, and the surjectivity leaf all audit to
+   `[propext, Classical.choice, Quot.sound]`.
+2. **ALL FIVE local-global glue nodes are DERIVED** onto content
+   leaves + shared transports: the two `IsUnramifiedAt` glues via the
+   PROVEN embedded-valuation-subring machinery
+   (`embeddedValuationSubring` + `h𝒪`-compatibility + the
+   `inertiaSubgroup` spelling bridge, all in
+   `LocalInertiaFixedField.lean`) against the vendored NOS leaf resp.
+   the new Tate leaf `torsion_unramified_of_multiplicative_reduction`;
+   the two `IsFlatAt` glues via the new SHARED transport node
+   `GaloisRep.isFlatAt_of_dvr_package` (`FlatProlongation.lean`;
+   design fully de-risked in PROGRESS.md — Hopf base change
+   scratch-verified, `localizationToAdicCompletionIntegers` and the
+   subsingleton case PROVEN) against the vendored flat leaf resp. the
+   new peu-ramifiée leaf `torsion_flat_of_multiplicative_reduction`.
+3. Remaining frontier (20): the four elliptic content leaves above +
+   the shared flat transport + `mazur_classification`,
+   `exists_p_point_of_not_isIrreducible_of_minkowski`,
+   `mod_three_reducible`, `mod_three_of_stable_line`, `three_adic`,
+   `exists_hardlyRamifiedLift`, `mem_isCompatible`,
+   `exists_frobenius_conj_mem_coset`, `exists_weilPairing`,
+   `smul_surjective`, `prime_torsion_card`,
+   `exists_variableChange_tateCurve`, `exists_tateEquivSepClosure`,
+   `resultant_Φ_ΨSq`, `torsion_unramified_of_good_reduction`,
+   `torsion_flat_of_good_reduction`.
+
 **Session 5 (2026-07-16) headline:** the Minkowski surjectivity leaf
 `exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup` is DERIVED (the
 valuation route: embed `L` into `M = ℚ_q(ι L)`, the local node makes
