@@ -2582,6 +2582,24 @@ assumed. Axiom invariant: every declaration must use at most
   composition identities at values, pulls back to `ℤ[A][X]` via
   `coeffHom_injective`-style basis arguments, and then runs the
   UFD-multiplicity endgame for `separable_preΨ'`.
+- 2026-07-17 (session 6, NOS (iii) SCOPING): the ΨSq-square structure
+  makes x-level mod-𝔪 injectivity subtle for general n (ΨSqₙ is
+  never separable — it is preΨ'ₙ²·parity); but the node's ONLY
+  consumer (Semistable.lean:592) instantiates n = p with
+  Fact p.Prime in scope. DECISION: restate the node for prime p
+  (legitimate hypothesis strengthening — all consumers satisfy it).
+  For odd p the x-level injectivity uses the residue curve's
+  separable_preΨ' on the squarefree part preΨ'ₚ (roots of ΨSqₚ =
+  roots of preΨ'ₚ for odd p); the p = 2 case (if ever needed —
+  check whether the Frey consumer guarantees p ≥ 5 / oddness and if
+  so add hodd to the node too) would use residue-Ψ₂Sq separability
+  via a small disc(Ψ₂Sq)-Δ certificate. The integral-to-residue
+  double-root argument needs: dividing ΨSq by the monic (X − x₁)
+  keeps 𝒪-coefficients (divByMonic-integrality), so equal residues
+  of two distinct roots give the residue polynomial a double root at
+  ξ, contradicting separability. (iv) then: inertia fixes residues,
+  Point.map σ is additive so σP is p-torsion with coordinates
+  congruent to P's, and (iii) forces σP = P.
 - 2026-07-17 (session 6, NOS step (ii) PROVEN `293e809`):
   `torsion_ordinate_mem` — the monic y-quadratic instantiation of the
   root-integrality lemma; coefficient membership by explicit
