@@ -130,21 +130,44 @@ the START and END of each block of work.
                 — DERIVED (2026-07-17) from the stable-line dichotomy
                 leaf, the PROVEN Galois descent for points, and the
                 Vélu quotient leaf (all `MazurTorsion.lean`).
-                - ✗· `FreyPackage.stable_line_dichotomy_of_not_isIrreducible`
-                  (stated 2026-07-17) — **Serre's
-                  character/semistability analysis**: not irreducible ⟹
-                  (Galois-FIXED point of exact order `p` in `E(ℚ̄)`) ∨
-                  (stable line `W` with trivial quotient action,
-                  `W.mkQ (ρ g v) = W.mkQ v`). Content: χ₁χ₂ = ω̄ (the
-                  DERIVED `det_galoisRep_eq_cyclotomic`), semistability
-                  (NOS at good primes PROVEN, Tate at multiplicative,
-                  flat/ordinary at `p`), Minkowski hypothesis kills the
-                  unramified character. SPELLING GOTCHA: the
-                  quotient-triviality clause must be phrased via
-                  `W.mkQ` — the subtraction form `ρ g v − v ∈ W`
-                  fails elaboration (HSub instance search sticks on
-                  the nTorsion subtype when the LHS is a
-                  galoisRep application with unknown expected type).
+                - ✓· `FreyPackage.stable_line_dichotomy_of_not_isIrreducible`
+                  — DERIVED (2026-07-17) from the semistability leaf
+                  below + the PROVEN character bookkeeping: the stable
+                  line (`exists_stable_line_of_not_isIrreducible`)
+                  carries unit-valued characters
+                  (`exists_subCharacter`/`exists_quotCharacter`, the
+                  scalar-action-on-rank-1 argument
+                  `exists_unit_character_of_finrank_one`), with
+                  `det = χ₁χ₂` (`det_eq_subCharacter_mul_quotCharacter`
+                  via `LinearMap.det_eq_det_mul_det`) `= ω̄` (the
+                  DERIVED det node + `cyclotomicCharacterModL_eq_toZMod`);
+                  kernels are open (they contain the open kernel of ρ,
+                  `isOpen_setOf_galoisRep_eq_one` +
+                  `Subgroup.isOpen_mono`); Minkowski (hmink) kills the
+                  everywhere-unramified character; `χ₁ = 1` fixes a
+                  nonzero `w₀ ∈ W` (a fixed point of exact order `p`),
+                  `χ₂ = 1` trivializes the quotient action.
+                  SPELLING GOTCHAS (all resolved): (a) quotient
+                  triviality must be phrased via `W.mkQ`, not
+                  `ρ g v − v ∈ W` (HSub instance search sticks);
+                  (b) `P.freyCurve`-instantiated nTorsion carries
+                  `Rat.commRing` vs the `Field.toCommRing` spelling
+                  baked into `galoisRep`'s codomain — defeq at DEFAULT
+                  transparency but NOT at instance transparency, so
+                  `letI`/`haveI` instances for the local spelling are
+                  invisible to TC search against the baked spelling;
+                  the cure is general-`V` lemmas whose instance binders
+                  are pinned by unification with the `ρbar` argument
+                  (pass `ρbar` FIRST, extra finiteness as a plain
+                  hypothesis, never an instance binder).
+                - ✗· `FreyPackage.subquotient_character_unramified`
+                  (stated 2026-07-17) — **the semistability leaf**,
+                  the sharpened arithmetic core: given the stable line
+                  and its characters with `χ₁χ₂ = ω̄`, ONE character is
+                  unramified at every finite place (NOS at good primes
+                  PROVEN; Tate unipotence at multiplicative primes;
+                  flat/ordinary analysis at `p`; the `2`-adic Tate
+                  description at `2`).
                 - ✗· `FreyPackage.exists_quotient_curve_point`
                   (stated 2026-07-17) — **the Vélu quotient leaf**:
                   a stable line with trivial quotient action produces

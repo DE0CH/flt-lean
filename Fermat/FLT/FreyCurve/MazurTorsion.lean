@@ -55,6 +55,12 @@ module
 
 public import Fermat.FLT.FreyCurve.Basic
 public import Fermat.FLT.EllipticCurve.Torsion
+-- `cyclotomicCharacterModL` and the stable-line extraction, used in the
+-- character bookkeeping of the Serre §4.1 dichotomy.
+public import Fermat.FLT.GaloisRepresentation.Chebotarev
+-- `det_galoisRep_eq_cyclotomic` (the DERIVED determinant node), the
+-- `χ₁χ₂ = ω̄` input of the dichotomy derivation.
+public import Fermat.FLT.EllipticCurve.WeilPairing
 -- `localInertiaGroup` and the restriction `Γ ℚ_q → Γ ℚ`, used to state
 -- the Minkowski node.
 public import Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup
@@ -745,24 +751,238 @@ theorem WeierstrassCurve.exists_point_eq_baseChange_of_fixed
     subst hx₀ hy₀
     rfl
 
+/-!
+### Character bookkeeping on a stable line
+
+The linear algebra of Serre's §4.1 analysis, PROVEN here: a stable line
+`W` in a 2-dimensional mod-`ℓ` representation carries a unit-valued
+sub-character `χ₁` (the scalar action on the rank-1 space `W`), the
+quotient carries a quotient-character `χ₂`, and
+`det ρ g = χ₁ g · χ₂ g` (the triangular determinant,
+`LinearMap.det_eq_det_mul_det`).
+-/
+
+section CharacterBookkeeping
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Scalar character on a rank-`1` module** (PROVEN): a multiplicative
+family of endomorphisms of a `1`-dimensional space over `ZMod ℓ` is
+given by a unit-valued character. -/
+lemma exists_unit_character_of_finrank_one {ℓ : ℕ} [Fact ℓ.Prime]
+    {G : Type*} [Group G] {M : Type*} [AddCommGroup M] [Module (ZMod ℓ) M]
+    [Module.Finite (ZMod ℓ) M] (hM : Module.finrank (ZMod ℓ) M = 1)
+    (F : G → Module.End (ZMod ℓ) M)
+    (hF1 : F 1 = 1) (hFmul : ∀ g h : G, F (g * h) = F g * F h) :
+    ∃ χ : G →* (ZMod ℓ)ˣ, ∀ g v, F g v = (χ g : ZMod ℓ) • v := by
+  classical
+  let b : Module.Basis (Fin 1) (ZMod ℓ) M :=
+    Module.finBasisOfFinrankEq (ZMod ℓ) M hM
+  have hm₀ne : (b 0 : M) ≠ 0 := b.ne_zero 0
+  have hspan : ∀ v : M, ∃ c : ZMod ℓ, v = c • b 0 := by
+    intro v
+    have h1 := b.sum_repr v
+    rw [Fin.sum_univ_one] at h1
+    exact ⟨b.repr v 0, h1.symm⟩
+  have huniq : ∀ {a c : ZMod ℓ}, a • (b 0 : M) = c • b 0 → a = c := by
+    intro a c h
+    have h2 : (a - c) • (b 0 : M) = 0 := by rw [sub_smul, h, sub_self]
+    rcases smul_eq_zero.mp h2 with h3 | h3
+    · exact sub_eq_zero.mp h3
+    · exact absurd h3 hm₀ne
+  choose c hc using fun g => hspan (F g (b 0))
+  have hone : c 1 = 1 := by
+    apply huniq
+    rw [← hc 1, hF1, Module.End.one_apply, one_smul]
+  have hmul : ∀ g h, c (g * h) = c g * c h := by
+    intro g h
+    apply huniq
+    rw [← hc (g * h), hFmul, Module.End.mul_apply, hc h, map_smul, hc g,
+      smul_smul, mul_comm (c h) (c g)]
+  have hunit : ∀ g, c g * c g⁻¹ = 1 := fun g => by
+    rw [← hmul, mul_inv_cancel, hone]
+  refine ⟨MonoidHom.mk' (fun g =>
+      ⟨c g, c g⁻¹, hunit g, (mul_comm (c g⁻¹) (c g)).trans (hunit g)⟩)
+    (fun g h => Units.ext (hmul g h)), ?_⟩
+  intro g v
+  obtain ⟨a, rfl⟩ := hspan v
+  show F g (a • b 0) = c g • a • b 0
+  rw [map_smul, hc g, smul_smul, smul_smul, mul_comm]
+
+variable {ℓ : ℕ} [Fact ℓ.Prime] {V : Type*} [AddCommGroup V]
+  [Module (ZMod ℓ) V] [Module.Finite (ZMod ℓ) V]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The sub-character of a stable line** (PROVEN): the restriction of
+the representation to a rank-`1` stable submodule is a unit-valued
+character. -/
+lemma exists_subCharacter (ρbar : GaloisRep ℚ (ZMod ℓ) V)
+    (W : Submodule (ZMod ℓ) V) (hW1 : Module.finrank (ZMod ℓ) W = 1)
+    (hstable : ∀ g v, v ∈ W → ρbar g v ∈ W) :
+    ∃ χ₁ : Field.absoluteGaloisGroup ℚ →* (ZMod ℓ)ˣ,
+      ∀ g, ∀ v ∈ W, ρbar g v = (χ₁ g : ZMod ℓ) • v := by
+  have he : ∀ g, W ≤ W.comap (ρbar g) := fun g v hv => hstable g v hv
+  obtain ⟨χ₁, hχ₁⟩ := exists_unit_character_of_finrank_one hW1
+    (fun g => (ρbar g).restrict (he g))
+    (by
+      apply LinearMap.ext; intro v; apply Subtype.ext
+      rw [LinearMap.coe_restrict_apply, map_one, Module.End.one_apply,
+        Module.End.one_apply])
+    (by
+      intro g h
+      apply LinearMap.ext; intro v; apply Subtype.ext
+      rw [LinearMap.coe_restrict_apply, map_mul, Module.End.mul_apply,
+        Module.End.mul_apply, LinearMap.coe_restrict_apply,
+        LinearMap.coe_restrict_apply])
+  refine ⟨χ₁, fun g v hv => ?_⟩
+  have h1 := hχ₁ g ⟨v, hv⟩
+  have h2 := congrArg Subtype.val h1
+  rw [LinearMap.coe_restrict_apply] at h2
+  exact h2
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The quotient-character of a stable line** (PROVEN): the induced
+action on the quotient by a stable submodule with rank-`1` quotient is a
+unit-valued character. -/
+lemma exists_quotCharacter (ρbar : GaloisRep ℚ (ZMod ℓ) V)
+    (W : Submodule (ZMod ℓ) V)
+    (hQ1 : Module.finrank (ZMod ℓ) (V ⧸ W) = 1)
+    (hstable : ∀ g v, v ∈ W → ρbar g v ∈ W) :
+    ∃ χ₂ : Field.absoluteGaloisGroup ℚ →* (ZMod ℓ)ˣ,
+      ∀ g v, W.mkQ (ρbar g v) = (χ₂ g : ZMod ℓ) • W.mkQ v := by
+  have he : ∀ g, W ≤ W.comap (ρbar g) := fun g v hv => hstable g v hv
+  obtain ⟨χ₂, hχ₂⟩ := exists_unit_character_of_finrank_one hQ1
+    (fun g => W.mapQ W (ρbar g) (he g))
+    (by
+      apply LinearMap.ext; intro z
+      obtain ⟨v, rfl⟩ := W.mkQ_surjective z
+      rw [Module.End.one_apply, Submodule.mkQ_apply, Submodule.mapQ_apply,
+        map_one, Module.End.one_apply])
+    (by
+      intro g h
+      apply LinearMap.ext; intro z
+      obtain ⟨v, rfl⟩ := W.mkQ_surjective z
+      rw [Module.End.mul_apply, Submodule.mkQ_apply, Submodule.mapQ_apply,
+        Submodule.mapQ_apply, Submodule.mapQ_apply, map_mul,
+        Module.End.mul_apply])
+  refine ⟨χ₂, fun g v => ?_⟩
+  have h1 := hχ₂ g (W.mkQ v)
+  rw [Submodule.mkQ_apply, Submodule.mapQ_apply] at h1
+  rw [Submodule.mkQ_apply, Submodule.mkQ_apply]
+  exact h1
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The triangular determinant** (PROVEN): on a stable line, the
+determinant is the product of the sub- and quotient-characters. -/
+lemma det_eq_subCharacter_mul_quotCharacter
+    (ρbar : GaloisRep ℚ (ZMod ℓ) V)
+    (W : Submodule (ZMod ℓ) V) (hW1 : Module.finrank (ZMod ℓ) W = 1)
+    (hQ1 : Module.finrank (ZMod ℓ) (V ⧸ W) = 1)
+    (hstable : ∀ g v, v ∈ W → ρbar g v ∈ W)
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ →* (ZMod ℓ)ˣ)
+    (hχ₁ : ∀ g, ∀ v ∈ W, ρbar g v = (χ₁ g : ZMod ℓ) • v)
+    (hχ₂ : ∀ g v, W.mkQ (ρbar g v) = (χ₂ g : ZMod ℓ) • W.mkQ v)
+    (g : Field.absoluteGaloisGroup ℚ) :
+    LinearMap.det (ρbar g : Module.End (ZMod ℓ) V) =
+      (χ₁ g : ZMod ℓ) * (χ₂ g : ZMod ℓ) := by
+  have he : W ≤ W.comap (ρbar g) := fun v hv => hstable g v hv
+  rw [LinearMap.det_eq_det_mul_det W (ρbar g) he]
+  congr 1
+  · have hr : (ρbar g).restrict he =
+        (χ₁ g : ZMod ℓ) • (LinearMap.id : W →ₗ[ZMod ℓ] W) := by
+      apply LinearMap.ext; intro v; apply Subtype.ext
+      rw [LinearMap.coe_restrict_apply, hχ₁ g v.1 v.2]
+      rfl
+    rw [hr, LinearMap.det_smul, hW1, pow_one, LinearMap.det_id, mul_one]
+  · have hr : W.mapQ W (ρbar g) he =
+        (χ₂ g : ZMod ℓ) • (LinearMap.id : (V ⧸ W) →ₗ[ZMod ℓ] (V ⧸ W)) := by
+      apply LinearMap.ext; intro z
+      obtain ⟨v, rfl⟩ := W.mkQ_surjective z
+      have h2 : (W.mapQ W (ρbar g) he) (W.mkQ v) = W.mkQ (ρbar g v) := by
+        rw [Submodule.mkQ_apply, Submodule.mapQ_apply, Submodule.mkQ_apply]
+      rw [h2, hχ₂ g v]
+      rfl
+    rw [hr, LinearMap.det_smul, hQ1, pow_one, LinearMap.det_id, mul_one]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Openness of the kernel-level set of a mod-`ℓ` representation**
+(PROVEN): the set where the representation is trivial is open — the
+endomorphism space is discrete (finite module over the discrete
+`ZMod ℓ`), so the representation is locally constant. Stated with the
+finiteness input as a plain hypothesis so that callers can supply it
+for any definitionally-equal spelling of `V`. -/
+lemma isOpen_setOf_galoisRep_eq_one {ℓ : ℕ} [Fact ℓ.Prime]
+    {V : Type*} [AddCommGroup V] [Module (ZMod ℓ) V]
+    (ρbar : GaloisRep ℚ (ZMod ℓ) V) (hfinV : Finite V) :
+    IsOpen {g : Field.absoluteGaloisGroup ℚ | ρbar g = 1} := by
+  haveI := hfinV
+  letI := moduleTopology (ZMod ℓ) (Module.End (ZMod ℓ) V)
+  haveI : Finite (Module.End (ZMod ℓ) V) :=
+    Finite.of_injective (fun f => (f : V → V)) DFunLike.coe_injective
+  haveI : Module.Finite (ZMod ℓ) (Module.End (ZMod ℓ) V) :=
+    Module.Finite.of_finite
+  haveI : DiscreteTopology (Module.End (ZMod ℓ) V) :=
+    GaloisRepresentation.discreteTopology_moduleTopology (ZMod ℓ)
+      (Module.End (ZMod ℓ) V)
+  have hcont : Continuous fun g : Field.absoluteGaloisGroup ℚ => ρbar g :=
+    ρbar.continuous_toFun
+  exact (isOpen_discrete ({1} : Set (Module.End (ZMod ℓ) V))).preimage hcont
+
+end CharacterBookkeeping
+
 set_option warn.sorry false in
-/-- **Serre's stable-line dichotomy for the Frey curve** (sorry node —
-the character/semistability analysis of Serre, Duke 1987, §4.1): if the
-mod-`p` representation of the Frey curve is not irreducible, then (given
-the Minkowski input) after replacing the stable line by its complement
-where necessary, one of the two characters of the extension
-`0 → χ₁ → E[p] → χ₂ → 0` is trivial. The two disjuncts record the two
-outcomes at the level of the torsion module: either the SUB-character is
-trivial — a Galois-FIXED point of exact order `p` in `E(ℚ̄)` — or the
-QUOTIENT-character is trivial — a stable line `W` with the induced
-action on `E[p]/W` trivial (`ρ g v − v ∈ W`). Content: `χ₁χ₂ = ω̄` (the
-determinant is the cyclotomic character, the PROVEN
-`det_galoisRep_eq_cyclotomic`); semistability of the Frey curve makes
-both characters unramified away from `p` (triviality of inertia at good
-primes is the PROVEN Néron–Ogg–Shafarevich node; unipotence at
-multiplicative primes is the Tate-curve description) and one of them
-unramified at `p` (flat/ordinary analysis at `p`); the Minkowski
-hypothesis then kills that character. -/
+/-- **The semistability-unramifiedness leaf** (sorry node — the
+arithmetic core of Serre's §4.1 analysis, now isolated from the
+character/descent bookkeeping, which is PROVEN): given a stable line in
+the mod-`p` torsion of the Frey curve with its sub- and
+quotient-characters `χ₁`, `χ₂` (multiplying to the mod-`p` cyclotomic
+character), ONE of the two characters is unramified at EVERY finite
+place. Content: at good primes `q ∉ {2, p}` the whole representation is
+unramified (the PROVEN Néron–Ogg–Shafarevich node); at multiplicative
+primes `q ≠ p` the inertia action is unipotent (Tate curve), so both
+diagonal characters are unramified there; at `p` the flat/ordinary
+analysis (the connected-étale sequence of the finite flat prolongation)
+makes one of the two characters unramified; at `2` the Frey package's
+Tate-curve description applies likewise. -/
+theorem FreyPackage.subquotient_character_unramified
+    (P : FreyPackage)
+    (W : Submodule (ZMod P.p)
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p))
+    (hW1 : Module.finrank (ZMod P.p) W = 1)
+    (hstable : ∀ g v, v ∈ W → P.freyCurve.galoisRep P.p P.hppos g v ∈ W)
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ →* (ZMod P.p)ˣ)
+    (hχ₁ : ∀ g, ∀ v ∈ W,
+      P.freyCurve.galoisRep P.p P.hppos g v = (χ₁ g : ZMod P.p) • v)
+    (hχ₂ : ∀ g v, W.mkQ (P.freyCurve.galoisRep P.p P.hppos g v) =
+      (χ₂ g : ZMod P.p) • W.mkQ v)
+    (hcyclo : ∀ g : Field.absoluteGaloisGroup ℚ,
+      (χ₁ g : ZMod P.p) * (χ₂ g : ZMod P.p) =
+        ((@GaloisRepresentation.cyclotomicCharacterModL P.p ⟨P.pp⟩ g :
+          (ZMod P.p)ˣ) : ZMod P.p)) :
+    (∀ (q : ℕ) (hq : q.Prime),
+      localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤
+        (χ₁.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) ∨
+    (∀ (q : ℕ) (hq : q.Prime),
+      localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤
+        (χ₂.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) :=
+  sorry
+
+/-- **Serre's stable-line dichotomy for the Frey curve** (DERIVED
+2026-07-17 from the semistability leaf and the PROVEN character
+bookkeeping): if the mod-`p` representation of the Frey curve is not
+irreducible, then (given the Minkowski input) either there is a
+Galois-FIXED point of exact order `p` in `E(ℚ̄)`, or there is a stable
+line `W` with the induced action on `E[p]/W` trivial. Assembly: the
+stable line exists (`exists_stable_line_of_not_isIrreducible`), carries
+characters `χ₁`, `χ₂` with `χ₁χ₂ = ω̄` (the DERIVED
+`det_galoisRep_eq_cyclotomic` through the triangular determinant); the
+semistability leaf makes one of them everywhere-unramified; its kernel
+is open (it contains the open kernel of the representation); the
+Minkowski hypothesis kills it; `χ₁ = 1` fixes a basis vector of `W`
+pointwise, `χ₂ = 1` trivializes the quotient action. -/
 theorem FreyPackage.stable_line_dichotomy_of_not_isIrreducible
     (P : FreyPackage)
     (hmink : ∀ χ : Field.absoluteGaloisGroup ℚ →* (ZMod P.p)ˣ,
@@ -789,8 +1009,155 @@ theorem FreyPackage.stable_line_dichotomy_of_not_isIrreducible
         ∀ v ∈ W, P.freyCurve.galoisRep P.p P.hppos g v ∈ W) ∧
       (∀ (g : Field.absoluteGaloisGroup ℚ)
         (v : (P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p),
-        W.mkQ (P.freyCurve.galoisRep P.p P.hppos g v) = W.mkQ v)) :=
-  sorry
+        W.mkQ (P.freyCurve.galoisRep P.p P.hppos g v) = W.mkQ v)) := by
+  classical
+  haveI : Fact P.p.Prime := ⟨P.pp⟩
+  -- the torsion space has rank `2`
+  have hcard : Nat.card ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) = P.p ^ 2 :=
+    TorsionCard.card_torsionBy
+      (P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))) P.p
+      (Nat.cast_ne_zero.mpr P.pp.ne_zero)
+  haveI hfin : Finite ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) := Nat.finite_of_card_ne_zero (by
+    rw [hcard]
+    have := P.pp.pos
+    positivity)
+  haveI : Fintype ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) := Fintype.ofFinite _
+  haveI : Module.Finite (ZMod P.p) ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) := Module.Finite.of_finite
+  have hfr : Module.finrank (ZMod P.p) ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) = 2 := by
+    have h1 := Module.card_eq_pow_finrank (K := ZMod P.p) (V := ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p))
+    rw [ZMod.card] at h1
+    have h2 : P.p ^ 2 = P.p ^ Module.finrank (ZMod P.p) ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) := by
+      rw [← hcard, Nat.card_eq_fintype_card]
+      exact h1
+    exact Nat.pow_right_injective P.pp.two_le h2.symm
+  have hrank : Module.rank (ZMod P.p) ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) = 2 := by
+    have h1 := Module.finrank_eq_rank (ZMod P.p) ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p)
+    rw [hfr] at h1
+    exact_mod_cast h1.symm
+  -- the stable line
+  have hirr : ¬ (P.freyCurve.galoisRep P.p P.hppos).IsIrreducible := h
+  obtain ⟨W, hW1, hstable⟩ :=
+    GaloisRepresentation.exists_stable_line_of_not_isIrreducible hrank (P.freyCurve.galoisRep P.p P.hppos) hirr
+  have hW0 : W ≠ ⊥ := by
+    intro hbot
+    rw [hbot, finrank_bot] at hW1
+    omega
+  have hWtop : W ≠ ⊤ := by
+    intro htop
+    rw [htop, finrank_top, hfr] at hW1
+    omega
+  have hQ1 : Module.finrank (ZMod P.p) (((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) ⧸ W) = 1 := by
+    have hsum := Submodule.finrank_quotient_add_finrank W
+    rw [hfr, hW1] at hsum
+    omega
+  -- the two characters
+  obtain ⟨χ₁, hχ₁⟩ := exists_subCharacter (P.freyCurve.galoisRep P.p P.hppos) W hW1 hstable
+  obtain ⟨χ₂, hχ₂⟩ := exists_quotCharacter (P.freyCurve.galoisRep P.p P.hppos) W hQ1 hstable
+  -- `χ₁χ₂ = ω̄` through the determinant node
+  have hcyclo : ∀ g, (χ₁ g : ZMod P.p) * (χ₂ g : ZMod P.p) =
+      ((@GaloisRepresentation.cyclotomicCharacterModL P.p ⟨P.pp⟩ g :
+        (ZMod P.p)ˣ) : ZMod P.p) := by
+    intro g
+    rw [← det_eq_subCharacter_mul_quotCharacter (P.freyCurve.galoisRep P.p P.hppos) W hW1 hQ1 hstable
+      χ₁ χ₂ hχ₁ hχ₂ g, WeilPairing.cyclotomicCharacterModL_eq_toZMod]
+    exact WeilPairing.det_galoisRep_eq_cyclotomic P.freyCurve P.p P.hppos g
+  -- the kernel of the representation is open …
+  let Kρ : Subgroup (Field.absoluteGaloisGroup ℚ) :=
+    { carrier := {g | (P.freyCurve.galoisRep P.p P.hppos) g = 1}
+      one_mem' := map_one (P.freyCurve.galoisRep P.p P.hppos)
+      mul_mem' := by
+        intro a b ha hb
+        show (P.freyCurve.galoisRep P.p P.hppos) (a * b) = 1
+        rw [map_mul, ha, hb, mul_one]
+      inv_mem' := by
+        intro a ha
+        show (P.freyCurve.galoisRep P.p P.hppos) a⁻¹ = 1
+        have h1 : (P.freyCurve.galoisRep P.p P.hppos) a⁻¹ * (P.freyCurve.galoisRep P.p P.hppos) a = 1 := by
+          rw [← map_mul, inv_mul_cancel, map_one]
+        rwa [ha, mul_one] at h1 }
+  have hKρ_open : IsOpen (Kρ : Set (Field.absoluteGaloisGroup ℚ)) :=
+    isOpen_setOf_galoisRep_eq_one (P.freyCurve.galoisRep P.p P.hppos) hfin
+  -- … and lies in the kernels of both characters
+  have hnontrivW : Nontrivial W := Submodule.nontrivial_iff_ne_bot.mpr hW0
+  obtain ⟨w₀, hw₀ne⟩ := exists_ne (0 : W)
+  have hw₀V : (w₀ : ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p)) ≠ 0 := fun hc => hw₀ne (Subtype.ext hc)
+  have hker₁ : Kρ ≤ χ₁.ker := by
+    intro g hg
+    have hg1 : (P.freyCurve.galoisRep P.p P.hppos) g = 1 := hg
+    rw [MonoidHom.mem_ker]
+    have h1 := hχ₁ g (w₀ : ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p)) w₀.2
+    rw [hg1, Module.End.one_apply] at h1
+    have h2 : ((1 : ZMod P.p) - (χ₁ g : ZMod P.p)) • (w₀ : ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p)) = 0 := by
+      rw [sub_smul, one_smul]
+      exact sub_eq_zero_of_eq h1
+    rcases smul_eq_zero.mp h2 with h3 | h3
+    · exact Units.ext (by
+        rw [Units.val_one]
+        exact (sub_eq_zero.mp h3).symm)
+    · exact absurd h3 hw₀V
+  have hker₂ : Kρ ≤ χ₂.ker := by
+    intro g hg
+    have hg1 : (P.freyCurve.galoisRep P.p P.hppos) g = 1 := hg
+    rw [MonoidHom.mem_ker]
+    haveI : Nontrivial (((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) ⧸ W) :=
+      Submodule.Quotient.nontrivial_iff.mpr hWtop
+    obtain ⟨z, hz⟩ := exists_ne (0 : ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) ⧸ W)
+    obtain ⟨v, rfl⟩ := W.mkQ_surjective z
+    have h1 := hχ₂ g v
+    rw [hg1, Module.End.one_apply] at h1
+    have h2 : ((1 : ZMod P.p) - (χ₂ g : ZMod P.p)) • W.mkQ v = 0 := by
+      rw [sub_smul, one_smul]
+      exact sub_eq_zero_of_eq h1
+    rcases smul_eq_zero.mp h2 with h3 | h3
+    · exact Units.ext (by
+        rw [Units.val_one]
+        exact (sub_eq_zero.mp h3).symm)
+    · exact absurd h3 hz
+  have hopen₁ : IsOpen (χ₁.ker : Set (Field.absoluteGaloisGroup ℚ)) :=
+    Subgroup.isOpen_mono hker₁ hKρ_open
+  have hopen₂ : IsOpen (χ₂.ker : Set (Field.absoluteGaloisGroup ℚ)) :=
+    Subgroup.isOpen_mono hker₂ hKρ_open
+  -- the semistability leaf, then Minkowski
+  rcases P.subquotient_character_unramified W hW1 hstable χ₁ χ₂ hχ₁ hχ₂
+    hcyclo with hun₁ | hun₂
+  · -- `χ₁ = 1`: the basis vector of `W` is a fixed point of order `p`
+    have hχ₁triv : χ₁ = 1 := hmink χ₁ hopen₁ hun₁
+    left
+    refine ⟨(show ((P.freyCurve)⁄(AlgebraicClosure ℚ)).Point from
+      (w₀ : ((P.freyCurve.map (algebraMap ℚ
+        (AlgebraicClosure ℚ))).nTorsion P.p)).1), ?_, ?_⟩
+    · -- exact order `p`
+      have hsm : ((P.p : ℕ) : ℤ) •
+          (w₀ : ((P.freyCurve.map (algebraMap ℚ
+            (AlgebraicClosure ℚ))).nTorsion P.p)).1 = 0 :=
+        (Submodule.mem_torsionBy_iff _ _).mp
+          (w₀ : ((P.freyCurve.map (algebraMap ℚ
+            (AlgebraicClosure ℚ))).nTorsion P.p)).2
+      have hnat : P.p •
+          (w₀ : ((P.freyCurve.map (algebraMap ℚ
+            (AlgebraicClosure ℚ))).nTorsion P.p)).1 = 0 := by
+        exact_mod_cast hsm
+      have hdvd := addOrderOf_dvd_of_nsmul_eq_zero hnat
+      have hne : (w₀ : ((P.freyCurve.map (algebraMap ℚ
+          (AlgebraicClosure ℚ))).nTorsion P.p)).1 ≠ 0 :=
+        fun hc => hw₀V (Subtype.ext hc)
+      rcases P.pp.eq_one_or_self_of_dvd _ hdvd with h1 | h1
+      · exact absurd (AddMonoid.addOrderOf_eq_one_iff.mp h1) hne
+      · exact h1
+    · -- fixed by every `σ`
+      intro σ
+      have h1 := hχ₁ σ (w₀ : ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p)) w₀.2
+      rw [hχ₁triv] at h1
+      simp only [MonoidHom.one_apply, Units.val_one, one_smul] at h1
+      exact congrArg Subtype.val h1
+  · -- `χ₂ = 1`: the quotient action is trivial
+    have hχ₂triv : χ₂ = 1 := hmink χ₂ hopen₂ hun₂
+    right
+    refine ⟨W, hW0, hWtop, fun g v hv => hstable g v hv, fun g v => ?_⟩
+    have h1 := hχ₂ g v
+    rw [hχ₂triv] at h1
+    simp only [MonoidHom.one_apply, Units.val_one, one_smul] at h1
+    exact h1
 
 set_option warn.sorry false in
 /-- **The Vélu quotient leaf** (sorry node): given a Galois-stable line
