@@ -573,7 +573,7 @@ the START and END of each block of work.
             formula node computes `n • (x₀, y₀)` with `x`-coordinate
             `ξ`; `Y_eq_of_X_eq` gives `y = η` or `negY`, negating the
             preimage in the latter case.
-            - ✗· `TorsionCard.smul_some_eq_zero_iff` — **the
+            - ✗○ `TorsionCard.smul_some_eq_zero_iff` — **the
               division-polynomial torsion dictionary**: `n • (x,y) = 0
               ↔ ΨSq n (x) = 0` (Washington Thm 3.6 territory).
             - ✗· `TorsionCard.exists_smul_some_eq` — **the
