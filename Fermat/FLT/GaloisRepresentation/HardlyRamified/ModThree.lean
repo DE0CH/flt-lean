@@ -21,6 +21,7 @@ import Mathlib.Topology.Instances.Complex
 -- (vendored PROVEN), consumed by `not_isAbsolutelyIrreducible`.
 public import Fermat.FLT.KnownIn1980s.PGL2.Defs
 import Mathlib.LinearAlgebra.Complex.FiniteDimensional
+import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 import Mathlib.RingTheory.RootsOfUnity.AlgebraicallyClosed
 
 /-!
@@ -290,20 +291,62 @@ theorem finrank_eigenspace_one_of_involution {k : Type u} [Field k]
   omega
 
 set_option warn.sorry false in
-/-- **The Serre §5.4/Tate elimination over the Dickson list** (sorry
-node): given a mod-3 hardly ramified representation `ρ`, a group
+/-- **The Serre §5.4/Tate elimination, noncyclic cases** (sorry node):
+with the notation of `serre_elimination` below, every noncyclic Dickson
+case for `π.range` is eliminated: the semidirect-of-elementary-abelian
+case contradicts absolute irreducibility (the normal `3`-subgroup has a
+nonzero unipotent fixed space, which is a proper stable subspace), and
+the dihedral, `A₄`, `S₄`, `A₅`, `PSL₂(𝔽_{3^m})`, `PGL₂(𝔽_{3^m})` cases
+contradict the hardly-ramified ramification constraints (cyclotomic
+determinant, unramified outside `{2, 3}`, flat at `3`, tame quadratic
+quotient at `2`) via Serre's discriminant/conductor bounds over `ℚ`. -/
+theorem serre_elimination_noncyclic {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (habs : Slop.OddRep.IsAbsolutelyIrreducible
+      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V))
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (π : Γ ℚ →* Dickson.PGL 3)
+    (hπ : ∀ g, π g = QuotientGroup.mk (u g))
+    (hcase :
+      (∃ n : ℕ, n ≥ 2 ∧ Nonempty (π.range ≃* DihedralGroup n)) ∨
+      (Nonempty (π.range ≃* alternatingGroup (Fin 4))) ∨
+      (Nonempty (π.range ≃* Equiv.Perm (Fin 4))) ∨
+      (Nonempty (π.range ≃* alternatingGroup (Fin 5))) ∨
+      (∃ (m t : ℕ) (_ : m ≥ 1) (_ : Nat.Coprime t 3) (_ : t ∣ 3 ^ m - 1)
+        (φ : Multiplicative (ZMod t) →*
+          MulAut (Multiplicative (Fin m → ZMod 3))),
+        Nonempty (π.range ≃*
+          (Multiplicative (Fin m → ZMod 3)) ⋊[φ] Multiplicative (ZMod t))) ∨
+      (∃ m : ℕ, m ≥ 1 ∧ Nonempty (π.range ≃*
+        Matrix.ProjectiveSpecialLinearGroup (Fin 2) (GaloisField 3 m))) ∨
+      (∃ m : ℕ, m ≥ 1 ∧ Nonempty (π.range ≃*
+        (GL (Fin 2) (GaloisField 3 m) ⧸
+          Subgroup.center (GL (Fin 2) (GaloisField 3 m)))))) :
+    False :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **The Serre §5.4/Tate elimination over the Dickson list** (cyclic
+case PROVEN 2026-07-18; the noncyclic cases delegate to the leaf
+above): given a mod-3 hardly ramified representation `ρ`, a group
 homomorphism `π` from `Γ ℚ` to `PGL₂(𝔽̄₃)` which is the
 projectivization of the base change of `ρ` to `𝔽̄₃` (witnessed
 explicitly: `u` is the matrix form of the base-changed action in the
 basis `b`, transported along the field identification `e`, and `π` is
 its class modulo the centre), and the Dickson classification of the
-finite image `π.range`, every case is eliminated: cyclic and
-semidirect-of-elementary-abelian images contradict absolute
-irreducibility, and the dihedral, `A₄`, `S₄`, `A₅`, `PSL₂(𝔽_{3^m})`,
-`PGL₂(𝔽_{3^m})` cases contradict the hardly-ramified ramification
-constraints (cyclotomic determinant, unramified outside `{2, 3}`,
-flat at `3`, tame quadratic quotient at `2`) via Serre's
-discriminant/conductor bounds over `ℚ`. -/
+finite image `π.range`, every case is eliminated. -/
 theorem serre_elimination {k : Type u} [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
@@ -338,8 +381,115 @@ theorem serre_elimination {k : Type u} [Finite k] [Field k]
       (∃ m : ℕ, m ≥ 1 ∧ Nonempty (π.range ≃*
         (GL (Fin 2) (GaloisField 3 m) ⧸
           Subgroup.center (GL (Fin 2) (GaloisField 3 m)))))) :
-    False :=
-  sorry
+    False := by
+  rcases hcase with hcyc | hrest
+  · -- **cyclic case, PROVEN**: a cyclic projective image makes the matrix
+    -- image abelian (a group with cyclic central quotient is abelian), so
+    -- the base-changed action is by commuting operators; over the
+    -- algebraically closed field each operator then acts as a scalar (its
+    -- eigenspace is invariant, hence everything), and a scalar action on a
+    -- `2`-dimensional space has a stable line — contradicting absolute
+    -- irreducibility.
+    classical
+    set L := AlgebraicClosure k with hL
+    set σρ : Representation L (Γ ℚ) (L ⊗[k] V) :=
+      Slop.OddRep.baseChange L (MonoidHomClass.toMonoidHom ρ) with hσρ
+    have hirr : σρ.IsIrreducible := habs
+    -- the image of `π` is the image of `u.range` in the quotient
+    have hrange : Subgroup.map
+        (QuotientGroup.mk' (Subgroup.center (GL (Fin 2) (Dickson.K 3))))
+        u.range = π.range := by
+      ext x
+      simp only [Subgroup.mem_map, MonoidHom.mem_range]
+      constructor
+      · rintro ⟨_, ⟨g, rfl⟩, rfl⟩
+        exact ⟨g, (hπ g).trans rfl⟩
+      · rintro ⟨g, rfl⟩
+        exact ⟨u g, ⟨g, rfl⟩, ((hπ g).trans rfl).symm⟩
+    -- the matrix image is abelian
+    have hcomm_u : ∀ g₁ g₂ : Γ ℚ, u g₁ * u g₂ = u g₂ * u g₁ := by
+      haveI hcyc' : IsCyclic (Subgroup.map
+          (QuotientGroup.mk' (Subgroup.center (GL (Fin 2) (Dickson.K 3))))
+          u.range) := hrange ▸ hcyc
+      have hker : ((QuotientGroup.mk'
+          (Subgroup.center (GL (Fin 2) (Dickson.K 3)))).subgroupMap
+            u.range).ker ≤ Subgroup.center u.range := by
+        rintro ⟨x, hx⟩ hmem
+        have hx1 : QuotientGroup.mk' (Subgroup.center
+            (GL (Fin 2) (Dickson.K 3))) x = 1 := congrArg Subtype.val hmem
+        have hxc : x ∈ Subgroup.center (GL (Fin 2) (Dickson.K 3)) := by
+          rwa [← QuotientGroup.ker_mk' (Subgroup.center
+            (GL (Fin 2) (Dickson.K 3))), MonoidHom.mem_ker]
+        exact Subgroup.mem_center_iff.mpr fun y => Subtype.ext
+          ((Subgroup.mem_center_iff.mp hxc) y.1)
+      haveI h := MonoidHom.isMulCommutative_of_isCyclic_of_ker_le_center
+        ((QuotientGroup.mk' (Subgroup.center
+          (GL (Fin 2) (Dickson.K 3)))).subgroupMap u.range) hker
+      intro g₁ g₂
+      exact congrArg Subtype.val
+        (h.is_comm.comm ⟨u g₁, MonoidHom.mem_range.mpr ⟨g₁, rfl⟩⟩
+          ⟨u g₂, MonoidHom.mem_range.mpr ⟨g₂, rfl⟩⟩)
+    -- the base-changed operators commute
+    have hcomm : ∀ g₁ g₂ : Γ ℚ, σρ g₁ * σρ g₂ = σρ g₂ * σρ g₁ := by
+      intro g₁ g₂
+      have hmap : ∀ M N : Matrix (Fin 2) (Fin 2) (AlgebraicClosure k),
+          M.map e = N.map e → M = N := by
+        intro M N h
+        ext i j
+        exact e.injective (by
+          have := congrFun (congrFun (congrArg Matrix.of.symm h) i) j
+          exact this)
+      have hval := congrArg (Units.val) (hcomm_u g₁ g₂)
+      rw [Units.val_mul, Units.val_mul, hu, hu, ← Matrix.map_mul,
+        ← Matrix.map_mul] at hval
+      have hmat := hmap _ _ hval
+      have hmul : ∀ gg₁ gg₂ : Γ ℚ, LinearMap.toMatrix b b (σρ gg₁) *
+          LinearMap.toMatrix b b (σρ gg₂) =
+          LinearMap.toMatrix b b (σρ gg₁ * σρ gg₂) :=
+        fun gg₁ gg₂ => (LinearMap.toMatrix_comp b b b _ _).symm
+      rw [hmul, hmul] at hmat
+      exact (LinearMap.toMatrix b b).injective hmat
+    -- each operator is a scalar
+    haveI : Module.Finite L (L ⊗[k] V) := Module.Finite.base_change k L V
+    have hfr2 : Module.finrank L (L ⊗[k] V) = 2 := by
+      rw [Module.finrank_baseChange]
+      exact Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
+    haveI : Nontrivial (L ⊗[k] V) :=
+      Module.nontrivial_of_finrank_pos (R := L) (by omega)
+    obtain ⟨hnt, hsub⟩ := (Slop.OddRep.isIrreducible_iff_forall σρ).mp hirr
+    have hscalar : ∀ g : Γ ℚ, ∃ μ : L, ∀ v : L ⊗[k] V, σρ g v = μ • v := by
+      intro g
+      obtain ⟨μ, hμ⟩ := Module.End.exists_eigenvalue (σρ g)
+      have hEne : Module.End.eigenspace (σρ g) μ ≠ ⊥ := hμ
+      have hEinv : ∀ h : Γ ℚ, ∀ w ∈ Module.End.eigenspace (σρ g) μ,
+          σρ h w ∈ Module.End.eigenspace (σρ g) μ := by
+        intro h w hw
+        rw [Module.End.mem_eigenspace_iff] at hw ⊢
+        have hc := congrFun (congrArg DFunLike.coe (hcomm g h)) w
+        simp only [Module.End.mul_apply] at hc
+        rw [hc, hw, map_smul]
+      rcases hsub (Module.End.eigenspace (σρ g) μ) hEinv with hE | hE
+      · exact absurd hE hEne
+      · refine ⟨μ, fun v => ?_⟩
+        have hv : v ∈ Module.End.eigenspace (σρ g) μ :=
+          hE ▸ Submodule.mem_top
+        rwa [Module.End.mem_eigenspace_iff] at hv
+    -- a scalar action on a `2`-dimensional space has a stable line
+    obtain ⟨v, hv⟩ := exists_ne (0 : L ⊗[k] V)
+    have hWinv : ∀ g : Γ ℚ, ∀ w ∈ Submodule.span L {v},
+        σρ g w ∈ Submodule.span L {v} := by
+      intro g w hw
+      obtain ⟨μ, hμ⟩ := hscalar g
+      rw [hμ w]
+      exact Submodule.smul_mem _ _ hw
+    rcases hsub (Submodule.span L {v}) hWinv with hW | hW
+    · exact hv ((Submodule.mem_bot L).mp
+        (hW ▸ Submodule.mem_span_singleton_self v))
+    · have h1 : Module.finrank L (Submodule.span L {v}) = 1 :=
+        finrank_span_singleton hv
+      rw [hW, finrank_top, hfr2] at h1
+      omega
+  · exact serre_elimination_noncyclic V hV hρ habs b e u hu π hπ hrest
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in

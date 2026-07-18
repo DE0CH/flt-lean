@@ -1684,17 +1684,25 @@ entries file). To add/remove/annotate a node, edit
                                           action factors through the finite End k V via a
                                           choice-based function, Units.ext), and applies the
                                           vendored Dickson.classification_tame/wild.
-                                            - ❌· `serre_elimination` — the Serre §5.4/Tate elimination over the Dickson eight-case list
-                                              (sorry node): given ρ hardly ramified, its explicit
-                                              projectivization data (b, e, u, hu, π, hπ) and the
-                                              case disjunction on π.range (cyclic / dihedral / A₄ /
-                                              S₄ / A₅ / elementary-abelian⋊cyclic / PSL₂(𝔽_{3^m}) /
-                                              PGL₂(𝔽_{3^m})), derive False. Attack per case: cyclic
-                                              and semidirect contradict absolute irreducibility
-                                              (central-quotient-cyclic ⇒ abelian ⇒ Schur via the
-                                              slop exists_smul_eq_of_commute; unipotent fixed
-                                              spaces); the rest via Serre's discriminant/conductor
-                                              bounds over ℚ (deep number theory).
+                                            - ✅· `serre_elimination` — the Serre elimination over the Dickson list — cyclic case PROVEN
+                                              2026-07-18: cyclic projective image ⇒ the matrix image
+                                              u.range is abelian (subgroupMap to the center-quotient
+                                              + MonoidHom.isMulCommutative_of_isCyclic_of_ker_le_center)
+                                              ⇒ the base-changed operators commute (Units.val,
+                                              Matrix.map_mul, injectivity of map e and toMatrix) ⇒
+                                              each acts as a scalar (exists_eigenvalue over the
+                                              algebraically closed L, eigenspace invariance under
+                                              commuting operators, irreducibility dichotomy) ⇒ a
+                                              span of any nonzero vector is a stable line,
+                                              contradicting finrank 2. Noncyclic cases delegate to:
+                                                - ❌· `serre_elimination_noncyclic` — the seven noncyclic Dickson cases (sorry node):
+                                                  semidirect-of-elementary-abelian contradicts
+                                                  absolute irreducibility (normal 3-subgroup has a
+                                                  nonzero unipotent fixed space, a stable subspace);
+                                                  dihedral / A₄ / S₄ / A₅ / PSL₂(𝔽_{3^m}) /
+                                                  PGL₂(𝔽_{3^m}) contradict the hardly-ramified
+                                                  ramification constraints via Serre's
+                                                  discriminant/conductor bounds over ℚ (deep).
                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient` — ordinarity lifting. DERIVED 2026-07-18 from the global triangular
                                   form + the cyclotomic-at-Frobenius leaf: the local Frobenius
                                   matrix is the global form at the Frobenius image; the diagonal
