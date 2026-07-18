@@ -1316,6 +1316,32 @@ theorem pointMap_inv_of_valuation_eq_one (u₀ q₀ : k) (h0 : u₀ ≠ 0)
     rfl
   exact hgen _ _ _ _ _ _ hx (hy.trans hnegY.symm)
 
+omit [CharZero k] in
+/-- The geometric series is summable on the open unit disc. -/
+theorem summable_geometric_nonarch (x : k) (hx : valuation k x < 1) :
+    Summable (fun n : ℕ ↦ x ^ n) :=
+  summable_of_valuation_le_pow hx (fun n ↦ n) (fun N ↦ Set.finite_Iio N)
+    (fun n ↦ by rw [map_pow])
+
+omit [CharZero k] in
+/-- **The nonarchimedean geometric series**: for `|x| < 1`,
+`∑ xⁿ = (1-x)⁻¹` — telescoping against the shift, no norm needed. -/
+theorem tsum_geometric_nonarch (x : k) (hx : valuation k x < 1) :
+    (∑' n : ℕ, x ^ n) = (1 - x)⁻¹ := by
+  have hxne : x ≠ 1 := by
+    rintro rfl
+    simp at hx
+  have hsum := summable_geometric_nonarch x hx
+  have h0 := hsum.tsum_eq_zero_add
+  rw [pow_zero] at h0
+  have hmul : x * (∑' n : ℕ, x ^ n) = (∑' n : ℕ, x ^ n) - 1 := by
+    have hx1 : (∑' n : ℕ, x ^ (n + 1)) = (∑' n : ℕ, x ^ n) - 1 := by
+      linear_combination -h0
+    rw [← hx1, ← tsum_mul_left]
+    exact tsum_congr fun n ↦ by ring
+  refine eq_inv_of_mul_eq_one_left ?_
+  linear_combination -hmul
+
 end Annulus
 
 end TateCurve
