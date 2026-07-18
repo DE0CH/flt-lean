@@ -1662,27 +1662,19 @@ entries file). To add/remove/annotate a node, edit
                                       modularCyclotomicCharacter.unique identifying each level with
                                       p from the action; HasEnoughRootsOfUnity instances from
                                       RootsOfUnity.AlgebraicallyClosed.
-                                        - ❌· `adicArithFrob_rootsOfUnity_pow` — the Frobenius action on 3-power roots of unity (sorry
-                                          node). EXECUTABLE ROUTE (verified against mathlib
-                                          2026-07-18): the Hensel content EXISTS as
-                                          AlgHom.IsArithFrobAt.apply_of_pow_eq_one
-                                          (RingTheory/Frobenius.lean:109 — φ ζ = ζ^q for m-th roots,
-                                          m ∉ Q, S a domain); the project supplies
-                                          isArithFrobAt_adicArithFrob (AbsoluteGaloisGroup.lean:268,
-                                          on IntegralClosure 𝒪ᵥ Kᵥᵃˡᵍ at its maximal ideal).
-                                          Assembly steps: (A) residue cardinality q = p: under-ideal
-                                          of 𝔪(IntegralClosure) is 𝔪(𝒪ᵥ), then
-                                          ResidueFieldEquivCompletionResidueField
-                                          (AdicValuation.lean, in tree) + 𝓞ℚ ⧸ (p) ≅ ZMod p — state
-                                          as its own sub-lemma; (B) globalization:
-                                          absoluteGaloisGroup.map is restrictNormal' along
-                                          IsAlgClosed.lift (AbsoluteGaloisGroup.lean:52-57), so the
-                                          square lift ((map f σ) x) = σ (lift x) is
-                                          AlgHom.restrictNormal_commutes; (C) roots of unity are
-                                          integral over 𝒪ᵥ, IntegralClosure is a domain; (D) (3^n :
-                                          ) ∉ 𝔪̄ since 3 is a unit at p ≠ 3; (E) exponent juggle
-                                          ζ^((p mod 3ⁿ).val) = ζ^p from ζ^(3^n) = 1 (pow_mod-style +
-                                          ZMod.val_natCast).
+                                        - ❌· `adicArithFrob_rootsOfUnity_pow` — the Frobenius action on 3-power roots of unity — ASSEMBLED
+                                          2026-07-18: the full derivation now compiles, consuming
+                                          mathlib's AlgHom.IsArithFrobAt.apply_of_pow_eq_one on the
+                                          integral closure (isArithFrobAt_adicArithFrob), the
+                                          existing lift_map globalization square, the new
+                                          IntegralClosure.coe_smul rfl-lemma, F-injectivity, and the
+                                          exponent-mod juggle (ZMod.val_natCast + Nat.div_add_mod).
+                                          Remaining inline sorry: h3notin — 3ⁿ avoids the maximal
+                                          ideal of the integral closure at the p-place (3 is a unit
+                                          in 𝒪ᵥ for p ≠ 3; route:
+                                          Valuation.Integer.not_isUnit_iff_valuation_lt_one + the
+                                          adic valuation of 3 at v = (p) is 1) — plus the residue-
+                                          cardinality sub-lemma natCard_residue_under_padicPlace.
                                             - ❌· `natCard_residue_under_padicPlace` — the residue cardinality at the p-place is p (sorry
                                               node): the under-ideal of 𝔪(IntegralClosure 𝒪ᵥ Kᵥᵃˡᵍ)
                                               is 𝔪(𝒪ᵥ) (lying over), and the residue field is 𝓞ℚ ⧸

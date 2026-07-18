@@ -315,14 +315,88 @@ theorem adicArithFrob_rootsOfUnity_pow
           hp.toHeightOneSpectrumRingOfIntegersRat)).toRingEquiv) t =
         t ^ ((p : ZMod (3 ^ n)).val) := by
   intro t ht
+  classical
   -- the `q` of the Frobenius specification is `p` (the residue cardinality)
   have hq := natCard_residue_under_padicPlace p hp hp5
-  -- remaining assembly (see PROGRESS): mathlib's
-  -- `AlgHom.IsArithFrobAt.apply_of_pow_eq_one` on the integral closure via
-  -- `isArithFrobAt_adicArithFrob`, the globalization square
-  -- (`AlgHom.restrictNormal_commutes` through `IsAlgClosed.lift`), and the
-  -- exponent-mod juggle.
-  sorry
+  set v := hp.toHeightOneSpectrumRingOfIntegersRat with hv
+  set f := algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) with hf
+  -- the root of unity, its power identity, and its image under the chosen
+  -- embedding of algebraic closures
+  have htL : ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ (3 ^ n)
+      = 1 := by
+    have h1 := (mem_rootsOfUnity _ _).mp ht
+    calc ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ (3 ^ n)
+        = ((t ^ (3 ^ n) : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) := by
+          push_cast; rfl
+      _ = 1 := by rw [h1]; rfl
+  set ζ : AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) :=
+    AlgebraicClosure.map f ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ)
+    with hζdef
+  have hζpow : ζ ^ (3 ^ n) = 1 := by
+    rw [hζdef, ← map_pow, htL, map_one]
+  -- the image is integral over the completion integers (it kills `X^{3ⁿ}-1`)
+  have hint : IsIntegral
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v) ζ := by
+    refine ⟨Polynomial.X ^ (3 ^ n) - 1, ?_, ?_⟩
+    · have := Polynomial.monic_X_pow_sub_C
+        (R := IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (1 : _) (n := 3 ^ n) (by positivity)
+      simpa [Polynomial.C_1] using this
+    · simp [Polynomial.eval₂_sub, hζpow]
+  set ζ' : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+    ⟨ζ, hint⟩ with hζ'def
+  have hζ'pow : ζ' ^ (3 ^ n) = 1 := by
+    apply Subtype.ext
+    push_cast [hζ'def]
+    exact hζpow
+  -- `3` is a unit at the `p`-place (`p ≠ 3`), so `3ⁿ` avoids the maximal ideal
+  have h3notin : ((3 : ℕ) ^ n : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) ∉
+      IsLocalRing.maximalIdeal _ := by
+    sorry
+  -- the Frobenius specification on the integral closure
+  have hfrob := AlgHom.IsArithFrobAt.apply_of_pow_eq_one
+    (Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob (v := v))
+    hζ'pow (by exact_mod_cast h3notin)
+  rw [hq] at hfrob
+  -- read the specification off in `Kᵥᵃˡᵍ`
+  have hfrobK : Field.AbsoluteGaloisGroup.adicArithFrob v ζ = ζ ^ p := by
+    have h1 := hfrob
+    rw [MulSemiringAction.toAlgHom_apply] at h1
+    have h2 := congrArg Subtype.val h1
+    rw [IntegralClosure.coe_smul] at h2
+    have h3 : ((⟨ζ, hint⟩ : IntegralClosure _ _) ^ p).1 = ζ ^ p :=
+      SubmonoidClass.coe_pow _ _
+    simpa [hζ'def, AlgEquiv.smul_def] using h2.trans h3
+  -- globalize through the chosen embedding, which is injective
+  have hsq := Field.absoluteGaloisGroup.lift_map f
+    (Field.AbsoluteGaloisGroup.adicArithFrob v)
+    ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ)
+  have hmain : (Field.absoluteGaloisGroup.map f
+      (Field.AbsoluteGaloisGroup.adicArithFrob v))
+      ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) =
+      ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ p := by
+    apply (AlgebraicClosure.map f).injective
+    rw [hsq, map_pow]
+    exact hfrobK
+  -- the goal's `toRingEquiv` application is the automorphism application
+  show (Field.absoluteGaloisGroup.map f
+      (Field.AbsoluteGaloisGroup.adicArithFrob v))
+      ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) = _
+  rw [hmain]
+  -- the exponent-mod juggle: `t^p = t^(p mod 3ⁿ)` since `t^{3ⁿ} = 1`
+  haveI : NeZero (3 ^ n) := ⟨pow_ne_zero _ (by norm_num)⟩
+  have hval : ((p : ZMod (3 ^ n))).val = p % 3 ^ n := ZMod.val_natCast _ p
+  conv_lhs => rw [show p = 3 ^ n * (p / 3 ^ n) + p % 3 ^ n from
+    (Nat.div_add_mod p (3 ^ n)).symm]
+  rw [pow_add, pow_mul, htL, one_pow, one_mul, hval]
 
 /-- **The 3-adic cyclotomic character at an arithmetic Frobenius** (DERIVED
 2026-07-18 from the roots-of-unity action leaf, by `3`-adic continuity:

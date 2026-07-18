@@ -59,6 +59,16 @@ instance mulSemiringActionIntegralClosure
   smul_one _ := Subtype.ext (smul_one _)
   smul_mul _ _ _ := Subtype.ext (MulSemiringAction.smul_mul _ _ _)
 
+/-- The action on the integral closure is computed on underlying elements
+(an exposed `rfl`-lemma for downstream modules, where the instance does not
+unfold through the module-system export). -/
+lemma IntegralClosure.coe_smul
+    {G R K : Type*} [CommRing R] [Field K] [Algebra R K] [Monoid G]
+    [MulSemiringAction G K] [SMulCommClass G R K]
+    (σ : G) (x : IntegralClosure R K) :
+    (σ • x).1 = σ • x.1 :=
+  rfl
+
 instance smulCommClass_integralClosure
     {G R K : Type*} [CommRing R] [Field K] [Algebra R K] [Monoid G] [MulSemiringAction G K]
     [SMulCommClass G R K] :
