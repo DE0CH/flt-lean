@@ -2085,6 +2085,82 @@ theorem tsum_choose_two_geometric_nonarch (x : k)
     _ = ((1 - x)⁻¹) ^ 2 * (1 - x)⁻¹ := hkey.symm
     _ = ((1 - x)⁻¹) ^ 3 := by ring
 
+omit [CharZero k] in
+/-- The cube series is summable. -/
+theorem summable_choose_two_geometric_nonarch (v : k)
+    (hv : valuation k v < 1) :
+    Summable (fun n : ℕ ↦ (((n + 2).choose 2 : ℕ) : k) * v ^ n) := by
+  refine summable_of_valuation_le_pow hv (fun n ↦ n)
+    (fun N ↦ Set.finite_Iio N) (fun n ↦ ?_)
+  rw [map_mul, map_pow]
+  calc valuation k ((((n + 2).choose 2 : ℕ) : k)) * valuation k v ^ n
+      ≤ 1 * valuation k v ^ n := by
+        refine mul_le_mul_left ?_ _
+        have h := valuation_intCast_le_one (R := k) ((n + 2).choose 2)
+        simpa using h
+    _ = valuation k v ^ n := one_mul _
+
+omit [CharZero k] in
+/-- The first `Y`-kernel: `∑ⱼ C(j,2)vʲ = v²/(1-v)³`. -/
+theorem tsum_choose_two_self_geometric_nonarch (v : k)
+    (hv : valuation k v < 1) :
+    (∑' j : ℕ, ((j.choose 2 : ℕ) : k) * v ^ j) =
+      v ^ 2 / (1 - v) ^ 3 := by
+  have hvne : v ≠ 1 := by
+    rintro rfl
+    simp at hv
+  have h1v : (1 - v) ≠ 0 := sub_ne_zero.mpr (Ne.symm hvne)
+  have hcubeHS : HasSum
+      (fun n : ℕ ↦ (((n + 2).choose 2 : ℕ) : k) * v ^ n)
+      (((1 - v)⁻¹) ^ 3) := by
+    have h := (summable_choose_two_geometric_nonarch v hv).hasSum
+    rwa [tsum_choose_two_geometric_nonarch v hv] at h
+  have hshifted : HasSum (fun n : ℕ ↦
+      (((n + 2).choose 2 : ℕ) : k) * v ^ (n + 2))
+      (v ^ 2 * ((1 - v)⁻¹) ^ 3) := by
+    refine (hcubeHS.mul_left (v ^ 2)).congr_fun fun n ↦ ?_
+    rw [pow_add]
+    ring
+  have hfull := (hasSum_nat_add_iff
+    (f := fun j : ℕ ↦ ((j.choose 2 : ℕ) : k) * v ^ j) 2).mp hshifted
+  have hzero : (∑ i ∈ Finset.range 2,
+      ((i.choose 2 : ℕ) : k) * v ^ i) = 0 := by
+    simp [Finset.sum_range_succ]
+  rw [hzero, add_zero] at hfull
+  rw [hfull.tsum_eq]
+  field_simp
+
+omit [CharZero k] in
+/-- The second `Y`-kernel: `∑ⱼ C(j+1,2)vʲ = v/(1-v)³`. -/
+theorem tsum_choose_two_succ_geometric_nonarch (v : k)
+    (hv : valuation k v < 1) :
+    (∑' j : ℕ, (((j + 1).choose 2 : ℕ) : k) * v ^ j) =
+      v / (1 - v) ^ 3 := by
+  have hvne : v ≠ 1 := by
+    rintro rfl
+    simp at hv
+  have h1v : (1 - v) ≠ 0 := sub_ne_zero.mpr (Ne.symm hvne)
+  have hcubeHS : HasSum
+      (fun n : ℕ ↦ (((n + 2).choose 2 : ℕ) : k) * v ^ n)
+      (((1 - v)⁻¹) ^ 3) := by
+    have h := (summable_choose_two_geometric_nonarch v hv).hasSum
+    rwa [tsum_choose_two_geometric_nonarch v hv] at h
+  have hshifted : HasSum (fun n : ℕ ↦
+      ((((n + 1) + 1).choose 2 : ℕ) : k) * v ^ (n + 1))
+      (v * ((1 - v)⁻¹) ^ 3) := by
+    refine (hcubeHS.mul_left v).congr_fun fun n ↦ ?_
+    rw [pow_succ]
+    ring
+  have hfull := (hasSum_nat_add_iff
+    (f := fun j : ℕ ↦ (((j + 1).choose 2 : ℕ) : k) * v ^ j) 1).mp
+    hshifted
+  have hzero : (∑ i ∈ Finset.range 1,
+      (((i + 1).choose 2 : ℕ) : k) * v ^ i) = 0 := by
+    simp
+  rw [hzero, add_zero] at hfull
+  rw [hfull.tsum_eq]
+  field_simp
+
 end Annulus
 
 end TateCurve
