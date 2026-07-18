@@ -105,59 +105,6 @@ lemma fixedPoints_determined (G : Subgroup (PGLOf (K p))) [Fintype G]
     · exfalso; exact hxy rfl
 
 omit h_odd in
-@[nolint unusedArguments]
-lemma commute_of_fixedPair (G_sub : Subgroup (PGLOf (K p))) [Fintype G_sub]
-    (g h : PGLOf (K p)) (hg : g ∈ G_sub) (hh : h ∈ G_sub)
-    (x y : ProjectiveLine p) (hxy : x ≠ y)
-    (hgx : g • x = x) (hgy : g • y = y)
-    (hhx : h • x = x) (hhy : h • y = y) :
-    Commute g h := by
-  obtain ⟨G, rfl⟩ := QuotientGroup.mk_surjective g
-  obtain ⟨H, rfl⟩ := QuotientGroup.mk_surjective h
-  obtain ⟨v, hv⟩ := x
-  obtain ⟨w, hw⟩ := y
-
-  have extract_eigen : ∀ {M : GL (Fin 2) (K p)} {u : Fin 2 → K p} {hu : u ≠ 0},
-      (QuotientGroup.mk M : PGLOf (K p)) • Projectivization.mk (K p) u hu = Projectivization.mk (K p) u
-          hu →
-      ∃ c : K p, M.val.mulVec u = c • u := by
-    intro M u hu h_fix
-    change Projectivization.mk (K p) (M • u) _ = _ at h_fix
-    rw [Projectivization.mk_eq_mk_iff] at h_fix
-    obtain ⟨c, hc⟩ := h_fix
-    exact ⟨(c : K p), hc.symm⟩
-  obtain ⟨c, hc⟩ := extract_eigen hgx
-  obtain ⟨d, hd⟩ := extract_eigen hhx
-  obtain ⟨e, he⟩ := extract_eigen hgy
-  obtain ⟨f, hf⟩ := extract_eigen hhy
-
-  have h_indep : LinearIndependent (K p) ![v, w] := by
-    rw [linearIndependent_fin2]
-    refine ⟨hw, fun a ha ↦ hxy ?_⟩
-    change Projectivization.mk (K p) v hv = Projectivization.mk (K p) w hw
-    rw [Projectivization.mk_eq_mk_iff]
-    exact ⟨Units.mk0 a (fun ha0 ↦ hv (by rw [ha0, zero_smul] at ha; exact ha.symm)), ha⟩
-
-  have h_basis : ∀ u : Fin 2 → K p, ∃ a b : K p, u = a • v + b • w := fun u ↦ by
-    have h_span : Submodule.span (K p) (Set.range ![v, w]) = ⊤ := by
-      apply Submodule.eq_top_of_finrank_eq
-      rw [finrank_span_eq_card h_indep, Module.finrank_pi]
-    have hu : u ∈ Submodule.span (K p) (Set.range ![v, w]) := by rw [h_span]; trivial
-    obtain ⟨coeff, hu_eq⟩ := (Submodule.mem_span_range_iff_exists_fun (K p)).mp hu
-    exact ⟨coeff 0, coeff 1, by rw [← hu_eq, Fin.sum_univ_two]; rfl⟩
-
-  have h_comm_u : ∀ u : Fin 2 → K p,
-      (G.val * H.val).mulVec u = (H.val * G.val).mulVec u := fun u ↦ by
-    obtain ⟨a, b, rfl⟩ := h_basis u
-    simp only [← Matrix.mulVec_mulVec, Matrix.mulVec_add, Matrix.mulVec_smul, hc, hd, he, hf,
-        smul_smul]
-    congr 1 <;> { congr 1; ring }
-  rw [Commute, SemiconjBy]
-  change QuotientGroup.mk (G * H) = QuotientGroup.mk (H * G)
-  congr 1
-  exact Units.ext (Matrix.toLin'.injective (LinearMap.ext h_comm_u))
-omit h_odd in
-
 lemma scalar_eq_one_in_PGL (g : GL (Fin 2) (K p)) (c : K p)
     (x y : ProjectiveLine p) (hxy : x ≠ y)
     (hgx : g.val.mulVec x.rep = c • x.rep) (hgy : g.val.mulVec y.rep = c • y.rep) :
@@ -398,36 +345,6 @@ lemma pairStabilizer_isCyclic (G : Subgroup (PGLOf (K p))) [Fintype G]
       scalar_eq_one_in_PGL p (f (g₁ * g₂⁻¹)) 1 x y hxy
         (by rw [hc_x, h_div, one_smul]) (by rw [hf_y, one_smul])
   exact isCyclic_of_injective_ringHom hom hom_inj
-
-lemma disjoint_fixedPairs (G : Subgroup (PGLOf (K p))) [Fintype G]
-    (hG_tame : ¬ (p : ℕ) ∣ Nat.card G)
-    (x y x' y' : ProjectiveLine p) (hxy : x ≠ y) (hx'y' : x' ≠ y')
-    (hpairs : ({x, y} : Set (ProjectiveLine p)) ≠ {x', y'})
-    (g : PGLOf (K p)) (hg : g ∈ G) (hg_ne : g ≠ 1)
-    (hfx : g • x = x) (hfy : g • y = y) (hfx' : g • x' = x') (hfy' : g • y' = y') :
-    False := by
-  let S := Function.fixedPoints (HSMul.hSMul g : ProjectiveLine p → ProjectiveLine p)
-  have h2 := tame_ncard_fixedPoints_eq_two p G hG_tame g hg hg_ne
-
-  have h_eq : ∀ {u v : ProjectiveLine p}, u ≠ v → u ∈ S → v ∈ S → S = {u, v} := by
-    intro u v huv hu hv
-    obtain ⟨a, b, _, hS⟩ : ∃ a b, a ≠ b ∧ S = {a, b} := Set.ncard_eq_two.mp h2
-    rw [hS] at hu hv ⊢
-    rw [Set.mem_insert_iff, Set.mem_singleton_iff] at hu hv
-    rcases hu with rfl | rfl
-
-    · rcases hv with rfl | rfl
-      · exact absurd rfl huv
-
-      · rfl
-
-    · rcases hv with rfl | rfl
-      · ext z
-        rw [Set.mem_insert_iff, Set.mem_singleton_iff]
-        exact ⟨Or.symm, Or.symm⟩
-
-      · exact absurd rfl huv
-  exact hpairs ((h_eq hxy hfx hfy).symm.trans (h_eq hx'y' hfx' hfy'))
 
 lemma normalizer_permutes_pair (G : Subgroup (PGLOf (K p))) [Fintype G]
     (hG_tame : ¬ (p : ℕ) ∣ Nat.card G)

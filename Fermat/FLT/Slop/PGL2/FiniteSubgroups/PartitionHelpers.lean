@@ -607,19 +607,6 @@ theorem sylow_fixedPoint_injective (G : Subgroup (PGLOf (K p))) [Finite G]
   have h_card : Nat.card (Q : Subgroup G) = Nat.card (P : Subgroup G) := by rw [P.card_eq_multiplicity, Q.card_eq_multiplicity]
   exact h_contra <| Sylow.ext <| SetLike.ext' <| (Set.eq_of_subset_of_ncard_le h_eq h_card.ge).symm
 
-theorem sylow_free_action (G : Subgroup (PGLOf (K p))) [Finite G]
-    (hG_p : p ∣ Nat.card G) (P Q : Sylow p G) (hPQ : P ≠ Q)
-    (g : G) (hg : g ∈ (P : Subgroup G)) (hg_ne : g ≠ 1) :
-    (g : PGLOf (K p)) • sylowFixedPoint p G hG_p Q ≠ sylowFixedPoint p G hG_p Q := by
-  intro h_fix
-  obtain ⟨x, hx⟩ := Set.ncard_eq_one.mp <| order_p_one_fixedPoint p (g : PGLOf (K p)) (sylow_element_order_p p G P g hg hg_ne)
-  have hP_mem : sylowFixedPoint p G hG_p P ∈ fixedPoints p ↑g := sylow_element_fixes p G hG_p P g hg
-  have hQ_mem : sylowFixedPoint p G hG_p Q ∈ fixedPoints p ↑g := h_fix
-  rw [hx, Set.mem_singleton_iff] at hP_mem hQ_mem
-  exact hPQ <| sylow_fixedPoint_injective p G hG_p <| hP_mem.trans hQ_mem.symm
-
-
-
 theorem card_sylow_mod_card (G : Subgroup (PGLOf (K p))) [Finite G]
     (hG_p : p ∣ Nat.card G) (P : Sylow p G) :
     Nat.card P ∣ (Fintype.card (Sylow p G) - 1) := by

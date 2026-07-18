@@ -378,22 +378,6 @@ lemma sylow_normal_of_unique_in_normal {G : Type*} [Group G] [Finite G]
   exact ⟨P, ConjAct.normal_of_characteristic_of_normal⟩
 
 
-lemma too_many_elements_of_prime_order {G : Type*} [Group G] [Finite G]
-    {p q : ℕ} [hp : Fact (Nat.Prime p)] [hq : Fact (Nat.Prime q)]
-    (_ : Nat.card G = p * q)
-    (hn_p : Fintype.card (Sylow p G) = q)
-    (hn_q : Fintype.card (Sylow q G) = p)
-    (hpq : p ≠ q) (hp_ge : p ≥ 3) (hq_ge : q ≥ 3) : False := by
-  rcases lt_trichotomy p q with h_lt | rfl | h_gt
-  · have h1 : Nat.card (Sylow q G) % q = 1 % q := card_sylow_modEq_one q G
-    rw [Nat.card_eq_fintype_card, hn_q, Nat.mod_eq_of_lt hq.out.one_lt, Nat.mod_eq_of_lt h_lt] at h1
-    omega
-  · exact hpq rfl
-  · have h1 : Nat.card (Sylow p G) % p = 1 % p := card_sylow_modEq_one p G
-    rw [Nat.card_eq_fintype_card, hn_p, Nat.mod_eq_of_lt hp.out.one_lt, Nat.mod_eq_of_lt h_gt] at h1
-    omega
-
-
 lemma order_30_n3_ne_10_of_n5_eq_6 {G : Type*} [Group G] [Finite G]
     (hn : Nat.card G = 30)
     (hn5 : Fintype.card (Sylow 5 G) = 6) :

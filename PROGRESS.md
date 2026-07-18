@@ -1670,14 +1670,31 @@ entries file). To add/remove/annotate a node, edit
                                           (finrank_eq_one_iff/finrank_eq_one_iff_eq_top + dvd-prime
                                           case split), so σ = 1 by adjoin_induction — contradiction.
                                           mod_three_reducible now rests on the SINGLE Serre leaf.
-                                        - ❌· `not_isAbsolutelyIrreducible` — no absolutely irreducible mod-3 hardly ramified rep
-                                          (sorry node — the Serre §5.4/Tate elimination core): the
-                                          projective image in PGL₂(𝔽̄₃) is classified by Dickson
-                                          (vendored PROVEN, ~6700 lines in Slop.PGL2.FiniteSubgroups
-                                          at 8282dfb~1, to be restored when this node's proof
-                                          consumes it); ramification constraints (cyclotomic det,
-                                          unramified outside {2,3}, flat at 3, tame at 2) eliminate
-                                          every case via discriminant/conductor bounds over ℚ.
+                                        - ✅· `not_isAbsolutelyIrreducible` — no absolutely irreducible mod-3 hardly ramified rep —
+                                          DERIVED 2026-07-18: the Dickson stack RESTORED (~11,400
+                                          lines, 14 files, zero sorries: Slop.PGL2.FiniteSubgroups +
+                                          KnownIn1980s.PGL2.{Basic,Defs}); the skeleton base-changes
+                                          ρ to 𝔽̄₃ (Slop.OddRep.baseChange), identifies k̄ ≅ K 3 =
+                                          AlgebraicClosure (ZMod 3) via IsAlgClosure.equiv over
+                                          ZMod 3 (CharP k 3 from the new
+                                          charP_three_of_finite_padicIntThree_algebra), takes the
+                                          matrix form in a finBasis (toMatrixAlgEquiv units chain →
+                                          GL₂(𝔽̄₃)), projectivizes to π : Γ ℚ →* PGL₂(𝔽̄₃)
+                                          (QuotientGroup.mk' center), proves Finite π.range (the
+                                          action factors through the finite End k V via a
+                                          choice-based function, Units.ext), and applies the
+                                          vendored Dickson.classification_tame/wild.
+                                            - ❌· `serre_elimination` — the Serre §5.4/Tate elimination over the Dickson eight-case list
+                                              (sorry node): given ρ hardly ramified, its explicit
+                                              projectivization data (b, e, u, hu, π, hπ) and the
+                                              case disjunction on π.range (cyclic / dihedral / A₄ /
+                                              S₄ / A₅ / elementary-abelian⋊cyclic / PSL₂(𝔽_{3^m}) /
+                                              PGL₂(𝔽_{3^m})), derive False. Attack per case: cyclic
+                                              and semidirect contradict absolute irreducibility
+                                              (central-quotient-cyclic ⇒ abelian ⇒ Schur via the
+                                              slop exists_smul_eq_of_commute; unipotent fixed
+                                              spaces); the rest via Serre's discriminant/conductor
+                                              bounds over ℚ (deep number theory).
                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient` — ordinarity lifting. DERIVED 2026-07-18 from the global triangular
                                   form + the cyclotomic-at-Frobenius leaf: the local Frobenius
                                   matrix is the global form at the Frobenius image; the diagonal
