@@ -1843,9 +1843,9 @@ private lemma addRelXFn_add_coe (L : PeriodPair) (w z : ℂ)
       if_neg hpz]
     exact addRelXRaw_add_coe L w z l
 
-set_option warn.sorry false in
-/-- **The cleared `℘`-addition identity** (DERIVED modulo the two local
-sorries above, by the Liouville pattern of `derivWeierstrassP_sq`): the
+/-- **The cleared `℘`-addition identity** (DERIVED modulo the local
+`tendsto_addRelXRaw_zero` sorry above, by the Liouville pattern of
+`derivWeierstrassP_sq`): the
 patched relation is entire, doubly periodic and bounded, hence constant,
 and its value at `0` is the vanishing limit. -/
 private theorem addRelXRaw_eq_zero (L : PeriodPair) (w : ℂ)
@@ -1867,17 +1867,125 @@ private theorem addRelXRaw_eq_zero (L : PeriodPair) (w : ℂ)
   rw [← hzval, hconst, h0]
 
 
-set_option warn.sorry false in
-/-- (private WIP sorry node) **`℘'' = 6℘² − g₂/2`** away from the
-lattice: differentiate `derivWeierstrassP_sq` on the open complement of
-the lattice, cancel `℘'` where it is nonzero, and extend across its
-isolated zeros by the identity theorem (`latticeᶜ` is preconnected as
-the complement of a countable set). Consumed by the Laurent table for
-`tendsto_addRelXRaw_zero` (the `S`-coefficient conversions). -/
+/-- `℘'` is not identically zero away from the lattice: near `0` it is
+dominated by the pole `−2/z³` coming from `℘'[L] z = ℘'[L − 0] z − 2/z³`,
+while `℘'[L − 0]` is continuous at `0`. -/
+private lemma exists_derivWeierstrassP_ne_zero (L : PeriodPair) :
+    ∃ z, z ∉ L.lattice ∧ ℘'[L] z ≠ 0 := by
+  by_contra hall
+  push Not at hall
+  have h0 : (0 : ℂ) ∈ L.lattice := L.lattice.zero_mem
+  have hcont : ContinuousAt ℘'[L - (0 : ℂ)] 0 :=
+    (L.analyticAt_derivWeierstrassPExcept 0).continuousAt
+  -- the Except part is eventually bounded near `0`
+  have hbdd : ∀ᶠ z in 𝓝 (0 : ℂ),
+      ‖℘'[L - (0 : ℂ)] z‖ < ‖℘'[L - (0 : ℂ)] 0‖ + 1 :=
+    hcont.norm.eventually_lt_const
+      (by linarith [norm_nonneg (℘'[L - (0 : ℂ)] 0)])
+  -- the pole term eventually beats that bound
+  have hpole : ∀ᶠ z in 𝓝[≠] (0 : ℂ),
+      ‖℘'[L - (0 : ℂ)] 0‖ + 1 < ‖(2 : ℂ) / z ^ 3‖ := by
+    have hcube : Filter.Tendsto (fun z : ℂ => z ^ 3) (𝓝[≠] (0 : ℂ))
+        (𝓝[≠] (0 : ℂ)) := by
+      rw [tendsto_nhdsWithin_iff]
+      constructor
+      · have := ((continuous_pow 3).tendsto (0 : ℂ)).mono_left
+          (nhdsWithin_le_nhds (s := {(0 : ℂ)}ᶜ))
+        simpa using this
+      · exact eventually_mem_nhdsWithin.mono fun z hz => pow_ne_zero 3 hz
+    have hcob : Filter.Tendsto (fun z : ℂ => (2 : ℂ) / z ^ 3)
+        (𝓝[≠] (0 : ℂ)) (Bornology.cobounded ℂ) := by
+      have h2 := (Filter.tendsto_mul_left_cobounded
+        (two_ne_zero (α := ℂ))).comp
+        ((Filter.tendsto_inv₀_nhdsNE_zero (α := ℂ)).comp hcube)
+      simpa [Function.comp_def, div_eq_mul_inv] using h2
+    exact (tendsto_norm_atTop_iff_cobounded.mpr hcob).eventually_gt_atTop _
+  -- combine on the punctured neighborhood and extract a witness
+  have hlat : ∀ᶠ z in 𝓝 (0 : ℂ), z ∈ ((↑L.lattice : Set ℂ) \ {0})ᶜ :=
+    L.compl_lattice_sdiff_singleton_mem_nhds 0
+  obtain ⟨z, hz1, hz2, hz3, hz4⟩ :=
+    ((hlat.filter_mono nhdsWithin_le_nhds).and
+      ((hbdd.filter_mono nhdsWithin_le_nhds).and
+        (hpole.and eventually_mem_nhdsWithin))).exists
+  -- `z ∉ L.lattice` (it avoids `L \ {0}` and is nonzero)
+  have hz0 : z ≠ 0 := hz4
+  have hzL : z ∉ L.lattice := by
+    intro hmem
+    exact hz1 ⟨hmem, hz0⟩
+  -- `℘'[L − 0] z = ℘' z + 2/z³ = 2/z³` since `℘' z = 0` by `hall`
+  have hdef := L.derivWeierstrassPExcept_def ⟨0, h0⟩ z
+  have hcoe : ((⟨0, h0⟩ : L.lattice) : ℂ) = 0 := rfl
+  rw [hcoe, sub_zero, hall z hzL, zero_add] at hdef
+  -- contradiction with the norm bounds
+  rw [hdef] at hz2
+  exact absurd hz2 (not_lt.mpr (le_of_lt hz3))
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **`℘'' = 6℘² − g₂/2`** away from the lattice: differentiate
+`derivWeierstrassP_sq`, cancel `℘'` where it is nonzero, and extend
+across the isolated zeros of `℘'` by the identity theorem (`latticeᶜ`
+is preconnected as the complement of a countable set in `ℂ`). -/
 private theorem deriv_derivWeierstrassP_eq (L : PeriodPair) {z : ℂ}
     (hz : z ∉ L.lattice) :
-    deriv ℘'[L] z = 6 * ℘[L] z ^ 2 - L.g₂ / 2 :=
-  sorry
+    deriv ℘'[L] z = 6 * ℘[L] z ^ 2 - L.g₂ / 2 := by
+  have hUopen : IsOpen ((↑L.lattice : Set ℂ)ᶜ) :=
+    L.isClosed_lattice.isOpen_compl
+  -- both sides analytic on `latticeᶜ`
+  have hf : AnalyticOnNhd ℂ (deriv ℘'[L]) (↑L.lattice : Set ℂ)ᶜ :=
+    L.analyticOnNhd_derivWeierstrassP.deriv
+  have hg : AnalyticOnNhd ℂ (fun x => 6 * ℘[L] x ^ 2 - L.g₂ / 2)
+      (↑L.lattice : Set ℂ)ᶜ := by
+    intro x hx
+    have hP := L.analyticOnNhd_weierstrassP x hx
+    fun_prop
+  -- the multiplied identity `2℘'·(℘')' = 12℘²℘' − g₂℘'` at every
+  -- non-lattice point, from differentiating `℘'² = 4℘³ − g₂℘ − g₃`
+  have hmul : ∀ x ∈ (↑L.lattice : Set ℂ)ᶜ,
+      2 * ℘'[L] x * deriv ℘'[L] x
+        = 12 * ℘[L] x ^ 2 * ℘'[L] x - L.g₂ * ℘'[L] x := by
+    intro x hx
+    have hP'x : HasDerivAt ℘'[L] (deriv ℘'[L] x) x :=
+      (L.analyticOnNhd_derivWeierstrassP x hx).differentiableAt.hasDerivAt
+    have hPx : HasDerivAt ℘[L] (℘'[L] x) x := by
+      have h1 :=
+        (L.analyticOnNhd_weierstrassP x hx).differentiableAt.hasDerivAt
+      rwa [L.deriv_weierstrassP] at h1
+    -- the two functions agree near `x`, so the derivatives agree
+    have hev : (fun y => ℘'[L] y ^ 2)
+        =ᶠ[𝓝 x] (fun y => 4 * ℘[L] y ^ 3 - L.g₂ * ℘[L] y - L.g₃) := by
+      filter_upwards [hUopen.mem_nhds hx] with y hy
+      exact L.derivWeierstrassP_sq y hy
+    have heq := (hP'x.pow 2).unique
+      (((((hPx.pow 3).const_mul (4 : ℂ)).sub
+        (hPx.const_mul L.g₂)).sub_const L.g₃).congr_of_eventuallyEq hev)
+    push_cast at heq
+    linear_combination heq
+  -- a point where `℘'` does not vanish
+  obtain ⟨z₀, hz₀L, hz₀ne⟩ := exists_derivWeierstrassP_ne_zero L
+  -- near it, cancel `2℘'` to get the clean identity eventually
+  have hev₀ : deriv ℘'[L] =ᶠ[𝓝 z₀] fun x => 6 * ℘[L] x ^ 2 - L.g₂ / 2 := by
+    have hcont : ContinuousAt ℘'[L] z₀ :=
+      (L.analyticOnNhd_derivWeierstrassP z₀ hz₀L).continuousAt
+    have hne : ∀ᶠ x in 𝓝 z₀, ℘'[L] x ≠ 0 :=
+      hcont.eventually_ne hz₀ne
+    filter_upwards [hUopen.mem_nhds hz₀L, hne] with x hxU hxne
+    have h1 := hmul x hxU
+    have h2 : (2 : ℂ) * ℘'[L] x ≠ 0 := by
+      simp [hxne]
+    apply mul_left_cancel₀ h2
+    rw [h1]
+    ring
+  -- `latticeᶜ` is preconnected (complement of a countable set)
+  have hcnt : (↑L.lattice : Set ℂ).Countable := by
+    have hC : Countable L.lattice :=
+      L.latticeEquivProd.toEquiv.countable_iff.mpr inferInstance
+    exact Set.countable_coe_iff.mp hC
+  have hpre : IsPreconnected ((↑L.lattice : Set ℂ)ᶜ) := by
+    have h2 : 1 < Module.rank ℝ ℂ := by
+      rw [rank_real_complex]
+      norm_num
+    exact (hcnt.isPathConnected_compl_of_one_lt_rank h2).isConnected.isPreconnected
+  exact hf.eqOn_of_preconnected_of_eventuallyEq hg hpre hz₀L hev₀ hz
 
 end WeierstrassAddition
 
