@@ -1771,6 +1771,27 @@ theorem evalA_XA_bilateral (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
   rw [evalA, hfull.tsum_eq]
   ring
 
+omit [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- Reindexing an `ℕ+`-series by the successor bijection with `ℕ`. -/
+theorem tsum_pnat_eq_tsum_succPNat (g : ℕ+ → k) :
+    (∑' m : ℕ+, g m) = ∑' n : ℕ, g n.succPNat := by
+  rw [← Equiv.tsum_eq Equiv.pnatEquivNat.symm g]
+  exact tsum_congr fun n ↦ by
+    simp only [Equiv.pnatEquivNat_symm_apply]
+
+omit [CharZero k] in
+/-- Splitting off the first term of a summable `ℕ+`-series. -/
+theorem tsum_pnat_eq_add_shift {f : ℕ+ → k} (hf : Summable f) :
+    (∑' m : ℕ+, f m) = f 1 + ∑' m : ℕ+, f (m + 1) := by
+  have hsum : Summable (fun n : ℕ ↦ f n.succPNat) := by
+    have h := (Equiv.pnatEquivNat.symm.summable_iff).mpr hf
+    refine h.congr fun n ↦ ?_
+    simp only [Function.comp_apply, Equiv.pnatEquivNat_symm_apply]
+  rw [tsum_pnat_eq_tsum_succPNat f,
+    tsum_pnat_eq_tsum_succPNat (fun m ↦ f (m + 1)),
+    hsum.tsum_eq_zero_add]
+  rfl
+
 end Annulus
 
 end TateCurve
