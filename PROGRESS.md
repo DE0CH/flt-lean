@@ -185,15 +185,29 @@ entries file). To add/remove/annotate a node, edit
                                                                   extended window |q|² < |w| ≤ 1,
                                                                   and quotient bookkeeping (annulus
                                                                   normalisation, trivial classes).
-                                                                    - ❌· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (sorry node,
-                                                                      Silverman V.4): on the
-                                                                      annulus, equal bilateral
-                                                                      x-values force v = u or uv ∈
-                                                                      {1, q} — the x-line is two-to-
-                                                                      one up to the involution.
-                                                                      Valuation analysis of the
-                                                                      theta-quotient/Weierstrass
-                                                                      x-series.
+                                                                    - ✅· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (Silverman V.4).
+                                                                      DERIVED 2026-07-18 from the
+                                                                      coordinate-pair injectivity
+                                                                      bilateralXY_inj: Y_eq_of_X_eq
+                                                                      gives equal or negY-related
+                                                                      y-values; equal ⇒ injectivity
+                                                                      ⇒ v = u; negY-related ⇒ v =
+                                                                      the inverse partner (u⁻¹ on
+                                                                      the shell, q·u⁻¹ in the
+                                                                      interior) by the PROVEN
+                                                                      vertical case + injectivity,
+                                                                      so uv ∈ {1, q}.
+                                                                        - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity on
+                                                                          the annulus (sorry node — the
+                                                                          injectivity half of Silverman
+                                                                          V.4): equal bilateral x- AND
+                                                                          y-values force equal
+                                                                          parameters. Attack: Newton-
+                                                                          polygon/theta-quotient
+                                                                          analysis of X(u) - X(v) over
+                                                                          the complete field, the
+                                                                          y-value separating the two
+                                                                          sheets.
                                                                     - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry
                                                                       node, V.3.1(c) doubling case):
                                                                       for u in the annulus with u²
@@ -334,15 +348,29 @@ entries file). To add/remove/annotate a node, edit
                                                                       1, and quotient bookkeeping
                                                                       (annulus normalisation,
                                                                       trivial classes).
-                                                                        - ❌· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (sorry node,
-                                                                          Silverman V.4): on the
-                                                                          annulus, equal bilateral
-                                                                          x-values force v = u or uv ∈
-                                                                          {1, q} — the x-line is two-to-
-                                                                          one up to the involution.
-                                                                          Valuation analysis of the
-                                                                          theta-quotient/Weierstrass
-                                                                          x-series.
+                                                                        - ✅· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (Silverman V.4).
+                                                                          DERIVED 2026-07-18 from the
+                                                                          coordinate-pair injectivity
+                                                                          bilateralXY_inj: Y_eq_of_X_eq
+                                                                          gives equal or negY-related
+                                                                          y-values; equal ⇒ injectivity
+                                                                          ⇒ v = u; negY-related ⇒ v =
+                                                                          the inverse partner (u⁻¹ on
+                                                                          the shell, q·u⁻¹ in the
+                                                                          interior) by the PROVEN
+                                                                          vertical case + injectivity,
+                                                                          so uv ∈ {1, q}.
+                                                                            - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity on
+                                                                              the annulus (sorry node — the
+                                                                              injectivity half of Silverman
+                                                                              V.4): equal bilateral x- AND
+                                                                              y-values force equal
+                                                                              parameters. Attack: Newton-
+                                                                              polygon/theta-quotient
+                                                                              analysis of X(u) - X(v) over
+                                                                              the complete field, the
+                                                                              y-value separating the two
+                                                                              sheets.
                                                                         - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry
                                                                           node, V.3.1(c) doubling case):
                                                                           for u in the annulus with u²
@@ -507,15 +535,29 @@ entries file). To add/remove/annotate a node, edit
                                                                           1, and quotient bookkeeping
                                                                           (annulus normalisation,
                                                                           trivial classes).
-                                                                            - ❌· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (sorry node,
-                                                                              Silverman V.4): on the
-                                                                              annulus, equal bilateral
-                                                                              x-values force v = u or uv ∈
-                                                                              {1, q} — the x-line is two-to-
-                                                                              one up to the involution.
-                                                                              Valuation analysis of the
-                                                                              theta-quotient/Weierstrass
-                                                                              x-series.
+                                                                            - ✅· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (Silverman V.4).
+                                                                              DERIVED 2026-07-18 from the
+                                                                              coordinate-pair injectivity
+                                                                              bilateralXY_inj: Y_eq_of_X_eq
+                                                                              gives equal or negY-related
+                                                                              y-values; equal ⇒ injectivity
+                                                                              ⇒ v = u; negY-related ⇒ v =
+                                                                              the inverse partner (u⁻¹ on
+                                                                              the shell, q·u⁻¹ in the
+                                                                              interior) by the PROVEN
+                                                                              vertical case + injectivity,
+                                                                              so uv ∈ {1, q}.
+                                                                                - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity on
+                                                                                  the annulus (sorry node — the
+                                                                                  injectivity half of Silverman
+                                                                                  V.4): equal bilateral x- AND
+                                                                                  y-values force equal
+                                                                                  parameters. Attack: Newton-
+                                                                                  polygon/theta-quotient
+                                                                                  analysis of X(u) - X(v) over
+                                                                                  the complete field, the
+                                                                                  y-value separating the two
+                                                                                  sheets.
                                                                             - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry
                                                                               node, V.3.1(c) doubling case):
                                                                               for u in the annulus with u²
@@ -673,15 +715,29 @@ entries file). To add/remove/annotate a node, edit
                                                                               1, and quotient bookkeeping
                                                                               (annulus normalisation,
                                                                               trivial classes).
-                                                                                - ❌· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (sorry node,
-                                                                                  Silverman V.4): on the
-                                                                                  annulus, equal bilateral
-                                                                                  x-values force v = u or uv ∈
-                                                                                  {1, q} — the x-line is two-to-
-                                                                                  one up to the involution.
-                                                                                  Valuation analysis of the
-                                                                                  theta-quotient/Weierstrass
-                                                                                  x-series.
+                                                                                - ✅· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (Silverman V.4).
+                                                                                  DERIVED 2026-07-18 from the
+                                                                                  coordinate-pair injectivity
+                                                                                  bilateralXY_inj: Y_eq_of_X_eq
+                                                                                  gives equal or negY-related
+                                                                                  y-values; equal ⇒ injectivity
+                                                                                  ⇒ v = u; negY-related ⇒ v =
+                                                                                  the inverse partner (u⁻¹ on
+                                                                                  the shell, q·u⁻¹ in the
+                                                                                  interior) by the PROVEN
+                                                                                  vertical case + injectivity,
+                                                                                  so uv ∈ {1, q}.
+                                                                                    - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity on
+                                                                                      the annulus (sorry node — the
+                                                                                      injectivity half of Silverman
+                                                                                      V.4): equal bilateral x- AND
+                                                                                      y-values force equal
+                                                                                      parameters. Attack: Newton-
+                                                                                      polygon/theta-quotient
+                                                                                      analysis of X(u) - X(v) over
+                                                                                      the complete field, the
+                                                                                      y-value separating the two
+                                                                                      sheets.
                                                                                 - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry
                                                                                   node, V.3.1(c) doubling case):
                                                                                   for u in the annulus with u²
@@ -883,12 +939,23 @@ entries file). To add/remove/annotate a node, edit
                                                       window |q|² < |w| ≤ 1, and quotient
                                                       bookkeeping (annulus normalisation, trivial
                                                       classes).
-                                                        - ❌· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (sorry node, Silverman V.4):
-                                                          on the annulus, equal bilateral x-values
-                                                          force v = u or uv ∈ {1, q} — the x-line is
-                                                          two-to-one up to the involution. Valuation
-                                                          analysis of the theta-quotient/Weierstrass
-                                                          x-series.
+                                                        - ✅· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (Silverman V.4). DERIVED
+                                                          2026-07-18 from the coordinate-pair
+                                                          injectivity bilateralXY_inj: Y_eq_of_X_eq
+                                                          gives equal or negY-related y-values;
+                                                          equal ⇒ injectivity ⇒ v = u; negY-related
+                                                          ⇒ v = the inverse partner (u⁻¹ on the
+                                                          shell, q·u⁻¹ in the interior) by the
+                                                          PROVEN vertical case + injectivity, so uv
+                                                          ∈ {1, q}.
+                                                            - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity on the
+                                                              annulus (sorry node — the injectivity
+                                                              half of Silverman V.4): equal
+                                                              bilateral x- AND y-values force equal
+                                                              parameters. Attack: Newton-
+                                                              polygon/theta-quotient analysis of
+                                                              X(u) - X(v) over the complete field,
+                                                              the y-value separating the two sheets.
                                                         - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry node, V.3.1(c)
                                                           doubling case): for u in the annulus with
                                                           u² not in the trivial class, y ≠ negY (not
@@ -994,12 +1061,25 @@ entries file). To add/remove/annotate a node, edit
                                                           window |q|² < |w| ≤ 1, and quotient
                                                           bookkeeping (annulus normalisation,
                                                           trivial classes).
-                                                            - ❌· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (sorry node, Silverman
-                                                              V.4): on the annulus, equal bilateral
-                                                              x-values force v = u or uv ∈ {1, q} —
-                                                              the x-line is two-to-one up to the
-                                                              involution. Valuation analysis of the
-                                                              theta-quotient/Weierstrass x-series.
+                                                            - ✅· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (Silverman V.4). DERIVED
+                                                              2026-07-18 from the coordinate-pair
+                                                              injectivity bilateralXY_inj:
+                                                              Y_eq_of_X_eq gives equal or negY-
+                                                              related y-values; equal ⇒ injectivity
+                                                              ⇒ v = u; negY-related ⇒ v = the
+                                                              inverse partner (u⁻¹ on the shell,
+                                                              q·u⁻¹ in the interior) by the PROVEN
+                                                              vertical case + injectivity, so uv ∈
+                                                              {1, q}.
+                                                                - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity on the
+                                                                  annulus (sorry node — the
+                                                                  injectivity half of Silverman
+                                                                  V.4): equal bilateral x- AND
+                                                                  y-values force equal parameters.
+                                                                  Attack: Newton-polygon/theta-
+                                                                  quotient analysis of X(u) - X(v)
+                                                                  over the complete field, the
+                                                                  y-value separating the two sheets.
                                                             - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry node,
                                                               V.3.1(c) doubling case): for u in the
                                                               annulus with u² not in the trivial
@@ -1122,11 +1202,20 @@ entries file). To add/remove/annotate a node, edit
                                               pointMap_eq_bilateral on the extended window |q|² <
                                               |w| ≤ 1, and quotient bookkeeping (annulus
                                               normalisation, trivial classes).
-                                                - ❌· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (sorry node, Silverman V.4): on the
-                                                  annulus, equal bilateral x-values force v = u or
-                                                  uv ∈ {1, q} — the x-line is two-to-one up to the
-                                                  involution. Valuation analysis of the theta-
-                                                  quotient/Weierstrass x-series.
+                                                - ✅· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (Silverman V.4). DERIVED 2026-07-18
+                                                  from the coordinate-pair injectivity
+                                                  bilateralXY_inj: Y_eq_of_X_eq gives equal or negY-
+                                                  related y-values; equal ⇒ injectivity ⇒ v = u;
+                                                  negY-related ⇒ v = the inverse partner (u⁻¹ on the
+                                                  shell, q·u⁻¹ in the interior) by the PROVEN
+                                                  vertical case + injectivity, so uv ∈ {1, q}.
+                                                    - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity on the annulus
+                                                      (sorry node — the injectivity half of
+                                                      Silverman V.4): equal bilateral x- AND
+                                                      y-values force equal parameters. Attack:
+                                                      Newton-polygon/theta-quotient analysis of X(u)
+                                                      - X(v) over the complete field, the y-value
+                                                      separating the two sheets.
                                                 - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry node, V.3.1(c)
                                                   doubling case): for u in the annulus with u² not
                                                   in the trivial class, y ≠ negY (not 2-torsion) and
@@ -1210,11 +1299,20 @@ entries file). To add/remove/annotate a node, edit
                                               pointMap_eq_bilateral on the extended window |q|² <
                                               |w| ≤ 1, and quotient bookkeeping (annulus
                                               normalisation, trivial classes).
-                                                - ❌· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (sorry node, Silverman V.4): on the
-                                                  annulus, equal bilateral x-values force v = u or
-                                                  uv ∈ {1, q} — the x-line is two-to-one up to the
-                                                  involution. Valuation analysis of the theta-
-                                                  quotient/Weierstrass x-series.
+                                                - ✅· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (Silverman V.4). DERIVED 2026-07-18
+                                                  from the coordinate-pair injectivity
+                                                  bilateralXY_inj: Y_eq_of_X_eq gives equal or negY-
+                                                  related y-values; equal ⇒ injectivity ⇒ v = u;
+                                                  negY-related ⇒ v = the inverse partner (u⁻¹ on the
+                                                  shell, q·u⁻¹ in the interior) by the PROVEN
+                                                  vertical case + injectivity, so uv ∈ {1, q}.
+                                                    - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity on the annulus
+                                                      (sorry node — the injectivity half of
+                                                      Silverman V.4): equal bilateral x- AND
+                                                      y-values force equal parameters. Attack:
+                                                      Newton-polygon/theta-quotient analysis of X(u)
+                                                      - X(v) over the complete field, the y-value
+                                                      separating the two sheets.
                                                 - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry node, V.3.1(c)
                                                   doubling case): for u in the annulus with u² not
                                                   in the trivial class, y ≠ negY (not 2-torsion) and

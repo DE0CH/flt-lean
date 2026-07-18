@@ -784,11 +784,18 @@
   "text": "surjectivity of the uniformisation (Silverman ATAEC V.3.1(d)/V.4). DERIVED 2026-07-18 from the x-onto leaf exists_annulus_bilateralX_eq: the leaf gives an annulus parameter u over the x-coordinate; Y_eq_of_X_eq gives y = bilateralY u or its negY, the latter realised by the inverse partner (u⁻¹ on the shell, q·u⁻¹ in the interior) via the PROVEN vertical case bilateral_negY_of_mul_trivial."
  },
  {
+  "name": "TateCurve.bilateralXY_inj",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
+  "wip": false,
+  "fullname": "TateCurve.bilateralXY_inj",
+  "text": "coordinate-pair injectivity on the annulus (sorry node — the injectivity half of Silverman V.4): equal bilateral x- AND y-values force equal parameters. Attack: Newton-polygon/theta-quotient analysis of X(u) - X(v) over the complete field, the y-value separating the two sheets."
+ },
+ {
   "name": "TateCurve.eq_or_mul_eq_of_bilateralX_eq",
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
   "wip": false,
   "fullname": "TateCurve.eq_or_mul_eq_of_bilateralX_eq",
-  "text": "the X-fibre (sorry node, Silverman V.4): on the annulus, equal bilateral x-values force v = u or uv ∈ {1, q} — the x-line is two-to-one up to the involution. Valuation analysis of the theta-quotient/Weierstrass x-series."
+  "text": "the X-fibre (Silverman V.4). DERIVED 2026-07-18 from the coordinate-pair injectivity bilateralXY_inj: Y_eq_of_X_eq gives equal or negY-related y-values; equal ⇒ injectivity ⇒ v = u; negY-related ⇒ v = the inverse partner (u⁻¹ on the shell, q·u⁻¹ in the interior) by the PROVEN vertical case + injectivity, so uv ∈ {1, q}."
  },
  {
   "name": "TateCurve.bilateral_add_self",

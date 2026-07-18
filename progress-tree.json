@@ -112,7 +112,8 @@
   "WeierstrassCurve.exists_tateCurveHomSepClosure": "✅",
   "TateCurve.exists_annulus_bilateralX_eq": "❌",
   "TateCurve.pointMapQuot_surjective": "✅",
-  "TateCurve.eq_or_mul_eq_of_bilateralX_eq": "❌",
+  "TateCurve.bilateralXY_inj": "❌",
+  "TateCurve.eq_or_mul_eq_of_bilateralX_eq": "✅",
   "TateCurve.bilateral_add_self": "❌",
   "TateCurve.bilateral_add_of_X_ne": "❌",
   "TateCurve.pointMapQuot_add": "✅",
@@ -576,7 +577,11 @@
    "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
    "TateCurve.exists_annulus_bilateralX_eq"
   ],
-  "TateCurve.eq_or_mul_eq_of_bilateralX_eq": [],
+  "TateCurve.bilateralXY_inj": [],
+  "TateCurve.eq_or_mul_eq_of_bilateralX_eq": [
+   "TateCurve.bilateralXY_inj",
+   "WeierstrassCurve.Δ_tateCurve_eq_evalInt"
+  ],
   "TateCurve.bilateral_add_self": [],
   "TateCurve.bilateral_add_of_X_ne": [],
   "TateCurve.pointMapQuot_add": [

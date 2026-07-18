@@ -2754,19 +2754,22 @@ theorem bilateral_add_self [DecidableEq k] (u₀ q₀ : k)
   sorry
 
 set_option warn.sorry false in
-/-- **The fibre of the bilateral `x`-value** (sorry node — Silverman V.4):
-on the fundamental annulus, two parameters with the same bilateral
-`x`-value either coincide or are inverse to each other modulo `q₀^ℤ` (their
-product is `1` or `q₀`). -/
-theorem eq_or_mul_eq_of_bilateralX_eq (u₀ v₀ q₀ : k)
+/-- **Injectivity of the bilateral coordinate pair on the annulus** (sorry
+node — Silverman V.4, the injectivity half): two annulus parameters with
+the same bilateral `x`- AND `y`-values coincide. Attack: the difference
+`X(u) - X(v)` as a series in the annulus (theta-quotient/Newton-polygon
+analysis over the complete field `k`), with the `y`-value separating the
+two sheets. -/
+theorem bilateralXY_inj (u₀ v₀ q₀ : k)
     (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hv0 : v₀ ≠ 0) (hv1 : v₀ ≠ 1)
     (hq0 : q₀ ≠ 0) (hq1 : valuation k q₀ < 1)
     (hulow : valuation k q₀ < valuation k u₀)
     (huhigh : valuation k u₀ ≤ 1)
     (hvlow : valuation k q₀ < valuation k v₀)
     (hvhigh : valuation k v₀ ≤ 1)
-    (hX : bilateralX u₀ q₀ = bilateralX v₀ q₀) :
-    v₀ = u₀ ∨ u₀ * v₀ = 1 ∨ u₀ * v₀ = q₀ :=
+    (hX : bilateralX u₀ q₀ = bilateralX v₀ q₀)
+    (hY : bilateralY u₀ q₀ = bilateralY v₀ q₀) :
+    u₀ = v₀ :=
   sorry
 
 omit [CharZero k] in
@@ -2822,6 +2825,102 @@ theorem bilateral_negY_of_mul_trivial (u₀ v₀ q₀ : k)
         bilateralX_inv u₀ q₀ hu0]
     · rw [bilateralY_shift u₀⁻¹ q₀ hinv0 hinv1 hq0 hq1 hqu' hquinv',
         bilateralY_inv u₀ q₀ hu0 hu1 hq1 hqu hquinv]
+
+/-- **The fibre of the bilateral `x`-value** (DERIVED 2026-07-18 from the
+coordinate-pair injectivity `bilateralXY_inj`, the PROVEN vertical case,
+and the `y`-dichotomy `Y_eq_of_X_eq` — Silverman V.4): on the fundamental
+annulus, two parameters with the same bilateral `x`-value either coincide
+or are inverse to each other modulo `q₀^ℤ` (their product is `1` or
+`q₀`). -/
+theorem eq_or_mul_eq_of_bilateralX_eq (u₀ v₀ q₀ : k)
+    (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hv0 : v₀ ≠ 0) (hv1 : v₀ ≠ 1)
+    (hq0 : q₀ ≠ 0) (hq1 : valuation k q₀ < 1)
+    (hulow : valuation k q₀ < valuation k u₀)
+    (huhigh : valuation k u₀ ≤ 1)
+    (hvlow : valuation k q₀ < valuation k v₀)
+    (hvhigh : valuation k v₀ ≤ 1)
+    (hX : bilateralX u₀ q₀ = bilateralX v₀ q₀) :
+    v₀ = u₀ ∨ u₀ * v₀ = 1 ∨ u₀ * v₀ = q₀ := by
+  have hqv : valuation k q₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hq0
+  have hqpos : (0 : ValueGroupWithZero k) < valuation k q₀ :=
+    zero_lt_iff.mpr hqv
+  have hsq_lt : valuation k q₀ * valuation k q₀ < valuation k q₀ := by
+    calc valuation k q₀ * valuation k q₀ < 1 * valuation k q₀ :=
+          (OrderIso.mulRight₀ _ hqpos).strictMono hq1
+      _ = valuation k q₀ := one_mul _
+  have huq : u₀ ≠ q₀ := fun h => absurd hulow (by rw [h]; exact lt_irrefl _)
+  have hvq : v₀ ≠ q₀ := fun h => absurd hvlow (by rw [h]; exact lt_irrefl _)
+  have huwin : valuation k q₀ * valuation k q₀ < valuation k u₀ :=
+    lt_trans hsq_lt hulow
+  have hvwin : valuation k q₀ * valuation k q₀ < valuation k v₀ :=
+    lt_trans hsq_lt hvlow
+  have hequ : (WeierstrassCurve.tateCurve q₀).toAffine.Equation
+      (bilateralX u₀ q₀) (bilateralY u₀ q₀) :=
+    (nonsingular_bilateral u₀ q₀ hu0 hu1 huq hq0 hq1 huwin huhigh).1
+  have heqv : (WeierstrassCurve.tateCurve q₀).toAffine.Equation
+      (bilateralX v₀ q₀) (bilateralY v₀ q₀) :=
+    (nonsingular_bilateral v₀ q₀ hv0 hv1 hvq hq0 hq1 hvwin hvhigh).1
+  rcases WeierstrassCurve.Affine.Y_eq_of_X_eq heqv hequ hX.symm with hy | hy
+  · -- equal `y`-values: the parameters coincide
+    exact Or.inl (bilateralXY_inj v₀ u₀ q₀ hv0 hv1 hu0 hu1 hq0 hq1
+      hvlow hvhigh hulow huhigh hX.symm hy)
+  · -- `negY`-related `y`-values: `v₀` is the inverse partner of `u₀`
+    rcases eq_or_lt_of_le huhigh with hshell | hint
+    · -- shell: partner `u₀⁻¹`
+      have hinv0 : u₀⁻¹ ≠ 0 := inv_ne_zero hu0
+      have hinv1 : u₀⁻¹ ≠ 1 := fun h => hu1 (by
+        rw [← inv_inv u₀, h, inv_one])
+      obtain ⟨hXw, hYw⟩ := bilateral_negY_of_mul_trivial u₀ u₀⁻¹ q₀
+        hu0 hu1 hinv0 hq0 hq1 hulow huhigh (Or.inl (mul_inv_cancel₀ hu0))
+      have hinvval : valuation k u₀⁻¹ = 1 := by
+        rw [map_inv₀, hshell, inv_one]
+      have hveq : v₀ = u₀⁻¹ := bilateralXY_inj v₀ u₀⁻¹ q₀ hv0 hv1
+        hinv0 hinv1 hq0 hq1 hvlow hvhigh
+        (by rw [hinvval]; exact hq1) (le_of_eq hinvval)
+        (hX.symm.trans hXw.symm) (hy.trans hYw.symm)
+      exact Or.inr (Or.inl (by rw [hveq, mul_inv_cancel₀ hu0]))
+    · -- interior: partner `q₀ * u₀⁻¹`
+      have huvne : valuation k u₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hu0
+      have hupos : (0 : ValueGroupWithZero k) < valuation k u₀ :=
+        zero_lt_iff.mpr huvne
+      have huinvpos : (0 : ValueGroupWithZero k) < (valuation k u₀)⁻¹ :=
+        zero_lt_iff.mpr (inv_ne_zero huvne)
+      have hw0 : q₀ * u₀⁻¹ ≠ 0 := mul_ne_zero hq0 (inv_ne_zero hu0)
+      have hw1 : q₀ * u₀⁻¹ ≠ 1 := by
+        intro h
+        apply huq
+        have h2 : q₀ * u₀⁻¹ * u₀ = 1 * u₀ := by rw [h]
+        rw [mul_assoc, inv_mul_cancel₀ hu0, mul_one, one_mul] at h2
+        exact h2.symm
+      obtain ⟨hXw, hYw⟩ := bilateral_negY_of_mul_trivial u₀ (q₀ * u₀⁻¹) q₀
+        hu0 hu1 hw0 hq0 hq1 hulow huhigh (Or.inr (by
+          rw [mul_comm q₀ _, ← mul_assoc, mul_inv_cancel₀ hu0, one_mul]))
+      have hwval : valuation k (q₀ * u₀⁻¹) =
+          valuation k q₀ * (valuation k u₀)⁻¹ := by
+        rw [map_mul, map_inv₀]
+      have hwlow : valuation k q₀ < valuation k (q₀ * u₀⁻¹) := by
+        rw [hwval]
+        have h3 : (1 : ValueGroupWithZero k) < (valuation k u₀)⁻¹ := by
+          calc (1 : ValueGroupWithZero k)
+              = valuation k u₀ * (valuation k u₀)⁻¹ :=
+                (mul_inv_cancel₀ huvne).symm
+            _ < 1 * (valuation k u₀)⁻¹ :=
+                (OrderIso.mulRight₀ _ huinvpos).strictMono hint
+            _ = (valuation k u₀)⁻¹ := one_mul _
+        calc valuation k q₀ = valuation k q₀ * 1 := (mul_one _).symm
+          _ < valuation k q₀ * (valuation k u₀)⁻¹ :=
+            (OrderIso.mulLeft₀ _ hqpos).strictMono h3
+      have hwhigh : valuation k (q₀ * u₀⁻¹) ≤ 1 := by
+        rw [hwval]
+        calc valuation k q₀ * (valuation k u₀)⁻¹
+            ≤ valuation k u₀ * (valuation k u₀)⁻¹ :=
+              mul_le_mul_left hulow.le _
+          _ = 1 := mul_inv_cancel₀ huvne
+      have hveq : v₀ = q₀ * u₀⁻¹ := bilateralXY_inj v₀ (q₀ * u₀⁻¹) q₀
+        hv0 hv1 hw0 hw1 hq0 hq1 hvlow hvhigh hwlow hwhigh
+        (hX.symm.trans hXw.symm) (hy.trans hYw.symm)
+      refine Or.inr (Or.inr ?_)
+      rw [hveq, mul_comm q₀ _, ← mul_assoc, mul_inv_cancel₀ hu0, one_mul]
 
 /-- **The addition law on annulus parameters** (derived from the sorried
 chord/tangent/fibre leaves, the PROVEN vertical case, and the bilateral
