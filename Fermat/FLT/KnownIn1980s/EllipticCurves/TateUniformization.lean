@@ -2279,6 +2279,72 @@ theorem hasSum_lambert_general (a : ℕ → k) (g : k → k)
   refine hT.congr_fun fun p ↦ ?_
   ring
 
+omit [CharZero k] in
+/-- The first `Y`-kernel as an `ℕ+`-`HasSum` (the `j = 0` term
+vanishes: `C(0,2) = 0`). -/
+theorem hasSum_pnat_choose_two_self (v : k)
+    (hv : valuation k v < 1) :
+    HasSum (fun j : ℕ+ ↦ (((j : ℕ).choose 2 : ℕ) : k) * v ^ (j : ℕ))
+      (v ^ 2 / (1 - v) ^ 3) := by
+  have hsummable : Summable
+      (fun j : ℕ ↦ ((j.choose 2 : ℕ) : k) * v ^ j) := by
+    refine summable_of_valuation_le_pow hv (fun n ↦ n)
+      (fun N ↦ Set.finite_Iio N) (fun n ↦ ?_)
+    rw [map_mul, map_pow]
+    calc valuation k (((n.choose 2 : ℕ) : k)) * valuation k v ^ n
+        ≤ 1 * valuation k v ^ n := by
+          refine mul_le_mul_left ?_ _
+          have h := valuation_intCast_le_one (R := k) (n.choose 2)
+          simpa using h
+      _ = valuation k v ^ n := one_mul _
+  have hN : HasSum (fun j : ℕ ↦ ((j.choose 2 : ℕ) : k) * v ^ j)
+      (v ^ 2 / (1 - v) ^ 3) := by
+    have h := hsummable.hasSum
+    rwa [tsum_choose_two_self_geometric_nonarch v hv] at h
+  rw [← Function.Injective.hasSum_iff
+    (f := fun j : ℕ ↦ ((j.choose 2 : ℕ) : k) * v ^ j)
+    PNat.coe_injective ?_] at hN
+  · exact hN
+  · intro n hn
+    have hn0 : n = 0 := by
+      by_contra h0
+      exact hn ⟨⟨n, Nat.pos_of_ne_zero h0⟩, rfl⟩
+    simp [hn0]
+
+omit [CharZero k] in
+/-- The second `Y`-kernel as an `ℕ+`-`HasSum` (the `j = 0` term
+vanishes: `C(1,2) = 0`). -/
+theorem hasSum_pnat_choose_two_succ (v : k)
+    (hv : valuation k v < 1) :
+    HasSum (fun j : ℕ+ ↦
+      ((((j : ℕ) + 1).choose 2 : ℕ) : k) * v ^ (j : ℕ))
+      (v / (1 - v) ^ 3) := by
+  have hsummable : Summable
+      (fun j : ℕ ↦ (((j + 1).choose 2 : ℕ) : k) * v ^ j) := by
+    refine summable_of_valuation_le_pow hv (fun n ↦ n)
+      (fun N ↦ Set.finite_Iio N) (fun n ↦ ?_)
+    rw [map_mul, map_pow]
+    calc valuation k ((((n + 1).choose 2 : ℕ) : k)) *
+          valuation k v ^ n
+        ≤ 1 * valuation k v ^ n := by
+          refine mul_le_mul_left ?_ _
+          have h := valuation_intCast_le_one (R := k) ((n + 1).choose 2)
+          simpa using h
+      _ = valuation k v ^ n := one_mul _
+  have hN : HasSum (fun j : ℕ ↦ (((j + 1).choose 2 : ℕ) : k) * v ^ j)
+      (v / (1 - v) ^ 3) := by
+    have h := hsummable.hasSum
+    rwa [tsum_choose_two_succ_geometric_nonarch v hv] at h
+  rw [← Function.Injective.hasSum_iff
+    (f := fun j : ℕ ↦ (((j + 1).choose 2 : ℕ) : k) * v ^ j)
+    PNat.coe_injective ?_] at hN
+  · exact hN
+  · intro n hn
+    have hn0 : n = 0 := by
+      by_contra h0
+      exact hn ⟨⟨n, Nat.pos_of_ne_zero h0⟩, rfl⟩
+    simp [hn0]
+
 end Annulus
 
 end TateCurve
