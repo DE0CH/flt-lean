@@ -1,5 +1,5 @@
 {
- "key": "1784358474.6713655",
+ "key": "1784360006.752892",
  "returncode": 0,
  "floating": [
   {
@@ -437,6 +437,10 @@
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "FramedGaloisRep.ofGL_apply"
+  },
+  {
+   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
+   "name": "TateCurve.coeffRingEval.congr_simp"
   },
   {
    "module": "Fermat.FLT.FreyCurve.FreyPackage",

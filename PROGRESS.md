@@ -158,21 +158,51 @@ entries file). To add/remove/annotate a node, edit
                                                                   annulus onto the x-line up to the
                                                                   involution, preimages separated by
                                                                   the y-coordinate.
-                                                                - ❌· `TateCurve.pointMapQuot_add` — the addition law (sorry node,
-                                                                  Silverman ATAEC V.3.1(c)):
-                                                                  pointMapQuot turns unit-class
-                                                                  multiplication into Tate-curve
-                                                                  addition. Attack: coordinates are
-                                                                  the bilateral values
-                                                                  (evalA_XA_eq_bilateralX /
-                                                                  evalA_YA_eq_bilateralY, with the
-                                                                  PROVEN shift/inversion identities
-                                                                  normalising representatives — in
-                                                                  the reference commit 8282dfb^);
-                                                                  chord–tangent group law against
-                                                                  two-parameter Lambert
-                                                                  manipulations on
-                                                                  hasSum_lambert_general.
+                                                                - ✅· `TateCurve.pointMapQuot_add` — the addition law (Silverman ATAEC
+                                                                  V.3.1(c)). DERIVED 2026-07-18 from
+                                                                  three sorried series-identity
+                                                                  leaves (chord, tangent, X-fibre) +
+                                                                  the PROVEN vertical case
+                                                                  bilateral_negY_of_mul_trivial
+                                                                  (inversion/shift identities), the
+                                                                  PROVEN bilateral coordinate bridge
+                                                                  pointMap_eq_bilateral on the
+                                                                  extended window |q|² < |w| ≤ 1,
+                                                                  and quotient bookkeeping (annulus
+                                                                  normalisation, trivial classes).
+                                                                    - ❌· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (sorry node,
+                                                                      Silverman V.4): on the
+                                                                      annulus, equal bilateral
+                                                                      x-values force v = u or uv ∈
+                                                                      {1, q} — the x-line is two-to-
+                                                                      one up to the involution.
+                                                                      Valuation analysis of the
+                                                                      theta-quotient/Weierstrass
+                                                                      x-series.
+                                                                    - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry
+                                                                      node, V.3.1(c) doubling case):
+                                                                      for u in the annulus with u²
+                                                                      not in the trivial class, y ≠
+                                                                      negY (not 2-torsion) and the
+                                                                      bilateral values of u² are the
+                                                                      affine tangent doubling. Same
+                                                                      attack as the chord identity,
+                                                                      along the diagonal.
+                                                                    - ❌· `TateCurve.bilateral_add_of_X_ne` — the chord identity (sorry
+                                                                      node, V.3.1(c) generic case):
+                                                                      bilateral values of u·v =
+                                                                      affine chord addition
+                                                                      (addX/addY at slope) of
+                                                                      bilateral values of u, v when
+                                                                      the x-values differ. Attack:
+                                                                      two-transcendental extension
+                                                                      of the
+                                                                      eq_zero_of_forall_hasSum_zero
+                                                                      descent of
+                                                                      TateCurveConstruction, via the
+                                                                      ℂ-analytic addition law of the
+                                                                      exponential parametrization
+                                                                      ℂ/Λ → E_q(ℂ).
                                                             - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node):
                                                               GIVEN the finite-level canonical
                                                               uniformisation lˣ/q^ℤ ≃+ E_q(l) with
@@ -256,22 +286,54 @@ entries file). To add/remove/annotate a node, edit
                                                                       onto the x-line up to the
                                                                       involution, preimages
                                                                       separated by the y-coordinate.
-                                                                    - ❌· `TateCurve.pointMapQuot_add` — the addition law (sorry node,
-                                                                      Silverman ATAEC V.3.1(c)):
-                                                                      pointMapQuot turns unit-class
-                                                                      multiplication into Tate-curve
-                                                                      addition. Attack: coordinates
-                                                                      are the bilateral values
-                                                                      (evalA_XA_eq_bilateralX /
-                                                                      evalA_YA_eq_bilateralY, with
-                                                                      the PROVEN shift/inversion
-                                                                      identities normalising
-                                                                      representatives — in the
-                                                                      reference commit 8282dfb^);
-                                                                      chord–tangent group law
-                                                                      against two-parameter Lambert
-                                                                      manipulations on
-                                                                      hasSum_lambert_general.
+                                                                    - ✅· `TateCurve.pointMapQuot_add` — the addition law (Silverman
+                                                                      ATAEC V.3.1(c)). DERIVED
+                                                                      2026-07-18 from three sorried
+                                                                      series-identity leaves (chord,
+                                                                      tangent, X-fibre) + the PROVEN
+                                                                      vertical case
+                                                                      bilateral_negY_of_mul_trivial
+                                                                      (inversion/shift identities),
+                                                                      the PROVEN bilateral
+                                                                      coordinate bridge
+                                                                      pointMap_eq_bilateral on the
+                                                                      extended window |q|² < |w| ≤
+                                                                      1, and quotient bookkeeping
+                                                                      (annulus normalisation,
+                                                                      trivial classes).
+                                                                        - ❌· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (sorry node,
+                                                                          Silverman V.4): on the
+                                                                          annulus, equal bilateral
+                                                                          x-values force v = u or uv ∈
+                                                                          {1, q} — the x-line is two-to-
+                                                                          one up to the involution.
+                                                                          Valuation analysis of the
+                                                                          theta-quotient/Weierstrass
+                                                                          x-series.
+                                                                        - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry
+                                                                          node, V.3.1(c) doubling case):
+                                                                          for u in the annulus with u²
+                                                                          not in the trivial class, y ≠
+                                                                          negY (not 2-torsion) and the
+                                                                          bilateral values of u² are the
+                                                                          affine tangent doubling. Same
+                                                                          attack as the chord identity,
+                                                                          along the diagonal.
+                                                                        - ❌· `TateCurve.bilateral_add_of_X_ne` — the chord identity (sorry
+                                                                          node, V.3.1(c) generic case):
+                                                                          bilateral values of u·v =
+                                                                          affine chord addition
+                                                                          (addX/addY at slope) of
+                                                                          bilateral values of u, v when
+                                                                          the x-values differ. Attack:
+                                                                          two-transcendental extension
+                                                                          of the
+                                                                          eq_zero_of_forall_hasSum_zero
+                                                                          descent of
+                                                                          TateCurveConstruction, via the
+                                                                          ℂ-analytic addition law of the
+                                                                          exponential parametrization
+                                                                          ℂ/Λ → E_q(ℂ).
                                                                 - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry
                                                                   node): GIVEN the finite-level
                                                                   canonical uniformisation lˣ/q^ℤ ≃+
@@ -379,22 +441,54 @@ entries file). To add/remove/annotate a node, edit
                                                                           onto the x-line up to the
                                                                           involution, preimages
                                                                           separated by the y-coordinate.
-                                                                        - ❌· `TateCurve.pointMapQuot_add` — the addition law (sorry node,
-                                                                          Silverman ATAEC V.3.1(c)):
-                                                                          pointMapQuot turns unit-class
-                                                                          multiplication into Tate-curve
-                                                                          addition. Attack: coordinates
-                                                                          are the bilateral values
-                                                                          (evalA_XA_eq_bilateralX /
-                                                                          evalA_YA_eq_bilateralY, with
-                                                                          the PROVEN shift/inversion
-                                                                          identities normalising
-                                                                          representatives — in the
-                                                                          reference commit 8282dfb^);
-                                                                          chord–tangent group law
-                                                                          against two-parameter Lambert
-                                                                          manipulations on
-                                                                          hasSum_lambert_general.
+                                                                        - ✅· `TateCurve.pointMapQuot_add` — the addition law (Silverman
+                                                                          ATAEC V.3.1(c)). DERIVED
+                                                                          2026-07-18 from three sorried
+                                                                          series-identity leaves (chord,
+                                                                          tangent, X-fibre) + the PROVEN
+                                                                          vertical case
+                                                                          bilateral_negY_of_mul_trivial
+                                                                          (inversion/shift identities),
+                                                                          the PROVEN bilateral
+                                                                          coordinate bridge
+                                                                          pointMap_eq_bilateral on the
+                                                                          extended window |q|² < |w| ≤
+                                                                          1, and quotient bookkeeping
+                                                                          (annulus normalisation,
+                                                                          trivial classes).
+                                                                            - ❌· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (sorry node,
+                                                                              Silverman V.4): on the
+                                                                              annulus, equal bilateral
+                                                                              x-values force v = u or uv ∈
+                                                                              {1, q} — the x-line is two-to-
+                                                                              one up to the involution.
+                                                                              Valuation analysis of the
+                                                                              theta-quotient/Weierstrass
+                                                                              x-series.
+                                                                            - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry
+                                                                              node, V.3.1(c) doubling case):
+                                                                              for u in the annulus with u²
+                                                                              not in the trivial class, y ≠
+                                                                              negY (not 2-torsion) and the
+                                                                              bilateral values of u² are the
+                                                                              affine tangent doubling. Same
+                                                                              attack as the chord identity,
+                                                                              along the diagonal.
+                                                                            - ❌· `TateCurve.bilateral_add_of_X_ne` — the chord identity (sorry
+                                                                              node, V.3.1(c) generic case):
+                                                                              bilateral values of u·v =
+                                                                              affine chord addition
+                                                                              (addX/addY at slope) of
+                                                                              bilateral values of u, v when
+                                                                              the x-values differ. Attack:
+                                                                              two-transcendental extension
+                                                                              of the
+                                                                              eq_zero_of_forall_hasSum_zero
+                                                                              descent of
+                                                                              TateCurveConstruction, via the
+                                                                              ℂ-analytic addition law of the
+                                                                              exponential parametrization
+                                                                              ℂ/Λ → E_q(ℂ).
                                                                     - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
                                                                       (sorry node): GIVEN the
                                                                       finite-level canonical
@@ -495,22 +589,54 @@ entries file). To add/remove/annotate a node, edit
                                                                               onto the x-line up to the
                                                                               involution, preimages
                                                                               separated by the y-coordinate.
-                                                                            - ❌· `TateCurve.pointMapQuot_add` — the addition law (sorry node,
-                                                                              Silverman ATAEC V.3.1(c)):
-                                                                              pointMapQuot turns unit-class
-                                                                              multiplication into Tate-curve
-                                                                              addition. Attack: coordinates
-                                                                              are the bilateral values
-                                                                              (evalA_XA_eq_bilateralX /
-                                                                              evalA_YA_eq_bilateralY, with
-                                                                              the PROVEN shift/inversion
-                                                                              identities normalising
-                                                                              representatives — in the
-                                                                              reference commit 8282dfb^);
-                                                                              chord–tangent group law
-                                                                              against two-parameter Lambert
-                                                                              manipulations on
-                                                                              hasSum_lambert_general.
+                                                                            - ✅· `TateCurve.pointMapQuot_add` — the addition law (Silverman
+                                                                              ATAEC V.3.1(c)). DERIVED
+                                                                              2026-07-18 from three sorried
+                                                                              series-identity leaves (chord,
+                                                                              tangent, X-fibre) + the PROVEN
+                                                                              vertical case
+                                                                              bilateral_negY_of_mul_trivial
+                                                                              (inversion/shift identities),
+                                                                              the PROVEN bilateral
+                                                                              coordinate bridge
+                                                                              pointMap_eq_bilateral on the
+                                                                              extended window |q|² < |w| ≤
+                                                                              1, and quotient bookkeeping
+                                                                              (annulus normalisation,
+                                                                              trivial classes).
+                                                                                - ❌· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (sorry node,
+                                                                                  Silverman V.4): on the
+                                                                                  annulus, equal bilateral
+                                                                                  x-values force v = u or uv ∈
+                                                                                  {1, q} — the x-line is two-to-
+                                                                                  one up to the involution.
+                                                                                  Valuation analysis of the
+                                                                                  theta-quotient/Weierstrass
+                                                                                  x-series.
+                                                                                - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry
+                                                                                  node, V.3.1(c) doubling case):
+                                                                                  for u in the annulus with u²
+                                                                                  not in the trivial class, y ≠
+                                                                                  negY (not 2-torsion) and the
+                                                                                  bilateral values of u² are the
+                                                                                  affine tangent doubling. Same
+                                                                                  attack as the chord identity,
+                                                                                  along the diagonal.
+                                                                                - ❌· `TateCurve.bilateral_add_of_X_ne` — the chord identity (sorry
+                                                                                  node, V.3.1(c) generic case):
+                                                                                  bilateral values of u·v =
+                                                                                  affine chord addition
+                                                                                  (addX/addY at slope) of
+                                                                                  bilateral values of u, v when
+                                                                                  the x-values differ. Attack:
+                                                                                  two-transcendental extension
+                                                                                  of the
+                                                                                  eq_zero_of_forall_hasSum_zero
+                                                                                  descent of
+                                                                                  TateCurveConstruction, via the
+                                                                                  ℂ-analytic addition law of the
+                                                                                  exponential parametrization
+                                                                                  ℂ/Λ → E_q(ℂ).
                                                                         - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
                                                                           (sorry node): GIVEN the
                                                                           finite-level canonical
@@ -668,17 +794,39 @@ entries file). To add/remove/annotate a node, edit
                                                       X-value is two-to-one from the annulus onto
                                                       the x-line up to the involution, preimages
                                                       separated by the y-coordinate.
-                                                    - ❌· `TateCurve.pointMapQuot_add` — the addition law (sorry node, Silverman ATAEC
-                                                      V.3.1(c)): pointMapQuot turns unit-class
-                                                      multiplication into Tate-curve addition.
-                                                      Attack: coordinates are the bilateral values
-                                                      (evalA_XA_eq_bilateralX /
-                                                      evalA_YA_eq_bilateralY, with the PROVEN
-                                                      shift/inversion identities normalising
-                                                      representatives — in the reference commit
-                                                      8282dfb^); chord–tangent group law against
-                                                      two-parameter Lambert manipulations on
-                                                      hasSum_lambert_general.
+                                                    - ✅· `TateCurve.pointMapQuot_add` — the addition law (Silverman ATAEC V.3.1(c)).
+                                                      DERIVED 2026-07-18 from three sorried series-
+                                                      identity leaves (chord, tangent, X-fibre) +
+                                                      the PROVEN vertical case
+                                                      bilateral_negY_of_mul_trivial (inversion/shift
+                                                      identities), the PROVEN bilateral coordinate
+                                                      bridge pointMap_eq_bilateral on the extended
+                                                      window |q|² < |w| ≤ 1, and quotient
+                                                      bookkeeping (annulus normalisation, trivial
+                                                      classes).
+                                                        - ❌· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (sorry node, Silverman V.4):
+                                                          on the annulus, equal bilateral x-values
+                                                          force v = u or uv ∈ {1, q} — the x-line is
+                                                          two-to-one up to the involution. Valuation
+                                                          analysis of the theta-quotient/Weierstrass
+                                                          x-series.
+                                                        - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry node, V.3.1(c)
+                                                          doubling case): for u in the annulus with
+                                                          u² not in the trivial class, y ≠ negY (not
+                                                          2-torsion) and the bilateral values of u²
+                                                          are the affine tangent doubling. Same
+                                                          attack as the chord identity, along the
+                                                          diagonal.
+                                                        - ❌· `TateCurve.bilateral_add_of_X_ne` — the chord identity (sorry node, V.3.1(c)
+                                                          generic case): bilateral values of u·v =
+                                                          affine chord addition (addX/addY at slope)
+                                                          of bilateral values of u, v when the
+                                                          x-values differ. Attack: two-
+                                                          transcendental extension of the
+                                                          eq_zero_of_forall_hasSum_zero descent of
+                                                          TateCurveConstruction, via the ℂ-analytic
+                                                          addition law of the exponential
+                                                          parametrization ℂ/Λ → E_q(ℂ).
                                                 - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the
                                                   finite-level canonical uniformisation lˣ/q^ℤ ≃+
                                                   E_q(l) with underlying pointMapQuot for every NALF
@@ -743,17 +891,43 @@ entries file). To add/remove/annotate a node, edit
                                                           annulus onto the x-line up to the
                                                           involution, preimages separated by the
                                                           y-coordinate.
-                                                        - ❌· `TateCurve.pointMapQuot_add` — the addition law (sorry node, Silverman
-                                                          ATAEC V.3.1(c)): pointMapQuot turns unit-
-                                                          class multiplication into Tate-curve
-                                                          addition. Attack: coordinates are the
-                                                          bilateral values (evalA_XA_eq_bilateralX /
-                                                          evalA_YA_eq_bilateralY, with the PROVEN
-                                                          shift/inversion identities normalising
-                                                          representatives — in the reference commit
-                                                          8282dfb^); chord–tangent group law against
-                                                          two-parameter Lambert manipulations on
-                                                          hasSum_lambert_general.
+                                                        - ✅· `TateCurve.pointMapQuot_add` — the addition law (Silverman ATAEC
+                                                          V.3.1(c)). DERIVED 2026-07-18 from three
+                                                          sorried series-identity leaves (chord,
+                                                          tangent, X-fibre) + the PROVEN vertical
+                                                          case bilateral_negY_of_mul_trivial
+                                                          (inversion/shift identities), the PROVEN
+                                                          bilateral coordinate bridge
+                                                          pointMap_eq_bilateral on the extended
+                                                          window |q|² < |w| ≤ 1, and quotient
+                                                          bookkeeping (annulus normalisation,
+                                                          trivial classes).
+                                                            - ❌· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (sorry node, Silverman
+                                                              V.4): on the annulus, equal bilateral
+                                                              x-values force v = u or uv ∈ {1, q} —
+                                                              the x-line is two-to-one up to the
+                                                              involution. Valuation analysis of the
+                                                              theta-quotient/Weierstrass x-series.
+                                                            - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry node,
+                                                              V.3.1(c) doubling case): for u in the
+                                                              annulus with u² not in the trivial
+                                                              class, y ≠ negY (not 2-torsion) and
+                                                              the bilateral values of u² are the
+                                                              affine tangent doubling. Same attack
+                                                              as the chord identity, along the
+                                                              diagonal.
+                                                            - ❌· `TateCurve.bilateral_add_of_X_ne` — the chord identity (sorry node,
+                                                              V.3.1(c) generic case): bilateral
+                                                              values of u·v = affine chord addition
+                                                              (addX/addY at slope) of bilateral
+                                                              values of u, v when the x-values
+                                                              differ. Attack: two-transcendental
+                                                              extension of the
+                                                              eq_zero_of_forall_hasSum_zero descent
+                                                              of TateCurveConstruction, via the
+                                                              ℂ-analytic addition law of the
+                                                              exponential parametrization ℂ/Λ →
+                                                              E_q(ℂ).
                                                     - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN
                                                       the finite-level canonical uniformisation
                                                       lˣ/q^ℤ ≃+ E_q(l) with underlying pointMapQuot
@@ -839,15 +1013,34 @@ entries file). To add/remove/annotate a node, edit
                                               affine points — the bilateral X-value is two-to-one
                                               from the annulus onto the x-line up to the involution,
                                               preimages separated by the y-coordinate.
-                                            - ❌· `TateCurve.pointMapQuot_add` — the addition law (sorry node, Silverman ATAEC
-                                              V.3.1(c)): pointMapQuot turns unit-class
-                                              multiplication into Tate-curve addition. Attack:
-                                              coordinates are the bilateral values
-                                              (evalA_XA_eq_bilateralX / evalA_YA_eq_bilateralY, with
-                                              the PROVEN shift/inversion identities normalising
-                                              representatives — in the reference commit 8282dfb^);
-                                              chord–tangent group law against two-parameter Lambert
-                                              manipulations on hasSum_lambert_general.
+                                            - ✅· `TateCurve.pointMapQuot_add` — the addition law (Silverman ATAEC V.3.1(c)). DERIVED
+                                              2026-07-18 from three sorried series-identity leaves
+                                              (chord, tangent, X-fibre) + the PROVEN vertical case
+                                              bilateral_negY_of_mul_trivial (inversion/shift
+                                              identities), the PROVEN bilateral coordinate bridge
+                                              pointMap_eq_bilateral on the extended window |q|² <
+                                              |w| ≤ 1, and quotient bookkeeping (annulus
+                                              normalisation, trivial classes).
+                                                - ❌· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (sorry node, Silverman V.4): on the
+                                                  annulus, equal bilateral x-values force v = u or
+                                                  uv ∈ {1, q} — the x-line is two-to-one up to the
+                                                  involution. Valuation analysis of the theta-
+                                                  quotient/Weierstrass x-series.
+                                                - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry node, V.3.1(c)
+                                                  doubling case): for u in the annulus with u² not
+                                                  in the trivial class, y ≠ negY (not 2-torsion) and
+                                                  the bilateral values of u² are the affine tangent
+                                                  doubling. Same attack as the chord identity, along
+                                                  the diagonal.
+                                                - ❌· `TateCurve.bilateral_add_of_X_ne` — the chord identity (sorry node, V.3.1(c) generic
+                                                  case): bilateral values of u·v = affine chord
+                                                  addition (addX/addY at slope) of bilateral values
+                                                  of u, v when the x-values differ. Attack: two-
+                                                  transcendental extension of the
+                                                  eq_zero_of_forall_hasSum_zero descent of
+                                                  TateCurveConstruction, via the ℂ-analytic addition
+                                                  law of the exponential parametrization ℂ/Λ →
+                                                  E_q(ℂ).
                                         - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
                                           level canonical uniformisation lˣ/q^ℤ ≃+ E_q(l) with
                                           underlying pointMapQuot for every NALF l, the Ω-level hom
@@ -899,15 +1092,34 @@ entries file). To add/remove/annotate a node, edit
                                               affine points — the bilateral X-value is two-to-one
                                               from the annulus onto the x-line up to the involution,
                                               preimages separated by the y-coordinate.
-                                            - ❌· `TateCurve.pointMapQuot_add` — the addition law (sorry node, Silverman ATAEC
-                                              V.3.1(c)): pointMapQuot turns unit-class
-                                              multiplication into Tate-curve addition. Attack:
-                                              coordinates are the bilateral values
-                                              (evalA_XA_eq_bilateralX / evalA_YA_eq_bilateralY, with
-                                              the PROVEN shift/inversion identities normalising
-                                              representatives — in the reference commit 8282dfb^);
-                                              chord–tangent group law against two-parameter Lambert
-                                              manipulations on hasSum_lambert_general.
+                                            - ✅· `TateCurve.pointMapQuot_add` — the addition law (Silverman ATAEC V.3.1(c)). DERIVED
+                                              2026-07-18 from three sorried series-identity leaves
+                                              (chord, tangent, X-fibre) + the PROVEN vertical case
+                                              bilateral_negY_of_mul_trivial (inversion/shift
+                                              identities), the PROVEN bilateral coordinate bridge
+                                              pointMap_eq_bilateral on the extended window |q|² <
+                                              |w| ≤ 1, and quotient bookkeeping (annulus
+                                              normalisation, trivial classes).
+                                                - ❌· `TateCurve.eq_or_mul_eq_of_bilateralX_eq` — the X-fibre (sorry node, Silverman V.4): on the
+                                                  annulus, equal bilateral x-values force v = u or
+                                                  uv ∈ {1, q} — the x-line is two-to-one up to the
+                                                  involution. Valuation analysis of the theta-
+                                                  quotient/Weierstrass x-series.
+                                                - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry node, V.3.1(c)
+                                                  doubling case): for u in the annulus with u² not
+                                                  in the trivial class, y ≠ negY (not 2-torsion) and
+                                                  the bilateral values of u² are the affine tangent
+                                                  doubling. Same attack as the chord identity, along
+                                                  the diagonal.
+                                                - ❌· `TateCurve.bilateral_add_of_X_ne` — the chord identity (sorry node, V.3.1(c) generic
+                                                  case): bilateral values of u·v = affine chord
+                                                  addition (addX/addY at slope) of bilateral values
+                                                  of u, v when the x-values differ. Attack: two-
+                                                  transcendental extension of the
+                                                  eq_zero_of_forall_hasSum_zero descent of
+                                                  TateCurveConstruction, via the ℂ-analytic addition
+                                                  law of the exponential parametrization ℂ/Λ →
+                                                  E_q(ℂ).
                                         - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
                                           level canonical uniformisation lˣ/q^ℤ ≃+ E_q(l) with
                                           underlying pointMapQuot for every NALF l, the Ω-level hom

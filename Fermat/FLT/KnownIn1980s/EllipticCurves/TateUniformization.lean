@@ -300,6 +300,10 @@ theorem coeffRingEval_uA (u₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1) :
     coeffRingEval u₀ h0 h1 ((uA : CoeffRingˣ) : CoeffRing) = u₀ := by
   rw [coe_uA, coeffRingEval_algebraMap, Polynomial.aeval_X]
 
+theorem coeffRingEval_vA (u₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1) :
+    coeffRingEval u₀ h0 h1 ((vA : CoeffRingˣ) : CoeffRing) = 1 - u₀ := by
+  rw [coe_vA, coeffRingEval_algebraMap, map_sub, map_one, Polynomial.aeval_X]
+
 theorem coeffRingEval_uA_inv (u₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1) :
     coeffRingEval u₀ h0 h1 ((uA⁻¹ : CoeffRingˣ) : CoeffRing) = u₀⁻¹ := by
   refine eq_inv_of_mul_eq_one_left ?_
@@ -307,6 +311,18 @@ theorem coeffRingEval_uA_inv (u₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1) :
       = coeffRingEval u₀ h0 h1 ((uA⁻¹ : CoeffRingˣ) : CoeffRing) *
         coeffRingEval u₀ h0 h1 ((uA : CoeffRingˣ) : CoeffRing) := by
         rw [coeffRingEval_uA u₀ h0 h1]
+    _ = 1 := by
+        rw [← map_mul, ← Units.val_mul, inv_mul_cancel, Units.val_one,
+          map_one]
+
+theorem coeffRingEval_vA_inv (u₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1) :
+    coeffRingEval u₀ h0 h1 ((vA⁻¹ : CoeffRingˣ) : CoeffRing) =
+      (1 - u₀)⁻¹ := by
+  refine eq_inv_of_mul_eq_one_left ?_
+  calc coeffRingEval u₀ h0 h1 ((vA⁻¹ : CoeffRingˣ) : CoeffRing) * (1 - u₀)
+      = coeffRingEval u₀ h0 h1 ((vA⁻¹ : CoeffRingˣ) : CoeffRing) *
+        coeffRingEval u₀ h0 h1 ((vA : CoeffRingˣ) : CoeffRing) := by
+        rw [coeffRingEval_vA u₀ h0 h1]
     _ = 1 := by
         rw [← map_mul, ← Units.val_mul, inv_mul_cancel, Units.val_one,
           map_one]
@@ -1138,29 +1154,1839 @@ theorem pointMapQuot_eq_zero_iff (q : kˣ)
     push_cast
     rfl
 
-/-! The bilateral/Lambert negation-and-translation machinery (the
-groundwork for the sorried addition law `pointMapQuot_add` below) is
-NOT vendored in this pass: it enters the tree only when the addition-law
-proof consumes it. Recover it from the reference commit:
-`git show 8282dfb03cd1a390fd979a1d38fa2bb3b863ac20^:fermat/Fermat/FLT/KnownIn1980s/EllipticCurves/TateUniformization.lean` -/
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] in
+/-- The constant coefficient of `XA` evaluates to `u₀/(1-u₀)²`. -/
+theorem coeffRingEval_coeff_XA_zero (u₀ : k) (h0 : u₀ ≠ 0)
+    (h1 : u₀ ≠ 1) :
+    coeffRingEval u₀ h0 h1 (PowerSeries.coeff 0 XA) =
+      u₀ / (1 - u₀) ^ 2 := by
+  rw [XA, map_add, PowerSeries.coeff_C, if_pos rfl, PowerSeries.coeff_mk]
+  simp only [Nat.divisors_zero, Finset.sum_empty, add_zero]
+  rw [map_mul, map_pow, coeffRingEval_uA, coeffRingEval_vA_inv,
+    div_eq_mul_inv, inv_pow]
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] in
+/-- The constant coefficient of `YA` evaluates to `u₀²/(1-u₀)³`. -/
+theorem coeffRingEval_coeff_YA_zero (u₀ : k) (h0 : u₀ ≠ 0)
+    (h1 : u₀ ≠ 1) :
+    coeffRingEval u₀ h0 h1 (PowerSeries.coeff 0 YA) =
+      u₀ ^ 2 / (1 - u₀) ^ 3 := by
+  rw [YA, map_add, PowerSeries.coeff_C, if_pos rfl, PowerSeries.coeff_mk]
+  simp only [Nat.divisors_zero, Finset.sum_empty, add_zero]
+  rw [map_mul, map_pow, map_pow, coeffRingEval_uA, coeffRingEval_vA_inv,
+    div_eq_mul_inv, inv_pow]
+
+/-- For a parameter already in the fundamental annulus, the canonical
+exponent is `0` and the point map is the annulus point directly. -/
+theorem pointMap_of_mem_annulus (q₀ : k) (hq0 : q₀ ≠ 0)
+    (hq : valuation k q₀ < 1) (u₀ : k) (hu0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hlow : valuation k q₀ < valuation k u₀)
+    (hhigh : valuation k u₀ ≤ 1) :
+    pointMap q₀ hq0 hq u₀ hu0 =
+      annulusPoint u₀ q₀ hu0 h1 hq0 hhigh hq hlow := by
+  have h0 : (exists_zpow_mul_mem_annulus q₀ hq0 hq u₀ hu0).choose = 0 := by
+    refine annulus_exponent_unique q₀ hq0 hq u₀
+      (exists_zpow_mul_mem_annulus q₀ hq0 hq u₀ hu0).choose_spec
+      ⟨?_, ?_⟩
+    · simpa using hlow
+    · simpa using hhigh
+  have hrep : u₀ * q₀ ^
+      (-(exists_zpow_mul_mem_annulus q₀ hq0 hq u₀ hu0).choose) = u₀ := by
+    rw [h0]
+    simp
+  unfold pointMap
+  simp only [hrep]
+  split_ifs with ha
+  · exact absurd (hrep ▸ ha) h1
+  · rfl
+
+omit [CharZero k] in
+/-- The geometric series is summable on the open unit disc. -/
+theorem summable_geometric_nonarch (x : k) (hx : valuation k x < 1) :
+    Summable (fun n : ℕ ↦ x ^ n) :=
+  summable_of_valuation_le_pow hx (fun n ↦ n) (fun N ↦ Set.finite_Iio N)
+    (fun n ↦ by rw [map_pow])
+
+omit [CharZero k] in
+/-- **The nonarchimedean geometric series**: for `|x| < 1`,
+`∑ xⁿ = (1-x)⁻¹` — telescoping against the shift, no norm needed. -/
+theorem tsum_geometric_nonarch (x : k) (hx : valuation k x < 1) :
+    (∑' n : ℕ, x ^ n) = (1 - x)⁻¹ := by
+  have hxne : x ≠ 1 := by
+    rintro rfl
+    simp at hx
+  have hsum := summable_geometric_nonarch x hx
+  have h0 := hsum.tsum_eq_zero_add
+  rw [pow_zero] at h0
+  have hmul : x * (∑' n : ℕ, x ^ n) = (∑' n : ℕ, x ^ n) - 1 := by
+    have hx1 : (∑' n : ℕ, x ^ (n + 1)) = (∑' n : ℕ, x ^ n) - 1 := by
+      linear_combination -h0
+    rw [← hx1, ← tsum_mul_left]
+    exact tsum_congr fun n ↦ by ring
+  refine eq_inv_of_mul_eq_one_left ?_
+  linear_combination -hmul
+
+omit [CharZero k] in
+/-- `∑ n·xⁿ` is summable on the open unit disc. -/
+theorem summable_nat_mul_geometric_nonarch (x : k)
+    (hx : valuation k x < 1) :
+    Summable (fun n : ℕ ↦ (n : k) * x ^ n) := by
+  refine summable_of_valuation_le_pow hx (fun n ↦ n)
+    (fun N ↦ Set.finite_Iio N) (fun n ↦ ?_)
+  rw [map_mul, map_pow]
+  calc valuation k ((n : k)) * valuation k x ^ n
+      ≤ 1 * valuation k x ^ n := by
+        refine mul_le_mul_left ?_ _
+        have h := valuation_intCast_le_one (R := k) n
+        simpa using h
+    _ = valuation k x ^ n := one_mul _
+
+omit [CharZero k] in
+/-- **The nonarchimedean derivative-geometric series**: for `|x| < 1`,
+`∑ n·xⁿ = x/(1-x)²` — the Cauchy square of the geometric series
+counted along antidiagonals, minus the geometric series. -/
+theorem tsum_nat_mul_geometric_nonarch (x : k)
+    (hx : valuation k x < 1) :
+    (∑' n : ℕ, (n : k) * x ^ n) = x / (1 - x) ^ 2 := by
+  have hxne : x ≠ 1 := by
+    rintro rfl
+    simp at hx
+  have h1x : (1 - x) ≠ 0 := sub_ne_zero.mpr (Ne.symm hxne)
+  have hsum := summable_geometric_nonarch x hx
+  have hnsum := summable_nat_mul_geometric_nonarch x hx
+  have hkey := Summable.tsum_mul_tsum_eq_tsum_sum_antidiagonal (A := ℕ)
+    hsum hsum (summable_mul_prod hsum hsum)
+  have hterm : ∀ n : ℕ,
+      (∑ kl ∈ Finset.antidiagonal n, x ^ kl.1 * x ^ kl.2) =
+      ((n : k) + 1) * x ^ n := by
+    intro n
+    have h1 : ∀ kl ∈ Finset.antidiagonal n,
+        x ^ kl.1 * x ^ kl.2 = x ^ n := by
+      intro kl hkl
+      rw [← pow_add, Finset.mem_antidiagonal.mp hkl]
+    rw [Finset.sum_congr rfl h1, Finset.sum_const,
+      Finset.Nat.card_antidiagonal, nsmul_eq_mul]
+    push_cast
+    ring
+  rw [tsum_geometric_nonarch x hx] at hkey
+  have h2 : (∑' n : ℕ, ((n : k) + 1) * x ^ n) =
+      (1 - x)⁻¹ * (1 - x)⁻¹ := by
+    rw [hkey]
+    exact tsum_congr fun n ↦ (hterm n).symm
+  have hsplit : (∑' n : ℕ, ((n : k) + 1) * x ^ n) =
+      (∑' n : ℕ, (n : k) * x ^ n) + (∑' n : ℕ, x ^ n) := by
+    rw [← hnsum.tsum_add hsum]
+    exact tsum_congr fun n ↦ by ring
+  have h3 : (∑' n : ℕ, (n : k) * x ^ n) =
+      (1 - x)⁻¹ * (1 - x)⁻¹ - (1 - x)⁻¹ := by
+    rw [tsum_geometric_nonarch x hx] at hsplit
+    linear_combination hsplit.symm.trans h2
+  rw [h3]
+  field_simp
+  ring
+
+omit [CharZero k] in
+/-- A summable double series over `ℕ+ × ℕ+` has sum the iterated sum
+of its rows (`k`-version of the construction file's
+`hasSum_prod_pnat`). -/
+theorem hasSum_prod_pnat_nonarch {T : ℕ+ × ℕ+ → k} {F : ℕ+ → k}
+    (hsum : Summable T)
+    (hfib : ∀ n : ℕ+, HasSum (fun m : ℕ+ ↦ T (n, m)) (F n)) :
+    HasSum T (∑' n : ℕ+, F n) := by
+  simpa [hsum.tsum_prod' (fun n ↦ (hfib n).summable),
+    tsum_congr fun n ↦ (hfib n).tsum_eq] using hsum.hasSum
+
+omit [CharZero k] in
+/-- Collecting a double series `∑_{n,m} g(m)x^{nm}` by powers of `x`
+(`k`-version of the construction file's `hasSum_divisor_collect`): the
+coefficient of `x^N` is the divisor sum `∑_{d ∣ N} g d`. -/
+theorem hasSum_divisor_collect_nonarch (g : ℕ → k) {x : k} {S : k}
+    (hT : HasSum
+      (fun p : ℕ+ × ℕ+ ↦ g (p.2 : ℕ) * x ^ ((p.1 : ℕ) * (p.2 : ℕ))) S) :
+    HasSum (fun N : ℕ+ ↦
+      (∑ d ∈ (N : ℕ).divisors, g d) * x ^ (N : ℕ)) S := by
+  apply ((sigmaAntidiagonalEquivProd.hasSum_iff).mpr hT).sigma
+  intro N
+  have h2 := hasSum_fintype (fun c : ((N : ℕ).divisorsAntidiagonal) ↦
+    (g c.1.2 * x ^ (c.1.1 * c.1.2) : k))
+  have hval : (∑ c : ((N : ℕ).divisorsAntidiagonal),
+      (g c.1.2 * x ^ (c.1.1 * c.1.2) : k))
+      = (∑ d ∈ (N : ℕ).divisors, g d) * x ^ (N : ℕ) := by
+    rw [Finset.univ_eq_attach,
+      Finset.sum_attach ((N : ℕ).divisorsAntidiagonal)
+        (fun p ↦ (g p.2 * x ^ (p.1 * p.2) : k)),
+      show (∑ p ∈ (N : ℕ).divisorsAntidiagonal,
+          (g p.2 * x ^ (p.1 * p.2) : k))
+          = ∑ p ∈ (N : ℕ).divisorsAntidiagonal, (g p.2 * x ^ (N : ℕ) : k)
+        from Finset.sum_congr rfl fun p hp ↦ by
+          rw [(Nat.mem_divisorsAntidiagonal.mp hp).1],
+      ← Finset.sum_mul, Nat.sum_divisorsAntidiagonal' (f := fun _ d ↦ (g d : k))]
+  rw [hval] at h2
+  refine h2.congr_fun fun c ↦ ?_
+  simp only [Function.comp_apply, sigmaAntidiagonalEquivProd, Equiv.coe_fn_mk,
+    divisorsAntidiagonalFactors, PNat.mk_coe]
+
+omit [CharZero k] in
+/-- Two-index summability of the Lambert double series in the general
+window `|q₀| < 1`, `|q₀·w| < 1` (allowing `|w| > 1`, as for
+`w = u₀⁻¹` with `u₀` interior to the annulus). -/
+theorem summable_lambert_prod' (w q₀ : k) (hq : valuation k q₀ < 1)
+    (hqw : valuation k (q₀ * w) < 1) :
+    Summable (fun p : ℕ+ × ℕ+ ↦
+      ((p.2 : ℕ) : k) * w ^ (p.2 : ℕ) * q₀ ^ ((p.1 : ℕ) * (p.2 : ℕ))) := by
+  have hfin : ∀ N : ℕ, {p : ℕ+ × ℕ+ |
+      (fun p : ℕ+ × ℕ+ ↦ (p.1 : ℕ) * (p.2 : ℕ)) p < N}.Finite := by
+    intro N
+    have hinj : Function.Injective
+        (fun p : ℕ+ × ℕ+ ↦ ((p.1 : ℕ), (p.2 : ℕ))) := by
+      intro a b hab
+      simp only [Prod.mk.injEq] at hab
+      exact Prod.ext (PNat.coe_injective hab.1) (PNat.coe_injective hab.2)
+    refine Set.Finite.subset
+      (((Set.finite_Iio N).prod (Set.finite_Iio N)).preimage
+        hinj.injOn) ?_
+    intro p hp
+    simp only [Set.mem_setOf_eq] at hp
+    constructor
+    · exact lt_of_le_of_lt (Nat.le_mul_of_pos_right _ p.2.pos) hp
+    · exact lt_of_le_of_lt (Nat.le_mul_of_pos_left _ p.1.pos) hp
+  have hj1 : ∀ j : ℕ+, valuation k (((j : ℕ) : k)) ≤ 1 := by
+    intro j
+    have h := valuation_intCast_le_one (R := k) (j : ℕ)
+    simpa using h
+  -- the term bound `v(j·wʲ·q^{mj}) ≤ v(qw)ʲ·v(q)^{(m-1)j}`
+  have hbound : ∀ p : ℕ+ × ℕ+,
+      valuation k (((p.2 : ℕ) : k) * w ^ (p.2 : ℕ) *
+        q₀ ^ ((p.1 : ℕ) * (p.2 : ℕ))) ≤
+      valuation k (q₀ * w) ^ (p.2 : ℕ) *
+        valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) := by
+    intro p
+    have hm1 : ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ) =
+        (p.1 : ℕ) * (p.2 : ℕ) := by
+      calc ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ)
+          = (((p.1 : ℕ) - 1) + 1) * (p.2 : ℕ) := by ring
+        _ = (p.1 : ℕ) * (p.2 : ℕ) := by
+            rw [Nat.sub_add_cancel p.1.pos]
+    rw [map_mul, map_mul, map_pow, map_pow, ← hm1, pow_add, map_mul]
+    calc valuation k (((p.2 : ℕ) : k)) * valuation k w ^ (p.2 : ℕ) *
+          (valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) *
+            valuation k q₀ ^ (p.2 : ℕ))
+        ≤ 1 * valuation k w ^ (p.2 : ℕ) *
+          (valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) *
+            valuation k q₀ ^ (p.2 : ℕ)) := by
+          exact mul_le_mul_left
+            (mul_le_mul_left (hj1 p.2) _) _
+      _ = (valuation k q₀ * valuation k w) ^ (p.2 : ℕ) *
+          valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) := by
+          rw [one_mul, mul_pow, mul_comm
+            (valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)))
+            (valuation k q₀ ^ (p.2 : ℕ)), ← mul_assoc, mul_comm
+            (valuation k w ^ (p.2 : ℕ)) (valuation k q₀ ^ (p.2 : ℕ)),
+            mul_assoc]
+  -- run the criterion with the larger of `q₀`, `q₀w`
+  rcases le_total (valuation k q₀) (valuation k (q₀ * w)) with hle | hle
+  · refine summable_of_valuation_le_pow (q := q₀ * w) hqw
+      (fun p ↦ (p.1 : ℕ) * (p.2 : ℕ)) hfin (fun p ↦ ?_)
+    refine le_trans (hbound p) ?_
+    have hm1 : ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ) =
+        (p.1 : ℕ) * (p.2 : ℕ) := by
+      calc ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ)
+          = (((p.1 : ℕ) - 1) + 1) * (p.2 : ℕ) := by ring
+        _ = (p.1 : ℕ) * (p.2 : ℕ) := by
+            rw [Nat.sub_add_cancel p.1.pos]
+    calc valuation k (q₀ * w) ^ (p.2 : ℕ) *
+          valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ))
+        ≤ valuation k (q₀ * w) ^ (p.2 : ℕ) *
+          valuation k (q₀ * w) ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) :=
+          mul_le_mul_right (pow_le_pow_left' hle _) _
+      _ = valuation k (q₀ * w) ^ ((p.1 : ℕ) * (p.2 : ℕ)) := by
+          rw [← pow_add, add_comm, hm1]
+  · refine summable_of_valuation_le_pow (q := q₀) hq
+      (fun p ↦ (p.1 : ℕ) * (p.2 : ℕ)) hfin (fun p ↦ ?_)
+    refine le_trans (hbound p) ?_
+    have hm1 : ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ) =
+        (p.1 : ℕ) * (p.2 : ℕ) := by
+      calc ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ)
+          = (((p.1 : ℕ) - 1) + 1) * (p.2 : ℕ) := by ring
+        _ = (p.1 : ℕ) * (p.2 : ℕ) := by
+            rw [Nat.sub_add_cancel p.1.pos]
+    calc valuation k (q₀ * w) ^ (p.2 : ℕ) *
+          valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ))
+        ≤ valuation k q₀ ^ (p.2 : ℕ) *
+          valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) :=
+          mul_le_mul_left (pow_le_pow_left' hle _) _
+      _ = valuation k q₀ ^ ((p.1 : ℕ) * (p.2 : ℕ)) := by
+          rw [← pow_add, add_comm, hm1]
+
+omit [CharZero k] in
+/-- Per-row sums in the general window: `|q₀ᵐw| ≤ |q₀w| < 1` for
+`m ≥ 1`. -/
+theorem hasSum_lambert_row' (w q₀ : k) (hq : valuation k q₀ < 1)
+    (hqw : valuation k (q₀ * w) < 1) (m : ℕ+) :
+    HasSum (fun j : ℕ+ ↦
+      ((j : ℕ) : k) * w ^ (j : ℕ) * q₀ ^ ((m : ℕ) * (j : ℕ)))
+      (q₀ ^ (m : ℕ) * w / (1 - q₀ ^ (m : ℕ) * w) ^ 2) := by
+  set x : k := q₀ ^ (m : ℕ) * w with hxdef
+  have hx : valuation k x < 1 := by
+    have hm1 : ((m : ℕ) - 1) + 1 = (m : ℕ) := by
+      have := m.pos
+      omega
+    rw [hxdef, ← hm1, pow_add, pow_one, mul_assoc, map_mul, map_pow]
+    calc valuation k q₀ ^ ((m : ℕ) - 1) * valuation k (q₀ * w)
+        ≤ 1 * valuation k (q₀ * w) :=
+          mul_le_mul_left (pow_le_one₀ zero_le hq.le) _
+      _ = valuation k (q₀ * w) := one_mul _
+      _ < 1 := hqw
+  have hN : HasSum (fun j : ℕ ↦ ((j : ℕ) : k) * x ^ j)
+      (x / (1 - x) ^ 2) := by
+    have h := (summable_nat_mul_geometric_nonarch x hx).hasSum
+    rwa [tsum_nat_mul_geometric_nonarch x hx] at h
+  have hP : HasSum (fun j : ℕ+ ↦ ((j : ℕ) : k) * x ^ (j : ℕ))
+      (x / (1 - x) ^ 2) := by
+    rw [← Function.Injective.hasSum_iff
+      (f := fun j : ℕ ↦ ((j : ℕ) : k) * x ^ j)
+      PNat.coe_injective ?_] at hN
+    · exact hN
+    · intro n hn
+      have hn0 : n = 0 := by
+        by_contra h0
+        exact hn ⟨⟨n, Nat.pos_of_ne_zero h0⟩, rfl⟩
+      simp [hn0]
+  refine hP.congr_fun fun j ↦ ?_
+  rw [hxdef, mul_pow, ← pow_mul]
+  ring
+
+omit [CharZero k] in
+/-- **The one-sided Lambert identity in the general window**
+`|q₀| < 1`, `|q₀w| < 1`. -/
+theorem hasSum_lambert_side' (w q₀ : k) (hq : valuation k q₀ < 1)
+    (hqw : valuation k (q₀ * w) < 1) :
+    HasSum (fun N : ℕ+ ↦
+      (∑ d ∈ (N : ℕ).divisors, (d : k) * w ^ d) * q₀ ^ (N : ℕ))
+      (∑' m : ℕ+, q₀ ^ (m : ℕ) * w / (1 - q₀ ^ (m : ℕ) * w) ^ 2) := by
+  refine hasSum_divisor_collect_nonarch
+    (g := fun d ↦ (d : k) * w ^ d) ?_
+  have hT := hasSum_prod_pnat_nonarch
+    (summable_lambert_prod' w q₀ hq hqw)
+    (fun m ↦ hasSum_lambert_row' w q₀ hq hqw m)
+  refine hT.congr_fun fun p ↦ ?_
+  ring
+
+omit [CharZero k] in
+/-- The `σ₁`-series over `ℕ+` is summable on `|q₀| < 1`. -/
+theorem summable_sigma_one_nonarch (q₀ : k) (hq : valuation k q₀ < 1) :
+    Summable (fun N : ℕ+ ↦
+      (∑ d ∈ (N : ℕ).divisors, (d : k)) * q₀ ^ (N : ℕ)) := by
+  refine summable_of_valuation_le_pow hq (fun N ↦ (N : ℕ))
+    (fun M ↦ Set.Finite.subset ((Set.finite_Iio M).preimage
+      PNat.coe_injective.injOn) fun N hN ↦ hN) (fun N ↦ ?_)
+  rw [map_mul, map_pow]
+  have h1 : valuation k ((∑ d ∈ (N : ℕ).divisors, (d : k))) ≤ 1 := by
+    refine Valuation.map_sum_le _ fun d _ ↦ ?_
+    have h := valuation_intCast_le_one (R := k) d
+    simpa using h
+  calc valuation k ((∑ d ∈ (N : ℕ).divisors, (d : k))) *
+        valuation k q₀ ^ (N : ℕ)
+      ≤ 1 * valuation k q₀ ^ (N : ℕ) := mul_le_mul_left h1 _
+    _ = valuation k q₀ ^ (N : ℕ) := one_mul _
+
+set_option maxHeartbeats 1000000 in
+/-- **The bilateral form of the evaluated `x`-series** (Silverman,
+ATAEC V.3, the `ℤ`-indexed description): on the fundamental annulus,
+`X(u₀,q₀) = u₀/(1-u₀)² + ∑_{m≥1}[q₀ᵐu₀/(1-q₀ᵐu₀)² +
+q₀ᵐu₀⁻¹/(1-q₀ᵐu₀⁻¹)²] - 2∑_N σ₁(N)q₀^N` — the `m ≥ 1` and `m ≤ -1`
+halves of `∑_{m∈ℤ} q₀ᵐu₀/(1-q₀ᵐu₀)²` (the negative half rewritten by
+the involution `v ↦ v⁻¹` fixing `v/(1-v)²`), the manifestly
+`u₀ ↦ q₀u₀`-invariant description of `X`. -/
+theorem evalA_XA_bilateral (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hu : valuation k u₀ ≤ 1) (hq1 : valuation k q₀ < 1)
+    (hq : valuation k q₀ < valuation k u₀) :
+    evalA u₀ q₀ h0 h1 XA =
+      u₀ / (1 - u₀) ^ 2 +
+      ((∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀ / (1 - q₀ ^ (m : ℕ) * u₀) ^ 2) +
+       (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 2) -
+       2 * (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ))) := by
+  have hv0 : valuation k u₀ ≠ 0 := by
+    simpa [ne_eq, map_eq_zero] using h0
+  have hqu : valuation k (q₀ * u₀) < 1 := by
+    rw [map_mul]
+    calc valuation k q₀ * valuation k u₀
+        ≤ valuation k q₀ * 1 := mul_le_mul_right hu _
+      _ = valuation k q₀ := mul_one _
+      _ < 1 := hq1
+  have hquinv : valuation k (q₀ * u₀⁻¹) < 1 := by
+    rw [map_mul, map_inv₀]
+    calc valuation k q₀ * (valuation k u₀)⁻¹
+        < valuation k u₀ * (valuation k u₀)⁻¹ :=
+          mul_lt_mul_of_pos_right hq
+            (zero_lt_iff.mpr (inv_ne_zero hv0))
+      _ = 1 := mul_inv_cancel₀ hv0
+  have hSu := hasSum_lambert_side' u₀ q₀ hq1 hqu
+  have hSuinv := hasSum_lambert_side' u₀⁻¹ q₀ hq1 hquinv
+  have hSσ := (summable_sigma_one_nonarch q₀ hq1).hasSum
+  have htail : HasSum (fun N : ℕ+ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff (N : ℕ) XA) *
+        q₀ ^ (N : ℕ))
+      ((∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀ / (1 - q₀ ^ (m : ℕ) * u₀) ^ 2) +
+       (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 2) -
+       2 * (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ))) := by
+    refine ((hSu.add hSuinv).sub (hSσ.mul_left 2)).congr_fun
+      fun N ↦ ?_
+    rw [coeffRingEval_coeff_XA u₀ h0 h1 N.pos.ne', Finset.sum_mul,
+      Finset.sum_mul, Finset.sum_mul, Finset.sum_mul, Finset.mul_sum,
+      ← Finset.sum_add_distrib, ← Finset.sum_sub_distrib]
+    refine Finset.sum_congr rfl fun d _ ↦ ?_
+    ring
+  have htailN : HasSum (fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff (n + 1) XA) *
+        q₀ ^ (n + 1))
+      ((∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀ / (1 - q₀ ^ (m : ℕ) * u₀) ^ 2) +
+       (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 2) -
+       2 * (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ))) := by
+    have h := (Equiv.pnatEquivNat.symm.hasSum_iff).mpr htail
+    refine h.congr_fun fun n ↦ ?_
+    simp only [Function.comp_apply, Equiv.pnatEquivNat_symm_apply,
+      Nat.succPNat_coe]
+  have hfull := (hasSum_nat_add_iff
+    (f := fun n : ℕ ↦ coeffRingEval u₀ h0 h1
+      (PowerSeries.coeff n XA) * q₀ ^ n) 1).mp htailN
+  rw [Finset.range_one, Finset.sum_singleton] at hfull
+  have hf0 : coeffRingEval u₀ h0 h1 (PowerSeries.coeff 0 XA) *
+      q₀ ^ 0 = u₀ / (1 - u₀) ^ 2 := by
+    rw [coeffRingEval_coeff_XA_zero, pow_zero, mul_one]
+  rw [hf0] at hfull
+  rw [evalA, hfull.tsum_eq]
+  ring
+
+omit [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- Reindexing an `ℕ+`-series by the successor bijection with `ℕ`. -/
+theorem tsum_pnat_eq_tsum_succPNat (g : ℕ+ → k) :
+    (∑' m : ℕ+, g m) = ∑' n : ℕ, g n.succPNat := by
+  rw [← Equiv.tsum_eq Equiv.pnatEquivNat.symm g]
+  exact tsum_congr fun n ↦ by
+    simp only [Equiv.pnatEquivNat_symm_apply]
+
+omit [CharZero k] in
+/-- Splitting off the first term of a summable `ℕ+`-series. -/
+theorem tsum_pnat_eq_add_shift {f : ℕ+ → k} (hf : Summable f) :
+    (∑' m : ℕ+, f m) = f 1 + ∑' m : ℕ+, f (m + 1) := by
+  have hsum : Summable (fun n : ℕ ↦ f n.succPNat) := by
+    have h := (Equiv.pnatEquivNat.symm.summable_iff).mpr hf
+    refine h.congr fun n ↦ ?_
+    simp only [Function.comp_apply, Equiv.pnatEquivNat_symm_apply]
+  rw [tsum_pnat_eq_tsum_succPNat f,
+    tsum_pnat_eq_tsum_succPNat (fun m ↦ f (m + 1)),
+    hsum.tsum_eq_zero_add]
+  rfl
+
+/-- **The bilateral `x`-value**: the `ℤ`-indexed description of the
+Tate `x`-coordinate, defined for any parameters (junk off the
+convergence window `|q₀| < |u₀| < |q₀|⁻¹`). On the fundamental
+annulus it agrees with `evalA … XA` (`evalA_XA_bilateral`). -/
+noncomputable def bilateralX (u₀ q₀ : k) : k :=
+  u₀ / (1 - u₀) ^ 2 +
+    ((∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀ / (1 - q₀ ^ (m : ℕ) * u₀) ^ 2) +
+     (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+        (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 2) -
+     2 * (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+        q₀ ^ (N : ℕ)))
+
+/-- `evalA_XA_bilateral`, restated through `bilateralX`. -/
+theorem evalA_XA_eq_bilateralX (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hu : valuation k u₀ ≤ 1) (hq1 : valuation k q₀ < 1)
+    (hq : valuation k q₀ < valuation k u₀) :
+    evalA u₀ q₀ h0 h1 XA = bilateralX u₀ q₀ :=
+  evalA_XA_bilateral u₀ q₀ h0 h1 hu hq1 hq
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- The Möbius-type involution fixing the Lambert kernel:
+`v⁻¹/(1-v⁻¹)² = v/(1-v)²`. -/
+theorem lambert_kernel_inv (v : k) (hv : v ≠ 0) :
+    v⁻¹ / (1 - v⁻¹) ^ 2 = v / (1 - v) ^ 2 := by
+  rcases eq_or_ne v 1 with rfl | hv1
+  · simp
+  · have h1 : (1 - v) ≠ 0 := sub_ne_zero.mpr (Ne.symm hv1)
+    have h2 : (1 - v⁻¹) ≠ 0 := by
+      intro h0
+      have : v⁻¹ = 1 := by linear_combination -h0
+      exact hv1 (by
+        have := congrArg (v * ·) this
+        simpa [mul_inv_cancel₀ hv] using this.symm)
+    field_simp
+    ring
+
+omit [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- **Involution invariance of the bilateral `x`-value**:
+`bilateralX u₀⁻¹ = bilateralX u₀` — the substitution `u₀ ↦ u₀⁻¹`
+exchanges the two half-sums termwise (the Lambert kernel is
+`v ↦ v⁻¹`-invariant) and fixes the constant term. -/
+theorem bilateralX_inv (u₀ q₀ : k) (h0 : u₀ ≠ 0) :
+    bilateralX u₀⁻¹ q₀ = bilateralX u₀ q₀ := by
+  rw [bilateralX, bilateralX, inv_inv]
+  have hconst : u₀⁻¹ / (1 - u₀⁻¹) ^ 2 = u₀ / (1 - u₀) ^ 2 :=
+    lambert_kernel_inv u₀ h0
+  rw [hconst]
+  ring
+
+omit [CharZero k] in
+/-- The Lambert-term family is summable in the general window: the
+rows of the summable double series sum to it fiberwise. -/
+theorem summable_lambert_terms (w q₀ : k) (hq : valuation k q₀ < 1)
+    (hqw : valuation k (q₀ * w) < 1) :
+    Summable (fun m : ℕ+ ↦
+      q₀ ^ (m : ℕ) * w / (1 - q₀ ^ (m : ℕ) * w) ^ 2) :=
+  ((summable_lambert_prod' w q₀ hq hqw).hasSum.prod_fiberwise
+    (fun m ↦ hasSum_lambert_row' w q₀ hq hqw m)).summable
+
+omit [CharZero k] in
+/-- Summability of an `ℕ+`-family follows from summability of its
+shift. -/
+theorem summable_pnat_of_shift {f : ℕ+ → k}
+    (hf : Summable fun m : ℕ+ ↦ f (m + 1)) : Summable f := by
+  have hpn : ∀ n : ℕ, (n + 1).succPNat = n.succPNat + 1 := by
+    intro n
+    apply PNat.coe_injective
+    simp [Nat.succPNat]
+  have hN : Summable (fun n : ℕ ↦ f (n + 1).succPNat) := by
+    have h := (Equiv.pnatEquivNat.symm.summable_iff).mpr hf
+    refine h.congr fun n ↦ ?_
+    simp only [Function.comp_apply, Equiv.pnatEquivNat_symm_apply]
+    exact congrArg f (hpn n).symm
+  have h2 : Summable (fun n : ℕ ↦ f n.succPNat) :=
+    (summable_nat_add_iff 1).mp hN
+  exact (Equiv.pnatEquivNat.symm.summable_iff).mp
+    (h2.congr fun n ↦ by
+      simp only [Function.comp_apply, Equiv.pnatEquivNat_symm_apply])
+
+omit [CharZero k] in
+set_option maxHeartbeats 1000000 in
+/-- **Shift invariance of the bilateral `x`-value** (the translation
+identity, Silverman V.3.1(a)): `bilateralX (q₀u₀) q₀ = bilateralX u₀ q₀`
+on the annulus — the constant term of the shifted parameter is the
+first term of the `u₀`-half-sum, and the first term of the shifted
+inverse half-sum is the `u₀`-constant; everything else reindexes by
+one step. -/
+theorem bilateralX_shift (u₀ q₀ : k) (h0 : u₀ ≠ 0) (hq0 : q₀ ≠ 0)
+    (hq1 : valuation k q₀ < 1) (hqu : valuation k (q₀ * u₀) < 1)
+    (hquinv : valuation k (q₀ * u₀⁻¹) < 1) :
+    bilateralX (q₀ * u₀) q₀ = bilateralX u₀ q₀ := by
+  have hq2u : valuation k (q₀ * (q₀ * u₀)) < 1 := by
+    rw [map_mul]
+    calc valuation k q₀ * valuation k (q₀ * u₀)
+        ≤ 1 * valuation k (q₀ * u₀) :=
+          mul_le_mul_left hq1.le _
+      _ = valuation k (q₀ * u₀) := one_mul _
+      _ < 1 := hqu
+  have hS1 := summable_lambert_terms u₀ q₀ hq1 hqu
+  have hS2 := summable_lambert_terms (q₀ * u₀) q₀ hq1 hq2u
+  have hS3 := summable_lambert_terms u₀⁻¹ q₀ hq1 hquinv
+  -- the shifted-inverse family: its shift is the `u₀⁻¹`-family
+  have hS4 : Summable (fun m : ℕ+ ↦
+      q₀ ^ (m : ℕ) * (q₀ * u₀)⁻¹ /
+        (1 - q₀ ^ (m : ℕ) * (q₀ * u₀)⁻¹) ^ 2) := by
+    refine summable_pnat_of_shift (hS3.congr fun m ↦ ?_)
+    have hterm : q₀ ^ ((m + 1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹ =
+        q₀ ^ (m : ℕ) * u₀⁻¹ := by
+      rw [mul_inv, PNat.add_coe, PNat.one_coe, pow_succ]
+      field_simp
+    rw [hterm]
+  -- the two shift computations
+  have hshift2 : (∑' m : ℕ+, q₀ ^ (m : ℕ) * (q₀ * u₀) /
+      (1 - q₀ ^ (m : ℕ) * (q₀ * u₀)) ^ 2) =
+      (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀ /
+        (1 - q₀ ^ (m : ℕ) * u₀) ^ 2) -
+      q₀ * u₀ / (1 - q₀ * u₀) ^ 2 := by
+    have h := tsum_pnat_eq_add_shift hS1
+    have hcongr : (∑' m : ℕ+, q₀ ^ ((m + 1 : ℕ+) : ℕ) * u₀ /
+        (1 - q₀ ^ ((m + 1 : ℕ+) : ℕ) * u₀) ^ 2) =
+        (∑' m : ℕ+, q₀ ^ (m : ℕ) * (q₀ * u₀) /
+          (1 - q₀ ^ (m : ℕ) * (q₀ * u₀)) ^ 2) := by
+      refine tsum_congr fun m ↦ ?_
+      rw [show q₀ ^ ((m + 1 : ℕ+) : ℕ) * u₀ =
+          q₀ ^ (m : ℕ) * (q₀ * u₀) from by
+        rw [PNat.add_coe, PNat.one_coe, pow_succ]
+        ring]
+    rw [hcongr] at h
+    have h1 : q₀ ^ ((1 : ℕ+) : ℕ) * u₀ / (1 - q₀ ^ ((1 : ℕ+) : ℕ) * u₀) ^ 2
+        = q₀ * u₀ / (1 - q₀ * u₀) ^ 2 := by
+      norm_num
+    rw [h1] at h
+    linear_combination -h
+  have hshift4 : (∑' m : ℕ+, q₀ ^ (m : ℕ) * (q₀ * u₀)⁻¹ /
+      (1 - q₀ ^ (m : ℕ) * (q₀ * u₀)⁻¹) ^ 2) =
+      u₀⁻¹ / (1 - u₀⁻¹) ^ 2 +
+      (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+        (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 2) := by
+    have h := tsum_pnat_eq_add_shift hS4
+    have h1 : q₀ ^ ((1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹ /
+        (1 - q₀ ^ ((1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹) ^ 2
+        = u₀⁻¹ / (1 - u₀⁻¹) ^ 2 := by
+      rw [show q₀ ^ ((1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹ = u₀⁻¹ from by
+        rw [mul_inv, PNat.one_coe, pow_one]
+        field_simp]
+    have hcongr : (∑' m : ℕ+,
+        q₀ ^ ((m + 1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹ /
+          (1 - q₀ ^ ((m + 1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹) ^ 2) =
+        (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 2) := by
+      refine tsum_congr fun m ↦ ?_
+      rw [show q₀ ^ ((m + 1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹ =
+          q₀ ^ (m : ℕ) * u₀⁻¹ from by
+        rw [mul_inv, PNat.add_coe, PNat.one_coe, pow_succ]
+        field_simp]
+    rw [h1, hcongr] at h
+    exact h
+  -- assemble
+  rw [bilateralX, bilateralX, hshift2, hshift4,
+    lambert_kernel_inv u₀ h0]
+  ring
+
+omit [CharZero k] in
+/-- `∑ (n+1)xⁿ` is summable on the open unit disc. -/
+theorem summable_add_one_mul_geometric_nonarch (x : k)
+    (hx : valuation k x < 1) :
+    Summable (fun n : ℕ ↦ ((n : k) + 1) * x ^ n) := by
+  have h := (summable_nat_mul_geometric_nonarch x hx).add
+    (summable_geometric_nonarch x hx)
+  refine h.congr fun n ↦ ?_
+  ring
+
+omit [CharZero k] in
+/-- `∑ (n+1)xⁿ = (1-x)⁻²` on the open unit disc. -/
+theorem tsum_add_one_mul_geometric_nonarch (x : k)
+    (hx : valuation k x < 1) :
+    (∑' n : ℕ, ((n : k) + 1) * x ^ n) = ((1 - x)⁻¹) ^ 2 := by
+  have hxne : x ≠ 1 := by
+    rintro rfl
+    simp at hx
+  have h1x : (1 - x) ≠ 0 := sub_ne_zero.mpr (Ne.symm hxne)
+  have hsplit : (∑' n : ℕ, ((n : k) + 1) * x ^ n) =
+      (∑' n : ℕ, (n : k) * x ^ n) + (∑' n : ℕ, x ^ n) := by
+    rw [← (summable_nat_mul_geometric_nonarch x hx).tsum_add
+      (summable_geometric_nonarch x hx)]
+    exact tsum_congr fun n ↦ by ring
+  rw [hsplit, tsum_nat_mul_geometric_nonarch x hx,
+    tsum_geometric_nonarch x hx]
+  field_simp
+  ring
+
+omit [CharZero k] in
+/-- The Gauss sum in binomial form:
+`∑_{i<n+1} (i+1) = C(n+2, 2)`. -/
+theorem sum_range_add_one_eq_choose (n : ℕ) :
+    (∑ i ∈ Finset.range (n + 1), (i + 1)) = (n + 2).choose 2 := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    rw [Finset.sum_range_succ, ih, Nat.choose_succ_succ (n + 2) 1,
+      Nat.choose_one_right]
+    simp only [show Nat.succ 1 = 2 from rfl]
+    omega
+
+omit [CharZero k] in
+set_option maxHeartbeats 1000000 in
+/-- **The nonarchimedean geometric cube**:
+`∑ C(n+2,2)xⁿ = (1-x)⁻³` — the Cauchy product of `(1-x)⁻²` and the
+geometric series, with the antidiagonal counted by the Gauss sum. -/
+theorem tsum_choose_two_geometric_nonarch (x : k)
+    (hx : valuation k x < 1) :
+    (∑' n : ℕ, (((n + 2).choose 2 : ℕ) : k) * x ^ n) =
+      ((1 - x)⁻¹) ^ 3 := by
+  have hplus := summable_add_one_mul_geometric_nonarch x hx
+  have hgeom := summable_geometric_nonarch x hx
+  have hterm : ∀ n : ℕ,
+      (∑ kl ∈ Finset.antidiagonal n,
+        ((kl.1 : k) + 1) * x ^ kl.1 * x ^ kl.2) =
+      (((n + 2).choose 2 : ℕ) : k) * x ^ n := by
+    intro n
+    have h1 : ∀ kl ∈ Finset.antidiagonal n,
+        ((kl.1 : k) + 1) * x ^ kl.1 * x ^ kl.2 =
+        ((kl.1 : k) + 1) * x ^ n := by
+      intro kl hkl
+      rw [mul_assoc, ← pow_add, Finset.mem_antidiagonal.mp hkl]
+    rw [Finset.sum_congr rfl h1, ← Finset.sum_mul,
+      Finset.Nat.sum_antidiagonal_eq_sum_range_succ_mk]
+    congr 1
+    have hcast : (∑ i ∈ Finset.range (n + 1), ((i : k) + 1)) =
+        ((∑ i ∈ Finset.range (n + 1), (i + 1) : ℕ) : k) := by
+      push_cast
+      ring
+    rw [hcast, sum_range_add_one_eq_choose]
+  have hv2 := tsum_add_one_mul_geometric_nonarch x hx
+  have hv1 := tsum_geometric_nonarch x hx
+  set f : ℕ → k := fun n ↦ ((n : k) + 1) * x ^ n with hfdef
+  set g : ℕ → k := fun n ↦ x ^ n with hgdef
+  have hkey := Summable.tsum_mul_tsum_eq_tsum_sum_antidiagonal (A := ℕ)
+    hplus hgeom (summable_mul_prod hplus hgeom)
+  rw [hv2, hv1] at hkey
+  calc (∑' n : ℕ, (((n + 2).choose 2 : ℕ) : k) * x ^ n)
+      = ∑' n : ℕ, ∑ kl ∈ Finset.antidiagonal n, f kl.1 * g kl.2 :=
+        tsum_congr fun n ↦ (hterm n).symm
+    _ = ((1 - x)⁻¹) ^ 2 * (1 - x)⁻¹ := hkey.symm
+    _ = ((1 - x)⁻¹) ^ 3 := by ring
+
+omit [CharZero k] in
+/-- The cube series is summable. -/
+theorem summable_choose_two_geometric_nonarch (v : k)
+    (hv : valuation k v < 1) :
+    Summable (fun n : ℕ ↦ (((n + 2).choose 2 : ℕ) : k) * v ^ n) := by
+  refine summable_of_valuation_le_pow hv (fun n ↦ n)
+    (fun N ↦ Set.finite_Iio N) (fun n ↦ ?_)
+  rw [map_mul, map_pow]
+  calc valuation k ((((n + 2).choose 2 : ℕ) : k)) * valuation k v ^ n
+      ≤ 1 * valuation k v ^ n := by
+        refine mul_le_mul_left ?_ _
+        have h := valuation_intCast_le_one (R := k) ((n + 2).choose 2)
+        simpa using h
+    _ = valuation k v ^ n := one_mul _
+
+omit [CharZero k] in
+/-- The first `Y`-kernel: `∑ⱼ C(j,2)vʲ = v²/(1-v)³`. -/
+theorem tsum_choose_two_self_geometric_nonarch (v : k)
+    (hv : valuation k v < 1) :
+    (∑' j : ℕ, ((j.choose 2 : ℕ) : k) * v ^ j) =
+      v ^ 2 / (1 - v) ^ 3 := by
+  have hvne : v ≠ 1 := by
+    rintro rfl
+    simp at hv
+  have h1v : (1 - v) ≠ 0 := sub_ne_zero.mpr (Ne.symm hvne)
+  have hcubeHS : HasSum
+      (fun n : ℕ ↦ (((n + 2).choose 2 : ℕ) : k) * v ^ n)
+      (((1 - v)⁻¹) ^ 3) := by
+    have h := (summable_choose_two_geometric_nonarch v hv).hasSum
+    rwa [tsum_choose_two_geometric_nonarch v hv] at h
+  have hshifted : HasSum (fun n : ℕ ↦
+      (((n + 2).choose 2 : ℕ) : k) * v ^ (n + 2))
+      (v ^ 2 * ((1 - v)⁻¹) ^ 3) := by
+    refine (hcubeHS.mul_left (v ^ 2)).congr_fun fun n ↦ ?_
+    rw [pow_add]
+    ring
+  have hfull := (hasSum_nat_add_iff
+    (f := fun j : ℕ ↦ ((j.choose 2 : ℕ) : k) * v ^ j) 2).mp hshifted
+  have hzero : (∑ i ∈ Finset.range 2,
+      ((i.choose 2 : ℕ) : k) * v ^ i) = 0 := by
+    simp [Finset.sum_range_succ]
+  rw [hzero, add_zero] at hfull
+  rw [hfull.tsum_eq]
+  field_simp
+
+omit [CharZero k] in
+/-- The second `Y`-kernel: `∑ⱼ C(j+1,2)vʲ = v/(1-v)³`. -/
+theorem tsum_choose_two_succ_geometric_nonarch (v : k)
+    (hv : valuation k v < 1) :
+    (∑' j : ℕ, (((j + 1).choose 2 : ℕ) : k) * v ^ j) =
+      v / (1 - v) ^ 3 := by
+  have hvne : v ≠ 1 := by
+    rintro rfl
+    simp at hv
+  have h1v : (1 - v) ≠ 0 := sub_ne_zero.mpr (Ne.symm hvne)
+  have hcubeHS : HasSum
+      (fun n : ℕ ↦ (((n + 2).choose 2 : ℕ) : k) * v ^ n)
+      (((1 - v)⁻¹) ^ 3) := by
+    have h := (summable_choose_two_geometric_nonarch v hv).hasSum
+    rwa [tsum_choose_two_geometric_nonarch v hv] at h
+  have hshifted : HasSum (fun n : ℕ ↦
+      ((((n + 1) + 1).choose 2 : ℕ) : k) * v ^ (n + 1))
+      (v * ((1 - v)⁻¹) ^ 3) := by
+    refine (hcubeHS.mul_left v).congr_fun fun n ↦ ?_
+    rw [pow_succ]
+    ring
+  have hfull := (hasSum_nat_add_iff
+    (f := fun j : ℕ ↦ (((j + 1).choose 2 : ℕ) : k) * v ^ j) 1).mp
+    hshifted
+  have hzero : (∑ i ∈ Finset.range 1,
+      (((i + 1).choose 2 : ℕ) : k) * v ^ i) = 0 := by
+    simp
+  rw [hzero, add_zero] at hfull
+  rw [hfull.tsum_eq]
+  field_simp
+
+omit [CharZero k] in
+/-- **The general one-sided Lambert identity**: for coefficients `a`
+of valuation at most `1` whose power series sums to `g` on the open
+unit disc, `∑_N (∑_{d∣N} a(d)wᵈ)q₀^N = ∑_m g(q₀ᵐw)` in the window
+`|q₀| < 1`, `|q₀w| < 1`. Instantiates to the `x`-series
+(`a = id`, `g = v/(1-v)²`) and to both `y`-kernels
+(`a = C(·,2)`, `g = v²/(1-v)³` and `a = C(·+1,2)`, `g = v/(1-v)³`). -/
+theorem hasSum_lambert_general (a : ℕ → k) (g : k → k)
+    (ha : ∀ j : ℕ, valuation k (a j) ≤ 1) (w q₀ : k)
+    (hq : valuation k q₀ < 1) (hqw : valuation k (q₀ * w) < 1)
+    (hg : ∀ v₀ : k, valuation k v₀ < 1 →
+      HasSum (fun j : ℕ+ ↦ a (j : ℕ) * v₀ ^ (j : ℕ)) (g v₀)) :
+    HasSum (fun N : ℕ+ ↦
+      (∑ d ∈ (N : ℕ).divisors, a d * w ^ d) * q₀ ^ (N : ℕ))
+      (∑' m : ℕ+, g (q₀ ^ (m : ℕ) * w)) := by
+  -- the double series is summable (the general-window two-case bound)
+  have hfin : ∀ N : ℕ, {p : ℕ+ × ℕ+ |
+      (fun p : ℕ+ × ℕ+ ↦ (p.1 : ℕ) * (p.2 : ℕ)) p < N}.Finite := by
+    intro N
+    have hinj : Function.Injective
+        (fun p : ℕ+ × ℕ+ ↦ ((p.1 : ℕ), (p.2 : ℕ))) := by
+      intro x y hxy
+      simp only [Prod.mk.injEq] at hxy
+      exact Prod.ext (PNat.coe_injective hxy.1) (PNat.coe_injective hxy.2)
+    refine Set.Finite.subset
+      (((Set.finite_Iio N).prod (Set.finite_Iio N)).preimage
+        hinj.injOn) ?_
+    intro p hp
+    simp only [Set.mem_setOf_eq] at hp
+    exact ⟨lt_of_le_of_lt (Nat.le_mul_of_pos_right _ p.2.pos) hp,
+      lt_of_le_of_lt (Nat.le_mul_of_pos_left _ p.1.pos) hp⟩
+  have hbound : ∀ p : ℕ+ × ℕ+,
+      valuation k (a (p.2 : ℕ) * w ^ (p.2 : ℕ) *
+        q₀ ^ ((p.1 : ℕ) * (p.2 : ℕ))) ≤
+      valuation k (q₀ * w) ^ (p.2 : ℕ) *
+        valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) := by
+    intro p
+    have hm1 : ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ) =
+        (p.1 : ℕ) * (p.2 : ℕ) := by
+      calc ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ)
+          = (((p.1 : ℕ) - 1) + 1) * (p.2 : ℕ) := by ring
+        _ = (p.1 : ℕ) * (p.2 : ℕ) := by
+            rw [Nat.sub_add_cancel p.1.pos]
+    rw [map_mul, map_mul, map_pow, map_pow, ← hm1, pow_add, map_mul]
+    calc valuation k (a (p.2 : ℕ)) * valuation k w ^ (p.2 : ℕ) *
+          (valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) *
+            valuation k q₀ ^ (p.2 : ℕ))
+        ≤ 1 * valuation k w ^ (p.2 : ℕ) *
+          (valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) *
+            valuation k q₀ ^ (p.2 : ℕ)) := by
+          exact mul_le_mul_left
+            (mul_le_mul_left (ha (p.2 : ℕ)) _) _
+      _ = (valuation k q₀ * valuation k w) ^ (p.2 : ℕ) *
+          valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) := by
+          rw [one_mul, mul_pow, mul_comm
+            (valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)))
+            (valuation k q₀ ^ (p.2 : ℕ)), ← mul_assoc, mul_comm
+            (valuation k w ^ (p.2 : ℕ)) (valuation k q₀ ^ (p.2 : ℕ)),
+            mul_assoc]
+  have hsummable : Summable (fun p : ℕ+ × ℕ+ ↦
+      a (p.2 : ℕ) * w ^ (p.2 : ℕ) * q₀ ^ ((p.1 : ℕ) * (p.2 : ℕ))) := by
+    rcases le_total (valuation k q₀) (valuation k (q₀ * w)) with hle | hle
+    · refine summable_of_valuation_le_pow (q := q₀ * w) hqw
+        (fun p ↦ (p.1 : ℕ) * (p.2 : ℕ)) hfin (fun p ↦ ?_)
+      refine le_trans (hbound p) ?_
+      have hm1 : ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ) =
+          (p.1 : ℕ) * (p.2 : ℕ) := by
+        calc ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ)
+            = (((p.1 : ℕ) - 1) + 1) * (p.2 : ℕ) := by ring
+          _ = (p.1 : ℕ) * (p.2 : ℕ) := by
+              rw [Nat.sub_add_cancel p.1.pos]
+      calc valuation k (q₀ * w) ^ (p.2 : ℕ) *
+            valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ))
+          ≤ valuation k (q₀ * w) ^ (p.2 : ℕ) *
+            valuation k (q₀ * w) ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) :=
+            mul_le_mul_right (pow_le_pow_left' hle _) _
+        _ = valuation k (q₀ * w) ^ ((p.1 : ℕ) * (p.2 : ℕ)) := by
+            rw [← pow_add, add_comm, hm1]
+    · refine summable_of_valuation_le_pow (q := q₀) hq
+        (fun p ↦ (p.1 : ℕ) * (p.2 : ℕ)) hfin (fun p ↦ ?_)
+      refine le_trans (hbound p) ?_
+      have hm1 : ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ) =
+          (p.1 : ℕ) * (p.2 : ℕ) := by
+        calc ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ)
+            = (((p.1 : ℕ) - 1) + 1) * (p.2 : ℕ) := by ring
+          _ = (p.1 : ℕ) * (p.2 : ℕ) := by
+              rw [Nat.sub_add_cancel p.1.pos]
+      calc valuation k (q₀ * w) ^ (p.2 : ℕ) *
+            valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ))
+          ≤ valuation k q₀ ^ (p.2 : ℕ) *
+            valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) :=
+            mul_le_mul_left (pow_le_pow_left' hle _) _
+        _ = valuation k q₀ ^ ((p.1 : ℕ) * (p.2 : ℕ)) := by
+            rw [← pow_add, add_comm, hm1]
+  -- rows sum to `g(q₀ᵐw)`
+  have hrow : ∀ m : ℕ+, HasSum (fun j : ℕ+ ↦
+      a (j : ℕ) * w ^ (j : ℕ) * q₀ ^ ((m : ℕ) * (j : ℕ)))
+      (g (q₀ ^ (m : ℕ) * w)) := by
+    intro m
+    have hx : valuation k (q₀ ^ (m : ℕ) * w) < 1 := by
+      have hm1 : ((m : ℕ) - 1) + 1 = (m : ℕ) := by
+        have := m.pos
+        omega
+      rw [← hm1, pow_add, pow_one, mul_assoc, map_mul, map_pow]
+      calc valuation k q₀ ^ ((m : ℕ) - 1) * valuation k (q₀ * w)
+          ≤ 1 * valuation k (q₀ * w) :=
+            mul_le_mul_left (pow_le_one₀ zero_le hq.le) _
+        _ = valuation k (q₀ * w) := one_mul _
+        _ < 1 := hqw
+    refine (hg _ hx).congr_fun fun j ↦ ?_
+    rw [mul_pow, ← pow_mul]
+    ring
+  -- assemble
+  refine hasSum_divisor_collect_nonarch (g := fun d ↦ a d * w ^ d) ?_
+  have hT := hasSum_prod_pnat_nonarch hsummable hrow
+  refine hT.congr_fun fun p ↦ ?_
+  ring
+
+omit [CharZero k] in
+/-- The first `Y`-kernel as an `ℕ+`-`HasSum` (the `j = 0` term
+vanishes: `C(0,2) = 0`). -/
+theorem hasSum_pnat_choose_two_self (v : k)
+    (hv : valuation k v < 1) :
+    HasSum (fun j : ℕ+ ↦ (((j : ℕ).choose 2 : ℕ) : k) * v ^ (j : ℕ))
+      (v ^ 2 / (1 - v) ^ 3) := by
+  have hsummable : Summable
+      (fun j : ℕ ↦ ((j.choose 2 : ℕ) : k) * v ^ j) := by
+    refine summable_of_valuation_le_pow hv (fun n ↦ n)
+      (fun N ↦ Set.finite_Iio N) (fun n ↦ ?_)
+    rw [map_mul, map_pow]
+    calc valuation k (((n.choose 2 : ℕ) : k)) * valuation k v ^ n
+        ≤ 1 * valuation k v ^ n := by
+          refine mul_le_mul_left ?_ _
+          have h := valuation_intCast_le_one (R := k) (n.choose 2)
+          simpa using h
+      _ = valuation k v ^ n := one_mul _
+  have hN : HasSum (fun j : ℕ ↦ ((j.choose 2 : ℕ) : k) * v ^ j)
+      (v ^ 2 / (1 - v) ^ 3) := by
+    have h := hsummable.hasSum
+    rwa [tsum_choose_two_self_geometric_nonarch v hv] at h
+  rw [← Function.Injective.hasSum_iff
+    (f := fun j : ℕ ↦ ((j.choose 2 : ℕ) : k) * v ^ j)
+    PNat.coe_injective ?_] at hN
+  · exact hN
+  · intro n hn
+    have hn0 : n = 0 := by
+      by_contra h0
+      exact hn ⟨⟨n, Nat.pos_of_ne_zero h0⟩, rfl⟩
+    simp [hn0]
+
+omit [CharZero k] in
+/-- The second `Y`-kernel as an `ℕ+`-`HasSum` (the `j = 0` term
+vanishes: `C(1,2) = 0`). -/
+theorem hasSum_pnat_choose_two_succ (v : k)
+    (hv : valuation k v < 1) :
+    HasSum (fun j : ℕ+ ↦
+      ((((j : ℕ) + 1).choose 2 : ℕ) : k) * v ^ (j : ℕ))
+      (v / (1 - v) ^ 3) := by
+  have hsummable : Summable
+      (fun j : ℕ ↦ (((j + 1).choose 2 : ℕ) : k) * v ^ j) := by
+    refine summable_of_valuation_le_pow hv (fun n ↦ n)
+      (fun N ↦ Set.finite_Iio N) (fun n ↦ ?_)
+    rw [map_mul, map_pow]
+    calc valuation k ((((n + 1).choose 2 : ℕ) : k)) *
+          valuation k v ^ n
+        ≤ 1 * valuation k v ^ n := by
+          refine mul_le_mul_left ?_ _
+          have h := valuation_intCast_le_one (R := k) ((n + 1).choose 2)
+          simpa using h
+      _ = valuation k v ^ n := one_mul _
+  have hN : HasSum (fun j : ℕ ↦ (((j + 1).choose 2 : ℕ) : k) * v ^ j)
+      (v / (1 - v) ^ 3) := by
+    have h := hsummable.hasSum
+    rwa [tsum_choose_two_succ_geometric_nonarch v hv] at h
+  rw [← Function.Injective.hasSum_iff
+    (f := fun j : ℕ ↦ (((j + 1).choose 2 : ℕ) : k) * v ^ j)
+    PNat.coe_injective ?_] at hN
+  · exact hN
+  · intro n hn
+    have hn0 : n = 0 := by
+      by_contra h0
+      exact hn ⟨⟨n, Nat.pos_of_ne_zero h0⟩, rfl⟩
+    simp [hn0]
+
+set_option maxHeartbeats 1000000 in
+/-- **The bilateral form of the evaluated `y`-series** (Silverman
+ATAEC V.3, `ℤ`-indexed): on the fundamental annulus,
+`Y(u₀,q₀) = u₀²/(1-u₀)³ + ∑_{m≥1}(q₀ᵐu₀)²/(1-q₀ᵐu₀)³ -
+∑_{m≥1}(q₀ᵐu₀⁻¹)/(1-q₀ᵐu₀⁻¹)³ + ∑σ₁(N)q₀^N`. -/
+theorem evalA_YA_bilateral (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hu : valuation k u₀ ≤ 1) (hq1 : valuation k q₀ < 1)
+    (hq : valuation k q₀ < valuation k u₀) :
+    evalA u₀ q₀ h0 h1 YA =
+      u₀ ^ 2 / (1 - u₀) ^ 3 +
+      ((∑' m : ℕ+, (q₀ ^ (m : ℕ) * u₀) ^ 2 /
+          (1 - q₀ ^ (m : ℕ) * u₀) ^ 3) -
+       (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 3) +
+       (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ))) := by
+  have hv0 : valuation k u₀ ≠ 0 := by
+    simpa [ne_eq, map_eq_zero] using h0
+  have hqu : valuation k (q₀ * u₀) < 1 := by
+    rw [map_mul]
+    calc valuation k q₀ * valuation k u₀
+        ≤ valuation k q₀ * 1 := mul_le_mul_right hu _
+      _ = valuation k q₀ := mul_one _
+      _ < 1 := hq1
+  have hquinv : valuation k (q₀ * u₀⁻¹) < 1 := by
+    rw [map_mul, map_inv₀]
+    calc valuation k q₀ * (valuation k u₀)⁻¹
+        < valuation k u₀ * (valuation k u₀)⁻¹ :=
+          mul_lt_mul_of_pos_right hq
+            (zero_lt_iff.mpr (inv_ne_zero hv0))
+      _ = 1 := mul_inv_cancel₀ hv0
+  have hbin1 : ∀ j : ℕ, valuation k (((j.choose 2 : ℕ) : k)) ≤ 1 := by
+    intro j
+    have h := valuation_intCast_le_one (R := k) (j.choose 2)
+    simpa using h
+  have hbin2 : ∀ j : ℕ,
+      valuation k ((((j + 1).choose 2 : ℕ) : k)) ≤ 1 := by
+    intro j
+    have h := valuation_intCast_le_one (R := k) ((j + 1).choose 2)
+    simpa using h
+  have hS1 := hasSum_lambert_general
+    (fun j ↦ ((j.choose 2 : ℕ) : k)) (fun v ↦ v ^ 2 / (1 - v) ^ 3)
+    hbin1 u₀ q₀ hq1 hqu
+    (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_self v₀ hv₀)
+  have hS2 := hasSum_lambert_general
+    (fun j ↦ (((j + 1).choose 2 : ℕ) : k)) (fun v ↦ v / (1 - v) ^ 3)
+    hbin2 u₀⁻¹ q₀ hq1 hquinv
+    (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_succ v₀ hv₀)
+  have hSσ := (summable_sigma_one_nonarch q₀ hq1).hasSum
+  have htail : HasSum (fun N : ℕ+ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff (N : ℕ) YA) *
+        q₀ ^ (N : ℕ))
+      ((∑' m : ℕ+, (q₀ ^ (m : ℕ) * u₀) ^ 2 /
+          (1 - q₀ ^ (m : ℕ) * u₀) ^ 3) -
+       (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 3) +
+       (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ))) := by
+    refine ((hS1.sub hS2).add hSσ).congr_fun fun N ↦ ?_
+    rw [coeffRingEval_coeff_YA u₀ h0 h1 N.pos.ne', Finset.sum_mul,
+      Finset.sum_mul, Finset.sum_mul, Finset.sum_mul,
+      ← Finset.sum_sub_distrib, ← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl fun d _ ↦ ?_
+    ring
+  have htailN : HasSum (fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff (n + 1) YA) *
+        q₀ ^ (n + 1))
+      ((∑' m : ℕ+, (q₀ ^ (m : ℕ) * u₀) ^ 2 /
+          (1 - q₀ ^ (m : ℕ) * u₀) ^ 3) -
+       (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 3) +
+       (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ))) := by
+    have h := (Equiv.pnatEquivNat.symm.hasSum_iff).mpr htail
+    refine h.congr_fun fun n ↦ ?_
+    simp only [Function.comp_apply, Equiv.pnatEquivNat_symm_apply,
+      Nat.succPNat_coe]
+  have hfull := (hasSum_nat_add_iff
+    (f := fun n : ℕ ↦ coeffRingEval u₀ h0 h1
+      (PowerSeries.coeff n YA) * q₀ ^ n) 1).mp htailN
+  rw [Finset.range_one, Finset.sum_singleton] at hfull
+  have hf0 : coeffRingEval u₀ h0 h1 (PowerSeries.coeff 0 YA) *
+      q₀ ^ 0 = u₀ ^ 2 / (1 - u₀) ^ 3 := by
+    rw [coeffRingEval_coeff_YA_zero, pow_zero, mul_one]
+  rw [hf0] at hfull
+  rw [evalA, hfull.tsum_eq]
+  ring
+
+/-- **The bilateral `y`-value** (junk off the wide window). -/
+noncomputable def bilateralY (u₀ q₀ : k) : k :=
+  u₀ ^ 2 / (1 - u₀) ^ 3 +
+    ((∑' m : ℕ+, (q₀ ^ (m : ℕ) * u₀) ^ 2 /
+        (1 - q₀ ^ (m : ℕ) * u₀) ^ 3) -
+     (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+        (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 3) +
+     (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+        q₀ ^ (N : ℕ)))
+
+/-- `evalA_YA_bilateral`, restated through `bilateralY`. -/
+theorem evalA_YA_eq_bilateralY (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hu : valuation k u₀ ≤ 1) (hq1 : valuation k q₀ < 1)
+    (hq : valuation k q₀ < valuation k u₀) :
+    evalA u₀ q₀ h0 h1 YA = bilateralY u₀ q₀ :=
+  evalA_YA_bilateral u₀ q₀ h0 h1 hu hq1 hq
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- The second `Y`-kernel under inversion:
+`v⁻¹/(1-v⁻¹)³ = -(v²/(1-v)³)`. -/
+theorem y_kernel_succ_inv (v : k) (hv : v ≠ 0) (hv1 : v ≠ 1) :
+    v⁻¹ / (1 - v⁻¹) ^ 3 = -(v ^ 2 / (1 - v) ^ 3) := by
+  have h1 : (1 - v) ≠ 0 := sub_ne_zero.mpr (Ne.symm hv1)
+  have h2 : (1 - v⁻¹) ≠ 0 := by
+    intro h0
+    have hinv : v⁻¹ = 1 := by linear_combination -h0
+    exact hv1 (by
+      have := congrArg (v * ·) hinv
+      simpa [mul_inv_cancel₀ hv] using this.symm)
+  field_simp
+  ring
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- The mixed constant identity behind `Y(u⁻¹) = -Y(u) - X(u)`:
+`(u⁻¹)²/(1-u⁻¹)³ = -(u²/(1-u)³) - u/(1-u)²`. -/
+theorem y_constant_inv (u : k) (hu : u ≠ 0) (hu1 : u ≠ 1) :
+    (u⁻¹) ^ 2 / (1 - u⁻¹) ^ 3 = -(u ^ 2 / (1 - u) ^ 3) - u / (1 - u) ^ 2 := by
+  have h1 : (1 - u) ≠ 0 := sub_ne_zero.mpr (Ne.symm hu1)
+  have h2 : (1 - u⁻¹) ≠ 0 := by
+    intro h0
+    have hinv : u⁻¹ = 1 := by linear_combination -h0
+    exact hu1 (by
+      have := congrArg (u * ·) hinv
+      simpa [mul_inv_cancel₀ hu] using this.symm)
+  field_simp
+  ring
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- The pointwise relation between the three kernels:
+`w²/(1-w)³ = w/(1-w)³ - w/(1-w)²`. -/
+theorem y_kernel_relation (w : k) (h1w : (1 : k) - w ≠ 0) :
+    w ^ 2 / (1 - w) ^ 3 = w / (1 - w) ^ 3 - w / (1 - w) ^ 2 := by
+  field_simp
+  ring
+
+omit [CharZero k] in
+/-- Term-family summability for the general Lambert data. -/
+theorem summable_lambert_terms_general (a : ℕ → k) (g : k → k)
+    (ha : ∀ j : ℕ, valuation k (a j) ≤ 1) (w q₀ : k)
+    (hq : valuation k q₀ < 1) (hqw : valuation k (q₀ * w) < 1)
+    (hg : ∀ v₀ : k, valuation k v₀ < 1 →
+      HasSum (fun j : ℕ+ ↦ a (j : ℕ) * v₀ ^ (j : ℕ)) (g v₀)) :
+    Summable (fun m : ℕ+ ↦ g (q₀ ^ (m : ℕ) * w)) := by
+  -- the double series is summable (the general-window two-case bound)
+  have hfin : ∀ N : ℕ, {p : ℕ+ × ℕ+ |
+      (fun p : ℕ+ × ℕ+ ↦ (p.1 : ℕ) * (p.2 : ℕ)) p < N}.Finite := by
+    intro N
+    have hinj : Function.Injective
+        (fun p : ℕ+ × ℕ+ ↦ ((p.1 : ℕ), (p.2 : ℕ))) := by
+      intro x y hxy
+      simp only [Prod.mk.injEq] at hxy
+      exact Prod.ext (PNat.coe_injective hxy.1) (PNat.coe_injective hxy.2)
+    refine Set.Finite.subset
+      (((Set.finite_Iio N).prod (Set.finite_Iio N)).preimage
+        hinj.injOn) ?_
+    intro p hp
+    simp only [Set.mem_setOf_eq] at hp
+    exact ⟨lt_of_le_of_lt (Nat.le_mul_of_pos_right _ p.2.pos) hp,
+      lt_of_le_of_lt (Nat.le_mul_of_pos_left _ p.1.pos) hp⟩
+  have hbound : ∀ p : ℕ+ × ℕ+,
+      valuation k (a (p.2 : ℕ) * w ^ (p.2 : ℕ) *
+        q₀ ^ ((p.1 : ℕ) * (p.2 : ℕ))) ≤
+      valuation k (q₀ * w) ^ (p.2 : ℕ) *
+        valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) := by
+    intro p
+    have hm1 : ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ) =
+        (p.1 : ℕ) * (p.2 : ℕ) := by
+      calc ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ)
+          = (((p.1 : ℕ) - 1) + 1) * (p.2 : ℕ) := by ring
+        _ = (p.1 : ℕ) * (p.2 : ℕ) := by
+            rw [Nat.sub_add_cancel p.1.pos]
+    rw [map_mul, map_mul, map_pow, map_pow, ← hm1, pow_add, map_mul]
+    calc valuation k (a (p.2 : ℕ)) * valuation k w ^ (p.2 : ℕ) *
+          (valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) *
+            valuation k q₀ ^ (p.2 : ℕ))
+        ≤ 1 * valuation k w ^ (p.2 : ℕ) *
+          (valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) *
+            valuation k q₀ ^ (p.2 : ℕ)) := by
+          exact mul_le_mul_left
+            (mul_le_mul_left (ha (p.2 : ℕ)) _) _
+      _ = (valuation k q₀ * valuation k w) ^ (p.2 : ℕ) *
+          valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) := by
+          rw [one_mul, mul_pow, mul_comm
+            (valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)))
+            (valuation k q₀ ^ (p.2 : ℕ)), ← mul_assoc, mul_comm
+            (valuation k w ^ (p.2 : ℕ)) (valuation k q₀ ^ (p.2 : ℕ)),
+            mul_assoc]
+  have hsummable : Summable (fun p : ℕ+ × ℕ+ ↦
+      a (p.2 : ℕ) * w ^ (p.2 : ℕ) * q₀ ^ ((p.1 : ℕ) * (p.2 : ℕ))) := by
+    rcases le_total (valuation k q₀) (valuation k (q₀ * w)) with hle | hle
+    · refine summable_of_valuation_le_pow (q := q₀ * w) hqw
+        (fun p ↦ (p.1 : ℕ) * (p.2 : ℕ)) hfin (fun p ↦ ?_)
+      refine le_trans (hbound p) ?_
+      have hm1 : ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ) =
+          (p.1 : ℕ) * (p.2 : ℕ) := by
+        calc ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ)
+            = (((p.1 : ℕ) - 1) + 1) * (p.2 : ℕ) := by ring
+          _ = (p.1 : ℕ) * (p.2 : ℕ) := by
+              rw [Nat.sub_add_cancel p.1.pos]
+      calc valuation k (q₀ * w) ^ (p.2 : ℕ) *
+            valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ))
+          ≤ valuation k (q₀ * w) ^ (p.2 : ℕ) *
+            valuation k (q₀ * w) ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) :=
+            mul_le_mul_right (pow_le_pow_left' hle _) _
+        _ = valuation k (q₀ * w) ^ ((p.1 : ℕ) * (p.2 : ℕ)) := by
+            rw [← pow_add, add_comm, hm1]
+    · refine summable_of_valuation_le_pow (q := q₀) hq
+        (fun p ↦ (p.1 : ℕ) * (p.2 : ℕ)) hfin (fun p ↦ ?_)
+      refine le_trans (hbound p) ?_
+      have hm1 : ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ) =
+          (p.1 : ℕ) * (p.2 : ℕ) := by
+        calc ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ)
+            = (((p.1 : ℕ) - 1) + 1) * (p.2 : ℕ) := by ring
+          _ = (p.1 : ℕ) * (p.2 : ℕ) := by
+              rw [Nat.sub_add_cancel p.1.pos]
+      calc valuation k (q₀ * w) ^ (p.2 : ℕ) *
+            valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ))
+          ≤ valuation k q₀ ^ (p.2 : ℕ) *
+            valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) :=
+            mul_le_mul_left (pow_le_pow_left' hle _) _
+        _ = valuation k q₀ ^ ((p.1 : ℕ) * (p.2 : ℕ)) := by
+            rw [← pow_add, add_comm, hm1]
+  -- rows sum to `g(q₀ᵐw)`
+  have hrow : ∀ m : ℕ+, HasSum (fun j : ℕ+ ↦
+      a (j : ℕ) * w ^ (j : ℕ) * q₀ ^ ((m : ℕ) * (j : ℕ)))
+      (g (q₀ ^ (m : ℕ) * w)) := by
+    intro m
+    have hx : valuation k (q₀ ^ (m : ℕ) * w) < 1 := by
+      have hm1 : ((m : ℕ) - 1) + 1 = (m : ℕ) := by
+        have := m.pos
+        omega
+      rw [← hm1, pow_add, pow_one, mul_assoc, map_mul, map_pow]
+      calc valuation k q₀ ^ ((m : ℕ) - 1) * valuation k (q₀ * w)
+          ≤ 1 * valuation k (q₀ * w) :=
+            mul_le_mul_left (pow_le_one₀ zero_le hq.le) _
+        _ = valuation k (q₀ * w) := one_mul _
+        _ < 1 := hqw
+    refine (hg _ hx).congr_fun fun j ↦ ?_
+    rw [mul_pow, ← pow_mul]
+    ring
+  exact (hsummable.hasSum.prod_fiberwise hrow).summable
+
+omit [TopologicalSpace k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- Terms of the Lambert sums are away from the pole:
+`1 - q₀ᵐw ≠ 0` when `|q₀w| < 1`. -/
+theorem one_sub_pow_mul_ne_zero (w q₀ : k)
+    (hq : valuation k q₀ < 1) (hqw : valuation k (q₀ * w) < 1)
+    (m : ℕ+) : (1 : k) - q₀ ^ (m : ℕ) * w ≠ 0 := by
+  intro h0
+  have hval : valuation k (q₀ ^ (m : ℕ) * w) < 1 := by
+    have hm1 : ((m : ℕ) - 1) + 1 = (m : ℕ) := by
+      have := m.pos
+      omega
+    rw [← hm1, pow_add, pow_one, mul_assoc, map_mul, map_pow]
+    calc valuation k q₀ ^ ((m : ℕ) - 1) * valuation k (q₀ * w)
+        ≤ 1 * valuation k (q₀ * w) :=
+          mul_le_mul_left (pow_le_one₀ zero_le hq.le) _
+      _ = valuation k (q₀ * w) := one_mul _
+      _ < 1 := hqw
+  have heq : q₀ ^ (m : ℕ) * w = 1 := by linear_combination -h0
+  rw [heq] at hval
+  simp at hval
+
+omit [CharZero k] in
+set_option maxHeartbeats 1000000 in
+/-- **Inversion antisymmetry of the bilateral `y`-value**:
+`bilateralY u₀⁻¹ = -(bilateralY u₀) - bilateralX u₀` in the wide
+window — the negation law of the Tate parametrisation at the level of
+the `ℤ`-indexed sums, via the pointwise kernel relation
+`kernel₁ = kernel₂ - kernelX` applied on both parameter arguments,
+and the mixed constant identity. -/
+theorem bilateralY_inv (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hq1 : valuation k q₀ < 1) (hqu : valuation k (q₀ * u₀) < 1)
+    (hquinv : valuation k (q₀ * u₀⁻¹) < 1) :
+    bilateralY u₀⁻¹ q₀ = -(bilateralY u₀ q₀) - bilateralX u₀ q₀ := by
+  have hbin1 : ∀ j : ℕ, valuation k (((j.choose 2 : ℕ) : k)) ≤ 1 := by
+    intro j
+    have h := valuation_intCast_le_one (R := k) (j.choose 2)
+    simpa using h
+  have hbin2 : ∀ j : ℕ,
+      valuation k ((((j + 1).choose 2 : ℕ) : k)) ≤ 1 := by
+    intro j
+    have h := valuation_intCast_le_one (R := k) ((j + 1).choose 2)
+    simpa using h
+  -- summabilities of the four kernel families
+  have hS2inv := summable_lambert_terms_general
+    (fun j ↦ (((j + 1).choose 2 : ℕ) : k)) (fun v ↦ v / (1 - v) ^ 3)
+    hbin2 u₀⁻¹ q₀ hq1 hquinv
+    (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_succ v₀ hv₀)
+  have hSXinv := summable_lambert_terms u₀⁻¹ q₀ hq1 hquinv
+  have hS1u := summable_lambert_terms_general
+    (fun j ↦ ((j.choose 2 : ℕ) : k)) (fun v ↦ v ^ 2 / (1 - v) ^ 3)
+    hbin1 u₀ q₀ hq1 hqu
+    (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_self v₀ hv₀)
+  have hSXu := summable_lambert_terms u₀ q₀ hq1 hqu
+  -- split the two `kernel₁`/`kernel₂` sums by the kernel relation
+  have hsplit1 : (∑' m : ℕ+, (q₀ ^ (m : ℕ) * u₀⁻¹) ^ 2 /
+      (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 3) =
+      (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+        (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 3) -
+      (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+        (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 2) := by
+    rw [← hS2inv.tsum_sub hSXinv]
+    exact tsum_congr fun m ↦
+      y_kernel_relation _ (one_sub_pow_mul_ne_zero u₀⁻¹ q₀ hq1 hquinv m)
+  have hsplit2 : (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀ /
+      (1 - q₀ ^ (m : ℕ) * u₀) ^ 3) =
+      (∑' m : ℕ+, (q₀ ^ (m : ℕ) * u₀) ^ 2 /
+        (1 - q₀ ^ (m : ℕ) * u₀) ^ 3) +
+      (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀ /
+        (1 - q₀ ^ (m : ℕ) * u₀) ^ 2) := by
+    rw [← hS1u.tsum_add hSXu]
+    refine tsum_congr fun m ↦ ?_
+    have h := y_kernel_relation (q₀ ^ (m : ℕ) * u₀)
+      (one_sub_pow_mul_ne_zero u₀ q₀ hq1 hqu m)
+    linear_combination -h
+  rw [bilateralY, bilateralY, bilateralX, inv_inv, hsplit1, hsplit2,
+    y_constant_inv u₀ h0 h1]
+  ring
+
+omit [CharZero k] in
+set_option maxHeartbeats 1000000 in
+/-- **Shift invariance of the bilateral `y`-value** (translation
+identity for `Y`): `bilateralY (q₀u₀) q₀ = bilateralY u₀ q₀` in the
+wide window — the shifted constant is the first `kernel₁`-term, and
+the first term of the shifted inverse half-sum is
+`kernel₂(u₀⁻¹) = -const₁(u₀)`, restoring the constant. -/
+theorem bilateralY_shift (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hq0 : q₀ ≠ 0) (hq1 : valuation k q₀ < 1)
+    (hqu : valuation k (q₀ * u₀) < 1)
+    (hquinv : valuation k (q₀ * u₀⁻¹) < 1) :
+    bilateralY (q₀ * u₀) q₀ = bilateralY u₀ q₀ := by
+  have hbin1 : ∀ j : ℕ, valuation k (((j.choose 2 : ℕ) : k)) ≤ 1 := by
+    intro j
+    have h := valuation_intCast_le_one (R := k) (j.choose 2)
+    simpa using h
+  have hbin2 : ∀ j : ℕ,
+      valuation k ((((j + 1).choose 2 : ℕ) : k)) ≤ 1 := by
+    intro j
+    have h := valuation_intCast_le_one (R := k) ((j + 1).choose 2)
+    simpa using h
+  have hS1u := summable_lambert_terms_general
+    (fun j ↦ ((j.choose 2 : ℕ) : k)) (fun v ↦ v ^ 2 / (1 - v) ^ 3)
+    hbin1 u₀ q₀ hq1 hqu
+    (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_self v₀ hv₀)
+  have hS2inv := summable_lambert_terms_general
+    (fun j ↦ (((j + 1).choose 2 : ℕ) : k)) (fun v ↦ v / (1 - v) ^ 3)
+    hbin2 u₀⁻¹ q₀ hq1 hquinv
+    (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_succ v₀ hv₀)
+  -- the shifted inverse family: its shift is the `u₀⁻¹`-family
+  have hS2' : Summable (fun m : ℕ+ ↦
+      q₀ ^ (m : ℕ) * (q₀ * u₀)⁻¹ /
+        (1 - q₀ ^ (m : ℕ) * (q₀ * u₀)⁻¹) ^ 3) := by
+    refine summable_pnat_of_shift (hS2inv.congr fun m ↦ ?_)
+    have hterm : q₀ ^ ((m + 1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹ =
+        q₀ ^ (m : ℕ) * u₀⁻¹ := by
+      rw [mul_inv, PNat.add_coe, PNat.one_coe, pow_succ]
+      field_simp
+    rw [hterm]
+  -- shift computation for the `kernel₁`-half
+  have hshift1 : (∑' m : ℕ+, (q₀ ^ (m : ℕ) * (q₀ * u₀)) ^ 2 /
+      (1 - q₀ ^ (m : ℕ) * (q₀ * u₀)) ^ 3) =
+      (∑' m : ℕ+, (q₀ ^ (m : ℕ) * u₀) ^ 2 /
+        (1 - q₀ ^ (m : ℕ) * u₀) ^ 3) -
+      (q₀ * u₀) ^ 2 / (1 - q₀ * u₀) ^ 3 := by
+    have h := tsum_pnat_eq_add_shift hS1u
+    have hcongr : (∑' m : ℕ+, (q₀ ^ ((m + 1 : ℕ+) : ℕ) * u₀) ^ 2 /
+        (1 - q₀ ^ ((m + 1 : ℕ+) : ℕ) * u₀) ^ 3) =
+        (∑' m : ℕ+, (q₀ ^ (m : ℕ) * (q₀ * u₀)) ^ 2 /
+          (1 - q₀ ^ (m : ℕ) * (q₀ * u₀)) ^ 3) := by
+      refine tsum_congr fun m ↦ ?_
+      rw [show q₀ ^ ((m + 1 : ℕ+) : ℕ) * u₀ =
+          q₀ ^ (m : ℕ) * (q₀ * u₀) from by
+        rw [PNat.add_coe, PNat.one_coe, pow_succ]
+        ring]
+    rw [hcongr] at h
+    have h1 : (q₀ ^ ((1 : ℕ+) : ℕ) * u₀) ^ 2 /
+        (1 - q₀ ^ ((1 : ℕ+) : ℕ) * u₀) ^ 3 =
+        (q₀ * u₀) ^ 2 / (1 - q₀ * u₀) ^ 3 := by
+      norm_num
+    rw [h1] at h
+    linear_combination -h
+  -- shift computation for the `kernel₂`-half
+  have hshift2 : (∑' m : ℕ+, q₀ ^ (m : ℕ) * (q₀ * u₀)⁻¹ /
+      (1 - q₀ ^ (m : ℕ) * (q₀ * u₀)⁻¹) ^ 3) =
+      u₀⁻¹ / (1 - u₀⁻¹) ^ 3 +
+      (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+        (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 3) := by
+    have h := tsum_pnat_eq_add_shift hS2'
+    have h1 : q₀ ^ ((1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹ /
+        (1 - q₀ ^ ((1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹) ^ 3 =
+        u₀⁻¹ / (1 - u₀⁻¹) ^ 3 := by
+      rw [show q₀ ^ ((1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹ = u₀⁻¹ from by
+        rw [mul_inv, PNat.one_coe, pow_one]
+        field_simp]
+    have hcongr : (∑' m : ℕ+,
+        q₀ ^ ((m + 1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹ /
+          (1 - q₀ ^ ((m + 1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹) ^ 3) =
+        (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 3) := by
+      refine tsum_congr fun m ↦ ?_
+      rw [show q₀ ^ ((m + 1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹ =
+          q₀ ^ (m : ℕ) * u₀⁻¹ from by
+        rw [mul_inv, PNat.add_coe, PNat.one_coe, pow_succ]
+        field_simp]
+    rw [h1, hcongr] at h
+    exact h
+  -- the exchanged constant: `kernel₂(u₀⁻¹) = -const₁(u₀)`
+  have hexch : u₀⁻¹ / (1 - u₀⁻¹) ^ 3 = -(u₀ ^ 2 / (1 - u₀) ^ 3) :=
+    y_kernel_succ_inv u₀ h0 h1
+  rw [bilateralY, bilateralY, hshift1, hshift2, hexch]
+  ring
+
+/-! ### The point map through bilateral coordinates
+
+The addition law is proven against the affine chord–tangent group law, whose
+inputs are the *coordinates* of the points being added. The bilateral values
+`bilateralX`/`bilateralY` are the right coordinate functions for this: they are
+`q₀`-shift-invariant (`bilateralX_shift`, `bilateralY_shift`), so they compute
+the coordinates of `pointMap w` for any parameter `w` in the extended window
+`|q₀|² < |w| ≤ 1` — the window containing all products of two annulus
+parameters — without normalising `w` into the annulus first. The two lemmas
+below record this: `nonsingular_bilateral` (the bilateral values are a
+nonsingular point) and `pointMap_eq_bilateral` (they are THE coordinates of
+`pointMap w`). -/
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- Two affine points with equal coordinates are equal (the nonsingularity
+proofs are propositionally irrelevant). -/
+theorem point_some_congr {W : WeierstrassCurve.Affine k} {x x' y y' : k}
+    {h : W.Nonsingular x y} {h' : W.Nonsingular x' y'}
+    (hx : x = x') (hy : y = y') :
+    (WeierstrassCurve.Affine.Point.some x y h : W.Point) =
+      WeierstrassCurve.Affine.Point.some x' y' h' := by
+  subst hx
+  subst hy
+  rfl
+
+/-- **The bilateral values are a nonsingular point on the extended window**
+`|q₀|² < |w| ≤ 1`, `w ∉ {1, q₀}`: for `w` in the fundamental annulus this is
+`nonsingular_evalA` through `evalA_XA_eq_bilateralX`; for `|w| ≤ |q₀|` one
+`q₀`-shift moves `w` into the annulus and the bilateral values do not move. -/
+theorem nonsingular_bilateral (w q₀ : k) (hw0 : w ≠ 0) (hw1 : w ≠ 1)
+    (hwq : w ≠ q₀) (hq0 : q₀ ≠ 0) (hq1 : valuation k q₀ < 1)
+    (hlow : valuation k q₀ * valuation k q₀ < valuation k w)
+    (hhigh : valuation k w ≤ 1) :
+    (WeierstrassCurve.tateCurve q₀).toAffine.Nonsingular
+      (bilateralX w q₀) (bilateralY w q₀) := by
+  have hqv : valuation k q₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hq0
+  rcases lt_or_ge (valuation k q₀) (valuation k w) with hgt | hle
+  · -- `w` is already in the fundamental annulus
+    have := nonsingular_evalA w q₀ hw0 hw1 hq0 hhigh hq1 hgt
+    rwa [evalA_XA_eq_bilateralX w q₀ hw0 hw1 hhigh hq1 hgt,
+      evalA_YA_eq_bilateralY w q₀ hw0 hw1 hhigh hq1 hgt] at this
+  · -- one shift: `w' := w * q₀⁻¹` is in the annulus and `q₀ * w' = w`
+    set w' : k := w * q₀⁻¹ with hw'def
+    have hw'0 : w' ≠ 0 := mul_ne_zero hw0 (inv_ne_zero hq0)
+    have hw'1 : w' ≠ 1 := by
+      intro h
+      apply hwq
+      have h2 : w * q₀⁻¹ * q₀ = 1 * q₀ := by rw [← hw'def, h]
+      rwa [mul_assoc, inv_mul_cancel₀ hq0, mul_one, one_mul] at h2
+    have hq₀w' : q₀ * w' = w := by
+      rw [hw'def, mul_comm w q₀⁻¹, ← mul_assoc, mul_inv_cancel₀ hq0, one_mul]
+    have hvw' : valuation k w' = valuation k w * (valuation k q₀)⁻¹ := by
+      rw [hw'def, map_mul, map_inv₀]
+    have hw'high : valuation k w' ≤ 1 := by
+      rw [hvw']
+      calc valuation k w * (valuation k q₀)⁻¹
+          ≤ valuation k q₀ * (valuation k q₀)⁻¹ := mul_le_mul_left hle _
+        _ = 1 := mul_inv_cancel₀ hqv
+    have hw'low : valuation k q₀ < valuation k w' := by
+      rw [hvw']
+      have hinvpos : (0 : ValueGroupWithZero k) < (valuation k q₀)⁻¹ :=
+        zero_lt_iff.mpr (inv_ne_zero hqv)
+      have h2 : valuation k q₀ * valuation k q₀ * (valuation k q₀)⁻¹ <
+          valuation k w * (valuation k q₀)⁻¹ :=
+        (OrderIso.mulRight₀ _ hinvpos).strictMono hlow
+      calc valuation k q₀
+          = valuation k q₀ * valuation k q₀ * (valuation k q₀)⁻¹ := by
+            rw [mul_assoc, mul_inv_cancel₀ hqv, mul_one]
+        _ < valuation k w * (valuation k q₀)⁻¹ := h2
+    -- the shift hypotheses for `u₀ := w'`
+    have hqu : valuation k (q₀ * w') < 1 := by
+      rw [hq₀w']
+      exact lt_of_le_of_lt hle hq1
+    have hquinv : valuation k (q₀ * w'⁻¹) < 1 := by
+      rw [map_mul, map_inv₀]
+      have hinv'pos : (0 : ValueGroupWithZero k) < (valuation k w')⁻¹ :=
+        zero_lt_iff.mpr (inv_ne_zero ((Valuation.ne_zero_iff _).mpr hw'0))
+      calc valuation k q₀ * (valuation k w')⁻¹
+          < valuation k w' * (valuation k w')⁻¹ :=
+            (OrderIso.mulRight₀ _ hinv'pos).strictMono hw'low
+        _ = 1 := mul_inv_cancel₀ ((Valuation.ne_zero_iff _).mpr hw'0)
+    have hX : bilateralX w q₀ = bilateralX w' q₀ := by
+      rw [← hq₀w']
+      exact bilateralX_shift w' q₀ hw'0 hq0 hq1 hqu hquinv
+    have hY : bilateralY w q₀ = bilateralY w' q₀ := by
+      rw [← hq₀w']
+      exact bilateralY_shift w' q₀ hw'0 hw'1 hq0 hq1 hqu hquinv
+    rw [hX, hY]
+    have := nonsingular_evalA w' q₀ hw'0 hw'1 hq0 hw'high hq1 hw'low
+    rwa [evalA_XA_eq_bilateralX w' q₀ hw'0 hw'1 hw'high hq1 hw'low,
+      evalA_YA_eq_bilateralY w' q₀ hw'0 hw'1 hw'high hq1 hw'low] at this
+
+/-- **The point map through bilateral coordinates**: on the extended window
+`|q₀|² < |w| ≤ 1`, `w ∉ {1, q₀}`, the point `pointMap w` is the affine point
+with coordinates `(bilateralX w, bilateralY w)`. -/
+theorem pointMap_eq_bilateral (w q₀ : k) (hw0 : w ≠ 0) (hw1 : w ≠ 1)
+    (hwq : w ≠ q₀) (hq0 : q₀ ≠ 0) (hq1 : valuation k q₀ < 1)
+    (hlow : valuation k q₀ * valuation k q₀ < valuation k w)
+    (hhigh : valuation k w ≤ 1) :
+    pointMap q₀ hq0 hq1 w hw0 =
+      WeierstrassCurve.Affine.Point.some (bilateralX w q₀) (bilateralY w q₀)
+        (nonsingular_bilateral w q₀ hw0 hw1 hwq hq0 hq1 hlow hhigh) := by
+  have hqv : valuation k q₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hq0
+  rcases lt_or_ge (valuation k q₀) (valuation k w) with hgt | hle
+  · -- `w` in the annulus: `pointMap w` is the annulus point of `w` itself
+    rw [pointMap_of_mem_annulus q₀ hq0 hq1 w hw0 hw1 hgt hhigh]
+    exact point_some_congr
+      (evalA_XA_eq_bilateralX w q₀ hw0 hw1 hhigh hq1 hgt)
+      (evalA_YA_eq_bilateralY w q₀ hw0 hw1 hhigh hq1 hgt)
+  · -- one shift: `w = q₀ * w'` with `w'` in the annulus
+    set w' : k := w * q₀⁻¹ with hw'def
+    have hw'0 : w' ≠ 0 := mul_ne_zero hw0 (inv_ne_zero hq0)
+    have hw'1 : w' ≠ 1 := by
+      intro h
+      apply hwq
+      have h2 : w * q₀⁻¹ * q₀ = 1 * q₀ := by rw [← hw'def, h]
+      rwa [mul_assoc, inv_mul_cancel₀ hq0, mul_one, one_mul] at h2
+    have hq₀w' : q₀ * w' = w := by
+      rw [hw'def, mul_comm w q₀⁻¹, ← mul_assoc, mul_inv_cancel₀ hq0, one_mul]
+    have hvw' : valuation k w' = valuation k w * (valuation k q₀)⁻¹ := by
+      rw [hw'def, map_mul, map_inv₀]
+    have hw'high : valuation k w' ≤ 1 := by
+      rw [hvw']
+      calc valuation k w * (valuation k q₀)⁻¹
+          ≤ valuation k q₀ * (valuation k q₀)⁻¹ := mul_le_mul_left hle _
+        _ = 1 := mul_inv_cancel₀ hqv
+    have hw'low : valuation k q₀ < valuation k w' := by
+      rw [hvw']
+      have hinvpos : (0 : ValueGroupWithZero k) < (valuation k q₀)⁻¹ :=
+        zero_lt_iff.mpr (inv_ne_zero hqv)
+      have h2 : valuation k q₀ * valuation k q₀ * (valuation k q₀)⁻¹ <
+          valuation k w * (valuation k q₀)⁻¹ :=
+        (OrderIso.mulRight₀ _ hinvpos).strictMono hlow
+      calc valuation k q₀
+          = valuation k q₀ * valuation k q₀ * (valuation k q₀)⁻¹ := by
+            rw [mul_assoc, mul_inv_cancel₀ hqv, mul_one]
+        _ < valuation k w * (valuation k q₀)⁻¹ := h2
+    have hqu : valuation k (q₀ * w') < 1 := by
+      rw [hq₀w']
+      exact lt_of_le_of_lt hle hq1
+    have hquinv : valuation k (q₀ * w'⁻¹) < 1 := by
+      rw [map_mul, map_inv₀]
+      have hinv'pos : (0 : ValueGroupWithZero k) < (valuation k w')⁻¹ :=
+        zero_lt_iff.mpr (inv_ne_zero ((Valuation.ne_zero_iff _).mpr hw'0))
+      calc valuation k q₀ * (valuation k w')⁻¹
+          < valuation k w' * (valuation k w')⁻¹ :=
+            (OrderIso.mulRight₀ _ hinv'pos).strictMono hw'low
+        _ = 1 := mul_inv_cancel₀ ((Valuation.ne_zero_iff _).mpr hw'0)
+    -- normalise: `pointMap w = pointMap w'`
+    have hnorm : pointMap q₀ hq0 hq1 w hw0 = pointMap q₀ hq0 hq1 w' hw'0 := by
+      have h := pointMap_zpow_mul q₀ hq0 hq1 w' hw'0 1
+      calc pointMap q₀ hq0 hq1 w hw0
+          = pointMap q₀ hq0 hq1 (q₀ ^ (1 : ℤ) * w')
+            (mul_ne_zero (zpow_ne_zero _ hq0) hw'0) :=
+            pointMap_congr (by rw [zpow_one, hq₀w'])
+        _ = pointMap q₀ hq0 hq1 w' hw'0 := h
+    rw [hnorm, pointMap_of_mem_annulus q₀ hq0 hq1 w' hw'0 hw'1 hw'low hw'high]
+    refine point_some_congr ?_ ?_
+    · rw [evalA_XA_eq_bilateralX w' q₀ hw'0 hw'1 hw'high hq1 hw'low]
+      rw [show bilateralX w' q₀ = bilateralX w q₀ from by
+        conv_rhs => rw [← hq₀w']
+        exact (bilateralX_shift w' q₀ hw'0 hq0 hq1 hqu hquinv).symm]
+    · rw [evalA_YA_eq_bilateralY w' q₀ hw'0 hw'1 hw'high hq1 hw'low]
+      rw [show bilateralY w' q₀ = bilateralY w q₀ from by
+        conv_rhs => rw [← hq₀w']
+        exact (bilateralY_shift w' q₀ hw'0 hw'1 hq0 hq1 hqu hquinv).symm]
+
+/-! ### The addition law
+
+The homomorphism property of the point map, against the affine chord–tangent
+group law. The two *series identities* — the chord case and the tangent case
+of Silverman V.3.1(c) — are the sorried leaves `bilateral_add_of_X_ne` and
+`bilateral_add_self`; the fibre structure of the `x`-coordinate (two-to-one up
+to the involution `u ↦ u⁻¹·q^ℤ`) is the sorried leaf
+`eq_or_mul_eq_of_bilateralX_eq`. Everything else — the vertical (inverse)
+case via the PROVEN inversion/shift identities, the reduction of arbitrary
+parameters to the extended window, and the quotient bookkeeping — is derived
+below. -/
+
+omit [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- `negY` of the Tate curve is `(x, y) ↦ -y - x` (`a₁ = 1`, `a₃ = 0`). -/
+theorem tateCurve_negY (q₀ x y : k) :
+    (WeierstrassCurve.tateCurve q₀).toAffine.negY x y = -y - x := by
+  simp [WeierstrassCurve.Affine.negY, WeierstrassCurve.tateCurve]
 
 set_option warn.sorry false in
-/-- **The homomorphism property of the uniformisation** (sorry node —
-the addition law, Silverman V.3.1(c)): the point map on `kˣ/q^ℤ`
-turns multiplication of unit classes into addition on the Tate curve.
-Attack: the coordinates of `pointMapQuot` are the bilateral values
-(`evalA_XA_eq_bilateralX`/`evalA_YA_eq_bilateralY` + the proven shift
-and inversion identities normalising representatives); the group law
-of `y² + xy = x³ + a₄x + a₆` is the chord–tangent formula, and the
-required identities of bilateral values at `u`, `v`, `uv` are
-two-parameter Lambert manipulations on the foundation already built
-(`hasSum_lambert_general`, the kernels, the shift engine). -/
+/-- **The chord identity** (sorry node — Silverman V.3.1(c), generic case):
+for annulus parameters with distinct bilateral `x`-values, the bilateral
+values of the product are the affine chord addition of the bilateral values
+of the factors. This is the two-parameter series identity; attack: extend the
+`eq_zero_of_forall_hasSum_zero` descent of `TateCurveConstruction.lean` to two
+transcendentals, using the `ℂ`-analytic addition law of the exponential
+parametrization `ℂ/Λ → E_q(ℂ)`. -/
+theorem bilateral_add_of_X_ne [DecidableEq k] (u₀ v₀ q₀ : k)
+    (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (hq0 : q₀ ≠ 0)
+    (hq1 : valuation k q₀ < 1)
+    (hulow : valuation k q₀ < valuation k u₀)
+    (huhigh : valuation k u₀ ≤ 1)
+    (hvlow : valuation k q₀ < valuation k v₀)
+    (hvhigh : valuation k v₀ ≤ 1)
+    (hX : bilateralX u₀ q₀ ≠ bilateralX v₀ q₀) :
+    bilateralX (u₀ * v₀) q₀ =
+      (WeierstrassCurve.tateCurve q₀).toAffine.addX (bilateralX u₀ q₀)
+        (bilateralX v₀ q₀)
+        ((WeierstrassCurve.tateCurve q₀).toAffine.slope (bilateralX u₀ q₀)
+          (bilateralX v₀ q₀) (bilateralY u₀ q₀) (bilateralY v₀ q₀)) ∧
+    bilateralY (u₀ * v₀) q₀ =
+      (WeierstrassCurve.tateCurve q₀).toAffine.addY (bilateralX u₀ q₀)
+        (bilateralX v₀ q₀) (bilateralY u₀ q₀)
+        ((WeierstrassCurve.tateCurve q₀).toAffine.slope (bilateralX u₀ q₀)
+          (bilateralX v₀ q₀) (bilateralY u₀ q₀) (bilateralY v₀ q₀)) :=
+  sorry
+
+set_option warn.sorry false in
+/-- **The tangent identity** (sorry node — Silverman V.3.1(c), doubling
+case): for an annulus parameter whose square is not in the trivial class,
+the point is not `2`-torsion (its `y`-value is not `negY` of itself), and
+the bilateral values of the square are the affine tangent doubling of the
+bilateral values. Same attack as the chord identity, specialised along the
+diagonal. -/
+theorem bilateral_add_self [DecidableEq k] (u₀ q₀ : k)
+    (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hq0 : q₀ ≠ 0)
+    (hq1 : valuation k q₀ < 1)
+    (hulow : valuation k q₀ < valuation k u₀)
+    (huhigh : valuation k u₀ ≤ 1)
+    (hsq1 : u₀ * u₀ ≠ 1) (hsqq : u₀ * u₀ ≠ q₀) :
+    bilateralY u₀ q₀ ≠ (WeierstrassCurve.tateCurve q₀).toAffine.negY
+      (bilateralX u₀ q₀) (bilateralY u₀ q₀) ∧
+    bilateralX (u₀ * u₀) q₀ =
+      (WeierstrassCurve.tateCurve q₀).toAffine.addX (bilateralX u₀ q₀)
+        (bilateralX u₀ q₀)
+        ((WeierstrassCurve.tateCurve q₀).toAffine.slope (bilateralX u₀ q₀)
+          (bilateralX u₀ q₀) (bilateralY u₀ q₀) (bilateralY u₀ q₀)) ∧
+    bilateralY (u₀ * u₀) q₀ =
+      (WeierstrassCurve.tateCurve q₀).toAffine.addY (bilateralX u₀ q₀)
+        (bilateralX u₀ q₀) (bilateralY u₀ q₀)
+        ((WeierstrassCurve.tateCurve q₀).toAffine.slope (bilateralX u₀ q₀)
+          (bilateralX u₀ q₀) (bilateralY u₀ q₀) (bilateralY u₀ q₀)) :=
+  sorry
+
+set_option warn.sorry false in
+/-- **The fibre of the bilateral `x`-value** (sorry node — Silverman V.4):
+on the fundamental annulus, two parameters with the same bilateral
+`x`-value either coincide or are inverse to each other modulo `q₀^ℤ` (their
+product is `1` or `q₀`). -/
+theorem eq_or_mul_eq_of_bilateralX_eq (u₀ v₀ q₀ : k)
+    (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hv0 : v₀ ≠ 0) (hv1 : v₀ ≠ 1)
+    (hq0 : q₀ ≠ 0) (hq1 : valuation k q₀ < 1)
+    (hulow : valuation k q₀ < valuation k u₀)
+    (huhigh : valuation k u₀ ≤ 1)
+    (hvlow : valuation k q₀ < valuation k v₀)
+    (hvhigh : valuation k v₀ ≤ 1)
+    (hX : bilateralX u₀ q₀ = bilateralX v₀ q₀) :
+    v₀ = u₀ ∨ u₀ * v₀ = 1 ∨ u₀ * v₀ = q₀ :=
+  sorry
+
+omit [CharZero k] in
+/-- **The vertical case** (PROVEN from the inversion and shift identities):
+if the product of two annulus parameters is `1` or `q₀` — the trivial class
+— then their bilateral coordinates are related by the Weierstrass negation:
+equal `x`-values, `negY`-related `y`-values. -/
+theorem bilateral_negY_of_mul_trivial (u₀ v₀ q₀ : k)
+    (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hv0 : v₀ ≠ 0)
+    (hq0 : q₀ ≠ 0) (hq1 : valuation k q₀ < 1)
+    (hulow : valuation k q₀ < valuation k u₀)
+    (huhigh : valuation k u₀ ≤ 1)
+    (htriv : u₀ * v₀ = 1 ∨ u₀ * v₀ = q₀) :
+    bilateralX v₀ q₀ = bilateralX u₀ q₀ ∧
+    bilateralY v₀ q₀ = (WeierstrassCurve.tateCurve q₀).toAffine.negY
+      (bilateralX u₀ q₀) (bilateralY u₀ q₀) := by
+  have hqu : valuation k (q₀ * u₀) < 1 := by
+    rw [map_mul]
+    calc valuation k q₀ * valuation k u₀ ≤ valuation k q₀ * 1 :=
+          mul_le_mul_right huhigh _
+      _ = valuation k q₀ := mul_one _
+      _ < 1 := hq1
+  have hquinv : valuation k (q₀ * u₀⁻¹) < 1 := by
+    rw [map_mul, map_inv₀]
+    have hinvpos : (0 : ValueGroupWithZero k) < (valuation k u₀)⁻¹ :=
+      zero_lt_iff.mpr (inv_ne_zero ((Valuation.ne_zero_iff _).mpr hu0))
+    calc valuation k q₀ * (valuation k u₀)⁻¹
+        < valuation k u₀ * (valuation k u₀)⁻¹ :=
+          (OrderIso.mulRight₀ _ hinvpos).strictMono hulow
+      _ = 1 := mul_inv_cancel₀ ((Valuation.ne_zero_iff _).mpr hu0)
+  rw [tateCurve_negY]
+  rcases htriv with h1 | hqcase
+  · -- `v₀ = u₀⁻¹`
+    have hv : v₀ = u₀⁻¹ := by
+      field_simp at h1 ⊢
+      linear_combination h1
+    subst hv
+    exact ⟨bilateralX_inv u₀ q₀ hu0,
+      bilateralY_inv u₀ q₀ hu0 hu1 hq1 hqu hquinv⟩
+  · -- `v₀ = q₀ * u₀⁻¹`
+    have hv : v₀ = q₀ * u₀⁻¹ := by
+      field_simp at hqcase ⊢
+      linear_combination hqcase
+    subst hv
+    have hinv1 : u₀⁻¹ ≠ 1 := fun h => hu1 (by
+      rw [← inv_inv u₀, h, inv_one])
+    have hinv0 : u₀⁻¹ ≠ 0 := inv_ne_zero hu0
+    have hqu' : valuation k (q₀ * u₀⁻¹) < 1 := hquinv
+    have hquinv' : valuation k (q₀ * (u₀⁻¹)⁻¹) < 1 := by
+      rwa [inv_inv]
+    constructor
+    · rw [bilateralX_shift u₀⁻¹ q₀ hinv0 hq0 hq1 hqu' hquinv',
+        bilateralX_inv u₀ q₀ hu0]
+    · rw [bilateralY_shift u₀⁻¹ q₀ hinv0 hinv1 hq0 hq1 hqu' hquinv',
+        bilateralY_inv u₀ q₀ hu0 hu1 hq1 hqu hquinv]
+
+/-- **The addition law on annulus parameters** (derived from the sorried
+chord/tangent/fibre leaves, the PROVEN vertical case, and the bilateral
+coordinate bridge): the point map turns multiplication of annulus
+parameters into addition of Tate-curve points. -/
+theorem pointMap_mul [DecidableEq k] (u₀ v₀ q₀ : k)
+    (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hv0 : v₀ ≠ 0) (hv1 : v₀ ≠ 1)
+    (hq0 : q₀ ≠ 0) (hq1 : valuation k q₀ < 1)
+    (hulow : valuation k q₀ < valuation k u₀)
+    (huhigh : valuation k u₀ ≤ 1)
+    (hvlow : valuation k q₀ < valuation k v₀)
+    (hvhigh : valuation k v₀ ≤ 1) :
+    pointMap q₀ hq0 hq1 (u₀ * v₀) (mul_ne_zero hu0 hv0) =
+      pointMap q₀ hq0 hq1 u₀ hu0 + pointMap q₀ hq0 hq1 v₀ hv0 := by
+  have hqv : valuation k q₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hq0
+  have hqpos : (0 : ValueGroupWithZero k) < valuation k q₀ :=
+    zero_lt_iff.mpr hqv
+  have huv : valuation k u₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hu0
+  have hupos : (0 : ValueGroupWithZero k) < valuation k u₀ :=
+    zero_lt_iff.mpr huv
+  -- the parameters are not `q₀` (their valuation is strictly bigger)
+  have huq : u₀ ≠ q₀ := fun h => absurd hulow (by rw [h]; exact lt_irrefl _)
+  have hvq : v₀ ≠ q₀ := fun h => absurd hvlow (by rw [h]; exact lt_irrefl _)
+  -- window facts for the factors
+  have hsq_lt : valuation k q₀ * valuation k q₀ < valuation k q₀ :=
+    by
+      calc valuation k q₀ * valuation k q₀ < 1 * valuation k q₀ :=
+            (OrderIso.mulRight₀ _ hqpos).strictMono hq1
+        _ = valuation k q₀ := one_mul _
+  have hulow2 : valuation k q₀ * valuation k q₀ < valuation k u₀ :=
+    lt_trans hsq_lt hulow
+  have hvlow2 : valuation k q₀ * valuation k q₀ < valuation k v₀ :=
+    lt_trans hsq_lt hvlow
+  -- window facts for the product
+  have hw0 : u₀ * v₀ ≠ 0 := mul_ne_zero hu0 hv0
+  have hwlow : valuation k q₀ * valuation k q₀ < valuation k (u₀ * v₀) := by
+    rw [map_mul]
+    calc valuation k q₀ * valuation k q₀
+        < valuation k u₀ * valuation k q₀ :=
+          (OrderIso.mulRight₀ _ hqpos).strictMono hulow
+      _ < valuation k u₀ * valuation k v₀ :=
+          (OrderIso.mulLeft₀ _ hupos).strictMono hvlow
+  have hwhigh : valuation k (u₀ * v₀) ≤ 1 := by
+    rw [map_mul]
+    exact mul_le_one' huhigh hvhigh
+  -- coordinates of the two summands
+  rw [pointMap_eq_bilateral u₀ q₀ hu0 hu1 huq hq0 hq1 hulow2 huhigh,
+    pointMap_eq_bilateral v₀ q₀ hv0 hv1 hvq hq0 hq1 hvlow2 hvhigh]
+  by_cases htriv : u₀ * v₀ = 1 ∨ u₀ * v₀ = q₀
+  · -- the vertical case: the sum is zero
+    obtain ⟨hXeq, hYeq⟩ := bilateral_negY_of_mul_trivial u₀ v₀ q₀
+      hu0 hu1 hv0 hq0 hq1 hulow huhigh htriv
+    rw [WeierstrassCurve.Affine.Point.add_of_Y_eq hXeq.symm
+      (by rw [hYeq, hXeq, WeierstrassCurve.Affine.negY_negY])]
+    rcases htriv with h1 | hqc
+    · rw [show pointMap q₀ hq0 hq1 (u₀ * v₀) (mul_ne_zero hu0 hv0) =
+        pointMap q₀ hq0 hq1 1 one_ne_zero from pointMap_congr h1]
+      exact pointMap_one q₀ hq0 hq1
+    · rw [show pointMap q₀ hq0 hq1 (u₀ * v₀) (mul_ne_zero hu0 hv0) =
+        pointMap q₀ hq0 hq1 q₀ hq0 from pointMap_congr hqc]
+      exact (pointMap_eq_zero_iff q₀ hq0 hq1 q₀ hq0).mpr ⟨1, (zpow_one _).symm⟩
+  · rw [not_or] at htriv
+    obtain ⟨hw1, hwq⟩ := htriv
+    rw [pointMap_eq_bilateral (u₀ * v₀) q₀ hw0 hw1 hwq hq0 hq1 hwlow hwhigh]
+    by_cases hX : bilateralX u₀ q₀ = bilateralX v₀ q₀
+    · -- equal `x`-values, not the vertical case: the parameters coincide
+      rcases eq_or_mul_eq_of_bilateralX_eq u₀ v₀ q₀ hu0 hu1 hv0 hv1 hq0 hq1
+        hulow huhigh hvlow hvhigh hX with heq | h1 | hqc
+      · -- doubling
+        subst heq
+        obtain ⟨hYne, hXX, hYY⟩ := bilateral_add_self v₀ q₀ hv0 hv1 hq0 hq1
+          hvlow hvhigh hw1 hwq
+        rw [WeierstrassCurve.Affine.Point.add_of_Y_ne hYne]
+        exact point_some_congr hXX hYY
+      · exact absurd h1 hw1
+      · exact absurd hqc hwq
+    · -- the chord case
+      obtain ⟨hXX, hYY⟩ := bilateral_add_of_X_ne u₀ v₀ q₀ hu0 hv0 hq0 hq1
+        hulow huhigh hvlow hvhigh hX
+      rw [WeierstrassCurve.Affine.Point.add_of_X_ne hX]
+      exact point_some_congr hXX hYY
+
+/-- **The homomorphism property of the uniformisation** (DERIVED
+2026-07-18 from the sorried chord/tangent/fibre leaves above — the addition
+law, Silverman V.3.1(c)): the point map on `kˣ/q^ℤ` turns multiplication of
+unit classes into addition on the Tate curve. The quotient bookkeeping
+(normalisation into the fundamental annulus by `pointMap_zpow_mul`, the
+trivial classes) is handled here; the geometric content is
+`pointMap_mul`. -/
 theorem pointMapQuot_add [DecidableEq k] (q : kˣ)
     (hq : valuation k (q : k) < 1)
     (x y : kˣ ⧸ Subgroup.zpowers q) :
     pointMapQuot q hq (x * y) =
-      pointMapQuot q hq x + pointMapQuot q hq y :=
-  sorry
+      pointMapQuot q hq x + pointMapQuot q hq y := by
+  have hq0 : (q : k) ≠ 0 := q.ne_zero
+  induction x using QuotientGroup.induction_on with
+  | H u =>
+  induction y using QuotientGroup.induction_on with
+  | H v =>
+  rw [show ((QuotientGroup.mk u : kˣ ⧸ Subgroup.zpowers q) *
+      QuotientGroup.mk v) = QuotientGroup.mk (u * v) from rfl,
+    pointMapQuot_mk, pointMapQuot_mk, pointMapQuot_mk]
+  -- normalise `u` and `v` into the fundamental annulus
+  obtain ⟨cu, hcu1, hcu2⟩ :=
+    exists_zpow_mul_mem_annulus (q : k) hq0 hq (u : k) u.ne_zero
+  obtain ⟨cv, hcv1, hcv2⟩ :=
+    exists_zpow_mul_mem_annulus (q : k) hq0 hq (v : k) v.ne_zero
+  set u' : k := (u : k) * (q : k) ^ (-cu) with hu'def
+  set v' : k := (v : k) * (q : k) ^ (-cv) with hv'def
+  have hu'0 : u' ≠ 0 := mul_ne_zero u.ne_zero (zpow_ne_zero _ hq0)
+  have hv'0 : v' ≠ 0 := mul_ne_zero v.ne_zero (zpow_ne_zero _ hq0)
+  have hu'eq : (q : k) ^ cu * u' = (u : k) := by
+    rw [hu'def, mul_comm ((u : k)) _, ← mul_assoc, ← zpow_add₀ hq0]
+    simp
+  have hv'eq : (q : k) ^ cv * v' = (v : k) := by
+    rw [hv'def, mul_comm ((v : k)) _, ← mul_assoc, ← zpow_add₀ hq0]
+    simp
+  -- the point map only sees the annulus representatives
+  have hnu : pointMap (q : k) hq0 hq (u : k) u.ne_zero =
+      pointMap (q : k) hq0 hq u' hu'0 := by
+    calc pointMap (q : k) hq0 hq (u : k) u.ne_zero
+        = pointMap (q : k) hq0 hq ((q : k) ^ cu * u')
+          (mul_ne_zero (zpow_ne_zero _ hq0) hu'0) :=
+          pointMap_congr hu'eq.symm
+      _ = pointMap (q : k) hq0 hq u' hu'0 :=
+          pointMap_zpow_mul (q : k) hq0 hq u' hu'0 cu
+  have hnv : pointMap (q : k) hq0 hq (v : k) v.ne_zero =
+      pointMap (q : k) hq0 hq v' hv'0 := by
+    calc pointMap (q : k) hq0 hq (v : k) v.ne_zero
+        = pointMap (q : k) hq0 hq ((q : k) ^ cv * v')
+          (mul_ne_zero (zpow_ne_zero _ hq0) hv'0) :=
+          pointMap_congr hv'eq.symm
+      _ = pointMap (q : k) hq0 hq v' hv'0 :=
+          pointMap_zpow_mul (q : k) hq0 hq v' hv'0 cv
+  have hnuv : pointMap (q : k) hq0 hq ((u : k) * (v : k))
+      (mul_ne_zero u.ne_zero v.ne_zero) =
+      pointMap (q : k) hq0 hq (u' * v') (mul_ne_zero hu'0 hv'0) := by
+    have heq : (q : k) ^ (cu + cv) * (u' * v') = (u : k) * (v : k) := by
+      rw [zpow_add₀ hq0]
+      calc (q : k) ^ cu * (q : k) ^ cv * (u' * v')
+          = ((q : k) ^ cu * u') * ((q : k) ^ cv * v') := by ring
+        _ = (u : k) * (v : k) := by rw [hu'eq, hv'eq]
+    exact (pointMap_congr heq.symm).trans
+      (pointMap_zpow_mul (q : k) hq0 hq (u' * v')
+        (mul_ne_zero hu'0 hv'0) (cu + cv))
+  have hmulc : pointMap (q : k) hq0 hq ((u : k) * (v : k))
+      (mul_ne_zero u.ne_zero v.ne_zero) =
+      pointMap (q : k) hq0 hq ((u * v : kˣ) : k) (u * v).ne_zero :=
+    pointMap_congr (by push_cast; ring)
+  rw [← hmulc, hnu, hnv, hnuv]
+  -- trivial-class cases
+  by_cases hu'1 : u' = 1
+  · rw [show pointMap (q : k) hq0 hq u' hu'0 = 0 from by
+      rw [pointMap_congr hu'1]; exact pointMap_one (q : k) hq0 hq]
+    rw [show pointMap (q : k) hq0 hq (u' * v') (mul_ne_zero hu'0 hv'0) =
+      pointMap (q : k) hq0 hq v' hv'0 from
+      pointMap_congr (by rw [hu'1, one_mul]), zero_add]
+  by_cases hv'1 : v' = 1
+  · rw [show pointMap (q : k) hq0 hq v' hv'0 = 0 from by
+      rw [pointMap_congr hv'1]; exact pointMap_one (q : k) hq0 hq]
+    rw [show pointMap (q : k) hq0 hq (u' * v') (mul_ne_zero hu'0 hv'0) =
+      pointMap (q : k) hq0 hq u' hu'0 from
+      pointMap_congr (by rw [hv'1, mul_one]), add_zero]
+  exact pointMap_mul u' v' (q : k) hu'0 hu'1 hv'0 hv'1 hq0 hq
+    hcu1 hcu2 hcv1 hcv2
 
 set_option warn.sorry false in
 /-- **Surjectivity of the uniformisation** (sorry node — Silverman
