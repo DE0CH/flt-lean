@@ -2698,9 +2698,216 @@ theorem tateCurve_negY (q₀ x y : k) :
     (WeierstrassCurve.tateCurve q₀).toAffine.negY x y = -y - x := by
   simp [WeierstrassCurve.Affine.negY, WeierstrassCurve.tateCurve]
 
+/-! ### The two-variable coefficient ring and the formal chord identities
+
+The series content of the chord identities lives in a two-variable
+analogue of `CoeffRing`: the localization of `ℚ[u][v]` (inner variable
+`u`, outer variable `v`) away from `u(1-u)·v(1-v)·(1-uv)`, with three
+slot maps `CoeffRing → CoeffRing₂` substituting `T ↦ u`, `T ↦ v`,
+`T ↦ uv`. The chord identities are formal identities between the slot
+images of `XA`/`YA`, to be descended from the complex-analytic
+`analytic_chordX`/`analytic_chordY` of `TateCurveConstruction.lean`
+through `ℚ(u)(v)⟦q⟧`. -/
+
+/-- The bivariate localized denominator `u(1-u)·v(1-v)·(1-uv)` in
+`ℚ[u][v]` (inner variable `u`, outer variable `v`). -/
+def biDenom : Polynomial (Polynomial ℚ) :=
+  Polynomial.C (Polynomial.X * (1 - Polynomial.X)) *
+    (Polynomial.X * (1 - Polynomial.X)) *
+    (1 - Polynomial.C Polynomial.X * Polynomial.X)
+
+/-- The two-variable coefficient ring
+`ℚ[u,v][1/(u(1-u)·v(1-v)·(1-uv))]`. -/
+abbrev CoeffRing₂ : Type := Localization.Away biDenom
+
+/-- The image of `u` in `CoeffRing₂`. -/
+def uElt₂ : CoeffRing₂ :=
+  algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂
+    (Polynomial.C Polynomial.X)
+
+/-- The image of `v` in `CoeffRing₂`. -/
+def vElt₂ : CoeffRing₂ :=
+  algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂ Polynomial.X
+
+/-- The image of `u·v` in `CoeffRing₂`. -/
+def uvElt₂ : CoeffRing₂ :=
+  algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂
+    (Polynomial.C Polynomial.X * Polynomial.X)
+
+/-- The one-variable polynomial ring maps into `CoeffRing₂` by
+substituting the variable. -/
+def slotPolyHom (t : CoeffRing₂) : Polynomial ℚ →+* CoeffRing₂ :=
+  Polynomial.eval₂RingHom
+    ((algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂).comp
+      ((Polynomial.C).comp (Polynomial.C))) t
+
+/-- The localized denominator itself is a unit in `CoeffRing₂`. -/
+theorem isUnit_biDenom_image :
+    IsUnit (algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂ biDenom) :=
+  IsLocalization.map_units CoeffRing₂
+    (⟨biDenom, Submonoid.mem_powers _⟩ :
+      Submonoid.powers biDenom)
+
+/-- The three factors of the localized denominator, as units. -/
+theorem isUnit_biDenom_factors :
+    IsUnit (algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂
+        (Polynomial.C (Polynomial.X * (1 - Polynomial.X)))) ∧
+    IsUnit (algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂
+        (Polynomial.X * (1 - Polynomial.X))) ∧
+    IsUnit (algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂
+        (1 - Polynomial.C Polynomial.X * Polynomial.X)) := by
+  have h := isUnit_biDenom_image
+  have hsplit := congrArg
+    (algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂)
+    (show biDenom = Polynomial.C (Polynomial.X * (1 - Polynomial.X)) *
+      (Polynomial.X * (1 - Polynomial.X)) *
+      (1 - Polynomial.C Polynomial.X * Polynomial.X) from rfl)
+  rw [map_mul, map_mul] at hsplit
+  rw [hsplit] at h
+  obtain ⟨hab, hc⟩ := IsUnit.mul_iff.mp h
+  obtain ⟨ha, hb⟩ := IsUnit.mul_iff.mp hab
+  exact ⟨ha, hb, hc⟩
+
+/-- `u(1-u)` is a unit in `CoeffRing₂`. -/
+theorem isUnit_u_one_sub_u :
+    IsUnit (slotPolyHom uElt₂
+      (Polynomial.X * (1 - Polynomial.X) : Polynomial ℚ)) := by
+  have ha := isUnit_biDenom_factors.1
+  convert ha using 1
+  simp [slotPolyHom, uElt₂, map_mul, map_sub, map_one]
+
+/-- `v(1-v)` is a unit in `CoeffRing₂`. -/
+theorem isUnit_v_one_sub_v :
+    IsUnit (slotPolyHom vElt₂
+      (Polynomial.X * (1 - Polynomial.X) : Polynomial ℚ)) := by
+  have hb := isUnit_biDenom_factors.2.1
+  convert hb using 1
+  simp [slotPolyHom, vElt₂, map_mul, map_sub, map_one]
+
+/-- `uv(1-uv)` is a unit in `CoeffRing₂`. -/
+theorem isUnit_uv_one_sub_uv :
+    IsUnit (slotPolyHom uvElt₂
+      (Polynomial.X * (1 - Polynomial.X) : Polynomial ℚ)) := by
+  obtain ⟨ha, hb, hc⟩ := isUnit_biDenom_factors
+  rw [show (Polynomial.C (Polynomial.X * (1 - Polynomial.X)) :
+      Polynomial (Polynomial ℚ)) = Polynomial.C Polynomial.X *
+      Polynomial.C (1 - Polynomial.X) from map_mul _ _ _, map_mul] at ha
+  rw [map_mul] at hb
+  have hCX := (IsUnit.mul_iff.mp ha).1
+  have hX := (IsUnit.mul_iff.mp hb).1
+  have huv : IsUnit (algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂
+      (Polynomial.C Polynomial.X * Polynomial.X)) := by
+    rw [map_mul]
+    exact hCX.mul hX
+  have := huv.mul hc
+  convert this using 1
+  simp [slotPolyHom, uvElt₂, map_mul, map_sub, map_one]
+
+/-- The `u`-slot map `CoeffRing → CoeffRing₂`. -/
+def uSlot : CoeffRing →+* CoeffRing₂ :=
+  Localization.awayLift (slotPolyHom uElt₂) _ isUnit_u_one_sub_u
+
+/-- The `v`-slot map `CoeffRing → CoeffRing₂`. -/
+def vSlot : CoeffRing →+* CoeffRing₂ :=
+  Localization.awayLift (slotPolyHom vElt₂) _ isUnit_v_one_sub_v
+
+/-- The `uv`-slot map `CoeffRing → CoeffRing₂`. -/
+def uvSlot : CoeffRing →+* CoeffRing₂ :=
+  Localization.awayLift (slotPolyHom uvElt₂) _ isUnit_uv_one_sub_uv
+
 set_option warn.sorry false in
-/-- **The `evalA`-level chord `X`-identity** (sorry node — the pure
-series content): for all three parameters in the fundamental annulus,
+/-- **The formal chord `X`-identity** (sorry node — the two-variable
+series content): the identity in `CoeffRing₂⟦q⟧` between the three slot
+images of `XA`/`YA`. Descends from `analytic_chordX` through the
+two-variable rational-function field `ℚ(u)(v)⟦q⟧` (design recorded at
+the `bilateral_chordX_cleared` progress entry). -/
+theorem chordX_formal :
+    (PowerSeries.map uvSlot XA + PowerSeries.map uSlot XA
+        + PowerSeries.map vSlot XA) *
+      (PowerSeries.map uSlot XA - PowerSeries.map vSlot XA) ^ 2 =
+    (PowerSeries.map uSlot YA - PowerSeries.map vSlot YA) ^ 2 +
+      (PowerSeries.map uSlot YA - PowerSeries.map vSlot YA) *
+        (PowerSeries.map uSlot XA - PowerSeries.map vSlot XA) :=
+  sorry
+
+set_option warn.sorry false in
+/-- **The formal chord `Y`-identity** (sorry node — the two-variable
+collinearity content), descending from `analytic_chordY`. -/
+theorem chordY_formal :
+    -(PowerSeries.map uvSlot YA + PowerSeries.map uvSlot XA) *
+      (PowerSeries.map uSlot XA - PowerSeries.map vSlot XA) =
+    (PowerSeries.map uSlot YA - PowerSeries.map vSlot YA) *
+        (PowerSeries.map uvSlot XA - PowerSeries.map uSlot XA) +
+      PowerSeries.map uSlot YA *
+        (PowerSeries.map uSlot XA - PowerSeries.map vSlot XA) :=
+  sorry
+
+set_option warn.sorry false in
+/-- **Two-variable evaluation transport for the chord `X`-identity**
+(sorry node — the `k`-side Cauchy-product bookkeeping): the evaluation
+`CoeffRing₂ → k` at `(u₀, v₀)` (through the localization at the
+nonvanishing `u₀(1-u₀)v₀(1-v₀)(1-u₀v₀)`) sends q-power series sums to
+the corresponding `evalA`-sums along the three slots; given the formal
+identity, the evaluated identity follows by the nonarchimedean Cauchy
+product and the slot bridges
+`coeffRingEval₂ ∘ uSlot = coeffRingEval u₀` (etc.). -/
+theorem evalA_chordX_of_formal
+    (hformal : (PowerSeries.map uvSlot XA + PowerSeries.map uSlot XA
+        + PowerSeries.map vSlot XA) *
+      (PowerSeries.map uSlot XA - PowerSeries.map vSlot XA) ^ 2 =
+    (PowerSeries.map uSlot YA - PowerSeries.map vSlot YA) ^ 2 +
+      (PowerSeries.map uSlot YA - PowerSeries.map vSlot YA) *
+        (PowerSeries.map uSlot XA - PowerSeries.map vSlot XA))
+    (u₀ v₀ q₀ : k)
+    (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (hq0 : q₀ ≠ 0)
+    (hu1 : u₀ ≠ 1) (hv1 : v₀ ≠ 1)
+    (hq1 : valuation k q₀ < 1)
+    (hulow : valuation k q₀ < valuation k u₀)
+    (huhigh : valuation k u₀ ≤ 1)
+    (hvlow : valuation k q₀ < valuation k v₀)
+    (hvhigh : valuation k v₀ ≤ 1)
+    (hne1 : u₀ * v₀ ≠ 1) (hneq : u₀ * v₀ ≠ q₀)
+    (hw0 : u₀ * v₀ ≠ 0) (hwin : valuation k q₀ < valuation k (u₀ * v₀))
+    (hwhigh : valuation k (u₀ * v₀) ≤ 1) :
+    (evalA (u₀ * v₀) q₀ hw0 hne1 XA + evalA u₀ q₀ hu0 hu1 XA
+        + evalA v₀ q₀ hv0 hv1 XA) *
+        (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) ^ 2 =
+      (evalA u₀ q₀ hu0 hu1 YA - evalA v₀ q₀ hv0 hv1 YA) ^ 2 +
+        (evalA u₀ q₀ hu0 hu1 YA - evalA v₀ q₀ hv0 hv1 YA) *
+          (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) :=
+  sorry
+
+set_option warn.sorry false in
+/-- **Two-variable evaluation transport for the chord `Y`-identity**
+(sorry node), mirroring `evalA_chordX_of_formal`. -/
+theorem evalA_chordY_of_formal
+    (hformal : -(PowerSeries.map uvSlot YA + PowerSeries.map uvSlot XA) *
+      (PowerSeries.map uSlot XA - PowerSeries.map vSlot XA) =
+    (PowerSeries.map uSlot YA - PowerSeries.map vSlot YA) *
+        (PowerSeries.map uvSlot XA - PowerSeries.map uSlot XA) +
+      PowerSeries.map uSlot YA *
+        (PowerSeries.map uSlot XA - PowerSeries.map vSlot XA))
+    (u₀ v₀ q₀ : k)
+    (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (hq0 : q₀ ≠ 0)
+    (hu1 : u₀ ≠ 1) (hv1 : v₀ ≠ 1)
+    (hq1 : valuation k q₀ < 1)
+    (hulow : valuation k q₀ < valuation k u₀)
+    (huhigh : valuation k u₀ ≤ 1)
+    (hvlow : valuation k q₀ < valuation k v₀)
+    (hvhigh : valuation k v₀ ≤ 1)
+    (hne1 : u₀ * v₀ ≠ 1) (hneq : u₀ * v₀ ≠ q₀)
+    (hw0 : u₀ * v₀ ≠ 0) (hwin : valuation k q₀ < valuation k (u₀ * v₀))
+    (hwhigh : valuation k (u₀ * v₀) ≤ 1) :
+    -(evalA (u₀ * v₀) q₀ hw0 hne1 YA + evalA (u₀ * v₀) q₀ hw0 hne1 XA) *
+        (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) =
+      (evalA u₀ q₀ hu0 hu1 YA - evalA v₀ q₀ hv0 hv1 YA) *
+          (evalA (u₀ * v₀) q₀ hw0 hne1 XA - evalA u₀ q₀ hu0 hu1 XA) +
+        evalA u₀ q₀ hu0 hu1 YA *
+          (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) :=
+  sorry
+
+/-- **The `evalA`-level chord `X`-identity** (DERIVED from the formal
+identity and the evaluation transport): for all three parameters in the fundamental annulus,
 the chord identity between the `evalA`-sums of the formal `XA`/`YA`.
 This is the `k`-evaluation of the two-variable formal chord identity in
 `ℚ(u)(v)⟦q⟧`, which descends from `analytic_chordX` of
@@ -2714,15 +2921,17 @@ theorem evalA_chordX (u₀ v₀ q₀ : k)
     (hvlow : valuation k q₀ < valuation k v₀)
     (hvhigh : valuation k v₀ ≤ 1)
     (hne1 : u₀ * v₀ ≠ 1) (hneq : u₀ * v₀ ≠ q₀) :
-    ∀ (hw0 : u₀ * v₀ ≠ 0) (hwin : valuation k q₀ < valuation k (u₀ * v₀))
-      (hwhigh : valuation k (u₀ * v₀) ≤ 1),
+    ∀ (hw0 : u₀ * v₀ ≠ 0) (_hwin : valuation k q₀ < valuation k (u₀ * v₀))
+      (_hwhigh : valuation k (u₀ * v₀) ≤ 1),
     (evalA (u₀ * v₀) q₀ hw0 hne1 XA + evalA u₀ q₀ hu0 hu1 XA
         + evalA v₀ q₀ hv0 hv1 XA) *
         (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) ^ 2 =
       (evalA u₀ q₀ hu0 hu1 YA - evalA v₀ q₀ hv0 hv1 YA) ^ 2 +
         (evalA u₀ q₀ hu0 hu1 YA - evalA v₀ q₀ hv0 hv1 YA) *
           (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) :=
-  sorry
+  fun hw0 hwin hwhigh =>
+    evalA_chordX_of_formal chordX_formal u₀ v₀ q₀ hu0 hv0 hq0 hu1 hv1 hq1
+      hulow huhigh hvlow hvhigh hne1 hneq hw0 hwin hwhigh
 
 /-- **The cleared chord `X`-identity, fundamental-window case** (DERIVED
 from the `evalA`-level identity through the bilateral bridges): all
@@ -2808,9 +3017,8 @@ theorem bilateral_chordX_cleared (u₀ v₀ q₀ : k)
   · exact bilateral_chordX_cleared_shifted u₀ v₀ q₀ hu0 hv0 hq0 hu1 hv1 hq1
       hulow huhigh hvlow hvhigh hne1 hneq hcase
 
-set_option warn.sorry false in
-/-- **The `evalA`-level chord `Y`-identity** (sorry node — the
-collinearity series content), descending from `analytic_chordY`. -/
+/-- **The `evalA`-level chord `Y`-identity** (DERIVED from the formal
+identity and the evaluation transport). -/
 theorem evalA_chordY (u₀ v₀ q₀ : k)
     (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (hq0 : q₀ ≠ 0)
     (hu1 : u₀ ≠ 1) (hv1 : v₀ ≠ 1)
@@ -2820,15 +3028,17 @@ theorem evalA_chordY (u₀ v₀ q₀ : k)
     (hvlow : valuation k q₀ < valuation k v₀)
     (hvhigh : valuation k v₀ ≤ 1)
     (hne1 : u₀ * v₀ ≠ 1) (hneq : u₀ * v₀ ≠ q₀) :
-    ∀ (hw0 : u₀ * v₀ ≠ 0) (hwin : valuation k q₀ < valuation k (u₀ * v₀))
-      (hwhigh : valuation k (u₀ * v₀) ≤ 1),
+    ∀ (hw0 : u₀ * v₀ ≠ 0) (_hwin : valuation k q₀ < valuation k (u₀ * v₀))
+      (_hwhigh : valuation k (u₀ * v₀) ≤ 1),
     -(evalA (u₀ * v₀) q₀ hw0 hne1 YA + evalA (u₀ * v₀) q₀ hw0 hne1 XA) *
         (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) =
       (evalA u₀ q₀ hu0 hu1 YA - evalA v₀ q₀ hv0 hv1 YA) *
           (evalA (u₀ * v₀) q₀ hw0 hne1 XA - evalA u₀ q₀ hu0 hu1 XA) +
         evalA u₀ q₀ hu0 hu1 YA *
           (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) :=
-  sorry
+  fun hw0 hwin hwhigh =>
+    evalA_chordY_of_formal chordY_formal u₀ v₀ q₀ hu0 hv0 hq0 hu1 hv1 hq1
+      hulow huhigh hvlow hvhigh hne1 hneq hw0 hwin hwhigh
 
 /-- **The cleared chord `Y`-identity, fundamental-window case** (DERIVED
 from the `evalA`-level identity through the bilateral bridges). -/

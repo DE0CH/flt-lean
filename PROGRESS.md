@@ -266,11 +266,18 @@ entries file). To add/remove/annotate a node, edit
                                                                               2026-07-18: same bridge
                                                                               rewrite, delegating to
                                                                               evalA_chordY).
-                                                                                - ❌· `TateCurve.evalA_chordY` — evalA-level chord Y-identity
-                                                                                  (sorry node): same descent
-                                                                                  route as evalA_chordX with
-                                                                                  analytic_chordY as the
-                                                                                  analytic input.
+                                                                                - ✅· `TateCurve.evalA_chordY` — evalA-level chord Y-identity
+                                                                                  (DERIVED 2026-07-18: same via
+                                                                                  chordY_formal and its
+                                                                                  transport).
+                                                                                    - ❌· `TateCurve.chordY_formal` — formal chord Y-identity in
+                                                                                      CoeffRing₂⟦q⟧ (sorry node):
+                                                                                      same route as chordX_formal
+                                                                                      with analytic_chordY.
+                                                                                    - ❌· `TateCurve.evalA_chordY_of_formal` — two-variable evaluation
+                                                                                      transport for the chord
+                                                                                      Y-identity (sorry node):
+                                                                                      mirrors the X-transport.
                                                                             - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
                                                                               chord Y-identity (sorry node):
                                                                               same shift-reduction as the
@@ -294,76 +301,104 @@ entries file). To add/remove/annotate a node, edit
                                                                               evalA_XA_eq_bilateralX /
                                                                               evalA_YA_eq_bilateralY,
                                                                               delegating to evalA_chordX).
-                                                                                - ❌· `TateCurve.evalA_chordX` — evalA-level chord X-identity
-                                                                                  (sorry node — the pure series
-                                                                                  content over k): all three of
-                                                                                  u₀, v₀, u₀v₀ in the
-                                                                                  fundamental annulus: rewrite
-                                                                                  the six bilateral values
-                                                                                  through evalA_XA_eq_bilateralX
-                                                                                  / evalA_YA_eq_bilateralY
-                                                                                  (bridges need ≠ 0, ≠ 1: u₀v₀ ≠
-                                                                                  1 = hne1, u₀v₀ ≠ 0 from
-                                                                                  hu0,hv0), then the identity is
-                                                                                  the k-evaluation of the 2-var
-                                                                                  formal chord identity in
-                                                                                  ℚ(u)(v)⟦q⟧ = (RatFunc (RatFunc
-                                                                                  ℚ))⟦q⟧. Formal layer (to be
-                                                                                  built AS CONSUMED, top-down):
-                                                                                  three substitution homs ℚ(u)
-                                                                                  →+* ℚ(u)(v) (C-embedding; u↦v
-                                                                                  and u↦uv via substHom :=
-                                                                                  coercion of RatFunc.algEquivOf
-                                                                                  Transcendental, transcendence
-                                                                                  transferred from
-                                                                                  RatFunc.transcendental_X over
-                                                                                  ℚ(u) down to ℚ by hom-
-                                                                                  uniqueness
-                                                                                  Rat.subsingleton_ringHom +
-                                                                                  Polynomial.eval₂_map, NO
-                                                                                  scalar-tower instances — the
-                                                                                  ℚ-algebra diamond
-                                                                                  DivisionRing.toRatAlgebra vs R
-                                                                                  atFunc.instAlgebraOfPolynomial
-                                                                                  makes towers unusable);
-                                                                                  descent lemma mirroring
-                                                                                  eq_zero_of_forall_hasSum_zero:
-                                                                                  evalAt₂ u₀ v₀ := RatFunc.eval
-                                                                                  (evalAtHom u₀) v₀,
-                                                                                  coefficientwise vanishing via
-                                                                                  coeffs_eq_zero_of_hasSum_punct
-                                                                                  ured, numerator-polynomial-
-                                                                                  over-ℚ(u) infinite roots +
-                                                                                  evalAtHom injectivity;
-                                                                                  sampling: ONE fixed
-                                                                                  transcendental u₀ ∈ (1/2,1), S
-                                                                                  := reals in (1/2,1)
-                                                                                  transcendental over ℚ(u₀)
-                                                                                  (complement countable via
-                                                                                  Algebraic.countable with R :=
-                                                                                  RatFunc ℚ), r := 1/4 uniform
-                                                                                  window; compat: composite homs
-                                                                                  equal evalAtHom v₀ resp.
-                                                                                  evalAtHom (u₀v₀) by
-                                                                                  ratFuncQ_ringHom_ext
-                                                                                  (IsLocalization.ringHom_ext
-                                                                                  (nonZeroDivisors ℚ[X]) +
-                                                                                  Polynomial.ringHom_ext +
-                                                                                  Rat.subsingleton_ringHom);
-                                                                                  hasSum transport mirrors
-                                                                                  hasSum_evalAt_add/neg/sub/mul;
-                                                                                  analytic input: analytic_chord
-                                                                                  X/analytic_chordY (PROVEN in
-                                                                                  TateCurveConstruction,
-                                                                                  currently private — publicize
-                                                                                  when this consumer lands).
-                                                                                  Then pull ℚ(u)(v)⟦q⟧ → the
-                                                                                  2-var CoeffRing analog and
-                                                                                  evaluate at (u₀,v₀,q₀) ∈ k
-                                                                                  with the fundamental-annulus
-                                                                                  convergence bounds (evalA is
-                                                                                  already the “two-variable
-                                                                                  analogue of evalInt”).
+                                                                                - ✅· `TateCurve.evalA_chordX` — evalA-level chord X-identity
+                                                                                  (DERIVED 2026-07-18: applies
+                                                                                  the two-variable evaluation
+                                                                                  transport to the formal
+                                                                                  identity chordX_formal).
+                                                                                    - ❌· `TateCurve.chordX_formal` — formal chord X-identity in
+                                                                                      CoeffRing₂⟦q⟧ (sorry node):
+                                                                                      CoeffRing₂ = ℚ[u,v] localized
+                                                                                      away from u(1-u)v(1-v)(1-uv),
+                                                                                      slot maps uSlot/vSlot/uvSlot :
+                                                                                      CoeffRing → CoeffRing₂ built
+                                                                                      (Localization.awayLift over
+                                                                                      eval₂RingHom substitutions;
+                                                                                      denominator factors proven
+                                                                                      units). To resolve: inject
+                                                                                      CoeffRing₂ into ℚ(u)(v) =
+                                                                                      RatFunc (RatFunc ℚ) (mirror
+                                                                                      coeffRingToRatFunc_injective),
+                                                                                      pull the identity back from
+                                                                                      the ℚ(u)(v)⟦q⟧ identity, which
+                                                                                      descends from analytic_chordX
+                                                                                      (PROVEN,
+                                                                                      TateCurveConstruction) — full
+                                                                                      descent design: Formal layer
+                                                                                      (to be built AS CONSUMED, top-
+                                                                                      down): three substitution homs
+                                                                                      ℚ(u) →+* ℚ(u)(v) (C-embedding;
+                                                                                      u↦v and u↦uv via substHom :=
+                                                                                      coercion of RatFunc.algEquivOf
+                                                                                      Transcendental, transcendence
+                                                                                      transferred from
+                                                                                      RatFunc.transcendental_X over
+                                                                                      ℚ(u) down to ℚ by hom-
+                                                                                      uniqueness
+                                                                                      Rat.subsingleton_ringHom +
+                                                                                      Polynomial.eval₂_map, NO
+                                                                                      scalar-tower instances — the
+                                                                                      ℚ-algebra diamond
+                                                                                      DivisionRing.toRatAlgebra vs R
+                                                                                      atFunc.instAlgebraOfPolynomial
+                                                                                      makes towers unusable);
+                                                                                      descent lemma mirroring
+                                                                                      eq_zero_of_forall_hasSum_zero:
+                                                                                      evalAt₂ u₀ v₀ := RatFunc.eval
+                                                                                      (evalAtHom u₀) v₀,
+                                                                                      coefficientwise vanishing via
+                                                                                      coeffs_eq_zero_of_hasSum_punct
+                                                                                      ured, numerator-polynomial-
+                                                                                      over-ℚ(u) infinite roots +
+                                                                                      evalAtHom injectivity;
+                                                                                      sampling: ONE fixed
+                                                                                      transcendental u₀ ∈ (1/2,1), S
+                                                                                      := reals in (1/2,1)
+                                                                                      transcendental over ℚ(u₀)
+                                                                                      (complement countable via
+                                                                                      Algebraic.countable with R :=
+                                                                                      RatFunc ℚ), r := 1/4 uniform
+                                                                                      window; compat: composite homs
+                                                                                      equal evalAtHom v₀ resp.
+                                                                                      evalAtHom (u₀v₀) by
+                                                                                      ratFuncQ_ringHom_ext
+                                                                                      (IsLocalization.ringHom_ext
+                                                                                      (nonZeroDivisors ℚ[X]) +
+                                                                                      Polynomial.ringHom_ext +
+                                                                                      Rat.subsingleton_ringHom);
+                                                                                      hasSum transport mirrors
+                                                                                      hasSum_evalAt_add/neg/sub/mul;
+                                                                                      analytic input: analytic_chord
+                                                                                      X/analytic_chordY (PROVEN in
+                                                                                      TateCurveConstruction,
+                                                                                      currently private — publicize
+                                                                                      when this consumer lands).
+                                                                                      Then pull ℚ(u)(v)⟦q⟧ → the
+                                                                                      2-var CoeffRing analog and
+                                                                                      evaluate at (u₀,v₀,q₀) ∈ k
+                                                                                      with the fundamental-annulus
+                                                                                      convergence bounds (evalA is
+                                                                                      already the “two-variable
+                                                                                      analogue of evalInt”).
+                                                                                    - ❌· `TateCurve.evalA_chordX_of_formal` — two-variable evaluation
+                                                                                      transport for the chord
+                                                                                      X-identity (sorry node):
+                                                                                      coeffRingEval₂ (u₀,v₀) :
+                                                                                      CoeffRing₂ →+* k via
+                                                                                      Localization.awayLift at the
+                                                                                      nonvanishing
+                                                                                      u₀(1-u₀)v₀(1-v₀)(1-u₀v₀); slot
+                                                                                      bridges coeffRingEval₂ ∘ uSlot
+                                                                                      = coeffRingEval u₀ / v₀-slot /
+                                                                                      uv-slot = coeffRingEval (u₀v₀)
+                                                                                      (localization-hom uniqueness);
+                                                                                      evalA₂-sums with summability
+                                                                                      from the fundamental-annulus
+                                                                                      bounds; add/mul arithmetic
+                                                                                      mirroring evalA_add/evalA_mul
+                                                                                      (nonarchimedean Cauchy
+                                                                                      product); assembly mirrors
+                                                                                      evalA_weierstrass.
                                                                             - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
                                                                               chord X-identity (sorry node):
                                                                               u₀v₀ below the fundamental
@@ -581,11 +616,18 @@ entries file). To add/remove/annotate a node, edit
                                                                                   2026-07-18: same bridge
                                                                                   rewrite, delegating to
                                                                                   evalA_chordY).
-                                                                                    - ❌· `TateCurve.evalA_chordY` — evalA-level chord Y-identity
-                                                                                      (sorry node): same descent
-                                                                                      route as evalA_chordX with
-                                                                                      analytic_chordY as the
-                                                                                      analytic input.
+                                                                                    - ✅· `TateCurve.evalA_chordY` — evalA-level chord Y-identity
+                                                                                      (DERIVED 2026-07-18: same via
+                                                                                      chordY_formal and its
+                                                                                      transport).
+                                                                                        - ❌· `TateCurve.chordY_formal` — formal chord Y-identity in
+                                                                                          CoeffRing₂⟦q⟧ (sorry node):
+                                                                                          same route as chordX_formal
+                                                                                          with analytic_chordY.
+                                                                                        - ❌· `TateCurve.evalA_chordY_of_formal` — two-variable evaluation
+                                                                                          transport for the chord
+                                                                                          Y-identity (sorry node):
+                                                                                          mirrors the X-transport.
                                                                                 - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
                                                                                   chord Y-identity (sorry node):
                                                                                   same shift-reduction as the
@@ -609,76 +651,104 @@ entries file). To add/remove/annotate a node, edit
                                                                                   evalA_XA_eq_bilateralX /
                                                                                   evalA_YA_eq_bilateralY,
                                                                                   delegating to evalA_chordX).
-                                                                                    - ❌· `TateCurve.evalA_chordX` — evalA-level chord X-identity
-                                                                                      (sorry node — the pure series
-                                                                                      content over k): all three of
-                                                                                      u₀, v₀, u₀v₀ in the
-                                                                                      fundamental annulus: rewrite
-                                                                                      the six bilateral values
-                                                                                      through evalA_XA_eq_bilateralX
-                                                                                      / evalA_YA_eq_bilateralY
-                                                                                      (bridges need ≠ 0, ≠ 1: u₀v₀ ≠
-                                                                                      1 = hne1, u₀v₀ ≠ 0 from
-                                                                                      hu0,hv0), then the identity is
-                                                                                      the k-evaluation of the 2-var
-                                                                                      formal chord identity in
-                                                                                      ℚ(u)(v)⟦q⟧ = (RatFunc (RatFunc
-                                                                                      ℚ))⟦q⟧. Formal layer (to be
-                                                                                      built AS CONSUMED, top-down):
-                                                                                      three substitution homs ℚ(u)
-                                                                                      →+* ℚ(u)(v) (C-embedding; u↦v
-                                                                                      and u↦uv via substHom :=
-                                                                                      coercion of RatFunc.algEquivOf
-                                                                                      Transcendental, transcendence
-                                                                                      transferred from
-                                                                                      RatFunc.transcendental_X over
-                                                                                      ℚ(u) down to ℚ by hom-
-                                                                                      uniqueness
-                                                                                      Rat.subsingleton_ringHom +
-                                                                                      Polynomial.eval₂_map, NO
-                                                                                      scalar-tower instances — the
-                                                                                      ℚ-algebra diamond
-                                                                                      DivisionRing.toRatAlgebra vs R
-                                                                                      atFunc.instAlgebraOfPolynomial
-                                                                                      makes towers unusable);
-                                                                                      descent lemma mirroring
-                                                                                      eq_zero_of_forall_hasSum_zero:
-                                                                                      evalAt₂ u₀ v₀ := RatFunc.eval
-                                                                                      (evalAtHom u₀) v₀,
-                                                                                      coefficientwise vanishing via
-                                                                                      coeffs_eq_zero_of_hasSum_punct
-                                                                                      ured, numerator-polynomial-
-                                                                                      over-ℚ(u) infinite roots +
-                                                                                      evalAtHom injectivity;
-                                                                                      sampling: ONE fixed
-                                                                                      transcendental u₀ ∈ (1/2,1), S
-                                                                                      := reals in (1/2,1)
-                                                                                      transcendental over ℚ(u₀)
-                                                                                      (complement countable via
-                                                                                      Algebraic.countable with R :=
-                                                                                      RatFunc ℚ), r := 1/4 uniform
-                                                                                      window; compat: composite homs
-                                                                                      equal evalAtHom v₀ resp.
-                                                                                      evalAtHom (u₀v₀) by
-                                                                                      ratFuncQ_ringHom_ext
-                                                                                      (IsLocalization.ringHom_ext
-                                                                                      (nonZeroDivisors ℚ[X]) +
-                                                                                      Polynomial.ringHom_ext +
-                                                                                      Rat.subsingleton_ringHom);
-                                                                                      hasSum transport mirrors
-                                                                                      hasSum_evalAt_add/neg/sub/mul;
-                                                                                      analytic input: analytic_chord
-                                                                                      X/analytic_chordY (PROVEN in
-                                                                                      TateCurveConstruction,
-                                                                                      currently private — publicize
-                                                                                      when this consumer lands).
-                                                                                      Then pull ℚ(u)(v)⟦q⟧ → the
-                                                                                      2-var CoeffRing analog and
-                                                                                      evaluate at (u₀,v₀,q₀) ∈ k
-                                                                                      with the fundamental-annulus
-                                                                                      convergence bounds (evalA is
-                                                                                      already the “two-variable
-                                                                                      analogue of evalInt”).
+                                                                                    - ✅· `TateCurve.evalA_chordX` — evalA-level chord X-identity
+                                                                                      (DERIVED 2026-07-18: applies
+                                                                                      the two-variable evaluation
+                                                                                      transport to the formal
+                                                                                      identity chordX_formal).
+                                                                                        - ❌· `TateCurve.chordX_formal` — formal chord X-identity in
+                                                                                          CoeffRing₂⟦q⟧ (sorry node):
+                                                                                          CoeffRing₂ = ℚ[u,v] localized
+                                                                                          away from u(1-u)v(1-v)(1-uv),
+                                                                                          slot maps uSlot/vSlot/uvSlot :
+                                                                                          CoeffRing → CoeffRing₂ built
+                                                                                          (Localization.awayLift over
+                                                                                          eval₂RingHom substitutions;
+                                                                                          denominator factors proven
+                                                                                          units). To resolve: inject
+                                                                                          CoeffRing₂ into ℚ(u)(v) =
+                                                                                          RatFunc (RatFunc ℚ) (mirror
+                                                                                          coeffRingToRatFunc_injective),
+                                                                                          pull the identity back from
+                                                                                          the ℚ(u)(v)⟦q⟧ identity, which
+                                                                                          descends from analytic_chordX
+                                                                                          (PROVEN,
+                                                                                          TateCurveConstruction) — full
+                                                                                          descent design: Formal layer
+                                                                                          (to be built AS CONSUMED, top-
+                                                                                          down): three substitution homs
+                                                                                          ℚ(u) →+* ℚ(u)(v) (C-embedding;
+                                                                                          u↦v and u↦uv via substHom :=
+                                                                                          coercion of RatFunc.algEquivOf
+                                                                                          Transcendental, transcendence
+                                                                                          transferred from
+                                                                                          RatFunc.transcendental_X over
+                                                                                          ℚ(u) down to ℚ by hom-
+                                                                                          uniqueness
+                                                                                          Rat.subsingleton_ringHom +
+                                                                                          Polynomial.eval₂_map, NO
+                                                                                          scalar-tower instances — the
+                                                                                          ℚ-algebra diamond
+                                                                                          DivisionRing.toRatAlgebra vs R
+                                                                                          atFunc.instAlgebraOfPolynomial
+                                                                                          makes towers unusable);
+                                                                                          descent lemma mirroring
+                                                                                          eq_zero_of_forall_hasSum_zero:
+                                                                                          evalAt₂ u₀ v₀ := RatFunc.eval
+                                                                                          (evalAtHom u₀) v₀,
+                                                                                          coefficientwise vanishing via
+                                                                                          coeffs_eq_zero_of_hasSum_punct
+                                                                                          ured, numerator-polynomial-
+                                                                                          over-ℚ(u) infinite roots +
+                                                                                          evalAtHom injectivity;
+                                                                                          sampling: ONE fixed
+                                                                                          transcendental u₀ ∈ (1/2,1), S
+                                                                                          := reals in (1/2,1)
+                                                                                          transcendental over ℚ(u₀)
+                                                                                          (complement countable via
+                                                                                          Algebraic.countable with R :=
+                                                                                          RatFunc ℚ), r := 1/4 uniform
+                                                                                          window; compat: composite homs
+                                                                                          equal evalAtHom v₀ resp.
+                                                                                          evalAtHom (u₀v₀) by
+                                                                                          ratFuncQ_ringHom_ext
+                                                                                          (IsLocalization.ringHom_ext
+                                                                                          (nonZeroDivisors ℚ[X]) +
+                                                                                          Polynomial.ringHom_ext +
+                                                                                          Rat.subsingleton_ringHom);
+                                                                                          hasSum transport mirrors
+                                                                                          hasSum_evalAt_add/neg/sub/mul;
+                                                                                          analytic input: analytic_chord
+                                                                                          X/analytic_chordY (PROVEN in
+                                                                                          TateCurveConstruction,
+                                                                                          currently private — publicize
+                                                                                          when this consumer lands).
+                                                                                          Then pull ℚ(u)(v)⟦q⟧ → the
+                                                                                          2-var CoeffRing analog and
+                                                                                          evaluate at (u₀,v₀,q₀) ∈ k
+                                                                                          with the fundamental-annulus
+                                                                                          convergence bounds (evalA is
+                                                                                          already the “two-variable
+                                                                                          analogue of evalInt”).
+                                                                                        - ❌· `TateCurve.evalA_chordX_of_formal` — two-variable evaluation
+                                                                                          transport for the chord
+                                                                                          X-identity (sorry node):
+                                                                                          coeffRingEval₂ (u₀,v₀) :
+                                                                                          CoeffRing₂ →+* k via
+                                                                                          Localization.awayLift at the
+                                                                                          nonvanishing
+                                                                                          u₀(1-u₀)v₀(1-v₀)(1-u₀v₀); slot
+                                                                                          bridges coeffRingEval₂ ∘ uSlot
+                                                                                          = coeffRingEval u₀ / v₀-slot /
+                                                                                          uv-slot = coeffRingEval (u₀v₀)
+                                                                                          (localization-hom uniqueness);
+                                                                                          evalA₂-sums with summability
+                                                                                          from the fundamental-annulus
+                                                                                          bounds; add/mul arithmetic
+                                                                                          mirroring evalA_add/evalA_mul
+                                                                                          (nonarchimedean Cauchy
+                                                                                          product); assembly mirrors
+                                                                                          evalA_weierstrass.
                                                                                 - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
                                                                                   chord X-identity (sorry node):
                                                                                   u₀v₀ below the fundamental
@@ -920,11 +990,18 @@ entries file). To add/remove/annotate a node, edit
                                                                                       2026-07-18: same bridge
                                                                                       rewrite, delegating to
                                                                                       evalA_chordY).
-                                                                                        - ❌· `TateCurve.evalA_chordY` — evalA-level chord Y-identity
-                                                                                          (sorry node): same descent
-                                                                                          route as evalA_chordX with
-                                                                                          analytic_chordY as the
-                                                                                          analytic input.
+                                                                                        - ✅· `TateCurve.evalA_chordY` — evalA-level chord Y-identity
+                                                                                          (DERIVED 2026-07-18: same via
+                                                                                          chordY_formal and its
+                                                                                          transport).
+                                                                                            - ❌· `TateCurve.chordY_formal` — formal chord Y-identity in
+                                                                                              CoeffRing₂⟦q⟧ (sorry node):
+                                                                                              same route as chordX_formal
+                                                                                              with analytic_chordY.
+                                                                                            - ❌· `TateCurve.evalA_chordY_of_formal` — two-variable evaluation
+                                                                                              transport for the chord
+                                                                                              Y-identity (sorry node):
+                                                                                              mirrors the X-transport.
                                                                                     - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
                                                                                       chord Y-identity (sorry node):
                                                                                       same shift-reduction as the
@@ -948,76 +1025,104 @@ entries file). To add/remove/annotate a node, edit
                                                                                       evalA_XA_eq_bilateralX /
                                                                                       evalA_YA_eq_bilateralY,
                                                                                       delegating to evalA_chordX).
-                                                                                        - ❌· `TateCurve.evalA_chordX` — evalA-level chord X-identity
-                                                                                          (sorry node — the pure series
-                                                                                          content over k): all three of
-                                                                                          u₀, v₀, u₀v₀ in the
-                                                                                          fundamental annulus: rewrite
-                                                                                          the six bilateral values
-                                                                                          through evalA_XA_eq_bilateralX
-                                                                                          / evalA_YA_eq_bilateralY
-                                                                                          (bridges need ≠ 0, ≠ 1: u₀v₀ ≠
-                                                                                          1 = hne1, u₀v₀ ≠ 0 from
-                                                                                          hu0,hv0), then the identity is
-                                                                                          the k-evaluation of the 2-var
-                                                                                          formal chord identity in
-                                                                                          ℚ(u)(v)⟦q⟧ = (RatFunc (RatFunc
-                                                                                          ℚ))⟦q⟧. Formal layer (to be
-                                                                                          built AS CONSUMED, top-down):
-                                                                                          three substitution homs ℚ(u)
-                                                                                          →+* ℚ(u)(v) (C-embedding; u↦v
-                                                                                          and u↦uv via substHom :=
-                                                                                          coercion of RatFunc.algEquivOf
-                                                                                          Transcendental, transcendence
-                                                                                          transferred from
-                                                                                          RatFunc.transcendental_X over
-                                                                                          ℚ(u) down to ℚ by hom-
-                                                                                          uniqueness
-                                                                                          Rat.subsingleton_ringHom +
-                                                                                          Polynomial.eval₂_map, NO
-                                                                                          scalar-tower instances — the
-                                                                                          ℚ-algebra diamond
-                                                                                          DivisionRing.toRatAlgebra vs R
-                                                                                          atFunc.instAlgebraOfPolynomial
-                                                                                          makes towers unusable);
-                                                                                          descent lemma mirroring
-                                                                                          eq_zero_of_forall_hasSum_zero:
-                                                                                          evalAt₂ u₀ v₀ := RatFunc.eval
-                                                                                          (evalAtHom u₀) v₀,
-                                                                                          coefficientwise vanishing via
-                                                                                          coeffs_eq_zero_of_hasSum_punct
-                                                                                          ured, numerator-polynomial-
-                                                                                          over-ℚ(u) infinite roots +
-                                                                                          evalAtHom injectivity;
-                                                                                          sampling: ONE fixed
-                                                                                          transcendental u₀ ∈ (1/2,1), S
-                                                                                          := reals in (1/2,1)
-                                                                                          transcendental over ℚ(u₀)
-                                                                                          (complement countable via
-                                                                                          Algebraic.countable with R :=
-                                                                                          RatFunc ℚ), r := 1/4 uniform
-                                                                                          window; compat: composite homs
-                                                                                          equal evalAtHom v₀ resp.
-                                                                                          evalAtHom (u₀v₀) by
-                                                                                          ratFuncQ_ringHom_ext
-                                                                                          (IsLocalization.ringHom_ext
-                                                                                          (nonZeroDivisors ℚ[X]) +
-                                                                                          Polynomial.ringHom_ext +
-                                                                                          Rat.subsingleton_ringHom);
-                                                                                          hasSum transport mirrors
-                                                                                          hasSum_evalAt_add/neg/sub/mul;
-                                                                                          analytic input: analytic_chord
-                                                                                          X/analytic_chordY (PROVEN in
-                                                                                          TateCurveConstruction,
-                                                                                          currently private — publicize
-                                                                                          when this consumer lands).
-                                                                                          Then pull ℚ(u)(v)⟦q⟧ → the
-                                                                                          2-var CoeffRing analog and
-                                                                                          evaluate at (u₀,v₀,q₀) ∈ k
-                                                                                          with the fundamental-annulus
-                                                                                          convergence bounds (evalA is
-                                                                                          already the “two-variable
-                                                                                          analogue of evalInt”).
+                                                                                        - ✅· `TateCurve.evalA_chordX` — evalA-level chord X-identity
+                                                                                          (DERIVED 2026-07-18: applies
+                                                                                          the two-variable evaluation
+                                                                                          transport to the formal
+                                                                                          identity chordX_formal).
+                                                                                            - ❌· `TateCurve.chordX_formal` — formal chord X-identity in
+                                                                                              CoeffRing₂⟦q⟧ (sorry node):
+                                                                                              CoeffRing₂ = ℚ[u,v] localized
+                                                                                              away from u(1-u)v(1-v)(1-uv),
+                                                                                              slot maps uSlot/vSlot/uvSlot :
+                                                                                              CoeffRing → CoeffRing₂ built
+                                                                                              (Localization.awayLift over
+                                                                                              eval₂RingHom substitutions;
+                                                                                              denominator factors proven
+                                                                                              units). To resolve: inject
+                                                                                              CoeffRing₂ into ℚ(u)(v) =
+                                                                                              RatFunc (RatFunc ℚ) (mirror
+                                                                                              coeffRingToRatFunc_injective),
+                                                                                              pull the identity back from
+                                                                                              the ℚ(u)(v)⟦q⟧ identity, which
+                                                                                              descends from analytic_chordX
+                                                                                              (PROVEN,
+                                                                                              TateCurveConstruction) — full
+                                                                                              descent design: Formal layer
+                                                                                              (to be built AS CONSUMED, top-
+                                                                                              down): three substitution homs
+                                                                                              ℚ(u) →+* ℚ(u)(v) (C-embedding;
+                                                                                              u↦v and u↦uv via substHom :=
+                                                                                              coercion of RatFunc.algEquivOf
+                                                                                              Transcendental, transcendence
+                                                                                              transferred from
+                                                                                              RatFunc.transcendental_X over
+                                                                                              ℚ(u) down to ℚ by hom-
+                                                                                              uniqueness
+                                                                                              Rat.subsingleton_ringHom +
+                                                                                              Polynomial.eval₂_map, NO
+                                                                                              scalar-tower instances — the
+                                                                                              ℚ-algebra diamond
+                                                                                              DivisionRing.toRatAlgebra vs R
+                                                                                              atFunc.instAlgebraOfPolynomial
+                                                                                              makes towers unusable);
+                                                                                              descent lemma mirroring
+                                                                                              eq_zero_of_forall_hasSum_zero:
+                                                                                              evalAt₂ u₀ v₀ := RatFunc.eval
+                                                                                              (evalAtHom u₀) v₀,
+                                                                                              coefficientwise vanishing via
+                                                                                              coeffs_eq_zero_of_hasSum_punct
+                                                                                              ured, numerator-polynomial-
+                                                                                              over-ℚ(u) infinite roots +
+                                                                                              evalAtHom injectivity;
+                                                                                              sampling: ONE fixed
+                                                                                              transcendental u₀ ∈ (1/2,1), S
+                                                                                              := reals in (1/2,1)
+                                                                                              transcendental over ℚ(u₀)
+                                                                                              (complement countable via
+                                                                                              Algebraic.countable with R :=
+                                                                                              RatFunc ℚ), r := 1/4 uniform
+                                                                                              window; compat: composite homs
+                                                                                              equal evalAtHom v₀ resp.
+                                                                                              evalAtHom (u₀v₀) by
+                                                                                              ratFuncQ_ringHom_ext
+                                                                                              (IsLocalization.ringHom_ext
+                                                                                              (nonZeroDivisors ℚ[X]) +
+                                                                                              Polynomial.ringHom_ext +
+                                                                                              Rat.subsingleton_ringHom);
+                                                                                              hasSum transport mirrors
+                                                                                              hasSum_evalAt_add/neg/sub/mul;
+                                                                                              analytic input: analytic_chord
+                                                                                              X/analytic_chordY (PROVEN in
+                                                                                              TateCurveConstruction,
+                                                                                              currently private — publicize
+                                                                                              when this consumer lands).
+                                                                                              Then pull ℚ(u)(v)⟦q⟧ → the
+                                                                                              2-var CoeffRing analog and
+                                                                                              evaluate at (u₀,v₀,q₀) ∈ k
+                                                                                              with the fundamental-annulus
+                                                                                              convergence bounds (evalA is
+                                                                                              already the “two-variable
+                                                                                              analogue of evalInt”).
+                                                                                            - ❌· `TateCurve.evalA_chordX_of_formal` — two-variable evaluation
+                                                                                              transport for the chord
+                                                                                              X-identity (sorry node):
+                                                                                              coeffRingEval₂ (u₀,v₀) :
+                                                                                              CoeffRing₂ →+* k via
+                                                                                              Localization.awayLift at the
+                                                                                              nonvanishing
+                                                                                              u₀(1-u₀)v₀(1-v₀)(1-u₀v₀); slot
+                                                                                              bridges coeffRingEval₂ ∘ uSlot
+                                                                                              = coeffRingEval u₀ / v₀-slot /
+                                                                                              uv-slot = coeffRingEval (u₀v₀)
+                                                                                              (localization-hom uniqueness);
+                                                                                              evalA₂-sums with summability
+                                                                                              from the fundamental-annulus
+                                                                                              bounds; add/mul arithmetic
+                                                                                              mirroring evalA_add/evalA_mul
+                                                                                              (nonarchimedean Cauchy
+                                                                                              product); assembly mirrors
+                                                                                              evalA_weierstrass.
                                                                                     - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
                                                                                       chord X-identity (sorry node):
                                                                                       u₀v₀ below the fundamental
@@ -1252,11 +1357,18 @@ entries file). To add/remove/annotate a node, edit
                                                                                           2026-07-18: same bridge
                                                                                           rewrite, delegating to
                                                                                           evalA_chordY).
-                                                                                            - ❌· `TateCurve.evalA_chordY` — evalA-level chord Y-identity
-                                                                                              (sorry node): same descent
-                                                                                              route as evalA_chordX with
-                                                                                              analytic_chordY as the
-                                                                                              analytic input.
+                                                                                            - ✅· `TateCurve.evalA_chordY` — evalA-level chord Y-identity
+                                                                                              (DERIVED 2026-07-18: same via
+                                                                                              chordY_formal and its
+                                                                                              transport).
+                                                                                                - ❌· `TateCurve.chordY_formal` — formal chord Y-identity in
+                                                                                                  CoeffRing₂⟦q⟧ (sorry node):
+                                                                                                  same route as chordX_formal
+                                                                                                  with analytic_chordY.
+                                                                                                - ❌· `TateCurve.evalA_chordY_of_formal` — two-variable evaluation
+                                                                                                  transport for the chord
+                                                                                                  Y-identity (sorry node):
+                                                                                                  mirrors the X-transport.
                                                                                         - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
                                                                                           chord Y-identity (sorry node):
                                                                                           same shift-reduction as the
@@ -1280,76 +1392,104 @@ entries file). To add/remove/annotate a node, edit
                                                                                           evalA_XA_eq_bilateralX /
                                                                                           evalA_YA_eq_bilateralY,
                                                                                           delegating to evalA_chordX).
-                                                                                            - ❌· `TateCurve.evalA_chordX` — evalA-level chord X-identity
-                                                                                              (sorry node — the pure series
-                                                                                              content over k): all three of
-                                                                                              u₀, v₀, u₀v₀ in the
-                                                                                              fundamental annulus: rewrite
-                                                                                              the six bilateral values
-                                                                                              through evalA_XA_eq_bilateralX
-                                                                                              / evalA_YA_eq_bilateralY
-                                                                                              (bridges need ≠ 0, ≠ 1: u₀v₀ ≠
-                                                                                              1 = hne1, u₀v₀ ≠ 0 from
-                                                                                              hu0,hv0), then the identity is
-                                                                                              the k-evaluation of the 2-var
-                                                                                              formal chord identity in
-                                                                                              ℚ(u)(v)⟦q⟧ = (RatFunc (RatFunc
-                                                                                              ℚ))⟦q⟧. Formal layer (to be
-                                                                                              built AS CONSUMED, top-down):
-                                                                                              three substitution homs ℚ(u)
-                                                                                              →+* ℚ(u)(v) (C-embedding; u↦v
-                                                                                              and u↦uv via substHom :=
-                                                                                              coercion of RatFunc.algEquivOf
-                                                                                              Transcendental, transcendence
-                                                                                              transferred from
-                                                                                              RatFunc.transcendental_X over
-                                                                                              ℚ(u) down to ℚ by hom-
-                                                                                              uniqueness
-                                                                                              Rat.subsingleton_ringHom +
-                                                                                              Polynomial.eval₂_map, NO
-                                                                                              scalar-tower instances — the
-                                                                                              ℚ-algebra diamond
-                                                                                              DivisionRing.toRatAlgebra vs R
-                                                                                              atFunc.instAlgebraOfPolynomial
-                                                                                              makes towers unusable);
-                                                                                              descent lemma mirroring
-                                                                                              eq_zero_of_forall_hasSum_zero:
-                                                                                              evalAt₂ u₀ v₀ := RatFunc.eval
-                                                                                              (evalAtHom u₀) v₀,
-                                                                                              coefficientwise vanishing via
-                                                                                              coeffs_eq_zero_of_hasSum_punct
-                                                                                              ured, numerator-polynomial-
-                                                                                              over-ℚ(u) infinite roots +
-                                                                                              evalAtHom injectivity;
-                                                                                              sampling: ONE fixed
-                                                                                              transcendental u₀ ∈ (1/2,1), S
-                                                                                              := reals in (1/2,1)
-                                                                                              transcendental over ℚ(u₀)
-                                                                                              (complement countable via
-                                                                                              Algebraic.countable with R :=
-                                                                                              RatFunc ℚ), r := 1/4 uniform
-                                                                                              window; compat: composite homs
-                                                                                              equal evalAtHom v₀ resp.
-                                                                                              evalAtHom (u₀v₀) by
-                                                                                              ratFuncQ_ringHom_ext
-                                                                                              (IsLocalization.ringHom_ext
-                                                                                              (nonZeroDivisors ℚ[X]) +
-                                                                                              Polynomial.ringHom_ext +
-                                                                                              Rat.subsingleton_ringHom);
-                                                                                              hasSum transport mirrors
-                                                                                              hasSum_evalAt_add/neg/sub/mul;
-                                                                                              analytic input: analytic_chord
-                                                                                              X/analytic_chordY (PROVEN in
-                                                                                              TateCurveConstruction,
-                                                                                              currently private — publicize
-                                                                                              when this consumer lands).
-                                                                                              Then pull ℚ(u)(v)⟦q⟧ → the
-                                                                                              2-var CoeffRing analog and
-                                                                                              evaluate at (u₀,v₀,q₀) ∈ k
-                                                                                              with the fundamental-annulus
-                                                                                              convergence bounds (evalA is
-                                                                                              already the “two-variable
-                                                                                              analogue of evalInt”).
+                                                                                            - ✅· `TateCurve.evalA_chordX` — evalA-level chord X-identity
+                                                                                              (DERIVED 2026-07-18: applies
+                                                                                              the two-variable evaluation
+                                                                                              transport to the formal
+                                                                                              identity chordX_formal).
+                                                                                                - ❌· `TateCurve.chordX_formal` — formal chord X-identity in
+                                                                                                  CoeffRing₂⟦q⟧ (sorry node):
+                                                                                                  CoeffRing₂ = ℚ[u,v] localized
+                                                                                                  away from u(1-u)v(1-v)(1-uv),
+                                                                                                  slot maps uSlot/vSlot/uvSlot :
+                                                                                                  CoeffRing → CoeffRing₂ built
+                                                                                                  (Localization.awayLift over
+                                                                                                  eval₂RingHom substitutions;
+                                                                                                  denominator factors proven
+                                                                                                  units). To resolve: inject
+                                                                                                  CoeffRing₂ into ℚ(u)(v) =
+                                                                                                  RatFunc (RatFunc ℚ) (mirror
+                                                                                                  coeffRingToRatFunc_injective),
+                                                                                                  pull the identity back from
+                                                                                                  the ℚ(u)(v)⟦q⟧ identity, which
+                                                                                                  descends from analytic_chordX
+                                                                                                  (PROVEN,
+                                                                                                  TateCurveConstruction) — full
+                                                                                                  descent design: Formal layer
+                                                                                                  (to be built AS CONSUMED, top-
+                                                                                                  down): three substitution homs
+                                                                                                  ℚ(u) →+* ℚ(u)(v) (C-embedding;
+                                                                                                  u↦v and u↦uv via substHom :=
+                                                                                                  coercion of RatFunc.algEquivOf
+                                                                                                  Transcendental, transcendence
+                                                                                                  transferred from
+                                                                                                  RatFunc.transcendental_X over
+                                                                                                  ℚ(u) down to ℚ by hom-
+                                                                                                  uniqueness
+                                                                                                  Rat.subsingleton_ringHom +
+                                                                                                  Polynomial.eval₂_map, NO
+                                                                                                  scalar-tower instances — the
+                                                                                                  ℚ-algebra diamond
+                                                                                                  DivisionRing.toRatAlgebra vs R
+                                                                                                  atFunc.instAlgebraOfPolynomial
+                                                                                                  makes towers unusable);
+                                                                                                  descent lemma mirroring
+                                                                                                  eq_zero_of_forall_hasSum_zero:
+                                                                                                  evalAt₂ u₀ v₀ := RatFunc.eval
+                                                                                                  (evalAtHom u₀) v₀,
+                                                                                                  coefficientwise vanishing via
+                                                                                                  coeffs_eq_zero_of_hasSum_punct
+                                                                                                  ured, numerator-polynomial-
+                                                                                                  over-ℚ(u) infinite roots +
+                                                                                                  evalAtHom injectivity;
+                                                                                                  sampling: ONE fixed
+                                                                                                  transcendental u₀ ∈ (1/2,1), S
+                                                                                                  := reals in (1/2,1)
+                                                                                                  transcendental over ℚ(u₀)
+                                                                                                  (complement countable via
+                                                                                                  Algebraic.countable with R :=
+                                                                                                  RatFunc ℚ), r := 1/4 uniform
+                                                                                                  window; compat: composite homs
+                                                                                                  equal evalAtHom v₀ resp.
+                                                                                                  evalAtHom (u₀v₀) by
+                                                                                                  ratFuncQ_ringHom_ext
+                                                                                                  (IsLocalization.ringHom_ext
+                                                                                                  (nonZeroDivisors ℚ[X]) +
+                                                                                                  Polynomial.ringHom_ext +
+                                                                                                  Rat.subsingleton_ringHom);
+                                                                                                  hasSum transport mirrors
+                                                                                                  hasSum_evalAt_add/neg/sub/mul;
+                                                                                                  analytic input: analytic_chord
+                                                                                                  X/analytic_chordY (PROVEN in
+                                                                                                  TateCurveConstruction,
+                                                                                                  currently private — publicize
+                                                                                                  when this consumer lands).
+                                                                                                  Then pull ℚ(u)(v)⟦q⟧ → the
+                                                                                                  2-var CoeffRing analog and
+                                                                                                  evaluate at (u₀,v₀,q₀) ∈ k
+                                                                                                  with the fundamental-annulus
+                                                                                                  convergence bounds (evalA is
+                                                                                                  already the “two-variable
+                                                                                                  analogue of evalInt”).
+                                                                                                - ❌· `TateCurve.evalA_chordX_of_formal` — two-variable evaluation
+                                                                                                  transport for the chord
+                                                                                                  X-identity (sorry node):
+                                                                                                  coeffRingEval₂ (u₀,v₀) :
+                                                                                                  CoeffRing₂ →+* k via
+                                                                                                  Localization.awayLift at the
+                                                                                                  nonvanishing
+                                                                                                  u₀(1-u₀)v₀(1-v₀)(1-u₀v₀); slot
+                                                                                                  bridges coeffRingEval₂ ∘ uSlot
+                                                                                                  = coeffRingEval u₀ / v₀-slot /
+                                                                                                  uv-slot = coeffRingEval (u₀v₀)
+                                                                                                  (localization-hom uniqueness);
+                                                                                                  evalA₂-sums with summability
+                                                                                                  from the fundamental-annulus
+                                                                                                  bounds; add/mul arithmetic
+                                                                                                  mirroring evalA_add/evalA_mul
+                                                                                                  (nonarchimedean Cauchy
+                                                                                                  product); assembly mirrors
+                                                                                                  evalA_weierstrass.
                                                                                         - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
                                                                                           chord X-identity (sorry node):
                                                                                           u₀v₀ below the fundamental
@@ -1609,11 +1749,18 @@ entries file). To add/remove/annotate a node, edit
                                                                   Y-identity (DERIVED 2026-07-18:
                                                                   same bridge rewrite, delegating to
                                                                   evalA_chordY).
-                                                                    - ❌· `TateCurve.evalA_chordY` — evalA-level chord Y-identity
-                                                                      (sorry node): same descent
-                                                                      route as evalA_chordX with
-                                                                      analytic_chordY as the
-                                                                      analytic input.
+                                                                    - ✅· `TateCurve.evalA_chordY` — evalA-level chord Y-identity
+                                                                      (DERIVED 2026-07-18: same via
+                                                                      chordY_formal and its
+                                                                      transport).
+                                                                        - ❌· `TateCurve.chordY_formal` — formal chord Y-identity in
+                                                                          CoeffRing₂⟦q⟧ (sorry node):
+                                                                          same route as chordX_formal
+                                                                          with analytic_chordY.
+                                                                        - ❌· `TateCurve.evalA_chordY_of_formal` — two-variable evaluation
+                                                                          transport for the chord
+                                                                          Y-identity (sorry node):
+                                                                          mirrors the X-transport.
                                                                 - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared chord
                                                                   Y-identity (sorry node): same
                                                                   shift-reduction as the X-shifted
@@ -1634,76 +1781,104 @@ entries file). To add/remove/annotate a node, edit
                                                                   evalA_XA_eq_bilateralX /
                                                                   evalA_YA_eq_bilateralY, delegating
                                                                   to evalA_chordX).
-                                                                    - ❌· `TateCurve.evalA_chordX` — evalA-level chord X-identity
-                                                                      (sorry node — the pure series
-                                                                      content over k): all three of
-                                                                      u₀, v₀, u₀v₀ in the
-                                                                      fundamental annulus: rewrite
-                                                                      the six bilateral values
-                                                                      through evalA_XA_eq_bilateralX
-                                                                      / evalA_YA_eq_bilateralY
-                                                                      (bridges need ≠ 0, ≠ 1: u₀v₀ ≠
-                                                                      1 = hne1, u₀v₀ ≠ 0 from
-                                                                      hu0,hv0), then the identity is
-                                                                      the k-evaluation of the 2-var
-                                                                      formal chord identity in
-                                                                      ℚ(u)(v)⟦q⟧ = (RatFunc (RatFunc
-                                                                      ℚ))⟦q⟧. Formal layer (to be
-                                                                      built AS CONSUMED, top-down):
-                                                                      three substitution homs ℚ(u)
-                                                                      →+* ℚ(u)(v) (C-embedding; u↦v
-                                                                      and u↦uv via substHom :=
-                                                                      coercion of RatFunc.algEquivOf
-                                                                      Transcendental, transcendence
-                                                                      transferred from
-                                                                      RatFunc.transcendental_X over
-                                                                      ℚ(u) down to ℚ by hom-
-                                                                      uniqueness
-                                                                      Rat.subsingleton_ringHom +
-                                                                      Polynomial.eval₂_map, NO
-                                                                      scalar-tower instances — the
-                                                                      ℚ-algebra diamond
-                                                                      DivisionRing.toRatAlgebra vs R
-                                                                      atFunc.instAlgebraOfPolynomial
-                                                                      makes towers unusable);
-                                                                      descent lemma mirroring
-                                                                      eq_zero_of_forall_hasSum_zero:
-                                                                      evalAt₂ u₀ v₀ := RatFunc.eval
-                                                                      (evalAtHom u₀) v₀,
-                                                                      coefficientwise vanishing via
-                                                                      coeffs_eq_zero_of_hasSum_punct
-                                                                      ured, numerator-polynomial-
-                                                                      over-ℚ(u) infinite roots +
-                                                                      evalAtHom injectivity;
-                                                                      sampling: ONE fixed
-                                                                      transcendental u₀ ∈ (1/2,1), S
-                                                                      := reals in (1/2,1)
-                                                                      transcendental over ℚ(u₀)
-                                                                      (complement countable via
-                                                                      Algebraic.countable with R :=
-                                                                      RatFunc ℚ), r := 1/4 uniform
-                                                                      window; compat: composite homs
-                                                                      equal evalAtHom v₀ resp.
-                                                                      evalAtHom (u₀v₀) by
-                                                                      ratFuncQ_ringHom_ext
-                                                                      (IsLocalization.ringHom_ext
-                                                                      (nonZeroDivisors ℚ[X]) +
-                                                                      Polynomial.ringHom_ext +
-                                                                      Rat.subsingleton_ringHom);
-                                                                      hasSum transport mirrors
-                                                                      hasSum_evalAt_add/neg/sub/mul;
-                                                                      analytic input: analytic_chord
-                                                                      X/analytic_chordY (PROVEN in
-                                                                      TateCurveConstruction,
-                                                                      currently private — publicize
-                                                                      when this consumer lands).
-                                                                      Then pull ℚ(u)(v)⟦q⟧ → the
-                                                                      2-var CoeffRing analog and
-                                                                      evaluate at (u₀,v₀,q₀) ∈ k
-                                                                      with the fundamental-annulus
-                                                                      convergence bounds (evalA is
-                                                                      already the “two-variable
-                                                                      analogue of evalInt”).
+                                                                    - ✅· `TateCurve.evalA_chordX` — evalA-level chord X-identity
+                                                                      (DERIVED 2026-07-18: applies
+                                                                      the two-variable evaluation
+                                                                      transport to the formal
+                                                                      identity chordX_formal).
+                                                                        - ❌· `TateCurve.chordX_formal` — formal chord X-identity in
+                                                                          CoeffRing₂⟦q⟧ (sorry node):
+                                                                          CoeffRing₂ = ℚ[u,v] localized
+                                                                          away from u(1-u)v(1-v)(1-uv),
+                                                                          slot maps uSlot/vSlot/uvSlot :
+                                                                          CoeffRing → CoeffRing₂ built
+                                                                          (Localization.awayLift over
+                                                                          eval₂RingHom substitutions;
+                                                                          denominator factors proven
+                                                                          units). To resolve: inject
+                                                                          CoeffRing₂ into ℚ(u)(v) =
+                                                                          RatFunc (RatFunc ℚ) (mirror
+                                                                          coeffRingToRatFunc_injective),
+                                                                          pull the identity back from
+                                                                          the ℚ(u)(v)⟦q⟧ identity, which
+                                                                          descends from analytic_chordX
+                                                                          (PROVEN,
+                                                                          TateCurveConstruction) — full
+                                                                          descent design: Formal layer
+                                                                          (to be built AS CONSUMED, top-
+                                                                          down): three substitution homs
+                                                                          ℚ(u) →+* ℚ(u)(v) (C-embedding;
+                                                                          u↦v and u↦uv via substHom :=
+                                                                          coercion of RatFunc.algEquivOf
+                                                                          Transcendental, transcendence
+                                                                          transferred from
+                                                                          RatFunc.transcendental_X over
+                                                                          ℚ(u) down to ℚ by hom-
+                                                                          uniqueness
+                                                                          Rat.subsingleton_ringHom +
+                                                                          Polynomial.eval₂_map, NO
+                                                                          scalar-tower instances — the
+                                                                          ℚ-algebra diamond
+                                                                          DivisionRing.toRatAlgebra vs R
+                                                                          atFunc.instAlgebraOfPolynomial
+                                                                          makes towers unusable);
+                                                                          descent lemma mirroring
+                                                                          eq_zero_of_forall_hasSum_zero:
+                                                                          evalAt₂ u₀ v₀ := RatFunc.eval
+                                                                          (evalAtHom u₀) v₀,
+                                                                          coefficientwise vanishing via
+                                                                          coeffs_eq_zero_of_hasSum_punct
+                                                                          ured, numerator-polynomial-
+                                                                          over-ℚ(u) infinite roots +
+                                                                          evalAtHom injectivity;
+                                                                          sampling: ONE fixed
+                                                                          transcendental u₀ ∈ (1/2,1), S
+                                                                          := reals in (1/2,1)
+                                                                          transcendental over ℚ(u₀)
+                                                                          (complement countable via
+                                                                          Algebraic.countable with R :=
+                                                                          RatFunc ℚ), r := 1/4 uniform
+                                                                          window; compat: composite homs
+                                                                          equal evalAtHom v₀ resp.
+                                                                          evalAtHom (u₀v₀) by
+                                                                          ratFuncQ_ringHom_ext
+                                                                          (IsLocalization.ringHom_ext
+                                                                          (nonZeroDivisors ℚ[X]) +
+                                                                          Polynomial.ringHom_ext +
+                                                                          Rat.subsingleton_ringHom);
+                                                                          hasSum transport mirrors
+                                                                          hasSum_evalAt_add/neg/sub/mul;
+                                                                          analytic input: analytic_chord
+                                                                          X/analytic_chordY (PROVEN in
+                                                                          TateCurveConstruction,
+                                                                          currently private — publicize
+                                                                          when this consumer lands).
+                                                                          Then pull ℚ(u)(v)⟦q⟧ → the
+                                                                          2-var CoeffRing analog and
+                                                                          evaluate at (u₀,v₀,q₀) ∈ k
+                                                                          with the fundamental-annulus
+                                                                          convergence bounds (evalA is
+                                                                          already the “two-variable
+                                                                          analogue of evalInt”).
+                                                                        - ❌· `TateCurve.evalA_chordX_of_formal` — two-variable evaluation
+                                                                          transport for the chord
+                                                                          X-identity (sorry node):
+                                                                          coeffRingEval₂ (u₀,v₀) :
+                                                                          CoeffRing₂ →+* k via
+                                                                          Localization.awayLift at the
+                                                                          nonvanishing
+                                                                          u₀(1-u₀)v₀(1-v₀)(1-u₀v₀); slot
+                                                                          bridges coeffRingEval₂ ∘ uSlot
+                                                                          = coeffRingEval u₀ / v₀-slot /
+                                                                          uv-slot = coeffRingEval (u₀v₀)
+                                                                          (localization-hom uniqueness);
+                                                                          evalA₂-sums with summability
+                                                                          from the fundamental-annulus
+                                                                          bounds; add/mul arithmetic
+                                                                          mirroring evalA_add/evalA_mul
+                                                                          (nonarchimedean Cauchy
+                                                                          product); assembly mirrors
+                                                                          evalA_weierstrass.
                                                                 - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared chord
                                                                   X-identity (sorry node): u₀v₀
                                                                   below the fundamental annulus
@@ -1879,11 +2054,18 @@ entries file). To add/remove/annotate a node, edit
                                                                       2026-07-18: same bridge
                                                                       rewrite, delegating to
                                                                       evalA_chordY).
-                                                                        - ❌· `TateCurve.evalA_chordY` — evalA-level chord Y-identity
-                                                                          (sorry node): same descent
-                                                                          route as evalA_chordX with
-                                                                          analytic_chordY as the
-                                                                          analytic input.
+                                                                        - ✅· `TateCurve.evalA_chordY` — evalA-level chord Y-identity
+                                                                          (DERIVED 2026-07-18: same via
+                                                                          chordY_formal and its
+                                                                          transport).
+                                                                            - ❌· `TateCurve.chordY_formal` — formal chord Y-identity in
+                                                                              CoeffRing₂⟦q⟧ (sorry node):
+                                                                              same route as chordX_formal
+                                                                              with analytic_chordY.
+                                                                            - ❌· `TateCurve.evalA_chordY_of_formal` — two-variable evaluation
+                                                                              transport for the chord
+                                                                              Y-identity (sorry node):
+                                                                              mirrors the X-transport.
                                                                     - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
                                                                       chord Y-identity (sorry node):
                                                                       same shift-reduction as the
@@ -1906,76 +2088,104 @@ entries file). To add/remove/annotate a node, edit
                                                                       evalA_XA_eq_bilateralX /
                                                                       evalA_YA_eq_bilateralY,
                                                                       delegating to evalA_chordX).
-                                                                        - ❌· `TateCurve.evalA_chordX` — evalA-level chord X-identity
-                                                                          (sorry node — the pure series
-                                                                          content over k): all three of
-                                                                          u₀, v₀, u₀v₀ in the
-                                                                          fundamental annulus: rewrite
-                                                                          the six bilateral values
-                                                                          through evalA_XA_eq_bilateralX
-                                                                          / evalA_YA_eq_bilateralY
-                                                                          (bridges need ≠ 0, ≠ 1: u₀v₀ ≠
-                                                                          1 = hne1, u₀v₀ ≠ 0 from
-                                                                          hu0,hv0), then the identity is
-                                                                          the k-evaluation of the 2-var
-                                                                          formal chord identity in
-                                                                          ℚ(u)(v)⟦q⟧ = (RatFunc (RatFunc
-                                                                          ℚ))⟦q⟧. Formal layer (to be
-                                                                          built AS CONSUMED, top-down):
-                                                                          three substitution homs ℚ(u)
-                                                                          →+* ℚ(u)(v) (C-embedding; u↦v
-                                                                          and u↦uv via substHom :=
-                                                                          coercion of RatFunc.algEquivOf
-                                                                          Transcendental, transcendence
-                                                                          transferred from
-                                                                          RatFunc.transcendental_X over
-                                                                          ℚ(u) down to ℚ by hom-
-                                                                          uniqueness
-                                                                          Rat.subsingleton_ringHom +
-                                                                          Polynomial.eval₂_map, NO
-                                                                          scalar-tower instances — the
-                                                                          ℚ-algebra diamond
-                                                                          DivisionRing.toRatAlgebra vs R
-                                                                          atFunc.instAlgebraOfPolynomial
-                                                                          makes towers unusable);
-                                                                          descent lemma mirroring
-                                                                          eq_zero_of_forall_hasSum_zero:
-                                                                          evalAt₂ u₀ v₀ := RatFunc.eval
-                                                                          (evalAtHom u₀) v₀,
-                                                                          coefficientwise vanishing via
-                                                                          coeffs_eq_zero_of_hasSum_punct
-                                                                          ured, numerator-polynomial-
-                                                                          over-ℚ(u) infinite roots +
-                                                                          evalAtHom injectivity;
-                                                                          sampling: ONE fixed
-                                                                          transcendental u₀ ∈ (1/2,1), S
-                                                                          := reals in (1/2,1)
-                                                                          transcendental over ℚ(u₀)
-                                                                          (complement countable via
-                                                                          Algebraic.countable with R :=
-                                                                          RatFunc ℚ), r := 1/4 uniform
-                                                                          window; compat: composite homs
-                                                                          equal evalAtHom v₀ resp.
-                                                                          evalAtHom (u₀v₀) by
-                                                                          ratFuncQ_ringHom_ext
-                                                                          (IsLocalization.ringHom_ext
-                                                                          (nonZeroDivisors ℚ[X]) +
-                                                                          Polynomial.ringHom_ext +
-                                                                          Rat.subsingleton_ringHom);
-                                                                          hasSum transport mirrors
-                                                                          hasSum_evalAt_add/neg/sub/mul;
-                                                                          analytic input: analytic_chord
-                                                                          X/analytic_chordY (PROVEN in
-                                                                          TateCurveConstruction,
-                                                                          currently private — publicize
-                                                                          when this consumer lands).
-                                                                          Then pull ℚ(u)(v)⟦q⟧ → the
-                                                                          2-var CoeffRing analog and
-                                                                          evaluate at (u₀,v₀,q₀) ∈ k
-                                                                          with the fundamental-annulus
-                                                                          convergence bounds (evalA is
-                                                                          already the “two-variable
-                                                                          analogue of evalInt”).
+                                                                        - ✅· `TateCurve.evalA_chordX` — evalA-level chord X-identity
+                                                                          (DERIVED 2026-07-18: applies
+                                                                          the two-variable evaluation
+                                                                          transport to the formal
+                                                                          identity chordX_formal).
+                                                                            - ❌· `TateCurve.chordX_formal` — formal chord X-identity in
+                                                                              CoeffRing₂⟦q⟧ (sorry node):
+                                                                              CoeffRing₂ = ℚ[u,v] localized
+                                                                              away from u(1-u)v(1-v)(1-uv),
+                                                                              slot maps uSlot/vSlot/uvSlot :
+                                                                              CoeffRing → CoeffRing₂ built
+                                                                              (Localization.awayLift over
+                                                                              eval₂RingHom substitutions;
+                                                                              denominator factors proven
+                                                                              units). To resolve: inject
+                                                                              CoeffRing₂ into ℚ(u)(v) =
+                                                                              RatFunc (RatFunc ℚ) (mirror
+                                                                              coeffRingToRatFunc_injective),
+                                                                              pull the identity back from
+                                                                              the ℚ(u)(v)⟦q⟧ identity, which
+                                                                              descends from analytic_chordX
+                                                                              (PROVEN,
+                                                                              TateCurveConstruction) — full
+                                                                              descent design: Formal layer
+                                                                              (to be built AS CONSUMED, top-
+                                                                              down): three substitution homs
+                                                                              ℚ(u) →+* ℚ(u)(v) (C-embedding;
+                                                                              u↦v and u↦uv via substHom :=
+                                                                              coercion of RatFunc.algEquivOf
+                                                                              Transcendental, transcendence
+                                                                              transferred from
+                                                                              RatFunc.transcendental_X over
+                                                                              ℚ(u) down to ℚ by hom-
+                                                                              uniqueness
+                                                                              Rat.subsingleton_ringHom +
+                                                                              Polynomial.eval₂_map, NO
+                                                                              scalar-tower instances — the
+                                                                              ℚ-algebra diamond
+                                                                              DivisionRing.toRatAlgebra vs R
+                                                                              atFunc.instAlgebraOfPolynomial
+                                                                              makes towers unusable);
+                                                                              descent lemma mirroring
+                                                                              eq_zero_of_forall_hasSum_zero:
+                                                                              evalAt₂ u₀ v₀ := RatFunc.eval
+                                                                              (evalAtHom u₀) v₀,
+                                                                              coefficientwise vanishing via
+                                                                              coeffs_eq_zero_of_hasSum_punct
+                                                                              ured, numerator-polynomial-
+                                                                              over-ℚ(u) infinite roots +
+                                                                              evalAtHom injectivity;
+                                                                              sampling: ONE fixed
+                                                                              transcendental u₀ ∈ (1/2,1), S
+                                                                              := reals in (1/2,1)
+                                                                              transcendental over ℚ(u₀)
+                                                                              (complement countable via
+                                                                              Algebraic.countable with R :=
+                                                                              RatFunc ℚ), r := 1/4 uniform
+                                                                              window; compat: composite homs
+                                                                              equal evalAtHom v₀ resp.
+                                                                              evalAtHom (u₀v₀) by
+                                                                              ratFuncQ_ringHom_ext
+                                                                              (IsLocalization.ringHom_ext
+                                                                              (nonZeroDivisors ℚ[X]) +
+                                                                              Polynomial.ringHom_ext +
+                                                                              Rat.subsingleton_ringHom);
+                                                                              hasSum transport mirrors
+                                                                              hasSum_evalAt_add/neg/sub/mul;
+                                                                              analytic input: analytic_chord
+                                                                              X/analytic_chordY (PROVEN in
+                                                                              TateCurveConstruction,
+                                                                              currently private — publicize
+                                                                              when this consumer lands).
+                                                                              Then pull ℚ(u)(v)⟦q⟧ → the
+                                                                              2-var CoeffRing analog and
+                                                                              evaluate at (u₀,v₀,q₀) ∈ k
+                                                                              with the fundamental-annulus
+                                                                              convergence bounds (evalA is
+                                                                              already the “two-variable
+                                                                              analogue of evalInt”).
+                                                                            - ❌· `TateCurve.evalA_chordX_of_formal` — two-variable evaluation
+                                                                              transport for the chord
+                                                                              X-identity (sorry node):
+                                                                              coeffRingEval₂ (u₀,v₀) :
+                                                                              CoeffRing₂ →+* k via
+                                                                              Localization.awayLift at the
+                                                                              nonvanishing
+                                                                              u₀(1-u₀)v₀(1-v₀)(1-u₀v₀); slot
+                                                                              bridges coeffRingEval₂ ∘ uSlot
+                                                                              = coeffRingEval u₀ / v₀-slot /
+                                                                              uv-slot = coeffRingEval (u₀v₀)
+                                                                              (localization-hom uniqueness);
+                                                                              evalA₂-sums with summability
+                                                                              from the fundamental-annulus
+                                                                              bounds; add/mul arithmetic
+                                                                              mirroring evalA_add/evalA_mul
+                                                                              (nonarchimedean Cauchy
+                                                                              product); assembly mirrors
+                                                                              evalA_weierstrass.
                                                                     - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
                                                                       chord X-identity (sorry node):
                                                                       u₀v₀ below the fundamental
@@ -2149,10 +2359,16 @@ entries file). To add/remove/annotate a node, edit
                                                           Y-identity (DERIVED 2026-07-18: same
                                                           bridge rewrite, delegating to
                                                           evalA_chordY).
-                                                            - ❌· `TateCurve.evalA_chordY` — evalA-level chord Y-identity (sorry
-                                                              node): same descent route as
-                                                              evalA_chordX with analytic_chordY as
-                                                              the analytic input.
+                                                            - ✅· `TateCurve.evalA_chordY` — evalA-level chord Y-identity (DERIVED
+                                                              2026-07-18: same via chordY_formal and
+                                                              its transport).
+                                                                - ❌· `TateCurve.chordY_formal` — formal chord Y-identity in
+                                                                  CoeffRing₂⟦q⟧ (sorry node): same
+                                                                  route as chordX_formal with
+                                                                  analytic_chordY.
+                                                                - ❌· `TateCurve.evalA_chordY_of_formal` — two-variable evaluation transport
+                                                                  for the chord Y-identity (sorry
+                                                                  node): mirrors the X-transport.
                                                         - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared chord
                                                           Y-identity (sorry node): same shift-
                                                           reduction as the X-shifted case.
@@ -2170,65 +2386,95 @@ entries file). To add/remove/annotate a node, edit
                                                           evalA_XA_eq_bilateralX /
                                                           evalA_YA_eq_bilateralY, delegating to
                                                           evalA_chordX).
-                                                            - ❌· `TateCurve.evalA_chordX` — evalA-level chord X-identity (sorry
-                                                              node — the pure series content over
-                                                              k): all three of u₀, v₀, u₀v₀ in the
-                                                              fundamental annulus: rewrite the six
-                                                              bilateral values through
-                                                              evalA_XA_eq_bilateralX /
-                                                              evalA_YA_eq_bilateralY (bridges need ≠
-                                                              0, ≠ 1: u₀v₀ ≠ 1 = hne1, u₀v₀ ≠ 0 from
-                                                              hu0,hv0), then the identity is the
-                                                              k-evaluation of the 2-var formal chord
-                                                              identity in ℚ(u)(v)⟦q⟧ = (RatFunc
-                                                              (RatFunc ℚ))⟦q⟧. Formal layer (to be
-                                                              built AS CONSUMED, top-down): three
-                                                              substitution homs ℚ(u) →+* ℚ(u)(v)
-                                                              (C-embedding; u↦v and u↦uv via
-                                                              substHom := coercion of
-                                                              RatFunc.algEquivOfTranscendental,
-                                                              transcendence transferred from
-                                                              RatFunc.transcendental_X over ℚ(u)
-                                                              down to ℚ by hom-uniqueness
-                                                              Rat.subsingleton_ringHom +
-                                                              Polynomial.eval₂_map, NO scalar-tower
-                                                              instances — the ℚ-algebra diamond
-                                                              DivisionRing.toRatAlgebra vs
-                                                              RatFunc.instAlgebraOfPolynomial makes
-                                                              towers unusable); descent lemma
-                                                              mirroring
-                                                              eq_zero_of_forall_hasSum_zero: evalAt₂
-                                                              u₀ v₀ := RatFunc.eval (evalAtHom u₀)
-                                                              v₀, coefficientwise vanishing via
-                                                              coeffs_eq_zero_of_hasSum_punctured,
-                                                              numerator-polynomial-over-ℚ(u)
-                                                              infinite roots + evalAtHom
-                                                              injectivity; sampling: ONE fixed
-                                                              transcendental u₀ ∈ (1/2,1), S :=
-                                                              reals in (1/2,1) transcendental over
-                                                              ℚ(u₀) (complement countable via
-                                                              Algebraic.countable with R := RatFunc
-                                                              ℚ), r := 1/4 uniform window; compat:
-                                                              composite homs equal evalAtHom v₀
-                                                              resp. evalAtHom (u₀v₀) by
-                                                              ratFuncQ_ringHom_ext
-                                                              (IsLocalization.ringHom_ext
-                                                              (nonZeroDivisors ℚ[X]) +
-                                                              Polynomial.ringHom_ext +
-                                                              Rat.subsingleton_ringHom); hasSum
-                                                              transport mirrors
-                                                              hasSum_evalAt_add/neg/sub/mul;
-                                                              analytic input:
-                                                              analytic_chordX/analytic_chordY
-                                                              (PROVEN in TateCurveConstruction,
-                                                              currently private — publicize when
-                                                              this consumer lands). Then pull
-                                                              ℚ(u)(v)⟦q⟧ → the 2-var CoeffRing
-                                                              analog and evaluate at (u₀,v₀,q₀) ∈ k
-                                                              with the fundamental-annulus
-                                                              convergence bounds (evalA is already
-                                                              the “two-variable analogue of
-                                                              evalInt”).
+                                                            - ✅· `TateCurve.evalA_chordX` — evalA-level chord X-identity (DERIVED
+                                                              2026-07-18: applies the two-variable
+                                                              evaluation transport to the formal
+                                                              identity chordX_formal).
+                                                                - ❌· `TateCurve.chordX_formal` — formal chord X-identity in
+                                                                  CoeffRing₂⟦q⟧ (sorry node):
+                                                                  CoeffRing₂ = ℚ[u,v] localized away
+                                                                  from u(1-u)v(1-v)(1-uv), slot maps
+                                                                  uSlot/vSlot/uvSlot : CoeffRing →
+                                                                  CoeffRing₂ built
+                                                                  (Localization.awayLift over
+                                                                  eval₂RingHom substitutions;
+                                                                  denominator factors proven units).
+                                                                  To resolve: inject CoeffRing₂ into
+                                                                  ℚ(u)(v) = RatFunc (RatFunc ℚ)
+                                                                  (mirror
+                                                                  coeffRingToRatFunc_injective),
+                                                                  pull the identity back from the
+                                                                  ℚ(u)(v)⟦q⟧ identity, which
+                                                                  descends from analytic_chordX
+                                                                  (PROVEN, TateCurveConstruction) —
+                                                                  full descent design: Formal layer
+                                                                  (to be built AS CONSUMED, top-
+                                                                  down): three substitution homs
+                                                                  ℚ(u) →+* ℚ(u)(v) (C-embedding; u↦v
+                                                                  and u↦uv via substHom := coercion
+                                                                  of
+                                                                  RatFunc.algEquivOfTranscendental,
+                                                                  transcendence transferred from
+                                                                  RatFunc.transcendental_X over ℚ(u)
+                                                                  down to ℚ by hom-uniqueness
+                                                                  Rat.subsingleton_ringHom +
+                                                                  Polynomial.eval₂_map, NO scalar-
+                                                                  tower instances — the ℚ-algebra
+                                                                  diamond DivisionRing.toRatAlgebra
+                                                                  vs RatFunc.instAlgebraOfPolynomial
+                                                                  makes towers unusable); descent
+                                                                  lemma mirroring
+                                                                  eq_zero_of_forall_hasSum_zero:
+                                                                  evalAt₂ u₀ v₀ := RatFunc.eval
+                                                                  (evalAtHom u₀) v₀, coefficientwise
+                                                                  vanishing via coeffs_eq_zero_of_ha
+                                                                  sSum_punctured, numerator-
+                                                                  polynomial-over-ℚ(u) infinite
+                                                                  roots + evalAtHom injectivity;
+                                                                  sampling: ONE fixed transcendental
+                                                                  u₀ ∈ (1/2,1), S := reals in
+                                                                  (1/2,1) transcendental over ℚ(u₀)
+                                                                  (complement countable via
+                                                                  Algebraic.countable with R :=
+                                                                  RatFunc ℚ), r := 1/4 uniform
+                                                                  window; compat: composite homs
+                                                                  equal evalAtHom v₀ resp. evalAtHom
+                                                                  (u₀v₀) by ratFuncQ_ringHom_ext
+                                                                  (IsLocalization.ringHom_ext
+                                                                  (nonZeroDivisors ℚ[X]) +
+                                                                  Polynomial.ringHom_ext +
+                                                                  Rat.subsingleton_ringHom); hasSum
+                                                                  transport mirrors
+                                                                  hasSum_evalAt_add/neg/sub/mul;
+                                                                  analytic input:
+                                                                  analytic_chordX/analytic_chordY
+                                                                  (PROVEN in TateCurveConstruction,
+                                                                  currently private — publicize when
+                                                                  this consumer lands). Then pull
+                                                                  ℚ(u)(v)⟦q⟧ → the 2-var CoeffRing
+                                                                  analog and evaluate at (u₀,v₀,q₀)
+                                                                  ∈ k with the fundamental-annulus
+                                                                  convergence bounds (evalA is
+                                                                  already the “two-variable analogue
+                                                                  of evalInt”).
+                                                                - ❌· `TateCurve.evalA_chordX_of_formal` — two-variable evaluation transport
+                                                                  for the chord X-identity (sorry
+                                                                  node): coeffRingEval₂ (u₀,v₀) :
+                                                                  CoeffRing₂ →+* k via
+                                                                  Localization.awayLift at the
+                                                                  nonvanishing
+                                                                  u₀(1-u₀)v₀(1-v₀)(1-u₀v₀); slot
+                                                                  bridges coeffRingEval₂ ∘ uSlot =
+                                                                  coeffRingEval u₀ / v₀-slot / uv-
+                                                                  slot = coeffRingEval (u₀v₀)
+                                                                  (localization-hom uniqueness);
+                                                                  evalA₂-sums with summability from
+                                                                  the fundamental-annulus bounds;
+                                                                  add/mul arithmetic mirroring
+                                                                  evalA_add/evalA_mul
+                                                                  (nonarchimedean Cauchy product);
+                                                                  assembly mirrors
+                                                                  evalA_weierstrass.
                                                         - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared chord
                                                           X-identity (sorry node): u₀v₀ below the
                                                           fundamental annulus (val(u₀v₀) ≤ val q₀
@@ -2362,10 +2608,16 @@ entries file). To add/remove/annotate a node, edit
                                                           Y-identity (DERIVED 2026-07-18: same
                                                           bridge rewrite, delegating to
                                                           evalA_chordY).
-                                                            - ❌· `TateCurve.evalA_chordY` — evalA-level chord Y-identity (sorry
-                                                              node): same descent route as
-                                                              evalA_chordX with analytic_chordY as
-                                                              the analytic input.
+                                                            - ✅· `TateCurve.evalA_chordY` — evalA-level chord Y-identity (DERIVED
+                                                              2026-07-18: same via chordY_formal and
+                                                              its transport).
+                                                                - ❌· `TateCurve.chordY_formal` — formal chord Y-identity in
+                                                                  CoeffRing₂⟦q⟧ (sorry node): same
+                                                                  route as chordX_formal with
+                                                                  analytic_chordY.
+                                                                - ❌· `TateCurve.evalA_chordY_of_formal` — two-variable evaluation transport
+                                                                  for the chord Y-identity (sorry
+                                                                  node): mirrors the X-transport.
                                                         - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared chord
                                                           Y-identity (sorry node): same shift-
                                                           reduction as the X-shifted case.
@@ -2383,65 +2635,95 @@ entries file). To add/remove/annotate a node, edit
                                                           evalA_XA_eq_bilateralX /
                                                           evalA_YA_eq_bilateralY, delegating to
                                                           evalA_chordX).
-                                                            - ❌· `TateCurve.evalA_chordX` — evalA-level chord X-identity (sorry
-                                                              node — the pure series content over
-                                                              k): all three of u₀, v₀, u₀v₀ in the
-                                                              fundamental annulus: rewrite the six
-                                                              bilateral values through
-                                                              evalA_XA_eq_bilateralX /
-                                                              evalA_YA_eq_bilateralY (bridges need ≠
-                                                              0, ≠ 1: u₀v₀ ≠ 1 = hne1, u₀v₀ ≠ 0 from
-                                                              hu0,hv0), then the identity is the
-                                                              k-evaluation of the 2-var formal chord
-                                                              identity in ℚ(u)(v)⟦q⟧ = (RatFunc
-                                                              (RatFunc ℚ))⟦q⟧. Formal layer (to be
-                                                              built AS CONSUMED, top-down): three
-                                                              substitution homs ℚ(u) →+* ℚ(u)(v)
-                                                              (C-embedding; u↦v and u↦uv via
-                                                              substHom := coercion of
-                                                              RatFunc.algEquivOfTranscendental,
-                                                              transcendence transferred from
-                                                              RatFunc.transcendental_X over ℚ(u)
-                                                              down to ℚ by hom-uniqueness
-                                                              Rat.subsingleton_ringHom +
-                                                              Polynomial.eval₂_map, NO scalar-tower
-                                                              instances — the ℚ-algebra diamond
-                                                              DivisionRing.toRatAlgebra vs
-                                                              RatFunc.instAlgebraOfPolynomial makes
-                                                              towers unusable); descent lemma
-                                                              mirroring
-                                                              eq_zero_of_forall_hasSum_zero: evalAt₂
-                                                              u₀ v₀ := RatFunc.eval (evalAtHom u₀)
-                                                              v₀, coefficientwise vanishing via
-                                                              coeffs_eq_zero_of_hasSum_punctured,
-                                                              numerator-polynomial-over-ℚ(u)
-                                                              infinite roots + evalAtHom
-                                                              injectivity; sampling: ONE fixed
-                                                              transcendental u₀ ∈ (1/2,1), S :=
-                                                              reals in (1/2,1) transcendental over
-                                                              ℚ(u₀) (complement countable via
-                                                              Algebraic.countable with R := RatFunc
-                                                              ℚ), r := 1/4 uniform window; compat:
-                                                              composite homs equal evalAtHom v₀
-                                                              resp. evalAtHom (u₀v₀) by
-                                                              ratFuncQ_ringHom_ext
-                                                              (IsLocalization.ringHom_ext
-                                                              (nonZeroDivisors ℚ[X]) +
-                                                              Polynomial.ringHom_ext +
-                                                              Rat.subsingleton_ringHom); hasSum
-                                                              transport mirrors
-                                                              hasSum_evalAt_add/neg/sub/mul;
-                                                              analytic input:
-                                                              analytic_chordX/analytic_chordY
-                                                              (PROVEN in TateCurveConstruction,
-                                                              currently private — publicize when
-                                                              this consumer lands). Then pull
-                                                              ℚ(u)(v)⟦q⟧ → the 2-var CoeffRing
-                                                              analog and evaluate at (u₀,v₀,q₀) ∈ k
-                                                              with the fundamental-annulus
-                                                              convergence bounds (evalA is already
-                                                              the “two-variable analogue of
-                                                              evalInt”).
+                                                            - ✅· `TateCurve.evalA_chordX` — evalA-level chord X-identity (DERIVED
+                                                              2026-07-18: applies the two-variable
+                                                              evaluation transport to the formal
+                                                              identity chordX_formal).
+                                                                - ❌· `TateCurve.chordX_formal` — formal chord X-identity in
+                                                                  CoeffRing₂⟦q⟧ (sorry node):
+                                                                  CoeffRing₂ = ℚ[u,v] localized away
+                                                                  from u(1-u)v(1-v)(1-uv), slot maps
+                                                                  uSlot/vSlot/uvSlot : CoeffRing →
+                                                                  CoeffRing₂ built
+                                                                  (Localization.awayLift over
+                                                                  eval₂RingHom substitutions;
+                                                                  denominator factors proven units).
+                                                                  To resolve: inject CoeffRing₂ into
+                                                                  ℚ(u)(v) = RatFunc (RatFunc ℚ)
+                                                                  (mirror
+                                                                  coeffRingToRatFunc_injective),
+                                                                  pull the identity back from the
+                                                                  ℚ(u)(v)⟦q⟧ identity, which
+                                                                  descends from analytic_chordX
+                                                                  (PROVEN, TateCurveConstruction) —
+                                                                  full descent design: Formal layer
+                                                                  (to be built AS CONSUMED, top-
+                                                                  down): three substitution homs
+                                                                  ℚ(u) →+* ℚ(u)(v) (C-embedding; u↦v
+                                                                  and u↦uv via substHom := coercion
+                                                                  of
+                                                                  RatFunc.algEquivOfTranscendental,
+                                                                  transcendence transferred from
+                                                                  RatFunc.transcendental_X over ℚ(u)
+                                                                  down to ℚ by hom-uniqueness
+                                                                  Rat.subsingleton_ringHom +
+                                                                  Polynomial.eval₂_map, NO scalar-
+                                                                  tower instances — the ℚ-algebra
+                                                                  diamond DivisionRing.toRatAlgebra
+                                                                  vs RatFunc.instAlgebraOfPolynomial
+                                                                  makes towers unusable); descent
+                                                                  lemma mirroring
+                                                                  eq_zero_of_forall_hasSum_zero:
+                                                                  evalAt₂ u₀ v₀ := RatFunc.eval
+                                                                  (evalAtHom u₀) v₀, coefficientwise
+                                                                  vanishing via coeffs_eq_zero_of_ha
+                                                                  sSum_punctured, numerator-
+                                                                  polynomial-over-ℚ(u) infinite
+                                                                  roots + evalAtHom injectivity;
+                                                                  sampling: ONE fixed transcendental
+                                                                  u₀ ∈ (1/2,1), S := reals in
+                                                                  (1/2,1) transcendental over ℚ(u₀)
+                                                                  (complement countable via
+                                                                  Algebraic.countable with R :=
+                                                                  RatFunc ℚ), r := 1/4 uniform
+                                                                  window; compat: composite homs
+                                                                  equal evalAtHom v₀ resp. evalAtHom
+                                                                  (u₀v₀) by ratFuncQ_ringHom_ext
+                                                                  (IsLocalization.ringHom_ext
+                                                                  (nonZeroDivisors ℚ[X]) +
+                                                                  Polynomial.ringHom_ext +
+                                                                  Rat.subsingleton_ringHom); hasSum
+                                                                  transport mirrors
+                                                                  hasSum_evalAt_add/neg/sub/mul;
+                                                                  analytic input:
+                                                                  analytic_chordX/analytic_chordY
+                                                                  (PROVEN in TateCurveConstruction,
+                                                                  currently private — publicize when
+                                                                  this consumer lands). Then pull
+                                                                  ℚ(u)(v)⟦q⟧ → the 2-var CoeffRing
+                                                                  analog and evaluate at (u₀,v₀,q₀)
+                                                                  ∈ k with the fundamental-annulus
+                                                                  convergence bounds (evalA is
+                                                                  already the “two-variable analogue
+                                                                  of evalInt”).
+                                                                - ❌· `TateCurve.evalA_chordX_of_formal` — two-variable evaluation transport
+                                                                  for the chord X-identity (sorry
+                                                                  node): coeffRingEval₂ (u₀,v₀) :
+                                                                  CoeffRing₂ →+* k via
+                                                                  Localization.awayLift at the
+                                                                  nonvanishing
+                                                                  u₀(1-u₀)v₀(1-v₀)(1-u₀v₀); slot
+                                                                  bridges coeffRingEval₂ ∘ uSlot =
+                                                                  coeffRingEval u₀ / v₀-slot / uv-
+                                                                  slot = coeffRingEval (u₀v₀)
+                                                                  (localization-hom uniqueness);
+                                                                  evalA₂-sums with summability from
+                                                                  the fundamental-annulus bounds;
+                                                                  add/mul arithmetic mirroring
+                                                                  evalA_add/evalA_mul
+                                                                  (nonarchimedean Cauchy product);
+                                                                  assembly mirrors
+                                                                  evalA_weierstrass.
                                                         - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared chord
                                                           X-identity (sorry node): u₀v₀ below the
                                                           fundamental annulus (val(u₀v₀) ≤ val q₀

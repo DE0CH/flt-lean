@@ -172,8 +172,12 @@
   "TateCurve.bilateral_chordX_cleared_shifted": "❌",
   "TateCurve.bilateral_chordY_cleared_window": "✅",
   "TateCurve.bilateral_chordY_cleared_shifted": "❌",
-  "TateCurve.evalA_chordX": "❌",
-  "TateCurve.evalA_chordY": "❌"
+  "TateCurve.evalA_chordX": "✅",
+  "TateCurve.evalA_chordY": "✅",
+  "TateCurve.chordX_formal": "❌",
+  "TateCurve.chordY_formal": "❌",
+  "TateCurve.evalA_chordX_of_formal": "❌",
+  "TateCurve.evalA_chordY_of_formal": "❌"
  },
  "children": {
   "fermatLastTheoremThree": [],
@@ -782,8 +786,18 @@
    "TateCurve.evalA_chordY"
   ],
   "TateCurve.bilateral_chordY_cleared_shifted": [],
-  "TateCurve.evalA_chordX": [],
-  "TateCurve.evalA_chordY": []
+  "TateCurve.evalA_chordX": [
+   "TateCurve.evalA_chordX_of_formal",
+   "TateCurve.chordX_formal"
+  ],
+  "TateCurve.evalA_chordY": [
+   "TateCurve.evalA_chordY_of_formal",
+   "TateCurve.chordY_formal"
+  ],
+  "TateCurve.chordX_formal": [],
+  "TateCurve.chordY_formal": [],
+  "TateCurve.evalA_chordX_of_formal": [],
+  "TateCurve.evalA_chordY_of_formal": []
  },
  "roots": [
   "fermat_last_theorem"
