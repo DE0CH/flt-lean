@@ -2529,6 +2529,7 @@ private theorem analytic_chordY {u v q : ℂ} (h0 : 0 < ‖q‖)
     rw [hlog_uv] at hquv
     exact div_lt_div_of_pos_right (by linarith) (by positivity)
 
+
 end Blueprint
 
 end TateCurve
