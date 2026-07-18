@@ -322,6 +322,184 @@ theorem WeierstrassCurve.tateCurveModel_baseChange (q : k)
     ((tateCurveModel q hq)⁄k) = tateCurve q := by
   ext <;> rfl
 
+open Polynomial in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The Tate curve has split multiplicative reduction** (Silverman,
+ATAEC V.3.1(b)-adjacent, the reduction-type part): its coefficients
+`a₄(q), a₆(q)` lie in the maximal ideal, so `c₄ = 1 − 48a₄ ≡ 1` (a
+unit: Kraus–Laska minimality) while `Δ ∈ (a₄, a₆)` reduces to `0`; the
+reduced curve is the nodal `y² + xy = x³`, whose node polynomial is
+`X(X + 1)` — split. -/
+theorem WeierstrassCurve.hasSplitMultiplicativeReduction_tateCurve
+    (q : k) (hq : valuation k q < 1) :
+    (tateCurve q).HasSplitMultiplicativeReduction 𝒪[k] := by
+  classical
+  have hA4 := valuation_tateA₄_lt_one q hq
+  have hA6 := valuation_tateA₆_lt_one q hq
+  -- `c₄` and `Δ` of the Tate curve, explicitly
+  have hc₄eq : (tateCurve q).c₄ = 1 - 48 * tateA₄ q := by
+    simp only [tateCurve, WeierstrassCurve.c₄, WeierstrassCurve.b₂,
+      WeierstrassCurve.b₄]
+    ring
+  have hΔeq : (tateCurve q).Δ =
+      tateA₄ q * (tateA₄ q - 64 * (tateA₄ q) ^ 2 + 72 * tateA₆ q) +
+      tateA₆ q * (-1 - 432 * tateA₆ q) := by
+    simp only [tateCurve, WeierstrassCurve.Δ, WeierstrassCurve.b₂,
+      WeierstrassCurve.b₄, WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+    ring
+  -- auxiliary bounds
+  have h48v : valuation k (48 : k) ≤ 1 := by
+    exact_mod_cast valuation_intCast_le_one (R := k) 48
+  have h64v : valuation k (64 : k) ≤ 1 := by
+    exact_mod_cast valuation_intCast_le_one (R := k) 64
+  have h72v : valuation k (72 : k) ≤ 1 := by
+    exact_mod_cast valuation_intCast_le_one (R := k) 72
+  have h432v : valuation k (432 : k) ≤ 1 := by
+    exact_mod_cast valuation_intCast_le_one (R := k) 432
+  have hsmall : ∀ x y : k, valuation k x < 1 → valuation k y ≤ 1 →
+      valuation k (x * y) < 1 := by
+    intro x y hx hy
+    rw [map_mul]
+    calc valuation k x * valuation k y ≤ valuation k x * 1 :=
+        mul_le_mul' le_rfl hy
+      _ = valuation k x := mul_one _
+      _ < 1 := hx
+  have h48 : valuation k (48 * tateA₄ q) < 1 := by
+    rw [map_mul]
+    calc valuation k (48 : k) * valuation k (tateA₄ q)
+        ≤ 1 * valuation k (tateA₄ q) := mul_le_mul' h48v le_rfl
+      _ = valuation k (tateA₄ q) := one_mul _
+      _ < 1 := hA4
+  have hc₄K : valuation k (tateCurve q).c₄ = 1 := by
+    rw [hc₄eq]
+    exact Valuation.map_one_sub_of_lt (valuation k) h48
+  have hΔK : valuation k (tateCurve q).Δ < 1 := by
+    rw [hΔeq]
+    refine lt_of_le_of_lt (Valuation.map_add _ _ _) (max_lt ?_ ?_)
+    · refine hsmall _ _ hA4 ?_
+      refine le_trans (Valuation.map_add _ _ _) (max_le ?_ ?_)
+      · refine le_trans (Valuation.map_sub _ _ _) (max_le (le_of_lt hA4) ?_)
+        rw [map_mul, map_pow]
+        exact mul_le_one' h64v (pow_le_one' (le_of_lt hA4) 2)
+      · rw [map_mul]
+        exact mul_le_one' h72v (le_of_lt hA6)
+    · refine hsmall _ _ hA6 ?_
+      refine le_trans (Valuation.map_sub _ _ _) (max_le ?_ ?_)
+      · rw [Valuation.map_neg, Valuation.map_one]
+      · rw [map_mul]
+        exact mul_le_one' h432v (le_of_lt hA6)
+  -- integrality and the adic conversions
+  haveI hint : IsIntegral 𝒪[k] (tateCurve q) :=
+    ⟨⟨tateCurveModel q hq, (tateCurveModel_baseChange q hq).symm⟩⟩
+  have hc₄mem : (tateCurve q).c₄ ∈ (valuation k).integer := le_of_eq hc₄K
+  have hΔmem : (tateCurve q).Δ ∈ (valuation k).integer := le_of_lt hΔK
+  have hc₄adic : (IsDiscreteValuationRing.maximalIdeal
+      𝒪[k]).valuation k ((tateCurve q).c₄) = 1 :=
+    (ValuativeRel.adicValuation_eq_one_iff (K := k)
+      (x := ⟨(tateCurve q).c₄, hc₄mem⟩)).mpr hc₄K
+  have hΔadic : (IsDiscreteValuationRing.maximalIdeal
+      𝒪[k]).valuation k ((tateCurve q).Δ) < 1 :=
+    (ValuativeRel.adicValuation_lt_one_iff (K := k)
+      (x := ⟨(tateCurve q).Δ, hΔmem⟩)).mpr hΔK
+  -- residues of the coefficients vanish
+  have hresA : (algebraMap 𝒪[k] (IsLocalRing.ResidueField 𝒪[k]))
+      (⟨tateA₄ q, le_of_lt hA4⟩ : 𝒪[k]) = 0 := by
+    refine Ideal.Quotient.eq_zero_iff_mem.mpr ?_
+    rw [IsLocalRing.mem_maximalIdeal]
+    exact Valuation.Integer.not_isUnit_iff_valuation_lt_one.mpr hA4
+  have hresB : (algebraMap 𝒪[k] (IsLocalRing.ResidueField 𝒪[k]))
+      (⟨tateA₆ q, le_of_lt hA6⟩ : 𝒪[k]) = 0 := by
+    refine Ideal.Quotient.eq_zero_iff_mem.mpr ?_
+    rw [IsLocalRing.mem_maximalIdeal]
+    exact Valuation.Integer.not_isUnit_iff_valuation_lt_one.mpr hA6
+  have hredmodel : (tateCurveModel q hq).map
+      (algebraMap 𝒪[k] (IsLocalRing.ResidueField 𝒪[k])) =
+      ⟨1, 0, 0, 0, 0⟩ := by
+    ext
+    · show (algebraMap 𝒪[k] (IsLocalRing.ResidueField 𝒪[k])) 1 = 1
+      exact map_one _
+    · show (algebraMap 𝒪[k] (IsLocalRing.ResidueField 𝒪[k])) 0 = 0
+      exact map_zero _
+    · show (algebraMap 𝒪[k] (IsLocalRing.ResidueField 𝒪[k])) 0 = 0
+      exact map_zero _
+    · exact hresA
+    · exact hresB
+  -- assemble
+  have hmin : IsMinimal 𝒪[k] (tateCurve q) :=
+    isMinimal_of_valuation_c₄_eq_one (R := 𝒪[k]) (tateCurve q) hc₄adic
+  have hmult : (tateCurve q).HasMultiplicativeReduction 𝒪[k] :=
+    { toIsMinimal := hmin
+      badReduction := hΔadic
+      multiplicativeReduction := hc₄adic }
+  refine { hmult with splitMultiplicativeReduction := ?_ }
+  have hIM : (tateCurve q).integralModel 𝒪[k] = tateCurveModel q hq := by
+    haveI : IsIntegral 𝒪[k] ((tateCurveModel q hq)⁄k) :=
+      ⟨⟨tateCurveModel q hq, rfl⟩⟩
+    have h0 := integralModel_baseChange (K := k) 𝒪[k] (tateCurveModel q hq)
+    convert h0 using 2
+    exact (tateCurveModel_baseChange q hq).symm
+  rw [hIM]
+  -- the reduced node polynomial is `X (X + 1)`
+  have hc₄red : (algebraMap 𝒪[k] (IsLocalRing.ResidueField 𝒪[k]))
+      ((tateCurveModel q hq).c₄) = 1 := by
+    rw [← WeierstrassCurve.map_c₄, hredmodel]
+    show WeierstrassCurve.c₄ ⟨1, 0, 0, 0, 0⟩ = 1
+    simp [WeierstrassCurve.c₄, WeierstrassCurve.b₂, WeierstrassCurve.b₄]
+  have ha₁red : (algebraMap 𝒪[k] (IsLocalRing.ResidueField 𝒪[k]))
+      ((tateCurveModel q hq).a₁ * (tateCurveModel q hq).c₄) = 1 := by
+    rw [map_mul, hc₄red]
+    show (algebraMap 𝒪[k] (IsLocalRing.ResidueField 𝒪[k])) 1 * 1 = 1
+    rw [map_one, one_mul]
+  have hconstred : (algebraMap 𝒪[k] (IsLocalRing.ResidueField 𝒪[k]))
+      (54 * (tateCurveModel q hq).b₆ -
+        3 * (tateCurveModel q hq).b₂ * (tateCurveModel q hq).b₄ +
+        (tateCurveModel q hq).a₂ * (tateCurveModel q hq).c₄) = 0 := by
+    rw [map_add, map_sub, map_mul, map_mul, map_mul, map_mul,
+      ← WeierstrassCurve.map_b₆, ← WeierstrassCurve.map_b₂,
+      ← WeierstrassCurve.map_b₄, ← WeierstrassCurve.map_c₄, hredmodel]
+    show (algebraMap 𝒪[k] (IsLocalRing.ResidueField 𝒪[k])) 54 *
+        WeierstrassCurve.b₆ ⟨1, 0, 0, 0, 0⟩ -
+      (algebraMap 𝒪[k] (IsLocalRing.ResidueField 𝒪[k])) 3 *
+        WeierstrassCurve.b₂ ⟨1, 0, 0, 0, 0⟩ *
+        WeierstrassCurve.b₄ ⟨1, 0, 0, 0, 0⟩ +
+      (algebraMap 𝒪[k] (IsLocalRing.ResidueField 𝒪[k]))
+        (tateCurveModel q hq).a₂ *
+        WeierstrassCurve.c₄ ⟨1, 0, 0, 0, 0⟩ = 0
+    have hb₆ : WeierstrassCurve.b₆ (⟨1, 0, 0, 0, 0⟩ :
+        WeierstrassCurve (IsLocalRing.ResidueField 𝒪[k])) = 0 := by
+      simp [WeierstrassCurve.b₆]
+    have hb₄ : WeierstrassCurve.b₄ (⟨1, 0, 0, 0, 0⟩ :
+        WeierstrassCurve (IsLocalRing.ResidueField 𝒪[k])) = 0 := by
+      simp [WeierstrassCurve.b₄]
+    have ha₂ : (tateCurveModel q hq).a₂ = 0 := rfl
+    rw [hb₆, hb₄, ha₂, map_zero]
+    ring
+  have hpoly : (Polynomial.map (algebraMap 𝒪[k]
+      (IsLocalRing.ResidueField 𝒪[k]))
+      (Polynomial.C ((tateCurveModel q hq)).c₄ * Polynomial.X ^ 2 +
+        Polynomial.C ((tateCurveModel q hq).a₁ *
+          (tateCurveModel q hq).c₄) * Polynomial.X -
+        Polynomial.C (54 * (tateCurveModel q hq).b₆ -
+          3 * (tateCurveModel q hq).b₂ * (tateCurveModel q hq).b₄ +
+          (tateCurveModel q hq).a₂ * (tateCurveModel q hq).c₄))) =
+      Polynomial.X ^ 2 + Polynomial.X := by
+    rw [Polynomial.map_sub, Polynomial.map_add, Polynomial.map_mul,
+      Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_C,
+      Polynomial.map_C, Polynomial.map_C, Polynomial.map_X,
+      hc₄red, ha₁red, hconstred]
+    simp
+  rw [hpoly]
+  -- `X² + X = X (X + 1)` splits
+  have hfac : (Polynomial.X ^ 2 + Polynomial.X :
+      Polynomial (IsLocalRing.ResidueField 𝒪[k])) =
+      Polynomial.X * (Polynomial.X + Polynomial.C 1) := by
+    rw [Polynomial.C_1]
+    ring
+  rw [hfac]
+  exact Polynomial.Splits.X.mul (Polynomial.Splits.X_add_C 1)
+
 /-! ### Functoriality
 
 Now let `l` be a second nonarchimedean local field and let `k → l` be a morphism of fields
