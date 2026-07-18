@@ -1662,10 +1662,18 @@ entries file). To add/remove/annotate a node, edit
                                     - ❌· `GaloisRepresentation.IsHardlyRamified.isFlatAt_baseChange_residue` — flatness transfer (sorry node): open ideals of the discrete
                                       field are ⊥/⊤; the ⊥ case is the I = 𝔪 instance of ρ.IsFlatAt
                                       along kk ≅ R/𝔪 and base-change composition.
-                                    - ❌· `GaloisRepresentation.IsHardlyRamified.exists_residue_package` — the residue package (sorry node): kk := R/𝔪 with
-                                      Field/Finite/char-3/discrete instances, surjective continuous
-                                      ℤ₃-algebra map, open maximal ideal, kernel = 𝔪, rank-2 base
-                                      change.
+                                    - ❌· `GaloisRepresentation.IsHardlyRamified.exists_residue_package` — the residue package (sorry node). PROOF PLAN (worked out
+                                      2026-07-18): kk := IsLocalRing.ResidueField R. (a) 3 ∈ 𝔪: if 3
+                                      were a unit, R = 3R and Nakayama over ℤ₃ (3 ∈ Jacobson
+                                      radical) forces R = 0, contradicting nontriviality of the
+                                      local ring; (b) 𝔪 open: 3R is open (R ≅ ℤ₃ⁿ topologically via
+                                      IsModuleTopology + Free, and 3·ℤ₃ⁿ is open), and a subgroup
+                                      containing an open subgroup is open; (c) Finite kk: quotient
+                                      of R/3R ≅ (ℤ/3)ⁿ; (d) topology on kk: ⊥ (discrete),
+                                      IsTopologicalRing via the discrete instance, ContinuousSMul R
+                                      kk from the open kernel (residue map locally constant); (e)
+                                      Algebra ℤ₃ kk via composition + IsScalarTower.of_algebraMap_eq
+                                      rfl; (f) rank: Module.rank_baseChange.
                 - ✅· `not_isIrreducible_of_charFrob_eq` — `not_isIrreducible_of_charFrob_eq` — Chebotarev + Brauer– Nesbitt — now
                   (2026-07-16, `Chebotarev.lean` + proof in `Lift.lean`): the agreement set with `1
                   ⊕ χ̄`'s charpolys is closed (module topology on `End` over `ZMod ℓ` is discrete ;
