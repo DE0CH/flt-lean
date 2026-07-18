@@ -46,29 +46,12 @@ namespace TateCurve
 
 open PowerSeries
 
-/-! ### The formal `a₄`- and `a₆`-series of the Tate curve -/
+/-! ### The formal `a₄`- and `a₆`-series of the Tate curve
 
-/-- The formal `a₄`-series `a₄(q) = -5s₃(q) ∈ ℤ⟦q⟧` of the Tate curve: the integral
-version of `WeierstrassCurve.tateA₄`. -/
-noncomputable def a₄Formal : ℤ⟦X⟧ :=
-  -5 * sInt 3
-
-/-- The formal `a₆`-series `a₆(q) = -(5s₃(q) + 7s₅(q))/12 ∈ ℤ⟦q⟧` of the Tate curve: the
-integral version of `WeierstrassCurve.tateA₆`. The division is exact, since
-`12 ∣ 5d³ + 7d⁵` for every `d`. -/
-noncomputable def a₆Formal : ℤ⟦X⟧ :=
-  .mk fun n ↦ -((5 * σ 3 n + 7 * σ 5 n : ℤ) / 12)
-
-@[simp]
-theorem coeff_a₄Formal (n : ℕ) : coeff n a₄Formal = -5 * σ 3 n := by
-  simp only [a₄Formal, sInt, neg_mul, map_neg,
-    show ((5 : ℤ⟦X⟧)) = C (5 : ℤ) from (map_ofNat (C : ℤ →+* ℤ⟦X⟧) 5).symm,
-    coeff_C_mul, coeff_mk]
-
-@[simp]
-theorem coeff_a₆Formal (n : ℕ) :
-    coeff n a₆Formal = -((5 * σ 3 n + 7 * σ 5 n : ℤ) / 12) := by
-  simp only [a₆Formal, coeff_mk]
+The definitions `TateCurve.a₄Formal` and `TateCurve.a₆Formal` (with their
+coefficient lemmas `coeff_a₄Formal`/`coeff_a₆Formal`) live upstream in
+`Fermat.FLT.KnownIn1980s.EllipticCurves.TateParameter`, where the formal
+discriminant `TateCurve.ΔFormal` is defined from them. -/
 
 /-! ### Subtraction of evaluations -/
 

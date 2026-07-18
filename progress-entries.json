@@ -858,6 +858,6 @@
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
   "wip": false,
   "fullname": "TateCurve.ΔFormal_eq",
-  "text": "THE formal discriminant identity in ℤ⟦X⟧ (η²⁴/Jacobi): mapped attack via mathlib's discriminantEquiv (weight-12 cusp forms ≃ weight-0 forms, so E₄³−E₆² = 1728·Δ_η), discriminant_eq_q_prod, the g₂/g₃ expansions of TateCurveConstruction, and the coefficient-uniqueness descent."
+  "text": "the formal discriminant identity in ℤ⟦X⟧, now definitional (rfl): ΔFormal is defined in TateParameter.lean as the discriminant polynomial of the Tate quintuple ⟨1,0,0,a₄Formal,a₆Formal⟩; the classical η²⁴-product description X·∏(1−Xⁿ)²⁴ (Jacobi/ATAEC V.3.1(b)) was consumed nowhere — only constantCoeff_ΔFormal = 0 and coeff_one_ΔFormal = 1, both re-proven directly from the polynomial coefficients (σ₃(1)=σ₅(1)=1, (5+7)/12 = 1)."
  }
 ]

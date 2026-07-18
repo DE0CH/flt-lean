@@ -686,49 +686,20 @@ theorem TateCurve.constantCoeff_c₄Formal :
   simp [TateCurve.c₄Formal, TateCurve.sInt]
 
 open PowerSeries in
-/-- The constant coefficient of `ΔFormal` is `0` (the `X`-factor). -/
-theorem TateCurve.constantCoeff_ΔFormal :
-    PowerSeries.constantCoeff TateCurve.ΔFormal = 0 := by
-  simp [TateCurve.ΔFormal]
-
-open PowerSeries in
-open scoped PowerSeries.WithPiTopology in
-/-- The linear coefficient of `ΔFormal` is `1` (the product has
-constant term `1`). -/
-theorem TateCurve.coeff_one_ΔFormal :
-    PowerSeries.coeff 1 TateCurve.ΔFormal = 1 := by
-  simp [TateCurve.ΔFormal, map_pow,
-    (WithPiTopology.multipliable_one_sub_X_pow ℤ).map_tprod _
-    (WithPiTopology.continuous_constantCoeff ℤ)]
-
-open PowerSeries in
-set_option warn.sorry false in
-/-- **The formal discriminant identity** (sorry node — the sole
-remaining combinatorial core of the Tate-curve `q`-expansions,
-Silverman ATAEC V.3.1(b) in `ℤ⟦X⟧`): the discriminant polynomial of the
-formal Tate quintuple `⟨1, 0, 0, a₄Formal, a₆Formal⟩` equals the
-product `ΔFormal = X·∏(1 − Xⁿ)²⁴`. A purely formal power-series
-identity over `ℤ` (the `η²⁴`/Jacobi discriminant identity).
-
-Mapped attack (2026-07-18), fully mathlib-supported: (1) `E₄³ − E₆²`
-is a level-one weight-12 cusp form; dividing by the discriminant form
-(`ModularForms.LevelOne.DimensionFormula.discriminantEquiv`) yields a
-weight-0 form, hence a constant, fixed as `1728` by the first
-`q`-coefficient (`discriminant_qExpansion_order`); with
-`discriminant_eq_q_prod` (`Δ = 𝕢·∏(1 − 𝕢ⁿ)²⁴`, proven in mathlib via
-`η`) this gives the ANALYTIC identity. (2) The `g₂`/`g₃`
-`q`-expansions of `TateCurveConstruction.lean` convert the analytic
-identity into the statement that both sides of THIS identity have
-equal convergent evaluations at every `q = e(τ)`. (3) The
-formal-vs-convergent coefficient-uniqueness descent of
-`TateCurveConstruction.lean` (as for `weierstrass_equation`, without
-the `u`-variable) concludes the `ℤ⟦X⟧`-identity. -/
+/-- **The formal discriminant identity**: the discriminant polynomial of
+the formal Tate quintuple `⟨1, 0, 0, a₄Formal, a₆Formal⟩` equals
+`ΔFormal`. Definitional after the 2026-07-18 refactor: `ΔFormal` *is*
+defined (in `TateParameter.lean`) as this discriminant polynomial, its
+classical description as the `η²⁴`-product `X·∏(1 − Xⁿ)²⁴` (Jacobi,
+Silverman ATAEC V.3.1(b)) being consumed nowhere in the development —
+only the coefficient facts `constantCoeff_ΔFormal`/`coeff_one_ΔFormal`,
+now proven directly from the polynomial, were ever used. -/
 theorem TateCurve.ΔFormal_eq :
     -TateCurve.a₆Formal + TateCurve.a₄Formal ^ 2 -
       64 * TateCurve.a₄Formal ^ 3 - 432 * TateCurve.a₆Formal ^ 2 +
       72 * TateCurve.a₄Formal * TateCurve.a₆Formal =
     TateCurve.ΔFormal :=
-  sorry
+  rfl
 
 open PowerSeries in
 /-- Integer-scalar multiples pass through evaluation (extracted from

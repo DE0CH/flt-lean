@@ -115,31 +115,6 @@ entries file). To add/remove/annotate a node, edit
                                                     - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the
                                                       j-identity leaf, the descent leaf, and the
                                                       PROVEN split reduction type of the Tate curve.
-                                                        - ✅· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E),
-                                                          now DERIVED: ellipticity from the
-                                                          Δ-evaluation leaf via valuation_evalInt_eq
-                                                          (linear coefficient 1); j(E_q)⁻¹ = evalInt
-                                                          q jInv by the proven c₄-identity,
-                                                          evalInt_mul/pow, and evalInt_invOfUnit;
-                                                          the composition through tateParameter by
-                                                          the substitution-evaluation leaf and
-                                                          jInv_subst_jInvReverse.
-                                                            - ✅· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant of the Tate curve is
-                                                              the value of ΔFormal, now DERIVED from
-                                                              the pure formal identity leaf by the
-                                                              evaluation ring homomorphism
-                                                              (evalInt_add/mul/pow + the integer-
-                                                              scalar lemma).
-                                                                - ❌· `TateCurve.ΔFormal_eq` — THE formal discriminant identity
-                                                                  in ℤ⟦X⟧ (η²⁴/Jacobi): mapped
-                                                                  attack via mathlib's
-                                                                  discriminantEquiv (weight-12 cusp
-                                                                  forms ≃ weight-0 forms, so E₄³−E₆²
-                                                                  = 1728·Δ_η),
-                                                                  discriminant_eq_q_prod, the g₂/g₃
-                                                                  expansions of
-                                                                  TateCurveConstruction, and the
-                                                                  coefficient-uniqueness descent.
                                                         - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-
                                                           multiplicative curves over k with equal j
                                                           are k-isomorphic — over the separable
@@ -177,35 +152,6 @@ entries file). To add/remove/annotate a node, edit
                                                           j-identity leaf, the descent leaf, and the
                                                           PROVEN split reduction type of the Tate
                                                           curve.
-                                                            - ✅· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is
-                                                              j(E), now DERIVED: ellipticity from
-                                                              the Δ-evaluation leaf via
-                                                              valuation_evalInt_eq (linear
-                                                              coefficient 1); j(E_q)⁻¹ = evalInt q
-                                                              jInv by the proven c₄-identity,
-                                                              evalInt_mul/pow, and
-                                                              evalInt_invOfUnit; the composition
-                                                              through tateParameter by the
-                                                              substitution-evaluation leaf and
-                                                              jInv_subst_jInvReverse.
-                                                                - ✅· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant of the Tate curve
-                                                                  is the value of ΔFormal, now
-                                                                  DERIVED from the pure formal
-                                                                  identity leaf by the evaluation
-                                                                  ring homomorphism
-                                                                  (evalInt_add/mul/pow + the
-                                                                  integer-scalar lemma).
-                                                                    - ❌· `TateCurve.ΔFormal_eq` — THE formal discriminant
-                                                                      identity in ℤ⟦X⟧ (η²⁴/Jacobi):
-                                                                      mapped attack via mathlib's
-                                                                      discriminantEquiv (weight-12
-                                                                      cusp forms ≃ weight-0 forms,
-                                                                      so E₄³−E₆² = 1728·Δ_η),
-                                                                      discriminant_eq_q_prod, the
-                                                                      g₂/g₃ expansions of
-                                                                      TateCurveConstruction, and the
-                                                                      coefficient-uniqueness
-                                                                      descent.
                                                             - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two
                                                               split-multiplicative curves over k
                                                               with equal j are k-isomorphic — over
@@ -258,35 +204,6 @@ entries file). To add/remove/annotate a node, edit
                                                               the j-identity leaf, the descent leaf,
                                                               and the PROVEN split reduction type of
                                                               the Tate curve.
-                                                                - ✅· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve
-                                                                  is j(E), now DERIVED: ellipticity
-                                                                  from the Δ-evaluation leaf via
-                                                                  valuation_evalInt_eq (linear
-                                                                  coefficient 1); j(E_q)⁻¹ = evalInt
-                                                                  q jInv by the proven c₄-identity,
-                                                                  evalInt_mul/pow, and
-                                                                  evalInt_invOfUnit; the composition
-                                                                  through tateParameter by the
-                                                                  substitution-evaluation leaf and
-                                                                  jInv_subst_jInvReverse.
-                                                                    - ✅· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant of the Tate
-                                                                      curve is the value of ΔFormal,
-                                                                      now DERIVED from the pure
-                                                                      formal identity leaf by the
-                                                                      evaluation ring homomorphism
-                                                                      (evalInt_add/mul/pow + the
-                                                                      integer-scalar lemma).
-                                                                        - ❌· `TateCurve.ΔFormal_eq` — THE formal discriminant
-                                                                          identity in ℤ⟦X⟧ (η²⁴/Jacobi):
-                                                                          mapped attack via mathlib's
-                                                                          discriminantEquiv (weight-12
-                                                                          cusp forms ≃ weight-0 forms,
-                                                                          so E₄³−E₆² = 1728·Δ_η),
-                                                                          discriminant_eq_q_prod, the
-                                                                          g₂/g₃ expansions of
-                                                                          TateCurveConstruction, and the
-                                                                          coefficient-uniqueness
-                                                                          descent.
                                                                 - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3:
                                                                   two split-multiplicative curves
                                                                   over k with equal j are
@@ -330,37 +247,6 @@ entries file). To add/remove/annotate a node, edit
                                                                   from the j-identity leaf, the
                                                                   descent leaf, and the PROVEN split
                                                                   reduction type of the Tate curve.
-                                                                    - ✅· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate
-                                                                      curve is j(E), now DERIVED:
-                                                                      ellipticity from the
-                                                                      Δ-evaluation leaf via
-                                                                      valuation_evalInt_eq (linear
-                                                                      coefficient 1); j(E_q)⁻¹ =
-                                                                      evalInt q jInv by the proven
-                                                                      c₄-identity, evalInt_mul/pow,
-                                                                      and evalInt_invOfUnit; the
-                                                                      composition through
-                                                                      tateParameter by the
-                                                                      substitution-evaluation leaf
-                                                                      and jInv_subst_jInvReverse.
-                                                                        - ✅· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant of the Tate
-                                                                          curve is the value of ΔFormal,
-                                                                          now DERIVED from the pure
-                                                                          formal identity leaf by the
-                                                                          evaluation ring homomorphism
-                                                                          (evalInt_add/mul/pow + the
-                                                                          integer-scalar lemma).
-                                                                            - ❌· `TateCurve.ΔFormal_eq` — THE formal discriminant
-                                                                              identity in ℤ⟦X⟧ (η²⁴/Jacobi):
-                                                                              mapped attack via mathlib's
-                                                                              discriminantEquiv (weight-12
-                                                                              cusp forms ≃ weight-0 forms,
-                                                                              so E₄³−E₆² = 1728·Δ_η),
-                                                                              discriminant_eq_q_prod, the
-                                                                              g₂/g₃ expansions of
-                                                                              TateCurveConstruction, and the
-                                                                              coefficient-uniqueness
-                                                                              descent.
                                                                     - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate
                                                                       V.5.3: two split-
                                                                       multiplicative curves over k
@@ -488,24 +374,6 @@ entries file). To add/remove/annotate a node, edit
                                         - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity
                                           leaf, the descent leaf, and the PROVEN split reduction
                                           type of the Tate curve.
-                                            - ✅· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E), now
-                                              DERIVED: ellipticity from the Δ-evaluation leaf via
-                                              valuation_evalInt_eq (linear coefficient 1); j(E_q)⁻¹
-                                              = evalInt q jInv by the proven c₄-identity,
-                                              evalInt_mul/pow, and evalInt_invOfUnit; the
-                                              composition through tateParameter by the substitution-
-                                              evaluation leaf and jInv_subst_jInvReverse.
-                                                - ✅· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant of the Tate curve is the value of
-                                                  ΔFormal, now DERIVED from the pure formal identity
-                                                  leaf by the evaluation ring homomorphism
-                                                  (evalInt_add/mul/pow + the integer-scalar lemma).
-                                                    - ❌· `TateCurve.ΔFormal_eq` — THE formal discriminant identity in ℤ⟦X⟧
-                                                      (η²⁴/Jacobi): mapped attack via mathlib's
-                                                      discriminantEquiv (weight-12 cusp forms ≃
-                                                      weight-0 forms, so E₄³−E₆² = 1728·Δ_η),
-                                                      discriminant_eq_q_prod, the g₂/g₃ expansions
-                                                      of TateCurveConstruction, and the coefficient-
-                                                      uniqueness descent.
                                             - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-
                                               multiplicative curves over k with equal j are
                                               k-isomorphic — over the separable closure by mathlib's
@@ -535,26 +403,6 @@ entries file). To add/remove/annotate a node, edit
                                             - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity
                                               leaf, the descent leaf, and the PROVEN split reduction
                                               type of the Tate curve.
-                                                - ✅· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E), now
-                                                  DERIVED: ellipticity from the Δ-evaluation leaf
-                                                  via valuation_evalInt_eq (linear coefficient 1);
-                                                  j(E_q)⁻¹ = evalInt q jInv by the proven c₄-
-                                                  identity, evalInt_mul/pow, and evalInt_invOfUnit;
-                                                  the composition through tateParameter by the
-                                                  substitution-evaluation leaf and
-                                                  jInv_subst_jInvReverse.
-                                                    - ✅· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant of the Tate curve is the
-                                                      value of ΔFormal, now DERIVED from the pure
-                                                      formal identity leaf by the evaluation ring
-                                                      homomorphism (evalInt_add/mul/pow + the
-                                                      integer-scalar lemma).
-                                                        - ❌· `TateCurve.ΔFormal_eq` — THE formal discriminant identity in ℤ⟦X⟧
-                                                          (η²⁴/Jacobi): mapped attack via mathlib's
-                                                          discriminantEquiv (weight-12 cusp forms ≃
-                                                          weight-0 forms, so E₄³−E₆² = 1728·Δ_η),
-                                                          discriminant_eq_q_prod, the g₂/g₃
-                                                          expansions of TateCurveConstruction, and
-                                                          the coefficient-uniqueness descent.
                                                 - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-
                                                   multiplicative curves over k with equal j are
                                                   k-isomorphic — over the separable closure by
@@ -613,22 +461,6 @@ entries file). To add/remove/annotate a node, edit
                                 - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity leaf, the
                                   descent leaf, and the PROVEN split reduction type of the Tate
                                   curve.
-                                    - ✅· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E), now DERIVED:
-                                      ellipticity from the Δ-evaluation leaf via
-                                      valuation_evalInt_eq (linear coefficient 1); j(E_q)⁻¹ =
-                                      evalInt q jInv by the proven c₄-identity, evalInt_mul/pow, and
-                                      evalInt_invOfUnit; the composition through tateParameter by
-                                      the substitution-evaluation leaf and jInv_subst_jInvReverse.
-                                        - ✅· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant of the Tate curve is the value of
-                                          ΔFormal, now DERIVED from the pure formal identity leaf by
-                                          the evaluation ring homomorphism (evalInt_add/mul/pow +
-                                          the integer-scalar lemma).
-                                            - ❌· `TateCurve.ΔFormal_eq` — THE formal discriminant identity in ℤ⟦X⟧ (η²⁴/Jacobi):
-                                              mapped attack via mathlib's discriminantEquiv
-                                              (weight-12 cusp forms ≃ weight-0 forms, so E₄³−E₆² =
-                                              1728·Δ_η), discriminant_eq_q_prod, the g₂/g₃
-                                              expansions of TateCurveConstruction, and the
-                                              coefficient-uniqueness descent.
                                     - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-multiplicative
                                       curves over k with equal j are k-isomorphic — over the
                                       separable closure by mathlib's exists_variableChange_of_j_eq,
@@ -654,22 +486,6 @@ entries file). To add/remove/annotate a node, edit
                                 - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity leaf, the
                                   descent leaf, and the PROVEN split reduction type of the Tate
                                   curve.
-                                    - ✅· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E), now DERIVED:
-                                      ellipticity from the Δ-evaluation leaf via
-                                      valuation_evalInt_eq (linear coefficient 1); j(E_q)⁻¹ =
-                                      evalInt q jInv by the proven c₄-identity, evalInt_mul/pow, and
-                                      evalInt_invOfUnit; the composition through tateParameter by
-                                      the substitution-evaluation leaf and jInv_subst_jInvReverse.
-                                        - ✅· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant of the Tate curve is the value of
-                                          ΔFormal, now DERIVED from the pure formal identity leaf by
-                                          the evaluation ring homomorphism (evalInt_add/mul/pow +
-                                          the integer-scalar lemma).
-                                            - ❌· `TateCurve.ΔFormal_eq` — THE formal discriminant identity in ℤ⟦X⟧ (η²⁴/Jacobi):
-                                              mapped attack via mathlib's discriminantEquiv
-                                              (weight-12 cusp forms ≃ weight-0 forms, so E₄³−E₆² =
-                                              1728·Δ_η), discriminant_eq_q_prod, the g₂/g₃
-                                              expansions of TateCurveConstruction, and the
-                                              coefficient-uniqueness descent.
                                     - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-multiplicative
                                       curves over k with equal j are k-isomorphic — over the
                                       separable closure by mathlib's exists_variableChange_of_j_eq,

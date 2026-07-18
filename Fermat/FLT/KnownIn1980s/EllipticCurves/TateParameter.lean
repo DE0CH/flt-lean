@@ -102,11 +102,102 @@ noncomputable def sInt (k : ℕ) : ℤ⟦X⟧ := .mk fun n ↦ (σ k n : ℤ)
 Tate curve: the `q`-expansion of the Eisenstein series `E₄`. -/
 noncomputable def c₄Formal : ℤ⟦X⟧ := 1 + 240 * sInt 3
 
-/-- The formal discriminant `Δ(q) = q∏_{n≥1}(1 - qⁿ)²⁴ ∈ ℤ⟦q⟧` of the Tate curve: the
-`q`-expansion of the modular discriminant, `∑ τ(n)qⁿ` with `τ` Ramanujan's tau. The
-product is a `tprod` in the `X`-adic topology, multipliable by
-`PowerSeries.WithPiTopology.multipliable_one_sub_X_pow`. -/
-noncomputable def ΔFormal : ℤ⟦X⟧ := X * (∏' n : ℕ, (1 - X ^ (n + 1))) ^ 24
+/-- The formal `a₄`-series `a₄(q) = -5s₃(q) ∈ ℤ⟦q⟧` of the Tate curve: the integral
+version of `WeierstrassCurve.tateA₄`. -/
+noncomputable def a₄Formal : ℤ⟦X⟧ :=
+  -5 * sInt 3
+
+/-- The formal `a₆`-series `a₆(q) = -(5s₃(q) + 7s₅(q))/12 ∈ ℤ⟦q⟧` of the Tate curve: the
+integral version of `WeierstrassCurve.tateA₆`. The division is exact, since
+`12 ∣ 5d³ + 7d⁵` for every `d`. -/
+noncomputable def a₆Formal : ℤ⟦X⟧ :=
+  .mk fun n ↦ -((5 * σ 3 n + 7 * σ 5 n : ℤ) / 12)
+
+@[simp]
+theorem coeff_a₄Formal (n : ℕ) : coeff n a₄Formal = -5 * σ 3 n := by
+  simp only [a₄Formal, sInt, neg_mul, map_neg,
+    show ((5 : ℤ⟦X⟧)) = C (5 : ℤ) from (map_ofNat (C : ℤ →+* ℤ⟦X⟧) 5).symm,
+    coeff_C_mul, coeff_mk]
+
+@[simp]
+theorem coeff_a₆Formal (n : ℕ) :
+    coeff n a₆Formal = -((5 * σ 3 n + 7 * σ 5 n : ℤ) / 12) := by
+  simp only [a₆Formal, coeff_mk]
+
+@[simp]
+theorem constantCoeff_a₄Formal : constantCoeff a₄Formal = 0 := by
+  have h := coeff_a₄Formal 0
+  rw [coeff_zero_eq_constantCoeff] at h
+  simp [h]
+
+@[simp]
+theorem constantCoeff_a₆Formal : constantCoeff a₆Formal = 0 := by
+  have h := coeff_a₆Formal 0
+  rw [coeff_zero_eq_constantCoeff] at h
+  simp [h]
+
+/-- The formal discriminant `Δ(q) ∈ ℤ⟦q⟧` of the Tate curve: the discriminant
+polynomial of the Weierstrass quintuple `⟨1, 0, 0, a₄Formal, a₆Formal⟩` (for
+`a₁ = 1`, `a₂ = a₃ = 0` the general discriminant
+`-b₂²b₈ - 8b₄³ - 27b₆² + 9b₂b₄b₆` reduces to
+`-a₆ + a₄² - 64a₄³ - 432a₆² + 72a₄a₆`). Classically this series is the
+`q`-expansion `q∏_{n≥1}(1 - qⁿ)²⁴ = ∑ τ(n)qⁿ` of the modular discriminant
+(Jacobi's identity, Silverman ATAEC V.3.1(b)); only the two coefficient facts
+`constantCoeff_ΔFormal` and `coeff_one_ΔFormal` below (immediate from either
+description) are consumed by the Tate-curve development, so the discriminant
+polynomial — the description that the evaluation lemma
+`WeierstrassCurve.Δ_tateCurve_eq_evalInt` needs — is taken as the definition. -/
+noncomputable def ΔFormal : ℤ⟦X⟧ :=
+  -a₆Formal + a₄Formal ^ 2 - 64 * a₄Formal ^ 3 - 432 * a₆Formal ^ 2 +
+    72 * a₄Formal * a₆Formal
+
+/-- The linear coefficient of a product of two power series with vanishing
+constant coefficients is `0`. -/
+theorem coeff_one_mul_eq_zero {F G : ℤ⟦X⟧} (hF : constantCoeff F = 0)
+    (hG : constantCoeff G = 0) : coeff 1 (F * G) = 0 := by
+  rw [coeff_mul]
+  rw [show (Finset.antidiagonal (1 : ℕ)) = {(0, 1), (1, 0)} from rfl]
+  simp [coeff_zero_eq_constantCoeff, hF, hG]
+
+@[simp]
+theorem constantCoeff_ΔFormal : constantCoeff ΔFormal = 0 := by
+  simp [ΔFormal]
+
+@[simp]
+theorem coeff_one_ΔFormal : coeff 1 ΔFormal = 1 := by
+  have hA : constantCoeff a₄Formal = 0 := constantCoeff_a₄Formal
+  have hB : constantCoeff a₆Formal = 0 := constantCoeff_a₆Formal
+  have hA2 : coeff 1 (a₄Formal ^ 2) = 0 := by
+    rw [sq]; exact coeff_one_mul_eq_zero hA hA
+  have hA2c : constantCoeff (a₄Formal ^ 2) = 0 := by
+    rw [sq, map_mul, hA, zero_mul]
+  have hA3 : coeff 1 (a₄Formal ^ 3) = 0 := by
+    rw [pow_succ, mul_comm]
+    exact coeff_one_mul_eq_zero hA hA2c
+  have hB2 : coeff 1 (a₆Formal ^ 2) = 0 := by
+    rw [sq]; exact coeff_one_mul_eq_zero hB hB
+  have hAB : coeff 1 (a₄Formal * a₆Formal) = 0 :=
+    coeff_one_mul_eq_zero hA hB
+  have h64 : coeff 1 ((64 : ℤ⟦X⟧) * a₄Formal ^ 3) = 0 := by
+    rw [show ((64 : ℤ⟦X⟧)) = ((64 : ℤ) : ℤ⟦X⟧) by norm_num,
+      show (((64 : ℤ) : ℤ⟦X⟧)) * a₄Formal ^ 3 = (64 : ℤ) • a₄Formal ^ 3 from
+        (zsmul_eq_mul _ _).symm, map_smul, hA3, smul_zero]
+  have h432 : coeff 1 ((432 : ℤ⟦X⟧) * a₆Formal ^ 2) = 0 := by
+    rw [show ((432 : ℤ⟦X⟧)) = ((432 : ℤ) : ℤ⟦X⟧) by norm_num,
+      show (((432 : ℤ) : ℤ⟦X⟧)) * a₆Formal ^ 2 = (432 : ℤ) • a₆Formal ^ 2 from
+        (zsmul_eq_mul _ _).symm, map_smul, hB2, smul_zero]
+  have h72 : coeff 1 ((72 : ℤ⟦X⟧) * a₄Formal * a₆Formal) = 0 := by
+    rw [mul_assoc,
+      show ((72 : ℤ⟦X⟧)) = ((72 : ℤ) : ℤ⟦X⟧) by norm_num,
+      show (((72 : ℤ) : ℤ⟦X⟧)) * (a₄Formal * a₆Formal) =
+        (72 : ℤ) • (a₄Formal * a₆Formal) from (zsmul_eq_mul _ _).symm,
+      map_smul, hAB, smul_zero]
+  have hB1 : coeff 1 a₆Formal = -1 := by
+    rw [coeff_a₆Formal]
+    simp
+  rw [ΔFormal, map_add, map_sub, map_sub, map_add, map_neg, hB1, hA2, h64,
+    h432, h72]
+  ring
 
 /-- The formal series `1/j = Δ(q)/c₄(q)³ = q - 744q² + 356652q³ - ⋯ ∈ ℤ⟦q⟧`: the
 reciprocal of the `j`-invariant of the Tate curve. Since `c₄³` has constant coefficient
@@ -116,12 +207,13 @@ noncomputable def jInv : ℤ⟦X⟧ := ΔFormal * invOfUnit (c₄Formal ^ 3) 1
 
 @[simp]
 theorem constantCoeff_jInv : constantCoeff jInv = 0 := by
-  simp [jInv, ΔFormal]
+  simp [jInv, map_mul, constantCoeff_ΔFormal]
 
 theorem coeff_one_jInv : coeff 1 jInv = 1 := by
-  simp [jInv, ΔFormal, mul_assoc, map_mul, map_pow,
-    (WithPiTopology.multipliable_one_sub_X_pow ℤ).map_tprod _
-    (WithPiTopology.continuous_constantCoeff ℤ), constantCoeff_invOfUnit]
+  rw [jInv, coeff_mul,
+    show (Finset.antidiagonal (1 : ℕ)) = {(0, 1), (1, 0)} from rfl]
+  simp [coeff_zero_eq_constantCoeff, constantCoeff_ΔFormal,
+    coeff_one_ΔFormal, constantCoeff_invOfUnit]
 
 /-! ### Step 2: formal compositional inversion -/
 
