@@ -235,6 +235,32 @@ def GaloisRep.HasFlatProlongationAt (ρ : GaloisRep K A M) : Prop :=
     (f : Additive (Kᵥ ⊗[𝒪ᵥ] G →ₐ[Kᵥ] Kᵥᵃˡᵍ) →+[Γ Kᵥ] (ρ.toLocal v).Space),
     Function.Bijective f
 
+omit [IsTopologicalRing A] [Module.Free A M] [Module.Finite A M] in
+/-- `HasFlatProlongationAt` transports along a `Γ Kᵥ`-equivariant additive
+isomorphism of underlying spaces: the Hopf-algebra witness is reused verbatim
+and the geometric-points identification is composed with the isomorphism. -/
+lemma GaloisRep.HasFlatProlongationAt.of_equiv {A' : Type*} [CommRing A']
+    [TopologicalSpace A'] {M' : Type*} [AddCommGroup M'] [Module A' M']
+    {ρ₁ : GaloisRep K A M} {ρ₂ : GaloisRep K A' M'}
+    (h : ρ₁.HasFlatProlongationAt v)
+    (e : (ρ₁.toLocal v).Space ≃+ (ρ₂.toLocal v).Space)
+    (he : ∀ (g : Γ Kᵥ) (x : (ρ₁.toLocal v).Space), e (g • x) = g • e x) :
+    ρ₂.HasFlatProlongationAt v := by
+  obtain ⟨G, i1, i2, i3, i4, i5, f, hbij⟩ := h
+  letI := i1
+  letI := i2
+  letI := i3
+  letI := i4
+  letI := i5
+  exact ⟨G, i1, i2, i3, i4, i5,
+    { toFun := fun x => e (f x)
+      map_smul' := fun g x => by
+        show e (f (g • x)) = g • e (f x)
+        rw [map_smul f g x, he]
+      map_zero' := by simp
+      map_add' := fun a b => by simp },
+    e.bijective.comp hbij⟩
+
 /-- A galois rep `ρ : Γ K → Aut_A(M)` is flat at `v` if `A/I ⊗ M` has a flat prolongation at `v`
 for all open ideals `I`. -/
 class GaloisRep.IsFlatAt [IsLocalRing A] (ρ : GaloisRep K A M) : Prop where

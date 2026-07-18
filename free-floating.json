@@ -1,5 +1,5 @@
 {
- "key": "1784368460.55963",
+ "key": "1784369093.9371953",
  "returncode": 0,
  "kept_invisible": [
   {
@@ -57,10 +57,6 @@
   {
    "module": "Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal",
    "name": "hasSum_geometric_pow_mul_succ"
-  },
-  {
-   "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
-   "name": "GaloisRep.IsFlatAt.cond"
   },
   {
    "module": "Fermat.Basic",

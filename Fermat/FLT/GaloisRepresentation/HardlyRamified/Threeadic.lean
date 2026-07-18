@@ -188,12 +188,53 @@ theorem exists_residue_package {R : Type u} [CommRing R]
   simp
 
 set_option warn.sorry false in
-/-- **Flatness transfers to the residue field** (sorry node): if `ρ` is
-flat at `3` in the open-ideal sense, its base change to the residue
-field (the quotient by the open maximal ideal) is flat at `3`. Content:
-the open ideals of the discrete field `kk` are `⊥` and `⊤`; the `⊥` case
-is the `I = 𝔪` instance of `ρ.IsFlatAt` transported along
-`kk ≅ R ⧸ 𝔪` and base-change composition. -/
+/-- **Degenerate flatness over the trivial quotient** (sorry node): a Galois
+representation on a subsingleton module has a flat prolongation at `3` — the
+trivial group scheme `Spec 𝒪ᵥ` works, its geometric points being the single
+algebra map matched with the single element of the space. -/
+theorem hasFlatProlongationAt_of_subsingleton {A' : Type*} [CommRing A']
+    [TopologicalSpace A'] {M' : Type*} [AddCommGroup M'] [Module A' M']
+    [Subsingleton M'] (ρ' : GaloisRep ℚ A' M') :
+    ρ'.HasFlatProlongationAt
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
+
+set_option warn.sorry false in
+/-- **The residual space identification** (sorry node): the double base
+change `(kk ⧸ ⊥) ⊗_kk (kk ⊗_R V)` is `Γ ℚ₃`-equivariantly isomorphic to
+`(R ⧸ 𝔪) ⊗_R V` — the quotient-by-`⊥` collapses, and `kk ≅ R ⧸ 𝔪` along the
+(surjective, kernel-`𝔪`) residue map transports the coefficients. Content:
+tensor associativity/collapse plus transport along the ring isomorphism
+induced by `hsurj`/`hker` (`RingHom.quotientKerEquivOfSurjective`). -/
+theorem flat_space_equiv_residue {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    {V : Type v} [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (hker : RingHom.ker (algebraMap R kk) = IsLocalRing.maximalIdeal R)
+    {ρ : GaloisRep ℚ R V} :
+    ∃ e : ((((ρ.baseChange kk).baseChange (kk ⧸ (⊥ : Ideal kk))).toLocal
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat).Space ≃+
+      ((ρ.baseChange (R ⧸ IsLocalRing.maximalIdeal R)).toLocal
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat).Space),
+      ∀ (g : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))
+        (x : (((ρ.baseChange kk).baseChange (kk ⧸ (⊥ : Ideal kk))).toLocal
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat).Space),
+        e (g • x) = g • e x :=
+  sorry
+
+/-- **Flatness transfers to the residue field** (DERIVED 2026-07-18 from the
+space identification and the degenerate-flatness leaf, through
+`HasFlatProlongationAt.of_equiv`): the ideals of the discrete field `kk` are
+`⊥` and `⊤`; the `⊥` case is the `I = 𝔪` instance of `ρ.IsFlatAt`
+transported along the equivariant space isomorphism, and the `⊤` case is
+degenerate. -/
 theorem isFlatAt_baseChange_residue {R : Type u} [CommRing R]
     [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
     [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
@@ -203,13 +244,28 @@ theorem isFlatAt_baseChange_residue {R : Type u} [CommRing R]
     (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
     [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
     [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
     (hopen : IsOpen ((IsLocalRing.maximalIdeal R : Ideal R) : Set R))
     (hker : RingHom.ker (algebraMap R kk) = IsLocalRing.maximalIdeal R)
     {ρ : GaloisRep ℚ R V}
     (hflat : ρ.IsFlatAt Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) :
     (ρ.baseChange kk).IsFlatAt
-      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat := by
+  constructor
+  intro I hI
+  rcases Ideal.eq_bot_or_top I with rfl | rfl
+  · -- `I = ⊥`: transport the `𝔪`-instance of `hflat` along the space iso
+    obtain ⟨e, he⟩ := flat_space_equiv_residue kk hsurj hker (ρ := ρ)
+    refine (hflat.cond (IsLocalRing.maximalIdeal R) hopen).of_equiv _ e.symm ?_
+    intro g x
+    apply e.injective
+    rw [AddEquiv.apply_symm_apply, he, AddEquiv.apply_symm_apply]
+  · -- `I = ⊤`: the trivial quotient ring, degenerate flatness
+    letI : Subsingleton (kk ⧸ (⊤ : Ideal kk)) :=
+      Ideal.Quotient.subsingleton_iff.mpr rfl
+    letI : Subsingleton ((kk ⧸ (⊤ : Ideal kk)) ⊗[kk] (kk ⊗[R] V)) :=
+      Module.subsingleton (kk ⧸ (⊤ : Ideal kk)) _
+    exact hasFlatProlongationAt_of_subsingleton _
 
 set_option warn.sorry false in
 /-- **Tameness at `2` transfers to the residue field** (sorry node): the
@@ -357,7 +413,7 @@ theorem exists_residual_isHardlyRamified {R : Type u} [CommRing R]
       hρ.isUnramified p hp hpp
     infer_instance
   · -- flatness at 3 (sorried transfer leaf)
-    exact isFlatAt_baseChange_residue kk hopen hker hρ.isFlat
+    exact isFlatAt_baseChange_residue kk hsurj hopen hker hρ.isFlat
   · -- tameness at 2 (sorried transfer leaf)
     exact isTameAtTwo_baseChange_residue kk hsurj hρ.isTameAtTwo
 

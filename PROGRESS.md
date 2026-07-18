@@ -1656,18 +1656,21 @@ entries file). To add/remove/annotate a node, edit
                                   tower, and unramifiedness by the existing IsUnramifiedAt base-
                                   change instance; the remaining content is the residue package and
                                   the flatness/tameness transfer leaves.
-                                    - ❌· `GaloisRepresentation.IsHardlyRamified.isFlatAt_baseChange_residue` — flatness transfer (sorry node). RECONNAISSANCE 2026-07-18:
-                                      IsFlatAt quantifies over open ideals I of kk — ALL ideals,
-                                      since kk is discrete; a field has only ⊥ and ⊤. The ⊤ case is
-                                      the degenerate trivial ring (flat prolongation G := 𝒪ᵥ, one
-                                      geometric point ≅ the zero module). The ⊥ case: (ρ.baseChange
-                                      kk).baseChange (kk⧸⊥) ≅ ρ.baseChange kk ≅ ρ.baseChange (R⧸𝔪) —
-                                      the I = 𝔪 instance of ρ.IsFlatAt.cond (𝔪 open, provided) —
-                                      transported along the coefficient iso kk ≅ R⧸𝔪 induced by
-                                      hker. Needs: HasFlatProlongationAt invariance under
-                                      equivariant coefficient isos (compose the →+[Γ Kᵥ] bijection f
-                                      with the Space iso) — this invariance lemma does not yet exist
-                                      and is the main content.
+                                    - ✅· `GaloisRepresentation.IsHardlyRamified.isFlatAt_baseChange_residue` — flatness transfer. DERIVED 2026-07-18: ideals of the discrete
+                                      field are ⊥/⊤ (Ideal.eq_bot_or_top); the ⊥ case transports the
+                                      I = 𝔪 instance of ρ.IsFlatAt through the NEW PROVEN
+                                      HasFlatProlongationAt.of_equiv (Hopf witness reused,
+                                      geometric-points bijection composed with the equivariant space
+                                      iso); the ⊤ case is the degenerate subsingleton leaf.
+                                        - ❌· `GaloisRepresentation.IsHardlyRamified.flat_space_equiv_residue` — the residual space identification (sorry node): (kk⧸⊥)
+                                          ⊗_kk (kk ⊗_R V) ≃+ (R⧸𝔪) ⊗_R V equivariantly — quotient-
+                                          by-⊥ collapse, tensor associativity, and transport along
+                                          RingHom.quotientKerEquivOfSurjective (hsurj + hker).
+                                        - ❌· `GaloisRepresentation.IsHardlyRamified.hasFlatProlongationAt_of_subsingleton` — degenerate flatness (sorry node): a rep on a subsingleton
+                                          module has a flat prolongation — the trivial group scheme
+                                          Spec 𝒪ᵥ, one geometric point matched with the single space
+                                          element. Needs a HopfAlgebra 𝒪ᵥ 𝒪ᵥ instance (trivial
+                                          comultiplication).
                 - ✅· `not_isIrreducible_of_charFrob_eq` — `not_isIrreducible_of_charFrob_eq` — Chebotarev + Brauer– Nesbitt — now
                   (2026-07-16, `Chebotarev.lean` + proof in `Lift.lean`): the agreement set with `1
                   ⊕ χ̄`'s charpolys is closed (module topology on `End` over `ZMod ℓ` is discrete ;
