@@ -438,14 +438,14 @@
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
   "wip": false,
   "fullname": "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter",
-  "text": "the stable line with locally-unramified quotient character at 2 and 3 (sorry node): flatness at 3 forces the étale quotient via the connected-étale sequence (the Serre swap); tameness at 2 kills ramification there."
+  "text": "the stable line with quotient character unramified at 2 AND 3 — DERIVED 2026-07-18 from the at-3 Serre-swap leaf plus the at-2 tame bookkeeping (`quotCharacter_unramified_at_two`, itself fully proven)."
  },
  {
   "name": "GaloisRepresentation.IsHardlyRamified.mod_three_reducible",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
   "wip": false,
   "fullname": "GaloisRepresentation.IsHardlyRamified.mod_three_reducible",
-  "text": "mod-3 reducibility (sorry node): Dickson classification + ramification constraints eliminate irreducible image — Serre §5.4/Tate argument for p = 3. The PGL2/Dickson/OddAbsIrred clusters are in the reference commit 8282dfb^."
+  "text": "mod-3 reducibility — DERIVED 2026-07-18: no stable submodule ⇒ irreducible (Slop.OddRep.isIrreducible_iff_forall); complex conjugation is an involution with det = χ₃(c) = −1 and 2 ≠ 0 in k, so its 1-eigenspace is a line and OddAbsIrred upgrades to absolute irreducibility, contradicting `not_isAbsolutelyIrreducible`."
  },
  {
   "name": "GaloisRepresentation.IsHardlyRamified.mod_three",
@@ -459,21 +459,14 @@
   "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
   "wip": false,
   "fullname": "valued_natCast_adicCompletionIntegers_eq_one",
-  "text": "the completed valuation of 3 at the p-place is 1 (sorry node — one cast-bridge from done): p ∤ 3 → primeCompl → intValuation = 1 → Valued.v = 1 is fully PROVEN in mathlib's scoped-algebraMap spelling inside the node; the remaining sorry (shared with the consumer in the action leaf) is the class-6 numeral-instance bridge between that spelling and the subtype-val of the ℕ-cast — even same-file same-source-text elaborations of ↑↑3 diverge. Candidate resolutions for the next cycle: a `Subtype.ext`-val-level bridging lemma stated against pp.all-extracted spellings, or importing/normalizing the numeral instances (Nat.cast vs instOfNat/AtLeastTwo paths) with a dedicated simp set."
- },
- {
-  "name": "natCard_residue_under_padicPlace",
-  "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
-  "wip": false,
-  "fullname": "natCard_residue_under_padicPlace",
-  "text": "the residue cardinality at the p-place is p (sorry node): the under-ideal of 𝔪(IntegralClosure 𝒪ᵥ Kᵥᵃˡᵍ) is 𝔪(𝒪ᵥ) (lying over), and the residue field is 𝓞ℚ ⧸ (p) ≅ ZMod p via ResidueFieldEquivCompletionResidueField (in tree, AdicValuation.lean)."
+  "text": "the completed valuation of 3 at the p-place is 1 — PROVEN 2026-07-18 (class-6 numeral bridge closed: the Algebra (𝓞 ℚ) Kᵥ instance diamond pinned to instAlgebraAdicCompletion, discharged by map_natCast + algebraMap.coe_natCast)."
  },
  {
   "name": "adicArithFrob_rootsOfUnity_pow",
   "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
   "wip": false,
   "fullname": "adicArithFrob_rootsOfUnity_pow",
-  "text": "the Frobenius action on 3-power roots of unity — ASSEMBLED 2026-07-18: the full derivation now compiles, consuming mathlib's AlgHom.IsArithFrobAt.apply_of_pow_eq_one on the integral closure (isArithFrobAt_adicArithFrob), the existing lift_map globalization square, the new IntegralClosure.coe_smul rfl-lemma, F-injectivity, and the exponent-mod juggle (ZMod.val_natCast + Nat.div_add_mod). Remaining inline sorry: h3notin — 3ⁿ avoids the maximal ideal of the integral closure at the p-place (3 is a unit in 𝒪ᵥ for p ≠ 3; route: Valuation.Integer.not_isUnit_iff_valuation_lt_one + the adic valuation of 3 at v = (p) is 1) — plus the residue-cardinality sub-lemma natCard_residue_under_padicPlace."
+  "text": "the arithmetic Frobenius raises 3-power roots of unity to the p-th power — FULLY PROVEN 2026-07-18 (IsArithFrobAt on the integral closure + residue cardinality via the moved `natCard_residue_quotient_toHeightOneSpectrum`)."
  },
  {
   "name": "cyclotomicCharacter_adicArithFrob",
@@ -1069,5 +1062,117 @@
   "wip": false,
   "fullname": "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split",
   "text": "the split criterion over the local field k, PROVEN: split multiplicative reduction implies −c₄c₆ ∈ (kˣ)². Both residue characteristics via Hensel over 𝒪[k] (HenselianRing from the IsAdicComplete instance of LocalField/Basic under a rightUniformSpace letI): odd — the reduced node polynomial's splitting means its discriminant −c₄c₆ is a residue square (nodePoly_map_splits_iff_isSquare) and X²−x Hensel-lifts (derivative 2z̄ a unit); residue char 2 — splitness is the Artin–Schreier condition (nodePoly_map_splits_iff_of_two_eq_zero), normalized by the unit b = a₁c₄ to z²+z = c̄, Hensel-lifted through X²+X−c (derivative 2z̄+1 ≡ 1 a unit), and −c₄c₆ = b²(1+4c) = (b(1+2t))² by the discriminant identity splitPolynomial_discrim."
+ },
+ {
+  "name": "natCard_residue_quotient_toHeightOneSpectrum",
+  "fullname": "GaloisRepresentation.natCard_residue_quotient_toHeightOneSpectrum",
+  "module": "Fermat.FLT.DedekindDomain.ResidueCardinality",
+  "wip": false,
+  "text": "residue cardinality at a prime's place is the prime — was already fully proven in Chebotarev.lean under a stale sorry-marking; moved 2026-07-18 to the new module `ResidueCardinality` so the Frobenius/roots-of-unity leaf can consume it."
+ },
+ {
+  "name": "exists_conj_cyclotomicCharacter_three",
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_conj_cyclotomicCharacter_three",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "wip": false,
+  "text": "complex conjugation with χ₃(c) = −1 — PROVEN 2026-07-18: Γ ℝ has two elements (ℝᵃˡᵍ ≃ₐ[ℝ] ℂ, card_aut = finrank = 2); the nontrivial one maps to an involution of Γ ℚ; χ₃(c)² = 1 in the domain ℤ_[3] and χ₃(c) = 1 is refuted since c would fix a primitive cube root, forcing the real-Galois element to fix ℝ(ι ζ) = ℝᵃˡᵍ."
+ },
+ {
+  "name": "finrank_eigenspace_one_of_involution",
+  "fullname": "GaloisRepresentation.IsHardlyRamified.finrank_eigenspace_one_of_involution",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "wip": false,
+  "text": "an odd involution on a 2-dimensional space has a 1-dimensional fixed space — PROVEN (E₁ ⊕ E₋₁ split via 2⁻¹(v ± fv), determinant case analysis)."
+ },
+ {
+  "name": "not_isAbsolutelyIrreducible",
+  "fullname": "GaloisRepresentation.IsHardlyRamified.not_isAbsolutelyIrreducible",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "wip": false,
+  "text": "no absolutely irreducible mod-3 hardly ramified representation — DERIVED 2026-07-18: base change to 𝔽̄₃ (IsAlgClosure.equiv over ZMod 3, CharP k 3), matrix form in a finBasis, projectivization to PGL₂(𝔽̄₃) with finite image (the action factors through the finite End k V), then the vendored Dickson classification feeds `serre_elimination`."
+ },
+ {
+  "name": "serre_elimination",
+  "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "wip": false,
+  "text": "the Serre elimination over the Dickson eight-case list — cyclic case PROVEN 2026-07-18 (cyclic projective image ⇒ abelian matrix image ⇒ scalar action ⇒ stable line, contradiction); the rest dispatched to `serre_elimination_noncyclic`."
+ },
+ {
+  "name": "serre_elimination_noncyclic",
+  "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_noncyclic",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "wip": false,
+  "text": "the seven noncyclic Dickson cases — DERIVED (case dispatch to the semidirect and arithmetic leaves)."
+ },
+ {
+  "name": "serre_elimination_semidirect",
+  "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_semidirect",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "wip": false,
+  "text": "the elementary-abelian ⋊ cyclic case — FULLY PROVEN 2026-07-18: kernel of the right-component character has central cubes ⇒ char-3 Frobenius square-nilpotency with μ ≠ 0; all-scalar kills the left factor; otherwise the 1-dim eigenline is shared (commutator scalars ±1 by determinants, −1 refuted by the char-3 expansion identity) and normality makes it Γℚ-stable — contradicting absolute irreducibility."
+ },
+ {
+  "name": "serre_elimination_arith",
+  "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_arith",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "wip": false,
+  "text": "(sorry node — the deep arithmetic core) dihedral / A₄ / S₄ / A₅ / PSL₂(𝔽_{3^m}) / PGL₂(𝔽_{3^m}) eliminated via Serre's discriminant/conductor bounds over ℚ (Duke 1987 §5.4); needs discriminant-bound machinery absent from mathlib."
+ },
+ {
+  "name": "exists_line_with_unramified_quotCharacter_at_three",
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_line_with_unramified_quotCharacter_at_three",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "wip": false,
+  "text": "(sorry node — the connected–étale content) a reducible mod-3 hardly ramified rep has a stable line with quotient character unramified at 3: the IsFlatAt prolongation over ℤ₃, unramified étale quotient of the connected–étale sequence, and the Serre swap to the other stable line when needed."
+ },
+ {
+  "name": "quotCharacter_unramified_at_two",
+  "fullname": "GaloisRepresentation.IsHardlyRamified.quotCharacter_unramified_at_two",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "wip": false,
+  "text": "quotient characters of stable lines are unramified at 2 — FULLY PROVEN 2026-07-18 from the ℚ_[2] tame dichotomy and the completion bridge (characters absorb the conjugator)."
+ },
+ {
+  "name": "quotCharacter_inertia_two_ker",
+  "fullname": "GaloisRepresentation.IsHardlyRamified.quotCharacter_inertia_two_ker",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "wip": false,
+  "text": "the ℚ_[2] tame dichotomy — FULLY PROVEN 2026-07-18: either the line dies in the tame quotient π₂ (χ₂ scales π₂ through liftQ, δ-triviality on inertia forces χ₂ = 1) or the sub-character agrees with δ and χ₂ = det/χ₁ with det the mod-3 cyclotomic character, unramified at 2."
+ },
+ {
+  "name": "cyclotomicCharacter_algebraMap_eq_one_of_inertia_two",
+  "fullname": "GaloisRepresentation.IsHardlyRamified.cyclotomicCharacter_algebraMap_eq_one_of_inertia_two",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "wip": false,
+  "text": "the mod-3 cyclotomic character is unramified at 2 — FULLY PROVEN 2026-07-18: inertia fixes the cube roots of unity in ℚ_[2]ᵃˡᵍ ((z−1)² = −3z with ‖3‖₂ = 1), lift_map transports to Γ ℚ, spec at level one + ker_toZModPow + char-3 target."
+ },
+ {
+  "name": "localInertia_two_eq_map_padic",
+  "fullname": "GaloisRepresentation.IsHardlyRamified.localInertia_two_eq_map_padic",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "wip": false,
+  "text": "the at-2 completion bridge (up to conjugacy) — FULLY PROVEN 2026-07-18: E = padicEquiv with integers-compatibility, τ = conjugation of σ through the bijective closure map of E.symm, inertia transported via spectral-integrality over PadicInt.subring 2 and nonunit push-forward, conjugator from Normal.algHomEquivAut, final square through injective ι₁."
+ },
+ {
+  "name": "Dickson.classification_tame",
+  "fullname": "Dickson.classification_tame",
+  "module": "Fermat.FLT.KnownIn1980s.PGL2.Defs",
+  "wip": false,
+  "text": "Dickson's classification, tame case (order coprime to p) — vendored PROVEN (Slop.PGL2.FiniteSubgroups, restored 2026-07-18)."
+ },
+ {
+  "name": "Dickson.classification_wild",
+  "fullname": "Dickson.classification_wild",
+  "module": "Fermat.FLT.KnownIn1980s.PGL2.Defs",
+  "wip": false,
+  "text": "Dickson's classification, wild case (order divisible by p) — vendored PROVEN (Slop.PGL2.FiniteSubgroups, restored 2026-07-18)."
+ },
+ {
+  "name": "OddRep.isIrreducible_iff_isAbsolutelyIrreducible",
+  "fullname": "OddRep.isIrreducible_iff_isAbsolutelyIrreducible",
+  "module": "Fermat.FLT.KnownIn1980s.RepresentationTheory.OddAbsIrred",
+  "wip": false,
+  "text": "irreducible ↔ absolutely irreducible given a 1-dimensional fixed space — vendored PROVEN (Slop.OddAbsIrredSlop, restored 2026-07-18)."
  }
 ]

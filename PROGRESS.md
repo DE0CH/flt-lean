@@ -215,15 +215,23 @@ entries file). To add/remove/annotate a node, edit
                                                                       non-2-torsion leaf, same
                                                                       division bookkeeping pattern
                                                                       as the chord case.
-                                                                        - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf — DERIVED
-                                                                          2026-07-18 from
-                                                                          bilateralXY_inj + the PROVEN
-                                                                          inversion identities: Y(u) =
-                                                                          negY makes the inverse-class
-                                                                          annulus representative share
-                                                                          the (X, Y) pair, so
-                                                                          injectivity forces u² ∈
-                                                                          {1, q} — excluded.
+                                                                        - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry
+                                                                          node): u in the annulus with
+                                                                          u² not in the trivial class
+                                                                          has 2Y(u) + X(u) ≠ 0 — the
+                                                                          2-torsion parameters are
+                                                                          exactly {-1, ±√q}·q^ℤ.
+                                                                            - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity on
+                                                                              the annulus (sorry node — the
+                                                                              injectivity half of Silverman
+                                                                              V.4): equal bilateral x- AND
+                                                                              y-values force equal
+                                                                              parameters. Attack: Newton-
+                                                                              polygon/theta-quotient
+                                                                              analysis of X(u) - X(v) over
+                                                                              the complete field, the
+                                                                              y-value separating the two
+                                                                              sheets.
                                                                         - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity
                                                                           (sorry node): -(Y(u²)+X(u²))E
                                                                           = M(X(u²)-X(u)) + Y(u)E.
@@ -256,47 +264,6 @@ entries file). To add/remove/annotate a node, edit
                                                                           the X-part output. Same attack
                                                                           as the X-identity.
                                                                         - ❌· `TateCurve.bilateral_chordX_cleared` — cleared chord X-identity
-                                                                          ℘-ADDITION ATTACK (recorded 2026-07-18): mathlib's
-                                                                          Analysis.SpecialFunctions.Elliptic.Weierstrass now ends at
-                                                                          derivWeierstrassP_sq (the differential equation) via the
-                                                                          Liouville pattern relation_eq_zero (ite-patched globally
-                                                                          analytic + doubly periodic + bounded ⇒ constant, pinned at a
-                                                                          point). The SAME pattern proves the addition theorem
-                                                                          ℘(z+w) = ((℘'z−℘'w)/(℘z−℘w))²/4 − ℘z − ℘w (z,w,z±w ∉ L):
-                                                                          fix w, patch the z-poles at L (Laurent cancellation via the
-                                                                          Except-machinery: ℘ = (z−l)⁻² + ℘[L−l], ℘' = −2(z−l)⁻³ +
-                                                                          ℘'[L−l], with hasFPowerSeriesAt_weierstrassPExcept Taylor
-                                                                          data) and at z ≡ −w (chord-pole matches ℘(z+w)-pole) and
-                                                                          z ≡ w (removable, order-API). Then the q-expansion bridges
-                                                                          (weierstrassP_q_expansion, hasSum_X_eval/hasSum_Y_eval) plus
-                                                                          a TWO-VARIABLE descent (extend eq_zero_of_forall_hasSum_zero
-                                                                          to (RatFunc-in-u,v)⟦q⟧ by iterating the one-variable descent
-                                                                          coefficientwise) yield the cleared chord identities; the
-                                                                          tangent identities analogously from the doubling formula.
-                                                                                                                                          REFINED (2026-07-18, hand-verified): the CLEARED x-part
-                                                                    needs NO ℘-fiber/order theory. G(z) := (℘(z+w)+℘z+℘w)(℘z−℘w)²
-                                                                    − ¼(℘'z−℘'w)²: (i) z ≡ −w poles cancel AUTOMATICALLY (the
-                                                                    square (℘z−℘w)² has zero order ≥ 2 against ℘(z+w)'s pole
-                                                                    order 2 — no ℘'(w) ≠ 0 input needed); (ii) at z ∈ L, with
-                                                                    t := z−l, ℘ = t⁻² + E, ℘' = −2t⁻³ + E', E = c₂t² + c₄t⁴ + …
-                                                                    (E(l) = 0, E even; c₂ = g₂/20 = 3G₄, c₄ = g₃/28 = 5G₆ from
-                                                                    coeff_weierstrassPExceptSeries/sumInvPow), and S := ℘(z+w)
-                                                                    analytic with S(l) = W := ℘w, S'(l) = W' (periodicity), the
-                                                                    Laurent coefficients vanish through order t⁰:
-                                                                    t⁻⁶: 1−1; t⁻⁴: 2W−2W; t⁻³: W'−W'; t⁻²: ½℘''w − 3W² + 5c₂ =
-                                                                    (3W²−g₂/4) − 3W² + g₂/4 = 0 (℘'' = 6℘²−g₂/2); t⁻¹:
-                                                                    (1/6)℘'''w − 2WW' = 0 (℘''' = 12℘℘'); t⁰: (1/24)℘''''w −
-                                                                    W℘''w + 2W³ + 7c₄ − ¼W'² = −g₃/4 + 7·g₃/28 = 0 (℘'''' =
-                                                                    120℘³−18g₂℘−12g₃, ℘'² = 4℘³−g₂℘−g₃). Hence the ite-patched G
-                                                                    is entire + doubly periodic + bounded ⇒ ≡ its lattice-point
-                                                                    value 0 (mathlib's relation_eq_zero pattern verbatim): the
-                                                                    cleared addition identity holds identically, INCLUDING the
-                                                                    constant, with no second evaluation point. The y-part and the
-                                                                    tangent (z = w) identities follow by the same scheme with
-                                                                    their own finite Laurent tables.
-  WIP policy: develop as PRIVATE lemmas in
-                                                                          TateCurveConstruction (private is exempt from the
-                                                                          free-floating sweep), de-privatize on consumption.
                                                                           (sorry node):
                                                                           (X(uv)+X(u)+X(v))(X(u)-X(v))²
                                                                           = (Y(u)-Y(v))² +
@@ -459,12 +426,23 @@ entries file). To add/remove/annotate a node, edit
                                                                           non-2-torsion leaf, same
                                                                           division bookkeeping pattern
                                                                           as the chord case.
-                                                                            - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf — DERIVED 2026-07-18 (see first occurrence; was: sorry
+                                                                            - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry
                                                                               node): u in the annulus with
                                                                               u² not in the trivial class
                                                                               has 2Y(u) + X(u) ≠ 0 — the
                                                                               2-torsion parameters are
                                                                               exactly {-1, ±√q}·q^ℤ.
+                                                                                - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity on
+                                                                                  the annulus (sorry node — the
+                                                                                  injectivity half of Silverman
+                                                                                  V.4): equal bilateral x- AND
+                                                                                  y-values force equal
+                                                                                  parameters. Attack: Newton-
+                                                                                  polygon/theta-quotient
+                                                                                  analysis of X(u) - X(v) over
+                                                                                  the complete field, the
+                                                                                  y-value separating the two
+                                                                                  sheets.
                                                                             - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity
                                                                               (sorry node): -(Y(u²)+X(u²))E
                                                                               = M(X(u²)-X(u)) + Y(u)E.
@@ -683,12 +661,23 @@ entries file). To add/remove/annotate a node, edit
                                                                               non-2-torsion leaf, same
                                                                               division bookkeeping pattern
                                                                               as the chord case.
-                                                                                - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf — DERIVED 2026-07-18 (see first occurrence; was: sorry
+                                                                                - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry
                                                                                   node): u in the annulus with
                                                                                   u² not in the trivial class
                                                                                   has 2Y(u) + X(u) ≠ 0 — the
                                                                                   2-torsion parameters are
                                                                                   exactly {-1, ±√q}·q^ℤ.
+                                                                                    - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity on
+                                                                                      the annulus (sorry node — the
+                                                                                      injectivity half of Silverman
+                                                                                      V.4): equal bilateral x- AND
+                                                                                      y-values force equal
+                                                                                      parameters. Attack: Newton-
+                                                                                      polygon/theta-quotient
+                                                                                      analysis of X(u) - X(v) over
+                                                                                      the complete field, the
+                                                                                      y-value separating the two
+                                                                                      sheets.
                                                                                 - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity
                                                                                   (sorry node): -(Y(u²)+X(u²))E
                                                                                   = M(X(u²)-X(u)) + Y(u)E.
@@ -900,12 +889,23 @@ entries file). To add/remove/annotate a node, edit
                                                                                   non-2-torsion leaf, same
                                                                                   division bookkeeping pattern
                                                                                   as the chord case.
-                                                                                    - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf — DERIVED 2026-07-18 (see first occurrence; was: sorry
+                                                                                    - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry
                                                                                       node): u in the annulus with
                                                                                       u² not in the trivial class
                                                                                       has 2Y(u) + X(u) ≠ 0 — the
                                                                                       2-torsion parameters are
                                                                                       exactly {-1, ±√q}·q^ℤ.
+                                                                                        - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity on
+                                                                                          the annulus (sorry node — the
+                                                                                          injectivity half of Silverman
+                                                                                          V.4): equal bilateral x- AND
+                                                                                          y-values force equal
+                                                                                          parameters. Attack: Newton-
+                                                                                          polygon/theta-quotient
+                                                                                          analysis of X(u) - X(v) over
+                                                                                          the complete field, the
+                                                                                          y-value separating the two
+                                                                                          sheets.
                                                                                     - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity
                                                                                       (sorry node): -(Y(u²)+X(u²))E
                                                                                       = M(X(u²)-X(u)) + Y(u)E.
@@ -1153,11 +1153,20 @@ entries file). To add/remove/annotate a node, edit
                                                           tangent identities + the non-2-torsion
                                                           leaf, same division bookkeeping pattern as
                                                           the chord case.
-                                                            - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf — DERIVED 2026-07-18 (see first occurrence; was: sorry node): u in
+                                                            - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry node): u in
                                                               the annulus with u² not in the trivial
                                                               class has 2Y(u) + X(u) ≠ 0 — the
                                                               2-torsion parameters are exactly {-1,
                                                               ±√q}·q^ℤ.
+                                                                - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity on the
+                                                                  annulus (sorry node — the
+                                                                  injectivity half of Silverman
+                                                                  V.4): equal bilateral x- AND
+                                                                  y-values force equal parameters.
+                                                                  Attack: Newton-polygon/theta-
+                                                                  quotient analysis of X(u) - X(v)
+                                                                  over the complete field, the
+                                                                  y-value separating the two sheets.
                                                             - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity (sorry
                                                               node): -(Y(u²)+X(u²))E = M(X(u²)-X(u))
                                                               + Y(u)E. Diagonal case.
@@ -1305,11 +1314,22 @@ entries file). To add/remove/annotate a node, edit
                                                               from the cleared tangent identities +
                                                               the non-2-torsion leaf, same division
                                                               bookkeeping pattern as the chord case.
-                                                                - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf — DERIVED 2026-07-18 (see first occurrence; was: sorry node): u
+                                                                - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry node): u
                                                                   in the annulus with u² not in the
                                                                   trivial class has 2Y(u) + X(u) ≠ 0
                                                                   — the 2-torsion parameters are
                                                                   exactly {-1, ±√q}·q^ℤ.
+                                                                    - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity on
+                                                                      the annulus (sorry node — the
+                                                                      injectivity half of Silverman
+                                                                      V.4): equal bilateral x- AND
+                                                                      y-values force equal
+                                                                      parameters. Attack: Newton-
+                                                                      polygon/theta-quotient
+                                                                      analysis of X(u) - X(v) over
+                                                                      the complete field, the
+                                                                      y-value separating the two
+                                                                      sheets.
                                                                 - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity (sorry
                                                                   node): -(Y(u²)+X(u²))E =
                                                                   M(X(u²)-X(u)) + Y(u)E. Diagonal
@@ -1471,10 +1491,17 @@ entries file). To add/remove/annotate a node, edit
                                                   DERIVED 2026-07-18 from the cleared tangent
                                                   identities + the non-2-torsion leaf, same division
                                                   bookkeeping pattern as the chord case.
-                                                    - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf — DERIVED 2026-07-18 (see first occurrence; was: sorry node): u in the
+                                                    - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry node): u in the
                                                       annulus with u² not in the trivial class has
                                                       2Y(u) + X(u) ≠ 0 — the 2-torsion parameters
                                                       are exactly {-1, ±√q}·q^ℤ.
+                                                        - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity on the annulus
+                                                          (sorry node — the injectivity half of
+                                                          Silverman V.4): equal bilateral x- AND
+                                                          y-values force equal parameters. Attack:
+                                                          Newton-polygon/theta-quotient analysis of
+                                                          X(u) - X(v) over the complete field, the
+                                                          y-value separating the two sheets.
                                                     - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity (sorry node):
                                                       -(Y(u²)+X(u²))E = M(X(u²)-X(u)) + Y(u)E.
                                                       Diagonal case.
@@ -1592,10 +1619,17 @@ entries file). To add/remove/annotate a node, edit
                                                   DERIVED 2026-07-18 from the cleared tangent
                                                   identities + the non-2-torsion leaf, same division
                                                   bookkeeping pattern as the chord case.
-                                                    - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf — DERIVED 2026-07-18 (see first occurrence; was: sorry node): u in the
+                                                    - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry node): u in the
                                                       annulus with u² not in the trivial class has
                                                       2Y(u) + X(u) ≠ 0 — the 2-torsion parameters
                                                       are exactly {-1, ±√q}·q^ℤ.
+                                                        - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity on the annulus
+                                                          (sorry node — the injectivity half of
+                                                          Silverman V.4): equal bilateral x- AND
+                                                          y-values force equal parameters. Attack:
+                                                          Newton-polygon/theta-quotient analysis of
+                                                          X(u) - X(v) over the complete field, the
+                                                          y-value separating the two sheets.
                                                     - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity (sorry node):
                                                       -(Y(u²)+X(u²))E = M(X(u²)-X(u)) + Y(u)E.
                                                       Diagonal case.
@@ -1683,121 +1717,42 @@ entries file). To add/remove/annotate a node, edit
                                   hardly ramified rep has a Γℚ-equivariant surjection onto the
                                   trivial 1-dim rep. From mod_three_reducible +
                                   mod_three_of_stable_line (Minkowski bookkeeping PROVEN).
-                                    - ✅· `exists_line_with_locally_unramified_quotCharacter` — DERIVED 2026-07-18: split into the
-                                      at-3 Serre-swap leaf and the at-2 tame bookkeeping leaf
-                                      (the at-2 argument applies to ANY stable line).
-                                        - ❌· `exists_line_with_unramified_quotCharacter_at_three` — (sorry node) the connected–étale
-                                          content: IsFlatAt-prolongation over ℤ₃, étale quotient
-                                          unramified, Serre swap to the other stable line when
-                                          the quotient of the given line is ramified.
-                                        - ✅· `quotCharacter_unramified_at_two` — DERIVED 2026-07-18 from the ℚ_[2] dichotomy and the
-                                          inertia bridge. The dichotomy `quotCharacter_inertia_two_ker`
-                                          is PROVEN (isTameAtTwo's π₂/δ; either W ≤ ker π₂ and χ₂
-                                          scales π₂ through liftQ, or the sub-character kills inertia
-                                          and χ₂ = det/χ₁ via MazurTorsion's
-                                          det_eq_subCharacter_mul_quotCharacter + the cyclotomic leaf);
-                                          new exposed rfl-lemma GaloisRep.map_apply.
-                                            - ✅· `cyclotomicCharacter_algebraMap_eq_one_of_inertia_two` — FULLY PROVEN 2026-07-18, audit
-                                              [propext, Classical.choice, Quot.sound]: inertia fixes the
-                                              cube root ι ζ (σζ = ζ² would put z² − z in 𝔪, but
-                                              (z−1)² = −3z with 1+z+z² = 0 gives |z−1| = 1 since
-                                              ‖3‖₂ = 1 by 2.Coprime 3); lift_map transports the fix to
-                                              Γ ℚ; cyclotomicCharacter.spec at level 1 + pow_inj give
-                                              χ₃ ≡ 1 mod 3 (PadicInt.ker_toZModPow), and the char-3
-                                              algebraMap kills the 3-divisible part. With it,
-                                              quotCharacter_inertia_two_ker audits fully clean too.
-                                            - ✅· `localInertia_two_eq_map_padic` — the completion bridge — FULLY PROVEN 2026-07-18, audit
-                                              [propext, Classical.choice, Quot.sound], exactly along the
-                                              recorded five-step design: (1) E : adicCompletion ℚ v₂ ≃A[ℚ]
-                                              ℚ_[2] from padicEquiv, packaged with the integers-compat
-                                              hEint (padicEquiv_bijOn + subring membership; prime-cast via
-                                              a Subtype-packaged norm-preserving transport with
-                                              Subsingleton-subst of Fact instances; the rat-algebra diamond
-                                              contained by scoped letI + pair-transport); (2) τ = the
-                                              conjugation of σ through the bijective ι₃ =
-                                              AlgebraicClosure.map E.symm (algHom_bijective on the
-                                              composite), transport square definitional; (3) inertia
-                                              membership: spectral-norm ≤ 1 ⇒ minpoly coefficients lift to
-                                              PadicInt.subring 2 (vendored proof adapted), transported by
-                                              codRestrict ring homs, nonunits pushed forward (IsUnit.map);
-                                              (4) the conjugator from Normal.algHomEquivAut; (5) the final
-                                              square pointwise through injective ι₁, lift_map over ℚ only.
-                                              With it, quotCharacter_unramified_at_two audits fully clean:
-                                              the ENTIRE at-2 half of the mod-3 analysis is closed.
-                                    - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible` — mod-3 reducibility — DERIVED 2026-07-18: if no stable
-                                      submodule then irreducible (Slop.OddRep.isIrreducible_iff_forall);
-                                      complex conjugation is an involution with det = χ₃(c) = -1 and
-                                      2 ≠ 0 in k (char k = 3), so its 1-eigenspace is a line and
-                                      OddRep.isIrreducible_iff_isAbsolutelyIrreducible upgrades to
-                                      absolute irreducibility, contradicting the Serre leaf. The
-                                      OddAbsIrred pair (495+53 lines, sorry-free, mathlib-only
-                                      imports) RESTORED from 8282dfb~1 and consumed. New PROVEN
-                                      helpers: three_eq_zero_of_finite_padicIntThree_algebra (char-3
-                                      via a unit (p:ℤ_[3]) mapping to 0), 
-                                      finrank_eigenspace_one_of_involution (E₁ ⊕ E₋₁ split + det
-                                      case analysis), GaloisRep.det_apply (exposed rfl-lemma).
-                                        - ✅· `exists_conj_cyclotomicCharacter_three` — complex conjugation with χ₃(c) = -1 — PROVEN
-                                          2026-07-18, audit [propext, Classical.choice, Quot.sound].
-                                          Route: ℝᵃˡᵍ ≃ₐ[ℝ] ℂ (IsAlgClosure.equiv, instance built
-                                          from Complex.isAlgClosed + finite ⇒ algebraic) gives
-                                          Nat.card (Γ ℝ) = 2 (IsGalois.card_aut_eq_finrank +
-                                          finrank_real_complex); the nontrivial σ squares to 1
-                                          (pow_card_eq_one'), its image c under Γ ℝ → Γ ℚ is the
-                                          involution; χ₃(c)² = 1 gives χ₃(c) = ±1 in the domain
-                                          ℤ_[3] (mul_self_eq_one_iff); χ₃(c) = 1 refuted:
-                                          cyclotomicCharacter.spec would make c fix a primitive cube
-                                          root ζ, so σ fixes ι(ζ) ∉ ℝ (real cube roots of 1 are just
-                                          1, nlinarith), but ℝ(ι ζ) = ℝᵃˡᵍ in degree 2
-                                          (finrank_eq_one_iff/finrank_eq_one_iff_eq_top + dvd-prime
-                                          case split), so σ = 1 by adjoin_induction — contradiction.
-                                          mod_three_reducible now rests on the SINGLE Serre leaf.
-                                        - ✅· `not_isAbsolutelyIrreducible` — no absolutely irreducible mod-3 hardly ramified rep —
-                                          DERIVED 2026-07-18: the Dickson stack RESTORED (~11,400
-                                          lines, 14 files, zero sorries: Slop.PGL2.FiniteSubgroups +
-                                          KnownIn1980s.PGL2.{Basic,Defs}); the skeleton base-changes
-                                          ρ to 𝔽̄₃ (Slop.OddRep.baseChange), identifies k̄ ≅ K 3 =
-                                          AlgebraicClosure (ZMod 3) via IsAlgClosure.equiv over
-                                          ZMod 3 (CharP k 3 from the new
-                                          charP_three_of_finite_padicIntThree_algebra), takes the
-                                          matrix form in a finBasis (toMatrixAlgEquiv units chain →
-                                          GL₂(𝔽̄₃)), projectivizes to π : Γ ℚ →* PGL₂(𝔽̄₃)
-                                          (QuotientGroup.mk' center), proves Finite π.range (the
-                                          action factors through the finite End k V via a
-                                          choice-based function, Units.ext), and applies the
-                                          vendored Dickson.classification_tame/wild.
-                                            - ✅· `serre_elimination` — the Serre elimination over the Dickson list — cyclic case PROVEN
-                                              2026-07-18: cyclic projective image ⇒ the matrix image
-                                              u.range is abelian (subgroupMap to the center-quotient
-                                              + MonoidHom.isMulCommutative_of_isCyclic_of_ker_le_center)
-                                              ⇒ the base-changed operators commute (Units.val,
-                                              Matrix.map_mul, injectivity of map e and toMatrix) ⇒
-                                              each acts as a scalar (exists_eigenvalue over the
-                                              algebraically closed L, eigenspace invariance under
-                                              commuting operators, irreducibility dichotomy) ⇒ a
-                                              span of any nonzero vector is a stable line,
-                                              contradicting finrank 2. Noncyclic cases delegate to:
-                                                - ✅· `serre_elimination_noncyclic` — DERIVED (case dispatch); children:
-                                                    - ✅· `serre_elimination_semidirect` — the elementary-abelian ⋊ cyclic case — FULLY PROVEN
-                                                      2026-07-18, audit [propext, Classical.choice,
-                                                      Quot.sound], exactly along the recorded attack:
-                                                      kernel of the right-component character r; cube
-                                                      central ⇒ scalar (irreducibility) ⇒ char-3
-                                                      Frobenius square-nilpotency with μ ≠ 0; all-scalar
-                                                      case kills the left factor (m ≥ 1); otherwise the
-                                                      1-dim eigenline (rank–nullity) is shared (unique
-                                                      unipotent parameter via expansion-subtraction;
-                                                      commutator scalar ±1 via det_smul, −1 refuted by
-                                                      the char-3 expansion identity (4μ₀)•A = μ₀•A = 0)
-                                                      and normality makes it Γℚ-stable. Technical notes:
-                                                      pointwise `module` tactic closes the End-algebra
-                                                      identities; the End-Mul/sub instance diamonds
-                                                      required respectTransparency false and avoiding
-                                                      rw with sub_smul/sub_zero/mul_sub patterns.
-                                                    - ❌· `serre_elimination_arith` — dihedral / A₄ / S₄ / A₅ / PSL₂(𝔽_{3^m}) / PGL₂(𝔽_{3^m})
-                                                      (sorry node — the deep arithmetic core): Serre's
-                                                      discriminant/conductor bounds over ℚ (Duke 1987
-                                                      §5.4); needs discriminant-bound machinery absent
-                                                      from mathlib.
+                                    - ✅· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter` — the stable line with quotient character unramified at 2 AND 3
+                                      — DERIVED 2026-07-18 from the at-3 Serre-swap leaf plus the
+                                      at-2 tame bookkeeping (`quotCharacter_unramified_at_two`,
+                                      itself fully proven).
+                                        - ❌· `exists_line_with_unramified_quotCharacter_at_three` — (sorry node — the connected–étale content) a reducible
+                                          mod-3 hardly ramified rep has a stable line with quotient
+                                          character unramified at 3: the IsFlatAt prolongation over
+                                          ℤ₃, unramified étale quotient of the connected–étale
+                                          sequence, and the Serre swap to the other stable line when
+                                          needed.
+                                    - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible` — mod-3 reducibility — DERIVED 2026-07-18: no stable submodule ⇒
+                                      irreducible (Slop.OddRep.isIrreducible_iff_forall); complex
+                                      conjugation is an involution with det = χ₃(c) = −1 and 2 ≠ 0
+                                      in k, so its 1-eigenspace is a line and OddAbsIrred upgrades
+                                      to absolute irreducibility, contradicting
+                                      `not_isAbsolutelyIrreducible`.
+                                        - ✅· `not_isAbsolutelyIrreducible` — no absolutely irreducible mod-3 hardly ramified
+                                          representation — DERIVED 2026-07-18: base change to 𝔽̄₃
+                                          (IsAlgClosure.equiv over ZMod 3, CharP k 3), matrix form
+                                          in a finBasis, projectivization to PGL₂(𝔽̄₃) with finite
+                                          image (the action factors through the finite End k V),
+                                          then the vendored Dickson classification feeds
+                                          `serre_elimination`.
+                                            - ✅· `serre_elimination` — the Serre elimination over the Dickson eight-case list
+                                              — cyclic case PROVEN 2026-07-18 (cyclic projective
+                                              image ⇒ abelian matrix image ⇒ scalar action ⇒ stable
+                                              line, contradiction); the rest dispatched to
+                                              `serre_elimination_noncyclic`.
+                                                - ✅· `serre_elimination_noncyclic` — the seven noncyclic Dickson cases — DERIVED (case
+                                                  dispatch to the semidirect and arithmetic leaves).
+                                                    - ❌· `serre_elimination_arith` — (sorry node — the deep arithmetic core)
+                                                      dihedral / A₄ / S₄ / A₅ / PSL₂(𝔽_{3^m}) /
+                                                      PGL₂(𝔽_{3^m}) eliminated via Serre's
+                                                      discriminant/conductor bounds over ℚ (Duke
+                                                      1987 §5.4); needs discriminant-bound machinery
+                                                      absent from mathlib.
                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient` — ordinarity lifting. DERIVED 2026-07-18 from the global triangular
                                   form + the cyclotomic-at-Frobenius leaf: the local Frobenius
                                   matrix is the global form at the Frobenius image; the diagonal
@@ -1806,54 +1761,6 @@ entries file). To add/remove/annotate a node, edit
                                   spellings reconciled by congr + Subsingleton (Algebra ℚ _) — the
                                   Rat-algebra uniqueness bridging the module-system elaboration
                                   divergence.
-                                    - ✅· `cyclotomicCharacter_adicArithFrob` — the 3-adic cyclotomic character at an arithmetic Frobenius =
-                                      p. DERIVED 2026-07-18 from the roots-of-unity action leaf by
-                                      3-adic continuity: PadicInt.ext_of_toZModPow level-by-level,
-                                      cyclotomicCharacter.toZModPow +
-                                      modularCyclotomicCharacter.unique identifying each level with
-                                      p from the action; HasEnoughRootsOfUnity instances from
-                                      RootsOfUnity.AlgebraicallyClosed.
-                                        - ✅· `adicArithFrob_rootsOfUnity_pow` — the Frobenius action on 3-power roots of unity — FULLY
-                                          PROVEN 2026-07-18, audit [propext, Classical.choice,
-                                          Quot.sound]; likewise its consumer
-                                          cyclotomicCharacter_adicArithFrob. The residue-cardinality
-                                          dependency resolved by DISCOVERING the identical statement
-                                          already fully proven in Chebotarev.lean
-                                          (natCard_residue_quotient_toHeightOneSpectrum, whose
-                                          "sorry node" docstring was stale) and moving that cluster
-                                          (+ natCard_quotient_maximalIdeal_padicInt,
-                                          natGenerator_toHeightOneSpectrum) upstream to the new
-                                          module Fermat.FLT.DedekindDomain.ResidueCardinality
-                                          (imports AbsoluteGaloisGroup for the
-                                          valuationRing_integralClosure ⇒ IsLocalRing instance);
-                                          GaloisRep's duplicate node natCard_residue_under_padicPlace
-                                          deleted, consumer rewired. — assembly notes:
-                                          2026-07-18: the full derivation now compiles, consuming
-                                          mathlib's AlgHom.IsArithFrobAt.apply_of_pow_eq_one on the
-                                          integral closure (isArithFrobAt_adicArithFrob), the
-                                          existing lift_map globalization square, the new
-                                          IntegralClosure.coe_smul rfl-lemma, F-injectivity, and the
-                                          exponent-mod juggle (ZMod.val_natCast + Nat.div_add_mod).
-                                          h3notin CLOSED 2026-07-18: the class-6 numeral bridge fell
-                                          — in the leaf, `subst hv` plus the defeq-tolerant finish
-                                          `absurd (lt_of_lt_of_le hlt h1.symm.le) (lt_irrefl _)`
-                                          closed the consumer side. Sole remaining dependency: the
-                                          residue-cardinality sub-lemma
-                                          natCard_residue_under_padicPlace.
-                                            - ✅· `valued_natCast_adicCompletionIntegers_eq_one` — the completed valuation of 3 at the
-                                              p-place is 1 — PROVEN 2026-07-18 (audit [propext,
-                                              Classical.choice, Quot.sound]): the intValuation chain
-                                              bridged by an explicit hbridge whose RHS pins the
-                                              `Algebra (𝓞 ℚ) Kᵥ` instance to
-                                              `instAlgebraAdicCompletion` — the diamond against
-                                              `RingOfIntegers.instAlgebra` WAS the invisible
-                                              divergence — discharged by `map_natCast` +
-                                              `algebraMap.coe_natCast`.
-                                            - ✅· `natCard_residue_quotient_toHeightOneSpectrum` — the residue cardinality at the p-place is p
-                                              — was already PROVEN in Chebotarev.lean (stale sorry
-                                              marking); moved to
-                                              Fermat.FLT.DedekindDomain.ResidueCardinality
-                                              2026-07-18 and consumed here.
                                     - ❌· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient` — the global triangular form (sorry node — the Serre
                                       classification core): given the residual trivial quotient, the
                                       WHOLE 3-adic rep is an extension of the trivial character by χ

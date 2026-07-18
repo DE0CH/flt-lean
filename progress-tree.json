@@ -62,13 +62,12 @@
   "GaloisRepresentation.residual_charFrob_eq": "✅",
   "GaloisRepresentation.IsHardlyRamified.mem_isCompatible": "❌",
   "GaloisRepresentation.residual_charFrob_eq_of_family": "✅",
-  "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter": "❌",
-  "GaloisRepresentation.IsHardlyRamified.mod_three_reducible": "❌",
+  "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter": "✅",
+  "GaloisRepresentation.IsHardlyRamified.mod_three_reducible": "✅",
   "GaloisRepresentation.IsHardlyRamified.mod_three": "✅",
   "valued_natCast_adicCompletionIntegers_eq_one": "✅✅",
-  "natCard_residue_under_padicPlace": "❌",
-  "adicArithFrob_rootsOfUnity_pow": "✅",
-  "cyclotomicCharacter_adicArithFrob": "✅",
+  "adicArithFrob_rootsOfUnity_pow": "✅✅",
+  "cyclotomicCharacter_adicArithFrob": "✅✅",
   "GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient": "❌",
   "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient": "✅",
   "GaloisRepresentation.IsHardlyRamified.isTameAtTwo_baseChange_residue": "✅✅",
@@ -130,7 +129,7 @@
   "TateCurve.bilateralXY_inj": "❌",
   "TateCurve.eq_or_mul_eq_of_bilateralX_eq": "✅",
   "TateCurve.bilateral_add_self": "✅",
-  "TateCurve.bilateral_ne_negY_of_sq_nontrivial": "❌",
+  "TateCurve.bilateral_ne_negY_of_sq_nontrivial": "✅",
   "TateCurve.bilateral_tangentY_cleared": "❌",
   "TateCurve.bilateral_tangentX_cleared": "❌",
   "TateCurve.bilateral_chordY_cleared": "❌",
@@ -152,7 +151,23 @@
   "TateCurve.ΔFormal_eq": "✅✅",
   "WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul": "✅✅",
   "WeierstrassCurve.isSquare_of_scaled_split": "✅✅",
-  "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split": "✅✅"
+  "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split": "✅✅",
+  "GaloisRepresentation.natCard_residue_quotient_toHeightOneSpectrum": "✅✅",
+  "GaloisRepresentation.IsHardlyRamified.exists_conj_cyclotomicCharacter_three": "✅✅",
+  "GaloisRepresentation.IsHardlyRamified.finrank_eigenspace_one_of_involution": "✅✅",
+  "GaloisRepresentation.IsHardlyRamified.not_isAbsolutelyIrreducible": "✅",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination": "✅",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_noncyclic": "✅",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_semidirect": "✅✅",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_arith": "❌",
+  "GaloisRepresentation.IsHardlyRamified.exists_line_with_unramified_quotCharacter_at_three": "❌",
+  "GaloisRepresentation.IsHardlyRamified.quotCharacter_unramified_at_two": "✅✅",
+  "GaloisRepresentation.IsHardlyRamified.quotCharacter_inertia_two_ker": "✅✅",
+  "GaloisRepresentation.IsHardlyRamified.cyclotomicCharacter_algebraMap_eq_one_of_inertia_two": "✅✅",
+  "GaloisRepresentation.IsHardlyRamified.localInertia_two_eq_map_padic": "✅✅",
+  "Dickson.classification_tame": "✅✅",
+  "Dickson.classification_wild": "✅✅",
+  "OddRep.isIrreducible_iff_isAbsolutelyIrreducible": "✅✅"
  },
  "children": {
   "fermatLastTheoremThree": [],
@@ -445,17 +460,24 @@
    "GaloisRepresentation.IsHardlyRamified.three_adic",
    "GaloisRepresentation.cyclotomicCharacter_globalFrob"
   ],
-  "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter": [],
-  "GaloisRepresentation.IsHardlyRamified.mod_three_reducible": [],
+  "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter": [
+   "GaloisRepresentation.IsHardlyRamified.quotCharacter_unramified_at_two",
+   "GaloisRepresentation.IsHardlyRamified.exists_line_with_unramified_quotCharacter_at_three"
+  ],
+  "GaloisRepresentation.IsHardlyRamified.mod_three_reducible": [
+   "GaloisRepresentation.IsHardlyRamified.not_isAbsolutelyIrreducible",
+   "OddRep.isIrreducible_iff_isAbsolutelyIrreducible",
+   "GaloisRepresentation.IsHardlyRamified.exists_conj_cyclotomicCharacter_three",
+   "GaloisRepresentation.IsHardlyRamified.finrank_eigenspace_one_of_involution"
+  ],
   "GaloisRepresentation.IsHardlyRamified.mod_three": [
    "minkowski_character_trivial",
    "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter",
    "GaloisRepresentation.IsHardlyRamified.mod_three_reducible"
   ],
   "valued_natCast_adicCompletionIntegers_eq_one": [],
-  "natCard_residue_under_padicPlace": [],
   "adicArithFrob_rootsOfUnity_pow": [
-   "natCard_residue_under_padicPlace",
+   "GaloisRepresentation.natCard_residue_quotient_toHeightOneSpectrum",
    "valued_natCast_adicCompletionIntegers_eq_one"
   ],
   "cyclotomicCharacter_adicArithFrob": [
@@ -505,7 +527,9 @@
   "GaloisRepresentation.cyclotomicCharacterModL_globalFrob": [
    "GaloisRepresentation.cyclotomicCharacter_globalFrob"
   ],
-  "GaloisRepresentation.cyclotomicCharacter_globalFrob": [],
+  "GaloisRepresentation.cyclotomicCharacter_globalFrob": [
+   "GaloisRepresentation.natCard_residue_quotient_toHeightOneSpectrum"
+  ],
   "GaloisRepresentation.toZMod_eq_ringEquivCongr_comp_toZModPow": [],
   "WeierstrassCurve.n_torsion_finite": [
    "TorsionCard.prime_torsion_card",
@@ -645,7 +669,9 @@
    "TateCurve.bilateral_tangentX_cleared",
    "TateCurve.bilateral_tangentY_cleared"
   ],
-  "TateCurve.bilateral_ne_negY_of_sq_nontrivial": [],
+  "TateCurve.bilateral_ne_negY_of_sq_nontrivial": [
+   "TateCurve.bilateralXY_inj"
+  ],
   "TateCurve.bilateral_tangentY_cleared": [],
   "TateCurve.bilateral_tangentX_cleared": [],
   "TateCurve.bilateral_chordY_cleared": [],
@@ -705,7 +731,37 @@
   "WeierstrassCurve.isSquare_of_scaled_split": [
    "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split"
   ],
-  "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split": []
+  "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split": [],
+  "GaloisRepresentation.natCard_residue_quotient_toHeightOneSpectrum": [],
+  "GaloisRepresentation.IsHardlyRamified.exists_conj_cyclotomicCharacter_three": [],
+  "GaloisRepresentation.IsHardlyRamified.finrank_eigenspace_one_of_involution": [],
+  "GaloisRepresentation.IsHardlyRamified.not_isAbsolutelyIrreducible": [
+   "Dickson.classification_wild",
+   "GaloisRepresentation.IsHardlyRamified.serre_elimination",
+   "Dickson.classification_tame"
+  ],
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination": [
+   "GaloisRepresentation.IsHardlyRamified.serre_elimination_noncyclic"
+  ],
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_noncyclic": [
+   "GaloisRepresentation.IsHardlyRamified.serre_elimination_arith",
+   "GaloisRepresentation.IsHardlyRamified.serre_elimination_semidirect"
+  ],
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_semidirect": [],
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_arith": [],
+  "GaloisRepresentation.IsHardlyRamified.exists_line_with_unramified_quotCharacter_at_three": [],
+  "GaloisRepresentation.IsHardlyRamified.quotCharacter_unramified_at_two": [
+   "GaloisRepresentation.IsHardlyRamified.quotCharacter_inertia_two_ker",
+   "GaloisRepresentation.IsHardlyRamified.localInertia_two_eq_map_padic"
+  ],
+  "GaloisRepresentation.IsHardlyRamified.quotCharacter_inertia_two_ker": [
+   "GaloisRepresentation.IsHardlyRamified.cyclotomicCharacter_algebraMap_eq_one_of_inertia_two"
+  ],
+  "GaloisRepresentation.IsHardlyRamified.cyclotomicCharacter_algebraMap_eq_one_of_inertia_two": [],
+  "GaloisRepresentation.IsHardlyRamified.localInertia_two_eq_map_padic": [],
+  "Dickson.classification_tame": [],
+  "Dickson.classification_wild": [],
+  "OddRep.isIrreducible_iff_isAbsolutelyIrreducible": []
  },
  "roots": [
   "fermat_last_theorem"
