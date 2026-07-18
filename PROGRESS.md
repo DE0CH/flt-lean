@@ -126,31 +126,32 @@ entries file). To add/remove/annotate a node, edit
                                                           the two new leaves make w a square and the
                                                           reduction type variable-change-invariant,
                                                           and scaling by √w⁻¹ concludes).
-                                                            - ❌· `WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul` — invariance of split multiplicative
-                                                              reduction under change of Weierstrass
-                                                              coordinates, phrased via the minimal
-                                                              model (mathlib's reduction classes are
-                                                              properties of the literal model): W
-                                                              split implies (C•W).minimal split — W
-                                                              and (C•W).minimal are two minimal
-                                                              integral models of one class,
-                                                              differing by a unit-scaling integral
-                                                              variable change under which the
-                                                              reduced node polynomial changes by a
-                                                              linear substitution and a unit-square
-                                                              scaling.
-                                                            - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3
-                                                              descent, phrased via minimal models:
-                                                              if the minimal models of y²=x³+Ax+B
-                                                              and of its scaling twist
-                                                              y²=x³+w²Ax+w³B both have split
-                                                              multiplicative reduction over the
-                                                              local field k then w is a square —
-                                                              odd-valuation w gives a ramified twist
-                                                              with additive reduction, unit-
-                                                              nonsquare w gives the unramified twist
-                                                              which flips the Galois action on the
-                                                              tangent directions at the node.
+                                                            - ✅· `WeierstrassCurve.isSquare_of_scaled_split` — split+split scaling twist forces w
+                                                              square, now DERIVED from the split
+                                                              criterion leaf: sq-class of −c₄c₆ is a
+                                                              variable-change invariant
+                                                              ((u⁻⁵)²-scaling), the criterion makes
+                                                              −c₄c₆ of both minimal models squares,
+                                                              c₄/c₆ are units by multiplicative
+                                                              reduction, and −c₄c₆ scales by w⁵
+                                                              under the twist, so w⁵ and hence w is
+                                                              a square.
+                                                                - ❌· `WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split` — the split criterion over the local
+                                                                  field k: split multiplicative
+                                                                  reduction implies −c₄c₆ ∈ (kˣ)².
+                                                                  Odd residue characteristic:
+                                                                  splitness of the reduced node
+                                                                  polynomial means its discriminant
+                                                                  −c₄c₆ is a residue square
+                                                                  (nodePoly_map_splits_iff_isSquare)
+                                                                  and Hensel lifts a unit with
+                                                                  square residue to a square of k.
+                                                                  Residue characteristic 2:
+                                                                  splitness is the Artin–Schreier
+                                                                  condition (nodePoly_map_splits_iff
+                                                                  _of_two_eq_zero), equivalent to
+                                                                  −c₄c₆ square by a 2-adic Hensel
+                                                                  argument.
                                                     - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation:
                                                       `E_q(Ω) ≅ Ωˣ/q^ℤ` Galois-equivariantly ON THE
                                                       NOSE, by the explicit series `X(u,q)`,
@@ -194,33 +195,36 @@ entries file). To add/remove/annotate a node, edit
                                                               reduction type variable-change-
                                                               invariant, and scaling by √w⁻¹
                                                               concludes).
-                                                                - ❌· `WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul` — invariance of split multiplicative
-                                                                  reduction under change of
-                                                                  Weierstrass coordinates, phrased
-                                                                  via the minimal model (mathlib's
-                                                                  reduction classes are properties
-                                                                  of the literal model): W split
-                                                                  implies (C•W).minimal split — W
-                                                                  and (C•W).minimal are two minimal
-                                                                  integral models of one class,
-                                                                  differing by a unit-scaling
-                                                                  integral variable change under
-                                                                  which the reduced node polynomial
-                                                                  changes by a linear substitution
-                                                                  and a unit-square scaling.
-                                                                - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3
-                                                                  descent, phrased via minimal
-                                                                  models: if the minimal models of
-                                                                  y²=x³+Ax+B and of its scaling
-                                                                  twist y²=x³+w²Ax+w³B both have
-                                                                  split multiplicative reduction
-                                                                  over the local field k then w is a
-                                                                  square — odd-valuation w gives a
-                                                                  ramified twist with additive
-                                                                  reduction, unit-nonsquare w gives
-                                                                  the unramified twist which flips
-                                                                  the Galois action on the tangent
-                                                                  directions at the node.
+                                                                - ✅· `WeierstrassCurve.isSquare_of_scaled_split` — split+split scaling twist forces w
+                                                                  square, now DERIVED from the split
+                                                                  criterion leaf: sq-class of −c₄c₆
+                                                                  is a variable-change invariant
+                                                                  ((u⁻⁵)²-scaling), the criterion
+                                                                  makes −c₄c₆ of both minimal models
+                                                                  squares, c₄/c₆ are units by
+                                                                  multiplicative reduction, and
+                                                                  −c₄c₆ scales by w⁵ under the
+                                                                  twist, so w⁵ and hence w is a
+                                                                  square.
+                                                                    - ❌· `WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split` — the split criterion over the
+                                                                      local field k: split
+                                                                      multiplicative reduction
+                                                                      implies −c₄c₆ ∈ (kˣ)². Odd
+                                                                      residue characteristic:
+                                                                      splitness of the reduced node
+                                                                      polynomial means its
+                                                                      discriminant −c₄c₆ is a
+                                                                      residue square (nodePoly_map_s
+                                                                      plits_iff_isSquare) and Hensel
+                                                                      lifts a unit with square
+                                                                      residue to a square of k.
+                                                                      Residue characteristic 2:
+                                                                      splitness is the
+                                                                      Artin–Schreier condition (node
+                                                                      Poly_map_splits_iff_of_two_eq_
+                                                                      zero), equivalent to −c₄c₆
+                                                                      square by a 2-adic Hensel
+                                                                      argument.
                                                         - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
                                                           uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ` Galois-
                                                           equivariantly ON THE NOSE, by the explicit
@@ -278,38 +282,37 @@ entries file). To add/remove/annotate a node, edit
                                                                   and the reduction type variable-
                                                                   change-invariant, and scaling by
                                                                   √w⁻¹ concludes).
-                                                                    - ❌· `WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul` — invariance of split
-                                                                      multiplicative reduction under
-                                                                      change of Weierstrass
-                                                                      coordinates, phrased via the
-                                                                      minimal model (mathlib's
-                                                                      reduction classes are
-                                                                      properties of the literal
-                                                                      model): W split implies
-                                                                      (C•W).minimal split — W and
-                                                                      (C•W).minimal are two minimal
-                                                                      integral models of one class,
-                                                                      differing by a unit-scaling
-                                                                      integral variable change under
-                                                                      which the reduced node
-                                                                      polynomial changes by a linear
-                                                                      substitution and a unit-square
-                                                                      scaling.
-                                                                    - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the
-                                                                      V.5.3 descent, phrased via
-                                                                      minimal models: if the minimal
-                                                                      models of y²=x³+Ax+B and of
-                                                                      its scaling twist
-                                                                      y²=x³+w²Ax+w³B both have split
-                                                                      multiplicative reduction over
-                                                                      the local field k then w is a
-                                                                      square — odd-valuation w gives
-                                                                      a ramified twist with additive
-                                                                      reduction, unit-nonsquare w
-                                                                      gives the unramified twist
-                                                                      which flips the Galois action
-                                                                      on the tangent directions at
-                                                                      the node.
+                                                                    - ✅· `WeierstrassCurve.isSquare_of_scaled_split` — split+split scaling twist
+                                                                      forces w square, now DERIVED
+                                                                      from the split criterion leaf:
+                                                                      sq-class of −c₄c₆ is a
+                                                                      variable-change invariant
+                                                                      ((u⁻⁵)²-scaling), the
+                                                                      criterion makes −c₄c₆ of both
+                                                                      minimal models squares, c₄/c₆
+                                                                      are units by multiplicative
+                                                                      reduction, and −c₄c₆ scales by
+                                                                      w⁵ under the twist, so w⁵ and
+                                                                      hence w is a square.
+                                                                        - ❌· `WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split` — the split criterion over the
+                                                                          local field k: split
+                                                                          multiplicative reduction
+                                                                          implies −c₄c₆ ∈ (kˣ)². Odd
+                                                                          residue characteristic:
+                                                                          splitness of the reduced node
+                                                                          polynomial means its
+                                                                          discriminant −c₄c₆ is a
+                                                                          residue square (nodePoly_map_s
+                                                                          plits_iff_isSquare) and Hensel
+                                                                          lifts a unit with square
+                                                                          residue to a square of k.
+                                                                          Residue characteristic 2:
+                                                                          splitness is the
+                                                                          Artin–Schreier condition (node
+                                                                          Poly_map_splits_iff_of_two_eq_
+                                                                          zero), equivalent to −c₄c₆
+                                                                          square by a 2-adic Hensel
+                                                                          argument.
                                                             - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
                                                               uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
                                                               Galois-equivariantly ON THE NOSE, by
@@ -359,38 +362,37 @@ entries file). To add/remove/annotate a node, edit
                                                                       square and the reduction type
                                                                       variable-change-invariant, and
                                                                       scaling by √w⁻¹ concludes).
-                                                                        - ❌· `WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul` — invariance of split
-                                                                          multiplicative reduction under
-                                                                          change of Weierstrass
-                                                                          coordinates, phrased via the
-                                                                          minimal model (mathlib's
-                                                                          reduction classes are
-                                                                          properties of the literal
-                                                                          model): W split implies
-                                                                          (C•W).minimal split — W and
-                                                                          (C•W).minimal are two minimal
-                                                                          integral models of one class,
-                                                                          differing by a unit-scaling
-                                                                          integral variable change under
-                                                                          which the reduced node
-                                                                          polynomial changes by a linear
-                                                                          substitution and a unit-square
-                                                                          scaling.
-                                                                        - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the
-                                                                          V.5.3 descent, phrased via
-                                                                          minimal models: if the minimal
-                                                                          models of y²=x³+Ax+B and of
-                                                                          its scaling twist
-                                                                          y²=x³+w²Ax+w³B both have split
-                                                                          multiplicative reduction over
-                                                                          the local field k then w is a
-                                                                          square — odd-valuation w gives
-                                                                          a ramified twist with additive
-                                                                          reduction, unit-nonsquare w
-                                                                          gives the unramified twist
-                                                                          which flips the Galois action
-                                                                          on the tangent directions at
-                                                                          the node.
+                                                                        - ✅· `WeierstrassCurve.isSquare_of_scaled_split` — split+split scaling twist
+                                                                          forces w square, now DERIVED
+                                                                          from the split criterion leaf:
+                                                                          sq-class of −c₄c₆ is a
+                                                                          variable-change invariant
+                                                                          ((u⁻⁵)²-scaling), the
+                                                                          criterion makes −c₄c₆ of both
+                                                                          minimal models squares, c₄/c₆
+                                                                          are units by multiplicative
+                                                                          reduction, and −c₄c₆ scales by
+                                                                          w⁵ under the twist, so w⁵ and
+                                                                          hence w is a square.
+                                                                            - ❌· `WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split` — the split criterion over the
+                                                                              local field k: split
+                                                                              multiplicative reduction
+                                                                              implies −c₄c₆ ∈ (kˣ)². Odd
+                                                                              residue characteristic:
+                                                                              splitness of the reduced node
+                                                                              polynomial means its
+                                                                              discriminant −c₄c₆ is a
+                                                                              residue square (nodePoly_map_s
+                                                                              plits_iff_isSquare) and Hensel
+                                                                              lifts a unit with square
+                                                                              residue to a square of k.
+                                                                              Residue characteristic 2:
+                                                                              splitness is the
+                                                                              Artin–Schreier condition (node
+                                                                              Poly_map_splits_iff_of_two_eq_
+                                                                              zero), equivalent to −c₄c₆
+                                                                              square by a 2-adic Hensel
+                                                                              argument.
                                                                 - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
                                                                   uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
                                                                   Galois-equivariantly ON THE NOSE,
@@ -515,24 +517,25 @@ entries file). To add/remove/annotate a node, edit
                                               of the first; the two new leaves make w a square and
                                               the reduction type variable-change-invariant, and
                                               scaling by √w⁻¹ concludes).
-                                                - ❌· `WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul` — invariance of split multiplicative reduction under
-                                                  change of Weierstrass coordinates, phrased via the
-                                                  minimal model (mathlib's reduction classes are
-                                                  properties of the literal model): W split implies
-                                                  (C•W).minimal split — W and (C•W).minimal are two
-                                                  minimal integral models of one class, differing by
-                                                  a unit-scaling integral variable change under
-                                                  which the reduced node polynomial changes by a
-                                                  linear substitution and a unit-square scaling.
-                                                - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3 descent, phrased
-                                                  via minimal models: if the minimal models of
-                                                  y²=x³+Ax+B and of its scaling twist y²=x³+w²Ax+w³B
-                                                  both have split multiplicative reduction over the
-                                                  local field k then w is a square — odd-valuation w
-                                                  gives a ramified twist with additive reduction,
-                                                  unit-nonsquare w gives the unramified twist which
-                                                  flips the Galois action on the tangent directions
-                                                  at the node.
+                                                - ✅· `WeierstrassCurve.isSquare_of_scaled_split` — split+split scaling twist forces w square, now
+                                                  DERIVED from the split criterion leaf: sq-class of
+                                                  −c₄c₆ is a variable-change invariant
+                                                  ((u⁻⁵)²-scaling), the criterion makes −c₄c₆ of
+                                                  both minimal models squares, c₄/c₆ are units by
+                                                  multiplicative reduction, and −c₄c₆ scales by w⁵
+                                                  under the twist, so w⁵ and hence w is a square.
+                                                    - ❌· `WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split` — the split criterion over the local field k:
+                                                      split multiplicative reduction implies −c₄c₆ ∈
+                                                      (kˣ)². Odd residue characteristic: splitness
+                                                      of the reduced node polynomial means its
+                                                      discriminant −c₄c₆ is a residue square
+                                                      (nodePoly_map_splits_iff_isSquare) and Hensel
+                                                      lifts a unit with square residue to a square
+                                                      of k. Residue characteristic 2: splitness is
+                                                      the Artin–Schreier condition
+                                                      (nodePoly_map_splits_iff_of_two_eq_zero),
+                                                      equivalent to −c₄c₆ square by a 2-adic Hensel
+                                                      argument.
                                         - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω) ≅
                                           Ωˣ/q^ℤ` Galois-equivariantly ON THE NOSE, by the explicit
                                           series `X(u,q)`, `Y(u,q)` (whose Weierstrass equation is
@@ -566,26 +569,27 @@ entries file). To add/remove/annotate a node, edit
                                                   the first; the two new leaves make w a square and
                                                   the reduction type variable-change-invariant, and
                                                   scaling by √w⁻¹ concludes).
-                                                    - ❌· `WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul` — invariance of split multiplicative reduction
-                                                      under change of Weierstrass coordinates,
-                                                      phrased via the minimal model (mathlib's
-                                                      reduction classes are properties of the
-                                                      literal model): W split implies (C•W).minimal
-                                                      split — W and (C•W).minimal are two minimal
-                                                      integral models of one class, differing by a
-                                                      unit-scaling integral variable change under
-                                                      which the reduced node polynomial changes by a
-                                                      linear substitution and a unit-square scaling.
-                                                    - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3 descent,
-                                                      phrased via minimal models: if the minimal
-                                                      models of y²=x³+Ax+B and of its scaling twist
-                                                      y²=x³+w²Ax+w³B both have split multiplicative
-                                                      reduction over the local field k then w is a
-                                                      square — odd-valuation w gives a ramified
-                                                      twist with additive reduction, unit-nonsquare
-                                                      w gives the unramified twist which flips the
-                                                      Galois action on the tangent directions at the
-                                                      node.
+                                                    - ✅· `WeierstrassCurve.isSquare_of_scaled_split` — split+split scaling twist forces w square, now
+                                                      DERIVED from the split criterion leaf: sq-
+                                                      class of −c₄c₆ is a variable-change invariant
+                                                      ((u⁻⁵)²-scaling), the criterion makes −c₄c₆ of
+                                                      both minimal models squares, c₄/c₆ are units
+                                                      by multiplicative reduction, and −c₄c₆ scales
+                                                      by w⁵ under the twist, so w⁵ and hence w is a
+                                                      square.
+                                                        - ❌· `WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split` — the split criterion over the local field
+                                                          k: split multiplicative reduction implies
+                                                          −c₄c₆ ∈ (kˣ)². Odd residue characteristic:
+                                                          splitness of the reduced node polynomial
+                                                          means its discriminant −c₄c₆ is a residue
+                                                          square (nodePoly_map_splits_iff_isSquare)
+                                                          and Hensel lifts a unit with square
+                                                          residue to a square of k. Residue
+                                                          characteristic 2: splitness is the
+                                                          Artin–Schreier condition
+                                                          (nodePoly_map_splits_iff_of_two_eq_zero),
+                                                          equivalent to −c₄c₆ square by a 2-adic
+                                                          Hensel argument.
                                             - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω)
                                               ≅ Ωˣ/q^ℤ` Galois-equivariantly ON THE NOSE, by the
                                               explicit series `X(u,q)`, `Y(u,q)` (whose Weierstrass
@@ -645,22 +649,22 @@ entries file). To add/remove/annotate a node, edit
                                       twist of the first; the two new leaves make w a square and the
                                       reduction type variable-change-invariant, and scaling by √w⁻¹
                                       concludes).
-                                        - ❌· `WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul` — invariance of split multiplicative reduction under change
-                                          of Weierstrass coordinates, phrased via the minimal model
-                                          (mathlib's reduction classes are properties of the literal
-                                          model): W split implies (C•W).minimal split — W and
-                                          (C•W).minimal are two minimal integral models of one
-                                          class, differing by a unit-scaling integral variable
-                                          change under which the reduced node polynomial changes by
-                                          a linear substitution and a unit-square scaling.
-                                        - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3 descent, phrased via
-                                          minimal models: if the minimal models of y²=x³+Ax+B and of
-                                          its scaling twist y²=x³+w²Ax+w³B both have split
-                                          multiplicative reduction over the local field k then w is
-                                          a square — odd-valuation w gives a ramified twist with
-                                          additive reduction, unit-nonsquare w gives the unramified
-                                          twist which flips the Galois action on the tangent
-                                          directions at the node.
+                                        - ✅· `WeierstrassCurve.isSquare_of_scaled_split` — split+split scaling twist forces w square, now DERIVED
+                                          from the split criterion leaf: sq-class of −c₄c₆ is a
+                                          variable-change invariant ((u⁻⁵)²-scaling), the criterion
+                                          makes −c₄c₆ of both minimal models squares, c₄/c₆ are
+                                          units by multiplicative reduction, and −c₄c₆ scales by w⁵
+                                          under the twist, so w⁵ and hence w is a square.
+                                            - ❌· `WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split` — the split criterion over the local field k: split
+                                              multiplicative reduction implies −c₄c₆ ∈ (kˣ)². Odd
+                                              residue characteristic: splitness of the reduced node
+                                              polynomial means its discriminant −c₄c₆ is a residue
+                                              square (nodePoly_map_splits_iff_isSquare) and Hensel
+                                              lifts a unit with square residue to a square of k.
+                                              Residue characteristic 2: splitness is the
+                                              Artin–Schreier condition
+                                              (nodePoly_map_splits_iff_of_two_eq_zero), equivalent
+                                              to −c₄c₆ square by a 2-adic Hensel argument.
                                 - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
                                   Galois-equivariantly ON THE NOSE, by the explicit series `X(u,q)`,
                                   `Y(u,q)` (whose Weierstrass equation is proven in
@@ -688,22 +692,22 @@ entries file). To add/remove/annotate a node, edit
                                       twist of the first; the two new leaves make w a square and the
                                       reduction type variable-change-invariant, and scaling by √w⁻¹
                                       concludes).
-                                        - ❌· `WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul` — invariance of split multiplicative reduction under change
-                                          of Weierstrass coordinates, phrased via the minimal model
-                                          (mathlib's reduction classes are properties of the literal
-                                          model): W split implies (C•W).minimal split — W and
-                                          (C•W).minimal are two minimal integral models of one
-                                          class, differing by a unit-scaling integral variable
-                                          change under which the reduced node polynomial changes by
-                                          a linear substitution and a unit-square scaling.
-                                        - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3 descent, phrased via
-                                          minimal models: if the minimal models of y²=x³+Ax+B and of
-                                          its scaling twist y²=x³+w²Ax+w³B both have split
-                                          multiplicative reduction over the local field k then w is
-                                          a square — odd-valuation w gives a ramified twist with
-                                          additive reduction, unit-nonsquare w gives the unramified
-                                          twist which flips the Galois action on the tangent
-                                          directions at the node.
+                                        - ✅· `WeierstrassCurve.isSquare_of_scaled_split` — split+split scaling twist forces w square, now DERIVED
+                                          from the split criterion leaf: sq-class of −c₄c₆ is a
+                                          variable-change invariant ((u⁻⁵)²-scaling), the criterion
+                                          makes −c₄c₆ of both minimal models squares, c₄/c₆ are
+                                          units by multiplicative reduction, and −c₄c₆ scales by w⁵
+                                          under the twist, so w⁵ and hence w is a square.
+                                            - ❌· `WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split` — the split criterion over the local field k: split
+                                              multiplicative reduction implies −c₄c₆ ∈ (kˣ)². Odd
+                                              residue characteristic: splitness of the reduced node
+                                              polynomial means its discriminant −c₄c₆ is a residue
+                                              square (nodePoly_map_splits_iff_isSquare) and Hensel
+                                              lifts a unit with square residue to a square of k.
+                                              Residue characteristic 2: splitness is the
+                                              Artin–Schreier condition
+                                              (nodePoly_map_splits_iff_of_two_eq_zero), equivalent
+                                              to −c₄c₆ square by a 2-adic Hensel argument.
                                 - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
                                   Galois-equivariantly ON THE NOSE, by the explicit series `X(u,q)`,
                                   `Y(u,q)` (whose Weierstrass equation is proven in

@@ -932,48 +932,165 @@ theorem WeierstrassCurve.isElliptic_tateCurve_and_j :
     rw [← hjinv, hcomp]
   exact inv_injective hkey
 
-set_option warn.sorry false in
 /-- **Invariance of split multiplicative reduction under change of
-Weierstrass coordinates** (sorry node), phrased through the minimal
-model (mathlib's `HasSplitMultiplicativeReduction` extends `IsMinimal`,
-a property of the literal model, so `C • W` itself — generally neither
-integral nor minimal — cannot carry the class; its minimal model can):
-if `W` has split multiplicative reduction, then so does the minimal
-model of `C • W` for any change of variables `C` over `k`. Content:
-`W` and `(C • W).minimal 𝒪[k]` are two minimal integral models of one
-`k`-isomorphism class, hence differ by a variable change with unit
-scaling `u` and integral `r, s, t`, under which the reduced node
-polynomial changes by a linear substitution and a unit-square scaling,
-preserving both multiplicativity and splitness over the residue
-field. -/
+Weierstrass coordinates**, phrased through the minimal model (mathlib's
+`HasSplitMultiplicativeReduction` extends `IsMinimal`, a property of
+the literal model, so `C • W` itself — generally neither integral nor
+minimal — cannot carry the class; its minimal model can): if `W` has
+split multiplicative reduction, then so does the minimal model of
+`C • W` for any change of variables `C` over `k`. Derived from the
+vendored uniqueness-of-minimal-models machinery: `W` and
+`(C • W).minimal 𝒪[k]` are two minimal models of one `k`-isomorphism
+class, related by the variable change
+`((C • W).exists_isMinimal 𝒪[k]).choose * C`, so
+`HasSplitMultiplicativeReduction.of_isMinimal_smul` (Silverman
+VII.1.3(b): the connecting change has unit `u` and integral `r, s, t`,
+under which the reduced node polynomial transforms by an affine
+substitution and a unit-square scaling) transfers splitness. -/
 theorem WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul
-    (W : WeierstrassCurve k) [W.HasSplitMultiplicativeReduction 𝒪[k]]
+    (W : WeierstrassCurve k) [W.IsElliptic]
+    [W.HasSplitMultiplicativeReduction 𝒪[k]]
     (C : VariableChange k) :
-    ((C • W).minimal 𝒪[k]).HasSplitMultiplicativeReduction 𝒪[k] :=
-  sorry
+    ((C • W).minimal 𝒪[k]).HasSplitMultiplicativeReduction 𝒪[k] := by
+  have hD : ((((C • W)).exists_isMinimal 𝒪[k]).choose * C) • W =
+      (C • W).minimal 𝒪[k] := by
+    rw [mul_smul]
+    rfl
+  exact WeierstrassCurve.HasSplitMultiplicativeReduction.of_isMinimal_smul
+    (R := 𝒪[k]) _ hD inferInstance
 
 set_option warn.sorry false in
+/-- **The split criterion over the local field** (sorry node — the
+arithmetic core of the descent half of Tate's theorem V.5.3): a curve
+with split multiplicative reduction over the nonarchimedean local
+field `k` has `-c₄c₆ ∈ (kˣ)²`. Content (Silverman AEC App. A;
+`-c₄c₆` is the discriminant of the node polynomial up to squares, and
+its square class is the twisting class of the two tangent directions):
+`c₄` and `c₆` of the integral model are units by multiplicative
+reduction; for odd residue characteristic, splitness of the reduced
+node polynomial means its discriminant `-c₄c₆` is a residue square
+(`nodePoly_map_splits_iff_isSquare`), and Hensel lifts a unit with
+square residue to a square of `k`; for residue characteristic `2`,
+splitness is the Artin–Schreier condition
+(`nodePoly_map_splits_iff_of_two_eq_zero`), whose solvability is
+equivalent, by a 2-adic Hensel argument at the finite level
+`-c₄c₆ ≡ (a₁c₄/c₄)²-adjusted squares mod 4·𝔪`, to `-c₄c₆` being a
+square in `k`. -/
+theorem WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split
+    (E : WeierstrassCurve k) [E.HasSplitMultiplicativeReduction 𝒪[k]] :
+    IsSquare (-(E.c₄ * E.c₆)) :=
+  sorry
+
 /-- **Quadratic scaling twists between split curves are trivial**
-(sorry node — the arithmetic core of the descent half of Tate's
-theorem V.5.3): if the short Weierstrass curve `y² = x³ + Ax + B` and
-its scaling twist `y² = x³ + w²Ax + w³B` both have split multiplicative
-reduction over the nonarchimedean local field `k` — phrased through
-their minimal models, since the short equations themselves need not be
-minimal — then `w` is a square in `k`. Content: for `w` of odd
-valuation the twist is by a ramified quadratic extension and has
-additive reduction; for `w` a unit-nonsquare it is the unramified
-quadratic twist, which flips the Galois action on the two tangent
-directions at the node, making the reduction nonsplit (cf. the
-converse construction
-`exists_quadraticTwist_hasSplitMultiplicativeReduction`). -/
+(the arithmetic core of the descent half of Tate's theorem V.5.3,
+derived from the split criterion): if the short Weierstrass curve
+`y² = x³ + Ax + B` and its scaling twist `y² = x³ + w²Ax + w³B` both
+have split multiplicative reduction over the nonarchimedean local
+field `k` — phrased through their minimal models, since the short
+equations themselves need not be minimal — then `w` is a square in
+`k`. Derivation: the square class of `-c₄c₆` is invariant under
+change of Weierstrass coordinates (`c₄`, `c₆` scale by `u⁻⁴`, `u⁻⁶`,
+so `-c₄c₆` scales by the square `(u⁻⁵)²`), and the split criterion
+makes `-c₄c₆` of both minimal models squares; since
+`-c₄c₆` of the scaled short model is `w⁵` times that of the first,
+and these are nonzero (`c₄`, `c₆` of a multiplicative-reduction
+integral model are units), `w⁵` — hence `w` — is a square. -/
 theorem WeierstrassCurve.isSquare_of_scaled_split
     (A B w : k) (hw : w ≠ 0)
-    [((⟨0, 0, 0, A, B⟩ :
+    [i₁ : ((⟨0, 0, 0, A, B⟩ :
         WeierstrassCurve k).minimal 𝒪[k]).HasSplitMultiplicativeReduction 𝒪[k]]
-    [((⟨0, 0, 0, w ^ 2 * A, w ^ 3 * B⟩ :
+    [i₂ : ((⟨0, 0, 0, w ^ 2 * A, w ^ 3 * B⟩ :
         WeierstrassCurve k).minimal 𝒪[k]).HasSplitMultiplicativeReduction 𝒪[k]] :
-    IsSquare w :=
-  sorry
+    IsSquare w := by
+  set S : WeierstrassCurve k := ⟨0, 0, 0, A, B⟩ with hSdef
+  set S' : WeierstrassCurve k := ⟨0, 0, 0, w ^ 2 * A, w ^ 3 * B⟩ with hS'def
+  -- the square class of `-c₄c₆` transfers from a variable change
+  have htrans : ∀ (T : VariableChange k) (W : WeierstrassCurve k),
+      IsSquare (-((T • W).c₄ * (T • W).c₆)) → IsSquare (-(W.c₄ * W.c₆)) := by
+    rintro T W ⟨r, hr⟩
+    refine ⟨(T.u : k) ^ 5 * r, ?_⟩
+    have huu : ((T.u⁻¹ : kˣ) : k) * (T.u : k) = 1 := by
+      exact_mod_cast T.u.inv_mul
+    rw [WeierstrassCurve.variableChange_c₄,
+      WeierstrassCurve.variableChange_c₆] at hr
+    calc -(W.c₄ * W.c₆)
+        = (((T.u⁻¹ : kˣ) : k) * (T.u : k)) ^ 10 * -(W.c₄ * W.c₆) := by
+          rw [huu]; ring
+      _ = (T.u : k) ^ 10 *
+          -(((T.u⁻¹ : kˣ) : k) ^ 4 * W.c₄ * (((T.u⁻¹ : kˣ) : k) ^ 6 * W.c₆)) := by
+          ring
+      _ = (T.u : k) ^ 10 * (r * r) := by rw [← hr]
+      _ = ((T.u : k) ^ 5 * r) * ((T.u : k) ^ 5 * r) := by ring
+  -- the split criterion applied to the two minimal models, transferred down
+  have hsq₁ : IsSquare (-(S.c₄ * S.c₆)) :=
+    htrans _ S ((S.minimal 𝒪[k]).isSquare_neg_c₄_mul_c₆_of_split)
+  have hsq₂ : IsSquare (-(S'.c₄ * S'.c₆)) :=
+    htrans _ S' ((S'.minimal 𝒪[k]).isSquare_neg_c₄_mul_c₆_of_split)
+  -- `c₄`, `c₆` of the first curve are nonzero (units of the minimal model)
+  have hc₄M : (S.minimal 𝒪[k]).c₄ ≠ 0 := by
+    intro h0
+    have h1 := WeierstrassCurve.integralModel_c₄_eq 𝒪[k] (S.minimal 𝒪[k])
+    rw [h0] at h1
+    have h2 : (WeierstrassCurve.integralModel 𝒪[k] (S.minimal 𝒪[k])).c₄ = 0 :=
+      IsFractionRing.injective 𝒪[k] k (by rw [h1, map_zero])
+    exact WeierstrassCurve.residue_integralModel_c₄_ne_zero (S.minimal 𝒪[k])
+      𝒪[k] (by rw [h2, map_zero])
+  have hc₆M : (S.minimal 𝒪[k]).c₆ ≠ 0 := by
+    intro h0
+    have h1 := WeierstrassCurve.integralModel_c₆_eq 𝒪[k] (S.minimal 𝒪[k])
+    rw [h0] at h1
+    have h2 : (WeierstrassCurve.integralModel 𝒪[k] (S.minimal 𝒪[k])).c₆ = 0 :=
+      IsFractionRing.injective 𝒪[k] k (by rw [h1, map_zero])
+    exact WeierstrassCurve.residue_integralModel_c₆_ne_zero (S.minimal 𝒪[k])
+      𝒪[k] (by rw [h2, map_zero])
+  have hc₄S : S.c₄ ≠ 0 := by
+    intro h0
+    refine hc₄M ?_
+    rw [show S.minimal 𝒪[k] = (S.exists_isMinimal 𝒪[k]).choose • S from rfl,
+      WeierstrassCurve.variableChange_c₄, h0, mul_zero]
+  have hc₆S : S.c₆ ≠ 0 := by
+    intro h0
+    refine hc₆M ?_
+    rw [show S.minimal 𝒪[k] = (S.exists_isMinimal 𝒪[k]).choose • S from rfl,
+      WeierstrassCurve.variableChange_c₆, h0, mul_zero]
+  -- the `c`-invariants of the two short models
+  have hc₄Sval : S.c₄ = -48 * A := by
+    show (⟨0, 0, 0, A, B⟩ : WeierstrassCurve k).c₄ = -48 * A
+    simp only [WeierstrassCurve.c₄, WeierstrassCurve.b₂, WeierstrassCurve.b₄]
+    ring
+  have hc₆Sval : S.c₆ = -864 * B := by
+    show (⟨0, 0, 0, A, B⟩ : WeierstrassCurve k).c₆ = -864 * B
+    simp only [WeierstrassCurve.c₆, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+      WeierstrassCurve.b₆]
+    ring
+  have hc₄S'val : S'.c₄ = -48 * (w ^ 2 * A) := by
+    show (⟨0, 0, 0, w ^ 2 * A, w ^ 3 * B⟩ : WeierstrassCurve k).c₄ =
+      -48 * (w ^ 2 * A)
+    simp only [WeierstrassCurve.c₄, WeierstrassCurve.b₂, WeierstrassCurve.b₄]
+    ring
+  have hc₆S'val : S'.c₆ = -864 * (w ^ 3 * B) := by
+    show (⟨0, 0, 0, w ^ 2 * A, w ^ 3 * B⟩ : WeierstrassCurve k).c₆ =
+      -864 * (w ^ 3 * B)
+    simp only [WeierstrassCurve.c₆, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+      WeierstrassCurve.b₆]
+    ring
+  -- assemble: `w⁵·(-c₄c₆ of S) = -c₄c₆ of S'` and both are squares
+  obtain ⟨r₁, hr₁⟩ := hsq₁
+  obtain ⟨r₂, hr₂⟩ := hsq₂
+  have hr₁0 : r₁ ≠ 0 := by
+    rintro rfl
+    rw [mul_zero, neg_eq_zero, mul_eq_zero] at hr₁
+    exact hr₁.elim hc₄S hc₆S
+  refine ⟨r₂ / (w ^ 2 * r₁), ?_⟩
+  rw [div_mul_div_comm, eq_div_iff
+    (mul_ne_zero (mul_ne_zero (pow_ne_zero 2 hw) hr₁0)
+      (mul_ne_zero (pow_ne_zero 2 hw) hr₁0))]
+  -- goal: `w·(w²r₁)² = r₂²`, i.e. `w⁵·r₁² = r₂²`
+  have hrel : w ^ 5 * -(S.c₄ * S.c₆) = -(S'.c₄ * S'.c₆) := by
+    rw [hc₄Sval, hc₆Sval, hc₄S'val, hc₆S'val]
+    ring
+  rw [hr₁, hr₂] at hrel
+  linear_combination hrel
 
 /-- **Split multiplicative curves with equal `j` are isomorphic**
 (the descent half of Tate's theorem V.5.3, derived from the two leaves

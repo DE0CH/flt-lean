@@ -865,13 +865,20 @@
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
   "wip": false,
   "fullname": "WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul",
-  "text": "invariance of split multiplicative reduction under change of Weierstrass coordinates, phrased via the minimal model (mathlib's reduction classes are properties of the literal model): W split implies (C•W).minimal split — W and (C•W).minimal are two minimal integral models of one class, differing by a unit-scaling integral variable change under which the reduced node polynomial changes by a linear substitution and a unit-square scaling."
+  "text": "invariance of split multiplicative reduction under change of Weierstrass coordinates via the minimal model, now DERIVED from the vendored HasSplitMultiplicativeReduction.of_isMinimal_smul (Silverman VII.1.3(b): connecting change of two minimal models has unit u and integral r,s,t; node polynomial transforms by affine substitution + unit-square scaling)."
  },
  {
   "name": "WeierstrassCurve.isSquare_of_scaled_split",
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
   "wip": false,
   "fullname": "WeierstrassCurve.isSquare_of_scaled_split",
-  "text": "the arithmetic core of the V.5.3 descent, phrased via minimal models: if the minimal models of y²=x³+Ax+B and of its scaling twist y²=x³+w²Ax+w³B both have split multiplicative reduction over the local field k then w is a square — odd-valuation w gives a ramified twist with additive reduction, unit-nonsquare w gives the unramified twist which flips the Galois action on the tangent directions at the node."
+  "text": "split+split scaling twist forces w square, now DERIVED from the split criterion leaf: sq-class of −c₄c₆ is a variable-change invariant ((u⁻⁵)²-scaling), the criterion makes −c₄c₆ of both minimal models squares, c₄/c₆ are units by multiplicative reduction, and −c₄c₆ scales by w⁵ under the twist, so w⁵ and hence w is a square."
+ },
+ {
+  "name": "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
+  "wip": false,
+  "fullname": "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split",
+  "text": "the split criterion over the local field k: split multiplicative reduction implies −c₄c₆ ∈ (kˣ)². Odd residue characteristic: splitness of the reduced node polynomial means its discriminant −c₄c₆ is a residue square (nodePoly_map_splits_iff_isSquare) and Hensel lifts a unit with square residue to a square of k. Residue characteristic 2: splitness is the Artin–Schreier condition (nodePoly_map_splits_iff_of_two_eq_zero), equivalent to −c₄c₆ square by a 2-adic Hensel argument."
  }
 ]
