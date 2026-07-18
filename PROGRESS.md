@@ -1663,11 +1663,26 @@ entries file). To add/remove/annotate a node, edit
                                       p from the action; HasEnoughRootsOfUnity instances from
                                       RootsOfUnity.AlgebraicallyClosed.
                                         - ❌· `adicArithFrob_rootsOfUnity_pow` — the Frobenius action on 3-power roots of unity (sorry
-                                          node): at p ∉ {2,3} the arithmetic Frobenius sends ζ to
-                                          ζ^p — 3-power roots are unramified, Frobenius reduces to x
-                                          ↦ x^p on 𝔽_p, and prime-to-p roots of unity inject into
-                                          the residue field (Hensel). Stated in
-                                          modularCyclotomicCharacter.unique's hypothesis shape.
+                                          node). EXECUTABLE ROUTE (verified against mathlib
+                                          2026-07-18): the Hensel content EXISTS as
+                                          AlgHom.IsArithFrobAt.apply_of_pow_eq_one
+                                          (RingTheory/Frobenius.lean:109 — φ ζ = ζ^q for m-th roots,
+                                          m ∉ Q, S a domain); the project supplies
+                                          isArithFrobAt_adicArithFrob (AbsoluteGaloisGroup.lean:268,
+                                          on IntegralClosure 𝒪ᵥ Kᵥᵃˡᵍ at its maximal ideal).
+                                          Assembly steps: (A) residue cardinality q = p: under-ideal
+                                          of 𝔪(IntegralClosure) is 𝔪(𝒪ᵥ), then
+                                          ResidueFieldEquivCompletionResidueField
+                                          (AdicValuation.lean, in tree) + 𝓞ℚ ⧸ (p) ≅ ZMod p — state
+                                          as its own sub-lemma; (B) globalization:
+                                          absoluteGaloisGroup.map is restrictNormal' along
+                                          IsAlgClosed.lift (AbsoluteGaloisGroup.lean:52-57), so the
+                                          square lift ((map f σ) x) = σ (lift x) is
+                                          AlgHom.restrictNormal_commutes; (C) roots of unity are
+                                          integral over 𝒪ᵥ, IntegralClosure is a domain; (D) (3^n :
+                                          ) ∉ 𝔪̄ since 3 is a unit at p ≠ 3; (E) exponent juggle
+                                          ζ^((p mod 3ⁿ).val) = ζ^p from ζ^(3^n) = 1 (pow_mod-style +
+                                          ZMod.val_natCast).
                                     - ❌· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient` — the global triangular form (sorry node — the Serre
                                       classification core): given the residual trivial quotient, the
                                       WHOLE 3-adic rep is an extension of the trivial character by χ
