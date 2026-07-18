@@ -19,7 +19,8 @@ public import Mathlib.FieldTheory.IsSepClosed
 public import Mathlib.NumberTheory.LocalField.Basic
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.TateParameter
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveBaseChange
-public import Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
+-- (was transitively supplied by the deleted ReductionBaseChange module)
 
 /-!
 

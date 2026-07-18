@@ -1,5 +1,5 @@
 {
- "key": "1784366691.4411168",
+ "key": "1784366844.6568959",
  "returncode": 0,
  "floating": [
   {
@@ -11,20 +11,12 @@
    "name": "TateCurve.valuation_algebraMap_lt_one"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
-   "name": "WeierstrassCurve.valuation_c₄_baseChange_eq_one"
-  },
-  {
    "module": "Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal",
    "name": "summable_prod_mul_pow'"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveBaseChange",
    "name": "TateCurve.evalInt_map"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
-   "name": "WeierstrassCurve.hasMultiplicativeReduction_baseChange"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
@@ -51,10 +43,6 @@
    "name": "instLocallyCompactSpaceAdicCompletionRingOfIntegers_fermat"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
-   "name": "ValuativeExtension.integerMap"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.LinearAlgebra.Countable",
    "name": "instCountableOfNumberField_fermat"
   },
@@ -63,20 +51,12 @@
    "name": "WeierstrassCurve.negVariableChange_ne_one"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
-   "name": "WeierstrassCurve.valuation_Δ_baseChange_lt_one"
-  },
-  {
    "module": "Fermat.FLT.FreyCurve.FreyPackage",
    "name": "FreyPackage.ctorIdx"
   },
   {
    "module": "Fermat.FLT.NumberField.Completion.Finite",
    "name": "NumberField.isOpenAdicCompletionIntegers"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
-   "name": "ValuativeExtension.algebraMap_integerMap"
   },
   {
    "module": "Fermat.FLT.Mathlib.RingTheory.Ideal.Quotient.Basic",
@@ -109,10 +89,6 @@
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "IntermediateField.smulCommClass_of_normal"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
-   "name": "WeierstrassCurve.instIsIntegralSubtypeMemSubringIntegerValueGroupWithZeroValuationBaseChange_fermat"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
@@ -175,10 +151,6 @@
    "name": "Valued.WithZeroMulInt.irreducible_valuation_lt_one"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
-   "name": "WeierstrassCurve.isMinimal_baseChange"
-  },
-  {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.instIsPrincipalIdealRingSubtypeMemValuationSubringAdicCompletionIntegers_fermat"
   },
@@ -195,14 +167,6 @@
    "name": "TateCurve.valuation_evalInt_sub_sum_le"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
-   "name": "ValuativeExtension.instIsLocalHomSubtypeMemSubringIntegerValueGroupWithZeroValuationRingHomIntegerMap"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
-   "name": "WeierstrassCurve.integralModel_baseChange_map"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "instMulSemiringActionSubtypeMemIntermediateFieldOfSMulCommClassOfNormal_fermat"
   },
@@ -213,10 +177,6 @@
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
    "name": "TateCurve.Blueprint.periodPair_ω₂"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
-   "name": "ValuativeExtension.residueMap"
   },
   {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.Valued.WithZeroMulInt",
@@ -275,20 +235,12 @@
    "name": "GaloisRepresentation.HardlyRamifiedLift.ctorIdx"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
-   "name": "ValuativeExtension.integerMap_coe"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.RingTheory.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.instSeparableSpaceAdicCompletionOfCountable_fermat"
   },
   {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.algebraMap_completionIntegers"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
-   "name": "WeierstrassCurve.hasSplitMultiplicativeReduction_baseChange"
   },
   {
    "module": "Fermat.FLT.Mathlib.GroupTheory.SpecificGroups.Cyclic",
