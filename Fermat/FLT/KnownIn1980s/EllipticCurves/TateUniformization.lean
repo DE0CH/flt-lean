@@ -2495,6 +2495,121 @@ theorem y_constant_inv (u : k) (hu : u ≠ 0) (hu1 : u ≠ 1) :
   field_simp
   ring
 
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- The pointwise relation between the three kernels:
+`w²/(1-w)³ = w/(1-w)³ - w/(1-w)²`. -/
+theorem y_kernel_relation (w : k) (h1w : (1 : k) - w ≠ 0) :
+    w ^ 2 / (1 - w) ^ 3 = w / (1 - w) ^ 3 - w / (1 - w) ^ 2 := by
+  field_simp
+  ring
+
+omit [CharZero k] in
+/-- Term-family summability for the general Lambert data. -/
+theorem summable_lambert_terms_general (a : ℕ → k) (g : k → k)
+    (ha : ∀ j : ℕ, valuation k (a j) ≤ 1) (w q₀ : k)
+    (hq : valuation k q₀ < 1) (hqw : valuation k (q₀ * w) < 1)
+    (hg : ∀ v₀ : k, valuation k v₀ < 1 →
+      HasSum (fun j : ℕ+ ↦ a (j : ℕ) * v₀ ^ (j : ℕ)) (g v₀)) :
+    Summable (fun m : ℕ+ ↦ g (q₀ ^ (m : ℕ) * w)) := by
+  -- the double series is summable (the general-window two-case bound)
+  have hfin : ∀ N : ℕ, {p : ℕ+ × ℕ+ |
+      (fun p : ℕ+ × ℕ+ ↦ (p.1 : ℕ) * (p.2 : ℕ)) p < N}.Finite := by
+    intro N
+    have hinj : Function.Injective
+        (fun p : ℕ+ × ℕ+ ↦ ((p.1 : ℕ), (p.2 : ℕ))) := by
+      intro x y hxy
+      simp only [Prod.mk.injEq] at hxy
+      exact Prod.ext (PNat.coe_injective hxy.1) (PNat.coe_injective hxy.2)
+    refine Set.Finite.subset
+      (((Set.finite_Iio N).prod (Set.finite_Iio N)).preimage
+        hinj.injOn) ?_
+    intro p hp
+    simp only [Set.mem_setOf_eq] at hp
+    exact ⟨lt_of_le_of_lt (Nat.le_mul_of_pos_right _ p.2.pos) hp,
+      lt_of_le_of_lt (Nat.le_mul_of_pos_left _ p.1.pos) hp⟩
+  have hbound : ∀ p : ℕ+ × ℕ+,
+      valuation k (a (p.2 : ℕ) * w ^ (p.2 : ℕ) *
+        q₀ ^ ((p.1 : ℕ) * (p.2 : ℕ))) ≤
+      valuation k (q₀ * w) ^ (p.2 : ℕ) *
+        valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) := by
+    intro p
+    have hm1 : ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ) =
+        (p.1 : ℕ) * (p.2 : ℕ) := by
+      calc ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ)
+          = (((p.1 : ℕ) - 1) + 1) * (p.2 : ℕ) := by ring
+        _ = (p.1 : ℕ) * (p.2 : ℕ) := by
+            rw [Nat.sub_add_cancel p.1.pos]
+    rw [map_mul, map_mul, map_pow, map_pow, ← hm1, pow_add, map_mul]
+    calc valuation k (a (p.2 : ℕ)) * valuation k w ^ (p.2 : ℕ) *
+          (valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) *
+            valuation k q₀ ^ (p.2 : ℕ))
+        ≤ 1 * valuation k w ^ (p.2 : ℕ) *
+          (valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) *
+            valuation k q₀ ^ (p.2 : ℕ)) := by
+          exact mul_le_mul_left
+            (mul_le_mul_left (ha (p.2 : ℕ)) _) _
+      _ = (valuation k q₀ * valuation k w) ^ (p.2 : ℕ) *
+          valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) := by
+          rw [one_mul, mul_pow, mul_comm
+            (valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)))
+            (valuation k q₀ ^ (p.2 : ℕ)), ← mul_assoc, mul_comm
+            (valuation k w ^ (p.2 : ℕ)) (valuation k q₀ ^ (p.2 : ℕ)),
+            mul_assoc]
+  have hsummable : Summable (fun p : ℕ+ × ℕ+ ↦
+      a (p.2 : ℕ) * w ^ (p.2 : ℕ) * q₀ ^ ((p.1 : ℕ) * (p.2 : ℕ))) := by
+    rcases le_total (valuation k q₀) (valuation k (q₀ * w)) with hle | hle
+    · refine summable_of_valuation_le_pow (q := q₀ * w) hqw
+        (fun p ↦ (p.1 : ℕ) * (p.2 : ℕ)) hfin (fun p ↦ ?_)
+      refine le_trans (hbound p) ?_
+      have hm1 : ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ) =
+          (p.1 : ℕ) * (p.2 : ℕ) := by
+        calc ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ)
+            = (((p.1 : ℕ) - 1) + 1) * (p.2 : ℕ) := by ring
+          _ = (p.1 : ℕ) * (p.2 : ℕ) := by
+              rw [Nat.sub_add_cancel p.1.pos]
+      calc valuation k (q₀ * w) ^ (p.2 : ℕ) *
+            valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ))
+          ≤ valuation k (q₀ * w) ^ (p.2 : ℕ) *
+            valuation k (q₀ * w) ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) :=
+            mul_le_mul_right (pow_le_pow_left' hle _) _
+        _ = valuation k (q₀ * w) ^ ((p.1 : ℕ) * (p.2 : ℕ)) := by
+            rw [← pow_add, add_comm, hm1]
+    · refine summable_of_valuation_le_pow (q := q₀) hq
+        (fun p ↦ (p.1 : ℕ) * (p.2 : ℕ)) hfin (fun p ↦ ?_)
+      refine le_trans (hbound p) ?_
+      have hm1 : ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ) =
+          (p.1 : ℕ) * (p.2 : ℕ) := by
+        calc ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ)
+            = (((p.1 : ℕ) - 1) + 1) * (p.2 : ℕ) := by ring
+          _ = (p.1 : ℕ) * (p.2 : ℕ) := by
+              rw [Nat.sub_add_cancel p.1.pos]
+      calc valuation k (q₀ * w) ^ (p.2 : ℕ) *
+            valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ))
+          ≤ valuation k q₀ ^ (p.2 : ℕ) *
+            valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) :=
+            mul_le_mul_left (pow_le_pow_left' hle _) _
+        _ = valuation k q₀ ^ ((p.1 : ℕ) * (p.2 : ℕ)) := by
+            rw [← pow_add, add_comm, hm1]
+  -- rows sum to `g(q₀ᵐw)`
+  have hrow : ∀ m : ℕ+, HasSum (fun j : ℕ+ ↦
+      a (j : ℕ) * w ^ (j : ℕ) * q₀ ^ ((m : ℕ) * (j : ℕ)))
+      (g (q₀ ^ (m : ℕ) * w)) := by
+    intro m
+    have hx : valuation k (q₀ ^ (m : ℕ) * w) < 1 := by
+      have hm1 : ((m : ℕ) - 1) + 1 = (m : ℕ) := by
+        have := m.pos
+        omega
+      rw [← hm1, pow_add, pow_one, mul_assoc, map_mul, map_pow]
+      calc valuation k q₀ ^ ((m : ℕ) - 1) * valuation k (q₀ * w)
+          ≤ 1 * valuation k (q₀ * w) :=
+            mul_le_mul_left (pow_le_one₀ zero_le hq.le) _
+        _ = valuation k (q₀ * w) := one_mul _
+        _ < 1 := hqw
+    refine (hg _ hx).congr_fun fun j ↦ ?_
+    rw [mul_pow, ← pow_mul]
+    ring
+  exact (hsummable.hasSum.prod_fiberwise hrow).summable
+
 end Annulus
 
 end TateCurve
