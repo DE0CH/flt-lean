@@ -1251,6 +1251,30 @@ theorem evalA_YA_inv (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
     rw [coeffRingEval_coeff_YA_inv u₀ h0 h1 h0' h1' n]
     ring
 
+/-- For a parameter already in the fundamental annulus, the canonical
+exponent is `0` and the point map is the annulus point directly. -/
+theorem pointMap_of_mem_annulus (q₀ : k) (hq0 : q₀ ≠ 0)
+    (hq : valuation k q₀ < 1) (u₀ : k) (hu0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hlow : valuation k q₀ < valuation k u₀)
+    (hhigh : valuation k u₀ ≤ 1) :
+    pointMap q₀ hq0 hq u₀ hu0 =
+      annulusPoint u₀ q₀ hu0 h1 hq0 hhigh hq hlow := by
+  have h0 : (exists_zpow_mul_mem_annulus q₀ hq0 hq u₀ hu0).choose = 0 := by
+    refine annulus_exponent_unique q₀ hq0 hq u₀
+      (exists_zpow_mul_mem_annulus q₀ hq0 hq u₀ hu0).choose_spec
+      ⟨?_, ?_⟩
+    · simpa using hlow
+    · simpa using hhigh
+  have hrep : u₀ * q₀ ^
+      (-(exists_zpow_mul_mem_annulus q₀ hq0 hq u₀ hu0).choose) = u₀ := by
+    rw [h0]
+    simp
+  unfold pointMap
+  simp only [hrep]
+  split_ifs with ha
+  · exact absurd (hrep ▸ ha) h1
+  · rfl
+
 end Annulus
 
 end TateCurve
