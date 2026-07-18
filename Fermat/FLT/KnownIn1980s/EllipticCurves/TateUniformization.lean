@@ -775,6 +775,110 @@ theorem evalA_mem_tateCurve (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
   simp only [WeierstrassCurve.tateCurve]
   linear_combination hWE
 
+/-- **Fundamental-domain normalization** (half of ATAEC V.3.1(e)'s
+setup): for `0 < |q| < 1`, every nonzero `u ∈ k` has a `q`-power
+translate `u·q⁻ᵐ` in the half-open annulus `|q| < |u·q⁻ᵐ| ≤ 1`; `m`
+is the floor of `log_{|q|}|u|`, obtained from the archimedean property
+of the rank-one value group (`exists_pow_valuation_lt`) and minimal
+choice. -/
+theorem exists_zpow_mul_mem_annulus (q : k) (hq0 : q ≠ 0)
+    (hq : valuation k q < 1) (u : k) (hu0 : u ≠ 0) :
+    ∃ m : ℤ, valuation k q < valuation k (u * q ^ (-m)) ∧
+      valuation k (u * q ^ (-m)) ≤ 1 := by
+  have hvq0 : valuation k q ≠ 0 := by
+    simpa [ne_eq, map_eq_zero] using hq0
+  have hvu0 : valuation k u ≠ 0 := by
+    simpa [ne_eq, map_eq_zero] using hu0
+  -- the valuation of the translate
+  have hval : ∀ m : ℤ, valuation k (u * q ^ (-m)) =
+      valuation k u * (valuation k q) ^ (-m : ℤ) := by
+    intro m
+    rw [map_mul, map_zpow₀]
+  -- reduce to the value-group statement: find `m` with
+  -- `v(q)^(m+1) < v(u) ≤ v(q)^m`
+  suffices h : ∃ m : ℤ, (valuation k q) ^ (m + 1) < valuation k u ∧
+      valuation k u ≤ (valuation k q) ^ m by
+    obtain ⟨m, hlow, hhigh⟩ := h
+    refine ⟨m, ?_, ?_⟩
+    · rw [hval]
+      calc valuation k q
+          = (valuation k q) ^ (m + 1) * ((valuation k q) ^ (-m : ℤ)) := by
+            rw [← zpow_add₀ hvq0]
+            norm_num
+        _ < valuation k u * ((valuation k q) ^ (-m : ℤ)) :=
+            mul_lt_mul_of_pos_right hlow
+              (zero_lt_iff.mpr (zpow_ne_zero _ hvq0))
+    · rw [hval]
+      calc valuation k u * (valuation k q) ^ (-m : ℤ)
+          ≤ (valuation k q) ^ m * (valuation k q) ^ (-m : ℤ) :=
+            mul_le_mul_left hhigh _
+        _ = 1 := by
+            rw [← zpow_add₀ hvq0]
+            norm_num
+  -- two cases on `v(u) ≤ 1`
+  rcases le_or_gt (valuation k u) 1 with hle | hgt
+  · -- least `N` with `v(q)^N < v(u)`
+    have hex : ∃ N : ℕ, (valuation k q) ^ N < valuation k u :=
+      exists_pow_valuation_lt q hq (Units.mk0 _ hvu0)
+    classical
+    set N₀ := Nat.find hex with hN₀def
+    have hN₀ : (valuation k q) ^ N₀ < valuation k u := Nat.find_spec hex
+    have hN₀pos : N₀ ≠ 0 := by
+      intro h0
+      rw [h0, pow_zero] at hN₀
+      exact absurd hle (not_le.mpr hN₀)
+    have hmin : ¬ (valuation k q) ^ (N₀ - 1) < valuation k u :=
+      Nat.find_min hex (Nat.sub_lt (Nat.pos_of_ne_zero hN₀pos) one_pos)
+    refine ⟨(N₀ : ℤ) - 1, ?_, ?_⟩
+    · have : ((N₀ : ℤ) - 1) + 1 = (N₀ : ℤ) := by ring
+      rw [this, zpow_natCast]
+      exact hN₀
+    · rw [show ((N₀ : ℤ) - 1) = ((N₀ - 1 : ℕ) : ℤ) by omega, zpow_natCast]
+      exact not_lt.mp hmin
+  · -- `v(u) > 1`: find the least `M` with `v(u)·v(q)^M ≤ 1`
+    have hvuinv0 : (valuation k u)⁻¹ ≠ 0 := inv_ne_zero hvu0
+    have hex : ∃ M : ℕ, valuation k u * (valuation k q) ^ M ≤ 1 := by
+      obtain ⟨N, hN⟩ := exists_pow_valuation_lt q hq
+        (Units.mk0 _ hvuinv0)
+      refine ⟨N, ?_⟩
+      have h1 : valuation k u * (valuation k q) ^ N <
+          valuation k u * (valuation k u)⁻¹ :=
+        mul_lt_mul_of_pos_left hN (zero_lt_iff.mpr hvu0)
+      rw [mul_inv_cancel₀ hvu0] at h1
+      exact h1.le
+    classical
+    set M₀ := Nat.find hex with hM₀def
+    have hM₀ : valuation k u * (valuation k q) ^ M₀ ≤ 1 := Nat.find_spec hex
+    have hM₀pos : M₀ ≠ 0 := by
+      intro h0
+      rw [h0, pow_zero, mul_one] at hM₀
+      exact absurd hgt (not_lt.mpr hM₀)
+    have hmin : ¬ valuation k u * (valuation k q) ^ (M₀ - 1) ≤ 1 :=
+      Nat.find_min hex (Nat.sub_lt (Nat.pos_of_ne_zero hM₀pos) one_pos)
+    rw [not_le] at hmin
+    refine ⟨-(M₀ : ℤ), ?_, ?_⟩
+    · have hexp : (-(M₀ : ℤ) + 1) = -((M₀ - 1 : ℕ) : ℤ) := by omega
+      rw [hexp]
+      calc (valuation k q) ^ (-((M₀ - 1 : ℕ) : ℤ))
+          = 1 * (valuation k q) ^ (-((M₀ - 1 : ℕ) : ℤ)) := (one_mul _).symm
+        _ < (valuation k u * (valuation k q) ^ (M₀ - 1)) *
+            (valuation k q) ^ (-((M₀ - 1 : ℕ) : ℤ)) :=
+            mul_lt_mul_of_pos_right hmin
+              (zero_lt_iff.mpr (zpow_ne_zero _ hvq0))
+        _ = valuation k u := by
+            rw [mul_assoc, ← zpow_natCast (valuation k q) (M₀ - 1),
+              ← zpow_add₀ hvq0]
+            norm_num
+    · calc valuation k u
+          = (valuation k u * (valuation k q) ^ M₀) *
+            (valuation k q) ^ (-(M₀ : ℤ)) := by
+            rw [mul_assoc, ← zpow_natCast (valuation k q) M₀,
+              ← zpow_add₀ hvq0]
+            norm_num
+        _ ≤ 1 * (valuation k q) ^ (-(M₀ : ℤ)) :=
+            mul_le_mul_left hM₀ _
+        _ = (valuation k q) ^ (-(M₀ : ℤ)) := one_mul _
+
 end Annulus
 
 end TateCurve
