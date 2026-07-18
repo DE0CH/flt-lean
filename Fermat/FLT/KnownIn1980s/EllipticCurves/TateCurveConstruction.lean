@@ -1636,17 +1636,113 @@ private noncomputable def addRelXFn (L : PeriodPair) (w z : ℂ) : ℂ :=
     Filter.limUnder (𝓝[≠] z) (addRelXRaw L w)
   else addRelXRaw L w z
 
-set_option warn.sorry false in
-/-- (private WIP sorry node) The patched relation is analytic at the
-`−w`-family of exceptional points: near `c` with `c + w ∈ L.lattice`
-(and `c ∉ L.lattice`), the raw relation is bounded — the double pole of
-`℘(· + w)` is killed by the square of `℘ − ℘ w`, which vanishes at `c`
-since `℘ c = ℘ (−w) = ℘ w` — so the singularity is removable and the
-`limUnder`-patch is the analytic extension. -/
+/-- The patched relation is analytic at the `−w`-family of exceptional
+points: near `c` with `c + w ∈ L.lattice` (and `c ∉ L.lattice`), the
+double pole of `℘(· + w)` is killed by the square of `℘ − ℘ w`, which
+vanishes at `c` since `℘ c = ℘(−w) = ℘ w`; the raw relation therefore
+has a limit at `c` (the value of the continuous comparison function
+built from the `dslope`), and the singularity is removable. -/
 private theorem analyticAt_addRelXFn_neg_w (L : PeriodPair) (w : ℂ)
-    (hw : w ∉ L.lattice) {c : ℂ} (hc : c ∉ L.lattice)
-    (hcw : c + w ∈ L.lattice) : AnalyticAt ℂ (addRelXFn L w) c :=
-  sorry
+    (_hw : w ∉ L.lattice) {c : ℂ} (hc : c ∉ L.lattice)
+    (hcw : c + w ∈ L.lattice) : AnalyticAt ℂ (addRelXFn L w) c := by
+  classical
+  -- `℘ c = ℘ w`
+  have hPc : ℘[L] c = ℘[L] w := by
+    have h1 : ℘[L] c = ℘[L] (-w) := by
+      rw [show c = -w + (c + w) by ring]
+      exact L.weierstrassP_add_coe (-w) ⟨c + w, hcw⟩
+    rw [h1, L.weierstrassP_neg]
+  -- eventual avoidance of the singular families, off `c`
+  have hev1 : ∀ᶠ x in 𝓝 c, x ∉ L.lattice :=
+    L.isClosed_lattice.isOpen_compl.mem_nhds hc
+  have hev2 : ∀ᶠ x in 𝓝 c, x ≠ c → x + w ∉ L.lattice := by
+    have hcont : ContinuousAt (fun x : ℂ => x + w) c := by fun_prop
+    filter_upwards [hcont.preimage_mem_nhds
+      (L.compl_lattice_sdiff_singleton_mem_nhds (c + w))] with x hx hxc hmem
+    exact hx ⟨hmem, fun heq => hxc (by
+      have := add_right_cancel (b := w) heq
+      exact this)⟩
+  -- the analytic/continuous ingredients of the comparison function
+  have hA : AnalyticAt ℂ
+      (fun x => ℘[L - (c + w)] (x + w) - 1 / (c + w) ^ 2) c := by
+    have hshift : AnalyticAt ℂ (fun x : ℂ => x + w) c := by fun_prop
+    exact (AnalyticAt.comp (g := ℘[L - (c + w)]) (f := fun x : ℂ => x + w)
+      (L.analyticAt_weierstrassPExcept (c + w)) hshift).sub analyticAt_const
+  have hg : ContinuousAt (dslope (fun x => ℘[L] x - ℘[L] w) c) c := by
+    rw [continuousAt_dslope_same]
+    exact ((L.analyticOnNhd_weierstrassP c hc).sub
+      analyticAt_const).differentiableAt
+  -- the comparison function and the punctured-neighborhood identity
+  set g : ℂ → ℂ := dslope (fun x => ℘[L] x - ℘[L] w) c with hgdef
+  set Φ : ℂ → ℂ := fun x => (g x) ^ 2 +
+    (x - c) ^ 2 * (℘[L - (c + w)] (x + w) - 1 / (c + w) ^ 2) * (g x) ^ 2 +
+    (℘[L] x + ℘[L] w) * ((x - c) * g x) ^ 2 -
+    (℘'[L] x - ℘'[L] w) ^ 2 / 4 with hΦdef
+  have hΦcont : ContinuousAt Φ c := by
+    have hP : ContinuousAt ℘[L] c :=
+      (L.analyticOnNhd_weierstrassP c hc).continuousAt
+    have hP' : ContinuousAt ℘'[L] c :=
+      (L.analyticOnNhd_derivWeierstrassP c hc).continuousAt
+    have hAc : ContinuousAt
+        (fun x => ℘[L - (c + w)] (x + w) - 1 / (c + w) ^ 2) c :=
+      hA.continuousAt
+    fun_prop
+  have hrawΦ : ∀ᶠ x in 𝓝[≠] c, addRelXRaw L w x = Φ x := by
+    rw [eventually_nhdsWithin_iff]
+    filter_upwards [hev1, hev2] with x hx1 hx2 hxc
+    have hxc' : x ≠ c := by simpa using hxc
+    have hxw := hx2 hxc'
+    -- the local decomposition of `℘(x + w)`
+    have hdecP : ℘[L] (x + w) = ((x - c) ^ 2)⁻¹ +
+        (℘[L - (c + w)] (x + w) - 1 / (c + w) ^ 2) := by
+      have hne : x + w ≠ c + w := fun heq => hxc' (add_right_cancel heq)
+      have h := L.ite_eq_one_sub_sq_mul_weierstrassP (c + w) hcw (x + w)
+      rw [if_neg hne] at h
+      have hsq : ((x + w) - (c + w)) ^ 2 ≠ 0 := by
+        intro h0
+        have h1 := pow_eq_zero_iff (n := 2) (by norm_num) |>.mp h0
+        exact hne (sub_eq_zero.mp h1)
+      field_simp at h ⊢
+      rw [show x + w - (c + w) = x - c by ring] at h
+      linear_combination h
+    -- the `dslope` factorization of `℘ − ℘ w`
+    have hdech : ℘[L] x - ℘[L] w = (x - c) * g x := by
+      have h := sub_smul_dslope (fun y => ℘[L] y - ℘[L] w) c x
+      rw [smul_eq_mul] at h
+      rw [h, hPc, sub_self, sub_zero]
+    rw [addRelXRaw, hdecP, hdech, hΦdef]
+    have hne2 : ((x - c) : ℂ) ≠ 0 := sub_ne_zero.mpr hxc'
+    field_simp
+    ring
+  -- the raw relation has a limit at `c`
+  have htend : Filter.Tendsto (addRelXRaw L w) (𝓝[≠] c) (𝓝 (Φ c)) := by
+    have h1 : Filter.Tendsto Φ (𝓝[≠] c) (𝓝 (Φ c)) :=
+      (hΦcont.continuousWithinAt).tendsto
+    exact h1.congr' (hrawΦ.mono fun x hx => hx.symm)
+  -- Riemann removability, as in the lattice case
+  have hupd : addRelXFn L w =ᶠ[𝓝 c]
+      Function.update (addRelXRaw L w) c
+        (Filter.limUnder (𝓝[≠] c) (addRelXRaw L w)) := by
+    filter_upwards [hev1, hev2] with x hx1 hx2
+    rcases eq_or_ne x c with rfl | hxc
+    · rw [addRelXFn, if_pos (Or.inr hcw), Function.update_self]
+    · rw [addRelXFn, if_neg (by push Not; exact ⟨hx1, hx2 hxc⟩),
+        Function.update_of_ne hxc]
+  rw [analyticAt_congr hupd]
+  apply Complex.analyticAt_of_differentiable_on_punctured_nhds_of_continuousAt
+  · rw [eventually_nhdsWithin_iff]
+    filter_upwards [hev1, hev2] with x hx1 hx2 hxc
+    have hxc' : x ≠ c := by simpa using hxc
+    refine ((analyticAt_addRelXRaw L w hx1 (hx2 hxc')).congr ?_).differentiableAt
+    have hcshift : ContinuousAt (fun y : ℂ => y + w) x := by fun_prop
+    filter_upwards [L.isClosed_lattice.isOpen_compl.mem_nhds hx1,
+      hcshift.preimage_mem_nhds
+        (L.isClosed_lattice.isOpen_compl.mem_nhds (hx2 hxc'))] with y hy1 hy2
+    rcases eq_or_ne y c with rfl | hyc
+    · exact absurd hcw hy2
+    · rw [Function.update_of_ne hyc]
+  · rw [continuousAt_update_same, htend.limUnder_eq]
+    exact htend
 
 /-- The patched relation is analytic everywhere. -/
 private lemma analyticAt_addRelXFn (L : PeriodPair) (w : ℂ)
