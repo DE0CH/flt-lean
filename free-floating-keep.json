@@ -1,0 +1,15 @@
+{
+  "_comment": "Build-verified elaboration-invisible keepers: each deletion was attempted and broke `lake build` even though the declaration is outside the term-level cone of the root (see CLAUDE.md, 'Elaboration-invisible dependency classes'). The detector subtracts these; every entry must name the failure that proved it.",
+  "IsDedekindDomain.HeightOneSpectrum.algebraMap_completionIntegers": "rfl-simp lemma consumed by the cone LiesOver instance's simp proof (AdicValuation.lean) without appearing in the proof term",
+  "IsDedekindDomain.HeightOneSpectrum.adicCompletion.exists_uniformizer": "feeds the DVR instance cluster below; deletion broke NumberField/Completion/Finite.lean TC synthesis",
+  "IsDedekindDomain.HeightOneSpectrum.adicCompletion.instDimensionLEOneSubtypeMemValuationSubringAdicCompletionIntegers_fermat": "parent of the PIR/DVR instances; deletion broke Finite.lean TC synthesis of IsDiscreteValuationRing 𝒪ᵥ",
+  "IsDedekindDomain.HeightOneSpectrum.adicCompletion.instIsPrincipalIdealRingSubtypeMemValuationSubringAdicCompletionIntegers_fermat": "parent of the DVR instance; deletion broke Finite.lean TC synthesis",
+  "IsDedekindDomain.HeightOneSpectrum.adicCompletion.instIsDiscreteValuationRingSubtypeMemValuationSubringAdicCompletionIntegers_fermat": "consumed by TC synthesis in Finite.lean cone declarations (IsDiscreteValuationRing 𝒪ᵥ)",
+  "IsDedekindDomain.HeightOneSpectrum.adicCompletion.instIsDiscreteValuationRingSubtypeMemSubringIntegerWithZeroMultiplicativeInt_fermat": "the 𝒪[·]-spelled alias of the DVR instance; the form Finite.lean actually synthesizes",
+  "IntermediateField.smulCommClass_of_normal": "instance consumed by TC synthesis then inlined; deletion broke AbsoluteGaloisGroup.lean (pass-3 build failure)",
+  "instMulSemiringActionSubtypeMemIntermediateFieldOfSMulCommClassOfNormal_fermat": "SMul supplier of smulCommClass_of_normal; deletion made it fail to elaborate",
+  "TateCurve.Blueprint.periodPair_ω₁": "rfl-simp lemma consumed by simp in TateCurveConstruction proofs without appearing in proof terms (build-verified)",
+  "TateCurve.Blueprint.periodPair_ω₂": "rfl-simp lemma consumed by simp in TateCurveConstruction proofs without appearing in proof terms (build-verified)",
+  "Ideal.Quotient.out_sub": "consumed by kept WithZeroMulInt code; deletion broke the build (pass-1)",
+  "AddMonoidHom.continuous_iff_isOpen_ker": "consumed by Deformations/Lemmas cone-adjacent code; deletion broke the build (pass-1)"
+}

@@ -120,12 +120,29 @@ def main() -> int:
             os.remove(scratch)
         except OSError:
             pass
+    # build-verified elaboration-invisible keepers: outside the term cone but
+    # required by elaboration (deletion breaks the build); see
+    # free-floating-keep.json and CLAUDE.md "Elaboration-invisible dependency
+    # classes". Each entry names the failure that proved it.
+    keep = {}
+    keep_path = os.path.join(ROOT, "free-floating-keep.json")
+    if os.path.exists(keep_path):
+        try:
+            keep = {k: v for k, v in json.load(open(keep_path)).items()
+                    if not k.startswith("_")}
+        except Exception:
+            keep = {}
     floating = []
+    kept_invisible = []
     for line in proc.stdout.splitlines():
         if line.startswith("FLOATING\t"):
             _tag, mod, name = line.split("\t")
-            floating.append({"module": mod, "name": name})
+            if name in keep:
+                kept_invisible.append({"module": mod, "name": name})
+            else:
+                floating.append({"module": mod, "name": name})
     result = {"key": key, "returncode": proc.returncode,
+              "kept_invisible": kept_invisible,
               "floating": floating}
     if proc.returncode == 0:
         json.dump(result, open(CACHE, "w"), ensure_ascii=False, indent=1)
