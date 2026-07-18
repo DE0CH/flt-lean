@@ -2345,6 +2345,94 @@ theorem hasSum_pnat_choose_two_succ (v : k)
       exact hn ⟨⟨n, Nat.pos_of_ne_zero h0⟩, rfl⟩
     simp [hn0]
 
+set_option maxHeartbeats 1000000 in
+/-- **The bilateral form of the evaluated `y`-series** (Silverman
+ATAEC V.3, `ℤ`-indexed): on the fundamental annulus,
+`Y(u₀,q₀) = u₀²/(1-u₀)³ + ∑_{m≥1}(q₀ᵐu₀)²/(1-q₀ᵐu₀)³ -
+∑_{m≥1}(q₀ᵐu₀⁻¹)/(1-q₀ᵐu₀⁻¹)³ + ∑σ₁(N)q₀^N`. -/
+theorem evalA_YA_bilateral (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hu : valuation k u₀ ≤ 1) (hq1 : valuation k q₀ < 1)
+    (hq : valuation k q₀ < valuation k u₀) :
+    evalA u₀ q₀ h0 h1 YA =
+      u₀ ^ 2 / (1 - u₀) ^ 3 +
+      ((∑' m : ℕ+, (q₀ ^ (m : ℕ) * u₀) ^ 2 /
+          (1 - q₀ ^ (m : ℕ) * u₀) ^ 3) -
+       (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 3) +
+       (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ))) := by
+  have hv0 : valuation k u₀ ≠ 0 := by
+    simpa [ne_eq, map_eq_zero] using h0
+  have hqu : valuation k (q₀ * u₀) < 1 := by
+    rw [map_mul]
+    calc valuation k q₀ * valuation k u₀
+        ≤ valuation k q₀ * 1 := mul_le_mul_right hu _
+      _ = valuation k q₀ := mul_one _
+      _ < 1 := hq1
+  have hquinv : valuation k (q₀ * u₀⁻¹) < 1 := by
+    rw [map_mul, map_inv₀]
+    calc valuation k q₀ * (valuation k u₀)⁻¹
+        < valuation k u₀ * (valuation k u₀)⁻¹ :=
+          mul_lt_mul_of_pos_right hq
+            (zero_lt_iff.mpr (inv_ne_zero hv0))
+      _ = 1 := mul_inv_cancel₀ hv0
+  have hbin1 : ∀ j : ℕ, valuation k (((j.choose 2 : ℕ) : k)) ≤ 1 := by
+    intro j
+    have h := valuation_intCast_le_one (R := k) (j.choose 2)
+    simpa using h
+  have hbin2 : ∀ j : ℕ,
+      valuation k ((((j + 1).choose 2 : ℕ) : k)) ≤ 1 := by
+    intro j
+    have h := valuation_intCast_le_one (R := k) ((j + 1).choose 2)
+    simpa using h
+  have hS1 := hasSum_lambert_general
+    (fun j ↦ ((j.choose 2 : ℕ) : k)) (fun v ↦ v ^ 2 / (1 - v) ^ 3)
+    hbin1 u₀ q₀ hq1 hqu
+    (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_self v₀ hv₀)
+  have hS2 := hasSum_lambert_general
+    (fun j ↦ (((j + 1).choose 2 : ℕ) : k)) (fun v ↦ v / (1 - v) ^ 3)
+    hbin2 u₀⁻¹ q₀ hq1 hquinv
+    (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_succ v₀ hv₀)
+  have hSσ := (summable_sigma_one_nonarch q₀ hq1).hasSum
+  have htail : HasSum (fun N : ℕ+ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff (N : ℕ) YA) *
+        q₀ ^ (N : ℕ))
+      ((∑' m : ℕ+, (q₀ ^ (m : ℕ) * u₀) ^ 2 /
+          (1 - q₀ ^ (m : ℕ) * u₀) ^ 3) -
+       (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 3) +
+       (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ))) := by
+    refine ((hS1.sub hS2).add hSσ).congr_fun fun N ↦ ?_
+    rw [coeffRingEval_coeff_YA u₀ h0 h1 N.pos.ne', Finset.sum_mul,
+      Finset.sum_mul, Finset.sum_mul, Finset.sum_mul,
+      ← Finset.sum_sub_distrib, ← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl fun d _ ↦ ?_
+    ring
+  have htailN : HasSum (fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff (n + 1) YA) *
+        q₀ ^ (n + 1))
+      ((∑' m : ℕ+, (q₀ ^ (m : ℕ) * u₀) ^ 2 /
+          (1 - q₀ ^ (m : ℕ) * u₀) ^ 3) -
+       (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 3) +
+       (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ))) := by
+    have h := (Equiv.pnatEquivNat.symm.hasSum_iff).mpr htail
+    refine h.congr_fun fun n ↦ ?_
+    simp only [Function.comp_apply, Equiv.pnatEquivNat_symm_apply,
+      Nat.succPNat_coe]
+  have hfull := (hasSum_nat_add_iff
+    (f := fun n : ℕ ↦ coeffRingEval u₀ h0 h1
+      (PowerSeries.coeff n YA) * q₀ ^ n) 1).mp htailN
+  rw [Finset.range_one, Finset.sum_singleton] at hfull
+  have hf0 : coeffRingEval u₀ h0 h1 (PowerSeries.coeff 0 YA) *
+      q₀ ^ 0 = u₀ ^ 2 / (1 - u₀) ^ 3 := by
+    rw [coeffRingEval_coeff_YA_zero, pow_zero, mul_one]
+  rw [hf0] at hfull
+  rw [evalA, hfull.tsum_eq]
+  ring
+
 end Annulus
 
 end TateCurve
