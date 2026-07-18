@@ -2781,6 +2781,66 @@ theorem bilateralY_shift (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
   rw [bilateralY, bilateralY, hshift1, hshift2, hexch]
   ring
 
+set_option warn.sorry false in
+/-- **The homomorphism property of the uniformisation** (sorry node —
+the addition law, Silverman V.3.1(c)): the point map on `kˣ/q^ℤ`
+turns multiplication of unit classes into addition on the Tate curve.
+Attack: the coordinates of `pointMapQuot` are the bilateral values
+(`evalA_XA_eq_bilateralX`/`evalA_YA_eq_bilateralY` + the proven shift
+and inversion identities normalising representatives); the group law
+of `y² + xy = x³ + a₄x + a₆` is the chord–tangent formula, and the
+required identities of bilateral values at `u`, `v`, `uv` are
+two-parameter Lambert manipulations on the foundation already built
+(`hasSum_lambert_general`, the kernels, the shift engine). -/
+theorem pointMapQuot_add [DecidableEq k] (q : kˣ)
+    (hq : valuation k (q : k) < 1)
+    (x y : kˣ ⧸ Subgroup.zpowers q) :
+    pointMapQuot q hq (x * y) =
+      pointMapQuot q hq x + pointMapQuot q hq y :=
+  sorry
+
+set_option warn.sorry false in
+/-- **Bijectivity of the uniformisation** (sorry node — Silverman
+V.3.1(d,e)): the point map on `kˣ/q^ℤ` is a bijection onto the Tate
+curve's points. Injectivity: the kernel is trivial
+(`pointMapQuot_eq_zero_iff`), so injectivity follows from
+`pointMapQuot_add`; surjectivity is the valuation analysis of affine
+points (Silverman V.4: every point of `E_q(k)` has its `x`-coordinate
+in the range of the annulus `X`-values, recovered through the
+bilateral form). -/
+theorem pointMapQuot_bijective (q : kˣ)
+    (hq : valuation k (q : k) < 1) :
+    Function.Bijective (pointMapQuot q hq) :=
+  sorry
+
+/-- **The finite-level Tate uniformisation** (derived from the two
+leaves above): the canonical additive equivalence
+`kˣ/q^ℤ ≃+ E_q(k)`, whose underlying function is `pointMapQuot` — in
+particular it is canonical (choice-free), hence compatible with field
+extensions and Galois actions, which is what the gluing over the
+separable closure consumes. -/
+noncomputable def tateCurveEquiv [DecidableEq k] (q : kˣ)
+    (hq : valuation k (q : k) < 1) :
+    Additive (kˣ ⧸ Subgroup.zpowers q) ≃+
+      (WeierstrassCurve.tateCurve (q : k)).toAffine.Point where
+  toFun x := pointMapQuot q hq x.toMul
+  invFun P := Additive.ofMul
+    ((Equiv.ofBijective _ (pointMapQuot_bijective q hq)).symm P)
+  left_inv x := by
+    have h := (Equiv.ofBijective _
+      (pointMapQuot_bijective q hq)).symm_apply_apply x.toMul
+    exact congrArg Additive.ofMul h
+  right_inv P := (Equiv.ofBijective _
+    (pointMapQuot_bijective q hq)).apply_symm_apply P
+  map_add' x y := pointMapQuot_add q hq x.toMul y.toMul
+
+@[simp]
+theorem tateCurveEquiv_apply [DecidableEq k] (q : kˣ)
+    (hq : valuation k (q : k) < 1)
+    (x : Additive (kˣ ⧸ Subgroup.zpowers q)) :
+    tateCurveEquiv q hq x = pointMapQuot q hq x.toMul :=
+  rfl
+
 end Annulus
 
 end TateCurve
