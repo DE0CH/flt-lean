@@ -256,6 +256,26 @@ entries file). To add/remove/annotate a node, edit
                                                                           the X-part output. Same attack
                                                                           as the X-identity.
                                                                         - ❌· `TateCurve.bilateral_chordX_cleared` — cleared chord X-identity
+                                                                          ℘-ADDITION ATTACK (recorded 2026-07-18): mathlib's
+                                                                          Analysis.SpecialFunctions.Elliptic.Weierstrass now ends at
+                                                                          derivWeierstrassP_sq (the differential equation) via the
+                                                                          Liouville pattern relation_eq_zero (ite-patched globally
+                                                                          analytic + doubly periodic + bounded ⇒ constant, pinned at a
+                                                                          point). The SAME pattern proves the addition theorem
+                                                                          ℘(z+w) = ((℘'z−℘'w)/(℘z−℘w))²/4 − ℘z − ℘w (z,w,z±w ∉ L):
+                                                                          fix w, patch the z-poles at L (Laurent cancellation via the
+                                                                          Except-machinery: ℘ = (z−l)⁻² + ℘[L−l], ℘' = −2(z−l)⁻³ +
+                                                                          ℘'[L−l], with hasFPowerSeriesAt_weierstrassPExcept Taylor
+                                                                          data) and at z ≡ −w (chord-pole matches ℘(z+w)-pole) and
+                                                                          z ≡ w (removable, order-API). Then the q-expansion bridges
+                                                                          (weierstrassP_q_expansion, hasSum_X_eval/hasSum_Y_eval) plus
+                                                                          a TWO-VARIABLE descent (extend eq_zero_of_forall_hasSum_zero
+                                                                          to (RatFunc-in-u,v)⟦q⟧ by iterating the one-variable descent
+                                                                          coefficientwise) yield the cleared chord identities; the
+                                                                          tangent identities analogously from the doubling formula.
+                                                                          WIP policy: develop as PRIVATE lemmas in
+                                                                          TateCurveConstruction (private is exempt from the
+                                                                          free-floating sweep), de-privatize on consumption.
                                                                           (sorry node):
                                                                           (X(uv)+X(u)+X(v))(X(u)-X(v))²
                                                                           = (Y(u)-Y(v))² +
