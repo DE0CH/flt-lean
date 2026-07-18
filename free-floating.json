@@ -1,5 +1,5 @@
 {
- "key": "1784361973.026025",
+ "key": "1784362526.4849138",
  "returncode": 0,
  "floating": [
   {
@@ -173,10 +173,6 @@
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "LinearMap.trace_toLin'"
-  },
-  {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs",
-   "name": "GaloisRepresentation.IsHardlyRamified.isUnramified"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",

@@ -434,11 +434,46 @@
   "fullname": "GaloisRepresentation.residual_charFrob_eq_of_family"
  },
  {
+  "name": "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "wip": false,
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter",
+  "text": "the stable line with locally-unramified quotient character at 2 and 3 (sorry node): flatness at 3 forces the étale quotient via the connected-étale sequence (the Serre swap); tameness at 2 kills ramification there."
+ },
+ {
+  "name": "GaloisRepresentation.IsHardlyRamified.mod_three_reducible",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "wip": false,
+  "fullname": "GaloisRepresentation.IsHardlyRamified.mod_three_reducible",
+  "text": "mod-3 reducibility (sorry node): Dickson classification + ramification constraints eliminate irreducible image — Serre §5.4/Tate argument for p = 3. The PGL2/Dickson/OddAbsIrred clusters are in the reference commit 8282dfb^."
+ },
+ {
+  "name": "GaloisRepresentation.IsHardlyRamified.mod_three",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "wip": false,
+  "fullname": "GaloisRepresentation.IsHardlyRamified.mod_three",
+  "text": "mod-3 classification (DERIVED, re-vendored 2026-07-18): a mod-3 hardly ramified rep has a Γℚ-equivariant surjection onto the trivial 1-dim rep. From mod_three_reducible + mod_three_of_stable_line (Minkowski bookkeeping PROVEN)."
+ },
+ {
+  "name": "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
+  "wip": false,
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient",
+  "text": "ordinarity lifting (sorry node — the deformation heart of B6c): the residual trivial-quotient surjection lifts 3-adically to the triangular Frobenius basis, diagonal = det = cyclotomic, value p at Frob_p."
+ },
+ {
+  "name": "GaloisRepresentation.IsHardlyRamified.exists_residual_isHardlyRamified",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
+  "wip": false,
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_residual_isHardlyRamified",
+  "text": "residual hardly-ramifiedness (sorry node): the reduction mod the maximal ideal is mod-3 hardly ramified over the finite discrete residue field — det maps along the residue map, kernels grow, flatness reduces."
+ },
+ {
   "name": "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
   "wip": false,
   "fullname": "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular",
-  "text": "Frobenius triangularity (sorry node): for p ≥ 5 a basis in which the local Frobenius acts by [[p, *], [0, 1]]. Route: mod-3 hardly ramified = extension of trivial by mod-3 cyclotomic (ModThree cluster in reference commit 8282dfb^ — mod_three PROVEN there from two sorried leaves), lifted through the deformation (ordinarity/stable line), diagonal character = det ρ = 3-adic cyclotomic, value p at Frob_p."
+  "text": "Frobenius triangularity for p ≥ 5. DERIVED 2026-07-18 by chaining exists_residual_isHardlyRamified → mod_three (ModThree.lean, RE-VENDORED into the tree) → exists_frobenius_triangular_of_residual_trivial_quotient."
  },
  {
   "name": "IsHardlyRamified.three_adic",

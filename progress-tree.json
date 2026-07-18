@@ -62,7 +62,12 @@
   "GaloisRepresentation.residual_charFrob_eq": "✅",
   "GaloisRepresentation.IsHardlyRamified.mem_isCompatible": "❌",
   "GaloisRepresentation.residual_charFrob_eq_of_family": "✅",
-  "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular": "❌",
+  "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter": "❌",
+  "GaloisRepresentation.IsHardlyRamified.mod_three_reducible": "❌",
+  "GaloisRepresentation.IsHardlyRamified.mod_three": "✅",
+  "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient": "❌",
+  "GaloisRepresentation.IsHardlyRamified.exists_residual_isHardlyRamified": "❌",
+  "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular": "✅",
   "GaloisRepresentation.IsHardlyRamified.three_adic": "✅",
   "GaloisRepresentation.not_isIrreducible_of_charFrob_eq": "✅",
   "GaloisRepresentation.dense_conjClasses_globalFrob": "✅",
@@ -430,7 +435,20 @@
    "GaloisRepresentation.IsHardlyRamified.three_adic",
    "GaloisRepresentation.cyclotomicCharacter_globalFrob"
   ],
-  "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular": [],
+  "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter": [],
+  "GaloisRepresentation.IsHardlyRamified.mod_three_reducible": [],
+  "GaloisRepresentation.IsHardlyRamified.mod_three": [
+   "minkowski_character_trivial",
+   "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter",
+   "GaloisRepresentation.IsHardlyRamified.mod_three_reducible"
+  ],
+  "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient": [],
+  "GaloisRepresentation.IsHardlyRamified.exists_residual_isHardlyRamified": [],
+  "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular": [
+   "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient",
+   "GaloisRepresentation.IsHardlyRamified.mod_three",
+   "GaloisRepresentation.IsHardlyRamified.exists_residual_isHardlyRamified"
+  ],
   "GaloisRepresentation.IsHardlyRamified.three_adic": [
    "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular"
   ],
