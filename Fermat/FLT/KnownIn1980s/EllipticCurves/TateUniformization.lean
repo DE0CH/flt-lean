@@ -1152,6 +1152,78 @@ theorem pointMapQuot_eq_zero_iff (q : kˣ)
     push_cast
     rfl
 
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] in
+/-- The constant coefficient of `XA` evaluates to `u₀/(1-u₀)²`. -/
+theorem coeffRingEval_coeff_XA_zero (u₀ : k) (h0 : u₀ ≠ 0)
+    (h1 : u₀ ≠ 1) :
+    coeffRingEval u₀ h0 h1 (PowerSeries.coeff 0 XA) =
+      u₀ / (1 - u₀) ^ 2 := by
+  rw [XA, map_add, PowerSeries.coeff_C, if_pos rfl, PowerSeries.coeff_mk]
+  simp only [Nat.divisors_zero, Finset.sum_empty, add_zero]
+  rw [map_mul, map_pow, coeffRingEval_uA, coeffRingEval_vA_inv,
+    div_eq_mul_inv, inv_pow]
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] in
+/-- The constant coefficient of `YA` evaluates to `u₀²/(1-u₀)³`. -/
+theorem coeffRingEval_coeff_YA_zero (u₀ : k) (h0 : u₀ ≠ 0)
+    (h1 : u₀ ≠ 1) :
+    coeffRingEval u₀ h0 h1 (PowerSeries.coeff 0 YA) =
+      u₀ ^ 2 / (1 - u₀) ^ 3 := by
+  rw [YA, map_add, PowerSeries.coeff_C, if_pos rfl, PowerSeries.coeff_mk]
+  simp only [Nat.divisors_zero, Finset.sum_empty, add_zero]
+  rw [map_mul, map_pow, map_pow, coeffRingEval_uA, coeffRingEval_vA_inv,
+    div_eq_mul_inv, inv_pow]
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] in
+/-- **Inversion symmetry of the `x`-coefficients** (the easier half of
+Silverman V.3.1(b)): every coefficient of `XA` takes the same value at
+`u₀⁻¹` as at `u₀`. -/
+theorem coeffRingEval_coeff_XA_inv (u₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (h0' : u₀⁻¹ ≠ 0) (h1' : u₀⁻¹ ≠ 1) (n : ℕ) :
+    coeffRingEval u₀⁻¹ h0' h1' (PowerSeries.coeff n XA) =
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff n XA) := by
+  rcases eq_or_ne n 0 with rfl | hn
+  · rw [coeffRingEval_coeff_XA_zero, coeffRingEval_coeff_XA_zero]
+    field_simp
+    ring
+  · rw [coeffRingEval_coeff_XA u₀⁻¹ h0' h1' hn,
+      coeffRingEval_coeff_XA u₀ h0 h1 hn]
+    refine Finset.sum_congr rfl fun d _ ↦ ?_
+    rw [inv_inv]
+    ring
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] in
+/-- **Inversion antisymmetry of the `y`-coefficients** (Silverman
+V.3.1(b), negation half): every coefficient of `YA` at `u₀⁻¹` is the
+negative of the sum of the `YA`- and `XA`-coefficients at `u₀` — the
+series identity behind `P(u⁻¹) = -P(u)` on the Tate curve
+`y² + xy = x³ + …`, whose negation is `(x, y) ↦ (x, -y - x)`.
+Termwise it is the binomial identity
+`C(d+1,2) = C(d,2) + d`. -/
+theorem coeffRingEval_coeff_YA_inv (u₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (h0' : u₀⁻¹ ≠ 0) (h1' : u₀⁻¹ ≠ 1) (n : ℕ) :
+    coeffRingEval u₀⁻¹ h0' h1' (PowerSeries.coeff n YA) =
+      -(coeffRingEval u₀ h0 h1 (PowerSeries.coeff n YA)) -
+        coeffRingEval u₀ h0 h1 (PowerSeries.coeff n XA) := by
+  rcases eq_or_ne n 0 with rfl | hn
+  · rw [coeffRingEval_coeff_YA_zero, coeffRingEval_coeff_YA_zero,
+      coeffRingEval_coeff_XA_zero]
+    field_simp
+    ring
+  · rw [coeffRingEval_coeff_YA u₀⁻¹ h0' h1' hn,
+      coeffRingEval_coeff_YA u₀ h0 h1 hn,
+      coeffRingEval_coeff_XA u₀ h0 h1 hn, ← Finset.sum_neg_distrib,
+      ← Finset.sum_sub_distrib]
+    refine Finset.sum_congr rfl fun d _ ↦ ?_
+    rw [inv_inv]
+    have hch : (((d + 1).choose 2 : ℕ) : k) = ((d.choose 2 : ℕ) : k) +
+        (d : k) := by
+      rw [Nat.choose_succ_succ d 1, Nat.choose_one_right]
+      push_cast
+      ring
+    rw [hch]
+    ring
+
 end Annulus
 
 end TateCurve
