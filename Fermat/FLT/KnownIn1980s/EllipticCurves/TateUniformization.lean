@@ -39,7 +39,8 @@ public import Fermat.FLT.KnownIn1980s.EllipticCurves.TateParameter
 public import Mathlib.RingTheory.Localization.Away.Basic
 public import Mathlib.FieldTheory.RatFunc.AsPolynomial
 
-import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve
+public import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve
+
 import Mathlib.Topology.Algebra.InfiniteSum.Nonarchimedean
 import Mathlib.Topology.Algebra.InfiniteSum.Ring
 
@@ -738,6 +739,41 @@ theorem evalA_weierstrass (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
         rw [evalA_mul u₀ q₀ h0 h1 hXX hX, evalA_mul u₀ q₀ h0 h1 hX hX,
           evalA_mul u₀ q₀ h0 h1 h4 hX]
         ring
+
+/-- The evaluated `a₄A` is the Tate curve coefficient `a₄(q₀)`:
+both sides equal the evaluation of the integral formal series
+`a₄Formal`. -/
+theorem evalA_a₄A (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hq : valuation k q₀ < 1) :
+    evalA u₀ q₀ h0 h1 a₄A = WeierstrassCurve.tateA₄ q₀ := by
+  rw [WeierstrassCurve.tateA₄_eq_evalInt q₀ hq, TateCurve.evalInt, evalA]
+  congr 1
+  funext n
+  rw [coeffRingEval_coeff_a₄A, TateCurve.coeff_a₄Formal]
+
+/-- The evaluated `a₆A` is the Tate curve coefficient `a₆(q₀)`. -/
+theorem evalA_a₆A (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hq : valuation k q₀ < 1) :
+    evalA u₀ q₀ h0 h1 a₆A = WeierstrassCurve.tateA₆ q₀ := by
+  rw [WeierstrassCurve.tateA₆_eq_evalInt q₀ hq, TateCurve.evalInt, evalA]
+  congr 1
+  funext n
+  rw [coeffRingEval_coeff_a₆A, TateCurve.coeff_a₆Formal]
+
+/-- **The uniformisation values lie on the Tate curve** (the affine
+form): for `(u₀, q₀)` in the fundamental annulus, the pair
+`(X(u₀,q₀), Y(u₀,q₀))` satisfies the affine Weierstrass equation of
+`tateCurve q₀`. -/
+theorem evalA_mem_tateCurve (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hu : valuation k u₀ ≤ 1) (hq1 : valuation k q₀ < 1)
+    (hq : valuation k q₀ < valuation k u₀) :
+    (WeierstrassCurve.tateCurve q₀).toAffine.Equation
+      (evalA u₀ q₀ h0 h1 XA) (evalA u₀ q₀ h0 h1 YA) := by
+  have hWE := evalA_weierstrass u₀ q₀ h0 h1 hu hq1 hq
+  rw [evalA_a₄A u₀ q₀ h0 h1 hq1, evalA_a₆A u₀ q₀ h0 h1 hq1] at hWE
+  rw [WeierstrassCurve.Affine.equation_iff]
+  simp only [WeierstrassCurve.tateCurve]
+  linear_combination hWE
 
 end Annulus
 
