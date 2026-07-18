@@ -300,16 +300,15 @@ theorem natCard_residue_under_padicPlace
           hp.toHeightOneSpectrumRingOfIntegersRat))) = p :=
   sorry
 
-set_option warn.sorry false in
 set_option backward.isDefEq.respectTransparency false in
 open scoped algebraMap in
-/-- **The completed valuation of `3` at the `p`-place is `1`** (sorry node —
-one cast-bridge from done): the chain `p ∤ 3 → 3 ∈ primeCompl →
-intValuation 3 = 1 → Valued.v (3 : Kᵥ) = 1` is fully proven below in
-mathlib's scoped-`algebraMap` spelling; the remaining `sorry` is the
-class-6 bridge identifying that spelling with the subtype-val of the
-`ℕ`-cast into the completion integers (invisible instance-path divergence
-inside the numeral's coercion). -/
+/-- **The completed valuation of `3` at the `p`-place is `1`** (PROVEN): the
+chain `p ∤ 3 → 3 ∈ primeCompl → intValuation 3 = 1 → Valued.v (3 : Kᵥ) = 1`
+in mathlib's scoped-`algebraMap` spelling, bridged to the subtype-val of the
+`ℕ`-cast into the completion integers by an explicit cast lemma with the
+`Algebra (𝓞 ℚ) Kᵥ` instance pinned to `instAlgebraAdicCompletion` (the
+class-6 numeral/instance divergence made explicit and discharged via
+`map_natCast` + `algebraMap.coe_natCast`). -/
 theorem valued_natCast_adicCompletionIntegers_eq_one {p : ℕ}
     (hp : Nat.Prime p) (hp5 : 5 ≤ p) :
     Valued.v ((((3 : ℕ) :
@@ -334,15 +333,26 @@ theorem valued_natCast_adicCompletionIntegers_eq_one {p : ℕ}
       (v := v) (K := ℚ) (3 : NumberField.RingOfIntegers ℚ)).trans
     ((IsDedekindDomain.HeightOneSpectrum.valuation_of_algebraMap
       (v := v) (K := ℚ) (3 : NumberField.RingOfIntegers ℚ)).trans hint1)
-  -- the class-6 bridge: `hK`'s scoped coercion of `3` vs the subtype-val
-  -- of the `ℕ`-cast
-  sorry
+  have hbridge : ((((3 : ℕ) :
+        IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)) :
+      IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) =
+      @algebraMap _ _ _ _
+        (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+          (NumberField.RingOfIntegers ℚ) ℚ v)
+        (3 : NumberField.RingOfIntegers ℚ) := by
+    rw [show (3 : NumberField.RingOfIntegers ℚ) =
+      ((3 : ℕ) : NumberField.RingOfIntegers ℚ) from by norm_cast]
+    rw [map_natCast]
+    simp only [_root_.algebraMap.coe_natCast]
+  rw [hbridge]
+  exact hK
 
-set_option warn.sorry false in
+
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
 /-- **The arithmetic Frobenius raises `3`-power roots of unity to the
-`p`-th power** (sorry node — the unramified local content): at a prime
+`p`-th power** (derived; sorry-free modulo the residue-cardinality node
+`natCard_residue_under_padicPlace`): at a prime
 `p ∉ {2, 3}`, the `3`-power roots of unity are unramified, the arithmetic
 Frobenius reduces to `x ↦ x^p` on the residue field, and roots of unity of
 order coprime to `p` inject into the residue field, so the action is
@@ -411,10 +421,7 @@ theorem adicArithFrob_rootsOfUnity_pow
       have hlt := (IsDedekindDomain.HeightOneSpectrum.mem_completionIdeal_iff
         (K := ℚ) (v := v) _).mp hmem
       have h1 := valued_natCast_adicCompletionIntegers_eq_one hp hp5
-      -- `hlt`'s and `h1`'s spellings of `↑↑3` diverge in an invisible
-      -- numeral-instance path even within this file (class-6); the
-      -- `1 < 1` contradiction is this one bridge away
-      sorry
+      exact absurd (lt_of_lt_of_le hlt h1.symm.le) (lt_irrefl _)
     have hunitIC : IsUnit (((3 : ℕ) ^ n) : IntegralClosure
         (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
         (AlgebraicClosure

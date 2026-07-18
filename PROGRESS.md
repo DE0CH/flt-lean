@@ -1662,33 +1662,28 @@ entries file). To add/remove/annotate a node, edit
                                       modularCyclotomicCharacter.unique identifying each level with
                                       p from the action; HasEnoughRootsOfUnity instances from
                                       RootsOfUnity.AlgebraicallyClosed.
-                                        - ❌· `adicArithFrob_rootsOfUnity_pow` — the Frobenius action on 3-power roots of unity — ASSEMBLED
+                                        - ✅· `adicArithFrob_rootsOfUnity_pow` — the Frobenius action on 3-power roots of unity — ASSEMBLED
                                           2026-07-18: the full derivation now compiles, consuming
                                           mathlib's AlgHom.IsArithFrobAt.apply_of_pow_eq_one on the
                                           integral closure (isArithFrobAt_adicArithFrob), the
                                           existing lift_map globalization square, the new
                                           IntegralClosure.coe_smul rfl-lemma, F-injectivity, and the
                                           exponent-mod juggle (ZMod.val_natCast + Nat.div_add_mod).
-                                          Remaining inline sorry: h3notin — 3ⁿ avoids the maximal
-                                          ideal of the integral closure at the p-place (3 is a unit
-                                          in 𝒪ᵥ for p ≠ 3; route:
-                                          Valuation.Integer.not_isUnit_iff_valuation_lt_one + the
-                                          adic valuation of 3 at v = (p) is 1) — plus the residue-
-                                          cardinality sub-lemma natCard_residue_under_padicPlace.
-                                            - ❌· `valued_natCast_adicCompletionIntegers_eq_one` — the completed valuation of 3 at the p-place is 1
-                                              (sorry node — one cast-bridge from done): p ∤ 3 →
-                                              primeCompl → intValuation = 1 → Valued.v = 1 is fully
-                                              PROVEN in mathlib's scoped-algebraMap spelling inside
-                                              the node; the remaining sorry (shared with the
-                                              consumer in the action leaf) is the class-6 numeral-
-                                              instance bridge between that spelling and the subtype-
-                                              val of the ℕ-cast — even same-file same-source-text
-                                              elaborations of ↑↑3 diverge. Candidate resolutions for
-                                              the next cycle: a `Subtype.ext`-val-level bridging
-                                              lemma stated against pp.all-extracted spellings, or
-                                              importing/normalizing the numeral instances (Nat.cast
-                                              vs instOfNat/AtLeastTwo paths) with a dedicated simp
-                                              set.
+                                          h3notin CLOSED 2026-07-18: the class-6 numeral bridge fell
+                                          — in the leaf, `subst hv` plus the defeq-tolerant finish
+                                          `absurd (lt_of_lt_of_le hlt h1.symm.le) (lt_irrefl _)`
+                                          closed the consumer side. Sole remaining dependency: the
+                                          residue-cardinality sub-lemma
+                                          natCard_residue_under_padicPlace.
+                                            - ✅· `valued_natCast_adicCompletionIntegers_eq_one` — the completed valuation of 3 at the
+                                              p-place is 1 — PROVEN 2026-07-18 (audit [propext,
+                                              Classical.choice, Quot.sound]): the intValuation chain
+                                              bridged by an explicit hbridge whose RHS pins the
+                                              `Algebra (𝓞 ℚ) Kᵥ` instance to
+                                              `instAlgebraAdicCompletion` — the diamond against
+                                              `RingOfIntegers.instAlgebra` WAS the invisible
+                                              divergence — discharged by `map_natCast` +
+                                              `algebraMap.coe_natCast`.
                                             - ❌· `natCard_residue_under_padicPlace` — the residue cardinality at the p-place is p (sorry
                                               node): the under-ideal of 𝔪(IntegralClosure 𝒪ᵥ Kᵥᵃˡᵍ)
                                               is 𝔪(𝒪ᵥ) (lying over), and the residue field is 𝓞ℚ ⧸
