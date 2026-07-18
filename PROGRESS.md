@@ -215,12 +215,15 @@ entries file). To add/remove/annotate a node, edit
                                                                       non-2-torsion leaf, same
                                                                       division bookkeeping pattern
                                                                       as the chord case.
-                                                                        - ❌· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry
-                                                                          node): u in the annulus with
-                                                                          u² not in the trivial class
-                                                                          has 2Y(u) + X(u) ≠ 0 — the
-                                                                          2-torsion parameters are
-                                                                          exactly {-1, ±√q}·q^ℤ.
+                                                                        - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf — DERIVED
+                                                                          2026-07-18 from
+                                                                          bilateralXY_inj + the PROVEN
+                                                                          inversion identities: Y(u) =
+                                                                          negY makes the inverse-class
+                                                                          annulus representative share
+                                                                          the (X, Y) pair, so
+                                                                          injectivity forces u² ∈
+                                                                          {1, q} — excluded.
                                                                         - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity
                                                                           (sorry node): -(Y(u²)+X(u²))E
                                                                           = M(X(u²)-X(u)) + Y(u)E.
