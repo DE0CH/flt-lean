@@ -25,32 +25,8 @@ continuous group-homomorphism / matrix-coefficient lifts, etc.
 
 @[expose] public section
 
-lemma IsLinearTopology.exists_ideal_isMaximal_and_isOpen
-    (R : Type*) [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
-    [IsLinearTopology R R] [Nontrivial R] [T0Space R] :
-    ∃ I : Ideal R, I.IsMaximal ∧ IsOpen (X := R) I := by
-  obtain ⟨I, hI, hI'⟩ := IsLinearTopology.hasBasis_open_ideal.mem_iff.mp
-    ((isClosed_singleton (x := (1 : R))).isOpen_compl.mem_nhds (x := 0) (by simp))
-  obtain ⟨J, hJ, hIJ⟩ := Ideal.exists_le_maximal I (by simpa [Ideal.eq_top_iff_one] using hI')
-  exact ⟨J, hJ, AddSubgroup.isOpen_mono (H₁ := I.toAddSubgroup) (H₂ := J.toAddSubgroup) hIJ hI⟩
 
-/-- The continuous group homomorphism on units induced by a `ContinuousMonoidHom`. -/
-@[simps!]
-def Units.mapₜ {M N : Type*} [Monoid M] [Monoid N] [TopologicalSpace M] [TopologicalSpace N]
-    (f : M →ₜ* N) : Mˣ →ₜ* Nˣ :=
-  ⟨Units.map f,
-  continuous_induced_rng.mpr (continuous_prodMk.mpr ⟨f.2.comp Units.continuous_val,
-    MulOpposite.continuous_op.comp (f.2.comp Units.continuous_coe_inv)⟩)⟩
 
-/-- The `ContinuousAlgHom` between spaces of square matrices induced by an `ContinuousAlgHom`
-between their coefficients. This is Matrix.map as an `ContinuousAlgHom`. -/
-@[simps!]
-def ContinuousAlgHom.mapMatrix
-    {R A B n : Type*} [CommSemiring R] [Semiring A] [Semiring B] [TopologicalSpace A]
-    [TopologicalSpace B] [Algebra R A] [Algebra R B] (f : A →A[R] B)
-    [Fintype n] [DecidableEq n] :
-    Matrix n n A →A[R] Matrix n n B :=
-  ⟨f.1.mapMatrix, Continuous.matrix_map continuous_id' f.2⟩
 
 /-- Coerce a `ContinuousAlgHom` to `ContinuousMonoidHom`. -/
 def ContinuousAlgHom.toContinuousMonoidHom
@@ -58,11 +34,6 @@ def ContinuousAlgHom.toContinuousMonoidHom
     [TopologicalSpace B] [Algebra R A] [Algebra R B] (f : A →A[R] B) : A →ₜ* B :=
   ⟨f.1.toMonoidHom, f.2⟩
 
-@[simp]
-lemma ContinuousAlgHom.coe_toContinuousMonoidHom
-    {R A B : Type*} [CommSemiring R] [Semiring A] [Semiring B] [TopologicalSpace A]
-    [TopologicalSpace B] [Algebra R A] [Algebra R B] (f : A →A[R] B) :
-    (f.toContinuousMonoidHom : A → B) = f := rfl
 
 instance {α M G : Type*} [Monoid M] [Monoid G] [Monoid α] [MulDistribMulAction α G] :
     MulAction α (M →* G) where
@@ -70,111 +41,25 @@ instance {α M G : Type*} [Monoid M] [Monoid G] [Monoid α] [MulDistribMulAction
   one_smul _ := by ext; exact one_smul _ _
   mul_smul a b f := by ext x; change (a * b) • (f x) = a • b • (f x); simp [mul_smul]
 
-@[simp]
-lemma MonoidHom.coe_smul
-    {α M G : Type*} [Monoid M] [Monoid G] [Monoid α] [MulDistribMulAction α G]
-    (a : α) (f : M →* G) :
-    ⇑(a • f) = a • ⇑f := rfl
 
-instance {α M G : Type*} [Monoid M] [Monoid G] [Monoid α] [MulDistribMulAction α G]
-    [TopologicalSpace M] [TopologicalSpace G] [ContinuousConstSMul α G] :
-    MulAction α (M →ₜ* G) where
-  smul a f := ⟨a • f, .const_smul f.2 _⟩
-  one_smul _ := by ext; exact one_smul _ _
-  mul_smul a b f := by ext x; change (a * b) • (f x) = a • b • (f x); simp [mul_smul]
 
-@[simp]
-lemma ContinuousMonoidHom.coe_smul
-    {α M G : Type*} [Monoid M] [Monoid G] [Monoid α] [MulDistribMulAction α G]
-    [TopologicalSpace M] [TopologicalSpace G] [ContinuousConstSMul α G]
-    (a : α) (f : M →ₜ* G) :
-    ⇑(a • f) = a • ⇑f := rfl
 
-instance {G : Type*} [Group G] [TopologicalSpace G] [ContinuousMul G] :
-    ContinuousConstSMul (ConjAct G) G :=
-  ⟨fun _ ↦ .mul (continuous_const.mul continuous_id) continuous_const⟩
 
-@[to_additive]
-instance IsTopologicalGroup.discreteUniformity
-    {G : Type*} [Group G] [TopologicalSpace G] [IsTopologicalGroup G] [DiscreteTopology G] :
-    letI := IsTopologicalGroup.rightUniformSpace G
-    DiscreteUniformity G := by
-  simp only [discreteUniformity_iff_setRelId_mem_uniformity]
-  exact ⟨{1}, by simp [Set.subset_def, ← div_eq_mul_inv, div_eq_one]⟩
 
-lemma IsLocalRing.ResidueField.map_surjective {R S : Type*} [CommRing R] [CommRing S]
-    [IsLocalRing R] [IsLocalRing S] (f : R →+* S) [IsLocalHom f] (H : Function.Surjective f) :
-    Function.Surjective (IsLocalRing.ResidueField.map f) :=
-  Ideal.Quotient.lift_surjective_of_surjective _ _ (Ideal.Quotient.mk_surjective.comp H)
 
-lemma RingHom.continuous_iff_isOpen_ker {α β : Type*} [TopologicalSpace α] [TopologicalSpace β]
-    [Ring α] [Semiring β] {f : α →+* β} [DiscreteTopology β] [IsTopologicalAddGroup α] :
-    Continuous f ↔ IsOpen (X := α) (RingHom.ker f) :=
-  AddMonoidHom.continuous_iff_isOpen_ker (φ := f.toAddMonoidHom)
 
 open Topology in
-lemma continuousAt_discrete_rng {α β : Type*} [TopologicalSpace α] [TopologicalSpace β]
-    {f : α → β} {x : α} [DiscreteTopology β] :
-    ContinuousAt f x ↔ ∀ᶠ y in 𝓝 x, f y = f x := by
-  simp [ContinuousAt]
 
-nonrec
-instance ContinuousAlgHom.isLocalHom_id {R A : Type*}
-    [CommSemiring R] [Semiring A] [Algebra R A] [TopologicalSpace A] :
-    IsLocalHom (ContinuousAlgHom.id R A) := by
-  convert isLocalHom_id A
-  exact ⟨fun ⟨H⟩ ↦ ⟨H⟩, fun ⟨H⟩ ↦ ⟨H⟩⟩
 
-lemma ContinuousAlgHom.isLocalHom_toRingHom {R A B : Type*}
-    [CommSemiring R] [Semiring A] [Semiring B]
-    [Algebra R A] [Algebra R B]
-    [TopologicalSpace A] [TopologicalSpace B]
-    {f : A →A[R] B} :
-    IsLocalHom f.toRingHom ↔ IsLocalHom f :=
-  ⟨fun ⟨H⟩ ↦ ⟨H⟩, fun ⟨H⟩ ↦ ⟨H⟩⟩
 
-instance {R A B : Type*} [CommSemiring R] [Semiring A] [Semiring B]
-    [Algebra R A] [Algebra R B] [TopologicalSpace A] [TopologicalSpace B]
-    (f : A →A[R] B) [IsLocalHom f] : IsLocalHom f.toRingHom := by
-  rwa [ContinuousAlgHom.isLocalHom_toRingHom]
 
-instance {R A B : Type*} [CommSemiring R] [Semiring A] [Semiring B]
-    [Algebra R A] [Algebra R B] [TopologicalSpace A] [TopologicalSpace B]
-    (f : A ≃A[R] B) : IsLocalHom (f : A →A[R] B) := by
-  convert isLocalHom_equiv f
-  exact ⟨fun ⟨H⟩ ↦ ⟨H⟩, fun ⟨H⟩ ↦ ⟨H⟩⟩
 
-instance {R A B : Type*} [CommSemiring R] [Semiring A] [Semiring B]
-    [Algebra R A] [Algebra R B] [TopologicalSpace A] [TopologicalSpace B]
-    (f : A →A[R] B) [IsLocalHom f] : IsLocalHom f.toRingHom := by
-  rwa [ContinuousAlgHom.isLocalHom_toRingHom]
 
-instance {A B : Type*} [Semiring A] [Semiring B]
-    (F : Type*) [EquivLike F A B] [RingEquivClass F A B] (f : F) :
-    IsLocalHom (RingHomClass.toRingHom f) := by
-  convert isLocalHom_equiv f
-  exact ⟨fun ⟨H⟩ ↦ ⟨H⟩, fun ⟨H⟩ ↦ ⟨H⟩⟩
 
-instance {R S} [Semiring R] [Semiring S] (e : R ≃+* S) : IsLocalHom e.toRingHom :=
-  ⟨fun x hx ↦ by convert hx.map e.symm; simp⟩
 
-instance ContinuousAlgHom.isLocalHom_comp {R A B C : Type*}
-    [CommSemiring R] [Semiring A] [Semiring B] [Semiring C]
-    [Algebra R A] [Algebra R B] [Algebra R C]
-    [TopologicalSpace A] [TopologicalSpace B] [TopologicalSpace C]
-    {g : B →A[R] C} {f : A →A[R] B}
-    [IsLocalHom g] [IsLocalHom f] :
-    IsLocalHom (g.comp f) := by
-  convert RingHom.isLocalHom_comp g.toRingHom f.toRingHom
-  exact ⟨fun ⟨H⟩ ↦ ⟨H⟩, fun ⟨H⟩ ↦ ⟨H⟩⟩
 
-instance {R : Type*} [CommSemiring R] : IsLocalHom (algebraMap R R) :=
-  isLocalHom_id R
 
 open IsLocalRing in
-instance {R : Type*} [CommRing R] [IsLocalRing R] :
-    IsLocalHom (algebraMap R (ResidueField R)) :=
-  IsLocalRing.instIsLocalHomResidueFieldRingHomResidue _
 
 /-- Given a field extension, this is an arbitrarily chosen map between their `AlgebraicClosure`s. -/
 noncomputable
@@ -217,26 +102,9 @@ lemma IsModuleTopology.continuous_det {A : Type*} [CommRing A] [TopologicalSpace
   rw [LinearMap.det, dif_neg H]
   exact continuous_of_const fun x ↦ congrFun rfl
 
-/-- `End_A(A) ≃ A`. -/
-def Module.endSelf {A : Type*} [CommSemiring A] : Module.End A A ≃ₐ[A] A :=
-  AlgEquiv.ofLinearEquiv (LinearMap.ringLmapEquivSelf A A A) (by simp) (by simp)
 
-/-- Given a `ContinuousMonoidHom` from a group to a monoid, we may lift it to map into the group
-of units of the monoid. -/
-@[simps!]
-def ContinuousMonoidHom.toHomUnits {G M : Type*} [Group G] [Monoid M] [TopologicalSpace G]
-    [IsTopologicalGroup G] [TopologicalSpace M] (f : G →ₜ* M) : G →ₜ* Mˣ :=
-  ⟨MonoidHom.toHomUnits f, continuous_induced_rng.mpr (continuous_prodMk.mpr ⟨f.continuous, by
-    simpa [← map_inv] using! MulOpposite.continuous_op.comp (f.continuous.comp continuous_inv)⟩)⟩
 
-/-- `Units.val` as a `ContinuousMonoidHom`. -/
-@[simps!]
-def Units.coeHomₜ (M : Type*) [Monoid M] [TopologicalSpace M] : Mˣ →ₜ* M :=
-  ⟨coeHom M, Units.continuous_val⟩
 
-instance {A n m : Type*} [CommRing A] [TopologicalSpace A]
-    [Finite n] [Finite m] [IsTopologicalRing A] :
-    IsModuleTopology A (Matrix n m A) := IsModuleTopology.instPi
 
 /-- We can upgrade an `AlgEquiv` between algebras with the module topology
 into a `ContinuousAlgEquiv`. -/
@@ -252,26 +120,8 @@ def ContinuousAlgEquiv.ofIsModuleTopology {R A B : Type*} [CommSemiring R] [Semi
     letI := IsModuleTopology.toContinuousAdd R A
     IsModuleTopology.continuous_of_linearMap e.symm.toLinearMap
 
-@[simp]
-lemma ContinuousMonoidHom.mk_toMonoidHom {M N : Type*} [Monoid M] [Monoid N] [TopologicalSpace M]
-  [TopologicalSpace N] (f : M →* N) (hf : Continuous f) : (ContinuousMonoidHom.mk f hf) = f := rfl
 
-@[simp]
-lemma ContinuousMonoidHom.coe_mk {M N : Type*} [Monoid M] [Monoid N] [TopologicalSpace M]
-  [TopologicalSpace N] (f : M →* N) (hf : Continuous f) : ⇑(ContinuousMonoidHom.mk f hf) = f := rfl
 
-instance {G K L : Type*} [Field K] [Field L] [Algebra K L] [Monoid G] [MulSemiringAction G L]
-    [SMulCommClass G K L]
-    (E : IntermediateField K L) [Normal K E] : MulSemiringAction G E where
-  smul σ x := ⟨σ • x, by
-    convert ((MulSemiringAction.toAlgHom K L σ).restrictNormal E x).2
-    exact ((MulSemiringAction.toAlgHom K L σ).restrictNormal_commutes E x).symm⟩
-  one_smul _ := Subtype.ext (one_smul _ _)
-  mul_smul _ _ _ := Subtype.ext (mul_smul _ _ _)
-  smul_zero _ := Subtype.ext (smul_zero _)
-  smul_add _ _ _ := Subtype.ext (smul_add _ _ _)
-  smul_one _ := Subtype.ext (smul_one _)
-  smul_mul _ _ _ := Subtype.ext (MulSemiringAction.smul_mul _ _ _)
 
 open NumberField in
 instance {G K : Type*} [Field K] [Monoid G] [MulSemiringAction G K] :
@@ -291,9 +141,6 @@ instance {K A : Type*} [Field K] [CommRing A] [Algebra K A] (R : ValuationSubrin
     [FaithfulSMul K A] : FaithfulSMul R A :=
   Subsemiring.instFaithfulSMulSubtypeMem R
 
-instance {K L : Type*} [Field K] [Field L] [Algebra K L] [NumberField K]
-    (E : IntermediateField K L) [FiniteDimensional K E] : NumberField E where
-  to_finiteDimensional := .trans ℚ K E
 
 -- VENDORING CHANGE: named explicitly (the original is anonymous and is
 -- referred to elsewhere by its auto-generated name
@@ -307,6 +154,23 @@ instance instAlgebraSubtypeMemValuationSubringVendored
   commutes' _ _ := by simp [Algebra.commutes]
   smul_def' _ _ := by simp [← Algebra.smul_def]; rfl
 
+
+
+instance {G K L : Type*} [Field K] [Field L] [Algebra K L] [Monoid G] [MulSemiringAction G L]
+    [SMulCommClass G K L]
+    (E : IntermediateField K L) [Normal K E] : MulSemiringAction G E where
+  smul σ x := ⟨σ • x, by
+    convert ((MulSemiringAction.toAlgHom K L σ).restrictNormal E x).2
+    exact ((MulSemiringAction.toAlgHom K L σ).restrictNormal_commutes E x).symm⟩
+  one_smul _ := Subtype.ext (one_smul _ _)
+  mul_smul _ _ _ := Subtype.ext (mul_smul _ _ _)
+  smul_zero _ := Subtype.ext (smul_zero _)
+  smul_add _ _ _ := Subtype.ext (smul_add _ _ _)
+  smul_one _ := Subtype.ext (smul_one _)
+  smul_mul _ _ _ := Subtype.ext (MulSemiringAction.smul_mul _ _ _)
+
+-- (invisible-instance floater: consumed by typeclass synthesis then inlined —
+-- do not delete as free-floating; the term cone cannot see instance use.)
 instance IntermediateField.smulCommClass_of_normal
     {K L G : Type*} [Field K] [Field L] [Algebra K L] (E : IntermediateField K L)
     [Monoid G] [MulSemiringAction G L] [SMulCommClass G K L] [Normal K E] :
