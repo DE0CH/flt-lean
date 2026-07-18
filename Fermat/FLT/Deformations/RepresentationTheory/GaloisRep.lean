@@ -17,6 +17,9 @@ public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 -- cyclotomic-at-Frobenius leaf below in THIS module's elaboration context
 public import Mathlib.NumberTheory.Cyclotomic.CyclotomicCharacter
 public import Mathlib.RingTheory.RootsOfUnity.AlgebraicallyClosed
+public import Fermat.FLT.DedekindDomain.AdicValuation
+-- `mem_completionIdeal_iff`, used in the 3-is-a-unit step of the
+-- Frobenius/roots-of-unity assembly
 -- `HasEnoughRootsOfUnity (AlgebraicClosure ℚ) (3 ^ i)` instances for the
 -- cyclotomic-character derivation
 
@@ -298,6 +301,8 @@ theorem natCard_residue_under_padicPlace
   sorry
 
 set_option warn.sorry false in
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
 /-- **The arithmetic Frobenius raises `3`-power roots of unity to the
 `p`-th power** (sorry node — the unramified local content): at a prime
 `p ∉ {2, 3}`, the `3`-power roots of unity are unramified, the arithmetic
@@ -360,7 +365,57 @@ theorem adicArithFrob_rootsOfUnity_pow
       (AlgebraicClosure
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) ∉
       IsLocalRing.maximalIdeal _ := by
-    sorry
+    -- `3 ∉ (p)`, so `3` is a unit in `𝒪ᵥ`, hence in the integral closure
+    have h3compl : (3 : NumberField.RingOfIntegers ℚ) ∈
+        v.asIdeal.primeCompl := by
+      intro hmem
+      have hdvd := (Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal
+        hp _).mp hmem
+      rw [map_ofNat] at hdvd
+      have hle := Int.le_of_dvd (by norm_num) hdvd
+      omega
+    have hint1 : IsDedekindDomain.HeightOneSpectrum.intValuation v
+        (3 : NumberField.RingOfIntegers ℚ) = 1 :=
+      (IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff_mem_primeCompl
+        v _).mpr h3compl
+    -- the completed valuation of `3`, assembled in mathlib's own coercion
+    -- spelling (the MazurTorsion pattern)
+    have hK := (IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation
+        (v := v) (K := ℚ) (3 : NumberField.RingOfIntegers ℚ)).trans
+      ((IsDedekindDomain.HeightOneSpectrum.valuation_of_algebraMap
+        (v := v) (K := ℚ) (3 : NumberField.RingOfIntegers ℚ)).trans hint1)
+    have hunit : IsUnit ((3 : ℕ) :
+        IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v) := by
+      by_contra hnu
+      have hmem := (IsLocalRing.mem_maximalIdeal _).mpr hnu
+      have hlt := (IsDedekindDomain.HeightOneSpectrum.mem_completionIdeal_iff
+        (K := ℚ) (v := v) _).mp hmem
+      open scoped algebraMap in
+      have hlt' : Valued.v (((3 : NumberField.RingOfIntegers ℚ)) :
+          IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) < 1 := by
+        convert hlt using 2
+        -- residual cast equation: the record-built `𝓞ℚ`-coercion of `3` into
+        -- the one-field-structure completion vs the subtype-val of the
+        -- `ℕ`-cast — `{toCompletion := ↑((WithVal.equiv _).symm ↑3)} = ↑↑3`
+        sorry
+      -- residual: `hK`'s and `hlt'`'s `↑3` differ in an invisible instance
+      -- path (class-6); the contradiction `1 < 1` is one bridge away
+      sorry
+    have hunitIC : IsUnit (((3 : ℕ) ^ n) : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+      have h1 := hunit.map (algebraMap
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (IntegralClosure _ _))
+      rw [map_natCast] at h1
+      have := h1.pow n
+      push_cast
+      exact this
+    intro hmem
+    exact ((IsLocalRing.mem_maximalIdeal _).mp hmem) (by
+      push_cast at hunitIC ⊢
+      exact hunitIC)
   -- the Frobenius specification on the integral closure
   have hfrob := AlgHom.IsArithFrobAt.apply_of_pow_eq_one
     (Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob (v := v))

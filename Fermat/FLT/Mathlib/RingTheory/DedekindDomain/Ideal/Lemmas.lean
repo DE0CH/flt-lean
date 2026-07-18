@@ -59,3 +59,13 @@ def Nat.Prime.toHeightOneSpectrumInt {p : ℕ} (hp : p.Prime) : HeightOneSpectru
 noncomputable def Nat.Prime.toHeightOneSpectrumRingOfIntegersRat {p : ℕ} (hp : p.Prime) :
     IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ) :=
   Rat.ringOfIntegersEquiv.symm.heightOneSpectrum <| hp.toHeightOneSpectrumInt
+
+/-- Membership in the ideal of the `p`-place of `ℚ`, computed through the
+integer equivalence (an exposed unfolding for downstream modules). -/
+lemma Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal {p : ℕ}
+    (hp : p.Prime) (x : NumberField.RingOfIntegers ℚ) :
+    x ∈ hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal ↔
+      (p : ℤ) ∣ Rat.ringOfIntegersEquiv x := by
+  show x ∈ Ideal.comap _ (Ideal.span {(p : ℤ)}) ↔ _
+  rw [Ideal.mem_comap, Ideal.mem_span_singleton]
+  rfl
