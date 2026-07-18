@@ -1696,13 +1696,33 @@ entries file). To add/remove/annotate a node, edit
                                               span of any nonzero vector is a stable line,
                                               contradicting finrank 2. Noncyclic cases delegate to:
                                                 - ❌· `serre_elimination_noncyclic` — the seven noncyclic Dickson cases (sorry node):
-                                                  semidirect-of-elementary-abelian contradicts
-                                                  absolute irreducibility (normal 3-subgroup has a
-                                                  nonzero unipotent fixed space, a stable subspace);
-                                                  dihedral / A₄ / S₄ / A₅ / PSL₂(𝔽_{3^m}) /
-                                                  PGL₂(𝔽_{3^m}) contradict the hardly-ramified
+                                                  SEMIDIRECT-CASE ATTACK (worked out 2026-07-18,
+                                                  rep-theoretic, no arithmetic): N := iso-preimage of
+                                                  the left factor (normal, elementary abelian 3,
+                                                  nontrivial since m ≥ 1); N' := {g | π g ∈ N}. For
+                                                  g ∈ N': (π g)³ = 1 ⇒ u g³ central ⇒ σρ g³ = λ•1;
+                                                  cube-root μ in L (alg closed) gives
+                                                  (σρ g − μ)³ = 0 by char-3 Frobenius binomial, and
+                                                  on a 2-dim space (σρ g − μ)² = 0, so unique
+                                                  eigenvalue; nonscalar ⇒ eigenline exactly 1-dim.
+                                                  Case A (all σρ g scalar, g ∈ N'): N trivial in PGL,
+                                                  contradicting nontriviality. Case B (some g₀
+                                                  nonscalar, line W): all nonscalar N'-elements share
+                                                  W — commutator of N'-elements is central scalar λ
+                                                  with λ² = 1 (det), λ = −1 impossible (conjugation
+                                                  preserves eigenvalues: μ = −μ ⇒ μ = 0,
+                                                  contradiction), so λ = 1 and commuting operators
+                                                  preserve each other's unique eigenlines; then for
+                                                  any h, h g₀ h⁻¹ ∈ N' (normality of N) is nonscalar
+                                                  with line σρ h (W) = W, so W is a Γℚ-stable line —
+                                                  contradicting irreducibility (finrank 2). Remaining
+                                                  after that: dihedral / A₄ / S₄ / A₅ / PSL₂(𝔽_{3^m})
+                                                  / PGL₂(𝔽_{3^m}) contradict the hardly-ramified
                                                   ramification constraints via Serre's
-                                                  discriminant/conductor bounds over ℚ (deep).
+                                                  discriminant/conductor bounds over ℚ (deep
+                                                  arithmetic: no such extensions of ℚ with these
+                                                  local conditions — Serre Duke 1987 §5.4, needs
+                                                  discriminant-bound machinery absent from mathlib).
                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient` — ordinarity lifting. DERIVED 2026-07-18 from the global triangular
                                   form + the cyclotomic-at-Frobenius leaf: the local Frobenius
                                   matrix is the global form at the Frobenius image; the diagonal
