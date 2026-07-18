@@ -39,6 +39,8 @@ public import Fermat.FLT.KnownIn1980s.EllipticCurves.TateParameter
 public import Mathlib.RingTheory.Localization.Away.Basic
 public import Mathlib.FieldTheory.RatFunc.AsPolynomial
 
+import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve
+
 @[expose] public section
 
 noncomputable section
@@ -106,6 +108,157 @@ theorem coeffRingToRatFunc_injective :
     apply RatFunc.algebraMap_injective (K := ℚ)
     rw [himg, map_zero]
   rw [← hmk, ha, IsLocalization.mk'_eq_iff_eq_mul, zero_mul, map_zero]
+
+/-! ### The variable `u` and its inverses in the coefficient ring -/
+
+/-- `T` is a unit of `CoeffRing`: it divides the inverted element
+`T(1-T)`. -/
+theorem isUnit_uA :
+    IsUnit (algebraMap (Polynomial ℚ) CoeffRing Polynomial.X) := by
+  have h := IsLocalization.Away.algebraMap_isUnit
+    (S := CoeffRing) (Polynomial.X * (1 - Polynomial.X) : Polynomial ℚ)
+  rw [map_mul] at h
+  exact isUnit_of_mul_isUnit_left h
+
+/-- `1 - T` is a unit of `CoeffRing`: it divides the inverted element
+`T(1-T)`. -/
+theorem isUnit_vA :
+    IsUnit (algebraMap (Polynomial ℚ) CoeffRing (1 - Polynomial.X)) := by
+  have h := IsLocalization.Away.algebraMap_isUnit
+    (S := CoeffRing) (Polynomial.X * (1 - Polynomial.X) : Polynomial ℚ)
+  rw [map_mul] at h
+  exact isUnit_of_mul_isUnit_right h
+
+/-- The variable `u = T` of the coefficient ring, as a unit. -/
+noncomputable def uA : CoeffRingˣ := isUnit_uA.unit
+
+/-- The unit `1 - u` of the coefficient ring. -/
+noncomputable def vA : CoeffRingˣ := isUnit_vA.unit
+
+@[simp]
+theorem coe_uA : (uA : CoeffRing) =
+    algebraMap (Polynomial ℚ) CoeffRing Polynomial.X := rfl
+
+@[simp]
+theorem coe_vA : (vA : CoeffRing) =
+    algebraMap (Polynomial ℚ) CoeffRing (1 - Polynomial.X) := rfl
+
+/-! ### The `CoeffRing`-lifts of the uniformisation series
+
+The series `X`, `Y`, `a₄`, `a₆` of `TateCurveConstruction.lean` have
+all their coefficients in the image of `CoeffRing`; these are the
+lifts, with the bridge lemmas (`map_XA` etc.) identifying their images
+in `ℚ(u)⟦q⟧` with the originals. -/
+
+open scoped ArithmeticFunction.sigma
+
+/-- The `CoeffRing`-lift of the divisor-sum series
+`s k = ∑ σₖ(n) qⁿ`. -/
+noncomputable def sA (j : ℕ) : PowerSeries CoeffRing :=
+  .mk fun n ↦ (σ j n : CoeffRing)
+
+/-- The `CoeffRing`-lift of `TateCurve.a₄ = -5s₃`. -/
+noncomputable def a₄A : PowerSeries CoeffRing := -5 * sA 3
+
+/-- The `CoeffRing`-lift of `TateCurve.a₆ = -(5s₃+7s₅)/12`
+(the division is exact on each coefficient: `12 ∣ 5σ₃(n) + 7σ₅(n)`,
+implemented — as in `TateCurve.a₆Formal` — coefficientwise over `ℤ`
+and cast). -/
+noncomputable def a₆A : PowerSeries CoeffRing :=
+  .mk fun n ↦ ((-((5 * σ 3 n + 7 * σ 5 n : ℤ) / 12) : ℤ) : CoeffRing)
+
+/-- The `CoeffRing`-lift of the `x`-coordinate series `TateCurve.X`. -/
+noncomputable def XA : PowerSeries CoeffRing :=
+  .C ((uA : CoeffRing) * ((vA⁻¹ : CoeffRingˣ) : CoeffRing) ^ 2) +
+    .mk fun n ↦ ∑ d ∈ n.divisors,
+      (d : CoeffRing) * (((uA : CoeffRingˣ) : CoeffRing) ^ d +
+        ((uA⁻¹ : CoeffRingˣ) : CoeffRing) ^ d - 2)
+
+/-- The `CoeffRing`-lift of the `y`-coordinate series `TateCurve.Y`. -/
+noncomputable def YA : PowerSeries CoeffRing :=
+  .C (((uA : CoeffRingˣ) : CoeffRing) ^ 2 *
+      ((vA⁻¹ : CoeffRingˣ) : CoeffRing) ^ 3) +
+    .mk fun n ↦ ∑ d ∈ n.divisors,
+      ((d.choose 2 : CoeffRing) * ((uA : CoeffRingˣ) : CoeffRing) ^ d -
+        ((d + 1).choose 2 : CoeffRing) *
+          ((uA⁻¹ : CoeffRingˣ) : CoeffRing) ^ d + (d : CoeffRing))
+
+/-! ### Bridges: the lifts map to the original series in `ℚ(u)⟦q⟧` -/
+
+theorem coeffRingToRatFunc_uA :
+    coeffRingToRatFunc ((uA : CoeffRingˣ) : CoeffRing) = RatFunc.X := by
+  rw [coe_uA, coeffRingToRatFunc_algebraMap, RatFunc.algebraMap_X]
+
+theorem coeffRingToRatFunc_vA :
+    coeffRingToRatFunc ((vA : CoeffRingˣ) : CoeffRing) =
+      1 - RatFunc.X := by
+  rw [coe_vA, coeffRingToRatFunc_algebraMap, map_sub, map_one,
+    RatFunc.algebraMap_X]
+
+theorem coeffRingToRatFunc_uA_inv :
+    coeffRingToRatFunc ((uA⁻¹ : CoeffRingˣ) : CoeffRing) =
+      (RatFunc.X : RatFunc ℚ)⁻¹ := by
+  refine eq_inv_of_mul_eq_one_left ?_
+  rw [← coeffRingToRatFunc_uA, ← map_mul, ← Units.val_mul, inv_mul_cancel,
+    Units.val_one, map_one]
+
+theorem coeffRingToRatFunc_vA_inv :
+    coeffRingToRatFunc ((vA⁻¹ : CoeffRingˣ) : CoeffRing) =
+      (1 - RatFunc.X : RatFunc ℚ)⁻¹ := by
+  refine eq_inv_of_mul_eq_one_left ?_
+  rw [← coeffRingToRatFunc_vA, ← map_mul, ← Units.val_mul, inv_mul_cancel,
+    Units.val_one, map_one]
+
+theorem map_sA (j : ℕ) :
+    (sA j).map coeffRingToRatFunc = TateCurve.s j := by
+  ext n
+  simp [sA, TateCurve.s, PowerSeries.coeff_map, PowerSeries.coeff_mk]
+
+theorem map_a₄A : a₄A.map coeffRingToRatFunc = TateCurve.a₄ := by
+  rw [a₄A, TateCurve.a₄, map_mul, map_neg, map_ofNat, map_sA]
+
+theorem map_a₆A : a₆A.map coeffRingToRatFunc = TateCurve.a₆ := by
+  ext n
+  have hdvd := TateCurve.dvd_five_sigma_three_add_seven_sigma_five n
+  have h5C : ((5 : PowerSeries (RatFunc ℚ))) = PowerSeries.C (5 : RatFunc ℚ) :=
+    (map_ofNat (PowerSeries.C (R := RatFunc ℚ)) 5).symm
+  have h7C : ((7 : PowerSeries (RatFunc ℚ))) = PowerSeries.C (7 : RatFunc ℚ) :=
+    (map_ofNat (PowerSeries.C (R := RatFunc ℚ)) 7).symm
+  simp only [PowerSeries.coeff_map, a₆A, TateCurve.a₆, TateCurve.s,
+    PowerSeries.coeff_mk, map_intCast, PowerSeries.coeff_smul, map_neg,
+    map_add, h5C, h7C, PowerSeries.coeff_C_mul, smul_eq_mul]
+  rw [Int.cast_neg, Int.cast_div_charZero hdvd]
+  push_cast
+  field_simp
+
+theorem map_XA : XA.map coeffRingToRatFunc = TateCurve.X := by
+  ext n
+  rw [PowerSeries.coeff_map, XA, TateCurve.X]
+  simp only [map_add, PowerSeries.coeff_C, PowerSeries.coeff_mk,
+    apply_ite coeffRingToRatFunc, map_zero, map_sum]
+  congr 1
+  · split_ifs with h
+    · rw [map_mul, map_pow, coeffRingToRatFunc_uA, coeffRingToRatFunc_vA_inv,
+        div_eq_mul_inv, inv_pow]
+    · rfl
+  · refine Finset.sum_congr rfl fun d _ ↦ ?_
+    rw [map_mul, map_sub, map_add, map_pow, map_pow, map_natCast,
+      map_ofNat, coeffRingToRatFunc_uA, coeffRingToRatFunc_uA_inv]
+
+theorem map_YA : YA.map coeffRingToRatFunc = TateCurve.Y := by
+  ext n
+  rw [PowerSeries.coeff_map, YA, TateCurve.Y]
+  simp only [map_add, PowerSeries.coeff_C, PowerSeries.coeff_mk,
+    apply_ite coeffRingToRatFunc, map_zero, map_sum]
+  congr 1
+  · split_ifs with h
+    · rw [map_mul, map_pow, map_pow, coeffRingToRatFunc_uA,
+        coeffRingToRatFunc_vA_inv, div_eq_mul_inv, inv_pow]
+    · rfl
+  · refine Finset.sum_congr rfl fun d _ ↦ ?_
+    rw [map_sub, map_mul, map_mul, map_pow, map_pow, map_natCast,
+      map_natCast, map_natCast, coeffRingToRatFunc_uA,
+      coeffRingToRatFunc_uA_inv]
 
 section Evaluation
 
