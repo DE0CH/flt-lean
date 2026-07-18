@@ -43,6 +43,7 @@ public import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve
 
 import Mathlib.Topology.Algebra.InfiniteSum.Nonarchimedean
 import Mathlib.Topology.Algebra.InfiniteSum.Ring
+import Mathlib.NumberTheory.TsumDivisorsAntidiagonal
 
 @[expose] public section
 
@@ -1400,6 +1401,47 @@ theorem tsum_nat_mul_geometric_nonarch (x : k)
   rw [h3]
   field_simp
   ring
+
+omit [CharZero k] in
+/-- A summable double series over `ℕ+ × ℕ+` has sum the iterated sum
+of its rows (`k`-version of the construction file's
+`hasSum_prod_pnat`). -/
+theorem hasSum_prod_pnat_nonarch {T : ℕ+ × ℕ+ → k} {F : ℕ+ → k}
+    (hsum : Summable T)
+    (hfib : ∀ n : ℕ+, HasSum (fun m : ℕ+ ↦ T (n, m)) (F n)) :
+    HasSum T (∑' n : ℕ+, F n) := by
+  simpa [hsum.tsum_prod' (fun n ↦ (hfib n).summable),
+    tsum_congr fun n ↦ (hfib n).tsum_eq] using hsum.hasSum
+
+omit [CharZero k] in
+/-- Collecting a double series `∑_{n,m} g(m)x^{nm}` by powers of `x`
+(`k`-version of the construction file's `hasSum_divisor_collect`): the
+coefficient of `x^N` is the divisor sum `∑_{d ∣ N} g d`. -/
+theorem hasSum_divisor_collect_nonarch (g : ℕ → k) {x : k} {S : k}
+    (hT : HasSum
+      (fun p : ℕ+ × ℕ+ ↦ g (p.2 : ℕ) * x ^ ((p.1 : ℕ) * (p.2 : ℕ))) S) :
+    HasSum (fun N : ℕ+ ↦
+      (∑ d ∈ (N : ℕ).divisors, g d) * x ^ (N : ℕ)) S := by
+  apply ((sigmaAntidiagonalEquivProd.hasSum_iff).mpr hT).sigma
+  intro N
+  have h2 := hasSum_fintype (fun c : ((N : ℕ).divisorsAntidiagonal) ↦
+    (g c.1.2 * x ^ (c.1.1 * c.1.2) : k))
+  have hval : (∑ c : ((N : ℕ).divisorsAntidiagonal),
+      (g c.1.2 * x ^ (c.1.1 * c.1.2) : k))
+      = (∑ d ∈ (N : ℕ).divisors, g d) * x ^ (N : ℕ) := by
+    rw [Finset.univ_eq_attach,
+      Finset.sum_attach ((N : ℕ).divisorsAntidiagonal)
+        (fun p ↦ (g p.2 * x ^ (p.1 * p.2) : k)),
+      show (∑ p ∈ (N : ℕ).divisorsAntidiagonal,
+          (g p.2 * x ^ (p.1 * p.2) : k))
+          = ∑ p ∈ (N : ℕ).divisorsAntidiagonal, (g p.2 * x ^ (N : ℕ) : k)
+        from Finset.sum_congr rfl fun p hp ↦ by
+          rw [(Nat.mem_divisorsAntidiagonal.mp hp).1],
+      ← Finset.sum_mul, Nat.sum_divisorsAntidiagonal' (f := fun _ d ↦ (g d : k))]
+  rw [hval] at h2
+  refine h2.congr_fun fun c ↦ ?_
+  simp only [Function.comp_apply, sigmaAntidiagonalEquivProd, Equiv.coe_fn_mk,
+    divisorsAntidiagonalFactors, PNat.mk_coe]
 
 end Annulus
 
