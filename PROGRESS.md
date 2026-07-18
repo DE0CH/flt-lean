@@ -323,34 +323,61 @@ entries file). To add/remove/annotate a node, edit
                                                                                           among the three substitution
                                                                                           images of TateCurve.X/Y (sorry
                                                                                           node — the final descent
-                                                                                          target): resolve by the two-
-                                                                                          variable analogue of
-                                                                                          eq_zero_of_forall_hasSum_zero:
-                                                                                          evaluate coefficients at
-                                                                                          algebraically-independent
-                                                                                          transcendental pairs (u₀,v₀) ∈
-                                                                                          ℂ² via the composite hom
-                                                                                          substHom-at-v₀ over evalAtHom
-                                                                                          u₀ (fix ONE transcendental u₀
-                                                                                          ∈ (1/2,1); S := reals in
-                                                                                          (1/2,1) transcendental over
-                                                                                          ℚ(u₀), complement countable by
-                                                                                          Algebraic.countable with R :=
-                                                                                          RatFunc ℚ; r := 1/4 uniform
-                                                                                          window); coefficientwise
-                                                                                          vanishing by coeffs_eq_zero_of
-                                                                                          _hasSum_punctured; numerator-
-                                                                                          polynomial-over-ℚ(u) infinite
-                                                                                          roots + evalAtHom injectivity;
-                                                                                          hasSum transport mirroring
-                                                                                          hasSum_evalAt_add/neg/mul;
-                                                                                          analytic input analytic_chordX
-                                                                                          (PROVEN, TateCurveConstruction
-                                                                                          — currently private, publicize
-                                                                                          when this consumer lands, plus
-                                                                                          hasSum_X_eval/hasSum_Y_eval at
-                                                                                          the three points u₀, v₀,
-                                                                                          u₀v₀).
+                                                                                          target). KEY SIMPLIFICATION
+                                                                                          (2026-07-18): since ℚ(u)(v) is
+                                                                                          a FIELD, any evaluation HOM to
+                                                                                          ℂ is injective, so ONE
+                                                                                          algebraically independent pair
+                                                                                          (u₀, v₀) suffices — no
+                                                                                          infinite-set/numerator
+                                                                                          argument at the outer level.
+                                                                                          Plan: (1) u₀ := 1/e
+                                                                                          (transcendental via
+                                                                                          Real.transcendental_exp-
+                                                                                          inverse; norm ≈ .3679), v₀ :=
+                                                                                          a real in (1/2,1)
+                                                                                          transcendental over the image
+                                                                                          ℚ(u₀) (exists:
+                                                                                          Algebraic.countable over R :=
+                                                                                          RatFunc ℚ with letI Algebra
+                                                                                          via (evalAtHom u₀).toAlgebra +
+                                                                                          uncountability of the
+                                                                                          interval; needs Countable
+                                                                                          (RatFunc ℚ) via num/denom-pair
+                                                                                          injection); (2) H := substHom
+                                                                                          (K := RatFunc ℚ) v₀ under the
+                                                                                          letI algebra : ℚ(u)(v) →+* ℂ,
+                                                                                          injective; (3) compat: H∘uEmbR
+                                                                                          = evalAtHom u₀ / H∘vEmbR =
+                                                                                          evalAtHom v₀ / H∘uvEmbR =
+                                                                                          evalAtHom (u₀v₀) — each by
+                                                                                          ratFuncQ_ringHom_ext (re-add;
+                                                                                          two ℚ(X)-homs agreeing on X)
+                                                                                          with X-values via
+                                                                                          substHom_algebraMap (re-add)
+                                                                                          and substHom_ratFuncX; u₀v₀-
+                                                                                          transcendence by the ℂ-level
+                                                                                          uvGen argument; (4)
+                                                                                          coefficient extraction: for
+                                                                                          all 0<‖q‖<1/10 the H-evaluated
+                                                                                          series of both sides HasSum to
+                                                                                          equal values (hasSum_X/Y_eval
+                                                                                          at u₀, v₀, u₀v₀ +
+                                                                                          hasSum_evalAt_add/neg/sub/mul-
+                                                                                          analogues at H +
+                                                                                          analytic_chordX with window
+                                                                                          0<‖q‖<1/10<min norms, all<1);
+                                                                                          apply coeffs_eq_zero_of_hasSum
+                                                                                          _punctured to the difference;
+                                                                                          H-injectivity finishes
+                                                                                          coefficientwise. Publicize
+                                                                                          (with this consumer, same
+                                                                                          commit): analytic_chordX/Y,
+                                                                                          evalAtHom(+_apply,_ratFuncX),
+                                                                                          coeffs_eq_zero_of_hasSum_punct
+                                                                                          ured,
+                                                                                          hasSum_evalAt_add/neg/sub/mul
+                                                                                          in TateCurveConstruction.
                                                                             - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
                                                                               chord X-identity (sorry node):
                                                                               u₀v₀ below the fundamental
@@ -625,34 +652,61 @@ entries file). To add/remove/annotate a node, edit
                                                                                               among the three substitution
                                                                                               images of TateCurve.X/Y (sorry
                                                                                               node — the final descent
-                                                                                              target): resolve by the two-
-                                                                                              variable analogue of
-                                                                                              eq_zero_of_forall_hasSum_zero:
-                                                                                              evaluate coefficients at
-                                                                                              algebraically-independent
-                                                                                              transcendental pairs (u₀,v₀) ∈
-                                                                                              ℂ² via the composite hom
-                                                                                              substHom-at-v₀ over evalAtHom
-                                                                                              u₀ (fix ONE transcendental u₀
-                                                                                              ∈ (1/2,1); S := reals in
-                                                                                              (1/2,1) transcendental over
-                                                                                              ℚ(u₀), complement countable by
-                                                                                              Algebraic.countable with R :=
-                                                                                              RatFunc ℚ; r := 1/4 uniform
-                                                                                              window); coefficientwise
-                                                                                              vanishing by coeffs_eq_zero_of
-                                                                                              _hasSum_punctured; numerator-
-                                                                                              polynomial-over-ℚ(u) infinite
-                                                                                              roots + evalAtHom injectivity;
-                                                                                              hasSum transport mirroring
-                                                                                              hasSum_evalAt_add/neg/mul;
-                                                                                              analytic input analytic_chordX
-                                                                                              (PROVEN, TateCurveConstruction
-                                                                                              — currently private, publicize
-                                                                                              when this consumer lands, plus
-                                                                                              hasSum_X_eval/hasSum_Y_eval at
-                                                                                              the three points u₀, v₀,
-                                                                                              u₀v₀).
+                                                                                              target). KEY SIMPLIFICATION
+                                                                                              (2026-07-18): since ℚ(u)(v) is
+                                                                                              a FIELD, any evaluation HOM to
+                                                                                              ℂ is injective, so ONE
+                                                                                              algebraically independent pair
+                                                                                              (u₀, v₀) suffices — no
+                                                                                              infinite-set/numerator
+                                                                                              argument at the outer level.
+                                                                                              Plan: (1) u₀ := 1/e
+                                                                                              (transcendental via
+                                                                                              Real.transcendental_exp-
+                                                                                              inverse; norm ≈ .3679), v₀ :=
+                                                                                              a real in (1/2,1)
+                                                                                              transcendental over the image
+                                                                                              ℚ(u₀) (exists:
+                                                                                              Algebraic.countable over R :=
+                                                                                              RatFunc ℚ with letI Algebra
+                                                                                              via (evalAtHom u₀).toAlgebra +
+                                                                                              uncountability of the
+                                                                                              interval; needs Countable
+                                                                                              (RatFunc ℚ) via num/denom-pair
+                                                                                              injection); (2) H := substHom
+                                                                                              (K := RatFunc ℚ) v₀ under the
+                                                                                              letI algebra : ℚ(u)(v) →+* ℂ,
+                                                                                              injective; (3) compat: H∘uEmbR
+                                                                                              = evalAtHom u₀ / H∘vEmbR =
+                                                                                              evalAtHom v₀ / H∘uvEmbR =
+                                                                                              evalAtHom (u₀v₀) — each by
+                                                                                              ratFuncQ_ringHom_ext (re-add;
+                                                                                              two ℚ(X)-homs agreeing on X)
+                                                                                              with X-values via
+                                                                                              substHom_algebraMap (re-add)
+                                                                                              and substHom_ratFuncX; u₀v₀-
+                                                                                              transcendence by the ℂ-level
+                                                                                              uvGen argument; (4)
+                                                                                              coefficient extraction: for
+                                                                                              all 0<‖q‖<1/10 the H-evaluated
+                                                                                              series of both sides HasSum to
+                                                                                              equal values (hasSum_X/Y_eval
+                                                                                              at u₀, v₀, u₀v₀ +
+                                                                                              hasSum_evalAt_add/neg/sub/mul-
+                                                                                              analogues at H +
+                                                                                              analytic_chordX with window
+                                                                                              0<‖q‖<1/10<min norms, all<1);
+                                                                                              apply coeffs_eq_zero_of_hasSum
+                                                                                              _punctured to the difference;
+                                                                                              H-injectivity finishes
+                                                                                              coefficientwise. Publicize
+                                                                                              (with this consumer, same
+                                                                                              commit): analytic_chordX/Y,
+                                                                                              evalAtHom(+_apply,_ratFuncX),
+                                                                                              coeffs_eq_zero_of_hasSum_punct
+                                                                                              ured,
+                                                                                              hasSum_evalAt_add/neg/sub/mul
+                                                                                              in TateCurveConstruction.
                                                                                 - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
                                                                                   chord X-identity (sorry node):
                                                                                   u₀v₀ below the fundamental
@@ -951,34 +1005,61 @@ entries file). To add/remove/annotate a node, edit
                                                                                                   among the three substitution
                                                                                                   images of TateCurve.X/Y (sorry
                                                                                                   node — the final descent
-                                                                                                  target): resolve by the two-
-                                                                                                  variable analogue of
-                                                                                                  eq_zero_of_forall_hasSum_zero:
-                                                                                                  evaluate coefficients at
-                                                                                                  algebraically-independent
-                                                                                                  transcendental pairs (u₀,v₀) ∈
-                                                                                                  ℂ² via the composite hom
-                                                                                                  substHom-at-v₀ over evalAtHom
-                                                                                                  u₀ (fix ONE transcendental u₀
-                                                                                                  ∈ (1/2,1); S := reals in
-                                                                                                  (1/2,1) transcendental over
-                                                                                                  ℚ(u₀), complement countable by
-                                                                                                  Algebraic.countable with R :=
-                                                                                                  RatFunc ℚ; r := 1/4 uniform
-                                                                                                  window); coefficientwise
-                                                                                                  vanishing by coeffs_eq_zero_of
-                                                                                                  _hasSum_punctured; numerator-
-                                                                                                  polynomial-over-ℚ(u) infinite
-                                                                                                  roots + evalAtHom injectivity;
-                                                                                                  hasSum transport mirroring
-                                                                                                  hasSum_evalAt_add/neg/mul;
-                                                                                                  analytic input analytic_chordX
-                                                                                                  (PROVEN, TateCurveConstruction
-                                                                                                  — currently private, publicize
-                                                                                                  when this consumer lands, plus
-                                                                                                  hasSum_X_eval/hasSum_Y_eval at
-                                                                                                  the three points u₀, v₀,
-                                                                                                  u₀v₀).
+                                                                                                  target). KEY SIMPLIFICATION
+                                                                                                  (2026-07-18): since ℚ(u)(v) is
+                                                                                                  a FIELD, any evaluation HOM to
+                                                                                                  ℂ is injective, so ONE
+                                                                                                  algebraically independent pair
+                                                                                                  (u₀, v₀) suffices — no
+                                                                                                  infinite-set/numerator
+                                                                                                  argument at the outer level.
+                                                                                                  Plan: (1) u₀ := 1/e
+                                                                                                  (transcendental via
+                                                                                                  Real.transcendental_exp-
+                                                                                                  inverse; norm ≈ .3679), v₀ :=
+                                                                                                  a real in (1/2,1)
+                                                                                                  transcendental over the image
+                                                                                                  ℚ(u₀) (exists:
+                                                                                                  Algebraic.countable over R :=
+                                                                                                  RatFunc ℚ with letI Algebra
+                                                                                                  via (evalAtHom u₀).toAlgebra +
+                                                                                                  uncountability of the
+                                                                                                  interval; needs Countable
+                                                                                                  (RatFunc ℚ) via num/denom-pair
+                                                                                                  injection); (2) H := substHom
+                                                                                                  (K := RatFunc ℚ) v₀ under the
+                                                                                                  letI algebra : ℚ(u)(v) →+* ℂ,
+                                                                                                  injective; (3) compat: H∘uEmbR
+                                                                                                  = evalAtHom u₀ / H∘vEmbR =
+                                                                                                  evalAtHom v₀ / H∘uvEmbR =
+                                                                                                  evalAtHom (u₀v₀) — each by
+                                                                                                  ratFuncQ_ringHom_ext (re-add;
+                                                                                                  two ℚ(X)-homs agreeing on X)
+                                                                                                  with X-values via
+                                                                                                  substHom_algebraMap (re-add)
+                                                                                                  and substHom_ratFuncX; u₀v₀-
+                                                                                                  transcendence by the ℂ-level
+                                                                                                  uvGen argument; (4)
+                                                                                                  coefficient extraction: for
+                                                                                                  all 0<‖q‖<1/10 the H-evaluated
+                                                                                                  series of both sides HasSum to
+                                                                                                  equal values (hasSum_X/Y_eval
+                                                                                                  at u₀, v₀, u₀v₀ +
+                                                                                                  hasSum_evalAt_add/neg/sub/mul-
+                                                                                                  analogues at H +
+                                                                                                  analytic_chordX with window
+                                                                                                  0<‖q‖<1/10<min norms, all<1);
+                                                                                                  apply coeffs_eq_zero_of_hasSum
+                                                                                                  _punctured to the difference;
+                                                                                                  H-injectivity finishes
+                                                                                                  coefficientwise. Publicize
+                                                                                                  (with this consumer, same
+                                                                                                  commit): analytic_chordX/Y,
+                                                                                                  evalAtHom(+_apply,_ratFuncX),
+                                                                                                  coeffs_eq_zero_of_hasSum_punct
+                                                                                                  ured,
+                                                                                                  hasSum_evalAt_add/neg/sub/mul
+                                                                                                  in TateCurveConstruction.
                                                                                     - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
                                                                                       chord X-identity (sorry node):
                                                                                       u₀v₀ below the fundamental
@@ -1270,34 +1351,61 @@ entries file). To add/remove/annotate a node, edit
                                                                                                       among the three substitution
                                                                                                       images of TateCurve.X/Y (sorry
                                                                                                       node — the final descent
-                                                                                                      target): resolve by the two-
-                                                                                                      variable analogue of
-                                                                                                      eq_zero_of_forall_hasSum_zero:
-                                                                                                      evaluate coefficients at
-                                                                                                      algebraically-independent
-                                                                                                      transcendental pairs (u₀,v₀) ∈
-                                                                                                      ℂ² via the composite hom
-                                                                                                      substHom-at-v₀ over evalAtHom
-                                                                                                      u₀ (fix ONE transcendental u₀
-                                                                                                      ∈ (1/2,1); S := reals in
-                                                                                                      (1/2,1) transcendental over
-                                                                                                      ℚ(u₀), complement countable by
-                                                                                                      Algebraic.countable with R :=
-                                                                                                      RatFunc ℚ; r := 1/4 uniform
-                                                                                                      window); coefficientwise
-                                                                                                      vanishing by coeffs_eq_zero_of
-                                                                                                      _hasSum_punctured; numerator-
-                                                                                                      polynomial-over-ℚ(u) infinite
-                                                                                                      roots + evalAtHom injectivity;
-                                                                                                      hasSum transport mirroring
-                                                                                                      hasSum_evalAt_add/neg/mul;
-                                                                                                      analytic input analytic_chordX
-                                                                                                      (PROVEN, TateCurveConstruction
-                                                                                                      — currently private, publicize
-                                                                                                      when this consumer lands, plus
-                                                                                                      hasSum_X_eval/hasSum_Y_eval at
-                                                                                                      the three points u₀, v₀,
-                                                                                                      u₀v₀).
+                                                                                                      target). KEY SIMPLIFICATION
+                                                                                                      (2026-07-18): since ℚ(u)(v) is
+                                                                                                      a FIELD, any evaluation HOM to
+                                                                                                      ℂ is injective, so ONE
+                                                                                                      algebraically independent pair
+                                                                                                      (u₀, v₀) suffices — no
+                                                                                                      infinite-set/numerator
+                                                                                                      argument at the outer level.
+                                                                                                      Plan: (1) u₀ := 1/e
+                                                                                                      (transcendental via
+                                                                                                      Real.transcendental_exp-
+                                                                                                      inverse; norm ≈ .3679), v₀ :=
+                                                                                                      a real in (1/2,1)
+                                                                                                      transcendental over the image
+                                                                                                      ℚ(u₀) (exists:
+                                                                                                      Algebraic.countable over R :=
+                                                                                                      RatFunc ℚ with letI Algebra
+                                                                                                      via (evalAtHom u₀).toAlgebra +
+                                                                                                      uncountability of the
+                                                                                                      interval; needs Countable
+                                                                                                      (RatFunc ℚ) via num/denom-pair
+                                                                                                      injection); (2) H := substHom
+                                                                                                      (K := RatFunc ℚ) v₀ under the
+                                                                                                      letI algebra : ℚ(u)(v) →+* ℂ,
+                                                                                                      injective; (3) compat: H∘uEmbR
+                                                                                                      = evalAtHom u₀ / H∘vEmbR =
+                                                                                                      evalAtHom v₀ / H∘uvEmbR =
+                                                                                                      evalAtHom (u₀v₀) — each by
+                                                                                                      ratFuncQ_ringHom_ext (re-add;
+                                                                                                      two ℚ(X)-homs agreeing on X)
+                                                                                                      with X-values via
+                                                                                                      substHom_algebraMap (re-add)
+                                                                                                      and substHom_ratFuncX; u₀v₀-
+                                                                                                      transcendence by the ℂ-level
+                                                                                                      uvGen argument; (4)
+                                                                                                      coefficient extraction: for
+                                                                                                      all 0<‖q‖<1/10 the H-evaluated
+                                                                                                      series of both sides HasSum to
+                                                                                                      equal values (hasSum_X/Y_eval
+                                                                                                      at u₀, v₀, u₀v₀ +
+                                                                                                      hasSum_evalAt_add/neg/sub/mul-
+                                                                                                      analogues at H +
+                                                                                                      analytic_chordX with window
+                                                                                                      0<‖q‖<1/10<min norms, all<1);
+                                                                                                      apply coeffs_eq_zero_of_hasSum
+                                                                                                      _punctured to the difference;
+                                                                                                      H-injectivity finishes
+                                                                                                      coefficientwise. Publicize
+                                                                                                      (with this consumer, same
+                                                                                                      commit): analytic_chordX/Y,
+                                                                                                      evalAtHom(+_apply,_ratFuncX),
+                                                                                                      coeffs_eq_zero_of_hasSum_punct
+                                                                                                      ured,
+                                                                                                      hasSum_evalAt_add/neg/sub/mul
+                                                                                                      in TateCurveConstruction.
                                                                                         - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
                                                                                           chord X-identity (sorry node):
                                                                                           u₀v₀ below the fundamental
@@ -1611,34 +1719,61 @@ entries file). To add/remove/annotate a node, edit
                                                                               among the three substitution
                                                                               images of TateCurve.X/Y (sorry
                                                                               node — the final descent
-                                                                              target): resolve by the two-
-                                                                              variable analogue of
-                                                                              eq_zero_of_forall_hasSum_zero:
-                                                                              evaluate coefficients at
-                                                                              algebraically-independent
-                                                                              transcendental pairs (u₀,v₀) ∈
-                                                                              ℂ² via the composite hom
-                                                                              substHom-at-v₀ over evalAtHom
-                                                                              u₀ (fix ONE transcendental u₀
-                                                                              ∈ (1/2,1); S := reals in
-                                                                              (1/2,1) transcendental over
-                                                                              ℚ(u₀), complement countable by
-                                                                              Algebraic.countable with R :=
-                                                                              RatFunc ℚ; r := 1/4 uniform
-                                                                              window); coefficientwise
-                                                                              vanishing by coeffs_eq_zero_of
-                                                                              _hasSum_punctured; numerator-
-                                                                              polynomial-over-ℚ(u) infinite
-                                                                              roots + evalAtHom injectivity;
-                                                                              hasSum transport mirroring
-                                                                              hasSum_evalAt_add/neg/mul;
-                                                                              analytic input analytic_chordX
-                                                                              (PROVEN, TateCurveConstruction
-                                                                              — currently private, publicize
-                                                                              when this consumer lands, plus
-                                                                              hasSum_X_eval/hasSum_Y_eval at
-                                                                              the three points u₀, v₀,
-                                                                              u₀v₀).
+                                                                              target). KEY SIMPLIFICATION
+                                                                              (2026-07-18): since ℚ(u)(v) is
+                                                                              a FIELD, any evaluation HOM to
+                                                                              ℂ is injective, so ONE
+                                                                              algebraically independent pair
+                                                                              (u₀, v₀) suffices — no
+                                                                              infinite-set/numerator
+                                                                              argument at the outer level.
+                                                                              Plan: (1) u₀ := 1/e
+                                                                              (transcendental via
+                                                                              Real.transcendental_exp-
+                                                                              inverse; norm ≈ .3679), v₀ :=
+                                                                              a real in (1/2,1)
+                                                                              transcendental over the image
+                                                                              ℚ(u₀) (exists:
+                                                                              Algebraic.countable over R :=
+                                                                              RatFunc ℚ with letI Algebra
+                                                                              via (evalAtHom u₀).toAlgebra +
+                                                                              uncountability of the
+                                                                              interval; needs Countable
+                                                                              (RatFunc ℚ) via num/denom-pair
+                                                                              injection); (2) H := substHom
+                                                                              (K := RatFunc ℚ) v₀ under the
+                                                                              letI algebra : ℚ(u)(v) →+* ℂ,
+                                                                              injective; (3) compat: H∘uEmbR
+                                                                              = evalAtHom u₀ / H∘vEmbR =
+                                                                              evalAtHom v₀ / H∘uvEmbR =
+                                                                              evalAtHom (u₀v₀) — each by
+                                                                              ratFuncQ_ringHom_ext (re-add;
+                                                                              two ℚ(X)-homs agreeing on X)
+                                                                              with X-values via
+                                                                              substHom_algebraMap (re-add)
+                                                                              and substHom_ratFuncX; u₀v₀-
+                                                                              transcendence by the ℂ-level
+                                                                              uvGen argument; (4)
+                                                                              coefficient extraction: for
+                                                                              all 0<‖q‖<1/10 the H-evaluated
+                                                                              series of both sides HasSum to
+                                                                              equal values (hasSum_X/Y_eval
+                                                                              at u₀, v₀, u₀v₀ +
+                                                                              hasSum_evalAt_add/neg/sub/mul-
+                                                                              analogues at H +
+                                                                              analytic_chordX with window
+                                                                              0<‖q‖<1/10<min norms, all<1);
+                                                                              apply coeffs_eq_zero_of_hasSum
+                                                                              _punctured to the difference;
+                                                                              H-injectivity finishes
+                                                                              coefficientwise. Publicize
+                                                                              (with this consumer, same
+                                                                              commit): analytic_chordX/Y,
+                                                                              evalAtHom(+_apply,_ratFuncX),
+                                                                              coeffs_eq_zero_of_hasSum_punct
+                                                                              ured,
+                                                                              hasSum_evalAt_add/neg/sub/mul
+                                                                              in TateCurveConstruction.
                                                                 - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared chord
                                                                   X-identity (sorry node): u₀v₀
                                                                   below the fundamental annulus
@@ -1870,34 +2005,61 @@ entries file). To add/remove/annotate a node, edit
                                                                                   among the three substitution
                                                                                   images of TateCurve.X/Y (sorry
                                                                                   node — the final descent
-                                                                                  target): resolve by the two-
-                                                                                  variable analogue of
-                                                                                  eq_zero_of_forall_hasSum_zero:
-                                                                                  evaluate coefficients at
-                                                                                  algebraically-independent
-                                                                                  transcendental pairs (u₀,v₀) ∈
-                                                                                  ℂ² via the composite hom
-                                                                                  substHom-at-v₀ over evalAtHom
-                                                                                  u₀ (fix ONE transcendental u₀
-                                                                                  ∈ (1/2,1); S := reals in
-                                                                                  (1/2,1) transcendental over
-                                                                                  ℚ(u₀), complement countable by
-                                                                                  Algebraic.countable with R :=
-                                                                                  RatFunc ℚ; r := 1/4 uniform
-                                                                                  window); coefficientwise
-                                                                                  vanishing by coeffs_eq_zero_of
-                                                                                  _hasSum_punctured; numerator-
-                                                                                  polynomial-over-ℚ(u) infinite
-                                                                                  roots + evalAtHom injectivity;
-                                                                                  hasSum transport mirroring
-                                                                                  hasSum_evalAt_add/neg/mul;
-                                                                                  analytic input analytic_chordX
-                                                                                  (PROVEN, TateCurveConstruction
-                                                                                  — currently private, publicize
-                                                                                  when this consumer lands, plus
-                                                                                  hasSum_X_eval/hasSum_Y_eval at
-                                                                                  the three points u₀, v₀,
-                                                                                  u₀v₀).
+                                                                                  target). KEY SIMPLIFICATION
+                                                                                  (2026-07-18): since ℚ(u)(v) is
+                                                                                  a FIELD, any evaluation HOM to
+                                                                                  ℂ is injective, so ONE
+                                                                                  algebraically independent pair
+                                                                                  (u₀, v₀) suffices — no
+                                                                                  infinite-set/numerator
+                                                                                  argument at the outer level.
+                                                                                  Plan: (1) u₀ := 1/e
+                                                                                  (transcendental via
+                                                                                  Real.transcendental_exp-
+                                                                                  inverse; norm ≈ .3679), v₀ :=
+                                                                                  a real in (1/2,1)
+                                                                                  transcendental over the image
+                                                                                  ℚ(u₀) (exists:
+                                                                                  Algebraic.countable over R :=
+                                                                                  RatFunc ℚ with letI Algebra
+                                                                                  via (evalAtHom u₀).toAlgebra +
+                                                                                  uncountability of the
+                                                                                  interval; needs Countable
+                                                                                  (RatFunc ℚ) via num/denom-pair
+                                                                                  injection); (2) H := substHom
+                                                                                  (K := RatFunc ℚ) v₀ under the
+                                                                                  letI algebra : ℚ(u)(v) →+* ℂ,
+                                                                                  injective; (3) compat: H∘uEmbR
+                                                                                  = evalAtHom u₀ / H∘vEmbR =
+                                                                                  evalAtHom v₀ / H∘uvEmbR =
+                                                                                  evalAtHom (u₀v₀) — each by
+                                                                                  ratFuncQ_ringHom_ext (re-add;
+                                                                                  two ℚ(X)-homs agreeing on X)
+                                                                                  with X-values via
+                                                                                  substHom_algebraMap (re-add)
+                                                                                  and substHom_ratFuncX; u₀v₀-
+                                                                                  transcendence by the ℂ-level
+                                                                                  uvGen argument; (4)
+                                                                                  coefficient extraction: for
+                                                                                  all 0<‖q‖<1/10 the H-evaluated
+                                                                                  series of both sides HasSum to
+                                                                                  equal values (hasSum_X/Y_eval
+                                                                                  at u₀, v₀, u₀v₀ +
+                                                                                  hasSum_evalAt_add/neg/sub/mul-
+                                                                                  analogues at H +
+                                                                                  analytic_chordX with window
+                                                                                  0<‖q‖<1/10<min norms, all<1);
+                                                                                  apply coeffs_eq_zero_of_hasSum
+                                                                                  _punctured to the difference;
+                                                                                  H-injectivity finishes
+                                                                                  coefficientwise. Publicize
+                                                                                  (with this consumer, same
+                                                                                  commit): analytic_chordX/Y,
+                                                                                  evalAtHom(+_apply,_ratFuncX),
+                                                                                  coeffs_eq_zero_of_hasSum_punct
+                                                                                  ured,
+                                                                                  hasSum_evalAt_add/neg/sub/mul
+                                                                                  in TateCurveConstruction.
                                                                     - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
                                                                       chord X-identity (sorry node):
                                                                       u₀v₀ below the fundamental
@@ -2117,34 +2279,61 @@ entries file). To add/remove/annotate a node, edit
                                                                       among the three substitution
                                                                       images of TateCurve.X/Y (sorry
                                                                       node — the final descent
-                                                                      target): resolve by the two-
-                                                                      variable analogue of
-                                                                      eq_zero_of_forall_hasSum_zero:
-                                                                      evaluate coefficients at
-                                                                      algebraically-independent
-                                                                      transcendental pairs (u₀,v₀) ∈
-                                                                      ℂ² via the composite hom
-                                                                      substHom-at-v₀ over evalAtHom
-                                                                      u₀ (fix ONE transcendental u₀
-                                                                      ∈ (1/2,1); S := reals in
-                                                                      (1/2,1) transcendental over
-                                                                      ℚ(u₀), complement countable by
-                                                                      Algebraic.countable with R :=
-                                                                      RatFunc ℚ; r := 1/4 uniform
-                                                                      window); coefficientwise
-                                                                      vanishing by coeffs_eq_zero_of
-                                                                      _hasSum_punctured; numerator-
-                                                                      polynomial-over-ℚ(u) infinite
-                                                                      roots + evalAtHom injectivity;
-                                                                      hasSum transport mirroring
-                                                                      hasSum_evalAt_add/neg/mul;
-                                                                      analytic input analytic_chordX
-                                                                      (PROVEN, TateCurveConstruction
-                                                                      — currently private, publicize
-                                                                      when this consumer lands, plus
-                                                                      hasSum_X_eval/hasSum_Y_eval at
-                                                                      the three points u₀, v₀,
-                                                                      u₀v₀).
+                                                                      target). KEY SIMPLIFICATION
+                                                                      (2026-07-18): since ℚ(u)(v) is
+                                                                      a FIELD, any evaluation HOM to
+                                                                      ℂ is injective, so ONE
+                                                                      algebraically independent pair
+                                                                      (u₀, v₀) suffices — no
+                                                                      infinite-set/numerator
+                                                                      argument at the outer level.
+                                                                      Plan: (1) u₀ := 1/e
+                                                                      (transcendental via
+                                                                      Real.transcendental_exp-
+                                                                      inverse; norm ≈ .3679), v₀ :=
+                                                                      a real in (1/2,1)
+                                                                      transcendental over the image
+                                                                      ℚ(u₀) (exists:
+                                                                      Algebraic.countable over R :=
+                                                                      RatFunc ℚ with letI Algebra
+                                                                      via (evalAtHom u₀).toAlgebra +
+                                                                      uncountability of the
+                                                                      interval; needs Countable
+                                                                      (RatFunc ℚ) via num/denom-pair
+                                                                      injection); (2) H := substHom
+                                                                      (K := RatFunc ℚ) v₀ under the
+                                                                      letI algebra : ℚ(u)(v) →+* ℂ,
+                                                                      injective; (3) compat: H∘uEmbR
+                                                                      = evalAtHom u₀ / H∘vEmbR =
+                                                                      evalAtHom v₀ / H∘uvEmbR =
+                                                                      evalAtHom (u₀v₀) — each by
+                                                                      ratFuncQ_ringHom_ext (re-add;
+                                                                      two ℚ(X)-homs agreeing on X)
+                                                                      with X-values via
+                                                                      substHom_algebraMap (re-add)
+                                                                      and substHom_ratFuncX; u₀v₀-
+                                                                      transcendence by the ℂ-level
+                                                                      uvGen argument; (4)
+                                                                      coefficient extraction: for
+                                                                      all 0<‖q‖<1/10 the H-evaluated
+                                                                      series of both sides HasSum to
+                                                                      equal values (hasSum_X/Y_eval
+                                                                      at u₀, v₀, u₀v₀ +
+                                                                      hasSum_evalAt_add/neg/sub/mul-
+                                                                      analogues at H +
+                                                                      analytic_chordX with window
+                                                                      0<‖q‖<1/10<min norms, all<1);
+                                                                      apply coeffs_eq_zero_of_hasSum
+                                                                      _punctured to the difference;
+                                                                      H-injectivity finishes
+                                                                      coefficientwise. Publicize
+                                                                      (with this consumer, same
+                                                                      commit): analytic_chordX/Y,
+                                                                      evalAtHom(+_apply,_ratFuncX),
+                                                                      coeffs_eq_zero_of_hasSum_punct
+                                                                      ured,
+                                                                      hasSum_evalAt_add/neg/sub/mul
+                                                                      in TateCurveConstruction.
                                                         - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared chord
                                                           X-identity (sorry node): u₀v₀ below the
                                                           fundamental annulus (val(u₀v₀) ≤ val q₀
@@ -2324,34 +2513,61 @@ entries file). To add/remove/annotate a node, edit
                                                                       among the three substitution
                                                                       images of TateCurve.X/Y (sorry
                                                                       node — the final descent
-                                                                      target): resolve by the two-
-                                                                      variable analogue of
-                                                                      eq_zero_of_forall_hasSum_zero:
-                                                                      evaluate coefficients at
-                                                                      algebraically-independent
-                                                                      transcendental pairs (u₀,v₀) ∈
-                                                                      ℂ² via the composite hom
-                                                                      substHom-at-v₀ over evalAtHom
-                                                                      u₀ (fix ONE transcendental u₀
-                                                                      ∈ (1/2,1); S := reals in
-                                                                      (1/2,1) transcendental over
-                                                                      ℚ(u₀), complement countable by
-                                                                      Algebraic.countable with R :=
-                                                                      RatFunc ℚ; r := 1/4 uniform
-                                                                      window); coefficientwise
-                                                                      vanishing by coeffs_eq_zero_of
-                                                                      _hasSum_punctured; numerator-
-                                                                      polynomial-over-ℚ(u) infinite
-                                                                      roots + evalAtHom injectivity;
-                                                                      hasSum transport mirroring
-                                                                      hasSum_evalAt_add/neg/mul;
-                                                                      analytic input analytic_chordX
-                                                                      (PROVEN, TateCurveConstruction
-                                                                      — currently private, publicize
-                                                                      when this consumer lands, plus
-                                                                      hasSum_X_eval/hasSum_Y_eval at
-                                                                      the three points u₀, v₀,
-                                                                      u₀v₀).
+                                                                      target). KEY SIMPLIFICATION
+                                                                      (2026-07-18): since ℚ(u)(v) is
+                                                                      a FIELD, any evaluation HOM to
+                                                                      ℂ is injective, so ONE
+                                                                      algebraically independent pair
+                                                                      (u₀, v₀) suffices — no
+                                                                      infinite-set/numerator
+                                                                      argument at the outer level.
+                                                                      Plan: (1) u₀ := 1/e
+                                                                      (transcendental via
+                                                                      Real.transcendental_exp-
+                                                                      inverse; norm ≈ .3679), v₀ :=
+                                                                      a real in (1/2,1)
+                                                                      transcendental over the image
+                                                                      ℚ(u₀) (exists:
+                                                                      Algebraic.countable over R :=
+                                                                      RatFunc ℚ with letI Algebra
+                                                                      via (evalAtHom u₀).toAlgebra +
+                                                                      uncountability of the
+                                                                      interval; needs Countable
+                                                                      (RatFunc ℚ) via num/denom-pair
+                                                                      injection); (2) H := substHom
+                                                                      (K := RatFunc ℚ) v₀ under the
+                                                                      letI algebra : ℚ(u)(v) →+* ℂ,
+                                                                      injective; (3) compat: H∘uEmbR
+                                                                      = evalAtHom u₀ / H∘vEmbR =
+                                                                      evalAtHom v₀ / H∘uvEmbR =
+                                                                      evalAtHom (u₀v₀) — each by
+                                                                      ratFuncQ_ringHom_ext (re-add;
+                                                                      two ℚ(X)-homs agreeing on X)
+                                                                      with X-values via
+                                                                      substHom_algebraMap (re-add)
+                                                                      and substHom_ratFuncX; u₀v₀-
+                                                                      transcendence by the ℂ-level
+                                                                      uvGen argument; (4)
+                                                                      coefficient extraction: for
+                                                                      all 0<‖q‖<1/10 the H-evaluated
+                                                                      series of both sides HasSum to
+                                                                      equal values (hasSum_X/Y_eval
+                                                                      at u₀, v₀, u₀v₀ +
+                                                                      hasSum_evalAt_add/neg/sub/mul-
+                                                                      analogues at H +
+                                                                      analytic_chordX with window
+                                                                      0<‖q‖<1/10<min norms, all<1);
+                                                                      apply coeffs_eq_zero_of_hasSum
+                                                                      _punctured to the difference;
+                                                                      H-injectivity finishes
+                                                                      coefficientwise. Publicize
+                                                                      (with this consumer, same
+                                                                      commit): analytic_chordX/Y,
+                                                                      evalAtHom(+_apply,_ratFuncX),
+                                                                      coeffs_eq_zero_of_hasSum_punct
+                                                                      ured,
+                                                                      hasSum_evalAt_add/neg/sub/mul
+                                                                      in TateCurveConstruction.
                                                         - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared chord
                                                           X-identity (sorry node): u₀v₀ below the
                                                           fundamental annulus (val(u₀v₀) ≤ val q₀
