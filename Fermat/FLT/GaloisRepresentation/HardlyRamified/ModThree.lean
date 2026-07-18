@@ -1610,23 +1610,149 @@ theorem localInertia_two_eq_map_padic
       Field.absoluteGaloisGroup.map (algebraMap ℚ
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ =
-      c * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ * c⁻¹ :=
-  -- IMPLEMENTATION DESIGN (2026-07-18, revised): `absoluteGaloisGroup.map`
-  -- carries a spurious `[NumberField K]` hypothesis, so `τ` cannot be
-  -- produced as `map E.symm σ`. Instead: (1) `E : adicCompletion ℚ v₂ ≃A[ℚ]
-  -- ℚ_[2]` from `padicEquiv` after the prime-cast
-  -- `primesEquiv v₂ = ⟨2, _⟩` (`natGenerator_toHeightOneSpectrum`);
-  -- (2) `ι₃ := AlgebraicClosure.map E.symm` is BIJECTIVE (injective field
-  -- hom; image algebraically closed with algebraic extension above it), so
-  -- define `τ := ι₃⁻¹ ∘ σ ∘ ι₃` directly as a `ℚ_[2]`-algebra
-  -- automorphism (the square `ι₃ (τ y) = σ (ι₃ y)` holds by construction,
-  -- no `lift_map` over `ℚ_[2]` needed); (3) inertia membership of `τ`
-  -- transports through `ι₃` by the spectral-norm compatibility of the
-  -- isometric `E`; (4) the conjugator `c` from `Normal.algHomEquivAut`
-  -- applied to `ι₃ ∘ ι₂ : ℚᵃˡᵍ →ₐ[ℚ] Kᵥ₂ᵃˡᵍ` against
-  -- `ι₁ := AlgebraicClosure.map (algebraMap ℚ Kᵥ₂)`; (5) the final square
-  -- pointwise through injective `ι₁`, using `lift_map` only over `ℚ`.
-  sorry
+      c * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ * c⁻¹ := by
+  classical
+  haveI h2f : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  -- (1) the completion at the place of `2` is `ℚ_[2]`
+  haveI hfp : Fact ((Rat.HeightOneSpectrum.primesEquiv
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) : ℕ).Prime :=
+    ⟨(Rat.HeightOneSpectrum.primesEquiv
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat).2⟩
+  have hprime : ((Rat.HeightOneSpectrum.primesEquiv
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) : ℕ) = 2 := by
+    show Rat.HeightOneSpectrum.natGenerator _ = 2
+    exact natGenerator_toHeightOneSpectrum Nat.prime_two
+  have hcast : ∀ (a b : ℕ) (ha : Fact a.Prime) (hb : Fact b.Prime),
+      a = b → ((@Padic a ha) ≃A[ℚ] (@Padic b hb)) := by
+    intro a b ha hb hab
+    subst hab
+    exact ContinuousAlgEquiv.refl ℚ _
+  have E : IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ≃A[ℚ] ℚ_[2] := by
+    have h0 := Rat.HeightOneSpectrum.adicCompletion.padicEquiv
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat
+    have halg : (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+        (NumberField.RingOfIntegers ℚ) ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) =
+        (DivisionRing.toRatAlgebra) := Subsingleton.elim _ _
+    have h1 := halg ▸ h0
+    exact h1.trans (hcast _ _ _ _ hprime)
+  -- (2) the transported element: conjugation through the closure map of
+  -- `E.symm`, which is bijective
+  set ι₃ : AlgebraicClosure ℚ_[2] →+*
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+    AlgebraicClosure.map (E.symm : ℚ_[2] →+*
+      IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) with hι₃
+  have hι₃surj : Function.Surjective ι₃ := by
+    set g : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) →+*
+        AlgebraicClosure ℚ_[2] :=
+      AlgebraicClosure.map (E : IsDedekindDomain.HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat →+* ℚ_[2]) with hg
+    set hcomp : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) →ₐ[
+          IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat]
+        AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+          ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+      { toRingHom := ι₃.comp g
+        commutes' := fun x => by
+          show ι₃ (g (algebraMap _ _ x)) = algebraMap _ _ x
+          rw [hg, AlgebraicClosure.map_algebraMap, hι₃,
+            AlgebraicClosure.map_algebraMap]
+          congr 1
+          exact E.symm_apply_apply x } with hhcomp
+    have hbij := Algebra.IsAlgebraic.algHom_bijective hcomp
+    intro y
+    obtain ⟨x, hx⟩ := hbij.2 y
+    exact ⟨g x, hx⟩
+  set ι₃e : AlgebraicClosure ℚ_[2] ≃+*
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+    RingEquiv.ofBijective ι₃ ⟨ι₃.injective, hι₃surj⟩ with hι₃e
+  have hι₃e_apply : ∀ y, ι₃e y = ι₃ y := fun y => rfl
+  -- `τ := ι₃⁻¹ ∘ σ ∘ ι₃`, an automorphism over `ℚ_[2]`
+  set τ₀ : AlgebraicClosure ℚ_[2] ≃+* AlgebraicClosure ℚ_[2] :=
+    (ι₃e.trans σ.toRingEquiv).trans ι₃e.symm with hτ₀
+  have hτ₀_apply : ∀ y, τ₀ y = ι₃e.symm (σ (ι₃e y)) := fun y => rfl
+  set τ : Γ ℚ_[2] := AlgEquiv.ofRingEquiv (f := τ₀) (fun x => by
+    rw [hτ₀_apply, RingEquiv.symm_apply_eq]
+    show σ (ι₃ ((algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2])) x)) =
+      ι₃ ((algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2])) x)
+    rw [hι₃, AlgebraicClosure.map_algebraMap]
+    exact σ.commutes (E.symm x)) with hτdef
+  have hτ_apply : ∀ y, τ y = ι₃e.symm (σ (ι₃e y)) := fun y => rfl
+  -- the transport square, by construction
+  have hsquare : ∀ y, ι₃ (τ y) = σ (ι₃ y) := by
+    intro y
+    rw [← hι₃e_apply, hτ_apply, RingEquiv.apply_symm_apply, hι₃e_apply]
+  refine ⟨τ, ?_, ?_⟩
+  · -- (3) inertia membership (sorry: spectral-norm compatibility of the
+    -- isometric `E` transports the inertia condition through `ι₃`)
+    sorry
+  · -- (4) the conjugator, from `Normal.algHomEquivAut`
+    set ι₁ := AlgebraicClosure.map ((algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) with hι₁
+    set ι₂ := AlgebraicClosure.map (algebraMap ℚ ℚ_[2]) with hι₂
+    letI : Algebra (AlgebraicClosure ℚ)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) :=
+      ι₁.toAlgebra
+    haveI : IsScalarTower ℚ (AlgebraicClosure ℚ)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) :=
+      IsScalarTower.of_algebraMap_eq' (Subsingleton.elim _ _)
+    set f : AlgebraicClosure ℚ →ₐ[ℚ]
+        AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+      (ι₃.comp ι₂).toRatAlgHom with hf
+    set c : Γ ℚ := (Normal.algHomEquivAut (F := ℚ)
+      (K₁ := AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+      (E := AlgebraicClosure ℚ)) f with hc
+    have hfc : ∀ x : AlgebraicClosure ℚ, f x = ι₁ (c x) := by
+      intro x
+      have h : f = (Normal.algHomEquivAut (F := ℚ)
+          (K₁ := AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+          (E := AlgebraicClosure ℚ)).symm c := by
+        rw [hc, Equiv.symm_apply_apply]
+      rw [h, Normal.algHomEquivAut_symm_apply]
+      rfl
+    refine ⟨c, ?_⟩
+    -- (5) the square, pointwise through the injective `ι₁`
+    apply AlgEquiv.ext
+    intro x
+    apply ι₁.injective
+    have hL := Field.absoluteGaloisGroup.lift_map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ x
+    have hR2 := Field.absoluteGaloisGroup.lift_map (algebraMap ℚ ℚ_[2]) τ
+      (c⁻¹ x)
+    -- LHS
+    rw [show ι₁ ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) x) =
+      σ (ι₁ x) from hL]
+    -- RHS
+    show σ (ι₁ x) = ι₁ ((c) ((Field.absoluteGaloisGroup.map
+      (algebraMap ℚ ℚ_[2]) τ) (c⁻¹ x)))
+    rw [← hfc]
+    rw [show f ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ)
+      (c⁻¹ x)) = ι₃ (ι₂ ((Field.absoluteGaloisGroup.map
+        (algebraMap ℚ ℚ_[2]) τ) (c⁻¹ x))) from rfl]
+    rw [show ι₂ ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ)
+      (c⁻¹ x)) = τ (ι₂ (c⁻¹ x)) from hR2]
+    rw [hsquare]
+    rw [show ι₃ (ι₂ (c⁻¹ x)) = f (c⁻¹ x) from rfl]
+    rw [hfc]
+    rw [show (c : Γ ℚ) ((c⁻¹ : Γ ℚ) x) = x from by
+      rw [← AlgEquiv.mul_apply, mul_inv_cancel, AlgEquiv.one_apply]]
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
