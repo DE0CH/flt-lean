@@ -2610,6 +2610,84 @@ theorem summable_lambert_terms_general (a : ℕ → k) (g : k → k)
     ring
   exact (hsummable.hasSum.prod_fiberwise hrow).summable
 
+omit [TopologicalSpace k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- Terms of the Lambert sums are away from the pole:
+`1 - q₀ᵐw ≠ 0` when `|q₀w| < 1`. -/
+theorem one_sub_pow_mul_ne_zero (w q₀ : k)
+    (hq : valuation k q₀ < 1) (hqw : valuation k (q₀ * w) < 1)
+    (m : ℕ+) : (1 : k) - q₀ ^ (m : ℕ) * w ≠ 0 := by
+  intro h0
+  have hval : valuation k (q₀ ^ (m : ℕ) * w) < 1 := by
+    have hm1 : ((m : ℕ) - 1) + 1 = (m : ℕ) := by
+      have := m.pos
+      omega
+    rw [← hm1, pow_add, pow_one, mul_assoc, map_mul, map_pow]
+    calc valuation k q₀ ^ ((m : ℕ) - 1) * valuation k (q₀ * w)
+        ≤ 1 * valuation k (q₀ * w) :=
+          mul_le_mul_left (pow_le_one₀ zero_le hq.le) _
+      _ = valuation k (q₀ * w) := one_mul _
+      _ < 1 := hqw
+  have heq : q₀ ^ (m : ℕ) * w = 1 := by linear_combination -h0
+  rw [heq] at hval
+  simp at hval
+
+omit [CharZero k] in
+set_option maxHeartbeats 1000000 in
+/-- **Inversion antisymmetry of the bilateral `y`-value**:
+`bilateralY u₀⁻¹ = -(bilateralY u₀) - bilateralX u₀` in the wide
+window — the negation law of the Tate parametrisation at the level of
+the `ℤ`-indexed sums, via the pointwise kernel relation
+`kernel₁ = kernel₂ - kernelX` applied on both parameter arguments,
+and the mixed constant identity. -/
+theorem bilateralY_inv (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hq1 : valuation k q₀ < 1) (hqu : valuation k (q₀ * u₀) < 1)
+    (hquinv : valuation k (q₀ * u₀⁻¹) < 1) :
+    bilateralY u₀⁻¹ q₀ = -(bilateralY u₀ q₀) - bilateralX u₀ q₀ := by
+  have hbin1 : ∀ j : ℕ, valuation k (((j.choose 2 : ℕ) : k)) ≤ 1 := by
+    intro j
+    have h := valuation_intCast_le_one (R := k) (j.choose 2)
+    simpa using h
+  have hbin2 : ∀ j : ℕ,
+      valuation k ((((j + 1).choose 2 : ℕ) : k)) ≤ 1 := by
+    intro j
+    have h := valuation_intCast_le_one (R := k) ((j + 1).choose 2)
+    simpa using h
+  -- summabilities of the four kernel families
+  have hS2inv := summable_lambert_terms_general
+    (fun j ↦ (((j + 1).choose 2 : ℕ) : k)) (fun v ↦ v / (1 - v) ^ 3)
+    hbin2 u₀⁻¹ q₀ hq1 hquinv
+    (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_succ v₀ hv₀)
+  have hSXinv := summable_lambert_terms u₀⁻¹ q₀ hq1 hquinv
+  have hS1u := summable_lambert_terms_general
+    (fun j ↦ ((j.choose 2 : ℕ) : k)) (fun v ↦ v ^ 2 / (1 - v) ^ 3)
+    hbin1 u₀ q₀ hq1 hqu
+    (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_self v₀ hv₀)
+  have hSXu := summable_lambert_terms u₀ q₀ hq1 hqu
+  -- split the two `kernel₁`/`kernel₂` sums by the kernel relation
+  have hsplit1 : (∑' m : ℕ+, (q₀ ^ (m : ℕ) * u₀⁻¹) ^ 2 /
+      (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 3) =
+      (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+        (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 3) -
+      (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+        (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 2) := by
+    rw [← hS2inv.tsum_sub hSXinv]
+    exact tsum_congr fun m ↦
+      y_kernel_relation _ (one_sub_pow_mul_ne_zero u₀⁻¹ q₀ hq1 hquinv m)
+  have hsplit2 : (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀ /
+      (1 - q₀ ^ (m : ℕ) * u₀) ^ 3) =
+      (∑' m : ℕ+, (q₀ ^ (m : ℕ) * u₀) ^ 2 /
+        (1 - q₀ ^ (m : ℕ) * u₀) ^ 3) +
+      (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀ /
+        (1 - q₀ ^ (m : ℕ) * u₀) ^ 2) := by
+    rw [← hS1u.tsum_add hSXu]
+    refine tsum_congr fun m ↦ ?_
+    have h := y_kernel_relation (q₀ ^ (m : ℕ) * u₀)
+      (one_sub_pow_mul_ne_zero u₀ q₀ hq1 hqu m)
+    linear_combination -h
+  rw [bilateralY, bilateralY, bilateralX, inv_inv, hsplit1, hsplit2,
+    y_constant_inv u₀ h0 h1]
+  ring
+
 end Annulus
 
 end TateCurve
