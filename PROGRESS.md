@@ -129,12 +129,6 @@ entries file). To add/remove/annotate a node, edit
                                                               q·∏(1−qⁿ)²⁴ (Silverman ATAEC
                                                               V.3.1(b)); the last open q-expansion
                                                               identity (c₄ and c₆ are proven).
-                                                            - ❌· `TateCurve.evalInt_subst` — evaluation commutes with formal
-                                                              substitution (the formal-to-convergent
-                                                              bridge): evalInt x (F ∘ G) = evalInt
-                                                              (evalInt x G) F for constant-term-zero
-                                                              G and |x| < 1, by the nonarchimedean
-                                                              double-series rearrangement.
                                                         - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-
                                                           multiplicative curves over k with equal j
                                                           are k-isomorphic — over the separable
@@ -189,13 +183,6 @@ entries file). To add/remove/annotate a node, edit
                                                                   V.3.1(b)); the last open
                                                                   q-expansion identity (c₄ and c₆
                                                                   are proven).
-                                                                - ❌· `TateCurve.evalInt_subst` — evaluation commutes with formal
-                                                                  substitution (the formal-to-
-                                                                  convergent bridge): evalInt x (F ∘
-                                                                  G) = evalInt (evalInt x G) F for
-                                                                  constant-term-zero G and |x| < 1,
-                                                                  by the nonarchimedean double-
-                                                                  series rearrangement.
                                                             - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two
                                                               split-multiplicative curves over k
                                                               with equal j are k-isomorphic — over
@@ -266,14 +253,6 @@ entries file). To add/remove/annotate a node, edit
                                                                       the last open q-expansion
                                                                       identity (c₄ and c₆ are
                                                                       proven).
-                                                                    - ❌· `TateCurve.evalInt_subst` — evaluation commutes with
-                                                                      formal substitution (the
-                                                                      formal-to-convergent bridge):
-                                                                      evalInt x (F ∘ G) = evalInt
-                                                                      (evalInt x G) F for constant-
-                                                                      term-zero G and |x| < 1, by
-                                                                      the nonarchimedean double-
-                                                                      series rearrangement.
                                                                 - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3:
                                                                   two split-multiplicative curves
                                                                   over k with equal j are
@@ -337,14 +316,6 @@ entries file). To add/remove/annotate a node, edit
                                                                           the last open q-expansion
                                                                           identity (c₄ and c₆ are
                                                                           proven).
-                                                                        - ❌· `TateCurve.evalInt_subst` — evaluation commutes with
-                                                                          formal substitution (the
-                                                                          formal-to-convergent bridge):
-                                                                          evalInt x (F ∘ G) = evalInt
-                                                                          (evalInt x G) F for constant-
-                                                                          term-zero G and |x| < 1, by
-                                                                          the nonarchimedean double-
-                                                                          series rearrangement.
                                                                     - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate
                                                                       V.5.3: two split-
                                                                       multiplicative curves over k
@@ -483,11 +454,6 @@ entries file). To add/remove/annotate a node, edit
                                                   q ΔFormal = q·∏(1−qⁿ)²⁴ (Silverman ATAEC
                                                   V.3.1(b)); the last open q-expansion identity (c₄
                                                   and c₆ are proven).
-                                                - ❌· `TateCurve.evalInt_subst` — evaluation commutes with formal substitution (the
-                                                  formal-to-convergent bridge): evalInt x (F ∘ G) =
-                                                  evalInt (evalInt x G) F for constant-term-zero G
-                                                  and |x| < 1, by the nonarchimedean double-series
-                                                  rearrangement.
                                             - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-
                                               multiplicative curves over k with equal j are
                                               k-isomorphic — over the separable closure by mathlib's
@@ -529,11 +495,6 @@ entries file). To add/remove/annotate a node, edit
                                                       evalInt q ΔFormal = q·∏(1−qⁿ)²⁴ (Silverman
                                                       ATAEC V.3.1(b)); the last open q-expansion
                                                       identity (c₄ and c₆ are proven).
-                                                    - ❌· `TateCurve.evalInt_subst` — evaluation commutes with formal substitution
-                                                      (the formal-to-convergent bridge): evalInt x
-                                                      (F ∘ G) = evalInt (evalInt x G) F for
-                                                      constant-term-zero G and |x| < 1, by the
-                                                      nonarchimedean double-series rearrangement.
                                                 - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-
                                                   multiplicative curves over k with equal j are
                                                   k-isomorphic — over the separable closure by
@@ -601,10 +562,6 @@ entries file). To add/remove/annotate a node, edit
                                         - ❌· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant product formula: Δ(E_q) = evalInt q
                                           ΔFormal = q·∏(1−qⁿ)²⁴ (Silverman ATAEC V.3.1(b)); the last
                                           open q-expansion identity (c₄ and c₆ are proven).
-                                        - ❌· `TateCurve.evalInt_subst` — evaluation commutes with formal substitution (the formal-
-                                          to-convergent bridge): evalInt x (F ∘ G) = evalInt
-                                          (evalInt x G) F for constant-term-zero G and |x| < 1, by
-                                          the nonarchimedean double-series rearrangement.
                                     - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-multiplicative
                                       curves over k with equal j are k-isomorphic — over the
                                       separable closure by mathlib's exists_variableChange_of_j_eq,
@@ -639,10 +596,6 @@ entries file). To add/remove/annotate a node, edit
                                         - ❌· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant product formula: Δ(E_q) = evalInt q
                                           ΔFormal = q·∏(1−qⁿ)²⁴ (Silverman ATAEC V.3.1(b)); the last
                                           open q-expansion identity (c₄ and c₆ are proven).
-                                        - ❌· `TateCurve.evalInt_subst` — evaluation commutes with formal substitution (the formal-
-                                          to-convergent bridge): evalInt x (F ∘ G) = evalInt
-                                          (evalInt x G) F for constant-term-zero G and |x| < 1, by
-                                          the nonarchimedean double-series rearrangement.
                                     - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-multiplicative
                                       curves over k with equal j are k-isomorphic — over the
                                       separable closure by mathlib's exists_variableChange_of_j_eq,

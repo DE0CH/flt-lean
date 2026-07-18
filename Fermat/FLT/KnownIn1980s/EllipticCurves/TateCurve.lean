@@ -726,8 +726,81 @@ Mertens/Fubini argument (note `|evalInt x G| ≤ |x| < 1` by
 theorem TateCurve.evalInt_subst (x : k) (hx : valuation k x < 1)
     (G F : ℤ⟦X⟧) (hG : PowerSeries.constantCoeff G = 0) :
     TateCurve.evalInt x (PowerSeries.subst G F) =
-      TateCurve.evalInt (TateCurve.evalInt x G) F :=
-  sorry
+      TateCurve.evalInt (TateCurve.evalInt x G) F := by
+  classical
+  letI : UniformSpace k := IsTopologicalAddGroup.rightUniformSpace k
+  haveI : IsUniformAddGroup k := isUniformAddGroup_of_addCommGroup
+  haveI : IsUniformAddGroup 𝒪[k] :=
+    inferInstanceAs (IsUniformAddGroup 𝒪[k].toAddSubgroup)
+  have hind : Topology.IsInducing ((↑) : 𝒪[k] → k) := ⟨rfl⟩
+  have hφ : Continuous (Int.castRingHom 𝒪[k]) := continuous_of_discreteTopology
+  -- the generalized `evalInt = eval₂Hom` identification (as in `evalInt_mul`)
+  have key : ∀ (q : k) (hq : valuation k q < 1)
+      (ha : PowerSeries.HasEval (⟨q, hq.le⟩ : 𝒪[k])) (H : ℤ⟦X⟧),
+      TateCurve.evalInt q H = (PowerSeries.eval₂Hom hφ ha H : k) := by
+    intro q hq ha H
+    change (∑' n : ℕ, ((PowerSeries.coeff n H : ℤ) : k) * q ^ n) = _
+    rw [PowerSeries.coe_eval₂Hom hφ ha]
+    refine HasSum.tsum_eq ?_
+    simpa [Function.comp_def] using (PowerSeries.hasSum_eval₂ hφ ha H).map
+      (Subring.subtype 𝒪[k]).toAddMonoidHom continuous_subtype_val
+  have hax : PowerSeries.HasEval (⟨x, hx.le⟩ : 𝒪[k]) :=
+    hind.tendsto_nhds_iff.mpr (by
+      simpa [Function.comp_def] using TateCurve.tendsto_pow_nhds_zero hx)
+  -- the value of `G` at `x` is again in the open unit disc
+  have hyval : valuation k (TateCurve.evalInt x G) < 1 := by
+    refine lt_of_le_of_lt ?_ hx
+    have h1 := TateCurve.valuation_evalInt_le_pow x hx (F := G) (M := 1)
+      (fun m hm => by
+        interval_cases m
+        rw [PowerSeries.coeff_zero_eq_constantCoeff]
+        exact hG)
+    rwa [pow_one] at h1
+  have hay : PowerSeries.HasEval (⟨TateCurve.evalInt x G, hyval.le⟩ : 𝒪[k]) :=
+    hind.tendsto_nhds_iff.mpr (by
+      simpa [Function.comp_def] using TateCurve.tendsto_pow_nhds_zero hyval)
+  -- the `eval₂`-value of `G` is that point
+  have hGpt : PowerSeries.eval₂Hom hφ hax G =
+      (⟨TateCurve.evalInt x G, hyval.le⟩ : 𝒪[k]) := by
+    apply Subtype.coe_injective
+    exact (key x hx hax G).symm
+  -- substitution compatibility at the `𝒪[k]`-level (mathlib's
+  -- `MvPowerSeries.eval₂_subst`, with the discrete uniformity on `ℤ`)
+  letI : UniformSpace ℤ := ⊥
+  haveI : DiscreteUniformity ℤ := inferInstance
+  have hsub : PowerSeries.eval₂Hom hφ hax (PowerSeries.subst G F) =
+      PowerSeries.eval₂Hom hφ hay F := by
+    have halg : (Int.castRingHom 𝒪[k]) = algebraMap ℤ 𝒪[k] :=
+      (algebraMap_int_eq 𝒪[k]).symm
+    have hsubstG : PowerSeries.HasSubst (G : MvPowerSeries Unit ℤ) :=
+      PowerSeries.HasSubst.of_constantCoeff_zero' hG
+    have h0 := MvPowerSeries.eval₂_subst (R := ℤ) (S := ℤ) (T := 𝒪[k])
+      (σ := Unit) (τ := Unit)
+      (a := fun _ : Unit => (G : MvPowerSeries Unit ℤ))
+      hsubstG.const
+      (b := fun _ : Unit => (⟨x, hx.le⟩ : 𝒪[k]))
+      (PowerSeries.hasEval hax) F
+    have hcoe1 := congrFun (PowerSeries.coe_eval₂Hom hφ hax)
+      (PowerSeries.subst G F)
+    have hcoe2 := congrFun (PowerSeries.coe_eval₂Hom hφ hay) F
+    rw [hcoe1, hcoe2]
+    show MvPowerSeries.eval₂ (Int.castRingHom 𝒪[k])
+        (fun _ : Unit => (⟨x, hx.le⟩ : 𝒪[k]))
+        (MvPowerSeries.subst (fun _ : Unit => (G : MvPowerSeries Unit ℤ)) F) =
+      MvPowerSeries.eval₂ (Int.castRingHom 𝒪[k])
+        (fun _ : Unit => (⟨TateCurve.evalInt x G, hyval.le⟩ : 𝒪[k])) F
+    rw [halg]
+    rw [h0]
+    congr 1
+    funext s
+    have h1 : MvPowerSeries.eval₂ (algebraMap ℤ 𝒪[k])
+        (fun _ : Unit => (⟨x, hx.le⟩ : 𝒪[k]))
+        ((fun _ : Unit => (G : MvPowerSeries Unit ℤ)) s) =
+        PowerSeries.eval₂ (algebraMap ℤ 𝒪[k]) (⟨x, hx.le⟩ : 𝒪[k]) G := rfl
+    rw [h1, ← halg, ← congrFun (PowerSeries.coe_eval₂Hom hφ hax) G]
+    exact hGpt
+  -- conclude through the identifications
+  rw [key x hx hax, key (TateCurve.evalInt x G) hyval hay, hsub]
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in

@@ -851,6 +851,6 @@
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
   "wip": false,
   "fullname": "TateCurve.evalInt_subst",
-  "text": "evaluation commutes with formal substitution (the formal-to-convergent bridge): evalInt x (F ∘ G) = evalInt (evalInt x G) F for constant-term-zero G and |x| < 1, by the nonarchimedean double-series rearrangement."
+  "text": "evaluation commutes with formal substitution, now PROVEN: evalInt is mathlib's topological eval₂Hom over 𝒪[k] (the evalInt_mul key-identification), and MvPowerSeries.eval₂_subst supplies the compatibility, with the value-point identified by Subtype-injectivity and the discrete uniformity on ℤ."
  }
 ]

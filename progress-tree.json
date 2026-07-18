@@ -121,7 +121,7 @@
   "WeierstrassCurve.isElliptic_tateCurve_and_j": "✅",
   "WeierstrassCurve.exists_variableChange_of_j_eq_of_split": "❌",
   "WeierstrassCurve.Δ_tateCurve_eq_evalInt": "❌",
-  "TateCurve.evalInt_subst": "❌"
+  "TateCurve.evalInt_subst": "✅✅"
  },
  "children": {
   "fermat_last_theorem": [
