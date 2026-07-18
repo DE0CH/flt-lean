@@ -1649,10 +1649,21 @@ entries file). To add/remove/annotate a node, edit
                                           content: IsFlatAt-prolongation over ℤ₃, étale quotient
                                           unramified, Serre swap to the other stable line when
                                           the quotient of the given line is ramified.
-                                        - ❌· `quotCharacter_unramified_at_two` — (sorry node) tame-at-2 bookkeeping: dichotomy
-                                          W ≤ ker π₂ (χ₂ = δ unramified) vs π₂ injective on W
-                                          (χ₂ = χ₃·δ⁻¹ at 2, cyclotomic unramified away from 3);
-                                          includes the ℚ_[2] ↔ adicCompletion-at-2 bridge.
+                                        - ✅· `quotCharacter_unramified_at_two` — DERIVED 2026-07-18 from the ℚ_[2] dichotomy and the
+                                          inertia bridge. The dichotomy `quotCharacter_inertia_two_ker`
+                                          is PROVEN (isTameAtTwo's π₂/δ; either W ≤ ker π₂ and χ₂
+                                          scales π₂ through liftQ, or the sub-character kills inertia
+                                          and χ₂ = det/χ₁ via MazurTorsion's
+                                          det_eq_subCharacter_mul_quotCharacter + the cyclotomic leaf);
+                                          new exposed rfl-lemma GaloisRep.map_apply.
+                                            - ❌· `cyclotomicCharacter_algebraMap_eq_one_of_inertia_two` — (sorry node) χ₃ composed with
+                                              algebraMap ℤ_[3] k is trivial on inertia-at-2 images:
+                                              inertia fixes cube roots of unity in ℚ_[2]ᵃˡᵍ
+                                              (|ζ₃ − 1|₂ = 1), lift_map transports to Γ ℚ, and char-3
+                                              k sees only level one of χ₃.
+                                            - ❌· `localInertia_two_eq_map_padic` — (sorry node) the completion bridge: localInertiaGroup
+                                              at prime_two (adic completion) matches the Z2bar inertia
+                                              over ℚ_[2] through padicEquiv-induced Galois functoriality.
                                     - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible` — mod-3 reducibility — DERIVED 2026-07-18: if no stable
                                       submodule then irreducible (Slop.OddRep.isIrreducible_iff_forall);
                                       complex conjugation is an involution with det = χ₃(c) = -1 and

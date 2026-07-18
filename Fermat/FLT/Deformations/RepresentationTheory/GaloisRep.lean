@@ -88,6 +88,14 @@ def GaloisRep.map (ρ : GaloisRep K A M) (f : K →+* L) : GaloisRep L A M :=
   letI := moduleTopology A (Module.End A M)
   ρ.comp (Field.absoluteGaloisGroup.map f)
 
+/-- `map` evaluates by precomposition with the induced map of absolute
+Galois groups (an exposed `rfl`-lemma: downstream modules cannot unfold
+the definition through the module-system export). -/
+lemma GaloisRep.map_apply (ρ : GaloisRep K A M) (f : K →+* L)
+    (σ : Γ L) :
+    ρ.map f σ = ρ (Field.absoluteGaloisGroup.map f σ) :=
+  rfl
+
 -- remark: `.toMonoidHom` added in bump to v4.30.0-rc1
 
 variable (K A n) in

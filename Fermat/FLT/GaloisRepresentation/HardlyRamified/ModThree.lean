@@ -1356,21 +1356,151 @@ theorem exists_line_with_unramified_quotCharacter_at_three
   sorry
 
 set_option warn.sorry false in
-/-- **Quotient characters of stable lines are unramified at `2`** (sorry
-node — the tame-at-`2` bookkeeping): for ANY stable line `W` of a mod-3
-hardly ramified representation with quotient character `χ₂`, the local
-inertia at `2` lies in the kernel of `χ₂`. Content: the tame quadratic
-quotient condition (`isTameAtTwo`) gives a `1`-dimensional local
-quotient `π : V →ₗ R` at `2` with unramified square-trivial character
-`δ`; either `W` maps into `ker π` locally — then `χ₂` agrees with `δ`
-at `2`, which is unramified — or `π` is injective on `W` — then the
-SUB-character `χ₁` agrees with `δ` at `2`, and
-`χ₂ = det ρ / χ₁ = χ₃ · δ⁻¹` locally at `2`, which is unramified since
-the mod-3 cyclotomic character is unramified away from `3` (inertia at
-`2` fixes the cube roots of unity). Bridging note: `isTameAtTwo` lives
-over `ℚ_[2]` while the conclusion is phrased at the adic completion at
-`prime_two`; the identification of the two local worlds is part of this
-node. -/
+/-- **The mod-3 cyclotomic character is unramified at `2`** (sorry node
+— the arithmetic input of the at-`2` bookkeeping): the composite of the
+3-adic cyclotomic character with `algebraMap ℤ_[3] k` (which kills the
+level-`>1` information since `k` has characteristic `3`) is trivial on
+the image of the inertia at `2`. Content: an inertia element fixes the
+cube roots of unity in `ℚ_[2]ᵃˡᵍ` (they are units congruent to distinct
+residues: `|ζ₃ − 1|₂ = 1` since `3` is a unit at `2`), so by the
+`lift_map` commuting square its image in `Γ ℚ` fixes the cube roots in
+`ℚᵃˡᵍ`, making `χ₃ ≡ 1` at level one, and `algebraMap ℤ_[3] k` sees
+only level one. -/
+theorem cyclotomicCharacter_algebraMap_eq_one_of_inertia_two
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    {σ : Γ ℚ_[2]}
+    (hσ : σ ∈ AddSubgroup.inertia
+      ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+      (Γ ℚ_[2])) :
+    algebraMap ℤ_[3] k
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) 3
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2])
+          σ).toRingEquiv) : ℤ_[3]ˣ) : ℤ_[3]) = 1 :=
+  sorry
+
+set_option warn.sorry false in
+/-- **The inertia bridge at `2`** (sorry node — completion
+bookkeeping): every element of the local inertia group at the place
+`prime_two` (phrased at the adic completion of `ℚ`) has the same image
+in `Γ ℚ` as some element of the inertia at `2` phrased over `ℚ_[2]`
+(via `Z2bar`). Content: the continuous `ℚ`-algebra isomorphism
+`adicCompletion ℚ v₂ ≃ ℚ_[2]`
+(`Rat.HeightOneSpectrum.adicCompletion.padicEquiv`) induces an
+isomorphism of absolute Galois groups matching the two inertia
+subgroups (both are defined by trivial action on the residue extension
+of the integral closure, and the isomorphism preserves the valuation
+structure); composing with the maps to `Γ ℚ` gives the statement. -/
+theorem localInertia_two_eq_map_padic
+    {σ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)}
+    (hσ : σ ∈ localInertiaGroup
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :
+    ∃ τ ∈ AddSubgroup.inertia
+      ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+      (Γ ℚ_[2]),
+      Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ =
+      Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **Quotient characters of stable lines are killed by the `ℚ_[2]`
+inertia** (DERIVED 2026-07-18 — the tame dichotomy): for any stable
+line `W` of a mod-3 hardly ramified representation with quotient
+character `χ₂`, the inertia at `2` (phrased over `ℚ_[2]`, matching
+`isTameAtTwo`) lies in the kernel of `χ₂` composed with the local
+inclusion. Either `W` maps into the kernel of the tame quotient `π₂` —
+then `χ₂` agrees with the unramified `δ` on inertia — or `π₂` is
+nonzero on `W` — then the sub-character agrees with `δ`, so it is
+trivial on inertia, and `χ₂ = det/χ₁` is trivial there too since the
+determinant is the mod-3 cyclotomic character, unramified at `2`. -/
+theorem quotCharacter_inertia_two_ker
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (W : Submodule k V) (χ₂ : Γ ℚ →* kˣ)
+    (hWfr : Module.finrank k W = 1)
+    (hWstable : ∀ g v, v ∈ W → ρ g v ∈ W)
+    (hχ₂ : ∀ g v, W.mkQ (ρ g v) = (χ₂ g : k) • W.mkQ v) :
+    AddSubgroup.inertia
+      ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+      (Γ ℚ_[2]) ≤
+      (χ₂.comp (Field.absoluteGaloisGroup.map
+        (algebraMap ℚ ℚ_[2])).toMonoidHom).ker := by
+  classical
+  intro σ hσ
+  rw [MonoidHom.mem_ker, MonoidHom.comp_apply]
+  set g' : Γ ℚ := Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) σ
+    with hg'
+  obtain ⟨π₂, hπsurj, δ, hδ⟩ := hρ.isTameAtTwo
+  -- `δ` is trivial on inertia
+  have hδσ : δ σ = 1 := by
+    have h := (hδ σ 0).2.1 hσ
+    rwa [GaloisRep.ker, MonoidHom.mem_ker] at h
+  -- the tame relation at `σ`, rewritten through the global action
+  have hrel : ∀ v : V, π₂ (ρ g' v) = π₂ v := by
+    intro v
+    have h := (hδ σ v).1
+    rw [GaloisRep.map_apply, ← hg'] at h
+    rw [h, hδσ, Module.End.one_apply]
+  -- the goal, at the level of `k`
+  suffices hval : (χ₂ g' : k) = 1 by
+    apply Units.ext
+    simpa using hval
+  by_cases hcase : W ≤ LinearMap.ker π₂
+  · -- `π₂` factors through the quotient, so `χ₂` scales `π₂`
+    obtain ⟨v₀, hv₀⟩ := hπsurj 1
+    have hfac : ∀ v : V, π₂ v =
+        (W.liftQ π₂ hcase) (W.mkQ v) := by
+      intro v
+      rw [Submodule.mkQ_apply, Submodule.liftQ_apply]
+    have h1 : π₂ (ρ g' v₀) = (χ₂ g' : k) * π₂ v₀ := by
+      rw [hfac, hχ₂ g' v₀, map_smul, smul_eq_mul, ← hfac]
+    rw [hrel v₀, hv₀, mul_one] at h1
+    exact h1.symm
+  · -- `π₂` is nonzero on `W`: the sub-character is trivial on inertia
+    obtain ⟨w₀, hw₀W, hw₀ne⟩ : ∃ w ∈ W, π₂ w ≠ 0 := by
+      by_contra hnone
+      push Not at hnone
+      exact hcase fun w hw => LinearMap.mem_ker.mpr (hnone w hw)
+    obtain ⟨χ₁, hχ₁⟩ := exists_subCharacter ρ W hWfr hWstable
+    have hχ₁σ : (χ₁ g' : k) = 1 := by
+      have h1 : π₂ (ρ g' w₀) = (χ₁ g' : k) * π₂ w₀ := by
+        rw [hχ₁ g' w₀ hw₀W, map_smul, smul_eq_mul]
+      rw [hrel w₀] at h1
+      have h2 : ((χ₁ g' : k) - 1) * π₂ w₀ = 0 := by
+        rw [sub_mul, one_mul, ← h1, sub_self]
+      rcases mul_eq_zero.mp h2 with h' | h'
+      · linear_combination h'
+      · exact absurd h' hw₀ne
+    -- the determinant is `χ₁ · χ₂` and also the cyclotomic character
+    have hfr : Module.finrank k V = 2 :=
+      Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
+    have hQ1 : Module.finrank k (V ⧸ W) = 1 := by
+      have h := Submodule.finrank_quotient_add_finrank W
+      omega
+    have hdet := det_eq_subCharacter_mul_quotCharacter ρ W hWfr hQ1
+      hWstable χ₁ χ₂ hχ₁ hχ₂ g'
+    have hcyc := hρ.det g'
+    rw [GaloisRep.det_apply] at hcyc
+    rw [hcyc] at hdet
+    have hone := cyclotomicCharacter_algebraMap_eq_one_of_inertia_two
+      (k := k) hσ
+    rw [← hg'] at hone
+    rw [hone, hχ₁σ, one_mul] at hdet
+    exact hdet.symm
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Quotient characters of stable lines are unramified at `2`**
+(DERIVED 2026-07-18 from the `ℚ_[2]` dichotomy and the inertia
+bridge): for any stable line `W` of a mod-3 hardly ramified
+representation with quotient character `χ₂`, the local inertia at the
+place `prime_two` lies in the kernel of `χ₂`. -/
 theorem quotCharacter_unramified_at_two
     {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
     [TopologicalSpace k] [DiscreteTopology k]
@@ -1385,8 +1515,16 @@ theorem quotCharacter_unramified_at_two
     localInertiaGroup Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ≤
       (χ₂.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker :=
-  sorry
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker := by
+  intro σ hσ
+  obtain ⟨τ, hτ, heq⟩ := localInertia_two_eq_map_padic hσ
+  have h := quotCharacter_inertia_two_ker V hV hρ W χ₂ hWfr hWstable hχ₂ hτ
+  rw [MonoidHom.mem_ker, MonoidHom.comp_apply] at h ⊢
+  show χ₂ ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) σ) = 1
+  rw [heq]
+  exact h
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The stable line with locally-unramified quotient character at
