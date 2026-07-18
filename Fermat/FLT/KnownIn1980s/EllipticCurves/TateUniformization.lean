@@ -989,11 +989,12 @@ noncomputable def pointMap (q₀ : k) (hq0 : q₀ ≠ 0)
     (hq : valuation k q₀ < 1) (u : k) (hu0 : u ≠ 0) :
     (WeierstrassCurve.tateCurve q₀).toAffine.Point :=
   haveI := Classical.decEq k
-  let m := (exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose
-  let u₀ := u * q₀ ^ (-m)
-  if h1 : u₀ = 1 then 0
+  if h1 : u * q₀ ^
+      (-(exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose) = 1 then 0
   else
-    annulusPoint u₀ q₀ (mul_ne_zero hu0 (zpow_ne_zero _ hq0)) h1 hq0
+    annulusPoint
+      (u * q₀ ^ (-(exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose))
+      q₀ (mul_ne_zero hu0 (zpow_ne_zero _ hq0)) h1 hq0
       (exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose_spec.2 hq
       (exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose_spec.1
 
@@ -1064,6 +1065,62 @@ noncomputable def pointMapQuot (q : kˣ) (hq : valuation k (q : k) < 1) :
         (pointMap_zpow_mul (q : k) q.ne_zero hq (a : k) a.ne_zero j).symm
     _ = pointMap (q : k) q.ne_zero hq (b : k) b.ne_zero :=
         pointMap_congr hval.symm
+
+/-- The identity class goes to zero: the canonical annulus
+representative of `1` is `1` itself. -/
+theorem pointMap_one (q₀ : k) (hq0 : q₀ ≠ 0)
+    (hq : valuation k q₀ < 1) :
+    pointMap q₀ hq0 hq 1 one_ne_zero = 0 := by
+  have hspec := (exists_zpow_mul_mem_annulus q₀ hq0 hq 1
+    one_ne_zero).choose_spec
+  have h0 : (exists_zpow_mul_mem_annulus q₀ hq0 hq 1
+      one_ne_zero).choose = 0 := by
+    refine annulus_exponent_unique q₀ hq0 hq 1 hspec ⟨?_, ?_⟩
+    · simpa using hq
+    · simp
+  have hcond : (1 : k) * q₀ ^
+      (-(exists_zpow_mul_mem_annulus q₀ hq0 hq 1
+        one_ne_zero).choose) = 1 := by
+    rw [h0]
+    simp
+  unfold pointMap
+  rw [dif_pos hcond]
+
+/-- **The kernel of the point map**: `pointMap u = 0` exactly when `u`
+is a power of `q₀` — the class of `u` in `kˣ/q₀^ℤ` is trivial. -/
+theorem pointMap_eq_zero_iff (q₀ : k) (hq0 : q₀ ≠ 0)
+    (hq : valuation k q₀ < 1) (u : k) (hu0 : u ≠ 0) :
+    pointMap q₀ hq0 hq u hu0 = 0 ↔ ∃ m : ℤ, u = q₀ ^ m := by
+  constructor
+  · intro h
+    unfold pointMap at h
+    split_ifs at h with h1
+    · refine ⟨(exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose, ?_⟩
+      have h3 : u * q₀ ^
+          (-(exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose) *
+          q₀ ^ (exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose
+          = u := by
+        rw [mul_assoc, ← zpow_add₀ hq0]
+        simp
+      calc u = u * q₀ ^
+            (-(exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose) *
+            q₀ ^ (exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose :=
+            h3.symm
+        _ = 1 * q₀ ^
+            (exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose := by
+            rw [h1]
+        _ = q₀ ^
+            (exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose :=
+            one_mul _
+    · exact absurd h (by simp [annulusPoint])
+  · rintro ⟨m, rfl⟩
+    calc pointMap q₀ hq0 hq (q₀ ^ m) hu0
+        = pointMap q₀ hq0 hq (q₀ ^ m * 1)
+          (mul_ne_zero (zpow_ne_zero _ hq0) one_ne_zero) :=
+          pointMap_congr (mul_one _).symm
+      _ = pointMap q₀ hq0 hq 1 one_ne_zero :=
+          pointMap_zpow_mul q₀ hq0 hq 1 one_ne_zero m
+      _ = 0 := pointMap_one q₀ hq0 hq
 
 end Annulus
 
