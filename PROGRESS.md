@@ -1659,9 +1659,18 @@ entries file). To add/remove/annotate a node, edit
                                     - ❌· `GaloisRepresentation.IsHardlyRamified.isTameAtTwo_baseChange_residue` — tameness-at-2 transfer (sorry node): π ⊗ 1 through kk ⊗ R ≅ kk
                                       and the pushforward of δ along the residue map; conditions
                                       transfer on simple tensors.
-                                    - ❌· `GaloisRepresentation.IsHardlyRamified.isFlatAt_baseChange_residue` — flatness transfer (sorry node): open ideals of the discrete
-                                      field are ⊥/⊤; the ⊥ case is the I = 𝔪 instance of ρ.IsFlatAt
-                                      along kk ≅ R/𝔪 and base-change composition.
+                                    - ❌· `GaloisRepresentation.IsHardlyRamified.isFlatAt_baseChange_residue` — flatness transfer (sorry node). RECONNAISSANCE 2026-07-18:
+                                      IsFlatAt quantifies over open ideals I of kk — ALL ideals,
+                                      since kk is discrete; a field has only ⊥ and ⊤. The ⊤ case is
+                                      the degenerate trivial ring (flat prolongation G := 𝒪ᵥ, one
+                                      geometric point ≅ the zero module). The ⊥ case: (ρ.baseChange
+                                      kk).baseChange (kk⧸⊥) ≅ ρ.baseChange kk ≅ ρ.baseChange (R⧸𝔪) —
+                                      the I = 𝔪 instance of ρ.IsFlatAt.cond (𝔪 open, provided) —
+                                      transported along the coefficient iso kk ≅ R⧸𝔪 induced by
+                                      hker. Needs: HasFlatProlongationAt invariance under
+                                      equivariant coefficient isos (compose the →+[Γ Kᵥ] bijection f
+                                      with the Space iso) — this invariance lemma does not yet exist
+                                      and is the main content.
                 - ✅· `not_isIrreducible_of_charFrob_eq` — `not_isIrreducible_of_charFrob_eq` — Chebotarev + Brauer– Nesbitt — now
                   (2026-07-16, `Chebotarev.lean` + proof in `Lift.lean`): the agreement set with `1
                   ⊕ χ̄`'s charpolys is closed (module topology on `End` over `ZMod ℓ` is discrete ;

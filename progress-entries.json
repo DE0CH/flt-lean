@@ -473,7 +473,7 @@
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
   "wip": false,
   "fullname": "GaloisRepresentation.IsHardlyRamified.isFlatAt_baseChange_residue",
-  "text": "flatness transfer (sorry node): open ideals of the discrete field are ⊥/⊤; the ⊥ case is the I = 𝔪 instance of ρ.IsFlatAt along kk ≅ R/𝔪 and base-change composition."
+  "text": "flatness transfer (sorry node). RECONNAISSANCE 2026-07-18: IsFlatAt quantifies over open ideals I of kk — ALL ideals, since kk is discrete; a field has only ⊥ and ⊤. The ⊤ case is the degenerate trivial ring (flat prolongation G := 𝒪ᵥ, one geometric point ≅ the zero module). The ⊥ case: (ρ.baseChange kk).baseChange (kk⧸⊥) ≅ ρ.baseChange kk ≅ ρ.baseChange (R⧸𝔪) — the I = 𝔪 instance of ρ.IsFlatAt.cond (𝔪 open, provided) — transported along the coefficient iso kk ≅ R⧸𝔪 induced by hker. Needs: HasFlatProlongationAt invariance under equivariant coefficient isos (compose the →+[Γ Kᵥ] bijection f with the Space iso) — this invariance lemma does not yet exist and is the main content."
  },
  {
   "name": "GaloisRepresentation.IsHardlyRamified.exists_residue_package",
