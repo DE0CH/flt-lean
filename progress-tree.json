@@ -123,7 +123,7 @@
   "WeierstrassCurve.Δ_tateCurve_eq_evalInt": "✅✅",
   "TateCurve.evalInt_subst": "✅✅",
   "TateCurve.ΔFormal_eq": "✅✅",
-  "WeierstrassCurve.HasSplitMultiplicativeReduction.smul": "❌",
+  "WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul": "❌",
   "WeierstrassCurve.isSquare_of_scaled_split": "❌"
  },
  "children": {
@@ -589,7 +589,7 @@
    "TateCurve.evalInt_subst"
   ],
   "WeierstrassCurve.exists_variableChange_of_j_eq_of_split": [
-   "WeierstrassCurve.HasSplitMultiplicativeReduction.smul",
+   "WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul",
    "WeierstrassCurve.isSquare_of_scaled_split"
   ],
   "WeierstrassCurve.Δ_tateCurve_eq_evalInt": [
@@ -597,7 +597,7 @@
   ],
   "TateCurve.evalInt_subst": [],
   "TateCurve.ΔFormal_eq": [],
-  "WeierstrassCurve.HasSplitMultiplicativeReduction.smul": [],
+  "WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul": [],
   "WeierstrassCurve.isSquare_of_scaled_split": []
  },
  "roots": [

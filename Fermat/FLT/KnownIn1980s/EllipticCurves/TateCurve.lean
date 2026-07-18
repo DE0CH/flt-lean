@@ -934,18 +934,22 @@ theorem WeierstrassCurve.isElliptic_tateCurve_and_j :
 
 set_option warn.sorry false in
 /-- **Invariance of split multiplicative reduction under change of
-Weierstrass coordinates** (sorry node): if `W` has split multiplicative
-reduction, so does `C • W` for any change of variables `C` over `k`.
-Content: the reduction type and the splitting field of the two tangent
-directions at the node are intrinsic to the `k`-isomorphism class —
-minimal integral models of `W` and `C • W` differ by a variable change
-with unit scaling `u` and integral `r, s, t`, under which the reduced
-node polynomial changes by a linear substitution and a unit square
-scaling, preserving whether it splits over the residue field. -/
-theorem WeierstrassCurve.HasSplitMultiplicativeReduction.smul
+Weierstrass coordinates** (sorry node), phrased through the minimal
+model (mathlib's `HasSplitMultiplicativeReduction` extends `IsMinimal`,
+a property of the literal model, so `C • W` itself — generally neither
+integral nor minimal — cannot carry the class; its minimal model can):
+if `W` has split multiplicative reduction, then so does the minimal
+model of `C • W` for any change of variables `C` over `k`. Content:
+`W` and `(C • W).minimal 𝒪[k]` are two minimal integral models of one
+`k`-isomorphism class, hence differ by a variable change with unit
+scaling `u` and integral `r, s, t`, under which the reduced node
+polynomial changes by a linear substitution and a unit-square scaling,
+preserving both multiplicativity and splitness over the residue
+field. -/
+theorem WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul
     (W : WeierstrassCurve k) [W.HasSplitMultiplicativeReduction 𝒪[k]]
     (C : VariableChange k) :
-    (C • W).HasSplitMultiplicativeReduction 𝒪[k] :=
+    ((C • W).minimal 𝒪[k]).HasSplitMultiplicativeReduction 𝒪[k] :=
   sorry
 
 set_option warn.sorry false in
@@ -953,18 +957,21 @@ set_option warn.sorry false in
 (sorry node — the arithmetic core of the descent half of Tate's
 theorem V.5.3): if the short Weierstrass curve `y² = x³ + Ax + B` and
 its scaling twist `y² = x³ + w²Ax + w³B` both have split multiplicative
-reduction over the nonarchimedean local field `k`, then `w` is a
-square in `k`. Content: for `w` of odd valuation the twist is by a
-ramified quadratic extension and has additive reduction; for `w` a
-unit-nonsquare it is the unramified quadratic twist, which flips the
-Galois action on the two tangent directions at the node, making the
-reduction nonsplit (cf. the converse construction
+reduction over the nonarchimedean local field `k` — phrased through
+their minimal models, since the short equations themselves need not be
+minimal — then `w` is a square in `k`. Content: for `w` of odd
+valuation the twist is by a ramified quadratic extension and has
+additive reduction; for `w` a unit-nonsquare it is the unramified
+quadratic twist, which flips the Galois action on the two tangent
+directions at the node, making the reduction nonsplit (cf. the
+converse construction
 `exists_quadraticTwist_hasSplitMultiplicativeReduction`). -/
 theorem WeierstrassCurve.isSquare_of_scaled_split
     (A B w : k) (hw : w ≠ 0)
-    [(⟨0, 0, 0, A, B⟩ : WeierstrassCurve k).HasSplitMultiplicativeReduction 𝒪[k]]
-    [(⟨0, 0, 0, w ^ 2 * A, w ^ 3 * B⟩ :
-        WeierstrassCurve k).HasSplitMultiplicativeReduction 𝒪[k]] :
+    [((⟨0, 0, 0, A, B⟩ :
+        WeierstrassCurve k).minimal 𝒪[k]).HasSplitMultiplicativeReduction 𝒪[k]]
+    [((⟨0, 0, 0, w ^ 2 * A, w ^ 3 * B⟩ :
+        WeierstrassCurve k).minimal 𝒪[k]).HasSplitMultiplicativeReduction 𝒪[k]] :
     IsSquare w :=
   sorry
 
@@ -974,9 +981,10 @@ above): two elliptic curves over `k` (of characteristic zero), both
 with split multiplicative reduction, and with the same `j`-invariant,
 differ by a change of Weierstrass coordinates over `k` itself.
 Derivation: put both curves in short normal form `y² = x³ + Aᵢx + Bᵢ`
-(char `k` = 0); split multiplicative reduction transfers to the short
-models by the invariance leaf; `Aᵢ ≠ 0` since `c₄ = -48Aᵢ` is a unit,
-`Bᵢ ≠ 0` since `Bᵢ = 0` forces `j = 1728`, contradicting `|j| > 1`;
+(char `k` = 0); split multiplicative reduction transfers to the
+minimal models of the short equations by the invariance leaf;
+`Aᵢ ≠ 0` since `Aᵢ = 0` forces `j = 0`, and `Bᵢ ≠ 0` since `Bᵢ = 0`
+forces `j = 1728`, both contradicting `|j| > 1`;
 equal `j` gives `A₁³B₂² = A₂³B₁²`, so `w := B₂A₁/(B₁A₂)` satisfies
 `A₂ = w²A₁`, `B₂ = w³B₁` — the second short model is the scaling twist
 of the first by `w`; both being split, the arithmetic-core leaf makes
@@ -993,31 +1001,20 @@ theorem WeierstrassCurve.exists_variableChange_of_j_eq_of_split
   haveI h3 : Invertible (3 : k) := invertibleOfNonzero three_ne_zero
   obtain ⟨C₁, hC₁⟩ := W₁.exists_variableChange_isShortNF
   obtain ⟨C₂, hC₂⟩ := W₂.exists_variableChange_isShortNF
-  haveI hs₁ : (C₁ • W₁).HasSplitMultiplicativeReduction 𝒪[k] :=
-    WeierstrassCurve.HasSplitMultiplicativeReduction.smul W₁ C₁
-  haveI hs₂ : (C₂ • W₂).HasSplitMultiplicativeReduction 𝒪[k] :=
-    WeierstrassCurve.HasSplitMultiplicativeReduction.smul W₂ C₂
-  -- the `j`-invariants of the short models agree
+  -- the `j`-invariants of the short models agree, and exceed `1` in valuation
   have hj' : (C₁ • W₁).j = (C₂ • W₂).j := by
     rw [WeierstrassCurve.variableChange_j, WeierstrassCurve.variableChange_j, hj]
+  have hjv₁ : 1 < valuation k (C₁ • W₁).j := by
+    rw [WeierstrassCurve.variableChange_j]
+    exact W₁.one_lt_valuation_j
+  have hjv₂ : 1 < valuation k (C₂ • W₂).j := by
+    rw [WeierstrassCurve.variableChange_j]
+    exact W₂.one_lt_valuation_j
   -- notation for the short coefficients
   set A₁ := (C₁ • W₁).a₄ with hA₁def
   set B₁ := (C₁ • W₁).a₆ with hB₁def
   set A₂ := (C₂ • W₂).a₄ with hA₂def
   set B₂ := (C₂ • W₂).a₆ with hB₂def
-  -- `c₄` is a unit for split multiplicative reduction, so `Aᵢ ≠ 0`
-  have hc₄ : ∀ (W : WeierstrassCurve k) [W.IsElliptic]
-      [W.HasSplitMultiplicativeReduction 𝒪[k]], W.c₄ ≠ 0 := by
-    intro W _ _ h0
-    have h1 := W.valuation_c₄_eq_one
-    rw [h0, map_zero] at h1
-    exact zero_ne_one h1
-  have hA₁0 : A₁ ≠ 0 := by
-    intro h0
-    exact hc₄ (C₁ • W₁) (by rw [(C₁ • W₁).c₄_of_isShortNF, ← hA₁def, h0, mul_zero])
-  have hA₂0 : A₂ ≠ 0 := by
-    intro h0
-    exact hc₄ (C₂ • W₂) (by rw [(C₂ • W₂).c₄_of_isShortNF, ← hA₂def, h0, mul_zero])
   -- the discriminants are nonzero and `j = Δ⁻¹c₄³`
   have hΔ : ∀ (W : WeierstrassCurve k) [W.IsElliptic], W.Δ ≠ 0 := by
     intro W _ h0
@@ -1029,22 +1026,31 @@ theorem WeierstrassCurve.exists_variableChange_of_j_eq_of_split
     intro W _
     rw [show W.j = (↑(W.Δ'⁻¹) : k) * W.c₄ ^ 3 from rfl,
       Units.val_inv_eq_inv_val, W.coe_Δ']
+  -- `Aᵢ ≠ 0`: otherwise `c₄ = -48Aᵢ = 0`, so `j = 0`, contradicting `1 < |j|`
+  have hA0 : ∀ (W : WeierstrassCurve k) [W.IsElliptic] [W.IsShortNF],
+      1 < valuation k W.j → W.a₄ ≠ 0 := by
+    intro W _ _ hjv h0
+    have hj0 : W.j = 0 := by
+      rw [hjeq W, W.c₄_of_isShortNF, h0, mul_zero, zero_pow (by norm_num),
+        mul_zero]
+    rw [hj0, map_zero] at hjv
+    exact absurd hjv (not_lt.mpr zero_le_one)
+  have hA₁0 : A₁ ≠ 0 := hA0 (C₁ • W₁) hjv₁
+  have hA₂0 : A₂ ≠ 0 := hA0 (C₂ • W₂) hjv₂
   -- `Bᵢ ≠ 0`: otherwise `j = 1728`, contradicting `1 < |j|`
-  have hB0 : ∀ (W : WeierstrassCurve k) [W.IsElliptic]
-      [W.HasSplitMultiplicativeReduction 𝒪[k]] [W.IsShortNF],
-      W.a₄ ≠ 0 → W.a₆ ≠ 0 := by
-    intro W _ _ _ hA h0
+  have hB0 : ∀ (W : WeierstrassCurve k) [W.IsElliptic] [W.IsShortNF],
+      1 < valuation k W.j → W.a₄ ≠ 0 → W.a₆ ≠ 0 := by
+    intro W _ _ hjv hA h0
     have hΔW : W.Δ = -16 * (4 * W.a₄ ^ 3 + 27 * W.a₆ ^ 2) := W.Δ_of_isShortNF
     have hj1728 : W.j = 1728 := by
       rw [hjeq W, W.c₄_of_isShortNF, hΔW, h0]
       field_simp
       ring
-    have hlt := W.one_lt_valuation_j
-    rw [hj1728, show ((1728 : k)) = ((1728 : ℤ) : k) by norm_num] at hlt
-    exact absurd (lt_of_lt_of_le hlt (valuation_intCast_le_one 1728))
+    rw [hj1728, show ((1728 : k)) = ((1728 : ℤ) : k) by norm_num] at hjv
+    exact absurd (lt_of_lt_of_le hjv (valuation_intCast_le_one 1728))
       (lt_irrefl _)
-  have hB₁0 : B₁ ≠ 0 := hB0 (C₁ • W₁) hA₁0
-  have hB₂0 : B₂ ≠ 0 := hB0 (C₂ • W₂) hA₂0
+  have hB₁0 : B₁ ≠ 0 := hB0 (C₁ • W₁) hjv₁ hA₁0
+  have hB₂0 : B₂ ≠ 0 := hB0 (C₂ • W₂) hjv₂ hA₂0
   -- the cross-multiplied `j`-equation
   have hcross : (C₁ • W₁).c₄ ^ 3 * (C₂ • W₂).Δ =
       (C₂ • W₂).c₄ ^ 3 * (C₁ • W₁).Δ := by
@@ -1089,11 +1095,15 @@ theorem WeierstrassCurve.exists_variableChange_of_j_eq_of_split
     · exact (C₂ • W₂).a₃_of_isShortNF
     · exact hA₂w
     · exact hB₂w
-  haveI i₁ :
-      (⟨0, 0, 0, A₁, B₁⟩ : WeierstrassCurve k).HasSplitMultiplicativeReduction
-        𝒪[k] := hS₁eq ▸ hs₁
-  haveI i₂ : (⟨0, 0, 0, w ^ 2 * A₁, w ^ 3 * B₁⟩ :
-      WeierstrassCurve k).HasSplitMultiplicativeReduction 𝒪[k] := hS₂eq ▸ hs₂
+  haveI hs₁ : ((C₁ • W₁).minimal 𝒪[k]).HasSplitMultiplicativeReduction 𝒪[k] :=
+    W₁.hasSplitMultiplicativeReduction_minimal_smul C₁
+  haveI hs₂ : ((C₂ • W₂).minimal 𝒪[k]).HasSplitMultiplicativeReduction 𝒪[k] :=
+    W₂.hasSplitMultiplicativeReduction_minimal_smul C₂
+  haveI i₁ : (((⟨0, 0, 0, A₁, B₁⟩ : WeierstrassCurve k)).minimal
+      𝒪[k]).HasSplitMultiplicativeReduction 𝒪[k] := hS₁eq ▸ hs₁
+  haveI i₂ : (((⟨0, 0, 0, w ^ 2 * A₁, w ^ 3 * B₁⟩ :
+      WeierstrassCurve k)).minimal 𝒪[k]).HasSplitMultiplicativeReduction 𝒪[k] :=
+    hS₂eq ▸ hs₂
   -- the arithmetic core: `w` is a square
   obtain ⟨v, hv⟩ := WeierstrassCurve.isSquare_of_scaled_split A₁ B₁ w hw0
   have hv0 : v ≠ 0 := by

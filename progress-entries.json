@@ -861,17 +861,17 @@
   "text": "the formal discriminant identity in ℤ⟦X⟧, now definitional (rfl): ΔFormal is defined in TateParameter.lean as the discriminant polynomial of the Tate quintuple ⟨1,0,0,a₄Formal,a₆Formal⟩; the classical η²⁴-product description X·∏(1−Xⁿ)²⁴ (Jacobi/ATAEC V.3.1(b)) was consumed nowhere — only constantCoeff_ΔFormal = 0 and coeff_one_ΔFormal = 1, both re-proven directly from the polynomial coefficients (σ₃(1)=σ₅(1)=1, (5+7)/12 = 1)."
  },
  {
-  "name": "WeierstrassCurve.HasSplitMultiplicativeReduction.smul",
+  "name": "WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul",
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
   "wip": false,
-  "fullname": "WeierstrassCurve.HasSplitMultiplicativeReduction.smul",
-  "text": "invariance of split multiplicative reduction under change of Weierstrass coordinates over k: minimal integral models of W and C•W differ by a unit-scaling integral variable change, under which the reduced node polynomial changes by a linear substitution and a unit-square scaling, preserving splitness over the residue field."
+  "fullname": "WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul",
+  "text": "invariance of split multiplicative reduction under change of Weierstrass coordinates, phrased via the minimal model (mathlib's reduction classes are properties of the literal model): W split implies (C•W).minimal split — W and (C•W).minimal are two minimal integral models of one class, differing by a unit-scaling integral variable change under which the reduced node polynomial changes by a linear substitution and a unit-square scaling."
  },
  {
   "name": "WeierstrassCurve.isSquare_of_scaled_split",
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
   "wip": false,
   "fullname": "WeierstrassCurve.isSquare_of_scaled_split",
-  "text": "the arithmetic core of the V.5.3 descent: if y²=x³+Ax+B and its scaling twist y²=x³+w²Ax+w³B both have split multiplicative reduction over the local field k then w is a square — odd-valuation w gives a ramified twist with additive reduction, unit-nonsquare w gives the unramified twist which flips the Galois action on the tangent directions at the node."
+  "text": "the arithmetic core of the V.5.3 descent, phrased via minimal models: if the minimal models of y²=x³+Ax+B and of its scaling twist y²=x³+w²Ax+w³B both have split multiplicative reduction over the local field k then w is a square — odd-valuation w gives a ramified twist with additive reduction, unit-nonsquare w gives the unramified twist which flips the Galois action on the tangent directions at the node."
  }
 ]

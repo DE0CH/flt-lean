@@ -126,19 +126,24 @@ entries file). To add/remove/annotate a node, edit
                                                           the two new leaves make w a square and the
                                                           reduction type variable-change-invariant,
                                                           and scaling by √w⁻¹ concludes).
-                                                            - ❌· `WeierstrassCurve.HasSplitMultiplicativeReduction.smul` — invariance of split multiplicative
+                                                            - ❌· `WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul` — invariance of split multiplicative
                                                               reduction under change of Weierstrass
-                                                              coordinates over k: minimal integral
-                                                              models of W and C•W differ by a unit-
-                                                              scaling integral variable change,
-                                                              under which the reduced node
-                                                              polynomial changes by a linear
-                                                              substitution and a unit-square
-                                                              scaling, preserving splitness over the
-                                                              residue field.
+                                                              coordinates, phrased via the minimal
+                                                              model (mathlib's reduction classes are
+                                                              properties of the literal model): W
+                                                              split implies (C•W).minimal split — W
+                                                              and (C•W).minimal are two minimal
+                                                              integral models of one class,
+                                                              differing by a unit-scaling integral
+                                                              variable change under which the
+                                                              reduced node polynomial changes by a
+                                                              linear substitution and a unit-square
+                                                              scaling.
                                                             - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3
-                                                              descent: if y²=x³+Ax+B and its scaling
-                                                              twist y²=x³+w²Ax+w³B both have split
+                                                              descent, phrased via minimal models:
+                                                              if the minimal models of y²=x³+Ax+B
+                                                              and of its scaling twist
+                                                              y²=x³+w²Ax+w³B both have split
                                                               multiplicative reduction over the
                                                               local field k then w is a square —
                                                               odd-valuation w gives a ramified twist
@@ -189,28 +194,33 @@ entries file). To add/remove/annotate a node, edit
                                                               reduction type variable-change-
                                                               invariant, and scaling by √w⁻¹
                                                               concludes).
-                                                                - ❌· `WeierstrassCurve.HasSplitMultiplicativeReduction.smul` — invariance of split multiplicative
+                                                                - ❌· `WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul` — invariance of split multiplicative
                                                                   reduction under change of
-                                                                  Weierstrass coordinates over k:
-                                                                  minimal integral models of W and
-                                                                  C•W differ by a unit-scaling
-                                                                  integral variable change, under
+                                                                  Weierstrass coordinates, phrased
+                                                                  via the minimal model (mathlib's
+                                                                  reduction classes are properties
+                                                                  of the literal model): W split
+                                                                  implies (C•W).minimal split — W
+                                                                  and (C•W).minimal are two minimal
+                                                                  integral models of one class,
+                                                                  differing by a unit-scaling
+                                                                  integral variable change under
                                                                   which the reduced node polynomial
                                                                   changes by a linear substitution
-                                                                  and a unit-square scaling,
-                                                                  preserving splitness over the
-                                                                  residue field.
+                                                                  and a unit-square scaling.
                                                                 - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3
-                                                                  descent: if y²=x³+Ax+B and its
-                                                                  scaling twist y²=x³+w²Ax+w³B both
-                                                                  have split multiplicative
-                                                                  reduction over the local field k
-                                                                  then w is a square — odd-valuation
-                                                                  w gives a ramified twist with
-                                                                  additive reduction, unit-nonsquare
-                                                                  w gives the unramified twist which
-                                                                  flips the Galois action on the
-                                                                  tangent directions at the node.
+                                                                  descent, phrased via minimal
+                                                                  models: if the minimal models of
+                                                                  y²=x³+Ax+B and of its scaling
+                                                                  twist y²=x³+w²Ax+w³B both have
+                                                                  split multiplicative reduction
+                                                                  over the local field k then w is a
+                                                                  square — odd-valuation w gives a
+                                                                  ramified twist with additive
+                                                                  reduction, unit-nonsquare w gives
+                                                                  the unramified twist which flips
+                                                                  the Galois action on the tangent
+                                                                  directions at the node.
                                                         - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
                                                           uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ` Galois-
                                                           equivariantly ON THE NOSE, by the explicit
@@ -268,21 +278,28 @@ entries file). To add/remove/annotate a node, edit
                                                                   and the reduction type variable-
                                                                   change-invariant, and scaling by
                                                                   √w⁻¹ concludes).
-                                                                    - ❌· `WeierstrassCurve.HasSplitMultiplicativeReduction.smul` — invariance of split
+                                                                    - ❌· `WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul` — invariance of split
                                                                       multiplicative reduction under
                                                                       change of Weierstrass
-                                                                      coordinates over k: minimal
-                                                                      integral models of W and C•W
-                                                                      differ by a unit-scaling
-                                                                      integral variable change,
-                                                                      under which the reduced node
+                                                                      coordinates, phrased via the
+                                                                      minimal model (mathlib's
+                                                                      reduction classes are
+                                                                      properties of the literal
+                                                                      model): W split implies
+                                                                      (C•W).minimal split — W and
+                                                                      (C•W).minimal are two minimal
+                                                                      integral models of one class,
+                                                                      differing by a unit-scaling
+                                                                      integral variable change under
+                                                                      which the reduced node
                                                                       polynomial changes by a linear
                                                                       substitution and a unit-square
-                                                                      scaling, preserving splitness
-                                                                      over the residue field.
+                                                                      scaling.
                                                                     - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the
-                                                                      V.5.3 descent: if y²=x³+Ax+B
-                                                                      and its scaling twist
+                                                                      V.5.3 descent, phrased via
+                                                                      minimal models: if the minimal
+                                                                      models of y²=x³+Ax+B and of
+                                                                      its scaling twist
                                                                       y²=x³+w²Ax+w³B both have split
                                                                       multiplicative reduction over
                                                                       the local field k then w is a
@@ -342,21 +359,28 @@ entries file). To add/remove/annotate a node, edit
                                                                       square and the reduction type
                                                                       variable-change-invariant, and
                                                                       scaling by √w⁻¹ concludes).
-                                                                        - ❌· `WeierstrassCurve.HasSplitMultiplicativeReduction.smul` — invariance of split
+                                                                        - ❌· `WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul` — invariance of split
                                                                           multiplicative reduction under
                                                                           change of Weierstrass
-                                                                          coordinates over k: minimal
-                                                                          integral models of W and C•W
-                                                                          differ by a unit-scaling
-                                                                          integral variable change,
-                                                                          under which the reduced node
+                                                                          coordinates, phrased via the
+                                                                          minimal model (mathlib's
+                                                                          reduction classes are
+                                                                          properties of the literal
+                                                                          model): W split implies
+                                                                          (C•W).minimal split — W and
+                                                                          (C•W).minimal are two minimal
+                                                                          integral models of one class,
+                                                                          differing by a unit-scaling
+                                                                          integral variable change under
+                                                                          which the reduced node
                                                                           polynomial changes by a linear
                                                                           substitution and a unit-square
-                                                                          scaling, preserving splitness
-                                                                          over the residue field.
+                                                                          scaling.
                                                                         - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the
-                                                                          V.5.3 descent: if y²=x³+Ax+B
-                                                                          and its scaling twist
+                                                                          V.5.3 descent, phrased via
+                                                                          minimal models: if the minimal
+                                                                          models of y²=x³+Ax+B and of
+                                                                          its scaling twist
                                                                           y²=x³+w²Ax+w³B both have split
                                                                           multiplicative reduction over
                                                                           the local field k then w is a
@@ -491,15 +515,18 @@ entries file). To add/remove/annotate a node, edit
                                               of the first; the two new leaves make w a square and
                                               the reduction type variable-change-invariant, and
                                               scaling by √w⁻¹ concludes).
-                                                - ❌· `WeierstrassCurve.HasSplitMultiplicativeReduction.smul` — invariance of split multiplicative reduction under
-                                                  change of Weierstrass coordinates over k: minimal
-                                                  integral models of W and C•W differ by a unit-
-                                                  scaling integral variable change, under which the
-                                                  reduced node polynomial changes by a linear
-                                                  substitution and a unit-square scaling, preserving
-                                                  splitness over the residue field.
-                                                - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3 descent: if
-                                                  y²=x³+Ax+B and its scaling twist y²=x³+w²Ax+w³B
+                                                - ❌· `WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul` — invariance of split multiplicative reduction under
+                                                  change of Weierstrass coordinates, phrased via the
+                                                  minimal model (mathlib's reduction classes are
+                                                  properties of the literal model): W split implies
+                                                  (C•W).minimal split — W and (C•W).minimal are two
+                                                  minimal integral models of one class, differing by
+                                                  a unit-scaling integral variable change under
+                                                  which the reduced node polynomial changes by a
+                                                  linear substitution and a unit-square scaling.
+                                                - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3 descent, phrased
+                                                  via minimal models: if the minimal models of
+                                                  y²=x³+Ax+B and of its scaling twist y²=x³+w²Ax+w³B
                                                   both have split multiplicative reduction over the
                                                   local field k then w is a square — odd-valuation w
                                                   gives a ramified twist with additive reduction,
@@ -539,16 +566,19 @@ entries file). To add/remove/annotate a node, edit
                                                   the first; the two new leaves make w a square and
                                                   the reduction type variable-change-invariant, and
                                                   scaling by √w⁻¹ concludes).
-                                                    - ❌· `WeierstrassCurve.HasSplitMultiplicativeReduction.smul` — invariance of split multiplicative reduction
-                                                      under change of Weierstrass coordinates over
-                                                      k: minimal integral models of W and C•W differ
-                                                      by a unit-scaling integral variable change,
-                                                      under which the reduced node polynomial
-                                                      changes by a linear substitution and a unit-
-                                                      square scaling, preserving splitness over the
-                                                      residue field.
-                                                    - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3 descent: if
-                                                      y²=x³+Ax+B and its scaling twist
+                                                    - ❌· `WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul` — invariance of split multiplicative reduction
+                                                      under change of Weierstrass coordinates,
+                                                      phrased via the minimal model (mathlib's
+                                                      reduction classes are properties of the
+                                                      literal model): W split implies (C•W).minimal
+                                                      split — W and (C•W).minimal are two minimal
+                                                      integral models of one class, differing by a
+                                                      unit-scaling integral variable change under
+                                                      which the reduced node polynomial changes by a
+                                                      linear substitution and a unit-square scaling.
+                                                    - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3 descent,
+                                                      phrased via minimal models: if the minimal
+                                                      models of y²=x³+Ax+B and of its scaling twist
                                                       y²=x³+w²Ax+w³B both have split multiplicative
                                                       reduction over the local field k then w is a
                                                       square — odd-valuation w gives a ramified
@@ -615,14 +645,17 @@ entries file). To add/remove/annotate a node, edit
                                       twist of the first; the two new leaves make w a square and the
                                       reduction type variable-change-invariant, and scaling by √w⁻¹
                                       concludes).
-                                        - ❌· `WeierstrassCurve.HasSplitMultiplicativeReduction.smul` — invariance of split multiplicative reduction under change
-                                          of Weierstrass coordinates over k: minimal integral models
-                                          of W and C•W differ by a unit-scaling integral variable
-                                          change, under which the reduced node polynomial changes by
-                                          a linear substitution and a unit-square scaling,
-                                          preserving splitness over the residue field.
-                                        - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3 descent: if y²=x³+Ax+B
-                                          and its scaling twist y²=x³+w²Ax+w³B both have split
+                                        - ❌· `WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul` — invariance of split multiplicative reduction under change
+                                          of Weierstrass coordinates, phrased via the minimal model
+                                          (mathlib's reduction classes are properties of the literal
+                                          model): W split implies (C•W).minimal split — W and
+                                          (C•W).minimal are two minimal integral models of one
+                                          class, differing by a unit-scaling integral variable
+                                          change under which the reduced node polynomial changes by
+                                          a linear substitution and a unit-square scaling.
+                                        - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3 descent, phrased via
+                                          minimal models: if the minimal models of y²=x³+Ax+B and of
+                                          its scaling twist y²=x³+w²Ax+w³B both have split
                                           multiplicative reduction over the local field k then w is
                                           a square — odd-valuation w gives a ramified twist with
                                           additive reduction, unit-nonsquare w gives the unramified
@@ -655,14 +688,17 @@ entries file). To add/remove/annotate a node, edit
                                       twist of the first; the two new leaves make w a square and the
                                       reduction type variable-change-invariant, and scaling by √w⁻¹
                                       concludes).
-                                        - ❌· `WeierstrassCurve.HasSplitMultiplicativeReduction.smul` — invariance of split multiplicative reduction under change
-                                          of Weierstrass coordinates over k: minimal integral models
-                                          of W and C•W differ by a unit-scaling integral variable
-                                          change, under which the reduced node polynomial changes by
-                                          a linear substitution and a unit-square scaling,
-                                          preserving splitness over the residue field.
-                                        - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3 descent: if y²=x³+Ax+B
-                                          and its scaling twist y²=x³+w²Ax+w³B both have split
+                                        - ❌· `WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul` — invariance of split multiplicative reduction under change
+                                          of Weierstrass coordinates, phrased via the minimal model
+                                          (mathlib's reduction classes are properties of the literal
+                                          model): W split implies (C•W).minimal split — W and
+                                          (C•W).minimal are two minimal integral models of one
+                                          class, differing by a unit-scaling integral variable
+                                          change under which the reduced node polynomial changes by
+                                          a linear substitution and a unit-square scaling.
+                                        - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3 descent, phrased via
+                                          minimal models: if the minimal models of y²=x³+Ax+B and of
+                                          its scaling twist y²=x³+w²Ax+w³B both have split
                                           multiplicative reduction over the local field k then w is
                                           a square — odd-valuation w gives a ramified twist with
                                           additive reduction, unit-nonsquare w gives the unramified
