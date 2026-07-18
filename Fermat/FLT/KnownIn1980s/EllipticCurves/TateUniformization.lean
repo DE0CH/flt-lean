@@ -1122,6 +1122,36 @@ theorem pointMap_eq_zero_iff (q₀ : k) (hq0 : q₀ ≠ 0)
           pointMap_zpow_mul q₀ hq0 hq 1 one_ne_zero m
       _ = 0 := pointMap_one q₀ hq0 hq
 
+@[simp]
+theorem pointMapQuot_mk (q : kˣ) (hq : valuation k (q : k) < 1)
+    (u : kˣ) :
+    pointMapQuot q hq (QuotientGroup.mk u) =
+      pointMap (q : k) q.ne_zero hq (u : k) u.ne_zero :=
+  rfl
+
+/-- **The quotient point map has trivial kernel** (as a pointed map):
+the class of `u` goes to zero exactly when it is the trivial class. -/
+theorem pointMapQuot_eq_zero_iff (q : kˣ)
+    (hq : valuation k (q : k) < 1) (u : kˣ) :
+    pointMapQuot q hq (QuotientGroup.mk u) = 0 ↔
+      (QuotientGroup.mk u : kˣ ⧸ Subgroup.zpowers q) = 1 := by
+  rw [pointMapQuot_mk, pointMap_eq_zero_iff]
+  constructor
+  · rintro ⟨m, hm⟩
+    have hu : u = q ^ m := by
+      ext
+      push_cast
+      exact hm
+    rw [hu, QuotientGroup.eq_one_iff]
+    exact zpow_mem (Subgroup.mem_zpowers q) m
+  · intro h
+    obtain ⟨m, hm⟩ := Subgroup.mem_zpowers_iff.mp
+      ((QuotientGroup.eq_one_iff u).mp h)
+    refine ⟨m, ?_⟩
+    rw [← hm]
+    push_cast
+    rfl
+
 end Annulus
 
 end TateCurve
