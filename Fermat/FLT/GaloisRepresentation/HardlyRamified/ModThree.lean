@@ -1325,17 +1325,76 @@ theorem mod_three_reducible {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k
     ((OddRep.isIrreducible_iff_isAbsolutelyIrreducible ρ' heig).mp hirr)
 
 set_option warn.sorry false in
+/-- **The stable line with unramified-at-`3` quotient character** (sorry
+node — the connected–étale content of Serre's §5.4 mod-3 analysis): a
+reducible mod-3 hardly ramified representation has a stable LINE whose
+quotient character is unramified at `3`. Content: the flatness
+condition (`IsFlatAt` at `3`) prolongs the representation to a finite
+flat group scheme over `ℤ₃`; the étale quotient of its connected–étale
+sequence is unramified, so if the given stable line has ramified
+quotient at `3`, the connected part is multiplicative and the
+connected–étale splitting provides the OTHER stable line whose quotient
+IS the étale part (the Serre swap). -/
+theorem exists_line_with_unramified_quotCharacter_at_three
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (W₀ : Submodule k V) (hW₀0 : W₀ ≠ ⊥) (hW₀top : W₀ ≠ ⊤)
+    (hW₀stable : ∀ g : Γ ℚ, W₀.map (ρ g) ≤ W₀) :
+    ∃ (W : Submodule k V) (χ₂ : Γ ℚ →* kˣ),
+      Module.finrank k W = 1 ∧
+      (∀ g v, v ∈ W → ρ g v ∈ W) ∧
+      (∀ g v, W.mkQ (ρ g v) = (χ₂ g : k) • W.mkQ v) ∧
+      (localInertiaGroup
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ≤
+        (χ₂.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) :=
+  sorry
+
+set_option warn.sorry false in
+/-- **Quotient characters of stable lines are unramified at `2`** (sorry
+node — the tame-at-`2` bookkeeping): for ANY stable line `W` of a mod-3
+hardly ramified representation with quotient character `χ₂`, the local
+inertia at `2` lies in the kernel of `χ₂`. Content: the tame quadratic
+quotient condition (`isTameAtTwo`) gives a `1`-dimensional local
+quotient `π : V →ₗ R` at `2` with unramified square-trivial character
+`δ`; either `W` maps into `ker π` locally — then `χ₂` agrees with `δ`
+at `2`, which is unramified — or `π` is injective on `W` — then the
+SUB-character `χ₁` agrees with `δ` at `2`, and
+`χ₂ = det ρ / χ₁ = χ₃ · δ⁻¹` locally at `2`, which is unramified since
+the mod-3 cyclotomic character is unramified away from `3` (inertia at
+`2` fixes the cube roots of unity). Bridging note: `isTameAtTwo` lives
+over `ℚ_[2]` while the conclusion is phrased at the adic completion at
+`prime_two`; the identification of the two local worlds is part of this
+node. -/
+theorem quotCharacter_unramified_at_two
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (W : Submodule k V) (χ₂ : Γ ℚ →* kˣ)
+    (hWfr : Module.finrank k W = 1)
+    (hWstable : ∀ g v, v ∈ W → ρ g v ∈ W)
+    (hχ₂ : ∀ g v, W.mkQ (ρ g v) = (χ₂ g : k) • W.mkQ v) :
+    localInertiaGroup Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ≤
+      (χ₂.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
 /-- **The stable line with locally-unramified quotient character at
-`2` and `3`** (sorry node — the local content of Serre's §5.4 mod-3
-analysis, isolated from the global bookkeeping, which is DERIVED
-below): a reducible mod-3 hardly ramified representation has a stable
-LINE whose quotient character is unramified at `2` AND at `3`.
-Content: at `3` the flatness condition forces the étale quotient of
-the connected-étale sequence of the finite flat prolongation to be
-unramified — if the natural stable line has ramified quotient, the
-connected-étale splitting provides the OTHER stable line (the Serre
-swap); at `2` the tame quadratic quotient condition (`isTameAtTwo`)
-makes the quotient character at worst quadratic-unramified. -/
+`2` and `3`** (DERIVED 2026-07-18 from the at-`3` Serre-swap leaf and
+the at-`2` tame bookkeeping leaf): a reducible mod-3 hardly ramified
+representation has a stable LINE whose quotient character is unramified
+at `2` AND at `3`. The at-`3` leaf provides the line and its at-`3`
+unramifiedness; the at-`2` leaf applies to any stable line. -/
 theorem exists_line_with_locally_unramified_quotCharacter
     {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
     [TopologicalSpace k] [DiscreteTopology k]
@@ -1357,8 +1416,12 @@ theorem exists_line_with_locally_unramified_quotCharacter
           Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ≤
         (χ₂.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) :=
-  sorry
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) := by
+  obtain ⟨W, χ₂, hWfr, hWstable, hχ₂, h3⟩ :=
+    exists_line_with_unramified_quotCharacter_at_three V hV hρ
+      W₀ hW₀0 hW₀top hW₀stable
+  exact ⟨W, χ₂, hWfr, hWstable, hχ₂,
+    quotCharacter_unramified_at_two V hV hρ W χ₂ hWfr hWstable hχ₂, h3⟩
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in

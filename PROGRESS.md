@@ -1642,10 +1642,17 @@ entries file). To add/remove/annotate a node, edit
                                   hardly ramified rep has a Γℚ-equivariant surjection onto the
                                   trivial 1-dim rep. From mod_three_reducible +
                                   mod_three_of_stable_line (Minkowski bookkeeping PROVEN).
-                                    - ❌· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter` — the stable line with locally-unramified quotient character at
-                                      2 and 3 (sorry node): flatness at 3 forces the étale quotient
-                                      via the connected-étale sequence (the Serre swap); tameness at
-                                      2 kills ramification there.
+                                    - ✅· `exists_line_with_locally_unramified_quotCharacter` — DERIVED 2026-07-18: split into the
+                                      at-3 Serre-swap leaf and the at-2 tame bookkeeping leaf
+                                      (the at-2 argument applies to ANY stable line).
+                                        - ❌· `exists_line_with_unramified_quotCharacter_at_three` — (sorry node) the connected–étale
+                                          content: IsFlatAt-prolongation over ℤ₃, étale quotient
+                                          unramified, Serre swap to the other stable line when
+                                          the quotient of the given line is ramified.
+                                        - ❌· `quotCharacter_unramified_at_two` — (sorry node) tame-at-2 bookkeeping: dichotomy
+                                          W ≤ ker π₂ (χ₂ = δ unramified) vs π₂ injective on W
+                                          (χ₂ = χ₃·δ⁻¹ at 2, cyclotomic unramified away from 3);
+                                          includes the ℚ_[2] ↔ adicCompletion-at-2 bridge.
                                     - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible` — mod-3 reducibility — DERIVED 2026-07-18: if no stable
                                       submodule then irreducible (Slop.OddRep.isIrreducible_iff_forall);
                                       complex conjugation is an involution with det = χ₃(c) = -1 and
