@@ -1643,10 +1643,31 @@ entries file). To add/remove/annotate a node, edit
                                       2 and 3 (sorry node): flatness at 3 forces the étale quotient
                                       via the connected-étale sequence (the Serre swap); tameness at
                                       2 kills ramification there.
-                                    - ❌· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible` — mod-3 reducibility (sorry node): Dickson classification +
-                                      ramification constraints eliminate irreducible image — Serre
-                                      §5.4/Tate argument for p = 3. The PGL2/Dickson/OddAbsIrred
-                                      clusters are in the reference commit 8282dfb^.
+                                    - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible` — mod-3 reducibility — DERIVED 2026-07-18: if no stable
+                                      submodule then irreducible (Slop.OddRep.isIrreducible_iff_forall);
+                                      complex conjugation is an involution with det = χ₃(c) = -1 and
+                                      2 ≠ 0 in k (char k = 3), so its 1-eigenspace is a line and
+                                      OddRep.isIrreducible_iff_isAbsolutelyIrreducible upgrades to
+                                      absolute irreducibility, contradicting the Serre leaf. The
+                                      OddAbsIrred pair (495+53 lines, sorry-free, mathlib-only
+                                      imports) RESTORED from 8282dfb~1 and consumed. New PROVEN
+                                      helpers: three_eq_zero_of_finite_padicIntThree_algebra (char-3
+                                      via a unit (p:ℤ_[3]) mapping to 0), 
+                                      finrank_eigenspace_one_of_involution (E₁ ⊕ E₋₁ split + det
+                                      case analysis), GaloisRep.det_apply (exposed rfl-lemma).
+                                        - ❌· `exists_conj_cyclotomicCharacter_three` — complex conjugation with χ₃(c) = -1 (sorry node —
+                                          the oddness input): an embedding ℚᵃˡᵍ → ℂ restricts complex
+                                          conjugation to an involution; it inverts roots of unity, so
+                                          χ₃(c) = -1. Attack: IsAlgClosed.lift / Complex.conjAe +
+                                          cyclotomicCharacter.spec on inverted roots of unity.
+                                        - ❌· `not_isAbsolutelyIrreducible` — no absolutely irreducible mod-3 hardly ramified rep
+                                          (sorry node — the Serre §5.4/Tate elimination core): the
+                                          projective image in PGL₂(𝔽̄₃) is classified by Dickson
+                                          (vendored PROVEN, ~6700 lines in Slop.PGL2.FiniteSubgroups
+                                          at 8282dfb~1, to be restored when this node's proof
+                                          consumes it); ramification constraints (cyclotomic det,
+                                          unramified outside {2,3}, flat at 3, tame at 2) eliminate
+                                          every case via discriminant/conductor bounds over ℚ.
                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient` — ordinarity lifting. DERIVED 2026-07-18 from the global triangular
                                   form + the cyclotomic-at-Frobenius leaf: the local Frobenius
                                   matrix is the global form at the Frobenius image; the diagonal

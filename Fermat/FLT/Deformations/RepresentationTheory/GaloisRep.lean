@@ -132,6 +132,13 @@ def GaloisRep.det (ρ : GaloisRep K A M) : Γ K →ₜ* A :=
   letI := moduleTopology A (Module.End A M)
   .comp ⟨LinearMap.det, IsModuleTopology.continuous_det⟩ ρ
 
+omit [NumberField K] in
+/-- `det` evaluates to the linear-map determinant (an exposed `rfl`-lemma:
+downstream modules cannot unfold the definition through the module-system
+export). -/
+lemma GaloisRep.det_apply (ρ : GaloisRep K A M) (g : Γ K) :
+    ρ.det g = LinearMap.det (ρ g) := rfl
+
 open TensorProduct in
 variable (B) in
 /-- Make a `A`-linear galois rep on `M` into a `B`-linear rep on `B ⊗ M`. -/
