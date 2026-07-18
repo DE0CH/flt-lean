@@ -200,41 +200,4 @@ noncomputable instance isNonarchimedeanLocalFieldAdicCompletionRat :
   toLocallyCompactSpace := inferInstance
   toIsNontrivial := inferInstance
 
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 1000000 in
-/-- **The completion is a valuative extension of `ℚ`-with-the-`v`-adic
-valuation** (PROVEN): the coercion `WithVal (v.valuation ℚ) →
-adicCompletion ℚ v` matches the two `ofValuation` valuative relations
-(`Valued.valuedCompletion_apply` through the `toCompletion`
-projection). This is the hypothesis under which the sorry-free
-reduction-type transfer of `ReductionBaseChange.lean`
-(`hasMultiplicativeReduction_baseChange`,
-`hasSplitMultiplicativeReduction_baseChange`) applies to the
-completion. -/
-noncomputable instance valuativeExtensionWithValAdicCompletionRat :
-    ValuativeExtension (WithVal (v.valuation ℚ))
-      (HeightOneSpectrum.adicCompletion ℚ v) where
-  vle_iff_vle a b := by
-    show Valued.v ((algebraMap (WithVal (v.valuation ℚ))
-        (HeightOneSpectrum.adicCompletion ℚ v)) a) ≤
-      Valued.v ((algebraMap (WithVal (v.valuation ℚ))
-        (HeightOneSpectrum.adicCompletion ℚ v)) b) ↔
-      Valued.v a ≤ Valued.v b
-    rw [show Valued.v ((algebraMap (WithVal (v.valuation ℚ))
-        (HeightOneSpectrum.adicCompletion ℚ v)) a) =
-      Valued.v (((algebraMap (WithVal (v.valuation ℚ))
-        (HeightOneSpectrum.adicCompletion ℚ v)) a).toCompletion) from rfl,
-      show Valued.v ((algebraMap (WithVal (v.valuation ℚ))
-        (HeightOneSpectrum.adicCompletion ℚ v)) b) =
-      Valued.v (((algebraMap (WithVal (v.valuation ℚ))
-        (HeightOneSpectrum.adicCompletion ℚ v)) b).toCompletion) from rfl]
-    rw [show (((algebraMap (WithVal (v.valuation ℚ))
-        (HeightOneSpectrum.adicCompletion ℚ v)) a).toCompletion) =
-      (↑a : (v.valuation ℚ).Completion) from rfl,
-      show (((algebraMap (WithVal (v.valuation ℚ))
-        (HeightOneSpectrum.adicCompletion ℚ v)) b).toCompletion) =
-      (↑b : (v.valuation ℚ).Completion) from rfl,
-      Valued.valuedCompletion_apply, Valued.valuedCompletion_apply]
-
 end AdicCompletionRat

@@ -11,7 +11,6 @@ public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.AdicValuation
 import Mathlib.NumberTheory.NumberField.Completion.FinitePlace
 import Mathlib.NumberTheory.Padics.HeightOneSpectrum
 import Mathlib.NumberTheory.Padics.ProperSpace
-public import Fermat.FLT.Mathlib.LinearAlgebra.Countable
 
 /-!
 
@@ -38,8 +37,4 @@ instance NumberField.instFiniteResidueFieldAdicCompletionIntegers :
     Finite (ResidueField (v.adicCompletionIntegers K)) := by
   apply (HeightOneSpectrum.ResidueFieldEquivCompletionResidueField K v).toEquiv.finite_iff.mp
   exact Ideal.finiteQuotientOfFreeOfNeBot v.asIdeal v.ne_bot
-
-open scoped Valued in
-instance : Finite (𝓀[v.adicCompletion K]) :=
-  inferInstanceAs (Finite (ResidueField (v.adicCompletionIntegers K)))
 

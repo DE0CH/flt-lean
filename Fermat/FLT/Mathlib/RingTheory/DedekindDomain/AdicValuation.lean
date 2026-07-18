@@ -20,15 +20,6 @@ namespace IsDedekindDomain.HeightOneSpectrum
 -- TODO upstream
 open IsDedekindDomain
 
-instance {R : Type*} [CommRing R] [IsDedekindDomain R] (K : Type*) [Field K] [Countable K]
-    [Algebra R K] [IsFractionRing R K] (v : HeightOneSpectrum R) :
-    TopologicalSpace.SeparableSpace (v.adicCompletion K) where
-  exists_countable_dense :=
-    -- `adicCompletion` is now a one-field structure (not defeq to `Completion`), so use the
-    -- mathlib-provided dense range of `algebraMap K → adicCompletion` and `K`'s countability.
-    ⟨Set.range (algebraMap K (v.adicCompletion K)),
-      Set.countable_range _, denseRange_algebraMap K v⟩
-
 lemma intValuation_eq_coe_neg_multiplicity {A : Type*} [CommRing A] [IsDedekindDomain A]
     (v : HeightOneSpectrum A) {a : A} (hnz : a ≠ 0) :
     v.intValuation a = WithZero.exp (-(multiplicity v.asIdeal (Ideal.span {a}) : ℤ)) := by
@@ -41,13 +32,5 @@ lemma intValuation_eq_coe_neg_multiplicity {A : Type*} [CommRing A] [IsDedekindD
   symm
   apply multiplicity_eq_of_emultiplicity_eq_some
   rw [← UniqueFactorizationMonoid.emultiplicity_eq_count_normalizedFactors v.irreducible hnb]
-
-/-- `adicCompletion.equiv` as a `K`-algebra isomorphism onto the underlying completion. -/
-noncomputable def adicCompletion.algEquiv
-    {A : Type*} [CommRing A] [IsDedekindDomain A] (K : Type*) [Field K] [Algebra A K]
-    [IsFractionRing A K] (v : HeightOneSpectrum A) :
-    v.adicCompletion K ≃ₐ[K] (v.valuation K).Completion :=
-  AlgEquiv.ofRingEquiv (f := adicCompletion.equiv K v)
-    fun x => algebraMap_adicCompletion_toCompletion A K v x
 
 end IsDedekindDomain.HeightOneSpectrum

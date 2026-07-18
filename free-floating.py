@@ -93,7 +93,7 @@ def main() -> int:
       | c :: _ =>
         let last := c.toString
         last ∈ ["rec", "recOn", "casesOn", "brecOn", "below", "ibelow",
-          "binductionOn", "noConfusion", "noConfusionType", "mk", "injEq",
+          "binductionOn", "noConfusion", "noConfusionType", "mk", "injEq", "ctorIdx",
           "inj", "sizeOf_spec", "ext", "ext_iff", "congr_simp", "eq_def"] ||
         last.startsWith "eq_" || last.startsWith "match_" ||
         last.startsWith "proof_" || last.startsWith "_proof_"

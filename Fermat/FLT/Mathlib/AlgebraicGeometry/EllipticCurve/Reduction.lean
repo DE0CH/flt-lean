@@ -47,17 +47,6 @@ lemma nodePoly_map {A : Type*} [CommRing A] {B : Type*} [CommRing B] (φ : A →
   simp only [nodePoly, Polynomial.map_sub, Polynomial.map_add, Polynomial.map_mul,
     Polynomial.map_pow, Polynomial.map_C, Polynomial.map_X]
 
-/-- The node polynomial is natural in the coefficient ring: it commutes with base change of the
-Weierstrass equation along any ring homomorphism, since every coefficient is a polynomial in the
-`aᵢ` and `Polynomial.map` is a ring homomorphism on each. -/
-lemma map_nodePoly {A : Type*} [CommRing A] {B : Type*} [CommRing B] (φ : A →+* B)
-    (W : WeierstrassCurve A) :
-    (W.map φ).nodePoly = W.nodePoly.map φ := by
-  simp only [nodePoly, WeierstrassCurve.map_c₄, WeierstrassCurve.map_a₁, WeierstrassCurve.map_b₂,
-    WeierstrassCurve.map_b₄, WeierstrassCurve.map_b₆, WeierstrassCurve.map_a₂, Polynomial.map_add,
-    Polynomial.map_sub, Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_C, Polynomial.map_X,
-    Polynomial.map_ofNat, map_add, map_sub, map_mul, map_ofNat]
-
 /-- The root of the (base-changed) node polynomial satisfies its defining quadratic relation. -/
 lemma aeval_root_nodePoly_map {A : Type*} [CommRing A] {B : Type*} [CommRing B] (φ : A →+* B)
     (W : WeierstrassCurve A) :

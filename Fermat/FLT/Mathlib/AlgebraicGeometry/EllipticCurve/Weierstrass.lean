@@ -40,12 +40,6 @@ end
 
 variable {K : Type u} [Field K] (E : WeierstrassCurve K)
 
-/-- In characteristic `2`, an elliptic curve has `a₁ ≠ 0` or `a₃ ≠ 0`: otherwise `a₁ = a₃ = 0`
-makes the partial derivative `∂/∂y = 2y + a₁x + a₃` vanish identically, so `Δ = 0`. -/
-lemma a₁_ne_zero_or_a₃_ne_zero_of_two_eq_zero [E.IsElliptic] (h2 : (2 : K) = 0) :
-    E.a₁ ≠ 0 ∨ E.a₃ ≠ 0 := by
-  by_contra! h
-  exact E.isUnit_Δ.ne_zero (by rw [Δ, b₈, b₆, b₄, b₂, h.1, h.2]; grobner)
 
 /-- `c₆(E) = 0` if and only if `j(E) = 1728`, by the relation `1728·Δ = c₄³ - c₆²`. This is the
 analogue for `j = 1728` of `WeierstrassCurve.j_eq_zero_iff` (`j = 0 ↔ c₄ = 0`). -/

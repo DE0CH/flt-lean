@@ -6,7 +6,6 @@ Authors: Michael Stoll, Claude
 module
 
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange
-public import Fermat.FLT.Mathlib.GroupTheory.SpecificGroups.Cyclic
 
 /-!
 
