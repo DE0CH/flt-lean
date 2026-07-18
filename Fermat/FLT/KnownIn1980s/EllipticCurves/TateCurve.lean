@@ -313,6 +313,47 @@ theorem WeierstrassCurve.tateCurveModel_baseChange (q : k)
     ((tateCurveModel q hq)⁄k) = tateCurve q := by
   ext <;> rfl
 
+open PowerSeries in
+/-- **The `c₄`-invariant of the Tate curve is the value of `c₄Formal`**
+(PROVEN — the easy half of the `q`-expansion identities):
+`c₄ = 1 − 48·a₄(q)` and `c₄Formal = 1 − 48·a₄Formal` term by term. -/
+theorem WeierstrassCurve.c₄_tateCurve_eq_evalInt (q : k)
+    (hq : valuation k q < 1) :
+    (tateCurve q).c₄ = TateCurve.evalInt q TateCurve.c₄Formal := by
+  have hc₄eq : (tateCurve q).c₄ = 1 - 48 * tateA₄ q := by
+    simp only [tateCurve, WeierstrassCurve.c₄, WeierstrassCurve.b₂,
+      WeierstrassCurve.b₄]
+    ring
+  have hform : TateCurve.c₄Formal = 1 + (-48) * TateCurve.a₄Formal := by
+    rw [TateCurve.c₄Formal, TateCurve.a₄Formal]
+    ring
+  -- evaluation of the constant series
+  have h1 : TateCurve.evalInt q (1 : ℤ⟦X⟧) = 1 := by
+    rw [TateCurve.evalInt, tsum_eq_single 0 ?_]
+    · simp
+    · intro n hn
+      simp [PowerSeries.coeff_one, hn]
+  -- evaluation of an integer multiple
+  have hsc : TateCurve.evalInt q ((-48) * TateCurve.a₄Formal) =
+      (-48 : k) * TateCurve.evalInt q TateCurve.a₄Formal := by
+    rw [TateCurve.evalInt, TateCurve.evalInt, ← tsum_mul_left]
+    congr 1
+    funext n
+    have hcoeff : PowerSeries.coeff n ((-48) * TateCurve.a₄Formal) =
+        -48 * PowerSeries.coeff n TateCurve.a₄Formal := by
+      have h0 : ((-48 : ℤ⟦X⟧)) * TateCurve.a₄Formal =
+          (-48 : ℤ) • TateCurve.a₄Formal := by
+        rw [zsmul_eq_mul]
+        norm_num
+      rw [h0, map_smul, smul_eq_mul]
+    rw [hcoeff]
+    push_cast
+    ring
+  rw [hc₄eq, tateA₄_eq_evalInt q hq, hform,
+    TateCurve.evalInt_add (TateCurve.summable_evalInt q hq 1)
+      (TateCurve.summable_evalInt q hq _), h1, hsc]
+  ring
+
 open Polynomial in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
