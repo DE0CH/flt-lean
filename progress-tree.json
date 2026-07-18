@@ -176,8 +176,8 @@
   "TateCurve.evalA_chordY": "✅",
   "TateCurve.chordX_formal": "❌",
   "TateCurve.chordY_formal": "❌",
-  "TateCurve.evalA_chordX_of_formal": "❌",
-  "TateCurve.evalA_chordY_of_formal": "❌"
+  "TateCurve.evalA_chordX_of_formal": "✅✅",
+  "TateCurve.evalA_chordY_of_formal": "✅✅"
  },
  "children": {
   "fermatLastTheoremThree": [],

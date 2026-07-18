@@ -1227,12 +1227,12 @@
     "name": "TateCurve.evalA_chordX_of_formal",
     "fullname": "TateCurve.evalA_chordX_of_formal",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-    "text": "two-variable evaluation transport for the chord X-identity (sorry node, NARROWED 2026-07-18: coeffRingEval₂ (Localization.awayLift over the bivariate eval₂RingHom, unit of the localized denominator proven) and the three slot bridges coeffRingEval₂∘uSlot = coeffRingEval u₀ / v-slot / uv-slot = coeffRingEval (u₀v₀) are PROVEN (IsLocalization.ringHom_ext + Polynomial.hom_eval₂), and the evaluated coefficient sequences of the slot images are identified with the one-variable sequences inside the proof. REMAINING: the nonarchimedean Cauchy-product assembly mirroring evalA_weierstrass — define the ₂-level tsum, transport summability along the sequence identifications (summable_evalA_XA/YA at u₀, v₀, u₀v₀ with the window hypotheses hwin/hwhigh), evalA₂_add/evalA₂_mul copies, product-normal form of hformal by linear_combination, calc chain."
+    "text": "two-variable evaluation transport for the chord X-identity (PROVEN 2026-07-18: coeffRingEval₂ + slot bridges + generic hom-evaluation arithmetic summable/tsum_hom_eval_add/neg/mul (nonarchimedean Cauchy product, mirroring evalA_mul) + calc assembly against the product-normal form of the formal identity)."
   },
   {
     "name": "TateCurve.evalA_chordY_of_formal",
     "fullname": "TateCurve.evalA_chordY_of_formal",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-    "text": "two-variable evaluation transport for the chord Y-identity (sorry node, NARROWED: same bridge skeleton proven as the X-transport; remaining Cauchy-product assembly identical)."
+    "text": "two-variable evaluation transport for the chord Y-identity (PROVEN 2026-07-18: same assembly)."
   }
 ]

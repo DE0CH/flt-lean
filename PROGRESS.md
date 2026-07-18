@@ -274,13 +274,6 @@ entries file). To add/remove/annotate a node, edit
                                                                                       CoeffRing₂⟦q⟧ (sorry node):
                                                                                       same route as chordX_formal
                                                                                       with analytic_chordY.
-                                                                                    - ❌· `TateCurve.evalA_chordY_of_formal` — two-variable evaluation
-                                                                                      transport for the chord
-                                                                                      Y-identity (sorry node,
-                                                                                      NARROWED: same bridge skeleton
-                                                                                      proven as the X-transport;
-                                                                                      remaining Cauchy-product
-                                                                                      assembly identical).
                                                                             - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
                                                                               chord Y-identity (sorry node):
                                                                               same shift-reduction as the
@@ -383,40 +376,6 @@ entries file). To add/remove/annotate a node, edit
                                                                                       convergence bounds (evalA is
                                                                                       already the “two-variable
                                                                                       analogue of evalInt”).
-                                                                                    - ❌· `TateCurve.evalA_chordX_of_formal` — two-variable evaluation
-                                                                                      transport for the chord
-                                                                                      X-identity (sorry node,
-                                                                                      NARROWED 2026-07-18:
-                                                                                      coeffRingEval₂
-                                                                                      (Localization.awayLift over
-                                                                                      the bivariate eval₂RingHom,
-                                                                                      unit of the localized
-                                                                                      denominator proven) and the
-                                                                                      three slot bridges
-                                                                                      coeffRingEval₂∘uSlot =
-                                                                                      coeffRingEval u₀ / v-slot /
-                                                                                      uv-slot = coeffRingEval (u₀v₀)
-                                                                                      are PROVEN
-                                                                                      (IsLocalization.ringHom_ext +
-                                                                                      Polynomial.hom_eval₂), and the
-                                                                                      evaluated coefficient
-                                                                                      sequences of the slot images
-                                                                                      are identified with the one-
-                                                                                      variable sequences inside the
-                                                                                      proof. REMAINING: the
-                                                                                      nonarchimedean Cauchy-product
-                                                                                      assembly mirroring
-                                                                                      evalA_weierstrass — define the
-                                                                                      ₂-level tsum, transport
-                                                                                      summability along the sequence
-                                                                                      identifications
-                                                                                      (summable_evalA_XA/YA at u₀,
-                                                                                      v₀, u₀v₀ with the window
-                                                                                      hypotheses hwin/hwhigh),
-                                                                                      evalA₂_add/evalA₂_mul copies,
-                                                                                      product-normal form of hformal
-                                                                                      by linear_combination, calc
-                                                                                      chain.
                                                                             - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
                                                                               chord X-identity (sorry node):
                                                                               u₀v₀ below the fundamental
@@ -642,13 +601,6 @@ entries file). To add/remove/annotate a node, edit
                                                                                           CoeffRing₂⟦q⟧ (sorry node):
                                                                                           same route as chordX_formal
                                                                                           with analytic_chordY.
-                                                                                        - ❌· `TateCurve.evalA_chordY_of_formal` — two-variable evaluation
-                                                                                          transport for the chord
-                                                                                          Y-identity (sorry node,
-                                                                                          NARROWED: same bridge skeleton
-                                                                                          proven as the X-transport;
-                                                                                          remaining Cauchy-product
-                                                                                          assembly identical).
                                                                                 - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
                                                                                   chord Y-identity (sorry node):
                                                                                   same shift-reduction as the
@@ -751,40 +703,6 @@ entries file). To add/remove/annotate a node, edit
                                                                                           convergence bounds (evalA is
                                                                                           already the “two-variable
                                                                                           analogue of evalInt”).
-                                                                                        - ❌· `TateCurve.evalA_chordX_of_formal` — two-variable evaluation
-                                                                                          transport for the chord
-                                                                                          X-identity (sorry node,
-                                                                                          NARROWED 2026-07-18:
-                                                                                          coeffRingEval₂
-                                                                                          (Localization.awayLift over
-                                                                                          the bivariate eval₂RingHom,
-                                                                                          unit of the localized
-                                                                                          denominator proven) and the
-                                                                                          three slot bridges
-                                                                                          coeffRingEval₂∘uSlot =
-                                                                                          coeffRingEval u₀ / v-slot /
-                                                                                          uv-slot = coeffRingEval (u₀v₀)
-                                                                                          are PROVEN
-                                                                                          (IsLocalization.ringHom_ext +
-                                                                                          Polynomial.hom_eval₂), and the
-                                                                                          evaluated coefficient
-                                                                                          sequences of the slot images
-                                                                                          are identified with the one-
-                                                                                          variable sequences inside the
-                                                                                          proof. REMAINING: the
-                                                                                          nonarchimedean Cauchy-product
-                                                                                          assembly mirroring
-                                                                                          evalA_weierstrass — define the
-                                                                                          ₂-level tsum, transport
-                                                                                          summability along the sequence
-                                                                                          identifications
-                                                                                          (summable_evalA_XA/YA at u₀,
-                                                                                          v₀, u₀v₀ with the window
-                                                                                          hypotheses hwin/hwhigh),
-                                                                                          evalA₂_add/evalA₂_mul copies,
-                                                                                          product-normal form of hformal
-                                                                                          by linear_combination, calc
-                                                                                          chain.
                                                                                 - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
                                                                                   chord X-identity (sorry node):
                                                                                   u₀v₀ below the fundamental
@@ -1034,13 +952,6 @@ entries file). To add/remove/annotate a node, edit
                                                                                               CoeffRing₂⟦q⟧ (sorry node):
                                                                                               same route as chordX_formal
                                                                                               with analytic_chordY.
-                                                                                            - ❌· `TateCurve.evalA_chordY_of_formal` — two-variable evaluation
-                                                                                              transport for the chord
-                                                                                              Y-identity (sorry node,
-                                                                                              NARROWED: same bridge skeleton
-                                                                                              proven as the X-transport;
-                                                                                              remaining Cauchy-product
-                                                                                              assembly identical).
                                                                                     - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
                                                                                       chord Y-identity (sorry node):
                                                                                       same shift-reduction as the
@@ -1143,40 +1054,6 @@ entries file). To add/remove/annotate a node, edit
                                                                                               convergence bounds (evalA is
                                                                                               already the “two-variable
                                                                                               analogue of evalInt”).
-                                                                                            - ❌· `TateCurve.evalA_chordX_of_formal` — two-variable evaluation
-                                                                                              transport for the chord
-                                                                                              X-identity (sorry node,
-                                                                                              NARROWED 2026-07-18:
-                                                                                              coeffRingEval₂
-                                                                                              (Localization.awayLift over
-                                                                                              the bivariate eval₂RingHom,
-                                                                                              unit of the localized
-                                                                                              denominator proven) and the
-                                                                                              three slot bridges
-                                                                                              coeffRingEval₂∘uSlot =
-                                                                                              coeffRingEval u₀ / v-slot /
-                                                                                              uv-slot = coeffRingEval (u₀v₀)
-                                                                                              are PROVEN
-                                                                                              (IsLocalization.ringHom_ext +
-                                                                                              Polynomial.hom_eval₂), and the
-                                                                                              evaluated coefficient
-                                                                                              sequences of the slot images
-                                                                                              are identified with the one-
-                                                                                              variable sequences inside the
-                                                                                              proof. REMAINING: the
-                                                                                              nonarchimedean Cauchy-product
-                                                                                              assembly mirroring
-                                                                                              evalA_weierstrass — define the
-                                                                                              ₂-level tsum, transport
-                                                                                              summability along the sequence
-                                                                                              identifications
-                                                                                              (summable_evalA_XA/YA at u₀,
-                                                                                              v₀, u₀v₀ with the window
-                                                                                              hypotheses hwin/hwhigh),
-                                                                                              evalA₂_add/evalA₂_mul copies,
-                                                                                              product-normal form of hformal
-                                                                                              by linear_combination, calc
-                                                                                              chain.
                                                                                     - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
                                                                                       chord X-identity (sorry node):
                                                                                       u₀v₀ below the fundamental
@@ -1419,13 +1296,6 @@ entries file). To add/remove/annotate a node, edit
                                                                                                   CoeffRing₂⟦q⟧ (sorry node):
                                                                                                   same route as chordX_formal
                                                                                                   with analytic_chordY.
-                                                                                                - ❌· `TateCurve.evalA_chordY_of_formal` — two-variable evaluation
-                                                                                                  transport for the chord
-                                                                                                  Y-identity (sorry node,
-                                                                                                  NARROWED: same bridge skeleton
-                                                                                                  proven as the X-transport;
-                                                                                                  remaining Cauchy-product
-                                                                                                  assembly identical).
                                                                                         - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
                                                                                           chord Y-identity (sorry node):
                                                                                           same shift-reduction as the
@@ -1528,40 +1398,6 @@ entries file). To add/remove/annotate a node, edit
                                                                                                   convergence bounds (evalA is
                                                                                                   already the “two-variable
                                                                                                   analogue of evalInt”).
-                                                                                                - ❌· `TateCurve.evalA_chordX_of_formal` — two-variable evaluation
-                                                                                                  transport for the chord
-                                                                                                  X-identity (sorry node,
-                                                                                                  NARROWED 2026-07-18:
-                                                                                                  coeffRingEval₂
-                                                                                                  (Localization.awayLift over
-                                                                                                  the bivariate eval₂RingHom,
-                                                                                                  unit of the localized
-                                                                                                  denominator proven) and the
-                                                                                                  three slot bridges
-                                                                                                  coeffRingEval₂∘uSlot =
-                                                                                                  coeffRingEval u₀ / v-slot /
-                                                                                                  uv-slot = coeffRingEval (u₀v₀)
-                                                                                                  are PROVEN
-                                                                                                  (IsLocalization.ringHom_ext +
-                                                                                                  Polynomial.hom_eval₂), and the
-                                                                                                  evaluated coefficient
-                                                                                                  sequences of the slot images
-                                                                                                  are identified with the one-
-                                                                                                  variable sequences inside the
-                                                                                                  proof. REMAINING: the
-                                                                                                  nonarchimedean Cauchy-product
-                                                                                                  assembly mirroring
-                                                                                                  evalA_weierstrass — define the
-                                                                                                  ₂-level tsum, transport
-                                                                                                  summability along the sequence
-                                                                                                  identifications
-                                                                                                  (summable_evalA_XA/YA at u₀,
-                                                                                                  v₀, u₀v₀ with the window
-                                                                                                  hypotheses hwin/hwhigh),
-                                                                                                  evalA₂_add/evalA₂_mul copies,
-                                                                                                  product-normal form of hformal
-                                                                                                  by linear_combination, calc
-                                                                                                  chain.
                                                                                         - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
                                                                                           chord X-identity (sorry node):
                                                                                           u₀v₀ below the fundamental
@@ -1829,13 +1665,6 @@ entries file). To add/remove/annotate a node, edit
                                                                           CoeffRing₂⟦q⟧ (sorry node):
                                                                           same route as chordX_formal
                                                                           with analytic_chordY.
-                                                                        - ❌· `TateCurve.evalA_chordY_of_formal` — two-variable evaluation
-                                                                          transport for the chord
-                                                                          Y-identity (sorry node,
-                                                                          NARROWED: same bridge skeleton
-                                                                          proven as the X-transport;
-                                                                          remaining Cauchy-product
-                                                                          assembly identical).
                                                                 - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared chord
                                                                   Y-identity (sorry node): same
                                                                   shift-reduction as the X-shifted
@@ -1935,40 +1764,6 @@ entries file). To add/remove/annotate a node, edit
                                                                           convergence bounds (evalA is
                                                                           already the “two-variable
                                                                           analogue of evalInt”).
-                                                                        - ❌· `TateCurve.evalA_chordX_of_formal` — two-variable evaluation
-                                                                          transport for the chord
-                                                                          X-identity (sorry node,
-                                                                          NARROWED 2026-07-18:
-                                                                          coeffRingEval₂
-                                                                          (Localization.awayLift over
-                                                                          the bivariate eval₂RingHom,
-                                                                          unit of the localized
-                                                                          denominator proven) and the
-                                                                          three slot bridges
-                                                                          coeffRingEval₂∘uSlot =
-                                                                          coeffRingEval u₀ / v-slot /
-                                                                          uv-slot = coeffRingEval (u₀v₀)
-                                                                          are PROVEN
-                                                                          (IsLocalization.ringHom_ext +
-                                                                          Polynomial.hom_eval₂), and the
-                                                                          evaluated coefficient
-                                                                          sequences of the slot images
-                                                                          are identified with the one-
-                                                                          variable sequences inside the
-                                                                          proof. REMAINING: the
-                                                                          nonarchimedean Cauchy-product
-                                                                          assembly mirroring
-                                                                          evalA_weierstrass — define the
-                                                                          ₂-level tsum, transport
-                                                                          summability along the sequence
-                                                                          identifications
-                                                                          (summable_evalA_XA/YA at u₀,
-                                                                          v₀, u₀v₀ with the window
-                                                                          hypotheses hwin/hwhigh),
-                                                                          evalA₂_add/evalA₂_mul copies,
-                                                                          product-normal form of hformal
-                                                                          by linear_combination, calc
-                                                                          chain.
                                                                 - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared chord
                                                                   X-identity (sorry node): u₀v₀
                                                                   below the fundamental annulus
@@ -2152,13 +1947,6 @@ entries file). To add/remove/annotate a node, edit
                                                                               CoeffRing₂⟦q⟧ (sorry node):
                                                                               same route as chordX_formal
                                                                               with analytic_chordY.
-                                                                            - ❌· `TateCurve.evalA_chordY_of_formal` — two-variable evaluation
-                                                                              transport for the chord
-                                                                              Y-identity (sorry node,
-                                                                              NARROWED: same bridge skeleton
-                                                                              proven as the X-transport;
-                                                                              remaining Cauchy-product
-                                                                              assembly identical).
                                                                     - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
                                                                       chord Y-identity (sorry node):
                                                                       same shift-reduction as the
@@ -2260,40 +2048,6 @@ entries file). To add/remove/annotate a node, edit
                                                                               convergence bounds (evalA is
                                                                               already the “two-variable
                                                                               analogue of evalInt”).
-                                                                            - ❌· `TateCurve.evalA_chordX_of_formal` — two-variable evaluation
-                                                                              transport for the chord
-                                                                              X-identity (sorry node,
-                                                                              NARROWED 2026-07-18:
-                                                                              coeffRingEval₂
-                                                                              (Localization.awayLift over
-                                                                              the bivariate eval₂RingHom,
-                                                                              unit of the localized
-                                                                              denominator proven) and the
-                                                                              three slot bridges
-                                                                              coeffRingEval₂∘uSlot =
-                                                                              coeffRingEval u₀ / v-slot /
-                                                                              uv-slot = coeffRingEval (u₀v₀)
-                                                                              are PROVEN
-                                                                              (IsLocalization.ringHom_ext +
-                                                                              Polynomial.hom_eval₂), and the
-                                                                              evaluated coefficient
-                                                                              sequences of the slot images
-                                                                              are identified with the one-
-                                                                              variable sequences inside the
-                                                                              proof. REMAINING: the
-                                                                              nonarchimedean Cauchy-product
-                                                                              assembly mirroring
-                                                                              evalA_weierstrass — define the
-                                                                              ₂-level tsum, transport
-                                                                              summability along the sequence
-                                                                              identifications
-                                                                              (summable_evalA_XA/YA at u₀,
-                                                                              v₀, u₀v₀ with the window
-                                                                              hypotheses hwin/hwhigh),
-                                                                              evalA₂_add/evalA₂_mul copies,
-                                                                              product-normal form of hformal
-                                                                              by linear_combination, calc
-                                                                              chain.
                                                                     - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
                                                                       chord X-identity (sorry node):
                                                                       u₀v₀ below the fundamental
@@ -2474,12 +2228,6 @@ entries file). To add/remove/annotate a node, edit
                                                                   CoeffRing₂⟦q⟧ (sorry node): same
                                                                   route as chordX_formal with
                                                                   analytic_chordY.
-                                                                - ❌· `TateCurve.evalA_chordY_of_formal` — two-variable evaluation transport
-                                                                  for the chord Y-identity (sorry
-                                                                  node, NARROWED: same bridge
-                                                                  skeleton proven as the
-                                                                  X-transport; remaining Cauchy-
-                                                                  product assembly identical).
                                                         - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared chord
                                                           Y-identity (sorry node): same shift-
                                                           reduction as the X-shifted case.
@@ -2568,35 +2316,6 @@ entries file). To add/remove/annotate a node, edit
                                                                   convergence bounds (evalA is
                                                                   already the “two-variable analogue
                                                                   of evalInt”).
-                                                                - ❌· `TateCurve.evalA_chordX_of_formal` — two-variable evaluation transport
-                                                                  for the chord X-identity (sorry
-                                                                  node, NARROWED 2026-07-18:
-                                                                  coeffRingEval₂
-                                                                  (Localization.awayLift over the
-                                                                  bivariate eval₂RingHom, unit of
-                                                                  the localized denominator proven)
-                                                                  and the three slot bridges
-                                                                  coeffRingEval₂∘uSlot =
-                                                                  coeffRingEval u₀ / v-slot / uv-
-                                                                  slot = coeffRingEval (u₀v₀) are
-                                                                  PROVEN (IsLocalization.ringHom_ext
-                                                                  + Polynomial.hom_eval₂), and the
-                                                                  evaluated coefficient sequences of
-                                                                  the slot images are identified
-                                                                  with the one-variable sequences
-                                                                  inside the proof. REMAINING: the
-                                                                  nonarchimedean Cauchy-product
-                                                                  assembly mirroring
-                                                                  evalA_weierstrass — define the
-                                                                  ₂-level tsum, transport
-                                                                  summability along the sequence
-                                                                  identifications
-                                                                  (summable_evalA_XA/YA at u₀, v₀,
-                                                                  u₀v₀ with the window hypotheses
-                                                                  hwin/hwhigh),
-                                                                  evalA₂_add/evalA₂_mul copies,
-                                                                  product-normal form of hformal by
-                                                                  linear_combination, calc chain.
                                                         - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared chord
                                                           X-identity (sorry node): u₀v₀ below the
                                                           fundamental annulus (val(u₀v₀) ≤ val q₀
@@ -2737,12 +2456,6 @@ entries file). To add/remove/annotate a node, edit
                                                                   CoeffRing₂⟦q⟧ (sorry node): same
                                                                   route as chordX_formal with
                                                                   analytic_chordY.
-                                                                - ❌· `TateCurve.evalA_chordY_of_formal` — two-variable evaluation transport
-                                                                  for the chord Y-identity (sorry
-                                                                  node, NARROWED: same bridge
-                                                                  skeleton proven as the
-                                                                  X-transport; remaining Cauchy-
-                                                                  product assembly identical).
                                                         - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared chord
                                                           Y-identity (sorry node): same shift-
                                                           reduction as the X-shifted case.
@@ -2831,35 +2544,6 @@ entries file). To add/remove/annotate a node, edit
                                                                   convergence bounds (evalA is
                                                                   already the “two-variable analogue
                                                                   of evalInt”).
-                                                                - ❌· `TateCurve.evalA_chordX_of_formal` — two-variable evaluation transport
-                                                                  for the chord X-identity (sorry
-                                                                  node, NARROWED 2026-07-18:
-                                                                  coeffRingEval₂
-                                                                  (Localization.awayLift over the
-                                                                  bivariate eval₂RingHom, unit of
-                                                                  the localized denominator proven)
-                                                                  and the three slot bridges
-                                                                  coeffRingEval₂∘uSlot =
-                                                                  coeffRingEval u₀ / v-slot / uv-
-                                                                  slot = coeffRingEval (u₀v₀) are
-                                                                  PROVEN (IsLocalization.ringHom_ext
-                                                                  + Polynomial.hom_eval₂), and the
-                                                                  evaluated coefficient sequences of
-                                                                  the slot images are identified
-                                                                  with the one-variable sequences
-                                                                  inside the proof. REMAINING: the
-                                                                  nonarchimedean Cauchy-product
-                                                                  assembly mirroring
-                                                                  evalA_weierstrass — define the
-                                                                  ₂-level tsum, transport
-                                                                  summability along the sequence
-                                                                  identifications
-                                                                  (summable_evalA_XA/YA at u₀, v₀,
-                                                                  u₀v₀ with the window hypotheses
-                                                                  hwin/hwhigh),
-                                                                  evalA₂_add/evalA₂_mul copies,
-                                                                  product-normal form of hformal by
-                                                                  linear_combination, calc chain.
                                                         - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared chord
                                                           X-identity (sorry node): u₀v₀ below the
                                                           fundamental annulus (val(u₀v₀) ≤ val q₀

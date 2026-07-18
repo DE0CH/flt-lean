@@ -2984,15 +2984,97 @@ theorem coeffRingEval₂_uvSlot (u₀ v₀ : k) (hu0 : u₀ ≠ 0) (hu1 : u₀ �
   simp only [RingHom.comp_apply, coeffRingEval₂_algebraMap]
   simp [biEval]
 
-set_option warn.sorry false in
+omit [CharZero k] in
+/-- Summability of an evaluated sum series, for an arbitrary
+coefficient homomorphism. -/
+theorem summable_hom_eval_add {R : Type*} [CommRing R] (E : R →+* k)
+    (q₀ : k) {F G : PowerSeries R}
+    (hF : Summable fun n : ℕ ↦ E (PowerSeries.coeff n F) * q₀ ^ n)
+    (hG : Summable fun n : ℕ ↦ E (PowerSeries.coeff n G) * q₀ ^ n) :
+    Summable fun n : ℕ ↦ E (PowerSeries.coeff n (F + G)) * q₀ ^ n := by
+  refine (hF.add hG).congr fun n ↦ ?_
+  rw [map_add, map_add, add_mul]
+
+omit [CharZero k] in
+/-- Summability of an evaluated negated series. -/
+theorem summable_hom_eval_neg {R : Type*} [CommRing R] (E : R →+* k)
+    (q₀ : k) {F : PowerSeries R}
+    (hF : Summable fun n : ℕ ↦ E (PowerSeries.coeff n F) * q₀ ^ n) :
+    Summable fun n : ℕ ↦ E (PowerSeries.coeff n (-F)) * q₀ ^ n := by
+  refine hF.neg.congr fun n ↦ ?_
+  rw [map_neg, map_neg, neg_mul]
+
+omit [CharZero k] in
+/-- Summability of an evaluated product series (nonarchimedean Cauchy
+product), for an arbitrary coefficient homomorphism. -/
+theorem summable_hom_eval_mul {R : Type*} [CommRing R] (E : R →+* k)
+    (q₀ : k) {F G : PowerSeries R}
+    (hF : Summable fun n : ℕ ↦ E (PowerSeries.coeff n F) * q₀ ^ n)
+    (hG : Summable fun n : ℕ ↦ E (PowerSeries.coeff n G) * q₀ ^ n) :
+    Summable fun n : ℕ ↦ E (PowerSeries.coeff n (F * G)) * q₀ ^ n := by
+  have h := summable_sum_mul_antidiagonal_of_summable_mul (A := ℕ)
+    (summable_mul_prod hF hG)
+  refine h.congr fun n ↦ ?_
+  rw [PowerSeries.coeff_mul, map_sum, Finset.sum_mul]
+  refine Finset.sum_congr rfl fun p hp ↦ ?_
+  have hpn : p.1 + p.2 = n := Finset.mem_antidiagonal.mp hp
+  rw [map_mul, ← hpn, pow_add]
+  ring
+
+omit [CharZero k] in
+/-- The evaluated sum series sums to the sum of the evaluations. -/
+theorem tsum_hom_eval_add {R : Type*} [CommRing R] (E : R →+* k)
+    (q₀ : k) {F G : PowerSeries R}
+    (hF : Summable fun n : ℕ ↦ E (PowerSeries.coeff n F) * q₀ ^ n)
+    (hG : Summable fun n : ℕ ↦ E (PowerSeries.coeff n G) * q₀ ^ n) :
+    ∑' n : ℕ, E (PowerSeries.coeff n (F + G)) * q₀ ^ n =
+      (∑' n : ℕ, E (PowerSeries.coeff n F) * q₀ ^ n) +
+      ∑' n : ℕ, E (PowerSeries.coeff n G) * q₀ ^ n := by
+  rw [← hF.tsum_add hG]
+  congr 1
+  funext n
+  rw [map_add, map_add, add_mul]
+
+omit [CharZero k] in
+/-- The evaluated negated series sums to the negated evaluation. -/
+theorem tsum_hom_eval_neg {R : Type*} [CommRing R] (E : R →+* k)
+    (q₀ : k) {F : PowerSeries R} :
+    ∑' n : ℕ, E (PowerSeries.coeff n (-F)) * q₀ ^ n =
+      -∑' n : ℕ, E (PowerSeries.coeff n F) * q₀ ^ n := by
+  rw [← tsum_neg]
+  congr 1
+  funext n
+  rw [map_neg, map_neg, neg_mul]
+
+set_option maxHeartbeats 1000000 in
+omit [CharZero k] in
+/-- The evaluated product series sums to the product of the evaluations
+(nonarchimedean Mertens), for an arbitrary coefficient homomorphism. -/
+theorem tsum_hom_eval_mul {R : Type*} [CommRing R] (E : R →+* k)
+    (q₀ : k) {F G : PowerSeries R}
+    (hF : Summable fun n : ℕ ↦ E (PowerSeries.coeff n F) * q₀ ^ n)
+    (hG : Summable fun n : ℕ ↦ E (PowerSeries.coeff n G) * q₀ ^ n) :
+    ∑' n : ℕ, E (PowerSeries.coeff n (F * G)) * q₀ ^ n =
+      (∑' n : ℕ, E (PowerSeries.coeff n F) * q₀ ^ n) *
+      ∑' n : ℕ, E (PowerSeries.coeff n G) * q₀ ^ n := by
+  set f : ℕ → k := fun n ↦ E (PowerSeries.coeff n F) * q₀ ^ n with hfdef
+  set g : ℕ → k := fun n ↦ E (PowerSeries.coeff n G) * q₀ ^ n with hgdef
+  have key := Summable.tsum_mul_tsum_eq_tsum_sum_antidiagonal (A := ℕ)
+    hF hG (summable_mul_prod hF hG)
+  rw [key]
+  congr 1
+  funext n
+  rw [PowerSeries.coeff_mul, map_sum, Finset.sum_mul]
+  refine Finset.sum_congr rfl fun p hp ↦ ?_
+  have hpn : p.1 + p.2 = n := Finset.mem_antidiagonal.mp hp
+  rw [hfdef, hgdef, map_mul, ← hpn, pow_add]
+  ring
+
 /-- **Two-variable evaluation transport for the chord `X`-identity**
-(sorry node — the `k`-side Cauchy-product bookkeeping): the evaluation
-`CoeffRing₂ → k` at `(u₀, v₀)` (through the localization at the
-nonvanishing `u₀(1-u₀)v₀(1-v₀)(1-u₀v₀)`) sends q-power series sums to
-the corresponding `evalA`-sums along the three slots; given the formal
-identity, the evaluated identity follows by the nonarchimedean Cauchy
-product and the slot bridges
-`coeffRingEval₂ ∘ uSlot = coeffRingEval u₀` (etc.). -/
+(PROVEN): the evaluation `CoeffRing₂ → k` at `(u₀, v₀)` sends q-power
+series sums to the corresponding `evalA`-sums along the three slot
+bridges, and the evaluated identity follows from the formal one by the
+nonarchimedean Cauchy product. -/
 theorem evalA_chordX_of_formal
     (hformal : (PowerSeries.map uvSlot XA + PowerSeries.map uSlot XA
         + PowerSeries.map vSlot XA) *
@@ -3001,14 +3083,14 @@ theorem evalA_chordX_of_formal
       (PowerSeries.map uSlot YA - PowerSeries.map vSlot YA) *
         (PowerSeries.map uSlot XA - PowerSeries.map vSlot XA))
     (u₀ v₀ q₀ : k)
-    (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (hq0 : q₀ ≠ 0)
+    (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (_hq0 : q₀ ≠ 0)
     (hu1 : u₀ ≠ 1) (hv1 : v₀ ≠ 1)
-    (hq1 : valuation k q₀ < 1)
+    (_hq1 : valuation k q₀ < 1)
     (hulow : valuation k q₀ < valuation k u₀)
     (huhigh : valuation k u₀ ≤ 1)
     (hvlow : valuation k q₀ < valuation k v₀)
     (hvhigh : valuation k v₀ ≤ 1)
-    (hne1 : u₀ * v₀ ≠ 1) (hneq : u₀ * v₀ ≠ q₀)
+    (hne1 : u₀ * v₀ ≠ 1) (_hneq : u₀ * v₀ ≠ q₀)
     (hw0 : u₀ * v₀ ≠ 0) (hwin : valuation k q₀ < valuation k (u₀ * v₀))
     (hwhigh : valuation k (u₀ * v₀) ≤ 1) :
     (evalA (u₀ * v₀) q₀ hw0 hne1 XA + evalA u₀ q₀ hu0 hu1 XA
@@ -3038,13 +3120,109 @@ theorem evalA_chordX_of_formal
       coeffRingEval (u₀ * v₀) hw0 hne1 (PowerSeries.coeff n F) :=
     fun F n => by
     rw [PowerSeries.coeff_map, ← RingHom.comp_apply, hbw]
-  -- remaining: the nonarchimedean Cauchy-product assembly mirroring
-  -- `evalA_weierstrass`, against the formal identity `hformal`
-  sorry
+  set E₂ := coeffRingEval₂ u₀ v₀ hu0 hu1 hv0 hv1 hne1 with hE₂def
+  set uX := PowerSeries.map uSlot XA with huX
+  set vX := PowerSeries.map vSlot XA with hvX
+  set wX := PowerSeries.map uvSlot XA with hwX
+  set uY := PowerSeries.map uSlot YA with huY
+  set vY := PowerSeries.map vSlot YA with hvY
+  -- one-variable summabilities on the annulus
+  have hXu := summable_evalA_XA u₀ q₀ hu0 hu1 huhigh hulow
+  have hXv := summable_evalA_XA v₀ q₀ hv0 hv1 hvhigh hvlow
+  have hXw := summable_evalA_XA (u₀ * v₀) q₀ hw0 hne1 hwhigh hwin
+  have hYu := summable_evalA_YA u₀ q₀ hu0 hu1 huhigh hulow
+  have hYv := summable_evalA_YA v₀ q₀ hv0 hv1 hvhigh hvlow
+  -- transported to the two-variable evaluation
+  have sXu : Summable fun n : ℕ ↦ E₂ (PowerSeries.coeff n uX) * q₀ ^ n :=
+    hXu.congr fun n => by rw [hsequ]
+  have sXv : Summable fun n : ℕ ↦ E₂ (PowerSeries.coeff n vX) * q₀ ^ n :=
+    hXv.congr fun n => by rw [hseqv]
+  have sXw : Summable fun n : ℕ ↦ E₂ (PowerSeries.coeff n wX) * q₀ ^ n :=
+    hXw.congr fun n => by rw [hseqw]
+  have sYu : Summable fun n : ℕ ↦ E₂ (PowerSeries.coeff n uY) * q₀ ^ n :=
+    hYu.congr fun n => by rw [hsequ]
+  have sYv : Summable fun n : ℕ ↦ E₂ (PowerSeries.coeff n vY) * q₀ ^ n :=
+    hYv.congr fun n => by rw [hseqv]
+  -- the five `evalA`-values as two-variable sums
+  have hvXu : evalA u₀ q₀ hu0 hu1 XA
+      = ∑' n : ℕ, E₂ (PowerSeries.coeff n uX) * q₀ ^ n :=
+    tsum_congr fun n => by rw [hsequ]
+  have hvXv : evalA v₀ q₀ hv0 hv1 XA
+      = ∑' n : ℕ, E₂ (PowerSeries.coeff n vX) * q₀ ^ n :=
+    tsum_congr fun n => by rw [hseqv]
+  have hvXw : evalA (u₀ * v₀) q₀ hw0 hne1 XA
+      = ∑' n : ℕ, E₂ (PowerSeries.coeff n wX) * q₀ ^ n :=
+    tsum_congr fun n => by rw [hseqw]
+  have hvYu : evalA u₀ q₀ hu0 hu1 YA
+      = ∑' n : ℕ, E₂ (PowerSeries.coeff n uY) * q₀ ^ n :=
+    tsum_congr fun n => by rw [hsequ]
+  have hvYv : evalA v₀ q₀ hv0 hv1 YA
+      = ∑' n : ℕ, E₂ (PowerSeries.coeff n vY) * q₀ ^ n :=
+    tsum_congr fun n => by rw [hseqv]
+  rw [hvXu, hvXv, hvXw, hvYu, hvYv]
+  -- assemble both sides as single evaluated series
+  have sXsub : Summable fun n : ℕ ↦
+      E₂ (PowerSeries.coeff n (uX - vX)) * q₀ ^ n := by
+    rw [sub_eq_add_neg]
+    exact summable_hom_eval_add E₂ q₀ sXu (summable_hom_eval_neg E₂ q₀ sXv)
+  have sYsub : Summable fun n : ℕ ↦
+      E₂ (PowerSeries.coeff n (uY - vY)) * q₀ ^ n := by
+    rw [sub_eq_add_neg]
+    exact summable_hom_eval_add E₂ q₀ sYu (summable_hom_eval_neg E₂ q₀ sYv)
+  have sadd3 : Summable fun n : ℕ ↦
+      E₂ (PowerSeries.coeff n (wX + uX + vX)) * q₀ ^ n :=
+    summable_hom_eval_add E₂ q₀ (summable_hom_eval_add E₂ q₀ sXw sXu) sXv
+  have tXsub : ∑' n : ℕ, E₂ (PowerSeries.coeff n (uX - vX)) * q₀ ^ n
+      = (∑' n : ℕ, E₂ (PowerSeries.coeff n uX) * q₀ ^ n) -
+        ∑' n : ℕ, E₂ (PowerSeries.coeff n vX) * q₀ ^ n := by
+    rw [sub_eq_add_neg,
+      tsum_hom_eval_add E₂ q₀ sXu (summable_hom_eval_neg E₂ q₀ sXv),
+      tsum_hom_eval_neg E₂ q₀, ← sub_eq_add_neg]
+  have tYsub : ∑' n : ℕ, E₂ (PowerSeries.coeff n (uY - vY)) * q₀ ^ n
+      = (∑' n : ℕ, E₂ (PowerSeries.coeff n uY) * q₀ ^ n) -
+        ∑' n : ℕ, E₂ (PowerSeries.coeff n vY) * q₀ ^ n := by
+    rw [sub_eq_add_neg,
+      tsum_hom_eval_add E₂ q₀ sYu (summable_hom_eval_neg E₂ q₀ sYv),
+      tsum_hom_eval_neg E₂ q₀, ← sub_eq_add_neg]
+  have tadd3 : ∑' n : ℕ, E₂ (PowerSeries.coeff n (wX + uX + vX)) * q₀ ^ n
+      = (∑' n : ℕ, E₂ (PowerSeries.coeff n wX) * q₀ ^ n) +
+        (∑' n : ℕ, E₂ (PowerSeries.coeff n uX) * q₀ ^ n) +
+        ∑' n : ℕ, E₂ (PowerSeries.coeff n vX) * q₀ ^ n := by
+    rw [tsum_hom_eval_add E₂ q₀ (summable_hom_eval_add E₂ q₀ sXw sXu) sXv,
+      tsum_hom_eval_add E₂ q₀ sXw sXu]
+  -- the product-normal form of the formal identity
+  have hF' : (wX + uX + vX) * ((uX - vX) * (uX - vX))
+      = (uY - vY) * (uY - vY) + (uY - vY) * (uX - vX) := by
+    linear_combination hformal
+  calc (∑' n : ℕ, E₂ (PowerSeries.coeff n wX) * q₀ ^ n +
+          ∑' n : ℕ, E₂ (PowerSeries.coeff n uX) * q₀ ^ n +
+          ∑' n : ℕ, E₂ (PowerSeries.coeff n vX) * q₀ ^ n) *
+        (∑' n : ℕ, E₂ (PowerSeries.coeff n uX) * q₀ ^ n -
+          ∑' n : ℕ, E₂ (PowerSeries.coeff n vX) * q₀ ^ n) ^ 2
+      = ∑' n : ℕ, E₂ (PowerSeries.coeff n
+          ((wX + uX + vX) * ((uX - vX) * (uX - vX)))) * q₀ ^ n := by
+        rw [tsum_hom_eval_mul E₂ q₀ sadd3
+            (summable_hom_eval_mul E₂ q₀ sXsub sXsub),
+          tsum_hom_eval_mul E₂ q₀ sXsub sXsub, tadd3, tXsub]
+        ring
+    _ = ∑' n : ℕ, E₂ (PowerSeries.coeff n
+          ((uY - vY) * (uY - vY) + (uY - vY) * (uX - vX))) * q₀ ^ n := by
+        rw [hF']
+    _ = (∑' n : ℕ, E₂ (PowerSeries.coeff n uY) * q₀ ^ n -
+          ∑' n : ℕ, E₂ (PowerSeries.coeff n vY) * q₀ ^ n) ^ 2 +
+        (∑' n : ℕ, E₂ (PowerSeries.coeff n uY) * q₀ ^ n -
+          ∑' n : ℕ, E₂ (PowerSeries.coeff n vY) * q₀ ^ n) *
+        (∑' n : ℕ, E₂ (PowerSeries.coeff n uX) * q₀ ^ n -
+          ∑' n : ℕ, E₂ (PowerSeries.coeff n vX) * q₀ ^ n) := by
+        rw [tsum_hom_eval_add E₂ q₀
+            (summable_hom_eval_mul E₂ q₀ sYsub sYsub)
+            (summable_hom_eval_mul E₂ q₀ sYsub sXsub),
+          tsum_hom_eval_mul E₂ q₀ sYsub sYsub,
+          tsum_hom_eval_mul E₂ q₀ sYsub sXsub, tYsub, tXsub]
+        ring
 
-set_option warn.sorry false in
 /-- **Two-variable evaluation transport for the chord `Y`-identity**
-(sorry node), mirroring `evalA_chordX_of_formal`. -/
+(PROVEN), mirroring `evalA_chordX_of_formal`. -/
 theorem evalA_chordY_of_formal
     (hformal : -(PowerSeries.map uvSlot YA + PowerSeries.map uvSlot XA) *
       (PowerSeries.map uSlot XA - PowerSeries.map vSlot XA) =
@@ -3053,14 +3231,14 @@ theorem evalA_chordY_of_formal
       PowerSeries.map uSlot YA *
         (PowerSeries.map uSlot XA - PowerSeries.map vSlot XA))
     (u₀ v₀ q₀ : k)
-    (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (hq0 : q₀ ≠ 0)
+    (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (_hq0 : q₀ ≠ 0)
     (hu1 : u₀ ≠ 1) (hv1 : v₀ ≠ 1)
-    (hq1 : valuation k q₀ < 1)
+    (_hq1 : valuation k q₀ < 1)
     (hulow : valuation k q₀ < valuation k u₀)
     (huhigh : valuation k u₀ ≤ 1)
     (hvlow : valuation k q₀ < valuation k v₀)
     (hvhigh : valuation k v₀ ≤ 1)
-    (hne1 : u₀ * v₀ ≠ 1) (hneq : u₀ * v₀ ≠ q₀)
+    (hne1 : u₀ * v₀ ≠ 1) (_hneq : u₀ * v₀ ≠ q₀)
     (hw0 : u₀ * v₀ ≠ 0) (hwin : valuation k q₀ < valuation k (u₀ * v₀))
     (hwhigh : valuation k (u₀ * v₀) ≤ 1) :
     -(evalA (u₀ * v₀) q₀ hw0 hne1 YA + evalA (u₀ * v₀) q₀ hw0 hne1 XA) *
@@ -3090,9 +3268,114 @@ theorem evalA_chordY_of_formal
       coeffRingEval (u₀ * v₀) hw0 hne1 (PowerSeries.coeff n F) :=
     fun F n => by
     rw [PowerSeries.coeff_map, ← RingHom.comp_apply, hbw]
-  -- remaining: the nonarchimedean Cauchy-product assembly mirroring
-  -- `evalA_weierstrass`, against the formal identity `hformal`
-  sorry
+  set E₂ := coeffRingEval₂ u₀ v₀ hu0 hu1 hv0 hv1 hne1 with hE₂def
+  set uX := PowerSeries.map uSlot XA with huX
+  set vX := PowerSeries.map vSlot XA with hvX
+  set wX := PowerSeries.map uvSlot XA with hwX
+  set uY := PowerSeries.map uSlot YA with huY
+  set vY := PowerSeries.map vSlot YA with hvY
+  set wY := PowerSeries.map uvSlot YA with hwY
+  have hXu := summable_evalA_XA u₀ q₀ hu0 hu1 huhigh hulow
+  have hXv := summable_evalA_XA v₀ q₀ hv0 hv1 hvhigh hvlow
+  have hXw := summable_evalA_XA (u₀ * v₀) q₀ hw0 hne1 hwhigh hwin
+  have hYu := summable_evalA_YA u₀ q₀ hu0 hu1 huhigh hulow
+  have hYv := summable_evalA_YA v₀ q₀ hv0 hv1 hvhigh hvlow
+  have hYw := summable_evalA_YA (u₀ * v₀) q₀ hw0 hne1 hwhigh hwin
+  have sXu : Summable fun n : ℕ ↦ E₂ (PowerSeries.coeff n uX) * q₀ ^ n :=
+    hXu.congr fun n => by rw [hsequ]
+  have sXv : Summable fun n : ℕ ↦ E₂ (PowerSeries.coeff n vX) * q₀ ^ n :=
+    hXv.congr fun n => by rw [hseqv]
+  have sXw : Summable fun n : ℕ ↦ E₂ (PowerSeries.coeff n wX) * q₀ ^ n :=
+    hXw.congr fun n => by rw [hseqw]
+  have sYu : Summable fun n : ℕ ↦ E₂ (PowerSeries.coeff n uY) * q₀ ^ n :=
+    hYu.congr fun n => by rw [hsequ]
+  have sYv : Summable fun n : ℕ ↦ E₂ (PowerSeries.coeff n vY) * q₀ ^ n :=
+    hYv.congr fun n => by rw [hseqv]
+  have sYw : Summable fun n : ℕ ↦ E₂ (PowerSeries.coeff n wY) * q₀ ^ n :=
+    hYw.congr fun n => by rw [hseqw]
+  have hvXu : evalA u₀ q₀ hu0 hu1 XA
+      = ∑' n : ℕ, E₂ (PowerSeries.coeff n uX) * q₀ ^ n :=
+    tsum_congr fun n => by rw [hsequ]
+  have hvXv : evalA v₀ q₀ hv0 hv1 XA
+      = ∑' n : ℕ, E₂ (PowerSeries.coeff n vX) * q₀ ^ n :=
+    tsum_congr fun n => by rw [hseqv]
+  have hvXw : evalA (u₀ * v₀) q₀ hw0 hne1 XA
+      = ∑' n : ℕ, E₂ (PowerSeries.coeff n wX) * q₀ ^ n :=
+    tsum_congr fun n => by rw [hseqw]
+  have hvYu : evalA u₀ q₀ hu0 hu1 YA
+      = ∑' n : ℕ, E₂ (PowerSeries.coeff n uY) * q₀ ^ n :=
+    tsum_congr fun n => by rw [hsequ]
+  have hvYv : evalA v₀ q₀ hv0 hv1 YA
+      = ∑' n : ℕ, E₂ (PowerSeries.coeff n vY) * q₀ ^ n :=
+    tsum_congr fun n => by rw [hseqv]
+  have hvYw : evalA (u₀ * v₀) q₀ hw0 hne1 YA
+      = ∑' n : ℕ, E₂ (PowerSeries.coeff n wY) * q₀ ^ n :=
+    tsum_congr fun n => by rw [hseqw]
+  rw [hvXu, hvXv, hvXw, hvYu, hvYv, hvYw]
+  have sXsub : Summable fun n : ℕ ↦
+      E₂ (PowerSeries.coeff n (uX - vX)) * q₀ ^ n := by
+    rw [sub_eq_add_neg]
+    exact summable_hom_eval_add E₂ q₀ sXu (summable_hom_eval_neg E₂ q₀ sXv)
+  have sYsub : Summable fun n : ℕ ↦
+      E₂ (PowerSeries.coeff n (uY - vY)) * q₀ ^ n := by
+    rw [sub_eq_add_neg]
+    exact summable_hom_eval_add E₂ q₀ sYu (summable_hom_eval_neg E₂ q₀ sYv)
+  have sWXsub : Summable fun n : ℕ ↦
+      E₂ (PowerSeries.coeff n (wX - uX)) * q₀ ^ n := by
+    rw [sub_eq_add_neg]
+    exact summable_hom_eval_add E₂ q₀ sXw (summable_hom_eval_neg E₂ q₀ sXu)
+  have sWadd : Summable fun n : ℕ ↦
+      E₂ (PowerSeries.coeff n (wY + wX)) * q₀ ^ n :=
+    summable_hom_eval_add E₂ q₀ sYw sXw
+  have tXsub : ∑' n : ℕ, E₂ (PowerSeries.coeff n (uX - vX)) * q₀ ^ n
+      = (∑' n : ℕ, E₂ (PowerSeries.coeff n uX) * q₀ ^ n) -
+        ∑' n : ℕ, E₂ (PowerSeries.coeff n vX) * q₀ ^ n := by
+    rw [sub_eq_add_neg,
+      tsum_hom_eval_add E₂ q₀ sXu (summable_hom_eval_neg E₂ q₀ sXv),
+      tsum_hom_eval_neg E₂ q₀, ← sub_eq_add_neg]
+  have tYsub : ∑' n : ℕ, E₂ (PowerSeries.coeff n (uY - vY)) * q₀ ^ n
+      = (∑' n : ℕ, E₂ (PowerSeries.coeff n uY) * q₀ ^ n) -
+        ∑' n : ℕ, E₂ (PowerSeries.coeff n vY) * q₀ ^ n := by
+    rw [sub_eq_add_neg,
+      tsum_hom_eval_add E₂ q₀ sYu (summable_hom_eval_neg E₂ q₀ sYv),
+      tsum_hom_eval_neg E₂ q₀, ← sub_eq_add_neg]
+  have tWXsub : ∑' n : ℕ, E₂ (PowerSeries.coeff n (wX - uX)) * q₀ ^ n
+      = (∑' n : ℕ, E₂ (PowerSeries.coeff n wX) * q₀ ^ n) -
+        ∑' n : ℕ, E₂ (PowerSeries.coeff n uX) * q₀ ^ n := by
+    rw [sub_eq_add_neg,
+      tsum_hom_eval_add E₂ q₀ sXw (summable_hom_eval_neg E₂ q₀ sXu),
+      tsum_hom_eval_neg E₂ q₀, ← sub_eq_add_neg]
+  have tWadd : ∑' n : ℕ, E₂ (PowerSeries.coeff n (wY + wX)) * q₀ ^ n
+      = (∑' n : ℕ, E₂ (PowerSeries.coeff n wY) * q₀ ^ n) +
+        ∑' n : ℕ, E₂ (PowerSeries.coeff n wX) * q₀ ^ n :=
+    tsum_hom_eval_add E₂ q₀ sYw sXw
+  have hF' : (-(wY + wX)) * (uX - vX)
+      = (uY - vY) * (wX - uX) + uY * (uX - vX) := by
+    linear_combination hformal
+  calc -(∑' n : ℕ, E₂ (PowerSeries.coeff n wY) * q₀ ^ n +
+          ∑' n : ℕ, E₂ (PowerSeries.coeff n wX) * q₀ ^ n) *
+        (∑' n : ℕ, E₂ (PowerSeries.coeff n uX) * q₀ ^ n -
+          ∑' n : ℕ, E₂ (PowerSeries.coeff n vX) * q₀ ^ n)
+      = ∑' n : ℕ, E₂ (PowerSeries.coeff n
+          ((-(wY + wX)) * (uX - vX))) * q₀ ^ n := by
+        rw [tsum_hom_eval_mul E₂ q₀
+            (summable_hom_eval_neg E₂ q₀ sWadd) sXsub,
+          tsum_hom_eval_neg E₂ q₀, tWadd, tXsub]
+    _ = ∑' n : ℕ, E₂ (PowerSeries.coeff n
+          ((uY - vY) * (wX - uX) + uY * (uX - vX))) * q₀ ^ n := by
+        rw [hF']
+    _ = (∑' n : ℕ, E₂ (PowerSeries.coeff n uY) * q₀ ^ n -
+          ∑' n : ℕ, E₂ (PowerSeries.coeff n vY) * q₀ ^ n) *
+        (∑' n : ℕ, E₂ (PowerSeries.coeff n wX) * q₀ ^ n -
+          ∑' n : ℕ, E₂ (PowerSeries.coeff n uX) * q₀ ^ n) +
+        (∑' n : ℕ, E₂ (PowerSeries.coeff n uY) * q₀ ^ n) *
+        (∑' n : ℕ, E₂ (PowerSeries.coeff n uX) * q₀ ^ n -
+          ∑' n : ℕ, E₂ (PowerSeries.coeff n vX) * q₀ ^ n) := by
+        rw [tsum_hom_eval_add E₂ q₀
+            (summable_hom_eval_mul E₂ q₀ sYsub sWXsub)
+            (summable_hom_eval_mul E₂ q₀ sYu sXsub),
+          tsum_hom_eval_mul E₂ q₀ sYsub sWXsub,
+          tsum_hom_eval_mul E₂ q₀ sYu sXsub, tYsub, tWXsub, tXsub]
 
 /-- **The `evalA`-level chord `X`-identity** (DERIVED from the formal
 identity and the evaluation transport): for all three parameters in the fundamental annulus,
