@@ -1570,21 +1570,152 @@ identities consume it through the two-variable descent. -/
 
 section WeierstrassAddition
 
-open scoped PeriodPair
+open scoped Topology PeriodPair
 
-/-- The cleared addition relation for `℘` at translation `w`, patched at
-its non-generic points by `0` (its actual value there, as the addition
-theorem shows). -/
-private noncomputable def addRelationX (L : PeriodPair) (w z : ℂ) : ℂ :=
-  open scoped Classical in
-  if z ∈ L.lattice ∨ z + w ∈ L.lattice then 0
-  else (℘[L] (z + w) + ℘[L] z + ℘[L] w) * (℘[L] z - ℘[L] w) ^ 2 -
+/-- The raw (unpatched) cleared addition relation for `℘` at translation
+`w`: the polynomial expression in `℘`/`℘'`-values whose identical
+vanishing (away from the poles) is the cleared addition theorem. -/
+private noncomputable def addRelXRaw (L : PeriodPair) (w z : ℂ) : ℂ :=
+  (℘[L] (z + w) + ℘[L] z + ℘[L] w) * (℘[L] z - ℘[L] w) ^ 2 -
     (℘'[L] z - ℘'[L] w) ^ 2 / 4
 
-/-- The relation is doubly periodic in `z`. -/
-private lemma addRelationX_add_coe (L : PeriodPair) (w z : ℂ)
-    (l : L.lattice) : addRelationX L w (z + l) = addRelationX L w z := by
-  unfold addRelationX
+/-- The raw relation is doubly periodic in `z`. -/
+private lemma addRelXRaw_add_coe (L : PeriodPair) (w z : ℂ)
+    (l : L.lattice) : addRelXRaw L w (z + l) = addRelXRaw L w z := by
+  unfold addRelXRaw
+  rw [L.weierstrassP_add_coe z l, L.derivWeierstrassP_add_coe z l,
+    show z + (l : ℂ) + w = z + w + l by ring,
+    L.weierstrassP_add_coe (z + w) l]
+
+/-- Away from the poles the raw relation is analytic. -/
+private lemma analyticAt_addRelXRaw (L : PeriodPair) (w : ℂ)
+    {z : ℂ} (hz : z ∉ L.lattice) (hzw : z + w ∉ L.lattice) :
+    AnalyticAt ℂ (addRelXRaw L w) z := by
+  have hP : AnalyticAt ℂ ℘[L] z := L.analyticOnNhd_weierstrassP z hz
+  have hPw : AnalyticAt ℂ (fun x => ℘[L] (x + w)) z := by
+    have hshift : AnalyticAt ℂ (fun x : ℂ => x + w) z := by fun_prop
+    exact AnalyticAt.comp (g := ℘[L]) (f := fun x : ℂ => x + w)
+      (L.analyticOnNhd_weierstrassP (z + w) hzw) hshift
+  have hP' : AnalyticAt ℂ ℘'[L] z := L.analyticOnNhd_derivWeierstrassP z hz
+  unfold addRelXRaw
+  fun_prop
+
+set_option warn.sorry false in
+/-- **The Laurent tail of the cleared addition relation at the origin**
+(private WIP sorry node — the deep cancellation table recorded in
+`PROGRESS.md` at the `bilateral_chordX_cleared` node): all Laurent
+coefficients through order `t⁰` vanish, so the raw relation tends to `0`
+along the punctured neighborhood of `0`. This is both the removability
+of the singularity at lattice points and the pinning of the Liouville
+constant. -/
+private theorem tendsto_addRelXRaw_zero (L : PeriodPair) (w : ℂ)
+    (hw : w ∉ L.lattice) :
+    Filter.Tendsto (addRelXRaw L w) (𝓝[≠] (0 : ℂ)) (𝓝 (0 : ℂ)) :=
+  sorry
+
+/-- The raw relation tends to `0` along the punctured neighborhood of
+every lattice point (translate `tendsto_addRelXRaw_zero`). -/
+private lemma tendsto_addRelXRaw_lattice (L : PeriodPair) (w : ℂ)
+    (hw : w ∉ L.lattice) {c : ℂ} (hc : c ∈ L.lattice) :
+    Filter.Tendsto (addRelXRaw L w) (𝓝[≠] c) (𝓝 (0 : ℂ)) := by
+  have h0 := tendsto_addRelXRaw_zero L w hw
+  have hmap : Filter.map (fun x : ℂ => x + c) (𝓝[≠] (0 : ℂ)) = 𝓝[≠] c := by
+    have h := (Homeomorph.addRight c).map_punctured_nhds_eq (0 : ℂ)
+    simp only [Homeomorph.coe_addRight, zero_add] at h
+    exact h
+  rw [← hmap]
+  rw [Filter.tendsto_map'_iff]
+  refine h0.congr fun x => ?_
+  exact (addRelXRaw_add_coe L w x ⟨c, hc⟩).symm
+
+/-- The patched relation: `limUnder` at the two exceptional families,
+the raw value elsewhere. -/
+private noncomputable def addRelXFn (L : PeriodPair) (w z : ℂ) : ℂ :=
+  open scoped Classical in
+  if z ∈ L.lattice ∨ z + w ∈ L.lattice then
+    Filter.limUnder (𝓝[≠] z) (addRelXRaw L w)
+  else addRelXRaw L w z
+
+set_option warn.sorry false in
+/-- (private WIP sorry node) The patched relation is analytic at the
+`−w`-family of exceptional points: near `c` with `c + w ∈ L.lattice`
+(and `c ∉ L.lattice`), the raw relation is bounded — the double pole of
+`℘(· + w)` is killed by the square of `℘ − ℘ w`, which vanishes at `c`
+since `℘ c = ℘ (−w) = ℘ w` — so the singularity is removable and the
+`limUnder`-patch is the analytic extension. -/
+private theorem analyticAt_addRelXFn_neg_w (L : PeriodPair) (w : ℂ)
+    (hw : w ∉ L.lattice) {c : ℂ} (hc : c ∉ L.lattice)
+    (hcw : c + w ∈ L.lattice) : AnalyticAt ℂ (addRelXFn L w) c :=
+  sorry
+
+/-- The patched relation is analytic everywhere. -/
+private lemma analyticAt_addRelXFn (L : PeriodPair) (w : ℂ)
+    (hw : w ∉ L.lattice) (z : ℂ) : AnalyticAt ℂ (addRelXFn L w) z := by
+  classical
+  by_cases hz : z ∈ L.lattice
+  · -- lattice points: continuity from the limit plus punctured
+    -- differentiability, Riemann removability
+    have hzw : z + w ∉ L.lattice := fun hmem => hw (by
+      have := L.lattice.sub_mem hmem hz
+      simpa using this)
+    have htend := tendsto_addRelXRaw_lattice L w hw hz
+    have hupd : addRelXFn L w =ᶠ[𝓝 z]
+        Function.update (addRelXRaw L w) z
+          (Filter.limUnder (𝓝[≠] z) (addRelXRaw L w)) := by
+      have hev : ∀ᶠ x in 𝓝 z, x ≠ z → (x ∉ L.lattice ∧ x + w ∉ L.lattice) := by
+        have hopen : IsOpen ((L.lattice : Set ℂ) \ {z})ᶜ :=
+          L.isOpen_compl_lattice_sdiff
+        have hmemo : z ∈ ((L.lattice : Set ℂ) \ {z})ᶜ := by simp
+        have hcw : ∀ᶠ x in 𝓝 z, x + w ∉ L.lattice := by
+          have hcont : ContinuousAt (fun x : ℂ => x + w) z := by fun_prop
+          exact hcont.preimage_mem_nhds
+            (L.isClosed_lattice.isOpen_compl.mem_nhds hzw)
+        filter_upwards [hopen.mem_nhds hmemo, hcw] with x hx1 hx2 hxz
+        refine ⟨fun hmem => hx1 ⟨hmem, hxz⟩, hx2⟩
+      filter_upwards [hev] with x hx
+      rcases eq_or_ne x z with rfl | hxz
+      · rw [addRelXFn, if_pos (Or.inl hz), Function.update_self]
+      · obtain ⟨h1, h2⟩ := hx hxz
+        rw [addRelXFn, if_neg (by tauto), Function.update_of_ne hxz]
+    rw [analyticAt_congr hupd]
+    apply Complex.analyticAt_of_differentiable_on_punctured_nhds_of_continuousAt
+    · have hev : ∀ᶠ x in 𝓝[≠] z, (x ∉ L.lattice ∧ x + w ∉ L.lattice) := by
+        have hopen : IsOpen ((L.lattice : Set ℂ) \ {z})ᶜ :=
+          L.isOpen_compl_lattice_sdiff
+        have hmemo : z ∈ ((L.lattice : Set ℂ) \ {z})ᶜ := by simp
+        have hcw : ∀ᶠ x in 𝓝 z, x + w ∉ L.lattice := by
+          have hcont : ContinuousAt (fun x : ℂ => x + w) z := by fun_prop
+          exact hcont.preimage_mem_nhds
+            (L.isClosed_lattice.isOpen_compl.mem_nhds hzw)
+        rw [eventually_nhdsWithin_iff]
+        filter_upwards [hopen.mem_nhds hmemo, hcw] with x hx1 hx2 hxz
+        exact ⟨fun hmem => hx1 ⟨hmem, by simpa using hxz⟩, hx2⟩
+      filter_upwards [hev] with x hx
+      refine ((analyticAt_addRelXRaw L w hx.1 hx.2).congr ?_).differentiableAt
+      have hcshift : ContinuousAt (fun y : ℂ => y + w) x := by fun_prop
+      filter_upwards [L.isClosed_lattice.isOpen_compl.mem_nhds hx.1,
+        hcshift.preimage_mem_nhds
+          (L.isClosed_lattice.isOpen_compl.mem_nhds hx.2)] with y hy1 hy2
+      rcases eq_or_ne y z with rfl | hyz
+      · exact absurd hz hy1
+      · rw [Function.update_of_ne hyz]
+    · have hlim : Filter.limUnder (𝓝[≠] z) (addRelXRaw L w) = 0 :=
+        htend.limUnder_eq
+      rw [continuousAt_update_same, hlim]
+      exact htend
+  · by_cases hzw : z + w ∈ L.lattice
+    · exact analyticAt_addRelXFn_neg_w L w hw hz hzw
+    · refine (analyticAt_addRelXRaw L w hz hzw).congr ?_
+      have hcshift : ContinuousAt (fun y : ℂ => y + w) z := by fun_prop
+      filter_upwards [L.isClosed_lattice.isOpen_compl.mem_nhds hz,
+        hcshift.preimage_mem_nhds
+          (L.isClosed_lattice.isOpen_compl.mem_nhds hzw)] with x hx1 hx2
+      rw [addRelXFn, if_neg (by tauto)]
+
+/-- The patched relation is doubly periodic. -/
+private lemma addRelXFn_add_coe (L : PeriodPair) (w z : ℂ)
+    (l : L.lattice) : addRelXFn L w (z + l) = addRelXFn L w z := by
+  classical
   have hmem : (z + l ∈ L.lattice ∨ z + l + w ∈ L.lattice) ↔
       (z ∈ L.lattice ∨ z + w ∈ L.lattice) := by
     constructor
@@ -1598,21 +1729,46 @@ private lemma addRelationX_add_coe (L : PeriodPair) (w z : ℂ)
       · refine Or.inr ?_
         have h2 := L.lattice.add_mem h l.2
         simpa [add_right_comm z (l : ℂ) w] using h2
-  by_cases hz : z ∈ L.lattice ∨ z + w ∈ L.lattice
-  · rw [if_pos (hmem.mpr hz), if_pos hz]
-  · rw [if_neg (fun hc => hz (hmem.mp hc)), if_neg hz]
-    rw [L.weierstrassP_add_coe z l]
-    rw [L.derivWeierstrassP_add_coe z l]
-    rw [show z + (l : ℂ) + w = z + w + l by ring,
-      L.weierstrassP_add_coe (z + w) l]
+  have hshift : Filter.map (fun x : ℂ => x + l) (𝓝[≠] z) = 𝓝[≠] (z + l) := by
+    have h := (Homeomorph.addRight (l : ℂ)).map_punctured_nhds_eq z
+    simp only [Homeomorph.coe_addRight] at h
+    exact h
+  by_cases hpz : z ∈ L.lattice ∨ z + w ∈ L.lattice
+  · rw [addRelXFn, if_pos (hmem.mpr hpz), addRelXFn, if_pos hpz]
+    have hmapeq : Filter.map (addRelXRaw L w) (𝓝[≠] (z + l)) =
+        Filter.map (addRelXRaw L w) (𝓝[≠] z) := by
+      rw [← hshift, Filter.map_map]
+      congr 1
+      funext x
+      exact addRelXRaw_add_coe L w x l
+    unfold Filter.limUnder
+    rw [hmapeq]
+  · rw [addRelXFn, if_neg (fun hc => hpz (hmem.mp hc)), addRelXFn,
+      if_neg hpz]
+    exact addRelXRaw_add_coe L w z l
 
 set_option warn.sorry false in
-/-- **The cleared `℘`-addition identity** (private WIP sorry node — the
-Liouville/Laurent scheme, cancellation table in `PROGRESS.md`): the
-patched relation vanishes identically. -/
-private theorem addRelationX_eq_zero (L : PeriodPair) (w : ℂ)
-    (hw : w ∉ L.lattice) : addRelationX L w = 0 :=
-  sorry
+/-- **The cleared `℘`-addition identity** (DERIVED modulo the two local
+sorries above, by the Liouville pattern of `derivWeierstrassP_sq`): the
+patched relation is entire, doubly periodic and bounded, hence constant,
+and its value at `0` is the vanishing limit. -/
+private theorem addRelXRaw_eq_zero (L : PeriodPair) (w : ℂ)
+    (hw : w ∉ L.lattice) {z : ℂ} (hz : z ∉ L.lattice)
+    (hzw : z + w ∉ L.lattice) : addRelXRaw L w z = 0 := by
+  classical
+  have hdiff : Differentiable ℂ (addRelXFn L w) :=
+    fun x => (analyticAt_addRelXFn L w hw x).differentiableAt
+  have hconst := (hdiff.apply_eq_apply_of_bounded
+    (IsZLattice.isCompact_range_of_periodic L.lattice _
+      hdiff.continuous fun x y hy => by
+        lift y to L.lattice using hy
+        exact addRelXFn_add_coe L w x y).isBounded z 0)
+  have h0 : addRelXFn L w 0 = 0 := by
+    rw [addRelXFn, if_pos (Or.inl L.lattice.zero_mem)]
+    exact (tendsto_addRelXRaw_zero L w hw).limUnder_eq
+  have hzval : addRelXFn L w z = addRelXRaw L w z := by
+    rw [addRelXFn, if_neg (by tauto)]
+  rw [← hzval, hconst, h0]
 
 end WeierstrassAddition
 
