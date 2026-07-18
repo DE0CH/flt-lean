@@ -418,7 +418,7 @@ entries file). To add/remove/annotate a node, edit
                                                                           non-2-torsion leaf, same
                                                                           division bookkeeping pattern
                                                                           as the chord case.
-                                                                            - ❌· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry
+                                                                            - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf — DERIVED 2026-07-18 (see first occurrence; was: sorry
                                                                               node): u in the annulus with
                                                                               u² not in the trivial class
                                                                               has 2Y(u) + X(u) ≠ 0 — the
@@ -642,7 +642,7 @@ entries file). To add/remove/annotate a node, edit
                                                                               non-2-torsion leaf, same
                                                                               division bookkeeping pattern
                                                                               as the chord case.
-                                                                                - ❌· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry
+                                                                                - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf — DERIVED 2026-07-18 (see first occurrence; was: sorry
                                                                                   node): u in the annulus with
                                                                                   u² not in the trivial class
                                                                                   has 2Y(u) + X(u) ≠ 0 — the
@@ -859,7 +859,7 @@ entries file). To add/remove/annotate a node, edit
                                                                                   non-2-torsion leaf, same
                                                                                   division bookkeeping pattern
                                                                                   as the chord case.
-                                                                                    - ❌· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry
+                                                                                    - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf — DERIVED 2026-07-18 (see first occurrence; was: sorry
                                                                                       node): u in the annulus with
                                                                                       u² not in the trivial class
                                                                                       has 2Y(u) + X(u) ≠ 0 — the
@@ -1112,7 +1112,7 @@ entries file). To add/remove/annotate a node, edit
                                                           tangent identities + the non-2-torsion
                                                           leaf, same division bookkeeping pattern as
                                                           the chord case.
-                                                            - ❌· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry node): u in
+                                                            - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf — DERIVED 2026-07-18 (see first occurrence; was: sorry node): u in
                                                               the annulus with u² not in the trivial
                                                               class has 2Y(u) + X(u) ≠ 0 — the
                                                               2-torsion parameters are exactly {-1,
@@ -1264,7 +1264,7 @@ entries file). To add/remove/annotate a node, edit
                                                               from the cleared tangent identities +
                                                               the non-2-torsion leaf, same division
                                                               bookkeeping pattern as the chord case.
-                                                                - ❌· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry node): u
+                                                                - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf — DERIVED 2026-07-18 (see first occurrence; was: sorry node): u
                                                                   in the annulus with u² not in the
                                                                   trivial class has 2Y(u) + X(u) ≠ 0
                                                                   — the 2-torsion parameters are
@@ -1430,7 +1430,7 @@ entries file). To add/remove/annotate a node, edit
                                                   DERIVED 2026-07-18 from the cleared tangent
                                                   identities + the non-2-torsion leaf, same division
                                                   bookkeeping pattern as the chord case.
-                                                    - ❌· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry node): u in the
+                                                    - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf — DERIVED 2026-07-18 (see first occurrence; was: sorry node): u in the
                                                       annulus with u² not in the trivial class has
                                                       2Y(u) + X(u) ≠ 0 — the 2-torsion parameters
                                                       are exactly {-1, ±√q}·q^ℤ.
@@ -1551,7 +1551,7 @@ entries file). To add/remove/annotate a node, edit
                                                   DERIVED 2026-07-18 from the cleared tangent
                                                   identities + the non-2-torsion leaf, same division
                                                   bookkeeping pattern as the chord case.
-                                                    - ❌· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry node): u in the
+                                                    - ✅· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf — DERIVED 2026-07-18 (see first occurrence; was: sorry node): u in the
                                                       annulus with u² not in the trivial class has
                                                       2Y(u) + X(u) ≠ 0 — the 2-torsion parameters
                                                       are exactly {-1, ±√q}·q^ℤ.
