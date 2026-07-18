@@ -919,6 +919,65 @@ noncomputable def annulusPoint (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 
   .some (evalA u₀ q₀ h0 h1 XA) (evalA u₀ q₀ h0 h1 YA)
     (nonsingular_evalA u₀ q₀ h0 h1 hq0 hu hq1 hq)
 
+omit [TopologicalSpace k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- **The annulus is a strict fundamental domain**: the `q`-power
+normalising exponent of `exists_zpow_mul_mem_annulus` is unique — two
+translates of `u` in the half-open annulus `(|q|, 1]` coincide, since
+their ratio `|q|^(m'-m)` would otherwise leave the interval
+`(|q|, |q|⁻¹)`. -/
+theorem annulus_exponent_unique (q : k) (hq0 : q ≠ 0)
+    (hq : valuation k q < 1) (u : k) (hu0 : u ≠ 0) {m m' : ℤ}
+    (hm : valuation k q < valuation k (u * q ^ (-m)) ∧
+      valuation k (u * q ^ (-m)) ≤ 1)
+    (hm' : valuation k q < valuation k (u * q ^ (-m')) ∧
+      valuation k (u * q ^ (-m')) ≤ 1) :
+    m = m' := by
+  have hvq0 : valuation k q ≠ 0 := by
+    simpa [ne_eq, map_eq_zero] using hq0
+  -- valuations of the translates
+  have hval : ∀ n : ℤ, valuation k (u * q ^ (-n)) =
+      valuation k u * (valuation k q) ^ (-n : ℤ) := by
+    intro n
+    rw [map_mul, map_zpow₀]
+  -- w.l.o.g. via a symmetric auxiliary claim
+  have key : ∀ a b : ℤ, a < b →
+      valuation k q < valuation k (u * q ^ (-a)) →
+      valuation k (u * q ^ (-b)) ≤ 1 → False := by
+    intro a b hab hlow hhigh
+    -- `v(u·q⁻ᵇ) = v(u·q⁻ᵃ)·v(q)^(a-b)` with `a - b ≤ -1`
+    have hratio : valuation k (u * q ^ (-b)) =
+        valuation k (u * q ^ (-a)) * (valuation k q) ^ (a - b) := by
+      rw [hval, hval, mul_assoc, ← zpow_add₀ hvq0]
+      congr 1
+      ring_nf
+    -- so `v(u·q⁻ᵇ) > v(q)·v(q)^(a-b) = v(q)^(a-b+1) ≥ 1` as `a-b+1 ≤ 0`
+    have hgt : 1 < valuation k (u * q ^ (-b)) := by
+      have h2 : valuation k q * (valuation k q) ^ ((a : ℤ) - b) <
+          valuation k (u * q ^ (-a)) * (valuation k q) ^ ((a : ℤ) - b) :=
+        mul_lt_mul_of_pos_right hlow
+          (zero_lt_iff.mpr (zpow_ne_zero _ hvq0))
+      have h3 : (1 : ValueGroupWithZero k) ≤
+          valuation k q * (valuation k q) ^ ((a : ℤ) - b) := by
+        rw [show valuation k q * (valuation k q) ^ ((a : ℤ) - b) =
+            (valuation k q) ^ ((a : ℤ) - b + 1) from by
+          rw [zpow_add₀ hvq0, zpow_one, mul_comm]]
+        obtain ⟨n, hn⟩ : ∃ n : ℕ, -((a : ℤ) - b + 1) = n :=
+          ⟨(-((a : ℤ) - b + 1)).toNat, (Int.toNat_of_nonneg (by omega)).symm⟩
+        rw [show ((a : ℤ) - b + 1) = -(n : ℤ) by omega, zpow_neg,
+          one_le_inv₀ (zero_lt_iff.mpr (zpow_ne_zero _ hvq0)),
+          zpow_natCast]
+        exact pow_le_one₀ zero_le hq.le
+      calc (1 : ValueGroupWithZero k)
+          ≤ valuation k q * (valuation k q) ^ ((a : ℤ) - b) := h3
+        _ < valuation k (u * q ^ (-a)) * (valuation k q) ^ ((a : ℤ) - b) :=
+            h2
+        _ = valuation k (u * q ^ (-b)) := hratio.symm
+    exact absurd hhigh (not_le.mpr hgt)
+  rcases lt_trichotomy m m' with h | h | h
+  · exact (key m m' h hm.1 hm'.2).elim
+  · exact h
+  · exact (key m' m h hm'.1 hm.2).elim
+
 end Annulus
 
 end TateCurve
