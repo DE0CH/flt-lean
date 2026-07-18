@@ -313,6 +313,27 @@ theorem WeierstrassCurve.tateCurveModel_baseChange (q : k)
     ((tateCurveModel q hq)⁄k) = tateCurve q := by
   ext <;> rfl
 
+open PowerSeries in
+/-- **Evaluation inverts formal units**: for a series with constant
+coefficient `1`, the value of its formal inverse is the inverse of its
+value (via `evalInt_mul` — the nonarchimedean Mertens theorem — and
+`mul_invOfUnit`). -/
+theorem TateCurve.evalInt_invOfUnit (q : k) (hq : valuation k q < 1)
+    (F : ℤ⟦X⟧) (hF : PowerSeries.constantCoeff F = 1) :
+    TateCurve.evalInt q (PowerSeries.invOfUnit F 1) =
+      (TateCurve.evalInt q F)⁻¹ := by
+  have hmul : F * PowerSeries.invOfUnit F 1 = 1 :=
+    PowerSeries.mul_invOfUnit F 1 (by rw [hF]; rfl)
+  have h1 : TateCurve.evalInt q F *
+      TateCurve.evalInt q (PowerSeries.invOfUnit F 1) = 1 := by
+    rw [← TateCurve.evalInt_mul q hq, hmul]
+    rw [TateCurve.evalInt, tsum_eq_single 0 ?_]
+    · simp
+    · intro n hn
+      simp [PowerSeries.coeff_one, hn]
+  exact eq_inv_of_mul_eq_one_left
+    (by rw [mul_comm] at h1; exact h1)
+
 open scoped ArithmeticFunction.sigma in
 /-- The integrality `12 ∣ 5σ₃(n) + 7σ₅(n)`: termwise, `12 ∣ 5d³ + 7d⁵`
 (check mod `12` by `decide` on `ZMod 12`). -/
