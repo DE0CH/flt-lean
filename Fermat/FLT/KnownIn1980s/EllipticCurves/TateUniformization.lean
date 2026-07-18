@@ -632,7 +632,53 @@ theorem summable_evalA_a₆A (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
         mul_le_mul_left (valuation_intCast_le_one _) _
     _ = valuation k q₀ ^ n := one_mul _
 
+/-- Summability of the evaluated product series: the Cauchy product of
+the two evaluated series regrouped into the product coefficients. -/
+theorem summable_evalA_mul (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    {F G : PowerSeries CoeffRing}
+    (hF : Summable fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff n F) * q₀ ^ n)
+    (hG : Summable fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff n G) * q₀ ^ n) :
+    Summable fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff n (F * G)) * q₀ ^ n := by
+  set f : ℕ → k :=
+    fun n ↦ coeffRingEval u₀ h0 h1 (PowerSeries.coeff n F) * q₀ ^ n
+    with hfdef
+  set g : ℕ → k :=
+    fun n ↦ coeffRingEval u₀ h0 h1 (PowerSeries.coeff n G) * q₀ ^ n
+    with hgdef
+  have h := summable_sum_mul_antidiagonal_of_summable_mul (A := ℕ)
+    (summable_mul_prod hF hG)
+  refine h.congr fun n ↦ ?_
+  rw [PowerSeries.coeff_mul, map_sum, Finset.sum_mul]
+  refine Finset.sum_congr rfl fun p hp ↦ ?_
+  have hpn : p.1 + p.2 = n := Finset.mem_antidiagonal.mp hp
+  rw [hfdef, hgdef, map_mul]
+  rw [← hpn, pow_add]
+  ring
+
 end Annulus
+
+/-! ### The formal Weierstrass equation over the coefficient ring -/
+
+/-- **The formal Weierstrass equation over `CoeffRing`**: pulled back
+from `TateCurve.weierstrass_equation` (in `ℚ(u)⟦q⟧`, proven by the
+complex-analytic descent of `TateCurveConstruction.lean`) along the
+injective inclusion `coeffRingToRatFunc`. -/
+theorem weierstrass_equation_A :
+    YA ^ 2 + XA * YA = XA ^ 3 + a₄A * XA + a₆A := by
+  have hinj : Function.Injective
+      (PowerSeries.map coeffRingToRatFunc) := by
+    intro P Q h
+    ext n
+    refine coeffRingToRatFunc_injective ?_
+    have h1 := congrArg (PowerSeries.coeff n) h
+    rwa [PowerSeries.coeff_map, PowerSeries.coeff_map] at h1
+  apply hinj
+  simp only [map_add, map_mul, map_pow, map_XA, map_YA, map_a₄A,
+    map_a₆A]
+  exact TateCurve.weierstrass_equation
 
 end TateCurve
 
