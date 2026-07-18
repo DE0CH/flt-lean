@@ -110,9 +110,14 @@ def main() -> int:
             floating.append({"module": mod, "name": name})
     result = {"key": key, "returncode": proc.returncode,
               "floating": floating}
-    json.dump(result, open(CACHE, "w"), ensure_ascii=False, indent=1)
+    if proc.returncode == 0:
+        json.dump(result, open(CACHE, "w"), ensure_ascii=False, indent=1)
+    else:
+        # do NOT cache a failed analysis — a broken run must not read as
+        # "zero floating declarations" (fail-safe, 2026-07-18)
+        result["error"] = proc.stdout[:400]
     print(json.dumps(result))
-    return 0
+    return 0 if proc.returncode == 0 else 1
 
 
 if __name__ == "__main__":
