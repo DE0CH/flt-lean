@@ -2167,6 +2167,176 @@ private theorem addRelXRaw_eq_zero (L : PeriodPair) (w : ℂ)
   rw [← hzval, hconst, h0]
 
 
+/-- The differentiated cleared addition identity: `d/dz` of
+`addRelXRaw_eq_zero` on the open complement of both pole families. -/
+private lemma deriv_addRelX (L : PeriodPair) (w : ℂ) (hw : w ∉ L.lattice)
+    {z : ℂ} (hz : z ∉ L.lattice) (hzw : z + w ∉ L.lattice) :
+    (℘'[L] (z + w) + ℘'[L] z) * (℘[L] z - ℘[L] w) ^ 2
+      + (℘[L] (z + w) + ℘[L] z + ℘[L] w) * (2 * (℘[L] z - ℘[L] w) * ℘'[L] z)
+      - (℘'[L] z - ℘'[L] w) * (6 * ℘[L] z ^ 2 - L.g₂ / 2) / 2 = 0 := by
+  have h1 : IsOpen ((↑L.lattice : Set ℂ)ᶜ) := L.isClosed_lattice.isOpen_compl
+  have hev : addRelXRaw L w =ᶠ[𝓝 z] fun _ => (0 : ℂ) := by
+    filter_upwards [h1.mem_nhds hz,
+      (h1.preimage (f := fun y : ℂ => y + w) (by fun_prop)).mem_nhds hzw]
+      with y hy1 hy2
+    exact addRelXRaw_eq_zero L w hw hy1 hy2
+  have hPd : HasDerivAt ℘[L] (℘'[L] z) z := by
+    have h := (L.analyticOnNhd_weierstrassP z hz).differentiableAt.hasDerivAt
+    rwa [L.deriv_weierstrassP] at h
+  have hPwd : HasDerivAt (fun y : ℂ => ℘[L] (y + w)) (℘'[L] (z + w)) z := by
+    have h := (L.analyticOnNhd_weierstrassP (z + w) hzw).differentiableAt.hasDerivAt
+    rw [L.deriv_weierstrassP] at h
+    exact h.comp_add_const z w
+  have hP'd : HasDerivAt ℘'[L] (6 * ℘[L] z ^ 2 - L.g₂ / 2) z := by
+    have h := (L.analyticOnNhd_derivWeierstrassP z hz).differentiableAt.hasDerivAt
+    rwa [deriv_derivWeierstrassP_eq L hz] at h
+  have hfull := (((hPwd.add hPd).add_const (℘[L] w)).mul
+    ((hPd.sub_const (℘[L] w)).pow 2)).sub
+    (((hP'd.sub_const (℘'[L] w)).pow 2).div_const 4)
+  have hcongr : HasDerivAt (addRelXRaw L w) _ z := hfull
+  have hzero : HasDerivAt (addRelXRaw L w) 0 z :=
+    (hasDerivAt_const z (0 : ℂ)).congr_of_eventuallyEq hev
+  have hval := hcongr.unique hzero
+  simp only [Pi.pow_apply, Pi.add_apply] at hval
+  push_cast at hval
+  linear_combination hval
+
+/-- **The collinearity (`y`-part) of the `℘`-addition law**: the points
+`(℘z, ℘'z)`, `(℘w, ℘'w)`, `(℘(z+w), −℘'(z+w))` are collinear — derived
+from the cleared `x`-identity by differentiation (certificate cofactors
+against the differential equation), extended across the isolated
+`℘ = ℘w` locus by the identity theorem. -/
+private theorem addRelYRaw_eq_zero (L : PeriodPair) (w : ℂ)
+    (hw : w ∉ L.lattice) {z : ℂ} (hz : z ∉ L.lattice)
+    (hzw : z + w ∉ L.lattice) :
+    (-℘'[L] (z + w) - ℘'[L] z) * (℘[L] w - ℘[L] z)
+      - (℘'[L] w - ℘'[L] z) * (℘[L] (z + w) - ℘[L] z) = 0 := by
+  have hop : IsOpen ((↑L.lattice : Set ℂ)ᶜ) := L.isClosed_lattice.isOpen_compl
+  have hstep : ∀ y : ℂ, y ∉ L.lattice → y + w ∉ L.lattice →
+      ℘[L] y ≠ ℘[L] w →
+      (-℘'[L] (y + w) - ℘'[L] y) * (℘[L] w - ℘[L] y)
+        - (℘'[L] w - ℘'[L] y) * (℘[L] (y + w) - ℘[L] y) = 0 := by
+    intro y hy hyw hne
+    have hX : (℘[L] (y + w) + ℘[L] y + ℘[L] w) * (℘[L] y - ℘[L] w) ^ 2
+        - (℘'[L] y - ℘'[L] w) ^ 2 / 4 = 0 := addRelXRaw_eq_zero L w hw hy hyw
+    have hdX := deriv_addRelX L w hw hy hyw
+    have hDE1 := L.derivWeierstrassP_sq y hy
+    have hDE2 := L.derivWeierstrassP_sq w hw
+    have hsq : (℘[L] y - ℘[L] w) ^ 2 ≠ 0 := pow_ne_zero 2 (sub_ne_zero.mpr hne)
+    apply mul_left_cancel₀ hsq
+    rw [mul_zero]
+    linear_combination (℘[L] y - ℘[L] w) * hdX + (-℘'[L] y - ℘'[L] w) * hX
+      + (-℘'[L] y / 4 + ℘'[L] w / 4) * hDE1
+      + (℘'[L] y / 4 - ℘'[L] w / 4) * hDE2
+  set U : Set ℂ := ((↑L.lattice : Set ℂ) ∪
+    (fun y : ℂ => y + w) ⁻¹' (↑L.lattice : Set ℂ))ᶜ with hUdef
+  have hUmem : ∀ {y : ℂ}, y ∈ U ↔ y ∉ L.lattice ∧ y + w ∉ L.lattice := by
+    intro y
+    simp [hUdef]
+  have hUopen : IsOpen U := (L.isClosed_lattice.union
+    (L.isClosed_lattice.preimage (by fun_prop))).isOpen_compl
+  have hf : AnalyticOnNhd ℂ (fun y : ℂ =>
+      (-℘'[L] (y + w) - ℘'[L] y) * (℘[L] w - ℘[L] y)
+        - (℘'[L] w - ℘'[L] y) * (℘[L] (y + w) - ℘[L] y)) U := by
+    intro y hy
+    obtain ⟨hy1, hy2⟩ := hUmem.mp hy
+    have hP : AnalyticAt ℂ ℘[L] y := L.analyticOnNhd_weierstrassP y hy1
+    have hP' : AnalyticAt ℂ ℘'[L] y := L.analyticOnNhd_derivWeierstrassP y hy1
+    have hPw : AnalyticAt ℂ (fun x => ℘[L] (x + w)) y :=
+      AnalyticAt.comp (g := ℘[L]) (f := fun x : ℂ => x + w)
+        (L.analyticOnNhd_weierstrassP (y + w) hy2) (by fun_prop)
+    have hP'w : AnalyticAt ℂ (fun x => ℘'[L] (x + w)) y :=
+      AnalyticAt.comp (g := ℘'[L]) (f := fun x : ℂ => x + w)
+        (L.analyticOnNhd_derivWeierstrassP (y + w) hy2) (by fun_prop)
+    fun_prop
+  have hg : AnalyticOnNhd ℂ (fun _ : ℂ => (0 : ℂ)) U :=
+    fun _ _ => analyticAt_const
+  have hpre : IsPreconnected U := by
+    have hc1 : (↑L.lattice : Set ℂ).Countable := by
+      have hC : Countable L.lattice :=
+        L.latticeEquivProd.toEquiv.countable_iff.mpr inferInstance
+      exact Set.countable_coe_iff.mp hC
+    have hc2 : ((fun y : ℂ => y + w) ⁻¹' (↑L.lattice : Set ℂ)).Countable := by
+      have himg : (fun y : ℂ => y + w) ⁻¹' (↑L.lattice : Set ℂ)
+          = (fun x : ℂ => x - w) '' (↑L.lattice : Set ℂ) := by
+        ext t
+        constructor
+        · intro ht
+          exact ⟨t + w, ht, by ring⟩
+        · rintro ⟨x, hx, rfl⟩
+          simpa using hx
+      rw [himg]
+      exact hc1.image _
+    have h2 : 1 < Module.rank ℝ ℂ := by
+      rw [rank_real_complex]
+      norm_num
+    exact ((hc1.union hc2).isPathConnected_compl_of_one_lt_rank
+      h2).isConnected.isPreconnected
+  obtain ⟨z₀, hz₀m, hz₀ne⟩ : ∃ y, (y ∉ L.lattice ∧ y + w ∉ L.lattice) ∧
+      ℘[L] y ≠ ℘[L] w := by
+    by_contra hall
+    push Not at hall
+    have hE : ContinuousAt ℘[L - (0 : ℂ)] 0 :=
+      (L.analyticAt_weierstrassPExcept 0).continuousAt
+    have e3 : ∀ᶠ y in 𝓝 (0 : ℂ),
+        ‖℘[L - (0 : ℂ)] y‖ < ‖℘[L - (0 : ℂ)] 0‖ + 1 :=
+      hE.norm.eventually_lt_const
+        (by linarith [norm_nonneg (℘[L - (0 : ℂ)] 0)])
+    have e4 : ∀ᶠ y in 𝓝 (0 : ℂ),
+        ‖y‖ ^ 2 * (‖℘[L - (0 : ℂ)] 0‖ + ‖℘[L] w‖ + 1) < 1 := by
+      have hten : Filter.Tendsto
+          (fun y : ℂ => ‖y‖ ^ 2 * (‖℘[L - (0 : ℂ)] 0‖ + ‖℘[L] w‖ + 1))
+          (𝓝 0) (𝓝 0) := by
+        have hn : Filter.Tendsto (fun y : ℂ => ‖y‖) (𝓝 0) (𝓝 0) := by
+          simpa using continuous_norm.tendsto (0 : ℂ)
+        simpa using (hn.pow 2).mul_const
+          (‖℘[L - (0 : ℂ)] 0‖ + ‖℘[L] w‖ + 1)
+      exact hten.eventually_lt_const one_pos
+    have e1 : ∀ᶠ y in 𝓝 (0 : ℂ), y ∈ ((↑L.lattice : Set ℂ) \ {0})ᶜ :=
+      L.compl_lattice_sdiff_singleton_mem_nhds 0
+    have e2 : ∀ᶠ y in 𝓝 (0 : ℂ), y + w ∉ L.lattice := by
+      filter_upwards [(hop.preimage (f := fun y : ℂ => y + w)
+        (by fun_prop)).mem_nhds (by simpa using hw)] with y hy
+      exact hy
+    obtain ⟨y, ⟨hy1, hy2, hy3, hy4⟩, hy0⟩ :=
+      (((e1.and (e2.and (e3.and e4))).filter_mono
+        (nhdsWithin_le_nhds (s := {(0 : ℂ)}ᶜ))).and
+        eventually_mem_nhdsWithin).exists
+    have hy0' : y ≠ 0 := hy0
+    have hyL : y ∉ L.lattice := fun hmem => hy1 ⟨hmem, hy0'⟩
+    have heq : ℘[L] y = ℘[L] w := hall y ⟨hyL, hy2⟩
+    have h := L.ite_eq_one_sub_sq_mul_weierstrassP 0 L.lattice.zero_mem y
+    rw [if_neg hy0'] at h
+    simp only [sub_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true,
+      zero_pow, div_zero] at h
+    have hkey : (1 : ℂ) = y ^ 2 * (℘[L] w - ℘[L - (0 : ℂ)] y) := by
+      rw [← heq]
+      linear_combination -h
+    have hnorm := congrArg norm hkey
+    rw [norm_one, norm_mul, norm_pow] at hnorm
+    have hub : ‖℘[L] w - ℘[L - (0 : ℂ)] y‖ ≤
+        ‖℘[L - (0 : ℂ)] 0‖ + ‖℘[L] w‖ + 1 := by
+      calc ‖℘[L] w - ℘[L - (0 : ℂ)] y‖
+          ≤ ‖℘[L] w‖ + ‖℘[L - (0 : ℂ)] y‖ := norm_sub_le _ _
+        _ ≤ ‖℘[L - (0 : ℂ)] 0‖ + ‖℘[L] w‖ + 1 := by linarith
+    have hge : (1 : ℝ) ≤ ‖y‖ ^ 2 *
+        (‖℘[L - (0 : ℂ)] 0‖ + ‖℘[L] w‖ + 1) := by
+      calc (1 : ℝ) = ‖y‖ ^ 2 * ‖℘[L] w - ℘[L - (0 : ℂ)] y‖ := hnorm
+        _ ≤ ‖y‖ ^ 2 * (‖℘[L - (0 : ℂ)] 0‖ + ‖℘[L] w‖ + 1) :=
+          mul_le_mul_of_nonneg_left hub (by positivity)
+    linarith
+  have hev : (fun y : ℂ =>
+      (-℘'[L] (y + w) - ℘'[L] y) * (℘[L] w - ℘[L] y)
+        - (℘'[L] w - ℘'[L] y) * (℘[L] (y + w) - ℘[L] y))
+      =ᶠ[𝓝 z₀] fun _ => (0 : ℂ) := by
+    have hne : ∀ᶠ y in 𝓝 z₀, ℘[L] y ≠ ℘[L] w :=
+      ((L.analyticOnNhd_weierstrassP z₀ hz₀m.1).continuousAt).eventually_ne
+        hz₀ne
+    filter_upwards [hUopen.mem_nhds (hUmem.mpr hz₀m), hne] with y hyU hyne
+    exact hstep y (hUmem.mp hyU).1 (hUmem.mp hyU).2 hyne
+  exact hf.eqOn_of_preconnected_of_eventuallyEq hg hpre
+    (hUmem.mpr hz₀m) hev (hUmem.mpr ⟨hz, hzw⟩)
+
 end WeierstrassAddition
 
 namespace Blueprint
@@ -2248,6 +2418,100 @@ private theorem analytic_chordX {u v q : ℂ} (h0 : 0 < ‖q‖)
     rw [norm_mul]
     exact Real.log_mul (ne_of_gt hu0) (ne_of_gt hv0)
   refine analytic_chordX_of_exp
+    (τ := Complex.log q / (2 * (Real.pi : ℂ) * I))
+    (z := Complex.log u / (2 * (Real.pi : ℂ) * I))
+    (w := Complex.log v / (2 * (Real.pi : ℂ) * I))
+    (him h0 (h1u.trans h2u)) (him hu0 h2u) (hlt h1u) (him hv0 h2v) (hlt h1v)
+    ?_ ?_ (e_log_div_two_pi_I (norm_pos_iff.mp hu0))
+    (e_log_div_two_pi_I (norm_pos_iff.mp hv0))
+    (e_log_div_two_pi_I (norm_pos_iff.mp h0))
+  · rw [hsum]
+    have huv1 : Real.log ‖u * v‖ < 0 :=
+      (Real.log_neg_iff (by rw [norm_mul]; positivity)).2 h2uv
+    rw [hlog_uv] at huv1
+    exact div_pos (by linarith) (by positivity)
+  · rw [hsum, log_div_two_pi_I_im]
+    have hquv : Real.log ‖q‖ < Real.log ‖u * v‖ := Real.log_lt_log h0 h1uv
+    rw [hlog_uv] at hquv
+    exact div_lt_div_of_pos_right (by linarith) (by positivity)
+
+
+/-- Pure-algebra core of the chord `Y`-identity: the collinearity
+relation divided by `(2πi)⁵` (the `1/12`s cancel in the `P`-differences,
+and the target is exactly `−1/2` times the reduced relation). -/
+private theorem analytic_chordY_algebra
+    (xu yu xv yv xuv yuv c Pu Pv Puv Du Dv Duv : ℂ) (hc : c ≠ 0)
+    (hPu : Pu = c ^ 2 * (1 / 12 + xu)) (hPv : Pv = c ^ 2 * (1 / 12 + xv))
+    (hPuv : Puv = c ^ 2 * (1 / 12 + xuv))
+    (hDu : Du = c ^ 3 * (xu + 2 * yu)) (hDv : Dv = c ^ 3 * (xv + 2 * yv))
+    (hDuv : Duv = c ^ 3 * (xuv + 2 * yuv))
+    (hrel : (-Duv - Du) * (Pv - Pu) - (Dv - Du) * (Puv - Pu) = 0) :
+    -(yuv + xuv) * (xu - xv) =
+      (yu - yv) * (xuv - xu) + yu * (xu - xv) := by
+  have hmain : c ^ 5 * (-(yuv + xuv) * (xu - xv) -
+      ((yu - yv) * (xuv - xu) + yu * (xu - xv))) = 0 := by
+    rw [hPu, hPv, hPuv, hDu, hDv, hDuv] at hrel
+    linear_combination (-1 / 2 : ℂ) * hrel
+  exact sub_eq_zero.mp ((mul_eq_zero.mp hmain).resolve_left
+    (pow_ne_zero 5 hc))
+
+/-- The chord `Y`-identity at exponential parameters. -/
+private theorem analytic_chordY_of_exp {τ z w u v q : ℂ} (hτ : 0 < τ.im)
+    (hz : 0 < z.im) (hzτ : z.im < τ.im)
+    (hw : 0 < w.im) (hwτ : w.im < τ.im)
+    (hzw : 0 < (z + w).im) (hzwτ : (z + w).im < τ.im)
+    (hu : e z = u) (hv : e w = v) (hq : e τ = q) :
+    -(YAn (u * v) q + XAn (u * v) q) * (XAn u q - XAn v q) =
+      (YAn u q - YAn v q) * (XAn (u * v) q - XAn u q)
+        + YAn u q * (XAn u q - XAn v q) := by
+  subst hu hv hq
+  have hPu := weierstrassP_q_expansion τ hτ z hz hzτ
+  have hPv := weierstrassP_q_expansion τ hτ w hw hwτ
+  have hPuv := weierstrassP_q_expansion τ hτ (z + w) hzw hzwτ
+  rw [e_add] at hPuv
+  have hDu := derivWeierstrassP_q_expansion τ hτ z hz hzτ
+  have hDv := derivWeierstrassP_q_expansion τ hτ w hw hwτ
+  have hDuv := derivWeierstrassP_q_expansion τ hτ (z + w) hzw hzwτ
+  rw [e_add] at hDuv
+  have hrel := addRelYRaw_eq_zero (periodPair τ hτ.ne') w
+    (notMem_lattice_of_im_between hτ hw hwτ)
+    (notMem_lattice_of_im_between hτ hz hzτ)
+    (notMem_lattice_of_im_between hτ hzw hzwτ)
+  exact analytic_chordY_algebra _ _ _ _ _ _ (2 * (Real.pi : ℂ) * I)
+    _ _ _ _ _ _ two_pi_I_ne_zero hPu hPv hPuv hDu hDv hDuv hrel
+
+/-- **The analytic cleared chord `Y`-identity** (the analytic content of
+the denominator-free Silverman V.3.1(c) `y`-part): for annulus
+parameters `0 < ‖q‖ < ‖u‖, ‖v‖, ‖uv‖ < 1`. Private until the
+two-variable descent consumes it. -/
+private theorem analytic_chordY {u v q : ℂ} (h0 : 0 < ‖q‖)
+    (h1u : ‖q‖ < ‖u‖) (h2u : ‖u‖ < 1)
+    (h1v : ‖q‖ < ‖v‖) (h2v : ‖v‖ < 1)
+    (h1uv : ‖q‖ < ‖u * v‖) (h2uv : ‖u * v‖ < 1) :
+    -(YAn (u * v) q + XAn (u * v) q) * (XAn u q - XAn v q) =
+      (YAn u q - YAn v q) * (XAn (u * v) q - XAn u q)
+        + YAn u q * (XAn u q - XAn v q) := by
+  have him : ∀ {x : ℂ}, 0 < ‖x‖ → ‖x‖ < 1 →
+      0 < (Complex.log x / (2 * (Real.pi : ℂ) * I)).im := fun hx0 hx1 ↦ by
+    rw [log_div_two_pi_I_im]
+    exact div_pos (neg_pos.2 ((Real.log_neg_iff hx0).2 hx1)) (by positivity)
+  have hlt : ∀ {x : ℂ}, ‖q‖ < ‖x‖ →
+      (Complex.log x / (2 * (Real.pi : ℂ) * I)).im
+        < (Complex.log q / (2 * (Real.pi : ℂ) * I)).im := fun {x} hqx ↦ by
+    rw [log_div_two_pi_I_im, log_div_two_pi_I_im]
+    exact div_lt_div_of_pos_right (neg_lt_neg (Real.log_lt_log h0 hqx))
+      (by positivity)
+  have hu0 : (0 : ℝ) < ‖u‖ := h0.trans h1u
+  have hv0 : (0 : ℝ) < ‖v‖ := h0.trans h1v
+  have hsum : (Complex.log u / (2 * (Real.pi : ℂ) * I)
+      + Complex.log v / (2 * (Real.pi : ℂ) * I)).im
+      = -(Real.log ‖u‖ + Real.log ‖v‖) / (2 * Real.pi) := by
+    rw [Complex.add_im, log_div_two_pi_I_im, log_div_two_pi_I_im]
+    ring
+  have hlog_uv : Real.log ‖u * v‖ = Real.log ‖u‖ + Real.log ‖v‖ := by
+    rw [norm_mul]
+    exact Real.log_mul (ne_of_gt hu0) (ne_of_gt hv0)
+  refine analytic_chordY_of_exp
     (τ := Complex.log q / (2 * (Real.pi : ℂ) * I))
     (z := Complex.log u / (2 * (Real.pi : ℂ) * I))
     (w := Complex.log v / (2 * (Real.pi : ℂ) * I))
