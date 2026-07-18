@@ -29,6 +29,10 @@ ROOT_DECL = "fermat_last_theorem"
 def source_key() -> str:
     # include this script's own mtime so detector refinements invalidate the cache
     latest = os.path.getmtime(os.path.abspath(__file__))
+    # and the keep-list's, so allowlist changes invalidate it too
+    keep_path = os.path.join(ROOT, "free-floating-keep.json")
+    if os.path.exists(keep_path):
+        latest = max(latest, os.path.getmtime(keep_path))
     for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "Fermat")):
         for name in files:
             if name.endswith(".lean"):

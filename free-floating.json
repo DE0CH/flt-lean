@@ -1,5 +1,5 @@
 {
- "key": "1784371035.3665879",
+ "key": "1784371361.7360013",
  "returncode": 0,
  "kept_invisible": [
   {
@@ -21,6 +21,10 @@
   {
    "module": "Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal",
    "name": "tsum_lambert_of_summable_of_isTopologicallyNilpotent"
+  },
+  {
+   "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
+   "name": "GaloisRep.toLocal_apply"
   },
   {
    "module": "Fermat.FLT.Mathlib.RingTheory.Ideal.Quotient.Basic",
@@ -123,10 +127,5 @@
    "name": "IsDedekindDomain.HeightOneSpectrum.algebraMap_completionIntegers"
   }
  ],
- "floating": [
-  {
-   "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
-   "name": "GaloisRep.toLocal_apply"
-  }
- ]
+ "floating": []
 }
