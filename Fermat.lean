@@ -9,11 +9,15 @@ import Fermat.FLT.EllipticCurve.TorsionCard
 import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
 import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
 import Fermat.FLT.KnownIn1980s.EllipticCurves.TateParameter
+import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction
+import Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization
 import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveBaseChange
 import Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange
 import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists
 import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.SplitMultiplicativeReduction
 import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve
+import Fermat.FLT.KnownIn1980s.RepresentationTheory.OddAbsIrred
+import Fermat.FLT.KnownIn1980s.PGL2.Defs
 import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 import Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal
 import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField

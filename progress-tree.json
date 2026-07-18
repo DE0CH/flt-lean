@@ -63,6 +63,10 @@
   "GaloisRepresentation.IsHardlyRamified.mem_isCompatible": "❌",
   "GaloisRepresentation.residual_charFrob_eq_of_family": "✅",
   "GaloisRepresentation.IsHardlyRamified.three_adic": "❌",
+  "GaloisRepresentation.IsHardlyRamified.mod_three": "✅",
+  "GaloisRepresentation.IsHardlyRamified.mod_three_reducible": "❌",
+  "GaloisRepresentation.IsHardlyRamified.mod_three_of_stable_line": "✅",
+  "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter": "❌",
   "GaloisRepresentation.not_isIrreducible_of_charFrob_eq": "✅",
   "GaloisRepresentation.dense_conjClasses_globalFrob": "✅",
   "GaloisRepresentation.exists_frobenius_conj_mem_coset": "❌",
@@ -121,7 +125,11 @@
   "TateCurve.ΔFormal_eq": "✅✅",
   "WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul": "✅✅",
   "WeierstrassCurve.isSquare_of_scaled_split": "✅✅",
-  "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split": "✅✅"
+  "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split": "✅✅",
+  "TateCurve.pointMapQuot_add": "❌",
+  "TateCurve.pointMapQuot_bijective": "✅",
+  "TateCurve.tateCurveEquiv": "✅",
+  "TateCurve.pointMapQuot_surjective": "❌"
  },
  "children": {
   "fermat_last_theorem": [
@@ -415,6 +423,16 @@
    "GaloisRepresentation.cyclotomicCharacter_globalFrob"
   ],
   "GaloisRepresentation.IsHardlyRamified.three_adic": [],
+  "GaloisRepresentation.IsHardlyRamified.mod_three": [
+   "GaloisRepresentation.IsHardlyRamified.mod_three_of_stable_line",
+   "GaloisRepresentation.IsHardlyRamified.mod_three_reducible"
+  ],
+  "GaloisRepresentation.IsHardlyRamified.mod_three_reducible": [],
+  "GaloisRepresentation.IsHardlyRamified.mod_three_of_stable_line": [
+   "minkowski_character_trivial",
+   "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter"
+  ],
+  "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter": [],
   "GaloisRepresentation.not_isIrreducible_of_charFrob_eq": [
    "GaloisRepresentation.not_isIrreducible_of_charpoly_eq",
    "GaloisRepresentation.dense_conjClasses_globalFrob",
@@ -588,9 +606,27 @@
   "WeierstrassCurve.isSquare_of_scaled_split": [
    "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split"
   ],
-  "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split": []
+  "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split": [],
+  "TateCurve.pointMapQuot_add": [
+   "WeierstrassCurve.Δ_tateCurve_eq_evalInt"
+  ],
+  "TateCurve.pointMapQuot_bijective": [
+   "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
+   "TateCurve.pointMapQuot_add",
+   "TateCurve.pointMapQuot_surjective"
+  ],
+  "TateCurve.tateCurveEquiv": [
+   "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
+   "TateCurve.pointMapQuot_bijective",
+   "TateCurve.pointMapQuot_add"
+  ],
+  "TateCurve.pointMapQuot_surjective": [
+   "WeierstrassCurve.Δ_tateCurve_eq_evalInt"
+  ]
  },
  "roots": [
-  "fermat_last_theorem"
+  "fermat_last_theorem",
+  "GaloisRepresentation.IsHardlyRamified.mod_three",
+  "TateCurve.tateCurveEquiv"
  ]
 }
