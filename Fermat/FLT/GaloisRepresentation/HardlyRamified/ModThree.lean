@@ -1355,9 +1355,10 @@ theorem exists_line_with_unramified_quotCharacter_at_three
             Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) :=
   sorry
 
-set_option warn.sorry false in
-/-- **The mod-3 cyclotomic character is unramified at `2`** (sorry node
-— the arithmetic input of the at-`2` bookkeeping): the composite of the
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **The mod-3 cyclotomic character is unramified at `2`** (PROVEN
+2026-07-18 — the arithmetic input of the at-`2` bookkeeping): the composite of the
 3-adic cyclotomic character with `algebraMap ℤ_[3] k` (which kills the
 level-`>1` information since `k` has characteristic `3`) is trivial on
 the image of the inertia at `2`. Content: an inertia element fixes the
@@ -1375,8 +1376,212 @@ theorem cyclotomicCharacter_algebraMap_eq_one_of_inertia_two
     algebraMap ℤ_[3] k
       ((cyclotomicCharacter (AlgebraicClosure ℚ) 3
         ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2])
-          σ).toRingEquiv) : ℤ_[3]ˣ) : ℤ_[3]) = 1 :=
-  sorry
+          σ).toRingEquiv) : ℤ_[3]ˣ) : ℤ_[3]) = 1 := by
+  haveI h3 : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
+  classical
+  set g' : Γ ℚ := Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) σ
+    with hg'
+  -- a primitive cube root of unity in `ℚᵃˡᵍ` and its image in `ℚ_[2]ᵃˡᵍ`
+  obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot
+    (AlgebraicClosure ℚ) 3
+  have hzprim : IsPrimitiveRoot
+      (AlgebraicClosure.map (algebraMap ℚ ℚ_[2]) ζ) 3 :=
+    hζ.map_of_injective (AlgebraicClosure.map (algebraMap ℚ ℚ_[2])).injective
+  set z : AlgebraicClosure ℚ_[2] :=
+    AlgebraicClosure.map (algebraMap ℚ ℚ_[2]) ζ with hz
+  have hz3 : z ^ 3 = 1 := hzprim.pow_eq_one
+  have hz0 : z ≠ 0 := fun h0 => one_ne_zero
+    (α := AlgebraicClosure ℚ_[2]) (by rw [← hz3, h0, zero_pow]; norm_num)
+  -- roots of unity have valuation `1`
+  have hval_of_root : ∀ w : AlgebraicClosure ℚ_[2], w ^ 3 = 1 →
+      Valued.v w = 1 := by
+    intro w hw
+    have h := congrArg Valued.v hw
+    rw [map_pow, map_one] at h
+    rcases lt_trichotomy (Valued.v w) 1 with hlt | heq | hgt
+    · exfalso
+      have hcon : Valued.v w ^ 3 < 1 := by
+        calc Valued.v w ^ 3 ≤ Valued.v w ^ 1 :=
+              pow_le_pow_right_of_le_one' (le_of_lt hlt) (by norm_num)
+          _ = Valued.v w := pow_one _
+          _ < 1 := hlt
+      rw [h] at hcon
+      exact lt_irrefl _ hcon
+    · exact heq
+    · exfalso
+      have hcon : 1 < Valued.v w ^ 3 := by
+        calc 1 < Valued.v w := hgt
+          _ = Valued.v w ^ 1 := (pow_one _).symm
+          _ ≤ Valued.v w ^ 3 := pow_le_pow_right' (le_of_lt hgt) (by norm_num)
+      rw [h] at hcon
+      exact lt_irrefl _ hcon
+  have hzval : Valued.v z = 1 := hval_of_root z hz3
+  have hzmem : z ∈ Z2bar := by
+    rw [Valuation.mem_valuationSubring_iff, hzval]
+  -- the inertia element fixes `z`
+  have hfix2 : σ z = z := by
+    by_contra hne
+    -- `σ z` is a cube root of unity, hence a power of `z`
+    have hσz3 : (σ z) ^ 3 = 1 := by
+      rw [← map_pow, hz3, map_one]
+    obtain ⟨i, hi3, hiz⟩ := hzprim.eq_pow_of_pow_eq_one hσz3
+    -- the inertia condition: `σ z − z` has valuation `< 1`
+    have hdiff := (AddSubgroup.mem_inertia.mp hσ) ⟨z, hzmem⟩
+    have hdiffval : Valued.v (σ z - z) < 1 := by
+      set y : Z2bar := σ • (⟨z, hzmem⟩ : Z2bar) - ⟨z, hzmem⟩ with hy
+      have hy1 : (y : AlgebraicClosure ℚ_[2]) = σ z - z := rfl
+      have hnu : ¬IsUnit y := by
+        have hmem : y ∈ IsLocalRing.maximalIdeal Z2bar := hdiff
+        rwa [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff] at hmem
+      have hyval : Valued.v (σ z - z) ≤ 1 := by
+        refine le_trans (Valued.v.map_sub _ _) ?_
+        rw [show Valued.v (σ z) = 1 from hval_of_root _ hσz3, hzval]
+        exact le_of_eq (max_self 1)
+      rcases lt_or_eq_of_le hyval with hlt | heq
+      · exact hlt
+      · exfalso
+        apply hnu
+        have hne0 : (σ z - z : AlgebraicClosure ℚ_[2]) ≠ 0 := by
+          intro h0
+          rw [h0, map_zero] at heq
+          exact zero_ne_one heq
+        have hinvmem : (σ z - z : AlgebraicClosure ℚ_[2])⁻¹ ∈ Z2bar := by
+          rw [Valuation.mem_valuationSubring_iff, map_inv₀, heq, inv_one]
+        refine isUnit_iff_exists.mpr
+          ⟨(⟨(σ z - z)⁻¹, hinvmem⟩ : Z2bar), ?_, ?_⟩
+        · apply Subtype.ext
+          show (y : AlgebraicClosure ℚ_[2]) * (σ z - z)⁻¹ = 1
+          rw [hy1]
+          exact mul_inv_cancel₀ hne0
+        · apply Subtype.ext
+          show (σ z - z)⁻¹ * (y : AlgebraicClosure ℚ_[2]) = 1
+          rw [hy1]
+          exact inv_mul_cancel₀ hne0
+    interval_cases i
+    · -- `σ z = 1` forces `z = 1`, impossible for a primitive root
+      rw [pow_zero] at hiz
+      exact hzprim.ne_one (by norm_num)
+        (σ.injective (by rw [← hiz, map_one]))
+    · -- `σ z = z` contradicts the assumption
+      rw [pow_one] at hiz
+      exact hne hiz.symm
+    · -- `σ z = z²`: then `z² − z ∈ 𝔪`, but its valuation is `1`
+      rw [← hiz] at hdiffval
+      -- `z² − z = z (z − 1)` and `(z − 1)² = −3z` since `1 + z + z² = 0`
+      have hsum : 1 + z + z ^ 2 = 0 := by
+        have h := hzprim.geom_sum_eq_zero (by norm_num)
+        rw [Finset.sum_range_succ, Finset.sum_range_succ,
+          Finset.sum_range_succ, Finset.sum_range_zero] at h
+        rw [pow_zero, pow_one] at h
+        rw [← h]
+        ring
+      have hfactor : (z - 1) ^ 2 = -3 * z := by
+        have h2 : z ^ 2 = -1 - z := by linear_combination hsum
+        calc (z - 1) ^ 2 = z ^ 2 - 2 * z + 1 := by ring
+          _ = (-1 - z) - 2 * z + 1 := by rw [h2]
+          _ = -3 * z := by ring
+      have hval31 : Valued.v (-3 * z : AlgebraicClosure ℚ_[2]) = 1 := by
+        rw [map_mul, hzval, mul_one, Valuation.map_neg]
+        -- `3` is a unit at `2`
+        have h3norm : ‖(3 : ℚ_[2])‖ = 1 := by
+          rw [show ((3 : ℚ_[2])) = ((3 : ℕ) : ℚ_[2]) by norm_cast]
+          rw [Padic.norm_natCast_eq_one_iff]
+          decide
+        have h3alg : (3 : AlgebraicClosure ℚ_[2]) =
+            algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2]) 3 := by
+          rw [map_ofNat]
+        have h3ne : (3 : AlgebraicClosure ℚ_[2]) ≠ 0 := by
+          norm_num
+        have h3le : Valued.v (3 : AlgebraicClosure ℚ_[2]) ≤ 1 := by
+          have hmem : (3 : AlgebraicClosure ℚ_[2]) ∈ Z2bar := by
+            rw [h3alg, algebraMap_mem_Z2bar_iff, h3norm]
+          rwa [Valuation.mem_valuationSubring_iff] at hmem
+        have h3invle : (Valued.v (3 : AlgebraicClosure ℚ_[2]))⁻¹ ≤ 1 := by
+          have hmem : (3 : AlgebraicClosure ℚ_[2])⁻¹ ∈ Z2bar := by
+            rw [h3alg, ← map_inv₀, algebraMap_mem_Z2bar_iff, norm_inv,
+              h3norm, inv_one]
+          rw [Valuation.mem_valuationSubring_iff, map_inv₀] at hmem
+          exact hmem
+        have h3vne : Valued.v (3 : AlgebraicClosure ℚ_[2]) ≠ 0 :=
+          (Valuation.ne_zero_iff _).mpr h3ne
+        refine le_antisymm h3le ?_
+        calc (1 : _) = Valued.v (3 : AlgebraicClosure ℚ_[2]) *
+              (Valued.v (3 : AlgebraicClosure ℚ_[2]))⁻¹ :=
+            (mul_inv_cancel₀ h3vne).symm
+          _ ≤ Valued.v (3 : AlgebraicClosure ℚ_[2]) * 1 :=
+            mul_le_mul_right h3invle _
+          _ = Valued.v (3 : AlgebraicClosure ℚ_[2]) := mul_one _
+      have hvalz1 : Valued.v (z - 1) = 1 := by
+        have h := congrArg Valued.v hfactor
+        rw [map_pow, hval31] at h
+        -- `a² = 1 → a = 1` in the value group
+        rcases lt_trichotomy (Valued.v (z - 1)) 1 with hlt | heq | hgt
+        · exfalso
+          have hcon : Valued.v (z - 1) ^ 2 < 1 := by
+            calc Valued.v (z - 1) ^ 2 ≤ Valued.v (z - 1) ^ 1 :=
+                  pow_le_pow_right_of_le_one' (le_of_lt hlt) (by norm_num)
+              _ = Valued.v (z - 1) := pow_one _
+              _ < 1 := hlt
+          rw [h] at hcon
+          exact lt_irrefl _ hcon
+        · exact heq
+        · exfalso
+          have hcon : 1 < Valued.v (z - 1) ^ 2 := by
+            calc 1 < Valued.v (z - 1) := hgt
+              _ = Valued.v (z - 1) ^ 1 := (pow_one _).symm
+              _ ≤ Valued.v (z - 1) ^ 2 :=
+                  pow_le_pow_right' (le_of_lt hgt) (by norm_num)
+          rw [h] at hcon
+          exact lt_irrefl _ hcon
+      have hval_prod : Valued.v (z ^ 2 - z) = 1 := by
+        have hfac2 : z ^ 2 - z = z * (z - 1) := by ring
+        rw [hfac2, map_mul, hzval, one_mul, hvalz1]
+      rw [hval_prod] at hdiffval
+      exact lt_irrefl _ hdiffval
+  -- transport: `g'` fixes `ζ` in `ℚᵃˡᵍ`
+  have hfix : g' ζ = ζ := by
+    apply (AlgebraicClosure.map (algebraMap ℚ ℚ_[2])).injective
+    rw [hg']
+    rw [Field.absoluteGaloisGroup.lift_map (algebraMap ℚ ℚ_[2]) σ ζ]
+    exact hfix2
+  -- level one of the cyclotomic character is `1`
+  have hlevel : (PadicInt.toZModPow 1)
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) 3
+        (g'.toRingEquiv) : ℤ_[3]ˣ) : ℤ_[3]) = 1 := by
+    have hspec := cyclotomicCharacter.spec 3 (n := 1) g'.toRingEquiv ζ
+      (by rw [pow_one]; exact hζ.pow_eq_one)
+    have hζspec : ζ = ζ ^ ((PadicInt.toZModPow 1)
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) 3
+          (g'.toRingEquiv) : ℤ_[3]ˣ) : ℤ_[3])).val := by
+      rw [← hspec]
+      exact hfix.symm
+    have hval_lt : ((PadicInt.toZModPow 1)
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) 3
+          (g'.toRingEquiv) : ℤ_[3]ˣ) : ℤ_[3])).val < 3 ^ 1 :=
+      ZMod.val_lt _
+    have h1 := hζ.pow_inj (by norm_num : (1 : ℕ) < 3 ^ 1)
+      (by exact_mod_cast hval_lt) (by rw [pow_one]; exact hζspec)
+    have h2 : ((PadicInt.toZModPow 1)
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) 3
+          (g'.toRingEquiv) : ℤ_[3]ˣ) : ℤ_[3])).val = 1 := h1.symm
+    have h3v : ((1 : ZMod (3 ^ 1))).val = 1 := rfl
+    exact ZMod.val_injective _ (h2.trans h3v.symm)
+  -- `algebraMap ℤ_[3] k` sees only level one (`k` has characteristic 3)
+  haveI hchark : CharP k 3 := charP_three_of_finite_padicIntThree_algebra
+  have hker : ((cyclotomicCharacter (AlgebraicClosure ℚ) 3
+      (g'.toRingEquiv) : ℤ_[3]ˣ) : ℤ_[3]) - 1 ∈
+      RingHom.ker (PadicInt.toZModPow (p := 3) 1) := by
+    rw [RingHom.mem_ker, map_sub, hlevel, map_one, sub_self]
+  rw [PadicInt.ker_toZModPow] at hker
+  obtain ⟨t, ht⟩ := Ideal.mem_span_singleton'.mp hker
+  have hx : ((cyclotomicCharacter (AlgebraicClosure ℚ) 3
+      (g'.toRingEquiv) : ℤ_[3]ˣ) : ℤ_[3]) =
+      1 + t * ((3 : ℕ) : ℤ_[3]) ^ 1 := by
+    linear_combination -ht
+  rw [hg'] at hx ⊢
+  rw [hx, map_add, map_one, map_mul, map_pow, map_natCast]
+  rw [show ((3 : ℕ) : k) = 0 from CharP.cast_eq_zero k 3]
+  ring
 
 set_option warn.sorry false in
 /-- **The inertia bridge at `2`** (sorry node — completion

@@ -1656,11 +1656,15 @@ entries file). To add/remove/annotate a node, edit
                                           and χ₂ = det/χ₁ via MazurTorsion's
                                           det_eq_subCharacter_mul_quotCharacter + the cyclotomic leaf);
                                           new exposed rfl-lemma GaloisRep.map_apply.
-                                            - ❌· `cyclotomicCharacter_algebraMap_eq_one_of_inertia_two` — (sorry node) χ₃ composed with
-                                              algebraMap ℤ_[3] k is trivial on inertia-at-2 images:
-                                              inertia fixes cube roots of unity in ℚ_[2]ᵃˡᵍ
-                                              (|ζ₃ − 1|₂ = 1), lift_map transports to Γ ℚ, and char-3
-                                              k sees only level one of χ₃.
+                                            - ✅· `cyclotomicCharacter_algebraMap_eq_one_of_inertia_two` — FULLY PROVEN 2026-07-18, audit
+                                              [propext, Classical.choice, Quot.sound]: inertia fixes the
+                                              cube root ι ζ (σζ = ζ² would put z² − z in 𝔪, but
+                                              (z−1)² = −3z with 1+z+z² = 0 gives |z−1| = 1 since
+                                              ‖3‖₂ = 1 by 2.Coprime 3); lift_map transports the fix to
+                                              Γ ℚ; cyclotomicCharacter.spec at level 1 + pow_inj give
+                                              χ₃ ≡ 1 mod 3 (PadicInt.ker_toZModPow), and the char-3
+                                              algebraMap kills the 3-divisible part. With it,
+                                              quotCharacter_inertia_two_ker audits fully clean too.
                                             - ❌· `localInertia_two_eq_map_padic` — (sorry node) the completion bridge: localInertiaGroup
                                               at prime_two (adic completion) matches the Z2bar inertia
                                               over ℚ_[2] through padicEquiv-induced Galois functoriality.
