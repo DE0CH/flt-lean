@@ -1792,6 +1792,55 @@ theorem tsum_pnat_eq_add_shift {f : ℕ+ → k} (hf : Summable f) :
     hsum.tsum_eq_zero_add]
   rfl
 
+/-- **The bilateral `x`-value**: the `ℤ`-indexed description of the
+Tate `x`-coordinate, defined for any parameters (junk off the
+convergence window `|q₀| < |u₀| < |q₀|⁻¹`). On the fundamental
+annulus it agrees with `evalA … XA` (`evalA_XA_bilateral`). -/
+noncomputable def bilateralX (u₀ q₀ : k) : k :=
+  u₀ / (1 - u₀) ^ 2 +
+    ((∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀ / (1 - q₀ ^ (m : ℕ) * u₀) ^ 2) +
+     (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+        (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 2) -
+     2 * (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+        q₀ ^ (N : ℕ)))
+
+/-- `evalA_XA_bilateral`, restated through `bilateralX`. -/
+theorem evalA_XA_eq_bilateralX (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hu : valuation k u₀ ≤ 1) (hq1 : valuation k q₀ < 1)
+    (hq : valuation k q₀ < valuation k u₀) :
+    evalA u₀ q₀ h0 h1 XA = bilateralX u₀ q₀ :=
+  evalA_XA_bilateral u₀ q₀ h0 h1 hu hq1 hq
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- The Möbius-type involution fixing the Lambert kernel:
+`v⁻¹/(1-v⁻¹)² = v/(1-v)²`. -/
+theorem lambert_kernel_inv (v : k) (hv : v ≠ 0) :
+    v⁻¹ / (1 - v⁻¹) ^ 2 = v / (1 - v) ^ 2 := by
+  rcases eq_or_ne v 1 with rfl | hv1
+  · simp
+  · have h1 : (1 - v) ≠ 0 := sub_ne_zero.mpr (Ne.symm hv1)
+    have h2 : (1 - v⁻¹) ≠ 0 := by
+      intro h0
+      have : v⁻¹ = 1 := by linear_combination -h0
+      exact hv1 (by
+        have := congrArg (v * ·) this
+        simpa [mul_inv_cancel₀ hv] using this.symm)
+    field_simp
+    ring
+
+omit [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- **Involution invariance of the bilateral `x`-value**:
+`bilateralX u₀⁻¹ = bilateralX u₀` — the substitution `u₀ ↦ u₀⁻¹`
+exchanges the two half-sums termwise (the Lambert kernel is
+`v ↦ v⁻¹`-invariant) and fixes the constant term. -/
+theorem bilateralX_inv (u₀ q₀ : k) (h0 : u₀ ≠ 0) :
+    bilateralX u₀⁻¹ q₀ = bilateralX u₀ q₀ := by
+  rw [bilateralX, bilateralX, inv_inv]
+  have hconst : u₀⁻¹ / (1 - u₀⁻¹) ^ 2 = u₀ / (1 - u₀) ^ 2 :=
+    lambert_kernel_inv u₀ h0
+  rw [hconst]
+  ring
+
 end Annulus
 
 end TateCurve
