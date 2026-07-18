@@ -291,6 +291,49 @@ theorem coeffRingEval_algebraMap (u₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
   rw [coeffRingEval]
   exact IsLocalization.lift_eq _ p
 
+theorem coeffRingEval_uA (u₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1) :
+    coeffRingEval u₀ h0 h1 ((uA : CoeffRingˣ) : CoeffRing) = u₀ := by
+  rw [coe_uA, coeffRingEval_algebraMap, Polynomial.aeval_X]
+
+theorem coeffRingEval_vA (u₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1) :
+    coeffRingEval u₀ h0 h1 ((vA : CoeffRingˣ) : CoeffRing) = 1 - u₀ := by
+  rw [coe_vA, coeffRingEval_algebraMap, map_sub, map_one, Polynomial.aeval_X]
+
+theorem coeffRingEval_uA_inv (u₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1) :
+    coeffRingEval u₀ h0 h1 ((uA⁻¹ : CoeffRingˣ) : CoeffRing) = u₀⁻¹ := by
+  refine eq_inv_of_mul_eq_one_left ?_
+  calc coeffRingEval u₀ h0 h1 ((uA⁻¹ : CoeffRingˣ) : CoeffRing) * u₀
+      = coeffRingEval u₀ h0 h1 ((uA⁻¹ : CoeffRingˣ) : CoeffRing) *
+        coeffRingEval u₀ h0 h1 ((uA : CoeffRingˣ) : CoeffRing) := by
+        rw [coeffRingEval_uA u₀ h0 h1]
+    _ = 1 := by
+        rw [← map_mul, ← Units.val_mul, inv_mul_cancel, Units.val_one,
+          map_one]
+
+theorem coeffRingEval_vA_inv (u₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1) :
+    coeffRingEval u₀ h0 h1 ((vA⁻¹ : CoeffRingˣ) : CoeffRing) =
+      (1 - u₀)⁻¹ := by
+  refine eq_inv_of_mul_eq_one_left ?_
+  calc coeffRingEval u₀ h0 h1 ((vA⁻¹ : CoeffRingˣ) : CoeffRing) * (1 - u₀)
+      = coeffRingEval u₀ h0 h1 ((vA⁻¹ : CoeffRingˣ) : CoeffRing) *
+        coeffRingEval u₀ h0 h1 ((vA : CoeffRingˣ) : CoeffRing) := by
+        rw [coeffRingEval_vA u₀ h0 h1]
+    _ = 1 := by
+        rw [← map_mul, ← Units.val_mul, inv_mul_cancel, Units.val_one,
+          map_one]
+
+/-- **Evaluation of a `CoeffRing`-series at a point `(u₀, q₀)` of a
+topological field** (junk value if the series does not converge): the
+two-variable analogue of `TateCurve.evalInt`, specialising the
+coefficient variable to `u₀` through the ring homomorphism
+`coeffRingEval` and summing against powers of `q₀`. On a
+nonarchimedean local field, for `|q₀| < |u₀| ≤ 1` the evaluations of
+`XA`, `YA`, `a₄A`, `a₆A` all converge (fundamental-annulus estimates —
+next block). -/
+noncomputable def evalA [TopologicalSpace k] (u₀ q₀ : k) (h0 : u₀ ≠ 0)
+    (h1 : u₀ ≠ 1) (F : PowerSeries CoeffRing) : k :=
+  ∑' n : ℕ, coeffRingEval u₀ h0 h1 (PowerSeries.coeff n F) * q₀ ^ n
+
 end Evaluation
 
 end TateCurve
