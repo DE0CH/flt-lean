@@ -1655,11 +1655,21 @@ entries file). To add/remove/annotate a node, edit
                                       via a unit (p:ℤ_[3]) mapping to 0), 
                                       finrank_eigenspace_one_of_involution (E₁ ⊕ E₋₁ split + det
                                       case analysis), GaloisRep.det_apply (exposed rfl-lemma).
-                                        - ❌· `exists_conj_cyclotomicCharacter_three` — complex conjugation with χ₃(c) = -1 (sorry node —
-                                          the oddness input): an embedding ℚᵃˡᵍ → ℂ restricts complex
-                                          conjugation to an involution; it inverts roots of unity, so
-                                          χ₃(c) = -1. Attack: IsAlgClosed.lift / Complex.conjAe +
-                                          cyclotomicCharacter.spec on inverted roots of unity.
+                                        - ✅· `exists_conj_cyclotomicCharacter_three` — complex conjugation with χ₃(c) = -1 — PROVEN
+                                          2026-07-18, audit [propext, Classical.choice, Quot.sound].
+                                          Route: ℝᵃˡᵍ ≃ₐ[ℝ] ℂ (IsAlgClosure.equiv, instance built
+                                          from Complex.isAlgClosed + finite ⇒ algebraic) gives
+                                          Nat.card (Γ ℝ) = 2 (IsGalois.card_aut_eq_finrank +
+                                          finrank_real_complex); the nontrivial σ squares to 1
+                                          (pow_card_eq_one'), its image c under Γ ℝ → Γ ℚ is the
+                                          involution; χ₃(c)² = 1 gives χ₃(c) = ±1 in the domain
+                                          ℤ_[3] (mul_self_eq_one_iff); χ₃(c) = 1 refuted:
+                                          cyclotomicCharacter.spec would make c fix a primitive cube
+                                          root ζ, so σ fixes ι(ζ) ∉ ℝ (real cube roots of 1 are just
+                                          1, nlinarith), but ℝ(ι ζ) = ℝᵃˡᵍ in degree 2
+                                          (finrank_eq_one_iff/finrank_eq_one_iff_eq_top + dvd-prime
+                                          case split), so σ = 1 by adjoin_induction — contradiction.
+                                          mod_three_reducible now rests on the SINGLE Serre leaf.
                                         - ❌· `not_isAbsolutelyIrreducible` — no absolutely irreducible mod-3 hardly ramified rep
                                           (sorry node — the Serre §5.4/Tate elimination core): the
                                           projective image in PGL₂(𝔽̄₃) is classified by Dickson

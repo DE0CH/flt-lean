@@ -13,6 +13,12 @@ public import Fermat.FLT.FreyCurve.MazurTorsion
 -- Irreducible ↔ absolutely irreducible given a 1-dimensional fixed space
 -- (complex conjugation), used by the derivation of `mod_three_reducible`.
 public import Fermat.FLT.KnownIn1980s.RepresentationTheory.OddAbsIrred
+-- `ℂ` is an algebraic closure of `ℝ` (for the complex-conjugation
+-- involution in `exists_conj_cyclotomicCharacter_three`)
+import Mathlib.Analysis.Complex.Polynomial.Basic
+import Mathlib.Topology.Instances.Complex
+import Mathlib.LinearAlgebra.Complex.FiniteDimensional
+import Mathlib.RingTheory.RootsOfUnity.AlgebraicallyClosed
 
 /-!
 # Mod-3 hardly ramified representations
@@ -29,18 +35,127 @@ local notation3 "Γ" K:max => Field.absoluteGaloisGroup K
 
 universe u
 
-set_option warn.sorry false in
-/-- **Complex conjugation and the 3-adic cyclotomic character** (sorry
-node — the oddness input): the absolute Galois group of `ℚ` contains an
-involution on which the 3-adic cyclotomic character takes the value
-`-1`. Content: any embedding `ℚᵃˡᵍ → ℂ` restricts complex conjugation
-to an involution `c` of `ℚᵃˡᵍ`; `c` inverts every root of unity (they
-lie on the unit circle), so `χ₃(c) = -1`. -/
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+open Field in
+/-- **Complex conjugation and the 3-adic cyclotomic character** (DERIVED
+2026-07-18 — the oddness input): the absolute Galois group of `ℚ`
+contains an involution on which the 3-adic cyclotomic character takes
+the value `-1`. Construction: `ℝᵃˡᵍ ≃ₐ[ℝ] ℂ`, so `Γ ℝ` has exactly two
+elements (Galois, degree `2`); the image `c` of the nontrivial one
+under `Γ ℝ → Γ ℚ` is an involution, so `χ₃(c)² = 1`, i.e. `χ₃(c) = ±1`
+in the domain `ℤ_[3]`; and `χ₃(c) = 1` would force `c` to fix a
+primitive cube root of unity `ζ`, hence the nontrivial element of `Γ ℝ`
+to fix `ι ζ ∉ ℝ` — but `ℝ(ι ζ) = ℝᵃˡᵍ` in degree `2`, so that element
+would be the identity. -/
 theorem exists_conj_cyclotomicCharacter_three :
     ∃ c : Γ ℚ, c * c = 1 ∧
       ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 c.toRingEquiv :
-        ℤ_[3]ˣ) : ℤ_[3]) = -1 :=
-  sorry
+        ℤ_[3]ˣ) : ℤ_[3]) = -1 := by
+  haveI h3 : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
+  classical
+  -- `ℝᵃˡᵍ ≃ₐ[ℝ] ℂ`, hence `Γ ℝ` has exactly two elements
+  haveI : IsAlgClosed ℂ := Complex.isAlgClosed
+  haveI : IsAlgClosure ℝ ℂ := ⟨inferInstance, Algebra.IsAlgebraic.of_finite ℝ ℂ⟩
+  let e : AlgebraicClosure ℝ ≃ₐ[ℝ] ℂ :=
+    IsAlgClosure.equiv ℝ (AlgebraicClosure ℝ) ℂ
+  haveI : FiniteDimensional ℝ (AlgebraicClosure ℝ) :=
+    Module.Finite.equiv e.symm.toLinearEquiv
+  have hfr : Module.finrank ℝ (AlgebraicClosure ℝ) = 2 := by
+    rw [e.toLinearEquiv.finrank_eq]
+    exact Complex.finrank_real_complex
+  haveI : IsGalois ℝ (AlgebraicClosure ℝ) := ⟨⟩
+  have hcard : Nat.card (Γ ℝ) = 2 :=
+    (IsGalois.card_aut_eq_finrank ℝ (AlgebraicClosure ℝ)).trans hfr
+  -- the nontrivial element of `Γ ℝ`
+  haveI : Finite (Γ ℝ) := Nat.finite_of_card_ne_zero (by omega)
+  haveI : Nontrivial (Γ ℝ) := Finite.one_lt_card_iff_nontrivial.mp (by omega)
+  obtain ⟨σ, hσ⟩ := exists_ne (1 : Γ ℝ)
+  have hσ2 : σ * σ = 1 := by
+    have h : σ ^ Nat.card (Γ ℝ) = 1 := pow_card_eq_one'
+    rwa [hcard, pow_two] at h
+  -- its image in `Γ ℚ` is the sought involution
+  refine ⟨absoluteGaloisGroup.map (algebraMap ℚ ℝ) σ, ?_, ?_⟩
+  · rw [← map_mul, hσ2, map_one]
+  · set c : Γ ℚ := absoluteGaloisGroup.map (algebraMap ℚ ℝ) σ with hc
+    set x : ℤ_[3] :=
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 c.toRingEquiv :
+        ℤ_[3]ˣ) : ℤ_[3]) with hx
+    -- `x² = 1`, so `x = ±1` in the domain `ℤ_[3]`
+    have hsq : x * x = 1 := by
+      have hmul : (c * c).toRingEquiv = c.toRingEquiv * c.toRingEquiv := rfl
+      have hone : ((1 : Γ ℚ).toRingEquiv) = 1 := rfl
+      have h := congrArg (fun g => ((cyclotomicCharacter
+        (AlgebraicClosure ℚ) 3 g : ℤ_[3]ˣ) : ℤ_[3]))
+        (hmul.symm.trans (by rw [← map_mul, hσ2, map_one, hone] : _ = _))
+      simpa [map_mul] using h
+    rcases mul_self_eq_one_iff.mp hsq with hx1 | hxm1
+    swap
+    · exact hxm1
+    -- rule out `x = 1`: `c` would fix a primitive cube root of unity
+    exfalso
+    obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot
+      (AlgebraicClosure ℚ) 3
+    -- `c ζ = ζ ^ (x mod 3) = ζ`
+    have hfix : c.toRingEquiv ζ = ζ := by
+      have hspec := cyclotomicCharacter.spec 3 (n := 1) c.toRingEquiv ζ
+        (by rw [pow_one]; exact hζ.pow_eq_one)
+      rw [hspec, show (cyclotomicCharacter (AlgebraicClosure ℚ) 3
+        c.toRingEquiv).val = x from rfl, hx1, map_one]
+      rw [show ((1 : ZMod (3 ^ 1)).val) = 1 from rfl, pow_one]
+    -- transport along the embedding `ι : ℚᵃˡᵍ → ℝᵃˡᵍ`
+    have hσz : σ (AlgebraicClosure.map (algebraMap ℚ ℝ) ζ) =
+        AlgebraicClosure.map (algebraMap ℚ ℝ) ζ := by
+      rw [← absoluteGaloisGroup.lift_map (algebraMap ℚ ℝ) σ ζ]
+      exact congrArg _ hfix
+    set z : AlgebraicClosure ℝ := AlgebraicClosure.map (algebraMap ℚ ℝ) ζ
+      with hz
+    -- `z` is a primitive cube root of unity, hence not real
+    have hzprim : IsPrimitiveRoot z 3 :=
+      hζ.map_of_injective (AlgebraicClosure.map (algebraMap ℚ ℝ)).injective
+    have hznotbot : z ∉ (⊥ : IntermediateField ℝ (AlgebraicClosure ℝ)) := by
+      intro hmem
+      obtain ⟨r, hr⟩ := IntermediateField.mem_bot.mp hmem
+      -- `r³ = 1` in `ℝ` forces `r = 1`, forcing `z = 1`
+      have hr3 : r ^ 3 = 1 := by
+        have h := hzprim.pow_eq_one
+        rw [← hr] at h
+        exact (algebraMap ℝ (AlgebraicClosure ℝ)).injective
+          (by rw [map_pow, map_one]; exact h)
+      have hr1 : r = 1 := by nlinarith [sq_nonneg (r - 1), sq_nonneg (r + 1)]
+      exact hzprim.ne_one (by norm_num) (by rw [← hr, hr1, map_one])
+    -- `ℝ(z) = ℝᵃˡᵍ` in degree `2`
+    have htop : IntermediateField.adjoin ℝ {z} = ⊤ := by
+      rw [← IntermediateField.finrank_eq_one_iff_eq_top]
+      have hmul : Module.finrank ℝ (IntermediateField.adjoin ℝ {z}) *
+          Module.finrank (IntermediateField.adjoin ℝ {z})
+            (AlgebraicClosure ℝ) = 2 := by
+        rw [Module.finrank_mul_finrank]
+        exact hfr
+      have hne1 : Module.finrank ℝ (IntermediateField.adjoin ℝ {z}) ≠ 1 := by
+        rw [Ne, IntermediateField.finrank_eq_one_iff]
+        intro hbot
+        exact hznotbot (hbot ▸ IntermediateField.mem_adjoin_simple_self ℝ z)
+      have hdvd : Module.finrank ℝ (IntermediateField.adjoin ℝ {z}) ∣ 2 :=
+        ⟨_, hmul.symm⟩
+      rcases (Nat.dvd_prime Nat.prime_two).mp hdvd with h1 | h2
+      · exact absurd h1 hne1
+      · rw [h2] at hmul
+        omega
+    -- `σ` fixes `ℝ` and `z`, hence everything — contradicting `σ ≠ 1`
+    refine hσ (AlgEquiv.ext fun w => ?_)
+    have hw : w ∈ IntermediateField.adjoin ℝ {z} :=
+      htop ▸ IntermediateField.mem_top
+    show σ w = w
+    induction hw using IntermediateField.adjoin_induction with
+    | mem u hu =>
+      rw [Set.mem_singleton_iff] at hu
+      rw [hu]
+      exact hσz
+    | algebraMap r => exact σ.commutes r
+    | add a b _ _ ha hb => rw [map_add, ha, hb]
+    | mul a b _ _ ha hb => rw [map_mul, ha, hb]
+    | inv a _ ha => rw [map_inv₀, ha]
 
 /-- A finite field admitting a `ℤ_[3]`-algebra structure has `3 = 0`:
 the image of `3` under `ℤ_[3] → k` is not a unit (else the composite
