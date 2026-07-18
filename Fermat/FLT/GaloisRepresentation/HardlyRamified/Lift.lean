@@ -147,7 +147,6 @@ lemma charpoly_baseChange_conj {A : Type*} [CommRing A] [TopologicalSpace A]
   rw [show (Module.End.baseChangeHom A B W) (τ g) =
     LinearMap.baseChange B (τ g) from rfl, LinearMap.charpoly_baseChange]
 
-set_option warn.sorry false in
 /-- **Compatibility bookkeeping** (sorry node): if the hardly ramified
 `ℓ`-adic lift of `ρbar` lives in a compatible family of hardly ramified
 representations, then the residual characteristic polynomials of Frobenius

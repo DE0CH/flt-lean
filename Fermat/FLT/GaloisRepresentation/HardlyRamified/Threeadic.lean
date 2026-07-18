@@ -38,7 +38,6 @@ local notation "Frob" => Field.AbsoluteGaloisGroup.adicArithFrob
 -- TODO -- make some API for "I have a rank 1 quotient where Galois acts trivially"
 -- e.g. this implies trace(Frob_p) is (1+p)
 
-set_option warn.sorry false in
 /-- **The residue package** (sorry node): a local, topological,
 module-finite `ℤ₃`-algebra `R` has a residue field `kk` — finite, of
 characteristic `3`, discrete — with a surjective continuous
@@ -187,7 +186,6 @@ theorem exists_residue_package {R : Type u} [CommRing R]
   rw [Module.rank_baseChange, hV]
   simp
 
-set_option warn.sorry false in
 /-- **Degenerate flatness over the trivial quotient** (sorry node): a Galois
 representation on a subsingleton module has a flat prolongation at `3` — the
 trivial group scheme `Spec 𝒪ᵥ` works, its geometric points being the single
@@ -238,7 +236,6 @@ theorem hasFlatProlongationAt_of_subsingleton {A' : Type*} [CommRing A']
         (Algebra.TensorProduct.rid Ov Kv Kv).toAlgHom), ?_⟩
       exact Subsingleton.elim _ y
 
-set_option warn.sorry false in
 /-- **The residual space identification** (sorry node): the double base
 change `(kk ⧸ ⊥) ⊗_kk (kk ⊗_R V)` is `Γ ℚ₃`-equivariantly isomorphic to
 `(R ⧸ 𝔪) ⊗_R V` — the quotient-by-`⊥` collapses, and `kk ≅ R ⧸ 𝔪` along the
@@ -357,7 +354,6 @@ theorem isFlatAt_baseChange_residue {R : Type u} [CommRing R]
       Module.subsingleton (kk ⧸ (⊤ : Ideal kk)) _
     exact hasFlatProlongationAt_of_subsingleton _
 
-set_option warn.sorry false in
 /-- **Tameness at `2` transfers to the residue field** (sorry node): the
 rank-1 tame quadratic quotient of `ρ` at `2` base-changes to one for the
 residual representation. Content: `π ⊗ 1 : kk ⊗ V → kk ⊗ R ≅ kk` and the
