@@ -119,6 +119,7 @@ example (r : 𝕜)
   simp only [PNat.one_coe, one_mul, Nat.cofinite_eq_atTop] at h
   exact (Filter.tendsto_add_atTop_iff_nat 1).mp h
 
+
 /-- The sequential geometric limit that identifies each row's value in the companion below: over a
 Hausdorff topological field, `r` is topologically nilpotent iff the geometric partial sums
 `∑_{n<N} rⁿ` converge to `(1-r)⁻¹`. This *sequential* convergence is weaker than `HasSum`, but
@@ -159,6 +160,7 @@ section Complete
 
 variable {𝕜 : Type*} [Field 𝕜] [UniformSpace 𝕜] [IsUniformAddGroup 𝕜] [IsTopologicalRing 𝕜]
   [CompleteSpace 𝕜] [T2Space 𝕜]
+
 
 /-- The Lambert series rearrangement from topological nilpotency, over a complete uniform field: the
 companion to `tsum_lambert_of_summable` that trades the per-row hypothesis `hgeo` for the single
@@ -213,6 +215,8 @@ section Normed
 variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] [CompleteSpace 𝕜] {r : 𝕜}
 
 omit [CompleteSpace 𝕜] in
+
+
 /-- The geometric series of `rᵐ`, indexed from the first term: for `‖r‖ < 1` and `m ≠ 0`,
 `∑_{j≥1} r^{mj} = rᵐ/(1-rᵐ)`. This discharges the `hgeo` hypothesis of
 `tsum_lambert_of_summable` over a normed field (no completeness is needed: the limit is

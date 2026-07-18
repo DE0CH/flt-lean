@@ -1,46 +1,14 @@
 {
- "key": "1784354447.5469677",
+ "key": "1784356725.393524",
  "returncode": 0,
  "floating": [
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHomClass.rec"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite",
-   "name": "AlgHom.liftNormal.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.GroupTheory.GroupAction.Quotient",
-   "name": "MulAction.homEquivProdFixedPoints_apply_coe"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.GroupTheory.Index",
-   "name": "GroupTheory.«term[_:_]»"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.coe_coe"
-  },
   {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.Valued.WithZeroMulInt",
    "name": "Valued.WithZeroMulInt.finite_quotient_maximalIdeal_pow_of_finite_residueField"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.noConfusionType"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "Units.mapₜ"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "Pi.algHomEquivOfIsDomain_apply_fst"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "RingHom.exists_map_single_ne_zero"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
@@ -49,14 +17,6 @@
   {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.ContinuousSMulDiscrete",
    "name": "ContinuousSMulDiscrete.recOn"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateParameter",
-   "name": "TateCurve.subst_jInvReverse"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "Pi.algHomEquivOfIsDomain"
   },
   {
    "module": "Fermat.FLT.EllipticCurve.TorsionCard",
@@ -69,14 +29,6 @@
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.GaloisDescent",
    "name": "WeierstrassCurve.exists_baseChange_eq_of_map_eq"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "Pi.algHomEquivOfIsDomain_apply_snd_apply"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.GroupTheory.GroupAction.Quotient",
-   "name": "MulAction.sigmaRangeQuotientStabilizer_apply"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
@@ -95,16 +47,16 @@
    "name": "GaloisRep.frame"
   },
   {
+   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
+   "name": "WeierstrassCurve.baseChange_c₆_ne_zero"
+  },
+  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "GaloisRep.ext"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
    "name": "WeierstrassCurve.valuation_c₄_baseChange_eq_one"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.GroupTheory.GroupAction.Quotient",
-   "name": "MulAction.homEquivProdFixedPoints"
   },
   {
    "module": "Fermat.FLT.FreyCurve.FreyPackage",
@@ -115,24 +67,8 @@
    "name": "summable_prod_mul_pow'"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHomClass"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.GroupTheory.GroupAction.Quotient",
-   "name": "MulAction.sigmaRangeQuotientStabilizer_symm_apply_snd"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "RingHom.single_piIndex_ne_zero"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveBaseChange",
    "name": "TateCurve.evalInt_map"
-  },
-  {
-   "module": "Fermat.FLT.EllipticCurve.InvariantDerivation",
-   "name": "PsiSumCompanion.dX_coeff"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
@@ -143,16 +79,8 @@
    "name": "GaloisRepresentation.IsHardlyRamified.isFlat"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.commutes"
-  },
-  {
    "module": "Fermat.FLT.FreyCurve.FreyPackage",
    "name": "FreyPackage.casesOn"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.prodMap"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup",
@@ -165,10 +93,6 @@
   {
    "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Basic",
    "name": "quadraticCharacter_surjective"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHomClass.toMonoidHomClass"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup",
@@ -195,10 +119,6 @@
    "name": "FramedGaloisRep.GL"
   },
   {
-   "module": "Fermat.FLT.Mathlib.GroupTheory.GroupAction.Quotient",
-   "name": "MulAction.sigmaRangeQuotientStabilizer_symm_apply_fst_coe"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "ContinuousMonoidHom.coe_smul"
   },
@@ -209,6 +129,10 @@
   {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.instDimensionLEOneSubtypeMemValuationSubringAdicCompletionIntegers_fermat"
+  },
+  {
+   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
+   "name": "WeierstrassCurve.exists_smul_quadraticTwist_baseChange_eq"
   },
   {
    "module": "Fermat.FLT.Mathlib.NumberTheory.Padics.LocalField",
@@ -223,28 +147,12 @@
    "name": "GaloisRepresentation.HardlyRamifiedLift.mk.sizeOf_spec"
   },
   {
-   "module": "Fermat.FLT.Basic.Lemmas",
-   "name": "Nat.three_dvd_or_four_dvd_or_prime_dvd"
-  },
-  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "GaloisRep.IsFlatAt.casesOn"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Group.Action.Hom",
-   "name": "MulActionHom.compLeftAlgHom"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "instMulActionMonoidHomOfMulDistribMulAction_fermat"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.mk.injEq"
-  },
-  {
-   "module": "Fermat.FLT.Basic.Lemmas",
-   "name": "PNat.pow_add_pow_ne_pow_of_FermatLastTheorem"
   },
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
@@ -259,16 +167,8 @@
    "name": "instLocallyCompactSpaceAdicCompletionRingOfIntegers_fermat"
   },
   {
-   "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite",
-   "name": "instContinuousSMulDiscreteAlgEquivAlgHomOfFinite"
-  },
-  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "LinearMap.trace_toLin'"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "RingHom.projPiIndex_apply"
   },
   {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs",
@@ -291,10 +191,6 @@
    "name": "WeierstrassCurve.negVariableChange_ne_one"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.toLinearMap_eq_coe"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "ContinuousMonoidHom.val_toHomUnits_toFun"
   },
@@ -303,20 +199,8 @@
    "name": "instIsLocalHomRingHomToRingHom_fermat"
   },
   {
-   "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite",
-   "name": "instFormallyEtaleMulActionHomAlgEquivIdOfIsGaloisOfFinite_fermat"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "Pi.ringHomEquivOfIsDomain"
-  },
-  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "GaloisRep.IsUnramifiedAt.rec"
-  },
-  {
-   "module": "Fermat.FLT.EllipticCurve.TorsionCounting",
-   "name": "TorsionCounting.endRestrict_apply"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
@@ -379,10 +263,6 @@
    "name": "GaloisRepresentation.HardlyRamifiedLift.recOn"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.mk.sizeOf_spec"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.Group.Basic",
    "name": "continuous_iff_continuousAt_zero"
   },
@@ -439,22 +319,6 @@
    "name": "GaloisRep.baseChange_map"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "RingHom.projPiIndex"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "RingHom.toNonUnitalRingHom_apply"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite",
-   "name": "InfiniteGalois.evalAlgHom_bijective"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHomClass.casesOn"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "ContinuousAlgHom.coe_toContinuousMonoidHom"
   },
@@ -487,20 +351,8 @@
    "name": "WeierstrassCurve.nTorsion.congr_simp"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.map_mul'"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "Pi.semialgHom_apply"
-  },
-  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "GaloisRep.IsUnramifiedAt.recOn"
-  },
-  {
-   "module": "Fermat.FLT.EllipticCurve.InvariantDerivation",
-   "name": "PsiSumCompanion.DK_div"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
@@ -519,28 +371,12 @@
    "name": "ContinuousAlgHom.mapMatrix"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.toLinearMap"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.RingTheory.Valuation.ValuativeRel.Basic",
    "name": "ValuativeExtension.valuation_algebraMap_lt_one"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "GaloisRep.ext_iff"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHomClass.mk"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Topology.Algebra.ContinuousSMulDiscrete",
-   "name": "ContinuousSMulDiscrete.of_continuousSMul"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "Pi.ringHomEquivOfIsDomain_apply_snd"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
@@ -551,10 +387,6 @@
    "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.mem_completionIdeal_pow"
   },
   {
-   "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite",
-   "name": "instEtaleMulActionHomAlgEquivIdOfIsGaloisOfFiniteOfContinuousSMulDiscrete"
-  },
-  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "GaloisRep.ker_map"
   },
@@ -563,16 +395,8 @@
    "name": "ValuativeExtension.valuation_algebraMap_eq_one"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.mk.noConfusion"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateParameter",
    "name": "PowerSeries.eval₂Hom.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.mk.inj"
   },
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
@@ -581,6 +405,10 @@
   {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs",
    "name": "GaloisRepresentation.IsHardlyRamified.casesOn"
+  },
+  {
+   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
+   "name": "WeierstrassCurve.quadraticTwist_of_two_ne_zero"
   },
   {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
@@ -593,14 +421,6 @@
   {
    "module": "Fermat.FLT.EllipticCurve.Torsion",
    "name": "WeierstrassCurve.Points.map"
-  },
-  {
-   "module": "Fermat.FLT.Deformations.RepresentationTheory.Frobenius",
-   "name": "isConj_arithFrobAt'"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "RingHom.piIndex"
   },
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
@@ -623,20 +443,8 @@
    "name": "FreyPackage.mk.noConfusion"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "Pi.semialgHom"
-  },
-  {
    "module": "Fermat.FLT.EllipticCurve.TorsionCard",
    "name": "TorsionCard.evalEval_ψ_odd"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.casesOn"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHomClass.recOn"
   },
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
@@ -659,10 +467,6 @@
    "name": "MonoidHom.coe_smul"
   },
   {
-   "module": "Fermat.FLT.Mathlib.RingTheory.Valuation.ValuationSubring",
-   "name": "ValuationSubring.subtype_inj"
-  },
-  {
    "module": "Fermat.FLT.EllipticCurve.TorsionCard",
    "name": "TorsionCard.zsmul_odd_step_x"
   },
@@ -675,24 +479,12 @@
    "name": "WeierstrassCurve.negVariableChange_baseChange_map"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "Pi.algHomEquivOfIsDomain_symm_apply_apply"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "instIsLocalHomRingHomOfContinuousAlgHom_fermat"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.recOn"
-  },
-  {
    "module": "Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal",
    "name": "hasSum_geometric_pow_mul_succ"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite",
-   "name": "MulAction.etaleSubalgebraEquiv"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.GaloisDescent",
@@ -703,16 +495,8 @@
    "name": "instIsLocalHomRingHomToRingHom_fermat_1"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.comp"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
    "name": "WeierstrassCurve.mem_torsionBy_of_mem_rootsOfUnity"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.noConfusion"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
@@ -727,40 +511,12 @@
    "name": "GaloisRep.IsFlatAt.cond"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Group.Action.Hom",
-   "name": "AlgHom.evalMulActionHom"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "«term_→ₛₐ[_]_»"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.mk"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.restrictScalars_toFun"
-  },
-  {
    "module": "Fermat.Basic",
    "name": "fermat_last_theorem_explicit"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.map_one'"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.ctorIdx"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "RingHom.continuous_iff_isOpen_ker"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.compAlgHom"
   },
   {
    "module": "Fermat.SorryGate",
@@ -771,72 +527,48 @@
    "name": "isTopologicallyNilpotent_iff_tendsto_geomSum"
   },
   {
-   "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
-   "name": "FramedGaloisRep.unframe"
+   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
+   "name": "WeierstrassCurve.quadraticTwistPointEquiv_conj"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHomClass.toZeroHomClass"
+   "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
+   "name": "FramedGaloisRep.unframe"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
    "name": "WeierstrassCurve.quadraticTwistVarChange.congr_simp"
   },
   {
-   "module": "Fermat.FLT.Mathlib.GroupTheory.GroupAction.Quotient",
-   "name": "MulAction.homEquivProdFixedPoints_symm_apply_apply"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "Pi.semialgHomPi"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "RingHom.single_piIndex"
+   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
+   "name": "WeierstrassCurve.exists_quadraticTwistPointEquiv_baseChange_eq_iff"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
    "name": "WeierstrassCurve.eq_one_or_eq_negVariableChange_of_smul_eq_of_c₄_ne_zero"
   },
   {
-   "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite",
-   "name": "InfiniteGalois.evalMulActionHom_bijective"
-  },
-  {
    "module": "Fermat.FLT.NumberField.Completion.Finite",
    "name": "NumberField.isCompact_adicCompletionIntegers"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHomClass.instSemialgHom"
   },
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "instIsLocalHomContinuousAlgHomToContinuousAlgHom_fermat"
   },
   {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
-   "name": "GaloisRepresentation.HardlyRamifiedLift.noConfusionType"
+   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
+   "name": "WeierstrassCurve.baseChange_c₄_ne_zero"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "RingHom.coe_toSemialgHom"
+   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
+   "name": "GaloisRepresentation.HardlyRamifiedLift.noConfusionType"
   },
   {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.completionIdeal_ne_bot"
   },
   {
-   "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite",
-   "name": "InfiniteGalois.evalMulActionHom_bijective_of_isSepClosed"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.Valued.WithZeroMulInt",
    "name": "Valued.WithZeroMulInt.irreducible_valuation_le_ofAdd_neg_one"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "NonUnitalRingHom.single"
   },
   {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.Group.Basic",
@@ -851,10 +583,6 @@
    "name": "notMem_range_algebraMap_of_not_isSquare"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "Pi.semialgHomPi_apply"
-  },
-  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "Matrix.map_det"
   },
@@ -863,28 +591,8 @@
    "name": "WeierstrassCurve.tateParameter_map"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "coe_mk"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Topology.Algebra.ContinuousSMulDiscrete",
-   "name": "ContinuousSMulDiscrete.isOpen_stabilizer"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "ContinuousAlgHom.isLocalHom_id"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.toRingHom_eq_coe"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Group.Action.Hom",
-   "name": "instSMulMulActionHomIdOfSMulCommClass_fermat"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Group.Action.Hom",
-   "name": "MulActionHom.evalAlgHom_apply"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Weierstrass",
@@ -897,10 +605,6 @@
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "Field.absoluteGaloisGroup.map.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.RingTheory.Norm.Quotient",
-   "name": "norm_quotient_mk"
   },
   {
    "module": "Fermat.FLT.Mathlib.RingTheory.Norm.Quadratic",
@@ -927,10 +631,6 @@
    "name": "IsDedekindDomain.HeightOneSpectrum.inertiaDeg_asIdeal_completionIdeal"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.rec"
-  },
-  {
    "module": "Fermat.FLT.NumberField.Completion.Finite",
    "name": "Rat.adicCompletion.locallyCompactSpace"
   },
@@ -947,14 +647,6 @@
    "name": "instWeaklyLocallyCompactSpaceAdicCompletionRingOfIntegers_fermat"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.map_zero'"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHomClass.toSemialgHom"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "instIsLocalHomRingHomOfContinuousAlgHom_fermat_1"
   },
@@ -963,40 +655,28 @@
    "name": "Valued.WithZeroMulInt.integer_compactSpace"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
-   "name": "instHasSplitMultiplicativeReductionSubtypeMemSubringIntegerValueGroupWithZeroValuationBaseChange_fermat"
+   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
+   "name": "WeierstrassCurve.exists_smul_eq_or_exists_smul_eq_quadraticTwist"
   },
   {
-   "module": "Fermat.FLT.Mathlib.GroupTheory.GroupAction.Quotient",
-   "name": "MulAction.orbitRel.Quotient.mk_smul"
+   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
+   "name": "WeierstrassCurve.exists_smul_eq_quadraticTwistOf_quadraticTwistOf"
+  },
+  {
+   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
+   "name": "instHasSplitMultiplicativeReductionSubtypeMemSubringIntegerValueGroupWithZeroValuationBaseChange_fermat"
   },
   {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.exists_ofAdd_natCast_lt"
   },
   {
-   "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite",
-   "name": "instIsInvariantAlgEquivOfIsGalois_fermat"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "instMulActionContinuousMonoidHomOfContinuousConstSMul_fermat"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.prod"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.restrictScalars"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.Valued.WithZeroMulInt",
    "name": "Valued.WithZeroMulInt.irreducible_valuation_lt_one"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "AlgEquiv.piCongrFiberwise"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
@@ -1015,28 +695,12 @@
    "name": "GaloisRep.charFrob_eq"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "RingHom.piIndex.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "Pi.ringHomEquivOfIsDomain_symm_apply_apply"
-  },
-  {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
    "name": "GaloisRepresentation.HardlyRamifiedLift.mk.noConfusion"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "Pi.ringHomEquivOfIsDomain_apply_fst"
-  },
-  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "FramedGaloisRep.map"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Group.Action.Hom",
-   "name": "instAlgebraMulActionHomIdOfSMulCommClass_fermat"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
@@ -1049,10 +713,6 @@
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction",
    "name": "WeierstrassCurve.HasSplitMultiplicativeReduction.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHomClass.toRingHomClass"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction",
@@ -1099,20 +759,8 @@
    "name": "IsDedekindDomain.HeightOneSpectrum.denseRange_of_prodAlgebraMap"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.map_smul"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "«term_→ₛₐ_»"
-  },
-  {
    "module": "Fermat.FLT.NumberField.Completion.Finite",
    "name": "NumberField.instCompactSpaceAdicCompletionIntegers"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom"
   },
   {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
@@ -1127,8 +775,8 @@
    "name": "ValuativeExtension.instIsLocalHomSubtypeMemSubringIntegerValueGroupWithZeroValuationRingHomIntegerMap"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "instFunLike"
+   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
+   "name": "WeierstrassCurve.exists_smul_quadraticTwist_quadraticTwist_eq"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
@@ -1145,14 +793,6 @@
   {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
    "name": "GaloisRepresentation.HardlyRamifiedLift.mk.inj"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.GroupTheory.GroupAction.Quotient",
-   "name": "MulAction.sigmaRangeQuotientStabilizer"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite",
-   "name": "InfiniteGalois.quotientEquivFixedFieldEmb"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
@@ -1179,8 +819,8 @@
    "name": "WeierstrassCurve.integralModel_baseChange_map"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "AlgHom.toSemialgHom"
+   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
+   "name": "WeierstrassCurve.not_exists_smul_quadraticTwist_eq"
   },
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
@@ -1191,24 +831,12 @@
    "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.exists_uniformizer"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Group.Action.Hom",
-   "name": "MulActionHom.toFunAlgHom"
-  },
-  {
    "module": "Fermat.FLT.FreyCurve.FreyPackage",
    "name": "FreyPackage.noConfusion"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "RingHom.toSemialgHom"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
    "name": "WeierstrassCurve.eq_one_or_eq_negVariableChange_of_u_eq_one"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite",
-   "name": "instFiniteMulActionHomAlgEquivIdOfIsGaloisOfFiniteOfContinuousSMulDiscrete"
   },
   {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
@@ -1283,10 +911,6 @@
    "name": "Nat.Prime.toHeightOneSpectrumRingOfIntegersRat.congr_simp"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Topology.Algebra.ContinuousSMulDiscrete",
-   "name": "continuousSMulDiscrete_iff_isOpen_stabilizer"
-  },
-  {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.denseRange_of_integerAlgebraMap"
   },
@@ -1303,24 +927,12 @@
    "name": "FramedGaloisRep.unframe_frame"
   },
   {
-   "module": "Fermat.FLT.Basic.Lemmas",
-   "name": "FermatLastTheorem.of_p_ge_5"
-  },
-  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "FramedGaloisRep.ofGL.congr_simp"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
    "name": "WeierstrassCurve.autGroup"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "NonUnitalRingHom.single_apply"
-  },
-  {
-   "module": "Fermat.FLT.EllipticCurve.WronskianInduction",
-   "name": "PsiSumCompanion.bc_a₆"
   },
   {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.Group.Basic",
@@ -1337,10 +949,6 @@
   {
    "module": "Fermat.FLT.Mathlib.RingTheory.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.algEquiv"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.toRingHom"
   },
   {
    "module": "Fermat.FLT.Mathlib.RingTheory.Valuation.ValuativeRel.Basic",
@@ -1371,16 +979,8 @@
    "name": "quadraticCharacter.congr_simp"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "instCoeTCSemialgHom"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "ContinuousMonoidHom.val_inv_toHomUnits_toFun"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHom.algebraMap_apply"
   },
   {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs",
@@ -1423,14 +1023,6 @@
    "name": "GaloisRep.IsFlatAt.recOn"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Algebra.Group.Action.Hom",
-   "name": "MulActionHom.evalAlgHom"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
-   "name": "SemialgHomClass.toSemilinearMapClass"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
    "name": "WeierstrassCurve.hasSplitMultiplicativeReduction_baseChange"
   },
@@ -1465,10 +1057,6 @@
   {
    "module": "Fermat.FLT.Mathlib.RingTheory.Norm.Quadratic",
    "name": "Algebra.IsQuadraticExtension.trace_eq_zero_of_sq_eq"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
-   "name": "RingHom.single_piIndex_one"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",

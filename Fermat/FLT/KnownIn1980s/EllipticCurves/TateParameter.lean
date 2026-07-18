@@ -228,10 +228,6 @@ V.5.2 — the integrality of the coefficients is by construction, see the module
 docstring). -/
 noncomputable def jInvReverse : ℤ⟦X⟧ := substInv jInv
 
-/-- The defining property of `jInvReverse`: `ψ(jInv(q)) = q` as formal power series. This
-is the identity from which both halves of Silverman V.5.2 follow by evaluation. -/
-theorem subst_jInvReverse : PowerSeries.subst jInv jInvReverse = X :=
-  subst_substInv_left jInv constantCoeff_jInv
 
 /-- The composition in the other order: `jInv(ψ(w)) = w` as formal power series. -/
 theorem jInv_subst_jInvReverse : PowerSeries.subst jInvReverse jInv = X :=

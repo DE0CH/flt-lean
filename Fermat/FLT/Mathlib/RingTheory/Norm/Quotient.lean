@@ -41,24 +41,6 @@ theorem sq_sub_trace_mul_self_add_norm {A B : Type*} [CommRing A] [Nontrivial A]
     using hCH
 
 open IsLocalRing in
-/-- **Norm and the residue field.** For a finite free algebra `B` over a local ring `A`, the norm of
-the reduction of `x` is the reduction of the norm. This is the norm analogue of
-`Algebra.trace_quotient_mk`; the proof is identical, using `RingHom.map_det` in place of the matrix
-trace map. -/
-theorem norm_quotient_mk {A B : Type*} [CommRing A] [CommRing B] [Algebra A B] [IsLocalRing A]
-    [Module.Free A B] [Module.Finite A B] (x : B) :
-    Algebra.norm (A ⧸ maximalIdeal A)
-        (Ideal.Quotient.mk (Ideal.map (algebraMap A B) (maximalIdeal A)) x)
-      = Ideal.Quotient.mk (maximalIdeal A) (Algebra.norm A x) := by
-  classical
-  let _ : Field (A ⧸ maximalIdeal A) := Ideal.Quotient.field _
-  let b : Module.Basis (Module.Free.ChooseBasisIndex A B) A B := Module.Free.chooseBasis A B
-  rw [Algebra.norm_eq_matrix_det (basisQuotient b), Algebra.norm_eq_matrix_det b, RingHom.map_det]
-  congr 1
-  ext i j
-  simp only [Algebra.leftMulMatrix_apply, Algebra.coe_lmul_eq_mul, LinearMap.toMatrix_apply,
-    basisQuotient_apply, LinearMap.mul_apply', RingHom.mapMatrix_apply, Matrix.map_apply,
-    ← map_mul, basisQuotient_repr]
 
 universe u
 

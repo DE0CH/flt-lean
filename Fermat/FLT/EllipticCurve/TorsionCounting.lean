@@ -85,8 +85,6 @@ def endRestrict (f : A →+ A) (z : ℤ) :
   map_zero' := Subtype.ext (map_zero f)
   map_add' x y := Subtype.ext (map_add f x.1 y.1)
 
-@[simp] lemma endRestrict_apply (f : A →+ A) (z : ℤ) (x : torsionBy ℤ A z) :
-    (endRestrict f z x : A) = f x.1 := rfl
 
 /-- Drop the factors of a product that are trivial: if `M i` is a
 subsingleton whenever `¬ P i`, the product over all of `ι` is the product

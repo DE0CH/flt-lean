@@ -17,9 +17,6 @@ Material destined for Mathlib.
 
 variable {F : Type*} [Field F]
 
-lemma ValuationSubring.subtype_inj {R : ValuationSubring F} {x y : R} :
-    R.subtype x = R.subtype y ↔ x = y :=
-  R.subtype_injective.eq_iff
 
 theorem ValuationSubring.valued_eq_one_of_isUnit {K : Type*} [Field K] {Γ₀ : Type*}
     [LinearOrderedCommGroupWithZero Γ₀] [hv : Valued K Γ₀] (x : hv.v.valuationSubring)

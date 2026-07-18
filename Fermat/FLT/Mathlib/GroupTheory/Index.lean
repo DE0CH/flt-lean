@@ -27,8 +27,6 @@ open Function
 open scoped Pointwise
 
 -- This is cool notation. Should mathlib have it? And what should the `relindex` version be?
-/-- Notation `[G : H]` for the (additive) index of a subgroup `H ≤ G`. -/
-scoped[GroupTheory] notation "[" G ":" H "]" => @AddSubgroup.index G _ H
 
 theorem Subgroup.index_op {G : Type*} [Group G] (H : Subgroup G) :
     H.op.index = H.index := by

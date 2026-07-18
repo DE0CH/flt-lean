@@ -5,9 +5,7 @@ Authors: Andrew Yang, Kevin Buzzard
 -/
 module
 
-public import Fermat.FLT.Mathlib.Algebra.Algebra.Pi
 public import Fermat.FLT.Mathlib.Algebra.Group.Action.Hom
-public import Fermat.FLT.Mathlib.GroupTheory.GroupAction.Quotient
 public import Fermat.FLT.Mathlib.Topology.Algebra.ContinuousSMulDiscrete
 public import Fermat.FLT.Mathlib.Topology.Algebra.IsUniformGroup.Basic
 public import Mathlib.FieldTheory.Galois.Infinite
@@ -62,157 +60,22 @@ variable (X : Type u) [MulAction (L ≃ₐ[K] L) X]
 open TensorProduct
 
 open IntermediateField in
-/-- Given a representative for each orbit of `X` under `G := Gal(L/K)`,
-and for each `x : X` a choice of `σ` that sends `x` to the representative,
-we obtain a `K`-algebra isomorphism between `G`-equivariant homs from `X`
-and the product of `Stab(x)`-fixed points over each orbit representative `x`. -/
-def MulAction.etaleSubalgebraEquiv
-    (σ : X → L ≃ₐ[K] L) (hσ : ∀ a b, orbitRel (L ≃ₐ[K] L) X a b → σ a • a = σ b • b) :
-    (X →[L ≃ₐ[K] L] L) ≃ₐ[K]
-      Π i : Set.range (fun i ↦ σ i • i), fixedField (stabilizer (L ≃ₐ[K] L) i.1) where
-  __ := MulAction.homEquivProdFixedPoints σ hσ
-  map_mul' f g := by ext i; rfl
-  map_add' f g := by ext i; rfl
-  commutes' k := by ext i; rfl
 
 open MulAction IntermediateField in
-/-- If `G` is a closed subgroup of the galois group `Γ := Gal(L/K)`, then
-`Γ/G` is in bijection with the `K`-linear embeddings of `Lᴳ` into `L`.
-
-Note that `G` is not necessarily normal here. -/
-noncomputable
-def InfiniteGalois.quotientEquivFixedFieldEmb [IsGalois K L] (G : ClosedSubgroup (L ≃ₐ[K] L)) :
-    ((L ≃ₐ[K] L) ⧸ G.1) ≃ (fixedField G.1 →ₐ[K] L) where
-  toFun := Quotient.lift (fun σ ↦ σ.toAlgHom.comp (IntermediateField.val _)) (by
-    rintro _ σ ⟨τ, rfl⟩
-    ext x
-    change σ _ = σ _
-    simpa using x.2 ⟨_, τ.2⟩)
-  invFun f := QuotientGroup.mk (.ofBijective (f.liftNormal L) (AlgHom.normal_bijective K L L _))
-  left_inv := Quotient.ind fun σ ↦ show _ = QuotientGroup.mk σ by
-    simp only [Quotient.lift_mk, QuotientGroup.eq]
-    conv_lhs => rw [← InfiniteGalois.fixingSubgroup_fixedField G]
-    intro x
-    rw [mul_smul, inv_smul_eq_iff]
-    exact ((σ.toAlgHom.comp (IntermediateField.val _)).liftNormal_commutes _ _).symm
-  right_inv f := by ext x; simpa using! f.liftNormal_commutes _ _
 
 open MulAction in
-lemma InfiniteGalois.evalAlgHom_bijective [IsGalois K L] [Finite X]
-    [ContinuousSMulDiscrete (L ≃ₐ[K] L) X] :
-    Function.Bijective (MulActionHom.evalAlgHom (L ≃ₐ[K] L) K X L) := by
-  classical
-  choose φ hφ using Quotient.mk_surjective (s := orbitRel (L ≃ₐ[K] L) X)
-  choose σ hσ using fun x ↦ Quotient.eq''.mp (hφ ⟦x⟧)
-  replace hσ : ∀ a b, orbitRel (L ≃ₐ[K] L) X a b → σ a • a = σ b • b :=
-    fun a b e ↦ ((hσ a).trans (congr_arg φ (Quotient.eq''.mpr e))).trans (hσ b).symm
-  let e : ((X →[L ≃ₐ[K] L] L) →ₐ[K] L) ≃ X := by
-    refine (AlgEquiv.arrowCongr (MulAction.etaleSubalgebraEquiv K L X σ hσ) .refl).trans ?_
-    refine Pi.algHomEquivOfIsDomain.trans ?_
-    refine (Equiv.sigmaCongrRight fun _ ↦
-      (InfiniteGalois.quotientEquivFixedFieldEmb K L ⟨_, ?_⟩).symm).trans ?_
-    · exact Subgroup.isClosed_of_isOpen _ (ContinuousSMulDiscrete.isOpen_stabilizer _ _)
-    exact MulAction.sigmaRangeQuotientStabilizer σ hσ
-  convert e.symm.bijective
-  ext x f
-  change f x = (σ x)⁻¹ • (f (σ x • x))
-  rw [map_smul, inv_smul_smul]
 
 open MulAction IntermediateField in
-instance [IsGalois K L] [Finite X] : Algebra.FormallyEtale K (X →[L ≃ₐ[K] L] L) := by
-  classical
-  choose φ hφ using Quotient.mk_surjective (s := orbitRel (L ≃ₐ[K] L) X)
-  choose σ hσ using fun x ↦ Quotient.eq''.mp (hφ ⟦x⟧)
-  replace hσ : ∀ a b, orbitRel (L ≃ₐ[K] L) X a b → σ a • a = σ b • b :=
-    fun a b e ↦ ((hσ a).trans (congr_arg φ (Quotient.eq''.mpr e))).trans (hσ b).symm
-  have (x : X) : Algebra.FormallyEtale K (fixedField (stabilizer (L ≃ₐ[K] L) x)) :=
-    .of_isSeparable _ _
-  exact .of_equiv (MulAction.etaleSubalgebraEquiv K L X σ hσ).symm
 
 open MulAction IntermediateField in
-instance [IsGalois K L] [Finite X] [ContinuousSMulDiscrete (L ≃ₐ[K] L) X] :
-    Module.Finite K (X →[L ≃ₐ[K] L] L) := by
-  classical
-  choose φ hφ using Quotient.mk_surjective (s := orbitRel (L ≃ₐ[K] L) X)
-  choose σ hσ using fun x ↦ Quotient.eq''.mp (hφ ⟦x⟧)
-  replace hσ : ∀ a b, orbitRel (L ≃ₐ[K] L) X a b → σ a • a = σ b • b :=
-    fun a b e ↦ ((hσ a).trans (congr_arg φ (Quotient.eq''.mpr e))).trans (hσ b).symm
-  have (x : X) : Module.Finite K (fixedField (stabilizer (L ≃ₐ[K] L) x)) :=
-    (InfiniteGalois.isOpen_iff_finite _).mp (by
-      rw [InfiniteGalois.fixingSubgroup_fixedField
-        ⟨_, Subgroup.isClosed_of_isOpen _ (ContinuousSMulDiscrete.isOpen_stabilizer _ _)⟩]
-      exact ContinuousSMulDiscrete.isOpen_stabilizer _ _)
-  exact .equiv (MulAction.etaleSubalgebraEquiv K L X σ hσ).toLinearEquiv.symm
 
-instance [IsGalois K L] [Finite X] [ContinuousSMulDiscrete (L ≃ₐ[K] L) X] :
-    Algebra.Etale K (X →[L ≃ₐ[K] L] L) where
-  finitePresentation := by rw [← Algebra.FinitePresentation.of_finiteType]; infer_instance
 
 variable (A : Type u) [CommRing A] [Algebra K A]
 
-instance [Module.Finite K A] : ContinuousSMulDiscrete (L ≃ₐ[K] L) (A →ₐ[K] L) := by
-  refine continuousSMulDiscrete_iff_isOpen_stabilizer.mpr fun f ↦ ?_
-  have : FiniteDimensional K f.range :=
-    .of_surjective f.rangeRestrict.toLinearMap f.rangeRestrict_surjective
-  let E := IntermediateField.adjoin K (f.range : Set L)
-  have : FiniteDimensional K E := by
-    change FiniteDimensional K E.toSubalgebra
-    rwa [IntermediateField.adjoin_toSubalgebra_of_isAlgebraic, Algebra.adjoin_eq]
-    simp only [AlgHom.coe_range, Set.mem_range, forall_exists_index, forall_apply_eq_imp_iff]
-    exact fun x ↦ ((Algebra.IsIntegral.isIntegral (R := K) x).map f).isAlgebraic
-  refine Subgroup.isOpen_mono ?_ E.fixingSubgroup_isOpen
-  intro σ hσ
-  ext x
-  exact hσ ⟨f x, IntermediateField.subset_adjoin _ _ ⟨x, rfl⟩⟩
 
 attribute [local instance] Ideal.Quotient.field RingHom.ker_isPrime in
-lemma InfiniteGalois.evalMulActionHom_bijective [Algebra.Etale K A] [IsGalois K L]
-    (H : ∀ 𝔪 : Ideal A, 𝔪.IsMaximal → Nonempty (A ⧸ 𝔪 →ₐ[K] L)) :
-    Function.Bijective (AlgHom.evalMulActionHom (L ≃ₐ[K] L) K A L) := by
-  let emb (𝔪 : Ideal A) [𝔪.IsMaximal] := (H 𝔪 ‹_›).some
-  have := Algebra.FormallyUnramified.isReduced_of_field K A
-  have := Algebra.FormallyUnramified.finite_of_free K A
-  have : IsArtinianRing A := isArtinian_of_tower K inferInstance
-  have hemb (𝔪 : Ideal A) [𝔪.IsMaximal] (f : (A →ₐ[K] L) →[(L ≃ₐ[K] L)] L) :
-      f ((emb 𝔪).comp (Ideal.Quotient.mkₐ _ _)) ∈ (emb 𝔪).fieldRange := by
-    rw [← fixedField_fixingSubgroup (emb 𝔪).fieldRange]
-    intro ⟨σ, hσ⟩
-    rw [Subgroup.mk_smul, ← map_smul]
-    congr 1
-    ext x
-    simpa using! hσ ⟨_, Ideal.Quotient.mk _ x, rfl⟩
-  choose! F' hF' using hemb
-  let F : ((A →ₐ[K] L) →[(L ≃ₐ[K] L)] L) → A :=
-    fun f ↦ (IsArtinianRing.equivPi A).symm fun 𝔪 ↦ F' 𝔪.1 f
-  have H₁ : Function.LeftInverse F (AlgHom.evalMulActionHom (L ≃ₐ[K] L) K A L) := by
-    intros a
-    apply (IsArtinianRing.equivPi A).injective
-    refine ((IsArtinianRing.equivPi A).apply_symm_apply _).trans ?_
-    ext ⟨𝔪, h𝔪⟩
-    replace h𝔪 : 𝔪.IsMaximal := h𝔪
-    exact (emb 𝔪).injective (hF' _ _)
-  have H₂ : Function.Injective F := by
-    intros f₁ f₂ e
-    ext g
-    obtain ⟨σ, hσ⟩ : ∃ σ : L ≃ₐ[K] L, σ • emb (RingHom.ker g) = Ideal.kerLiftAlg g := by
-      letI := (emb (RingHom.ker g)).toAlgebra
-      have : IsScalarTower K (A ⧸ RingHom.ker g) L :=
-        .of_algebraMap_eq' (emb (RingHom.ker g)).comp_algebraMap.symm
-      exact ⟨.ofBijective ((Ideal.kerLiftAlg g).liftNormal L) (AlgHom.normal_bijective _ _ _ _),
-        AlgHom.ext ((Ideal.kerLiftAlg g).liftNormal_commutes L)⟩
-    have hσ' : σ • (emb (RingHom.ker g)).comp (Ideal.Quotient.mkₐ _ _) = g :=
-      AlgHom.ext fun x ↦ DFunLike.congr_fun hσ (Ideal.Quotient.mk _ x)
-    rw [← hσ', map_smul, map_smul, ← hF', ← hF']
-    congr 2
-    exact congr_fun ((IsArtinianRing.equivPi A).symm.injective e)
-      ⟨RingHom.ker g, inferInstanceAs (RingHom.ker g).IsMaximal⟩
-  exact ⟨H₁.injective, fun x ↦ ⟨F x, H₂ (H₁ (F x))⟩⟩
 
 attribute [local instance] Ideal.Quotient.field Algebra.FormallyUnramified.isSeparable in
-lemma InfiniteGalois.evalMulActionHom_bijective_of_isSepClosed
-    [Algebra.Etale K A] [IsGalois K L] [IsSepClosed L] :
-    Function.Bijective (AlgHom.evalMulActionHom (L ≃ₐ[K] L) K A L) :=
-  InfiniteGalois.evalMulActionHom_bijective _ _ _ fun _ _ ↦ ⟨IsSepClosed.lift⟩
 
 instance finiteIndex_fixingSubgroup {K L : Type*} [Field K] [Field L] [Algebra K L]
     (E : IntermediateField K L) [FiniteDimensional K E] : E.fixingSubgroup.FiniteIndex := by
@@ -305,7 +168,3 @@ instance {K L : Type*} [Field K] [Field L] [Algebra K L] [Algebra.IsAlgebraic K 
   have := (mem_fixingSubgroup_iff _).mp hτ x (IntermediateField.mem_adjoin_simple_self K x)
   simp only [smul_eq_mul, Set.mem_setOf_eq, mul_smul, this, hσ]
 
-instance {K L : Type*} [Field K] [Field L] [Algebra K L] [IsGalois K L] :
-    Algebra.IsInvariant K L (L ≃ₐ[K] L) :=
-  ⟨fun _ H ↦ (InfiniteGalois.fixedField_fixingSubgroup
-    (⊥ : IntermediateField K L)).le fun _ ↦ H _⟩

@@ -15,7 +15,6 @@ import Mathlib.Algebra.Lie.OfAssociative
 import Mathlib.NumberTheory.FLT.Four
 import Mathlib.NumberTheory.FLT.Three
 import Mathlib.Tactic.ModCases
-public import Fermat.FLT.Basic.Lemmas
 
 /-!
 

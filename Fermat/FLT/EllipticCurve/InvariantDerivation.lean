@@ -45,10 +45,6 @@ noncomputable def dY :
   Polynomial.derivative'.restrictScalars (MvPolynomial (Fin 5) ℤ)
 
 set_option backward.isDefEq.respectTransparency false in
-lemma dX_coeff (P : (MvPolynomial (Fin 5) ℤ)[X][Y]) (i : ℕ) :
-    (dX P).coeff i = Polynomial.derivative (P.coeff i) := by
-  rw [dX_apply]
-  rfl
 
 set_option backward.isDefEq.respectTransparency false in
 lemma dY_apply (P : (MvPolynomial (Fin 5) ℤ)[X][Y]) :
@@ -397,14 +393,6 @@ lemma DK_sub (z w : Kuniv) : DK (z - w) = DK z - DK w := by
   rw [sub_eq_add_neg, DK_add, hneg, sub_eq_add_neg]
 
 set_option backward.isDefEq.respectTransparency false in
-/-- The quotient rule for `DK`. -/
-lemma DK_div (u v : Kuniv) (hv : v ≠ 0) :
-    DK (u / v) = (DK u * v - u * DK v) / v ^ 2 := by
-  have hu : u / v * v = u := div_mul_cancel₀ u hv
-  have h := DK_mul (u / v) v
-  rw [hu] at h
-  rw [eq_div_iff (pow_ne_zero 2 hv)]
-  linear_combination (-v) * h - DK v * hu
 
 set_option backward.isDefEq.respectTransparency false in
 lemma DK_sq (z : Kuniv) : DK (z ^ 2) = 2 * z * DK z := by

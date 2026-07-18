@@ -122,15 +122,5 @@ protected lemma arithFrobAt' [Q.IsPrime] [Finite (R ⧸ Q.under R)] :
     IsArithFrobAt R (arithFrobAt' R G Q) Q :=
   (exists_primesOver_isConj_of_profinite S G (Q.under R)).choose_spec.1 ⟨Q, ‹_›, ⟨rfl⟩⟩
 
-lemma _root_.isConj_arithFrobAt'
-    [Q.IsPrime] [Finite (R ⧸ Q.under R)] (Q' : Ideal S) [Q'.IsPrime] [Finite (R ⧸ Q'.under R)]
-    (H : Q.under R = Q'.under R) : IsConj (arithFrobAt' R G Q) (arithFrobAt' R G Q') := by
-  obtain ⟨P, hP, h₁, h₂, h₃⟩ :
-      ∃ P : Ideal R, P.IsPrime ∧ P = Q.under R ∧ P = Q'.under R ∧ Finite (R ⧸ P) :=
-    ⟨Q.under R, inferInstance, rfl, H, ‹_›⟩
-  convert (exists_primesOver_isConj_of_profinite S G P).choose_spec.2
-    ⟨Q, ‹_›, ⟨h₁⟩⟩ ⟨Q', ‹_›, ⟨h₂⟩⟩
-  · subst h₁; rfl
-  · subst h₂; rfl
 
 end IsArithFrobAt

@@ -31,7 +31,6 @@ lemma bc_a₃ : (WK⁄Kuniv).a₃ = coeffHom (MvPolynomial.X 2) := rfl
 set_option backward.isDefEq.respectTransparency false in
 lemma bc_a₄ : (WK⁄Kuniv).a₄ = coeffHom (MvPolynomial.X 3) := rfl
 set_option backward.isDefEq.respectTransparency false in
-lemma bc_a₆ : (WK⁄Kuniv).a₆ = coeffHom (MvPolynomial.X 4) := rfl
 
 set_option backward.isDefEq.respectTransparency false in
 lemma DK_bc_a₁ : DK (WK⁄Kuniv).a₁ = 0 := by

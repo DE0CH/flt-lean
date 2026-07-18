@@ -6,6 +6,7 @@ Authors: Kevin Buzzard, Ruben Van de Velde, Pietro Monticone
 module
 
 public import Fermat.FLT.FreyCurve.FreyPackage
+import Mathlib.Tactic.Rify
 /-!
 
 # The Frey curve associated to a Frey package
