@@ -582,6 +582,56 @@ theorem evalA_mul (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
   rw [← hpn, pow_add]
   ring
 
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] in
+/-- The coefficients of `a₄A` evaluate to plain integers. -/
+theorem coeffRingEval_coeff_a₄A (u₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (n : ℕ) :
+    coeffRingEval u₀ h0 h1 (PowerSeries.coeff n a₄A) =
+      ((-5 * σ 3 n : ℤ) : k) := by
+  have h5C : ((5 : PowerSeries CoeffRing)) = PowerSeries.C (5 : CoeffRing) :=
+    (map_ofNat (PowerSeries.C (R := CoeffRing)) 5).symm
+  rw [a₄A, neg_mul, map_neg, h5C, PowerSeries.coeff_C_mul, sA,
+    PowerSeries.coeff_mk, map_neg, map_mul, map_ofNat, map_natCast]
+  push_cast
+  ring
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] in
+/-- The coefficients of `a₆A` evaluate to plain integers. -/
+theorem coeffRingEval_coeff_a₆A (u₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (n : ℕ) :
+    coeffRingEval u₀ h0 h1 (PowerSeries.coeff n a₆A) =
+      ((-((5 * σ 3 n + 7 * σ 5 n : ℤ) / 12) : ℤ) : k) := by
+  rw [a₆A, PowerSeries.coeff_mk, map_intCast]
+
+/-- Summability of the evaluated `a₄`-series: integer coefficients,
+`|q₀| < 1`. -/
+theorem summable_evalA_a₄A (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hq : valuation k q₀ < 1) :
+    Summable fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff n a₄A) * q₀ ^ n := by
+  refine summable_of_valuation_le_pow hq (fun n ↦ n)
+    (fun N ↦ Set.finite_Iio N) fun n ↦ ?_
+  rw [coeffRingEval_coeff_a₄A, map_mul, map_pow]
+  calc valuation k (((-5 * σ 3 n : ℤ) : k)) * valuation k q₀ ^ n
+      ≤ 1 * valuation k q₀ ^ n :=
+        mul_le_mul_left (valuation_intCast_le_one _) _
+    _ = valuation k q₀ ^ n := one_mul _
+
+/-- Summability of the evaluated `a₆`-series: integer coefficients,
+`|q₀| < 1`. -/
+theorem summable_evalA_a₆A (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hq : valuation k q₀ < 1) :
+    Summable fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff n a₆A) * q₀ ^ n := by
+  refine summable_of_valuation_le_pow hq (fun n ↦ n)
+    (fun N ↦ Set.finite_Iio N) fun n ↦ ?_
+  rw [coeffRingEval_coeff_a₆A, map_mul, map_pow]
+  calc valuation k (((-((5 * σ 3 n + 7 * σ 5 n : ℤ) / 12) : ℤ) : k)) *
+        valuation k q₀ ^ n
+      ≤ 1 * valuation k q₀ ^ n :=
+        mul_le_mul_left (valuation_intCast_le_one _) _
+    _ = valuation k q₀ ^ n := one_mul _
+
 end Annulus
 
 end TateCurve
