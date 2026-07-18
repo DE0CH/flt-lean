@@ -880,6 +880,45 @@ theorem exists_zpow_mul_mem_annulus (q : k) (hq0 : q ≠ 0)
             mul_le_mul_left hM₀ _
         _ = (valuation k q) ^ (-(M₀ : ℤ)) := one_mul _
 
+omit [CharZero k] in
+/-- The Tate curve at any `0 < |q₀| < 1` has nonvanishing discriminant:
+its discriminant is the evaluation of `ΔFormal`, of valuation exactly
+`|q₀| ≠ 0`. -/
+theorem tateCurve_Δ_ne_zero (q₀ : k) (hq0 : q₀ ≠ 0)
+    (hq : valuation k q₀ < 1) :
+    (WeierstrassCurve.tateCurve q₀).Δ ≠ 0 := by
+  rw [WeierstrassCurve.Δ_tateCurve_eq_evalInt q₀ hq]
+  have h := TateCurve.valuation_evalInt_eq q₀ hq0 hq
+    TateCurve.constantCoeff_ΔFormal TateCurve.coeff_one_ΔFormal
+  intro h0
+  rw [h0, map_zero] at h
+  exact hq0 (by rwa [eq_comm, map_eq_zero] at h)
+
+/-- **Nonsingularity of the uniformisation values**: on the
+fundamental annulus, `(X(u₀,q₀), Y(u₀,q₀))` is a nonsingular point of
+the Tate curve (the curve is smooth as `Δ ≠ 0`). -/
+theorem nonsingular_evalA (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hq0 : q₀ ≠ 0) (hu : valuation k u₀ ≤ 1) (hq1 : valuation k q₀ < 1)
+    (hq : valuation k q₀ < valuation k u₀) :
+    (WeierstrassCurve.tateCurve q₀).toAffine.Nonsingular
+      (evalA u₀ q₀ h0 h1 XA) (evalA u₀ q₀ h0 h1 YA) :=
+  (WeierstrassCurve.Affine.equation_iff_nonsingular_of_Δ_ne_zero
+    (tateCurve_Δ_ne_zero q₀ hq0 hq1)).mp
+    (evalA_mem_tateCurve u₀ q₀ h0 h1 hu hq1 hq)
+
+/-- **The uniformisation point of an annulus parameter**: the affine
+point `(X(u₀,q₀), Y(u₀,q₀))` of the Tate curve attached to `u₀` in
+the fundamental annulus, `u₀ ≠ 1`. The point map `kˣ/q₀^ℤ → E_{q₀}(k)`
+sends the class of `u` to `annulusPoint` of its unique annulus
+representative (`exists_zpow_mul_mem_annulus`), and the class of `1`
+to zero. -/
+noncomputable def annulusPoint (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hq0 : q₀ ≠ 0) (hu : valuation k u₀ ≤ 1) (hq1 : valuation k q₀ < 1)
+    (hq : valuation k q₀ < valuation k u₀) :
+    (WeierstrassCurve.tateCurve q₀).toAffine.Point :=
+  .some (evalA u₀ q₀ h0 h1 XA) (evalA u₀ q₀ h0 h1 YA)
+    (nonsingular_evalA u₀ q₀ h0 h1 hq0 hu hq1 hq)
+
 end Annulus
 
 end TateCurve
