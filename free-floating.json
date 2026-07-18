@@ -1,5 +1,5 @@
 {
- "key": "1784348567.3013487",
+ "key": "1784349858.474145",
  "returncode": 0,
  "floating": [
   {
@@ -7,72 +7,16 @@
    "name": "SemialgHomClass.rec"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "sl2_mulVec_ne_zero"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.a₄A"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite",
    "name": "AlgHom.liftNormal.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.normal_contains_all_sylow"
   },
   {
    "module": "Fermat.FLT.Mathlib.GroupTheory.GroupAction.Quotient",
    "name": "MulAction.homEquivProdFixedPoints_apply_coe"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.NatClassEquation",
-   "name": "Dickson.conjNonidentity"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.preserves_P1Fq_in_range"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.swap_contradicts_odd_order"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.element_dichotomy"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.complement_isCyclic"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.tateCurveEquiv_apply"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLRecognition",
-   "name": "Dickson.n_p_gt_one_of_psl_order"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingEval_vA"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.exists_orderOf_15_of_card_15"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.GroupTheory.Index",
    "name": "GroupTheory.«term[_:_]»"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "p1Rep_ne_zero"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.branch2_params_of_divisibility"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
@@ -87,52 +31,8 @@
    "name": "SemialgHom.noConfusionType"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.CyclicPartitionConfig.mk"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingToRatFunc_injective"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.NatClassEquation",
-   "name": "Dickson.conjClass_unique_index"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "Units.mapₜ"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.ncard_fixedPoints_eq_one_of_discrim_zero"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.evalA_a₄A"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.F_q_sub_closed"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.classEquation_nat_to_rat"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.fixedPoints_lift"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.periodPair.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.p_subgroup_fixing_infinity_translations"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.hasSum_Y_eval"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
@@ -147,48 +47,12 @@
    "name": "FramedGaloisRep.ofGL"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.n_p_eq_pgl"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLRecognition",
-   "name": "Dickson.translationSet_stable_under_half_roots"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.dickson_branch2_z1_eq_1"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.CyclicPartitionConfig.noConfusion"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.X"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.ContinuousSMulDiscrete",
    "name": "ContinuousSMulDiscrete.recOn"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateParameter",
    "name": "TateCurve.subst_jInvReverse"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.eigenvectors_linearIndependent"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.F_q_card"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.a₆A"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.instFactPrimeOfNatNat_fermat_1"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
@@ -199,14 +63,6 @@
    "name": "TorsionCard.x_sub_gap_one"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.iso_A5_of_simple_60"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.dilation_param_one_is_translation"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveBaseChange",
    "name": "TateCurve.valuation_algebraMap_lt_one"
   },
@@ -215,36 +71,16 @@
    "name": "WeierstrassCurve.exists_baseChange_eq_of_map_eq"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.factorization_pgl_order"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
    "name": "Pi.algHomEquivOfIsDomain_apply_snd_apply"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.recognition_PSL_general"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.a₄"
   },
   {
    "module": "Fermat.FLT.Mathlib.GroupTheory.GroupAction.Quotient",
    "name": "MulAction.sigmaRangeQuotientStabilizer_apply"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.P1point"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
    "name": "WeierstrassCurve.tateCurve_baseChange"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.recognition_PGL_iso"
   },
   {
    "module": "Fermat.FLT.EllipticCurve.TorsionCard",
@@ -257,10 +93,6 @@
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "GaloisRep.frame"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.NatClassEquation",
-   "name": "Dickson.card_conjNonidentity"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
@@ -279,24 +111,8 @@
    "name": "MulAction.homEquivProdFixedPoints"
   },
   {
-   "module": "Fermat.FLT.Slop.RepresentationTheory.OddAbsIrredSlop",
-   "name": "Slop.OddRep.IsAbsolutelyIrreducible"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.F_q_add_closed"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.summable_evalA_a₆A"
-  },
-  {
    "module": "Fermat.FLT.FreyCurve.FreyPackage",
    "name": "FreyPackage.mk.inj"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.Phi_finite"
   },
   {
    "module": "Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal",
@@ -305,18 +121,6 @@
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHomClass"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.CyclicPartitionConfig.d"
-  },
-  {
-   "module": "Fermat.FLT.Slop.RepresentationTheory.OddAbsIrredSlop",
-   "name": "Slop.OddRep.isIrreducible_of_adjoinRange_eq_top"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "p1Proj_mulVec_rep_proj"
   },
   {
    "module": "Fermat.FLT.Mathlib.GroupTheory.GroupAction.Quotient",
@@ -335,156 +139,48 @@
    "name": "PsiSumCompanion.dX_coeff"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.card_ge_45_of_orders_3_and_5"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
    "name": "WeierstrassCurve.hasMultiplicativeReduction_baseChange"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.fixedBy_sum_eq"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.summable_evalA_YA"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.map_a₆A"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.card_sup_of_coprime_normal"
   },
   {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs",
    "name": "GaloisRepresentation.IsHardlyRamified.isFlat"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.annulusPoint"
-  },
-  {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-   "name": "GaloisRepresentation.IsHardlyRamified.mod_three"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHom.commutes"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.dilation_smul_P1point"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "SL2ToPGL"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.normDilationParam_of_P"
   },
   {
    "module": "Fermat.FLT.FreyCurve.FreyPackage",
    "name": "FreyPackage.casesOn"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.translationPGL_mul"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHom.prodMap"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.analytic_weierstrass"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup",
    "name": "AlgHom.restrictNormal'.congr_simp"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.no_commute_p_coprime"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.pgl_fixes_three_points_eq_one"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.e_add"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
    "name": "WeierstrassCurve.autGroupMulEquiv"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.r3D233Contradiction"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingEval_coeff_a₄A"
   },
   {
    "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Basic",
    "name": "quadraticCharacter_surjective"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.translationSet_add"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.two_fixed_points_contradicts_order_p"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHomClass.toMonoidHomClass"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.e_intCast_mul_natAbs"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.buildPartition_r3_exceptional"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.normDilationParam_mul"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.summable_choose_two_geometric_nonarch"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup",
    "name": "localTameAbelianInertiaGroup"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "SL2F3"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.fixes_sylowPoint_normalizes"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "ContinuousAlgHom.isLocalHom_comp"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingEval_coeff_YA_inv"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "PSLImageInPGL_index"
   },
   {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
@@ -493,10 +189,6 @@
   {
    "module": "Fermat.FLT.NumberField.Completion.Finite",
    "name": "instFiniteResidueFieldAdicCompletionRingOfIntegersWithZeroMultiplicativeInt_fermat"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "SL2.E21"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
@@ -515,16 +207,8 @@
    "name": "ContinuousMonoidHom.coe_smul"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.orbitInfty_ncard"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "IsLinearTopology.exists_ideal_isMaximal_and_isOpen"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.sylow5_in_normal_forces_large"
   },
   {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
@@ -535,64 +219,16 @@
    "name": "WeierstrassCurve.exists_smul_quadraticTwist_baseChange_eq"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.hasSum_pnat_choose_two_succ"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingToRatFunc_algebraMap"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.NumberTheory.Padics.LocalField",
    "name": "AdicCompletionRat.valuativeExtensionWithValAdicCompletionRat"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.translationSet"
   },
   {
    "module": "Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal",
    "name": "tsum_lambert_of_summable_of_isTopologicallyNilpotent"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.sylow_5_options"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingEval_algebraMap"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "sl2F3ToPermHom"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLRecognition",
-   "name": "Dickson.orbit_eq_infty_union_translations_psl"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.hasSum_lambert_side'"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.pointMap_of_mem_annulus"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.summable_lambert_terms"
-  },
-  {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
    "name": "GaloisRepresentation.HardlyRamifiedLift.mk.sizeOf_spec"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.sylow_orbit_size"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.r3SolutionsUnsorted"
   },
   {
    "module": "Fermat.FLT.Basic.Lemmas",
@@ -605,14 +241,6 @@
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Group.Action.Hom",
    "name": "MulActionHom.compLeftAlgHom"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.uA"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.evalA_YA_inv"
   },
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
@@ -631,14 +259,6 @@
    "name": "instContinuousConstSMulConjActOfContinuousMul_fermat"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.e_sub_intCast_mul"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingEval_uA"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.RingTheory.Valuation.ValuativeRel.Basic",
    "name": "ValuativeRel.valuation_natCast_le_one"
   },
@@ -651,34 +271,6 @@
    "name": "instContinuousSMulDiscreteAlgEquivAlgHomOfFinite"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.card_PGL2"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.sylow_fixedPoint_injective"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.glActionProjectiveLine"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.summable_evalA_a₄A"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.same_dilation_param_diff_translation"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.sum_range_add_one_eq_choose"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingEval_vA_inv"
-  },
-  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "LinearMap.trace_toLin'"
   },
@@ -687,60 +279,16 @@
    "name": "RingHom.projPiIndex_apply"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.summable_sigma_one_nonarch"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingToRatFunc_uA_inv"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.simple_60_is_A5"
-  },
-  {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs",
    "name": "GaloisRepresentation.IsHardlyRamified.isUnramified"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.pointMapQuot_bijective"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.pgl_subgroups_conjugate"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "A4_iso_PSL2_GF31"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
    "name": "ValuativeExtension.integerMap"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.general_matrix_in_pgl_range"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "ContinuousMonoidHom.mk_toMonoidHom"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.three_transitive_case2"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "p1Proj_smul"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.summable_lambert_terms_general"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.orderOf_eq_prime_of_prime_pow"
   },
   {
    "module": "Fermat.FLT.Mathlib.LinearAlgebra.Countable",
@@ -749,14 +297,6 @@
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
    "name": "WeierstrassCurve.negVariableChange_ne_one"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.preserves_orbitInfty"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "p1Rep_p1Proj_scalar"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
@@ -775,24 +315,8 @@
    "name": "instFormallyEtaleMulActionHomAlgEquivIdOfIsGaloisOfFinite_fermat"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.card_sylow3_of_non_normal_order3"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.XA"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
    "name": "Pi.ringHomEquivOfIsDomain"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.tateCurveEquiv"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.pointMapQuot_inv"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
@@ -805,14 +329,6 @@
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "FramedGaloisRep.equivChar"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.hasSum_lambert_row"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.CyclicPartitionConfig.casesOn"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
@@ -831,24 +347,8 @@
    "name": "FramedGaloisRep.GL_apply"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.y_kernel_self_inv"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.evalA"
-  },
-  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "GaloisRep.unframe_frame"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.isPGroup_exists_common_fixedPoint"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.g₂_q_expansion"
   },
   {
    "module": "Fermat.FLT.FreyCurve.FreyPackage",
@@ -863,68 +363,24 @@
    "name": "NumberField.isOpenAdicCompletionIntegers"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.classification_wild_slop"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.stab_sum_lower_bound"
-  },
-  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "GaloisRep.ker_baseChange"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.isUnit_uA"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.normalizer_card_eq_index_mul"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.nonsplit_torus_divides_geo"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "ContinuousAlgEquiv.ofIsModuleTopology.congr_simp"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.CyclicPartitionConfig.f"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
    "name": "instIsMinimalSubtypeMemSubringIntegerValueGroupWithZeroValuationBaseChange_fermat"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.dilationParam_scales_translationSet"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "GaloisRep.map.congr_simp"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "A4_iso_PSL2_F3"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
    "name": "WeierstrassCurve.Affine.Point.equivVariableChange.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.CyclicPartitionConfig.ctorIdx"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.bilateralY_shift"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.shared_element_shared_fixedPoint"
   },
   {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
@@ -933,22 +389,6 @@
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHom.mk.sizeOf_spec"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.normalizerQuotient"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.pointMapQuot_add"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.map_sA"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.card_sylow5_of_hasCyclicPartition_A5"
   },
   {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.Group.Basic",
@@ -963,18 +403,6 @@
    "name": "GaloisRep.conjEquiv"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.isPGroup_comm_exponent_fixedPoint"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.pairStabilizer_conj"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.dilationParam_one"
-  },
-  {
    "module": "Fermat.FLT.EllipticCurve.Torsion",
    "name": "WeierstrassCurve.Points.map_id"
   },
@@ -983,36 +411,8 @@
    "name": "GaloisRep.frame_baseChange"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "sl2F3_ker_eq_center"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.subgroup_S4_order12_eq_A4"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.orderOf_eq_prime_of_discrim_zero"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.pglMap"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.CoeffRing"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
    "name": "TateCurve.c₆Formal"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "PSLImageInPGL"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.summable_evalA_XA"
   },
   {
    "module": "Fermat.FLT.EllipticCurve.TorsionCard",
@@ -1021,10 +421,6 @@
   {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
    "name": "GaloisRepresentation.HardlyRamifiedLift.rec"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.sylow_free_action"
   },
   {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
@@ -1043,52 +439,20 @@
    "name": "ValuativeExtension.algebraMap_integerMap"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.translationPGL_in_range"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.periodPair"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.branch2_params"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "ContinuousMonoidHom.coe_mk"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.sylow_count_of_order_12"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "GaloisRep.baseChange_map"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.sylow_inf_eq_bot_of_prime_card"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.sAn"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
    "name": "RingHom.projPiIndex"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.phiMulAction"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
    "name": "RingHom.toNonUnitalRingHom_apply"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.evalA_mul"
   },
   {
    "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite",
@@ -1099,32 +463,12 @@
    "name": "SemialgHomClass.casesOn"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.fixedPoints_eq_pair"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "ContinuousAlgHom.coe_toContinuousMonoidHom"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "GaloisRep.ker_conj"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.orderOf_mem_of_hasCyclicPartition_A5"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.n_p_gt_one_of_pgl_order"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.order_30_unique_sylow_5"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.dilationParam_ne_zero"
   },
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
@@ -1135,14 +479,6 @@
    "name": "AlgHom.liftEquiv.congr_simp"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.eq_sylow_fixedPoint"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.translationSet_neg"
-  },
-  {
    "module": "Fermat.FLT.FreyCurve.FreyPackage",
    "name": "FreyPackage.recOn"
   },
@@ -1151,52 +487,12 @@
    "name": "FramedGaloisRep.baseChange.congr_simp"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.num_orbits_eq_two"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.pointMapQuot_one"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.RingTheory.Ideal.Quotient.Basic",
    "name": "Ideal.Quotient.out_sub"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.translationPGL_inv"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.iso_A4_of_hasCyclicPartition"
-  },
-  {
    "module": "Fermat.FLT.EllipticCurve.Torsion",
    "name": "WeierstrassCurve.nTorsion.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.evalA_add"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.CyclicPartitionConfig.mk.noConfusion"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.order_30_unique_sylow_3"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.conjugate_pairStabilizer_disjoint"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingToRatFunc"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.z1_eq_pm_minus_one"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
@@ -1207,28 +503,8 @@
    "name": "Pi.semialgHom_apply"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.norm_e_lt_norm_e"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.translation_smul_infinity"
-  },
-  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "GaloisRep.IsUnramifiedAt.recOn"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.instFintypeSylow"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingEval_coeff_YA"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.evalA_XA_bilateral"
   },
   {
    "module": "Fermat.FLT.EllipticCurve.InvariantDerivation",
@@ -1255,60 +531,8 @@
    "name": "SemialgHom.toLinearMap"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.pointMap_one"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.pgl_mulEquiv_psl"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.orbit_infty_eq_P1Fq_core"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.buildPartition_r1"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.annulus_exponent_unique"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.pairStabilizer_isCyclic"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.RingTheory.Valuation.ValuativeRel.Basic",
    "name": "ValuativeExtension.valuation_algebraMap_lt_one"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.normal_order2_le_center"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.infty_mem_orbitInfty"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.card_sylow2_ne_one_of_simple_60"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.exists_conj_sylow_fixing_infty"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.card_sylow3_of_hasCyclicPartition_A5"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.isUnipotent_of_fixesInfinity_orderOf"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.Nat.factorization_eq_one"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
@@ -1319,18 +543,6 @@
    "name": "SemialgHomClass.mk"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.exists_normal_complement_of_sylow2_15"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.YA"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.count_order_p_elements"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.ContinuousSMulDiscrete",
    "name": "ContinuousSMulDiscrete.of_continuousSMul"
   },
@@ -1339,36 +551,12 @@
    "name": "Pi.ringHomEquivOfIsDomain_apply_snd"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.normalizer_element_fixes_infinity"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.branch2a_constraints"
-  },
-  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "FramedGaloisRep.baseChange_map"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.order_p_one_fixed_point"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.weierstrass_equation_A"
-  },
-  {
-   "module": "Fermat.FLT.Slop.RepresentationTheory.OddAbsIrredSlop",
-   "name": "Slop.OddRep.adjoinRange_baseChange_eq_top"
-  },
-  {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.mem_completionIdeal_pow"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.three_transitive_case3"
   },
   {
    "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite",
@@ -1379,20 +567,12 @@
    "name": "GaloisRep.ker_map"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.evalA_a₆A"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.RingTheory.Valuation.ValuativeRel.Basic",
    "name": "ValuativeExtension.valuation_algebraMap_eq_one"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHom.mk.noConfusion"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.e"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateParameter",
@@ -1403,68 +583,20 @@
    "name": "SemialgHom.mk.inj"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.YAn"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.normDilationParam"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "IsTopologicalGroup.discreteUniformity"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.commute_of_orderOf_prime_fixesInfinity"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.partition_equation"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.sylow_prime_pairwise_disjoint"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.NatClassEquation",
-   "name": "Dickson.conjClassElements"
   },
   {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs",
    "name": "GaloisRepresentation.IsHardlyRamified.casesOn"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.order_p_fixing_infinity_is_translation"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
    "name": "WeierstrassCurve.quadraticTwist_of_two_ne_zero"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.upper_triangular_normalizes_translations"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.evalA_mem_tateCurve"
-  },
-  {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
    "name": "GaloisRepresentation.HardlyRamifiedLift.mk.injEq"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.r3_allF_eq_two"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.sylow_pairwise_trivial_intersection"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.map_XA"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
@@ -1475,28 +607,8 @@
    "name": "WeierstrassCurve.Points.map"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.sylow_distinct_fixedPoints"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.normalizer_permutes_pair"
-  },
-  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.Frobenius",
    "name": "isConj_arithFrobAt'"
-  },
-  {
-   "module": "Fermat.FLT.Slop.RepresentationTheory.OddAbsIrredSlop",
-   "name": "Slop.OddRep.smul_tmul_mem_range_iff"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.dilation_params_cover"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.Phi_card_le"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
@@ -1511,10 +623,6 @@
    "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.instIsDiscreteValuationRingSubtypeMemSubringIntegerWithZeroMultiplicativeInt_fermat"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.map_YA"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
    "name": "WeierstrassCurve.u_eq_one_or_eq_neg_one"
   },
@@ -1523,104 +631,32 @@
    "name": "FramedGaloisRep.ofGL_apply"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.sylow_card_prime_pow"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.summable_evalA_add"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.recognition_PSL_pm3"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingEval.congr_simp"
-  },
-  {
    "module": "Fermat.FLT.FreyCurve.FreyPackage",
    "name": "FreyPackage.mk.noConfusion"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.simple_60_n2_eq_5"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
    "name": "Pi.semialgHom"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "p1Rep"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.evalA_XA_eq_bilateralX"
-  },
-  {
    "module": "Fermat.FLT.EllipticCurve.TorsionCard",
    "name": "TorsionCard.evalEval_ψ_odd"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.fixedPoints_determined"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHom.casesOn"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.ratio_one_imp_unipotent"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.orbitInfty_conj_of_fixes_infty"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingEval_uA_inv"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHomClass.recOn"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.sA"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "PSL2_ZMod3_equiv_GF31"
   },
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "IntermediateField.smulCommClass_of_normal"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.translationSet_zero"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.pairStabilizer"
-  },
-  {
-   "module": "Fermat.FLT.Slop.RepresentationTheory.OddAbsIrredSlop",
-   "name": "Slop.OddRep.exists_smul_eq_of_commute"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.isPGroup_exponent_dvd_prime"
-  },
-  {
    "module": "Fermat.FLT.FreyCurve.FreyPackage",
    "name": "FreyPackage.noConfusionType"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.buildPartition_r3_evenDihedral"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
@@ -1631,120 +667,36 @@
    "name": "IsArithFrobAt.congr_simp"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.valuation_coeffRingEval_YA_le"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.group_fixes_sylow_point"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "MonoidHom.coe_smul"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.projLine_cases"
   },
   {
    "module": "Fermat.FLT.Mathlib.RingTheory.Valuation.ValuationSubring",
    "name": "ValuationSubring.subtype_inj"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.pointMapQuot_eq_zero_iff'"
-  },
-  {
    "module": "Fermat.FLT.EllipticCurve.TorsionCard",
    "name": "TorsionCard.zsmul_odd_step_x"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.mul_elem_abelian_iso"
   },
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "IsTopologicalAddGroup.discreteUniformity"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.pgl_Fq_three_transitive"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.F_q_mul_closed"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
    "name": "WeierstrassCurve.negVariableChange_baseChange_map"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.XAn"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.three_transitive_case1"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
    "name": "Pi.algHomEquivOfIsDomain_symm_apply_apply"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.orbit_translate_conj"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "instIsLocalHomRingHomOfContinuousAlgHom_fermat"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.not_normal_of_card_lt"
-  },
-  {
-   "module": "Fermat.FLT.Slop.RepresentationTheory.OddAbsIrredSlop",
-   "name": "Slop.OddRep.isIrreducible_iff_isAbsolutelyIrreducible_slop"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.bilateralX"
-  },
-  {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-   "name": "GaloisRepresentation.IsHardlyRamified.mod_three_reducible"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.card_sylow_mod_card"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.no_normal_30_with_all_sylow3"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.stab_sum_eq_phi_plus_element"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingToRatFunc_uA"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHom.recOn"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "p1Act"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.sylow_unique_fixedPoint"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.normal_divides_4_eq_bot"
   },
   {
    "module": "Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal",
@@ -1759,36 +711,12 @@
    "name": "WeierstrassCurve.exists_baseChange_point_eq_of_map_eq"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLRecognition",
-   "name": "Dickson.normDilationParam_image_card_eq_normalizerQuotient"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "instIsLocalHomRingHomToRingHom_fermat_1"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.bilateralX_inv"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLRecognition",
-   "name": "Dickson.sylow_order_of_psl_order"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.a₆"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.phiFintype"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHom.comp"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.sylow_5_not_one"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
@@ -1799,32 +727,12 @@
    "name": "SemialgHom.noConfusion"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.infinity_mem_P1_Fq"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.fixedBy_eq_fixedPoints"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.hasSum_X_eval"
-  },
-  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "FramedGaloisRep.GL_symm_apply"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "FramedGaloisRep.det_baseChange"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.orbit_infty_eq_P1Fq"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.hasSum_pnat_choose_two_self"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
@@ -1843,100 +751,32 @@
    "name": "SemialgHom.mk"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.sylowFixedPoint.congr_simp"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHom.restrictScalars_toFun"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "SL2ToPGL_ker_eq_center"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.translationPGL"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.map_a₄A"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.bilateralY"
   },
   {
    "module": "Fermat.Basic",
    "name": "fermat_last_theorem_explicit"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.sylow_order_of_pgl_order"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.nonsplit_torus_ge_two"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.ncard_fixedPoints_eq_two_of_discrim_ne_zero"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHom.map_one'"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.two_pi_I_ne_zero"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.HasCyclicPartition"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.common_fixedPoint_commutes_order_p"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.tsum_choose_two_geometric_nonarch"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHom.ctorIdx"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.evalA_weierstrass"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "RingHom.continuous_iff_isOpen_ker"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.stabilizer_conj_eq_P"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHom.compAlgHom"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Matrix.GeneralLinearGroup.mkOfDetNeZero.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.dilationGL"
-  },
-  {
    "module": "Fermat.SorryGate",
    "name": "«command#assert_no_sorry_»"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.dilationHom_ker_order"
   },
   {
    "module": "Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal",
@@ -1947,52 +787,16 @@
    "name": "WeierstrassCurve.quadraticTwistPointEquiv_conj"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.F_q_neg"
-  },
-  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "FramedGaloisRep.unframe"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.translationPGL_zero"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.infinity"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.unique_sylow_fixing_infinity"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHomClass.toZeroHomClass"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.iso_A4_of_card_12_sylow3_4"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.orbit_superset_of_translations"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
    "name": "WeierstrassCurve.quadraticTwistVarChange.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.e_intMul"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.orbitInfty"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.order_15_unique_sylow_3"
   },
   {
    "module": "Fermat.FLT.Mathlib.GroupTheory.GroupAction.Quotient",
@@ -2003,92 +807,20 @@
    "name": "Pi.semialgHomPi"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.sylowMap"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.exists_unique_normalizedLift"
-  },
-  {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-   "name": "GaloisRepresentation.IsHardlyRamified.mod_three_of_stable_line"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.fixedPoints_dichotomy"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.complement_order_coprime"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.not_dvd_pred_pow"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.dilationPGL"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
    "name": "WeierstrassCurve.exists_quadraticTwistPointEquiv_baseChange_eq_iff"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.pointMap_zpow_mul"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
    "name": "RingHom.single_piIndex"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.dilationPGL_in_range"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.subgroup_S5_order60_eq_A5"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.disjoint_fixedPairs"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.translationPGL_injective"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.normDilationParam_P_mul"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
    "name": "WeierstrassCurve.eq_one_or_eq_negVariableChange_of_smul_eq_of_c₄_ne_zero"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.r2CaseOdd"
-  },
-  {
-   "module": "Fermat.FLT.Slop.RepresentationTheory.OddAbsIrredSlop",
-   "name": "Slop.OddRep.baseChange"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite",
    "name": "InfiniteGalois.evalMulActionHom_bijective"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.CyclicPartitionConfig"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.card_center_GL2"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.pglMap_injective"
   },
   {
    "module": "Fermat.FLT.NumberField.Completion.Finite",
@@ -2115,20 +847,8 @@
    "name": "RingHom.coe_toSemialgHom"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.card_sylow2_eq_five_of_simple_60"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.isSimple_of_hasCyclicPartition_A5"
-  },
-  {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.completionIdeal_ne_bot"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.e_ne_zero"
   },
   {
    "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite",
@@ -2143,108 +863,40 @@
    "name": "NonUnitalRingHom.single"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coe_uA"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.Group.Basic",
    "name": "AddMonoidHom.continuous_of_isOpen_ker"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.is_simple_60_aux"
   },
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "instIsLocalHomRingHomAlgebraMap_fermat"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.is_simple_60"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.PGL2.Defs",
-   "name": "Dickson.classification_wild"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.LinearAlgebra.Dimension.IsQuadraticExtension",
    "name": "notMem_range_algebraMap_of_not_isSquare"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.sylow_le_normal_of_coprime_index"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.recognition_A5_proof"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
    "name": "Pi.semialgHomPi_apply"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "SL2.closure_elementary_eq_top"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.RepresentationTheory.OddAbsIrred",
-   "name": "OddRep.isIrreducible_iff_isAbsolutelyIrreducible"
-  },
-  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "Matrix.map_det"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLRecognition",
-   "name": "Dickson.sq_is_half_root_or_zero"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.commute_of_fixedPair"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.commute_of_orderOf_prime_common_fixedPoint"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
    "name": "WeierstrassCurve.tateParameter_map"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.evalAt"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "coe_mk"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.card_ge_of_contains_all_sylow"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.summable_evalA_mul"
   },
   {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.ContinuousSMulDiscrete",
    "name": "ContinuousSMulDiscrete.isOpen_stabilizer"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.isPGroup_orderOf_eq_prime"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.eigenvector_isMultiple_of_basis"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "ContinuousAlgHom.isLocalHom_id"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.order_p_one_fixedPoint"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
@@ -2253,22 +905,6 @@
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Group.Action.Hom",
    "name": "instSMulMulActionHomIdOfSMulCommClass_fermat"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.instSMulPGLOfKProjectiveLine"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.tsum_choose_two_succ_geometric_nonarch"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.translationSet_scaled_eq_Fq"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.bilateralX_shift"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Group.Action.Hom",
@@ -2283,64 +919,12 @@
    "name": "WeierstrassCurve.mem_autGroup"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.PGL2.Defs",
-   "name": "Dickson.classification_tame"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.galoisFieldRingHom_range_eq_F_q"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.dilationParam_eq_one_iff"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.tsum_choose_two_self_geometric_nonarch"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.s"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "scalar_det_one_pm_one"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.card_elements_orderOf_prime"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.valuation_coeffRingEval_XA_le"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.CyclicPartitionConfig.rec"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.order_30_n3_ne_10_of_n5_eq_6"
-  },
-  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "Field.absoluteGaloisGroup.map.congr_simp"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "PSLImageInPGL_le_of_index_two"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.evalA_XA_rep_inv"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.RingTheory.Norm.Quotient",
    "name": "norm_quotient_mk"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.isUnit_ratFuncX_mul_one_sub"
   },
   {
    "module": "Fermat.FLT.Mathlib.RingTheory.Norm.Quadratic",
@@ -2349,10 +933,6 @@
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
    "name": "WeierstrassCurve.map_smul_baseChange_eq"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.NatClassEquation",
-   "name": "Dickson.card_conjugates_eq_normalizer_index"
   },
   {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.Group.Basic",
@@ -2367,30 +947,6 @@
    "name": "GaloisRep.map_conj"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.iso_A5_of_hasCyclicPartition"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.CyclicPartitionConfig.recOn"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLRecognition",
-   "name": "Dickson.n_p_eq_psl"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "PeriodPair.mk.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.dilation_param_inv"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.phi_stab_card_ge_two"
-  },
-  {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.inertiaDeg_asIdeal_completionIdeal"
   },
@@ -2399,32 +955,8 @@
    "name": "SemialgHom.rec"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.riemannZeta_six"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.orderOf_coprime_of_discrim_ne_zero"
-  },
-  {
    "module": "Fermat.FLT.NumberField.Completion.Finite",
    "name": "Rat.adicCompletion.locallyCompactSpace"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "U₁"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.mem_of_orderOf_prime_sylow_le"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.exists_smul_eq_infinity"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.evalA.congr_simp"
   },
   {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
@@ -2439,68 +971,16 @@
    "name": "instWeaklyLocallyCompactSpaceAdicCompletionRingOfIntegers_fermat"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.y_kernel_succ_inv"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHom.map_zero'"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.instMulActionPGLOfKProjectiveLine"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.fixes_one_diagonal"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.dihedralRecognition"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.P1point_mem_P1_Fq"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.simple_group_faithful_action_on_sylow"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "SL2.E12"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.evalA_XA_inv"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHomClass.toSemialgHom"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.pointMap_eq_zero_iff"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "instIsLocalHomRingHomOfContinuousAlgHom_fermat_1"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLRecognition",
-   "name": "Dickson.orbit_infty_eq_P1Fq_psl_core"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.sum_int_inv_sq"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.tsum_add_one_mul_geometric_nonarch"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.nonsingular_evalA"
   },
   {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.Valued.WithZeroMulInt",
@@ -2515,136 +995,20 @@
    "name": "WeierstrassCurve.exists_smul_eq_quadraticTwistOf_quadraticTwistOf"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.sylow_element_order_p"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.Phi_smul_mem"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.card_sylow3_of_hasCyclicPartition_S4"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.evalA_YA_bilateral"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.NatClassEquation",
-   "name": "Dickson.natClassEquation"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "SL2_center_card"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingToRatFunc_vA_inv"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
    "name": "instHasSplitMultiplicativeReductionSubtypeMemSubringIntegerValueGroupWithZeroValuationBaseChange_fermat"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.sylow_comm_exp_p"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.nonsplit_D_lt_n"
-  },
-  {
-   "module": "Fermat.FLT.Slop.RepresentationTheory.OddAbsIrredSlop",
-   "name": "Slop.OddRep.adjoinRange_eq_top"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.extractDihedralStructure"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.upper_triangular_mul_ratio"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.finite_subgroup_eq_roots_of_unity"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.numTerms_le_three"
   },
   {
    "module": "Fermat.FLT.Mathlib.GroupTheory.GroupAction.Quotient",
    "name": "MulAction.orbitRel.Quotient.mk_smul"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.tateCurve_Δ_ne_zero"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.sylow_normal_of_unique_in_normal"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.dilationParam_mul_eq"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.upper_triangular_in_pgl_range"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.conjOnP"
-  },
-  {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.exists_ofAdd_natCast_lt"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.dilation_param_mul"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.tsum_nat_mul_geometric_nonarch"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.dilation_smul_infinity"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.dilationHomOfFix"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLRecognition",
-   "name": "Dickson.psl_G_le_pgl_range_from_orbit"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.orbit_eq_infty_union_translations"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.hasSum_lambert_row'"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite",
    "name": "instIsInvariantAlgEquivOfIsGalois_fermat"
-  },
-  {
-   "module": "Fermat.FLT.Slop.RepresentationTheory.OddAbsIrredSlop",
-   "name": "Slop.OddRep.adjoinRange"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.annulusPoint.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.summable_lambert_prod'"
   },
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
@@ -2659,32 +1023,12 @@
    "name": "SemialgHom.restrictScalars"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.lambert_kernel_inv"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.not_normal_order6_of_card_sylow3_4"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.instFactPrimeOfNatNat_fermat_2"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.element_partition_count"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.Valued.WithZeroMulInt",
    "name": "Valued.WithZeroMulInt.irreducible_valuation_lt_one"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
    "name": "AlgEquiv.piCongrFiberwise"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.toPermHom_injective_of_simple_60"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
@@ -2711,26 +1055,6 @@
    "name": "Pi.ringHomEquivOfIsDomain_symm_apply_apply"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.F_q_one"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingEval_coeff_YA_zero"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.too_many_elements_of_prime_order"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.instFintypeGaloisField"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.exists_finite_subfield_conjugate"
-  },
-  {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
    "name": "GaloisRepresentation.HardlyRamifiedLift.mk.noConfusion"
   },
@@ -2739,24 +1063,12 @@
    "name": "Pi.ringHomEquivOfIsDomain_apply_fst"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "p1Proj"
-  },
-  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "FramedGaloisRep.map"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.hasSum_prod_pnat_nonarch"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Group.Action.Hom",
    "name": "instAlgebraMulActionHomIdOfSMulCommClass_fermat"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.summable_add_one_mul_geometric_nonarch"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
@@ -2773,10 +1085,6 @@
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHomClass.toRingHomClass"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.pointMapQuot_surjective"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction",
@@ -2811,34 +1119,6 @@
    "name": "ContinuousAlgHom.isLocalHom_toRingHom"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.cauchy_element_in_subgroup"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.fixes_infinity_normalizes_sylow"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLRecognition",
-   "name": "Dickson.normalizer_dilation_params_cover_nq_roots"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.normalizer_pairStabilizer_index_le_two"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLRecognition",
-   "name": "Dickson.G_preserves_P1Fq_psl"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.no_normal_30_with_all_sylow5"
-  },
-  {
-   "module": "Fermat.FLT.Slop.RepresentationTheory.OddAbsIrredSlop",
-   "name": "Slop.OddRep.isIrreducible_baseChange_of_finrank_eigenspace_eq_one"
-  },
-  {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.eq_mul_nonZeroDivisor_inv_adicCompletionIntegers"
   },
@@ -2847,48 +1127,12 @@
    "name": "GaloisRep.IsFlatAt.rec"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.tame_ncard_fixedPoints_eq_two"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.CyclicPartitionConfig.mk.injEq"
-  },
-  {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.denseRange_of_prodAlgebraMap"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.element_fixedPt_sum"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.conjEquiv"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.exists_zpow_mul_mem_annulus"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "PGL.orderOf_E12_image"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHom.map_smul"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingEval_coeff_XA_inv"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.nonsplit_torus_ge_two_arith"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.pointMapQuot"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
@@ -2899,36 +1143,12 @@
    "name": "NumberField.instCompactSpaceAdicCompletionIntegers"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.ProjectiveLine"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.center_eq_bot_of_hasCyclicPartition"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.sylow3_in_normal_forces_large"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHom"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.one_sub_pow_mul_ne_zero"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.orbit_dilation_conj"
-  },
-  {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
    "name": "GaloisRepresentation.HardlyRamifiedLift.noConfusion"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.sylow_fixedPt_injective"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveBaseChange",
@@ -2939,84 +1159,28 @@
    "name": "ValuativeExtension.instIsLocalHomSubtypeMemSubringIntegerValueGroupWithZeroValuationRingHomIntegerMap"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.derivWeierstrassP_q_expansion"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
    "name": "WeierstrassCurve.exists_smul_quadraticTwist_quadraticTwist_eq"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.hasSum_lambert_side"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.three_transitive_case4"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.sum_int_inv_cube"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "instFunLike"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.normalizer_fixes_element_in_sylow"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.upper_triangular_ratio_unique"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
    "name": "WeierstrassCurve.q_baseChange"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.y_constant_inv"
   },
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "Units.coeHomₜ"
   },
   {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-   "name": "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter"
-  },
-  {
    "module": "Fermat.FLT.EllipticCurve.TorsionCard",
    "name": "TorsionCard.two_point_cross_identity"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.termLowerBound"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.CyclicPartitionConfig.noConfusionType"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "PSL2F3"
-  },
-  {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
    "name": "GaloisRepresentation.HardlyRamifiedLift.mk.inj"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.normalizer_stabilizes_fixedPoint"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.norm_e_lt_one"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.group_order_gt_normalizer"
   },
   {
    "module": "Fermat.FLT.Mathlib.GroupTheory.GroupAction.Quotient",
@@ -3027,16 +1191,8 @@
    "name": "InfiniteGalois.quotientEquivFixedFieldEmb"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.summable_nat_mul_geometric_nonarch"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
    "name": "WeierstrassCurve.quadraticTwistPointEquiv.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.range_preserves_P1Fq"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
@@ -3045,10 +1201,6 @@
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "instIsUnramifiedAtConj"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.e_neg"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
@@ -3063,24 +1215,12 @@
    "name": "WeierstrassCurve.integralModel_baseChange_map"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.summable_lambert_prod"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
    "name": "WeierstrassCurve.not_exists_smul_quadraticTwist_eq"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.weierstrass_equation"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "AlgHom.toSemialgHom"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.NatClassEquation",
-   "name": "Dickson.card_conjClassElements"
   },
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
@@ -3095,64 +1235,8 @@
    "name": "MulActionHom.toFunAlgHom"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.eq_zero_of_forall_hasSum_zero"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.dilation_conjugation_formula"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.sylowFixedPoint"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.additive_subgroup_eq_F_q"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.card_sylow2_ne_three_of_simple_60"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.hasSum_a₆_eval"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.fixes_infinity_commutes_order_p"
-  },
-  {
    "module": "Fermat.FLT.FreyCurve.FreyPackage",
    "name": "FreyPackage.noConfusion"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.semidirect_of_complement_iso"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.recognition_A4"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.dihedral2_of_hasCyclicPartition"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.ncard_fixedPoints_eq_two_of_ne_eigenvalues"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLRecognition",
-   "name": "Dickson.z1_eq_psl"
-  },
-  {
-   "module": "Fermat.FLT.Slop.RepresentationTheory.OddAbsIrredSlop",
-   "name": "Slop.OddRep.isIrreducible_of_baseChange"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "sl2F3MulAction"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
@@ -3163,40 +1247,12 @@
    "name": "WeierstrassCurve.eq_one_or_eq_negVariableChange_of_u_eq_one"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.coprime_order_two_fixed_points"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.dihedral_of_hasCyclicPartition_odd"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.PhiType"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite",
    "name": "instFiniteMulActionHomAlgEquivIdOfIsGaloisOfFiniteOfContinuousSMulDiscrete"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.CyclicPartitionConfig.mk.inj"
-  },
-  {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.closureAlgebraMapIntegers_eq_prodIntegers"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.galoisFieldRingHom"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.vA"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLRecognition",
-   "name": "Dickson.orbit_infty_eq_P1Fq_psl"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
@@ -3207,24 +1263,8 @@
    "name": "WeierstrassCurve.Affine.Point.equivOfEq.congr_simp"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLRecognition",
-   "name": "Dickson.translationSet_scaled_eq_Fq_psl"
-  },
-  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "GaloisRep.IsUnramifiedAt.casesOn"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.periodPair_ω₂"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.branch1_semidirect"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.orbitPartitionConstruction"
   },
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
@@ -3235,10 +1275,6 @@
    "name": "ValuativeExtension.residueMap"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.tsum_pnat_eq_tsum_succPNat"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.Valued.WithZeroMulInt",
    "name": "Valued.WithZeroMulInt.finite_cover_of_uniformity_basis"
   },
@@ -3247,28 +1283,8 @@
    "name": "Valued.WithZeroMulInt.mem_maximalIdeal_pow_valuation"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.P1Fq"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.iso_S4_of_hasCyclicPartition"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.translationSet_card_eq_P"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.FieldTheory.Galois.Basic",
    "name": "Algebra.IsQuadraticExtension.algEquiv_apply_eq_neg_of_sq_eq"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.order_3_centralizes_order_5"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.summable_mul_prod"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
@@ -3287,44 +1303,12 @@
    "name": "Units.val_inv_mapₜ_toFun"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.sylow_element_fixes"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.tsum_geometric_nonarch"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.orbit_count_mul_card"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Weierstrass",
    "name": "WeierstrassCurve.c₆_eq_zero_iff_j_eq_1728"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup",
    "name": "IsAlgClosed.lift.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.pointMap_inv_of_valuation_eq_one"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLRecognition",
-   "name": "Dickson.additive_subgroup_eq_F_q_from_squares"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.evalA_YA_eq_bilateralY"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.r2Solutions"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coe_vA"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
@@ -3335,128 +1319,40 @@
    "name": "FramedGaloisRep.baseChange_def"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "SL2_card"
-  },
-  {
    "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
    "name": "Nat.Prime.toHeightOneSpectrumRingOfIntegersRat.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.translationGL"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.dihedral_of_hasCyclicPartition_even"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.pgl_unique_index_two_subgroup"
   },
   {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.ContinuousSMulDiscrete",
    "name": "continuousSMulDiscrete_iff_isOpen_stabilizer"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "mem_of_odd_orderOf_of_index_two"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.dickson_branch2_z1_ge_2"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.card_sylow_eq_one_of_normal"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.tame_hasCyclicPartition"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.Nat.factorization_eq_two"
-  },
-  {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.denseRange_of_integerAlgebraMap"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.sylow3_toPermHom_ker_eq_bot_of_card_12"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.hasSum_a₄_eval"
   },
   {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.Group.Basic",
    "name": "MonoidHom.continuous_iff_isOpen_ker"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.partitionTerm"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.F_q_inv"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
    "name": "WeierstrassCurve.negVariableChange_smul_self"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.bilateralY_inv"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "FramedGaloisRep.unframe_frame"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.buildPartition_r2_A4"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.normalizer_complement_divides_main"
-  },
-  {
    "module": "Fermat.FLT.Basic.Lemmas",
    "name": "FermatLastTheorem.of_p_ge_5"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.e_neg_intCast_mul_natAbs"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.hasSum_lambert_general"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.instFintypeOfGroupOfFinite"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "FramedGaloisRep.ofGL.congr_simp"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.isUnit_aeval_of_ne"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.classification_tame_slop"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
    "name": "WeierstrassCurve.autGroup"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.weierstrassP_q_expansion"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",
@@ -3471,24 +1367,8 @@
    "name": "MonoidHom.continuous_of_isOpen_ker"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingEval_coeff_XA_zero"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
    "name": "WeierstrassCurve.VariableChange.instDecidableEq"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLRecognition",
-   "name": "Dickson.sum_of_two_squares_Fq"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.PGLOf"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.orbitPartitionData"
   },
   {
    "module": "Fermat.FLT.Mathlib.RingTheory.LocalRing.MaximalIdeal.Basic",
@@ -3499,32 +1379,12 @@
    "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.algEquiv"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.sylow_card_dvd_index"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHom.toRingHom"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.translation_smul_P1point"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.periodPair_ω₁"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.RingTheory.Valuation.ValuativeRel.Basic",
    "name": "ValuativeExtension.valuation_algebraMap_le_one"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.pgl_conjugate_to_standard"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.isUnit_vA"
   },
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
@@ -3535,40 +1395,12 @@
    "name": "GaloisRepresentation.IsHardlyRamified.isTameAtTwo"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.pointMap"
-  },
-  {
    "module": "Fermat.FLT.FreyCurve.MazurTorsion",
    "name": "WeierstrassCurve.galoisRep.congr_simp"
   },
   {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.Group.Basic",
    "name": "continuous_iff_continuousAt_one"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.normal_with_element_contains_all_sylow"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.y_kernel_relation"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.dilationParam"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.CyclicPartitionConfig.mk.sizeOf_spec"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.finQuotientReps"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.fixes_point_coprime_isCyclic"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction",
@@ -3579,10 +1411,6 @@
    "name": "quadraticCharacter.congr_simp"
   },
   {
-   "module": "Fermat.FLT.Slop.RepresentationTheory.OddAbsIrredSlop",
-   "name": "Slop.OddRep.isIrreducible_iff_forall"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "instCoeTCSemialgHom"
   },
@@ -3591,168 +1419,32 @@
    "name": "ContinuousMonoidHom.val_inv_toHomUnits_toFun"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.fixesInfinity_iff_upperTriangular"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.pointMapQuot_eq_zero_iff"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingEval_coeff_a₆A"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.F_q_div"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.normDilationParam.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.PGL2.Basic",
-   "name": "Dickson.PSL"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.count_elements_order_p"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.FqInK"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.finite_of_closure_finite"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHom.algebraMap_apply"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.tsum_pnat_eq_add_shift"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "index_two_subgroup_iso_PSL"
   },
   {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs",
    "name": "GaloisRepresentation.IsHardlyRamified.recOn"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.normDilationParam_image_card"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.fixes_infinity_coprime_isCyclic"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.same_normDilationParam_imp_coset"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.PGL2.Basic",
-   "name": "Dickson.PGL"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.F_q_zero"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.order_one_or_p_in_sylow"
-  },
-  {
    "module": "Fermat.FLT.EllipticCurve.Torsion",
    "name": "WeierstrassCurve.Points.map_comp"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.sylow_fixedPt_mem_Phi"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "kernel_is_scalar"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "central_is_scalar"
   },
   {
    "module": "Fermat.FLT.FreyCurve.Semistable",
    "name": "Rat.HeightOneSpectrum.primesEquiv.congr_simp"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.orbit_closed_under_translation"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.instFactPrimeOfNatNat_fermat"
-  },
-  {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
    "name": "GaloisRepresentation.HardlyRamifiedLift.ctorIdx"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.stabilizer_sylowFixedPoint_eq_normalizer"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
    "name": "ValuativeExtension.integerMap_coe"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.norm_e"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.toPermHom_injective_of_card_24"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingEval_coeff_XA"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.pointMapQuot_mk"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.scalar_eq_one_in_PGL"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.m_ge_one_of_pow_ge_three"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Y"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.buildPartition_r2_dihedral"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
    "name": "WeierstrassCurve.Affine.Point.map.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingEval"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.r1Solution"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.DicksonClassification",
-   "name": "Dickson.dickson_classification"
   },
   {
    "module": "Fermat.FLT.Mathlib.RingTheory.DedekindDomain.AdicValuation",
@@ -3771,16 +1463,8 @@
    "name": "GaloisRep.IsFlatAt.recOn"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.g₃_q_expansion"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Algebra.Group.Action.Hom",
    "name": "MulActionHom.evalAlgHom"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.summable_geometric_nonarch"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
@@ -3791,24 +1475,8 @@
    "name": "WeierstrassCurve.hasSplitMultiplicativeReduction_baseChange"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition",
-   "name": "Dickson.isCyclic_of_hasCyclicPartition"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.sylow_fixedPt_phiStab"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.GroupTheory.SpecificGroups.Cyclic",
    "name": "mulEquivMultiplicativeZModTwo"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
-   "name": "Dickson.mem_pairStabilizer_of_ne_one"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
-   "name": "Dickson.sylow_card_ge_3"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
@@ -3819,56 +1487,12 @@
    "name": "ContinuousMonoidHom.toHomUnits.congr_simp"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.dilationParam_action"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.hasSum_divisor_collect_nonarch"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
-   "name": "Dickson.fixes_zero_upper_triangular"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.fixedPoints"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.pointMap_congr"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.summable_pnat_of_shift"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PSLBasic",
-   "name": "L₁"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.commute_preserves_fixedPoint"
-  },
-  {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs",
    "name": "GaloisRepresentation.IsHardlyRamified.rec"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.card_eigenvalues"
-  },
-  {
    "module": "Fermat.FLT.FreyCurve.FreyPackage",
    "name": "FreyPackage.rec"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.Phi"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
-   "name": "Dickson.card_eq_pm_z1_np'"
   },
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
@@ -3879,32 +1503,8 @@
    "name": "ContinuousAlgHom.mapMatrix_apply"
   },
   {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.order_15_unique_sylow_5"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
-   "name": "Dickson.simple_60_n2_ne_15"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
-   "name": "Dickson.fixedPoint_of_center_unique"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.RingTheory.Norm.Quadratic",
    "name": "Algebra.IsQuadraticExtension.trace_eq_zero_of_sq_eq"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingToRatFunc_vA"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.PGL2.Basic",
-   "name": "Dickson.K"
-  },
-  {
-   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification",
-   "name": "Dickson.recognition_PSL_iso"
   },
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Pi",

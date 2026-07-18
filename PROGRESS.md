@@ -767,41 +767,6 @@ entries file). To add/remove/annotate a node, edit
                           finite subextension `E` of `K̄/K` and every `σ`, the coset `σ·Gal(K̄/E)`
                           contains a conjugate of a `globalFrob v` with `v ∉ S` (existence form of
                           Chebotarev for the Galois closure of `E/K`)
-- ✅· `IsHardlyRamified.mod_three` — `IsHardlyRamified.mod_three` (`ModThree.lean`) — : a mod-3 hardly ramified rep has a Γℚ-
-  equivariant surjection onto the trivial character; B6c's eventual proof lifts this 3-adically.
-  Children:
-    - ❌· `mod_three_reducible` — `mod_three_reducible` — the Dickson/discriminant reducibility content (unchanged)
-    - ✅· `mod_three_of_stable_line` — `mod_three_of_stable_line` — (2026-07-17) from the new local leaf below + the (now field-
-      generic) character bookkeeping of `MazurTorsion.lean`: quotient character `χ₂` of the leaf's
-      line, trivial-on-`ker ρ` (unipotent scalar lemma), open kernel
-      (`isOpen_setOf_galoisRep_eq_one`), unramified outside `{2,3}` from
-      `IsHardlyRamified.isUnramified` via the generic bridge + `Rat.subsingleton_ringHom` convert;
-      `minkowski_character_trivial` (target-generalized to any group) kills `χ₂`; `π` := coordinate
-      of the rank-1 quotient
-        - ❌· `exists_line_with_locally_unramified_quotCharacter` — `exists_line_with_locally_unramified_quotCharacter` (`ModThree.lean`, stated 2026-07-17) —
-          the LOCAL leaf: a reducible mod-3 hardly ramified rep has a stable line whose quotient
-          character is unramified at `2` AND `3` (flat connected-étale analysis at `3` incl. the
-          Serre swap; tame quadratic condition at `2`). - NB the lift structure gained an
-          `IsModuleTopology ℤ_[ℓ] O` field (statement strengthening of B6a's conclusion, true for
-          integers of finite extensions of ℚ_ℓ; required by B6b)
-- ✅· `TateCurve.tateCurveEquiv` — the finite-level Tate uniformisation kˣ/q^ℤ ≃+ E_q(k), DERIVED from pointMapQuot_add +
-  pointMapQuot_bijective with pointMapQuot (canonical, choice-free) as underlying function — the
-  object the Ω-gluing of exists_tateCurveEquivSepClosure consumes.
-    - ❌· `TateCurve.pointMapQuot_add` — the addition law of the Tate uniformisation (Silverman V.3.1(c)): pointMapQuot turns unit-
-      class multiplication into Tate-curve point addition. Attack: the coordinates are the bilateral
-      values (proven bilateral forms, shifts, inversion identities for X and Y); the chord–tangent
-      formulas reduce to two-parameter Lambert identities on the built foundation.
-    - ✅· `TateCurve.pointMapQuot_bijective` — bijectivity of the Tate uniformisation, DERIVED top-down: injectivity from the trivial kernel
-      (pointMapQuot_eq_zero_iff', quotient induction over the proven kernel characterization) and
-      the addition law through the derived negation compatibility pointMapQuot_inv; surjectivity is
-      the remaining sorried leaf.
-        - ❌· `TateCurve.pointMapQuot_add` — the addition law of the Tate uniformisation (Silverman V.3.1(c)): pointMapQuot turns unit-
-          class multiplication into Tate-curve point addition. Attack: the coordinates are the
-          bilateral values (proven bilateral forms, shifts, inversion identities for X and Y); the
-          chord–tangent formulas reduce to two-parameter Lambert identities on the built foundation.
-        - ❌· `TateCurve.pointMapQuot_surjective` — surjectivity of the Tate uniformisation (Silverman V.3.1(d)/V.4): every point of E_q(k) is
-          a pointMapQuot-value — the valuation analysis of affine points through the bilateral
-          X-value, two-to-one up to the involution and separated by the y-coordinate.
 
 ## Canonical frontier (2026-07-16, session 4 close — audit-verified)
 
