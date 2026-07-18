@@ -1,5 +1,5 @@
 {
- "key": "1784373214.430972",
+ "key": "1784374988.0642962",
  "returncode": 0,
  "kept_invisible": [
   {
@@ -13,10 +13,6 @@
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveBaseChange",
    "name": "TateCurve.evalInt_map"
-  },
-  {
-   "module": "Fermat.FLT.DedekindDomain.AdicValuation",
-   "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.instDimensionLEOneSubtypeMemValuationSubringAdicCompletionIntegers_fermat"
   },
   {
    "module": "Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal",
@@ -76,10 +72,6 @@
   },
   {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
-   "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.instIsPrincipalIdealRingSubtypeMemValuationSubringAdicCompletionIntegers_fermat"
-  },
-  {
-   "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.instIsDiscreteValuationRingSubtypeMemValuationSubringAdicCompletionIntegers_fermat"
   },
   {
@@ -89,10 +81,6 @@
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "instMulSemiringActionSubtypeMemIntermediateFieldOfSMulCommClassOfNormal_fermat"
-  },
-  {
-   "module": "Fermat.FLT.DedekindDomain.AdicValuation",
-   "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.exists_uniformizer"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
@@ -109,10 +97,6 @@
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
    "name": "WeierstrassCurve.negVariableChange_smul_self"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.RingTheory.LocalRing.MaximalIdeal.Basic",
-   "name": "IsLocalRing.maximalIdeal_le"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",

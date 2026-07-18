@@ -1675,6 +1675,20 @@ entries file). To add/remove/annotate a node, edit
                                           Valuation.Integer.not_isUnit_iff_valuation_lt_one + the
                                           adic valuation of 3 at v = (p) is 1) — plus the residue-
                                           cardinality sub-lemma natCard_residue_under_padicPlace.
+                                            - ❌· `valued_natCast_adicCompletionIntegers_eq_one` — the completed valuation of 3 at the p-place is 1
+                                              (sorry node — one cast-bridge from done): p ∤ 3 →
+                                              primeCompl → intValuation = 1 → Valued.v = 1 is fully
+                                              PROVEN in mathlib's scoped-algebraMap spelling inside
+                                              the node; the remaining sorry (shared with the
+                                              consumer in the action leaf) is the class-6 numeral-
+                                              instance bridge between that spelling and the subtype-
+                                              val of the ℕ-cast — even same-file same-source-text
+                                              elaborations of ↑↑3 diverge. Candidate resolutions for
+                                              the next cycle: a `Subtype.ext`-val-level bridging
+                                              lemma stated against pp.all-extracted spellings, or
+                                              importing/normalizing the numeral instances (Nat.cast
+                                              vs instOfNat/AtLeastTwo paths) with a dedicated simp
+                                              set.
                                             - ❌· `natCard_residue_under_padicPlace` — the residue cardinality at the p-place is p (sorry
                                               node): the under-ideal of 𝔪(IntegralClosure 𝒪ᵥ Kᵥᵃˡᵍ)
                                               is 𝔪(𝒪ᵥ) (lying over), and the residue field is 𝓞ℚ ⧸

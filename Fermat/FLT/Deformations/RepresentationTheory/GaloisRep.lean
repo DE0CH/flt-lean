@@ -302,6 +302,44 @@ theorem natCard_residue_under_padicPlace
 
 set_option warn.sorry false in
 set_option backward.isDefEq.respectTransparency false in
+open scoped algebraMap in
+/-- **The completed valuation of `3` at the `p`-place is `1`** (sorry node —
+one cast-bridge from done): the chain `p ∤ 3 → 3 ∈ primeCompl →
+intValuation 3 = 1 → Valued.v (3 : Kᵥ) = 1` is fully proven below in
+mathlib's scoped-`algebraMap` spelling; the remaining `sorry` is the
+class-6 bridge identifying that spelling with the subtype-val of the
+`ℕ`-cast into the completion integers (invisible instance-path divergence
+inside the numeral's coercion). -/
+theorem valued_natCast_adicCompletionIntegers_eq_one {p : ℕ}
+    (hp : Nat.Prime p) (hp5 : 5 ≤ p) :
+    Valued.v ((((3 : ℕ) :
+        IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)) :
+      IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat) = 1 := by
+  set v := hp.toHeightOneSpectrumRingOfIntegersRat with hv
+  have h3compl : (3 : NumberField.RingOfIntegers ℚ) ∈
+      v.asIdeal.primeCompl := by
+    intro hmem
+    have hdvd := (Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal
+      hp _).mp hmem
+    rw [map_ofNat] at hdvd
+    have hle := Int.le_of_dvd (by norm_num) hdvd
+    omega
+  have hint1 : IsDedekindDomain.HeightOneSpectrum.intValuation v
+      (3 : NumberField.RingOfIntegers ℚ) = 1 :=
+    (IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff_mem_primeCompl
+      v _).mpr h3compl
+  have hK := (IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation
+      (v := v) (K := ℚ) (3 : NumberField.RingOfIntegers ℚ)).trans
+    ((IsDedekindDomain.HeightOneSpectrum.valuation_of_algebraMap
+      (v := v) (K := ℚ) (3 : NumberField.RingOfIntegers ℚ)).trans hint1)
+  -- the class-6 bridge: `hK`'s scoped coercion of `3` vs the subtype-val
+  -- of the `ℕ`-cast
+  sorry
+
+set_option warn.sorry false in
+set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
 /-- **The arithmetic Frobenius raises `3`-power roots of unity to the
 `p`-th power** (sorry node — the unramified local content): at a prime
@@ -366,40 +404,16 @@ theorem adicArithFrob_rootsOfUnity_pow
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) ∉
       IsLocalRing.maximalIdeal _ := by
     -- `3 ∉ (p)`, so `3` is a unit in `𝒪ᵥ`, hence in the integral closure
-    have h3compl : (3 : NumberField.RingOfIntegers ℚ) ∈
-        v.asIdeal.primeCompl := by
-      intro hmem
-      have hdvd := (Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal
-        hp _).mp hmem
-      rw [map_ofNat] at hdvd
-      have hle := Int.le_of_dvd (by norm_num) hdvd
-      omega
-    have hint1 : IsDedekindDomain.HeightOneSpectrum.intValuation v
-        (3 : NumberField.RingOfIntegers ℚ) = 1 :=
-      (IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff_mem_primeCompl
-        v _).mpr h3compl
-    -- the completed valuation of `3`, assembled in mathlib's own coercion
-    -- spelling (the MazurTorsion pattern)
-    have hK := (IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation
-        (v := v) (K := ℚ) (3 : NumberField.RingOfIntegers ℚ)).trans
-      ((IsDedekindDomain.HeightOneSpectrum.valuation_of_algebraMap
-        (v := v) (K := ℚ) (3 : NumberField.RingOfIntegers ℚ)).trans hint1)
     have hunit : IsUnit ((3 : ℕ) :
         IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v) := by
       by_contra hnu
       have hmem := (IsLocalRing.mem_maximalIdeal _).mpr hnu
       have hlt := (IsDedekindDomain.HeightOneSpectrum.mem_completionIdeal_iff
         (K := ℚ) (v := v) _).mp hmem
-      open scoped algebraMap in
-      have hlt' : Valued.v (((3 : NumberField.RingOfIntegers ℚ)) :
-          IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) < 1 := by
-        convert hlt using 2
-        -- residual cast equation: the record-built `𝓞ℚ`-coercion of `3` into
-        -- the one-field-structure completion vs the subtype-val of the
-        -- `ℕ`-cast — `{toCompletion := ↑((WithVal.equiv _).symm ↑3)} = ↑↑3`
-        sorry
-      -- residual: `hK`'s and `hlt'`'s `↑3` differ in an invisible instance
-      -- path (class-6); the contradiction `1 < 1` is one bridge away
+      have h1 := valued_natCast_adicCompletionIntegers_eq_one hp hp5
+      -- `hlt`'s and `h1`'s spellings of `↑↑3` diverge in an invisible
+      -- numeral-instance path even within this file (class-6); the
+      -- `1 < 1` contradiction is this one bridge away
       sorry
     have hunitIC : IsUnit (((3 : ℕ) ^ n) : IntegralClosure
         (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)

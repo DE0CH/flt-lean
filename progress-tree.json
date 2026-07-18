@@ -65,6 +65,7 @@
   "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter": "❌",
   "GaloisRepresentation.IsHardlyRamified.mod_three_reducible": "❌",
   "GaloisRepresentation.IsHardlyRamified.mod_three": "✅",
+  "valued_natCast_adicCompletionIntegers_eq_one": "❌",
   "natCard_residue_under_padicPlace": "❌",
   "adicArithFrob_rootsOfUnity_pow": "❌",
   "cyclotomicCharacter_adicArithFrob": "✅",
@@ -451,9 +452,11 @@
    "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter",
    "GaloisRepresentation.IsHardlyRamified.mod_three_reducible"
   ],
+  "valued_natCast_adicCompletionIntegers_eq_one": [],
   "natCard_residue_under_padicPlace": [],
   "adicArithFrob_rootsOfUnity_pow": [
-   "natCard_residue_under_padicPlace"
+   "natCard_residue_under_padicPlace",
+   "valued_natCast_adicCompletionIntegers_eq_one"
   ],
   "cyclotomicCharacter_adicArithFrob": [
    "adicArithFrob_rootsOfUnity_pow"
