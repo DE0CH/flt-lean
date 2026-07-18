@@ -9,6 +9,7 @@ public import Mathlib.RingTheory.Valuation.RamificationGroup
 -- `ValuationSubring.inertia_fixes_of_pow_eq_one` (step (b)), used in the
 -- local unipotence assembly
 import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
+import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
 import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
@@ -932,31 +933,190 @@ theorem WeierstrassCurve.isElliptic_tateCurve_and_j :
   exact inv_injective hkey
 
 set_option warn.sorry false in
+/-- **Invariance of split multiplicative reduction under change of
+Weierstrass coordinates** (sorry node): if `W` has split multiplicative
+reduction, so does `C • W` for any change of variables `C` over `k`.
+Content: the reduction type and the splitting field of the two tangent
+directions at the node are intrinsic to the `k`-isomorphism class —
+minimal integral models of `W` and `C • W` differ by a variable change
+with unit scaling `u` and integral `r, s, t`, under which the reduced
+node polynomial changes by a linear substitution and a unit square
+scaling, preserving whether it splits over the residue field. -/
+theorem WeierstrassCurve.HasSplitMultiplicativeReduction.smul
+    (W : WeierstrassCurve k) [W.HasSplitMultiplicativeReduction 𝒪[k]]
+    (C : VariableChange k) :
+    (C • W).HasSplitMultiplicativeReduction 𝒪[k] :=
+  sorry
+
+set_option warn.sorry false in
+/-- **Quadratic scaling twists between split curves are trivial**
+(sorry node — the arithmetic core of the descent half of Tate's
+theorem V.5.3): if the short Weierstrass curve `y² = x³ + Ax + B` and
+its scaling twist `y² = x³ + w²Ax + w³B` both have split multiplicative
+reduction over the nonarchimedean local field `k`, then `w` is a
+square in `k`. Content: for `w` of odd valuation the twist is by a
+ramified quadratic extension and has additive reduction; for `w` a
+unit-nonsquare it is the unramified quadratic twist, which flips the
+Galois action on the two tangent directions at the node, making the
+reduction nonsplit (cf. the converse construction
+`exists_quadraticTwist_hasSplitMultiplicativeReduction`). -/
+theorem WeierstrassCurve.isSquare_of_scaled_split
+    (A B w : k) (hw : w ≠ 0)
+    [(⟨0, 0, 0, A, B⟩ : WeierstrassCurve k).HasSplitMultiplicativeReduction 𝒪[k]]
+    [(⟨0, 0, 0, w ^ 2 * A, w ^ 3 * B⟩ :
+        WeierstrassCurve k).HasSplitMultiplicativeReduction 𝒪[k]] :
+    IsSquare w :=
+  sorry
+
 /-- **Split multiplicative curves with equal `j` are isomorphic**
-(sorry node — the descent half of Tate's theorem V.5.3): two elliptic
-curves over `k`, both with split multiplicative reduction, and with
-the same `j`-invariant, differ by a change of Weierstrass coordinates
-over `k` itself. Content: over the separable closure they are
-isomorphic (mathlib's `exists_variableChange_of_j_eq`); the
-obstruction to descent is a `±1`-valued cocycle of `Gal(Ω/k)`
-(`Aut = {±1}` as `|j| > 1`), which is TRIVIAL because both reductions
-are split: the isomorphism matches the (rational) tangent directions
-at the nodes, so it is Galois-invariant and its coefficients descend
-to `k`. -/
+(the descent half of Tate's theorem V.5.3, derived from the two leaves
+above): two elliptic curves over `k` (of characteristic zero), both
+with split multiplicative reduction, and with the same `j`-invariant,
+differ by a change of Weierstrass coordinates over `k` itself.
+Derivation: put both curves in short normal form `y² = x³ + Aᵢx + Bᵢ`
+(char `k` = 0); split multiplicative reduction transfers to the short
+models by the invariance leaf; `Aᵢ ≠ 0` since `c₄ = -48Aᵢ` is a unit,
+`Bᵢ ≠ 0` since `Bᵢ = 0` forces `j = 1728`, contradicting `|j| > 1`;
+equal `j` gives `A₁³B₂² = A₂³B₁²`, so `w := B₂A₁/(B₁A₂)` satisfies
+`A₂ = w²A₁`, `B₂ = w³B₁` — the second short model is the scaling twist
+of the first by `w`; both being split, the arithmetic-core leaf makes
+`w = v²` a square, and scaling by `v⁻¹` is a change of variables over
+`k` carrying the first short model to the second. -/
 theorem WeierstrassCurve.exists_variableChange_of_j_eq_of_split
+    [CharZero k]
     (W₁ W₂ : WeierstrassCurve k) [W₁.IsElliptic] [W₂.IsElliptic]
     [W₁.HasSplitMultiplicativeReduction 𝒪[k]]
     [W₂.HasSplitMultiplicativeReduction 𝒪[k]]
     (hj : W₁.j = W₂.j) :
-    ∃ C : VariableChange k, C • W₁ = W₂ :=
-  sorry
+    ∃ C : VariableChange k, C • W₁ = W₂ := by
+  haveI h2 : Invertible (2 : k) := invertibleOfNonzero two_ne_zero
+  haveI h3 : Invertible (3 : k) := invertibleOfNonzero three_ne_zero
+  obtain ⟨C₁, hC₁⟩ := W₁.exists_variableChange_isShortNF
+  obtain ⟨C₂, hC₂⟩ := W₂.exists_variableChange_isShortNF
+  haveI hs₁ : (C₁ • W₁).HasSplitMultiplicativeReduction 𝒪[k] :=
+    WeierstrassCurve.HasSplitMultiplicativeReduction.smul W₁ C₁
+  haveI hs₂ : (C₂ • W₂).HasSplitMultiplicativeReduction 𝒪[k] :=
+    WeierstrassCurve.HasSplitMultiplicativeReduction.smul W₂ C₂
+  -- the `j`-invariants of the short models agree
+  have hj' : (C₁ • W₁).j = (C₂ • W₂).j := by
+    rw [WeierstrassCurve.variableChange_j, WeierstrassCurve.variableChange_j, hj]
+  -- notation for the short coefficients
+  set A₁ := (C₁ • W₁).a₄ with hA₁def
+  set B₁ := (C₁ • W₁).a₆ with hB₁def
+  set A₂ := (C₂ • W₂).a₄ with hA₂def
+  set B₂ := (C₂ • W₂).a₆ with hB₂def
+  -- `c₄` is a unit for split multiplicative reduction, so `Aᵢ ≠ 0`
+  have hc₄ : ∀ (W : WeierstrassCurve k) [W.IsElliptic]
+      [W.HasSplitMultiplicativeReduction 𝒪[k]], W.c₄ ≠ 0 := by
+    intro W _ _ h0
+    have h1 := W.valuation_c₄_eq_one
+    rw [h0, map_zero] at h1
+    exact zero_ne_one h1
+  have hA₁0 : A₁ ≠ 0 := by
+    intro h0
+    exact hc₄ (C₁ • W₁) (by rw [(C₁ • W₁).c₄_of_isShortNF, ← hA₁def, h0, mul_zero])
+  have hA₂0 : A₂ ≠ 0 := by
+    intro h0
+    exact hc₄ (C₂ • W₂) (by rw [(C₂ • W₂).c₄_of_isShortNF, ← hA₂def, h0, mul_zero])
+  -- the discriminants are nonzero and `j = Δ⁻¹c₄³`
+  have hΔ : ∀ (W : WeierstrassCurve k) [W.IsElliptic], W.Δ ≠ 0 := by
+    intro W _ h0
+    have h1 := W.valuation_Δ_ne_zero
+    rw [h0, map_zero] at h1
+    exact h1 rfl
+  have hjeq : ∀ (W : WeierstrassCurve k) [W.IsElliptic],
+      W.j = (W.Δ)⁻¹ * W.c₄ ^ 3 := by
+    intro W _
+    rw [show W.j = (↑(W.Δ'⁻¹) : k) * W.c₄ ^ 3 from rfl,
+      Units.val_inv_eq_inv_val, W.coe_Δ']
+  -- `Bᵢ ≠ 0`: otherwise `j = 1728`, contradicting `1 < |j|`
+  have hB0 : ∀ (W : WeierstrassCurve k) [W.IsElliptic]
+      [W.HasSplitMultiplicativeReduction 𝒪[k]] [W.IsShortNF],
+      W.a₄ ≠ 0 → W.a₆ ≠ 0 := by
+    intro W _ _ _ hA h0
+    have hΔW : W.Δ = -16 * (4 * W.a₄ ^ 3 + 27 * W.a₆ ^ 2) := W.Δ_of_isShortNF
+    have hj1728 : W.j = 1728 := by
+      rw [hjeq W, W.c₄_of_isShortNF, hΔW, h0]
+      field_simp
+      ring
+    have hlt := W.one_lt_valuation_j
+    rw [hj1728, show ((1728 : k)) = ((1728 : ℤ) : k) by norm_num] at hlt
+    exact absurd (lt_of_lt_of_le hlt (valuation_intCast_le_one 1728))
+      (lt_irrefl _)
+  have hB₁0 : B₁ ≠ 0 := hB0 (C₁ • W₁) hA₁0
+  have hB₂0 : B₂ ≠ 0 := hB0 (C₂ • W₂) hA₂0
+  -- the cross-multiplied `j`-equation
+  have hcross : (C₁ • W₁).c₄ ^ 3 * (C₂ • W₂).Δ =
+      (C₂ • W₂).c₄ ^ 3 * (C₁ • W₁).Δ := by
+    have h1 := hjeq (C₁ • W₁)
+    have h2 := hjeq (C₂ • W₂)
+    rw [h1, h2, inv_mul_eq_div, inv_mul_eq_div,
+      div_eq_div_iff (hΔ (C₁ • W₁)) (hΔ (C₂ • W₂))] at hj'
+    exact hj'
+  -- extract the fundamental relation `A₁³B₂² = A₂³B₁²`
+  have hkey : A₁ ^ 3 * B₂ ^ 2 = A₂ ^ 3 * B₁ ^ 2 := by
+    rw [(C₁ • W₁).c₄_of_isShortNF, (C₂ • W₂).c₄_of_isShortNF,
+      (C₁ • W₁).Δ_of_isShortNF, (C₂ • W₂).Δ_of_isShortNF,
+      ← hA₁def, ← hB₁def, ← hA₂def, ← hB₂def] at hcross
+    have h27 : ((27 : k) * ((-48 : k) ^ 3 * (-16 : k))) ≠ 0 := by norm_num
+    apply mul_left_cancel₀ h27
+    linear_combination hcross
+  -- the twisting scalar
+  set w := (B₂ * A₁) / (B₁ * A₂) with hwdef
+  have hw0 : w ≠ 0 :=
+    div_ne_zero (mul_ne_zero hB₂0 hA₁0) (mul_ne_zero hB₁0 hA₂0)
+  have hA₂w : A₂ = w ^ 2 * A₁ := by
+    rw [hwdef, div_pow, div_mul_eq_mul_div,
+      eq_div_iff (pow_ne_zero 2 (mul_ne_zero hB₁0 hA₂0))]
+    linear_combination -hkey
+  have hB₂w : B₂ = w ^ 3 * B₁ := by
+    rw [hwdef, div_pow, div_mul_eq_mul_div,
+      eq_div_iff (pow_ne_zero 3 (mul_ne_zero hB₁0 hA₂0))]
+    linear_combination -B₁ * B₂ * hkey
+  -- identify the short models with the explicit quintuples
+  have hS₁eq : (C₁ • W₁) = (⟨0, 0, 0, A₁, B₁⟩ : WeierstrassCurve k) := by
+    refine WeierstrassCurve.ext ?_ ?_ ?_ ?_ ?_
+    · exact (C₁ • W₁).a₁_of_isShortNF
+    · exact (C₁ • W₁).a₂_of_isShortNF
+    · exact (C₁ • W₁).a₃_of_isShortNF
+    · rfl
+    · rfl
+  have hS₂eq : (C₂ • W₂) =
+      (⟨0, 0, 0, w ^ 2 * A₁, w ^ 3 * B₁⟩ : WeierstrassCurve k) := by
+    refine WeierstrassCurve.ext ?_ ?_ ?_ ?_ ?_
+    · exact (C₂ • W₂).a₁_of_isShortNF
+    · exact (C₂ • W₂).a₂_of_isShortNF
+    · exact (C₂ • W₂).a₃_of_isShortNF
+    · exact hA₂w
+    · exact hB₂w
+  haveI i₁ :
+      (⟨0, 0, 0, A₁, B₁⟩ : WeierstrassCurve k).HasSplitMultiplicativeReduction
+        𝒪[k] := hS₁eq ▸ hs₁
+  haveI i₂ : (⟨0, 0, 0, w ^ 2 * A₁, w ^ 3 * B₁⟩ :
+      WeierstrassCurve k).HasSplitMultiplicativeReduction 𝒪[k] := hS₂eq ▸ hs₂
+  -- the arithmetic core: `w` is a square
+  obtain ⟨v, hv⟩ := WeierstrassCurve.isSquare_of_scaled_split A₁ B₁ w hw0
+  have hv0 : v ≠ 0 := by
+    rintro rfl
+    exact hw0 (by rw [hv, mul_zero])
+  -- scaling by `v⁻¹` carries the first short model to the second
+  set Cv : VariableChange k := ⟨(Units.mk0 v hv0)⁻¹, 0, 0, 0⟩ with hCvdef
+  have hCv : Cv • (C₁ • W₁) = C₂ • W₂ := by
+    rw [hS₁eq, hS₂eq]
+    refine WeierstrassCurve.ext ?_ ?_ ?_ ?_ ?_ <;>
+      simp only [WeierstrassCurve.variableChange_def, hCvdef, hv, inv_inv,
+        Units.val_mk0] <;>
+      field_simp <;>
+      ring
+  exact ⟨C₂⁻¹ * (Cv * C₁), by
+    rw [mul_smul, mul_smul, hCv, inv_smul_smul]⟩
 
 omit [E.IsMinimal 𝒪[k]] in
 /-- Tate's theorem (Silverman, ATAEC V.5.3, derived from the two leaves
 above and the PROVEN reduction type of the Tate curve): an elliptic
 curve with split multiplicative reduction is isomorphic, by a change of
 Weierstrass coordinates, to the Tate curve of its Tate parameter. -/
-theorem WeierstrassCurve.exists_variableChange_tateCurve :
+theorem WeierstrassCurve.exists_variableChange_tateCurve [CharZero k] :
     ∃ C : VariableChange k, C • tateCurve E.q = E := by
   obtain ⟨hell, hj⟩ := E.isElliptic_tateCurve_and_j
   haveI := hell
@@ -1098,7 +1258,7 @@ uniformisations `E(l) ≅ lˣ/qᶻ` over the finite subextensions `l/k` of `Ω`;
 `k`-linearity of every `σ ∈ Gal(Ω/k)` makes the sign choice `σ`-stable, cf.
 `tateEquiv_galois` in the upstream FLT file). Stated as an existential Prop because
 the isomorphism is canonical only up to negation. -/
-theorem WeierstrassCurve.exists_tateEquivSepClosure :
+theorem WeierstrassCurve.exists_tateEquivSepClosure [CharZero k] :
     ∃ e : Additive (Ωˣ ⧸ Subgroup.zpowers (E.qUnitSepClosure Ω)) ≃+ ((E⁄Ω)).Point,
       ∀ (σ : Ω ≃ₐ[k] Ω) (u : Ωˣ),
         WeierstrassCurve.Affine.Point.map (W' := E) σ.toAlgHom (e (Additive.ofMul ↑u)) =

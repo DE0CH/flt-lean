@@ -115,14 +115,37 @@ entries file). To add/remove/annotate a node, edit
                                                     - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the
                                                       j-identity leaf, the descent leaf, and the
                                                       PROVEN split reduction type of the Tate curve.
-                                                        - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-
-                                                          multiplicative curves over k with equal j
-                                                          are k-isomorphic — over the separable
-                                                          closure by mathlib's
-                                                          exists_variableChange_of_j_eq, and the ±1
-                                                          descent cocycle is trivial because both
-                                                          reductions are split (the isomorphism
-                                                          matches the rational node tangents).
+                                                        - ✅· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — split multiplicative curves with equal j
+                                                          differ by a variable change over k, now
+                                                          DERIVED (short normal forms via mathlib
+                                                          exists_variableChange_isShortNF in char 0;
+                                                          A≠0 from unit c₄, B≠0 from |j|>1 vs
+                                                          j=1728; equal j gives A₁³B₂²=A₂³B₁², so w
+                                                          := B₂A₁/(B₁A₂) realizes the second short
+                                                          model as the w-scaling twist of the first;
+                                                          the two new leaves make w a square and the
+                                                          reduction type variable-change-invariant,
+                                                          and scaling by √w⁻¹ concludes).
+                                                            - ❌· `WeierstrassCurve.HasSplitMultiplicativeReduction.smul` — invariance of split multiplicative
+                                                              reduction under change of Weierstrass
+                                                              coordinates over k: minimal integral
+                                                              models of W and C•W differ by a unit-
+                                                              scaling integral variable change,
+                                                              under which the reduced node
+                                                              polynomial changes by a linear
+                                                              substitution and a unit-square
+                                                              scaling, preserving splitness over the
+                                                              residue field.
+                                                            - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3
+                                                              descent: if y²=x³+Ax+B and its scaling
+                                                              twist y²=x³+w²Ax+w³B both have split
+                                                              multiplicative reduction over the
+                                                              local field k then w is a square —
+                                                              odd-valuation w gives a ramified twist
+                                                              with additive reduction, unit-
+                                                              nonsquare w gives the unramified twist
+                                                              which flips the Galois action on the
+                                                              tangent directions at the node.
                                                     - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation:
                                                       `E_q(Ω) ≅ Ωˣ/q^ℤ` Galois-equivariantly ON THE
                                                       NOSE, by the explicit series `X(u,q)`,
@@ -152,15 +175,42 @@ entries file). To add/remove/annotate a node, edit
                                                           j-identity leaf, the descent leaf, and the
                                                           PROVEN split reduction type of the Tate
                                                           curve.
-                                                            - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two
-                                                              split-multiplicative curves over k
-                                                              with equal j are k-isomorphic — over
-                                                              the separable closure by mathlib's
-                                                              exists_variableChange_of_j_eq, and the
-                                                              ±1 descent cocycle is trivial because
-                                                              both reductions are split (the
-                                                              isomorphism matches the rational node
-                                                              tangents).
+                                                            - ✅· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — split multiplicative curves with equal
+                                                              j differ by a variable change over k,
+                                                              now DERIVED (short normal forms via
+                                                              mathlib
+                                                              exists_variableChange_isShortNF in
+                                                              char 0; A≠0 from unit c₄, B≠0 from
+                                                              |j|>1 vs j=1728; equal j gives
+                                                              A₁³B₂²=A₂³B₁², so w := B₂A₁/(B₁A₂)
+                                                              realizes the second short model as the
+                                                              w-scaling twist of the first; the two
+                                                              new leaves make w a square and the
+                                                              reduction type variable-change-
+                                                              invariant, and scaling by √w⁻¹
+                                                              concludes).
+                                                                - ❌· `WeierstrassCurve.HasSplitMultiplicativeReduction.smul` — invariance of split multiplicative
+                                                                  reduction under change of
+                                                                  Weierstrass coordinates over k:
+                                                                  minimal integral models of W and
+                                                                  C•W differ by a unit-scaling
+                                                                  integral variable change, under
+                                                                  which the reduced node polynomial
+                                                                  changes by a linear substitution
+                                                                  and a unit-square scaling,
+                                                                  preserving splitness over the
+                                                                  residue field.
+                                                                - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3
+                                                                  descent: if y²=x³+Ax+B and its
+                                                                  scaling twist y²=x³+w²Ax+w³B both
+                                                                  have split multiplicative
+                                                                  reduction over the local field k
+                                                                  then w is a square — odd-valuation
+                                                                  w gives a ramified twist with
+                                                                  additive reduction, unit-nonsquare
+                                                                  w gives the unramified twist which
+                                                                  flips the Galois action on the
+                                                                  tangent directions at the node.
                                                         - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
                                                           uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ` Galois-
                                                           equivariantly ON THE NOSE, by the explicit
@@ -204,16 +254,45 @@ entries file). To add/remove/annotate a node, edit
                                                               the j-identity leaf, the descent leaf,
                                                               and the PROVEN split reduction type of
                                                               the Tate curve.
-                                                                - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3:
-                                                                  two split-multiplicative curves
-                                                                  over k with equal j are
-                                                                  k-isomorphic — over the separable
-                                                                  closure by mathlib's
-                                                                  exists_variableChange_of_j_eq, and
-                                                                  the ±1 descent cocycle is trivial
-                                                                  because both reductions are split
-                                                                  (the isomorphism matches the
-                                                                  rational node tangents).
+                                                                - ✅· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — split multiplicative curves with
+                                                                  equal j differ by a variable
+                                                                  change over k, now DERIVED (short
+                                                                  normal forms via mathlib
+                                                                  exists_variableChange_isShortNF in
+                                                                  char 0; A≠0 from unit c₄, B≠0 from
+                                                                  |j|>1 vs j=1728; equal j gives
+                                                                  A₁³B₂²=A₂³B₁², so w := B₂A₁/(B₁A₂)
+                                                                  realizes the second short model as
+                                                                  the w-scaling twist of the first;
+                                                                  the two new leaves make w a square
+                                                                  and the reduction type variable-
+                                                                  change-invariant, and scaling by
+                                                                  √w⁻¹ concludes).
+                                                                    - ❌· `WeierstrassCurve.HasSplitMultiplicativeReduction.smul` — invariance of split
+                                                                      multiplicative reduction under
+                                                                      change of Weierstrass
+                                                                      coordinates over k: minimal
+                                                                      integral models of W and C•W
+                                                                      differ by a unit-scaling
+                                                                      integral variable change,
+                                                                      under which the reduced node
+                                                                      polynomial changes by a linear
+                                                                      substitution and a unit-square
+                                                                      scaling, preserving splitness
+                                                                      over the residue field.
+                                                                    - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the
+                                                                      V.5.3 descent: if y²=x³+Ax+B
+                                                                      and its scaling twist
+                                                                      y²=x³+w²Ax+w³B both have split
+                                                                      multiplicative reduction over
+                                                                      the local field k then w is a
+                                                                      square — odd-valuation w gives
+                                                                      a ramified twist with additive
+                                                                      reduction, unit-nonsquare w
+                                                                      gives the unramified twist
+                                                                      which flips the Galois action
+                                                                      on the tangent directions at
+                                                                      the node.
                                                             - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
                                                               uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
                                                               Galois-equivariantly ON THE NOSE, by
@@ -247,18 +326,47 @@ entries file). To add/remove/annotate a node, edit
                                                                   from the j-identity leaf, the
                                                                   descent leaf, and the PROVEN split
                                                                   reduction type of the Tate curve.
-                                                                    - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate
-                                                                      V.5.3: two split-
-                                                                      multiplicative curves over k
-                                                                      with equal j are k-isomorphic
-                                                                      — over the separable closure
-                                                                      by mathlib's
-                                                                      exists_variableChange_of_j_eq,
-                                                                      and the ±1 descent cocycle is
-                                                                      trivial because both
-                                                                      reductions are split (the
-                                                                      isomorphism matches the
-                                                                      rational node tangents).
+                                                                    - ✅· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — split multiplicative curves
+                                                                      with equal j differ by a
+                                                                      variable change over k, now
+                                                                      DERIVED (short normal forms
+                                                                      via mathlib exists_variableCha
+                                                                      nge_isShortNF in char 0; A≠0
+                                                                      from unit c₄, B≠0 from |j|>1
+                                                                      vs j=1728; equal j gives
+                                                                      A₁³B₂²=A₂³B₁², so w :=
+                                                                      B₂A₁/(B₁A₂) realizes the
+                                                                      second short model as the
+                                                                      w-scaling twist of the first;
+                                                                      the two new leaves make w a
+                                                                      square and the reduction type
+                                                                      variable-change-invariant, and
+                                                                      scaling by √w⁻¹ concludes).
+                                                                        - ❌· `WeierstrassCurve.HasSplitMultiplicativeReduction.smul` — invariance of split
+                                                                          multiplicative reduction under
+                                                                          change of Weierstrass
+                                                                          coordinates over k: minimal
+                                                                          integral models of W and C•W
+                                                                          differ by a unit-scaling
+                                                                          integral variable change,
+                                                                          under which the reduced node
+                                                                          polynomial changes by a linear
+                                                                          substitution and a unit-square
+                                                                          scaling, preserving splitness
+                                                                          over the residue field.
+                                                                        - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the
+                                                                          V.5.3 descent: if y²=x³+Ax+B
+                                                                          and its scaling twist
+                                                                          y²=x³+w²Ax+w³B both have split
+                                                                          multiplicative reduction over
+                                                                          the local field k then w is a
+                                                                          square — odd-valuation w gives
+                                                                          a ramified twist with additive
+                                                                          reduction, unit-nonsquare w
+                                                                          gives the unramified twist
+                                                                          which flips the Galois action
+                                                                          on the tangent directions at
+                                                                          the node.
                                                                 - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
                                                                   uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
                                                                   Galois-equivariantly ON THE NOSE,
@@ -374,12 +482,30 @@ entries file). To add/remove/annotate a node, edit
                                         - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity
                                           leaf, the descent leaf, and the PROVEN split reduction
                                           type of the Tate curve.
-                                            - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-
-                                              multiplicative curves over k with equal j are
-                                              k-isomorphic — over the separable closure by mathlib's
-                                              exists_variableChange_of_j_eq, and the ±1 descent
-                                              cocycle is trivial because both reductions are split
-                                              (the isomorphism matches the rational node tangents).
+                                            - ✅· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — split multiplicative curves with equal j differ by a
+                                              variable change over k, now DERIVED (short normal
+                                              forms via mathlib exists_variableChange_isShortNF in
+                                              char 0; A≠0 from unit c₄, B≠0 from |j|>1 vs j=1728;
+                                              equal j gives A₁³B₂²=A₂³B₁², so w := B₂A₁/(B₁A₂)
+                                              realizes the second short model as the w-scaling twist
+                                              of the first; the two new leaves make w a square and
+                                              the reduction type variable-change-invariant, and
+                                              scaling by √w⁻¹ concludes).
+                                                - ❌· `WeierstrassCurve.HasSplitMultiplicativeReduction.smul` — invariance of split multiplicative reduction under
+                                                  change of Weierstrass coordinates over k: minimal
+                                                  integral models of W and C•W differ by a unit-
+                                                  scaling integral variable change, under which the
+                                                  reduced node polynomial changes by a linear
+                                                  substitution and a unit-square scaling, preserving
+                                                  splitness over the residue field.
+                                                - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3 descent: if
+                                                  y²=x³+Ax+B and its scaling twist y²=x³+w²Ax+w³B
+                                                  both have split multiplicative reduction over the
+                                                  local field k then w is a square — odd-valuation w
+                                                  gives a ramified twist with additive reduction,
+                                                  unit-nonsquare w gives the unramified twist which
+                                                  flips the Galois action on the tangent directions
+                                                  at the node.
                                         - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω) ≅
                                           Ωˣ/q^ℤ` Galois-equivariantly ON THE NOSE, by the explicit
                                           series `X(u,q)`, `Y(u,q)` (whose Weierstrass equation is
@@ -403,13 +529,33 @@ entries file). To add/remove/annotate a node, edit
                                             - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity
                                               leaf, the descent leaf, and the PROVEN split reduction
                                               type of the Tate curve.
-                                                - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-
-                                                  multiplicative curves over k with equal j are
-                                                  k-isomorphic — over the separable closure by
-                                                  mathlib's exists_variableChange_of_j_eq, and the
-                                                  ±1 descent cocycle is trivial because both
-                                                  reductions are split (the isomorphism matches the
-                                                  rational node tangents).
+                                                - ✅· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — split multiplicative curves with equal j differ by
+                                                  a variable change over k, now DERIVED (short
+                                                  normal forms via mathlib
+                                                  exists_variableChange_isShortNF in char 0; A≠0
+                                                  from unit c₄, B≠0 from |j|>1 vs j=1728; equal j
+                                                  gives A₁³B₂²=A₂³B₁², so w := B₂A₁/(B₁A₂) realizes
+                                                  the second short model as the w-scaling twist of
+                                                  the first; the two new leaves make w a square and
+                                                  the reduction type variable-change-invariant, and
+                                                  scaling by √w⁻¹ concludes).
+                                                    - ❌· `WeierstrassCurve.HasSplitMultiplicativeReduction.smul` — invariance of split multiplicative reduction
+                                                      under change of Weierstrass coordinates over
+                                                      k: minimal integral models of W and C•W differ
+                                                      by a unit-scaling integral variable change,
+                                                      under which the reduced node polynomial
+                                                      changes by a linear substitution and a unit-
+                                                      square scaling, preserving splitness over the
+                                                      residue field.
+                                                    - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3 descent: if
+                                                      y²=x³+Ax+B and its scaling twist
+                                                      y²=x³+w²Ax+w³B both have split multiplicative
+                                                      reduction over the local field k then w is a
+                                                      square — odd-valuation w gives a ramified
+                                                      twist with additive reduction, unit-nonsquare
+                                                      w gives the unramified twist which flips the
+                                                      Galois action on the tangent directions at the
+                                                      node.
                                             - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω)
                                               ≅ Ωˣ/q^ℤ` Galois-equivariantly ON THE NOSE, by the
                                               explicit series `X(u,q)`, `Y(u,q)` (whose Weierstrass
@@ -461,12 +607,27 @@ entries file). To add/remove/annotate a node, edit
                                 - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity leaf, the
                                   descent leaf, and the PROVEN split reduction type of the Tate
                                   curve.
-                                    - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-multiplicative
-                                      curves over k with equal j are k-isomorphic — over the
-                                      separable closure by mathlib's exists_variableChange_of_j_eq,
-                                      and the ±1 descent cocycle is trivial because both reductions
-                                      are split (the isomorphism matches the rational node
-                                      tangents).
+                                    - ✅· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — split multiplicative curves with equal j differ by a variable
+                                      change over k, now DERIVED (short normal forms via mathlib
+                                      exists_variableChange_isShortNF in char 0; A≠0 from unit c₄,
+                                      B≠0 from |j|>1 vs j=1728; equal j gives A₁³B₂²=A₂³B₁², so w :=
+                                      B₂A₁/(B₁A₂) realizes the second short model as the w-scaling
+                                      twist of the first; the two new leaves make w a square and the
+                                      reduction type variable-change-invariant, and scaling by √w⁻¹
+                                      concludes).
+                                        - ❌· `WeierstrassCurve.HasSplitMultiplicativeReduction.smul` — invariance of split multiplicative reduction under change
+                                          of Weierstrass coordinates over k: minimal integral models
+                                          of W and C•W differ by a unit-scaling integral variable
+                                          change, under which the reduced node polynomial changes by
+                                          a linear substitution and a unit-square scaling,
+                                          preserving splitness over the residue field.
+                                        - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3 descent: if y²=x³+Ax+B
+                                          and its scaling twist y²=x³+w²Ax+w³B both have split
+                                          multiplicative reduction over the local field k then w is
+                                          a square — odd-valuation w gives a ramified twist with
+                                          additive reduction, unit-nonsquare w gives the unramified
+                                          twist which flips the Galois action on the tangent
+                                          directions at the node.
                                 - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
                                   Galois-equivariantly ON THE NOSE, by the explicit series `X(u,q)`,
                                   `Y(u,q)` (whose Weierstrass equation is proven in
@@ -486,12 +647,27 @@ entries file). To add/remove/annotate a node, edit
                                 - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity leaf, the
                                   descent leaf, and the PROVEN split reduction type of the Tate
                                   curve.
-                                    - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-multiplicative
-                                      curves over k with equal j are k-isomorphic — over the
-                                      separable closure by mathlib's exists_variableChange_of_j_eq,
-                                      and the ±1 descent cocycle is trivial because both reductions
-                                      are split (the isomorphism matches the rational node
-                                      tangents).
+                                    - ✅· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — split multiplicative curves with equal j differ by a variable
+                                      change over k, now DERIVED (short normal forms via mathlib
+                                      exists_variableChange_isShortNF in char 0; A≠0 from unit c₄,
+                                      B≠0 from |j|>1 vs j=1728; equal j gives A₁³B₂²=A₂³B₁², so w :=
+                                      B₂A₁/(B₁A₂) realizes the second short model as the w-scaling
+                                      twist of the first; the two new leaves make w a square and the
+                                      reduction type variable-change-invariant, and scaling by √w⁻¹
+                                      concludes).
+                                        - ❌· `WeierstrassCurve.HasSplitMultiplicativeReduction.smul` — invariance of split multiplicative reduction under change
+                                          of Weierstrass coordinates over k: minimal integral models
+                                          of W and C•W differ by a unit-scaling integral variable
+                                          change, under which the reduced node polynomial changes by
+                                          a linear substitution and a unit-square scaling,
+                                          preserving splitness over the residue field.
+                                        - ❌· `WeierstrassCurve.isSquare_of_scaled_split` — the arithmetic core of the V.5.3 descent: if y²=x³+Ax+B
+                                          and its scaling twist y²=x³+w²Ax+w³B both have split
+                                          multiplicative reduction over the local field k then w is
+                                          a square — odd-valuation w gives a ramified twist with
+                                          additive reduction, unit-nonsquare w gives the unramified
+                                          twist which flips the Galois action on the tangent
+                                          directions at the node.
                                 - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
                                   Galois-equivariantly ON THE NOSE, by the explicit series `X(u,q)`,
                                   `Y(u,q)` (whose Weierstrass equation is proven in
