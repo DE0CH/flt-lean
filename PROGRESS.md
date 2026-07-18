@@ -273,7 +273,28 @@ entries file). To add/remove/annotate a node, edit
                                                                           to (RatFunc-in-u,v)⟦q⟧ by iterating the one-variable descent
                                                                           coefficientwise) yield the cleared chord identities; the
                                                                           tangent identities analogously from the doubling formula.
-                                                                          WIP policy: develop as PRIVATE lemmas in
+                                                                                                                                          REFINED (2026-07-18, hand-verified): the CLEARED x-part
+                                                                    needs NO ℘-fiber/order theory. G(z) := (℘(z+w)+℘z+℘w)(℘z−℘w)²
+                                                                    − ¼(℘'z−℘'w)²: (i) z ≡ −w poles cancel AUTOMATICALLY (the
+                                                                    square (℘z−℘w)² has zero order ≥ 2 against ℘(z+w)'s pole
+                                                                    order 2 — no ℘'(w) ≠ 0 input needed); (ii) at z ∈ L, with
+                                                                    t := z−l, ℘ = t⁻² + E, ℘' = −2t⁻³ + E', E = c₂t² + c₄t⁴ + …
+                                                                    (E(l) = 0, E even; c₂ = g₂/20 = 3G₄, c₄ = g₃/28 = 5G₆ from
+                                                                    coeff_weierstrassPExceptSeries/sumInvPow), and S := ℘(z+w)
+                                                                    analytic with S(l) = W := ℘w, S'(l) = W' (periodicity), the
+                                                                    Laurent coefficients vanish through order t⁰:
+                                                                    t⁻⁶: 1−1; t⁻⁴: 2W−2W; t⁻³: W'−W'; t⁻²: ½℘''w − 3W² + 5c₂ =
+                                                                    (3W²−g₂/4) − 3W² + g₂/4 = 0 (℘'' = 6℘²−g₂/2); t⁻¹:
+                                                                    (1/6)℘'''w − 2WW' = 0 (℘''' = 12℘℘'); t⁰: (1/24)℘''''w −
+                                                                    W℘''w + 2W³ + 7c₄ − ¼W'² = −g₃/4 + 7·g₃/28 = 0 (℘'''' =
+                                                                    120℘³−18g₂℘−12g₃, ℘'² = 4℘³−g₂℘−g₃). Hence the ite-patched G
+                                                                    is entire + doubly periodic + bounded ⇒ ≡ its lattice-point
+                                                                    value 0 (mathlib's relation_eq_zero pattern verbatim): the
+                                                                    cleared addition identity holds identically, INCLUDING the
+                                                                    constant, with no second evaluation point. The y-part and the
+                                                                    tangent (z = w) identities follow by the same scheme with
+                                                                    their own finite Laurent tables.
+  WIP policy: develop as PRIVATE lemmas in
                                                                           TateCurveConstruction (private is exempt from the
                                                                           free-floating sweep), de-privatize on consumption.
                                                                           (sorry node):
