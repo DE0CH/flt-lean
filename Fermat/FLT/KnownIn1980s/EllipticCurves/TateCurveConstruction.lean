@@ -1600,18 +1600,318 @@ private lemma analyticAt_addRelXRaw (L : PeriodPair) (w : ℂ)
   unfold addRelXRaw
   fun_prop
 
-set_option warn.sorry false in
-/-- **The Laurent tail of the cleared addition relation at the origin**
-(private WIP sorry node — the deep cancellation table recorded in
-`PROGRESS.md` at the `bilateral_chordX_cleared` node): all Laurent
-coefficients through order `t⁰` vanish, so the raw relation tends to `0`
-along the punctured neighborhood of `0`. This is both the removability
-of the singularity at lattice points and the pinning of the Liouville
-constant. -/
+/-- `℘'` is not identically zero away from the lattice: near `0` it is
+dominated by the pole `−2/z³` coming from `℘'[L] z = ℘'[L − 0] z − 2/z³`,
+while `℘'[L − 0]` is continuous at `0`. -/
+private lemma exists_derivWeierstrassP_ne_zero (L : PeriodPair) :
+    ∃ z, z ∉ L.lattice ∧ ℘'[L] z ≠ 0 := by
+  by_contra hall
+  push Not at hall
+  have h0 : (0 : ℂ) ∈ L.lattice := L.lattice.zero_mem
+  have hcont : ContinuousAt ℘'[L - (0 : ℂ)] 0 :=
+    (L.analyticAt_derivWeierstrassPExcept 0).continuousAt
+  -- the Except part is eventually bounded near `0`
+  have hbdd : ∀ᶠ z in 𝓝 (0 : ℂ),
+      ‖℘'[L - (0 : ℂ)] z‖ < ‖℘'[L - (0 : ℂ)] 0‖ + 1 :=
+    hcont.norm.eventually_lt_const
+      (by linarith [norm_nonneg (℘'[L - (0 : ℂ)] 0)])
+  -- the pole term eventually beats that bound
+  have hpole : ∀ᶠ z in 𝓝[≠] (0 : ℂ),
+      ‖℘'[L - (0 : ℂ)] 0‖ + 1 < ‖(2 : ℂ) / z ^ 3‖ := by
+    have hcube : Filter.Tendsto (fun z : ℂ => z ^ 3) (𝓝[≠] (0 : ℂ))
+        (𝓝[≠] (0 : ℂ)) := by
+      rw [tendsto_nhdsWithin_iff]
+      constructor
+      · have := ((continuous_pow 3).tendsto (0 : ℂ)).mono_left
+          (nhdsWithin_le_nhds (s := {(0 : ℂ)}ᶜ))
+        simpa using this
+      · exact eventually_mem_nhdsWithin.mono fun z hz => pow_ne_zero 3 hz
+    have hcob : Filter.Tendsto (fun z : ℂ => (2 : ℂ) / z ^ 3)
+        (𝓝[≠] (0 : ℂ)) (Bornology.cobounded ℂ) := by
+      have h2 := (Filter.tendsto_mul_left_cobounded
+        (two_ne_zero (α := ℂ))).comp
+        ((Filter.tendsto_inv₀_nhdsNE_zero (α := ℂ)).comp hcube)
+      simpa [Function.comp_def, div_eq_mul_inv] using h2
+    exact (tendsto_norm_atTop_iff_cobounded.mpr hcob).eventually_gt_atTop _
+  -- combine on the punctured neighborhood and extract a witness
+  have hlat : ∀ᶠ z in 𝓝 (0 : ℂ), z ∈ ((↑L.lattice : Set ℂ) \ {0})ᶜ :=
+    L.compl_lattice_sdiff_singleton_mem_nhds 0
+  obtain ⟨z, hz1, hz2, hz3, hz4⟩ :=
+    ((hlat.filter_mono nhdsWithin_le_nhds).and
+      ((hbdd.filter_mono nhdsWithin_le_nhds).and
+        (hpole.and eventually_mem_nhdsWithin))).exists
+  -- `z ∉ L.lattice` (it avoids `L \ {0}` and is nonzero)
+  have hz0 : z ≠ 0 := hz4
+  have hzL : z ∉ L.lattice := by
+    intro hmem
+    exact hz1 ⟨hmem, hz0⟩
+  -- `℘'[L − 0] z = ℘' z + 2/z³ = 2/z³` since `℘' z = 0` by `hall`
+  have hdef := L.derivWeierstrassPExcept_def ⟨0, h0⟩ z
+  have hcoe : ((⟨0, h0⟩ : L.lattice) : ℂ) = 0 := rfl
+  rw [hcoe, sub_zero, hall z hzL, zero_add] at hdef
+  -- contradiction with the norm bounds
+  rw [hdef] at hz2
+  exact absurd hz2 (not_lt.mpr (le_of_lt hz3))
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **`℘'' = 6℘² − g₂/2`** away from the lattice: differentiate
+`derivWeierstrassP_sq`, cancel `℘'` where it is nonzero, and extend
+across the isolated zeros of `℘'` by the identity theorem (`latticeᶜ`
+is preconnected as the complement of a countable set in `ℂ`). -/
+private theorem deriv_derivWeierstrassP_eq (L : PeriodPair) {z : ℂ}
+    (hz : z ∉ L.lattice) :
+    deriv ℘'[L] z = 6 * ℘[L] z ^ 2 - L.g₂ / 2 := by
+  have hUopen : IsOpen ((↑L.lattice : Set ℂ)ᶜ) :=
+    L.isClosed_lattice.isOpen_compl
+  -- both sides analytic on `latticeᶜ`
+  have hf : AnalyticOnNhd ℂ (deriv ℘'[L]) (↑L.lattice : Set ℂ)ᶜ :=
+    L.analyticOnNhd_derivWeierstrassP.deriv
+  have hg : AnalyticOnNhd ℂ (fun x => 6 * ℘[L] x ^ 2 - L.g₂ / 2)
+      (↑L.lattice : Set ℂ)ᶜ := by
+    intro x hx
+    have hP := L.analyticOnNhd_weierstrassP x hx
+    fun_prop
+  -- the multiplied identity `2℘'·(℘')' = 12℘²℘' − g₂℘'` at every
+  -- non-lattice point, from differentiating `℘'² = 4℘³ − g₂℘ − g₃`
+  have hmul : ∀ x ∈ (↑L.lattice : Set ℂ)ᶜ,
+      2 * ℘'[L] x * deriv ℘'[L] x
+        = 12 * ℘[L] x ^ 2 * ℘'[L] x - L.g₂ * ℘'[L] x := by
+    intro x hx
+    have hP'x : HasDerivAt ℘'[L] (deriv ℘'[L] x) x :=
+      (L.analyticOnNhd_derivWeierstrassP x hx).differentiableAt.hasDerivAt
+    have hPx : HasDerivAt ℘[L] (℘'[L] x) x := by
+      have h1 :=
+        (L.analyticOnNhd_weierstrassP x hx).differentiableAt.hasDerivAt
+      rwa [L.deriv_weierstrassP] at h1
+    -- the two functions agree near `x`, so the derivatives agree
+    have hev : (fun y => ℘'[L] y ^ 2)
+        =ᶠ[𝓝 x] (fun y => 4 * ℘[L] y ^ 3 - L.g₂ * ℘[L] y - L.g₃) := by
+      filter_upwards [hUopen.mem_nhds hx] with y hy
+      exact L.derivWeierstrassP_sq y hy
+    have heq := (hP'x.pow 2).unique
+      (((((hPx.pow 3).const_mul (4 : ℂ)).sub
+        (hPx.const_mul L.g₂)).sub_const L.g₃).congr_of_eventuallyEq hev)
+    push_cast at heq
+    linear_combination heq
+  -- a point where `℘'` does not vanish
+  obtain ⟨z₀, hz₀L, hz₀ne⟩ := exists_derivWeierstrassP_ne_zero L
+  -- near it, cancel `2℘'` to get the clean identity eventually
+  have hev₀ : deriv ℘'[L] =ᶠ[𝓝 z₀] fun x => 6 * ℘[L] x ^ 2 - L.g₂ / 2 := by
+    have hcont : ContinuousAt ℘'[L] z₀ :=
+      (L.analyticOnNhd_derivWeierstrassP z₀ hz₀L).continuousAt
+    have hne : ∀ᶠ x in 𝓝 z₀, ℘'[L] x ≠ 0 :=
+      hcont.eventually_ne hz₀ne
+    filter_upwards [hUopen.mem_nhds hz₀L, hne] with x hxU hxne
+    have h1 := hmul x hxU
+    have h2 : (2 : ℂ) * ℘'[L] x ≠ 0 := by
+      simp [hxne]
+    apply mul_left_cancel₀ h2
+    rw [h1]
+    ring
+  -- `latticeᶜ` is preconnected (complement of a countable set)
+  have hcnt : (↑L.lattice : Set ℂ).Countable := by
+    have hC : Countable L.lattice :=
+      L.latticeEquivProd.toEquiv.countable_iff.mpr inferInstance
+    exact Set.countable_coe_iff.mp hC
+  have hpre : IsPreconnected ((↑L.lattice : Set ℂ)ᶜ) := by
+    have h2 : 1 < Module.rank ℝ ℂ := by
+      rw [rank_real_complex]
+      norm_num
+    exact (hcnt.isPathConnected_compl_of_one_lt_rank h2).isConnected.isPreconnected
+  exact hf.eqOn_of_preconnected_of_eventuallyEq hg hpre hz₀L hev₀ hz
+
+/-- Third-derivative identity `℘' = 12 ℘ ℘'` away from the lattice
+(differentiate `deriv_derivWeierstrassP_eq`). -/
+private lemma deriv_deriv_derivWeierstrassP (L : PeriodPair) {z : ℂ}
+    (hz : z ∉ L.lattice) :
+    deriv (deriv ℘'[L]) z = 12 * (℘[L] z * ℘'[L] z) := by
+  have hUopen : IsOpen ((↑L.lattice : Set ℂ)ᶜ) := L.isClosed_lattice.isOpen_compl
+  have hev : deriv ℘'[L] =ᶠ[𝓝 z] fun y => 6 * ℘[L] y ^ 2 - L.g₂ / 2 := by
+    filter_upwards [hUopen.mem_nhds hz] with y hy
+    exact deriv_derivWeierstrassP_eq L hy
+  rw [hev.deriv_eq]
+  have hPd : HasDerivAt ℘[L] (℘'[L] z) z := by
+    have h1 := (L.analyticOnNhd_weierstrassP z hz).differentiableAt.hasDerivAt
+    rwa [L.deriv_weierstrassP] at h1
+  have h := (((hPd.pow 2).const_mul (6 : ℂ)).sub_const (L.g₂ / 2)).deriv
+  simp only [Pi.pow_apply] at h
+  rw [h]
+  push_cast
+  ring
+
+/-- Degree-4 Taylor expansion of the shifted `℘` at `0`, with analytic
+remainder: the coefficients are `℘`-derivatives at `w`, computed from the
+differential equation. -/
+private lemma exists_taylorA (L : PeriodPair) {w : ℂ} (hw : w ∉ L.lattice) :
+    ∃ gA : ℂ → ℂ, AnalyticAt ℂ gA 0 ∧ ∀ x : ℂ,
+      ℘[L] (x + w) = ℘[L] w + ℘'[L] w * x
+        + (6 * ℘[L] w ^ 2 - L.g₂ / 2) / 2 * x ^ 2
+        + 12 * ℘[L] w * ℘'[L] w / 6 * x ^ 3
+        + (12 * ℘'[L] w ^ 2 + 72 * ℘[L] w ^ 3 - 6 * L.g₂ * ℘[L] w) / 24 * x ^ 4
+        + x ^ 5 * gA x := by
+  have hUopen : IsOpen ((↑L.lattice : Set ℂ)ᶜ) := L.isClosed_lattice.isOpen_compl
+  have hA : AnalyticAt ℂ (fun x : ℂ => ℘[L] (x + w)) 0 := by
+    have h0 : AnalyticAt ℂ ℘[L] ((0 : ℂ) + w) := by
+      rw [zero_add]; exact L.analyticOnNhd_weierstrassP w hw
+    exact AnalyticAt.comp (g := ℘[L]) (f := fun x : ℂ => x + w) h0 (by fun_prop)
+  obtain ⟨gA, hgA, hsum⟩ := hA.exists_eq_sum_add_pow_mul 5
+  have hid : ∀ i : ℕ, iteratedDeriv i (fun z : ℂ => ℘[L] (z + w)) 0
+      = iteratedDeriv i ℘[L] w := by
+    intro i
+    rw [iteratedDeriv_comp_add_const]
+    simp
+  have h1v : iteratedDeriv 1 ℘[L] w = ℘'[L] w := by
+    rw [iteratedDeriv_one, L.deriv_weierstrassP]
+  have h2f : iteratedDeriv 2 ℘[L] = deriv ℘'[L] := by
+    have h : iteratedDeriv 2 ℘[L] = deriv (iteratedDeriv 1 ℘[L]) :=
+      iteratedDeriv_succ
+    rw [h, iteratedDeriv_one, L.deriv_weierstrassP]
+  have h2v : iteratedDeriv 2 ℘[L] w = 6 * ℘[L] w ^ 2 - L.g₂ / 2 := by
+    rw [h2f]; exact deriv_derivWeierstrassP_eq L hw
+  have h3f : ∀ y : ℂ, y ∉ L.lattice →
+      iteratedDeriv 3 ℘[L] y = 12 * (℘[L] y * ℘'[L] y) := by
+    intro y hy
+    have h : iteratedDeriv 3 ℘[L] = deriv (iteratedDeriv 2 ℘[L]) :=
+      iteratedDeriv_succ
+    rw [h, h2f]
+    exact deriv_deriv_derivWeierstrassP L hy
+  have h3v : iteratedDeriv 3 ℘[L] w = 12 * (℘[L] w * ℘'[L] w) := h3f w hw
+  have h4v : iteratedDeriv 4 ℘[L] w
+      = 12 * ℘'[L] w ^ 2 + 72 * ℘[L] w ^ 3 - 6 * L.g₂ * ℘[L] w := by
+    have h : iteratedDeriv 4 ℘[L] = deriv (iteratedDeriv 3 ℘[L]) :=
+      iteratedDeriv_succ
+    rw [h]
+    have hev3 : iteratedDeriv 3 ℘[L] =ᶠ[𝓝 w]
+        fun y => 12 * (℘[L] y * ℘'[L] y) := by
+      filter_upwards [hUopen.mem_nhds hw] with y hy
+      exact h3f y hy
+    rw [hev3.deriv_eq]
+    have hPd : HasDerivAt ℘[L] (℘'[L] w) w := by
+      have h1 := (L.analyticOnNhd_weierstrassP w hw).differentiableAt.hasDerivAt
+      rwa [L.deriv_weierstrassP] at h1
+    have hP'd : HasDerivAt ℘'[L] (6 * ℘[L] w ^ 2 - L.g₂ / 2) w := by
+      have h1 :=
+        (L.analyticOnNhd_derivWeierstrassP w hw).differentiableAt.hasDerivAt
+      rwa [deriv_derivWeierstrassP_eq L hw] at h1
+    have h := ((hPd.mul hP'd).const_mul (12 : ℂ)).deriv
+    simp only [Pi.mul_apply] at h
+    rw [h]
+    ring
+  refine ⟨gA, hgA, fun x => ?_⟩
+  have hx := hsum x
+  simp only [Finset.sum_range_succ, Finset.sum_range_zero, zero_add,
+    smul_eq_mul, iteratedDeriv_zero, hid 1, hid 2, hid 3, hid 4] at hx
+  rw [h1v, h2v, h3v, h4v] at hx
+  norm_num [Nat.factorial] at hx
+  linear_combination hx
+
+/-- Degree-4 Taylor expansion of `℘[L - 0]` at `0`: the value and odd
+coefficients vanish, the even ones are the Eisenstein numbers
+`g₂/20`, `g₃/28`. -/
+private lemma exists_taylorE (L : PeriodPair) :
+    ∃ gE : ℂ → ℂ, AnalyticAt ℂ gE 0 ∧ ∀ x : ℂ,
+      ℘[L - (0 : ℂ)] x = L.g₂ / 20 * x ^ 2 + L.g₃ / 28 * x ^ 4
+        + x ^ 5 * gE x := by
+  obtain ⟨gE, hgE, hsum⟩ :=
+    (L.analyticAt_weierstrassPExcept 0).exists_eq_sum_add_pow_mul 5
+  have h0 : ℘[L - (0 : ℂ)] 0 = 0 := by
+    show L.weierstrassPExcept 0 0 = 0
+    unfold PeriodPair.weierstrassPExcept
+    convert tsum_zero with l
+    split
+    · rfl
+    · simp [zero_sub]
+  have hn : ∀ n : ℕ, n ≠ 0 → iteratedDeriv n ℘[L - (0 : ℂ)] 0
+      = ((n + 1).factorial : ℂ) * L.G (n + 2) := by
+    intro n hne
+    rw [L.iteratedDeriv_weierstrassPExcept_self 0, if_neg hne, L.sumInvPow_zero]
+  have hG3 : L.G 3 = 0 := L.G_eq_zero_of_odd 3 (by decide)
+  have hG5 : L.G 5 = 0 := L.G_eq_zero_of_odd 5 (by decide)
+  have hG4 : L.G 4 = L.g₂ / 60 := by unfold PeriodPair.g₂; ring
+  have hG6 : L.G 6 = L.g₃ / 140 := by unfold PeriodPair.g₃; ring
+  refine ⟨gE, hgE, fun x => ?_⟩
+  have hx := hsum x
+  simp only [Finset.sum_range_succ, Finset.sum_range_zero, zero_add,
+    smul_eq_mul, iteratedDeriv_zero, h0,
+    hn 1 one_ne_zero, hn 2 (by norm_num), hn 3 (by norm_num),
+    hn 4 (by norm_num)] at hx
+  norm_num [Nat.factorial, hG3, hG5, hG4, hG6] at hx
+  linear_combination hx
+
+/-- Degree-3 Taylor expansion of `℘'[L - 0]` at `0`. -/
+private lemma exists_taylorF (L : PeriodPair) :
+    ∃ gF : ℂ → ℂ, AnalyticAt ℂ gF 0 ∧ ∀ x : ℂ,
+      ℘'[L - (0 : ℂ)] x = L.g₂ / 10 * x + L.g₃ / 7 * x ^ 3
+        + x ^ 4 * gF x := by
+  obtain ⟨gF, hgF, hsum⟩ :=
+    (L.analyticAt_derivWeierstrassPExcept 0).exists_eq_sum_add_pow_mul 4
+  have hn : ∀ n : ℕ, iteratedDeriv n ℘'[L - (0 : ℂ)] 0
+      = ((n + 2).factorial : ℂ) * L.G (n + 3) := by
+    intro n
+    rw [L.iteratedDeriv_derivWeierstrassPExcept_self 0, L.sumInvPow_zero]
+  have hG3 : L.G 3 = 0 := L.G_eq_zero_of_odd 3 (by decide)
+  have hG5 : L.G 5 = 0 := L.G_eq_zero_of_odd 5 (by decide)
+  have hG4 : L.G 4 = L.g₂ / 60 := by unfold PeriodPair.g₂; ring
+  have hG6 : L.G 6 = L.g₃ / 140 := by unfold PeriodPair.g₃; ring
+  refine ⟨gF, hgF, fun x => ?_⟩
+  have hx := hsum x
+  simp only [Finset.sum_range_succ, Finset.sum_range_zero, zero_add,
+    smul_eq_mul, hn 0, hn 1, hn 2, hn 3] at hx
+  norm_num [Nat.factorial, hG3, hG5, hG4, hG6] at hx
+  linear_combination hx
+
+set_option maxHeartbeats 3200000 in
+/-- **The Laurent tail of the cleared addition relation at the origin**:
+substituting the pole splittings `℘ = z⁻² + ℘[L−0]`,
+`℘' = ℘'[L−0] − 2z⁻³` and the Taylor expansions of the three analytic
+ingredients, all Laurent coefficients through order `t⁰` cancel (the
+polynomial certificate below, verified by `linear_combination` against
+the differential equation `℘'(w)² = 4℘(w)³ − g₂℘(w) − g₃`), so the raw
+relation is `x · (continuous)` on a punctured neighborhood of `0`. -/
 private theorem tendsto_addRelXRaw_zero (L : PeriodPair) (w : ℂ)
     (hw : w ∉ L.lattice) :
-    Filter.Tendsto (addRelXRaw L w) (𝓝[≠] (0 : ℂ)) (𝓝 (0 : ℂ)) :=
-  sorry
+    Filter.Tendsto (addRelXRaw L w) (𝓝[≠] (0 : ℂ)) (𝓝 (0 : ℂ)) := by
+  obtain ⟨gA, hgA, hA5⟩ := exists_taylorA L hw
+  obtain ⟨gE, hgE, hE5⟩ := exists_taylorE L
+  obtain ⟨gF, hgF, hF4⟩ := exists_taylorF L
+  have hW' : ℘'[L] w ^ 2 = 4 * ℘[L] w ^ 3 - L.g₂ * ℘[L] w - L.g₃ :=
+    L.derivWeierstrassP_sq w hw
+  have hP2 : ∀ x : ℂ, x ≠ 0 →
+      x ^ 2 * ℘[L] x = 1 + x ^ 2 * ℘[L - (0 : ℂ)] x := by
+    intro x hx
+    have h := L.ite_eq_one_sub_sq_mul_weierstrassP 0 L.lattice.zero_mem x
+    rw [if_neg hx] at h
+    simp only [sub_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true,
+      zero_pow, div_zero] at h
+    linear_combination h
+  have hPp3 : ∀ x : ℂ, x ≠ 0 →
+      x ^ 3 * ℘'[L] x = -2 + x ^ 3 * ℘'[L - (0 : ℂ)] x := by
+    intro x hx
+    have h := L.derivWeierstrassPExcept_def ⟨0, L.lattice.zero_mem⟩ x
+    have hcoe : ((⟨0, L.lattice.zero_mem⟩ : L.lattice) : ℂ) = 0 := rfl
+    rw [hcoe, sub_zero] at h
+    rw [h]
+    field_simp
+    ring
+  have key : ∀ x : ℂ, x ≠ 0 →
+      addRelXRaw L w x * x ^ 6 = x ^ 7 * (5*(℘[L] w)^5*x^3 - (℘[L] w)^4*L.g₂*x^5/2 - 5*(℘[L] w)^4*L.g₃*x^7/14 - 10*(℘[L] w)^4*(gE x)*x^8 - 7*(℘[L] w)^4*x + 2*(℘[L] w)^3*(℘'[L] w)*x^2 + (℘[L] w)^3*L.g₂^2*x^7/80 + (℘[L] w)^3*L.g₂*L.g₃*x^9/56 + (℘[L] w)^3*L.g₂*(gE x)*x^10/2 - 11*(℘[L] w)^3*L.g₂*x^3/20 + 5*(℘[L] w)^3*L.g₃^2*x^11/784 + 5*(℘[L] w)^3*L.g₃*(gE x)*x^12/14 + (℘[L] w)^3*L.g₃*x^5/7 + 5*(℘[L] w)^3*(gE x)^2*x^13 + 4*(℘[L] w)^3*(gE x)*x^6 - (℘[L] w)^2*(℘'[L] w)*L.g₂*x^4/5 - (℘[L] w)^2*(℘'[L] w)*L.g₃*x^6/7 - 4*(℘[L] w)^2*(℘'[L] w)*(gE x)*x^7 - 3*(℘[L] w)^2*(℘'[L] w) + 33*(℘[L] w)^2*L.g₂^2*x^5/400 + 9*(℘[L] w)^2*L.g₂*L.g₃*x^7/140 + 9*(℘[L] w)^2*L.g₂*(gE x)*x^8/5 + 7*(℘[L] w)^2*L.g₂*x/5 + 3*(℘[L] w)^2*L.g₃^2*x^9/784 + 3*(℘[L] w)^2*L.g₃*(gE x)*x^10/14 - 11*(℘[L] w)^2*L.g₃*x^3/28 + (℘[L] w)^2*(gA x)*x^4 + 3*(℘[L] w)^2*(gE x)^2*x^11 + 3*(℘[L] w)^2*(gE x)*x^4 + (℘[L] w)*(℘'[L] w)*L.g₂^2*x^6/200 + (℘[L] w)*(℘'[L] w)*L.g₂*L.g₃*x^8/140 + (℘[L] w)*(℘'[L] w)*L.g₂*(gE x)*x^9/5 + (℘[L] w)*(℘'[L] w)*L.g₂*x^2/10 + (℘[L] w)*(℘'[L] w)*L.g₃^2*x^10/392 + (℘[L] w)*(℘'[L] w)*L.g₃*(gE x)*x^11/7 + (℘[L] w)*(℘'[L] w)*L.g₃*x^4/14 + 2*(℘[L] w)*(℘'[L] w)*(gE x)^2*x^12 + 2*(℘[L] w)*(℘'[L] w)*(gE x)*x^5 - 3*(℘[L] w)*L.g₂^3*x^7/1600 - 3*(℘[L] w)*L.g₂^2*L.g₃*x^9/1120 - 3*(℘[L] w)*L.g₂^2*(gE x)*x^10/40 - (℘[L] w)*L.g₂^2*x^3/20 - 3*(℘[L] w)*L.g₂*L.g₃^2*x^11/3136 - 3*(℘[L] w)*L.g₂*L.g₃*(gE x)*x^12/56 + (℘[L] w)*L.g₂*L.g₃*x^5/70 - (℘[L] w)*L.g₂*(gA x)*x^6/10 - 3*(℘[L] w)*L.g₂*(gE x)^2*x^13/4 - (℘[L] w)*L.g₂*(gE x)*x^6 + (℘[L] w)*L.g₃^2*x^7/28 - (℘[L] w)*L.g₃*(gA x)*x^8/14 + (℘[L] w)*L.g₃*(gE x)*x^8 + (℘[L] w)*L.g₃*x - 2*(℘[L] w)*(gA x)*(gE x)*x^9 - 2*(℘[L] w)*(gA x)*x^2 + (℘'[L] w)*L.g₂^2*x^4/400 + (℘'[L] w)*L.g₂*L.g₃*x^6/280 + (℘'[L] w)*L.g₂*(gE x)*x^7/10 + 3*(℘'[L] w)*L.g₂/20 + (℘'[L] w)*L.g₃^2*x^8/784 + (℘'[L] w)*L.g₃*(gE x)*x^9/14 + (℘'[L] w)*L.g₃*x^2/7 + (℘'[L] w)*(gE x)^2*x^10 + 2*(℘'[L] w)*(gE x)*x^3 + (℘'[L] w)*(gF x)*x^3/2 - L.g₂^3*x^5/2000 - 3*L.g₂^2*L.g₃*x^7/1600 + L.g₂^2*(gA x)*x^8/400 - 7*L.g₂^2*(gE x)*x^8/400 - L.g₂^2*x/50 - 3*L.g₂*L.g₃^2*x^9/1568 + L.g₂*L.g₃*(gA x)*x^10/280 - 2*L.g₂*L.g₃*(gE x)*x^10/35 - 9*L.g₂*L.g₃*x^3/140 + L.g₂*(gA x)*(gE x)*x^11/10 + L.g₂*(gA x)*x^4/10 - L.g₂*(gE x)^2*x^11/10 - L.g₂*(gE x)*x^4/5 - L.g₂*(gF x)*x^4/20 - 13*L.g₃^3*x^11/21952 + L.g₃^2*(gA x)*x^12/784 - 25*L.g₃^2*(gE x)*x^12/784 - 29*L.g₃^2*x^5/784 + L.g₃*(gA x)*(gE x)*x^13/14 + L.g₃*(gA x)*x^6/14 - 11*L.g₃*(gE x)^2*x^13/28 - 11*L.g₃*(gE x)*x^6/14 - L.g₃*(gF x)*x^6/14 + (gA x)*(gE x)^2*x^14 + 2*(gA x)*(gE x)*x^7 + (gA x) + (gE x)^3*x^14 + 3*(gE x)^2*x^7 + 3*(gE x) - (gF x)^2*x^7/4 + (gF x)) := by
+    intro x hx
+    unfold addRelXRaw
+    linear_combination ((℘[L - (0:ℂ)] x)^2*x^4 + (℘[L - (0:ℂ)] x)*(℘[L] x)*x^4 + 3*(℘[L - (0:ℂ)] x)*(℘[L] w)^3*x^8 + 3*(℘[L - (0:ℂ)] x)*(℘[L] w)^2*x^6 + 2*(℘[L - (0:ℂ)] x)*(℘[L] w)*(℘'[L] w)*x^7 - (℘[L - (0:ℂ)] x)*(℘[L] w)*L.g₂*x^8/4 + (℘[L - (0:ℂ)] x)*(℘'[L] w)^2*x^8/2 + (℘[L - (0:ℂ)] x)*(℘'[L] w)*x^5 - (℘[L - (0:ℂ)] x)*L.g₂*x^6/4 + (℘[L - (0:ℂ)] x)*(gA x)*x^9 + 2*(℘[L - (0:ℂ)] x)*x^2 + (℘[L] x)^2*x^4 + 3*(℘[L] x)*(℘[L] w)^3*x^8 + 3*(℘[L] x)*(℘[L] w)^2*x^6 + 2*(℘[L] x)*(℘[L] w)*(℘'[L] w)*x^7 - (℘[L] x)*(℘[L] w)*L.g₂*x^8/4 + (℘[L] x)*(℘'[L] w)^2*x^8/2 + (℘[L] x)*(℘'[L] w)*x^5 - (℘[L] x)*L.g₂*x^6/4 + (℘[L] x)*(gA x)*x^9 + (℘[L] x)*x^2 - 6*(℘[L] w)^4*x^8 - 3*(℘[L] w)^3*x^6 - 4*(℘[L] w)^2*(℘'[L] w)*x^7 + (℘[L] w)^2*L.g₂*x^8/2 - (℘[L] w)*(℘'[L] w)^2*x^8 + (℘[L] w)*L.g₂*x^6/4 - 2*(℘[L] w)*(gA x)*x^9 + (℘'[L] w)^2*x^6/2 + (℘'[L] w)*x^3 - L.g₂*x^4/4 + (gA x)*x^7 + 1) * hP2 x hx + (-(℘'[L - (0:ℂ)] x)*x^3/4 - (℘'[L] x)*x^3/4 + (℘'[L] w)*x^3/2 + 1/2) * hPp3 x hx
+      + ((℘[L] x)^2*x^6 - 2*(℘[L] x)*(℘[L] w)*x^6 + (℘[L] w)^2*x^6) * hA5 x + ((℘[L - (0:ℂ)] x)^2*x^6 + 3*(℘[L - (0:ℂ)] x)*(℘[L] w)^3*x^10 + 3*(℘[L - (0:ℂ)] x)*(℘[L] w)^2*x^8 + 2*(℘[L - (0:ℂ)] x)*(℘[L] w)*(℘'[L] w)*x^9 - (℘[L - (0:ℂ)] x)*(℘[L] w)*L.g₂*x^10/4 + (℘[L - (0:ℂ)] x)*(℘'[L] w)^2*x^10/2 + (℘[L - (0:ℂ)] x)*(℘'[L] w)*x^7 - (℘[L - (0:ℂ)] x)*L.g₂*x^8/5 + (℘[L - (0:ℂ)] x)*L.g₃*x^10/28 + (℘[L - (0:ℂ)] x)*(gA x)*x^11 + (℘[L - (0:ℂ)] x)*(gE x)*x^11 + 3*(℘[L - (0:ℂ)] x)*x^4 - 6*(℘[L] w)^4*x^10 + 3*(℘[L] w)^3*L.g₂*x^12/20 + 3*(℘[L] w)^3*L.g₃*x^14/28 + 3*(℘[L] w)^3*(gE x)*x^15 - 4*(℘[L] w)^2*(℘'[L] w)*x^9 + 13*(℘[L] w)^2*L.g₂*x^10/20 + 3*(℘[L] w)^2*L.g₃*x^12/28 + 3*(℘[L] w)^2*(gE x)*x^13 + 3*(℘[L] w)^2*x^6 - (℘[L] w)*(℘'[L] w)^2*x^10 + (℘[L] w)*(℘'[L] w)*L.g₂*x^11/10 + (℘[L] w)*(℘'[L] w)*L.g₃*x^13/14 + 2*(℘[L] w)*(℘'[L] w)*(gE x)*x^14 + 2*(℘[L] w)*(℘'[L] w)*x^7 - (℘[L] w)*L.g₂^2*x^12/80 - (℘[L] w)*L.g₂*L.g₃*x^14/112 - (℘[L] w)*L.g₂*(gE x)*x^15/4 - 2*(℘[L] w)*(gA x)*x^11 + (℘'[L] w)^2*L.g₂*x^12/40 + (℘'[L] w)^2*L.g₃*x^14/56 + (℘'[L] w)^2*(gE x)*x^15/2 + (℘'[L] w)^2*x^8 + (℘'[L] w)*L.g₂*x^9/20 + (℘'[L] w)*L.g₃*x^11/28 + (℘'[L] w)*(gE x)*x^12 + 2*(℘'[L] w)*x^5 - L.g₂^2*x^10/100 - 3*L.g₂*L.g₃*x^12/560 + L.g₂*(gA x)*x^13/20 - 3*L.g₂*(gE x)*x^13/20 - 7*L.g₂*x^6/20 + L.g₃^2*x^14/784 + L.g₃*(gA x)*x^15/28 + L.g₃*(gE x)*x^15/14 + 3*L.g₃*x^8/28 + (gA x)*(gE x)*x^16 + 2*(gA x)*x^9 + (gE x)^2*x^16 + 3*(gE x)*x^9 + 3*x^2) * hE5 x + (-(℘'[L - (0:ℂ)] x)*x^6/4 + (℘'[L] w)*x^6/2 - L.g₂*x^7/40 - L.g₃*x^9/28 - (gF x)*x^10/4 + x^3) * hF4 x + ((℘[L] w)^2*x^10/2 - (℘[L] w)*L.g₂*x^12/20 - (℘[L] w)*L.g₃*x^14/28 - (℘[L] w)*(gE x)*x^15 - (℘[L] w)*x^8 + L.g₂^2*x^14/800 + L.g₂*L.g₃*x^16/560 + L.g₂*(gE x)*x^17/20 + L.g₂*x^10/20 + L.g₃^2*x^18/1568 + L.g₃*(gE x)*x^19/28 + L.g₃*x^12/28 + (gE x)^2*x^20/2 + (gE x)*x^13 + x^6/4) * hW'
+  have hev : addRelXRaw L w =ᶠ[𝓝[≠] (0 : ℂ)]
+      fun x : ℂ => x * (5*(℘[L] w)^5*x^3 - (℘[L] w)^4*L.g₂*x^5/2 - 5*(℘[L] w)^4*L.g₃*x^7/14 - 10*(℘[L] w)^4*(gE x)*x^8 - 7*(℘[L] w)^4*x + 2*(℘[L] w)^3*(℘'[L] w)*x^2 + (℘[L] w)^3*L.g₂^2*x^7/80 + (℘[L] w)^3*L.g₂*L.g₃*x^9/56 + (℘[L] w)^3*L.g₂*(gE x)*x^10/2 - 11*(℘[L] w)^3*L.g₂*x^3/20 + 5*(℘[L] w)^3*L.g₃^2*x^11/784 + 5*(℘[L] w)^3*L.g₃*(gE x)*x^12/14 + (℘[L] w)^3*L.g₃*x^5/7 + 5*(℘[L] w)^3*(gE x)^2*x^13 + 4*(℘[L] w)^3*(gE x)*x^6 - (℘[L] w)^2*(℘'[L] w)*L.g₂*x^4/5 - (℘[L] w)^2*(℘'[L] w)*L.g₃*x^6/7 - 4*(℘[L] w)^2*(℘'[L] w)*(gE x)*x^7 - 3*(℘[L] w)^2*(℘'[L] w) + 33*(℘[L] w)^2*L.g₂^2*x^5/400 + 9*(℘[L] w)^2*L.g₂*L.g₃*x^7/140 + 9*(℘[L] w)^2*L.g₂*(gE x)*x^8/5 + 7*(℘[L] w)^2*L.g₂*x/5 + 3*(℘[L] w)^2*L.g₃^2*x^9/784 + 3*(℘[L] w)^2*L.g₃*(gE x)*x^10/14 - 11*(℘[L] w)^2*L.g₃*x^3/28 + (℘[L] w)^2*(gA x)*x^4 + 3*(℘[L] w)^2*(gE x)^2*x^11 + 3*(℘[L] w)^2*(gE x)*x^4 + (℘[L] w)*(℘'[L] w)*L.g₂^2*x^6/200 + (℘[L] w)*(℘'[L] w)*L.g₂*L.g₃*x^8/140 + (℘[L] w)*(℘'[L] w)*L.g₂*(gE x)*x^9/5 + (℘[L] w)*(℘'[L] w)*L.g₂*x^2/10 + (℘[L] w)*(℘'[L] w)*L.g₃^2*x^10/392 + (℘[L] w)*(℘'[L] w)*L.g₃*(gE x)*x^11/7 + (℘[L] w)*(℘'[L] w)*L.g₃*x^4/14 + 2*(℘[L] w)*(℘'[L] w)*(gE x)^2*x^12 + 2*(℘[L] w)*(℘'[L] w)*(gE x)*x^5 - 3*(℘[L] w)*L.g₂^3*x^7/1600 - 3*(℘[L] w)*L.g₂^2*L.g₃*x^9/1120 - 3*(℘[L] w)*L.g₂^2*(gE x)*x^10/40 - (℘[L] w)*L.g₂^2*x^3/20 - 3*(℘[L] w)*L.g₂*L.g₃^2*x^11/3136 - 3*(℘[L] w)*L.g₂*L.g₃*(gE x)*x^12/56 + (℘[L] w)*L.g₂*L.g₃*x^5/70 - (℘[L] w)*L.g₂*(gA x)*x^6/10 - 3*(℘[L] w)*L.g₂*(gE x)^2*x^13/4 - (℘[L] w)*L.g₂*(gE x)*x^6 + (℘[L] w)*L.g₃^2*x^7/28 - (℘[L] w)*L.g₃*(gA x)*x^8/14 + (℘[L] w)*L.g₃*(gE x)*x^8 + (℘[L] w)*L.g₃*x - 2*(℘[L] w)*(gA x)*(gE x)*x^9 - 2*(℘[L] w)*(gA x)*x^2 + (℘'[L] w)*L.g₂^2*x^4/400 + (℘'[L] w)*L.g₂*L.g₃*x^6/280 + (℘'[L] w)*L.g₂*(gE x)*x^7/10 + 3*(℘'[L] w)*L.g₂/20 + (℘'[L] w)*L.g₃^2*x^8/784 + (℘'[L] w)*L.g₃*(gE x)*x^9/14 + (℘'[L] w)*L.g₃*x^2/7 + (℘'[L] w)*(gE x)^2*x^10 + 2*(℘'[L] w)*(gE x)*x^3 + (℘'[L] w)*(gF x)*x^3/2 - L.g₂^3*x^5/2000 - 3*L.g₂^2*L.g₃*x^7/1600 + L.g₂^2*(gA x)*x^8/400 - 7*L.g₂^2*(gE x)*x^8/400 - L.g₂^2*x/50 - 3*L.g₂*L.g₃^2*x^9/1568 + L.g₂*L.g₃*(gA x)*x^10/280 - 2*L.g₂*L.g₃*(gE x)*x^10/35 - 9*L.g₂*L.g₃*x^3/140 + L.g₂*(gA x)*(gE x)*x^11/10 + L.g₂*(gA x)*x^4/10 - L.g₂*(gE x)^2*x^11/10 - L.g₂*(gE x)*x^4/5 - L.g₂*(gF x)*x^4/20 - 13*L.g₃^3*x^11/21952 + L.g₃^2*(gA x)*x^12/784 - 25*L.g₃^2*(gE x)*x^12/784 - 29*L.g₃^2*x^5/784 + L.g₃*(gA x)*(gE x)*x^13/14 + L.g₃*(gA x)*x^6/14 - 11*L.g₃*(gE x)^2*x^13/28 - 11*L.g₃*(gE x)*x^6/14 - L.g₃*(gF x)*x^6/14 + (gA x)*(gE x)^2*x^14 + 2*(gA x)*(gE x)*x^7 + (gA x) + (gE x)^3*x^14 + 3*(gE x)^2*x^7 + 3*(gE x) - (gF x)^2*x^7/4 + (gF x)) := by
+    filter_upwards [self_mem_nhdsWithin] with x hx
+    have h6 : x ^ 6 ≠ 0 := pow_ne_zero 6 hx
+    exact mul_right_cancel₀ h6 (by linear_combination key x hx)
+  have hcgA : ContinuousAt gA 0 := hgA.continuousAt
+  have hcgE : ContinuousAt gE 0 := hgE.continuousAt
+  have hcgF : ContinuousAt gF 0 := hgF.continuousAt
+  have hcont : ContinuousAt (fun x : ℂ => x * (5*(℘[L] w)^5*x^3 - (℘[L] w)^4*L.g₂*x^5/2 - 5*(℘[L] w)^4*L.g₃*x^7/14 - 10*(℘[L] w)^4*(gE x)*x^8 - 7*(℘[L] w)^4*x + 2*(℘[L] w)^3*(℘'[L] w)*x^2 + (℘[L] w)^3*L.g₂^2*x^7/80 + (℘[L] w)^3*L.g₂*L.g₃*x^9/56 + (℘[L] w)^3*L.g₂*(gE x)*x^10/2 - 11*(℘[L] w)^3*L.g₂*x^3/20 + 5*(℘[L] w)^3*L.g₃^2*x^11/784 + 5*(℘[L] w)^3*L.g₃*(gE x)*x^12/14 + (℘[L] w)^3*L.g₃*x^5/7 + 5*(℘[L] w)^3*(gE x)^2*x^13 + 4*(℘[L] w)^3*(gE x)*x^6 - (℘[L] w)^2*(℘'[L] w)*L.g₂*x^4/5 - (℘[L] w)^2*(℘'[L] w)*L.g₃*x^6/7 - 4*(℘[L] w)^2*(℘'[L] w)*(gE x)*x^7 - 3*(℘[L] w)^2*(℘'[L] w) + 33*(℘[L] w)^2*L.g₂^2*x^5/400 + 9*(℘[L] w)^2*L.g₂*L.g₃*x^7/140 + 9*(℘[L] w)^2*L.g₂*(gE x)*x^8/5 + 7*(℘[L] w)^2*L.g₂*x/5 + 3*(℘[L] w)^2*L.g₃^2*x^9/784 + 3*(℘[L] w)^2*L.g₃*(gE x)*x^10/14 - 11*(℘[L] w)^2*L.g₃*x^3/28 + (℘[L] w)^2*(gA x)*x^4 + 3*(℘[L] w)^2*(gE x)^2*x^11 + 3*(℘[L] w)^2*(gE x)*x^4 + (℘[L] w)*(℘'[L] w)*L.g₂^2*x^6/200 + (℘[L] w)*(℘'[L] w)*L.g₂*L.g₃*x^8/140 + (℘[L] w)*(℘'[L] w)*L.g₂*(gE x)*x^9/5 + (℘[L] w)*(℘'[L] w)*L.g₂*x^2/10 + (℘[L] w)*(℘'[L] w)*L.g₃^2*x^10/392 + (℘[L] w)*(℘'[L] w)*L.g₃*(gE x)*x^11/7 + (℘[L] w)*(℘'[L] w)*L.g₃*x^4/14 + 2*(℘[L] w)*(℘'[L] w)*(gE x)^2*x^12 + 2*(℘[L] w)*(℘'[L] w)*(gE x)*x^5 - 3*(℘[L] w)*L.g₂^3*x^7/1600 - 3*(℘[L] w)*L.g₂^2*L.g₃*x^9/1120 - 3*(℘[L] w)*L.g₂^2*(gE x)*x^10/40 - (℘[L] w)*L.g₂^2*x^3/20 - 3*(℘[L] w)*L.g₂*L.g₃^2*x^11/3136 - 3*(℘[L] w)*L.g₂*L.g₃*(gE x)*x^12/56 + (℘[L] w)*L.g₂*L.g₃*x^5/70 - (℘[L] w)*L.g₂*(gA x)*x^6/10 - 3*(℘[L] w)*L.g₂*(gE x)^2*x^13/4 - (℘[L] w)*L.g₂*(gE x)*x^6 + (℘[L] w)*L.g₃^2*x^7/28 - (℘[L] w)*L.g₃*(gA x)*x^8/14 + (℘[L] w)*L.g₃*(gE x)*x^8 + (℘[L] w)*L.g₃*x - 2*(℘[L] w)*(gA x)*(gE x)*x^9 - 2*(℘[L] w)*(gA x)*x^2 + (℘'[L] w)*L.g₂^2*x^4/400 + (℘'[L] w)*L.g₂*L.g₃*x^6/280 + (℘'[L] w)*L.g₂*(gE x)*x^7/10 + 3*(℘'[L] w)*L.g₂/20 + (℘'[L] w)*L.g₃^2*x^8/784 + (℘'[L] w)*L.g₃*(gE x)*x^9/14 + (℘'[L] w)*L.g₃*x^2/7 + (℘'[L] w)*(gE x)^2*x^10 + 2*(℘'[L] w)*(gE x)*x^3 + (℘'[L] w)*(gF x)*x^3/2 - L.g₂^3*x^5/2000 - 3*L.g₂^2*L.g₃*x^7/1600 + L.g₂^2*(gA x)*x^8/400 - 7*L.g₂^2*(gE x)*x^8/400 - L.g₂^2*x/50 - 3*L.g₂*L.g₃^2*x^9/1568 + L.g₂*L.g₃*(gA x)*x^10/280 - 2*L.g₂*L.g₃*(gE x)*x^10/35 - 9*L.g₂*L.g₃*x^3/140 + L.g₂*(gA x)*(gE x)*x^11/10 + L.g₂*(gA x)*x^4/10 - L.g₂*(gE x)^2*x^11/10 - L.g₂*(gE x)*x^4/5 - L.g₂*(gF x)*x^4/20 - 13*L.g₃^3*x^11/21952 + L.g₃^2*(gA x)*x^12/784 - 25*L.g₃^2*(gE x)*x^12/784 - 29*L.g₃^2*x^5/784 + L.g₃*(gA x)*(gE x)*x^13/14 + L.g₃*(gA x)*x^6/14 - 11*L.g₃*(gE x)^2*x^13/28 - 11*L.g₃*(gE x)*x^6/14 - L.g₃*(gF x)*x^6/14 + (gA x)*(gE x)^2*x^14 + 2*(gA x)*(gE x)*x^7 + (gA x) + (gE x)^3*x^14 + 3*(gE x)^2*x^7 + 3*(gE x) - (gF x)^2*x^7/4 + (gF x))) 0 := by fun_prop
+  have htend : Filter.Tendsto (fun x : ℂ => x * (5*(℘[L] w)^5*x^3 - (℘[L] w)^4*L.g₂*x^5/2 - 5*(℘[L] w)^4*L.g₃*x^7/14 - 10*(℘[L] w)^4*(gE x)*x^8 - 7*(℘[L] w)^4*x + 2*(℘[L] w)^3*(℘'[L] w)*x^2 + (℘[L] w)^3*L.g₂^2*x^7/80 + (℘[L] w)^3*L.g₂*L.g₃*x^9/56 + (℘[L] w)^3*L.g₂*(gE x)*x^10/2 - 11*(℘[L] w)^3*L.g₂*x^3/20 + 5*(℘[L] w)^3*L.g₃^2*x^11/784 + 5*(℘[L] w)^3*L.g₃*(gE x)*x^12/14 + (℘[L] w)^3*L.g₃*x^5/7 + 5*(℘[L] w)^3*(gE x)^2*x^13 + 4*(℘[L] w)^3*(gE x)*x^6 - (℘[L] w)^2*(℘'[L] w)*L.g₂*x^4/5 - (℘[L] w)^2*(℘'[L] w)*L.g₃*x^6/7 - 4*(℘[L] w)^2*(℘'[L] w)*(gE x)*x^7 - 3*(℘[L] w)^2*(℘'[L] w) + 33*(℘[L] w)^2*L.g₂^2*x^5/400 + 9*(℘[L] w)^2*L.g₂*L.g₃*x^7/140 + 9*(℘[L] w)^2*L.g₂*(gE x)*x^8/5 + 7*(℘[L] w)^2*L.g₂*x/5 + 3*(℘[L] w)^2*L.g₃^2*x^9/784 + 3*(℘[L] w)^2*L.g₃*(gE x)*x^10/14 - 11*(℘[L] w)^2*L.g₃*x^3/28 + (℘[L] w)^2*(gA x)*x^4 + 3*(℘[L] w)^2*(gE x)^2*x^11 + 3*(℘[L] w)^2*(gE x)*x^4 + (℘[L] w)*(℘'[L] w)*L.g₂^2*x^6/200 + (℘[L] w)*(℘'[L] w)*L.g₂*L.g₃*x^8/140 + (℘[L] w)*(℘'[L] w)*L.g₂*(gE x)*x^9/5 + (℘[L] w)*(℘'[L] w)*L.g₂*x^2/10 + (℘[L] w)*(℘'[L] w)*L.g₃^2*x^10/392 + (℘[L] w)*(℘'[L] w)*L.g₃*(gE x)*x^11/7 + (℘[L] w)*(℘'[L] w)*L.g₃*x^4/14 + 2*(℘[L] w)*(℘'[L] w)*(gE x)^2*x^12 + 2*(℘[L] w)*(℘'[L] w)*(gE x)*x^5 - 3*(℘[L] w)*L.g₂^3*x^7/1600 - 3*(℘[L] w)*L.g₂^2*L.g₃*x^9/1120 - 3*(℘[L] w)*L.g₂^2*(gE x)*x^10/40 - (℘[L] w)*L.g₂^2*x^3/20 - 3*(℘[L] w)*L.g₂*L.g₃^2*x^11/3136 - 3*(℘[L] w)*L.g₂*L.g₃*(gE x)*x^12/56 + (℘[L] w)*L.g₂*L.g₃*x^5/70 - (℘[L] w)*L.g₂*(gA x)*x^6/10 - 3*(℘[L] w)*L.g₂*(gE x)^2*x^13/4 - (℘[L] w)*L.g₂*(gE x)*x^6 + (℘[L] w)*L.g₃^2*x^7/28 - (℘[L] w)*L.g₃*(gA x)*x^8/14 + (℘[L] w)*L.g₃*(gE x)*x^8 + (℘[L] w)*L.g₃*x - 2*(℘[L] w)*(gA x)*(gE x)*x^9 - 2*(℘[L] w)*(gA x)*x^2 + (℘'[L] w)*L.g₂^2*x^4/400 + (℘'[L] w)*L.g₂*L.g₃*x^6/280 + (℘'[L] w)*L.g₂*(gE x)*x^7/10 + 3*(℘'[L] w)*L.g₂/20 + (℘'[L] w)*L.g₃^2*x^8/784 + (℘'[L] w)*L.g₃*(gE x)*x^9/14 + (℘'[L] w)*L.g₃*x^2/7 + (℘'[L] w)*(gE x)^2*x^10 + 2*(℘'[L] w)*(gE x)*x^3 + (℘'[L] w)*(gF x)*x^3/2 - L.g₂^3*x^5/2000 - 3*L.g₂^2*L.g₃*x^7/1600 + L.g₂^2*(gA x)*x^8/400 - 7*L.g₂^2*(gE x)*x^8/400 - L.g₂^2*x/50 - 3*L.g₂*L.g₃^2*x^9/1568 + L.g₂*L.g₃*(gA x)*x^10/280 - 2*L.g₂*L.g₃*(gE x)*x^10/35 - 9*L.g₂*L.g₃*x^3/140 + L.g₂*(gA x)*(gE x)*x^11/10 + L.g₂*(gA x)*x^4/10 - L.g₂*(gE x)^2*x^11/10 - L.g₂*(gE x)*x^4/5 - L.g₂*(gF x)*x^4/20 - 13*L.g₃^3*x^11/21952 + L.g₃^2*(gA x)*x^12/784 - 25*L.g₃^2*(gE x)*x^12/784 - 29*L.g₃^2*x^5/784 + L.g₃*(gA x)*(gE x)*x^13/14 + L.g₃*(gA x)*x^6/14 - 11*L.g₃*(gE x)^2*x^13/28 - 11*L.g₃*(gE x)*x^6/14 - L.g₃*(gF x)*x^6/14 + (gA x)*(gE x)^2*x^14 + 2*(gA x)*(gE x)*x^7 + (gA x) + (gE x)^3*x^14 + 3*(gE x)^2*x^7 + 3*(gE x) - (gF x)^2*x^7/4 + (gF x))) (𝓝[≠] (0 : ℂ)) (𝓝 0) := by
+    have h := hcont.continuousWithinAt (s := {(0 : ℂ)}ᶜ) |>.tendsto
+    simpa using h
+  exact Filter.Tendsto.congr' hev.symm htend
 
 /-- The raw relation tends to `0` along the punctured neighborhood of
 every lattice point (translate `tendsto_addRelXRaw_zero`). -/
@@ -1866,126 +2166,6 @@ private theorem addRelXRaw_eq_zero (L : PeriodPair) (w : ℂ)
     rw [addRelXFn, if_neg (by tauto)]
   rw [← hzval, hconst, h0]
 
-
-/-- `℘'` is not identically zero away from the lattice: near `0` it is
-dominated by the pole `−2/z³` coming from `℘'[L] z = ℘'[L − 0] z − 2/z³`,
-while `℘'[L − 0]` is continuous at `0`. -/
-private lemma exists_derivWeierstrassP_ne_zero (L : PeriodPair) :
-    ∃ z, z ∉ L.lattice ∧ ℘'[L] z ≠ 0 := by
-  by_contra hall
-  push Not at hall
-  have h0 : (0 : ℂ) ∈ L.lattice := L.lattice.zero_mem
-  have hcont : ContinuousAt ℘'[L - (0 : ℂ)] 0 :=
-    (L.analyticAt_derivWeierstrassPExcept 0).continuousAt
-  -- the Except part is eventually bounded near `0`
-  have hbdd : ∀ᶠ z in 𝓝 (0 : ℂ),
-      ‖℘'[L - (0 : ℂ)] z‖ < ‖℘'[L - (0 : ℂ)] 0‖ + 1 :=
-    hcont.norm.eventually_lt_const
-      (by linarith [norm_nonneg (℘'[L - (0 : ℂ)] 0)])
-  -- the pole term eventually beats that bound
-  have hpole : ∀ᶠ z in 𝓝[≠] (0 : ℂ),
-      ‖℘'[L - (0 : ℂ)] 0‖ + 1 < ‖(2 : ℂ) / z ^ 3‖ := by
-    have hcube : Filter.Tendsto (fun z : ℂ => z ^ 3) (𝓝[≠] (0 : ℂ))
-        (𝓝[≠] (0 : ℂ)) := by
-      rw [tendsto_nhdsWithin_iff]
-      constructor
-      · have := ((continuous_pow 3).tendsto (0 : ℂ)).mono_left
-          (nhdsWithin_le_nhds (s := {(0 : ℂ)}ᶜ))
-        simpa using this
-      · exact eventually_mem_nhdsWithin.mono fun z hz => pow_ne_zero 3 hz
-    have hcob : Filter.Tendsto (fun z : ℂ => (2 : ℂ) / z ^ 3)
-        (𝓝[≠] (0 : ℂ)) (Bornology.cobounded ℂ) := by
-      have h2 := (Filter.tendsto_mul_left_cobounded
-        (two_ne_zero (α := ℂ))).comp
-        ((Filter.tendsto_inv₀_nhdsNE_zero (α := ℂ)).comp hcube)
-      simpa [Function.comp_def, div_eq_mul_inv] using h2
-    exact (tendsto_norm_atTop_iff_cobounded.mpr hcob).eventually_gt_atTop _
-  -- combine on the punctured neighborhood and extract a witness
-  have hlat : ∀ᶠ z in 𝓝 (0 : ℂ), z ∈ ((↑L.lattice : Set ℂ) \ {0})ᶜ :=
-    L.compl_lattice_sdiff_singleton_mem_nhds 0
-  obtain ⟨z, hz1, hz2, hz3, hz4⟩ :=
-    ((hlat.filter_mono nhdsWithin_le_nhds).and
-      ((hbdd.filter_mono nhdsWithin_le_nhds).and
-        (hpole.and eventually_mem_nhdsWithin))).exists
-  -- `z ∉ L.lattice` (it avoids `L \ {0}` and is nonzero)
-  have hz0 : z ≠ 0 := hz4
-  have hzL : z ∉ L.lattice := by
-    intro hmem
-    exact hz1 ⟨hmem, hz0⟩
-  -- `℘'[L − 0] z = ℘' z + 2/z³ = 2/z³` since `℘' z = 0` by `hall`
-  have hdef := L.derivWeierstrassPExcept_def ⟨0, h0⟩ z
-  have hcoe : ((⟨0, h0⟩ : L.lattice) : ℂ) = 0 := rfl
-  rw [hcoe, sub_zero, hall z hzL, zero_add] at hdef
-  -- contradiction with the norm bounds
-  rw [hdef] at hz2
-  exact absurd hz2 (not_lt.mpr (le_of_lt hz3))
-
-set_option backward.isDefEq.respectTransparency false in
-/-- **`℘'' = 6℘² − g₂/2`** away from the lattice: differentiate
-`derivWeierstrassP_sq`, cancel `℘'` where it is nonzero, and extend
-across the isolated zeros of `℘'` by the identity theorem (`latticeᶜ`
-is preconnected as the complement of a countable set in `ℂ`). -/
-private theorem deriv_derivWeierstrassP_eq (L : PeriodPair) {z : ℂ}
-    (hz : z ∉ L.lattice) :
-    deriv ℘'[L] z = 6 * ℘[L] z ^ 2 - L.g₂ / 2 := by
-  have hUopen : IsOpen ((↑L.lattice : Set ℂ)ᶜ) :=
-    L.isClosed_lattice.isOpen_compl
-  -- both sides analytic on `latticeᶜ`
-  have hf : AnalyticOnNhd ℂ (deriv ℘'[L]) (↑L.lattice : Set ℂ)ᶜ :=
-    L.analyticOnNhd_derivWeierstrassP.deriv
-  have hg : AnalyticOnNhd ℂ (fun x => 6 * ℘[L] x ^ 2 - L.g₂ / 2)
-      (↑L.lattice : Set ℂ)ᶜ := by
-    intro x hx
-    have hP := L.analyticOnNhd_weierstrassP x hx
-    fun_prop
-  -- the multiplied identity `2℘'·(℘')' = 12℘²℘' − g₂℘'` at every
-  -- non-lattice point, from differentiating `℘'² = 4℘³ − g₂℘ − g₃`
-  have hmul : ∀ x ∈ (↑L.lattice : Set ℂ)ᶜ,
-      2 * ℘'[L] x * deriv ℘'[L] x
-        = 12 * ℘[L] x ^ 2 * ℘'[L] x - L.g₂ * ℘'[L] x := by
-    intro x hx
-    have hP'x : HasDerivAt ℘'[L] (deriv ℘'[L] x) x :=
-      (L.analyticOnNhd_derivWeierstrassP x hx).differentiableAt.hasDerivAt
-    have hPx : HasDerivAt ℘[L] (℘'[L] x) x := by
-      have h1 :=
-        (L.analyticOnNhd_weierstrassP x hx).differentiableAt.hasDerivAt
-      rwa [L.deriv_weierstrassP] at h1
-    -- the two functions agree near `x`, so the derivatives agree
-    have hev : (fun y => ℘'[L] y ^ 2)
-        =ᶠ[𝓝 x] (fun y => 4 * ℘[L] y ^ 3 - L.g₂ * ℘[L] y - L.g₃) := by
-      filter_upwards [hUopen.mem_nhds hx] with y hy
-      exact L.derivWeierstrassP_sq y hy
-    have heq := (hP'x.pow 2).unique
-      (((((hPx.pow 3).const_mul (4 : ℂ)).sub
-        (hPx.const_mul L.g₂)).sub_const L.g₃).congr_of_eventuallyEq hev)
-    push_cast at heq
-    linear_combination heq
-  -- a point where `℘'` does not vanish
-  obtain ⟨z₀, hz₀L, hz₀ne⟩ := exists_derivWeierstrassP_ne_zero L
-  -- near it, cancel `2℘'` to get the clean identity eventually
-  have hev₀ : deriv ℘'[L] =ᶠ[𝓝 z₀] fun x => 6 * ℘[L] x ^ 2 - L.g₂ / 2 := by
-    have hcont : ContinuousAt ℘'[L] z₀ :=
-      (L.analyticOnNhd_derivWeierstrassP z₀ hz₀L).continuousAt
-    have hne : ∀ᶠ x in 𝓝 z₀, ℘'[L] x ≠ 0 :=
-      hcont.eventually_ne hz₀ne
-    filter_upwards [hUopen.mem_nhds hz₀L, hne] with x hxU hxne
-    have h1 := hmul x hxU
-    have h2 : (2 : ℂ) * ℘'[L] x ≠ 0 := by
-      simp [hxne]
-    apply mul_left_cancel₀ h2
-    rw [h1]
-    ring
-  -- `latticeᶜ` is preconnected (complement of a countable set)
-  have hcnt : (↑L.lattice : Set ℂ).Countable := by
-    have hC : Countable L.lattice :=
-      L.latticeEquivProd.toEquiv.countable_iff.mpr inferInstance
-    exact Set.countable_coe_iff.mp hC
-  have hpre : IsPreconnected ((↑L.lattice : Set ℂ)ᶜ) := by
-    have h2 : 1 < Module.rank ℝ ℂ := by
-      rw [rank_real_complex]
-      norm_num
-    exact (hcnt.isPathConnected_compl_of_one_lt_rank h2).isConnected.isPreconnected
-  exact hf.eqOn_of_preconnected_of_eventuallyEq hg hpre hz₀L hev₀ hz
 
 end WeierstrassAddition
 
