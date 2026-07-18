@@ -997,6 +997,43 @@ noncomputable def pointMap (q₀ : k) (hq0 : q₀ ≠ 0)
       (exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose_spec.2 hq
       (exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose_spec.1
 
+/-- **The point map is invariant under `q₀`-power translation**: the
+canonical annulus representative of `q₀ʲ·u` is that of `u` (exponents
+shift by `j`, unique by `annulus_exponent_unique`), so the point map
+descends to the quotient `kˣ/q₀^ℤ`. -/
+theorem pointMap_zpow_mul (q₀ : k) (hq0 : q₀ ≠ 0)
+    (hq : valuation k q₀ < 1) (u : k) (hu0 : u ≠ 0) (j : ℤ) :
+    pointMap q₀ hq0 hq (q₀ ^ j * u)
+      (mul_ne_zero (zpow_ne_zero _ hq0) hu0) =
+    pointMap q₀ hq0 hq u hu0 := by
+  have hm := (exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose_spec
+  have hm' := (exists_zpow_mul_mem_annulus q₀ hq0 hq (q₀ ^ j * u)
+    (mul_ne_zero (zpow_ne_zero _ hq0) hu0)).choose_spec
+  have hshift : (q₀ ^ j * u) * q₀ ^
+      (-((exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose + j)) =
+      u * q₀ ^ (-(exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose) := by
+    rw [mul_comm (q₀ ^ j) u, mul_assoc, ← zpow_add₀ hq0]
+    congr 2
+    ring
+  have huniq : (exists_zpow_mul_mem_annulus q₀ hq0 hq (q₀ ^ j * u)
+      (mul_ne_zero (zpow_ne_zero _ hq0) hu0)).choose =
+      (exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose + j := by
+    refine annulus_exponent_unique q₀ hq0 hq (q₀ ^ j * u) hm' ?_
+    rw [hshift]
+    exact hm
+  have hrep : (q₀ ^ j * u) * q₀ ^
+      (-(exists_zpow_mul_mem_annulus q₀ hq0 hq (q₀ ^ j * u)
+        (mul_ne_zero (zpow_ne_zero _ hq0) hu0)).choose) =
+      u * q₀ ^ (-(exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose) := by
+    rw [huniq, hshift]
+  unfold pointMap
+  simp only [hrep]
+  split_ifs with ha hb hc
+  · rfl
+  · exact absurd (hrep ▸ ha) hb
+  · exact absurd (hrep.symm ▸ hc) ha
+  · rfl
+
 end Annulus
 
 end TateCurve
