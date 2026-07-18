@@ -466,7 +466,7 @@
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
   "wip": false,
   "fullname": "GaloisRepresentation.IsHardlyRamified.isTameAtTwo_baseChange_residue",
-  "text": "tameness-at-2 transfer (sorry node): π ⊗ 1 through kk ⊗ R ≅ kk and the pushforward of δ along the residue map; conditions transfer on simple tensors."
+  "text": "tameness-at-2 transfer — PROVEN 2026-07-18, sorry-free. π̄ := AlgebraTensorModule.rid ∘ baseChange π (surjective via c ⊗ v₀ over a preimage of 1); δ̄ := (δ.baseChange kk).conj rid; equivariance by TensorProduct.induction_on with the R-linearity smul juggle; the inertia and quadratic conditions transfer through the monoid-hom structure (map_mul + baseChange of 1)."
  },
  {
   "name": "GaloisRepresentation.IsHardlyRamified.isFlatAt_baseChange_residue",

@@ -66,7 +66,7 @@
   "GaloisRepresentation.IsHardlyRamified.mod_three_reducible": "❌",
   "GaloisRepresentation.IsHardlyRamified.mod_three": "✅",
   "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient": "❌",
-  "GaloisRepresentation.IsHardlyRamified.isTameAtTwo_baseChange_residue": "❌",
+  "GaloisRepresentation.IsHardlyRamified.isTameAtTwo_baseChange_residue": "✅✅",
   "GaloisRepresentation.IsHardlyRamified.isFlatAt_baseChange_residue": "❌",
   "GaloisRepresentation.IsHardlyRamified.exists_residue_package": "✅✅",
   "GaloisRepresentation.IsHardlyRamified.exists_residual_isHardlyRamified": "✅",

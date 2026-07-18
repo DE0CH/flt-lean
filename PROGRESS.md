@@ -1656,9 +1656,6 @@ entries file). To add/remove/annotate a node, edit
                                   tower, and unramifiedness by the existing IsUnramifiedAt base-
                                   change instance; the remaining content is the residue package and
                                   the flatness/tameness transfer leaves.
-                                    - ❌· `GaloisRepresentation.IsHardlyRamified.isTameAtTwo_baseChange_residue` — tameness-at-2 transfer (sorry node): π ⊗ 1 through kk ⊗ R ≅ kk
-                                      and the pushforward of δ along the residue map; conditions
-                                      transfer on simple tensors.
                                     - ❌· `GaloisRepresentation.IsHardlyRamified.isFlatAt_baseChange_residue` — flatness transfer (sorry node). RECONNAISSANCE 2026-07-18:
                                       IsFlatAt quantifies over open ideals I of kk — ALL ideals,
                                       since kk is discrete; a field has only ⊥ and ⊤. The ⊤ case is

@@ -226,7 +226,7 @@ theorem isTameAtTwo_baseChange_residue {R : Type u} [CommRing R]
     (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
     [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
     [Algebra R kk] [ContinuousSMul R kk]
-    (hsurj : Function.Surjective (algebraMap R kk))
+    (_hsurj : Function.Surjective (algebraMap R kk))
     {ρ : GaloisRep ℚ R V}
     (htame : ∃ (π : V →ₗ[R] R) (_ : Function.Surjective π)
       (δ : GaloisRep ℚ_[2] R R),
@@ -243,8 +243,68 @@ theorem isTameAtTwo_baseChange_residue {R : Type u} [CommRing R]
         (AddSubgroup.inertia
           ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
             AddSubgroup Z2bar) (Γ ℚ_[2]) ≤ δ.ker) ∧
-        (∀ g' : Γ ℚ_[2], δ g' * δ g' = 1) :=
-  sorry
+        (∀ g' : Γ ℚ_[2], δ g' * δ g' = 1) := by
+  obtain ⟨π, hπsurj, δ, h⟩ := htame
+  -- the canonical identification `kk ⊗[R] R ≃ₗ[kk] kk`
+  let e : (kk ⊗[R] R) ≃ₗ[kk] kk := TensorProduct.AlgebraTensorModule.rid R kk kk
+  -- the base-changed projection and character
+  refine ⟨e.toLinearMap ∘ₗ LinearMap.baseChange kk π, ?_,
+    (δ.baseChange kk).conj e, ?_⟩
+  · -- surjectivity: hit `c` with `c ⊗ v₀` for a preimage `v₀` of `1`
+    intro c
+    obtain ⟨v₀, hv₀⟩ := hπsurj 1
+    refine ⟨c ⊗ₜ v₀, ?_⟩
+    simp [e, LinearMap.baseChange_tmul, hv₀,
+      TensorProduct.AlgebraTensorModule.rid_tmul]
+  · intro g w
+    refine ⟨?_, ?_, ?_⟩
+    · -- equivariance, by linearity on simple tensors
+      induction w using TensorProduct.induction_on with
+      | zero => simp
+      | tmul c v =>
+        have h1 := (h g v).1
+        simp only [LinearMap.comp_apply, LinearEquiv.coe_coe]
+        rw [show ((ρ.baseChange kk).map (algebraMap ℚ ℚ_[2])) g (c ⊗ₜ v) =
+          c ⊗ₜ ((ρ.map (algebraMap ℚ ℚ_[2])) g v) from rfl,
+          LinearMap.baseChange_tmul, h1,
+          GaloisRep.conj_apply, LinearMap.baseChange_tmul]
+        rw [LinearEquiv.conj_apply, LinearMap.comp_apply, LinearMap.comp_apply,
+          LinearEquiv.coe_coe, LinearEquiv.coe_coe,
+          TensorProduct.AlgebraTensorModule.rid_symm_apply,
+          show ((δ.baseChange kk) g : Module.End kk (kk ⊗[R] R)) =
+            LinearMap.baseChange kk (δ g) from rfl,
+          LinearMap.baseChange_tmul,
+          TensorProduct.AlgebraTensorModule.rid_tmul]
+        rw [show (δ g) (π v) = π v • (δ g) 1 from by
+          conv_lhs => rw [show (π v : R) = π v • (1 : R) from by
+            rw [smul_eq_mul, mul_one]]
+          rw [map_smul]]
+        simp [e, TensorProduct.AlgebraTensorModule.rid_tmul, smul_smul,
+          mul_comm]
+      | add x y hx hy =>
+        simp only [map_add, hx, hy]
+    · -- unramifiedness: the kernel only grows under base change + conj
+      intro σ hσ
+      have hδσ : δ σ = 1 := (h 1 0).2.1 hσ
+      have : (δ.baseChange kk).conj e σ = 1 := by
+        rw [GaloisRep.conj_apply]
+        rw [show (δ.baseChange kk) σ =
+          LinearMap.baseChange kk (δ σ) from rfl, hδσ]
+        refine LinearMap.ext fun c => ?_
+        simp
+      exact this
+    · -- the quadratic condition transfers through the monoid hom
+      intro g'
+      have hsq : δ g' * δ g' = 1 := (h 1 0).2.2 g'
+      calc (δ.baseChange kk).conj e g' * (δ.baseChange kk).conj e g'
+          = (δ.baseChange kk).conj e (g' * g') := (map_mul _ _ _).symm
+        _ = 1 := by
+            rw [GaloisRep.conj_apply]
+            rw [show (δ.baseChange kk) (g' * g') =
+              LinearMap.baseChange kk (δ (g' * g')) from rfl,
+              map_mul δ, hsq]
+            refine LinearMap.ext fun c => ?_
+            simp
 
 /-- **Residual hardly-ramifiedness** (DERIVED 2026-07-18 from the
 residue package and the flatness/tameness transfer leaves; the
