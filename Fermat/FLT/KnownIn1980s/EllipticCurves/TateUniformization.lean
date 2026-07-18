@@ -2988,18 +2988,6 @@ theorem pointMapQuot_add [DecidableEq k] (q : kˣ)
   exact pointMap_mul u' v' (q : k) hu'0 hu'1 hv'0 hv'1 hq0 hq
     hcu1 hcu2 hcv1 hcv2
 
-set_option warn.sorry false in
-/-- **Surjectivity of the uniformisation** (sorry node — Silverman
-V.3.1(d)/V.4): every point of the Tate curve is a `pointMapQuot`-value.
-Content: the valuation analysis of affine points — for
-`P = (x, y) ∈ E_q(k)`, the bilateral `X`-value is a two-to-one map of
-the annulus onto the `x`-line (up to the involution), and the two
-preimage candidates are separated by the `y`-coordinate. -/
-theorem pointMapQuot_surjective (q : kˣ)
-    (hq : valuation k (q : k) < 1) :
-    Function.Surjective (pointMapQuot q hq) :=
-  sorry
-
 /-- The image of the trivial class is zero. -/
 theorem pointMapQuot_one (q : kˣ) (hq : valuation k (q : k) < 1) :
     pointMapQuot q hq 1 = 0 := by
@@ -3008,6 +2996,152 @@ theorem pointMapQuot_one (q : kˣ) (hq : valuation k (q : k) < 1) :
   have h1 : ((1 : kˣ) : k) = 1 := rfl
   rw [pointMap_congr h1]
   exact pointMap_one (q : k) q.ne_zero hq
+
+set_option warn.sorry false in
+/-- **The bilateral `x`-value is onto the affine `x`-line** (sorry node —
+the analytic heart of Silverman V.4): for every affine solution `(x, y)`
+of the Tate curve equation there is a parameter `u` in the fundamental
+annulus with `bilateralX u = x`. Attack: the valuation/Newton-polygon
+analysis of `X(u) - x` as a function of `u` on the annulus (the theta
+quotient), using completeness of `k`. -/
+theorem exists_annulus_bilateralX_eq (q₀ : k) (hq0 : q₀ ≠ 0)
+    (hq1 : valuation k q₀ < 1) (x y : k)
+    (hxy : (WeierstrassCurve.tateCurve q₀).toAffine.Equation x y) :
+    ∃ u : k, u ≠ 0 ∧ u ≠ 1 ∧ valuation k q₀ < valuation k u ∧
+      valuation k u ≤ 1 ∧ bilateralX u q₀ = x :=
+  sorry
+
+/-- **Surjectivity of the uniformisation** (DERIVED 2026-07-18 from the
+`x`-onto leaf `exists_annulus_bilateralX_eq` — Silverman V.3.1(d)/V.4):
+every point of the Tate curve is a `pointMapQuot`-value. The leaf
+produces an annulus parameter over the `x`-coordinate; the quadratic in
+`y` has exactly the two roots `bilateralY u` and `negY` of it
+(`Y_eq_of_X_eq`), realised by `u` and by its inverse partner (`u⁻¹` on
+the valuation-one shell, `q·u⁻¹` in the interior — the PROVEN vertical
+case `bilateral_negY_of_mul_trivial`). -/
+theorem pointMapQuot_surjective [DecidableEq k] (q : kˣ)
+    (hq : valuation k (q : k) < 1) :
+    Function.Surjective (pointMapQuot q hq) := by
+  have hq0 : (q : k) ≠ 0 := q.ne_zero
+  have hqv : valuation k (q : k) ≠ 0 := (Valuation.ne_zero_iff _).mpr hq0
+  have hqpos : (0 : ValueGroupWithZero k) < valuation k (q : k) :=
+    zero_lt_iff.mpr hqv
+  have hsq_lt : valuation k (q : k) * valuation k (q : k) <
+      valuation k (q : k) := by
+    calc valuation k (q : k) * valuation k (q : k)
+        < 1 * valuation k (q : k) :=
+          (OrderIso.mulRight₀ _ hqpos).strictMono hq
+      _ = valuation k (q : k) := one_mul _
+  intro P
+  cases P with
+  | zero => exact ⟨1, pointMapQuot_one q hq⟩
+  | some x y h =>
+    obtain ⟨u, hu0, hu1, hulow, huhigh, hbX⟩ :=
+      exists_annulus_bilateralX_eq (q : k) hq0 hq x y h.1
+    have huq : u ≠ (q : k) := fun heq => absurd hulow (by
+      rw [heq]; exact lt_irrefl _)
+    have huwin : valuation k (q : k) * valuation k (q : k) <
+        valuation k u := lt_trans hsq_lt hulow
+    have hpm := pointMap_eq_bilateral u (q : k) hu0 hu1 huq hq0 hq
+      huwin huhigh
+    have hequ : (WeierstrassCurve.tateCurve (q : k)).toAffine.Equation
+        (bilateralX u (q : k)) (bilateralY u (q : k)) :=
+      (nonsingular_bilateral u (q : k) hu0 hu1 huq hq0 hq huwin huhigh).1
+    rcases WeierstrassCurve.Affine.Y_eq_of_X_eq h.1 hequ hbX.symm with hy | hy
+    · -- `y = bilateralY u`: the point is `pointMap u`
+      refine ⟨QuotientGroup.mk (Units.mk0 u hu0), ?_⟩
+      have hcoe : pointMapQuot q hq (QuotientGroup.mk (Units.mk0 u hu0)) =
+          pointMap (q : k) hq0 hq u hu0 := by
+        rw [pointMapQuot_mk]; exact pointMap_congr rfl
+      rw [hcoe, hpm]
+      exact point_some_congr hbX hy.symm
+    · -- `y = negY`: the point is `pointMap` of the inverse partner
+      rcases eq_or_lt_of_le huhigh with hshell | hint
+      · -- `|u| = 1`: partner `v = u⁻¹`
+        set v : k := u⁻¹ with hvdef
+        have hv0 : v ≠ 0 := inv_ne_zero hu0
+        have hv1 : v ≠ 1 := fun hv => hu1 (by
+          rw [← inv_inv u, ← hvdef, hv, inv_one])
+        have htriv : u * v = 1 ∨ u * v = (q : k) :=
+          Or.inl (mul_inv_cancel₀ hu0)
+        obtain ⟨hXv, hYv⟩ := bilateral_negY_of_mul_trivial u v (q : k)
+          hu0 hu1 hv0 hq0 hq hulow huhigh htriv
+        have hvval : valuation k v = 1 := by
+          rw [hvdef, map_inv₀, hshell, inv_one]
+
+        have hvlow : valuation k (q : k) < valuation k v := by
+          rw [hvval]; exact hq
+        have hvhigh : valuation k v ≤ 1 := le_of_eq hvval
+        have hvq : v ≠ (q : k) := fun heq => absurd hvlow (by
+          rw [heq]; exact lt_irrefl _)
+        have hvwin : valuation k (q : k) * valuation k (q : k) <
+            valuation k v := lt_trans hsq_lt hvlow
+        refine ⟨QuotientGroup.mk (Units.mk0 v hv0), ?_⟩
+        have hcoe : pointMapQuot q hq (QuotientGroup.mk (Units.mk0 v hv0)) =
+            pointMap (q : k) hq0 hq v hv0 := by
+          rw [pointMapQuot_mk]; exact pointMap_congr rfl
+        rw [hcoe,
+          pointMap_eq_bilateral v (q : k) hv0 hv1 hvq hq0 hq hvwin hvhigh]
+        exact point_some_congr (hXv.trans hbX)
+          (by rw [hYv, ← hy])
+      · -- `|u| < 1`: partner `v = q·u⁻¹`
+        set v : k := (q : k) * u⁻¹ with hvdef
+        have hv0 : v ≠ 0 := mul_ne_zero hq0 (inv_ne_zero hu0)
+        have hv1 : v ≠ 1 := by
+          intro hv
+          apply huq
+          have h2 : (q : k) * u⁻¹ * u = 1 * u := by rw [← hvdef, hv]
+          rw [mul_assoc, inv_mul_cancel₀ hu0, mul_one, one_mul] at h2
+          exact h2.symm
+        have htriv : u * v = 1 ∨ u * v = (q : k) := Or.inr (by
+          rw [hvdef, mul_comm ((q : k)) _, ← mul_assoc,
+            mul_inv_cancel₀ hu0, one_mul])
+        obtain ⟨hXv, hYv⟩ := bilateral_negY_of_mul_trivial u v (q : k)
+          hu0 hu1 hv0 hq0 hq hulow huhigh htriv
+        have huv : valuation k u ≠ 0 := (Valuation.ne_zero_iff _).mpr hu0
+        have hupos : (0 : ValueGroupWithZero k) < valuation k u :=
+          zero_lt_iff.mpr huv
+        have huinvpos : (0 : ValueGroupWithZero k) < (valuation k u)⁻¹ :=
+          zero_lt_iff.mpr (inv_ne_zero huv)
+        have hvval : valuation k v =
+            valuation k (q : k) * (valuation k u)⁻¹ := by
+          rw [hvdef, map_mul, map_inv₀]
+        have hvlow : valuation k (q : k) < valuation k v := by
+          rw [hvval]
+          calc valuation k (q : k)
+              = valuation k (q : k) * 1 := (mul_one _).symm
+            _ < valuation k (q : k) * (valuation k u)⁻¹ := by
+                have h3 : (1 : ValueGroupWithZero k) < (valuation k u)⁻¹ := by
+                  calc (1 : ValueGroupWithZero k)
+                      = valuation k u * (valuation k u)⁻¹ :=
+                        (mul_inv_cancel₀ huv).symm
+                    _ < 1 * (valuation k u)⁻¹ :=
+                        (OrderIso.mulRight₀ _ huinvpos).strictMono hint
+                    _ = (valuation k u)⁻¹ := one_mul _
+                exact (OrderIso.mulLeft₀ _ hqpos).strictMono h3
+        have hvhigh : valuation k v ≤ 1 := by
+          rw [hvval]
+          calc valuation k (q : k) * (valuation k u)⁻¹
+              ≤ valuation k u * (valuation k u)⁻¹ :=
+                mul_le_mul_left hulow.le _
+            _ = 1 := mul_inv_cancel₀ huv
+        have hvq : v ≠ (q : k) := fun heq => hu1 (by
+          have h2 : (q : k) * u⁻¹ * u = (q : k) * u := by
+            rw [← hvdef, heq]
+          rw [mul_assoc, inv_mul_cancel₀ hu0, mul_one] at h2
+          have h2' : (q : k) * u = (q : k) * 1 := by
+            rw [mul_one]; exact h2.symm
+          exact mul_left_cancel₀ hq0 h2')
+        have hvwin : valuation k (q : k) * valuation k (q : k) <
+            valuation k v := lt_trans hsq_lt hvlow
+        refine ⟨QuotientGroup.mk (Units.mk0 v hv0), ?_⟩
+        have hcoe : pointMapQuot q hq (QuotientGroup.mk (Units.mk0 v hv0)) =
+            pointMap (q : k) hq0 hq v hv0 := by
+          rw [pointMapQuot_mk]; exact pointMap_congr rfl
+        rw [hcoe,
+          pointMap_eq_bilateral v (q : k) hv0 hv1 hvq hq0 hq hvwin hvhigh]
+        exact point_some_congr (hXv.trans hbX)
+          (by rw [hYv, ← hy])
 
 /-- Negation compatibility, derived from the addition law and the
 trivial-class image. -/

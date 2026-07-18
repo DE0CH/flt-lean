@@ -770,11 +770,18 @@
   "text": "the uniformization core, pre-quotient form: surjective Galois-equivariant hom Ωˣ →+ E_q(Ω) with kernel exactly q^ℤ. DERIVED 2026-07-18 by feeding the finite-level canonical uniformisation tateCurveEquiv (underlying function pointMapQuot) into the sorried gluing implication exists_tateCurveHomSepClosure_of_finiteLevel."
  },
  {
+  "name": "TateCurve.exists_annulus_bilateralX_eq",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
+  "wip": false,
+  "fullname": "TateCurve.exists_annulus_bilateralX_eq",
+  "text": "the x-onto leaf (sorry node, the analytic heart of Silverman V.4): every affine solution (x, y) of the Tate curve equation has an annulus parameter u with bilateralX u = x. Attack: Newton-polygon/valuation analysis of X(u) - x on the annulus (theta quotient), using completeness of k."
+ },
+ {
   "name": "TateCurve.pointMapQuot_surjective",
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
   "wip": false,
   "fullname": "TateCurve.pointMapQuot_surjective",
-  "text": "surjectivity of the uniformisation (sorry node, Silverman ATAEC V.3.1(d)/V.4): valuation analysis of affine points — the bilateral X-value is two-to-one from the annulus onto the x-line up to the involution, preimages separated by the y-coordinate."
+  "text": "surjectivity of the uniformisation (Silverman ATAEC V.3.1(d)/V.4). DERIVED 2026-07-18 from the x-onto leaf exists_annulus_bilateralX_eq: the leaf gives an annulus parameter u over the x-coordinate; Y_eq_of_X_eq gives y = bilateralY u or its negY, the latter realised by the inverse partner (u⁻¹ on the shell, q·u⁻¹ in the interior) via the PROVEN vertical case bilateral_negY_of_mul_trivial."
  },
  {
   "name": "TateCurve.eq_or_mul_eq_of_bilateralX_eq",

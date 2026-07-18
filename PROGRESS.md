@@ -150,14 +150,29 @@ entries file). To add/remove/annotate a node, edit
                                                               machinery stays in the reference
                                                               commit 8282dfb^ until the addition-law
                                                               proof consumes it.
-                                                                - ❌· `TateCurve.pointMapQuot_surjective` — surjectivity of the uniformisation
-                                                                  (sorry node, Silverman ATAEC
-                                                                  V.3.1(d)/V.4): valuation analysis
-                                                                  of affine points — the bilateral
-                                                                  X-value is two-to-one from the
-                                                                  annulus onto the x-line up to the
-                                                                  involution, preimages separated by
-                                                                  the y-coordinate.
+                                                                - ✅· `TateCurve.pointMapQuot_surjective` — surjectivity of the uniformisation
+                                                                  (Silverman ATAEC V.3.1(d)/V.4).
+                                                                  DERIVED 2026-07-18 from the x-onto
+                                                                  leaf exists_annulus_bilateralX_eq:
+                                                                  the leaf gives an annulus
+                                                                  parameter u over the x-coordinate;
+                                                                  Y_eq_of_X_eq gives y = bilateralY
+                                                                  u or its negY, the latter realised
+                                                                  by the inverse partner (u⁻¹ on the
+                                                                  shell, q·u⁻¹ in the interior) via
+                                                                  the PROVEN vertical case
+                                                                  bilateral_negY_of_mul_trivial.
+                                                                    - ❌· `TateCurve.exists_annulus_bilateralX_eq` — the x-onto leaf (sorry node,
+                                                                      the analytic heart of
+                                                                      Silverman V.4): every affine
+                                                                      solution (x, y) of the Tate
+                                                                      curve equation has an annulus
+                                                                      parameter u with bilateralX u
+                                                                      = x. Attack: Newton-
+                                                                      polygon/valuation analysis of
+                                                                      X(u) - x on the annulus (theta
+                                                                      quotient), using completeness
+                                                                      of k.
                                                                 - ✅· `TateCurve.pointMapQuot_add` — the addition law (Silverman ATAEC
                                                                   V.3.1(c)). DERIVED 2026-07-18 from
                                                                   three sorried series-identity
@@ -277,15 +292,33 @@ entries file). To add/remove/annotate a node, edit
                                                                   reference commit 8282dfb^ until
                                                                   the addition-law proof consumes
                                                                   it.
-                                                                    - ❌· `TateCurve.pointMapQuot_surjective` — surjectivity of the
-                                                                      uniformisation (sorry node,
-                                                                      Silverman ATAEC V.3.1(d)/V.4):
-                                                                      valuation analysis of affine
-                                                                      points — the bilateral X-value
-                                                                      is two-to-one from the annulus
-                                                                      onto the x-line up to the
-                                                                      involution, preimages
-                                                                      separated by the y-coordinate.
+                                                                    - ✅· `TateCurve.pointMapQuot_surjective` — surjectivity of the
+                                                                      uniformisation (Silverman
+                                                                      ATAEC V.3.1(d)/V.4). DERIVED
+                                                                      2026-07-18 from the x-onto
+                                                                      leaf
+                                                                      exists_annulus_bilateralX_eq:
+                                                                      the leaf gives an annulus
+                                                                      parameter u over the
+                                                                      x-coordinate; Y_eq_of_X_eq
+                                                                      gives y = bilateralY u or its
+                                                                      negY, the latter realised by
+                                                                      the inverse partner (u⁻¹ on
+                                                                      the shell, q·u⁻¹ in the
+                                                                      interior) via the PROVEN
+                                                                      vertical case
+                                                                      bilateral_negY_of_mul_trivial.
+                                                                        - ❌· `TateCurve.exists_annulus_bilateralX_eq` — the x-onto leaf (sorry node,
+                                                                          the analytic heart of
+                                                                          Silverman V.4): every affine
+                                                                          solution (x, y) of the Tate
+                                                                          curve equation has an annulus
+                                                                          parameter u with bilateralX u
+                                                                          = x. Attack: Newton-
+                                                                          polygon/valuation analysis of
+                                                                          X(u) - x on the annulus (theta
+                                                                          quotient), using completeness
+                                                                          of k.
                                                                     - ✅· `TateCurve.pointMapQuot_add` — the addition law (Silverman
                                                                       ATAEC V.3.1(c)). DERIVED
                                                                       2026-07-18 from three sorried
@@ -432,15 +465,33 @@ entries file). To add/remove/annotate a node, edit
                                                                       the reference commit 8282dfb^
                                                                       until the addition-law proof
                                                                       consumes it.
-                                                                        - ❌· `TateCurve.pointMapQuot_surjective` — surjectivity of the
-                                                                          uniformisation (sorry node,
-                                                                          Silverman ATAEC V.3.1(d)/V.4):
-                                                                          valuation analysis of affine
-                                                                          points — the bilateral X-value
-                                                                          is two-to-one from the annulus
-                                                                          onto the x-line up to the
-                                                                          involution, preimages
-                                                                          separated by the y-coordinate.
+                                                                        - ✅· `TateCurve.pointMapQuot_surjective` — surjectivity of the
+                                                                          uniformisation (Silverman
+                                                                          ATAEC V.3.1(d)/V.4). DERIVED
+                                                                          2026-07-18 from the x-onto
+                                                                          leaf
+                                                                          exists_annulus_bilateralX_eq:
+                                                                          the leaf gives an annulus
+                                                                          parameter u over the
+                                                                          x-coordinate; Y_eq_of_X_eq
+                                                                          gives y = bilateralY u or its
+                                                                          negY, the latter realised by
+                                                                          the inverse partner (u⁻¹ on
+                                                                          the shell, q·u⁻¹ in the
+                                                                          interior) via the PROVEN
+                                                                          vertical case
+                                                                          bilateral_negY_of_mul_trivial.
+                                                                            - ❌· `TateCurve.exists_annulus_bilateralX_eq` — the x-onto leaf (sorry node,
+                                                                              the analytic heart of
+                                                                              Silverman V.4): every affine
+                                                                              solution (x, y) of the Tate
+                                                                              curve equation has an annulus
+                                                                              parameter u with bilateralX u
+                                                                              = x. Attack: Newton-
+                                                                              polygon/valuation analysis of
+                                                                              X(u) - x on the annulus (theta
+                                                                              quotient), using completeness
+                                                                              of k.
                                                                         - ✅· `TateCurve.pointMapQuot_add` — the addition law (Silverman
                                                                           ATAEC V.3.1(c)). DERIVED
                                                                           2026-07-18 from three sorried
@@ -580,15 +631,33 @@ entries file). To add/remove/annotate a node, edit
                                                                           the reference commit 8282dfb^
                                                                           until the addition-law proof
                                                                           consumes it.
-                                                                            - ❌· `TateCurve.pointMapQuot_surjective` — surjectivity of the
-                                                                              uniformisation (sorry node,
-                                                                              Silverman ATAEC V.3.1(d)/V.4):
-                                                                              valuation analysis of affine
-                                                                              points — the bilateral X-value
-                                                                              is two-to-one from the annulus
-                                                                              onto the x-line up to the
-                                                                              involution, preimages
-                                                                              separated by the y-coordinate.
+                                                                            - ✅· `TateCurve.pointMapQuot_surjective` — surjectivity of the
+                                                                              uniformisation (Silverman
+                                                                              ATAEC V.3.1(d)/V.4). DERIVED
+                                                                              2026-07-18 from the x-onto
+                                                                              leaf
+                                                                              exists_annulus_bilateralX_eq:
+                                                                              the leaf gives an annulus
+                                                                              parameter u over the
+                                                                              x-coordinate; Y_eq_of_X_eq
+                                                                              gives y = bilateralY u or its
+                                                                              negY, the latter realised by
+                                                                              the inverse partner (u⁻¹ on
+                                                                              the shell, q·u⁻¹ in the
+                                                                              interior) via the PROVEN
+                                                                              vertical case
+                                                                              bilateral_negY_of_mul_trivial.
+                                                                                - ❌· `TateCurve.exists_annulus_bilateralX_eq` — the x-onto leaf (sorry node,
+                                                                                  the analytic heart of
+                                                                                  Silverman V.4): every affine
+                                                                                  solution (x, y) of the Tate
+                                                                                  curve equation has an annulus
+                                                                                  parameter u with bilateralX u
+                                                                                  = x. Attack: Newton-
+                                                                                  polygon/valuation analysis of
+                                                                                  X(u) - x on the annulus (theta
+                                                                                  quotient), using completeness
+                                                                                  of k.
                                                                             - ✅· `TateCurve.pointMapQuot_add` — the addition law (Silverman
                                                                               ATAEC V.3.1(c)). DERIVED
                                                                               2026-07-18 from three sorried
@@ -788,12 +857,22 @@ entries file). To add/remove/annotate a node, edit
                                                   negation-translation machinery stays in the
                                                   reference commit 8282dfb^ until the addition-law
                                                   proof consumes it.
-                                                    - ❌· `TateCurve.pointMapQuot_surjective` — surjectivity of the uniformisation (sorry
-                                                      node, Silverman ATAEC V.3.1(d)/V.4): valuation
-                                                      analysis of affine points — the bilateral
-                                                      X-value is two-to-one from the annulus onto
-                                                      the x-line up to the involution, preimages
-                                                      separated by the y-coordinate.
+                                                    - ✅· `TateCurve.pointMapQuot_surjective` — surjectivity of the uniformisation (Silverman
+                                                      ATAEC V.3.1(d)/V.4). DERIVED 2026-07-18 from
+                                                      the x-onto leaf exists_annulus_bilateralX_eq:
+                                                      the leaf gives an annulus parameter u over the
+                                                      x-coordinate; Y_eq_of_X_eq gives y =
+                                                      bilateralY u or its negY, the latter realised
+                                                      by the inverse partner (u⁻¹ on the shell,
+                                                      q·u⁻¹ in the interior) via the PROVEN vertical
+                                                      case bilateral_negY_of_mul_trivial.
+                                                        - ❌· `TateCurve.exists_annulus_bilateralX_eq` — the x-onto leaf (sorry node, the analytic
+                                                          heart of Silverman V.4): every affine
+                                                          solution (x, y) of the Tate curve equation
+                                                          has an annulus parameter u with bilateralX
+                                                          u = x. Attack: Newton-polygon/valuation
+                                                          analysis of X(u) - x on the annulus (theta
+                                                          quotient), using completeness of k.
                                                     - ✅· `TateCurve.pointMapQuot_add` — the addition law (Silverman ATAEC V.3.1(c)).
                                                       DERIVED 2026-07-18 from three sorried series-
                                                       identity leaves (chord, tangent, X-fibre) +
@@ -884,13 +963,26 @@ entries file). To add/remove/annotate a node, edit
                                                       machinery stays in the reference commit
                                                       8282dfb^ until the addition-law proof consumes
                                                       it.
-                                                        - ❌· `TateCurve.pointMapQuot_surjective` — surjectivity of the uniformisation (sorry
-                                                          node, Silverman ATAEC V.3.1(d)/V.4):
-                                                          valuation analysis of affine points — the
-                                                          bilateral X-value is two-to-one from the
-                                                          annulus onto the x-line up to the
-                                                          involution, preimages separated by the
-                                                          y-coordinate.
+                                                        - ✅· `TateCurve.pointMapQuot_surjective` — surjectivity of the uniformisation
+                                                          (Silverman ATAEC V.3.1(d)/V.4). DERIVED
+                                                          2026-07-18 from the x-onto leaf
+                                                          exists_annulus_bilateralX_eq: the leaf
+                                                          gives an annulus parameter u over the
+                                                          x-coordinate; Y_eq_of_X_eq gives y =
+                                                          bilateralY u or its negY, the latter
+                                                          realised by the inverse partner (u⁻¹ on
+                                                          the shell, q·u⁻¹ in the interior) via the
+                                                          PROVEN vertical case
+                                                          bilateral_negY_of_mul_trivial.
+                                                            - ❌· `TateCurve.exists_annulus_bilateralX_eq` — the x-onto leaf (sorry node, the
+                                                              analytic heart of Silverman V.4):
+                                                              every affine solution (x, y) of the
+                                                              Tate curve equation has an annulus
+                                                              parameter u with bilateralX u = x.
+                                                              Attack: Newton-polygon/valuation
+                                                              analysis of X(u) - x on the annulus
+                                                              (theta quotient), using completeness
+                                                              of k.
                                                         - ✅· `TateCurve.pointMapQuot_add` — the addition law (Silverman ATAEC
                                                           V.3.1(c)). DERIVED 2026-07-18 from three
                                                           sorried series-identity leaves (chord,
@@ -1008,11 +1100,20 @@ entries file). To add/remove/annotate a node, edit
                                           bilateral/Lambert negation-translation machinery stays in
                                           the reference commit 8282dfb^ until the addition-law proof
                                           consumes it.
-                                            - ❌· `TateCurve.pointMapQuot_surjective` — surjectivity of the uniformisation (sorry node,
-                                              Silverman ATAEC V.3.1(d)/V.4): valuation analysis of
-                                              affine points — the bilateral X-value is two-to-one
-                                              from the annulus onto the x-line up to the involution,
-                                              preimages separated by the y-coordinate.
+                                            - ✅· `TateCurve.pointMapQuot_surjective` — surjectivity of the uniformisation (Silverman ATAEC
+                                              V.3.1(d)/V.4). DERIVED 2026-07-18 from the x-onto leaf
+                                              exists_annulus_bilateralX_eq: the leaf gives an
+                                              annulus parameter u over the x-coordinate;
+                                              Y_eq_of_X_eq gives y = bilateralY u or its negY, the
+                                              latter realised by the inverse partner (u⁻¹ on the
+                                              shell, q·u⁻¹ in the interior) via the PROVEN vertical
+                                              case bilateral_negY_of_mul_trivial.
+                                                - ❌· `TateCurve.exists_annulus_bilateralX_eq` — the x-onto leaf (sorry node, the analytic heart of
+                                                  Silverman V.4): every affine solution (x, y) of
+                                                  the Tate curve equation has an annulus parameter u
+                                                  with bilateralX u = x. Attack: Newton-
+                                                  polygon/valuation analysis of X(u) - x on the
+                                                  annulus (theta quotient), using completeness of k.
                                             - ✅· `TateCurve.pointMapQuot_add` — the addition law (Silverman ATAEC V.3.1(c)). DERIVED
                                               2026-07-18 from three sorried series-identity leaves
                                               (chord, tangent, X-fibre) + the PROVEN vertical case
@@ -1087,11 +1188,20 @@ entries file). To add/remove/annotate a node, edit
                                           bilateral/Lambert negation-translation machinery stays in
                                           the reference commit 8282dfb^ until the addition-law proof
                                           consumes it.
-                                            - ❌· `TateCurve.pointMapQuot_surjective` — surjectivity of the uniformisation (sorry node,
-                                              Silverman ATAEC V.3.1(d)/V.4): valuation analysis of
-                                              affine points — the bilateral X-value is two-to-one
-                                              from the annulus onto the x-line up to the involution,
-                                              preimages separated by the y-coordinate.
+                                            - ✅· `TateCurve.pointMapQuot_surjective` — surjectivity of the uniformisation (Silverman ATAEC
+                                              V.3.1(d)/V.4). DERIVED 2026-07-18 from the x-onto leaf
+                                              exists_annulus_bilateralX_eq: the leaf gives an
+                                              annulus parameter u over the x-coordinate;
+                                              Y_eq_of_X_eq gives y = bilateralY u or its negY, the
+                                              latter realised by the inverse partner (u⁻¹ on the
+                                              shell, q·u⁻¹ in the interior) via the PROVEN vertical
+                                              case bilateral_negY_of_mul_trivial.
+                                                - ❌· `TateCurve.exists_annulus_bilateralX_eq` — the x-onto leaf (sorry node, the analytic heart of
+                                                  Silverman V.4): every affine solution (x, y) of
+                                                  the Tate curve equation has an annulus parameter u
+                                                  with bilateralX u = x. Attack: Newton-
+                                                  polygon/valuation analysis of X(u) - x on the
+                                                  annulus (theta quotient), using completeness of k.
                                             - ✅· `TateCurve.pointMapQuot_add` — the addition law (Silverman ATAEC V.3.1(c)). DERIVED
                                               2026-07-18 from three sorried series-identity leaves
                                               (chord, tangent, X-fibre) + the PROVEN vertical case

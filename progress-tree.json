@@ -110,7 +110,8 @@
   "ValuationSubring.inertia_fixes_root_of_separable_residue": "✅✅",
   "WeierstrassCurve.exists_tateCurveEquivSepClosure": "✅",
   "WeierstrassCurve.exists_tateCurveHomSepClosure": "✅",
-  "TateCurve.pointMapQuot_surjective": "❌",
+  "TateCurve.exists_annulus_bilateralX_eq": "❌",
+  "TateCurve.pointMapQuot_surjective": "✅",
   "TateCurve.eq_or_mul_eq_of_bilateralX_eq": "❌",
   "TateCurve.bilateral_add_self": "❌",
   "TateCurve.bilateral_add_of_X_ne": "❌",
@@ -570,8 +571,10 @@
    "TateCurve.tateCurveEquiv",
    "WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel"
   ],
+  "TateCurve.exists_annulus_bilateralX_eq": [],
   "TateCurve.pointMapQuot_surjective": [
-   "WeierstrassCurve.Δ_tateCurve_eq_evalInt"
+   "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
+   "TateCurve.exists_annulus_bilateralX_eq"
   ],
   "TateCurve.eq_or_mul_eq_of_bilateralX_eq": [],
   "TateCurve.bilateral_add_self": [],
