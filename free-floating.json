@@ -1,5 +1,5 @@
 {
- "key": "1784367020.365152",
+ "key": "1784367148.2021372",
  "returncode": 0,
  "kept_invisible": [
   {
@@ -49,10 +49,6 @@
  ],
  "floating": [
   {
-   "module": "Fermat.FLT.Mathlib.Topology.Algebra.Valued.WithZeroMulInt",
-   "name": "Valued.WithZeroMulInt.finite_quotient_maximalIdeal_pow_of_finite_residueField"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveBaseChange",
    "name": "TateCurve.valuation_algebraMap_lt_one"
   },
@@ -81,10 +77,6 @@
    "name": "tsum_lambert_of_summable_of_isTopologicallyNilpotent"
   },
   {
-   "module": "Fermat.FLT.NumberField.Completion.Finite",
-   "name": "instLocallyCompactSpaceAdicCompletionRingOfIntegers_fermat"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.LinearAlgebra.Countable",
    "name": "instCountableOfNumberField_fermat"
   },
@@ -95,10 +87,6 @@
   {
    "module": "Fermat.FLT.FreyCurve.FreyPackage",
    "name": "FreyPackage.ctorIdx"
-  },
-  {
-   "module": "Fermat.FLT.NumberField.Completion.Finite",
-   "name": "NumberField.isOpenAdicCompletionIntegers"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
@@ -145,14 +133,6 @@
    "name": "isTopologicallyNilpotent_iff_tendsto_geomSum"
   },
   {
-   "module": "Fermat.FLT.NumberField.Completion.Finite",
-   "name": "NumberField.isCompact_adicCompletionIntegers"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Topology.Algebra.Valued.WithZeroMulInt",
-   "name": "Valued.WithZeroMulInt.irreducible_valuation_le_ofAdd_neg_one"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Weierstrass",
    "name": "WeierstrassCurve.a₁_ne_zero_or_a₃_ne_zero_of_two_eq_zero"
   },
@@ -165,36 +145,8 @@
    "name": "WeierstrassCurve.map_smul_baseChange_eq"
   },
   {
-   "module": "Fermat.FLT.NumberField.Completion.Finite",
-   "name": "Rat.adicCompletion.locallyCompactSpace"
-  },
-  {
-   "module": "Fermat.FLT.NumberField.Completion.Finite",
-   "name": "instWeaklyLocallyCompactSpaceAdicCompletionRingOfIntegers_fermat"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Topology.Algebra.Valued.WithZeroMulInt",
-   "name": "Valued.WithZeroMulInt.integer_compactSpace"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Topology.Algebra.Valued.WithZeroMulInt",
-   "name": "Valued.WithZeroMulInt.irreducible_valuation_lt_one"
-  },
-  {
-   "module": "Fermat.FLT.NumberField.Completion.Finite",
-   "name": "NumberField.instCompactSpaceAdicCompletionIntegers"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveBaseChange",
    "name": "TateCurve.valuation_evalInt_sub_sum_le"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Topology.Algebra.Valued.WithZeroMulInt",
-   "name": "Valued.WithZeroMulInt.finite_cover_of_uniformity_basis"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Topology.Algebra.Valued.WithZeroMulInt",
-   "name": "Valued.WithZeroMulInt.mem_maximalIdeal_pow_valuation"
   },
   {
    "module": "Fermat.FLT.Mathlib.LinearAlgebra.Countable",
