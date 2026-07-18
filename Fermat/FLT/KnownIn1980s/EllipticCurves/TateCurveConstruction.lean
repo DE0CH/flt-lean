@@ -1552,4 +1552,68 @@ theorem weierstrass_equation : Y ^ 2 + X * Y = X ^ 3 + a₄ * X + a₆ := by
   rw [analytic_weierstrass hq0 hqu hu1]
   ring
 
+
+/-! ### Towards the addition theorem for `℘` (WIP, private)
+
+The cleared x-part addition relation
+`(℘(z+w) + ℘ z + ℘ w) (℘ z − ℘ w)² = ¼ (℘' z − ℘' w)²` is proven by the
+same Liouville pattern as mathlib's `derivWeierstrassP_sq`: the relation,
+patched at its removable points, is entire in `z`, doubly periodic and
+bounded, and vanishes at lattice points, hence vanishes identically; the
+finitely many Laurent coefficients at a lattice point cancel using only
+the differential equation (and its derivatives) and the Taylor
+coefficients `g₂/20`, `g₃/28` of `℘ − z⁻²` — the full cancellation table
+is recorded in `PROGRESS.md` at the `bilateral_chordX_cleared` node.
+Private while under construction (private declarations are exempt from
+the free-floating sweep); to be publicized when the cleared Tate chord
+identities consume it through the two-variable descent. -/
+
+section WeierstrassAddition
+
+open scoped PeriodPair
+
+/-- The cleared addition relation for `℘` at translation `w`, patched at
+its non-generic points by `0` (its actual value there, as the addition
+theorem shows). -/
+private noncomputable def addRelationX (L : PeriodPair) (w z : ℂ) : ℂ :=
+  open scoped Classical in
+  if z ∈ L.lattice ∨ z + w ∈ L.lattice then 0
+  else (℘[L] (z + w) + ℘[L] z + ℘[L] w) * (℘[L] z - ℘[L] w) ^ 2 -
+    (℘'[L] z - ℘'[L] w) ^ 2 / 4
+
+/-- The relation is doubly periodic in `z`. -/
+private lemma addRelationX_add_coe (L : PeriodPair) (w z : ℂ)
+    (l : L.lattice) : addRelationX L w (z + l) = addRelationX L w z := by
+  unfold addRelationX
+  have hmem : (z + l ∈ L.lattice ∨ z + l + w ∈ L.lattice) ↔
+      (z ∈ L.lattice ∨ z + w ∈ L.lattice) := by
+    constructor
+    · rintro (h | h)
+      · exact Or.inl (by simpa using L.lattice.sub_mem h l.2)
+      · refine Or.inr ?_
+        have h2 := L.lattice.sub_mem h l.2
+        simpa [add_right_comm z (l : ℂ) w, add_sub_cancel_right] using h2
+    · rintro (h | h)
+      · exact Or.inl (L.lattice.add_mem h l.2)
+      · refine Or.inr ?_
+        have h2 := L.lattice.add_mem h l.2
+        simpa [add_right_comm z (l : ℂ) w] using h2
+  by_cases hz : z ∈ L.lattice ∨ z + w ∈ L.lattice
+  · rw [if_pos (hmem.mpr hz), if_pos hz]
+  · rw [if_neg (fun hc => hz (hmem.mp hc)), if_neg hz]
+    rw [L.weierstrassP_add_coe z l]
+    rw [L.derivWeierstrassP_add_coe z l]
+    rw [show z + (l : ℂ) + w = z + w + l by ring,
+      L.weierstrassP_add_coe (z + w) l]
+
+set_option warn.sorry false in
+/-- **The cleared `℘`-addition identity** (private WIP sorry node — the
+Liouville/Laurent scheme, cancellation table in `PROGRESS.md`): the
+patched relation vanishes identically. -/
+private theorem addRelationX_eq_zero (L : PeriodPair) (w : ℂ)
+    (hw : w ∉ L.lattice) : addRelationX L w = 0 :=
+  sorry
+
+end WeierstrassAddition
+
 end TateCurve
