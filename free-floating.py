@@ -27,7 +27,8 @@ ROOT_DECL = "fermat_last_theorem"
 
 
 def source_key() -> str:
-    latest = 0.0
+    # include this script's own mtime so detector refinements invalidate the cache
+    latest = os.path.getmtime(os.path.abspath(__file__))
     for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "Fermat")):
         for name in files:
             if name.endswith(".lean"):
@@ -82,6 +83,22 @@ def main() -> int:
   -- sweep every project-module declaration against the cone
   for (n, _) in env.constants.toList do
     if n.isInternalDetail then continue
+    -- auto-generated structure/inductive members (rec, casesOn, mk, injEq,
+    -- ext, congr_simp, ...) share their SOURCE LINES with the parent
+    -- declaration; the free-floating criterion is line-based (every line
+    -- transitively used from the root), so they are only reportable through
+    -- their parent, never separately.
+    let comps := n.componentsRev
+    let isAutogen := match comps with
+      | c :: _ =>
+        let last := c.toString
+        last ∈ ["rec", "recOn", "casesOn", "brecOn", "below", "ibelow",
+          "binductionOn", "noConfusion", "noConfusionType", "mk", "injEq",
+          "inj", "sizeOf_spec", "ext", "ext_iff", "congr_simp", "eq_def"] ||
+        last.startsWith "eq_" || last.startsWith "match_" ||
+        last.startsWith "proof_" || last.startsWith "_proof_"
+      | _ => false
+    if isAutogen then continue
     match env.getModuleIdxFor? n with
     | none => continue
     | some idx =>

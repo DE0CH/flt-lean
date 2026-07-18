@@ -1,5 +1,5 @@
 {
- "key": "1784365784.2846894",
+ "key": "1784365977.9137719",
  "returncode": 0,
  "floating": [
   {
@@ -7,32 +7,12 @@
    "name": "Valued.WithZeroMulInt.finite_quotient_maximalIdeal_pow_of_finite_residueField"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "TateCurve.Blueprint.periodPair.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Topology.Algebra.ContinuousSMulDiscrete",
-   "name": "ContinuousSMulDiscrete.recOn"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveBaseChange",
    "name": "TateCurve.valuation_algebraMap_lt_one"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Topology.Algebra.ContinuousSMulDiscrete",
-   "name": "ContinuousSMulDiscrete.rec"
-  },
-  {
-   "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
-   "name": "GaloisRep.ext"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
    "name": "WeierstrassCurve.valuation_c₄_baseChange_eq_one"
-  },
-  {
-   "module": "Fermat.FLT.FreyCurve.FreyPackage",
-   "name": "FreyPackage.mk.inj"
   },
   {
    "module": "Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal",
@@ -45,14 +25,6 @@
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
    "name": "WeierstrassCurve.hasMultiplicativeReduction_baseChange"
-  },
-  {
-   "module": "Fermat.FLT.FreyCurve.FreyPackage",
-   "name": "FreyPackage.casesOn"
-  },
-  {
-   "module": "Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup",
-   "name": "AlgHom.restrictNormal'.congr_simp"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
@@ -79,14 +51,6 @@
    "name": "tsum_lambert_of_summable_of_isTopologicallyNilpotent"
   },
   {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
-   "name": "GaloisRepresentation.HardlyRamifiedLift.mk.sizeOf_spec"
-  },
-  {
-   "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
-   "name": "GaloisRep.IsFlatAt.casesOn"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "instMulActionMonoidHomOfMulDistribMulAction_fermat"
   },
@@ -111,10 +75,6 @@
    "name": "WeierstrassCurve.negVariableChange_ne_one"
   },
   {
-   "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
-   "name": "GaloisRep.IsUnramifiedAt.rec"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
    "name": "WeierstrassCurve.valuation_Δ_baseChange_lt_one"
   },
@@ -127,52 +87,16 @@
    "name": "NumberField.isOpenAdicCompletionIntegers"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
-   "name": "WeierstrassCurve.Affine.Point.equivVariableChange.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
-   "name": "GaloisRepresentation.HardlyRamifiedLift.recOn"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.Group.Basic",
    "name": "continuous_iff_continuousAt_zero"
-  },
-  {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
-   "name": "GaloisRepresentation.HardlyRamifiedLift.rec"
-  },
-  {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
-   "name": "GaloisRepresentation.HardlyRamifiedLift.casesOn"
-  },
-  {
-   "module": "Fermat.FLT.FreyCurve.FreyPackage",
-   "name": "FreyPackage.mk.injEq"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
    "name": "ValuativeExtension.algebraMap_integerMap"
   },
   {
-   "module": "Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation",
-   "name": "AlgHom.liftEquiv.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.FreyCurve.FreyPackage",
-   "name": "FreyPackage.recOn"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.RingTheory.Ideal.Quotient.Basic",
    "name": "Ideal.Quotient.out_sub"
-  },
-  {
-   "module": "Fermat.FLT.EllipticCurve.Torsion",
-   "name": "WeierstrassCurve.nTorsion.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
-   "name": "GaloisRep.IsUnramifiedAt.recOn"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
@@ -187,28 +111,12 @@
    "name": "ValuativeExtension.valuation_algebraMap_lt_one"
   },
   {
-   "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
-   "name": "GaloisRep.ext_iff"
-  },
-  {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.mem_completionIdeal_pow"
   },
   {
    "module": "Fermat.FLT.Mathlib.RingTheory.Valuation.ValuativeRel.Basic",
    "name": "ValuativeExtension.valuation_algebraMap_eq_one"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateParameter",
-   "name": "PowerSeries.eval₂Hom.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs",
-   "name": "GaloisRepresentation.IsHardlyRamified.casesOn"
-  },
-  {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
-   "name": "GaloisRepresentation.HardlyRamifiedLift.mk.injEq"
   },
   {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
@@ -219,28 +127,12 @@
    "name": "WeierstrassCurve.u_eq_one_or_eq_neg_one"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-   "name": "TateCurve.coeffRingEval.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.FreyCurve.FreyPackage",
-   "name": "FreyPackage.mk.noConfusion"
-  },
-  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "IntermediateField.smulCommClass_of_normal"
   },
   {
-   "module": "Fermat.FLT.FreyCurve.FreyPackage",
-   "name": "FreyPackage.noConfusionType"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
    "name": "WeierstrassCurve.instIsIntegralSubtypeMemSubringIntegerValueGroupWithZeroValuationBaseChange_fermat"
-  },
-  {
-   "module": "Fermat.FLT.Deformations.RepresentationTheory.Frobenius",
-   "name": "IsArithFrobAt.congr_simp"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
@@ -267,20 +159,8 @@
    "name": "isTopologicallyNilpotent_iff_tendsto_geomSum"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
-   "name": "WeierstrassCurve.quadraticTwistVarChange.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
-   "name": "WeierstrassCurve.eq_one_or_eq_negVariableChange_of_smul_eq_of_c₄_ne_zero"
-  },
-  {
    "module": "Fermat.FLT.NumberField.Completion.Finite",
    "name": "NumberField.isCompact_adicCompletionIntegers"
-  },
-  {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
-   "name": "GaloisRepresentation.HardlyRamifiedLift.noConfusionType"
   },
   {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
@@ -303,10 +183,6 @@
    "name": "WeierstrassCurve.mem_autGroup"
   },
   {
-   "module": "Fermat.FLT.FreyCurve.Semistable",
-   "name": "Field.absoluteGaloisGroup.map.congr_simp"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
    "name": "WeierstrassCurve.map_smul_baseChange_eq"
   },
@@ -316,27 +192,11 @@
   },
   {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
-   "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.eq_mul_pi_adicCompletionIntegers"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
-   "name": "PeriodPair.mk.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.inertiaDeg_asIdeal_completionIdeal"
   },
   {
    "module": "Fermat.FLT.NumberField.Completion.Finite",
    "name": "Rat.adicCompletion.locallyCompactSpace"
-  },
-  {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
-   "name": "GaloisRepresentation.globalFrob.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Topology.Algebra.ContinuousSMulDiscrete",
-   "name": "ContinuousSMulDiscrete.casesOn"
   },
   {
    "module": "Fermat.FLT.NumberField.Completion.Finite",
@@ -359,24 +219,8 @@
    "name": "WeierstrassCurve.isMinimal_baseChange"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
-   "name": "WeierstrassCurve.q.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
-   "name": "GaloisRepresentation.HardlyRamifiedLift.mk.noConfusion"
-  },
-  {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.instIsPrincipalIdealRingSubtypeMemValuationSubringAdicCompletionIntegers_fermat"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction",
-   "name": "WeierstrassCurve.HasSplitMultiplicativeReduction.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction",
-   "name": "WeierstrassCurve.HasMultiplicativeReduction.congr_simp"
   },
   {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
@@ -387,18 +231,6 @@
    "name": "WeierstrassCurve.HasSplitMultiplicativeReduction.baseChange_smul"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
-   "name": "ValuativeExtension.integerMap.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.DedekindDomain.AdicValuation",
-   "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.eq_mul_nonZeroDivisor_inv_adicCompletionIntegers"
-  },
-  {
-   "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
-   "name": "GaloisRep.IsFlatAt.rec"
-  },
-  {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.denseRange_of_prodAlgebraMap"
   },
@@ -407,28 +239,12 @@
    "name": "NumberField.instCompactSpaceAdicCompletionIntegers"
   },
   {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
-   "name": "GaloisRepresentation.HardlyRamifiedLift.noConfusion"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveBaseChange",
    "name": "TateCurve.valuation_evalInt_sub_sum_le"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
    "name": "ValuativeExtension.instIsLocalHomSubtypeMemSubringIntegerValueGroupWithZeroValuationRingHomIntegerMap"
-  },
-  {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
-   "name": "GaloisRepresentation.HardlyRamifiedLift.mk.inj"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
-   "name": "WeierstrassCurve.quadraticTwistPointEquiv.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
-   "name": "WeierstrassCurve.eq_one_or_eq_negVariableChange_of_smul_eq"
   },
   {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
@@ -447,24 +263,8 @@
    "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.exists_uniformizer"
   },
   {
-   "module": "Fermat.FLT.FreyCurve.FreyPackage",
-   "name": "FreyPackage.noConfusion"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
-   "name": "WeierstrassCurve.eq_one_or_eq_negVariableChange_of_u_eq_one"
-  },
-  {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.closureAlgebraMapIntegers_eq_prodIntegers"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point",
-   "name": "WeierstrassCurve.Affine.Point.equivOfEq.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
-   "name": "GaloisRep.IsUnramifiedAt.casesOn"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
@@ -487,24 +287,12 @@
    "name": "Countable.of_module_finite"
   },
   {
-   "module": "Fermat.FLT.FreyCurve.FreyPackage",
-   "name": "FreyPackage.mk.sizeOf_spec"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Weierstrass",
    "name": "WeierstrassCurve.c₆_eq_zero_iff_j_eq_1728"
   },
   {
-   "module": "Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup",
-   "name": "IsAlgClosed.lift.congr_simp"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
    "name": "WeierstrassCurve.r_eq_zero_of_u_eq_one"
-  },
-  {
-   "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
-   "name": "Nat.Prime.toHeightOneSpectrumRingOfIntegersRat.congr_simp"
   },
   {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
@@ -547,10 +335,6 @@
    "name": "ValuativeExtension.valuation_algebraMap_le_one"
   },
   {
-   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
-   "name": "WeierstrassCurve.galoisRep.congr_simp"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.Topology.Algebra.Group.Basic",
    "name": "continuous_iff_continuousAt_one"
   },
@@ -559,28 +343,12 @@
    "name": "WeierstrassCurve.map_nodePoly"
   },
   {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.FreyConditions",
-   "name": "quadraticCharacter.congr_simp"
-  },
-  {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs",
-   "name": "GaloisRepresentation.IsHardlyRamified.recOn"
-  },
-  {
-   "module": "Fermat.FLT.FreyCurve.Semistable",
-   "name": "Rat.HeightOneSpectrum.primesEquiv.congr_simp"
-  },
-  {
    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
    "name": "GaloisRepresentation.HardlyRamifiedLift.ctorIdx"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
    "name": "ValuativeExtension.integerMap_coe"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists",
-   "name": "WeierstrassCurve.Affine.Point.map.congr_simp"
   },
   {
    "module": "Fermat.FLT.Mathlib.RingTheory.DedekindDomain.AdicValuation",
@@ -595,24 +363,12 @@
    "name": "IsDedekindDomain.HeightOneSpectrum.algebraMap_completionIntegers"
   },
   {
-   "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
-   "name": "GaloisRep.IsFlatAt.recOn"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
    "name": "WeierstrassCurve.hasSplitMultiplicativeReduction_baseChange"
   },
   {
    "module": "Fermat.FLT.Mathlib.GroupTheory.SpecificGroups.Cyclic",
    "name": "mulEquivMultiplicativeZModTwo"
-  },
-  {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs",
-   "name": "GaloisRepresentation.IsHardlyRamified.rec"
-  },
-  {
-   "module": "Fermat.FLT.FreyCurve.FreyPackage",
-   "name": "FreyPackage.rec"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
