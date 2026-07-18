@@ -291,15 +291,85 @@ theorem finrank_eigenspace_one_of_involution {k : Type u} [Field k]
   omega
 
 set_option warn.sorry false in
-/-- **The Serre §5.4/Tate elimination, noncyclic cases** (sorry node):
-with the notation of `serre_elimination` below, every noncyclic Dickson
-case for `π.range` is eliminated: the semidirect-of-elementary-abelian
-case contradicts absolute irreducibility (the normal `3`-subgroup has a
-nonzero unipotent fixed space, which is a proper stable subspace), and
-the dihedral, `A₄`, `S₄`, `A₅`, `PSL₂(𝔽_{3^m})`, `PGL₂(𝔽_{3^m})` cases
-contradict the hardly-ramified ramification constraints (cyclotomic
-determinant, unramified outside `{2, 3}`, flat at `3`, tame quadratic
-quotient at `2`) via Serre's discriminant/conductor bounds over `ℚ`. -/
+/-- **The Serre elimination, semidirect case** (sorry node — purely
+representation-theoretic; attack recorded in PROGRESS): the left factor
+gives a nontrivial normal exponent-3 subgroup `N` of `π.range`; its
+`Γ ℚ`-preimage acts by scalar-times-unipotent operators (cube central ⇒
+`(σρ g − μ)² = 0` in char `3` on a `2`-dim space); either all are scalar
+(then `N` is trivial in `PGL₂`, contradiction) or some nonscalar `g₀`
+has a `1`-dimensional eigenline `W` shared by all nonscalar elements of
+the preimage (central commutators are `±1`-scalars, `−1` impossible),
+and normality makes `W` a `Γ ℚ`-stable line — contradicting absolute
+irreducibility. -/
+theorem serre_elimination_semidirect {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (habs : Slop.OddRep.IsAbsolutelyIrreducible
+      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V))
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (π : Γ ℚ →* Dickson.PGL 3)
+    (hπ : ∀ g, π g = QuotientGroup.mk (u g))
+    {m t : ℕ} (hm : m ≥ 1)
+    (φ : Multiplicative (ZMod t) →* MulAut (Multiplicative (Fin m → ZMod 3)))
+    (hiso : Nonempty (π.range ≃*
+      (Multiplicative (Fin m → ZMod 3)) ⋊[φ] Multiplicative (ZMod t))) :
+    False :=
+  sorry
+
+set_option warn.sorry false in
+/-- **The Serre §5.4/Tate elimination, arithmetic cases** (sorry node —
+the deep number-theoretic core): with the notation of `serre_elimination`
+below, the dihedral, `A₄`, `S₄`, `A₅`, `PSL₂(𝔽_{3^m})`, `PGL₂(𝔽_{3^m})`
+cases contradict the hardly-ramified ramification constraints
+(cyclotomic determinant, unramified outside `{2, 3}`, flat at `3`, tame
+quadratic quotient at `2`) via Serre's discriminant/conductor bounds
+over `ℚ` (Serre, Duke 1987, §5.4: no extension of `ℚ` with these Galois
+groups and local conditions exists). -/
+theorem serre_elimination_arith {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (habs : Slop.OddRep.IsAbsolutelyIrreducible
+      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V))
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (π : Γ ℚ →* Dickson.PGL 3)
+    (hπ : ∀ g, π g = QuotientGroup.mk (u g))
+    (hcase :
+      (∃ n : ℕ, n ≥ 2 ∧ Nonempty (π.range ≃* DihedralGroup n)) ∨
+      (Nonempty (π.range ≃* alternatingGroup (Fin 4))) ∨
+      (Nonempty (π.range ≃* Equiv.Perm (Fin 4))) ∨
+      (Nonempty (π.range ≃* alternatingGroup (Fin 5))) ∨
+      (∃ m : ℕ, m ≥ 1 ∧ Nonempty (π.range ≃*
+        Matrix.ProjectiveSpecialLinearGroup (Fin 2) (GaloisField 3 m))) ∨
+      (∃ m : ℕ, m ≥ 1 ∧ Nonempty (π.range ≃*
+        (GL (Fin 2) (GaloisField 3 m) ⧸
+          Subgroup.center (GL (Fin 2) (GaloisField 3 m)))))) :
+    False :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- The seven noncyclic Dickson cases, split into the rep-theoretic
+semidirect case (`serre_elimination_semidirect`) and the six arithmetic
+cases (`serre_elimination_arith`). -/
 theorem serre_elimination_noncyclic {k : Type u} [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
@@ -333,8 +403,19 @@ theorem serre_elimination_noncyclic {k : Type u} [Finite k] [Field k]
       (∃ m : ℕ, m ≥ 1 ∧ Nonempty (π.range ≃*
         (GL (Fin 2) (GaloisField 3 m) ⧸
           Subgroup.center (GL (Fin 2) (GaloisField 3 m)))))) :
-    False :=
-  sorry
+    False := by
+  rcases hcase with h | h | h | h | ⟨m, t, hm, hcop, hdvd, φ, hiso⟩ | h | h
+  · exact serre_elimination_arith V hV hρ habs b e u hu π hπ (Or.inl h)
+  · exact serre_elimination_arith V hV hρ habs b e u hu π hπ (Or.inr (Or.inl h))
+  · exact serre_elimination_arith V hV hρ habs b e u hu π hπ
+      (Or.inr (Or.inr (Or.inl h)))
+  · exact serre_elimination_arith V hV hρ habs b e u hu π hπ
+      (Or.inr (Or.inr (Or.inr (Or.inl h))))
+  · exact serre_elimination_semidirect V hV hρ habs b e u hu π hπ hm φ hiso
+  · exact serre_elimination_arith V hV hρ habs b e u hu π hπ
+      (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl h)))))
+  · exact serre_elimination_arith V hV hρ habs b e u hu π hπ
+      (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr h)))))
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
