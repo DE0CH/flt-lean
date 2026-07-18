@@ -132,8 +132,8 @@
   "TateCurve.bilateral_ne_negY_of_sq_nontrivial": "✅",
   "TateCurve.bilateral_tangentY_cleared": "❌",
   "TateCurve.bilateral_tangentX_cleared": "❌",
-  "TateCurve.bilateral_chordY_cleared": "❌",
-  "TateCurve.bilateral_chordX_cleared": "❌",
+  "TateCurve.bilateral_chordY_cleared": "✅",
+  "TateCurve.bilateral_chordX_cleared": "✅",
   "TateCurve.bilateral_add_of_X_ne": "✅",
   "TateCurve.pointMapQuot_add": "✅",
   "TateCurve.tateCurveEquiv": "✅",
@@ -167,7 +167,11 @@
   "GaloisRepresentation.IsHardlyRamified.localInertia_two_eq_map_padic": "✅✅",
   "Dickson.classification_tame": "✅✅",
   "Dickson.classification_wild": "✅✅",
-  "OddRep.isIrreducible_iff_isAbsolutelyIrreducible": "✅✅"
+  "OddRep.isIrreducible_iff_isAbsolutelyIrreducible": "✅✅",
+  "TateCurve.bilateral_chordX_cleared_window": "❌",
+  "TateCurve.bilateral_chordX_cleared_shifted": "❌",
+  "TateCurve.bilateral_chordY_cleared_window": "❌",
+  "TateCurve.bilateral_chordY_cleared_shifted": "❌"
  },
  "children": {
   "fermatLastTheoremThree": [],
@@ -674,8 +678,14 @@
   ],
   "TateCurve.bilateral_tangentY_cleared": [],
   "TateCurve.bilateral_tangentX_cleared": [],
-  "TateCurve.bilateral_chordY_cleared": [],
-  "TateCurve.bilateral_chordX_cleared": [],
+  "TateCurve.bilateral_chordY_cleared": [
+   "TateCurve.bilateral_chordY_cleared_shifted",
+   "TateCurve.bilateral_chordY_cleared_window"
+  ],
+  "TateCurve.bilateral_chordX_cleared": [
+   "TateCurve.bilateral_chordX_cleared_shifted",
+   "TateCurve.bilateral_chordX_cleared_window"
+  ],
   "TateCurve.bilateral_add_of_X_ne": [
    "TateCurve.bilateral_chordY_cleared",
    "TateCurve.bilateral_chordX_cleared"
@@ -761,7 +771,11 @@
   "GaloisRepresentation.IsHardlyRamified.localInertia_two_eq_map_padic": [],
   "Dickson.classification_tame": [],
   "Dickson.classification_wild": [],
-  "OddRep.isIrreducible_iff_isAbsolutelyIrreducible": []
+  "OddRep.isIrreducible_iff_isAbsolutelyIrreducible": [],
+  "TateCurve.bilateral_chordX_cleared_window": [],
+  "TateCurve.bilateral_chordX_cleared_shifted": [],
+  "TateCurve.bilateral_chordY_cleared_window": [],
+  "TateCurve.bilateral_chordY_cleared_shifted": []
  },
  "roots": [
   "fermat_last_theorem"

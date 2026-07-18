@@ -928,14 +928,14 @@
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
     "wip": false,
     "fullname": "TateCurve.bilateral_chordY_cleared",
-    "text": "cleared chord Y-identity (sorry node): -(Y(uv)+X(uv))(X(u)-X(v)) = (Y(u)-Y(v))(X(uv)-X(u)) + Y(u)(X(u)-X(v)) — linear in the X-part output. Same attack as the X-identity."
+    "text": "cleared chord Y-identity (DERIVED 2026-07-18: same case dispatch as the X-identity; statement strengthened with hu1/hv1)."
   },
   {
     "name": "TateCurve.bilateral_chordX_cleared",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
     "wip": false,
     "fullname": "TateCurve.bilateral_chordX_cleared",
-    "text": "cleared chord X-identity (sorry node): (X(uv)+X(u)+X(v))(X(u)-X(v))² = (Y(u)-Y(v))² + (Y(u)-Y(v))(X(u)-X(v)) — pure polynomial series identity, no slope/division/cases. Attack: Ramanujan/Eisenstein manipulation of divisor double series (Venkatachaliengar–Cooper Ch. 1) or two-transcendental descent; mathlib LACKS the ℘-addition law (checked 2026-07-18), so the ℂ-analytic route requires formalizing it first. IMPLEMENTATION STATE (2026-07-18b): ℂ-ANALYTIC SIDE COMPLETE — addRelXRaw_eq_zero (Liouville) and addRelYRaw_eq_zero (differentiate the X-identity; Groebner certificate (℘z−℘w)²·collinearity ∈ ideal{Xid, dXid, DE1, DE2} with cofactors (℘z−℘w), (−℘'z−℘'w), ±(℘'w−℘'z)/4; identity theorem across ℘=℘w) both PROVEN in TateCurveConstruction; analytic_chordX and analytic_chordY (XAn/YAn forms on the annulus 0<‖q‖<‖u‖,‖v‖,‖uv‖<1) PROVEN (private). REMAINING — two-variable formal descent: (1) ring R₂ := RatFunc (RatFunc ℚ) = ℚ(u)(v); three substitution homs RatFunc ℚ →+* R₂: C-embedding (u↦u), v-subst (u↦RatFunc.X of outer), uv-subst (u↦C(inner X)·outer X) — latter two via IsFractionRing.lift on ℚ[X] (images of nonzero polys are units since v, uv transcendental over ℚ(u)-fraction images); X_u/X_v/X_uv/Y_* := PowerSeries.map of TateCurve.X/Y; (2) 2-var descent lemma mirroring eq_zero_of_forall_hasSum_zero: evalAt₂ u₀ v₀ := RatFunc.eval (evalAtHom u₀ htr) v₀ : R₂ → ℂ; coefficient-wise vanishing by coeffs_eq_zero_of_hasSum_punctured, then numerator-polynomial-over-ℚ(u) infinite-roots + injectivity of evalAtHom; ONE fixed transcendental u₀ ∈ (1/2,1) suffices with v₀ := u₀^k (k ≥ 2 infinitely many; u₀v₀ = u₀^(k+1) transcendental automatically; windows OK since r can shrink with k); (3) compat: RatFunc.eval-composite = evalAtHom v₀ resp. evalAtHom (u₀v₀) (hom-uniqueness via IsFractionRing.lift ext on the ℚ[X]-generator); hasSum transport lemmas mirror hasSum_evalAt_add/neg/sub/mul verbatim with the composite hom; assembly gives chordX_formal/chordY_formal in R₂⟦q⟧; (4) k-side: pull back along the 2-var CoeffRing analog (TateUniformization already sketches evalA as \"two-variable analogue of evalInt\" ~line 332) and evaluate at (u₀,v₀,q₀) ∈ k with the fundamental-annulus convergence bounds, bridging to bilateralX/bilateralY via the bilateral evaluation bridges."
+    "text": "cleared chord X-identity (DERIVED 2026-07-18: case dispatch on whether u₀v₀ stays in the fundamental annulus, val q₀ < val(u₀v₀), delegating to the window and shifted leaves). Statement strengthened with hu1 : u₀ ≠ 1, hv1 : v₀ ≠ 1 (available at the pointMap_mul call site), needed for the evalA bridges (X has a pole at u = 1)."
   },
   {
     "name": "TateCurve.bilateral_add_of_X_ne",
@@ -1174,5 +1174,29 @@
     "module": "Fermat.FLT.KnownIn1980s.RepresentationTheory.OddAbsIrred",
     "wip": false,
     "text": "irreducible ↔ absolutely irreducible given a 1-dimensional fixed space — vendored PROVEN (Slop.OddAbsIrredSlop, restored 2026-07-18)."
+  },
+  {
+    "name": "TateCurve.bilateral_chordX_cleared_window",
+    "fullname": "TateCurve.bilateral_chordX_cleared_window",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
+    "text": "window case of the cleared chord X-identity (sorry node): all three of u₀, v₀, u₀v₀ in the fundamental annulus: rewrite the six bilateral values through evalA_XA_eq_bilateralX / evalA_YA_eq_bilateralY (bridges need ≠ 0, ≠ 1: u₀v₀ ≠ 1 = hne1, u₀v₀ ≠ 0 from hu0,hv0), then the identity is the k-evaluation of the 2-var formal chord identity in ℚ(u)(v)⟦q⟧ = (RatFunc (RatFunc ℚ))⟦q⟧. Formal layer (to be built AS CONSUMED, top-down): three substitution homs ℚ(u) →+* ℚ(u)(v) (C-embedding; u↦v and u↦uv via substHom := coercion of RatFunc.algEquivOfTranscendental, transcendence transferred from RatFunc.transcendental_X over ℚ(u) down to ℚ by hom-uniqueness Rat.subsingleton_ringHom + Polynomial.eval₂_map, NO scalar-tower instances — the ℚ-algebra diamond DivisionRing.toRatAlgebra vs RatFunc.instAlgebraOfPolynomial makes towers unusable); descent lemma mirroring eq_zero_of_forall_hasSum_zero: evalAt₂ u₀ v₀ := RatFunc.eval (evalAtHom u₀) v₀, coefficientwise vanishing via coeffs_eq_zero_of_hasSum_punctured, numerator-polynomial-over-ℚ(u) infinite roots + evalAtHom injectivity; sampling: ONE fixed transcendental u₀ ∈ (1/2,1), S := reals in (1/2,1) transcendental over ℚ(u₀) (complement countable via Algebraic.countable with R := RatFunc ℚ), r := 1/4 uniform window; compat: composite homs equal evalAtHom v₀ resp. evalAtHom (u₀v₀) by ratFuncQ_ringHom_ext (IsLocalization.ringHom_ext (nonZeroDivisors ℚ[X]) + Polynomial.ringHom_ext + Rat.subsingleton_ringHom); hasSum transport mirrors hasSum_evalAt_add/neg/sub/mul; analytic input: analytic_chordX/analytic_chordY (PROVEN in TateCurveConstruction, currently private — publicize when this consumer lands). Then pull ℚ(u)(v)⟦q⟧ → the 2-var CoeffRing analog and evaluate at (u₀,v₀,q₀) ∈ k with the fundamental-annulus convergence bounds (evalA is already the “two-variable analogue of evalInt”)."
+  },
+  {
+    "name": "TateCurve.bilateral_chordX_cleared_shifted",
+    "fullname": "TateCurve.bilateral_chordX_cleared_shifted",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
+    "text": "shifted case of the cleared chord X-identity (sorry node): u₀v₀ below the fundamental annulus (val(u₀v₀) ≤ val q₀ but > val q₀² from the individual windows): reduce the third slot by the PROVEN shift identities (bilateralX_shift, Y-analogue) to w := u₀v₀/q₀ with val ∈ (val q₀, 1] (w ≠ 1 from hneq : u₀v₀ ≠ q₀), giving a shifted chord configuration; derive from the window case applied to a reduced parameter pair (classical Silverman V.3 annulus case analysis; may need the inversion identity bilateralX_inv for a boundary subcase val v₀ = 1)."
+  },
+  {
+    "name": "TateCurve.bilateral_chordY_cleared_window",
+    "fullname": "TateCurve.bilateral_chordY_cleared_window",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
+    "text": "window case of the cleared chord Y-identity (sorry node): same route as the X-window case with analytic_chordY as the analytic input."
+  },
+  {
+    "name": "TateCurve.bilateral_chordY_cleared_shifted",
+    "fullname": "TateCurve.bilateral_chordY_cleared_shifted",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
+    "text": "shifted case of the cleared chord Y-identity (sorry node): same shift-reduction as the X-shifted case."
   }
 ]
