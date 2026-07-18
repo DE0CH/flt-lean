@@ -2815,32 +2815,375 @@ def vSlot : CoeffRing →+* CoeffRing₂ :=
 def uvSlot : CoeffRing →+* CoeffRing₂ :=
   Localization.awayLift (slotPolyHom uvElt₂) _ isUnit_uv_one_sub_uv
 
+/-! ### The rational-function field `ℚ(u)(v)` and its three embeddings -/
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- Evaluation of `ℚ(X)` at a transcendental element of any field
+extension, as a ring homomorphism (the abstract form of the complex
+`evalAtHom` of `TateCurveConstruction.lean`). -/
+noncomputable def substHom {K L : Type*} [Field K] [Field L]
+    [Algebra K L] (t : L) (ht : Transcendental K t) : RatFunc K →+* L where
+  toFun r := (RatFunc.algEquivOfTranscendental t ht r : L)
+  map_one' := by simp
+  map_mul' x y := by simp
+  map_zero' := by simp
+  map_add' x y := by simp
+
+theorem substHom_ratFuncX {K L : Type*} [Field K] [Field L]
+    [Algebra K L] (t : L) (ht : Transcendental K t) :
+    substHom t ht RatFunc.X = t := by
+  simp [substHom]
+
+/-- Transfer of transcendence from the coefficient field `ℚ(u)` down to
+`ℚ`, through the uniqueness of ring homomorphisms out of `ℚ` (no
+scalar-tower instances needed — the `ℚ`-algebra diamond on
+`RatFunc (RatFunc ℚ)` makes towers unusable). -/
+theorem transcendental_of_transcendental_ratFunc
+    {x : RatFunc (RatFunc ℚ)} (h : Transcendental (RatFunc ℚ) x) :
+    Transcendental ℚ x := by
+  intro halg
+  obtain ⟨q, hq0, hqev⟩ := halg
+  refine h ⟨q.map (algebraMap ℚ (RatFunc ℚ)), ?_, ?_⟩
+  · exact (Polynomial.map_ne_zero_iff
+      (algebraMap ℚ (RatFunc ℚ)).injective).mpr hq0
+  · rw [Polynomial.aeval_def, Polynomial.eval₂_map,
+      show (algebraMap (RatFunc ℚ) (RatFunc (RatFunc ℚ))).comp
+          (algebraMap ℚ (RatFunc ℚ))
+        = algebraMap ℚ (RatFunc (RatFunc ℚ)) from Subsingleton.elim _ _]
+    rw [Polynomial.aeval_def] at hqev
+    exact hqev
+
+/-- The outer variable of `ℚ(u)(v)` is transcendental over `ℚ`. -/
+theorem transcendental_outerX :
+    Transcendental ℚ (RatFunc.X (K := RatFunc ℚ)) := by
+  have h : Transcendental (RatFunc ℚ) (RatFunc.X (K := RatFunc ℚ)) :=
+    RatFunc.transcendental_X
+  exact transcendental_of_transcendental_ratFunc h
+
+/-- The element `u·v` of `ℚ(u)(v)` (constant `u` times the outer
+variable). -/
+noncomputable def uvGen : RatFunc (RatFunc ℚ) :=
+  RatFunc.C (RatFunc.X : RatFunc ℚ) * RatFunc.X
+
+/-- `u·v` is transcendental over `ℚ`. -/
+theorem transcendental_uvGen : Transcendental ℚ uvGen := by
+  unfold uvGen
+  refine transcendental_of_transcendental_ratFunc ?_
+  intro h1
+  have h2 : IsAlgebraic (RatFunc ℚ)
+      ((RatFunc.C (RatFunc.X : RatFunc ℚ))⁻¹ : RatFunc (RatFunc ℚ)) := by
+    rw [← map_inv₀]
+    exact isAlgebraic_algebraMap _
+  have h3 := h2.mul h1
+  rw [inv_mul_cancel_left₀ (by
+    simpa using RatFunc.X_ne_zero (K := ℚ))] at h3
+  exact RatFunc.transcendental_X (K := RatFunc ℚ) h3
+
+/-- `X` is transcendental over `ℚ` in `ℚ(u)` (stated instance-robustly:
+only hom-uniqueness out of `ℚ` is used, no algebra-structure
+comparison). -/
+theorem transcendental_ratFuncX_Q :
+    Transcendental ℚ (RatFunc.X : RatFunc ℚ) := by
+  intro halg
+  obtain ⟨q, hq0, hqev⟩ := halg
+  refine hq0 (RatFunc.algebraMap_injective (K := ℚ) ?_)
+  rw [map_zero, ← hqev, Polynomial.aeval_def]
+  have hhom : Polynomial.eval₂RingHom (algebraMap ℚ (RatFunc ℚ))
+      RatFunc.X = algebraMap (Polynomial ℚ) (RatFunc ℚ) := by
+    refine Polynomial.ringHom_ext (fun a => ?_) ?_
+    · exact RingHom.congr_fun (Subsingleton.elim
+        ((Polynomial.eval₂RingHom (algebraMap ℚ (RatFunc ℚ))
+          RatFunc.X).comp (Polynomial.C : ℚ →+* Polynomial ℚ))
+        ((algebraMap (Polynomial ℚ) (RatFunc ℚ)).comp
+          (Polynomial.C : ℚ →+* Polynomial ℚ))) a
+    · simp [RatFunc.algebraMap_X]
+  exact (RingHom.congr_fun hhom q).symm
+
+/-- The constant `u` of `ℚ(u)(v)` is transcendental over `ℚ`. -/
+theorem transcendental_CX :
+    Transcendental ℚ
+      (RatFunc.C (RatFunc.X : RatFunc ℚ) : RatFunc (RatFunc ℚ)) := by
+  intro halg
+  obtain ⟨q, hq0, hqev⟩ := halg
+  refine transcendental_ratFuncX_Q ⟨q, hq0, ?_⟩
+  have hC : Function.Injective
+      (RatFunc.C : RatFunc ℚ →+* RatFunc (RatFunc ℚ)) :=
+    RingHom.injective _
+  apply hC
+  rw [map_zero, ← hqev, Polynomial.aeval_def, Polynomial.aeval_def,
+    Polynomial.hom_eval₂]
+  congr 1
+  exact Subsingleton.elim _ _
+
+/-- The constant embedding `ℚ(u) → ℚ(u)(v)` (as a substitution, for
+uniformity with the other two slots). -/
+noncomputable def uEmbR : RatFunc ℚ →+* RatFunc (RatFunc ℚ) :=
+  substHom (RatFunc.C (RatFunc.X : RatFunc ℚ)) transcendental_CX
+
+/-- The substitution `u ↦ v` as `ℚ(u) → ℚ(u)(v)`. -/
+noncomputable def vEmbR : RatFunc ℚ →+* RatFunc (RatFunc ℚ) :=
+  substHom (RatFunc.X : RatFunc (RatFunc ℚ)) transcendental_outerX
+
+/-- The substitution `u ↦ u·v` as `ℚ(u) → ℚ(u)(v)`. -/
+noncomputable def uvEmbR : RatFunc ℚ →+* RatFunc (RatFunc ℚ) :=
+  substHom uvGen transcendental_uvGen
+
+/-! ### The injection `CoeffRing₂ → ℚ(u)(v)` and the slot compatibilities -/
+
+/-- The canonical map `ℚ[u][v] → ℚ(u)(v)`. -/
+noncomputable def biPolyToRatFunc :
+    Polynomial (Polynomial ℚ) →+* RatFunc (RatFunc ℚ) :=
+  (algebraMap (Polynomial (RatFunc ℚ)) (RatFunc (RatFunc ℚ))).comp
+    (Polynomial.mapRingHom (algebraMap (Polynomial ℚ) (RatFunc ℚ)))
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- `biPolyToRatFunc` is injective. -/
+theorem biPolyToRatFunc_injective : Function.Injective biPolyToRatFunc := by
+  have h1 : Function.Injective
+      ⇑(algebraMap (Polynomial (RatFunc ℚ)) (RatFunc (RatFunc ℚ))) :=
+    RatFunc.algebraMap_injective (K := RatFunc ℚ)
+  have h2 : Function.Injective
+      ⇑(Polynomial.mapRingHom (algebraMap (Polynomial ℚ) (RatFunc ℚ))) := by
+    simpa [Polynomial.coe_mapRingHom] using
+      Polynomial.map_injective _ (RatFunc.algebraMap_injective (K := ℚ))
+  rw [biPolyToRatFunc, RingHom.coe_comp]
+  exact h1.comp h2
+
+/-- The image of the localized denominator is a unit of `ℚ(u)(v)`. -/
+theorem isUnit_biPolyToRatFunc_biDenom :
+    IsUnit (biPolyToRatFunc biDenom) := by
+  refine isUnit_iff_ne_zero.mpr ?_
+  rw [show (biPolyToRatFunc biDenom : RatFunc (RatFunc ℚ))
+      = biPolyToRatFunc biDenom from rfl]
+  intro h0
+  have hne : biDenom ≠ 0 := by
+    intro hz
+    have h1 := congrArg
+      (Polynomial.eval ((Polynomial.C (1/2 : ℚ)) : Polynomial ℚ)) hz
+    unfold biDenom at h1
+    simp only [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_one,
+      Polynomial.eval_C, Polynomial.eval_X, Polynomial.eval_zero] at h1
+    have h2 := congrArg (Polynomial.eval (1/2 : ℚ)) h1
+    simp only [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_one,
+      Polynomial.eval_C, Polynomial.eval_X, Polynomial.eval_zero] at h2
+    norm_num at h2
+  exact hne (biPolyToRatFunc_injective (by simpa using h0))
+
+/-- The lift `CoeffRing₂ → ℚ(u)(v)`. -/
+noncomputable def coeffRing₂ToRatFunc :
+    CoeffRing₂ →+* RatFunc (RatFunc ℚ) :=
+  Localization.awayLift biPolyToRatFunc _ isUnit_biPolyToRatFunc_biDenom
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- The inclusion of the two-variable coefficient ring in `ℚ(u)(v)` is
+injective. -/
+theorem coeffRing₂ToRatFunc_injective :
+    Function.Injective coeffRing₂ToRatFunc := by
+  rw [injective_iff_map_eq_zero]
+  intro x hx
+  obtain ⟨⟨a, s⟩, hmk⟩ := IsLocalization.mk'_surjective
+    (Submonoid.powers biDenom) x
+  have hxs : x * algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂ s.1 =
+      algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂ a := by
+    rw [← hmk]
+    exact IsLocalization.mk'_spec _ a s
+  have himg : biPolyToRatFunc a = 0 := by
+    have h1 := congrArg coeffRing₂ToRatFunc hxs
+    rw [map_mul, hx, zero_mul,
+      show coeffRing₂ToRatFunc (algebraMap (Polynomial (Polynomial ℚ))
+        CoeffRing₂ a) = biPolyToRatFunc a from IsLocalization.lift_eq _ _]
+      at h1
+    exact h1.symm
+  have ha : a = 0 := by
+    apply biPolyToRatFunc_injective
+    rw [himg, map_zero]
+  rw [← hmk, ha, IsLocalization.mk'_eq_iff_eq_mul, zero_mul, map_zero]
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- The generic slot compatibility: composing the `ℚ(u)(v)`-injection
+with a slot map is the corresponding substitution composed with the
+one-variable injection, provided the generators match. -/
+theorem coeffRing₂ToRatFunc_slot (t₂ : CoeffRing₂)
+    (tR : RatFunc (RatFunc ℚ)) (htR : Transcendental ℚ tR)
+    (hunit : IsUnit (slotPolyHom t₂
+      (Polynomial.X * (1 - Polynomial.X) : Polynomial ℚ)))
+    (hval : coeffRing₂ToRatFunc t₂ = tR) :
+    coeffRing₂ToRatFunc.comp
+        (Localization.awayLift (slotPolyHom t₂) _ hunit) =
+      (substHom tR htR).comp coeffRingToRatFunc := by
+  refine IsLocalization.ringHom_ext
+    (Submonoid.powers (Polynomial.X * (1 - Polynomial.X) : Polynomial ℚ))
+    ?_
+  refine Polynomial.ringHom_ext (fun a => ?_) ?_
+  · exact RingHom.congr_fun (Subsingleton.elim
+      (((coeffRing₂ToRatFunc.comp (Localization.awayLift (slotPolyHom t₂)
+        _ hunit)).comp (algebraMap (Polynomial ℚ) CoeffRing)).comp
+        (Polynomial.C : ℚ →+* Polynomial ℚ))
+      ((((substHom tR htR).comp coeffRingToRatFunc).comp
+        (algebraMap (Polynomial ℚ) CoeffRing)).comp
+        (Polynomial.C : ℚ →+* Polynomial ℚ))) a
+  · simp only [RingHom.comp_apply]
+    rw [show (Localization.awayLift (slotPolyHom t₂) _ hunit)
+        (algebraMap (Polynomial ℚ) CoeffRing Polynomial.X)
+        = slotPolyHom t₂ Polynomial.X from IsLocalization.lift_eq _ _,
+      show coeffRingToRatFunc
+        (algebraMap (Polynomial ℚ) CoeffRing Polynomial.X)
+        = algebraMap (Polynomial ℚ) (RatFunc ℚ) Polynomial.X from
+        IsLocalization.lift_eq _ _,
+      RatFunc.algebraMap_X, substHom_ratFuncX,
+      show slotPolyHom t₂ Polynomial.X = t₂ by simp [slotPolyHom]]
+    exact hval
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- The generator values of the injection. -/
+theorem coeffRing₂ToRatFunc_uElt₂ :
+    coeffRing₂ToRatFunc uElt₂ = RatFunc.C (RatFunc.X : RatFunc ℚ) := by
+  rw [show uElt₂ = algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂
+      (Polynomial.C Polynomial.X) from rfl,
+    show coeffRing₂ToRatFunc (algebraMap (Polynomial (Polynomial ℚ))
+      CoeffRing₂ (Polynomial.C Polynomial.X)) = biPolyToRatFunc
+      (Polynomial.C Polynomial.X) from IsLocalization.lift_eq _ _]
+  simp [biPolyToRatFunc]
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+theorem coeffRing₂ToRatFunc_vElt₂ :
+    coeffRing₂ToRatFunc vElt₂ = (RatFunc.X : RatFunc (RatFunc ℚ)) := by
+  rw [show vElt₂ = algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂
+      Polynomial.X from rfl,
+    show coeffRing₂ToRatFunc (algebraMap (Polynomial (Polynomial ℚ))
+      CoeffRing₂ Polynomial.X) = biPolyToRatFunc Polynomial.X from
+      IsLocalization.lift_eq _ _]
+  simp [biPolyToRatFunc]
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+theorem coeffRing₂ToRatFunc_uvElt₂ :
+    coeffRing₂ToRatFunc uvElt₂ = uvGen := by
+  rw [show uvElt₂ = algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂
+      (Polynomial.C Polynomial.X * Polynomial.X) from rfl,
+    show coeffRing₂ToRatFunc (algebraMap (Polynomial (Polynomial ℚ))
+      CoeffRing₂ (Polynomial.C Polynomial.X * Polynomial.X))
+      = biPolyToRatFunc (Polynomial.C Polynomial.X * Polynomial.X) from
+      IsLocalization.lift_eq _ _]
+  simp [biPolyToRatFunc, uvGen]
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- The three slot compatibilities. -/
+theorem coeffRing₂ToRatFunc_uSlot :
+    coeffRing₂ToRatFunc.comp uSlot = uEmbR.comp coeffRingToRatFunc :=
+  coeffRing₂ToRatFunc_slot uElt₂ _ transcendental_CX
+    isUnit_u_one_sub_u coeffRing₂ToRatFunc_uElt₂
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+theorem coeffRing₂ToRatFunc_vSlot :
+    coeffRing₂ToRatFunc.comp vSlot = vEmbR.comp coeffRingToRatFunc :=
+  coeffRing₂ToRatFunc_slot vElt₂ _ transcendental_outerX
+    isUnit_v_one_sub_v coeffRing₂ToRatFunc_vElt₂
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+theorem coeffRing₂ToRatFunc_uvSlot :
+    coeffRing₂ToRatFunc.comp uvSlot = uvEmbR.comp coeffRingToRatFunc :=
+  coeffRing₂ToRatFunc_slot uvElt₂ _ transcendental_uvGen
+    isUnit_uv_one_sub_uv coeffRing₂ToRatFunc_uvElt₂
+
 set_option warn.sorry false in
-/-- **The formal chord `X`-identity** (sorry node — the two-variable
-series content): the identity in `CoeffRing₂⟦q⟧` between the three slot
-images of `XA`/`YA`. Descends from `analytic_chordX` through the
-two-variable rational-function field `ℚ(u)(v)⟦q⟧` (design recorded at
-the `bilateral_chordX_cleared` progress entry). -/
+/-- **The chord `X`-identity in `ℚ(u)(v)⟦q⟧`** (sorry node — the
+two-variable descent target): the identity among the three substitution
+images of the uniformisation series `X`, `Y` of
+`TateCurveConstruction.lean`. To be descended from `analytic_chordX`
+via `eq_zero_of_forall_hasSum_zero`-style coefficient extraction over
+algebraically independent transcendental pairs. -/
+theorem chordX_ratFunc₂ :
+    (PowerSeries.map uvEmbR TateCurve.X + PowerSeries.map uEmbR TateCurve.X
+        + PowerSeries.map vEmbR TateCurve.X) *
+      (PowerSeries.map uEmbR TateCurve.X
+        - PowerSeries.map vEmbR TateCurve.X) ^ 2 =
+    (PowerSeries.map uEmbR TateCurve.Y
+        - PowerSeries.map vEmbR TateCurve.Y) ^ 2 +
+      (PowerSeries.map uEmbR TateCurve.Y
+        - PowerSeries.map vEmbR TateCurve.Y) *
+        (PowerSeries.map uEmbR TateCurve.X
+          - PowerSeries.map vEmbR TateCurve.X) :=
+  sorry
+
+set_option warn.sorry false in
+/-- **The chord `Y`-identity in `ℚ(u)(v)⟦q⟧`** (sorry node), the
+collinearity content, descending from `analytic_chordY`. -/
+theorem chordY_ratFunc₂ :
+    -(PowerSeries.map uvEmbR TateCurve.Y + PowerSeries.map uvEmbR TateCurve.X) *
+      (PowerSeries.map uEmbR TateCurve.X
+        - PowerSeries.map vEmbR TateCurve.X) =
+    (PowerSeries.map uEmbR TateCurve.Y
+        - PowerSeries.map vEmbR TateCurve.Y) *
+        (PowerSeries.map uvEmbR TateCurve.X
+          - PowerSeries.map uEmbR TateCurve.X) +
+      PowerSeries.map uEmbR TateCurve.Y *
+        (PowerSeries.map uEmbR TateCurve.X
+          - PowerSeries.map vEmbR TateCurve.X) :=
+  sorry
+
+/-- **The formal chord `X`-identity** (DERIVED from the `ℚ(u)(v)⟦q⟧`
+identity by injectivity of the coefficient inclusion). -/
 theorem chordX_formal :
     (PowerSeries.map uvSlot XA + PowerSeries.map uSlot XA
         + PowerSeries.map vSlot XA) *
       (PowerSeries.map uSlot XA - PowerSeries.map vSlot XA) ^ 2 =
     (PowerSeries.map uSlot YA - PowerSeries.map vSlot YA) ^ 2 +
       (PowerSeries.map uSlot YA - PowerSeries.map vSlot YA) *
-        (PowerSeries.map uSlot XA - PowerSeries.map vSlot XA) :=
-  sorry
+        (PowerSeries.map uSlot XA - PowerSeries.map vSlot XA) := by
+  have hinj : Function.Injective
+      (PowerSeries.map coeffRing₂ToRatFunc) := by
+    intro P Q h
+    ext n
+    refine coeffRing₂ToRatFunc_injective ?_
+    have h1 := congrArg (PowerSeries.coeff n) h
+    rwa [PowerSeries.coeff_map, PowerSeries.coeff_map] at h1
+  apply hinj
+  have hb : ∀ (sl : CoeffRing →+* CoeffRing₂)
+      (em : RatFunc ℚ →+* RatFunc (RatFunc ℚ))
+      (hcomp : coeffRing₂ToRatFunc.comp sl = em.comp coeffRingToRatFunc)
+      (F : PowerSeries CoeffRing),
+      (PowerSeries.map coeffRing₂ToRatFunc) ((PowerSeries.map sl) F)
+        = PowerSeries.map em (PowerSeries.map coeffRingToRatFunc F) := by
+    intro sl em hcomp F
+    rw [← RingHom.comp_apply, ← PowerSeries.map_comp, hcomp,
+      PowerSeries.map_comp, RingHom.comp_apply]
+  simp only [map_add, map_mul, map_pow, map_sub,
+    hb uSlot uEmbR coeffRing₂ToRatFunc_uSlot,
+    hb vSlot vEmbR coeffRing₂ToRatFunc_vSlot,
+    hb uvSlot uvEmbR coeffRing₂ToRatFunc_uvSlot, map_XA, map_YA]
+  exact chordX_ratFunc₂
 
-set_option warn.sorry false in
-/-- **The formal chord `Y`-identity** (sorry node — the two-variable
-collinearity content), descending from `analytic_chordY`. -/
+/-- **The formal chord `Y`-identity** (DERIVED from the `ℚ(u)(v)⟦q⟧`
+identity by injectivity of the coefficient inclusion). -/
 theorem chordY_formal :
     -(PowerSeries.map uvSlot YA + PowerSeries.map uvSlot XA) *
       (PowerSeries.map uSlot XA - PowerSeries.map vSlot XA) =
     (PowerSeries.map uSlot YA - PowerSeries.map vSlot YA) *
         (PowerSeries.map uvSlot XA - PowerSeries.map uSlot XA) +
       PowerSeries.map uSlot YA *
-        (PowerSeries.map uSlot XA - PowerSeries.map vSlot XA) :=
-  sorry
+        (PowerSeries.map uSlot XA - PowerSeries.map vSlot XA) := by
+  have hinj : Function.Injective
+      (PowerSeries.map coeffRing₂ToRatFunc) := by
+    intro P Q h
+    ext n
+    refine coeffRing₂ToRatFunc_injective ?_
+    have h1 := congrArg (PowerSeries.coeff n) h
+    rwa [PowerSeries.coeff_map, PowerSeries.coeff_map] at h1
+  apply hinj
+  have hb : ∀ (sl : CoeffRing →+* CoeffRing₂)
+      (em : RatFunc ℚ →+* RatFunc (RatFunc ℚ))
+      (hcomp : coeffRing₂ToRatFunc.comp sl = em.comp coeffRingToRatFunc)
+      (F : PowerSeries CoeffRing),
+      (PowerSeries.map coeffRing₂ToRatFunc) ((PowerSeries.map sl) F)
+        = PowerSeries.map em (PowerSeries.map coeffRingToRatFunc F) := by
+    intro sl em hcomp F
+    rw [← RingHom.comp_apply, ← PowerSeries.map_comp, hcomp,
+      PowerSeries.map_comp, RingHom.comp_apply]
+  simp only [map_add, map_mul, map_neg, map_sub,
+    hb uSlot uEmbR coeffRing₂ToRatFunc_uSlot,
+    hb vSlot vEmbR coeffRing₂ToRatFunc_vSlot,
+    hb uvSlot uvEmbR coeffRing₂ToRatFunc_uvSlot, map_XA, map_YA]
+  exact chordY_ratFunc₂
 
 /-- The bivariate evaluation `ℚ[u][v] →+* k` at `(u₀, v₀)` (inner
 variable to `u₀`, outer variable to `v₀`). -/
