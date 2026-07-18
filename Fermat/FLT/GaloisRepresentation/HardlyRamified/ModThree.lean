@@ -17,6 +17,9 @@ public import Fermat.FLT.KnownIn1980s.RepresentationTheory.OddAbsIrred
 -- involution in `exists_conj_cyclotomicCharacter_three`)
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.Topology.Instances.Complex
+-- Dickson's classification of the finite subgroups of PGL₂(𝔽̄₃)
+-- (vendored PROVEN), consumed by `not_isAbsolutelyIrreducible`.
+public import Fermat.FLT.KnownIn1980s.PGL2.Defs
 import Mathlib.LinearAlgebra.Complex.FiniteDimensional
 import Mathlib.RingTheory.RootsOfUnity.AlgebraicallyClosed
 
@@ -30,6 +33,8 @@ the trivial character by the mod-3 cyclotomic character.
 @[expose] public section
 
 namespace GaloisRepresentation.IsHardlyRamified
+
+open scoped TensorProduct MatrixGroups
 
 local notation3 "Γ" K:max => Field.absoluteGaloisGroup K
 
@@ -164,14 +169,14 @@ field every nonzero element is a unit. Precisely: `k` has prime
 characteristic `p`; if `p ≠ 3` then `(p : ℤ_[3])` is a unit (its
 residue mod `3` is nonzero), yet it maps to `(p : k) = 0`, which is not
 a unit — contradiction. -/
-theorem three_eq_zero_of_finite_padicIntThree_algebra
-    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k] : (3 : k) = 0 := by
+theorem charP_three_of_finite_padicIntThree_algebra
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k] : CharP k 3 := by
   cases nonempty_fintype k
   obtain ⟨p, hchar⟩ := CharP.exists k
   haveI := hchar
   haveI hp : Fact p.Prime := ⟨CharP.char_is_prime k p⟩
   rcases eq_or_ne p 3 with rfl | hp3
-  · exact (CharP.cast_eq_zero k 3)
+  · exact hchar
   · exfalso
     -- `(p : ℤ_[3])` is a unit: its norm is not `< 1` since `3 ∤ p`
     have hunit : IsUnit ((p : ℕ) : ℤ_[3]) := by
@@ -186,6 +191,13 @@ theorem three_eq_zero_of_finite_padicIntThree_algebra
       rw [map_natCast]
       exact CharP.cast_eq_zero k p
     exact (hunit.map (algebraMap ℤ_[3] k)).ne_zero hzero
+
+/-- A finite field admitting a `ℤ_[3]`-algebra structure has `3 = 0`
+(the cast form of `charP_three_of_finite_padicIntThree_algebra`). -/
+theorem three_eq_zero_of_finite_padicIntThree_algebra
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k] : (3 : k) = 0 :=
+  haveI := charP_three_of_finite_padicIntThree_algebra (k := k)
+  CharP.cast_eq_zero k 3
 
 /-- **The `1`-eigenspace of an odd involution is a line**: on a
 `2`-dimensional space over a field where `2 ≠ 0`, a linear involution
@@ -278,15 +290,68 @@ theorem finrank_eigenspace_one_of_involution {k : Type u} [Field k]
   omega
 
 set_option warn.sorry false in
+/-- **The Serre §5.4/Tate elimination over the Dickson list** (sorry
+node): given a mod-3 hardly ramified representation `ρ`, a group
+homomorphism `π` from `Γ ℚ` to `PGL₂(𝔽̄₃)` which is the
+projectivization of the base change of `ρ` to `𝔽̄₃` (witnessed
+explicitly: `u` is the matrix form of the base-changed action in the
+basis `b`, transported along the field identification `e`, and `π` is
+its class modulo the centre), and the Dickson classification of the
+finite image `π.range`, every case is eliminated: cyclic and
+semidirect-of-elementary-abelian images contradict absolute
+irreducibility, and the dihedral, `A₄`, `S₄`, `A₅`, `PSL₂(𝔽_{3^m})`,
+`PGL₂(𝔽_{3^m})` cases contradict the hardly-ramified ramification
+constraints (cyclotomic determinant, unramified outside `{2, 3}`,
+flat at `3`, tame quadratic quotient at `2`) via Serre's
+discriminant/conductor bounds over `ℚ`. -/
+theorem serre_elimination {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (habs : Slop.OddRep.IsAbsolutelyIrreducible
+      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V))
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (π : Γ ℚ →* Dickson.PGL 3)
+    (hπ : ∀ g, π g = QuotientGroup.mk (u g))
+    (hcase :
+      (IsCyclic π.range) ∨
+      (∃ n : ℕ, n ≥ 2 ∧ Nonempty (π.range ≃* DihedralGroup n)) ∨
+      (Nonempty (π.range ≃* alternatingGroup (Fin 4))) ∨
+      (Nonempty (π.range ≃* Equiv.Perm (Fin 4))) ∨
+      (Nonempty (π.range ≃* alternatingGroup (Fin 5))) ∨
+      (∃ (m t : ℕ) (_ : m ≥ 1) (_ : Nat.Coprime t 3) (_ : t ∣ 3 ^ m - 1)
+        (φ : Multiplicative (ZMod t) →*
+          MulAut (Multiplicative (Fin m → ZMod 3))),
+        Nonempty (π.range ≃*
+          (Multiplicative (Fin m → ZMod 3)) ⋊[φ] Multiplicative (ZMod t))) ∨
+      (∃ m : ℕ, m ≥ 1 ∧ Nonempty (π.range ≃*
+        Matrix.ProjectiveSpecialLinearGroup (Fin 2) (GaloisField 3 m))) ∨
+      (∃ m : ℕ, m ≥ 1 ∧ Nonempty (π.range ≃*
+        (GL (Fin 2) (GaloisField 3 m) ⧸
+          Subgroup.center (GL (Fin 2) (GaloisField 3 m)))))) :
+    False :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
 /-- **No absolutely irreducible mod-3 hardly ramified representation**
-(sorry node — the Serre §5.4/Tate elimination): the projective image
-of an absolutely irreducible mod-3 representation is a finite subgroup
-of `PGL₂(𝔽̄₃)` classified by Dickson (vendored PROVEN in
-`Slop.PGL2.FiniteSubgroups`, to be reconnected by this node's proof),
-and the hardly-ramified ramification constraints (cyclotomic
-determinant, unramified outside `{2,3}`, flat at `3`, tame quadratic
-quotient at `2`) eliminate every case via discriminant/conductor
-bounds over `ℚ`. -/
+(DERIVED 2026-07-18 from the Serre-elimination leaf and the vendored
+Dickson classification): the base change of an absolutely irreducible
+mod-3 representation to `𝔽̄₃` projectivizes to a homomorphism
+`π : Γ ℚ →* PGL₂(𝔽̄₃)` with finite image (the action factors through
+the finite monoid `End k V`); Dickson's classification
+(`Dickson.classification_tame`/`classification_wild`, vendored PROVEN)
+puts `π.range` in the eight-case list, and the elimination leaf
+refutes every case. -/
 theorem not_isAbsolutelyIrreducible {k : Type u} [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
@@ -294,8 +359,99 @@ theorem not_isAbsolutelyIrreducible {k : Type u} [Finite k] [Field k]
     (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
     (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ) :
     ¬ Slop.OddRep.IsAbsolutelyIrreducible
-      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V) :=
-  sorry
+      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V) := by
+  intro habs
+  classical
+  haveI h3 : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
+  haveI h32 : Fact ((3 : ℕ) > 2) := ⟨by norm_num⟩
+  haveI : Finite V := Module.finite_of_finite k
+  -- `k` has characteristic `3`, so `𝔽̄₃` receives both `k̄` and `K 3`
+  haveI hchark : CharP k 3 := charP_three_of_finite_padicIntThree_algebra
+  letI : Algebra (ZMod 3) k := ZMod.algebra k 3
+  haveI : Algebra.IsAlgebraic (ZMod 3) (AlgebraicClosure k) := by
+    haveI : Algebra.IsAlgebraic (ZMod 3) k :=
+      Algebra.IsAlgebraic.of_finite (ZMod 3) k
+    exact Algebra.IsAlgebraic.trans (ZMod 3) k (AlgebraicClosure k)
+  haveI : IsAlgClosure (ZMod 3) (AlgebraicClosure k) :=
+    ⟨inferInstance, inferInstance⟩
+  let e : AlgebraicClosure k ≃ₐ[ZMod 3] Dickson.K 3 :=
+    IsAlgClosure.equiv (ZMod 3) (AlgebraicClosure k) (Dickson.K 3)
+  -- the base-changed representation and its matrix form
+  set L := AlgebraicClosure k with hL
+  set σρ : Representation L (Γ ℚ) (L ⊗[k] V) :=
+    Slop.OddRep.baseChange L (MonoidHomClass.toMonoidHom ρ) with hσρ
+  haveI : Module.Finite L (L ⊗[k] V) := Module.Finite.base_change k L V
+  have hfr2 : Module.finrank L (L ⊗[k] V) = 2 := by
+    rw [Module.finrank_baseChange]
+    exact Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
+  let b : Module.Basis (Fin 2) L (L ⊗[k] V) :=
+    Module.finBasisOfFinrankEq L (L ⊗[k] V) hfr2
+  -- the `GL₂(𝔽̄₃)`-valued matrix form of the action
+  let u : Γ ℚ →* GL (Fin 2) (Dickson.K 3) :=
+    (Units.map (RingHom.toMonoidHom
+      (RingHom.mapMatrix (e : AlgebraicClosure k →+* Dickson.K 3)))).comp
+      ((Units.mapEquiv
+        (LinearMap.toMatrixAlgEquiv b).toMulEquiv).toMonoidHom.comp
+        σρ.toHomUnits)
+  have hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b (σρ g)).map e := by
+    intro g
+    rfl
+  -- the projectivization
+  let π : Γ ℚ →* Dickson.PGL 3 :=
+    (QuotientGroup.mk' (Subgroup.center (GL (Fin 2) (Dickson.K 3)))).comp u
+  have hπ : ∀ g, π g = QuotientGroup.mk (u g) := fun g => rfl
+  -- the image is finite: the action factors through the finite `End k V`
+  haveI hfin : Finite π.range := by
+    haveI : Finite (Module.End k V) :=
+      Finite.of_injective _ DFunLike.coe_injective
+    -- `π g` depends on `g` only through `ρ g` (units with equal values
+    -- are equal)
+    have hdep : ∀ g₁ g₂ : Γ ℚ, (MonoidHomClass.toMonoidHom ρ) g₁ =
+        (MonoidHomClass.toMonoidHom ρ) g₂ → π g₁ = π g₂ := by
+      intro g₁ g₂ h12
+      have huu : u g₁ = u g₂ := by
+        apply Units.ext
+        rw [hu, hu]
+        show ((LinearMap.toMatrix b b
+          (((MonoidHomClass.toMonoidHom ρ) g₁).baseChange L)).map e) =
+          ((LinearMap.toMatrix b b
+          (((MonoidHomClass.toMonoidHom ρ) g₂).baseChange L)).map e)
+        rw [h12]
+      rw [hπ, hπ, huu]
+    let G' : Module.End k V → Dickson.PGL 3 := fun T =>
+      if h : ∃ g, (MonoidHomClass.toMonoidHom ρ) g = T then π h.choose else 1
+    have hπG : ∀ g, π g = G' ((MonoidHomClass.toMonoidHom ρ) g) := by
+      intro g
+      have hex : ∃ g', (MonoidHomClass.toMonoidHom ρ) g' =
+          (MonoidHomClass.toMonoidHom ρ) g := ⟨g, rfl⟩
+      show π g = dite _ _ _
+      rw [dif_pos hex]
+      exact (hdep _ _ hex.choose_spec).symm
+    have hsub : Set.range π ⊆ Set.range G' := by
+      rintro _ ⟨g, rfl⟩
+      exact ⟨_, (hπG g).symm⟩
+    exact ((Set.finite_range G').subset hsub).to_subtype
+  -- Dickson's classification of the finite image, then the elimination
+  refine serre_elimination V hV hρ habs b (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    u hu π hπ ?_
+  by_cases hnt : Nontrivial π.range
+  · by_cases hdvd : (3 : ℕ) ∣ Nat.card π.range
+    · rcases Dickson.classification_wild 3 π.range hdvd with h | h | h | ⟨_, h⟩
+      · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl h)))))
+      · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl h))))))
+      · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr h))))))
+      · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl h))))
+    · rcases Dickson.classification_tame 3 π.range hdvd hnt with h | h | h | h | h
+      · exact Or.inl h
+      · exact Or.inr (Or.inl h)
+      · exact Or.inr (Or.inr (Or.inl h))
+      · exact Or.inr (Or.inr (Or.inr (Or.inl h)))
+      · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl h))))
+  · haveI : Subsingleton π.range := not_nontrivial_iff_subsingleton.mp hnt
+    exact Or.inl ⟨⟨1, fun x => by
+      rw [Subsingleton.elim x 1]; exact Subgroup.mem_zpowers 1⟩⟩
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Mod-3 reducibility** (DERIVED 2026-07-18 from the three leaves

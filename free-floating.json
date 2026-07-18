@@ -1,5 +1,5 @@
 {
- "key": "1784384376.7154713",
+ "key": "1784384973.7245615",
  "returncode": 0,
  "kept_invisible": [
   {
@@ -111,5 +111,66 @@
    "name": "IsDedekindDomain.HeightOneSpectrum.algebraMap_completionIntegers"
   }
  ],
- "floating": []
+ "floating": [
+  {
+   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionHelpers",
+   "name": "Dickson.sylow_free_action"
+  },
+  {
+   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
+   "name": "Dickson.pgl_mulEquiv_psl"
+  },
+  {
+   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
+   "name": "Dickson.ratio_one_imp_unipotent"
+  },
+  {
+   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
+   "name": "Dickson.disjoint_fixedPairs"
+  },
+  {
+   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.TameClassification",
+   "name": "Dickson.commute_of_fixedPair"
+  },
+  {
+   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
+   "name": "Dickson.upper_triangular_mul_ratio"
+  },
+  {
+   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.RecognitionA5",
+   "name": "Dickson.too_many_elements_of_prime_order"
+  },
+  {
+   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
+   "name": "Dickson.exists_finite_subfield_conjugate"
+  },
+  {
+   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
+   "name": "Dickson.upper_triangular_ratio_unique"
+  },
+  {
+   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
+   "name": "Dickson.range_preserves_P1Fq"
+  },
+  {
+   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
+   "name": "Dickson.F_q_inv"
+  },
+  {
+   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.FieldReconstruction",
+   "name": "Dickson.F_q_div"
+  },
+  {
+   "module": "Fermat.FLT.KnownIn1980s.PGL2.Basic",
+   "name": "Dickson.PSL"
+  },
+  {
+   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
+   "name": "Dickson.finite_of_closure_finite"
+  },
+  {
+   "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.DicksonClassification",
+   "name": "Dickson.dickson_classification"
+  }
+ ]
 }
