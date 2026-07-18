@@ -926,7 +926,7 @@ translates of `u` in the half-open annulus `(|q|, 1]` coincide, since
 their ratio `|q|^(m'-m)` would otherwise leave the interval
 `(|q|, |q|⁻¹)`. -/
 theorem annulus_exponent_unique (q : k) (hq0 : q ≠ 0)
-    (hq : valuation k q < 1) (u : k) (hu0 : u ≠ 0) {m m' : ℤ}
+    (hq : valuation k q < 1) (u : k) {m m' : ℤ}
     (hm : valuation k q < valuation k (u * q ^ (-m)) ∧
       valuation k (u * q ^ (-m)) ≤ 1)
     (hm' : valuation k q < valuation k (u * q ^ (-m')) ∧
