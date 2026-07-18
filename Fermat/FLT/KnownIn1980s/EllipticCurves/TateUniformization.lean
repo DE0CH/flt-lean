@@ -1224,6 +1224,33 @@ theorem coeffRingEval_coeff_YA_inv (u₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1
     rw [hch]
     ring
 
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] in
+/-- **Inversion symmetry of the evaluated `x`-series**:
+`X(u₀⁻¹, q₀) = X(u₀, q₀)` (termwise from
+`coeffRingEval_coeff_XA_inv`; no convergence needed — the two series
+agree term by term). -/
+theorem evalA_XA_inv [TopologicalSpace k] (u₀ q₀ : k) (h0 : u₀ ≠ 0)
+    (h1 : u₀ ≠ 1) (h0' : u₀⁻¹ ≠ 0) (h1' : u₀⁻¹ ≠ 1) :
+    evalA u₀⁻¹ q₀ h0' h1' XA = evalA u₀ q₀ h0 h1 XA := by
+  unfold evalA
+  exact tsum_congr fun n ↦ by
+    rw [coeffRingEval_coeff_XA_inv u₀ h0 h1 h0' h1' n]
+
+/-- **Inversion antisymmetry of the evaluated `y`-series**:
+`Y(u₀⁻¹, q₀) = -Y(u₀, q₀) - X(u₀, q₀)` on the fundamental annulus —
+the series-level negation law of the Tate parametrisation. -/
+theorem evalA_YA_inv (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (h0' : u₀⁻¹ ≠ 0) (h1' : u₀⁻¹ ≠ 1) (hu : valuation k u₀ ≤ 1)
+    (hq : valuation k q₀ < valuation k u₀) :
+    evalA u₀⁻¹ q₀ h0' h1' YA =
+      -(evalA u₀ q₀ h0 h1 YA) - evalA u₀ q₀ h0 h1 XA := by
+  have hY := summable_evalA_YA u₀ q₀ h0 h1 hu hq
+  have hX := summable_evalA_XA u₀ q₀ h0 h1 hu hq
+  rw [evalA, evalA, evalA, ← tsum_neg, ← hY.neg.tsum_sub hX]
+  exact tsum_congr fun n ↦ by
+    rw [coeffRingEval_coeff_YA_inv u₀ h0 h1 h0' h1' n]
+    ring
+
 end Annulus
 
 end TateCurve
