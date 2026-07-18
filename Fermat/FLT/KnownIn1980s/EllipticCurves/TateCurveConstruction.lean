@@ -1866,6 +1866,19 @@ private theorem addRelXRaw_eq_zero (L : PeriodPair) (w : ℂ)
     rw [addRelXFn, if_neg (by tauto)]
   rw [← hzval, hconst, h0]
 
+
+set_option warn.sorry false in
+/-- (private WIP sorry node) **`℘'' = 6℘² − g₂/2`** away from the
+lattice: differentiate `derivWeierstrassP_sq` on the open complement of
+the lattice, cancel `℘'` where it is nonzero, and extend across its
+isolated zeros by the identity theorem (`latticeᶜ` is preconnected as
+the complement of a countable set). Consumed by the Laurent table for
+`tendsto_addRelXRaw_zero` (the `S`-coefficient conversions). -/
+private theorem deriv_derivWeierstrassP_eq (L : PeriodPair) {z : ℂ}
+    (hz : z ∉ L.lattice) :
+    deriv ℘'[L] z = 6 * ℘[L] z ^ 2 - L.g₂ / 2 :=
+  sorry
+
 end WeierstrassAddition
 
 end TateCurve
