@@ -2433,6 +2433,68 @@ theorem evalA_YA_bilateral (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
   rw [evalA, hfull.tsum_eq]
   ring
 
+/-- **The bilateral `y`-value** (junk off the wide window). -/
+noncomputable def bilateralY (u₀ q₀ : k) : k :=
+  u₀ ^ 2 / (1 - u₀) ^ 3 +
+    ((∑' m : ℕ+, (q₀ ^ (m : ℕ) * u₀) ^ 2 /
+        (1 - q₀ ^ (m : ℕ) * u₀) ^ 3) -
+     (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+        (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 3) +
+     (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+        q₀ ^ (N : ℕ)))
+
+/-- `evalA_YA_bilateral`, restated through `bilateralY`. -/
+theorem evalA_YA_eq_bilateralY (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hu : valuation k u₀ ≤ 1) (hq1 : valuation k q₀ < 1)
+    (hq : valuation k q₀ < valuation k u₀) :
+    evalA u₀ q₀ h0 h1 YA = bilateralY u₀ q₀ :=
+  evalA_YA_bilateral u₀ q₀ h0 h1 hu hq1 hq
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- The first `Y`-kernel under inversion:
+`(v⁻¹)²/(1-v⁻¹)³ = -(v/(1-v)³)`. -/
+theorem y_kernel_self_inv (v : k) (hv : v ≠ 0) (hv1 : v ≠ 1) :
+    (v⁻¹) ^ 2 / (1 - v⁻¹) ^ 3 = -(v / (1 - v) ^ 3) := by
+  have h1 : (1 - v) ≠ 0 := sub_ne_zero.mpr (Ne.symm hv1)
+  have h2 : (1 - v⁻¹) ≠ 0 := by
+    intro h0
+    have hinv : v⁻¹ = 1 := by linear_combination -h0
+    exact hv1 (by
+      have := congrArg (v * ·) hinv
+      simpa [mul_inv_cancel₀ hv] using this.symm)
+  field_simp
+  ring
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- The second `Y`-kernel under inversion:
+`v⁻¹/(1-v⁻¹)³ = -(v²/(1-v)³)`. -/
+theorem y_kernel_succ_inv (v : k) (hv : v ≠ 0) (hv1 : v ≠ 1) :
+    v⁻¹ / (1 - v⁻¹) ^ 3 = -(v ^ 2 / (1 - v) ^ 3) := by
+  have h1 : (1 - v) ≠ 0 := sub_ne_zero.mpr (Ne.symm hv1)
+  have h2 : (1 - v⁻¹) ≠ 0 := by
+    intro h0
+    have hinv : v⁻¹ = 1 := by linear_combination -h0
+    exact hv1 (by
+      have := congrArg (v * ·) hinv
+      simpa [mul_inv_cancel₀ hv] using this.symm)
+  field_simp
+  ring
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- The mixed constant identity behind `Y(u⁻¹) = -Y(u) - X(u)`:
+`(u⁻¹)²/(1-u⁻¹)³ = -(u²/(1-u)³) - u/(1-u)²`. -/
+theorem y_constant_inv (u : k) (hu : u ≠ 0) (hu1 : u ≠ 1) :
+    (u⁻¹) ^ 2 / (1 - u⁻¹) ^ 3 = -(u ^ 2 / (1 - u) ^ 3) - u / (1 - u) ^ 2 := by
+  have h1 : (1 - u) ≠ 0 := sub_ne_zero.mpr (Ne.symm hu1)
+  have h2 : (1 - u⁻¹) ≠ 0 := by
+    intro h0
+    have hinv : u⁻¹ = 1 := by linear_combination -h0
+    exact hu1 (by
+      have := congrArg (u * ·) hinv
+      simpa [mul_inv_cancel₀ hu] using this.symm)
+  field_simp
+  ring
+
 end Annulus
 
 end TateCurve
