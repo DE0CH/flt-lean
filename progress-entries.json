@@ -480,7 +480,7 @@
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
   "wip": false,
   "fullname": "GaloisRepresentation.IsHardlyRamified.exists_residue_package",
-  "text": "the residue package (sorry node; the Nakayama step 3 ∈ 𝔪 is PROVEN inline 2026-07-18). REMAINING ROUTE with verified mathlib entry points: IsNoetherianRing R via IsNoetherianRing.of_finite ℤ₃ R (RingTheory/Noetherian/Basic:340); then IsLocalRing.isOpen_maximalIdeal + finite_residueField_of_compactSpace (Topology/Algebra/Ring/Compact.lean:94-105) give openness and finiteness ONCE CompactSpace R and T2Space R are constructed — the missing bridge: R ≃ₗ ℤ₃ⁿ via Module.Free.chooseBasis, transported to a homeomorphism by IsModuleTopology.continuous_of_linearMap both ways (no ready-made compactness lemma in ModuleTopology.lean); ℤ₃ⁿ is compact T2. Then kk := ResidueField R, discrete (𝔪 open), ContinuousSMul from the open kernel, scalar tower rfl, rank via Module.rank_baseChange."
+  "text": "the residue package — PROVEN 2026-07-18, sorry-free [propext, Classical.choice, Quot.sound]. kk := ResidueField R: 3 ∈ 𝔪 by Nakayama over ℤ₃ (eq_bot_of_le_smul_of_le_jacobson_bot); CompactSpace/T2Space R by transporting ℤ₃ⁿ along chooseBasis.equivFun (continuous both ways by IsModuleTopology.continuous_of_linearMap); 𝔪 open + residue field finite by IsLocalRing.isOpen_maximalIdeal / finite_residueField_of_compactSpace (Noetherian via IsNoetherianRing.of_finite); discrete topology on kk with IsTopologicalRing; residue map continuous (open cosets), giving ContinuousSMul; scalar tower rfl; rank via Module.rank_baseChange."
  },
  {
   "name": "GaloisRepresentation.IsHardlyRamified.exists_residual_isHardlyRamified",

@@ -12,6 +12,10 @@ public import Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree
 import Mathlib.LinearAlgebra.Charpoly.BaseChange
 -- `LinearMap.det_baseChange`, used in the determinant transfer of
 -- `exists_residual_isHardlyRamified`
+import Mathlib.Topology.Algebra.Ring.Compact
+-- `IsLocalRing.isOpen_maximalIdeal` and
+-- `IsLocalRing.finite_residueField_of_compactSpace`, used in the residue
+-- package
 
 /-!
 # 3-adic hardly ramified representations
@@ -92,10 +96,96 @@ theorem exists_residue_package {R : Type u} [CommRing R]
       rw [hbot, Submodule.mem_bot] at hmem
       exact hmem
     exact one_ne_zero h01
-  -- the remaining package: instances on the residue field, openness of
-  -- the maximal ideal (via `3R` open in the `ℤ₃ⁿ` module topology),
-  -- finiteness (quotient of `R/3R`), continuity, and the rank transfer.
-  sorry
+  -- `R` is a Noetherian ring (module-finite over the Noetherian `ℤ₃`)
+  haveI hNoeth : IsNoetherianRing R := IsNoetherianRing.of_finite ℤ_[3] R
+  -- `R` is compact Hausdorff: transport along a `ℤ₃`-basis, since linear
+  -- maps between module-topology modules are continuous both ways
+  let bR := Module.Free.chooseBasis ℤ_[3] R
+  let eR : R ≃ₗ[ℤ_[3]] (Module.Free.ChooseBasisIndex ℤ_[3] R → ℤ_[3]) :=
+    bR.equivFun
+  have hcont₁ : Continuous eR :=
+    IsModuleTopology.continuous_of_linearMap eR.toLinearMap
+  have hcont₂ : Continuous eR.symm :=
+    IsModuleTopology.continuous_of_linearMap eR.symm.toLinearMap
+  let hom : R ≃ₜ (Module.Free.ChooseBasisIndex ℤ_[3] R → ℤ_[3]) :=
+    { toEquiv := eR.toEquiv
+      continuous_toFun := hcont₁
+      continuous_invFun := hcont₂ }
+  haveI : CompactSpace R := hom.symm.compactSpace
+  haveI : T2Space R := hom.symm.symm.isEmbedding.t2Space
+  -- openness of the maximal ideal and finiteness of the residue field
+  have hopen : IsOpen ((IsLocalRing.maximalIdeal R : Ideal R) : Set R) :=
+    IsLocalRing.isOpen_maximalIdeal R
+  haveI hfinres : Finite (IsLocalRing.ResidueField R) :=
+    IsLocalRing.finite_residueField_of_compactSpace
+  -- the residue field with the discrete topology
+  letI : TopologicalSpace (IsLocalRing.ResidueField R) := ⊥
+  haveI : DiscreteTopology (IsLocalRing.ResidueField R) := ⟨rfl⟩
+  haveI : IsTopologicalRing (IsLocalRing.ResidueField R) :=
+    { continuous_add := continuous_of_discreteTopology
+      continuous_mul := continuous_of_discreteTopology
+      continuous_neg := continuous_of_discreteTopology }
+  letI algZ3 : Algebra ℤ_[3] (IsLocalRing.ResidueField R) :=
+    ((algebraMap R (IsLocalRing.ResidueField R)).comp
+      (algebraMap ℤ_[3] R)).toAlgebra
+  haveI hST : IsScalarTower ℤ_[3] R (IsLocalRing.ResidueField R) :=
+    IsScalarTower.of_algebraMap_eq fun x => rfl
+  -- the residue map is continuous (the open kernel makes it locally
+  -- constant), hence the scalar action is continuous
+  have hresid_cont : Continuous (algebraMap R (IsLocalRing.ResidueField R)) := by
+    refine continuous_def.mpr fun s _ => ?_
+    have : (algebraMap R (IsLocalRing.ResidueField R)) ⁻¹' s =
+        ⋃ y ∈ s, (algebraMap R (IsLocalRing.ResidueField R)) ⁻¹' {y} := by
+      ext r
+      simp
+    rw [this]
+    refine isOpen_biUnion fun y hy => ?_
+    obtain ⟨r₀, hr₀⟩ : ∃ r₀ : R,
+        algebraMap R (IsLocalRing.ResidueField R) r₀ = y := by
+      rw [IsLocalRing.ResidueField.algebraMap_eq]
+      exact IsLocalRing.residue_surjective y
+    have hcoset : (algebraMap R (IsLocalRing.ResidueField R)) ⁻¹' {y} =
+        (fun x => r₀ + x) '' ((IsLocalRing.maximalIdeal R : Ideal R) : Set R) := by
+      ext r
+      constructor
+      · intro hr
+        refine ⟨r - r₀, ?_, by ring⟩
+        have h1 : algebraMap R (IsLocalRing.ResidueField R) (r - r₀) = 0 := by
+          rw [map_sub]
+          have h2 : algebraMap R (IsLocalRing.ResidueField R) r = y := hr
+          have h3 : algebraMap R (IsLocalRing.ResidueField R) r₀ = y := hr₀
+          rw [h2, h3, sub_self]
+        rwa [← RingHom.mem_ker, IsLocalRing.ResidueField.algebraMap_eq,
+          IsLocalRing.ker_residue] at h1
+      · rintro ⟨m, hm, rfl⟩
+        have h1 : algebraMap R (IsLocalRing.ResidueField R) m = 0 := by
+          rw [← RingHom.mem_ker, IsLocalRing.ResidueField.algebraMap_eq,
+            IsLocalRing.ker_residue]
+          exact hm
+        show algebraMap R (IsLocalRing.ResidueField R) (r₀ + m) = y
+        rw [map_add, h1, add_zero, hr₀]
+    rw [hcoset]
+    exact (Homeomorph.addLeft r₀).isOpenMap _ hopen
+  haveI hCS : ContinuousSMul R (IsLocalRing.ResidueField R) := by
+    constructor
+    have : (fun p : R × IsLocalRing.ResidueField R => p.1 • p.2) =
+        (fun p : IsLocalRing.ResidueField R × IsLocalRing.ResidueField R =>
+          p.1 * p.2) ∘ (fun p : R × IsLocalRing.ResidueField R =>
+          (algebraMap R (IsLocalRing.ResidueField R) p.1, p.2)) := by
+      funext p
+      simp [Algebra.smul_def]
+    rw [this]
+    exact continuous_of_discreteTopology.comp
+      ((hresid_cont.comp continuous_fst).prodMk continuous_snd)
+  refine ⟨IsLocalRing.ResidueField R, inferInstance, hfinres, algZ3,
+    inferInstance, inferInstance, inferInstance, inferInstance, hCS, hST,
+    (by rw [IsLocalRing.ResidueField.algebraMap_eq]
+        exact IsLocalRing.residue_surjective), hopen,
+    (by rw [IsLocalRing.ResidueField.algebraMap_eq]
+        exact IsLocalRing.ker_residue), ?_⟩
+  -- the rank transfers along the base change
+  rw [Module.rank_baseChange, hV]
+  simp
 
 set_option warn.sorry false in
 /-- **Flatness transfers to the residue field** (sorry node): if `ρ` is
