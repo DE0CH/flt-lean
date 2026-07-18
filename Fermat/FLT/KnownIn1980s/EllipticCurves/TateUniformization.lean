@@ -2001,6 +2001,90 @@ theorem evalA_XA_rep_inv (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
     _ = evalA u₀ q₀ h0 h1 XA :=
         (evalA_XA_eq_bilateralX u₀ q₀ h0 h1 hint.le hq1 hlow).symm
 
+omit [CharZero k] in
+/-- `∑ (n+1)xⁿ` is summable on the open unit disc. -/
+theorem summable_add_one_mul_geometric_nonarch (x : k)
+    (hx : valuation k x < 1) :
+    Summable (fun n : ℕ ↦ ((n : k) + 1) * x ^ n) := by
+  have h := (summable_nat_mul_geometric_nonarch x hx).add
+    (summable_geometric_nonarch x hx)
+  refine h.congr fun n ↦ ?_
+  ring
+
+omit [CharZero k] in
+/-- `∑ (n+1)xⁿ = (1-x)⁻²` on the open unit disc. -/
+theorem tsum_add_one_mul_geometric_nonarch (x : k)
+    (hx : valuation k x < 1) :
+    (∑' n : ℕ, ((n : k) + 1) * x ^ n) = ((1 - x)⁻¹) ^ 2 := by
+  have hxne : x ≠ 1 := by
+    rintro rfl
+    simp at hx
+  have h1x : (1 - x) ≠ 0 := sub_ne_zero.mpr (Ne.symm hxne)
+  have hsplit : (∑' n : ℕ, ((n : k) + 1) * x ^ n) =
+      (∑' n : ℕ, (n : k) * x ^ n) + (∑' n : ℕ, x ^ n) := by
+    rw [← (summable_nat_mul_geometric_nonarch x hx).tsum_add
+      (summable_geometric_nonarch x hx)]
+    exact tsum_congr fun n ↦ by ring
+  rw [hsplit, tsum_nat_mul_geometric_nonarch x hx,
+    tsum_geometric_nonarch x hx]
+  field_simp
+  ring
+
+omit [CharZero k] in
+/-- The Gauss sum in binomial form:
+`∑_{i<n+1} (i+1) = C(n+2, 2)`. -/
+theorem sum_range_add_one_eq_choose (n : ℕ) :
+    (∑ i ∈ Finset.range (n + 1), (i + 1)) = (n + 2).choose 2 := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    rw [Finset.sum_range_succ, ih, Nat.choose_succ_succ (n + 2) 1,
+      Nat.choose_one_right]
+    simp only [show Nat.succ 1 = 2 from rfl]
+    omega
+
+omit [CharZero k] in
+set_option maxHeartbeats 1000000 in
+/-- **The nonarchimedean geometric cube**:
+`∑ C(n+2,2)xⁿ = (1-x)⁻³` — the Cauchy product of `(1-x)⁻²` and the
+geometric series, with the antidiagonal counted by the Gauss sum. -/
+theorem tsum_choose_two_geometric_nonarch (x : k)
+    (hx : valuation k x < 1) :
+    (∑' n : ℕ, (((n + 2).choose 2 : ℕ) : k) * x ^ n) =
+      ((1 - x)⁻¹) ^ 3 := by
+  have hplus := summable_add_one_mul_geometric_nonarch x hx
+  have hgeom := summable_geometric_nonarch x hx
+  have hterm : ∀ n : ℕ,
+      (∑ kl ∈ Finset.antidiagonal n,
+        ((kl.1 : k) + 1) * x ^ kl.1 * x ^ kl.2) =
+      (((n + 2).choose 2 : ℕ) : k) * x ^ n := by
+    intro n
+    have h1 : ∀ kl ∈ Finset.antidiagonal n,
+        ((kl.1 : k) + 1) * x ^ kl.1 * x ^ kl.2 =
+        ((kl.1 : k) + 1) * x ^ n := by
+      intro kl hkl
+      rw [mul_assoc, ← pow_add, Finset.mem_antidiagonal.mp hkl]
+    rw [Finset.sum_congr rfl h1, ← Finset.sum_mul,
+      Finset.Nat.sum_antidiagonal_eq_sum_range_succ_mk]
+    congr 1
+    have hcast : (∑ i ∈ Finset.range (n + 1), ((i : k) + 1)) =
+        ((∑ i ∈ Finset.range (n + 1), (i + 1) : ℕ) : k) := by
+      push_cast
+      ring
+    rw [hcast, sum_range_add_one_eq_choose]
+  have hv2 := tsum_add_one_mul_geometric_nonarch x hx
+  have hv1 := tsum_geometric_nonarch x hx
+  set f : ℕ → k := fun n ↦ ((n : k) + 1) * x ^ n with hfdef
+  set g : ℕ → k := fun n ↦ x ^ n with hgdef
+  have hkey := Summable.tsum_mul_tsum_eq_tsum_sum_antidiagonal (A := ℕ)
+    hplus hgeom (summable_mul_prod hplus hgeom)
+  rw [hv2, hv1] at hkey
+  calc (∑' n : ℕ, (((n + 2).choose 2 : ℕ) : k) * x ^ n)
+      = ∑' n : ℕ, ∑ kl ∈ Finset.antidiagonal n, f kl.1 * g kl.2 :=
+        tsum_congr fun n ↦ (hterm n).symm
+    _ = ((1 - x)⁻¹) ^ 2 * (1 - x)⁻¹ := hkey.symm
+    _ = ((1 - x)⁻¹) ^ 3 := by ring
+
 end Annulus
 
 end TateCurve
