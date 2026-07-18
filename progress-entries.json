@@ -830,7 +830,7 @@
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
   "wip": false,
   "fullname": "WeierstrassCurve.isElliptic_tateCurve_and_j",
-  "text": "the j-invariant of the Tate curve is j(E) (and E_q is elliptic): the formal discriminant product identity Δ(E_q) = q∏(1−qⁿ)²⁴ plus the evaluation compatibility of the inverse j-series composition."
+  "text": "the j-invariant of the Tate curve is j(E), now DERIVED: ellipticity from the Δ-evaluation leaf via valuation_evalInt_eq (linear coefficient 1); j(E_q)⁻¹ = evalInt q jInv by the proven c₄-identity, evalInt_mul/pow, and evalInt_invOfUnit; the composition through tateParameter by the substitution-evaluation leaf and jInv_subst_jInvReverse."
  },
  {
   "name": "WeierstrassCurve.exists_variableChange_of_j_eq_of_split",
@@ -838,5 +838,19 @@
   "wip": false,
   "fullname": "WeierstrassCurve.exists_variableChange_of_j_eq_of_split",
   "text": "the descent half of Tate V.5.3: two split-multiplicative curves over k with equal j are k-isomorphic — over the separable closure by mathlib's exists_variableChange_of_j_eq, and the ±1 descent cocycle is trivial because both reductions are split (the isomorphism matches the rational node tangents)."
+ },
+ {
+  "name": "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
+  "wip": false,
+  "fullname": "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
+  "text": "the discriminant product formula: Δ(E_q) = evalInt q ΔFormal = q·∏(1−qⁿ)²⁴ (Silverman ATAEC V.3.1(b)); the last open q-expansion identity (c₄ and c₆ are proven)."
+ },
+ {
+  "name": "TateCurve.evalInt_subst",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
+  "wip": false,
+  "fullname": "TateCurve.evalInt_subst",
+  "text": "evaluation commutes with formal substitution (the formal-to-convergent bridge): evalInt x (F ∘ G) = evalInt (evalInt x G) F for constant-term-zero G and |x| < 1, by the nonarchimedean double-series rearrangement."
  }
 ]

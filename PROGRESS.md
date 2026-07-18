@@ -115,12 +115,26 @@ entries file). To add/remove/annotate a node, edit
                                                     - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the
                                                       j-identity leaf, the descent leaf, and the
                                                       PROVEN split reduction type of the Tate curve.
-                                                        - ❌· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E)
-                                                          (and E_q is elliptic): the formal
-                                                          discriminant product identity Δ(E_q) =
-                                                          q∏(1−qⁿ)²⁴ plus the evaluation
-                                                          compatibility of the inverse j-series
-                                                          composition.
+                                                        - ✅· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E),
+                                                          now DERIVED: ellipticity from the
+                                                          Δ-evaluation leaf via valuation_evalInt_eq
+                                                          (linear coefficient 1); j(E_q)⁻¹ = evalInt
+                                                          q jInv by the proven c₄-identity,
+                                                          evalInt_mul/pow, and evalInt_invOfUnit;
+                                                          the composition through tateParameter by
+                                                          the substitution-evaluation leaf and
+                                                          jInv_subst_jInvReverse.
+                                                            - ❌· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant product formula:
+                                                              Δ(E_q) = evalInt q ΔFormal =
+                                                              q·∏(1−qⁿ)²⁴ (Silverman ATAEC
+                                                              V.3.1(b)); the last open q-expansion
+                                                              identity (c₄ and c₆ are proven).
+                                                            - ❌· `TateCurve.evalInt_subst` — evaluation commutes with formal
+                                                              substitution (the formal-to-convergent
+                                                              bridge): evalInt x (F ∘ G) = evalInt
+                                                              (evalInt x G) F for constant-term-zero
+                                                              G and |x| < 1, by the nonarchimedean
+                                                              double-series rearrangement.
                                                         - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-
                                                           multiplicative curves over k with equal j
                                                           are k-isomorphic — over the separable
@@ -158,12 +172,30 @@ entries file). To add/remove/annotate a node, edit
                                                           j-identity leaf, the descent leaf, and the
                                                           PROVEN split reduction type of the Tate
                                                           curve.
-                                                            - ❌· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is
-                                                              j(E) (and E_q is elliptic): the formal
-                                                              discriminant product identity Δ(E_q) =
-                                                              q∏(1−qⁿ)²⁴ plus the evaluation
-                                                              compatibility of the inverse j-series
-                                                              composition.
+                                                            - ✅· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is
+                                                              j(E), now DERIVED: ellipticity from
+                                                              the Δ-evaluation leaf via
+                                                              valuation_evalInt_eq (linear
+                                                              coefficient 1); j(E_q)⁻¹ = evalInt q
+                                                              jInv by the proven c₄-identity,
+                                                              evalInt_mul/pow, and
+                                                              evalInt_invOfUnit; the composition
+                                                              through tateParameter by the
+                                                              substitution-evaluation leaf and
+                                                              jInv_subst_jInvReverse.
+                                                                - ❌· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant product formula:
+                                                                  Δ(E_q) = evalInt q ΔFormal =
+                                                                  q·∏(1−qⁿ)²⁴ (Silverman ATAEC
+                                                                  V.3.1(b)); the last open
+                                                                  q-expansion identity (c₄ and c₆
+                                                                  are proven).
+                                                                - ❌· `TateCurve.evalInt_subst` — evaluation commutes with formal
+                                                                  substitution (the formal-to-
+                                                                  convergent bridge): evalInt x (F ∘
+                                                                  G) = evalInt (evalInt x G) F for
+                                                                  constant-term-zero G and |x| < 1,
+                                                                  by the nonarchimedean double-
+                                                                  series rearrangement.
                                                             - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two
                                                               split-multiplicative curves over k
                                                               with equal j are k-isomorphic — over
@@ -216,12 +248,32 @@ entries file). To add/remove/annotate a node, edit
                                                               the j-identity leaf, the descent leaf,
                                                               and the PROVEN split reduction type of
                                                               the Tate curve.
-                                                                - ❌· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve
-                                                                  is j(E) (and E_q is elliptic): the
-                                                                  formal discriminant product
-                                                                  identity Δ(E_q) = q∏(1−qⁿ)²⁴ plus
-                                                                  the evaluation compatibility of
-                                                                  the inverse j-series composition.
+                                                                - ✅· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve
+                                                                  is j(E), now DERIVED: ellipticity
+                                                                  from the Δ-evaluation leaf via
+                                                                  valuation_evalInt_eq (linear
+                                                                  coefficient 1); j(E_q)⁻¹ = evalInt
+                                                                  q jInv by the proven c₄-identity,
+                                                                  evalInt_mul/pow, and
+                                                                  evalInt_invOfUnit; the composition
+                                                                  through tateParameter by the
+                                                                  substitution-evaluation leaf and
+                                                                  jInv_subst_jInvReverse.
+                                                                    - ❌· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant product
+                                                                      formula: Δ(E_q) = evalInt q
+                                                                      ΔFormal = q·∏(1−qⁿ)²⁴
+                                                                      (Silverman ATAEC V.3.1(b));
+                                                                      the last open q-expansion
+                                                                      identity (c₄ and c₆ are
+                                                                      proven).
+                                                                    - ❌· `TateCurve.evalInt_subst` — evaluation commutes with
+                                                                      formal substitution (the
+                                                                      formal-to-convergent bridge):
+                                                                      evalInt x (F ∘ G) = evalInt
+                                                                      (evalInt x G) F for constant-
+                                                                      term-zero G and |x| < 1, by
+                                                                      the nonarchimedean double-
+                                                                      series rearrangement.
                                                                 - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3:
                                                                   two split-multiplicative curves
                                                                   over k with equal j are
@@ -265,14 +317,34 @@ entries file). To add/remove/annotate a node, edit
                                                                   from the j-identity leaf, the
                                                                   descent leaf, and the PROVEN split
                                                                   reduction type of the Tate curve.
-                                                                    - ❌· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate
-                                                                      curve is j(E) (and E_q is
-                                                                      elliptic): the formal
-                                                                      discriminant product identity
-                                                                      Δ(E_q) = q∏(1−qⁿ)²⁴ plus the
-                                                                      evaluation compatibility of
-                                                                      the inverse j-series
-                                                                      composition.
+                                                                    - ✅· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate
+                                                                      curve is j(E), now DERIVED:
+                                                                      ellipticity from the
+                                                                      Δ-evaluation leaf via
+                                                                      valuation_evalInt_eq (linear
+                                                                      coefficient 1); j(E_q)⁻¹ =
+                                                                      evalInt q jInv by the proven
+                                                                      c₄-identity, evalInt_mul/pow,
+                                                                      and evalInt_invOfUnit; the
+                                                                      composition through
+                                                                      tateParameter by the
+                                                                      substitution-evaluation leaf
+                                                                      and jInv_subst_jInvReverse.
+                                                                        - ❌· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant product
+                                                                          formula: Δ(E_q) = evalInt q
+                                                                          ΔFormal = q·∏(1−qⁿ)²⁴
+                                                                          (Silverman ATAEC V.3.1(b));
+                                                                          the last open q-expansion
+                                                                          identity (c₄ and c₆ are
+                                                                          proven).
+                                                                        - ❌· `TateCurve.evalInt_subst` — evaluation commutes with
+                                                                          formal substitution (the
+                                                                          formal-to-convergent bridge):
+                                                                          evalInt x (F ∘ G) = evalInt
+                                                                          (evalInt x G) F for constant-
+                                                                          term-zero G and |x| < 1, by
+                                                                          the nonarchimedean double-
+                                                                          series rearrangement.
                                                                     - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate
                                                                       V.5.3: two split-
                                                                       multiplicative curves over k
@@ -400,10 +472,22 @@ entries file). To add/remove/annotate a node, edit
                                         - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity
                                           leaf, the descent leaf, and the PROVEN split reduction
                                           type of the Tate curve.
-                                            - ❌· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E) (and E_q is
-                                              elliptic): the formal discriminant product identity
-                                              Δ(E_q) = q∏(1−qⁿ)²⁴ plus the evaluation compatibility
-                                              of the inverse j-series composition.
+                                            - ✅· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E), now
+                                              DERIVED: ellipticity from the Δ-evaluation leaf via
+                                              valuation_evalInt_eq (linear coefficient 1); j(E_q)⁻¹
+                                              = evalInt q jInv by the proven c₄-identity,
+                                              evalInt_mul/pow, and evalInt_invOfUnit; the
+                                              composition through tateParameter by the substitution-
+                                              evaluation leaf and jInv_subst_jInvReverse.
+                                                - ❌· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant product formula: Δ(E_q) = evalInt
+                                                  q ΔFormal = q·∏(1−qⁿ)²⁴ (Silverman ATAEC
+                                                  V.3.1(b)); the last open q-expansion identity (c₄
+                                                  and c₆ are proven).
+                                                - ❌· `TateCurve.evalInt_subst` — evaluation commutes with formal substitution (the
+                                                  formal-to-convergent bridge): evalInt x (F ∘ G) =
+                                                  evalInt (evalInt x G) F for constant-term-zero G
+                                                  and |x| < 1, by the nonarchimedean double-series
+                                                  rearrangement.
                                             - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-
                                               multiplicative curves over k with equal j are
                                               k-isomorphic — over the separable closure by mathlib's
@@ -433,10 +517,23 @@ entries file). To add/remove/annotate a node, edit
                                             - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity
                                               leaf, the descent leaf, and the PROVEN split reduction
                                               type of the Tate curve.
-                                                - ❌· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E) (and E_q
-                                                  is elliptic): the formal discriminant product
-                                                  identity Δ(E_q) = q∏(1−qⁿ)²⁴ plus the evaluation
-                                                  compatibility of the inverse j-series composition.
+                                                - ✅· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E), now
+                                                  DERIVED: ellipticity from the Δ-evaluation leaf
+                                                  via valuation_evalInt_eq (linear coefficient 1);
+                                                  j(E_q)⁻¹ = evalInt q jInv by the proven c₄-
+                                                  identity, evalInt_mul/pow, and evalInt_invOfUnit;
+                                                  the composition through tateParameter by the
+                                                  substitution-evaluation leaf and
+                                                  jInv_subst_jInvReverse.
+                                                    - ❌· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant product formula: Δ(E_q) =
+                                                      evalInt q ΔFormal = q·∏(1−qⁿ)²⁴ (Silverman
+                                                      ATAEC V.3.1(b)); the last open q-expansion
+                                                      identity (c₄ and c₆ are proven).
+                                                    - ❌· `TateCurve.evalInt_subst` — evaluation commutes with formal substitution
+                                                      (the formal-to-convergent bridge): evalInt x
+                                                      (F ∘ G) = evalInt (evalInt x G) F for
+                                                      constant-term-zero G and |x| < 1, by the
+                                                      nonarchimedean double-series rearrangement.
                                                 - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-
                                                   multiplicative curves over k with equal j are
                                                   k-isomorphic — over the separable closure by
@@ -495,10 +592,19 @@ entries file). To add/remove/annotate a node, edit
                                 - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity leaf, the
                                   descent leaf, and the PROVEN split reduction type of the Tate
                                   curve.
-                                    - ❌· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E) (and E_q is
-                                      elliptic): the formal discriminant product identity Δ(E_q) =
-                                      q∏(1−qⁿ)²⁴ plus the evaluation compatibility of the inverse
-                                      j-series composition.
+                                    - ✅· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E), now DERIVED:
+                                      ellipticity from the Δ-evaluation leaf via
+                                      valuation_evalInt_eq (linear coefficient 1); j(E_q)⁻¹ =
+                                      evalInt q jInv by the proven c₄-identity, evalInt_mul/pow, and
+                                      evalInt_invOfUnit; the composition through tateParameter by
+                                      the substitution-evaluation leaf and jInv_subst_jInvReverse.
+                                        - ❌· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant product formula: Δ(E_q) = evalInt q
+                                          ΔFormal = q·∏(1−qⁿ)²⁴ (Silverman ATAEC V.3.1(b)); the last
+                                          open q-expansion identity (c₄ and c₆ are proven).
+                                        - ❌· `TateCurve.evalInt_subst` — evaluation commutes with formal substitution (the formal-
+                                          to-convergent bridge): evalInt x (F ∘ G) = evalInt
+                                          (evalInt x G) F for constant-term-zero G and |x| < 1, by
+                                          the nonarchimedean double-series rearrangement.
                                     - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-multiplicative
                                       curves over k with equal j are k-isomorphic — over the
                                       separable closure by mathlib's exists_variableChange_of_j_eq,
@@ -524,10 +630,19 @@ entries file). To add/remove/annotate a node, edit
                                 - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity leaf, the
                                   descent leaf, and the PROVEN split reduction type of the Tate
                                   curve.
-                                    - ❌· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E) (and E_q is
-                                      elliptic): the formal discriminant product identity Δ(E_q) =
-                                      q∏(1−qⁿ)²⁴ plus the evaluation compatibility of the inverse
-                                      j-series composition.
+                                    - ✅· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E), now DERIVED:
+                                      ellipticity from the Δ-evaluation leaf via
+                                      valuation_evalInt_eq (linear coefficient 1); j(E_q)⁻¹ =
+                                      evalInt q jInv by the proven c₄-identity, evalInt_mul/pow, and
+                                      evalInt_invOfUnit; the composition through tateParameter by
+                                      the substitution-evaluation leaf and jInv_subst_jInvReverse.
+                                        - ❌· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant product formula: Δ(E_q) = evalInt q
+                                          ΔFormal = q·∏(1−qⁿ)²⁴ (Silverman ATAEC V.3.1(b)); the last
+                                          open q-expansion identity (c₄ and c₆ are proven).
+                                        - ❌· `TateCurve.evalInt_subst` — evaluation commutes with formal substitution (the formal-
+                                          to-convergent bridge): evalInt x (F ∘ G) = evalInt
+                                          (evalInt x G) F for constant-term-zero G and |x| < 1, by
+                                          the nonarchimedean double-series rearrangement.
                                     - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-multiplicative
                                       curves over k with equal j are k-isomorphic — over the
                                       separable closure by mathlib's exists_variableChange_of_j_eq,

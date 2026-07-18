@@ -679,19 +679,131 @@ theorem WeierstrassCurve.hasSplitMultiplicativeReduction_tateCurve
   rw [hfac]
   exact Polynomial.Splits.X.mul (Polynomial.Splits.X_add_C 1)
 
+open PowerSeries in
+/-- The constant coefficient of `c₄Formal` is `1`. -/
+theorem TateCurve.constantCoeff_c₄Formal :
+    PowerSeries.constantCoeff TateCurve.c₄Formal = 1 := by
+  simp [TateCurve.c₄Formal, TateCurve.sInt]
+
+open PowerSeries in
+/-- The constant coefficient of `ΔFormal` is `0` (the `X`-factor). -/
+theorem TateCurve.constantCoeff_ΔFormal :
+    PowerSeries.constantCoeff TateCurve.ΔFormal = 0 := by
+  simp [TateCurve.ΔFormal]
+
+open PowerSeries in
+open scoped PowerSeries.WithPiTopology in
+/-- The linear coefficient of `ΔFormal` is `1` (the product has
+constant term `1`). -/
+theorem TateCurve.coeff_one_ΔFormal :
+    PowerSeries.coeff 1 TateCurve.ΔFormal = 1 := by
+  simp [TateCurve.ΔFormal, map_pow,
+    (WithPiTopology.multipliable_one_sub_X_pow ℤ).map_tprod _
+    (WithPiTopology.continuous_constantCoeff ℤ)]
+
 set_option warn.sorry false in
-/-- **The `j`-invariant of the Tate curve** (sorry node — the formal
-discriminant identity): the Tate curve of the Tate parameter of `E` is
-elliptic with `j`-invariant `j(E)`. Content: the product formula
-`Δ(E_q) = q·∏(1 − qⁿ)²⁴ = evalInt q ΔFormal` (Silverman, ATAEC
-V.3.1(b); the `c₄`-identity `c₄(E_q) = evalInt q c₄Formal` is immediate
-from `c₄ = 1 − 48a₄`), whence `j(E_q)⁻¹ = evalInt q jInv`, and the
-inverse-series composition (`jInv_subst_jInvReverse`, PROVEN formally;
-its evaluation compatibility is part of this node) gives
-`j(E_q) = j(E)` for `q = tateParameter j(E)`. -/
-theorem WeierstrassCurve.isElliptic_tateCurve_and_j :
-    ∃ _ : (tateCurve E.q).IsElliptic, (tateCurve E.q).j = E.j :=
+/-- **The discriminant of the Tate curve is the value of `ΔFormal`**
+(sorry node — the product formula, Silverman ATAEC V.3.1(b)): the
+discriminant of `y² + xy = x³ + a₄(q)x + a₆(q)` is
+`q·∏(1 − qⁿ)²⁴`. All other `q`-expansion identities (`c₄`, `c₆`) are
+PROVEN; this is the remaining combinatorial core (equivalently, in
+residue characteristic `≠ 2, 3`, the formal Jacobi identity
+`c₄Formal³ − c₆Formal² = 1728·ΔFormal`). -/
+theorem WeierstrassCurve.Δ_tateCurve_eq_evalInt (q : k)
+    (hq : valuation k q < 1) :
+    (tateCurve q).Δ = TateCurve.evalInt q TateCurve.ΔFormal :=
   sorry
+
+open PowerSeries in
+set_option warn.sorry false in
+/-- **Evaluation commutes with formal substitution** (sorry node — the
+formal-to-convergent bridge anticipated by `TateParameter.lean`): for
+`G` with vanishing constant term and `|x| < 1`, the value of the
+composite `F ∘ G` is the value of `F` at the value of `G` — both sides
+are limits of the same double series, rearranged by the nonarchimedean
+Mertens/Fubini argument (note `|evalInt x G| ≤ |x| < 1` by
+`valuation_evalInt_le_pow`, so the outer evaluation converges). -/
+theorem TateCurve.evalInt_subst (x : k) (hx : valuation k x < 1)
+    (G F : ℤ⟦X⟧) (hG : PowerSeries.constantCoeff G = 0) :
+    TateCurve.evalInt x (PowerSeries.subst G F) =
+      TateCurve.evalInt (TateCurve.evalInt x G) F :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+omit [E.IsMinimal 𝒪[k]] in
+/-- **The `j`-invariant of the Tate curve** (derived from the
+Δ-evaluation and substitution-evaluation leaves and the PROVEN
+`c₄`-identity): the Tate curve of the Tate parameter of `E` is elliptic
+with `j`-invariant `j(E)`. -/
+theorem WeierstrassCurve.isElliptic_tateCurve_and_j :
+    ∃ _ : (tateCurve E.q).IsElliptic, (tateCurve E.q).j = E.j := by
+  have hq0 : E.q ≠ 0 := E.q_ne_zero
+  have hq : valuation k E.q < 1 := E.valuation_q_lt_one
+  -- the discriminant value and its nonvanishing
+  have hΔ : (tateCurve E.q).Δ = TateCurve.evalInt E.q TateCurve.ΔFormal :=
+    Δ_tateCurve_eq_evalInt E.q hq
+  have hvΔ : valuation k ((tateCurve E.q).Δ) = valuation k E.q := by
+    rw [hΔ]
+    exact TateCurve.valuation_evalInt_eq E.q hq0 hq
+      TateCurve.constantCoeff_ΔFormal TateCurve.coeff_one_ΔFormal
+  have hΔne : (tateCurve E.q).Δ ≠ 0 := by
+    intro h0
+    rw [h0, map_zero] at hvΔ
+    exact hq0 ((valuation k).zero_iff.mp hvΔ.symm)
+  haveI hell : (tateCurve E.q).IsElliptic := ⟨isUnit_iff_ne_zero.mpr hΔne⟩
+  refine ⟨hell, ?_⟩
+  -- `c₄` is a unit
+  have hc₄eq : (tateCurve E.q).c₄ = 1 - 48 * tateA₄ E.q := by
+    simp only [tateCurve, WeierstrassCurve.c₄, WeierstrassCurve.b₂,
+      WeierstrassCurve.b₄]
+    ring
+  have h48v : valuation k (48 : k) ≤ 1 := by
+    exact_mod_cast valuation_intCast_le_one (R := k) 48
+  have h48 : valuation k (48 * tateA₄ E.q) < 1 := by
+    rw [map_mul]
+    calc valuation k (48 : k) * valuation k (tateA₄ E.q)
+        ≤ 1 * valuation k (tateA₄ E.q) := mul_le_mul' h48v le_rfl
+      _ = valuation k (tateA₄ E.q) := one_mul _
+      _ < 1 := valuation_tateA₄_lt_one E.q hq
+  have hc₄K : valuation k (tateCurve E.q).c₄ = 1 := by
+    rw [hc₄eq]
+    exact Valuation.map_one_sub_of_lt (valuation k) h48
+  have hc₄ne : (tateCurve E.q).c₄ ≠ 0 := by
+    intro h0
+    rw [h0, map_zero] at hc₄K
+    exact zero_ne_one hc₄K
+  -- the value of `jInv` at `E.q` is `j(E_q)⁻¹`
+  have hcc₄3 : PowerSeries.constantCoeff (TateCurve.c₄Formal ^ 3) = 1 := by
+    rw [map_pow, TateCurve.constantCoeff_c₄Formal, one_pow]
+  have hjinv : TateCurve.evalInt E.q TateCurve.jInv =
+      ((tateCurve E.q).j)⁻¹ := by
+    rw [TateCurve.jInv, TateCurve.evalInt_mul E.q hq,
+      TateCurve.evalInt_invOfUnit E.q hq _ hcc₄3,
+      TateCurve.evalInt_pow E.q hq, ← c₄_tateCurve_eq_evalInt E.q hq, ← hΔ]
+    rw [WeierstrassCurve.j, Units.val_inv_eq_inv_val,
+      (tateCurve E.q).coe_Δ']
+    rw [mul_inv, inv_inv]
+  -- the composition: the value of `jInv` at the Tate parameter is `j(E)⁻¹`
+  have hvjinv : valuation k (E.j)⁻¹ < 1 := by
+    rw [map_inv₀]
+    exact inv_lt_one_of_one_lt₀ E.one_lt_valuation_j
+  have hcomp : TateCurve.evalInt E.q TateCurve.jInv = (E.j)⁻¹ := by
+    have hqdef : E.q = TateCurve.evalInt (E.j)⁻¹ TateCurve.jInvReverse := by
+      rw [show E.q = WeierstrassCurve.tateParameter E.j from rfl,
+        WeierstrassCurve.tateParameter_eq]
+    rw [hqdef, ← TateCurve.evalInt_subst (E.j)⁻¹ hvjinv _ _
+      TateCurve.constantCoeff_jInvReverse,
+      TateCurve.jInv_subst_jInvReverse, TateCurve.evalInt_X]
+  -- conclude by inverting
+  have hjEne : E.j ≠ 0 := by
+    intro h0
+    have h1 := E.one_lt_valuation_j
+    rw [h0, map_zero] at h1
+    exact absurd h1 (not_lt.mpr zero_le)
+  have hkey : ((tateCurve E.q).j)⁻¹ = (E.j)⁻¹ := by
+    rw [← hjinv, hcomp]
+  exact inv_injective hkey
 
 set_option warn.sorry false in
 /-- **Split multiplicative curves with equal `j` are isomorphic**
@@ -713,6 +825,7 @@ theorem WeierstrassCurve.exists_variableChange_of_j_eq_of_split
     ∃ C : VariableChange k, C • W₁ = W₂ :=
   sorry
 
+omit [E.IsMinimal 𝒪[k]] in
 /-- Tate's theorem (Silverman, ATAEC V.5.3, derived from the two leaves
 above and the PROVEN reduction type of the Tate curve): an elliptic
 curve with split multiplicative reduction is isomorphic, by a change of
@@ -844,6 +957,7 @@ theorem WeierstrassCurve.exists_tateCurveEquivSepClosure (q : kˣ)
           e (Additive.ofMul ↑(Units.map σ.toAlgHom.toRingHom.toMonoidHom u)) :=
   sorry
 
+omit [E.IsMinimal 𝒪[k]] in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 400000 in
 set_option maxHeartbeats 1000000 in

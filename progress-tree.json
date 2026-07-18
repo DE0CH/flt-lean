@@ -118,8 +118,10 @@
   "WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two": "✅",
   "inertia_fixes_algHom_of_unramified_gen_padic_two": "✅✅",
   "WeierstrassCurve.hasSplitMultiplicativeReduction_tateCurve": "✅✅",
-  "WeierstrassCurve.isElliptic_tateCurve_and_j": "❌",
-  "WeierstrassCurve.exists_variableChange_of_j_eq_of_split": "❌"
+  "WeierstrassCurve.isElliptic_tateCurve_and_j": "✅",
+  "WeierstrassCurve.exists_variableChange_of_j_eq_of_split": "❌",
+  "WeierstrassCurve.Δ_tateCurve_eq_evalInt": "❌",
+  "TateCurve.evalInt_subst": "❌"
  },
  "children": {
   "fermat_last_theorem": [
@@ -579,8 +581,13 @@
    "ValuationSubring.inertia_fixes_root_of_separable_residue"
   ],
   "WeierstrassCurve.hasSplitMultiplicativeReduction_tateCurve": [],
-  "WeierstrassCurve.isElliptic_tateCurve_and_j": [],
-  "WeierstrassCurve.exists_variableChange_of_j_eq_of_split": []
+  "WeierstrassCurve.isElliptic_tateCurve_and_j": [
+   "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
+   "TateCurve.evalInt_subst"
+  ],
+  "WeierstrassCurve.exists_variableChange_of_j_eq_of_split": [],
+  "WeierstrassCurve.Δ_tateCurve_eq_evalInt": [],
+  "TateCurve.evalInt_subst": []
  },
  "roots": [
   "fermat_last_theorem",
