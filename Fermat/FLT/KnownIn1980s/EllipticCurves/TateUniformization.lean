@@ -1841,6 +1841,134 @@ theorem bilateralX_inv (u₀ q₀ : k) (h0 : u₀ ≠ 0) :
   rw [hconst]
   ring
 
+omit [CharZero k] in
+/-- The Lambert-term family is summable in the general window: the
+rows of the summable double series sum to it fiberwise. -/
+theorem summable_lambert_terms (w q₀ : k) (hq : valuation k q₀ < 1)
+    (hqw : valuation k (q₀ * w) < 1) :
+    Summable (fun m : ℕ+ ↦
+      q₀ ^ (m : ℕ) * w / (1 - q₀ ^ (m : ℕ) * w) ^ 2) :=
+  ((summable_lambert_prod' w q₀ hq hqw).hasSum.prod_fiberwise
+    (fun m ↦ hasSum_lambert_row' w q₀ hq hqw m)).summable
+
+omit [CharZero k] in
+/-- Summability of an `ℕ+`-family follows from summability of its
+shift. -/
+theorem summable_pnat_of_shift {f : ℕ+ → k}
+    (hf : Summable fun m : ℕ+ ↦ f (m + 1)) : Summable f := by
+  have hpn : ∀ n : ℕ, (n + 1).succPNat = n.succPNat + 1 := by
+    intro n
+    apply PNat.coe_injective
+    simp [Nat.succPNat]
+  have hN : Summable (fun n : ℕ ↦ f (n + 1).succPNat) := by
+    have h := (Equiv.pnatEquivNat.symm.summable_iff).mpr hf
+    refine h.congr fun n ↦ ?_
+    simp only [Function.comp_apply, Equiv.pnatEquivNat_symm_apply]
+    exact congrArg f (hpn n).symm
+  have h2 : Summable (fun n : ℕ ↦ f n.succPNat) :=
+    (summable_nat_add_iff 1).mp hN
+  exact (Equiv.pnatEquivNat.symm.summable_iff).mp
+    (h2.congr fun n ↦ by
+      simp only [Function.comp_apply, Equiv.pnatEquivNat_symm_apply])
+
+omit [CharZero k] in
+set_option maxHeartbeats 1000000 in
+/-- **Shift invariance of the bilateral `x`-value** (the translation
+identity, Silverman V.3.1(a)): `bilateralX (q₀u₀) q₀ = bilateralX u₀ q₀`
+on the annulus — the constant term of the shifted parameter is the
+first term of the `u₀`-half-sum, and the first term of the shifted
+inverse half-sum is the `u₀`-constant; everything else reindexes by
+one step. -/
+theorem bilateralX_shift (u₀ q₀ : k) (h0 : u₀ ≠ 0) (hq0 : q₀ ≠ 0)
+    (hq1 : valuation k q₀ < 1) (hlow : valuation k q₀ < valuation k u₀)
+    (hhigh : valuation k u₀ ≤ 1) :
+    bilateralX (q₀ * u₀) q₀ = bilateralX u₀ q₀ := by
+  have hv0 : valuation k u₀ ≠ 0 := by
+    simpa [ne_eq, map_eq_zero] using h0
+  have hqu : valuation k (q₀ * u₀) < 1 := by
+    rw [map_mul]
+    calc valuation k q₀ * valuation k u₀
+        ≤ valuation k q₀ * 1 := mul_le_mul_right hhigh _
+      _ = valuation k q₀ := mul_one _
+      _ < 1 := hq1
+  have hq2u : valuation k (q₀ * (q₀ * u₀)) < 1 := by
+    rw [map_mul]
+    calc valuation k q₀ * valuation k (q₀ * u₀)
+        ≤ 1 * valuation k (q₀ * u₀) :=
+          mul_le_mul_left hq1.le _
+      _ = valuation k (q₀ * u₀) := one_mul _
+      _ < 1 := hqu
+  have hquinv : valuation k (q₀ * u₀⁻¹) < 1 := by
+    rw [map_mul, map_inv₀]
+    calc valuation k q₀ * (valuation k u₀)⁻¹
+        < valuation k u₀ * (valuation k u₀)⁻¹ :=
+          mul_lt_mul_of_pos_right hlow
+            (zero_lt_iff.mpr (inv_ne_zero hv0))
+      _ = 1 := mul_inv_cancel₀ hv0
+  have hS1 := summable_lambert_terms u₀ q₀ hq1 hqu
+  have hS2 := summable_lambert_terms (q₀ * u₀) q₀ hq1 hq2u
+  have hS3 := summable_lambert_terms u₀⁻¹ q₀ hq1 hquinv
+  -- the shifted-inverse family: its shift is the `u₀⁻¹`-family
+  have hS4 : Summable (fun m : ℕ+ ↦
+      q₀ ^ (m : ℕ) * (q₀ * u₀)⁻¹ /
+        (1 - q₀ ^ (m : ℕ) * (q₀ * u₀)⁻¹) ^ 2) := by
+    refine summable_pnat_of_shift (hS3.congr fun m ↦ ?_)
+    have hterm : q₀ ^ ((m + 1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹ =
+        q₀ ^ (m : ℕ) * u₀⁻¹ := by
+      rw [mul_inv, PNat.add_coe, PNat.one_coe, pow_succ]
+      field_simp
+    rw [hterm]
+  -- the two shift computations
+  have hshift2 : (∑' m : ℕ+, q₀ ^ (m : ℕ) * (q₀ * u₀) /
+      (1 - q₀ ^ (m : ℕ) * (q₀ * u₀)) ^ 2) =
+      (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀ /
+        (1 - q₀ ^ (m : ℕ) * u₀) ^ 2) -
+      q₀ * u₀ / (1 - q₀ * u₀) ^ 2 := by
+    have h := tsum_pnat_eq_add_shift hS1
+    have hcongr : (∑' m : ℕ+, q₀ ^ ((m + 1 : ℕ+) : ℕ) * u₀ /
+        (1 - q₀ ^ ((m + 1 : ℕ+) : ℕ) * u₀) ^ 2) =
+        (∑' m : ℕ+, q₀ ^ (m : ℕ) * (q₀ * u₀) /
+          (1 - q₀ ^ (m : ℕ) * (q₀ * u₀)) ^ 2) := by
+      refine tsum_congr fun m ↦ ?_
+      rw [show q₀ ^ ((m + 1 : ℕ+) : ℕ) * u₀ =
+          q₀ ^ (m : ℕ) * (q₀ * u₀) from by
+        rw [PNat.add_coe, PNat.one_coe, pow_succ]
+        ring]
+    rw [hcongr] at h
+    have h1 : q₀ ^ ((1 : ℕ+) : ℕ) * u₀ / (1 - q₀ ^ ((1 : ℕ+) : ℕ) * u₀) ^ 2
+        = q₀ * u₀ / (1 - q₀ * u₀) ^ 2 := by
+      norm_num
+    rw [h1] at h
+    linear_combination -h
+  have hshift4 : (∑' m : ℕ+, q₀ ^ (m : ℕ) * (q₀ * u₀)⁻¹ /
+      (1 - q₀ ^ (m : ℕ) * (q₀ * u₀)⁻¹) ^ 2) =
+      u₀⁻¹ / (1 - u₀⁻¹) ^ 2 +
+      (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+        (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 2) := by
+    have h := tsum_pnat_eq_add_shift hS4
+    have h1 : q₀ ^ ((1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹ /
+        (1 - q₀ ^ ((1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹) ^ 2
+        = u₀⁻¹ / (1 - u₀⁻¹) ^ 2 := by
+      rw [show q₀ ^ ((1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹ = u₀⁻¹ from by
+        rw [mul_inv, PNat.one_coe, pow_one]
+        field_simp]
+    have hcongr : (∑' m : ℕ+,
+        q₀ ^ ((m + 1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹ /
+          (1 - q₀ ^ ((m + 1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹) ^ 2) =
+        (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 2) := by
+      refine tsum_congr fun m ↦ ?_
+      rw [show q₀ ^ ((m + 1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹ =
+          q₀ ^ (m : ℕ) * u₀⁻¹ from by
+        rw [mul_inv, PNat.add_coe, PNat.one_coe, pow_succ]
+        field_simp]
+    rw [h1, hcongr] at h
+    exact h
+  -- assemble
+  rw [bilateralX, bilateralX, hshift2, hshift4,
+    lambert_kernel_inv u₀ h0]
+  ring
+
 end Annulus
 
 end TateCurve
