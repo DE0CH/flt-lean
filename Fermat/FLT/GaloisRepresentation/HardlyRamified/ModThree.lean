@@ -1583,6 +1583,8 @@ theorem cyclotomicCharacter_algebraMap_eq_one_of_inertia_two
   rw [show ((3 : ℕ) : k) = 0 from CharP.cast_eq_zero k 3]
   ring
 
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
 set_option warn.sorry false in
 /-- **The inertia bridge at `2`** (sorry node — completion
 bookkeeping, stated up to conjugacy since the two local worlds involve
@@ -1609,6 +1611,21 @@ theorem localInertia_two_eq_map_padic
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ =
       c * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ * c⁻¹ :=
+  -- IMPLEMENTATION DESIGN (2026-07-18, revised): `absoluteGaloisGroup.map`
+  -- carries a spurious `[NumberField K]` hypothesis, so `τ` cannot be
+  -- produced as `map E.symm σ`. Instead: (1) `E : adicCompletion ℚ v₂ ≃A[ℚ]
+  -- ℚ_[2]` from `padicEquiv` after the prime-cast
+  -- `primesEquiv v₂ = ⟨2, _⟩` (`natGenerator_toHeightOneSpectrum`);
+  -- (2) `ι₃ := AlgebraicClosure.map E.symm` is BIJECTIVE (injective field
+  -- hom; image algebraically closed with algebraic extension above it), so
+  -- define `τ := ι₃⁻¹ ∘ σ ∘ ι₃` directly as a `ℚ_[2]`-algebra
+  -- automorphism (the square `ι₃ (τ y) = σ (ι₃ y)` holds by construction,
+  -- no `lift_map` over `ℚ_[2]` needed); (3) inertia membership of `τ`
+  -- transports through `ι₃` by the spectral-norm compatibility of the
+  -- isometric `E`; (4) the conjugator `c` from `Normal.algHomEquivAut`
+  -- applied to `ι₃ ∘ ι₂ : ℚᵃˡᵍ →ₐ[ℚ] Kᵥ₂ᵃˡᵍ` against
+  -- `ι₁ := AlgebraicClosure.map (algebraMap ℚ Kᵥ₂)`; (5) the final square
+  -- pointwise through injective `ι₁`, using `lift_map` only over `ℚ`.
   sorry
 
 set_option backward.isDefEq.respectTransparency false in
