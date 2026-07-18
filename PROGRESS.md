@@ -280,52 +280,79 @@ entries file). To add/remove/annotate a node, edit
                                                                           2026-07-18), so the ℂ-analytic
                                                                           route requires formalizing it
                                                                           first. IMPLEMENTATION STATE
-                                                                          (2026-07-18): the ℂ-side
-                                                                          Liouville machine is BUILT in
-                                                                          TateCurveConstruction
-                                                                          (private):
-                                                                          addRelXRaw/addRelXFn with
-                                                                          periodicity, generic
-                                                                          analyticity, the −w-family
-                                                                          removability PROVEN (dslope
-                                                                          factorization + Riemann weak
-                                                                          removability), and the full
-                                                                          Liouville assembly DERIVED;
-                                                                          ONE leaf remains
-                                                                          (tendsto_addRelXRaw_zero, the
-                                                                          Laurent table at the origin).
-                                                                          KEY RECON: clear x⁶: Ĥ :=
-                                                                          (S+W)(x+x³(E−W))² +
-                                                                          (1+x²E)(1+x²(E−W))² −
-                                                                          ¼(−2+x³(F−W'))² is manifestly
-                                                                          analytic with raw = x⁻⁶Ĥ;
-                                                                          mathlib's Analysis.Analytic.Is
-                                                                          olatedZeros provides the
-                                                                          dslope-tower ↔ series bridge (
-                                                                          has_fpower_series_iterate_dslo
-                                                                          pe_fslope + coeff_fslope), so
-                                                                          tower values = Taylor
-                                                                          coefficients; E/F-coefficients
-                                                                          from iteratedDeriv_weierstrass
-                                                                          PExcept_self /
-                                                                          derivWeierstrassPExceptSeries
-                                                                          + sumInvPow_zero (= G-series;
-                                                                          odd vanish; c₂ = 3G₄ = g₂/20,
-                                                                          c₄ = 5G₆ = g₃/28);
-                                                                          S-coefficients are
-                                                                          ℘-derivatives at w, converted
-                                                                          by ℘'' = 6℘² − g₂/2 (etc.),
-                                                                          themselves derived from
-                                                                          derivWeierstrassP_sq by
-                                                                          differentiation + analytic
-                                                                          continuation across the
-                                                                          isolated zeros of ℘'.
-                                                                          Assembly: truncate E,F,S with
-                                                                          tower remainders, substitute
-                                                                          into Ĥ, ring-normalize, cancel
-                                                                          coefficients via the hand-
-                                                                          verified table, conclude Ĥ =
-                                                                          x⁷·(analytic) and Tendsto.
+                                                                          (2026-07-18b): ℂ-ANALYTIC SIDE
+                                                                          COMPLETE — addRelXRaw_eq_zero
+                                                                          (Liouville) and
+                                                                          addRelYRaw_eq_zero
+                                                                          (differentiate the X-identity;
+                                                                          Groebner certificate
+                                                                          (℘z−℘w)²·collinearity ∈
+                                                                          ideal{Xid, dXid, DE1, DE2}
+                                                                          with cofactors (℘z−℘w),
+                                                                          (−℘'z−℘'w), ±(℘'w−℘'z)/4;
+                                                                          identity theorem across ℘=℘w)
+                                                                          both PROVEN in
+                                                                          TateCurveConstruction;
+                                                                          analytic_chordX and
+                                                                          analytic_chordY (XAn/YAn forms
+                                                                          on the annulus
+                                                                          0<‖q‖<‖u‖,‖v‖,‖uv‖<1) PROVEN
+                                                                          (private). REMAINING — two-
+                                                                          variable formal descent: (1)
+                                                                          ring R₂ := RatFunc (RatFunc ℚ)
+                                                                          = ℚ(u)(v); three substitution
+                                                                          homs RatFunc ℚ →+* R₂:
+                                                                          C-embedding (u↦u), v-subst
+                                                                          (u↦RatFunc.X of outer), uv-
+                                                                          subst (u↦C(inner X)·outer X) —
+                                                                          latter two via
+                                                                          IsFractionRing.lift on ℚ[X]
+                                                                          (images of nonzero polys are
+                                                                          units since v, uv
+                                                                          transcendental over
+                                                                          ℚ(u)-fraction images);
+                                                                          X_u/X_v/X_uv/Y_* :=
+                                                                          PowerSeries.map of
+                                                                          TateCurve.X/Y; (2) 2-var
+                                                                          descent lemma mirroring
+                                                                          eq_zero_of_forall_hasSum_zero:
+                                                                          evalAt₂ u₀ v₀ := RatFunc.eval
+                                                                          (evalAtHom u₀ htr) v₀ : R₂ →
+                                                                          ℂ; coefficient-wise vanishing
+                                                                          by coeffs_eq_zero_of_hasSum_pu
+                                                                          nctured, then numerator-
+                                                                          polynomial-over-ℚ(u) infinite-
+                                                                          roots + injectivity of
+                                                                          evalAtHom; ONE fixed
+                                                                          transcendental u₀ ∈ (1/2,1)
+                                                                          suffices with v₀ := u₀^k (k ≥
+                                                                          2 infinitely many; u₀v₀ =
+                                                                          u₀^(k+1) transcendental
+                                                                          automatically; windows OK
+                                                                          since r can shrink with k);
+                                                                          (3) compat: RatFunc.eval-
+                                                                          composite = evalAtHom v₀ resp.
+                                                                          evalAtHom (u₀v₀) (hom-
+                                                                          uniqueness via
+                                                                          IsFractionRing.lift ext on the
+                                                                          ℚ[X]-generator); hasSum
+                                                                          transport lemmas mirror
+                                                                          hasSum_evalAt_add/neg/sub/mul
+                                                                          verbatim with the composite
+                                                                          hom; assembly gives
+                                                                          chordX_formal/chordY_formal in
+                                                                          R₂⟦q⟧; (4) k-side: pull back
+                                                                          along the 2-var CoeffRing
+                                                                          analog (TateUniformization
+                                                                          already sketches evalA as
+                                                                          "two-variable analogue of
+                                                                          evalInt" ~line 332) and
+                                                                          evaluate at (u₀,v₀,q₀) ∈ k
+                                                                          with the fundamental-annulus
+                                                                          convergence bounds, bridging
+                                                                          to bilateralX/bilateralY via
+                                                                          the bilateral evaluation
+                                                                          bridges.
                                                             - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node):
                                                               GIVEN the finite-level canonical
                                                               uniformisation lˣ/q^ℤ ≃+ E_q(l) with
@@ -537,52 +564,79 @@ entries file). To add/remove/annotate a node, edit
                                                                               2026-07-18), so the ℂ-analytic
                                                                               route requires formalizing it
                                                                               first. IMPLEMENTATION STATE
-                                                                              (2026-07-18): the ℂ-side
-                                                                              Liouville machine is BUILT in
-                                                                              TateCurveConstruction
-                                                                              (private):
-                                                                              addRelXRaw/addRelXFn with
-                                                                              periodicity, generic
-                                                                              analyticity, the −w-family
-                                                                              removability PROVEN (dslope
-                                                                              factorization + Riemann weak
-                                                                              removability), and the full
-                                                                              Liouville assembly DERIVED;
-                                                                              ONE leaf remains
-                                                                              (tendsto_addRelXRaw_zero, the
-                                                                              Laurent table at the origin).
-                                                                              KEY RECON: clear x⁶: Ĥ :=
-                                                                              (S+W)(x+x³(E−W))² +
-                                                                              (1+x²E)(1+x²(E−W))² −
-                                                                              ¼(−2+x³(F−W'))² is manifestly
-                                                                              analytic with raw = x⁻⁶Ĥ;
-                                                                              mathlib's Analysis.Analytic.Is
-                                                                              olatedZeros provides the
-                                                                              dslope-tower ↔ series bridge (
-                                                                              has_fpower_series_iterate_dslo
-                                                                              pe_fslope + coeff_fslope), so
-                                                                              tower values = Taylor
-                                                                              coefficients; E/F-coefficients
-                                                                              from iteratedDeriv_weierstrass
-                                                                              PExcept_self /
-                                                                              derivWeierstrassPExceptSeries
-                                                                              + sumInvPow_zero (= G-series;
-                                                                              odd vanish; c₂ = 3G₄ = g₂/20,
-                                                                              c₄ = 5G₆ = g₃/28);
-                                                                              S-coefficients are
-                                                                              ℘-derivatives at w, converted
-                                                                              by ℘'' = 6℘² − g₂/2 (etc.),
-                                                                              themselves derived from
-                                                                              derivWeierstrassP_sq by
-                                                                              differentiation + analytic
-                                                                              continuation across the
-                                                                              isolated zeros of ℘'.
-                                                                              Assembly: truncate E,F,S with
-                                                                              tower remainders, substitute
-                                                                              into Ĥ, ring-normalize, cancel
-                                                                              coefficients via the hand-
-                                                                              verified table, conclude Ĥ =
-                                                                              x⁷·(analytic) and Tendsto.
+                                                                              (2026-07-18b): ℂ-ANALYTIC SIDE
+                                                                              COMPLETE — addRelXRaw_eq_zero
+                                                                              (Liouville) and
+                                                                              addRelYRaw_eq_zero
+                                                                              (differentiate the X-identity;
+                                                                              Groebner certificate
+                                                                              (℘z−℘w)²·collinearity ∈
+                                                                              ideal{Xid, dXid, DE1, DE2}
+                                                                              with cofactors (℘z−℘w),
+                                                                              (−℘'z−℘'w), ±(℘'w−℘'z)/4;
+                                                                              identity theorem across ℘=℘w)
+                                                                              both PROVEN in
+                                                                              TateCurveConstruction;
+                                                                              analytic_chordX and
+                                                                              analytic_chordY (XAn/YAn forms
+                                                                              on the annulus
+                                                                              0<‖q‖<‖u‖,‖v‖,‖uv‖<1) PROVEN
+                                                                              (private). REMAINING — two-
+                                                                              variable formal descent: (1)
+                                                                              ring R₂ := RatFunc (RatFunc ℚ)
+                                                                              = ℚ(u)(v); three substitution
+                                                                              homs RatFunc ℚ →+* R₂:
+                                                                              C-embedding (u↦u), v-subst
+                                                                              (u↦RatFunc.X of outer), uv-
+                                                                              subst (u↦C(inner X)·outer X) —
+                                                                              latter two via
+                                                                              IsFractionRing.lift on ℚ[X]
+                                                                              (images of nonzero polys are
+                                                                              units since v, uv
+                                                                              transcendental over
+                                                                              ℚ(u)-fraction images);
+                                                                              X_u/X_v/X_uv/Y_* :=
+                                                                              PowerSeries.map of
+                                                                              TateCurve.X/Y; (2) 2-var
+                                                                              descent lemma mirroring
+                                                                              eq_zero_of_forall_hasSum_zero:
+                                                                              evalAt₂ u₀ v₀ := RatFunc.eval
+                                                                              (evalAtHom u₀ htr) v₀ : R₂ →
+                                                                              ℂ; coefficient-wise vanishing
+                                                                              by coeffs_eq_zero_of_hasSum_pu
+                                                                              nctured, then numerator-
+                                                                              polynomial-over-ℚ(u) infinite-
+                                                                              roots + injectivity of
+                                                                              evalAtHom; ONE fixed
+                                                                              transcendental u₀ ∈ (1/2,1)
+                                                                              suffices with v₀ := u₀^k (k ≥
+                                                                              2 infinitely many; u₀v₀ =
+                                                                              u₀^(k+1) transcendental
+                                                                              automatically; windows OK
+                                                                              since r can shrink with k);
+                                                                              (3) compat: RatFunc.eval-
+                                                                              composite = evalAtHom v₀ resp.
+                                                                              evalAtHom (u₀v₀) (hom-
+                                                                              uniqueness via
+                                                                              IsFractionRing.lift ext on the
+                                                                              ℚ[X]-generator); hasSum
+                                                                              transport lemmas mirror
+                                                                              hasSum_evalAt_add/neg/sub/mul
+                                                                              verbatim with the composite
+                                                                              hom; assembly gives
+                                                                              chordX_formal/chordY_formal in
+                                                                              R₂⟦q⟧; (4) k-side: pull back
+                                                                              along the 2-var CoeffRing
+                                                                              analog (TateUniformization
+                                                                              already sketches evalA as
+                                                                              "two-variable analogue of
+                                                                              evalInt" ~line 332) and
+                                                                              evaluate at (u₀,v₀,q₀) ∈ k
+                                                                              with the fundamental-annulus
+                                                                              convergence bounds, bridging
+                                                                              to bilateralX/bilateralY via
+                                                                              the bilateral evaluation
+                                                                              bridges.
                                                                 - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry
                                                                   node): GIVEN the finite-level
                                                                   canonical uniformisation lˣ/q^ℤ ≃+
@@ -818,52 +872,79 @@ entries file). To add/remove/annotate a node, edit
                                                                                   2026-07-18), so the ℂ-analytic
                                                                                   route requires formalizing it
                                                                                   first. IMPLEMENTATION STATE
-                                                                                  (2026-07-18): the ℂ-side
-                                                                                  Liouville machine is BUILT in
-                                                                                  TateCurveConstruction
-                                                                                  (private):
-                                                                                  addRelXRaw/addRelXFn with
-                                                                                  periodicity, generic
-                                                                                  analyticity, the −w-family
-                                                                                  removability PROVEN (dslope
-                                                                                  factorization + Riemann weak
-                                                                                  removability), and the full
-                                                                                  Liouville assembly DERIVED;
-                                                                                  ONE leaf remains
-                                                                                  (tendsto_addRelXRaw_zero, the
-                                                                                  Laurent table at the origin).
-                                                                                  KEY RECON: clear x⁶: Ĥ :=
-                                                                                  (S+W)(x+x³(E−W))² +
-                                                                                  (1+x²E)(1+x²(E−W))² −
-                                                                                  ¼(−2+x³(F−W'))² is manifestly
-                                                                                  analytic with raw = x⁻⁶Ĥ;
-                                                                                  mathlib's Analysis.Analytic.Is
-                                                                                  olatedZeros provides the
-                                                                                  dslope-tower ↔ series bridge (
-                                                                                  has_fpower_series_iterate_dslo
-                                                                                  pe_fslope + coeff_fslope), so
-                                                                                  tower values = Taylor
-                                                                                  coefficients; E/F-coefficients
-                                                                                  from iteratedDeriv_weierstrass
-                                                                                  PExcept_self /
-                                                                                  derivWeierstrassPExceptSeries
-                                                                                  + sumInvPow_zero (= G-series;
-                                                                                  odd vanish; c₂ = 3G₄ = g₂/20,
-                                                                                  c₄ = 5G₆ = g₃/28);
-                                                                                  S-coefficients are
-                                                                                  ℘-derivatives at w, converted
-                                                                                  by ℘'' = 6℘² − g₂/2 (etc.),
-                                                                                  themselves derived from
-                                                                                  derivWeierstrassP_sq by
-                                                                                  differentiation + analytic
-                                                                                  continuation across the
-                                                                                  isolated zeros of ℘'.
-                                                                                  Assembly: truncate E,F,S with
-                                                                                  tower remainders, substitute
-                                                                                  into Ĥ, ring-normalize, cancel
-                                                                                  coefficients via the hand-
-                                                                                  verified table, conclude Ĥ =
-                                                                                  x⁷·(analytic) and Tendsto.
+                                                                                  (2026-07-18b): ℂ-ANALYTIC SIDE
+                                                                                  COMPLETE — addRelXRaw_eq_zero
+                                                                                  (Liouville) and
+                                                                                  addRelYRaw_eq_zero
+                                                                                  (differentiate the X-identity;
+                                                                                  Groebner certificate
+                                                                                  (℘z−℘w)²·collinearity ∈
+                                                                                  ideal{Xid, dXid, DE1, DE2}
+                                                                                  with cofactors (℘z−℘w),
+                                                                                  (−℘'z−℘'w), ±(℘'w−℘'z)/4;
+                                                                                  identity theorem across ℘=℘w)
+                                                                                  both PROVEN in
+                                                                                  TateCurveConstruction;
+                                                                                  analytic_chordX and
+                                                                                  analytic_chordY (XAn/YAn forms
+                                                                                  on the annulus
+                                                                                  0<‖q‖<‖u‖,‖v‖,‖uv‖<1) PROVEN
+                                                                                  (private). REMAINING — two-
+                                                                                  variable formal descent: (1)
+                                                                                  ring R₂ := RatFunc (RatFunc ℚ)
+                                                                                  = ℚ(u)(v); three substitution
+                                                                                  homs RatFunc ℚ →+* R₂:
+                                                                                  C-embedding (u↦u), v-subst
+                                                                                  (u↦RatFunc.X of outer), uv-
+                                                                                  subst (u↦C(inner X)·outer X) —
+                                                                                  latter two via
+                                                                                  IsFractionRing.lift on ℚ[X]
+                                                                                  (images of nonzero polys are
+                                                                                  units since v, uv
+                                                                                  transcendental over
+                                                                                  ℚ(u)-fraction images);
+                                                                                  X_u/X_v/X_uv/Y_* :=
+                                                                                  PowerSeries.map of
+                                                                                  TateCurve.X/Y; (2) 2-var
+                                                                                  descent lemma mirroring
+                                                                                  eq_zero_of_forall_hasSum_zero:
+                                                                                  evalAt₂ u₀ v₀ := RatFunc.eval
+                                                                                  (evalAtHom u₀ htr) v₀ : R₂ →
+                                                                                  ℂ; coefficient-wise vanishing
+                                                                                  by coeffs_eq_zero_of_hasSum_pu
+                                                                                  nctured, then numerator-
+                                                                                  polynomial-over-ℚ(u) infinite-
+                                                                                  roots + injectivity of
+                                                                                  evalAtHom; ONE fixed
+                                                                                  transcendental u₀ ∈ (1/2,1)
+                                                                                  suffices with v₀ := u₀^k (k ≥
+                                                                                  2 infinitely many; u₀v₀ =
+                                                                                  u₀^(k+1) transcendental
+                                                                                  automatically; windows OK
+                                                                                  since r can shrink with k);
+                                                                                  (3) compat: RatFunc.eval-
+                                                                                  composite = evalAtHom v₀ resp.
+                                                                                  evalAtHom (u₀v₀) (hom-
+                                                                                  uniqueness via
+                                                                                  IsFractionRing.lift ext on the
+                                                                                  ℚ[X]-generator); hasSum
+                                                                                  transport lemmas mirror
+                                                                                  hasSum_evalAt_add/neg/sub/mul
+                                                                                  verbatim with the composite
+                                                                                  hom; assembly gives
+                                                                                  chordX_formal/chordY_formal in
+                                                                                  R₂⟦q⟧; (4) k-side: pull back
+                                                                                  along the 2-var CoeffRing
+                                                                                  analog (TateUniformization
+                                                                                  already sketches evalA as
+                                                                                  "two-variable analogue of
+                                                                                  evalInt" ~line 332) and
+                                                                                  evaluate at (u₀,v₀,q₀) ∈ k
+                                                                                  with the fundamental-annulus
+                                                                                  convergence bounds, bridging
+                                                                                  to bilateralX/bilateralY via
+                                                                                  the bilateral evaluation
+                                                                                  bridges.
                                                                     - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
                                                                       (sorry node): GIVEN the
                                                                       finite-level canonical
@@ -1092,52 +1173,79 @@ entries file). To add/remove/annotate a node, edit
                                                                                       2026-07-18), so the ℂ-analytic
                                                                                       route requires formalizing it
                                                                                       first. IMPLEMENTATION STATE
-                                                                                      (2026-07-18): the ℂ-side
-                                                                                      Liouville machine is BUILT in
-                                                                                      TateCurveConstruction
-                                                                                      (private):
-                                                                                      addRelXRaw/addRelXFn with
-                                                                                      periodicity, generic
-                                                                                      analyticity, the −w-family
-                                                                                      removability PROVEN (dslope
-                                                                                      factorization + Riemann weak
-                                                                                      removability), and the full
-                                                                                      Liouville assembly DERIVED;
-                                                                                      ONE leaf remains
-                                                                                      (tendsto_addRelXRaw_zero, the
-                                                                                      Laurent table at the origin).
-                                                                                      KEY RECON: clear x⁶: Ĥ :=
-                                                                                      (S+W)(x+x³(E−W))² +
-                                                                                      (1+x²E)(1+x²(E−W))² −
-                                                                                      ¼(−2+x³(F−W'))² is manifestly
-                                                                                      analytic with raw = x⁻⁶Ĥ;
-                                                                                      mathlib's Analysis.Analytic.Is
-                                                                                      olatedZeros provides the
-                                                                                      dslope-tower ↔ series bridge (
-                                                                                      has_fpower_series_iterate_dslo
-                                                                                      pe_fslope + coeff_fslope), so
-                                                                                      tower values = Taylor
-                                                                                      coefficients; E/F-coefficients
-                                                                                      from iteratedDeriv_weierstrass
-                                                                                      PExcept_self /
-                                                                                      derivWeierstrassPExceptSeries
-                                                                                      + sumInvPow_zero (= G-series;
-                                                                                      odd vanish; c₂ = 3G₄ = g₂/20,
-                                                                                      c₄ = 5G₆ = g₃/28);
-                                                                                      S-coefficients are
-                                                                                      ℘-derivatives at w, converted
-                                                                                      by ℘'' = 6℘² − g₂/2 (etc.),
-                                                                                      themselves derived from
-                                                                                      derivWeierstrassP_sq by
-                                                                                      differentiation + analytic
-                                                                                      continuation across the
-                                                                                      isolated zeros of ℘'.
-                                                                                      Assembly: truncate E,F,S with
-                                                                                      tower remainders, substitute
-                                                                                      into Ĥ, ring-normalize, cancel
-                                                                                      coefficients via the hand-
-                                                                                      verified table, conclude Ĥ =
-                                                                                      x⁷·(analytic) and Tendsto.
+                                                                                      (2026-07-18b): ℂ-ANALYTIC SIDE
+                                                                                      COMPLETE — addRelXRaw_eq_zero
+                                                                                      (Liouville) and
+                                                                                      addRelYRaw_eq_zero
+                                                                                      (differentiate the X-identity;
+                                                                                      Groebner certificate
+                                                                                      (℘z−℘w)²·collinearity ∈
+                                                                                      ideal{Xid, dXid, DE1, DE2}
+                                                                                      with cofactors (℘z−℘w),
+                                                                                      (−℘'z−℘'w), ±(℘'w−℘'z)/4;
+                                                                                      identity theorem across ℘=℘w)
+                                                                                      both PROVEN in
+                                                                                      TateCurveConstruction;
+                                                                                      analytic_chordX and
+                                                                                      analytic_chordY (XAn/YAn forms
+                                                                                      on the annulus
+                                                                                      0<‖q‖<‖u‖,‖v‖,‖uv‖<1) PROVEN
+                                                                                      (private). REMAINING — two-
+                                                                                      variable formal descent: (1)
+                                                                                      ring R₂ := RatFunc (RatFunc ℚ)
+                                                                                      = ℚ(u)(v); three substitution
+                                                                                      homs RatFunc ℚ →+* R₂:
+                                                                                      C-embedding (u↦u), v-subst
+                                                                                      (u↦RatFunc.X of outer), uv-
+                                                                                      subst (u↦C(inner X)·outer X) —
+                                                                                      latter two via
+                                                                                      IsFractionRing.lift on ℚ[X]
+                                                                                      (images of nonzero polys are
+                                                                                      units since v, uv
+                                                                                      transcendental over
+                                                                                      ℚ(u)-fraction images);
+                                                                                      X_u/X_v/X_uv/Y_* :=
+                                                                                      PowerSeries.map of
+                                                                                      TateCurve.X/Y; (2) 2-var
+                                                                                      descent lemma mirroring
+                                                                                      eq_zero_of_forall_hasSum_zero:
+                                                                                      evalAt₂ u₀ v₀ := RatFunc.eval
+                                                                                      (evalAtHom u₀ htr) v₀ : R₂ →
+                                                                                      ℂ; coefficient-wise vanishing
+                                                                                      by coeffs_eq_zero_of_hasSum_pu
+                                                                                      nctured, then numerator-
+                                                                                      polynomial-over-ℚ(u) infinite-
+                                                                                      roots + injectivity of
+                                                                                      evalAtHom; ONE fixed
+                                                                                      transcendental u₀ ∈ (1/2,1)
+                                                                                      suffices with v₀ := u₀^k (k ≥
+                                                                                      2 infinitely many; u₀v₀ =
+                                                                                      u₀^(k+1) transcendental
+                                                                                      automatically; windows OK
+                                                                                      since r can shrink with k);
+                                                                                      (3) compat: RatFunc.eval-
+                                                                                      composite = evalAtHom v₀ resp.
+                                                                                      evalAtHom (u₀v₀) (hom-
+                                                                                      uniqueness via
+                                                                                      IsFractionRing.lift ext on the
+                                                                                      ℚ[X]-generator); hasSum
+                                                                                      transport lemmas mirror
+                                                                                      hasSum_evalAt_add/neg/sub/mul
+                                                                                      verbatim with the composite
+                                                                                      hom; assembly gives
+                                                                                      chordX_formal/chordY_formal in
+                                                                                      R₂⟦q⟧; (4) k-side: pull back
+                                                                                      along the 2-var CoeffRing
+                                                                                      analog (TateUniformization
+                                                                                      already sketches evalA as
+                                                                                      "two-variable analogue of
+                                                                                      evalInt" ~line 332) and
+                                                                                      evaluate at (u₀,v₀,q₀) ∈ k
+                                                                                      with the fundamental-annulus
+                                                                                      convergence bounds, bridging
+                                                                                      to bilateralX/bilateralY via
+                                                                                      the bilateral evaluation
+                                                                                      bridges.
                                                                         - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
                                                                           (sorry node): GIVEN the
                                                                           finite-level canonical
@@ -1386,42 +1494,63 @@ entries file). To add/remove/annotate a node, edit
                                                               LACKS the ℘-addition law (checked
                                                               2026-07-18), so the ℂ-analytic route
                                                               requires formalizing it first.
-                                                              IMPLEMENTATION STATE (2026-07-18): the
-                                                              ℂ-side Liouville machine is BUILT in
-                                                              TateCurveConstruction (private):
-                                                              addRelXRaw/addRelXFn with periodicity,
-                                                              generic analyticity, the −w-family
-                                                              removability PROVEN (dslope
-                                                              factorization + Riemann weak
-                                                              removability), and the full Liouville
-                                                              assembly DERIVED; ONE leaf remains
-                                                              (tendsto_addRelXRaw_zero, the Laurent
-                                                              table at the origin). KEY RECON: clear
-                                                              x⁶: Ĥ := (S+W)(x+x³(E−W))² +
-                                                              (1+x²E)(1+x²(E−W))² − ¼(−2+x³(F−W'))²
-                                                              is manifestly analytic with raw =
-                                                              x⁻⁶Ĥ; mathlib's
-                                                              Analysis.Analytic.IsolatedZeros
-                                                              provides the dslope-tower ↔ series
-                                                              bridge (has_fpower_series_iterate_dslo
-                                                              pe_fslope + coeff_fslope), so tower
-                                                              values = Taylor coefficients;
-                                                              E/F-coefficients from
-                                                              iteratedDeriv_weierstrassPExcept_self
-                                                              / derivWeierstrassPExceptSeries +
-                                                              sumInvPow_zero (= G-series; odd
-                                                              vanish; c₂ = 3G₄ = g₂/20, c₄ = 5G₆ =
-                                                              g₃/28); S-coefficients are
-                                                              ℘-derivatives at w, converted by ℘'' =
-                                                              6℘² − g₂/2 (etc.), themselves derived
-                                                              from derivWeierstrassP_sq by
-                                                              differentiation + analytic
-                                                              continuation across the isolated zeros
-                                                              of ℘'. Assembly: truncate E,F,S with
-                                                              tower remainders, substitute into Ĥ,
-                                                              ring-normalize, cancel coefficients
-                                                              via the hand-verified table, conclude
-                                                              Ĥ = x⁷·(analytic) and Tendsto.
+                                                              IMPLEMENTATION STATE (2026-07-18b):
+                                                              ℂ-ANALYTIC SIDE COMPLETE —
+                                                              addRelXRaw_eq_zero (Liouville) and
+                                                              addRelYRaw_eq_zero (differentiate the
+                                                              X-identity; Groebner certificate
+                                                              (℘z−℘w)²·collinearity ∈ ideal{Xid,
+                                                              dXid, DE1, DE2} with cofactors
+                                                              (℘z−℘w), (−℘'z−℘'w), ±(℘'w−℘'z)/4;
+                                                              identity theorem across ℘=℘w) both
+                                                              PROVEN in TateCurveConstruction;
+                                                              analytic_chordX and analytic_chordY
+                                                              (XAn/YAn forms on the annulus
+                                                              0<‖q‖<‖u‖,‖v‖,‖uv‖<1) PROVEN
+                                                              (private). REMAINING — two-variable
+                                                              formal descent: (1) ring R₂ := RatFunc
+                                                              (RatFunc ℚ) = ℚ(u)(v); three
+                                                              substitution homs RatFunc ℚ →+* R₂:
+                                                              C-embedding (u↦u), v-subst
+                                                              (u↦RatFunc.X of outer), uv-subst
+                                                              (u↦C(inner X)·outer X) — latter two
+                                                              via IsFractionRing.lift on ℚ[X]
+                                                              (images of nonzero polys are units
+                                                              since v, uv transcendental over
+                                                              ℚ(u)-fraction images);
+                                                              X_u/X_v/X_uv/Y_* := PowerSeries.map of
+                                                              TateCurve.X/Y; (2) 2-var descent lemma
+                                                              mirroring
+                                                              eq_zero_of_forall_hasSum_zero: evalAt₂
+                                                              u₀ v₀ := RatFunc.eval (evalAtHom u₀
+                                                              htr) v₀ : R₂ → ℂ; coefficient-wise
+                                                              vanishing by
+                                                              coeffs_eq_zero_of_hasSum_punctured,
+                                                              then numerator-polynomial-over-ℚ(u)
+                                                              infinite-roots + injectivity of
+                                                              evalAtHom; ONE fixed transcendental u₀
+                                                              ∈ (1/2,1) suffices with v₀ := u₀^k (k
+                                                              ≥ 2 infinitely many; u₀v₀ = u₀^(k+1)
+                                                              transcendental automatically; windows
+                                                              OK since r can shrink with k); (3)
+                                                              compat: RatFunc.eval-composite =
+                                                              evalAtHom v₀ resp. evalAtHom (u₀v₀)
+                                                              (hom-uniqueness via
+                                                              IsFractionRing.lift ext on the
+                                                              ℚ[X]-generator); hasSum transport
+                                                              lemmas mirror
+                                                              hasSum_evalAt_add/neg/sub/mul verbatim
+                                                              with the composite hom; assembly gives
+                                                              chordX_formal/chordY_formal in R₂⟦q⟧;
+                                                              (4) k-side: pull back along the 2-var
+                                                              CoeffRing analog (TateUniformization
+                                                              already sketches evalA as "two-
+                                                              variable analogue of evalInt" ~line
+                                                              332) and evaluate at (u₀,v₀,q₀) ∈ k
+                                                              with the fundamental-annulus
+                                                              convergence bounds, bridging to
+                                                              bilateralX/bilateralY via the
+                                                              bilateral evaluation bridges.
                                                 - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the
                                                   finite-level canonical uniformisation lˣ/q^ℤ ≃+
                                                   E_q(l) with underlying pointMapQuot for every NALF
@@ -1591,49 +1720,68 @@ entries file). To add/remove/annotate a node, edit
                                                                   (checked 2026-07-18), so the
                                                                   ℂ-analytic route requires
                                                                   formalizing it first.
-                                                                  IMPLEMENTATION STATE (2026-07-18):
-                                                                  the ℂ-side Liouville machine is
-                                                                  BUILT in TateCurveConstruction
-                                                                  (private): addRelXRaw/addRelXFn
-                                                                  with periodicity, generic
-                                                                  analyticity, the −w-family
-                                                                  removability PROVEN (dslope
-                                                                  factorization + Riemann weak
-                                                                  removability), and the full
-                                                                  Liouville assembly DERIVED; ONE
-                                                                  leaf remains
-                                                                  (tendsto_addRelXRaw_zero, the
-                                                                  Laurent table at the origin). KEY
-                                                                  RECON: clear x⁶: Ĥ :=
-                                                                  (S+W)(x+x³(E−W))² +
-                                                                  (1+x²E)(1+x²(E−W))² −
-                                                                  ¼(−2+x³(F−W'))² is manifestly
-                                                                  analytic with raw = x⁻⁶Ĥ;
-                                                                  mathlib's
-                                                                  Analysis.Analytic.IsolatedZeros
-                                                                  provides the dslope-tower ↔ series
-                                                                  bridge (has_fpower_series_iterate_
-                                                                  dslope_fslope + coeff_fslope), so
-                                                                  tower values = Taylor
-                                                                  coefficients; E/F-coefficients
-                                                                  from iteratedDeriv_weierstrassPExc
-                                                                  ept_self /
-                                                                  derivWeierstrassPExceptSeries +
-                                                                  sumInvPow_zero (= G-series; odd
-                                                                  vanish; c₂ = 3G₄ = g₂/20, c₄ = 5G₆
-                                                                  = g₃/28); S-coefficients are
-                                                                  ℘-derivatives at w, converted by
-                                                                  ℘'' = 6℘² − g₂/2 (etc.),
-                                                                  themselves derived from
-                                                                  derivWeierstrassP_sq by
-                                                                  differentiation + analytic
-                                                                  continuation across the isolated
-                                                                  zeros of ℘'. Assembly: truncate
-                                                                  E,F,S with tower remainders,
-                                                                  substitute into Ĥ, ring-normalize,
-                                                                  cancel coefficients via the hand-
-                                                                  verified table, conclude Ĥ =
-                                                                  x⁷·(analytic) and Tendsto.
+                                                                  IMPLEMENTATION STATE
+                                                                  (2026-07-18b): ℂ-ANALYTIC SIDE
+                                                                  COMPLETE — addRelXRaw_eq_zero
+                                                                  (Liouville) and addRelYRaw_eq_zero
+                                                                  (differentiate the X-identity;
+                                                                  Groebner certificate
+                                                                  (℘z−℘w)²·collinearity ∈ ideal{Xid,
+                                                                  dXid, DE1, DE2} with cofactors
+                                                                  (℘z−℘w), (−℘'z−℘'w), ±(℘'w−℘'z)/4;
+                                                                  identity theorem across ℘=℘w) both
+                                                                  PROVEN in TateCurveConstruction;
+                                                                  analytic_chordX and
+                                                                  analytic_chordY (XAn/YAn forms on
+                                                                  the annulus 0<‖q‖<‖u‖,‖v‖,‖uv‖<1)
+                                                                  PROVEN (private). REMAINING — two-
+                                                                  variable formal descent: (1) ring
+                                                                  R₂ := RatFunc (RatFunc ℚ) =
+                                                                  ℚ(u)(v); three substitution homs
+                                                                  RatFunc ℚ →+* R₂: C-embedding
+                                                                  (u↦u), v-subst (u↦RatFunc.X of
+                                                                  outer), uv-subst (u↦C(inner
+                                                                  X)·outer X) — latter two via
+                                                                  IsFractionRing.lift on ℚ[X]
+                                                                  (images of nonzero polys are units
+                                                                  since v, uv transcendental over
+                                                                  ℚ(u)-fraction images);
+                                                                  X_u/X_v/X_uv/Y_* :=
+                                                                  PowerSeries.map of TateCurve.X/Y;
+                                                                  (2) 2-var descent lemma mirroring
+                                                                  eq_zero_of_forall_hasSum_zero:
+                                                                  evalAt₂ u₀ v₀ := RatFunc.eval
+                                                                  (evalAtHom u₀ htr) v₀ : R₂ → ℂ;
+                                                                  coefficient-wise vanishing by coef
+                                                                  fs_eq_zero_of_hasSum_punctured,
+                                                                  then numerator-polynomial-
+                                                                  over-ℚ(u) infinite-roots +
+                                                                  injectivity of evalAtHom; ONE
+                                                                  fixed transcendental u₀ ∈ (1/2,1)
+                                                                  suffices with v₀ := u₀^k (k ≥ 2
+                                                                  infinitely many; u₀v₀ = u₀^(k+1)
+                                                                  transcendental automatically;
+                                                                  windows OK since r can shrink with
+                                                                  k); (3) compat: RatFunc.eval-
+                                                                  composite = evalAtHom v₀ resp.
+                                                                  evalAtHom (u₀v₀) (hom-uniqueness
+                                                                  via IsFractionRing.lift ext on the
+                                                                  ℚ[X]-generator); hasSum transport
+                                                                  lemmas mirror
+                                                                  hasSum_evalAt_add/neg/sub/mul
+                                                                  verbatim with the composite hom;
+                                                                  assembly gives
+                                                                  chordX_formal/chordY_formal in
+                                                                  R₂⟦q⟧; (4) k-side: pull back along
+                                                                  the 2-var CoeffRing analog
+                                                                  (TateUniformization already
+                                                                  sketches evalA as "two-variable
+                                                                  analogue of evalInt" ~line 332)
+                                                                  and evaluate at (u₀,v₀,q₀) ∈ k
+                                                                  with the fundamental-annulus
+                                                                  convergence bounds, bridging to
+                                                                  bilateralX/bilateralY via the
+                                                                  bilateral evaluation bridges.
                                                     - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN
                                                       the finite-level canonical uniformisation
                                                       lˣ/q^ℤ ≃+ E_q(l) with underlying pointMapQuot
@@ -1795,37 +1943,51 @@ entries file). To add/remove/annotate a node, edit
                                                       transcendental descent; mathlib LACKS the
                                                       ℘-addition law (checked 2026-07-18), so the
                                                       ℂ-analytic route requires formalizing it
-                                                      first. IMPLEMENTATION STATE (2026-07-18): the
-                                                      ℂ-side Liouville machine is BUILT in
-                                                      TateCurveConstruction (private):
-                                                      addRelXRaw/addRelXFn with periodicity, generic
-                                                      analyticity, the −w-family removability PROVEN
-                                                      (dslope factorization + Riemann weak
-                                                      removability), and the full Liouville assembly
-                                                      DERIVED; ONE leaf remains
-                                                      (tendsto_addRelXRaw_zero, the Laurent table at
-                                                      the origin). KEY RECON: clear x⁶: Ĥ :=
-                                                      (S+W)(x+x³(E−W))² + (1+x²E)(1+x²(E−W))² −
-                                                      ¼(−2+x³(F−W'))² is manifestly analytic with
-                                                      raw = x⁻⁶Ĥ; mathlib's
-                                                      Analysis.Analytic.IsolatedZeros provides the
-                                                      dslope-tower ↔ series bridge
-                                                      (has_fpower_series_iterate_dslope_fslope +
-                                                      coeff_fslope), so tower values = Taylor
-                                                      coefficients; E/F-coefficients from
-                                                      iteratedDeriv_weierstrassPExcept_self /
-                                                      derivWeierstrassPExceptSeries + sumInvPow_zero
-                                                      (= G-series; odd vanish; c₂ = 3G₄ = g₂/20, c₄
-                                                      = 5G₆ = g₃/28); S-coefficients are
-                                                      ℘-derivatives at w, converted by ℘'' = 6℘² −
-                                                      g₂/2 (etc.), themselves derived from
-                                                      derivWeierstrassP_sq by differentiation +
-                                                      analytic continuation across the isolated
-                                                      zeros of ℘'. Assembly: truncate E,F,S with
-                                                      tower remainders, substitute into Ĥ, ring-
-                                                      normalize, cancel coefficients via the hand-
-                                                      verified table, conclude Ĥ = x⁷·(analytic) and
-                                                      Tendsto.
+                                                      first. IMPLEMENTATION STATE (2026-07-18b):
+                                                      ℂ-ANALYTIC SIDE COMPLETE — addRelXRaw_eq_zero
+                                                      (Liouville) and addRelYRaw_eq_zero
+                                                      (differentiate the X-identity; Groebner
+                                                      certificate (℘z−℘w)²·collinearity ∈ ideal{Xid,
+                                                      dXid, DE1, DE2} with cofactors (℘z−℘w),
+                                                      (−℘'z−℘'w), ±(℘'w−℘'z)/4; identity theorem
+                                                      across ℘=℘w) both PROVEN in
+                                                      TateCurveConstruction; analytic_chordX and
+                                                      analytic_chordY (XAn/YAn forms on the annulus
+                                                      0<‖q‖<‖u‖,‖v‖,‖uv‖<1) PROVEN (private).
+                                                      REMAINING — two-variable formal descent: (1)
+                                                      ring R₂ := RatFunc (RatFunc ℚ) = ℚ(u)(v);
+                                                      three substitution homs RatFunc ℚ →+* R₂:
+                                                      C-embedding (u↦u), v-subst (u↦RatFunc.X of
+                                                      outer), uv-subst (u↦C(inner X)·outer X) —
+                                                      latter two via IsFractionRing.lift on ℚ[X]
+                                                      (images of nonzero polys are units since v, uv
+                                                      transcendental over ℚ(u)-fraction images);
+                                                      X_u/X_v/X_uv/Y_* := PowerSeries.map of
+                                                      TateCurve.X/Y; (2) 2-var descent lemma
+                                                      mirroring eq_zero_of_forall_hasSum_zero:
+                                                      evalAt₂ u₀ v₀ := RatFunc.eval (evalAtHom u₀
+                                                      htr) v₀ : R₂ → ℂ; coefficient-wise vanishing
+                                                      by coeffs_eq_zero_of_hasSum_punctured, then
+                                                      numerator-polynomial-over-ℚ(u) infinite-roots
+                                                      + injectivity of evalAtHom; ONE fixed
+                                                      transcendental u₀ ∈ (1/2,1) suffices with v₀
+                                                      := u₀^k (k ≥ 2 infinitely many; u₀v₀ =
+                                                      u₀^(k+1) transcendental automatically; windows
+                                                      OK since r can shrink with k); (3) compat:
+                                                      RatFunc.eval-composite = evalAtHom v₀ resp.
+                                                      evalAtHom (u₀v₀) (hom-uniqueness via
+                                                      IsFractionRing.lift ext on the
+                                                      ℚ[X]-generator); hasSum transport lemmas
+                                                      mirror hasSum_evalAt_add/neg/sub/mul verbatim
+                                                      with the composite hom; assembly gives
+                                                      chordX_formal/chordY_formal in R₂⟦q⟧; (4)
+                                                      k-side: pull back along the 2-var CoeffRing
+                                                      analog (TateUniformization already sketches
+                                                      evalA as "two-variable analogue of evalInt"
+                                                      ~line 332) and evaluate at (u₀,v₀,q₀) ∈ k with
+                                                      the fundamental-annulus convergence bounds,
+                                                      bridging to bilateralX/bilateralY via the
+                                                      bilateral evaluation bridges.
                                         - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
                                           level canonical uniformisation lˣ/q^ℤ ≃+ E_q(l) with
                                           underlying pointMapQuot for every NALF l, the Ω-level hom
@@ -1953,37 +2115,51 @@ entries file). To add/remove/annotate a node, edit
                                                       transcendental descent; mathlib LACKS the
                                                       ℘-addition law (checked 2026-07-18), so the
                                                       ℂ-analytic route requires formalizing it
-                                                      first. IMPLEMENTATION STATE (2026-07-18): the
-                                                      ℂ-side Liouville machine is BUILT in
-                                                      TateCurveConstruction (private):
-                                                      addRelXRaw/addRelXFn with periodicity, generic
-                                                      analyticity, the −w-family removability PROVEN
-                                                      (dslope factorization + Riemann weak
-                                                      removability), and the full Liouville assembly
-                                                      DERIVED; ONE leaf remains
-                                                      (tendsto_addRelXRaw_zero, the Laurent table at
-                                                      the origin). KEY RECON: clear x⁶: Ĥ :=
-                                                      (S+W)(x+x³(E−W))² + (1+x²E)(1+x²(E−W))² −
-                                                      ¼(−2+x³(F−W'))² is manifestly analytic with
-                                                      raw = x⁻⁶Ĥ; mathlib's
-                                                      Analysis.Analytic.IsolatedZeros provides the
-                                                      dslope-tower ↔ series bridge
-                                                      (has_fpower_series_iterate_dslope_fslope +
-                                                      coeff_fslope), so tower values = Taylor
-                                                      coefficients; E/F-coefficients from
-                                                      iteratedDeriv_weierstrassPExcept_self /
-                                                      derivWeierstrassPExceptSeries + sumInvPow_zero
-                                                      (= G-series; odd vanish; c₂ = 3G₄ = g₂/20, c₄
-                                                      = 5G₆ = g₃/28); S-coefficients are
-                                                      ℘-derivatives at w, converted by ℘'' = 6℘² −
-                                                      g₂/2 (etc.), themselves derived from
-                                                      derivWeierstrassP_sq by differentiation +
-                                                      analytic continuation across the isolated
-                                                      zeros of ℘'. Assembly: truncate E,F,S with
-                                                      tower remainders, substitute into Ĥ, ring-
-                                                      normalize, cancel coefficients via the hand-
-                                                      verified table, conclude Ĥ = x⁷·(analytic) and
-                                                      Tendsto.
+                                                      first. IMPLEMENTATION STATE (2026-07-18b):
+                                                      ℂ-ANALYTIC SIDE COMPLETE — addRelXRaw_eq_zero
+                                                      (Liouville) and addRelYRaw_eq_zero
+                                                      (differentiate the X-identity; Groebner
+                                                      certificate (℘z−℘w)²·collinearity ∈ ideal{Xid,
+                                                      dXid, DE1, DE2} with cofactors (℘z−℘w),
+                                                      (−℘'z−℘'w), ±(℘'w−℘'z)/4; identity theorem
+                                                      across ℘=℘w) both PROVEN in
+                                                      TateCurveConstruction; analytic_chordX and
+                                                      analytic_chordY (XAn/YAn forms on the annulus
+                                                      0<‖q‖<‖u‖,‖v‖,‖uv‖<1) PROVEN (private).
+                                                      REMAINING — two-variable formal descent: (1)
+                                                      ring R₂ := RatFunc (RatFunc ℚ) = ℚ(u)(v);
+                                                      three substitution homs RatFunc ℚ →+* R₂:
+                                                      C-embedding (u↦u), v-subst (u↦RatFunc.X of
+                                                      outer), uv-subst (u↦C(inner X)·outer X) —
+                                                      latter two via IsFractionRing.lift on ℚ[X]
+                                                      (images of nonzero polys are units since v, uv
+                                                      transcendental over ℚ(u)-fraction images);
+                                                      X_u/X_v/X_uv/Y_* := PowerSeries.map of
+                                                      TateCurve.X/Y; (2) 2-var descent lemma
+                                                      mirroring eq_zero_of_forall_hasSum_zero:
+                                                      evalAt₂ u₀ v₀ := RatFunc.eval (evalAtHom u₀
+                                                      htr) v₀ : R₂ → ℂ; coefficient-wise vanishing
+                                                      by coeffs_eq_zero_of_hasSum_punctured, then
+                                                      numerator-polynomial-over-ℚ(u) infinite-roots
+                                                      + injectivity of evalAtHom; ONE fixed
+                                                      transcendental u₀ ∈ (1/2,1) suffices with v₀
+                                                      := u₀^k (k ≥ 2 infinitely many; u₀v₀ =
+                                                      u₀^(k+1) transcendental automatically; windows
+                                                      OK since r can shrink with k); (3) compat:
+                                                      RatFunc.eval-composite = evalAtHom v₀ resp.
+                                                      evalAtHom (u₀v₀) (hom-uniqueness via
+                                                      IsFractionRing.lift ext on the
+                                                      ℚ[X]-generator); hasSum transport lemmas
+                                                      mirror hasSum_evalAt_add/neg/sub/mul verbatim
+                                                      with the composite hom; assembly gives
+                                                      chordX_formal/chordY_formal in R₂⟦q⟧; (4)
+                                                      k-side: pull back along the 2-var CoeffRing
+                                                      analog (TateUniformization already sketches
+                                                      evalA as "two-variable analogue of evalInt"
+                                                      ~line 332) and evaluate at (u₀,v₀,q₀) ∈ k with
+                                                      the fundamental-annulus convergence bounds,
+                                                      bridging to bilateralX/bilateralY via the
+                                                      bilateral evaluation bridges.
                                         - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
                                           level canonical uniformisation lˣ/q^ℤ ≃+ E_q(l) with
                                           underlying pointMapQuot for every NALF l, the Ω-level hom
