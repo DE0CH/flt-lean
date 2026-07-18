@@ -134,9 +134,17 @@ entries file). To add/remove/annotate a node, edit
                                                       and the point-level P(u⁻¹)=−P(u) PROVEN on the
                                                       valuation-one shell
                                                       (pointMap_inv_of_valuation_eq_one); the
-                                                      interior case awaits the translation identity
-                                                      X(qu,q)=X(u,q) — the bilateral (ℤ-indexed)
-                                                      Lambert rearrangement over k, shared with the
+                                                      TRANSLATION IDENTITY IS PROVEN
+                                                      (bilateralX_shift, 2026-07-18): the bilateral
+                                                      x-form (evalA_XA_bilateral, from the nonarch
+                                                      Lambert machinery — geometric + derivative-
+                                                      geometric series, Fubini, divisor collection,
+                                                      general-window one-sided identities) is
+                                                      inversion-invariant (bilateralX_inv) and
+                                                      q-shift-invariant (bilateralX_shift). Next:
+                                                      the interior-case point negation via these,
+                                                      the Y-series bilateral analogue (kernel
+                                                      v²/(1−v)³, triple Cauchy products), then the
                                                       addition law. REMAINING: (a) the homomorphism
                                                       property — Silverman V.3.1 addition law, via
                                                       two-parameter formal identities against
@@ -193,14 +201,23 @@ entries file). To add/remove/annotate a node, edit
                                                           C(d+1,2)=C(d,2)+d), and the point-level
                                                           P(u⁻¹)=−P(u) PROVEN on the valuation-one
                                                           shell (pointMap_inv_of_valuation_eq_one);
-                                                          the interior case awaits the translation
-                                                          identity X(qu,q)=X(u,q) — the bilateral
-                                                          (ℤ-indexed) Lambert rearrangement over k,
-                                                          shared with the addition law. REMAINING:
-                                                          (a) the homomorphism property — Silverman
-                                                          V.3.1 addition law, via two-parameter
-                                                          formal identities against mathlib's affine
-                                                          group law (extend the
+                                                          the TRANSLATION IDENTITY IS PROVEN
+                                                          (bilateralX_shift, 2026-07-18): the
+                                                          bilateral x-form (evalA_XA_bilateral, from
+                                                          the nonarch Lambert machinery — geometric
+                                                          + derivative-geometric series, Fubini,
+                                                          divisor collection, general-window one-
+                                                          sided identities) is inversion-invariant
+                                                          (bilateralX_inv) and q-shift-invariant
+                                                          (bilateralX_shift). Next: the interior-
+                                                          case point negation via these, the
+                                                          Y-series bilateral analogue (kernel
+                                                          v²/(1−v)³, triple Cauchy products), then
+                                                          the addition law. REMAINING: (a) the
+                                                          homomorphism property — Silverman V.3.1
+                                                          addition law, via two-parameter formal
+                                                          identities against mathlib's affine group
+                                                          law (extend the
                                                           eq_zero_of_forall_hasSum_zero descent of
                                                           TateCurveConstruction to two
                                                           transcendentals, using the ℂ-analytic
@@ -270,15 +287,25 @@ entries file). To add/remove/annotate a node, edit
                                                               point-level P(u⁻¹)=−P(u) PROVEN on the
                                                               valuation-one shell
                                                               (pointMap_inv_of_valuation_eq_one);
-                                                              the interior case awaits the
-                                                              translation identity X(qu,q)=X(u,q) —
-                                                              the bilateral (ℤ-indexed) Lambert
-                                                              rearrangement over k, shared with the
-                                                              addition law. REMAINING: (a) the
-                                                              homomorphism property — Silverman
-                                                              V.3.1 addition law, via two-parameter
-                                                              formal identities against mathlib's
-                                                              affine group law (extend the
+                                                              the TRANSLATION IDENTITY IS PROVEN
+                                                              (bilateralX_shift, 2026-07-18): the
+                                                              bilateral x-form (evalA_XA_bilateral,
+                                                              from the nonarch Lambert machinery —
+                                                              geometric + derivative-geometric
+                                                              series, Fubini, divisor collection,
+                                                              general-window one-sided identities)
+                                                              is inversion-invariant
+                                                              (bilateralX_inv) and q-shift-invariant
+                                                              (bilateralX_shift). Next: the
+                                                              interior-case point negation via
+                                                              these, the Y-series bilateral analogue
+                                                              (kernel v²/(1−v)³, triple Cauchy
+                                                              products), then the addition law.
+                                                              REMAINING: (a) the homomorphism
+                                                              property — Silverman V.3.1 addition
+                                                              law, via two-parameter formal
+                                                              identities against mathlib's affine
+                                                              group law (extend the
                                                               eq_zero_of_forall_hasSum_zero descent
                                                               of TateCurveConstruction to two
                                                               transcendentals, using the ℂ-analytic
@@ -343,12 +370,23 @@ entries file). To add/remove/annotate a node, edit
                                                                   the point-level P(u⁻¹)=−P(u)
                                                                   PROVEN on the valuation-one shell
                                                                   (pointMap_inv_of_valuation_eq_one)
-                                                                  ; the interior case awaits the
-                                                                  translation identity
-                                                                  X(qu,q)=X(u,q) — the bilateral
-                                                                  (ℤ-indexed) Lambert rearrangement
-                                                                  over k, shared with the addition
-                                                                  law. REMAINING: (a) the
+                                                                  ; the TRANSLATION IDENTITY IS
+                                                                  PROVEN (bilateralX_shift,
+                                                                  2026-07-18): the bilateral x-form
+                                                                  (evalA_XA_bilateral, from the
+                                                                  nonarch Lambert machinery —
+                                                                  geometric + derivative-geometric
+                                                                  series, Fubini, divisor
+                                                                  collection, general-window one-
+                                                                  sided identities) is inversion-
+                                                                  invariant (bilateralX_inv) and
+                                                                  q-shift-invariant
+                                                                  (bilateralX_shift). Next: the
+                                                                  interior-case point negation via
+                                                                  these, the Y-series bilateral
+                                                                  analogue (kernel v²/(1−v)³, triple
+                                                                  Cauchy products), then the
+                                                                  addition law. REMAINING: (a) the
                                                                   homomorphism property — Silverman
                                                                   V.3.1 addition law, via two-
                                                                   parameter formal identities
@@ -486,15 +524,21 @@ entries file). To add/remove/annotate a node, edit
                                           series-level inversion identities PROVEN (X(u⁻¹,q)=X(u,q),
                                           Y(u⁻¹,q)=−Y−X, binomial C(d+1,2)=C(d,2)+d), and the point-
                                           level P(u⁻¹)=−P(u) PROVEN on the valuation-one shell
-                                          (pointMap_inv_of_valuation_eq_one); the interior case
-                                          awaits the translation identity X(qu,q)=X(u,q) — the
-                                          bilateral (ℤ-indexed) Lambert rearrangement over k, shared
-                                          with the addition law. REMAINING: (a) the homomorphism
-                                          property — Silverman V.3.1 addition law, via two-parameter
-                                          formal identities against mathlib's affine group law
-                                          (extend the eq_zero_of_forall_hasSum_zero descent of
-                                          TateCurveConstruction to two transcendentals, using the
-                                          ℂ-analytic addition law of the exponential
+                                          (pointMap_inv_of_valuation_eq_one); the TRANSLATION
+                                          IDENTITY IS PROVEN (bilateralX_shift, 2026-07-18): the
+                                          bilateral x-form (evalA_XA_bilateral, from the nonarch
+                                          Lambert machinery — geometric + derivative-geometric
+                                          series, Fubini, divisor collection, general-window one-
+                                          sided identities) is inversion-invariant (bilateralX_inv)
+                                          and q-shift-invariant (bilateralX_shift). Next: the
+                                          interior-case point negation via these, the Y-series
+                                          bilateral analogue (kernel v²/(1−v)³, triple Cauchy
+                                          products), then the addition law. REMAINING: (a) the
+                                          homomorphism property — Silverman V.3.1 addition law, via
+                                          two-parameter formal identities against mathlib's affine
+                                          group law (extend the eq_zero_of_forall_hasSum_zero
+                                          descent of TateCurveConstruction to two transcendentals,
+                                          using the ℂ-analytic addition law of the exponential
                                           parametrization); (b) surjectivity of the finite-level map
                                           (valuation analysis of affine points, Silverman V.4); (c)
                                           Galois-equivariant gluing over Ω (finite-level
@@ -532,14 +576,20 @@ entries file). To add/remove/annotate a node, edit
                                               PROVEN (X(u⁻¹,q)=X(u,q), Y(u⁻¹,q)=−Y−X, binomial
                                               C(d+1,2)=C(d,2)+d), and the point-level P(u⁻¹)=−P(u)
                                               PROVEN on the valuation-one shell
-                                              (pointMap_inv_of_valuation_eq_one); the interior case
-                                              awaits the translation identity X(qu,q)=X(u,q) — the
-                                              bilateral (ℤ-indexed) Lambert rearrangement over k,
-                                              shared with the addition law. REMAINING: (a) the
-                                              homomorphism property — Silverman V.3.1 addition law,
-                                              via two-parameter formal identities against mathlib's
-                                              affine group law (extend the
-                                              eq_zero_of_forall_hasSum_zero descent of
+                                              (pointMap_inv_of_valuation_eq_one); the TRANSLATION
+                                              IDENTITY IS PROVEN (bilateralX_shift, 2026-07-18): the
+                                              bilateral x-form (evalA_XA_bilateral, from the nonarch
+                                              Lambert machinery — geometric + derivative-geometric
+                                              series, Fubini, divisor collection, general-window
+                                              one-sided identities) is inversion-invariant
+                                              (bilateralX_inv) and q-shift-invariant
+                                              (bilateralX_shift). Next: the interior-case point
+                                              negation via these, the Y-series bilateral analogue
+                                              (kernel v²/(1−v)³, triple Cauchy products), then the
+                                              addition law. REMAINING: (a) the homomorphism property
+                                              — Silverman V.3.1 addition law, via two-parameter
+                                              formal identities against mathlib's affine group law
+                                              (extend the eq_zero_of_forall_hasSum_zero descent of
                                               TateCurveConstruction to two transcendentals, using
                                               the ℂ-analytic addition law of the exponential
                                               parametrization); (b) surjectivity of the finite-level
@@ -604,19 +654,24 @@ entries file). To add/remove/annotate a node, edit
                                   inversion identities PROVEN (X(u⁻¹,q)=X(u,q), Y(u⁻¹,q)=−Y−X,
                                   binomial C(d+1,2)=C(d,2)+d), and the point-level P(u⁻¹)=−P(u)
                                   PROVEN on the valuation-one shell
-                                  (pointMap_inv_of_valuation_eq_one); the interior case awaits the
-                                  translation identity X(qu,q)=X(u,q) — the bilateral (ℤ-indexed)
-                                  Lambert rearrangement over k, shared with the addition law.
-                                  REMAINING: (a) the homomorphism property — Silverman V.3.1
-                                  addition law, via two-parameter formal identities against
-                                  mathlib's affine group law (extend the
-                                  eq_zero_of_forall_hasSum_zero descent of TateCurveConstruction to
-                                  two transcendentals, using the ℂ-analytic addition law of the
-                                  exponential parametrization); (b) surjectivity of the finite-level
-                                  map (valuation analysis of affine points, Silverman V.4); (c)
-                                  Galois-equivariant gluing over Ω (finite-level equivariance from
-                                  the universality of the series coefficients, then colimit over
-                                  finite subextensions).
+                                  (pointMap_inv_of_valuation_eq_one); the TRANSLATION IDENTITY IS
+                                  PROVEN (bilateralX_shift, 2026-07-18): the bilateral x-form
+                                  (evalA_XA_bilateral, from the nonarch Lambert machinery —
+                                  geometric + derivative-geometric series, Fubini, divisor
+                                  collection, general-window one-sided identities) is inversion-
+                                  invariant (bilateralX_inv) and q-shift-invariant
+                                  (bilateralX_shift). Next: the interior-case point negation via
+                                  these, the Y-series bilateral analogue (kernel v²/(1−v)³, triple
+                                  Cauchy products), then the addition law. REMAINING: (a) the
+                                  homomorphism property — Silverman V.3.1 addition law, via two-
+                                  parameter formal identities against mathlib's affine group law
+                                  (extend the eq_zero_of_forall_hasSum_zero descent of
+                                  TateCurveConstruction to two transcendentals, using the ℂ-analytic
+                                  addition law of the exponential parametrization); (b) surjectivity
+                                  of the finite-level map (valuation analysis of affine points,
+                                  Silverman V.4); (c) Galois-equivariant gluing over Ω (finite-level
+                                  equivariance from the universality of the series coefficients,
+                                  then colimit over finite subextensions).
                         - ✅· `WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two` — the nonsplit half of the tame-at-2 condition, now ASSEMBLED: the exponent
                           quotient of the twisted minimal model transports through the (χ-twisted)
                           composite point equivalence; δ is the quadratic character of the
@@ -642,19 +697,24 @@ entries file). To add/remove/annotate a node, edit
                                   inversion identities PROVEN (X(u⁻¹,q)=X(u,q), Y(u⁻¹,q)=−Y−X,
                                   binomial C(d+1,2)=C(d,2)+d), and the point-level P(u⁻¹)=−P(u)
                                   PROVEN on the valuation-one shell
-                                  (pointMap_inv_of_valuation_eq_one); the interior case awaits the
-                                  translation identity X(qu,q)=X(u,q) — the bilateral (ℤ-indexed)
-                                  Lambert rearrangement over k, shared with the addition law.
-                                  REMAINING: (a) the homomorphism property — Silverman V.3.1
-                                  addition law, via two-parameter formal identities against
-                                  mathlib's affine group law (extend the
-                                  eq_zero_of_forall_hasSum_zero descent of TateCurveConstruction to
-                                  two transcendentals, using the ℂ-analytic addition law of the
-                                  exponential parametrization); (b) surjectivity of the finite-level
-                                  map (valuation analysis of affine points, Silverman V.4); (c)
-                                  Galois-equivariant gluing over Ω (finite-level equivariance from
-                                  the universality of the series coefficients, then colimit over
-                                  finite subextensions).
+                                  (pointMap_inv_of_valuation_eq_one); the TRANSLATION IDENTITY IS
+                                  PROVEN (bilateralX_shift, 2026-07-18): the bilateral x-form
+                                  (evalA_XA_bilateral, from the nonarch Lambert machinery —
+                                  geometric + derivative-geometric series, Fubini, divisor
+                                  collection, general-window one-sided identities) is inversion-
+                                  invariant (bilateralX_inv) and q-shift-invariant
+                                  (bilateralX_shift). Next: the interior-case point negation via
+                                  these, the Y-series bilateral analogue (kernel v²/(1−v)³, triple
+                                  Cauchy products), then the addition law. REMAINING: (a) the
+                                  homomorphism property — Silverman V.3.1 addition law, via two-
+                                  parameter formal identities against mathlib's affine group law
+                                  (extend the eq_zero_of_forall_hasSum_zero descent of
+                                  TateCurveConstruction to two transcendentals, using the ℂ-analytic
+                                  addition law of the exponential parametrization); (b) surjectivity
+                                  of the finite-level map (valuation analysis of affine points,
+                                  Silverman V.4); (c) Galois-equivariant gluing over Ω (finite-level
+                                  equivariance from the universality of the series coefficients,
+                                  then colimit over finite subextensions).
             - ✅· `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified` — B5 `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
               (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work) — now (2026-07-16)
               from three explicit nodes in `HardlyRamified/Lift.lean` (own work), following
