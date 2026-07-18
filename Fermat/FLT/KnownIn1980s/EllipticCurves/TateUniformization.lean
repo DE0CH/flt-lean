@@ -338,6 +338,26 @@ noncomputable def evalA [TopologicalSpace k] (u₀ q₀ : k) (h0 : u₀ ≠ 0)
 
 end Evaluation
 
+/-! ### The formal Weierstrass equation over the coefficient ring -/
+
+/-- **The formal Weierstrass equation over `CoeffRing`**: pulled back
+from `TateCurve.weierstrass_equation` (in `ℚ(u)⟦q⟧`, proven by the
+complex-analytic descent of `TateCurveConstruction.lean`) along the
+injective inclusion `coeffRingToRatFunc`. -/
+theorem weierstrass_equation_A :
+    YA ^ 2 + XA * YA = XA ^ 3 + a₄A * XA + a₆A := by
+  have hinj : Function.Injective
+      (PowerSeries.map coeffRingToRatFunc) := by
+    intro P Q h
+    ext n
+    refine coeffRingToRatFunc_injective ?_
+    have h1 := congrArg (PowerSeries.coeff n) h
+    rwa [PowerSeries.coeff_map, PowerSeries.coeff_map] at h1
+  apply hinj
+  simp only [map_add, map_mul, map_pow, map_XA, map_YA, map_a₄A,
+    map_a₆A]
+  exact TateCurve.weierstrass_equation
+
 section Annulus
 
 open ValuativeRel
@@ -658,27 +678,68 @@ theorem summable_evalA_mul (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
   rw [← hpn, pow_add]
   ring
 
+/-- Summability of the evaluated sum series. -/
+theorem summable_evalA_add (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    {F G : PowerSeries CoeffRing}
+    (hF : Summable fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff n F) * q₀ ^ n)
+    (hG : Summable fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff n G) * q₀ ^ n) :
+    Summable fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff n (F + G)) * q₀ ^ n := by
+  refine (hF.add hG).congr fun n ↦ ?_
+  rw [map_add, map_add, add_mul]
+
+/-- **The evaluated Weierstrass equation** (Silverman ATAEC V.3.1(c),
+algebraic half): at every point `(u₀, q₀)` of the fundamental annulus
+`|q₀| < |u₀| ≤ 1`, `|q₀| < 1`, the values `x = X(u₀,q₀)`,
+`y = Y(u₀,q₀)` of the uniformisation series satisfy
+`y² + xy = x³ + a₄(q₀)x + a₆(q₀)` — the affine equation of the Tate
+curve. Derived from the formal identity `weierstrass_equation_A` by
+pushing the evaluation through sums and Cauchy products. -/
+theorem evalA_weierstrass (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hu : valuation k u₀ ≤ 1) (hq1 : valuation k q₀ < 1)
+    (hq : valuation k q₀ < valuation k u₀) :
+    evalA u₀ q₀ h0 h1 YA ^ 2 +
+      evalA u₀ q₀ h0 h1 XA * evalA u₀ q₀ h0 h1 YA =
+    evalA u₀ q₀ h0 h1 XA ^ 3 +
+      evalA u₀ q₀ h0 h1 a₄A * evalA u₀ q₀ h0 h1 XA +
+      evalA u₀ q₀ h0 h1 a₆A := by
+  have hX := summable_evalA_XA u₀ q₀ h0 h1 hu hq
+  have hY := summable_evalA_YA u₀ q₀ h0 h1 hu hq
+  have h4 := summable_evalA_a₄A u₀ q₀ h0 h1 hq1
+  have h6 := summable_evalA_a₆A u₀ q₀ h0 h1 hq1
+  have hYY := summable_evalA_mul u₀ q₀ h0 h1 hY hY
+  have hXY := summable_evalA_mul u₀ q₀ h0 h1 hX hY
+  have hXX := summable_evalA_mul u₀ q₀ h0 h1 hX hX
+  have hXXX := summable_evalA_mul u₀ q₀ h0 h1 hXX hX
+  have h4X := summable_evalA_mul u₀ q₀ h0 h1 h4 hX
+  -- the formal identity in product-normal form
+  have hWE : YA * YA + XA * YA = XA * XA * XA + a₄A * XA + a₆A := by
+    linear_combination weierstrass_equation_A
+  calc evalA u₀ q₀ h0 h1 YA ^ 2 +
+        evalA u₀ q₀ h0 h1 XA * evalA u₀ q₀ h0 h1 YA
+      = evalA u₀ q₀ h0 h1 (YA * YA) + evalA u₀ q₀ h0 h1 (XA * YA) := by
+        rw [evalA_mul u₀ q₀ h0 h1 hY hY, evalA_mul u₀ q₀ h0 h1 hX hY]
+        ring
+    _ = evalA u₀ q₀ h0 h1 (YA * YA + XA * YA) :=
+        (evalA_add u₀ q₀ h0 h1 hYY hXY).symm
+    _ = evalA u₀ q₀ h0 h1 (XA * XA * XA + a₄A * XA + a₆A) := by rw [hWE]
+    _ = evalA u₀ q₀ h0 h1 (XA * XA * XA + a₄A * XA) +
+        evalA u₀ q₀ h0 h1 a₆A :=
+        evalA_add u₀ q₀ h0 h1
+          (summable_evalA_add u₀ q₀ h0 h1 hXXX h4X) h6
+    _ = evalA u₀ q₀ h0 h1 (XA * XA * XA) +
+        evalA u₀ q₀ h0 h1 (a₄A * XA) + evalA u₀ q₀ h0 h1 a₆A := by
+        rw [evalA_add u₀ q₀ h0 h1 hXXX h4X]
+    _ = evalA u₀ q₀ h0 h1 XA ^ 3 +
+        evalA u₀ q₀ h0 h1 a₄A * evalA u₀ q₀ h0 h1 XA +
+        evalA u₀ q₀ h0 h1 a₆A := by
+        rw [evalA_mul u₀ q₀ h0 h1 hXX hX, evalA_mul u₀ q₀ h0 h1 hX hX,
+          evalA_mul u₀ q₀ h0 h1 h4 hX]
+        ring
+
 end Annulus
-
-/-! ### The formal Weierstrass equation over the coefficient ring -/
-
-/-- **The formal Weierstrass equation over `CoeffRing`**: pulled back
-from `TateCurve.weierstrass_equation` (in `ℚ(u)⟦q⟧`, proven by the
-complex-analytic descent of `TateCurveConstruction.lean`) along the
-injective inclusion `coeffRingToRatFunc`. -/
-theorem weierstrass_equation_A :
-    YA ^ 2 + XA * YA = XA ^ 3 + a₄A * XA + a₆A := by
-  have hinj : Function.Injective
-      (PowerSeries.map coeffRingToRatFunc) := by
-    intro P Q h
-    ext n
-    refine coeffRingToRatFunc_injective ?_
-    have h1 := congrArg (PowerSeries.coeff n) h
-    rwa [PowerSeries.coeff_map, PowerSeries.coeff_map] at h1
-  apply hinj
-  simp only [map_add, map_mul, map_pow, map_XA, map_YA, map_a₄A,
-    map_a₆A]
-  exact TateCurve.weierstrass_equation
 
 end TateCurve
 
