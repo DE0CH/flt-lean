@@ -127,20 +127,30 @@ entries file). To add/remove/annotate a node, edit
                                                       annulus_exponent_unique); pointMap on kˣ with
                                                       q-power invariance, descent pointMapQuot to
                                                       kˣ/q^ℤ, and kernel characterization
-                                                      pointMap_eq_zero_iff. REMAINING: (a) the
-                                                      homomorphism property — Silverman V.3.1
-                                                      addition law, via two-parameter formal
-                                                      identities against mathlib's affine group law
-                                                      (extend the eq_zero_of_forall_hasSum_zero
-                                                      descent of TateCurveConstruction to two
-                                                      transcendentals, using the ℂ-analytic addition
-                                                      law of the exponential parametrization); (b)
-                                                      surjectivity of the finite-level map
-                                                      (valuation analysis of affine points,
-                                                      Silverman V.4); (c) Galois-equivariant gluing
-                                                      over Ω (finite-level equivariance from the
-                                                      universality of the series coefficients, then
-                                                      colimit over finite subextensions).
+                                                      pointMap_eq_zero_iff. NEGATION LAW:
+                                                      coefficient- and series-level inversion
+                                                      identities PROVEN (X(u⁻¹,q)=X(u,q),
+                                                      Y(u⁻¹,q)=−Y−X, binomial C(d+1,2)=C(d,2)+d),
+                                                      and the point-level P(u⁻¹)=−P(u) PROVEN on the
+                                                      valuation-one shell
+                                                      (pointMap_inv_of_valuation_eq_one); the
+                                                      interior case awaits the translation identity
+                                                      X(qu,q)=X(u,q) — the bilateral (ℤ-indexed)
+                                                      Lambert rearrangement over k, shared with the
+                                                      addition law. REMAINING: (a) the homomorphism
+                                                      property — Silverman V.3.1 addition law, via
+                                                      two-parameter formal identities against
+                                                      mathlib's affine group law (extend the
+                                                      eq_zero_of_forall_hasSum_zero descent of
+                                                      TateCurveConstruction to two transcendentals,
+                                                      using the ℂ-analytic addition law of the
+                                                      exponential parametrization); (b) surjectivity
+                                                      of the finite-level map (valuation analysis of
+                                                      affine points, Silverman V.4); (c) Galois-
+                                                      equivariant gluing over Ω (finite-level
+                                                      equivariance from the universality of the
+                                                      series coefficients, then colimit over finite
+                                                      subextensions).
                                             - ✅· `WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic` — the nonsplit half of the unipotence statement,
                                               assembled from the LOCAL nonsplit node
                                               `tate_inertia_unipotent_of_nonsplit` by the proven
@@ -177,10 +187,20 @@ entries file). To add/remove/annotate a node, edit
                                                           with q-power invariance, descent
                                                           pointMapQuot to kˣ/q^ℤ, and kernel
                                                           characterization pointMap_eq_zero_iff.
-                                                          REMAINING: (a) the homomorphism property —
-                                                          Silverman V.3.1 addition law, via two-
-                                                          parameter formal identities against
-                                                          mathlib's affine group law (extend the
+                                                          NEGATION LAW: coefficient- and series-
+                                                          level inversion identities PROVEN
+                                                          (X(u⁻¹,q)=X(u,q), Y(u⁻¹,q)=−Y−X, binomial
+                                                          C(d+1,2)=C(d,2)+d), and the point-level
+                                                          P(u⁻¹)=−P(u) PROVEN on the valuation-one
+                                                          shell (pointMap_inv_of_valuation_eq_one);
+                                                          the interior case awaits the translation
+                                                          identity X(qu,q)=X(u,q) — the bilateral
+                                                          (ℤ-indexed) Lambert rearrangement over k,
+                                                          shared with the addition law. REMAINING:
+                                                          (a) the homomorphism property — Silverman
+                                                          V.3.1 addition law, via two-parameter
+                                                          formal identities against mathlib's affine
+                                                          group law (extend the
                                                           eq_zero_of_forall_hasSum_zero descent of
                                                           TateCurveConstruction to two
                                                           transcendentals, using the ℂ-analytic
@@ -243,11 +263,22 @@ entries file). To add/remove/annotate a node, edit
                                                               kˣ with q-power invariance, descent
                                                               pointMapQuot to kˣ/q^ℤ, and kernel
                                                               characterization pointMap_eq_zero_iff.
-                                                              REMAINING: (a) the homomorphism
-                                                              property — Silverman V.3.1 addition
-                                                              law, via two-parameter formal
-                                                              identities against mathlib's affine
-                                                              group law (extend the
+                                                              NEGATION LAW: coefficient- and series-
+                                                              level inversion identities PROVEN
+                                                              (X(u⁻¹,q)=X(u,q), Y(u⁻¹,q)=−Y−X,
+                                                              binomial C(d+1,2)=C(d,2)+d), and the
+                                                              point-level P(u⁻¹)=−P(u) PROVEN on the
+                                                              valuation-one shell
+                                                              (pointMap_inv_of_valuation_eq_one);
+                                                              the interior case awaits the
+                                                              translation identity X(qu,q)=X(u,q) —
+                                                              the bilateral (ℤ-indexed) Lambert
+                                                              rearrangement over k, shared with the
+                                                              addition law. REMAINING: (a) the
+                                                              homomorphism property — Silverman
+                                                              V.3.1 addition law, via two-parameter
+                                                              formal identities against mathlib's
+                                                              affine group law (extend the
                                                               eq_zero_of_forall_hasSum_zero descent
                                                               of TateCurveConstruction to two
                                                               transcendentals, using the ℂ-analytic
@@ -304,10 +335,23 @@ entries file). To add/remove/annotate a node, edit
                                                                   on kˣ with q-power invariance,
                                                                   descent pointMapQuot to kˣ/q^ℤ,
                                                                   and kernel characterization
-                                                                  pointMap_eq_zero_iff. REMAINING:
-                                                                  (a) the homomorphism property —
-                                                                  Silverman V.3.1 addition law, via
-                                                                  two-parameter formal identities
+                                                                  pointMap_eq_zero_iff. NEGATION
+                                                                  LAW: coefficient- and series-level
+                                                                  inversion identities PROVEN
+                                                                  (X(u⁻¹,q)=X(u,q), Y(u⁻¹,q)=−Y−X,
+                                                                  binomial C(d+1,2)=C(d,2)+d), and
+                                                                  the point-level P(u⁻¹)=−P(u)
+                                                                  PROVEN on the valuation-one shell
+                                                                  (pointMap_inv_of_valuation_eq_one)
+                                                                  ; the interior case awaits the
+                                                                  translation identity
+                                                                  X(qu,q)=X(u,q) — the bilateral
+                                                                  (ℤ-indexed) Lambert rearrangement
+                                                                  over k, shared with the addition
+                                                                  law. REMAINING: (a) the
+                                                                  homomorphism property — Silverman
+                                                                  V.3.1 addition law, via two-
+                                                                  parameter formal identities
                                                                   against mathlib's affine group law
                                                                   (extend the
                                                                   eq_zero_of_forall_hasSum_zero
@@ -438,7 +482,14 @@ entries file). To add/remove/annotate a node, edit
                                           (exists_zpow_mul_mem_annulus + annulus_exponent_unique);
                                           pointMap on kˣ with q-power invariance, descent
                                           pointMapQuot to kˣ/q^ℤ, and kernel characterization
-                                          pointMap_eq_zero_iff. REMAINING: (a) the homomorphism
+                                          pointMap_eq_zero_iff. NEGATION LAW: coefficient- and
+                                          series-level inversion identities PROVEN (X(u⁻¹,q)=X(u,q),
+                                          Y(u⁻¹,q)=−Y−X, binomial C(d+1,2)=C(d,2)+d), and the point-
+                                          level P(u⁻¹)=−P(u) PROVEN on the valuation-one shell
+                                          (pointMap_inv_of_valuation_eq_one); the interior case
+                                          awaits the translation identity X(qu,q)=X(u,q) — the
+                                          bilateral (ℤ-indexed) Lambert rearrangement over k, shared
+                                          with the addition law. REMAINING: (a) the homomorphism
                                           property — Silverman V.3.1 addition law, via two-parameter
                                           formal identities against mathlib's affine group law
                                           (extend the eq_zero_of_forall_hasSum_zero descent of
@@ -476,10 +527,18 @@ entries file). To add/remove/annotate a node, edit
                                               (exists_zpow_mul_mem_annulus +
                                               annulus_exponent_unique); pointMap on kˣ with q-power
                                               invariance, descent pointMapQuot to kˣ/q^ℤ, and kernel
-                                              characterization pointMap_eq_zero_iff. REMAINING: (a)
-                                              the homomorphism property — Silverman V.3.1 addition
-                                              law, via two-parameter formal identities against
-                                              mathlib's affine group law (extend the
+                                              characterization pointMap_eq_zero_iff. NEGATION LAW:
+                                              coefficient- and series-level inversion identities
+                                              PROVEN (X(u⁻¹,q)=X(u,q), Y(u⁻¹,q)=−Y−X, binomial
+                                              C(d+1,2)=C(d,2)+d), and the point-level P(u⁻¹)=−P(u)
+                                              PROVEN on the valuation-one shell
+                                              (pointMap_inv_of_valuation_eq_one); the interior case
+                                              awaits the translation identity X(qu,q)=X(u,q) — the
+                                              bilateral (ℤ-indexed) Lambert rearrangement over k,
+                                              shared with the addition law. REMAINING: (a) the
+                                              homomorphism property — Silverman V.3.1 addition law,
+                                              via two-parameter formal identities against mathlib's
+                                              affine group law (extend the
                                               eq_zero_of_forall_hasSum_zero descent of
                                               TateCurveConstruction to two transcendentals, using
                                               the ℂ-analytic addition law of the exponential
@@ -541,9 +600,16 @@ entries file). To add/remove/annotate a node, edit
                                   strict fundamental domain (exists_zpow_mul_mem_annulus +
                                   annulus_exponent_unique); pointMap on kˣ with q-power invariance,
                                   descent pointMapQuot to kˣ/q^ℤ, and kernel characterization
-                                  pointMap_eq_zero_iff. REMAINING: (a) the homomorphism property —
-                                  Silverman V.3.1 addition law, via two-parameter formal identities
-                                  against mathlib's affine group law (extend the
+                                  pointMap_eq_zero_iff. NEGATION LAW: coefficient- and series-level
+                                  inversion identities PROVEN (X(u⁻¹,q)=X(u,q), Y(u⁻¹,q)=−Y−X,
+                                  binomial C(d+1,2)=C(d,2)+d), and the point-level P(u⁻¹)=−P(u)
+                                  PROVEN on the valuation-one shell
+                                  (pointMap_inv_of_valuation_eq_one); the interior case awaits the
+                                  translation identity X(qu,q)=X(u,q) — the bilateral (ℤ-indexed)
+                                  Lambert rearrangement over k, shared with the addition law.
+                                  REMAINING: (a) the homomorphism property — Silverman V.3.1
+                                  addition law, via two-parameter formal identities against
+                                  mathlib's affine group law (extend the
                                   eq_zero_of_forall_hasSum_zero descent of TateCurveConstruction to
                                   two transcendentals, using the ℂ-analytic addition law of the
                                   exponential parametrization); (b) surjectivity of the finite-level
@@ -572,9 +638,16 @@ entries file). To add/remove/annotate a node, edit
                                   strict fundamental domain (exists_zpow_mul_mem_annulus +
                                   annulus_exponent_unique); pointMap on kˣ with q-power invariance,
                                   descent pointMapQuot to kˣ/q^ℤ, and kernel characterization
-                                  pointMap_eq_zero_iff. REMAINING: (a) the homomorphism property —
-                                  Silverman V.3.1 addition law, via two-parameter formal identities
-                                  against mathlib's affine group law (extend the
+                                  pointMap_eq_zero_iff. NEGATION LAW: coefficient- and series-level
+                                  inversion identities PROVEN (X(u⁻¹,q)=X(u,q), Y(u⁻¹,q)=−Y−X,
+                                  binomial C(d+1,2)=C(d,2)+d), and the point-level P(u⁻¹)=−P(u)
+                                  PROVEN on the valuation-one shell
+                                  (pointMap_inv_of_valuation_eq_one); the interior case awaits the
+                                  translation identity X(qu,q)=X(u,q) — the bilateral (ℤ-indexed)
+                                  Lambert rearrangement over k, shared with the addition law.
+                                  REMAINING: (a) the homomorphism property — Silverman V.3.1
+                                  addition law, via two-parameter formal identities against
+                                  mathlib's affine group law (extend the
                                   eq_zero_of_forall_hasSum_zero descent of TateCurveConstruction to
                                   two transcendentals, using the ℂ-analytic addition law of the
                                   exponential parametrization); (b) surjectivity of the finite-level
