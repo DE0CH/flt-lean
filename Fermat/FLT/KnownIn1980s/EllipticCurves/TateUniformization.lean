@@ -978,6 +978,25 @@ theorem annulus_exponent_unique (q : k) (hq0 : q ≠ 0)
   · exact h
   · exact (key m' m h hm'.1 hm.2).elim
 
+/-- **The uniformisation point map** `kˣ → E_{q₀}(k)` (on nonzero
+field elements; it will descend to `kˣ/q₀^ℤ`): normalise `u` into the
+fundamental annulus by the canonical exponent
+(`exists_zpow_mul_mem_annulus`, unique by
+`annulus_exponent_unique`), send the representative `1` (the class of
+`q₀^ℤ`) to zero and any other representative to its affine
+uniformisation point. -/
+noncomputable def pointMap (q₀ : k) (hq0 : q₀ ≠ 0)
+    (hq : valuation k q₀ < 1) (u : k) (hu0 : u ≠ 0) :
+    (WeierstrassCurve.tateCurve q₀).toAffine.Point :=
+  haveI := Classical.decEq k
+  let m := (exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose
+  let u₀ := u * q₀ ^ (-m)
+  if h1 : u₀ = 1 then 0
+  else
+    annulusPoint u₀ q₀ (mul_ne_zero hu0 (zpow_ne_zero _ hq0)) h1 hq0
+      (exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose_spec.2 hq
+      (exists_zpow_mul_mem_annulus q₀ hq0 hq u hu0).choose_spec.1
+
 end Annulus
 
 end TateCurve
