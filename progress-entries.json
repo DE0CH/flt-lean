@@ -1,17 +1,10 @@
 [
  {
-  "name": "fermat_last_theorem",
-  "module": "Fermat.Basic",
+  "name": "fermatLastTheoremThree",
+  "module": "Mathlib.NumberTheory.FLT.Three",
   "wip": false,
-  "text": "the goal: `FermatLastTheorem`, assembled from the mathlib reductions and `fermatLastTheoremFor_of_five_le`.",
-  "fullname": "fermat_last_theorem"
- },
- {
-  "name": "FermatLastTheorem.of_odd_primes",
-  "module": "Mathlib.NumberTheory.FLT.Four",
-  "wip": false,
-  "text": "`FermatLastTheorem.of_odd_primes` (mathlib, NumberTheory/FLT/Four.lean)",
-  "fullname": "FermatLastTheorem.of_odd_primes"
+  "text": "`fermatLastTheoremThree` (mathlib)",
+  "fullname": "fermatLastTheoremThree"
  },
  {
   "name": "fermatLastTheoremFour",
@@ -21,11 +14,18 @@
   "fullname": "fermatLastTheoremFour"
  },
  {
-  "name": "fermatLastTheoremThree",
-  "module": "Mathlib.NumberTheory.FLT.Three",
+  "name": "FermatLastTheorem.of_odd_primes",
+  "module": "Mathlib.NumberTheory.FLT.Four",
   "wip": false,
-  "text": "`fermatLastTheoremThree` (mathlib)",
-  "fullname": "fermatLastTheoremThree"
+  "text": "`FermatLastTheorem.of_odd_primes` (mathlib, NumberTheory/FLT/Four.lean)",
+  "fullname": "FermatLastTheorem.of_odd_primes"
+ },
+ {
+  "name": "fermat_last_theorem",
+  "module": "Fermat.Basic",
+  "wip": false,
+  "text": "the goal: `FermatLastTheorem`, assembled from the mathlib reductions and `fermatLastTheoremFor_of_five_le`.",
+  "fullname": "fermat_last_theorem"
  },
  {
   "name": "fermatLastTheoremFor_of_five_le",
@@ -441,34 +441,6 @@
   "fullname": "GaloisRepresentation.IsHardlyRamified.three_adic"
  },
  {
-  "name": "IsHardlyRamified.mod_three",
-  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-  "wip": false,
-  "text": "`IsHardlyRamified.mod_three` (`ModThree.lean`) — : a mod-3 hardly ramified rep has a Γℚ-equivariant surjection onto the trivial character; B6c's eventual proof lifts this 3-adically. Children:",
-  "fullname": "GaloisRepresentation.IsHardlyRamified.mod_three"
- },
- {
-  "name": "mod_three_reducible",
-  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-  "wip": false,
-  "text": "`mod_three_reducible` — the Dickson/discriminant reducibility content (unchanged)",
-  "fullname": "GaloisRepresentation.IsHardlyRamified.mod_three_reducible"
- },
- {
-  "name": "mod_three_of_stable_line",
-  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-  "wip": false,
-  "text": "`mod_three_of_stable_line` — (2026-07-17) from the new local leaf below + the (now field-generic) character bookkeeping of `MazurTorsion.lean`: quotient character `χ₂` of the leaf's line, trivial-on-`ker ρ` (unipotent scalar lemma), open kernel (`isOpen_setOf_galoisRep_eq_one`), unramified outside `{2,3}` from `IsHardlyRamified.isUnramified` via the generic bridge + `Rat.subsingleton_ringHom` convert; `minkowski_character_trivial` (target-generalized to any group) kills `χ₂`; `π` := coordinate of the rank-1 quotient",
-  "fullname": "GaloisRepresentation.IsHardlyRamified.mod_three_of_stable_line"
- },
- {
-  "name": "exists_line_with_locally_unramified_quotCharacter",
-  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-  "wip": false,
-  "text": "`exists_line_with_locally_unramified_quotCharacter` (`ModThree.lean`, stated 2026-07-17) — the LOCAL leaf: a reducible mod-3 hardly ramified rep has a stable line whose quotient character is unramified at `2` AND `3` (flat connected-étale analysis at `3` incl. the Serre swap; tame quadratic condition at `2`). - NB the lift structure gained an `IsModuleTopology ℤ_[ℓ] O` field (statement strengthening of B6a's conclusion, true for integers of finite extensions of ℚ_ℓ; required by B6b)",
-  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter"
- },
- {
   "name": "not_isIrreducible_of_charFrob_eq",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
   "wip": false,
@@ -781,7 +753,14 @@
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
   "wip": false,
   "fullname": "WeierstrassCurve.exists_tateCurveEquivSepClosure",
-  "text": "the uniformization core (ATAEC V.3.1 + gluing): Galois-equivariant Ωˣ/q^ℤ ≃+ E_q(Ω). GROUNDWORK BUILT (TateUniformization.lean, 2026-07-18, all axiom-clean): CoeffRing = ℚ[T][1/(T(1−T))] evaluation infrastructure; lifts/bridges of the X/Y/a₄/a₆ series; evalA two-variable evaluation with fundamental-annulus (|q|<|u|≤1) summability; nonarch Cauchy products; formal + EVALUATED Weierstrass equations; annulusPoint (on-curve, nonsingular); strict fundamental domain (exists_zpow_mul_mem_annulus + annulus_exponent_unique); pointMap on kˣ with q-power invariance, descent pointMapQuot to kˣ/q^ℤ, and kernel characterization pointMap_eq_zero_iff. NEGATION LAW: coefficient- and series-level inversion identities PROVEN (X(u⁻¹,q)=X(u,q), Y(u⁻¹,q)=−Y−X, binomial C(d+1,2)=C(d,2)+d), and the point-level P(u⁻¹)=−P(u) PROVEN on the valuation-one shell (pointMap_inv_of_valuation_eq_one); the TRANSLATION IDENTITY IS PROVEN (bilateralX_shift, 2026-07-18): the bilateral x-form (evalA_XA_bilateral, from the nonarch Lambert machinery — geometric + derivative-geometric series, Fubini, divisor collection, general-window one-sided identities) is inversion-invariant (bilateralX_inv) and q-shift-invariant (bilateralX_shift). Next: the interior-case point negation via these, the Y-series bilateral analogue (kernel v²/(1−v)³, triple Cauchy products), then the addition law. REMAINING: (a) the homomorphism property — Silverman V.3.1 addition law, via two-parameter formal identities against mathlib's affine group law (extend the eq_zero_of_forall_hasSum_zero descent of TateCurveConstruction to two transcendentals, using the ℂ-analytic addition law of the exponential parametrization); (b) surjectivity of the finite-level map (valuation analysis of affine points, Silverman V.4); (c) Galois-equivariant gluing over Ω (finite-level equivariance from the universality of the series coefficients, then colimit over finite subextensions)."
+  "text": "the uniformization core, quotient form: Galois-equivariant Ωˣ/q^ℤ ≃+ E_q(Ω). DERIVED 2026-07-18 from the pre-quotient node exists_tateCurveHomSepClosure by the first isomorphism theorem: multiplicative lift ψ of the hom, QuotientGroup.lift over zpowers q, injectivity from the kernel characterization, MulEquiv.ofBijective, MulEquiv.toAdditiveLeft; equivariance descends definitionally on ofMul-classes."
+ },
+ {
+  "name": "WeierstrassCurve.exists_tateCurveHomSepClosure",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
+  "wip": true,
+  "fullname": "WeierstrassCurve.exists_tateCurveHomSepClosure",
+  "text": "the uniformization core, pre-quotient form (ATAEC V.3.1 + gluing): surjective Galois-equivariant hom Ωˣ →+ E_q(Ω) with kernel exactly q^ℤ, given by the explicit X/Y series (each u converges in the NALF k(u); the finite-level maps glue choice-freely). GROUNDWORK BUILT (TateUniformization.lean, 2026-07-18, all axiom-clean): CoeffRing = ℚ[T][1/(T(1−T))] evaluation infrastructure; lifts/bridges of the X/Y/a₄/a₆ series; evalA two-variable evaluation with fundamental-annulus (|q|<|u|≤1) summability; nonarch Cauchy products; formal + EVALUATED Weierstrass equations; annulusPoint (on-curve, nonsingular); strict fundamental domain (exists_zpow_mul_mem_annulus + annulus_exponent_unique); pointMap on kˣ with q-power invariance, descent pointMapQuot to kˣ/q^ℤ, and kernel characterization pointMap_eq_zero_iff. NEGATION LAW: coefficient- and series-level inversion identities PROVEN (X(u⁻¹,q)=X(u,q), Y(u⁻¹,q)=−Y−X, binomial C(d+1,2)=C(d,2)+d), and the point-level P(u⁻¹)=−P(u) PROVEN on the valuation-one shell (pointMap_inv_of_valuation_eq_one); the TRANSLATION IDENTITY IS PROVEN (bilateralX_shift, 2026-07-18): the bilateral x-form (evalA_XA_bilateral, from the nonarch Lambert machinery — geometric + derivative-geometric series, Fubini, divisor collection, general-window one-sided identities) is inversion-invariant (bilateralX_inv) and q-shift-invariant (bilateralX_shift). Next: the interior-case point negation via these, the Y-series bilateral analogue (kernel v²/(1−v)³, triple Cauchy products), then the addition law. REMAINING: (a) the homomorphism property — Silverman V.3.1 addition law, via two-parameter formal identities against mathlib's affine group law (extend the eq_zero_of_forall_hasSum_zero descent of TateCurveConstruction to two transcendentals, using the ℂ-analytic addition law of the exponential parametrization); (b) surjectivity of the finite-level map (valuation analysis of affine points, Silverman V.4); (c) Galois-equivariant gluing over Ω (finite-level equivariance from the universality of the series coefficients, then colimit over finite subextensions)."
  },
  {
   "name": "WeierstrassCurve.exists_tateTorsionQuotient",
@@ -880,33 +859,5 @@
   "wip": false,
   "fullname": "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split",
   "text": "the split criterion over the local field k, PROVEN: split multiplicative reduction implies −c₄c₆ ∈ (kˣ)². Both residue characteristics via Hensel over 𝒪[k] (HenselianRing from the IsAdicComplete instance of LocalField/Basic under a rightUniformSpace letI): odd — the reduced node polynomial's splitting means its discriminant −c₄c₆ is a residue square (nodePoly_map_splits_iff_isSquare) and X²−x Hensel-lifts (derivative 2z̄ a unit); residue char 2 — splitness is the Artin–Schreier condition (nodePoly_map_splits_iff_of_two_eq_zero), normalized by the unit b = a₁c₄ to z²+z = c̄, Hensel-lifted through X²+X−c (derivative 2z̄+1 ≡ 1 a unit), and −c₄c₆ = b²(1+4c) = (b(1+2t))² by the discriminant identity splitPolynomial_discrim."
- },
- {
-  "name": "TateCurve.pointMapQuot_add",
-  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-  "wip": false,
-  "fullname": "TateCurve.pointMapQuot_add",
-  "text": "the addition law of the Tate uniformisation (Silverman V.3.1(c)): pointMapQuot turns unit-class multiplication into Tate-curve point addition. Attack: the coordinates are the bilateral values (proven bilateral forms, shifts, inversion identities for X and Y); the chord–tangent formulas reduce to two-parameter Lambert identities on the built foundation."
- },
- {
-  "name": "TateCurve.pointMapQuot_bijective",
-  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-  "wip": false,
-  "fullname": "TateCurve.pointMapQuot_bijective",
-  "text": "bijectivity of the Tate uniformisation, DERIVED top-down: injectivity from the trivial kernel (pointMapQuot_eq_zero_iff', quotient induction over the proven kernel characterization) and the addition law through the derived negation compatibility pointMapQuot_inv; surjectivity is the remaining sorried leaf."
- },
- {
-  "name": "TateCurve.tateCurveEquiv",
-  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-  "wip": false,
-  "fullname": "TateCurve.tateCurveEquiv",
-  "text": "the finite-level Tate uniformisation kˣ/q^ℤ ≃+ E_q(k), DERIVED from pointMapQuot_add + pointMapQuot_bijective with pointMapQuot (canonical, choice-free) as underlying function — the object the Ω-gluing of exists_tateCurveEquivSepClosure consumes."
- },
- {
-  "name": "TateCurve.pointMapQuot_surjective",
-  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-  "wip": false,
-  "fullname": "TateCurve.pointMapQuot_surjective",
-  "text": "surjectivity of the Tate uniformisation (Silverman V.3.1(d)/V.4): every point of E_q(k) is a pointMapQuot-value — the valuation analysis of affine points through the bilateral X-value, two-to-one up to the involution and separated by the y-coordinate."
  }
 ]

@@ -1530,17 +1530,37 @@ noncomputable def WeierstrassCurve.qUnitSepClosure : Ωˣ :=
 variable [DecidableEq Ω]
 
 set_option warn.sorry false in
+/-- **The Tate-curve uniformising homomorphism over a separable closure**
+(sorry node — the choice-free core of the uniformisation, pre-quotient
+form): for a unit `q` of `k` with `|q| < 1` there is a surjective group
+homomorphism `Ωˣ → E_q(Ω)` with kernel exactly `q^ℤ`, commuting with
+every `k`-algebra automorphism of `Ω` ON THE NOSE. The map is given by
+the explicit series `X(u, q)`, `Y(u, q)` (whose Weierstrass equation is
+`TateCurve.weierstrass_equation`, PROVEN), so it involves no choices.
+Each `u ∈ Ωˣ` lies in a finite subextension `l = k(u)` of `Ω/k` — a
+nonarchimedean local field, where the series converge — and `E(Ω)` is
+the directed union of the `E(l)`; the finite-level maps glue because
+the series are independent of `l`. -/
+theorem WeierstrassCurve.exists_tateCurveHomSepClosure (q : kˣ)
+    (hq : valuation k (q : k) < 1) :
+    ∃ φ : Additive Ωˣ →+ (((tateCurve ((q : k) : k))⁄Ω)).Point,
+      Function.Surjective φ ∧
+      (∀ u : Ωˣ, φ (Additive.ofMul u) = 0 ↔
+        u ∈ Subgroup.zpowers (Units.map (algebraMap k Ω).toMonoidHom q)) ∧
+      (∀ (σ : Ω ≃ₐ[k] Ω) (u : Ωˣ),
+        WeierstrassCurve.Affine.Point.map (W' := tateCurve ((q : k) : k))
+            σ.toAlgHom (φ (Additive.ofMul u)) =
+          φ (Additive.ofMul (Units.map σ.toAlgHom.toRingHom.toMonoidHom u))) :=
+  sorry
+
 /-- **Tate's uniformisation of the TATE CURVE over a separable closure**
-(sorry node — the choice-free core of the uniformisation): for a unit
-`q` of `k` with `|q| < 1`, the points of the Tate curve `E_q` over a
-separable closure `Ω` are `Ωˣ/q^ℤ`, Galois-equivariantly ON THE NOSE —
-the isomorphism is given by the explicit series `X(u, q)`, `Y(u, q)`
-(whose Weierstrass equation is `TateCurve.weierstrass_equation`,
-PROVEN), so it involves no choices and commutes with every `k`-algebra
-endomorphism of `Ω`. `E(Ω)` is the directed union of the `E(l)` over
-finite subextensions `l/k` (each a nonarchimedean local field, where
-the series converge); the uniformisations glue by the same
-choice-freeness. -/
+(derived 2026-07-18 from the pre-quotient homomorphism
+`exists_tateCurveHomSepClosure` by the first isomorphism theorem): for a
+unit `q` of `k` with `|q| < 1`, the points of the Tate curve `E_q` over
+a separable closure `Ω` are `Ωˣ/q^ℤ`, Galois-equivariantly ON THE NOSE.
+The uniformising homomorphism `Ωˣ → E_q(Ω)` is surjective with kernel
+`q^ℤ`, so it descends to an isomorphism on the quotient; equivariance
+descends along the quotient map. -/
 theorem WeierstrassCurve.exists_tateCurveEquivSepClosure (q : kˣ)
     (hq : valuation k (q : k) < 1) :
     ∃ e : Additive (Ωˣ ⧸ Subgroup.zpowers
@@ -1549,8 +1569,45 @@ theorem WeierstrassCurve.exists_tateCurveEquivSepClosure (q : kˣ)
       ∀ (σ : Ω ≃ₐ[k] Ω) (u : Ωˣ),
         WeierstrassCurve.Affine.Point.map (W' := tateCurve ((q : k) : k))
             σ.toAlgHom (e (Additive.ofMul ↑u)) =
-          e (Additive.ofMul ↑(Units.map σ.toAlgHom.toRingHom.toMonoidHom u)) :=
-  sorry
+          e (Additive.ofMul ↑(Units.map σ.toAlgHom.toRingHom.toMonoidHom u)) := by
+  obtain ⟨φ, hφsurj, hφker, hφequiv⟩ :=
+    WeierstrassCurve.exists_tateCurveHomSepClosure (k := k) Ω q hq
+  -- the multiplicative form of `φ`, as a `MonoidHom` out of `Ωˣ`
+  let ψ : Ωˣ →* Multiplicative ((((tateCurve ((q : k) : k))⁄Ω)).Point) :=
+    { toFun := fun u => Multiplicative.ofAdd (φ (Additive.ofMul u))
+      map_one' := by simp
+      map_mul' := fun u v => by simp }
+  -- `q^ℤ` is contained in the kernel, so `ψ` descends to the quotient
+  have hZle : Subgroup.zpowers (Units.map (algebraMap k Ω).toMonoidHom q) ≤
+      ψ.ker := by
+    intro z hz
+    exact (hφker z).mpr hz
+  let ψbar : (Ωˣ ⧸ Subgroup.zpowers
+      (Units.map (algebraMap k Ω).toMonoidHom q)) →*
+      Multiplicative ((((tateCurve ((q : k) : k))⁄Ω)).Point) :=
+    QuotientGroup.lift _ ψ hZle
+  -- the descended map is injective (kernel of `φ` is exactly `q^ℤ`) …
+  have hinj : Function.Injective ψbar := by
+    rw [injective_iff_map_eq_one]
+    intro x hx
+    induction x using QuotientGroup.induction_on with
+    | H u =>
+      rw [QuotientGroup.eq_one_iff]
+      exact (hφker u).mp hx
+  -- … and surjective (because `φ` is)
+  have hsurj : Function.Surjective ψbar := by
+    intro p
+    obtain ⟨a, ha⟩ := hφsurj (Multiplicative.toAdd p)
+    refine ⟨((Additive.toMul a : Ωˣ) : Ωˣ ⧸ Subgroup.zpowers
+      (Units.map (algebraMap k Ω).toMonoidHom q)), ?_⟩
+    show Multiplicative.ofAdd (φ (Additive.ofMul (Additive.toMul a))) = p
+    simp [ha]
+  -- assemble the additive equivalence out of the multiplicative bijection
+  refine ⟨MulEquiv.toAdditiveLeft
+    (MulEquiv.ofBijective ψbar ⟨hinj, hsurj⟩), fun σ u => ?_⟩
+  -- on the class of `u` the equivalence evaluates to `φ (ofMul u)`,
+  -- so equivariance is exactly the equivariance of `φ`
+  exact hφequiv σ u
 
 omit [E.IsMinimal 𝒪[k]] in
 set_option backward.isDefEq.respectTransparency false in
