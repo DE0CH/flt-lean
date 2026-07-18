@@ -893,7 +893,7 @@
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
   "wip": false,
   "fullname": "TateCurve.pointMapQuot_bijective",
-  "text": "bijectivity of the Tate uniformisation (Silverman V.3.1(d,e)): injectivity from the proven trivial kernel plus the addition law; surjectivity by the valuation analysis of affine points (Silverman V.4) through the bilateral form."
+  "text": "bijectivity of the Tate uniformisation, DERIVED top-down: injectivity from the trivial kernel (pointMapQuot_eq_zero_iff', quotient induction over the proven kernel characterization) and the addition law through the derived negation compatibility pointMapQuot_inv; surjectivity is the remaining sorried leaf."
  },
  {
   "name": "TateCurve.tateCurveEquiv",
@@ -901,5 +901,12 @@
   "wip": false,
   "fullname": "TateCurve.tateCurveEquiv",
   "text": "the finite-level Tate uniformisation kˣ/q^ℤ ≃+ E_q(k), DERIVED from pointMapQuot_add + pointMapQuot_bijective with pointMapQuot (canonical, choice-free) as underlying function — the object the Ω-gluing of exists_tateCurveEquivSepClosure consumes."
+ },
+ {
+  "name": "TateCurve.pointMapQuot_surjective",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
+  "wip": false,
+  "fullname": "TateCurve.pointMapQuot_surjective",
+  "text": "surjectivity of the Tate uniformisation (Silverman V.3.1(d)/V.4): every point of E_q(k) is a pointMapQuot-value — the valuation analysis of affine points through the bilateral X-value, two-to-one up to the involution and separated by the y-coordinate."
  }
 ]

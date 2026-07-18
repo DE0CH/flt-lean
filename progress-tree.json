@@ -127,8 +127,9 @@
   "WeierstrassCurve.isSquare_of_scaled_split": "✅✅",
   "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split": "✅✅",
   "TateCurve.pointMapQuot_add": "❌",
-  "TateCurve.pointMapQuot_bijective": "❌",
-  "TateCurve.tateCurveEquiv": "✅"
+  "TateCurve.pointMapQuot_bijective": "✅",
+  "TateCurve.tateCurveEquiv": "✅",
+  "TateCurve.pointMapQuot_surjective": "❌"
  },
  "children": {
   "fermat_last_theorem": [
@@ -610,12 +611,17 @@
    "WeierstrassCurve.Δ_tateCurve_eq_evalInt"
   ],
   "TateCurve.pointMapQuot_bijective": [
-   "WeierstrassCurve.Δ_tateCurve_eq_evalInt"
+   "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
+   "TateCurve.pointMapQuot_add",
+   "TateCurve.pointMapQuot_surjective"
   ],
   "TateCurve.tateCurveEquiv": [
    "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
    "TateCurve.pointMapQuot_bijective",
    "TateCurve.pointMapQuot_add"
+  ],
+  "TateCurve.pointMapQuot_surjective": [
+   "WeierstrassCurve.Δ_tateCurve_eq_evalInt"
   ]
  },
  "roots": [

@@ -2800,18 +2800,60 @@ theorem pointMapQuot_add [DecidableEq k] (q : kˣ)
   sorry
 
 set_option warn.sorry false in
-/-- **Bijectivity of the uniformisation** (sorry node — Silverman
-V.3.1(d,e)): the point map on `kˣ/q^ℤ` is a bijection onto the Tate
-curve's points. Injectivity: the kernel is trivial
-(`pointMapQuot_eq_zero_iff`), so injectivity follows from
-`pointMapQuot_add`; surjectivity is the valuation analysis of affine
-points (Silverman V.4: every point of `E_q(k)` has its `x`-coordinate
-in the range of the annulus `X`-values, recovered through the
-bilateral form). -/
-theorem pointMapQuot_bijective (q : kˣ)
+/-- **Surjectivity of the uniformisation** (sorry node — Silverman
+V.3.1(d)/V.4): every point of the Tate curve is a `pointMapQuot`-value.
+Content: the valuation analysis of affine points — for
+`P = (x, y) ∈ E_q(k)`, the bilateral `X`-value is a two-to-one map of
+the annulus onto the `x`-line (up to the involution), and the two
+preimage candidates are separated by the `y`-coordinate. -/
+theorem pointMapQuot_surjective (q : kˣ)
     (hq : valuation k (q : k) < 1) :
-    Function.Bijective (pointMapQuot q hq) :=
+    Function.Surjective (pointMapQuot q hq) :=
   sorry
+
+/-- The image of the trivial class is zero. -/
+theorem pointMapQuot_one (q : kˣ) (hq : valuation k (q : k) < 1) :
+    pointMapQuot q hq 1 = 0 := by
+  have h : (1 : kˣ ⧸ Subgroup.zpowers q) = QuotientGroup.mk 1 := rfl
+  rw [h, pointMapQuot_mk]
+  have h1 : ((1 : kˣ) : k) = 1 := rfl
+  rw [pointMap_congr h1]
+  exact pointMap_one (q : k) q.ne_zero hq
+
+/-- Negation compatibility, derived from the addition law and the
+trivial-class image. -/
+theorem pointMapQuot_inv [DecidableEq k] (q : kˣ)
+    (hq : valuation k (q : k) < 1) (x : kˣ ⧸ Subgroup.zpowers q) :
+    pointMapQuot q hq x⁻¹ = -(pointMapQuot q hq x) := by
+  refine eq_neg_of_add_eq_zero_left ?_
+  rw [← pointMapQuot_add q hq x⁻¹ x, inv_mul_cancel]
+  exact pointMapQuot_one q hq
+
+/-- The kernel is trivial on all classes (quotient induction over
+`pointMapQuot_eq_zero_iff`). -/
+theorem pointMapQuot_eq_zero_iff' (q : kˣ)
+    (hq : valuation k (q : k) < 1) (x : kˣ ⧸ Subgroup.zpowers q) :
+    pointMapQuot q hq x = 0 ↔ x = 1 := by
+  induction x using QuotientGroup.induction_on with
+  | H u => exact pointMapQuot_eq_zero_iff q hq u
+
+/-- **Bijectivity of the uniformisation**, derived top-down:
+injectivity from the trivial kernel (`pointMapQuot_eq_zero_iff'`) and
+the addition law (`pointMapQuot_add`); surjectivity is the remaining
+sorried leaf (`pointMapQuot_surjective`). -/
+theorem pointMapQuot_bijective [DecidableEq k] (q : kˣ)
+    (hq : valuation k (q : k) < 1) :
+    Function.Bijective (pointMapQuot q hq) := by
+  constructor
+  · intro x y hxy
+    have h0 : pointMapQuot q hq (x * y⁻¹) = 0 := by
+      rw [pointMapQuot_add q hq x y⁻¹, pointMapQuot_inv q hq y, hxy]
+      exact add_neg_cancel _
+    have h1 : x * y⁻¹ = 1 := (pointMapQuot_eq_zero_iff' q hq _).mp h0
+    calc x = x * y⁻¹ * y := by group
+      _ = 1 * y := by rw [h1]
+      _ = y := one_mul y
+  · exact pointMapQuot_surjective q hq
 
 /-- **The finite-level Tate uniformisation** (derived from the two
 leaves above): the canonical additive equivalence

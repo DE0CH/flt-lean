@@ -1,5 +1,5 @@
 {
- "key": "1784348076.658438",
+ "key": "1784348567.3013487",
  "returncode": 0,
  "floating": [
   {
@@ -791,6 +791,10 @@
    "name": "TateCurve.tateCurveEquiv"
   },
   {
+   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
+   "name": "TateCurve.pointMapQuot_inv"
+  },
+  {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
    "name": "GaloisRep.IsUnramifiedAt.rec"
   },
@@ -1149,6 +1153,10 @@
   {
    "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PartitionProof",
    "name": "Dickson.num_orbits_eq_two"
+  },
+  {
+   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
+   "name": "TateCurve.pointMapQuot_one"
   },
   {
    "module": "Fermat.FLT.Mathlib.RingTheory.Ideal.Quotient.Basic",
@@ -1641,6 +1649,10 @@
   {
    "module": "Fermat.FLT.Mathlib.RingTheory.Valuation.ValuationSubring",
    "name": "ValuationSubring.subtype_inj"
+  },
+  {
+   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
+   "name": "TateCurve.pointMapQuot_eq_zero_iff'"
   },
   {
    "module": "Fermat.FLT.EllipticCurve.TorsionCard",
@@ -2761,6 +2773,10 @@
   {
    "module": "Fermat.FLT.Mathlib.Algebra.Algebra.Hom",
    "name": "SemialgHomClass.toRingHomClass"
+  },
+  {
+   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
+   "name": "TateCurve.pointMapQuot_surjective"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction",

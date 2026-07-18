@@ -791,9 +791,17 @@ entries file). To add/remove/annotate a node, edit
       class multiplication into Tate-curve point addition. Attack: the coordinates are the bilateral
       values (proven bilateral forms, shifts, inversion identities for X and Y); the chord–tangent
       formulas reduce to two-parameter Lambert identities on the built foundation.
-    - ❌· `TateCurve.pointMapQuot_bijective` — bijectivity of the Tate uniformisation (Silverman V.3.1(d,e)): injectivity from the proven
-      trivial kernel plus the addition law; surjectivity by the valuation analysis of affine points
-      (Silverman V.4) through the bilateral form.
+    - ✅· `TateCurve.pointMapQuot_bijective` — bijectivity of the Tate uniformisation, DERIVED top-down: injectivity from the trivial kernel
+      (pointMapQuot_eq_zero_iff', quotient induction over the proven kernel characterization) and
+      the addition law through the derived negation compatibility pointMapQuot_inv; surjectivity is
+      the remaining sorried leaf.
+        - ❌· `TateCurve.pointMapQuot_add` — the addition law of the Tate uniformisation (Silverman V.3.1(c)): pointMapQuot turns unit-
+          class multiplication into Tate-curve point addition. Attack: the coordinates are the
+          bilateral values (proven bilateral forms, shifts, inversion identities for X and Y); the
+          chord–tangent formulas reduce to two-parameter Lambert identities on the built foundation.
+        - ❌· `TateCurve.pointMapQuot_surjective` — surjectivity of the Tate uniformisation (Silverman V.3.1(d)/V.4): every point of E_q(k) is
+          a pointMapQuot-value — the valuation analysis of affine points through the bilateral
+          X-value, two-to-one up to the involution and separated by the y-coordinate.
 
 ## Canonical frontier (2026-07-16, session 4 close — audit-verified)
 
