@@ -1662,7 +1662,21 @@ entries file). To add/remove/annotate a node, edit
                                       modularCyclotomicCharacter.unique identifying each level with
                                       p from the action; HasEnoughRootsOfUnity instances from
                                       RootsOfUnity.AlgebraicallyClosed.
-                                        - ✅· `adicArithFrob_rootsOfUnity_pow` — the Frobenius action on 3-power roots of unity — ASSEMBLED
+                                        - ✅· `adicArithFrob_rootsOfUnity_pow` — the Frobenius action on 3-power roots of unity — FULLY
+                                          PROVEN 2026-07-18, audit [propext, Classical.choice,
+                                          Quot.sound]; likewise its consumer
+                                          cyclotomicCharacter_adicArithFrob. The residue-cardinality
+                                          dependency resolved by DISCOVERING the identical statement
+                                          already fully proven in Chebotarev.lean
+                                          (natCard_residue_quotient_toHeightOneSpectrum, whose
+                                          "sorry node" docstring was stale) and moving that cluster
+                                          (+ natCard_quotient_maximalIdeal_padicInt,
+                                          natGenerator_toHeightOneSpectrum) upstream to the new
+                                          module Fermat.FLT.DedekindDomain.ResidueCardinality
+                                          (imports AbsoluteGaloisGroup for the
+                                          valuationRing_integralClosure ⇒ IsLocalRing instance);
+                                          GaloisRep's duplicate node natCard_residue_under_padicPlace
+                                          deleted, consumer rewired. — assembly notes:
                                           2026-07-18: the full derivation now compiles, consuming
                                           mathlib's AlgHom.IsArithFrobAt.apply_of_pow_eq_one on the
                                           integral closure (isArithFrobAt_adicArithFrob), the
@@ -1684,12 +1698,11 @@ entries file). To add/remove/annotate a node, edit
                                               `RingOfIntegers.instAlgebra` WAS the invisible
                                               divergence — discharged by `map_natCast` +
                                               `algebraMap.coe_natCast`.
-                                            - ❌· `natCard_residue_under_padicPlace` — the residue cardinality at the p-place is p (sorry
-                                              node): the under-ideal of 𝔪(IntegralClosure 𝒪ᵥ Kᵥᵃˡᵍ)
-                                              is 𝔪(𝒪ᵥ) (lying over), and the residue field is 𝓞ℚ ⧸
-                                              (p) ≅ ZMod p via
-                                              ResidueFieldEquivCompletionResidueField (in tree,
-                                              AdicValuation.lean).
+                                            - ✅· `natCard_residue_quotient_toHeightOneSpectrum` — the residue cardinality at the p-place is p
+                                              — was already PROVEN in Chebotarev.lean (stale sorry
+                                              marking); moved to
+                                              Fermat.FLT.DedekindDomain.ResidueCardinality
+                                              2026-07-18 and consumed here.
                                     - ❌· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient` — the global triangular form (sorry node — the Serre
                                       classification core): given the residual trivial quotient, the
                                       WHOLE 3-adic rep is an extension of the trivial character by χ

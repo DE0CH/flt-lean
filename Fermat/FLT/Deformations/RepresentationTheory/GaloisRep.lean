@@ -18,6 +18,7 @@ public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 public import Mathlib.NumberTheory.Cyclotomic.CyclotomicCharacter
 public import Mathlib.RingTheory.RootsOfUnity.AlgebraicallyClosed
 public import Fermat.FLT.DedekindDomain.AdicValuation
+public import Fermat.FLT.DedekindDomain.ResidueCardinality
 -- `mem_completionIdeal_iff`, used in the 3-is-a-unit step of the
 -- Frobenius/roots-of-unity assembly
 -- `HasEnoughRootsOfUnity (AlgebraicClosure ℚ) (3 ^ i)` instances for the
@@ -281,25 +282,6 @@ lemma GaloisRep.HasFlatProlongationAt.of_equiv {A' : Type*} [CommRing A']
       map_add' := fun a b => by simp },
     e.bijective.comp hbij⟩
 
-set_option warn.sorry false in
-/-- **The residue cardinality at the `p`-place is `p`** (sorry node): the
-maximal ideal of the integral closure of `𝒪ᵥ` in `Kᵥᵃˡᵍ` lies over the
-maximal ideal of `𝒪ᵥ`, whose residue field is `𝓞_ℚ ⧸ (p) ≅ ZMod p` through
-`ResidueFieldEquivCompletionResidueField`. This is the `q` of the
-`IsArithFrobAt` specification. -/
-theorem natCard_residue_under_padicPlace
-    (p : ℕ) (hp : Nat.Prime p) (hp5 : 5 ≤ p) :
-    Nat.card ((IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-        hp.toHeightOneSpectrumRingOfIntegersRat) ⧸
-      ((IsLocalRing.maximalIdeal (IntegralClosure
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-          hp.toHeightOneSpectrumRingOfIntegersRat)
-        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          hp.toHeightOneSpectrumRingOfIntegersRat)))).under
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-          hp.toHeightOneSpectrumRingOfIntegersRat))) = p :=
-  sorry
-
 set_option backward.isDefEq.respectTransparency false in
 open scoped algebraMap in
 /-- **The completed valuation of `3` at the `p`-place is `1`** (PROVEN): the
@@ -351,8 +333,7 @@ theorem valued_natCast_adicCompletionIntegers_eq_one {p : ℕ}
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
 /-- **The arithmetic Frobenius raises `3`-power roots of unity to the
-`p`-th power** (derived; sorry-free modulo the residue-cardinality node
-`natCard_residue_under_padicPlace`): at a prime
+`p`-th power** (PROVEN): at a prime
 `p ∉ {2, 3}`, the `3`-power roots of unity are unramified, the arithmetic
 Frobenius reduces to `x ↦ x^p` on the residue field, and roots of unity of
 order coprime to `p` inject into the residue field, so the action is
@@ -370,7 +351,7 @@ theorem adicArithFrob_rootsOfUnity_pow
   intro t ht
   classical
   -- the `q` of the Frobenius specification is `p` (the residue cardinality)
-  have hq := natCard_residue_under_padicPlace p hp hp5
+  have hq := GaloisRepresentation.natCard_residue_quotient_toHeightOneSpectrum hp
   set v := hp.toHeightOneSpectrumRingOfIntegersRat with hv
   set f := algebraMap ℚ
     (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) with hf
