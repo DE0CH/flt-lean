@@ -2169,4 +2169,102 @@ private theorem addRelXRaw_eq_zero (L : PeriodPair) (w : ℂ)
 
 end WeierstrassAddition
 
+namespace Blueprint
+
+/-- Pure-algebra core of the chord `X`-identity: dividing the cleared
+`℘`-addition relation by `(2πi)⁶` after substituting the `q`-expansions. -/
+private theorem analytic_chordX_algebra (xu yu xv yv xuv c Pu Pv Puv Du Dv : ℂ)
+    (hc : c ≠ 0)
+    (hPu : Pu = c ^ 2 * (1 / 12 + xu)) (hPv : Pv = c ^ 2 * (1 / 12 + xv))
+    (hPuv : Puv = c ^ 2 * (1 / 12 + xuv))
+    (hDu : Du = c ^ 3 * (xu + 2 * yu)) (hDv : Dv = c ^ 3 * (xv + 2 * yv))
+    (hrel : (Puv + Pu + Pv) * (Pu - Pv) ^ 2 - (Du - Dv) ^ 2 / 4 = 0) :
+    (xuv + xu + xv) * (xu - xv) ^ 2 =
+      (yu - yv) ^ 2 + (yu - yv) * (xu - xv) := by
+  have hmain : c ^ 6 * ((xuv + xu + xv) * (xu - xv) ^ 2 -
+      ((yu - yv) ^ 2 + (yu - yv) * (xu - xv))) = 0 := by
+    rw [hPu, hPv, hPuv, hDu, hDv] at hrel
+    linear_combination hrel
+  exact sub_eq_zero.mp ((mul_eq_zero.mp hmain).resolve_left (pow_ne_zero 6 hc))
+
+/-- The chord `X`-identity at exponential parameters: all three of
+`z`, `w`, `z + w` in the fundamental window. -/
+private theorem analytic_chordX_of_exp {τ z w u v q : ℂ} (hτ : 0 < τ.im)
+    (hz : 0 < z.im) (hzτ : z.im < τ.im)
+    (hw : 0 < w.im) (hwτ : w.im < τ.im)
+    (hzw : 0 < (z + w).im) (hzwτ : (z + w).im < τ.im)
+    (hu : e z = u) (hv : e w = v) (hq : e τ = q) :
+    (XAn (u * v) q + XAn u q + XAn v q) * (XAn u q - XAn v q) ^ 2 =
+      (YAn u q - YAn v q) ^ 2 + (YAn u q - YAn v q) * (XAn u q - XAn v q) := by
+  subst hu hv hq
+  have hPu := weierstrassP_q_expansion τ hτ z hz hzτ
+  have hPv := weierstrassP_q_expansion τ hτ w hw hwτ
+  have hPuv := weierstrassP_q_expansion τ hτ (z + w) hzw hzwτ
+  rw [e_add] at hPuv
+  have hDu := derivWeierstrassP_q_expansion τ hτ z hz hzτ
+  have hDv := derivWeierstrassP_q_expansion τ hτ w hw hwτ
+  have hrel := addRelXRaw_eq_zero (periodPair τ hτ.ne') w
+    (notMem_lattice_of_im_between hτ hw hwτ)
+    (notMem_lattice_of_im_between hτ hz hzτ)
+    (notMem_lattice_of_im_between hτ hzw hzwτ)
+  unfold addRelXRaw at hrel
+  exact analytic_chordX_algebra _ _ _ _ _ (2 * (Real.pi : ℂ) * I) _ _ _ _ _
+    two_pi_I_ne_zero hPu hPv hPuv hDu hDv hrel
+
+/-- **The analytic cleared chord `X`-identity** (the analytic content of
+the denominator-free Silverman V.3.1(c) `x`-part): for annulus parameters
+`0 < ‖q‖ < ‖u‖, ‖v‖, ‖uv‖ < 1`,
+
+`(Xₐ(uv,q) + Xₐ(u,q) + Xₐ(v,q))·(Xₐ(u,q) − Xₐ(v,q))²
+  = (Yₐ(u,q) − Yₐ(v,q))² + (Yₐ(u,q) − Yₐ(v,q))·(Xₐ(u,q) − Xₐ(v,q))`.
+
+Derived from the cleared `℘`-addition theorem `addRelXRaw_eq_zero`
+through the `q`-expansions of `℘` and `℘'`. Private until the
+two-variable descent consumes it. -/
+private theorem analytic_chordX {u v q : ℂ} (h0 : 0 < ‖q‖)
+    (h1u : ‖q‖ < ‖u‖) (h2u : ‖u‖ < 1)
+    (h1v : ‖q‖ < ‖v‖) (h2v : ‖v‖ < 1)
+    (h1uv : ‖q‖ < ‖u * v‖) (h2uv : ‖u * v‖ < 1) :
+    (XAn (u * v) q + XAn u q + XAn v q) * (XAn u q - XAn v q) ^ 2 =
+      (YAn u q - YAn v q) ^ 2 + (YAn u q - YAn v q) * (XAn u q - XAn v q) := by
+  have him : ∀ {x : ℂ}, 0 < ‖x‖ → ‖x‖ < 1 →
+      0 < (Complex.log x / (2 * (Real.pi : ℂ) * I)).im := fun hx0 hx1 ↦ by
+    rw [log_div_two_pi_I_im]
+    exact div_pos (neg_pos.2 ((Real.log_neg_iff hx0).2 hx1)) (by positivity)
+  have hlt : ∀ {x : ℂ}, ‖q‖ < ‖x‖ →
+      (Complex.log x / (2 * (Real.pi : ℂ) * I)).im
+        < (Complex.log q / (2 * (Real.pi : ℂ) * I)).im := fun {x} hqx ↦ by
+    rw [log_div_two_pi_I_im, log_div_two_pi_I_im]
+    exact div_lt_div_of_pos_right (neg_lt_neg (Real.log_lt_log h0 hqx))
+      (by positivity)
+  have hu0 : (0 : ℝ) < ‖u‖ := h0.trans h1u
+  have hv0 : (0 : ℝ) < ‖v‖ := h0.trans h1v
+  have hsum : (Complex.log u / (2 * (Real.pi : ℂ) * I)
+      + Complex.log v / (2 * (Real.pi : ℂ) * I)).im
+      = -(Real.log ‖u‖ + Real.log ‖v‖) / (2 * Real.pi) := by
+    rw [Complex.add_im, log_div_two_pi_I_im, log_div_two_pi_I_im]
+    ring
+  have hlog_uv : Real.log ‖u * v‖ = Real.log ‖u‖ + Real.log ‖v‖ := by
+    rw [norm_mul]
+    exact Real.log_mul (ne_of_gt hu0) (ne_of_gt hv0)
+  refine analytic_chordX_of_exp
+    (τ := Complex.log q / (2 * (Real.pi : ℂ) * I))
+    (z := Complex.log u / (2 * (Real.pi : ℂ) * I))
+    (w := Complex.log v / (2 * (Real.pi : ℂ) * I))
+    (him h0 (h1u.trans h2u)) (him hu0 h2u) (hlt h1u) (him hv0 h2v) (hlt h1v)
+    ?_ ?_ (e_log_div_two_pi_I (norm_pos_iff.mp hu0))
+    (e_log_div_two_pi_I (norm_pos_iff.mp hv0))
+    (e_log_div_two_pi_I (norm_pos_iff.mp h0))
+  · rw [hsum]
+    have huv1 : Real.log ‖u * v‖ < 0 :=
+      (Real.log_neg_iff (by rw [norm_mul]; positivity)).2 h2uv
+    rw [hlog_uv] at huv1
+    exact div_pos (by linarith) (by positivity)
+  · rw [hsum, log_div_two_pi_I_im]
+    have hquv : Real.log ‖q‖ < Real.log ‖u * v‖ := Real.log_lt_log h0 h1uv
+    rw [hlog_uv] at hquv
+    exact div_lt_div_of_pos_right (by linarith) (by positivity)
+
+end Blueprint
+
 end TateCurve
