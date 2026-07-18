@@ -1034,6 +1034,37 @@ theorem pointMap_zpow_mul (q₀ : k) (hq0 : q₀ ≠ 0)
   · exact absurd (hrep.symm ▸ hc) ha
   · rfl
 
+/-- The point map depends only on the value of the parameter (its
+nonvanishing proof is irrelevant). -/
+theorem pointMap_congr {q₀ : k} {hq0 : q₀ ≠ 0} {hq : valuation k q₀ < 1}
+    {u v : k} {hu : u ≠ 0} {hv : v ≠ 0} (h : u = v) :
+    pointMap q₀ hq0 hq u hu = pointMap q₀ hq0 hq v hv := by
+  subst h
+  rfl
+
+/-- **The point map on the quotient** `kˣ/q^ℤ → E_q(k)`: the class of
+`u` goes to `pointMap u`, well-defined by `pointMap_zpow_mul`. -/
+noncomputable def pointMapQuot (q : kˣ) (hq : valuation k (q : k) < 1) :
+    (kˣ ⧸ Subgroup.zpowers q) →
+      (WeierstrassCurve.tateCurve (q : k)).toAffine.Point := by
+  refine Quotient.lift
+    (fun u : kˣ ↦ pointMap (q : k) q.ne_zero hq (u : k) u.ne_zero) ?_
+  intro a b hab
+  obtain ⟨j, hj⟩ := QuotientGroup.leftRel_apply.mp hab
+  have hval : ((b : k)) = ((q : k)) ^ j * (a : k) := by
+    have h1 : a * q ^ j = b := by
+      have h2 := congrArg (fun x : kˣ ↦ a * x) hj
+      simpa using h2
+    rw [← h1]
+    push_cast
+    ring
+  calc pointMap (q : k) q.ne_zero hq (a : k) a.ne_zero
+      = pointMap (q : k) q.ne_zero hq (((q : k)) ^ j * (a : k))
+          (mul_ne_zero (zpow_ne_zero _ q.ne_zero) a.ne_zero) :=
+        (pointMap_zpow_mul (q : k) q.ne_zero hq (a : k) a.ne_zero j).symm
+    _ = pointMap (q : k) q.ne_zero hq (b : k) b.ne_zero :=
+        pointMap_congr hval.symm
+
 end Annulus
 
 end TateCurve
