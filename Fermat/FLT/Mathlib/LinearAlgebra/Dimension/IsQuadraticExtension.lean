@@ -64,13 +64,6 @@ section
 
 variable {K : Type*} [Field K] (L : Type*) [Field L] [Algebra K L]
 
-/-- An element whose square is (the image of) a nonsquare of `K` lies outside `K`. -/
-lemma notMem_range_algebraMap_of_not_isSquare {d : K} (hd : ¬IsSquare d) {α : L}
-    (hα : α ^ 2 = algebraMap K L d) : α ∉ Set.range (algebraMap K L) := by
-  rintro ⟨c, rfl⟩
-  refine hd ⟨c, FaithfulSMul.algebraMap_injective K L ?_⟩
-  rw [map_mul, ← sq]
-  exact hα.symm
 
 end
 

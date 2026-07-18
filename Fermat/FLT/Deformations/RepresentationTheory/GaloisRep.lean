@@ -78,20 +78,12 @@ def GaloisRep.map (ρ : GaloisRep K A M) (f : K →+* L) : GaloisRep L A M :=
   ρ.comp (Field.absoluteGaloisGroup.map f)
 
 -- remark: `.toMonoidHom` added in bump to v4.30.0-rc1
-@[simp]
-lemma GaloisRep.ker_map (ρ : GaloisRep K A M) (f : K →+* L) :
-    (ρ.map f).ker = ρ.ker.comap (Field.absoluteGaloisGroup.map f).toMonoidHom := rfl
 
 variable (K A n) in
 /-- A framed galois rep is a galois rep with a distinguished basis.
 We implement it by via a galois rep on `Aⁿ`. -/
 abbrev FramedGaloisRep := GaloisRep K A (n → A)
 
-/-- A field extension induces a map between framed galois reps.
-Note that this relies on an arbitrarily chosen embedding of the algebraic closures. -/
-noncomputable
-abbrev FramedGaloisRep.map (ρ : FramedGaloisRep K A n) (f : K →+* L) : FramedGaloisRep L A n :=
-  GaloisRep.map ρ f
 
 /-- We can conjugate a galois rep by a linear isomorphism on the space. -/
 noncomputable
@@ -106,96 +98,22 @@ omit [NumberField K] in
 lemma GaloisRep.conj_apply (ρ : GaloisRep K A M) (e : M ≃ₗ[A] N) (σ : Γ K) :
     ρ.conj e σ = e.conj (ρ σ) := rfl
 
-omit [NumberField K] in
-@[simp]
-lemma GaloisRep.conj_apply_apply (ρ : GaloisRep K A M) (e : M ≃ₗ[A] N) (σ : Γ K) (x : N) :
-    ρ.conj e σ x = e (ρ σ (e.symm x)) := rfl
 
-@[simp]
-lemma GaloisRep.map_conj (ρ : GaloisRep K A M) (e : M ≃ₗ[A] N) (f : K →+* L) :
-    (ρ.conj e).map f = (ρ.map f).conj e := rfl
 
-omit [NumberField K] in
-@[simp]
-lemma GaloisRep.ker_conj (ρ : GaloisRep K A M) (e : M ≃ₗ[A] N) :
-    (ρ.conj e).ker = ρ.ker := by
-  letI := moduleTopology A (Module.End A M)
-  letI := moduleTopology A (Module.End A N)
-  ext; simp [conj]
 
-/-- Equivalent modules have equivalent set of galois reps. -/
-noncomputable
-def GaloisRep.conjEquiv (e : M ≃ₗ[A] N) : GaloisRep K A M ≃ GaloisRep K A N where
-  toFun := (conj · e)
-  invFun := (conj · e.symm)
-  left_inv _ := by ext; simp
-  right_inv _ := by ext; simp
 
-/-- Given a basis, we may frame a galois rep into a framed galois rep. -/
-noncomputable
-def GaloisRep.frame (ρ : GaloisRep K A M) (b : Module.Basis n A M) : FramedGaloisRep K A n :=
-  ρ.conj (b.repr ≪≫ₗ Finsupp.linearEquivFunOnFinite A A n)
 
-/-- Given a basis of `M`, we may realize a framed galois rep as a galois rep on `M`. -/
-noncomputable
-def FramedGaloisRep.unframe (ρ : FramedGaloisRep K A n) (b : Module.Basis n A M) :
-    GaloisRep K A M :=
-  ρ.conj (b.repr ≪≫ₗ Finsupp.linearEquivFunOnFinite A A n).symm
 
 -- **TODO** this should be frame_unframe maybe?
-omit [DecidableEq n] [NumberField K] in
-@[simp]
-lemma GaloisRep.unframe_frame (ρ : GaloisRep K A M) (b : Module.Basis n A M) :
-    (ρ.frame b).unframe b = ρ := by
-  ext; simp [frame, FramedGaloisRep.unframe]
 
-omit [DecidableEq n] [NumberField K] in
-@[simp]
-lemma FramedGaloisRep.unframe_frame (ρ : FramedGaloisRep K A n) (b : Module.Basis n A M) :
-    (ρ.unframe b).frame b = ρ := by
-  ext; simp [unframe, GaloisRep.frame]
 
 variable [IsTopologicalRing A]
 
-/-- `A`-linear framed galois reps are equivalent to continuous homomorphisms into `GLₙ(A)`. -/
-noncomputable
-def FramedGaloisRep.GL : FramedGaloisRep K A n ≃ (Γ K →ₜ* GL n A) :=
-  letI := moduleTopology A (Module.End A (n → A))
-  letI : ContinuousMul _ := ⟨IsModuleTopology.continuous_mul_of_finite A (Module.End A (n → A))⟩
-  letI e : Module.End A (n → A) ≃A[A] Matrix n n A :=
-    .ofIsModuleTopology LinearMap.toMatrixAlgEquiv'
-  { toFun ρ := (e.toContinuousAlgHom.toContinuousMonoidHom.comp ρ).toHomUnits
-    invFun ρ := e.symm.toContinuousAlgHom.toContinuousMonoidHom.comp ((Units.coeHomₜ _).comp ρ)
-    left_inv _ := by ext; simp [GaloisRep]
-    right_inv _ := by ext; simp }
 
-omit [NumberField K] in
-@[simp]
-lemma FramedGaloisRep.GL_apply (ρ : FramedGaloisRep K A n) (σ) : (ρ.GL σ).1 = (ρ σ).toMatrix' := rfl
 
-/-- Make an `A`-linear framed galois reps from a continuous hom into `GLₙ(A)`. -/
-noncomputable
-abbrev FramedGaloisRep.ofGL := FramedGaloisRep.GL (K := K) (A := A) (n := n).symm
 
-omit [NumberField K] in
-@[simp]
-lemma FramedGaloisRep.GL_symm_apply (ρ : Γ K →ₜ* GL n A) (σ) : GL.symm ρ σ = (ρ σ).toLin := rfl
 
-omit [NumberField K] in
-@[simp]
-lemma FramedGaloisRep.ofGL_apply (ρ : Γ K →ₜ* GL n A) (σ) : ofGL ρ σ = (ρ σ).toLin := rfl
 
-/-- `1`-dimensional framed galois reps are equivalent to (continuous) characters. -/
-noncomputable def FramedGaloisRep.equivChar {n : Type*} [Unique n] :
-    FramedGaloisRep K A n ≃ (Γ K →ₜ* A) :=
-  letI := moduleTopology A (Module.End A (n → A))
-  letI : ContinuousMul _ := ⟨IsModuleTopology.continuous_mul_of_finite A (Module.End A (n → A))⟩
-  letI e : Module.End A (n → A) ≃A[A] A :=
-    .ofIsModuleTopology (LinearMap.toMatrixAlgEquiv'.trans Matrix.uniqueAlgEquiv)
-  { toFun ρ := e.toContinuousAlgHom.toContinuousMonoidHom.comp ρ
-    invFun ρ := e.symm.toContinuousAlgHom.toContinuousMonoidHom.comp ρ
-    left_inv _ := by ext; simp [GaloisRep]
-    right_inv _ := by ext; simp }
 
 /-- The determinant of a galois rep. -/
 noncomputable
@@ -236,71 +154,16 @@ lemma GaloisRep.ker_baseChange [IsTopologicalRing B] [Algebra A B] [ContinuousSM
     ρ.ker ≤ (ρ.baseChange B).ker := by
   intro _; simp +contextual [baseChange]
 
-omit [IsTopologicalRing A] in
-lemma GaloisRep.baseChange_map [IsTopologicalRing B] [Algebra A B] [ContinuousSMul A B]
-    [Module.Finite A M] [Module.Free A M]
-    (ρ : GaloisRep K A M) (f : K →+* L) : (ρ.baseChange B).map f = (ρ.map f).baseChange B := rfl
 
-/-- Make a framed `n` dimensional `A`-linear galois rep into a `B`-linear rep by composing with
-`GLₙ(A) → GLₙ(B)`. -/
-noncomputable
-def FramedGaloisRep.baseChange [IsTopologicalRing B]
-    (ρ : FramedGaloisRep K A n) (f : A →+* B) (hf : Continuous f) : FramedGaloisRep K B n :=
-  .ofGL (.comp (Units.mapₜ ⟨f.mapMatrix.toMonoidHom, continuous_id.matrix_map hf⟩) ρ.GL)
 
-omit [NumberField K] in
-@[simp]
-lemma FramedGaloisRep.baseChange_GL [IsTopologicalRing B]
-    (ρ : FramedGaloisRep K A n) (f : A →+* B) (hf : Continuous f) {σ i j} :
-    (ρ.baseChange f hf).GL σ i j = f (ρ.GL σ i j) := by
-  simp [baseChange]
 
 omit [NumberField K] in
 variable (B) in
-lemma GaloisRep.frame_baseChange [IsTopologicalRing B] [Algebra A B] [ContinuousSMul A B]
-    [Module.Finite A M] [Module.Free A M]
-    (ρ : GaloisRep K A M) (b : Module.Basis n A M) :
-    (ρ.baseChange B).frame (b.baseChange B) =
-      (ρ.frame b).baseChange _ (continuous_algebraMap A B) := by
-  apply FramedGaloisRep.GL.injective
-  ext σ i j
-  simp [GaloisRep.frame, Algebra.smul_def]
 
-omit [NumberField K] in
-lemma FramedGaloisRep.baseChange_def [IsTopologicalRing B]
-    (ρ : FramedGaloisRep K A n) (f : A →+* B) (hf : Continuous f) :
-    ρ.baseChange f hf =
-      letI := f.toAlgebra
-      haveI : ContinuousSMul A B := continuousSMul_of_algebraMap A B hf
-      (GaloisRep.baseChange B ρ).frame ((Pi.basisFun A n).baseChange B) := by
-  letI := f.toAlgebra
-  haveI : ContinuousSMul A B := continuousSMul_of_algebraMap A B hf
-  rw [GaloisRep.frame_baseChange]
-  rfl
 
-lemma FramedGaloisRep.baseChange_map [IsTopologicalRing B]
-    (ρ : FramedGaloisRep K A n) (f : A →+* B) (hf : Continuous f)
-    (g : K →+* L) : (ρ.baseChange f hf).map g = (ρ.map g).baseChange f hf := rfl
 
-lemma Matrix.map_det {F α β n : Type*} [CommRing β] [CommRing α] [Fintype n]
-    [DecidableEq n]
-    (M : Matrix n n α) (f : F) [FunLike F α β] [RingHomClass F α β] :
-    (M.map f).det = f M.det :=
-  (RingHom.map_det (f : α →+* β) M).symm
 
-lemma LinearMap.trace_toLin' {R n : Type*} [CommSemiring R] [DecidableEq n]
-    [Fintype n] (M : Matrix n n R) : LinearMap.trace _ _ M.toLin' = M.trace := by
-  simp
 
-set_option backward.isDefEq.respectTransparency false in
-omit [NumberField K] in
-lemma FramedGaloisRep.det_baseChange [IsTopologicalRing B]
-    (ρ : FramedGaloisRep K A n) (f : A →+* B) (hf : Continuous f) :
-    (ρ.baseChange f hf).det = .comp ⟨f, hf⟩ ρ.det := by
-  ext σ
-  dsimp [baseChange, GaloisRep.det]
-  rw [GL_symm_apply]
-  simp [← Matrix.toLin'_apply', Matrix.map_det]
 
 /-- Given a (global) galois rep, this is the local galois rep at a finite prime `v`.
 Note: this fixes an arbitrary embedding `Kᵃˡᵍ → Kᵥᵃˡᵍ`, or equivalently,
@@ -318,9 +181,6 @@ class GaloisRep.IsUnramifiedAt (ρ : GaloisRep K A M) (v : Ω K) : Prop where
     letI := moduleTopology A (Module.End A M)
     localInertiaGroup v ≤ (ρ.toLocal v).ker
 
-instance (ρ : GaloisRep K A M) (v : Ω K) [ρ.IsUnramifiedAt v] (e : M ≃ₗ[A] N) :
-    (ρ.conj e).IsUnramifiedAt v where
-  localInertiaGroup_le := (GaloisRep.IsUnramifiedAt.localInertiaGroup_le (ρ := ρ)).trans (by simp)
 
 instance [IsTopologicalRing B] [Algebra A B] [ContinuousSMul A B]
     [Module.Finite A M] [Module.Free A M] (ρ : GaloisRep K A M) (v : Ω K) [ρ.IsUnramifiedAt v] :
@@ -337,17 +197,6 @@ def GaloisRep.charFrob (ρ : GaloisRep K A M) : Polynomial A := (ρ.toLocal v Fr
 -- shortcut instance for next theorem: needed after mathlib #34045
 noncomputable instance : CommRing Kᵥ := inferInstance
 
-set_option backward.isDefEq.respectTransparency false in
-omit [IsTopologicalRing A] in
-lemma GaloisRep.charFrob_eq (ρ : GaloisRep K A M) [ρ.IsUnramifiedAt v] (σ : Γ Kᵥ)
-    (hσ : IsArithFrobAt 𝒪ᵥ σ (𝔪 (IntegralClosure 𝒪ᵥ (Kᵥᵃˡᵍ)))) :
-    (ρ.toLocal v σ).charpoly = ρ.charFrob v := by
-  have := IsUnramifiedAt.localInertiaGroup_le (ρ := ρ)
-    (hσ.mul_inv_mem_inertia (Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob v))
-  replace this := congr($this * ρ.toLocal v Frobᵥ)
-  simp only [ContinuousMonoidHom.coe_toMonoidHom, ← map_mul, MonoidHom.coe_coe, one_mul,
-    inv_mul_cancel_right] at this
-  rw [this, charFrob]
 
 section Flat
 

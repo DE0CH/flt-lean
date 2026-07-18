@@ -91,17 +91,6 @@ theorem Algebra.IsQuadraticExtension.algEquiv_apply_ne {σ : L ≃ₐ[K] L} (hσ
     (hx : x ∉ Set.range (algebraMap K L)) : σ x ≠ x :=
   fun heq ↦ hx (mem_range_algebraMap_of_apply_eq K L hσ heq)
 
-/-- The nontrivial automorphism of a separable quadratic extension sends a square root
-`α ∉ K` of an element of `K` to `-α`. -/
-theorem Algebra.IsQuadraticExtension.algEquiv_apply_eq_neg_of_sq_eq {σ : L ≃ₐ[K] L} (hσ : σ ≠ 1)
-    {α : L} {d : K} (hαK : α ∉ Set.range (algebraMap K L)) (hα : α ^ 2 = algebraMap K L d) :
-    σ α = -α := by
-  have hσα : σ α ≠ α := algEquiv_apply_ne K L hσ hαK
-  have h1 : (σ α - α) * (σ α + α) = 0 := by
-    have hσ2 : (σ α) ^ 2 = α ^ 2 := by rw [← map_pow, hα, AlgEquiv.commutes]
-    linear_combination hσ2
-  exact eq_neg_of_add_eq_zero_left
-    ((mul_eq_zero.mp h1).resolve_left fun h ↦ hσα (sub_eq_zero.mp h))
 
 open Classical in
 /-- The quadratic character of `Aut(M/K)` attached to a separable quadratic subextension
@@ -139,22 +128,6 @@ theorem quadraticCharacter_eq_one_iff (σ : M ≃ₐ[K] M) :
   · exact iff_of_true rfl h
   · exact iff_of_false (fun hc ↦ by simpa using congrArg Units.val hc) h
 
-/-- If `M/K` is normal (for example `M = L`, or `M` a separable closure of `K`) then the
-nontrivial element of `Gal(L/K)` extends to an automorphism of `M`, so the quadratic character
-of `Aut(M/K)` attached to `L/K` is surjective. -/
-theorem quadraticCharacter_surjective [Normal K M] :
-    Function.Surjective (quadraticCharacter K L M) := by
-  intro u
-  rcases Int.units_eq_one_or u with rfl | rfl
-  · exact ⟨1, map_one _⟩
-  · -- The nontrivial element of `Gal(L/K)` lifts to some `τ ∈ Aut(M/K)` because `M/K` is normal;
-    -- `τ` does not fix `L` pointwise, so `χ(τ) ≠ 1`, hence `χ(τ) = -1`.
-    obtain ⟨σ₀, hσ₀⟩ := exists_algEquiv_ne_one K L
-    obtain ⟨τ, hτ⟩ := AlgEquiv.restrictNormalHom_surjective (F := K) (K₁ := L) (E := M) σ₀
-    refine ⟨τ, (Int.units_eq_one_or _).resolve_left fun heq ↦ hσ₀ ?_⟩
-    rw [← hτ]
-    exact (forall_apply_algebraMap_iff_restrictNormal_eq_one K L M τ).mp
-      ((quadraticCharacter_eq_one_iff K L M τ).mp heq)
 
 end
 

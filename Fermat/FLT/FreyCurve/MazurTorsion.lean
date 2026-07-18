@@ -1846,13 +1846,3 @@ theorem FreyPackage.exists_torsion_embedding_of_not_isIrreducible (P : FreyPacka
   obtain ⟨ψ, hψ⟩ := embedding_assembly P.pp hp2 φ₂ hφ₂ Q hQ
   exact ⟨E', hE', ψ, hψ⟩
 
-/-- **An open subgroup of `G_ℚ` has finite quotient** (PROVEN
-2026-07-16): `Γ ℚ = Gal(ℚ̄/ℚ)` is compact (mathlib's profinite-limit
-instance, activated by `IsAlgClosure.isGalois`), and open subgroups of
-compact groups have finite quotients. This is step (1) of the
-`open_normal_subgroup_eq_top_of_inertia_le` route, compiled here to
-certify that the entire instance chain synthesizes. -/
-theorem finite_quotient_of_isOpen (H : Subgroup (Field.absoluteGaloisGroup ℚ))
-    (hopen : IsOpen (H : Set (Field.absoluteGaloisGroup ℚ))) :
-    Finite (Field.absoluteGaloisGroup ℚ ⧸ H) :=
-  Subgroup.quotient_finite_of_isOpen H hopen

@@ -1198,45 +1198,6 @@ variable (N : IntermediateField
     (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
   [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
 
-/-- **Restriction maps the local inertia group into the finite-level
-inertia**: if `σ ∈ Γ Kᵥ` lies in `localInertiaGroup v`, then its
-restriction to a finite Galois subextension `N` lies in the inertia
-subgroup of `𝔪_N` in `Gal(N/Kᵥ)`. The two ingredients: the
-compatibility `ι(σ|_N • x) = σ • ι(x)` (from
-`AlgEquiv.restrictNormal_commutes`), and `ι⁻¹(𝔪_big) ≤ 𝔪_N` — which is
-FREE from locality of `𝒪_N` (the pullback is a proper ideal of a local
-ring; no integrality or henselian input needed). -/
-theorem restrictNormalHom_mem_inertia_of_mem_localInertiaGroup
-    [IsGalois Kᵥ N] (σ : Γ Kᵥ) (hσ : σ ∈ localInertiaGroup v) :
-    AlgEquiv.restrictNormalHom N σ ∈
-      (𝔪 (IntegralClosure 𝒪ᵥ N)).inertia (N ≃ₐ[Kᵥ] N) := by
-  rw [AddSubgroup.mem_inertia]
-  intro x
-  -- the inclusion carries the difference into `𝔪` of the big integral
-  -- closure
-  have hcomm : integralClosureInclusion v N ((AlgEquiv.restrictNormalHom N σ) • x - x) =
-      σ • (integralClosureInclusion v N x) - integralClosureInclusion v N x := by
-    rw [map_sub]
-    congr 1
-    apply Subtype.ext
-    exact AlgEquiv.restrictNormal_commutes σ N (algebraMap (IntegralClosure 𝒪ᵥ N) N x)
-  have hbig : integralClosureInclusion v N ((AlgEquiv.restrictNormalHom N σ) • x - x) ∈
-      (𝔪 (IntegralClosure 𝒪ᵥ (Kᵥᵃˡᵍ))).toAddSubgroup := by
-    rw [hcomm]
-    exact hσ (integralClosureInclusion v N x)
-  -- pull back along the inclusion: the pullback of the maximal ideal is
-  -- a proper ideal of the local ring `𝒪_N`, hence contained in `𝔪_N`
-  have hproper : (𝔪 (IntegralClosure 𝒪ᵥ (Kᵥᵃˡᵍ))).comap
-      (integralClosureInclusion v N) ≠ ⊤ := by
-    intro htop
-    have h1 : (1 : IntegralClosure 𝒪ᵥ N) ∈ (𝔪 (IntegralClosure 𝒪ᵥ (Kᵥᵃˡᵍ))).comap
-        (integralClosureInclusion v N) := htop ▸ Submodule.mem_top
-    rw [Ideal.mem_comap, map_one] at h1
-    exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
-      (Ideal.eq_top_of_isUnit_mem _ h1 isUnit_one)
-  have hle := IsLocalRing.le_maximalIdeal hproper
-  rw [Submodule.mem_toAddSubgroup] at hbig ⊢
-  exact hle (Ideal.mem_comap.mpr hbig)
 
 set_option backward.isDefEq.respectTransparency false in
 /-- The inclusion of a finite-level integral closure into the full one

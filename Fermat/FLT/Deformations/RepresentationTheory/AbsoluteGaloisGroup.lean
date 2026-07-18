@@ -232,21 +232,6 @@ theorem mem_inertiaSubgroup_localValuationSubring
   show IsLocalRing.residue _ _ = IsLocalRing.residue _ a
   exact Ideal.Quotient.eq.mpr (hσ ⟨(a : (Kᵥᵃˡᵍ)), a.2⟩)
 
-open IntermediateField in
-/-- The subgroup of the local galois group which is the kernel of the canonical map `Iᵥ → k(v)ˣ`.
-Note that this definition is somewhat cheating, abusing the fact that the field corresponding
-to this subgroup is `Kᵘʳ(ᵖ⁻¹√ϖ)` (where `p` is `#k(v)` and not the characteristic)
-and that all units in `Kᵘʳ` have `p-1`-th roots.
-
-TODO: show that this is indeed the right group. -/
-noncomputable
-def localTameAbelianInertiaGroup : Subgroup (Γ Kᵥ) where
-  carrier := { σ | ∀ x, x ^ (Nat.card (κ 𝒪ᵥ) - 1) ∈ fixedField (localInertiaGroup v) → σ x = x }
-  mul_mem' {σ τ} hσ hτ x hx := by dsimp; rw [hτ x hx, hσ x hx]
-  one_mem' _ _ := rfl
-  inv_mem' {σ} hσ x hx := by
-    conv_lhs => rw [← hσ x hx]
-    simp [AlgEquiv.aut_inv]
 
 instance : CharZero Kᵥ :=
   ((algebraMap K Kᵥ).charZero_iff (algebraMap K Kᵥ).injective).mp inferInstance
