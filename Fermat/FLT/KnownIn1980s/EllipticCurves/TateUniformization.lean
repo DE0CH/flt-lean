@@ -1954,6 +1954,53 @@ theorem bilateralX_shift (u₀ q₀ : k) (h0 : u₀ ≠ 0) (hq0 : q₀ ≠ 0)
     lambert_kernel_inv u₀ h0]
   ring
 
+/-- **The `x`-coordinate of the interior negation** (assembly of the
+bilateral identities): for `u₀` strictly interior to the annulus, the
+`x`-value at the annulus representative `q₀u₀⁻¹` of `u₀⁻¹` equals the
+`x`-value at `u₀`. -/
+theorem evalA_XA_rep_inv (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hq0 : q₀ ≠ 0) (hq1 : valuation k q₀ < 1)
+    (hlow : valuation k q₀ < valuation k u₀)
+    (hint : valuation k u₀ < 1)
+    (hrep0 : q₀ * u₀⁻¹ ≠ 0) (hrep1 : q₀ * u₀⁻¹ ≠ 1) :
+    evalA (q₀ * u₀⁻¹) q₀ hrep0 hrep1 XA = evalA u₀ q₀ h0 h1 XA := by
+  have hv0 : valuation k u₀ ≠ 0 := by
+    simpa [ne_eq, map_eq_zero] using h0
+  have hvq0 : valuation k q₀ ≠ 0 := by
+    simpa [ne_eq, map_eq_zero] using hq0
+  have hrepval : valuation k (q₀ * u₀⁻¹) =
+      valuation k q₀ * (valuation k u₀)⁻¹ := by
+    rw [map_mul, map_inv₀]
+  have hrepstrict : valuation k (q₀ * u₀⁻¹) < 1 := by
+    rw [hrepval]
+    calc valuation k q₀ * (valuation k u₀)⁻¹
+        < valuation k u₀ * (valuation k u₀)⁻¹ :=
+          mul_lt_mul_of_pos_right hlow
+            (zero_lt_iff.mpr (inv_ne_zero hv0))
+      _ = 1 := mul_inv_cancel₀ hv0
+  have hreplow : valuation k q₀ < valuation k (q₀ * u₀⁻¹) := by
+    rw [hrepval]
+    calc valuation k q₀ = valuation k q₀ * 1 := (mul_one _).symm
+      _ < valuation k q₀ * (valuation k u₀)⁻¹ :=
+          mul_lt_mul_of_pos_left
+            ((one_lt_inv₀ (zero_lt_iff.mpr hv0)).mpr hint)
+            (zero_lt_iff.mpr hvq0)
+  have hquinv' : valuation k (q₀ * (u₀⁻¹)⁻¹) < 1 := by
+    rw [inv_inv, map_mul]
+    calc valuation k q₀ * valuation k u₀
+        ≤ valuation k q₀ * 1 := mul_le_mul_right hint.le _
+      _ = valuation k q₀ := mul_one _
+      _ < 1 := hq1
+  calc evalA (q₀ * u₀⁻¹) q₀ hrep0 hrep1 XA
+      = bilateralX (q₀ * u₀⁻¹) q₀ :=
+        evalA_XA_eq_bilateralX _ _ hrep0 hrep1 hrepstrict.le hq1 hreplow
+    _ = bilateralX u₀⁻¹ q₀ :=
+        bilateralX_shift u₀⁻¹ q₀ (inv_ne_zero h0) hq0 hq1
+          hrepstrict hquinv'
+    _ = bilateralX u₀ q₀ := bilateralX_inv u₀ q₀ h0
+    _ = evalA u₀ q₀ h0 h1 XA :=
+        (evalA_XA_eq_bilateralX u₀ q₀ h0 h1 hint.le hq1 hlow).symm
+
 end Annulus
 
 end TateCurve
