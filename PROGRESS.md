@@ -1655,10 +1655,19 @@ entries file). To add/remove/annotate a node, edit
                                   spellings reconciled by congr + Subsingleton (Algebra ℚ _) — the
                                   Rat-algebra uniqueness bridging the module-system elaboration
                                   divergence.
-                                    - ❌· `cyclotomicCharacter_adicArithFrob` — the 3-adic cyclotomic character at an arithmetic Frobenius = p
-                                      (sorry node): Frobenius raises 3-power roots of unity to the
-                                      p-th power. Stated in GaloisRep.lean so the Frobenius-image
-                                      elaboration matches toLocal_apply.
+                                    - ✅· `cyclotomicCharacter_adicArithFrob` — the 3-adic cyclotomic character at an arithmetic Frobenius =
+                                      p. DERIVED 2026-07-18 from the roots-of-unity action leaf by
+                                      3-adic continuity: PadicInt.ext_of_toZModPow level-by-level,
+                                      cyclotomicCharacter.toZModPow +
+                                      modularCyclotomicCharacter.unique identifying each level with
+                                      p from the action; HasEnoughRootsOfUnity instances from
+                                      RootsOfUnity.AlgebraicallyClosed.
+                                        - ❌· `adicArithFrob_rootsOfUnity_pow` — the Frobenius action on 3-power roots of unity (sorry
+                                          node): at p ∉ {2,3} the arithmetic Frobenius sends ζ to
+                                          ζ^p — 3-power roots are unramified, Frobenius reduces to x
+                                          ↦ x^p on 𝔽_p, and prime-to-p roots of unity inject into
+                                          the residue field (Hensel). Stated in
+                                          modularCyclotomicCharacter.unique's hypothesis shape.
                                     - ❌· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient` — the global triangular form (sorry node — the Serre
                                       classification core): given the residual trivial quotient, the
                                       WHOLE 3-adic rep is an extension of the trivial character by χ

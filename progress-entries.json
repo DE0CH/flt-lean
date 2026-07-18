@@ -455,11 +455,18 @@
   "text": "mod-3 classification (DERIVED, re-vendored 2026-07-18): a mod-3 hardly ramified rep has a Γℚ-equivariant surjection onto the trivial 1-dim rep. From mod_three_reducible + mod_three_of_stable_line (Minkowski bookkeeping PROVEN)."
  },
  {
+  "name": "adicArithFrob_rootsOfUnity_pow",
+  "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
+  "wip": false,
+  "fullname": "adicArithFrob_rootsOfUnity_pow",
+  "text": "the Frobenius action on 3-power roots of unity (sorry node): at p ∉ {2,3} the arithmetic Frobenius sends ζ to ζ^p — 3-power roots are unramified, Frobenius reduces to x ↦ x^p on 𝔽_p, and prime-to-p roots of unity inject into the residue field (Hensel). Stated in modularCyclotomicCharacter.unique's hypothesis shape."
+ },
+ {
   "name": "cyclotomicCharacter_adicArithFrob",
   "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
   "wip": false,
   "fullname": "cyclotomicCharacter_adicArithFrob",
-  "text": "the 3-adic cyclotomic character at an arithmetic Frobenius = p (sorry node): Frobenius raises 3-power roots of unity to the p-th power. Stated in GaloisRep.lean so the Frobenius-image elaboration matches toLocal_apply."
+  "text": "the 3-adic cyclotomic character at an arithmetic Frobenius = p. DERIVED 2026-07-18 from the roots-of-unity action leaf by 3-adic continuity: PadicInt.ext_of_toZModPow level-by-level, cyclotomicCharacter.toZModPow + modularCyclotomicCharacter.unique identifying each level with p from the action; HasEnoughRootsOfUnity instances from RootsOfUnity.AlgebraicallyClosed."
  },
  {
   "name": "GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient",

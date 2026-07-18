@@ -16,6 +16,9 @@ public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 -- `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`, used to state the
 -- cyclotomic-at-Frobenius leaf below in THIS module's elaboration context
 public import Mathlib.NumberTheory.Cyclotomic.CyclotomicCharacter
+public import Mathlib.RingTheory.RootsOfUnity.AlgebraicallyClosed
+-- `HasEnoughRootsOfUnity (AlgebraicClosure ℚ) (3 ^ i)` instances for the
+-- cyclotomic-character derivation
 
 /-!
 # Galois representations
@@ -276,15 +279,32 @@ lemma GaloisRep.HasFlatProlongationAt.of_equiv {A' : Type*} [CommRing A']
     e.bijective.comp hbij⟩
 
 set_option warn.sorry false in
-/-- **The 3-adic cyclotomic character at an arithmetic Frobenius** (sorry
-node): for a prime `p ∉ {2, 3}`, the cyclotomic character of `Γ ℚ`
-evaluated at (the global image of) an arithmetic Frobenius at `p` is `p` —
-Frobenius raises `3`-power roots of unity to the `p`-th power. Stated in
-THIS module so that the Frobenius-image element elaborates identically to
+/-- **The arithmetic Frobenius raises `3`-power roots of unity to the
+`p`-th power** (sorry node — the unramified local content): at a prime
+`p ∉ {2, 3}`, the `3`-power roots of unity are unramified, the arithmetic
+Frobenius reduces to `x ↦ x^p` on the residue field, and roots of unity of
+order coprime to `p` inject into the residue field, so the action is
+exactly `ζ ↦ ζ^p`. Stated in the `modularCyclotomicCharacter.unique`
+hypothesis shape. -/
+theorem adicArithFrob_rootsOfUnity_pow
+    (p : ℕ) (hp : Nat.Prime p) (hp5 : 5 ≤ p) (n : ℕ) :
+    ∀ t ∈ rootsOfUnity (3 ^ n) (AlgebraicClosure ℚ),
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))
+        (Field.AbsoluteGaloisGroup.adicArithFrob
+          hp.toHeightOneSpectrumRingOfIntegersRat)).toRingEquiv) t =
+        t ^ ((p : ZMod (3 ^ n)).val) :=
+  sorry
+
+/-- **The 3-adic cyclotomic character at an arithmetic Frobenius** (DERIVED
+2026-07-18 from the roots-of-unity action leaf, by `3`-adic continuity:
+`PadicInt.ext_of_toZModPow` reduces the identity to every level `3ⁿ`, where
+`cyclotomicCharacter.toZModPow` and `modularCyclotomicCharacter.unique`
+identify the character value with `p` from the action). Stated in THIS
+module so that the Frobenius-image element elaborates identically to
 `GaloisRep.toLocal_apply`'s right-hand side (the module-system's opaque
-exports make cross-module respellings non-defeq). Stated after applying
-`algebraMap ℤ₃ → R`, matching the determinant condition of
-`IsHardlyRamified`. -/
+exports make cross-module respellings non-defeq). -/
 theorem cyclotomicCharacter_adicArithFrob {R : Type*} [CommRing R]
     [Algebra ℤ_[3] R]
     (p : ℕ) (hp : Nat.Prime p) (hp5 : 5 ≤ p) :
@@ -295,8 +315,22 @@ theorem cyclotomicCharacter_adicArithFrob {R : Type*} [CommRing R]
             hp.toHeightOneSpectrumRingOfIntegersRat))
           (Field.AbsoluteGaloisGroup.adicArithFrob
             hp.toHeightOneSpectrumRingOfIntegersRat)).toRingEquiv)) =
-      (p : R) :=
-  sorry
+      (p : R) := by
+  have hval : ((cyclotomicCharacter (AlgebraicClosure ℚ) 3
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))
+        (Field.AbsoluteGaloisGroup.adicArithFrob
+          hp.toHeightOneSpectrumRingOfIntegersRat)).toRingEquiv) :
+      ℤ_[3]ˣ) : ℤ_[3]) = ((p : ℕ) : ℤ_[3]) := by
+    rw [← PadicInt.ext_of_toZModPow]
+    intro n
+    rw [map_natCast, cyclotomicCharacter.toZModPow]
+    exact (modularCyclotomicCharacter.unique
+      (hn := HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ)
+        (3 ^ n))
+      _ _ (adicArithFrob_rootsOfUnity_pow p hp hp5 n)).symm
+  rw [hval, map_natCast]
 
 /-- A galois rep `ρ : Γ K → Aut_A(M)` is flat at `v` if `A/I ⊗ M` has a flat prolongation at `v`
 for all open ideals `I`. -/
