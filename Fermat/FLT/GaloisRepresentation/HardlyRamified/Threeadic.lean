@@ -56,7 +56,45 @@ theorem exists_residue_package {R : Type u} [CommRing R]
       Function.Surjective (algebraMap R kk) ∧
       IsOpen ((IsLocalRing.maximalIdeal R : Ideal R) : Set R) ∧
       RingHom.ker (algebraMap R kk) = IsLocalRing.maximalIdeal R ∧
-      Module.rank kk (kk ⊗[R] V) = 2 :=
+      Module.rank kk (kk ⊗[R] V) = 2 := by
+  -- `3` is in the maximal ideal of `ℤ₃`
+  have h3Z : (3 : ℤ_[3]) ∈ IsLocalRing.maximalIdeal ℤ_[3] := by
+    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff,
+      PadicInt.not_isUnit_iff]
+    have h : ‖((3 : ℕ) : ℤ_[3])‖ = ((3 : ℕ) : ℝ)⁻¹ := PadicInt.norm_p
+    have h2 : ((3 : ℕ) : ℤ_[3]) = (3 : ℤ_[3]) := by norm_cast
+    rw [h2] at h
+    rw [h]
+    norm_num
+  -- `3` is not a unit in `R`: otherwise `R = 3R` and Nakayama over `ℤ₃`
+  -- forces `R = 0`, contradicting nontriviality of the local ring.
+  have h3mem : (3 : R) ∈ IsLocalRing.maximalIdeal R := by
+    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+    intro h3u
+    have h3R : (algebraMap ℤ_[3] R) 3 = (3 : R) := by
+      rw [show (3 : ℤ_[3]) = ((3 : ℕ) : ℤ_[3]) by norm_cast, map_natCast]
+      norm_cast
+    have htop : (⊤ : Submodule ℤ_[3] R) ≤
+        (IsLocalRing.maximalIdeal ℤ_[3]) • (⊤ : Submodule ℤ_[3] R) := by
+      intro r _
+      obtain ⟨u, hu⟩ := h3u.exists_right_inv
+      have hr : r = (3 : ℤ_[3]) • (u * r) := by
+        rw [Algebra.smul_def, h3R, ← mul_assoc, hu, one_mul]
+      rw [hr]
+      exact Submodule.smul_mem_smul h3Z trivial
+    have hbot : (⊤ : Submodule ℤ_[3] R) = ⊥ :=
+      Submodule.eq_bot_of_le_smul_of_le_jacobson_bot
+        (IsLocalRing.maximalIdeal ℤ_[3]) ⊤
+        (Module.finite_def.mp inferInstance) htop
+        (IsLocalRing.maximalIdeal_le_jacobson ⊥)
+    have h01 : (1 : R) = 0 := by
+      have hmem : (1 : R) ∈ (⊤ : Submodule ℤ_[3] R) := trivial
+      rw [hbot, Submodule.mem_bot] at hmem
+      exact hmem
+    exact one_ne_zero h01
+  -- the remaining package: instances on the residue field, openness of
+  -- the maximal ideal (via `3R` open in the `ℤ₃ⁿ` module topology),
+  -- finiteness (quotient of `R/3R`), continuity, and the rank transfer.
   sorry
 
 set_option warn.sorry false in
