@@ -2822,6 +2822,78 @@ theorem bilateral_add_of_X_ne [DecidableEq k] (u₀ v₀ q₀ : k)
   linear_combination -h2
 
 set_option warn.sorry false in
+/-- **Injectivity of the bilateral coordinate pair on the annulus** (sorry
+node — Silverman V.4, the injectivity half): two annulus parameters with
+the same bilateral `x`- AND `y`-values coincide. Attack: the difference
+`X(u) - X(v)` as a series in the annulus (theta-quotient/Newton-polygon
+analysis over the complete field `k`), with the `y`-value separating the
+two sheets. -/
+theorem bilateralXY_inj (u₀ v₀ q₀ : k)
+    (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hv0 : v₀ ≠ 0) (hv1 : v₀ ≠ 1)
+    (hq0 : q₀ ≠ 0) (hq1 : valuation k q₀ < 1)
+    (hulow : valuation k q₀ < valuation k u₀)
+    (huhigh : valuation k u₀ ≤ 1)
+    (hvlow : valuation k q₀ < valuation k v₀)
+    (hvhigh : valuation k v₀ ≤ 1)
+    (hX : bilateralX u₀ q₀ = bilateralX v₀ q₀)
+    (hY : bilateralY u₀ q₀ = bilateralY v₀ q₀) :
+    u₀ = v₀ :=
+  sorry
+
+omit [CharZero k] in
+/-- **The vertical case** (PROVEN from the inversion and shift identities):
+if the product of two annulus parameters is `1` or `q₀` — the trivial class
+— then their bilateral coordinates are related by the Weierstrass negation:
+equal `x`-values, `negY`-related `y`-values. -/
+theorem bilateral_negY_of_mul_trivial (u₀ v₀ q₀ : k)
+    (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hv0 : v₀ ≠ 0)
+    (hq0 : q₀ ≠ 0) (hq1 : valuation k q₀ < 1)
+    (hulow : valuation k q₀ < valuation k u₀)
+    (huhigh : valuation k u₀ ≤ 1)
+    (htriv : u₀ * v₀ = 1 ∨ u₀ * v₀ = q₀) :
+    bilateralX v₀ q₀ = bilateralX u₀ q₀ ∧
+    bilateralY v₀ q₀ = (WeierstrassCurve.tateCurve q₀).toAffine.negY
+      (bilateralX u₀ q₀) (bilateralY u₀ q₀) := by
+  have hqu : valuation k (q₀ * u₀) < 1 := by
+    rw [map_mul]
+    calc valuation k q₀ * valuation k u₀ ≤ valuation k q₀ * 1 :=
+          mul_le_mul_right huhigh _
+      _ = valuation k q₀ := mul_one _
+      _ < 1 := hq1
+  have hquinv : valuation k (q₀ * u₀⁻¹) < 1 := by
+    rw [map_mul, map_inv₀]
+    have hinvpos : (0 : ValueGroupWithZero k) < (valuation k u₀)⁻¹ :=
+      zero_lt_iff.mpr (inv_ne_zero ((Valuation.ne_zero_iff _).mpr hu0))
+    calc valuation k q₀ * (valuation k u₀)⁻¹
+        < valuation k u₀ * (valuation k u₀)⁻¹ :=
+          (OrderIso.mulRight₀ _ hinvpos).strictMono hulow
+      _ = 1 := mul_inv_cancel₀ ((Valuation.ne_zero_iff _).mpr hu0)
+  rw [tateCurve_negY]
+  rcases htriv with h1 | hqcase
+  · -- `v₀ = u₀⁻¹`
+    have hv : v₀ = u₀⁻¹ := by
+      field_simp at h1 ⊢
+      linear_combination h1
+    subst hv
+    exact ⟨bilateralX_inv u₀ q₀ hu0,
+      bilateralY_inv u₀ q₀ hu0 hu1 hq1 hqu hquinv⟩
+  · -- `v₀ = q₀ * u₀⁻¹`
+    have hv : v₀ = q₀ * u₀⁻¹ := by
+      field_simp at hqcase ⊢
+      linear_combination hqcase
+    subst hv
+    have hinv1 : u₀⁻¹ ≠ 1 := fun h => hu1 (by
+      rw [← inv_inv u₀, h, inv_one])
+    have hinv0 : u₀⁻¹ ≠ 0 := inv_ne_zero hu0
+    have hqu' : valuation k (q₀ * u₀⁻¹) < 1 := hquinv
+    have hquinv' : valuation k (q₀ * (u₀⁻¹)⁻¹) < 1 := by
+      rwa [inv_inv]
+    constructor
+    · rw [bilateralX_shift u₀⁻¹ q₀ hinv0 hq0 hq1 hqu' hquinv',
+        bilateralX_inv u₀ q₀ hu0]
+    · rw [bilateralY_shift u₀⁻¹ q₀ hinv0 hinv1 hq0 hq1 hqu' hquinv',
+        bilateralY_inv u₀ q₀ hu0 hu1 hq1 hqu hquinv]
+
 /-- **Non-`2`-torsion of nontrivial-square annulus parameters** (sorry
 node): for an annulus parameter whose square is not in the trivial class,
 the bilateral point is not `2`-torsion — its `y`-value differs from `negY`
@@ -2834,8 +2906,78 @@ theorem bilateral_ne_negY_of_sq_nontrivial (u₀ q₀ : k)
     (huhigh : valuation k u₀ ≤ 1)
     (hsq1 : u₀ * u₀ ≠ 1) (hsqq : u₀ * u₀ ≠ q₀) :
     bilateralY u₀ q₀ ≠ (WeierstrassCurve.tateCurve q₀).toAffine.negY
-      (bilateralX u₀ q₀) (bilateralY u₀ q₀) :=
-  sorry
+      (bilateralX u₀ q₀) (bilateralY u₀ q₀) := by
+  intro heq
+  have hqv : valuation k q₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hq0
+  have huv : valuation k u₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hu0
+  rcases lt_or_eq_of_le huhigh with hlt | hone
+  · -- interior case: the inverse-class representative is `q₀ * u₀⁻¹`
+    set v₀ := q₀ * u₀⁻¹ with hv₀
+    have hv0 : v₀ ≠ 0 := mul_ne_zero hq0 (inv_ne_zero hu0)
+    have hv1 : v₀ ≠ 1 := by
+      intro h1
+      rw [hv₀] at h1
+      have huq : u₀ = q₀ := by
+        field_simp at h1
+        exact h1.symm
+      rw [huq] at hulow
+      exact absurd hulow (lt_irrefl _)
+    have hvval : valuation k v₀ = valuation k q₀ * (valuation k u₀)⁻¹ := by
+      rw [hv₀, map_mul, map_inv₀]
+    have hvlow : valuation k q₀ < valuation k v₀ := by
+      rw [hvval]
+      have hinvgt : (1 : ValueGroupWithZero k) < (valuation k u₀)⁻¹ := by
+        have hpos : (0 : ValueGroupWithZero k) < (valuation k u₀)⁻¹ :=
+          zero_lt_iff.mpr (inv_ne_zero huv)
+        calc (1 : ValueGroupWithZero k)
+            = valuation k u₀ * (valuation k u₀)⁻¹ := (mul_inv_cancel₀ huv).symm
+          _ < 1 * (valuation k u₀)⁻¹ :=
+              (OrderIso.mulRight₀ _ hpos).strictMono hlt
+          _ = (valuation k u₀)⁻¹ := one_mul _
+      calc valuation k q₀ = valuation k q₀ * 1 := (mul_one _).symm
+        _ < valuation k q₀ * (valuation k u₀)⁻¹ :=
+            (OrderIso.mulLeft₀ _ (zero_lt_iff.mpr hqv)).strictMono hinvgt
+    have hvhigh : valuation k v₀ ≤ 1 := by
+      rw [hvval]
+      calc valuation k q₀ * (valuation k u₀)⁻¹
+          ≤ valuation k u₀ * (valuation k u₀)⁻¹ :=
+            mul_le_mul_left (le_of_lt hulow) _
+        _ = 1 := mul_inv_cancel₀ huv
+    have hmul := bilateral_negY_of_mul_trivial u₀ v₀ q₀ hu0 hu1 hv0 hq0 hq1
+      hulow huhigh (Or.inr (by rw [hv₀]; field_simp))
+    have hXeq : bilateralX u₀ q₀ = bilateralX v₀ q₀ := hmul.1.symm
+    have hYeq : bilateralY u₀ q₀ = bilateralY v₀ q₀ := by
+      rw [hmul.2]
+      exact heq
+    have huv₀ := bilateralXY_inj u₀ v₀ q₀ hu0 hu1 hv0 hv1 hq0 hq1
+      hulow huhigh hvlow hvhigh hXeq hYeq
+    refine hsqq ?_
+    calc u₀ * u₀ = u₀ * v₀ := by nth_rw 2 [huv₀]
+      _ = q₀ := by rw [hv₀]; field_simp
+  · -- boundary case: the inverse-class representative is `u₀⁻¹`
+    set v₀ := u₀⁻¹ with hv₀
+    have hv0 : v₀ ≠ 0 := inv_ne_zero hu0
+    have hv1 : v₀ ≠ 1 := by
+      intro h1
+      rw [hv₀] at h1
+      exact hu1 (by rw [← inv_inv u₀, h1, inv_one])
+    have hvval : valuation k v₀ = 1 := by
+      rw [hv₀, map_inv₀, hone, inv_one]
+    have hvlow : valuation k q₀ < valuation k v₀ := by
+      rw [hvval]
+      exact hq1
+    have hvhigh : valuation k v₀ ≤ 1 := le_of_eq hvval
+    have hmul := bilateral_negY_of_mul_trivial u₀ v₀ q₀ hu0 hu1 hv0 hq0 hq1
+      hulow huhigh (Or.inl (mul_inv_cancel₀ hu0))
+    have hXeq : bilateralX u₀ q₀ = bilateralX v₀ q₀ := hmul.1.symm
+    have hYeq : bilateralY u₀ q₀ = bilateralY v₀ q₀ := by
+      rw [hmul.2]
+      exact heq
+    have huv₀ := bilateralXY_inj u₀ v₀ q₀ hu0 hu1 hv0 hv1 hq0 hq1
+      hulow huhigh hvlow hvhigh hXeq hYeq
+    refine hsq1 ?_
+    calc u₀ * u₀ = u₀ * v₀ := by nth_rw 2 [huv₀]
+      _ = 1 := by rw [hv₀]; exact mul_inv_cancel₀ hu0
 
 set_option warn.sorry false in
 /-- **The cleared tangent `X`-identity** (sorry node — the
@@ -2949,78 +3091,7 @@ theorem bilateral_add_self [DecidableEq k] (u₀ q₀ : k)
   field_simp
   linear_combination -h2
 
-set_option warn.sorry false in
-/-- **Injectivity of the bilateral coordinate pair on the annulus** (sorry
-node — Silverman V.4, the injectivity half): two annulus parameters with
-the same bilateral `x`- AND `y`-values coincide. Attack: the difference
-`X(u) - X(v)` as a series in the annulus (theta-quotient/Newton-polygon
-analysis over the complete field `k`), with the `y`-value separating the
-two sheets. -/
-theorem bilateralXY_inj (u₀ v₀ q₀ : k)
-    (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hv0 : v₀ ≠ 0) (hv1 : v₀ ≠ 1)
-    (hq0 : q₀ ≠ 0) (hq1 : valuation k q₀ < 1)
-    (hulow : valuation k q₀ < valuation k u₀)
-    (huhigh : valuation k u₀ ≤ 1)
-    (hvlow : valuation k q₀ < valuation k v₀)
-    (hvhigh : valuation k v₀ ≤ 1)
-    (hX : bilateralX u₀ q₀ = bilateralX v₀ q₀)
-    (hY : bilateralY u₀ q₀ = bilateralY v₀ q₀) :
-    u₀ = v₀ :=
-  sorry
 
-omit [CharZero k] in
-/-- **The vertical case** (PROVEN from the inversion and shift identities):
-if the product of two annulus parameters is `1` or `q₀` — the trivial class
-— then their bilateral coordinates are related by the Weierstrass negation:
-equal `x`-values, `negY`-related `y`-values. -/
-theorem bilateral_negY_of_mul_trivial (u₀ v₀ q₀ : k)
-    (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hv0 : v₀ ≠ 0)
-    (hq0 : q₀ ≠ 0) (hq1 : valuation k q₀ < 1)
-    (hulow : valuation k q₀ < valuation k u₀)
-    (huhigh : valuation k u₀ ≤ 1)
-    (htriv : u₀ * v₀ = 1 ∨ u₀ * v₀ = q₀) :
-    bilateralX v₀ q₀ = bilateralX u₀ q₀ ∧
-    bilateralY v₀ q₀ = (WeierstrassCurve.tateCurve q₀).toAffine.negY
-      (bilateralX u₀ q₀) (bilateralY u₀ q₀) := by
-  have hqu : valuation k (q₀ * u₀) < 1 := by
-    rw [map_mul]
-    calc valuation k q₀ * valuation k u₀ ≤ valuation k q₀ * 1 :=
-          mul_le_mul_right huhigh _
-      _ = valuation k q₀ := mul_one _
-      _ < 1 := hq1
-  have hquinv : valuation k (q₀ * u₀⁻¹) < 1 := by
-    rw [map_mul, map_inv₀]
-    have hinvpos : (0 : ValueGroupWithZero k) < (valuation k u₀)⁻¹ :=
-      zero_lt_iff.mpr (inv_ne_zero ((Valuation.ne_zero_iff _).mpr hu0))
-    calc valuation k q₀ * (valuation k u₀)⁻¹
-        < valuation k u₀ * (valuation k u₀)⁻¹ :=
-          (OrderIso.mulRight₀ _ hinvpos).strictMono hulow
-      _ = 1 := mul_inv_cancel₀ ((Valuation.ne_zero_iff _).mpr hu0)
-  rw [tateCurve_negY]
-  rcases htriv with h1 | hqcase
-  · -- `v₀ = u₀⁻¹`
-    have hv : v₀ = u₀⁻¹ := by
-      field_simp at h1 ⊢
-      linear_combination h1
-    subst hv
-    exact ⟨bilateralX_inv u₀ q₀ hu0,
-      bilateralY_inv u₀ q₀ hu0 hu1 hq1 hqu hquinv⟩
-  · -- `v₀ = q₀ * u₀⁻¹`
-    have hv : v₀ = q₀ * u₀⁻¹ := by
-      field_simp at hqcase ⊢
-      linear_combination hqcase
-    subst hv
-    have hinv1 : u₀⁻¹ ≠ 1 := fun h => hu1 (by
-      rw [← inv_inv u₀, h, inv_one])
-    have hinv0 : u₀⁻¹ ≠ 0 := inv_ne_zero hu0
-    have hqu' : valuation k (q₀ * u₀⁻¹) < 1 := hquinv
-    have hquinv' : valuation k (q₀ * (u₀⁻¹)⁻¹) < 1 := by
-      rwa [inv_inv]
-    constructor
-    · rw [bilateralX_shift u₀⁻¹ q₀ hinv0 hq0 hq1 hqu' hquinv',
-        bilateralX_inv u₀ q₀ hu0]
-    · rw [bilateralY_shift u₀⁻¹ q₀ hinv0 hinv1 hq0 hq1 hqu' hquinv',
-        bilateralY_inv u₀ q₀ hu0 hu1 hq1 hqu hquinv]
 
 /-- **The fibre of the bilateral `x`-value** (DERIVED 2026-07-18 from the
 coordinate-pair injectivity `bilateralXY_inj`, the PROVEN vertical case,
