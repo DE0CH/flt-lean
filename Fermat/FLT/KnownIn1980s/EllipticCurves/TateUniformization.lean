@@ -336,6 +336,106 @@ noncomputable def evalA [TopologicalSpace k] (u₀ q₀ : k) (h0 : u₀ ≠ 0)
 
 end Evaluation
 
+section Annulus
+
+open ValuativeRel
+
+variable {k : Type*} [Field k] [TopologicalSpace k] [ValuativeRel k]
+  [IsNonarchimedeanLocalField k] [CharZero k]
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] in
+/-- The explicit form of the higher coefficients of `XA` evaluated at
+`u₀`. -/
+theorem coeffRingEval_coeff_XA (u₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    {n : ℕ} (hn : n ≠ 0) :
+    coeffRingEval u₀ h0 h1 (PowerSeries.coeff n XA) =
+      ∑ d ∈ n.divisors, (d : k) * (u₀ ^ d + u₀⁻¹ ^ d - 2) := by
+  rw [XA, map_add, PowerSeries.coeff_C, if_neg hn, zero_add,
+    PowerSeries.coeff_mk, map_sum]
+  refine Finset.sum_congr rfl fun d _ ↦ ?_
+  rw [map_mul, map_sub, map_add, map_pow, map_pow, map_natCast,
+    map_ofNat, coeffRingEval_uA, coeffRingEval_uA_inv]
+
+omit [TopologicalSpace k] [IsNonarchimedeanLocalField k] in
+/-- **Fundamental-annulus coefficient bound for `XA`**: for
+`|u₀| ≤ 1` the `n`-th coefficient of `XA` evaluated at `u₀` has
+valuation at most `|u₀|⁻ⁿ` — each divisor term `d(u₀ᵈ + u₀⁻ᵈ - 2)`
+is dominated by the `u₀⁻ᵈ` summand, and `d ≤ n`. -/
+theorem valuation_coeffRingEval_XA_le (u₀ : k) (h0 : u₀ ≠ 0)
+    (h1 : u₀ ≠ 1) (hu : valuation k u₀ ≤ 1) {n : ℕ} (hn : n ≠ 0) :
+    valuation k (coeffRingEval u₀ h0 h1 (PowerSeries.coeff n XA)) ≤
+      ((valuation k u₀) ^ n)⁻¹ := by
+  have hv0 : valuation k u₀ ≠ 0 := by
+    simpa [ne_eq, map_eq_zero] using h0
+  have hone : (1 : ValueGroupWithZero k) ≤ ((valuation k u₀) ^ n)⁻¹ := by
+    rw [one_le_inv₀ (pow_pos (zero_lt_iff.mpr hv0) n)]
+    exact pow_le_one₀ zero_le hu
+  rw [coeffRingEval_coeff_XA u₀ h0 h1 hn]
+  refine Valuation.map_sum_le _ fun d hd ↦ ?_
+  have hdn : d ≤ n := Nat.divisor_le hd
+  rw [map_mul]
+  have hd1 : valuation k (d : k) ≤ 1 := by
+    have h := valuation_intCast_le_one (R := k) d
+    simpa using h
+  have hsum : valuation k (u₀ ^ d + u₀⁻¹ ^ d - 2) ≤
+      ((valuation k u₀) ^ n)⁻¹ := by
+    have ha : valuation k (u₀ ^ d) ≤ ((valuation k u₀) ^ n)⁻¹ := by
+      rw [map_pow]
+      exact le_trans (pow_le_one₀ zero_le hu) hone
+    have hb : valuation k (u₀⁻¹ ^ d) ≤ ((valuation k u₀) ^ n)⁻¹ := by
+      rw [map_pow, map_inv₀, ← inv_pow]
+      refine pow_le_pow_right' ?_ hdn
+      rw [one_le_inv₀ (zero_lt_iff.mpr hv0)]
+      exact hu
+    have hc : valuation k (2 : k) ≤ ((valuation k u₀) ^ n)⁻¹ := by
+      refine le_trans ?_ hone
+      have h := valuation_intCast_le_one (R := k) 2
+      simpa using h
+    calc valuation k (u₀ ^ d + u₀⁻¹ ^ d - 2)
+        ≤ max (valuation k (u₀ ^ d + u₀⁻¹ ^ d)) (valuation k (2 : k)) :=
+          Valuation.map_sub _ _ _
+      _ ≤ ((valuation k u₀) ^ n)⁻¹ := by
+          refine max_le ?_ hc
+          exact le_trans (Valuation.map_add _ _ _) (max_le ha hb)
+  calc valuation k ((d : k)) * valuation k (u₀ ^ d + u₀⁻¹ ^ d - 2)
+      ≤ 1 * ((valuation k u₀) ^ n)⁻¹ := mul_le_mul' hd1 hsum
+    _ = ((valuation k u₀) ^ n)⁻¹ := one_mul _
+
+/-- **Summability of the evaluated `x`-series on the fundamental
+annulus** `|q₀| < |u₀| ≤ 1`: term `n ≥ 1` has valuation at most
+`(|q₀|/|u₀|)ⁿ = |q₀u₀⁻¹|ⁿ` by the coefficient bound, and
+`|q₀u₀⁻¹| < 1`, so the nonarchimedean criterion applies (the `n = 0`
+term is split off, since the constant coefficient `u₀/(1-u₀)²` obeys
+no annulus bound). -/
+theorem summable_evalA_XA (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hu : valuation k u₀ ≤ 1) (hq : valuation k q₀ < valuation k u₀) :
+    Summable fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff n XA) * q₀ ^ n := by
+  have hv0 : valuation k u₀ ≠ 0 := by
+    simpa [ne_eq, map_eq_zero] using h0
+  have hw : valuation k (q₀ * u₀⁻¹) < 1 := by
+    rw [map_mul, map_inv₀]
+    calc valuation k q₀ * (valuation k u₀)⁻¹
+        < valuation k u₀ * (valuation k u₀)⁻¹ :=
+          mul_lt_mul_of_pos_right hq (zero_lt_iff.mpr (inv_ne_zero hv0))
+      _ = 1 := mul_inv_cancel₀ hv0
+  rw [← summable_nat_add_iff 1]
+  refine summable_of_valuation_le_pow hw (fun n ↦ n + 1)
+    (fun N ↦ (Set.finite_Iio N).subset fun i hi ↦ Set.mem_Iio.mpr
+      (lt_trans (Nat.lt_succ_self i) hi)) (fun n ↦ ?_)
+  rw [map_mul, map_pow]
+  have hb := valuation_coeffRingEval_XA_le u₀ h0 h1 hu
+    (Nat.succ_ne_zero n)
+  calc valuation k (coeffRingEval u₀ h0 h1
+        (PowerSeries.coeff (n + 1) XA)) * valuation k q₀ ^ (n + 1)
+      ≤ ((valuation k u₀) ^ (n + 1))⁻¹ * valuation k q₀ ^ (n + 1) :=
+        mul_le_mul_left hb _
+    _ = valuation k (q₀ * u₀⁻¹) ^ (n + 1) := by
+        rw [map_mul, map_inv₀, mul_pow, inv_pow]
+        exact mul_comm _ _
+
+end Annulus
+
 end TateCurve
 
 end
