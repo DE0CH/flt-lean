@@ -196,8 +196,47 @@ theorem hasFlatProlongationAt_of_subsingleton {A' : Type*} [CommRing A']
     [TopologicalSpace A'] {M' : Type*} [AddCommGroup M'] [Module A' M']
     [Subsingleton M'] (ρ' : GaloisRep ℚ A' M') :
     ρ'.HasFlatProlongationAt
-      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat := by
+  classical
+  set v := Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat with hv
+  set Kv := IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v with hKv
+  set Ov := IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v
+    with hOv
+  -- every `Kᵥ`-algebra map out of `Kᵥ ⊗[𝒪ᵥ] 𝒪ᵥ ≅ Kᵥ` is the canonical one
+  haveI hsub : Subsingleton (Kv ⊗[Ov] Ov →ₐ[Kv] AlgebraicClosure Kv) := by
+    constructor
+    intro f g
+    have hcomp : ∀ h : Kv ⊗[Ov] Ov →ₐ[Kv] AlgebraicClosure Kv,
+        h = ((h.comp (Algebra.TensorProduct.rid Ov Kv Kv).symm.toAlgHom).comp
+          (Algebra.TensorProduct.rid Ov Kv Kv).toAlgHom) := by
+      intro h
+      ext
+    rw [hcomp f, hcomp g]
+    congr 1
+    exact AlgHom.ext fun x =>
+      ((f.comp (Algebra.TensorProduct.rid Ov Kv Kv).symm.toAlgHom).commutes
+        x).trans
+        ((g.comp
+          (Algebra.TensorProduct.rid Ov Kv Kv).symm.toAlgHom).commutes x).symm
+  haveI hspace : Subsingleton (ρ'.toLocal v).Space :=
+    inferInstanceAs (Subsingleton M')
+  refine ⟨Ov, inferInstance, inferInstance, inferInstance, inferInstance,
+    ?_, ?_, ?_⟩
+  · -- étale generic fibre: base change of the étale identity
+    exact inferInstance
+  · -- the zero equivariant map into the subsingleton space
+    exact
+      { toFun := fun _ => 0
+        map_smul' := fun g x => (smul_zero g).symm
+        map_zero' := rfl
+        map_add' := fun a b => (add_zero (0 : M')).symm }
+  · constructor
+    · intro a b _
+      exact Subsingleton.elim a b
+    · intro y
+      refine ⟨Additive.ofMul ((Algebra.ofId Kv (AlgebraicClosure Kv)).comp
+        (Algebra.TensorProduct.rid Ov Kv Kv).toAlgHom), ?_⟩
+      exact Subsingleton.elim _ y
 
 set_option warn.sorry false in
 /-- **The residual space identification** (sorry node): the double base

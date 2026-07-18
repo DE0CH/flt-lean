@@ -1651,22 +1651,6 @@ entries file). To add/remove/annotate a node, edit
                                   the residual trivial-quotient surjection lifts 3-adically to the
                                   triangular Frobenius basis, diagonal = det = cyclotomic, value p
                                   at Frob_p.
-                                - ✅· `GaloisRepresentation.IsHardlyRamified.exists_residual_isHardlyRamified` — residual hardly-ramifiedness. DERIVED 2026-07-18: the determinant
-                                  condition transfers by LinearMap.det_baseChange + the scalar
-                                  tower, and unramifiedness by the existing IsUnramifiedAt base-
-                                  change instance; the remaining content is the residue package and
-                                  the flatness/tameness transfer leaves.
-                                    - ✅· `GaloisRepresentation.IsHardlyRamified.isFlatAt_baseChange_residue` — flatness transfer. DERIVED 2026-07-18: ideals of the discrete
-                                      field are ⊥/⊤ (Ideal.eq_bot_or_top); the ⊥ case transports the
-                                      I = 𝔪 instance of ρ.IsFlatAt through the NEW PROVEN
-                                      HasFlatProlongationAt.of_equiv (Hopf witness reused,
-                                      geometric-points bijection composed with the equivariant space
-                                      iso); the ⊤ case is the degenerate subsingleton leaf.
-                                        - ❌· `GaloisRepresentation.IsHardlyRamified.hasFlatProlongationAt_of_subsingleton` — degenerate flatness (sorry node): a rep on a subsingleton
-                                          module has a flat prolongation — the trivial group scheme
-                                          Spec 𝒪ᵥ, one geometric point matched with the single space
-                                          element. Needs a HopfAlgebra 𝒪ᵥ 𝒪ᵥ instance (trivial
-                                          comultiplication).
                 - ✅· `not_isIrreducible_of_charFrob_eq` — `not_isIrreducible_of_charFrob_eq` — Chebotarev + Brauer– Nesbitt — now
                   (2026-07-16, `Chebotarev.lean` + proof in `Lift.lean`): the agreement set with `1
                   ⊕ χ̄`'s charpolys is closed (module topology on `End` over `ZMod ℓ` is discrete ;
