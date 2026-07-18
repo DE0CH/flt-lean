@@ -1342,6 +1342,65 @@ theorem tsum_geometric_nonarch (x : k) (hx : valuation k x < 1) :
   refine eq_inv_of_mul_eq_one_left ?_
   linear_combination -hmul
 
+omit [CharZero k] in
+/-- `∑ n·xⁿ` is summable on the open unit disc. -/
+theorem summable_nat_mul_geometric_nonarch (x : k)
+    (hx : valuation k x < 1) :
+    Summable (fun n : ℕ ↦ (n : k) * x ^ n) := by
+  refine summable_of_valuation_le_pow hx (fun n ↦ n)
+    (fun N ↦ Set.finite_Iio N) (fun n ↦ ?_)
+  rw [map_mul, map_pow]
+  calc valuation k ((n : k)) * valuation k x ^ n
+      ≤ 1 * valuation k x ^ n := by
+        refine mul_le_mul_left ?_ _
+        have h := valuation_intCast_le_one (R := k) n
+        simpa using h
+    _ = valuation k x ^ n := one_mul _
+
+omit [CharZero k] in
+/-- **The nonarchimedean derivative-geometric series**: for `|x| < 1`,
+`∑ n·xⁿ = x/(1-x)²` — the Cauchy square of the geometric series
+counted along antidiagonals, minus the geometric series. -/
+theorem tsum_nat_mul_geometric_nonarch (x : k)
+    (hx : valuation k x < 1) :
+    (∑' n : ℕ, (n : k) * x ^ n) = x / (1 - x) ^ 2 := by
+  have hxne : x ≠ 1 := by
+    rintro rfl
+    simp at hx
+  have h1x : (1 - x) ≠ 0 := sub_ne_zero.mpr (Ne.symm hxne)
+  have hsum := summable_geometric_nonarch x hx
+  have hnsum := summable_nat_mul_geometric_nonarch x hx
+  have hkey := Summable.tsum_mul_tsum_eq_tsum_sum_antidiagonal (A := ℕ)
+    hsum hsum (summable_mul_prod hsum hsum)
+  have hterm : ∀ n : ℕ,
+      (∑ kl ∈ Finset.antidiagonal n, x ^ kl.1 * x ^ kl.2) =
+      ((n : k) + 1) * x ^ n := by
+    intro n
+    have h1 : ∀ kl ∈ Finset.antidiagonal n,
+        x ^ kl.1 * x ^ kl.2 = x ^ n := by
+      intro kl hkl
+      rw [← pow_add, Finset.mem_antidiagonal.mp hkl]
+    rw [Finset.sum_congr rfl h1, Finset.sum_const,
+      Finset.Nat.card_antidiagonal, nsmul_eq_mul]
+    push_cast
+    ring
+  rw [tsum_geometric_nonarch x hx] at hkey
+  have h2 : (∑' n : ℕ, ((n : k) + 1) * x ^ n) =
+      (1 - x)⁻¹ * (1 - x)⁻¹ := by
+    rw [hkey]
+    exact tsum_congr fun n ↦ (hterm n).symm
+  have hsplit : (∑' n : ℕ, ((n : k) + 1) * x ^ n) =
+      (∑' n : ℕ, (n : k) * x ^ n) + (∑' n : ℕ, x ^ n) := by
+    rw [← hnsum.tsum_add hsum]
+    exact tsum_congr fun n ↦ by ring
+  have h3 : (∑' n : ℕ, (n : k) * x ^ n) =
+      (1 - x)⁻¹ * (1 - x)⁻¹ - (1 - x)⁻¹ := by
+    rw [tsum_geometric_nonarch x hx] at hsplit
+    linear_combination hsplit.symm.trans h2
+  rw [h3]
+  field_simp
+  ring
+
 end Annulus
 
 end TateCurve
