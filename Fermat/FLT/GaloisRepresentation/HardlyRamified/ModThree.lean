@@ -1622,21 +1622,57 @@ theorem localInertia_two_eq_map_padic
       Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) : ℕ) = 2 := by
     show Rat.HeightOneSpectrum.natGenerator _ = 2
     exact natGenerator_toHeightOneSpectrum Nat.prime_two
-  have hcast : ∀ (a b : ℕ) (ha : Fact a.Prime) (hb : Fact b.Prime),
-      a = b → ((@Padic a ha) ≃A[ℚ] (@Padic b hb)) := by
+  have hcastP : ∀ (a b : ℕ) (ha : Fact a.Prime) (hb : Fact b.Prime),
+      a = b → { F : (@Padic a ha) ≃A[ℚ] (@Padic b hb) //
+        ∀ y, ‖F y‖ = ‖y‖ } := by
     intro a b ha hb hab
     subst hab
-    exact ContinuousAlgEquiv.refl ℚ _
-  have E : IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ≃A[ℚ] ℚ_[2] := by
-    have h0 := Rat.HeightOneSpectrum.adicCompletion.padicEquiv
+    have hinst : ha = hb := Subsingleton.elim _ _
+    subst hinst
+    exact ⟨ContinuousAlgEquiv.refl ℚ _, fun y => rfl⟩
+  obtain ⟨E, hEint⟩ : ∃ E : (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+      ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ≃A[ℚ] ℚ_[2]),
+      ∀ x, x ∈ IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ↔ ‖E x‖ ≤ 1 := by
+    letI : Algebra ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+      IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion _ _ _
+    set h0 := Rat.HeightOneSpectrum.adicCompletion.padicEquiv
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat with hh0
+    have hbij := Rat.HeightOneSpectrum.adicCompletion.padicEquiv_bijOn
       Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat
+    have h0int : ∀ x, x ∈ IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers
+        ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ↔
+        ‖Rat.HeightOneSpectrum.adicCompletion.padicEquiv
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat x‖ ≤ 1 := by
+      intro x
+      constructor
+      · intro hx
+        exact hbij.mapsTo hx
+      · intro hx
+        obtain ⟨x', hx', hEx⟩ := hbij.surjOn hx
+        have hxx' : x' = x := by
+          have h1 := congrArg (Rat.HeightOneSpectrum.adicCompletion.padicEquiv
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat).symm hEx
+          simpa using h1
+        rwa [← hxx']
+    have hpair : ∃ E : (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ≃A[ℚ] ℚ_[2]),
+        ∀ x, x ∈ IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ↔ ‖E x‖ ≤ 1 := by
+      refine ⟨h0.trans (hcastP _ 2 hfp h2f hprime).1,
+        fun x => (h0int x).trans ?_⟩
+      have hnorm : ‖(h0.trans (hcastP _ 2 hfp h2f hprime).1) x‖ =
+          ‖h0 x‖ := by
+        rw [show (h0.trans (hcastP _ 2 hfp h2f hprime).1) x =
+          (hcastP _ 2 hfp h2f hprime).1 (h0 x) from rfl]
+        exact (hcastP _ 2 hfp h2f hprime).2 (h0 x)
+      rw [hnorm]
     have halg : (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
         (NumberField.RingOfIntegers ℚ) ℚ
         Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) =
         (DivisionRing.toRatAlgebra) := Subsingleton.elim _ _
-    have h1 := halg ▸ h0
-    exact h1.trans (hcast _ _ _ _ hprime)
+    exact halg ▸ hpair
   -- (2) the transported element: conjugation through the closure map of
   -- `E.symm`, which is bijective
   set ι₃ : AlgebraicClosure ℚ_[2] →+*
