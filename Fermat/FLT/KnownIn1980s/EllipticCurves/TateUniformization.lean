@@ -1880,17 +1880,9 @@ first term of the `u₀`-half-sum, and the first term of the shifted
 inverse half-sum is the `u₀`-constant; everything else reindexes by
 one step. -/
 theorem bilateralX_shift (u₀ q₀ : k) (h0 : u₀ ≠ 0) (hq0 : q₀ ≠ 0)
-    (hq1 : valuation k q₀ < 1) (hlow : valuation k q₀ < valuation k u₀)
-    (hhigh : valuation k u₀ ≤ 1) :
+    (hq1 : valuation k q₀ < 1) (hqu : valuation k (q₀ * u₀) < 1)
+    (hquinv : valuation k (q₀ * u₀⁻¹) < 1) :
     bilateralX (q₀ * u₀) q₀ = bilateralX u₀ q₀ := by
-  have hv0 : valuation k u₀ ≠ 0 := by
-    simpa [ne_eq, map_eq_zero] using h0
-  have hqu : valuation k (q₀ * u₀) < 1 := by
-    rw [map_mul]
-    calc valuation k q₀ * valuation k u₀
-        ≤ valuation k q₀ * 1 := mul_le_mul_right hhigh _
-      _ = valuation k q₀ := mul_one _
-      _ < 1 := hq1
   have hq2u : valuation k (q₀ * (q₀ * u₀)) < 1 := by
     rw [map_mul]
     calc valuation k q₀ * valuation k (q₀ * u₀)
@@ -1898,13 +1890,6 @@ theorem bilateralX_shift (u₀ q₀ : k) (h0 : u₀ ≠ 0) (hq0 : q₀ ≠ 0)
           mul_le_mul_left hq1.le _
       _ = valuation k (q₀ * u₀) := one_mul _
       _ < 1 := hqu
-  have hquinv : valuation k (q₀ * u₀⁻¹) < 1 := by
-    rw [map_mul, map_inv₀]
-    calc valuation k q₀ * (valuation k u₀)⁻¹
-        < valuation k u₀ * (valuation k u₀)⁻¹ :=
-          mul_lt_mul_of_pos_right hlow
-            (zero_lt_iff.mpr (inv_ne_zero hv0))
-      _ = 1 := mul_inv_cancel₀ hv0
   have hS1 := summable_lambert_terms u₀ q₀ hq1 hqu
   have hS2 := summable_lambert_terms (q₀ * u₀) q₀ hq1 hq2u
   have hS3 := summable_lambert_terms u₀⁻¹ q₀ hq1 hquinv
