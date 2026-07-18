@@ -44,6 +44,7 @@ public import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve
 import Mathlib.Topology.Algebra.InfiniteSum.Nonarchimedean
 import Mathlib.Topology.Algebra.InfiniteSum.Ring
 import Mathlib.NumberTheory.TsumDivisorsAntidiagonal
+import Mathlib.Data.PNat.Equiv
 
 @[expose] public section
 
@@ -1676,6 +1677,98 @@ theorem hasSum_lambert_side' (w q₀ : k) (hq : valuation k q₀ < 1)
     (summable_lambert_prod' w q₀ hq hqw)
     (fun m ↦ hasSum_lambert_row' w q₀ hq hqw m)
   refine hT.congr_fun fun p ↦ ?_
+  ring
+
+omit [CharZero k] in
+/-- The `σ₁`-series over `ℕ+` is summable on `|q₀| < 1`. -/
+theorem summable_sigma_one_nonarch (q₀ : k) (hq : valuation k q₀ < 1) :
+    Summable (fun N : ℕ+ ↦
+      (∑ d ∈ (N : ℕ).divisors, (d : k)) * q₀ ^ (N : ℕ)) := by
+  refine summable_of_valuation_le_pow hq (fun N ↦ (N : ℕ))
+    (fun M ↦ Set.Finite.subset ((Set.finite_Iio M).preimage
+      PNat.coe_injective.injOn) fun N hN ↦ hN) (fun N ↦ ?_)
+  rw [map_mul, map_pow]
+  have h1 : valuation k ((∑ d ∈ (N : ℕ).divisors, (d : k))) ≤ 1 := by
+    refine Valuation.map_sum_le _ fun d _ ↦ ?_
+    have h := valuation_intCast_le_one (R := k) d
+    simpa using h
+  calc valuation k ((∑ d ∈ (N : ℕ).divisors, (d : k))) *
+        valuation k q₀ ^ (N : ℕ)
+      ≤ 1 * valuation k q₀ ^ (N : ℕ) := mul_le_mul_left h1 _
+    _ = valuation k q₀ ^ (N : ℕ) := one_mul _
+
+set_option maxHeartbeats 1000000 in
+/-- **The bilateral form of the evaluated `x`-series** (Silverman,
+ATAEC V.3, the `ℤ`-indexed description): on the fundamental annulus,
+`X(u₀,q₀) = u₀/(1-u₀)² + ∑_{m≥1}[q₀ᵐu₀/(1-q₀ᵐu₀)² +
+q₀ᵐu₀⁻¹/(1-q₀ᵐu₀⁻¹)²] - 2∑_N σ₁(N)q₀^N` — the `m ≥ 1` and `m ≤ -1`
+halves of `∑_{m∈ℤ} q₀ᵐu₀/(1-q₀ᵐu₀)²` (the negative half rewritten by
+the involution `v ↦ v⁻¹` fixing `v/(1-v)²`), the manifestly
+`u₀ ↦ q₀u₀`-invariant description of `X`. -/
+theorem evalA_XA_bilateral (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hu : valuation k u₀ ≤ 1) (hq1 : valuation k q₀ < 1)
+    (hq : valuation k q₀ < valuation k u₀) :
+    evalA u₀ q₀ h0 h1 XA =
+      u₀ / (1 - u₀) ^ 2 +
+      ((∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀ / (1 - q₀ ^ (m : ℕ) * u₀) ^ 2) +
+       (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 2) -
+       2 * (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ))) := by
+  have hv0 : valuation k u₀ ≠ 0 := by
+    simpa [ne_eq, map_eq_zero] using h0
+  have hqu : valuation k (q₀ * u₀) < 1 := by
+    rw [map_mul]
+    calc valuation k q₀ * valuation k u₀
+        ≤ valuation k q₀ * 1 := mul_le_mul_right hu _
+      _ = valuation k q₀ := mul_one _
+      _ < 1 := hq1
+  have hquinv : valuation k (q₀ * u₀⁻¹) < 1 := by
+    rw [map_mul, map_inv₀]
+    calc valuation k q₀ * (valuation k u₀)⁻¹
+        < valuation k u₀ * (valuation k u₀)⁻¹ :=
+          mul_lt_mul_of_pos_right hq
+            (zero_lt_iff.mpr (inv_ne_zero hv0))
+      _ = 1 := mul_inv_cancel₀ hv0
+  have hSu := hasSum_lambert_side' u₀ q₀ hq1 hqu
+  have hSuinv := hasSum_lambert_side' u₀⁻¹ q₀ hq1 hquinv
+  have hSσ := (summable_sigma_one_nonarch q₀ hq1).hasSum
+  have htail : HasSum (fun N : ℕ+ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff (N : ℕ) XA) *
+        q₀ ^ (N : ℕ))
+      ((∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀ / (1 - q₀ ^ (m : ℕ) * u₀) ^ 2) +
+       (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 2) -
+       2 * (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ))) := by
+    refine ((hSu.add hSuinv).sub (hSσ.mul_left 2)).congr_fun
+      fun N ↦ ?_
+    rw [coeffRingEval_coeff_XA u₀ h0 h1 N.pos.ne', Finset.sum_mul,
+      Finset.sum_mul, Finset.sum_mul, Finset.sum_mul, Finset.mul_sum,
+      ← Finset.sum_add_distrib, ← Finset.sum_sub_distrib]
+    refine Finset.sum_congr rfl fun d _ ↦ ?_
+    ring
+  have htailN : HasSum (fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff (n + 1) XA) *
+        q₀ ^ (n + 1))
+      ((∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀ / (1 - q₀ ^ (m : ℕ) * u₀) ^ 2) +
+       (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 2) -
+       2 * (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ))) := by
+    have h := (Equiv.pnatEquivNat.symm.hasSum_iff).mpr htail
+    refine h.congr_fun fun n ↦ ?_
+    simp only [Function.comp_apply, Equiv.pnatEquivNat_symm_apply,
+      Nat.succPNat_coe]
+  have hfull := (hasSum_nat_add_iff
+    (f := fun n : ℕ ↦ coeffRingEval u₀ h0 h1
+      (PowerSeries.coeff n XA) * q₀ ^ n) 1).mp htailN
+  rw [Finset.range_one, Finset.sum_singleton] at hfull
+  have hf0 : coeffRingEval u₀ h0 h1 (PowerSeries.coeff 0 XA) *
+      q₀ ^ 0 = u₀ / (1 - u₀) ^ 2 := by
+    rw [coeffRingEval_coeff_XA_zero, pow_zero, mul_one]
+  rw [hf0] at hfull
+  rw [evalA, hfull.tsum_eq]
   ring
 
 end Annulus
