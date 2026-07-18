@@ -2688,6 +2688,99 @@ theorem bilateralY_inv (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
     y_constant_inv u₀ h0 h1]
   ring
 
+omit [CharZero k] in
+set_option maxHeartbeats 1000000 in
+/-- **Shift invariance of the bilateral `y`-value** (translation
+identity for `Y`): `bilateralY (q₀u₀) q₀ = bilateralY u₀ q₀` in the
+wide window — the shifted constant is the first `kernel₁`-term, and
+the first term of the shifted inverse half-sum is
+`kernel₂(u₀⁻¹) = -const₁(u₀)`, restoring the constant. -/
+theorem bilateralY_shift (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hq0 : q₀ ≠ 0) (hq1 : valuation k q₀ < 1)
+    (hqu : valuation k (q₀ * u₀) < 1)
+    (hquinv : valuation k (q₀ * u₀⁻¹) < 1) :
+    bilateralY (q₀ * u₀) q₀ = bilateralY u₀ q₀ := by
+  have hbin1 : ∀ j : ℕ, valuation k (((j.choose 2 : ℕ) : k)) ≤ 1 := by
+    intro j
+    have h := valuation_intCast_le_one (R := k) (j.choose 2)
+    simpa using h
+  have hbin2 : ∀ j : ℕ,
+      valuation k ((((j + 1).choose 2 : ℕ) : k)) ≤ 1 := by
+    intro j
+    have h := valuation_intCast_le_one (R := k) ((j + 1).choose 2)
+    simpa using h
+  have hS1u := summable_lambert_terms_general
+    (fun j ↦ ((j.choose 2 : ℕ) : k)) (fun v ↦ v ^ 2 / (1 - v) ^ 3)
+    hbin1 u₀ q₀ hq1 hqu
+    (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_self v₀ hv₀)
+  have hS2inv := summable_lambert_terms_general
+    (fun j ↦ (((j + 1).choose 2 : ℕ) : k)) (fun v ↦ v / (1 - v) ^ 3)
+    hbin2 u₀⁻¹ q₀ hq1 hquinv
+    (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_succ v₀ hv₀)
+  -- the shifted inverse family: its shift is the `u₀⁻¹`-family
+  have hS2' : Summable (fun m : ℕ+ ↦
+      q₀ ^ (m : ℕ) * (q₀ * u₀)⁻¹ /
+        (1 - q₀ ^ (m : ℕ) * (q₀ * u₀)⁻¹) ^ 3) := by
+    refine summable_pnat_of_shift (hS2inv.congr fun m ↦ ?_)
+    have hterm : q₀ ^ ((m + 1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹ =
+        q₀ ^ (m : ℕ) * u₀⁻¹ := by
+      rw [mul_inv, PNat.add_coe, PNat.one_coe, pow_succ]
+      field_simp
+    rw [hterm]
+  -- shift computation for the `kernel₁`-half
+  have hshift1 : (∑' m : ℕ+, (q₀ ^ (m : ℕ) * (q₀ * u₀)) ^ 2 /
+      (1 - q₀ ^ (m : ℕ) * (q₀ * u₀)) ^ 3) =
+      (∑' m : ℕ+, (q₀ ^ (m : ℕ) * u₀) ^ 2 /
+        (1 - q₀ ^ (m : ℕ) * u₀) ^ 3) -
+      (q₀ * u₀) ^ 2 / (1 - q₀ * u₀) ^ 3 := by
+    have h := tsum_pnat_eq_add_shift hS1u
+    have hcongr : (∑' m : ℕ+, (q₀ ^ ((m + 1 : ℕ+) : ℕ) * u₀) ^ 2 /
+        (1 - q₀ ^ ((m + 1 : ℕ+) : ℕ) * u₀) ^ 3) =
+        (∑' m : ℕ+, (q₀ ^ (m : ℕ) * (q₀ * u₀)) ^ 2 /
+          (1 - q₀ ^ (m : ℕ) * (q₀ * u₀)) ^ 3) := by
+      refine tsum_congr fun m ↦ ?_
+      rw [show q₀ ^ ((m + 1 : ℕ+) : ℕ) * u₀ =
+          q₀ ^ (m : ℕ) * (q₀ * u₀) from by
+        rw [PNat.add_coe, PNat.one_coe, pow_succ]
+        ring]
+    rw [hcongr] at h
+    have h1 : (q₀ ^ ((1 : ℕ+) : ℕ) * u₀) ^ 2 /
+        (1 - q₀ ^ ((1 : ℕ+) : ℕ) * u₀) ^ 3 =
+        (q₀ * u₀) ^ 2 / (1 - q₀ * u₀) ^ 3 := by
+      norm_num
+    rw [h1] at h
+    linear_combination -h
+  -- shift computation for the `kernel₂`-half
+  have hshift2 : (∑' m : ℕ+, q₀ ^ (m : ℕ) * (q₀ * u₀)⁻¹ /
+      (1 - q₀ ^ (m : ℕ) * (q₀ * u₀)⁻¹) ^ 3) =
+      u₀⁻¹ / (1 - u₀⁻¹) ^ 3 +
+      (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+        (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 3) := by
+    have h := tsum_pnat_eq_add_shift hS2'
+    have h1 : q₀ ^ ((1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹ /
+        (1 - q₀ ^ ((1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹) ^ 3 =
+        u₀⁻¹ / (1 - u₀⁻¹) ^ 3 := by
+      rw [show q₀ ^ ((1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹ = u₀⁻¹ from by
+        rw [mul_inv, PNat.one_coe, pow_one]
+        field_simp]
+    have hcongr : (∑' m : ℕ+,
+        q₀ ^ ((m + 1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹ /
+          (1 - q₀ ^ ((m + 1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹) ^ 3) =
+        (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 3) := by
+      refine tsum_congr fun m ↦ ?_
+      rw [show q₀ ^ ((m + 1 : ℕ+) : ℕ) * (q₀ * u₀)⁻¹ =
+          q₀ ^ (m : ℕ) * u₀⁻¹ from by
+        rw [mul_inv, PNat.add_coe, PNat.one_coe, pow_succ]
+        field_simp]
+    rw [h1, hcongr] at h
+    exact h
+  -- the exchanged constant: `kernel₂(u₀⁻¹) = -const₁(u₀)`
+  have hexch : u₀⁻¹ / (1 - u₀⁻¹) ^ 3 = -(u₀ ^ 2 / (1 - u₀) ^ 3) :=
+    y_kernel_succ_inv u₀ h0 h1
+  rw [bilateralY, bilateralY, hshift1, hshift2, hexch]
+  ring
+
 end Annulus
 
 end TateCurve
