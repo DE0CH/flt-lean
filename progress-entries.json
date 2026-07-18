@@ -858,6 +858,6 @@
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
   "wip": false,
   "fullname": "TateCurve.ΔFormal_eq",
-  "text": "THE formal discriminant identity in ℤ⟦X⟧: the discriminant polynomial of ⟨1,0,0,a₄Formal,a₆Formal⟩ equals X·∏(1−Xⁿ)²⁴ — the η²⁴/Jacobi identity, the sole remaining combinatorial core of the Tate q-expansions; provable by the complex-analytic descent of TateCurveConstruction.lean."
+  "text": "THE formal discriminant identity in ℤ⟦X⟧ (η²⁴/Jacobi): mapped attack via mathlib's discriminantEquiv (weight-12 cusp forms ≃ weight-0 forms, so E₄³−E₆² = 1728·Δ_η), discriminant_eq_q_prod, the g₂/g₃ expansions of TateCurveConstruction, and the coefficient-uniqueness descent."
  }
 ]

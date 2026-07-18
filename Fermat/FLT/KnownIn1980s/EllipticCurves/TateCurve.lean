@@ -708,10 +708,21 @@ remaining combinatorial core of the Tate-curve `q`-expansions,
 Silverman ATAEC V.3.1(b) in `ℤ⟦X⟧`): the discriminant polynomial of the
 formal Tate quintuple `⟨1, 0, 0, a₄Formal, a₆Formal⟩` equals the
 product `ΔFormal = X·∏(1 − Xⁿ)²⁴`. A purely formal power-series
-identity over `ℤ` (equivalent to the `η²⁴`/Jacobi discriminant
-identity); provable by the complex-analytic descent technique of
-`TateCurveConstruction.lean` (compare coefficients at complex points,
-as for `weierstrass_equation`). -/
+identity over `ℤ` (the `η²⁴`/Jacobi discriminant identity).
+
+Mapped attack (2026-07-18), fully mathlib-supported: (1) `E₄³ − E₆²`
+is a level-one weight-12 cusp form; dividing by the discriminant form
+(`ModularForms.LevelOne.DimensionFormula.discriminantEquiv`) yields a
+weight-0 form, hence a constant, fixed as `1728` by the first
+`q`-coefficient (`discriminant_qExpansion_order`); with
+`discriminant_eq_q_prod` (`Δ = 𝕢·∏(1 − 𝕢ⁿ)²⁴`, proven in mathlib via
+`η`) this gives the ANALYTIC identity. (2) The `g₂`/`g₃`
+`q`-expansions of `TateCurveConstruction.lean` convert the analytic
+identity into the statement that both sides of THIS identity have
+equal convergent evaluations at every `q = e(τ)`. (3) The
+formal-vs-convergent coefficient-uniqueness descent of
+`TateCurveConstruction.lean` (as for `weierstrass_equation`, without
+the `u`-variable) concludes the `ℤ⟦X⟧`-identity. -/
 theorem TateCurve.ΔFormal_eq :
     -TateCurve.a₆Formal + TateCurve.a₄Formal ^ 2 -
       64 * TateCurve.a₄Formal ^ 3 - 432 * TateCurve.a₆Formal ^ 2 +
