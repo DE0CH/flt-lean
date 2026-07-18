@@ -1651,10 +1651,21 @@ entries file). To add/remove/annotate a node, edit
                                   the residual trivial-quotient surjection lifts 3-adically to the
                                   triangular Frobenius basis, diagonal = det = cyclotomic, value p
                                   at Frob_p.
-                                - ❌· `GaloisRepresentation.IsHardlyRamified.exists_residual_isHardlyRamified` — residual hardly-ramifiedness (sorry node): the reduction mod the
-                                  maximal ideal is mod-3 hardly ramified over the finite discrete
-                                  residue field — det maps along the residue map, kernels grow,
-                                  flatness reduces.
+                                - ✅· `GaloisRepresentation.IsHardlyRamified.exists_residual_isHardlyRamified` — residual hardly-ramifiedness. DERIVED 2026-07-18: the determinant
+                                  condition transfers by LinearMap.det_baseChange + the scalar
+                                  tower, and unramifiedness by the existing IsUnramifiedAt base-
+                                  change instance; the remaining content is the residue package and
+                                  the flatness/tameness transfer leaves.
+                                    - ❌· `GaloisRepresentation.IsHardlyRamified.isTameAtTwo_baseChange_residue` — tameness-at-2 transfer (sorry node): π ⊗ 1 through kk ⊗ R ≅ kk
+                                      and the pushforward of δ along the residue map; conditions
+                                      transfer on simple tensors.
+                                    - ❌· `GaloisRepresentation.IsHardlyRamified.isFlatAt_baseChange_residue` — flatness transfer (sorry node): open ideals of the discrete
+                                      field are ⊥/⊤; the ⊥ case is the I = 𝔪 instance of ρ.IsFlatAt
+                                      along kk ≅ R/𝔪 and base-change composition.
+                                    - ❌· `GaloisRepresentation.IsHardlyRamified.exists_residue_package` — the residue package (sorry node): kk := R/𝔪 with
+                                      Field/Finite/char-3/discrete instances, surjective continuous
+                                      ℤ₃-algebra map, open maximal ideal, kernel = 𝔪, rank-2 base
+                                      change.
                 - ✅· `not_isIrreducible_of_charFrob_eq` — `not_isIrreducible_of_charFrob_eq` — Chebotarev + Brauer– Nesbitt — now
                   (2026-07-16, `Chebotarev.lean` + proof in `Lift.lean`): the agreement set with `1
                   ⊕ χ̄`'s charpolys is closed (module topology on `End` over `ZMod ℓ` is discrete ;

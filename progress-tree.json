@@ -66,7 +66,10 @@
   "GaloisRepresentation.IsHardlyRamified.mod_three_reducible": "❌",
   "GaloisRepresentation.IsHardlyRamified.mod_three": "✅",
   "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient": "❌",
-  "GaloisRepresentation.IsHardlyRamified.exists_residual_isHardlyRamified": "❌",
+  "GaloisRepresentation.IsHardlyRamified.isTameAtTwo_baseChange_residue": "❌",
+  "GaloisRepresentation.IsHardlyRamified.isFlatAt_baseChange_residue": "❌",
+  "GaloisRepresentation.IsHardlyRamified.exists_residue_package": "❌",
+  "GaloisRepresentation.IsHardlyRamified.exists_residual_isHardlyRamified": "✅",
   "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular": "✅",
   "GaloisRepresentation.IsHardlyRamified.three_adic": "✅",
   "GaloisRepresentation.not_isIrreducible_of_charFrob_eq": "✅",
@@ -443,7 +446,14 @@
    "GaloisRepresentation.IsHardlyRamified.mod_three_reducible"
   ],
   "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient": [],
-  "GaloisRepresentation.IsHardlyRamified.exists_residual_isHardlyRamified": [],
+  "GaloisRepresentation.IsHardlyRamified.isTameAtTwo_baseChange_residue": [],
+  "GaloisRepresentation.IsHardlyRamified.isFlatAt_baseChange_residue": [],
+  "GaloisRepresentation.IsHardlyRamified.exists_residue_package": [],
+  "GaloisRepresentation.IsHardlyRamified.exists_residual_isHardlyRamified": [
+   "GaloisRepresentation.IsHardlyRamified.isFlatAt_baseChange_residue",
+   "GaloisRepresentation.IsHardlyRamified.isTameAtTwo_baseChange_residue",
+   "GaloisRepresentation.IsHardlyRamified.exists_residue_package"
+  ],
   "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular": [
    "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient",
    "GaloisRepresentation.IsHardlyRamified.mod_three",

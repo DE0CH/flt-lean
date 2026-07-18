@@ -462,11 +462,32 @@
   "text": "ordinarity lifting (sorry node — the deformation heart of B6c): the residual trivial-quotient surjection lifts 3-adically to the triangular Frobenius basis, diagonal = det = cyclotomic, value p at Frob_p."
  },
  {
+  "name": "GaloisRepresentation.IsHardlyRamified.isTameAtTwo_baseChange_residue",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
+  "wip": false,
+  "fullname": "GaloisRepresentation.IsHardlyRamified.isTameAtTwo_baseChange_residue",
+  "text": "tameness-at-2 transfer (sorry node): π ⊗ 1 through kk ⊗ R ≅ kk and the pushforward of δ along the residue map; conditions transfer on simple tensors."
+ },
+ {
+  "name": "GaloisRepresentation.IsHardlyRamified.isFlatAt_baseChange_residue",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
+  "wip": false,
+  "fullname": "GaloisRepresentation.IsHardlyRamified.isFlatAt_baseChange_residue",
+  "text": "flatness transfer (sorry node): open ideals of the discrete field are ⊥/⊤; the ⊥ case is the I = 𝔪 instance of ρ.IsFlatAt along kk ≅ R/𝔪 and base-change composition."
+ },
+ {
+  "name": "GaloisRepresentation.IsHardlyRamified.exists_residue_package",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
+  "wip": false,
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_residue_package",
+  "text": "the residue package (sorry node): kk := R/𝔪 with Field/Finite/char-3/discrete instances, surjective continuous ℤ₃-algebra map, open maximal ideal, kernel = 𝔪, rank-2 base change."
+ },
+ {
   "name": "GaloisRepresentation.IsHardlyRamified.exists_residual_isHardlyRamified",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
   "wip": false,
   "fullname": "GaloisRepresentation.IsHardlyRamified.exists_residual_isHardlyRamified",
-  "text": "residual hardly-ramifiedness (sorry node): the reduction mod the maximal ideal is mod-3 hardly ramified over the finite discrete residue field — det maps along the residue map, kernels grow, flatness reduces."
+  "text": "residual hardly-ramifiedness. DERIVED 2026-07-18: the determinant condition transfers by LinearMap.det_baseChange + the scalar tower, and unramifiedness by the existing IsUnramifiedAt base-change instance; the remaining content is the residue package and the flatness/tameness transfer leaves."
  },
  {
   "name": "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular",

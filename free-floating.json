@@ -1,5 +1,5 @@
 {
- "key": "1784362526.4849138",
+ "key": "1784363070.943626",
  "returncode": 0,
  "floating": [
   {
@@ -77,10 +77,6 @@
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
    "name": "WeierstrassCurve.hasMultiplicativeReduction_baseChange"
-  },
-  {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs",
-   "name": "GaloisRepresentation.IsHardlyRamified.isFlat"
   },
   {
    "module": "Fermat.FLT.FreyCurve.FreyPackage",
@@ -237,10 +233,6 @@
   {
    "module": "Fermat.FLT.NumberField.Completion.Finite",
    "name": "NumberField.isOpenAdicCompletionIntegers"
-  },
-  {
-   "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
-   "name": "GaloisRep.ker_baseChange"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
@@ -875,10 +867,6 @@
    "name": "Algebra.IsQuadraticExtension.algEquiv_apply_eq_neg_of_sq_eq"
   },
   {
-   "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
-   "name": "instIsUnramifiedAtTensorProductBaseChange"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.LinearAlgebra.Countable",
    "name": "Countable.of_module_finite"
   },
@@ -961,10 +949,6 @@
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "continuousAt_discrete_rng"
-  },
-  {
-   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs",
-   "name": "GaloisRepresentation.IsHardlyRamified.isTameAtTwo"
   },
   {
    "module": "Fermat.FLT.FreyCurve.MazurTorsion",
