@@ -124,11 +124,22 @@ entries file). To add/remove/annotate a node, edit
                                                           the composition through tateParameter by
                                                           the substitution-evaluation leaf and
                                                           jInv_subst_jInvReverse.
-                                                            - ❌· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant product formula:
-                                                              Δ(E_q) = evalInt q ΔFormal =
-                                                              q·∏(1−qⁿ)²⁴ (Silverman ATAEC
-                                                              V.3.1(b)); the last open q-expansion
-                                                              identity (c₄ and c₆ are proven).
+                                                            - ✅· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant of the Tate curve is
+                                                              the value of ΔFormal, now DERIVED from
+                                                              the pure formal identity leaf by the
+                                                              evaluation ring homomorphism
+                                                              (evalInt_add/mul/pow + the integer-
+                                                              scalar lemma).
+                                                                - ❌· `TateCurve.ΔFormal_eq` — THE formal discriminant identity
+                                                                  in ℤ⟦X⟧: the discriminant
+                                                                  polynomial of
+                                                                  ⟨1,0,0,a₄Formal,a₆Formal⟩ equals
+                                                                  X·∏(1−Xⁿ)²⁴ — the η²⁴/Jacobi
+                                                                  identity, the sole remaining
+                                                                  combinatorial core of the Tate
+                                                                  q-expansions; provable by the
+                                                                  complex-analytic descent of
+                                                                  TateCurveConstruction.lean.
                                                         - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-
                                                           multiplicative curves over k with equal j
                                                           are k-isomorphic — over the separable
@@ -177,12 +188,24 @@ entries file). To add/remove/annotate a node, edit
                                                               through tateParameter by the
                                                               substitution-evaluation leaf and
                                                               jInv_subst_jInvReverse.
-                                                                - ❌· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant product formula:
-                                                                  Δ(E_q) = evalInt q ΔFormal =
-                                                                  q·∏(1−qⁿ)²⁴ (Silverman ATAEC
-                                                                  V.3.1(b)); the last open
-                                                                  q-expansion identity (c₄ and c₆
-                                                                  are proven).
+                                                                - ✅· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant of the Tate curve
+                                                                  is the value of ΔFormal, now
+                                                                  DERIVED from the pure formal
+                                                                  identity leaf by the evaluation
+                                                                  ring homomorphism
+                                                                  (evalInt_add/mul/pow + the
+                                                                  integer-scalar lemma).
+                                                                    - ❌· `TateCurve.ΔFormal_eq` — THE formal discriminant
+                                                                      identity in ℤ⟦X⟧: the
+                                                                      discriminant polynomial of
+                                                                      ⟨1,0,0,a₄Formal,a₆Formal⟩
+                                                                      equals X·∏(1−Xⁿ)²⁴ — the
+                                                                      η²⁴/Jacobi identity, the sole
+                                                                      remaining combinatorial core
+                                                                      of the Tate q-expansions;
+                                                                      provable by the complex-
+                                                                      analytic descent of
+                                                                      TateCurveConstruction.lean.
                                                             - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two
                                                               split-multiplicative curves over k
                                                               with equal j are k-isomorphic — over
@@ -246,13 +269,24 @@ entries file). To add/remove/annotate a node, edit
                                                                   through tateParameter by the
                                                                   substitution-evaluation leaf and
                                                                   jInv_subst_jInvReverse.
-                                                                    - ❌· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant product
-                                                                      formula: Δ(E_q) = evalInt q
-                                                                      ΔFormal = q·∏(1−qⁿ)²⁴
-                                                                      (Silverman ATAEC V.3.1(b));
-                                                                      the last open q-expansion
-                                                                      identity (c₄ and c₆ are
-                                                                      proven).
+                                                                    - ✅· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant of the Tate
+                                                                      curve is the value of ΔFormal,
+                                                                      now DERIVED from the pure
+                                                                      formal identity leaf by the
+                                                                      evaluation ring homomorphism
+                                                                      (evalInt_add/mul/pow + the
+                                                                      integer-scalar lemma).
+                                                                        - ❌· `TateCurve.ΔFormal_eq` — THE formal discriminant
+                                                                          identity in ℤ⟦X⟧: the
+                                                                          discriminant polynomial of
+                                                                          ⟨1,0,0,a₄Formal,a₆Formal⟩
+                                                                          equals X·∏(1−Xⁿ)²⁴ — the
+                                                                          η²⁴/Jacobi identity, the sole
+                                                                          remaining combinatorial core
+                                                                          of the Tate q-expansions;
+                                                                          provable by the complex-
+                                                                          analytic descent of
+                                                                          TateCurveConstruction.lean.
                                                                 - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3:
                                                                   two split-multiplicative curves
                                                                   over k with equal j are
@@ -309,13 +343,24 @@ entries file). To add/remove/annotate a node, edit
                                                                       tateParameter by the
                                                                       substitution-evaluation leaf
                                                                       and jInv_subst_jInvReverse.
-                                                                        - ❌· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant product
-                                                                          formula: Δ(E_q) = evalInt q
-                                                                          ΔFormal = q·∏(1−qⁿ)²⁴
-                                                                          (Silverman ATAEC V.3.1(b));
-                                                                          the last open q-expansion
-                                                                          identity (c₄ and c₆ are
-                                                                          proven).
+                                                                        - ✅· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant of the Tate
+                                                                          curve is the value of ΔFormal,
+                                                                          now DERIVED from the pure
+                                                                          formal identity leaf by the
+                                                                          evaluation ring homomorphism
+                                                                          (evalInt_add/mul/pow + the
+                                                                          integer-scalar lemma).
+                                                                            - ❌· `TateCurve.ΔFormal_eq` — THE formal discriminant
+                                                                              identity in ℤ⟦X⟧: the
+                                                                              discriminant polynomial of
+                                                                              ⟨1,0,0,a₄Formal,a₆Formal⟩
+                                                                              equals X·∏(1−Xⁿ)²⁴ — the
+                                                                              η²⁴/Jacobi identity, the sole
+                                                                              remaining combinatorial core
+                                                                              of the Tate q-expansions;
+                                                                              provable by the complex-
+                                                                              analytic descent of
+                                                                              TateCurveConstruction.lean.
                                                                     - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate
                                                                       V.5.3: two split-
                                                                       multiplicative curves over k
@@ -450,10 +495,17 @@ entries file). To add/remove/annotate a node, edit
                                               evalInt_mul/pow, and evalInt_invOfUnit; the
                                               composition through tateParameter by the substitution-
                                               evaluation leaf and jInv_subst_jInvReverse.
-                                                - ❌· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant product formula: Δ(E_q) = evalInt
-                                                  q ΔFormal = q·∏(1−qⁿ)²⁴ (Silverman ATAEC
-                                                  V.3.1(b)); the last open q-expansion identity (c₄
-                                                  and c₆ are proven).
+                                                - ✅· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant of the Tate curve is the value of
+                                                  ΔFormal, now DERIVED from the pure formal identity
+                                                  leaf by the evaluation ring homomorphism
+                                                  (evalInt_add/mul/pow + the integer-scalar lemma).
+                                                    - ❌· `TateCurve.ΔFormal_eq` — THE formal discriminant identity in ℤ⟦X⟧: the
+                                                      discriminant polynomial of
+                                                      ⟨1,0,0,a₄Formal,a₆Formal⟩ equals X·∏(1−Xⁿ)²⁴ —
+                                                      the η²⁴/Jacobi identity, the sole remaining
+                                                      combinatorial core of the Tate q-expansions;
+                                                      provable by the complex-analytic descent of
+                                                      TateCurveConstruction.lean.
                                             - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-
                                               multiplicative curves over k with equal j are
                                               k-isomorphic — over the separable closure by mathlib's
@@ -491,10 +543,19 @@ entries file). To add/remove/annotate a node, edit
                                                   the composition through tateParameter by the
                                                   substitution-evaluation leaf and
                                                   jInv_subst_jInvReverse.
-                                                    - ❌· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant product formula: Δ(E_q) =
-                                                      evalInt q ΔFormal = q·∏(1−qⁿ)²⁴ (Silverman
-                                                      ATAEC V.3.1(b)); the last open q-expansion
-                                                      identity (c₄ and c₆ are proven).
+                                                    - ✅· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant of the Tate curve is the
+                                                      value of ΔFormal, now DERIVED from the pure
+                                                      formal identity leaf by the evaluation ring
+                                                      homomorphism (evalInt_add/mul/pow + the
+                                                      integer-scalar lemma).
+                                                        - ❌· `TateCurve.ΔFormal_eq` — THE formal discriminant identity in ℤ⟦X⟧:
+                                                          the discriminant polynomial of
+                                                          ⟨1,0,0,a₄Formal,a₆Formal⟩ equals
+                                                          X·∏(1−Xⁿ)²⁴ — the η²⁴/Jacobi identity, the
+                                                          sole remaining combinatorial core of the
+                                                          Tate q-expansions; provable by the
+                                                          complex-analytic descent of
+                                                          TateCurveConstruction.lean.
                                                 - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-
                                                   multiplicative curves over k with equal j are
                                                   k-isomorphic — over the separable closure by
@@ -559,9 +620,16 @@ entries file). To add/remove/annotate a node, edit
                                       evalInt q jInv by the proven c₄-identity, evalInt_mul/pow, and
                                       evalInt_invOfUnit; the composition through tateParameter by
                                       the substitution-evaluation leaf and jInv_subst_jInvReverse.
-                                        - ❌· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant product formula: Δ(E_q) = evalInt q
-                                          ΔFormal = q·∏(1−qⁿ)²⁴ (Silverman ATAEC V.3.1(b)); the last
-                                          open q-expansion identity (c₄ and c₆ are proven).
+                                        - ✅· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant of the Tate curve is the value of
+                                          ΔFormal, now DERIVED from the pure formal identity leaf by
+                                          the evaluation ring homomorphism (evalInt_add/mul/pow +
+                                          the integer-scalar lemma).
+                                            - ❌· `TateCurve.ΔFormal_eq` — THE formal discriminant identity in ℤ⟦X⟧: the
+                                              discriminant polynomial of ⟨1,0,0,a₄Formal,a₆Formal⟩
+                                              equals X·∏(1−Xⁿ)²⁴ — the η²⁴/Jacobi identity, the sole
+                                              remaining combinatorial core of the Tate q-expansions;
+                                              provable by the complex-analytic descent of
+                                              TateCurveConstruction.lean.
                                     - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-multiplicative
                                       curves over k with equal j are k-isomorphic — over the
                                       separable closure by mathlib's exists_variableChange_of_j_eq,
@@ -593,9 +661,16 @@ entries file). To add/remove/annotate a node, edit
                                       evalInt q jInv by the proven c₄-identity, evalInt_mul/pow, and
                                       evalInt_invOfUnit; the composition through tateParameter by
                                       the substitution-evaluation leaf and jInv_subst_jInvReverse.
-                                        - ❌· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant product formula: Δ(E_q) = evalInt q
-                                          ΔFormal = q·∏(1−qⁿ)²⁴ (Silverman ATAEC V.3.1(b)); the last
-                                          open q-expansion identity (c₄ and c₆ are proven).
+                                        - ✅· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant of the Tate curve is the value of
+                                          ΔFormal, now DERIVED from the pure formal identity leaf by
+                                          the evaluation ring homomorphism (evalInt_add/mul/pow +
+                                          the integer-scalar lemma).
+                                            - ❌· `TateCurve.ΔFormal_eq` — THE formal discriminant identity in ℤ⟦X⟧: the
+                                              discriminant polynomial of ⟨1,0,0,a₄Formal,a₆Formal⟩
+                                              equals X·∏(1−Xⁿ)²⁴ — the η²⁴/Jacobi identity, the sole
+                                              remaining combinatorial core of the Tate q-expansions;
+                                              provable by the complex-analytic descent of
+                                              TateCurveConstruction.lean.
                                     - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-multiplicative
                                       curves over k with equal j are k-isomorphic — over the
                                       separable closure by mathlib's exists_variableChange_of_j_eq,

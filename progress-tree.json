@@ -120,8 +120,9 @@
   "WeierstrassCurve.hasSplitMultiplicativeReduction_tateCurve": "✅✅",
   "WeierstrassCurve.isElliptic_tateCurve_and_j": "✅",
   "WeierstrassCurve.exists_variableChange_of_j_eq_of_split": "❌",
-  "WeierstrassCurve.Δ_tateCurve_eq_evalInt": "❌",
-  "TateCurve.evalInt_subst": "✅✅"
+  "WeierstrassCurve.Δ_tateCurve_eq_evalInt": "✅",
+  "TateCurve.evalInt_subst": "✅✅",
+  "TateCurve.ΔFormal_eq": "❌"
  },
  "children": {
   "fermat_last_theorem": [
@@ -586,8 +587,11 @@
    "TateCurve.evalInt_subst"
   ],
   "WeierstrassCurve.exists_variableChange_of_j_eq_of_split": [],
-  "WeierstrassCurve.Δ_tateCurve_eq_evalInt": [],
-  "TateCurve.evalInt_subst": []
+  "WeierstrassCurve.Δ_tateCurve_eq_evalInt": [
+   "TateCurve.ΔFormal_eq"
+  ],
+  "TateCurve.evalInt_subst": [],
+  "TateCurve.ΔFormal_eq": []
  },
  "roots": [
   "fermat_last_theorem",

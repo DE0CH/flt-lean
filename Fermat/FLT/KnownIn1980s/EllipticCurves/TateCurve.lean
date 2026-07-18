@@ -701,18 +701,89 @@ theorem TateCurve.coeff_one_ΔFormal :
     (WithPiTopology.multipliable_one_sub_X_pow ℤ).map_tprod _
     (WithPiTopology.continuous_constantCoeff ℤ)]
 
+open PowerSeries in
 set_option warn.sorry false in
+/-- **The formal discriminant identity** (sorry node — the sole
+remaining combinatorial core of the Tate-curve `q`-expansions,
+Silverman ATAEC V.3.1(b) in `ℤ⟦X⟧`): the discriminant polynomial of the
+formal Tate quintuple `⟨1, 0, 0, a₄Formal, a₆Formal⟩` equals the
+product `ΔFormal = X·∏(1 − Xⁿ)²⁴`. A purely formal power-series
+identity over `ℤ` (equivalent to the `η²⁴`/Jacobi discriminant
+identity); provable by the complex-analytic descent technique of
+`TateCurveConstruction.lean` (compare coefficients at complex points,
+as for `weierstrass_equation`). -/
+theorem TateCurve.ΔFormal_eq :
+    -TateCurve.a₆Formal + TateCurve.a₄Formal ^ 2 -
+      64 * TateCurve.a₄Formal ^ 3 - 432 * TateCurve.a₆Formal ^ 2 +
+      72 * TateCurve.a₄Formal * TateCurve.a₆Formal =
+    TateCurve.ΔFormal :=
+  sorry
+
+open PowerSeries in
+/-- Integer-scalar multiples pass through evaluation (extracted from
+the `c₄`/`c₆` computations). -/
+theorem TateCurve.evalInt_intCast_mul (q : k)
+    (c : ℤ) (F : ℤ⟦X⟧) :
+    TateCurve.evalInt q ((c : ℤ⟦X⟧) * F) =
+      (c : k) * TateCurve.evalInt q F := by
+  rw [TateCurve.evalInt, TateCurve.evalInt, ← tsum_mul_left]
+  congr 1
+  funext n
+  have h0 : ((c : ℤ⟦X⟧)) * F = (c : ℤ) • F := by
+    rw [zsmul_eq_mul]
+  have hcoeff : PowerSeries.coeff n ((c : ℤ⟦X⟧) * F) =
+      c * PowerSeries.coeff n F := by
+    rw [h0, map_smul, smul_eq_mul]
+  rw [hcoeff]
+  push_cast
+  ring
+
+open PowerSeries in
 /-- **The discriminant of the Tate curve is the value of `ΔFormal`**
-(sorry node — the product formula, Silverman ATAEC V.3.1(b)): the
-discriminant of `y² + xy = x³ + a₄(q)x + a₆(q)` is
-`q·∏(1 − qⁿ)²⁴`. All other `q`-expansion identities (`c₄`, `c₆`) are
-PROVEN; this is the remaining combinatorial core (equivalently, in
-residue characteristic `≠ 2, 3`, the formal Jacobi identity
-`c₄Formal³ − c₆Formal² = 1728·ΔFormal`). -/
+(derived from the formal identity leaf by the evaluation ring
+homomorphism): the discriminant of `y² + xy = x³ + a₄(q)x + a₆(q)` is
+`q·∏(1 − qⁿ)²⁴`. -/
 theorem WeierstrassCurve.Δ_tateCurve_eq_evalInt (q : k)
     (hq : valuation k q < 1) :
-    (tateCurve q).Δ = TateCurve.evalInt q TateCurve.ΔFormal :=
-  sorry
+    (tateCurve q).Δ = TateCurve.evalInt q TateCurve.ΔFormal := by
+  have hΔeq : (tateCurve q).Δ =
+      -(tateA₆ q) + (tateA₄ q) ^ 2 - 64 * (tateA₄ q) ^ 3 -
+        432 * (tateA₆ q) ^ 2 + 72 * (tateA₄ q) * (tateA₆ q) := by
+    simp only [tateCurve, WeierstrassCurve.Δ, WeierstrassCurve.b₂,
+      WeierstrassCurve.b₄, WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+    ring
+  rw [hΔeq, ← TateCurve.ΔFormal_eq]
+  -- push the evaluation through the polynomial combination
+  set A : k := TateCurve.evalInt q TateCurve.a₄Formal with hA
+  set B : k := TateCurve.evalInt q TateCurve.a₆Formal with hB
+  have hA' : tateA₄ q = A := tateA₄_eq_evalInt q hq
+  have hB' : tateA₆ q = B := tateA₆_eq_evalInt q hq
+  have hexp : (-TateCurve.a₆Formal + TateCurve.a₄Formal ^ 2 -
+      64 * TateCurve.a₄Formal ^ 3 - 432 * TateCurve.a₆Formal ^ 2 +
+      72 * TateCurve.a₄Formal * TateCurve.a₆Formal) =
+      ((-1 : ℤ) : ℤ⟦X⟧) * TateCurve.a₆Formal +
+      TateCurve.a₄Formal ^ 2 +
+      ((-64 : ℤ) : ℤ⟦X⟧) * TateCurve.a₄Formal ^ 3 +
+      ((-432 : ℤ) : ℤ⟦X⟧) * TateCurve.a₆Formal ^ 2 +
+      ((72 : ℤ) : ℤ⟦X⟧) * (TateCurve.a₄Formal * TateCurve.a₆Formal) := by
+    push_cast
+    ring
+  rw [hexp]
+  rw [TateCurve.evalInt_add (TateCurve.summable_evalInt q hq _)
+    (TateCurve.summable_evalInt q hq _)]
+  rw [TateCurve.evalInt_add (TateCurve.summable_evalInt q hq _)
+    (TateCurve.summable_evalInt q hq _)]
+  rw [TateCurve.evalInt_add (TateCurve.summable_evalInt q hq _)
+    (TateCurve.summable_evalInt q hq _)]
+  rw [TateCurve.evalInt_add (TateCurve.summable_evalInt q hq _)
+    (TateCurve.summable_evalInt q hq _)]
+  rw [TateCurve.evalInt_intCast_mul q, TateCurve.evalInt_intCast_mul q,
+    TateCurve.evalInt_intCast_mul q, TateCurve.evalInt_intCast_mul q,
+    TateCurve.evalInt_pow q hq, TateCurve.evalInt_pow q hq,
+    TateCurve.evalInt_pow q hq, TateCurve.evalInt_mul q hq]
+  rw [hA', hB', ← hA, ← hB]
+  push_cast
+  ring
 
 open PowerSeries in
 set_option warn.sorry false in
