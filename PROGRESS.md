@@ -1665,28 +1665,24 @@ entries file). To add/remove/annotate a node, edit
                                               χ₃ ≡ 1 mod 3 (PadicInt.ker_toZModPow), and the char-3
                                               algebraMap kills the 3-divisible part. With it,
                                               quotCharacter_inertia_two_ker audits fully clean too.
-                                            - ❌· `localInertia_two_eq_map_padic` — the completion bridge (sorry node; restated up to
-                                              conjugacy 2026-07-18 — exact image equality was unprovable,
-                                              the two inertias sit at different places of ℚᵃˡᵍ; consumer
-                                              absorbs the conjugator by character conj-invariance).
-                                              FULL DESIGN (recorded 2026-07-18): (1) prime-cast:
-                                              padicEquiv v₂ lands in ℚ_[primesEquiv v₂]; transport to
-                                              ℚ_[2] via natGenerator_toHeightOneSpectrum (Subtype.ext) —
-                                              gives E : adicCompletion ℚ v₂ ≃ ℚ_[2]. (2) τ := 
-                                              absoluteGaloisGroup.map E.symm σ : Γ ℚ_[2], with the
-                                              lift_map square ι₃ (τ y) = σ (ι₃ y) for
-                                              ι₃ := AlgebraicClosure.map E.symm. (3) τ ∈ inertia(Z2bar):
-                                              ι₃ maps Z2bar into IntegralClosure 𝒪ᵥ₂ Kᵥ₂ᵃˡᵍ with
-                                              𝔪 ↔ 𝔪 (spectral-norm compatibility of the isometric E;
-                                              FreyConditions has spectral-norm invariance patterns), so
-                                              σ-inertia transports. (4) the conjugator: give Kᵥ₂ᵃˡᵍ the
-                                              ℚᵃˡᵍ-algebra structure via ι₁ := AlgebraicClosure.map
-                                              (algebraMap ℚ Kᵥ₂); then mathlib's Normal.algHomEquivAut
-                                              (Normal ℚ ℚᵃˡᵍ) applied to ι₃ ∘ ι₂ : ℚᵃˡᵍ →ₐ[ℚ] Kᵥ₂ᵃˡᵍ
-                                              yields c ∈ Γ ℚ with ι₃ ∘ ι₂ = ι₁ ∘ c. (5) the square:
-                                              pointwise via ι₁-injectivity: ι₁ ((map aᵥ σ) x) = σ (ι₁ x)
-                                              and ι₁ ((c · map a₂ τ · c⁻¹) x) = ι₃ι₂ (mapτ (c⁻¹x)) =
-                                              σ (ι₃ι₂ (c⁻¹ x)) = σ (ι₁ x).
+                                            - ✅· `localInertia_two_eq_map_padic` — the completion bridge — FULLY PROVEN 2026-07-18, audit
+                                              [propext, Classical.choice, Quot.sound], exactly along the
+                                              recorded five-step design: (1) E : adicCompletion ℚ v₂ ≃A[ℚ]
+                                              ℚ_[2] from padicEquiv, packaged with the integers-compat
+                                              hEint (padicEquiv_bijOn + subring membership; prime-cast via
+                                              a Subtype-packaged norm-preserving transport with
+                                              Subsingleton-subst of Fact instances; the rat-algebra diamond
+                                              contained by scoped letI + pair-transport); (2) τ = the
+                                              conjugation of σ through the bijective ι₃ =
+                                              AlgebraicClosure.map E.symm (algHom_bijective on the
+                                              composite), transport square definitional; (3) inertia
+                                              membership: spectral-norm ≤ 1 ⇒ minpoly coefficients lift to
+                                              PadicInt.subring 2 (vendored proof adapted), transported by
+                                              codRestrict ring homs, nonunits pushed forward (IsUnit.map);
+                                              (4) the conjugator from Normal.algHomEquivAut; (5) the final
+                                              square pointwise through injective ι₁, lift_map over ℚ only.
+                                              With it, quotCharacter_unramified_at_two audits fully clean:
+                                              the ENTIRE at-2 half of the mod-3 analysis is closed.
                                     - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible` — mod-3 reducibility — DERIVED 2026-07-18: if no stable
                                       submodule then irreducible (Slop.OddRep.isIrreducible_iff_forall);
                                       complex conjugation is an involution with det = χ₃(c) = -1 and

@@ -1584,9 +1584,8 @@ theorem cyclotomicCharacter_algebraMap_eq_one_of_inertia_two
   ring
 
 set_option backward.isDefEq.respectTransparency false in
-set_option maxHeartbeats 1000000 in
-set_option warn.sorry false in
-/-- **The inertia bridge at `2`** (sorry node — completion
+set_option maxHeartbeats 8000000 in
+/-- **The inertia bridge at `2`** (FULLY PROVEN 2026-07-18 — completion
 bookkeeping, stated up to conjugacy since the two local worlds involve
 different choices of embedding of `ℚᵃˡᵍ`): every element of the local
 inertia group at the place `prime_two` (phrased at the adic completion
@@ -1725,9 +1724,139 @@ theorem localInertia_two_eq_map_padic
     intro y
     rw [← hι₃e_apply, hτ_apply, RingEquiv.apply_symm_apply, hι₃e_apply]
   refine ⟨τ, ?_, ?_⟩
-  · -- (3) inertia membership (sorry: spectral-norm compatibility of the
-    -- isometric `E` transports the inertia condition through `ι₃`)
-    sorry
+  · -- (3) inertia membership: `ι₃` maps `Z2bar` into the integral
+    -- closure (integral equations transport through `E.symm` on
+    -- coefficients), and nonunits transport forward through the induced
+    -- ring hom, so the inertia condition follows from `hσ`
+    rw [AddSubgroup.mem_inertia]
+    intro x
+    have hEsymm_int : ∀ a : ℚ_[2], ‖a‖ ≤ 1 →
+        (E.symm : ℚ_[2] →+* IsDedekindDomain.HeightOneSpectrum.adicCompletion
+          ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) a ∈
+        IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat := by
+      intro a ha
+      refine (hEint _).mpr ?_
+      rw [show E ((E.symm : ℚ_[2] →+* _) a) = a from E.apply_symm_apply a]
+      exact ha
+    -- the coefficient transport hom on the `2`-adic unit ball
+    set Es : ℚ_[2] →+* IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat :=
+      (E.symm : ℚ_[2] →+*
+        IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) with hEs
+    set φ : (PadicInt.subring 2) →+*
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+      RingHom.codRestrict (Es.comp (PadicInt.subring 2).subtype)
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat).toSubring
+        (fun a => hEsymm_int a.1 a.2) with hφ
+    -- `ι₃` maps `Z2bar` into the integral closure of `𝒪ᵥ₂`
+    have hmemIC : ∀ w : AlgebraicClosure ℚ_[2], w ∈ Z2bar →
+        IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers
+          ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) (ι₃ w) := by
+      intro w hw
+      have hnorm : spectralNorm ℚ_[2] (AlgebraicClosure ℚ_[2]) w ≤ 1 := hw
+      -- the minimal polynomial has `2`-adic integer coefficients (as in
+      -- `isIntegral_of_spectralNorm_le_one`)
+      have hlift : minpoly ℚ_[2] w ∈ Polynomial.lifts
+          (PadicInt.subring 2).subtype := by
+        refine (Polynomial.lifts_iff_coeff_lifts _).mpr fun i ↦ ?_
+        have hterm := (ciSup_le_iff (spectralValueTerms_bddAbove ..)).mp
+          hnorm i
+        simp only [spectralValueTerms] at hterm
+        split_ifs at hterm with h
+        · conv_rhs at hterm => rw [← Real.one_rpow
+            (1 / (↑(minpoly ℚ_[2] w).natDegree - ↑i) : ℝ)]
+          rw [Real.rpow_le_rpow_iff (by positivity) (by positivity)
+            (by aesop)] at hterm
+          exact ⟨⟨_, hterm⟩, rfl⟩
+        obtain h | h := (le_of_not_gt h).eq_or_lt
+        · exact ⟨1, by
+            rw [map_one, ← h, (minpoly.monic
+              (Algebra.IsAlgebraic.isAlgebraic w).isIntegral).coeff_natDegree]⟩
+        · exact ⟨0, by
+            rw [map_zero, Polynomial.coeff_eq_zero_of_natDegree_lt h]⟩
+      obtain ⟨P, hP, -, hP'⟩ := Polynomial.lifts_and_degree_eq_and_monic
+        hlift (minpoly.monic (Algebra.IsAlgebraic.isAlgebraic w).isIntegral)
+      -- transport the integral equation through `φ`
+      refine ⟨P.map φ, hP'.map φ, ?_⟩
+      rw [Polynomial.eval₂_map]
+      have hcomp : ((algebraMap
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+            ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).comp φ) =
+          (ι₃ : AlgebraicClosure ℚ_[2] →+* _).comp
+            ((algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2])).comp
+              (PadicInt.subring 2).subtype) := by
+        ext a
+        show algebraMap _ _ (φ a) =
+          ι₃ (algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2]) a.1)
+        rw [hι₃, AlgebraicClosure.map_algebraMap]
+        rw [IsScalarTower.algebraMap_apply
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+            ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) (φ a)]
+        rfl
+      rw [hcomp]
+      rw [show Polynomial.eval₂ ((ι₃ : AlgebraicClosure ℚ_[2] →+* _).comp
+          ((algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2])).comp
+            (PadicInt.subring 2).subtype)) (ι₃ w) P =
+        ι₃ (Polynomial.eval₂ ((algebraMap ℚ_[2]
+          (AlgebraicClosure ℚ_[2])).comp (PadicInt.subring 2).subtype) w P)
+        from (Polynomial.hom_eval₂ _ _ _ _).symm]
+      have hev : Polynomial.eval₂ ((algebraMap ℚ_[2]
+          (AlgebraicClosure ℚ_[2])).comp (PadicInt.subring 2).subtype) w P
+          = 0 := by
+        rw [← Polynomial.eval₂_map, hP]
+        rw [← Polynomial.aeval_def, minpoly.aeval]
+      rw [hev, map_zero]
+    -- the induced ring hom `Z2bar →+* IntegralClosure`
+    set Φ : Z2bar →+* IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+          ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) :=
+      RingHom.codRestrict ((ι₃ : AlgebraicClosure ℚ_[2] →+* _).comp
+        Z2bar.subtype)
+        (integralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toSubring
+        (fun z => hmemIC z.1 z.2) with hΦ
+    -- transport the inertia condition
+    set y : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+          ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) :=
+      ⟨ι₃ x.1, hmemIC x.1 x.2⟩ with hy
+    have hIC := (AddSubgroup.mem_inertia.mp hσ) y
+    rw [Submodule.mem_toAddSubgroup, IsLocalRing.mem_maximalIdeal,
+      mem_nonunits_iff] at hIC
+    rw [Submodule.mem_toAddSubgroup, IsLocalRing.mem_maximalIdeal,
+      mem_nonunits_iff]
+    intro hu
+    apply hIC
+    have hΦeq : Φ (τ • x - x) = σ • y - y := by
+      apply Subtype.ext
+      have h1 : (Φ (τ • x - x)).1 =
+          ι₃ (τ (x : AlgebraicClosure ℚ_[2]) -
+            (x : AlgebraicClosure ℚ_[2])) := rfl
+      have h2 : (σ • y - y).1 = σ y.1 - y.1 := by
+        rw [show (σ • y - y).1 = (σ • y).1 - y.1 from rfl,
+          IntegralClosure.coe_smul]
+        rfl
+      rw [h1, h2, map_sub, hsquare]
+    rw [← hΦeq]
+    exact hu.map Φ
   · -- (4) the conjugator, from `Normal.algHomEquivAut`
     set ι₁ := AlgebraicClosure.map ((algebraMap ℚ
       (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
