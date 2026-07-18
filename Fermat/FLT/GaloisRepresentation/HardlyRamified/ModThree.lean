@@ -22,6 +22,7 @@ import Mathlib.Topology.Instances.Complex
 public import Fermat.FLT.KnownIn1980s.PGL2.Defs
 import Mathlib.LinearAlgebra.Complex.FiniteDimensional
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
+import Mathlib.LinearAlgebra.Eigenspace.Zero
 import Mathlib.RingTheory.RootsOfUnity.AlgebraicallyClosed
 
 /-!
@@ -290,23 +291,28 @@ theorem finrank_eigenspace_one_of_involution {k : Type u} [Field k]
     exact hone_ne hdet.symm
   omega
 
-set_option warn.sorry false in
-/-- **The Serre elimination, semidirect case** (sorry node — purely
-representation-theoretic; attack recorded in PROGRESS): the left factor
-gives a nontrivial normal exponent-3 subgroup `N` of `π.range`; its
-`Γ ℚ`-preimage acts by scalar-times-unipotent operators (cube central ⇒
-`(σρ g − μ)² = 0` in char `3` on a `2`-dim space); either all are scalar
-(then `N` is trivial in `PGL₂`, contradiction) or some nonscalar `g₀`
-has a `1`-dimensional eigenline `W` shared by all nonscalar elements of
-the preimage (central commutators are `±1`-scalars, `−1` impossible),
-and normality makes `W` a `Γ ℚ`-stable line — contradicting absolute
-irreducibility. -/
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **The Serre elimination, semidirect case** (PROVEN 2026-07-18 —
+purely representation-theoretic): the left factor gives a nontrivial
+normal exponent-3 subgroup of `π.range`; its `Γ ℚ`-preimage (the kernel
+of the right-component character `r`) acts by scalar-times-unipotent
+operators (the cube is central hence scalar by irreducibility, a cube
+root and the char-3 Frobenius give `(σρ g − μ)² = 0`, with `μ ≠ 0` by
+invertibility); either every kernel element is scalar (then the left
+factor is trivial in `PGL₂`, contradicting `m ≥ 1`) or some nonscalar
+`g₀` has a `1`-dimensional eigenline `W` (rank–nullity) shared by every
+nonscalar kernel element (the unipotent parameter is unique, central
+commutator scalars are `±1` by determinants, and `−1` is impossible in
+characteristic `3` by expanding the two nilpotency relations), so
+normality of the kernel makes `W` a `Γ ℚ`-stable line — contradicting
+absolute irreducibility. -/
 theorem serre_elimination_semidirect {k : Type u} [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
-    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (_hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
     (habs : Slop.OddRep.IsAbsolutelyIrreducible
       (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V))
     (b : Module.Basis (Fin 2) (AlgebraicClosure k)
@@ -323,8 +329,587 @@ theorem serre_elimination_semidirect {k : Type u} [Finite k] [Field k]
     (φ : Multiplicative (ZMod t) →* MulAut (Multiplicative (Fin m → ZMod 3)))
     (hiso : Nonempty (π.range ≃*
       (Multiplicative (Fin m → ZMod 3)) ⋊[φ] Multiplicative (ZMod t))) :
-    False :=
-  sorry
+    False := by
+  classical
+  obtain ⟨eiso⟩ := hiso
+  haveI h3 : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
+  set L := AlgebraicClosure k with hL
+  set σρ : Representation L (Γ ℚ) (L ⊗[k] V) :=
+    Slop.OddRep.baseChange L (MonoidHomClass.toMonoidHom ρ) with hσρ
+  have hirr : σρ.IsIrreducible := habs
+  haveI : Module.Finite L (L ⊗[k] V) := Module.Finite.base_change k L V
+  have hfr2 : Module.finrank L (L ⊗[k] V) = 2 := by
+    rw [Module.finrank_baseChange]
+    exact Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
+  haveI : Nontrivial (L ⊗[k] V) :=
+    Module.nontrivial_of_finrank_pos (R := L) (by omega)
+  obtain ⟨hnt, hsub⟩ := (Slop.OddRep.isIrreducible_iff_forall σρ).mp hirr
+  -- characteristic `3` in `L` and in the endomorphism ring
+  haveI hchark : CharP k 3 := charP_three_of_finite_padicIntThree_algebra
+  haveI hcharL : CharP L 3 :=
+    charP_of_injective_algebraMap (algebraMap k L).injective 3
+  have hEnd_ne : (1 : Module.End L (L ⊗[k] V)) ≠ 0 := by
+    obtain ⟨v, hv⟩ := exists_ne (0 : L ⊗[k] V)
+    intro h1
+    exact hv (by simpa using congrFun (congrArg DFunLike.coe h1) v)
+  haveI hcharEnd : CharP (Module.End L (L ⊗[k] V)) 3 := by
+    refine charP_of_injective_algebraMap (R := L) ?_ 3
+    intro a c hac
+    obtain ⟨v, hv⟩ := exists_ne (0 : L ⊗[k] V)
+    have h := congrFun (congrArg DFunLike.coe hac) v
+    simp only [Module.algebraMap_end_apply] at h
+    have h2 : (a - c) • v = 0 := by
+      have h3 := sub_smul a c v
+      rw [h, sub_self] at h3
+      exact h3
+    rcases smul_eq_zero.mp h2 with h' | h'
+    · exact sub_eq_zero.mp h'
+    · exact absurd h' hv
+  -- transport toolkit
+  have hmap_inj : ∀ M N : Matrix (Fin 2) (Fin 2) (AlgebraicClosure k),
+      M.map e = N.map e → M = N := by
+    intro M N h
+    ext i j
+    exact e.injective (congrFun (congrFun (congrArg Matrix.of.symm h) i) j)
+  have hmulM : ∀ gg₁ gg₂ : Γ ℚ, LinearMap.toMatrix b b (σρ gg₁) *
+      LinearMap.toMatrix b b (σρ gg₂) =
+      LinearMap.toMatrix b b (σρ gg₁ * σρ gg₂) :=
+    fun gg₁ gg₂ => (LinearMap.toMatrix_comp b b b _ _).symm
+  -- σρ takes values in units
+  have hunit : ∀ g : Γ ℚ, σρ g * σρ g⁻¹ = 1 := by
+    intro g
+    rw [← map_mul, mul_inv_cancel, map_one]
+  -- commuting with the whole action forces a scalar
+  have hscalar_of_comm : ∀ T : Module.End L (L ⊗[k] V),
+      (∀ h : Γ ℚ, T * σρ h = σρ h * T) → ∃ ν : L, T = ν • 1 := by
+    intro T hT
+    obtain ⟨ν, hν⟩ := Module.End.exists_eigenvalue T
+    have hEinv : ∀ h : Γ ℚ, ∀ w ∈ Module.End.eigenspace T ν,
+        σρ h w ∈ Module.End.eigenspace T ν := by
+      intro h w hw
+      rw [Module.End.mem_eigenspace_iff] at hw ⊢
+      have hc := congrFun (congrArg DFunLike.coe (hT h)) w
+      simp only [Module.End.mul_apply] at hc
+      rw [hc, hw, map_smul]
+    rcases hsub (Module.End.eigenspace T ν) hEinv with hE | hE
+    · exact absurd hE hν
+    · refine ⟨ν, LinearMap.ext fun v => ?_⟩
+      have hv : v ∈ Module.End.eigenspace T ν := hE ▸ Submodule.mem_top
+      rw [Module.End.mem_eigenspace_iff] at hv
+      simpa using hv
+  -- a `g` whose projective class is trivial acts by a scalar
+  have hscalar_of_pi_one : ∀ g : Γ ℚ, π g = 1 → ∃ ν : L, σρ g = ν • 1 := by
+    intro g hg
+    refine hscalar_of_comm (σρ g) fun h => ?_
+    -- the matrix of `g` is central, so it commutes with the matrix of `h`
+    have hcen : (u g : GL (Fin 2) (Dickson.K 3)) ∈
+        Subgroup.center (GL (Fin 2) (Dickson.K 3)) := by
+      rw [← QuotientGroup.ker_mk' (Subgroup.center
+        (GL (Fin 2) (Dickson.K 3))), MonoidHom.mem_ker]
+      exact ((hπ g).symm.trans hg : _)
+    have hcommGL : u g * u h = u h * u g :=
+      (Subgroup.mem_center_iff.mp hcen (u h)).symm
+    have hval := congrArg Units.val hcommGL
+    rw [Units.val_mul, Units.val_mul, hu, hu, ← Matrix.map_mul,
+      ← Matrix.map_mul] at hval
+    have hmat := hmap_inj _ _ hval
+    rw [hmulM, hmulM] at hmat
+    exact (LinearMap.toMatrix b b).injective hmat
+  -- conversely: a scalar action has trivial projective class
+  have hpi_one_of_scalar : ∀ g : Γ ℚ, (∃ ν : L, σρ g = ν • 1) → π g = 1 := by
+    rintro g ⟨ν, hν⟩
+    have hval : ((u g : GL (Fin 2) (Dickson.K 3)) :
+        Matrix (Fin 2) (Fin 2) (Dickson.K 3)) = e ν • 1 := by
+      rw [hu, hν, map_smul, LinearMap.toMatrix_one]
+      ext i j
+      by_cases hij : i = j <;>
+        simp [Matrix.map_apply, Matrix.smul_apply, hij]
+    have hcen : (u g : GL (Fin 2) (Dickson.K 3)) ∈
+        Subgroup.center (GL (Fin 2) (Dickson.K 3)) := by
+      refine Subgroup.mem_center_iff.mpr fun y => ?_
+      apply Units.ext
+      rw [Units.val_mul, Units.val_mul, hval]
+      rw [smul_mul_assoc, one_mul, mul_smul_comm, mul_one]
+    rw [hπ g]
+    have : QuotientGroup.mk' (Subgroup.center
+        (GL (Fin 2) (Dickson.K 3))) (u g) = 1 := by
+      rw [← MonoidHom.mem_ker, QuotientGroup.ker_mk']
+      exact hcen
+    exact this
+  -- the kernel of the right component: the `Γ ℚ`-preimage of the
+  -- normal elementary abelian `3`-subgroup
+  set r : Γ ℚ →* Multiplicative (ZMod t) :=
+    (SemidirectProduct.rightHom.comp eiso.toMonoidHom).comp
+      π.rangeRestrict with hr
+  -- elements of the kernel cube to a central class
+  have hcube : ∀ g : Γ ℚ, g ∈ r.ker → (π g) ^ 3 = 1 := by
+    intro g hg
+    have hy : SemidirectProduct.rightHom (eiso (π.rangeRestrict g)) = 1 := hg
+    have hy3 : (eiso (π.rangeRestrict g)) ^ 3 = 1 := by
+      have hmem : eiso (π.rangeRestrict g) ∈
+          (SemidirectProduct.inl (φ := φ)).range := by
+        rw [SemidirectProduct.range_inl_eq_ker_rightHom]
+        exact hy
+      obtain ⟨n, hn⟩ := hmem
+      rw [← hn, ← map_pow]
+      have hn3 : n ^ 3 = 1 := by
+        apply Multiplicative.toAdd.injective
+        rw [toAdd_pow, toAdd_one]
+        funext i
+        show (3 : ℕ) • Multiplicative.toAdd n i = 0
+        rw [nsmul_eq_mul,
+          show ((3 : ℕ) : ZMod 3) = 0 from ZMod.natCast_self 3, zero_mul]
+      rw [hn3, map_one]
+    have hx3 : (π.rangeRestrict g) ^ 3 = 1 := by
+      apply eiso.injective
+      rw [map_pow, hy3, map_one]
+    have := congrArg Subtype.val hx3
+    simpa using this
+  -- kernel elements act by scalar-times-unipotent operators
+  have hcube_scalar : ∀ g : Γ ℚ, g ∈ r.ker →
+      ∃ ν : L, (σρ g) ^ 3 = ν • 1 := by
+    intro g hg
+    have hpi3 : π (g ^ 3) = 1 := by rw [map_pow]; exact hcube g hg
+    obtain ⟨ν, hν⟩ := hscalar_of_pi_one (g ^ 3) hpi3
+    exact ⟨ν, by rw [← map_pow]; exact hν⟩
+  -- the unipotent structure: `(σρ g − μ)² = 0` with `μ³ = ν`, `μ ≠ 0`
+  have hunip : ∀ g : Γ ℚ, g ∈ r.ker →
+      ∃ μ : L, μ ≠ 0 ∧ (σρ g - μ • 1) ^ 2 = 0 := by
+    intro g hg
+    obtain ⟨ν, hν⟩ := hcube_scalar g hg
+    obtain ⟨μ, hμ⟩ := IsAlgClosed.exists_pow_nat_eq (k := L) ν
+      (n := 3) (by norm_num)
+    have hcomm : Commute (σρ g) (μ • (1 : Module.End L (L ⊗[k] V))) := by
+      unfold Commute SemiconjBy
+      rw [mul_smul_comm, smul_mul_assoc, mul_one, one_mul]
+    have hnil3 : (σρ g - μ • 1) ^ 3 = 0 := by
+      have hfrob := sub_pow_char_of_commute (p := 3)
+        (x := σρ g) (y := μ • (1 : Module.End L (L ⊗[k] V))) hcomm
+      rw [hfrob, hν, smul_pow, one_pow, hμ, sub_self]
+    have hnil2 : (σρ g - μ • 1) ^ 2 = 0 := by
+      have hnil : IsNilpotent (σρ g - μ • 1) := ⟨3, hnil3⟩
+      have hchar := IsNilpotent.charpoly_eq_X_pow_finrank hnil
+      have haev := LinearMap.aeval_self_charpoly (σρ g - μ • 1)
+      rw [hchar, hfr2] at haev
+      simpa using haev
+    refine ⟨μ, ?_, hnil2⟩
+    -- `μ ≠ 0`: otherwise `σρ g` is nilpotent yet invertible
+    intro hμ0
+    rw [hμ0] at hμ
+    have hν0 : ν = 0 := by rw [← hμ]; ring
+    rw [hν0, zero_smul] at hν
+    have hcomm' : Commute (σρ g) (σρ g⁻¹) := by
+      show σρ g * σρ g⁻¹ = σρ g⁻¹ * σρ g
+      rw [← map_mul, ← map_mul, mul_inv_cancel, inv_mul_cancel]
+    have h1 : (1 : Module.End L (L ⊗[k] V)) = 0 := by
+      have h2 : (σρ g) ^ 3 * (σρ g⁻¹) ^ 3 = 1 := by
+        rw [← hcomm'.mul_pow, hunit, one_pow]
+      rw [← h2, hν, zero_mul]
+    exact hEnd_ne h1
+  -- Case split: either every kernel element is scalar, or some is not
+  by_cases hallscalar : ∀ g : Γ ℚ, g ∈ r.ker → ∃ ν : L, σρ g = ν • 1
+  · -- then the elementary abelian subgroup is trivial in `PGL₂`
+    -- pick a nontrivial element of the left factor
+    haveI : Nonempty (Fin m) := Fin.pos_iff_nonempty.mp (by omega)
+    haveI : Nontrivial (Fin m → ZMod 3) := inferInstance
+    obtain ⟨n₀, hn₀⟩ := exists_ne (1 : Multiplicative (Fin m → ZMod 3))
+    obtain ⟨g₀, hg₀⟩ := π.rangeRestrict_surjective
+      (eiso.symm (SemidirectProduct.inl n₀))
+    have hg₀ker : g₀ ∈ r.ker := by
+      show SemidirectProduct.rightHom (eiso (π.rangeRestrict g₀)) = 1
+      rw [hg₀, MulEquiv.apply_symm_apply]
+      exact SemidirectProduct.rightHom_inl n₀
+    have hπg₀ : π g₀ ≠ 1 := by
+      intro hone
+      have hx1 : π.rangeRestrict g₀ = 1 := by
+        apply Subtype.ext
+        simpa using hone
+      rw [hx1] at hg₀
+      have hinl1 : SemidirectProduct.inl (φ := φ) n₀ = 1 := by
+        have := congrArg eiso hg₀
+        rw [MulEquiv.apply_symm_apply, map_one] at this
+        exact this.symm
+      exact hn₀ (SemidirectProduct.inl_injective (by rw [hinl1, map_one]))
+    exact hπg₀ (hpi_one_of_scalar g₀ (hallscalar g₀ hg₀ker))
+  · -- some kernel element is nonscalar: its eigenline is stable
+    push Not at hallscalar
+    obtain ⟨g₀, hg₀ker, hg₀ns'⟩ := hallscalar
+    have hg₀ns : ¬ ∃ ν : L, σρ g₀ = ν • 1 := by
+      rintro ⟨ν, hν⟩
+      exact hg₀ns' ν hν
+    obtain ⟨μ₀, hμ₀ne, hμ₀nil⟩ := hunip g₀ hg₀ker
+    set A := σρ g₀ with hA
+    set W := LinearMap.ker (A - μ₀ • 1) with hW
+    -- a nonzero square-nilpotent operator on a `2`-dimensional space has
+    -- a `1`-dimensional kernel
+    have hline : ∀ T : Module.End L (L ⊗[k] V), T ≠ 0 → T ^ 2 = 0 →
+        Module.finrank L (LinearMap.ker T) = 1 := by
+      intro T hTne hT2
+      have hrange : LinearMap.range T ≤ LinearMap.ker T := by
+        rintro _ ⟨v, rfl⟩
+        rw [LinearMap.mem_ker]
+        have := congrFun (congrArg DFunLike.coe hT2) v
+        simpa [pow_two] using this
+      have hrn := LinearMap.finrank_range_add_finrank_ker T
+      rw [hfr2] at hrn
+      have hrpos : 0 < Module.finrank L (LinearMap.range T) := by
+        rcases Nat.eq_zero_or_pos (Module.finrank L (LinearMap.range T))
+          with h0 | hp
+        · exact absurd (LinearMap.range_eq_bot.mp
+            (Submodule.finrank_eq_zero.mp h0)) hTne
+        · exact hp
+      have hle := Submodule.finrank_mono hrange
+      omega
+    -- the eigenline is one-dimensional
+    have hNne : A - μ₀ • 1 ≠ 0 := by
+      intro h0
+      exact hg₀ns ⟨μ₀, sub_eq_zero.mp h0⟩
+    have hWfr : Module.finrank L W = 1 := by
+      rw [hW]
+      exact hline _ hNne hμ₀nil
+    -- projective classes of kernel elements commute (the left factor of
+    -- the semidirect product is abelian)
+    have hπcomm : ∀ g g' : Γ ℚ, g ∈ r.ker → g' ∈ r.ker →
+        π g * π g' = π g' * π g := by
+      intro g g' hg hg'
+      have hinl : ∀ gg : Γ ℚ, gg ∈ r.ker → ∃ n,
+          SemidirectProduct.inl (φ := φ) n = eiso (π.rangeRestrict gg) := by
+        intro gg hgg
+        have hmem : eiso (π.rangeRestrict gg) ∈
+            (SemidirectProduct.inl (φ := φ)).range := by
+          rw [SemidirectProduct.range_inl_eq_ker_rightHom]
+          exact hgg
+        exact hmem
+      obtain ⟨n, hn⟩ := hinl g hg
+      obtain ⟨n', hn'⟩ := hinl g' hg'
+      have hx : π.rangeRestrict g * π.rangeRestrict g' =
+          π.rangeRestrict g' * π.rangeRestrict g := by
+        apply eiso.injective
+        rw [map_mul, map_mul, ← hn, ← hn', ← map_mul, ← map_mul,
+          mul_comm n n']
+      have := congrArg Subtype.val hx
+      simpa using this
+  -- the scalar factor of a commutator of kernel elements is `±1`,
+    -- and `-1` is impossible; so kernel elements commute with `A`
+    have hcommA : ∀ g : Γ ℚ, g ∈ r.ker → (¬ ∃ ν : L, σρ g = ν • 1) →
+        ∀ μ : L, (σρ g - μ • 1) ^ 2 = 0 → μ ≠ 0 →
+        σρ g * A = A * σρ g := by
+      intro g hg hgns μ hμnil hμne
+      set B := σρ g with hB
+      -- the commutator acts by a scalar `λ'`
+      have hπc : π (g * g₀ * g⁻¹ * g₀⁻¹) = 1 := by
+        rw [map_mul, map_mul, map_mul, map_inv, map_inv]
+        rw [show π g * π g₀ = π g₀ * π g from hπcomm g g₀ hg hg₀ker]
+        group
+      obtain ⟨lam, hlam⟩ := hscalar_of_pi_one _ hπc
+      -- `B A = lam • (A B)`
+      have hBA : B * A = lam • (A * B) := by
+        have hc : σρ (g * g₀ * g⁻¹ * g₀⁻¹) = B * A * σρ g⁻¹ * σρ g₀⁻¹ := by
+          rw [map_mul, map_mul, map_mul]
+        rw [hc] at hlam
+        have h1 : σρ g⁻¹ * B = 1 := by
+          rw [hB, ← map_mul, inv_mul_cancel, map_one]
+        have h2 : σρ g₀⁻¹ * A = 1 := by
+          rw [hA, ← map_mul, inv_mul_cancel, map_one]
+        calc B * A = B * A * σρ g⁻¹ * σρ g₀⁻¹ * (A * B) * 1 * 1 := by
+              have e1 : B * A * σρ g⁻¹ * σρ g₀⁻¹ * (A * B) =
+                  B * A * σρ g⁻¹ * ((σρ g₀⁻¹ * A) * B) := by
+                simp only [mul_assoc]
+              rw [mul_one, mul_one, e1, h2, one_mul]
+              have e2 : B * A * σρ g⁻¹ * B = B * A * (σρ g⁻¹ * B) := by
+                simp only [mul_assoc]
+              rw [e2, h1, mul_one]
+          _ = lam • (A * B) := by
+              rw [mul_one, mul_one, hlam, smul_mul_assoc, one_mul]
+      -- `lam² = 1` via determinants
+      have hdetAB : LinearMap.det (A * B) ≠ 0 := by
+        have hAB : A * B = σρ (g₀ * g) := by rw [map_mul, hA, hB]
+        have hinv : σρ (g₀ * g) * σρ ((g₀ * g)⁻¹) = 1 := by
+          rw [← map_mul, mul_inv_cancel, map_one]
+        intro h0
+        have hd := congrArg LinearMap.det hinv
+        rw [map_mul, map_one, ← hAB, h0, zero_mul] at hd
+        exact zero_ne_one hd
+      have hlam2 : lam * lam = 1 := by
+        have hdet := congrArg LinearMap.det hBA
+        rw [LinearMap.det_smul, hfr2] at hdet
+        have hcommdet : LinearMap.det (B * A) = LinearMap.det (A * B) := by
+          rw [map_mul, map_mul, mul_comm]
+        rw [hcommdet] at hdet
+        have h1 : (1 : L) * LinearMap.det (A * B) =
+            lam ^ 2 * LinearMap.det (A * B) := by
+          rw [one_mul, ← hdet]
+        have h2 := mul_right_cancel₀ hdetAB h1
+        rw [pow_two] at h2
+        exact h2.symm
+      rcases mul_self_eq_one_iff.mp hlam2 with hl1 | hlm1
+      · rw [hl1, one_smul] at hBA
+        exact hBA
+      · -- `lam = -1` is impossible
+        exfalso
+        rw [hlm1] at hBA
+        -- conjugating `A` by `B` gives `-A`
+        have hBinv : B * σρ g⁻¹ = 1 := by
+          rw [hB, ← map_mul, mul_inv_cancel, map_one]
+        have hconjA : B * A * σρ g⁻¹ = -A := by
+          rw [hBA]
+          have e1 : (-1 : L) • (A * B) * σρ g⁻¹ =
+              (-1 : L) • (A * (B * σρ g⁻¹)) := by
+            rw [smul_mul_assoc, mul_assoc]
+          rw [e1, hBinv, mul_one]
+          exact neg_one_smul L A
+        -- `(-A - μ₀ • 1)² = 0` from conjugating the nilpotency of `A`
+        have hnegnil : (-A - μ₀ • 1) ^ 2 = 0 := by
+          rw [← hconjA]
+          have hfacB : B * A * σρ g⁻¹ - μ₀ • 1 =
+              B * (A - μ₀ • 1) * σρ g⁻¹ := by
+            have hdist : B * (A - μ₀ • 1) * σρ g⁻¹ =
+                B * A * σρ g⁻¹ - B * (μ₀ • 1) * σρ g⁻¹ := by
+              refine LinearMap.ext fun v => ?_
+              simp only [Module.End.mul_apply, LinearMap.sub_apply,
+                LinearMap.smul_apply, Module.End.one_apply, map_sub, map_smul]
+            rw [hdist]
+            congr 1
+            rw [mul_smul_comm, mul_one, smul_mul_assoc, hBinv]
+          rw [hfacB]
+          have hswap : σρ g⁻¹ * B = 1 := by
+            rw [hB, ← map_mul, inv_mul_cancel, map_one]
+          have hexp : (B * (A - μ₀ • 1) * σρ g⁻¹) ^ 2 =
+              B * ((A - μ₀ • 1) * (σρ g⁻¹ * B) * (A - μ₀ • 1)) * σρ g⁻¹ := by
+            rw [pow_two]
+            noncomm_ring
+          rw [hexp, hswap, mul_one, ← pow_two, hμ₀nil, mul_zero, zero_mul]
+        -- expand both nilpotency relations and subtract: `(4 μ₀) • A = 0`
+        have e1 : (A - μ₀ • 1) ^ 2 =
+            A * A - (2 * μ₀) • A + (μ₀ * μ₀) • 1 := by
+          rw [pow_two]
+          refine LinearMap.ext fun v => ?_
+          simp only [Module.End.mul_apply, LinearMap.sub_apply,
+            LinearMap.add_apply, LinearMap.smul_apply, Module.End.one_apply,
+            map_sub, map_smul]
+          module
+        have e2 : (-A - μ₀ • 1) ^ 2 =
+            A * A + (2 * μ₀) • A + (μ₀ * μ₀) • 1 := by
+          rw [pow_two]
+          refine LinearMap.ext fun v => ?_
+          simp only [Module.End.mul_apply, LinearMap.sub_apply,
+            LinearMap.add_apply, LinearMap.neg_apply, LinearMap.smul_apply,
+            Module.End.one_apply, map_sub, map_neg, map_smul]
+          module
+        have h5 : (A * A + (2 * μ₀) • A + (μ₀ * μ₀) • 1) -
+            (A * A - (2 * μ₀) • A + (μ₀ * μ₀) • 1) = 0 := by
+          rw [← e1, ← e2, hμ₀nil, hnegnil]
+          exact sub_self (0 : Module.End L (L ⊗[k] V))
+        have h6 : (A * A + (2 * μ₀) • A + (μ₀ * μ₀) • 1) -
+            (A * A - (2 * μ₀) • A + (μ₀ * μ₀) • 1) =
+            ((4 : L) * μ₀) • A := by
+          refine LinearMap.ext fun v => ?_
+          simp only [LinearMap.sub_apply, LinearMap.add_apply,
+            LinearMap.smul_apply, Module.End.one_apply, Module.End.mul_apply]
+          module
+        rw [h6] at h5
+        have h4 : ((4 : L) * μ₀) = μ₀ := by
+          have h3L : (3 : L) = 0 := by
+            exact_mod_cast CharP.cast_eq_zero L 3
+          linear_combination μ₀ * h3L
+        rw [h4] at h5
+        have hA0 : A = 0 := by
+          rcases smul_eq_zero.mp h5 with h' | h'
+          · exact absurd h' hμ₀ne
+          · exact h'
+        have hAinv : A * σρ g₀⁻¹ = 1 := by
+          rw [hA, ← map_mul, mul_inv_cancel, map_one]
+        rw [hA0, zero_mul] at hAinv
+        exact hEnd_ne hAinv.symm
+    -- key: any nonscalar kernel element has the same eigenline
+    have hshare : ∀ g : Γ ℚ, g ∈ r.ker → (¬ ∃ ν : L, σρ g = ν • 1) →
+        ∀ μ : L, (σρ g - μ • 1) ^ 2 = 0 →
+        LinearMap.ker (σρ g - μ • 1) = W := by
+      intro g hg hgns μ hμnil
+      -- `μ ≠ 0` (as for every kernel element)
+      obtain ⟨μ', hμ'ne, hμ'nil⟩ := hunip g hg
+      have hμμ' : μ = μ' := by
+        -- two square-nilpotent shifts of the same nonscalar operator
+        -- have equal parameters
+        by_contra hne
+        set B' := σρ g with hB'
+        have e1 : (B' - μ • 1) ^ 2 =
+            B' * B' - (2 * μ) • B' + (μ * μ) • 1 := by
+          rw [pow_two]
+          refine LinearMap.ext fun v => ?_
+          simp only [Module.End.mul_apply, LinearMap.sub_apply,
+            LinearMap.add_apply, LinearMap.smul_apply, Module.End.one_apply,
+            map_sub, map_smul]
+          module
+        have e2 : (B' - μ' • 1) ^ 2 =
+            B' * B' - (2 * μ') • B' + (μ' * μ') • 1 := by
+          rw [pow_two]
+          refine LinearMap.ext fun v => ?_
+          simp only [Module.End.mul_apply, LinearMap.sub_apply,
+            LinearMap.add_apply, LinearMap.smul_apply, Module.End.one_apply,
+            map_sub, map_smul]
+          module
+        have h5 : (B' * B' - (2 * μ) • B' + (μ * μ) • 1) -
+            (B' * B' - (2 * μ') • B' + (μ' * μ') • 1) = 0 := by
+          rw [← e1, ← e2, hμnil, hμ'nil]
+          exact sub_self (0 : Module.End L (L ⊗[k] V))
+        have h6 : (B' * B' - (2 * μ) • B' + (μ * μ) • 1) -
+            (B' * B' - (2 * μ') • B' + (μ' * μ') • 1) =
+            ((2 : L) * (μ' - μ)) • B' - ((μ' * μ' - μ * μ)) • 1 := by
+          refine LinearMap.ext fun v => ?_
+          simp only [LinearMap.sub_apply, LinearMap.add_apply,
+            LinearMap.smul_apply, Module.End.one_apply, Module.End.mul_apply]
+          module
+        rw [h6] at h5
+        have h2ne : ((2 : L) * (μ' - μ)) ≠ 0 := by
+          refine mul_ne_zero ?_ (sub_ne_zero.mpr (Ne.symm hne))
+          intro h2
+          have h3L : (3 : L) = 0 := by
+            exact_mod_cast CharP.cast_eq_zero L 3
+          have h1 : (1 : L) = 0 := by linear_combination h3L - h2
+          exact one_ne_zero h1
+        refine hgns ⟨((2 : L) * (μ' - μ))⁻¹ * (μ' * μ' - μ * μ), ?_⟩
+        have hB'eq : ((2 : L) * (μ' - μ)) • B' =
+            ((μ' * μ' - μ * μ)) • (1 : Module.End L (L ⊗[k] V)) :=
+          sub_eq_zero.mp h5
+        have := congrArg (fun T => (((2 : L) * (μ' - μ))⁻¹) • T) hB'eq
+        simp only [smul_smul, inv_mul_cancel₀ h2ne, one_smul] at this
+        exact this
+      subst hμμ'
+      -- kernel elements commute with `A`
+      have hBA := hcommA g hg hgns μ hμnil hμ'ne
+      -- `σρ g` preserves `W`, so a spanning vector of `W` is an
+      -- eigenvector of `σρ g` with its unique eigenvalue `μ`
+      obtain ⟨w, hwW, hwne⟩ : ∃ w ∈ W, w ≠ 0 := by
+        by_contra hnone
+        push Not at hnone
+        have : W = ⊥ := by
+          rw [eq_bot_iff]
+          intro x hx
+          rcases eq_or_ne x 0 with rfl | hxne
+          · exact Submodule.zero_mem _
+          · exact absurd (hnone x hx) (by simpa using hxne)
+        rw [this, finrank_bot] at hWfr
+        omega
+      have hspan : Submodule.span L {w} = W := by
+        apply Submodule.eq_of_le_of_finrank_le
+          ((Submodule.span_singleton_le_iff_mem w W).mpr hwW)
+        rw [hWfr, finrank_span_singleton hwne]
+      have hBw : σρ g w ∈ W := by
+        rw [hW, LinearMap.mem_ker] at hwW ⊢
+        have hcommshift : (A - μ₀ • 1) * σρ g = σρ g * (A - μ₀ • 1) := by
+          refine LinearMap.ext fun v => ?_
+          simp only [Module.End.mul_apply, LinearMap.sub_apply,
+            LinearMap.smul_apply, Module.End.one_apply, map_sub, map_smul]
+          rw [show A (σρ g v) = σρ g (A v) from
+            congrFun (congrArg DFunLike.coe hBA.symm) v]
+        have := congrFun (congrArg DFunLike.coe hcommshift) w
+        simp only [Module.End.mul_apply] at this
+        rw [this, hwW, map_zero]
+      have hBw' : σρ g w ∈ Submodule.span L {w} := by
+        rw [hspan]
+        exact hBw
+      obtain ⟨cst, hcst⟩ := (Submodule.mem_span_singleton).mp hBw'
+      -- the eigenvalue is `μ`
+      have hcstμ : cst = μ := by
+        have happ : (((σρ g - μ • 1) ^ 2 : Module.End L (L ⊗[k] V))) w =
+            ((cst - μ) * (cst - μ)) • w := by
+          rw [pow_two]
+          have h1 : (σρ g - μ • 1) w = (cst - μ) • w := by
+            have h2 : (σρ g - μ • 1) w = σρ g w - μ • w := by
+              simp [LinearMap.sub_apply, LinearMap.smul_apply,
+                Module.End.one_apply]
+            rw [h2, ← hcst]
+            module
+          show (σρ g - μ • 1) ((σρ g - μ • 1) w) = _
+          rw [h1, map_smul, h1, smul_smul]
+        rw [hμnil] at happ
+        have h0 : ((cst - μ) * (cst - μ)) • w = 0 := by
+          rw [← happ]
+          simp
+        rcases smul_eq_zero.mp h0 with h' | h'
+        · exact sub_eq_zero.mp (mul_self_eq_zero.mp h')
+        · exact absurd h' hwne
+      -- hence `w ∈ ker (σρ g − μ)`, and the two lines coincide
+      have hwker : w ∈ LinearMap.ker (σρ g - μ • 1) := by
+        rw [LinearMap.mem_ker]
+        simp only [LinearMap.sub_apply, LinearMap.smul_apply,
+          Module.End.one_apply]
+        rw [← hcst, hcstμ, sub_self]
+      have hkerfr : Module.finrank L (LinearMap.ker (σρ g - μ • 1)) = 1 := by
+        refine hline _ ?_ hμnil
+        intro h0
+        exact hgns ⟨μ, sub_eq_zero.mp h0⟩
+      symm
+      apply Submodule.eq_of_le_of_finrank_le
+      · rw [← hspan]
+        exact (Submodule.span_singleton_le_iff_mem w _).mpr hwker
+      · rw [hWfr, hkerfr]
+    -- stability of `W` under the whole action, by normality of the kernel
+    have hstable : ∀ h : Γ ℚ, ∀ w ∈ W, σρ h w ∈ W := by
+      intro h w hw
+      -- the conjugate `h g₀ h⁻¹` is again in the kernel
+      have hconjker : h * g₀ * h⁻¹ ∈ r.ker := by
+        have : r (h * g₀ * h⁻¹) = r h * r g₀ * (r h)⁻¹ := by
+          rw [map_mul, map_mul, map_inv]
+        rw [MonoidHom.mem_ker, this, hg₀ker, mul_one, mul_inv_cancel]
+      -- its action is the conjugated operator, nonscalar, with the same
+      -- unipotent parameter `μ₀` and eigenline `σρ h '' W`
+      have hconj : σρ (h * g₀ * h⁻¹) = σρ h * A * σρ h⁻¹ := by
+        rw [map_mul, map_mul, hA]
+      have h1inv : σρ h⁻¹ * σρ h = 1 := by
+        rw [← map_mul, inv_mul_cancel, map_one]
+      have hconjns : ¬ ∃ ν : L, σρ (h * g₀ * h⁻¹) = ν • 1 := by
+        rintro ⟨ν, hν⟩
+        refine hg₀ns ⟨ν, ?_⟩
+        have h2 : A = σρ h⁻¹ * σρ (h * g₀ * h⁻¹) * σρ h := by
+          rw [hconj]
+          have h3 : σρ h⁻¹ * (σρ h * A * σρ h⁻¹) * σρ h =
+              (σρ h⁻¹ * σρ h) * A * (σρ h⁻¹ * σρ h) := by
+            simp only [mul_assoc]
+          rw [h3, h1inv, one_mul, mul_one]
+        rw [h2, hν]
+        rw [mul_smul_comm, smul_mul_assoc, mul_one, h1inv]
+      have hfac : σρ (h * g₀ * h⁻¹) - μ₀ • 1 =
+          σρ h * (A - μ₀ • 1) * σρ h⁻¹ := by
+        rw [hconj]
+        have hdist : σρ h * (A - μ₀ • 1) * σρ h⁻¹ =
+            σρ h * A * σρ h⁻¹ - σρ h * (μ₀ • 1) * σρ h⁻¹ := by
+          refine LinearMap.ext fun v => ?_
+          simp [Module.End.mul_apply, LinearMap.sub_apply, map_sub,
+            LinearMap.smul_apply, Module.End.one_apply, map_smul]
+        rw [hdist]
+        congr 1
+        rw [mul_smul_comm, mul_one, smul_mul_assoc, hunit]
+      have hconjnil : (σρ (h * g₀ * h⁻¹) - μ₀ • 1) ^ 2 = 0 := by
+        rw [hfac]
+        have hexp : (σρ h * (A - μ₀ • 1) * σρ h⁻¹) ^ 2 =
+            σρ h * ((A - μ₀ • 1) * (σρ h⁻¹ * σρ h) * (A - μ₀ • 1)) *
+              σρ h⁻¹ := by
+          rw [pow_two]
+          noncomm_ring
+        rw [hexp, h1inv, mul_one, ← pow_two, hμ₀nil, mul_zero, zero_mul]
+      have hkerconj : LinearMap.ker (σρ (h * g₀ * h⁻¹) - μ₀ • 1) = W :=
+        hshare _ hconjker hconjns μ₀ hconjnil
+      -- `σρ h w` lies in that kernel
+      rw [← hkerconj, LinearMap.mem_ker]
+      rw [hfac]
+      have hinvw : σρ h⁻¹ (σρ h w) = w := by
+        have h4 := congrFun (congrArg DFunLike.coe h1inv) w
+        simp only [Module.End.mul_apply, Module.End.one_apply] at h4
+        exact h4
+      show σρ h ((A - μ₀ • 1) (σρ h⁻¹ (σρ h w))) = 0
+      rw [hinvw]
+      have hw0 : (A - μ₀ • 1) w = 0 := LinearMap.mem_ker.mp hw
+      rw [hw0, map_zero]
+    -- contradiction with irreducibility
+    rcases hsub W hstable with hbot | htop
+    · rw [hbot] at hWfr
+      rw [finrank_bot] at hWfr
+      omega
+    · rw [htop] at hWfr
+      rw [finrank_top, hfr2] at hWfr
+      omega
 
 set_option warn.sorry false in
 /-- **The Serre §5.4/Tate elimination, arithmetic cases** (sorry node —

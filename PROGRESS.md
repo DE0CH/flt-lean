@@ -1695,34 +1695,28 @@ entries file). To add/remove/annotate a node, edit
                                               commuting operators, irreducibility dichotomy) ⇒ a
                                               span of any nonzero vector is a stable line,
                                               contradicting finrank 2. Noncyclic cases delegate to:
-                                                - ❌· `serre_elimination_noncyclic` — the seven noncyclic Dickson cases (sorry node):
-                                                  SEMIDIRECT-CASE ATTACK (worked out 2026-07-18,
-                                                  rep-theoretic, no arithmetic): N := iso-preimage of
-                                                  the left factor (normal, elementary abelian 3,
-                                                  nontrivial since m ≥ 1); N' := {g | π g ∈ N}. For
-                                                  g ∈ N': (π g)³ = 1 ⇒ u g³ central ⇒ σρ g³ = λ•1;
-                                                  cube-root μ in L (alg closed) gives
-                                                  (σρ g − μ)³ = 0 by char-3 Frobenius binomial, and
-                                                  on a 2-dim space (σρ g − μ)² = 0, so unique
-                                                  eigenvalue; nonscalar ⇒ eigenline exactly 1-dim.
-                                                  Case A (all σρ g scalar, g ∈ N'): N trivial in PGL,
-                                                  contradicting nontriviality. Case B (some g₀
-                                                  nonscalar, line W): all nonscalar N'-elements share
-                                                  W — commutator of N'-elements is central scalar λ
-                                                  with λ² = 1 (det), λ = −1 impossible (conjugation
-                                                  preserves eigenvalues: μ = −μ ⇒ μ = 0,
-                                                  contradiction), so λ = 1 and commuting operators
-                                                  preserve each other's unique eigenlines; then for
-                                                  any h, h g₀ h⁻¹ ∈ N' (normality of N) is nonscalar
-                                                  with line σρ h (W) = W, so W is a Γℚ-stable line —
-                                                  contradicting irreducibility (finrank 2). Remaining
-                                                  after that: dihedral / A₄ / S₄ / A₅ / PSL₂(𝔽_{3^m})
-                                                  / PGL₂(𝔽_{3^m}) contradict the hardly-ramified
-                                                  ramification constraints via Serre's
-                                                  discriminant/conductor bounds over ℚ (deep
-                                                  arithmetic: no such extensions of ℚ with these
-                                                  local conditions — Serre Duke 1987 §5.4, needs
-                                                  discriminant-bound machinery absent from mathlib).
+                                                - ✅· `serre_elimination_noncyclic` — DERIVED (case dispatch); children:
+                                                    - ✅· `serre_elimination_semidirect` — the elementary-abelian ⋊ cyclic case — FULLY PROVEN
+                                                      2026-07-18, audit [propext, Classical.choice,
+                                                      Quot.sound], exactly along the recorded attack:
+                                                      kernel of the right-component character r; cube
+                                                      central ⇒ scalar (irreducibility) ⇒ char-3
+                                                      Frobenius square-nilpotency with μ ≠ 0; all-scalar
+                                                      case kills the left factor (m ≥ 1); otherwise the
+                                                      1-dim eigenline (rank–nullity) is shared (unique
+                                                      unipotent parameter via expansion-subtraction;
+                                                      commutator scalar ±1 via det_smul, −1 refuted by
+                                                      the char-3 expansion identity (4μ₀)•A = μ₀•A = 0)
+                                                      and normality makes it Γℚ-stable. Technical notes:
+                                                      pointwise `module` tactic closes the End-algebra
+                                                      identities; the End-Mul/sub instance diamonds
+                                                      required respectTransparency false and avoiding
+                                                      rw with sub_smul/sub_zero/mul_sub patterns.
+                                                    - ❌· `serre_elimination_arith` — dihedral / A₄ / S₄ / A₅ / PSL₂(𝔽_{3^m}) / PGL₂(𝔽_{3^m})
+                                                      (sorry node — the deep arithmetic core): Serre's
+                                                      discriminant/conductor bounds over ℚ (Duke 1987
+                                                      §5.4); needs discriminant-bound machinery absent
+                                                      from mathlib.
                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient` — ordinarity lifting. DERIVED 2026-07-18 from the global triangular
                                   form + the cyclotomic-at-Frobenius leaf: the local Frobenius
                                   matrix is the global form at the Frobenius image; the diagonal
