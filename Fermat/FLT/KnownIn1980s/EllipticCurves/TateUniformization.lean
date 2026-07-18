@@ -40,6 +40,8 @@ public import Mathlib.RingTheory.Localization.Away.Basic
 public import Mathlib.FieldTheory.RatFunc.AsPolynomial
 
 import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve
+import Mathlib.Topology.Algebra.InfiniteSum.Nonarchimedean
+import Mathlib.Topology.Algebra.InfiniteSum.Ring
 
 @[expose] public section
 
@@ -525,6 +527,60 @@ theorem summable_evalA_YA (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
     _ = valuation k (q₀ * u₀⁻¹) ^ (n + 1) := by
         rw [map_mul, map_inv₀, mul_pow, inv_pow]
         exact mul_comm _ _
+
+/-- **Additivity of the evaluation** on summable series. -/
+theorem evalA_add (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    {F G : PowerSeries CoeffRing}
+    (hF : Summable fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff n F) * q₀ ^ n)
+    (hG : Summable fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff n G) * q₀ ^ n) :
+    evalA u₀ q₀ h0 h1 (F + G) =
+      evalA u₀ q₀ h0 h1 F + evalA u₀ q₀ h0 h1 G := by
+  rw [evalA, evalA, evalA, ← hF.tsum_add hG]
+  congr 1
+  funext n
+  rw [map_add, map_add, add_mul]
+
+omit [CharZero k] in
+/-- The nonarchimedean Cauchy-product summability over `k`, stated for
+the original topology (the uniform structure is installed only inside
+the proof, so no instance mixing leaks into applications). -/
+theorem summable_mul_prod {f g : ℕ → k} (hf : Summable f)
+    (hg : Summable g) : Summable fun i : ℕ × ℕ ↦ f i.1 * g i.2 := by
+  letI : UniformSpace k := IsTopologicalAddGroup.rightUniformSpace k
+  haveI : IsUniformAddGroup k := isUniformAddGroup_of_addCommGroup
+  exact Summable.mul_of_nonarchimedean hf hg
+
+set_option maxHeartbeats 1000000 in
+/-- **Multiplicativity of the evaluation** on summable series: the
+nonarchimedean Cauchy product, regrouped along antidiagonals into the
+power-series product coefficients. -/
+theorem evalA_mul (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    {F G : PowerSeries CoeffRing}
+    (hF : Summable fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff n F) * q₀ ^ n)
+    (hG : Summable fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff n G) * q₀ ^ n) :
+    evalA u₀ q₀ h0 h1 (F * G) =
+      evalA u₀ q₀ h0 h1 F * evalA u₀ q₀ h0 h1 G := by
+  set f : ℕ → k :=
+    fun n ↦ coeffRingEval u₀ h0 h1 (PowerSeries.coeff n F) * q₀ ^ n
+    with hfdef
+  set g : ℕ → k :=
+    fun n ↦ coeffRingEval u₀ h0 h1 (PowerSeries.coeff n G) * q₀ ^ n
+    with hgdef
+  have key := Summable.tsum_mul_tsum_eq_tsum_sum_antidiagonal (A := ℕ)
+    hF hG (summable_mul_prod hF hG)
+  rw [evalA, evalA, evalA, key]
+  congr 1
+  funext n
+  rw [PowerSeries.coeff_mul, map_sum, Finset.sum_mul]
+  refine Finset.sum_congr rfl fun p hp ↦ ?_
+  have hpn : p.1 + p.2 = n := Finset.mem_antidiagonal.mp hp
+  rw [hfdef, hgdef, map_mul]
+  rw [← hpn, pow_add]
+  ring
 
 end Annulus
 
