@@ -62,7 +62,8 @@
   "GaloisRepresentation.residual_charFrob_eq": "✅",
   "GaloisRepresentation.IsHardlyRamified.mem_isCompatible": "❌",
   "GaloisRepresentation.residual_charFrob_eq_of_family": "✅",
-  "GaloisRepresentation.IsHardlyRamified.three_adic": "❌",
+  "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular": "❌",
+  "GaloisRepresentation.IsHardlyRamified.three_adic": "✅",
   "GaloisRepresentation.not_isIrreducible_of_charFrob_eq": "✅",
   "GaloisRepresentation.dense_conjClasses_globalFrob": "✅",
   "GaloisRepresentation.exists_frobenius_conj_mem_coset": "❌",
@@ -422,7 +423,10 @@
    "GaloisRepresentation.IsHardlyRamified.three_adic",
    "GaloisRepresentation.cyclotomicCharacter_globalFrob"
   ],
-  "GaloisRepresentation.IsHardlyRamified.three_adic": [],
+  "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular": [],
+  "GaloisRepresentation.IsHardlyRamified.three_adic": [
+   "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular"
+  ],
   "GaloisRepresentation.not_isIrreducible_of_charFrob_eq": [
    "GaloisRepresentation.not_isIrreducible_of_charpoly_eq",
    "GaloisRepresentation.dense_conjClasses_globalFrob",

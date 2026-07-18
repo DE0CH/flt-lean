@@ -434,10 +434,17 @@
   "fullname": "GaloisRepresentation.residual_charFrob_eq_of_family"
  },
  {
+  "name": "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
+  "wip": false,
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular",
+  "text": "Frobenius triangularity (sorry node): for p ≥ 5 a basis in which the local Frobenius acts by [[p, *], [0, 1]]. Route: mod-3 hardly ramified = extension of trivial by mod-3 cyclotomic (ModThree cluster in reference commit 8282dfb^ — mod_three PROVEN there from two sorried leaves), lifted through the deformation (ordinarity/stable line), diagonal character = det ρ = 3-adic cyclotomic, value p at Frob_p."
+ },
+ {
   "name": "IsHardlyRamified.three_adic",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
   "wip": false,
-  "text": "B6c `IsHardlyRamified.three_adic` (`HardlyRamified/Threeadic.lean`, ) — a 3-adic hardly ramified rep has trace(Frob_q) = 1 + q for q ≥ 5",
+  "text": "B6c: trace(Frob_p) = 1 + p for p ≥ 5. DERIVED 2026-07-18 from exists_frobenius_triangular by LinearMap.trace_eq_matrix_trace + Matrix.trace_fin_two on the triangular form [[p, *], [0, 1]].",
   "fullname": "GaloisRepresentation.IsHardlyRamified.three_adic"
  },
  {

@@ -1165,8 +1165,15 @@ entries file). To add/remove/annotate a node, edit
                       `S` (new bridge: `toHeightOneSpectrumRingOfIntegersRat_injective`, distinct
                       primes give distinct places, so a finite set of places excludes only finitely
                       many primes in the auxiliary-prime selection). Proof ingredients consumed:
-                        - ❌· `IsHardlyRamified.three_adic` — B6c `IsHardlyRamified.three_adic` (`HardlyRamified/Threeadic.lean`, ) — a
-                          3-adic hardly ramified rep has trace(Frob_q) = 1 + q for q ≥ 5
+                        - ✅· `IsHardlyRamified.three_adic` — B6c: trace(Frob_p) = 1 + p for p ≥ 5. DERIVED 2026-07-18 from
+                          exists_frobenius_triangular by LinearMap.trace_eq_matrix_trace +
+                          Matrix.trace_fin_two on the triangular form [[p, *], [0, 1]].
+                            - ❌· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular` — Frobenius triangularity (sorry node): for p ≥ 5 a basis in which the
+                              local Frobenius acts by [[p, *], [0, 1]]. Route: mod-3 hardly ramified
+                              = extension of trivial by mod-3 cyclotomic (ModThree cluster in
+                              reference commit 8282dfb^ — mod_three PROVEN there from two sorried
+                              leaves), lifted through the deformation (ordinarity/stable line),
+                              diagonal character = det ρ = 3-adic cyclotomic, value p at Frob_p.
                 - ✅· `not_isIrreducible_of_charFrob_eq` — `not_isIrreducible_of_charFrob_eq` — Chebotarev + Brauer– Nesbitt — now
                   (2026-07-16, `Chebotarev.lean` + proof in `Lift.lean`): the agreement set with `1
                   ⊕ χ̄`'s charpolys is closed (module topology on `End` over `ZMod ℓ` is discrete ;
