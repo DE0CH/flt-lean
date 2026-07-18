@@ -508,18 +508,40 @@ theorem exists_residual_isHardlyRamified {R : Type u} [CommRing R]
     exact isTameAtTwo_baseChange_residue kk hsurj hρ.isTameAtTwo
 
 set_option warn.sorry false in
-/-- **Ordinarity lifting from the residual trivial quotient** (sorry
-node — the deformation-theoretic heart of B6c): if the residual
-representation admits an equivariant surjection onto the trivial
-1-dimensional representation (the output of the mod-3 classification
-`mod_three`), then the stable-line structure lifts 3-adically: at every
-good prime `p ≥ 5` there is a basis of `V` in which the local Frobenius
-acts by `[[p, *], [0, 1]]`. Content: the ordinary deformation argument
-(the unramified rank-1 quotient lifts through the complete local ring,
-by flatness at 3 and the connected-étale sequence), the diagonal
-character is `det ρ` = the 3-adic cyclotomic character
-(`IsHardlyRamified.det`), and the cyclotomic character takes the value
-`p` at an arithmetic Frobenius at `p ≠ 3`. -/
+/-- **The global triangular form** (sorry node — the Serre classification
+core for 3-adic hardly ramified representations): given the residual
+trivial-quotient surjection, the WHOLE representation is triangular in a
+suitable basis — an extension of the trivial character by a character
+`χ` (which the determinant condition identifies with the cyclotomic
+character). Content: the 3-adic reducibility of Serre's §5.4 analysis,
+lifted through the complete local coefficient ring by the flatness and
+tameness constraints. -/
+theorem exists_global_triangular_of_residual_trivial_quotient
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w) :
+    ∃ (b : Module.Basis (Fin 2) R V) (χ : Γ ℚ →* R) (cc : Γ ℚ → R),
+      ∀ g : Γ ℚ, LinearMap.toMatrix b b (ρ g) = !![χ g, cc g; 0, 1] :=
+  sorry
+
+/-- **Ordinarity lifting from the residual trivial quotient** (DERIVED
+2026-07-18 from the global triangular form and the cyclotomic-at-Frobenius
+leaf): the local Frobenius matrix is the global triangular form evaluated
+at the image of the arithmetic Frobenius, and its diagonal character value
+is `p` by the determinant condition (`IsHardlyRamified.det` +
+`Matrix.det_fin_two` on the triangular matrix). -/
 theorem exists_frobenius_triangular_of_residual_trivial_quotient
     {R : Type u} [CommRing R]
     [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
@@ -540,8 +562,28 @@ theorem exists_frobenius_triangular_of_residual_trivial_quotient
     letI v := hp.toHeightOneSpectrumRingOfIntegersRat
     ∃ (b : Module.Basis (Fin 2) R V) (c : R),
       LinearMap.toMatrix b b (ρ.toLocal v (Frob v)) =
-        !![(p : R), c; 0, 1] :=
-  sorry
+        !![(p : R), c; 0, 1] := by
+  obtain ⟨b, χ, cc, hb⟩ :=
+    exists_global_triangular_of_residual_trivial_quotient V hV hρ kk hsurj
+      π hπsurj hπequiv
+  -- the determinant reads off the diagonal character
+  have hAll : ∀ g : Γ ℚ, ρ.det g = χ g := fun g => by
+    show LinearMap.det (ρ g) = χ g
+    rw [← LinearMap.det_toMatrix b, hb g]
+    simp [Matrix.det_fin_two]
+  have key : ∀ X : Γ ℚ, χ X = (p : R) →
+      ∃ c, LinearMap.toMatrix b b (ρ X) = !![(p : R), c; 0, 1] :=
+    fun X hX => ⟨cc X, by rw [hb X, hX]⟩
+  simp only [GaloisRep.toLocal_apply]
+  refine ⟨b, ?_⟩
+  refine key _ ?_
+  rw [← hAll, hρ.det]
+  convert cyclotomicCharacter_adicArithFrob (R := R) p hp hp5 using 4
+  -- the two spellings differ only in the (subsingleton) `Algebra ℚ _` instance
+  congr 1
+  congr 1
+  congr 1
+  exact Subsingleton.elim _ _
 
 /-- **The Frobenius triangularity of a 3-adic hardly ramified
 representation at good odd primes** (DERIVED 2026-07-18 by chaining the

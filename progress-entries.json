@@ -455,11 +455,25 @@
   "text": "mod-3 classification (DERIVED, re-vendored 2026-07-18): a mod-3 hardly ramified rep has a Γℚ-equivariant surjection onto the trivial 1-dim rep. From mod_three_reducible + mod_three_of_stable_line (Minkowski bookkeeping PROVEN)."
  },
  {
+  "name": "cyclotomicCharacter_adicArithFrob",
+  "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
+  "wip": false,
+  "fullname": "cyclotomicCharacter_adicArithFrob",
+  "text": "the 3-adic cyclotomic character at an arithmetic Frobenius = p (sorry node): Frobenius raises 3-power roots of unity to the p-th power. Stated in GaloisRep.lean so the Frobenius-image elaboration matches toLocal_apply."
+ },
+ {
+  "name": "GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
+  "wip": false,
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient",
+  "text": "the global triangular form (sorry node — the Serre classification core): given the residual trivial quotient, the WHOLE 3-adic rep is an extension of the trivial character by χ in a suitable basis. The 3-adic reducibility of Serre §5.4, lifted through the complete local ring by flatness + tameness."
+ },
+ {
   "name": "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
   "wip": false,
   "fullname": "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient",
-  "text": "ordinarity lifting (sorry node — the deformation heart of B6c): the residual trivial-quotient surjection lifts 3-adically to the triangular Frobenius basis, diagonal = det = cyclotomic, value p at Frob_p."
+  "text": "ordinarity lifting. DERIVED 2026-07-18 from the global triangular form + the cyclotomic-at-Frobenius leaf: the local Frobenius matrix is the global form at the Frobenius image; the diagonal value is p through the determinant (det of the triangular matrix = χ, IsHardlyRamified.det, and the leaf), with the two Frobenius spellings reconciled by congr + Subsingleton (Algebra ℚ _) — the Rat-algebra uniqueness bridging the module-system elaboration divergence."
  },
  {
   "name": "GaloisRepresentation.IsHardlyRamified.isTameAtTwo_baseChange_residue",

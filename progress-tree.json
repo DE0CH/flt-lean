@@ -65,7 +65,9 @@
   "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter": "❌",
   "GaloisRepresentation.IsHardlyRamified.mod_three_reducible": "❌",
   "GaloisRepresentation.IsHardlyRamified.mod_three": "✅",
-  "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient": "❌",
+  "cyclotomicCharacter_adicArithFrob": "❌",
+  "GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient": "❌",
+  "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient": "✅",
   "GaloisRepresentation.IsHardlyRamified.isTameAtTwo_baseChange_residue": "✅✅",
   "GaloisRepresentation.IsHardlyRamified.flat_space_equiv_residue": "✅✅",
   "GaloisRepresentation.IsHardlyRamified.hasFlatProlongationAt_of_subsingleton": "✅✅",
@@ -447,7 +449,12 @@
    "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter",
    "GaloisRepresentation.IsHardlyRamified.mod_three_reducible"
   ],
-  "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient": [],
+  "cyclotomicCharacter_adicArithFrob": [],
+  "GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient": [],
+  "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient": [
+   "GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient",
+   "cyclotomicCharacter_adicArithFrob"
+  ],
   "GaloisRepresentation.IsHardlyRamified.isTameAtTwo_baseChange_residue": [],
   "GaloisRepresentation.IsHardlyRamified.flat_space_equiv_residue": [],
   "GaloisRepresentation.IsHardlyRamified.hasFlatProlongationAt_of_subsingleton": [],

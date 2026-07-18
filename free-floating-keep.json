@@ -34,5 +34,6 @@
   "WeierstrassCurve.c₆_eq_zero_iff_j_eq_1728": "class-6: textually used by the cone theorem eq_one_or_eq_negVariableChange_of_smul_eq (Aut.lean)",
   "NumberField.instFiniteResidueFieldAdicCompletionIntegers": "cone-adjacent finiteness instance retained for the residual-HR chain",
   "FreyPackage.ctorIdx": "auto-generated (ctorIdx) — shares source lines with the structure",
-  "GaloisRepresentation.HardlyRamifiedLift.ctorIdx": "auto-generated (ctorIdx) — shares source lines with the structure"
+  "GaloisRepresentation.HardlyRamifiedLift.ctorIdx": "auto-generated (ctorIdx) — shares source lines with the structure",
+  "GaloisRep.toLocal_apply": "rfl-simp bridging lemma consumed by simp in the ordinarity-lifting derivation (Threeadic.lean) without appearing in the proof term; exists precisely because the module-system opaque exports block the defeq downstream"
 }

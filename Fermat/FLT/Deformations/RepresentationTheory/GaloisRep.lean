@@ -12,6 +12,10 @@ public import Mathlib.LinearAlgebra.Matrix.Unique
 public import Mathlib.RingTheory.Bialgebra.TensorProduct
 public import Mathlib.RingTheory.HopfAlgebra.Basic
 public import Mathlib.RepresentationTheory.Irreducible
+public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
+-- `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`, used to state the
+-- cyclotomic-at-Frobenius leaf below in THIS module's elaboration context
+public import Mathlib.NumberTheory.Cyclotomic.CyclotomicCharacter
 
 /-!
 # Galois representations
@@ -172,6 +176,16 @@ noncomputable
 abbrev GaloisRep.toLocal (ρ : GaloisRep K A M) (v : Ω K) : GaloisRep (v.adicCompletion K) A M :=
   ρ.map (algebraMap _ _)
 
+omit [IsTopologicalRing A] in
+/-- `toLocal` evaluates by precomposition with the induced map of absolute
+Galois groups (an exposed `rfl`-lemma: downstream modules cannot unfold the
+definition through the module-system export). -/
+lemma GaloisRep.toLocal_apply (ρ : GaloisRep K A M) (v : Ω K)
+    (σ : Γ (v.adicCompletion K)) :
+    ρ.toLocal v σ =
+      ρ (Field.absoluteGaloisGroup.map (algebraMap K (v.adicCompletion K)) σ) :=
+  rfl
+
 universe v u
 variable {R : Type u} [CommRing R]
 
@@ -260,6 +274,29 @@ lemma GaloisRep.HasFlatProlongationAt.of_equiv {A' : Type*} [CommRing A']
       map_zero' := by simp
       map_add' := fun a b => by simp },
     e.bijective.comp hbij⟩
+
+set_option warn.sorry false in
+/-- **The 3-adic cyclotomic character at an arithmetic Frobenius** (sorry
+node): for a prime `p ∉ {2, 3}`, the cyclotomic character of `Γ ℚ`
+evaluated at (the global image of) an arithmetic Frobenius at `p` is `p` —
+Frobenius raises `3`-power roots of unity to the `p`-th power. Stated in
+THIS module so that the Frobenius-image element elaborates identically to
+`GaloisRep.toLocal_apply`'s right-hand side (the module-system's opaque
+exports make cross-module respellings non-defeq). Stated after applying
+`algebraMap ℤ₃ → R`, matching the determinant condition of
+`IsHardlyRamified`. -/
+theorem cyclotomicCharacter_adicArithFrob {R : Type*} [CommRing R]
+    [Algebra ℤ_[3] R]
+    (p : ℕ) (hp : Nat.Prime p) (hp5 : 5 ≤ p) :
+    algebraMap ℤ_[3] R
+      (cyclotomicCharacter (AlgebraicClosure ℚ) 3
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat))
+          (Field.AbsoluteGaloisGroup.adicArithFrob
+            hp.toHeightOneSpectrumRingOfIntegersRat)).toRingEquiv)) =
+      (p : R) :=
+  sorry
 
 /-- A galois rep `ρ : Γ K → Aut_A(M)` is flat at `v` if `A/I ⊗ M` has a flat prolongation at `v`
 for all open ideals `I`. -/

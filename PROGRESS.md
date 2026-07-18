@@ -1647,10 +1647,23 @@ entries file). To add/remove/annotate a node, edit
                                       ramification constraints eliminate irreducible image — Serre
                                       §5.4/Tate argument for p = 3. The PGL2/Dickson/OddAbsIrred
                                       clusters are in the reference commit 8282dfb^.
-                                - ❌· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient` — ordinarity lifting (sorry node — the deformation heart of B6c):
-                                  the residual trivial-quotient surjection lifts 3-adically to the
-                                  triangular Frobenius basis, diagonal = det = cyclotomic, value p
-                                  at Frob_p.
+                                - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient` — ordinarity lifting. DERIVED 2026-07-18 from the global triangular
+                                  form + the cyclotomic-at-Frobenius leaf: the local Frobenius
+                                  matrix is the global form at the Frobenius image; the diagonal
+                                  value is p through the determinant (det of the triangular matrix =
+                                  χ, IsHardlyRamified.det, and the leaf), with the two Frobenius
+                                  spellings reconciled by congr + Subsingleton (Algebra ℚ _) — the
+                                  Rat-algebra uniqueness bridging the module-system elaboration
+                                  divergence.
+                                    - ❌· `cyclotomicCharacter_adicArithFrob` — the 3-adic cyclotomic character at an arithmetic Frobenius = p
+                                      (sorry node): Frobenius raises 3-power roots of unity to the
+                                      p-th power. Stated in GaloisRep.lean so the Frobenius-image
+                                      elaboration matches toLocal_apply.
+                                    - ❌· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient` — the global triangular form (sorry node — the Serre
+                                      classification core): given the residual trivial quotient, the
+                                      WHOLE 3-adic rep is an extension of the trivial character by χ
+                                      in a suitable basis. The 3-adic reducibility of Serre §5.4,
+                                      lifted through the complete local ring by flatness + tameness.
                 - ✅· `not_isIrreducible_of_charFrob_eq` — `not_isIrreducible_of_charFrob_eq` — Chebotarev + Brauer– Nesbitt — now
                   (2026-07-16, `Chebotarev.lean` + proof in `Lift.lean`): the agreement set with `1
                   ⊕ χ̄`'s charpolys is closed (module topology on `End` over `ZMod ℓ` is discrete ;
