@@ -775,6 +775,7 @@ theorem evalA_mem_tateCurve (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
   simp only [WeierstrassCurve.tateCurve]
   linear_combination hWE
 
+omit [CharZero k] in
 /-- **Fundamental-domain normalization** (half of ATAEC V.3.1(e)'s
 setup): for `0 < |q| < 1`, every nonzero `u ∈ k` has a `q`-power
 translate `u·q⁻ᵐ` in the half-open annulus `|q| < |u·q⁻ᵐ| ≤ 1`; `m`
