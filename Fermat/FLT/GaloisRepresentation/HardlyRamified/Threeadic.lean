@@ -226,8 +226,59 @@ theorem flat_space_equiv_residue {R : Type u} [CommRing R]
           Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))
         (x : (((ρ.baseChange kk).baseChange (kk ⧸ (⊥ : Ideal kk))).toLocal
           Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat).Space),
-        e (g • x) = g • e x :=
-  sorry
+        e (g • x) = g • e x := by
+  classical
+  -- the coefficient identification `kk ⧸ ⊥ ≃+* R ⧸ 𝔪`
+  let ψ₂ : R ⧸ RingHom.ker (algebraMap R kk) ≃+* kk :=
+    RingHom.quotientKerEquivOfSurjective hsurj
+  let φ : (kk ⧸ (⊥ : Ideal kk)) ≃+* (R ⧸ IsLocalRing.maximalIdeal R) :=
+    (RingEquiv.quotientBot kk).trans
+      (ψ₂.symm.trans (Ideal.quotEquivOfEq hker))
+  have hφalg : ∀ r : R,
+      φ (algebraMap R (kk ⧸ (⊥ : Ideal kk)) r) =
+        algebraMap R (R ⧸ IsLocalRing.maximalIdeal R) r := by
+    intro r
+    have h1 : (RingEquiv.quotientBot kk)
+        (algebraMap R (kk ⧸ (⊥ : Ideal kk)) r) = algebraMap R kk r := rfl
+    have h2 : ψ₂ (Ideal.Quotient.mk _ r) = algebraMap R kk r := rfl
+    have h3 : ψ₂.symm (algebraMap R kk r) = Ideal.Quotient.mk _ r := by
+      rw [← h2, RingEquiv.symm_apply_apply]
+    show (Ideal.quotEquivOfEq hker) (ψ₂.symm ((RingEquiv.quotientBot kk)
+      (algebraMap R (kk ⧸ (⊥ : Ideal kk)) r))) = _
+    rw [h1, h3]
+    rfl
+  -- the `R`-linear form of `φ`
+  let φlin : (kk ⧸ (⊥ : Ideal kk)) ≃ₗ[R] (R ⧸ IsLocalRing.maximalIdeal R) :=
+    { φ.toAddEquiv with
+      map_smul' := fun r x => by
+        show φ (r • x) = r • φ x
+        rw [Algebra.smul_def, Algebra.smul_def, map_mul, hφalg] }
+  -- assemble: cancel the middle base change, then transport coefficients
+  let e₁ := TensorProduct.AlgebraTensorModule.cancelBaseChange R kk
+    (kk ⧸ (⊥ : Ideal kk)) (kk ⧸ (⊥ : Ideal kk)) V
+  let e₂ := TensorProduct.congr φlin (LinearEquiv.refl R V)
+  refine ⟨e₁.toAddEquiv.trans e₂.toAddEquiv, ?_⟩
+  intro g x
+  show (e₁.toAddEquiv.trans e₂.toAddEquiv)
+      ((((ρ.baseChange kk).baseChange (kk ⧸ (⊥ : Ideal kk))).toLocal
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) g x) =
+    (((ρ.baseChange (R ⧸ IsLocalRing.maximalIdeal R)).toLocal
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) g)
+      ((e₁.toAddEquiv.trans e₂.toAddEquiv) x)
+  induction x using TensorProduct.induction_on with
+  | zero => simp
+  | add a b ha hb => simp only [map_add, ha, hb]
+  | tmul c y =>
+    induction y using TensorProduct.induction_on with
+    | zero =>
+      rw [show (c ⊗ₜ[kk] (0 : kk ⊗[R] V)) =
+        (0 : (kk ⧸ (⊥ : Ideal kk)) ⊗[kk] (kk ⊗[R] V)) from
+        TensorProduct.tmul_zero _ _]
+      simp
+    | add a b ha hb =>
+      rw [TensorProduct.tmul_add]
+      simp only [map_add, ha, hb]
+    | tmul d v => rfl
 
 /-- **Flatness transfers to the residue field** (DERIVED 2026-07-18 from the
 space identification and the degenerate-flatness leaf, through

@@ -473,7 +473,7 @@
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
   "wip": false,
   "fullname": "GaloisRepresentation.IsHardlyRamified.flat_space_equiv_residue",
-  "text": "the residual space identification (sorry node): (kk⧸⊥) ⊗_kk (kk ⊗_R V) ≃+ (R⧸𝔪) ⊗_R V equivariantly — quotient-by-⊥ collapse, tensor associativity, and transport along RingHom.quotientKerEquivOfSurjective (hsurj + hker)."
+  "text": "the residual space identification — PROVEN 2026-07-18, sorry-free. φ := quotientBot.trans (quotientKerEquivOfSurjective.symm.trans quotEquivOfEq hker), R-linearized via hφalg (φ ∘ algebraMap = algebraMap, each component rfl); e := cancelBaseChange.trans (congr φlin refl); equivariance by nested TensorProduct.induction_on, the tmul case closing on rfl (both sides are φ(d•c) ⊗ ρ(g)v definitionally)."
  },
  {
   "name": "GaloisRepresentation.IsHardlyRamified.hasFlatProlongationAt_of_subsingleton",

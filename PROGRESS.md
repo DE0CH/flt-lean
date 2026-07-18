@@ -1662,10 +1662,6 @@ entries file). To add/remove/annotate a node, edit
                                       HasFlatProlongationAt.of_equiv (Hopf witness reused,
                                       geometric-points bijection composed with the equivariant space
                                       iso); the ⊤ case is the degenerate subsingleton leaf.
-                                        - ❌· `GaloisRepresentation.IsHardlyRamified.flat_space_equiv_residue` — the residual space identification (sorry node): (kk⧸⊥)
-                                          ⊗_kk (kk ⊗_R V) ≃+ (R⧸𝔪) ⊗_R V equivariantly — quotient-
-                                          by-⊥ collapse, tensor associativity, and transport along
-                                          RingHom.quotientKerEquivOfSurjective (hsurj + hker).
                                         - ❌· `GaloisRepresentation.IsHardlyRamified.hasFlatProlongationAt_of_subsingleton` — degenerate flatness (sorry node): a rep on a subsingleton
                                           module has a flat prolongation — the trivial group scheme
                                           Spec 𝒪ᵥ, one geometric point matched with the single space
