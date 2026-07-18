@@ -1,5 +1,5 @@
 {
- "key": "1784365977.9137719",
+ "key": "1784366226.3301468",
  "returncode": 0,
  "floating": [
   {
@@ -51,14 +51,6 @@
    "name": "tsum_lambert_of_summable_of_isTopologicallyNilpotent"
   },
   {
-   "module": "Fermat.FLT.Deformations.Lemmas",
-   "name": "instMulActionMonoidHomOfMulDistribMulAction_fermat"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.RingTheory.Valuation.ValuativeRel.Basic",
-   "name": "ValuativeRel.valuation_natCast_le_one"
-  },
-  {
    "module": "Fermat.FLT.NumberField.Completion.Finite",
    "name": "instLocallyCompactSpaceAdicCompletionRingOfIntegers_fermat"
   },
@@ -85,10 +77,6 @@
   {
    "module": "Fermat.FLT.NumberField.Completion.Finite",
    "name": "NumberField.isOpenAdicCompletionIntegers"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Topology.Algebra.Group.Basic",
-   "name": "continuous_iff_continuousAt_zero"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
@@ -171,10 +159,6 @@
    "name": "Valued.WithZeroMulInt.irreducible_valuation_le_ofAdd_neg_one"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Topology.Algebra.Group.Basic",
-   "name": "AddMonoidHom.continuous_of_isOpen_ker"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Weierstrass",
    "name": "WeierstrassCurve.a₁_ne_zero_or_a₃_ne_zero_of_two_eq_zero"
   },
@@ -185,10 +169,6 @@
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
    "name": "WeierstrassCurve.map_smul_baseChange_eq"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Topology.Algebra.Group.Basic",
-   "name": "AddMonoidHom.continuous_iff_isOpen_ker"
   },
   {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
@@ -225,10 +205,6 @@
   {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.instIsDiscreteValuationRingSubtypeMemValuationSubringAdicCompletionIntegers_fermat"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction",
-   "name": "WeierstrassCurve.HasSplitMultiplicativeReduction.baseChange_smul"
   },
   {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
@@ -299,20 +275,12 @@
    "name": "IsDedekindDomain.HeightOneSpectrum.denseRange_of_integerAlgebraMap"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Topology.Algebra.Group.Basic",
-   "name": "MonoidHom.continuous_iff_isOpen_ker"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
    "name": "WeierstrassCurve.negVariableChange_smul_self"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
    "name": "WeierstrassCurve.autGroup"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.Topology.Algebra.Group.Basic",
-   "name": "MonoidHom.continuous_of_isOpen_ker"
   },
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
@@ -335,10 +303,6 @@
    "name": "ValuativeExtension.valuation_algebraMap_le_one"
   },
   {
-   "module": "Fermat.FLT.Mathlib.Topology.Algebra.Group.Basic",
-   "name": "continuous_iff_continuousAt_one"
-  },
-  {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction",
    "name": "WeierstrassCurve.map_nodePoly"
   },
@@ -353,10 +317,6 @@
   {
    "module": "Fermat.FLT.Mathlib.RingTheory.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.instSeparableSpaceAdicCompletionOfCountable_fermat"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Weierstrass",
-   "name": "WeierstrassCurve.instIsEllipticBaseChange_fermat"
   },
   {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",

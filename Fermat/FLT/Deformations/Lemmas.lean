@@ -35,11 +35,6 @@ def ContinuousAlgHom.toContinuousMonoidHom
   ⟨f.1.toMonoidHom, f.2⟩
 
 
-instance {α M G : Type*} [Monoid M] [Monoid G] [Monoid α] [MulDistribMulAction α G] :
-    MulAction α (M →* G) where
-  smul a f := ⟨⟨a • f, by simp⟩, by simp⟩
-  one_smul _ := by ext; exact one_smul _ _
-  mul_smul a b f := by ext x; change (a * b) • (f x) = a • b • (f x); simp [mul_smul]
 
 
 

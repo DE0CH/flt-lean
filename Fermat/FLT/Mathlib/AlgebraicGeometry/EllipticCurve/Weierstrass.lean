@@ -21,12 +21,6 @@ namespace WeierstrassCurve
 
 universe u
 
-/-- The base change of an elliptic curve is an elliptic curve. Restates the instance for
-`WeierstrassCurve.map`, which does not apply to `baseChange` directly since the latter is a
-non-reducible definition. -/
-instance {R A : Type*} [CommRing R] [CommRing A] [Algebra R A] (W : WeierstrassCurve R)
-    [W.IsElliptic] : (W.baseChange A).IsElliptic :=
-  inferInstanceAs (W.map (algebraMap R A)).IsElliptic
 
 section
 

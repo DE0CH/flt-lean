@@ -183,20 +183,6 @@ lemma integralModel_baseChange (W : WeierstrassCurve R) [IsIntegral R (W⁄K)] :
 
 variable [IsDomain R] [IsDiscreteValuationRing R]
 
-/-- **Split multiplicative reduction is a change-of-variables invariant.** If `W` (over `R`) gives a
-curve with split multiplicative reduction over `K`, then so does any `R`-change of variables `C • W`
-that still has multiplicative reduction — because the split condition is the splitting of the node
-polynomial of the integral model, which is invariant by `nodePoly_map_splits_smul_iff`. -/
-theorem HasSplitMultiplicativeReduction.baseChange_smul {W : WeierstrassCurve R}
-    (C : VariableChange R) [IsMinimal R (W⁄K)]
-    (hW : (W⁄K).HasSplitMultiplicativeReduction R)
-    [((C • W)⁄K).HasMultiplicativeReduction R] :
-    ((C • W)⁄K).HasSplitMultiplicativeReduction R := by
-  have hspl := hW.splitMultiplicativeReduction
-  rw [show ((W⁄K).integralModel R) = W from integralModel_baseChange R W] at hspl
-  refine { ‹((C • W)⁄K).HasMultiplicativeReduction R› with splitMultiplicativeReduction := ?_ }
-  rw [show (((C • W)⁄K).integralModel R) = C • W from integralModel_baseChange R (C • W)]
-  exact (nodePoly_map_splits_smul_iff (algebraMap R (IsLocalRing.ResidueField R)) W C).mpr hspl
 
 open IsLocalRing IsDedekindDomain.HeightOneSpectrum in
 /-- Multiplicative reduction forces `c₄` of the integral model to be a unit: its residue is nonzero

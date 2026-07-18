@@ -22,10 +22,6 @@ namespace ValuativeRel
 
 variable {R : Type*} [Ring R] [ValuativeRel R]
 
-/-- Naturals have valuation at most `1`: they lie in the integer subring
-`(valuation R).integer` of the valuation. -/
-theorem valuation_natCast_le_one (m : ℕ) : valuation R (m : R) ≤ 1 :=
-  (Valuation.mem_integer_iff _ _).mp (natCast_mem (valuation R).integer m)
 
 /-- Integers have valuation at most `1`: they lie in the integer subring
 `(valuation R).integer` of the valuation. -/
