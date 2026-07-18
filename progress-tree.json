@@ -114,8 +114,13 @@
   "TateCurve.pointMapQuot_surjective": "✅",
   "TateCurve.bilateralXY_inj": "❌",
   "TateCurve.eq_or_mul_eq_of_bilateralX_eq": "✅",
-  "TateCurve.bilateral_add_self": "❌",
-  "TateCurve.bilateral_add_of_X_ne": "❌",
+  "TateCurve.bilateral_add_self": "✅",
+  "TateCurve.bilateral_ne_negY_of_sq_nontrivial": "❌",
+  "TateCurve.bilateral_tangentY_cleared": "❌",
+  "TateCurve.bilateral_tangentX_cleared": "❌",
+  "TateCurve.bilateral_chordY_cleared": "❌",
+  "TateCurve.bilateral_chordX_cleared": "❌",
+  "TateCurve.bilateral_add_of_X_ne": "✅",
   "TateCurve.pointMapQuot_add": "✅",
   "TateCurve.tateCurveEquiv": "✅",
   "WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel": "❌",
@@ -582,8 +587,20 @@
    "TateCurve.bilateralXY_inj",
    "WeierstrassCurve.Δ_tateCurve_eq_evalInt"
   ],
-  "TateCurve.bilateral_add_self": [],
-  "TateCurve.bilateral_add_of_X_ne": [],
+  "TateCurve.bilateral_add_self": [
+   "TateCurve.bilateral_ne_negY_of_sq_nontrivial",
+   "TateCurve.bilateral_tangentX_cleared",
+   "TateCurve.bilateral_tangentY_cleared"
+  ],
+  "TateCurve.bilateral_ne_negY_of_sq_nontrivial": [],
+  "TateCurve.bilateral_tangentY_cleared": [],
+  "TateCurve.bilateral_tangentX_cleared": [],
+  "TateCurve.bilateral_chordY_cleared": [],
+  "TateCurve.bilateral_chordX_cleared": [],
+  "TateCurve.bilateral_add_of_X_ne": [
+   "TateCurve.bilateral_chordY_cleared",
+   "TateCurve.bilateral_chordX_cleared"
+  ],
   "TateCurve.pointMapQuot_add": [
    "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
    "TateCurve.eq_or_mul_eq_of_bilateralX_eq",

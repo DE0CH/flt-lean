@@ -208,30 +208,67 @@ entries file). To add/remove/annotate a node, edit
                                                                           the complete field, the
                                                                           y-value separating the two
                                                                           sheets.
-                                                                    - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry
-                                                                      node, V.3.1(c) doubling case):
-                                                                      for u in the annulus with u²
-                                                                      not in the trivial class, y ≠
-                                                                      negY (not 2-torsion) and the
-                                                                      bilateral values of u² are the
-                                                                      affine tangent doubling. Same
-                                                                      attack as the chord identity,
-                                                                      along the diagonal.
-                                                                    - ❌· `TateCurve.bilateral_add_of_X_ne` — the chord identity (sorry
-                                                                      node, V.3.1(c) generic case):
-                                                                      bilateral values of u·v =
-                                                                      affine chord addition
-                                                                      (addX/addY at slope) of
-                                                                      bilateral values of u, v when
-                                                                      the x-values differ. Attack:
-                                                                      two-transcendental extension
-                                                                      of the
-                                                                      eq_zero_of_forall_hasSum_zero
-                                                                      descent of
-                                                                      TateCurveConstruction, via the
-                                                                      ℂ-analytic addition law of the
-                                                                      exponential parametrization
-                                                                      ℂ/Λ → E_q(ℂ).
+                                                                    - ✅· `TateCurve.bilateral_add_self` — the tangent identity (V.3.1(c)
+                                                                      doubling case). DERIVED
+                                                                      2026-07-18 from the cleared
+                                                                      tangent identities + the
+                                                                      non-2-torsion leaf, same
+                                                                      division bookkeeping pattern
+                                                                      as the chord case.
+                                                                        - ❌· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry
+                                                                          node): u in the annulus with
+                                                                          u² not in the trivial class
+                                                                          has 2Y(u) + X(u) ≠ 0 — the
+                                                                          2-torsion parameters are
+                                                                          exactly {-1, ±√q}·q^ℤ.
+                                                                        - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity
+                                                                          (sorry node): -(Y(u²)+X(u²))E
+                                                                          = M(X(u²)-X(u)) + Y(u)E.
+                                                                          Diagonal case.
+                                                                        - ❌· `TateCurve.bilateral_tangentX_cleared` — cleared tangent X-identity
+                                                                          (sorry node): (X(u²)+2X(u))E²
+                                                                          = M² + ME with M the tangent-
+                                                                          slope numerator, E = y - negY.
+                                                                          Diagonal case of the cleared
+                                                                          chord content.
+                                                                    - ✅· `TateCurve.bilateral_add_of_X_ne` — the chord identity (V.3.1(c)
+                                                                      generic case). DERIVED
+                                                                      2026-07-18 from the cleared
+                                                                      chord identities
+                                                                      bilateral_chordX_cleared /
+                                                                      bilateral_chordY_cleared: the
+                                                                      triviality exclusions follow
+                                                                      from distinct x-values via the
+                                                                      proven inversion/shift
+                                                                      identities, and the
+                                                                      slope/addX/addY division
+                                                                      bookkeeping is field_simp +
+                                                                      linear_combination against the
+                                                                      cleared forms.
+                                                                        - ❌· `TateCurve.bilateral_chordY_cleared` — cleared chord Y-identity
+                                                                          (sorry node):
+                                                                          -(Y(uv)+X(uv))(X(u)-X(v)) =
+                                                                          (Y(u)-Y(v))(X(uv)-X(u)) +
+                                                                          Y(u)(X(u)-X(v)) — linear in
+                                                                          the X-part output. Same attack
+                                                                          as the X-identity.
+                                                                        - ❌· `TateCurve.bilateral_chordX_cleared` — cleared chord X-identity
+                                                                          (sorry node):
+                                                                          (X(uv)+X(u)+X(v))(X(u)-X(v))²
+                                                                          = (Y(u)-Y(v))² +
+                                                                          (Y(u)-Y(v))(X(u)-X(v)) — pure
+                                                                          polynomial series identity, no
+                                                                          slope/division/cases. Attack:
+                                                                          Ramanujan/Eisenstein
+                                                                          manipulation of divisor double
+                                                                          series
+                                                                          (Venkatachaliengar–Cooper Ch.
+                                                                          1) or two-transcendental
+                                                                          descent; mathlib LACKS the
+                                                                          ℘-addition law (checked
+                                                                          2026-07-18), so the ℂ-analytic
+                                                                          route requires formalizing it
+                                                                          first.
                                                             - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node):
                                                               GIVEN the finite-level canonical
                                                               uniformisation lˣ/q^ℤ ≃+ E_q(l) with
@@ -371,30 +408,67 @@ entries file). To add/remove/annotate a node, edit
                                                                               the complete field, the
                                                                               y-value separating the two
                                                                               sheets.
-                                                                        - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry
-                                                                          node, V.3.1(c) doubling case):
-                                                                          for u in the annulus with u²
-                                                                          not in the trivial class, y ≠
-                                                                          negY (not 2-torsion) and the
-                                                                          bilateral values of u² are the
-                                                                          affine tangent doubling. Same
-                                                                          attack as the chord identity,
-                                                                          along the diagonal.
-                                                                        - ❌· `TateCurve.bilateral_add_of_X_ne` — the chord identity (sorry
-                                                                          node, V.3.1(c) generic case):
-                                                                          bilateral values of u·v =
-                                                                          affine chord addition
-                                                                          (addX/addY at slope) of
-                                                                          bilateral values of u, v when
-                                                                          the x-values differ. Attack:
-                                                                          two-transcendental extension
-                                                                          of the
-                                                                          eq_zero_of_forall_hasSum_zero
-                                                                          descent of
-                                                                          TateCurveConstruction, via the
-                                                                          ℂ-analytic addition law of the
-                                                                          exponential parametrization
-                                                                          ℂ/Λ → E_q(ℂ).
+                                                                        - ✅· `TateCurve.bilateral_add_self` — the tangent identity (V.3.1(c)
+                                                                          doubling case). DERIVED
+                                                                          2026-07-18 from the cleared
+                                                                          tangent identities + the
+                                                                          non-2-torsion leaf, same
+                                                                          division bookkeeping pattern
+                                                                          as the chord case.
+                                                                            - ❌· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry
+                                                                              node): u in the annulus with
+                                                                              u² not in the trivial class
+                                                                              has 2Y(u) + X(u) ≠ 0 — the
+                                                                              2-torsion parameters are
+                                                                              exactly {-1, ±√q}·q^ℤ.
+                                                                            - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity
+                                                                              (sorry node): -(Y(u²)+X(u²))E
+                                                                              = M(X(u²)-X(u)) + Y(u)E.
+                                                                              Diagonal case.
+                                                                            - ❌· `TateCurve.bilateral_tangentX_cleared` — cleared tangent X-identity
+                                                                              (sorry node): (X(u²)+2X(u))E²
+                                                                              = M² + ME with M the tangent-
+                                                                              slope numerator, E = y - negY.
+                                                                              Diagonal case of the cleared
+                                                                              chord content.
+                                                                        - ✅· `TateCurve.bilateral_add_of_X_ne` — the chord identity (V.3.1(c)
+                                                                          generic case). DERIVED
+                                                                          2026-07-18 from the cleared
+                                                                          chord identities
+                                                                          bilateral_chordX_cleared /
+                                                                          bilateral_chordY_cleared: the
+                                                                          triviality exclusions follow
+                                                                          from distinct x-values via the
+                                                                          proven inversion/shift
+                                                                          identities, and the
+                                                                          slope/addX/addY division
+                                                                          bookkeeping is field_simp +
+                                                                          linear_combination against the
+                                                                          cleared forms.
+                                                                            - ❌· `TateCurve.bilateral_chordY_cleared` — cleared chord Y-identity
+                                                                              (sorry node):
+                                                                              -(Y(uv)+X(uv))(X(u)-X(v)) =
+                                                                              (Y(u)-Y(v))(X(uv)-X(u)) +
+                                                                              Y(u)(X(u)-X(v)) — linear in
+                                                                              the X-part output. Same attack
+                                                                              as the X-identity.
+                                                                            - ❌· `TateCurve.bilateral_chordX_cleared` — cleared chord X-identity
+                                                                              (sorry node):
+                                                                              (X(uv)+X(u)+X(v))(X(u)-X(v))²
+                                                                              = (Y(u)-Y(v))² +
+                                                                              (Y(u)-Y(v))(X(u)-X(v)) — pure
+                                                                              polynomial series identity, no
+                                                                              slope/division/cases. Attack:
+                                                                              Ramanujan/Eisenstein
+                                                                              manipulation of divisor double
+                                                                              series
+                                                                              (Venkatachaliengar–Cooper Ch.
+                                                                              1) or two-transcendental
+                                                                              descent; mathlib LACKS the
+                                                                              ℘-addition law (checked
+                                                                              2026-07-18), so the ℂ-analytic
+                                                                              route requires formalizing it
+                                                                              first.
                                                                 - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry
                                                                   node): GIVEN the finite-level
                                                                   canonical uniformisation lˣ/q^ℤ ≃+
@@ -558,30 +632,67 @@ entries file). To add/remove/annotate a node, edit
                                                                                   the complete field, the
                                                                                   y-value separating the two
                                                                                   sheets.
-                                                                            - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry
-                                                                              node, V.3.1(c) doubling case):
-                                                                              for u in the annulus with u²
-                                                                              not in the trivial class, y ≠
-                                                                              negY (not 2-torsion) and the
-                                                                              bilateral values of u² are the
-                                                                              affine tangent doubling. Same
-                                                                              attack as the chord identity,
-                                                                              along the diagonal.
-                                                                            - ❌· `TateCurve.bilateral_add_of_X_ne` — the chord identity (sorry
-                                                                              node, V.3.1(c) generic case):
-                                                                              bilateral values of u·v =
-                                                                              affine chord addition
-                                                                              (addX/addY at slope) of
-                                                                              bilateral values of u, v when
-                                                                              the x-values differ. Attack:
-                                                                              two-transcendental extension
-                                                                              of the
-                                                                              eq_zero_of_forall_hasSum_zero
-                                                                              descent of
-                                                                              TateCurveConstruction, via the
-                                                                              ℂ-analytic addition law of the
-                                                                              exponential parametrization
-                                                                              ℂ/Λ → E_q(ℂ).
+                                                                            - ✅· `TateCurve.bilateral_add_self` — the tangent identity (V.3.1(c)
+                                                                              doubling case). DERIVED
+                                                                              2026-07-18 from the cleared
+                                                                              tangent identities + the
+                                                                              non-2-torsion leaf, same
+                                                                              division bookkeeping pattern
+                                                                              as the chord case.
+                                                                                - ❌· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry
+                                                                                  node): u in the annulus with
+                                                                                  u² not in the trivial class
+                                                                                  has 2Y(u) + X(u) ≠ 0 — the
+                                                                                  2-torsion parameters are
+                                                                                  exactly {-1, ±√q}·q^ℤ.
+                                                                                - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity
+                                                                                  (sorry node): -(Y(u²)+X(u²))E
+                                                                                  = M(X(u²)-X(u)) + Y(u)E.
+                                                                                  Diagonal case.
+                                                                                - ❌· `TateCurve.bilateral_tangentX_cleared` — cleared tangent X-identity
+                                                                                  (sorry node): (X(u²)+2X(u))E²
+                                                                                  = M² + ME with M the tangent-
+                                                                                  slope numerator, E = y - negY.
+                                                                                  Diagonal case of the cleared
+                                                                                  chord content.
+                                                                            - ✅· `TateCurve.bilateral_add_of_X_ne` — the chord identity (V.3.1(c)
+                                                                              generic case). DERIVED
+                                                                              2026-07-18 from the cleared
+                                                                              chord identities
+                                                                              bilateral_chordX_cleared /
+                                                                              bilateral_chordY_cleared: the
+                                                                              triviality exclusions follow
+                                                                              from distinct x-values via the
+                                                                              proven inversion/shift
+                                                                              identities, and the
+                                                                              slope/addX/addY division
+                                                                              bookkeeping is field_simp +
+                                                                              linear_combination against the
+                                                                              cleared forms.
+                                                                                - ❌· `TateCurve.bilateral_chordY_cleared` — cleared chord Y-identity
+                                                                                  (sorry node):
+                                                                                  -(Y(uv)+X(uv))(X(u)-X(v)) =
+                                                                                  (Y(u)-Y(v))(X(uv)-X(u)) +
+                                                                                  Y(u)(X(u)-X(v)) — linear in
+                                                                                  the X-part output. Same attack
+                                                                                  as the X-identity.
+                                                                                - ❌· `TateCurve.bilateral_chordX_cleared` — cleared chord X-identity
+                                                                                  (sorry node):
+                                                                                  (X(uv)+X(u)+X(v))(X(u)-X(v))²
+                                                                                  = (Y(u)-Y(v))² +
+                                                                                  (Y(u)-Y(v))(X(u)-X(v)) — pure
+                                                                                  polynomial series identity, no
+                                                                                  slope/division/cases. Attack:
+                                                                                  Ramanujan/Eisenstein
+                                                                                  manipulation of divisor double
+                                                                                  series
+                                                                                  (Venkatachaliengar–Cooper Ch.
+                                                                                  1) or two-transcendental
+                                                                                  descent; mathlib LACKS the
+                                                                                  ℘-addition law (checked
+                                                                                  2026-07-18), so the ℂ-analytic
+                                                                                  route requires formalizing it
+                                                                                  first.
                                                                     - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
                                                                       (sorry node): GIVEN the
                                                                       finite-level canonical
@@ -738,30 +849,67 @@ entries file). To add/remove/annotate a node, edit
                                                                                       the complete field, the
                                                                                       y-value separating the two
                                                                                       sheets.
-                                                                                - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry
-                                                                                  node, V.3.1(c) doubling case):
-                                                                                  for u in the annulus with u²
-                                                                                  not in the trivial class, y ≠
-                                                                                  negY (not 2-torsion) and the
-                                                                                  bilateral values of u² are the
-                                                                                  affine tangent doubling. Same
-                                                                                  attack as the chord identity,
-                                                                                  along the diagonal.
-                                                                                - ❌· `TateCurve.bilateral_add_of_X_ne` — the chord identity (sorry
-                                                                                  node, V.3.1(c) generic case):
-                                                                                  bilateral values of u·v =
-                                                                                  affine chord addition
-                                                                                  (addX/addY at slope) of
-                                                                                  bilateral values of u, v when
-                                                                                  the x-values differ. Attack:
-                                                                                  two-transcendental extension
-                                                                                  of the
-                                                                                  eq_zero_of_forall_hasSum_zero
-                                                                                  descent of
-                                                                                  TateCurveConstruction, via the
-                                                                                  ℂ-analytic addition law of the
-                                                                                  exponential parametrization
-                                                                                  ℂ/Λ → E_q(ℂ).
+                                                                                - ✅· `TateCurve.bilateral_add_self` — the tangent identity (V.3.1(c)
+                                                                                  doubling case). DERIVED
+                                                                                  2026-07-18 from the cleared
+                                                                                  tangent identities + the
+                                                                                  non-2-torsion leaf, same
+                                                                                  division bookkeeping pattern
+                                                                                  as the chord case.
+                                                                                    - ❌· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry
+                                                                                      node): u in the annulus with
+                                                                                      u² not in the trivial class
+                                                                                      has 2Y(u) + X(u) ≠ 0 — the
+                                                                                      2-torsion parameters are
+                                                                                      exactly {-1, ±√q}·q^ℤ.
+                                                                                    - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity
+                                                                                      (sorry node): -(Y(u²)+X(u²))E
+                                                                                      = M(X(u²)-X(u)) + Y(u)E.
+                                                                                      Diagonal case.
+                                                                                    - ❌· `TateCurve.bilateral_tangentX_cleared` — cleared tangent X-identity
+                                                                                      (sorry node): (X(u²)+2X(u))E²
+                                                                                      = M² + ME with M the tangent-
+                                                                                      slope numerator, E = y - negY.
+                                                                                      Diagonal case of the cleared
+                                                                                      chord content.
+                                                                                - ✅· `TateCurve.bilateral_add_of_X_ne` — the chord identity (V.3.1(c)
+                                                                                  generic case). DERIVED
+                                                                                  2026-07-18 from the cleared
+                                                                                  chord identities
+                                                                                  bilateral_chordX_cleared /
+                                                                                  bilateral_chordY_cleared: the
+                                                                                  triviality exclusions follow
+                                                                                  from distinct x-values via the
+                                                                                  proven inversion/shift
+                                                                                  identities, and the
+                                                                                  slope/addX/addY division
+                                                                                  bookkeeping is field_simp +
+                                                                                  linear_combination against the
+                                                                                  cleared forms.
+                                                                                    - ❌· `TateCurve.bilateral_chordY_cleared` — cleared chord Y-identity
+                                                                                      (sorry node):
+                                                                                      -(Y(uv)+X(uv))(X(u)-X(v)) =
+                                                                                      (Y(u)-Y(v))(X(uv)-X(u)) +
+                                                                                      Y(u)(X(u)-X(v)) — linear in
+                                                                                      the X-part output. Same attack
+                                                                                      as the X-identity.
+                                                                                    - ❌· `TateCurve.bilateral_chordX_cleared` — cleared chord X-identity
+                                                                                      (sorry node):
+                                                                                      (X(uv)+X(u)+X(v))(X(u)-X(v))²
+                                                                                      = (Y(u)-Y(v))² +
+                                                                                      (Y(u)-Y(v))(X(u)-X(v)) — pure
+                                                                                      polynomial series identity, no
+                                                                                      slope/division/cases. Attack:
+                                                                                      Ramanujan/Eisenstein
+                                                                                      manipulation of divisor double
+                                                                                      series
+                                                                                      (Venkatachaliengar–Cooper Ch.
+                                                                                      1) or two-transcendental
+                                                                                      descent; mathlib LACKS the
+                                                                                      ℘-addition law (checked
+                                                                                      2026-07-18), so the ℂ-analytic
+                                                                                      route requires formalizing it
+                                                                                      first.
                                                                         - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
                                                                           (sorry node): GIVEN the
                                                                           finite-level canonical
@@ -956,23 +1104,51 @@ entries file). To add/remove/annotate a node, edit
                                                               polygon/theta-quotient analysis of
                                                               X(u) - X(v) over the complete field,
                                                               the y-value separating the two sheets.
-                                                        - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry node, V.3.1(c)
-                                                          doubling case): for u in the annulus with
-                                                          u² not in the trivial class, y ≠ negY (not
-                                                          2-torsion) and the bilateral values of u²
-                                                          are the affine tangent doubling. Same
-                                                          attack as the chord identity, along the
-                                                          diagonal.
-                                                        - ❌· `TateCurve.bilateral_add_of_X_ne` — the chord identity (sorry node, V.3.1(c)
-                                                          generic case): bilateral values of u·v =
-                                                          affine chord addition (addX/addY at slope)
-                                                          of bilateral values of u, v when the
-                                                          x-values differ. Attack: two-
-                                                          transcendental extension of the
-                                                          eq_zero_of_forall_hasSum_zero descent of
-                                                          TateCurveConstruction, via the ℂ-analytic
-                                                          addition law of the exponential
-                                                          parametrization ℂ/Λ → E_q(ℂ).
+                                                        - ✅· `TateCurve.bilateral_add_self` — the tangent identity (V.3.1(c) doubling
+                                                          case). DERIVED 2026-07-18 from the cleared
+                                                          tangent identities + the non-2-torsion
+                                                          leaf, same division bookkeeping pattern as
+                                                          the chord case.
+                                                            - ❌· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry node): u in
+                                                              the annulus with u² not in the trivial
+                                                              class has 2Y(u) + X(u) ≠ 0 — the
+                                                              2-torsion parameters are exactly {-1,
+                                                              ±√q}·q^ℤ.
+                                                            - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity (sorry
+                                                              node): -(Y(u²)+X(u²))E = M(X(u²)-X(u))
+                                                              + Y(u)E. Diagonal case.
+                                                            - ❌· `TateCurve.bilateral_tangentX_cleared` — cleared tangent X-identity (sorry
+                                                              node): (X(u²)+2X(u))E² = M² + ME with
+                                                              M the tangent-slope numerator, E = y -
+                                                              negY. Diagonal case of the cleared
+                                                              chord content.
+                                                        - ✅· `TateCurve.bilateral_add_of_X_ne` — the chord identity (V.3.1(c) generic
+                                                          case). DERIVED 2026-07-18 from the cleared
+                                                          chord identities bilateral_chordX_cleared
+                                                          / bilateral_chordY_cleared: the triviality
+                                                          exclusions follow from distinct x-values
+                                                          via the proven inversion/shift identities,
+                                                          and the slope/addX/addY division
+                                                          bookkeeping is field_simp +
+                                                          linear_combination against the cleared
+                                                          forms.
+                                                            - ❌· `TateCurve.bilateral_chordY_cleared` — cleared chord Y-identity (sorry node):
+                                                              -(Y(uv)+X(uv))(X(u)-X(v)) =
+                                                              (Y(u)-Y(v))(X(uv)-X(u)) +
+                                                              Y(u)(X(u)-X(v)) — linear in the X-part
+                                                              output. Same attack as the X-identity.
+                                                            - ❌· `TateCurve.bilateral_chordX_cleared` — cleared chord X-identity (sorry node):
+                                                              (X(uv)+X(u)+X(v))(X(u)-X(v))² =
+                                                              (Y(u)-Y(v))² + (Y(u)-Y(v))(X(u)-X(v))
+                                                              — pure polynomial series identity, no
+                                                              slope/division/cases. Attack:
+                                                              Ramanujan/Eisenstein manipulation of
+                                                              divisor double series
+                                                              (Venkatachaliengar–Cooper Ch. 1) or
+                                                              two-transcendental descent; mathlib
+                                                              LACKS the ℘-addition law (checked
+                                                              2026-07-18), so the ℂ-analytic route
+                                                              requires formalizing it first.
                                                 - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the
                                                   finite-level canonical uniformisation lˣ/q^ℤ ≃+
                                                   E_q(l) with underlying pointMapQuot for every NALF
@@ -1080,26 +1256,57 @@ entries file). To add/remove/annotate a node, edit
                                                                   quotient analysis of X(u) - X(v)
                                                                   over the complete field, the
                                                                   y-value separating the two sheets.
-                                                            - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry node,
-                                                              V.3.1(c) doubling case): for u in the
-                                                              annulus with u² not in the trivial
-                                                              class, y ≠ negY (not 2-torsion) and
-                                                              the bilateral values of u² are the
-                                                              affine tangent doubling. Same attack
-                                                              as the chord identity, along the
-                                                              diagonal.
-                                                            - ❌· `TateCurve.bilateral_add_of_X_ne` — the chord identity (sorry node,
-                                                              V.3.1(c) generic case): bilateral
-                                                              values of u·v = affine chord addition
-                                                              (addX/addY at slope) of bilateral
-                                                              values of u, v when the x-values
-                                                              differ. Attack: two-transcendental
-                                                              extension of the
-                                                              eq_zero_of_forall_hasSum_zero descent
-                                                              of TateCurveConstruction, via the
-                                                              ℂ-analytic addition law of the
-                                                              exponential parametrization ℂ/Λ →
-                                                              E_q(ℂ).
+                                                            - ✅· `TateCurve.bilateral_add_self` — the tangent identity (V.3.1(c)
+                                                              doubling case). DERIVED 2026-07-18
+                                                              from the cleared tangent identities +
+                                                              the non-2-torsion leaf, same division
+                                                              bookkeeping pattern as the chord case.
+                                                                - ❌· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry node): u
+                                                                  in the annulus with u² not in the
+                                                                  trivial class has 2Y(u) + X(u) ≠ 0
+                                                                  — the 2-torsion parameters are
+                                                                  exactly {-1, ±√q}·q^ℤ.
+                                                                - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity (sorry
+                                                                  node): -(Y(u²)+X(u²))E =
+                                                                  M(X(u²)-X(u)) + Y(u)E. Diagonal
+                                                                  case.
+                                                                - ❌· `TateCurve.bilateral_tangentX_cleared` — cleared tangent X-identity (sorry
+                                                                  node): (X(u²)+2X(u))E² = M² + ME
+                                                                  with M the tangent-slope
+                                                                  numerator, E = y - negY. Diagonal
+                                                                  case of the cleared chord content.
+                                                            - ✅· `TateCurve.bilateral_add_of_X_ne` — the chord identity (V.3.1(c) generic
+                                                              case). DERIVED 2026-07-18 from the
+                                                              cleared chord identities
+                                                              bilateral_chordX_cleared /
+                                                              bilateral_chordY_cleared: the
+                                                              triviality exclusions follow from
+                                                              distinct x-values via the proven
+                                                              inversion/shift identities, and the
+                                                              slope/addX/addY division bookkeeping
+                                                              is field_simp + linear_combination
+                                                              against the cleared forms.
+                                                                - ❌· `TateCurve.bilateral_chordY_cleared` — cleared chord Y-identity (sorry
+                                                                  node): -(Y(uv)+X(uv))(X(u)-X(v)) =
+                                                                  (Y(u)-Y(v))(X(uv)-X(u)) +
+                                                                  Y(u)(X(u)-X(v)) — linear in the
+                                                                  X-part output. Same attack as the
+                                                                  X-identity.
+                                                                - ❌· `TateCurve.bilateral_chordX_cleared` — cleared chord X-identity (sorry
+                                                                  node):
+                                                                  (X(uv)+X(u)+X(v))(X(u)-X(v))² =
+                                                                  (Y(u)-Y(v))² +
+                                                                  (Y(u)-Y(v))(X(u)-X(v)) — pure
+                                                                  polynomial series identity, no
+                                                                  slope/division/cases. Attack:
+                                                                  Ramanujan/Eisenstein manipulation
+                                                                  of divisor double series
+                                                                  (Venkatachaliengar–Cooper Ch. 1)
+                                                                  or two-transcendental descent;
+                                                                  mathlib LACKS the ℘-addition law
+                                                                  (checked 2026-07-18), so the
+                                                                  ℂ-analytic route requires
+                                                                  formalizing it first.
                                                     - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN
                                                       the finite-level canonical uniformisation
                                                       lˣ/q^ℤ ≃+ E_q(l) with underlying pointMapQuot
@@ -1216,21 +1423,45 @@ entries file). To add/remove/annotate a node, edit
                                                       Newton-polygon/theta-quotient analysis of X(u)
                                                       - X(v) over the complete field, the y-value
                                                       separating the two sheets.
-                                                - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry node, V.3.1(c)
-                                                  doubling case): for u in the annulus with u² not
-                                                  in the trivial class, y ≠ negY (not 2-torsion) and
-                                                  the bilateral values of u² are the affine tangent
-                                                  doubling. Same attack as the chord identity, along
-                                                  the diagonal.
-                                                - ❌· `TateCurve.bilateral_add_of_X_ne` — the chord identity (sorry node, V.3.1(c) generic
-                                                  case): bilateral values of u·v = affine chord
-                                                  addition (addX/addY at slope) of bilateral values
-                                                  of u, v when the x-values differ. Attack: two-
-                                                  transcendental extension of the
-                                                  eq_zero_of_forall_hasSum_zero descent of
-                                                  TateCurveConstruction, via the ℂ-analytic addition
-                                                  law of the exponential parametrization ℂ/Λ →
-                                                  E_q(ℂ).
+                                                - ✅· `TateCurve.bilateral_add_self` — the tangent identity (V.3.1(c) doubling case).
+                                                  DERIVED 2026-07-18 from the cleared tangent
+                                                  identities + the non-2-torsion leaf, same division
+                                                  bookkeeping pattern as the chord case.
+                                                    - ❌· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry node): u in the
+                                                      annulus with u² not in the trivial class has
+                                                      2Y(u) + X(u) ≠ 0 — the 2-torsion parameters
+                                                      are exactly {-1, ±√q}·q^ℤ.
+                                                    - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity (sorry node):
+                                                      -(Y(u²)+X(u²))E = M(X(u²)-X(u)) + Y(u)E.
+                                                      Diagonal case.
+                                                    - ❌· `TateCurve.bilateral_tangentX_cleared` — cleared tangent X-identity (sorry node):
+                                                      (X(u²)+2X(u))E² = M² + ME with M the tangent-
+                                                      slope numerator, E = y - negY. Diagonal case
+                                                      of the cleared chord content.
+                                                - ✅· `TateCurve.bilateral_add_of_X_ne` — the chord identity (V.3.1(c) generic case).
+                                                  DERIVED 2026-07-18 from the cleared chord
+                                                  identities bilateral_chordX_cleared /
+                                                  bilateral_chordY_cleared: the triviality
+                                                  exclusions follow from distinct x-values via the
+                                                  proven inversion/shift identities, and the
+                                                  slope/addX/addY division bookkeeping is field_simp
+                                                  + linear_combination against the cleared forms.
+                                                    - ❌· `TateCurve.bilateral_chordY_cleared` — cleared chord Y-identity (sorry node):
+                                                      -(Y(uv)+X(uv))(X(u)-X(v)) =
+                                                      (Y(u)-Y(v))(X(uv)-X(u)) + Y(u)(X(u)-X(v)) —
+                                                      linear in the X-part output. Same attack as
+                                                      the X-identity.
+                                                    - ❌· `TateCurve.bilateral_chordX_cleared` — cleared chord X-identity (sorry node):
+                                                      (X(uv)+X(u)+X(v))(X(u)-X(v))² = (Y(u)-Y(v))² +
+                                                      (Y(u)-Y(v))(X(u)-X(v)) — pure polynomial
+                                                      series identity, no slope/division/cases.
+                                                      Attack: Ramanujan/Eisenstein manipulation of
+                                                      divisor double series
+                                                      (Venkatachaliengar–Cooper Ch. 1) or two-
+                                                      transcendental descent; mathlib LACKS the
+                                                      ℘-addition law (checked 2026-07-18), so the
+                                                      ℂ-analytic route requires formalizing it
+                                                      first.
                                         - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
                                           level canonical uniformisation lˣ/q^ℤ ≃+ E_q(l) with
                                           underlying pointMapQuot for every NALF l, the Ω-level hom
@@ -1313,21 +1544,45 @@ entries file). To add/remove/annotate a node, edit
                                                       Newton-polygon/theta-quotient analysis of X(u)
                                                       - X(v) over the complete field, the y-value
                                                       separating the two sheets.
-                                                - ❌· `TateCurve.bilateral_add_self` — the tangent identity (sorry node, V.3.1(c)
-                                                  doubling case): for u in the annulus with u² not
-                                                  in the trivial class, y ≠ negY (not 2-torsion) and
-                                                  the bilateral values of u² are the affine tangent
-                                                  doubling. Same attack as the chord identity, along
-                                                  the diagonal.
-                                                - ❌· `TateCurve.bilateral_add_of_X_ne` — the chord identity (sorry node, V.3.1(c) generic
-                                                  case): bilateral values of u·v = affine chord
-                                                  addition (addX/addY at slope) of bilateral values
-                                                  of u, v when the x-values differ. Attack: two-
-                                                  transcendental extension of the
-                                                  eq_zero_of_forall_hasSum_zero descent of
-                                                  TateCurveConstruction, via the ℂ-analytic addition
-                                                  law of the exponential parametrization ℂ/Λ →
-                                                  E_q(ℂ).
+                                                - ✅· `TateCurve.bilateral_add_self` — the tangent identity (V.3.1(c) doubling case).
+                                                  DERIVED 2026-07-18 from the cleared tangent
+                                                  identities + the non-2-torsion leaf, same division
+                                                  bookkeeping pattern as the chord case.
+                                                    - ❌· `TateCurve.bilateral_ne_negY_of_sq_nontrivial` — non-2-torsion leaf (sorry node): u in the
+                                                      annulus with u² not in the trivial class has
+                                                      2Y(u) + X(u) ≠ 0 — the 2-torsion parameters
+                                                      are exactly {-1, ±√q}·q^ℤ.
+                                                    - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity (sorry node):
+                                                      -(Y(u²)+X(u²))E = M(X(u²)-X(u)) + Y(u)E.
+                                                      Diagonal case.
+                                                    - ❌· `TateCurve.bilateral_tangentX_cleared` — cleared tangent X-identity (sorry node):
+                                                      (X(u²)+2X(u))E² = M² + ME with M the tangent-
+                                                      slope numerator, E = y - negY. Diagonal case
+                                                      of the cleared chord content.
+                                                - ✅· `TateCurve.bilateral_add_of_X_ne` — the chord identity (V.3.1(c) generic case).
+                                                  DERIVED 2026-07-18 from the cleared chord
+                                                  identities bilateral_chordX_cleared /
+                                                  bilateral_chordY_cleared: the triviality
+                                                  exclusions follow from distinct x-values via the
+                                                  proven inversion/shift identities, and the
+                                                  slope/addX/addY division bookkeeping is field_simp
+                                                  + linear_combination against the cleared forms.
+                                                    - ❌· `TateCurve.bilateral_chordY_cleared` — cleared chord Y-identity (sorry node):
+                                                      -(Y(uv)+X(uv))(X(u)-X(v)) =
+                                                      (Y(u)-Y(v))(X(uv)-X(u)) + Y(u)(X(u)-X(v)) —
+                                                      linear in the X-part output. Same attack as
+                                                      the X-identity.
+                                                    - ❌· `TateCurve.bilateral_chordX_cleared` — cleared chord X-identity (sorry node):
+                                                      (X(uv)+X(u)+X(v))(X(u)-X(v))² = (Y(u)-Y(v))² +
+                                                      (Y(u)-Y(v))(X(u)-X(v)) — pure polynomial
+                                                      series identity, no slope/division/cases.
+                                                      Attack: Ramanujan/Eisenstein manipulation of
+                                                      divisor double series
+                                                      (Venkatachaliengar–Cooper Ch. 1) or two-
+                                                      transcendental descent; mathlib LACKS the
+                                                      ℘-addition law (checked 2026-07-18), so the
+                                                      ℂ-analytic route requires formalizing it
+                                                      first.
                                         - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
                                           level canonical uniformisation lˣ/q^ℤ ≃+ E_q(l) with
                                           underlying pointMapQuot for every NALF l, the Ω-level hom

@@ -2699,13 +2699,54 @@ theorem tateCurve_negY (q₀ x y : k) :
   simp [WeierstrassCurve.Affine.negY, WeierstrassCurve.tateCurve]
 
 set_option warn.sorry false in
-/-- **The chord identity** (sorry node — Silverman V.3.1(c), generic case):
-for annulus parameters with distinct bilateral `x`-values, the bilateral
-values of the product are the affine chord addition of the bilateral values
-of the factors. This is the two-parameter series identity; attack: extend the
-`eq_zero_of_forall_hasSum_zero` descent of `TateCurveConstruction.lean` to two
-transcendentals, using the `ℂ`-analytic addition law of the exponential
-parametrization `ℂ/Λ → E_q(ℂ)`. -/
+/-- **The cleared chord `X`-identity** (sorry node — the denominator-free
+form of Silverman V.3.1(c), `x`-part): a pure polynomial identity between
+the six bilateral values at `u₀`, `v₀`, `u₀v₀`, with no slope, division,
+or case structure — the series content of the chord addition. Attack:
+the Ramanujan/Eisenstein-style algebraic manipulation of the divisor
+double series (cf. Venkatachaliengar–Cooper, *Development of Elliptic
+Functions According to Ramanujan*, Ch. 1, and the one-variable descent
+of `TateCurveConstruction.lean` extended to two transcendentals). -/
+theorem bilateral_chordX_cleared (u₀ v₀ q₀ : k)
+    (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (hq0 : q₀ ≠ 0)
+    (hq1 : valuation k q₀ < 1)
+    (hulow : valuation k q₀ < valuation k u₀)
+    (huhigh : valuation k u₀ ≤ 1)
+    (hvlow : valuation k q₀ < valuation k v₀)
+    (hvhigh : valuation k v₀ ≤ 1)
+    (hne1 : u₀ * v₀ ≠ 1) (hneq : u₀ * v₀ ≠ q₀) :
+    (bilateralX (u₀ * v₀) q₀ + bilateralX u₀ q₀ + bilateralX v₀ q₀) *
+        (bilateralX u₀ q₀ - bilateralX v₀ q₀) ^ 2 =
+      (bilateralY u₀ q₀ - bilateralY v₀ q₀) ^ 2 +
+        (bilateralY u₀ q₀ - bilateralY v₀ q₀) *
+          (bilateralX u₀ q₀ - bilateralX v₀ q₀) :=
+  sorry
+
+set_option warn.sorry false in
+/-- **The cleared chord `Y`-identity** (sorry node — the denominator-free
+form of Silverman V.3.1(c), `y`-part), linear in the `x`-part output. Same
+attack as the `X`-identity. -/
+theorem bilateral_chordY_cleared (u₀ v₀ q₀ : k)
+    (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (hq0 : q₀ ≠ 0)
+    (hq1 : valuation k q₀ < 1)
+    (hulow : valuation k q₀ < valuation k u₀)
+    (huhigh : valuation k u₀ ≤ 1)
+    (hvlow : valuation k q₀ < valuation k v₀)
+    (hvhigh : valuation k v₀ ≤ 1)
+    (hne1 : u₀ * v₀ ≠ 1) (hneq : u₀ * v₀ ≠ q₀) :
+    -(bilateralY (u₀ * v₀) q₀ + bilateralX (u₀ * v₀) q₀) *
+        (bilateralX u₀ q₀ - bilateralX v₀ q₀) =
+      (bilateralY u₀ q₀ - bilateralY v₀ q₀) *
+          (bilateralX (u₀ * v₀) q₀ - bilateralX u₀ q₀) +
+        bilateralY u₀ q₀ * (bilateralX u₀ q₀ - bilateralX v₀ q₀) :=
+  sorry
+
+/-- **The chord identity** (DERIVED 2026-07-18 from the cleared chord
+identities — Silverman V.3.1(c), generic case): for annulus parameters
+with distinct bilateral `x`-values, the bilateral values of the product
+are the affine chord addition of the bilateral values of the factors.
+The division bookkeeping (the slope, `addX`, `addY`) is handled here;
+the series content is the two cleared polynomial identities. -/
 theorem bilateral_add_of_X_ne [DecidableEq k] (u₀ v₀ q₀ : k)
     (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (hq0 : q₀ ≠ 0)
     (hq1 : valuation k q₀ < 1)
@@ -2723,16 +2764,133 @@ theorem bilateral_add_of_X_ne [DecidableEq k] (u₀ v₀ q₀ : k)
       (WeierstrassCurve.tateCurve q₀).toAffine.addY (bilateralX u₀ q₀)
         (bilateralX v₀ q₀) (bilateralY u₀ q₀)
         ((WeierstrassCurve.tateCurve q₀).toAffine.slope (bilateralX u₀ q₀)
-          (bilateralX v₀ q₀) (bilateralY u₀ q₀) (bilateralY v₀ q₀)) :=
+          (bilateralX v₀ q₀) (bilateralY u₀ q₀) (bilateralY v₀ q₀)) := by
+  -- the triviality exclusions follow from the distinct `x`-values
+  have hqu : valuation k (q₀ * u₀) < 1 := by
+    rw [map_mul]
+    calc valuation k q₀ * valuation k u₀ ≤ valuation k q₀ * 1 :=
+          mul_le_mul_right huhigh _
+      _ = valuation k q₀ := mul_one _
+      _ < 1 := hq1
+  have hquinv : valuation k (q₀ * u₀⁻¹) < 1 := by
+    rw [map_mul, map_inv₀]
+    have hinvpos : (0 : ValueGroupWithZero k) < (valuation k u₀)⁻¹ :=
+      zero_lt_iff.mpr (inv_ne_zero ((Valuation.ne_zero_iff _).mpr hu0))
+    calc valuation k q₀ * (valuation k u₀)⁻¹
+        < valuation k u₀ * (valuation k u₀)⁻¹ :=
+          (OrderIso.mulRight₀ _ hinvpos).strictMono hulow
+      _ = 1 := mul_inv_cancel₀ ((Valuation.ne_zero_iff _).mpr hu0)
+  have hne1 : u₀ * v₀ ≠ 1 := by
+    intro h
+    apply hX
+    have hv : v₀ = u₀⁻¹ := by
+      field_simp at h ⊢
+      linear_combination h
+    rw [hv, bilateralX_inv u₀ q₀ hu0]
+  have hneq : u₀ * v₀ ≠ q₀ := by
+    intro h
+    apply hX
+    have hv : v₀ = q₀ * u₀⁻¹ := by
+      field_simp at h ⊢
+      linear_combination h
+    have hqinv' : valuation k (q₀ * (u₀⁻¹)⁻¹) < 1 := by rwa [inv_inv]
+    rw [hv, bilateralX_shift u₀⁻¹ q₀ (inv_ne_zero hu0) hq0 hq1 hquinv hqinv',
+      bilateralX_inv u₀ q₀ hu0]
+  have hD : bilateralX u₀ q₀ - bilateralX v₀ q₀ ≠ 0 := sub_ne_zero.mpr hX
+  have h1 := bilateral_chordX_cleared u₀ v₀ q₀ hu0 hv0 hq0 hq1
+    hulow huhigh hvlow hvhigh hne1 hneq
+  have h2 := bilateral_chordY_cleared u₀ v₀ q₀ hu0 hv0 hq0 hq1
+    hulow huhigh hvlow hvhigh hne1 hneq
+  have hXeq : bilateralX (u₀ * v₀) q₀ =
+      (WeierstrassCurve.tateCurve q₀).toAffine.addX (bilateralX u₀ q₀)
+        (bilateralX v₀ q₀)
+        ((WeierstrassCurve.tateCurve q₀).toAffine.slope (bilateralX u₀ q₀)
+          (bilateralX v₀ q₀) (bilateralY u₀ q₀) (bilateralY v₀ q₀)) := by
+    rw [WeierstrassCurve.Affine.slope_of_X_ne hX,
+      WeierstrassCurve.Affine.addX,
+      show (WeierstrassCurve.tateCurve q₀).toAffine.a₁ = 1 from rfl,
+      show (WeierstrassCurve.tateCurve q₀).toAffine.a₂ = 0 from rfl]
+    field_simp
+    linear_combination h1
+  refine ⟨hXeq, ?_⟩
+  rw [WeierstrassCurve.Affine.addY, WeierstrassCurve.Affine.negAddY,
+    WeierstrassCurve.Affine.negY,
+    show (WeierstrassCurve.tateCurve q₀).toAffine.a₁ = 1 from rfl,
+    show (WeierstrassCurve.tateCurve q₀).toAffine.a₃ = 0 from rfl,
+    ← hXeq, WeierstrassCurve.Affine.slope_of_X_ne hX]
+  field_simp
+  linear_combination -h2
+
+set_option warn.sorry false in
+/-- **Non-`2`-torsion of nontrivial-square annulus parameters** (sorry
+node): for an annulus parameter whose square is not in the trivial class,
+the bilateral point is not `2`-torsion — its `y`-value differs from `negY`
+of itself. Series content: `2Y(u) + X(u) = 0` characterises the three
+nontrivial `2`-torsion parameters `u ∈ {-1, ±√q}·q^ℤ`. -/
+theorem bilateral_ne_negY_of_sq_nontrivial (u₀ q₀ : k)
+    (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hq0 : q₀ ≠ 0)
+    (hq1 : valuation k q₀ < 1)
+    (hulow : valuation k q₀ < valuation k u₀)
+    (huhigh : valuation k u₀ ≤ 1)
+    (hsq1 : u₀ * u₀ ≠ 1) (hsqq : u₀ * u₀ ≠ q₀) :
+    bilateralY u₀ q₀ ≠ (WeierstrassCurve.tateCurve q₀).toAffine.negY
+      (bilateralX u₀ q₀) (bilateralY u₀ q₀) :=
   sorry
 
 set_option warn.sorry false in
-/-- **The tangent identity** (sorry node — Silverman V.3.1(c), doubling
-case): for an annulus parameter whose square is not in the trivial class,
-the point is not `2`-torsion (its `y`-value is not `negY` of itself), and
-the bilateral values of the square are the affine tangent doubling of the
-bilateral values. Same attack as the chord identity, specialised along the
-diagonal. -/
+/-- **The cleared tangent `X`-identity** (sorry node — the
+denominator-free form of Silverman V.3.1(c), doubling case, `x`-part):
+with `M` the tangent-slope numerator and `E` its denominator
+(`y - negY`), the identity `(X(u²) + 2X(u))·E² = M² + M·E`. Same series
+content as the cleared chord identities, along the diagonal. -/
+theorem bilateral_tangentX_cleared (u₀ q₀ : k)
+    (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hq0 : q₀ ≠ 0)
+    (hq1 : valuation k q₀ < 1)
+    (hulow : valuation k q₀ < valuation k u₀)
+    (huhigh : valuation k u₀ ≤ 1)
+    (hsq1 : u₀ * u₀ ≠ 1) (hsqq : u₀ * u₀ ≠ q₀) :
+    (bilateralX (u₀ * u₀) q₀ + 2 * bilateralX u₀ q₀) *
+        (bilateralY u₀ q₀ - (WeierstrassCurve.tateCurve q₀).toAffine.negY
+          (bilateralX u₀ q₀) (bilateralY u₀ q₀)) ^ 2 =
+      (3 * bilateralX u₀ q₀ ^ 2 +
+          2 * (WeierstrassCurve.tateCurve q₀).toAffine.a₂ * bilateralX u₀ q₀ +
+          (WeierstrassCurve.tateCurve q₀).toAffine.a₄ -
+          (WeierstrassCurve.tateCurve q₀).toAffine.a₁ * bilateralY u₀ q₀) ^ 2 +
+        (3 * bilateralX u₀ q₀ ^ 2 +
+          2 * (WeierstrassCurve.tateCurve q₀).toAffine.a₂ * bilateralX u₀ q₀ +
+          (WeierstrassCurve.tateCurve q₀).toAffine.a₄ -
+          (WeierstrassCurve.tateCurve q₀).toAffine.a₁ * bilateralY u₀ q₀) *
+        (bilateralY u₀ q₀ - (WeierstrassCurve.tateCurve q₀).toAffine.negY
+          (bilateralX u₀ q₀) (bilateralY u₀ q₀)) :=
+  sorry
+
+set_option warn.sorry false in
+/-- **The cleared tangent `Y`-identity** (sorry node — the
+denominator-free form of Silverman V.3.1(c), doubling case, `y`-part),
+linear in the `x`-part output. Same series content. -/
+theorem bilateral_tangentY_cleared (u₀ q₀ : k)
+    (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hq0 : q₀ ≠ 0)
+    (hq1 : valuation k q₀ < 1)
+    (hulow : valuation k q₀ < valuation k u₀)
+    (huhigh : valuation k u₀ ≤ 1)
+    (hsq1 : u₀ * u₀ ≠ 1) (hsqq : u₀ * u₀ ≠ q₀) :
+    -(bilateralY (u₀ * u₀) q₀ + bilateralX (u₀ * u₀) q₀) *
+        (bilateralY u₀ q₀ - (WeierstrassCurve.tateCurve q₀).toAffine.negY
+          (bilateralX u₀ q₀) (bilateralY u₀ q₀)) =
+      (3 * bilateralX u₀ q₀ ^ 2 +
+          2 * (WeierstrassCurve.tateCurve q₀).toAffine.a₂ * bilateralX u₀ q₀ +
+          (WeierstrassCurve.tateCurve q₀).toAffine.a₄ -
+          (WeierstrassCurve.tateCurve q₀).toAffine.a₁ * bilateralY u₀ q₀) *
+          (bilateralX (u₀ * u₀) q₀ - bilateralX u₀ q₀) +
+        bilateralY u₀ q₀ *
+        (bilateralY u₀ q₀ - (WeierstrassCurve.tateCurve q₀).toAffine.negY
+          (bilateralX u₀ q₀) (bilateralY u₀ q₀)) :=
+  sorry
+
+/-- **The tangent identity** (DERIVED 2026-07-18 from the cleared tangent
+identities and the non-`2`-torsion leaf — Silverman V.3.1(c), doubling
+case): the division bookkeeping of the tangent slope is handled here;
+the series content is the cleared identities. -/
 theorem bilateral_add_self [DecidableEq k] (u₀ q₀ : k)
     (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hq0 : q₀ ≠ 0)
     (hq1 : valuation k q₀ < 1)
@@ -2750,8 +2908,46 @@ theorem bilateral_add_self [DecidableEq k] (u₀ q₀ : k)
       (WeierstrassCurve.tateCurve q₀).toAffine.addY (bilateralX u₀ q₀)
         (bilateralX u₀ q₀) (bilateralY u₀ q₀)
         ((WeierstrassCurve.tateCurve q₀).toAffine.slope (bilateralX u₀ q₀)
-          (bilateralX u₀ q₀) (bilateralY u₀ q₀) (bilateralY u₀ q₀)) :=
-  sorry
+          (bilateralX u₀ q₀) (bilateralY u₀ q₀) (bilateralY u₀ q₀)) := by
+  have hYne := bilateral_ne_negY_of_sq_nontrivial u₀ q₀ hu0 hu1 hq0 hq1
+    hulow huhigh hsq1 hsqq
+  have hE : bilateralY u₀ q₀ -
+      (WeierstrassCurve.tateCurve q₀).toAffine.negY
+        (bilateralX u₀ q₀) (bilateralY u₀ q₀) ≠ 0 :=
+    sub_ne_zero.mpr hYne
+  have h1 := bilateral_tangentX_cleared u₀ q₀ hu0 hu1 hq0 hq1
+    hulow huhigh hsq1 hsqq
+  have h2 := bilateral_tangentY_cleared u₀ q₀ hu0 hu1 hq0 hq1
+    hulow huhigh hsq1 hsqq
+  rw [show (WeierstrassCurve.tateCurve q₀).toAffine.a₂ = 0 from rfl,
+    show (WeierstrassCurve.tateCurve q₀).toAffine.a₁ = 1 from rfl,
+    tateCurve_negY q₀, show u₀ * u₀ = u₀ ^ 2 from (pow_two u₀).symm] at h1 h2
+  have hE' : bilateralY u₀ q₀ - (-(bilateralY u₀ q₀) - bilateralX u₀ q₀) ≠ 0 := by
+    rw [← tateCurve_negY q₀]
+    exact hE
+  have hXeq : bilateralX (u₀ * u₀) q₀ =
+      (WeierstrassCurve.tateCurve q₀).toAffine.addX (bilateralX u₀ q₀)
+        (bilateralX u₀ q₀)
+        ((WeierstrassCurve.tateCurve q₀).toAffine.slope (bilateralX u₀ q₀)
+          (bilateralX u₀ q₀) (bilateralY u₀ q₀) (bilateralY u₀ q₀)) := by
+    rw [WeierstrassCurve.Affine.slope_of_Y_ne rfl hYne,
+      WeierstrassCurve.Affine.addX,
+      show (WeierstrassCurve.tateCurve q₀).toAffine.a₂ = 0 from rfl,
+      show (WeierstrassCurve.tateCurve q₀).toAffine.a₁ = 1 from rfl,
+      tateCurve_negY q₀]
+    field_simp
+    linear_combination h1
+  refine ⟨hYne, hXeq, ?_⟩
+  rw [WeierstrassCurve.Affine.addY, WeierstrassCurve.Affine.negAddY,
+    WeierstrassCurve.Affine.negY,
+    show (WeierstrassCurve.tateCurve q₀).toAffine.a₁ = 1 from rfl,
+    show (WeierstrassCurve.tateCurve q₀).toAffine.a₃ = 0 from rfl,
+    ← hXeq, WeierstrassCurve.Affine.slope_of_Y_ne rfl hYne,
+    show (WeierstrassCurve.tateCurve q₀).toAffine.a₂ = 0 from rfl,
+    show (WeierstrassCurve.tateCurve q₀).toAffine.a₁ = 1 from rfl,
+    tateCurve_negY q₀]
+  field_simp
+  linear_combination -h2
 
 set_option warn.sorry false in
 /-- **Injectivity of the bilateral coordinate pair on the annulus** (sorry
