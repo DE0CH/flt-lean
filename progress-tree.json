@@ -116,7 +116,8 @@
   "hasMultiplicativeReduction_padic": "✅✅",
   "exists_tame_quotient_of_split_padic_two": "✅",
   "WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two": "✅",
-  "inertia_fixes_algHom_of_unramified_gen_padic_two": "✅✅"
+  "inertia_fixes_algHom_of_unramified_gen_padic_two": "✅✅",
+  "WeierstrassCurve.hasSplitMultiplicativeReduction_tateCurve": "✅✅"
  },
  "children": {
   "fermat_last_theorem": [
@@ -570,10 +571,12 @@
   ],
   "inertia_fixes_algHom_of_unramified_gen_padic_two": [
    "ValuationSubring.inertia_fixes_root_of_separable_residue"
-  ]
+  ],
+  "WeierstrassCurve.hasSplitMultiplicativeReduction_tateCurve": []
  },
  "roots": [
   "fermat_last_theorem",
-  "GaloisRepresentation.IsHardlyRamified.mod_three"
+  "GaloisRepresentation.IsHardlyRamified.mod_three",
+  "WeierstrassCurve.hasSplitMultiplicativeReduction_tateCurve"
  ]
 }
