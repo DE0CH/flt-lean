@@ -1532,6 +1532,152 @@ theorem hasSum_lambert_side (u₀ q₀ : k) (hq : valuation k q₀ < 1)
   refine hT.congr_fun fun p ↦ ?_
   ring
 
+omit [CharZero k] in
+/-- Two-index summability of the Lambert double series in the general
+window `|q₀| < 1`, `|q₀·w| < 1` (allowing `|w| > 1`, as for
+`w = u₀⁻¹` with `u₀` interior to the annulus). -/
+theorem summable_lambert_prod' (w q₀ : k) (hq : valuation k q₀ < 1)
+    (hqw : valuation k (q₀ * w) < 1) :
+    Summable (fun p : ℕ+ × ℕ+ ↦
+      ((p.2 : ℕ) : k) * w ^ (p.2 : ℕ) * q₀ ^ ((p.1 : ℕ) * (p.2 : ℕ))) := by
+  have hfin : ∀ N : ℕ, {p : ℕ+ × ℕ+ |
+      (fun p : ℕ+ × ℕ+ ↦ (p.1 : ℕ) * (p.2 : ℕ)) p < N}.Finite := by
+    intro N
+    have hinj : Function.Injective
+        (fun p : ℕ+ × ℕ+ ↦ ((p.1 : ℕ), (p.2 : ℕ))) := by
+      intro a b hab
+      simp only [Prod.mk.injEq] at hab
+      exact Prod.ext (PNat.coe_injective hab.1) (PNat.coe_injective hab.2)
+    refine Set.Finite.subset
+      (((Set.finite_Iio N).prod (Set.finite_Iio N)).preimage
+        hinj.injOn) ?_
+    intro p hp
+    simp only [Set.mem_setOf_eq] at hp
+    constructor
+    · exact lt_of_le_of_lt (Nat.le_mul_of_pos_right _ p.2.pos) hp
+    · exact lt_of_le_of_lt (Nat.le_mul_of_pos_left _ p.1.pos) hp
+  have hj1 : ∀ j : ℕ+, valuation k (((j : ℕ) : k)) ≤ 1 := by
+    intro j
+    have h := valuation_intCast_le_one (R := k) (j : ℕ)
+    simpa using h
+  -- the term bound `v(j·wʲ·q^{mj}) ≤ v(qw)ʲ·v(q)^{(m-1)j}`
+  have hbound : ∀ p : ℕ+ × ℕ+,
+      valuation k (((p.2 : ℕ) : k) * w ^ (p.2 : ℕ) *
+        q₀ ^ ((p.1 : ℕ) * (p.2 : ℕ))) ≤
+      valuation k (q₀ * w) ^ (p.2 : ℕ) *
+        valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) := by
+    intro p
+    have hm1 : ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ) =
+        (p.1 : ℕ) * (p.2 : ℕ) := by
+      calc ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ)
+          = (((p.1 : ℕ) - 1) + 1) * (p.2 : ℕ) := by ring
+        _ = (p.1 : ℕ) * (p.2 : ℕ) := by
+            rw [Nat.sub_add_cancel p.1.pos]
+    rw [map_mul, map_mul, map_pow, map_pow, ← hm1, pow_add, map_mul]
+    calc valuation k (((p.2 : ℕ) : k)) * valuation k w ^ (p.2 : ℕ) *
+          (valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) *
+            valuation k q₀ ^ (p.2 : ℕ))
+        ≤ 1 * valuation k w ^ (p.2 : ℕ) *
+          (valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) *
+            valuation k q₀ ^ (p.2 : ℕ)) := by
+          exact mul_le_mul_left
+            (mul_le_mul_left (hj1 p.2) _) _
+      _ = (valuation k q₀ * valuation k w) ^ (p.2 : ℕ) *
+          valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) := by
+          rw [one_mul, mul_pow, mul_comm
+            (valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)))
+            (valuation k q₀ ^ (p.2 : ℕ)), ← mul_assoc, mul_comm
+            (valuation k w ^ (p.2 : ℕ)) (valuation k q₀ ^ (p.2 : ℕ)),
+            mul_assoc]
+  -- run the criterion with the larger of `q₀`, `q₀w`
+  rcases le_total (valuation k q₀) (valuation k (q₀ * w)) with hle | hle
+  · refine summable_of_valuation_le_pow (q := q₀ * w) hqw
+      (fun p ↦ (p.1 : ℕ) * (p.2 : ℕ)) hfin (fun p ↦ ?_)
+    refine le_trans (hbound p) ?_
+    have hm1 : ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ) =
+        (p.1 : ℕ) * (p.2 : ℕ) := by
+      calc ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ)
+          = (((p.1 : ℕ) - 1) + 1) * (p.2 : ℕ) := by ring
+        _ = (p.1 : ℕ) * (p.2 : ℕ) := by
+            rw [Nat.sub_add_cancel p.1.pos]
+    calc valuation k (q₀ * w) ^ (p.2 : ℕ) *
+          valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ))
+        ≤ valuation k (q₀ * w) ^ (p.2 : ℕ) *
+          valuation k (q₀ * w) ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) :=
+          mul_le_mul_right (pow_le_pow_left' hle _) _
+      _ = valuation k (q₀ * w) ^ ((p.1 : ℕ) * (p.2 : ℕ)) := by
+          rw [← pow_add, add_comm, hm1]
+  · refine summable_of_valuation_le_pow (q := q₀) hq
+      (fun p ↦ (p.1 : ℕ) * (p.2 : ℕ)) hfin (fun p ↦ ?_)
+    refine le_trans (hbound p) ?_
+    have hm1 : ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ) =
+        (p.1 : ℕ) * (p.2 : ℕ) := by
+      calc ((p.1 : ℕ) - 1) * (p.2 : ℕ) + (p.2 : ℕ)
+          = (((p.1 : ℕ) - 1) + 1) * (p.2 : ℕ) := by ring
+        _ = (p.1 : ℕ) * (p.2 : ℕ) := by
+            rw [Nat.sub_add_cancel p.1.pos]
+    calc valuation k (q₀ * w) ^ (p.2 : ℕ) *
+          valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ))
+        ≤ valuation k q₀ ^ (p.2 : ℕ) *
+          valuation k q₀ ^ (((p.1 : ℕ) - 1) * (p.2 : ℕ)) :=
+          mul_le_mul_left (pow_le_pow_left' hle _) _
+      _ = valuation k q₀ ^ ((p.1 : ℕ) * (p.2 : ℕ)) := by
+          rw [← pow_add, add_comm, hm1]
+
+omit [CharZero k] in
+/-- Per-row sums in the general window: `|q₀ᵐw| ≤ |q₀w| < 1` for
+`m ≥ 1`. -/
+theorem hasSum_lambert_row' (w q₀ : k) (hq : valuation k q₀ < 1)
+    (hqw : valuation k (q₀ * w) < 1) (m : ℕ+) :
+    HasSum (fun j : ℕ+ ↦
+      ((j : ℕ) : k) * w ^ (j : ℕ) * q₀ ^ ((m : ℕ) * (j : ℕ)))
+      (q₀ ^ (m : ℕ) * w / (1 - q₀ ^ (m : ℕ) * w) ^ 2) := by
+  set x : k := q₀ ^ (m : ℕ) * w with hxdef
+  have hx : valuation k x < 1 := by
+    have hm1 : ((m : ℕ) - 1) + 1 = (m : ℕ) := by
+      have := m.pos
+      omega
+    rw [hxdef, ← hm1, pow_add, pow_one, mul_assoc, map_mul, map_pow]
+    calc valuation k q₀ ^ ((m : ℕ) - 1) * valuation k (q₀ * w)
+        ≤ 1 * valuation k (q₀ * w) :=
+          mul_le_mul_left (pow_le_one₀ zero_le hq.le) _
+      _ = valuation k (q₀ * w) := one_mul _
+      _ < 1 := hqw
+  have hN : HasSum (fun j : ℕ ↦ ((j : ℕ) : k) * x ^ j)
+      (x / (1 - x) ^ 2) := by
+    have h := (summable_nat_mul_geometric_nonarch x hx).hasSum
+    rwa [tsum_nat_mul_geometric_nonarch x hx] at h
+  have hP : HasSum (fun j : ℕ+ ↦ ((j : ℕ) : k) * x ^ (j : ℕ))
+      (x / (1 - x) ^ 2) := by
+    rw [← Function.Injective.hasSum_iff
+      (f := fun j : ℕ ↦ ((j : ℕ) : k) * x ^ j)
+      PNat.coe_injective ?_] at hN
+    · exact hN
+    · intro n hn
+      have hn0 : n = 0 := by
+        by_contra h0
+        exact hn ⟨⟨n, Nat.pos_of_ne_zero h0⟩, rfl⟩
+      simp [hn0]
+  refine hP.congr_fun fun j ↦ ?_
+  rw [hxdef, mul_pow, ← pow_mul]
+  ring
+
+omit [CharZero k] in
+/-- **The one-sided Lambert identity in the general window**
+`|q₀| < 1`, `|q₀w| < 1`. -/
+theorem hasSum_lambert_side' (w q₀ : k) (hq : valuation k q₀ < 1)
+    (hqw : valuation k (q₀ * w) < 1) :
+    HasSum (fun N : ℕ+ ↦
+      (∑ d ∈ (N : ℕ).divisors, (d : k) * w ^ d) * q₀ ^ (N : ℕ))
+      (∑' m : ℕ+, q₀ ^ (m : ℕ) * w / (1 - q₀ ^ (m : ℕ) * w) ^ 2) := by
+  refine hasSum_divisor_collect_nonarch
+    (g := fun d ↦ (d : k) * w ^ d) ?_
+  have hT := hasSum_prod_pnat_nonarch
+    (summable_lambert_prod' w q₀ hq hqw)
+    (fun m ↦ hasSum_lambert_row' w q₀ hq hqw m)
+  refine hT.congr_fun fun p ↦ ?_
+  ring
+
 end Annulus
 
 end TateCurve
