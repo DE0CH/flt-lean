@@ -1443,6 +1443,95 @@ theorem hasSum_divisor_collect_nonarch (g : ℕ → k) {x : k} {S : k}
   simp only [Function.comp_apply, sigmaAntidiagonalEquivProd, Equiv.coe_fn_mk,
     divisorsAntidiagonalFactors, PNat.mk_coe]
 
+omit [CharZero k] in
+/-- Two-index summability of the Lambert double series
+`∑ j·u₀ʲ·q₀^{mj}` on `|q₀| < 1`, `|u₀| ≤ 1`. -/
+theorem summable_lambert_prod (u₀ q₀ : k) (hq : valuation k q₀ < 1)
+    (hu : valuation k u₀ ≤ 1) :
+    Summable (fun p : ℕ+ × ℕ+ ↦
+      ((p.2 : ℕ) : k) * u₀ ^ (p.2 : ℕ) * q₀ ^ ((p.1 : ℕ) * (p.2 : ℕ))) := by
+  refine summable_of_valuation_le_pow hq
+    (fun p ↦ (p.1 : ℕ) * (p.2 : ℕ)) (fun N ↦ ?_) (fun p ↦ ?_)
+  · have hinj : Function.Injective
+        (fun p : ℕ+ × ℕ+ ↦ ((p.1 : ℕ), (p.2 : ℕ))) := by
+      intro a b hab
+      simp only [Prod.mk.injEq] at hab
+      exact Prod.ext (PNat.coe_injective hab.1) (PNat.coe_injective hab.2)
+    refine Set.Finite.subset
+      (((Set.finite_Iio N).prod (Set.finite_Iio N)).preimage
+        hinj.injOn) ?_
+    intro p hp
+    simp only [Set.mem_setOf_eq] at hp
+    constructor
+    · exact lt_of_le_of_lt (Nat.le_mul_of_pos_right _ p.2.pos) hp
+    · exact lt_of_le_of_lt (Nat.le_mul_of_pos_left _ p.1.pos) hp
+  · rw [map_mul, map_mul, map_pow, map_pow]
+    have h1 : valuation k (((p.2 : ℕ) : k)) ≤ 1 := by
+      have h := valuation_intCast_le_one (R := k) (p.2 : ℕ)
+      simpa using h
+    calc valuation k (((p.2 : ℕ) : k)) * valuation k u₀ ^ (p.2 : ℕ) *
+          valuation k q₀ ^ ((p.1 : ℕ) * (p.2 : ℕ))
+        ≤ 1 * 1 * valuation k q₀ ^ ((p.1 : ℕ) * (p.2 : ℕ)) := by
+          refine mul_le_mul_left ?_ _
+          calc valuation k (((p.2 : ℕ) : k)) * valuation k u₀ ^ (p.2 : ℕ)
+              ≤ 1 * 1 := mul_le_mul' h1 (pow_le_one₀ zero_le hu)
+            _ = 1 * 1 := rfl
+      _ = valuation k q₀ ^ ((p.1 : ℕ) * (p.2 : ℕ)) := by
+          rw [one_mul, one_mul]
+
+omit [CharZero k] in
+/-- The per-row sum of the Lambert double series: row `m` sums to
+`q₀ᵐu₀/(1-q₀ᵐu₀)²` by the derivative-geometric series. -/
+theorem hasSum_lambert_row (u₀ q₀ : k) (hq : valuation k q₀ < 1)
+    (hu : valuation k u₀ ≤ 1) (m : ℕ+) :
+    HasSum (fun j : ℕ+ ↦
+      ((j : ℕ) : k) * u₀ ^ (j : ℕ) * q₀ ^ ((m : ℕ) * (j : ℕ)))
+      (q₀ ^ (m : ℕ) * u₀ / (1 - q₀ ^ (m : ℕ) * u₀) ^ 2) := by
+  set x : k := q₀ ^ (m : ℕ) * u₀ with hxdef
+  have hx : valuation k x < 1 := by
+    rw [hxdef, map_mul, map_pow]
+    calc valuation k q₀ ^ (m : ℕ) * valuation k u₀
+        ≤ valuation k q₀ ^ (m : ℕ) * 1 := mul_le_mul' le_rfl hu
+      _ = valuation k q₀ ^ (m : ℕ) := mul_one _
+      _ ≤ valuation k q₀ ^ 1 :=
+          pow_le_pow_right_of_le_one' hq.le m.pos
+      _ = valuation k q₀ := pow_one _
+      _ < 1 := hq
+  have hN : HasSum (fun j : ℕ ↦ ((j : ℕ) : k) * x ^ j)
+      (x / (1 - x) ^ 2) := by
+    have h := (summable_nat_mul_geometric_nonarch x hx).hasSum
+    rwa [tsum_nat_mul_geometric_nonarch x hx] at h
+  have hP : HasSum (fun j : ℕ+ ↦ ((j : ℕ) : k) * x ^ (j : ℕ))
+      (x / (1 - x) ^ 2) := by
+    rw [← Function.Injective.hasSum_iff (f := fun j : ℕ ↦ ((j : ℕ) : k) * x ^ j)
+      PNat.coe_injective ?_] at hN
+    · exact hN
+    · intro n hn
+      have hn0 : n = 0 := by
+        by_contra h0
+        exact hn ⟨⟨n, Nat.pos_of_ne_zero h0⟩, rfl⟩
+      simp [hn0]
+  refine hP.congr_fun fun j ↦ ?_
+  rw [hxdef, mul_pow, ← pow_mul]
+  ring
+
+omit [CharZero k] in
+/-- **The one-sided Lambert identity over `k`** (the interior half of
+the bilateral `X`-series): for `|q₀| < 1`, `|u₀| ≤ 1`,
+`∑_N (∑_{d∣N} d·u₀ᵈ) q₀^N = ∑_m q₀ᵐu₀/(1-q₀ᵐu₀)²`. -/
+theorem hasSum_lambert_side (u₀ q₀ : k) (hq : valuation k q₀ < 1)
+    (hu : valuation k u₀ ≤ 1) :
+    HasSum (fun N : ℕ+ ↦
+      (∑ d ∈ (N : ℕ).divisors, (d : k) * u₀ ^ d) * q₀ ^ (N : ℕ))
+      (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀ / (1 - q₀ ^ (m : ℕ) * u₀) ^ 2) := by
+  refine hasSum_divisor_collect_nonarch
+    (g := fun d ↦ (d : k) * u₀ ^ d) ?_
+  have hT := hasSum_prod_pnat_nonarch
+    (summable_lambert_prod u₀ q₀ hq hu)
+    (fun m ↦ hasSum_lambert_row u₀ q₀ hq hu m)
+  refine hT.congr_fun fun p ↦ ?_
+  ring
+
 end Annulus
 
 end TateCurve
