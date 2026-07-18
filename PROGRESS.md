@@ -279,7 +279,53 @@ entries file). To add/remove/annotate a node, edit
                                                                           ℘-addition law (checked
                                                                           2026-07-18), so the ℂ-analytic
                                                                           route requires formalizing it
-                                                                          first.
+                                                                          first. IMPLEMENTATION STATE
+                                                                          (2026-07-18): the ℂ-side
+                                                                          Liouville machine is BUILT in
+                                                                          TateCurveConstruction
+                                                                          (private):
+                                                                          addRelXRaw/addRelXFn with
+                                                                          periodicity, generic
+                                                                          analyticity, the −w-family
+                                                                          removability PROVEN (dslope
+                                                                          factorization + Riemann weak
+                                                                          removability), and the full
+                                                                          Liouville assembly DERIVED;
+                                                                          ONE leaf remains
+                                                                          (tendsto_addRelXRaw_zero, the
+                                                                          Laurent table at the origin).
+                                                                          KEY RECON: clear x⁶: Ĥ :=
+                                                                          (S+W)(x+x³(E−W))² +
+                                                                          (1+x²E)(1+x²(E−W))² −
+                                                                          ¼(−2+x³(F−W'))² is manifestly
+                                                                          analytic with raw = x⁻⁶Ĥ;
+                                                                          mathlib's Analysis.Analytic.Is
+                                                                          olatedZeros provides the
+                                                                          dslope-tower ↔ series bridge (
+                                                                          has_fpower_series_iterate_dslo
+                                                                          pe_fslope + coeff_fslope), so
+                                                                          tower values = Taylor
+                                                                          coefficients; E/F-coefficients
+                                                                          from iteratedDeriv_weierstrass
+                                                                          PExcept_self /
+                                                                          derivWeierstrassPExceptSeries
+                                                                          + sumInvPow_zero (= G-series;
+                                                                          odd vanish; c₂ = 3G₄ = g₂/20,
+                                                                          c₄ = 5G₆ = g₃/28);
+                                                                          S-coefficients are
+                                                                          ℘-derivatives at w, converted
+                                                                          by ℘'' = 6℘² − g₂/2 (etc.),
+                                                                          themselves derived from
+                                                                          derivWeierstrassP_sq by
+                                                                          differentiation + analytic
+                                                                          continuation across the
+                                                                          isolated zeros of ℘'.
+                                                                          Assembly: truncate E,F,S with
+                                                                          tower remainders, substitute
+                                                                          into Ĥ, ring-normalize, cancel
+                                                                          coefficients via the hand-
+                                                                          verified table, conclude Ĥ =
+                                                                          x⁷·(analytic) and Tendsto.
                                                             - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node):
                                                               GIVEN the finite-level canonical
                                                               uniformisation lˣ/q^ℤ ≃+ E_q(l) with
@@ -490,7 +536,53 @@ entries file). To add/remove/annotate a node, edit
                                                                               ℘-addition law (checked
                                                                               2026-07-18), so the ℂ-analytic
                                                                               route requires formalizing it
-                                                                              first.
+                                                                              first. IMPLEMENTATION STATE
+                                                                              (2026-07-18): the ℂ-side
+                                                                              Liouville machine is BUILT in
+                                                                              TateCurveConstruction
+                                                                              (private):
+                                                                              addRelXRaw/addRelXFn with
+                                                                              periodicity, generic
+                                                                              analyticity, the −w-family
+                                                                              removability PROVEN (dslope
+                                                                              factorization + Riemann weak
+                                                                              removability), and the full
+                                                                              Liouville assembly DERIVED;
+                                                                              ONE leaf remains
+                                                                              (tendsto_addRelXRaw_zero, the
+                                                                              Laurent table at the origin).
+                                                                              KEY RECON: clear x⁶: Ĥ :=
+                                                                              (S+W)(x+x³(E−W))² +
+                                                                              (1+x²E)(1+x²(E−W))² −
+                                                                              ¼(−2+x³(F−W'))² is manifestly
+                                                                              analytic with raw = x⁻⁶Ĥ;
+                                                                              mathlib's Analysis.Analytic.Is
+                                                                              olatedZeros provides the
+                                                                              dslope-tower ↔ series bridge (
+                                                                              has_fpower_series_iterate_dslo
+                                                                              pe_fslope + coeff_fslope), so
+                                                                              tower values = Taylor
+                                                                              coefficients; E/F-coefficients
+                                                                              from iteratedDeriv_weierstrass
+                                                                              PExcept_self /
+                                                                              derivWeierstrassPExceptSeries
+                                                                              + sumInvPow_zero (= G-series;
+                                                                              odd vanish; c₂ = 3G₄ = g₂/20,
+                                                                              c₄ = 5G₆ = g₃/28);
+                                                                              S-coefficients are
+                                                                              ℘-derivatives at w, converted
+                                                                              by ℘'' = 6℘² − g₂/2 (etc.),
+                                                                              themselves derived from
+                                                                              derivWeierstrassP_sq by
+                                                                              differentiation + analytic
+                                                                              continuation across the
+                                                                              isolated zeros of ℘'.
+                                                                              Assembly: truncate E,F,S with
+                                                                              tower remainders, substitute
+                                                                              into Ĥ, ring-normalize, cancel
+                                                                              coefficients via the hand-
+                                                                              verified table, conclude Ĥ =
+                                                                              x⁷·(analytic) and Tendsto.
                                                                 - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry
                                                                   node): GIVEN the finite-level
                                                                   canonical uniformisation lˣ/q^ℤ ≃+
@@ -725,7 +817,53 @@ entries file). To add/remove/annotate a node, edit
                                                                                   ℘-addition law (checked
                                                                                   2026-07-18), so the ℂ-analytic
                                                                                   route requires formalizing it
-                                                                                  first.
+                                                                                  first. IMPLEMENTATION STATE
+                                                                                  (2026-07-18): the ℂ-side
+                                                                                  Liouville machine is BUILT in
+                                                                                  TateCurveConstruction
+                                                                                  (private):
+                                                                                  addRelXRaw/addRelXFn with
+                                                                                  periodicity, generic
+                                                                                  analyticity, the −w-family
+                                                                                  removability PROVEN (dslope
+                                                                                  factorization + Riemann weak
+                                                                                  removability), and the full
+                                                                                  Liouville assembly DERIVED;
+                                                                                  ONE leaf remains
+                                                                                  (tendsto_addRelXRaw_zero, the
+                                                                                  Laurent table at the origin).
+                                                                                  KEY RECON: clear x⁶: Ĥ :=
+                                                                                  (S+W)(x+x³(E−W))² +
+                                                                                  (1+x²E)(1+x²(E−W))² −
+                                                                                  ¼(−2+x³(F−W'))² is manifestly
+                                                                                  analytic with raw = x⁻⁶Ĥ;
+                                                                                  mathlib's Analysis.Analytic.Is
+                                                                                  olatedZeros provides the
+                                                                                  dslope-tower ↔ series bridge (
+                                                                                  has_fpower_series_iterate_dslo
+                                                                                  pe_fslope + coeff_fslope), so
+                                                                                  tower values = Taylor
+                                                                                  coefficients; E/F-coefficients
+                                                                                  from iteratedDeriv_weierstrass
+                                                                                  PExcept_self /
+                                                                                  derivWeierstrassPExceptSeries
+                                                                                  + sumInvPow_zero (= G-series;
+                                                                                  odd vanish; c₂ = 3G₄ = g₂/20,
+                                                                                  c₄ = 5G₆ = g₃/28);
+                                                                                  S-coefficients are
+                                                                                  ℘-derivatives at w, converted
+                                                                                  by ℘'' = 6℘² − g₂/2 (etc.),
+                                                                                  themselves derived from
+                                                                                  derivWeierstrassP_sq by
+                                                                                  differentiation + analytic
+                                                                                  continuation across the
+                                                                                  isolated zeros of ℘'.
+                                                                                  Assembly: truncate E,F,S with
+                                                                                  tower remainders, substitute
+                                                                                  into Ĥ, ring-normalize, cancel
+                                                                                  coefficients via the hand-
+                                                                                  verified table, conclude Ĥ =
+                                                                                  x⁷·(analytic) and Tendsto.
                                                                     - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
                                                                       (sorry node): GIVEN the
                                                                       finite-level canonical
@@ -953,7 +1091,53 @@ entries file). To add/remove/annotate a node, edit
                                                                                       ℘-addition law (checked
                                                                                       2026-07-18), so the ℂ-analytic
                                                                                       route requires formalizing it
-                                                                                      first.
+                                                                                      first. IMPLEMENTATION STATE
+                                                                                      (2026-07-18): the ℂ-side
+                                                                                      Liouville machine is BUILT in
+                                                                                      TateCurveConstruction
+                                                                                      (private):
+                                                                                      addRelXRaw/addRelXFn with
+                                                                                      periodicity, generic
+                                                                                      analyticity, the −w-family
+                                                                                      removability PROVEN (dslope
+                                                                                      factorization + Riemann weak
+                                                                                      removability), and the full
+                                                                                      Liouville assembly DERIVED;
+                                                                                      ONE leaf remains
+                                                                                      (tendsto_addRelXRaw_zero, the
+                                                                                      Laurent table at the origin).
+                                                                                      KEY RECON: clear x⁶: Ĥ :=
+                                                                                      (S+W)(x+x³(E−W))² +
+                                                                                      (1+x²E)(1+x²(E−W))² −
+                                                                                      ¼(−2+x³(F−W'))² is manifestly
+                                                                                      analytic with raw = x⁻⁶Ĥ;
+                                                                                      mathlib's Analysis.Analytic.Is
+                                                                                      olatedZeros provides the
+                                                                                      dslope-tower ↔ series bridge (
+                                                                                      has_fpower_series_iterate_dslo
+                                                                                      pe_fslope + coeff_fslope), so
+                                                                                      tower values = Taylor
+                                                                                      coefficients; E/F-coefficients
+                                                                                      from iteratedDeriv_weierstrass
+                                                                                      PExcept_self /
+                                                                                      derivWeierstrassPExceptSeries
+                                                                                      + sumInvPow_zero (= G-series;
+                                                                                      odd vanish; c₂ = 3G₄ = g₂/20,
+                                                                                      c₄ = 5G₆ = g₃/28);
+                                                                                      S-coefficients are
+                                                                                      ℘-derivatives at w, converted
+                                                                                      by ℘'' = 6℘² − g₂/2 (etc.),
+                                                                                      themselves derived from
+                                                                                      derivWeierstrassP_sq by
+                                                                                      differentiation + analytic
+                                                                                      continuation across the
+                                                                                      isolated zeros of ℘'.
+                                                                                      Assembly: truncate E,F,S with
+                                                                                      tower remainders, substitute
+                                                                                      into Ĥ, ring-normalize, cancel
+                                                                                      coefficients via the hand-
+                                                                                      verified table, conclude Ĥ =
+                                                                                      x⁷·(analytic) and Tendsto.
                                                                         - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
                                                                           (sorry node): GIVEN the
                                                                           finite-level canonical
@@ -1202,6 +1386,42 @@ entries file). To add/remove/annotate a node, edit
                                                               LACKS the ℘-addition law (checked
                                                               2026-07-18), so the ℂ-analytic route
                                                               requires formalizing it first.
+                                                              IMPLEMENTATION STATE (2026-07-18): the
+                                                              ℂ-side Liouville machine is BUILT in
+                                                              TateCurveConstruction (private):
+                                                              addRelXRaw/addRelXFn with periodicity,
+                                                              generic analyticity, the −w-family
+                                                              removability PROVEN (dslope
+                                                              factorization + Riemann weak
+                                                              removability), and the full Liouville
+                                                              assembly DERIVED; ONE leaf remains
+                                                              (tendsto_addRelXRaw_zero, the Laurent
+                                                              table at the origin). KEY RECON: clear
+                                                              x⁶: Ĥ := (S+W)(x+x³(E−W))² +
+                                                              (1+x²E)(1+x²(E−W))² − ¼(−2+x³(F−W'))²
+                                                              is manifestly analytic with raw =
+                                                              x⁻⁶Ĥ; mathlib's
+                                                              Analysis.Analytic.IsolatedZeros
+                                                              provides the dslope-tower ↔ series
+                                                              bridge (has_fpower_series_iterate_dslo
+                                                              pe_fslope + coeff_fslope), so tower
+                                                              values = Taylor coefficients;
+                                                              E/F-coefficients from
+                                                              iteratedDeriv_weierstrassPExcept_self
+                                                              / derivWeierstrassPExceptSeries +
+                                                              sumInvPow_zero (= G-series; odd
+                                                              vanish; c₂ = 3G₄ = g₂/20, c₄ = 5G₆ =
+                                                              g₃/28); S-coefficients are
+                                                              ℘-derivatives at w, converted by ℘'' =
+                                                              6℘² − g₂/2 (etc.), themselves derived
+                                                              from derivWeierstrassP_sq by
+                                                              differentiation + analytic
+                                                              continuation across the isolated zeros
+                                                              of ℘'. Assembly: truncate E,F,S with
+                                                              tower remainders, substitute into Ĥ,
+                                                              ring-normalize, cancel coefficients
+                                                              via the hand-verified table, conclude
+                                                              Ĥ = x⁷·(analytic) and Tendsto.
                                                 - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the
                                                   finite-level canonical uniformisation lˣ/q^ℤ ≃+
                                                   E_q(l) with underlying pointMapQuot for every NALF
@@ -1371,6 +1591,49 @@ entries file). To add/remove/annotate a node, edit
                                                                   (checked 2026-07-18), so the
                                                                   ℂ-analytic route requires
                                                                   formalizing it first.
+                                                                  IMPLEMENTATION STATE (2026-07-18):
+                                                                  the ℂ-side Liouville machine is
+                                                                  BUILT in TateCurveConstruction
+                                                                  (private): addRelXRaw/addRelXFn
+                                                                  with periodicity, generic
+                                                                  analyticity, the −w-family
+                                                                  removability PROVEN (dslope
+                                                                  factorization + Riemann weak
+                                                                  removability), and the full
+                                                                  Liouville assembly DERIVED; ONE
+                                                                  leaf remains
+                                                                  (tendsto_addRelXRaw_zero, the
+                                                                  Laurent table at the origin). KEY
+                                                                  RECON: clear x⁶: Ĥ :=
+                                                                  (S+W)(x+x³(E−W))² +
+                                                                  (1+x²E)(1+x²(E−W))² −
+                                                                  ¼(−2+x³(F−W'))² is manifestly
+                                                                  analytic with raw = x⁻⁶Ĥ;
+                                                                  mathlib's
+                                                                  Analysis.Analytic.IsolatedZeros
+                                                                  provides the dslope-tower ↔ series
+                                                                  bridge (has_fpower_series_iterate_
+                                                                  dslope_fslope + coeff_fslope), so
+                                                                  tower values = Taylor
+                                                                  coefficients; E/F-coefficients
+                                                                  from iteratedDeriv_weierstrassPExc
+                                                                  ept_self /
+                                                                  derivWeierstrassPExceptSeries +
+                                                                  sumInvPow_zero (= G-series; odd
+                                                                  vanish; c₂ = 3G₄ = g₂/20, c₄ = 5G₆
+                                                                  = g₃/28); S-coefficients are
+                                                                  ℘-derivatives at w, converted by
+                                                                  ℘'' = 6℘² − g₂/2 (etc.),
+                                                                  themselves derived from
+                                                                  derivWeierstrassP_sq by
+                                                                  differentiation + analytic
+                                                                  continuation across the isolated
+                                                                  zeros of ℘'. Assembly: truncate
+                                                                  E,F,S with tower remainders,
+                                                                  substitute into Ĥ, ring-normalize,
+                                                                  cancel coefficients via the hand-
+                                                                  verified table, conclude Ĥ =
+                                                                  x⁷·(analytic) and Tendsto.
                                                     - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN
                                                       the finite-level canonical uniformisation
                                                       lˣ/q^ℤ ≃+ E_q(l) with underlying pointMapQuot
@@ -1532,7 +1795,37 @@ entries file). To add/remove/annotate a node, edit
                                                       transcendental descent; mathlib LACKS the
                                                       ℘-addition law (checked 2026-07-18), so the
                                                       ℂ-analytic route requires formalizing it
-                                                      first.
+                                                      first. IMPLEMENTATION STATE (2026-07-18): the
+                                                      ℂ-side Liouville machine is BUILT in
+                                                      TateCurveConstruction (private):
+                                                      addRelXRaw/addRelXFn with periodicity, generic
+                                                      analyticity, the −w-family removability PROVEN
+                                                      (dslope factorization + Riemann weak
+                                                      removability), and the full Liouville assembly
+                                                      DERIVED; ONE leaf remains
+                                                      (tendsto_addRelXRaw_zero, the Laurent table at
+                                                      the origin). KEY RECON: clear x⁶: Ĥ :=
+                                                      (S+W)(x+x³(E−W))² + (1+x²E)(1+x²(E−W))² −
+                                                      ¼(−2+x³(F−W'))² is manifestly analytic with
+                                                      raw = x⁻⁶Ĥ; mathlib's
+                                                      Analysis.Analytic.IsolatedZeros provides the
+                                                      dslope-tower ↔ series bridge
+                                                      (has_fpower_series_iterate_dslope_fslope +
+                                                      coeff_fslope), so tower values = Taylor
+                                                      coefficients; E/F-coefficients from
+                                                      iteratedDeriv_weierstrassPExcept_self /
+                                                      derivWeierstrassPExceptSeries + sumInvPow_zero
+                                                      (= G-series; odd vanish; c₂ = 3G₄ = g₂/20, c₄
+                                                      = 5G₆ = g₃/28); S-coefficients are
+                                                      ℘-derivatives at w, converted by ℘'' = 6℘² −
+                                                      g₂/2 (etc.), themselves derived from
+                                                      derivWeierstrassP_sq by differentiation +
+                                                      analytic continuation across the isolated
+                                                      zeros of ℘'. Assembly: truncate E,F,S with
+                                                      tower remainders, substitute into Ĥ, ring-
+                                                      normalize, cancel coefficients via the hand-
+                                                      verified table, conclude Ĥ = x⁷·(analytic) and
+                                                      Tendsto.
                                         - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
                                           level canonical uniformisation lˣ/q^ℤ ≃+ E_q(l) with
                                           underlying pointMapQuot for every NALF l, the Ω-level hom
@@ -1660,7 +1953,37 @@ entries file). To add/remove/annotate a node, edit
                                                       transcendental descent; mathlib LACKS the
                                                       ℘-addition law (checked 2026-07-18), so the
                                                       ℂ-analytic route requires formalizing it
-                                                      first.
+                                                      first. IMPLEMENTATION STATE (2026-07-18): the
+                                                      ℂ-side Liouville machine is BUILT in
+                                                      TateCurveConstruction (private):
+                                                      addRelXRaw/addRelXFn with periodicity, generic
+                                                      analyticity, the −w-family removability PROVEN
+                                                      (dslope factorization + Riemann weak
+                                                      removability), and the full Liouville assembly
+                                                      DERIVED; ONE leaf remains
+                                                      (tendsto_addRelXRaw_zero, the Laurent table at
+                                                      the origin). KEY RECON: clear x⁶: Ĥ :=
+                                                      (S+W)(x+x³(E−W))² + (1+x²E)(1+x²(E−W))² −
+                                                      ¼(−2+x³(F−W'))² is manifestly analytic with
+                                                      raw = x⁻⁶Ĥ; mathlib's
+                                                      Analysis.Analytic.IsolatedZeros provides the
+                                                      dslope-tower ↔ series bridge
+                                                      (has_fpower_series_iterate_dslope_fslope +
+                                                      coeff_fslope), so tower values = Taylor
+                                                      coefficients; E/F-coefficients from
+                                                      iteratedDeriv_weierstrassPExcept_self /
+                                                      derivWeierstrassPExceptSeries + sumInvPow_zero
+                                                      (= G-series; odd vanish; c₂ = 3G₄ = g₂/20, c₄
+                                                      = 5G₆ = g₃/28); S-coefficients are
+                                                      ℘-derivatives at w, converted by ℘'' = 6℘² −
+                                                      g₂/2 (etc.), themselves derived from
+                                                      derivWeierstrassP_sq by differentiation +
+                                                      analytic continuation across the isolated
+                                                      zeros of ℘'. Assembly: truncate E,F,S with
+                                                      tower remainders, substitute into Ĥ, ring-
+                                                      normalize, cancel coefficients via the hand-
+                                                      verified table, conclude Ĥ = x⁷·(analytic) and
+                                                      Tendsto.
                                         - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
                                           level canonical uniformisation lˣ/q^ℤ ≃+ E_q(l) with
                                           underlying pointMapQuot for every NALF l, the Ω-level hom
