@@ -54,6 +54,9 @@ variable {K : Type u} [Field K] (E : WeierstrassCurve K)
 Throughout, `C • E = E` is an automorphism of `E`; the nonvanishing of `c₄` and `c₆` encodes
 `j ∉ {0, 1728}`. -/
 
+-- (module-system note: the two lemmas below are consumed by the proofs of the
+-- theorems that follow, but the EXPORTED proof bodies hide those edges from
+-- the term-cone detector — do not delete as free-floating.)
 /-- An automorphism `C` of `E` with `C.u = 1` has no `x`-translation: `C.r = 0`. This follows
 from the transformation laws of `b₄`, `b₆`, `b₈` together with `c₆ ≠ 0`. -/
 lemma r_eq_zero_of_u_eq_one (hc6 : E.c₆ ≠ 0) {C : VariableChange K} (hu : C.u = 1)
@@ -65,6 +68,23 @@ lemma r_eq_zero_of_u_eq_one (hc6 : E.c₆ ≠ 0) {C : VariableChange K} (hu : C.
   have eb8 := congrArg b₈ hCE
   simp [variableChange_b₄, variableChange_b₆, variableChange_b₈, hu] at eb4 eb6 eb8
   grobner
+
+
+/-- The `u`-coefficient of an automorphism `C` of `E` (with `c₄, c₆ ≠ 0`) satisfies `u² = 1`:
+the `c₄` and `c₆` laws give `u⁴ = u⁶ = 1`. -/
+lemma u_eq_one_or_eq_neg_one (hc4 : E.c₄ ≠ 0) (hc6 : E.c₆ ≠ 0) {C : VariableChange K}
+    (hCE : C • E = E) : C.u = 1 ∨ C.u = -1 := by
+  have hu4 : (C.u : K) ^ 4 = 1 := by
+    have h := congrArg c₄ hCE
+    rwa [variableChange_c₄, Units.val_inv_eq_inv_val, mul_eq_right₀ hc4, inv_pow, inv_eq_one] at h
+  have hu6 : (C.u : K) ^ 6 = 1 := by
+    have h := congrArg c₆ hCE
+    rwa [variableChange_c₆, Units.val_inv_eq_inv_val, mul_eq_right₀ hc6, inv_pow, inv_eq_one] at h
+  have hu2 : (C.u : K) * (C.u : K) = 1 := by linear_combination hu6 - (C.u : K) ^ 2 * hu4
+  rcases mul_self_eq_one_iff.mp hu2 with h | h
+  · exact .inl (Units.val_eq_one.mp h)
+  · exact .inr (Units.ext h)
+
 
 /-- An automorphism `C` of `E` with `C.u = 1` is either the identity or `negVariableChange E`.
 After `r_eq_zero_of_u_eq_one`, the `a₁` and `a₃` laws give `2s = 2t = 0`; in characteristic `≠ 2`
@@ -95,21 +115,6 @@ lemma eq_one_or_eq_negVariableChange_of_u_eq_one (hc4 : E.c₄ ≠ 0) (hc6 : E.c
     have ht : C.t = 0 := by grobner
     exact .inl (VariableChange.ext hu hr hs ht)
 
-/-- The `u`-coefficient of an automorphism `C` of `E` (with `c₄, c₆ ≠ 0`) satisfies `u² = 1`:
-the `c₄` and `c₆` laws give `u⁴ = u⁶ = 1`. -/
-lemma u_eq_one_or_eq_neg_one (hc4 : E.c₄ ≠ 0) (hc6 : E.c₆ ≠ 0) {C : VariableChange K}
-    (hCE : C • E = E) : C.u = 1 ∨ C.u = -1 := by
-  have hu4 : (C.u : K) ^ 4 = 1 := by
-    have h := congrArg c₄ hCE
-    rwa [variableChange_c₄, Units.val_inv_eq_inv_val, mul_eq_right₀ hc4, inv_pow, inv_eq_one] at h
-  have hu6 : (C.u : K) ^ 6 = 1 := by
-    have h := congrArg c₆ hCE
-    rwa [variableChange_c₆, Units.val_inv_eq_inv_val, mul_eq_right₀ hc6, inv_pow, inv_eq_one] at h
-  have hu2 : (C.u : K) * (C.u : K) = 1 := by linear_combination hu6 - (C.u : K) ^ 2 * hu4
-  rcases mul_self_eq_one_iff.mp hu2 with h | h
-  · exact .inl (Units.val_eq_one.mp h)
-  · exact .inr (Units.ext h)
-
 /-- If `c₄ ≠ 0` and `c₆ ≠ 0` then the only admissible changes of variables fixing `E` are `1` and
 `negVariableChange E`. This is the form of `Aut(E) = {±1}` phrased via `c₄, c₆` (equivalent to
 `j ∉ {0, 1728}` for an elliptic curve, see `eq_one_or_eq_negVariableChange_of_smul_eq`). -/
@@ -139,24 +144,6 @@ theorem eq_one_or_eq_negVariableChange_of_smul_eq [E.IsElliptic] (hj₀ : E.j �
 
 /-! ### The automorphism group -/
 
-open MulAction in
-/-- The automorphism group of a Weierstrass curve `E` over a field: the admissible changes of
-variables fixing `E`, i.e. the stabiliser of `E` under the action of `VariableChange K`. -/
-def autGroup : Subgroup (VariableChange K) := stabilizer (VariableChange K) E
-
-lemma mem_autGroup {C : VariableChange K} : C ∈ E.autGroup ↔ C • E = E := Iff.rfl
-
-open MulAction in
-/-- **`Aut(E) ≅ ℤ/2` for `j(E) ∉ {0, 1728}`.** The automorphism group of `E` is `{±1}`, so it is
-isomorphic to `Multiplicative (ZMod 2)`: it has exactly two elements — `1` and `negVariableChange E`
-(`eq_one_or_eq_negVariableChange_of_smul_eq`), distinct by `negVariableChange_ne_one`. The
-isomorphism sends `negVariableChange E` to `Multiplicative.ofAdd 1`. -/
-def autGroupMulEquiv [DecidableEq K] [E.IsElliptic] (hj₀ : E.j ≠ 0) (hj₁₇₂₈ : E.j ≠ 1728) :
-    E.autGroup ≃* Multiplicative (ZMod 2) :=
-  mulEquivMultiplicativeZModTwo ⟨E.negVariableChange, E.negVariableChange_smul_self⟩
-    (fun h ↦ E.negVariableChange_ne_one (congrArg Subtype.val h))
-    fun C ↦ (E.eq_one_or_eq_negVariableChange_of_smul_eq hj₀ hj₁₇₂₈
-      (E.mem_autGroup.mp C.2)).imp Subtype.ext Subtype.ext
 
 end WeierstrassCurve
 

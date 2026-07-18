@@ -1,5 +1,5 @@
 {
- "key": "1784367148.2021372",
+ "key": "1784367472.5626504",
  "returncode": 0,
  "kept_invisible": [
   {
@@ -11,8 +11,16 @@
    "name": "Ideal.Quotient.out_sub"
   },
   {
+   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
+   "name": "WeierstrassCurve.negVariableChange_u"
+  },
+  {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.instIsDiscreteValuationRingSubtypeMemSubringIntegerWithZeroMultiplicativeInt_fermat"
+  },
+  {
+   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
+   "name": "WeierstrassCurve.u_eq_one_or_eq_neg_one"
   },
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
@@ -39,6 +47,14 @@
    "name": "TateCurve.Blueprint.periodPair_ω₂"
   },
   {
+   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
+   "name": "WeierstrassCurve.r_eq_zero_of_u_eq_one"
+  },
+  {
+   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
+   "name": "WeierstrassCurve.negVariableChange_smul_self"
+  },
+  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
    "name": "TateCurve.Blueprint.periodPair_ω₁"
   },
@@ -61,10 +77,6 @@
    "name": "TateCurve.evalInt_map"
   },
   {
-   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
-   "name": "WeierstrassCurve.autGroupMulEquiv"
-  },
-  {
    "module": "Fermat.FLT.NumberField.Completion.Finite",
    "name": "instFiniteResidueFieldAdicCompletionRingOfIntegersWithZeroMultiplicativeInt_fermat"
   },
@@ -81,16 +93,8 @@
    "name": "instCountableOfNumberField_fermat"
   },
   {
-   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
-   "name": "WeierstrassCurve.negVariableChange_ne_one"
-  },
-  {
    "module": "Fermat.FLT.FreyCurve.FreyPackage",
    "name": "FreyPackage.ctorIdx"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
-   "name": "WeierstrassCurve.negVariableChange_u"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveBaseChange",
@@ -103,14 +107,6 @@
   {
    "module": "Fermat.FLT.Mathlib.RingTheory.Valuation.ValuativeRel.Basic",
    "name": "ValuativeExtension.valuation_algebraMap_eq_one"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
-   "name": "WeierstrassCurve.u_eq_one_or_eq_neg_one"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
-   "name": "WeierstrassCurve.negVariableChange_baseChange_map"
   },
   {
    "module": "Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal",
@@ -137,14 +133,6 @@
    "name": "WeierstrassCurve.a₁_ne_zero_or_a₃_ne_zero_of_two_eq_zero"
   },
   {
-   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
-   "name": "WeierstrassCurve.mem_autGroup"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
-   "name": "WeierstrassCurve.map_smul_baseChange_eq"
-  },
-  {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveBaseChange",
    "name": "TateCurve.valuation_evalInt_sub_sum_le"
   },
@@ -155,22 +143,6 @@
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Weierstrass",
    "name": "WeierstrassCurve.c₆_eq_zero_iff_j_eq_1728"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
-   "name": "WeierstrassCurve.r_eq_zero_of_u_eq_one"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
-   "name": "WeierstrassCurve.negVariableChange_smul_self"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut",
-   "name": "WeierstrassCurve.autGroup"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
-   "name": "WeierstrassCurve.VariableChange.instDecidableEq"
   },
   {
    "module": "Fermat.FLT.Mathlib.RingTheory.LocalRing.MaximalIdeal.Basic",
@@ -199,10 +171,6 @@
   {
    "module": "Fermat.FLT.Mathlib.GroupTheory.SpecificGroups.Cyclic",
    "name": "mulEquivMultiplicativeZModTwo"
-  },
-  {
-   "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
-   "name": "WeierstrassCurve.smul_eq_of_baseChange_smul_eq"
   }
  ]
 }

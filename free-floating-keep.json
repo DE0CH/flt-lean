@@ -11,5 +11,9 @@
   "TateCurve.Blueprint.periodPair_ω₁": "rfl-simp lemma consumed by simp in TateCurveConstruction proofs without appearing in proof terms (build-verified)",
   "TateCurve.Blueprint.periodPair_ω₂": "rfl-simp lemma consumed by simp in TateCurveConstruction proofs without appearing in proof terms (build-verified)",
   "Ideal.Quotient.out_sub": "consumed by kept WithZeroMulInt code; deletion broke the build (pass-1)",
-  "AddMonoidHom.continuous_iff_isOpen_ker": "consumed by Deformations/Lemmas cone-adjacent code; deletion broke the build (pass-1)"
+  "AddMonoidHom.continuous_iff_isOpen_ker": "consumed by Deformations/Lemmas cone-adjacent code; deletion broke the build (pass-1)",
+  "WeierstrassCurve.r_eq_zero_of_u_eq_one": "consumed by proofs in the same/adjacent module whose EXPORTED bodies hide the edge (module-system opaque exports); deletion broke the build",
+  "WeierstrassCurve.u_eq_one_or_eq_neg_one": "consumed by proofs in the same/adjacent module whose EXPORTED bodies hide the edge (module-system opaque exports); deletion broke the build",
+  "WeierstrassCurve.negVariableChange_u": "consumed by proofs in the same/adjacent module whose EXPORTED bodies hide the edge (module-system opaque exports); deletion broke the build",
+  "WeierstrassCurve.negVariableChange_smul_self": "consumed by proofs in the same/adjacent module whose EXPORTED bodies hide the edge (module-system opaque exports); deletion broke the build"
 }
