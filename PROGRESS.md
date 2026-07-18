@@ -1683,6 +1683,12 @@ entries file). To add/remove/annotate a node, edit
                                           ) ∉ 𝔪̄ since 3 is a unit at p ≠ 3; (E) exponent juggle
                                           ζ^((p mod 3ⁿ).val) = ζ^p from ζ^(3^n) = 1 (pow_mod-style +
                                           ZMod.val_natCast).
+                                            - ❌· `natCard_residue_under_padicPlace` — the residue cardinality at the p-place is p (sorry
+                                              node): the under-ideal of 𝔪(IntegralClosure 𝒪ᵥ Kᵥᵃˡᵍ)
+                                              is 𝔪(𝒪ᵥ) (lying over), and the residue field is 𝓞ℚ ⧸
+                                              (p) ≅ ZMod p via
+                                              ResidueFieldEquivCompletionResidueField (in tree,
+                                              AdicValuation.lean).
                                     - ❌· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient` — the global triangular form (sorry node — the Serre
                                       classification core): given the residual trivial quotient, the
                                       WHOLE 3-adic rep is an extension of the trivial character by χ

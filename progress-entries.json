@@ -455,6 +455,13 @@
   "text": "mod-3 classification (DERIVED, re-vendored 2026-07-18): a mod-3 hardly ramified rep has a Γℚ-equivariant surjection onto the trivial 1-dim rep. From mod_three_reducible + mod_three_of_stable_line (Minkowski bookkeeping PROVEN)."
  },
  {
+  "name": "natCard_residue_under_padicPlace",
+  "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
+  "wip": false,
+  "fullname": "natCard_residue_under_padicPlace",
+  "text": "the residue cardinality at the p-place is p (sorry node): the under-ideal of 𝔪(IntegralClosure 𝒪ᵥ Kᵥᵃˡᵍ) is 𝔪(𝒪ᵥ) (lying over), and the residue field is 𝓞ℚ ⧸ (p) ≅ ZMod p via ResidueFieldEquivCompletionResidueField (in tree, AdicValuation.lean)."
+ },
+ {
   "name": "adicArithFrob_rootsOfUnity_pow",
   "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
   "wip": false,

@@ -279,6 +279,25 @@ lemma GaloisRep.HasFlatProlongationAt.of_equiv {A' : Type*} [CommRing A']
     e.bijective.comp hbij⟩
 
 set_option warn.sorry false in
+/-- **The residue cardinality at the `p`-place is `p`** (sorry node): the
+maximal ideal of the integral closure of `𝒪ᵥ` in `Kᵥᵃˡᵍ` lies over the
+maximal ideal of `𝒪ᵥ`, whose residue field is `𝓞_ℚ ⧸ (p) ≅ ZMod p` through
+`ResidueFieldEquivCompletionResidueField`. This is the `q` of the
+`IsArithFrobAt` specification. -/
+theorem natCard_residue_under_padicPlace
+    (p : ℕ) (hp : Nat.Prime p) (hp5 : 5 ≤ p) :
+    Nat.card ((IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat) ⧸
+      ((IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)))).under
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))) = p :=
+  sorry
+
+set_option warn.sorry false in
 /-- **The arithmetic Frobenius raises `3`-power roots of unity to the
 `p`-th power** (sorry node — the unramified local content): at a prime
 `p ∉ {2, 3}`, the `3`-power roots of unity are unramified, the arithmetic
@@ -294,7 +313,15 @@ theorem adicArithFrob_rootsOfUnity_pow
           hp.toHeightOneSpectrumRingOfIntegersRat))
         (Field.AbsoluteGaloisGroup.adicArithFrob
           hp.toHeightOneSpectrumRingOfIntegersRat)).toRingEquiv) t =
-        t ^ ((p : ZMod (3 ^ n)).val) :=
+        t ^ ((p : ZMod (3 ^ n)).val) := by
+  intro t ht
+  -- the `q` of the Frobenius specification is `p` (the residue cardinality)
+  have hq := natCard_residue_under_padicPlace p hp hp5
+  -- remaining assembly (see PROGRESS): mathlib's
+  -- `AlgHom.IsArithFrobAt.apply_of_pow_eq_one` on the integral closure via
+  -- `isArithFrobAt_adicArithFrob`, the globalization square
+  -- (`AlgHom.restrictNormal_commutes` through `IsAlgClosed.lift`), and the
+  -- exponent-mod juggle.
   sorry
 
 /-- **The 3-adic cyclotomic character at an arithmetic Frobenius** (DERIVED
