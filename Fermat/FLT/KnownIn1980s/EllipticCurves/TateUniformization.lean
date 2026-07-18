@@ -2842,6 +2842,148 @@ theorem chordY_formal :
         (PowerSeries.map uSlot XA - PowerSeries.map vSlot XA) :=
   sorry
 
+/-- The bivariate evaluation `ℚ[u][v] →+* k` at `(u₀, v₀)` (inner
+variable to `u₀`, outer variable to `v₀`). -/
+def biEval (u₀ v₀ : k) : Polynomial (Polynomial ℚ) →+* k :=
+  Polynomial.eval₂RingHom
+    (Polynomial.eval₂RingHom (algebraMap ℚ k) u₀) v₀
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] in
+@[simp]
+theorem biEval_C_X (u₀ v₀ : k) :
+    biEval u₀ v₀ (Polynomial.C Polynomial.X) = u₀ := by
+  simp [biEval]
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] in
+@[simp]
+theorem biEval_X (u₀ v₀ : k) : biEval u₀ v₀ Polynomial.X = v₀ := by
+  simp [biEval]
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] in
+/-- The localized denominator evaluates to a unit of `k` on the
+nondegenerate locus. -/
+theorem isUnit_biEval_biDenom (u₀ v₀ : k) (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1)
+    (hv0 : v₀ ≠ 0) (hv1 : v₀ ≠ 1) (hne1 : u₀ * v₀ ≠ 1) :
+    IsUnit (biEval u₀ v₀ biDenom) := by
+  have hC : ∀ p : Polynomial ℚ, biEval u₀ v₀ (Polynomial.C p)
+      = Polynomial.eval₂ (algebraMap ℚ k) u₀ p := fun p => by
+    simp [biEval]
+  refine isUnit_iff_ne_zero.mpr ?_
+  rw [show biDenom = Polynomial.C (Polynomial.X * (1 - Polynomial.X)) *
+    (Polynomial.X * (1 - Polynomial.X)) *
+    (1 - Polynomial.C Polynomial.X * Polynomial.X) from rfl]
+  rw [map_mul, map_mul]
+  refine mul_ne_zero (mul_ne_zero ?_ ?_) ?_
+  · rw [hC]
+    simp only [Polynomial.eval₂_mul, Polynomial.eval₂_sub,
+      Polynomial.eval₂_one, Polynomial.eval₂_X]
+    exact mul_ne_zero hu0 (sub_ne_zero.mpr (Ne.symm hu1))
+  · rw [map_mul, map_sub, map_one, biEval_X]
+    exact mul_ne_zero hv0 (sub_ne_zero.mpr (Ne.symm hv1))
+  · rw [map_sub, map_one, map_mul, biEval_C_X, biEval_X]
+    exact sub_ne_zero.mpr (Ne.symm hne1)
+
+/-- **Evaluation of the two-variable coefficient ring at a point
+`(u₀, v₀)` of `k²`** in the nondegenerate locus. -/
+def coeffRingEval₂ (u₀ v₀ : k) (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1)
+    (hv0 : v₀ ≠ 0) (hv1 : v₀ ≠ 1) (hne1 : u₀ * v₀ ≠ 1) :
+    CoeffRing₂ →+* k :=
+  Localization.awayLift (biEval u₀ v₀) _
+    (isUnit_biEval_biDenom u₀ v₀ hu0 hu1 hv0 hv1 hne1)
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] in
+@[simp]
+theorem coeffRingEval₂_algebraMap (u₀ v₀ : k) (hu0 : u₀ ≠ 0)
+    (hu1 : u₀ ≠ 1) (hv0 : v₀ ≠ 0) (hv1 : v₀ ≠ 1) (hne1 : u₀ * v₀ ≠ 1)
+    (p : Polynomial (Polynomial ℚ)) :
+    coeffRingEval₂ u₀ v₀ hu0 hu1 hv0 hv1 hne1
+      (algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂ p) =
+      biEval u₀ v₀ p := by
+  rw [coeffRingEval₂]
+  exact IsLocalization.lift_eq _ p
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] in
+/-- The `u`-slot bridge: evaluating the `u`-slot image at `(u₀, v₀)` is
+the one-variable evaluation at `u₀`. -/
+theorem coeffRingEval₂_uSlot (u₀ v₀ : k) (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1)
+    (hv0 : v₀ ≠ 0) (hv1 : v₀ ≠ 1) (hne1 : u₀ * v₀ ≠ 1) :
+    (coeffRingEval₂ u₀ v₀ hu0 hu1 hv0 hv1 hne1).comp uSlot =
+      coeffRingEval u₀ hu0 hu1 := by
+  refine IsLocalization.ringHom_ext
+    (Submonoid.powers (Polynomial.X * (1 - Polynomial.X) : Polynomial ℚ))
+    (RingHom.ext fun p => ?_)
+  simp only [RingHom.comp_apply]
+  rw [show uSlot (algebraMap (Polynomial ℚ) CoeffRing p)
+      = slotPolyHom uElt₂ p from IsLocalization.lift_eq _ p,
+    coeffRingEval_algebraMap]
+  rw [show slotPolyHom uElt₂ p = Polynomial.eval₂
+      ((algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂).comp
+        ((Polynomial.C).comp (Polynomial.C))) uElt₂ p from rfl,
+    Polynomial.hom_eval₂]
+  rw [show coeffRingEval₂ u₀ v₀ hu0 hu1 hv0 hv1 hne1 uElt₂ = u₀ by
+      rw [show uElt₂ = algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂
+        (Polynomial.C Polynomial.X) from rfl, coeffRingEval₂_algebraMap,
+        biEval_C_X]]
+  rw [Polynomial.aeval_def]
+  congr 1
+  refine RingHom.ext fun a => ?_
+  simp only [RingHom.comp_apply, coeffRingEval₂_algebraMap]
+  simp [biEval]
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] in
+/-- The `v`-slot bridge. -/
+theorem coeffRingEval₂_vSlot (u₀ v₀ : k) (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1)
+    (hv0 : v₀ ≠ 0) (hv1 : v₀ ≠ 1) (hne1 : u₀ * v₀ ≠ 1) :
+    (coeffRingEval₂ u₀ v₀ hu0 hu1 hv0 hv1 hne1).comp vSlot =
+      coeffRingEval v₀ hv0 hv1 := by
+  refine IsLocalization.ringHom_ext
+    (Submonoid.powers (Polynomial.X * (1 - Polynomial.X) : Polynomial ℚ))
+    (RingHom.ext fun p => ?_)
+  simp only [RingHom.comp_apply]
+  rw [show vSlot (algebraMap (Polynomial ℚ) CoeffRing p)
+      = slotPolyHom vElt₂ p from IsLocalization.lift_eq _ p,
+    coeffRingEval_algebraMap]
+  rw [show slotPolyHom vElt₂ p = Polynomial.eval₂
+      ((algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂).comp
+        ((Polynomial.C).comp (Polynomial.C))) vElt₂ p from rfl,
+    Polynomial.hom_eval₂]
+  rw [show coeffRingEval₂ u₀ v₀ hu0 hu1 hv0 hv1 hne1 vElt₂ = v₀ by
+      rw [show vElt₂ = algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂
+        Polynomial.X from rfl, coeffRingEval₂_algebraMap, biEval_X]]
+  rw [Polynomial.aeval_def]
+  congr 1
+  refine RingHom.ext fun a => ?_
+  simp only [RingHom.comp_apply, coeffRingEval₂_algebraMap]
+  simp [biEval]
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] in
+/-- The `uv`-slot bridge. -/
+theorem coeffRingEval₂_uvSlot (u₀ v₀ : k) (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1)
+    (hv0 : v₀ ≠ 0) (hv1 : v₀ ≠ 1) (hne1 : u₀ * v₀ ≠ 1)
+    (hw0 : u₀ * v₀ ≠ 0) :
+    (coeffRingEval₂ u₀ v₀ hu0 hu1 hv0 hv1 hne1).comp uvSlot =
+      coeffRingEval (u₀ * v₀) hw0 hne1 := by
+  refine IsLocalization.ringHom_ext
+    (Submonoid.powers (Polynomial.X * (1 - Polynomial.X) : Polynomial ℚ))
+    (RingHom.ext fun p => ?_)
+  simp only [RingHom.comp_apply]
+  rw [show uvSlot (algebraMap (Polynomial ℚ) CoeffRing p)
+      = slotPolyHom uvElt₂ p from IsLocalization.lift_eq _ p,
+    coeffRingEval_algebraMap]
+  rw [show slotPolyHom uvElt₂ p = Polynomial.eval₂
+      ((algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂).comp
+        ((Polynomial.C).comp (Polynomial.C))) uvElt₂ p from rfl,
+    Polynomial.hom_eval₂]
+  rw [show coeffRingEval₂ u₀ v₀ hu0 hu1 hv0 hv1 hne1 uvElt₂ = u₀ * v₀ by
+      rw [show uvElt₂ = algebraMap (Polynomial (Polynomial ℚ)) CoeffRing₂
+        (Polynomial.C Polynomial.X * Polynomial.X) from rfl,
+        coeffRingEval₂_algebraMap, map_mul, biEval_C_X, biEval_X]]
+  rw [Polynomial.aeval_def]
+  congr 1
+  refine RingHom.ext fun a => ?_
+  simp only [RingHom.comp_apply, coeffRingEval₂_algebraMap]
+  simp [biEval]
+
 set_option warn.sorry false in
 /-- **Two-variable evaluation transport for the chord `X`-identity**
 (sorry node — the `k`-side Cauchy-product bookkeeping): the evaluation
@@ -2874,7 +3016,30 @@ theorem evalA_chordX_of_formal
         (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) ^ 2 =
       (evalA u₀ q₀ hu0 hu1 YA - evalA v₀ q₀ hv0 hv1 YA) ^ 2 +
         (evalA u₀ q₀ hu0 hu1 YA - evalA v₀ q₀ hv0 hv1 YA) *
-          (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) :=
+          (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) := by
+  -- the slot bridges identify the evaluated coefficient sequences of the
+  -- slot images with the one-variable evaluation sequences
+  have hbu := coeffRingEval₂_uSlot u₀ v₀ hu0 hu1 hv0 hv1 hne1
+  have hbv := coeffRingEval₂_vSlot u₀ v₀ hu0 hu1 hv0 hv1 hne1
+  have hbw := coeffRingEval₂_uvSlot u₀ v₀ hu0 hu1 hv0 hv1 hne1 hw0
+  have hsequ : ∀ (F : PowerSeries CoeffRing) (n : ℕ),
+      coeffRingEval₂ u₀ v₀ hu0 hu1 hv0 hv1 hne1
+        (PowerSeries.coeff n (PowerSeries.map uSlot F)) =
+      coeffRingEval u₀ hu0 hu1 (PowerSeries.coeff n F) := fun F n => by
+    rw [PowerSeries.coeff_map, ← RingHom.comp_apply, hbu]
+  have hseqv : ∀ (F : PowerSeries CoeffRing) (n : ℕ),
+      coeffRingEval₂ u₀ v₀ hu0 hu1 hv0 hv1 hne1
+        (PowerSeries.coeff n (PowerSeries.map vSlot F)) =
+      coeffRingEval v₀ hv0 hv1 (PowerSeries.coeff n F) := fun F n => by
+    rw [PowerSeries.coeff_map, ← RingHom.comp_apply, hbv]
+  have hseqw : ∀ (F : PowerSeries CoeffRing) (n : ℕ),
+      coeffRingEval₂ u₀ v₀ hu0 hu1 hv0 hv1 hne1
+        (PowerSeries.coeff n (PowerSeries.map uvSlot F)) =
+      coeffRingEval (u₀ * v₀) hw0 hne1 (PowerSeries.coeff n F) :=
+    fun F n => by
+    rw [PowerSeries.coeff_map, ← RingHom.comp_apply, hbw]
+  -- remaining: the nonarchimedean Cauchy-product assembly mirroring
+  -- `evalA_weierstrass`, against the formal identity `hformal`
   sorry
 
 set_option warn.sorry false in
@@ -2903,7 +3068,30 @@ theorem evalA_chordY_of_formal
       (evalA u₀ q₀ hu0 hu1 YA - evalA v₀ q₀ hv0 hv1 YA) *
           (evalA (u₀ * v₀) q₀ hw0 hne1 XA - evalA u₀ q₀ hu0 hu1 XA) +
         evalA u₀ q₀ hu0 hu1 YA *
-          (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) :=
+          (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) := by
+  -- the slot bridges identify the evaluated coefficient sequences of the
+  -- slot images with the one-variable evaluation sequences
+  have hbu := coeffRingEval₂_uSlot u₀ v₀ hu0 hu1 hv0 hv1 hne1
+  have hbv := coeffRingEval₂_vSlot u₀ v₀ hu0 hu1 hv0 hv1 hne1
+  have hbw := coeffRingEval₂_uvSlot u₀ v₀ hu0 hu1 hv0 hv1 hne1 hw0
+  have hsequ : ∀ (F : PowerSeries CoeffRing) (n : ℕ),
+      coeffRingEval₂ u₀ v₀ hu0 hu1 hv0 hv1 hne1
+        (PowerSeries.coeff n (PowerSeries.map uSlot F)) =
+      coeffRingEval u₀ hu0 hu1 (PowerSeries.coeff n F) := fun F n => by
+    rw [PowerSeries.coeff_map, ← RingHom.comp_apply, hbu]
+  have hseqv : ∀ (F : PowerSeries CoeffRing) (n : ℕ),
+      coeffRingEval₂ u₀ v₀ hu0 hu1 hv0 hv1 hne1
+        (PowerSeries.coeff n (PowerSeries.map vSlot F)) =
+      coeffRingEval v₀ hv0 hv1 (PowerSeries.coeff n F) := fun F n => by
+    rw [PowerSeries.coeff_map, ← RingHom.comp_apply, hbv]
+  have hseqw : ∀ (F : PowerSeries CoeffRing) (n : ℕ),
+      coeffRingEval₂ u₀ v₀ hu0 hu1 hv0 hv1 hne1
+        (PowerSeries.coeff n (PowerSeries.map uvSlot F)) =
+      coeffRingEval (u₀ * v₀) hw0 hne1 (PowerSeries.coeff n F) :=
+    fun F n => by
+    rw [PowerSeries.coeff_map, ← RingHom.comp_apply, hbw]
+  -- remaining: the nonarchimedean Cauchy-product assembly mirroring
+  -- `evalA_weierstrass`, against the formal identity `hformal`
   sorry
 
 /-- **The `evalA`-level chord `X`-identity** (DERIVED from the formal
