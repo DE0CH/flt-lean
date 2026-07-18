@@ -168,10 +168,12 @@
   "Dickson.classification_tame": "✅✅",
   "Dickson.classification_wild": "✅✅",
   "OddRep.isIrreducible_iff_isAbsolutelyIrreducible": "✅✅",
-  "TateCurve.bilateral_chordX_cleared_window": "❌",
+  "TateCurve.bilateral_chordX_cleared_window": "✅",
   "TateCurve.bilateral_chordX_cleared_shifted": "❌",
-  "TateCurve.bilateral_chordY_cleared_window": "❌",
-  "TateCurve.bilateral_chordY_cleared_shifted": "❌"
+  "TateCurve.bilateral_chordY_cleared_window": "✅",
+  "TateCurve.bilateral_chordY_cleared_shifted": "❌",
+  "TateCurve.evalA_chordX": "❌",
+  "TateCurve.evalA_chordY": "❌"
  },
  "children": {
   "fermatLastTheoremThree": [],
@@ -772,10 +774,16 @@
   "Dickson.classification_tame": [],
   "Dickson.classification_wild": [],
   "OddRep.isIrreducible_iff_isAbsolutelyIrreducible": [],
-  "TateCurve.bilateral_chordX_cleared_window": [],
+  "TateCurve.bilateral_chordX_cleared_window": [
+   "TateCurve.evalA_chordX"
+  ],
   "TateCurve.bilateral_chordX_cleared_shifted": [],
-  "TateCurve.bilateral_chordY_cleared_window": [],
-  "TateCurve.bilateral_chordY_cleared_shifted": []
+  "TateCurve.bilateral_chordY_cleared_window": [
+   "TateCurve.evalA_chordY"
+  ],
+  "TateCurve.bilateral_chordY_cleared_shifted": [],
+  "TateCurve.evalA_chordX": [],
+  "TateCurve.evalA_chordY": []
  },
  "roots": [
   "fermat_last_theorem"

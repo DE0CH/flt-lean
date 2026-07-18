@@ -2699,13 +2699,35 @@ theorem tateCurve_negY (q₀ x y : k) :
   simp [WeierstrassCurve.Affine.negY, WeierstrassCurve.tateCurve]
 
 set_option warn.sorry false in
-/-- **The cleared chord `X`-identity, fundamental-window case** (sorry
-node — the series content): all three parameters `u₀`, `v₀`, `u₀v₀` lie
-in the fundamental annulus `|q₀| < |·| ≤ 1`, so all six bilateral values
-are `evalA`-sums by the bridges; the identity is the `k`-evaluation of
-the two-variable formal chord identity in `ℚ(u)(v)⟦q⟧`, which descends
-from the complex-analytic `analytic_chordX` of
+/-- **The `evalA`-level chord `X`-identity** (sorry node — the pure
+series content): for all three parameters in the fundamental annulus,
+the chord identity between the `evalA`-sums of the formal `XA`/`YA`.
+This is the `k`-evaluation of the two-variable formal chord identity in
+`ℚ(u)(v)⟦q⟧`, which descends from `analytic_chordX` of
 `TateCurveConstruction.lean`. -/
+theorem evalA_chordX (u₀ v₀ q₀ : k)
+    (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (hq0 : q₀ ≠ 0)
+    (hu1 : u₀ ≠ 1) (hv1 : v₀ ≠ 1)
+    (hq1 : valuation k q₀ < 1)
+    (hulow : valuation k q₀ < valuation k u₀)
+    (huhigh : valuation k u₀ ≤ 1)
+    (hvlow : valuation k q₀ < valuation k v₀)
+    (hvhigh : valuation k v₀ ≤ 1)
+    (hne1 : u₀ * v₀ ≠ 1) (hneq : u₀ * v₀ ≠ q₀) :
+    ∀ (hw0 : u₀ * v₀ ≠ 0) (hwin : valuation k q₀ < valuation k (u₀ * v₀))
+      (hwhigh : valuation k (u₀ * v₀) ≤ 1),
+    (evalA (u₀ * v₀) q₀ hw0 hne1 XA + evalA u₀ q₀ hu0 hu1 XA
+        + evalA v₀ q₀ hv0 hv1 XA) *
+        (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) ^ 2 =
+      (evalA u₀ q₀ hu0 hu1 YA - evalA v₀ q₀ hv0 hv1 YA) ^ 2 +
+        (evalA u₀ q₀ hu0 hu1 YA - evalA v₀ q₀ hv0 hv1 YA) *
+          (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) :=
+  sorry
+
+/-- **The cleared chord `X`-identity, fundamental-window case** (DERIVED
+from the `evalA`-level identity through the bilateral bridges): all
+three parameters lie in the fundamental annulus, so all six bilateral
+values are `evalA`-sums. -/
 theorem bilateral_chordX_cleared_window (u₀ v₀ q₀ : k)
     (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (hq0 : q₀ ≠ 0)
     (hu1 : u₀ ≠ 1) (hv1 : v₀ ≠ 1)
@@ -2720,8 +2742,22 @@ theorem bilateral_chordX_cleared_window (u₀ v₀ q₀ : k)
         (bilateralX u₀ q₀ - bilateralX v₀ q₀) ^ 2 =
       (bilateralY u₀ q₀ - bilateralY v₀ q₀) ^ 2 +
         (bilateralY u₀ q₀ - bilateralY v₀ q₀) *
-          (bilateralX u₀ q₀ - bilateralX v₀ q₀) :=
-  sorry
+          (bilateralX u₀ q₀ - bilateralX v₀ q₀) := by
+  intro hwin
+  have hw0 : u₀ * v₀ ≠ 0 := mul_ne_zero hu0 hv0
+  have hwhigh : valuation k (u₀ * v₀) ≤ 1 := by
+    rw [map_mul]
+    calc valuation k u₀ * valuation k v₀ ≤ 1 * valuation k v₀ :=
+          mul_le_mul_left huhigh _
+      _ = valuation k v₀ := one_mul _
+      _ ≤ 1 := hvhigh
+  rw [← evalA_XA_eq_bilateralX u₀ q₀ hu0 hu1 huhigh hq1 hulow,
+    ← evalA_XA_eq_bilateralX v₀ q₀ hv0 hv1 hvhigh hq1 hvlow,
+    ← evalA_XA_eq_bilateralX (u₀ * v₀) q₀ hw0 hne1 hwhigh hq1 hwin,
+    ← evalA_YA_eq_bilateralY u₀ q₀ hu0 hu1 huhigh hq1 hulow,
+    ← evalA_YA_eq_bilateralY v₀ q₀ hv0 hv1 hvhigh hq1 hvlow]
+  exact evalA_chordX u₀ v₀ q₀ hu0 hv0 hq0 hu1 hv1 hq1 hulow huhigh hvlow
+    hvhigh hne1 hneq hw0 hwin hwhigh
 
 set_option warn.sorry false in
 /-- **The cleared chord `X`-identity, shifted case** (sorry node — the
@@ -2773,9 +2809,29 @@ theorem bilateral_chordX_cleared (u₀ v₀ q₀ : k)
       hulow huhigh hvlow hvhigh hne1 hneq hcase
 
 set_option warn.sorry false in
-/-- **The cleared chord `Y`-identity, fundamental-window case** (sorry
-node): same window situation as `bilateral_chordX_cleared_window`, for
-the collinearity (`y`-part), descending from `analytic_chordY`. -/
+/-- **The `evalA`-level chord `Y`-identity** (sorry node — the
+collinearity series content), descending from `analytic_chordY`. -/
+theorem evalA_chordY (u₀ v₀ q₀ : k)
+    (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (hq0 : q₀ ≠ 0)
+    (hu1 : u₀ ≠ 1) (hv1 : v₀ ≠ 1)
+    (hq1 : valuation k q₀ < 1)
+    (hulow : valuation k q₀ < valuation k u₀)
+    (huhigh : valuation k u₀ ≤ 1)
+    (hvlow : valuation k q₀ < valuation k v₀)
+    (hvhigh : valuation k v₀ ≤ 1)
+    (hne1 : u₀ * v₀ ≠ 1) (hneq : u₀ * v₀ ≠ q₀) :
+    ∀ (hw0 : u₀ * v₀ ≠ 0) (hwin : valuation k q₀ < valuation k (u₀ * v₀))
+      (hwhigh : valuation k (u₀ * v₀) ≤ 1),
+    -(evalA (u₀ * v₀) q₀ hw0 hne1 YA + evalA (u₀ * v₀) q₀ hw0 hne1 XA) *
+        (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) =
+      (evalA u₀ q₀ hu0 hu1 YA - evalA v₀ q₀ hv0 hv1 YA) *
+          (evalA (u₀ * v₀) q₀ hw0 hne1 XA - evalA u₀ q₀ hu0 hu1 XA) +
+        evalA u₀ q₀ hu0 hu1 YA *
+          (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) :=
+  sorry
+
+/-- **The cleared chord `Y`-identity, fundamental-window case** (DERIVED
+from the `evalA`-level identity through the bilateral bridges). -/
 theorem bilateral_chordY_cleared_window (u₀ v₀ q₀ : k)
     (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (hq0 : q₀ ≠ 0)
     (hu1 : u₀ ≠ 1) (hv1 : v₀ ≠ 1)
@@ -2790,8 +2846,23 @@ theorem bilateral_chordY_cleared_window (u₀ v₀ q₀ : k)
         (bilateralX u₀ q₀ - bilateralX v₀ q₀) =
       (bilateralY u₀ q₀ - bilateralY v₀ q₀) *
           (bilateralX (u₀ * v₀) q₀ - bilateralX u₀ q₀) +
-        bilateralY u₀ q₀ * (bilateralX u₀ q₀ - bilateralX v₀ q₀) :=
-  sorry
+        bilateralY u₀ q₀ * (bilateralX u₀ q₀ - bilateralX v₀ q₀) := by
+  intro hwin
+  have hw0 : u₀ * v₀ ≠ 0 := mul_ne_zero hu0 hv0
+  have hwhigh : valuation k (u₀ * v₀) ≤ 1 := by
+    rw [map_mul]
+    calc valuation k u₀ * valuation k v₀ ≤ 1 * valuation k v₀ :=
+          mul_le_mul_left huhigh _
+      _ = valuation k v₀ := one_mul _
+      _ ≤ 1 := hvhigh
+  rw [← evalA_XA_eq_bilateralX u₀ q₀ hu0 hu1 huhigh hq1 hulow,
+    ← evalA_XA_eq_bilateralX v₀ q₀ hv0 hv1 hvhigh hq1 hvlow,
+    ← evalA_XA_eq_bilateralX (u₀ * v₀) q₀ hw0 hne1 hwhigh hq1 hwin,
+    ← evalA_YA_eq_bilateralY u₀ q₀ hu0 hu1 huhigh hq1 hulow,
+    ← evalA_YA_eq_bilateralY v₀ q₀ hv0 hv1 hvhigh hq1 hvlow,
+    ← evalA_YA_eq_bilateralY (u₀ * v₀) q₀ hw0 hne1 hwhigh hq1 hwin]
+  exact evalA_chordY u₀ v₀ q₀ hu0 hv0 hq0 hu1 hv1 hq1 hulow huhigh hvlow
+    hvhigh hne1 hneq hw0 hwin hwhigh
 
 set_option warn.sorry false in
 /-- **The cleared chord `Y`-identity, shifted case** (sorry node): the
