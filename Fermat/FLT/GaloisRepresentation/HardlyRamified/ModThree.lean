@@ -1585,16 +1585,18 @@ theorem cyclotomicCharacter_algebraMap_eq_one_of_inertia_two
 
 set_option warn.sorry false in
 /-- **The inertia bridge at `2`** (sorry node — completion
-bookkeeping): every element of the local inertia group at the place
-`prime_two` (phrased at the adic completion of `ℚ`) has the same image
-in `Γ ℚ` as some element of the inertia at `2` phrased over `ℚ_[2]`
-(via `Z2bar`). Content: the continuous `ℚ`-algebra isomorphism
-`adicCompletion ℚ v₂ ≃ ℚ_[2]`
+bookkeeping, stated up to conjugacy since the two local worlds involve
+different choices of embedding of `ℚᵃˡᵍ`): every element of the local
+inertia group at the place `prime_two` (phrased at the adic completion
+of `ℚ`) has, up to conjugation in `Γ ℚ`, the same image as some element
+of the inertia at `2` phrased over `ℚ_[2]` (via `Z2bar`). Content: the
+continuous `ℚ`-algebra isomorphism `adicCompletion ℚ v₂ ≃ ℚ_[2]`
 (`Rat.HeightOneSpectrum.adicCompletion.padicEquiv`) induces an
-isomorphism of absolute Galois groups matching the two inertia
-subgroups (both are defined by trivial action on the residue extension
-of the integral closure, and the isomorphism preserves the valuation
-structure); composing with the maps to `Γ ℚ` gives the statement. -/
+isomorphism of the algebraic closures matching the two inertia
+subgroups (the spectral valuation is preserved); the two resulting
+embeddings of `ℚᵃˡᵍ` differ by an automorphism `c ∈ Γ ℚ`, which
+conjugates one image onto the other. The conjugacy slack is harmless
+downstream: quotient characters are conjugation-invariant. -/
 theorem localInertia_two_eq_map_padic
     {σ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
       Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)}
@@ -1602,11 +1604,11 @@ theorem localInertia_two_eq_map_padic
       Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :
     ∃ τ ∈ AddSubgroup.inertia
       ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
-      (Γ ℚ_[2]),
+      (Γ ℚ_[2]), ∃ c : Γ ℚ,
       Field.absoluteGaloisGroup.map (algebraMap ℚ
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ =
-      Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ :=
+      c * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ * c⁻¹ :=
   sorry
 
 set_option backward.isDefEq.respectTransparency false in
@@ -1722,14 +1724,18 @@ theorem quotCharacter_unramified_at_two
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker := by
   intro σ hσ
-  obtain ⟨τ, hτ, heq⟩ := localInertia_two_eq_map_padic hσ
+  obtain ⟨τ, hτ, c, heq⟩ := localInertia_two_eq_map_padic hσ
   have h := quotCharacter_inertia_two_ker V hV hρ W χ₂ hWfr hWstable hχ₂ hτ
   rw [MonoidHom.mem_ker, MonoidHom.comp_apply] at h ⊢
   show χ₂ ((Field.absoluteGaloisGroup.map (algebraMap ℚ
     (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
       Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) σ) = 1
   rw [heq]
-  exact h
+  -- characters are conjugation-invariant
+  rw [map_mul, map_mul, map_inv]
+  rw [show χ₂ ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2])) τ) = 1
+    from h]
+  group
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The stable line with locally-unramified quotient character at
