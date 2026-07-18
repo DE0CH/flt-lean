@@ -407,7 +407,10 @@ theorem adicArithFrob_rootsOfUnity_pow
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
       have h1 := hunit.map (algebraMap
         (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
-        (IntegralClosure _ _))
+        (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))))
       rw [map_natCast] at h1
       have := h1.pow n
       push_cast
