@@ -313,6 +313,132 @@ theorem WeierstrassCurve.tateCurveModel_baseChange (q : k)
     ((tateCurveModel q hq)⁄k) = tateCurve q := by
   ext <;> rfl
 
+open scoped ArithmeticFunction.sigma in
+/-- The integrality `12 ∣ 5σ₃(n) + 7σ₅(n)`: termwise, `12 ∣ 5d³ + 7d⁵`
+(check mod `12` by `decide` on `ZMod 12`). -/
+theorem TateCurve.dvd_five_sigma_three_add_seven_sigma_five (n : ℕ) :
+    (12 : ℤ) ∣ 5 * σ 3 n + 7 * σ 5 n := by
+  have hterm : ∀ d : ℤ, (12 : ℤ) ∣ 5 * d ^ 3 + 7 * d ^ 5 := by
+    intro d
+    have h0 : ∀ x : ZMod 12, 5 * x ^ 3 + 7 * x ^ 5 = 0 := by decide
+    have h1 := h0 ((d : ℤ) : ZMod 12)
+    have h2 : (((5 * d ^ 3 + 7 * d ^ 5 : ℤ)) : ZMod 12) = 0 := by
+      push_cast
+      exact h1
+    exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mp h2
+  have hsum : (5 * σ 3 n + 7 * σ 5 n : ℤ) =
+      ∑ d ∈ n.divisors, (5 * (d : ℤ) ^ 3 + 7 * (d : ℤ) ^ 5) := by
+    rw [Finset.sum_add_distrib, ← Finset.mul_sum, ← Finset.mul_sum]
+    congr 1
+    · congr 1
+      rw [ArithmeticFunction.sigma_apply]
+      push_cast
+      rfl
+    · congr 1
+      rw [ArithmeticFunction.sigma_apply]
+      push_cast
+      rfl
+  rw [hsum]
+  exact Finset.dvd_sum fun d _ => hterm (d : ℤ)
+
+open PowerSeries in
+/-- The formal `c₆`-series of the Tate curve: `c₆(q) = −(1 − 504·s₅)`,
+the classical (negated) normalized Eisenstein series of weight `6`. -/
+noncomputable def TateCurve.c₆Formal : ℤ⟦X⟧ := -(1 - 504 * TateCurve.sInt 5)
+
+open PowerSeries in
+open scoped ArithmeticFunction.sigma in
+/-- **The `c₆`-invariant of the Tate curve is the value of `c₆Formal`**
+(PROVEN — the second easy `q`-expansion identity):
+`c₆ = −1 + 72·a₄(q) − 864·a₆(q)`, and at each coefficient the exact
+division in `a₆Formal` cancels: `864·((5σ₃ + 7σ₅)/12) = 72·(5σ₃ + 7σ₅)`
+by the integrality above, leaving `504·σ₅`. -/
+theorem WeierstrassCurve.c₆_tateCurve_eq_evalInt (q : k)
+    (hq : valuation k q < 1) :
+    (tateCurve q).c₆ = TateCurve.evalInt q TateCurve.c₆Formal := by
+  have hc₆eq : (tateCurve q).c₆ = -1 + 72 * tateA₄ q - 864 * tateA₆ q := by
+    simp only [tateCurve, WeierstrassCurve.c₆, WeierstrassCurve.b₂,
+      WeierstrassCurve.b₄, WeierstrassCurve.b₆]
+    ring
+  -- the corresponding formal identity, coefficientwise
+  have hform : TateCurve.c₆Formal =
+      -1 + 72 * TateCurve.a₄Formal - 864 * TateCurve.a₆Formal := by
+    ext n
+    rw [TateCurve.c₆Formal]
+    simp only [map_neg, map_sub, map_add, PowerSeries.coeff_one]
+    have h72 : PowerSeries.coeff n ((72 : ℤ⟦X⟧) * TateCurve.a₄Formal) =
+        72 * PowerSeries.coeff n TateCurve.a₄Formal := by
+      have h0 : ((72 : ℤ⟦X⟧)) * TateCurve.a₄Formal =
+          (72 : ℤ) • TateCurve.a₄Formal := by
+        rw [zsmul_eq_mul]
+        norm_num
+      rw [h0, map_smul, smul_eq_mul]
+    have h864 : PowerSeries.coeff n ((864 : ℤ⟦X⟧) * TateCurve.a₆Formal) =
+        864 * PowerSeries.coeff n TateCurve.a₆Formal := by
+      have h0 : ((864 : ℤ⟦X⟧)) * TateCurve.a₆Formal =
+          (864 : ℤ) • TateCurve.a₆Formal := by
+        rw [zsmul_eq_mul]
+        norm_num
+      rw [h0, map_smul, smul_eq_mul]
+    have h504 : PowerSeries.coeff n ((504 : ℤ⟦X⟧) * TateCurve.sInt 5) =
+        504 * PowerSeries.coeff n (TateCurve.sInt 5) := by
+      have h0 : ((504 : ℤ⟦X⟧)) * TateCurve.sInt 5 =
+          (504 : ℤ) • TateCurve.sInt 5 := by
+        rw [zsmul_eq_mul]
+        norm_num
+      rw [h0, map_smul, smul_eq_mul]
+    rw [h72, h864, h504, TateCurve.coeff_a₄Formal, TateCurve.coeff_a₆Formal]
+    have hcoeffs5 : PowerSeries.coeff n (TateCurve.sInt 5) = (σ 5 n : ℤ) := by
+      rw [TateCurve.sInt, PowerSeries.coeff_mk]
+    rw [hcoeffs5]
+    have hdvd := TateCurve.dvd_five_sigma_three_add_seven_sigma_five n
+    obtain ⟨c, hc⟩ := hdvd
+    rw [hc]
+    rw [Int.mul_ediv_cancel_left c (by norm_num : (12 : ℤ) ≠ 0)]
+    rcases eq_or_ne n 0 with rfl | hn
+    · have hσ30 : ((σ 3) (0 : ℕ) : ℤ) = 0 := by simp
+      have hσ50 : ((σ 5) (0 : ℕ) : ℤ) = 0 := by simp
+      have hc0 : c = 0 := by
+        have h12c : 5 * ((σ 3) (0 : ℕ) : ℤ) +
+            7 * ((σ 5) (0 : ℕ) : ℤ) = 12 * c := hc
+        rw [hσ30, hσ50] at h12c
+        omega
+      rw [hσ30, hσ50, hc0]
+      ring
+    · have h12c : 5 * (σ 3 n : ℤ) + 7 * (σ 5 n : ℤ) = 12 * c := hc
+      linarith [h12c]
+  rw [hc₆eq, tateA₄_eq_evalInt q hq, tateA₆_eq_evalInt q hq, hform]
+  -- evaluate the formal combination
+  have hneg1 : TateCurve.evalInt q (-1 : ℤ⟦X⟧) = -1 := by
+    rw [TateCurve.evalInt, tsum_eq_single 0 ?_]
+    · simp
+    · intro n hn
+      simp [PowerSeries.coeff_one, hn]
+  have hsc : ∀ (c : ℤ) (F : ℤ⟦X⟧), TateCurve.evalInt q ((c : ℤ⟦X⟧) * F) =
+      (c : k) * TateCurve.evalInt q F := by
+    intro c F
+    rw [TateCurve.evalInt, TateCurve.evalInt, ← tsum_mul_left]
+    congr 1
+    funext n
+    have h0 : ((c : ℤ⟦X⟧)) * F = (c : ℤ) • F := by
+      rw [zsmul_eq_mul]
+    have hcoeff : PowerSeries.coeff n ((c : ℤ⟦X⟧) * F) =
+        c * PowerSeries.coeff n F := by
+      rw [h0, map_smul, smul_eq_mul]
+    rw [hcoeff]
+    push_cast
+    ring
+  rw [show (-1 + 72 * TateCurve.a₄Formal - 864 * TateCurve.a₆Formal :
+      ℤ⟦X⟧) = (-1 : ℤ⟦X⟧) + (((72 : ℤ) : ℤ⟦X⟧) * TateCurve.a₄Formal +
+      ((-864 : ℤ) : ℤ⟦X⟧) * TateCurve.a₆Formal) from by push_cast; ring]
+  rw [TateCurve.evalInt_add (TateCurve.summable_evalInt q hq _)
+      (TateCurve.summable_evalInt q hq _),
+    TateCurve.evalInt_add (TateCurve.summable_evalInt q hq _)
+      (TateCurve.summable_evalInt q hq _),
+    hneg1, hsc, hsc]
+  push_cast
+  ring
+
 open PowerSeries in
 /-- **The `c₄`-invariant of the Tate curve is the value of `c₄Formal`**
 (PROVEN — the easy half of the `q`-expansion identities):
