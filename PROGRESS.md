@@ -122,61 +122,71 @@ entries file). To add/remove/annotate a node, edit
                                                       MulEquiv.ofBijective, MulEquiv.toAdditiveLeft;
                                                       equivariance descends definitionally on ofMul-
                                                       classes.
-                                                        - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure` — the uniformization core, pre-quotient form
-                                                          (ATAEC V.3.1 + gluing): surjective Galois-
-                                                          equivariant hom Ωˣ →+ E_q(Ω) with kernel
-                                                          exactly q^ℤ, given by the explicit X/Y
-                                                          series (each u converges in the NALF k(u);
-                                                          the finite-level maps glue choice-freely).
-                                                          GROUNDWORK BUILT (TateUniformization.lean,
-                                                          2026-07-18, all axiom-clean): CoeffRing =
-                                                          ℚ[T][1/(T(1−T))] evaluation
-                                                          infrastructure; lifts/bridges of the
-                                                          X/Y/a₄/a₆ series; evalA two-variable
-                                                          evaluation with fundamental-annulus
-                                                          (|q|<|u|≤1) summability; nonarch Cauchy
-                                                          products; formal + EVALUATED Weierstrass
-                                                          equations; annulusPoint (on-curve,
-                                                          nonsingular); strict fundamental domain
-                                                          (exists_zpow_mul_mem_annulus +
-                                                          annulus_exponent_unique); pointMap on kˣ
-                                                          with q-power invariance, descent
-                                                          pointMapQuot to kˣ/q^ℤ, and kernel
-                                                          characterization pointMap_eq_zero_iff.
-                                                          NEGATION LAW: coefficient- and series-
-                                                          level inversion identities PROVEN
-                                                          (X(u⁻¹,q)=X(u,q), Y(u⁻¹,q)=−Y−X, binomial
-                                                          C(d+1,2)=C(d,2)+d), and the point-level
-                                                          P(u⁻¹)=−P(u) PROVEN on the valuation-one
-                                                          shell (pointMap_inv_of_valuation_eq_one);
-                                                          the TRANSLATION IDENTITY IS PROVEN
-                                                          (bilateralX_shift, 2026-07-18): the
-                                                          bilateral x-form (evalA_XA_bilateral, from
-                                                          the nonarch Lambert machinery — geometric
-                                                          + derivative-geometric series, Fubini,
-                                                          divisor collection, general-window one-
-                                                          sided identities) is inversion-invariant
-                                                          (bilateralX_inv) and q-shift-invariant
-                                                          (bilateralX_shift). Next: the interior-
-                                                          case point negation via these, the
-                                                          Y-series bilateral analogue (kernel
-                                                          v²/(1−v)³, triple Cauchy products), then
-                                                          the addition law. REMAINING: (a) the
-                                                          homomorphism property — Silverman V.3.1
-                                                          addition law, via two-parameter formal
-                                                          identities against mathlib's affine group
-                                                          law (extend the
-                                                          eq_zero_of_forall_hasSum_zero descent of
-                                                          TateCurveConstruction to two
-                                                          transcendentals, using the ℂ-analytic
-                                                          addition law of the exponential
-                                                          parametrization); (b) surjectivity of the
-                                                          finite-level map (valuation analysis of
-                                                          affine points, Silverman V.4); (c) Galois-
-                                                          equivariant gluing over Ω (finite-level
-                                                          equivariance from the universality of the
-                                                          series coefficients, then colimit over
-                                                          finite subextensions).
+                                                        - ✅· `WeierstrassCurve.exists_tateCurveHomSepClosure` — the uniformization core, pre-quotient
+                                                          form: surjective Galois-equivariant hom Ωˣ
+                                                          →+ E_q(Ω) with kernel exactly q^ℤ. DERIVED
+                                                          2026-07-18 by feeding the finite-level
+                                                          canonical uniformisation tateCurveEquiv
+                                                          (underlying function pointMapQuot) into
+                                                          the sorried gluing implication exists_tate
+                                                          CurveHomSepClosure_of_finiteLevel.
+                                                            - ✅· `TateCurve.tateCurveEquiv` — the finite-level Tate uniformisation
+                                                              kˣ/q^ℤ ≃+ E_q(k), DERIVED from
+                                                              pointMapQuot_add +
+                                                              pointMapQuot_bijective with
+                                                              pointMapQuot (canonical, choice-free)
+                                                              as underlying function — the object
+                                                              the Ω-gluing consumes. RE-VENDORED
+                                                              2026-07-18 (stripped form): the
+                                                              annulus/evalA/pointMap machinery is in
+                                                              the tree (all PROVEN: CoeffRing
+                                                              evaluation, summability on the
+                                                              fundamental annulus, evaluated
+                                                              Weierstrass equation, annulusPoint
+                                                              nonsingularity, strict fundamental
+                                                              domain, kernel characterization
+                                                              pointMap_eq_zero_iff); the
+                                                              bilateral/Lambert negation-translation
+                                                              machinery stays in the reference
+                                                              commit 8282dfb^ until the addition-law
+                                                              proof consumes it.
+                                                                - ❌· `TateCurve.pointMapQuot_surjective` — surjectivity of the uniformisation
+                                                                  (sorry node, Silverman ATAEC
+                                                                  V.3.1(d)/V.4): valuation analysis
+                                                                  of affine points — the bilateral
+                                                                  X-value is two-to-one from the
+                                                                  annulus onto the x-line up to the
+                                                                  involution, preimages separated by
+                                                                  the y-coordinate.
+                                                                - ❌· `TateCurve.pointMapQuot_add` — the addition law (sorry node,
+                                                                  Silverman ATAEC V.3.1(c)):
+                                                                  pointMapQuot turns unit-class
+                                                                  multiplication into Tate-curve
+                                                                  addition. Attack: coordinates are
+                                                                  the bilateral values
+                                                                  (evalA_XA_eq_bilateralX /
+                                                                  evalA_YA_eq_bilateralY, with the
+                                                                  PROVEN shift/inversion identities
+                                                                  normalising representatives — in
+                                                                  the reference commit 8282dfb^);
+                                                                  chord–tangent group law against
+                                                                  two-parameter Lambert
+                                                                  manipulations on
+                                                                  hasSum_lambert_general.
+                                                            - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node):
+                                                              GIVEN the finite-level canonical
+                                                              uniformisation lˣ/q^ℤ ≃+ E_q(l) with
+                                                              underlying pointMapQuot for every NALF
+                                                              l, the Ω-level hom exists. Content:
+                                                              finite subextensions of Ω/k are NALFs
+                                                              (unique valuative extension over the
+                                                              complete k — infrastructure absent
+                                                              from mathlib at this pin), the maps
+                                                              are compatible with inclusions and
+                                                              σ-twists by naturality of the
+                                                              universal series, and
+                                                              kernel/surjectivity/equivariance pass
+                                                              to the colimit.
                                             - ✅· `WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic` — the nonsplit half of the unipotence statement,
                                               assembled from the LOCAL nonsplit node
                                               `tate_inertia_unipotent_of_nonsplit` by the proven
@@ -206,68 +216,78 @@ entries file). To add/remove/annotate a node, edit
                                                           characterization, MulEquiv.ofBijective,
                                                           MulEquiv.toAdditiveLeft; equivariance
                                                           descends definitionally on ofMul-classes.
-                                                            - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure` — the uniformization core, pre-quotient
-                                                              form (ATAEC V.3.1 + gluing):
-                                                              surjective Galois-equivariant hom Ωˣ
-                                                              →+ E_q(Ω) with kernel exactly q^ℤ,
-                                                              given by the explicit X/Y series (each
-                                                              u converges in the NALF k(u); the
-                                                              finite-level maps glue choice-freely).
-                                                              GROUNDWORK BUILT
-                                                              (TateUniformization.lean, 2026-07-18,
-                                                              all axiom-clean): CoeffRing =
-                                                              ℚ[T][1/(T(1−T))] evaluation
-                                                              infrastructure; lifts/bridges of the
-                                                              X/Y/a₄/a₆ series; evalA two-variable
-                                                              evaluation with fundamental-annulus
-                                                              (|q|<|u|≤1) summability; nonarch
-                                                              Cauchy products; formal + EVALUATED
-                                                              Weierstrass equations; annulusPoint
-                                                              (on-curve, nonsingular); strict
-                                                              fundamental domain
-                                                              (exists_zpow_mul_mem_annulus +
-                                                              annulus_exponent_unique); pointMap on
-                                                              kˣ with q-power invariance, descent
-                                                              pointMapQuot to kˣ/q^ℤ, and kernel
-                                                              characterization pointMap_eq_zero_iff.
-                                                              NEGATION LAW: coefficient- and series-
-                                                              level inversion identities PROVEN
-                                                              (X(u⁻¹,q)=X(u,q), Y(u⁻¹,q)=−Y−X,
-                                                              binomial C(d+1,2)=C(d,2)+d), and the
-                                                              point-level P(u⁻¹)=−P(u) PROVEN on the
-                                                              valuation-one shell
-                                                              (pointMap_inv_of_valuation_eq_one);
-                                                              the TRANSLATION IDENTITY IS PROVEN
-                                                              (bilateralX_shift, 2026-07-18): the
-                                                              bilateral x-form (evalA_XA_bilateral,
-                                                              from the nonarch Lambert machinery —
-                                                              geometric + derivative-geometric
-                                                              series, Fubini, divisor collection,
-                                                              general-window one-sided identities)
-                                                              is inversion-invariant
-                                                              (bilateralX_inv) and q-shift-invariant
-                                                              (bilateralX_shift). Next: the
-                                                              interior-case point negation via
-                                                              these, the Y-series bilateral analogue
-                                                              (kernel v²/(1−v)³, triple Cauchy
-                                                              products), then the addition law.
-                                                              REMAINING: (a) the homomorphism
-                                                              property — Silverman V.3.1 addition
-                                                              law, via two-parameter formal
-                                                              identities against mathlib's affine
-                                                              group law (extend the
-                                                              eq_zero_of_forall_hasSum_zero descent
-                                                              of TateCurveConstruction to two
-                                                              transcendentals, using the ℂ-analytic
-                                                              addition law of the exponential
-                                                              parametrization); (b) surjectivity of
-                                                              the finite-level map (valuation
-                                                              analysis of affine points, Silverman
-                                                              V.4); (c) Galois-equivariant gluing
-                                                              over Ω (finite-level equivariance from
-                                                              the universality of the series
-                                                              coefficients, then colimit over finite
-                                                              subextensions).
+                                                            - ✅· `WeierstrassCurve.exists_tateCurveHomSepClosure` — the uniformization core, pre-quotient
+                                                              form: surjective Galois-equivariant
+                                                              hom Ωˣ →+ E_q(Ω) with kernel exactly
+                                                              q^ℤ. DERIVED 2026-07-18 by feeding the
+                                                              finite-level canonical uniformisation
+                                                              tateCurveEquiv (underlying function
+                                                              pointMapQuot) into the sorried gluing
+                                                              implication exists_tateCurveHomSepClos
+                                                              ure_of_finiteLevel.
+                                                                - ✅· `TateCurve.tateCurveEquiv` — the finite-level Tate
+                                                                  uniformisation kˣ/q^ℤ ≃+ E_q(k),
+                                                                  DERIVED from pointMapQuot_add +
+                                                                  pointMapQuot_bijective with
+                                                                  pointMapQuot (canonical, choice-
+                                                                  free) as underlying function — the
+                                                                  object the Ω-gluing consumes. RE-
+                                                                  VENDORED 2026-07-18 (stripped
+                                                                  form): the annulus/evalA/pointMap
+                                                                  machinery is in the tree (all
+                                                                  PROVEN: CoeffRing evaluation,
+                                                                  summability on the fundamental
+                                                                  annulus, evaluated Weierstrass
+                                                                  equation, annulusPoint
+                                                                  nonsingularity, strict fundamental
+                                                                  domain, kernel characterization
+                                                                  pointMap_eq_zero_iff); the
+                                                                  bilateral/Lambert negation-
+                                                                  translation machinery stays in the
+                                                                  reference commit 8282dfb^ until
+                                                                  the addition-law proof consumes
+                                                                  it.
+                                                                    - ❌· `TateCurve.pointMapQuot_surjective` — surjectivity of the
+                                                                      uniformisation (sorry node,
+                                                                      Silverman ATAEC V.3.1(d)/V.4):
+                                                                      valuation analysis of affine
+                                                                      points — the bilateral X-value
+                                                                      is two-to-one from the annulus
+                                                                      onto the x-line up to the
+                                                                      involution, preimages
+                                                                      separated by the y-coordinate.
+                                                                    - ❌· `TateCurve.pointMapQuot_add` — the addition law (sorry node,
+                                                                      Silverman ATAEC V.3.1(c)):
+                                                                      pointMapQuot turns unit-class
+                                                                      multiplication into Tate-curve
+                                                                      addition. Attack: coordinates
+                                                                      are the bilateral values
+                                                                      (evalA_XA_eq_bilateralX /
+                                                                      evalA_YA_eq_bilateralY, with
+                                                                      the PROVEN shift/inversion
+                                                                      identities normalising
+                                                                      representatives — in the
+                                                                      reference commit 8282dfb^);
+                                                                      chord–tangent group law
+                                                                      against two-parameter Lambert
+                                                                      manipulations on
+                                                                      hasSum_lambert_general.
+                                                                - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry
+                                                                  node): GIVEN the finite-level
+                                                                  canonical uniformisation lˣ/q^ℤ ≃+
+                                                                  E_q(l) with underlying
+                                                                  pointMapQuot for every NALF l, the
+                                                                  Ω-level hom exists. Content:
+                                                                  finite subextensions of Ω/k are
+                                                                  NALFs (unique valuative extension
+                                                                  over the complete k —
+                                                                  infrastructure absent from mathlib
+                                                                  at this pin), the maps are
+                                                                  compatible with inclusions and
+                                                                  σ-twists by naturality of the
+                                                                  universal series, and
+                                                                  kernel/surjectivity/equivariance
+                                                                  pass to the colimit.
                                     - ❌· `FreyPackage.subquotient_character_unramified_at_p` — (stated 2026-07-17) — flat/ordinary at `p`: one of the two
                                       characters is unramified at `p` itself (connected-étale
                                       sequence in the ordinary/ multiplicative case; supersingular
@@ -314,76 +334,85 @@ entries file). To add/remove/annotate a node, edit
                                                               MulEquiv.toAdditiveLeft; equivariance
                                                               descends definitionally on ofMul-
                                                               classes.
-                                                                - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure` — the uniformization core, pre-
-                                                                  quotient form (ATAEC V.3.1 +
-                                                                  gluing): surjective Galois-
+                                                                - ✅· `WeierstrassCurve.exists_tateCurveHomSepClosure` — the uniformization core, pre-
+                                                                  quotient form: surjective Galois-
                                                                   equivariant hom Ωˣ →+ E_q(Ω) with
-                                                                  kernel exactly q^ℤ, given by the
-                                                                  explicit X/Y series (each u
-                                                                  converges in the NALF k(u); the
-                                                                  finite-level maps glue choice-
-                                                                  freely). GROUNDWORK BUILT
-                                                                  (TateUniformization.lean,
-                                                                  2026-07-18, all axiom-clean):
-                                                                  CoeffRing = ℚ[T][1/(T(1−T))]
-                                                                  evaluation infrastructure;
-                                                                  lifts/bridges of the X/Y/a₄/a₆
-                                                                  series; evalA two-variable
-                                                                  evaluation with fundamental-
-                                                                  annulus (|q|<|u|≤1) summability;
-                                                                  nonarch Cauchy products; formal +
-                                                                  EVALUATED Weierstrass equations;
-                                                                  annulusPoint (on-curve,
-                                                                  nonsingular); strict fundamental
-                                                                  domain
-                                                                  (exists_zpow_mul_mem_annulus +
-                                                                  annulus_exponent_unique); pointMap
-                                                                  on kˣ with q-power invariance,
-                                                                  descent pointMapQuot to kˣ/q^ℤ,
-                                                                  and kernel characterization
-                                                                  pointMap_eq_zero_iff. NEGATION
-                                                                  LAW: coefficient- and series-level
-                                                                  inversion identities PROVEN
-                                                                  (X(u⁻¹,q)=X(u,q), Y(u⁻¹,q)=−Y−X,
-                                                                  binomial C(d+1,2)=C(d,2)+d), and
-                                                                  the point-level P(u⁻¹)=−P(u)
-                                                                  PROVEN on the valuation-one shell
-                                                                  (pointMap_inv_of_valuation_eq_one)
-                                                                  ; the TRANSLATION IDENTITY IS
-                                                                  PROVEN (bilateralX_shift,
-                                                                  2026-07-18): the bilateral x-form
-                                                                  (evalA_XA_bilateral, from the
-                                                                  nonarch Lambert machinery —
-                                                                  geometric + derivative-geometric
-                                                                  series, Fubini, divisor
-                                                                  collection, general-window one-
-                                                                  sided identities) is inversion-
-                                                                  invariant (bilateralX_inv) and
-                                                                  q-shift-invariant
-                                                                  (bilateralX_shift). Next: the
-                                                                  interior-case point negation via
-                                                                  these, the Y-series bilateral
-                                                                  analogue (kernel v²/(1−v)³, triple
-                                                                  Cauchy products), then the
-                                                                  addition law. REMAINING: (a) the
-                                                                  homomorphism property — Silverman
-                                                                  V.3.1 addition law, via two-
-                                                                  parameter formal identities
-                                                                  against mathlib's affine group law
-                                                                  (extend the
-                                                                  eq_zero_of_forall_hasSum_zero
-                                                                  descent of TateCurveConstruction
-                                                                  to two transcendentals, using the
-                                                                  ℂ-analytic addition law of the
-                                                                  exponential parametrization); (b)
-                                                                  surjectivity of the finite-level
-                                                                  map (valuation analysis of affine
-                                                                  points, Silverman V.4); (c)
-                                                                  Galois-equivariant gluing over Ω
-                                                                  (finite-level equivariance from
-                                                                  the universality of the series
-                                                                  coefficients, then colimit over
-                                                                  finite subextensions).
+                                                                  kernel exactly q^ℤ. DERIVED
+                                                                  2026-07-18 by feeding the finite-
+                                                                  level canonical uniformisation
+                                                                  tateCurveEquiv (underlying
+                                                                  function pointMapQuot) into the
+                                                                  sorried gluing implication exists_
+                                                                  tateCurveHomSepClosure_of_finiteLe
+                                                                  vel.
+                                                                    - ✅· `TateCurve.tateCurveEquiv` — the finite-level Tate
+                                                                      uniformisation kˣ/q^ℤ ≃+
+                                                                      E_q(k), DERIVED from
+                                                                      pointMapQuot_add +
+                                                                      pointMapQuot_bijective with
+                                                                      pointMapQuot (canonical,
+                                                                      choice-free) as underlying
+                                                                      function — the object the
+                                                                      Ω-gluing consumes. RE-VENDORED
+                                                                      2026-07-18 (stripped form):
+                                                                      the annulus/evalA/pointMap
+                                                                      machinery is in the tree (all
+                                                                      PROVEN: CoeffRing evaluation,
+                                                                      summability on the fundamental
+                                                                      annulus, evaluated Weierstrass
+                                                                      equation, annulusPoint
+                                                                      nonsingularity, strict
+                                                                      fundamental domain, kernel
+                                                                      characterization
+                                                                      pointMap_eq_zero_iff); the
+                                                                      bilateral/Lambert negation-
+                                                                      translation machinery stays in
+                                                                      the reference commit 8282dfb^
+                                                                      until the addition-law proof
+                                                                      consumes it.
+                                                                        - ❌· `TateCurve.pointMapQuot_surjective` — surjectivity of the
+                                                                          uniformisation (sorry node,
+                                                                          Silverman ATAEC V.3.1(d)/V.4):
+                                                                          valuation analysis of affine
+                                                                          points — the bilateral X-value
+                                                                          is two-to-one from the annulus
+                                                                          onto the x-line up to the
+                                                                          involution, preimages
+                                                                          separated by the y-coordinate.
+                                                                        - ❌· `TateCurve.pointMapQuot_add` — the addition law (sorry node,
+                                                                          Silverman ATAEC V.3.1(c)):
+                                                                          pointMapQuot turns unit-class
+                                                                          multiplication into Tate-curve
+                                                                          addition. Attack: coordinates
+                                                                          are the bilateral values
+                                                                          (evalA_XA_eq_bilateralX /
+                                                                          evalA_YA_eq_bilateralY, with
+                                                                          the PROVEN shift/inversion
+                                                                          identities normalising
+                                                                          representatives — in the
+                                                                          reference commit 8282dfb^);
+                                                                          chord–tangent group law
+                                                                          against two-parameter Lambert
+                                                                          manipulations on
+                                                                          hasSum_lambert_general.
+                                                                    - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
+                                                                      (sorry node): GIVEN the
+                                                                      finite-level canonical
+                                                                      uniformisation lˣ/q^ℤ ≃+
+                                                                      E_q(l) with underlying
+                                                                      pointMapQuot for every NALF l,
+                                                                      the Ω-level hom exists.
+                                                                      Content: finite subextensions
+                                                                      of Ω/k are NALFs (unique
+                                                                      valuative extension over the
+                                                                      complete k — infrastructure
+                                                                      absent from mathlib at this
+                                                                      pin), the maps are compatible
+                                                                      with inclusions and σ-twists
+                                                                      by naturality of the universal
+                                                                      series, and kernel/surjectivit
+                                                                      y/equivariance pass to the
+                                                                      colimit.
                                                     - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality statement,
                                                       assembled from the LOCAL nonsplit node
                                                       `tate_inertia_trivial_of_nonsplit` by the
@@ -420,86 +449,86 @@ entries file). To add/remove/annotate a node, edit
                                                                   MulEquiv.toAdditiveLeft;
                                                                   equivariance descends
                                                                   definitionally on ofMul-classes.
-                                                                    - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure` — the uniformization core, pre-
-                                                                      quotient form (ATAEC V.3.1 +
-                                                                      gluing): surjective Galois-
-                                                                      equivariant hom Ωˣ →+ E_q(Ω)
-                                                                      with kernel exactly q^ℤ, given
-                                                                      by the explicit X/Y series
-                                                                      (each u converges in the NALF
-                                                                      k(u); the finite-level maps
-                                                                      glue choice-freely).
-                                                                      GROUNDWORK BUILT
-                                                                      (TateUniformization.lean,
-                                                                      2026-07-18, all axiom-clean):
-                                                                      CoeffRing = ℚ[T][1/(T(1−T))]
-                                                                      evaluation infrastructure;
-                                                                      lifts/bridges of the X/Y/a₄/a₆
-                                                                      series; evalA two-variable
-                                                                      evaluation with fundamental-
-                                                                      annulus (|q|<|u|≤1)
-                                                                      summability; nonarch Cauchy
-                                                                      products; formal + EVALUATED
-                                                                      Weierstrass equations;
-                                                                      annulusPoint (on-curve,
-                                                                      nonsingular); strict
-                                                                      fundamental domain
-                                                                      (exists_zpow_mul_mem_annulus +
-                                                                      annulus_exponent_unique);
-                                                                      pointMap on kˣ with q-power
-                                                                      invariance, descent
-                                                                      pointMapQuot to kˣ/q^ℤ, and
-                                                                      kernel characterization
-                                                                      pointMap_eq_zero_iff. NEGATION
-                                                                      LAW: coefficient- and series-
-                                                                      level inversion identities
-                                                                      PROVEN (X(u⁻¹,q)=X(u,q),
-                                                                      Y(u⁻¹,q)=−Y−X, binomial
-                                                                      C(d+1,2)=C(d,2)+d), and the
-                                                                      point-level P(u⁻¹)=−P(u)
-                                                                      PROVEN on the valuation-one
-                                                                      shell (pointMap_inv_of_valuati
-                                                                      on_eq_one); the TRANSLATION
-                                                                      IDENTITY IS PROVEN
-                                                                      (bilateralX_shift,
-                                                                      2026-07-18): the bilateral
-                                                                      x-form (evalA_XA_bilateral,
-                                                                      from the nonarch Lambert
-                                                                      machinery — geometric +
-                                                                      derivative-geometric series,
-                                                                      Fubini, divisor collection,
-                                                                      general-window one-sided
-                                                                      identities) is inversion-
-                                                                      invariant (bilateralX_inv) and
-                                                                      q-shift-invariant
-                                                                      (bilateralX_shift). Next: the
-                                                                      interior-case point negation
-                                                                      via these, the Y-series
-                                                                      bilateral analogue (kernel
-                                                                      v²/(1−v)³, triple Cauchy
-                                                                      products), then the addition
-                                                                      law. REMAINING: (a) the
-                                                                      homomorphism property —
-                                                                      Silverman V.3.1 addition law,
-                                                                      via two-parameter formal
-                                                                      identities against mathlib's
-                                                                      affine group law (extend the
-                                                                      eq_zero_of_forall_hasSum_zero
-                                                                      descent of
-                                                                      TateCurveConstruction to two
-                                                                      transcendentals, using the
-                                                                      ℂ-analytic addition law of the
-                                                                      exponential parametrization);
-                                                                      (b) surjectivity of the
-                                                                      finite-level map (valuation
-                                                                      analysis of affine points,
-                                                                      Silverman V.4); (c) Galois-
-                                                                      equivariant gluing over Ω
-                                                                      (finite-level equivariance
-                                                                      from the universality of the
-                                                                      series coefficients, then
-                                                                      colimit over finite
-                                                                      subextensions).
+                                                                    - ✅· `WeierstrassCurve.exists_tateCurveHomSepClosure` — the uniformization core, pre-
+                                                                      quotient form: surjective
+                                                                      Galois-equivariant hom Ωˣ →+
+                                                                      E_q(Ω) with kernel exactly
+                                                                      q^ℤ. DERIVED 2026-07-18 by
+                                                                      feeding the finite-level
+                                                                      canonical uniformisation
+                                                                      tateCurveEquiv (underlying
+                                                                      function pointMapQuot) into
+                                                                      the sorried gluing implication
+                                                                      exists_tateCurveHomSepClosure_
+                                                                      of_finiteLevel.
+                                                                        - ✅· `TateCurve.tateCurveEquiv` — the finite-level Tate
+                                                                          uniformisation kˣ/q^ℤ ≃+
+                                                                          E_q(k), DERIVED from
+                                                                          pointMapQuot_add +
+                                                                          pointMapQuot_bijective with
+                                                                          pointMapQuot (canonical,
+                                                                          choice-free) as underlying
+                                                                          function — the object the
+                                                                          Ω-gluing consumes. RE-VENDORED
+                                                                          2026-07-18 (stripped form):
+                                                                          the annulus/evalA/pointMap
+                                                                          machinery is in the tree (all
+                                                                          PROVEN: CoeffRing evaluation,
+                                                                          summability on the fundamental
+                                                                          annulus, evaluated Weierstrass
+                                                                          equation, annulusPoint
+                                                                          nonsingularity, strict
+                                                                          fundamental domain, kernel
+                                                                          characterization
+                                                                          pointMap_eq_zero_iff); the
+                                                                          bilateral/Lambert negation-
+                                                                          translation machinery stays in
+                                                                          the reference commit 8282dfb^
+                                                                          until the addition-law proof
+                                                                          consumes it.
+                                                                            - ❌· `TateCurve.pointMapQuot_surjective` — surjectivity of the
+                                                                              uniformisation (sorry node,
+                                                                              Silverman ATAEC V.3.1(d)/V.4):
+                                                                              valuation analysis of affine
+                                                                              points — the bilateral X-value
+                                                                              is two-to-one from the annulus
+                                                                              onto the x-line up to the
+                                                                              involution, preimages
+                                                                              separated by the y-coordinate.
+                                                                            - ❌· `TateCurve.pointMapQuot_add` — the addition law (sorry node,
+                                                                              Silverman ATAEC V.3.1(c)):
+                                                                              pointMapQuot turns unit-class
+                                                                              multiplication into Tate-curve
+                                                                              addition. Attack: coordinates
+                                                                              are the bilateral values
+                                                                              (evalA_XA_eq_bilateralX /
+                                                                              evalA_YA_eq_bilateralY, with
+                                                                              the PROVEN shift/inversion
+                                                                              identities normalising
+                                                                              representatives — in the
+                                                                              reference commit 8282dfb^);
+                                                                              chord–tangent group law
+                                                                              against two-parameter Lambert
+                                                                              manipulations on
+                                                                              hasSum_lambert_general.
+                                                                        - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
+                                                                          (sorry node): GIVEN the
+                                                                          finite-level canonical
+                                                                          uniformisation lˣ/q^ℤ ≃+
+                                                                          E_q(l) with underlying
+                                                                          pointMapQuot for every NALF l,
+                                                                          the Ω-level hom exists.
+                                                                          Content: finite subextensions
+                                                                          of Ω/k are NALFs (unique
+                                                                          valuative extension over the
+                                                                          complete k — infrastructure
+                                                                          absent from mathlib at this
+                                                                          pin), the maps are compatible
+                                                                          with inclusions and σ-twists
+                                                                          by naturality of the universal
+                                                                          series, and kernel/surjectivit
+                                                                          y/equivariance pass to the
+                                                                          colimit.
                                 - ✅· `det_galoisRep_eq_cyclotomic` — `det_galoisRep_eq_cyclotomic` — (2026-07-17): `det ρ̄` and `χ̄`
                                   are continuous conjugation-invariant `ZMod p`-valued functions on
                                   `Γ ℚ` (continuity of `det ∘ ρ` from discreteness of `End` via
@@ -611,47 +640,56 @@ entries file). To add/remove/annotate a node, edit
                                           kernel characterization, MulEquiv.ofBijective,
                                           MulEquiv.toAdditiveLeft; equivariance descends
                                           definitionally on ofMul-classes.
-                                            - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure` — the uniformization core, pre-quotient form (ATAEC
-                                              V.3.1 + gluing): surjective Galois-equivariant hom Ωˣ
-                                              →+ E_q(Ω) with kernel exactly q^ℤ, given by the
-                                              explicit X/Y series (each u converges in the NALF
-                                              k(u); the finite-level maps glue choice-freely).
-                                              GROUNDWORK BUILT (TateUniformization.lean, 2026-07-18,
-                                              all axiom-clean): CoeffRing = ℚ[T][1/(T(1−T))]
-                                              evaluation infrastructure; lifts/bridges of the
-                                              X/Y/a₄/a₆ series; evalA two-variable evaluation with
-                                              fundamental-annulus (|q|<|u|≤1) summability; nonarch
-                                              Cauchy products; formal + EVALUATED Weierstrass
-                                              equations; annulusPoint (on-curve, nonsingular);
-                                              strict fundamental domain (exists_zpow_mul_mem_annulus
-                                              + annulus_exponent_unique); pointMap on kˣ with
-                                              q-power invariance, descent pointMapQuot to kˣ/q^ℤ,
-                                              and kernel characterization pointMap_eq_zero_iff.
-                                              NEGATION LAW: coefficient- and series-level inversion
-                                              identities PROVEN (X(u⁻¹,q)=X(u,q), Y(u⁻¹,q)=−Y−X,
-                                              binomial C(d+1,2)=C(d,2)+d), and the point-level
-                                              P(u⁻¹)=−P(u) PROVEN on the valuation-one shell
-                                              (pointMap_inv_of_valuation_eq_one); the TRANSLATION
-                                              IDENTITY IS PROVEN (bilateralX_shift, 2026-07-18): the
-                                              bilateral x-form (evalA_XA_bilateral, from the nonarch
-                                              Lambert machinery — geometric + derivative-geometric
-                                              series, Fubini, divisor collection, general-window
-                                              one-sided identities) is inversion-invariant
-                                              (bilateralX_inv) and q-shift-invariant
-                                              (bilateralX_shift). Next: the interior-case point
-                                              negation via these, the Y-series bilateral analogue
-                                              (kernel v²/(1−v)³, triple Cauchy products), then the
-                                              addition law. REMAINING: (a) the homomorphism property
-                                              — Silverman V.3.1 addition law, via two-parameter
-                                              formal identities against mathlib's affine group law
-                                              (extend the eq_zero_of_forall_hasSum_zero descent of
-                                              TateCurveConstruction to two transcendentals, using
-                                              the ℂ-analytic addition law of the exponential
-                                              parametrization); (b) surjectivity of the finite-level
-                                              map (valuation analysis of affine points, Silverman
-                                              V.4); (c) Galois-equivariant gluing over Ω (finite-
-                                              level equivariance from the universality of the series
-                                              coefficients, then colimit over finite subextensions).
+                                            - ✅· `WeierstrassCurve.exists_tateCurveHomSepClosure` — the uniformization core, pre-quotient form: surjective
+                                              Galois-equivariant hom Ωˣ →+ E_q(Ω) with kernel
+                                              exactly q^ℤ. DERIVED 2026-07-18 by feeding the finite-
+                                              level canonical uniformisation tateCurveEquiv
+                                              (underlying function pointMapQuot) into the sorried
+                                              gluing implication
+                                              exists_tateCurveHomSepClosure_of_finiteLevel.
+                                                - ✅· `TateCurve.tateCurveEquiv` — the finite-level Tate uniformisation kˣ/q^ℤ ≃+
+                                                  E_q(k), DERIVED from pointMapQuot_add +
+                                                  pointMapQuot_bijective with pointMapQuot
+                                                  (canonical, choice-free) as underlying function —
+                                                  the object the Ω-gluing consumes. RE-VENDORED
+                                                  2026-07-18 (stripped form): the
+                                                  annulus/evalA/pointMap machinery is in the tree
+                                                  (all PROVEN: CoeffRing evaluation, summability on
+                                                  the fundamental annulus, evaluated Weierstrass
+                                                  equation, annulusPoint nonsingularity, strict
+                                                  fundamental domain, kernel characterization
+                                                  pointMap_eq_zero_iff); the bilateral/Lambert
+                                                  negation-translation machinery stays in the
+                                                  reference commit 8282dfb^ until the addition-law
+                                                  proof consumes it.
+                                                    - ❌· `TateCurve.pointMapQuot_surjective` — surjectivity of the uniformisation (sorry
+                                                      node, Silverman ATAEC V.3.1(d)/V.4): valuation
+                                                      analysis of affine points — the bilateral
+                                                      X-value is two-to-one from the annulus onto
+                                                      the x-line up to the involution, preimages
+                                                      separated by the y-coordinate.
+                                                    - ❌· `TateCurve.pointMapQuot_add` — the addition law (sorry node, Silverman ATAEC
+                                                      V.3.1(c)): pointMapQuot turns unit-class
+                                                      multiplication into Tate-curve addition.
+                                                      Attack: coordinates are the bilateral values
+                                                      (evalA_XA_eq_bilateralX /
+                                                      evalA_YA_eq_bilateralY, with the PROVEN
+                                                      shift/inversion identities normalising
+                                                      representatives — in the reference commit
+                                                      8282dfb^); chord–tangent group law against
+                                                      two-parameter Lambert manipulations on
+                                                      hasSum_lambert_general.
+                                                - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the
+                                                  finite-level canonical uniformisation lˣ/q^ℤ ≃+
+                                                  E_q(l) with underlying pointMapQuot for every NALF
+                                                  l, the Ω-level hom exists. Content: finite
+                                                  subextensions of Ω/k are NALFs (unique valuative
+                                                  extension over the complete k — infrastructure
+                                                  absent from mathlib at this pin), the maps are
+                                                  compatible with inclusions and σ-twists by
+                                                  naturality of the universal series, and
+                                                  kernel/surjectivity/equivariance pass to the
+                                                  colimit.
                                 - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality statement, assembled from the
                                   LOCAL nonsplit node `tate_inertia_trivial_of_nonsplit` by the
                                   proven `ℚ̄`-pullback glue; the `j`-hypothesis feeds through
@@ -675,52 +713,58 @@ entries file). To add/remove/annotate a node, edit
                                               injectivity from the kernel characterization,
                                               MulEquiv.ofBijective, MulEquiv.toAdditiveLeft;
                                               equivariance descends definitionally on ofMul-classes.
-                                                - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure` — the uniformization core, pre-quotient form (ATAEC
-                                                  V.3.1 + gluing): surjective Galois-equivariant hom
-                                                  Ωˣ →+ E_q(Ω) with kernel exactly q^ℤ, given by the
-                                                  explicit X/Y series (each u converges in the NALF
-                                                  k(u); the finite-level maps glue choice-freely).
-                                                  GROUNDWORK BUILT (TateUniformization.lean,
-                                                  2026-07-18, all axiom-clean): CoeffRing =
-                                                  ℚ[T][1/(T(1−T))] evaluation infrastructure;
-                                                  lifts/bridges of the X/Y/a₄/a₆ series; evalA two-
-                                                  variable evaluation with fundamental-annulus
-                                                  (|q|<|u|≤1) summability; nonarch Cauchy products;
-                                                  formal + EVALUATED Weierstrass equations;
-                                                  annulusPoint (on-curve, nonsingular); strict
-                                                  fundamental domain (exists_zpow_mul_mem_annulus +
-                                                  annulus_exponent_unique); pointMap on kˣ with
-                                                  q-power invariance, descent pointMapQuot to
-                                                  kˣ/q^ℤ, and kernel characterization
-                                                  pointMap_eq_zero_iff. NEGATION LAW: coefficient-
-                                                  and series-level inversion identities PROVEN
-                                                  (X(u⁻¹,q)=X(u,q), Y(u⁻¹,q)=−Y−X, binomial
-                                                  C(d+1,2)=C(d,2)+d), and the point-level
-                                                  P(u⁻¹)=−P(u) PROVEN on the valuation-one shell
-                                                  (pointMap_inv_of_valuation_eq_one); the
-                                                  TRANSLATION IDENTITY IS PROVEN (bilateralX_shift,
-                                                  2026-07-18): the bilateral x-form
-                                                  (evalA_XA_bilateral, from the nonarch Lambert
-                                                  machinery — geometric + derivative-geometric
-                                                  series, Fubini, divisor collection, general-window
-                                                  one-sided identities) is inversion-invariant
-                                                  (bilateralX_inv) and q-shift-invariant
-                                                  (bilateralX_shift). Next: the interior-case point
-                                                  negation via these, the Y-series bilateral
-                                                  analogue (kernel v²/(1−v)³, triple Cauchy
-                                                  products), then the addition law. REMAINING: (a)
-                                                  the homomorphism property — Silverman V.3.1
-                                                  addition law, via two-parameter formal identities
-                                                  against mathlib's affine group law (extend the
-                                                  eq_zero_of_forall_hasSum_zero descent of
-                                                  TateCurveConstruction to two transcendentals,
-                                                  using the ℂ-analytic addition law of the
-                                                  exponential parametrization); (b) surjectivity of
-                                                  the finite-level map (valuation analysis of affine
-                                                  points, Silverman V.4); (c) Galois-equivariant
-                                                  gluing over Ω (finite-level equivariance from the
-                                                  universality of the series coefficients, then
-                                                  colimit over finite subextensions).
+                                                - ✅· `WeierstrassCurve.exists_tateCurveHomSepClosure` — the uniformization core, pre-quotient form:
+                                                  surjective Galois-equivariant hom Ωˣ →+ E_q(Ω)
+                                                  with kernel exactly q^ℤ. DERIVED 2026-07-18 by
+                                                  feeding the finite-level canonical uniformisation
+                                                  tateCurveEquiv (underlying function pointMapQuot)
+                                                  into the sorried gluing implication
+                                                  exists_tateCurveHomSepClosure_of_finiteLevel.
+                                                    - ✅· `TateCurve.tateCurveEquiv` — the finite-level Tate uniformisation kˣ/q^ℤ ≃+
+                                                      E_q(k), DERIVED from pointMapQuot_add +
+                                                      pointMapQuot_bijective with pointMapQuot
+                                                      (canonical, choice-free) as underlying
+                                                      function — the object the Ω-gluing consumes.
+                                                      RE-VENDORED 2026-07-18 (stripped form): the
+                                                      annulus/evalA/pointMap machinery is in the
+                                                      tree (all PROVEN: CoeffRing evaluation,
+                                                      summability on the fundamental annulus,
+                                                      evaluated Weierstrass equation, annulusPoint
+                                                      nonsingularity, strict fundamental domain,
+                                                      kernel characterization pointMap_eq_zero_iff);
+                                                      the bilateral/Lambert negation-translation
+                                                      machinery stays in the reference commit
+                                                      8282dfb^ until the addition-law proof consumes
+                                                      it.
+                                                        - ❌· `TateCurve.pointMapQuot_surjective` — surjectivity of the uniformisation (sorry
+                                                          node, Silverman ATAEC V.3.1(d)/V.4):
+                                                          valuation analysis of affine points — the
+                                                          bilateral X-value is two-to-one from the
+                                                          annulus onto the x-line up to the
+                                                          involution, preimages separated by the
+                                                          y-coordinate.
+                                                        - ❌· `TateCurve.pointMapQuot_add` — the addition law (sorry node, Silverman
+                                                          ATAEC V.3.1(c)): pointMapQuot turns unit-
+                                                          class multiplication into Tate-curve
+                                                          addition. Attack: coordinates are the
+                                                          bilateral values (evalA_XA_eq_bilateralX /
+                                                          evalA_YA_eq_bilateralY, with the PROVEN
+                                                          shift/inversion identities normalising
+                                                          representatives — in the reference commit
+                                                          8282dfb^); chord–tangent group law against
+                                                          two-parameter Lambert manipulations on
+                                                          hasSum_lambert_general.
+                                                    - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN
+                                                      the finite-level canonical uniformisation
+                                                      lˣ/q^ℤ ≃+ E_q(l) with underlying pointMapQuot
+                                                      for every NALF l, the Ω-level hom exists.
+                                                      Content: finite subextensions of Ω/k are NALFs
+                                                      (unique valuative extension over the complete
+                                                      k — infrastructure absent from mathlib at this
+                                                      pin), the maps are compatible with inclusions
+                                                      and σ-twists by naturality of the universal
+                                                      series, and kernel/surjectivity/equivariance
+                                                      pass to the colimit.
                 - ✅· `FreyCurve.torsion_isFlat` — flat at p: (2026-07-16) by the case split `p ∣ abc` or not, from the two nodes
                   below
                     - ✅· `FreyCurve.torsion_isFlat_of_good` — (2026-07-16) from the arithmetic node `freyCurve_hasGoodReduction_of_not_dvd`
@@ -771,42 +815,48 @@ entries file). To add/remove/annotate a node, edit
                                   q, injectivity from the kernel characterization,
                                   MulEquiv.ofBijective, MulEquiv.toAdditiveLeft; equivariance
                                   descends definitionally on ofMul-classes.
-                                    - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure` — the uniformization core, pre-quotient form (ATAEC V.3.1 +
-                                      gluing): surjective Galois-equivariant hom Ωˣ →+ E_q(Ω) with
-                                      kernel exactly q^ℤ, given by the explicit X/Y series (each u
-                                      converges in the NALF k(u); the finite-level maps glue choice-
-                                      freely). GROUNDWORK BUILT (TateUniformization.lean,
-                                      2026-07-18, all axiom-clean): CoeffRing = ℚ[T][1/(T(1−T))]
-                                      evaluation infrastructure; lifts/bridges of the X/Y/a₄/a₆
-                                      series; evalA two-variable evaluation with fundamental-annulus
-                                      (|q|<|u|≤1) summability; nonarch Cauchy products; formal +
-                                      EVALUATED Weierstrass equations; annulusPoint (on-curve,
-                                      nonsingular); strict fundamental domain
-                                      (exists_zpow_mul_mem_annulus + annulus_exponent_unique);
-                                      pointMap on kˣ with q-power invariance, descent pointMapQuot
-                                      to kˣ/q^ℤ, and kernel characterization pointMap_eq_zero_iff.
-                                      NEGATION LAW: coefficient- and series-level inversion
-                                      identities PROVEN (X(u⁻¹,q)=X(u,q), Y(u⁻¹,q)=−Y−X, binomial
-                                      C(d+1,2)=C(d,2)+d), and the point-level P(u⁻¹)=−P(u) PROVEN on
-                                      the valuation-one shell (pointMap_inv_of_valuation_eq_one);
-                                      the TRANSLATION IDENTITY IS PROVEN (bilateralX_shift,
-                                      2026-07-18): the bilateral x-form (evalA_XA_bilateral, from
-                                      the nonarch Lambert machinery — geometric + derivative-
-                                      geometric series, Fubini, divisor collection, general-window
-                                      one-sided identities) is inversion-invariant (bilateralX_inv)
-                                      and q-shift-invariant (bilateralX_shift). Next: the interior-
-                                      case point negation via these, the Y-series bilateral analogue
-                                      (kernel v²/(1−v)³, triple Cauchy products), then the addition
-                                      law. REMAINING: (a) the homomorphism property — Silverman
-                                      V.3.1 addition law, via two-parameter formal identities
-                                      against mathlib's affine group law (extend the
-                                      eq_zero_of_forall_hasSum_zero descent of TateCurveConstruction
-                                      to two transcendentals, using the ℂ-analytic addition law of
-                                      the exponential parametrization); (b) surjectivity of the
-                                      finite-level map (valuation analysis of affine points,
-                                      Silverman V.4); (c) Galois-equivariant gluing over Ω (finite-
-                                      level equivariance from the universality of the series
-                                      coefficients, then colimit over finite subextensions).
+                                    - ✅· `WeierstrassCurve.exists_tateCurveHomSepClosure` — the uniformization core, pre-quotient form: surjective Galois-
+                                      equivariant hom Ωˣ →+ E_q(Ω) with kernel exactly q^ℤ. DERIVED
+                                      2026-07-18 by feeding the finite-level canonical
+                                      uniformisation tateCurveEquiv (underlying function
+                                      pointMapQuot) into the sorried gluing implication
+                                      exists_tateCurveHomSepClosure_of_finiteLevel.
+                                        - ✅· `TateCurve.tateCurveEquiv` — the finite-level Tate uniformisation kˣ/q^ℤ ≃+ E_q(k),
+                                          DERIVED from pointMapQuot_add + pointMapQuot_bijective
+                                          with pointMapQuot (canonical, choice-free) as underlying
+                                          function — the object the Ω-gluing consumes. RE-VENDORED
+                                          2026-07-18 (stripped form): the annulus/evalA/pointMap
+                                          machinery is in the tree (all PROVEN: CoeffRing
+                                          evaluation, summability on the fundamental annulus,
+                                          evaluated Weierstrass equation, annulusPoint
+                                          nonsingularity, strict fundamental domain, kernel
+                                          characterization pointMap_eq_zero_iff); the
+                                          bilateral/Lambert negation-translation machinery stays in
+                                          the reference commit 8282dfb^ until the addition-law proof
+                                          consumes it.
+                                            - ❌· `TateCurve.pointMapQuot_surjective` — surjectivity of the uniformisation (sorry node,
+                                              Silverman ATAEC V.3.1(d)/V.4): valuation analysis of
+                                              affine points — the bilateral X-value is two-to-one
+                                              from the annulus onto the x-line up to the involution,
+                                              preimages separated by the y-coordinate.
+                                            - ❌· `TateCurve.pointMapQuot_add` — the addition law (sorry node, Silverman ATAEC
+                                              V.3.1(c)): pointMapQuot turns unit-class
+                                              multiplication into Tate-curve addition. Attack:
+                                              coordinates are the bilateral values
+                                              (evalA_XA_eq_bilateralX / evalA_YA_eq_bilateralY, with
+                                              the PROVEN shift/inversion identities normalising
+                                              representatives — in the reference commit 8282dfb^);
+                                              chord–tangent group law against two-parameter Lambert
+                                              manipulations on hasSum_lambert_general.
+                                        - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
+                                          level canonical uniformisation lˣ/q^ℤ ≃+ E_q(l) with
+                                          underlying pointMapQuot for every NALF l, the Ω-level hom
+                                          exists. Content: finite subextensions of Ω/k are NALFs
+                                          (unique valuative extension over the complete k —
+                                          infrastructure absent from mathlib at this pin), the maps
+                                          are compatible with inclusions and σ-twists by naturality
+                                          of the universal series, and
+                                          kernel/surjectivity/equivariance pass to the colimit.
                         - ✅· `WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two` — the nonsplit half of the tame-at-2 condition, now ASSEMBLED: the exponent
                           quotient of the twisted minimal model transports through the (χ-twisted)
                           composite point equivalence; δ is the quadratic character of the
@@ -825,42 +875,48 @@ entries file). To add/remove/annotate a node, edit
                                   q, injectivity from the kernel characterization,
                                   MulEquiv.ofBijective, MulEquiv.toAdditiveLeft; equivariance
                                   descends definitionally on ofMul-classes.
-                                    - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure` — the uniformization core, pre-quotient form (ATAEC V.3.1 +
-                                      gluing): surjective Galois-equivariant hom Ωˣ →+ E_q(Ω) with
-                                      kernel exactly q^ℤ, given by the explicit X/Y series (each u
-                                      converges in the NALF k(u); the finite-level maps glue choice-
-                                      freely). GROUNDWORK BUILT (TateUniformization.lean,
-                                      2026-07-18, all axiom-clean): CoeffRing = ℚ[T][1/(T(1−T))]
-                                      evaluation infrastructure; lifts/bridges of the X/Y/a₄/a₆
-                                      series; evalA two-variable evaluation with fundamental-annulus
-                                      (|q|<|u|≤1) summability; nonarch Cauchy products; formal +
-                                      EVALUATED Weierstrass equations; annulusPoint (on-curve,
-                                      nonsingular); strict fundamental domain
-                                      (exists_zpow_mul_mem_annulus + annulus_exponent_unique);
-                                      pointMap on kˣ with q-power invariance, descent pointMapQuot
-                                      to kˣ/q^ℤ, and kernel characterization pointMap_eq_zero_iff.
-                                      NEGATION LAW: coefficient- and series-level inversion
-                                      identities PROVEN (X(u⁻¹,q)=X(u,q), Y(u⁻¹,q)=−Y−X, binomial
-                                      C(d+1,2)=C(d,2)+d), and the point-level P(u⁻¹)=−P(u) PROVEN on
-                                      the valuation-one shell (pointMap_inv_of_valuation_eq_one);
-                                      the TRANSLATION IDENTITY IS PROVEN (bilateralX_shift,
-                                      2026-07-18): the bilateral x-form (evalA_XA_bilateral, from
-                                      the nonarch Lambert machinery — geometric + derivative-
-                                      geometric series, Fubini, divisor collection, general-window
-                                      one-sided identities) is inversion-invariant (bilateralX_inv)
-                                      and q-shift-invariant (bilateralX_shift). Next: the interior-
-                                      case point negation via these, the Y-series bilateral analogue
-                                      (kernel v²/(1−v)³, triple Cauchy products), then the addition
-                                      law. REMAINING: (a) the homomorphism property — Silverman
-                                      V.3.1 addition law, via two-parameter formal identities
-                                      against mathlib's affine group law (extend the
-                                      eq_zero_of_forall_hasSum_zero descent of TateCurveConstruction
-                                      to two transcendentals, using the ℂ-analytic addition law of
-                                      the exponential parametrization); (b) surjectivity of the
-                                      finite-level map (valuation analysis of affine points,
-                                      Silverman V.4); (c) Galois-equivariant gluing over Ω (finite-
-                                      level equivariance from the universality of the series
-                                      coefficients, then colimit over finite subextensions).
+                                    - ✅· `WeierstrassCurve.exists_tateCurveHomSepClosure` — the uniformization core, pre-quotient form: surjective Galois-
+                                      equivariant hom Ωˣ →+ E_q(Ω) with kernel exactly q^ℤ. DERIVED
+                                      2026-07-18 by feeding the finite-level canonical
+                                      uniformisation tateCurveEquiv (underlying function
+                                      pointMapQuot) into the sorried gluing implication
+                                      exists_tateCurveHomSepClosure_of_finiteLevel.
+                                        - ✅· `TateCurve.tateCurveEquiv` — the finite-level Tate uniformisation kˣ/q^ℤ ≃+ E_q(k),
+                                          DERIVED from pointMapQuot_add + pointMapQuot_bijective
+                                          with pointMapQuot (canonical, choice-free) as underlying
+                                          function — the object the Ω-gluing consumes. RE-VENDORED
+                                          2026-07-18 (stripped form): the annulus/evalA/pointMap
+                                          machinery is in the tree (all PROVEN: CoeffRing
+                                          evaluation, summability on the fundamental annulus,
+                                          evaluated Weierstrass equation, annulusPoint
+                                          nonsingularity, strict fundamental domain, kernel
+                                          characterization pointMap_eq_zero_iff); the
+                                          bilateral/Lambert negation-translation machinery stays in
+                                          the reference commit 8282dfb^ until the addition-law proof
+                                          consumes it.
+                                            - ❌· `TateCurve.pointMapQuot_surjective` — surjectivity of the uniformisation (sorry node,
+                                              Silverman ATAEC V.3.1(d)/V.4): valuation analysis of
+                                              affine points — the bilateral X-value is two-to-one
+                                              from the annulus onto the x-line up to the involution,
+                                              preimages separated by the y-coordinate.
+                                            - ❌· `TateCurve.pointMapQuot_add` — the addition law (sorry node, Silverman ATAEC
+                                              V.3.1(c)): pointMapQuot turns unit-class
+                                              multiplication into Tate-curve addition. Attack:
+                                              coordinates are the bilateral values
+                                              (evalA_XA_eq_bilateralX / evalA_YA_eq_bilateralY, with
+                                              the PROVEN shift/inversion identities normalising
+                                              representatives — in the reference commit 8282dfb^);
+                                              chord–tangent group law against two-parameter Lambert
+                                              manipulations on hasSum_lambert_general.
+                                        - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
+                                          level canonical uniformisation lˣ/q^ℤ ≃+ E_q(l) with
+                                          underlying pointMapQuot for every NALF l, the Ω-level hom
+                                          exists. Content: finite subextensions of Ω/k are NALFs
+                                          (unique valuative extension over the complete k —
+                                          infrastructure absent from mathlib at this pin), the maps
+                                          are compatible with inclusions and σ-twists by naturality
+                                          of the universal series, and
+                                          kernel/surjectivity/equivariance pass to the colimit.
             - ✅· `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified` — B5 `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
               (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work) — now (2026-07-16)
               from three explicit nodes in `HardlyRamified/Lift.lean` (own work), following

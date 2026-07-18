@@ -108,7 +108,11 @@
   "inertia_fixes_algHom_of_unramified_gen": "✅✅",
   "ValuationSubring.inertia_fixes_root_of_separable_residue": "✅✅",
   "WeierstrassCurve.exists_tateCurveEquivSepClosure": "✅",
-  "WeierstrassCurve.exists_tateCurveHomSepClosure": "❌",
+  "WeierstrassCurve.exists_tateCurveHomSepClosure": "✅",
+  "TateCurve.pointMapQuot_surjective": "❌",
+  "TateCurve.pointMapQuot_add": "❌",
+  "TateCurve.tateCurveEquiv": "✅",
+  "WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel": "❌",
   "WeierstrassCurve.exists_tateTorsionQuotient": "✅✅",
   "hasMultiplicativeReduction_padic": "✅✅",
   "exists_tame_quotient_of_split_padic_two": "✅",
@@ -554,7 +558,25 @@
   "WeierstrassCurve.exists_tateCurveEquivSepClosure": [
    "WeierstrassCurve.exists_tateCurveHomSepClosure"
   ],
-  "WeierstrassCurve.exists_tateCurveHomSepClosure": [],
+  "WeierstrassCurve.exists_tateCurveHomSepClosure": [
+   "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
+   "TateCurve.tateCurveEquiv",
+   "WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel"
+  ],
+  "TateCurve.pointMapQuot_surjective": [
+   "WeierstrassCurve.Δ_tateCurve_eq_evalInt"
+  ],
+  "TateCurve.pointMapQuot_add": [
+   "WeierstrassCurve.Δ_tateCurve_eq_evalInt"
+  ],
+  "TateCurve.tateCurveEquiv": [
+   "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
+   "TateCurve.pointMapQuot_add",
+   "TateCurve.pointMapQuot_surjective"
+  ],
+  "WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel": [
+   "WeierstrassCurve.Δ_tateCurve_eq_evalInt"
+  ],
   "WeierstrassCurve.exists_tateTorsionQuotient": [],
   "hasMultiplicativeReduction_padic": [],
   "exists_tame_quotient_of_split_padic_two": [

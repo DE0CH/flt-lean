@@ -55,7 +55,7 @@ public import Fermat.FLT.Mathlib.NumberTheory.Padics.LocalField
 public import Fermat.FLT.Mathlib.RingTheory.Valuation.ValuativeRel.Basic
 -- `exists_tateEquivSepClosure` and the PROVEN `tate_inertia_unipotent`,
 -- consumed by the split-case unipotence assembly
-public import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve
+public import Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure
 -- `isUnit_natCast_adicCompletionIntegers` (a prime `p ≠ q` is a unit of
 -- `ℤ_qˆ`), input to the residue-characteristic fact at the local
 -- valuation subring

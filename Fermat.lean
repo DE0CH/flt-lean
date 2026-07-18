@@ -12,7 +12,7 @@ import Fermat.FLT.KnownIn1980s.EllipticCurves.TateParameter
 import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveBaseChange
 import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists
 import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.SplitMultiplicativeReduction
-import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve
+import Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure
 import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 import Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal
 import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField

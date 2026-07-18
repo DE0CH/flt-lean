@@ -1,5 +1,5 @@
 {
- "key": "1784357258.728079",
+ "key": "1784358474.6713655",
  "returncode": 0,
  "floating": [
   {
@@ -9,6 +9,10 @@
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "Units.mapₜ"
+  },
+  {
+   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
+   "name": "TateCurve.Blueprint.periodPair.congr_simp"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
@@ -415,10 +419,6 @@
    "name": "GaloisRepresentation.HardlyRamifiedLift.mk.injEq"
   },
   {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
-   "name": "TateCurve.dvd_five_sigma_three_add_seven_sigma_five"
-  },
-  {
    "module": "Fermat.FLT.EllipticCurve.Torsion",
    "name": "WeierstrassCurve.Points.map"
   },
@@ -493,10 +493,6 @@
   {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "instIsLocalHomRingHomToRingHom_fermat_1"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
-   "name": "WeierstrassCurve.mem_torsionBy_of_mem_rootsOfUnity"
   },
   {
    "module": "Fermat.FLT.Deformations.RepresentationTheory.GaloisRep",
@@ -627,6 +623,10 @@
    "name": "GaloisRep.map_conj"
   },
   {
+   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
+   "name": "PeriodPair.mk.congr_simp"
+  },
+  {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.inertiaDeg_asIdeal_completionIdeal"
   },
@@ -681,10 +681,6 @@
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.ReductionBaseChange",
    "name": "WeierstrassCurve.isMinimal_baseChange"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
-   "name": "WeierstrassCurve.mem_torsionBy_of_pow_eq"
   },
   {
    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
@@ -855,6 +851,10 @@
    "name": "GaloisRep.IsUnramifiedAt.casesOn"
   },
   {
+   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
+   "name": "TateCurve.Blueprint.periodPair_ω₂"
+  },
+  {
    "module": "Fermat.FLT.Deformations.Lemmas",
    "name": "Units.coeHomₜ_toFun"
   },
@@ -949,6 +949,10 @@
   {
    "module": "Fermat.FLT.Mathlib.RingTheory.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.algEquiv"
+  },
+  {
+   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction",
+   "name": "TateCurve.Blueprint.periodPair_ω₁"
   },
   {
    "module": "Fermat.FLT.Mathlib.RingTheory.Valuation.ValuativeRel.Basic",
