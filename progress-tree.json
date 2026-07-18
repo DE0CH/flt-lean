@@ -97,7 +97,7 @@
   "group_theory_lemma": "✅✅",
   "torsion_unipotent_of_split_multiplicative_adic": "✅",
   "WeierstrassCurve.exists_tateEquivSepClosure": "✅",
-  "WeierstrassCurve.exists_variableChange_tateCurve": "❌",
+  "WeierstrassCurve.exists_variableChange_tateCurve": "✅",
   "WeierstrassCurve.tate_inertia_unipotent": "✅✅",
   "WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic": "✅",
   "ValuationSubring.inertia_fixes_of_pow_eq": "✅✅",
@@ -117,7 +117,9 @@
   "exists_tame_quotient_of_split_padic_two": "✅",
   "WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two": "✅",
   "inertia_fixes_algHom_of_unramified_gen_padic_two": "✅✅",
-  "WeierstrassCurve.hasSplitMultiplicativeReduction_tateCurve": "✅✅"
+  "WeierstrassCurve.hasSplitMultiplicativeReduction_tateCurve": "✅✅",
+  "WeierstrassCurve.isElliptic_tateCurve_and_j": "❌",
+  "WeierstrassCurve.exists_variableChange_of_j_eq_of_split": "❌"
  },
  "children": {
   "fermat_last_theorem": [
@@ -512,7 +514,11 @@
    "WeierstrassCurve.exists_variableChange_tateCurve",
    "WeierstrassCurve.exists_tateCurveEquivSepClosure"
   ],
-  "WeierstrassCurve.exists_variableChange_tateCurve": [],
+  "WeierstrassCurve.exists_variableChange_tateCurve": [
+   "WeierstrassCurve.exists_variableChange_of_j_eq_of_split",
+   "WeierstrassCurve.hasSplitMultiplicativeReduction_tateCurve",
+   "WeierstrassCurve.isElliptic_tateCurve_and_j"
+  ],
   "WeierstrassCurve.tate_inertia_unipotent": [],
   "WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic": [
    "WeierstrassCurve.tate_inertia_unipotent_of_nonsplit"
@@ -572,11 +578,12 @@
   "inertia_fixes_algHom_of_unramified_gen_padic_two": [
    "ValuationSubring.inertia_fixes_root_of_separable_residue"
   ],
-  "WeierstrassCurve.hasSplitMultiplicativeReduction_tateCurve": []
+  "WeierstrassCurve.hasSplitMultiplicativeReduction_tateCurve": [],
+  "WeierstrassCurve.isElliptic_tateCurve_and_j": [],
+  "WeierstrassCurve.exists_variableChange_of_j_eq_of_split": []
  },
  "roots": [
   "fermat_last_theorem",
-  "GaloisRepresentation.IsHardlyRamified.mod_three",
-  "WeierstrassCurve.hasSplitMultiplicativeReduction_tateCurve"
+  "GaloisRepresentation.IsHardlyRamified.mod_three"
  ]
 }

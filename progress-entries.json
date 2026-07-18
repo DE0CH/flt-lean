@@ -683,7 +683,7 @@
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
   "wip": false,
   "fullname": "WeierstrassCurve.exists_variableChange_tateCurve",
-  "text": "Tate's theorem (Silverman ATAEC V.5.3): a curve with split multiplicative reduction is a change of Weierstrass coordinates of the Tate curve of its Tate parameter."
+  "text": "Tate's theorem V.5.3, now DERIVED from the j-identity leaf, the descent leaf, and the PROVEN split reduction type of the Tate curve."
  },
  {
   "name": "WeierstrassCurve.tate_inertia_unipotent",
@@ -824,5 +824,19 @@
   "wip": false,
   "fullname": "WeierstrassCurve.hasSplitMultiplicativeReduction_tateCurve",
   "text": "the Tate curve has split multiplicative reduction: coefficients in the maximal ideal, c₄ ≡ 1 (Kraus–Laska minimal), Δ ∈ (a₄, a₆), and the reduced nodal curve's node polynomial X(X+1) splits. The reduction-type half of Tate's theorem V.5.3, toward deriving exists_variableChange_tateCurve."
+ },
+ {
+  "name": "WeierstrassCurve.isElliptic_tateCurve_and_j",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
+  "wip": false,
+  "fullname": "WeierstrassCurve.isElliptic_tateCurve_and_j",
+  "text": "the j-invariant of the Tate curve is j(E) (and E_q is elliptic): the formal discriminant product identity Δ(E_q) = q∏(1−qⁿ)²⁴ plus the evaluation compatibility of the inverse j-series composition."
+ },
+ {
+  "name": "WeierstrassCurve.exists_variableChange_of_j_eq_of_split",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve",
+  "wip": false,
+  "fullname": "WeierstrassCurve.exists_variableChange_of_j_eq_of_split",
+  "text": "the descent half of Tate V.5.3: two split-multiplicative curves over k with equal j are k-isomorphic — over the separable closure by mathlib's exists_variableChange_of_j_eq, and the ±1 descent cocycle is trivial because both reductions are split (the isomorphism matches the rational node tangents)."
  }
 ]

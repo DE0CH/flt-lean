@@ -213,15 +213,6 @@ theorem WeierstrassCurve.valuation_q_lt_one : valuation k E.q < 1 :=
 noncomputable def WeierstrassCurve.qUnit : kˣ :=
   Units.mk0 E.q E.q_ne_zero
 
-set_option warn.sorry false in
-/-- Tate's theorem (Silverman, ATAEC V.5.3) (sorry node): an elliptic curve with split
-multiplicative reduction is isomorphic, by a change of Weierstrass coordinates, to the
-Tate curve of its Tate parameter. Since `j(E)` is non-integral, `Aut` of the curve is
-`{±1}` and there are exactly *two* such `C`, differing by negation. -/
-theorem WeierstrassCurve.exists_variableChange_tateCurve :
-    ∃ C : VariableChange k, C • tateCurve E.q = E :=
-  sorry
-
 open scoped ArithmeticFunction.sigma in
 /-- The Lambert series rearrangement `∑_{n≥1} n³qⁿ/(1-qⁿ) = ∑_{n≥1} σ₃(n)qⁿ` for
 `|q| < 1`: the defining series of `tateA₄` is the evaluation of the formal series
@@ -499,6 +490,52 @@ theorem WeierstrassCurve.hasSplitMultiplicativeReduction_tateCurve
     ring
   rw [hfac]
   exact Polynomial.Splits.X.mul (Polynomial.Splits.X_add_C 1)
+
+set_option warn.sorry false in
+/-- **The `j`-invariant of the Tate curve** (sorry node — the formal
+discriminant identity): the Tate curve of the Tate parameter of `E` is
+elliptic with `j`-invariant `j(E)`. Content: the product formula
+`Δ(E_q) = q·∏(1 − qⁿ)²⁴ = evalInt q ΔFormal` (Silverman, ATAEC
+V.3.1(b); the `c₄`-identity `c₄(E_q) = evalInt q c₄Formal` is immediate
+from `c₄ = 1 − 48a₄`), whence `j(E_q)⁻¹ = evalInt q jInv`, and the
+inverse-series composition (`jInv_subst_jInvReverse`, PROVEN formally;
+its evaluation compatibility is part of this node) gives
+`j(E_q) = j(E)` for `q = tateParameter j(E)`. -/
+theorem WeierstrassCurve.isElliptic_tateCurve_and_j :
+    ∃ _ : (tateCurve E.q).IsElliptic, (tateCurve E.q).j = E.j :=
+  sorry
+
+set_option warn.sorry false in
+/-- **Split multiplicative curves with equal `j` are isomorphic**
+(sorry node — the descent half of Tate's theorem V.5.3): two elliptic
+curves over `k`, both with split multiplicative reduction, and with
+the same `j`-invariant, differ by a change of Weierstrass coordinates
+over `k` itself. Content: over the separable closure they are
+isomorphic (mathlib's `exists_variableChange_of_j_eq`); the
+obstruction to descent is a `±1`-valued cocycle of `Gal(Ω/k)`
+(`Aut = {±1}` as `|j| > 1`), which is TRIVIAL because both reductions
+are split: the isomorphism matches the (rational) tangent directions
+at the nodes, so it is Galois-invariant and its coefficients descend
+to `k`. -/
+theorem WeierstrassCurve.exists_variableChange_of_j_eq_of_split
+    (W₁ W₂ : WeierstrassCurve k) [W₁.IsElliptic] [W₂.IsElliptic]
+    [W₁.HasSplitMultiplicativeReduction 𝒪[k]]
+    [W₂.HasSplitMultiplicativeReduction 𝒪[k]]
+    (hj : W₁.j = W₂.j) :
+    ∃ C : VariableChange k, C • W₁ = W₂ :=
+  sorry
+
+/-- Tate's theorem (Silverman, ATAEC V.5.3, derived from the two leaves
+above and the PROVEN reduction type of the Tate curve): an elliptic
+curve with split multiplicative reduction is isomorphic, by a change of
+Weierstrass coordinates, to the Tate curve of its Tate parameter. -/
+theorem WeierstrassCurve.exists_variableChange_tateCurve :
+    ∃ C : VariableChange k, C • tateCurve E.q = E := by
+  obtain ⟨hell, hj⟩ := E.isElliptic_tateCurve_and_j
+  haveI := hell
+  haveI := hasSplitMultiplicativeReduction_tateCurve E.q E.valuation_q_lt_one
+  exact WeierstrassCurve.exists_variableChange_of_j_eq_of_split
+    (tateCurve E.q) E hj
 
 /-! ### Functoriality
 

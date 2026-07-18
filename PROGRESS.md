@@ -112,10 +112,23 @@ entries file). To add/remove/annotate a node, edit
                                                   changed point equivalence is Galois-equivariant,
                                                   and the equivariance transports through the
                                                   composite.
-                                                    - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC V.5.3): a
-                                                      curve with split multiplicative reduction is a
-                                                      change of Weierstrass coordinates of the Tate
-                                                      curve of its Tate parameter.
+                                                    - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the
+                                                      j-identity leaf, the descent leaf, and the
+                                                      PROVEN split reduction type of the Tate curve.
+                                                        - ❌· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E)
+                                                          (and E_q is elliptic): the formal
+                                                          discriminant product identity Δ(E_q) =
+                                                          q∏(1−qⁿ)²⁴ plus the evaluation
+                                                          compatibility of the inverse j-series
+                                                          composition.
+                                                        - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-
+                                                          multiplicative curves over k with equal j
+                                                          are k-isomorphic — over the separable
+                                                          closure by mathlib's
+                                                          exists_variableChange_of_j_eq, and the ±1
+                                                          descent cocycle is trivial because both
+                                                          reductions are split (the isomorphism
+                                                          matches the rational node tangents).
                                                     - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation:
                                                       `E_q(Ω) ≅ Ωˣ/q^ℤ` Galois-equivariantly ON THE
                                                       NOSE, by the explicit series `X(u,q)`,
@@ -141,10 +154,25 @@ entries file). To add/remove/annotate a node, edit
                                                       `k`-rational, so its base-changed point
                                                       equivalence is Galois-equivariant, and the
                                                       equivariance transports through the composite.
-                                                        - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC V.5.3): a
-                                                          curve with split multiplicative reduction
-                                                          is a change of Weierstrass coordinates of
-                                                          the Tate curve of its Tate parameter.
+                                                        - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the
+                                                          j-identity leaf, the descent leaf, and the
+                                                          PROVEN split reduction type of the Tate
+                                                          curve.
+                                                            - ❌· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is
+                                                              j(E) (and E_q is elliptic): the formal
+                                                              discriminant product identity Δ(E_q) =
+                                                              q∏(1−qⁿ)²⁴ plus the evaluation
+                                                              compatibility of the inverse j-series
+                                                              composition.
+                                                            - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two
+                                                              split-multiplicative curves over k
+                                                              with equal j are k-isomorphic — over
+                                                              the separable closure by mathlib's
+                                                              exists_variableChange_of_j_eq, and the
+                                                              ±1 descent cocycle is trivial because
+                                                              both reductions are split (the
+                                                              isomorphism matches the rational node
+                                                              tangents).
                                                         - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
                                                           uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ` Galois-
                                                           equivariantly ON THE NOSE, by the explicit
@@ -184,11 +212,26 @@ entries file). To add/remove/annotate a node, edit
                                                           changed point equivalence is Galois-
                                                           equivariant, and the equivariance
                                                           transports through the composite.
-                                                            - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC
-                                                              V.5.3): a curve with split
-                                                              multiplicative reduction is a change
-                                                              of Weierstrass coordinates of the Tate
-                                                              curve of its Tate parameter.
+                                                            - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from
+                                                              the j-identity leaf, the descent leaf,
+                                                              and the PROVEN split reduction type of
+                                                              the Tate curve.
+                                                                - ❌· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve
+                                                                  is j(E) (and E_q is elliptic): the
+                                                                  formal discriminant product
+                                                                  identity Δ(E_q) = q∏(1−qⁿ)²⁴ plus
+                                                                  the evaluation compatibility of
+                                                                  the inverse j-series composition.
+                                                                - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3:
+                                                                  two split-multiplicative curves
+                                                                  over k with equal j are
+                                                                  k-isomorphic — over the separable
+                                                                  closure by mathlib's
+                                                                  exists_variableChange_of_j_eq, and
+                                                                  the ±1 descent cocycle is trivial
+                                                                  because both reductions are split
+                                                                  (the isomorphism matches the
+                                                                  rational node tangents).
                                                             - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
                                                               uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
                                                               Galois-equivariantly ON THE NOSE, by
@@ -218,12 +261,30 @@ entries file). To add/remove/annotate a node, edit
                                                               Galois-equivariant, and the
                                                               equivariance transports through the
                                                               composite.
-                                                                - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC
-                                                                  V.5.3): a curve with split
-                                                                  multiplicative reduction is a
-                                                                  change of Weierstrass coordinates
-                                                                  of the Tate curve of its Tate
-                                                                  parameter.
+                                                                - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED
+                                                                  from the j-identity leaf, the
+                                                                  descent leaf, and the PROVEN split
+                                                                  reduction type of the Tate curve.
+                                                                    - ❌· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate
+                                                                      curve is j(E) (and E_q is
+                                                                      elliptic): the formal
+                                                                      discriminant product identity
+                                                                      Δ(E_q) = q∏(1−qⁿ)²⁴ plus the
+                                                                      evaluation compatibility of
+                                                                      the inverse j-series
+                                                                      composition.
+                                                                    - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate
+                                                                      V.5.3: two split-
+                                                                      multiplicative curves over k
+                                                                      with equal j are k-isomorphic
+                                                                      — over the separable closure
+                                                                      by mathlib's
+                                                                      exists_variableChange_of_j_eq,
+                                                                      and the ±1 descent cocycle is
+                                                                      trivial because both
+                                                                      reductions are split (the
+                                                                      isomorphism matches the
+                                                                      rational node tangents).
                                                                 - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
                                                                   uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
                                                                   Galois-equivariantly ON THE NOSE,
@@ -336,9 +397,19 @@ entries file). To add/remove/annotate a node, edit
                                       variable-change theorem: the variable change is `k`-rational,
                                       so its base-changed point equivalence is Galois-equivariant,
                                       and the equivariance transports through the composite.
-                                        - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC V.5.3): a curve with split
-                                          multiplicative reduction is a change of Weierstrass
-                                          coordinates of the Tate curve of its Tate parameter.
+                                        - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity
+                                          leaf, the descent leaf, and the PROVEN split reduction
+                                          type of the Tate curve.
+                                            - ❌· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E) (and E_q is
+                                              elliptic): the formal discriminant product identity
+                                              Δ(E_q) = q∏(1−qⁿ)²⁴ plus the evaluation compatibility
+                                              of the inverse j-series composition.
+                                            - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-
+                                              multiplicative curves over k with equal j are
+                                              k-isomorphic — over the separable closure by mathlib's
+                                              exists_variableChange_of_j_eq, and the ±1 descent
+                                              cocycle is trivial because both reductions are split
+                                              (the isomorphism matches the rational node tangents).
                                         - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω) ≅
                                           Ωˣ/q^ℤ` Galois-equivariantly ON THE NOSE, by the explicit
                                           series `X(u,q)`, `Y(u,q)` (whose Weierstrass equation is
@@ -359,10 +430,20 @@ entries file). To add/remove/annotate a node, edit
                                           `k`-rational, so its base-changed point equivalence is
                                           Galois-equivariant, and the equivariance transports
                                           through the composite.
-                                            - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC V.5.3): a curve with
-                                              split multiplicative reduction is a change of
-                                              Weierstrass coordinates of the Tate curve of its Tate
-                                              parameter.
+                                            - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity
+                                              leaf, the descent leaf, and the PROVEN split reduction
+                                              type of the Tate curve.
+                                                - ❌· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E) (and E_q
+                                                  is elliptic): the formal discriminant product
+                                                  identity Δ(E_q) = q∏(1−qⁿ)²⁴ plus the evaluation
+                                                  compatibility of the inverse j-series composition.
+                                                - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-
+                                                  multiplicative curves over k with equal j are
+                                                  k-isomorphic — over the separable closure by
+                                                  mathlib's exists_variableChange_of_j_eq, and the
+                                                  ±1 descent cocycle is trivial because both
+                                                  reductions are split (the isomorphism matches the
+                                                  rational node tangents).
                                             - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω)
                                               ≅ Ωˣ/q^ℤ` Galois-equivariantly ON THE NOSE, by the
                                               explicit series `X(u,q)`, `Y(u,q)` (whose Weierstrass
@@ -411,9 +492,19 @@ entries file). To add/remove/annotate a node, edit
                               theorem: the variable change is `k`-rational, so its base-changed
                               point equivalence is Galois-equivariant, and the equivariance
                               transports through the composite.
-                                - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC V.5.3): a curve with split
-                                  multiplicative reduction is a change of Weierstrass coordinates of
-                                  the Tate curve of its Tate parameter.
+                                - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity leaf, the
+                                  descent leaf, and the PROVEN split reduction type of the Tate
+                                  curve.
+                                    - ❌· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E) (and E_q is
+                                      elliptic): the formal discriminant product identity Δ(E_q) =
+                                      q∏(1−qⁿ)²⁴ plus the evaluation compatibility of the inverse
+                                      j-series composition.
+                                    - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-multiplicative
+                                      curves over k with equal j are k-isomorphic — over the
+                                      separable closure by mathlib's exists_variableChange_of_j_eq,
+                                      and the ±1 descent cocycle is trivial because both reductions
+                                      are split (the isomorphism matches the rational node
+                                      tangents).
                                 - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
                                   Galois-equivariantly ON THE NOSE, by the explicit series `X(u,q)`,
                                   `Y(u,q)` (whose Weierstrass equation is proven in
@@ -430,9 +521,19 @@ entries file). To add/remove/annotate a node, edit
                               theorem: the variable change is `k`-rational, so its base-changed
                               point equivalence is Galois-equivariant, and the equivariance
                               transports through the composite.
-                                - ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem (Silverman ATAEC V.5.3): a curve with split
-                                  multiplicative reduction is a change of Weierstrass coordinates of
-                                  the Tate curve of its Tate parameter.
+                                - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity leaf, the
+                                  descent leaf, and the PROVEN split reduction type of the Tate
+                                  curve.
+                                    - ❌· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E) (and E_q is
+                                      elliptic): the formal discriminant product identity Δ(E_q) =
+                                      q∏(1−qⁿ)²⁴ plus the evaluation compatibility of the inverse
+                                      j-series composition.
+                                    - ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — the descent half of Tate V.5.3: two split-multiplicative
+                                      curves over k with equal j are k-isomorphic — over the
+                                      separable closure by mathlib's exists_variableChange_of_j_eq,
+                                      and the ±1 descent cocycle is trivial because both reductions
+                                      are split (the isomorphism matches the rational node
+                                      tangents).
                                 - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
                                   Galois-equivariantly ON THE NOSE, by the explicit series `X(u,q)`,
                                   `Y(u,q)` (whose Weierstrass equation is proven in
