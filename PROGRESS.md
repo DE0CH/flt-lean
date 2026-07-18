@@ -112,12 +112,35 @@ entries file). To add/remove/annotate a node, edit
                                                   changed point equivalence is Galois-equivariant,
                                                   and the equivariance transports through the
                                                   composite.
-                                                    - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation:
-                                                      `E_q(Ω) ≅ Ωˣ/q^ℤ` Galois-equivariantly ON THE
-                                                      NOSE, by the explicit series `X(u,q)`,
-                                                      `Y(u,q)` (whose Weierstrass equation is proven
-                                                      in `TateCurveConstruction`); glued over the
-                                                      finite subextensions of `Ω`.
+                                                    - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the uniformization core (ATAEC V.3.1 +
+                                                      gluing): Galois-equivariant Ωˣ/q^ℤ ≃+ E_q(Ω).
+                                                      GROUNDWORK BUILT (TateUniformization.lean,
+                                                      2026-07-18, all axiom-clean): CoeffRing =
+                                                      ℚ[T][1/(T(1−T))] evaluation infrastructure;
+                                                      lifts/bridges of the X/Y/a₄/a₆ series; evalA
+                                                      two-variable evaluation with fundamental-
+                                                      annulus (|q|<|u|≤1) summability; nonarch
+                                                      Cauchy products; formal + EVALUATED
+                                                      Weierstrass equations; annulusPoint (on-curve,
+                                                      nonsingular); strict fundamental domain
+                                                      (exists_zpow_mul_mem_annulus +
+                                                      annulus_exponent_unique); pointMap on kˣ with
+                                                      q-power invariance, descent pointMapQuot to
+                                                      kˣ/q^ℤ, and kernel characterization
+                                                      pointMap_eq_zero_iff. REMAINING: (a) the
+                                                      homomorphism property — Silverman V.3.1
+                                                      addition law, via two-parameter formal
+                                                      identities against mathlib's affine group law
+                                                      (extend the eq_zero_of_forall_hasSum_zero
+                                                      descent of TateCurveConstruction to two
+                                                      transcendentals, using the ℂ-analytic addition
+                                                      law of the exponential parametrization); (b)
+                                                      surjectivity of the finite-level map
+                                                      (valuation analysis of affine points,
+                                                      Silverman V.4); (c) Galois-equivariant gluing
+                                                      over Ω (finite-level equivariance from the
+                                                      universality of the series coefficients, then
+                                                      colimit over finite subextensions).
                                             - ✅· `WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic` — the nonsplit half of the unipotence statement,
                                               assembled from the LOCAL nonsplit node
                                               `tate_inertia_unipotent_of_nonsplit` by the proven
@@ -137,13 +160,38 @@ entries file). To add/remove/annotate a node, edit
                                                       `k`-rational, so its base-changed point
                                                       equivalence is Galois-equivariant, and the
                                                       equivariance transports through the composite.
-                                                        - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
-                                                          uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ` Galois-
-                                                          equivariantly ON THE NOSE, by the explicit
-                                                          series `X(u,q)`, `Y(u,q)` (whose
-                                                          Weierstrass equation is proven in
-                                                          `TateCurveConstruction`); glued over the
-                                                          finite subextensions of `Ω`.
+                                                        - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the uniformization core (ATAEC V.3.1 +
+                                                          gluing): Galois-equivariant Ωˣ/q^ℤ ≃+
+                                                          E_q(Ω). GROUNDWORK BUILT
+                                                          (TateUniformization.lean, 2026-07-18, all
+                                                          axiom-clean): CoeffRing = ℚ[T][1/(T(1−T))]
+                                                          evaluation infrastructure; lifts/bridges
+                                                          of the X/Y/a₄/a₆ series; evalA two-
+                                                          variable evaluation with fundamental-
+                                                          annulus (|q|<|u|≤1) summability; nonarch
+                                                          Cauchy products; formal + EVALUATED
+                                                          Weierstrass equations; annulusPoint (on-
+                                                          curve, nonsingular); strict fundamental
+                                                          domain (exists_zpow_mul_mem_annulus +
+                                                          annulus_exponent_unique); pointMap on kˣ
+                                                          with q-power invariance, descent
+                                                          pointMapQuot to kˣ/q^ℤ, and kernel
+                                                          characterization pointMap_eq_zero_iff.
+                                                          REMAINING: (a) the homomorphism property —
+                                                          Silverman V.3.1 addition law, via two-
+                                                          parameter formal identities against
+                                                          mathlib's affine group law (extend the
+                                                          eq_zero_of_forall_hasSum_zero descent of
+                                                          TateCurveConstruction to two
+                                                          transcendentals, using the ℂ-analytic
+                                                          addition law of the exponential
+                                                          parametrization); (b) surjectivity of the
+                                                          finite-level map (valuation analysis of
+                                                          affine points, Silverman V.4); (c) Galois-
+                                                          equivariant gluing over Ω (finite-level
+                                                          equivariance from the universality of the
+                                                          series coefficients, then colimit over
+                                                          finite subextensions).
                                     - ❌· `FreyPackage.subquotient_character_unramified_at_p` — (stated 2026-07-17) — flat/ordinary at `p`: one of the two
                                       characters is unramified at `p` itself (connected-étale
                                       sequence in the ordinary/ multiplicative case; supersingular
@@ -176,13 +224,42 @@ entries file). To add/remove/annotate a node, edit
                                                           changed point equivalence is Galois-
                                                           equivariant, and the equivariance
                                                           transports through the composite.
-                                                            - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
-                                                              uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
-                                                              Galois-equivariantly ON THE NOSE, by
-                                                              the explicit series `X(u,q)`, `Y(u,q)`
-                                                              (whose Weierstrass equation is proven
-                                                              in `TateCurveConstruction`); glued
-                                                              over the finite subextensions of `Ω`.
+                                                            - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the uniformization core (ATAEC V.3.1 +
+                                                              gluing): Galois-equivariant Ωˣ/q^ℤ ≃+
+                                                              E_q(Ω). GROUNDWORK BUILT
+                                                              (TateUniformization.lean, 2026-07-18,
+                                                              all axiom-clean): CoeffRing =
+                                                              ℚ[T][1/(T(1−T))] evaluation
+                                                              infrastructure; lifts/bridges of the
+                                                              X/Y/a₄/a₆ series; evalA two-variable
+                                                              evaluation with fundamental-annulus
+                                                              (|q|<|u|≤1) summability; nonarch
+                                                              Cauchy products; formal + EVALUATED
+                                                              Weierstrass equations; annulusPoint
+                                                              (on-curve, nonsingular); strict
+                                                              fundamental domain
+                                                              (exists_zpow_mul_mem_annulus +
+                                                              annulus_exponent_unique); pointMap on
+                                                              kˣ with q-power invariance, descent
+                                                              pointMapQuot to kˣ/q^ℤ, and kernel
+                                                              characterization pointMap_eq_zero_iff.
+                                                              REMAINING: (a) the homomorphism
+                                                              property — Silverman V.3.1 addition
+                                                              law, via two-parameter formal
+                                                              identities against mathlib's affine
+                                                              group law (extend the
+                                                              eq_zero_of_forall_hasSum_zero descent
+                                                              of TateCurveConstruction to two
+                                                              transcendentals, using the ℂ-analytic
+                                                              addition law of the exponential
+                                                              parametrization); (b) surjectivity of
+                                                              the finite-level map (valuation
+                                                              analysis of affine points, Silverman
+                                                              V.4); (c) Galois-equivariant gluing
+                                                              over Ω (finite-level equivariance from
+                                                              the universality of the series
+                                                              coefficients, then colimit over finite
+                                                              subextensions).
                                                     - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality statement,
                                                       assembled from the LOCAL nonsplit node
                                                       `tate_inertia_trivial_of_nonsplit` by the
@@ -205,15 +282,47 @@ entries file). To add/remove/annotate a node, edit
                                                               Galois-equivariant, and the
                                                               equivariance transports through the
                                                               composite.
-                                                                - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
-                                                                  uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
-                                                                  Galois-equivariantly ON THE NOSE,
-                                                                  by the explicit series `X(u,q)`,
-                                                                  `Y(u,q)` (whose Weierstrass
-                                                                  equation is proven in
-                                                                  `TateCurveConstruction`); glued
-                                                                  over the finite subextensions of
-                                                                  `Ω`.
+                                                                - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the uniformization core (ATAEC
+                                                                  V.3.1 + gluing): Galois-
+                                                                  equivariant Ωˣ/q^ℤ ≃+ E_q(Ω).
+                                                                  GROUNDWORK BUILT
+                                                                  (TateUniformization.lean,
+                                                                  2026-07-18, all axiom-clean):
+                                                                  CoeffRing = ℚ[T][1/(T(1−T))]
+                                                                  evaluation infrastructure;
+                                                                  lifts/bridges of the X/Y/a₄/a₆
+                                                                  series; evalA two-variable
+                                                                  evaluation with fundamental-
+                                                                  annulus (|q|<|u|≤1) summability;
+                                                                  nonarch Cauchy products; formal +
+                                                                  EVALUATED Weierstrass equations;
+                                                                  annulusPoint (on-curve,
+                                                                  nonsingular); strict fundamental
+                                                                  domain
+                                                                  (exists_zpow_mul_mem_annulus +
+                                                                  annulus_exponent_unique); pointMap
+                                                                  on kˣ with q-power invariance,
+                                                                  descent pointMapQuot to kˣ/q^ℤ,
+                                                                  and kernel characterization
+                                                                  pointMap_eq_zero_iff. REMAINING:
+                                                                  (a) the homomorphism property —
+                                                                  Silverman V.3.1 addition law, via
+                                                                  two-parameter formal identities
+                                                                  against mathlib's affine group law
+                                                                  (extend the
+                                                                  eq_zero_of_forall_hasSum_zero
+                                                                  descent of TateCurveConstruction
+                                                                  to two transcendentals, using the
+                                                                  ℂ-analytic addition law of the
+                                                                  exponential parametrization); (b)
+                                                                  surjectivity of the finite-level
+                                                                  map (valuation analysis of affine
+                                                                  points, Silverman V.4); (c)
+                                                                  Galois-equivariant gluing over Ω
+                                                                  (finite-level equivariance from
+                                                                  the universality of the series
+                                                                  coefficients, then colimit over
+                                                                  finite subextensions).
                                 - ✅· `det_galoisRep_eq_cyclotomic` — `det_galoisRep_eq_cyclotomic` — (2026-07-17): `det ρ̄` and `χ̄`
                                   are continuous conjugation-invariant `ZMod p`-valued functions on
                                   `Γ ℚ` (continuity of `det ∘ ρ` from discreteness of `End` via
@@ -317,11 +426,29 @@ entries file). To add/remove/annotate a node, edit
                                       variable-change theorem: the variable change is `k`-rational,
                                       so its base-changed point equivalence is Galois-equivariant,
                                       and the equivariance transports through the composite.
-                                        - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω) ≅
-                                          Ωˣ/q^ℤ` Galois-equivariantly ON THE NOSE, by the explicit
-                                          series `X(u,q)`, `Y(u,q)` (whose Weierstrass equation is
-                                          proven in `TateCurveConstruction`); glued over the finite
-                                          subextensions of `Ω`.
+                                        - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the uniformization core (ATAEC V.3.1 + gluing): Galois-
+                                          equivariant Ωˣ/q^ℤ ≃+ E_q(Ω). GROUNDWORK BUILT
+                                          (TateUniformization.lean, 2026-07-18, all axiom-clean):
+                                          CoeffRing = ℚ[T][1/(T(1−T))] evaluation infrastructure;
+                                          lifts/bridges of the X/Y/a₄/a₆ series; evalA two-variable
+                                          evaluation with fundamental-annulus (|q|<|u|≤1)
+                                          summability; nonarch Cauchy products; formal + EVALUATED
+                                          Weierstrass equations; annulusPoint (on-curve,
+                                          nonsingular); strict fundamental domain
+                                          (exists_zpow_mul_mem_annulus + annulus_exponent_unique);
+                                          pointMap on kˣ with q-power invariance, descent
+                                          pointMapQuot to kˣ/q^ℤ, and kernel characterization
+                                          pointMap_eq_zero_iff. REMAINING: (a) the homomorphism
+                                          property — Silverman V.3.1 addition law, via two-parameter
+                                          formal identities against mathlib's affine group law
+                                          (extend the eq_zero_of_forall_hasSum_zero descent of
+                                          TateCurveConstruction to two transcendentals, using the
+                                          ℂ-analytic addition law of the exponential
+                                          parametrization); (b) surjectivity of the finite-level map
+                                          (valuation analysis of affine points, Silverman V.4); (c)
+                                          Galois-equivariant gluing over Ω (finite-level
+                                          equivariance from the universality of the series
+                                          coefficients, then colimit over finite subextensions).
                                 - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality statement, assembled from the
                                   LOCAL nonsplit node `tate_inertia_trivial_of_nonsplit` by the
                                   proven `ℚ̄`-pullback glue; the `j`-hypothesis feeds through
@@ -337,11 +464,30 @@ entries file). To add/remove/annotate a node, edit
                                           `k`-rational, so its base-changed point equivalence is
                                           Galois-equivariant, and the equivariance transports
                                           through the composite.
-                                            - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω)
-                                              ≅ Ωˣ/q^ℤ` Galois-equivariantly ON THE NOSE, by the
-                                              explicit series `X(u,q)`, `Y(u,q)` (whose Weierstrass
-                                              equation is proven in `TateCurveConstruction`); glued
-                                              over the finite subextensions of `Ω`.
+                                            - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the uniformization core (ATAEC V.3.1 + gluing):
+                                              Galois-equivariant Ωˣ/q^ℤ ≃+ E_q(Ω). GROUNDWORK BUILT
+                                              (TateUniformization.lean, 2026-07-18, all axiom-
+                                              clean): CoeffRing = ℚ[T][1/(T(1−T))] evaluation
+                                              infrastructure; lifts/bridges of the X/Y/a₄/a₆ series;
+                                              evalA two-variable evaluation with fundamental-annulus
+                                              (|q|<|u|≤1) summability; nonarch Cauchy products;
+                                              formal + EVALUATED Weierstrass equations; annulusPoint
+                                              (on-curve, nonsingular); strict fundamental domain
+                                              (exists_zpow_mul_mem_annulus +
+                                              annulus_exponent_unique); pointMap on kˣ with q-power
+                                              invariance, descent pointMapQuot to kˣ/q^ℤ, and kernel
+                                              characterization pointMap_eq_zero_iff. REMAINING: (a)
+                                              the homomorphism property — Silverman V.3.1 addition
+                                              law, via two-parameter formal identities against
+                                              mathlib's affine group law (extend the
+                                              eq_zero_of_forall_hasSum_zero descent of
+                                              TateCurveConstruction to two transcendentals, using
+                                              the ℂ-analytic addition law of the exponential
+                                              parametrization); (b) surjectivity of the finite-level
+                                              map (valuation analysis of affine points, Silverman
+                                              V.4); (c) Galois-equivariant gluing over Ω (finite-
+                                              level equivariance from the universality of the series
+                                              coefficients, then colimit over finite subextensions).
                 - ✅· `FreyCurve.torsion_isFlat` — flat at p: (2026-07-16) by the case split `p ∣ abc` or not, from the two nodes
                   below
                     - ✅· `FreyCurve.torsion_isFlat_of_good` — (2026-07-16) from the arithmetic node `freyCurve_hasGoodReduction_of_not_dvd`
@@ -385,11 +531,26 @@ entries file). To add/remove/annotate a node, edit
                               theorem: the variable change is `k`-rational, so its base-changed
                               point equivalence is Galois-equivariant, and the equivariance
                               transports through the composite.
-                                - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
-                                  Galois-equivariantly ON THE NOSE, by the explicit series `X(u,q)`,
-                                  `Y(u,q)` (whose Weierstrass equation is proven in
-                                  `TateCurveConstruction`); glued over the finite subextensions of
-                                  `Ω`.
+                                - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the uniformization core (ATAEC V.3.1 + gluing): Galois-equivariant
+                                  Ωˣ/q^ℤ ≃+ E_q(Ω). GROUNDWORK BUILT (TateUniformization.lean,
+                                  2026-07-18, all axiom-clean): CoeffRing = ℚ[T][1/(T(1−T))]
+                                  evaluation infrastructure; lifts/bridges of the X/Y/a₄/a₆ series;
+                                  evalA two-variable evaluation with fundamental-annulus (|q|<|u|≤1)
+                                  summability; nonarch Cauchy products; formal + EVALUATED
+                                  Weierstrass equations; annulusPoint (on-curve, nonsingular);
+                                  strict fundamental domain (exists_zpow_mul_mem_annulus +
+                                  annulus_exponent_unique); pointMap on kˣ with q-power invariance,
+                                  descent pointMapQuot to kˣ/q^ℤ, and kernel characterization
+                                  pointMap_eq_zero_iff. REMAINING: (a) the homomorphism property —
+                                  Silverman V.3.1 addition law, via two-parameter formal identities
+                                  against mathlib's affine group law (extend the
+                                  eq_zero_of_forall_hasSum_zero descent of TateCurveConstruction to
+                                  two transcendentals, using the ℂ-analytic addition law of the
+                                  exponential parametrization); (b) surjectivity of the finite-level
+                                  map (valuation analysis of affine points, Silverman V.4); (c)
+                                  Galois-equivariant gluing over Ω (finite-level equivariance from
+                                  the universality of the series coefficients, then colimit over
+                                  finite subextensions).
                         - ✅· `WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two` — the nonsplit half of the tame-at-2 condition, now ASSEMBLED: the exponent
                           quotient of the twisted minimal model transports through the (χ-twisted)
                           composite point equivalence; δ is the quadratic character of the
@@ -401,11 +562,26 @@ entries file). To add/remove/annotate a node, edit
                               theorem: the variable change is `k`-rational, so its base-changed
                               point equivalence is Galois-equivariant, and the equivariance
                               transports through the composite.
-                                - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
-                                  Galois-equivariantly ON THE NOSE, by the explicit series `X(u,q)`,
-                                  `Y(u,q)` (whose Weierstrass equation is proven in
-                                  `TateCurveConstruction`); glued over the finite subextensions of
-                                  `Ω`.
+                                - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the uniformization core (ATAEC V.3.1 + gluing): Galois-equivariant
+                                  Ωˣ/q^ℤ ≃+ E_q(Ω). GROUNDWORK BUILT (TateUniformization.lean,
+                                  2026-07-18, all axiom-clean): CoeffRing = ℚ[T][1/(T(1−T))]
+                                  evaluation infrastructure; lifts/bridges of the X/Y/a₄/a₆ series;
+                                  evalA two-variable evaluation with fundamental-annulus (|q|<|u|≤1)
+                                  summability; nonarch Cauchy products; formal + EVALUATED
+                                  Weierstrass equations; annulusPoint (on-curve, nonsingular);
+                                  strict fundamental domain (exists_zpow_mul_mem_annulus +
+                                  annulus_exponent_unique); pointMap on kˣ with q-power invariance,
+                                  descent pointMapQuot to kˣ/q^ℤ, and kernel characterization
+                                  pointMap_eq_zero_iff. REMAINING: (a) the homomorphism property —
+                                  Silverman V.3.1 addition law, via two-parameter formal identities
+                                  against mathlib's affine group law (extend the
+                                  eq_zero_of_forall_hasSum_zero descent of TateCurveConstruction to
+                                  two transcendentals, using the ℂ-analytic addition law of the
+                                  exponential parametrization); (b) surjectivity of the finite-level
+                                  map (valuation analysis of affine points, Silverman V.4); (c)
+                                  Galois-equivariant gluing over Ω (finite-level equivariance from
+                                  the universality of the series coefficients, then colimit over
+                                  finite subextensions).
             - ✅· `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified` — B5 `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
               (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work) — now (2026-07-16)
               from three explicit nodes in `HardlyRamified/Lift.lean` (own work), following
