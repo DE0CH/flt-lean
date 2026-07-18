@@ -125,7 +125,10 @@
   "TateCurve.ΔFormal_eq": "✅✅",
   "WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul": "✅✅",
   "WeierstrassCurve.isSquare_of_scaled_split": "✅✅",
-  "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split": "✅✅"
+  "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split": "✅✅",
+  "TateCurve.pointMapQuot_add": "❌",
+  "TateCurve.pointMapQuot_bijective": "❌",
+  "TateCurve.tateCurveEquiv": "✅"
  },
  "children": {
   "fermat_last_theorem": [
@@ -602,10 +605,22 @@
   "WeierstrassCurve.isSquare_of_scaled_split": [
    "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split"
   ],
-  "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split": []
+  "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split": [],
+  "TateCurve.pointMapQuot_add": [
+   "WeierstrassCurve.Δ_tateCurve_eq_evalInt"
+  ],
+  "TateCurve.pointMapQuot_bijective": [
+   "WeierstrassCurve.Δ_tateCurve_eq_evalInt"
+  ],
+  "TateCurve.tateCurveEquiv": [
+   "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
+   "TateCurve.pointMapQuot_bijective",
+   "TateCurve.pointMapQuot_add"
+  ]
  },
  "roots": [
   "fermat_last_theorem",
-  "GaloisRepresentation.IsHardlyRamified.mod_three"
+  "GaloisRepresentation.IsHardlyRamified.mod_three",
+  "TateCurve.tateCurveEquiv"
  ]
 }

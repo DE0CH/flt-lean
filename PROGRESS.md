@@ -784,6 +784,16 @@ entries file). To add/remove/annotate a node, edit
           Serre swap; tame quadratic condition at `2`). - NB the lift structure gained an
           `IsModuleTopology ℤ_[ℓ] O` field (statement strengthening of B6a's conclusion, true for
           integers of finite extensions of ℚ_ℓ; required by B6b)
+- ✅· `TateCurve.tateCurveEquiv` — the finite-level Tate uniformisation kˣ/q^ℤ ≃+ E_q(k), DERIVED from pointMapQuot_add +
+  pointMapQuot_bijective with pointMapQuot (canonical, choice-free) as underlying function — the
+  object the Ω-gluing of exists_tateCurveEquivSepClosure consumes.
+    - ❌· `TateCurve.pointMapQuot_add` — the addition law of the Tate uniformisation (Silverman V.3.1(c)): pointMapQuot turns unit-
+      class multiplication into Tate-curve point addition. Attack: the coordinates are the bilateral
+      values (proven bilateral forms, shifts, inversion identities for X and Y); the chord–tangent
+      formulas reduce to two-parameter Lambert identities on the built foundation.
+    - ❌· `TateCurve.pointMapQuot_bijective` — bijectivity of the Tate uniformisation (Silverman V.3.1(d,e)): injectivity from the proven
+      trivial kernel plus the addition law; surjectivity by the valuation analysis of affine points
+      (Silverman V.4) through the bilateral form.
 
 ## Canonical frontier (2026-07-16, session 4 close — audit-verified)
 

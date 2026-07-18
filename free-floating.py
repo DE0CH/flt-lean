@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+"""Compiler-verified free-floating-code detection (Deyao, 2026-07-18).
+
+A declaration in the project's own modules is *free-floating* if it is not
+in the transitive used-constant cone of `fermat_last_theorem` — i.e. no
+proof term reachable from the root actually uses it (a sorried body
+contributes no edges, so material built bottom-up for a still-sorried
+consumer shows up here until the consumer's proof skeleton is written).
+
+Method (the Lean compiler does the work): generate a scratch file
+importing every project module (except the root aggregator `Fermat`, which
+deliberately fails on the sorry gate), run a metaprogram that (a) BFSes
+the used-constant cone from the root, (b) sweeps every constant whose
+defining module is a `Fermat.*` module, and (c) prints the ones outside
+the cone. Results are cached in `free-floating.json` keyed by the max
+mtime of the Lean sources, so repeated hook invocations are cheap.
+"""
+
+import json
+import os
+import subprocess
+import sys
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+CACHE = os.path.join(ROOT, "free-floating.json")
+ROOT_DECL = "fermat_last_theorem"
+
+
+def source_key() -> str:
+    latest = 0.0
+    for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "Fermat")):
+        for name in files:
+            if name.endswith(".lean"):
+                try:
+                    latest = max(latest,
+                                 os.path.getmtime(os.path.join(dirpath, name)))
+                except OSError:
+                    pass
+    return str(latest)
+
+
+def modules() -> list[str]:
+    mods = []
+    base = os.path.join(ROOT, "Fermat")
+    for dirpath, _dirs, files in os.walk(base):
+        for name in sorted(files):
+            if not name.endswith(".lean"):
+                continue
+            rel = os.path.relpath(os.path.join(dirpath, name), ROOT)
+            mod = rel[:-5].replace(os.sep, ".")
+            mods.append(mod)
+    return mods
+
+
+def main() -> int:
+    key = source_key()
+    if os.path.exists(CACHE):
+        try:
+            cached = json.load(open(CACHE))
+            if cached.get("key") == key:
+                print(json.dumps(cached))
+                return 0
+        except Exception:
+            pass
+
+    lean = ["import " + m for m in modules()]
+    lean.append("open Lean in")
+    lean.append("#eval show CoreM Unit from do")
+    lean.append(f"  let root : Name := `{ROOT_DECL}")
+    lean.append("""  let env ← getEnv
+  -- the transitive used-constant cone of the root
+  let mut cone : NameSet := {}
+  let mut stack : Array Name := #[root]
+  while !stack.isEmpty do
+    let c := stack.back!
+    stack := stack.pop
+    unless cone.contains c do
+      cone := cone.insert c
+      match env.find? c with
+      | some ci => stack := stack ++ ci.getUsedConstantsAsSet.toArray
+      | none => pure ()
+  -- sweep every project-module declaration against the cone
+  for (n, _) in env.constants.toList do
+    if n.isInternalDetail then continue
+    match env.getModuleIdxFor? n with
+    | none => continue
+    | some idx =>
+      let mod := env.header.moduleNames[idx.toNat]!
+      if mod.getRoot == `Fermat then
+        unless cone.contains n do
+          IO.println s!"FLOATING\\t{mod}\\t{n}"
+""")
+    scratch = os.path.join(ROOT, "FreeFloatingScratch.lean")
+    with open(scratch, "w") as fh:
+        fh.write("\n".join(lean) + "\n")
+    try:
+        proc = subprocess.run(
+            ["lake", "env", "lean", scratch],
+            cwd=ROOT, capture_output=True, text=True, timeout=1200,
+        )
+    finally:
+        try:
+            os.remove(scratch)
+        except OSError:
+            pass
+    floating = []
+    for line in proc.stdout.splitlines():
+        if line.startswith("FLOATING\t"):
+            _tag, mod, name = line.split("\t")
+            floating.append({"module": mod, "name": name})
+    result = {"key": key, "returncode": proc.returncode,
+              "floating": floating}
+    json.dump(result, open(CACHE, "w"), ensure_ascii=False, indent=1)
+    print(json.dumps(result))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

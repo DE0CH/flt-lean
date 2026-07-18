@@ -880,5 +880,26 @@
   "wip": false,
   "fullname": "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split",
   "text": "the split criterion over the local field k, PROVEN: split multiplicative reduction implies −c₄c₆ ∈ (kˣ)². Both residue characteristics via Hensel over 𝒪[k] (HenselianRing from the IsAdicComplete instance of LocalField/Basic under a rightUniformSpace letI): odd — the reduced node polynomial's splitting means its discriminant −c₄c₆ is a residue square (nodePoly_map_splits_iff_isSquare) and X²−x Hensel-lifts (derivative 2z̄ a unit); residue char 2 — splitness is the Artin–Schreier condition (nodePoly_map_splits_iff_of_two_eq_zero), normalized by the unit b = a₁c₄ to z²+z = c̄, Hensel-lifted through X²+X−c (derivative 2z̄+1 ≡ 1 a unit), and −c₄c₆ = b²(1+4c) = (b(1+2t))² by the discriminant identity splitPolynomial_discrim."
+ },
+ {
+  "name": "TateCurve.pointMapQuot_add",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
+  "wip": false,
+  "fullname": "TateCurve.pointMapQuot_add",
+  "text": "the addition law of the Tate uniformisation (Silverman V.3.1(c)): pointMapQuot turns unit-class multiplication into Tate-curve point addition. Attack: the coordinates are the bilateral values (proven bilateral forms, shifts, inversion identities for X and Y); the chord–tangent formulas reduce to two-parameter Lambert identities on the built foundation."
+ },
+ {
+  "name": "TateCurve.pointMapQuot_bijective",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
+  "wip": false,
+  "fullname": "TateCurve.pointMapQuot_bijective",
+  "text": "bijectivity of the Tate uniformisation (Silverman V.3.1(d,e)): injectivity from the proven trivial kernel plus the addition law; surjectivity by the valuation analysis of affine points (Silverman V.4) through the bilateral form."
+ },
+ {
+  "name": "TateCurve.tateCurveEquiv",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
+  "wip": false,
+  "fullname": "TateCurve.tateCurveEquiv",
+  "text": "the finite-level Tate uniformisation kˣ/q^ℤ ≃+ E_q(k), DERIVED from pointMapQuot_add + pointMapQuot_bijective with pointMapQuot (canonical, choice-free) as underlying function — the object the Ω-gluing of exists_tateCurveEquivSepClosure consumes."
  }
 ]
