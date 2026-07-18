@@ -10,6 +10,7 @@ public import Mathlib.RingTheory.Valuation.RamificationGroup
 -- local unipotence assembly
 import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
 import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
+import Mathlib.RingTheory.Henselian
 import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
@@ -769,8 +770,7 @@ theorem WeierstrassCurve.Δ_tateCurve_eq_evalInt (q : k)
   ring
 
 open PowerSeries in
-set_option warn.sorry false in
-/-- **Evaluation commutes with formal substitution** (sorry node — the
+/-- **Evaluation commutes with formal substitution** (the
 formal-to-convergent bridge anticipated by `TateParameter.lean`): for
 `G` with vanishing constant term and `|x| < 1`, the value of the
 composite `F ∘ G` is the value of `F` at the value of `G` — both sides
@@ -959,9 +959,9 @@ theorem WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul
   exact WeierstrassCurve.HasSplitMultiplicativeReduction.of_isMinimal_smul
     (R := 𝒪[k]) _ hD inferInstance
 
-set_option warn.sorry false in
-/-- **The split criterion over the local field** (sorry node — the
-arithmetic core of the descent half of Tate's theorem V.5.3): a curve
+/-- **The split criterion over the local field** (the arithmetic core
+of the descent half of Tate's theorem V.5.3, PROVEN by Hensel lifting
+over `𝒪[k]` in both residue characteristics): a curve
 with split multiplicative reduction over the nonarchimedean local
 field `k` has `-c₄c₆ ∈ (kˣ)²`. Content (Silverman AEC App. A;
 `-c₄c₆` is the discriminant of the node polynomial up to squares, and
@@ -978,8 +978,190 @@ equivalent, by a 2-adic Hensel argument at the finite level
 square in `k`. -/
 theorem WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split
     (E : WeierstrassCurve k) [E.HasSplitMultiplicativeReduction 𝒪[k]] :
-    IsSquare (-(E.c₄ * E.c₆)) :=
-  sorry
+    IsSquare (-(E.c₄ * E.c₆)) := by
+  classical
+  set I : WeierstrassCurve 𝒪[k] := E.integralModel 𝒪[k] with hIdef
+  set φ : 𝒪[k] →+* IsLocalRing.ResidueField 𝒪[k] :=
+    algebraMap 𝒪[k] (IsLocalRing.ResidueField 𝒪[k]) with hφdef
+  -- it suffices to produce a square root of `-(I.c₄ * I.c₆)` in `𝒪[k]`
+  suffices hcore : IsSquare (-(I.c₄ * I.c₆)) by
+    obtain ⟨a, ha⟩ := hcore
+    refine ⟨algebraMap 𝒪[k] k a, ?_⟩
+    have hx : algebraMap 𝒪[k] k (-(I.c₄ * I.c₆)) = -(E.c₄ * E.c₆) := by
+      rw [map_neg, map_mul, hIdef, WeierstrassCurve.integralModel_c₄_eq 𝒪[k] E,
+        WeierstrassCurve.integralModel_c₆_eq 𝒪[k] E]
+    rw [← hx, ha, map_mul]
+  -- the splitting of the node polynomial over the residue field
+  have hsplit : (I.nodePoly.map φ).Splits :=
+    ‹E.HasSplitMultiplicativeReduction 𝒪[k]›.splitMultiplicativeReduction
+  -- residues of `c₄` and `c₆` are nonzero
+  have hres4 : φ I.c₄ ≠ 0 :=
+    WeierstrassCurve.residue_integralModel_c₄_ne_zero E 𝒪[k]
+  have hres6 : φ I.c₆ ≠ 0 :=
+    WeierstrassCurve.residue_integralModel_c₆_ne_zero E 𝒪[k]
+  -- the Henselian structure of `𝒪[k]` at its maximal ideal (via completeness;
+  -- the adic-completeness instance lives in the uniform-space world)
+  letI : UniformSpace k := IsTopologicalAddGroup.rightUniformSpace k
+  haveI : IsUniformAddGroup k := isUniformAddGroup_of_addCommGroup
+  haveI hhens : HenselianRing 𝒪[k] (IsLocalRing.maximalIdeal 𝒪[k]) :=
+    inferInstance
+  by_cases h2 : (2 : IsLocalRing.ResidueField 𝒪[k]) = 0
+  · -- residue characteristic 2: the Artin–Schreier route
+    -- `b := a₁c₄` is a unit: its residue squares to `-c₄c₆ ≠ 0` as `4 = 0`
+    have h4 : (4 : IsLocalRing.ResidueField 𝒪[k]) = 0 := by
+      linear_combination (2 : IsLocalRing.ResidueField 𝒪[k]) * h2
+    have hdiscr := WeierstrassCurve.map_splitPolynomial_discrim φ I
+    have hbres : φ (I.a₁ * I.c₄) ≠ 0 := by
+      intro h0
+      refine neg_ne_zero.mpr (mul_ne_zero hres4 hres6) ?_
+      rw [← map_mul, ← map_neg]
+      calc φ (-(I.c₄ * I.c₆))
+          = φ (I.a₁ * I.c₄) ^ 2 - 4 * φ I.c₄ *
+            (-φ (54 * I.b₆ - 3 * I.b₂ * I.b₄ + I.a₂ * I.c₄)) := hdiscr.symm
+        _ = 0 := by rw [h0, h4]; ring
+    have hbunit : IsUnit (I.a₁ * I.c₄) := by
+      rw [← IsLocalRing.notMem_maximalIdeal]
+      intro hmem
+      exact hbres (Ideal.Quotient.eq_zero_iff_mem.mpr hmem)
+    obtain ⟨U, hU⟩ := hbunit
+    -- the Artin–Schreier datum from the splitting
+    obtain ⟨z, hz⟩ := (WeierstrassCurve.nodePoly_map_splits_iff_of_two_eq_zero
+      h2 φ I hres4 hres6).mp hsplit
+    obtain ⟨t₀, ht₀⟩ := Ideal.Quotient.mk_surjective z
+    replace ht₀ : φ t₀ = z := ht₀
+    -- normalize: `c := γ/b²` with `γ := c₄·K₀`, so that `z² + z = φ c`
+    set γ : 𝒪[k] := I.c₄ * (54 * I.b₆ - 3 * I.b₂ * I.b₄ + I.a₂ * I.c₄)
+      with hγdef
+    set c : 𝒪[k] := γ * ((U⁻¹ : 𝒪[k]ˣ) : 𝒪[k]) ^ 2 with hcdef
+    have hUinv : ((U⁻¹ : 𝒪[k]ˣ) : 𝒪[k]) * (I.a₁ * I.c₄) = 1 := by
+      rw [← hU]
+      exact_mod_cast U.inv_mul
+    have hneg : ∀ a : IsLocalRing.ResidueField 𝒪[k], -a = a := by
+      intro a
+      linear_combination (-a) * h2
+    have hUφ : φ ((U⁻¹ : 𝒪[k]ˣ) : 𝒪[k]) * φ (I.a₁ * I.c₄) = 1 := by
+      rw [← map_mul, hUinv, map_one]
+    have hzc : z ^ 2 + z = φ c := by
+      calc z ^ 2 + z
+          = (φ ((U⁻¹ : 𝒪[k]ˣ) : 𝒪[k]) * φ (I.a₁ * I.c₄)) ^ 2 *
+            (z ^ 2 + z) := by rw [hUφ]; ring
+        _ = φ ((U⁻¹ : 𝒪[k]ˣ) : 𝒪[k]) ^ 2 *
+            (φ (I.a₁ * I.c₄) ^ 2 * (z ^ 2 + z)) := by ring
+        _ = φ ((U⁻¹ : 𝒪[k]ˣ) : 𝒪[k]) ^ 2 *
+            (φ I.c₄ * -φ (54 * I.b₆ - 3 * I.b₂ * I.b₄ + I.a₂ * I.c₄)) := by
+            rw [hz]
+        _ = -(φ ((U⁻¹ : 𝒪[k]ˣ) : 𝒪[k]) ^ 2 *
+            (φ I.c₄ * φ (54 * I.b₆ - 3 * I.b₂ * I.b₄ + I.a₂ * I.c₄))) := by
+            ring
+        _ = φ ((U⁻¹ : 𝒪[k]ˣ) : 𝒪[k]) ^ 2 *
+            (φ I.c₄ * φ (54 * I.b₆ - 3 * I.b₂ * I.b₄ + I.a₂ * I.c₄)) :=
+            hneg _
+        _ = φ c := by rw [hcdef, hγdef, map_mul, map_pow, map_mul]; ring
+    -- Hensel: solve `t² + t = c` in `𝒪[k]`
+    have hmonic : (Polynomial.X ^ 2 +
+        (Polynomial.X - Polynomial.C c) : Polynomial 𝒪[k]).Monic := by
+      have hdeg : (Polynomial.X - Polynomial.C c : Polynomial 𝒪[k]).degree
+          < (2 : ℕ) := by
+        rw [Polynomial.degree_X_sub_C]
+        exact_mod_cast one_lt_two
+      exact Polynomial.monic_X_pow_add hdeg
+    have hev : (Polynomial.X ^ 2 +
+        (Polynomial.X - Polynomial.C c) : Polynomial 𝒪[k]).eval t₀ ∈
+        IsLocalRing.maximalIdeal 𝒪[k] := by
+      rw [← Ideal.Quotient.eq_zero_iff_mem]
+      show φ ((Polynomial.X ^ 2 +
+        (Polynomial.X - Polynomial.C c) : Polynomial 𝒪[k]).eval t₀) = 0
+      rw [Polynomial.eval_add, Polynomial.eval_pow, Polynomial.eval_sub,
+        Polynomial.eval_X, Polynomial.eval_C, map_add, map_pow, map_sub, ht₀]
+      linear_combination hzc
+    have hder : IsUnit ((Ideal.Quotient.mk (IsLocalRing.maximalIdeal 𝒪[k]))
+        ((Polynomial.X ^ 2 +
+          (Polynomial.X - Polynomial.C c) : Polynomial 𝒪[k]).derivative.eval
+          t₀)) := by
+      have hval : φ ((Polynomial.X ^ 2 +
+          (Polynomial.X - Polynomial.C c) :
+          Polynomial 𝒪[k]).derivative.eval t₀) = 2 * z + 1 := by
+        simp only [Polynomial.derivative_sub,
+          Polynomial.derivative_X_pow, Polynomial.derivative_X,
+          Polynomial.derivative_C, sub_zero, Polynomial.eval_add,
+          Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_pow,
+          Polynomial.eval_X, Polynomial.eval_one, map_add, map_mul,
+          map_one, Nat.cast_ofNat]
+        rw [show (2 : ℕ) - 1 = 1 from rfl, pow_one, ht₀, map_ofNat]
+      show IsUnit (φ ((Polynomial.X ^ 2 +
+        (Polynomial.X - Polynomial.C c) :
+        Polynomial 𝒪[k]).derivative.eval t₀))
+      rw [hval, show (2 : IsLocalRing.ResidueField 𝒪[k]) * z + 1 = 1 by
+        rw [h2]; ring]
+      exact isUnit_one
+    obtain ⟨a, ha, -⟩ := hhens.is_henselian
+      (Polynomial.X ^ 2 + (Polynomial.X - Polynomial.C c)) hmonic t₀ hev hder
+    have hac : a ^ 2 + a = c := by
+      have h1 : (Polynomial.X ^ 2 +
+          (Polynomial.X - Polynomial.C c) : Polynomial 𝒪[k]).eval a = 0 := ha
+      rw [Polynomial.eval_add, Polynomial.eval_pow, Polynomial.eval_sub,
+        Polynomial.eval_X, Polynomial.eval_C] at h1
+      linear_combination h1
+    -- assemble the square root: `-(c₄c₆) = (a₁c₄·(1+2a))²`
+    have hb2c : γ = c * (I.a₁ * I.c₄) ^ 2 := by
+      calc γ = γ * ((((U⁻¹ : 𝒪[k]ˣ) : 𝒪[k]) * (I.a₁ * I.c₄)) ^ 2) := by
+            rw [hUinv]; ring
+        _ = c * (I.a₁ * I.c₄) ^ 2 := by rw [hcdef]; ring
+    have hraw := I.splitPolynomial_discrim
+    refine ⟨(I.a₁ * I.c₄) * (1 + 2 * a), ?_⟩
+    calc -(I.c₄ * I.c₆)
+        = (I.a₁ * I.c₄) ^ 2 + 4 * γ := by rw [hγdef]; linear_combination -hraw
+      _ = (I.a₁ * I.c₄) ^ 2 * (1 + 4 * c) := by rw [hb2c]; ring
+      _ = (I.a₁ * I.c₄) ^ 2 * (1 + 4 * (a ^ 2 + a)) := by rw [hac]
+      _ = ((I.a₁ * I.c₄) * (1 + 2 * a)) * ((I.a₁ * I.c₄) * (1 + 2 * a)) := by
+          ring
+  · -- odd residue characteristic: Hensel on `X² - x`
+    haveI : NeZero (2 : IsLocalRing.ResidueField 𝒪[k]) := ⟨h2⟩
+    obtain ⟨z, hz⟩ := (WeierstrassCurve.nodePoly_map_splits_iff_isSquare
+      φ I hres4).mp hsplit
+    obtain ⟨t₀, ht₀⟩ := Ideal.Quotient.mk_surjective z
+    replace ht₀ : φ t₀ = z := ht₀
+    have hz0 : z ≠ 0 := by
+      rintro rfl
+      rw [mul_zero, map_neg, map_mul] at hz
+      exact mul_ne_zero hres4 hres6 (neg_eq_zero.mp hz)
+    have hmonic : (Polynomial.X ^ 2 -
+        Polynomial.C (-(I.c₄ * I.c₆)) : Polynomial 𝒪[k]).Monic :=
+      Polynomial.monic_X_pow_sub_C _ (by norm_num)
+    have hev : (Polynomial.X ^ 2 -
+        Polynomial.C (-(I.c₄ * I.c₆)) : Polynomial 𝒪[k]).eval t₀ ∈
+        IsLocalRing.maximalIdeal 𝒪[k] := by
+      rw [← Ideal.Quotient.eq_zero_iff_mem]
+      show φ ((Polynomial.X ^ 2 -
+        Polynomial.C (-(I.c₄ * I.c₆)) : Polynomial 𝒪[k]).eval t₀) = 0
+      rw [Polynomial.eval_sub, Polynomial.eval_pow, Polynomial.eval_X,
+        Polynomial.eval_C, map_sub, map_pow, ht₀]
+      linear_combination -hz
+    have hder : IsUnit ((Ideal.Quotient.mk (IsLocalRing.maximalIdeal 𝒪[k]))
+        ((Polynomial.X ^ 2 -
+          Polynomial.C (-(I.c₄ * I.c₆)) :
+          Polynomial 𝒪[k]).derivative.eval t₀)) := by
+      have hval : φ ((Polynomial.X ^ 2 -
+          Polynomial.C (-(I.c₄ * I.c₆)) :
+          Polynomial 𝒪[k]).derivative.eval t₀) = 2 * z := by
+        simp only [Polynomial.derivative_sub, Polynomial.derivative_X_pow,
+          Polynomial.derivative_C, sub_zero, Polynomial.eval_mul,
+          Polynomial.eval_C, Polynomial.eval_pow, Polynomial.eval_X,
+          map_mul, Nat.cast_ofNat]
+        rw [show (2 : ℕ) - 1 = 1 from rfl, pow_one, ht₀, map_ofNat]
+      show IsUnit (φ ((Polynomial.X ^ 2 -
+        Polynomial.C (-(I.c₄ * I.c₆)) :
+        Polynomial 𝒪[k]).derivative.eval t₀))
+      rw [hval, isUnit_iff_ne_zero]
+      exact mul_ne_zero h2 hz0
+    obtain ⟨a, ha, -⟩ := hhens.is_henselian
+      (Polynomial.X ^ 2 - Polynomial.C (-(I.c₄ * I.c₆))) hmonic t₀ hev hder
+    refine ⟨a, ?_⟩
+    have h1 : (Polynomial.X ^ 2 -
+        Polynomial.C (-(I.c₄ * I.c₆)) : Polynomial 𝒪[k]).eval a = 0 := ha
+    rw [Polynomial.eval_sub, Polynomial.eval_pow, Polynomial.eval_X,
+      Polynomial.eval_C] at h1
+    linear_combination -h1
 
 /-- **Quadratic scaling twists between split curves are trivial**
 (the arithmetic core of the descent half of Tate's theorem V.5.3,

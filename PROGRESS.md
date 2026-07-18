@@ -112,46 +112,6 @@ entries file). To add/remove/annotate a node, edit
                                                   changed point equivalence is Galois-equivariant,
                                                   and the equivariance transports through the
                                                   composite.
-                                                    - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the
-                                                      j-identity leaf, the descent leaf, and the
-                                                      PROVEN split reduction type of the Tate curve.
-                                                        - ✅· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — split multiplicative curves with equal j
-                                                          differ by a variable change over k, now
-                                                          DERIVED (short normal forms via mathlib
-                                                          exists_variableChange_isShortNF in char 0;
-                                                          A≠0 from unit c₄, B≠0 from |j|>1 vs
-                                                          j=1728; equal j gives A₁³B₂²=A₂³B₁², so w
-                                                          := B₂A₁/(B₁A₂) realizes the second short
-                                                          model as the w-scaling twist of the first;
-                                                          the two new leaves make w a square and the
-                                                          reduction type variable-change-invariant,
-                                                          and scaling by √w⁻¹ concludes).
-                                                            - ✅· `WeierstrassCurve.isSquare_of_scaled_split` — split+split scaling twist forces w
-                                                              square, now DERIVED from the split
-                                                              criterion leaf: sq-class of −c₄c₆ is a
-                                                              variable-change invariant
-                                                              ((u⁻⁵)²-scaling), the criterion makes
-                                                              −c₄c₆ of both minimal models squares,
-                                                              c₄/c₆ are units by multiplicative
-                                                              reduction, and −c₄c₆ scales by w⁵
-                                                              under the twist, so w⁵ and hence w is
-                                                              a square.
-                                                                - ❌· `WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split` — the split criterion over the local
-                                                                  field k: split multiplicative
-                                                                  reduction implies −c₄c₆ ∈ (kˣ)².
-                                                                  Odd residue characteristic:
-                                                                  splitness of the reduced node
-                                                                  polynomial means its discriminant
-                                                                  −c₄c₆ is a residue square
-                                                                  (nodePoly_map_splits_iff_isSquare)
-                                                                  and Hensel lifts a unit with
-                                                                  square residue to a square of k.
-                                                                  Residue characteristic 2:
-                                                                  splitness is the Artin–Schreier
-                                                                  condition (nodePoly_map_splits_iff
-                                                                  _of_two_eq_zero), equivalent to
-                                                                  −c₄c₆ square by a 2-adic Hensel
-                                                                  argument.
                                                     - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation:
                                                       `E_q(Ω) ≅ Ωˣ/q^ℤ` Galois-equivariantly ON THE
                                                       NOSE, by the explicit series `X(u,q)`,
@@ -177,54 +137,6 @@ entries file). To add/remove/annotate a node, edit
                                                       `k`-rational, so its base-changed point
                                                       equivalence is Galois-equivariant, and the
                                                       equivariance transports through the composite.
-                                                        - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the
-                                                          j-identity leaf, the descent leaf, and the
-                                                          PROVEN split reduction type of the Tate
-                                                          curve.
-                                                            - ✅· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — split multiplicative curves with equal
-                                                              j differ by a variable change over k,
-                                                              now DERIVED (short normal forms via
-                                                              mathlib
-                                                              exists_variableChange_isShortNF in
-                                                              char 0; A≠0 from unit c₄, B≠0 from
-                                                              |j|>1 vs j=1728; equal j gives
-                                                              A₁³B₂²=A₂³B₁², so w := B₂A₁/(B₁A₂)
-                                                              realizes the second short model as the
-                                                              w-scaling twist of the first; the two
-                                                              new leaves make w a square and the
-                                                              reduction type variable-change-
-                                                              invariant, and scaling by √w⁻¹
-                                                              concludes).
-                                                                - ✅· `WeierstrassCurve.isSquare_of_scaled_split` — split+split scaling twist forces w
-                                                                  square, now DERIVED from the split
-                                                                  criterion leaf: sq-class of −c₄c₆
-                                                                  is a variable-change invariant
-                                                                  ((u⁻⁵)²-scaling), the criterion
-                                                                  makes −c₄c₆ of both minimal models
-                                                                  squares, c₄/c₆ are units by
-                                                                  multiplicative reduction, and
-                                                                  −c₄c₆ scales by w⁵ under the
-                                                                  twist, so w⁵ and hence w is a
-                                                                  square.
-                                                                    - ❌· `WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split` — the split criterion over the
-                                                                      local field k: split
-                                                                      multiplicative reduction
-                                                                      implies −c₄c₆ ∈ (kˣ)². Odd
-                                                                      residue characteristic:
-                                                                      splitness of the reduced node
-                                                                      polynomial means its
-                                                                      discriminant −c₄c₆ is a
-                                                                      residue square (nodePoly_map_s
-                                                                      plits_iff_isSquare) and Hensel
-                                                                      lifts a unit with square
-                                                                      residue to a square of k.
-                                                                      Residue characteristic 2:
-                                                                      splitness is the
-                                                                      Artin–Schreier condition (node
-                                                                      Poly_map_splits_iff_of_two_eq_
-                                                                      zero), equivalent to −c₄c₆
-                                                                      square by a 2-adic Hensel
-                                                                      argument.
                                                         - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
                                                           uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ` Galois-
                                                           equivariantly ON THE NOSE, by the explicit
@@ -264,55 +176,6 @@ entries file). To add/remove/annotate a node, edit
                                                           changed point equivalence is Galois-
                                                           equivariant, and the equivariance
                                                           transports through the composite.
-                                                            - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from
-                                                              the j-identity leaf, the descent leaf,
-                                                              and the PROVEN split reduction type of
-                                                              the Tate curve.
-                                                                - ✅· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — split multiplicative curves with
-                                                                  equal j differ by a variable
-                                                                  change over k, now DERIVED (short
-                                                                  normal forms via mathlib
-                                                                  exists_variableChange_isShortNF in
-                                                                  char 0; A≠0 from unit c₄, B≠0 from
-                                                                  |j|>1 vs j=1728; equal j gives
-                                                                  A₁³B₂²=A₂³B₁², so w := B₂A₁/(B₁A₂)
-                                                                  realizes the second short model as
-                                                                  the w-scaling twist of the first;
-                                                                  the two new leaves make w a square
-                                                                  and the reduction type variable-
-                                                                  change-invariant, and scaling by
-                                                                  √w⁻¹ concludes).
-                                                                    - ✅· `WeierstrassCurve.isSquare_of_scaled_split` — split+split scaling twist
-                                                                      forces w square, now DERIVED
-                                                                      from the split criterion leaf:
-                                                                      sq-class of −c₄c₆ is a
-                                                                      variable-change invariant
-                                                                      ((u⁻⁵)²-scaling), the
-                                                                      criterion makes −c₄c₆ of both
-                                                                      minimal models squares, c₄/c₆
-                                                                      are units by multiplicative
-                                                                      reduction, and −c₄c₆ scales by
-                                                                      w⁵ under the twist, so w⁵ and
-                                                                      hence w is a square.
-                                                                        - ❌· `WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split` — the split criterion over the
-                                                                          local field k: split
-                                                                          multiplicative reduction
-                                                                          implies −c₄c₆ ∈ (kˣ)². Odd
-                                                                          residue characteristic:
-                                                                          splitness of the reduced node
-                                                                          polynomial means its
-                                                                          discriminant −c₄c₆ is a
-                                                                          residue square (nodePoly_map_s
-                                                                          plits_iff_isSquare) and Hensel
-                                                                          lifts a unit with square
-                                                                          residue to a square of k.
-                                                                          Residue characteristic 2:
-                                                                          splitness is the
-                                                                          Artin–Schreier condition (node
-                                                                          Poly_map_splits_iff_of_two_eq_
-                                                                          zero), equivalent to −c₄c₆
-                                                                          square by a 2-adic Hensel
-                                                                          argument.
                                                             - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
                                                               uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
                                                               Galois-equivariantly ON THE NOSE, by
@@ -342,57 +205,6 @@ entries file). To add/remove/annotate a node, edit
                                                               Galois-equivariant, and the
                                                               equivariance transports through the
                                                               composite.
-                                                                - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED
-                                                                  from the j-identity leaf, the
-                                                                  descent leaf, and the PROVEN split
-                                                                  reduction type of the Tate curve.
-                                                                    - ✅· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — split multiplicative curves
-                                                                      with equal j differ by a
-                                                                      variable change over k, now
-                                                                      DERIVED (short normal forms
-                                                                      via mathlib exists_variableCha
-                                                                      nge_isShortNF in char 0; A≠0
-                                                                      from unit c₄, B≠0 from |j|>1
-                                                                      vs j=1728; equal j gives
-                                                                      A₁³B₂²=A₂³B₁², so w :=
-                                                                      B₂A₁/(B₁A₂) realizes the
-                                                                      second short model as the
-                                                                      w-scaling twist of the first;
-                                                                      the two new leaves make w a
-                                                                      square and the reduction type
-                                                                      variable-change-invariant, and
-                                                                      scaling by √w⁻¹ concludes).
-                                                                        - ✅· `WeierstrassCurve.isSquare_of_scaled_split` — split+split scaling twist
-                                                                          forces w square, now DERIVED
-                                                                          from the split criterion leaf:
-                                                                          sq-class of −c₄c₆ is a
-                                                                          variable-change invariant
-                                                                          ((u⁻⁵)²-scaling), the
-                                                                          criterion makes −c₄c₆ of both
-                                                                          minimal models squares, c₄/c₆
-                                                                          are units by multiplicative
-                                                                          reduction, and −c₄c₆ scales by
-                                                                          w⁵ under the twist, so w⁵ and
-                                                                          hence w is a square.
-                                                                            - ❌· `WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split` — the split criterion over the
-                                                                              local field k: split
-                                                                              multiplicative reduction
-                                                                              implies −c₄c₆ ∈ (kˣ)². Odd
-                                                                              residue characteristic:
-                                                                              splitness of the reduced node
-                                                                              polynomial means its
-                                                                              discriminant −c₄c₆ is a
-                                                                              residue square (nodePoly_map_s
-                                                                              plits_iff_isSquare) and Hensel
-                                                                              lifts a unit with square
-                                                                              residue to a square of k.
-                                                                              Residue characteristic 2:
-                                                                              splitness is the
-                                                                              Artin–Schreier condition (node
-                                                                              Poly_map_splits_iff_of_two_eq_
-                                                                              zero), equivalent to −c₄c₆
-                                                                              square by a 2-adic Hensel
-                                                                              argument.
                                                                 - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's
                                                                   uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
                                                                   Galois-equivariantly ON THE NOSE,
@@ -505,37 +317,6 @@ entries file). To add/remove/annotate a node, edit
                                       variable-change theorem: the variable change is `k`-rational,
                                       so its base-changed point equivalence is Galois-equivariant,
                                       and the equivariance transports through the composite.
-                                        - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity
-                                          leaf, the descent leaf, and the PROVEN split reduction
-                                          type of the Tate curve.
-                                            - ✅· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — split multiplicative curves with equal j differ by a
-                                              variable change over k, now DERIVED (short normal
-                                              forms via mathlib exists_variableChange_isShortNF in
-                                              char 0; A≠0 from unit c₄, B≠0 from |j|>1 vs j=1728;
-                                              equal j gives A₁³B₂²=A₂³B₁², so w := B₂A₁/(B₁A₂)
-                                              realizes the second short model as the w-scaling twist
-                                              of the first; the two new leaves make w a square and
-                                              the reduction type variable-change-invariant, and
-                                              scaling by √w⁻¹ concludes).
-                                                - ✅· `WeierstrassCurve.isSquare_of_scaled_split` — split+split scaling twist forces w square, now
-                                                  DERIVED from the split criterion leaf: sq-class of
-                                                  −c₄c₆ is a variable-change invariant
-                                                  ((u⁻⁵)²-scaling), the criterion makes −c₄c₆ of
-                                                  both minimal models squares, c₄/c₆ are units by
-                                                  multiplicative reduction, and −c₄c₆ scales by w⁵
-                                                  under the twist, so w⁵ and hence w is a square.
-                                                    - ❌· `WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split` — the split criterion over the local field k:
-                                                      split multiplicative reduction implies −c₄c₆ ∈
-                                                      (kˣ)². Odd residue characteristic: splitness
-                                                      of the reduced node polynomial means its
-                                                      discriminant −c₄c₆ is a residue square
-                                                      (nodePoly_map_splits_iff_isSquare) and Hensel
-                                                      lifts a unit with square residue to a square
-                                                      of k. Residue characteristic 2: splitness is
-                                                      the Artin–Schreier condition
-                                                      (nodePoly_map_splits_iff_of_two_eq_zero),
-                                                      equivalent to −c₄c₆ square by a 2-adic Hensel
-                                                      argument.
                                         - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω) ≅
                                           Ωˣ/q^ℤ` Galois-equivariantly ON THE NOSE, by the explicit
                                           series `X(u,q)`, `Y(u,q)` (whose Weierstrass equation is
@@ -556,40 +337,6 @@ entries file). To add/remove/annotate a node, edit
                                           `k`-rational, so its base-changed point equivalence is
                                           Galois-equivariant, and the equivariance transports
                                           through the composite.
-                                            - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity
-                                              leaf, the descent leaf, and the PROVEN split reduction
-                                              type of the Tate curve.
-                                                - ✅· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — split multiplicative curves with equal j differ by
-                                                  a variable change over k, now DERIVED (short
-                                                  normal forms via mathlib
-                                                  exists_variableChange_isShortNF in char 0; A≠0
-                                                  from unit c₄, B≠0 from |j|>1 vs j=1728; equal j
-                                                  gives A₁³B₂²=A₂³B₁², so w := B₂A₁/(B₁A₂) realizes
-                                                  the second short model as the w-scaling twist of
-                                                  the first; the two new leaves make w a square and
-                                                  the reduction type variable-change-invariant, and
-                                                  scaling by √w⁻¹ concludes).
-                                                    - ✅· `WeierstrassCurve.isSquare_of_scaled_split` — split+split scaling twist forces w square, now
-                                                      DERIVED from the split criterion leaf: sq-
-                                                      class of −c₄c₆ is a variable-change invariant
-                                                      ((u⁻⁵)²-scaling), the criterion makes −c₄c₆ of
-                                                      both minimal models squares, c₄/c₆ are units
-                                                      by multiplicative reduction, and −c₄c₆ scales
-                                                      by w⁵ under the twist, so w⁵ and hence w is a
-                                                      square.
-                                                        - ❌· `WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split` — the split criterion over the local field
-                                                          k: split multiplicative reduction implies
-                                                          −c₄c₆ ∈ (kˣ)². Odd residue characteristic:
-                                                          splitness of the reduced node polynomial
-                                                          means its discriminant −c₄c₆ is a residue
-                                                          square (nodePoly_map_splits_iff_isSquare)
-                                                          and Hensel lifts a unit with square
-                                                          residue to a square of k. Residue
-                                                          characteristic 2: splitness is the
-                                                          Artin–Schreier condition
-                                                          (nodePoly_map_splits_iff_of_two_eq_zero),
-                                                          equivalent to −c₄c₆ square by a 2-adic
-                                                          Hensel argument.
                                             - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω)
                                               ≅ Ωˣ/q^ℤ` Galois-equivariantly ON THE NOSE, by the
                                               explicit series `X(u,q)`, `Y(u,q)` (whose Weierstrass
@@ -638,33 +385,6 @@ entries file). To add/remove/annotate a node, edit
                               theorem: the variable change is `k`-rational, so its base-changed
                               point equivalence is Galois-equivariant, and the equivariance
                               transports through the composite.
-                                - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity leaf, the
-                                  descent leaf, and the PROVEN split reduction type of the Tate
-                                  curve.
-                                    - ✅· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — split multiplicative curves with equal j differ by a variable
-                                      change over k, now DERIVED (short normal forms via mathlib
-                                      exists_variableChange_isShortNF in char 0; A≠0 from unit c₄,
-                                      B≠0 from |j|>1 vs j=1728; equal j gives A₁³B₂²=A₂³B₁², so w :=
-                                      B₂A₁/(B₁A₂) realizes the second short model as the w-scaling
-                                      twist of the first; the two new leaves make w a square and the
-                                      reduction type variable-change-invariant, and scaling by √w⁻¹
-                                      concludes).
-                                        - ✅· `WeierstrassCurve.isSquare_of_scaled_split` — split+split scaling twist forces w square, now DERIVED
-                                          from the split criterion leaf: sq-class of −c₄c₆ is a
-                                          variable-change invariant ((u⁻⁵)²-scaling), the criterion
-                                          makes −c₄c₆ of both minimal models squares, c₄/c₆ are
-                                          units by multiplicative reduction, and −c₄c₆ scales by w⁵
-                                          under the twist, so w⁵ and hence w is a square.
-                                            - ❌· `WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split` — the split criterion over the local field k: split
-                                              multiplicative reduction implies −c₄c₆ ∈ (kˣ)². Odd
-                                              residue characteristic: splitness of the reduced node
-                                              polynomial means its discriminant −c₄c₆ is a residue
-                                              square (nodePoly_map_splits_iff_isSquare) and Hensel
-                                              lifts a unit with square residue to a square of k.
-                                              Residue characteristic 2: splitness is the
-                                              Artin–Schreier condition
-                                              (nodePoly_map_splits_iff_of_two_eq_zero), equivalent
-                                              to −c₄c₆ square by a 2-adic Hensel argument.
                                 - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
                                   Galois-equivariantly ON THE NOSE, by the explicit series `X(u,q)`,
                                   `Y(u,q)` (whose Weierstrass equation is proven in
@@ -681,33 +401,6 @@ entries file). To add/remove/annotate a node, edit
                               theorem: the variable change is `k`-rational, so its base-changed
                               point equivalence is Galois-equivariant, and the equivariance
                               transports through the composite.
-                                - ✅· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity leaf, the
-                                  descent leaf, and the PROVEN split reduction type of the Tate
-                                  curve.
-                                    - ✅· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — split multiplicative curves with equal j differ by a variable
-                                      change over k, now DERIVED (short normal forms via mathlib
-                                      exists_variableChange_isShortNF in char 0; A≠0 from unit c₄,
-                                      B≠0 from |j|>1 vs j=1728; equal j gives A₁³B₂²=A₂³B₁², so w :=
-                                      B₂A₁/(B₁A₂) realizes the second short model as the w-scaling
-                                      twist of the first; the two new leaves make w a square and the
-                                      reduction type variable-change-invariant, and scaling by √w⁻¹
-                                      concludes).
-                                        - ✅· `WeierstrassCurve.isSquare_of_scaled_split` — split+split scaling twist forces w square, now DERIVED
-                                          from the split criterion leaf: sq-class of −c₄c₆ is a
-                                          variable-change invariant ((u⁻⁵)²-scaling), the criterion
-                                          makes −c₄c₆ of both minimal models squares, c₄/c₆ are
-                                          units by multiplicative reduction, and −c₄c₆ scales by w⁵
-                                          under the twist, so w⁵ and hence w is a square.
-                                            - ❌· `WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split` — the split criterion over the local field k: split
-                                              multiplicative reduction implies −c₄c₆ ∈ (kˣ)². Odd
-                                              residue characteristic: splitness of the reduced node
-                                              polynomial means its discriminant −c₄c₆ is a residue
-                                              square (nodePoly_map_splits_iff_isSquare) and Hensel
-                                              lifts a unit with square residue to a square of k.
-                                              Residue characteristic 2: splitness is the
-                                              Artin–Schreier condition
-                                              (nodePoly_map_splits_iff_of_two_eq_zero), equivalent
-                                              to −c₄c₆ square by a 2-adic Hensel argument.
                                 - ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the choice-free core of Tate's uniformisation: `E_q(Ω) ≅ Ωˣ/q^ℤ`
                                   Galois-equivariantly ON THE NOSE, by the explicit series `X(u,q)`,
                                   `Y(u,q)` (whose Weierstrass equation is proven in

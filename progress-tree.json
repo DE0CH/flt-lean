@@ -97,7 +97,7 @@
   "group_theory_lemma": "✅✅",
   "torsion_unipotent_of_split_multiplicative_adic": "✅",
   "WeierstrassCurve.exists_tateEquivSepClosure": "✅",
-  "WeierstrassCurve.exists_variableChange_tateCurve": "✅",
+  "WeierstrassCurve.exists_variableChange_tateCurve": "✅✅",
   "WeierstrassCurve.tate_inertia_unipotent": "✅✅",
   "WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic": "✅",
   "ValuationSubring.inertia_fixes_of_pow_eq": "✅✅",
@@ -119,13 +119,13 @@
   "inertia_fixes_algHom_of_unramified_gen_padic_two": "✅✅",
   "WeierstrassCurve.hasSplitMultiplicativeReduction_tateCurve": "✅✅",
   "WeierstrassCurve.isElliptic_tateCurve_and_j": "✅✅",
-  "WeierstrassCurve.exists_variableChange_of_j_eq_of_split": "✅",
+  "WeierstrassCurve.exists_variableChange_of_j_eq_of_split": "✅✅",
   "WeierstrassCurve.Δ_tateCurve_eq_evalInt": "✅✅",
   "TateCurve.evalInt_subst": "✅✅",
   "TateCurve.ΔFormal_eq": "✅✅",
   "WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul": "✅✅",
-  "WeierstrassCurve.isSquare_of_scaled_split": "✅",
-  "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split": "❌"
+  "WeierstrassCurve.isSquare_of_scaled_split": "✅✅",
+  "WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split": "✅✅"
  },
  "children": {
   "fermat_last_theorem": [
