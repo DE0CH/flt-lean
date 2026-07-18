@@ -1275,6 +1275,47 @@ theorem pointMap_of_mem_annulus (q₀ : k) (hq0 : q₀ ≠ 0)
   · exact absurd (hrep ▸ ha) h1
   · rfl
 
+/-- **The point-level negation law on the valuation-one shell**
+(Silverman V.3.1(b), boundary case): for `|u₀| = 1` (so that `u₀` and
+`u₀⁻¹` are both their own annulus representatives),
+`P(u₀⁻¹) = -P(u₀)` — the coordinates transform by the series
+inversion identities, matching the Weierstrass negation
+`(x, y) ↦ (x, -y - x)` of `y² + xy = x³ + …`. -/
+theorem pointMap_inv_of_valuation_eq_one (u₀ q₀ : k) (h0 : u₀ ≠ 0)
+    (h1 : u₀ ≠ 1) (h1' : u₀⁻¹ ≠ 1) (hq0 : q₀ ≠ 0)
+    (hq1 : valuation k q₀ < 1) (hu : valuation k u₀ = 1) :
+    pointMap q₀ hq0 hq1 u₀⁻¹ (inv_ne_zero h0) =
+      -(pointMap q₀ hq0 hq1 u₀ h0) := by
+  have hlow : valuation k q₀ < valuation k u₀ := hu ▸ hq1
+  have hhigh : valuation k u₀ ≤ 1 := hu.le
+  have hlow' : valuation k q₀ < valuation k u₀⁻¹ := by
+    rw [map_inv₀, hu, inv_one]
+    exact hq1
+  have hhigh' : valuation k u₀⁻¹ ≤ 1 := by
+    rw [map_inv₀, hu, inv_one]
+  rw [pointMap_of_mem_annulus q₀ hq0 hq1 u₀ h0 h1 hlow hhigh,
+    pointMap_of_mem_annulus q₀ hq0 hq1 u₀⁻¹ (inv_ne_zero h0) h1'
+      hlow' hhigh']
+  unfold annulusPoint
+  rw [WeierstrassCurve.Affine.Point.neg_some]
+  have hx := evalA_XA_inv u₀ q₀ h0 h1 (inv_ne_zero h0) h1'
+  have hy := evalA_YA_inv u₀ q₀ h0 h1 (inv_ne_zero h0) h1' hhigh hlow
+  have hnegY : (WeierstrassCurve.tateCurve q₀).toAffine.negY
+      (evalA u₀ q₀ h0 h1 XA) (evalA u₀ q₀ h0 h1 YA) =
+      -(evalA u₀ q₀ h0 h1 YA) - evalA u₀ q₀ h0 h1 XA := by
+    rw [WeierstrassCurve.Affine.negY]
+    simp only [WeierstrassCurve.tateCurve]
+    ring
+  have hgen : ∀ (x y x' y' : k)
+      (h : (WeierstrassCurve.tateCurve q₀).toAffine.Nonsingular x y)
+      (h' : (WeierstrassCurve.tateCurve q₀).toAffine.Nonsingular x' y'),
+      x = x' → y = y' →
+      WeierstrassCurve.Affine.Point.some x y h =
+        WeierstrassCurve.Affine.Point.some x' y' h' := by
+    rintro x y _ _ h h' rfl rfl
+    rfl
+  exact hgen _ _ _ _ _ _ hx (hy.trans hnegY.symm)
+
 end Annulus
 
 end TateCurve
