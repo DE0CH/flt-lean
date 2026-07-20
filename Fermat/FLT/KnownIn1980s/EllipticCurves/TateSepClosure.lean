@@ -268,11 +268,147 @@ theorem locallyCompactSpace_intermediate
       have hpos : 0 < spectralNorm k Ω x :=
         spectralNorm_zero_lt hx0 (Algebra.IsAlgebraic.isAlgebraic x)
       exact absurd h (not_lt.mpr ((inv_le_one₀ hpos).mp hinv))
-  -- remaining: the valuative topology of `L` coincides with the spectral
-  -- norm topology (ball correspondence through the strict bridge and
-  -- `valuation_surjective`), under which `L` is a finite-dimensional
-  -- normed `k`-vector space, proper since `k` is — the transport of
-  -- local compactness
+  -- a strictly-small base element
+  obtain ⟨γπ, hγπ0, hγπ1⟩ := ValuativeRel.IsNontrivial.exists_lt_one (R := k)
+  obtain ⟨p, hp⟩ := ValuativeRel.valuation_surjective (K := k) γπ
+  have hp0 : p ≠ 0 := by
+    intro h
+    rw [h, map_zero] at hp
+    exact (zero_lt_iff.mp hγπ0) hp.symm
+  have hpimg : valuation L (algebraMap k L p) < 1 := by
+    have h1 : ¬ ((1 : k) ≤ᵥ p) := by
+      rw [Valuation.Compatible.vle_iff_le (v := valuation k), map_one, hp]
+      exact not_le.mpr hγπ1
+    have h2 : ¬ (algebraMap k L 1 ≤ᵥ algebraMap k L p) := by
+      rw [(valuativeExtension_comap (k := k) Ω v hv L).vle_iff_vle]
+      exact h1
+    rw [Valuation.Compatible.vle_iff_le (v := valuation L), map_one] at h2
+    exact not_le.mp h2
+  -- every `𝒪[k]`-integral element of `Ω` has value at most one (the
+  -- classical power-comparison argument, coefficient bound through the
+  -- valuative extension)
+  have hkle : ∀ a : k, valuation k a ≤ 1 →
+      valuation Ω (algebraMap k Ω a) ≤ 1 := by
+    intro a ha
+    have h1 : a ≤ᵥ (1 : k) := by
+      rw [Valuation.Compatible.vle_iff_le (v := valuation k), map_one]
+      exact ha
+    have h2 : algebraMap k Ω a ≤ᵥ algebraMap k Ω 1 := hv.vle_iff_vle a 1 |>.mpr h1
+    rw [Valuation.Compatible.vle_iff_le (v := valuation Ω), map_one] at h2
+    exact h2
+  have hint_le : ∀ x : Ω, IsIntegral 𝒪[k] x → valuation Ω x ≤ 1 := by
+    intro x hx
+    obtain ⟨f, hm, hf⟩ := hx
+    by_cases hn : f.natDegree = 0
+    · exfalso
+      rw [Polynomial.natDegree_eq_zero] at hn
+      obtain ⟨c, rfl⟩ := hn
+      have hc1 : c = 1 := by
+        simpa [Polynomial.Monic, Polynomial.leadingCoeff] using hm
+      rw [hc1, map_one, Polynomial.eval₂_one] at hf
+      exact one_ne_zero hf
+    by_contra hgt
+    rw [not_le] at hgt
+    have hxne : valuation Ω x ^ f.natDegree ≠ 0 :=
+      pow_ne_zero _ (lt_trans zero_lt_one hgt).ne'
+    have h0 := hf
+    rw [Polynomial.eval₂_eq_sum_range, Finset.sum_range_succ,
+      hm.coeff_natDegree, map_one, one_mul] at h0
+    have h1 : x ^ f.natDegree
+        = -∑ i ∈ Finset.range f.natDegree,
+            algebraMap 𝒪[k] Ω (f.coeff i) * x ^ i :=
+      eq_neg_of_add_eq_zero_right h0
+    have h2 := congrArg (valuation Ω) h1
+    rw [map_pow, (valuation Ω).map_neg] at h2
+    refine absurd h2.symm (ne_of_lt ((valuation Ω).map_sum_lt ?_ ?_))
+    · exact hxne
+    · intro i hi
+      rw [Finset.mem_range] at hi
+      rw [map_mul, map_pow]
+      have hcoeff : valuation Ω (algebraMap 𝒪[k] Ω (f.coeff i)) ≤ 1 := by
+        rw [IsScalarTower.algebraMap_apply 𝒪[k] k Ω]
+        exact hkle _ (f.coeff i).2
+      exact mul_lt_of_le_one_of_lt hcoeff (pow_lt_pow_right₀ hgt hi)
+  -- every element of `k` is algebraic over `𝒪[k]` (valuation-ring
+  -- dichotomy), hence so is every element of `Ω`
+  haveI hOk : Algebra.IsAlgebraic 𝒪[k] k := by
+    constructor
+    intro c
+    by_cases hc : valuation k c ≤ 1
+    · exact isAlgebraic_algebraMap (⟨c, hc⟩ : 𝒪[k])
+    · have hc0 : c ≠ 0 := by
+        intro h
+        rw [h, map_zero] at hc
+        exact hc zero_le
+      have hcinv : valuation k c⁻¹ ≤ 1 := by
+        rw [map_inv₀]
+        exact inv_le_one_of_one_le₀ (le_of_lt (not_le.mp hc))
+      refine ⟨Polynomial.C (⟨c⁻¹, hcinv⟩ : 𝒪[k]) * Polynomial.X - 1,
+        ?_, ?_⟩
+      · intro h0
+        have h1 := congrArg (fun q => Polynomial.coeff q 1) h0
+        simp only [Polynomial.coeff_sub, Polynomial.coeff_C_mul,
+          Polynomial.coeff_X_one, mul_one, Polynomial.coeff_one,
+          Polynomial.coeff_zero] at h1
+        have h2 : (⟨c⁻¹, hcinv⟩ : 𝒪[k]) = 0 := by
+          simpa using h1
+        exact inv_ne_zero hc0 (by simpa using congrArg Subtype.val h2)
+      · simp only [map_sub, map_mul, Polynomial.aeval_C,
+          Polynomial.aeval_X, map_one]
+        show (c⁻¹ : k) * c - 1 = 0
+        rw [inv_mul_cancel₀ hc0, sub_self]
+  haveI : Algebra.IsAlgebraic 𝒪[k] Ω :=
+    ⟨fun x => (Algebra.IsAlgebraic.isAlgebraic (R := k) x).restrictScalars
+      (R := 𝒪[k])⟩
+  -- below any nonzero value of `L` there is a nonzero base value: clear
+  -- denominators of the inverse and shrink once by `p`
+  have hsmall : ∀ w : L, w ≠ 0 → ∃ c : k, c ≠ 0 ∧
+      valuation L (algebraMap k L c) < valuation L w := by
+    intro w hw0
+    obtain ⟨y, hy0, hyint⟩ :=
+      (Algebra.IsAlgebraic.isAlgebraic (R := 𝒪[k])
+        ((L.val (w⁻¹) : Ω))).exists_integral_multiple
+    have h1 : valuation Ω (algebraMap 𝒪[k] Ω y * L.val w⁻¹) ≤ 1 := by
+      have h2 := hint_le _ hyint
+      rwa [Algebra.smul_def] at h2
+    -- comparisons in `L` are comparisons of images in `Ω`
+    have hLcomp : ∀ a b : L, valuation L a ≤ valuation L b ↔
+        valuation Ω (algebraMap L Ω a) ≤ valuation Ω (algebraMap L Ω b) := by
+      intro a b
+      rw [← Valuation.Compatible.vle_iff_le (v := valuation L),
+        ← Valuation.Compatible.vle_iff_le (v := valuation Ω)]
+      exact (valuativeExtension_comap_val (k := k) Ω v L).vle_iff_vle a b
+    have hw0' : valuation Ω (L.val w) ≠ 0 := by
+      rw [Valuation.ne_zero_iff]
+      exact fun h => hw0 ((map_eq_zero L.val).mp h)
+    have hyW : valuation Ω (algebraMap 𝒪[k] Ω y) ≤ valuation Ω (L.val w) := by
+      rw [map_inv₀ L.val, map_mul, map_inv₀, ← div_eq_mul_inv,
+        div_le_one₀ (zero_lt_iff.mpr hw0')] at h1
+      exact h1
+    refine ⟨p * (y : k), mul_ne_zero hp0 (by exact_mod_cast hy0), ?_⟩
+    have hyL : valuation L (algebraMap k L (y : k)) ≤ valuation L w := by
+      rw [hLcomp]
+      have e1 : algebraMap L Ω (algebraMap k L (y : k))
+          = algebraMap 𝒪[k] Ω y := by
+        rw [← IsScalarTower.algebraMap_apply k L Ω,
+          IsScalarTower.algebraMap_apply 𝒪[k] k Ω]
+        rfl
+      have e2 : algebraMap L Ω w = L.val w := rfl
+      rw [e1, e2]
+      exact hyW
+    have hyLpos : 0 < valuation L (algebraMap k L (y : k)) := by
+      rw [zero_lt_iff, Valuation.ne_zero_iff]
+      intro h
+      exact (by exact_mod_cast hy0 : (y : k) ≠ 0)
+        ((map_eq_zero (algebraMap k L)).mp h)
+    calc valuation L (algebraMap k L (p * (y : k)))
+        = valuation L (algebraMap k L p) *
+            valuation L (algebraMap k L (y : k)) := by
+          rw [map_mul, map_mul]
+      _ < 1 * valuation L (algebraMap k L (y : k)) :=
+          mul_lt_mul_of_pos_right hpimg hyLpos
+      _ = valuation L (algebraMap k L (y : k)) := one_mul _
+      _ ≤ valuation L w := hyL
   sorry
 
 /-- **Finite subextensions of `Ω` are nonarchimedean local fields**
