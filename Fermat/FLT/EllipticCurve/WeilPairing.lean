@@ -331,6 +331,52 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
   let ψ₀ : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p)
       ≃ₗ[ZMod p] ((W.map (algebraMap ℤ (AlgebraicClosure ℚ))).nTorsion p) :=
     { ψ₀add with map_smul' := ZMod.map_smul ψ₀add.toAddMonoidHom }
+  -- Step 3c-prep: the local valuation subring of the completed
+  -- algebraic closure lies exactly over the completed integers (the
+  -- `h𝒪`-hypothesis of the `GoodReduction` machinery)
+  have h𝒪 : ((localValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat).comap
+      (algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)))).toSubring
+      = (algebraMap
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)).range := by
+    ext c
+    constructor
+    · intro hc
+      have h1 : IsIntegral
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)
+          (algebraMap
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)
+            (AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)) c) := hc
+      have h2 := (isIntegral_algebraMap_iff
+        (algebraMap
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))).injective).mp h1
+      obtain ⟨y, hy⟩ := IsIntegrallyClosed.isIntegral_iff.mp h2
+      exact ⟨y, hy⟩
+    · rintro ⟨y, rfl⟩
+      show IsIntegral _ _
+      refine (isIntegral_algebraMap_iff
+        (algebraMap
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))).injective).mpr ?_
+      exact isIntegral_algebraMap
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
