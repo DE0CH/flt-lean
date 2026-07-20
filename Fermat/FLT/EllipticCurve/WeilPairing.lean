@@ -3053,7 +3053,16 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
     -- separable quadratic extension of `k(X)`
     haveI : FaithfulSMul (Polynomial (AlgebraicClosure (ZMod q)))
         (FractionRing Wb.toAffine.CoordinateRing) := by
-      sorry
+      rw [faithfulSMul_iff_algebraMap_injective]
+      have h1 : Function.Injective (algebraMap (Polynomial (AlgebraicClosure (ZMod q)))
+          Wb.toAffine.CoordinateRing) :=
+        AdjoinRoot.of.injective_of_degree_ne_zero (by
+          rw [WeierstrassCurve.Affine.degree_polynomial]
+          norm_num)
+      rw [IsScalarTower.algebraMap_eq (Polynomial (AlgebraicClosure (ZMod q)))
+        Wb.toAffine.CoordinateRing (FractionRing Wb.toAffine.CoordinateRing)]
+      exact (IsFractionRing.injective Wb.toAffine.CoordinateRing
+        (FractionRing Wb.toAffine.CoordinateRing)).comp h1
     letI : Algebra (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
         (FractionRing Wb.toAffine.CoordinateRing) :=
       FractionRing.liftAlgebra _ _
