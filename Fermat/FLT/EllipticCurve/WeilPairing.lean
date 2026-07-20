@@ -278,6 +278,14 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
   haveI hWbarell : Wbar.IsElliptic :=
     (WeierstrassCurve.isElliptic_iff _).mpr (isUnit_iff_ne_zero.mpr hWbarΔ)
   refine ⟨hqp, Wbar, hWbarell, ?_⟩
+  -- the model identification over `ℚ̄`: the base-changed variable
+  -- change carries the base change of `E` to the base change of `W`
+  have hmapbar : (C.map (algebraMap ℚ (AlgebraicClosure ℚ))) •
+      (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) =
+      W.map (algebraMap ℤ (AlgebraicClosure ℚ)) := by
+    rw [WeierstrassCurve.map_variableChange, hmap,
+      WeierstrassCurve.map_map]
+    rfl
   -- Step 3 (sorried): the torsion reduction isomorphism and its
   -- Frobenius compatibility
   sorry
