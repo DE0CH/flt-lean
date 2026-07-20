@@ -278,33 +278,48 @@ entries file). To add/remove/annotate a node, edit
                                                                   locallyCompactSpace_intermediate.
                                                                     - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite
                                                                       subextensions in the valuative
-                                                                      topology (sorry node — the
-                                                                      analytic core): routes: (a)
-                                                                      𝒪_L := integralClosure 𝒪[k] L
-                                                                      is module-finite over the
-                                                                      compact DVR 𝒪[k]
-                                                                      (IsIntegralClosure.finite for
-                                                                      finite separable extensions of
-                                                                      Dedekind domains), hence
-                                                                      compact in the induced
-                                                                      topology and open (it is the
-                                                                      closed unit ball of the
-                                                                      valuation), giving a compact
-                                                                      neighbourhood of 0; need the
-                                                                      valuative topology of L to
-                                                                      match the 𝒪[k]-module topology
-                                                                      — uniqueness of Hausdorff
-                                                                      module topologies in finite
-                                                                      dimension over the complete
-                                                                      field k (Mathlib.Topology.Alge
-                                                                      bra.Module.FiniteDimension);
-                                                                      (b) alternatively transport
-                                                                      ProperSpace through a k-basis
-                                                                      with Basis.norm. Also compare
-                                                                      mathlib’s compactSpace_iff_com
-                                                                      pleteSpace_and_isDiscreteValua
-                                                                      tionRing_and_finite_residueFie
-                                                                      ld used in LocalField.Basic.
+                                                                      topology (sorry node, NARROWED
+                                                                      2026-07-20): the proof
+                                                                      skeleton establishes IN-PROOF
+                                                                      the two-sided bridge x ∈
+                                                                      integralClosure 𝒪[k] Ω ↔
+                                                                      spectralNorm k Ω x ≤ 1
+                                                                      (forward: minpoly over the
+                                                                      integrally closed DVR via minp
+                                                                      oly.isIntegrallyClosed_eq_fiel
+                                                                      d_fractions-prime +
+                                                                      spectralValue_le_one_iff + Val
+                                                                      ued.toNormedField.norm_le_one_
+                                                                      iff; backward: the vendored is
+                                                                      Integral_of_spectralNorm_le_on
+                                                                      e) and its strict version (via
+                                                                      spectralNorm_inv and
+                                                                      spectralNorm_zero_lt).
+                                                                      REMAINING: (4) the valuative
+                                                                      topology of L equals the
+                                                                      spectral-norm topology — ball
+                                                                      correspondence: for gamma =
+                                                                      val_L w
+                                                                      (valuation_surjective), the
+                                                                      gamma-ball is w times the unit
+                                                                      ball, equal to the spectral
+                                                                      ball of radius specNorm w by
+                                                                      the strict bridge and
+                                                                      multiplicativity; (5) L with
+                                                                      the spectral norm is a finite-
+                                                                      dimensional normed k-vector
+                                                                      space (spectralAlgNorm
+                                                                      restricted along L.val; norm
+                                                                      extends); (6) ProperSpace k (.
+                                                                      of_nontriviallyNormedField_of_
+                                                                      weaklyLocallyCompactSpace) +
+                                                                      finite-dimensional properness
+                                                                      (FiniteDimensional.properSpace
+                                                                      or ContinuousLinearEquiv to
+                                                                      k^n) gives LocallyCompactSpace
+                                                                      under the norm topology; (7)
+                                                                      transport along the topology
+                                                                      equality.
                                             - ✅· `WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic` — the nonsplit half of the unipotence statement,
                                               assembled from the LOCAL nonsplit node
                                               `tate_inertia_unipotent_of_nonsplit` by the proven
@@ -501,33 +516,48 @@ entries file). To add/remove/annotate a node, edit
                                                                       pace_intermediate.
                                                                         - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite
                                                                           subextensions in the valuative
-                                                                          topology (sorry node — the
-                                                                          analytic core): routes: (a)
-                                                                          𝒪_L := integralClosure 𝒪[k] L
-                                                                          is module-finite over the
-                                                                          compact DVR 𝒪[k]
-                                                                          (IsIntegralClosure.finite for
-                                                                          finite separable extensions of
-                                                                          Dedekind domains), hence
-                                                                          compact in the induced
-                                                                          topology and open (it is the
-                                                                          closed unit ball of the
-                                                                          valuation), giving a compact
-                                                                          neighbourhood of 0; need the
-                                                                          valuative topology of L to
-                                                                          match the 𝒪[k]-module topology
-                                                                          — uniqueness of Hausdorff
-                                                                          module topologies in finite
-                                                                          dimension over the complete
-                                                                          field k (Mathlib.Topology.Alge
-                                                                          bra.Module.FiniteDimension);
-                                                                          (b) alternatively transport
-                                                                          ProperSpace through a k-basis
-                                                                          with Basis.norm. Also compare
-                                                                          mathlib’s compactSpace_iff_com
-                                                                          pleteSpace_and_isDiscreteValua
-                                                                          tionRing_and_finite_residueFie
-                                                                          ld used in LocalField.Basic.
+                                                                          topology (sorry node, NARROWED
+                                                                          2026-07-20): the proof
+                                                                          skeleton establishes IN-PROOF
+                                                                          the two-sided bridge x ∈
+                                                                          integralClosure 𝒪[k] Ω ↔
+                                                                          spectralNorm k Ω x ≤ 1
+                                                                          (forward: minpoly over the
+                                                                          integrally closed DVR via minp
+                                                                          oly.isIntegrallyClosed_eq_fiel
+                                                                          d_fractions-prime +
+                                                                          spectralValue_le_one_iff + Val
+                                                                          ued.toNormedField.norm_le_one_
+                                                                          iff; backward: the vendored is
+                                                                          Integral_of_spectralNorm_le_on
+                                                                          e) and its strict version (via
+                                                                          spectralNorm_inv and
+                                                                          spectralNorm_zero_lt).
+                                                                          REMAINING: (4) the valuative
+                                                                          topology of L equals the
+                                                                          spectral-norm topology — ball
+                                                                          correspondence: for gamma =
+                                                                          val_L w
+                                                                          (valuation_surjective), the
+                                                                          gamma-ball is w times the unit
+                                                                          ball, equal to the spectral
+                                                                          ball of radius specNorm w by
+                                                                          the strict bridge and
+                                                                          multiplicativity; (5) L with
+                                                                          the spectral norm is a finite-
+                                                                          dimensional normed k-vector
+                                                                          space (spectralAlgNorm
+                                                                          restricted along L.val; norm
+                                                                          extends); (6) ProperSpace k (.
+                                                                          of_nontriviallyNormedField_of_
+                                                                          weaklyLocallyCompactSpace) +
+                                                                          finite-dimensional properness
+                                                                          (FiniteDimensional.properSpace
+                                                                          or ContinuousLinearEquiv to
+                                                                          k^n) gives LocallyCompactSpace
+                                                                          under the norm topology; (7)
+                                                                          transport along the topology
+                                                                          equality.
                                     - ❌· `FreyPackage.subquotient_character_unramified_at_p` — (stated 2026-07-17) — flat/ordinary at `p`: one of the two
                                       characters is unramified at `p` itself (connected-étale
                                       sequence in the ordinary/ multiplicative case; supersingular
@@ -751,33 +781,48 @@ entries file). To add/remove/annotate a node, edit
                                                                           pace_intermediate.
                                                                             - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite
                                                                               subextensions in the valuative
-                                                                              topology (sorry node — the
-                                                                              analytic core): routes: (a)
-                                                                              𝒪_L := integralClosure 𝒪[k] L
-                                                                              is module-finite over the
-                                                                              compact DVR 𝒪[k]
-                                                                              (IsIntegralClosure.finite for
-                                                                              finite separable extensions of
-                                                                              Dedekind domains), hence
-                                                                              compact in the induced
-                                                                              topology and open (it is the
-                                                                              closed unit ball of the
-                                                                              valuation), giving a compact
-                                                                              neighbourhood of 0; need the
-                                                                              valuative topology of L to
-                                                                              match the 𝒪[k]-module topology
-                                                                              — uniqueness of Hausdorff
-                                                                              module topologies in finite
-                                                                              dimension over the complete
-                                                                              field k (Mathlib.Topology.Alge
-                                                                              bra.Module.FiniteDimension);
-                                                                              (b) alternatively transport
-                                                                              ProperSpace through a k-basis
-                                                                              with Basis.norm. Also compare
-                                                                              mathlib’s compactSpace_iff_com
-                                                                              pleteSpace_and_isDiscreteValua
-                                                                              tionRing_and_finite_residueFie
-                                                                              ld used in LocalField.Basic.
+                                                                              topology (sorry node, NARROWED
+                                                                              2026-07-20): the proof
+                                                                              skeleton establishes IN-PROOF
+                                                                              the two-sided bridge x ∈
+                                                                              integralClosure 𝒪[k] Ω ↔
+                                                                              spectralNorm k Ω x ≤ 1
+                                                                              (forward: minpoly over the
+                                                                              integrally closed DVR via minp
+                                                                              oly.isIntegrallyClosed_eq_fiel
+                                                                              d_fractions-prime +
+                                                                              spectralValue_le_one_iff + Val
+                                                                              ued.toNormedField.norm_le_one_
+                                                                              iff; backward: the vendored is
+                                                                              Integral_of_spectralNorm_le_on
+                                                                              e) and its strict version (via
+                                                                              spectralNorm_inv and
+                                                                              spectralNorm_zero_lt).
+                                                                              REMAINING: (4) the valuative
+                                                                              topology of L equals the
+                                                                              spectral-norm topology — ball
+                                                                              correspondence: for gamma =
+                                                                              val_L w
+                                                                              (valuation_surjective), the
+                                                                              gamma-ball is w times the unit
+                                                                              ball, equal to the spectral
+                                                                              ball of radius specNorm w by
+                                                                              the strict bridge and
+                                                                              multiplicativity; (5) L with
+                                                                              the spectral norm is a finite-
+                                                                              dimensional normed k-vector
+                                                                              space (spectralAlgNorm
+                                                                              restricted along L.val; norm
+                                                                              extends); (6) ProperSpace k (.
+                                                                              of_nontriviallyNormedField_of_
+                                                                              weaklyLocallyCompactSpace) +
+                                                                              finite-dimensional properness
+                                                                              (FiniteDimensional.properSpace
+                                                                              or ContinuousLinearEquiv to
+                                                                              k^n) gives LocallyCompactSpace
+                                                                              under the norm topology; (7)
+                                                                              transport along the topology
+                                                                              equality.
                                                     - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality statement,
                                                       assembled from the LOCAL nonsplit node
                                                       `tate_inertia_trivial_of_nonsplit` by the
@@ -992,33 +1037,48 @@ entries file). To add/remove/annotate a node, edit
                                                                               pace_intermediate.
                                                                                 - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite
                                                                                   subextensions in the valuative
-                                                                                  topology (sorry node — the
-                                                                                  analytic core): routes: (a)
-                                                                                  𝒪_L := integralClosure 𝒪[k] L
-                                                                                  is module-finite over the
-                                                                                  compact DVR 𝒪[k]
-                                                                                  (IsIntegralClosure.finite for
-                                                                                  finite separable extensions of
-                                                                                  Dedekind domains), hence
-                                                                                  compact in the induced
-                                                                                  topology and open (it is the
-                                                                                  closed unit ball of the
-                                                                                  valuation), giving a compact
-                                                                                  neighbourhood of 0; need the
-                                                                                  valuative topology of L to
-                                                                                  match the 𝒪[k]-module topology
-                                                                                  — uniqueness of Hausdorff
-                                                                                  module topologies in finite
-                                                                                  dimension over the complete
-                                                                                  field k (Mathlib.Topology.Alge
-                                                                                  bra.Module.FiniteDimension);
-                                                                                  (b) alternatively transport
-                                                                                  ProperSpace through a k-basis
-                                                                                  with Basis.norm. Also compare
-                                                                                  mathlib’s compactSpace_iff_com
-                                                                                  pleteSpace_and_isDiscreteValua
-                                                                                  tionRing_and_finite_residueFie
-                                                                                  ld used in LocalField.Basic.
+                                                                                  topology (sorry node, NARROWED
+                                                                                  2026-07-20): the proof
+                                                                                  skeleton establishes IN-PROOF
+                                                                                  the two-sided bridge x ∈
+                                                                                  integralClosure 𝒪[k] Ω ↔
+                                                                                  spectralNorm k Ω x ≤ 1
+                                                                                  (forward: minpoly over the
+                                                                                  integrally closed DVR via minp
+                                                                                  oly.isIntegrallyClosed_eq_fiel
+                                                                                  d_fractions-prime +
+                                                                                  spectralValue_le_one_iff + Val
+                                                                                  ued.toNormedField.norm_le_one_
+                                                                                  iff; backward: the vendored is
+                                                                                  Integral_of_spectralNorm_le_on
+                                                                                  e) and its strict version (via
+                                                                                  spectralNorm_inv and
+                                                                                  spectralNorm_zero_lt).
+                                                                                  REMAINING: (4) the valuative
+                                                                                  topology of L equals the
+                                                                                  spectral-norm topology — ball
+                                                                                  correspondence: for gamma =
+                                                                                  val_L w
+                                                                                  (valuation_surjective), the
+                                                                                  gamma-ball is w times the unit
+                                                                                  ball, equal to the spectral
+                                                                                  ball of radius specNorm w by
+                                                                                  the strict bridge and
+                                                                                  multiplicativity; (5) L with
+                                                                                  the spectral norm is a finite-
+                                                                                  dimensional normed k-vector
+                                                                                  space (spectralAlgNorm
+                                                                                  restricted along L.val; norm
+                                                                                  extends); (6) ProperSpace k (.
+                                                                                  of_nontriviallyNormedField_of_
+                                                                                  weaklyLocallyCompactSpace) +
+                                                                                  finite-dimensional properness
+                                                                                  (FiniteDimensional.properSpace
+                                                                                  or ContinuousLinearEquiv to
+                                                                                  k^n) gives LocallyCompactSpace
+                                                                                  under the norm topology; (7)
+                                                                                  transport along the topology
+                                                                                  equality.
                                 - ✅· `det_galoisRep_eq_cyclotomic` — `det_galoisRep_eq_cyclotomic` — (2026-07-17): `det ρ̄` and `χ̄`
                                   are continuous conjugation-invariant `ZMod p`-valued functions on
                                   `Γ ℚ` (continuity of `det ∘ ρ` from discreteness of `End` via
@@ -1252,26 +1312,37 @@ entries file). To add/remove/annotate a node, edit
                                                       delegated to the remaining leaf
                                                       locallyCompactSpace_intermediate.
                                                         - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite subextensions
-                                                          in the valuative topology (sorry node —
-                                                          the analytic core): routes: (a) 𝒪_L :=
-                                                          integralClosure 𝒪[k] L is module-finite
-                                                          over the compact DVR 𝒪[k]
-                                                          (IsIntegralClosure.finite for finite
-                                                          separable extensions of Dedekind domains),
-                                                          hence compact in the induced topology and
-                                                          open (it is the closed unit ball of the
-                                                          valuation), giving a compact neighbourhood
-                                                          of 0; need the valuative topology of L to
-                                                          match the 𝒪[k]-module topology —
-                                                          uniqueness of Hausdorff module topologies
-                                                          in finite dimension over the complete
-                                                          field k (Mathlib.Topology.Algebra.Module.F
-                                                          initeDimension); (b) alternatively
-                                                          transport ProperSpace through a k-basis
-                                                          with Basis.norm. Also compare mathlib’s co
-                                                          mpactSpace_iff_completeSpace_and_isDiscret
-                                                          eValuationRing_and_finite_residueField
-                                                          used in LocalField.Basic.
+                                                          in the valuative topology (sorry node,
+                                                          NARROWED 2026-07-20): the proof skeleton
+                                                          establishes IN-PROOF the two-sided bridge
+                                                          x ∈ integralClosure 𝒪[k] Ω ↔ spectralNorm
+                                                          k Ω x ≤ 1 (forward: minpoly over the
+                                                          integrally closed DVR via minpoly.isIntegr
+                                                          allyClosed_eq_field_fractions-prime +
+                                                          spectralValue_le_one_iff +
+                                                          Valued.toNormedField.norm_le_one_iff;
+                                                          backward: the vendored
+                                                          isIntegral_of_spectralNorm_le_one) and its
+                                                          strict version (via spectralNorm_inv and
+                                                          spectralNorm_zero_lt). REMAINING: (4) the
+                                                          valuative topology of L equals the
+                                                          spectral-norm topology — ball
+                                                          correspondence: for gamma = val_L w
+                                                          (valuation_surjective), the gamma-ball is
+                                                          w times the unit ball, equal to the
+                                                          spectral ball of radius specNorm w by the
+                                                          strict bridge and multiplicativity; (5) L
+                                                          with the spectral norm is a finite-
+                                                          dimensional normed k-vector space
+                                                          (spectralAlgNorm restricted along L.val;
+                                                          norm extends); (6) ProperSpace k (.of_nont
+                                                          riviallyNormedField_of_weaklyLocallyCompac
+                                                          tSpace) + finite-dimensional properness
+                                                          (FiniteDimensional.properSpace or
+                                                          ContinuousLinearEquiv to k^n) gives
+                                                          LocallyCompactSpace under the norm
+                                                          topology; (7) transport along the topology
+                                                          equality.
                                 - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality statement, assembled from the
                                   LOCAL nonsplit node `tate_inertia_trivial_of_nonsplit` by the
                                   proven `ℚ̄`-pullback glue; the `j`-hypothesis feeds through
@@ -1430,27 +1501,40 @@ entries file). To add/remove/annotate a node, edit
                                                           locallyCompactSpace_intermediate.
                                                             - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite
                                                               subextensions in the valuative
-                                                              topology (sorry node — the analytic
-                                                              core): routes: (a) 𝒪_L :=
-                                                              integralClosure 𝒪[k] L is module-
-                                                              finite over the compact DVR 𝒪[k]
-                                                              (IsIntegralClosure.finite for finite
-                                                              separable extensions of Dedekind
-                                                              domains), hence compact in the induced
-                                                              topology and open (it is the closed
-                                                              unit ball of the valuation), giving a
-                                                              compact neighbourhood of 0; need the
-                                                              valuative topology of L to match the
-                                                              𝒪[k]-module topology — uniqueness of
-                                                              Hausdorff module topologies in finite
-                                                              dimension over the complete field k (M
-                                                              athlib.Topology.Algebra.Module.FiniteD
-                                                              imension); (b) alternatively transport
-                                                              ProperSpace through a k-basis with
-                                                              Basis.norm. Also compare mathlib’s com
-                                                              pactSpace_iff_completeSpace_and_isDisc
-                                                              reteValuationRing_and_finite_residueFi
-                                                              eld used in LocalField.Basic.
+                                                              topology (sorry node, NARROWED
+                                                              2026-07-20): the proof skeleton
+                                                              establishes IN-PROOF the two-sided
+                                                              bridge x ∈ integralClosure 𝒪[k] Ω ↔
+                                                              spectralNorm k Ω x ≤ 1 (forward:
+                                                              minpoly over the integrally closed DVR
+                                                              via minpoly.isIntegrallyClosed_eq_fiel
+                                                              d_fractions-prime +
+                                                              spectralValue_le_one_iff +
+                                                              Valued.toNormedField.norm_le_one_iff;
+                                                              backward: the vendored
+                                                              isIntegral_of_spectralNorm_le_one) and
+                                                              its strict version (via
+                                                              spectralNorm_inv and
+                                                              spectralNorm_zero_lt). REMAINING: (4)
+                                                              the valuative topology of L equals the
+                                                              spectral-norm topology — ball
+                                                              correspondence: for gamma = val_L w
+                                                              (valuation_surjective), the gamma-ball
+                                                              is w times the unit ball, equal to the
+                                                              spectral ball of radius specNorm w by
+                                                              the strict bridge and
+                                                              multiplicativity; (5) L with the
+                                                              spectral norm is a finite-dimensional
+                                                              normed k-vector space (spectralAlgNorm
+                                                              restricted along L.val; norm extends);
+                                                              (6) ProperSpace k (.of_nontriviallyNor
+                                                              medField_of_weaklyLocallyCompactSpace)
+                                                              + finite-dimensional properness
+                                                              (FiniteDimensional.properSpace or
+                                                              ContinuousLinearEquiv to k^n) gives
+                                                              LocallyCompactSpace under the norm
+                                                              topology; (7) transport along the
+                                                              topology equality.
                 - ✅· `FreyCurve.torsion_isFlat` — flat at p: (2026-07-16) by the case split `p ∣ abc` or not, from the two nodes
                   below
                     - ✅· `FreyCurve.torsion_isFlat_of_good` — (2026-07-16) from the arithmetic node `freyCurve_hasGoodReduction_of_not_dvd`
@@ -1603,23 +1687,32 @@ entries file). To add/remove/annotate a node, edit
                                               Compatible.vle_iff_le); local compactness delegated to
                                               the remaining leaf locallyCompactSpace_intermediate.
                                                 - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite subextensions in the
-                                                  valuative topology (sorry node — the analytic
-                                                  core): routes: (a) 𝒪_L := integralClosure 𝒪[k] L
-                                                  is module-finite over the compact DVR 𝒪[k]
-                                                  (IsIntegralClosure.finite for finite separable
-                                                  extensions of Dedekind domains), hence compact in
-                                                  the induced topology and open (it is the closed
-                                                  unit ball of the valuation), giving a compact
-                                                  neighbourhood of 0; need the valuative topology of
-                                                  L to match the 𝒪[k]-module topology — uniqueness
-                                                  of Hausdorff module topologies in finite dimension
-                                                  over the complete field k
-                                                  (Mathlib.Topology.Algebra.Module.FiniteDimension);
-                                                  (b) alternatively transport ProperSpace through a
-                                                  k-basis with Basis.norm. Also compare mathlib’s co
-                                                  mpactSpace_iff_completeSpace_and_isDiscreteValuati
-                                                  onRing_and_finite_residueField used in
-                                                  LocalField.Basic.
+                                                  valuative topology (sorry node, NARROWED
+                                                  2026-07-20): the proof skeleton establishes IN-
+                                                  PROOF the two-sided bridge x ∈ integralClosure
+                                                  𝒪[k] Ω ↔ spectralNorm k Ω x ≤ 1 (forward: minpoly
+                                                  over the integrally closed DVR via
+                                                  minpoly.isIntegrallyClosed_eq_field_fractions-
+                                                  prime + spectralValue_le_one_iff +
+                                                  Valued.toNormedField.norm_le_one_iff; backward:
+                                                  the vendored isIntegral_of_spectralNorm_le_one)
+                                                  and its strict version (via spectralNorm_inv and
+                                                  spectralNorm_zero_lt). REMAINING: (4) the
+                                                  valuative topology of L equals the spectral-norm
+                                                  topology — ball correspondence: for gamma = val_L
+                                                  w (valuation_surjective), the gamma-ball is w
+                                                  times the unit ball, equal to the spectral ball of
+                                                  radius specNorm w by the strict bridge and
+                                                  multiplicativity; (5) L with the spectral norm is
+                                                  a finite-dimensional normed k-vector space
+                                                  (spectralAlgNorm restricted along L.val; norm
+                                                  extends); (6) ProperSpace k (.of_nontriviallyNorme
+                                                  dField_of_weaklyLocallyCompactSpace) + finite-
+                                                  dimensional properness
+                                                  (FiniteDimensional.properSpace or
+                                                  ContinuousLinearEquiv to k^n) gives
+                                                  LocallyCompactSpace under the norm topology; (7)
+                                                  transport along the topology equality.
                         - ✅· `WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two` — the nonsplit half of the tame-at-2 condition, now ASSEMBLED: the exponent
                           quotient of the twisted minimal model transports through the (χ-twisted)
                           composite point equivalence; δ is the quadratic character of the
@@ -1740,23 +1833,32 @@ entries file). To add/remove/annotate a node, edit
                                               Compatible.vle_iff_le); local compactness delegated to
                                               the remaining leaf locallyCompactSpace_intermediate.
                                                 - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite subextensions in the
-                                                  valuative topology (sorry node — the analytic
-                                                  core): routes: (a) 𝒪_L := integralClosure 𝒪[k] L
-                                                  is module-finite over the compact DVR 𝒪[k]
-                                                  (IsIntegralClosure.finite for finite separable
-                                                  extensions of Dedekind domains), hence compact in
-                                                  the induced topology and open (it is the closed
-                                                  unit ball of the valuation), giving a compact
-                                                  neighbourhood of 0; need the valuative topology of
-                                                  L to match the 𝒪[k]-module topology — uniqueness
-                                                  of Hausdorff module topologies in finite dimension
-                                                  over the complete field k
-                                                  (Mathlib.Topology.Algebra.Module.FiniteDimension);
-                                                  (b) alternatively transport ProperSpace through a
-                                                  k-basis with Basis.norm. Also compare mathlib’s co
-                                                  mpactSpace_iff_completeSpace_and_isDiscreteValuati
-                                                  onRing_and_finite_residueField used in
-                                                  LocalField.Basic.
+                                                  valuative topology (sorry node, NARROWED
+                                                  2026-07-20): the proof skeleton establishes IN-
+                                                  PROOF the two-sided bridge x ∈ integralClosure
+                                                  𝒪[k] Ω ↔ spectralNorm k Ω x ≤ 1 (forward: minpoly
+                                                  over the integrally closed DVR via
+                                                  minpoly.isIntegrallyClosed_eq_field_fractions-
+                                                  prime + spectralValue_le_one_iff +
+                                                  Valued.toNormedField.norm_le_one_iff; backward:
+                                                  the vendored isIntegral_of_spectralNorm_le_one)
+                                                  and its strict version (via spectralNorm_inv and
+                                                  spectralNorm_zero_lt). REMAINING: (4) the
+                                                  valuative topology of L equals the spectral-norm
+                                                  topology — ball correspondence: for gamma = val_L
+                                                  w (valuation_surjective), the gamma-ball is w
+                                                  times the unit ball, equal to the spectral ball of
+                                                  radius specNorm w by the strict bridge and
+                                                  multiplicativity; (5) L with the spectral norm is
+                                                  a finite-dimensional normed k-vector space
+                                                  (spectralAlgNorm restricted along L.val; norm
+                                                  extends); (6) ProperSpace k (.of_nontriviallyNorme
+                                                  dField_of_weaklyLocallyCompactSpace) + finite-
+                                                  dimensional properness
+                                                  (FiniteDimensional.properSpace or
+                                                  ContinuousLinearEquiv to k^n) gives
+                                                  LocallyCompactSpace under the norm topology; (7)
+                                                  transport along the topology equality.
             - ✅· `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified` — B5 `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
               (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work) — now (2026-07-16)
               from three explicit nodes in `HardlyRamified/Lift.lean` (own work), following
