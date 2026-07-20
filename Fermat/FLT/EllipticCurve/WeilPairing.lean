@@ -1986,6 +1986,66 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
       p ^ 2 :=
     TorsionCard.card_torsionBy (W.map (algebraMap ℤ (IsLocalRing.ResidueField
       (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)))) p hpresne
+  -- Step 3c-ii-q: carrier collapses — the torsion carrier of the model
+  -- over the completed closure is the double base change, and the
+  -- reduced curve's torsion carrier is the reduced curve itself
+  have hcupEq : (((W.map (algebraMap ℤ (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))))⁄(AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) :
+      WeierstrassCurve (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) =
+      ((W.map (algebraMap ℤ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) := by
+    show (W.map _).map _ = (W.map _).map _
+    rw [WeierstrassCurve.map_map, WeierstrassCurve.map_map]
+    exact congrArg W.map (Subsingleton.elim _ _)
+  have hidRes : (((W.map (algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))))⁄(IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))) :
+      WeierstrassCurve (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))) = W.map (algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))) := by
+    show (W.map _).map _ = W.map _
+    rw [WeierstrassCurve.map_map]
+    exact congrArg W.map (Subsingleton.elim _ _)
+  -- Step 3c-ii-r: the reduction as a homomorphism between the
+  -- `p`-torsion modules
+  set eup := WeierstrassCurve.Affine.Point.equivOfEq hcupEq with heupdef
+  set edn := WeierstrassCurve.Affine.Point.equivOfEq hidRes with hedndef
+  have hredE0 : ∀ x : ((W.map (algebraMap ℤ (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p),
+      ((p : ℕ) : ℤ) • (edn.symm (redFun (eup x.1))) = 0 := by
+    intro x
+    have htor : ((p : ℕ) : ℤ) • (eup x.1) = 0 :=
+      hmem eup x.1 ((Submodule.mem_torsionBy_iff _ _).mp x.2)
+    have := hredtor (eup x.1) htor
+    rw [← map_zsmul edn.symm, this, map_zero]
+  set redE : ((W.map (algebraMap ℤ (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) →+
+      ((W.map (algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) :=
+    { toFun := fun x => ⟨edn.symm (redFun (eup x.1)),
+        (Submodule.mem_torsionBy_iff _ _).mpr (hredE0 x)⟩
+      map_zero' := by
+        refine Subtype.ext ?_
+        show edn.symm (redFun (eup 0)) = 0
+        rw [map_zero eup, hred0, map_zero]
+      map_add' := by
+        intro x y
+        refine Subtype.ext ?_
+        show edn.symm (redFun (eup (x.1 + y.1))) =
+          edn.symm (redFun (eup x.1)) + edn.symm (redFun (eup y.1))
+        rw [map_add eup, hredAdd (eup x.1) (eup y.1)
+          (hmem eup x.1 ((Submodule.mem_torsionBy_iff _ _).mp x.2))
+          (hmem eup y.1 ((Submodule.mem_torsionBy_iff _ _).mp y.2)),
+          map_add] } with hredEdef
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
