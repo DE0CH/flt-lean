@@ -840,6 +840,37 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
           hq.toHeightOneSpectrumRingOfIntegersRat))
       (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
       h𝒪 h htor
+  -- Step 3c-ii-e: torsion ordinates are likewise integral
+  have hord : ∀ {x y : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))}
+      (h : ((W.map (algebraMap ℤ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Nonsingular
+        x y),
+      ((p : ℕ) : ℤ) • (WeierstrassCurve.Affine.Point.some x y h :
+        ((W.map (algebraMap ℤ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Point) = 0 →
+      y ∈ localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat :=
+    fun h htor => WeierstrassCurve.torsion_ordinate_mem
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (W.map (algebraMap ℤ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))
+      p
+      (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+      h𝒪 h htor
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
