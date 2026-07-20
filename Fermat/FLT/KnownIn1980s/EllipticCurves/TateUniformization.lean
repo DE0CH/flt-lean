@@ -7896,9 +7896,35 @@ theorem exists_annulus_bilateralX_eq_of_lt_one (q₀ : k) (hq0 : q₀ ≠ 0)
       exact absurd hx (lt_irrefl _)
     exact ⟨ustar, hu0', hu1', by rw [hustar_val]; exact hqx,
       le_of_lt (hustar_val ▸ hx), hbXeq⟩
-  · -- Case B (the boundary shell `|x|² ≤ |q|`, Silverman's `W`): the
-    -- cancellation case, requiring the quadratic solve with the
-    -- `y`-coordinate selecting the root.
+  · -- Case B (the boundary shell `|x|² ≤ |q|`, Silverman's `W`): work
+    -- with the sum `S(u) = bilateralX u + bilateralY u`, whose Lambert
+    -- kernels combine so that the `q/u`-term cancels exactly; the
+    -- iteration `u ↦ (x+y) - (S(u) - u)` contracts on the shell
+    -- `|u| = |y|`, and the fixed point matches both coordinates.
+    push Not at hcase
+    -- `|a₆| = |q|` exactly (leading coefficient `-1`)
+    have ha₆exact : valuation k (WeierstrassCurve.tateA₆ q₀) =
+        valuation k q₀ := by
+      have h2 := valuation_evalInt_sub_sum_le q₀ hq1 a₆Formal 2
+      have hsum : ∑ n ∈ Finset.range 2,
+          ((PowerSeries.coeff n a₆Formal : ℤ) : k) * q₀ ^ n = -q₀ := by
+        rw [Finset.sum_range_succ, Finset.sum_range_one]
+        rw [coeff_a₆Formal, coeff_a₆Formal]
+        simp
+      rw [hsum] at h2
+      rw [WeierstrassCurve.tateA₆_eq_evalInt q₀ hq1]
+      have hq2lt : valuation k q₀ ^ 2 < valuation k q₀ := by
+        rw [pow_two]
+        exact mul_lt_of_lt_one_right
+          (zero_lt_iff.mpr ((Valuation.ne_zero_iff _).mpr hq0)) hq1
+      have he : valuation k (evalInt q₀ a₆Formal) =
+          valuation k (-q₀ + (evalInt q₀ a₆Formal - -q₀)) := by
+        congr 1
+        ring
+      rw [he, (valuation k).map_add_eq_of_lt_left
+        (by
+          rw [Valuation.map_neg]
+          exact lt_of_le_of_lt h2 hq2lt), Valuation.map_neg]
     sorry
 
 /-- **`x`-surjectivity onto the annulus** (DERIVED 2026-07-20 by case
