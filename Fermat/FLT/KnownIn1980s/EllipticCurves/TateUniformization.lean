@@ -7720,7 +7720,182 @@ theorem exists_annulus_bilateralX_eq_of_lt_one (q₀ : k) (hq0 : q₀ ≠ 0)
       refine le_trans (Valuation.map_add _ _ _) (max_le ?_ ?_)
       · exact valuation_tsum_le (hSu1.sub hSv1) _ htermD1
       · exact valuation_tsum_le (hSu2.sub hSv2) _ htermD2
-    sorry
+    -- the iteration `H u = x - (bilateralX u - u)` and its orbit
+    set H : k → k := fun u => x - (bilateralX u q₀ - u) with hHdef
+    have hHshell : ∀ u : k, valuation k u = valuation k x →
+        valuation k (H u) = valuation k x := by
+      intro u hu
+      simp only [hHdef]
+      have he : valuation k (x - (bilateralX u q₀ - u)) =
+          valuation k (-((bilateralX u q₀ - u) - x)) := by
+        congr 1
+        ring
+      rw [he, Valuation.map_neg,
+        (valuation k).map_sub_eq_of_lt_right
+          (lt_of_le_of_lt (hGval u hu) hMxlt)]
+    have hHdiff : ∀ u v : k, valuation k u = valuation k x →
+        valuation k v = valuation k x →
+        valuation k (H u - H v) ≤ ρ * valuation k (u - v) := by
+      intro u v hu hv
+      have he : H u - H v = -((bilateralX u q₀ - u) -
+          (bilateralX v q₀ - v)) := by
+        simp only [hHdef]
+        ring
+      rw [he, Valuation.map_neg]
+      exact hGlip u v hu hv
+    set seq : ℕ → k := fun n => H^[n] x with hseqdef
+    have hseq_zero : seq 0 = x := rfl
+    have hseq_succ : ∀ n, seq (n + 1) = H (seq n) := fun n =>
+      Function.iterate_succ_apply' H n _
+    have hseq_shell : ∀ n, valuation k (seq n) = valuation k x := by
+      intro n
+      induction n with
+      | zero => rfl
+      | succ n ih =>
+        rw [hseq_succ n]
+        exact hHshell _ ih
+    have hdiffA : ∀ n, valuation k (seq (n + 1) - seq n) ≤
+        Mx * ρ ^ n := by
+      intro n
+      induction n with
+      | zero =>
+        rw [hseq_succ 0, hseq_zero, pow_zero, mul_one]
+        have he : H x - x = -(bilateralX x q₀ - x) := by
+          simp only [hHdef]
+          ring
+        rw [he, Valuation.map_neg]
+        exact hGval x rfl
+      | succ n ih =>
+        rw [hseq_succ (n + 1), hseq_succ n]
+        calc valuation k (H (H (seq n)) - H (seq n)) ≤
+            ρ * valuation k (H (seq n) - seq n) :=
+              hHdiff _ _ (hHshell _ (hseq_shell n)) (hseq_shell n)
+          _ ≤ ρ * (Mx * ρ ^ n) := by
+              refine mul_le_mul' le_rfl ?_
+              have h5 := ih
+              rwa [hseq_succ n] at h5
+          _ = Mx * ρ ^ (n + 1) := by
+              rw [pow_succ]
+              rw [mul_comm ρ, mul_assoc]
+    -- realize the constants as field elements and pass to the norm
+    obtain ⟨cρ, hcρ⟩ := ValuativeRel.valuation_surjective (K := k) ρ
+    have hcρ0 : cρ ≠ 0 := by
+      intro hz
+      rw [hz, map_zero] at hcρ
+      exact hρ0 hcρ.symm
+    have hMx0 : Mx ≠ 0 := by
+      intro hz
+      have h1 : valuation k q₀ / valuation k x = 0 :=
+        le_zero_iff.mp (hz ▸ le_max_right _ _)
+      rw [div_eq_zero_iff] at h1
+      rcases h1 with h1 | h1
+      · exact hq0 ((Valuation.zero_iff _).mp h1)
+      · exact hX0 h1
+    obtain ⟨cM, hcM⟩ := ValuativeRel.valuation_surjective (K := k) Mx
+    have hcM0 : cM ≠ 0 := by
+      intro hz
+      rw [hz, map_zero] at hcM
+      exact hMx0 hcM.symm
+    -- rank-one analytic structure (the LocalField recipe)
+    letI : UniformSpace k := IsTopologicalAddGroup.rightUniformSpace k
+    haveI : IsUniformAddGroup k := isUniformAddGroup_of_addCommGroup
+    letI : (Valued.v (R := k)).RankOne :=
+      { hom' := IsRankLeOne.nonempty.some.emb (R := k).comp
+          MonoidWithZeroHom.ValueGroup₀.embedding
+        strictMono' := IsRankLeOne.nonempty.some.strictMono.comp
+          MonoidWithZeroHom.ValueGroup₀.embedding_strictMono }
+    letI : NontriviallyNormedField k := Valued.toNontriviallyNormedField _ _
+    have hbridge_lt : ∀ z c : k, valuation k z < valuation k c ↔
+        ‖z‖ < ‖c‖ :=
+      fun z c => (Valued.toNormedField.norm_lt_iff).symm
+    have hbridge_le : ∀ z c : k, valuation k z ≤ valuation k c ↔
+        ‖z‖ ≤ ‖c‖ :=
+      fun z c => (Valued.toNormedField.norm_le_iff).symm
+    have hcauchy : CauchySeq seq := by
+      refine cauchySeq_of_le_geometric ‖cρ‖ ‖cM‖ ?_ ?_
+      · rw [← norm_one (α := k)]
+        exact (hbridge_lt _ _).mp (by rw [hcρ, map_one]; exact hρ1)
+      · intro n
+        rw [dist_eq_norm]
+        have h1 : valuation k (seq n - seq (n + 1)) ≤
+            valuation k (cM * cρ ^ n) := by
+          rw [map_mul, map_pow, hcρ, hcM,
+            show seq n - seq (n + 1) = -(seq (n + 1) - seq n) from by
+              ring, Valuation.map_neg]
+          exact hdiffA n
+        calc ‖seq n - seq (n + 1)‖ ≤ ‖cM * cρ ^ n‖ :=
+            (hbridge_le _ _).mp h1
+          _ = ‖cM‖ * ‖cρ‖ ^ n := by rw [norm_mul, norm_pow]
+    obtain ⟨ustar, hus⟩ := cauchySeq_tendsto_of_complete hcauchy
+    have hconv : ∀ c : k, c ≠ 0 → ∀ᶠ n in Filter.atTop,
+        valuation k (seq n - ustar) < valuation k c := by
+      intro c hc
+      obtain ⟨N, hN⟩ := Metric.tendsto_atTop.mp hus ‖c‖
+        (norm_pos_iff.mpr hc)
+      refine Filter.eventually_atTop.mpr ⟨N, fun n hn => ?_⟩
+      have h2 := hN n hn
+      rw [dist_eq_norm] at h2
+      exact (hbridge_lt _ _).mpr h2
+    -- the limit lies on the shell
+    have hustar_val : valuation k ustar = valuation k x := by
+      obtain ⟨n, hn⟩ := (hconv x hx0).exists
+      rw [← hseq_shell n] at hn
+      have he : valuation k ustar =
+          valuation k (-((seq n - ustar) - seq n)) := by
+        congr 1
+        ring
+      rw [he, Valuation.map_neg,
+        (valuation k).map_sub_eq_of_lt_right hn]
+      exact hseq_shell n
+    -- the limit is a fixed point of `H`
+    have hfix : H ustar = ustar := by
+      by_contra hne
+      have hΔ0 : H ustar - ustar ≠ 0 := sub_ne_zero_of_ne hne
+      obtain ⟨N, hN⟩ := Filter.eventually_atTop.mp
+        (hconv (H ustar - ustar) hΔ0)
+      have h1 : valuation k (seq N - ustar) <
+          valuation k (H ustar - ustar) := hN N le_rfl
+      have h2 : valuation k (seq (N + 1) - ustar) <
+          valuation k (H ustar - ustar) := hN (N + 1) (Nat.le_succ N)
+      have h3 : valuation k (H ustar - seq (N + 1)) <
+          valuation k (H ustar - ustar) := by
+        rw [hseq_succ N]
+        calc valuation k (H ustar - H (seq N))
+            ≤ ρ * valuation k (ustar - seq N) :=
+              hHdiff _ _ hustar_val (hseq_shell N)
+          _ ≤ 1 * valuation k (ustar - seq N) :=
+              mul_le_mul_left (le_of_lt hρ1) _
+          _ = valuation k (ustar - seq N) := one_mul _
+          _ = valuation k (seq N - ustar) := by
+              rw [show ustar - seq N = -(seq N - ustar) from by ring,
+                Valuation.map_neg]
+          _ < valuation k (H ustar - ustar) := h1
+      have h4 : valuation k (H ustar - ustar) <
+          valuation k (H ustar - ustar) := by
+        calc valuation k (H ustar - ustar)
+            = valuation k ((H ustar - seq (N + 1)) +
+                (seq (N + 1) - ustar)) := by
+              congr 1
+              ring
+          _ ≤ max (valuation k (H ustar - seq (N + 1)))
+              (valuation k (seq (N + 1) - ustar)) :=
+              Valuation.map_add _ _ _
+          _ < valuation k (H ustar - ustar) := max_lt h3 h2
+      exact absurd h4 (lt_irrefl _)
+    -- conclusion: `bilateralX ustar = x` and the shell conditions
+    have hbXeq : bilateralX ustar q₀ = x := by
+      have h1 := hfix
+      simp only [hHdef] at h1
+      linear_combination -h1
+    have hu0' : ustar ≠ 0 := fun hz =>
+      hX0 (by rw [← hustar_val, hz, map_zero])
+    have hu1' : ustar ≠ 1 := by
+      intro hz
+      rw [hz, map_one] at hustar_val
+      rw [← hustar_val] at hx
+      exact absurd hx (lt_irrefl _)
+    exact ⟨ustar, hu0', hu1', by rw [hustar_val]; exact hqx,
+      le_of_lt (hustar_val ▸ hx), hbXeq⟩
   · -- Case B (the boundary shell `|x|² ≤ |q|`, Silverman's `W`): the
     -- cancellation case, requiring the quadratic solve with the
     -- `y`-coordinate selecting the root.
