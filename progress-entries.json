@@ -1132,13 +1132,14 @@
     "name": "exists_valuativeRel_sepClosure",
     "fullname": "exists_valuativeRel_sepClosure",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure",
-    "wip": true,
-    "text": "valuative structure of the separable closure (sorry node — prerequisite identified 2026-07-20): the valuation of a nonarchimedean local field extends to Ω. Route: mathlib’s BGR machinery (Basis.norm: exists_nonarchimedean_pow_mul_seminorm_of_finiteDimensional; spectralNorm with spectralAlgNorm multiplicative over complete base) gives a unique extending rank-one norm on each finite level, compatible by uniqueness, hence a valuative relation on the union; convert ℝ-norm to ValuativeRel via the norm-order (vle x y := ‖x‖ ≤ ‖y‖). Alternative route: integral closure of 𝒪[k] in Ω as a valuation subring (henselian: unique maximal ideal over the complete DVR)."
+    "wip": false,
+    "text": "valuative structure of the separable closure (PROVEN 2026-07-20, same iteration as stated): letI the uniform/rank-one-Valued/NontriviallyNormedField structure on k (the LocalField.Basic recipe), then the integral closure of 𝒪[k] in Ω is a ValuationSubring by the spectral-norm dichotomy (vendored isIntegral_of_spectralNorm_le_one + spectralNorm_inv from Deformations/AbsoluteGaloisGroup); ValuativeRel.ofValuation of its valuation; the ValuativeExtension compatibility reduces by the divisibility form (div_le_one₀ + valuation_le_one_iff) to “base-field element integral over 𝒪[k] iff in 𝒪[k]” — IsIntegrallyClosed.isIntegral_iff for the DVR."
   },
   {
     "name": "exists_isNonarchimedeanLocalField_intermediate",
     "fullname": "exists_isNonarchimedeanLocalField_intermediate",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure",
-    "text": "finite subextensions of Ω are nonarchimedean local fields (sorry node): with the restricted valuative relation, L carries the valuative topology; locally compact since L ≅ k^n as a topological k-vector space (finite-dimensional over complete locally compact k — mathlib has the unique-topology/continuity theory for finite-dimensional spaces over complete nontrivially normed fields); nontriviality restricts from k."
+    "text": "finite subextensions of Ω are nonarchimedean local fields (sorry node): with the restricted valuative relation, L carries the valuative topology; locally compact since L ≅ k^n as a topological k-vector space (finite-dimensional over complete locally compact k — mathlib has the unique-topology/continuity theory for finite-dimensional spaces over complete nontrivially normed fields); nontriviality restricts from k.",
+    "wip": true
   }
 ]

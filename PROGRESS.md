@@ -262,29 +262,7 @@ entries file). To add/remove/annotate a node, edit
                                                               choice of L via hnat, then additivity/
                                                               kernel/surjectivity/equivariance pass
                                                               to the colimit.
-                                                                - ❌🟪 `exists_valuativeRel_sepClosure` — valuative structure of the
-                                                                  separable closure (sorry node —
-                                                                  prerequisite identified
-                                                                  2026-07-20): the valuation of a
-                                                                  nonarchimedean local field extends
-                                                                  to Ω. Route: mathlib’s BGR
-                                                                  machinery (Basis.norm: exists_nona
-                                                                  rchimedean_pow_mul_seminorm_of_fin
-                                                                  iteDimensional; spectralNorm with
-                                                                  spectralAlgNorm multiplicative
-                                                                  over complete base) gives a unique
-                                                                  extending rank-one norm on each
-                                                                  finite level, compatible by
-                                                                  uniqueness, hence a valuative
-                                                                  relation on the union; convert
-                                                                  ℝ-norm to ValuativeRel via the
-                                                                  norm-order (vle x y := ‖x‖ ≤ ‖y‖).
-                                                                  Alternative route: integral
-                                                                  closure of 𝒪[k] in Ω as a
-                                                                  valuation subring (henselian:
-                                                                  unique maximal ideal over the
-                                                                  complete DVR).
-                                                                - ❌· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
+                                                                - ❌🟪 `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
                                                                   nonarchimedean local fields (sorry
                                                                   node): with the restricted
                                                                   valuative relation, L carries the
@@ -477,31 +455,7 @@ entries file). To add/remove/annotate a node, edit
                                                                   of L via hnat, then additivity/ker
                                                                   nel/surjectivity/equivariance pass
                                                                   to the colimit.
-                                                                    - ❌🟪 `exists_valuativeRel_sepClosure` — valuative structure of the
-                                                                      separable closure (sorry node
-                                                                      — prerequisite identified
-                                                                      2026-07-20): the valuation of
-                                                                      a nonarchimedean local field
-                                                                      extends to Ω. Route: mathlib’s
-                                                                      BGR machinery (Basis.norm: exi
-                                                                      sts_nonarchimedean_pow_mul_sem
-                                                                      inorm_of_finiteDimensional;
-                                                                      spectralNorm with
-                                                                      spectralAlgNorm multiplicative
-                                                                      over complete base) gives a
-                                                                      unique extending rank-one norm
-                                                                      on each finite level,
-                                                                      compatible by uniqueness,
-                                                                      hence a valuative relation on
-                                                                      the union; convert ℝ-norm to
-                                                                      ValuativeRel via the norm-
-                                                                      order (vle x y := ‖x‖ ≤ ‖y‖).
-                                                                      Alternative route: integral
-                                                                      closure of 𝒪[k] in Ω as a
-                                                                      valuation subring (henselian:
-                                                                      unique maximal ideal over the
-                                                                      complete DVR).
-                                                                    - ❌· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
+                                                                    - ❌🟪 `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
                                                                       nonarchimedean local fields
                                                                       (sorry node): with the
                                                                       restricted valuative relation,
@@ -723,31 +677,7 @@ entries file). To add/remove/annotate a node, edit
                                                                       L via hnat, then additivity/ke
                                                                       rnel/surjectivity/equivariance
                                                                       pass to the colimit.
-                                                                        - ❌🟪 `exists_valuativeRel_sepClosure` — valuative structure of the
-                                                                          separable closure (sorry node
-                                                                          — prerequisite identified
-                                                                          2026-07-20): the valuation of
-                                                                          a nonarchimedean local field
-                                                                          extends to Ω. Route: mathlib’s
-                                                                          BGR machinery (Basis.norm: exi
-                                                                          sts_nonarchimedean_pow_mul_sem
-                                                                          inorm_of_finiteDimensional;
-                                                                          spectralNorm with
-                                                                          spectralAlgNorm multiplicative
-                                                                          over complete base) gives a
-                                                                          unique extending rank-one norm
-                                                                          on each finite level,
-                                                                          compatible by uniqueness,
-                                                                          hence a valuative relation on
-                                                                          the union; convert ℝ-norm to
-                                                                          ValuativeRel via the norm-
-                                                                          order (vle x y := ‖x‖ ≤ ‖y‖).
-                                                                          Alternative route: integral
-                                                                          closure of 𝒪[k] in Ω as a
-                                                                          valuation subring (henselian:
-                                                                          unique maximal ideal over the
-                                                                          complete DVR).
-                                                                        - ❌· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
+                                                                        - ❌🟪 `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
                                                                           nonarchimedean local fields
                                                                           (sorry node): with the
                                                                           restricted valuative relation,
@@ -960,31 +890,7 @@ entries file). To add/remove/annotate a node, edit
                                                                           L via hnat, then additivity/ke
                                                                           rnel/surjectivity/equivariance
                                                                           pass to the colimit.
-                                                                            - ❌🟪 `exists_valuativeRel_sepClosure` — valuative structure of the
-                                                                              separable closure (sorry node
-                                                                              — prerequisite identified
-                                                                              2026-07-20): the valuation of
-                                                                              a nonarchimedean local field
-                                                                              extends to Ω. Route: mathlib’s
-                                                                              BGR machinery (Basis.norm: exi
-                                                                              sts_nonarchimedean_pow_mul_sem
-                                                                              inorm_of_finiteDimensional;
-                                                                              spectralNorm with
-                                                                              spectralAlgNorm multiplicative
-                                                                              over complete base) gives a
-                                                                              unique extending rank-one norm
-                                                                              on each finite level,
-                                                                              compatible by uniqueness,
-                                                                              hence a valuative relation on
-                                                                              the union; convert ℝ-norm to
-                                                                              ValuativeRel via the norm-
-                                                                              order (vle x y := ‖x‖ ≤ ‖y‖).
-                                                                              Alternative route: integral
-                                                                              closure of 𝒪[k] in Ω as a
-                                                                              valuation subring (henselian:
-                                                                              unique maximal ideal over the
-                                                                              complete DVR).
-                                                                            - ❌· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
+                                                                            - ❌🟪 `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
                                                                               nonarchimedean local fields
                                                                               (sorry node): with the
                                                                               restricted valuative relation,
@@ -1220,23 +1126,7 @@ entries file). To add/remove/annotate a node, edit
                                                   choice of L via hnat, then
                                                   additivity/kernel/surjectivity/equivariance pass
                                                   to the colimit.
-                                                    - ❌🟪 `exists_valuativeRel_sepClosure` — valuative structure of the separable closure
-                                                      (sorry node — prerequisite identified
-                                                      2026-07-20): the valuation of a nonarchimedean
-                                                      local field extends to Ω. Route: mathlib’s BGR
-                                                      machinery (Basis.norm: exists_nonarchimedean_p
-                                                      ow_mul_seminorm_of_finiteDimensional;
-                                                      spectralNorm with spectralAlgNorm
-                                                      multiplicative over complete base) gives a
-                                                      unique extending rank-one norm on each finite
-                                                      level, compatible by uniqueness, hence a
-                                                      valuative relation on the union; convert
-                                                      ℝ-norm to ValuativeRel via the norm-order (vle
-                                                      x y := ‖x‖ ≤ ‖y‖). Alternative route: integral
-                                                      closure of 𝒪[k] in Ω as a valuation subring
-                                                      (henselian: unique maximal ideal over the
-                                                      complete DVR).
-                                                    - ❌· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are nonarchimedean
+                                                    - ❌🟪 `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are nonarchimedean
                                                       local fields (sorry node): with the restricted
                                                       valuative relation, L carries the valuative
                                                       topology; locally compact since L ≅ k^n as a
@@ -1389,25 +1279,7 @@ entries file). To add/remove/annotate a node, edit
                                                       independence of the choice of L via hnat, then
                                                       additivity/kernel/surjectivity/equivariance
                                                       pass to the colimit.
-                                                        - ❌🟪 `exists_valuativeRel_sepClosure` — valuative structure of the separable
-                                                          closure (sorry node — prerequisite
-                                                          identified 2026-07-20): the valuation of a
-                                                          nonarchimedean local field extends to Ω.
-                                                          Route: mathlib’s BGR machinery
-                                                          (Basis.norm: exists_nonarchimedean_pow_mul
-                                                          _seminorm_of_finiteDimensional;
-                                                          spectralNorm with spectralAlgNorm
-                                                          multiplicative over complete base) gives a
-                                                          unique extending rank-one norm on each
-                                                          finite level, compatible by uniqueness,
-                                                          hence a valuative relation on the union;
-                                                          convert ℝ-norm to ValuativeRel via the
-                                                          norm-order (vle x y := ‖x‖ ≤ ‖y‖).
-                                                          Alternative route: integral closure of
-                                                          𝒪[k] in Ω as a valuation subring
-                                                          (henselian: unique maximal ideal over the
-                                                          complete DVR).
-                                                        - ❌· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
+                                                        - ❌🟪 `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
                                                           nonarchimedean local fields (sorry node):
                                                           with the restricted valuative relation, L
                                                           carries the valuative topology; locally
@@ -1560,20 +1432,7 @@ entries file). To add/remove/annotate a node, edit
                                           independence of the choice of L via hnat, then
                                           additivity/kernel/surjectivity/equivariance pass to the
                                           colimit.
-                                            - ❌🟪 `exists_valuativeRel_sepClosure` — valuative structure of the separable closure (sorry
-                                              node — prerequisite identified 2026-07-20): the
-                                              valuation of a nonarchimedean local field extends to
-                                              Ω. Route: mathlib’s BGR machinery (Basis.norm: exists_
-                                              nonarchimedean_pow_mul_seminorm_of_finiteDimensional;
-                                              spectralNorm with spectralAlgNorm multiplicative over
-                                              complete base) gives a unique extending rank-one norm
-                                              on each finite level, compatible by uniqueness, hence
-                                              a valuative relation on the union; convert ℝ-norm to
-                                              ValuativeRel via the norm-order (vle x y := ‖x‖ ≤
-                                              ‖y‖). Alternative route: integral closure of 𝒪[k] in Ω
-                                              as a valuation subring (henselian: unique maximal
-                                              ideal over the complete DVR).
-                                            - ❌· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are nonarchimedean local
+                                            - ❌🟪 `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are nonarchimedean local
                                               fields (sorry node): with the restricted valuative
                                               relation, L carries the valuative topology; locally
                                               compact since L ≅ k^n as a topological k-vector space
@@ -1691,20 +1550,7 @@ entries file). To add/remove/annotate a node, edit
                                           independence of the choice of L via hnat, then
                                           additivity/kernel/surjectivity/equivariance pass to the
                                           colimit.
-                                            - ❌🟪 `exists_valuativeRel_sepClosure` — valuative structure of the separable closure (sorry
-                                              node — prerequisite identified 2026-07-20): the
-                                              valuation of a nonarchimedean local field extends to
-                                              Ω. Route: mathlib’s BGR machinery (Basis.norm: exists_
-                                              nonarchimedean_pow_mul_seminorm_of_finiteDimensional;
-                                              spectralNorm with spectralAlgNorm multiplicative over
-                                              complete base) gives a unique extending rank-one norm
-                                              on each finite level, compatible by uniqueness, hence
-                                              a valuative relation on the union; convert ℝ-norm to
-                                              ValuativeRel via the norm-order (vle x y := ‖x‖ ≤
-                                              ‖y‖). Alternative route: integral closure of 𝒪[k] in Ω
-                                              as a valuation subring (henselian: unique maximal
-                                              ideal over the complete DVR).
-                                            - ❌· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are nonarchimedean local
+                                            - ❌🟪 `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are nonarchimedean local
                                               fields (sorry node): with the restricted valuative
                                               relation, L carries the valuative topology; locally
                                               compact since L ≅ k^n as a topological k-vector space

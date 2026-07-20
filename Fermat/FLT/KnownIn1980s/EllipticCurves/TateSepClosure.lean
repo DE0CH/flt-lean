@@ -25,6 +25,7 @@ import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
 import Mathlib.RingTheory.Henselian
 import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange
+import Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup
 
 @[expose] public section
 
@@ -103,18 +104,75 @@ restricted structures coherent by construction. -/
     rw [map_mul, map_mul]
     exact ValuativeRel.vle_mul_comm
 
-set_option warn.sorry false in
-/-- **The valuative structure of a separable closure** (sorry node — the
-missing prerequisite identified 2026-07-20): the valuation of a
-nonarchimedean local field extends to any separable algebraic
-extension, in particular to `Ω` — classically via the spectral norm
-(BGR §3.2; mathlib's `spectralNorm`/`Basis.norm` machinery gives
-existence and uniqueness of the extending power-multiplicative norm on
-each finite level, hence a compatible valuative relation on the
-union). -/
+omit [IsSepClosed Ω] [DecidableEq Ω] in
+/-- **The valuative structure of a separable closure** (PROVEN
+2026-07-20): the valuation of a nonarchimedean local field extends to
+any separable algebraic extension, in particular to `Ω` — the integral
+closure of `𝒪[k]` in `Ω` is a valuation subring by the spectral-norm
+dichotomy (vendored `isIntegral_of_spectralNorm_le_one` over the
+rank-one `Valued` structure of `k`), and its valuation restricts to
+that of `k` by integral closedness of the DVR `𝒪[k]`. -/
 theorem exists_valuativeRel_sepClosure :
-    ∃ v : ValuativeRel Ω, @ValuativeExtension k Ω _ _ _ v _ :=
-  sorry
+    ∃ v : ValuativeRel Ω, @ValuativeExtension k Ω _ _ _ v _ := by
+  classical
+  -- analytic structure on `k`: uniformity, rank-one valued, complete, normed
+  letI : UniformSpace k := IsTopologicalAddGroup.rightUniformSpace k
+  haveI : IsUniformAddGroup k := isUniformAddGroup_of_addCommGroup
+  letI : (Valued.v (R := k)).RankOne :=
+    { hom' := IsRankLeOne.nonempty.some.emb (R := k).comp
+        MonoidWithZeroHom.ValueGroup₀.embedding
+      strictMono' := IsRankLeOne.nonempty.some.strictMono.comp
+        MonoidWithZeroHom.ValueGroup₀.embedding_strictMono }
+  letI : NontriviallyNormedField k := Valued.toNontriviallyNormedField _ _
+  haveI : Algebra.IsAlgebraic k Ω := Algebra.IsSeparable.isAlgebraic k Ω
+  -- the integral closure of `𝒪[k]` in `Ω` is a valuation subring, by the
+  -- spectral-norm dichotomy (vendored `isIntegral_of_spectralNorm_le_one`)
+  have hdicho : ∀ x : Ω, x ∈ (integralClosure 𝒪[k] Ω).toSubring ∨
+      x⁻¹ ∈ (integralClosure 𝒪[k] Ω).toSubring := fun x => by
+    obtain hx | hx := le_total (spectralNorm k Ω x) 1
+    · exact Or.inl (isIntegral_of_spectralNorm_le_one hx)
+    · have h1 : spectralNorm k Ω x⁻¹ ≤ 1 := by
+        rw [spectralNorm_inv]
+        exact inv_le_one_of_one_le₀ hx
+      exact Or.inr (isIntegral_of_spectralNorm_le_one h1)
+  set B : ValuationSubring Ω :=
+    ⟨(integralClosure 𝒪[k] Ω).toSubring, hdicho⟩ with hBdef
+  letI vΩ : ValuativeRel Ω := ValuativeRel.ofValuation B.valuation
+  -- membership bridge: a base-field element lands in `B` iff it is a
+  -- `k`-integer (integral closedness of the DVR `𝒪[k]`)
+  have hmem : ∀ c : k, algebraMap k Ω c ∈ B ↔ valuation k c ≤ 1 := by
+    intro c
+    constructor
+    · intro hc
+      have h1 : IsIntegral 𝒪[k] (algebraMap k Ω c) := hc
+      have h2 : IsIntegral 𝒪[k] c :=
+        (isIntegral_algebraMap_iff (algebraMap k Ω).injective).mp h1
+      obtain ⟨y, hy⟩ := IsIntegrallyClosed.isIntegral_iff.mp h2
+      rw [← hy]
+      exact y.2
+    · intro hc
+      have h1 : IsIntegral 𝒪[k] ((⟨c, hc⟩ : 𝒪[k]) : k) :=
+        isIntegral_algebraMap (R := 𝒪[k]) (A := k) (x := (⟨c, hc⟩ : 𝒪[k]))
+      show IsIntegral 𝒪[k] (algebraMap k Ω c)
+      exact (isIntegral_algebraMap_iff (algebraMap k Ω).injective).mpr h1
+  refine ⟨vΩ, ⟨fun a b => ?_⟩⟩
+  show B.valuation (algebraMap k Ω a) ≤ B.valuation (algebraMap k Ω b)
+    ↔ a ≤ᵥ b
+  rw [show (a ≤ᵥ b) ↔ valuation k a ≤ valuation k b from
+    Valuation.Compatible.vle_iff_le a b]
+  by_cases hb : b = 0
+  · subst hb
+    rw [map_zero, map_zero, map_zero, le_zero_iff, le_zero_iff,
+      Valuation.zero_iff, Valuation.zero_iff]
+    exact ⟨fun h => (map_eq_zero _).mp h, fun h => by rw [h, map_zero]⟩
+  · have hbΩ : algebraMap k Ω b ≠ 0 := (map_ne_zero _).mpr hb
+    have hbBpos : (0 : _) < B.valuation (algebraMap k Ω b) :=
+      zero_lt_iff.mpr ((Valuation.ne_zero_iff _).mpr hbΩ)
+    have hbkpos : (0 : _) < valuation k b :=
+      zero_lt_iff.mpr ((Valuation.ne_zero_iff _).mpr hb)
+    rw [← div_le_one₀ hbBpos, ← map_div₀ B.valuation, ← map_div₀,
+      ValuationSubring.valuation_le_one_iff, hmem, map_div₀,
+      div_le_one₀ hbkpos]
 
 omit [TopologicalSpace k] [IsNonarchimedeanLocalField k] [IsSepClosed Ω] [Algebra.IsSeparable k Ω] [DecidableEq Ω] in
 /-- The restriction of a valuative structure of `Ω` to an intermediate

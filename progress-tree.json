@@ -188,7 +188,7 @@
   "TateCurve.bilateralX_map": "✅✅",
   "TateCurve.bilateralY_map": "✅✅",
   "TateCurve.tateCurve_map": "✅✅",
-  "exists_valuativeRel_sepClosure": "❌",
+  "exists_valuativeRel_sepClosure": "✅✅",
   "exists_isNonarchimedeanLocalField_intermediate": "❌"
  },
  "children": {
