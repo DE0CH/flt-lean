@@ -124,7 +124,7 @@
   "ValuationSubring.inertia_fixes_root_of_separable_residue": "✅✅",
   "WeierstrassCurve.exists_tateCurveEquivSepClosure": "✅",
   "WeierstrassCurve.exists_tateCurveHomSepClosure": "✅",
-  "TateCurve.exists_annulus_bilateralX_eq": "❌",
+  "TateCurve.exists_annulus_bilateralX_eq": "✅",
   "TateCurve.pointMapQuot_surjective": "✅",
   "TateCurve.bilateral_chordY_cleared": "✅✅",
   "TateCurve.bilateral_chordX_cleared": "✅✅",
@@ -178,7 +178,9 @@
   "TateCurve.summable_evalA_YA_ext": "✅✅",
   "TateCurve.evalA_XA_eq_bilateralX_ext": "✅✅",
   "TateCurve.evalA_YA_eq_bilateralY_ext": "✅✅",
-  "TateCurve.pointMap_mul": "✅✅"
+  "TateCurve.pointMap_mul": "✅✅",
+  "TateCurve.exists_annulus_bilateralX_eq_of_one_le": "❌",
+  "TateCurve.exists_annulus_bilateralX_eq_of_lt_one": "❌"
  },
  "children": {
   "fermatLastTheoremThree": [],
@@ -665,7 +667,10 @@
    "TateCurve.tateCurveEquiv",
    "WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel"
   ],
-  "TateCurve.exists_annulus_bilateralX_eq": [],
+  "TateCurve.exists_annulus_bilateralX_eq": [
+   "TateCurve.exists_annulus_bilateralX_eq_of_lt_one",
+   "TateCurve.exists_annulus_bilateralX_eq_of_one_le"
+  ],
   "TateCurve.pointMapQuot_surjective": [
    "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
    "TateCurve.exists_annulus_bilateralX_eq"
@@ -809,7 +814,9 @@
   "TateCurve.pointMap_mul": [
    "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
    "TateCurve.bilateral_add_of_X_ne"
-  ]
+  ],
+  "TateCurve.exists_annulus_bilateralX_eq_of_one_le": [],
+  "TateCurve.exists_annulus_bilateralX_eq_of_lt_one": []
  },
  "roots": [
   "fermat_last_theorem"

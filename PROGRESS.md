@@ -162,58 +162,78 @@ entries file). To add/remove/annotate a node, edit
                                                                   shell, q·u⁻¹ in the interior) via
                                                                   the PROVEN vertical case
                                                                   bilateral_negY_of_mul_trivial.
-                                                                    - ❌· `TateCurve.exists_annulus_bilateralX_eq` — x-coordinate surjectivity onto
-                                                                      the annulus (sorry node — the
-                                                                      last TateUniformization leaf,
-                                                                      feeding
-                                                                      pointMapQuot_surjective).
-                                                                      SILVERMAN §V.4 READ
-                                                                      (2026-07-20,
-                                                                      Books/silverman1994ataec.txt
-                                                                      ~16000–16300): his route
-                                                                      avoids direct x-inversion: (1)
-                                                                      E_{q,0}(K) (identity
-                                                                      component, |x| ≥ 1 points
-                                                                      together with O) is the image
-                                                                      of the formal-group part
-                                                                      (|1−u| < 1 parameters, via the
-                                                                      formal group / Hensel
-                                                                      inversion of X(u) = x for |x|
-                                                                      > 1: u/(1−u)² dominates, solve
-                                                                      by completeness); (2) the
-                                                                      complement decomposes into
-                                                                      shells U_n, V_n (|x| = |y| =
-                                                                      |π|^n-type) and W (|x| =
-                                                                      |q|^{1/2}-shell), Lemma 4.1.4:
-                                                                      differences of two points in
-                                                                      the same shell land in E_{q,0}
-                                                                      (elementary ultrametric
-                                                                      estimates + duplication-
-                                                                      resultant f·F − g·G = Δ for
-                                                                      the W-shell 2P-case); (3)
-                                                                      coset counting: #(E_q/E_{q,0})
-                                                                      ≤ ord(q) = #(image-classes)
-                                                                      forces surjectivity.
-                                                                      ALTERNATIVE worth
-                                                                      investigating before
-                                                                      formalizing §V.4: the FLT cone
-                                                                      consumes surjectivity only
-                                                                      through TateSepClosure’s
-                                                                      finite-level gluing toward the
-                                                                      ℓ-torsion Galois description —
-                                                                      a TORSION-level surjectivity
-                                                                      (image ⊇ E_q[ℓ]) may suffice
-                                                                      and follows from counting: the
-                                                                      image of ⟨μ_ℓ-parameters,
-                                                                      q^{1/ℓ}-parameters⟩ under the
-                                                                      PROVEN injective (kernel-q^ℤ)
-                                                                      homomorphism gives ℓ² distinct
-                                                                      torsion points = all of
-                                                                      E_q[ℓ](K̄) — no analytic
-                                                                      inversion needed; check
-                                                                      whether TateSepClosure’s
-                                                                      Surjective-φ interface can be
-                                                                      weakened accordingly.
+                                                                    - ✅· `TateCurve.exists_annulus_bilateralX_eq` — x-surjectivity onto the
+                                                                      annulus (DERIVED 2026-07-20:
+                                                                      case split on valuation x vs
+                                                                      1, dispatching to exists_annul
+                                                                      us_bilateralX_eq_of_one_le /
+                                                                      _of_lt_one).
+                                                                        - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component
+                                                                          x-surjectivity (sorry node,
+                                                                          |x| ≥ 1): (x,y) lies in the
+                                                                          formal group of E_q (Silverman
+                                                                          IV §6 / V.4); X(u) = u/(1-u)²
+                                                                          + O(q) inverts near u=0 by
+                                                                          Hensel since the linear term
+                                                                          is a unit, giving u with
+                                                                          |1-u|<1 and X(u,q)=x. Needs:
+                                                                          formal-group inversion
+                                                                          machinery for a series with
+                                                                          invertible linear coefficient
+                                                                          over a complete nonarchimedean
+                                                                          field (Hensel/Newton iteration
+                                                                          on ℤ[[q]]-coefficients, or
+                                                                          direct fixed-point iteration
+                                                                          u_{n+1} = x(1-u_n)²).
+                                                                        - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
+                                                                          x-surjectivity (sorry node,
+                                                                          |x| < 1): SILVERMAN §V.4 READ
+                                                                          (2026-07-20,
+                                                                          Books/silverman1994ataec.txt
+                                                                          ~16000–16300): his route
+                                                                          avoids direct x-inversion: (1)
+                                                                          E_{q,0}(K) (identity
+                                                                          component, |x| ≥ 1 points
+                                                                          together with O) is the image
+                                                                          of the formal-group part
+                                                                          (|1−u| < 1 parameters, via the
+                                                                          formal group / Hensel
+                                                                          inversion of X(u) = x for |x|
+                                                                          > 1: u/(1−u)² dominates, solve
+                                                                          by completeness); (2) the
+                                                                          complement decomposes into
+                                                                          shells U_n, V_n (|x| = |y| =
+                                                                          |π|^n-type) and W (|x| =
+                                                                          |q|^{1/2}-shell), Lemma 4.1.4:
+                                                                          differences of two points in
+                                                                          the same shell land in E_{q,0}
+                                                                          (elementary ultrametric
+                                                                          estimates + duplication-
+                                                                          resultant f·F − g·G = Δ for
+                                                                          the W-shell 2P-case); (3)
+                                                                          coset counting: #(E_q/E_{q,0})
+                                                                          ≤ ord(q) = #(image-classes)
+                                                                          forces surjectivity.
+                                                                          ALTERNATIVE worth
+                                                                          investigating before
+                                                                          formalizing §V.4: the FLT cone
+                                                                          consumes surjectivity only
+                                                                          through TateSepClosure’s
+                                                                          finite-level gluing toward the
+                                                                          ℓ-torsion Galois description —
+                                                                          a TORSION-level surjectivity
+                                                                          (image ⊇ E_q[ℓ]) may suffice
+                                                                          and follows from counting: the
+                                                                          image of ⟨μ_ℓ-parameters,
+                                                                          q^{1/ℓ}-parameters⟩ under the
+                                                                          PROVEN injective (kernel-q^ℤ)
+                                                                          homomorphism gives ℓ² distinct
+                                                                          torsion points = all of
+                                                                          E_q[ℓ](K̄) — no analytic
+                                                                          inversion needed; check
+                                                                          whether TateSepClosure’s
+                                                                          Surjective-φ interface can be
+                                                                          weakened accordingly.
                                                             - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node):
                                                               GIVEN the finite-level canonical
                                                               uniformisation lˣ/q^ℤ ≃+ E_q(l) with
@@ -304,58 +324,78 @@ entries file). To add/remove/annotate a node, edit
                                                                       interior) via the PROVEN
                                                                       vertical case
                                                                       bilateral_negY_of_mul_trivial.
-                                                                        - ❌· `TateCurve.exists_annulus_bilateralX_eq` — x-coordinate surjectivity onto
-                                                                          the annulus (sorry node — the
-                                                                          last TateUniformization leaf,
-                                                                          feeding
-                                                                          pointMapQuot_surjective).
-                                                                          SILVERMAN §V.4 READ
-                                                                          (2026-07-20,
-                                                                          Books/silverman1994ataec.txt
-                                                                          ~16000–16300): his route
-                                                                          avoids direct x-inversion: (1)
-                                                                          E_{q,0}(K) (identity
-                                                                          component, |x| ≥ 1 points
-                                                                          together with O) is the image
-                                                                          of the formal-group part
-                                                                          (|1−u| < 1 parameters, via the
-                                                                          formal group / Hensel
-                                                                          inversion of X(u) = x for |x|
-                                                                          > 1: u/(1−u)² dominates, solve
-                                                                          by completeness); (2) the
-                                                                          complement decomposes into
-                                                                          shells U_n, V_n (|x| = |y| =
-                                                                          |π|^n-type) and W (|x| =
-                                                                          |q|^{1/2}-shell), Lemma 4.1.4:
-                                                                          differences of two points in
-                                                                          the same shell land in E_{q,0}
-                                                                          (elementary ultrametric
-                                                                          estimates + duplication-
-                                                                          resultant f·F − g·G = Δ for
-                                                                          the W-shell 2P-case); (3)
-                                                                          coset counting: #(E_q/E_{q,0})
-                                                                          ≤ ord(q) = #(image-classes)
-                                                                          forces surjectivity.
-                                                                          ALTERNATIVE worth
-                                                                          investigating before
-                                                                          formalizing §V.4: the FLT cone
-                                                                          consumes surjectivity only
-                                                                          through TateSepClosure’s
-                                                                          finite-level gluing toward the
-                                                                          ℓ-torsion Galois description —
-                                                                          a TORSION-level surjectivity
-                                                                          (image ⊇ E_q[ℓ]) may suffice
-                                                                          and follows from counting: the
-                                                                          image of ⟨μ_ℓ-parameters,
-                                                                          q^{1/ℓ}-parameters⟩ under the
-                                                                          PROVEN injective (kernel-q^ℤ)
-                                                                          homomorphism gives ℓ² distinct
-                                                                          torsion points = all of
-                                                                          E_q[ℓ](K̄) — no analytic
-                                                                          inversion needed; check
-                                                                          whether TateSepClosure’s
-                                                                          Surjective-φ interface can be
-                                                                          weakened accordingly.
+                                                                        - ✅· `TateCurve.exists_annulus_bilateralX_eq` — x-surjectivity onto the
+                                                                          annulus (DERIVED 2026-07-20:
+                                                                          case split on valuation x vs
+                                                                          1, dispatching to exists_annul
+                                                                          us_bilateralX_eq_of_one_le /
+                                                                          _of_lt_one).
+                                                                            - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component
+                                                                              x-surjectivity (sorry node,
+                                                                              |x| ≥ 1): (x,y) lies in the
+                                                                              formal group of E_q (Silverman
+                                                                              IV §6 / V.4); X(u) = u/(1-u)²
+                                                                              + O(q) inverts near u=0 by
+                                                                              Hensel since the linear term
+                                                                              is a unit, giving u with
+                                                                              |1-u|<1 and X(u,q)=x. Needs:
+                                                                              formal-group inversion
+                                                                              machinery for a series with
+                                                                              invertible linear coefficient
+                                                                              over a complete nonarchimedean
+                                                                              field (Hensel/Newton iteration
+                                                                              on ℤ[[q]]-coefficients, or
+                                                                              direct fixed-point iteration
+                                                                              u_{n+1} = x(1-u_n)²).
+                                                                            - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
+                                                                              x-surjectivity (sorry node,
+                                                                              |x| < 1): SILVERMAN §V.4 READ
+                                                                              (2026-07-20,
+                                                                              Books/silverman1994ataec.txt
+                                                                              ~16000–16300): his route
+                                                                              avoids direct x-inversion: (1)
+                                                                              E_{q,0}(K) (identity
+                                                                              component, |x| ≥ 1 points
+                                                                              together with O) is the image
+                                                                              of the formal-group part
+                                                                              (|1−u| < 1 parameters, via the
+                                                                              formal group / Hensel
+                                                                              inversion of X(u) = x for |x|
+                                                                              > 1: u/(1−u)² dominates, solve
+                                                                              by completeness); (2) the
+                                                                              complement decomposes into
+                                                                              shells U_n, V_n (|x| = |y| =
+                                                                              |π|^n-type) and W (|x| =
+                                                                              |q|^{1/2}-shell), Lemma 4.1.4:
+                                                                              differences of two points in
+                                                                              the same shell land in E_{q,0}
+                                                                              (elementary ultrametric
+                                                                              estimates + duplication-
+                                                                              resultant f·F − g·G = Δ for
+                                                                              the W-shell 2P-case); (3)
+                                                                              coset counting: #(E_q/E_{q,0})
+                                                                              ≤ ord(q) = #(image-classes)
+                                                                              forces surjectivity.
+                                                                              ALTERNATIVE worth
+                                                                              investigating before
+                                                                              formalizing §V.4: the FLT cone
+                                                                              consumes surjectivity only
+                                                                              through TateSepClosure’s
+                                                                              finite-level gluing toward the
+                                                                              ℓ-torsion Galois description —
+                                                                              a TORSION-level surjectivity
+                                                                              (image ⊇ E_q[ℓ]) may suffice
+                                                                              and follows from counting: the
+                                                                              image of ⟨μ_ℓ-parameters,
+                                                                              q^{1/ℓ}-parameters⟩ under the
+                                                                              PROVEN injective (kernel-q^ℤ)
+                                                                              homomorphism gives ℓ² distinct
+                                                                              torsion points = all of
+                                                                              E_q[ℓ](K̄) — no analytic
+                                                                              inversion needed; check
+                                                                              whether TateSepClosure’s
+                                                                              Surjective-φ interface can be
+                                                                              weakened accordingly.
                                                                 - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry
                                                                   node): GIVEN the finite-level
                                                                   canonical uniformisation lˣ/q^ℤ ≃+
@@ -470,58 +510,78 @@ entries file). To add/remove/annotate a node, edit
                                                                           interior) via the PROVEN
                                                                           vertical case
                                                                           bilateral_negY_of_mul_trivial.
-                                                                            - ❌· `TateCurve.exists_annulus_bilateralX_eq` — x-coordinate surjectivity onto
-                                                                              the annulus (sorry node — the
-                                                                              last TateUniformization leaf,
-                                                                              feeding
-                                                                              pointMapQuot_surjective).
-                                                                              SILVERMAN §V.4 READ
-                                                                              (2026-07-20,
-                                                                              Books/silverman1994ataec.txt
-                                                                              ~16000–16300): his route
-                                                                              avoids direct x-inversion: (1)
-                                                                              E_{q,0}(K) (identity
-                                                                              component, |x| ≥ 1 points
-                                                                              together with O) is the image
-                                                                              of the formal-group part
-                                                                              (|1−u| < 1 parameters, via the
-                                                                              formal group / Hensel
-                                                                              inversion of X(u) = x for |x|
-                                                                              > 1: u/(1−u)² dominates, solve
-                                                                              by completeness); (2) the
-                                                                              complement decomposes into
-                                                                              shells U_n, V_n (|x| = |y| =
-                                                                              |π|^n-type) and W (|x| =
-                                                                              |q|^{1/2}-shell), Lemma 4.1.4:
-                                                                              differences of two points in
-                                                                              the same shell land in E_{q,0}
-                                                                              (elementary ultrametric
-                                                                              estimates + duplication-
-                                                                              resultant f·F − g·G = Δ for
-                                                                              the W-shell 2P-case); (3)
-                                                                              coset counting: #(E_q/E_{q,0})
-                                                                              ≤ ord(q) = #(image-classes)
-                                                                              forces surjectivity.
-                                                                              ALTERNATIVE worth
-                                                                              investigating before
-                                                                              formalizing §V.4: the FLT cone
-                                                                              consumes surjectivity only
-                                                                              through TateSepClosure’s
-                                                                              finite-level gluing toward the
-                                                                              ℓ-torsion Galois description —
-                                                                              a TORSION-level surjectivity
-                                                                              (image ⊇ E_q[ℓ]) may suffice
-                                                                              and follows from counting: the
-                                                                              image of ⟨μ_ℓ-parameters,
-                                                                              q^{1/ℓ}-parameters⟩ under the
-                                                                              PROVEN injective (kernel-q^ℤ)
-                                                                              homomorphism gives ℓ² distinct
-                                                                              torsion points = all of
-                                                                              E_q[ℓ](K̄) — no analytic
-                                                                              inversion needed; check
-                                                                              whether TateSepClosure’s
-                                                                              Surjective-φ interface can be
-                                                                              weakened accordingly.
+                                                                            - ✅· `TateCurve.exists_annulus_bilateralX_eq` — x-surjectivity onto the
+                                                                              annulus (DERIVED 2026-07-20:
+                                                                              case split on valuation x vs
+                                                                              1, dispatching to exists_annul
+                                                                              us_bilateralX_eq_of_one_le /
+                                                                              _of_lt_one).
+                                                                                - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component
+                                                                                  x-surjectivity (sorry node,
+                                                                                  |x| ≥ 1): (x,y) lies in the
+                                                                                  formal group of E_q (Silverman
+                                                                                  IV §6 / V.4); X(u) = u/(1-u)²
+                                                                                  + O(q) inverts near u=0 by
+                                                                                  Hensel since the linear term
+                                                                                  is a unit, giving u with
+                                                                                  |1-u|<1 and X(u,q)=x. Needs:
+                                                                                  formal-group inversion
+                                                                                  machinery for a series with
+                                                                                  invertible linear coefficient
+                                                                                  over a complete nonarchimedean
+                                                                                  field (Hensel/Newton iteration
+                                                                                  on ℤ[[q]]-coefficients, or
+                                                                                  direct fixed-point iteration
+                                                                                  u_{n+1} = x(1-u_n)²).
+                                                                                - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
+                                                                                  x-surjectivity (sorry node,
+                                                                                  |x| < 1): SILVERMAN §V.4 READ
+                                                                                  (2026-07-20,
+                                                                                  Books/silverman1994ataec.txt
+                                                                                  ~16000–16300): his route
+                                                                                  avoids direct x-inversion: (1)
+                                                                                  E_{q,0}(K) (identity
+                                                                                  component, |x| ≥ 1 points
+                                                                                  together with O) is the image
+                                                                                  of the formal-group part
+                                                                                  (|1−u| < 1 parameters, via the
+                                                                                  formal group / Hensel
+                                                                                  inversion of X(u) = x for |x|
+                                                                                  > 1: u/(1−u)² dominates, solve
+                                                                                  by completeness); (2) the
+                                                                                  complement decomposes into
+                                                                                  shells U_n, V_n (|x| = |y| =
+                                                                                  |π|^n-type) and W (|x| =
+                                                                                  |q|^{1/2}-shell), Lemma 4.1.4:
+                                                                                  differences of two points in
+                                                                                  the same shell land in E_{q,0}
+                                                                                  (elementary ultrametric
+                                                                                  estimates + duplication-
+                                                                                  resultant f·F − g·G = Δ for
+                                                                                  the W-shell 2P-case); (3)
+                                                                                  coset counting: #(E_q/E_{q,0})
+                                                                                  ≤ ord(q) = #(image-classes)
+                                                                                  forces surjectivity.
+                                                                                  ALTERNATIVE worth
+                                                                                  investigating before
+                                                                                  formalizing §V.4: the FLT cone
+                                                                                  consumes surjectivity only
+                                                                                  through TateSepClosure’s
+                                                                                  finite-level gluing toward the
+                                                                                  ℓ-torsion Galois description —
+                                                                                  a TORSION-level surjectivity
+                                                                                  (image ⊇ E_q[ℓ]) may suffice
+                                                                                  and follows from counting: the
+                                                                                  image of ⟨μ_ℓ-parameters,
+                                                                                  q^{1/ℓ}-parameters⟩ under the
+                                                                                  PROVEN injective (kernel-q^ℤ)
+                                                                                  homomorphism gives ℓ² distinct
+                                                                                  torsion points = all of
+                                                                                  E_q[ℓ](K̄) — no analytic
+                                                                                  inversion needed; check
+                                                                                  whether TateSepClosure’s
+                                                                                  Surjective-φ interface can be
+                                                                                  weakened accordingly.
                                                                     - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
                                                                       (sorry node): GIVEN the
                                                                       finite-level canonical
@@ -629,58 +689,78 @@ entries file). To add/remove/annotate a node, edit
                                                                               interior) via the PROVEN
                                                                               vertical case
                                                                               bilateral_negY_of_mul_trivial.
-                                                                                - ❌· `TateCurve.exists_annulus_bilateralX_eq` — x-coordinate surjectivity onto
-                                                                                  the annulus (sorry node — the
-                                                                                  last TateUniformization leaf,
-                                                                                  feeding
-                                                                                  pointMapQuot_surjective).
-                                                                                  SILVERMAN §V.4 READ
-                                                                                  (2026-07-20,
-                                                                                  Books/silverman1994ataec.txt
-                                                                                  ~16000–16300): his route
-                                                                                  avoids direct x-inversion: (1)
-                                                                                  E_{q,0}(K) (identity
-                                                                                  component, |x| ≥ 1 points
-                                                                                  together with O) is the image
-                                                                                  of the formal-group part
-                                                                                  (|1−u| < 1 parameters, via the
-                                                                                  formal group / Hensel
-                                                                                  inversion of X(u) = x for |x|
-                                                                                  > 1: u/(1−u)² dominates, solve
-                                                                                  by completeness); (2) the
-                                                                                  complement decomposes into
-                                                                                  shells U_n, V_n (|x| = |y| =
-                                                                                  |π|^n-type) and W (|x| =
-                                                                                  |q|^{1/2}-shell), Lemma 4.1.4:
-                                                                                  differences of two points in
-                                                                                  the same shell land in E_{q,0}
-                                                                                  (elementary ultrametric
-                                                                                  estimates + duplication-
-                                                                                  resultant f·F − g·G = Δ for
-                                                                                  the W-shell 2P-case); (3)
-                                                                                  coset counting: #(E_q/E_{q,0})
-                                                                                  ≤ ord(q) = #(image-classes)
-                                                                                  forces surjectivity.
-                                                                                  ALTERNATIVE worth
-                                                                                  investigating before
-                                                                                  formalizing §V.4: the FLT cone
-                                                                                  consumes surjectivity only
-                                                                                  through TateSepClosure’s
-                                                                                  finite-level gluing toward the
-                                                                                  ℓ-torsion Galois description —
-                                                                                  a TORSION-level surjectivity
-                                                                                  (image ⊇ E_q[ℓ]) may suffice
-                                                                                  and follows from counting: the
-                                                                                  image of ⟨μ_ℓ-parameters,
-                                                                                  q^{1/ℓ}-parameters⟩ under the
-                                                                                  PROVEN injective (kernel-q^ℤ)
-                                                                                  homomorphism gives ℓ² distinct
-                                                                                  torsion points = all of
-                                                                                  E_q[ℓ](K̄) — no analytic
-                                                                                  inversion needed; check
-                                                                                  whether TateSepClosure’s
-                                                                                  Surjective-φ interface can be
-                                                                                  weakened accordingly.
+                                                                                - ✅· `TateCurve.exists_annulus_bilateralX_eq` — x-surjectivity onto the
+                                                                                  annulus (DERIVED 2026-07-20:
+                                                                                  case split on valuation x vs
+                                                                                  1, dispatching to exists_annul
+                                                                                  us_bilateralX_eq_of_one_le /
+                                                                                  _of_lt_one).
+                                                                                    - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component
+                                                                                      x-surjectivity (sorry node,
+                                                                                      |x| ≥ 1): (x,y) lies in the
+                                                                                      formal group of E_q (Silverman
+                                                                                      IV §6 / V.4); X(u) = u/(1-u)²
+                                                                                      + O(q) inverts near u=0 by
+                                                                                      Hensel since the linear term
+                                                                                      is a unit, giving u with
+                                                                                      |1-u|<1 and X(u,q)=x. Needs:
+                                                                                      formal-group inversion
+                                                                                      machinery for a series with
+                                                                                      invertible linear coefficient
+                                                                                      over a complete nonarchimedean
+                                                                                      field (Hensel/Newton iteration
+                                                                                      on ℤ[[q]]-coefficients, or
+                                                                                      direct fixed-point iteration
+                                                                                      u_{n+1} = x(1-u_n)²).
+                                                                                    - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
+                                                                                      x-surjectivity (sorry node,
+                                                                                      |x| < 1): SILVERMAN §V.4 READ
+                                                                                      (2026-07-20,
+                                                                                      Books/silverman1994ataec.txt
+                                                                                      ~16000–16300): his route
+                                                                                      avoids direct x-inversion: (1)
+                                                                                      E_{q,0}(K) (identity
+                                                                                      component, |x| ≥ 1 points
+                                                                                      together with O) is the image
+                                                                                      of the formal-group part
+                                                                                      (|1−u| < 1 parameters, via the
+                                                                                      formal group / Hensel
+                                                                                      inversion of X(u) = x for |x|
+                                                                                      > 1: u/(1−u)² dominates, solve
+                                                                                      by completeness); (2) the
+                                                                                      complement decomposes into
+                                                                                      shells U_n, V_n (|x| = |y| =
+                                                                                      |π|^n-type) and W (|x| =
+                                                                                      |q|^{1/2}-shell), Lemma 4.1.4:
+                                                                                      differences of two points in
+                                                                                      the same shell land in E_{q,0}
+                                                                                      (elementary ultrametric
+                                                                                      estimates + duplication-
+                                                                                      resultant f·F − g·G = Δ for
+                                                                                      the W-shell 2P-case); (3)
+                                                                                      coset counting: #(E_q/E_{q,0})
+                                                                                      ≤ ord(q) = #(image-classes)
+                                                                                      forces surjectivity.
+                                                                                      ALTERNATIVE worth
+                                                                                      investigating before
+                                                                                      formalizing §V.4: the FLT cone
+                                                                                      consumes surjectivity only
+                                                                                      through TateSepClosure’s
+                                                                                      finite-level gluing toward the
+                                                                                      ℓ-torsion Galois description —
+                                                                                      a TORSION-level surjectivity
+                                                                                      (image ⊇ E_q[ℓ]) may suffice
+                                                                                      and follows from counting: the
+                                                                                      image of ⟨μ_ℓ-parameters,
+                                                                                      q^{1/ℓ}-parameters⟩ under the
+                                                                                      PROVEN injective (kernel-q^ℤ)
+                                                                                      homomorphism gives ℓ² distinct
+                                                                                      torsion points = all of
+                                                                                      E_q[ℓ](K̄) — no analytic
+                                                                                      inversion needed; check
+                                                                                      whether TateSepClosure’s
+                                                                                      Surjective-φ interface can be
+                                                                                      weakened accordingly.
                                                                         - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
                                                                           (sorry node): GIVEN the
                                                                           finite-level canonical
@@ -841,42 +921,62 @@ entries file). To add/remove/annotate a node, edit
                                                       by the inverse partner (u⁻¹ on the shell,
                                                       q·u⁻¹ in the interior) via the PROVEN vertical
                                                       case bilateral_negY_of_mul_trivial.
-                                                        - ❌· `TateCurve.exists_annulus_bilateralX_eq` — x-coordinate surjectivity onto the annulus
-                                                          (sorry node — the last TateUniformization
-                                                          leaf, feeding pointMapQuot_surjective).
-                                                          SILVERMAN §V.4 READ (2026-07-20,
-                                                          Books/silverman1994ataec.txt
-                                                          ~16000–16300): his route avoids direct
-                                                          x-inversion: (1) E_{q,0}(K) (identity
-                                                          component, |x| ≥ 1 points together with O)
-                                                          is the image of the formal-group part
-                                                          (|1−u| < 1 parameters, via the formal
-                                                          group / Hensel inversion of X(u) = x for
-                                                          |x| > 1: u/(1−u)² dominates, solve by
-                                                          completeness); (2) the complement
-                                                          decomposes into shells U_n, V_n (|x| = |y|
-                                                          = |π|^n-type) and W (|x| =
-                                                          |q|^{1/2}-shell), Lemma 4.1.4: differences
-                                                          of two points in the same shell land in
-                                                          E_{q,0} (elementary ultrametric estimates
-                                                          + duplication-resultant f·F − g·G = Δ for
-                                                          the W-shell 2P-case); (3) coset counting:
-                                                          #(E_q/E_{q,0}) ≤ ord(q) = #(image-classes)
-                                                          forces surjectivity. ALTERNATIVE worth
-                                                          investigating before formalizing §V.4: the
-                                                          FLT cone consumes surjectivity only
-                                                          through TateSepClosure’s finite-level
-                                                          gluing toward the ℓ-torsion Galois
-                                                          description — a TORSION-level surjectivity
-                                                          (image ⊇ E_q[ℓ]) may suffice and follows
-                                                          from counting: the image of ⟨μ_ℓ-
-                                                          parameters, q^{1/ℓ}-parameters⟩ under the
-                                                          PROVEN injective (kernel-q^ℤ) homomorphism
-                                                          gives ℓ² distinct torsion points = all of
-                                                          E_q[ℓ](K̄) — no analytic inversion needed;
-                                                          check whether TateSepClosure’s
-                                                          Surjective-φ interface can be weakened
-                                                          accordingly.
+                                                        - ✅· `TateCurve.exists_annulus_bilateralX_eq` — x-surjectivity onto the annulus (DERIVED
+                                                          2026-07-20: case split on valuation x vs
+                                                          1, dispatching to
+                                                          exists_annulus_bilateralX_eq_of_one_le /
+                                                          _of_lt_one).
+                                                            - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component x-surjectivity
+                                                              (sorry node, |x| ≥ 1): (x,y) lies in
+                                                              the formal group of E_q (Silverman IV
+                                                              §6 / V.4); X(u) = u/(1-u)² + O(q)
+                                                              inverts near u=0 by Hensel since the
+                                                              linear term is a unit, giving u with
+                                                              |1-u|<1 and X(u,q)=x. Needs: formal-
+                                                              group inversion machinery for a series
+                                                              with invertible linear coefficient
+                                                              over a complete nonarchimedean field
+                                                              (Hensel/Newton iteration on
+                                                              ℤ[[q]]-coefficients, or direct fixed-
+                                                              point iteration u_{n+1} = x(1-u_n)²).
+                                                            - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component x-surjectivity
+                                                              (sorry node, |x| < 1): SILVERMAN §V.4
+                                                              READ (2026-07-20,
+                                                              Books/silverman1994ataec.txt
+                                                              ~16000–16300): his route avoids direct
+                                                              x-inversion: (1) E_{q,0}(K) (identity
+                                                              component, |x| ≥ 1 points together
+                                                              with O) is the image of the formal-
+                                                              group part (|1−u| < 1 parameters, via
+                                                              the formal group / Hensel inversion of
+                                                              X(u) = x for |x| > 1: u/(1−u)²
+                                                              dominates, solve by completeness); (2)
+                                                              the complement decomposes into shells
+                                                              U_n, V_n (|x| = |y| = |π|^n-type) and
+                                                              W (|x| = |q|^{1/2}-shell), Lemma
+                                                              4.1.4: differences of two points in
+                                                              the same shell land in E_{q,0}
+                                                              (elementary ultrametric estimates +
+                                                              duplication-resultant f·F − g·G = Δ
+                                                              for the W-shell 2P-case); (3) coset
+                                                              counting: #(E_q/E_{q,0}) ≤ ord(q) =
+                                                              #(image-classes) forces surjectivity.
+                                                              ALTERNATIVE worth investigating before
+                                                              formalizing §V.4: the FLT cone
+                                                              consumes surjectivity only through
+                                                              TateSepClosure’s finite-level gluing
+                                                              toward the ℓ-torsion Galois
+                                                              description — a TORSION-level
+                                                              surjectivity (image ⊇ E_q[ℓ]) may
+                                                              suffice and follows from counting: the
+                                                              image of ⟨μ_ℓ-parameters,
+                                                              q^{1/ℓ}-parameters⟩ under the PROVEN
+                                                              injective (kernel-q^ℤ) homomorphism
+                                                              gives ℓ² distinct torsion points = all
+                                                              of E_q[ℓ](K̄) — no analytic inversion
+                                                              needed; check whether TateSepClosure’s
+                                                              Surjective-φ interface can be weakened
+                                                              accordingly.
                                                 - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the
                                                   finite-level canonical uniformisation lˣ/q^ℤ ≃+
                                                   E_q(l) with underlying pointMapQuot for every NALF
@@ -945,46 +1045,69 @@ entries file). To add/remove/annotate a node, edit
                                                           the shell, q·u⁻¹ in the interior) via the
                                                           PROVEN vertical case
                                                           bilateral_negY_of_mul_trivial.
-                                                            - ❌· `TateCurve.exists_annulus_bilateralX_eq` — x-coordinate surjectivity onto the
-                                                              annulus (sorry node — the last
-                                                              TateUniformization leaf, feeding
-                                                              pointMapQuot_surjective). SILVERMAN
-                                                              §V.4 READ (2026-07-20,
-                                                              Books/silverman1994ataec.txt
-                                                              ~16000–16300): his route avoids direct
-                                                              x-inversion: (1) E_{q,0}(K) (identity
-                                                              component, |x| ≥ 1 points together
-                                                              with O) is the image of the formal-
-                                                              group part (|1−u| < 1 parameters, via
-                                                              the formal group / Hensel inversion of
-                                                              X(u) = x for |x| > 1: u/(1−u)²
-                                                              dominates, solve by completeness); (2)
-                                                              the complement decomposes into shells
-                                                              U_n, V_n (|x| = |y| = |π|^n-type) and
-                                                              W (|x| = |q|^{1/2}-shell), Lemma
-                                                              4.1.4: differences of two points in
-                                                              the same shell land in E_{q,0}
-                                                              (elementary ultrametric estimates +
-                                                              duplication-resultant f·F − g·G = Δ
-                                                              for the W-shell 2P-case); (3) coset
-                                                              counting: #(E_q/E_{q,0}) ≤ ord(q) =
-                                                              #(image-classes) forces surjectivity.
-                                                              ALTERNATIVE worth investigating before
-                                                              formalizing §V.4: the FLT cone
-                                                              consumes surjectivity only through
-                                                              TateSepClosure’s finite-level gluing
-                                                              toward the ℓ-torsion Galois
-                                                              description — a TORSION-level
-                                                              surjectivity (image ⊇ E_q[ℓ]) may
-                                                              suffice and follows from counting: the
-                                                              image of ⟨μ_ℓ-parameters,
-                                                              q^{1/ℓ}-parameters⟩ under the PROVEN
-                                                              injective (kernel-q^ℤ) homomorphism
-                                                              gives ℓ² distinct torsion points = all
-                                                              of E_q[ℓ](K̄) — no analytic inversion
-                                                              needed; check whether TateSepClosure’s
-                                                              Surjective-φ interface can be weakened
-                                                              accordingly.
+                                                            - ✅· `TateCurve.exists_annulus_bilateralX_eq` — x-surjectivity onto the annulus
+                                                              (DERIVED 2026-07-20: case split on
+                                                              valuation x vs 1, dispatching to
+                                                              exists_annulus_bilateralX_eq_of_one_le
+                                                              / _of_lt_one).
+                                                                - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component x-surjectivity
+                                                                  (sorry node, |x| ≥ 1): (x,y) lies
+                                                                  in the formal group of E_q
+                                                                  (Silverman IV §6 / V.4); X(u) =
+                                                                  u/(1-u)² + O(q) inverts near u=0
+                                                                  by Hensel since the linear term is
+                                                                  a unit, giving u with |1-u|<1 and
+                                                                  X(u,q)=x. Needs: formal-group
+                                                                  inversion machinery for a series
+                                                                  with invertible linear coefficient
+                                                                  over a complete nonarchimedean
+                                                                  field (Hensel/Newton iteration on
+                                                                  ℤ[[q]]-coefficients, or direct
+                                                                  fixed-point iteration u_{n+1} =
+                                                                  x(1-u_n)²).
+                                                                - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
+                                                                  x-surjectivity (sorry node, |x| <
+                                                                  1): SILVERMAN §V.4 READ
+                                                                  (2026-07-20,
+                                                                  Books/silverman1994ataec.txt
+                                                                  ~16000–16300): his route avoids
+                                                                  direct x-inversion: (1) E_{q,0}(K)
+                                                                  (identity component, |x| ≥ 1
+                                                                  points together with O) is the
+                                                                  image of the formal-group part
+                                                                  (|1−u| < 1 parameters, via the
+                                                                  formal group / Hensel inversion of
+                                                                  X(u) = x for |x| > 1: u/(1−u)²
+                                                                  dominates, solve by completeness);
+                                                                  (2) the complement decomposes into
+                                                                  shells U_n, V_n (|x| = |y| =
+                                                                  |π|^n-type) and W (|x| =
+                                                                  |q|^{1/2}-shell), Lemma 4.1.4:
+                                                                  differences of two points in the
+                                                                  same shell land in E_{q,0}
+                                                                  (elementary ultrametric estimates
+                                                                  + duplication-resultant f·F − g·G
+                                                                  = Δ for the W-shell 2P-case); (3)
+                                                                  coset counting: #(E_q/E_{q,0}) ≤
+                                                                  ord(q) = #(image-classes) forces
+                                                                  surjectivity. ALTERNATIVE worth
+                                                                  investigating before formalizing
+                                                                  §V.4: the FLT cone consumes
+                                                                  surjectivity only through
+                                                                  TateSepClosure’s finite-level
+                                                                  gluing toward the ℓ-torsion Galois
+                                                                  description — a TORSION-level
+                                                                  surjectivity (image ⊇ E_q[ℓ]) may
+                                                                  suffice and follows from counting:
+                                                                  the image of ⟨μ_ℓ-parameters,
+                                                                  q^{1/ℓ}-parameters⟩ under the
+                                                                  PROVEN injective (kernel-q^ℤ)
+                                                                  homomorphism gives ℓ² distinct
+                                                                  torsion points = all of E_q[ℓ](K̄)
+                                                                  — no analytic inversion needed;
+                                                                  check whether TateSepClosure’s
+                                                                  Surjective-φ interface can be
+                                                                  weakened accordingly.
                                                     - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN
                                                       the finite-level canonical uniformisation
                                                       lˣ/q^ℤ ≃+ E_q(l) with underlying pointMapQuot
@@ -1073,36 +1196,53 @@ entries file). To add/remove/annotate a node, edit
                                               latter realised by the inverse partner (u⁻¹ on the
                                               shell, q·u⁻¹ in the interior) via the PROVEN vertical
                                               case bilateral_negY_of_mul_trivial.
-                                                - ❌· `TateCurve.exists_annulus_bilateralX_eq` — x-coordinate surjectivity onto the annulus (sorry
-                                                  node — the last TateUniformization leaf, feeding
-                                                  pointMapQuot_surjective). SILVERMAN §V.4 READ
-                                                  (2026-07-20, Books/silverman1994ataec.txt
-                                                  ~16000–16300): his route avoids direct
-                                                  x-inversion: (1) E_{q,0}(K) (identity component,
-                                                  |x| ≥ 1 points together with O) is the image of
-                                                  the formal-group part (|1−u| < 1 parameters, via
-                                                  the formal group / Hensel inversion of X(u) = x
-                                                  for |x| > 1: u/(1−u)² dominates, solve by
-                                                  completeness); (2) the complement decomposes into
-                                                  shells U_n, V_n (|x| = |y| = |π|^n-type) and W
-                                                  (|x| = |q|^{1/2}-shell), Lemma 4.1.4: differences
-                                                  of two points in the same shell land in E_{q,0}
-                                                  (elementary ultrametric estimates + duplication-
-                                                  resultant f·F − g·G = Δ for the W-shell 2P-case);
-                                                  (3) coset counting: #(E_q/E_{q,0}) ≤ ord(q) =
-                                                  #(image-classes) forces surjectivity. ALTERNATIVE
-                                                  worth investigating before formalizing §V.4: the
-                                                  FLT cone consumes surjectivity only through
-                                                  TateSepClosure’s finite-level gluing toward the
-                                                  ℓ-torsion Galois description — a TORSION-level
-                                                  surjectivity (image ⊇ E_q[ℓ]) may suffice and
-                                                  follows from counting: the image of ⟨μ_ℓ-
-                                                  parameters, q^{1/ℓ}-parameters⟩ under the PROVEN
-                                                  injective (kernel-q^ℤ) homomorphism gives ℓ²
-                                                  distinct torsion points = all of E_q[ℓ](K̄) — no
-                                                  analytic inversion needed; check whether
-                                                  TateSepClosure’s Surjective-φ interface can be
-                                                  weakened accordingly.
+                                                - ✅· `TateCurve.exists_annulus_bilateralX_eq` — x-surjectivity onto the annulus (DERIVED
+                                                  2026-07-20: case split on valuation x vs 1,
+                                                  dispatching to
+                                                  exists_annulus_bilateralX_eq_of_one_le /
+                                                  _of_lt_one).
+                                                    - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component x-surjectivity (sorry node,
+                                                      |x| ≥ 1): (x,y) lies in the formal group of
+                                                      E_q (Silverman IV §6 / V.4); X(u) = u/(1-u)² +
+                                                      O(q) inverts near u=0 by Hensel since the
+                                                      linear term is a unit, giving u with |1-u|<1
+                                                      and X(u,q)=x. Needs: formal-group inversion
+                                                      machinery for a series with invertible linear
+                                                      coefficient over a complete nonarchimedean
+                                                      field (Hensel/Newton iteration on
+                                                      ℤ[[q]]-coefficients, or direct fixed-point
+                                                      iteration u_{n+1} = x(1-u_n)²).
+                                                    - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component x-surjectivity (sorry
+                                                      node, |x| < 1): SILVERMAN §V.4 READ
+                                                      (2026-07-20, Books/silverman1994ataec.txt
+                                                      ~16000–16300): his route avoids direct
+                                                      x-inversion: (1) E_{q,0}(K) (identity
+                                                      component, |x| ≥ 1 points together with O) is
+                                                      the image of the formal-group part (|1−u| < 1
+                                                      parameters, via the formal group / Hensel
+                                                      inversion of X(u) = x for |x| > 1: u/(1−u)²
+                                                      dominates, solve by completeness); (2) the
+                                                      complement decomposes into shells U_n, V_n
+                                                      (|x| = |y| = |π|^n-type) and W (|x| =
+                                                      |q|^{1/2}-shell), Lemma 4.1.4: differences of
+                                                      two points in the same shell land in E_{q,0}
+                                                      (elementary ultrametric estimates +
+                                                      duplication-resultant f·F − g·G = Δ for the
+                                                      W-shell 2P-case); (3) coset counting:
+                                                      #(E_q/E_{q,0}) ≤ ord(q) = #(image-classes)
+                                                      forces surjectivity. ALTERNATIVE worth
+                                                      investigating before formalizing §V.4: the FLT
+                                                      cone consumes surjectivity only through
+                                                      TateSepClosure’s finite-level gluing toward
+                                                      the ℓ-torsion Galois description — a TORSION-
+                                                      level surjectivity (image ⊇ E_q[ℓ]) may
+                                                      suffice and follows from counting: the image
+                                                      of ⟨μ_ℓ-parameters, q^{1/ℓ}-parameters⟩ under
+                                                      the PROVEN injective (kernel-q^ℤ) homomorphism
+                                                      gives ℓ² distinct torsion points = all of
+                                                      E_q[ℓ](K̄) — no analytic inversion needed;
+                                                      check whether TateSepClosure’s Surjective-φ
+                                                      interface can be weakened accordingly.
                                         - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
                                           level canonical uniformisation lˣ/q^ℤ ≃+ E_q(l) with
                                           underlying pointMapQuot for every NALF l, the Ω-level hom
@@ -1157,36 +1297,53 @@ entries file). To add/remove/annotate a node, edit
                                               latter realised by the inverse partner (u⁻¹ on the
                                               shell, q·u⁻¹ in the interior) via the PROVEN vertical
                                               case bilateral_negY_of_mul_trivial.
-                                                - ❌· `TateCurve.exists_annulus_bilateralX_eq` — x-coordinate surjectivity onto the annulus (sorry
-                                                  node — the last TateUniformization leaf, feeding
-                                                  pointMapQuot_surjective). SILVERMAN §V.4 READ
-                                                  (2026-07-20, Books/silverman1994ataec.txt
-                                                  ~16000–16300): his route avoids direct
-                                                  x-inversion: (1) E_{q,0}(K) (identity component,
-                                                  |x| ≥ 1 points together with O) is the image of
-                                                  the formal-group part (|1−u| < 1 parameters, via
-                                                  the formal group / Hensel inversion of X(u) = x
-                                                  for |x| > 1: u/(1−u)² dominates, solve by
-                                                  completeness); (2) the complement decomposes into
-                                                  shells U_n, V_n (|x| = |y| = |π|^n-type) and W
-                                                  (|x| = |q|^{1/2}-shell), Lemma 4.1.4: differences
-                                                  of two points in the same shell land in E_{q,0}
-                                                  (elementary ultrametric estimates + duplication-
-                                                  resultant f·F − g·G = Δ for the W-shell 2P-case);
-                                                  (3) coset counting: #(E_q/E_{q,0}) ≤ ord(q) =
-                                                  #(image-classes) forces surjectivity. ALTERNATIVE
-                                                  worth investigating before formalizing §V.4: the
-                                                  FLT cone consumes surjectivity only through
-                                                  TateSepClosure’s finite-level gluing toward the
-                                                  ℓ-torsion Galois description — a TORSION-level
-                                                  surjectivity (image ⊇ E_q[ℓ]) may suffice and
-                                                  follows from counting: the image of ⟨μ_ℓ-
-                                                  parameters, q^{1/ℓ}-parameters⟩ under the PROVEN
-                                                  injective (kernel-q^ℤ) homomorphism gives ℓ²
-                                                  distinct torsion points = all of E_q[ℓ](K̄) — no
-                                                  analytic inversion needed; check whether
-                                                  TateSepClosure’s Surjective-φ interface can be
-                                                  weakened accordingly.
+                                                - ✅· `TateCurve.exists_annulus_bilateralX_eq` — x-surjectivity onto the annulus (DERIVED
+                                                  2026-07-20: case split on valuation x vs 1,
+                                                  dispatching to
+                                                  exists_annulus_bilateralX_eq_of_one_le /
+                                                  _of_lt_one).
+                                                    - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component x-surjectivity (sorry node,
+                                                      |x| ≥ 1): (x,y) lies in the formal group of
+                                                      E_q (Silverman IV §6 / V.4); X(u) = u/(1-u)² +
+                                                      O(q) inverts near u=0 by Hensel since the
+                                                      linear term is a unit, giving u with |1-u|<1
+                                                      and X(u,q)=x. Needs: formal-group inversion
+                                                      machinery for a series with invertible linear
+                                                      coefficient over a complete nonarchimedean
+                                                      field (Hensel/Newton iteration on
+                                                      ℤ[[q]]-coefficients, or direct fixed-point
+                                                      iteration u_{n+1} = x(1-u_n)²).
+                                                    - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component x-surjectivity (sorry
+                                                      node, |x| < 1): SILVERMAN §V.4 READ
+                                                      (2026-07-20, Books/silverman1994ataec.txt
+                                                      ~16000–16300): his route avoids direct
+                                                      x-inversion: (1) E_{q,0}(K) (identity
+                                                      component, |x| ≥ 1 points together with O) is
+                                                      the image of the formal-group part (|1−u| < 1
+                                                      parameters, via the formal group / Hensel
+                                                      inversion of X(u) = x for |x| > 1: u/(1−u)²
+                                                      dominates, solve by completeness); (2) the
+                                                      complement decomposes into shells U_n, V_n
+                                                      (|x| = |y| = |π|^n-type) and W (|x| =
+                                                      |q|^{1/2}-shell), Lemma 4.1.4: differences of
+                                                      two points in the same shell land in E_{q,0}
+                                                      (elementary ultrametric estimates +
+                                                      duplication-resultant f·F − g·G = Δ for the
+                                                      W-shell 2P-case); (3) coset counting:
+                                                      #(E_q/E_{q,0}) ≤ ord(q) = #(image-classes)
+                                                      forces surjectivity. ALTERNATIVE worth
+                                                      investigating before formalizing §V.4: the FLT
+                                                      cone consumes surjectivity only through
+                                                      TateSepClosure’s finite-level gluing toward
+                                                      the ℓ-torsion Galois description — a TORSION-
+                                                      level surjectivity (image ⊇ E_q[ℓ]) may
+                                                      suffice and follows from counting: the image
+                                                      of ⟨μ_ℓ-parameters, q^{1/ℓ}-parameters⟩ under
+                                                      the PROVEN injective (kernel-q^ℤ) homomorphism
+                                                      gives ℓ² distinct torsion points = all of
+                                                      E_q[ℓ](K̄) — no analytic inversion needed;
+                                                      check whether TateSepClosure’s Surjective-φ
+                                                      interface can be weakened accordingly.
                                         - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
                                           level canonical uniformisation lˣ/q^ℤ ≃+ E_q(l) with
                                           underlying pointMapQuot for every NALF l, the Ω-level hom

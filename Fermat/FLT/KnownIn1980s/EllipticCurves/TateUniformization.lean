@@ -5573,18 +5573,53 @@ theorem pointMapQuot_one (q : kˣ) (hq : valuation k (q : k) < 1) :
   exact pointMap_one (q : k) q.ne_zero hq
 
 set_option warn.sorry false in
-/-- **The bilateral `x`-value is onto the affine `x`-line** (sorry node —
-the analytic heart of Silverman V.4): for every affine solution `(x, y)`
-of the Tate curve equation there is a parameter `u` in the fundamental
-annulus with `bilateralX u = x`. Attack: the valuation/Newton-polygon
-analysis of `X(u) - x` as a function of `u` on the annulus (the theta
-quotient), using completeness of `k`. -/
+/-- **`x`-surjectivity, identity-component case** (sorry node —
+Silverman ATAEC V.4, the formal-group half): if `|x| ≥ 1` then `(x,y)`
+lies in the image of the formal group of `E_q` (Silverman's
+`E_{q,0}(K)`, IV §6), which is parametrised near the origin by the
+inverse of the series `X(u) = u/(1-u)² + O(q)`; `u/(1-u)²` inverts by
+Hensel's lemma / formal-group logarithm since `d/du[u/(1-u)²]|_{u=0}
+= 1` is a unit, giving `u` with `|1-u| < 1` (equivalently `|u| = 1`)
+and `X(u,q) = x`. -/
+theorem exists_annulus_bilateralX_eq_of_one_le (q₀ : k) (hq0 : q₀ ≠ 0)
+    (hq1 : valuation k q₀ < 1) (x y : k)
+    (hxy : (WeierstrassCurve.tateCurve q₀).toAffine.Equation x y)
+    (hx : 1 ≤ valuation k x) :
+    ∃ u : k, u ≠ 0 ∧ u ≠ 1 ∧ valuation k q₀ < valuation k u ∧
+      valuation k u ≤ 1 ∧ bilateralX u q₀ = x :=
+  sorry
+
+set_option warn.sorry false in
+/-- **`x`-surjectivity, non-identity-component case** (sorry node —
+Silverman ATAEC V.4, Lemma 4.1.4 and the coset-counting argument): if
+`|x| < 1` then `(x,y)` lies in one of the finitely many non-identity
+components `U_n`, `V_n`, `W` of the special fibre of the Néron model;
+each component meets the image of the annulus parametrisation (its
+points are within `E_{q,0}` of each other by the elementary ultrametric
+estimates of Lemma 4.1.4, including the duplication-resultant identity
+`f·F - g·G = Δ` for the boundary shell `W`), and since the image of
+`φ` already contains a full set of coset representatives for
+`E_q(K)/E_{q,0}(K)` (of order `ord_v(q)`, matched by the `q^ℤ`-indexed
+shift classes), every component is hit. -/
+theorem exists_annulus_bilateralX_eq_of_lt_one (q₀ : k) (hq0 : q₀ ≠ 0)
+    (hq1 : valuation k q₀ < 1) (x y : k)
+    (hxy : (WeierstrassCurve.tateCurve q₀).toAffine.Equation x y)
+    (hx : valuation k x < 1) :
+    ∃ u : k, u ≠ 0 ∧ u ≠ 1 ∧ valuation k q₀ < valuation k u ∧
+      valuation k u ≤ 1 ∧ bilateralX u q₀ = x :=
+  sorry
+
+/-- **`x`-surjectivity onto the annulus** (DERIVED 2026-07-20 by case
+split on `valuation k x` against `1`, dispatching to the two Silverman
+cases above — ATAEC V.3.1(d)/V.4). -/
 theorem exists_annulus_bilateralX_eq (q₀ : k) (hq0 : q₀ ≠ 0)
     (hq1 : valuation k q₀ < 1) (x y : k)
     (hxy : (WeierstrassCurve.tateCurve q₀).toAffine.Equation x y) :
     ∃ u : k, u ≠ 0 ∧ u ≠ 1 ∧ valuation k q₀ < valuation k u ∧
-      valuation k u ≤ 1 ∧ bilateralX u q₀ = x :=
-  sorry
+      valuation k u ≤ 1 ∧ bilateralX u q₀ = x := by
+  rcases lt_or_ge (valuation k x) 1 with hx | hx
+  · exact exists_annulus_bilateralX_eq_of_lt_one q₀ hq0 hq1 x y hxy hx
+  · exact exists_annulus_bilateralX_eq_of_one_le q₀ hq0 hq1 x y hxy hx
 
 /-- **Surjectivity of the uniformisation** (DERIVED 2026-07-18 from the
 `x`-onto leaf `exists_annulus_bilateralX_eq` — Silverman V.3.1(d)/V.4):
