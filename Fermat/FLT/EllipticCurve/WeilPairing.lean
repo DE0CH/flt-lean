@@ -1964,6 +1964,28 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
       ((p : ℕ) : ℤ) • redFun P = 0 := by
     intro P hP
     rw [← hredsmul p P hP, hP, hred0]
+  -- Step 3c-ii-p: `p` is nonzero in the residue field, and the reduced
+  -- curve has `p²` points of `p`-torsion over the (algebraically
+  -- closed) residue field
+  have hpresne : ((p : ℕ) : (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))) ≠ 0 := by
+    have hqndvd : ¬ ((q : ℤ) ∣ ((p : ℕ) : ℤ)) := by
+      intro hdvd
+      exact hqp ((Nat.prime_dvd_prime_iff_eq hq (Fact.out : p.Prime)).mp
+        (Int.natCast_dvd_natCast.mp hdvd))
+    have hu := (hIntUnitLoc ((p : ℕ) : ℤ) hqndvd).map
+      (IsLocalRing.residue (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))
+    rw [map_intCast] at hu
+    have hne := hu.ne_zero
+    intro h0
+    apply hne
+    push_cast
+    exact h0
+  have hcardRes : Nat.card ((W.map (algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) =
+      p ^ 2 :=
+    TorsionCard.card_torsionBy (W.map (algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)))) p hpresne
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
