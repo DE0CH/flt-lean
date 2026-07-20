@@ -139,7 +139,7 @@ noncomputable def frobeniusTorsionEnd (q : ℕ) [Fact q.Prime]
       (WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
         (frobAlgHom q)) p)
 
-set_option maxHeartbeats 4000000 in
+set_option maxHeartbeats 8000000 in
 set_option warn.sorry false in
 set_option linter.unusedSimpArgs false in
 /-- **Reduction transfer at good primes** (sorry node — the
@@ -2449,8 +2449,118 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
       show Polynomial.aeval (IsLocalRing.residue _ w) _ = 0
       rw [Polynomial.aeval_def, Polynomial.eval₂_map, Polynomial.eval₂_map,
         hcomp1, hcomp2, ← Polynomial.hom_eval₂, hevalO, map_zero]
-  -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
-  -- Frobenius compatibility
+  -- Step 3c-iii-g: the residue field is an algebraic closure of
+  -- `ZMod q`; identify it with `AlgebraicClosure (ZMod q)`
+  haveI hAlgClo : IsAlgClosure (ZMod q) (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) :=
+    ⟨hACres, halgZq⟩
+  set identA : (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ≃ₐ[ZMod q] (AlgebraicClosure (ZMod q)) :=
+    IsAlgClosure.equiv (ZMod q) (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) (AlgebraicClosure (ZMod q)) with hidentAdef
+  -- the identification as a `ℤ`-algebra homomorphism (the manual
+  -- `commutes'` avoids the `ℤ`-algebra instance diamond)
+  set identZ : (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) →ₐ[ℤ] (AlgebraicClosure (ZMod q)) :=
+    { toRingHom := identA.toAlgHom.toRingHom
+      commutes' := fun n => by
+        show identA.toAlgHom.toRingHom ((algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))) n) = _
+        rw [eq_intCast (algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))), eq_intCast (algebraMap ℤ (AlgebraicClosure (ZMod q))),
+          map_intCast] }
+    with hidentZdef
+  -- the transported point homomorphism (the model `W` is defined over
+  -- `ℤ`)
+  set imap : ((W⁄(IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))) :
+      WeierstrassCurve (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Point →+
+      ((W⁄(AlgebraicClosure (ZMod q))) : WeierstrassCurve (AlgebraicClosure (ZMod q))).toAffine.Point :=
+    WeierstrassCurve.Affine.Point.map (W' := W) (S := ℤ)
+      identZ with himapdef
+  -- carrier collapses on both sides
+  have hEq1 : (((W.map (algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))))⁄(IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))) :
+      WeierstrassCurve (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))) = (W⁄(IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))) := by
+    show (W.map _).map _ = W.map _
+    rw [WeierstrassCurve.map_map]
+    exact congrArg W.map (Subsingleton.elim _ _)
+  have hEq2 : (((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure (ZMod q))) :
+      WeierstrassCurve (AlgebraicClosure (ZMod q))) = (W⁄(AlgebraicClosure (ZMod q))) := by
+    show ((W.map _).map _).map _ = W.map _
+    rw [WeierstrassCurve.map_map, WeierstrassCurve.map_map]
+    exact congrArg W.map (Subsingleton.elim _ _)
+  -- membership: the composite carries `p`-torsion to `p`-torsion
+  have hidmem : ∀ x : ((W.map (algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p),
+      ((p : ℕ) : ℤ) • ((WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm)
+        (imap ((WeierstrassCurve.Affine.Point.equivOfEq hEq1) x.1))) = 0 := by
+    intro x
+    have h1 : ((p : ℕ) : ℤ) •
+        ((WeierstrassCurve.Affine.Point.equivOfEq hEq1) x.1) = 0 :=
+      hmem _ x.1 ((Submodule.mem_torsionBy_iff _ _).mp x.2)
+    have h2 : ((p : ℕ) : ℤ) •
+        (imap ((WeierstrassCurve.Affine.Point.equivOfEq hEq1) x.1)) = 0 := by
+      rw [← map_zsmul imap, h1, map_zero]
+    rw [← map_zsmul (WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm),
+      h2, map_zero]
+  set ident₀ : ((W.map (algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) →+
+      ((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion p) :=
+    { toFun := fun x => ⟨(WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm)
+        (imap ((WeierstrassCurve.Affine.Point.equivOfEq hEq1) x.1)),
+        (Submodule.mem_torsionBy_iff _ _).mpr (hidmem x)⟩
+      map_zero' := Subtype.ext (by
+        show (WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm)
+          (imap ((WeierstrassCurve.Affine.Point.equivOfEq hEq1) 0)) = 0
+        rw [map_zero, map_zero, map_zero])
+      map_add' := fun x y => Subtype.ext (by
+        show (WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm)
+          (imap ((WeierstrassCurve.Affine.Point.equivOfEq hEq1)
+            (x.1 + y.1))) = _
+        rw [map_add, map_add, map_add]
+        rfl) }
+    with hident₀def
+  have hidentinj : Function.Injective ident₀ := by
+    intro x y hxy
+    have h1 := congrArg Subtype.val hxy
+    have h2 := (WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm).injective h1
+    rw [himapdef] at h2
+    have h3 := WeierstrassCurve.Affine.Point.map_injective
+      (f := identZ) h2
+    exact Subtype.ext ((WeierstrassCurve.Affine.Point.equivOfEq hEq1).injective h3)
+  have hcardBar : Nat.card ((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion p) =
+      p ^ 2 := by
+    haveI : (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).IsElliptic :=
+      inferInstance
+    refine TorsionCard.card_torsionBy _ p ?_
+    haveI : CharP (AlgebraicClosure (ZMod q)) q :=
+      charP_of_injective_algebraMap
+        (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+    exact CharP.cast_ne_zero_of_ne_of_prime (R := (AlgebraicClosure (ZMod q)))
+      (Fact.out : p.Prime) hqp
+  have hidentbij : Function.Bijective ident₀ := by
+    haveI : Finite ((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion p) :=
+      Nat.finite_of_card_ne_zero (by rw [hcardBar]; positivity)
+    refine (Nat.bijective_iff_injective_and_card ident₀).mpr ⟨hidentinj, ?_⟩
+    rw [hcardRes, hcardBar]
+  set identL : ((W.map (algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) ≃ₗ[ZMod p]
+      ((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion p) :=
+    { AddEquiv.ofBijective ident₀ hidentbij with
+      map_smul' := ZMod.map_smul (AddEquiv.ofBijective ident₀
+        hidentbij).toAddMonoidHom }
+    with hidentLdef
+  -- Step 3c-iv: assemble the equivalence and reduce the node to the
+  -- Frobenius-compatibility equation
+  refine ⟨(((ψ₀.trans τ).trans redL).trans identL), ?_⟩
+  -- Step 3c-v (sorried): Frobenius compatibility — the global Frobenius
+  -- acts on reduced torsion as the `q`-power Frobenius
+  -- (`isArithFrobAt_adicArithFrob` on coordinates)
   sorry
 
 set_option warn.sorry false in
