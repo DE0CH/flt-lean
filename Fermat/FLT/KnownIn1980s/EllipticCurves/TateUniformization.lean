@@ -6518,6 +6518,157 @@ theorem exists_annulus_bilateralX_eq_of_one_le (q₀ : k) (hq0 : q₀ ≠ 0)
         (by rwa [mul_one])
     rw [hy2] at h1
     exact absurd (lt_of_le_of_lt hXcube h1) (lt_irrefl _)
+  have hXY_le : valuation k x ≤ valuation k y := by
+    by_contra hcon
+    push Not at hcon
+    have h1 : valuation k y * valuation k y <
+        valuation k x * valuation k x :=
+      lt_of_le_of_lt (mul_le_mul' le_rfl hcon.le)
+        (mul_lt_mul_of_pos_right hcon (zero_lt_iff.mpr hX0))
+    have h2 : valuation k x * valuation k x ≤ valuation k x ^ 3 := by
+      rw [← sq]
+      exact pow_le_pow_right' hx (by norm_num)
+    rw [hy2] at h1
+    exact absurd (lt_of_lt_of_le h1 h2) (lt_irrefl _)
+  -- the iteration map `F u = (y - T_Y u) / ((x - T_X u) + (y - T_Y u))`
+  -- (the nodal linear solve `t' = (y - T_Y)/(x - T_X)` composed with
+  -- `u = t'/(1+t')`, written without nested division)
+  set TX : k → k := fun u => bilateralX u q₀ - u / (1 - u) ^ 2 with hTXdef
+  set TY : k → k := fun u => bilateralY u q₀ - u ^ 2 / (1 - u) ^ 3
+    with hTYdef
+  set F : k → k := fun u =>
+    (y - TY u) / ((x - TX u) + (y - TY u)) with hFdef
+  have hyQ : valuation k q₀ < valuation k y := lt_of_lt_of_le hq1 hy1
+  have hxQ : valuation k q₀ < valuation k x := lt_of_lt_of_le hq1 hx
+  -- shell magnitudes of the numerator and denominator of `F`
+  have hNval : ∀ u : k, valuation k u = 1 → u ≠ 1 →
+      valuation k (y - TY u) = valuation k y := by
+    intro u hu hu1
+    have he : valuation k (y - TY u) = valuation k (-(TY u - y)) := by
+      congr 1
+      ring
+    rw [he, Valuation.map_neg,
+      (valuation k).map_sub_eq_of_lt_right
+        (lt_of_le_of_lt (htailY u hu hu1) hyQ)]
+  have hDval : ∀ u : k, valuation k u = 1 → u ≠ 1 →
+      valuation k (x - TX u) = valuation k x := by
+    intro u hu hu1
+    have he : valuation k (x - TX u) = valuation k (-(TX u - x)) := by
+      congr 1
+      ring
+    rw [he, Valuation.map_neg,
+      (valuation k).map_sub_eq_of_lt_right
+        (lt_of_le_of_lt (htail u hu hu1) hxQ)]
+  have hSval : ∀ u : k, valuation k u = 1 → u ≠ 1 →
+      valuation k ((x - TX u) + (y - TY u)) = valuation k y := by
+    intro u hu hu1
+    have he : valuation k ((x - TX u) + (y - TY u)) =
+        valuation k (-((TX u + TY u) - (y + x))) := by
+      congr 1
+      ring
+    rw [he, Valuation.map_neg,
+      (valuation k).map_sub_eq_of_lt_right (by
+        rw [hyx]
+        exact lt_of_le_of_lt (le_trans (Valuation.map_add _ _ _)
+          (max_le (htail u hu hu1) (htailY u hu hu1))) hyQ)]
+    exact hyx
+  have hS0 : ∀ u : k, valuation k u = 1 → u ≠ 1 →
+      (x - TX u) + (y - TY u) ≠ 0 := by
+    intro u hu hu1 hz
+    have h2 := hSval u hu hu1
+    rw [hz, map_zero] at h2
+    exact hY0 h2.symm
+  -- `F` maps the shell into the shell (and never takes the value `1`)
+  have hFshell : ∀ u : k, valuation k u = 1 → u ≠ 1 →
+      valuation k (F u) = 1 ∧ F u ≠ 1 := by
+    intro u hu hu1
+    constructor
+    · simp only [hFdef]
+      rw [map_div₀, hNval u hu hu1, hSval u hu hu1, div_self hY0]
+    · intro hh
+      simp only [hFdef] at hh
+      have h1 : y - TY u = (x - TX u) + (y - TY u) :=
+        (div_eq_one_iff_eq (hS0 u hu hu1)).mp hh
+      have h2 : x - TX u = 0 :=
+        add_right_cancel (h1.symm.trans (zero_add (y - TY u)).symm)
+      have h3 := hDval u hu hu1
+      rw [h2, map_zero] at h3
+      exact hX0 h3.symm
+  -- the distance of `F u` from `1` is the constant `|x|/|y|`
+  have h1subF : ∀ u : k, valuation k u = 1 → u ≠ 1 →
+      valuation k (1 - F u) = valuation k x / valuation k y := by
+    intro u hu hu1
+    have he : 1 - F u = (x - TX u) / ((x - TX u) + (y - TY u)) := by
+      simp only [hFdef]
+      rw [eq_div_iff (hS0 u hu hu1), sub_mul, one_mul,
+        div_mul_cancel₀ _ (hS0 u hu hu1)]
+      ring
+    rw [he, map_div₀, hDval u hu hu1, hSval u hu hu1]
+  -- `F` is a `|q₀|`-contraction on the shell
+  have hFlip : ∀ u v : k, valuation k u = 1 → valuation k v = 1 →
+      u ≠ 1 → v ≠ 1 → valuation k (F u - F v) ≤
+        valuation k q₀ * valuation k (u - v) := by
+    intro u v hu hv hu1 hv1
+    have hkeyF : F u - F v =
+        ((y - TY u) * (x - TX v) - (y - TY v) * (x - TX u)) /
+          (((x - TX u) + (y - TY u)) * ((x - TX v) + (y - TY v))) := by
+      simp only [hFdef]
+      rw [div_sub_div _ _ (hS0 u hu hu1) (hS0 v hv hv1)]
+      congr 1
+      ring
+    have hvu : valuation k (v - u) = valuation k (u - v) := by
+      rw [show v - u = -(u - v) from by ring, Valuation.map_neg]
+    have hb1 : valuation k (y * (TX u - TX v)) ≤
+        valuation k y * (valuation k q₀ * valuation k (u - v)) := by
+      rw [map_mul]
+      exact mul_le_mul' le_rfl (hlip u v hu hv hu1 hv1)
+    have hb2 : valuation k (x * (TY u - TY v)) ≤
+        valuation k y * (valuation k q₀ * valuation k (u - v)) := by
+      rw [map_mul]
+      calc valuation k x * valuation k (TY u - TY v)
+          ≤ valuation k x * (valuation k q₀ * valuation k (u - v)) :=
+            mul_le_mul' le_rfl (hlipY u v hu hv hu1 hv1)
+        _ ≤ valuation k y * (valuation k q₀ * valuation k (u - v)) :=
+            mul_le_mul_left hXY_le _
+    have hb3 : valuation k (TY u * (TX v - TX u) +
+        TX u * (TY u - TY v)) ≤
+        valuation k y * (valuation k q₀ * valuation k (u - v)) := by
+      refine le_trans (Valuation.map_add _ _ _) (max_le ?_ ?_)
+      · rw [map_mul]
+        calc valuation k (TY u) * valuation k (TX v - TX u)
+            ≤ valuation k q₀ * (valuation k q₀ * valuation k (u - v)) := by
+              refine mul_le_mul' (htailY u hu hu1) ?_
+              have h4 := hlip v u hv hu hv1 hu1
+              rwa [hvu] at h4
+          _ ≤ valuation k y * (valuation k q₀ * valuation k (u - v)) :=
+              mul_le_mul_left (le_trans (le_of_lt hq1) hy1) _
+      · rw [map_mul]
+        calc valuation k (TX u) * valuation k (TY u - TY v)
+            ≤ valuation k q₀ * (valuation k q₀ * valuation k (u - v)) :=
+              mul_le_mul' (htail u hu hu1) (hlipY u v hu hv hu1 hv1)
+          _ ≤ valuation k y * (valuation k q₀ * valuation k (u - v)) :=
+              mul_le_mul_left (le_trans (le_of_lt hq1) hy1) _
+    have hnum : valuation k
+        ((y - TY u) * (x - TX v) - (y - TY v) * (x - TX u)) ≤
+        valuation k y * (valuation k q₀ * valuation k (u - v)) := by
+      have he : (y - TY u) * (x - TX v) - (y - TY v) * (x - TX u) =
+          (y * (TX u - TX v) - x * (TY u - TY v)) +
+            (TY u * (TX v - TX u) + TX u * (TY u - TY v)) := by
+        ring
+      rw [he]
+      refine le_trans (Valuation.map_add _ _ _) (max_le ?_ hb3)
+      exact le_trans (Valuation.map_sub _ _ _) (max_le hb1 hb2)
+    rw [hkeyF, map_div₀, map_mul, hSval u hu hu1, hSval v hv hv1,
+      div_le_iff₀ (zero_lt_iff.mpr (mul_ne_zero hY0 hY0))]
+    calc valuation k ((y - TY u) * (x - TX v) - (y - TY v) * (x - TX u)) ≤
+        valuation k y * (valuation k q₀ * valuation k (u - v)) := hnum
+      _ = valuation k q₀ * valuation k (u - v) * valuation k y := by
+          rw [mul_comm]
+      _ ≤ valuation k q₀ * valuation k (u - v) *
+          (valuation k y * valuation k y) := by
+          refine mul_le_mul' le_rfl ?_
+          calc valuation k y = valuation k y * 1 := (mul_one _).symm
+            _ ≤ valuation k y * valuation k y := mul_le_mul' le_rfl hy1
   sorry
 
 set_option warn.sorry false in
