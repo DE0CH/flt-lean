@@ -503,6 +503,48 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
     refine le_antisymm h2 ?_
     rw [← h1]
     exact le_trans (mul_le_mul' le_rfl h3) (le_of_eq (mul_one _))
+  haveI hWvMin : WeierstrassCurve.IsMinimal
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (W.map (algebraMap ℤ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) := by
+    constructor
+    refine ⟨?_, ?_⟩
+    · simp only [one_smul]
+      exact hWvInt
+    · intro C' hC'
+      have h2 : (WeierstrassCurve.valuation_Δ_aux
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)
+          ((1 : WeierstrassCurve.VariableChange
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)) •
+            (W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))))) =
+          ⟨1, le_rfl⟩ := by
+        simp only [one_smul]
+        refine Subtype.ext ?_
+        rw [WeierstrassCurve.valuation_Δ_aux_eq_of_isIntegral]
+        exact hval1
+      beta_reduce
+      rw [h2]
+      intro _
+      rw [← Subtype.coe_le_coe]
+      exact (WeierstrassCurve.valuation_Δ_aux
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+        (C' • (W.map (algebraMap ℤ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))))).2
+  haveI hWvGood : WeierstrassCurve.HasGoodReduction
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (W.map (algebraMap ℤ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) :=
+    { goodReduction := hval1 }
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
