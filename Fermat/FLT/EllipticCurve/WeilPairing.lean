@@ -871,6 +871,95 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
           hq.toHeightOneSpectrumRingOfIntegersRat))
       (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
       h𝒪 h htor
+  -- Step 3c-ii-f: integers prime to `q` remain units in the local
+  -- valuation subring of the completed algebraic closure (transport the
+  -- `𝒪ᵥ`-unit through the lying-over identity `h𝒪`)
+  have hIntUnitLoc : ∀ n : ℤ, ¬ ((q : ℤ) ∣ n) →
+      IsUnit ((n : ℤ) :
+        (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) := by
+    intro n hn
+    obtain ⟨u, hu⟩ := hIntUnit n hn
+    have hprodO : (u : (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) * ((u⁻¹ :
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)ˣ) :
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) = 1 := u.mul_inv
+    -- the image of the inverse lies in the local valuation subring
+    have hinvmem : algebraMap
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))
+        (((u⁻¹ : (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)ˣ) :
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) :
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) ∈
+        localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat := by
+      have hrange : (((u⁻¹ :
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)ˣ) :
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) :
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) ∈
+          (algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)).range := ⟨_, rfl⟩
+      rw [← h𝒪] at hrange
+      exact hrange
+    have hprodK : ((n : ℤ) : (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) *
+        (((u⁻¹ : (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)ˣ) :
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) :
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) = 1 := by
+      have hcast := congrArg (fun z :
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat) =>
+          (z : (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))) hprodO
+      push_cast at hcast
+      rw [← hcast]
+      push_cast [hu]
+      ring
+    have hfin := congrArg (algebraMap
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) hprodK
+    rw [map_mul, map_one, map_intCast] at hfin
+    refine isUnit_iff_exists.mpr ⟨⟨_, hinvmem⟩, ?_, ?_⟩
+    · exact Subtype.ext hfin
+    · refine Subtype.ext ?_
+      show _ * ((n : ℤ) : (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) = 1
+      rw [mul_comm]
+      exact hfin
+  -- Step 3c-ii-g: the reduced curve over the residue field of the local
+  -- valuation subring is elliptic (its discriminant is the residue of a
+  -- unit)
+  haveI hEllRes : (W.map (algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat)))).IsElliptic := by
+    refine (WeierstrassCurve.isElliptic_iff _).mpr ?_
+    rw [WeierstrassCurve.map_Δ]
+    have hu := (hIntUnitLoc W.Δ hqΔ).map (IsLocalRing.residue
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))
+    rw [map_intCast] at hu
+    rwa [show algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) W.Δ
+      = ((W.Δ : ℤ) : IsLocalRing.ResidueField
+        (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))
+      from eq_intCast _ _]
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
