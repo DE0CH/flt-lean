@@ -2646,9 +2646,85 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
         ((IsLocalRing.mem_maximalIdeal _).mpr hdnu)
     rw [map_sub, map_pow, sub_eq_zero] at hd0
     exact hd0
-  -- Step 3c-v (sorried): Frobenius compatibility — the global Frobenius
-  -- acts on reduced torsion as the `q`-power Frobenius
-  -- (`isArithFrobAt_adicArithFrob` on coordinates)
+  -- Step 3c-v-b: the `q`-power Frobenius of the residue field as a
+  -- `ℤ`-algebra homomorphism
+  set frobZ : (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) →ₐ[ℤ] (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) :=
+    { toRingHom := frobenius (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) q
+      commutes' := fun n => by
+        show frobenius (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) q ((algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))) n) = _
+        rw [eq_intCast (algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))), map_intCast] }
+    with hfrobZdef
+  -- proof-irrelevant congruence for reduced points (top-level copy)
+  have hsome' : ∀ {xa xb ya yb : (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))}
+      {ha : (W.map (algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)))).toAffine.Nonsingular xa ya}
+      {hb : (W.map (algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)))).toAffine.Nonsingular xb yb},
+      xa = xb → ya = yb →
+      (WeierstrassCurve.Affine.Point.some xa ya ha :
+        (W.map (algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)))).toAffine.Point) =
+        WeierstrassCurve.Affine.Point.some xb yb hb := by
+    intro xa xb ya yb ha hb hxab hyab
+    subst hxab
+    subst hyab
+    rfl
+  -- Step 3c-v-c: the reduction map intertwines the arithmetic Frobenius
+  -- with the `q`-power Frobenius
+  have hredfrob : ∀ P : ((W.map (algebraMap ℤ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Point, ((p : ℕ) : ℤ) • P = 0 →
+      redFun (WeierstrassCurve.Affine.Point.map
+        (W' := W.map (algebraMap ℤ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))) (S := (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))
+        ((Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat)).toAlgHom P) =
+      WeierstrassCurve.Affine.Point.map (W' := W) (S := ℤ) frobZ
+        (redFun P) := by
+    intro P hP
+    cases P with
+    | zero => rfl
+    | some z w h =>
+      have hz := habs h hP
+      have hw := hord h hP
+      -- torsion of the mapped point
+      have hP' : ((p : ℕ) : ℤ) • (WeierstrassCurve.Affine.Point.map
+          (W' := W.map (algebraMap ℤ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))) (S := (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))
+          ((Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat)).toAlgHom
+          (WeierstrassCurve.Affine.Point.some z w h)) = 0 := by
+        rw [← map_zsmul, hP, map_zero]
+      rw [WeierstrassCurve.Affine.Point.map_some] at hP' ⊢
+      have hz' := habs _ hP'
+      have hw' := hord _ hP'
+      rw [hredSome ((WeierstrassCurve.Affine.baseChange_nonsingular
+          (W := (W.map (algebraMap ℤ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine)
+          (f := ((Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat)).toAlgHom) ((Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat)).injective z w).mpr h)
+          hz' hw', hredSome h hz hw]
+      refine hsome' ?_ ?_
+      · show IsLocalRing.residue (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) ⟨((Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat)).toAlgHom z, hz'⟩ =
+          frobZ (IsLocalRing.residue (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) ⟨z, hz⟩)
+        rw [show frobZ (IsLocalRing.residue (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) ⟨z, hz⟩) =
+          (IsLocalRing.residue (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) ⟨z, hz⟩) ^ q from rfl]
+        exact hfrobres z hz
+      · show IsLocalRing.residue (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) ⟨((Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat)).toAlgHom w, hw'⟩ =
+          frobZ (IsLocalRing.residue (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) ⟨w, hw⟩)
+        rw [show frobZ (IsLocalRing.residue (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) ⟨w, hw⟩) =
+          (IsLocalRing.residue (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) ⟨w, hw⟩) ^ q from rfl]
+        exact hfrobres w hw
+  -- Step 3c-v (sorried): Frobenius compatibility — assemble the
+  -- equivariance of the layers
   sorry
 
 set_option warn.sorry false in
