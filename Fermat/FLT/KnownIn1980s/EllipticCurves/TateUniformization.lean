@@ -5947,16 +5947,22 @@ theorem pointMapQuot_one (q : kˣ) (hq : valuation k (q : k) < 1) :
   rw [pointMap_congr h1]
   exact pointMap_one (q : k) q.ne_zero hq
 
-set_option warn.sorry false in
 set_option maxHeartbeats 1000000 in
-/-- **`x`-surjectivity, identity-component case** (sorry node —
-Silverman ATAEC V.4, the formal-group half): if `|x| ≥ 1` then `(x,y)`
-lies in the image of the formal group of `E_q` (Silverman's
-`E_{q,0}(K)`, IV §6), which is parametrised near the origin by the
-inverse of the series `X(u) = u/(1-u)² + O(q)`; `u/(1-u)²` inverts by
-Hensel's lemma / formal-group logarithm since `d/du[u/(1-u)²]|_{u=0}
-= 1` is a unit, giving `u` with `|1-u| < 1` (equivalently `|u| = 1`)
-and `X(u,q) = x`. -/
+/-- **`x`-surjectivity, identity-component case** (PROVEN 2026-07-20 —
+Silverman ATAEC V.4, the formal-group half): if `|x| ≥ 1` then `x` is a
+`bilateralX`-value on the unit shell. The proof runs the nodal linear
+solve `t' = (y - T_Y u)/(x - T_X u)`, `F u = t'/(1+t')` (the
+`y`-coordinate selects the branch, so no square-root existence or
+characteristic hypotheses are needed): the tails `T_X`, `T_Y` of the
+bilateral series beyond their nodal leading terms are bounded by `|q₀|`
+and are `|q₀|`-Lipschitz on the shell; `F` is then a `|q₀|`-contraction
+fixing the shell, its orbit from the seed `y/(x+y)` converges in the
+complete field, and at the fixed point the defect `x - bilateralX u`
+satisfies the division-free identity `ε·D² = D³ - N·S` (bounded by
+`|q₀|` through the Tate equation) and the factored exclusion identity
+`ε·B = 0` with `|B| = |x|²` (the bracket identity
+`3Xl² - tXl - 2tYl - Yl = u²/(1-u)⁴` dominates all corrections), so
+`ε = 0`. -/
 theorem exists_annulus_bilateralX_eq_of_one_le (q₀ : k) (hq0 : q₀ ≠ 0)
     (hq1 : valuation k q₀ < 1) (x y : k)
     (hxy : (WeierstrassCurve.tateCurve q₀).toAffine.Equation x y)
@@ -7052,7 +7058,250 @@ theorem exists_annulus_bilateralX_eq_of_one_le (q₀ : k) (hq0 : q₀ ≠ 0)
       mul_comm (valuation k q₀) _] at h2
     exact (mul_le_mul_iff_right₀
       (zero_lt_iff.mpr (pow_ne_zero 2 hX0))).mp h2
-  sorry
+  -- the bilateral point satisfies the Tate equation
+  have huq : ustar ≠ q₀ := by
+    intro hh
+    rw [hh] at hustar_val
+    rw [hustar_val] at hq1
+    exact absurd hq1 (lt_irrefl _)
+  have hlow' : valuation k q₀ * valuation k q₀ < valuation k ustar := by
+    rw [hustar_val]
+    calc valuation k q₀ * valuation k q₀
+        ≤ valuation k q₀ * 1 := mul_le_mul' le_rfl hQ1
+      _ = valuation k q₀ := mul_one _
+      _ < 1 := hq1
+  have hns := nonsingular_bilateral ustar q₀ hu0' hustar_ne1 huq hq0 hq1
+    hlow' (le_of_eq hustar_val)
+  have hEq2 : (bilateralY ustar q₀) ^ 2 +
+      (bilateralX ustar q₀) * (bilateralY ustar q₀) =
+      (bilateralX ustar q₀) ^ 3 +
+        WeierstrassCurve.tateA₄ q₀ * (bilateralX ustar q₀) +
+        WeierstrassCurve.tateA₆ q₀ := by
+    have h1 := ((WeierstrassCurve.tateCurve q₀).toAffine.equation_iff
+      _ _).mp hns.1
+    simpa [WeierstrassCurve.tateCurve] using h1
+  -- the division form of the `δ`-relation, and the factored identity
+  have hδdiv : y - bilateralY ustar q₀ =
+      (y - TY ustar) / (x - TX ustar) * (x - bilateralX ustar q₀) := by
+    rw [div_mul_eq_mul_div, eq_div_iff hD0]
+    linear_combination hδmul
+  have hsub : (y - bilateralY ustar q₀) *
+      ((y - bilateralY ustar q₀) + 2 * (bilateralY ustar q₀) +
+        (bilateralX ustar q₀) + (x - bilateralX ustar q₀)) =
+      (x - bilateralX ustar q₀) *
+        (3 * (bilateralX ustar q₀) ^ 2 +
+          3 * (bilateralX ustar q₀) * (x - bilateralX ustar q₀) +
+          (x - bilateralX ustar q₀) ^ 2 +
+          WeierstrassCurve.tateA₄ q₀ - bilateralY ustar q₀) := by
+    linear_combination heq - hEq2
+  have hfactored : (x - bilateralX ustar q₀) *
+      ((y - TY ustar) / (x - TX ustar) *
+        ((y - bilateralY ustar q₀) + 2 * (bilateralY ustar q₀) +
+          (bilateralX ustar q₀) + (x - bilateralX ustar q₀)) -
+       (3 * (bilateralX ustar q₀) ^ 2 +
+          3 * (bilateralX ustar q₀) * (x - bilateralX ustar q₀) +
+          (x - bilateralX ustar q₀) ^ 2 +
+          WeierstrassCurve.tateA₄ q₀ - bilateralY ustar q₀)) = 0 := by
+    linear_combination hsub -
+      ((y - bilateralY ustar q₀) + 2 * (bilateralY ustar q₀) +
+        (bilateralX ustar q₀) + (x - bilateralX ustar q₀)) * hδdiv
+  -- the slope fraction in `u`-form
+  have ht : (y - TY ustar) / (x - TX ustar) = ustar / (1 - ustar) :=
+    (div_eq_div_iff hD0 h1u0).mpr (by
+      linear_combination (1 - ustar) * hNS - ustar * hDS)
+  -- the exclusion factor equals the dominant `-u²/(1-u)⁴` plus small terms
+  have hR : (y - TY ustar) / (x - TX ustar) *
+        ((y - bilateralY ustar q₀) + 2 * (bilateralY ustar q₀) +
+          (bilateralX ustar q₀) + (x - bilateralX ustar q₀)) -
+       (3 * (bilateralX ustar q₀) ^ 2 +
+          3 * (bilateralX ustar q₀) * (x - bilateralX ustar q₀) +
+          (x - bilateralX ustar q₀) ^ 2 +
+          WeierstrassCurve.tateA₄ q₀ - bilateralY ustar q₀) =
+      -(ustar ^ 2 / (1 - ustar) ^ 4) +
+        (ustar / (1 - ustar) * (y - bilateralY ustar q₀) +
+         ustar / (1 - ustar) * (x - bilateralX ustar q₀) -
+         6 * (ustar / (1 - ustar) ^ 2) * TX ustar - 3 * TX ustar ^ 2 +
+         ustar / (1 - ustar) * TX ustar + 2 * (ustar / (1 - ustar)) *
+           TY ustar + TY ustar -
+         3 * (ustar / (1 - ustar) ^ 2 + TX ustar) *
+           (x - bilateralX ustar q₀) -
+         (x - bilateralX ustar q₀) ^ 2 -
+         WeierstrassCurve.tateA₄ q₀) := by
+    rw [ht, hbX, hbY]
+    field_simp
+    ring
+  -- valuations of the dominant and small parts
+  have h1u : 1 - ustar = (x - TX ustar) /
+      ((x - TX ustar) + (y - TY ustar)) :=
+    (eq_div_iff hS0').mpr hDS.symm
+  have hW : valuation k (1 - ustar) = valuation k x / valuation k y := by
+    rw [h1u, map_div₀, hDv, hSv]
+  have htval : valuation k (ustar / (1 - ustar)) =
+      valuation k y / valuation k x := by
+    rw [map_div₀, hustar_val, hW, one_div, inv_div]
+  have hYX_sq : valuation k y / valuation k x *
+      (valuation k y / valuation k x) = valuation k x := by
+    rw [div_mul_div_comm, hy2]
+    rw [div_eq_iff (mul_ne_zero hX0 hX0), pow_succ, pow_two]
+    exact mul_assoc _ _ _
+  have hXlval : valuation k (ustar / (1 - ustar) ^ 2) = valuation k x := by
+    rw [map_div₀, hustar_val, map_pow, hW, one_div, div_pow, inv_div,
+      div_eq_iff (pow_ne_zero 2 hX0), pow_two (valuation k y), hy2,
+      pow_succ]
+    exact mul_comm _ _
+  have hMAINval : valuation k (ustar ^ 2 / (1 - ustar) ^ 4) =
+      valuation k x ^ 2 := by
+    rw [map_div₀, map_pow, map_pow, hustar_val, one_pow, hW, one_div,
+      div_pow, inv_div, div_eq_iff (pow_ne_zero 4 hX0),
+      show (4 : ℕ) = 2 * 2 from rfl, pow_mul, pow_two (valuation k y), hy2,
+      ← pow_mul, show (3 * 2 : ℕ) = 2 + 2 * 2 from rfl, pow_add]
+  have hYXle : valuation k y / valuation k x ≤ valuation k x := by
+    rw [div_le_iff₀ (zero_lt_iff.mpr hX0)]
+    calc valuation k y ≤ valuation k x ^ 2 := hYX2
+      _ = valuation k x * valuation k x := pow_two _
+  have hδaval : valuation k (y - bilateralY ustar q₀) ≤
+      valuation k y / valuation k x * valuation k q₀ := by
+    rw [hδdiv, map_mul, map_div₀, hNv, hDv]
+    exact mul_le_mul' le_rfl hεval
+  set C₂ := valuation k x * valuation k q₀ with hC₂def
+  have hQC₂ : valuation k q₀ ≤ C₂ := by
+    calc valuation k q₀ = 1 * valuation k q₀ := (one_mul _).symm
+      _ ≤ C₂ := mul_le_mul' hx le_rfl
+  have hr1 : valuation k (ustar / (1 - ustar) *
+      (y - bilateralY ustar q₀)) ≤ C₂ := by
+    rw [map_mul, htval]
+    calc valuation k y / valuation k x *
+        valuation k (y - bilateralY ustar q₀)
+        ≤ valuation k y / valuation k x *
+          (valuation k y / valuation k x * valuation k q₀) :=
+          mul_le_mul' le_rfl hδaval
+      _ = valuation k y / valuation k x *
+          (valuation k y / valuation k x) * valuation k q₀ := by
+          rw [mul_assoc]
+      _ = C₂ := by rw [hYX_sq]
+  have hr2 : valuation k (ustar / (1 - ustar) *
+      (x - bilateralX ustar q₀)) ≤ C₂ := by
+    rw [map_mul, htval]
+    exact mul_le_mul' hYXle hεval
+  have hr3 : valuation k (6 * (ustar / (1 - ustar) ^ 2) * TX ustar) ≤
+      C₂ := by
+    rw [map_mul, map_mul, hXlval]
+    calc valuation k 6 * valuation k x * valuation k (TX ustar)
+        ≤ 1 * valuation k x * valuation k q₀ :=
+          mul_le_mul' (mul_le_mul'
+            (by simpa using valuation_intCast_le_one (R := k) 6) le_rfl)
+            hTXv
+      _ = C₂ := by rw [one_mul]
+  have hr4 : valuation k (3 * TX ustar ^ 2) ≤ C₂ := by
+    rw [map_mul, map_pow]
+    refine le_trans ?_ hQC₂
+    calc valuation k 3 * valuation k (TX ustar) ^ 2
+        ≤ 1 * (valuation k q₀ * 1) := by
+          refine mul_le_mul' h3v ?_
+          rw [pow_two]
+          exact mul_le_mul' hTXv (le_trans hTXv hQ1)
+      _ = valuation k q₀ := by rw [one_mul, mul_one]
+  have hr5 : valuation k (ustar / (1 - ustar) * TX ustar) ≤ C₂ := by
+    rw [map_mul, htval]
+    exact mul_le_mul' hYXle hTXv
+  have hr6 : valuation k (2 * (ustar / (1 - ustar)) * TY ustar) ≤ C₂ := by
+    rw [map_mul, map_mul, htval]
+    calc valuation k 2 * (valuation k y / valuation k x) *
+        valuation k (TY ustar)
+        ≤ 1 * valuation k x * valuation k q₀ :=
+          mul_le_mul' (mul_le_mul' h2v hYXle) hTYv
+      _ = C₂ := by rw [one_mul]
+  have hr7 : valuation k (TY ustar) ≤ C₂ := le_trans hTYv hQC₂
+  have hr8 : valuation k (3 * (ustar / (1 - ustar) ^ 2 + TX ustar) *
+      (x - bilateralX ustar q₀)) ≤ C₂ := by
+    rw [map_mul, map_mul]
+    have h1 : valuation k (ustar / (1 - ustar) ^ 2 + TX ustar) ≤
+        valuation k x := by
+      refine le_trans (Valuation.map_add _ _ _) (max_le (le_of_eq hXlval)
+        (le_trans hTXv (le_trans hQ1 hx)))
+    calc valuation k 3 *
+        valuation k (ustar / (1 - ustar) ^ 2 + TX ustar) *
+        valuation k (x - bilateralX ustar q₀)
+        ≤ 1 * valuation k x * valuation k q₀ :=
+          mul_le_mul' (mul_le_mul' h3v h1) hεval
+      _ = C₂ := by rw [one_mul]
+  have hr9 : valuation k ((x - bilateralX ustar q₀) ^ 2) ≤ C₂ := by
+    rw [map_pow]
+    refine le_trans ?_ hQC₂
+    calc valuation k (x - bilateralX ustar q₀) ^ 2
+        ≤ valuation k q₀ * 1 := by
+          rw [pow_two]
+          exact mul_le_mul' hεval (le_trans hεval hQ1)
+      _ = valuation k q₀ := mul_one _
+  have hr10 : valuation k (WeierstrassCurve.tateA₄ q₀) ≤ C₂ :=
+    le_trans ha₄ hQC₂
+  -- the small part is at most `C₂ = |x||q₀| < |x|²`
+  have hRval : valuation k
+      (ustar / (1 - ustar) * (y - bilateralY ustar q₀) +
+       ustar / (1 - ustar) * (x - bilateralX ustar q₀) -
+       6 * (ustar / (1 - ustar) ^ 2) * TX ustar - 3 * TX ustar ^ 2 +
+       ustar / (1 - ustar) * TX ustar + 2 * (ustar / (1 - ustar)) *
+         TY ustar + TY ustar -
+       3 * (ustar / (1 - ustar) ^ 2 + TX ustar) *
+         (x - bilateralX ustar q₀) -
+       (x - bilateralX ustar q₀) ^ 2 -
+       WeierstrassCurve.tateA₄ q₀) ≤ C₂ := by
+    refine le_trans (Valuation.map_sub _ _ _) (max_le
+      (le_trans (Valuation.map_sub _ _ _) (max_le
+        (le_trans (Valuation.map_sub _ _ _) (max_le
+          (le_trans (Valuation.map_add _ _ _) (max_le
+            (le_trans (Valuation.map_add _ _ _) (max_le
+              (le_trans (Valuation.map_add _ _ _) (max_le
+                (le_trans (Valuation.map_sub _ _ _) (max_le
+                  (le_trans (Valuation.map_sub _ _ _) (max_le
+                    (le_trans (Valuation.map_add _ _ _)
+                      (max_le hr1 hr2))
+                    hr3))
+                  hr4))
+                hr5))
+              hr6))
+            hr7))
+          hr8))
+        hr9))
+      hr10)
+  have hC₂lt : C₂ < valuation k x ^ 2 := by
+    rw [hC₂def, pow_two]
+    exact mul_lt_mul_of_pos_left (lt_of_lt_of_le hq1 hx)
+      (zero_lt_iff.mpr hX0)
+  -- hence the exclusion factor has valuation `|x|²` and is nonzero
+  have hBBval : valuation k
+      ((y - TY ustar) / (x - TX ustar) *
+        ((y - bilateralY ustar q₀) + 2 * (bilateralY ustar q₀) +
+          (bilateralX ustar q₀) + (x - bilateralX ustar q₀)) -
+       (3 * (bilateralX ustar q₀) ^ 2 +
+          3 * (bilateralX ustar q₀) * (x - bilateralX ustar q₀) +
+          (x - bilateralX ustar q₀) ^ 2 +
+          WeierstrassCurve.tateA₄ q₀ - bilateralY ustar q₀)) =
+      valuation k x ^ 2 := by
+    rw [hR]
+    have h1 : valuation k
+        (ustar / (1 - ustar) * (y - bilateralY ustar q₀) +
+         ustar / (1 - ustar) * (x - bilateralX ustar q₀) -
+         6 * (ustar / (1 - ustar) ^ 2) * TX ustar - 3 * TX ustar ^ 2 +
+         ustar / (1 - ustar) * TX ustar + 2 * (ustar / (1 - ustar)) *
+           TY ustar + TY ustar -
+         3 * (ustar / (1 - ustar) ^ 2 + TX ustar) *
+           (x - bilateralX ustar q₀) -
+         (x - bilateralX ustar q₀) ^ 2 -
+         WeierstrassCurve.tateA₄ q₀) <
+        valuation k (-(ustar ^ 2 / (1 - ustar) ^ 4)) := by
+      rw [Valuation.map_neg, hMAINval]
+      exact lt_of_le_of_lt hRval hC₂lt
+    rw [(valuation k).map_add_eq_of_lt_left h1, Valuation.map_neg,
+      hMAINval]
+  -- conclude: the defect vanishes and `ustar` is the sought parameter
+  rcases mul_eq_zero.mp hfactored with hzero | hBBzero
+  · exact ⟨ustar, hu0', hustar_ne1,
+      by rw [hustar_val]; exact hq1, le_of_eq hustar_val,
+      (sub_eq_zero.mp hzero).symm⟩
+  · exfalso
+    rw [hBBzero, map_zero] at hBBval
+    exact pow_ne_zero 2 hX0 hBBval.symm
 
 set_option warn.sorry false in
 /-- **`x`-surjectivity, non-identity-component case** (sorry node —
