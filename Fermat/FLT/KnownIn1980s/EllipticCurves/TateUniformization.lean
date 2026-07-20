@@ -466,12 +466,12 @@ theorem summable_evalA_XA (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
 omit [CharZero k] in
 /-- Ultrametric bound for a convergent sum: the valuation of the sum is
 at most any common bound of the terms. -/
-theorem valuation_tsum_le {f : ℕ → k} (hf : Summable f)
+theorem valuation_tsum_le {ι : Type*} {f : ι → k} (hf : Summable f)
     (c : ValueGroupWithZero k) (hbound : ∀ n, valuation k (f n) ≤ c) :
     valuation k (∑' n, f n) ≤ c := by
   by_contra hlt
   rw [not_le] at hlt
-  have hpart : ∀ s : Finset ℕ, valuation k (∑ n ∈ s, f n) ≤ c :=
+  have hpart : ∀ s : Finset ι, valuation k (∑ n ∈ s, f n) ≤ c :=
     fun s => Valuation.map_sum_le _ fun n _ => hbound n
   have hS : HasSum f (∑' n, f n) := hf.hasSum
   simp only [HasSum, SummationFilter.unconditional_filter,
@@ -5948,6 +5948,7 @@ theorem pointMapQuot_one (q : kˣ) (hq : valuation k (q : k) < 1) :
   exact pointMap_one (q : k) q.ne_zero hq
 
 set_option warn.sorry false in
+set_option maxHeartbeats 1000000 in
 /-- **`x`-surjectivity, identity-component case** (sorry node —
 Silverman ATAEC V.4, the formal-group half): if `|x| ≥ 1` then `(x,y)`
 lies in the image of the formal group of `E_q` (Silverman's
@@ -5968,10 +5969,72 @@ theorem exists_annulus_bilateralX_eq_of_one_le (q₀ : k) (hq0 : q₀ ≠ 0)
   -- (`|q₀^m u^{±1}| < 1`) and numerator of valuation `|q₀|^m`, and the
   -- divisor-sum series is bounded by `|q₀|` outright
   -- (`valuation_tsum_le` on each of the three constituent series).
+  have htsum_pnat : ∀ (f : ℕ+ → k), Summable f →
+      ∀ c : ValueGroupWithZero k, (∀ m, valuation k (f m) ≤ c) →
+      valuation k (∑' m, f m) ≤ c :=
+    fun f hf c hb => valuation_tsum_le hf c hb
+  have hqpow_le : ∀ N : ℕ+, valuation k q₀ ^ (N : ℕ) ≤ valuation k q₀ := by
+    intro N
+    calc valuation k q₀ ^ (N : ℕ) ≤ valuation k q₀ ^ (1 : ℕ) :=
+        pow_le_pow_right_of_le_one' (le_of_lt hq1) N.2
+      _ = valuation k q₀ := pow_one _
+  have hterm_le : ∀ (w : k), valuation k w = 1 → ∀ m : ℕ+,
+      valuation k (q₀ ^ (m : ℕ) * w / (1 - q₀ ^ (m : ℕ) * w) ^ 2) ≤
+        valuation k q₀ := by
+    intro w hw m
+    have hsmall : valuation k (q₀ ^ (m : ℕ) * w) < 1 := by
+      rw [map_mul, map_pow, hw, mul_one]
+      exact pow_lt_one₀ zero_le hq1 m.ne_zero
+    rw [map_div₀, map_mul, map_pow, hw, mul_one, map_pow,
+      (valuation k).map_one_sub_of_lt hsmall, one_pow, div_one]
+    exact hqpow_le m
   have htail : ∀ u : k, valuation k u = 1 → u ≠ 1 →
       valuation k (bilateralX u q₀ - u / (1 - u) ^ 2) ≤
         valuation k q₀ := by
-    sorry
+    intro u hu hu1
+    have huinv : valuation k u⁻¹ = 1 := by
+      rw [map_inv₀, hu, inv_one]
+    have hqu : valuation k (q₀ * u) < 1 := by
+      rw [map_mul, hu, mul_one]
+      exact hq1
+    have hquinv : valuation k (q₀ * u⁻¹) < 1 := by
+      rw [map_mul, huinv, mul_one]
+      exact hq1
+    rw [bilateralX, add_sub_cancel_left]
+    have hS1 : valuation k
+        (∑' m : ℕ+, q₀ ^ (m : ℕ) * u / (1 - q₀ ^ (m : ℕ) * u) ^ 2) ≤
+          valuation k q₀ :=
+      htsum_pnat _ (summable_lambert_terms u q₀ hq1 hqu) _
+        (hterm_le u hu)
+    have hS2 : valuation k
+        (∑' m : ℕ+, q₀ ^ (m : ℕ) * u⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 2) ≤ valuation k q₀ :=
+      htsum_pnat _ (summable_lambert_terms u⁻¹ q₀ hq1 hquinv) _
+        (hterm_le u⁻¹ huinv)
+    have hS3 : valuation k
+        (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ)) ≤ valuation k q₀ := by
+      refine htsum_pnat _ (summable_sigma_one_nonarch q₀ hq1) _ ?_
+      intro N
+      rw [map_mul, map_pow]
+      have hd1 : valuation k (∑ d ∈ (N : ℕ).divisors, (d : k)) ≤ 1 :=
+        Valuation.map_sum_le _ fun d _ => by
+          simpa using valuation_intCast_le_one (R := k) d
+      calc valuation k (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+            valuation k q₀ ^ (N : ℕ)
+          ≤ 1 * valuation k q₀ ^ (N : ℕ) := mul_le_mul_left hd1 _
+        _ = valuation k q₀ ^ (N : ℕ) := one_mul _
+        _ ≤ valuation k q₀ := hqpow_le N
+    refine le_trans (Valuation.map_sub _ _ _) (max_le ?_ ?_)
+    · exact le_trans (Valuation.map_add _ _ _) (max_le hS1 hS2)
+    · rw [map_mul]
+      calc valuation k 2 * valuation k
+            (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+              q₀ ^ (N : ℕ))
+          ≤ 1 * valuation k q₀ := by
+            refine mul_le_mul' ?_ hS3
+            simpa using valuation_intCast_le_one (R := k) 2
+        _ = valuation k q₀ := one_mul _
   -- Step 2 (Lipschitz bound): the deviation is `|q₀|`-Lipschitz on the
   -- unit shell, by the algebraic identity
   -- `u/(1-au)² - v/(1-av)² = (u-v)(1-a²uv)/((1-au)²(1-av)²)` applied
