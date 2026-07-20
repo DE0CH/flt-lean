@@ -6409,15 +6409,115 @@ theorem exists_annulus_bilateralX_eq_of_one_le (q₀ : k) (hq0 : q₀ ≠ 0)
     · refine le_trans (valuation_tsum_le (hSY2u.sub hSY2v) _
         (fun m => htermY2_diff_le u⁻¹ v⁻¹ huinv hvinv m)) ?_
       rw [hinvdiff]
-  -- Step 3 (seed and contraction; Silverman ATAEC V.4.1): from the curve
-  -- equation with `|x| ≥ 1` the reduced point lies on the smooth locus of
-  -- the nodal cubic `Y² + XY = X³`, whose rational parametrization
-  -- `t ↦ (t² + t, t³ + t²)`, `t = y/x`, `u = t/(1+t)`, provides a seed
-  -- `u₀` on the unit shell with `|bilateralX u₀ q₀ - x|` small — the
-  -- `y`-coordinate selects the branch, so no square-root existence is
-  -- needed; then iterate the exact nodal solve against the tail
-  -- (contraction factor `|q₀| < 1` by `hlip`) and pass to the limit in
-  -- the complete field `k`.
+  -- Step 3 (seed and contraction; Silverman ATAEC V.4.1).
+  -- Coefficient bounds: `|a₄|, |a₆| ≤ |q₀|`.
+  have ha₄ : valuation k (WeierstrassCurve.tateA₄ q₀) ≤ valuation k q₀ := by
+    rw [WeierstrassCurve.tateA₄_eq_evalInt q₀ hq1]
+    calc valuation k (evalInt q₀ a₄Formal)
+        ≤ valuation k q₀ ^ 1 := valuation_evalInt_le_pow q₀ hq1
+          (fun m hm => by
+            interval_cases m
+            rw [coeff_a₄Formal]
+            simp)
+      _ = valuation k q₀ := pow_one _
+  have ha₆ : valuation k (WeierstrassCurve.tateA₆ q₀) ≤ valuation k q₀ := by
+    rw [WeierstrassCurve.tateA₆_eq_evalInt q₀ hq1]
+    calc valuation k (evalInt q₀ a₆Formal)
+        ≤ valuation k q₀ ^ 1 := valuation_evalInt_le_pow q₀ hq1
+          (fun m hm => by
+            interval_cases m
+            rw [coeff_a₆Formal]
+            simp)
+      _ = valuation k q₀ := pow_one _
+  -- the explicit equation `y² + xy = x³ + a₄x + a₆`
+  have heq : y ^ 2 + x * y =
+      x ^ 3 + WeierstrassCurve.tateA₄ q₀ * x + WeierstrassCurve.tateA₆ q₀ := by
+    have h1 := ((WeierstrassCurve.tateCurve q₀).toAffine.equation_iff x y).mp hxy
+    simpa [WeierstrassCurve.tateCurve] using h1
+  -- basic magnitudes: `x ≠ 0`, and the right side has valuation `|x|³`
+  have hx0 : x ≠ 0 := by
+    intro hh
+    rw [hh, map_zero] at hx
+    exact absurd (lt_of_lt_of_le zero_lt_one hx) (lt_irrefl _)
+  have hX0 : valuation k x ≠ 0 := (Valuation.ne_zero_iff _).mpr hx0
+  have hXcube : (1 : ValueGroupWithZero k) ≤ valuation k x ^ 3 :=
+    one_le_pow_of_one_le' hx 3
+  have hRHS : valuation k
+      (x ^ 3 + WeierstrassCurve.tateA₄ q₀ * x + WeierstrassCurve.tateA₆ q₀) =
+      valuation k x ^ 3 := by
+    have h1 : valuation k (WeierstrassCurve.tateA₄ q₀ * x +
+        WeierstrassCurve.tateA₆ q₀) < valuation k x ^ 3 := by
+      refine lt_of_le_of_lt (Valuation.map_add _ _ _) (max_lt ?_ ?_)
+      · rw [map_mul]
+        calc valuation k (WeierstrassCurve.tateA₄ q₀) * valuation k x
+            ≤ valuation k q₀ * valuation k x := mul_le_mul_left ha₄ _
+          _ < 1 * valuation k x :=
+              mul_lt_mul_of_pos_right hq1 (zero_lt_iff.mpr hX0)
+          _ = valuation k x := one_mul _
+          _ ≤ valuation k x ^ 3 := le_self_pow hx (by norm_num)
+      · exact lt_of_le_of_lt ha₆ (lt_of_lt_of_le hq1 hXcube)
+    rw [add_assoc]
+    calc valuation k (x ^ 3 + (WeierstrassCurve.tateA₄ q₀ * x +
+          WeierstrassCurve.tateA₆ q₀)) = valuation k (x ^ 3) := by
+          exact (valuation k).map_add_eq_of_lt_left (by rwa [map_pow])
+      _ = valuation k x ^ 3 := map_pow _ _ _
+  -- magnitudes of `y`: `y ≠ 0`, `|y + x| = |y|`, `|y|² = |x|³`, `1 ≤ |y|`
+  have hfact : valuation k y * valuation k (y + x) = valuation k x ^ 3 := by
+    have h1 : y * (y + x) = y ^ 2 + x * y := by ring
+    calc valuation k y * valuation k (y + x)
+        = valuation k (y * (y + x)) := (map_mul _ _ _).symm
+      _ = valuation k (y ^ 2 + x * y) := by rw [h1]
+      _ = valuation k x ^ 3 := by rw [heq]; exact hRHS
+  have hy0 : y ≠ 0 := by
+    intro hh
+    rw [hh, map_zero, zero_mul] at hfact
+    exact pow_ne_zero 3 hX0 hfact.symm
+  have hY0 : valuation k y ≠ 0 := (Valuation.ne_zero_iff _).mpr hy0
+  have hyx : valuation k (y + x) = valuation k y := by
+    rcases lt_trichotomy (valuation k y) (valuation k (y + x)) with h | h | h
+    · exfalso
+      have hXG : valuation k x = valuation k (y + x) := by
+        have he : valuation k x = valuation k (-(y - (y + x))) := by
+          congr 1
+          ring
+        rw [he, Valuation.map_neg, (valuation k).map_sub_eq_of_lt_right h]
+      have hG0 : valuation k (y + x) ≠ 0 := hXG ▸ hX0
+      have hYG : valuation k y = valuation k (y + x) ^ 2 := by
+        have h1 : valuation k y * valuation k (y + x) =
+            valuation k (y + x) ^ 2 * valuation k (y + x) := by
+          rw [hfact, hXG, pow_succ]
+        exact mul_right_cancel₀ hG0 h1
+      have hG1 : (1 : ValueGroupWithZero k) ≤ valuation k (y + x) :=
+        hXG ▸ hx
+      have hGsq : valuation k (y + x) ≤ valuation k (y + x) ^ 2 :=
+        le_self_pow hG1 (by norm_num)
+      exact absurd (lt_of_le_of_lt (hYG ▸ hGsq) h) (lt_irrefl _)
+    · exact h.symm
+    · exfalso
+      have hXY : valuation k x = valuation k y := by
+        have he : valuation k x = valuation k ((y + x) - y) := by
+          congr 1
+          ring
+        rw [he, (valuation k).map_sub_eq_of_lt_right h]
+      have hGY : valuation k (y + x) = valuation k y ^ 2 := by
+        have h1 : valuation k y * valuation k (y + x) =
+            valuation k y * valuation k y ^ 2 := by
+          rw [hfact, hXY, pow_succ, mul_comm]
+        exact mul_left_cancel₀ hY0 h1
+      have hY1 : (1 : ValueGroupWithZero k) ≤ valuation k y := hXY ▸ hx
+      have hYsq : valuation k y ≤ valuation k y ^ 2 :=
+        le_self_pow hY1 (by norm_num)
+      exact absurd (lt_of_le_of_lt (hGY ▸ hYsq) h) (lt_irrefl _)
+  have hy2 : valuation k y * valuation k y = valuation k x ^ 3 := by
+    rw [← hfact, hyx]
+  have hy1 : (1 : ValueGroupWithZero k) ≤ valuation k y := by
+    by_contra hcon
+    push Not at hcon
+    have h1 : valuation k y * valuation k y < 1 :=
+      lt_of_le_of_lt (mul_le_mul' le_rfl hcon.le)
+        (by rwa [mul_one])
+    rw [hy2] at h1
+    exact absurd (lt_of_le_of_lt hXcube h1) (lt_irrefl _)
   sorry
 
 set_option warn.sorry false in
