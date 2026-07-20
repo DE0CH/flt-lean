@@ -197,59 +197,55 @@ entries file). To add/remove/annotate a node, edit
                                                                       interior) by the PROVEN
                                                                       vertical case + injectivity,
                                                                       so uv ∈ {1, q}.
-                                                                        - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity of
-                                                                          the bilateral parametrization
-                                                                          on the fundamental annulus
-                                                                          (sorry node): X(u₀)=X(v₀) ∧
-                                                                          Y(u₀)=Y(v₀) → u₀ = v₀.
-                                                                          ANALYSIS (2026-07-18): the
-                                                                          difference of Lambert kernels
-                                                                          factors exactly: f(a)−f(b) =
-                                                                          (a−b)(1−ab)/((1−a)²(1−b)²) for
-                                                                          f(t)=t/(1−t)², and
-                                                                          ultrametrically |1−a| = 1
-                                                                          whenever |a| < 1, so each tail
-                                                                          term of X(u₀)−X(v₀) is bounded
-                                                                          by |q₀|^m|u₀−v₀| (u-side)
-                                                                          resp. |q₀^m/(u₀v₀)||u₀−v₀|
-                                                                          (u⁻¹-side); the head
-                                                                          contributes (u₀−v₀)(1−u₀v₀)/((
-                                                                          1−u₀)²(1−v₀)²). Two-step plan:
-                                                                          (1) show X(u₀)=X(v₀) → u₀=v₀ ∨
-                                                                          u₀v₀=1 by comparing the head
-                                                                          factor against the tails —
-                                                                          DELICATE when |1−u₀| < 1 (u₀ ≡
-                                                                          1 in residue) and for the m=1
-                                                                          u⁻¹-side term when |u₀v₀| is
-                                                                          near |q₀|² (only > |q₀|²
-                                                                          guaranteed); the clean
-                                                                          classical route is the theta-
-                                                                          product factorization
-                                                                          (Silverman ATAEC V §3–4, Lang
-                                                                          Elliptic Functions ch. 15:
-                                                                          X(u)−X(v) = -uv·Θ(uv)Θ(u/v)/(Θ
-                                                                          (u)²Θ(v)²)-type with Θ(t) =
-                                                                          (1−t)∏(1−qⁿt)(1−qⁿ/t)/(1−qⁿ)²
-                                                                          — CONSULT THE LITERATURE for
-                                                                          the exact normalization before
-                                                                          formalizing; the Θ-machinery
-                                                                          would also give an independent
-                                                                          route to the chord
-                                                                          identities). (2) the case u₀v₀
-                                                                          = 1 with equal Y: then both in
-                                                                          window forces |u₀| = |v₀| = 1,
-                                                                          and Y(u₀)=Y(u₀⁻¹) =
-                                                                          −Y(u₀)−X(u₀) gives
-                                                                          2Y(u₀)+X(u₀)=0 (the negation-
-                                                                          fixed condition); the one-
-                                                                          variable formal series 2Y+X
-                                                                          has head u(1+u)/(1−u)³ and
-                                                                          should factor as
-                                                                          u(1+u)/(1−u)³·(unit), giving
-                                                                          u₀ = −1 hence v₀ = u₀. Note
-                                                                          the (1−u)-division head-vs-
-                                                                          tail estimate has the same
-                                                                          |1−u₀|-delicacy.
+                                                                        - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity
+                                                                          (sorry node — TO BE
+                                                                          RESTRUCTURED AWAY, Silverman
+                                                                          ATAEC V.3.1(c) proof read
+                                                                          2026-07-20 from
+                                                                          Books/silverman1994ataec.txt
+                                                                          ~line 15900): Silverman NEVER
+                                                                          proves injectivity or the
+                                                                          tangent case directly. Lemma
+                                                                          3.1.2: a map φ from a
+                                                                          multiplicative group to an
+                                                                          additive group taking
+                                                                          infinitely many distinct
+                                                                          values and satisfying φ(u₁u₂)
+                                                                          = φ(u₁)+φ(u₂) WHENEVER φ(u₁) ≠
+                                                                          ±φ(u₂) is automatically a
+                                                                          homomorphism (pick u with φ(u)
+                                                                          avoiding 6 values; then φ(uu₁)
+                                                                          = φ(u)+φ(u₁) ≠ ±φ(u₂) etc.,
+                                                                          cancel). RESTRUCTURE PLAN: (1)
+                                                                          abstract Lemma 3.1.2; (2)
+                                                                          infinitude: |X(1+t,q)| = |t|⁻²
+                                                                          for 0<|t|<1 (head (1+t)/t²
+                                                                          dominates the Lambert tails
+                                                                          ultrametrically), so u ↦
+                                                                          pointMap(1+πʲ) gives
+                                                                          infinitely many distinct
+                                                                          values; (3) pointMap_mul :=
+                                                                          X≠-case
+                                                                          (bilateral_add_of_X_ne, PROVEN
+                                                                          chain) + vertical case
+                                                                          (PROVEN) + Lemma 3.1.2 — note
+                                                                          φ(u₁) ≠ ±φ(u₂) ⟺ X-values
+                                                                          differ (for non-O points), so
+                                                                          the X≠-case is exactly the
+                                                                          hypothesis; (4) injectivity
+                                                                          DERIVED: φ(u)=φ(v) →
+                                                                          φ(u·v⁻¹-class) = O → kernel is
+                                                                          q^ℤ by definition of pointMap
+                                                                          → window reps equal; (5)
+                                                                          DELETE the tangent chain
+                                                                          (bilateral_tangentX/Y_cleared,
+                                                                          bilateral_add_self) — 2
+                                                                          sorries removed. Remaining
+                                                                          hard leaf:
+                                                                          exists_annulus_bilateralX_eq
+                                                                          (surjectivity, Silverman §V.4
+                                                                          — Newton
+                                                                          polygon/completeness).
                                                                     - ✅· `TateCurve.bilateral_add_self` — the tangent identity (V.3.1(c)
                                                                       doubling case). DERIVED
                                                                       2026-07-18 from the cleared
@@ -263,59 +259,55 @@ entries file). To add/remove/annotate a node, edit
                                                                           has 2Y(u) + X(u) ≠ 0 — the
                                                                           2-torsion parameters are
                                                                           exactly {-1, ±√q}·q^ℤ.
-                                                                            - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity of
-                                                                              the bilateral parametrization
-                                                                              on the fundamental annulus
-                                                                              (sorry node): X(u₀)=X(v₀) ∧
-                                                                              Y(u₀)=Y(v₀) → u₀ = v₀.
-                                                                              ANALYSIS (2026-07-18): the
-                                                                              difference of Lambert kernels
-                                                                              factors exactly: f(a)−f(b) =
-                                                                              (a−b)(1−ab)/((1−a)²(1−b)²) for
-                                                                              f(t)=t/(1−t)², and
-                                                                              ultrametrically |1−a| = 1
-                                                                              whenever |a| < 1, so each tail
-                                                                              term of X(u₀)−X(v₀) is bounded
-                                                                              by |q₀|^m|u₀−v₀| (u-side)
-                                                                              resp. |q₀^m/(u₀v₀)||u₀−v₀|
-                                                                              (u⁻¹-side); the head
-                                                                              contributes (u₀−v₀)(1−u₀v₀)/((
-                                                                              1−u₀)²(1−v₀)²). Two-step plan:
-                                                                              (1) show X(u₀)=X(v₀) → u₀=v₀ ∨
-                                                                              u₀v₀=1 by comparing the head
-                                                                              factor against the tails —
-                                                                              DELICATE when |1−u₀| < 1 (u₀ ≡
-                                                                              1 in residue) and for the m=1
-                                                                              u⁻¹-side term when |u₀v₀| is
-                                                                              near |q₀|² (only > |q₀|²
-                                                                              guaranteed); the clean
-                                                                              classical route is the theta-
-                                                                              product factorization
-                                                                              (Silverman ATAEC V §3–4, Lang
-                                                                              Elliptic Functions ch. 15:
-                                                                              X(u)−X(v) = -uv·Θ(uv)Θ(u/v)/(Θ
-                                                                              (u)²Θ(v)²)-type with Θ(t) =
-                                                                              (1−t)∏(1−qⁿt)(1−qⁿ/t)/(1−qⁿ)²
-                                                                              — CONSULT THE LITERATURE for
-                                                                              the exact normalization before
-                                                                              formalizing; the Θ-machinery
-                                                                              would also give an independent
-                                                                              route to the chord
-                                                                              identities). (2) the case u₀v₀
-                                                                              = 1 with equal Y: then both in
-                                                                              window forces |u₀| = |v₀| = 1,
-                                                                              and Y(u₀)=Y(u₀⁻¹) =
-                                                                              −Y(u₀)−X(u₀) gives
-                                                                              2Y(u₀)+X(u₀)=0 (the negation-
-                                                                              fixed condition); the one-
-                                                                              variable formal series 2Y+X
-                                                                              has head u(1+u)/(1−u)³ and
-                                                                              should factor as
-                                                                              u(1+u)/(1−u)³·(unit), giving
-                                                                              u₀ = −1 hence v₀ = u₀. Note
-                                                                              the (1−u)-division head-vs-
-                                                                              tail estimate has the same
-                                                                              |1−u₀|-delicacy.
+                                                                            - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity
+                                                                              (sorry node — TO BE
+                                                                              RESTRUCTURED AWAY, Silverman
+                                                                              ATAEC V.3.1(c) proof read
+                                                                              2026-07-20 from
+                                                                              Books/silverman1994ataec.txt
+                                                                              ~line 15900): Silverman NEVER
+                                                                              proves injectivity or the
+                                                                              tangent case directly. Lemma
+                                                                              3.1.2: a map φ from a
+                                                                              multiplicative group to an
+                                                                              additive group taking
+                                                                              infinitely many distinct
+                                                                              values and satisfying φ(u₁u₂)
+                                                                              = φ(u₁)+φ(u₂) WHENEVER φ(u₁) ≠
+                                                                              ±φ(u₂) is automatically a
+                                                                              homomorphism (pick u with φ(u)
+                                                                              avoiding 6 values; then φ(uu₁)
+                                                                              = φ(u)+φ(u₁) ≠ ±φ(u₂) etc.,
+                                                                              cancel). RESTRUCTURE PLAN: (1)
+                                                                              abstract Lemma 3.1.2; (2)
+                                                                              infinitude: |X(1+t,q)| = |t|⁻²
+                                                                              for 0<|t|<1 (head (1+t)/t²
+                                                                              dominates the Lambert tails
+                                                                              ultrametrically), so u ↦
+                                                                              pointMap(1+πʲ) gives
+                                                                              infinitely many distinct
+                                                                              values; (3) pointMap_mul :=
+                                                                              X≠-case
+                                                                              (bilateral_add_of_X_ne, PROVEN
+                                                                              chain) + vertical case
+                                                                              (PROVEN) + Lemma 3.1.2 — note
+                                                                              φ(u₁) ≠ ±φ(u₂) ⟺ X-values
+                                                                              differ (for non-O points), so
+                                                                              the X≠-case is exactly the
+                                                                              hypothesis; (4) injectivity
+                                                                              DERIVED: φ(u)=φ(v) →
+                                                                              φ(u·v⁻¹-class) = O → kernel is
+                                                                              q^ℤ by definition of pointMap
+                                                                              → window reps equal; (5)
+                                                                              DELETE the tangent chain
+                                                                              (bilateral_tangentX/Y_cleared,
+                                                                              bilateral_add_self) — 2
+                                                                              sorries removed. Remaining
+                                                                              hard leaf:
+                                                                              exists_annulus_bilateralX_eq
+                                                                              (surjectivity, Silverman §V.4
+                                                                              — Newton
+                                                                              polygon/completeness).
                                                                         - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity
                                                                           (sorry node): -(Y(u²)+X(u²))E
                                                                           = M(X(u²)-X(u)) + Y(u)E.
@@ -454,59 +446,55 @@ entries file). To add/remove/annotate a node, edit
                                                                           interior) by the PROVEN
                                                                           vertical case + injectivity,
                                                                           so uv ∈ {1, q}.
-                                                                            - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity of
-                                                                              the bilateral parametrization
-                                                                              on the fundamental annulus
-                                                                              (sorry node): X(u₀)=X(v₀) ∧
-                                                                              Y(u₀)=Y(v₀) → u₀ = v₀.
-                                                                              ANALYSIS (2026-07-18): the
-                                                                              difference of Lambert kernels
-                                                                              factors exactly: f(a)−f(b) =
-                                                                              (a−b)(1−ab)/((1−a)²(1−b)²) for
-                                                                              f(t)=t/(1−t)², and
-                                                                              ultrametrically |1−a| = 1
-                                                                              whenever |a| < 1, so each tail
-                                                                              term of X(u₀)−X(v₀) is bounded
-                                                                              by |q₀|^m|u₀−v₀| (u-side)
-                                                                              resp. |q₀^m/(u₀v₀)||u₀−v₀|
-                                                                              (u⁻¹-side); the head
-                                                                              contributes (u₀−v₀)(1−u₀v₀)/((
-                                                                              1−u₀)²(1−v₀)²). Two-step plan:
-                                                                              (1) show X(u₀)=X(v₀) → u₀=v₀ ∨
-                                                                              u₀v₀=1 by comparing the head
-                                                                              factor against the tails —
-                                                                              DELICATE when |1−u₀| < 1 (u₀ ≡
-                                                                              1 in residue) and for the m=1
-                                                                              u⁻¹-side term when |u₀v₀| is
-                                                                              near |q₀|² (only > |q₀|²
-                                                                              guaranteed); the clean
-                                                                              classical route is the theta-
-                                                                              product factorization
-                                                                              (Silverman ATAEC V §3–4, Lang
-                                                                              Elliptic Functions ch. 15:
-                                                                              X(u)−X(v) = -uv·Θ(uv)Θ(u/v)/(Θ
-                                                                              (u)²Θ(v)²)-type with Θ(t) =
-                                                                              (1−t)∏(1−qⁿt)(1−qⁿ/t)/(1−qⁿ)²
-                                                                              — CONSULT THE LITERATURE for
-                                                                              the exact normalization before
-                                                                              formalizing; the Θ-machinery
-                                                                              would also give an independent
-                                                                              route to the chord
-                                                                              identities). (2) the case u₀v₀
-                                                                              = 1 with equal Y: then both in
-                                                                              window forces |u₀| = |v₀| = 1,
-                                                                              and Y(u₀)=Y(u₀⁻¹) =
-                                                                              −Y(u₀)−X(u₀) gives
-                                                                              2Y(u₀)+X(u₀)=0 (the negation-
-                                                                              fixed condition); the one-
-                                                                              variable formal series 2Y+X
-                                                                              has head u(1+u)/(1−u)³ and
-                                                                              should factor as
-                                                                              u(1+u)/(1−u)³·(unit), giving
-                                                                              u₀ = −1 hence v₀ = u₀. Note
-                                                                              the (1−u)-division head-vs-
-                                                                              tail estimate has the same
-                                                                              |1−u₀|-delicacy.
+                                                                            - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity
+                                                                              (sorry node — TO BE
+                                                                              RESTRUCTURED AWAY, Silverman
+                                                                              ATAEC V.3.1(c) proof read
+                                                                              2026-07-20 from
+                                                                              Books/silverman1994ataec.txt
+                                                                              ~line 15900): Silverman NEVER
+                                                                              proves injectivity or the
+                                                                              tangent case directly. Lemma
+                                                                              3.1.2: a map φ from a
+                                                                              multiplicative group to an
+                                                                              additive group taking
+                                                                              infinitely many distinct
+                                                                              values and satisfying φ(u₁u₂)
+                                                                              = φ(u₁)+φ(u₂) WHENEVER φ(u₁) ≠
+                                                                              ±φ(u₂) is automatically a
+                                                                              homomorphism (pick u with φ(u)
+                                                                              avoiding 6 values; then φ(uu₁)
+                                                                              = φ(u)+φ(u₁) ≠ ±φ(u₂) etc.,
+                                                                              cancel). RESTRUCTURE PLAN: (1)
+                                                                              abstract Lemma 3.1.2; (2)
+                                                                              infinitude: |X(1+t,q)| = |t|⁻²
+                                                                              for 0<|t|<1 (head (1+t)/t²
+                                                                              dominates the Lambert tails
+                                                                              ultrametrically), so u ↦
+                                                                              pointMap(1+πʲ) gives
+                                                                              infinitely many distinct
+                                                                              values; (3) pointMap_mul :=
+                                                                              X≠-case
+                                                                              (bilateral_add_of_X_ne, PROVEN
+                                                                              chain) + vertical case
+                                                                              (PROVEN) + Lemma 3.1.2 — note
+                                                                              φ(u₁) ≠ ±φ(u₂) ⟺ X-values
+                                                                              differ (for non-O points), so
+                                                                              the X≠-case is exactly the
+                                                                              hypothesis; (4) injectivity
+                                                                              DERIVED: φ(u)=φ(v) →
+                                                                              φ(u·v⁻¹-class) = O → kernel is
+                                                                              q^ℤ by definition of pointMap
+                                                                              → window reps equal; (5)
+                                                                              DELETE the tangent chain
+                                                                              (bilateral_tangentX/Y_cleared,
+                                                                              bilateral_add_self) — 2
+                                                                              sorries removed. Remaining
+                                                                              hard leaf:
+                                                                              exists_annulus_bilateralX_eq
+                                                                              (surjectivity, Silverman §V.4
+                                                                              — Newton
+                                                                              polygon/completeness).
                                                                         - ✅· `TateCurve.bilateral_add_self` — the tangent identity (V.3.1(c)
                                                                           doubling case). DERIVED
                                                                           2026-07-18 from the cleared
@@ -520,59 +508,55 @@ entries file). To add/remove/annotate a node, edit
                                                                               has 2Y(u) + X(u) ≠ 0 — the
                                                                               2-torsion parameters are
                                                                               exactly {-1, ±√q}·q^ℤ.
-                                                                                - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity of
-                                                                                  the bilateral parametrization
-                                                                                  on the fundamental annulus
-                                                                                  (sorry node): X(u₀)=X(v₀) ∧
-                                                                                  Y(u₀)=Y(v₀) → u₀ = v₀.
-                                                                                  ANALYSIS (2026-07-18): the
-                                                                                  difference of Lambert kernels
-                                                                                  factors exactly: f(a)−f(b) =
-                                                                                  (a−b)(1−ab)/((1−a)²(1−b)²) for
-                                                                                  f(t)=t/(1−t)², and
-                                                                                  ultrametrically |1−a| = 1
-                                                                                  whenever |a| < 1, so each tail
-                                                                                  term of X(u₀)−X(v₀) is bounded
-                                                                                  by |q₀|^m|u₀−v₀| (u-side)
-                                                                                  resp. |q₀^m/(u₀v₀)||u₀−v₀|
-                                                                                  (u⁻¹-side); the head
-                                                                                  contributes (u₀−v₀)(1−u₀v₀)/((
-                                                                                  1−u₀)²(1−v₀)²). Two-step plan:
-                                                                                  (1) show X(u₀)=X(v₀) → u₀=v₀ ∨
-                                                                                  u₀v₀=1 by comparing the head
-                                                                                  factor against the tails —
-                                                                                  DELICATE when |1−u₀| < 1 (u₀ ≡
-                                                                                  1 in residue) and for the m=1
-                                                                                  u⁻¹-side term when |u₀v₀| is
-                                                                                  near |q₀|² (only > |q₀|²
-                                                                                  guaranteed); the clean
-                                                                                  classical route is the theta-
-                                                                                  product factorization
-                                                                                  (Silverman ATAEC V §3–4, Lang
-                                                                                  Elliptic Functions ch. 15:
-                                                                                  X(u)−X(v) = -uv·Θ(uv)Θ(u/v)/(Θ
-                                                                                  (u)²Θ(v)²)-type with Θ(t) =
-                                                                                  (1−t)∏(1−qⁿt)(1−qⁿ/t)/(1−qⁿ)²
-                                                                                  — CONSULT THE LITERATURE for
-                                                                                  the exact normalization before
-                                                                                  formalizing; the Θ-machinery
-                                                                                  would also give an independent
-                                                                                  route to the chord
-                                                                                  identities). (2) the case u₀v₀
-                                                                                  = 1 with equal Y: then both in
-                                                                                  window forces |u₀| = |v₀| = 1,
-                                                                                  and Y(u₀)=Y(u₀⁻¹) =
-                                                                                  −Y(u₀)−X(u₀) gives
-                                                                                  2Y(u₀)+X(u₀)=0 (the negation-
-                                                                                  fixed condition); the one-
-                                                                                  variable formal series 2Y+X
-                                                                                  has head u(1+u)/(1−u)³ and
-                                                                                  should factor as
-                                                                                  u(1+u)/(1−u)³·(unit), giving
-                                                                                  u₀ = −1 hence v₀ = u₀. Note
-                                                                                  the (1−u)-division head-vs-
-                                                                                  tail estimate has the same
-                                                                                  |1−u₀|-delicacy.
+                                                                                - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity
+                                                                                  (sorry node — TO BE
+                                                                                  RESTRUCTURED AWAY, Silverman
+                                                                                  ATAEC V.3.1(c) proof read
+                                                                                  2026-07-20 from
+                                                                                  Books/silverman1994ataec.txt
+                                                                                  ~line 15900): Silverman NEVER
+                                                                                  proves injectivity or the
+                                                                                  tangent case directly. Lemma
+                                                                                  3.1.2: a map φ from a
+                                                                                  multiplicative group to an
+                                                                                  additive group taking
+                                                                                  infinitely many distinct
+                                                                                  values and satisfying φ(u₁u₂)
+                                                                                  = φ(u₁)+φ(u₂) WHENEVER φ(u₁) ≠
+                                                                                  ±φ(u₂) is automatically a
+                                                                                  homomorphism (pick u with φ(u)
+                                                                                  avoiding 6 values; then φ(uu₁)
+                                                                                  = φ(u)+φ(u₁) ≠ ±φ(u₂) etc.,
+                                                                                  cancel). RESTRUCTURE PLAN: (1)
+                                                                                  abstract Lemma 3.1.2; (2)
+                                                                                  infinitude: |X(1+t,q)| = |t|⁻²
+                                                                                  for 0<|t|<1 (head (1+t)/t²
+                                                                                  dominates the Lambert tails
+                                                                                  ultrametrically), so u ↦
+                                                                                  pointMap(1+πʲ) gives
+                                                                                  infinitely many distinct
+                                                                                  values; (3) pointMap_mul :=
+                                                                                  X≠-case
+                                                                                  (bilateral_add_of_X_ne, PROVEN
+                                                                                  chain) + vertical case
+                                                                                  (PROVEN) + Lemma 3.1.2 — note
+                                                                                  φ(u₁) ≠ ±φ(u₂) ⟺ X-values
+                                                                                  differ (for non-O points), so
+                                                                                  the X≠-case is exactly the
+                                                                                  hypothesis; (4) injectivity
+                                                                                  DERIVED: φ(u)=φ(v) →
+                                                                                  φ(u·v⁻¹-class) = O → kernel is
+                                                                                  q^ℤ by definition of pointMap
+                                                                                  → window reps equal; (5)
+                                                                                  DELETE the tangent chain
+                                                                                  (bilateral_tangentX/Y_cleared,
+                                                                                  bilateral_add_self) — 2
+                                                                                  sorries removed. Remaining
+                                                                                  hard leaf:
+                                                                                  exists_annulus_bilateralX_eq
+                                                                                  (surjectivity, Silverman §V.4
+                                                                                  — Newton
+                                                                                  polygon/completeness).
                                                                             - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity
                                                                               (sorry node): -(Y(u²)+X(u²))E
                                                                               = M(X(u²)-X(u)) + Y(u)E.
@@ -735,59 +719,55 @@ entries file). To add/remove/annotate a node, edit
                                                                               interior) by the PROVEN
                                                                               vertical case + injectivity,
                                                                               so uv ∈ {1, q}.
-                                                                                - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity of
-                                                                                  the bilateral parametrization
-                                                                                  on the fundamental annulus
-                                                                                  (sorry node): X(u₀)=X(v₀) ∧
-                                                                                  Y(u₀)=Y(v₀) → u₀ = v₀.
-                                                                                  ANALYSIS (2026-07-18): the
-                                                                                  difference of Lambert kernels
-                                                                                  factors exactly: f(a)−f(b) =
-                                                                                  (a−b)(1−ab)/((1−a)²(1−b)²) for
-                                                                                  f(t)=t/(1−t)², and
-                                                                                  ultrametrically |1−a| = 1
-                                                                                  whenever |a| < 1, so each tail
-                                                                                  term of X(u₀)−X(v₀) is bounded
-                                                                                  by |q₀|^m|u₀−v₀| (u-side)
-                                                                                  resp. |q₀^m/(u₀v₀)||u₀−v₀|
-                                                                                  (u⁻¹-side); the head
-                                                                                  contributes (u₀−v₀)(1−u₀v₀)/((
-                                                                                  1−u₀)²(1−v₀)²). Two-step plan:
-                                                                                  (1) show X(u₀)=X(v₀) → u₀=v₀ ∨
-                                                                                  u₀v₀=1 by comparing the head
-                                                                                  factor against the tails —
-                                                                                  DELICATE when |1−u₀| < 1 (u₀ ≡
-                                                                                  1 in residue) and for the m=1
-                                                                                  u⁻¹-side term when |u₀v₀| is
-                                                                                  near |q₀|² (only > |q₀|²
-                                                                                  guaranteed); the clean
-                                                                                  classical route is the theta-
-                                                                                  product factorization
-                                                                                  (Silverman ATAEC V §3–4, Lang
-                                                                                  Elliptic Functions ch. 15:
-                                                                                  X(u)−X(v) = -uv·Θ(uv)Θ(u/v)/(Θ
-                                                                                  (u)²Θ(v)²)-type with Θ(t) =
-                                                                                  (1−t)∏(1−qⁿt)(1−qⁿ/t)/(1−qⁿ)²
-                                                                                  — CONSULT THE LITERATURE for
-                                                                                  the exact normalization before
-                                                                                  formalizing; the Θ-machinery
-                                                                                  would also give an independent
-                                                                                  route to the chord
-                                                                                  identities). (2) the case u₀v₀
-                                                                                  = 1 with equal Y: then both in
-                                                                                  window forces |u₀| = |v₀| = 1,
-                                                                                  and Y(u₀)=Y(u₀⁻¹) =
-                                                                                  −Y(u₀)−X(u₀) gives
-                                                                                  2Y(u₀)+X(u₀)=0 (the negation-
-                                                                                  fixed condition); the one-
-                                                                                  variable formal series 2Y+X
-                                                                                  has head u(1+u)/(1−u)³ and
-                                                                                  should factor as
-                                                                                  u(1+u)/(1−u)³·(unit), giving
-                                                                                  u₀ = −1 hence v₀ = u₀. Note
-                                                                                  the (1−u)-division head-vs-
-                                                                                  tail estimate has the same
-                                                                                  |1−u₀|-delicacy.
+                                                                                - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity
+                                                                                  (sorry node — TO BE
+                                                                                  RESTRUCTURED AWAY, Silverman
+                                                                                  ATAEC V.3.1(c) proof read
+                                                                                  2026-07-20 from
+                                                                                  Books/silverman1994ataec.txt
+                                                                                  ~line 15900): Silverman NEVER
+                                                                                  proves injectivity or the
+                                                                                  tangent case directly. Lemma
+                                                                                  3.1.2: a map φ from a
+                                                                                  multiplicative group to an
+                                                                                  additive group taking
+                                                                                  infinitely many distinct
+                                                                                  values and satisfying φ(u₁u₂)
+                                                                                  = φ(u₁)+φ(u₂) WHENEVER φ(u₁) ≠
+                                                                                  ±φ(u₂) is automatically a
+                                                                                  homomorphism (pick u with φ(u)
+                                                                                  avoiding 6 values; then φ(uu₁)
+                                                                                  = φ(u)+φ(u₁) ≠ ±φ(u₂) etc.,
+                                                                                  cancel). RESTRUCTURE PLAN: (1)
+                                                                                  abstract Lemma 3.1.2; (2)
+                                                                                  infinitude: |X(1+t,q)| = |t|⁻²
+                                                                                  for 0<|t|<1 (head (1+t)/t²
+                                                                                  dominates the Lambert tails
+                                                                                  ultrametrically), so u ↦
+                                                                                  pointMap(1+πʲ) gives
+                                                                                  infinitely many distinct
+                                                                                  values; (3) pointMap_mul :=
+                                                                                  X≠-case
+                                                                                  (bilateral_add_of_X_ne, PROVEN
+                                                                                  chain) + vertical case
+                                                                                  (PROVEN) + Lemma 3.1.2 — note
+                                                                                  φ(u₁) ≠ ±φ(u₂) ⟺ X-values
+                                                                                  differ (for non-O points), so
+                                                                                  the X≠-case is exactly the
+                                                                                  hypothesis; (4) injectivity
+                                                                                  DERIVED: φ(u)=φ(v) →
+                                                                                  φ(u·v⁻¹-class) = O → kernel is
+                                                                                  q^ℤ by definition of pointMap
+                                                                                  → window reps equal; (5)
+                                                                                  DELETE the tangent chain
+                                                                                  (bilateral_tangentX/Y_cleared,
+                                                                                  bilateral_add_self) — 2
+                                                                                  sorries removed. Remaining
+                                                                                  hard leaf:
+                                                                                  exists_annulus_bilateralX_eq
+                                                                                  (surjectivity, Silverman §V.4
+                                                                                  — Newton
+                                                                                  polygon/completeness).
                                                                             - ✅· `TateCurve.bilateral_add_self` — the tangent identity (V.3.1(c)
                                                                               doubling case). DERIVED
                                                                               2026-07-18 from the cleared
@@ -801,59 +781,55 @@ entries file). To add/remove/annotate a node, edit
                                                                                   has 2Y(u) + X(u) ≠ 0 — the
                                                                                   2-torsion parameters are
                                                                                   exactly {-1, ±√q}·q^ℤ.
-                                                                                    - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity of
-                                                                                      the bilateral parametrization
-                                                                                      on the fundamental annulus
-                                                                                      (sorry node): X(u₀)=X(v₀) ∧
-                                                                                      Y(u₀)=Y(v₀) → u₀ = v₀.
-                                                                                      ANALYSIS (2026-07-18): the
-                                                                                      difference of Lambert kernels
-                                                                                      factors exactly: f(a)−f(b) =
-                                                                                      (a−b)(1−ab)/((1−a)²(1−b)²) for
-                                                                                      f(t)=t/(1−t)², and
-                                                                                      ultrametrically |1−a| = 1
-                                                                                      whenever |a| < 1, so each tail
-                                                                                      term of X(u₀)−X(v₀) is bounded
-                                                                                      by |q₀|^m|u₀−v₀| (u-side)
-                                                                                      resp. |q₀^m/(u₀v₀)||u₀−v₀|
-                                                                                      (u⁻¹-side); the head
-                                                                                      contributes (u₀−v₀)(1−u₀v₀)/((
-                                                                                      1−u₀)²(1−v₀)²). Two-step plan:
-                                                                                      (1) show X(u₀)=X(v₀) → u₀=v₀ ∨
-                                                                                      u₀v₀=1 by comparing the head
-                                                                                      factor against the tails —
-                                                                                      DELICATE when |1−u₀| < 1 (u₀ ≡
-                                                                                      1 in residue) and for the m=1
-                                                                                      u⁻¹-side term when |u₀v₀| is
-                                                                                      near |q₀|² (only > |q₀|²
-                                                                                      guaranteed); the clean
-                                                                                      classical route is the theta-
-                                                                                      product factorization
-                                                                                      (Silverman ATAEC V §3–4, Lang
-                                                                                      Elliptic Functions ch. 15:
-                                                                                      X(u)−X(v) = -uv·Θ(uv)Θ(u/v)/(Θ
-                                                                                      (u)²Θ(v)²)-type with Θ(t) =
-                                                                                      (1−t)∏(1−qⁿt)(1−qⁿ/t)/(1−qⁿ)²
-                                                                                      — CONSULT THE LITERATURE for
-                                                                                      the exact normalization before
-                                                                                      formalizing; the Θ-machinery
-                                                                                      would also give an independent
-                                                                                      route to the chord
-                                                                                      identities). (2) the case u₀v₀
-                                                                                      = 1 with equal Y: then both in
-                                                                                      window forces |u₀| = |v₀| = 1,
-                                                                                      and Y(u₀)=Y(u₀⁻¹) =
-                                                                                      −Y(u₀)−X(u₀) gives
-                                                                                      2Y(u₀)+X(u₀)=0 (the negation-
-                                                                                      fixed condition); the one-
-                                                                                      variable formal series 2Y+X
-                                                                                      has head u(1+u)/(1−u)³ and
-                                                                                      should factor as
-                                                                                      u(1+u)/(1−u)³·(unit), giving
-                                                                                      u₀ = −1 hence v₀ = u₀. Note
-                                                                                      the (1−u)-division head-vs-
-                                                                                      tail estimate has the same
-                                                                                      |1−u₀|-delicacy.
+                                                                                    - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity
+                                                                                      (sorry node — TO BE
+                                                                                      RESTRUCTURED AWAY, Silverman
+                                                                                      ATAEC V.3.1(c) proof read
+                                                                                      2026-07-20 from
+                                                                                      Books/silverman1994ataec.txt
+                                                                                      ~line 15900): Silverman NEVER
+                                                                                      proves injectivity or the
+                                                                                      tangent case directly. Lemma
+                                                                                      3.1.2: a map φ from a
+                                                                                      multiplicative group to an
+                                                                                      additive group taking
+                                                                                      infinitely many distinct
+                                                                                      values and satisfying φ(u₁u₂)
+                                                                                      = φ(u₁)+φ(u₂) WHENEVER φ(u₁) ≠
+                                                                                      ±φ(u₂) is automatically a
+                                                                                      homomorphism (pick u with φ(u)
+                                                                                      avoiding 6 values; then φ(uu₁)
+                                                                                      = φ(u)+φ(u₁) ≠ ±φ(u₂) etc.,
+                                                                                      cancel). RESTRUCTURE PLAN: (1)
+                                                                                      abstract Lemma 3.1.2; (2)
+                                                                                      infinitude: |X(1+t,q)| = |t|⁻²
+                                                                                      for 0<|t|<1 (head (1+t)/t²
+                                                                                      dominates the Lambert tails
+                                                                                      ultrametrically), so u ↦
+                                                                                      pointMap(1+πʲ) gives
+                                                                                      infinitely many distinct
+                                                                                      values; (3) pointMap_mul :=
+                                                                                      X≠-case
+                                                                                      (bilateral_add_of_X_ne, PROVEN
+                                                                                      chain) + vertical case
+                                                                                      (PROVEN) + Lemma 3.1.2 — note
+                                                                                      φ(u₁) ≠ ±φ(u₂) ⟺ X-values
+                                                                                      differ (for non-O points), so
+                                                                                      the X≠-case is exactly the
+                                                                                      hypothesis; (4) injectivity
+                                                                                      DERIVED: φ(u)=φ(v) →
+                                                                                      φ(u·v⁻¹-class) = O → kernel is
+                                                                                      q^ℤ by definition of pointMap
+                                                                                      → window reps equal; (5)
+                                                                                      DELETE the tangent chain
+                                                                                      (bilateral_tangentX/Y_cleared,
+                                                                                      bilateral_add_self) — 2
+                                                                                      sorries removed. Remaining
+                                                                                      hard leaf:
+                                                                                      exists_annulus_bilateralX_eq
+                                                                                      (surjectivity, Silverman §V.4
+                                                                                      — Newton
+                                                                                      polygon/completeness).
                                                                                 - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity
                                                                                   (sorry node): -(Y(u²)+X(u²))E
                                                                                   = M(X(u²)-X(u)) + Y(u)E.
@@ -1009,59 +985,55 @@ entries file). To add/remove/annotate a node, edit
                                                                                   interior) by the PROVEN
                                                                                   vertical case + injectivity,
                                                                                   so uv ∈ {1, q}.
-                                                                                    - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity of
-                                                                                      the bilateral parametrization
-                                                                                      on the fundamental annulus
-                                                                                      (sorry node): X(u₀)=X(v₀) ∧
-                                                                                      Y(u₀)=Y(v₀) → u₀ = v₀.
-                                                                                      ANALYSIS (2026-07-18): the
-                                                                                      difference of Lambert kernels
-                                                                                      factors exactly: f(a)−f(b) =
-                                                                                      (a−b)(1−ab)/((1−a)²(1−b)²) for
-                                                                                      f(t)=t/(1−t)², and
-                                                                                      ultrametrically |1−a| = 1
-                                                                                      whenever |a| < 1, so each tail
-                                                                                      term of X(u₀)−X(v₀) is bounded
-                                                                                      by |q₀|^m|u₀−v₀| (u-side)
-                                                                                      resp. |q₀^m/(u₀v₀)||u₀−v₀|
-                                                                                      (u⁻¹-side); the head
-                                                                                      contributes (u₀−v₀)(1−u₀v₀)/((
-                                                                                      1−u₀)²(1−v₀)²). Two-step plan:
-                                                                                      (1) show X(u₀)=X(v₀) → u₀=v₀ ∨
-                                                                                      u₀v₀=1 by comparing the head
-                                                                                      factor against the tails —
-                                                                                      DELICATE when |1−u₀| < 1 (u₀ ≡
-                                                                                      1 in residue) and for the m=1
-                                                                                      u⁻¹-side term when |u₀v₀| is
-                                                                                      near |q₀|² (only > |q₀|²
-                                                                                      guaranteed); the clean
-                                                                                      classical route is the theta-
-                                                                                      product factorization
-                                                                                      (Silverman ATAEC V §3–4, Lang
-                                                                                      Elliptic Functions ch. 15:
-                                                                                      X(u)−X(v) = -uv·Θ(uv)Θ(u/v)/(Θ
-                                                                                      (u)²Θ(v)²)-type with Θ(t) =
-                                                                                      (1−t)∏(1−qⁿt)(1−qⁿ/t)/(1−qⁿ)²
-                                                                                      — CONSULT THE LITERATURE for
-                                                                                      the exact normalization before
-                                                                                      formalizing; the Θ-machinery
-                                                                                      would also give an independent
-                                                                                      route to the chord
-                                                                                      identities). (2) the case u₀v₀
-                                                                                      = 1 with equal Y: then both in
-                                                                                      window forces |u₀| = |v₀| = 1,
-                                                                                      and Y(u₀)=Y(u₀⁻¹) =
-                                                                                      −Y(u₀)−X(u₀) gives
-                                                                                      2Y(u₀)+X(u₀)=0 (the negation-
-                                                                                      fixed condition); the one-
-                                                                                      variable formal series 2Y+X
-                                                                                      has head u(1+u)/(1−u)³ and
-                                                                                      should factor as
-                                                                                      u(1+u)/(1−u)³·(unit), giving
-                                                                                      u₀ = −1 hence v₀ = u₀. Note
-                                                                                      the (1−u)-division head-vs-
-                                                                                      tail estimate has the same
-                                                                                      |1−u₀|-delicacy.
+                                                                                    - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity
+                                                                                      (sorry node — TO BE
+                                                                                      RESTRUCTURED AWAY, Silverman
+                                                                                      ATAEC V.3.1(c) proof read
+                                                                                      2026-07-20 from
+                                                                                      Books/silverman1994ataec.txt
+                                                                                      ~line 15900): Silverman NEVER
+                                                                                      proves injectivity or the
+                                                                                      tangent case directly. Lemma
+                                                                                      3.1.2: a map φ from a
+                                                                                      multiplicative group to an
+                                                                                      additive group taking
+                                                                                      infinitely many distinct
+                                                                                      values and satisfying φ(u₁u₂)
+                                                                                      = φ(u₁)+φ(u₂) WHENEVER φ(u₁) ≠
+                                                                                      ±φ(u₂) is automatically a
+                                                                                      homomorphism (pick u with φ(u)
+                                                                                      avoiding 6 values; then φ(uu₁)
+                                                                                      = φ(u)+φ(u₁) ≠ ±φ(u₂) etc.,
+                                                                                      cancel). RESTRUCTURE PLAN: (1)
+                                                                                      abstract Lemma 3.1.2; (2)
+                                                                                      infinitude: |X(1+t,q)| = |t|⁻²
+                                                                                      for 0<|t|<1 (head (1+t)/t²
+                                                                                      dominates the Lambert tails
+                                                                                      ultrametrically), so u ↦
+                                                                                      pointMap(1+πʲ) gives
+                                                                                      infinitely many distinct
+                                                                                      values; (3) pointMap_mul :=
+                                                                                      X≠-case
+                                                                                      (bilateral_add_of_X_ne, PROVEN
+                                                                                      chain) + vertical case
+                                                                                      (PROVEN) + Lemma 3.1.2 — note
+                                                                                      φ(u₁) ≠ ±φ(u₂) ⟺ X-values
+                                                                                      differ (for non-O points), so
+                                                                                      the X≠-case is exactly the
+                                                                                      hypothesis; (4) injectivity
+                                                                                      DERIVED: φ(u)=φ(v) →
+                                                                                      φ(u·v⁻¹-class) = O → kernel is
+                                                                                      q^ℤ by definition of pointMap
+                                                                                      → window reps equal; (5)
+                                                                                      DELETE the tangent chain
+                                                                                      (bilateral_tangentX/Y_cleared,
+                                                                                      bilateral_add_self) — 2
+                                                                                      sorries removed. Remaining
+                                                                                      hard leaf:
+                                                                                      exists_annulus_bilateralX_eq
+                                                                                      (surjectivity, Silverman §V.4
+                                                                                      — Newton
+                                                                                      polygon/completeness).
                                                                                 - ✅· `TateCurve.bilateral_add_self` — the tangent identity (V.3.1(c)
                                                                                   doubling case). DERIVED
                                                                                   2026-07-18 from the cleared
@@ -1075,59 +1047,55 @@ entries file). To add/remove/annotate a node, edit
                                                                                       has 2Y(u) + X(u) ≠ 0 — the
                                                                                       2-torsion parameters are
                                                                                       exactly {-1, ±√q}·q^ℤ.
-                                                                                        - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity of
-                                                                                          the bilateral parametrization
-                                                                                          on the fundamental annulus
-                                                                                          (sorry node): X(u₀)=X(v₀) ∧
-                                                                                          Y(u₀)=Y(v₀) → u₀ = v₀.
-                                                                                          ANALYSIS (2026-07-18): the
-                                                                                          difference of Lambert kernels
-                                                                                          factors exactly: f(a)−f(b) =
-                                                                                          (a−b)(1−ab)/((1−a)²(1−b)²) for
-                                                                                          f(t)=t/(1−t)², and
-                                                                                          ultrametrically |1−a| = 1
-                                                                                          whenever |a| < 1, so each tail
-                                                                                          term of X(u₀)−X(v₀) is bounded
-                                                                                          by |q₀|^m|u₀−v₀| (u-side)
-                                                                                          resp. |q₀^m/(u₀v₀)||u₀−v₀|
-                                                                                          (u⁻¹-side); the head
-                                                                                          contributes (u₀−v₀)(1−u₀v₀)/((
-                                                                                          1−u₀)²(1−v₀)²). Two-step plan:
-                                                                                          (1) show X(u₀)=X(v₀) → u₀=v₀ ∨
-                                                                                          u₀v₀=1 by comparing the head
-                                                                                          factor against the tails —
-                                                                                          DELICATE when |1−u₀| < 1 (u₀ ≡
-                                                                                          1 in residue) and for the m=1
-                                                                                          u⁻¹-side term when |u₀v₀| is
-                                                                                          near |q₀|² (only > |q₀|²
-                                                                                          guaranteed); the clean
-                                                                                          classical route is the theta-
-                                                                                          product factorization
-                                                                                          (Silverman ATAEC V §3–4, Lang
-                                                                                          Elliptic Functions ch. 15:
-                                                                                          X(u)−X(v) = -uv·Θ(uv)Θ(u/v)/(Θ
-                                                                                          (u)²Θ(v)²)-type with Θ(t) =
-                                                                                          (1−t)∏(1−qⁿt)(1−qⁿ/t)/(1−qⁿ)²
-                                                                                          — CONSULT THE LITERATURE for
-                                                                                          the exact normalization before
-                                                                                          formalizing; the Θ-machinery
-                                                                                          would also give an independent
-                                                                                          route to the chord
-                                                                                          identities). (2) the case u₀v₀
-                                                                                          = 1 with equal Y: then both in
-                                                                                          window forces |u₀| = |v₀| = 1,
-                                                                                          and Y(u₀)=Y(u₀⁻¹) =
-                                                                                          −Y(u₀)−X(u₀) gives
-                                                                                          2Y(u₀)+X(u₀)=0 (the negation-
-                                                                                          fixed condition); the one-
-                                                                                          variable formal series 2Y+X
-                                                                                          has head u(1+u)/(1−u)³ and
-                                                                                          should factor as
-                                                                                          u(1+u)/(1−u)³·(unit), giving
-                                                                                          u₀ = −1 hence v₀ = u₀. Note
-                                                                                          the (1−u)-division head-vs-
-                                                                                          tail estimate has the same
-                                                                                          |1−u₀|-delicacy.
+                                                                                        - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity
+                                                                                          (sorry node — TO BE
+                                                                                          RESTRUCTURED AWAY, Silverman
+                                                                                          ATAEC V.3.1(c) proof read
+                                                                                          2026-07-20 from
+                                                                                          Books/silverman1994ataec.txt
+                                                                                          ~line 15900): Silverman NEVER
+                                                                                          proves injectivity or the
+                                                                                          tangent case directly. Lemma
+                                                                                          3.1.2: a map φ from a
+                                                                                          multiplicative group to an
+                                                                                          additive group taking
+                                                                                          infinitely many distinct
+                                                                                          values and satisfying φ(u₁u₂)
+                                                                                          = φ(u₁)+φ(u₂) WHENEVER φ(u₁) ≠
+                                                                                          ±φ(u₂) is automatically a
+                                                                                          homomorphism (pick u with φ(u)
+                                                                                          avoiding 6 values; then φ(uu₁)
+                                                                                          = φ(u)+φ(u₁) ≠ ±φ(u₂) etc.,
+                                                                                          cancel). RESTRUCTURE PLAN: (1)
+                                                                                          abstract Lemma 3.1.2; (2)
+                                                                                          infinitude: |X(1+t,q)| = |t|⁻²
+                                                                                          for 0<|t|<1 (head (1+t)/t²
+                                                                                          dominates the Lambert tails
+                                                                                          ultrametrically), so u ↦
+                                                                                          pointMap(1+πʲ) gives
+                                                                                          infinitely many distinct
+                                                                                          values; (3) pointMap_mul :=
+                                                                                          X≠-case
+                                                                                          (bilateral_add_of_X_ne, PROVEN
+                                                                                          chain) + vertical case
+                                                                                          (PROVEN) + Lemma 3.1.2 — note
+                                                                                          φ(u₁) ≠ ±φ(u₂) ⟺ X-values
+                                                                                          differ (for non-O points), so
+                                                                                          the X≠-case is exactly the
+                                                                                          hypothesis; (4) injectivity
+                                                                                          DERIVED: φ(u)=φ(v) →
+                                                                                          φ(u·v⁻¹-class) = O → kernel is
+                                                                                          q^ℤ by definition of pointMap
+                                                                                          → window reps equal; (5)
+                                                                                          DELETE the tangent chain
+                                                                                          (bilateral_tangentX/Y_cleared,
+                                                                                          bilateral_add_self) — 2
+                                                                                          sorries removed. Remaining
+                                                                                          hard leaf:
+                                                                                          exists_annulus_bilateralX_eq
+                                                                                          (surjectivity, Silverman §V.4
+                                                                                          — Newton
+                                                                                          polygon/completeness).
                                                                                     - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity
                                                                                       (sorry node): -(Y(u²)+X(u²))E
                                                                                       = M(X(u²)-X(u)) + Y(u)E.
@@ -1324,47 +1292,43 @@ entries file). To add/remove/annotate a node, edit
                                                           shell, q·u⁻¹ in the interior) by the
                                                           PROVEN vertical case + injectivity, so uv
                                                           ∈ {1, q}.
-                                                            - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity of the
-                                                              bilateral parametrization on the
-                                                              fundamental annulus (sorry node):
-                                                              X(u₀)=X(v₀) ∧ Y(u₀)=Y(v₀) → u₀ = v₀.
-                                                              ANALYSIS (2026-07-18): the difference
-                                                              of Lambert kernels factors exactly:
-                                                              f(a)−f(b) = (a−b)(1−ab)/((1−a)²(1−b)²)
-                                                              for f(t)=t/(1−t)², and ultrametrically
-                                                              |1−a| = 1 whenever |a| < 1, so each
-                                                              tail term of X(u₀)−X(v₀) is bounded by
-                                                              |q₀|^m|u₀−v₀| (u-side) resp.
-                                                              |q₀^m/(u₀v₀)||u₀−v₀| (u⁻¹-side); the
-                                                              head contributes
-                                                              (u₀−v₀)(1−u₀v₀)/((1−u₀)²(1−v₀)²). Two-
-                                                              step plan: (1) show X(u₀)=X(v₀) →
-                                                              u₀=v₀ ∨ u₀v₀=1 by comparing the head
-                                                              factor against the tails — DELICATE
-                                                              when |1−u₀| < 1 (u₀ ≡ 1 in residue)
-                                                              and for the m=1 u⁻¹-side term when
-                                                              |u₀v₀| is near |q₀|² (only > |q₀|²
-                                                              guaranteed); the clean classical route
-                                                              is the theta-product factorization
-                                                              (Silverman ATAEC V §3–4, Lang Elliptic
-                                                              Functions ch. 15: X(u)−X(v) =
-                                                              -uv·Θ(uv)Θ(u/v)/(Θ(u)²Θ(v)²)-type with
-                                                              Θ(t) = (1−t)∏(1−qⁿt)(1−qⁿ/t)/(1−qⁿ)² —
-                                                              CONSULT THE LITERATURE for the exact
-                                                              normalization before formalizing; the
-                                                              Θ-machinery would also give an
-                                                              independent route to the chord
-                                                              identities). (2) the case u₀v₀ = 1
-                                                              with equal Y: then both in window
-                                                              forces |u₀| = |v₀| = 1, and
-                                                              Y(u₀)=Y(u₀⁻¹) = −Y(u₀)−X(u₀) gives
-                                                              2Y(u₀)+X(u₀)=0 (the negation-fixed
-                                                              condition); the one-variable formal
-                                                              series 2Y+X has head u(1+u)/(1−u)³ and
-                                                              should factor as u(1+u)/(1−u)³·(unit),
-                                                              giving u₀ = −1 hence v₀ = u₀. Note the
-                                                              (1−u)-division head-vs-tail estimate
-                                                              has the same |1−u₀|-delicacy.
+                                                            - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity (sorry
+                                                              node — TO BE RESTRUCTURED AWAY,
+                                                              Silverman ATAEC V.3.1(c) proof read
+                                                              2026-07-20 from
+                                                              Books/silverman1994ataec.txt ~line
+                                                              15900): Silverman NEVER proves
+                                                              injectivity or the tangent case
+                                                              directly. Lemma 3.1.2: a map φ from a
+                                                              multiplicative group to an additive
+                                                              group taking infinitely many distinct
+                                                              values and satisfying φ(u₁u₂) =
+                                                              φ(u₁)+φ(u₂) WHENEVER φ(u₁) ≠ ±φ(u₂) is
+                                                              automatically a homomorphism (pick u
+                                                              with φ(u) avoiding 6 values; then
+                                                              φ(uu₁) = φ(u)+φ(u₁) ≠ ±φ(u₂) etc.,
+                                                              cancel). RESTRUCTURE PLAN: (1)
+                                                              abstract Lemma 3.1.2; (2) infinitude:
+                                                              |X(1+t,q)| = |t|⁻² for 0<|t|<1 (head
+                                                              (1+t)/t² dominates the Lambert tails
+                                                              ultrametrically), so u ↦
+                                                              pointMap(1+πʲ) gives infinitely many
+                                                              distinct values; (3) pointMap_mul :=
+                                                              X≠-case (bilateral_add_of_X_ne, PROVEN
+                                                              chain) + vertical case (PROVEN) +
+                                                              Lemma 3.1.2 — note φ(u₁) ≠ ±φ(u₂) ⟺
+                                                              X-values differ (for non-O points), so
+                                                              the X≠-case is exactly the hypothesis;
+                                                              (4) injectivity DERIVED: φ(u)=φ(v) →
+                                                              φ(u·v⁻¹-class) = O → kernel is q^ℤ by
+                                                              definition of pointMap → window reps
+                                                              equal; (5) DELETE the tangent chain
+                                                              (bilateral_tangentX/Y_cleared,
+                                                              bilateral_add_self) — 2 sorries
+                                                              removed. Remaining hard leaf:
+                                                              exists_annulus_bilateralX_eq
+                                                              (surjectivity, Silverman §V.4 — Newton
+                                                              polygon/completeness).
                                                         - ✅· `TateCurve.bilateral_add_self` — the tangent identity (V.3.1(c) doubling
                                                           case). DERIVED 2026-07-18 from the cleared
                                                           tangent identities + the non-2-torsion
@@ -1375,54 +1339,48 @@ entries file). To add/remove/annotate a node, edit
                                                               class has 2Y(u) + X(u) ≠ 0 — the
                                                               2-torsion parameters are exactly {-1,
                                                               ±√q}·q^ℤ.
-                                                                - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity of the
-                                                                  bilateral parametrization on the
-                                                                  fundamental annulus (sorry node):
-                                                                  X(u₀)=X(v₀) ∧ Y(u₀)=Y(v₀) → u₀ =
-                                                                  v₀. ANALYSIS (2026-07-18): the
-                                                                  difference of Lambert kernels
-                                                                  factors exactly: f(a)−f(b) =
-                                                                  (a−b)(1−ab)/((1−a)²(1−b)²) for
-                                                                  f(t)=t/(1−t)², and ultrametrically
-                                                                  |1−a| = 1 whenever |a| < 1, so
-                                                                  each tail term of X(u₀)−X(v₀) is
-                                                                  bounded by |q₀|^m|u₀−v₀| (u-side)
-                                                                  resp. |q₀^m/(u₀v₀)||u₀−v₀|
-                                                                  (u⁻¹-side); the head contributes
-                                                                  (u₀−v₀)(1−u₀v₀)/((1−u₀)²(1−v₀)²).
-                                                                  Two-step plan: (1) show
-                                                                  X(u₀)=X(v₀) → u₀=v₀ ∨ u₀v₀=1 by
-                                                                  comparing the head factor against
-                                                                  the tails — DELICATE when |1−u₀| <
-                                                                  1 (u₀ ≡ 1 in residue) and for the
-                                                                  m=1 u⁻¹-side term when |u₀v₀| is
-                                                                  near |q₀|² (only > |q₀|²
-                                                                  guaranteed); the clean classical
-                                                                  route is the theta-product
-                                                                  factorization (Silverman ATAEC V
-                                                                  §3–4, Lang Elliptic Functions ch.
-                                                                  15: X(u)−X(v) =
-                                                                  -uv·Θ(uv)Θ(u/v)/(Θ(u)²Θ(v)²)-type
-                                                                  with Θ(t) =
-                                                                  (1−t)∏(1−qⁿt)(1−qⁿ/t)/(1−qⁿ)² —
-                                                                  CONSULT THE LITERATURE for the
-                                                                  exact normalization before
-                                                                  formalizing; the Θ-machinery would
-                                                                  also give an independent route to
-                                                                  the chord identities). (2) the
-                                                                  case u₀v₀ = 1 with equal Y: then
-                                                                  both in window forces |u₀| = |v₀|
-                                                                  = 1, and Y(u₀)=Y(u₀⁻¹) =
-                                                                  −Y(u₀)−X(u₀) gives 2Y(u₀)+X(u₀)=0
-                                                                  (the negation-fixed condition);
-                                                                  the one-variable formal series
-                                                                  2Y+X has head u(1+u)/(1−u)³ and
-                                                                  should factor as
-                                                                  u(1+u)/(1−u)³·(unit), giving u₀ =
-                                                                  −1 hence v₀ = u₀. Note the
-                                                                  (1−u)-division head-vs-tail
-                                                                  estimate has the same
-                                                                  |1−u₀|-delicacy.
+                                                                - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity (sorry
+                                                                  node — TO BE RESTRUCTURED AWAY,
+                                                                  Silverman ATAEC V.3.1(c) proof
+                                                                  read 2026-07-20 from
+                                                                  Books/silverman1994ataec.txt ~line
+                                                                  15900): Silverman NEVER proves
+                                                                  injectivity or the tangent case
+                                                                  directly. Lemma 3.1.2: a map φ
+                                                                  from a multiplicative group to an
+                                                                  additive group taking infinitely
+                                                                  many distinct values and
+                                                                  satisfying φ(u₁u₂) = φ(u₁)+φ(u₂)
+                                                                  WHENEVER φ(u₁) ≠ ±φ(u₂) is
+                                                                  automatically a homomorphism (pick
+                                                                  u with φ(u) avoiding 6 values;
+                                                                  then φ(uu₁) = φ(u)+φ(u₁) ≠ ±φ(u₂)
+                                                                  etc., cancel). RESTRUCTURE PLAN:
+                                                                  (1) abstract Lemma 3.1.2; (2)
+                                                                  infinitude: |X(1+t,q)| = |t|⁻² for
+                                                                  0<|t|<1 (head (1+t)/t² dominates
+                                                                  the Lambert tails
+                                                                  ultrametrically), so u ↦
+                                                                  pointMap(1+πʲ) gives infinitely
+                                                                  many distinct values; (3)
+                                                                  pointMap_mul := X≠-case
+                                                                  (bilateral_add_of_X_ne, PROVEN
+                                                                  chain) + vertical case (PROVEN) +
+                                                                  Lemma 3.1.2 — note φ(u₁) ≠ ±φ(u₂)
+                                                                  ⟺ X-values differ (for non-O
+                                                                  points), so the X≠-case is exactly
+                                                                  the hypothesis; (4) injectivity
+                                                                  DERIVED: φ(u)=φ(v) →
+                                                                  φ(u·v⁻¹-class) = O → kernel is q^ℤ
+                                                                  by definition of pointMap → window
+                                                                  reps equal; (5) DELETE the tangent
+                                                                  chain
+                                                                  (bilateral_tangentX/Y_cleared,
+                                                                  bilateral_add_self) — 2 sorries
+                                                                  removed. Remaining hard leaf:
+                                                                  exists_annulus_bilateralX_eq
+                                                                  (surjectivity, Silverman §V.4 —
+                                                                  Newton polygon/completeness).
                                                             - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity (sorry
                                                               node): -(Y(u²)+X(u²))E = M(X(u²)-X(u))
                                                               + Y(u)E. Diagonal case.
@@ -1529,54 +1487,48 @@ entries file). To add/remove/annotate a node, edit
                                                               q·u⁻¹ in the interior) by the PROVEN
                                                               vertical case + injectivity, so uv ∈
                                                               {1, q}.
-                                                                - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity of the
-                                                                  bilateral parametrization on the
-                                                                  fundamental annulus (sorry node):
-                                                                  X(u₀)=X(v₀) ∧ Y(u₀)=Y(v₀) → u₀ =
-                                                                  v₀. ANALYSIS (2026-07-18): the
-                                                                  difference of Lambert kernels
-                                                                  factors exactly: f(a)−f(b) =
-                                                                  (a−b)(1−ab)/((1−a)²(1−b)²) for
-                                                                  f(t)=t/(1−t)², and ultrametrically
-                                                                  |1−a| = 1 whenever |a| < 1, so
-                                                                  each tail term of X(u₀)−X(v₀) is
-                                                                  bounded by |q₀|^m|u₀−v₀| (u-side)
-                                                                  resp. |q₀^m/(u₀v₀)||u₀−v₀|
-                                                                  (u⁻¹-side); the head contributes
-                                                                  (u₀−v₀)(1−u₀v₀)/((1−u₀)²(1−v₀)²).
-                                                                  Two-step plan: (1) show
-                                                                  X(u₀)=X(v₀) → u₀=v₀ ∨ u₀v₀=1 by
-                                                                  comparing the head factor against
-                                                                  the tails — DELICATE when |1−u₀| <
-                                                                  1 (u₀ ≡ 1 in residue) and for the
-                                                                  m=1 u⁻¹-side term when |u₀v₀| is
-                                                                  near |q₀|² (only > |q₀|²
-                                                                  guaranteed); the clean classical
-                                                                  route is the theta-product
-                                                                  factorization (Silverman ATAEC V
-                                                                  §3–4, Lang Elliptic Functions ch.
-                                                                  15: X(u)−X(v) =
-                                                                  -uv·Θ(uv)Θ(u/v)/(Θ(u)²Θ(v)²)-type
-                                                                  with Θ(t) =
-                                                                  (1−t)∏(1−qⁿt)(1−qⁿ/t)/(1−qⁿ)² —
-                                                                  CONSULT THE LITERATURE for the
-                                                                  exact normalization before
-                                                                  formalizing; the Θ-machinery would
-                                                                  also give an independent route to
-                                                                  the chord identities). (2) the
-                                                                  case u₀v₀ = 1 with equal Y: then
-                                                                  both in window forces |u₀| = |v₀|
-                                                                  = 1, and Y(u₀)=Y(u₀⁻¹) =
-                                                                  −Y(u₀)−X(u₀) gives 2Y(u₀)+X(u₀)=0
-                                                                  (the negation-fixed condition);
-                                                                  the one-variable formal series
-                                                                  2Y+X has head u(1+u)/(1−u)³ and
-                                                                  should factor as
-                                                                  u(1+u)/(1−u)³·(unit), giving u₀ =
-                                                                  −1 hence v₀ = u₀. Note the
-                                                                  (1−u)-division head-vs-tail
-                                                                  estimate has the same
-                                                                  |1−u₀|-delicacy.
+                                                                - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity (sorry
+                                                                  node — TO BE RESTRUCTURED AWAY,
+                                                                  Silverman ATAEC V.3.1(c) proof
+                                                                  read 2026-07-20 from
+                                                                  Books/silverman1994ataec.txt ~line
+                                                                  15900): Silverman NEVER proves
+                                                                  injectivity or the tangent case
+                                                                  directly. Lemma 3.1.2: a map φ
+                                                                  from a multiplicative group to an
+                                                                  additive group taking infinitely
+                                                                  many distinct values and
+                                                                  satisfying φ(u₁u₂) = φ(u₁)+φ(u₂)
+                                                                  WHENEVER φ(u₁) ≠ ±φ(u₂) is
+                                                                  automatically a homomorphism (pick
+                                                                  u with φ(u) avoiding 6 values;
+                                                                  then φ(uu₁) = φ(u)+φ(u₁) ≠ ±φ(u₂)
+                                                                  etc., cancel). RESTRUCTURE PLAN:
+                                                                  (1) abstract Lemma 3.1.2; (2)
+                                                                  infinitude: |X(1+t,q)| = |t|⁻² for
+                                                                  0<|t|<1 (head (1+t)/t² dominates
+                                                                  the Lambert tails
+                                                                  ultrametrically), so u ↦
+                                                                  pointMap(1+πʲ) gives infinitely
+                                                                  many distinct values; (3)
+                                                                  pointMap_mul := X≠-case
+                                                                  (bilateral_add_of_X_ne, PROVEN
+                                                                  chain) + vertical case (PROVEN) +
+                                                                  Lemma 3.1.2 — note φ(u₁) ≠ ±φ(u₂)
+                                                                  ⟺ X-values differ (for non-O
+                                                                  points), so the X≠-case is exactly
+                                                                  the hypothesis; (4) injectivity
+                                                                  DERIVED: φ(u)=φ(v) →
+                                                                  φ(u·v⁻¹-class) = O → kernel is q^ℤ
+                                                                  by definition of pointMap → window
+                                                                  reps equal; (5) DELETE the tangent
+                                                                  chain
+                                                                  (bilateral_tangentX/Y_cleared,
+                                                                  bilateral_add_self) — 2 sorries
+                                                                  removed. Remaining hard leaf:
+                                                                  exists_annulus_bilateralX_eq
+                                                                  (surjectivity, Silverman §V.4 —
+                                                                  Newton polygon/completeness).
                                                             - ✅· `TateCurve.bilateral_add_self` — the tangent identity (V.3.1(c)
                                                               doubling case). DERIVED 2026-07-18
                                                               from the cleared tangent identities +
@@ -1587,59 +1539,55 @@ entries file). To add/remove/annotate a node, edit
                                                                   trivial class has 2Y(u) + X(u) ≠ 0
                                                                   — the 2-torsion parameters are
                                                                   exactly {-1, ±√q}·q^ℤ.
-                                                                    - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity of
-                                                                      the bilateral parametrization
-                                                                      on the fundamental annulus
-                                                                      (sorry node): X(u₀)=X(v₀) ∧
-                                                                      Y(u₀)=Y(v₀) → u₀ = v₀.
-                                                                      ANALYSIS (2026-07-18): the
-                                                                      difference of Lambert kernels
-                                                                      factors exactly: f(a)−f(b) =
-                                                                      (a−b)(1−ab)/((1−a)²(1−b)²) for
-                                                                      f(t)=t/(1−t)², and
-                                                                      ultrametrically |1−a| = 1
-                                                                      whenever |a| < 1, so each tail
-                                                                      term of X(u₀)−X(v₀) is bounded
-                                                                      by |q₀|^m|u₀−v₀| (u-side)
-                                                                      resp. |q₀^m/(u₀v₀)||u₀−v₀|
-                                                                      (u⁻¹-side); the head
-                                                                      contributes (u₀−v₀)(1−u₀v₀)/((
-                                                                      1−u₀)²(1−v₀)²). Two-step plan:
-                                                                      (1) show X(u₀)=X(v₀) → u₀=v₀ ∨
-                                                                      u₀v₀=1 by comparing the head
-                                                                      factor against the tails —
-                                                                      DELICATE when |1−u₀| < 1 (u₀ ≡
-                                                                      1 in residue) and for the m=1
-                                                                      u⁻¹-side term when |u₀v₀| is
-                                                                      near |q₀|² (only > |q₀|²
-                                                                      guaranteed); the clean
-                                                                      classical route is the theta-
-                                                                      product factorization
-                                                                      (Silverman ATAEC V §3–4, Lang
-                                                                      Elliptic Functions ch. 15:
-                                                                      X(u)−X(v) = -uv·Θ(uv)Θ(u/v)/(Θ
-                                                                      (u)²Θ(v)²)-type with Θ(t) =
-                                                                      (1−t)∏(1−qⁿt)(1−qⁿ/t)/(1−qⁿ)²
-                                                                      — CONSULT THE LITERATURE for
-                                                                      the exact normalization before
-                                                                      formalizing; the Θ-machinery
-                                                                      would also give an independent
-                                                                      route to the chord
-                                                                      identities). (2) the case u₀v₀
-                                                                      = 1 with equal Y: then both in
-                                                                      window forces |u₀| = |v₀| = 1,
-                                                                      and Y(u₀)=Y(u₀⁻¹) =
-                                                                      −Y(u₀)−X(u₀) gives
-                                                                      2Y(u₀)+X(u₀)=0 (the negation-
-                                                                      fixed condition); the one-
-                                                                      variable formal series 2Y+X
-                                                                      has head u(1+u)/(1−u)³ and
-                                                                      should factor as
-                                                                      u(1+u)/(1−u)³·(unit), giving
-                                                                      u₀ = −1 hence v₀ = u₀. Note
-                                                                      the (1−u)-division head-vs-
-                                                                      tail estimate has the same
-                                                                      |1−u₀|-delicacy.
+                                                                    - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity
+                                                                      (sorry node — TO BE
+                                                                      RESTRUCTURED AWAY, Silverman
+                                                                      ATAEC V.3.1(c) proof read
+                                                                      2026-07-20 from
+                                                                      Books/silverman1994ataec.txt
+                                                                      ~line 15900): Silverman NEVER
+                                                                      proves injectivity or the
+                                                                      tangent case directly. Lemma
+                                                                      3.1.2: a map φ from a
+                                                                      multiplicative group to an
+                                                                      additive group taking
+                                                                      infinitely many distinct
+                                                                      values and satisfying φ(u₁u₂)
+                                                                      = φ(u₁)+φ(u₂) WHENEVER φ(u₁) ≠
+                                                                      ±φ(u₂) is automatically a
+                                                                      homomorphism (pick u with φ(u)
+                                                                      avoiding 6 values; then φ(uu₁)
+                                                                      = φ(u)+φ(u₁) ≠ ±φ(u₂) etc.,
+                                                                      cancel). RESTRUCTURE PLAN: (1)
+                                                                      abstract Lemma 3.1.2; (2)
+                                                                      infinitude: |X(1+t,q)| = |t|⁻²
+                                                                      for 0<|t|<1 (head (1+t)/t²
+                                                                      dominates the Lambert tails
+                                                                      ultrametrically), so u ↦
+                                                                      pointMap(1+πʲ) gives
+                                                                      infinitely many distinct
+                                                                      values; (3) pointMap_mul :=
+                                                                      X≠-case
+                                                                      (bilateral_add_of_X_ne, PROVEN
+                                                                      chain) + vertical case
+                                                                      (PROVEN) + Lemma 3.1.2 — note
+                                                                      φ(u₁) ≠ ±φ(u₂) ⟺ X-values
+                                                                      differ (for non-O points), so
+                                                                      the X≠-case is exactly the
+                                                                      hypothesis; (4) injectivity
+                                                                      DERIVED: φ(u)=φ(v) →
+                                                                      φ(u·v⁻¹-class) = O → kernel is
+                                                                      q^ℤ by definition of pointMap
+                                                                      → window reps equal; (5)
+                                                                      DELETE the tangent chain
+                                                                      (bilateral_tangentX/Y_cleared,
+                                                                      bilateral_add_self) — 2
+                                                                      sorries removed. Remaining
+                                                                      hard leaf:
+                                                                      exists_annulus_bilateralX_eq
+                                                                      (surjectivity, Silverman §V.4
+                                                                      — Newton
+                                                                      polygon/completeness).
                                                                 - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity (sorry
                                                                   node): -(Y(u²)+X(u²))E =
                                                                   M(X(u²)-X(u)) + Y(u)E. Diagonal
@@ -1758,40 +1706,37 @@ entries file). To add/remove/annotate a node, edit
                                                   negY-related ⇒ v = the inverse partner (u⁻¹ on the
                                                   shell, q·u⁻¹ in the interior) by the PROVEN
                                                   vertical case + injectivity, so uv ∈ {1, q}.
-                                                    - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity of the bilateral
-                                                      parametrization on the fundamental annulus
-                                                      (sorry node): X(u₀)=X(v₀) ∧ Y(u₀)=Y(v₀) → u₀ =
-                                                      v₀. ANALYSIS (2026-07-18): the difference of
-                                                      Lambert kernels factors exactly: f(a)−f(b) =
-                                                      (a−b)(1−ab)/((1−a)²(1−b)²) for f(t)=t/(1−t)²,
-                                                      and ultrametrically |1−a| = 1 whenever |a| <
-                                                      1, so each tail term of X(u₀)−X(v₀) is bounded
-                                                      by |q₀|^m|u₀−v₀| (u-side) resp.
-                                                      |q₀^m/(u₀v₀)||u₀−v₀| (u⁻¹-side); the head
-                                                      contributes (u₀−v₀)(1−u₀v₀)/((1−u₀)²(1−v₀)²).
-                                                      Two-step plan: (1) show X(u₀)=X(v₀) → u₀=v₀ ∨
-                                                      u₀v₀=1 by comparing the head factor against
-                                                      the tails — DELICATE when |1−u₀| < 1 (u₀ ≡ 1
-                                                      in residue) and for the m=1 u⁻¹-side term when
-                                                      |u₀v₀| is near |q₀|² (only > |q₀|²
-                                                      guaranteed); the clean classical route is the
-                                                      theta-product factorization (Silverman ATAEC V
-                                                      §3–4, Lang Elliptic Functions ch. 15:
-                                                      X(u)−X(v) = -uv·Θ(uv)Θ(u/v)/(Θ(u)²Θ(v)²)-type
-                                                      with Θ(t) = (1−t)∏(1−qⁿt)(1−qⁿ/t)/(1−qⁿ)² —
-                                                      CONSULT THE LITERATURE for the exact
-                                                      normalization before formalizing; the
-                                                      Θ-machinery would also give an independent
-                                                      route to the chord identities). (2) the case
-                                                      u₀v₀ = 1 with equal Y: then both in window
-                                                      forces |u₀| = |v₀| = 1, and Y(u₀)=Y(u₀⁻¹) =
-                                                      −Y(u₀)−X(u₀) gives 2Y(u₀)+X(u₀)=0 (the
-                                                      negation-fixed condition); the one-variable
-                                                      formal series 2Y+X has head u(1+u)/(1−u)³ and
-                                                      should factor as u(1+u)/(1−u)³·(unit), giving
-                                                      u₀ = −1 hence v₀ = u₀. Note the (1−u)-division
-                                                      head-vs-tail estimate has the same
-                                                      |1−u₀|-delicacy.
+                                                    - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity (sorry node — TO
+                                                      BE RESTRUCTURED AWAY, Silverman ATAEC V.3.1(c)
+                                                      proof read 2026-07-20 from
+                                                      Books/silverman1994ataec.txt ~line 15900):
+                                                      Silverman NEVER proves injectivity or the
+                                                      tangent case directly. Lemma 3.1.2: a map φ
+                                                      from a multiplicative group to an additive
+                                                      group taking infinitely many distinct values
+                                                      and satisfying φ(u₁u₂) = φ(u₁)+φ(u₂) WHENEVER
+                                                      φ(u₁) ≠ ±φ(u₂) is automatically a homomorphism
+                                                      (pick u with φ(u) avoiding 6 values; then
+                                                      φ(uu₁) = φ(u)+φ(u₁) ≠ ±φ(u₂) etc., cancel).
+                                                      RESTRUCTURE PLAN: (1) abstract Lemma 3.1.2;
+                                                      (2) infinitude: |X(1+t,q)| = |t|⁻² for 0<|t|<1
+                                                      (head (1+t)/t² dominates the Lambert tails
+                                                      ultrametrically), so u ↦ pointMap(1+πʲ) gives
+                                                      infinitely many distinct values; (3)
+                                                      pointMap_mul := X≠-case
+                                                      (bilateral_add_of_X_ne, PROVEN chain) +
+                                                      vertical case (PROVEN) + Lemma 3.1.2 — note
+                                                      φ(u₁) ≠ ±φ(u₂) ⟺ X-values differ (for non-O
+                                                      points), so the X≠-case is exactly the
+                                                      hypothesis; (4) injectivity DERIVED: φ(u)=φ(v)
+                                                      → φ(u·v⁻¹-class) = O → kernel is q^ℤ by
+                                                      definition of pointMap → window reps equal;
+                                                      (5) DELETE the tangent chain
+                                                      (bilateral_tangentX/Y_cleared,
+                                                      bilateral_add_self) — 2 sorries removed.
+                                                      Remaining hard leaf:
+                                                      exists_annulus_bilateralX_eq (surjectivity,
+                                                      Silverman §V.4 — Newton polygon/completeness).
                                                 - ✅· `TateCurve.bilateral_add_self` — the tangent identity (V.3.1(c) doubling case).
                                                   DERIVED 2026-07-18 from the cleared tangent
                                                   identities + the non-2-torsion leaf, same division
@@ -1800,44 +1745,39 @@ entries file). To add/remove/annotate a node, edit
                                                       annulus with u² not in the trivial class has
                                                       2Y(u) + X(u) ≠ 0 — the 2-torsion parameters
                                                       are exactly {-1, ±√q}·q^ℤ.
-                                                        - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity of the
-                                                          bilateral parametrization on the
-                                                          fundamental annulus (sorry node):
-                                                          X(u₀)=X(v₀) ∧ Y(u₀)=Y(v₀) → u₀ = v₀.
-                                                          ANALYSIS (2026-07-18): the difference of
-                                                          Lambert kernels factors exactly: f(a)−f(b)
-                                                          = (a−b)(1−ab)/((1−a)²(1−b)²) for
-                                                          f(t)=t/(1−t)², and ultrametrically |1−a| =
-                                                          1 whenever |a| < 1, so each tail term of
-                                                          X(u₀)−X(v₀) is bounded by |q₀|^m|u₀−v₀|
-                                                          (u-side) resp. |q₀^m/(u₀v₀)||u₀−v₀|
-                                                          (u⁻¹-side); the head contributes
-                                                          (u₀−v₀)(1−u₀v₀)/((1−u₀)²(1−v₀)²). Two-step
-                                                          plan: (1) show X(u₀)=X(v₀) → u₀=v₀ ∨
-                                                          u₀v₀=1 by comparing the head factor
-                                                          against the tails — DELICATE when |1−u₀| <
-                                                          1 (u₀ ≡ 1 in residue) and for the m=1
-                                                          u⁻¹-side term when |u₀v₀| is near |q₀|²
-                                                          (only > |q₀|² guaranteed); the clean
-                                                          classical route is the theta-product
-                                                          factorization (Silverman ATAEC V §3–4,
-                                                          Lang Elliptic Functions ch. 15: X(u)−X(v)
-                                                          = -uv·Θ(uv)Θ(u/v)/(Θ(u)²Θ(v)²)-type with
-                                                          Θ(t) = (1−t)∏(1−qⁿt)(1−qⁿ/t)/(1−qⁿ)² —
-                                                          CONSULT THE LITERATURE for the exact
-                                                          normalization before formalizing; the
-                                                          Θ-machinery would also give an independent
-                                                          route to the chord identities). (2) the
-                                                          case u₀v₀ = 1 with equal Y: then both in
-                                                          window forces |u₀| = |v₀| = 1, and
-                                                          Y(u₀)=Y(u₀⁻¹) = −Y(u₀)−X(u₀) gives
-                                                          2Y(u₀)+X(u₀)=0 (the negation-fixed
-                                                          condition); the one-variable formal series
-                                                          2Y+X has head u(1+u)/(1−u)³ and should
-                                                          factor as u(1+u)/(1−u)³·(unit), giving u₀
-                                                          = −1 hence v₀ = u₀. Note the
-                                                          (1−u)-division head-vs-tail estimate has
-                                                          the same |1−u₀|-delicacy.
+                                                        - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity (sorry node —
+                                                          TO BE RESTRUCTURED AWAY, Silverman ATAEC
+                                                          V.3.1(c) proof read 2026-07-20 from
+                                                          Books/silverman1994ataec.txt ~line 15900):
+                                                          Silverman NEVER proves injectivity or the
+                                                          tangent case directly. Lemma 3.1.2: a map
+                                                          φ from a multiplicative group to an
+                                                          additive group taking infinitely many
+                                                          distinct values and satisfying φ(u₁u₂) =
+                                                          φ(u₁)+φ(u₂) WHENEVER φ(u₁) ≠ ±φ(u₂) is
+                                                          automatically a homomorphism (pick u with
+                                                          φ(u) avoiding 6 values; then φ(uu₁) =
+                                                          φ(u)+φ(u₁) ≠ ±φ(u₂) etc., cancel).
+                                                          RESTRUCTURE PLAN: (1) abstract Lemma
+                                                          3.1.2; (2) infinitude: |X(1+t,q)| = |t|⁻²
+                                                          for 0<|t|<1 (head (1+t)/t² dominates the
+                                                          Lambert tails ultrametrically), so u ↦
+                                                          pointMap(1+πʲ) gives infinitely many
+                                                          distinct values; (3) pointMap_mul :=
+                                                          X≠-case (bilateral_add_of_X_ne, PROVEN
+                                                          chain) + vertical case (PROVEN) + Lemma
+                                                          3.1.2 — note φ(u₁) ≠ ±φ(u₂) ⟺ X-values
+                                                          differ (for non-O points), so the X≠-case
+                                                          is exactly the hypothesis; (4) injectivity
+                                                          DERIVED: φ(u)=φ(v) → φ(u·v⁻¹-class) = O →
+                                                          kernel is q^ℤ by definition of pointMap →
+                                                          window reps equal; (5) DELETE the tangent
+                                                          chain (bilateral_tangentX/Y_cleared,
+                                                          bilateral_add_self) — 2 sorries removed.
+                                                          Remaining hard leaf:
+                                                          exists_annulus_bilateralX_eq
+                                                          (surjectivity, Silverman §V.4 — Newton
+                                                          polygon/completeness).
                                                     - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity (sorry node):
                                                       -(Y(u²)+X(u²))E = M(X(u²)-X(u)) + Y(u)E.
                                                       Diagonal case.
@@ -1920,40 +1860,37 @@ entries file). To add/remove/annotate a node, edit
                                                   negY-related ⇒ v = the inverse partner (u⁻¹ on the
                                                   shell, q·u⁻¹ in the interior) by the PROVEN
                                                   vertical case + injectivity, so uv ∈ {1, q}.
-                                                    - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity of the bilateral
-                                                      parametrization on the fundamental annulus
-                                                      (sorry node): X(u₀)=X(v₀) ∧ Y(u₀)=Y(v₀) → u₀ =
-                                                      v₀. ANALYSIS (2026-07-18): the difference of
-                                                      Lambert kernels factors exactly: f(a)−f(b) =
-                                                      (a−b)(1−ab)/((1−a)²(1−b)²) for f(t)=t/(1−t)²,
-                                                      and ultrametrically |1−a| = 1 whenever |a| <
-                                                      1, so each tail term of X(u₀)−X(v₀) is bounded
-                                                      by |q₀|^m|u₀−v₀| (u-side) resp.
-                                                      |q₀^m/(u₀v₀)||u₀−v₀| (u⁻¹-side); the head
-                                                      contributes (u₀−v₀)(1−u₀v₀)/((1−u₀)²(1−v₀)²).
-                                                      Two-step plan: (1) show X(u₀)=X(v₀) → u₀=v₀ ∨
-                                                      u₀v₀=1 by comparing the head factor against
-                                                      the tails — DELICATE when |1−u₀| < 1 (u₀ ≡ 1
-                                                      in residue) and for the m=1 u⁻¹-side term when
-                                                      |u₀v₀| is near |q₀|² (only > |q₀|²
-                                                      guaranteed); the clean classical route is the
-                                                      theta-product factorization (Silverman ATAEC V
-                                                      §3–4, Lang Elliptic Functions ch. 15:
-                                                      X(u)−X(v) = -uv·Θ(uv)Θ(u/v)/(Θ(u)²Θ(v)²)-type
-                                                      with Θ(t) = (1−t)∏(1−qⁿt)(1−qⁿ/t)/(1−qⁿ)² —
-                                                      CONSULT THE LITERATURE for the exact
-                                                      normalization before formalizing; the
-                                                      Θ-machinery would also give an independent
-                                                      route to the chord identities). (2) the case
-                                                      u₀v₀ = 1 with equal Y: then both in window
-                                                      forces |u₀| = |v₀| = 1, and Y(u₀)=Y(u₀⁻¹) =
-                                                      −Y(u₀)−X(u₀) gives 2Y(u₀)+X(u₀)=0 (the
-                                                      negation-fixed condition); the one-variable
-                                                      formal series 2Y+X has head u(1+u)/(1−u)³ and
-                                                      should factor as u(1+u)/(1−u)³·(unit), giving
-                                                      u₀ = −1 hence v₀ = u₀. Note the (1−u)-division
-                                                      head-vs-tail estimate has the same
-                                                      |1−u₀|-delicacy.
+                                                    - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity (sorry node — TO
+                                                      BE RESTRUCTURED AWAY, Silverman ATAEC V.3.1(c)
+                                                      proof read 2026-07-20 from
+                                                      Books/silverman1994ataec.txt ~line 15900):
+                                                      Silverman NEVER proves injectivity or the
+                                                      tangent case directly. Lemma 3.1.2: a map φ
+                                                      from a multiplicative group to an additive
+                                                      group taking infinitely many distinct values
+                                                      and satisfying φ(u₁u₂) = φ(u₁)+φ(u₂) WHENEVER
+                                                      φ(u₁) ≠ ±φ(u₂) is automatically a homomorphism
+                                                      (pick u with φ(u) avoiding 6 values; then
+                                                      φ(uu₁) = φ(u)+φ(u₁) ≠ ±φ(u₂) etc., cancel).
+                                                      RESTRUCTURE PLAN: (1) abstract Lemma 3.1.2;
+                                                      (2) infinitude: |X(1+t,q)| = |t|⁻² for 0<|t|<1
+                                                      (head (1+t)/t² dominates the Lambert tails
+                                                      ultrametrically), so u ↦ pointMap(1+πʲ) gives
+                                                      infinitely many distinct values; (3)
+                                                      pointMap_mul := X≠-case
+                                                      (bilateral_add_of_X_ne, PROVEN chain) +
+                                                      vertical case (PROVEN) + Lemma 3.1.2 — note
+                                                      φ(u₁) ≠ ±φ(u₂) ⟺ X-values differ (for non-O
+                                                      points), so the X≠-case is exactly the
+                                                      hypothesis; (4) injectivity DERIVED: φ(u)=φ(v)
+                                                      → φ(u·v⁻¹-class) = O → kernel is q^ℤ by
+                                                      definition of pointMap → window reps equal;
+                                                      (5) DELETE the tangent chain
+                                                      (bilateral_tangentX/Y_cleared,
+                                                      bilateral_add_self) — 2 sorries removed.
+                                                      Remaining hard leaf:
+                                                      exists_annulus_bilateralX_eq (surjectivity,
+                                                      Silverman §V.4 — Newton polygon/completeness).
                                                 - ✅· `TateCurve.bilateral_add_self` — the tangent identity (V.3.1(c) doubling case).
                                                   DERIVED 2026-07-18 from the cleared tangent
                                                   identities + the non-2-torsion leaf, same division
@@ -1962,44 +1899,39 @@ entries file). To add/remove/annotate a node, edit
                                                       annulus with u² not in the trivial class has
                                                       2Y(u) + X(u) ≠ 0 — the 2-torsion parameters
                                                       are exactly {-1, ±√q}·q^ℤ.
-                                                        - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity of the
-                                                          bilateral parametrization on the
-                                                          fundamental annulus (sorry node):
-                                                          X(u₀)=X(v₀) ∧ Y(u₀)=Y(v₀) → u₀ = v₀.
-                                                          ANALYSIS (2026-07-18): the difference of
-                                                          Lambert kernels factors exactly: f(a)−f(b)
-                                                          = (a−b)(1−ab)/((1−a)²(1−b)²) for
-                                                          f(t)=t/(1−t)², and ultrametrically |1−a| =
-                                                          1 whenever |a| < 1, so each tail term of
-                                                          X(u₀)−X(v₀) is bounded by |q₀|^m|u₀−v₀|
-                                                          (u-side) resp. |q₀^m/(u₀v₀)||u₀−v₀|
-                                                          (u⁻¹-side); the head contributes
-                                                          (u₀−v₀)(1−u₀v₀)/((1−u₀)²(1−v₀)²). Two-step
-                                                          plan: (1) show X(u₀)=X(v₀) → u₀=v₀ ∨
-                                                          u₀v₀=1 by comparing the head factor
-                                                          against the tails — DELICATE when |1−u₀| <
-                                                          1 (u₀ ≡ 1 in residue) and for the m=1
-                                                          u⁻¹-side term when |u₀v₀| is near |q₀|²
-                                                          (only > |q₀|² guaranteed); the clean
-                                                          classical route is the theta-product
-                                                          factorization (Silverman ATAEC V §3–4,
-                                                          Lang Elliptic Functions ch. 15: X(u)−X(v)
-                                                          = -uv·Θ(uv)Θ(u/v)/(Θ(u)²Θ(v)²)-type with
-                                                          Θ(t) = (1−t)∏(1−qⁿt)(1−qⁿ/t)/(1−qⁿ)² —
-                                                          CONSULT THE LITERATURE for the exact
-                                                          normalization before formalizing; the
-                                                          Θ-machinery would also give an independent
-                                                          route to the chord identities). (2) the
-                                                          case u₀v₀ = 1 with equal Y: then both in
-                                                          window forces |u₀| = |v₀| = 1, and
-                                                          Y(u₀)=Y(u₀⁻¹) = −Y(u₀)−X(u₀) gives
-                                                          2Y(u₀)+X(u₀)=0 (the negation-fixed
-                                                          condition); the one-variable formal series
-                                                          2Y+X has head u(1+u)/(1−u)³ and should
-                                                          factor as u(1+u)/(1−u)³·(unit), giving u₀
-                                                          = −1 hence v₀ = u₀. Note the
-                                                          (1−u)-division head-vs-tail estimate has
-                                                          the same |1−u₀|-delicacy.
+                                                        - ❌· `TateCurve.bilateralXY_inj` — coordinate-pair injectivity (sorry node —
+                                                          TO BE RESTRUCTURED AWAY, Silverman ATAEC
+                                                          V.3.1(c) proof read 2026-07-20 from
+                                                          Books/silverman1994ataec.txt ~line 15900):
+                                                          Silverman NEVER proves injectivity or the
+                                                          tangent case directly. Lemma 3.1.2: a map
+                                                          φ from a multiplicative group to an
+                                                          additive group taking infinitely many
+                                                          distinct values and satisfying φ(u₁u₂) =
+                                                          φ(u₁)+φ(u₂) WHENEVER φ(u₁) ≠ ±φ(u₂) is
+                                                          automatically a homomorphism (pick u with
+                                                          φ(u) avoiding 6 values; then φ(uu₁) =
+                                                          φ(u)+φ(u₁) ≠ ±φ(u₂) etc., cancel).
+                                                          RESTRUCTURE PLAN: (1) abstract Lemma
+                                                          3.1.2; (2) infinitude: |X(1+t,q)| = |t|⁻²
+                                                          for 0<|t|<1 (head (1+t)/t² dominates the
+                                                          Lambert tails ultrametrically), so u ↦
+                                                          pointMap(1+πʲ) gives infinitely many
+                                                          distinct values; (3) pointMap_mul :=
+                                                          X≠-case (bilateral_add_of_X_ne, PROVEN
+                                                          chain) + vertical case (PROVEN) + Lemma
+                                                          3.1.2 — note φ(u₁) ≠ ±φ(u₂) ⟺ X-values
+                                                          differ (for non-O points), so the X≠-case
+                                                          is exactly the hypothesis; (4) injectivity
+                                                          DERIVED: φ(u)=φ(v) → φ(u·v⁻¹-class) = O →
+                                                          kernel is q^ℤ by definition of pointMap →
+                                                          window reps equal; (5) DELETE the tangent
+                                                          chain (bilateral_tangentX/Y_cleared,
+                                                          bilateral_add_self) — 2 sorries removed.
+                                                          Remaining hard leaf:
+                                                          exists_annulus_bilateralX_eq
+                                                          (surjectivity, Silverman §V.4 — Newton
+                                                          polygon/completeness).
                                                     - ❌· `TateCurve.bilateral_tangentY_cleared` — cleared tangent Y-identity (sorry node):
                                                       -(Y(u²)+X(u²))E = M(X(u²)-X(u)) + Y(u)E.
                                                       Diagonal case.
