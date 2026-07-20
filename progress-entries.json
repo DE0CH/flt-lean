@@ -1184,8 +1184,8 @@
     "text": "valuative structure of the separable closure (PROVEN 2026-07-20, same iteration as stated): letI the uniform/rank-one-Valued/NontriviallyNormedField structure on k (the LocalField.Basic recipe), then the integral closure of 𝒪[k] in Ω is a ValuationSubring by the spectral-norm dichotomy (vendored isIntegral_of_spectralNorm_le_one + spectralNorm_inv from Deformations/AbsoluteGaloisGroup); ValuativeRel.ofValuation of its valuation; the ValuativeExtension compatibility reduces by the divisibility form (div_le_one₀ + valuation_le_one_iff) to “base-field element integral over 𝒪[k] iff in 𝒪[k]” — IsIntegrallyClosed.isIntegral_iff for the DVR."
   },
   {
-    "name": "exists_isNonarchimedeanLocalField_intermediate",
-    "fullname": "exists_isNonarchimedeanLocalField_intermediate",
+    "name": "isNonarchimedeanLocalField_intermediate",
+    "fullname": "isNonarchimedeanLocalField_intermediate",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure",
     "text": "finite subextensions of Ω are nonarchimedean local fields (DERIVED 2026-07-20): topology := the canonical valuative topology (ValuativeRel.topologicalSpace), which is valuative by mathlib’s ValuativeRel.isValuativeTopology; nontriviality transports from k through the proven valuative extension (valuation_surjective + Compatible.vle_iff_le); local compactness delegated to the remaining leaf locallyCompactSpace_intermediate.",
     "wip": false
