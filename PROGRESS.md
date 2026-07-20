@@ -261,23 +261,6 @@ entries file). To add/remove/annotate a node, edit
                                                                           dispatch as the X-identity;
                                                                           statement strengthened with
                                                                           hu1/hv1).
-                                                                            - ✅· `TateCurve.bilateral_chordY_cleared_window` — window case of the cleared
-                                                                              chord Y-identity (DERIVED
-                                                                              2026-07-18: same bridge
-                                                                              rewrite, delegating to
-                                                                              evalA_chordY).
-                                                                                - ✅· `TateCurve.evalA_chordY` — evalA-level chord Y-identity
-                                                                                  (DERIVED 2026-07-18: same via
-                                                                                  chordY_formal and its
-                                                                                  transport).
-                                                                                    - ✅· `TateCurve.chordY_formal` — formal chord Y-identity in
-                                                                                      CoeffRing₂⟦q⟧ (DERIVED
-                                                                                      2026-07-18: same injectivity
-                                                                                      pullback).
-                                                                                        - ❌· `TateCurve.chordY_ratFunc₂` — chord Y-identity in ℚ(u)(v)⟦q⟧
-                                                                                          (sorry node): same descent as
-                                                                                          chordX_ratFunc₂ with
-                                                                                          analytic_chordY.
                                                                             - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
                                                                               chord Y-identity (sorry node):
                                                                               same shift-reduction as the
@@ -294,90 +277,6 @@ entries file). To add/remove/annotate a node, edit
                                                                           the pointMap_mul call site),
                                                                           needed for the evalA bridges
                                                                           (X has a pole at u = 1).
-                                                                            - ✅· `TateCurve.bilateral_chordX_cleared_window` — window case of the cleared
-                                                                              chord X-identity (DERIVED
-                                                                              2026-07-18: bilateral values
-                                                                              rewritten to evalA-sums via
-                                                                              evalA_XA_eq_bilateralX /
-                                                                              evalA_YA_eq_bilateralY,
-                                                                              delegating to evalA_chordX).
-                                                                                - ✅· `TateCurve.evalA_chordX` — evalA-level chord X-identity
-                                                                                  (DERIVED 2026-07-18: applies
-                                                                                  the two-variable evaluation
-                                                                                  transport to the formal
-                                                                                  identity chordX_formal).
-                                                                                    - ✅· `TateCurve.chordX_formal` — formal chord X-identity in
-                                                                                      CoeffRing₂⟦q⟧ (DERIVED
-                                                                                      2026-07-18: injectivity
-                                                                                      pullback along
-                                                                                      coeffRing₂ToRatFunc —
-                                                                                      CoeffRing₂ ↪ ℚ(u)(v) built
-                                                                                      with the three slot
-                                                                                      compatibilities coeffRing₂ToRa
-                                                                                      tFunc∘{u,v,uv}Slot = {u,v,uv}E
-                                                                                      mbR∘coeffRingToRatFunc; all
-                                                                                      three embeddings are substHom-
-                                                                                      substitutions with instance-
-                                                                                      robust transcendence proofs).
-                                                                                        - ❌· `TateCurve.chordX_ratFunc₂` — chord X-identity in ℚ(u)(v)⟦q⟧
-                                                                                          among the three substitution
-                                                                                          images of TateCurve.X/Y (sorry
-                                                                                          node — the final descent
-                                                                                          target). KEY SIMPLIFICATION
-                                                                                          (2026-07-18): since ℚ(u)(v) is
-                                                                                          a FIELD, any evaluation HOM to
-                                                                                          ℂ is injective, so ONE
-                                                                                          algebraically independent pair
-                                                                                          (u₀, v₀) suffices — no
-                                                                                          infinite-set/numerator
-                                                                                          argument at the outer level.
-                                                                                          Plan: (1) u₀ := 1/e
-                                                                                          (transcendental via
-                                                                                          Real.transcendental_exp-
-                                                                                          inverse; norm ≈ .3679), v₀ :=
-                                                                                          a real in (1/2,1)
-                                                                                          transcendental over the image
-                                                                                          ℚ(u₀) (exists:
-                                                                                          Algebraic.countable over R :=
-                                                                                          RatFunc ℚ with letI Algebra
-                                                                                          via (evalAtHom u₀).toAlgebra +
-                                                                                          uncountability of the
-                                                                                          interval; needs Countable
-                                                                                          (RatFunc ℚ) via num/denom-pair
-                                                                                          injection); (2) H := substHom
-                                                                                          (K := RatFunc ℚ) v₀ under the
-                                                                                          letI algebra : ℚ(u)(v) →+* ℂ,
-                                                                                          injective; (3) compat: H∘uEmbR
-                                                                                          = evalAtHom u₀ / H∘vEmbR =
-                                                                                          evalAtHom v₀ / H∘uvEmbR =
-                                                                                          evalAtHom (u₀v₀) — each by
-                                                                                          ratFuncQ_ringHom_ext (re-add;
-                                                                                          two ℚ(X)-homs agreeing on X)
-                                                                                          with X-values via
-                                                                                          substHom_algebraMap (re-add)
-                                                                                          and substHom_ratFuncX; u₀v₀-
-                                                                                          transcendence by the ℂ-level
-                                                                                          uvGen argument; (4)
-                                                                                          coefficient extraction: for
-                                                                                          all 0<‖q‖<1/10 the H-evaluated
-                                                                                          series of both sides HasSum to
-                                                                                          equal values (hasSum_X/Y_eval
-                                                                                          at u₀, v₀, u₀v₀ +
-                                                                                          hasSum_evalAt_add/neg/sub/mul-
-                                                                                          analogues at H +
-                                                                                          analytic_chordX with window
-                                                                                          0<‖q‖<1/10<min norms, all<1);
-                                                                                          apply coeffs_eq_zero_of_hasSum
-                                                                                          _punctured to the difference;
-                                                                                          H-injectivity finishes
-                                                                                          coefficientwise. Publicize
-                                                                                          (with this consumer, same
-                                                                                          commit): analytic_chordX/Y,
-                                                                                          evalAtHom(+_apply,_ratFuncX),
-                                                                                          coeffs_eq_zero_of_hasSum_punct
-                                                                                          ured,
-                                                                                          hasSum_evalAt_add/neg/sub/mul
-                                                                                          in TateCurveConstruction.
                                                                             - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
                                                                               chord X-identity (sorry node):
                                                                               u₀v₀ below the fundamental
@@ -590,23 +489,6 @@ entries file). To add/remove/annotate a node, edit
                                                                               dispatch as the X-identity;
                                                                               statement strengthened with
                                                                               hu1/hv1).
-                                                                                - ✅· `TateCurve.bilateral_chordY_cleared_window` — window case of the cleared
-                                                                                  chord Y-identity (DERIVED
-                                                                                  2026-07-18: same bridge
-                                                                                  rewrite, delegating to
-                                                                                  evalA_chordY).
-                                                                                    - ✅· `TateCurve.evalA_chordY` — evalA-level chord Y-identity
-                                                                                      (DERIVED 2026-07-18: same via
-                                                                                      chordY_formal and its
-                                                                                      transport).
-                                                                                        - ✅· `TateCurve.chordY_formal` — formal chord Y-identity in
-                                                                                          CoeffRing₂⟦q⟧ (DERIVED
-                                                                                          2026-07-18: same injectivity
-                                                                                          pullback).
-                                                                                            - ❌· `TateCurve.chordY_ratFunc₂` — chord Y-identity in ℚ(u)(v)⟦q⟧
-                                                                                              (sorry node): same descent as
-                                                                                              chordX_ratFunc₂ with
-                                                                                              analytic_chordY.
                                                                                 - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
                                                                                   chord Y-identity (sorry node):
                                                                                   same shift-reduction as the
@@ -623,90 +505,6 @@ entries file). To add/remove/annotate a node, edit
                                                                               the pointMap_mul call site),
                                                                               needed for the evalA bridges
                                                                               (X has a pole at u = 1).
-                                                                                - ✅· `TateCurve.bilateral_chordX_cleared_window` — window case of the cleared
-                                                                                  chord X-identity (DERIVED
-                                                                                  2026-07-18: bilateral values
-                                                                                  rewritten to evalA-sums via
-                                                                                  evalA_XA_eq_bilateralX /
-                                                                                  evalA_YA_eq_bilateralY,
-                                                                                  delegating to evalA_chordX).
-                                                                                    - ✅· `TateCurve.evalA_chordX` — evalA-level chord X-identity
-                                                                                      (DERIVED 2026-07-18: applies
-                                                                                      the two-variable evaluation
-                                                                                      transport to the formal
-                                                                                      identity chordX_formal).
-                                                                                        - ✅· `TateCurve.chordX_formal` — formal chord X-identity in
-                                                                                          CoeffRing₂⟦q⟧ (DERIVED
-                                                                                          2026-07-18: injectivity
-                                                                                          pullback along
-                                                                                          coeffRing₂ToRatFunc —
-                                                                                          CoeffRing₂ ↪ ℚ(u)(v) built
-                                                                                          with the three slot
-                                                                                          compatibilities coeffRing₂ToRa
-                                                                                          tFunc∘{u,v,uv}Slot = {u,v,uv}E
-                                                                                          mbR∘coeffRingToRatFunc; all
-                                                                                          three embeddings are substHom-
-                                                                                          substitutions with instance-
-                                                                                          robust transcendence proofs).
-                                                                                            - ❌· `TateCurve.chordX_ratFunc₂` — chord X-identity in ℚ(u)(v)⟦q⟧
-                                                                                              among the three substitution
-                                                                                              images of TateCurve.X/Y (sorry
-                                                                                              node — the final descent
-                                                                                              target). KEY SIMPLIFICATION
-                                                                                              (2026-07-18): since ℚ(u)(v) is
-                                                                                              a FIELD, any evaluation HOM to
-                                                                                              ℂ is injective, so ONE
-                                                                                              algebraically independent pair
-                                                                                              (u₀, v₀) suffices — no
-                                                                                              infinite-set/numerator
-                                                                                              argument at the outer level.
-                                                                                              Plan: (1) u₀ := 1/e
-                                                                                              (transcendental via
-                                                                                              Real.transcendental_exp-
-                                                                                              inverse; norm ≈ .3679), v₀ :=
-                                                                                              a real in (1/2,1)
-                                                                                              transcendental over the image
-                                                                                              ℚ(u₀) (exists:
-                                                                                              Algebraic.countable over R :=
-                                                                                              RatFunc ℚ with letI Algebra
-                                                                                              via (evalAtHom u₀).toAlgebra +
-                                                                                              uncountability of the
-                                                                                              interval; needs Countable
-                                                                                              (RatFunc ℚ) via num/denom-pair
-                                                                                              injection); (2) H := substHom
-                                                                                              (K := RatFunc ℚ) v₀ under the
-                                                                                              letI algebra : ℚ(u)(v) →+* ℂ,
-                                                                                              injective; (3) compat: H∘uEmbR
-                                                                                              = evalAtHom u₀ / H∘vEmbR =
-                                                                                              evalAtHom v₀ / H∘uvEmbR =
-                                                                                              evalAtHom (u₀v₀) — each by
-                                                                                              ratFuncQ_ringHom_ext (re-add;
-                                                                                              two ℚ(X)-homs agreeing on X)
-                                                                                              with X-values via
-                                                                                              substHom_algebraMap (re-add)
-                                                                                              and substHom_ratFuncX; u₀v₀-
-                                                                                              transcendence by the ℂ-level
-                                                                                              uvGen argument; (4)
-                                                                                              coefficient extraction: for
-                                                                                              all 0<‖q‖<1/10 the H-evaluated
-                                                                                              series of both sides HasSum to
-                                                                                              equal values (hasSum_X/Y_eval
-                                                                                              at u₀, v₀, u₀v₀ +
-                                                                                              hasSum_evalAt_add/neg/sub/mul-
-                                                                                              analogues at H +
-                                                                                              analytic_chordX with window
-                                                                                              0<‖q‖<1/10<min norms, all<1);
-                                                                                              apply coeffs_eq_zero_of_hasSum
-                                                                                              _punctured to the difference;
-                                                                                              H-injectivity finishes
-                                                                                              coefficientwise. Publicize
-                                                                                              (with this consumer, same
-                                                                                              commit): analytic_chordX/Y,
-                                                                                              evalAtHom(+_apply,_ratFuncX),
-                                                                                              coeffs_eq_zero_of_hasSum_punct
-                                                                                              ured,
-                                                                                              hasSum_evalAt_add/neg/sub/mul
-                                                                                              in TateCurveConstruction.
                                                                                 - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
                                                                                   chord X-identity (sorry node):
                                                                                   u₀v₀ below the fundamental
@@ -943,23 +741,6 @@ entries file). To add/remove/annotate a node, edit
                                                                                   dispatch as the X-identity;
                                                                                   statement strengthened with
                                                                                   hu1/hv1).
-                                                                                    - ✅· `TateCurve.bilateral_chordY_cleared_window` — window case of the cleared
-                                                                                      chord Y-identity (DERIVED
-                                                                                      2026-07-18: same bridge
-                                                                                      rewrite, delegating to
-                                                                                      evalA_chordY).
-                                                                                        - ✅· `TateCurve.evalA_chordY` — evalA-level chord Y-identity
-                                                                                          (DERIVED 2026-07-18: same via
-                                                                                          chordY_formal and its
-                                                                                          transport).
-                                                                                            - ✅· `TateCurve.chordY_formal` — formal chord Y-identity in
-                                                                                              CoeffRing₂⟦q⟧ (DERIVED
-                                                                                              2026-07-18: same injectivity
-                                                                                              pullback).
-                                                                                                - ❌· `TateCurve.chordY_ratFunc₂` — chord Y-identity in ℚ(u)(v)⟦q⟧
-                                                                                                  (sorry node): same descent as
-                                                                                                  chordX_ratFunc₂ with
-                                                                                                  analytic_chordY.
                                                                                     - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
                                                                                       chord Y-identity (sorry node):
                                                                                       same shift-reduction as the
@@ -976,90 +757,6 @@ entries file). To add/remove/annotate a node, edit
                                                                                   the pointMap_mul call site),
                                                                                   needed for the evalA bridges
                                                                                   (X has a pole at u = 1).
-                                                                                    - ✅· `TateCurve.bilateral_chordX_cleared_window` — window case of the cleared
-                                                                                      chord X-identity (DERIVED
-                                                                                      2026-07-18: bilateral values
-                                                                                      rewritten to evalA-sums via
-                                                                                      evalA_XA_eq_bilateralX /
-                                                                                      evalA_YA_eq_bilateralY,
-                                                                                      delegating to evalA_chordX).
-                                                                                        - ✅· `TateCurve.evalA_chordX` — evalA-level chord X-identity
-                                                                                          (DERIVED 2026-07-18: applies
-                                                                                          the two-variable evaluation
-                                                                                          transport to the formal
-                                                                                          identity chordX_formal).
-                                                                                            - ✅· `TateCurve.chordX_formal` — formal chord X-identity in
-                                                                                              CoeffRing₂⟦q⟧ (DERIVED
-                                                                                              2026-07-18: injectivity
-                                                                                              pullback along
-                                                                                              coeffRing₂ToRatFunc —
-                                                                                              CoeffRing₂ ↪ ℚ(u)(v) built
-                                                                                              with the three slot
-                                                                                              compatibilities coeffRing₂ToRa
-                                                                                              tFunc∘{u,v,uv}Slot = {u,v,uv}E
-                                                                                              mbR∘coeffRingToRatFunc; all
-                                                                                              three embeddings are substHom-
-                                                                                              substitutions with instance-
-                                                                                              robust transcendence proofs).
-                                                                                                - ❌· `TateCurve.chordX_ratFunc₂` — chord X-identity in ℚ(u)(v)⟦q⟧
-                                                                                                  among the three substitution
-                                                                                                  images of TateCurve.X/Y (sorry
-                                                                                                  node — the final descent
-                                                                                                  target). KEY SIMPLIFICATION
-                                                                                                  (2026-07-18): since ℚ(u)(v) is
-                                                                                                  a FIELD, any evaluation HOM to
-                                                                                                  ℂ is injective, so ONE
-                                                                                                  algebraically independent pair
-                                                                                                  (u₀, v₀) suffices — no
-                                                                                                  infinite-set/numerator
-                                                                                                  argument at the outer level.
-                                                                                                  Plan: (1) u₀ := 1/e
-                                                                                                  (transcendental via
-                                                                                                  Real.transcendental_exp-
-                                                                                                  inverse; norm ≈ .3679), v₀ :=
-                                                                                                  a real in (1/2,1)
-                                                                                                  transcendental over the image
-                                                                                                  ℚ(u₀) (exists:
-                                                                                                  Algebraic.countable over R :=
-                                                                                                  RatFunc ℚ with letI Algebra
-                                                                                                  via (evalAtHom u₀).toAlgebra +
-                                                                                                  uncountability of the
-                                                                                                  interval; needs Countable
-                                                                                                  (RatFunc ℚ) via num/denom-pair
-                                                                                                  injection); (2) H := substHom
-                                                                                                  (K := RatFunc ℚ) v₀ under the
-                                                                                                  letI algebra : ℚ(u)(v) →+* ℂ,
-                                                                                                  injective; (3) compat: H∘uEmbR
-                                                                                                  = evalAtHom u₀ / H∘vEmbR =
-                                                                                                  evalAtHom v₀ / H∘uvEmbR =
-                                                                                                  evalAtHom (u₀v₀) — each by
-                                                                                                  ratFuncQ_ringHom_ext (re-add;
-                                                                                                  two ℚ(X)-homs agreeing on X)
-                                                                                                  with X-values via
-                                                                                                  substHom_algebraMap (re-add)
-                                                                                                  and substHom_ratFuncX; u₀v₀-
-                                                                                                  transcendence by the ℂ-level
-                                                                                                  uvGen argument; (4)
-                                                                                                  coefficient extraction: for
-                                                                                                  all 0<‖q‖<1/10 the H-evaluated
-                                                                                                  series of both sides HasSum to
-                                                                                                  equal values (hasSum_X/Y_eval
-                                                                                                  at u₀, v₀, u₀v₀ +
-                                                                                                  hasSum_evalAt_add/neg/sub/mul-
-                                                                                                  analogues at H +
-                                                                                                  analytic_chordX with window
-                                                                                                  0<‖q‖<1/10<min norms, all<1);
-                                                                                                  apply coeffs_eq_zero_of_hasSum
-                                                                                                  _punctured to the difference;
-                                                                                                  H-injectivity finishes
-                                                                                                  coefficientwise. Publicize
-                                                                                                  (with this consumer, same
-                                                                                                  commit): analytic_chordX/Y,
-                                                                                                  evalAtHom(+_apply,_ratFuncX),
-                                                                                                  coeffs_eq_zero_of_hasSum_punct
-                                                                                                  ured,
-                                                                                                  hasSum_evalAt_add/neg/sub/mul
-                                                                                                  in TateCurveConstruction.
                                                                                     - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
                                                                                       chord X-identity (sorry node):
                                                                                       u₀v₀ below the fundamental
@@ -1289,23 +986,6 @@ entries file). To add/remove/annotate a node, edit
                                                                                       dispatch as the X-identity;
                                                                                       statement strengthened with
                                                                                       hu1/hv1).
-                                                                                        - ✅· `TateCurve.bilateral_chordY_cleared_window` — window case of the cleared
-                                                                                          chord Y-identity (DERIVED
-                                                                                          2026-07-18: same bridge
-                                                                                          rewrite, delegating to
-                                                                                          evalA_chordY).
-                                                                                            - ✅· `TateCurve.evalA_chordY` — evalA-level chord Y-identity
-                                                                                              (DERIVED 2026-07-18: same via
-                                                                                              chordY_formal and its
-                                                                                              transport).
-                                                                                                - ✅· `TateCurve.chordY_formal` — formal chord Y-identity in
-                                                                                                  CoeffRing₂⟦q⟧ (DERIVED
-                                                                                                  2026-07-18: same injectivity
-                                                                                                  pullback).
-                                                                                                    - ❌· `TateCurve.chordY_ratFunc₂` — chord Y-identity in ℚ(u)(v)⟦q⟧
-                                                                                                      (sorry node): same descent as
-                                                                                                      chordX_ratFunc₂ with
-                                                                                                      analytic_chordY.
                                                                                         - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
                                                                                           chord Y-identity (sorry node):
                                                                                           same shift-reduction as the
@@ -1322,90 +1002,6 @@ entries file). To add/remove/annotate a node, edit
                                                                                       the pointMap_mul call site),
                                                                                       needed for the evalA bridges
                                                                                       (X has a pole at u = 1).
-                                                                                        - ✅· `TateCurve.bilateral_chordX_cleared_window` — window case of the cleared
-                                                                                          chord X-identity (DERIVED
-                                                                                          2026-07-18: bilateral values
-                                                                                          rewritten to evalA-sums via
-                                                                                          evalA_XA_eq_bilateralX /
-                                                                                          evalA_YA_eq_bilateralY,
-                                                                                          delegating to evalA_chordX).
-                                                                                            - ✅· `TateCurve.evalA_chordX` — evalA-level chord X-identity
-                                                                                              (DERIVED 2026-07-18: applies
-                                                                                              the two-variable evaluation
-                                                                                              transport to the formal
-                                                                                              identity chordX_formal).
-                                                                                                - ✅· `TateCurve.chordX_formal` — formal chord X-identity in
-                                                                                                  CoeffRing₂⟦q⟧ (DERIVED
-                                                                                                  2026-07-18: injectivity
-                                                                                                  pullback along
-                                                                                                  coeffRing₂ToRatFunc —
-                                                                                                  CoeffRing₂ ↪ ℚ(u)(v) built
-                                                                                                  with the three slot
-                                                                                                  compatibilities coeffRing₂ToRa
-                                                                                                  tFunc∘{u,v,uv}Slot = {u,v,uv}E
-                                                                                                  mbR∘coeffRingToRatFunc; all
-                                                                                                  three embeddings are substHom-
-                                                                                                  substitutions with instance-
-                                                                                                  robust transcendence proofs).
-                                                                                                    - ❌· `TateCurve.chordX_ratFunc₂` — chord X-identity in ℚ(u)(v)⟦q⟧
-                                                                                                      among the three substitution
-                                                                                                      images of TateCurve.X/Y (sorry
-                                                                                                      node — the final descent
-                                                                                                      target). KEY SIMPLIFICATION
-                                                                                                      (2026-07-18): since ℚ(u)(v) is
-                                                                                                      a FIELD, any evaluation HOM to
-                                                                                                      ℂ is injective, so ONE
-                                                                                                      algebraically independent pair
-                                                                                                      (u₀, v₀) suffices — no
-                                                                                                      infinite-set/numerator
-                                                                                                      argument at the outer level.
-                                                                                                      Plan: (1) u₀ := 1/e
-                                                                                                      (transcendental via
-                                                                                                      Real.transcendental_exp-
-                                                                                                      inverse; norm ≈ .3679), v₀ :=
-                                                                                                      a real in (1/2,1)
-                                                                                                      transcendental over the image
-                                                                                                      ℚ(u₀) (exists:
-                                                                                                      Algebraic.countable over R :=
-                                                                                                      RatFunc ℚ with letI Algebra
-                                                                                                      via (evalAtHom u₀).toAlgebra +
-                                                                                                      uncountability of the
-                                                                                                      interval; needs Countable
-                                                                                                      (RatFunc ℚ) via num/denom-pair
-                                                                                                      injection); (2) H := substHom
-                                                                                                      (K := RatFunc ℚ) v₀ under the
-                                                                                                      letI algebra : ℚ(u)(v) →+* ℂ,
-                                                                                                      injective; (3) compat: H∘uEmbR
-                                                                                                      = evalAtHom u₀ / H∘vEmbR =
-                                                                                                      evalAtHom v₀ / H∘uvEmbR =
-                                                                                                      evalAtHom (u₀v₀) — each by
-                                                                                                      ratFuncQ_ringHom_ext (re-add;
-                                                                                                      two ℚ(X)-homs agreeing on X)
-                                                                                                      with X-values via
-                                                                                                      substHom_algebraMap (re-add)
-                                                                                                      and substHom_ratFuncX; u₀v₀-
-                                                                                                      transcendence by the ℂ-level
-                                                                                                      uvGen argument; (4)
-                                                                                                      coefficient extraction: for
-                                                                                                      all 0<‖q‖<1/10 the H-evaluated
-                                                                                                      series of both sides HasSum to
-                                                                                                      equal values (hasSum_X/Y_eval
-                                                                                                      at u₀, v₀, u₀v₀ +
-                                                                                                      hasSum_evalAt_add/neg/sub/mul-
-                                                                                                      analogues at H +
-                                                                                                      analytic_chordX with window
-                                                                                                      0<‖q‖<1/10<min norms, all<1);
-                                                                                                      apply coeffs_eq_zero_of_hasSum
-                                                                                                      _punctured to the difference;
-                                                                                                      H-injectivity finishes
-                                                                                                      coefficientwise. Publicize
-                                                                                                      (with this consumer, same
-                                                                                                      commit): analytic_chordX/Y,
-                                                                                                      evalAtHom(+_apply,_ratFuncX),
-                                                                                                      coeffs_eq_zero_of_hasSum_punct
-                                                                                                      ured,
-                                                                                                      hasSum_evalAt_add/neg/sub/mul
-                                                                                                      in TateCurveConstruction.
                                                                                         - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
                                                                                           chord X-identity (sorry node):
                                                                                           u₀v₀ below the fundamental
@@ -1661,22 +1257,6 @@ entries file). To add/remove/annotate a node, edit
                                                               2026-07-18: same case dispatch as the
                                                               X-identity; statement strengthened
                                                               with hu1/hv1).
-                                                                - ✅· `TateCurve.bilateral_chordY_cleared_window` — window case of the cleared chord
-                                                                  Y-identity (DERIVED 2026-07-18:
-                                                                  same bridge rewrite, delegating to
-                                                                  evalA_chordY).
-                                                                    - ✅· `TateCurve.evalA_chordY` — evalA-level chord Y-identity
-                                                                      (DERIVED 2026-07-18: same via
-                                                                      chordY_formal and its
-                                                                      transport).
-                                                                        - ✅· `TateCurve.chordY_formal` — formal chord Y-identity in
-                                                                          CoeffRing₂⟦q⟧ (DERIVED
-                                                                          2026-07-18: same injectivity
-                                                                          pullback).
-                                                                            - ❌· `TateCurve.chordY_ratFunc₂` — chord Y-identity in ℚ(u)(v)⟦q⟧
-                                                                              (sorry node): same descent as
-                                                                              chordX_ratFunc₂ with
-                                                                              analytic_chordY.
                                                                 - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared chord
                                                                   Y-identity (sorry node): same
                                                                   shift-reduction as the X-shifted
@@ -1690,90 +1270,6 @@ entries file). To add/remove/annotate a node, edit
                                                               v₀ ≠ 1 (available at the pointMap_mul
                                                               call site), needed for the evalA
                                                               bridges (X has a pole at u = 1).
-                                                                - ✅· `TateCurve.bilateral_chordX_cleared_window` — window case of the cleared chord
-                                                                  X-identity (DERIVED 2026-07-18:
-                                                                  bilateral values rewritten to
-                                                                  evalA-sums via
-                                                                  evalA_XA_eq_bilateralX /
-                                                                  evalA_YA_eq_bilateralY, delegating
-                                                                  to evalA_chordX).
-                                                                    - ✅· `TateCurve.evalA_chordX` — evalA-level chord X-identity
-                                                                      (DERIVED 2026-07-18: applies
-                                                                      the two-variable evaluation
-                                                                      transport to the formal
-                                                                      identity chordX_formal).
-                                                                        - ✅· `TateCurve.chordX_formal` — formal chord X-identity in
-                                                                          CoeffRing₂⟦q⟧ (DERIVED
-                                                                          2026-07-18: injectivity
-                                                                          pullback along
-                                                                          coeffRing₂ToRatFunc —
-                                                                          CoeffRing₂ ↪ ℚ(u)(v) built
-                                                                          with the three slot
-                                                                          compatibilities coeffRing₂ToRa
-                                                                          tFunc∘{u,v,uv}Slot = {u,v,uv}E
-                                                                          mbR∘coeffRingToRatFunc; all
-                                                                          three embeddings are substHom-
-                                                                          substitutions with instance-
-                                                                          robust transcendence proofs).
-                                                                            - ❌· `TateCurve.chordX_ratFunc₂` — chord X-identity in ℚ(u)(v)⟦q⟧
-                                                                              among the three substitution
-                                                                              images of TateCurve.X/Y (sorry
-                                                                              node — the final descent
-                                                                              target). KEY SIMPLIFICATION
-                                                                              (2026-07-18): since ℚ(u)(v) is
-                                                                              a FIELD, any evaluation HOM to
-                                                                              ℂ is injective, so ONE
-                                                                              algebraically independent pair
-                                                                              (u₀, v₀) suffices — no
-                                                                              infinite-set/numerator
-                                                                              argument at the outer level.
-                                                                              Plan: (1) u₀ := 1/e
-                                                                              (transcendental via
-                                                                              Real.transcendental_exp-
-                                                                              inverse; norm ≈ .3679), v₀ :=
-                                                                              a real in (1/2,1)
-                                                                              transcendental over the image
-                                                                              ℚ(u₀) (exists:
-                                                                              Algebraic.countable over R :=
-                                                                              RatFunc ℚ with letI Algebra
-                                                                              via (evalAtHom u₀).toAlgebra +
-                                                                              uncountability of the
-                                                                              interval; needs Countable
-                                                                              (RatFunc ℚ) via num/denom-pair
-                                                                              injection); (2) H := substHom
-                                                                              (K := RatFunc ℚ) v₀ under the
-                                                                              letI algebra : ℚ(u)(v) →+* ℂ,
-                                                                              injective; (3) compat: H∘uEmbR
-                                                                              = evalAtHom u₀ / H∘vEmbR =
-                                                                              evalAtHom v₀ / H∘uvEmbR =
-                                                                              evalAtHom (u₀v₀) — each by
-                                                                              ratFuncQ_ringHom_ext (re-add;
-                                                                              two ℚ(X)-homs agreeing on X)
-                                                                              with X-values via
-                                                                              substHom_algebraMap (re-add)
-                                                                              and substHom_ratFuncX; u₀v₀-
-                                                                              transcendence by the ℂ-level
-                                                                              uvGen argument; (4)
-                                                                              coefficient extraction: for
-                                                                              all 0<‖q‖<1/10 the H-evaluated
-                                                                              series of both sides HasSum to
-                                                                              equal values (hasSum_X/Y_eval
-                                                                              at u₀, v₀, u₀v₀ +
-                                                                              hasSum_evalAt_add/neg/sub/mul-
-                                                                              analogues at H +
-                                                                              analytic_chordX with window
-                                                                              0<‖q‖<1/10<min norms, all<1);
-                                                                              apply coeffs_eq_zero_of_hasSum
-                                                                              _punctured to the difference;
-                                                                              H-injectivity finishes
-                                                                              coefficientwise. Publicize
-                                                                              (with this consumer, same
-                                                                              commit): analytic_chordX/Y,
-                                                                              evalAtHom(+_apply,_ratFuncX),
-                                                                              coeffs_eq_zero_of_hasSum_punct
-                                                                              ured,
-                                                                              hasSum_evalAt_add/neg/sub/mul
-                                                                              in TateCurveConstruction.
                                                                 - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared chord
                                                                   X-identity (sorry node): u₀v₀
                                                                   below the fundamental annulus
@@ -1944,23 +1440,6 @@ entries file). To add/remove/annotate a node, edit
                                                                   2026-07-18: same case dispatch as
                                                                   the X-identity; statement
                                                                   strengthened with hu1/hv1).
-                                                                    - ✅· `TateCurve.bilateral_chordY_cleared_window` — window case of the cleared
-                                                                      chord Y-identity (DERIVED
-                                                                      2026-07-18: same bridge
-                                                                      rewrite, delegating to
-                                                                      evalA_chordY).
-                                                                        - ✅· `TateCurve.evalA_chordY` — evalA-level chord Y-identity
-                                                                          (DERIVED 2026-07-18: same via
-                                                                          chordY_formal and its
-                                                                          transport).
-                                                                            - ✅· `TateCurve.chordY_formal` — formal chord Y-identity in
-                                                                              CoeffRing₂⟦q⟧ (DERIVED
-                                                                              2026-07-18: same injectivity
-                                                                              pullback).
-                                                                                - ❌· `TateCurve.chordY_ratFunc₂` — chord Y-identity in ℚ(u)(v)⟦q⟧
-                                                                                  (sorry node): same descent as
-                                                                                  chordX_ratFunc₂ with
-                                                                                  analytic_chordY.
                                                                     - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
                                                                       chord Y-identity (sorry node):
                                                                       same shift-reduction as the
@@ -1976,90 +1455,6 @@ entries file). To add/remove/annotate a node, edit
                                                                   the pointMap_mul call site),
                                                                   needed for the evalA bridges (X
                                                                   has a pole at u = 1).
-                                                                    - ✅· `TateCurve.bilateral_chordX_cleared_window` — window case of the cleared
-                                                                      chord X-identity (DERIVED
-                                                                      2026-07-18: bilateral values
-                                                                      rewritten to evalA-sums via
-                                                                      evalA_XA_eq_bilateralX /
-                                                                      evalA_YA_eq_bilateralY,
-                                                                      delegating to evalA_chordX).
-                                                                        - ✅· `TateCurve.evalA_chordX` — evalA-level chord X-identity
-                                                                          (DERIVED 2026-07-18: applies
-                                                                          the two-variable evaluation
-                                                                          transport to the formal
-                                                                          identity chordX_formal).
-                                                                            - ✅· `TateCurve.chordX_formal` — formal chord X-identity in
-                                                                              CoeffRing₂⟦q⟧ (DERIVED
-                                                                              2026-07-18: injectivity
-                                                                              pullback along
-                                                                              coeffRing₂ToRatFunc —
-                                                                              CoeffRing₂ ↪ ℚ(u)(v) built
-                                                                              with the three slot
-                                                                              compatibilities coeffRing₂ToRa
-                                                                              tFunc∘{u,v,uv}Slot = {u,v,uv}E
-                                                                              mbR∘coeffRingToRatFunc; all
-                                                                              three embeddings are substHom-
-                                                                              substitutions with instance-
-                                                                              robust transcendence proofs).
-                                                                                - ❌· `TateCurve.chordX_ratFunc₂` — chord X-identity in ℚ(u)(v)⟦q⟧
-                                                                                  among the three substitution
-                                                                                  images of TateCurve.X/Y (sorry
-                                                                                  node — the final descent
-                                                                                  target). KEY SIMPLIFICATION
-                                                                                  (2026-07-18): since ℚ(u)(v) is
-                                                                                  a FIELD, any evaluation HOM to
-                                                                                  ℂ is injective, so ONE
-                                                                                  algebraically independent pair
-                                                                                  (u₀, v₀) suffices — no
-                                                                                  infinite-set/numerator
-                                                                                  argument at the outer level.
-                                                                                  Plan: (1) u₀ := 1/e
-                                                                                  (transcendental via
-                                                                                  Real.transcendental_exp-
-                                                                                  inverse; norm ≈ .3679), v₀ :=
-                                                                                  a real in (1/2,1)
-                                                                                  transcendental over the image
-                                                                                  ℚ(u₀) (exists:
-                                                                                  Algebraic.countable over R :=
-                                                                                  RatFunc ℚ with letI Algebra
-                                                                                  via (evalAtHom u₀).toAlgebra +
-                                                                                  uncountability of the
-                                                                                  interval; needs Countable
-                                                                                  (RatFunc ℚ) via num/denom-pair
-                                                                                  injection); (2) H := substHom
-                                                                                  (K := RatFunc ℚ) v₀ under the
-                                                                                  letI algebra : ℚ(u)(v) →+* ℂ,
-                                                                                  injective; (3) compat: H∘uEmbR
-                                                                                  = evalAtHom u₀ / H∘vEmbR =
-                                                                                  evalAtHom v₀ / H∘uvEmbR =
-                                                                                  evalAtHom (u₀v₀) — each by
-                                                                                  ratFuncQ_ringHom_ext (re-add;
-                                                                                  two ℚ(X)-homs agreeing on X)
-                                                                                  with X-values via
-                                                                                  substHom_algebraMap (re-add)
-                                                                                  and substHom_ratFuncX; u₀v₀-
-                                                                                  transcendence by the ℂ-level
-                                                                                  uvGen argument; (4)
-                                                                                  coefficient extraction: for
-                                                                                  all 0<‖q‖<1/10 the H-evaluated
-                                                                                  series of both sides HasSum to
-                                                                                  equal values (hasSum_X/Y_eval
-                                                                                  at u₀, v₀, u₀v₀ +
-                                                                                  hasSum_evalAt_add/neg/sub/mul-
-                                                                                  analogues at H +
-                                                                                  analytic_chordX with window
-                                                                                  0<‖q‖<1/10<min norms, all<1);
-                                                                                  apply coeffs_eq_zero_of_hasSum
-                                                                                  _punctured to the difference;
-                                                                                  H-injectivity finishes
-                                                                                  coefficientwise. Publicize
-                                                                                  (with this consumer, same
-                                                                                  commit): analytic_chordX/Y,
-                                                                                  evalAtHom(+_apply,_ratFuncX),
-                                                                                  coeffs_eq_zero_of_hasSum_punct
-                                                                                  ured,
-                                                                                  hasSum_evalAt_add/neg/sub/mul
-                                                                                  in TateCurveConstruction.
                                                                     - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
                                                                       chord X-identity (sorry node):
                                                                       u₀v₀ below the fundamental
@@ -2229,20 +1624,6 @@ entries file). To add/remove/annotate a node, edit
                                                     - ✅· `TateCurve.bilateral_chordY_cleared` — cleared chord Y-identity (DERIVED 2026-07-18:
                                                       same case dispatch as the X-identity;
                                                       statement strengthened with hu1/hv1).
-                                                        - ✅· `TateCurve.bilateral_chordY_cleared_window` — window case of the cleared chord
-                                                          Y-identity (DERIVED 2026-07-18: same
-                                                          bridge rewrite, delegating to
-                                                          evalA_chordY).
-                                                            - ✅· `TateCurve.evalA_chordY` — evalA-level chord Y-identity (DERIVED
-                                                              2026-07-18: same via chordY_formal and
-                                                              its transport).
-                                                                - ✅· `TateCurve.chordY_formal` — formal chord Y-identity in
-                                                                  CoeffRing₂⟦q⟧ (DERIVED 2026-07-18:
-                                                                  same injectivity pullback).
-                                                                    - ❌· `TateCurve.chordY_ratFunc₂` — chord Y-identity in ℚ(u)(v)⟦q⟧
-                                                                      (sorry node): same descent as
-                                                                      chordX_ratFunc₂ with
-                                                                      analytic_chordY.
                                                         - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared chord
                                                           Y-identity (sorry node): same shift-
                                                           reduction as the X-shifted case.
@@ -2254,86 +1635,6 @@ entries file). To add/remove/annotate a node, edit
                                                       : v₀ ≠ 1 (available at the pointMap_mul call
                                                       site), needed for the evalA bridges (X has a
                                                       pole at u = 1).
-                                                        - ✅· `TateCurve.bilateral_chordX_cleared_window` — window case of the cleared chord
-                                                          X-identity (DERIVED 2026-07-18: bilateral
-                                                          values rewritten to evalA-sums via
-                                                          evalA_XA_eq_bilateralX /
-                                                          evalA_YA_eq_bilateralY, delegating to
-                                                          evalA_chordX).
-                                                            - ✅· `TateCurve.evalA_chordX` — evalA-level chord X-identity (DERIVED
-                                                              2026-07-18: applies the two-variable
-                                                              evaluation transport to the formal
-                                                              identity chordX_formal).
-                                                                - ✅· `TateCurve.chordX_formal` — formal chord X-identity in
-                                                                  CoeffRing₂⟦q⟧ (DERIVED 2026-07-18:
-                                                                  injectivity pullback along
-                                                                  coeffRing₂ToRatFunc — CoeffRing₂ ↪
-                                                                  ℚ(u)(v) built with the three slot
-                                                                  compatibilities
-                                                                  coeffRing₂ToRatFunc∘{u,v,uv}Slot =
-                                                                  {u,v,uv}EmbR∘coeffRingToRatFunc;
-                                                                  all three embeddings are substHom-
-                                                                  substitutions with instance-robust
-                                                                  transcendence proofs).
-                                                                    - ❌· `TateCurve.chordX_ratFunc₂` — chord X-identity in ℚ(u)(v)⟦q⟧
-                                                                      among the three substitution
-                                                                      images of TateCurve.X/Y (sorry
-                                                                      node — the final descent
-                                                                      target). KEY SIMPLIFICATION
-                                                                      (2026-07-18): since ℚ(u)(v) is
-                                                                      a FIELD, any evaluation HOM to
-                                                                      ℂ is injective, so ONE
-                                                                      algebraically independent pair
-                                                                      (u₀, v₀) suffices — no
-                                                                      infinite-set/numerator
-                                                                      argument at the outer level.
-                                                                      Plan: (1) u₀ := 1/e
-                                                                      (transcendental via
-                                                                      Real.transcendental_exp-
-                                                                      inverse; norm ≈ .3679), v₀ :=
-                                                                      a real in (1/2,1)
-                                                                      transcendental over the image
-                                                                      ℚ(u₀) (exists:
-                                                                      Algebraic.countable over R :=
-                                                                      RatFunc ℚ with letI Algebra
-                                                                      via (evalAtHom u₀).toAlgebra +
-                                                                      uncountability of the
-                                                                      interval; needs Countable
-                                                                      (RatFunc ℚ) via num/denom-pair
-                                                                      injection); (2) H := substHom
-                                                                      (K := RatFunc ℚ) v₀ under the
-                                                                      letI algebra : ℚ(u)(v) →+* ℂ,
-                                                                      injective; (3) compat: H∘uEmbR
-                                                                      = evalAtHom u₀ / H∘vEmbR =
-                                                                      evalAtHom v₀ / H∘uvEmbR =
-                                                                      evalAtHom (u₀v₀) — each by
-                                                                      ratFuncQ_ringHom_ext (re-add;
-                                                                      two ℚ(X)-homs agreeing on X)
-                                                                      with X-values via
-                                                                      substHom_algebraMap (re-add)
-                                                                      and substHom_ratFuncX; u₀v₀-
-                                                                      transcendence by the ℂ-level
-                                                                      uvGen argument; (4)
-                                                                      coefficient extraction: for
-                                                                      all 0<‖q‖<1/10 the H-evaluated
-                                                                      series of both sides HasSum to
-                                                                      equal values (hasSum_X/Y_eval
-                                                                      at u₀, v₀, u₀v₀ +
-                                                                      hasSum_evalAt_add/neg/sub/mul-
-                                                                      analogues at H +
-                                                                      analytic_chordX with window
-                                                                      0<‖q‖<1/10<min norms, all<1);
-                                                                      apply coeffs_eq_zero_of_hasSum
-                                                                      _punctured to the difference;
-                                                                      H-injectivity finishes
-                                                                      coefficientwise. Publicize
-                                                                      (with this consumer, same
-                                                                      commit): analytic_chordX/Y,
-                                                                      evalAtHom(+_apply,_ratFuncX),
-                                                                      coeffs_eq_zero_of_hasSum_punct
-                                                                      ured,
-                                                                      hasSum_evalAt_add/neg/sub/mul
-                                                                      in TateCurveConstruction.
                                                         - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared chord
                                                           X-identity (sorry node): u₀v₀ below the
                                                           fundamental annulus (val(u₀v₀) ≤ val q₀
@@ -2463,20 +1764,6 @@ entries file). To add/remove/annotate a node, edit
                                                     - ✅· `TateCurve.bilateral_chordY_cleared` — cleared chord Y-identity (DERIVED 2026-07-18:
                                                       same case dispatch as the X-identity;
                                                       statement strengthened with hu1/hv1).
-                                                        - ✅· `TateCurve.bilateral_chordY_cleared_window` — window case of the cleared chord
-                                                          Y-identity (DERIVED 2026-07-18: same
-                                                          bridge rewrite, delegating to
-                                                          evalA_chordY).
-                                                            - ✅· `TateCurve.evalA_chordY` — evalA-level chord Y-identity (DERIVED
-                                                              2026-07-18: same via chordY_formal and
-                                                              its transport).
-                                                                - ✅· `TateCurve.chordY_formal` — formal chord Y-identity in
-                                                                  CoeffRing₂⟦q⟧ (DERIVED 2026-07-18:
-                                                                  same injectivity pullback).
-                                                                    - ❌· `TateCurve.chordY_ratFunc₂` — chord Y-identity in ℚ(u)(v)⟦q⟧
-                                                                      (sorry node): same descent as
-                                                                      chordX_ratFunc₂ with
-                                                                      analytic_chordY.
                                                         - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared chord
                                                           Y-identity (sorry node): same shift-
                                                           reduction as the X-shifted case.
@@ -2488,86 +1775,6 @@ entries file). To add/remove/annotate a node, edit
                                                       : v₀ ≠ 1 (available at the pointMap_mul call
                                                       site), needed for the evalA bridges (X has a
                                                       pole at u = 1).
-                                                        - ✅· `TateCurve.bilateral_chordX_cleared_window` — window case of the cleared chord
-                                                          X-identity (DERIVED 2026-07-18: bilateral
-                                                          values rewritten to evalA-sums via
-                                                          evalA_XA_eq_bilateralX /
-                                                          evalA_YA_eq_bilateralY, delegating to
-                                                          evalA_chordX).
-                                                            - ✅· `TateCurve.evalA_chordX` — evalA-level chord X-identity (DERIVED
-                                                              2026-07-18: applies the two-variable
-                                                              evaluation transport to the formal
-                                                              identity chordX_formal).
-                                                                - ✅· `TateCurve.chordX_formal` — formal chord X-identity in
-                                                                  CoeffRing₂⟦q⟧ (DERIVED 2026-07-18:
-                                                                  injectivity pullback along
-                                                                  coeffRing₂ToRatFunc — CoeffRing₂ ↪
-                                                                  ℚ(u)(v) built with the three slot
-                                                                  compatibilities
-                                                                  coeffRing₂ToRatFunc∘{u,v,uv}Slot =
-                                                                  {u,v,uv}EmbR∘coeffRingToRatFunc;
-                                                                  all three embeddings are substHom-
-                                                                  substitutions with instance-robust
-                                                                  transcendence proofs).
-                                                                    - ❌· `TateCurve.chordX_ratFunc₂` — chord X-identity in ℚ(u)(v)⟦q⟧
-                                                                      among the three substitution
-                                                                      images of TateCurve.X/Y (sorry
-                                                                      node — the final descent
-                                                                      target). KEY SIMPLIFICATION
-                                                                      (2026-07-18): since ℚ(u)(v) is
-                                                                      a FIELD, any evaluation HOM to
-                                                                      ℂ is injective, so ONE
-                                                                      algebraically independent pair
-                                                                      (u₀, v₀) suffices — no
-                                                                      infinite-set/numerator
-                                                                      argument at the outer level.
-                                                                      Plan: (1) u₀ := 1/e
-                                                                      (transcendental via
-                                                                      Real.transcendental_exp-
-                                                                      inverse; norm ≈ .3679), v₀ :=
-                                                                      a real in (1/2,1)
-                                                                      transcendental over the image
-                                                                      ℚ(u₀) (exists:
-                                                                      Algebraic.countable over R :=
-                                                                      RatFunc ℚ with letI Algebra
-                                                                      via (evalAtHom u₀).toAlgebra +
-                                                                      uncountability of the
-                                                                      interval; needs Countable
-                                                                      (RatFunc ℚ) via num/denom-pair
-                                                                      injection); (2) H := substHom
-                                                                      (K := RatFunc ℚ) v₀ under the
-                                                                      letI algebra : ℚ(u)(v) →+* ℂ,
-                                                                      injective; (3) compat: H∘uEmbR
-                                                                      = evalAtHom u₀ / H∘vEmbR =
-                                                                      evalAtHom v₀ / H∘uvEmbR =
-                                                                      evalAtHom (u₀v₀) — each by
-                                                                      ratFuncQ_ringHom_ext (re-add;
-                                                                      two ℚ(X)-homs agreeing on X)
-                                                                      with X-values via
-                                                                      substHom_algebraMap (re-add)
-                                                                      and substHom_ratFuncX; u₀v₀-
-                                                                      transcendence by the ℂ-level
-                                                                      uvGen argument; (4)
-                                                                      coefficient extraction: for
-                                                                      all 0<‖q‖<1/10 the H-evaluated
-                                                                      series of both sides HasSum to
-                                                                      equal values (hasSum_X/Y_eval
-                                                                      at u₀, v₀, u₀v₀ +
-                                                                      hasSum_evalAt_add/neg/sub/mul-
-                                                                      analogues at H +
-                                                                      analytic_chordX with window
-                                                                      0<‖q‖<1/10<min norms, all<1);
-                                                                      apply coeffs_eq_zero_of_hasSum
-                                                                      _punctured to the difference;
-                                                                      H-injectivity finishes
-                                                                      coefficientwise. Publicize
-                                                                      (with this consumer, same
-                                                                      commit): analytic_chordX/Y,
-                                                                      evalAtHom(+_apply,_ratFuncX),
-                                                                      coeffs_eq_zero_of_hasSum_punct
-                                                                      ured,
-                                                                      hasSum_evalAt_add/neg/sub/mul
-                                                                      in TateCurveConstruction.
                                                         - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared chord
                                                           X-identity (sorry node): u₀v₀ below the
                                                           fundamental annulus (val(u₀v₀) ≤ val q₀

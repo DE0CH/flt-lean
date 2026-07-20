@@ -42,6 +42,10 @@ public import Mathlib.FieldTheory.RatFunc.AsPolynomial
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve
 
 import Mathlib.Topology.Algebra.InfiniteSum.Nonarchimedean
+import Mathlib.NumberTheory.Transcendental.Liouville.LiouvilleNumber
+import Mathlib.Algebra.AlgebraicCard
+import Mathlib.Data.Finsupp.Encodable
+import Mathlib.Algebra.Polynomial.Cardinal
 import Mathlib.Topology.Algebra.InfiniteSum.Ring
 import Mathlib.NumberTheory.TsumDivisorsAntidiagonal
 import Mathlib.Data.PNat.Equiv
@@ -3085,13 +3089,210 @@ theorem coeffRing₂ToRatFunc_uvSlot :
   coeffRing₂ToRatFunc_slot uvElt₂ _ transcendental_uvGen
     isUnit_uv_one_sub_uv coeffRing₂ToRatFunc_uvElt₂
 
-set_option warn.sorry false in
-/-- **The chord `X`-identity in `ℚ(u)(v)⟦q⟧`** (sorry node — the
-two-variable descent target): the identity among the three substitution
-images of the uniformisation series `X`, `Y` of
-`TateCurveConstruction.lean`. To be descended from `analytic_chordX`
-via `eq_zero_of_forall_hasSum_zero`-style coefficient extraction over
-algebraically independent transcendental pairs. -/
+/-! ### The two-variable descent from the analytic chord identities -/
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- `substHom` is compatible with the coefficient algebra. -/
+theorem substHom_algebraMap {K L : Type*} [Field K] [Field L]
+    [Algebra K L] (t : L) (ht : Transcendental K t) (c : K) :
+    substHom t ht (algebraMap K (RatFunc K) c) = algebraMap K L c := by
+  have h := (RatFunc.algEquivOfTranscendental t ht).commutes c
+  have h2 := congrArg Subtype.val h
+  simpa [substHom] using h2
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- Ring homomorphisms out of `ℚ(X)` into a field are determined by the
+image of `X`. -/
+theorem ratFuncQ_ringHom_ext {L : Type*} [Field L]
+    {f g : RatFunc ℚ →+* L} (h : f RatFunc.X = g RatFunc.X) : f = g := by
+  refine IsLocalization.ringHom_ext (nonZeroDivisors (Polynomial ℚ)) ?_
+  refine Polynomial.ringHom_ext (fun a => ?_) ?_
+  · have hsub : (f.comp (algebraMap (Polynomial ℚ) (RatFunc ℚ))).comp
+        (Polynomial.C : ℚ →+* Polynomial ℚ)
+        = (g.comp (algebraMap (Polynomial ℚ) (RatFunc ℚ))).comp
+          (Polynomial.C : ℚ →+* Polynomial ℚ) := Subsingleton.elim _ _
+    exact RingHom.congr_fun hsub a
+  · simp only [RingHom.comp_apply, RatFunc.algebraMap_X]
+    exact h
+
+/-- A transcendental complex number of modulus in `(1/4, 1/2)`:
+`liouvilleNumber 2 − 1`. -/
+theorem exists_transcendental_quarter_half :
+    ∃ u₀ : ℂ, Transcendental ℚ u₀ ∧ 1/4 < ‖u₀‖ ∧ ‖u₀‖ < 1/2 := by
+  set L : ℝ := liouvilleNumber 2 with hLdef
+  have htL : Transcendental ℤ L :=
+    transcendental_liouvilleNumber le_rfl
+  have hps := LiouvilleNumber.partialSum_add_remainder (m := 2)
+    one_lt_two 2
+  have hrem_pos := LiouvilleNumber.remainder_pos (m := 2) one_lt_two 2
+  have hrem_lt := LiouvilleNumber.remainder_lt 2 (le_refl (2 : ℝ))
+  have hpsval : LiouvilleNumber.partialSum 2 2 = 5/4 := by
+    rw [LiouvilleNumber.partialSum]
+    norm_num [Finset.sum_range_succ, Nat.factorial]
+  have hL_lb : (5/4 : ℝ) < L := by
+    rw [hLdef, ← hps, hpsval]
+    linarith
+  have hL_ub : L < 21/16 := by
+    have h16 : LiouvilleNumber.remainder 2 2 < 1/16 := by
+      have := hrem_lt
+      norm_num [Nat.factorial] at this
+      linarith
+    rw [hLdef, ← hps, hpsval]
+    linarith
+  haveI : Algebra.IsAlgebraic ℤ ℚ :=
+    (IsFractionRing.comap_isAlgebraic_iff (A := ℤ) (K := ℚ) (C := ℚ)).mpr
+      inferInstance
+  have htLQ : Transcendental ℚ L :=
+    (Algebra.IsAlgebraic.transcendental_iff ℤ ℚ).mp htL
+  have htL1 : Transcendental ℚ (L - 1) := by
+    intro halg
+    exact htLQ (by simpa using halg.add (isAlgebraic_one (R := ℚ) (A := ℝ)))
+  refine ⟨((L - 1 : ℝ) : ℂ), ?_, ?_, ?_⟩
+  · have hcast := (transcendental_algebraMap_iff (R := ℚ) (S := ℝ) (A := ℂ)
+      (algebraMap ℝ ℂ).injective).mpr htL1
+    simpa using hcast
+  · rw [Complex.norm_real, Real.norm_eq_abs, abs_of_pos (by linarith)]
+    linarith
+  · rw [Complex.norm_real, Real.norm_eq_abs, abs_of_pos (by linarith)]
+    linarith
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- `ℚ(u)` is countable (via the numerator/denominator pair). -/
+theorem countable_ratFuncQ : Countable (RatFunc ℚ) := by
+  haveI : Countable (Polynomial ℚ) := by
+    rw [← Cardinal.mk_le_aleph0_iff]
+    calc Cardinal.mk (Polynomial ℚ) ≤ max (Cardinal.mk ℚ) Cardinal.aleph0 :=
+          Polynomial.cardinalMk_le_max
+      _ ≤ Cardinal.aleph0 := by
+          rw [max_le_iff]
+          exact ⟨Cardinal.mk_le_aleph0, le_refl _⟩
+  have hinj : Function.Injective
+      (fun r : RatFunc ℚ => (r.num, r.denom)) := by
+    intro a b hab
+    simp only [Prod.mk.injEq] at hab
+    rw [← RatFunc.num_div_denom a, ← RatFunc.num_div_denom b,
+      hab.1, hab.2]
+  exact Function.Injective.countable hinj
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- Existence of a second-slot transcendental: a real in `(1/2, 1)`
+transcendental over the (countable) image of `ℚ(u₀)`. -/
+theorem exists_transcendental_pair (u₀ : ℂ) (hu : Transcendental ℚ u₀) :
+    ∃ v₀ : ℂ,
+      (letI : Algebra (RatFunc ℚ) ℂ := (Blueprint.evalAtHom u₀ hu).toAlgebra
+       Transcendental (RatFunc ℚ) v₀) ∧ 1/2 < ‖v₀‖ ∧ ‖v₀‖ < 1 := by
+  letI : Algebra (RatFunc ℚ) ℂ := (Blueprint.evalAtHom u₀ hu).toAlgebra
+  haveI : Countable (RatFunc ℚ) := countable_ratFuncQ
+  have halg : {x : ℂ | IsAlgebraic (RatFunc ℚ) x}.Countable :=
+    Algebraic.countable (RatFunc ℚ) ℂ
+  by_contra hno
+  have hsub : ((↑) : ℝ → ℂ) '' Set.Ioo (1/2 : ℝ) 1 ⊆
+      {x : ℂ | IsAlgebraic (RatFunc ℚ) x} := by
+    rintro z ⟨x, ⟨hx1, hx2⟩, rfl⟩
+    by_contra htr
+    refine hno ⟨(x : ℂ), htr, ?_, ?_⟩
+    · rw [Complex.norm_real, Real.norm_eq_abs,
+        abs_of_pos (by linarith)]
+      exact hx1
+    · rw [Complex.norm_real, Real.norm_eq_abs,
+        abs_of_pos (by linarith)]
+      exact hx2
+  have hIoo : (Set.Ioo (1/2 : ℝ) 1).Countable :=
+    Set.countable_of_injective_of_countable_image
+      (fun x _ y _ h => Complex.ofReal_injective h) (halg.mono hsub)
+  exact not_le_of_gt Cardinal.aleph0_lt_continuum
+    (Cardinal.mk_Ioo_real (by norm_num : (1/2 : ℝ) < 1) ▸
+      Cardinal.le_aleph0_iff_set_countable.mpr hIoo)
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- The archimedean Cauchy product for an arbitrary coefficient
+homomorphism into `ℂ` (mirror of `hasSum_evalAt_mul`). -/
+theorem hasSum_homC_mul {R : Type*} [CommRing R] (E : R →+* ℂ) {q : ℂ}
+    {F G : PowerSeries R} {A B : ℂ}
+    (hF : HasSum (fun n : ℕ ↦ E (PowerSeries.coeff n F) * q ^ n) A)
+    (hG : HasSum (fun n : ℕ ↦ E (PowerSeries.coeff n G) * q ^ n) B) :
+    HasSum (fun n : ℕ ↦ E (PowerSeries.coeff n (F * G)) * q ^ n)
+      (A * B) := by
+  have hprod := hasSum_sum_range_mul_of_summable_norm
+    hF.summable.norm hG.summable.norm
+  rw [hF.tsum_eq, hG.tsum_eq] at hprod
+  refine hprod.congr_fun fun n ↦ ?_
+  rw [PowerSeries.coeff_mul, ← Finset.Nat.sum_antidiagonal_eq_sum_range_succ
+    (fun x y ↦ (E ((PowerSeries.coeff x) F) * q ^ x) *
+      (E ((PowerSeries.coeff y) G) * q ^ y)), map_sum, Finset.sum_mul]
+  refine Finset.sum_congr rfl fun p hp ↦ ?_
+  rw [map_mul, ← Finset.mem_antidiagonal.mp hp, pow_add]
+  ring
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+theorem hasSum_homC_add {R : Type*} [CommRing R] (E : R →+* ℂ) {q : ℂ}
+    {F G : PowerSeries R} {A B : ℂ}
+    (hF : HasSum (fun n : ℕ ↦ E (PowerSeries.coeff n F) * q ^ n) A)
+    (hG : HasSum (fun n : ℕ ↦ E (PowerSeries.coeff n G) * q ^ n) B) :
+    HasSum (fun n : ℕ ↦ E (PowerSeries.coeff n (F + G)) * q ^ n)
+      (A + B) := by
+  refine (hF.add hG).congr_fun fun n ↦ ?_
+  rw [map_add, map_add, add_mul]
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+theorem hasSum_homC_neg {R : Type*} [CommRing R] (E : R →+* ℂ) {q : ℂ}
+    {F : PowerSeries R} {A : ℂ}
+    (hF : HasSum (fun n : ℕ ↦ E (PowerSeries.coeff n F) * q ^ n) A) :
+    HasSum (fun n : ℕ ↦ E (PowerSeries.coeff n (-F)) * q ^ n) (-A) := by
+  refine hF.neg.congr_fun fun n ↦ ?_
+  rw [map_neg, map_neg, neg_mul]
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+theorem hasSum_homC_sub {R : Type*} [CommRing R] (E : R →+* ℂ) {q : ℂ}
+    {F G : PowerSeries R} {A B : ℂ}
+    (hF : HasSum (fun n : ℕ ↦ E (PowerSeries.coeff n F) * q ^ n) A)
+    (hG : HasSum (fun n : ℕ ↦ E (PowerSeries.coeff n G) * q ^ n) B) :
+    HasSum (fun n : ℕ ↦ E (PowerSeries.coeff n (F - G)) * q ^ n)
+      (A - B) := by
+  rw [sub_eq_add_neg, sub_eq_add_neg]
+  exact hasSum_homC_add E hF (hasSum_homC_neg E hG)
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- Transcendence transfer at the complex level: transcendental over the
+image of `ℚ(u₀)` implies transcendental over `ℚ`. -/
+theorem transcendental_of_pair (u₀ : ℂ) (hu : Transcendental ℚ u₀)
+    {x : ℂ}
+    (h : letI : Algebra (RatFunc ℚ) ℂ := (Blueprint.evalAtHom u₀ hu).toAlgebra
+      Transcendental (RatFunc ℚ) x) :
+    Transcendental ℚ x := by
+  letI : Algebra (RatFunc ℚ) ℂ := (Blueprint.evalAtHom u₀ hu).toAlgebra
+  intro halg
+  obtain ⟨q, hq0, hqev⟩ := halg
+  refine h ⟨q.map (algebraMap ℚ (RatFunc ℚ)),
+    (Polynomial.map_ne_zero_iff (algebraMap ℚ (RatFunc ℚ)).injective).mpr
+      hq0, ?_⟩
+  rw [Polynomial.aeval_def, Polynomial.eval₂_map,
+    show (algebraMap (RatFunc ℚ) ℂ).comp (algebraMap ℚ (RatFunc ℚ))
+      = algebraMap ℚ ℂ from Subsingleton.elim _ _]
+  rw [Polynomial.aeval_def] at hqev
+  exact hqev
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
+/-- Algebraicity lifts from `ℚ` to the image of `ℚ(u₀)`. -/
+theorem isAlgebraic_pair_of_isAlgebraic (u₀ : ℂ) (hu : Transcendental ℚ u₀)
+    {x : ℂ} (h : IsAlgebraic ℚ x) :
+    letI : Algebra (RatFunc ℚ) ℂ := (Blueprint.evalAtHom u₀ hu).toAlgebra
+    IsAlgebraic (RatFunc ℚ) x := by
+  letI : Algebra (RatFunc ℚ) ℂ := (Blueprint.evalAtHom u₀ hu).toAlgebra
+  obtain ⟨q, hq0, hqev⟩ := h
+  refine ⟨q.map (algebraMap ℚ (RatFunc ℚ)),
+    (Polynomial.map_ne_zero_iff (algebraMap ℚ (RatFunc ℚ)).injective).mpr
+      hq0, ?_⟩
+  rw [Polynomial.aeval_def, Polynomial.eval₂_map,
+    show (algebraMap (RatFunc ℚ) ℂ).comp (algebraMap ℚ (RatFunc ℚ))
+      = algebraMap ℚ ℂ from Subsingleton.elim _ _]
+  rw [Polynomial.aeval_def] at hqev
+  exact hqev
+
+/-- **The chord `X`-identity in `ℚ(u)(v)⟦q⟧`** (DERIVED by the
+two-variable descent from `analytic_chordX`: one algebraically
+independent transcendental pair suffices, since the evaluation is an
+injective field homomorphism). -/
 theorem chordX_ratFunc₂ :
     (PowerSeries.map uvEmbR TateCurve.X + PowerSeries.map uEmbR TateCurve.X
         + PowerSeries.map vEmbR TateCurve.X) *
@@ -3102,12 +3303,173 @@ theorem chordX_ratFunc₂ :
       (PowerSeries.map uEmbR TateCurve.Y
         - PowerSeries.map vEmbR TateCurve.Y) *
         (PowerSeries.map uEmbR TateCurve.X
-          - PowerSeries.map vEmbR TateCurve.X) :=
-  sorry
+          - PowerSeries.map vEmbR TateCurve.X) := by
+  obtain ⟨u₀, hu₀t, hu₀l, hu₀h⟩ := exists_transcendental_quarter_half
+  letI : Algebra (RatFunc ℚ) ℂ := (Blueprint.evalAtHom u₀ hu₀t).toAlgebra
+  obtain ⟨v₀, hv₀t, hv₀l, hv₀h⟩ := exists_transcendental_pair u₀ hu₀t
+  set H : RatFunc (RatFunc ℚ) →+* ℂ := substHom v₀ hv₀t with hHdef
+  have hHinj : Function.Injective H := H.injective
+  have hu₀0 : (0 : ℝ) < ‖u₀‖ := lt_trans (by norm_num) hu₀l
+  have hv₀0 : (0 : ℝ) < ‖v₀‖ := lt_trans (by norm_num) hv₀l
+  have hu₀ne : u₀ ≠ 0 := norm_pos_iff.mp hu₀0
+  have huv_l : (1/8 : ℝ) < ‖u₀ * v₀‖ := by
+    rw [norm_mul]
+    nlinarith
+  have huv_h : ‖u₀ * v₀‖ < 1 := by
+    rw [norm_mul]
+    nlinarith
+  have hv₀ℚ : Transcendental ℚ v₀ := transcendental_of_pair u₀ hu₀t hv₀t
+  have huvt : Transcendental ℚ (u₀ * v₀) := by
+    intro halg
+    have h1 := isAlgebraic_pair_of_isAlgebraic u₀ hu₀t halg
+    have h2 : IsAlgebraic (RatFunc ℚ)
+        (algebraMap (RatFunc ℚ) ℂ (RatFunc.X)⁻¹) :=
+      isAlgebraic_algebraMap _
+    have h3 := h2.mul h1
+    have hval : algebraMap (RatFunc ℚ) ℂ (RatFunc.X)⁻¹ * (u₀ * v₀) = v₀ := by
+      have hX : algebraMap (RatFunc ℚ) ℂ RatFunc.X = u₀ :=
+        Blueprint.evalAtHom_ratFuncX u₀ hu₀t
+      rw [map_inv₀, hX]
+      field_simp
+    rw [hval] at h3
+    exact hv₀t h3
+  -- the three hom compatibilities
+  have hHalg : ∀ r : RatFunc ℚ,
+      H (algebraMap (RatFunc ℚ) (RatFunc (RatFunc ℚ)) r)
+        = Blueprint.evalAtHom u₀ hu₀t r := fun r =>
+    substHom_algebraMap v₀ hv₀t r
+  have hCeq : (RatFunc.C : RatFunc ℚ →+* RatFunc (RatFunc ℚ))
+      = algebraMap (RatFunc ℚ) (RatFunc (RatFunc ℚ)) := by
+    refine RingHom.ext fun r => ?_
+    rw [RatFunc.algebraMap_eq_C]
+  have hCXval : H (RatFunc.C (RatFunc.X : RatFunc ℚ)) = u₀ := by
+    rw [hCeq, hHalg, Blueprint.evalAtHom_ratFuncX]
+  have hHu : H.comp uEmbR = Blueprint.evalAtHom u₀ hu₀t := by
+    refine ratFuncQ_ringHom_ext ?_
+    rw [RingHom.comp_apply,
+      show uEmbR RatFunc.X = RatFunc.C (RatFunc.X : RatFunc ℚ) from
+        substHom_ratFuncX _ _,
+      hCXval, Blueprint.evalAtHom_ratFuncX]
+  have hHv : H.comp vEmbR = Blueprint.evalAtHom v₀ hv₀ℚ := by
+    refine ratFuncQ_ringHom_ext ?_
+    rw [RingHom.comp_apply,
+      show vEmbR RatFunc.X = (RatFunc.X : RatFunc (RatFunc ℚ)) from
+        substHom_ratFuncX _ _,
+      show H (RatFunc.X : RatFunc (RatFunc ℚ)) = v₀ from
+        substHom_ratFuncX _ _,
+      Blueprint.evalAtHom_ratFuncX]
+  have hHuv : H.comp uvEmbR = Blueprint.evalAtHom (u₀ * v₀) huvt := by
+    refine ratFuncQ_ringHom_ext ?_
+    rw [RingHom.comp_apply,
+      show uvEmbR RatFunc.X = uvGen from substHom_ratFuncX _ _,
+      show H uvGen = u₀ * v₀ by
+        rw [uvGen, map_mul, hCXval,
+          show H (RatFunc.X : RatFunc (RatFunc ℚ)) = v₀ from
+            substHom_ratFuncX _ _],
+      Blueprint.evalAtHom_ratFuncX]
+  -- the six coefficient-sequence identifications and sums
+  have hseq : ∀ (em : RatFunc ℚ →+* RatFunc (RatFunc ℚ)) (t : ℂ)
+      (ht : Transcendental ℚ t)
+      (hcomp : H.comp em = Blueprint.evalAtHom t ht)
+      (F : PowerSeries (RatFunc ℚ)) (n : ℕ),
+      H (PowerSeries.coeff n (PowerSeries.map em F))
+        = Blueprint.evalAt t (PowerSeries.coeff n F) := by
+    intro em t ht hcomp F n
+    rw [PowerSeries.coeff_map, ← RingHom.comp_apply, hcomp,
+      Blueprint.evalAtHom_apply]
+  have hXu : ∀ q : ℂ, 0 < ‖q‖ → ‖q‖ < 1/8 → HasSum
+      (fun n => H (PowerSeries.coeff n
+        (PowerSeries.map uEmbR TateCurve.X)) * q ^ n)
+      (Blueprint.XAn u₀ q) := fun q hq0 hq8 => by
+    refine (Blueprint.hasSum_X_eval hu₀t hq0 (by linarith) (by linarith)
+      ).congr_fun fun n => ?_
+    rw [hseq uEmbR u₀ hu₀t hHu]
+  have hXv : ∀ q : ℂ, 0 < ‖q‖ → ‖q‖ < 1/8 → HasSum
+      (fun n => H (PowerSeries.coeff n
+        (PowerSeries.map vEmbR TateCurve.X)) * q ^ n)
+      (Blueprint.XAn v₀ q) := fun q hq0 hq8 => by
+    refine (Blueprint.hasSum_X_eval hv₀ℚ hq0 (by linarith) (by linarith)
+      ).congr_fun fun n => ?_
+    rw [hseq vEmbR v₀ hv₀ℚ hHv]
+  have hXw : ∀ q : ℂ, 0 < ‖q‖ → ‖q‖ < 1/8 → HasSum
+      (fun n => H (PowerSeries.coeff n
+        (PowerSeries.map uvEmbR TateCurve.X)) * q ^ n)
+      (Blueprint.XAn (u₀ * v₀) q) := fun q hq0 hq8 => by
+    refine (Blueprint.hasSum_X_eval huvt hq0 (by linarith) (by linarith)
+      ).congr_fun fun n => ?_
+    rw [hseq uvEmbR (u₀ * v₀) huvt hHuv]
+  have hYu : ∀ q : ℂ, 0 < ‖q‖ → ‖q‖ < 1/8 → HasSum
+      (fun n => H (PowerSeries.coeff n
+        (PowerSeries.map uEmbR TateCurve.Y)) * q ^ n)
+      (Blueprint.YAn u₀ q) := fun q hq0 hq8 => by
+    refine (Blueprint.hasSum_Y_eval hu₀t hq0 (by linarith) (by linarith)
+      ).congr_fun fun n => ?_
+    rw [hseq uEmbR u₀ hu₀t hHu]
+  have hYv : ∀ q : ℂ, 0 < ‖q‖ → ‖q‖ < 1/8 → HasSum
+      (fun n => H (PowerSeries.coeff n
+        (PowerSeries.map vEmbR TateCurve.Y)) * q ^ n)
+      (Blueprint.YAn v₀ q) := fun q hq0 hq8 => by
+    refine (Blueprint.hasSum_Y_eval hv₀ℚ hq0 (by linarith) (by linarith)
+      ).congr_fun fun n => ?_
+    rw [hseq vEmbR v₀ hv₀ℚ hHv]
+  -- vanishing of the difference coefficients
+  rw [← sub_eq_zero]
+  have hcoeff := Blueprint.coeffs_eq_zero_of_hasSum_punctured
+    (fun n => H (PowerSeries.coeff n
+      ((PowerSeries.map uvEmbR TateCurve.X + PowerSeries.map uEmbR TateCurve.X
+          + PowerSeries.map vEmbR TateCurve.X) *
+        (PowerSeries.map uEmbR TateCurve.X
+          - PowerSeries.map vEmbR TateCurve.X) ^ 2 -
+        ((PowerSeries.map uEmbR TateCurve.Y
+            - PowerSeries.map vEmbR TateCurve.Y) ^ 2 +
+          (PowerSeries.map uEmbR TateCurve.Y
+            - PowerSeries.map vEmbR TateCurve.Y) *
+            (PowerSeries.map uEmbR TateCurve.X
+              - PowerSeries.map vEmbR TateCurve.X)))))
+    (1/8) (by norm_num) ?_
+  · ext n
+    have h1 := congrFun hcoeff n
+    simp only [Pi.zero_apply] at h1
+    rw [map_zero]
+    exact hHinj (by rw [h1, map_zero])
+  · intro q hq0 hq8
+    have h1 := hasSum_homC_add H (hasSum_homC_add H (hXw q hq0 hq8)
+      (hXu q hq0 hq8)) (hXv q hq0 hq8)
+    have h2 := hasSum_homC_sub H (hXu q hq0 hq8) (hXv q hq0 hq8)
+    have h3 := hasSum_homC_sub H (hYu q hq0 hq8) (hYv q hq0 hq8)
+    have h2sq : HasSum (fun n => H (PowerSeries.coeff n
+        ((PowerSeries.map uEmbR TateCurve.X
+          - PowerSeries.map vEmbR TateCurve.X) ^ 2)) * q ^ n)
+        ((Blueprint.XAn u₀ q - Blueprint.XAn v₀ q) *
+          (Blueprint.XAn u₀ q - Blueprint.XAn v₀ q)) := by
+      rw [pow_two]
+      exact hasSum_homC_mul H h2 h2
+    have h3sq : HasSum (fun n => H (PowerSeries.coeff n
+        ((PowerSeries.map uEmbR TateCurve.Y
+          - PowerSeries.map vEmbR TateCurve.Y) ^ 2)) * q ^ n)
+        ((Blueprint.YAn u₀ q - Blueprint.YAn v₀ q) *
+          (Blueprint.YAn u₀ q - Blueprint.YAn v₀ q)) := by
+      rw [pow_two]
+      exact hasSum_homC_mul H h3 h3
+    have hL := hasSum_homC_mul H h1 h2sq
+    have hR := hasSum_homC_add H h3sq (hasSum_homC_mul H h3 h2)
+    have hval : (Blueprint.XAn (u₀ * v₀) q + Blueprint.XAn u₀ q
+        + Blueprint.XAn v₀ q) *
+        ((Blueprint.XAn u₀ q - Blueprint.XAn v₀ q) *
+          (Blueprint.XAn u₀ q - Blueprint.XAn v₀ q)) -
+        ((Blueprint.YAn u₀ q - Blueprint.YAn v₀ q) *
+          (Blueprint.YAn u₀ q - Blueprint.YAn v₀ q) +
+          (Blueprint.YAn u₀ q - Blueprint.YAn v₀ q) *
+            (Blueprint.XAn u₀ q - Blueprint.XAn v₀ q)) = 0 := by
+      have h := Blueprint.analytic_chordX hq0 (by linarith) (by linarith)
+        (by linarith) (by linarith) (by linarith) huv_h
+      linear_combination h
+    have hsum := hasSum_homC_sub H hL hR
+    rw [hval] at hsum
+    exact hsum
 
-set_option warn.sorry false in
-/-- **The chord `Y`-identity in `ℚ(u)(v)⟦q⟧`** (sorry node), the
-collinearity content, descending from `analytic_chordY`. -/
+/-- **The chord `Y`-identity in `ℚ(u)(v)⟦q⟧`** (DERIVED by the same
+two-variable descent from `analytic_chordY`). -/
 theorem chordY_ratFunc₂ :
     -(PowerSeries.map uvEmbR TateCurve.Y + PowerSeries.map uvEmbR TateCurve.X) *
       (PowerSeries.map uEmbR TateCurve.X
@@ -3118,8 +3480,163 @@ theorem chordY_ratFunc₂ :
           - PowerSeries.map uEmbR TateCurve.X) +
       PowerSeries.map uEmbR TateCurve.Y *
         (PowerSeries.map uEmbR TateCurve.X
-          - PowerSeries.map vEmbR TateCurve.X) :=
-  sorry
+          - PowerSeries.map vEmbR TateCurve.X) := by
+  obtain ⟨u₀, hu₀t, hu₀l, hu₀h⟩ := exists_transcendental_quarter_half
+  letI : Algebra (RatFunc ℚ) ℂ := (Blueprint.evalAtHom u₀ hu₀t).toAlgebra
+  obtain ⟨v₀, hv₀t, hv₀l, hv₀h⟩ := exists_transcendental_pair u₀ hu₀t
+  set H : RatFunc (RatFunc ℚ) →+* ℂ := substHom v₀ hv₀t with hHdef
+  have hHinj : Function.Injective H := H.injective
+  have hu₀0 : (0 : ℝ) < ‖u₀‖ := lt_trans (by norm_num) hu₀l
+  have hv₀0 : (0 : ℝ) < ‖v₀‖ := lt_trans (by norm_num) hv₀l
+  have hu₀ne : u₀ ≠ 0 := norm_pos_iff.mp hu₀0
+  have huv_l : (1/8 : ℝ) < ‖u₀ * v₀‖ := by
+    rw [norm_mul]
+    nlinarith
+  have huv_h : ‖u₀ * v₀‖ < 1 := by
+    rw [norm_mul]
+    nlinarith
+  have hv₀ℚ : Transcendental ℚ v₀ := transcendental_of_pair u₀ hu₀t hv₀t
+  have huvt : Transcendental ℚ (u₀ * v₀) := by
+    intro halg
+    have h1 := isAlgebraic_pair_of_isAlgebraic u₀ hu₀t halg
+    have h2 : IsAlgebraic (RatFunc ℚ)
+        (algebraMap (RatFunc ℚ) ℂ (RatFunc.X)⁻¹) :=
+      isAlgebraic_algebraMap _
+    have h3 := h2.mul h1
+    have hval : algebraMap (RatFunc ℚ) ℂ (RatFunc.X)⁻¹ * (u₀ * v₀) = v₀ := by
+      have hX : algebraMap (RatFunc ℚ) ℂ RatFunc.X = u₀ :=
+        Blueprint.evalAtHom_ratFuncX u₀ hu₀t
+      rw [map_inv₀, hX]
+      field_simp
+    rw [hval] at h3
+    exact hv₀t h3
+  -- the three hom compatibilities
+  have hHalg : ∀ r : RatFunc ℚ,
+      H (algebraMap (RatFunc ℚ) (RatFunc (RatFunc ℚ)) r)
+        = Blueprint.evalAtHom u₀ hu₀t r := fun r =>
+    substHom_algebraMap v₀ hv₀t r
+  have hCeq : (RatFunc.C : RatFunc ℚ →+* RatFunc (RatFunc ℚ))
+      = algebraMap (RatFunc ℚ) (RatFunc (RatFunc ℚ)) := by
+    refine RingHom.ext fun r => ?_
+    rw [RatFunc.algebraMap_eq_C]
+  have hCXval : H (RatFunc.C (RatFunc.X : RatFunc ℚ)) = u₀ := by
+    rw [hCeq, hHalg, Blueprint.evalAtHom_ratFuncX]
+  have hHu : H.comp uEmbR = Blueprint.evalAtHom u₀ hu₀t := by
+    refine ratFuncQ_ringHom_ext ?_
+    rw [RingHom.comp_apply,
+      show uEmbR RatFunc.X = RatFunc.C (RatFunc.X : RatFunc ℚ) from
+        substHom_ratFuncX _ _,
+      hCXval, Blueprint.evalAtHom_ratFuncX]
+  have hHv : H.comp vEmbR = Blueprint.evalAtHom v₀ hv₀ℚ := by
+    refine ratFuncQ_ringHom_ext ?_
+    rw [RingHom.comp_apply,
+      show vEmbR RatFunc.X = (RatFunc.X : RatFunc (RatFunc ℚ)) from
+        substHom_ratFuncX _ _,
+      show H (RatFunc.X : RatFunc (RatFunc ℚ)) = v₀ from
+        substHom_ratFuncX _ _,
+      Blueprint.evalAtHom_ratFuncX]
+  have hHuv : H.comp uvEmbR = Blueprint.evalAtHom (u₀ * v₀) huvt := by
+    refine ratFuncQ_ringHom_ext ?_
+    rw [RingHom.comp_apply,
+      show uvEmbR RatFunc.X = uvGen from substHom_ratFuncX _ _,
+      show H uvGen = u₀ * v₀ by
+        rw [uvGen, map_mul, hCXval,
+          show H (RatFunc.X : RatFunc (RatFunc ℚ)) = v₀ from
+            substHom_ratFuncX _ _],
+      Blueprint.evalAtHom_ratFuncX]
+  -- the six coefficient-sequence identifications and sums
+  have hseq : ∀ (em : RatFunc ℚ →+* RatFunc (RatFunc ℚ)) (t : ℂ)
+      (ht : Transcendental ℚ t)
+      (hcomp : H.comp em = Blueprint.evalAtHom t ht)
+      (F : PowerSeries (RatFunc ℚ)) (n : ℕ),
+      H (PowerSeries.coeff n (PowerSeries.map em F))
+        = Blueprint.evalAt t (PowerSeries.coeff n F) := by
+    intro em t ht hcomp F n
+    rw [PowerSeries.coeff_map, ← RingHom.comp_apply, hcomp,
+      Blueprint.evalAtHom_apply]
+  have hXu : ∀ q : ℂ, 0 < ‖q‖ → ‖q‖ < 1/8 → HasSum
+      (fun n => H (PowerSeries.coeff n
+        (PowerSeries.map uEmbR TateCurve.X)) * q ^ n)
+      (Blueprint.XAn u₀ q) := fun q hq0 hq8 => by
+    refine (Blueprint.hasSum_X_eval hu₀t hq0 (by linarith) (by linarith)
+      ).congr_fun fun n => ?_
+    rw [hseq uEmbR u₀ hu₀t hHu]
+  have hXv : ∀ q : ℂ, 0 < ‖q‖ → ‖q‖ < 1/8 → HasSum
+      (fun n => H (PowerSeries.coeff n
+        (PowerSeries.map vEmbR TateCurve.X)) * q ^ n)
+      (Blueprint.XAn v₀ q) := fun q hq0 hq8 => by
+    refine (Blueprint.hasSum_X_eval hv₀ℚ hq0 (by linarith) (by linarith)
+      ).congr_fun fun n => ?_
+    rw [hseq vEmbR v₀ hv₀ℚ hHv]
+  have hXw : ∀ q : ℂ, 0 < ‖q‖ → ‖q‖ < 1/8 → HasSum
+      (fun n => H (PowerSeries.coeff n
+        (PowerSeries.map uvEmbR TateCurve.X)) * q ^ n)
+      (Blueprint.XAn (u₀ * v₀) q) := fun q hq0 hq8 => by
+    refine (Blueprint.hasSum_X_eval huvt hq0 (by linarith) (by linarith)
+      ).congr_fun fun n => ?_
+    rw [hseq uvEmbR (u₀ * v₀) huvt hHuv]
+  have hYu : ∀ q : ℂ, 0 < ‖q‖ → ‖q‖ < 1/8 → HasSum
+      (fun n => H (PowerSeries.coeff n
+        (PowerSeries.map uEmbR TateCurve.Y)) * q ^ n)
+      (Blueprint.YAn u₀ q) := fun q hq0 hq8 => by
+    refine (Blueprint.hasSum_Y_eval hu₀t hq0 (by linarith) (by linarith)
+      ).congr_fun fun n => ?_
+    rw [hseq uEmbR u₀ hu₀t hHu]
+  have hYv : ∀ q : ℂ, 0 < ‖q‖ → ‖q‖ < 1/8 → HasSum
+      (fun n => H (PowerSeries.coeff n
+        (PowerSeries.map vEmbR TateCurve.Y)) * q ^ n)
+      (Blueprint.YAn v₀ q) := fun q hq0 hq8 => by
+    refine (Blueprint.hasSum_Y_eval hv₀ℚ hq0 (by linarith) (by linarith)
+      ).congr_fun fun n => ?_
+    rw [hseq vEmbR v₀ hv₀ℚ hHv]
+  have hYw : ∀ q : ℂ, 0 < ‖q‖ → ‖q‖ < 1/8 → HasSum
+      (fun n => H (PowerSeries.coeff n
+        (PowerSeries.map uvEmbR TateCurve.Y)) * q ^ n)
+      (Blueprint.YAn (u₀ * v₀) q) := fun q hq0 hq8 => by
+    refine (Blueprint.hasSum_Y_eval huvt hq0 (by linarith) (by linarith)
+      ).congr_fun fun n => ?_
+    rw [hseq uvEmbR (u₀ * v₀) huvt hHuv]
+  rw [← sub_eq_zero]
+  have hcoeff := Blueprint.coeffs_eq_zero_of_hasSum_punctured
+    (fun n => H (PowerSeries.coeff n
+      (-(PowerSeries.map uvEmbR TateCurve.Y
+          + PowerSeries.map uvEmbR TateCurve.X) *
+        (PowerSeries.map uEmbR TateCurve.X
+          - PowerSeries.map vEmbR TateCurve.X) -
+        ((PowerSeries.map uEmbR TateCurve.Y
+            - PowerSeries.map vEmbR TateCurve.Y) *
+            (PowerSeries.map uvEmbR TateCurve.X
+              - PowerSeries.map uEmbR TateCurve.X) +
+          PowerSeries.map uEmbR TateCurve.Y *
+            (PowerSeries.map uEmbR TateCurve.X
+              - PowerSeries.map vEmbR TateCurve.X)))))
+    (1/8) (by norm_num) ?_
+  · ext n
+    have h1 := congrFun hcoeff n
+    simp only [Pi.zero_apply] at h1
+    rw [map_zero]
+    exact hHinj (by rw [h1, map_zero])
+  · intro q hq0 hq8
+    have h1 := hasSum_homC_neg H (hasSum_homC_add H (hYw q hq0 hq8)
+      (hXw q hq0 hq8))
+    have h2 := hasSum_homC_sub H (hXu q hq0 hq8) (hXv q hq0 hq8)
+    have h3 := hasSum_homC_sub H (hYu q hq0 hq8) (hYv q hq0 hq8)
+    have h4 := hasSum_homC_sub H (hXw q hq0 hq8) (hXu q hq0 hq8)
+    have hL := hasSum_homC_mul H h1 h2
+    have hR := hasSum_homC_add H (hasSum_homC_mul H h3 h4)
+      (hasSum_homC_mul H (hYu q hq0 hq8) h2)
+    have hval : -(Blueprint.YAn (u₀ * v₀) q + Blueprint.XAn (u₀ * v₀) q) *
+        (Blueprint.XAn u₀ q - Blueprint.XAn v₀ q) -
+        ((Blueprint.YAn u₀ q - Blueprint.YAn v₀ q) *
+            (Blueprint.XAn (u₀ * v₀) q - Blueprint.XAn u₀ q) +
+          Blueprint.YAn u₀ q *
+            (Blueprint.XAn u₀ q - Blueprint.XAn v₀ q)) = 0 := by
+      have h := Blueprint.analytic_chordY hq0 (by linarith) (by linarith)
+        (by linarith) (by linarith) (by linarith) huv_h
+      linear_combination h
+    have hsum := hasSum_homC_sub H hL hR
+    rw [hval] at hsum
+    exact hsum
 
 /-- **The formal chord `X`-identity** (DERIVED from the `ℚ(u)(v)⟦q⟧`
 identity by injectivity of the coefficient inclusion). -/

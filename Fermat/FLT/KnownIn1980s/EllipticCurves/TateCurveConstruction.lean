@@ -1029,19 +1029,19 @@ def evalAt (u : ℂ) (r : RatFunc ℚ) : ℂ := r.eval (algebraMap ℚ ℂ) u
 
 /-- For transcendental `u`, evaluation at `u` is a ring homomorphism
 `ℚ(u) →+* ℂ` (there are no poles to produce junk values). -/
-private noncomputable def evalAtHom (u : ℂ) (hu : Transcendental ℚ u) : RatFunc ℚ →+* ℂ where
+noncomputable def evalAtHom (u : ℂ) (hu : Transcendental ℚ u) : RatFunc ℚ →+* ℂ where
   toFun r := (RatFunc.algEquivOfTranscendental u hu r : ℂ)
   map_one' := by simp
   map_mul' x y := by simp
   map_zero' := by simp
   map_add' x y := by simp
 
-private theorem evalAtHom_apply (u : ℂ) (hu : Transcendental ℚ u) (r : RatFunc ℚ) :
+theorem evalAtHom_apply (u : ℂ) (hu : Transcendental ℚ u) (r : RatFunc ℚ) :
     evalAtHom u hu r = evalAt u r := by
   change (RatFunc.algEquivOfTranscendental u hu r : ℂ) = evalAt u r
   simp [RatFunc.algEquivOfTranscendental_apply, evalAt, RatFunc.eval, Polynomial.aeval_def]
 
-private theorem evalAtHom_ratFuncX (u : ℂ) (hu : Transcendental ℚ u) :
+theorem evalAtHom_ratFuncX (u : ℂ) (hu : Transcendental ℚ u) :
     evalAtHom u hu RatFunc.X = u := by
   rw [evalAtHom_apply]
   exact RatFunc.eval_X (K := ℚ) (f := algebraMap ℚ ℂ) (a := u)
@@ -1388,7 +1388,7 @@ theorem hasSum_a₆_eval (u : ℂ) {q : ℂ} (hq : ‖q‖ < 1) :
 
 /-! ## Descent to the formal power series ring -/
 
-private theorem coeffs_eq_zero_of_hasSum_punctured (c : ℕ → ℂ) (r : ℝ) (hr : 0 < r)
+theorem coeffs_eq_zero_of_hasSum_punctured (c : ℕ → ℂ) (r : ℝ) (hr : 0 < r)
     (h : ∀ q : ℂ, 0 < ‖q‖ → ‖q‖ < r → HasSum (fun n : ℕ ↦ c n * q ^ n) 0) :
     c = 0 := by
   rw [← FormalMultilinearSeries.ofScalars_series_eq_zero (E := ℂ)]
@@ -1441,7 +1441,7 @@ theorem eq_zero_of_forall_hasSum_zero (F : (RatFunc ℚ)⟦X⟧) (S : Set ℂ) (
   simpa using congrFun (coeffs_eq_zero_of_hasSum_punctured
     (fun n : ℕ ↦ evalAt u ((PowerSeries.coeff n) F)) r hr hsum) n
 
-private theorem hasSum_evalAt_add {u q : ℂ} (hu : Transcendental ℚ u)
+theorem hasSum_evalAt_add {u q : ℂ} (hu : Transcendental ℚ u)
     {φ ψ : (RatFunc ℚ)⟦X⟧} {A B : ℂ}
     (hφ : HasSum (fun n : ℕ ↦ evalAt u ((PowerSeries.coeff n) φ) * q ^ n) A)
     (hψ : HasSum (fun n : ℕ ↦ evalAt u ((PowerSeries.coeff n) ψ) * q ^ n) B) :
@@ -1453,7 +1453,7 @@ private theorem hasSum_evalAt_add {u q : ℂ} (hu : Transcendental ℚ u)
   refine HasSum.congr_fun (hφE.add hψE) fun n ↦ ?_
   simp_rw [← evalAtHom_apply u hu ((PowerSeries.coeff n) (φ + ψ)), map_add, add_mul]
 
-private theorem hasSum_evalAt_neg {u q : ℂ} (hu : Transcendental ℚ u)
+theorem hasSum_evalAt_neg {u q : ℂ} (hu : Transcendental ℚ u)
     {φ : (RatFunc ℚ)⟦X⟧} {A : ℂ}
     (hφ : HasSum (fun n : ℕ ↦ evalAt u ((PowerSeries.coeff n) φ) * q ^ n) A) :
     HasSum (fun n : ℕ ↦ evalAt u ((PowerSeries.coeff n) (-φ)) * q ^ n) (-A) := by
@@ -1462,14 +1462,14 @@ private theorem hasSum_evalAt_neg {u q : ℂ} (hu : Transcendental ℚ u)
   refine HasSum.congr_fun hφE.neg fun n ↦ ?_
   simp_rw [← evalAtHom_apply u hu ((PowerSeries.coeff n) (-φ)), map_neg, neg_mul]
 
-private theorem hasSum_evalAt_sub {u q : ℂ} (hu : Transcendental ℚ u)
+theorem hasSum_evalAt_sub {u q : ℂ} (hu : Transcendental ℚ u)
     {φ ψ : (RatFunc ℚ)⟦X⟧} {A B : ℂ}
     (hφ : HasSum (fun n : ℕ ↦ evalAt u ((PowerSeries.coeff n) φ) * q ^ n) A)
     (hψ : HasSum (fun n : ℕ ↦ evalAt u ((PowerSeries.coeff n) ψ) * q ^ n) B) :
     HasSum (fun n : ℕ ↦ evalAt u ((PowerSeries.coeff n) (φ - ψ)) * q ^ n) (A - B) := by
   simpa [sub_eq_add_neg] using hasSum_evalAt_add hu hφ (hasSum_evalAt_neg hu hψ)
 
-private theorem hasSum_evalAt_mul {u q : ℂ} (hu : Transcendental ℚ u)
+theorem hasSum_evalAt_mul {u q : ℂ} (hu : Transcendental ℚ u)
     {φ ψ : (RatFunc ℚ)⟦X⟧} {A B : ℂ}
     (hφ : HasSum (fun n : ℕ ↦ evalAt u ((PowerSeries.coeff n) φ) * q ^ n) A)
     (hψ : HasSum (fun n : ℕ ↦ evalAt u ((PowerSeries.coeff n) ψ) * q ^ n) B) :
@@ -2343,7 +2343,7 @@ namespace Blueprint
 
 /-- Pure-algebra core of the chord `X`-identity: dividing the cleared
 `℘`-addition relation by `(2πi)⁶` after substituting the `q`-expansions. -/
-private theorem analytic_chordX_algebra (xu yu xv yv xuv c Pu Pv Puv Du Dv : ℂ)
+theorem analytic_chordX_algebra (xu yu xv yv xuv c Pu Pv Puv Du Dv : ℂ)
     (hc : c ≠ 0)
     (hPu : Pu = c ^ 2 * (1 / 12 + xu)) (hPv : Pv = c ^ 2 * (1 / 12 + xv))
     (hPuv : Puv = c ^ 2 * (1 / 12 + xuv))
@@ -2391,7 +2391,7 @@ the denominator-free Silverman V.3.1(c) `x`-part): for annulus parameters
 Derived from the cleared `℘`-addition theorem `addRelXRaw_eq_zero`
 through the `q`-expansions of `℘` and `℘'`. Private until the
 two-variable descent consumes it. -/
-private theorem analytic_chordX {u v q : ℂ} (h0 : 0 < ‖q‖)
+theorem analytic_chordX {u v q : ℂ} (h0 : 0 < ‖q‖)
     (h1u : ‖q‖ < ‖u‖) (h2u : ‖u‖ < 1)
     (h1v : ‖q‖ < ‖v‖) (h2v : ‖v‖ < 1)
     (h1uv : ‖q‖ < ‖u * v‖) (h2uv : ‖u * v‖ < 1) :
@@ -2439,7 +2439,7 @@ private theorem analytic_chordX {u v q : ℂ} (h0 : 0 < ‖q‖)
 /-- Pure-algebra core of the chord `Y`-identity: the collinearity
 relation divided by `(2πi)⁵` (the `1/12`s cancel in the `P`-differences,
 and the target is exactly `−1/2` times the reduced relation). -/
-private theorem analytic_chordY_algebra
+theorem analytic_chordY_algebra
     (xu yu xv yv xuv yuv c Pu Pv Puv Du Dv Duv : ℂ) (hc : c ≠ 0)
     (hPu : Pu = c ^ 2 * (1 / 12 + xu)) (hPv : Pv = c ^ 2 * (1 / 12 + xv))
     (hPuv : Puv = c ^ 2 * (1 / 12 + xuv))
@@ -2484,7 +2484,7 @@ private theorem analytic_chordY_of_exp {τ z w u v q : ℂ} (hτ : 0 < τ.im)
 the denominator-free Silverman V.3.1(c) `y`-part): for annulus
 parameters `0 < ‖q‖ < ‖u‖, ‖v‖, ‖uv‖ < 1`. Private until the
 two-variable descent consumes it. -/
-private theorem analytic_chordY {u v q : ℂ} (h0 : 0 < ‖q‖)
+theorem analytic_chordY {u v q : ℂ} (h0 : 0 < ‖q‖)
     (h1u : ‖q‖ < ‖u‖) (h2u : ‖u‖ < 1)
     (h1v : ‖q‖ < ‖v‖) (h2v : ‖v‖ < 1)
     (h1uv : ‖q‖ < ‖u * v‖) (h2uv : ‖u * v‖ < 1) :
