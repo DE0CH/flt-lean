@@ -259,34 +259,56 @@ entries file). To add/remove/annotate a node, edit
                                                               (X,Y) pair. REMAINING for the actual
                                                               gluing: (1) DONE — tateCurve_map
                                                               proven and wired (hcurve); (2)
-                                                              REMAINING, hardest type-theoretic step
-                                                              — naturality of pointMap/annulusPoint
-                                                              packaged through
-                                                              WeierstrassCurve.Affine.Point.map:
-                                                              this needs an actual AlgHom l →ₐ[k] Ω
-                                                              (no bare `Algebra k l` inline
-                                                              construction found in this mathlib pin
-                                                              under a name like Algebra.ofId —
-                                                              probed via #check/exact?, none found;
-                                                              would need to build one by hand via
-                                                              the AlgHom structure with a trivial
-                                                              commutes' proof, OR — better — use the
-                                                              REAL embedding l →ₐ[k] Ω that arises
-                                                              when l is instantiated as an actual
-                                                              IntermediateField k Ω in the colimit
-                                                              construction of step (3), where the
-                                                              inclusion IS already an AlgHom via
-                                                              IntermediateField.val; reduce an
-                                                              arbitrary u to its annulus
-                                                              representative via
-                                                              exists_zpow_mul_mem_annulus, show the
-                                                              SAME exponent works after mapping
-                                                              through the embedding (valuation
-                                                              membership transfers via
-                                                              mapValueGroupWithZero +
-                                                              annulus_exponent_unique gives
-                                                              uniqueness), then apply hnat/hcurve;
-                                                              (3) the colimit construction: every
+                                                              CONFIRMED MECHANISM, BLOCKED ON A
+                                                              MISSING PREREQUISITE (checked
+                                                              2026-07-20): the AlgHom needed for
+                                                              WeierstrassCurve.Affine.Point.map IS
+                                                              IntermediateField.val (confirmed by
+                                                              probe: for l : IntermediateField k Ω,
+                                                              l.val : l →ₐ[k] Ω typechecks directly
+                                                              — no need for an ad-hoc Algebra.ofId-
+                                                              style construction). BUT this requires
+                                                              l (as an IntermediateField k Ω, hence
+                                                              a finite-dimensional field extension
+                                                              of k) to carry [ValuativeRel l]
+                                                              [TopologicalSpace l]
+                                                              [IsNonarchimedeanLocalField l]
+                                                              [ValuativeExtension k l] instances,
+                                                              and NO SUCH GENERAL INSTANCE EXISTS in
+                                                              this codebase: Fermat/FLT/Mathlib/Numb
+                                                              erTheory/Padics/LocalField.lean only
+                                                              supplies the
+                                                              IsNonarchimedeanLocalField package for
+                                                              ℚ_[p] and IsDedekindDomain.HeightOneSp
+                                                              ectrum.adicCompletion — nothing
+                                                              generic for 'a finite extension of a
+                                                              nonarchimedean local field is again
+                                                              one, with the valuation extending
+                                                              uniquely'. This is itself a
+                                                              substantial classical fact
+                                                              (existence+uniqueness of the extended
+                                                              absolute value on a finite extension
+                                                              of a complete nonarchimedean field,
+                                                              completeness of the extension, local
+                                                              compactness) NOT YET FORMALIZED
+                                                              anywhere in this project — a genuine
+                                                              new prerequisite node, comparable in
+                                                              scope to the work already done on this
+                                                              file. NEXT ACTION for a fresh
+                                                              iteration: search mathlib for existing
+                                                              extension-of-valuation machinery for
+                                                              finite extensions of complete fields
+                                                              (candidates: Mathlib.RingTheory.Valuat
+                                                              ion.Extension?,
+                                                              Mathlib.NumberTheory.Padics/Complete
+                                                              field extension theory, or Spectral
+                                                              norm / Mathlib.Analysis.Normed.Field
+                                                              material) before attempting to prove
+                                                              it from scratch; if found, build the
+                                                              instance for IntermediateField k Ω
+                                                              under [FiniteDimensional k l], then
+                                                              resume steps (2)-(3) of this plan. (3)
+                                                              the colimit construction: every
                                                               element of Ωˣ / every point of E_q(Ω)
                                                               lies in a finite subextension l/k of
                                                               Ω/k (mathlib: IsAlgebraic elements lie
@@ -474,47 +496,73 @@ entries file). To add/remove/annotate a node, edit
                                                                   pair. REMAINING for the actual
                                                                   gluing: (1) DONE — tateCurve_map
                                                                   proven and wired (hcurve); (2)
-                                                                  REMAINING, hardest type-theoretic
-                                                                  step — naturality of
-                                                                  pointMap/annulusPoint packaged
-                                                                  through
-                                                                  WeierstrassCurve.Affine.Point.map:
-                                                                  this needs an actual AlgHom l
-                                                                  →ₐ[k] Ω (no bare `Algebra k l`
-                                                                  inline construction found in this
-                                                                  mathlib pin under a name like
-                                                                  Algebra.ofId — probed via
-                                                                  #check/exact?, none found; would
-                                                                  need to build one by hand via the
-                                                                  AlgHom structure with a trivial
-                                                                  commutes' proof, OR — better — use
-                                                                  the REAL embedding l →ₐ[k] Ω that
-                                                                  arises when l is instantiated as
-                                                                  an actual IntermediateField k Ω in
-                                                                  the colimit construction of step
-                                                                  (3), where the inclusion IS
-                                                                  already an AlgHom via
-                                                                  IntermediateField.val; reduce an
-                                                                  arbitrary u to its annulus
-                                                                  representative via
-                                                                  exists_zpow_mul_mem_annulus, show
-                                                                  the SAME exponent works after
-                                                                  mapping through the embedding
-                                                                  (valuation membership transfers
-                                                                  via mapValueGroupWithZero +
-                                                                  annulus_exponent_unique gives
-                                                                  uniqueness), then apply
-                                                                  hnat/hcurve; (3) the colimit
-                                                                  construction: every element of Ωˣ
-                                                                  / every point of E_q(Ω) lies in a
-                                                                  finite subextension l/k of Ω/k
-                                                                  (mathlib: IsAlgebraic elements lie
-                                                                  in finite subextensions — search I
-                                                                  ntermediateField/Algebra.IsAlgebra
-                                                                  ic API); define φ via the chosen l
-                                                                  and hfin, prove independence of
-                                                                  the choice using pointMap
-                                                                  naturality from (2);
+                                                                  CONFIRMED MECHANISM, BLOCKED ON A
+                                                                  MISSING PREREQUISITE (checked
+                                                                  2026-07-20): the AlgHom needed for
+                                                                  WeierstrassCurve.Affine.Point.map
+                                                                  IS IntermediateField.val
+                                                                  (confirmed by probe: for l :
+                                                                  IntermediateField k Ω, l.val : l
+                                                                  →ₐ[k] Ω typechecks directly — no
+                                                                  need for an ad-hoc Algebra.ofId-
+                                                                  style construction). BUT this
+                                                                  requires l (as an
+                                                                  IntermediateField k Ω, hence a
+                                                                  finite-dimensional field extension
+                                                                  of k) to carry [ValuativeRel l]
+                                                                  [TopologicalSpace l]
+                                                                  [IsNonarchimedeanLocalField l]
+                                                                  [ValuativeExtension k l]
+                                                                  instances, and NO SUCH GENERAL
+                                                                  INSTANCE EXISTS in this codebase:
+                                                                  Fermat/FLT/Mathlib/NumberTheory/Pa
+                                                                  dics/LocalField.lean only supplies
+                                                                  the IsNonarchimedeanLocalField
+                                                                  package for ℚ_[p] and IsDedekindDo
+                                                                  main.HeightOneSpectrum.adicComplet
+                                                                  ion — nothing generic for 'a
+                                                                  finite extension of a
+                                                                  nonarchimedean local field is
+                                                                  again one, with the valuation
+                                                                  extending uniquely'. This is
+                                                                  itself a substantial classical
+                                                                  fact (existence+uniqueness of the
+                                                                  extended absolute value on a
+                                                                  finite extension of a complete
+                                                                  nonarchimedean field, completeness
+                                                                  of the extension, local
+                                                                  compactness) NOT YET FORMALIZED
+                                                                  anywhere in this project — a
+                                                                  genuine new prerequisite node,
+                                                                  comparable in scope to the work
+                                                                  already done on this file. NEXT
+                                                                  ACTION for a fresh iteration:
+                                                                  search mathlib for existing
+                                                                  extension-of-valuation machinery
+                                                                  for finite extensions of complete
+                                                                  fields (candidates: Mathlib.RingTh
+                                                                  eory.Valuation.Extension?, Mathlib
+                                                                  .NumberTheory.Padics/Complete
+                                                                  field extension theory, or
+                                                                  Spectral norm /
+                                                                  Mathlib.Analysis.Normed.Field
+                                                                  material) before attempting to
+                                                                  prove it from scratch; if found,
+                                                                  build the instance for
+                                                                  IntermediateField k Ω under
+                                                                  [FiniteDimensional k l], then
+                                                                  resume steps (2)-(3) of this plan.
+                                                                  (3) the colimit construction:
+                                                                  every element of Ωˣ / every point
+                                                                  of E_q(Ω) lies in a finite
+                                                                  subextension l/k of Ω/k (mathlib:
+                                                                  IsAlgebraic elements lie in finite
+                                                                  subextensions — search Intermediat
+                                                                  eField/Algebra.IsAlgebraic API);
+                                                                  define φ via the chosen l and
+                                                                  hfin, prove independence of the
+                                                                  choice using pointMap naturality
+                                                                  from (2);
                                                                   surjectivity/kernel/equivariance
                                                                   descend from the finite-level
                                                                   properties.
@@ -720,41 +768,70 @@ entries file). To add/remove/annotate a node, edit
                                                                       REMAINING for the actual
                                                                       gluing: (1) DONE —
                                                                       tateCurve_map proven and wired
-                                                                      (hcurve); (2) REMAINING,
-                                                                      hardest type-theoretic step —
-                                                                      naturality of
-                                                                      pointMap/annulusPoint packaged
-                                                                      through WeierstrassCurve.Affin
-                                                                      e.Point.map: this needs an
-                                                                      actual AlgHom l →ₐ[k] Ω (no
-                                                                      bare `Algebra k l` inline
-                                                                      construction found in this
-                                                                      mathlib pin under a name like
-                                                                      Algebra.ofId — probed via
-                                                                      #check/exact?, none found;
-                                                                      would need to build one by
-                                                                      hand via the AlgHom structure
-                                                                      with a trivial commutes'
-                                                                      proof, OR — better — use the
-                                                                      REAL embedding l →ₐ[k] Ω that
-                                                                      arises when l is instantiated
-                                                                      as an actual IntermediateField
-                                                                      k Ω in the colimit
-                                                                      construction of step (3),
-                                                                      where the inclusion IS already
-                                                                      an AlgHom via
-                                                                      IntermediateField.val; reduce
-                                                                      an arbitrary u to its annulus
-                                                                      representative via
-                                                                      exists_zpow_mul_mem_annulus,
-                                                                      show the SAME exponent works
-                                                                      after mapping through the
-                                                                      embedding (valuation
-                                                                      membership transfers via
-                                                                      mapValueGroupWithZero +
-                                                                      annulus_exponent_unique gives
-                                                                      uniqueness), then apply
-                                                                      hnat/hcurve; (3) the colimit
+                                                                      (hcurve); (2) CONFIRMED
+                                                                      MECHANISM, BLOCKED ON A
+                                                                      MISSING PREREQUISITE (checked
+                                                                      2026-07-20): the AlgHom needed
+                                                                      for WeierstrassCurve.Affine.Po
+                                                                      int.map IS
+                                                                      IntermediateField.val
+                                                                      (confirmed by probe: for l :
+                                                                      IntermediateField k Ω, l.val :
+                                                                      l →ₐ[k] Ω typechecks directly
+                                                                      — no need for an ad-hoc
+                                                                      Algebra.ofId-style
+                                                                      construction). BUT this
+                                                                      requires l (as an
+                                                                      IntermediateField k Ω, hence a
+                                                                      finite-dimensional field
+                                                                      extension of k) to carry
+                                                                      [ValuativeRel l]
+                                                                      [TopologicalSpace l]
+                                                                      [IsNonarchimedeanLocalField l]
+                                                                      [ValuativeExtension k l]
+                                                                      instances, and NO SUCH GENERAL
+                                                                      INSTANCE EXISTS in this
+                                                                      codebase: Fermat/FLT/Mathlib/N
+                                                                      umberTheory/Padics/LocalField.
+                                                                      lean only supplies the
+                                                                      IsNonarchimedeanLocalField
+                                                                      package for ℚ_[p] and IsDedeki
+                                                                      ndDomain.HeightOneSpectrum.adi
+                                                                      cCompletion — nothing generic
+                                                                      for 'a finite extension of a
+                                                                      nonarchimedean local field is
+                                                                      again one, with the valuation
+                                                                      extending uniquely'. This is
+                                                                      itself a substantial classical
+                                                                      fact (existence+uniqueness of
+                                                                      the extended absolute value on
+                                                                      a finite extension of a
+                                                                      complete nonarchimedean field,
+                                                                      completeness of the extension,
+                                                                      local compactness) NOT YET
+                                                                      FORMALIZED anywhere in this
+                                                                      project — a genuine new
+                                                                      prerequisite node, comparable
+                                                                      in scope to the work already
+                                                                      done on this file. NEXT ACTION
+                                                                      for a fresh iteration: search
+                                                                      mathlib for existing
+                                                                      extension-of-valuation
+                                                                      machinery for finite
+                                                                      extensions of complete fields
+                                                                      (candidates: Mathlib.RingTheor
+                                                                      y.Valuation.Extension?, Mathli
+                                                                      b.NumberTheory.Padics/Complete
+                                                                      field extension theory, or
+                                                                      Spectral norm /
+                                                                      Mathlib.Analysis.Normed.Field
+                                                                      material) before attempting to
+                                                                      prove it from scratch; if
+                                                                      found, build the instance for
+                                                                      IntermediateField k Ω under
+                                                                      [FiniteDimensional k l], then
+                                                                      resume steps (2)-(3) of this
+                                                                      plan. (3) the colimit
                                                                       construction: every element of
                                                                       Ωˣ / every point of E_q(Ω)
                                                                       lies in a finite subextension
@@ -962,41 +1039,70 @@ entries file). To add/remove/annotate a node, edit
                                                                           REMAINING for the actual
                                                                           gluing: (1) DONE —
                                                                           tateCurve_map proven and wired
-                                                                          (hcurve); (2) REMAINING,
-                                                                          hardest type-theoretic step —
-                                                                          naturality of
-                                                                          pointMap/annulusPoint packaged
-                                                                          through WeierstrassCurve.Affin
-                                                                          e.Point.map: this needs an
-                                                                          actual AlgHom l →ₐ[k] Ω (no
-                                                                          bare `Algebra k l` inline
-                                                                          construction found in this
-                                                                          mathlib pin under a name like
-                                                                          Algebra.ofId — probed via
-                                                                          #check/exact?, none found;
-                                                                          would need to build one by
-                                                                          hand via the AlgHom structure
-                                                                          with a trivial commutes'
-                                                                          proof, OR — better — use the
-                                                                          REAL embedding l →ₐ[k] Ω that
-                                                                          arises when l is instantiated
-                                                                          as an actual IntermediateField
-                                                                          k Ω in the colimit
-                                                                          construction of step (3),
-                                                                          where the inclusion IS already
-                                                                          an AlgHom via
-                                                                          IntermediateField.val; reduce
-                                                                          an arbitrary u to its annulus
-                                                                          representative via
-                                                                          exists_zpow_mul_mem_annulus,
-                                                                          show the SAME exponent works
-                                                                          after mapping through the
-                                                                          embedding (valuation
-                                                                          membership transfers via
-                                                                          mapValueGroupWithZero +
-                                                                          annulus_exponent_unique gives
-                                                                          uniqueness), then apply
-                                                                          hnat/hcurve; (3) the colimit
+                                                                          (hcurve); (2) CONFIRMED
+                                                                          MECHANISM, BLOCKED ON A
+                                                                          MISSING PREREQUISITE (checked
+                                                                          2026-07-20): the AlgHom needed
+                                                                          for WeierstrassCurve.Affine.Po
+                                                                          int.map IS
+                                                                          IntermediateField.val
+                                                                          (confirmed by probe: for l :
+                                                                          IntermediateField k Ω, l.val :
+                                                                          l →ₐ[k] Ω typechecks directly
+                                                                          — no need for an ad-hoc
+                                                                          Algebra.ofId-style
+                                                                          construction). BUT this
+                                                                          requires l (as an
+                                                                          IntermediateField k Ω, hence a
+                                                                          finite-dimensional field
+                                                                          extension of k) to carry
+                                                                          [ValuativeRel l]
+                                                                          [TopologicalSpace l]
+                                                                          [IsNonarchimedeanLocalField l]
+                                                                          [ValuativeExtension k l]
+                                                                          instances, and NO SUCH GENERAL
+                                                                          INSTANCE EXISTS in this
+                                                                          codebase: Fermat/FLT/Mathlib/N
+                                                                          umberTheory/Padics/LocalField.
+                                                                          lean only supplies the
+                                                                          IsNonarchimedeanLocalField
+                                                                          package for ℚ_[p] and IsDedeki
+                                                                          ndDomain.HeightOneSpectrum.adi
+                                                                          cCompletion — nothing generic
+                                                                          for 'a finite extension of a
+                                                                          nonarchimedean local field is
+                                                                          again one, with the valuation
+                                                                          extending uniquely'. This is
+                                                                          itself a substantial classical
+                                                                          fact (existence+uniqueness of
+                                                                          the extended absolute value on
+                                                                          a finite extension of a
+                                                                          complete nonarchimedean field,
+                                                                          completeness of the extension,
+                                                                          local compactness) NOT YET
+                                                                          FORMALIZED anywhere in this
+                                                                          project — a genuine new
+                                                                          prerequisite node, comparable
+                                                                          in scope to the work already
+                                                                          done on this file. NEXT ACTION
+                                                                          for a fresh iteration: search
+                                                                          mathlib for existing
+                                                                          extension-of-valuation
+                                                                          machinery for finite
+                                                                          extensions of complete fields
+                                                                          (candidates: Mathlib.RingTheor
+                                                                          y.Valuation.Extension?, Mathli
+                                                                          b.NumberTheory.Padics/Complete
+                                                                          field extension theory, or
+                                                                          Spectral norm /
+                                                                          Mathlib.Analysis.Normed.Field
+                                                                          material) before attempting to
+                                                                          prove it from scratch; if
+                                                                          found, build the instance for
+                                                                          IntermediateField k Ω under
+                                                                          [FiniteDimensional k l], then
+                                                                          resume steps (2)-(3) of this
+                                                                          plan. (3) the colimit
                                                                           construction: every element of
                                                                           Ωˣ / every point of E_q(Ω)
                                                                           lies in a finite subextension
@@ -1227,34 +1333,51 @@ entries file). To add/remove/annotate a node, edit
                                                   theorem's proof, packaging the bilateral-
                                                   coordinate naturality as an (X,Y) pair. REMAINING
                                                   for the actual gluing: (1) DONE — tateCurve_map
-                                                  proven and wired (hcurve); (2) REMAINING, hardest
-                                                  type-theoretic step — naturality of
-                                                  pointMap/annulusPoint packaged through
-                                                  WeierstrassCurve.Affine.Point.map: this needs an
-                                                  actual AlgHom l →ₐ[k] Ω (no bare `Algebra k l`
-                                                  inline construction found in this mathlib pin
-                                                  under a name like Algebra.ofId — probed via
-                                                  #check/exact?, none found; would need to build one
-                                                  by hand via the AlgHom structure with a trivial
-                                                  commutes' proof, OR — better — use the REAL
-                                                  embedding l →ₐ[k] Ω that arises when l is
-                                                  instantiated as an actual IntermediateField k Ω in
-                                                  the colimit construction of step (3), where the
-                                                  inclusion IS already an AlgHom via
-                                                  IntermediateField.val; reduce an arbitrary u to
-                                                  its annulus representative via
-                                                  exists_zpow_mul_mem_annulus, show the SAME
-                                                  exponent works after mapping through the embedding
-                                                  (valuation membership transfers via
-                                                  mapValueGroupWithZero + annulus_exponent_unique
-                                                  gives uniqueness), then apply hnat/hcurve; (3) the
-                                                  colimit construction: every element of Ωˣ / every
-                                                  point of E_q(Ω) lies in a finite subextension l/k
-                                                  of Ω/k (mathlib: IsAlgebraic elements lie in
-                                                  finite subextensions — search
-                                                  IntermediateField/Algebra.IsAlgebraic API); define
-                                                  φ via the chosen l and hfin, prove independence of
-                                                  the choice using pointMap naturality from (2);
+                                                  proven and wired (hcurve); (2) CONFIRMED
+                                                  MECHANISM, BLOCKED ON A MISSING PREREQUISITE
+                                                  (checked 2026-07-20): the AlgHom needed for
+                                                  WeierstrassCurve.Affine.Point.map IS
+                                                  IntermediateField.val (confirmed by probe: for l :
+                                                  IntermediateField k Ω, l.val : l →ₐ[k] Ω
+                                                  typechecks directly — no need for an ad-hoc
+                                                  Algebra.ofId-style construction). BUT this
+                                                  requires l (as an IntermediateField k Ω, hence a
+                                                  finite-dimensional field extension of k) to carry
+                                                  [ValuativeRel l] [TopologicalSpace l]
+                                                  [IsNonarchimedeanLocalField l] [ValuativeExtension
+                                                  k l] instances, and NO SUCH GENERAL INSTANCE
+                                                  EXISTS in this codebase: Fermat/FLT/Mathlib/Number
+                                                  Theory/Padics/LocalField.lean only supplies the
+                                                  IsNonarchimedeanLocalField package for ℚ_[p] and
+                                                  IsDedekindDomain.HeightOneSpectrum.adicCompletion
+                                                  — nothing generic for 'a finite extension of a
+                                                  nonarchimedean local field is again one, with the
+                                                  valuation extending uniquely'. This is itself a
+                                                  substantial classical fact (existence+uniqueness
+                                                  of the extended absolute value on a finite
+                                                  extension of a complete nonarchimedean field,
+                                                  completeness of the extension, local compactness)
+                                                  NOT YET FORMALIZED anywhere in this project — a
+                                                  genuine new prerequisite node, comparable in scope
+                                                  to the work already done on this file. NEXT ACTION
+                                                  for a fresh iteration: search mathlib for existing
+                                                  extension-of-valuation machinery for finite
+                                                  extensions of complete fields (candidates:
+                                                  Mathlib.RingTheory.Valuation.Extension?,
+                                                  Mathlib.NumberTheory.Padics/Complete field
+                                                  extension theory, or Spectral norm /
+                                                  Mathlib.Analysis.Normed.Field material) before
+                                                  attempting to prove it from scratch; if found,
+                                                  build the instance for IntermediateField k Ω under
+                                                  [FiniteDimensional k l], then resume steps (2)-(3)
+                                                  of this plan. (3) the colimit construction: every
+                                                  element of Ωˣ / every point of E_q(Ω) lies in a
+                                                  finite subextension l/k of Ω/k (mathlib:
+                                                  IsAlgebraic elements lie in finite subextensions —
+                                                  search IntermediateField/Algebra.IsAlgebraic API);
+                                                  define φ via the chosen l and hfin, prove
+                                                  independence of the choice using pointMap
+                                                  naturality from (2);
                                                   surjectivity/kernel/equivariance descend from the
                                                   finite-level properties.
                                 - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality statement, assembled from the
@@ -1396,29 +1519,47 @@ entries file). To add/remove/annotate a node, edit
                                                       proof, packaging the bilateral-coordinate
                                                       naturality as an (X,Y) pair. REMAINING for the
                                                       actual gluing: (1) DONE — tateCurve_map proven
-                                                      and wired (hcurve); (2) REMAINING, hardest
-                                                      type-theoretic step — naturality of
-                                                      pointMap/annulusPoint packaged through
-                                                      WeierstrassCurve.Affine.Point.map: this needs
-                                                      an actual AlgHom l →ₐ[k] Ω (no bare `Algebra k
-                                                      l` inline construction found in this mathlib
-                                                      pin under a name like Algebra.ofId — probed
-                                                      via #check/exact?, none found; would need to
-                                                      build one by hand via the AlgHom structure
-                                                      with a trivial commutes' proof, OR — better —
-                                                      use the REAL embedding l →ₐ[k] Ω that arises
-                                                      when l is instantiated as an actual
-                                                      IntermediateField k Ω in the colimit
-                                                      construction of step (3), where the inclusion
-                                                      IS already an AlgHom via
-                                                      IntermediateField.val; reduce an arbitrary u
-                                                      to its annulus representative via
-                                                      exists_zpow_mul_mem_annulus, show the SAME
-                                                      exponent works after mapping through the
-                                                      embedding (valuation membership transfers via
-                                                      mapValueGroupWithZero +
-                                                      annulus_exponent_unique gives uniqueness),
-                                                      then apply hnat/hcurve; (3) the colimit
+                                                      and wired (hcurve); (2) CONFIRMED MECHANISM,
+                                                      BLOCKED ON A MISSING PREREQUISITE (checked
+                                                      2026-07-20): the AlgHom needed for
+                                                      WeierstrassCurve.Affine.Point.map IS
+                                                      IntermediateField.val (confirmed by probe: for
+                                                      l : IntermediateField k Ω, l.val : l →ₐ[k] Ω
+                                                      typechecks directly — no need for an ad-hoc
+                                                      Algebra.ofId-style construction). BUT this
+                                                      requires l (as an IntermediateField k Ω, hence
+                                                      a finite-dimensional field extension of k) to
+                                                      carry [ValuativeRel l] [TopologicalSpace l]
+                                                      [IsNonarchimedeanLocalField l]
+                                                      [ValuativeExtension k l] instances, and NO
+                                                      SUCH GENERAL INSTANCE EXISTS in this codebase:
+                                                      Fermat/FLT/Mathlib/NumberTheory/Padics/LocalFi
+                                                      eld.lean only supplies the
+                                                      IsNonarchimedeanLocalField package for ℚ_[p]
+                                                      and IsDedekindDomain.HeightOneSpectrum.adicCom
+                                                      pletion — nothing generic for 'a finite
+                                                      extension of a nonarchimedean local field is
+                                                      again one, with the valuation extending
+                                                      uniquely'. This is itself a substantial
+                                                      classical fact (existence+uniqueness of the
+                                                      extended absolute value on a finite extension
+                                                      of a complete nonarchimedean field,
+                                                      completeness of the extension, local
+                                                      compactness) NOT YET FORMALIZED anywhere in
+                                                      this project — a genuine new prerequisite
+                                                      node, comparable in scope to the work already
+                                                      done on this file. NEXT ACTION for a fresh
+                                                      iteration: search mathlib for existing
+                                                      extension-of-valuation machinery for finite
+                                                      extensions of complete fields (candidates:
+                                                      Mathlib.RingTheory.Valuation.Extension?,
+                                                      Mathlib.NumberTheory.Padics/Complete field
+                                                      extension theory, or Spectral norm /
+                                                      Mathlib.Analysis.Normed.Field material) before
+                                                      attempting to prove it from scratch; if found,
+                                                      build the instance for IntermediateField k Ω
+                                                      under [FiniteDimensional k l], then resume
+                                                      steps (2)-(3) of this plan. (3) the colimit
                                                       construction: every element of Ωˣ / every
                                                       point of E_q(Ω) lies in a finite subextension
                                                       l/k of Ω/k (mathlib: IsAlgebraic elements lie
@@ -1569,27 +1710,44 @@ entries file). To add/remove/annotate a node, edit
                                           (hnat) inside this theorem's proof, packaging the
                                           bilateral-coordinate naturality as an (X,Y) pair.
                                           REMAINING for the actual gluing: (1) DONE — tateCurve_map
-                                          proven and wired (hcurve); (2) REMAINING, hardest type-
-                                          theoretic step — naturality of pointMap/annulusPoint
-                                          packaged through WeierstrassCurve.Affine.Point.map: this
-                                          needs an actual AlgHom l →ₐ[k] Ω (no bare `Algebra k l`
-                                          inline construction found in this mathlib pin under a name
-                                          like Algebra.ofId — probed via #check/exact?, none found;
-                                          would need to build one by hand via the AlgHom structure
-                                          with a trivial commutes' proof, OR — better — use the REAL
-                                          embedding l →ₐ[k] Ω that arises when l is instantiated as
-                                          an actual IntermediateField k Ω in the colimit
-                                          construction of step (3), where the inclusion IS already
-                                          an AlgHom via IntermediateField.val; reduce an arbitrary u
-                                          to its annulus representative via
-                                          exists_zpow_mul_mem_annulus, show the SAME exponent works
-                                          after mapping through the embedding (valuation membership
-                                          transfers via mapValueGroupWithZero +
-                                          annulus_exponent_unique gives uniqueness), then apply
-                                          hnat/hcurve; (3) the colimit construction: every element
-                                          of Ωˣ / every point of E_q(Ω) lies in a finite
-                                          subextension l/k of Ω/k (mathlib: IsAlgebraic elements lie
-                                          in finite subextensions — search
+                                          proven and wired (hcurve); (2) CONFIRMED MECHANISM,
+                                          BLOCKED ON A MISSING PREREQUISITE (checked 2026-07-20):
+                                          the AlgHom needed for WeierstrassCurve.Affine.Point.map IS
+                                          IntermediateField.val (confirmed by probe: for l :
+                                          IntermediateField k Ω, l.val : l →ₐ[k] Ω typechecks
+                                          directly — no need for an ad-hoc Algebra.ofId-style
+                                          construction). BUT this requires l (as an
+                                          IntermediateField k Ω, hence a finite-dimensional field
+                                          extension of k) to carry [ValuativeRel l]
+                                          [TopologicalSpace l] [IsNonarchimedeanLocalField l]
+                                          [ValuativeExtension k l] instances, and NO SUCH GENERAL
+                                          INSTANCE EXISTS in this codebase:
+                                          Fermat/FLT/Mathlib/NumberTheory/Padics/LocalField.lean
+                                          only supplies the IsNonarchimedeanLocalField package for
+                                          ℚ_[p] and
+                                          IsDedekindDomain.HeightOneSpectrum.adicCompletion —
+                                          nothing generic for 'a finite extension of a
+                                          nonarchimedean local field is again one, with the
+                                          valuation extending uniquely'. This is itself a
+                                          substantial classical fact (existence+uniqueness of the
+                                          extended absolute value on a finite extension of a
+                                          complete nonarchimedean field, completeness of the
+                                          extension, local compactness) NOT YET FORMALIZED anywhere
+                                          in this project — a genuine new prerequisite node,
+                                          comparable in scope to the work already done on this file.
+                                          NEXT ACTION for a fresh iteration: search mathlib for
+                                          existing extension-of-valuation machinery for finite
+                                          extensions of complete fields (candidates:
+                                          Mathlib.RingTheory.Valuation.Extension?,
+                                          Mathlib.NumberTheory.Padics/Complete field extension
+                                          theory, or Spectral norm / Mathlib.Analysis.Normed.Field
+                                          material) before attempting to prove it from scratch; if
+                                          found, build the instance for IntermediateField k Ω under
+                                          [FiniteDimensional k l], then resume steps (2)-(3) of this
+                                          plan. (3) the colimit construction: every element of Ωˣ /
+                                          every point of E_q(Ω) lies in a finite subextension l/k of
+                                          Ω/k (mathlib: IsAlgebraic elements lie in finite
+                                          subextensions — search
                                           IntermediateField/Algebra.IsAlgebraic API); define φ via
                                           the chosen l and hfin, prove independence of the choice
                                           using pointMap naturality from (2);
@@ -1703,27 +1861,44 @@ entries file). To add/remove/annotate a node, edit
                                           (hnat) inside this theorem's proof, packaging the
                                           bilateral-coordinate naturality as an (X,Y) pair.
                                           REMAINING for the actual gluing: (1) DONE — tateCurve_map
-                                          proven and wired (hcurve); (2) REMAINING, hardest type-
-                                          theoretic step — naturality of pointMap/annulusPoint
-                                          packaged through WeierstrassCurve.Affine.Point.map: this
-                                          needs an actual AlgHom l →ₐ[k] Ω (no bare `Algebra k l`
-                                          inline construction found in this mathlib pin under a name
-                                          like Algebra.ofId — probed via #check/exact?, none found;
-                                          would need to build one by hand via the AlgHom structure
-                                          with a trivial commutes' proof, OR — better — use the REAL
-                                          embedding l →ₐ[k] Ω that arises when l is instantiated as
-                                          an actual IntermediateField k Ω in the colimit
-                                          construction of step (3), where the inclusion IS already
-                                          an AlgHom via IntermediateField.val; reduce an arbitrary u
-                                          to its annulus representative via
-                                          exists_zpow_mul_mem_annulus, show the SAME exponent works
-                                          after mapping through the embedding (valuation membership
-                                          transfers via mapValueGroupWithZero +
-                                          annulus_exponent_unique gives uniqueness), then apply
-                                          hnat/hcurve; (3) the colimit construction: every element
-                                          of Ωˣ / every point of E_q(Ω) lies in a finite
-                                          subextension l/k of Ω/k (mathlib: IsAlgebraic elements lie
-                                          in finite subextensions — search
+                                          proven and wired (hcurve); (2) CONFIRMED MECHANISM,
+                                          BLOCKED ON A MISSING PREREQUISITE (checked 2026-07-20):
+                                          the AlgHom needed for WeierstrassCurve.Affine.Point.map IS
+                                          IntermediateField.val (confirmed by probe: for l :
+                                          IntermediateField k Ω, l.val : l →ₐ[k] Ω typechecks
+                                          directly — no need for an ad-hoc Algebra.ofId-style
+                                          construction). BUT this requires l (as an
+                                          IntermediateField k Ω, hence a finite-dimensional field
+                                          extension of k) to carry [ValuativeRel l]
+                                          [TopologicalSpace l] [IsNonarchimedeanLocalField l]
+                                          [ValuativeExtension k l] instances, and NO SUCH GENERAL
+                                          INSTANCE EXISTS in this codebase:
+                                          Fermat/FLT/Mathlib/NumberTheory/Padics/LocalField.lean
+                                          only supplies the IsNonarchimedeanLocalField package for
+                                          ℚ_[p] and
+                                          IsDedekindDomain.HeightOneSpectrum.adicCompletion —
+                                          nothing generic for 'a finite extension of a
+                                          nonarchimedean local field is again one, with the
+                                          valuation extending uniquely'. This is itself a
+                                          substantial classical fact (existence+uniqueness of the
+                                          extended absolute value on a finite extension of a
+                                          complete nonarchimedean field, completeness of the
+                                          extension, local compactness) NOT YET FORMALIZED anywhere
+                                          in this project — a genuine new prerequisite node,
+                                          comparable in scope to the work already done on this file.
+                                          NEXT ACTION for a fresh iteration: search mathlib for
+                                          existing extension-of-valuation machinery for finite
+                                          extensions of complete fields (candidates:
+                                          Mathlib.RingTheory.Valuation.Extension?,
+                                          Mathlib.NumberTheory.Padics/Complete field extension
+                                          theory, or Spectral norm / Mathlib.Analysis.Normed.Field
+                                          material) before attempting to prove it from scratch; if
+                                          found, build the instance for IntermediateField k Ω under
+                                          [FiniteDimensional k l], then resume steps (2)-(3) of this
+                                          plan. (3) the colimit construction: every element of Ωˣ /
+                                          every point of E_q(Ω) lies in a finite subextension l/k of
+                                          Ω/k (mathlib: IsAlgebraic elements lie in finite
+                                          subextensions — search
                                           IntermediateField/Algebra.IsAlgebraic API); define φ via
                                           the chosen l and hfin, prove independence of the choice
                                           using pointMap naturality from (2);
