@@ -6928,6 +6928,130 @@ theorem exists_annulus_bilateralX_eq_of_one_le (q₀ : k) (hq0 : q₀ ≠ 0)
     rw [hbX, hbY]
     field_simp
     linear_combination (ustar * (1 - ustar)) * hNS - ustar ^ 2 * hDS
+  -- `|y| ≤ |x|²`
+  have hYX2 : valuation k y ≤ valuation k x ^ 2 := by
+    by_contra hcon
+    push Not at hcon
+    have h1 : valuation k x ^ 2 * valuation k x ^ 2 <
+        valuation k y * valuation k y :=
+      lt_of_le_of_lt (mul_le_mul' hcon.le le_rfl)
+        (mul_lt_mul_of_pos_left hcon (zero_lt_iff.mpr hY0))
+    rw [hy2, ← pow_add] at h1
+    exact absurd (lt_of_le_of_lt (pow_le_pow_right' hx (by norm_num)) h1)
+      (lt_irrefl _)
+  -- tail values at the fixed point, and small auxiliary bounds
+  have hTXv : valuation k (TX ustar) ≤ valuation k q₀ :=
+    htail ustar hustar_val hustar_ne1
+  have hTYv : valuation k (TY ustar) ≤ valuation k q₀ :=
+    htailY ustar hustar_val hustar_ne1
+  have hXX2 : valuation k x ≤ valuation k x ^ 2 :=
+    le_self_pow hx (by norm_num)
+  have hQ1 : valuation k q₀ ≤ 1 := le_of_lt hq1
+  have h2v : valuation k (2 : k) ≤ 1 := by
+    simpa using valuation_intCast_le_one (R := k) 2
+  have h3v : valuation k (3 : k) ≤ 1 := by
+    simpa using valuation_intCast_le_one (R := k) 3
+  set C := valuation k q₀ * valuation k x ^ 2 with hCdef
+  have hQC : valuation k q₀ ≤ C := by
+    calc valuation k q₀ = valuation k q₀ * 1 := (mul_one _).symm
+      _ ≤ C := mul_le_mul' le_rfl (one_le_pow_of_one_le' hx 2)
+  -- the ten tail terms of the defect numerator are all bounded by `C`
+  have hb01 : valuation k (-(WeierstrassCurve.tateA₄ q₀ * x)) ≤ C := by
+    rw [Valuation.map_neg, map_mul]
+    exact mul_le_mul' ha₄ hXX2
+  have hb02 : valuation k (WeierstrassCurve.tateA₆ q₀) ≤ C :=
+    le_trans ha₆ hQC
+  have hb03 : valuation k (3 * x ^ 2 * TX ustar) ≤ C := by
+    rw [map_mul, map_mul, map_pow]
+    calc valuation k 3 * valuation k x ^ 2 * valuation k (TX ustar)
+        ≤ 1 * valuation k x ^ 2 * valuation k q₀ :=
+          mul_le_mul' (mul_le_mul' h3v le_rfl) hTXv
+      _ = C := by rw [one_mul, mul_comm]
+  have hb04 : valuation k (3 * x * TX ustar ^ 2) ≤ C := by
+    rw [map_mul, map_mul, map_pow]
+    calc valuation k 3 * valuation k x * valuation k (TX ustar) ^ 2
+        ≤ 1 * valuation k x ^ 2 * (valuation k q₀ * 1) := by
+          refine mul_le_mul' (mul_le_mul' h3v hXX2) ?_
+          rw [sq]
+          exact mul_le_mul' hTXv (le_trans hTXv hQ1)
+      _ = C := by rw [one_mul, mul_one, mul_comm]
+  have hb05 : valuation k (TX ustar ^ 3) ≤ C := by
+    rw [map_pow]
+    refine le_trans ?_ hQC
+    calc valuation k (TX ustar) ^ 3
+        ≤ valuation k q₀ ^ 3 := pow_le_pow_left' hTXv 3
+      _ ≤ valuation k q₀ ^ 1 :=
+          pow_le_pow_right_of_le_one' hQ1 (by norm_num)
+      _ = valuation k q₀ := pow_one _
+  have hb06 : valuation k (2 * y * TY ustar) ≤ C := by
+    rw [map_mul, map_mul]
+    calc valuation k 2 * valuation k y * valuation k (TY ustar)
+        ≤ 1 * valuation k x ^ 2 * valuation k q₀ :=
+          mul_le_mul' (mul_le_mul' h2v hYX2) hTYv
+      _ = C := by rw [one_mul, mul_comm]
+  have hb07 : valuation k (TY ustar ^ 2) ≤ C := by
+    rw [map_pow]
+    refine le_trans ?_ hQC
+    calc valuation k (TY ustar) ^ 2
+        ≤ valuation k q₀ ^ 2 := pow_le_pow_left' hTYv 2
+      _ ≤ valuation k q₀ ^ 1 :=
+          pow_le_pow_right_of_le_one' hQ1 (by norm_num)
+      _ = valuation k q₀ := pow_one _
+  have hb08 : valuation k (y * TX ustar) ≤ C := by
+    rw [map_mul]
+    calc valuation k y * valuation k (TX ustar)
+        ≤ valuation k x ^ 2 * valuation k q₀ := mul_le_mul' hYX2 hTXv
+      _ = C := mul_comm _ _
+  have hb09 : valuation k (x * TY ustar) ≤ C := by
+    rw [map_mul]
+    calc valuation k x * valuation k (TY ustar)
+        ≤ valuation k x ^ 2 * valuation k q₀ := mul_le_mul' hXX2 hTYv
+      _ = C := mul_comm _ _
+  have hb10 : valuation k (TX ustar * TY ustar) ≤ C := by
+    rw [map_mul]
+    refine le_trans ?_ hQC
+    calc valuation k (TX ustar) * valuation k (TY ustar)
+        ≤ valuation k q₀ * 1 := mul_le_mul' hTXv (le_trans hTYv hQ1)
+      _ = valuation k q₀ := mul_one _
+  -- assemble: the defect numerator has valuation at most `C`
+  have hPexp : (x - TX ustar) ^ 3 - (y - TY ustar) *
+      ((x - TX ustar) + (y - TY ustar)) =
+      -(WeierstrassCurve.tateA₄ q₀ * x) - WeierstrassCurve.tateA₆ q₀
+        - 3 * x ^ 2 * TX ustar + 3 * x * TX ustar ^ 2 - TX ustar ^ 3
+        + 2 * y * TY ustar - TY ustar ^ 2 + y * TX ustar + x * TY ustar
+        - TX ustar * TY ustar := by
+    linear_combination -heq
+  have hPval : valuation k ((x - TX ustar) ^ 3 - (y - TY ustar) *
+      ((x - TX ustar) + (y - TY ustar))) ≤ C := by
+    rw [hPexp]
+    refine le_trans (Valuation.map_sub _ _ _) (max_le
+      (le_trans (Valuation.map_add _ _ _) (max_le
+        (le_trans (Valuation.map_add _ _ _) (max_le
+          (le_trans (Valuation.map_sub _ _ _) (max_le
+            (le_trans (Valuation.map_add _ _ _) (max_le
+              (le_trans (Valuation.map_sub _ _ _) (max_le
+                (le_trans (Valuation.map_add _ _ _) (max_le
+                  (le_trans (Valuation.map_sub _ _ _) (max_le
+                    (le_trans (Valuation.map_sub _ _ _)
+                      (max_le hb01 hb02))
+                    hb03))
+                  hb04))
+                hb05))
+              hb06))
+            hb07))
+          hb08))
+        hb09))
+      hb10)
+  -- hence the defect itself is at most `|q₀|`
+  have hεval : valuation k (x - bilateralX ustar q₀) ≤ valuation k q₀ := by
+    have h1 := congrArg (valuation k) hεmul
+    rw [map_mul, map_pow, hDv] at h1
+    have h2 : valuation k (x - bilateralX ustar q₀) *
+        valuation k x ^ 2 ≤ C := h1 ▸ hPval
+    rw [hCdef, mul_comm (valuation k (x - bilateralX ustar q₀)) _,
+      mul_comm (valuation k q₀) _] at h2
+    exact (mul_le_mul_iff_right₀
+      (zero_lt_iff.mpr (pow_ne_zero 2 hX0))).mp h2
   sorry
 
 set_option warn.sorry false in
