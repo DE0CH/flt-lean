@@ -2775,8 +2775,56 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
         ((WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm) (imap
         ((WeierstrassCurve.Affine.Point.equivOfEq hEq1)
         (edn.symm (redFun (eup (Pmap (hmodelPt x.1)))))))) := rfl
-  rw [hLv, hRv]
-  sorry
+  rw [hLv, hRv, hgalval]
+  -- the point-level key equation, by cases on the point
+  have hkey : ∀ (P : ((E.map (algebraMap ℚ
+      (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).toAffine.Point),
+      ((p : ℕ) : ℤ) • P = 0 →
+      (WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm) (imap
+        ((WeierstrassCurve.Affine.Point.equivOfEq hEq1)
+        (edn.symm (redFun (eup (Pmap (hmodelPt
+        (WeierstrassCurve.Affine.Point.map (W' := E) (S := ℚ)
+          (AlgEquiv.toAlgHom (R := ℚ) (A₁ := AlgebraicClosure ℚ)
+            (A₂ := AlgebraicClosure ℚ) (GaloisRepresentation.globalFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat)) P)))))))) =
+      WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
+        (frobAlgHom q)
+        ((WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm) (imap
+        ((WeierstrassCurve.Affine.Point.equivOfEq hEq1)
+        (edn.symm (redFun (eup (Pmap (hmodelPt P)))))))) := by
+    intro P hP
+    cases P with
+    | zero =>
+      have h1 : WeierstrassCurve.Affine.Point.map (W' := E) (S := ℚ)
+          (AlgEquiv.toAlgHom (R := ℚ) (A₁ := AlgebraicClosure ℚ)
+            (A₂ := AlgebraicClosure ℚ) (GaloisRepresentation.globalFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat))
+          (0 : ((E.map (algebraMap ℚ
+            (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).toAffine.Point) =
+          (0 : ((E.map (algebraMap ℚ
+            (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).toAffine.Point) :=
+        map_zero _
+      have h2 : WeierstrassCurve.Affine.Point.map (W' := Wbar)
+          (S := ZMod q) (frobAlgHom q)
+          (0 : ((Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure
+            (ZMod q))).toAffine.Point) = 0 := map_zero _
+      rw [show (WeierstrassCurve.Affine.Point.zero : ((E.map (algebraMap ℚ
+        (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).toAffine.Point) = 0
+        from rfl, h1]
+      rw [map_zero hmodelPt]
+      rw [map_zero Pmap]
+      rw [map_zero eup]
+      rw [hred0]
+      rw [map_zero edn.symm]
+      rw [map_zero (WeierstrassCurve.Affine.Point.equivOfEq hEq1)]
+      rw [map_zero imap]
+      rw [map_zero (WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm)]
+      rw [h2]
+      rfl
+    | some a b hab =>
+      sorry
+  exact hkey x.1 ((Submodule.mem_torsionBy_iff _ _).mp x.2)
 
 set_option warn.sorry false in
 /-- **The Weil pairing over a finite field, Frobenius-twisted form**
