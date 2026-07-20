@@ -34,7 +34,7 @@
   "WeilPairing.exists_weilPairing": "✅",
   "WeilPairing.det_galoisRep_eq_cyclotomic": "✅",
   "WeilPairing.exists_frobenius_reduction_model": "✅✅",
-  "WeilPairing.exists_weilPairing_frobenius": "❌",
+  "WeilPairing.exists_weilPairing_frobenius": "✅",
   "WeilPairing.det_frobeniusTorsionEnd": "✅",
   "WeilPairing.det_galoisRep_globalFrob": "✅",
   "WeilPairing.pairing_map_eq_det_smul": "✅✅",
@@ -198,7 +198,8 @@
   "TateCurve.tateCurve_map": "✅✅",
   "exists_valuativeRel_sepClosure": "✅✅",
   "isNonarchimedeanLocalField_intermediate": "✅✅",
-  "locallyCompactSpace_intermediate": "✅✅"
+  "locallyCompactSpace_intermediate": "✅✅",
+  "WeilPairing.exists_weilPairing_mu": "❌"
  },
  "children": {
   "fermatLastTheoremThree": [],
@@ -375,7 +376,11 @@
    "TorsionCard.isCoprime_Ψ₂Sq_preΨ'",
    "TorsionCard.separable_preΨ'"
   ],
-  "WeilPairing.exists_weilPairing_frobenius": [],
+  "WeilPairing.exists_weilPairing_frobenius": [
+   "TorsionCard.prime_torsion_card",
+   "TorsionCard.smul_surjective",
+   "WeilPairing.exists_weilPairing_mu"
+  ],
   "WeilPairing.det_frobeniusTorsionEnd": [
    "group_theory_lemma",
    "WeierstrassCurve.n_torsion_card",
@@ -922,7 +927,8 @@
   "isNonarchimedeanLocalField_intermediate": [
    "locallyCompactSpace_intermediate"
   ],
-  "locallyCompactSpace_intermediate": []
+  "locallyCompactSpace_intermediate": [],
+  "WeilPairing.exists_weilPairing_mu": []
  },
  "roots": [
   "fermat_last_theorem"

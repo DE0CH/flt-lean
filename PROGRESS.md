@@ -111,17 +111,30 @@ entries file). To add/remove/annotate a node, edit
                                           2-dimensional alternating-form linear algebra) gives det =
                                           q; the rank-2 input is p_torsion_rank over the separably
                                           closed F_q-bar with (p : F_q-bar) != 0 from p != q.
-                                            - ❌🟪 `WeilPairing.exists_weilPairing_frobenius` — the Weil pairing over a finite field, Frobenius-
-                                              twisted form (sorry node -- the canonical arithmetic
-                                              input): alternating nondegenerate ZMod p-bilinear
-                                              pairing on the p-torsion over F_q-bar which the
-                                              q-power Frobenius scales by q; classically the mu_p-
-                                              valued Weil pairing (Galois-equivariant, Frobenius
-                                              acts on roots of unity by the q-th power) read through
-                                              an identification mu_p = ZMod p. Construction routes:
-                                              Miller functions/divisors, or the explicit 3-torsion-
-                                              style resultant formulas, or transport from a
-                                              characteristic-0 lift
+                                            - ✅· `WeilPairing.exists_weilPairing_frobenius` — Frobenius-twisted ZMod p Weil pairing over F_q
+                                              (DERIVED 2026-07-21 from exists_weilPairing_mu by
+                                              discrete logarithm: primitive root via
+                                              HasEnoughRootsOfUnity, zmodEquivZPowers, Frobenius
+                                              naturality becomes q-scaling since frobAlgHom is x^q).
+                                                - ❌🟪 `WeilPairing.exists_weilPairing_mu` — the mu_p-valued Weil pairing over F_q (sorry node,
+                                                  stated 2026-07-21): multiplicatively bilinear,
+                                                  alternating, nondegenerate pairing on Wbar[p](F_q-
+                                                  bar) valued in p-th roots of unity, natural for
+                                                  the q-power Frobenius (Silverman AEC III.8.1 +
+                                                  III.8.1(e)). The whole Weil-pairing/determinant
+                                                  tower (det_frobeniusTorsionEnd ->
+                                                  det_galoisRep_globalFrob ->
+                                                  det_galoisRep_eq_cyclotomic -> exists_weilPairing
+                                                  -> FreyConditions) now rests on this single node.
+                                                  Construction plan: mathlib's coordinate-
+                                                  ring/class-group machinery (Affine.CoordinateRing,
+                                                  Point.toClass into ClassGroup) gives divisors of
+                                                  degree-zero; the pairing via functions with
+                                                  divisor p(P) - p(O) and Weil reciprocity (the hard
+                                                  classical lemma), OR via the alternative Miller-
+                                                  function normalization; reference: Silverman AEC
+                                                  III.8, Books/silverman1994ataec.txt for the ATAEC
+                                                  side.
                                     - ✅· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density,
                                       topological form — now (2026-07-16) by the profinite limit
                                       argument (: cosets of fixing subgroups of finite subextensions
@@ -183,15 +196,27 @@ entries file). To add/remove/annotate a node, edit
                                   linear algebra) gives det = q; the rank-2 input is p_torsion_rank
                                   over the separably closed F_q-bar with (p : F_q-bar) != 0 from p
                                   != q.
-                                    - ❌🟪 `WeilPairing.exists_weilPairing_frobenius` — the Weil pairing over a finite field, Frobenius-twisted form
-                                      (sorry node -- the canonical arithmetic input): alternating
-                                      nondegenerate ZMod p-bilinear pairing on the p-torsion over
-                                      F_q-bar which the q-power Frobenius scales by q; classically
-                                      the mu_p-valued Weil pairing (Galois-equivariant, Frobenius
-                                      acts on roots of unity by the q-th power) read through an
-                                      identification mu_p = ZMod p. Construction routes: Miller
-                                      functions/divisors, or the explicit 3-torsion-style resultant
-                                      formulas, or transport from a characteristic-0 lift
+                                    - ✅· `WeilPairing.exists_weilPairing_frobenius` — Frobenius-twisted ZMod p Weil pairing over F_q (DERIVED
+                                      2026-07-21 from exists_weilPairing_mu by discrete logarithm:
+                                      primitive root via HasEnoughRootsOfUnity, zmodEquivZPowers,
+                                      Frobenius naturality becomes q-scaling since frobAlgHom is
+                                      x^q).
+                                        - ❌🟪 `WeilPairing.exists_weilPairing_mu` — the mu_p-valued Weil pairing over F_q (sorry node, stated
+                                          2026-07-21): multiplicatively bilinear, alternating,
+                                          nondegenerate pairing on Wbar[p](F_q-bar) valued in p-th
+                                          roots of unity, natural for the q-power Frobenius
+                                          (Silverman AEC III.8.1 + III.8.1(e)). The whole Weil-
+                                          pairing/determinant tower (det_frobeniusTorsionEnd ->
+                                          det_galoisRep_globalFrob -> det_galoisRep_eq_cyclotomic ->
+                                          exists_weilPairing -> FreyConditions) now rests on this
+                                          single node. Construction plan: mathlib's coordinate-
+                                          ring/class-group machinery (Affine.CoordinateRing,
+                                          Point.toClass into ClassGroup) gives divisors of degree-
+                                          zero; the pairing via functions with divisor p(P) - p(O)
+                                          and Weil reciprocity (the hard classical lemma), OR via
+                                          the alternative Miller-function normalization; reference:
+                                          Silverman AEC III.8, Books/silverman1994ataec.txt for the
+                                          ATAEC side.
                             - ✅· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density, topological form
                               — now (2026-07-16) by the profinite limit argument (: cosets of fixing
                               subgroups of finite subextensions are a neighborhood basis,

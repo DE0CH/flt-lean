@@ -207,8 +207,7 @@
     "name": "WeilPairing.exists_weilPairing_frobenius",
     "fullname": "WeilPairing.exists_weilPairing_frobenius",
     "module": "Fermat.FLT.EllipticCurve.WeilPairing",
-    "text": "the Weil pairing over a finite field, Frobenius-twisted form (sorry node -- the canonical arithmetic input): alternating nondegenerate ZMod p-bilinear pairing on the p-torsion over F_q-bar which the q-power Frobenius scales by q; classically the mu_p-valued Weil pairing (Galois-equivariant, Frobenius acts on roots of unity by the q-th power) read through an identification mu_p = ZMod p. Construction routes: Miller functions/divisors, or the explicit 3-torsion-style resultant formulas, or transport from a characteristic-0 lift",
-    "wip": true
+    "text": "Frobenius-twisted ZMod p Weil pairing over F_q (DERIVED 2026-07-21 from exists_weilPairing_mu by discrete logarithm: primitive root via HasEnoughRootsOfUnity, zmodEquivZPowers, Frobenius naturality becomes q-scaling since frobAlgHom is x^q)."
   },
   {
     "name": "WeilPairing.det_frobeniusTorsionEnd",
@@ -1195,5 +1194,12 @@
     "fullname": "locallyCompactSpace_intermediate",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure",
     "text": "local compactness of finite subextensions in the valuative topology (PROVEN 2026-07-20): in-proof chain -- (1) hkle/hint_le: any O[k]-integral element of Omega has value at most 1 (classical power-comparison mirroring Valuation.Integers.isIntegral_iff_v_le_one, coefficient bound through the valuative extension); (2) hOk: k is algebraic over O[k] by the valuation-ring dichotomy (degree-one witness C(1/c)X - 1), lifted to Omega via IsAlgebraic.restrictScalars; (3) hsmall: below any nonzero value of L lies a nonzero base value (exists_integral_multiple on 1/w over O[k] + one strict shrink by the uniformizing element p); (4) T2Space L via IsTopologicalAddGroup.t2Space_of_zero_sep; (5) the structure map algebraMap k L is continuous (preimage of every basic ball contains a basic ball, by hsmall + strict vlt transfer through valuativeExtension_comap), hence ContinuousSMul k L; (6) Module.finBasis equivFun is a homeomorphism by LinearMap.continuous_of_finiteDimensional over the complete field k (both directions), and local compactness transports from k^finrank via Homeomorph.locallyCompactSpace_iff. Axioms: propext/Classical.choice/Quot.sound only."
+  },
+  {
+    "name": "WeilPairing.exists_weilPairing_mu",
+    "fullname": "WeilPairing.exists_weilPairing_mu",
+    "module": "Fermat.FLT.EllipticCurve.WeilPairing",
+    "wip": true,
+    "text": "the mu_p-valued Weil pairing over F_q (sorry node, stated 2026-07-21): multiplicatively bilinear, alternating, nondegenerate pairing on Wbar[p](F_q-bar) valued in p-th roots of unity, natural for the q-power Frobenius (Silverman AEC III.8.1 + III.8.1(e)). The whole Weil-pairing/determinant tower (det_frobeniusTorsionEnd -> det_galoisRep_globalFrob -> det_galoisRep_eq_cyclotomic -> exists_weilPairing -> FreyConditions) now rests on this single node. Construction plan: mathlib's coordinate-ring/class-group machinery (Affine.CoordinateRing, Point.toClass into ClassGroup) gives divisors of degree-zero; the pairing via functions with divisor p(P) - p(O) and Weil reciprocity (the hard classical lemma), OR via the alternative Miller-function normalization; reference: Silverman AEC III.8, Books/silverman1994ataec.txt for the ATAEC side."
   }
 ]
