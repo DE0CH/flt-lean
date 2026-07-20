@@ -3048,7 +3048,28 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
   set Wb : WeierstrassCurve (AlgebraicClosure (ZMod q)) :=
     Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) with hWbdef
   haveI hDD : IsDedekindDomain Wb.toAffine.CoordinateRing := by
-    sorry
+    -- Krull–Akizuki frame: the coordinate ring is the integral closure
+    -- of `k[X]` (a PID) in the function field, which is a finite
+    -- separable quadratic extension of `k(X)`
+    haveI : FaithfulSMul (Polynomial (AlgebraicClosure (ZMod q)))
+        (FractionRing Wb.toAffine.CoordinateRing) := by
+      sorry
+    letI : Algebra (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+        (FractionRing Wb.toAffine.CoordinateRing) :=
+      FractionRing.liftAlgebra _ _
+    haveI hfd : FiniteDimensional (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+        (FractionRing Wb.toAffine.CoordinateRing) := by
+      sorry
+    haveI hsep : Algebra.IsSeparable (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+        (FractionRing Wb.toAffine.CoordinateRing) := by
+      sorry
+    haveI hic : IsIntegralClosure Wb.toAffine.CoordinateRing
+        (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing Wb.toAffine.CoordinateRing) := by
+      sorry
+    exact IsIntegralClosure.isDedekindDomain (Polynomial (AlgebraicClosure (ZMod q)))
+      (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+      (FractionRing Wb.toAffine.CoordinateRing)
+      Wb.toAffine.CoordinateRing
   sorry
 
 set_option warn.sorry false in
