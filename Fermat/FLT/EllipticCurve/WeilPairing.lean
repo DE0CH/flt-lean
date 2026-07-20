@@ -2723,6 +2723,28 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
         rw [show frobZ (IsLocalRing.residue (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) ⟨w, hw⟩) =
           (IsLocalRing.residue (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) ⟨w, hw⟩) ^ q from rfl]
         exact hfrobres w hw
+  -- Step 3c-v-d: the chosen embedding of algebraic closures intertwines
+  -- the global Frobenius with the arithmetic Frobenius (coordinatewise)
+  have hlift : ∀ z : AlgebraicClosure ℚ,
+      AlgebraicClosure.map (@algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) _ _
+      (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+        (NumberField.RingOfIntegers ℚ) ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))
+        (GaloisRepresentation.globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat z) =
+      (Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat) (AlgebraicClosure.map (@algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) _ _
+      (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+        (NumberField.RingOfIntegers ℚ) ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) z) := by
+    intro z
+    unfold GaloisRepresentation.globalFrob
+    exact Field.absoluteGaloisGroup.lift_map (@algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) _ _
+      (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+        (NumberField.RingOfIntegers ℚ) ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) (Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat) z
   -- Step 3c-v (sorried): Frobenius compatibility — assemble the
   -- equivariance of the layers
   sorry
