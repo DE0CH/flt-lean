@@ -3029,7 +3029,26 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       (∀ x y, (e x y) ^ p = 1) ∧
       (∀ x y, e (frobeniusTorsionEnd q Wbar p x)
           (frobeniusTorsionEnd q Wbar p y) =
-        Units.map (frobAlgHom q).toRingHom.toMonoidHom (e x y)) :=
+        Units.map (frobAlgHom q).toRingHom.toMonoidHom (e x y)) := by
+  classical
+  -- ============================================================
+  -- CONSTRUCTION PLAN (Silverman AEC III.8, divisor-theoretic):
+  -- the coordinate ring of the base-changed curve is a Dedekind
+  -- domain (N1, regularity from Δ ≠ 0 via the trace/norm integral-
+  -- closure computation over k[X]); its class group carries the
+  -- points (mathlib `Point.toClass`, injective); for a p-torsion
+  -- point the p-th power of its point ideal is principal with a
+  -- Miller generator f_P; the pairing is the evaluation ratio
+  -- e(P,Q) = f_P(D_Q)/f_Q(D_P), well-defined and bilinear by Weil
+  -- reciprocity (N5) with the infinite place handled by the degree
+  -- bookkeeping of the norm form (N2); alternation, nondegeneracy
+  -- and Frobenius naturality follow from the construction.
+  -- ============================================================
+  -- N1: the coordinate ring of the base-changed curve is Dedekind
+  set Wb : WeierstrassCurve (AlgebraicClosure (ZMod q)) :=
+    Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) with hWbdef
+  haveI hDD : IsDedekindDomain Wb.toAffine.CoordinateRing := by
+    sorry
   sorry
 
 set_option warn.sorry false in
