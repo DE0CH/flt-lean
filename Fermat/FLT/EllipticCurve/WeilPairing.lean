@@ -302,7 +302,7 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
     rw [show algebraMap (AlgebraicClosure ℚ) (AlgebraicClosure ℚ) =
       RingHom.id (AlgebraicClosure ℚ) from rfl]
     exact V.map_id
-  have hmodelPt :
+  let hmodelPt :
       ((E.map (algebraMap ℚ
         (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).toAffine.Point ≃+
       ((W.map (algebraMap ℤ
@@ -2745,8 +2745,37 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
       (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
         (NumberField.RingOfIntegers ℚ) ℚ
         hq.toHeightOneSpectrumRingOfIntegersRat)) (Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat) z
-  -- Step 3c-v (sorried): Frobenius compatibility — assemble the
-  -- equivariance of the layers
+  -- Step 3c-v-e: assembly — reduce to a value-level equation and
+  -- compute both sides on the point
+  intro x
+  refine Subtype.ext ?_
+  -- the Galois action is the coordinatewise automorphism
+  have hgalval : (E.galoisRep p hppos (GaloisRepresentation.globalFrob
+      hq.toHeightOneSpectrumRingOfIntegersRat) x).1 =
+      WeierstrassCurve.Affine.Point.map (W' := E) (S := ℚ)
+        (AlgEquiv.toAlgHom (R := ℚ) (A₁ := AlgebraicClosure ℚ)
+          (A₂ := AlgebraicClosure ℚ) (GaloisRepresentation.globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat))
+        x.1 := rfl
+  -- the left side unfolds to the composite of the layer values
+  have hLv : ((((ψ₀.trans τ).trans redL).trans identL)
+      (E.galoisRep p hppos (GaloisRepresentation.globalFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat) x)).1 =
+      (WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm) (imap
+        ((WeierstrassCurve.Affine.Point.equivOfEq hEq1)
+        (edn.symm (redFun (eup (Pmap (hmodelPt
+        ((E.galoisRep p hppos (GaloisRepresentation.globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat) x)).1))))))) := rfl
+  -- the right side is the coordinatewise `q`-power Frobenius of the
+  -- composite value
+  have hRv : ((frobeniusTorsionEnd q Wbar p)
+      ((((ψ₀.trans τ).trans redL).trans identL) x)).1 =
+      WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
+        (frobAlgHom q)
+        ((WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm) (imap
+        ((WeierstrassCurve.Affine.Point.equivOfEq hEq1)
+        (edn.symm (redFun (eup (Pmap (hmodelPt x.1)))))))) := rfl
+  rw [hLv, hRv]
   sorry
 
 set_option warn.sorry false in
