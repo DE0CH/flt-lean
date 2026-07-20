@@ -136,6 +136,7 @@ noncomputable def frobeniusTorsionEnd (q : ℕ) [Fact q.Prime]
         (frobAlgHom q)) p)
 
 set_option warn.sorry false in
+set_option linter.unusedSimpArgs false in
 /-- **Reduction transfer at good primes** (sorry node — the
 Néron–Ogg–Shafarevich reduction isomorphism): away from a finite set of
 places (containing the places of bad reduction and the residue
@@ -168,7 +169,80 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
           ∀ x, ψ (E.galoisRep p hppos
               (GaloisRepresentation.globalFrob
                 hq.toHeightOneSpectrumRingOfIntegersRat) x) =
-            frobeniusTorsionEnd q Wbar p (ψ x) :=
+            frobeniusTorsionEnd q Wbar p (ψ x) := by
+  classical
+  -- Step 0: a global integral model — a variable change carrying `E` to
+  -- the base change of a curve over `ℤ` with nonzero discriminant
+  have hkey : ∀ (a : ℚ) (m : ℕ), a.den ∣ m →
+      ∃ b : ℤ, a * (m : ℚ) = (b : ℚ) := by
+    rintro a m ⟨t, ht⟩
+    refine ⟨a.num * t, ?_⟩
+    have hden : (a.den : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr a.den_ne_zero
+    have hmul : a * (a.den : ℚ) = (a.num : ℚ) := by
+      have h1 : ((a.num : ℚ) / (a.den : ℚ)) * (a.den : ℚ) = (a.num : ℚ) :=
+        div_mul_cancel₀ _ hden
+      rwa [Rat.num_div_den] at h1
+    rw [ht]
+    push_cast
+    rw [← mul_assoc, hmul]
+  have hmodel : ∃ (C : WeierstrassCurve.VariableChange ℚ)
+      (W : WeierstrassCurve ℤ),
+      C • E = W.map (algebraMap ℤ ℚ) ∧ W.Δ ≠ 0 := by
+    set N : ℕ := E.a₁.den * E.a₂.den * E.a₃.den * E.a₄.den * E.a₆.den
+      with hNdef
+    have hN0 : N ≠ 0 := by
+      simp [hNdef]
+    have hNQ0 : (N : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr hN0
+    set C : WeierstrassCurve.VariableChange ℚ :=
+      ⟨Units.mk0 ((N : ℚ))⁻¹ (inv_ne_zero hNQ0), 0, 0, 0⟩ with hCdef
+    -- each denominator divides `N`
+    have hd1 : E.a₁.den ∣ N := ⟨E.a₂.den * E.a₃.den * E.a₄.den * E.a₆.den,
+      by rw [hNdef]; ring⟩
+    have hd2 : E.a₂.den ∣ N := ⟨E.a₁.den * E.a₃.den * E.a₄.den * E.a₆.den,
+      by rw [hNdef]; ring⟩
+    have hd3 : E.a₃.den ∣ N := ⟨E.a₁.den * E.a₂.den * E.a₄.den * E.a₆.den,
+      by rw [hNdef]; ring⟩
+    have hd4 : E.a₄.den ∣ N := ⟨E.a₁.den * E.a₂.den * E.a₃.den * E.a₆.den,
+      by rw [hNdef]; ring⟩
+    have hd6 : E.a₆.den ∣ N := ⟨E.a₁.den * E.a₂.den * E.a₃.den * E.a₄.den,
+      by rw [hNdef]; ring⟩
+    obtain ⟨b₁, hb₁⟩ := hkey E.a₁ (N ^ 1) (hd1.trans (dvd_pow_self N one_ne_zero))
+    obtain ⟨b₂, hb₂⟩ := hkey E.a₂ (N ^ 2) (hd2.trans (dvd_pow_self N two_ne_zero))
+    obtain ⟨b₃, hb₃⟩ := hkey E.a₃ (N ^ 3) (hd3.trans (dvd_pow_self N three_ne_zero))
+    obtain ⟨b₄, hb₄⟩ := hkey E.a₄ (N ^ 4) (hd4.trans (dvd_pow_self N four_ne_zero))
+    obtain ⟨b₆, hb₆⟩ := hkey E.a₆ (N ^ 6) (hd6.trans (dvd_pow_self N (by norm_num)))
+    have hmap : C • E =
+        (⟨b₁, b₂, b₃, b₄, b₆⟩ : WeierstrassCurve ℤ).map
+          (algebraMap ℤ ℚ) := by
+      ext <;>
+        simp only [WeierstrassCurve.variableChange_def, hCdef,
+          WeierstrassCurve.map, Units.val_inv_eq_inv_val, Units.val_mk0,
+          inv_inv, mul_zero, add_zero, zero_mul, zero_add, sub_zero,
+          zero_pow, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true,
+          eq_intCast, mul_one]
+      · rw [← hb₁]
+        push_cast
+        ring
+      · rw [← hb₂]
+        push_cast
+        ring
+      · rw [← hb₃]
+        push_cast
+        ring
+      · rw [← hb₄]
+        push_cast
+        ring
+      · rw [← hb₆]
+        push_cast
+        ring
+    refine ⟨C, ⟨b₁, b₂, b₃, b₄, b₆⟩, hmap, ?_⟩
+    -- the integer discriminant is nonzero, since the `ℚ`-curve is
+    -- elliptic and the variable change preserves that
+    intro hz
+    haveI : (C • E).IsElliptic := inferInstance
+    have h1 : (C • E).Δ ≠ 0 := (C • E).isUnit_Δ.ne_zero
+    apply h1
+    rw [hmap, WeierstrassCurve.map_Δ, hz, map_zero]
   sorry
 
 set_option warn.sorry false in
