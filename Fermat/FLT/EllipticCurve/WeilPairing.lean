@@ -2079,6 +2079,134 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
       (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) :=
     { redEadd with map_smul' := ZMod.map_smul redEadd.toAddMonoidHom }
     with hredLdef
+  -- Step 3c-iii-a: `q` is not a unit of the completed integers (its
+  -- valuation is strictly below one at the `q`-adic place)
+  have hqNotUnit : ¬ IsUnit ((q : ℕ) : (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) := by
+    have hints : (Valued.v).Integers (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) :=
+      Valuation.valuationSubring.integers _
+    intro hu
+    have h1 := hints.isUnit_iff_valuation_eq_one.mp hu
+    rw [map_natCast] at h1
+    have h2 := IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation
+      (K := ℚ) (v := hq.toHeightOneSpectrumRingOfIntegersRat)
+      ((q : ℕ) : NumberField.RingOfIntegers ℚ)
+    push_cast at h2
+    rw [h2, show ((q : ℕ) : ℚ) = algebraMap (NumberField.RingOfIntegers ℚ) ℚ
+        ((q : ℕ) : NumberField.RingOfIntegers ℚ) from (map_natCast _ q).symm,
+      IsDedekindDomain.HeightOneSpectrum.valuation_of_algebraMap,
+      IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff] at h1
+    apply h1
+    rw [Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal hq]
+    rw [map_natCast]
+  -- Step 3c-iii-b: `q` vanishes in the residue field of the local
+  -- valuation subring (a unit inverse would descend through `h𝒪`)
+  have hqZeroRes : ((q : ℕ) : (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))) = 0 := by
+    by_contra h0
+    -- the residue being nonzero makes `q` a unit of the local subring
+    have huloc : IsUnit ((q : ℕ) : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) := by
+      by_contra hnu
+      apply h0
+      have hmem : ((q : ℕ) : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ∈
+          IsLocalRing.maximalIdeal (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) :=
+        (IsLocalRing.mem_maximalIdeal _).mpr hnu
+      rw [show ((q : ℕ) : (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))) =
+        IsLocalRing.residue (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) ((q : ℕ) : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))
+        from (map_natCast _ q).symm]
+      exact (Ideal.Quotient.eq_zero_iff_mem).mpr hmem
+    -- descend the inverse through the lying-over identity
+    obtain ⟨u, hu⟩ := huloc
+    have hinvv : (((u⁻¹ : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)ˣ) : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) =
+        (((q : ℕ) : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))))⁻¹ := by
+      symm
+      refine inv_eq_of_mul_eq_one_right ?_
+      have hmulO := u.mul_inv
+      rw [hu] at hmulO
+      have := congrArg (fun z : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) => (z : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))) hmulO
+      push_cast at this
+      exact this
+    have hqK : ((q : ℕ) : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) = algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) ((q : ℕ) : (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) :=
+      (map_natCast _ q).symm
+    have hinvmem2 : algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) (((q : ℕ) : (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))⁻¹) ∈ (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) := by
+      rw [map_inv₀, ← hqK, ← hinvv]
+      exact Subtype.coe_prop _
+    have hrange : (((q : ℕ) : (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))⁻¹) ∈
+        (algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)).range := by
+      have hcomap : (((q : ℕ) : (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))⁻¹) ∈
+          ((localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat).comap (algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))).toSubring :=
+        hinvmem2
+      rw [h𝒪] at hcomap
+      exact hcomap
+    obtain ⟨y, hy⟩ := hrange
+    apply hqNotUnit
+    refine isUnit_iff_exists.mpr ⟨y, ?_, ?_⟩
+    · apply Subtype.ext
+      have hqKv : ((q : ℕ) : (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+      show (((q : ℕ) : (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) : (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) * (y : (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) = 1
+      rw [show (((q : ℕ) : (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) : (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) = ((q : ℕ) : (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) by push_cast; rfl]
+      rw [show ((y : (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) : (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) = algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) y from rfl, hy]
+      exact mul_inv_cancel₀ hqKv
+    · apply Subtype.ext
+      have hqKv : ((q : ℕ) : (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+      show (y : (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) * (((q : ℕ) : (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) : (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) = 1
+      rw [show (((q : ℕ) : (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) : (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) = ((q : ℕ) : (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) by push_cast; rfl]
+      rw [show ((y : (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) : (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) = algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) y from rfl, hy]
+      exact inv_mul_cancel₀ hqKv
+  -- the residue field has characteristic `q`
+  haveI hCharRes : CharP (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) q := by
+    have h := CharP.ringChar_of_prime_eq_zero hq hqZeroRes
+    haveI := ringChar.charP (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))
+    exact CharP.congr _ h
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
