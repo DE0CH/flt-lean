@@ -6868,6 +6868,66 @@ theorem exists_annulus_bilateralX_eq_of_one_le (q₀ : k) (hq0 : q₀ ≠ 0)
             Valuation.map_add _ _ _
         _ < valuation k (F ustar - ustar) := max_lt h3 h2
     exact absurd h4 (lt_irrefl _)
+  -- shell facts for the fixed point, and its `D`, `N`, `S` data
+  have hu0' : ustar ≠ 0 := by
+    intro hz
+    rw [hz, map_zero] at hustar_val
+    exact zero_ne_one hustar_val
+  have hDv : valuation k (x - TX ustar) = valuation k x :=
+    hDval ustar hustar_val hustar_ne1
+  have hNv : valuation k (y - TY ustar) = valuation k y :=
+    hNval ustar hustar_val hustar_ne1
+  have hSv : valuation k ((x - TX ustar) + (y - TY ustar)) =
+      valuation k y := hSval ustar hustar_val hustar_ne1
+  have hD0 : x - TX ustar ≠ 0 := by
+    intro hz
+    rw [hz, map_zero] at hDv
+    exact hX0 hDv.symm
+  have hN0 : y - TY ustar ≠ 0 := by
+    intro hz
+    rw [hz, map_zero] at hNv
+    exact hY0 hNv.symm
+  have hS0' : (x - TX ustar) + (y - TY ustar) ≠ 0 :=
+    hS0 ustar hustar_val hustar_ne1
+  -- the fixed point in closed form: `N = u·S`, hence `D = (1-u)·S`
+  have hNS : y - TY ustar = ustar *
+      ((x - TX ustar) + (y - TY ustar)) := by
+    have h1 : F ustar = ustar := hfix
+    simp only [hFdef] at h1
+    exact (div_eq_iff hS0').mp h1
+  have hDS : x - TX ustar = (1 - ustar) *
+      ((x - TX ustar) + (y - TY ustar)) := by
+    linear_combination -hNS
+  have h1u0 : (1 : k) - ustar ≠ 0 :=
+    sub_ne_zero_of_ne (Ne.symm hustar_ne1)
+  -- the division-free core identity `u·D² = N·S·(1-u)²`
+  have hcore : ustar * (x - TX ustar) ^ 2 =
+      (y - TY ustar) * ((x - TX ustar) + (y - TY ustar)) *
+        (1 - ustar) ^ 2 := by
+    linear_combination
+      (-(((x - TX ustar) + (y - TY ustar)) * (1 - ustar) ^ 2)) * hNS +
+      (ustar * ((x - TX ustar) + (1 - ustar) *
+        ((x - TX ustar) + (y - TY ustar)))) * hDS
+  -- the division-free defect formulas: `ε·D² = P := D³ - N·S` and
+  -- `δ·D = N·ε`
+  have hbX : bilateralX ustar q₀ = ustar / (1 - ustar) ^ 2 + TX ustar := by
+    rw [hTXdef]
+    ring
+  have hbY : bilateralY ustar q₀ =
+      ustar ^ 2 / (1 - ustar) ^ 3 + TY ustar := by
+    rw [hTYdef]
+    ring
+  have hεmul : (x - bilateralX ustar q₀) * (x - TX ustar) ^ 2 =
+      (x - TX ustar) ^ 3 - (y - TY ustar) *
+        ((x - TX ustar) + (y - TY ustar)) := by
+    rw [hbX]
+    field_simp
+    linear_combination -hcore
+  have hδmul : (y - bilateralY ustar q₀) * (x - TX ustar) =
+      (y - TY ustar) * (x - bilateralX ustar q₀) := by
+    rw [hbX, hbY]
+    field_simp
+    linear_combination (ustar * (1 - ustar)) * hNS - ustar ^ 2 * hDS
   sorry
 
 set_option warn.sorry false in
