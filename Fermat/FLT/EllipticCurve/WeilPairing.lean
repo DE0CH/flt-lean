@@ -28,6 +28,7 @@ public import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 public import Mathlib.LinearAlgebra.Determinant
+public import Mathlib.RingTheory.Valuation.Integral
 public import Mathlib.NumberTheory.Cyclotomic.CyclotomicCharacter
 
 @[expose] public section
@@ -1864,6 +1865,71 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
             (Fact.out : p.Prime) hodd h𝒪 h₁ h₂ hP hx₁ hy₁ hy₂ hry
         subst hyy
         rfl
+  -- Step 3c-ii-m: membership from integrality — the valuation subring
+  -- is integrally closed in the completed algebraic closure
+  have hintmem : ∀ z : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)), IsIntegral (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) z → z ∈ (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) := by
+    intro z hz
+    have hI := Valuation.valuationSubring.integers
+      (v := (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat : ValuationSubring (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))).valuation)
+    rw [ValuationSubring.valuationSubring_valuation] at hI
+    have hmem := hI.mem_of_integral hz
+    rw [ValuationSubring.integer_valuation] at hmem
+    exact hmem
+  -- Step 3c-ii-n: the residue field of the local valuation subring is
+  -- algebraically closed (monic lift, root upstairs, integrality,
+  -- residue of the root)
+  haveI hACres : IsAlgClosed (IsLocalRing.ResidueField (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) := by
+    apply IsAlgClosed.of_exists_root
+    intro f hmonic hirr
+    -- lift to a monic polynomial over the subring
+    obtain ⟨F, hFmap, hFdeg, hFmonic⟩ :=
+      Polynomial.lifts_and_degree_eq_and_monic
+        ((Polynomial.mem_lifts f).mpr
+          (Polynomial.map_surjective _ (IsLocalRing.residue_surjective) f))
+        hmonic
+    -- the coefficientwise inclusion into the field has a root
+    have hdegne : (F.map (algebraMap (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))).degree ≠ 0 := by
+      rw [Polynomial.degree_map_eq_of_injective (Subtype.coe_injective)]
+      rw [hFdeg]
+      exact (Polynomial.degree_pos_of_irreducible hirr).ne'
+    obtain ⟨z, hz⟩ := IsAlgClosed.exists_root
+      (k := (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) (F.map (algebraMap (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))) hdegne
+    -- the root is integral over the subring, hence lies in it
+    have hzint : IsIntegral (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) z := by
+      refine ⟨F, hFmonic, ?_⟩
+      rwa [Polynomial.IsRoot, Polynomial.eval_map] at hz
+    have hzmem := hintmem z hzint
+    -- its residue is a root of `f`
+    refine ⟨IsLocalRing.residue (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) ⟨z, hzmem⟩, ?_⟩
+    have hFz : Polynomial.eval (⟨z, hzmem⟩ : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) F = 0 := by
+      have hval : ((Polynomial.eval (⟨z, hzmem⟩ : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) F : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) :
+          (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) = 0 := by
+        show (algebraMap (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))
+          (Polynomial.eval (⟨z, hzmem⟩ : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) F) = 0
+        rw [← Polynomial.eval₂_at_apply
+          (algebraMap (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) ⟨z, hzmem⟩]
+        show Polynomial.eval₂ _ z F = 0
+        rw [← Polynomial.eval_map]
+        exact hz
+      exact Subtype.ext hval
+    rw [← hFmap, Polynomial.eval_map, Polynomial.eval₂_at_apply, hFz,
+      map_zero]
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
