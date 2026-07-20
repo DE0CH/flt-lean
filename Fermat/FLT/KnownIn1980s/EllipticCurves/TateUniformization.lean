@@ -7925,6 +7925,125 @@ theorem exists_annulus_bilateralX_eq_of_lt_one (q₀ : k) (hq0 : q₀ ≠ 0)
         (by
           rw [Valuation.map_neg]
           exact lt_of_le_of_lt h2 hq2lt), Valuation.map_neg]
+    -- the explicit equation and the `W`-shell magnitudes of `y`
+    have heq : y ^ 2 + x * y = x ^ 3 +
+        WeierstrassCurve.tateA₄ q₀ * x + WeierstrassCurve.tateA₆ q₀ := by
+      have h1 := ((WeierstrassCurve.tateCurve q₀).toAffine.equation_iff
+        x y).mp hxy
+      simpa [WeierstrassCurve.tateCurve] using h1
+    have ha₄ : valuation k (WeierstrassCurve.tateA₄ q₀) ≤
+        valuation k q₀ := by
+      rw [WeierstrassCurve.tateA₄_eq_evalInt q₀ hq1]
+      calc valuation k (evalInt q₀ a₄Formal)
+          ≤ valuation k q₀ ^ 1 := valuation_evalInt_le_pow q₀ hq1
+            (fun m hm => by
+              interval_cases m
+              rw [coeff_a₄Formal]
+              simp)
+        _ = valuation k q₀ := pow_one _
+    have hQ0 : valuation k q₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hq0
+    have hxsmall : valuation k x * valuation k x ≤ valuation k q₀ := by
+      rwa [← pow_two]
+    have hxlt1 : valuation k x < 1 := hx
+    have hRHS : valuation k (x ^ 3 +
+        WeierstrassCurve.tateA₄ q₀ * x + WeierstrassCurve.tateA₆ q₀) =
+        valuation k q₀ := by
+      rw [add_assoc]
+      have hsm : valuation k (x ^ 3) < valuation k q₀ := by
+        rw [map_pow]
+        calc valuation k x ^ 3 = valuation k x * valuation k x *
+            valuation k x := by rw [pow_succ, pow_two]
+          _ ≤ valuation k q₀ * valuation k x :=
+              mul_le_mul_left hxsmall _
+          _ < valuation k q₀ * 1 :=
+              mul_lt_mul_of_pos_left hxlt1 (zero_lt_iff.mpr hQ0)
+          _ = valuation k q₀ := mul_one _
+      have hsm2 : valuation k (WeierstrassCurve.tateA₄ q₀ * x) <
+          valuation k q₀ := by
+        rw [map_mul]
+        calc valuation k (WeierstrassCurve.tateA₄ q₀) * valuation k x
+            ≤ valuation k q₀ * valuation k x := mul_le_mul_left ha₄ _
+          _ < valuation k q₀ * 1 :=
+              mul_lt_mul_of_pos_left hxlt1 (zero_lt_iff.mpr hQ0)
+          _ = valuation k q₀ := mul_one _
+      have he2 : valuation k (x ^ 3 + (WeierstrassCurve.tateA₄ q₀ * x +
+          WeierstrassCurve.tateA₆ q₀)) =
+          valuation k (WeierstrassCurve.tateA₄ q₀ * x +
+            WeierstrassCurve.tateA₆ q₀) := by
+        refine (valuation k).map_add_eq_of_lt_right ?_
+        rw [(valuation k).map_add_eq_of_lt_right
+          (by rw [ha₆exact]; exact hsm2)]
+        rw [ha₆exact]
+        exact hsm
+      rw [he2, (valuation k).map_add_eq_of_lt_right
+        (by rw [ha₆exact]; exact hsm2), ha₆exact]
+    have hfact : valuation k y * valuation k (y + x) = valuation k q₀ := by
+      have h1 : y * (y + x) = y ^ 2 + x * y := by ring
+      calc valuation k y * valuation k (y + x)
+          = valuation k (y * (y + x)) := (map_mul _ _ _).symm
+        _ = valuation k (y ^ 2 + x * y) := by rw [h1]
+        _ = valuation k q₀ := by rw [heq]; exact hRHS
+    have hy0 : y ≠ 0 := by
+      intro hh
+      rw [hh, map_zero, zero_mul] at hfact
+      exact hQ0 hfact.symm
+    have hY0 : valuation k y ≠ 0 := (Valuation.ne_zero_iff _).mpr hy0
+    have hyx : valuation k (y + x) = valuation k y := by
+      rcases lt_trichotomy (valuation k y) (valuation k (y + x)) with
+        h | h | h
+      · exfalso
+        have hXG : valuation k x = valuation k (y + x) := by
+          have he : valuation k x = valuation k (-(y - (y + x))) := by
+            congr 1
+            ring
+          rw [he, Valuation.map_neg,
+            (valuation k).map_sub_eq_of_lt_right h]
+        have hbig : valuation k q₀ <
+            valuation k (y + x) * valuation k (y + x) := by
+          calc valuation k q₀ = valuation k y * valuation k (y + x) :=
+              hfact.symm
+            _ < valuation k (y + x) * valuation k (y + x) :=
+              mul_lt_mul_of_pos_right h (zero_lt_iff.mpr (by
+                intro hz
+                rw [hz, mul_zero] at hfact
+                exact hQ0 hfact.symm))
+        rw [← hXG] at hbig
+        exact absurd (lt_of_lt_of_le hbig hxsmall) (lt_irrefl _)
+      · exact h.symm
+      · exfalso
+        have hXY : valuation k x = valuation k y := by
+          have he : valuation k x = valuation k ((y + x) - y) := by
+            congr 1
+            ring
+          rw [he, (valuation k).map_sub_eq_of_lt_right h]
+        have hbig : valuation k q₀ <
+            valuation k y * valuation k y := by
+          calc valuation k q₀ = valuation k y * valuation k (y + x) :=
+              hfact.symm
+            _ < valuation k y * valuation k y :=
+              mul_lt_mul_of_pos_left h (zero_lt_iff.mpr hY0)
+        rw [← hXY] at hbig
+        exact absurd (lt_of_lt_of_le hbig hxsmall) (lt_irrefl _)
+    have hy2 : valuation k y * valuation k y = valuation k q₀ := by
+      rw [← hfact, hyx]
+    have hxy_le : valuation k x ≤ valuation k y := by
+      by_contra hcon
+      push Not at hcon
+      have h1 : valuation k y * valuation k y <
+          valuation k x * valuation k x :=
+        lt_of_le_of_lt (mul_le_mul' hcon.le le_rfl)
+          (mul_lt_mul_of_pos_left hcon (lt_of_le_of_lt zero_le hcon))
+      rw [hy2] at h1
+      exact absurd (lt_of_lt_of_le h1 hxsmall) (lt_irrefl _)
+    have hylt1 : valuation k y < 1 := by
+      by_contra hcon
+      push Not at hcon
+      have h1 : (1 : ValueGroupWithZero k) ≤
+          valuation k y * valuation k y := by
+        calc (1 : ValueGroupWithZero k) = 1 * 1 := (one_mul _).symm
+          _ ≤ valuation k y * valuation k y := mul_le_mul' hcon hcon
+      rw [hy2] at h1
+      exact absurd (lt_of_le_of_lt h1 hq1) (lt_irrefl _)
     sorry
 
 /-- **`x`-surjectivity onto the annulus** (DERIVED 2026-07-20 by case
