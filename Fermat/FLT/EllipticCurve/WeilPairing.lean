@@ -172,19 +172,50 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
   sorry
 
 set_option warn.sorry false in
-/-- **The Frobenius determinant over a finite field** (sorry node — the
-`deg`–`det` relation): the `q`-power Frobenius on the `p`-torsion of an
-elliptic curve over `𝔽_q` (`p ≠ q`) has determinant `q`. Classically:
-the Frobenius isogeny has degree `q`, its composite with the dual
-(Verschiebung) is multiplication by `q`, and on the `p`-torsion the
-determinant of an isogeny is its degree mod `p` — equivalently, count
-`#ker(φ - 1) = #Ē(𝔽_q)` and use the quadratic character of the degree
-form on the endomorphism ring. -/
+/-- **The Weil pairing over a finite field, Frobenius-twisted form**
+(sorry node — the canonical arithmetic input): on the `p`-torsion of an
+elliptic curve over `𝔽_q` (`p ≠ q`) there is an alternating,
+nondegenerate, `ZMod p`-bilinear pairing which the `q`-power Frobenius
+scales by `q`. This is the Weil pairing valued in `μ_p ⊂ 𝔽̄_q` — on
+which the Frobenius acts by `ζ ↦ ζ^q` — read through any
+identification `μ_p ≃ ZMod p`; Galois-equivariance of the pairing
+becomes the `q`-scaling. -/
+theorem exists_weilPairing_frobenius (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
+    (p : ℕ) [Fact p.Prime] (hqp : q ≠ p) :
+    ∃ e : ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p) →ₗ[ZMod p]
+        (((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion p) →ₗ[ZMod p] ZMod p),
+      (∀ v, e v v = 0) ∧ (∃ x y, e x y ≠ 0) ∧
+      ∀ x y, e (frobeniusTorsionEnd q Wbar p x)
+          (frobeniusTorsionEnd q Wbar p y) = (q : ZMod p) * e x y :=
+  sorry
+
+/-- **The Frobenius determinant over a finite field** (DERIVED
+2026-07-20 from the Weil pairing): the `q`-power Frobenius on the
+`p`-torsion of an elliptic curve over `𝔽_q` (`p ≠ q`) has determinant
+`q` — the Frobenius scales the Weil pairing by `q`, and on a
+2-dimensional space an endomorphism scaling a nonzero alternating form
+by `c` has determinant `c` (`det_eq_of_conj`). -/
 theorem det_frobeniusTorsionEnd (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
     (p : ℕ) [Fact p.Prime] (hqp : q ≠ p) :
-    LinearMap.det (frobeniusTorsionEnd q Wbar p) = (q : ZMod p) :=
-  sorry
+    LinearMap.det (frobeniusTorsionEnd q Wbar p) = (q : ZMod p) := by
+  obtain ⟨e, halt, hnd, hconj⟩ := exists_weilPairing_frobenius q Wbar p hqp
+  haveI : CharP (AlgebraicClosure (ZMod q)) q :=
+    charP_of_injective_algebraMap
+      (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+  have hpk : ((p : ℕ) : AlgebraicClosure (ZMod q)) ≠ 0 := by
+    intro hz
+    have h1 : q ∣ p :=
+      (CharP.cast_eq_zero_iff (AlgebraicClosure (ZMod q)) q p).mp hz
+    rcases (Nat.Prime.eq_one_or_self_of_dvd Fact.out q h1) with h2 | h2
+    · exact Nat.Prime.one_lt (Fact.out : q.Prime) |>.ne' h2
+    · exact hqp h2
+  have hrank := WeierstrassCurve.p_torsion_rank
+    (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))) hpk
+  exact det_eq_of_conj hrank e halt hnd hconj
 
 set_option warn.sorry false in
 /-- **Frobenius determinant at good primes** (sorry node): away from a

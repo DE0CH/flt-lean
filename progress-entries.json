@@ -205,10 +205,16 @@
     "text": "reduction transfer at good primes (sorry node -- NOS reduction isomorphism; SUB-DECOMPOSITION RECON 2026-07-20): (1) the reduction map on torsion: (x,y) -> (residue x, residue y) through the valuation subring O of the algebraic closure (GoodReduction.lean framework: torsion_abscissa_mem/torsion_ordinate_mem give integrality, so the residues are defined); (2) HOMOMORPHISM property of reduction (the central sub-obstacle: chord-tangent formulas reduce well -- needs the addition-law case analysis with unit denominators, or the formal-group route); (3) injectivity: torsion_abscissa_residue_ne (proven); (4) surjectivity by counting: p_torsion_rank works over any separably closed field with (p : k) != 0, so the reduced curve over F_q-bar also has p^2 torsion points; (5) Frobenius compatibility: globalFrob is Field.absoluteGaloisGroup.map (algebraMap K (adicCompletion)) (adicArithFrob v) -- unwind adicArithFrob to the residue q-power map through the decomposition group; the reduction map intertwines it with frobAlgHom by construction (residue of sigma(x) = Frob(residue x) for sigma in the decomposition group lifting Frobenius). KEY FINDING: adicArithFrob is arithFrobAt-prime of the maximal ideal of IntegralClosure O_v (K_v-alg), with isArithFrobAt_adicArithFrob : IsArithFrobAt O_v Frob_v m -- the predicate gives sigma x = x^q mod m coordinatewise on integral elements, which is EXACTLY the congruence making the residue map intertwine globalFrob with frobAlgHom. Route: work at the completion (map through Field.absoluteGaloisGroup.map (algebraMap Q (adicCompletion)) as in globalFrob), reduce torsion coordinates through the integral closure of O_v, and use IsArithFrobAt for the compatibility; the group-hom property of reduction remains the central sub-obstacle (chord-tangent reduction or formal-group kernel)."
   },
   {
+    "name": "WeilPairing.exists_weilPairing_frobenius",
+    "fullname": "WeilPairing.exists_weilPairing_frobenius",
+    "module": "Fermat.FLT.EllipticCurve.WeilPairing",
+    "text": "the Weil pairing over a finite field, Frobenius-twisted form (sorry node -- the canonical arithmetic input): alternating nondegenerate ZMod p-bilinear pairing on the p-torsion over F_q-bar which the q-power Frobenius scales by q; classically the mu_p-valued Weil pairing (Galois-equivariant, Frobenius acts on roots of unity by the q-th power) read through an identification mu_p = ZMod p. Construction routes: Miller functions/divisors, or the explicit 3-torsion-style resultant formulas, or transport from a characteristic-0 lift"
+  },
+  {
     "name": "WeilPairing.det_frobeniusTorsionEnd",
     "fullname": "WeilPairing.det_frobeniusTorsionEnd",
     "module": "Fermat.FLT.EllipticCurve.WeilPairing",
-    "text": "Frobenius determinant over a finite field (sorry node -- the deg-det relation): the q-power Frobenius on the p-torsion of an elliptic curve over F_q (p != q) has determinant q. Classical routes: Frobenius-Verschiebung composite = [q] plus det-multiplicativity and det([q]) = q^2 with the trace bound; or the Weil pairing over F_q-bar; or point counting #ker(phi - 1) = #E(F_q) with the degree quadratic form"
+    "text": "Frobenius determinant over a finite field (DERIVED 2026-07-20 from the Weil pairing): the q-power Frobenius scales the pairing by q, and det_eq_of_conj (the proven 2-dimensional alternating-form linear algebra) gives det = q; the rank-2 input is p_torsion_rank over the separably closed F_q-bar with (p : F_q-bar) != 0 from p != q."
   },
   {
     "name": "det_galoisRep_globalFrob",
