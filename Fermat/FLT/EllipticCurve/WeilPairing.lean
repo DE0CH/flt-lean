@@ -243,6 +243,43 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
     have h1 : (C • E).Δ ≠ 0 := (C • E).isUnit_Δ.ne_zero
     apply h1
     rw [hmap, WeierstrassCurve.map_Δ, hz, map_zero]
+  obtain ⟨C, W, hmap, hΔ0⟩ := hmodel
+  -- Step 1: the excluded places — the primes dividing the integral
+  -- discriminant, together with `p`
+  set badPrimes : Finset ℕ := W.Δ.natAbs.primeFactors ∪ {p}
+    with hbaddef
+  refine ⟨badPrimes.image (fun r =>
+    if h : r.Prime then h.toHeightOneSpectrumRingOfIntegersRat
+    else Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat), ?_⟩
+  intro q hq hqS
+  haveI : Fact q.Prime := ⟨hq⟩
+  have hqbad : q ∉ badPrimes := by
+    intro hmem
+    apply hqS
+    refine Finset.mem_image.mpr ⟨q, hmem, ?_⟩
+    rw [dif_pos hq]
+  have hqp : q ≠ p := by
+    intro hh
+    exact hqbad (Finset.mem_union_right _ (Finset.mem_singleton.mpr hh))
+  have hqΔ : ¬ ((q : ℤ) ∣ W.Δ) := by
+    intro hdvd
+    apply hqbad
+    refine Finset.mem_union_left _ (Nat.mem_primeFactors.mpr
+      ⟨hq, ?_, ?_⟩)
+    · exact Int.natAbs_dvd_natAbs.mpr (by simpa using hdvd)
+    · exact Int.natAbs_ne_zero.mpr hΔ0
+  -- Step 2: the reduced curve over `𝔽_q` is elliptic
+  set Wbar : WeierstrassCurve (ZMod q) := W.map (Int.castRingHom (ZMod q))
+    with hWbardef
+  have hWbarΔ : Wbar.Δ ≠ 0 := by
+    rw [hWbardef, WeierstrassCurve.map_Δ]
+    intro hzz
+    exact hqΔ ((ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mp hzz)
+  haveI hWbarell : Wbar.IsElliptic :=
+    (WeierstrassCurve.isElliptic_iff _).mpr (isUnit_iff_ne_zero.mpr hWbarΔ)
+  refine ⟨hqp, Wbar, hWbarell, ?_⟩
+  -- Step 3 (sorried): the torsion reduction isomorphism and its
+  -- Frobenius compatibility
   sorry
 
 set_option warn.sorry false in
