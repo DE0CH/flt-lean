@@ -25,6 +25,7 @@ module
 public import Fermat.FLT.EllipticCurve.Torsion
 public import Fermat.FLT.GaloisRepresentation.Chebotarev
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
+public import Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 public import Mathlib.LinearAlgebra.Determinant
 public import Mathlib.NumberTheory.Cyclotomic.CyclotomicCharacter
 
@@ -368,7 +369,7 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
       obtain ⟨y, hy⟩ := IsIntegrallyClosed.isIntegral_iff.mp h2
       exact ⟨y, hy⟩
     · rintro ⟨y, rfl⟩
-      show IsIntegral _ _
+      show _root_.IsIntegral _ _
       refine (isIntegral_algebraMap_iff
         (algebraMap
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
@@ -377,6 +378,65 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
             (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
               hq.toHeightOneSpectrumRingOfIntegersRat))).injective).mpr ?_
       exact isIntegral_algebraMap
+  -- Step 3c-prep 3: integers prime to `q` are units of the completed
+  -- integers (generalizing `isUnit_natCast_adicCompletionIntegers`)
+  have hNatUnit : ∀ m : ℕ, ¬ ((q : ℤ) ∣ (m : ℤ)) →
+      IsUnit ((m : ℕ) :
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) := by
+    intro m hm
+    have hints : (Valued.v).Integers
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat) :=
+      Valuation.valuationSubring.integers _
+    refine hints.isUnit_iff_valuation_eq_one.mpr ?_
+    rw [map_natCast]
+    have h2 := IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation
+      (K := ℚ) (v := hq.toHeightOneSpectrumRingOfIntegersRat)
+      ((m : ℕ) : NumberField.RingOfIntegers ℚ)
+    push_cast at h2
+    rw [h2, show ((m : ℕ) : ℚ) = algebraMap (NumberField.RingOfIntegers ℚ) ℚ
+        ((m : ℕ) : NumberField.RingOfIntegers ℚ) from (map_natCast _ m).symm,
+      IsDedekindDomain.HeightOneSpectrum.valuation_of_algebraMap,
+      IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff]
+    rw [Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal hq]
+    rwa [map_natCast]
+  have hIntUnit : ∀ n : ℤ, ¬ ((q : ℤ) ∣ n) →
+      IsUnit ((n : ℤ) :
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) := by
+    intro n hn
+    have hnat := hNatUnit n.natAbs (by
+      rwa [Int.dvd_natAbs])
+    rcases Int.natAbs_eq n with he | he
+    · rw [he, Int.cast_natCast]
+      exact hnat
+    · rw [he, Int.cast_neg, Int.cast_natCast]
+      exact hnat.neg
+  -- Step 3c-prep 4: the model over the completion is integral with unit
+  -- discriminant, hence minimal with good reduction
+  have hcompZ : (algebraMap
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)).comp
+      (algebraMap ℤ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) =
+      algebraMap ℤ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat) :=
+    Subsingleton.elim _ _
+  haveI hWvInt : WeierstrassCurve.IsIntegral
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (W.map (algebraMap ℤ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) := by
+    refine ⟨⟨W.map (algebraMap ℤ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)), ?_⟩⟩
+    show _ = (W.map _).map _
+    rw [WeierstrassCurve.map_map, hcompZ]
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
