@@ -1049,6 +1049,139 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
               hq.toHeightOneSpectrumRingOfIntegersRat))
           (hredNS x y hxy.1 hxy.2 h.1)
       else 0
+  -- Step 3c-ii-j: computation rules for `redFun`
+  have hred0 : redFun 0 = 0 := rfl
+  have hredSome : ∀ {x y : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))}
+      (h : ((W.map (algebraMap ℤ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Nonsingular
+        x y)
+      (hx : x ∈ localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+      (hy : y ∈ localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat),
+      redFun (WeierstrassCurve.Affine.Point.some x y h) =
+        WeierstrassCurve.Affine.Point.some
+          (IsLocalRing.residue
+            (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+            ⟨x, hx⟩)
+          (IsLocalRing.residue
+            (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+            ⟨y, hy⟩)
+          (hredNS x y hx hy h.1) := by
+    intro x y h hx hy
+    show (if hxy : _ ∧ _ then _ else 0) = _
+    rw [dif_pos ⟨hx, hy⟩]
+  -- membership and residue-commutation for the negation ordinate
+  have hnegYmem : ∀ (x y : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))),
+      x ∈ localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat →
+      y ∈ localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat →
+      ((W.map (algebraMap ℤ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.negY x y ∈
+        localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat := by
+    intro x y hx hy
+    simp only [WeierstrassCurve.Affine.negY, WeierstrassCurve.baseChange,
+      WeierstrassCurve.map_a₁, WeierstrassCurve.map_a₃, eq_intCast,
+      map_intCast]
+    exact sub_mem (sub_mem (neg_mem hy)
+      (mul_mem (intCast_mem _ _) hx)) (intCast_mem _ _)
+  have hnegYres : ∀ (x y : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))
+      (hx : x ∈ localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+      (hy : y ∈ localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat),
+      IsLocalRing.residue
+        (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+        ⟨((W.map (algebraMap ℤ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.negY x y,
+          hnegYmem x y hx hy⟩ =
+      (W.map (algebraMap ℤ (IsLocalRing.ResidueField
+        (localValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat)))).toAffine.negY
+        (IsLocalRing.residue
+          (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+          ⟨x, hx⟩)
+        (IsLocalRing.residue
+          (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+          ⟨y, hy⟩) := by
+    intro x y hx hy
+    have hsub : (⟨((W.map (algebraMap ℤ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.negY x y,
+        hnegYmem x y hx hy⟩ : localValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat) =
+        -⟨y, hy⟩ - ((W.a₁ : ℤ) : localValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat) * ⟨x, hx⟩ -
+          ((W.a₃ : ℤ) : localValuationSubring
+            hq.toHeightOneSpectrumRingOfIntegersRat) := by
+      apply Subtype.ext
+      push_cast
+      simp only [WeierstrassCurve.Affine.negY, WeierstrassCurve.baseChange,
+        WeierstrassCurve.map_a₁, WeierstrassCurve.map_a₃, eq_intCast,
+        map_intCast]
+    rw [hsub]
+    simp only [map_sub, map_neg, map_mul, map_intCast,
+      WeierstrassCurve.Affine.negY, WeierstrassCurve.map_a₁,
+      WeierstrassCurve.map_a₃, eq_intCast]
+  -- Step 3c-ii-k: additivity of `redFun` on `p`-torsion — the zero and
+  -- mutually-opposite cases; the generic slope case is the open frontier
+  have hredAdd : ∀ (P Q : ((W.map (algebraMap ℤ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Point),
+      ((p : ℕ) : ℤ) • P = 0 → ((p : ℕ) : ℤ) • Q = 0 →
+      redFun (P + Q) = redFun P + redFun Q := by
+    intro P Q hP hQ
+    cases P with
+    | zero =>
+      rw [show (WeierstrassCurve.Affine.Point.zero : ((W.map (algebraMap ℤ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Point) = 0
+        from rfl, zero_add, hred0, zero_add]
+    | some x₁ y₁ h₁ =>
+      cases Q with
+      | zero =>
+        rw [show (WeierstrassCurve.Affine.Point.zero : ((W.map (algebraMap ℤ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Point) = 0
+          from rfl, add_zero, hred0, add_zero]
+      | some x₂ y₂ h₂ =>
+        have hx₁ := habs h₁ hP
+        have hy₁ := hord h₁ hP
+        have hx₂ := habs h₂ hQ
+        have hy₂ := hord h₂ hQ
+        by_cases hopp : x₁ = x₂ ∧ y₁ = ((W.map (algebraMap ℤ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.negY x₂ y₂
+        · -- opposite points: both sums vanish
+          rw [WeierstrassCurve.Affine.Point.add_of_Y_eq hopp.1 hopp.2, hred0,
+            hredSome h₁ hx₁ hy₁, hredSome h₂ hx₂ hy₂,
+            WeierstrassCurve.Affine.Point.add_of_Y_eq]
+          · exact congrArg _ (Subtype.ext hopp.1)
+          · rw [← hnegYres x₂ y₂ hx₂ hy₂]
+            exact congrArg _ (Subtype.ext hopp.2)
+        · -- generic case: the slope is integral and the formulas commute
+          -- with the residue (open frontier of the reduction node)
+          sorry
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
