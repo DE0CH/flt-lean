@@ -220,7 +220,59 @@ theorem locallyCompactSpace_intermediate
     (v : ValuativeRel Ω) (hv : @ValuativeExtension k Ω _ _ _ v _)
     (L : IntermediateField k Ω) [FiniteDimensional k L] :
     letI : ValuativeRel L := @ValuativeRel.comap L Ω _ _ v L.val.toRingHom
-    @LocallyCompactSpace L (ValuativeRel.topologicalSpace L) :=
+    @LocallyCompactSpace L (ValuativeRel.topologicalSpace L) := by
+  letI vL : ValuativeRel L :=
+    @ValuativeRel.comap L Ω _ _ v L.val.toRingHom
+  letI tL : TopologicalSpace L := ValuativeRel.topologicalSpace L
+  -- analytic structure on `k` (the LocalField.Basic recipe)
+  letI : UniformSpace k := IsTopologicalAddGroup.rightUniformSpace k
+  haveI : IsUniformAddGroup k := isUniformAddGroup_of_addCommGroup
+  letI : (Valued.v (R := k)).RankOne :=
+    { hom' := IsRankLeOne.nonempty.some.emb (R := k).comp
+        MonoidWithZeroHom.ValueGroup₀.embedding
+      strictMono' := IsRankLeOne.nonempty.some.strictMono.comp
+        MonoidWithZeroHom.ValueGroup₀.embedding_strictMono }
+  letI : NontriviallyNormedField k := Valued.toNontriviallyNormedField _ _
+  haveI : Algebra.IsAlgebraic k Ω := Algebra.IsSeparable.isAlgebraic k Ω
+  -- the two-sided bridge: membership in the integral closure is the
+  -- closed unit ball of the spectral norm
+  have hBmem : ∀ x : Ω, x ∈ integralClosure 𝒪[k] Ω ↔
+      spectralNorm k Ω x ≤ 1 := by
+    intro x
+    constructor
+    · intro hx
+      have hint : IsIntegral 𝒪[k] x := hx
+      rw [spectralNorm,
+        spectralValue_le_one_iff
+          (minpoly.monic (Algebra.IsIntegral.isIntegral x))]
+      intro n
+      rw [minpoly.isIntegrallyClosed_eq_field_fractions' k hint,
+        Polynomial.coeff_map]
+      exact Valued.toNormedField.norm_le_one_iff.mpr
+        ((minpoly 𝒪[k] x).coeff n).2
+    · exact isIntegral_of_spectralNorm_le_one
+  -- the strict version, via multiplicativity of the inverse
+  have hBmem_lt : ∀ x : Ω, x ≠ 0 →
+      (x ∈ integralClosure 𝒪[k] Ω ∧ x⁻¹ ∉ integralClosure 𝒪[k] Ω ↔
+        spectralNorm k Ω x < 1) := by
+    intro x hx0
+    rw [hBmem, hBmem, spectralNorm_inv]
+    constructor
+    · rintro ⟨h1, h2⟩
+      rcases lt_or_eq_of_le h1 with h | h
+      · exact h
+      · exact absurd (by rw [h, inv_one]) h2
+    · intro h
+      refine ⟨le_of_lt h, ?_⟩
+      intro hinv
+      have hpos : 0 < spectralNorm k Ω x :=
+        spectralNorm_zero_lt hx0 (Algebra.IsAlgebraic.isAlgebraic x)
+      exact absurd h (not_lt.mpr ((inv_le_one₀ hpos).mp hinv))
+  -- remaining: the valuative topology of `L` coincides with the spectral
+  -- norm topology (ball correspondence through the strict bridge and
+  -- `valuation_surjective`), under which `L` is a finite-dimensional
+  -- normed `k`-vector space, proper since `k` is — the transport of
+  -- local compactness
   sorry
 
 /-- **Finite subextensions of `Ω` are nonarchimedean local fields**
