@@ -437,6 +437,72 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
         hq.toHeightOneSpectrumRingOfIntegersRat)), ?_⟩⟩
     show _ = (W.map _).map _
     rw [WeierstrassCurve.map_map, hcompZ]
+  -- Step 3c-prep 5: the model has unit discriminant valuation, hence is
+  -- minimal with good reduction
+  have hval1 : (IsDiscreteValuationRing.maximalIdeal
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)).valuation
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (W.map (algebraMap ℤ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).Δ = 1 := by
+    have hΔunit := hIntUnit W.Δ hqΔ
+    have hΔeq : (W.map (algebraMap ℤ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).Δ =
+        algebraMap
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)
+          ((W.Δ : ℤ) :
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)) := by
+      rw [WeierstrassCurve.map_Δ, ← hcompZ]
+      rfl
+    rw [hΔeq]
+    obtain ⟨u, hu⟩ := hΔunit
+    have h1 : (IsDiscreteValuationRing.maximalIdeal
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)).valuation
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+        (algebraMap
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat) (u : _)) *
+        (IsDiscreteValuationRing.maximalIdeal
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)).valuation
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+        (algebraMap
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat) ((u⁻¹ : _ˣ) : _)) =
+        1 := by
+      rw [← map_mul, ← map_mul]
+      norm_cast
+      simp
+    have h2 := IsDedekindDomain.HeightOneSpectrum.valuation_le_one
+      (IsDiscreteValuationRing.maximalIdeal
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))
+      (K := (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) (u : _)
+    have h3 := IsDedekindDomain.HeightOneSpectrum.valuation_le_one
+      (IsDiscreteValuationRing.maximalIdeal
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))
+      (K := (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) ((u⁻¹ : _ˣ) : _)
+    rw [← hu]
+    refine le_antisymm h2 ?_
+    rw [← h1]
+    exact le_trans (mul_le_mul' le_rfl h3) (le_of_eq (mul_one _))
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
