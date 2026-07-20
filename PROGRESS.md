@@ -117,14 +117,20 @@ entries file). To add/remove/annotate a node, edit
                                           (eKv), rho-res residue-hom, algebraicity over ZMod q
                                           (halgZq), IsAlgClosure.equiv identification identA/identZ,
                                           Point.map transport identL, psi refined into the goal.
-                                          REMAINING (single sorry): the Frobenius-compatibility
-                                          equation for all x, psi(galoisRep p (globalFrob q) x) =
-                                          frobeniusTorsionEnd q Wbar p (psi x). Plan: unfold psi on
-                                          a some-point; galoisRep acts by Point.map of the
-                                          automorphism; globalFrob = AbsoluteGaloisGroup.map of
-                                          adicArithFrob through the closure embedding (pointwise-
-                                          commutation lemma Field.absoluteGaloisGroup.lift_map / the
-                                          hiota-device in cyclotomicCharacter_globalFrob at
+                                          PROVEN Frobenius pieces: hfrobmem/hfrobres (arithmetic
+                                          Frobenius stabilizes the subring and is the q-power map on
+                                          residues, via isArithFrobAt_adicArithFrob + residue-
+                                          cardinality + unit-descent), frobZ (q-power Frobenius as
+                                          Z-AlgHom), hredfrob (redFun intertwines Frob with frobZ on
+                                          p-torsion points). REMAINING (single sorry): the
+                                          Frobenius-compatibility equation for all x, psi(galoisRep
+                                          p (globalFrob q) x) = frobeniusTorsionEnd q Wbar p (psi
+                                          x). Plan: unfold psi on a some-point; galoisRep acts by
+                                          Point.map of the automorphism; globalFrob =
+                                          AbsoluteGaloisGroup.map of adicArithFrob through the
+                                          closure embedding (pointwise-commutation lemma
+                                          Field.absoluteGaloisGroup.lift_map / the hiota-device in
+                                          cyclotomicCharacter_globalFrob at
                                           Chebotarev.lean:263-340); isArithFrobAt_adicArithFrob
                                           gives sigma-z = z^q mod max-ideal on localValuationSubring
                                           elements, with exponent rewritten to q by
@@ -219,8 +225,13 @@ entries file). To add/remove/annotate a node, edit
                                   proven IsAlgClosed), redL, char-q legs, kappa_v = ZMod q (eKv),
                                   rho-res residue-hom, algebraicity over ZMod q (halgZq),
                                   IsAlgClosure.equiv identification identA/identZ, Point.map
-                                  transport identL, psi refined into the goal. REMAINING (single
-                                  sorry): the Frobenius-compatibility equation for all x,
+                                  transport identL, psi refined into the goal. PROVEN Frobenius
+                                  pieces: hfrobmem/hfrobres (arithmetic Frobenius stabilizes the
+                                  subring and is the q-power map on residues, via
+                                  isArithFrobAt_adicArithFrob + residue-cardinality + unit-descent),
+                                  frobZ (q-power Frobenius as Z-AlgHom), hredfrob (redFun
+                                  intertwines Frob with frobZ on p-torsion points). REMAINING
+                                  (single sorry): the Frobenius-compatibility equation for all x,
                                   psi(galoisRep p (globalFrob q) x) = frobeniusTorsionEnd q Wbar p
                                   (psi x). Plan: unfold psi on a some-point; galoisRep acts by
                                   Point.map of the automorphism; globalFrob =
