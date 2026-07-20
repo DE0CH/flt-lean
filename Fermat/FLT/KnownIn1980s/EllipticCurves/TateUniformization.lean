@@ -8616,6 +8616,166 @@ theorem exists_annulus_bilateralX_eq_of_lt_one (q₀ : k) (hq0 : q₀ ≠ 0)
       refine le_trans (Valuation.map_sub _ _ _) (max_le ?_ ?_)
       · exact valuation_tsum_le (hCu.sub hCv) _ htermB1
       · exact valuation_tsum_le (hDu.sub hDv) _ htermB2
+    -- the iteration `H u = (x+y) - (S(u) - u)` and its orbit
+    have hvxy : valuation k (x + y) = valuation k y := by
+      rw [show x + y = y + x from by ring]
+      exact hyx
+    set H : k → k := fun u =>
+      (x + y) - ((bilateralX u q₀ + bilateralY u q₀) - u) with hHdef
+    have hHshell : ∀ u : k, valuation k u = valuation k y →
+        valuation k (H u) = valuation k y := by
+      intro u hu
+      simp only [hHdef]
+      have he : valuation k ((x + y) -
+          ((bilateralX u q₀ + bilateralY u q₀) - u)) =
+          valuation k (-(((bilateralX u q₀ + bilateralY u q₀) - u) -
+            (x + y))) := by
+        congr 1
+        ring
+      rw [he, Valuation.map_neg,
+        (valuation k).map_sub_eq_of_lt_right
+          (by
+            rw [hvxy]
+            exact lt_of_le_of_lt (hGBval u hu) hqlty)]
+      exact hvxy
+    have hHdiff : ∀ u v : k, valuation k u = valuation k y →
+        valuation k v = valuation k y →
+        valuation k (H u - H v) ≤
+          valuation k y * valuation k (u - v) := by
+      intro u v hu hv
+      have he : H u - H v =
+          -((((bilateralX u q₀ + bilateralY u q₀) - u)) -
+            (((bilateralX v q₀ + bilateralY v q₀) - v))) := by
+        simp only [hHdef]
+        ring
+      rw [he, Valuation.map_neg]
+      exact hGBlip u v hu hv
+    set seqB : ℕ → k := fun n => H^[n] (x + y) with hseqBdef
+    have hseqB_zero : seqB 0 = x + y := rfl
+    have hseqB_succ : ∀ n, seqB (n + 1) = H (seqB n) := fun n =>
+      Function.iterate_succ_apply' H n _
+    have hseqB_shell : ∀ n, valuation k (seqB n) = valuation k y := by
+      intro n
+      induction n with
+      | zero => exact hvxy
+      | succ n ih =>
+        rw [hseqB_succ n]
+        exact hHshell _ ih
+    have hdiffB : ∀ n, valuation k (seqB (n + 1) - seqB n) ≤
+        valuation k q₀ * valuation k y ^ n := by
+      intro n
+      induction n with
+      | zero =>
+        rw [hseqB_succ 0, hseqB_zero, pow_zero, mul_one]
+        have he : H (x + y) - (x + y) =
+            -((bilateralX (x + y) q₀ + bilateralY (x + y) q₀) -
+              (x + y)) := by
+          simp only [hHdef]
+          ring
+        rw [he, Valuation.map_neg]
+        exact hGBval (x + y) hvxy
+      | succ n ih =>
+        rw [hseqB_succ (n + 1), hseqB_succ n]
+        calc valuation k (H (H (seqB n)) - H (seqB n)) ≤
+            valuation k y * valuation k (H (seqB n) - seqB n) :=
+              hHdiff _ _ (hHshell _ (hseqB_shell n)) (hseqB_shell n)
+          _ ≤ valuation k y * (valuation k q₀ * valuation k y ^ n) := by
+              refine mul_le_mul' le_rfl ?_
+              have h5 := ih
+              rwa [hseqB_succ n] at h5
+          _ = valuation k q₀ * valuation k y ^ (n + 1) := by
+              rw [pow_succ]
+              rw [mul_comm (valuation k y), mul_assoc,
+                mul_comm (valuation k y ^ n)]
+    -- rank-one analytic structure (the LocalField recipe)
+    letI : UniformSpace k := IsTopologicalAddGroup.rightUniformSpace k
+    haveI : IsUniformAddGroup k := isUniformAddGroup_of_addCommGroup
+    letI : (Valued.v (R := k)).RankOne :=
+      { hom' := IsRankLeOne.nonempty.some.emb (R := k).comp
+          MonoidWithZeroHom.ValueGroup₀.embedding
+        strictMono' := IsRankLeOne.nonempty.some.strictMono.comp
+          MonoidWithZeroHom.ValueGroup₀.embedding_strictMono }
+    letI : NontriviallyNormedField k :=
+      Valued.toNontriviallyNormedField _ _
+    have hbridge_lt : ∀ z c : k, valuation k z < valuation k c ↔
+        ‖z‖ < ‖c‖ :=
+      fun z c => (Valued.toNormedField.norm_lt_iff).symm
+    have hbridge_le : ∀ z c : k, valuation k z ≤ valuation k c ↔
+        ‖z‖ ≤ ‖c‖ :=
+      fun z c => (Valued.toNormedField.norm_le_iff).symm
+    have hcauchy : CauchySeq seqB := by
+      refine cauchySeq_of_le_geometric ‖y‖ ‖q₀‖ ?_ ?_
+      · rw [← norm_one (α := k)]
+        exact (hbridge_lt _ _).mp (by rw [map_one]; exact hylt1)
+      · intro n
+        rw [dist_eq_norm]
+        have h1 : valuation k (seqB n - seqB (n + 1)) ≤
+            valuation k (q₀ * y ^ n) := by
+          rw [map_mul, map_pow,
+            show seqB n - seqB (n + 1) = -(seqB (n + 1) - seqB n) from by
+              ring, Valuation.map_neg]
+          exact hdiffB n
+        calc ‖seqB n - seqB (n + 1)‖ ≤ ‖q₀ * y ^ n‖ :=
+            (hbridge_le _ _).mp h1
+          _ = ‖q₀‖ * ‖y‖ ^ n := by rw [norm_mul, norm_pow]
+    obtain ⟨ustar, hus⟩ := cauchySeq_tendsto_of_complete hcauchy
+    have hconv : ∀ c : k, c ≠ 0 → ∀ᶠ n in Filter.atTop,
+        valuation k (seqB n - ustar) < valuation k c := by
+      intro c hc
+      obtain ⟨N, hN⟩ := Metric.tendsto_atTop.mp hus ‖c‖
+        (norm_pos_iff.mpr hc)
+      refine Filter.eventually_atTop.mpr ⟨N, fun n hn => ?_⟩
+      have h2 := hN n hn
+      rw [dist_eq_norm] at h2
+      exact (hbridge_lt _ _).mpr h2
+    have hustar_val : valuation k ustar = valuation k y := by
+      obtain ⟨n, hn⟩ := (hconv y hy0).exists
+      rw [← hseqB_shell n] at hn
+      have he : valuation k ustar =
+          valuation k (-((seqB n - ustar) - seqB n)) := by
+        congr 1
+        ring
+      rw [he, Valuation.map_neg,
+        (valuation k).map_sub_eq_of_lt_right hn]
+      exact hseqB_shell n
+    have hfix : H ustar = ustar := by
+      by_contra hne
+      have hΔ0 : H ustar - ustar ≠ 0 := sub_ne_zero_of_ne hne
+      obtain ⟨N, hN⟩ := Filter.eventually_atTop.mp
+        (hconv (H ustar - ustar) hΔ0)
+      have h1 : valuation k (seqB N - ustar) <
+          valuation k (H ustar - ustar) := hN N le_rfl
+      have h2 : valuation k (seqB (N + 1) - ustar) <
+          valuation k (H ustar - ustar) := hN (N + 1) (Nat.le_succ N)
+      have h3 : valuation k (H ustar - seqB (N + 1)) <
+          valuation k (H ustar - ustar) := by
+        rw [hseqB_succ N]
+        calc valuation k (H ustar - H (seqB N))
+            ≤ valuation k y * valuation k (ustar - seqB N) :=
+              hHdiff _ _ hustar_val (hseqB_shell N)
+          _ ≤ 1 * valuation k (ustar - seqB N) :=
+              mul_le_mul_left (le_of_lt hylt1) _
+          _ = valuation k (ustar - seqB N) := one_mul _
+          _ = valuation k (seqB N - ustar) := by
+              rw [show ustar - seqB N = -(seqB N - ustar) from by ring,
+                Valuation.map_neg]
+          _ < valuation k (H ustar - ustar) := h1
+      have h4 : valuation k (H ustar - ustar) <
+          valuation k (H ustar - ustar) := by
+        calc valuation k (H ustar - ustar)
+            = valuation k ((H ustar - seqB (N + 1)) +
+                (seqB (N + 1) - ustar)) := by
+              congr 1
+              ring
+          _ ≤ max (valuation k (H ustar - seqB (N + 1)))
+              (valuation k (seqB (N + 1) - ustar)) :=
+              Valuation.map_add _ _ _
+          _ < valuation k (H ustar - ustar) := max_lt h3 h2
+      exact absurd h4 (lt_irrefl _)
+    have hsum_eq : bilateralX ustar q₀ + bilateralY ustar q₀ = x + y := by
+      have h1 := hfix
+      simp only [hHdef] at h1
+      linear_combination -h1
     sorry
 
 /-- **`x`-surjectivity onto the annulus** (DERIVED 2026-07-20 by case
