@@ -2745,86 +2745,57 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
       (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
         (NumberField.RingOfIntegers ℚ) ℚ
         hq.toHeightOneSpectrumRingOfIntegersRat)) (Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat) z
-  -- Step 3c-v-e: assembly — reduce to a value-level equation and
-  -- compute both sides on the point
+  -- Step 3c-v-e: assembly — destructure the torsion element, convert
+  -- the Galois image pointwise, and compute both value chains
   intro x
-  refine Subtype.ext ?_
-  -- the Galois action is the coordinatewise automorphism
-  have hgalval : (E.galoisRep p hppos (GaloisRepresentation.globalFrob
-      hq.toHeightOneSpectrumRingOfIntegersRat) x).1 =
-      WeierstrassCurve.Affine.Point.map (W' := E) (S := ℚ)
-        (AlgEquiv.toAlgHom (R := ℚ) (A₁ := AlgebraicClosure ℚ)
-          (A₂ := AlgebraicClosure ℚ) (GaloisRepresentation.globalFrob
-          hq.toHeightOneSpectrumRingOfIntegersRat))
-        x.1 := rfl
-  -- the left side unfolds to the composite of the layer values
-  have hLv : ((((ψ₀.trans τ).trans redL).trans identL)
-      (E.galoisRep p hppos (GaloisRepresentation.globalFrob
-        hq.toHeightOneSpectrumRingOfIntegersRat) x)).1 =
-      (WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm) (imap
+  obtain ⟨P, hPmem⟩ := x
+  have hPtor : ((p : ℕ) : ℤ) • P = 0 :=
+    (Submodule.mem_torsionBy_iff _ _).mp hPmem
+  cases P with
+  | zero =>
+    -- the zero-value computes through every layer
+    refine Subtype.ext ?_
+    have h1 : (E.galoisRep p hppos (GaloisRepresentation.globalFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+        ⟨WeierstrassCurve.Affine.Point.zero, hPmem⟩) =
+        ⟨WeierstrassCurve.Affine.Point.zero, hPmem⟩ := Subtype.ext rfl
+    rw [h1]
+    show (WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm) (imap
         ((WeierstrassCurve.Affine.Point.equivOfEq hEq1)
         (edn.symm (redFun (eup (Pmap (hmodelPt
-        ((E.galoisRep p hppos (GaloisRepresentation.globalFrob
-          hq.toHeightOneSpectrumRingOfIntegersRat) x)).1))))))) := rfl
-  -- the right side is the coordinatewise `q`-power Frobenius of the
-  -- composite value
-  have hRv : ((frobeniusTorsionEnd q Wbar p)
-      ((((ψ₀.trans τ).trans redL).trans identL) x)).1 =
+          WeierstrassCurve.Affine.Point.zero))))))) =
       WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
         (frobAlgHom q)
         ((WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm) (imap
         ((WeierstrassCurve.Affine.Point.equivOfEq hEq1)
-        (edn.symm (redFun (eup (Pmap (hmodelPt x.1)))))))) := rfl
-  rw [hLv, hRv, hgalval]
-  -- the point-level key equation, by cases on the point
-  have hkey : ∀ (P : ((E.map (algebraMap ℚ
-      (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).toAffine.Point),
-      ((p : ℕ) : ℤ) • P = 0 →
-      (WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm) (imap
-        ((WeierstrassCurve.Affine.Point.equivOfEq hEq1)
         (edn.symm (redFun (eup (Pmap (hmodelPt
-        (WeierstrassCurve.Affine.Point.map (W' := E) (S := ℚ)
-          (AlgEquiv.toAlgHom (R := ℚ) (A₁ := AlgebraicClosure ℚ)
-            (A₂ := AlgebraicClosure ℚ) (GaloisRepresentation.globalFrob
-            hq.toHeightOneSpectrumRingOfIntegersRat)) P)))))))) =
-      WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
-        (frobAlgHom q)
-        ((WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm) (imap
-        ((WeierstrassCurve.Affine.Point.equivOfEq hEq1)
-        (edn.symm (redFun (eup (Pmap (hmodelPt P)))))))) := by
-    intro P hP
-    cases P with
-    | zero =>
-      have h1 : WeierstrassCurve.Affine.Point.map (W' := E) (S := ℚ)
-          (AlgEquiv.toAlgHom (R := ℚ) (A₁ := AlgebraicClosure ℚ)
-            (A₂ := AlgebraicClosure ℚ) (GaloisRepresentation.globalFrob
-            hq.toHeightOneSpectrumRingOfIntegersRat))
-          (0 : ((E.map (algebraMap ℚ
-            (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).toAffine.Point) =
-          (0 : ((E.map (algebraMap ℚ
-            (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).toAffine.Point) :=
-        map_zero _
-      have h2 : WeierstrassCurve.Affine.Point.map (W' := Wbar)
-          (S := ZMod q) (frobAlgHom q)
-          (0 : ((Wbar.map (algebraMap (ZMod q)
-            (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure
-            (ZMod q))).toAffine.Point) = 0 := map_zero _
-      rw [show (WeierstrassCurve.Affine.Point.zero : ((E.map (algebraMap ℚ
-        (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).toAffine.Point) = 0
-        from rfl, h1]
-      rw [map_zero hmodelPt]
-      rw [map_zero Pmap]
-      rw [map_zero eup]
-      rw [hred0]
-      rw [map_zero edn.symm]
-      rw [map_zero (WeierstrassCurve.Affine.Point.equivOfEq hEq1)]
-      rw [map_zero imap]
-      rw [map_zero (WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm)]
-      rw [h2]
+          WeierstrassCurve.Affine.Point.zero))))))))
+    have h0 : (WeierstrassCurve.Affine.Point.zero : ((E.map (algebraMap ℚ
+        (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).toAffine.Point) = 0 :=
       rfl
-    | some a b hab =>
-      sorry
-  exact hkey x.1 ((Submodule.mem_torsionBy_iff _ _).mp x.2)
+    rw [h0, map_zero hmodelPt, map_zero Pmap, map_zero eup, hred0,
+      map_zero edn.symm,
+      map_zero (WeierstrassCurve.Affine.Point.equivOfEq hEq1),
+      map_zero imap,
+      map_zero (WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm)]
+    exact (map_zero (WeierstrassCurve.Affine.Point.map (W' := Wbar)
+      (S := ZMod q) (frobAlgHom q))).symm
+  | some a b hab =>
+    -- convert the Galois image to its coordinatewise form
+    obtain ⟨hns1, hm1, hgx⟩ : ∃ h' m',
+        (E.galoisRep p hppos (GaloisRepresentation.globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+          ⟨WeierstrassCurve.Affine.Point.some a b hab, hPmem⟩) =
+        ⟨WeierstrassCurve.Affine.Point.some
+          (GaloisRepresentation.globalFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat a)
+          (GaloisRepresentation.globalFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat b) h', m'⟩ :=
+      ⟨_, _, Subtype.ext rfl⟩
+    rw [hgx]
+    refine Subtype.ext ?_
+    sorry
+
 
 set_option warn.sorry false in
 /-- **The Weil pairing over a finite field, Frobenius-twisted form**
