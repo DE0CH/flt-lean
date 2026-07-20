@@ -119,21 +119,21 @@ entries file). To add/remove/annotate a node, edit
                                           theorems), hintmem (integrally closed), hACres (residue
                                           field of localValuationSubring IsAlgClosed via monic lift
                                           + root upstairs + integrality + residue root). Odd p
-                                          threaded. REMAINING (2 sorries in file): (a) outer 3c
-                                          sorry: p^2-count downstairs (card_torsionBy over the
-                                          residue field, IsSepClosed from hACres), package redFun as
-                                          ZMod p-equiv (AddEquiv.ofBijective via count + hredInj,
-                                          ZMod.map_smul), identify
-                                          ResidueField(localValuationSubring) with AlgebraicClosure
-                                          (ZMod q) (CharP q via q in max ideal through h-O; algebra
-                                          ZMod q; algebraic: every residue is residue of an O_v-
-                                          integral element, monic poly descends through kappa_v =
-                                          F_q by card; IsAlgClosure.equiv), transport
-                                          frobeniusTorsionEnd (Frobenius commutes with ring homs),
-                                          Frobenius leg via isArithFrobAt_adicArithFrob on
-                                          coordinates (sigma x = x^q mod max ideal; reduced points
-                                          match; cyclotomicCharacter_globalFrob template); (b)
-                                          exists_weilPairing_frobenius (separate node).
+                                          threaded. ALSO PROVEN: hcardRes (p^2 downstairs),
+                                          redE/redL (the ZMod p-linear reduction equivalence,
+                                          bijective by counting),
+                                          hqNotUnit/hqZeroRes/hCharRes/hCharKv (both residue fields
+                                          have char q). REMAINING (2 sorries in file): (a) outer 3c
+                                          sorry: identify ResidueField(localValuationSubring) with
+                                          AlgebraicClosure (ZMod q) (CharP q via q in max ideal
+                                          through h-O; algebra ZMod q; algebraic: every residue is
+                                          residue of an O_v-integral element, monic poly descends
+                                          through kappa_v = F_q by card; IsAlgClosure.equiv),
+                                          transport frobeniusTorsionEnd (Frobenius commutes with
+                                          ring homs), Frobenius leg via isArithFrobAt_adicArithFrob
+                                          on coordinates (sigma x = x^q mod max ideal; reduced
+                                          points match; cyclotomicCharacter_globalFrob template);
+                                          (b) exists_weilPairing_frobenius (separate node).
                                         - ✅· `WeilPairing.det_frobeniusTorsionEnd` — Frobenius determinant over a finite field (DERIVED
                                           2026-07-20 from the Weil pairing): the q-power Frobenius
                                           scales the pairing by q, and det_eq_of_conj (the proven
@@ -219,12 +219,12 @@ entries file). To add/remove/annotate a node, edit
                                   residue-injectivity theorems), hintmem (integrally closed), hACres
                                   (residue field of localValuationSubring IsAlgClosed via monic lift
                                   + root upstairs + integrality + residue root). Odd p threaded.
-                                  REMAINING (2 sorries in file): (a) outer 3c sorry: p^2-count
-                                  downstairs (card_torsionBy over the residue field, IsSepClosed
-                                  from hACres), package redFun as ZMod p-equiv (AddEquiv.ofBijective
-                                  via count + hredInj, ZMod.map_smul), identify
-                                  ResidueField(localValuationSubring) with AlgebraicClosure (ZMod q)
-                                  (CharP q via q in max ideal through h-O; algebra ZMod q;
+                                  ALSO PROVEN: hcardRes (p^2 downstairs), redE/redL (the ZMod
+                                  p-linear reduction equivalence, bijective by counting),
+                                  hqNotUnit/hqZeroRes/hCharRes/hCharKv (both residue fields have
+                                  char q). REMAINING (2 sorries in file): (a) outer 3c sorry:
+                                  identify ResidueField(localValuationSubring) with AlgebraicClosure
+                                  (ZMod q) (CharP q via q in max ideal through h-O; algebra ZMod q;
                                   algebraic: every residue is residue of an O_v-integral element,
                                   monic poly descends through kappa_v = F_q by card;
                                   IsAlgClosure.equiv), transport frobeniusTorsionEnd (Frobenius
