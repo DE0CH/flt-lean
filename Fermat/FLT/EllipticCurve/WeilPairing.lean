@@ -2558,6 +2558,94 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
   -- Step 3c-iv: assemble the equivalence and reduce the node to the
   -- Frobenius-compatibility equation
   refine ⟨(((ψ₀.trans τ).trans redL).trans identL), ?_⟩
+  -- Step 3c-v-a: the arithmetic Frobenius stabilizes the local
+  -- valuation subring, and its residue action is the `q`-power map
+  have hfrobmem : ∀ z : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)), z ∈ (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) → (Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat) z ∈ (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) :=
+    fun z hz => IsIntegral.map
+      (((Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat)).toAlgHom.restrictScalars (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) (hz : IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) z)
+  have hfrobres : ∀ (z : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) (hz : z ∈ (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)),
+      IsLocalRing.residue (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) ⟨(Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat) z, hfrobmem z hz⟩ =
+      (IsLocalRing.residue (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) ⟨z, hz⟩) ^ q := by
+    intro z hz
+    have harith := Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob
+      (v := hq.toHeightOneSpectrumRingOfIntegersRat)
+    have hcardq :=
+      GaloisRepresentation.natCard_residue_quotient_toHeightOneSpectrum hq
+    have hc := harith (⟨z, hz⟩ : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))
+    rw [hcardq] at hc
+    -- name the congruence subject abstractly (its value is the
+    -- Frobenius difference)
+    obtain ⟨dic, hdicval, hdicmem⟩ : ∃ dic : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)),
+        (dic.1 = (Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat) z - z ^ q) ∧
+        dic ∈ IsLocalRing.maximalIdeal (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) :=
+      ⟨_, rfl, hc⟩
+    have hdval : ((⟨(Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat) z, hfrobmem z hz⟩ - ⟨z, hz⟩ ^ q : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) :
+        (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) = (Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat) z - z ^ q := by
+      push_cast
+      rfl
+    -- the difference is not a unit of the local subring (same carrier
+    -- as the integral closure)
+    have hdnu : ¬ IsUnit (⟨(Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat) z, hfrobmem z hz⟩ - ⟨z, hz⟩ ^ q :
+        (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) := by
+      intro hu
+      obtain ⟨u, hu'⟩ := hu
+      have hicnu : ¬ IsUnit dic :=
+        (IsLocalRing.mem_maximalIdeal _).mp hdicmem
+      apply hicnu
+      have hinvmem : (((u⁻¹ : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)ˣ) : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) ∈
+          integralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) :=
+        ((u⁻¹ : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)ˣ) : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)).2
+      refine isUnit_iff_exists.mpr
+        ⟨⟨((u⁻¹ : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)ˣ) : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)), hinvmem⟩, ?_, ?_⟩
+      · apply Subtype.ext
+        show dic.1 * (((u⁻¹ : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)ˣ) : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) = 1
+        rw [hdicval, ← hdval]
+        have hmul := u.mul_inv
+        rw [hu'] at hmul
+        exact_mod_cast congrArg (fun w : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) => (w : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))) hmul
+      · apply Subtype.ext
+        show (((u⁻¹ : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)ˣ) : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) * dic.1 = 1
+        rw [hdicval, ← hdval]
+        have hmul := u.inv_mul
+        rw [hu'] at hmul
+        exact_mod_cast congrArg (fun w : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) => (w : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))) hmul
+    -- hence the residues agree
+    have hd0 : IsLocalRing.residue (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+        (⟨(Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat) z, hfrobmem z hz⟩ - ⟨z, hz⟩ ^ q) = 0 :=
+      (Ideal.Quotient.eq_zero_iff_mem).mpr
+        ((IsLocalRing.mem_maximalIdeal _).mpr hdnu)
+    rw [map_sub, map_pow, sub_eq_zero] at hd0
+    exact hd0
   -- Step 3c-v (sorried): Frobenius compatibility — the global Frobenius
   -- acts on reduced torsion as the `q`-power Frobenius
   -- (`isArithFrobAt_adicArithFrob` on coordinates)
