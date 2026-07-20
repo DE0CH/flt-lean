@@ -110,7 +110,29 @@ theorem WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel
       (∀ (σ : Ω ≃ₐ[k] Ω) (u : Ωˣ),
         WeierstrassCurve.Affine.Point.map (W' := tateCurve ((q : k) : k))
             σ.toAlgHom (φ (Additive.ofMul u)) =
-          φ (Additive.ofMul (Units.map σ.toAlgHom.toRingHom.toMonoidHom u))) :=
+          φ (Additive.ofMul (Units.map σ.toAlgHom.toRingHom.toMonoidHom u))) := by
+  -- The naturality of the fundamental-annulus bilateral coordinates under a
+  -- valuative extension of nonarchimedean local fields (PROVEN in
+  -- `TateUniformization.lean`: `coeffRingEval_map`, `evalA_XA_map`,
+  -- `evalA_YA_map`, `bilateralX_map`, `bilateralY_map`), packaged as the
+  -- coordinate-pair fact the gluing needs to check well-definedness of the
+  -- glued point map independently of the chosen finite subextension.
+  have hnat : ∀ {l : Type uΩ} [Field l] [ValuativeRel l] [TopologicalSpace l]
+      [IsNonarchimedeanLocalField l] [CharZero l] [Algebra k l]
+      [ValuativeExtension k l] (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+      (hu : valuation k u₀ ≤ 1) (hq1 : valuation k q₀ < 1)
+      (hqu : valuation k q₀ < valuation k u₀)
+      (h0' : algebraMap k l u₀ ≠ 0) (h1' : algebraMap k l u₀ ≠ 1)
+      (hu' : valuation l (algebraMap k l u₀) ≤ 1)
+      (hq1' : valuation l (algebraMap k l q₀) < 1)
+      (hqu' : valuation l (algebraMap k l q₀) < valuation l (algebraMap k l u₀)),
+      algebraMap k l (TateCurve.bilateralX u₀ q₀) =
+        TateCurve.bilateralX (algebraMap k l u₀) (algebraMap k l q₀) ∧
+      algebraMap k l (TateCurve.bilateralY u₀ q₀) =
+        TateCurve.bilateralY (algebraMap k l u₀) (algebraMap k l q₀) :=
+    fun {l} _ _ _ _ _ _ _ u₀ q₀ h0 h1 hu hq1 hqu h0' h1' hu' hq1' hqu' =>
+      ⟨TateCurve.bilateralX_map u₀ q₀ h0 h1 hu hq1 hqu h0' h1' hu' hq1' hqu',
+       TateCurve.bilateralY_map u₀ q₀ h0 h1 hu hq1 hqu h0' h1' hu' hq1' hqu'⟩
   sorry
 
 /-- **The Tate-curve uniformising homomorphism over a separable closure**

@@ -168,7 +168,7 @@ entries file). To add/remove/annotate a node, edit
                                                                       1, dispatching to exists_annul
                                                                       us_bilateralX_eq_of_one_le /
                                                                       _of_lt_one).
-                                                                        - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component
+                                                                        - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component
                                                                           x-surjectivity (sorry node,
                                                                           |x| ≥ 1): (x,y) lies in the
                                                                           formal group of E_q (Silverman
@@ -185,7 +185,7 @@ entries file). To add/remove/annotate a node, edit
                                                                           on ℤ[[q]]-coefficients, or
                                                                           direct fixed-point iteration
                                                                           u_{n+1} = x(1-u_n)²).
-                                                                        - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
+                                                                        - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
                                                                           x-surjectivity (sorry node,
                                                                           |x| < 1): SILVERMAN §V.4 READ
                                                                           (2026-07-20,
@@ -234,7 +234,7 @@ entries file). To add/remove/annotate a node, edit
                                                                           whether TateSepClosure’s
                                                                           Surjective-φ interface can be
                                                                           weakened accordingly.
-                                                            - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node):
+                                                            - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node):
                                                               GIVEN the finite-level canonical
                                                               uniformisation lˣ/q^ℤ ≃+ E_q(l) with
                                                               underlying pointMapQuot for every NALF
@@ -247,7 +247,47 @@ entries file). To add/remove/annotate a node, edit
                                                               σ-twists by naturality of the
                                                               universal series, and
                                                               kernel/surjectivity/equivariance pass
-                                                              to the colimit.
+                                                              to the colimit. PROGRESS (2026-07-20):
+                                                              the naturality chain feeding this
+                                                              gluing (coeffRingEval_map/evalA_XA_map
+                                                              /evalA_YA_map/bilateralX_map/bilateral
+                                                              Y_map, all PROVEN in
+                                                              TateUniformization.lean) is now wired
+                                                              in as a real `have` (hnat) inside this
+                                                              theorem's proof, packaging the
+                                                              bilateral-coordinate naturality as an
+                                                              (X,Y) pair. REMAINING for the actual
+                                                              gluing: (1) tateCurve_baseChange —
+                                                              (tateCurve q₀).map (algebraMap k l) =
+                                                              tateCurve (algebraMap k l q₀) (NOT yet
+                                                              proven anywhere; needed to type the
+                                                              WeierstrassCurve.Affine.Point.map used
+                                                              in the final φ), quick from
+                                                              TateCurve.evalInt_map applied to
+                                                              tateA₄_eq_evalInt/tateA₆_eq_evalInt;
+                                                              (2) naturality of pointMap itself (not
+                                                              just bilateralX/Y): reduce an
+                                                              arbitrary u to its annulus
+                                                              representative via
+                                                              exists_zpow_mul_mem_annulus, show the
+                                                              SAME exponent works after mapping
+                                                              through algebraMap k l (valuation
+                                                              membership transfers via
+                                                              mapValueGroupWithZero +
+                                                              annulus_exponent_unique gives
+                                                              uniqueness), then apply hnat; (3) the
+                                                              colimit construction: every element of
+                                                              Ωˣ / every point of E_q(Ω) lies in a
+                                                              finite subextension l/k of Ω/k
+                                                              (mathlib: IsAlgebraic elements lie in
+                                                              finite subextensions — search
+                                                              IntermediateField/Algebra.IsAlgebraic
+                                                              API); define φ via the chosen l and
+                                                              hfin, prove independence of the choice
+                                                              using pointMap naturality from (2);
+                                                              surjectivity/kernel/equivariance
+                                                              descend from the finite-level
+                                                              properties.
                                             - ✅· `WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic` — the nonsplit half of the unipotence statement,
                                               assembled from the LOCAL nonsplit node
                                               `tate_inertia_unipotent_of_nonsplit` by the proven
@@ -330,7 +370,7 @@ entries file). To add/remove/annotate a node, edit
                                                                           1, dispatching to exists_annul
                                                                           us_bilateralX_eq_of_one_le /
                                                                           _of_lt_one).
-                                                                            - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component
+                                                                            - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component
                                                                               x-surjectivity (sorry node,
                                                                               |x| ≥ 1): (x,y) lies in the
                                                                               formal group of E_q (Silverman
@@ -347,7 +387,7 @@ entries file). To add/remove/annotate a node, edit
                                                                               on ℤ[[q]]-coefficients, or
                                                                               direct fixed-point iteration
                                                                               u_{n+1} = x(1-u_n)²).
-                                                                            - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
+                                                                            - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
                                                                               x-surjectivity (sorry node,
                                                                               |x| < 1): SILVERMAN §V.4 READ
                                                                               (2026-07-20,
@@ -396,7 +436,7 @@ entries file). To add/remove/annotate a node, edit
                                                                               whether TateSepClosure’s
                                                                               Surjective-φ interface can be
                                                                               weakened accordingly.
-                                                                - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry
+                                                                - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry
                                                                   node): GIVEN the finite-level
                                                                   canonical uniformisation lˣ/q^ℤ ≃+
                                                                   E_q(l) with underlying
@@ -411,7 +451,51 @@ entries file). To add/remove/annotate a node, edit
                                                                   σ-twists by naturality of the
                                                                   universal series, and
                                                                   kernel/surjectivity/equivariance
-                                                                  pass to the colimit.
+                                                                  pass to the colimit. PROGRESS
+                                                                  (2026-07-20): the naturality chain
+                                                                  feeding this gluing (coeffRingEval
+                                                                  _map/evalA_XA_map/evalA_YA_map/bil
+                                                                  ateralX_map/bilateralY_map, all
+                                                                  PROVEN in TateUniformization.lean)
+                                                                  is now wired in as a real `have`
+                                                                  (hnat) inside this theorem's
+                                                                  proof, packaging the bilateral-
+                                                                  coordinate naturality as an (X,Y)
+                                                                  pair. REMAINING for the actual
+                                                                  gluing: (1) tateCurve_baseChange —
+                                                                  (tateCurve q₀).map (algebraMap k
+                                                                  l) = tateCurve (algebraMap k l q₀)
+                                                                  (NOT yet proven anywhere; needed
+                                                                  to type the
+                                                                  WeierstrassCurve.Affine.Point.map
+                                                                  used in the final φ), quick from
+                                                                  TateCurve.evalInt_map applied to t
+                                                                  ateA₄_eq_evalInt/tateA₆_eq_evalInt
+                                                                  ; (2) naturality of pointMap
+                                                                  itself (not just bilateralX/Y):
+                                                                  reduce an arbitrary u to its
+                                                                  annulus representative via
+                                                                  exists_zpow_mul_mem_annulus, show
+                                                                  the SAME exponent works after
+                                                                  mapping through algebraMap k l
+                                                                  (valuation membership transfers
+                                                                  via mapValueGroupWithZero +
+                                                                  annulus_exponent_unique gives
+                                                                  uniqueness), then apply hnat; (3)
+                                                                  the colimit construction: every
+                                                                  element of Ωˣ / every point of
+                                                                  E_q(Ω) lies in a finite
+                                                                  subextension l/k of Ω/k (mathlib:
+                                                                  IsAlgebraic elements lie in finite
+                                                                  subextensions — search Intermediat
+                                                                  eField/Algebra.IsAlgebraic API);
+                                                                  define φ via the chosen l and
+                                                                  hfin, prove independence of the
+                                                                  choice using pointMap naturality
+                                                                  from (2);
+                                                                  surjectivity/kernel/equivariance
+                                                                  descend from the finite-level
+                                                                  properties.
                                     - ❌· `FreyPackage.subquotient_character_unramified_at_p` — (stated 2026-07-17) — flat/ordinary at `p`: one of the two
                                       characters is unramified at `p` itself (connected-étale
                                       sequence in the ordinary/ multiplicative case; supersingular
@@ -516,7 +600,7 @@ entries file). To add/remove/annotate a node, edit
                                                                               1, dispatching to exists_annul
                                                                               us_bilateralX_eq_of_one_le /
                                                                               _of_lt_one).
-                                                                                - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component
+                                                                                - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component
                                                                                   x-surjectivity (sorry node,
                                                                                   |x| ≥ 1): (x,y) lies in the
                                                                                   formal group of E_q (Silverman
@@ -533,7 +617,7 @@ entries file). To add/remove/annotate a node, edit
                                                                                   on ℤ[[q]]-coefficients, or
                                                                                   direct fixed-point iteration
                                                                                   u_{n+1} = x(1-u_n)²).
-                                                                                - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
+                                                                                - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
                                                                                   x-surjectivity (sorry node,
                                                                                   |x| < 1): SILVERMAN §V.4 READ
                                                                                   (2026-07-20,
@@ -582,7 +666,7 @@ entries file). To add/remove/annotate a node, edit
                                                                                   whether TateSepClosure’s
                                                                                   Surjective-φ interface can be
                                                                                   weakened accordingly.
-                                                                    - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
+                                                                    - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
                                                                       (sorry node): GIVEN the
                                                                       finite-level canonical
                                                                       uniformisation lˣ/q^ℤ ≃+
@@ -599,7 +683,57 @@ entries file). To add/remove/annotate a node, edit
                                                                       by naturality of the universal
                                                                       series, and kernel/surjectivit
                                                                       y/equivariance pass to the
-                                                                      colimit.
+                                                                      colimit. PROGRESS
+                                                                      (2026-07-20): the naturality
+                                                                      chain feeding this gluing (coe
+                                                                      ffRingEval_map/evalA_XA_map/ev
+                                                                      alA_YA_map/bilateralX_map/bila
+                                                                      teralY_map, all PROVEN in
+                                                                      TateUniformization.lean) is
+                                                                      now wired in as a real `have`
+                                                                      (hnat) inside this theorem's
+                                                                      proof, packaging the
+                                                                      bilateral-coordinate
+                                                                      naturality as an (X,Y) pair.
+                                                                      REMAINING for the actual
+                                                                      gluing: (1)
+                                                                      tateCurve_baseChange —
+                                                                      (tateCurve q₀).map (algebraMap
+                                                                      k l) = tateCurve (algebraMap k
+                                                                      l q₀) (NOT yet proven
+                                                                      anywhere; needed to type the W
+                                                                      eierstrassCurve.Affine.Point.m
+                                                                      ap used in the final φ), quick
+                                                                      from TateCurve.evalInt_map
+                                                                      applied to tateA₄_eq_evalInt/t
+                                                                      ateA₆_eq_evalInt; (2)
+                                                                      naturality of pointMap itself
+                                                                      (not just bilateralX/Y):
+                                                                      reduce an arbitrary u to its
+                                                                      annulus representative via
+                                                                      exists_zpow_mul_mem_annulus,
+                                                                      show the SAME exponent works
+                                                                      after mapping through
+                                                                      algebraMap k l (valuation
+                                                                      membership transfers via
+                                                                      mapValueGroupWithZero +
+                                                                      annulus_exponent_unique gives
+                                                                      uniqueness), then apply hnat;
+                                                                      (3) the colimit construction:
+                                                                      every element of Ωˣ / every
+                                                                      point of E_q(Ω) lies in a
+                                                                      finite subextension l/k of Ω/k
+                                                                      (mathlib: IsAlgebraic elements
+                                                                      lie in finite subextensions —
+                                                                      search IntermediateField/Algeb
+                                                                      ra.IsAlgebraic API); define φ
+                                                                      via the chosen l and hfin,
+                                                                      prove independence of the
+                                                                      choice using pointMap
+                                                                      naturality from (2); surjectiv
+                                                                      ity/kernel/equivariance
+                                                                      descend from the finite-level
+                                                                      properties.
                                                     - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality statement,
                                                       assembled from the LOCAL nonsplit node
                                                       `tate_inertia_trivial_of_nonsplit` by the
@@ -695,7 +829,7 @@ entries file). To add/remove/annotate a node, edit
                                                                                   1, dispatching to exists_annul
                                                                                   us_bilateralX_eq_of_one_le /
                                                                                   _of_lt_one).
-                                                                                    - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component
+                                                                                    - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component
                                                                                       x-surjectivity (sorry node,
                                                                                       |x| ≥ 1): (x,y) lies in the
                                                                                       formal group of E_q (Silverman
@@ -712,7 +846,7 @@ entries file). To add/remove/annotate a node, edit
                                                                                       on ℤ[[q]]-coefficients, or
                                                                                       direct fixed-point iteration
                                                                                       u_{n+1} = x(1-u_n)²).
-                                                                                    - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
+                                                                                    - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
                                                                                       x-surjectivity (sorry node,
                                                                                       |x| < 1): SILVERMAN §V.4 READ
                                                                                       (2026-07-20,
@@ -761,7 +895,7 @@ entries file). To add/remove/annotate a node, edit
                                                                                       whether TateSepClosure’s
                                                                                       Surjective-φ interface can be
                                                                                       weakened accordingly.
-                                                                        - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
+                                                                        - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
                                                                           (sorry node): GIVEN the
                                                                           finite-level canonical
                                                                           uniformisation lˣ/q^ℤ ≃+
@@ -778,7 +912,57 @@ entries file). To add/remove/annotate a node, edit
                                                                           by naturality of the universal
                                                                           series, and kernel/surjectivit
                                                                           y/equivariance pass to the
-                                                                          colimit.
+                                                                          colimit. PROGRESS
+                                                                          (2026-07-20): the naturality
+                                                                          chain feeding this gluing (coe
+                                                                          ffRingEval_map/evalA_XA_map/ev
+                                                                          alA_YA_map/bilateralX_map/bila
+                                                                          teralY_map, all PROVEN in
+                                                                          TateUniformization.lean) is
+                                                                          now wired in as a real `have`
+                                                                          (hnat) inside this theorem's
+                                                                          proof, packaging the
+                                                                          bilateral-coordinate
+                                                                          naturality as an (X,Y) pair.
+                                                                          REMAINING for the actual
+                                                                          gluing: (1)
+                                                                          tateCurve_baseChange —
+                                                                          (tateCurve q₀).map (algebraMap
+                                                                          k l) = tateCurve (algebraMap k
+                                                                          l q₀) (NOT yet proven
+                                                                          anywhere; needed to type the W
+                                                                          eierstrassCurve.Affine.Point.m
+                                                                          ap used in the final φ), quick
+                                                                          from TateCurve.evalInt_map
+                                                                          applied to tateA₄_eq_evalInt/t
+                                                                          ateA₆_eq_evalInt; (2)
+                                                                          naturality of pointMap itself
+                                                                          (not just bilateralX/Y):
+                                                                          reduce an arbitrary u to its
+                                                                          annulus representative via
+                                                                          exists_zpow_mul_mem_annulus,
+                                                                          show the SAME exponent works
+                                                                          after mapping through
+                                                                          algebraMap k l (valuation
+                                                                          membership transfers via
+                                                                          mapValueGroupWithZero +
+                                                                          annulus_exponent_unique gives
+                                                                          uniqueness), then apply hnat;
+                                                                          (3) the colimit construction:
+                                                                          every element of Ωˣ / every
+                                                                          point of E_q(Ω) lies in a
+                                                                          finite subextension l/k of Ω/k
+                                                                          (mathlib: IsAlgebraic elements
+                                                                          lie in finite subextensions —
+                                                                          search IntermediateField/Algeb
+                                                                          ra.IsAlgebraic API); define φ
+                                                                          via the chosen l and hfin,
+                                                                          prove independence of the
+                                                                          choice using pointMap
+                                                                          naturality from (2); surjectiv
+                                                                          ity/kernel/equivariance
+                                                                          descend from the finite-level
+                                                                          properties.
                                 - ✅· `det_galoisRep_eq_cyclotomic` — `det_galoisRep_eq_cyclotomic` — (2026-07-17): `det ρ̄` and `χ̄`
                                   are continuous conjugation-invariant `ZMod p`-valued functions on
                                   `Γ ℚ` (continuity of `det ∘ ρ` from discreteness of `End` via
@@ -926,7 +1110,7 @@ entries file). To add/remove/annotate a node, edit
                                                           1, dispatching to
                                                           exists_annulus_bilateralX_eq_of_one_le /
                                                           _of_lt_one).
-                                                            - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component x-surjectivity
+                                                            - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component x-surjectivity
                                                               (sorry node, |x| ≥ 1): (x,y) lies in
                                                               the formal group of E_q (Silverman IV
                                                               §6 / V.4); X(u) = u/(1-u)² + O(q)
@@ -939,7 +1123,7 @@ entries file). To add/remove/annotate a node, edit
                                                               (Hensel/Newton iteration on
                                                               ℤ[[q]]-coefficients, or direct fixed-
                                                               point iteration u_{n+1} = x(1-u_n)²).
-                                                            - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component x-surjectivity
+                                                            - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component x-surjectivity
                                                               (sorry node, |x| < 1): SILVERMAN §V.4
                                                               READ (2026-07-20,
                                                               Books/silverman1994ataec.txt
@@ -977,7 +1161,7 @@ entries file). To add/remove/annotate a node, edit
                                                               needed; check whether TateSepClosure’s
                                                               Surjective-φ interface can be weakened
                                                               accordingly.
-                                                - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the
+                                                - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the
                                                   finite-level canonical uniformisation lˣ/q^ℤ ≃+
                                                   E_q(l) with underlying pointMapQuot for every NALF
                                                   l, the Ω-level hom exists. Content: finite
@@ -987,7 +1171,37 @@ entries file). To add/remove/annotate a node, edit
                                                   compatible with inclusions and σ-twists by
                                                   naturality of the universal series, and
                                                   kernel/surjectivity/equivariance pass to the
-                                                  colimit.
+                                                  colimit. PROGRESS (2026-07-20): the naturality
+                                                  chain feeding this gluing (coeffRingEval_map/evalA
+                                                  _XA_map/evalA_YA_map/bilateralX_map/bilateralY_map
+                                                  , all PROVEN in TateUniformization.lean) is now
+                                                  wired in as a real `have` (hnat) inside this
+                                                  theorem's proof, packaging the bilateral-
+                                                  coordinate naturality as an (X,Y) pair. REMAINING
+                                                  for the actual gluing: (1) tateCurve_baseChange —
+                                                  (tateCurve q₀).map (algebraMap k l) = tateCurve
+                                                  (algebraMap k l q₀) (NOT yet proven anywhere;
+                                                  needed to type the
+                                                  WeierstrassCurve.Affine.Point.map used in the
+                                                  final φ), quick from TateCurve.evalInt_map applied
+                                                  to tateA₄_eq_evalInt/tateA₆_eq_evalInt; (2)
+                                                  naturality of pointMap itself (not just
+                                                  bilateralX/Y): reduce an arbitrary u to its
+                                                  annulus representative via
+                                                  exists_zpow_mul_mem_annulus, show the SAME
+                                                  exponent works after mapping through algebraMap k
+                                                  l (valuation membership transfers via
+                                                  mapValueGroupWithZero + annulus_exponent_unique
+                                                  gives uniqueness), then apply hnat; (3) the
+                                                  colimit construction: every element of Ωˣ / every
+                                                  point of E_q(Ω) lies in a finite subextension l/k
+                                                  of Ω/k (mathlib: IsAlgebraic elements lie in
+                                                  finite subextensions — search
+                                                  IntermediateField/Algebra.IsAlgebraic API); define
+                                                  φ via the chosen l and hfin, prove independence of
+                                                  the choice using pointMap naturality from (2);
+                                                  surjectivity/kernel/equivariance descend from the
+                                                  finite-level properties.
                                 - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality statement, assembled from the
                                   LOCAL nonsplit node `tate_inertia_trivial_of_nonsplit` by the
                                   proven `ℚ̄`-pullback glue; the `j`-hypothesis feeds through
@@ -1050,7 +1264,7 @@ entries file). To add/remove/annotate a node, edit
                                                               valuation x vs 1, dispatching to
                                                               exists_annulus_bilateralX_eq_of_one_le
                                                               / _of_lt_one).
-                                                                - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component x-surjectivity
+                                                                - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component x-surjectivity
                                                                   (sorry node, |x| ≥ 1): (x,y) lies
                                                                   in the formal group of E_q
                                                                   (Silverman IV §6 / V.4); X(u) =
@@ -1065,7 +1279,7 @@ entries file). To add/remove/annotate a node, edit
                                                                   ℤ[[q]]-coefficients, or direct
                                                                   fixed-point iteration u_{n+1} =
                                                                   x(1-u_n)²).
-                                                                - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
+                                                                - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
                                                                   x-surjectivity (sorry node, |x| <
                                                                   1): SILVERMAN §V.4 READ
                                                                   (2026-07-20,
@@ -1108,7 +1322,7 @@ entries file). To add/remove/annotate a node, edit
                                                                   check whether TateSepClosure’s
                                                                   Surjective-φ interface can be
                                                                   weakened accordingly.
-                                                    - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN
+                                                    - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN
                                                       the finite-level canonical uniformisation
                                                       lˣ/q^ℤ ≃+ E_q(l) with underlying pointMapQuot
                                                       for every NALF l, the Ω-level hom exists.
@@ -1118,7 +1332,41 @@ entries file). To add/remove/annotate a node, edit
                                                       pin), the maps are compatible with inclusions
                                                       and σ-twists by naturality of the universal
                                                       series, and kernel/surjectivity/equivariance
-                                                      pass to the colimit.
+                                                      pass to the colimit. PROGRESS (2026-07-20):
+                                                      the naturality chain feeding this gluing (coef
+                                                      fRingEval_map/evalA_XA_map/evalA_YA_map/bilate
+                                                      ralX_map/bilateralY_map, all PROVEN in
+                                                      TateUniformization.lean) is now wired in as a
+                                                      real `have` (hnat) inside this theorem's
+                                                      proof, packaging the bilateral-coordinate
+                                                      naturality as an (X,Y) pair. REMAINING for the
+                                                      actual gluing: (1) tateCurve_baseChange —
+                                                      (tateCurve q₀).map (algebraMap k l) =
+                                                      tateCurve (algebraMap k l q₀) (NOT yet proven
+                                                      anywhere; needed to type the
+                                                      WeierstrassCurve.Affine.Point.map used in the
+                                                      final φ), quick from TateCurve.evalInt_map
+                                                      applied to
+                                                      tateA₄_eq_evalInt/tateA₆_eq_evalInt; (2)
+                                                      naturality of pointMap itself (not just
+                                                      bilateralX/Y): reduce an arbitrary u to its
+                                                      annulus representative via
+                                                      exists_zpow_mul_mem_annulus, show the SAME
+                                                      exponent works after mapping through
+                                                      algebraMap k l (valuation membership transfers
+                                                      via mapValueGroupWithZero +
+                                                      annulus_exponent_unique gives uniqueness),
+                                                      then apply hnat; (3) the colimit construction:
+                                                      every element of Ωˣ / every point of E_q(Ω)
+                                                      lies in a finite subextension l/k of Ω/k
+                                                      (mathlib: IsAlgebraic elements lie in finite
+                                                      subextensions — search
+                                                      IntermediateField/Algebra.IsAlgebraic API);
+                                                      define φ via the chosen l and hfin, prove
+                                                      independence of the choice using pointMap
+                                                      naturality from (2);
+                                                      surjectivity/kernel/equivariance descend from
+                                                      the finite-level properties.
                 - ✅· `FreyCurve.torsion_isFlat` — flat at p: (2026-07-16) by the case split `p ∣ abc` or not, from the two nodes
                   below
                     - ✅· `FreyCurve.torsion_isFlat_of_good` — (2026-07-16) from the arithmetic node `freyCurve_hasGoodReduction_of_not_dvd`
@@ -1201,7 +1449,7 @@ entries file). To add/remove/annotate a node, edit
                                                   dispatching to
                                                   exists_annulus_bilateralX_eq_of_one_le /
                                                   _of_lt_one).
-                                                    - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component x-surjectivity (sorry node,
+                                                    - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component x-surjectivity (sorry node,
                                                       |x| ≥ 1): (x,y) lies in the formal group of
                                                       E_q (Silverman IV §6 / V.4); X(u) = u/(1-u)² +
                                                       O(q) inverts near u=0 by Hensel since the
@@ -1212,7 +1460,7 @@ entries file). To add/remove/annotate a node, edit
                                                       field (Hensel/Newton iteration on
                                                       ℤ[[q]]-coefficients, or direct fixed-point
                                                       iteration u_{n+1} = x(1-u_n)²).
-                                                    - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component x-surjectivity (sorry
+                                                    - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component x-surjectivity (sorry
                                                       node, |x| < 1): SILVERMAN §V.4 READ
                                                       (2026-07-20, Books/silverman1994ataec.txt
                                                       ~16000–16300): his route avoids direct
@@ -1243,7 +1491,7 @@ entries file). To add/remove/annotate a node, edit
                                                       E_q[ℓ](K̄) — no analytic inversion needed;
                                                       check whether TateSepClosure’s Surjective-φ
                                                       interface can be weakened accordingly.
-                                        - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
+                                        - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
                                           level canonical uniformisation lˣ/q^ℤ ≃+ E_q(l) with
                                           underlying pointMapQuot for every NALF l, the Ω-level hom
                                           exists. Content: finite subextensions of Ω/k are NALFs
@@ -1252,6 +1500,33 @@ entries file). To add/remove/annotate a node, edit
                                           are compatible with inclusions and σ-twists by naturality
                                           of the universal series, and
                                           kernel/surjectivity/equivariance pass to the colimit.
+                                          PROGRESS (2026-07-20): the naturality chain feeding this
+                                          gluing (coeffRingEval_map/evalA_XA_map/evalA_YA_map/bilate
+                                          ralX_map/bilateralY_map, all PROVEN in
+                                          TateUniformization.lean) is now wired in as a real `have`
+                                          (hnat) inside this theorem's proof, packaging the
+                                          bilateral-coordinate naturality as an (X,Y) pair.
+                                          REMAINING for the actual gluing: (1) tateCurve_baseChange
+                                          — (tateCurve q₀).map (algebraMap k l) = tateCurve
+                                          (algebraMap k l q₀) (NOT yet proven anywhere; needed to
+                                          type the WeierstrassCurve.Affine.Point.map used in the
+                                          final φ), quick from TateCurve.evalInt_map applied to
+                                          tateA₄_eq_evalInt/tateA₆_eq_evalInt; (2) naturality of
+                                          pointMap itself (not just bilateralX/Y): reduce an
+                                          arbitrary u to its annulus representative via
+                                          exists_zpow_mul_mem_annulus, show the SAME exponent works
+                                          after mapping through algebraMap k l (valuation membership
+                                          transfers via mapValueGroupWithZero +
+                                          annulus_exponent_unique gives uniqueness), then apply
+                                          hnat; (3) the colimit construction: every element of Ωˣ /
+                                          every point of E_q(Ω) lies in a finite subextension l/k of
+                                          Ω/k (mathlib: IsAlgebraic elements lie in finite
+                                          subextensions — search
+                                          IntermediateField/Algebra.IsAlgebraic API); define φ via
+                                          the chosen l and hfin, prove independence of the choice
+                                          using pointMap naturality from (2);
+                                          surjectivity/kernel/equivariance descend from the finite-
+                                          level properties.
                         - ✅· `WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two` — the nonsplit half of the tame-at-2 condition, now ASSEMBLED: the exponent
                           quotient of the twisted minimal model transports through the (χ-twisted)
                           composite point equivalence; δ is the quadratic character of the
@@ -1302,7 +1577,7 @@ entries file). To add/remove/annotate a node, edit
                                                   dispatching to
                                                   exists_annulus_bilateralX_eq_of_one_le /
                                                   _of_lt_one).
-                                                    - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component x-surjectivity (sorry node,
+                                                    - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component x-surjectivity (sorry node,
                                                       |x| ≥ 1): (x,y) lies in the formal group of
                                                       E_q (Silverman IV §6 / V.4); X(u) = u/(1-u)² +
                                                       O(q) inverts near u=0 by Hensel since the
@@ -1313,7 +1588,7 @@ entries file). To add/remove/annotate a node, edit
                                                       field (Hensel/Newton iteration on
                                                       ℤ[[q]]-coefficients, or direct fixed-point
                                                       iteration u_{n+1} = x(1-u_n)²).
-                                                    - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component x-surjectivity (sorry
+                                                    - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component x-surjectivity (sorry
                                                       node, |x| < 1): SILVERMAN §V.4 READ
                                                       (2026-07-20, Books/silverman1994ataec.txt
                                                       ~16000–16300): his route avoids direct
@@ -1344,7 +1619,7 @@ entries file). To add/remove/annotate a node, edit
                                                       E_q[ℓ](K̄) — no analytic inversion needed;
                                                       check whether TateSepClosure’s Surjective-φ
                                                       interface can be weakened accordingly.
-                                        - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
+                                        - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
                                           level canonical uniformisation lˣ/q^ℤ ≃+ E_q(l) with
                                           underlying pointMapQuot for every NALF l, the Ω-level hom
                                           exists. Content: finite subextensions of Ω/k are NALFs
@@ -1353,6 +1628,33 @@ entries file). To add/remove/annotate a node, edit
                                           are compatible with inclusions and σ-twists by naturality
                                           of the universal series, and
                                           kernel/surjectivity/equivariance pass to the colimit.
+                                          PROGRESS (2026-07-20): the naturality chain feeding this
+                                          gluing (coeffRingEval_map/evalA_XA_map/evalA_YA_map/bilate
+                                          ralX_map/bilateralY_map, all PROVEN in
+                                          TateUniformization.lean) is now wired in as a real `have`
+                                          (hnat) inside this theorem's proof, packaging the
+                                          bilateral-coordinate naturality as an (X,Y) pair.
+                                          REMAINING for the actual gluing: (1) tateCurve_baseChange
+                                          — (tateCurve q₀).map (algebraMap k l) = tateCurve
+                                          (algebraMap k l q₀) (NOT yet proven anywhere; needed to
+                                          type the WeierstrassCurve.Affine.Point.map used in the
+                                          final φ), quick from TateCurve.evalInt_map applied to
+                                          tateA₄_eq_evalInt/tateA₆_eq_evalInt; (2) naturality of
+                                          pointMap itself (not just bilateralX/Y): reduce an
+                                          arbitrary u to its annulus representative via
+                                          exists_zpow_mul_mem_annulus, show the SAME exponent works
+                                          after mapping through algebraMap k l (valuation membership
+                                          transfers via mapValueGroupWithZero +
+                                          annulus_exponent_unique gives uniqueness), then apply
+                                          hnat; (3) the colimit construction: every element of Ωˣ /
+                                          every point of E_q(Ω) lies in a finite subextension l/k of
+                                          Ω/k (mathlib: IsAlgebraic elements lie in finite
+                                          subextensions — search
+                                          IntermediateField/Algebra.IsAlgebraic API); define φ via
+                                          the chosen l and hfin, prove independence of the choice
+                                          using pointMap naturality from (2);
+                                          surjectivity/kernel/equivariance descend from the finite-
+                                          level properties.
             - ✅· `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified` — B5 `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
               (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work) — now (2026-07-16)
               from three explicit nodes in `HardlyRamified/Lift.lean` (own work), following

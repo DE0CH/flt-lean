@@ -34,12 +34,12 @@ ring-homomorphism pushes), and the finite-level uniformisation
 -/
 module
 
+public import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveConstruction
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.TateParameter
+public import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveBaseChange
 public import Mathlib.RingTheory.Localization.Away.Basic
 public import Mathlib.FieldTheory.RatFunc.AsPolynomial
-
-public import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve
 
 import Mathlib.Topology.Algebra.InfiniteSum.Nonarchimedean
 import Mathlib.NumberTheory.Transcendental.Liouville.LiouvilleNumber
@@ -463,6 +463,33 @@ theorem summable_evalA_XA (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
         rw [map_mul, map_inv₀, mul_pow, inv_pow]
         exact mul_comm _ _
 
+omit [CharZero k] in
+/-- Ultrametric bound for a convergent sum: the valuation of the sum is
+at most any common bound of the terms. -/
+theorem valuation_tsum_le {f : ℕ → k} (hf : Summable f)
+    (c : ValueGroupWithZero k) (hbound : ∀ n, valuation k (f n) ≤ c) :
+    valuation k (∑' n, f n) ≤ c := by
+  by_contra hlt
+  rw [not_le] at hlt
+  have hpart : ∀ s : Finset ℕ, valuation k (∑ n ∈ s, f n) ≤ c :=
+    fun s => Valuation.map_sum_le _ fun n _ => hbound n
+  have hS : HasSum f (∑' n, f n) := hf.hasSum
+  simp only [HasSum, SummationFilter.unconditional_filter,
+    (IsValuativeTopology.hasBasis_nhds (∑' n, f n)).tendsto_right_iff] at hS
+  obtain ⟨s, hs⟩ := (hS (Units.mk0 _ (ne_of_gt
+    (lt_of_le_of_lt zero_le hlt))) trivial).exists
+  simp only [Set.mem_setOf_eq] at hs
+  refine absurd ?_ (lt_irrefl (valuation k (∑' n, f n)))
+  calc valuation k (∑' n, f n)
+      = valuation k ((∑ n ∈ s, f n) - ((∑ n ∈ s, f n) - ∑' n, f n)) := by
+        rw [sub_sub_cancel]
+    _ ≤ max (valuation k (∑ n ∈ s, f n))
+        (valuation k ((∑ n ∈ s, f n) - ∑' n, f n)) :=
+        Valuation.map_sub _ _ _
+    _ < valuation k (∑' n, f n) :=
+        max_lt (lt_of_le_of_lt (hpart s) hlt) hs
+
+
 omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] in
 /-- The explicit form of the higher coefficients of `YA` evaluated at
 `u₀`. -/
@@ -554,6 +581,318 @@ theorem summable_evalA_YA (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
     _ = valuation k (q₀ * u₀⁻¹) ^ (n + 1) := by
         rw [map_mul, map_inv₀, mul_pow, inv_pow]
         exact mul_comm _ _
+/-! ### Naturality of `evalA … XA` under valuative extensions
+
+For the gluing of the finite-level uniformisation to a separable
+closure (`TateSepClosure.lean`), the evaluation series needs to commute
+with a valuative extension `k → l` of nonarchimedean local fields — the
+analogue of `TateCurve.evalInt_map` (`TateCurveBaseChange.lean`) for
+the two-variable coefficient ring, on the fundamental annulus. -/
+
+section Naturality
+
+variable {l : Type*} [Field l] [ValuativeRel l] [TopologicalSpace l]
+  [IsNonarchimedeanLocalField l] [CharZero l] [Algebra k l]
+  [ValuativeExtension k l]
+
+omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k]
+  [ValuativeRel l] [TopologicalSpace l] [IsNonarchimedeanLocalField l] in
+/-- **The coefficient-ring evaluation commutes with a valuative
+extension**: `coeffRingEval` is built from `Polynomial.aeval`, whose
+naturality under any ring homomorphism reduces the claim to checking
+it on the two generators of `ℚ[X]` (constants, where it is
+`ℚ`-hom-uniqueness, and `X`, where both sides are `algebraMap k l u₀`
+by definition). -/
+theorem coeffRingEval_map (u₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (h0' : algebraMap k l u₀ ≠ 0) (h1' : algebraMap k l u₀ ≠ 1)
+    (F : CoeffRing) :
+    algebraMap k l (coeffRingEval u₀ h0 h1 F) =
+      coeffRingEval (algebraMap k l u₀) h0' h1' F := by
+  have hext : ((algebraMap k l).comp (coeffRingEval u₀ h0 h1)).comp
+        (algebraMap (Polynomial ℚ) CoeffRing) =
+      (coeffRingEval (algebraMap k l u₀) h0' h1').comp
+        (algebraMap (Polynomial ℚ) CoeffRing) := by
+    refine Polynomial.ringHom_ext (fun a => ?_) ?_
+    · simp only [RingHom.comp_apply, coeffRingEval_algebraMap,
+        Polynomial.aeval_C]
+      exact RingHom.congr_fun (Subsingleton.elim
+        ((algebraMap k l).comp (algebraMap ℚ k)) (algebraMap ℚ l)) a
+    · simp only [RingHom.comp_apply, coeffRingEval_algebraMap,
+        Polynomial.aeval_X]
+  have hfull : (algebraMap k l).comp (coeffRingEval u₀ h0 h1) =
+      coeffRingEval (algebraMap k l u₀) h0' h1' :=
+    IsLocalization.ringHom_ext
+      (Submonoid.powers (Polynomial.X * (1 - Polynomial.X) : Polynomial ℚ))
+      hext
+  exact RingHom.congr_fun hfull F
+
+omit [CharZero k] in
+/-- Ultrametric bound for a `HasSum`, transported from a uniform bound
+on the tail after splitting off the first `N` terms (mirror of
+`valuation_tsum_le` for an arbitrary partial-sum remainder, using
+`hasSum_nat_add_iff` to identify the remainder as the sum of the
+shifted sequence). -/
+theorem valuation_hasSum_sub_sum_le {f : ℕ → k} {a : k} (hf : HasSum f a)
+    (N : ℕ) (c : ValueGroupWithZero k)
+    (hbound : ∀ n, valuation k (f (n + N)) ≤ c) :
+    valuation k (a - ∑ i ∈ Finset.range N, f i) ≤ c := by
+  have hshift : HasSum (fun n => f (n + N)) (a - ∑ i ∈ Finset.range N, f i) :=
+    (hasSum_nat_add_iff N).mpr (by rw [sub_add_cancel]; exact hf)
+  rw [← hshift.tsum_eq]
+  exact valuation_tsum_le hshift.summable c hbound
+
+set_option maxHeartbeats 1000000 in
+/-- **`evalA … XA` commutes with a valuative extension**, on the
+fundamental annulus: mirror of `TateCurve.evalInt_map`, using
+`coeffRingEval_map` for the finite-sum part and transporting the
+`k`-side tail bound (`valuation_coeffRingEval_XA_le`) along the
+strictly monotone map of value groups
+(`ValuativeExtension.mapValueGroupWithZero`) for one half of the
+sandwich, with a freshly proven `l`-side tail bound for the other
+half — no continuity argument is needed. -/
+theorem evalA_XA_map (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hu : valuation k u₀ ≤ 1) (hq : valuation k q₀ < valuation k u₀)
+    (h0' : algebraMap k l u₀ ≠ 0) (h1' : algebraMap k l u₀ ≠ 1) :
+    algebraMap k l (evalA u₀ q₀ h0 h1 XA) =
+      evalA (algebraMap k l u₀) (algebraMap k l q₀) h0' h1' XA := by
+  have hv0 : valuation k u₀ ≠ 0 := by
+    simpa [ne_eq, map_eq_zero] using h0
+  set w : k := q₀ * u₀⁻¹ with hwdef
+  have hw : valuation k w < 1 := by
+    rw [hwdef, map_mul, map_inv₀]
+    calc valuation k q₀ * (valuation k u₀)⁻¹
+        < valuation k u₀ * (valuation k u₀)⁻¹ :=
+          mul_lt_mul_of_pos_right hq (zero_lt_iff.mpr (inv_ne_zero hv0))
+      _ = 1 := mul_inv_cancel₀ hv0
+  have hu' : valuation l (algebraMap k l u₀) ≤ 1 := by
+    rw [← ValuativeExtension.mapValueGroupWithZero_valuation]
+    calc ValuativeExtension.mapValueGroupWithZero k l (valuation k u₀)
+        ≤ ValuativeExtension.mapValueGroupWithZero k l 1 :=
+          ValuativeExtension.mapValueGroupWithZero_strictMono.monotone hu
+      _ = 1 := map_one _
+  have hq' : valuation l (algebraMap k l q₀) <
+      valuation l (algebraMap k l u₀) := by
+    rw [← ValuativeExtension.mapValueGroupWithZero_valuation,
+      ← ValuativeExtension.mapValueGroupWithZero_valuation]
+    exact ValuativeExtension.mapValueGroupWithZero_strictMono hq
+  have hw' : valuation l (algebraMap k l w) < 1 :=
+    TateCurve.valuation_algebraMap_lt_one hw
+  have hwmap : algebraMap k l w =
+      algebraMap k l q₀ * (algebraMap k l u₀)⁻¹ := by
+    rw [hwdef, map_mul, map_inv₀]
+  set fk : ℕ → k := fun n => coeffRingEval u₀ h0 h1
+    (PowerSeries.coeff n XA) * q₀ ^ n with hfkdef
+  set fl : ℕ → l := fun n => coeffRingEval (algebraMap k l u₀) h0' h1'
+    (PowerSeries.coeff n XA) * (algebraMap k l q₀) ^ n with hfldef
+  have hsumk : Summable fk := summable_evalA_XA u₀ q₀ h0 h1 hu hq
+  have hsuml : Summable fl := summable_evalA_XA (algebraMap k l u₀)
+    (algebraMap k l q₀) h0' h1' hu' hq'
+  set a : k := ∑' n, fk n with hadef
+  set a' : l := ∑' n, fl n with ha'def
+  rw [show evalA u₀ q₀ h0 h1 XA = a from rfl,
+    show evalA (algebraMap k l u₀) (algebraMap k l q₀) h0' h1' XA = a' from rfl]
+  rw [← sub_eq_zero]
+  by_contra hcon
+  obtain ⟨N, hN⟩ := exists_pow_valuation_lt (algebraMap k l w) hw'
+    (Units.mk0 (valuation l (algebraMap k l a - a'))
+      ((valuation l).ne_zero_iff.mpr hcon))
+  set N' : ℕ := max N 1 with hN'def
+  have hN'1 : 1 ≤ N' := le_max_right N 1
+  have hN' : valuation l (algebraMap k l w) ^ N' <
+      valuation l (algebraMap k l a - a') :=
+    lt_of_le_of_lt (pow_le_pow_right_of_le_one' hw'.le (le_max_left N 1)) hN
+  have hmapsum : algebraMap k l (∑ i ∈ Finset.range N', fk i) =
+      ∑ i ∈ Finset.range N', fl i := by
+    rw [map_sum]
+    refine Finset.sum_congr rfl fun n _ => ?_
+    rw [hfkdef, hfldef, map_mul, map_pow, coeffRingEval_map]
+  have hktail : valuation k (a - ∑ i ∈ Finset.range N', fk i) ≤
+      valuation k w ^ N' :=
+    valuation_hasSum_sub_sum_le hsumk.hasSum N' (valuation k w ^ N')
+      fun n => by
+        have hb := valuation_coeffRingEval_XA_le u₀ h0 h1 hu
+          (show n + N' ≠ 0 by omega)
+        rw [hfkdef]
+        show valuation k (coeffRingEval u₀ h0 h1
+            (PowerSeries.coeff (n + N') XA) * q₀ ^ (n + N')) ≤ _
+        rw [map_mul, map_pow]
+        calc valuation k (coeffRingEval u₀ h0 h1
+              (PowerSeries.coeff (n + N') XA)) * valuation k q₀ ^ (n + N')
+            ≤ ((valuation k u₀) ^ (n + N'))⁻¹ * valuation k q₀ ^ (n + N') :=
+              mul_le_mul_left hb _
+          _ = valuation k w ^ (n + N') := by
+              rw [hwdef, map_mul, map_inv₀, mul_pow, inv_pow]
+              exact mul_comm _ _
+          _ ≤ valuation k w ^ N' :=
+              pow_le_pow_right_of_le_one' hw.le (le_add_self)
+  have hltail : valuation l (a' - ∑ i ∈ Finset.range N', fl i) ≤
+      valuation l (algebraMap k l w) ^ N' :=
+    valuation_hasSum_sub_sum_le hsuml.hasSum N'
+      (valuation l (algebraMap k l w) ^ N') fun n => by
+        have hb := valuation_coeffRingEval_XA_le (algebraMap k l u₀) h0' h1'
+          hu' (show n + N' ≠ 0 by omega)
+        rw [hfldef]
+        show valuation l (coeffRingEval (algebraMap k l u₀) h0' h1'
+            (PowerSeries.coeff (n + N') XA) *
+            (algebraMap k l q₀) ^ (n + N')) ≤ _
+        rw [map_mul, map_pow]
+        calc valuation l (coeffRingEval (algebraMap k l u₀) h0' h1'
+              (PowerSeries.coeff (n + N') XA)) *
+              valuation l (algebraMap k l q₀) ^ (n + N')
+            ≤ ((valuation l (algebraMap k l u₀)) ^ (n + N'))⁻¹ *
+                valuation l (algebraMap k l q₀) ^ (n + N') :=
+              mul_le_mul_left hb _
+          _ = valuation l (algebraMap k l w) ^ (n + N') := by
+              rw [hwmap, map_mul, map_inv₀, mul_pow, inv_pow]
+              exact mul_comm _ _
+          _ ≤ valuation l (algebraMap k l w) ^ N' :=
+              pow_le_pow_right_of_le_one' hw'.le (le_add_self)
+  have h1 : valuation l (algebraMap k l a -
+      ∑ i ∈ Finset.range N', fl i) ≤ valuation l (algebraMap k l w) ^ N' := by
+    rw [← hmapsum, ← map_sub]
+    calc valuation l (algebraMap k l (a - ∑ i ∈ Finset.range N', fk i))
+        = ValuativeExtension.mapValueGroupWithZero k l
+            (valuation k (a - ∑ i ∈ Finset.range N', fk i)) :=
+          (ValuativeExtension.mapValueGroupWithZero_valuation _).symm
+      _ ≤ ValuativeExtension.mapValueGroupWithZero k l (valuation k w ^ N') :=
+          ValuativeExtension.mapValueGroupWithZero_strictMono.monotone hktail
+      _ = valuation l (algebraMap k l w) ^ N' := by
+          rw [map_pow, ValuativeExtension.mapValueGroupWithZero_valuation]
+  refine absurd ?_ (lt_irrefl (valuation l (algebraMap k l a - a')))
+  calc valuation l (algebraMap k l a - a')
+      = valuation l ((algebraMap k l a - ∑ i ∈ Finset.range N', fl i) -
+          (a' - ∑ i ∈ Finset.range N', fl i)) := by congr 1; ring
+    _ ≤ max _ _ := Valuation.map_sub _ _ _
+    _ ≤ valuation l (algebraMap k l w) ^ N' := max_le h1 hltail
+    _ < _ := hN'
+
+set_option maxHeartbeats 1000000 in
+/-- **`evalA … YA` commutes with a valuative extension**, on the
+fundamental annulus: mirror of `TateCurve.evalInt_map`, using
+`coeffRingEval_map` for the finite-sum part and transporting the
+`k`-side tail bound (`valuation_coeffRingEval_YA_le`) along the
+strictly monotone map of value groups
+(`ValuativeExtension.mapValueGroupWithZero`) for one half of the
+sandwich, with a freshly proven `l`-side tail bound for the other
+half — no continuity argument is needed. -/
+theorem evalA_YA_map (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hu : valuation k u₀ ≤ 1) (hq : valuation k q₀ < valuation k u₀)
+    (h0' : algebraMap k l u₀ ≠ 0) (h1' : algebraMap k l u₀ ≠ 1) :
+    algebraMap k l (evalA u₀ q₀ h0 h1 YA) =
+      evalA (algebraMap k l u₀) (algebraMap k l q₀) h0' h1' YA := by
+  have hv0 : valuation k u₀ ≠ 0 := by
+    simpa [ne_eq, map_eq_zero] using h0
+  set w : k := q₀ * u₀⁻¹ with hwdef
+  have hw : valuation k w < 1 := by
+    rw [hwdef, map_mul, map_inv₀]
+    calc valuation k q₀ * (valuation k u₀)⁻¹
+        < valuation k u₀ * (valuation k u₀)⁻¹ :=
+          mul_lt_mul_of_pos_right hq (zero_lt_iff.mpr (inv_ne_zero hv0))
+      _ = 1 := mul_inv_cancel₀ hv0
+  have hu' : valuation l (algebraMap k l u₀) ≤ 1 := by
+    rw [← ValuativeExtension.mapValueGroupWithZero_valuation]
+    calc ValuativeExtension.mapValueGroupWithZero k l (valuation k u₀)
+        ≤ ValuativeExtension.mapValueGroupWithZero k l 1 :=
+          ValuativeExtension.mapValueGroupWithZero_strictMono.monotone hu
+      _ = 1 := map_one _
+  have hq' : valuation l (algebraMap k l q₀) <
+      valuation l (algebraMap k l u₀) := by
+    rw [← ValuativeExtension.mapValueGroupWithZero_valuation,
+      ← ValuativeExtension.mapValueGroupWithZero_valuation]
+    exact ValuativeExtension.mapValueGroupWithZero_strictMono hq
+  have hw' : valuation l (algebraMap k l w) < 1 :=
+    TateCurve.valuation_algebraMap_lt_one hw
+  have hwmap : algebraMap k l w =
+      algebraMap k l q₀ * (algebraMap k l u₀)⁻¹ := by
+    rw [hwdef, map_mul, map_inv₀]
+  set fk : ℕ → k := fun n => coeffRingEval u₀ h0 h1
+    (PowerSeries.coeff n YA) * q₀ ^ n with hfkdef
+  set fl : ℕ → l := fun n => coeffRingEval (algebraMap k l u₀) h0' h1'
+    (PowerSeries.coeff n YA) * (algebraMap k l q₀) ^ n with hfldef
+  have hsumk : Summable fk := summable_evalA_YA u₀ q₀ h0 h1 hu hq
+  have hsuml : Summable fl := summable_evalA_YA (algebraMap k l u₀)
+    (algebraMap k l q₀) h0' h1' hu' hq'
+  set a : k := ∑' n, fk n with hadef
+  set a' : l := ∑' n, fl n with ha'def
+  rw [show evalA u₀ q₀ h0 h1 YA = a from rfl,
+    show evalA (algebraMap k l u₀) (algebraMap k l q₀) h0' h1' YA = a' from rfl]
+  rw [← sub_eq_zero]
+  by_contra hcon
+  obtain ⟨N, hN⟩ := exists_pow_valuation_lt (algebraMap k l w) hw'
+    (Units.mk0 (valuation l (algebraMap k l a - a'))
+      ((valuation l).ne_zero_iff.mpr hcon))
+  set N' : ℕ := max N 1 with hN'def
+  have hN'1 : 1 ≤ N' := le_max_right N 1
+  have hN' : valuation l (algebraMap k l w) ^ N' <
+      valuation l (algebraMap k l a - a') :=
+    lt_of_le_of_lt (pow_le_pow_right_of_le_one' hw'.le (le_max_left N 1)) hN
+  have hmapsum : algebraMap k l (∑ i ∈ Finset.range N', fk i) =
+      ∑ i ∈ Finset.range N', fl i := by
+    rw [map_sum]
+    refine Finset.sum_congr rfl fun n _ => ?_
+    rw [hfkdef, hfldef, map_mul, map_pow, coeffRingEval_map]
+  have hktail : valuation k (a - ∑ i ∈ Finset.range N', fk i) ≤
+      valuation k w ^ N' :=
+    valuation_hasSum_sub_sum_le hsumk.hasSum N' (valuation k w ^ N')
+      fun n => by
+        have hb := valuation_coeffRingEval_YA_le u₀ h0 h1 hu
+          (show n + N' ≠ 0 by omega)
+        rw [hfkdef]
+        show valuation k (coeffRingEval u₀ h0 h1
+            (PowerSeries.coeff (n + N') YA) * q₀ ^ (n + N')) ≤ _
+        rw [map_mul, map_pow]
+        calc valuation k (coeffRingEval u₀ h0 h1
+              (PowerSeries.coeff (n + N') YA)) * valuation k q₀ ^ (n + N')
+            ≤ ((valuation k u₀) ^ (n + N'))⁻¹ * valuation k q₀ ^ (n + N') :=
+              mul_le_mul_left hb _
+          _ = valuation k w ^ (n + N') := by
+              rw [hwdef, map_mul, map_inv₀, mul_pow, inv_pow]
+              exact mul_comm _ _
+          _ ≤ valuation k w ^ N' :=
+              pow_le_pow_right_of_le_one' hw.le (le_add_self)
+  have hltail : valuation l (a' - ∑ i ∈ Finset.range N', fl i) ≤
+      valuation l (algebraMap k l w) ^ N' :=
+    valuation_hasSum_sub_sum_le hsuml.hasSum N'
+      (valuation l (algebraMap k l w) ^ N') fun n => by
+        have hb := valuation_coeffRingEval_YA_le (algebraMap k l u₀) h0' h1'
+          hu' (show n + N' ≠ 0 by omega)
+        rw [hfldef]
+        show valuation l (coeffRingEval (algebraMap k l u₀) h0' h1'
+            (PowerSeries.coeff (n + N') YA) *
+            (algebraMap k l q₀) ^ (n + N')) ≤ _
+        rw [map_mul, map_pow]
+        calc valuation l (coeffRingEval (algebraMap k l u₀) h0' h1'
+              (PowerSeries.coeff (n + N') YA)) *
+              valuation l (algebraMap k l q₀) ^ (n + N')
+            ≤ ((valuation l (algebraMap k l u₀)) ^ (n + N'))⁻¹ *
+                valuation l (algebraMap k l q₀) ^ (n + N') :=
+              mul_le_mul_left hb _
+          _ = valuation l (algebraMap k l w) ^ (n + N') := by
+              rw [hwmap, map_mul, map_inv₀, mul_pow, inv_pow]
+              exact mul_comm _ _
+          _ ≤ valuation l (algebraMap k l w) ^ N' :=
+              pow_le_pow_right_of_le_one' hw'.le (le_add_self)
+  have h1 : valuation l (algebraMap k l a -
+      ∑ i ∈ Finset.range N', fl i) ≤ valuation l (algebraMap k l w) ^ N' := by
+    rw [← hmapsum, ← map_sub]
+    calc valuation l (algebraMap k l (a - ∑ i ∈ Finset.range N', fk i))
+        = ValuativeExtension.mapValueGroupWithZero k l
+            (valuation k (a - ∑ i ∈ Finset.range N', fk i)) :=
+          (ValuativeExtension.mapValueGroupWithZero_valuation _).symm
+      _ ≤ ValuativeExtension.mapValueGroupWithZero k l (valuation k w ^ N') :=
+          ValuativeExtension.mapValueGroupWithZero_strictMono.monotone hktail
+      _ = valuation l (algebraMap k l w) ^ N' := by
+          rw [map_pow, ValuativeExtension.mapValueGroupWithZero_valuation]
+  refine absurd ?_ (lt_irrefl (valuation l (algebraMap k l a - a')))
+  calc valuation l (algebraMap k l a - a')
+      = valuation l ((algebraMap k l a - ∑ i ∈ Finset.range N', fl i) -
+          (a' - ∑ i ∈ Finset.range N', fl i)) := by congr 1; ring
+    _ ≤ max _ _ := Valuation.map_sub _ _ _
+    _ ≤ valuation l (algebraMap k l w) ^ N' := max_le h1 hltail
+    _ < _ := hN'
+
+end Naturality
+
 
 /-- **Additivity of the evaluation** on summable series. -/
 theorem evalA_add (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
@@ -1609,6 +1948,26 @@ theorem evalA_XA_eq_bilateralX (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 
     evalA u₀ q₀ h0 h1 XA = bilateralX u₀ q₀ :=
   evalA_XA_bilateral u₀ q₀ h0 h1 hu hq1 hq
 
+/-- **`bilateralX` commutes with a valuative extension of
+nonarchimedean local fields**, on the fundamental annulus: transport
+`evalA_XA_map` through the bridge `evalA_XA_eq_bilateralX`. -/
+theorem bilateralX_map {l : Type*} [Field l] [ValuativeRel l]
+    [TopologicalSpace l] [IsNonarchimedeanLocalField l] [CharZero l]
+    [Algebra k l] [ValuativeExtension k l]
+    (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hu : valuation k u₀ ≤ 1) (hq1 : valuation k q₀ < 1)
+    (hq : valuation k q₀ < valuation k u₀)
+    (h0' : algebraMap k l u₀ ≠ 0) (h1' : algebraMap k l u₀ ≠ 1)
+    (hu' : valuation l (algebraMap k l u₀) ≤ 1)
+    (hq1' : valuation l (algebraMap k l q₀) < 1)
+    (hq' : valuation l (algebraMap k l q₀) < valuation l (algebraMap k l u₀)) :
+    algebraMap k l (bilateralX u₀ q₀) =
+      bilateralX (algebraMap k l u₀) (algebraMap k l q₀) := by
+  rw [← evalA_XA_eq_bilateralX u₀ q₀ h0 h1 hu hq1 hq,
+    evalA_XA_map u₀ q₀ h0 h1 hu hq h0' h1',
+    evalA_XA_eq_bilateralX (algebraMap k l u₀) (algebraMap k l q₀) h0' h1'
+      hu' hq1' hq']
+
 omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
 /-- The Möbius-type involution fixing the Lambert kernel:
 `v⁻¹/(1-v⁻¹)² = v/(1-v)²`. -/
@@ -2200,6 +2559,25 @@ theorem evalA_YA_eq_bilateralY (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 
     (hq : valuation k q₀ < valuation k u₀) :
     evalA u₀ q₀ h0 h1 YA = bilateralY u₀ q₀ :=
   evalA_YA_bilateral u₀ q₀ h0 h1 hu hq1 hq
+
+/-- **`bilateralY` commutes with a valuative extension**, mirroring
+`bilateralX_map`. -/
+theorem bilateralY_map {l : Type*} [Field l] [ValuativeRel l]
+    [TopologicalSpace l] [IsNonarchimedeanLocalField l] [CharZero l]
+    [Algebra k l] [ValuativeExtension k l]
+    (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hu : valuation k u₀ ≤ 1) (hq1 : valuation k q₀ < 1)
+    (hq : valuation k q₀ < valuation k u₀)
+    (h0' : algebraMap k l u₀ ≠ 0) (h1' : algebraMap k l u₀ ≠ 1)
+    (hu' : valuation l (algebraMap k l u₀) ≤ 1)
+    (hq1' : valuation l (algebraMap k l q₀) < 1)
+    (hq' : valuation l (algebraMap k l q₀) < valuation l (algebraMap k l u₀)) :
+    algebraMap k l (bilateralY u₀ q₀) =
+      bilateralY (algebraMap k l u₀) (algebraMap k l q₀) := by
+  rw [← evalA_YA_eq_bilateralY u₀ q₀ h0 h1 hu hq1 hq,
+    evalA_YA_map u₀ q₀ h0 h1 hu hq h0' h1',
+    evalA_YA_eq_bilateralY (algebraMap k l u₀) (algebraMap k l q₀) h0' h1'
+      hu' hq1' hq']
 
 omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZero k] in
 /-- The second `Y`-kernel under inversion:
@@ -5148,32 +5526,6 @@ theorem hom_of_partial_hom {G A : Type*} [CommGroup G] [AddCommGroup A]
   have e6 : φ w + φ (u₁ * u₂) = φ w + (φ u₁ + φ u₂) := by
     rw [← e5, ← mul_assoc, e4, add_assoc]
   exact add_left_cancel e6
-
-omit [CharZero k] in
-/-- Ultrametric bound for a convergent sum: the valuation of the sum is
-at most any common bound of the terms. -/
-theorem valuation_tsum_le {f : ℕ → k} (hf : Summable f)
-    (c : ValueGroupWithZero k) (hbound : ∀ n, valuation k (f n) ≤ c) :
-    valuation k (∑' n, f n) ≤ c := by
-  by_contra hlt
-  rw [not_le] at hlt
-  have hpart : ∀ s : Finset ℕ, valuation k (∑ n ∈ s, f n) ≤ c :=
-    fun s => Valuation.map_sum_le _ fun n _ => hbound n
-  have hS : HasSum f (∑' n, f n) := hf.hasSum
-  simp only [HasSum, SummationFilter.unconditional_filter,
-    (IsValuativeTopology.hasBasis_nhds (∑' n, f n)).tendsto_right_iff] at hS
-  obtain ⟨s, hs⟩ := (hS (Units.mk0 _ (ne_of_gt
-    (lt_of_le_of_lt zero_le hlt))) trivial).exists
-  simp only [Set.mem_setOf_eq] at hs
-  refine absurd ?_ (lt_irrefl (valuation k (∑' n, f n)))
-  calc valuation k (∑' n, f n)
-      = valuation k ((∑ n ∈ s, f n) - ((∑ n ∈ s, f n) - ∑' n, f n)) := by
-        rw [sub_sub_cancel]
-    _ ≤ max (valuation k (∑ n ∈ s, f n))
-        (valuation k ((∑ n ∈ s, f n) - ∑' n, f n)) :=
-        Valuation.map_sub _ _ _
-    _ < valuation k (∑' n, f n) :=
-        max_lt (lt_of_le_of_lt (hpart s) hlt) hs
 
 set_option maxHeartbeats 800000 in
 /-- **Head domination on the unit shell**: for `|u₀| = 1` the

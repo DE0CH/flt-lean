@@ -180,7 +180,13 @@
   "TateCurve.evalA_YA_eq_bilateralY_ext": "✅✅",
   "TateCurve.pointMap_mul": "✅✅",
   "TateCurve.exists_annulus_bilateralX_eq_of_one_le": "❌",
-  "TateCurve.exists_annulus_bilateralX_eq_of_lt_one": "❌"
+  "TateCurve.exists_annulus_bilateralX_eq_of_lt_one": "❌",
+  "TateCurve.coeffRingEval_map": "✅✅",
+  "TateCurve.valuation_hasSum_sub_sum_le": "✅✅",
+  "TateCurve.evalA_XA_map": "✅✅",
+  "TateCurve.evalA_YA_map": "✅✅",
+  "TateCurve.bilateralX_map": "✅✅",
+  "TateCurve.bilateralY_map": "✅✅"
  },
  "children": {
   "fermatLastTheoremThree": [],
@@ -697,7 +703,9 @@
    "TateCurve.pointMapQuot_surjective"
   ],
   "WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel": [
-   "WeierstrassCurve.Δ_tateCurve_eq_evalInt"
+   "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
+   "TateCurve.bilateralX_map",
+   "TateCurve.bilateralY_map"
   ],
   "WeierstrassCurve.exists_tateTorsionQuotient": [],
   "hasMultiplicativeReduction_padic": [],
@@ -816,7 +824,23 @@
    "TateCurve.bilateral_add_of_X_ne"
   ],
   "TateCurve.exists_annulus_bilateralX_eq_of_one_le": [],
-  "TateCurve.exists_annulus_bilateralX_eq_of_lt_one": []
+  "TateCurve.exists_annulus_bilateralX_eq_of_lt_one": [],
+  "TateCurve.coeffRingEval_map": [],
+  "TateCurve.valuation_hasSum_sub_sum_le": [],
+  "TateCurve.evalA_XA_map": [
+   "TateCurve.valuation_hasSum_sub_sum_le",
+   "TateCurve.coeffRingEval_map"
+  ],
+  "TateCurve.evalA_YA_map": [
+   "TateCurve.valuation_hasSum_sub_sum_le",
+   "TateCurve.coeffRingEval_map"
+  ],
+  "TateCurve.bilateralX_map": [
+   "TateCurve.evalA_XA_map"
+  ],
+  "TateCurve.bilateralY_map": [
+   "TateCurve.evalA_YA_map"
+  ]
  },
  "roots": [
   "fermat_last_theorem"

@@ -1,11 +1,7 @@
 {
- "key": "1784530941.3020062",
+ "key": "1784532991.4720323",
  "returncode": 0,
  "kept_invisible": [
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveBaseChange",
-   "name": "TateCurve.valuation_algebraMap_lt_one"
-  },
   {
    "module": "Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal",
    "name": "summable_prod_mul_pow'"
