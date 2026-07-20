@@ -8044,6 +8044,122 @@ theorem exists_annulus_bilateralX_eq_of_lt_one (q₀ : k) (hq0 : q₀ ≠ 0)
           _ ≤ valuation k y * valuation k y := mul_le_mul' hcon hcon
       rw [hy2] at h1
       exact absurd (lt_of_le_of_lt h1 hq1) (lt_irrefl _)
+    have hone_sub_ne'' : ∀ z : k, valuation k z < 1 → 1 - z ≠ 0 := by
+      intro z hz hh
+      have h1 := (valuation k).map_one_sub_of_lt hz
+      rw [hh, map_zero] at h1
+      exact zero_ne_one h1
+    have hbin1 : ∀ j : ℕ, valuation k (((j.choose 2 : ℕ) : k)) ≤ 1 := by
+      intro j
+      simpa using valuation_intCast_le_one (R := k) (j.choose 2)
+    have hbin2 : ∀ j : ℕ,
+        valuation k ((((j + 1).choose 2 : ℕ) : k)) ≤ 1 := by
+      intro j
+      simpa using valuation_intCast_le_one (R := k) ((j + 1).choose 2)
+    -- shell windows: on `|u| = |y|` both Lambert windows are inside
+    -- the disc, since `|q₀|/|y| = |y| < 1`
+    have hwin : ∀ u : k, valuation k u = valuation k y →
+        u ≠ 0 ∧ valuation k u < 1 ∧ valuation k (q₀ * u) < 1 ∧
+          valuation k (q₀ * u⁻¹) = valuation k y := by
+      intro u hu
+      have hu0 : u ≠ 0 := fun hz => hY0 (by rw [← hu, hz, map_zero])
+      have hult : valuation k u < 1 := hu ▸ hylt1
+      refine ⟨hu0, hult, ?_, ?_⟩
+      · rw [map_mul]
+        calc valuation k q₀ * valuation k u
+            ≤ valuation k q₀ * 1 := mul_le_mul' le_rfl (le_of_lt hult)
+          _ = valuation k q₀ := mul_one _
+          _ < 1 := hq1
+      · rw [map_mul, map_inv₀, hu, ← hy2, mul_assoc,
+          mul_inv_cancel₀ hY0, mul_one]
+    -- the combined sum series: the Lambert kernels collapse, so the
+    -- dangerous `q/u`-term cancels exactly
+    have hSsum : ∀ u : k, valuation k u = valuation k y →
+        bilateralX u q₀ + bilateralY u q₀ =
+          u / (1 - u) ^ 3 +
+          (∑' m : ℕ+, q₀ ^ (m : ℕ) * u / (1 - q₀ ^ (m : ℕ) * u) ^ 3) -
+          (∑' m : ℕ+, (q₀ ^ (m : ℕ) * u⁻¹) ^ 2 /
+            (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 3) -
+          (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+            q₀ ^ (N : ℕ)) := by
+      intro u hu
+      obtain ⟨hu0, hult, hqu, hquinv⟩ := hwin u hu
+      have hquinv1 : valuation k (q₀ * u⁻¹) < 1 := by
+        rw [hquinv]
+        exact hylt1
+      have h1u0 : (1 : k) - u ≠ 0 := hone_sub_ne'' u hult
+      have hsm1 : ∀ m : ℕ+, valuation k (q₀ ^ (m : ℕ) * u) < 1 := by
+        intro m
+        rw [map_mul, map_pow]
+        calc valuation k q₀ ^ (m : ℕ) * valuation k u
+            ≤ valuation k q₀ * 1 :=
+              mul_le_mul' (hqpow_le m) (le_of_lt hult)
+          _ = valuation k q₀ := mul_one _
+          _ < 1 := hq1
+      have hsm2 : ∀ m : ℕ+, valuation k (q₀ ^ (m : ℕ) * u⁻¹) < 1 := by
+        intro m
+        rw [map_mul, map_pow, map_inv₀]
+        calc valuation k q₀ ^ (m : ℕ) * (valuation k u)⁻¹
+            ≤ valuation k q₀ * (valuation k u)⁻¹ :=
+              mul_le_mul_left (hqpow_le m) _
+          _ = valuation k (q₀ * u⁻¹) := by rw [map_mul, map_inv₀]
+          _ < 1 := hquinv1
+      have hA1 : Summable (fun m : ℕ+ ↦
+          q₀ ^ (m : ℕ) * u / (1 - q₀ ^ (m : ℕ) * u) ^ 2) :=
+        summable_lambert_terms u q₀ hq1 hqu
+      have hA2 : Summable (fun m : ℕ+ ↦
+          (q₀ ^ (m : ℕ) * u) ^ 2 / (1 - q₀ ^ (m : ℕ) * u) ^ 3) :=
+        summable_lambert_terms_general
+          (fun j ↦ ((j.choose 2 : ℕ) : k)) (fun v ↦ v ^ 2 / (1 - v) ^ 3)
+          hbin1 u q₀ hq1 hqu
+          (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_self v₀ hv₀)
+      have hB1 : Summable (fun m : ℕ+ ↦
+          q₀ ^ (m : ℕ) * u⁻¹ / (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 2) :=
+        summable_lambert_terms u⁻¹ q₀ hq1 hquinv1
+      have hB2 : Summable (fun m : ℕ+ ↦
+          q₀ ^ (m : ℕ) * u⁻¹ / (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 3) :=
+        summable_lambert_terms_general
+          (fun j ↦ (((j + 1).choose 2 : ℕ) : k)) (fun v ↦ v / (1 - v) ^ 3)
+          hbin2 u⁻¹ q₀ hq1 hquinv1
+          (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_succ v₀ hv₀)
+      have hdirect : ∀ m : ℕ+,
+          q₀ ^ (m : ℕ) * u / (1 - q₀ ^ (m : ℕ) * u) ^ 2 +
+            (q₀ ^ (m : ℕ) * u) ^ 2 / (1 - q₀ ^ (m : ℕ) * u) ^ 3 =
+          q₀ ^ (m : ℕ) * u / (1 - q₀ ^ (m : ℕ) * u) ^ 3 := by
+        intro m
+        have h0 := hone_sub_ne'' _ (hsm1 m)
+        field_simp
+        ring
+      have hinverse : ∀ m : ℕ+,
+          q₀ ^ (m : ℕ) * u⁻¹ / (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 2 -
+            q₀ ^ (m : ℕ) * u⁻¹ / (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 3 =
+          -((q₀ ^ (m : ℕ) * u⁻¹) ^ 2 /
+            (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 3) := by
+        intro m
+        have h0 := hone_sub_ne'' _ (hsm2 m)
+        field_simp
+        ring
+      have hlead : u / (1 - u) ^ 2 + u ^ 2 / (1 - u) ^ 3 =
+          u / (1 - u) ^ 3 := by
+        field_simp
+        ring
+      have hc1 : (∑' m : ℕ+,
+          q₀ ^ (m : ℕ) * u / (1 - q₀ ^ (m : ℕ) * u) ^ 2) +
+          (∑' m : ℕ+, (q₀ ^ (m : ℕ) * u) ^ 2 /
+            (1 - q₀ ^ (m : ℕ) * u) ^ 3) =
+          ∑' m : ℕ+, q₀ ^ (m : ℕ) * u / (1 - q₀ ^ (m : ℕ) * u) ^ 3 := by
+        rw [← hA1.tsum_add hA2]
+        exact tsum_congr fun m => hdirect m
+      have hc2 : (∑' m : ℕ+,
+          q₀ ^ (m : ℕ) * u⁻¹ / (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 2) -
+          (∑' m : ℕ+, q₀ ^ (m : ℕ) * u⁻¹ /
+            (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 3) =
+          -(∑' m : ℕ+, (q₀ ^ (m : ℕ) * u⁻¹) ^ 2 /
+            (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 3) := by
+        rw [← hB1.tsum_sub hB2, ← tsum_neg]
+        exact tsum_congr fun m => hinverse m
+      rw [bilateralX, bilateralY]
+      linear_combination hc1 + hc2 + hlead
     sorry
 
 /-- **`x`-surjectivity onto the annulus** (DERIVED 2026-07-20 by case
