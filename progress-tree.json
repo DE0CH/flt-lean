@@ -189,8 +189,8 @@
   "TateCurve.bilateralY_map": "✅✅",
   "TateCurve.tateCurve_map": "✅✅",
   "exists_valuativeRel_sepClosure": "✅✅",
-  "exists_isNonarchimedeanLocalField_intermediate": "✅",
-  "locallyCompactSpace_intermediate": "❌"
+  "exists_isNonarchimedeanLocalField_intermediate": "✅✅",
+  "locallyCompactSpace_intermediate": "✅✅"
  },
  "children": {
   "fermatLastTheoremThree": [],

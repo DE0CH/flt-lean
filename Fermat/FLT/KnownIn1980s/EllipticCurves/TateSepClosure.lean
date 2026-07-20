@@ -206,16 +206,15 @@ theorem valuativeExtension_comap_val (v : ValuativeRel Ω)
   letI : ValuativeRel L := @ValuativeRel.comap L Ω _ _ v L.val.toRingHom
   exact ⟨fun a b => Iff.rfl⟩
 
-set_option warn.sorry false in
-/-- **Local compactness of finite subextensions** (sorry node — the
-remaining analytic core of the prerequisite): in its valuative
+omit [IsSepClosed Ω] [DecidableEq Ω] in
+/-- **Local compactness of finite subextensions**: in its valuative
 topology, a finite intermediate field `L` of `Ω/k` is locally compact.
-Classical routes: `𝒪_L = integralClosure 𝒪[k] L` is a finite module
-over the compact DVR `𝒪[k]` (`IsIntegralClosure.finite` for the finite
-separable extension), hence compact and open, giving a compact
-neighbourhood basis; or transport properness from `k` through a
-`k`-basis (`Basis.norm`, unique Hausdorff TVS topology in finite
-dimension over a complete field). -/
+Proof route: `hsmall` (below any nonzero value of `L` lies a nonzero
+base value, by clearing denominators over `𝒪[k]` and one strict shrink)
+gives Hausdorffness and continuity of the structure map, hence
+`ContinuousSMul k L`; then any `k`-linear equivalence with
+`k ^ finrank` is a homeomorphism (`LinearMap.continuous_of_finiteDimensional`
+over the complete field `k`) and local compactness transports. -/
 theorem locallyCompactSpace_intermediate
     (v : ValuativeRel Ω) (hv : @ValuativeExtension k Ω _ _ _ v _)
     (L : IntermediateField k Ω) [FiniteDimensional k L] :
@@ -409,8 +408,70 @@ theorem locallyCompactSpace_intermediate
           mul_lt_mul_of_pos_right hpimg hyLpos
       _ = valuation L (algebraMap k L (y : k)) := one_mul _
       _ ≤ valuation L w := hyL
-  sorry
+  -- `L` is a Hausdorff topological ring in its valuative topology
+  haveI hvtL : IsValuativeTopology L := ValuativeRel.isValuativeTopology L
+  haveI : T2Space L := by
+    apply IsTopologicalAddGroup.t2Space_of_zero_sep
+    intro w hw0
+    refine ⟨{x | valuation L x < valuation L w}, ?_,
+      fun h => lt_irrefl _ (show valuation L w < valuation L w from h)⟩
+    rw [IsValuativeTopology.mem_nhds_zero_iff]
+    exact ⟨Units.mk0 (valuation L w) ((valuation L).ne_zero_iff.mpr hw0),
+      fun y hy => hy⟩
+  -- strict comparisons transfer from `k` to `L`
+  have hlt : ∀ x z : k, valuation k x < valuation k z →
+      valuation L (algebraMap k L x) < valuation L (algebraMap k L z) := by
+    intro x z hxz
+    rw [lt_iff_not_ge] at hxz ⊢
+    intro hge
+    apply hxz
+    rw [← Valuation.Compatible.vle_iff_le (v := valuation L)] at hge
+    rw [← Valuation.Compatible.vle_iff_le (v := valuation k)]
+    exact ((valuativeExtension_comap (k := k) Ω v hv L).vle_iff_vle z x).mp hge
+  -- the structure map is continuous: the preimage of every basic ball
+  -- around zero contains a basic ball, by `hsmall`
+  have hcont : Continuous (algebraMap k L) := by
+    apply continuous_of_continuousAt_zero (algebraMap k L)
+    rw [ContinuousAt, map_zero]
+    rw [(IsValuativeTopology.hasBasis_nhds_zero k).tendsto_iff
+      (IsValuativeTopology.hasBasis_nhds_zero L)]
+    rintro γL -
+    obtain ⟨z, hz⟩ := ValuativeRel.valuation_surjective (K := L)
+      ((γL : ValueGroupWithZero L))
+    have hz0 : z ≠ 0 := by
+      intro h
+      rw [h, map_zero] at hz
+      exact γL.ne_zero hz.symm
+    obtain ⟨c, hc0, hc⟩ := hsmall z hz0
+    refine ⟨Units.mk0 (valuation k c) ((valuation k).ne_zero_iff.mpr hc0),
+      trivial, ?_⟩
+    intro a ha
+    calc valuation L (algebraMap k L a)
+        < valuation L (algebraMap k L c) := hlt a c ha
+      _ < valuation L z := hc
+      _ = (γL : ValueGroupWithZero L) := hz
+  -- hence scalar multiplication is continuous
+  haveI : ContinuousSMul k L := by
+    constructor
+    have h : (fun q : k × L => q.1 • q.2)
+        = fun q : k × L => algebraMap k L q.1 * q.2 := by
+      funext q
+      exact Algebra.smul_def _ _
+    rw [h]
+    exact ((hcont.comp continuous_fst).mul continuous_snd)
+  -- transport local compactness from `k ^ finrank`
+  let e : (Fin (Module.finrank k L) → k) ≃ₗ[k] L :=
+    (Module.finBasis k L).equivFun.symm
+  have he : Continuous e.toLinearMap := e.toLinearMap.continuous_of_finiteDimensional
+  have he' : Continuous e.symm.toLinearMap :=
+    e.symm.toLinearMap.continuous_of_finiteDimensional
+  let h : (Fin (Module.finrank k L) → k) ≃ₜ L :=
+    { toEquiv := e.toEquiv
+      continuous_toFun := he
+      continuous_invFun := he' }
+  exact h.locallyCompactSpace_iff.mp inferInstance
 
+omit [IsSepClosed Ω] [DecidableEq Ω] in
 /-- **Finite subextensions of `Ω` are nonarchimedean local fields**
 (DERIVED 2026-07-20 from the local-compactness leaf): with the
 restricted valuative relation and its valuative topology, `L` is a

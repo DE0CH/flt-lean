@@ -234,7 +234,7 @@ entries file). To add/remove/annotate a node, edit
                                                                           whether TateSepClosure’s
                                                                           Surjective-φ interface can be
                                                                           weakened accordingly.
-                                                            - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the Ω-level
+                                                            - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the Ω-level
                                                               Tate uniformisation (sorry node,
                                                               NARROWED 2026-07-20: naturality of the
                                                               bilateral coordinates and curve-level
@@ -262,64 +262,6 @@ entries file). To add/remove/annotate a node, edit
                                                               choice of L via hnat, then additivity/
                                                               kernel/surjectivity/equivariance pass
                                                               to the colimit.
-                                                                - ✅· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
-                                                                  nonarchimedean local fields
-                                                                  (DERIVED 2026-07-20): topology :=
-                                                                  the canonical valuative topology
-                                                                  (ValuativeRel.topologicalSpace),
-                                                                  which is valuative by mathlib’s
-                                                                  ValuativeRel.isValuativeTopology;
-                                                                  nontriviality transports from k
-                                                                  through the proven valuative
-                                                                  extension (valuation_surjective +
-                                                                  Compatible.vle_iff_le); local
-                                                                  compactness delegated to the
-                                                                  remaining leaf
-                                                                  locallyCompactSpace_intermediate.
-                                                                    - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite
-                                                                      subextensions in the valuative
-                                                                      topology (sorry node, NARROWED
-                                                                      2026-07-20): the proof
-                                                                      skeleton establishes IN-PROOF
-                                                                      the two-sided bridge x ∈
-                                                                      integralClosure 𝒪[k] Ω ↔
-                                                                      spectralNorm k Ω x ≤ 1
-                                                                      (forward: minpoly over the
-                                                                      integrally closed DVR via minp
-                                                                      oly.isIntegrallyClosed_eq_fiel
-                                                                      d_fractions-prime +
-                                                                      spectralValue_le_one_iff + Val
-                                                                      ued.toNormedField.norm_le_one_
-                                                                      iff; backward: the vendored is
-                                                                      Integral_of_spectralNorm_le_on
-                                                                      e) and its strict version (via
-                                                                      spectralNorm_inv and
-                                                                      spectralNorm_zero_lt).
-                                                                      REMAINING: (4) the valuative
-                                                                      topology of L equals the
-                                                                      spectral-norm topology — ball
-                                                                      correspondence: for gamma =
-                                                                      val_L w
-                                                                      (valuation_surjective), the
-                                                                      gamma-ball is w times the unit
-                                                                      ball, equal to the spectral
-                                                                      ball of radius specNorm w by
-                                                                      the strict bridge and
-                                                                      multiplicativity; (5) L with
-                                                                      the spectral norm is a finite-
-                                                                      dimensional normed k-vector
-                                                                      space (spectralAlgNorm
-                                                                      restricted along L.val; norm
-                                                                      extends); (6) ProperSpace k (.
-                                                                      of_nontriviallyNormedField_of_
-                                                                      weaklyLocallyCompactSpace) +
-                                                                      finite-dimensional properness
-                                                                      (FiniteDimensional.properSpace
-                                                                      or ContinuousLinearEquiv to
-                                                                      k^n) gives LocallyCompactSpace
-                                                                      under the norm topology; (7)
-                                                                      transport along the topology
-                                                                      equality.
                                             - ✅· `WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic` — the nonsplit half of the unipotence statement,
                                               assembled from the LOCAL nonsplit node
                                               `tate_inertia_unipotent_of_nonsplit` by the proven
@@ -468,7 +410,7 @@ entries file). To add/remove/annotate a node, edit
                                                                               whether TateSepClosure’s
                                                                               Surjective-φ interface can be
                                                                               weakened accordingly.
-                                                                - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the Ω-level
+                                                                - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the Ω-level
                                                                   Tate uniformisation (sorry node,
                                                                   NARROWED 2026-07-20: naturality of
                                                                   the bilateral coordinates and
@@ -499,65 +441,6 @@ entries file). To add/remove/annotate a node, edit
                                                                   of L via hnat, then additivity/ker
                                                                   nel/surjectivity/equivariance pass
                                                                   to the colimit.
-                                                                    - ✅· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
-                                                                      nonarchimedean local fields
-                                                                      (DERIVED 2026-07-20): topology
-                                                                      := the canonical valuative
-                                                                      topology (ValuativeRel.topolog
-                                                                      icalSpace), which is valuative
-                                                                      by mathlib’s ValuativeRel.isVa
-                                                                      luativeTopology; nontriviality
-                                                                      transports from k through the
-                                                                      proven valuative extension
-                                                                      (valuation_surjective +
-                                                                      Compatible.vle_iff_le); local
-                                                                      compactness delegated to the
-                                                                      remaining leaf locallyCompactS
-                                                                      pace_intermediate.
-                                                                        - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite
-                                                                          subextensions in the valuative
-                                                                          topology (sorry node, NARROWED
-                                                                          2026-07-20): the proof
-                                                                          skeleton establishes IN-PROOF
-                                                                          the two-sided bridge x ∈
-                                                                          integralClosure 𝒪[k] Ω ↔
-                                                                          spectralNorm k Ω x ≤ 1
-                                                                          (forward: minpoly over the
-                                                                          integrally closed DVR via minp
-                                                                          oly.isIntegrallyClosed_eq_fiel
-                                                                          d_fractions-prime +
-                                                                          spectralValue_le_one_iff + Val
-                                                                          ued.toNormedField.norm_le_one_
-                                                                          iff; backward: the vendored is
-                                                                          Integral_of_spectralNorm_le_on
-                                                                          e) and its strict version (via
-                                                                          spectralNorm_inv and
-                                                                          spectralNorm_zero_lt).
-                                                                          REMAINING: (4) the valuative
-                                                                          topology of L equals the
-                                                                          spectral-norm topology — ball
-                                                                          correspondence: for gamma =
-                                                                          val_L w
-                                                                          (valuation_surjective), the
-                                                                          gamma-ball is w times the unit
-                                                                          ball, equal to the spectral
-                                                                          ball of radius specNorm w by
-                                                                          the strict bridge and
-                                                                          multiplicativity; (5) L with
-                                                                          the spectral norm is a finite-
-                                                                          dimensional normed k-vector
-                                                                          space (spectralAlgNorm
-                                                                          restricted along L.val; norm
-                                                                          extends); (6) ProperSpace k (.
-                                                                          of_nontriviallyNormedField_of_
-                                                                          weaklyLocallyCompactSpace) +
-                                                                          finite-dimensional properness
-                                                                          (FiniteDimensional.properSpace
-                                                                          or ContinuousLinearEquiv to
-                                                                          k^n) gives LocallyCompactSpace
-                                                                          under the norm topology; (7)
-                                                                          transport along the topology
-                                                                          equality.
                                     - ❌· `FreyPackage.subquotient_character_unramified_at_p` — (stated 2026-07-17) — flat/ordinary at `p`: one of the two
                                       characters is unramified at `p` itself (connected-étale
                                       sequence in the ordinary/ multiplicative case; supersingular
@@ -728,7 +611,7 @@ entries file). To add/remove/annotate a node, edit
                                                                                   whether TateSepClosure’s
                                                                                   Surjective-φ interface can be
                                                                                   weakened accordingly.
-                                                                    - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the
+                                                                    - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the
                                                                       Ω-level Tate uniformisation
                                                                       (sorry node, NARROWED
                                                                       2026-07-20: naturality of the
@@ -764,65 +647,6 @@ entries file). To add/remove/annotate a node, edit
                                                                       L via hnat, then additivity/ke
                                                                       rnel/surjectivity/equivariance
                                                                       pass to the colimit.
-                                                                        - ✅· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
-                                                                          nonarchimedean local fields
-                                                                          (DERIVED 2026-07-20): topology
-                                                                          := the canonical valuative
-                                                                          topology (ValuativeRel.topolog
-                                                                          icalSpace), which is valuative
-                                                                          by mathlib’s ValuativeRel.isVa
-                                                                          luativeTopology; nontriviality
-                                                                          transports from k through the
-                                                                          proven valuative extension
-                                                                          (valuation_surjective +
-                                                                          Compatible.vle_iff_le); local
-                                                                          compactness delegated to the
-                                                                          remaining leaf locallyCompactS
-                                                                          pace_intermediate.
-                                                                            - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite
-                                                                              subextensions in the valuative
-                                                                              topology (sorry node, NARROWED
-                                                                              2026-07-20): the proof
-                                                                              skeleton establishes IN-PROOF
-                                                                              the two-sided bridge x ∈
-                                                                              integralClosure 𝒪[k] Ω ↔
-                                                                              spectralNorm k Ω x ≤ 1
-                                                                              (forward: minpoly over the
-                                                                              integrally closed DVR via minp
-                                                                              oly.isIntegrallyClosed_eq_fiel
-                                                                              d_fractions-prime +
-                                                                              spectralValue_le_one_iff + Val
-                                                                              ued.toNormedField.norm_le_one_
-                                                                              iff; backward: the vendored is
-                                                                              Integral_of_spectralNorm_le_on
-                                                                              e) and its strict version (via
-                                                                              spectralNorm_inv and
-                                                                              spectralNorm_zero_lt).
-                                                                              REMAINING: (4) the valuative
-                                                                              topology of L equals the
-                                                                              spectral-norm topology — ball
-                                                                              correspondence: for gamma =
-                                                                              val_L w
-                                                                              (valuation_surjective), the
-                                                                              gamma-ball is w times the unit
-                                                                              ball, equal to the spectral
-                                                                              ball of radius specNorm w by
-                                                                              the strict bridge and
-                                                                              multiplicativity; (5) L with
-                                                                              the spectral norm is a finite-
-                                                                              dimensional normed k-vector
-                                                                              space (spectralAlgNorm
-                                                                              restricted along L.val; norm
-                                                                              extends); (6) ProperSpace k (.
-                                                                              of_nontriviallyNormedField_of_
-                                                                              weaklyLocallyCompactSpace) +
-                                                                              finite-dimensional properness
-                                                                              (FiniteDimensional.properSpace
-                                                                              or ContinuousLinearEquiv to
-                                                                              k^n) gives LocallyCompactSpace
-                                                                              under the norm topology; (7)
-                                                                              transport along the topology
-                                                                              equality.
                                                     - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality statement,
                                                       assembled from the LOCAL nonsplit node
                                                       `tate_inertia_trivial_of_nonsplit` by the
@@ -984,7 +808,7 @@ entries file). To add/remove/annotate a node, edit
                                                                                       whether TateSepClosure’s
                                                                                       Surjective-φ interface can be
                                                                                       weakened accordingly.
-                                                                        - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the
+                                                                        - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the
                                                                           Ω-level Tate uniformisation
                                                                           (sorry node, NARROWED
                                                                           2026-07-20: naturality of the
@@ -1020,65 +844,6 @@ entries file). To add/remove/annotate a node, edit
                                                                           L via hnat, then additivity/ke
                                                                           rnel/surjectivity/equivariance
                                                                           pass to the colimit.
-                                                                            - ✅· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
-                                                                              nonarchimedean local fields
-                                                                              (DERIVED 2026-07-20): topology
-                                                                              := the canonical valuative
-                                                                              topology (ValuativeRel.topolog
-                                                                              icalSpace), which is valuative
-                                                                              by mathlib’s ValuativeRel.isVa
-                                                                              luativeTopology; nontriviality
-                                                                              transports from k through the
-                                                                              proven valuative extension
-                                                                              (valuation_surjective +
-                                                                              Compatible.vle_iff_le); local
-                                                                              compactness delegated to the
-                                                                              remaining leaf locallyCompactS
-                                                                              pace_intermediate.
-                                                                                - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite
-                                                                                  subextensions in the valuative
-                                                                                  topology (sorry node, NARROWED
-                                                                                  2026-07-20): the proof
-                                                                                  skeleton establishes IN-PROOF
-                                                                                  the two-sided bridge x ∈
-                                                                                  integralClosure 𝒪[k] Ω ↔
-                                                                                  spectralNorm k Ω x ≤ 1
-                                                                                  (forward: minpoly over the
-                                                                                  integrally closed DVR via minp
-                                                                                  oly.isIntegrallyClosed_eq_fiel
-                                                                                  d_fractions-prime +
-                                                                                  spectralValue_le_one_iff + Val
-                                                                                  ued.toNormedField.norm_le_one_
-                                                                                  iff; backward: the vendored is
-                                                                                  Integral_of_spectralNorm_le_on
-                                                                                  e) and its strict version (via
-                                                                                  spectralNorm_inv and
-                                                                                  spectralNorm_zero_lt).
-                                                                                  REMAINING: (4) the valuative
-                                                                                  topology of L equals the
-                                                                                  spectral-norm topology — ball
-                                                                                  correspondence: for gamma =
-                                                                                  val_L w
-                                                                                  (valuation_surjective), the
-                                                                                  gamma-ball is w times the unit
-                                                                                  ball, equal to the spectral
-                                                                                  ball of radius specNorm w by
-                                                                                  the strict bridge and
-                                                                                  multiplicativity; (5) L with
-                                                                                  the spectral norm is a finite-
-                                                                                  dimensional normed k-vector
-                                                                                  space (spectralAlgNorm
-                                                                                  restricted along L.val; norm
-                                                                                  extends); (6) ProperSpace k (.
-                                                                                  of_nontriviallyNormedField_of_
-                                                                                  weaklyLocallyCompactSpace) +
-                                                                                  finite-dimensional properness
-                                                                                  (FiniteDimensional.properSpace
-                                                                                  or ContinuousLinearEquiv to
-                                                                                  k^n) gives LocallyCompactSpace
-                                                                                  under the norm topology; (7)
-                                                                                  transport along the topology
-                                                                                  equality.
                                 - ✅· `det_galoisRep_eq_cyclotomic` — `det_galoisRep_eq_cyclotomic` — (2026-07-17): `det ρ̄` and `χ̄`
                                   are continuous conjugation-invariant `ZMod p`-valued functions on
                                   `Γ ℚ` (continuity of `det ∘ ρ` from discreteness of `End` via
@@ -1277,7 +1042,7 @@ entries file). To add/remove/annotate a node, edit
                                                               needed; check whether TateSepClosure’s
                                                               Surjective-φ interface can be weakened
                                                               accordingly.
-                                                - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the Ω-level Tate
+                                                - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the Ω-level Tate
                                                   uniformisation (sorry node, NARROWED 2026-07-20:
                                                   naturality of the bilateral coordinates and curve-
                                                   level functoriality under valuative extensions are
@@ -1299,50 +1064,6 @@ entries file). To add/remove/annotate a node, edit
                                                   choice of L via hnat, then
                                                   additivity/kernel/surjectivity/equivariance pass
                                                   to the colimit.
-                                                    - ✅· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are nonarchimedean
-                                                      local fields (DERIVED 2026-07-20): topology :=
-                                                      the canonical valuative topology
-                                                      (ValuativeRel.topologicalSpace), which is
-                                                      valuative by mathlib’s
-                                                      ValuativeRel.isValuativeTopology;
-                                                      nontriviality transports from k through the
-                                                      proven valuative extension
-                                                      (valuation_surjective +
-                                                      Compatible.vle_iff_le); local compactness
-                                                      delegated to the remaining leaf
-                                                      locallyCompactSpace_intermediate.
-                                                        - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite subextensions
-                                                          in the valuative topology (sorry node,
-                                                          NARROWED 2026-07-20): the proof skeleton
-                                                          establishes IN-PROOF the two-sided bridge
-                                                          x ∈ integralClosure 𝒪[k] Ω ↔ spectralNorm
-                                                          k Ω x ≤ 1 (forward: minpoly over the
-                                                          integrally closed DVR via minpoly.isIntegr
-                                                          allyClosed_eq_field_fractions-prime +
-                                                          spectralValue_le_one_iff +
-                                                          Valued.toNormedField.norm_le_one_iff;
-                                                          backward: the vendored
-                                                          isIntegral_of_spectralNorm_le_one) and its
-                                                          strict version (via spectralNorm_inv and
-                                                          spectralNorm_zero_lt). REMAINING: (4) the
-                                                          valuative topology of L equals the
-                                                          spectral-norm topology — ball
-                                                          correspondence: for gamma = val_L w
-                                                          (valuation_surjective), the gamma-ball is
-                                                          w times the unit ball, equal to the
-                                                          spectral ball of radius specNorm w by the
-                                                          strict bridge and multiplicativity; (5) L
-                                                          with the spectral norm is a finite-
-                                                          dimensional normed k-vector space
-                                                          (spectralAlgNorm restricted along L.val;
-                                                          norm extends); (6) ProperSpace k (.of_nont
-                                                          riviallyNormedField_of_weaklyLocallyCompac
-                                                          tSpace) + finite-dimensional properness
-                                                          (FiniteDimensional.properSpace or
-                                                          ContinuousLinearEquiv to k^n) gives
-                                                          LocallyCompactSpace under the norm
-                                                          topology; (7) transport along the topology
-                                                          equality.
                                 - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality statement, assembled from the
                                   LOCAL nonsplit node `tate_inertia_trivial_of_nonsplit` by the
                                   proven `ℚ̄`-pullback glue; the `j`-hypothesis feeds through
@@ -1463,7 +1184,7 @@ entries file). To add/remove/annotate a node, edit
                                                                   check whether TateSepClosure’s
                                                                   Surjective-φ interface can be
                                                                   weakened accordingly.
-                                                    - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the Ω-level Tate
+                                                    - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the Ω-level Tate
                                                       uniformisation (sorry node, NARROWED
                                                       2026-07-20: naturality of the bilateral
                                                       coordinates and curve-level functoriality
@@ -1486,55 +1207,6 @@ entries file). To add/remove/annotate a node, edit
                                                       independence of the choice of L via hnat, then
                                                       additivity/kernel/surjectivity/equivariance
                                                       pass to the colimit.
-                                                        - ✅· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
-                                                          nonarchimedean local fields (DERIVED
-                                                          2026-07-20): topology := the canonical
-                                                          valuative topology
-                                                          (ValuativeRel.topologicalSpace), which is
-                                                          valuative by mathlib’s
-                                                          ValuativeRel.isValuativeTopology;
-                                                          nontriviality transports from k through
-                                                          the proven valuative extension
-                                                          (valuation_surjective +
-                                                          Compatible.vle_iff_le); local compactness
-                                                          delegated to the remaining leaf
-                                                          locallyCompactSpace_intermediate.
-                                                            - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite
-                                                              subextensions in the valuative
-                                                              topology (sorry node, NARROWED
-                                                              2026-07-20): the proof skeleton
-                                                              establishes IN-PROOF the two-sided
-                                                              bridge x ∈ integralClosure 𝒪[k] Ω ↔
-                                                              spectralNorm k Ω x ≤ 1 (forward:
-                                                              minpoly over the integrally closed DVR
-                                                              via minpoly.isIntegrallyClosed_eq_fiel
-                                                              d_fractions-prime +
-                                                              spectralValue_le_one_iff +
-                                                              Valued.toNormedField.norm_le_one_iff;
-                                                              backward: the vendored
-                                                              isIntegral_of_spectralNorm_le_one) and
-                                                              its strict version (via
-                                                              spectralNorm_inv and
-                                                              spectralNorm_zero_lt). REMAINING: (4)
-                                                              the valuative topology of L equals the
-                                                              spectral-norm topology — ball
-                                                              correspondence: for gamma = val_L w
-                                                              (valuation_surjective), the gamma-ball
-                                                              is w times the unit ball, equal to the
-                                                              spectral ball of radius specNorm w by
-                                                              the strict bridge and
-                                                              multiplicativity; (5) L with the
-                                                              spectral norm is a finite-dimensional
-                                                              normed k-vector space (spectralAlgNorm
-                                                              restricted along L.val; norm extends);
-                                                              (6) ProperSpace k (.of_nontriviallyNor
-                                                              medField_of_weaklyLocallyCompactSpace)
-                                                              + finite-dimensional properness
-                                                              (FiniteDimensional.properSpace or
-                                                              ContinuousLinearEquiv to k^n) gives
-                                                              LocallyCompactSpace under the norm
-                                                              topology; (7) transport along the
-                                                              topology equality.
                 - ✅· `FreyCurve.torsion_isFlat` — flat at p: (2026-07-16) by the case split `p ∣ abc` or not, from the two nodes
                   below
                     - ✅· `FreyCurve.torsion_isFlat_of_good` — (2026-07-16) from the arithmetic node `freyCurve_hasGoodReduction_of_not_dvd`
@@ -1659,7 +1331,7 @@ entries file). To add/remove/annotate a node, edit
                                                       E_q[ℓ](K̄) — no analytic inversion needed;
                                                       check whether TateSepClosure’s Surjective-φ
                                                       interface can be weakened accordingly.
-                                        - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the Ω-level Tate uniformisation
+                                        - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the Ω-level Tate uniformisation
                                           (sorry node, NARROWED 2026-07-20: naturality of the
                                           bilateral coordinates and curve-level functoriality under
                                           valuative extensions are PROVEN and wired as hnat/hcurve;
@@ -1677,42 +1349,6 @@ entries file). To add/remove/annotate a node, edit
                                           independence of the choice of L via hnat, then
                                           additivity/kernel/surjectivity/equivariance pass to the
                                           colimit.
-                                            - ✅· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are nonarchimedean local
-                                              fields (DERIVED 2026-07-20): topology := the canonical
-                                              valuative topology (ValuativeRel.topologicalSpace),
-                                              which is valuative by mathlib’s
-                                              ValuativeRel.isValuativeTopology; nontriviality
-                                              transports from k through the proven valuative
-                                              extension (valuation_surjective +
-                                              Compatible.vle_iff_le); local compactness delegated to
-                                              the remaining leaf locallyCompactSpace_intermediate.
-                                                - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite subextensions in the
-                                                  valuative topology (sorry node, NARROWED
-                                                  2026-07-20): the proof skeleton establishes IN-
-                                                  PROOF the two-sided bridge x ∈ integralClosure
-                                                  𝒪[k] Ω ↔ spectralNorm k Ω x ≤ 1 (forward: minpoly
-                                                  over the integrally closed DVR via
-                                                  minpoly.isIntegrallyClosed_eq_field_fractions-
-                                                  prime + spectralValue_le_one_iff +
-                                                  Valued.toNormedField.norm_le_one_iff; backward:
-                                                  the vendored isIntegral_of_spectralNorm_le_one)
-                                                  and its strict version (via spectralNorm_inv and
-                                                  spectralNorm_zero_lt). REMAINING: (4) the
-                                                  valuative topology of L equals the spectral-norm
-                                                  topology — ball correspondence: for gamma = val_L
-                                                  w (valuation_surjective), the gamma-ball is w
-                                                  times the unit ball, equal to the spectral ball of
-                                                  radius specNorm w by the strict bridge and
-                                                  multiplicativity; (5) L with the spectral norm is
-                                                  a finite-dimensional normed k-vector space
-                                                  (spectralAlgNorm restricted along L.val; norm
-                                                  extends); (6) ProperSpace k (.of_nontriviallyNorme
-                                                  dField_of_weaklyLocallyCompactSpace) + finite-
-                                                  dimensional properness
-                                                  (FiniteDimensional.properSpace or
-                                                  ContinuousLinearEquiv to k^n) gives
-                                                  LocallyCompactSpace under the norm topology; (7)
-                                                  transport along the topology equality.
                         - ✅· `WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two` — the nonsplit half of the tame-at-2 condition, now ASSEMBLED: the exponent
                           quotient of the twisted minimal model transports through the (χ-twisted)
                           composite point equivalence; δ is the quadratic character of the
@@ -1805,7 +1441,7 @@ entries file). To add/remove/annotate a node, edit
                                                       E_q[ℓ](K̄) — no analytic inversion needed;
                                                       check whether TateSepClosure’s Surjective-φ
                                                       interface can be weakened accordingly.
-                                        - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the Ω-level Tate uniformisation
+                                        - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the Ω-level Tate uniformisation
                                           (sorry node, NARROWED 2026-07-20: naturality of the
                                           bilateral coordinates and curve-level functoriality under
                                           valuative extensions are PROVEN and wired as hnat/hcurve;
@@ -1823,42 +1459,6 @@ entries file). To add/remove/annotate a node, edit
                                           independence of the choice of L via hnat, then
                                           additivity/kernel/surjectivity/equivariance pass to the
                                           colimit.
-                                            - ✅· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are nonarchimedean local
-                                              fields (DERIVED 2026-07-20): topology := the canonical
-                                              valuative topology (ValuativeRel.topologicalSpace),
-                                              which is valuative by mathlib’s
-                                              ValuativeRel.isValuativeTopology; nontriviality
-                                              transports from k through the proven valuative
-                                              extension (valuation_surjective +
-                                              Compatible.vle_iff_le); local compactness delegated to
-                                              the remaining leaf locallyCompactSpace_intermediate.
-                                                - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite subextensions in the
-                                                  valuative topology (sorry node, NARROWED
-                                                  2026-07-20): the proof skeleton establishes IN-
-                                                  PROOF the two-sided bridge x ∈ integralClosure
-                                                  𝒪[k] Ω ↔ spectralNorm k Ω x ≤ 1 (forward: minpoly
-                                                  over the integrally closed DVR via
-                                                  minpoly.isIntegrallyClosed_eq_field_fractions-
-                                                  prime + spectralValue_le_one_iff +
-                                                  Valued.toNormedField.norm_le_one_iff; backward:
-                                                  the vendored isIntegral_of_spectralNorm_le_one)
-                                                  and its strict version (via spectralNorm_inv and
-                                                  spectralNorm_zero_lt). REMAINING: (4) the
-                                                  valuative topology of L equals the spectral-norm
-                                                  topology — ball correspondence: for gamma = val_L
-                                                  w (valuation_surjective), the gamma-ball is w
-                                                  times the unit ball, equal to the spectral ball of
-                                                  radius specNorm w by the strict bridge and
-                                                  multiplicativity; (5) L with the spectral norm is
-                                                  a finite-dimensional normed k-vector space
-                                                  (spectralAlgNorm restricted along L.val; norm
-                                                  extends); (6) ProperSpace k (.of_nontriviallyNorme
-                                                  dField_of_weaklyLocallyCompactSpace) + finite-
-                                                  dimensional properness
-                                                  (FiniteDimensional.properSpace or
-                                                  ContinuousLinearEquiv to k^n) gives
-                                                  LocallyCompactSpace under the norm topology; (7)
-                                                  transport along the topology equality.
             - ✅· `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified` — B5 `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
               (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work) — now (2026-07-16)
               from three explicit nodes in `HardlyRamified/Lift.lean` (own work), following
