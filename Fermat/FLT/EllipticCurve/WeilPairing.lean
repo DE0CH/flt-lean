@@ -2794,6 +2794,127 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
       ⟨_, _, Subtype.ext rfl⟩
     rw [hgx]
     refine Subtype.ext ?_
+    -- both sides as value chains on literal points
+    show (WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm) (imap
+        ((WeierstrassCurve.Affine.Point.equivOfEq hEq1)
+        (edn.symm (redFun (eup (Pmap (hmodelPt
+          (WeierstrassCurve.Affine.Point.some
+            (GaloisRepresentation.globalFrob
+              hq.toHeightOneSpectrumRingOfIntegersRat a)
+            (GaloisRepresentation.globalFrob
+              hq.toHeightOneSpectrumRingOfIntegersRat b) hns1)))))))) =
+      WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
+        (frobAlgHom q)
+        ((WeierstrassCurve.Affine.Point.equivOfEq hEq2.symm) (imap
+        ((WeierstrassCurve.Affine.Point.equivOfEq hEq1)
+        (edn.symm (redFun (eup (Pmap (hmodelPt
+          (WeierstrassCurve.Affine.Point.some a b hab)))))))))
+    -- unfold the model identification and push both chains to the
+    -- reduction layer
+    have hmodelPtdef : hmodelPt = ((WeierstrassCurve.Affine.Point.equivOfEq
+        (hid (E.map (algebraMap ℚ (AlgebraicClosure ℚ))))).trans
+      ((WeierstrassCurve.Affine.Point.equivVariableChange
+          (E.map (algebraMap ℚ (AlgebraicClosure ℚ)))
+          (C.map (algebraMap ℚ (AlgebraicClosure ℚ)))).symm.trans
+        ((WeierstrassCurve.Affine.Point.equivOfEq hmapbar).trans
+          (WeierstrassCurve.Affine.Point.equivOfEq
+            (hid (W.map (algebraMap ℤ (AlgebraicClosure ℚ)))).symm)))) :=
+      rfl
+    have hevcsymm : ∀ (c d : AlgebraicClosure ℚ)
+        (h : (E.map (algebraMap ℚ
+          (AlgebraicClosure ℚ))).toAffine.Nonsingular c d),
+        (WeierstrassCurve.Affine.Point.equivVariableChange
+          (E.map (algebraMap ℚ (AlgebraicClosure ℚ)))
+          (C.map (algebraMap ℚ (AlgebraicClosure ℚ)))).symm
+          (WeierstrassCurve.Affine.Point.some c d h) =
+        WeierstrassCurve.Affine.Point.mapVariableChangeFun
+          ((C.map (algebraMap ℚ (AlgebraicClosure ℚ))) •
+            (E.map (algebraMap ℚ (AlgebraicClosure ℚ))))
+          (C.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁻¹
+          (WeierstrassCurve.Affine.Point.equivOfEq
+            (inv_smul_smul (C.map (algebraMap ℚ (AlgebraicClosure ℚ)))
+              (E.map (algebraMap ℚ (AlgebraicClosure ℚ)))).symm
+            (WeierstrassCurve.Affine.Point.some c d h)) :=
+      fun _ _ _ => rfl
+    have heqsymm : ∀ {F : Type} [inst : Field F]
+        {V V' : WeierstrassCurve F} (h : V = V'),
+        (WeierstrassCurve.Affine.Point.equivOfEq h).symm =
+        WeierstrassCurve.Affine.Point.equivOfEq h.symm := by
+      intro F _ V V' h
+      subst h
+      rfl
+    -- torsion of the mid-chain image, tracked to the literal point
+    have hPtor2 : ((p : ℕ) : ℤ) • (WeierstrassCurve.Affine.Point.some a b
+        hab : ((E.map (algebraMap ℚ
+          (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).toAffine.Point) = 0 := hPtor
+    have htor2 : ((p : ℕ) : ℤ) • (eup (Pmap (hmodelPt
+        (WeierstrassCurve.Affine.Point.some a b hab)))) = 0 := by
+      rw [← map_zsmul eup, ← map_zsmul Pmap, ← map_zsmul hmodelPt, hPtor2,
+        map_zero, map_zero, map_zero]
+    simp only [hmodelPtdef, AddEquiv.trans_apply,
+      WeierstrassCurve.Affine.Point.equivOfEq_some, hevcsymm,
+      WeierstrassCurve.Affine.Point.mapVariableChangeFun_some,
+      hPmapdef, heupdef, hedndef, himapdef, heqsymm,
+      AddMonoidHom.comp_apply, AddEquiv.coe_toAddMonoidHom,
+      WeierstrassCurve.Affine.Point.map_some] at htor2 ⊢
+    -- σ-fixedness of the inverse variable-change entries
+    have hCinv : (C.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁻¹ =
+        (C⁻¹).map (algebraMap ℚ (AlgebraicClosure ℚ)) :=
+      (map_inv (WeierstrassCurve.VariableChange.mapHom
+        (algebraMap ℚ (AlgebraicClosure ℚ))) C).symm
+    have hσfix : ∀ w : ℚ, (GaloisRepresentation.globalFrob
+              hq.toHeightOneSpectrumRingOfIntegersRat) (algebraMap ℚ (AlgebraicClosure ℚ) w) =
+        algebraMap ℚ (AlgebraicClosure ℚ) w := fun w => AlgEquiv.commutes _ w
+    -- the embedded coordinates of the σ-image are the arithmetic
+    -- Frobenius of the embedded coordinates
+    have hbridge : ∀ z : (AlgebraicClosure ℚ), ιalg ((GaloisRepresentation.globalFrob
+              hq.toHeightOneSpectrumRingOfIntegersRat) z) = (Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat) (ιalg z) := by
+      intro z
+      have hAM : (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) =
+          (@algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat) _ _
+            (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+              (NumberField.RingOfIntegers ℚ) ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)) :=
+        Subsingleton.elim _ _
+      show AlgebraicClosure.map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) ((GaloisRepresentation.globalFrob
+              hq.toHeightOneSpectrumRingOfIntegersRat) z) =
+        (Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat) (AlgebraicClosure.map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) z)
+      rw [hAM]
+      exact hlift z
+    have hXc : ιalg (↑(C.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁻¹.u ^ 2 * (GaloisRepresentation.globalFrob
+              hq.toHeightOneSpectrumRingOfIntegersRat) a +
+        (C.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁻¹.r) =
+        (Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat) (ιalg (↑(C.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁻¹.u ^ 2 * a +
+        (C.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁻¹.r)) := by
+      rw [← hbridge]
+      refine congrArg ιalg ?_
+      rw [hCinv]
+      simp only [WeierstrassCurve.VariableChange.map_u,
+        WeierstrassCurve.VariableChange.map_r, Units.coe_map,
+        MonoidHom.coe_coe, map_add, map_mul, map_pow, hσfix]
+    have hYc : ιalg (↑(C.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁻¹.u ^ 3 * (GaloisRepresentation.globalFrob
+              hq.toHeightOneSpectrumRingOfIntegersRat) b +
+        ↑(C.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁻¹.u ^ 2 *
+          (C.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁻¹.s * (GaloisRepresentation.globalFrob
+              hq.toHeightOneSpectrumRingOfIntegersRat) a +
+        (C.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁻¹.t) =
+        (Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat) (ιalg (↑(C.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁻¹.u ^ 3 * b +
+        ↑(C.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁻¹.u ^ 2 *
+          (C.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁻¹.s * a +
+        (C.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁻¹.t)) := by
+      rw [← hbridge]
+      refine congrArg ιalg ?_
+      rw [hCinv]
+      simp only [WeierstrassCurve.VariableChange.map_u,
+        WeierstrassCurve.VariableChange.map_r,
+        WeierstrassCurve.VariableChange.map_s,
+        WeierstrassCurve.VariableChange.map_t, Units.coe_map,
+        MonoidHom.coe_coe, map_add, map_mul, map_pow, hσfix]
+    trace_state
     sorry
 
 
