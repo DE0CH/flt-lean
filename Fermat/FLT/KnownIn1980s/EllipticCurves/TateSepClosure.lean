@@ -544,6 +544,104 @@ theorem isNonarchimedeanLocalField_intermediate
       exact absurd hγ1 (not_lt.mpr hge)
   exact { }
 
+/-- **The level-`L` point of the glued Tate uniformisation**: for a
+finite intermediate field `L` of `Ω/k` (a nonarchimedean local field by
+`isNonarchimedeanLocalField_intermediate`), the canonical point map of
+`L` (`TateCurve.pointMapQuot` at the image of `q`) applied to a unit of
+`L`, transported across the curve identification
+`(E_q)_L = E_{q_L}` (`TateCurve.tateCurve_map`) and pushed forward to
+`Ω` along the inclusion `L.val`. -/
+noncomputable def WeierstrassCurve.tateGluePointAt [CharZero k] (q : kˣ)
+    (hq : valuation k (q : k) < 1) (v : ValuativeRel Ω)
+    (hv : @ValuativeExtension k Ω _ _ _ v _)
+    (L : IntermediateField k Ω) [FiniteDimensional k L] (u : Lˣ) :
+    (((tateCurve ((q : k) : k))⁄Ω)).Point :=
+  letI : ValuativeRel L := @ValuativeRel.comap L Ω _ _ v L.val.toRingHom
+  letI : TopologicalSpace L := ValuativeRel.topologicalSpace L
+  haveI : IsNonarchimedeanLocalField L :=
+    isNonarchimedeanLocalField_intermediate (k := k) Ω v hv L
+  haveI : CharZero L :=
+    charZero_of_injective_algebraMap (algebraMap k L).injective
+  haveI : ValuativeExtension k L :=
+    valuativeExtension_comap (k := k) Ω v hv L
+  WeierstrassCurve.Affine.Point.map (W' := tateCurve ((q : k) : k)) (S := k)
+    L.val
+    (cast (congrArg (fun W : WeierstrassCurve L => W.toAffine.Point)
+        (TateCurve.tateCurve_map (l := L) ((q : k) : k) hq)).symm
+      (TateCurve.pointMapQuot (Units.map (algebraMap k L).toMonoidHom q)
+        (TateCurve.valuation_algebraMap_lt_one hq)
+        (QuotientGroup.mk u)))
+
+set_option warn.sorry false in
+/-- **Naturality of the level maps in the subextension** (sorry node —
+the gluing well-definedness): for `L ≤ L'`, computing the level point
+in `L'` of (the image of) a unit of `L` gives the level point computed
+in `L`. Reduces to the naturality of the canonical annulus-point map
+under the valuative extension `L → L'` (the annulus representative is
+preserved because values transfer strictly, and the coordinates are
+values of the universal bilateral series — `bilateralX_map`-style
+naturality applied to the local-field extension `L ⊆ L'` rather than to
+`k ⊆ l`). -/
+theorem WeierstrassCurve.tateGluePointAt_inclusion [CharZero k] (q : kˣ)
+    (hq : valuation k (q : k) < 1) (v : ValuativeRel Ω)
+    (hv : @ValuativeExtension k Ω _ _ _ v _)
+    {L L' : IntermediateField k Ω} (h : L ≤ L')
+    [FiniteDimensional k L] [FiniteDimensional k L'] (u : Lˣ) :
+    tateGluePointAt Ω q hq v hv L'
+        (Units.map (IntermediateField.inclusion h).toRingHom.toMonoidHom u) =
+      tateGluePointAt Ω q hq v hv L u := by
+  sorry
+
+set_option warn.sorry false in
+/-- **Galois-naturality of the level maps** (sorry node — the
+equivariance leg of the gluing): a `k`-automorphism `σ` of `Ω` carries
+the level point of `u` at `L` to the level point of `σ u` at `σ(L)`,
+provided the valuative relation of `Ω` is `σ`-invariant (which the
+constructed valuation is, by the strengthened
+`exists_valuativeRel_sepClosure`). Reduces to the naturality of the
+canonical point map under the value-preserving isomorphism
+`σ : L ≃ σ(L)` of nonarchimedean local fields. -/
+theorem WeierstrassCurve.tateGluePointAt_conj [CharZero k] (q : kˣ)
+    (hq : valuation k (q : k) < 1) (v : ValuativeRel Ω)
+    (hv : @ValuativeExtension k Ω _ _ _ v _)
+    (hσinv : ∀ (σ : Ω ≃ₐ[k] Ω) (a b : Ω),
+      (@ValuativeRel.vle Ω _ v (σ a) (σ b) ↔ @ValuativeRel.vle Ω _ v a b))
+    (σ : Ω ≃ₐ[k] Ω) (L : IntermediateField k Ω) [FiniteDimensional k L]
+    [FiniteDimensional k (L.map σ.toAlgHom)] (u : Lˣ) :
+    WeierstrassCurve.Affine.Point.map (W' := tateCurve ((q : k) : k))
+        σ.toAlgHom (tateGluePointAt Ω q hq v hv L u) =
+      tateGluePointAt Ω q hq v hv (L.map σ.toAlgHom)
+        (Units.map (IntermediateField.intermediateFieldMap σ L).toAlgHom.toRingHom.toMonoidHom u) := by
+  sorry
+
+set_option warn.sorry false in
+/-- **Additivity of the level map in the unit** (sorry node — expected
+mechanical): the level map turns unit multiplication into point
+addition, by `TateCurve.pointMapQuot_add` at the local field `L`
+transported across the curve identification and pushed forward along
+the additive `Point.map`. -/
+theorem WeierstrassCurve.tateGluePointAt_mul [CharZero k] (q : kˣ)
+    (hq : valuation k (q : k) < 1) (v : ValuativeRel Ω)
+    (hv : @ValuativeExtension k Ω _ _ _ v _)
+    (L : IntermediateField k Ω) [FiniteDimensional k L] (u w : Lˣ) :
+    tateGluePointAt Ω q hq v hv L (u * w) =
+      tateGluePointAt Ω q hq v hv L u + tateGluePointAt Ω q hq v hv L w := by
+  sorry
+
+set_option warn.sorry false in
+/-- **The kernel of the level map** (sorry node — expected mechanical):
+the level point of `u` vanishes iff `u` is a power of the image of `q`
+in `L`, by `TateCurve.pointMapQuot_eq_zero_iff` at `L`, injectivity of
+the point pushforward, and injectivity of the inclusion on `q`-power
+subgroups. -/
+theorem WeierstrassCurve.tateGluePointAt_eq_zero_iff [CharZero k] (q : kˣ)
+    (hq : valuation k (q : k) < 1) (v : ValuativeRel Ω)
+    (hv : @ValuativeExtension k Ω _ _ _ v _)
+    (L : IntermediateField k Ω) [FiniteDimensional k L] (u : Lˣ) :
+    tateGluePointAt Ω q hq v hv L u = 0 ↔
+      u ∈ Subgroup.zpowers (Units.map (algebraMap k L).toMonoidHom q) := by
+  sorry
+
 set_option warn.sorry false in
 /-- **The gluing implication for Tate's uniformisation** (sorry node —
 Ω-level from finite level): GIVEN the finite-level canonical
@@ -630,7 +728,143 @@ theorem WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel
       @ValuativeExtension L Ω _ _
         (@ValuativeRel.comap L Ω _ _ vΩ L.val.toRingHom) vΩ _ :=
     fun L => valuativeExtension_comap_val (k := k) Ω vΩ L
-  sorry
+  classical
+  haveI : CharZero Ω :=
+    charZero_of_injective_algebraMap (algebraMap k Ω).injective
+  haveI halgΩ : Algebra.IsAlgebraic k Ω := Algebra.IsSeparable.isAlgebraic k Ω
+  have hfdAdj : ∀ x : Ω,
+      FiniteDimensional k (IntermediateField.adjoin k {x}) := fun x =>
+    IntermediateField.adjoin.finiteDimensional
+      (Algebra.IsAlgebraic.isAlgebraic (R := k) x).isIntegral
+  -- units of a finite subextension from global units lying in it
+  let toUnit : ∀ (L : IntermediateField k Ω) (u : Ωˣ), ((u : Ω) ∈ L) → Lˣ :=
+    fun L u hu =>
+      ⟨⟨(u : Ω), hu⟩,
+        ⟨((u⁻¹ : Ωˣ) : Ω), by
+          rw [Units.val_inv_eq_inv_val]
+          exact L.inv_mem hu⟩,
+        by
+          apply Subtype.ext
+          simp,
+        by
+          apply Subtype.ext
+          simp⟩
+  -- the glued underlying function: compute at the field generated by `u`
+  let Φ : Ωˣ → (((tateCurve ((q : k) : k))⁄Ω)).Point := fun u =>
+    haveI := hfdAdj (u : Ω)
+    tateGluePointAt Ω q hq vΩ hvΩ (IntermediateField.adjoin k {(u : Ω)})
+      (toUnit _ u (IntermediateField.mem_adjoin_simple_self k (u : Ω)))
+  -- `Φ` can be computed at any finite level containing the unit
+  have hΦat : ∀ (L : IntermediateField k Ω) (_ : FiniteDimensional k L)
+      (u : Ωˣ) (hu : (u : Ω) ∈ L),
+      Φ u = tateGluePointAt Ω q hq vΩ hvΩ L (toUnit L u hu) := by
+    intro L hfd u hu
+    haveI := hfdAdj (u : Ω)
+    have hle : IntermediateField.adjoin k {(u : Ω)} ≤ L := by
+      rw [IntermediateField.adjoin_le_iff]
+      simpa using hu
+    have hmap : Units.map (IntermediateField.inclusion hle).toRingHom.toMonoidHom
+        (toUnit _ u (IntermediateField.mem_adjoin_simple_self k (u : Ω))) =
+        toUnit L u hu := by
+      apply Units.ext
+      rfl
+    calc Φ u
+        = tateGluePointAt Ω q hq vΩ hvΩ L
+            (Units.map (IntermediateField.inclusion hle).toRingHom.toMonoidHom
+              (toUnit _ u (IntermediateField.mem_adjoin_simple_self k (u : Ω)))) :=
+          (tateGluePointAt_inclusion Ω q hq vΩ hvΩ hle _).symm
+      _ = tateGluePointAt Ω q hq vΩ hvΩ L (toUnit L u hu) := by rw [hmap]
+  -- additivity
+  have hΦadd : ∀ u w : Ωˣ, Φ (u * w) = Φ u + Φ w := by
+    intro u w
+    haveI := hfdAdj (u : Ω)
+    haveI := hfdAdj (w : Ω)
+    set L := IntermediateField.adjoin k {(u : Ω)} ⊔
+      IntermediateField.adjoin k {(w : Ω)} with hLdef
+    haveI : FiniteDimensional k L := IntermediateField.finiteDimensional_sup _ _
+    have humem : (u : Ω) ∈ L :=
+      le_sup_left (α := IntermediateField k Ω)
+        (IntermediateField.mem_adjoin_simple_self k (u : Ω))
+    have hwmem : (w : Ω) ∈ L :=
+      le_sup_right (α := IntermediateField k Ω)
+        (IntermediateField.mem_adjoin_simple_self k (w : Ω))
+    have huw : ((u * w : Ωˣ) : Ω) ∈ L := by
+      rw [Units.val_mul]
+      exact mul_mem humem hwmem
+    rw [hΦat L inferInstance (u * w) huw, hΦat L inferInstance u humem,
+      hΦat L inferInstance w hwmem]
+    have hsplit : toUnit L (u * w) huw = toUnit L u humem * toUnit L w hwmem := by
+      apply Units.ext
+      apply Subtype.ext
+      rfl
+    rw [hsplit, tateGluePointAt_mul]
+  -- kernel
+  have hΦker : ∀ u : Ωˣ, Φ u = 0 ↔
+      u ∈ Subgroup.zpowers (Units.map (algebraMap k Ω).toMonoidHom q) := by
+    intro u
+    haveI := hfdAdj (u : Ω)
+    set L := IntermediateField.adjoin k {(u : Ω)} with hLdef
+    rw [hΦat L inferInstance u (IntermediateField.mem_adjoin_simple_self k _),
+      tateGluePointAt_eq_zero_iff]
+    -- transfer `q`-power membership along the injective inclusion
+    have hqcomp : Units.map L.val.toRingHom.toMonoidHom
+        (Units.map (algebraMap k L).toMonoidHom q) =
+        Units.map (algebraMap k Ω).toMonoidHom q := by
+      apply Units.ext
+      show L.val (algebraMap k L (q : k)) = algebraMap k Ω (q : k)
+      rw [IsScalarTower.algebraMap_apply k L Ω]
+      rfl
+    have hucomp : Units.map L.val.toRingHom.toMonoidHom
+        (toUnit L u (IntermediateField.mem_adjoin_simple_self k _)) = u := by
+      apply Units.ext
+      rfl
+    rw [Subgroup.mem_zpowers_iff, Subgroup.mem_zpowers_iff]
+    constructor
+    · rintro ⟨n, hn⟩
+      refine ⟨n, ?_⟩
+      rw [← hqcomp, ← map_zpow, hn, hucomp]
+    · rintro ⟨n, hn⟩
+      refine ⟨n, ?_⟩
+      have hinj : Function.Injective
+          (Units.map L.val.toRingHom.toMonoidHom : Lˣ →* Ωˣ) := by
+        intro a b hab
+        apply Units.ext
+        exact L.val.injective (congrArg Units.val hab)
+      apply hinj
+      rw [map_zpow, hqcomp, hn, hucomp]
+  -- equivariance
+  have hΦequiv : ∀ (σ : Ω ≃ₐ[k] Ω) (u : Ωˣ),
+      WeierstrassCurve.Affine.Point.map (W' := tateCurve ((q : k) : k))
+          σ.toAlgHom (Φ u) =
+        Φ (Units.map σ.toAlgHom.toRingHom.toMonoidHom u) := by
+    intro σ u
+    haveI := hfdAdj (u : Ω)
+    set L := IntermediateField.adjoin k {(u : Ω)} with hLdef
+    haveI : FiniteDimensional k (L.map σ.toAlgHom) :=
+      LinearEquiv.finiteDimensional
+        (IntermediateField.intermediateFieldMap σ L).toLinearEquiv
+    rw [hΦat L inferInstance u (IntermediateField.mem_adjoin_simple_self k _),
+      tateGluePointAt_conj Ω q hq vΩ hvΩ hσinv σ L]
+    have hmem : ((Units.map σ.toAlgHom.toRingHom.toMonoidHom u : Ωˣ) : Ω) ∈
+        L.map σ.toAlgHom :=
+      ⟨(u : Ω), IntermediateField.mem_adjoin_simple_self k _, rfl⟩
+    rw [hΦat (L.map σ.toAlgHom) inferInstance _ hmem]
+    congr 1
+  -- surjectivity (the only leg that uses the finite-level hypothesis)
+  have hΦsurj : ∀ P : (((tateCurve ((q : k) : k))⁄Ω)).Point,
+      ∃ u : Ωˣ, Φ u = P := by
+    sorry
+  -- package
+  refine ⟨AddMonoidHom.mk' (fun x => Φ x.toMul) ?_, ?_, ?_, ?_⟩
+  · intro x y
+    exact hΦadd x.toMul y.toMul
+  · intro P
+    obtain ⟨u, hu⟩ := hΦsurj P
+    exact ⟨Additive.ofMul u, hu⟩
+  · intro u
+    exact hΦker u
+  · intro σ u
+    exact hΦequiv σ u
 
 /-- **The Tate-curve uniformising homomorphism over a separable closure**
 (derived 2026-07-18 by feeding the finite-level uniformisation

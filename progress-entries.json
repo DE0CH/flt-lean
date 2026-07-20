@@ -786,11 +786,42 @@
     "text": "the finite-level Tate uniformisation kˣ/q^ℤ ≃+ E_q(k), DERIVED from pointMapQuot_add + pointMapQuot_bijective with pointMapQuot (canonical, choice-free) as underlying function — the object the Ω-gluing consumes. RE-VENDORED 2026-07-18 (stripped form): the annulus/evalA/pointMap machinery is in the tree (all PROVEN: CoeffRing evaluation, summability on the fundamental annulus, evaluated Weierstrass equation, annulusPoint nonsingularity, strict fundamental domain, kernel characterization pointMap_eq_zero_iff); the bilateral/Lambert negation-translation machinery stays in the reference commit 8282dfb^ until the addition-law proof consumes it."
   },
   {
+    "name": "WeierstrassCurve.tateGluePointAt",
+    "fullname": "WeierstrassCurve.tateGluePointAt",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure",
+    "text": "the level-L point of the glued Tate uniformisation (DEFINED 2026-07-20, sorry-free): pointMapQuot of the local field L (instances from isNonarchimedeanLocalField_intermediate on the canonical valuative topology) at the image of q, cast across tateCurve_map and pushed to Omega along Point.map L.val"
+  },
+  {
+    "name": "WeierstrassCurve.tateGluePointAt_inclusion",
+    "fullname": "WeierstrassCurve.tateGluePointAt_inclusion",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure",
+    "wip": true,
+    "text": "naturality of the level maps under inclusions L <= L-prime (sorry node -- the gluing well-definedness): reduces to naturality of pointMap under the valuative extension L -> L-prime; the annulus representative is preserved (strict value transfer), the coordinates are universal bilateral series (bilateralX_map applied to the extension L in L-prime), and the curve casts compose via tateCurve_map"
+  },
+  {
+    "name": "WeierstrassCurve.tateGluePointAt_conj",
+    "fullname": "WeierstrassCurve.tateGluePointAt_conj",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure",
+    "text": "Galois-naturality of the level maps (sorry node -- the equivariance leg): sigma carries the level point at L to the level point at sigma(L), given sigma-invariance of the Omega-valuation (available from the strengthened exists_valuativeRel_sepClosure); reduces to pointMap naturality under the value-preserving isomorphism sigma: L = sigma(L)"
+  },
+  {
+    "name": "WeierstrassCurve.tateGluePointAt_mul",
+    "fullname": "WeierstrassCurve.tateGluePointAt_mul",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure",
+    "text": "additivity of the level map in the unit (sorry node, expected mechanical): pointMapQuot_add at L (PROVEN in TateUniformization) transported across the curve cast (cast commutes with + since the curves are equal) and pushed along the additive Point.map"
+  },
+  {
+    "name": "WeierstrassCurve.tateGluePointAt_eq_zero_iff",
+    "fullname": "WeierstrassCurve.tateGluePointAt_eq_zero_iff",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure",
+    "text": "kernel of the level map (sorry node, expected mechanical): pointMapQuot_eq_zero_iff at L (PROVEN in TateUniformization) + Point.map sends only 0 to 0 (case analysis) + the cast preserves 0 + QuotientGroup.mk u trivial iff u in zpowers"
+  },
+  {
     "name": "WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure",
     "fullname": "WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel",
-    "text": "gluing implication for the Ω-level Tate uniformisation (sorry node, NARROWED 2026-07-20: naturality of the bilateral coordinates and curve-level functoriality under valuative extensions are PROVEN and wired as hnat/hcurve; the missing local-field prerequisite is now decomposed into two explicit leaves — exists_valuativeRel_sepClosure and exists_isNonarchimedeanLocalField_intermediate — consumed in the proof skeleton together with the proven ValuativeRel.comap restriction infrastructure (valuativeExtension_comap, valuativeExtension_comap_val give the k ⊆ L ⊆ Ω coherence definitionally). REMAINING: the colimit construction proper — define φ(u) by choosing a finite L containing u and the relevant coordinates, apply hfin at L (letI the obtained structures), transport the point to Ω along L.val via Point.map + hcurve, prove independence of the choice of L via hnat, then additivity/kernel/surjectivity/equivariance pass to the colimit.",
-    "wip": true
+    "text": "Omega-level uniformising homomorphism from the finite-level hypothesis (DECOMPOSED 2026-07-20 into the glued-map skeleton): the body now CONSTRUCTS the glued map Phi u := tateGluePointAt at k-adjoin(u) and PROVES additivity (compositum level + tateGluePointAt_mul), kernel (tateGluePointAt_eq_zero_iff + q-power transfer along the injective inclusion), and sigma-equivariance (tateGluePointAt_conj + level change), packaging via AddMonoidHom.mk'. Remaining in-proof sorry: surjectivity (the only leg consuming hfin -- every Omega-point lies in a finite level, hfin's equivalence is onto there, pull back the unit). Sub-nodes: the four tateGluePointAt lemmas.",
+    "wip": false
   },
   {
     "name": "WeierstrassCurve.exists_tateTorsionQuotient",
