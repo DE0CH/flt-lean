@@ -6758,6 +6758,116 @@ theorem exists_annulus_bilateralX_eq_of_one_le (q₀ : k) (hq0 : q₀ ≠ 0)
             rwa [hseq_succ n] at h5
         _ = valuation k q₀ ^ (n + 2) := by
             rw [← pow_succ']
+  -- rank-one analytic structure on `k` (the LocalField recipe), giving a
+  -- complete nontrivially normed field whose norm order-embeds the
+  -- valuation
+  letI : UniformSpace k := IsTopologicalAddGroup.rightUniformSpace k
+  haveI : IsUniformAddGroup k := isUniformAddGroup_of_addCommGroup
+  letI : (Valued.v (R := k)).RankOne :=
+    { hom' := IsRankLeOne.nonempty.some.emb (R := k).comp
+        MonoidWithZeroHom.ValueGroup₀.embedding
+      strictMono' := IsRankLeOne.nonempty.some.strictMono.comp
+        MonoidWithZeroHom.ValueGroup₀.embedding_strictMono }
+  letI : NontriviallyNormedField k := Valued.toNontriviallyNormedField _ _
+  have hbridge_lt : ∀ z c : k, valuation k z < valuation k c ↔ ‖z‖ < ‖c‖ :=
+    fun z c => (Valued.toNormedField.norm_lt_iff).symm
+  have hbridge_le : ∀ z c : k, valuation k z ≤ valuation k c ↔ ‖z‖ ≤ ‖c‖ :=
+    fun z c => (Valued.toNormedField.norm_le_iff).symm
+  -- the orbit is Cauchy, by the geometric difference bound
+  have hcauchy : CauchySeq seq := by
+    refine cauchySeq_of_le_geometric ‖q₀‖ ‖q₀‖ ?_ ?_
+    · exact Valued.toNormedField.norm_lt_one_iff.mpr hq1
+    · intro n
+      rw [dist_eq_norm]
+      have h1 : valuation k (seq n - seq (n + 1)) ≤
+          valuation k (q₀ ^ (n + 1)) := by
+        rw [map_pow]
+        have h2 := hdiff n
+        rwa [show seq n - seq (n + 1) = -(seq (n + 1) - seq n) from by
+          ring, Valuation.map_neg]
+      calc ‖seq n - seq (n + 1)‖ ≤ ‖q₀ ^ (n + 1)‖ :=
+          (hbridge_le _ _).mp h1
+        _ = ‖q₀‖ ^ (n + 1) := norm_pow _ _
+        _ = ‖q₀‖ * ‖q₀‖ ^ n := by rw [pow_succ']
+  obtain ⟨ustar, hus⟩ := cauchySeq_tendsto_of_complete hcauchy
+  -- valuative form of the convergence
+  have hconv : ∀ c : k, c ≠ 0 → ∀ᶠ n in Filter.atTop,
+      valuation k (seq n - ustar) < valuation k c := by
+    intro c hc
+    obtain ⟨N, hN⟩ := Metric.tendsto_atTop.mp hus ‖c‖
+      (norm_pos_iff.mpr hc)
+    refine Filter.eventually_atTop.mpr ⟨N, fun n hn => ?_⟩
+    have h2 := hN n hn
+    rw [dist_eq_norm] at h2
+    exact (hbridge_lt _ _).mpr h2
+  -- the limit lies on the shell
+  have hustar_val : valuation k ustar = 1 := by
+    obtain ⟨n, hn⟩ := (hconv 1 one_ne_zero).exists
+    rw [map_one, ← (hseq_shell n).1] at hn
+    have he : valuation k ustar =
+        valuation k (-((seq n - ustar) - seq n)) := by
+      congr 1
+      ring
+    rw [he, Valuation.map_neg,
+      (valuation k).map_sub_eq_of_lt_right hn]
+    exact (hseq_shell n).1
+  have hustar_ne1 : ustar ≠ 1 := by
+    intro hh
+    have hXY0 : valuation k x / valuation k y ≠ 0 :=
+      div_ne_zero hX0 hY0
+    obtain ⟨c, hc⟩ := ValuativeRel.valuation_surjective (K := k)
+      (valuation k x / valuation k y)
+    have hc0 : c ≠ 0 := by
+      intro hz
+      rw [hz, map_zero] at hc
+      exact hXY0 hc.symm
+    obtain ⟨n, hn⟩ := (hconv c hc0).exists
+    rw [hc] at hn
+    have he : valuation k x / valuation k y =
+        valuation k (seq n - ustar) := by
+      rw [← hseq_one_sub n,
+        show (1 : k) - seq n = -(seq n - ustar) from by rw [hh]; ring,
+        Valuation.map_neg]
+    rw [← he] at hn
+    exact absurd hn (lt_irrefl _)
+  -- the limit is a fixed point of `F`
+  have hfix : F ustar = ustar := by
+    by_contra hne
+    have hΔ0 : F ustar - ustar ≠ 0 := sub_ne_zero_of_ne hne
+    have hΔv : valuation k (F ustar - ustar) ≠ 0 :=
+      (Valuation.ne_zero_iff _).mpr hΔ0
+    obtain ⟨N, hN⟩ := Filter.eventually_atTop.mp
+      (hconv (F ustar - ustar) hΔ0)
+    have h1 : valuation k (seq N - ustar) <
+        valuation k (F ustar - ustar) := hN N le_rfl
+    have h2 : valuation k (seq (N + 1) - ustar) <
+        valuation k (F ustar - ustar) := hN (N + 1) (Nat.le_succ N)
+    have h3 : valuation k (F ustar - seq (N + 1)) <
+        valuation k (F ustar - ustar) := by
+      rw [hseq_succ N]
+      calc valuation k (F ustar - F (seq N))
+          ≤ valuation k q₀ * valuation k (ustar - seq N) :=
+            hFlip _ _ hustar_val (hseq_shell N).1 hustar_ne1
+              (hseq_shell N).2
+        _ ≤ 1 * valuation k (ustar - seq N) :=
+            mul_le_mul_left (le_of_lt hq1) _
+        _ = valuation k (ustar - seq N) := one_mul _
+        _ = valuation k (seq N - ustar) := by
+            rw [show ustar - seq N = -(seq N - ustar) from by ring,
+              Valuation.map_neg]
+        _ < valuation k (F ustar - ustar) := h1
+    have h4 : valuation k (F ustar - ustar) <
+        valuation k (F ustar - ustar) := by
+      calc valuation k (F ustar - ustar)
+          = valuation k ((F ustar - seq (N + 1)) +
+              (seq (N + 1) - ustar)) := by
+            congr 1
+            ring
+        _ ≤ max (valuation k (F ustar - seq (N + 1)))
+            (valuation k (seq (N + 1) - ustar)) :=
+            Valuation.map_add _ _ _
+        _ < valuation k (F ustar - ustar) := max_lt h3 h2
+    exact absurd h4 (lt_irrefl _)
   sorry
 
 set_option warn.sorry false in
