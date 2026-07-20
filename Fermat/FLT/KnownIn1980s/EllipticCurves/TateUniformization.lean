@@ -8579,7 +8579,43 @@ theorem exists_annulus_bilateralX_eq_of_lt_one (q₀ : k) (hq0 : q₀ ≠ 0)
               rw [mul_assoc (valuation k (u - v) * valuation k y),
                 mul_inv_cancel₀ hY0, mul_one]
           _ = valuation k y * valuation k (u - v) := mul_comm _ _
-      sorry
+      -- fold and assemble
+      have hquinv1' : valuation k (q₀ * u⁻¹) < 1 := by
+        rw [hquinv]; exact hylt1
+      have hCu : Summable (fun m : ℕ+ ↦
+          q₀ ^ (m : ℕ) * u / (1 - q₀ ^ (m : ℕ) * u) ^ 3) :=
+        summable_lambert_terms_general
+          (fun j ↦ (((j + 1).choose 2 : ℕ) : k)) (fun w ↦ w / (1 - w) ^ 3)
+          hbin2 u q₀ hq1 hqu
+          (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_succ v₀ hv₀)
+      have hCv : Summable (fun m : ℕ+ ↦
+          q₀ ^ (m : ℕ) * v / (1 - q₀ ^ (m : ℕ) * v) ^ 3) :=
+        summable_lambert_terms_general
+          (fun j ↦ (((j + 1).choose 2 : ℕ) : k)) (fun w ↦ w / (1 - w) ^ 3)
+          hbin2 v q₀ hq1 hqv
+          (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_succ v₀ hv₀)
+      have hDu : Summable (fun m : ℕ+ ↦
+          (q₀ ^ (m : ℕ) * u⁻¹) ^ 2 / (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 3) :=
+        summable_lambert_terms_general
+          (fun j ↦ ((j.choose 2 : ℕ) : k)) (fun w ↦ w ^ 2 / (1 - w) ^ 3)
+          hbin1 u⁻¹ q₀ hq1 hquinv1'
+          (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_self v₀ hv₀)
+      have hDv : Summable (fun m : ℕ+ ↦
+          (q₀ ^ (m : ℕ) * v⁻¹) ^ 2 / (1 - q₀ ^ (m : ℕ) * v⁻¹) ^ 3) :=
+        summable_lambert_terms_general
+          (fun j ↦ ((j.choose 2 : ℕ) : k)) (fun w ↦ w ^ 2 / (1 - w) ^ 3)
+          hbin1 v⁻¹ q₀ hq1 hqvinv1
+          (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_self v₀ hv₀)
+      rw [hSsum u hu, hSsum v hv,
+        show ∀ L1 S1 S2 C uu L2 T1 T2 vv : k,
+          ((L1 + S1 - S2 - C) - uu) - ((L2 + T1 - T2 - C) - vv) =
+            ((L1 - uu) - (L2 - vv)) + ((S1 - T1) - (S2 - T2)) from
+          fun L1 S1 S2 C uu L2 T1 T2 vv => by ring,
+        ← hCu.tsum_sub hCv, ← hDu.tsum_sub hDv]
+      refine le_trans (Valuation.map_add _ _ _) (max_le hlead ?_)
+      refine le_trans (Valuation.map_sub _ _ _) (max_le ?_ ?_)
+      · exact valuation_tsum_le (hCu.sub hCv) _ htermB1
+      · exact valuation_tsum_le (hDu.sub hDv) _ htermB2
     sorry
 
 /-- **`x`-surjectivity onto the annulus** (DERIVED 2026-07-20 by case
