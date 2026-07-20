@@ -691,6 +691,93 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
           hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) :=
     { τadd with map_smul' := ZMod.map_smul τadd.toAddMonoidHom }
     with hτdef
+  -- Step 3c-ii-a: every nonzero projective triple over the completed
+  -- closure has a scaling with integral coordinates, one of them a unit
+  -- of the valuation subring (divide by a dominant coordinate)
+  have hdom : ∀ a b : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)), a ≠ 0 →
+      (∃ j : Bool, (if j then a else b) ≠ 0 ∧
+        (if j then b else a) / (if j then a else b) ∈
+          localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) := by
+    intro a b ha
+    by_cases hb : b = 0
+    · exact ⟨true, ha, by simp [hb, zero_mem]⟩
+    · rcases ValuationSubring.mem_or_inv_mem
+        (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+        (b / a) with h | h
+      · exact ⟨true, ha, by simpa using h⟩
+      · refine ⟨false, hb, ?_⟩
+        simpa [inv_div] using h
+  -- upgraded form: the dominant element is one of the two inputs and
+  -- dominates both
+  have hdom' : ∀ a b : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)), a ≠ 0 →
+      ∃ c, (c = a ∨ c = b) ∧ c ≠ 0 ∧
+        a / c ∈ localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat ∧
+        b / c ∈ localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat := by
+    intro a b ha
+    obtain ⟨j, hjne, hjdom⟩ := hdom a b ha
+    cases j with
+    | true =>
+      refine ⟨a, Or.inl rfl, ha, ?_, by simpa using hjdom⟩
+      rw [div_self ha]; exact one_mem _
+    | false =>
+      refine ⟨b, Or.inr rfl, by simpa using hjne, by simpa using hjdom, ?_⟩
+      rw [div_self (by simpa using hjne)]; exact one_mem _
+  -- transitivity of division-domination
+  have hdivtrans : ∀ a b c : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)), b ≠ 0 →
+      a / b ∈ localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat →
+      b / c ∈ localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat →
+      a / c ∈ localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat := by
+    intro a b c hb hab hbc
+    have hrw : a / c = a / b * (b / c) := by
+      rw [div_mul_div_comm, mul_comm b c, mul_div_mul_right _ _ hb]
+    rw [hrw]; exact mul_mem hab hbc
+  -- Step 3c-ii-a: every projective triple with a nonzero coordinate has a
+  -- dominant coordinate: all three ratios into it are integral
+  have hnorm3 : ∀ P : Fin 3 → (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)), (∃ i, P i ≠ 0) →
+      ∃ j, P j ≠ 0 ∧ ∀ i, P i / P j ∈
+        localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat := by
+    intro P hP
+    obtain ⟨i, hi⟩ := hP
+    obtain ⟨c₁, hc₁or, hc₁ne, hic₁, h0c₁⟩ := hdom' (P i) (P 0) hi
+    obtain ⟨c₂, hc₂or, hc₂ne, hc₁c₂, h1c₂⟩ := hdom' c₁ (P 1) hc₁ne
+    obtain ⟨c₃, hc₃or, hc₃ne, hc₂c₃, h2c₃⟩ := hdom' c₂ (P 2) hc₂ne
+    have hc₁c₃ : c₁ / c₃ ∈
+        localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat :=
+      hdivtrans _ _ _ hc₂ne hc₁c₂ hc₂c₃
+    have h0c₃ : P 0 / c₃ ∈
+        localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat :=
+      hdivtrans _ _ _ hc₁ne h0c₁ hc₁c₃
+    have h1c₃ : P 1 / c₃ ∈
+        localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat :=
+      hdivtrans _ _ _ hc₂ne h1c₂ hc₂c₃
+    have hic₃ : P i / c₃ ∈
+        localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat :=
+      hdivtrans _ _ _ hc₁ne hic₁ hc₁c₃
+    have hall : ∀ k, P k / c₃ ∈
+        localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat := by
+      intro k
+      fin_cases k
+      · exact h0c₃
+      · exact h1c₃
+      · exact h2c₃
+    have hc₃eq : ∃ j, c₃ = P j := by
+      rcases hc₃or with rfl | rfl
+      · rcases hc₂or with rfl | rfl
+        · rcases hc₁or with rfl | rfl
+          · exact ⟨i, rfl⟩
+          · exact ⟨0, rfl⟩
+        · exact ⟨1, rfl⟩
+      · exact ⟨2, rfl⟩
+    obtain ⟨j, rfl⟩ := hc₃eq
+    exact ⟨j, hc₃ne, hall⟩
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
