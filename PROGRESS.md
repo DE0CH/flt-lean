@@ -105,35 +105,38 @@ entries file). To add/remove/annotate a node, edit
                                       commutation) and frobeniusTorsionEnd (its ZMod p-linear action
                                       on p-torsion, via Point.map + endRestrict + toZModLinearMap,
                                       mirroring galoisRep).
-                                        - ❌🟪 `WeilPairing.exists_frobenius_reduction_model` — reduction transfer at good primes (REDUCTION MAP COMPLETE
-                                          2026-07-20: defined + additive + injective; residue field
-                                          alg closed): in-proof PROVEN: integral model, minimality,
-                                          HasGoodReduction at v, torsion transport tau (p^2-count),
-                                          h-O lying-over, NeZero p in residue field, habs/hord
-                                          integrality, unit transfer, hEllRes, hredNS, redFun,
-                                          hredAdd (ADDITIVITY: zero/opposite cases + generic slope
-                                          case -- tangent via torsion_ordinate_eq_of_residue_eq
-                                          exclusion, chord via torsion_abscissa_residue_ne, unit-
-                                          denominator slope residue, addX/addY residue commutation),
-                                          hredInj (INJECTIVITY via the two residue-injectivity
-                                          theorems), hintmem (integrally closed), hACres (residue
-                                          field of localValuationSubring IsAlgClosed via monic lift
-                                          + root upstairs + integrality + residue root). Odd p
-                                          threaded. ALSO PROVEN: hcardRes (p^2 downstairs),
-                                          redE/redL (the ZMod p-linear reduction equivalence,
-                                          bijective by counting),
-                                          hqNotUnit/hqZeroRes/hCharRes/hCharKv (both residue fields
-                                          have char q). REMAINING (2 sorries in file): (a) outer 3c
-                                          sorry: identify ResidueField(localValuationSubring) with
-                                          AlgebraicClosure (ZMod q) (CharP q via q in max ideal
-                                          through h-O; algebra ZMod q; algebraic: every residue is
-                                          residue of an O_v-integral element, monic poly descends
-                                          through kappa_v = F_q by card; IsAlgClosure.equiv),
-                                          transport frobeniusTorsionEnd (Frobenius commutes with
-                                          ring homs), Frobenius leg via isArithFrobAt_adicArithFrob
-                                          on coordinates (sigma x = x^q mod max ideal; reduced
-                                          points match; cyclotomicCharacter_globalFrob template);
-                                          (b) exists_weilPairing_frobenius (separate node).
+                                        - ❌🟪 `WeilPairing.exists_frobenius_reduction_model` — reduction transfer at good primes (PSI ASSEMBLED
+                                          2026-07-20; only the Frobenius leg remains): the full
+                                          reduction equivalence psi = identL . redL . tau . psi_0 :
+                                          E[p](Q-bar) = Wbar[p](F_q-bar) is CONSTRUCTED SORRY-FREE
+                                          in-proof: integral model, minimality, HasGoodReduction,
+                                          torsion transport tau, redFun + additivity (slope case
+                                          analysis w/ residue-injectivity exclusions) + injectivity
+                                          + p^2-counting (residue field of localValuationSubring
+                                          proven IsAlgClosed), redL, char-q legs, kappa_v = ZMod q
+                                          (eKv), rho-res residue-hom, algebraicity over ZMod q
+                                          (halgZq), IsAlgClosure.equiv identification identA/identZ,
+                                          Point.map transport identL, psi refined into the goal.
+                                          REMAINING (single sorry): the Frobenius-compatibility
+                                          equation for all x, psi(galoisRep p (globalFrob q) x) =
+                                          frobeniusTorsionEnd q Wbar p (psi x). Plan: unfold psi on
+                                          a some-point; galoisRep acts by Point.map of the
+                                          automorphism; globalFrob = AbsoluteGaloisGroup.map of
+                                          adicArithFrob through the closure embedding (pointwise-
+                                          commutation lemma Field.absoluteGaloisGroup.lift_map / the
+                                          hiota-device in cyclotomicCharacter_globalFrob at
+                                          Chebotarev.lean:263-340); isArithFrobAt_adicArithFrob
+                                          gives sigma-z = z^q mod max-ideal on localValuationSubring
+                                          elements, with exponent rewritten to q by
+                                          natCard_residue_quotient_toHeightOneSpectrum; so
+                                          residue(sigma z) = residue(z)^q, i.e. redFun(sigma P) =
+                                          Frobenius(redFun P) coordinatewise; frobAlgHom-side:
+                                          frobeniusTorsionEnd is Point.map of x -> x^q; the identA-
+                                          transport commutes with x -> x^q (map_pow of any ring
+                                          hom); the psi_0/tau layers commute with the Galois action
+                                          by the equivOfEq/variable-change/embedding naturality (all
+                                          maps defined over Q). Also remaining separately:
+                                          exists_weilPairing_frobenius.
                                         - ✅· `WeilPairing.det_frobeniusTorsionEnd` — Frobenius determinant over a finite field (DERIVED
                                           2026-07-20 from the Weil pairing): the q-power Frobenius
                                           scales the pairing by q, and det_eq_of_conj (the proven
@@ -206,32 +209,35 @@ entries file). To add/remove/annotate a node, edit
                               theorem for the commutation) and frobeniusTorsionEnd (its ZMod
                               p-linear action on p-torsion, via Point.map + endRestrict +
                               toZModLinearMap, mirroring galoisRep).
-                                - ❌🟪 `WeilPairing.exists_frobenius_reduction_model` — reduction transfer at good primes (REDUCTION MAP COMPLETE
-                                  2026-07-20: defined + additive + injective; residue field alg
-                                  closed): in-proof PROVEN: integral model, minimality,
-                                  HasGoodReduction at v, torsion transport tau (p^2-count), h-O
-                                  lying-over, NeZero p in residue field, habs/hord integrality, unit
-                                  transfer, hEllRes, hredNS, redFun, hredAdd (ADDITIVITY:
-                                  zero/opposite cases + generic slope case -- tangent via
-                                  torsion_ordinate_eq_of_residue_eq exclusion, chord via
-                                  torsion_abscissa_residue_ne, unit-denominator slope residue,
-                                  addX/addY residue commutation), hredInj (INJECTIVITY via the two
-                                  residue-injectivity theorems), hintmem (integrally closed), hACres
-                                  (residue field of localValuationSubring IsAlgClosed via monic lift
-                                  + root upstairs + integrality + residue root). Odd p threaded.
-                                  ALSO PROVEN: hcardRes (p^2 downstairs), redE/redL (the ZMod
-                                  p-linear reduction equivalence, bijective by counting),
-                                  hqNotUnit/hqZeroRes/hCharRes/hCharKv (both residue fields have
-                                  char q). REMAINING (2 sorries in file): (a) outer 3c sorry:
-                                  identify ResidueField(localValuationSubring) with AlgebraicClosure
-                                  (ZMod q) (CharP q via q in max ideal through h-O; algebra ZMod q;
-                                  algebraic: every residue is residue of an O_v-integral element,
-                                  monic poly descends through kappa_v = F_q by card;
-                                  IsAlgClosure.equiv), transport frobeniusTorsionEnd (Frobenius
-                                  commutes with ring homs), Frobenius leg via
-                                  isArithFrobAt_adicArithFrob on coordinates (sigma x = x^q mod max
-                                  ideal; reduced points match; cyclotomicCharacter_globalFrob
-                                  template); (b) exists_weilPairing_frobenius (separate node).
+                                - ❌🟪 `WeilPairing.exists_frobenius_reduction_model` — reduction transfer at good primes (PSI ASSEMBLED 2026-07-20; only
+                                  the Frobenius leg remains): the full reduction equivalence psi =
+                                  identL . redL . tau . psi_0 : E[p](Q-bar) = Wbar[p](F_q-bar) is
+                                  CONSTRUCTED SORRY-FREE in-proof: integral model, minimality,
+                                  HasGoodReduction, torsion transport tau, redFun + additivity
+                                  (slope case analysis w/ residue-injectivity exclusions) +
+                                  injectivity + p^2-counting (residue field of localValuationSubring
+                                  proven IsAlgClosed), redL, char-q legs, kappa_v = ZMod q (eKv),
+                                  rho-res residue-hom, algebraicity over ZMod q (halgZq),
+                                  IsAlgClosure.equiv identification identA/identZ, Point.map
+                                  transport identL, psi refined into the goal. REMAINING (single
+                                  sorry): the Frobenius-compatibility equation for all x,
+                                  psi(galoisRep p (globalFrob q) x) = frobeniusTorsionEnd q Wbar p
+                                  (psi x). Plan: unfold psi on a some-point; galoisRep acts by
+                                  Point.map of the automorphism; globalFrob =
+                                  AbsoluteGaloisGroup.map of adicArithFrob through the closure
+                                  embedding (pointwise-commutation lemma
+                                  Field.absoluteGaloisGroup.lift_map / the hiota-device in
+                                  cyclotomicCharacter_globalFrob at Chebotarev.lean:263-340);
+                                  isArithFrobAt_adicArithFrob gives sigma-z = z^q mod max-ideal on
+                                  localValuationSubring elements, with exponent rewritten to q by
+                                  natCard_residue_quotient_toHeightOneSpectrum; so residue(sigma z)
+                                  = residue(z)^q, i.e. redFun(sigma P) = Frobenius(redFun P)
+                                  coordinatewise; frobAlgHom-side: frobeniusTorsionEnd is Point.map
+                                  of x -> x^q; the identA-transport commutes with x -> x^q (map_pow
+                                  of any ring hom); the psi_0/tau layers commute with the Galois
+                                  action by the equivOfEq/variable-change/embedding naturality (all
+                                  maps defined over Q). Also remaining separately:
+                                  exists_weilPairing_frobenius.
                                 - ✅· `WeilPairing.det_frobeniusTorsionEnd` — Frobenius determinant over a finite field (DERIVED 2026-07-20 from
                                   the Weil pairing): the q-power Frobenius scales the pairing by q,
                                   and det_eq_of_conj (the proven 2-dimensional alternating-form

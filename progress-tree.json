@@ -368,6 +368,7 @@
   ],
   "WeilPairing.exists_frobenius_reduction_model": [
    "TorsionCard.smul_some_eq_zero_iff",
+   "GaloisRepresentation.natCard_residue_quotient_toHeightOneSpectrum",
    "WeierstrassCurve.galoisRep",
    "TorsionCard.prime_torsion_card",
    "TorsionCard.smul_surjective",
