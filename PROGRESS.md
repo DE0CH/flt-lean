@@ -257,30 +257,40 @@ entries file). To add/remove/annotate a node, edit
                                                               theorem's proof, packaging the
                                                               bilateral-coordinate naturality as an
                                                               (X,Y) pair. REMAINING for the actual
-                                                              gluing: (1) tateCurve_baseChange —
-                                                              (tateCurve q₀).map (algebraMap k l) =
-                                                              tateCurve (algebraMap k l q₀) (NOT yet
-                                                              proven anywhere; needed to type the
-                                                              WeierstrassCurve.Affine.Point.map used
-                                                              in the final φ), quick from
-                                                              TateCurve.evalInt_map applied to
-                                                              tateA₄_eq_evalInt/tateA₆_eq_evalInt;
-                                                              (2) naturality of pointMap itself (not
-                                                              just bilateralX/Y): reduce an
+                                                              gluing: (1) DONE — tateCurve_map
+                                                              proven and wired (hcurve); (2)
+                                                              REMAINING, hardest type-theoretic step
+                                                              — naturality of pointMap/annulusPoint
+                                                              packaged through
+                                                              WeierstrassCurve.Affine.Point.map:
+                                                              this needs an actual AlgHom l →ₐ[k] Ω
+                                                              (no bare `Algebra k l` inline
+                                                              construction found in this mathlib pin
+                                                              under a name like Algebra.ofId —
+                                                              probed via #check/exact?, none found;
+                                                              would need to build one by hand via
+                                                              the AlgHom structure with a trivial
+                                                              commutes' proof, OR — better — use the
+                                                              REAL embedding l →ₐ[k] Ω that arises
+                                                              when l is instantiated as an actual
+                                                              IntermediateField k Ω in the colimit
+                                                              construction of step (3), where the
+                                                              inclusion IS already an AlgHom via
+                                                              IntermediateField.val; reduce an
                                                               arbitrary u to its annulus
                                                               representative via
                                                               exists_zpow_mul_mem_annulus, show the
                                                               SAME exponent works after mapping
-                                                              through algebraMap k l (valuation
+                                                              through the embedding (valuation
                                                               membership transfers via
                                                               mapValueGroupWithZero +
                                                               annulus_exponent_unique gives
-                                                              uniqueness), then apply hnat; (3) the
-                                                              colimit construction: every element of
-                                                              Ωˣ / every point of E_q(Ω) lies in a
-                                                              finite subextension l/k of Ω/k
-                                                              (mathlib: IsAlgebraic elements lie in
-                                                              finite subextensions — search
+                                                              uniqueness), then apply hnat/hcurve;
+                                                              (3) the colimit construction: every
+                                                              element of Ωˣ / every point of E_q(Ω)
+                                                              lies in a finite subextension l/k of
+                                                              Ω/k (mathlib: IsAlgebraic elements lie
+                                                              in finite subextensions — search
                                                               IntermediateField/Algebra.IsAlgebraic
                                                               API); define φ via the chosen l and
                                                               hfin, prove independence of the choice
@@ -462,37 +472,49 @@ entries file). To add/remove/annotate a node, edit
                                                                   proof, packaging the bilateral-
                                                                   coordinate naturality as an (X,Y)
                                                                   pair. REMAINING for the actual
-                                                                  gluing: (1) tateCurve_baseChange —
-                                                                  (tateCurve q₀).map (algebraMap k
-                                                                  l) = tateCurve (algebraMap k l q₀)
-                                                                  (NOT yet proven anywhere; needed
-                                                                  to type the
-                                                                  WeierstrassCurve.Affine.Point.map
-                                                                  used in the final φ), quick from
-                                                                  TateCurve.evalInt_map applied to t
-                                                                  ateA₄_eq_evalInt/tateA₆_eq_evalInt
-                                                                  ; (2) naturality of pointMap
-                                                                  itself (not just bilateralX/Y):
-                                                                  reduce an arbitrary u to its
-                                                                  annulus representative via
+                                                                  gluing: (1) DONE — tateCurve_map
+                                                                  proven and wired (hcurve); (2)
+                                                                  REMAINING, hardest type-theoretic
+                                                                  step — naturality of
+                                                                  pointMap/annulusPoint packaged
+                                                                  through
+                                                                  WeierstrassCurve.Affine.Point.map:
+                                                                  this needs an actual AlgHom l
+                                                                  →ₐ[k] Ω (no bare `Algebra k l`
+                                                                  inline construction found in this
+                                                                  mathlib pin under a name like
+                                                                  Algebra.ofId — probed via
+                                                                  #check/exact?, none found; would
+                                                                  need to build one by hand via the
+                                                                  AlgHom structure with a trivial
+                                                                  commutes' proof, OR — better — use
+                                                                  the REAL embedding l →ₐ[k] Ω that
+                                                                  arises when l is instantiated as
+                                                                  an actual IntermediateField k Ω in
+                                                                  the colimit construction of step
+                                                                  (3), where the inclusion IS
+                                                                  already an AlgHom via
+                                                                  IntermediateField.val; reduce an
+                                                                  arbitrary u to its annulus
+                                                                  representative via
                                                                   exists_zpow_mul_mem_annulus, show
                                                                   the SAME exponent works after
-                                                                  mapping through algebraMap k l
+                                                                  mapping through the embedding
                                                                   (valuation membership transfers
                                                                   via mapValueGroupWithZero +
                                                                   annulus_exponent_unique gives
-                                                                  uniqueness), then apply hnat; (3)
-                                                                  the colimit construction: every
-                                                                  element of Ωˣ / every point of
-                                                                  E_q(Ω) lies in a finite
-                                                                  subextension l/k of Ω/k (mathlib:
-                                                                  IsAlgebraic elements lie in finite
-                                                                  subextensions — search Intermediat
-                                                                  eField/Algebra.IsAlgebraic API);
-                                                                  define φ via the chosen l and
-                                                                  hfin, prove independence of the
-                                                                  choice using pointMap naturality
-                                                                  from (2);
+                                                                  uniqueness), then apply
+                                                                  hnat/hcurve; (3) the colimit
+                                                                  construction: every element of Ωˣ
+                                                                  / every point of E_q(Ω) lies in a
+                                                                  finite subextension l/k of Ω/k
+                                                                  (mathlib: IsAlgebraic elements lie
+                                                                  in finite subextensions — search I
+                                                                  ntermediateField/Algebra.IsAlgebra
+                                                                  ic API); define φ via the chosen l
+                                                                  and hfin, prove independence of
+                                                                  the choice using pointMap
+                                                                  naturality from (2);
                                                                   surjectivity/kernel/equivariance
                                                                   descend from the finite-level
                                                                   properties.
@@ -696,44 +718,57 @@ entries file). To add/remove/annotate a node, edit
                                                                       bilateral-coordinate
                                                                       naturality as an (X,Y) pair.
                                                                       REMAINING for the actual
-                                                                      gluing: (1)
-                                                                      tateCurve_baseChange —
-                                                                      (tateCurve q₀).map (algebraMap
-                                                                      k l) = tateCurve (algebraMap k
-                                                                      l q₀) (NOT yet proven
-                                                                      anywhere; needed to type the W
-                                                                      eierstrassCurve.Affine.Point.m
-                                                                      ap used in the final φ), quick
-                                                                      from TateCurve.evalInt_map
-                                                                      applied to tateA₄_eq_evalInt/t
-                                                                      ateA₆_eq_evalInt; (2)
-                                                                      naturality of pointMap itself
-                                                                      (not just bilateralX/Y):
-                                                                      reduce an arbitrary u to its
-                                                                      annulus representative via
+                                                                      gluing: (1) DONE —
+                                                                      tateCurve_map proven and wired
+                                                                      (hcurve); (2) REMAINING,
+                                                                      hardest type-theoretic step —
+                                                                      naturality of
+                                                                      pointMap/annulusPoint packaged
+                                                                      through WeierstrassCurve.Affin
+                                                                      e.Point.map: this needs an
+                                                                      actual AlgHom l →ₐ[k] Ω (no
+                                                                      bare `Algebra k l` inline
+                                                                      construction found in this
+                                                                      mathlib pin under a name like
+                                                                      Algebra.ofId — probed via
+                                                                      #check/exact?, none found;
+                                                                      would need to build one by
+                                                                      hand via the AlgHom structure
+                                                                      with a trivial commutes'
+                                                                      proof, OR — better — use the
+                                                                      REAL embedding l →ₐ[k] Ω that
+                                                                      arises when l is instantiated
+                                                                      as an actual IntermediateField
+                                                                      k Ω in the colimit
+                                                                      construction of step (3),
+                                                                      where the inclusion IS already
+                                                                      an AlgHom via
+                                                                      IntermediateField.val; reduce
+                                                                      an arbitrary u to its annulus
+                                                                      representative via
                                                                       exists_zpow_mul_mem_annulus,
                                                                       show the SAME exponent works
-                                                                      after mapping through
-                                                                      algebraMap k l (valuation
+                                                                      after mapping through the
+                                                                      embedding (valuation
                                                                       membership transfers via
                                                                       mapValueGroupWithZero +
                                                                       annulus_exponent_unique gives
-                                                                      uniqueness), then apply hnat;
-                                                                      (3) the colimit construction:
-                                                                      every element of Ωˣ / every
-                                                                      point of E_q(Ω) lies in a
-                                                                      finite subextension l/k of Ω/k
-                                                                      (mathlib: IsAlgebraic elements
-                                                                      lie in finite subextensions —
-                                                                      search IntermediateField/Algeb
-                                                                      ra.IsAlgebraic API); define φ
-                                                                      via the chosen l and hfin,
-                                                                      prove independence of the
-                                                                      choice using pointMap
-                                                                      naturality from (2); surjectiv
-                                                                      ity/kernel/equivariance
-                                                                      descend from the finite-level
-                                                                      properties.
+                                                                      uniqueness), then apply
+                                                                      hnat/hcurve; (3) the colimit
+                                                                      construction: every element of
+                                                                      Ωˣ / every point of E_q(Ω)
+                                                                      lies in a finite subextension
+                                                                      l/k of Ω/k (mathlib:
+                                                                      IsAlgebraic elements lie in
+                                                                      finite subextensions — search
+                                                                      IntermediateField/Algebra.IsAl
+                                                                      gebraic API); define φ via the
+                                                                      chosen l and hfin, prove
+                                                                      independence of the choice
+                                                                      using pointMap naturality from
+                                                                      (2); surjectivity/kernel/equiv
+                                                                      ariance descend from the
+                                                                      finite-level properties.
                                                     - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality statement,
                                                       assembled from the LOCAL nonsplit node
                                                       `tate_inertia_trivial_of_nonsplit` by the
@@ -925,44 +960,57 @@ entries file). To add/remove/annotate a node, edit
                                                                           bilateral-coordinate
                                                                           naturality as an (X,Y) pair.
                                                                           REMAINING for the actual
-                                                                          gluing: (1)
-                                                                          tateCurve_baseChange —
-                                                                          (tateCurve q₀).map (algebraMap
-                                                                          k l) = tateCurve (algebraMap k
-                                                                          l q₀) (NOT yet proven
-                                                                          anywhere; needed to type the W
-                                                                          eierstrassCurve.Affine.Point.m
-                                                                          ap used in the final φ), quick
-                                                                          from TateCurve.evalInt_map
-                                                                          applied to tateA₄_eq_evalInt/t
-                                                                          ateA₆_eq_evalInt; (2)
-                                                                          naturality of pointMap itself
-                                                                          (not just bilateralX/Y):
-                                                                          reduce an arbitrary u to its
-                                                                          annulus representative via
+                                                                          gluing: (1) DONE —
+                                                                          tateCurve_map proven and wired
+                                                                          (hcurve); (2) REMAINING,
+                                                                          hardest type-theoretic step —
+                                                                          naturality of
+                                                                          pointMap/annulusPoint packaged
+                                                                          through WeierstrassCurve.Affin
+                                                                          e.Point.map: this needs an
+                                                                          actual AlgHom l →ₐ[k] Ω (no
+                                                                          bare `Algebra k l` inline
+                                                                          construction found in this
+                                                                          mathlib pin under a name like
+                                                                          Algebra.ofId — probed via
+                                                                          #check/exact?, none found;
+                                                                          would need to build one by
+                                                                          hand via the AlgHom structure
+                                                                          with a trivial commutes'
+                                                                          proof, OR — better — use the
+                                                                          REAL embedding l →ₐ[k] Ω that
+                                                                          arises when l is instantiated
+                                                                          as an actual IntermediateField
+                                                                          k Ω in the colimit
+                                                                          construction of step (3),
+                                                                          where the inclusion IS already
+                                                                          an AlgHom via
+                                                                          IntermediateField.val; reduce
+                                                                          an arbitrary u to its annulus
+                                                                          representative via
                                                                           exists_zpow_mul_mem_annulus,
                                                                           show the SAME exponent works
-                                                                          after mapping through
-                                                                          algebraMap k l (valuation
+                                                                          after mapping through the
+                                                                          embedding (valuation
                                                                           membership transfers via
                                                                           mapValueGroupWithZero +
                                                                           annulus_exponent_unique gives
-                                                                          uniqueness), then apply hnat;
-                                                                          (3) the colimit construction:
-                                                                          every element of Ωˣ / every
-                                                                          point of E_q(Ω) lies in a
-                                                                          finite subextension l/k of Ω/k
-                                                                          (mathlib: IsAlgebraic elements
-                                                                          lie in finite subextensions —
-                                                                          search IntermediateField/Algeb
-                                                                          ra.IsAlgebraic API); define φ
-                                                                          via the chosen l and hfin,
-                                                                          prove independence of the
-                                                                          choice using pointMap
-                                                                          naturality from (2); surjectiv
-                                                                          ity/kernel/equivariance
-                                                                          descend from the finite-level
-                                                                          properties.
+                                                                          uniqueness), then apply
+                                                                          hnat/hcurve; (3) the colimit
+                                                                          construction: every element of
+                                                                          Ωˣ / every point of E_q(Ω)
+                                                                          lies in a finite subextension
+                                                                          l/k of Ω/k (mathlib:
+                                                                          IsAlgebraic elements lie in
+                                                                          finite subextensions — search
+                                                                          IntermediateField/Algebra.IsAl
+                                                                          gebraic API); define φ via the
+                                                                          chosen l and hfin, prove
+                                                                          independence of the choice
+                                                                          using pointMap naturality from
+                                                                          (2); surjectivity/kernel/equiv
+                                                                          ariance descend from the
+                                                                          finite-level properties.
                                 - ✅· `det_galoisRep_eq_cyclotomic` — `det_galoisRep_eq_cyclotomic` — (2026-07-17): `det ρ̄` and `χ̄`
                                   are continuous conjugation-invariant `ZMod p`-valued functions on
                                   `Γ ℚ` (continuity of `det ∘ ρ` from discreteness of `End` via
@@ -1178,21 +1226,28 @@ entries file). To add/remove/annotate a node, edit
                                                   wired in as a real `have` (hnat) inside this
                                                   theorem's proof, packaging the bilateral-
                                                   coordinate naturality as an (X,Y) pair. REMAINING
-                                                  for the actual gluing: (1) tateCurve_baseChange —
-                                                  (tateCurve q₀).map (algebraMap k l) = tateCurve
-                                                  (algebraMap k l q₀) (NOT yet proven anywhere;
-                                                  needed to type the
-                                                  WeierstrassCurve.Affine.Point.map used in the
-                                                  final φ), quick from TateCurve.evalInt_map applied
-                                                  to tateA₄_eq_evalInt/tateA₆_eq_evalInt; (2)
-                                                  naturality of pointMap itself (not just
-                                                  bilateralX/Y): reduce an arbitrary u to its
-                                                  annulus representative via
+                                                  for the actual gluing: (1) DONE — tateCurve_map
+                                                  proven and wired (hcurve); (2) REMAINING, hardest
+                                                  type-theoretic step — naturality of
+                                                  pointMap/annulusPoint packaged through
+                                                  WeierstrassCurve.Affine.Point.map: this needs an
+                                                  actual AlgHom l →ₐ[k] Ω (no bare `Algebra k l`
+                                                  inline construction found in this mathlib pin
+                                                  under a name like Algebra.ofId — probed via
+                                                  #check/exact?, none found; would need to build one
+                                                  by hand via the AlgHom structure with a trivial
+                                                  commutes' proof, OR — better — use the REAL
+                                                  embedding l →ₐ[k] Ω that arises when l is
+                                                  instantiated as an actual IntermediateField k Ω in
+                                                  the colimit construction of step (3), where the
+                                                  inclusion IS already an AlgHom via
+                                                  IntermediateField.val; reduce an arbitrary u to
+                                                  its annulus representative via
                                                   exists_zpow_mul_mem_annulus, show the SAME
-                                                  exponent works after mapping through algebraMap k
-                                                  l (valuation membership transfers via
+                                                  exponent works after mapping through the embedding
+                                                  (valuation membership transfers via
                                                   mapValueGroupWithZero + annulus_exponent_unique
-                                                  gives uniqueness), then apply hnat; (3) the
+                                                  gives uniqueness), then apply hnat/hcurve; (3) the
                                                   colimit construction: every element of Ωˣ / every
                                                   point of E_q(Ω) lies in a finite subextension l/k
                                                   of Ω/k (mathlib: IsAlgebraic elements lie in
@@ -1340,27 +1395,34 @@ entries file). To add/remove/annotate a node, edit
                                                       real `have` (hnat) inside this theorem's
                                                       proof, packaging the bilateral-coordinate
                                                       naturality as an (X,Y) pair. REMAINING for the
-                                                      actual gluing: (1) tateCurve_baseChange —
-                                                      (tateCurve q₀).map (algebraMap k l) =
-                                                      tateCurve (algebraMap k l q₀) (NOT yet proven
-                                                      anywhere; needed to type the
-                                                      WeierstrassCurve.Affine.Point.map used in the
-                                                      final φ), quick from TateCurve.evalInt_map
-                                                      applied to
-                                                      tateA₄_eq_evalInt/tateA₆_eq_evalInt; (2)
-                                                      naturality of pointMap itself (not just
-                                                      bilateralX/Y): reduce an arbitrary u to its
-                                                      annulus representative via
+                                                      actual gluing: (1) DONE — tateCurve_map proven
+                                                      and wired (hcurve); (2) REMAINING, hardest
+                                                      type-theoretic step — naturality of
+                                                      pointMap/annulusPoint packaged through
+                                                      WeierstrassCurve.Affine.Point.map: this needs
+                                                      an actual AlgHom l →ₐ[k] Ω (no bare `Algebra k
+                                                      l` inline construction found in this mathlib
+                                                      pin under a name like Algebra.ofId — probed
+                                                      via #check/exact?, none found; would need to
+                                                      build one by hand via the AlgHom structure
+                                                      with a trivial commutes' proof, OR — better —
+                                                      use the REAL embedding l →ₐ[k] Ω that arises
+                                                      when l is instantiated as an actual
+                                                      IntermediateField k Ω in the colimit
+                                                      construction of step (3), where the inclusion
+                                                      IS already an AlgHom via
+                                                      IntermediateField.val; reduce an arbitrary u
+                                                      to its annulus representative via
                                                       exists_zpow_mul_mem_annulus, show the SAME
-                                                      exponent works after mapping through
-                                                      algebraMap k l (valuation membership transfers
-                                                      via mapValueGroupWithZero +
+                                                      exponent works after mapping through the
+                                                      embedding (valuation membership transfers via
+                                                      mapValueGroupWithZero +
                                                       annulus_exponent_unique gives uniqueness),
-                                                      then apply hnat; (3) the colimit construction:
-                                                      every element of Ωˣ / every point of E_q(Ω)
-                                                      lies in a finite subextension l/k of Ω/k
-                                                      (mathlib: IsAlgebraic elements lie in finite
-                                                      subextensions — search
+                                                      then apply hnat/hcurve; (3) the colimit
+                                                      construction: every element of Ωˣ / every
+                                                      point of E_q(Ω) lies in a finite subextension
+                                                      l/k of Ω/k (mathlib: IsAlgebraic elements lie
+                                                      in finite subextensions — search
                                                       IntermediateField/Algebra.IsAlgebraic API);
                                                       define φ via the chosen l and hfin, prove
                                                       independence of the choice using pointMap
@@ -1506,22 +1568,28 @@ entries file). To add/remove/annotate a node, edit
                                           TateUniformization.lean) is now wired in as a real `have`
                                           (hnat) inside this theorem's proof, packaging the
                                           bilateral-coordinate naturality as an (X,Y) pair.
-                                          REMAINING for the actual gluing: (1) tateCurve_baseChange
-                                          — (tateCurve q₀).map (algebraMap k l) = tateCurve
-                                          (algebraMap k l q₀) (NOT yet proven anywhere; needed to
-                                          type the WeierstrassCurve.Affine.Point.map used in the
-                                          final φ), quick from TateCurve.evalInt_map applied to
-                                          tateA₄_eq_evalInt/tateA₆_eq_evalInt; (2) naturality of
-                                          pointMap itself (not just bilateralX/Y): reduce an
-                                          arbitrary u to its annulus representative via
+                                          REMAINING for the actual gluing: (1) DONE — tateCurve_map
+                                          proven and wired (hcurve); (2) REMAINING, hardest type-
+                                          theoretic step — naturality of pointMap/annulusPoint
+                                          packaged through WeierstrassCurve.Affine.Point.map: this
+                                          needs an actual AlgHom l →ₐ[k] Ω (no bare `Algebra k l`
+                                          inline construction found in this mathlib pin under a name
+                                          like Algebra.ofId — probed via #check/exact?, none found;
+                                          would need to build one by hand via the AlgHom structure
+                                          with a trivial commutes' proof, OR — better — use the REAL
+                                          embedding l →ₐ[k] Ω that arises when l is instantiated as
+                                          an actual IntermediateField k Ω in the colimit
+                                          construction of step (3), where the inclusion IS already
+                                          an AlgHom via IntermediateField.val; reduce an arbitrary u
+                                          to its annulus representative via
                                           exists_zpow_mul_mem_annulus, show the SAME exponent works
-                                          after mapping through algebraMap k l (valuation membership
+                                          after mapping through the embedding (valuation membership
                                           transfers via mapValueGroupWithZero +
                                           annulus_exponent_unique gives uniqueness), then apply
-                                          hnat; (3) the colimit construction: every element of Ωˣ /
-                                          every point of E_q(Ω) lies in a finite subextension l/k of
-                                          Ω/k (mathlib: IsAlgebraic elements lie in finite
-                                          subextensions — search
+                                          hnat/hcurve; (3) the colimit construction: every element
+                                          of Ωˣ / every point of E_q(Ω) lies in a finite
+                                          subextension l/k of Ω/k (mathlib: IsAlgebraic elements lie
+                                          in finite subextensions — search
                                           IntermediateField/Algebra.IsAlgebraic API); define φ via
                                           the chosen l and hfin, prove independence of the choice
                                           using pointMap naturality from (2);
@@ -1634,22 +1702,28 @@ entries file). To add/remove/annotate a node, edit
                                           TateUniformization.lean) is now wired in as a real `have`
                                           (hnat) inside this theorem's proof, packaging the
                                           bilateral-coordinate naturality as an (X,Y) pair.
-                                          REMAINING for the actual gluing: (1) tateCurve_baseChange
-                                          — (tateCurve q₀).map (algebraMap k l) = tateCurve
-                                          (algebraMap k l q₀) (NOT yet proven anywhere; needed to
-                                          type the WeierstrassCurve.Affine.Point.map used in the
-                                          final φ), quick from TateCurve.evalInt_map applied to
-                                          tateA₄_eq_evalInt/tateA₆_eq_evalInt; (2) naturality of
-                                          pointMap itself (not just bilateralX/Y): reduce an
-                                          arbitrary u to its annulus representative via
+                                          REMAINING for the actual gluing: (1) DONE — tateCurve_map
+                                          proven and wired (hcurve); (2) REMAINING, hardest type-
+                                          theoretic step — naturality of pointMap/annulusPoint
+                                          packaged through WeierstrassCurve.Affine.Point.map: this
+                                          needs an actual AlgHom l →ₐ[k] Ω (no bare `Algebra k l`
+                                          inline construction found in this mathlib pin under a name
+                                          like Algebra.ofId — probed via #check/exact?, none found;
+                                          would need to build one by hand via the AlgHom structure
+                                          with a trivial commutes' proof, OR — better — use the REAL
+                                          embedding l →ₐ[k] Ω that arises when l is instantiated as
+                                          an actual IntermediateField k Ω in the colimit
+                                          construction of step (3), where the inclusion IS already
+                                          an AlgHom via IntermediateField.val; reduce an arbitrary u
+                                          to its annulus representative via
                                           exists_zpow_mul_mem_annulus, show the SAME exponent works
-                                          after mapping through algebraMap k l (valuation membership
+                                          after mapping through the embedding (valuation membership
                                           transfers via mapValueGroupWithZero +
                                           annulus_exponent_unique gives uniqueness), then apply
-                                          hnat; (3) the colimit construction: every element of Ωˣ /
-                                          every point of E_q(Ω) lies in a finite subextension l/k of
-                                          Ω/k (mathlib: IsAlgebraic elements lie in finite
-                                          subextensions — search
+                                          hnat/hcurve; (3) the colimit construction: every element
+                                          of Ωˣ / every point of E_q(Ω) lies in a finite
+                                          subextension l/k of Ω/k (mathlib: IsAlgebraic elements lie
+                                          in finite subextensions — search
                                           IntermediateField/Algebra.IsAlgebraic API); define φ via
                                           the chosen l and hfin, prove independence of the choice
                                           using pointMap naturality from (2);

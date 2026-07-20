@@ -1,14 +1,10 @@
 {
- "key": "1784532991.4720323",
+ "key": "1784534113.285972",
  "returncode": 0,
  "kept_invisible": [
   {
    "module": "Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal",
    "name": "summable_prod_mul_pow'"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveBaseChange",
-   "name": "TateCurve.evalInt_map"
   },
   {
    "module": "Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal",
@@ -25,10 +21,6 @@
   {
    "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange",
    "name": "WeierstrassCurve.negVariableChange_u"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveBaseChange",
-   "name": "TateCurve.evalInt_sub"
   },
   {
    "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",
@@ -85,10 +77,6 @@
   {
    "module": "Fermat.FLT.DedekindDomain.AdicValuation",
    "name": "IsDedekindDomain.HeightOneSpectrum.adicCompletion.instIsDiscreteValuationRingSubtypeMemValuationSubringAdicCompletionIntegers_fermat"
-  },
-  {
-   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurveBaseChange",
-   "name": "TateCurve.valuation_evalInt_sub_sum_le"
   },
   {
    "module": "Fermat.FLT.Slop.PGL2.FiniteSubgroups.PGLBasic",

@@ -133,6 +133,17 @@ theorem WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel
     fun {l} _ _ _ _ _ _ _ u₀ q₀ h0 h1 hu hq1 hqu h0' h1' hu' hq1' hqu' =>
       ⟨TateCurve.bilateralX_map u₀ q₀ h0 h1 hu hq1 hqu h0' h1' hu' hq1' hqu',
        TateCurve.bilateralY_map u₀ q₀ h0 h1 hu hq1 hqu h0' h1' hu' hq1' hqu'⟩
+  -- The Tate curve itself is functorial in a valuative extension (PROVEN,
+  -- `TateCurve.tateCurve_map`), so the base-changed curve
+  -- `(tateCurve q₀).map (algebraMap k l)` used to type the eventual
+  -- `WeierstrassCurve.Affine.Point.map` in the gluing construction is
+  -- identified with `tateCurve (algebraMap k l q₀)` directly.
+  have hcurve : ∀ {l : Type uΩ} [Field l] [ValuativeRel l] [TopologicalSpace l]
+      [IsNonarchimedeanLocalField l] [CharZero l] [Algebra k l]
+      [ValuativeExtension k l] (q₀ : k) (hq0 : valuation k q₀ < 1),
+      (WeierstrassCurve.tateCurve q₀).map (algebraMap k l) =
+        WeierstrassCurve.tateCurve (algebraMap k l q₀) :=
+    fun {l} _ _ _ _ _ _ _ q₀ hq0 => TateCurve.tateCurve_map q₀ hq0
   sorry
 
 /-- **The Tate-curve uniformising homomorphism over a separable closure**

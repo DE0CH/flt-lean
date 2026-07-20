@@ -186,7 +186,8 @@
   "TateCurve.evalA_XA_map": "✅✅",
   "TateCurve.evalA_YA_map": "✅✅",
   "TateCurve.bilateralX_map": "✅✅",
-  "TateCurve.bilateralY_map": "✅✅"
+  "TateCurve.bilateralY_map": "✅✅",
+  "TateCurve.tateCurve_map": "✅✅"
  },
  "children": {
   "fermatLastTheoremThree": [],
@@ -703,6 +704,7 @@
    "TateCurve.pointMapQuot_surjective"
   ],
   "WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel": [
+   "TateCurve.tateCurve_map",
    "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
    "TateCurve.bilateralX_map",
    "TateCurve.bilateralY_map"
@@ -840,7 +842,8 @@
   ],
   "TateCurve.bilateralY_map": [
    "TateCurve.evalA_YA_map"
-  ]
+  ],
+  "TateCurve.tateCurve_map": []
  },
  "roots": [
   "fermat_last_theorem"

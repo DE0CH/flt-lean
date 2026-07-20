@@ -891,6 +891,29 @@ theorem evalA_YA_map (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
     _ ≤ valuation l (algebraMap k l w) ^ N' := max_le h1 hltail
     _ < _ := hN'
 
+omit [CharZero k] [CharZero l] in
+/-- **The Tate curve is functorial in a valuative extension**: mapping
+`E_{q₀}` over `k` along `algebraMap k l` gives `E_{algebraMap k l q₀}`
+over `l` — the coefficients `a₄(q₀)`, `a₆(q₀)` are `evalInt`-evaluations
+of fixed integral power series (`WeierstrassCurve.tateA₄_eq_evalInt`,
+`WeierstrassCurve.tateA₆_eq_evalInt`), which commute with the
+extension by `evalInt_map`. -/
+theorem tateCurve_map (q₀ : k) (hq0 : valuation k q₀ < 1) :
+    (WeierstrassCurve.tateCurve q₀).map (algebraMap k l) =
+      WeierstrassCurve.tateCurve (algebraMap k l q₀) := by
+  have hq0' : valuation l (algebraMap k l q₀) < 1 :=
+    valuation_algebraMap_lt_one hq0
+  have h4 : algebraMap k l (WeierstrassCurve.tateA₄ q₀) =
+      WeierstrassCurve.tateA₄ (algebraMap k l q₀) := by
+    rw [WeierstrassCurve.tateA₄_eq_evalInt q₀ hq0, evalInt_map q₀ hq0,
+      ← WeierstrassCurve.tateA₄_eq_evalInt (algebraMap k l q₀) hq0']
+  have h6 : algebraMap k l (WeierstrassCurve.tateA₆ q₀) =
+      WeierstrassCurve.tateA₆ (algebraMap k l q₀) := by
+    rw [WeierstrassCurve.tateA₆_eq_evalInt q₀ hq0, evalInt_map q₀ hq0,
+      ← WeierstrassCurve.tateA₆_eq_evalInt (algebraMap k l q₀) hq0']
+  simp only [WeierstrassCurve.tateCurve, WeierstrassCurve.map, map_one,
+    map_zero, h4, h6]
+
 end Naturality
 
 
