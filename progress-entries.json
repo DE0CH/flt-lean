@@ -1185,7 +1185,7 @@
     "name": "TateCurve.bilateral_chordX_cleared_shifted",
     "fullname": "TateCurve.bilateral_chordX_cleared_shifted",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-    "text": "shifted case of the cleared chord X-identity (sorry node): u₀v₀ below the fundamental annulus (val(u₀v₀) ≤ val q₀ but > val q₀² from the individual windows): reduce the third slot by the PROVEN shift identities (bilateralX_shift, Y-analogue) to w := u₀v₀/q₀ with val ∈ (val q₀, 1] (w ≠ 1 from hneq : u₀v₀ ≠ q₀), giving a shifted chord configuration; derive from the window case applied to a reduced parameter pair (classical Silverman V.3 annulus case analysis; may need the inversion identity bilateralX_inv for a boundary subcase val v₀ = 1)."
+    "text": "shifted case of the cleared chord X-identity (DERIVED 2026-07-18: replace v₀ by v₀/q₀ in the upper extended annulus — in the shifted case |v₀| < 1 strictly so v₀/q₀ stays below |q₀|⁻¹ — and the product by u₀v₀/q₀ back in the fundamental annulus; bilateral values invariant by the proven shift identities; conclude by the summability-parameterized transport with the extended-annulus summability/bridge leaves)."
   },
   {
     "name": "TateCurve.bilateral_chordY_cleared_window",
@@ -1197,7 +1197,7 @@
     "name": "TateCurve.bilateral_chordY_cleared_shifted",
     "fullname": "TateCurve.bilateral_chordY_cleared_shifted",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-    "text": "shifted case of the cleared chord Y-identity (sorry node): same shift-reduction as the X-shifted case."
+    "text": "shifted case of the cleared chord Y-identity (DERIVED 2026-07-18: replace v₀ by v₀/q₀ in the upper extended annulus — in the shifted case |v₀| < 1 strictly so v₀/q₀ stays below |q₀|⁻¹ — and the product by u₀v₀/q₀ back in the fundamental annulus; bilateral values invariant by the proven shift identities; conclude by the summability-parameterized transport with the extended-annulus summability/bridge leaves)."
   },
   {
     "name": "TateCurve.evalA_chordX",
@@ -1246,5 +1246,29 @@
     "fullname": "TateCurve.chordY_ratFunc₂",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
     "text": "chord Y-identity in ℚ(u)(v)⟦q⟧ (PROVEN 2026-07-18: same descent with analytic_chordY)."
+  },
+  {
+    "name": "TateCurve.summable_evalA_XA_ext",
+    "fullname": "TateCurve.summable_evalA_XA_ext",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
+    "text": "extended-annulus summability for XA (sorry node): on 1 < |u₀| < |q₀|⁻¹ the coefficient bound is |u₀|ⁿ (dominant u^d-terms, d ≤ n), beaten by |q₀u₀|ⁿ < 1 — mirror summable_evalA_XA/valuation_coeffRingEval_XA_le with the max-bound."
+  },
+  {
+    "name": "TateCurve.summable_evalA_YA_ext",
+    "fullname": "TateCurve.summable_evalA_YA_ext",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
+    "text": "extended-annulus summability for YA (sorry node): same as the XA version."
+  },
+  {
+    "name": "TateCurve.evalA_XA_eq_bilateralX_ext",
+    "fullname": "TateCurve.evalA_XA_eq_bilateralX_ext",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
+    "text": "extended-annulus bilateral bridge for X (sorry node): the (u,q)-graded evalA double series rearranges to the bilateral ℤ-sum also on the upper half of the extended annulus (mirror evalA_XA_bilateral with the other Lambert splitting: the u^d-branch now carries the geometric decay)."
+  },
+  {
+    "name": "TateCurve.evalA_YA_eq_bilateralY_ext",
+    "fullname": "TateCurve.evalA_YA_eq_bilateralY_ext",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
+    "text": "extended-annulus bilateral bridge for Y (sorry node): same as the X version."
   }
 ]

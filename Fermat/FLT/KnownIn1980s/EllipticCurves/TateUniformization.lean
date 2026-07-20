@@ -3943,16 +3943,19 @@ theorem evalA_chordX_of_formal
       (PowerSeries.map uSlot YA - PowerSeries.map vSlot YA) *
         (PowerSeries.map uSlot XA - PowerSeries.map vSlot XA))
     (u₀ v₀ q₀ : k)
-    (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (_hq0 : q₀ ≠ 0)
+    (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0)
     (hu1 : u₀ ≠ 1) (hv1 : v₀ ≠ 1)
-    (_hq1 : valuation k q₀ < 1)
-    (hulow : valuation k q₀ < valuation k u₀)
-    (huhigh : valuation k u₀ ≤ 1)
-    (hvlow : valuation k q₀ < valuation k v₀)
-    (hvhigh : valuation k v₀ ≤ 1)
-    (hne1 : u₀ * v₀ ≠ 1) (_hneq : u₀ * v₀ ≠ q₀)
-    (hw0 : u₀ * v₀ ≠ 0) (hwin : valuation k q₀ < valuation k (u₀ * v₀))
-    (hwhigh : valuation k (u₀ * v₀) ≤ 1) :
+    (hne1 : u₀ * v₀ ≠ 1) (hw0 : u₀ * v₀ ≠ 0)
+    (hXu : Summable fun n : ℕ ↦
+      coeffRingEval u₀ hu0 hu1 (PowerSeries.coeff n XA) * q₀ ^ n)
+    (hXv : Summable fun n : ℕ ↦
+      coeffRingEval v₀ hv0 hv1 (PowerSeries.coeff n XA) * q₀ ^ n)
+    (hXw : Summable fun n : ℕ ↦
+      coeffRingEval (u₀ * v₀) hw0 hne1 (PowerSeries.coeff n XA) * q₀ ^ n)
+    (hYu : Summable fun n : ℕ ↦
+      coeffRingEval u₀ hu0 hu1 (PowerSeries.coeff n YA) * q₀ ^ n)
+    (hYv : Summable fun n : ℕ ↦
+      coeffRingEval v₀ hv0 hv1 (PowerSeries.coeff n YA) * q₀ ^ n) :
     (evalA (u₀ * v₀) q₀ hw0 hne1 XA + evalA u₀ q₀ hu0 hu1 XA
         + evalA v₀ q₀ hv0 hv1 XA) *
         (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) ^ 2 =
@@ -3986,12 +3989,6 @@ theorem evalA_chordX_of_formal
   set wX := PowerSeries.map uvSlot XA with hwX
   set uY := PowerSeries.map uSlot YA with huY
   set vY := PowerSeries.map vSlot YA with hvY
-  -- one-variable summabilities on the annulus
-  have hXu := summable_evalA_XA u₀ q₀ hu0 hu1 huhigh hulow
-  have hXv := summable_evalA_XA v₀ q₀ hv0 hv1 hvhigh hvlow
-  have hXw := summable_evalA_XA (u₀ * v₀) q₀ hw0 hne1 hwhigh hwin
-  have hYu := summable_evalA_YA u₀ q₀ hu0 hu1 huhigh hulow
-  have hYv := summable_evalA_YA v₀ q₀ hv0 hv1 hvhigh hvlow
   -- transported to the two-variable evaluation
   have sXu : Summable fun n : ℕ ↦ E₂ (PowerSeries.coeff n uX) * q₀ ^ n :=
     hXu.congr fun n => by rw [hsequ]
@@ -4091,16 +4088,21 @@ theorem evalA_chordY_of_formal
       PowerSeries.map uSlot YA *
         (PowerSeries.map uSlot XA - PowerSeries.map vSlot XA))
     (u₀ v₀ q₀ : k)
-    (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (_hq0 : q₀ ≠ 0)
+    (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0)
     (hu1 : u₀ ≠ 1) (hv1 : v₀ ≠ 1)
-    (_hq1 : valuation k q₀ < 1)
-    (hulow : valuation k q₀ < valuation k u₀)
-    (huhigh : valuation k u₀ ≤ 1)
-    (hvlow : valuation k q₀ < valuation k v₀)
-    (hvhigh : valuation k v₀ ≤ 1)
-    (hne1 : u₀ * v₀ ≠ 1) (_hneq : u₀ * v₀ ≠ q₀)
-    (hw0 : u₀ * v₀ ≠ 0) (hwin : valuation k q₀ < valuation k (u₀ * v₀))
-    (hwhigh : valuation k (u₀ * v₀) ≤ 1) :
+    (hne1 : u₀ * v₀ ≠ 1) (hw0 : u₀ * v₀ ≠ 0)
+    (hXu : Summable fun n : ℕ ↦
+      coeffRingEval u₀ hu0 hu1 (PowerSeries.coeff n XA) * q₀ ^ n)
+    (hXv : Summable fun n : ℕ ↦
+      coeffRingEval v₀ hv0 hv1 (PowerSeries.coeff n XA) * q₀ ^ n)
+    (hXw : Summable fun n : ℕ ↦
+      coeffRingEval (u₀ * v₀) hw0 hne1 (PowerSeries.coeff n XA) * q₀ ^ n)
+    (hYu : Summable fun n : ℕ ↦
+      coeffRingEval u₀ hu0 hu1 (PowerSeries.coeff n YA) * q₀ ^ n)
+    (hYv : Summable fun n : ℕ ↦
+      coeffRingEval v₀ hv0 hv1 (PowerSeries.coeff n YA) * q₀ ^ n)
+    (hYw : Summable fun n : ℕ ↦
+      coeffRingEval (u₀ * v₀) hw0 hne1 (PowerSeries.coeff n YA) * q₀ ^ n) :
     -(evalA (u₀ * v₀) q₀ hw0 hne1 YA + evalA (u₀ * v₀) q₀ hw0 hne1 XA) *
         (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) =
       (evalA u₀ q₀ hu0 hu1 YA - evalA v₀ q₀ hv0 hv1 YA) *
@@ -4135,12 +4137,6 @@ theorem evalA_chordY_of_formal
   set uY := PowerSeries.map uSlot YA with huY
   set vY := PowerSeries.map vSlot YA with hvY
   set wY := PowerSeries.map uvSlot YA with hwY
-  have hXu := summable_evalA_XA u₀ q₀ hu0 hu1 huhigh hulow
-  have hXv := summable_evalA_XA v₀ q₀ hv0 hv1 hvhigh hvlow
-  have hXw := summable_evalA_XA (u₀ * v₀) q₀ hw0 hne1 hwhigh hwin
-  have hYu := summable_evalA_YA u₀ q₀ hu0 hu1 huhigh hulow
-  have hYv := summable_evalA_YA v₀ q₀ hv0 hv1 hvhigh hvlow
-  have hYw := summable_evalA_YA (u₀ * v₀) q₀ hw0 hne1 hwhigh hwin
   have sXu : Summable fun n : ℕ ↦ E₂ (PowerSeries.coeff n uX) * q₀ ^ n :=
     hXu.congr fun n => by rw [hsequ]
   have sXv : Summable fun n : ℕ ↦ E₂ (PowerSeries.coeff n vX) * q₀ ^ n :=
@@ -4244,14 +4240,14 @@ This is the `k`-evaluation of the two-variable formal chord identity in
 `ℚ(u)(v)⟦q⟧`, which descends from `analytic_chordX` of
 `TateCurveConstruction.lean`. -/
 theorem evalA_chordX (u₀ v₀ q₀ : k)
-    (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (hq0 : q₀ ≠ 0)
+    (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (_hq0 : q₀ ≠ 0)
     (hu1 : u₀ ≠ 1) (hv1 : v₀ ≠ 1)
-    (hq1 : valuation k q₀ < 1)
+    (_hq1 : valuation k q₀ < 1)
     (hulow : valuation k q₀ < valuation k u₀)
     (huhigh : valuation k u₀ ≤ 1)
     (hvlow : valuation k q₀ < valuation k v₀)
     (hvhigh : valuation k v₀ ≤ 1)
-    (hne1 : u₀ * v₀ ≠ 1) (hneq : u₀ * v₀ ≠ q₀) :
+    (hne1 : u₀ * v₀ ≠ 1) (_hneq : u₀ * v₀ ≠ q₀) :
     ∀ (hw0 : u₀ * v₀ ≠ 0) (_hwin : valuation k q₀ < valuation k (u₀ * v₀))
       (_hwhigh : valuation k (u₀ * v₀) ≤ 1),
     (evalA (u₀ * v₀) q₀ hw0 hne1 XA + evalA u₀ q₀ hu0 hu1 XA
@@ -4261,8 +4257,12 @@ theorem evalA_chordX (u₀ v₀ q₀ : k)
         (evalA u₀ q₀ hu0 hu1 YA - evalA v₀ q₀ hv0 hv1 YA) *
           (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) :=
   fun hw0 hwin hwhigh =>
-    evalA_chordX_of_formal chordX_formal u₀ v₀ q₀ hu0 hv0 hq0 hu1 hv1 hq1
-      hulow huhigh hvlow hvhigh hne1 hneq hw0 hwin hwhigh
+    evalA_chordX_of_formal chordX_formal u₀ v₀ q₀ hu0 hv0 hu1 hv1 hne1 hw0
+      (summable_evalA_XA u₀ q₀ hu0 hu1 huhigh hulow)
+      (summable_evalA_XA v₀ q₀ hv0 hv1 hvhigh hvlow)
+      (summable_evalA_XA (u₀ * v₀) q₀ hw0 hne1 hwhigh hwin)
+      (summable_evalA_YA u₀ q₀ hu0 hu1 huhigh hulow)
+      (summable_evalA_YA v₀ q₀ hv0 hv1 hvhigh hvlow)
 
 /-- **The cleared chord `X`-identity, fundamental-window case** (DERIVED
 from the `evalA`-level identity through the bilateral bridges): all
@@ -4300,28 +4300,193 @@ theorem bilateral_chordX_cleared_window (u₀ v₀ q₀ : k)
     hvhigh hne1 hneq hw0 hwin hwhigh
 
 set_option warn.sorry false in
-/-- **The cleared chord `X`-identity, shifted case** (sorry node — the
-quotient bookkeeping): the product `u₀v₀` falls below the fundamental
-annulus (`|u₀v₀| ≤ |q₀|`, still `> |q₀|²`), so its bilateral values are
-reduced by the PROVEN shift identities `bilateralX_shift`/`bilateralY`
-analogue to the parameter `u₀v₀/q₀` in the window, and the identity
-follows from the window case in a shifted configuration. -/
+/-- **Extended-annulus summability for `XA`** (sorry node): the
+evaluated series also converges on the upper half of the extended
+annulus `1 < |u₀| < |q₀|⁻¹` — the coefficient bound becomes
+`max(|u₀|, |u₀|⁻¹)ⁿ = |u₀|ⁿ`, beaten by `|q₀u₀| < 1`. -/
+theorem summable_evalA_XA_ext (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hu : 1 < valuation k u₀) (hqu : valuation k (q₀ * u₀) < 1) :
+    Summable fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff n XA) * q₀ ^ n :=
+  sorry
+
+set_option warn.sorry false in
+/-- **Extended-annulus summability for `YA`** (sorry node). -/
+theorem summable_evalA_YA_ext (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (hu : 1 < valuation k u₀) (hqu : valuation k (q₀ * u₀) < 1) :
+    Summable fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff n YA) * q₀ ^ n :=
+  sorry
+
+set_option warn.sorry false in
+/-- **Extended-annulus bilateral bridge for `X`** (sorry node): the
+`evalA`-sum agrees with the bilateral value also on the upper half
+`1 < |u₀| < |q₀|⁻¹` of the extended annulus (rearrangement of the
+`(u, q)`-graded double series along the other Lambert splitting). -/
+theorem evalA_XA_eq_bilateralX_ext (u₀ q₀ : k) (h0 : u₀ ≠ 0)
+    (h1 : u₀ ≠ 1) (hq1 : valuation k q₀ < 1)
+    (hu : 1 < valuation k u₀) (hqu : valuation k (q₀ * u₀) < 1) :
+    evalA u₀ q₀ h0 h1 XA = bilateralX u₀ q₀ :=
+  sorry
+
+set_option warn.sorry false in
+/-- **Extended-annulus bilateral bridge for `Y`** (sorry node). -/
+theorem evalA_YA_eq_bilateralY_ext (u₀ q₀ : k) (h0 : u₀ ≠ 0)
+    (h1 : u₀ ≠ 1) (hq1 : valuation k q₀ < 1)
+    (hu : 1 < valuation k u₀) (hqu : valuation k (q₀ * u₀) < 1) :
+    evalA u₀ q₀ h0 h1 YA = bilateralY u₀ q₀ :=
+  sorry
+
+/-- **The cleared chord `X`-identity, shifted case** (DERIVED): when
+the product falls below the fundamental annulus, replace `v₀` by
+`v₀' := v₀/q₀` (upper extended annulus) and the product by
+`u₀v₀' = u₀v₀/q₀` (back in the fundamental annulus); the bilateral
+values are invariant by the PROVEN shift identities, and the transport
+applies with the extended-annulus summabilities and bridges. -/
 theorem bilateral_chordX_cleared_shifted (u₀ v₀ q₀ : k)
     (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (hq0 : q₀ ≠ 0)
-    (hu1 : u₀ ≠ 1) (hv1 : v₀ ≠ 1)
+    (hu1 : u₀ ≠ 1) (_hv1 : v₀ ≠ 1)
     (hq1 : valuation k q₀ < 1)
     (hulow : valuation k q₀ < valuation k u₀)
     (huhigh : valuation k u₀ ≤ 1)
     (hvlow : valuation k q₀ < valuation k v₀)
-    (hvhigh : valuation k v₀ ≤ 1)
-    (hne1 : u₀ * v₀ ≠ 1) (hneq : u₀ * v₀ ≠ q₀) :
+    (_hvhigh : valuation k v₀ ≤ 1)
+    (_hne1 : u₀ * v₀ ≠ 1) (hneq : u₀ * v₀ ≠ q₀) :
     valuation k (u₀ * v₀) ≤ valuation k q₀ →
     (bilateralX (u₀ * v₀) q₀ + bilateralX u₀ q₀ + bilateralX v₀ q₀) *
         (bilateralX u₀ q₀ - bilateralX v₀ q₀) ^ 2 =
       (bilateralY u₀ q₀ - bilateralY v₀ q₀) ^ 2 +
         (bilateralY u₀ q₀ - bilateralY v₀ q₀) *
-          (bilateralX u₀ q₀ - bilateralX v₀ q₀) :=
-  sorry
+          (bilateralX u₀ q₀ - bilateralX v₀ q₀) := by
+  intro hcase
+  have hqvne : valuation k q₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hq0
+  have hqpos : (0 : ValueGroupWithZero k) < valuation k q₀ :=
+    zero_lt_iff.mpr hqvne
+  have huvne : valuation k u₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hu0
+  have hupos : (0 : ValueGroupWithZero k) < valuation k u₀ :=
+    zero_lt_iff.mpr huvne
+  -- in the shifted case `|v₀| < 1` strictly
+  have hv₀lt1 : valuation k v₀ < 1 := by
+    have h1 : valuation k u₀ * valuation k v₀ < valuation k u₀ * 1 := by
+      rw [mul_one]
+      calc valuation k u₀ * valuation k v₀
+          = valuation k (u₀ * v₀) := (map_mul _ _ _).symm
+        _ ≤ valuation k q₀ := hcase
+        _ < valuation k u₀ := hulow
+    exact lt_of_mul_lt_mul_left' h1
+  -- the auxiliary parameters
+  set v₀' : k := v₀ * q₀⁻¹ with hv'def
+  have hv'0 : v₀' ≠ 0 := mul_ne_zero hv0 (inv_ne_zero hq0)
+  have hqv' : q₀ * v₀' = v₀ := by
+    rw [hv'def]
+    field_simp
+  have hv'gt1 : 1 < valuation k v₀' := by
+    rw [hv'def, map_mul, map_inv₀]
+    have h1 : valuation k q₀ * (valuation k q₀)⁻¹ <
+        valuation k v₀ * (valuation k q₀)⁻¹ :=
+      (OrderIso.mulRight₀ _ (zero_lt_iff.mpr (inv_ne_zero hqvne))
+        ).strictMono hvlow
+    rwa [mul_inv_cancel₀ hqvne] at h1
+  have hv'1 : v₀' ≠ 1 := by
+    intro h1
+    apply lt_irrefl (valuation k v₀)
+    calc valuation k v₀ = valuation k q₀ := by rw [← hqv', h1, mul_one]
+      _ < valuation k v₀ := hvlow
+  have hqv'lt : valuation k (q₀ * v₀') < 1 := by
+    rw [hqv']
+    exact hv₀lt1
+  have hvvne : valuation k v₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hv0
+  have hq2v : valuation k (q₀ * v₀'⁻¹) < 1 := by
+    have hval : q₀ * v₀'⁻¹ = q₀ * q₀ * v₀⁻¹ := by
+      rw [hv'def]
+      field_simp
+    rw [hval, map_mul, map_mul, map_inv₀]
+    calc valuation k q₀ * valuation k q₀ * (valuation k v₀)⁻¹
+        < valuation k q₀ * valuation k v₀ * (valuation k v₀)⁻¹ := by
+          have hinner : valuation k q₀ * valuation k q₀ <
+              valuation k q₀ * valuation k v₀ :=
+            (OrderIso.mulLeft₀ _ hqpos).strictMono hvlow
+          exact (OrderIso.mulRight₀ _ (zero_lt_iff.mpr
+            (inv_ne_zero hvvne))).strictMono hinner
+      _ = valuation k q₀ := by
+          rw [mul_assoc, mul_inv_cancel₀ hvvne, mul_one]
+      _ < 1 := hq1
+  have hw0 : u₀ * v₀' ≠ 0 := mul_ne_zero hu0 hv'0
+  have hqw : q₀ * (u₀ * v₀') = u₀ * v₀ := by
+    rw [hv'def]
+    field_simp
+  have hq2uv : valuation k q₀ * valuation k q₀ <
+      valuation k (u₀ * v₀) := by
+    rw [map_mul]
+    calc valuation k q₀ * valuation k q₀
+        < valuation k u₀ * valuation k q₀ :=
+          (OrderIso.mulRight₀ _ hqpos).strictMono hulow
+      _ < valuation k u₀ * valuation k v₀ :=
+          (OrderIso.mulLeft₀ _ hupos).strictMono hvlow
+  have hwlow : valuation k q₀ < valuation k (u₀ * v₀') := by
+    have h2 : valuation k q₀ * valuation k (u₀ * v₀')
+        = valuation k (u₀ * v₀) := by
+      rw [← map_mul, hqw]
+    have h1 : valuation k q₀ * valuation k q₀ <
+        valuation k q₀ * valuation k (u₀ * v₀') := by
+      rw [h2]
+      exact hq2uv
+    exact lt_of_mul_lt_mul_left' h1
+  have hwhigh : valuation k (u₀ * v₀') ≤ 1 := by
+    have h2 : valuation k q₀ * valuation k (u₀ * v₀')
+        = valuation k (u₀ * v₀) := by
+      rw [← map_mul, hqw]
+    have h1 : valuation k q₀ * valuation k (u₀ * v₀') ≤
+        valuation k q₀ * 1 := by
+      rw [mul_one, h2]
+      exact hcase
+    exact (OrderIso.mulLeft₀ _ hqpos).le_iff_le.mp h1
+  have hw1 : u₀ * v₀' ≠ 1 := by
+    intro h1
+    apply hneq
+    rw [← hqw, h1, mul_one]
+  have hqwlt : valuation k (q₀ * (u₀ * v₀')) < 1 := by
+    rw [hqw]
+    exact lt_of_le_of_lt hcase hq1
+  have hq2w : valuation k (q₀ * (u₀ * v₀')⁻¹) < 1 := by
+    have hval : q₀ * (u₀ * v₀')⁻¹ = q₀ * q₀ * (u₀ * v₀)⁻¹ := by
+      rw [hv'def]
+      field_simp
+    rw [hval, map_mul, map_mul, map_inv₀]
+    have huv0 : valuation k (u₀ * v₀) ≠ 0 :=
+      (Valuation.ne_zero_iff _).mpr (mul_ne_zero hu0 hv0)
+    have h1 : valuation k q₀ * valuation k q₀ *
+        (valuation k (u₀ * v₀))⁻¹ <
+        valuation k (u₀ * v₀) * (valuation k (u₀ * v₀))⁻¹ :=
+      (OrderIso.mulRight₀ _ (zero_lt_iff.mpr (inv_ne_zero huv0))
+        ).strictMono hq2uv
+    rwa [mul_inv_cancel₀ huv0] at h1
+  -- the bilateral values are shift-invariant
+  have hXv_eq : bilateralX v₀ q₀ = bilateralX v₀' q₀ := by
+    rw [← hqv']
+    exact bilateralX_shift v₀' q₀ hv'0 hq0 hq1 hqv'lt hq2v
+  have hYv_eq : bilateralY v₀ q₀ = bilateralY v₀' q₀ := by
+    rw [← hqv']
+    exact bilateralY_shift v₀' q₀ hv'0 hv'1 hq0 hq1 hqv'lt hq2v
+  have hXw_eq : bilateralX (u₀ * v₀) q₀ = bilateralX (u₀ * v₀') q₀ := by
+    rw [← hqw]
+    exact bilateralX_shift (u₀ * v₀') q₀ hw0 hq0 hq1 hqwlt hq2w
+  have hYw_eq : bilateralY (u₀ * v₀) q₀ = bilateralY (u₀ * v₀') q₀ := by
+    rw [← hqw]
+    exact bilateralY_shift (u₀ * v₀') q₀ hw0 hw1 hq0 hq1 hqwlt hq2w
+  rw [hXv_eq, hYv_eq, hXw_eq,
+    ← evalA_XA_eq_bilateralX u₀ q₀ hu0 hu1 huhigh hq1 hulow,
+    ← evalA_XA_eq_bilateralX_ext v₀' q₀ hv'0 hv'1 hq1 hv'gt1 hqv'lt,
+    ← evalA_XA_eq_bilateralX (u₀ * v₀') q₀ hw0 hw1 hwhigh hq1 hwlow,
+    ← evalA_YA_eq_bilateralY u₀ q₀ hu0 hu1 huhigh hq1 hulow,
+    ← evalA_YA_eq_bilateralY_ext v₀' q₀ hv'0 hv'1 hq1 hv'gt1 hqv'lt]
+  exact evalA_chordX_of_formal chordX_formal u₀ v₀' q₀ hu0 hv'0 hu1 hv'1
+    hw1 hw0
+    (summable_evalA_XA u₀ q₀ hu0 hu1 huhigh hulow)
+    (summable_evalA_XA_ext v₀' q₀ hv'0 hv'1 hv'gt1 hqv'lt)
+    (summable_evalA_XA (u₀ * v₀') q₀ hw0 hw1 hwhigh hwlow)
+    (summable_evalA_YA u₀ q₀ hu0 hu1 huhigh hulow)
+    (summable_evalA_YA_ext v₀' q₀ hv'0 hv'1 hv'gt1 hqv'lt)
 
 /-- **The cleared chord `X`-identity** (decomposed 2026-07-18 into the
 fundamental-window case and the shifted case): a pure polynomial
@@ -4351,14 +4516,14 @@ theorem bilateral_chordX_cleared (u₀ v₀ q₀ : k)
 /-- **The `evalA`-level chord `Y`-identity** (DERIVED from the formal
 identity and the evaluation transport). -/
 theorem evalA_chordY (u₀ v₀ q₀ : k)
-    (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (hq0 : q₀ ≠ 0)
+    (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (_hq0 : q₀ ≠ 0)
     (hu1 : u₀ ≠ 1) (hv1 : v₀ ≠ 1)
-    (hq1 : valuation k q₀ < 1)
+    (_hq1 : valuation k q₀ < 1)
     (hulow : valuation k q₀ < valuation k u₀)
     (huhigh : valuation k u₀ ≤ 1)
     (hvlow : valuation k q₀ < valuation k v₀)
     (hvhigh : valuation k v₀ ≤ 1)
-    (hne1 : u₀ * v₀ ≠ 1) (hneq : u₀ * v₀ ≠ q₀) :
+    (hne1 : u₀ * v₀ ≠ 1) (_hneq : u₀ * v₀ ≠ q₀) :
     ∀ (hw0 : u₀ * v₀ ≠ 0) (_hwin : valuation k q₀ < valuation k (u₀ * v₀))
       (_hwhigh : valuation k (u₀ * v₀) ≤ 1),
     -(evalA (u₀ * v₀) q₀ hw0 hne1 YA + evalA (u₀ * v₀) q₀ hw0 hne1 XA) *
@@ -4368,8 +4533,13 @@ theorem evalA_chordY (u₀ v₀ q₀ : k)
         evalA u₀ q₀ hu0 hu1 YA *
           (evalA u₀ q₀ hu0 hu1 XA - evalA v₀ q₀ hv0 hv1 XA) :=
   fun hw0 hwin hwhigh =>
-    evalA_chordY_of_formal chordY_formal u₀ v₀ q₀ hu0 hv0 hq0 hu1 hv1 hq1
-      hulow huhigh hvlow hvhigh hne1 hneq hw0 hwin hwhigh
+    evalA_chordY_of_formal chordY_formal u₀ v₀ q₀ hu0 hv0 hu1 hv1 hne1 hw0
+      (summable_evalA_XA u₀ q₀ hu0 hu1 huhigh hulow)
+      (summable_evalA_XA v₀ q₀ hv0 hv1 hvhigh hvlow)
+      (summable_evalA_XA (u₀ * v₀) q₀ hw0 hne1 hwhigh hwin)
+      (summable_evalA_YA u₀ q₀ hu0 hu1 huhigh hulow)
+      (summable_evalA_YA v₀ q₀ hv0 hv1 hvhigh hvlow)
+      (summable_evalA_YA (u₀ * v₀) q₀ hw0 hne1 hwhigh hwin)
 
 /-- **The cleared chord `Y`-identity, fundamental-window case** (DERIVED
 from the `evalA`-level identity through the bilateral bridges). -/
@@ -4405,25 +4575,154 @@ theorem bilateral_chordY_cleared_window (u₀ v₀ q₀ : k)
   exact evalA_chordY u₀ v₀ q₀ hu0 hv0 hq0 hu1 hv1 hq1 hulow huhigh hvlow
     hvhigh hne1 hneq hw0 hwin hwhigh
 
-set_option warn.sorry false in
-/-- **The cleared chord `Y`-identity, shifted case** (sorry node): the
-shift-reduction of the collinearity when `|u₀v₀| ≤ |q₀|`. -/
+/-- **The cleared chord `Y`-identity, shifted case** (DERIVED): same
+shift-reduction as the `X`-identity. -/
 theorem bilateral_chordY_cleared_shifted (u₀ v₀ q₀ : k)
     (hu0 : u₀ ≠ 0) (hv0 : v₀ ≠ 0) (hq0 : q₀ ≠ 0)
-    (hu1 : u₀ ≠ 1) (hv1 : v₀ ≠ 1)
+    (hu1 : u₀ ≠ 1) (_hv1 : v₀ ≠ 1)
     (hq1 : valuation k q₀ < 1)
     (hulow : valuation k q₀ < valuation k u₀)
     (huhigh : valuation k u₀ ≤ 1)
     (hvlow : valuation k q₀ < valuation k v₀)
-    (hvhigh : valuation k v₀ ≤ 1)
-    (hne1 : u₀ * v₀ ≠ 1) (hneq : u₀ * v₀ ≠ q₀) :
+    (_hvhigh : valuation k v₀ ≤ 1)
+    (_hne1 : u₀ * v₀ ≠ 1) (hneq : u₀ * v₀ ≠ q₀) :
     valuation k (u₀ * v₀) ≤ valuation k q₀ →
     -(bilateralY (u₀ * v₀) q₀ + bilateralX (u₀ * v₀) q₀) *
         (bilateralX u₀ q₀ - bilateralX v₀ q₀) =
       (bilateralY u₀ q₀ - bilateralY v₀ q₀) *
           (bilateralX (u₀ * v₀) q₀ - bilateralX u₀ q₀) +
-        bilateralY u₀ q₀ * (bilateralX u₀ q₀ - bilateralX v₀ q₀) :=
-  sorry
+        bilateralY u₀ q₀ * (bilateralX u₀ q₀ - bilateralX v₀ q₀) := by
+  intro hcase
+  have hqvne : valuation k q₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hq0
+  have hqpos : (0 : ValueGroupWithZero k) < valuation k q₀ :=
+    zero_lt_iff.mpr hqvne
+  have huvne : valuation k u₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hu0
+  have hupos : (0 : ValueGroupWithZero k) < valuation k u₀ :=
+    zero_lt_iff.mpr huvne
+  -- in the shifted case `|v₀| < 1` strictly
+  have hv₀lt1 : valuation k v₀ < 1 := by
+    have h1 : valuation k u₀ * valuation k v₀ < valuation k u₀ * 1 := by
+      rw [mul_one]
+      calc valuation k u₀ * valuation k v₀
+          = valuation k (u₀ * v₀) := (map_mul _ _ _).symm
+        _ ≤ valuation k q₀ := hcase
+        _ < valuation k u₀ := hulow
+    exact lt_of_mul_lt_mul_left' h1
+  -- the auxiliary parameters
+  set v₀' : k := v₀ * q₀⁻¹ with hv'def
+  have hv'0 : v₀' ≠ 0 := mul_ne_zero hv0 (inv_ne_zero hq0)
+  have hqv' : q₀ * v₀' = v₀ := by
+    rw [hv'def]
+    field_simp
+  have hv'gt1 : 1 < valuation k v₀' := by
+    rw [hv'def, map_mul, map_inv₀]
+    have h1 : valuation k q₀ * (valuation k q₀)⁻¹ <
+        valuation k v₀ * (valuation k q₀)⁻¹ :=
+      (OrderIso.mulRight₀ _ (zero_lt_iff.mpr (inv_ne_zero hqvne))
+        ).strictMono hvlow
+    rwa [mul_inv_cancel₀ hqvne] at h1
+  have hv'1 : v₀' ≠ 1 := by
+    intro h1
+    apply lt_irrefl (valuation k v₀)
+    calc valuation k v₀ = valuation k q₀ := by rw [← hqv', h1, mul_one]
+      _ < valuation k v₀ := hvlow
+  have hqv'lt : valuation k (q₀ * v₀') < 1 := by
+    rw [hqv']
+    exact hv₀lt1
+  have hvvne : valuation k v₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hv0
+  have hq2v : valuation k (q₀ * v₀'⁻¹) < 1 := by
+    have hval : q₀ * v₀'⁻¹ = q₀ * q₀ * v₀⁻¹ := by
+      rw [hv'def]
+      field_simp
+    rw [hval, map_mul, map_mul, map_inv₀]
+    calc valuation k q₀ * valuation k q₀ * (valuation k v₀)⁻¹
+        < valuation k q₀ * valuation k v₀ * (valuation k v₀)⁻¹ := by
+          have hinner : valuation k q₀ * valuation k q₀ <
+              valuation k q₀ * valuation k v₀ :=
+            (OrderIso.mulLeft₀ _ hqpos).strictMono hvlow
+          exact (OrderIso.mulRight₀ _ (zero_lt_iff.mpr
+            (inv_ne_zero hvvne))).strictMono hinner
+      _ = valuation k q₀ := by
+          rw [mul_assoc, mul_inv_cancel₀ hvvne, mul_one]
+      _ < 1 := hq1
+  have hw0 : u₀ * v₀' ≠ 0 := mul_ne_zero hu0 hv'0
+  have hqw : q₀ * (u₀ * v₀') = u₀ * v₀ := by
+    rw [hv'def]
+    field_simp
+  have hq2uv : valuation k q₀ * valuation k q₀ <
+      valuation k (u₀ * v₀) := by
+    rw [map_mul]
+    calc valuation k q₀ * valuation k q₀
+        < valuation k u₀ * valuation k q₀ :=
+          (OrderIso.mulRight₀ _ hqpos).strictMono hulow
+      _ < valuation k u₀ * valuation k v₀ :=
+          (OrderIso.mulLeft₀ _ hupos).strictMono hvlow
+  have hwlow : valuation k q₀ < valuation k (u₀ * v₀') := by
+    have h2 : valuation k q₀ * valuation k (u₀ * v₀')
+        = valuation k (u₀ * v₀) := by
+      rw [← map_mul, hqw]
+    have h1 : valuation k q₀ * valuation k q₀ <
+        valuation k q₀ * valuation k (u₀ * v₀') := by
+      rw [h2]
+      exact hq2uv
+    exact lt_of_mul_lt_mul_left' h1
+  have hwhigh : valuation k (u₀ * v₀') ≤ 1 := by
+    have h2 : valuation k q₀ * valuation k (u₀ * v₀')
+        = valuation k (u₀ * v₀) := by
+      rw [← map_mul, hqw]
+    have h1 : valuation k q₀ * valuation k (u₀ * v₀') ≤
+        valuation k q₀ * 1 := by
+      rw [mul_one, h2]
+      exact hcase
+    exact (OrderIso.mulLeft₀ _ hqpos).le_iff_le.mp h1
+  have hw1 : u₀ * v₀' ≠ 1 := by
+    intro h1
+    apply hneq
+    rw [← hqw, h1, mul_one]
+  have hqwlt : valuation k (q₀ * (u₀ * v₀')) < 1 := by
+    rw [hqw]
+    exact lt_of_le_of_lt hcase hq1
+  have hq2w : valuation k (q₀ * (u₀ * v₀')⁻¹) < 1 := by
+    have hval : q₀ * (u₀ * v₀')⁻¹ = q₀ * q₀ * (u₀ * v₀)⁻¹ := by
+      rw [hv'def]
+      field_simp
+    rw [hval, map_mul, map_mul, map_inv₀]
+    have huv0 : valuation k (u₀ * v₀) ≠ 0 :=
+      (Valuation.ne_zero_iff _).mpr (mul_ne_zero hu0 hv0)
+    have h1 : valuation k q₀ * valuation k q₀ *
+        (valuation k (u₀ * v₀))⁻¹ <
+        valuation k (u₀ * v₀) * (valuation k (u₀ * v₀))⁻¹ :=
+      (OrderIso.mulRight₀ _ (zero_lt_iff.mpr (inv_ne_zero huv0))
+        ).strictMono hq2uv
+    rwa [mul_inv_cancel₀ huv0] at h1
+  -- the bilateral values are shift-invariant
+  have hXv_eq : bilateralX v₀ q₀ = bilateralX v₀' q₀ := by
+    rw [← hqv']
+    exact bilateralX_shift v₀' q₀ hv'0 hq0 hq1 hqv'lt hq2v
+  have hYv_eq : bilateralY v₀ q₀ = bilateralY v₀' q₀ := by
+    rw [← hqv']
+    exact bilateralY_shift v₀' q₀ hv'0 hv'1 hq0 hq1 hqv'lt hq2v
+  have hXw_eq : bilateralX (u₀ * v₀) q₀ = bilateralX (u₀ * v₀') q₀ := by
+    rw [← hqw]
+    exact bilateralX_shift (u₀ * v₀') q₀ hw0 hq0 hq1 hqwlt hq2w
+  have hYw_eq : bilateralY (u₀ * v₀) q₀ = bilateralY (u₀ * v₀') q₀ := by
+    rw [← hqw]
+    exact bilateralY_shift (u₀ * v₀') q₀ hw0 hw1 hq0 hq1 hqwlt hq2w
+  rw [hXv_eq, hYv_eq, hXw_eq, hYw_eq,
+    ← evalA_XA_eq_bilateralX u₀ q₀ hu0 hu1 huhigh hq1 hulow,
+    ← evalA_XA_eq_bilateralX_ext v₀' q₀ hv'0 hv'1 hq1 hv'gt1 hqv'lt,
+    ← evalA_XA_eq_bilateralX (u₀ * v₀') q₀ hw0 hw1 hwhigh hq1 hwlow,
+    ← evalA_YA_eq_bilateralY u₀ q₀ hu0 hu1 huhigh hq1 hulow,
+    ← evalA_YA_eq_bilateralY_ext v₀' q₀ hv'0 hv'1 hq1 hv'gt1 hqv'lt,
+    ← evalA_YA_eq_bilateralY (u₀ * v₀') q₀ hw0 hw1 hwhigh hq1 hwlow]
+  exact evalA_chordY_of_formal chordY_formal u₀ v₀' q₀ hu0 hv'0 hu1 hv'1
+    hw1 hw0
+    (summable_evalA_XA u₀ q₀ hu0 hu1 huhigh hulow)
+    (summable_evalA_XA_ext v₀' q₀ hv'0 hv'1 hv'gt1 hqv'lt)
+    (summable_evalA_XA (u₀ * v₀') q₀ hw0 hw1 hwhigh hwlow)
+    (summable_evalA_YA u₀ q₀ hu0 hu1 huhigh hulow)
+    (summable_evalA_YA_ext v₀' q₀ hv'0 hv'1 hv'gt1 hqv'lt)
+    (summable_evalA_YA (u₀ * v₀') q₀ hw0 hw1 hwhigh hwlow)
 
 /-- **The cleared chord `Y`-identity** (decomposed 2026-07-18 into the
 fundamental-window case and the shifted case, like the `X`-identity):

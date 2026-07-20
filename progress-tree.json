@@ -169,9 +169,9 @@
   "Dickson.classification_wild": "✅✅",
   "OddRep.isIrreducible_iff_isAbsolutelyIrreducible": "✅✅",
   "TateCurve.bilateral_chordX_cleared_window": "✅✅",
-  "TateCurve.bilateral_chordX_cleared_shifted": "❌",
+  "TateCurve.bilateral_chordX_cleared_shifted": "✅",
   "TateCurve.bilateral_chordY_cleared_window": "✅✅",
-  "TateCurve.bilateral_chordY_cleared_shifted": "❌",
+  "TateCurve.bilateral_chordY_cleared_shifted": "✅",
   "TateCurve.evalA_chordX": "✅✅",
   "TateCurve.evalA_chordY": "✅✅",
   "TateCurve.chordX_formal": "✅✅",
@@ -179,7 +179,11 @@
   "TateCurve.evalA_chordX_of_formal": "✅✅",
   "TateCurve.evalA_chordY_of_formal": "✅✅",
   "TateCurve.chordX_ratFunc₂": "✅✅",
-  "TateCurve.chordY_ratFunc₂": "✅✅"
+  "TateCurve.chordY_ratFunc₂": "✅✅",
+  "TateCurve.summable_evalA_XA_ext": "❌",
+  "TateCurve.summable_evalA_YA_ext": "❌",
+  "TateCurve.evalA_XA_eq_bilateralX_ext": "❌",
+  "TateCurve.evalA_YA_eq_bilateralY_ext": "❌"
  },
  "children": {
   "fermatLastTheoremThree": [],
@@ -783,11 +787,25 @@
   "TateCurve.bilateral_chordX_cleared_window": [
    "TateCurve.evalA_chordX"
   ],
-  "TateCurve.bilateral_chordX_cleared_shifted": [],
+  "TateCurve.bilateral_chordX_cleared_shifted": [
+   "TateCurve.evalA_YA_eq_bilateralY_ext",
+   "TateCurve.summable_evalA_XA_ext",
+   "TateCurve.evalA_chordX_of_formal",
+   "TateCurve.evalA_XA_eq_bilateralX_ext",
+   "TateCurve.chordX_formal",
+   "TateCurve.summable_evalA_YA_ext"
+  ],
   "TateCurve.bilateral_chordY_cleared_window": [
    "TateCurve.evalA_chordY"
   ],
-  "TateCurve.bilateral_chordY_cleared_shifted": [],
+  "TateCurve.bilateral_chordY_cleared_shifted": [
+   "TateCurve.evalA_chordY_of_formal",
+   "TateCurve.evalA_YA_eq_bilateralY_ext",
+   "TateCurve.summable_evalA_XA_ext",
+   "TateCurve.evalA_XA_eq_bilateralX_ext",
+   "TateCurve.chordY_formal",
+   "TateCurve.summable_evalA_YA_ext"
+  ],
   "TateCurve.evalA_chordX": [
    "TateCurve.evalA_chordX_of_formal",
    "TateCurve.chordX_formal"
@@ -805,7 +823,11 @@
   "TateCurve.evalA_chordX_of_formal": [],
   "TateCurve.evalA_chordY_of_formal": [],
   "TateCurve.chordX_ratFunc₂": [],
-  "TateCurve.chordY_ratFunc₂": []
+  "TateCurve.chordY_ratFunc₂": [],
+  "TateCurve.summable_evalA_XA_ext": [],
+  "TateCurve.summable_evalA_YA_ext": [],
+  "TateCurve.evalA_XA_eq_bilateralX_ext": [],
+  "TateCurve.evalA_YA_eq_bilateralY_ext": []
  },
  "roots": [
   "fermat_last_theorem"

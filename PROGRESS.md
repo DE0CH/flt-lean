@@ -261,10 +261,46 @@ entries file). To add/remove/annotate a node, edit
                                                                           dispatch as the X-identity;
                                                                           statement strengthened with
                                                                           hu1/hv1).
-                                                                            - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
-                                                                              chord Y-identity (sorry node):
-                                                                              same shift-reduction as the
-                                                                              X-shifted case.
+                                                                            - ✅· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
+                                                                              chord Y-identity (DERIVED
+                                                                              2026-07-18: replace v₀ by
+                                                                              v₀/q₀ in the upper extended
+                                                                              annulus — in the shifted case
+                                                                              |v₀| < 1 strictly so v₀/q₀
+                                                                              stays below |q₀|⁻¹ — and the
+                                                                              product by u₀v₀/q₀ back in the
+                                                                              fundamental annulus; bilateral
+                                                                              values invariant by the proven
+                                                                              shift identities; conclude by
+                                                                              the summability-parameterized
+                                                                              transport with the extended-
+                                                                              annulus summability/bridge
+                                                                              leaves).
+                                                                                - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
+                                                                                  for XA (sorry node): on 1 <
+                                                                                  |u₀| < |q₀|⁻¹ the coefficient
+                                                                                  bound is |u₀|ⁿ (dominant
+                                                                                  u^d-terms, d ≤ n), beaten by
+                                                                                  |q₀u₀|ⁿ < 1 — mirror summable_
+                                                                                  evalA_XA/valuation_coeffRingEv
+                                                                                  al_XA_le with the max-bound.
+                                                                                - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
+                                                                                  for YA (sorry node): same as
+                                                                                  the XA version.
+                                                                                - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
+                                                                                  bridge for X (sorry node): the
+                                                                                  (u,q)-graded evalA double
+                                                                                  series rearranges to the
+                                                                                  bilateral ℤ-sum also on the
+                                                                                  upper half of the extended
+                                                                                  annulus (mirror
+                                                                                  evalA_XA_bilateral with the
+                                                                                  other Lambert splitting: the
+                                                                                  u^d-branch now carries the
+                                                                                  geometric decay).
+                                                                                - ❌· `TateCurve.evalA_YA_eq_bilateralY_ext` — extended-annulus bilateral
+                                                                                  bridge for Y (sorry node):
+                                                                                  same as the X version.
                                                                         - ✅· `TateCurve.bilateral_chordX_cleared` — cleared chord X-identity
                                                                           (DERIVED 2026-07-18: case
                                                                           dispatch on whether u₀v₀ stays
@@ -277,26 +313,46 @@ entries file). To add/remove/annotate a node, edit
                                                                           the pointMap_mul call site),
                                                                           needed for the evalA bridges
                                                                           (X has a pole at u = 1).
-                                                                            - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
-                                                                              chord X-identity (sorry node):
-                                                                              u₀v₀ below the fundamental
-                                                                              annulus (val(u₀v₀) ≤ val q₀
-                                                                              but > val q₀² from the
-                                                                              individual windows): reduce
-                                                                              the third slot by the PROVEN
-                                                                              shift identities
-                                                                              (bilateralX_shift, Y-analogue)
-                                                                              to w := u₀v₀/q₀ with val ∈
-                                                                              (val q₀, 1] (w ≠ 1 from hneq :
-                                                                              u₀v₀ ≠ q₀), giving a shifted
-                                                                              chord configuration; derive
-                                                                              from the window case applied
-                                                                              to a reduced parameter pair
-                                                                              (classical Silverman V.3
-                                                                              annulus case analysis; may
-                                                                              need the inversion identity
-                                                                              bilateralX_inv for a boundary
-                                                                              subcase val v₀ = 1).
+                                                                            - ✅· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
+                                                                              chord X-identity (DERIVED
+                                                                              2026-07-18: replace v₀ by
+                                                                              v₀/q₀ in the upper extended
+                                                                              annulus — in the shifted case
+                                                                              |v₀| < 1 strictly so v₀/q₀
+                                                                              stays below |q₀|⁻¹ — and the
+                                                                              product by u₀v₀/q₀ back in the
+                                                                              fundamental annulus; bilateral
+                                                                              values invariant by the proven
+                                                                              shift identities; conclude by
+                                                                              the summability-parameterized
+                                                                              transport with the extended-
+                                                                              annulus summability/bridge
+                                                                              leaves).
+                                                                                - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
+                                                                                  for XA (sorry node): on 1 <
+                                                                                  |u₀| < |q₀|⁻¹ the coefficient
+                                                                                  bound is |u₀|ⁿ (dominant
+                                                                                  u^d-terms, d ≤ n), beaten by
+                                                                                  |q₀u₀|ⁿ < 1 — mirror summable_
+                                                                                  evalA_XA/valuation_coeffRingEv
+                                                                                  al_XA_le with the max-bound.
+                                                                                - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
+                                                                                  for YA (sorry node): same as
+                                                                                  the XA version.
+                                                                                - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
+                                                                                  bridge for X (sorry node): the
+                                                                                  (u,q)-graded evalA double
+                                                                                  series rearranges to the
+                                                                                  bilateral ℤ-sum also on the
+                                                                                  upper half of the extended
+                                                                                  annulus (mirror
+                                                                                  evalA_XA_bilateral with the
+                                                                                  other Lambert splitting: the
+                                                                                  u^d-branch now carries the
+                                                                                  geometric decay).
+                                                                                - ❌· `TateCurve.evalA_YA_eq_bilateralY_ext` — extended-annulus bilateral
+                                                                                  bridge for Y (sorry node):
+                                                                                  same as the X version.
                                                             - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node):
                                                               GIVEN the finite-level canonical
                                                               uniformisation lˣ/q^ℤ ≃+ E_q(l) with
@@ -489,10 +545,46 @@ entries file). To add/remove/annotate a node, edit
                                                                               dispatch as the X-identity;
                                                                               statement strengthened with
                                                                               hu1/hv1).
-                                                                                - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
-                                                                                  chord Y-identity (sorry node):
-                                                                                  same shift-reduction as the
-                                                                                  X-shifted case.
+                                                                                - ✅· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
+                                                                                  chord Y-identity (DERIVED
+                                                                                  2026-07-18: replace v₀ by
+                                                                                  v₀/q₀ in the upper extended
+                                                                                  annulus — in the shifted case
+                                                                                  |v₀| < 1 strictly so v₀/q₀
+                                                                                  stays below |q₀|⁻¹ — and the
+                                                                                  product by u₀v₀/q₀ back in the
+                                                                                  fundamental annulus; bilateral
+                                                                                  values invariant by the proven
+                                                                                  shift identities; conclude by
+                                                                                  the summability-parameterized
+                                                                                  transport with the extended-
+                                                                                  annulus summability/bridge
+                                                                                  leaves).
+                                                                                    - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
+                                                                                      for XA (sorry node): on 1 <
+                                                                                      |u₀| < |q₀|⁻¹ the coefficient
+                                                                                      bound is |u₀|ⁿ (dominant
+                                                                                      u^d-terms, d ≤ n), beaten by
+                                                                                      |q₀u₀|ⁿ < 1 — mirror summable_
+                                                                                      evalA_XA/valuation_coeffRingEv
+                                                                                      al_XA_le with the max-bound.
+                                                                                    - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
+                                                                                      for YA (sorry node): same as
+                                                                                      the XA version.
+                                                                                    - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
+                                                                                      bridge for X (sorry node): the
+                                                                                      (u,q)-graded evalA double
+                                                                                      series rearranges to the
+                                                                                      bilateral ℤ-sum also on the
+                                                                                      upper half of the extended
+                                                                                      annulus (mirror
+                                                                                      evalA_XA_bilateral with the
+                                                                                      other Lambert splitting: the
+                                                                                      u^d-branch now carries the
+                                                                                      geometric decay).
+                                                                                    - ❌· `TateCurve.evalA_YA_eq_bilateralY_ext` — extended-annulus bilateral
+                                                                                      bridge for Y (sorry node):
+                                                                                      same as the X version.
                                                                             - ✅· `TateCurve.bilateral_chordX_cleared` — cleared chord X-identity
                                                                               (DERIVED 2026-07-18: case
                                                                               dispatch on whether u₀v₀ stays
@@ -505,26 +597,46 @@ entries file). To add/remove/annotate a node, edit
                                                                               the pointMap_mul call site),
                                                                               needed for the evalA bridges
                                                                               (X has a pole at u = 1).
-                                                                                - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
-                                                                                  chord X-identity (sorry node):
-                                                                                  u₀v₀ below the fundamental
-                                                                                  annulus (val(u₀v₀) ≤ val q₀
-                                                                                  but > val q₀² from the
-                                                                                  individual windows): reduce
-                                                                                  the third slot by the PROVEN
-                                                                                  shift identities
-                                                                                  (bilateralX_shift, Y-analogue)
-                                                                                  to w := u₀v₀/q₀ with val ∈
-                                                                                  (val q₀, 1] (w ≠ 1 from hneq :
-                                                                                  u₀v₀ ≠ q₀), giving a shifted
-                                                                                  chord configuration; derive
-                                                                                  from the window case applied
-                                                                                  to a reduced parameter pair
-                                                                                  (classical Silverman V.3
-                                                                                  annulus case analysis; may
-                                                                                  need the inversion identity
-                                                                                  bilateralX_inv for a boundary
-                                                                                  subcase val v₀ = 1).
+                                                                                - ✅· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
+                                                                                  chord X-identity (DERIVED
+                                                                                  2026-07-18: replace v₀ by
+                                                                                  v₀/q₀ in the upper extended
+                                                                                  annulus — in the shifted case
+                                                                                  |v₀| < 1 strictly so v₀/q₀
+                                                                                  stays below |q₀|⁻¹ — and the
+                                                                                  product by u₀v₀/q₀ back in the
+                                                                                  fundamental annulus; bilateral
+                                                                                  values invariant by the proven
+                                                                                  shift identities; conclude by
+                                                                                  the summability-parameterized
+                                                                                  transport with the extended-
+                                                                                  annulus summability/bridge
+                                                                                  leaves).
+                                                                                    - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
+                                                                                      for XA (sorry node): on 1 <
+                                                                                      |u₀| < |q₀|⁻¹ the coefficient
+                                                                                      bound is |u₀|ⁿ (dominant
+                                                                                      u^d-terms, d ≤ n), beaten by
+                                                                                      |q₀u₀|ⁿ < 1 — mirror summable_
+                                                                                      evalA_XA/valuation_coeffRingEv
+                                                                                      al_XA_le with the max-bound.
+                                                                                    - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
+                                                                                      for YA (sorry node): same as
+                                                                                      the XA version.
+                                                                                    - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
+                                                                                      bridge for X (sorry node): the
+                                                                                      (u,q)-graded evalA double
+                                                                                      series rearranges to the
+                                                                                      bilateral ℤ-sum also on the
+                                                                                      upper half of the extended
+                                                                                      annulus (mirror
+                                                                                      evalA_XA_bilateral with the
+                                                                                      other Lambert splitting: the
+                                                                                      u^d-branch now carries the
+                                                                                      geometric decay).
+                                                                                    - ❌· `TateCurve.evalA_YA_eq_bilateralY_ext` — extended-annulus bilateral
+                                                                                      bridge for Y (sorry node):
+                                                                                      same as the X version.
                                                                 - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry
                                                                   node): GIVEN the finite-level
                                                                   canonical uniformisation lˣ/q^ℤ ≃+
@@ -741,10 +853,46 @@ entries file). To add/remove/annotate a node, edit
                                                                                   dispatch as the X-identity;
                                                                                   statement strengthened with
                                                                                   hu1/hv1).
-                                                                                    - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
-                                                                                      chord Y-identity (sorry node):
-                                                                                      same shift-reduction as the
-                                                                                      X-shifted case.
+                                                                                    - ✅· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
+                                                                                      chord Y-identity (DERIVED
+                                                                                      2026-07-18: replace v₀ by
+                                                                                      v₀/q₀ in the upper extended
+                                                                                      annulus — in the shifted case
+                                                                                      |v₀| < 1 strictly so v₀/q₀
+                                                                                      stays below |q₀|⁻¹ — and the
+                                                                                      product by u₀v₀/q₀ back in the
+                                                                                      fundamental annulus; bilateral
+                                                                                      values invariant by the proven
+                                                                                      shift identities; conclude by
+                                                                                      the summability-parameterized
+                                                                                      transport with the extended-
+                                                                                      annulus summability/bridge
+                                                                                      leaves).
+                                                                                        - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
+                                                                                          for XA (sorry node): on 1 <
+                                                                                          |u₀| < |q₀|⁻¹ the coefficient
+                                                                                          bound is |u₀|ⁿ (dominant
+                                                                                          u^d-terms, d ≤ n), beaten by
+                                                                                          |q₀u₀|ⁿ < 1 — mirror summable_
+                                                                                          evalA_XA/valuation_coeffRingEv
+                                                                                          al_XA_le with the max-bound.
+                                                                                        - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
+                                                                                          for YA (sorry node): same as
+                                                                                          the XA version.
+                                                                                        - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
+                                                                                          bridge for X (sorry node): the
+                                                                                          (u,q)-graded evalA double
+                                                                                          series rearranges to the
+                                                                                          bilateral ℤ-sum also on the
+                                                                                          upper half of the extended
+                                                                                          annulus (mirror
+                                                                                          evalA_XA_bilateral with the
+                                                                                          other Lambert splitting: the
+                                                                                          u^d-branch now carries the
+                                                                                          geometric decay).
+                                                                                        - ❌· `TateCurve.evalA_YA_eq_bilateralY_ext` — extended-annulus bilateral
+                                                                                          bridge for Y (sorry node):
+                                                                                          same as the X version.
                                                                                 - ✅· `TateCurve.bilateral_chordX_cleared` — cleared chord X-identity
                                                                                   (DERIVED 2026-07-18: case
                                                                                   dispatch on whether u₀v₀ stays
@@ -757,26 +905,46 @@ entries file). To add/remove/annotate a node, edit
                                                                                   the pointMap_mul call site),
                                                                                   needed for the evalA bridges
                                                                                   (X has a pole at u = 1).
-                                                                                    - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
-                                                                                      chord X-identity (sorry node):
-                                                                                      u₀v₀ below the fundamental
-                                                                                      annulus (val(u₀v₀) ≤ val q₀
-                                                                                      but > val q₀² from the
-                                                                                      individual windows): reduce
-                                                                                      the third slot by the PROVEN
-                                                                                      shift identities
-                                                                                      (bilateralX_shift, Y-analogue)
-                                                                                      to w := u₀v₀/q₀ with val ∈
-                                                                                      (val q₀, 1] (w ≠ 1 from hneq :
-                                                                                      u₀v₀ ≠ q₀), giving a shifted
-                                                                                      chord configuration; derive
-                                                                                      from the window case applied
-                                                                                      to a reduced parameter pair
-                                                                                      (classical Silverman V.3
-                                                                                      annulus case analysis; may
-                                                                                      need the inversion identity
-                                                                                      bilateralX_inv for a boundary
-                                                                                      subcase val v₀ = 1).
+                                                                                    - ✅· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
+                                                                                      chord X-identity (DERIVED
+                                                                                      2026-07-18: replace v₀ by
+                                                                                      v₀/q₀ in the upper extended
+                                                                                      annulus — in the shifted case
+                                                                                      |v₀| < 1 strictly so v₀/q₀
+                                                                                      stays below |q₀|⁻¹ — and the
+                                                                                      product by u₀v₀/q₀ back in the
+                                                                                      fundamental annulus; bilateral
+                                                                                      values invariant by the proven
+                                                                                      shift identities; conclude by
+                                                                                      the summability-parameterized
+                                                                                      transport with the extended-
+                                                                                      annulus summability/bridge
+                                                                                      leaves).
+                                                                                        - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
+                                                                                          for XA (sorry node): on 1 <
+                                                                                          |u₀| < |q₀|⁻¹ the coefficient
+                                                                                          bound is |u₀|ⁿ (dominant
+                                                                                          u^d-terms, d ≤ n), beaten by
+                                                                                          |q₀u₀|ⁿ < 1 — mirror summable_
+                                                                                          evalA_XA/valuation_coeffRingEv
+                                                                                          al_XA_le with the max-bound.
+                                                                                        - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
+                                                                                          for YA (sorry node): same as
+                                                                                          the XA version.
+                                                                                        - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
+                                                                                          bridge for X (sorry node): the
+                                                                                          (u,q)-graded evalA double
+                                                                                          series rearranges to the
+                                                                                          bilateral ℤ-sum also on the
+                                                                                          upper half of the extended
+                                                                                          annulus (mirror
+                                                                                          evalA_XA_bilateral with the
+                                                                                          other Lambert splitting: the
+                                                                                          u^d-branch now carries the
+                                                                                          geometric decay).
+                                                                                        - ❌· `TateCurve.evalA_YA_eq_bilateralY_ext` — extended-annulus bilateral
+                                                                                          bridge for Y (sorry node):
+                                                                                          same as the X version.
                                                                     - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
                                                                       (sorry node): GIVEN the
                                                                       finite-level canonical
@@ -986,10 +1154,46 @@ entries file). To add/remove/annotate a node, edit
                                                                                       dispatch as the X-identity;
                                                                                       statement strengthened with
                                                                                       hu1/hv1).
-                                                                                        - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
-                                                                                          chord Y-identity (sorry node):
-                                                                                          same shift-reduction as the
-                                                                                          X-shifted case.
+                                                                                        - ✅· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
+                                                                                          chord Y-identity (DERIVED
+                                                                                          2026-07-18: replace v₀ by
+                                                                                          v₀/q₀ in the upper extended
+                                                                                          annulus — in the shifted case
+                                                                                          |v₀| < 1 strictly so v₀/q₀
+                                                                                          stays below |q₀|⁻¹ — and the
+                                                                                          product by u₀v₀/q₀ back in the
+                                                                                          fundamental annulus; bilateral
+                                                                                          values invariant by the proven
+                                                                                          shift identities; conclude by
+                                                                                          the summability-parameterized
+                                                                                          transport with the extended-
+                                                                                          annulus summability/bridge
+                                                                                          leaves).
+                                                                                            - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
+                                                                                              for XA (sorry node): on 1 <
+                                                                                              |u₀| < |q₀|⁻¹ the coefficient
+                                                                                              bound is |u₀|ⁿ (dominant
+                                                                                              u^d-terms, d ≤ n), beaten by
+                                                                                              |q₀u₀|ⁿ < 1 — mirror summable_
+                                                                                              evalA_XA/valuation_coeffRingEv
+                                                                                              al_XA_le with the max-bound.
+                                                                                            - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
+                                                                                              for YA (sorry node): same as
+                                                                                              the XA version.
+                                                                                            - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
+                                                                                              bridge for X (sorry node): the
+                                                                                              (u,q)-graded evalA double
+                                                                                              series rearranges to the
+                                                                                              bilateral ℤ-sum also on the
+                                                                                              upper half of the extended
+                                                                                              annulus (mirror
+                                                                                              evalA_XA_bilateral with the
+                                                                                              other Lambert splitting: the
+                                                                                              u^d-branch now carries the
+                                                                                              geometric decay).
+                                                                                            - ❌· `TateCurve.evalA_YA_eq_bilateralY_ext` — extended-annulus bilateral
+                                                                                              bridge for Y (sorry node):
+                                                                                              same as the X version.
                                                                                     - ✅· `TateCurve.bilateral_chordX_cleared` — cleared chord X-identity
                                                                                       (DERIVED 2026-07-18: case
                                                                                       dispatch on whether u₀v₀ stays
@@ -1002,26 +1206,46 @@ entries file). To add/remove/annotate a node, edit
                                                                                       the pointMap_mul call site),
                                                                                       needed for the evalA bridges
                                                                                       (X has a pole at u = 1).
-                                                                                        - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
-                                                                                          chord X-identity (sorry node):
-                                                                                          u₀v₀ below the fundamental
-                                                                                          annulus (val(u₀v₀) ≤ val q₀
-                                                                                          but > val q₀² from the
-                                                                                          individual windows): reduce
-                                                                                          the third slot by the PROVEN
-                                                                                          shift identities
-                                                                                          (bilateralX_shift, Y-analogue)
-                                                                                          to w := u₀v₀/q₀ with val ∈
-                                                                                          (val q₀, 1] (w ≠ 1 from hneq :
-                                                                                          u₀v₀ ≠ q₀), giving a shifted
-                                                                                          chord configuration; derive
-                                                                                          from the window case applied
-                                                                                          to a reduced parameter pair
-                                                                                          (classical Silverman V.3
-                                                                                          annulus case analysis; may
-                                                                                          need the inversion identity
-                                                                                          bilateralX_inv for a boundary
-                                                                                          subcase val v₀ = 1).
+                                                                                        - ✅· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
+                                                                                          chord X-identity (DERIVED
+                                                                                          2026-07-18: replace v₀ by
+                                                                                          v₀/q₀ in the upper extended
+                                                                                          annulus — in the shifted case
+                                                                                          |v₀| < 1 strictly so v₀/q₀
+                                                                                          stays below |q₀|⁻¹ — and the
+                                                                                          product by u₀v₀/q₀ back in the
+                                                                                          fundamental annulus; bilateral
+                                                                                          values invariant by the proven
+                                                                                          shift identities; conclude by
+                                                                                          the summability-parameterized
+                                                                                          transport with the extended-
+                                                                                          annulus summability/bridge
+                                                                                          leaves).
+                                                                                            - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
+                                                                                              for XA (sorry node): on 1 <
+                                                                                              |u₀| < |q₀|⁻¹ the coefficient
+                                                                                              bound is |u₀|ⁿ (dominant
+                                                                                              u^d-terms, d ≤ n), beaten by
+                                                                                              |q₀u₀|ⁿ < 1 — mirror summable_
+                                                                                              evalA_XA/valuation_coeffRingEv
+                                                                                              al_XA_le with the max-bound.
+                                                                                            - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
+                                                                                              for YA (sorry node): same as
+                                                                                              the XA version.
+                                                                                            - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
+                                                                                              bridge for X (sorry node): the
+                                                                                              (u,q)-graded evalA double
+                                                                                              series rearranges to the
+                                                                                              bilateral ℤ-sum also on the
+                                                                                              upper half of the extended
+                                                                                              annulus (mirror
+                                                                                              evalA_XA_bilateral with the
+                                                                                              other Lambert splitting: the
+                                                                                              u^d-branch now carries the
+                                                                                              geometric decay).
+                                                                                            - ❌· `TateCurve.evalA_YA_eq_bilateralY_ext` — extended-annulus bilateral
+                                                                                              bridge for Y (sorry node):
+                                                                                              same as the X version.
                                                                         - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
                                                                           (sorry node): GIVEN the
                                                                           finite-level canonical
@@ -1257,10 +1481,45 @@ entries file). To add/remove/annotate a node, edit
                                                               2026-07-18: same case dispatch as the
                                                               X-identity; statement strengthened
                                                               with hu1/hv1).
-                                                                - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared chord
-                                                                  Y-identity (sorry node): same
-                                                                  shift-reduction as the X-shifted
-                                                                  case.
+                                                                - ✅· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared chord
+                                                                  Y-identity (DERIVED 2026-07-18:
+                                                                  replace v₀ by v₀/q₀ in the upper
+                                                                  extended annulus — in the shifted
+                                                                  case |v₀| < 1 strictly so v₀/q₀
+                                                                  stays below |q₀|⁻¹ — and the
+                                                                  product by u₀v₀/q₀ back in the
+                                                                  fundamental annulus; bilateral
+                                                                  values invariant by the proven
+                                                                  shift identities; conclude by the
+                                                                  summability-parameterized
+                                                                  transport with the extended-
+                                                                  annulus summability/bridge
+                                                                  leaves).
+                                                                    - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
+                                                                      for XA (sorry node): on 1 <
+                                                                      |u₀| < |q₀|⁻¹ the coefficient
+                                                                      bound is |u₀|ⁿ (dominant
+                                                                      u^d-terms, d ≤ n), beaten by
+                                                                      |q₀u₀|ⁿ < 1 — mirror summable_
+                                                                      evalA_XA/valuation_coeffRingEv
+                                                                      al_XA_le with the max-bound.
+                                                                    - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
+                                                                      for YA (sorry node): same as
+                                                                      the XA version.
+                                                                    - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
+                                                                      bridge for X (sorry node): the
+                                                                      (u,q)-graded evalA double
+                                                                      series rearranges to the
+                                                                      bilateral ℤ-sum also on the
+                                                                      upper half of the extended
+                                                                      annulus (mirror
+                                                                      evalA_XA_bilateral with the
+                                                                      other Lambert splitting: the
+                                                                      u^d-branch now carries the
+                                                                      geometric decay).
+                                                                    - ❌· `TateCurve.evalA_YA_eq_bilateralY_ext` — extended-annulus bilateral
+                                                                      bridge for Y (sorry node):
+                                                                      same as the X version.
                                                             - ✅· `TateCurve.bilateral_chordX_cleared` — cleared chord X-identity (DERIVED
                                                               2026-07-18: case dispatch on whether
                                                               u₀v₀ stays in the fundamental annulus,
@@ -1270,24 +1529,45 @@ entries file). To add/remove/annotate a node, edit
                                                               v₀ ≠ 1 (available at the pointMap_mul
                                                               call site), needed for the evalA
                                                               bridges (X has a pole at u = 1).
-                                                                - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared chord
-                                                                  X-identity (sorry node): u₀v₀
-                                                                  below the fundamental annulus
-                                                                  (val(u₀v₀) ≤ val q₀ but > val q₀²
-                                                                  from the individual windows):
-                                                                  reduce the third slot by the
-                                                                  PROVEN shift identities
-                                                                  (bilateralX_shift, Y-analogue) to
-                                                                  w := u₀v₀/q₀ with val ∈ (val q₀,
-                                                                  1] (w ≠ 1 from hneq : u₀v₀ ≠ q₀),
-                                                                  giving a shifted chord
-                                                                  configuration; derive from the
-                                                                  window case applied to a reduced
-                                                                  parameter pair (classical
-                                                                  Silverman V.3 annulus case
-                                                                  analysis; may need the inversion
-                                                                  identity bilateralX_inv for a
-                                                                  boundary subcase val v₀ = 1).
+                                                                - ✅· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared chord
+                                                                  X-identity (DERIVED 2026-07-18:
+                                                                  replace v₀ by v₀/q₀ in the upper
+                                                                  extended annulus — in the shifted
+                                                                  case |v₀| < 1 strictly so v₀/q₀
+                                                                  stays below |q₀|⁻¹ — and the
+                                                                  product by u₀v₀/q₀ back in the
+                                                                  fundamental annulus; bilateral
+                                                                  values invariant by the proven
+                                                                  shift identities; conclude by the
+                                                                  summability-parameterized
+                                                                  transport with the extended-
+                                                                  annulus summability/bridge
+                                                                  leaves).
+                                                                    - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
+                                                                      for XA (sorry node): on 1 <
+                                                                      |u₀| < |q₀|⁻¹ the coefficient
+                                                                      bound is |u₀|ⁿ (dominant
+                                                                      u^d-terms, d ≤ n), beaten by
+                                                                      |q₀u₀|ⁿ < 1 — mirror summable_
+                                                                      evalA_XA/valuation_coeffRingEv
+                                                                      al_XA_le with the max-bound.
+                                                                    - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
+                                                                      for YA (sorry node): same as
+                                                                      the XA version.
+                                                                    - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
+                                                                      bridge for X (sorry node): the
+                                                                      (u,q)-graded evalA double
+                                                                      series rearranges to the
+                                                                      bilateral ℤ-sum also on the
+                                                                      upper half of the extended
+                                                                      annulus (mirror
+                                                                      evalA_XA_bilateral with the
+                                                                      other Lambert splitting: the
+                                                                      u^d-branch now carries the
+                                                                      geometric decay).
+                                                                    - ❌· `TateCurve.evalA_YA_eq_bilateralY_ext` — extended-annulus bilateral
+                                                                      bridge for Y (sorry node):
+                                                                      same as the X version.
                                                 - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the
                                                   finite-level canonical uniformisation lˣ/q^ℤ ≃+
                                                   E_q(l) with underlying pointMapQuot for every NALF
@@ -1440,10 +1720,46 @@ entries file). To add/remove/annotate a node, edit
                                                                   2026-07-18: same case dispatch as
                                                                   the X-identity; statement
                                                                   strengthened with hu1/hv1).
-                                                                    - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
-                                                                      chord Y-identity (sorry node):
-                                                                      same shift-reduction as the
-                                                                      X-shifted case.
+                                                                    - ✅· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared
+                                                                      chord Y-identity (DERIVED
+                                                                      2026-07-18: replace v₀ by
+                                                                      v₀/q₀ in the upper extended
+                                                                      annulus — in the shifted case
+                                                                      |v₀| < 1 strictly so v₀/q₀
+                                                                      stays below |q₀|⁻¹ — and the
+                                                                      product by u₀v₀/q₀ back in the
+                                                                      fundamental annulus; bilateral
+                                                                      values invariant by the proven
+                                                                      shift identities; conclude by
+                                                                      the summability-parameterized
+                                                                      transport with the extended-
+                                                                      annulus summability/bridge
+                                                                      leaves).
+                                                                        - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
+                                                                          for XA (sorry node): on 1 <
+                                                                          |u₀| < |q₀|⁻¹ the coefficient
+                                                                          bound is |u₀|ⁿ (dominant
+                                                                          u^d-terms, d ≤ n), beaten by
+                                                                          |q₀u₀|ⁿ < 1 — mirror summable_
+                                                                          evalA_XA/valuation_coeffRingEv
+                                                                          al_XA_le with the max-bound.
+                                                                        - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
+                                                                          for YA (sorry node): same as
+                                                                          the XA version.
+                                                                        - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
+                                                                          bridge for X (sorry node): the
+                                                                          (u,q)-graded evalA double
+                                                                          series rearranges to the
+                                                                          bilateral ℤ-sum also on the
+                                                                          upper half of the extended
+                                                                          annulus (mirror
+                                                                          evalA_XA_bilateral with the
+                                                                          other Lambert splitting: the
+                                                                          u^d-branch now carries the
+                                                                          geometric decay).
+                                                                        - ❌· `TateCurve.evalA_YA_eq_bilateralY_ext` — extended-annulus bilateral
+                                                                          bridge for Y (sorry node):
+                                                                          same as the X version.
                                                                 - ✅· `TateCurve.bilateral_chordX_cleared` — cleared chord X-identity (DERIVED
                                                                   2026-07-18: case dispatch on
                                                                   whether u₀v₀ stays in the
@@ -1455,26 +1771,46 @@ entries file). To add/remove/annotate a node, edit
                                                                   the pointMap_mul call site),
                                                                   needed for the evalA bridges (X
                                                                   has a pole at u = 1).
-                                                                    - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
-                                                                      chord X-identity (sorry node):
-                                                                      u₀v₀ below the fundamental
-                                                                      annulus (val(u₀v₀) ≤ val q₀
-                                                                      but > val q₀² from the
-                                                                      individual windows): reduce
-                                                                      the third slot by the PROVEN
-                                                                      shift identities
-                                                                      (bilateralX_shift, Y-analogue)
-                                                                      to w := u₀v₀/q₀ with val ∈
-                                                                      (val q₀, 1] (w ≠ 1 from hneq :
-                                                                      u₀v₀ ≠ q₀), giving a shifted
-                                                                      chord configuration; derive
-                                                                      from the window case applied
-                                                                      to a reduced parameter pair
-                                                                      (classical Silverman V.3
-                                                                      annulus case analysis; may
-                                                                      need the inversion identity
-                                                                      bilateralX_inv for a boundary
-                                                                      subcase val v₀ = 1).
+                                                                    - ✅· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared
+                                                                      chord X-identity (DERIVED
+                                                                      2026-07-18: replace v₀ by
+                                                                      v₀/q₀ in the upper extended
+                                                                      annulus — in the shifted case
+                                                                      |v₀| < 1 strictly so v₀/q₀
+                                                                      stays below |q₀|⁻¹ — and the
+                                                                      product by u₀v₀/q₀ back in the
+                                                                      fundamental annulus; bilateral
+                                                                      values invariant by the proven
+                                                                      shift identities; conclude by
+                                                                      the summability-parameterized
+                                                                      transport with the extended-
+                                                                      annulus summability/bridge
+                                                                      leaves).
+                                                                        - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
+                                                                          for XA (sorry node): on 1 <
+                                                                          |u₀| < |q₀|⁻¹ the coefficient
+                                                                          bound is |u₀|ⁿ (dominant
+                                                                          u^d-terms, d ≤ n), beaten by
+                                                                          |q₀u₀|ⁿ < 1 — mirror summable_
+                                                                          evalA_XA/valuation_coeffRingEv
+                                                                          al_XA_le with the max-bound.
+                                                                        - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
+                                                                          for YA (sorry node): same as
+                                                                          the XA version.
+                                                                        - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
+                                                                          bridge for X (sorry node): the
+                                                                          (u,q)-graded evalA double
+                                                                          series rearranges to the
+                                                                          bilateral ℤ-sum also on the
+                                                                          upper half of the extended
+                                                                          annulus (mirror
+                                                                          evalA_XA_bilateral with the
+                                                                          other Lambert splitting: the
+                                                                          u^d-branch now carries the
+                                                                          geometric decay).
+                                                                        - ❌· `TateCurve.evalA_YA_eq_bilateralY_ext` — extended-annulus bilateral
+                                                                          bridge for Y (sorry node):
+                                                                          same as the X version.
                                                     - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN
                                                       the finite-level canonical uniformisation
                                                       lˣ/q^ℤ ≃+ E_q(l) with underlying pointMapQuot
@@ -1624,9 +1960,36 @@ entries file). To add/remove/annotate a node, edit
                                                     - ✅· `TateCurve.bilateral_chordY_cleared` — cleared chord Y-identity (DERIVED 2026-07-18:
                                                       same case dispatch as the X-identity;
                                                       statement strengthened with hu1/hv1).
-                                                        - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared chord
-                                                          Y-identity (sorry node): same shift-
-                                                          reduction as the X-shifted case.
+                                                        - ✅· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared chord
+                                                          Y-identity (DERIVED 2026-07-18: replace v₀
+                                                          by v₀/q₀ in the upper extended annulus —
+                                                          in the shifted case |v₀| < 1 strictly so
+                                                          v₀/q₀ stays below |q₀|⁻¹ — and the product
+                                                          by u₀v₀/q₀ back in the fundamental
+                                                          annulus; bilateral values invariant by the
+                                                          proven shift identities; conclude by the
+                                                          summability-parameterized transport with
+                                                          the extended-annulus summability/bridge
+                                                          leaves).
+                                                            - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability for XA
+                                                              (sorry node): on 1 < |u₀| < |q₀|⁻¹ the
+                                                              coefficient bound is |u₀|ⁿ (dominant
+                                                              u^d-terms, d ≤ n), beaten by |q₀u₀|ⁿ <
+                                                              1 — mirror summable_evalA_XA/valuation
+                                                              _coeffRingEval_XA_le with the max-
+                                                              bound.
+                                                            - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability for YA
+                                                              (sorry node): same as the XA version.
+                                                            - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral bridge for
+                                                              X (sorry node): the (u,q)-graded evalA
+                                                              double series rearranges to the
+                                                              bilateral ℤ-sum also on the upper half
+                                                              of the extended annulus (mirror
+                                                              evalA_XA_bilateral with the other
+                                                              Lambert splitting: the u^d-branch now
+                                                              carries the geometric decay).
+                                                            - ❌· `TateCurve.evalA_YA_eq_bilateralY_ext` — extended-annulus bilateral bridge for
+                                                              Y (sorry node): same as the X version.
                                                     - ✅· `TateCurve.bilateral_chordX_cleared` — cleared chord X-identity (DERIVED 2026-07-18:
                                                       case dispatch on whether u₀v₀ stays in the
                                                       fundamental annulus, val q₀ < val(u₀v₀),
@@ -1635,20 +1998,36 @@ entries file). To add/remove/annotate a node, edit
                                                       : v₀ ≠ 1 (available at the pointMap_mul call
                                                       site), needed for the evalA bridges (X has a
                                                       pole at u = 1).
-                                                        - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared chord
-                                                          X-identity (sorry node): u₀v₀ below the
-                                                          fundamental annulus (val(u₀v₀) ≤ val q₀
-                                                          but > val q₀² from the individual
-                                                          windows): reduce the third slot by the
-                                                          PROVEN shift identities (bilateralX_shift,
-                                                          Y-analogue) to w := u₀v₀/q₀ with val ∈
-                                                          (val q₀, 1] (w ≠ 1 from hneq : u₀v₀ ≠ q₀),
-                                                          giving a shifted chord configuration;
-                                                          derive from the window case applied to a
-                                                          reduced parameter pair (classical
-                                                          Silverman V.3 annulus case analysis; may
-                                                          need the inversion identity bilateralX_inv
-                                                          for a boundary subcase val v₀ = 1).
+                                                        - ✅· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared chord
+                                                          X-identity (DERIVED 2026-07-18: replace v₀
+                                                          by v₀/q₀ in the upper extended annulus —
+                                                          in the shifted case |v₀| < 1 strictly so
+                                                          v₀/q₀ stays below |q₀|⁻¹ — and the product
+                                                          by u₀v₀/q₀ back in the fundamental
+                                                          annulus; bilateral values invariant by the
+                                                          proven shift identities; conclude by the
+                                                          summability-parameterized transport with
+                                                          the extended-annulus summability/bridge
+                                                          leaves).
+                                                            - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability for XA
+                                                              (sorry node): on 1 < |u₀| < |q₀|⁻¹ the
+                                                              coefficient bound is |u₀|ⁿ (dominant
+                                                              u^d-terms, d ≤ n), beaten by |q₀u₀|ⁿ <
+                                                              1 — mirror summable_evalA_XA/valuation
+                                                              _coeffRingEval_XA_le with the max-
+                                                              bound.
+                                                            - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability for YA
+                                                              (sorry node): same as the XA version.
+                                                            - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral bridge for
+                                                              X (sorry node): the (u,q)-graded evalA
+                                                              double series rearranges to the
+                                                              bilateral ℤ-sum also on the upper half
+                                                              of the extended annulus (mirror
+                                                              evalA_XA_bilateral with the other
+                                                              Lambert splitting: the u^d-branch now
+                                                              carries the geometric decay).
+                                                            - ❌· `TateCurve.evalA_YA_eq_bilateralY_ext` — extended-annulus bilateral bridge for
+                                                              Y (sorry node): same as the X version.
                                         - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
                                           level canonical uniformisation lˣ/q^ℤ ≃+ E_q(l) with
                                           underlying pointMapQuot for every NALF l, the Ω-level hom
@@ -1764,9 +2143,36 @@ entries file). To add/remove/annotate a node, edit
                                                     - ✅· `TateCurve.bilateral_chordY_cleared` — cleared chord Y-identity (DERIVED 2026-07-18:
                                                       same case dispatch as the X-identity;
                                                       statement strengthened with hu1/hv1).
-                                                        - ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared chord
-                                                          Y-identity (sorry node): same shift-
-                                                          reduction as the X-shifted case.
+                                                        - ✅· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared chord
+                                                          Y-identity (DERIVED 2026-07-18: replace v₀
+                                                          by v₀/q₀ in the upper extended annulus —
+                                                          in the shifted case |v₀| < 1 strictly so
+                                                          v₀/q₀ stays below |q₀|⁻¹ — and the product
+                                                          by u₀v₀/q₀ back in the fundamental
+                                                          annulus; bilateral values invariant by the
+                                                          proven shift identities; conclude by the
+                                                          summability-parameterized transport with
+                                                          the extended-annulus summability/bridge
+                                                          leaves).
+                                                            - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability for XA
+                                                              (sorry node): on 1 < |u₀| < |q₀|⁻¹ the
+                                                              coefficient bound is |u₀|ⁿ (dominant
+                                                              u^d-terms, d ≤ n), beaten by |q₀u₀|ⁿ <
+                                                              1 — mirror summable_evalA_XA/valuation
+                                                              _coeffRingEval_XA_le with the max-
+                                                              bound.
+                                                            - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability for YA
+                                                              (sorry node): same as the XA version.
+                                                            - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral bridge for
+                                                              X (sorry node): the (u,q)-graded evalA
+                                                              double series rearranges to the
+                                                              bilateral ℤ-sum also on the upper half
+                                                              of the extended annulus (mirror
+                                                              evalA_XA_bilateral with the other
+                                                              Lambert splitting: the u^d-branch now
+                                                              carries the geometric decay).
+                                                            - ❌· `TateCurve.evalA_YA_eq_bilateralY_ext` — extended-annulus bilateral bridge for
+                                                              Y (sorry node): same as the X version.
                                                     - ✅· `TateCurve.bilateral_chordX_cleared` — cleared chord X-identity (DERIVED 2026-07-18:
                                                       case dispatch on whether u₀v₀ stays in the
                                                       fundamental annulus, val q₀ < val(u₀v₀),
@@ -1775,20 +2181,36 @@ entries file). To add/remove/annotate a node, edit
                                                       : v₀ ≠ 1 (available at the pointMap_mul call
                                                       site), needed for the evalA bridges (X has a
                                                       pole at u = 1).
-                                                        - ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared chord
-                                                          X-identity (sorry node): u₀v₀ below the
-                                                          fundamental annulus (val(u₀v₀) ≤ val q₀
-                                                          but > val q₀² from the individual
-                                                          windows): reduce the third slot by the
-                                                          PROVEN shift identities (bilateralX_shift,
-                                                          Y-analogue) to w := u₀v₀/q₀ with val ∈
-                                                          (val q₀, 1] (w ≠ 1 from hneq : u₀v₀ ≠ q₀),
-                                                          giving a shifted chord configuration;
-                                                          derive from the window case applied to a
-                                                          reduced parameter pair (classical
-                                                          Silverman V.3 annulus case analysis; may
-                                                          need the inversion identity bilateralX_inv
-                                                          for a boundary subcase val v₀ = 1).
+                                                        - ✅· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared chord
+                                                          X-identity (DERIVED 2026-07-18: replace v₀
+                                                          by v₀/q₀ in the upper extended annulus —
+                                                          in the shifted case |v₀| < 1 strictly so
+                                                          v₀/q₀ stays below |q₀|⁻¹ — and the product
+                                                          by u₀v₀/q₀ back in the fundamental
+                                                          annulus; bilateral values invariant by the
+                                                          proven shift identities; conclude by the
+                                                          summability-parameterized transport with
+                                                          the extended-annulus summability/bridge
+                                                          leaves).
+                                                            - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability for XA
+                                                              (sorry node): on 1 < |u₀| < |q₀|⁻¹ the
+                                                              coefficient bound is |u₀|ⁿ (dominant
+                                                              u^d-terms, d ≤ n), beaten by |q₀u₀|ⁿ <
+                                                              1 — mirror summable_evalA_XA/valuation
+                                                              _coeffRingEval_XA_le with the max-
+                                                              bound.
+                                                            - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability for YA
+                                                              (sorry node): same as the XA version.
+                                                            - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral bridge for
+                                                              X (sorry node): the (u,q)-graded evalA
+                                                              double series rearranges to the
+                                                              bilateral ℤ-sum also on the upper half
+                                                              of the extended annulus (mirror
+                                                              evalA_XA_bilateral with the other
+                                                              Lambert splitting: the u^d-branch now
+                                                              carries the geometric decay).
+                                                            - ❌· `TateCurve.evalA_YA_eq_bilateralY_ext` — extended-annulus bilateral bridge for
+                                                              Y (sorry node): same as the X version.
                                         - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
                                           level canonical uniformisation lˣ/q^ℤ ≃+ E_q(l) with
                                           underlying pointMapQuot for every NALF l, the Ω-level hom
