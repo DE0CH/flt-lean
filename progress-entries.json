@@ -198,9 +198,22 @@
     "fullname": "WeilPairing.det_galoisRep_eq_cyclotomic"
   },
   {
+    "name": "WeilPairing.exists_frobenius_reduction_model",
+    "fullname": "WeilPairing.exists_frobenius_reduction_model",
+    "module": "Fermat.FLT.EllipticCurve.WeilPairing",
+    "wip": true,
+    "text": "reduction transfer at good primes (sorry node -- Neron-Ogg-Shafarevich reduction isomorphism): away from finitely many places, the mod-p representation at the global Frobenius of q is conjugate to the q-power Frobenius acting on the p-torsion of an elliptic curve over F_q. Ingredients in GoodReduction.lean: integral coordinates (torsion_abscissa_mem), injectivity of reduction on torsion (torsion_abscissa_residue_ne), inertia triviality (torsion_unramified_of_good_reduction); remaining: surjectivity by counting (p-torsion of the reduced curve also has p^2 elements for p != q) and the Frobenius compatibility through the residue extension"
+  },
+  {
+    "name": "WeilPairing.det_frobeniusTorsionEnd",
+    "fullname": "WeilPairing.det_frobeniusTorsionEnd",
+    "module": "Fermat.FLT.EllipticCurve.WeilPairing",
+    "text": "Frobenius determinant over a finite field (sorry node -- the deg-det relation): the q-power Frobenius on the p-torsion of an elliptic curve over F_q (p != q) has determinant q. Classical routes: Frobenius-Verschiebung composite = [q] plus det-multiplicativity and det([q]) = q^2 with the trace bound; or the Weil pairing over F_q-bar; or point counting #ker(phi - 1) = #E(F_q) with the degree quadratic form"
+  },
+  {
     "name": "det_galoisRep_globalFrob",
     "module": "Fermat.FLT.EllipticCurve.WeilPairing",
-    "text": "`det_galoisRep_globalFrob` (`EllipticCurve/WeilPairing.lean`, stated 2026-07-17): Frobenius determinant at good primes — away from a finite set of places, `det ρ̄(Frob_q) = q mod p` (the point-counting/Weil computation over the reduced curve; route: NOS reduction injectivity + Frobenius-isogeny degree). - (the other root of this derivation is the Chebotarev node `exists_frobenius_conj_mem_coset`, listed under the Chebotarev–Brauer–Nesbitt cone.)",
+    "text": "Frobenius determinant at good primes (DECOMPOSED 2026-07-20): the proof now conjugates the global Frobenius action to the finite-field side via the (sorried) reduction-transfer model and applies the (sorried) finite-field Frobenius determinant, with LinearEquiv.conj + LinearMap.det_conj closing the transport. New machinery: frobAlgHom (the q-power Frobenius of F_q-bar as a ZMod q-AlgHom, Fermat little theorem for the commutation) and frobeniusTorsionEnd (its ZMod p-linear action on p-torsion, via Point.map + endRestrict + toZModLinearMap, mirroring galoisRep).",
     "fullname": "WeilPairing.det_galoisRep_globalFrob"
   },
   {

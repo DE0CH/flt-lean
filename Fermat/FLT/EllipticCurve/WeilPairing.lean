@@ -106,6 +106,86 @@ noncomputable local instance instAlgebraPadicIntZModWeilPairing
     (p : ℕ) [Fact p.Prime] : Algebra ℤ_[p] (ZMod p) :=
   RingHom.toAlgebra PadicInt.toZMod
 
+/-- The `q`-power Frobenius of an algebraic closure of `𝔽_q`, as an
+algebra homomorphism over `ZMod q` (it fixes the prime field by
+Fermat's little theorem). -/
+noncomputable def frobAlgHom (q : ℕ) [Fact q.Prime] :
+    AlgebraicClosure (ZMod q) →ₐ[ZMod q] AlgebraicClosure (ZMod q) :=
+  { frobenius (AlgebraicClosure (ZMod q)) q with
+    commutes' := fun c => by
+      show frobenius (AlgebraicClosure (ZMod q)) q
+        (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)) c) = _
+      rw [frobenius_def, ← map_pow, ZMod.pow_card] }
+
+/-- A classical decidable-equality instance on the algebraic closure of
+`𝔽_q` (needed for the group law on points). -/
+noncomputable instance instDecEqAlgClosureZMod (q : ℕ) [Fact q.Prime] :
+    DecidableEq (AlgebraicClosure (ZMod q)) := Classical.typeDecidableEq _
+
+/-- The endomorphism of the `p`-torsion of (the base change to `𝔽̄_q`
+of) an elliptic curve over `𝔽_q` induced by the `q`-power Frobenius,
+as a `ZMod p`-linear map. -/
+noncomputable def frobeniusTorsionEnd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) (p : ℕ) :
+    Module.End (ZMod p)
+      ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p) :=
+  AddMonoidHom.toZModLinearMap p
+    (TorsionCounting.endRestrict
+      (WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
+        (frobAlgHom q)) p)
+
+set_option warn.sorry false in
+/-- **Reduction transfer at good primes** (sorry node — the
+Néron–Ogg–Shafarevich reduction isomorphism): away from a finite set of
+places (containing the places of bad reduction and the residue
+characteristic `p`), the mod-`p` representation at the global Frobenius
+of `q` is conjugate to the `q`-power Frobenius acting on the
+`p`-torsion of an elliptic curve over `𝔽_q` (the reduction of a minimal
+model of `E` at `q`). Ingredients available in
+`KnownIn1980s/EllipticCurves/GoodReduction.lean`: torsion points have
+integral coordinates at good places (`torsion_abscissa_mem`), distinct
+torsion points have distinct reductions (`torsion_abscissa_residue_ne`,
+injectivity of reduction on torsion), and inertia acts trivially
+(`torsion_unramified_of_good_reduction`); surjectivity of reduction on
+`p`-torsion follows from counting (`p ≠ q`, both torsion groups have
+`p²` elements once the reduced curve's torsion is also counted), and
+the Frobenius compatibility is the definition of the global Frobenius
+on the residue extension. -/
+theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (p : ℕ) [Fact p.Prime] (hppos : 0 < p) :
+    ∃ S : Finset (IsDedekindDomain.HeightOneSpectrum
+        (NumberField.RingOfIntegers ℚ)),
+      ∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        haveI : Fact q.Prime := ⟨hq⟩
+        ∃ (_ : q ≠ p) (Wbar : WeierstrassCurve (ZMod q))
+          (_ : Wbar.IsElliptic)
+          (ψ : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p)
+            ≃ₗ[ZMod p]
+            ((Wbar.map (algebraMap (ZMod q)
+              (AlgebraicClosure (ZMod q)))).nTorsion p)),
+          ∀ x, ψ (E.galoisRep p hppos
+              (GaloisRepresentation.globalFrob
+                hq.toHeightOneSpectrumRingOfIntegersRat) x) =
+            frobeniusTorsionEnd q Wbar p (ψ x) :=
+  sorry
+
+set_option warn.sorry false in
+/-- **The Frobenius determinant over a finite field** (sorry node — the
+`deg`–`det` relation): the `q`-power Frobenius on the `p`-torsion of an
+elliptic curve over `𝔽_q` (`p ≠ q`) has determinant `q`. Classically:
+the Frobenius isogeny has degree `q`, its composite with the dual
+(Verschiebung) is multiplication by `q`, and on the `p`-torsion the
+determinant of an isogeny is its degree mod `p` — equivalently, count
+`#ker(φ - 1) = #Ē(𝔽_q)` and use the quadratic character of the degree
+form on the endomorphism ring. -/
+theorem det_frobeniusTorsionEnd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
+    (p : ℕ) [Fact p.Prime] (hqp : q ≠ p) :
+    LinearMap.det (frobeniusTorsionEnd q Wbar p) = (q : ZMod p) :=
+  sorry
+
 set_option warn.sorry false in
 /-- **Frobenius determinant at good primes** (sorry node): away from a
 finite set `S` of places, the determinant of the mod-`p` representation
@@ -131,8 +211,25 @@ theorem det_galoisRep_globalFrob (E : WeierstrassCurve ℚ)
             (GaloisRepresentation.globalFrob
               hq.toHeightOneSpectrumRingOfIntegersRat) : Module.End (ZMod p)
             ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p)) =
-        (q : ZMod p) :=
-  sorry
+        (q : ZMod p) := by
+  obtain ⟨S, hS⟩ := exists_frobenius_reduction_model E p hppos
+  refine ⟨S, ?_⟩
+  intro q hq hqS
+  haveI : Fact q.Prime := ⟨hq⟩
+  obtain ⟨hqp, Wbar, hell, ψ, hψ⟩ := hS q hq hqS
+  haveI := hell
+  have hρ : (E.galoisRep p hppos
+      (GaloisRepresentation.globalFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat) : Module.End (ZMod p)
+      ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p)) =
+      ψ.symm.conj (frobeniusTorsionEnd q Wbar p) := by
+    apply LinearMap.ext
+    intro x
+    show _ = ψ.symm (frobeniusTorsionEnd q Wbar p (ψ.symm.symm x))
+    rw [LinearEquiv.symm_symm, ← hψ x, LinearEquiv.symm_apply_apply]
+  rw [hρ, LinearEquiv.conj_apply, LinearMap.comp_assoc]
+  exact (LinearMap.det_conj (frobeniusTorsionEnd q Wbar p) ψ.symm).trans
+    (det_frobeniusTorsionEnd q Wbar (p := p) hqp)
 
 set_option backward.isDefEq.respectTransparency false in
 /-- The mod-`p` cyclotomic character is the residue of the `p`-adic
