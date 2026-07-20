@@ -2851,12 +2851,6 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
         (WeierstrassCurve.Affine.Point.some a b hab)))) = 0 := by
       rw [← map_zsmul eup, ← map_zsmul Pmap, ← map_zsmul hmodelPt, hPtor2,
         map_zero, map_zero, map_zero]
-    simp only [hmodelPtdef, AddEquiv.trans_apply,
-      WeierstrassCurve.Affine.Point.equivOfEq_some, hevcsymm,
-      WeierstrassCurve.Affine.Point.mapVariableChangeFun_some,
-      hPmapdef, heupdef, hedndef, himapdef, heqsymm,
-      AddMonoidHom.comp_apply, AddEquiv.coe_toAddMonoidHom,
-      WeierstrassCurve.Affine.Point.map_some] at htor2 ⊢
     -- σ-fixedness of the inverse variable-change entries
     have hCinv : (C.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁻¹ =
         (C⁻¹).map (algebraMap ℚ (AlgebraicClosure ℚ)) :=
@@ -2914,8 +2908,104 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
         WeierstrassCurve.VariableChange.map_s,
         WeierstrassCurve.VariableChange.map_t, Units.coe_map,
         MonoidHom.coe_coe, map_add, map_mul, map_pow, hσfix]
-    trace_state
-    sorry
+    -- some-congruence at the completed-closure curve
+    have hsomeCUP : ∀ {xa xb ya yb : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))}
+        {ha : ((W.map (algebraMap ℤ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Nonsingular xa ya} {hb : ((W.map (algebraMap ℤ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Nonsingular xb yb},
+        xa = xb → ya = yb →
+        (WeierstrassCurve.Affine.Point.some xa ya ha : ((W.map (algebraMap ℤ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Point) =
+          WeierstrassCurve.Affine.Point.some xb yb hb := by
+      intro xa xb ya yb ha hb hxab hyab
+      subst hxab
+      subst hyab
+      rfl
+    -- destructure the two mid-chain values (they are finite points)
+    rcases hch1 : eup (Pmap (hmodelPt (WeierstrassCurve.Affine.Point.some
+        ((GaloisRepresentation.globalFrob
+              hq.toHeightOneSpectrumRingOfIntegersRat) a) ((GaloisRepresentation.globalFrob
+              hq.toHeightOneSpectrumRingOfIntegersRat) b) hns1))) with _ | ⟨X1, Y1, pf1⟩
+    · exfalso
+      simp only [hmodelPtdef, AddEquiv.trans_apply,
+        WeierstrassCurve.Affine.Point.equivOfEq_some, hevcsymm,
+        WeierstrassCurve.Affine.Point.mapVariableChangeFun_some,
+        hPmapdef, heupdef, hedndef, himapdef, heqsymm,
+        AddMonoidHom.comp_apply, AddEquiv.coe_toAddMonoidHom,
+        WeierstrassCurve.Affine.Point.map_some, reduceCtorEq] at hch1
+    rcases hch2 : eup (Pmap (hmodelPt
+        (WeierstrassCurve.Affine.Point.some a b hab))) with _ | ⟨X2, Y2, pf2⟩
+    · exfalso
+      simp only [hmodelPtdef, AddEquiv.trans_apply,
+        WeierstrassCurve.Affine.Point.equivOfEq_some, hevcsymm,
+        WeierstrassCurve.Affine.Point.mapVariableChangeFun_some,
+        hPmapdef, heupdef, hedndef, himapdef, heqsymm,
+        AddMonoidHom.comp_apply, AddEquiv.coe_toAddMonoidHom,
+        WeierstrassCurve.Affine.Point.map_some, reduceCtorEq] at hch2
+    -- torsion of the plain mid-point
+    rw [hch2] at htor2
+    -- coordinate identifications from the normalized chain values
+    simp only [hmodelPtdef, AddEquiv.trans_apply,
+        WeierstrassCurve.Affine.Point.equivOfEq_some, hevcsymm,
+        WeierstrassCurve.Affine.Point.mapVariableChangeFun_some,
+        hPmapdef, heupdef, hedndef, himapdef, heqsymm,
+        AddMonoidHom.comp_apply, AddEquiv.coe_toAddMonoidHom,
+        WeierstrassCurve.Affine.Point.map_some] at hch1 hch2
+    injection hch1 with hX1 hY1
+    injection hch2 with hX2 hY2
+    -- the σ-side point is the Frobenius image of the plain point
+    have hswap : (WeierstrassCurve.Affine.Point.some X1 Y1 pf1 :
+        ((W.map (algebraMap ℤ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Point) = WeierstrassCurve.Affine.Point.map
+        (W' := W.map (algebraMap ℤ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))) (S := (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))
+        ((Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat)).toAlgHom
+        (WeierstrassCurve.Affine.Point.some X2 Y2 pf2) := by
+      refine hsomeCUP ?_ ?_
+      · rw [← hX1, ← hX2]
+        exact hXc
+      · rw [← hY1, ← hY2]
+        exact hYc
+    rw [hswap, hredfrob _ htor2]
+    rw [hredSome pf2 (habs pf2 htor2) (hord pf2 htor2)]
+    -- push the residue-field Frobenius through the outer layers
+    have hsomeFbar : ∀ {xa xb ya yb : (AlgebraicClosure (ZMod q))}
+        {ha : ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure (ZMod q))).toAffine.Nonsingular xa ya} {hb : ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure (ZMod q))).toAffine.Nonsingular xb yb},
+        xa = xb → ya = yb →
+        (WeierstrassCurve.Affine.Point.some xa ya ha : ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure (ZMod q))).toAffine.Point) =
+          WeierstrassCurve.Affine.Point.some xb yb hb := by
+      intro xa xb ya yb ha hb hxab hyab
+      subst hxab
+      subst hyab
+      rfl
+    simp only [hedndef, himapdef, heqsymm,
+      WeierstrassCurve.Affine.Point.equivOfEq_some,
+      WeierstrassCurve.Affine.Point.map_some]
+    refine hsomeFbar ?_ ?_
+    · show identZ (frobenius _ q ((IsLocalRing.residue _) ⟨X2, _⟩)) =
+        frobenius _ q (identZ ((IsLocalRing.residue _) ⟨X2, _⟩))
+      rw [frobenius_def, frobenius_def, map_pow]
+    · show identZ (frobenius _ q ((IsLocalRing.residue _) ⟨Y2, _⟩)) =
+        frobenius _ q (identZ ((IsLocalRing.residue _) ⟨Y2, _⟩))
+      rw [frobenius_def, frobenius_def, map_pow]
 
 
 set_option warn.sorry false in
