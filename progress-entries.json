@@ -1263,12 +1263,12 @@
     "name": "TateCurve.evalA_XA_eq_bilateralX_ext",
     "fullname": "TateCurve.evalA_XA_eq_bilateralX_ext",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-    "text": "extended-annulus bilateral bridge for X (sorry node): the (u,q)-graded evalA double series rearranges to the bilateral ℤ-sum also on the upper half of the extended annulus (mirror evalA_XA_bilateral with the other Lambert splitting: the u^d-branch now carries the geometric decay)."
+    "text": "extended-annulus bilateral bridge (PROVEN 2026-07-18): the fundamental-annulus bridge proof only ever used the two Lambert conditions |q₀u₀| < 1 and |q₀u₀⁻¹| < 1, both of which hold on the upper extended annulus — the body replays verbatim with the new prologue."
   },
   {
     "name": "TateCurve.evalA_YA_eq_bilateralY_ext",
     "fullname": "TateCurve.evalA_YA_eq_bilateralY_ext",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-    "text": "extended-annulus bilateral bridge for Y (sorry node): same as the X version."
+    "text": "extended-annulus bilateral bridge (PROVEN 2026-07-18): the fundamental-annulus bridge proof only ever used the two Lambert conditions |q₀u₀| < 1 and |q₀u₀⁻¹| < 1, both of which hold on the upper extended annulus — the body replays verbatim with the new prologue."
   }
 ]

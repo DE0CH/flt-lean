@@ -4432,24 +4432,142 @@ theorem summable_evalA_YA_ext (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1
         rw [map_mul, mul_pow]
         exact mul_comm _ _
 
-set_option warn.sorry false in
-/-- **Extended-annulus bilateral bridge for `X`** (sorry node): the
-`evalA`-sum agrees with the bilateral value also on the upper half
-`1 < |u₀| < |q₀|⁻¹` of the extended annulus (rearrangement of the
-`(u, q)`-graded double series along the other Lambert splitting). -/
+/-- **Extended-annulus bilateral bridge for `X`** (PROVEN — the window
+proof only ever used the two Lambert conditions `|q₀u₀| < 1` and
+`|q₀u₀⁻¹| < 1`, both of which hold on the upper extended annulus). -/
 theorem evalA_XA_eq_bilateralX_ext (u₀ q₀ : k) (h0 : u₀ ≠ 0)
     (h1 : u₀ ≠ 1) (hq1 : valuation k q₀ < 1)
     (hu : 1 < valuation k u₀) (hqu : valuation k (q₀ * u₀) < 1) :
-    evalA u₀ q₀ h0 h1 XA = bilateralX u₀ q₀ :=
-  sorry
+    evalA u₀ q₀ h0 h1 XA = bilateralX u₀ q₀ := by
+  unfold bilateralX
+  have hv0 : valuation k u₀ ≠ 0 := by
+    simpa [ne_eq, map_eq_zero] using h0
+  have hquinv : valuation k (q₀ * u₀⁻¹) < 1 := by
+    rw [map_mul, map_inv₀]
+    calc valuation k q₀ * (valuation k u₀)⁻¹
+        ≤ valuation k q₀ * 1 := by
+          have hinv : (valuation k u₀)⁻¹ ≤ 1 := by
+            rw [inv_le_one₀ (zero_lt_iff.mpr hv0)]
+            exact hu.le
+          exact mul_le_mul_right hinv _
+      _ = valuation k q₀ := mul_one _
+      _ < 1 := hq1
+  have hSu := hasSum_lambert_side' u₀ q₀ hq1 hqu
+  have hSuinv := hasSum_lambert_side' u₀⁻¹ q₀ hq1 hquinv
+  have hSσ := (summable_sigma_one_nonarch q₀ hq1).hasSum
+  have htail : HasSum (fun N : ℕ+ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff (N : ℕ) XA) *
+        q₀ ^ (N : ℕ))
+      ((∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀ / (1 - q₀ ^ (m : ℕ) * u₀) ^ 2) +
+       (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 2) -
+       2 * (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ))) := by
+    refine ((hSu.add hSuinv).sub (hSσ.mul_left 2)).congr_fun
+      fun N ↦ ?_
+    rw [coeffRingEval_coeff_XA u₀ h0 h1 N.pos.ne', Finset.sum_mul,
+      Finset.sum_mul, Finset.sum_mul, Finset.sum_mul, Finset.mul_sum,
+      ← Finset.sum_add_distrib, ← Finset.sum_sub_distrib]
+    refine Finset.sum_congr rfl fun d _ ↦ ?_
+    ring
+  have htailN : HasSum (fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff (n + 1) XA) *
+        q₀ ^ (n + 1))
+      ((∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀ / (1 - q₀ ^ (m : ℕ) * u₀) ^ 2) +
+       (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 2) -
+       2 * (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ))) := by
+    have h := (Equiv.pnatEquivNat.symm.hasSum_iff).mpr htail
+    refine h.congr_fun fun n ↦ ?_
+    simp only [Function.comp_apply, Equiv.pnatEquivNat_symm_apply,
+      Nat.succPNat_coe]
+  have hfull := (hasSum_nat_add_iff
+    (f := fun n : ℕ ↦ coeffRingEval u₀ h0 h1
+      (PowerSeries.coeff n XA) * q₀ ^ n) 1).mp htailN
+  rw [Finset.range_one, Finset.sum_singleton] at hfull
+  have hf0 : coeffRingEval u₀ h0 h1 (PowerSeries.coeff 0 XA) *
+      q₀ ^ 0 = u₀ / (1 - u₀) ^ 2 := by
+    rw [coeffRingEval_coeff_XA_zero, pow_zero, mul_one]
+  rw [hf0] at hfull
+  rw [evalA, hfull.tsum_eq]
+  ring
 
-set_option warn.sorry false in
-/-- **Extended-annulus bilateral bridge for `Y`** (sorry node). -/
+/-- **Extended-annulus bilateral bridge for `Y`** (PROVEN, same
+observation as the `X` version). -/
 theorem evalA_YA_eq_bilateralY_ext (u₀ q₀ : k) (h0 : u₀ ≠ 0)
     (h1 : u₀ ≠ 1) (hq1 : valuation k q₀ < 1)
     (hu : 1 < valuation k u₀) (hqu : valuation k (q₀ * u₀) < 1) :
-    evalA u₀ q₀ h0 h1 YA = bilateralY u₀ q₀ :=
-  sorry
+    evalA u₀ q₀ h0 h1 YA = bilateralY u₀ q₀ := by
+  unfold bilateralY
+  have hv0 : valuation k u₀ ≠ 0 := by
+    simpa [ne_eq, map_eq_zero] using h0
+  have hquinv : valuation k (q₀ * u₀⁻¹) < 1 := by
+    rw [map_mul, map_inv₀]
+    calc valuation k q₀ * (valuation k u₀)⁻¹
+        ≤ valuation k q₀ * 1 := by
+          have hinv : (valuation k u₀)⁻¹ ≤ 1 := by
+            rw [inv_le_one₀ (zero_lt_iff.mpr hv0)]
+            exact hu.le
+          exact mul_le_mul_right hinv _
+      _ = valuation k q₀ := mul_one _
+      _ < 1 := hq1
+  have hbin1 : ∀ j : ℕ, valuation k (((j.choose 2 : ℕ) : k)) ≤ 1 := by
+    intro j
+    have h := valuation_intCast_le_one (R := k) (j.choose 2)
+    simpa using h
+  have hbin2 : ∀ j : ℕ,
+      valuation k ((((j + 1).choose 2 : ℕ) : k)) ≤ 1 := by
+    intro j
+    have h := valuation_intCast_le_one (R := k) ((j + 1).choose 2)
+    simpa using h
+  have hS1 := hasSum_lambert_general
+    (fun j ↦ ((j.choose 2 : ℕ) : k)) (fun v ↦ v ^ 2 / (1 - v) ^ 3)
+    hbin1 u₀ q₀ hq1 hqu
+    (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_self v₀ hv₀)
+  have hS2 := hasSum_lambert_general
+    (fun j ↦ (((j + 1).choose 2 : ℕ) : k)) (fun v ↦ v / (1 - v) ^ 3)
+    hbin2 u₀⁻¹ q₀ hq1 hquinv
+    (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_succ v₀ hv₀)
+  have hSσ := (summable_sigma_one_nonarch q₀ hq1).hasSum
+  have htail : HasSum (fun N : ℕ+ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff (N : ℕ) YA) *
+        q₀ ^ (N : ℕ))
+      ((∑' m : ℕ+, (q₀ ^ (m : ℕ) * u₀) ^ 2 /
+          (1 - q₀ ^ (m : ℕ) * u₀) ^ 3) -
+       (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 3) +
+       (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ))) := by
+    refine ((hS1.sub hS2).add hSσ).congr_fun fun N ↦ ?_
+    rw [coeffRingEval_coeff_YA u₀ h0 h1 N.pos.ne', Finset.sum_mul,
+      Finset.sum_mul, Finset.sum_mul, Finset.sum_mul,
+      ← Finset.sum_sub_distrib, ← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl fun d _ ↦ ?_
+    ring
+  have htailN : HasSum (fun n : ℕ ↦
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff (n + 1) YA) *
+        q₀ ^ (n + 1))
+      ((∑' m : ℕ+, (q₀ ^ (m : ℕ) * u₀) ^ 2 /
+          (1 - q₀ ^ (m : ℕ) * u₀) ^ 3) -
+       (∑' m : ℕ+, q₀ ^ (m : ℕ) * u₀⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u₀⁻¹) ^ 3) +
+       (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ))) := by
+    have h := (Equiv.pnatEquivNat.symm.hasSum_iff).mpr htail
+    refine h.congr_fun fun n ↦ ?_
+    simp only [Function.comp_apply, Equiv.pnatEquivNat_symm_apply,
+      Nat.succPNat_coe]
+  have hfull := (hasSum_nat_add_iff
+    (f := fun n : ℕ ↦ coeffRingEval u₀ h0 h1
+      (PowerSeries.coeff n YA) * q₀ ^ n) 1).mp htailN
+  rw [Finset.range_one, Finset.sum_singleton] at hfull
+  have hf0 : coeffRingEval u₀ h0 h1 (PowerSeries.coeff 0 YA) *
+      q₀ ^ 0 = u₀ ^ 2 / (1 - u₀) ^ 3 := by
+    rw [coeffRingEval_coeff_YA_zero, pow_zero, mul_one]
+  rw [hf0] at hfull
+  rw [evalA, hfull.tsum_eq]
+  ring
 
 /-- **The cleared chord `X`-identity, shifted case** (DERIVED): when
 the product falls below the fundamental annulus, replace `v₀` by
