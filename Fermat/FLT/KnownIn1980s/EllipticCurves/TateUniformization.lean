@@ -7320,8 +7320,189 @@ theorem exists_annulus_bilateralX_eq_of_lt_one (q₀ : k) (hq0 : q₀ ≠ 0)
     (hxy : (WeierstrassCurve.tateCurve q₀).toAffine.Equation x y)
     (hx : valuation k x < 1) :
     ∃ u : k, u ≠ 0 ∧ u ≠ 1 ∧ valuation k q₀ < valuation k u ∧
-      valuation k u ≤ 1 ∧ bilateralX u q₀ = x :=
-  sorry
+      valuation k u ≤ 1 ∧ bilateralX u q₀ = x := by
+  have htsum_pnat : ∀ (f : ℕ+ → k), Summable f →
+      ∀ c : ValueGroupWithZero k, (∀ m, valuation k (f m) ≤ c) →
+      valuation k (∑' m, f m) ≤ c :=
+    fun f hf c hb => valuation_tsum_le hf c hb
+  have hqpow_le : ∀ N : ℕ+, valuation k q₀ ^ (N : ℕ) ≤ valuation k q₀ := by
+    intro N
+    calc valuation k q₀ ^ (N : ℕ) ≤ valuation k q₀ ^ (1 : ℕ) :=
+        pow_le_pow_right_of_le_one' (le_of_lt hq1) N.2
+      _ = valuation k q₀ := pow_one _
+  by_cases hcase : valuation k q₀ < valuation k x ^ 2
+  · -- Case A (open shell, `|q| < |x|² < 1`): on the shell `|u| = |x|`
+    -- the map `u ↦ bilateralX u - u` is small and contractive, so the
+    -- iteration `u ↦ x - (bilateralX u - u)` seeded at `x` converges to
+    -- an exact solution — the leading map is the identity, so no branch
+    -- selection and no exclusion argument are needed.
+    have hX0 : valuation k x ≠ 0 := by
+      intro hz
+      rw [hz, pow_two, mul_zero] at hcase
+      exact absurd hcase (not_lt.mpr zero_le)
+    have hx0 : x ≠ 0 := fun hz => hX0 (by rw [hz, map_zero])
+    have hXpos : (0 : ValueGroupWithZero k) < valuation k x :=
+      zero_lt_iff.mpr hX0
+    have hsq : valuation k q₀ < valuation k x * valuation k x := by
+      rwa [pow_two] at hcase
+    have hqx : valuation k q₀ < valuation k x :=
+      lt_of_lt_of_le hsq (by
+        calc valuation k x * valuation k x
+            ≤ valuation k x * 1 := mul_le_mul' le_rfl (le_of_lt hx)
+          _ = valuation k x := mul_one _)
+    have hqdivx : valuation k q₀ / valuation k x < valuation k x := by
+      rw [div_lt_iff₀ hXpos]
+      exact hsq
+    set Mx := max (valuation k x * valuation k x)
+      (valuation k q₀ / valuation k x) with hMxdef
+    have hMxlt : Mx < valuation k x := max_lt
+      (mul_lt_of_lt_one_right hXpos hx) hqdivx
+    set ρ := max (valuation k x)
+      (valuation k q₀ / (valuation k x * valuation k x)) with hρdef
+    have hρ1 : ρ < 1 := max_lt hx (by
+      rw [div_lt_one₀ (zero_lt_iff.mpr (mul_ne_zero hX0 hX0))]
+      exact hsq)
+    have hρ0 : ρ ≠ 0 := fun hz =>
+      hX0 (le_zero_iff.mp (hz ▸ le_max_left _ _))
+    -- shell facts
+    have hshell : ∀ u : k, valuation k u = valuation k x →
+        u ≠ 0 ∧ u ≠ 1 ∧ valuation k (1 - u) = 1 ∧
+          valuation k (q₀ * u) < 1 ∧ valuation k (q₀ * u⁻¹) < 1 := by
+      intro u hu
+      have hu0 : u ≠ 0 := fun hz => hX0 (by rw [← hu, hz, map_zero])
+      have hult : valuation k u < 1 := hu ▸ hx
+      refine ⟨hu0, ?_, (valuation k).map_one_sub_of_lt hult, ?_, ?_⟩
+      · intro hz
+        rw [hz, map_one] at hu
+        exact absurd (hu ▸ hx) (lt_irrefl _)
+      · rw [map_mul]
+        calc valuation k q₀ * valuation k u
+            ≤ valuation k q₀ * 1 := mul_le_mul' le_rfl (le_of_lt hult)
+          _ = valuation k q₀ := mul_one _
+          _ < 1 := hq1
+      · rw [map_mul, map_inv₀, hu, ← div_eq_mul_inv]
+        exact lt_trans hqdivx hx
+    -- termwise bounds for the two Lambert halves on the shell
+    have htermA1 : ∀ (u : k), valuation k u = valuation k x → ∀ m : ℕ+,
+        valuation k (q₀ ^ (m : ℕ) * u / (1 - q₀ ^ (m : ℕ) * u) ^ 2) ≤
+          valuation k x * valuation k x := by
+      intro u hu m
+      have hsmall : valuation k (q₀ ^ (m : ℕ) * u) < 1 := by
+        rw [map_mul, map_pow]
+        calc valuation k q₀ ^ (m : ℕ) * valuation k u
+            ≤ valuation k q₀ * 1 :=
+              mul_le_mul' (hqpow_le m) (le_of_lt (hu ▸ hx))
+          _ = valuation k q₀ := mul_one _
+          _ < 1 := hq1
+      rw [map_div₀, map_mul, map_pow, hu, map_pow,
+        (valuation k).map_one_sub_of_lt hsmall, one_pow, div_one]
+      calc valuation k q₀ ^ (m : ℕ) * valuation k x
+          ≤ valuation k q₀ * valuation k x := mul_le_mul_left (hqpow_le m) _
+        _ ≤ valuation k x * valuation k x :=
+            mul_le_mul_left (le_of_lt hqx) _
+    have htermA2 : ∀ (u : k), valuation k u = valuation k x → ∀ m : ℕ+,
+        valuation k (q₀ ^ (m : ℕ) * u⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 2) ≤
+          valuation k q₀ / valuation k x := by
+      intro u hu m
+      have hsmall : valuation k (q₀ ^ (m : ℕ) * u⁻¹) < 1 := by
+        rw [map_mul, map_pow, map_inv₀, hu]
+        calc valuation k q₀ ^ (m : ℕ) * (valuation k x)⁻¹
+            ≤ valuation k q₀ * (valuation k x)⁻¹ :=
+              mul_le_mul_left (hqpow_le m) _
+          _ = valuation k q₀ / valuation k x := (div_eq_mul_inv _ _).symm
+          _ < 1 := lt_trans hqdivx hx
+      rw [map_div₀, map_mul, map_pow, map_inv₀, hu, map_pow,
+        (valuation k).map_one_sub_of_lt hsmall, one_pow, div_one,
+        ← div_eq_mul_inv]
+      rw [div_eq_mul_inv, div_eq_mul_inv]
+      exact mul_le_mul_left (hqpow_le m) _
+    -- the leading-part identity and its shell bound
+    have hkeylead : ∀ u : k, (1 : k) - u ≠ 0 →
+        u / (1 - u) ^ 2 - u = u ^ 2 * (2 - u) / (1 - u) ^ 2 := by
+      intro u h1u
+      field_simp
+      ring
+    have h2sub : ∀ u : k, valuation k u = valuation k x →
+        valuation k (2 - u) ≤ 1 := by
+      intro u hu
+      refine le_trans (Valuation.map_sub _ _ _) (max_le ?_ ?_)
+      · simpa using valuation_intCast_le_one (R := k) 2
+      · rw [hu]
+        exact le_of_lt hx
+    -- the tail bound: `|bilateralX u - u| ≤ Mx` on the shell
+    have hGval : ∀ u : k, valuation k u = valuation k x →
+        valuation k (bilateralX u q₀ - u) ≤ Mx := by
+      intro u hu
+      obtain ⟨hu0, hu1, h1u, hqu, hquinv⟩ := hshell u hu
+      have h1u0 : (1 : k) - u ≠ 0 := by
+        intro hz
+        rw [hz, map_zero] at h1u
+        exact zero_ne_one h1u
+      have he : bilateralX u q₀ - u =
+          (u / (1 - u) ^ 2 - u) +
+          ((∑' m : ℕ+, q₀ ^ (m : ℕ) * u / (1 - q₀ ^ (m : ℕ) * u) ^ 2) +
+           (∑' m : ℕ+, q₀ ^ (m : ℕ) * u⁻¹ /
+              (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 2) -
+           2 * (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+              q₀ ^ (N : ℕ))) := by
+        rw [bilateralX]
+        ring
+      rw [he]
+      have hq_le_Mx : valuation k q₀ ≤ Mx := by
+        refine le_trans ?_ (le_max_right _ _)
+        rw [le_div_iff₀ hXpos]
+        calc valuation k q₀ * valuation k x
+            ≤ valuation k q₀ * 1 := mul_le_mul' le_rfl (le_of_lt hx)
+          _ = valuation k q₀ := mul_one _
+      have hlead : valuation k (u / (1 - u) ^ 2 - u) ≤ Mx := by
+        rw [hkeylead u h1u0, map_div₀, map_mul, map_pow, map_pow, hu,
+          h1u, one_pow, div_one]
+        refine le_trans ?_ (le_max_left _ _)
+        calc valuation k x ^ 2 * valuation k (2 - u)
+            ≤ valuation k x ^ 2 * 1 := mul_le_mul' le_rfl (h2sub u hu)
+          _ = valuation k x * valuation k x := by rw [mul_one, pow_two]
+      have hS1 : valuation k
+          (∑' m : ℕ+, q₀ ^ (m : ℕ) * u / (1 - q₀ ^ (m : ℕ) * u) ^ 2) ≤
+            Mx :=
+        le_trans (htsum_pnat _ (summable_lambert_terms u q₀ hq1 hqu) _
+          (htermA1 u hu)) (le_max_left _ _)
+      have hS2 : valuation k
+          (∑' m : ℕ+, q₀ ^ (m : ℕ) * u⁻¹ /
+            (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 2) ≤ Mx :=
+        le_trans (htsum_pnat _ (summable_lambert_terms u⁻¹ q₀ hq1 hquinv)
+          _ (htermA2 u hu)) (le_max_right _ _)
+      have hσ : valuation k
+          (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+            q₀ ^ (N : ℕ)) ≤ valuation k q₀ := by
+        refine htsum_pnat _ (summable_sigma_one_nonarch q₀ hq1) _ ?_
+        intro N
+        rw [map_mul, map_pow]
+        have hd1 : valuation k
+            (∑ d ∈ (N : ℕ).divisors, (d : k)) ≤ 1 :=
+          Valuation.map_sum_le _ fun d _ => by
+            simpa using valuation_intCast_le_one (R := k) d
+        calc valuation k (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+            valuation k q₀ ^ (N : ℕ)
+            ≤ 1 * valuation k q₀ ^ (N : ℕ) := mul_le_mul_left hd1 _
+          _ = valuation k q₀ ^ (N : ℕ) := one_mul _
+          _ ≤ valuation k q₀ := hqpow_le N
+      have hS3 : valuation k
+          (2 * ∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+            q₀ ^ (N : ℕ)) ≤ Mx := by
+        rw [map_mul]
+        refine le_trans ?_ hq_le_Mx
+        refine le_trans (mul_le_mul'
+          (by simpa using valuation_intCast_le_one (R := k) 2) hσ) ?_
+        rw [one_mul]
+      exact le_trans (Valuation.map_add _ _ _) (max_le hlead
+        (le_trans (Valuation.map_sub _ _ _) (max_le
+          (le_trans (Valuation.map_add _ _ _) (max_le hS1 hS2)) hS3)))
+    sorry
+  · -- Case B (the boundary shell `|x|² ≤ |q|`, Silverman's `W`): the
+    -- cancellation case, requiring the quadratic solve with the
+    -- `y`-coordinate selecting the root.
+    sorry
 
 /-- **`x`-surjectivity onto the annulus** (DERIVED 2026-07-20 by case
 split on `valuation k x` against `1`, dispatching to the two Silverman
