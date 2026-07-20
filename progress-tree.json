@@ -126,16 +126,10 @@
   "WeierstrassCurve.exists_tateCurveHomSepClosure": "✅",
   "TateCurve.exists_annulus_bilateralX_eq": "❌",
   "TateCurve.pointMapQuot_surjective": "✅",
-  "TateCurve.bilateralXY_inj": "❌",
-  "TateCurve.eq_or_mul_eq_of_bilateralX_eq": "✅",
-  "TateCurve.bilateral_add_self": "✅",
-  "TateCurve.bilateral_ne_negY_of_sq_nontrivial": "✅",
-  "TateCurve.bilateral_tangentY_cleared": "❌",
-  "TateCurve.bilateral_tangentX_cleared": "❌",
   "TateCurve.bilateral_chordY_cleared": "✅✅",
   "TateCurve.bilateral_chordX_cleared": "✅✅",
   "TateCurve.bilateral_add_of_X_ne": "✅✅",
-  "TateCurve.pointMapQuot_add": "✅",
+  "TateCurve.pointMapQuot_add": "✅✅",
   "TateCurve.tateCurveEquiv": "✅",
   "WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel": "❌",
   "WeierstrassCurve.exists_tateTorsionQuotient": "✅✅",
@@ -183,7 +177,8 @@
   "TateCurve.summable_evalA_XA_ext": "✅✅",
   "TateCurve.summable_evalA_YA_ext": "✅✅",
   "TateCurve.evalA_XA_eq_bilateralX_ext": "✅✅",
-  "TateCurve.evalA_YA_eq_bilateralY_ext": "✅✅"
+  "TateCurve.evalA_YA_eq_bilateralY_ext": "✅✅",
+  "TateCurve.pointMap_mul": "✅✅"
  },
  "children": {
   "fermatLastTheoremThree": [],
@@ -675,21 +670,6 @@
    "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
    "TateCurve.exists_annulus_bilateralX_eq"
   ],
-  "TateCurve.bilateralXY_inj": [],
-  "TateCurve.eq_or_mul_eq_of_bilateralX_eq": [
-   "TateCurve.bilateralXY_inj",
-   "WeierstrassCurve.Δ_tateCurve_eq_evalInt"
-  ],
-  "TateCurve.bilateral_add_self": [
-   "TateCurve.bilateral_ne_negY_of_sq_nontrivial",
-   "TateCurve.bilateral_tangentX_cleared",
-   "TateCurve.bilateral_tangentY_cleared"
-  ],
-  "TateCurve.bilateral_ne_negY_of_sq_nontrivial": [
-   "TateCurve.bilateralXY_inj"
-  ],
-  "TateCurve.bilateral_tangentY_cleared": [],
-  "TateCurve.bilateral_tangentX_cleared": [],
   "TateCurve.bilateral_chordY_cleared": [
    "TateCurve.bilateral_chordY_cleared_shifted",
    "TateCurve.bilateral_chordY_cleared_window"
@@ -704,9 +684,7 @@
   ],
   "TateCurve.pointMapQuot_add": [
    "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
-   "TateCurve.eq_or_mul_eq_of_bilateralX_eq",
-   "TateCurve.bilateral_add_self",
-   "TateCurve.bilateral_add_of_X_ne"
+   "TateCurve.pointMap_mul"
   ],
   "TateCurve.tateCurveEquiv": [
    "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
@@ -827,7 +805,11 @@
   "TateCurve.summable_evalA_XA_ext": [],
   "TateCurve.summable_evalA_YA_ext": [],
   "TateCurve.evalA_XA_eq_bilateralX_ext": [],
-  "TateCurve.evalA_YA_eq_bilateralY_ext": []
+  "TateCurve.evalA_YA_eq_bilateralY_ext": [],
+  "TateCurve.pointMap_mul": [
+   "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
+   "TateCurve.bilateral_add_of_X_ne"
+  ]
  },
  "roots": [
   "fermat_last_theorem"

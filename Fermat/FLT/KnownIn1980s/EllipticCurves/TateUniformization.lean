@@ -5061,25 +5061,6 @@ theorem bilateral_add_of_X_ne [DecidableEq k] (u₀ v₀ q₀ : k)
   field_simp
   linear_combination -h2
 
-set_option warn.sorry false in
-/-- **Injectivity of the bilateral coordinate pair on the annulus** (sorry
-node — Silverman V.4, the injectivity half): two annulus parameters with
-the same bilateral `x`- AND `y`-values coincide. Attack: the difference
-`X(u) - X(v)` as a series in the annulus (theta-quotient/Newton-polygon
-analysis over the complete field `k`), with the `y`-value separating the
-two sheets. -/
-theorem bilateralXY_inj (u₀ v₀ q₀ : k)
-    (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hv0 : v₀ ≠ 0) (hv1 : v₀ ≠ 1)
-    (hq0 : q₀ ≠ 0) (hq1 : valuation k q₀ < 1)
-    (hulow : valuation k q₀ < valuation k u₀)
-    (huhigh : valuation k u₀ ≤ 1)
-    (hvlow : valuation k q₀ < valuation k v₀)
-    (hvhigh : valuation k v₀ ≤ 1)
-    (hX : bilateralX u₀ q₀ = bilateralX v₀ q₀)
-    (hY : bilateralY u₀ q₀ = bilateralY v₀ q₀) :
-    u₀ = v₀ :=
-  sorry
-
 omit [CharZero k] in
 /-- **The vertical case** (PROVEN from the inversion and shift identities):
 if the product of two annulus parameters is `1` or `q₀` — the trivial class
@@ -5134,312 +5115,209 @@ theorem bilateral_negY_of_mul_trivial (u₀ v₀ q₀ : k)
     · rw [bilateralY_shift u₀⁻¹ q₀ hinv0 hinv1 hq0 hq1 hqu' hquinv',
         bilateralY_inv u₀ q₀ hu0 hu1 hq1 hqu hquinv]
 
-/-- **Non-`2`-torsion of nontrivial-square annulus parameters** (sorry
-node): for an annulus parameter whose square is not in the trivial class,
-the bilateral point is not `2`-torsion — its `y`-value differs from `negY`
-of itself. Series content: `2Y(u) + X(u) = 0` characterises the three
-nontrivial `2`-torsion parameters `u ∈ {-1, ±√q}·q^ℤ`. -/
-theorem bilateral_ne_negY_of_sq_nontrivial (u₀ q₀ : k)
-    (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hq0 : q₀ ≠ 0)
-    (hq1 : valuation k q₀ < 1)
-    (hulow : valuation k q₀ < valuation k u₀)
-    (huhigh : valuation k u₀ ≤ 1)
-    (hsq1 : u₀ * u₀ ≠ 1) (hsqq : u₀ * u₀ ≠ q₀) :
-    bilateralY u₀ q₀ ≠ (WeierstrassCurve.tateCurve q₀).toAffine.negY
-      (bilateralX u₀ q₀) (bilateralY u₀ q₀) := by
-  intro heq
+/-- **Silverman's completion lemma** (ATAEC V.3.1.2): a map from a
+commutative group to an additive commutative group that takes
+infinitely many values and is additive on every pair with
+`φ u ≠ ±φ v` is a homomorphism outright. -/
+theorem hom_of_partial_hom {G A : Type*} [CommGroup G] [AddCommGroup A]
+    (φ : G → A) (hinf : (Set.range φ).Infinite)
+    (h : ∀ u v : G, φ u ≠ φ v → φ u ≠ -φ v → φ (u * v) = φ u + φ v)
+    (u₁ u₂ : G) : φ (u₁ * u₂) = φ u₁ + φ u₂ := by
+  obtain ⟨a, hmem, havoid⟩ := (hinf.sdiff (Set.toFinite
+    ({φ u₁, -φ u₁, -φ u₁ + φ u₂, -φ u₁ - φ u₂, φ (u₁ * u₂),
+      -φ (u₁ * u₂)} : Set A))).nonempty
+  obtain ⟨w, rfl⟩ := hmem
+  simp only [Set.mem_insert_iff, Set.mem_singleton_iff, not_or] at havoid
+  obtain ⟨h1, h2, h3, h4, h5, h6⟩ := havoid
+  have e1 : φ (w * u₁) = φ w + φ u₁ := h w u₁ h1 h2
+  have e2 : φ (w * u₁) ≠ φ u₂ := by
+    rw [e1]
+    intro hc
+    refine h3 ?_
+    rw [← hc]
+    abel
+  have e3 : φ (w * u₁) ≠ -φ u₂ := by
+    rw [e1]
+    intro hc
+    refine h4 ?_
+    rw [sub_eq_add_neg, ← hc]
+    abel
+  have e4 : φ (w * u₁ * u₂) = φ w + φ u₁ + φ u₂ := by
+    rw [h (w * u₁) u₂ e2 e3, e1]
+  have e5 : φ (w * (u₁ * u₂)) = φ w + φ (u₁ * u₂) := h w (u₁ * u₂) h5 h6
+  have e6 : φ w + φ (u₁ * u₂) = φ w + (φ u₁ + φ u₂) := by
+    rw [← e5, ← mul_assoc, e4, add_assoc]
+  exact add_left_cancel e6
+
+omit [CharZero k] in
+/-- Ultrametric bound for a convergent sum: the valuation of the sum is
+at most any common bound of the terms. -/
+theorem valuation_tsum_le {f : ℕ → k} (hf : Summable f)
+    (c : ValueGroupWithZero k) (hbound : ∀ n, valuation k (f n) ≤ c) :
+    valuation k (∑' n, f n) ≤ c := by
+  by_contra hlt
+  rw [not_le] at hlt
+  have hpart : ∀ s : Finset ℕ, valuation k (∑ n ∈ s, f n) ≤ c :=
+    fun s => Valuation.map_sum_le _ fun n _ => hbound n
+  have hS : HasSum f (∑' n, f n) := hf.hasSum
+  simp only [HasSum, SummationFilter.unconditional_filter,
+    (IsValuativeTopology.hasBasis_nhds (∑' n, f n)).tendsto_right_iff] at hS
+  obtain ⟨s, hs⟩ := (hS (Units.mk0 _ (ne_of_gt
+    (lt_of_le_of_lt zero_le hlt))) trivial).exists
+  simp only [Set.mem_setOf_eq] at hs
+  refine absurd ?_ (lt_irrefl (valuation k (∑' n, f n)))
+  calc valuation k (∑' n, f n)
+      = valuation k ((∑ n ∈ s, f n) - ((∑ n ∈ s, f n) - ∑' n, f n)) := by
+        rw [sub_sub_cancel]
+    _ ≤ max (valuation k (∑ n ∈ s, f n))
+        (valuation k ((∑ n ∈ s, f n) - ∑' n, f n)) :=
+        Valuation.map_sub _ _ _
+    _ < valuation k (∑' n, f n) :=
+        max_lt (lt_of_le_of_lt (hpart s) hlt) hs
+
+set_option maxHeartbeats 800000 in
+/-- **Head domination on the unit shell**: for `|u₀| = 1` the
+`x`-value's valuation is `|1-u₀|⁻²` — the head `u₀/(1-u₀)²` dominates
+the Lambert tail, which is bounded by `|q₀|`. -/
+theorem valuation_evalA_XA_eq (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
+    (_hq0 : q₀ ≠ 0) (hq1 : valuation k q₀ < 1)
+    (huval : valuation k u₀ = 1) :
+    valuation k (evalA u₀ q₀ h0 h1 XA) =
+      ((valuation k (1 - u₀)) ^ 2)⁻¹ := by
+  have hulow : valuation k q₀ < valuation k u₀ := by
+    rw [huval]
+    exact hq1
+  have hsum := summable_evalA_XA u₀ q₀ h0 h1 (le_of_eq huval) hulow
+  have hone : valuation k (1 - u₀) ≤ 1 := by
+    calc valuation k (1 - u₀) ≤ max (valuation k 1) (valuation k u₀) :=
+          Valuation.map_sub _ _ _
+      _ = 1 := by rw [map_one, huval, max_self]
+  have h1u0 : (1 : k) - u₀ ≠ 0 := sub_ne_zero.mpr (Ne.symm h1)
+  have h1uval : valuation k (1 - u₀) ≠ 0 :=
+    (Valuation.ne_zero_iff _).mpr h1u0
+  have hheadval : valuation k (u₀ / (1 - u₀) ^ 2) =
+      ((valuation k (1 - u₀)) ^ 2)⁻¹ := by
+    rw [map_div₀, map_pow, huval, one_div]
+  have htail : valuation k (∑' n : ℕ, coeffRingEval u₀ h0 h1
+      (PowerSeries.coeff (n + 1) XA) * q₀ ^ (n + 1)) ≤
+      valuation k q₀ := by
+    have hsum1 : Summable (fun n : ℕ => coeffRingEval u₀ h0 h1
+        (PowerSeries.coeff (n + 1) XA) * q₀ ^ (n + 1)) :=
+      (summable_nat_add_iff 1).mpr hsum
+    refine valuation_tsum_le hsum1 _ fun n => ?_
+    rw [map_mul, map_pow]
+    have hb := valuation_coeffRingEval_XA_le u₀ h0 h1 (le_of_eq huval)
+      (Nat.succ_ne_zero n)
+    rw [huval, one_pow, inv_one] at hb
+    calc valuation k (coeffRingEval u₀ h0 h1
+          (PowerSeries.coeff (n + 1) XA)) * valuation k q₀ ^ (n + 1)
+        ≤ 1 * valuation k q₀ ^ (n + 1) := mul_le_mul_left hb _
+      _ = valuation k q₀ ^ (n + 1) := one_mul _
+      _ ≤ valuation k q₀ ^ 1 :=
+          pow_le_pow_right_of_le_one' hq1.le (by omega)
+      _ = valuation k q₀ := pow_one _
+  have hheadone : (1 : ValueGroupWithZero k) ≤
+      ((valuation k (1 - u₀)) ^ 2)⁻¹ := by
+    rw [one_le_inv₀ (zero_lt_iff.mpr (pow_ne_zero 2 h1uval))]
+    exact pow_le_one₀ zero_le hone
+  have hltval : valuation k (∑' n : ℕ, coeffRingEval u₀ h0 h1
+      (PowerSeries.coeff (n + 1) XA) * q₀ ^ (n + 1)) <
+      valuation k (u₀ / (1 - u₀) ^ 2) := by
+    rw [hheadval]
+    exact lt_of_le_of_lt htail (lt_of_lt_of_le hq1 hheadone)
+  have hsplit : evalA u₀ q₀ h0 h1 XA = u₀ / (1 - u₀) ^ 2 +
+      ∑' n : ℕ, coeffRingEval u₀ h0 h1
+        (PowerSeries.coeff (n + 1) XA) * q₀ ^ (n + 1) := by
+    rw [evalA, hsum.tsum_eq_zero_add, coeffRingEval_coeff_XA_zero,
+      pow_zero, mul_one]
+  rw [hsplit, (valuation k).map_add_eq_of_lt_left hltval, hheadval]
+
+/-- **The point map takes infinitely many values**: the family
+`1 + q₀^(j+1)` lies on the unit shell with `x`-valuations
+`|q₀|^(-2(j+1))`, pairwise distinct. -/
+theorem pointMap_range_infinite (q₀ : k) (hq0 : q₀ ≠ 0)
+    (hq1 : valuation k q₀ < 1) :
+    (Set.range (fun x : kˣ =>
+      pointMap q₀ hq0 hq1 (x : k) x.ne_zero)).Infinite := by
   have hqv : valuation k q₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hq0
-  have huv : valuation k u₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hu0
-  rcases lt_or_eq_of_le huhigh with hlt | hone
-  · -- interior case: the inverse-class representative is `q₀ * u₀⁻¹`
-    set v₀ := q₀ * u₀⁻¹ with hv₀
-    have hv0 : v₀ ≠ 0 := mul_ne_zero hq0 (inv_ne_zero hu0)
-    have hv1 : v₀ ≠ 1 := by
-      intro h1
-      rw [hv₀] at h1
-      have huq : u₀ = q₀ := by
-        field_simp at h1
-        exact h1.symm
-      rw [huq] at hulow
-      exact absurd hulow (lt_irrefl _)
-    have hvval : valuation k v₀ = valuation k q₀ * (valuation k u₀)⁻¹ := by
-      rw [hv₀, map_mul, map_inv₀]
-    have hvlow : valuation k q₀ < valuation k v₀ := by
-      rw [hvval]
-      have hinvgt : (1 : ValueGroupWithZero k) < (valuation k u₀)⁻¹ := by
-        have hpos : (0 : ValueGroupWithZero k) < (valuation k u₀)⁻¹ :=
-          zero_lt_iff.mpr (inv_ne_zero huv)
-        calc (1 : ValueGroupWithZero k)
-            = valuation k u₀ * (valuation k u₀)⁻¹ := (mul_inv_cancel₀ huv).symm
-          _ < 1 * (valuation k u₀)⁻¹ :=
-              (OrderIso.mulRight₀ _ hpos).strictMono hlt
-          _ = (valuation k u₀)⁻¹ := one_mul _
-      calc valuation k q₀ = valuation k q₀ * 1 := (mul_one _).symm
-        _ < valuation k q₀ * (valuation k u₀)⁻¹ :=
-            (OrderIso.mulLeft₀ _ (zero_lt_iff.mpr hqv)).strictMono hinvgt
-    have hvhigh : valuation k v₀ ≤ 1 := by
-      rw [hvval]
-      calc valuation k q₀ * (valuation k u₀)⁻¹
-          ≤ valuation k u₀ * (valuation k u₀)⁻¹ :=
-            mul_le_mul_left (le_of_lt hulow) _
-        _ = 1 := mul_inv_cancel₀ huv
-    have hmul := bilateral_negY_of_mul_trivial u₀ v₀ q₀ hu0 hu1 hv0 hq0 hq1
-      hulow huhigh (Or.inr (by rw [hv₀]; field_simp))
-    have hXeq : bilateralX u₀ q₀ = bilateralX v₀ q₀ := hmul.1.symm
-    have hYeq : bilateralY u₀ q₀ = bilateralY v₀ q₀ := by
-      rw [hmul.2]
-      exact heq
-    have huv₀ := bilateralXY_inj u₀ v₀ q₀ hu0 hu1 hv0 hv1 hq0 hq1
-      hulow huhigh hvlow hvhigh hXeq hYeq
-    refine hsqq ?_
-    calc u₀ * u₀ = u₀ * v₀ := by nth_rw 2 [huv₀]
-      _ = q₀ := by rw [hv₀]; field_simp
-  · -- boundary case: the inverse-class representative is `u₀⁻¹`
-    set v₀ := u₀⁻¹ with hv₀
-    have hv0 : v₀ ≠ 0 := inv_ne_zero hu0
-    have hv1 : v₀ ≠ 1 := by
-      intro h1
-      rw [hv₀] at h1
-      exact hu1 (by rw [← inv_inv u₀, h1, inv_one])
-    have hvval : valuation k v₀ = 1 := by
-      rw [hv₀, map_inv₀, hone, inv_one]
-    have hvlow : valuation k q₀ < valuation k v₀ := by
-      rw [hvval]
-      exact hq1
-    have hvhigh : valuation k v₀ ≤ 1 := le_of_eq hvval
-    have hmul := bilateral_negY_of_mul_trivial u₀ v₀ q₀ hu0 hu1 hv0 hq0 hq1
-      hulow huhigh (Or.inl (mul_inv_cancel₀ hu0))
-    have hXeq : bilateralX u₀ q₀ = bilateralX v₀ q₀ := hmul.1.symm
-    have hYeq : bilateralY u₀ q₀ = bilateralY v₀ q₀ := by
-      rw [hmul.2]
-      exact heq
-    have huv₀ := bilateralXY_inj u₀ v₀ q₀ hu0 hu1 hv0 hv1 hq0 hq1
-      hulow huhigh hvlow hvhigh hXeq hYeq
-    refine hsq1 ?_
-    calc u₀ * u₀ = u₀ * v₀ := by nth_rw 2 [huv₀]
-      _ = 1 := by rw [hv₀]; exact mul_inv_cancel₀ hu0
+  have hqpow : ∀ j : ℕ, valuation k (q₀ ^ (j + 1)) < 1 := fun j => by
+    rw [map_pow]
+    calc valuation k q₀ ^ (j + 1) ≤ valuation k q₀ ^ 1 :=
+          pow_le_pow_right_of_le_one' hq1.le (by omega)
+      _ = valuation k q₀ := pow_one _
+      _ < 1 := hq1
+  have huval : ∀ j : ℕ, valuation k (1 + q₀ ^ (j + 1)) = 1 := fun j => by
+    have h : valuation k ((1 : k) + q₀ ^ (j + 1)) = valuation k (1 : k) :=
+      (valuation k).map_add_eq_of_lt_left
+        (by rw [map_one]; exact hqpow j)
+    rw [h, map_one]
+  have hu0 : ∀ j : ℕ, (1 : k) + q₀ ^ (j + 1) ≠ 0 := fun j => by
+    intro hc
+    have h := huval j
+    rw [hc, map_zero] at h
+    exact zero_ne_one h
+  have hu1 : ∀ j : ℕ, (1 : k) + q₀ ^ (j + 1) ≠ 1 := fun j => by
+    intro hc
+    have h : q₀ ^ (j + 1) = 0 := by linear_combination hc
+    exact pow_ne_zero (j + 1) hq0 h
+  have hsub : ∀ j : ℕ, (1 : k) - (1 + q₀ ^ (j + 1)) = -(q₀ ^ (j + 1)) :=
+    fun j => by ring
+  have hlow : ∀ m : ℕ, valuation k q₀ <
+      valuation k (1 + q₀ ^ (m + 1)) := fun m => by
+    rw [huval m]
+    exact hq1
+  have hhigh : ∀ m : ℕ, valuation k (1 + q₀ ^ (m + 1)) ≤ 1 :=
+    fun m => le_of_eq (huval m)
+  refine Set.infinite_of_injective_forall_mem
+    (f := fun j : ℕ => pointMap q₀ hq0 hq1 (1 + q₀ ^ (j + 1)) (hu0 j))
+    ?_ ?_
+  · intro i j hij
+    by_contra hne
+    simp only at hij
+    rw [pointMap_of_mem_annulus q₀ hq0 hq1 _ (hu0 i) (hu1 i) (hlow i)
+        (hhigh i),
+      pointMap_of_mem_annulus q₀ hq0 hq1 _ (hu0 j) (hu1 j) (hlow j)
+        (hhigh j), annulusPoint, annulusPoint] at hij
+    have hX : evalA (1 + q₀ ^ (i + 1)) q₀ (hu0 i) (hu1 i) XA =
+        evalA (1 + q₀ ^ (j + 1)) q₀ (hu0 j) (hu1 j) XA := by
+      injection hij
+    have hXv := congrArg (valuation k) hX
+    rw [valuation_evalA_XA_eq _ _ _ _ hq0 hq1 (huval i),
+      valuation_evalA_XA_eq _ _ _ _ hq0 hq1 (huval j),
+      hsub i, hsub j, (valuation k).map_neg, (valuation k).map_neg,
+      map_pow, map_pow] at hXv
+    have h2 := inv_injective hXv
+    rw [← pow_mul, ← pow_mul] at h2
+    rcases Nat.lt_trichotomy i j with hlt | heq | hlt
+    · have hstrict : valuation k q₀ ^ ((j + 1) * 2) <
+          valuation k q₀ ^ ((i + 1) * 2) :=
+        pow_lt_pow_right_of_lt_one₀ (zero_lt_iff.mpr hqv) hq1
+          (by omega)
+      rw [h2] at hstrict
+      exact absurd hstrict (lt_irrefl _)
+    · exact hne heq
+    · have hstrict : valuation k q₀ ^ ((i + 1) * 2) <
+          valuation k q₀ ^ ((j + 1) * 2) :=
+        pow_lt_pow_right_of_lt_one₀ (zero_lt_iff.mpr hqv) hq1
+          (by omega)
+      rw [h2] at hstrict
+      exact absurd hstrict (lt_irrefl _)
+  · intro j
+    exact ⟨Units.mk0 _ (hu0 j), rfl⟩
 
-set_option warn.sorry false in
-/-- **The cleared tangent `X`-identity** (sorry node — the
-denominator-free form of Silverman V.3.1(c), doubling case, `x`-part):
-with `M` the tangent-slope numerator and `E` its denominator
-(`y - negY`), the identity `(X(u²) + 2X(u))·E² = M² + M·E`. Same series
-content as the cleared chord identities, along the diagonal. -/
-theorem bilateral_tangentX_cleared (u₀ q₀ : k)
-    (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hq0 : q₀ ≠ 0)
-    (hq1 : valuation k q₀ < 1)
-    (hulow : valuation k q₀ < valuation k u₀)
-    (huhigh : valuation k u₀ ≤ 1)
-    (hsq1 : u₀ * u₀ ≠ 1) (hsqq : u₀ * u₀ ≠ q₀) :
-    (bilateralX (u₀ * u₀) q₀ + 2 * bilateralX u₀ q₀) *
-        (bilateralY u₀ q₀ - (WeierstrassCurve.tateCurve q₀).toAffine.negY
-          (bilateralX u₀ q₀) (bilateralY u₀ q₀)) ^ 2 =
-      (3 * bilateralX u₀ q₀ ^ 2 +
-          2 * (WeierstrassCurve.tateCurve q₀).toAffine.a₂ * bilateralX u₀ q₀ +
-          (WeierstrassCurve.tateCurve q₀).toAffine.a₄ -
-          (WeierstrassCurve.tateCurve q₀).toAffine.a₁ * bilateralY u₀ q₀) ^ 2 +
-        (3 * bilateralX u₀ q₀ ^ 2 +
-          2 * (WeierstrassCurve.tateCurve q₀).toAffine.a₂ * bilateralX u₀ q₀ +
-          (WeierstrassCurve.tateCurve q₀).toAffine.a₄ -
-          (WeierstrassCurve.tateCurve q₀).toAffine.a₁ * bilateralY u₀ q₀) *
-        (bilateralY u₀ q₀ - (WeierstrassCurve.tateCurve q₀).toAffine.negY
-          (bilateralX u₀ q₀) (bilateralY u₀ q₀)) :=
-  sorry
-
-set_option warn.sorry false in
-/-- **The cleared tangent `Y`-identity** (sorry node — the
-denominator-free form of Silverman V.3.1(c), doubling case, `y`-part),
-linear in the `x`-part output. Same series content. -/
-theorem bilateral_tangentY_cleared (u₀ q₀ : k)
-    (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hq0 : q₀ ≠ 0)
-    (hq1 : valuation k q₀ < 1)
-    (hulow : valuation k q₀ < valuation k u₀)
-    (huhigh : valuation k u₀ ≤ 1)
-    (hsq1 : u₀ * u₀ ≠ 1) (hsqq : u₀ * u₀ ≠ q₀) :
-    -(bilateralY (u₀ * u₀) q₀ + bilateralX (u₀ * u₀) q₀) *
-        (bilateralY u₀ q₀ - (WeierstrassCurve.tateCurve q₀).toAffine.negY
-          (bilateralX u₀ q₀) (bilateralY u₀ q₀)) =
-      (3 * bilateralX u₀ q₀ ^ 2 +
-          2 * (WeierstrassCurve.tateCurve q₀).toAffine.a₂ * bilateralX u₀ q₀ +
-          (WeierstrassCurve.tateCurve q₀).toAffine.a₄ -
-          (WeierstrassCurve.tateCurve q₀).toAffine.a₁ * bilateralY u₀ q₀) *
-          (bilateralX (u₀ * u₀) q₀ - bilateralX u₀ q₀) +
-        bilateralY u₀ q₀ *
-        (bilateralY u₀ q₀ - (WeierstrassCurve.tateCurve q₀).toAffine.negY
-          (bilateralX u₀ q₀) (bilateralY u₀ q₀)) :=
-  sorry
-
-/-- **The tangent identity** (DERIVED 2026-07-18 from the cleared tangent
-identities and the non-`2`-torsion leaf — Silverman V.3.1(c), doubling
-case): the division bookkeeping of the tangent slope is handled here;
-the series content is the cleared identities. -/
-theorem bilateral_add_self [DecidableEq k] (u₀ q₀ : k)
-    (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hq0 : q₀ ≠ 0)
-    (hq1 : valuation k q₀ < 1)
-    (hulow : valuation k q₀ < valuation k u₀)
-    (huhigh : valuation k u₀ ≤ 1)
-    (hsq1 : u₀ * u₀ ≠ 1) (hsqq : u₀ * u₀ ≠ q₀) :
-    bilateralY u₀ q₀ ≠ (WeierstrassCurve.tateCurve q₀).toAffine.negY
-      (bilateralX u₀ q₀) (bilateralY u₀ q₀) ∧
-    bilateralX (u₀ * u₀) q₀ =
-      (WeierstrassCurve.tateCurve q₀).toAffine.addX (bilateralX u₀ q₀)
-        (bilateralX u₀ q₀)
-        ((WeierstrassCurve.tateCurve q₀).toAffine.slope (bilateralX u₀ q₀)
-          (bilateralX u₀ q₀) (bilateralY u₀ q₀) (bilateralY u₀ q₀)) ∧
-    bilateralY (u₀ * u₀) q₀ =
-      (WeierstrassCurve.tateCurve q₀).toAffine.addY (bilateralX u₀ q₀)
-        (bilateralX u₀ q₀) (bilateralY u₀ q₀)
-        ((WeierstrassCurve.tateCurve q₀).toAffine.slope (bilateralX u₀ q₀)
-          (bilateralX u₀ q₀) (bilateralY u₀ q₀) (bilateralY u₀ q₀)) := by
-  have hYne := bilateral_ne_negY_of_sq_nontrivial u₀ q₀ hu0 hu1 hq0 hq1
-    hulow huhigh hsq1 hsqq
-  have hE : bilateralY u₀ q₀ -
-      (WeierstrassCurve.tateCurve q₀).toAffine.negY
-        (bilateralX u₀ q₀) (bilateralY u₀ q₀) ≠ 0 :=
-    sub_ne_zero.mpr hYne
-  have h1 := bilateral_tangentX_cleared u₀ q₀ hu0 hu1 hq0 hq1
-    hulow huhigh hsq1 hsqq
-  have h2 := bilateral_tangentY_cleared u₀ q₀ hu0 hu1 hq0 hq1
-    hulow huhigh hsq1 hsqq
-  rw [show (WeierstrassCurve.tateCurve q₀).toAffine.a₂ = 0 from rfl,
-    show (WeierstrassCurve.tateCurve q₀).toAffine.a₁ = 1 from rfl,
-    tateCurve_negY q₀, show u₀ * u₀ = u₀ ^ 2 from (pow_two u₀).symm] at h1 h2
-  have hE' : bilateralY u₀ q₀ - (-(bilateralY u₀ q₀) - bilateralX u₀ q₀) ≠ 0 := by
-    rw [← tateCurve_negY q₀]
-    exact hE
-  have hXeq : bilateralX (u₀ * u₀) q₀ =
-      (WeierstrassCurve.tateCurve q₀).toAffine.addX (bilateralX u₀ q₀)
-        (bilateralX u₀ q₀)
-        ((WeierstrassCurve.tateCurve q₀).toAffine.slope (bilateralX u₀ q₀)
-          (bilateralX u₀ q₀) (bilateralY u₀ q₀) (bilateralY u₀ q₀)) := by
-    rw [WeierstrassCurve.Affine.slope_of_Y_ne rfl hYne,
-      WeierstrassCurve.Affine.addX,
-      show (WeierstrassCurve.tateCurve q₀).toAffine.a₂ = 0 from rfl,
-      show (WeierstrassCurve.tateCurve q₀).toAffine.a₁ = 1 from rfl,
-      tateCurve_negY q₀]
-    field_simp
-    linear_combination h1
-  refine ⟨hYne, hXeq, ?_⟩
-  rw [WeierstrassCurve.Affine.addY, WeierstrassCurve.Affine.negAddY,
-    WeierstrassCurve.Affine.negY,
-    show (WeierstrassCurve.tateCurve q₀).toAffine.a₁ = 1 from rfl,
-    show (WeierstrassCurve.tateCurve q₀).toAffine.a₃ = 0 from rfl,
-    ← hXeq, WeierstrassCurve.Affine.slope_of_Y_ne rfl hYne,
-    show (WeierstrassCurve.tateCurve q₀).toAffine.a₂ = 0 from rfl,
-    show (WeierstrassCurve.tateCurve q₀).toAffine.a₁ = 1 from rfl,
-    tateCurve_negY q₀]
-  field_simp
-  linear_combination -h2
-
-
-
-/-- **The fibre of the bilateral `x`-value** (DERIVED 2026-07-18 from the
-coordinate-pair injectivity `bilateralXY_inj`, the PROVEN vertical case,
-and the `y`-dichotomy `Y_eq_of_X_eq` — Silverman V.4): on the fundamental
-annulus, two parameters with the same bilateral `x`-value either coincide
-or are inverse to each other modulo `q₀^ℤ` (their product is `1` or
-`q₀`). -/
-theorem eq_or_mul_eq_of_bilateralX_eq (u₀ v₀ q₀ : k)
+/-- **The homomorphism property away from equal values** (the proven
+vertical and chord branches; the doubling branch is excluded by the
+hypothesis, following Silverman's completion-lemma strategy). -/
+theorem pointMap_mul_of_ne [DecidableEq k] (u₀ v₀ q₀ : k)
     (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hv0 : v₀ ≠ 0) (hv1 : v₀ ≠ 1)
     (hq0 : q₀ ≠ 0) (hq1 : valuation k q₀ < 1)
     (hulow : valuation k q₀ < valuation k u₀)
     (huhigh : valuation k u₀ ≤ 1)
     (hvlow : valuation k q₀ < valuation k v₀)
     (hvhigh : valuation k v₀ ≤ 1)
-    (hX : bilateralX u₀ q₀ = bilateralX v₀ q₀) :
-    v₀ = u₀ ∨ u₀ * v₀ = 1 ∨ u₀ * v₀ = q₀ := by
-  have hqv : valuation k q₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hq0
-  have hqpos : (0 : ValueGroupWithZero k) < valuation k q₀ :=
-    zero_lt_iff.mpr hqv
-  have hsq_lt : valuation k q₀ * valuation k q₀ < valuation k q₀ := by
-    calc valuation k q₀ * valuation k q₀ < 1 * valuation k q₀ :=
-          (OrderIso.mulRight₀ _ hqpos).strictMono hq1
-      _ = valuation k q₀ := one_mul _
-  have huq : u₀ ≠ q₀ := fun h => absurd hulow (by rw [h]; exact lt_irrefl _)
-  have hvq : v₀ ≠ q₀ := fun h => absurd hvlow (by rw [h]; exact lt_irrefl _)
-  have huwin : valuation k q₀ * valuation k q₀ < valuation k u₀ :=
-    lt_trans hsq_lt hulow
-  have hvwin : valuation k q₀ * valuation k q₀ < valuation k v₀ :=
-    lt_trans hsq_lt hvlow
-  have hequ : (WeierstrassCurve.tateCurve q₀).toAffine.Equation
-      (bilateralX u₀ q₀) (bilateralY u₀ q₀) :=
-    (nonsingular_bilateral u₀ q₀ hu0 hu1 huq hq0 hq1 huwin huhigh).1
-  have heqv : (WeierstrassCurve.tateCurve q₀).toAffine.Equation
-      (bilateralX v₀ q₀) (bilateralY v₀ q₀) :=
-    (nonsingular_bilateral v₀ q₀ hv0 hv1 hvq hq0 hq1 hvwin hvhigh).1
-  rcases WeierstrassCurve.Affine.Y_eq_of_X_eq heqv hequ hX.symm with hy | hy
-  · -- equal `y`-values: the parameters coincide
-    exact Or.inl (bilateralXY_inj v₀ u₀ q₀ hv0 hv1 hu0 hu1 hq0 hq1
-      hvlow hvhigh hulow huhigh hX.symm hy)
-  · -- `negY`-related `y`-values: `v₀` is the inverse partner of `u₀`
-    rcases eq_or_lt_of_le huhigh with hshell | hint
-    · -- shell: partner `u₀⁻¹`
-      have hinv0 : u₀⁻¹ ≠ 0 := inv_ne_zero hu0
-      have hinv1 : u₀⁻¹ ≠ 1 := fun h => hu1 (by
-        rw [← inv_inv u₀, h, inv_one])
-      obtain ⟨hXw, hYw⟩ := bilateral_negY_of_mul_trivial u₀ u₀⁻¹ q₀
-        hu0 hu1 hinv0 hq0 hq1 hulow huhigh (Or.inl (mul_inv_cancel₀ hu0))
-      have hinvval : valuation k u₀⁻¹ = 1 := by
-        rw [map_inv₀, hshell, inv_one]
-      have hveq : v₀ = u₀⁻¹ := bilateralXY_inj v₀ u₀⁻¹ q₀ hv0 hv1
-        hinv0 hinv1 hq0 hq1 hvlow hvhigh
-        (by rw [hinvval]; exact hq1) (le_of_eq hinvval)
-        (hX.symm.trans hXw.symm) (hy.trans hYw.symm)
-      exact Or.inr (Or.inl (by rw [hveq, mul_inv_cancel₀ hu0]))
-    · -- interior: partner `q₀ * u₀⁻¹`
-      have huvne : valuation k u₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hu0
-      have hupos : (0 : ValueGroupWithZero k) < valuation k u₀ :=
-        zero_lt_iff.mpr huvne
-      have huinvpos : (0 : ValueGroupWithZero k) < (valuation k u₀)⁻¹ :=
-        zero_lt_iff.mpr (inv_ne_zero huvne)
-      have hw0 : q₀ * u₀⁻¹ ≠ 0 := mul_ne_zero hq0 (inv_ne_zero hu0)
-      have hw1 : q₀ * u₀⁻¹ ≠ 1 := by
-        intro h
-        apply huq
-        have h2 : q₀ * u₀⁻¹ * u₀ = 1 * u₀ := by rw [h]
-        rw [mul_assoc, inv_mul_cancel₀ hu0, mul_one, one_mul] at h2
-        exact h2.symm
-      obtain ⟨hXw, hYw⟩ := bilateral_negY_of_mul_trivial u₀ (q₀ * u₀⁻¹) q₀
-        hu0 hu1 hw0 hq0 hq1 hulow huhigh (Or.inr (by
-          rw [mul_comm q₀ _, ← mul_assoc, mul_inv_cancel₀ hu0, one_mul]))
-      have hwval : valuation k (q₀ * u₀⁻¹) =
-          valuation k q₀ * (valuation k u₀)⁻¹ := by
-        rw [map_mul, map_inv₀]
-      have hwlow : valuation k q₀ < valuation k (q₀ * u₀⁻¹) := by
-        rw [hwval]
-        have h3 : (1 : ValueGroupWithZero k) < (valuation k u₀)⁻¹ := by
-          calc (1 : ValueGroupWithZero k)
-              = valuation k u₀ * (valuation k u₀)⁻¹ :=
-                (mul_inv_cancel₀ huvne).symm
-            _ < 1 * (valuation k u₀)⁻¹ :=
-                (OrderIso.mulRight₀ _ huinvpos).strictMono hint
-            _ = (valuation k u₀)⁻¹ := one_mul _
-        calc valuation k q₀ = valuation k q₀ * 1 := (mul_one _).symm
-          _ < valuation k q₀ * (valuation k u₀)⁻¹ :=
-            (OrderIso.mulLeft₀ _ hqpos).strictMono h3
-      have hwhigh : valuation k (q₀ * u₀⁻¹) ≤ 1 := by
-        rw [hwval]
-        calc valuation k q₀ * (valuation k u₀)⁻¹
-            ≤ valuation k u₀ * (valuation k u₀)⁻¹ :=
-              mul_le_mul_left hulow.le _
-          _ = 1 := mul_inv_cancel₀ huvne
-      have hveq : v₀ = q₀ * u₀⁻¹ := bilateralXY_inj v₀ (q₀ * u₀⁻¹) q₀
-        hv0 hv1 hw0 hw1 hq0 hq1 hvlow hvhigh hwlow hwhigh
-        (hX.symm.trans hXw.symm) (hy.trans hYw.symm)
-      refine Or.inr (Or.inr ?_)
-      rw [hveq, mul_comm q₀ _, ← mul_assoc, mul_inv_cancel₀ hu0, one_mul]
-
-/-- **The addition law on annulus parameters** (derived from the sorried
-chord/tangent/fibre leaves, the PROVEN vertical case, and the bilateral
-coordinate bridge): the point map turns multiplication of annulus
-parameters into addition of Tate-curve points. -/
-theorem pointMap_mul [DecidableEq k] (u₀ v₀ q₀ : k)
-    (hu0 : u₀ ≠ 0) (hu1 : u₀ ≠ 1) (hv0 : v₀ ≠ 0) (hv1 : v₀ ≠ 1)
-    (hq0 : q₀ ≠ 0) (hq1 : valuation k q₀ < 1)
-    (hulow : valuation k q₀ < valuation k u₀)
-    (huhigh : valuation k u₀ ≤ 1)
-    (hvlow : valuation k q₀ < valuation k v₀)
-    (hvhigh : valuation k v₀ ≤ 1) :
+    (hne1 : pointMap q₀ hq0 hq1 u₀ hu0 ≠ pointMap q₀ hq0 hq1 v₀ hv0)
+    (hne2 : pointMap q₀ hq0 hq1 u₀ hu0 ≠
+      -pointMap q₀ hq0 hq1 v₀ hv0) :
     pointMap q₀ hq0 hq1 (u₀ * v₀) (mul_ne_zero hu0 hv0) =
       pointMap q₀ hq0 hq1 u₀ hu0 + pointMap q₀ hq0 hq1 v₀ hv0 := by
   have hqv : valuation k q₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hq0
@@ -5448,10 +5326,8 @@ theorem pointMap_mul [DecidableEq k] (u₀ v₀ q₀ : k)
   have huv : valuation k u₀ ≠ 0 := (Valuation.ne_zero_iff _).mpr hu0
   have hupos : (0 : ValueGroupWithZero k) < valuation k u₀ :=
     zero_lt_iff.mpr huv
-  -- the parameters are not `q₀` (their valuation is strictly bigger)
   have huq : u₀ ≠ q₀ := fun h => absurd hulow (by rw [h]; exact lt_irrefl _)
   have hvq : v₀ ≠ q₀ := fun h => absurd hvlow (by rw [h]; exact lt_irrefl _)
-  -- window facts for the factors
   have hsq_lt : valuation k q₀ * valuation k q₀ < valuation k q₀ :=
     by
       calc valuation k q₀ * valuation k q₀ < 1 * valuation k q₀ :=
@@ -5461,7 +5337,6 @@ theorem pointMap_mul [DecidableEq k] (u₀ v₀ q₀ : k)
     lt_trans hsq_lt hulow
   have hvlow2 : valuation k q₀ * valuation k q₀ < valuation k v₀ :=
     lt_trans hsq_lt hvlow
-  -- window facts for the product
   have hw0 : u₀ * v₀ ≠ 0 := mul_ne_zero hu0 hv0
   have hwlow : valuation k q₀ * valuation k q₀ < valuation k (u₀ * v₀) := by
     rw [map_mul]
@@ -5473,12 +5348,10 @@ theorem pointMap_mul [DecidableEq k] (u₀ v₀ q₀ : k)
   have hwhigh : valuation k (u₀ * v₀) ≤ 1 := by
     rw [map_mul]
     exact mul_le_one' huhigh hvhigh
-  -- coordinates of the two summands
   rw [pointMap_eq_bilateral u₀ q₀ hu0 hu1 huq hq0 hq1 hulow2 huhigh,
     pointMap_eq_bilateral v₀ q₀ hv0 hv1 hvq hq0 hq1 hvlow2 hvhigh]
   by_cases htriv : u₀ * v₀ = 1 ∨ u₀ * v₀ = q₀
-  · -- the vertical case: the sum is zero
-    obtain ⟨hXeq, hYeq⟩ := bilateral_negY_of_mul_trivial u₀ v₀ q₀
+  · obtain ⟨hXeq, hYeq⟩ := bilateral_negY_of_mul_trivial u₀ v₀ q₀
       hu0 hu1 hv0 hq0 hq1 hulow huhigh htriv
     rw [WeierstrassCurve.Affine.Point.add_of_Y_eq hXeq.symm
       (by rw [hYeq, hXeq, WeierstrassCurve.Affine.negY_negY])]
@@ -5493,22 +5366,118 @@ theorem pointMap_mul [DecidableEq k] (u₀ v₀ q₀ : k)
     obtain ⟨hw1, hwq⟩ := htriv
     rw [pointMap_eq_bilateral (u₀ * v₀) q₀ hw0 hw1 hwq hq0 hq1 hwlow hwhigh]
     by_cases hX : bilateralX u₀ q₀ = bilateralX v₀ q₀
-    · -- equal `x`-values, not the vertical case: the parameters coincide
-      rcases eq_or_mul_eq_of_bilateralX_eq u₀ v₀ q₀ hu0 hu1 hv0 hv1 hq0 hq1
-        hulow huhigh hvlow hvhigh hX with heq | h1 | hqc
-      · -- doubling
-        subst heq
-        obtain ⟨hYne, hXX, hYY⟩ := bilateral_add_self v₀ q₀ hv0 hv1 hq0 hq1
-          hvlow hvhigh hw1 hwq
-        rw [WeierstrassCurve.Affine.Point.add_of_Y_ne hYne]
-        exact point_some_congr hXX hYY
-      · exact absurd h1 hw1
-      · exact absurd hqc hwq
-    · -- the chord case
-      obtain ⟨hXX, hYY⟩ := bilateral_add_of_X_ne u₀ v₀ q₀ hu0 hv0 hq0 hu1 hv1
+    · -- equal `x`-values: the `y`-dichotomy contradicts one of the
+      -- two exclusion hypotheses
+      exfalso
+      have hequ : (WeierstrassCurve.tateCurve q₀).toAffine.Equation
+          (bilateralX u₀ q₀) (bilateralY u₀ q₀) :=
+        (nonsingular_bilateral u₀ q₀ hu0 hu1 huq hq0 hq1 hulow2 huhigh).1
+      have heqv : (WeierstrassCurve.tateCurve q₀).toAffine.Equation
+          (bilateralX v₀ q₀) (bilateralY v₀ q₀) :=
+        (nonsingular_bilateral v₀ q₀ hv0 hv1 hvq hq0 hq1 hvlow2 hvhigh).1
+      rcases WeierstrassCurve.Affine.Y_eq_of_X_eq hequ heqv hX with hy | hy
+      · refine hne1 ?_
+        rw [pointMap_eq_bilateral u₀ q₀ hu0 hu1 huq hq0 hq1 hulow2 huhigh,
+          pointMap_eq_bilateral v₀ q₀ hv0 hv1 hvq hq0 hq1 hvlow2 hvhigh]
+        exact point_some_congr hX hy
+      · refine hne2 ?_
+        rw [pointMap_eq_bilateral u₀ q₀ hu0 hu1 huq hq0 hq1 hulow2 huhigh,
+          pointMap_eq_bilateral v₀ q₀ hv0 hv1 hvq hq0 hq1 hvlow2 hvhigh,
+          WeierstrassCurve.Affine.Point.neg_some]
+        exact point_some_congr hX hy
+    · obtain ⟨hXX, hYY⟩ := bilateral_add_of_X_ne u₀ v₀ q₀ hu0 hv0 hq0 hu1 hv1
         hq1 hulow huhigh hvlow hvhigh hX
       rw [WeierstrassCurve.Affine.Point.add_of_X_ne hX]
       exact point_some_congr hXX hYY
+
+/-- **The homomorphism property of the point map** (Silverman ATAEC
+V.3.1(c)): derived from the vertical and chord cases through the
+completion lemma `hom_of_partial_hom` — no doubling formula and no
+injectivity are needed. -/
+theorem pointMap_mul [DecidableEq k] (u₀ v₀ q₀ : k)
+    (hu0 : u₀ ≠ 0) (_hu1 : u₀ ≠ 1) (hv0 : v₀ ≠ 0) (_hv1 : v₀ ≠ 1)
+    (hq0 : q₀ ≠ 0) (hq1 : valuation k q₀ < 1)
+    (_hulow : valuation k q₀ < valuation k u₀)
+    (_huhigh : valuation k u₀ ≤ 1)
+    (_hvlow : valuation k q₀ < valuation k v₀)
+    (_hvhigh : valuation k v₀ ≤ 1) :
+    pointMap q₀ hq0 hq1 (u₀ * v₀) (mul_ne_zero hu0 hv0) =
+      pointMap q₀ hq0 hq1 u₀ hu0 + pointMap q₀ hq0 hq1 v₀ hv0 := by
+  classical
+  have hpart : ∀ x y : kˣ,
+      pointMap q₀ hq0 hq1 (x : k) x.ne_zero ≠
+        pointMap q₀ hq0 hq1 (y : k) y.ne_zero →
+      pointMap q₀ hq0 hq1 (x : k) x.ne_zero ≠
+        -pointMap q₀ hq0 hq1 (y : k) y.ne_zero →
+      pointMap q₀ hq0 hq1 ((x * y : kˣ) : k) (x * y).ne_zero =
+        pointMap q₀ hq0 hq1 (x : k) x.ne_zero +
+        pointMap q₀ hq0 hq1 (y : k) y.ne_zero := by
+    intro x y hne1 hne2
+    obtain ⟨mx, hx1, hx2⟩ :=
+      exists_zpow_mul_mem_annulus q₀ hq0 hq1 (x : k) x.ne_zero
+    obtain ⟨my, hy1, hy2⟩ :=
+      exists_zpow_mul_mem_annulus q₀ hq0 hq1 (y : k) y.ne_zero
+    set x' : k := (x : k) * q₀ ^ (-mx) with hx'def
+    set y' : k := (y : k) * q₀ ^ (-my) with hy'def
+    have hx'0 : x' ≠ 0 := mul_ne_zero x.ne_zero (zpow_ne_zero _ hq0)
+    have hy'0 : y' ≠ 0 := mul_ne_zero y.ne_zero (zpow_ne_zero _ hq0)
+    have hxeq : pointMap q₀ hq0 hq1 x' hx'0 =
+        pointMap q₀ hq0 hq1 (x : k) x.ne_zero := by
+      rw [pointMap_congr (show x' = q₀ ^ (-mx) * (x : k) from by
+        rw [hx'def]; ring)]
+      exact pointMap_zpow_mul q₀ hq0 hq1 (x : k) x.ne_zero (-mx)
+    have hyeq : pointMap q₀ hq0 hq1 y' hy'0 =
+        pointMap q₀ hq0 hq1 (y : k) y.ne_zero := by
+      rw [pointMap_congr (show y' = q₀ ^ (-my) * (y : k) from by
+        rw [hy'def]; ring)]
+      exact pointMap_zpow_mul q₀ hq0 hq1 (y : k) y.ne_zero (-my)
+    have hprodeq : pointMap q₀ hq0 hq1 (x' * y')
+        (mul_ne_zero hx'0 hy'0) =
+        pointMap q₀ hq0 hq1 ((x * y : kˣ) : k) (x * y).ne_zero := by
+      rw [pointMap_congr (show x' * y' =
+          q₀ ^ (-(mx + my)) * ((x * y : kˣ) : k) from by
+        rw [hx'def, hy'def, Units.val_mul, neg_add, zpow_add₀ hq0]
+        ring)]
+      exact pointMap_zpow_mul q₀ hq0 hq1 _ (x * y).ne_zero (-(mx + my))
+    by_cases hx'1 : x' = 1
+    · have hx0' : pointMap q₀ hq0 hq1 (x : k) x.ne_zero = 0 := by
+        rw [← hxeq, pointMap_congr hx'1]
+        exact pointMap_one q₀ hq0 hq1
+      rw [hx0', zero_add]
+      calc pointMap q₀ hq0 hq1 ((x * y : kˣ) : k) (x * y).ne_zero
+          = pointMap q₀ hq0 hq1 (x' * y') (mul_ne_zero hx'0 hy'0) :=
+            hprodeq.symm
+        _ = pointMap q₀ hq0 hq1 y' hy'0 :=
+            pointMap_congr (by rw [hx'1, one_mul])
+        _ = pointMap q₀ hq0 hq1 (y : k) y.ne_zero := hyeq
+    · by_cases hy'1 : y' = 1
+      · have hy0' : pointMap q₀ hq0 hq1 (y : k) y.ne_zero = 0 := by
+          rw [← hyeq, pointMap_congr hy'1]
+          exact pointMap_one q₀ hq0 hq1
+        rw [hy0', add_zero]
+        calc pointMap q₀ hq0 hq1 ((x * y : kˣ) : k) (x * y).ne_zero
+            = pointMap q₀ hq0 hq1 (x' * y') (mul_ne_zero hx'0 hy'0) :=
+              hprodeq.symm
+          _ = pointMap q₀ hq0 hq1 x' hx'0 :=
+              pointMap_congr (by rw [hy'1, mul_one])
+          _ = pointMap q₀ hq0 hq1 (x : k) x.ne_zero := hxeq
+      · have hne1' : pointMap q₀ hq0 hq1 x' hx'0 ≠
+            pointMap q₀ hq0 hq1 y' hy'0 := by
+          rw [hxeq, hyeq]
+          exact hne1
+        have hne2' : pointMap q₀ hq0 hq1 x' hx'0 ≠
+            -pointMap q₀ hq0 hq1 y' hy'0 := by
+          rw [hxeq, hyeq]
+          exact hne2
+        have h := pointMap_mul_of_ne x' y' q₀ hx'0 hx'1 hy'0 hy'1 hq0 hq1
+          hx1 hx2 hy1 hy2 hne1' hne2'
+        rw [← hprodeq, h, hxeq, hyeq]
+  have htotal := hom_of_partial_hom
+    (fun x : kˣ => pointMap q₀ hq0 hq1 (x : k) x.ne_zero)
+    (pointMap_range_infinite q₀ hq0 hq1) hpart
+    (Units.mk0 u₀ hu0) (Units.mk0 v₀ hv0)
+  simp only [Units.val_mul, Units.val_mk0] at htotal
+  exact htotal
 
 /-- **The homomorphism property of the uniformisation** (DERIVED
 2026-07-18 from the sorried chord/tangent/fibre leaves above — the addition
