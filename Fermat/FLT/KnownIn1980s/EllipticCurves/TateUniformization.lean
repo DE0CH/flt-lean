@@ -5961,7 +5961,37 @@ theorem exists_annulus_bilateralX_eq_of_one_le (q₀ : k) (hq0 : q₀ ≠ 0)
     (hxy : (WeierstrassCurve.tateCurve q₀).toAffine.Equation x y)
     (hx : 1 ≤ valuation k x) :
     ∃ u : k, u ≠ 0 ∧ u ≠ 1 ∧ valuation k q₀ < valuation k u ∧
-      valuation k u ≤ 1 ∧ bilateralX u q₀ = x :=
+      valuation k u ≤ 1 ∧ bilateralX u q₀ = x := by
+  -- Step 1 (tail bound): on the unit shell the bilateral series deviates
+  -- from its nodal leading term `u/(1-u)²` by at most `|q₀|` — every
+  -- shell term `q₀^m u^{±1}/(1-q₀^m u^{±1})²` has a unit denominator
+  -- (`|q₀^m u^{±1}| < 1`) and numerator of valuation `|q₀|^m`, and the
+  -- divisor-sum series is bounded by `|q₀|` outright
+  -- (`valuation_tsum_le` on each of the three constituent series).
+  have htail : ∀ u : k, valuation k u = 1 → u ≠ 1 →
+      valuation k (bilateralX u q₀ - u / (1 - u) ^ 2) ≤
+        valuation k q₀ := by
+    sorry
+  -- Step 2 (Lipschitz bound): the deviation is `|q₀|`-Lipschitz on the
+  -- unit shell, by the algebraic identity
+  -- `u/(1-au)² - v/(1-av)² = (u-v)(1-a²uv)/((1-au)²(1-av)²)` applied
+  -- termwise with `a = q₀^m` (and `|u⁻¹-v⁻¹| = |u-v|` on the shell for
+  -- the inverse-parameter half; the divisor-sum series cancels).
+  have hlip : ∀ u v : k, valuation k u = 1 → valuation k v = 1 →
+      u ≠ 1 → v ≠ 1 →
+      valuation k ((bilateralX u q₀ - u / (1 - u) ^ 2) -
+          (bilateralX v q₀ - v / (1 - v) ^ 2)) ≤
+        valuation k q₀ * valuation k (u - v) := by
+    sorry
+  -- Step 3 (seed and contraction; Silverman ATAEC V.4.1): from the curve
+  -- equation with `|x| ≥ 1` the reduced point lies on the smooth locus of
+  -- the nodal cubic `Y² + XY = X³`, whose rational parametrization
+  -- `t ↦ (t² + t, t³ + t²)`, `t = y/x`, `u = t/(1+t)`, provides a seed
+  -- `u₀` on the unit shell with `|bilateralX u₀ q₀ - x|` small — the
+  -- `y`-coordinate selects the branch, so no square-root existence is
+  -- needed; then iterate the exact nodal solve against the tail
+  -- (contraction factor `|q₀| < 1` by `hlip`) and pass to the limit in
+  -- the complete field `k`.
   sorry
 
 set_option warn.sorry false in
