@@ -545,6 +545,140 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           hq.toHeightOneSpectrumRingOfIntegersRat))) :=
     { goodReduction := hval1 }
+  -- Step 3c-iv: transport the torsion along the embedding of algebraic
+  -- closures into the completion — injective by `Point.map_injective`,
+  -- bijective by the `p²`-count on both sides
+  haveI hCZv : CharZero (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) :=
+    charZero_of_injective_algebraMap
+      (algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))).injective
+  haveI : DecidableEq (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) :=
+    Classical.typeDecidableEq _
+  haveI hEllQ : (W.map (algebraMap ℤ (AlgebraicClosure ℚ))).IsElliptic :=
+    (WeierstrassCurve.isElliptic_iff _).mpr (by
+      rw [WeierstrassCurve.map_Δ]
+      refine isUnit_iff_ne_zero.mpr (fun hz => hΔ0 ?_)
+      exact (algebraMap ℤ (AlgebraicClosure ℚ)).injective_int
+        (hz.trans (map_zero _).symm))
+  haveI hEllV : (W.map (algebraMap ℤ (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))).IsElliptic :=
+    (WeierstrassCurve.isElliptic_iff _).mpr (by
+      rw [WeierstrassCurve.map_Δ]
+      refine isUnit_iff_ne_zero.mpr (fun hz => hΔ0 ?_)
+      exact (algebraMap ℤ (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).injective_int
+        (hz.trans (map_zero _).symm))
+  have hcardQ : Nat.card ((W.map
+      (algebraMap ℤ (AlgebraicClosure ℚ))).nTorsion p) = p ^ 2 :=
+    TorsionCard.card_torsionBy
+      (W.map (algebraMap ℤ (AlgebraicClosure ℚ))) p
+      (Nat.cast_ne_zero.mpr (Fact.out : p.Prime).ne_zero)
+  have hcardV : Nat.card ((W.map
+      (algebraMap ℤ (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) =
+      p ^ 2 :=
+    TorsionCard.card_torsionBy
+      (W.map (algebraMap ℤ (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))) p
+      (Nat.cast_ne_zero.mpr (Fact.out : p.Prime).ne_zero)
+  -- the point transport along the closure embedding
+  set ιalg : (AlgebraicClosure ℚ) →ₐ[ℤ] (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) :=
+    { toRingHom := AlgebraicClosure.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))
+      commutes' := fun n => by
+        show AlgebraicClosure.map _ (algebraMap ℤ _ n) = algebraMap ℤ _ n
+        rw [eq_intCast (algebraMap ℤ (AlgebraicClosure ℚ)) n,
+          eq_intCast (algebraMap ℤ (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))) n,
+          map_intCast] } with hιalgdef
+  have hcollapseQ : (((W.map (algebraMap ℤ
+      (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)) :
+        WeierstrassCurve (AlgebraicClosure ℚ)) =
+      ((W⁄(AlgebraicClosure ℚ)) :
+        WeierstrassCurve (AlgebraicClosure ℚ)) := by
+    show (W.map _).map _ = W.map _
+    rw [WeierstrassCurve.map_map]
+    exact congrArg W.map (Subsingleton.elim _ _)
+  have hcollapseV : (((W.map (algebraMap ℤ (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))))⁄(AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) :
+        WeierstrassCurve (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))) =
+      ((W⁄(AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) :
+        WeierstrassCurve (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))) := by
+    show (W.map _).map _ = W.map _
+    rw [WeierstrassCurve.map_map]
+    exact congrArg W.map (Subsingleton.elim _ _)
+  set Pmap : ((W.map (algebraMap ℤ
+      (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).toAffine.Point →+
+      ((W.map (algebraMap ℤ (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))))⁄(AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Point :=
+    (((WeierstrassCurve.Affine.Point.equivOfEq
+        hcollapseV.symm).toAddMonoidHom).comp
+      ((WeierstrassCurve.Affine.Point.map (W' := W) (S := ℤ)
+        ιalg).comp
+        ((WeierstrassCurve.Affine.Point.equivOfEq
+          hcollapseQ).toAddMonoidHom))) with hPmapdef
+  have hPinj : Function.Injective Pmap := by
+    simp only [hPmapdef, AddMonoidHom.coe_comp, AddEquiv.coe_toAddMonoidHom]
+    exact ((WeierstrassCurve.Affine.Point.equivOfEq
+        hcollapseV.symm).injective.comp
+      ((WeierstrassCurve.Affine.Point.map_injective (W' := W)
+        (f := ιalg)).comp
+        (WeierstrassCurve.Affine.Point.equivOfEq
+          hcollapseQ).injective))
+  have hτmem : ∀ x : ((W.map (algebraMap ℤ
+      (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).toAffine.Point,
+      (p : ℤ) • x = 0 → (p : ℤ) • Pmap x = 0 := by
+    intro x hx
+    rw [← map_zsmul, hx, map_zero]
+  set τ₀ : ((W.map (algebraMap ℤ (AlgebraicClosure ℚ))).nTorsion p) →+
+      ((W.map (algebraMap ℤ (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) :=
+    { toFun := fun x => ⟨Pmap x.1,
+        (Submodule.mem_torsionBy_iff _ _).mpr (hτmem x.1
+          ((Submodule.mem_torsionBy_iff _ _).mp x.2))⟩
+      map_zero' := Subtype.ext (map_zero _)
+      map_add' := fun x y => Subtype.ext (map_add _ x.1 y.1) } with hτ₀def
+  have hτinj : Function.Injective τ₀ := by
+    intro x y hxy
+    apply Subtype.ext
+    exact hPinj (congrArg Subtype.val hxy)
+  have hτbij : Function.Bijective τ₀ := by
+    haveI : Finite ((W.map (algebraMap ℤ (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) :=
+      Nat.finite_of_card_ne_zero (by
+        rw [hcardV]
+        positivity)
+    refine (Nat.bijective_iff_injective_and_card τ₀).mpr ⟨hτinj, ?_⟩
+    rw [hcardQ, hcardV]
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
