@@ -262,20 +262,49 @@ entries file). To add/remove/annotate a node, edit
                                                               choice of L via hnat, then additivity/
                                                               kernel/surjectivity/equivariance pass
                                                               to the colimit.
-                                                                - ❌🟪 `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
-                                                                  nonarchimedean local fields (sorry
-                                                                  node): with the restricted
-                                                                  valuative relation, L carries the
-                                                                  valuative topology; locally
-                                                                  compact since L ≅ k^n as a
-                                                                  topological k-vector space
-                                                                  (finite-dimensional over complete
-                                                                  locally compact k — mathlib has
-                                                                  the unique-topology/continuity
-                                                                  theory for finite-dimensional
-                                                                  spaces over complete nontrivially
-                                                                  normed fields); nontriviality
-                                                                  restricts from k.
+                                                                - ✅· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
+                                                                  nonarchimedean local fields
+                                                                  (DERIVED 2026-07-20): topology :=
+                                                                  the canonical valuative topology
+                                                                  (ValuativeRel.topologicalSpace),
+                                                                  which is valuative by mathlib’s
+                                                                  ValuativeRel.isValuativeTopology;
+                                                                  nontriviality transports from k
+                                                                  through the proven valuative
+                                                                  extension (valuation_surjective +
+                                                                  Compatible.vle_iff_le); local
+                                                                  compactness delegated to the
+                                                                  remaining leaf
+                                                                  locallyCompactSpace_intermediate.
+                                                                    - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite
+                                                                      subextensions in the valuative
+                                                                      topology (sorry node — the
+                                                                      analytic core): routes: (a)
+                                                                      𝒪_L := integralClosure 𝒪[k] L
+                                                                      is module-finite over the
+                                                                      compact DVR 𝒪[k]
+                                                                      (IsIntegralClosure.finite for
+                                                                      finite separable extensions of
+                                                                      Dedekind domains), hence
+                                                                      compact in the induced
+                                                                      topology and open (it is the
+                                                                      closed unit ball of the
+                                                                      valuation), giving a compact
+                                                                      neighbourhood of 0; need the
+                                                                      valuative topology of L to
+                                                                      match the 𝒪[k]-module topology
+                                                                      — uniqueness of Hausdorff
+                                                                      module topologies in finite
+                                                                      dimension over the complete
+                                                                      field k (Mathlib.Topology.Alge
+                                                                      bra.Module.FiniteDimension);
+                                                                      (b) alternatively transport
+                                                                      ProperSpace through a k-basis
+                                                                      with Basis.norm. Also compare
+                                                                      mathlib’s compactSpace_iff_com
+                                                                      pleteSpace_and_isDiscreteValua
+                                                                      tionRing_and_finite_residueFie
+                                                                      ld used in LocalField.Basic.
                                             - ✅· `WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic` — the nonsplit half of the unipotence statement,
                                               assembled from the LOCAL nonsplit node
                                               `tate_inertia_unipotent_of_nonsplit` by the proven
@@ -455,22 +484,50 @@ entries file). To add/remove/annotate a node, edit
                                                                   of L via hnat, then additivity/ker
                                                                   nel/surjectivity/equivariance pass
                                                                   to the colimit.
-                                                                    - ❌🟪 `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
+                                                                    - ✅· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
                                                                       nonarchimedean local fields
-                                                                      (sorry node): with the
-                                                                      restricted valuative relation,
-                                                                      L carries the valuative
-                                                                      topology; locally compact
-                                                                      since L ≅ k^n as a topological
-                                                                      k-vector space (finite-
-                                                                      dimensional over complete
-                                                                      locally compact k — mathlib
-                                                                      has the unique-
-                                                                      topology/continuity theory for
-                                                                      finite-dimensional spaces over
-                                                                      complete nontrivially normed
-                                                                      fields); nontriviality
-                                                                      restricts from k.
+                                                                      (DERIVED 2026-07-20): topology
+                                                                      := the canonical valuative
+                                                                      topology (ValuativeRel.topolog
+                                                                      icalSpace), which is valuative
+                                                                      by mathlib’s ValuativeRel.isVa
+                                                                      luativeTopology; nontriviality
+                                                                      transports from k through the
+                                                                      proven valuative extension
+                                                                      (valuation_surjective +
+                                                                      Compatible.vle_iff_le); local
+                                                                      compactness delegated to the
+                                                                      remaining leaf locallyCompactS
+                                                                      pace_intermediate.
+                                                                        - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite
+                                                                          subextensions in the valuative
+                                                                          topology (sorry node — the
+                                                                          analytic core): routes: (a)
+                                                                          𝒪_L := integralClosure 𝒪[k] L
+                                                                          is module-finite over the
+                                                                          compact DVR 𝒪[k]
+                                                                          (IsIntegralClosure.finite for
+                                                                          finite separable extensions of
+                                                                          Dedekind domains), hence
+                                                                          compact in the induced
+                                                                          topology and open (it is the
+                                                                          closed unit ball of the
+                                                                          valuation), giving a compact
+                                                                          neighbourhood of 0; need the
+                                                                          valuative topology of L to
+                                                                          match the 𝒪[k]-module topology
+                                                                          — uniqueness of Hausdorff
+                                                                          module topologies in finite
+                                                                          dimension over the complete
+                                                                          field k (Mathlib.Topology.Alge
+                                                                          bra.Module.FiniteDimension);
+                                                                          (b) alternatively transport
+                                                                          ProperSpace through a k-basis
+                                                                          with Basis.norm. Also compare
+                                                                          mathlib’s compactSpace_iff_com
+                                                                          pleteSpace_and_isDiscreteValua
+                                                                          tionRing_and_finite_residueFie
+                                                                          ld used in LocalField.Basic.
                                     - ❌· `FreyPackage.subquotient_character_unramified_at_p` — (stated 2026-07-17) — flat/ordinary at `p`: one of the two
                                       characters is unramified at `p` itself (connected-étale
                                       sequence in the ordinary/ multiplicative case; supersingular
@@ -677,22 +734,50 @@ entries file). To add/remove/annotate a node, edit
                                                                       L via hnat, then additivity/ke
                                                                       rnel/surjectivity/equivariance
                                                                       pass to the colimit.
-                                                                        - ❌🟪 `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
+                                                                        - ✅· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
                                                                           nonarchimedean local fields
-                                                                          (sorry node): with the
-                                                                          restricted valuative relation,
-                                                                          L carries the valuative
-                                                                          topology; locally compact
-                                                                          since L ≅ k^n as a topological
-                                                                          k-vector space (finite-
-                                                                          dimensional over complete
-                                                                          locally compact k — mathlib
-                                                                          has the unique-
-                                                                          topology/continuity theory for
-                                                                          finite-dimensional spaces over
-                                                                          complete nontrivially normed
-                                                                          fields); nontriviality
-                                                                          restricts from k.
+                                                                          (DERIVED 2026-07-20): topology
+                                                                          := the canonical valuative
+                                                                          topology (ValuativeRel.topolog
+                                                                          icalSpace), which is valuative
+                                                                          by mathlib’s ValuativeRel.isVa
+                                                                          luativeTopology; nontriviality
+                                                                          transports from k through the
+                                                                          proven valuative extension
+                                                                          (valuation_surjective +
+                                                                          Compatible.vle_iff_le); local
+                                                                          compactness delegated to the
+                                                                          remaining leaf locallyCompactS
+                                                                          pace_intermediate.
+                                                                            - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite
+                                                                              subextensions in the valuative
+                                                                              topology (sorry node — the
+                                                                              analytic core): routes: (a)
+                                                                              𝒪_L := integralClosure 𝒪[k] L
+                                                                              is module-finite over the
+                                                                              compact DVR 𝒪[k]
+                                                                              (IsIntegralClosure.finite for
+                                                                              finite separable extensions of
+                                                                              Dedekind domains), hence
+                                                                              compact in the induced
+                                                                              topology and open (it is the
+                                                                              closed unit ball of the
+                                                                              valuation), giving a compact
+                                                                              neighbourhood of 0; need the
+                                                                              valuative topology of L to
+                                                                              match the 𝒪[k]-module topology
+                                                                              — uniqueness of Hausdorff
+                                                                              module topologies in finite
+                                                                              dimension over the complete
+                                                                              field k (Mathlib.Topology.Alge
+                                                                              bra.Module.FiniteDimension);
+                                                                              (b) alternatively transport
+                                                                              ProperSpace through a k-basis
+                                                                              with Basis.norm. Also compare
+                                                                              mathlib’s compactSpace_iff_com
+                                                                              pleteSpace_and_isDiscreteValua
+                                                                              tionRing_and_finite_residueFie
+                                                                              ld used in LocalField.Basic.
                                                     - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality statement,
                                                       assembled from the LOCAL nonsplit node
                                                       `tate_inertia_trivial_of_nonsplit` by the
@@ -890,22 +975,50 @@ entries file). To add/remove/annotate a node, edit
                                                                           L via hnat, then additivity/ke
                                                                           rnel/surjectivity/equivariance
                                                                           pass to the colimit.
-                                                                            - ❌🟪 `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
+                                                                            - ✅· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
                                                                               nonarchimedean local fields
-                                                                              (sorry node): with the
-                                                                              restricted valuative relation,
-                                                                              L carries the valuative
-                                                                              topology; locally compact
-                                                                              since L ≅ k^n as a topological
-                                                                              k-vector space (finite-
-                                                                              dimensional over complete
-                                                                              locally compact k — mathlib
-                                                                              has the unique-
-                                                                              topology/continuity theory for
-                                                                              finite-dimensional spaces over
-                                                                              complete nontrivially normed
-                                                                              fields); nontriviality
-                                                                              restricts from k.
+                                                                              (DERIVED 2026-07-20): topology
+                                                                              := the canonical valuative
+                                                                              topology (ValuativeRel.topolog
+                                                                              icalSpace), which is valuative
+                                                                              by mathlib’s ValuativeRel.isVa
+                                                                              luativeTopology; nontriviality
+                                                                              transports from k through the
+                                                                              proven valuative extension
+                                                                              (valuation_surjective +
+                                                                              Compatible.vle_iff_le); local
+                                                                              compactness delegated to the
+                                                                              remaining leaf locallyCompactS
+                                                                              pace_intermediate.
+                                                                                - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite
+                                                                                  subextensions in the valuative
+                                                                                  topology (sorry node — the
+                                                                                  analytic core): routes: (a)
+                                                                                  𝒪_L := integralClosure 𝒪[k] L
+                                                                                  is module-finite over the
+                                                                                  compact DVR 𝒪[k]
+                                                                                  (IsIntegralClosure.finite for
+                                                                                  finite separable extensions of
+                                                                                  Dedekind domains), hence
+                                                                                  compact in the induced
+                                                                                  topology and open (it is the
+                                                                                  closed unit ball of the
+                                                                                  valuation), giving a compact
+                                                                                  neighbourhood of 0; need the
+                                                                                  valuative topology of L to
+                                                                                  match the 𝒪[k]-module topology
+                                                                                  — uniqueness of Hausdorff
+                                                                                  module topologies in finite
+                                                                                  dimension over the complete
+                                                                                  field k (Mathlib.Topology.Alge
+                                                                                  bra.Module.FiniteDimension);
+                                                                                  (b) alternatively transport
+                                                                                  ProperSpace through a k-basis
+                                                                                  with Basis.norm. Also compare
+                                                                                  mathlib’s compactSpace_iff_com
+                                                                                  pleteSpace_and_isDiscreteValua
+                                                                                  tionRing_and_finite_residueFie
+                                                                                  ld used in LocalField.Basic.
                                 - ✅· `det_galoisRep_eq_cyclotomic` — `det_galoisRep_eq_cyclotomic` — (2026-07-17): `det ρ̄` and `χ̄`
                                   are continuous conjugation-invariant `ZMod p`-valued functions on
                                   `Γ ℚ` (continuity of `det ∘ ρ` from discreteness of `End` via
@@ -1126,16 +1239,39 @@ entries file). To add/remove/annotate a node, edit
                                                   choice of L via hnat, then
                                                   additivity/kernel/surjectivity/equivariance pass
                                                   to the colimit.
-                                                    - ❌🟪 `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are nonarchimedean
-                                                      local fields (sorry node): with the restricted
-                                                      valuative relation, L carries the valuative
-                                                      topology; locally compact since L ≅ k^n as a
-                                                      topological k-vector space (finite-dimensional
-                                                      over complete locally compact k — mathlib has
-                                                      the unique-topology/continuity theory for
-                                                      finite-dimensional spaces over complete
-                                                      nontrivially normed fields); nontriviality
-                                                      restricts from k.
+                                                    - ✅· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are nonarchimedean
+                                                      local fields (DERIVED 2026-07-20): topology :=
+                                                      the canonical valuative topology
+                                                      (ValuativeRel.topologicalSpace), which is
+                                                      valuative by mathlib’s
+                                                      ValuativeRel.isValuativeTopology;
+                                                      nontriviality transports from k through the
+                                                      proven valuative extension
+                                                      (valuation_surjective +
+                                                      Compatible.vle_iff_le); local compactness
+                                                      delegated to the remaining leaf
+                                                      locallyCompactSpace_intermediate.
+                                                        - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite subextensions
+                                                          in the valuative topology (sorry node —
+                                                          the analytic core): routes: (a) 𝒪_L :=
+                                                          integralClosure 𝒪[k] L is module-finite
+                                                          over the compact DVR 𝒪[k]
+                                                          (IsIntegralClosure.finite for finite
+                                                          separable extensions of Dedekind domains),
+                                                          hence compact in the induced topology and
+                                                          open (it is the closed unit ball of the
+                                                          valuation), giving a compact neighbourhood
+                                                          of 0; need the valuative topology of L to
+                                                          match the 𝒪[k]-module topology —
+                                                          uniqueness of Hausdorff module topologies
+                                                          in finite dimension over the complete
+                                                          field k (Mathlib.Topology.Algebra.Module.F
+                                                          initeDimension); (b) alternatively
+                                                          transport ProperSpace through a k-basis
+                                                          with Basis.norm. Also compare mathlib’s co
+                                                          mpactSpace_iff_completeSpace_and_isDiscret
+                                                          eValuationRing_and_finite_residueField
+                                                          used in LocalField.Basic.
                                 - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality statement, assembled from the
                                   LOCAL nonsplit node `tate_inertia_trivial_of_nonsplit` by the
                                   proven `ℚ̄`-pullback glue; the `j`-hypothesis feeds through
@@ -1279,17 +1415,42 @@ entries file). To add/remove/annotate a node, edit
                                                       independence of the choice of L via hnat, then
                                                       additivity/kernel/surjectivity/equivariance
                                                       pass to the colimit.
-                                                        - ❌🟪 `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
-                                                          nonarchimedean local fields (sorry node):
-                                                          with the restricted valuative relation, L
-                                                          carries the valuative topology; locally
-                                                          compact since L ≅ k^n as a topological
-                                                          k-vector space (finite-dimensional over
-                                                          complete locally compact k — mathlib has
-                                                          the unique-topology/continuity theory for
-                                                          finite-dimensional spaces over complete
-                                                          nontrivially normed fields); nontriviality
-                                                          restricts from k.
+                                                        - ✅· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
+                                                          nonarchimedean local fields (DERIVED
+                                                          2026-07-20): topology := the canonical
+                                                          valuative topology
+                                                          (ValuativeRel.topologicalSpace), which is
+                                                          valuative by mathlib’s
+                                                          ValuativeRel.isValuativeTopology;
+                                                          nontriviality transports from k through
+                                                          the proven valuative extension
+                                                          (valuation_surjective +
+                                                          Compatible.vle_iff_le); local compactness
+                                                          delegated to the remaining leaf
+                                                          locallyCompactSpace_intermediate.
+                                                            - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite
+                                                              subextensions in the valuative
+                                                              topology (sorry node — the analytic
+                                                              core): routes: (a) 𝒪_L :=
+                                                              integralClosure 𝒪[k] L is module-
+                                                              finite over the compact DVR 𝒪[k]
+                                                              (IsIntegralClosure.finite for finite
+                                                              separable extensions of Dedekind
+                                                              domains), hence compact in the induced
+                                                              topology and open (it is the closed
+                                                              unit ball of the valuation), giving a
+                                                              compact neighbourhood of 0; need the
+                                                              valuative topology of L to match the
+                                                              𝒪[k]-module topology — uniqueness of
+                                                              Hausdorff module topologies in finite
+                                                              dimension over the complete field k (M
+                                                              athlib.Topology.Algebra.Module.FiniteD
+                                                              imension); (b) alternatively transport
+                                                              ProperSpace through a k-basis with
+                                                              Basis.norm. Also compare mathlib’s com
+                                                              pactSpace_iff_completeSpace_and_isDisc
+                                                              reteValuationRing_and_finite_residueFi
+                                                              eld used in LocalField.Basic.
                 - ✅· `FreyCurve.torsion_isFlat` — flat at p: (2026-07-16) by the case split `p ∣ abc` or not, from the two nodes
                   below
                     - ✅· `FreyCurve.torsion_isFlat_of_good` — (2026-07-16) from the arithmetic node `freyCurve_hasGoodReduction_of_not_dvd`
@@ -1432,14 +1593,33 @@ entries file). To add/remove/annotate a node, edit
                                           independence of the choice of L via hnat, then
                                           additivity/kernel/surjectivity/equivariance pass to the
                                           colimit.
-                                            - ❌🟪 `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are nonarchimedean local
-                                              fields (sorry node): with the restricted valuative
-                                              relation, L carries the valuative topology; locally
-                                              compact since L ≅ k^n as a topological k-vector space
-                                              (finite-dimensional over complete locally compact k —
-                                              mathlib has the unique-topology/continuity theory for
-                                              finite-dimensional spaces over complete nontrivially
-                                              normed fields); nontriviality restricts from k.
+                                            - ✅· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are nonarchimedean local
+                                              fields (DERIVED 2026-07-20): topology := the canonical
+                                              valuative topology (ValuativeRel.topologicalSpace),
+                                              which is valuative by mathlib’s
+                                              ValuativeRel.isValuativeTopology; nontriviality
+                                              transports from k through the proven valuative
+                                              extension (valuation_surjective +
+                                              Compatible.vle_iff_le); local compactness delegated to
+                                              the remaining leaf locallyCompactSpace_intermediate.
+                                                - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite subextensions in the
+                                                  valuative topology (sorry node — the analytic
+                                                  core): routes: (a) 𝒪_L := integralClosure 𝒪[k] L
+                                                  is module-finite over the compact DVR 𝒪[k]
+                                                  (IsIntegralClosure.finite for finite separable
+                                                  extensions of Dedekind domains), hence compact in
+                                                  the induced topology and open (it is the closed
+                                                  unit ball of the valuation), giving a compact
+                                                  neighbourhood of 0; need the valuative topology of
+                                                  L to match the 𝒪[k]-module topology — uniqueness
+                                                  of Hausdorff module topologies in finite dimension
+                                                  over the complete field k
+                                                  (Mathlib.Topology.Algebra.Module.FiniteDimension);
+                                                  (b) alternatively transport ProperSpace through a
+                                                  k-basis with Basis.norm. Also compare mathlib’s co
+                                                  mpactSpace_iff_completeSpace_and_isDiscreteValuati
+                                                  onRing_and_finite_residueField used in
+                                                  LocalField.Basic.
                         - ✅· `WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two` — the nonsplit half of the tame-at-2 condition, now ASSEMBLED: the exponent
                           quotient of the twisted minimal model transports through the (χ-twisted)
                           composite point equivalence; δ is the quadratic character of the
@@ -1550,14 +1730,33 @@ entries file). To add/remove/annotate a node, edit
                                           independence of the choice of L via hnat, then
                                           additivity/kernel/surjectivity/equivariance pass to the
                                           colimit.
-                                            - ❌🟪 `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are nonarchimedean local
-                                              fields (sorry node): with the restricted valuative
-                                              relation, L carries the valuative topology; locally
-                                              compact since L ≅ k^n as a topological k-vector space
-                                              (finite-dimensional over complete locally compact k —
-                                              mathlib has the unique-topology/continuity theory for
-                                              finite-dimensional spaces over complete nontrivially
-                                              normed fields); nontriviality restricts from k.
+                                            - ✅· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are nonarchimedean local
+                                              fields (DERIVED 2026-07-20): topology := the canonical
+                                              valuative topology (ValuativeRel.topologicalSpace),
+                                              which is valuative by mathlib’s
+                                              ValuativeRel.isValuativeTopology; nontriviality
+                                              transports from k through the proven valuative
+                                              extension (valuation_surjective +
+                                              Compatible.vle_iff_le); local compactness delegated to
+                                              the remaining leaf locallyCompactSpace_intermediate.
+                                                - ❌🟪 `locallyCompactSpace_intermediate` — local compactness of finite subextensions in the
+                                                  valuative topology (sorry node — the analytic
+                                                  core): routes: (a) 𝒪_L := integralClosure 𝒪[k] L
+                                                  is module-finite over the compact DVR 𝒪[k]
+                                                  (IsIntegralClosure.finite for finite separable
+                                                  extensions of Dedekind domains), hence compact in
+                                                  the induced topology and open (it is the closed
+                                                  unit ball of the valuation), giving a compact
+                                                  neighbourhood of 0; need the valuative topology of
+                                                  L to match the 𝒪[k]-module topology — uniqueness
+                                                  of Hausdorff module topologies in finite dimension
+                                                  over the complete field k
+                                                  (Mathlib.Topology.Algebra.Module.FiniteDimension);
+                                                  (b) alternatively transport ProperSpace through a
+                                                  k-basis with Basis.norm. Also compare mathlib’s co
+                                                  mpactSpace_iff_completeSpace_and_isDiscreteValuati
+                                                  onRing_and_finite_residueField used in
+                                                  LocalField.Basic.
             - ✅· `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified` — B5 `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
               (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work) — now (2026-07-16)
               from three explicit nodes in `HardlyRamified/Lift.lean` (own work), following

@@ -1139,7 +1139,14 @@
     "name": "exists_isNonarchimedeanLocalField_intermediate",
     "fullname": "exists_isNonarchimedeanLocalField_intermediate",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure",
-    "text": "finite subextensions of Ω are nonarchimedean local fields (sorry node): with the restricted valuative relation, L carries the valuative topology; locally compact since L ≅ k^n as a topological k-vector space (finite-dimensional over complete locally compact k — mathlib has the unique-topology/continuity theory for finite-dimensional spaces over complete nontrivially normed fields); nontriviality restricts from k.",
-    "wip": true
+    "text": "finite subextensions of Ω are nonarchimedean local fields (DERIVED 2026-07-20): topology := the canonical valuative topology (ValuativeRel.topologicalSpace), which is valuative by mathlib’s ValuativeRel.isValuativeTopology; nontriviality transports from k through the proven valuative extension (valuation_surjective + Compatible.vle_iff_le); local compactness delegated to the remaining leaf locallyCompactSpace_intermediate.",
+    "wip": false
+  },
+  {
+    "name": "locallyCompactSpace_intermediate",
+    "fullname": "locallyCompactSpace_intermediate",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure",
+    "wip": true,
+    "text": "local compactness of finite subextensions in the valuative topology (sorry node — the analytic core): routes: (a) 𝒪_L := integralClosure 𝒪[k] L is module-finite over the compact DVR 𝒪[k] (IsIntegralClosure.finite for finite separable extensions of Dedekind domains), hence compact in the induced topology and open (it is the closed unit ball of the valuation), giving a compact neighbourhood of 0; need the valuative topology of L to match the 𝒪[k]-module topology — uniqueness of Hausdorff module topologies in finite dimension over the complete field k (Mathlib.Topology.Algebra.Module.FiniteDimension); (b) alternatively transport ProperSpace through a k-basis with Basis.norm. Also compare mathlib’s compactSpace_iff_completeSpace_and_isDiscreteValuationRing_and_finite_residueField used in LocalField.Basic."
   }
 ]

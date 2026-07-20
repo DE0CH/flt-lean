@@ -207,21 +207,60 @@ theorem valuativeExtension_comap_val (v : ValuativeRel Ω)
   exact ⟨fun a b => Iff.rfl⟩
 
 set_option warn.sorry false in
+/-- **Local compactness of finite subextensions** (sorry node — the
+remaining analytic core of the prerequisite): in its valuative
+topology, a finite intermediate field `L` of `Ω/k` is locally compact.
+Classical routes: `𝒪_L = integralClosure 𝒪[k] L` is a finite module
+over the compact DVR `𝒪[k]` (`IsIntegralClosure.finite` for the finite
+separable extension), hence compact and open, giving a compact
+neighbourhood basis; or transport properness from `k` through a
+`k`-basis (`Basis.norm`, unique Hausdorff TVS topology in finite
+dimension over a complete field). -/
+theorem locallyCompactSpace_intermediate
+    (v : ValuativeRel Ω) (hv : @ValuativeExtension k Ω _ _ _ v _)
+    (L : IntermediateField k Ω) [FiniteDimensional k L] :
+    letI : ValuativeRel L := @ValuativeRel.comap L Ω _ _ v L.val.toRingHom
+    @LocallyCompactSpace L (ValuativeRel.topologicalSpace L) :=
+  sorry
+
 /-- **Finite subextensions of `Ω` are nonarchimedean local fields**
-(sorry node — the second half of the prerequisite): with the restricted
-valuative relation, a finite intermediate field `L` of `Ω/k` carries a
-topology making it a nonarchimedean local field — the valuative
-topology; locally compact since `L` is a finite-dimensional topological
-vector space over the locally compact complete field `k` (classical
-theory of complete discretely valued fields; mathlib's
-`Basis.norm`/`spectralNorm` route). -/
+(DERIVED 2026-07-20 from the local-compactness leaf): with the
+restricted valuative relation and its valuative topology, `L` is a
+nonarchimedean local field — the topology is valuative by construction
+(`ValuativeRel.isValuativeTopology`), and nontriviality transports from
+`k` through the proven valuative extension. -/
 theorem exists_isNonarchimedeanLocalField_intermediate
     (v : ValuativeRel Ω) (hv : @ValuativeExtension k Ω _ _ _ v _)
     (L : IntermediateField k Ω) [FiniteDimensional k L] :
     ∃ t : TopologicalSpace L,
       @IsNonarchimedeanLocalField L _
-        (@ValuativeRel.comap L Ω _ _ v L.val.toRingHom) t :=
-  sorry
+        (@ValuativeRel.comap L Ω _ _ v L.val.toRingHom) t := by
+  letI vL : ValuativeRel L := @ValuativeRel.comap L Ω _ _ v L.val.toRingHom
+  letI tL : TopologicalSpace L := ValuativeRel.topologicalSpace L
+  haveI hvt : IsValuativeTopology L := ValuativeRel.isValuativeTopology L
+  haveI hlc : LocallyCompactSpace L :=
+    locallyCompactSpace_intermediate (k := k) Ω v hv L
+  haveI hext : ValuativeExtension k L := valuativeExtension_comap (k := k) Ω v hv L
+  haveI hnt : ValuativeRel.IsNontrivial L := by
+    obtain ⟨γ, hγ0, hγ1⟩ := ValuativeRel.IsNontrivial.exists_lt_one (R := k)
+    obtain ⟨c, hc⟩ := ValuativeRel.valuation_surjective (K := k) γ
+    have hc0 : c ≠ 0 := by
+      intro h
+      rw [h, map_zero] at hc
+      exact (zero_lt_iff.mp hγ0) hc.symm
+    refine ⟨valuation L (algebraMap k L c), ?_, ?_⟩
+    · simp [(Valuation.ne_zero_iff _).mpr
+        ((map_ne_zero (algebraMap k L)).mpr hc0)]
+    · intro h1
+      -- `val_L (image c) = 1` forces `val_k c = 1`, contradicting `γ < 1`
+      have hge : algebraMap k L 1 ≤ᵥ algebraMap k L c := by
+        rw [Valuation.Compatible.vle_iff_le (v := valuation L)]
+        rw [map_one, h1, map_one]
+      rw [hext.vle_iff_vle] at hge
+      rw [Valuation.Compatible.vle_iff_le (v := valuation k), map_one,
+        hc] at hge
+      exact absurd hγ1 (not_lt.mpr hge)
+  exact ⟨tL, { }⟩
 
 set_option warn.sorry false in
 /-- **The gluing implication for Tate's uniformisation** (sorry node —
