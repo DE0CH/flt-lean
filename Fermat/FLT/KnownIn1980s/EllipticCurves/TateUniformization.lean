@@ -6040,12 +6040,101 @@ theorem exists_annulus_bilateralX_eq_of_one_le (q₀ : k) (hq0 : q₀ ≠ 0)
   -- `u/(1-au)² - v/(1-av)² = (u-v)(1-a²uv)/((1-au)²(1-av)²)` applied
   -- termwise with `a = q₀^m` (and `|u⁻¹-v⁻¹| = |u-v|` on the shell for
   -- the inverse-parameter half; the divisor-sum series cancels).
+  have hone_sub_ne : ∀ x : k, valuation k x < 1 → 1 - x ≠ 0 := by
+    intro x hx hh
+    have h1 := (valuation k).map_one_sub_of_lt hx
+    rw [hh, map_zero] at h1
+    exact zero_ne_one h1
+  have hkey : ∀ a w z : k, 1 - a * w ≠ 0 → 1 - a * z ≠ 0 →
+      a * w / (1 - a * w) ^ 2 - a * z / (1 - a * z) ^ 2 =
+        a * (w - z) * (1 - a ^ 2 * w * z) /
+          ((1 - a * w) ^ 2 * (1 - a * z) ^ 2) := by
+    intro a w z h1 h2
+    field_simp
+    ring
+  have hterm_diff_le : ∀ (w z : k), valuation k w = 1 →
+      valuation k z = 1 → ∀ m : ℕ+, valuation k
+        (q₀ ^ (m : ℕ) * w / (1 - q₀ ^ (m : ℕ) * w) ^ 2 -
+         q₀ ^ (m : ℕ) * z / (1 - q₀ ^ (m : ℕ) * z) ^ 2) ≤
+        valuation k q₀ * valuation k (w - z) := by
+    intro w z hw hz m
+    have hsw : valuation k (q₀ ^ (m : ℕ) * w) < 1 := by
+      rw [map_mul, map_pow, hw, mul_one]
+      exact pow_lt_one₀ zero_le hq1 m.ne_zero
+    have hsz : valuation k (q₀ ^ (m : ℕ) * z) < 1 := by
+      rw [map_mul, map_pow, hz, mul_one]
+      exact pow_lt_one₀ zero_le hq1 m.ne_zero
+    have hswz : valuation k ((q₀ ^ (m : ℕ)) ^ 2 * w * z) < 1 := by
+      rw [map_mul, map_mul, map_pow, map_pow, hw, hz, mul_one, mul_one]
+      exact pow_lt_one₀ zero_le
+        (pow_lt_one₀ zero_le hq1 m.ne_zero) two_ne_zero
+    rw [hkey _ _ _ (hone_sub_ne _ hsw) (hone_sub_ne _ hsz), map_div₀,
+      map_mul, map_mul, map_mul]
+    simp only [map_pow]
+    rw [(valuation k).map_one_sub_of_lt hsw,
+      (valuation k).map_one_sub_of_lt hsz,
+      (valuation k).map_one_sub_of_lt hswz]
+    simp only [one_pow, mul_one, div_one]
+    exact mul_le_mul_left (hqpow_le m) _
   have hlip : ∀ u v : k, valuation k u = 1 → valuation k v = 1 →
       u ≠ 1 → v ≠ 1 →
       valuation k ((bilateralX u q₀ - u / (1 - u) ^ 2) -
           (bilateralX v q₀ - v / (1 - v) ^ 2)) ≤
         valuation k q₀ * valuation k (u - v) := by
-    sorry
+    intro u v hu hv hu1 hv1
+    have hu0 : u ≠ 0 := by
+      intro hh
+      rw [hh, map_zero] at hu
+      exact zero_ne_one hu
+    have hv0 : v ≠ 0 := by
+      intro hh
+      rw [hh, map_zero] at hv
+      exact zero_ne_one hv
+    have huinv : valuation k u⁻¹ = 1 := by rw [map_inv₀, hu, inv_one]
+    have hvinv : valuation k v⁻¹ = 1 := by rw [map_inv₀, hv, inv_one]
+    have hqu : valuation k (q₀ * u) < 1 := by
+      rw [map_mul, hu, mul_one]; exact hq1
+    have hqv : valuation k (q₀ * v) < 1 := by
+      rw [map_mul, hv, mul_one]; exact hq1
+    have hquinv : valuation k (q₀ * u⁻¹) < 1 := by
+      rw [map_mul, huinv, mul_one]; exact hq1
+    have hqvinv : valuation k (q₀ * v⁻¹) < 1 := by
+      rw [map_mul, hvinv, mul_one]; exact hq1
+    have hinvdiff : valuation k (u⁻¹ - v⁻¹) = valuation k (u - v) := by
+      have he : u⁻¹ - v⁻¹ = (v - u) / (u * v) := by
+        field_simp
+      rw [he, map_div₀, map_mul, hu, hv, mul_one, div_one,
+        ← Valuation.map_neg, neg_sub]
+    have hSu1 := summable_lambert_terms u q₀ hq1 hqu
+    have hSv1 := summable_lambert_terms v q₀ hq1 hqv
+    have hSu2 := summable_lambert_terms u⁻¹ q₀ hq1 hquinv
+    have hSv2 := summable_lambert_terms v⁻¹ q₀ hq1 hqvinv
+    have e1 : bilateralX u q₀ - u / (1 - u) ^ 2 =
+        (∑' m : ℕ+, q₀ ^ (m : ℕ) * u / (1 - q₀ ^ (m : ℕ) * u) ^ 2) +
+        (∑' m : ℕ+, q₀ ^ (m : ℕ) * u⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 2) -
+        2 * (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ)) := by
+      rw [bilateralX]
+      ring
+    have e2 : bilateralX v q₀ - v / (1 - v) ^ 2 =
+        (∑' m : ℕ+, q₀ ^ (m : ℕ) * v / (1 - q₀ ^ (m : ℕ) * v) ^ 2) +
+        (∑' m : ℕ+, q₀ ^ (m : ℕ) * v⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * v⁻¹) ^ 2) -
+        2 * (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ)) := by
+      rw [bilateralX]
+      ring
+    rw [e1, e2, show ∀ A B C A' B' : k,
+        (A + B - 2 * C) - (A' + B' - 2 * C) = (A - A') + (B - B') from
+      fun A B C A' B' => by ring]
+    rw [← hSu1.tsum_sub hSv1, ← hSu2.tsum_sub hSv2]
+    refine le_trans (Valuation.map_add _ _ _) (max_le ?_ ?_)
+    · exact valuation_tsum_le (hSu1.sub hSv1) _
+        (fun m => hterm_diff_le u v hu hv m)
+    · refine le_trans (valuation_tsum_le (hSu2.sub hSv2) _
+        (fun m => hterm_diff_le u⁻¹ v⁻¹ huinv hvinv m)) ?_
+      rw [hinvdiff]
   -- Step 3 (seed and contraction; Silverman ATAEC V.4.1): from the curve
   -- equation with `|x| ≥ 1` the reduced point lies on the smooth locus of
   -- the nodal cubic `Y² + XY = X³`, whose rational parametrization
