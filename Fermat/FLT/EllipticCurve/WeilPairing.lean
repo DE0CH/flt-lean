@@ -3009,14 +3009,38 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
 
 
 set_option warn.sorry false in
+/-- **The `μ_p`-valued Weil pairing over a finite field** (sorry node —
+the canonical arithmetic input): on the `p`-torsion of an elliptic
+curve over `𝔽_q` (`p ≠ q`) there is a multiplicatively bilinear,
+alternating, nondegenerate pairing valued in the `p`-th roots of unity
+of `𝔽̄_q`, natural for the `q`-power Frobenius:
+`e(Fx, Fy) = F(e(x, y))`. This is Silverman AEC III.8.1 together with
+Galois-equivariance III.8.1(e) specialized to Frobenius. -/
+theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
+    (p : ℕ) [Fact p.Prime] (hqp : q ≠ p) :
+    ∃ e : ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p) → ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p) → (AlgebraicClosure (ZMod q))ˣ,
+      (∀ x y z, e (x + y) z = e x z * e y z) ∧
+      (∀ x y z, e x (y + z) = e x y * e x z) ∧
+      (∀ x, e x x = 1) ∧
+      (∀ x, x ≠ 0 → ∃ y, e x y ≠ 1) ∧
+      (∀ x y, (e x y) ^ p = 1) ∧
+      (∀ x y, e (frobeniusTorsionEnd q Wbar p x)
+          (frobeniusTorsionEnd q Wbar p y) =
+        Units.map (frobAlgHom q).toRingHom.toMonoidHom (e x y)) :=
+  sorry
+
+set_option warn.sorry false in
 /-- **The Weil pairing over a finite field, Frobenius-twisted form**
-(sorry node — the canonical arithmetic input): on the `p`-torsion of an
-elliptic curve over `𝔽_q` (`p ≠ q`) there is an alternating,
-nondegenerate, `ZMod p`-bilinear pairing which the `q`-power Frobenius
-scales by `q`. This is the Weil pairing valued in `μ_p ⊂ 𝔽̄_q` — on
-which the Frobenius acts by `ζ ↦ ζ^q` — read through any
-identification `μ_p ≃ ZMod p`; Galois-equivariance of the pairing
-becomes the `q`-scaling. -/
+(DERIVED from `exists_weilPairing_mu` by discrete logarithm): on the
+`p`-torsion of an elliptic curve over `𝔽_q` (`p ≠ q`) there is an
+alternating, nondegenerate, `ZMod p`-bilinear pairing which the
+`q`-power Frobenius scales by `q` — pick a primitive `p`-th root of
+unity `ζ`; the `μ_p`-valued pairing reads through the discrete
+logarithm base `ζ` as a `ZMod p`-valued pairing, and Frobenius
+naturality `e(Fx,Fy) = e(x,y)^q` becomes multiplication by `q`. -/
 theorem exists_weilPairing_frobenius (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
     (p : ℕ) [Fact p.Prime] (hqp : q ≠ p) :
@@ -3026,7 +3050,31 @@ theorem exists_weilPairing_frobenius (q : ℕ) [Fact q.Prime]
           (AlgebraicClosure (ZMod q)))).nTorsion p) →ₗ[ZMod p] ZMod p),
       (∀ v, e v v = 0) ∧ (∃ x y, e x y ≠ 0) ∧
       ∀ x y, e (frobeniusTorsionEnd q Wbar p x)
-          (frobeniusTorsionEnd q Wbar p y) = (q : ZMod p) * e x y :=
+          (frobeniusTorsionEnd q Wbar p y) = (q : ZMod p) * e x y := by
+  classical
+  obtain ⟨e₀, hbl, hbr, halt, hnd, hord, hfrob⟩ :=
+    exists_weilPairing_mu q Wbar p hqp
+  -- a primitive `p`-th root of unity in `𝔽̄_q`, at the unit level
+  haveI : NeZero ((p : ℕ) : (AlgebraicClosure (ZMod q))) := by
+    haveI : CharP (AlgebraicClosure (ZMod q)) q :=
+      charP_of_injective_algebraMap
+        (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+    exact ⟨CharP.cast_ne_zero_of_ne_of_prime (R := (AlgebraicClosure (ZMod q)))
+      (Fact.out : p.Prime) hqp⟩
+  obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure (ZMod q)) p
+  have hζu : IsPrimitiveRoot (hζ.isUnit (Fact.out : p.Prime).ne_zero).unit p :=
+    hζ.isUnit_unit (Fact.out : p.Prime).ne_zero
+  -- the discrete logarithm on the `p`-th roots of unity
+  set ζu : (AlgebraicClosure (ZMod q))ˣ := (hζ.isUnit (Fact.out : p.Prime).ne_zero).unit with hζudef
+  have hmem : ∀ x y, e₀ x y ∈ Subgroup.zpowers ζu := by
+    intro x y
+    rw [hζu.zpowers_eq]
+    exact (mem_rootsOfUnity p _).mpr (hord x y)
+  set dlog : ∀ (x y : ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p)), ZMod p :=
+    fun x y => hζu.zmodEquivZPowers.symm
+      (Additive.ofMul (⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu))
+    with hdlogdef
   sorry
 
 /-- **The Frobenius determinant over a finite field** (DERIVED
