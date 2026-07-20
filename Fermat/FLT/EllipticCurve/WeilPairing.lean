@@ -3075,7 +3075,136 @@ theorem exists_weilPairing_frobenius (q : ℕ) [Fact q.Prime]
     fun x y => hζu.zmodEquivZPowers.symm
       (Additive.ofMul (⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu))
     with hdlogdef
-  sorry
+  -- the discrete logarithm is injective at the identity
+  have hdlog0 : ∀ x y, dlog x y = 0 → e₀ x y = 1 := by
+    intro x y h0
+    have h1 : Additive.ofMul (⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu) =
+        hζu.zmodEquivZPowers 0 := by
+      rw [← h0]
+      simp only [hdlogdef]
+      exact (hζu.zmodEquivZPowers.apply_symm_apply _).symm
+    rw [map_zero] at h1
+    have h2 := congrArg (Subtype.val ∘ Additive.toMul) h1
+    simpa using h2
+  -- transfer of the pairing laws through the logarithm
+  have hdadd_l : ∀ x y z, dlog (x + y) z = dlog x z + dlog y z := by
+    intro x y z
+    simp only [hdlogdef]
+    have hsub : (⟨e₀ (x + y) z, hmem (x + y) z⟩ : Subgroup.zpowers ζu) =
+        (⟨e₀ x z, hmem x z⟩ : Subgroup.zpowers ζu) * ⟨e₀ y z, hmem y z⟩ :=
+      Subtype.ext (hbl x y z)
+    rw [hsub, ofMul_mul, map_add]
+  have hdadd_r : ∀ x y z, dlog x (y + z) = dlog x y + dlog x z := by
+    intro x y z
+    simp only [hdlogdef]
+    have hsub : (⟨e₀ x (y + z), hmem x (y + z)⟩ : Subgroup.zpowers ζu) =
+        (⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu) * ⟨e₀ x z, hmem x z⟩ :=
+      Subtype.ext (hbr x y z)
+    rw [hsub, ofMul_mul, map_add]
+  have hdalt : ∀ x, dlog x x = 0 := by
+    intro x
+    simp only [hdlogdef]
+    have hsub : (⟨e₀ x x, hmem x x⟩ : Subgroup.zpowers ζu) = 1 :=
+      Subtype.ext (halt x)
+    rw [hsub]
+    rw [show Additive.ofMul (1 : Subgroup.zpowers ζu) = 0 from rfl, map_zero]
+  have hdfrob : ∀ x y, dlog (frobeniusTorsionEnd q Wbar p x)
+      (frobeniusTorsionEnd q Wbar p y) = (q : ZMod p) * dlog x y := by
+    intro x y
+    simp only [hdlogdef]
+    have hval : e₀ (frobeniusTorsionEnd q Wbar p x)
+        (frobeniusTorsionEnd q Wbar p y) = (e₀ x y) ^ q := by
+      rw [hfrob]
+      refine Units.ext ?_
+      show frobAlgHom q ((e₀ x y : (AlgebraicClosure (ZMod q))ˣ) : (AlgebraicClosure (ZMod q))) = (((e₀ x y) ^ q :
+        (AlgebraicClosure (ZMod q))ˣ) : (AlgebraicClosure (ZMod q)))
+      rw [Units.val_pow_eq_pow_val]
+      rfl
+    have hsub : (⟨e₀ (frobeniusTorsionEnd q Wbar p x)
+        (frobeniusTorsionEnd q Wbar p y), hmem _ _⟩ :
+        Subgroup.zpowers ζu) =
+        (⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu) ^ q :=
+      Subtype.ext (by
+        show e₀ (frobeniusTorsionEnd q Wbar p x)
+          (frobeniusTorsionEnd q Wbar p y) =
+          ((⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu) ^ q :
+            Subgroup.zpowers ζu).1
+        rw [hval]
+        rfl)
+    refine Eq.trans (congrArg (fun g : Subgroup.zpowers ζu =>
+      hζu.zmodEquivZPowers.symm (Additive.ofMul g)) hsub) ?_
+    show hζu.zmodEquivZPowers.symm
+      (Additive.ofMul ((⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu) ^ q)) = _
+    rw [ofMul_pow, map_nsmul, nsmul_eq_mul]
+  -- right-zero law
+  have hdzero_r : ∀ x, dlog x 0 = 0 := by
+    intro x
+    have h2 := hdadd_r x 0 0
+    rw [add_zero] at h2
+    exact add_left_cancel (h2.symm.trans (add_zero _).symm)
+  have hdzero_l : ∀ y, dlog 0 y = 0 := by
+    intro y
+    have h2 := hdadd_l 0 0 y
+    rw [add_zero] at h2
+    exact add_left_cancel (h2.symm.trans (add_zero _).symm)
+  -- the inner linear maps
+  have heinner : ∀ x : ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p), ∃ f : (((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p) →ₗ[ZMod p] ZMod p),
+      ∀ y, f y = dlog x y := by
+    intro x
+    refine ⟨AddMonoidHom.toZModLinearMap p
+      ⟨⟨dlog x, hdzero_r x⟩, hdadd_r x⟩, fun y => rfl⟩
+  choose einner heinnerval using heinner
+  -- the outer linear map
+  have houter : ∃ e : ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p) →ₗ[ZMod p] (((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p) →ₗ[ZMod p] ZMod p),
+      ∀ x y, e x y = dlog x y := by
+    refine ⟨AddMonoidHom.toZModLinearMap p
+      ⟨⟨einner, ?_⟩, ?_⟩, fun x y => heinnerval x y⟩
+    · refine LinearMap.ext fun y => ?_
+      rw [heinnerval]
+      exact hdzero_l y
+    · intro x₁ x₂
+      refine LinearMap.ext fun y => ?_
+      rw [LinearMap.add_apply, heinnerval, heinnerval, heinnerval]
+      exact hdadd_l x₁ x₂ y
+  obtain ⟨e, he⟩ := houter
+  refine ⟨e, ?_, ?_, ?_⟩
+  · intro v
+    rw [he]
+    exact hdalt v
+  · -- nondegeneracy: some torsion point is nonzero, and pairs nontrivially
+    have hcard : Nat.card ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p) = p ^ 2 := by
+      haveI : CharP (AlgebraicClosure (ZMod q)) q :=
+        charP_of_injective_algebraMap
+          (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+      refine TorsionCard.card_torsionBy _ p ?_
+      exact CharP.cast_ne_zero_of_ne_of_prime
+        (R := (AlgebraicClosure (ZMod q))) (Fact.out : p.Prime) hqp
+    haveI : Finite ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p) :=
+      Nat.finite_of_card_ne_zero (by
+        rw [hcard]
+        exact pow_ne_zero 2 (Fact.out : p.Prime).ne_zero)
+    haveI : Nontrivial ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p) := by
+      refine Finite.one_lt_card_iff_nontrivial.mp ?_
+      rw [hcard]
+      have := (Fact.out : p.Prime).two_le
+      nlinarith
+    obtain ⟨x, hx0⟩ := exists_ne (0 : ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p))
+    obtain ⟨y, hy⟩ := hnd x hx0
+    refine ⟨x, y, ?_⟩
+    rw [he]
+    intro h0
+    exact hy (hdlog0 x y h0)
+  · intro x y
+    rw [he, he]
+    exact hdfrob x y
 
 /-- **The Frobenius determinant over a finite field** (DERIVED
 2026-07-20 from the Weil pairing): the `q`-power Frobenius on the
