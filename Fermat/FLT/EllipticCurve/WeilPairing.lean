@@ -1021,6 +1021,34 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
       (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) heqO
     simp only [map_add, map_mul, map_pow, map_intCast] at hres
     exact hres
+  -- Step 3c-ii-i: the reduction map on points — zero to zero, an
+  -- integral affine point to its coordinatewise residue (non-integral
+  -- points, which never arise on `p`-torsion, go to zero)
+  let redFun : ((W.map (algebraMap ℤ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Point →
+      (W.map (algebraMap ℤ (IsLocalRing.ResidueField
+        (localValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat)))).toAffine.Point :=
+    fun P => match P with
+    | WeierstrassCurve.Affine.Point.zero => 0
+    | WeierstrassCurve.Affine.Point.some x y h =>
+      if hxy : x ∈ localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat
+          ∧ y ∈ localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat
+        then
+        WeierstrassCurve.Affine.Point.some
+          (IsLocalRing.residue
+            (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+            (⟨x, hxy.1⟩ : localValuationSubring
+              hq.toHeightOneSpectrumRingOfIntegersRat))
+          (IsLocalRing.residue
+            (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+            (⟨y, hxy.2⟩ : localValuationSubring
+              hq.toHeightOneSpectrumRingOfIntegersRat))
+          (hredNS x y hxy.1 hxy.2 h.1)
+      else 0
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
