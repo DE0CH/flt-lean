@@ -24,6 +24,7 @@ module
 
 public import Fermat.FLT.EllipticCurve.Torsion
 public import Fermat.FLT.GaloisRepresentation.Chebotarev
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.LinearAlgebra.Determinant
 public import Mathlib.NumberTheory.Cyclotomic.CyclotomicCharacter
 
@@ -286,6 +287,30 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
     rw [WeierstrassCurve.map_variableChange, hmap,
       WeierstrassCurve.map_map]
     rfl
+  -- Step 3a: the `E`-side point identification — collapse the trivial
+  -- base change, apply the variable-change equivalence, and rewrite
+  -- along the model equality
+  have hid : ∀ V : WeierstrassCurve (AlgebraicClosure ℚ),
+      ((V⁄(AlgebraicClosure ℚ)) : WeierstrassCurve (AlgebraicClosure ℚ))
+        = V := by
+    intro V
+    show V.map (algebraMap (AlgebraicClosure ℚ) (AlgebraicClosure ℚ)) = V
+    rw [show algebraMap (AlgebraicClosure ℚ) (AlgebraicClosure ℚ) =
+      RingHom.id (AlgebraicClosure ℚ) from rfl]
+    exact V.map_id
+  have hmodelPt :
+      ((E.map (algebraMap ℚ
+        (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).toAffine.Point ≃+
+      ((W.map (algebraMap ℤ
+        (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).toAffine.Point :=
+    ((WeierstrassCurve.Affine.Point.equivOfEq
+        (hid (E.map (algebraMap ℚ (AlgebraicClosure ℚ))))).trans
+      ((WeierstrassCurve.Affine.Point.equivVariableChange
+          (E.map (algebraMap ℚ (AlgebraicClosure ℚ)))
+          (C.map (algebraMap ℚ (AlgebraicClosure ℚ)))).symm.trans
+        ((WeierstrassCurve.Affine.Point.equivOfEq hmapbar).trans
+          (WeierstrassCurve.Affine.Point.equivOfEq
+            (hid (W.map (algebraMap ℤ (AlgebraicClosure ℚ)))).symm))))
   -- Step 3 (sorried): the torsion reduction isomorphism and its
   -- Frobenius compatibility
   sorry
