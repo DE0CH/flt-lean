@@ -2225,6 +2225,40 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
     haveI := ringChar.charP (IsLocalRing.ResidueField (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
       hq.toHeightOneSpectrumRingOfIntegersRat))
     exact CharP.congr _ h
+  -- Step 3c-iii-d: the residue field of the completed integers has `q`
+  -- elements, hence is `ZMod q`
+  have hcardKv : Nat.card (IsLocalRing.ResidueField (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) = q := by
+    have h1 := GaloisRepresentation.natCard_residue_quotient_toHeightOneSpectrum hq
+    have hunder2 : ((IsLocalRing.maximalIdeal (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))).under (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) = IsLocalRing.maximalIdeal (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) :=
+      IsLocalRing.eq_maximalIdeal (Ideal.IsMaximal.under (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+        (IsLocalRing.maximalIdeal (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))))
+    rw [hunder2] at h1
+    exact h1
+  have ebij : Function.Bijective
+      (ZMod.castHom (dvd_refl q) (IsLocalRing.ResidueField (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))) := by
+    haveI : Finite (IsLocalRing.ResidueField (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) :=
+      Nat.finite_of_card_ne_zero (by rw [hcardKv]; exact hq.ne_zero)
+    refine (Nat.bijective_iff_injective_and_card _).mpr
+      ⟨(ZMod.castHom (dvd_refl q)
+        (IsLocalRing.ResidueField (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))).injective, ?_⟩
+    rw [Nat.card_zmod, hcardKv]
+  set eKv : ZMod q ≃+* IsLocalRing.ResidueField (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) :=
+    RingEquiv.ofBijective _ ebij with heKvdef
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
