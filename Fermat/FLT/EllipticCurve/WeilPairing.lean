@@ -2207,6 +2207,24 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
     haveI := ringChar.charP (IsLocalRing.ResidueField
       (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))
     exact CharP.congr _ h
+  -- Step 3c-iii-c: the residue field of the completed integers also has
+  -- characteristic `q`
+  have hqZeroKv : ((q : ℕ) : IsLocalRing.ResidueField (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) = 0 := by
+    rw [show ((q : ℕ) : IsLocalRing.ResidueField (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) =
+      IsLocalRing.residue (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) ((q : ℕ) : (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))
+      from (map_natCast _ q).symm]
+    exact (Ideal.Quotient.eq_zero_iff_mem).mpr
+      ((IsLocalRing.mem_maximalIdeal _).mpr hqNotUnit)
+  haveI hCharKv : CharP (IsLocalRing.ResidueField (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) q := by
+    have h := CharP.ringChar_of_prime_eq_zero hq hqZeroKv
+    haveI := ringChar.charP (IsLocalRing.ResidueField (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))
+    exact CharP.congr _ h
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
