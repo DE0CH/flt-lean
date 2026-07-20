@@ -7303,18 +7303,23 @@ theorem exists_annulus_bilateralX_eq_of_one_le (q₀ : k) (hq0 : q₀ ≠ 0)
     rw [hBBzero, map_zero] at hBBval
     exact pow_ne_zero 2 hX0 hBBval.symm
 
-set_option warn.sorry false in
-/-- **`x`-surjectivity, non-identity-component case** (sorry node —
-Silverman ATAEC V.4, Lemma 4.1.4 and the coset-counting argument): if
-`|x| < 1` then `(x,y)` lies in one of the finitely many non-identity
-components `U_n`, `V_n`, `W` of the special fibre of the Néron model;
-each component meets the image of the annulus parametrisation (its
-points are within `E_{q,0}` of each other by the elementary ultrametric
-estimates of Lemma 4.1.4, including the duplication-resultant identity
-`f·F - g·G = Δ` for the boundary shell `W`), and since the image of
-`φ` already contains a full set of coset representatives for
-`E_q(K)/E_{q,0}(K)` (of order `ord_v(q)`, matched by the `q^ℤ`-indexed
-shift classes), every component is hit. -/
+set_option maxHeartbeats 1000000 in
+/-- **`x`-surjectivity, non-identity-component case** (PROVEN
+2026-07-20 — replacing Silverman's coset counting with two direct
+contractions): if `|x| < 1` then `x` is a `bilateralX`-value on an open
+shell. Case `|q₀| < |x|²`: the leading part of `bilateralX` on the
+shell `|u| = |x|` is the identity map, and `u ↦ x - (bilateralX u - u)`
+is a contraction with ratio `max(|x|, |q₀|/|x|²) < 1`, so the fixed
+point solves `bilateralX u = x` exactly. Case `|x|² ≤ |q₀|`
+(Silverman's `W`-shell): the curve equation forces `|y|² = |q₀|` and
+`|x+y| = |y|` (the `y`-coordinate provides the square root of `|q₀|` in
+the value group); the SUM `bilateralX + bilateralY` has collapsed
+Lambert kernels `v/(1-v)³` and `-v²/(1-v)³`, cancelling the `q/u`-term
+whose Lipschitz ratio would be `1`, so `u ↦ (x+y) - (X+Y)(u) + u`
+contracts on `|u| = |y|` with ratio `|y| < 1`; at the fixed point
+`(X+Y)(u) = x+y`, and the two-equation subtraction identity with
+`δ = -ε` factors as `ε·((Xs+Ys) + small) = 0` where
+`|Xs+Ys| = |x+y| = |y|` dominates, so `ε = 0`. -/
 theorem exists_annulus_bilateralX_eq_of_lt_one (q₀ : k) (hq0 : q₀ ≠ 0)
     (hq1 : valuation k q₀ < 1) (x y : k)
     (hxy : (WeierstrassCurve.tateCurve q₀).toAffine.Equation x y)
@@ -8776,7 +8781,202 @@ theorem exists_annulus_bilateralX_eq_of_lt_one (q₀ : k) (hq0 : q₀ ≠ 0)
       have h1 := hfix
       simp only [hHdef] at h1
       linear_combination -h1
-    sorry
+    -- shell facts for the fixed point
+    obtain ⟨hu0', hult', hqu', hquinv'⟩ := hwin ustar hustar_val
+    have hu1' : ustar ≠ 1 := by
+      intro hz
+      rw [hz, map_one] at hustar_val
+      rw [← hustar_val] at hylt1
+      exact absurd hylt1 (lt_irrefl _)
+    -- the `X`-value is bounded by `|y|` on the shell
+    have hXsle : valuation k (bilateralX ustar q₀) ≤ valuation k y := by
+      have hquinv1' : valuation k (q₀ * ustar⁻¹) < 1 := by
+        rw [hquinv']
+        exact hylt1
+      have h1u : valuation k (1 - ustar) = 1 :=
+        (valuation k).map_one_sub_of_lt hult'
+      have hsm1' : ∀ m : ℕ+, valuation k (q₀ ^ (m : ℕ) * ustar) < 1 := by
+        intro m
+        rw [map_mul, map_pow]
+        calc valuation k q₀ ^ (m : ℕ) * valuation k ustar
+            ≤ valuation k q₀ * 1 :=
+              mul_le_mul' (hqpow_le m) (le_of_lt hult')
+          _ = valuation k q₀ := mul_one _
+          _ < 1 := hq1
+      have hsm2' : ∀ m : ℕ+, valuation k (q₀ ^ (m : ℕ) * ustar⁻¹) ≤
+          valuation k y := by
+        intro m
+        rw [map_mul, map_pow, map_inv₀]
+        calc valuation k q₀ ^ (m : ℕ) * (valuation k ustar)⁻¹
+            ≤ valuation k q₀ * (valuation k ustar)⁻¹ :=
+              mul_le_mul_left (hqpow_le m) _
+          _ = valuation k (q₀ * ustar⁻¹) := by rw [map_mul, map_inv₀]
+          _ = valuation k y := hquinv'
+      rw [bilateralX]
+      have hlead : valuation k (ustar / (1 - ustar) ^ 2) ≤
+          valuation k y := by
+        rw [map_div₀, map_pow, h1u, one_pow, div_one, hustar_val]
+      have hS1 : valuation k (∑' m : ℕ+,
+          q₀ ^ (m : ℕ) * ustar / (1 - q₀ ^ (m : ℕ) * ustar) ^ 2) ≤
+            valuation k y := by
+        refine htsum_pnat _ (summable_lambert_terms ustar q₀ hq1 hqu') _
+          ?_
+        intro m
+        rw [map_div₀, map_pow,
+          (valuation k).map_one_sub_of_lt (hsm1' m), one_pow, div_one]
+        refine le_trans ?_ (le_of_lt hqlty)
+        rw [map_mul, map_pow]
+        calc valuation k q₀ ^ (m : ℕ) * valuation k ustar
+            ≤ valuation k q₀ * 1 :=
+              mul_le_mul' (hqpow_le m) (le_of_lt hult')
+          _ = valuation k q₀ := mul_one _
+      have hS2 : valuation k (∑' m : ℕ+,
+          q₀ ^ (m : ℕ) * ustar⁻¹ /
+            (1 - q₀ ^ (m : ℕ) * ustar⁻¹) ^ 2) ≤ valuation k y := by
+        refine htsum_pnat _ (summable_lambert_terms ustar⁻¹ q₀ hq1
+          hquinv1') _ ?_
+        intro m
+        have hsm2'' : valuation k (q₀ ^ (m : ℕ) * ustar⁻¹) < 1 :=
+          lt_of_le_of_lt (hsm2' m) hylt1
+        rw [map_div₀, map_pow,
+          (valuation k).map_one_sub_of_lt hsm2'', one_pow, div_one]
+        exact hsm2' m
+      have hσ' : valuation k
+          (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+            q₀ ^ (N : ℕ)) ≤ valuation k q₀ := by
+        refine htsum_pnat _ (summable_sigma_one_nonarch q₀ hq1) _ ?_
+        intro N
+        rw [map_mul, map_pow]
+        have hd1 : valuation k
+            (∑ d ∈ (N : ℕ).divisors, (d : k)) ≤ 1 :=
+          Valuation.map_sum_le _ fun d _ => by
+            simpa using valuation_intCast_le_one (R := k) d
+        calc valuation k (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+            valuation k q₀ ^ (N : ℕ)
+            ≤ 1 * valuation k q₀ ^ (N : ℕ) := mul_le_mul_left hd1 _
+          _ = valuation k q₀ ^ (N : ℕ) := one_mul _
+          _ ≤ valuation k q₀ := hqpow_le N
+      have hσ3 : valuation k (2 * ∑' N : ℕ+,
+          (∑ d ∈ (N : ℕ).divisors, (d : k)) * q₀ ^ (N : ℕ)) ≤
+            valuation k y := by
+        rw [map_mul]
+        refine le_trans ?_ (le_of_lt hqlty)
+        refine le_trans (mul_le_mul'
+          (by simpa using valuation_intCast_le_one (R := k) 2) hσ') ?_
+        rw [one_mul]
+      refine le_trans (Valuation.map_add _ _ _) (max_le hlead ?_)
+      refine le_trans (Valuation.map_sub _ _ _) (max_le ?_ hσ3)
+      exact le_trans (Valuation.map_add _ _ _) (max_le hS1 hS2)
+    -- the bilateral point satisfies the Tate equation
+    have huq : ustar ≠ q₀ := by
+      intro hh
+      rw [hh] at hustar_val
+      have h1 : valuation k y * valuation k y = valuation k y * 1 := by
+        rw [mul_one, hy2, hustar_val]
+      have h2 := mul_left_cancel₀ hY0 h1
+      rw [h2] at hylt1
+      exact absurd hylt1 (lt_irrefl _)
+    have hlow' : valuation k q₀ * valuation k q₀ < valuation k ustar := by
+      rw [hustar_val]
+      calc valuation k q₀ * valuation k q₀
+          ≤ valuation k q₀ * 1 := mul_le_mul' le_rfl (le_of_lt hq1)
+        _ = valuation k q₀ := mul_one _
+        _ < valuation k y := hqlty
+    have hns := nonsingular_bilateral ustar q₀ hu0' hu1' huq hq0 hq1
+      hlow' (le_of_lt hult')
+    have hEq2 : (bilateralY ustar q₀) ^ 2 +
+        (bilateralX ustar q₀) * (bilateralY ustar q₀) =
+        (bilateralX ustar q₀) ^ 3 +
+          WeierstrassCurve.tateA₄ q₀ * (bilateralX ustar q₀) +
+          WeierstrassCurve.tateA₆ q₀ := by
+      have h1 := ((WeierstrassCurve.tateCurve q₀).toAffine.equation_iff
+        _ _).mp hns.1
+      simpa [WeierstrassCurve.tateCurve] using h1
+    -- the exclusion: with `δ = -ε` the factored identity forces `ε = 0`
+    have hδeq : y - bilateralY ustar q₀ =
+        -(x - bilateralX ustar q₀) := by
+      linear_combination -hsum_eq
+    have hsub : (y - bilateralY ustar q₀) *
+        ((y - bilateralY ustar q₀) + 2 * (bilateralY ustar q₀) +
+          (bilateralX ustar q₀) + (x - bilateralX ustar q₀)) =
+        (x - bilateralX ustar q₀) *
+          (3 * (bilateralX ustar q₀) ^ 2 +
+            3 * (bilateralX ustar q₀) * (x - bilateralX ustar q₀) +
+            (x - bilateralX ustar q₀) ^ 2 +
+            WeierstrassCurve.tateA₄ q₀ - bilateralY ustar q₀) := by
+      linear_combination heq - hEq2
+    have hfactored : (x - bilateralX ustar q₀) *
+        ((bilateralX ustar q₀ + bilateralY ustar q₀) +
+          (3 * (bilateralX ustar q₀) ^ 2 +
+           3 * (bilateralX ustar q₀) * (x - bilateralX ustar q₀) +
+           (x - bilateralX ustar q₀) ^ 2 +
+           WeierstrassCurve.tateA₄ q₀)) = 0 := by
+      linear_combination -hsub +
+        ((y - bilateralY ustar q₀) + 2 * bilateralY ustar q₀ +
+          bilateralX ustar q₀) * hδeq
+    have hεle : valuation k (x - bilateralX ustar q₀) ≤ valuation k y :=
+      le_trans (Valuation.map_sub _ _ _) (max_le hxy_le hXsle)
+    have hrest : valuation k
+        (3 * (bilateralX ustar q₀) ^ 2 +
+         3 * (bilateralX ustar q₀) * (x - bilateralX ustar q₀) +
+         (x - bilateralX ustar q₀) ^ 2 +
+         WeierstrassCurve.tateA₄ q₀) < valuation k y := by
+      have hyy : valuation k y * valuation k y < valuation k y := by
+        calc valuation k y * valuation k y
+            < valuation k y * 1 :=
+              mul_lt_mul_of_pos_left hylt1 (zero_lt_iff.mpr hY0)
+          _ = valuation k y := mul_one _
+      refine lt_of_le_of_lt (le_trans (Valuation.map_add _ _ _) (max_le
+        (le_trans (Valuation.map_add _ _ _) (max_le
+          (le_trans (Valuation.map_add _ _ _) (max_le ?_ ?_)) ?_)) ?_))
+        hyy
+      · rw [map_mul, map_pow]
+        calc valuation k 3 * valuation k (bilateralX ustar q₀) ^ 2
+            ≤ 1 * (valuation k y * valuation k y) := by
+              refine mul_le_mul'
+                (by simpa using valuation_intCast_le_one (R := k) 3) ?_
+              rw [pow_two]
+              exact mul_le_mul' hXsle hXsle
+          _ = valuation k y * valuation k y := one_mul _
+      · rw [map_mul, map_mul]
+        calc valuation k 3 * valuation k (bilateralX ustar q₀) *
+            valuation k (x - bilateralX ustar q₀)
+            ≤ 1 * valuation k y * valuation k y := mul_le_mul'
+              (mul_le_mul'
+                (by simpa using valuation_intCast_le_one (R := k) 3)
+                hXsle) hεle
+          _ = valuation k y * valuation k y := by rw [one_mul]
+      · rw [map_pow, pow_two]
+        exact mul_le_mul' hεle hεle
+      · exact le_trans ha₄ (le_of_eq hy2.symm)
+    have hbrv : valuation k
+        ((bilateralX ustar q₀ + bilateralY ustar q₀) +
+          (3 * (bilateralX ustar q₀) ^ 2 +
+           3 * (bilateralX ustar q₀) * (x - bilateralX ustar q₀) +
+           (x - bilateralX ustar q₀) ^ 2 +
+           WeierstrassCurve.tateA₄ q₀)) = valuation k y := by
+      have h5 : valuation k
+          (3 * (bilateralX ustar q₀) ^ 2 +
+           3 * (bilateralX ustar q₀) * (x - bilateralX ustar q₀) +
+           (x - bilateralX ustar q₀) ^ 2 +
+           WeierstrassCurve.tateA₄ q₀) <
+          valuation k (bilateralX ustar q₀ + bilateralY ustar q₀) := by
+        rw [hsum_eq, hvxy]
+        exact hrest
+      rw [(valuation k).map_add_eq_of_lt_left h5, hsum_eq, hvxy]
+    have hbr0 : (bilateralX ustar q₀ + bilateralY ustar q₀) +
+        (3 * (bilateralX ustar q₀) ^ 2 +
+         3 * (bilateralX ustar q₀) * (x - bilateralX ustar q₀) +
+         (x - bilateralX ustar q₀) ^ 2 +
+         WeierstrassCurve.tateA₄ q₀) ≠ 0 := by
+      intro hz
+      rw [hz, map_zero] at hbrv
+      exact hY0 hbrv.symm
+    rcases mul_eq_zero.mp hfactored with hz | hz
+    · exact ⟨ustar, hu0', hu1',
+        by rw [hustar_val]; exact hqlty, le_of_lt hult',
+        (sub_eq_zero.mp hz).symm⟩
+    · exact absurd hz hbr0
 
 /-- **`x`-surjectivity onto the annulus** (DERIVED 2026-07-20 by case
 split on `valuation k x` against `1`, dispatching to the two Silverman
