@@ -795,14 +795,14 @@
     "name": "WeierstrassCurve.tateGluePointAt_inclusion",
     "fullname": "WeierstrassCurve.tateGluePointAt_inclusion",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure",
-    "wip": true,
-    "text": "naturality of the level maps under inclusions L <= L-prime (sorry node -- the gluing well-definedness): reduces to naturality of pointMap under the valuative extension L -> L-prime; the annulus representative is preserved (strict value transfer), the coordinates are universal bilateral series (bilateralX_map applied to the extension L in L-prime), and the curve casts compose via tateCurve_map"
+    "text": "naturality of the level maps under inclusions L <= L-prime (PROVEN 2026-07-20 -- the gluing well-definedness): the inclusion is definitionally a valuative extension of local fields (both relations restricted from Omega, Iff.rfl); the canonical annulus representative w of u still represents the image with the SAME exponent (pointMap_zpow_mul, no exponent-uniqueness needed); w = 1 gives vanishing on both sides, otherwise both points are bilateral-coordinate points (pointMap_eq_bilateral on both levels) whose coordinates commute with the inclusion by bilateralX_map/bilateralY_map instantiated at base L; assembled with pointCastHom-on-some and Point.map_some, closed by point_some_congr"
   },
   {
     "name": "WeierstrassCurve.tateGluePointAt_conj",
     "fullname": "WeierstrassCurve.tateGluePointAt_conj",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure",
-    "text": "Galois-naturality of the level maps (sorry node -- the equivariance leg): sigma carries the level point at L to the level point at sigma(L), given sigma-invariance of the Omega-valuation (available from the strengthened exists_valuativeRel_sepClosure); reduces to pointMap naturality under the value-preserving isomorphism sigma: L = sigma(L)"
+    "text": "Galois-naturality of the level maps (sorry node -- the equivariance leg): sigma carries the level point at L to the level point at sigma(L), given sigma-invariance of the Omega-valuation (available from the strengthened exists_valuativeRel_sepClosure); reduces to pointMap naturality under the value-preserving isomorphism sigma: L = sigma(L)",
+    "wip": true
   },
   {
     "name": "WeierstrassCurve.tateGluePointAt_mul",
