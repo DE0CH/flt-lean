@@ -138,6 +138,7 @@ noncomputable def frobeniusTorsionEnd (q : ℕ) [Fact q.Prime]
       (WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
         (frobAlgHom q)) p)
 
+set_option maxHeartbeats 4000000 in
 set_option warn.sorry false in
 set_option linter.unusedSimpArgs false in
 /-- **Reduction transfer at good primes** (sorry node — the
@@ -1547,7 +1548,248 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
                 exact hxres hcol.1
           -- final computation: both additions are `some` of the addition
           -- formulas, and the formulas commute with the residue
-          sorry
+          have hsome : ∀ {xa xb ya yb : IsLocalRing.ResidueField
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)}
+              {ha : (W.map (algebraMap ℤ (IsLocalRing.ResidueField
+              (localValuationSubring
+                hq.toHeightOneSpectrumRingOfIntegersRat)))).toAffine.Nonsingular xa ya} {hb : (W.map (algebraMap ℤ (IsLocalRing.ResidueField
+              (localValuationSubring
+                hq.toHeightOneSpectrumRingOfIntegersRat)))).toAffine.Nonsingular xb yb},
+              xa = xb → ya = yb →
+              (WeierstrassCurve.Affine.Point.some xa ya ha :
+                (W.map (algebraMap ℤ (IsLocalRing.ResidueField
+              (localValuationSubring
+                hq.toHeightOneSpectrumRingOfIntegersRat)))).toAffine.Point) =
+                WeierstrassCurve.Affine.Point.some xb yb hb := by
+            intro xa xb ya yb ha hb hxab hyab
+            subst hxab
+            subst hyab
+            rfl
+          -- integrality of the addition formulas
+          have haddXmem : ((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.addX x₁ x₂
+              (((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.slope x₁ x₂ y₁ y₂) ∈ localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat := by
+            simp only [WeierstrassCurve.Affine.addX,
+              WeierstrassCurve.baseChange, WeierstrassCurve.map_a₁,
+              WeierstrassCurve.map_a₂, eq_intCast, map_intCast]
+            exact sub_mem (sub_mem (sub_mem (add_mem (pow_mem hℓmem 2)
+              (mul_mem (intCast_mem _ _) hℓmem)) (intCast_mem _ _)) hx₁) hx₂
+          have hnegAddYmem : ((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.negAddY x₁ x₂ y₁
+              (((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.slope x₁ x₂ y₁ y₂) ∈ localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat := by
+            simp only [WeierstrassCurve.Affine.negAddY]
+            exact add_mem (mul_mem hℓmem (sub_mem haddXmem hx₁)) hy₁
+          have haddYmem : ((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.addY x₁ x₂ y₁
+              (((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.slope x₁ x₂ y₁ y₂) ∈ localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat := by
+            simp only [WeierstrassCurve.Affine.addY]
+            exact hnegYmem _ _ haddXmem hnegAddYmem
+          -- rewrite both floors to `some` of the formulas
+          rw [WeierstrassCurve.Affine.Point.add_some hopp,
+            hredSome (WeierstrassCurve.Affine.nonsingular_add h₁ h₂
+              hopp) haddXmem haddYmem,
+            hredSome h₁ hx₁ hy₁, hredSome h₂ hx₂ hy₂,
+            WeierstrassCurve.Affine.Point.add_some hoppbar]
+          -- the reduced abscissa of the sum
+          have hXsub : (⟨((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.addX x₁ x₂
+              (((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.slope x₁ x₂ y₁ y₂), haddXmem⟩ : localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) =
+              (⟨((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.slope x₁ x₂ y₁ y₂, hℓmem⟩ : localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) ^ 2 +
+              ((W.a₁ : ℤ) : localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) * ⟨((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.slope x₁ x₂ y₁ y₂, hℓmem⟩ -
+              ((W.a₂ : ℤ) : localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) - ⟨x₁, hx₁⟩ - ⟨x₂, hx₂⟩ := by
+            apply Subtype.ext
+            push_cast
+            simp only [WeierstrassCurve.Affine.addX,
+              WeierstrassCurve.baseChange, WeierstrassCurve.map_a₁,
+              WeierstrassCurve.map_a₂, eq_intCast, map_intCast]
+          have hXeq : (IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.addX x₁ x₂
+              (((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.slope x₁ x₂ y₁ y₂), haddXmem⟩ =
+              (W.map (algebraMap ℤ (IsLocalRing.ResidueField
+              (localValuationSubring
+                hq.toHeightOneSpectrumRingOfIntegersRat)))).toAffine.addX ((IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨x₁, hx₁⟩) ((IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨x₂, hx₂⟩)
+                ((W.map (algebraMap ℤ (IsLocalRing.ResidueField
+              (localValuationSubring
+                hq.toHeightOneSpectrumRingOfIntegersRat)))).toAffine.slope ((IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨x₁, hx₁⟩) ((IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨x₂, hx₂⟩)
+                  ((IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨y₁, hy₁⟩) ((IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨y₂, hy₂⟩)) := by
+            rw [hXsub, ← hℓres]
+            simp only [map_add, map_sub, map_mul, map_pow, map_intCast,
+              WeierstrassCurve.Affine.addX, WeierstrassCurve.map_a₁,
+              WeierstrassCurve.map_a₂, eq_intCast]
+          -- the reduced ordinate of the sum
+          have hnegAddYsub : (⟨((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.negAddY x₁ x₂ y₁
+              (((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.slope x₁ x₂ y₁ y₂), hnegAddYmem⟩ : localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) =
+              (⟨((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.slope x₁ x₂ y₁ y₂, hℓmem⟩ : localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) *
+                (⟨((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.addX x₁ x₂ (((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.slope x₁ x₂ y₁ y₂), haddXmem⟩ -
+                  ⟨x₁, hx₁⟩) + ⟨y₁, hy₁⟩ := by
+            apply Subtype.ext
+            push_cast
+            simp only [WeierstrassCurve.Affine.negAddY]
+          have hnegAddYeq : (IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.negAddY x₁ x₂ y₁
+              (((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.slope x₁ x₂ y₁ y₂), hnegAddYmem⟩ =
+              (W.map (algebraMap ℤ (IsLocalRing.ResidueField
+              (localValuationSubring
+                hq.toHeightOneSpectrumRingOfIntegersRat)))).toAffine.negAddY ((IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨x₁, hx₁⟩) ((IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨x₂, hx₂⟩)
+                ((IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨y₁, hy₁⟩)
+                ((W.map (algebraMap ℤ (IsLocalRing.ResidueField
+              (localValuationSubring
+                hq.toHeightOneSpectrumRingOfIntegersRat)))).toAffine.slope ((IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨x₁, hx₁⟩) ((IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨x₂, hx₂⟩)
+                  ((IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨y₁, hy₁⟩) ((IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨y₂, hy₂⟩)) := by
+            rw [hnegAddYsub, ← hℓres]
+            simp only [map_add, map_sub, map_mul,
+              WeierstrassCurve.Affine.negAddY]
+            rw [hXeq, hℓres]
+          have hYeq : (IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.addY x₁ x₂ y₁
+              (((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.slope x₁ x₂ y₁ y₂), haddYmem⟩ =
+              (W.map (algebraMap ℤ (IsLocalRing.ResidueField
+              (localValuationSubring
+                hq.toHeightOneSpectrumRingOfIntegersRat)))).toAffine.addY ((IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨x₁, hx₁⟩) ((IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨x₂, hx₂⟩)
+                ((IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨y₁, hy₁⟩)
+                ((W.map (algebraMap ℤ (IsLocalRing.ResidueField
+              (localValuationSubring
+                hq.toHeightOneSpectrumRingOfIntegersRat)))).toAffine.slope ((IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨x₁, hx₁⟩) ((IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨x₂, hx₂⟩)
+                  ((IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨y₁, hy₁⟩) ((IsLocalRing.residue
+              (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨y₂, hy₂⟩)) := by
+            have haddYsub : (⟨((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.addY x₁ x₂ y₁
+                (((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.slope x₁ x₂ y₁ y₂), haddYmem⟩ : localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat) =
+                ⟨((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.negY (((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.addX x₁ x₂ (((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.slope x₁ x₂ y₁ y₂))
+                  (((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.negAddY x₁ x₂ y₁ (((W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.slope x₁ x₂ y₁ y₂)),
+                  hnegYmem _ _ haddXmem hnegAddYmem⟩ := by
+              apply Subtype.ext
+              simp only [WeierstrassCurve.Affine.addY]
+            rw [haddYsub, hnegYres _ _ haddXmem hnegAddYmem, hXeq,
+              hnegAddYeq]
+            simp only [WeierstrassCurve.Affine.addY]
+          exact hsome hXeq hYeq
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
