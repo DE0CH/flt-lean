@@ -799,15 +799,19 @@ theorem WeierstrassCurve.tateGluePointAt_inclusion [CharZero k] (q : kˣ)
       rfl
     exact TateCurve.point_some_congr hX hY
 
-set_option warn.sorry false in
-/-- **Galois-naturality of the level maps** (sorry node — the
+omit [IsSepClosed Ω] in
+/-- **Galois-naturality of the level maps** (PROVEN 2026-07-20 — the
 equivariance leg of the gluing): a `k`-automorphism `σ` of `Ω` carries
 the level point of `u` at `L` to the level point of `σ u` at `σ(L)`,
 provided the valuative relation of `Ω` is `σ`-invariant (which the
 constructed valuation is, by the strengthened
-`exists_valuativeRel_sepClosure`). Reduces to the naturality of the
-canonical point map under the value-preserving isomorphism
-`σ : L ≃ σ(L)` of nonarchimedean local fields. -/
+`exists_valuativeRel_sepClosure`). The twist `L ≃ σ(L)` is a valuative
+extension of nonarchimedean local fields by the `σ`-invariance; the
+proof then mirrors `tateGluePointAt_inclusion`: the canonical annulus
+representative transfers with the same exponent, and the two points are
+either both zero or both bilateral-coordinate points whose coordinates
+commute with the twist by `bilateralX_map`/`bilateralY_map` at base
+`L`. -/
 theorem WeierstrassCurve.tateGluePointAt_conj [CharZero k] (q : kˣ)
     (hq : valuation k (q : k) < 1) (v : ValuativeRel Ω)
     (hv : @ValuativeExtension k Ω _ _ _ v _)
@@ -819,7 +823,191 @@ theorem WeierstrassCurve.tateGluePointAt_conj [CharZero k] (q : kˣ)
         σ.toAlgHom (tateGluePointAt Ω q hq v hv L u) =
       tateGluePointAt Ω q hq v hv (L.map σ.toAlgHom)
         (Units.map (IntermediateField.intermediateFieldMap σ L).toAlgHom.toRingHom.toMonoidHom u) := by
-  sorry
+  set Lσ := L.map σ.toAlgHom with hLσdef
+  set gmap := (IntermediateField.intermediateFieldMap σ L).toAlgHom with hgmap
+  -- instances at `L` and `Lσ`
+  letI : ValuativeRel L := @ValuativeRel.comap L Ω _ _ v L.val.toRingHom
+  letI : TopologicalSpace L := ValuativeRel.topologicalSpace L
+  haveI : IsNonarchimedeanLocalField L :=
+    isNonarchimedeanLocalField_intermediate (k := k) Ω v hv L
+  haveI : CharZero L :=
+    charZero_of_injective_algebraMap (algebraMap k L).injective
+  haveI : ValuativeExtension k L := valuativeExtension_comap (k := k) Ω v hv L
+  letI : ValuativeRel Lσ := @ValuativeRel.comap Lσ Ω _ _ v Lσ.val.toRingHom
+  letI : TopologicalSpace Lσ := ValuativeRel.topologicalSpace Lσ
+  haveI : IsNonarchimedeanLocalField Lσ :=
+    isNonarchimedeanLocalField_intermediate (k := k) Ω v hv Lσ
+  haveI : CharZero Lσ :=
+    charZero_of_injective_algebraMap (algebraMap k Lσ).injective
+  haveI : ValuativeExtension k Lσ := valuativeExtension_comap (k := k) Ω v hv Lσ
+  -- the twist `L → Lσ` as a valuative extension of local fields, via the
+  -- `σ`-invariance of the `Ω`-valuation
+  letI : Algebra L Lσ := gmap.toRingHom.toAlgebra
+  haveI hLLσ : ValuativeExtension L Lσ :=
+    ⟨fun a b => hσinv σ (L.val a) (L.val b)⟩
+  -- images of `q` and valuation transfer along `L → Lσ`
+  set qv : L := ((Units.map (algebraMap k L).toMonoidHom q : Lˣ) : L) with hqv
+  set qv' : Lσ := ((Units.map (algebraMap k Lσ).toMonoidHom q : Lσˣ) : Lσ)
+    with hqv'
+  have hq_incl : algebraMap L Lσ qv = qv' := by
+    apply Subtype.ext
+    exact σ.commutes ((q : k))
+  have hvle : ∀ a b : L, valuation Lσ (algebraMap L Lσ a) ≤
+      valuation Lσ (algebraMap L Lσ b) ↔ valuation L a ≤ valuation L b := by
+    intro a b
+    rw [← Valuation.Compatible.vle_iff_le (v := valuation Lσ),
+      ← Valuation.Compatible.vle_iff_le (v := valuation L)]
+    exact hLLσ.vle_iff_vle a b
+  have hvlt : ∀ a b : L, valuation Lσ (algebraMap L Lσ a) <
+      valuation Lσ (algebraMap L Lσ b) ↔ valuation L a < valuation L b := by
+    intro a b
+    rw [lt_iff_not_ge, lt_iff_not_ge]
+    exact not_congr (hvle b a)
+  have hq0L : qv ≠ 0 :=
+    (Units.map (algebraMap k L).toMonoidHom q).ne_zero
+  have hq0L' : qv' ≠ 0 :=
+    (Units.map (algebraMap k Lσ).toMonoidHom q).ne_zero
+  have hqvL : valuation L qv < 1 := TateCurve.valuation_algebraMap_lt_one hq
+  have hqvL' : valuation Lσ qv' < 1 := TateCurve.valuation_algebraMap_lt_one hq
+  -- the canonical annulus representative of `u` over `L`
+  obtain ⟨n, hwlow, hwhigh⟩ := TateCurve.exists_zpow_mul_mem_annulus qv hq0L
+    hqvL ((u : L)) u.ne_zero
+  set w : L := (u : L) * qv ^ (-n) with hwdef
+  have hw0 : w ≠ 0 := mul_ne_zero u.ne_zero (zpow_ne_zero _ hq0L)
+  have harg : qv ^ n * w = (u : L) := by
+    rw [hwdef, mul_comm ((u : L)) _, ← mul_assoc, ← zpow_add₀ hq0L,
+      add_neg_cancel, zpow_zero, one_mul]
+  have hpmL : TateCurve.pointMap qv hq0L hqvL ((u : L)) u.ne_zero =
+      TateCurve.pointMap qv hq0L hqvL w hw0 := by
+    rw [← TateCurve.pointMap_zpow_mul qv hq0L hqvL w hw0 n]
+    exact TateCurve.pointMap_congr harg.symm
+  -- the image of the representative works over `Lσ`
+  have hw'0 : algebraMap L Lσ w ≠ 0 := (map_ne_zero _).mpr hw0
+  have hu'0 : algebraMap L Lσ ((u : L)) ≠ 0 := (map_ne_zero _).mpr u.ne_zero
+  have harg' : qv' ^ n * algebraMap L Lσ w = algebraMap L Lσ ((u : L)) := by
+    rw [← hq_incl, ← map_zpow₀, ← map_mul]
+    exact congrArg _ harg
+  have hpmL' : TateCurve.pointMap qv' hq0L' hqvL'
+      (algebraMap L Lσ ((u : L))) hu'0 =
+      TateCurve.pointMap qv' hq0L' hqvL' (algebraMap L Lσ w) hw'0 := by
+    rw [← TateCurve.pointMap_zpow_mul qv' hq0L' hqvL'
+      (algebraMap L Lσ w) hw'0 n]
+    exact TateCurve.pointMap_congr harg'.symm
+  -- annulus bounds for the image
+  have hwlow' : valuation Lσ qv' < valuation Lσ (algebraMap L Lσ w) := by
+    rw [← hq_incl]
+    exact (hvlt qv w).mpr hwlow
+  have hwhigh' : valuation Lσ (algebraMap L Lσ w) ≤ 1 := by
+    have h1 := (hvle w 1).mpr hwhigh
+    rwa [map_one, map_one] at h1
+  -- the transport homs
+  have hcurL : WeierstrassCurve.tateCurve qv =
+      (((WeierstrassCurve.tateCurve ((q : k) : k))⁄L) :
+        WeierstrassCurve L) :=
+    (TateCurve.tateCurve_map (l := L) ((q : k) : k) hq).symm
+  have hcurL' : WeierstrassCurve.tateCurve qv' =
+      (((WeierstrassCurve.tateCurve ((q : k) : k))⁄Lσ) :
+        WeierstrassCurve Lσ) :=
+    (TateCurve.tateCurve_map (l := Lσ) ((q : k) : k) hq).symm
+  have hpcs : ∀ (W₁ W₂ : WeierstrassCurve Lσ) (h12 : W₁ = W₂) (x y : Lσ)
+      (hns : W₁.toAffine.Nonsingular x y),
+      pointCastHom h12 (WeierstrassCurve.Affine.Point.some x y hns) =
+        WeierstrassCurve.Affine.Point.some x y (h12 ▸ hns) := by
+    intro W₁ W₂ h12 x y hns
+    subst h12
+    rfl
+  have hpcsL : ∀ (W₁ W₂ : WeierstrassCurve L) (h12 : W₁ = W₂) (x y : L)
+      (hns : W₁.toAffine.Nonsingular x y),
+      pointCastHom h12 (WeierstrassCurve.Affine.Point.some x y hns) =
+        WeierstrassCurve.Affine.Point.some x y (h12 ▸ hns) := by
+    intro W₁ W₂ h12 x y hns
+    subst h12
+    rfl
+  -- restate the goal through the composite forms
+  show WeierstrassCurve.Affine.Point.map (W' := tateCurve ((q : k) : k))
+      (S := k) σ.toAlgHom
+      (WeierstrassCurve.Affine.Point.map (W' := tateCurve ((q : k) : k))
+        (S := k) L.val
+        (pointCastHom hcurL
+          (TateCurve.pointMapQuot (Units.map (algebraMap k L).toMonoidHom q)
+            (show valuation L qv < 1 from hqvL)
+            (QuotientGroup.mk u)))) =
+    WeierstrassCurve.Affine.Point.map (W' := tateCurve ((q : k) : k))
+      (S := k) Lσ.val
+      (pointCastHom hcurL'
+        (TateCurve.pointMapQuot (Units.map (algebraMap k Lσ).toMonoidHom q)
+          (show valuation Lσ qv' < 1 from hqvL')
+          (QuotientGroup.mk
+            (Units.map gmap.toRingHom.toMonoidHom u))))
+  rw [TateCurve.pointMapQuot_mk, TateCurve.pointMapQuot_mk]
+  -- reduce both point maps to the representative
+  have hcoe : ((Units.map gmap.toRingHom.toMonoidHom u : Lσˣ) : Lσ) =
+      algebraMap L Lσ ((u : L)) := rfl
+  rw [show TateCurve.pointMap qv' hq0L' hqvL'
+        ((Units.map gmap.toRingHom.toMonoidHom u : Lσˣ) : Lσ)
+        (Units.map gmap.toRingHom.toMonoidHom u).ne_zero =
+      TateCurve.pointMap qv' hq0L' hqvL'
+        (algebraMap L Lσ ((u : L))) hu'0 from
+    TateCurve.pointMap_congr hcoe]
+  rw [hpmL', hpmL]
+  -- case split on the representative
+  by_cases hw1 : w = 1
+  · have hw1' : algebraMap L Lσ w = 1 := by rw [hw1, map_one]
+    rw [show TateCurve.pointMap qv hq0L hqvL w hw0 =
+        TateCurve.pointMap qv hq0L hqvL 1 one_ne_zero from
+      TateCurve.pointMap_congr hw1]
+    rw [show TateCurve.pointMap qv' hq0L' hqvL' (algebraMap L Lσ w) hw'0 =
+        TateCurve.pointMap qv' hq0L' hqvL' 1 one_ne_zero from
+      TateCurve.pointMap_congr hw1']
+    rw [TateCurve.pointMap_one, TateCurve.pointMap_one, map_zero, map_zero,
+      map_zero, map_zero, map_zero]
+  · have hw1' : algebraMap L Lσ w ≠ 1 := by
+      intro hh
+      apply hw1
+      apply (algebraMap L Lσ).injective
+      rw [hh, map_one]
+    have hwq : w ≠ qv := by
+      intro hh
+      rw [hh] at hwlow
+      exact lt_irrefl _ hwlow
+    have hwq' : algebraMap L Lσ w ≠ qv' := by
+      intro hh
+      rw [hh] at hwlow'
+      exact lt_irrefl _ hwlow'
+    have hlowL : valuation L qv * valuation L qv < valuation L w :=
+      lt_trans (mul_lt_of_lt_one_right
+        (zero_lt_iff.mpr ((Valuation.ne_zero_iff _).mpr hq0L)) hqvL) hwlow
+    have hlowL' : valuation Lσ qv' * valuation Lσ qv' <
+        valuation Lσ (algebraMap L Lσ w) :=
+      lt_trans (mul_lt_of_lt_one_right
+        (zero_lt_iff.mpr ((Valuation.ne_zero_iff _).mpr hq0L')) hqvL') hwlow'
+    rw [TateCurve.pointMap_eq_bilateral w qv hw0 hw1 hwq hq0L hqvL hlowL
+      hwhigh]
+    rw [TateCurve.pointMap_eq_bilateral (algebraMap L Lσ w) qv' hw'0 hw1'
+      hwq' hq0L' hqvL' hlowL' hwhigh']
+    rw [hpcs, hpcsL]
+    rw [WeierstrassCurve.Affine.Point.map_some,
+      WeierstrassCurve.Affine.Point.map_some,
+      WeierstrassCurve.Affine.Point.map_some]
+    -- the coordinates commute: pushing through `σ∘ιL` equals pushing the
+    -- `Lσ`-bilateral coordinates through `ιLσ`
+    have hX : σ.toAlgHom (L.val (TateCurve.bilateralX w qv)) =
+        Lσ.val (TateCurve.bilateralX (algebraMap L Lσ w) qv') := by
+      rw [← hq_incl, ← TateCurve.bilateralX_map (k := L) (l := Lσ) w qv hw0
+        hw1 hwhigh hqvL hwlow hw'0 hw1'
+        (by rw [hq_incl] at *; exact hwhigh')
+        (by rw [hq_incl] at *; exact hqvL')
+        (by rw [hq_incl] at *; exact hwlow')]
+      rfl
+    have hY : σ.toAlgHom (L.val (TateCurve.bilateralY w qv)) =
+        Lσ.val (TateCurve.bilateralY (algebraMap L Lσ w) qv') := by
+      rw [← hq_incl, ← TateCurve.bilateralY_map (k := L) (l := Lσ) w qv hw0
+        hw1 hwhigh hqvL hwlow hw'0 hw1'
+        (by rw [hq_incl] at *; exact hwhigh')
+        (by rw [hq_incl] at *; exact hqvL')
+        (by rw [hq_incl] at *; exact hwlow')]
+      rfl
+    exact TateCurve.point_some_congr hX hY
 
 omit [IsSepClosed Ω] in
 /-- **Additivity of the level map in the unit** (PROVEN 2026-07-20): the
@@ -908,8 +1096,9 @@ theorem WeierstrassCurve.tateGluePointAt_eq_zero_iff [CharZero k] (q : kˣ)
   rw [hrepr, hgz, TateCurve.pointMapQuot_eq_zero_iff,
     QuotientGroup.eq_one_iff]
 
+omit [IsSepClosed Ω] in
 /-- **The gluing implication for Tate's uniformisation** (PROVEN
-2026-07-20 down to the two level-map naturality lemmas): GIVEN the
+2026-07-20, fully): GIVEN the
 finite-level canonical uniformisation — for every nonarchimedean local
 field `l` an additive equivalence `lˣ/q^ℤ ≃+ E_q(l)` whose underlying
 function is the canonical (choice-free) `TateCurve.pointMapQuot` — the
@@ -1215,6 +1404,7 @@ theorem WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel
   · intro σ u
     exact hΦequiv σ u
 
+omit [IsSepClosed Ω] in
 /-- **The Tate-curve uniformising homomorphism over a separable closure**
 (derived 2026-07-18 by feeding the finite-level uniformisation
 `TateCurve.tateCurveEquiv` — canonical, with underlying function
@@ -1237,6 +1427,7 @@ theorem WeierstrassCurve.exists_tateCurveHomSepClosure [CharZero k] (q : kˣ)
       ⟨TateCurve.tateCurveEquiv ql hql,
         fun x => TateCurve.tateCurveEquiv_apply ql hql x⟩)
 
+omit [IsSepClosed Ω] in
 /-- **Tate's uniformisation of the TATE CURVE over a separable closure**
 (derived 2026-07-18 from the pre-quotient homomorphism
 `exists_tateCurveHomSepClosure` by the first isomorphism theorem): for a
@@ -1297,6 +1488,7 @@ omit [E.IsMinimal 𝒪[k]] in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 400000 in
 set_option maxHeartbeats 1000000 in
+omit [IsSepClosed Ω] in
 /-- **Tate's uniformisation theorem over a separable closure** (derived
 2026-07-17 from the choice-free Tate-curve uniformisation above and
 Tate's theorem `exists_variableChange_tateCurve`): for `E/k`
