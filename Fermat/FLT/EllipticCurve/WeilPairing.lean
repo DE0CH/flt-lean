@@ -2046,6 +2046,39 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
           (hmem eup x.1 ((Submodule.mem_torsionBy_iff _ _).mp x.2))
           (hmem eup y.1 ((Submodule.mem_torsionBy_iff _ _).mp y.2)),
           map_add] } with hredEdef
+  -- Step 3c-ii-s: the reduction is injective on `p`-torsion, hence a
+  -- `ZMod p`-linear equivalence by the matching `p²` counts
+  have hredEinj : Function.Injective redE := by
+    intro x y hxy
+    have h1 : edn.symm (redFun (eup x.1)) = edn.symm (redFun (eup y.1)) :=
+      congrArg Subtype.val hxy
+    have h2 : redFun (eup x.1) = redFun (eup y.1) := edn.symm.injective h1
+    have h3 : eup x.1 = eup y.1 :=
+      hredInj (eup x.1) (eup y.1)
+        (hmem eup x.1 ((Submodule.mem_torsionBy_iff _ _).mp x.2))
+        (hmem eup y.1 ((Submodule.mem_torsionBy_iff _ _).mp y.2)) h2
+    exact Subtype.ext (eup.injective h3)
+  have hredEbij : Function.Bijective redE := by
+    haveI : Finite ((W.map (algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) :=
+      Nat.finite_of_card_ne_zero (by
+        rw [hcardRes]
+        positivity)
+    refine (Nat.bijective_iff_injective_and_card redE).mpr ⟨hredEinj, ?_⟩
+    rw [hcardV, hcardRes]
+  set redEadd : ((W.map (algebraMap ℤ (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) ≃+
+      ((W.map (algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) :=
+    AddEquiv.ofBijective redE hredEbij with hredEadddef
+  set redL : ((W.map (algebraMap ℤ (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) ≃ₗ[ZMod p]
+      ((W.map (algebraMap ℤ (IsLocalRing.ResidueField
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) :=
+    { redEadd with map_smul' := ZMod.map_smul redEadd.toAddMonoidHom }
+    with hredLdef
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
