@@ -24,6 +24,7 @@ module
 
 public import Fermat.FLT.EllipticCurve.Torsion
 public import Fermat.FLT.GaloisRepresentation.Chebotarev
+public import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 public import Mathlib.LinearAlgebra.Determinant
@@ -778,6 +779,67 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
       · exact ⟨2, rfl⟩
     obtain ⟨j, rfl⟩ := hc₃eq
     exact ⟨j, hc₃ne, hall⟩
+  -- Step 3c-ii-b: `p` is invertible in the residue field of the
+  -- completed integers (`p` is a unit of `𝒪ᵥ` since `p ≠ q`)
+  haveI hpres : NeZero ((p : ℕ) : IsLocalRing.ResidueField
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) := by
+    refine ⟨fun h0 => ?_⟩
+    have hu : IsUnit ((p : ℕ) :
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) :=
+      GaloisRepresentation.isUnit_natCast_adicCompletionIntegers
+        (Fact.out : p.Prime) hq (fun h => hqp h.symm)
+    have hres := hu.map (IsLocalRing.residue
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))
+    rw [map_natCast] at hres
+    rw [h0] at hres
+    exact not_isUnit_zero hres
+  -- Step 3c-ii-c: the minimal model at `v`, base-changed to `Kᵥ`, is
+  -- elliptic
+  haveI hEllKv : (W.map (algebraMap ℤ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))).IsElliptic :=
+    (WeierstrassCurve.isElliptic_iff _).mpr (by
+      rw [WeierstrassCurve.map_Δ]
+      refine isUnit_iff_ne_zero.mpr (fun hz => hΔ0 ?_)
+      exact (algebraMap ℤ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)).injective_int
+        (hz.trans (map_zero _).symm))
+  -- Step 3c-ii-d: torsion abscissas of the model over the completed
+  -- algebraic closure are integral for the local valuation subring
+  have habs : ∀ {x y : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))}
+      (h : ((W.map (algebraMap ℤ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Nonsingular
+        x y),
+      ((p : ℕ) : ℤ) • (WeierstrassCurve.Affine.Point.some x y h :
+        ((W.map (algebraMap ℤ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Point) = 0 →
+      x ∈ localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat :=
+    fun h htor => WeierstrassCurve.torsion_abscissa_mem
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (W.map (algebraMap ℤ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))
+      p
+      (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+      h𝒪 h htor
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
