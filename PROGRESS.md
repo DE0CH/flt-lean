@@ -168,7 +168,7 @@ entries file). To add/remove/annotate a node, edit
                                                                       1, dispatching to exists_annul
                                                                       us_bilateralX_eq_of_one_le /
                                                                       _of_lt_one).
-                                                                        - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component
+                                                                        - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component
                                                                           x-surjectivity (sorry node,
                                                                           |x| ≥ 1): (x,y) lies in the
                                                                           formal group of E_q (Silverman
@@ -185,7 +185,7 @@ entries file). To add/remove/annotate a node, edit
                                                                           on ℤ[[q]]-coefficients, or
                                                                           direct fixed-point iteration
                                                                           u_{n+1} = x(1-u_n)²).
-                                                                        - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
+                                                                        - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
                                                                           x-surjectivity (sorry node,
                                                                           |x| < 1): SILVERMAN §V.4 READ
                                                                           (2026-07-20,
@@ -234,7 +234,7 @@ entries file). To add/remove/annotate a node, edit
                                                                           whether TateSepClosure’s
                                                                           Surjective-φ interface can be
                                                                           weakened accordingly.
-                                                            - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node):
+                                                            - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node):
                                                               GIVEN the finite-level canonical
                                                               uniformisation lˣ/q^ℤ ≃+ E_q(l) with
                                                               underlying pointMapQuot for every NALF
@@ -330,7 +330,7 @@ entries file). To add/remove/annotate a node, edit
                                                                           1, dispatching to exists_annul
                                                                           us_bilateralX_eq_of_one_le /
                                                                           _of_lt_one).
-                                                                            - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component
+                                                                            - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component
                                                                               x-surjectivity (sorry node,
                                                                               |x| ≥ 1): (x,y) lies in the
                                                                               formal group of E_q (Silverman
@@ -347,7 +347,7 @@ entries file). To add/remove/annotate a node, edit
                                                                               on ℤ[[q]]-coefficients, or
                                                                               direct fixed-point iteration
                                                                               u_{n+1} = x(1-u_n)²).
-                                                                            - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
+                                                                            - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
                                                                               x-surjectivity (sorry node,
                                                                               |x| < 1): SILVERMAN §V.4 READ
                                                                               (2026-07-20,
@@ -396,7 +396,7 @@ entries file). To add/remove/annotate a node, edit
                                                                               whether TateSepClosure’s
                                                                               Surjective-φ interface can be
                                                                               weakened accordingly.
-                                                                - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry
+                                                                - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry
                                                                   node): GIVEN the finite-level
                                                                   canonical uniformisation lˣ/q^ℤ ≃+
                                                                   E_q(l) with underlying
@@ -516,7 +516,7 @@ entries file). To add/remove/annotate a node, edit
                                                                               1, dispatching to exists_annul
                                                                               us_bilateralX_eq_of_one_le /
                                                                               _of_lt_one).
-                                                                                - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component
+                                                                                - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component
                                                                                   x-surjectivity (sorry node,
                                                                                   |x| ≥ 1): (x,y) lies in the
                                                                                   formal group of E_q (Silverman
@@ -533,7 +533,7 @@ entries file). To add/remove/annotate a node, edit
                                                                                   on ℤ[[q]]-coefficients, or
                                                                                   direct fixed-point iteration
                                                                                   u_{n+1} = x(1-u_n)²).
-                                                                                - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
+                                                                                - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
                                                                                   x-surjectivity (sorry node,
                                                                                   |x| < 1): SILVERMAN §V.4 READ
                                                                                   (2026-07-20,
@@ -582,7 +582,7 @@ entries file). To add/remove/annotate a node, edit
                                                                                   whether TateSepClosure’s
                                                                                   Surjective-φ interface can be
                                                                                   weakened accordingly.
-                                                                    - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
+                                                                    - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
                                                                       (sorry node): GIVEN the
                                                                       finite-level canonical
                                                                       uniformisation lˣ/q^ℤ ≃+
@@ -695,7 +695,7 @@ entries file). To add/remove/annotate a node, edit
                                                                                   1, dispatching to exists_annul
                                                                                   us_bilateralX_eq_of_one_le /
                                                                                   _of_lt_one).
-                                                                                    - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component
+                                                                                    - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component
                                                                                       x-surjectivity (sorry node,
                                                                                       |x| ≥ 1): (x,y) lies in the
                                                                                       formal group of E_q (Silverman
@@ -712,7 +712,7 @@ entries file). To add/remove/annotate a node, edit
                                                                                       on ℤ[[q]]-coefficients, or
                                                                                       direct fixed-point iteration
                                                                                       u_{n+1} = x(1-u_n)²).
-                                                                                    - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
+                                                                                    - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
                                                                                       x-surjectivity (sorry node,
                                                                                       |x| < 1): SILVERMAN §V.4 READ
                                                                                       (2026-07-20,
@@ -761,7 +761,7 @@ entries file). To add/remove/annotate a node, edit
                                                                                       whether TateSepClosure’s
                                                                                       Surjective-φ interface can be
                                                                                       weakened accordingly.
-                                                                        - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
+                                                                        - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
                                                                           (sorry node): GIVEN the
                                                                           finite-level canonical
                                                                           uniformisation lˣ/q^ℤ ≃+
@@ -926,7 +926,7 @@ entries file). To add/remove/annotate a node, edit
                                                           1, dispatching to
                                                           exists_annulus_bilateralX_eq_of_one_le /
                                                           _of_lt_one).
-                                                            - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component x-surjectivity
+                                                            - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component x-surjectivity
                                                               (sorry node, |x| ≥ 1): (x,y) lies in
                                                               the formal group of E_q (Silverman IV
                                                               §6 / V.4); X(u) = u/(1-u)² + O(q)
@@ -939,7 +939,7 @@ entries file). To add/remove/annotate a node, edit
                                                               (Hensel/Newton iteration on
                                                               ℤ[[q]]-coefficients, or direct fixed-
                                                               point iteration u_{n+1} = x(1-u_n)²).
-                                                            - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component x-surjectivity
+                                                            - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component x-surjectivity
                                                               (sorry node, |x| < 1): SILVERMAN §V.4
                                                               READ (2026-07-20,
                                                               Books/silverman1994ataec.txt
@@ -977,7 +977,7 @@ entries file). To add/remove/annotate a node, edit
                                                               needed; check whether TateSepClosure’s
                                                               Surjective-φ interface can be weakened
                                                               accordingly.
-                                                - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the
+                                                - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the
                                                   finite-level canonical uniformisation lˣ/q^ℤ ≃+
                                                   E_q(l) with underlying pointMapQuot for every NALF
                                                   l, the Ω-level hom exists. Content: finite
@@ -1050,7 +1050,7 @@ entries file). To add/remove/annotate a node, edit
                                                               valuation x vs 1, dispatching to
                                                               exists_annulus_bilateralX_eq_of_one_le
                                                               / _of_lt_one).
-                                                                - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component x-surjectivity
+                                                                - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component x-surjectivity
                                                                   (sorry node, |x| ≥ 1): (x,y) lies
                                                                   in the formal group of E_q
                                                                   (Silverman IV §6 / V.4); X(u) =
@@ -1065,7 +1065,7 @@ entries file). To add/remove/annotate a node, edit
                                                                   ℤ[[q]]-coefficients, or direct
                                                                   fixed-point iteration u_{n+1} =
                                                                   x(1-u_n)²).
-                                                                - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
+                                                                - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component
                                                                   x-surjectivity (sorry node, |x| <
                                                                   1): SILVERMAN §V.4 READ
                                                                   (2026-07-20,
@@ -1108,7 +1108,7 @@ entries file). To add/remove/annotate a node, edit
                                                                   check whether TateSepClosure’s
                                                                   Surjective-φ interface can be
                                                                   weakened accordingly.
-                                                    - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN
+                                                    - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN
                                                       the finite-level canonical uniformisation
                                                       lˣ/q^ℤ ≃+ E_q(l) with underlying pointMapQuot
                                                       for every NALF l, the Ω-level hom exists.
@@ -1201,7 +1201,7 @@ entries file). To add/remove/annotate a node, edit
                                                   dispatching to
                                                   exists_annulus_bilateralX_eq_of_one_le /
                                                   _of_lt_one).
-                                                    - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component x-surjectivity (sorry node,
+                                                    - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component x-surjectivity (sorry node,
                                                       |x| ≥ 1): (x,y) lies in the formal group of
                                                       E_q (Silverman IV §6 / V.4); X(u) = u/(1-u)² +
                                                       O(q) inverts near u=0 by Hensel since the
@@ -1212,7 +1212,7 @@ entries file). To add/remove/annotate a node, edit
                                                       field (Hensel/Newton iteration on
                                                       ℤ[[q]]-coefficients, or direct fixed-point
                                                       iteration u_{n+1} = x(1-u_n)²).
-                                                    - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component x-surjectivity (sorry
+                                                    - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component x-surjectivity (sorry
                                                       node, |x| < 1): SILVERMAN §V.4 READ
                                                       (2026-07-20, Books/silverman1994ataec.txt
                                                       ~16000–16300): his route avoids direct
@@ -1243,7 +1243,7 @@ entries file). To add/remove/annotate a node, edit
                                                       E_q[ℓ](K̄) — no analytic inversion needed;
                                                       check whether TateSepClosure’s Surjective-φ
                                                       interface can be weakened accordingly.
-                                        - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
+                                        - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
                                           level canonical uniformisation lˣ/q^ℤ ≃+ E_q(l) with
                                           underlying pointMapQuot for every NALF l, the Ω-level hom
                                           exists. Content: finite subextensions of Ω/k are NALFs
@@ -1302,7 +1302,7 @@ entries file). To add/remove/annotate a node, edit
                                                   dispatching to
                                                   exists_annulus_bilateralX_eq_of_one_le /
                                                   _of_lt_one).
-                                                    - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component x-surjectivity (sorry node,
+                                                    - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — identity-component x-surjectivity (sorry node,
                                                       |x| ≥ 1): (x,y) lies in the formal group of
                                                       E_q (Silverman IV §6 / V.4); X(u) = u/(1-u)² +
                                                       O(q) inverts near u=0 by Hensel since the
@@ -1313,7 +1313,7 @@ entries file). To add/remove/annotate a node, edit
                                                       field (Hensel/Newton iteration on
                                                       ℤ[[q]]-coefficients, or direct fixed-point
                                                       iteration u_{n+1} = x(1-u_n)²).
-                                                    - ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component x-surjectivity (sorry
+                                                    - ❌🟪 `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — non-identity-component x-surjectivity (sorry
                                                       node, |x| < 1): SILVERMAN §V.4 READ
                                                       (2026-07-20, Books/silverman1994ataec.txt
                                                       ~16000–16300): his route avoids direct
@@ -1344,7 +1344,7 @@ entries file). To add/remove/annotate a node, edit
                                                       E_q[ℓ](K̄) — no analytic inversion needed;
                                                       check whether TateSepClosure’s Surjective-φ
                                                       interface can be weakened accordingly.
-                                        - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
+                                        - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
                                           level canonical uniformisation lˣ/q^ℤ ≃+ E_q(l) with
                                           underlying pointMapQuot for every NALF l, the Ω-level hom
                                           exists. Content: finite subextensions of Ω/k are NALFs
