@@ -1930,6 +1930,40 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
       exact Subtype.ext hval
     rw [← hFmap, Polynomial.eval_map, Polynomial.eval₂_at_apply, hFz,
       map_zero]
+  -- Step 3c-ii-o: the reduction map commutes with natural scalar
+  -- multiples of torsion points (induction from additivity)
+  have hredsmul : ∀ (n : ℕ) (P : ((W.map (algebraMap ℤ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Point),
+      ((p : ℕ) : ℤ) • P = 0 →
+      redFun ((n : ℤ) • P) = (n : ℤ) • redFun P := by
+    intro n
+    induction n with
+    | zero =>
+      intro P hP
+      simp only [Nat.cast_zero, zero_zsmul]
+      exact hred0
+    | succ m ih =>
+      intro P hP
+      have hsmul : ((m + 1 : ℕ) : ℤ) • P = (m : ℤ) • P + P := by
+        push_cast
+        rw [add_zsmul, one_zsmul]
+      have hmtor : ((p : ℕ) : ℤ) • ((m : ℤ) • P) = 0 := by
+        rw [← mul_zsmul, mul_comm, mul_zsmul, hP, zsmul_zero]
+      rw [hsmul, hredAdd _ _ hmtor hP, ih P hP]
+      push_cast
+      rw [add_zsmul, one_zsmul]
+  -- the reduction of a `p`-torsion point is `p`-torsion
+  have hredtor : ∀ (P : ((W.map (algebraMap ℤ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Point), ((p : ℕ) : ℤ) • P = 0 →
+      ((p : ℕ) : ℤ) • redFun P = 0 := by
+    intro P hP
+    rw [← hredsmul p P hP, hP, hred0]
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
