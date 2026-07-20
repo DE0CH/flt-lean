@@ -113,7 +113,9 @@ dichotomy (vendored `isIntegral_of_spectralNorm_le_one` over the
 rank-one `Valued` structure of `k`), and its valuation restricts to
 that of `k` by integral closedness of the DVR `𝒪[k]`. -/
 theorem exists_valuativeRel_sepClosure :
-    ∃ v : ValuativeRel Ω, @ValuativeExtension k Ω _ _ _ v _ := by
+    ∃ v : ValuativeRel Ω, @ValuativeExtension k Ω _ _ _ v _ ∧
+      ∀ (σ : Ω ≃ₐ[k] Ω) (a b : Ω),
+        (@ValuativeRel.vle Ω _ v (σ a) (σ b) ↔ @ValuativeRel.vle Ω _ v a b) := by
   classical
   -- analytic structure on `k`: uniformity, rank-one valued, complete, normed
   letI : UniformSpace k := IsTopologicalAddGroup.rightUniformSpace k
@@ -155,7 +157,39 @@ theorem exists_valuativeRel_sepClosure :
         isIntegral_algebraMap (R := 𝒪[k]) (A := k) (x := (⟨c, hc⟩ : 𝒪[k]))
       show IsIntegral 𝒪[k] (algebraMap k Ω c)
       exact (isIntegral_algebraMap_iff (algebraMap k Ω).injective).mpr h1
-  refine ⟨vΩ, ⟨fun a b => ?_⟩⟩
+  -- Galois stability of the integral closure: comparisons are preserved
+  have hBstab : ∀ (σ : Ω ≃ₐ[k] Ω) (x : Ω), x ∈ B → σ x ∈ B := by
+    intro σ x hx
+    have h1 : IsIntegral 𝒪[k] x := hx
+    exact h1.map (σ.toAlgHom.restrictScalars 𝒪[k])
+  have hBiff : ∀ (σ : Ω ≃ₐ[k] Ω) (x : Ω), σ x ∈ B ↔ x ∈ B := by
+    intro σ x
+    refine ⟨fun h => ?_, hBstab σ x⟩
+    have h2 := hBstab σ.symm _ h
+    rwa [AlgEquiv.symm_apply_apply] at h2
+  have hσ : ∀ (σ : Ω ≃ₐ[k] Ω) (a b : Ω),
+      (B.valuation (σ a) ≤ B.valuation (σ b) ↔
+        B.valuation a ≤ B.valuation b) := by
+    intro σ a b
+    by_cases hb : b = 0
+    · subst hb
+      rw [map_zero, map_zero, le_zero_iff, le_zero_iff,
+        Valuation.zero_iff, Valuation.zero_iff]
+      exact ⟨fun h => by simpa using (map_eq_zero σ.toAlgHom.toRingHom).mp h,
+        fun h => by rw [h, map_zero]⟩
+    · have hσb : σ b ≠ 0 := fun h => hb (by
+        simpa using (map_eq_zero σ.toAlgHom.toRingHom).mp h)
+      have hbpos : (0 : _) < B.valuation b :=
+        zero_lt_iff.mpr ((Valuation.ne_zero_iff _).mpr hb)
+      have hσbpos : (0 : _) < B.valuation (σ b) :=
+        zero_lt_iff.mpr ((Valuation.ne_zero_iff _).mpr hσb)
+      rw [← div_le_one₀ hbpos, ← div_le_one₀ hσbpos,
+        ← map_div₀ B.valuation, ← map_div₀ B.valuation,
+        ValuationSubring.valuation_le_one_iff,
+        ValuationSubring.valuation_le_one_iff,
+        show σ a / σ b = σ (a / b) from (map_div₀ σ.toAlgHom.toRingHom a b).symm]
+      exact hBiff σ (a / b)
+  refine ⟨vΩ, ⟨fun a b => ?_⟩, fun σ a b => hσ σ a b⟩
   show B.valuation (algebraMap k Ω a) ≤ B.valuation (algebraMap k Ω b)
     ↔ a ≤ᵥ b
   rw [show (a ≤ᵥ b) ↔ valuation k a ≤ valuation k b from
@@ -478,12 +512,11 @@ restricted valuative relation and its valuative topology, `L` is a
 nonarchimedean local field — the topology is valuative by construction
 (`ValuativeRel.isValuativeTopology`), and nontriviality transports from
 `k` through the proven valuative extension. -/
-theorem exists_isNonarchimedeanLocalField_intermediate
+theorem isNonarchimedeanLocalField_intermediate
     (v : ValuativeRel Ω) (hv : @ValuativeExtension k Ω _ _ _ v _)
     (L : IntermediateField k Ω) [FiniteDimensional k L] :
-    ∃ t : TopologicalSpace L,
-      @IsNonarchimedeanLocalField L _
-        (@ValuativeRel.comap L Ω _ _ v L.val.toRingHom) t := by
+    letI : ValuativeRel L := @ValuativeRel.comap L Ω _ _ v L.val.toRingHom
+    @IsNonarchimedeanLocalField L _ _ (ValuativeRel.topologicalSpace L) := by
   letI vL : ValuativeRel L := @ValuativeRel.comap L Ω _ _ v L.val.toRingHom
   letI tL : TopologicalSpace L := ValuativeRel.topologicalSpace L
   haveI hvt : IsValuativeTopology L := ValuativeRel.isValuativeTopology L
@@ -509,7 +542,7 @@ theorem exists_isNonarchimedeanLocalField_intermediate
       rw [Valuation.Compatible.vle_iff_le (v := valuation k), map_one,
         hc] at hge
       exact absurd hγ1 (not_lt.mpr hge)
-  exact ⟨tL, { }⟩
+  exact { }
 
 set_option warn.sorry false in
 /-- **The gluing implication for Tate's uniformisation** (sorry node —
@@ -583,13 +616,12 @@ theorem WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel
   -- of `Ωˣ` and every point of `E_q(Ω)` lives in some finite intermediate
   -- field `L`, which these leaves make a nonarchimedean local field
   -- valuatively over `k`, so the finite-level hypothesis `hfin` applies.
-  obtain ⟨vΩ, hvΩ⟩ := exists_valuativeRel_sepClosure (k := k) Ω
+  obtain ⟨vΩ, hvΩ, hσinv⟩ := exists_valuativeRel_sepClosure (k := k) Ω
   have hL : ∀ (L : IntermediateField k Ω) (_ : FiniteDimensional k L),
-      ∃ t : TopologicalSpace L,
-        @IsNonarchimedeanLocalField L _
-          (@ValuativeRel.comap L Ω _ _ vΩ L.val.toRingHom) t :=
-    fun L hfd =>
-      exists_isNonarchimedeanLocalField_intermediate (k := k) Ω vΩ hvΩ L
+      letI : ValuativeRel L := @ValuativeRel.comap L Ω _ _ vΩ L.val.toRingHom
+      @IsNonarchimedeanLocalField L _ _ (ValuativeRel.topologicalSpace L) :=
+    fun L _ =>
+      isNonarchimedeanLocalField_intermediate (k := k) Ω vΩ hvΩ L
   have hLk : ∀ L : IntermediateField k Ω,
       @ValuativeExtension k L _ _ _
         (@ValuativeRel.comap L Ω _ _ vΩ L.val.toRingHom) _ :=
