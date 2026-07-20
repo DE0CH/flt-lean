@@ -6135,6 +6135,280 @@ theorem exists_annulus_bilateralX_eq_of_one_le (q₀ : k) (hq0 : q₀ ≠ 0)
     · refine le_trans (valuation_tsum_le (hSu2.sub hSv2) _
         (fun m => hterm_diff_le u⁻¹ v⁻¹ huinv hvinv m)) ?_
       rw [hinvdiff]
+  -- Y-series analogues of Steps 1–2, needed for the linear solve
+  -- `t = (y - T_Y(u))/(x - T_X(u))` in Step 3 (which avoids any
+  -- quadratic branch selection).
+  have hqpow_le_nat : ∀ n : ℕ, n ≠ 0 →
+      valuation k q₀ ^ n ≤ valuation k q₀ := by
+    intro n hn
+    calc valuation k q₀ ^ n ≤ valuation k q₀ ^ (1 : ℕ) :=
+        pow_le_pow_right_of_le_one' (le_of_lt hq1) (Nat.one_le_iff_ne_zero.mpr hn)
+      _ = valuation k q₀ := pow_one _
+  have hbin1 : ∀ j : ℕ, valuation k (((j.choose 2 : ℕ) : k)) ≤ 1 := by
+    intro j
+    simpa using valuation_intCast_le_one (R := k) (j.choose 2)
+  have hbin2 : ∀ j : ℕ, valuation k ((((j + 1).choose 2 : ℕ) : k)) ≤ 1 := by
+    intro j
+    simpa using valuation_intCast_le_one (R := k) ((j + 1).choose 2)
+  have hS3sum : Summable (fun N : ℕ+ ↦
+      (∑ d ∈ (N : ℕ).divisors, (d : k)) * q₀ ^ (N : ℕ)) :=
+    summable_sigma_one_nonarch q₀ hq1
+  have hS3le : valuation k
+      (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+        q₀ ^ (N : ℕ)) ≤ valuation k q₀ := by
+    refine htsum_pnat _ hS3sum _ ?_
+    intro N
+    rw [map_mul, map_pow]
+    have hd1 : valuation k (∑ d ∈ (N : ℕ).divisors, (d : k)) ≤ 1 :=
+      Valuation.map_sum_le _ fun d _ => by
+        simpa using valuation_intCast_le_one (R := k) d
+    calc valuation k (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          valuation k q₀ ^ (N : ℕ)
+        ≤ 1 * valuation k q₀ ^ (N : ℕ) := mul_le_mul_left hd1 _
+      _ = valuation k q₀ ^ (N : ℕ) := one_mul _
+      _ ≤ valuation k q₀ := hqpow_le N
+  have htermY1_le : ∀ (w : k), valuation k w = 1 → ∀ m : ℕ+,
+      valuation k ((q₀ ^ (m : ℕ) * w) ^ 2 /
+        (1 - q₀ ^ (m : ℕ) * w) ^ 3) ≤ valuation k q₀ := by
+    intro w hw m
+    have hsmall : valuation k (q₀ ^ (m : ℕ) * w) < 1 := by
+      rw [map_mul, map_pow, hw, mul_one]
+      exact pow_lt_one₀ zero_le hq1 m.ne_zero
+    rw [map_div₀, map_pow, map_pow,
+      (valuation k).map_one_sub_of_lt hsmall, one_pow, div_one,
+      map_mul, map_pow, hw, mul_one, ← pow_mul]
+    exact hqpow_le_nat _ (by positivity)
+  have htermY2_le : ∀ (w : k), valuation k w = 1 → ∀ m : ℕ+,
+      valuation k (q₀ ^ (m : ℕ) * w /
+        (1 - q₀ ^ (m : ℕ) * w) ^ 3) ≤ valuation k q₀ := by
+    intro w hw m
+    have hsmall : valuation k (q₀ ^ (m : ℕ) * w) < 1 := by
+      rw [map_mul, map_pow, hw, mul_one]
+      exact pow_lt_one₀ zero_le hq1 m.ne_zero
+    rw [map_div₀, map_pow,
+      (valuation k).map_one_sub_of_lt hsmall, one_pow, div_one,
+      map_mul, map_pow, hw, mul_one]
+    exact hqpow_le m
+  have htailY : ∀ u : k, valuation k u = 1 → u ≠ 1 →
+      valuation k (bilateralY u q₀ - u ^ 2 / (1 - u) ^ 3) ≤
+        valuation k q₀ := by
+    intro u hu hu1
+    have huinv : valuation k u⁻¹ = 1 := by
+      rw [map_inv₀, hu, inv_one]
+    have hqu : valuation k (q₀ * u) < 1 := by
+      rw [map_mul, hu, mul_one]; exact hq1
+    have hquinv : valuation k (q₀ * u⁻¹) < 1 := by
+      rw [map_mul, huinv, mul_one]; exact hq1
+    have hSY1 : Summable (fun m : ℕ+ ↦
+        (q₀ ^ (m : ℕ) * u) ^ 2 / (1 - q₀ ^ (m : ℕ) * u) ^ 3) :=
+      summable_lambert_terms_general
+        (fun j ↦ ((j.choose 2 : ℕ) : k)) (fun v ↦ v ^ 2 / (1 - v) ^ 3)
+        hbin1 u q₀ hq1 hqu
+        (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_self v₀ hv₀)
+    have hSY2 : Summable (fun m : ℕ+ ↦
+        q₀ ^ (m : ℕ) * u⁻¹ / (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 3) :=
+      summable_lambert_terms_general
+        (fun j ↦ (((j + 1).choose 2 : ℕ) : k)) (fun v ↦ v / (1 - v) ^ 3)
+        hbin2 u⁻¹ q₀ hq1 hquinv
+        (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_succ v₀ hv₀)
+    rw [bilateralY, add_sub_cancel_left]
+    have hb1 : valuation k
+        (∑' m : ℕ+, (q₀ ^ (m : ℕ) * u) ^ 2 /
+          (1 - q₀ ^ (m : ℕ) * u) ^ 3) ≤ valuation k q₀ :=
+      htsum_pnat _ hSY1 _ (htermY1_le u hu)
+    have hb2 : valuation k
+        (∑' m : ℕ+, q₀ ^ (m : ℕ) * u⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 3) ≤ valuation k q₀ :=
+      htsum_pnat _ hSY2 _ (htermY2_le u⁻¹ huinv)
+    refine le_trans (Valuation.map_add _ _ _) (max_le ?_ hS3le)
+    exact le_trans (Valuation.map_sub _ _ _) (max_le hb1 hb2)
+  have hkeyY1 : ∀ a w z : k, 1 - a * w ≠ 0 → 1 - a * z ≠ 0 →
+      (a * w) ^ 2 / (1 - a * w) ^ 3 - (a * z) ^ 2 / (1 - a * z) ^ 3 =
+        a ^ 2 * (w - z) * ((w + z) - 3 * a * w * z + a ^ 3 * w ^ 2 * z ^ 2) /
+          ((1 - a * w) ^ 3 * (1 - a * z) ^ 3) := by
+    intro a w z h1 h2
+    field_simp
+    ring
+  have hkeyY2 : ∀ a w z : k, 1 - a * w ≠ 0 → 1 - a * z ≠ 0 →
+      a * w / (1 - a * w) ^ 3 - a * z / (1 - a * z) ^ 3 =
+        a * (w - z) * (1 - 3 * a ^ 2 * w * z + a ^ 3 * w * z * (w + z)) /
+          ((1 - a * w) ^ 3 * (1 - a * z) ^ 3) := by
+    intro a w z h1 h2
+    field_simp
+    ring
+  have htermY1_diff_le : ∀ (w z : k), valuation k w = 1 →
+      valuation k z = 1 → ∀ m : ℕ+, valuation k
+        ((q₀ ^ (m : ℕ) * w) ^ 2 / (1 - q₀ ^ (m : ℕ) * w) ^ 3 -
+         (q₀ ^ (m : ℕ) * z) ^ 2 / (1 - q₀ ^ (m : ℕ) * z) ^ 3) ≤
+        valuation k q₀ * valuation k (w - z) := by
+    intro w z hw hz m
+    have hsw : valuation k (q₀ ^ (m : ℕ) * w) < 1 := by
+      rw [map_mul, map_pow, hw, mul_one]
+      exact pow_lt_one₀ zero_le hq1 m.ne_zero
+    have hsz : valuation k (q₀ ^ (m : ℕ) * z) < 1 := by
+      rw [map_mul, map_pow, hz, mul_one]
+      exact pow_lt_one₀ zero_le hq1 m.ne_zero
+    rw [hkeyY1 _ _ _ (hone_sub_ne _ hsw) (hone_sub_ne _ hsz), map_div₀,
+      map_mul, map_mul, map_mul]
+    simp only [map_pow]
+    rw [(valuation k).map_one_sub_of_lt hsw,
+      (valuation k).map_one_sub_of_lt hsz]
+    simp only [one_pow, mul_one, div_one]
+    have hbr : valuation k
+        ((w + z) - 3 * q₀ ^ (m : ℕ) * w * z +
+          (q₀ ^ (m : ℕ)) ^ 3 * w ^ 2 * z ^ 2) ≤ 1 := by
+      refine le_trans (Valuation.map_add _ _ _) (max_le
+        (le_trans (Valuation.map_sub _ _ _) (max_le ?_ ?_)) ?_)
+      · exact le_trans (Valuation.map_add _ _ _) (max_le (le_of_eq hw)
+          (le_of_eq hz))
+      · simp only [map_mul, map_pow, hw, hz, mul_one]
+        calc valuation k 3 * valuation k q₀ ^ (m : ℕ)
+            ≤ 1 * 1 := mul_le_mul'
+              (by simpa using valuation_intCast_le_one (R := k) 3)
+              (le_trans (hqpow_le m) (le_of_lt hq1))
+          _ = 1 := one_mul _
+      · simp only [map_mul, map_pow, hw, hz, one_pow, mul_one]
+        calc (valuation k q₀ ^ (m : ℕ)) ^ 3
+            ≤ 1 ^ 3 := pow_le_pow_left' (le_trans (hqpow_le m)
+              (le_of_lt hq1)) 3
+          _ = 1 := one_pow _
+    calc (valuation k q₀ ^ (m : ℕ)) ^ 2 * valuation k (w - z) *
+          valuation k ((w + z) - 3 * q₀ ^ (m : ℕ) * w * z +
+            (q₀ ^ (m : ℕ)) ^ 3 * w ^ 2 * z ^ 2)
+        ≤ (valuation k q₀ ^ (m : ℕ)) ^ 2 * valuation k (w - z) * 1 :=
+          mul_le_mul' (le_refl _) hbr
+      _ = (valuation k q₀ ^ (m : ℕ)) ^ 2 * valuation k (w - z) :=
+          mul_one _
+      _ ≤ valuation k q₀ * valuation k (w - z) := by
+          refine mul_le_mul_left ?_ _
+          rw [← pow_mul]
+          exact hqpow_le_nat _ (by positivity)
+  have htermY2_diff_le : ∀ (w z : k), valuation k w = 1 →
+      valuation k z = 1 → ∀ m : ℕ+, valuation k
+        (q₀ ^ (m : ℕ) * w / (1 - q₀ ^ (m : ℕ) * w) ^ 3 -
+         q₀ ^ (m : ℕ) * z / (1 - q₀ ^ (m : ℕ) * z) ^ 3) ≤
+        valuation k q₀ * valuation k (w - z) := by
+    intro w z hw hz m
+    have hsw : valuation k (q₀ ^ (m : ℕ) * w) < 1 := by
+      rw [map_mul, map_pow, hw, mul_one]
+      exact pow_lt_one₀ zero_le hq1 m.ne_zero
+    have hsz : valuation k (q₀ ^ (m : ℕ) * z) < 1 := by
+      rw [map_mul, map_pow, hz, mul_one]
+      exact pow_lt_one₀ zero_le hq1 m.ne_zero
+    rw [hkeyY2 _ _ _ (hone_sub_ne _ hsw) (hone_sub_ne _ hsz), map_div₀,
+      map_mul, map_mul, map_mul]
+    simp only [map_pow]
+    rw [(valuation k).map_one_sub_of_lt hsw,
+      (valuation k).map_one_sub_of_lt hsz]
+    simp only [one_pow, mul_one, div_one]
+    have hbr : valuation k
+        (1 - 3 * (q₀ ^ (m : ℕ)) ^ 2 * w * z +
+          (q₀ ^ (m : ℕ)) ^ 3 * w * z * (w + z)) ≤ 1 := by
+      refine le_trans (Valuation.map_add _ _ _) (max_le
+        (le_trans (Valuation.map_sub _ _ _) (max_le ?_ ?_)) ?_)
+      · rw [map_one]
+      · simp only [map_mul, map_pow, hw, hz, mul_one]
+        calc valuation k 3 * (valuation k q₀ ^ (m : ℕ)) ^ 2
+            ≤ 1 * 1 ^ 2 := mul_le_mul'
+              (by simpa using valuation_intCast_le_one (R := k) 3)
+              (pow_le_pow_left' (le_trans (hqpow_le m) (le_of_lt hq1)) 2)
+          _ = 1 := by rw [one_pow, one_mul]
+      · simp only [map_mul, map_pow, hw, hz, mul_one]
+        calc (valuation k q₀ ^ (m : ℕ)) ^ 3 * valuation k (w + z)
+            ≤ 1 ^ 3 * 1 := mul_le_mul'
+              (pow_le_pow_left' (le_trans (hqpow_le m) (le_of_lt hq1)) 3)
+              (le_trans (Valuation.map_add _ _ _) (max_le (le_of_eq hw)
+                (le_of_eq hz)))
+          _ = 1 := by rw [one_pow, one_mul]
+    calc valuation k q₀ ^ (m : ℕ) * valuation k (w - z) *
+          valuation k (1 - 3 * (q₀ ^ (m : ℕ)) ^ 2 * w * z +
+            (q₀ ^ (m : ℕ)) ^ 3 * w * z * (w + z))
+        ≤ valuation k q₀ ^ (m : ℕ) * valuation k (w - z) * 1 :=
+          mul_le_mul' (le_refl _) hbr
+      _ = valuation k q₀ ^ (m : ℕ) * valuation k (w - z) := mul_one _
+      _ ≤ valuation k q₀ * valuation k (w - z) :=
+          mul_le_mul_left (hqpow_le m) _
+  have hlipY : ∀ u v : k, valuation k u = 1 → valuation k v = 1 →
+      u ≠ 1 → v ≠ 1 →
+      valuation k ((bilateralY u q₀ - u ^ 2 / (1 - u) ^ 3) -
+          (bilateralY v q₀ - v ^ 2 / (1 - v) ^ 3)) ≤
+        valuation k q₀ * valuation k (u - v) := by
+    intro u v hu hv hu1 hv1
+    have hu0 : u ≠ 0 := by
+      intro hh
+      rw [hh, map_zero] at hu
+      exact zero_ne_one hu
+    have hv0 : v ≠ 0 := by
+      intro hh
+      rw [hh, map_zero] at hv
+      exact zero_ne_one hv
+    have huinv : valuation k u⁻¹ = 1 := by rw [map_inv₀, hu, inv_one]
+    have hvinv : valuation k v⁻¹ = 1 := by rw [map_inv₀, hv, inv_one]
+    have hqu : valuation k (q₀ * u) < 1 := by
+      rw [map_mul, hu, mul_one]; exact hq1
+    have hqv : valuation k (q₀ * v) < 1 := by
+      rw [map_mul, hv, mul_one]; exact hq1
+    have hquinv : valuation k (q₀ * u⁻¹) < 1 := by
+      rw [map_mul, huinv, mul_one]; exact hq1
+    have hqvinv : valuation k (q₀ * v⁻¹) < 1 := by
+      rw [map_mul, hvinv, mul_one]; exact hq1
+    have hinvdiff : valuation k (u⁻¹ - v⁻¹) = valuation k (u - v) := by
+      have he : u⁻¹ - v⁻¹ = (v - u) / (u * v) := by
+        field_simp
+      rw [he, map_div₀, map_mul, hu, hv, mul_one, div_one,
+        ← Valuation.map_neg, neg_sub]
+    have hSY1u : Summable (fun m : ℕ+ ↦
+        (q₀ ^ (m : ℕ) * u) ^ 2 / (1 - q₀ ^ (m : ℕ) * u) ^ 3) :=
+      summable_lambert_terms_general
+        (fun j ↦ ((j.choose 2 : ℕ) : k)) (fun v ↦ v ^ 2 / (1 - v) ^ 3)
+        hbin1 u q₀ hq1 hqu
+        (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_self v₀ hv₀)
+    have hSY1v : Summable (fun m : ℕ+ ↦
+        (q₀ ^ (m : ℕ) * v) ^ 2 / (1 - q₀ ^ (m : ℕ) * v) ^ 3) :=
+      summable_lambert_terms_general
+        (fun j ↦ ((j.choose 2 : ℕ) : k)) (fun w ↦ w ^ 2 / (1 - w) ^ 3)
+        hbin1 v q₀ hq1 hqv
+        (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_self v₀ hv₀)
+    have hSY2u : Summable (fun m : ℕ+ ↦
+        q₀ ^ (m : ℕ) * u⁻¹ / (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 3) :=
+      summable_lambert_terms_general
+        (fun j ↦ (((j + 1).choose 2 : ℕ) : k)) (fun v ↦ v / (1 - v) ^ 3)
+        hbin2 u⁻¹ q₀ hq1 hquinv
+        (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_succ v₀ hv₀)
+    have hSY2v : Summable (fun m : ℕ+ ↦
+        q₀ ^ (m : ℕ) * v⁻¹ / (1 - q₀ ^ (m : ℕ) * v⁻¹) ^ 3) :=
+      summable_lambert_terms_general
+        (fun j ↦ (((j + 1).choose 2 : ℕ) : k)) (fun w ↦ w / (1 - w) ^ 3)
+        hbin2 v⁻¹ q₀ hq1 hqvinv
+        (fun v₀ hv₀ ↦ hasSum_pnat_choose_two_succ v₀ hv₀)
+    have e1 : bilateralY u q₀ - u ^ 2 / (1 - u) ^ 3 =
+        (∑' m : ℕ+, (q₀ ^ (m : ℕ) * u) ^ 2 /
+          (1 - q₀ ^ (m : ℕ) * u) ^ 3) -
+        (∑' m : ℕ+, q₀ ^ (m : ℕ) * u⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 3) +
+        (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ)) := by
+      rw [bilateralY]
+      ring
+    have e2 : bilateralY v q₀ - v ^ 2 / (1 - v) ^ 3 =
+        (∑' m : ℕ+, (q₀ ^ (m : ℕ) * v) ^ 2 /
+          (1 - q₀ ^ (m : ℕ) * v) ^ 3) -
+        (∑' m : ℕ+, q₀ ^ (m : ℕ) * v⁻¹ /
+          (1 - q₀ ^ (m : ℕ) * v⁻¹) ^ 3) +
+        (∑' N : ℕ+, (∑ d ∈ (N : ℕ).divisors, (d : k)) *
+          q₀ ^ (N : ℕ)) := by
+      rw [bilateralY]
+      ring
+    rw [e1, e2, show ∀ A B C A' B' : k,
+        (A - B + C) - (A' - B' + C) = (A - A') - (B - B') from
+      fun A B C A' B' => by ring]
+    rw [← hSY1u.tsum_sub hSY1v, ← hSY2u.tsum_sub hSY2v]
+    refine le_trans (Valuation.map_sub _ _ _) (max_le ?_ ?_)
+    · exact valuation_tsum_le (hSY1u.sub hSY1v) _
+        (fun m => htermY1_diff_le u v hu hv m)
+    · refine le_trans (valuation_tsum_le (hSY2u.sub hSY2v) _
+        (fun m => htermY2_diff_le u⁻¹ v⁻¹ huinv hvinv m)) ?_
+      rw [hinvdiff]
   -- Step 3 (seed and contraction; Silverman ATAEC V.4.1): from the curve
   -- equation with `|x| ≥ 1` the reduced point lies on the smooth locus of
   -- the nodal cubic `Y² + XY = X³`, whose rational parametrization
