@@ -180,8 +180,8 @@
   "TateCurve.evalA_chordY_of_formal": "✅✅",
   "TateCurve.chordX_ratFunc₂": "✅✅",
   "TateCurve.chordY_ratFunc₂": "✅✅",
-  "TateCurve.summable_evalA_XA_ext": "❌",
-  "TateCurve.summable_evalA_YA_ext": "❌",
+  "TateCurve.summable_evalA_XA_ext": "✅✅",
+  "TateCurve.summable_evalA_YA_ext": "✅✅",
   "TateCurve.evalA_XA_eq_bilateralX_ext": "❌",
   "TateCurve.evalA_YA_eq_bilateralY_ext": "❌"
  },

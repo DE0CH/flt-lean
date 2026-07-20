@@ -276,17 +276,6 @@ entries file). To add/remove/annotate a node, edit
                                                                               transport with the extended-
                                                                               annulus summability/bridge
                                                                               leaves).
-                                                                                - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
-                                                                                  for XA (sorry node): on 1 <
-                                                                                  |u₀| < |q₀|⁻¹ the coefficient
-                                                                                  bound is |u₀|ⁿ (dominant
-                                                                                  u^d-terms, d ≤ n), beaten by
-                                                                                  |q₀u₀|ⁿ < 1 — mirror summable_
-                                                                                  evalA_XA/valuation_coeffRingEv
-                                                                                  al_XA_le with the max-bound.
-                                                                                - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
-                                                                                  for YA (sorry node): same as
-                                                                                  the XA version.
                                                                                 - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
                                                                                   bridge for X (sorry node): the
                                                                                   (u,q)-graded evalA double
@@ -328,17 +317,6 @@ entries file). To add/remove/annotate a node, edit
                                                                               transport with the extended-
                                                                               annulus summability/bridge
                                                                               leaves).
-                                                                                - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
-                                                                                  for XA (sorry node): on 1 <
-                                                                                  |u₀| < |q₀|⁻¹ the coefficient
-                                                                                  bound is |u₀|ⁿ (dominant
-                                                                                  u^d-terms, d ≤ n), beaten by
-                                                                                  |q₀u₀|ⁿ < 1 — mirror summable_
-                                                                                  evalA_XA/valuation_coeffRingEv
-                                                                                  al_XA_le with the max-bound.
-                                                                                - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
-                                                                                  for YA (sorry node): same as
-                                                                                  the XA version.
                                                                                 - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
                                                                                   bridge for X (sorry node): the
                                                                                   (u,q)-graded evalA double
@@ -560,17 +538,6 @@ entries file). To add/remove/annotate a node, edit
                                                                                   transport with the extended-
                                                                                   annulus summability/bridge
                                                                                   leaves).
-                                                                                    - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
-                                                                                      for XA (sorry node): on 1 <
-                                                                                      |u₀| < |q₀|⁻¹ the coefficient
-                                                                                      bound is |u₀|ⁿ (dominant
-                                                                                      u^d-terms, d ≤ n), beaten by
-                                                                                      |q₀u₀|ⁿ < 1 — mirror summable_
-                                                                                      evalA_XA/valuation_coeffRingEv
-                                                                                      al_XA_le with the max-bound.
-                                                                                    - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
-                                                                                      for YA (sorry node): same as
-                                                                                      the XA version.
                                                                                     - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
                                                                                       bridge for X (sorry node): the
                                                                                       (u,q)-graded evalA double
@@ -612,17 +579,6 @@ entries file). To add/remove/annotate a node, edit
                                                                                   transport with the extended-
                                                                                   annulus summability/bridge
                                                                                   leaves).
-                                                                                    - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
-                                                                                      for XA (sorry node): on 1 <
-                                                                                      |u₀| < |q₀|⁻¹ the coefficient
-                                                                                      bound is |u₀|ⁿ (dominant
-                                                                                      u^d-terms, d ≤ n), beaten by
-                                                                                      |q₀u₀|ⁿ < 1 — mirror summable_
-                                                                                      evalA_XA/valuation_coeffRingEv
-                                                                                      al_XA_le with the max-bound.
-                                                                                    - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
-                                                                                      for YA (sorry node): same as
-                                                                                      the XA version.
                                                                                     - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
                                                                                       bridge for X (sorry node): the
                                                                                       (u,q)-graded evalA double
@@ -868,17 +824,6 @@ entries file). To add/remove/annotate a node, edit
                                                                                       transport with the extended-
                                                                                       annulus summability/bridge
                                                                                       leaves).
-                                                                                        - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
-                                                                                          for XA (sorry node): on 1 <
-                                                                                          |u₀| < |q₀|⁻¹ the coefficient
-                                                                                          bound is |u₀|ⁿ (dominant
-                                                                                          u^d-terms, d ≤ n), beaten by
-                                                                                          |q₀u₀|ⁿ < 1 — mirror summable_
-                                                                                          evalA_XA/valuation_coeffRingEv
-                                                                                          al_XA_le with the max-bound.
-                                                                                        - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
-                                                                                          for YA (sorry node): same as
-                                                                                          the XA version.
                                                                                         - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
                                                                                           bridge for X (sorry node): the
                                                                                           (u,q)-graded evalA double
@@ -920,17 +865,6 @@ entries file). To add/remove/annotate a node, edit
                                                                                       transport with the extended-
                                                                                       annulus summability/bridge
                                                                                       leaves).
-                                                                                        - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
-                                                                                          for XA (sorry node): on 1 <
-                                                                                          |u₀| < |q₀|⁻¹ the coefficient
-                                                                                          bound is |u₀|ⁿ (dominant
-                                                                                          u^d-terms, d ≤ n), beaten by
-                                                                                          |q₀u₀|ⁿ < 1 — mirror summable_
-                                                                                          evalA_XA/valuation_coeffRingEv
-                                                                                          al_XA_le with the max-bound.
-                                                                                        - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
-                                                                                          for YA (sorry node): same as
-                                                                                          the XA version.
                                                                                         - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
                                                                                           bridge for X (sorry node): the
                                                                                           (u,q)-graded evalA double
@@ -1169,17 +1103,6 @@ entries file). To add/remove/annotate a node, edit
                                                                                           transport with the extended-
                                                                                           annulus summability/bridge
                                                                                           leaves).
-                                                                                            - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
-                                                                                              for XA (sorry node): on 1 <
-                                                                                              |u₀| < |q₀|⁻¹ the coefficient
-                                                                                              bound is |u₀|ⁿ (dominant
-                                                                                              u^d-terms, d ≤ n), beaten by
-                                                                                              |q₀u₀|ⁿ < 1 — mirror summable_
-                                                                                              evalA_XA/valuation_coeffRingEv
-                                                                                              al_XA_le with the max-bound.
-                                                                                            - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
-                                                                                              for YA (sorry node): same as
-                                                                                              the XA version.
                                                                                             - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
                                                                                               bridge for X (sorry node): the
                                                                                               (u,q)-graded evalA double
@@ -1221,17 +1144,6 @@ entries file). To add/remove/annotate a node, edit
                                                                                           transport with the extended-
                                                                                           annulus summability/bridge
                                                                                           leaves).
-                                                                                            - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
-                                                                                              for XA (sorry node): on 1 <
-                                                                                              |u₀| < |q₀|⁻¹ the coefficient
-                                                                                              bound is |u₀|ⁿ (dominant
-                                                                                              u^d-terms, d ≤ n), beaten by
-                                                                                              |q₀u₀|ⁿ < 1 — mirror summable_
-                                                                                              evalA_XA/valuation_coeffRingEv
-                                                                                              al_XA_le with the max-bound.
-                                                                                            - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
-                                                                                              for YA (sorry node): same as
-                                                                                              the XA version.
                                                                                             - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
                                                                                               bridge for X (sorry node): the
                                                                                               (u,q)-graded evalA double
@@ -1495,17 +1407,6 @@ entries file). To add/remove/annotate a node, edit
                                                                   transport with the extended-
                                                                   annulus summability/bridge
                                                                   leaves).
-                                                                    - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
-                                                                      for XA (sorry node): on 1 <
-                                                                      |u₀| < |q₀|⁻¹ the coefficient
-                                                                      bound is |u₀|ⁿ (dominant
-                                                                      u^d-terms, d ≤ n), beaten by
-                                                                      |q₀u₀|ⁿ < 1 — mirror summable_
-                                                                      evalA_XA/valuation_coeffRingEv
-                                                                      al_XA_le with the max-bound.
-                                                                    - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
-                                                                      for YA (sorry node): same as
-                                                                      the XA version.
                                                                     - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
                                                                       bridge for X (sorry node): the
                                                                       (u,q)-graded evalA double
@@ -1543,17 +1444,6 @@ entries file). To add/remove/annotate a node, edit
                                                                   transport with the extended-
                                                                   annulus summability/bridge
                                                                   leaves).
-                                                                    - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
-                                                                      for XA (sorry node): on 1 <
-                                                                      |u₀| < |q₀|⁻¹ the coefficient
-                                                                      bound is |u₀|ⁿ (dominant
-                                                                      u^d-terms, d ≤ n), beaten by
-                                                                      |q₀u₀|ⁿ < 1 — mirror summable_
-                                                                      evalA_XA/valuation_coeffRingEv
-                                                                      al_XA_le with the max-bound.
-                                                                    - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
-                                                                      for YA (sorry node): same as
-                                                                      the XA version.
                                                                     - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
                                                                       bridge for X (sorry node): the
                                                                       (u,q)-graded evalA double
@@ -1735,17 +1625,6 @@ entries file). To add/remove/annotate a node, edit
                                                                       transport with the extended-
                                                                       annulus summability/bridge
                                                                       leaves).
-                                                                        - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
-                                                                          for XA (sorry node): on 1 <
-                                                                          |u₀| < |q₀|⁻¹ the coefficient
-                                                                          bound is |u₀|ⁿ (dominant
-                                                                          u^d-terms, d ≤ n), beaten by
-                                                                          |q₀u₀|ⁿ < 1 — mirror summable_
-                                                                          evalA_XA/valuation_coeffRingEv
-                                                                          al_XA_le with the max-bound.
-                                                                        - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
-                                                                          for YA (sorry node): same as
-                                                                          the XA version.
                                                                         - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
                                                                           bridge for X (sorry node): the
                                                                           (u,q)-graded evalA double
@@ -1786,17 +1665,6 @@ entries file). To add/remove/annotate a node, edit
                                                                       transport with the extended-
                                                                       annulus summability/bridge
                                                                       leaves).
-                                                                        - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability
-                                                                          for XA (sorry node): on 1 <
-                                                                          |u₀| < |q₀|⁻¹ the coefficient
-                                                                          bound is |u₀|ⁿ (dominant
-                                                                          u^d-terms, d ≤ n), beaten by
-                                                                          |q₀u₀|ⁿ < 1 — mirror summable_
-                                                                          evalA_XA/valuation_coeffRingEv
-                                                                          al_XA_le with the max-bound.
-                                                                        - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability
-                                                                          for YA (sorry node): same as
-                                                                          the XA version.
                                                                         - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral
                                                                           bridge for X (sorry node): the
                                                                           (u,q)-graded evalA double
@@ -1971,15 +1839,6 @@ entries file). To add/remove/annotate a node, edit
                                                           summability-parameterized transport with
                                                           the extended-annulus summability/bridge
                                                           leaves).
-                                                            - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability for XA
-                                                              (sorry node): on 1 < |u₀| < |q₀|⁻¹ the
-                                                              coefficient bound is |u₀|ⁿ (dominant
-                                                              u^d-terms, d ≤ n), beaten by |q₀u₀|ⁿ <
-                                                              1 — mirror summable_evalA_XA/valuation
-                                                              _coeffRingEval_XA_le with the max-
-                                                              bound.
-                                                            - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability for YA
-                                                              (sorry node): same as the XA version.
                                                             - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral bridge for
                                                               X (sorry node): the (u,q)-graded evalA
                                                               double series rearranges to the
@@ -2009,15 +1868,6 @@ entries file). To add/remove/annotate a node, edit
                                                           summability-parameterized transport with
                                                           the extended-annulus summability/bridge
                                                           leaves).
-                                                            - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability for XA
-                                                              (sorry node): on 1 < |u₀| < |q₀|⁻¹ the
-                                                              coefficient bound is |u₀|ⁿ (dominant
-                                                              u^d-terms, d ≤ n), beaten by |q₀u₀|ⁿ <
-                                                              1 — mirror summable_evalA_XA/valuation
-                                                              _coeffRingEval_XA_le with the max-
-                                                              bound.
-                                                            - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability for YA
-                                                              (sorry node): same as the XA version.
                                                             - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral bridge for
                                                               X (sorry node): the (u,q)-graded evalA
                                                               double series rearranges to the
@@ -2154,15 +2004,6 @@ entries file). To add/remove/annotate a node, edit
                                                           summability-parameterized transport with
                                                           the extended-annulus summability/bridge
                                                           leaves).
-                                                            - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability for XA
-                                                              (sorry node): on 1 < |u₀| < |q₀|⁻¹ the
-                                                              coefficient bound is |u₀|ⁿ (dominant
-                                                              u^d-terms, d ≤ n), beaten by |q₀u₀|ⁿ <
-                                                              1 — mirror summable_evalA_XA/valuation
-                                                              _coeffRingEval_XA_le with the max-
-                                                              bound.
-                                                            - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability for YA
-                                                              (sorry node): same as the XA version.
                                                             - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral bridge for
                                                               X (sorry node): the (u,q)-graded evalA
                                                               double series rearranges to the
@@ -2192,15 +2033,6 @@ entries file). To add/remove/annotate a node, edit
                                                           summability-parameterized transport with
                                                           the extended-annulus summability/bridge
                                                           leaves).
-                                                            - ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability for XA
-                                                              (sorry node): on 1 < |u₀| < |q₀|⁻¹ the
-                                                              coefficient bound is |u₀|ⁿ (dominant
-                                                              u^d-terms, d ≤ n), beaten by |q₀u₀|ⁿ <
-                                                              1 — mirror summable_evalA_XA/valuation
-                                                              _coeffRingEval_XA_le with the max-
-                                                              bound.
-                                                            - ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability for YA
-                                                              (sorry node): same as the XA version.
                                                             - ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral bridge for
                                                               X (sorry node): the (u,q)-graded evalA
                                                               double series rearranges to the

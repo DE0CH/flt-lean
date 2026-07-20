@@ -4299,24 +4299,138 @@ theorem bilateral_chordX_cleared_window (u₀ v₀ q₀ : k)
   exact evalA_chordX u₀ v₀ q₀ hu0 hv0 hq0 hu1 hv1 hq1 hulow huhigh hvlow
     hvhigh hne1 hneq hw0 hwin hwhigh
 
-set_option warn.sorry false in
-/-- **Extended-annulus summability for `XA`** (sorry node): the
-evaluated series also converges on the upper half of the extended
-annulus `1 < |u₀| < |q₀|⁻¹` — the coefficient bound becomes
-`max(|u₀|, |u₀|⁻¹)ⁿ = |u₀|ⁿ`, beaten by `|q₀u₀| < 1`. -/
+omit [TopologicalSpace k] [IsNonarchimedeanLocalField k] in
+/-- **Extended-annulus coefficient bound for `XA`**: for `1 < |u₀|` the
+`n`-th evaluated coefficient has valuation at most `|u₀|ⁿ` (now the
+`u₀ᵈ` summand dominates). -/
+theorem valuation_coeffRingEval_XA_le_ext (u₀ : k) (h0 : u₀ ≠ 0)
+    (h1 : u₀ ≠ 1) (hu : 1 < valuation k u₀) {n : ℕ} (hn : n ≠ 0) :
+    valuation k (coeffRingEval u₀ h0 h1 (PowerSeries.coeff n XA)) ≤
+      (valuation k u₀) ^ n := by
+  have hv0 : valuation k u₀ ≠ 0 := by
+    simpa [ne_eq, map_eq_zero] using h0
+  have hone : (1 : ValueGroupWithZero k) ≤ (valuation k u₀) ^ n :=
+    one_le_pow₀ hu.le
+  rw [coeffRingEval_coeff_XA u₀ h0 h1 hn]
+  refine Valuation.map_sum_le _ fun d hd ↦ ?_
+  have hdn : d ≤ n := Nat.divisor_le hd
+  rw [map_mul]
+  have hd1 : valuation k (d : k) ≤ 1 := by
+    have h := valuation_intCast_le_one (R := k) d
+    simpa using h
+  have hsum : valuation k (u₀ ^ d + u₀⁻¹ ^ d - 2) ≤
+      (valuation k u₀) ^ n := by
+    have ha : valuation k (u₀ ^ d) ≤ (valuation k u₀) ^ n := by
+      rw [map_pow]
+      exact pow_le_pow_right' hu.le hdn
+    have hb : valuation k (u₀⁻¹ ^ d) ≤ (valuation k u₀) ^ n := by
+      rw [map_pow, map_inv₀]
+      refine le_trans ?_ hone
+      refine pow_le_one₀ zero_le ?_
+      rw [inv_le_one₀ (zero_lt_iff.mpr hv0)]
+      exact hu.le
+    have hc : valuation k (2 : k) ≤ (valuation k u₀) ^ n := by
+      refine le_trans ?_ hone
+      have h := valuation_intCast_le_one (R := k) 2
+      simpa using h
+    calc valuation k (u₀ ^ d + u₀⁻¹ ^ d - 2)
+        ≤ max (valuation k (u₀ ^ d + u₀⁻¹ ^ d)) (valuation k (2 : k)) :=
+          Valuation.map_sub _ _ _
+      _ ≤ (valuation k u₀) ^ n := by
+          refine max_le ?_ hc
+          exact le_trans (Valuation.map_add _ _ _) (max_le ha hb)
+  calc valuation k ((d : k)) * valuation k (u₀ ^ d + u₀⁻¹ ^ d - 2)
+      ≤ 1 * (valuation k u₀) ^ n := mul_le_mul' hd1 hsum
+    _ = (valuation k u₀) ^ n := one_mul _
+
+/-- **Extended-annulus summability for `XA`** (PROVEN): the evaluated
+series also converges on the upper half of the extended annulus
+`1 < |u₀| < |q₀|⁻¹` — the coefficient bound is `|u₀|ⁿ`, beaten by
+`|q₀u₀| < 1`. -/
 theorem summable_evalA_XA_ext (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
     (hu : 1 < valuation k u₀) (hqu : valuation k (q₀ * u₀) < 1) :
     Summable fun n : ℕ ↦
-      coeffRingEval u₀ h0 h1 (PowerSeries.coeff n XA) * q₀ ^ n :=
-  sorry
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff n XA) * q₀ ^ n := by
+  rw [← summable_nat_add_iff 1]
+  refine summable_of_valuation_le_pow hqu (fun n ↦ n + 1)
+    (fun N ↦ (Set.finite_Iio N).subset fun i hi ↦ Set.mem_Iio.mpr
+      (lt_trans (Nat.lt_succ_self i) hi)) (fun n ↦ ?_)
+  rw [map_mul, map_pow]
+  have hb := valuation_coeffRingEval_XA_le_ext u₀ h0 h1 hu
+    (Nat.succ_ne_zero n)
+  calc valuation k (coeffRingEval u₀ h0 h1
+        (PowerSeries.coeff (n + 1) XA)) * valuation k q₀ ^ (n + 1)
+      ≤ (valuation k u₀) ^ (n + 1) * valuation k q₀ ^ (n + 1) :=
+        mul_le_mul_left hb _
+    _ = valuation k (q₀ * u₀) ^ (n + 1) := by
+        rw [map_mul, mul_pow]
+        exact mul_comm _ _
 
-set_option warn.sorry false in
-/-- **Extended-annulus summability for `YA`** (sorry node). -/
+omit [TopologicalSpace k] [IsNonarchimedeanLocalField k] in
+/-- **Extended-annulus coefficient bound for `YA`**. -/
+theorem valuation_coeffRingEval_YA_le_ext (u₀ : k) (h0 : u₀ ≠ 0)
+    (h1 : u₀ ≠ 1) (hu : 1 < valuation k u₀) {n : ℕ} (hn : n ≠ 0) :
+    valuation k (coeffRingEval u₀ h0 h1 (PowerSeries.coeff n YA)) ≤
+      (valuation k u₀) ^ n := by
+  have hv0 : valuation k u₀ ≠ 0 := by
+    simpa [ne_eq, map_eq_zero] using h0
+  have hone : (1 : ValueGroupWithZero k) ≤ (valuation k u₀) ^ n :=
+    one_le_pow₀ hu.le
+  have hnat : ∀ m : ℕ, valuation k (m : k) ≤ 1 := by
+    intro m
+    have h := valuation_intCast_le_one (R := k) m
+    simpa using h
+  rw [coeffRingEval_coeff_YA u₀ h0 h1 hn]
+  refine Valuation.map_sum_le _ fun d hd ↦ ?_
+  have hdn : d ≤ n := Nat.divisor_le hd
+  have ha : valuation k ((d.choose 2 : k) * u₀ ^ d) ≤
+      (valuation k u₀) ^ n := by
+    rw [map_mul, map_pow]
+    calc valuation k ((d.choose 2 : k)) * valuation k u₀ ^ d
+        ≤ 1 * (valuation k u₀) ^ n :=
+          mul_le_mul' (hnat _) (pow_le_pow_right' hu.le hdn)
+      _ = (valuation k u₀) ^ n := one_mul _
+  have hb : valuation k (((d + 1).choose 2 : k) * u₀⁻¹ ^ d) ≤
+      (valuation k u₀) ^ n := by
+    rw [map_mul, map_pow, map_inv₀]
+    have hpow : ((valuation k u₀)⁻¹) ^ d ≤ (valuation k u₀) ^ n := by
+      refine le_trans ?_ hone
+      refine pow_le_one₀ zero_le ?_
+      rw [inv_le_one₀ (zero_lt_iff.mpr hv0)]
+      exact hu.le
+    calc valuation k (((d + 1).choose 2 : k)) * ((valuation k u₀)⁻¹) ^ d
+        ≤ 1 * (valuation k u₀) ^ n := mul_le_mul' (hnat _) hpow
+      _ = (valuation k u₀) ^ n := one_mul _
+  have hc : valuation k ((d : k)) ≤ (valuation k u₀) ^ n :=
+    le_trans (hnat d) hone
+  calc valuation k ((d.choose 2 : k) * u₀ ^ d -
+        ((d + 1).choose 2 : k) * u₀⁻¹ ^ d + (d : k))
+      ≤ max (valuation k ((d.choose 2 : k) * u₀ ^ d -
+          ((d + 1).choose 2 : k) * u₀⁻¹ ^ d)) (valuation k ((d : k))) :=
+        Valuation.map_add _ _ _
+    _ ≤ (valuation k u₀) ^ n := by
+        refine max_le ?_ hc
+        exact le_trans (Valuation.map_sub _ _ _) (max_le ha hb)
+
+/-- **Extended-annulus summability for `YA`** (PROVEN). -/
 theorem summable_evalA_YA_ext (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
     (hu : 1 < valuation k u₀) (hqu : valuation k (q₀ * u₀) < 1) :
     Summable fun n : ℕ ↦
-      coeffRingEval u₀ h0 h1 (PowerSeries.coeff n YA) * q₀ ^ n :=
-  sorry
+      coeffRingEval u₀ h0 h1 (PowerSeries.coeff n YA) * q₀ ^ n := by
+  rw [← summable_nat_add_iff 1]
+  refine summable_of_valuation_le_pow hqu (fun n ↦ n + 1)
+    (fun N ↦ (Set.finite_Iio N).subset fun i hi ↦ Set.mem_Iio.mpr
+      (lt_trans (Nat.lt_succ_self i) hi)) (fun n ↦ ?_)
+  rw [map_mul, map_pow]
+  have hb := valuation_coeffRingEval_YA_le_ext u₀ h0 h1 hu
+    (Nat.succ_ne_zero n)
+  calc valuation k (coeffRingEval u₀ h0 h1
+        (PowerSeries.coeff (n + 1) YA)) * valuation k q₀ ^ (n + 1)
+      ≤ (valuation k u₀) ^ (n + 1) * valuation k q₀ ^ (n + 1) :=
+        mul_le_mul_left hb _
+    _ = valuation k (q₀ * u₀) ^ (n + 1) := by
+        rw [map_mul, mul_pow]
+        exact mul_comm _ _
 
 set_option warn.sorry false in
 /-- **Extended-annulus bilateral bridge for `X`** (sorry node): the

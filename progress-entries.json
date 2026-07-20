@@ -1251,13 +1251,13 @@
     "name": "TateCurve.summable_evalA_XA_ext",
     "fullname": "TateCurve.summable_evalA_XA_ext",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-    "text": "extended-annulus summability for XA (sorry node): on 1 < |u₀| < |q₀|⁻¹ the coefficient bound is |u₀|ⁿ (dominant u^d-terms, d ≤ n), beaten by |q₀u₀|ⁿ < 1 — mirror summable_evalA_XA/valuation_coeffRingEval_XA_le with the max-bound."
+    "text": "extended-annulus summability for XA (PROVEN 2026-07-18): on 1 < |u₀| < |q₀|⁻¹ the coefficient bound is |u₀|ⁿ (dominant u^d-terms, d ≤ n), beaten by |q₀u₀|ⁿ < 1 — mirror summable_evalA_XA/valuation_coeffRingEval_XA_le with the max-bound."
   },
   {
     "name": "TateCurve.summable_evalA_YA_ext",
     "fullname": "TateCurve.summable_evalA_YA_ext",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateUniformization",
-    "text": "extended-annulus summability for YA (sorry node): same as the XA version."
+    "text": "extended-annulus summability for YA (PROVEN 2026-07-18): same as the XA version."
   },
   {
     "name": "TateCurve.evalA_XA_eq_bilateralX_ext",
