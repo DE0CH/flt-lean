@@ -8282,6 +8282,304 @@ theorem exists_annulus_bilateralX_eq_of_lt_one (q₀ : k) (hq0 : q₀ ≠ 0)
       refine le_trans (Valuation.map_sub _ _ _) (max_le ?_ ?_)
       · exact le_trans (Valuation.map_add _ _ _) (max_le hlead3 hS1)
       · exact le_trans (Valuation.map_add _ _ _) (max_le hS2 hσ2)
+    -- the difference identities for the cubic kernels
+    have hkeyl3d : ∀ u v : k, (1 : k) - u ≠ 0 → (1 : k) - v ≠ 0 →
+        (u / (1 - u) ^ 3 - u) - (v / (1 - v) ^ 3 - v) =
+          (u - v) * ((1 - 3 * u * v + u * v * (u + v)) -
+            (1 - u) ^ 3 * (1 - v) ^ 3) /
+            ((1 - u) ^ 3 * (1 - v) ^ 3) := by
+      intro u v h1 h2
+      field_simp
+      ring
+    have hkeyD3 : ∀ a w z : k, 1 - a * w ≠ 0 → 1 - a * z ≠ 0 →
+        a * w / (1 - a * w) ^ 3 - a * z / (1 - a * z) ^ 3 =
+          a * (w - z) * (1 - 3 * a ^ 2 * w * z + a ^ 3 * w * z * (w + z)) /
+            ((1 - a * w) ^ 3 * (1 - a * z) ^ 3) := by
+      intro a w z h1 h2
+      field_simp
+      ring
+    have hkeyD4 : ∀ a w z : k, 1 - a * w ≠ 0 → 1 - a * z ≠ 0 →
+        (a * w) ^ 2 / (1 - a * w) ^ 3 - (a * z) ^ 2 / (1 - a * z) ^ 3 =
+          a ^ 2 * (w - z) *
+            ((w + z) - 3 * a * w * z + a ^ 3 * w ^ 2 * z ^ 2) /
+            ((1 - a * w) ^ 3 * (1 - a * z) ^ 3) := by
+      intro a w z h1 h2
+      field_simp
+      ring
+    -- the Lipschitz bound with ratio `|y| < 1`
+    have hGBlip : ∀ u v : k, valuation k u = valuation k y →
+        valuation k v = valuation k y →
+        valuation k (((bilateralX u q₀ + bilateralY u q₀) - u) -
+            ((bilateralX v q₀ + bilateralY v q₀) - v)) ≤
+          valuation k y * valuation k (u - v) := by
+      intro u v hu hv
+      obtain ⟨hu0, hult, hqu, hquinv⟩ := hwin u hu
+      obtain ⟨hv0, hvlt, hqv, hqvinv⟩ := hwin v hv
+      have hquinv1 : valuation k (q₀ * u⁻¹) < 1 := by
+        rw [hquinv]; exact hylt1
+      have hqvinv1 : valuation k (q₀ * v⁻¹) < 1 := by
+        rw [hqvinv]; exact hylt1
+      have h1u0 : (1 : k) - u ≠ 0 := hone_sub_ne'' u hult
+      have h1v0 : (1 : k) - v ≠ 0 := hone_sub_ne'' v hvlt
+      have h1u : valuation k (1 - u) = 1 :=
+        (valuation k).map_one_sub_of_lt hult
+      have h1v : valuation k (1 - v) = 1 :=
+        (valuation k).map_one_sub_of_lt hvlt
+      have hsm1u : ∀ m : ℕ+, valuation k (q₀ ^ (m : ℕ) * u) < 1 := by
+        intro m
+        rw [map_mul, map_pow]
+        calc valuation k q₀ ^ (m : ℕ) * valuation k u
+            ≤ valuation k q₀ * 1 :=
+              mul_le_mul' (hqpow_le m) (le_of_lt hult)
+          _ = valuation k q₀ := mul_one _
+          _ < 1 := hq1
+      have hsm1v : ∀ m : ℕ+, valuation k (q₀ ^ (m : ℕ) * v) < 1 := by
+        intro m
+        rw [map_mul, map_pow]
+        calc valuation k q₀ ^ (m : ℕ) * valuation k v
+            ≤ valuation k q₀ * 1 :=
+              mul_le_mul' (hqpow_le m) (le_of_lt hvlt)
+          _ = valuation k q₀ := mul_one _
+          _ < 1 := hq1
+      have hsm2u : ∀ m : ℕ+, valuation k (q₀ ^ (m : ℕ) * u⁻¹) ≤
+          valuation k y := by
+        intro m
+        rw [map_mul, map_pow, map_inv₀]
+        calc valuation k q₀ ^ (m : ℕ) * (valuation k u)⁻¹
+            ≤ valuation k q₀ * (valuation k u)⁻¹ :=
+              mul_le_mul_left (hqpow_le m) _
+          _ = valuation k (q₀ * u⁻¹) := by rw [map_mul, map_inv₀]
+          _ = valuation k y := hquinv
+      have hsm2v : ∀ m : ℕ+, valuation k (q₀ ^ (m : ℕ) * v⁻¹) ≤
+          valuation k y := by
+        intro m
+        rw [map_mul, map_pow, map_inv₀]
+        calc valuation k q₀ ^ (m : ℕ) * (valuation k v)⁻¹
+            ≤ valuation k q₀ * (valuation k v)⁻¹ :=
+              mul_le_mul_left (hqpow_le m) _
+          _ = valuation k (q₀ * v⁻¹) := by rw [map_mul, map_inv₀]
+          _ = valuation k y := hqvinv
+      have hinvdiffB : valuation k (u⁻¹ - v⁻¹) =
+          valuation k (u - v) / (valuation k y * valuation k y) := by
+        have he : u⁻¹ - v⁻¹ = (v - u) / (u * v) := by
+          field_simp
+        rw [he, map_div₀, map_mul, hu, hv,
+          show v - u = -(u - v) from by ring, Valuation.map_neg]
+      -- leading difference
+      have hlead : valuation k
+          ((u / (1 - u) ^ 3 - u) - (v / (1 - v) ^ 3 - v)) ≤
+            valuation k y * valuation k (u - v) := by
+        rw [hkeyl3d u v h1u0 h1v0, map_div₀, map_mul, map_mul, map_pow,
+          map_pow, h1u, h1v, one_pow, one_mul, div_one]
+        have hQ3 : valuation k ((1 - 3 * u * v + u * v * (u + v)) -
+            (1 - u) ^ 3 * (1 - v) ^ 3) ≤ valuation k y := by
+          have hid : (1 - 3 * u * v + u * v * (u + v)) -
+              (1 - u) ^ 3 * (1 - v) ^ 3 =
+              (u + v - u * v) * (3 - 3 * (u + v - u * v) +
+                (u + v - u * v) ^ 2) - 3 * u * v + u * v * (u + v) := by
+            ring
+          rw [hid]
+          have hw : valuation k (u + v - u * v) ≤ valuation k y := by
+            refine le_trans (Valuation.map_sub _ _ _) (max_le
+              (le_trans (Valuation.map_add _ _ _) (max_le (le_of_eq hu)
+                (le_of_eq hv))) ?_)
+            rw [map_mul, hu, hv]
+            calc valuation k y * valuation k y
+                ≤ valuation k y * 1 := mul_le_mul' le_rfl (le_of_lt hylt1)
+              _ = valuation k y := mul_one _
+          have hbr : valuation k (3 - 3 * (u + v - u * v) +
+              (u + v - u * v) ^ 2) ≤ 1 := by
+            refine le_trans (Valuation.map_add _ _ _) (max_le
+              (le_trans (Valuation.map_sub _ _ _) (max_le ?_ ?_)) ?_)
+            · simpa using valuation_intCast_le_one (R := k) 3
+            · rw [map_mul]
+              calc valuation k 3 * valuation k (u + v - u * v)
+                  ≤ 1 * 1 := mul_le_mul'
+                    (by simpa using valuation_intCast_le_one (R := k) 3)
+                    (le_trans hw (le_of_lt hylt1))
+                _ = 1 := one_mul _
+            · rw [map_pow]
+              calc valuation k (u + v - u * v) ^ 2
+                  ≤ 1 ^ 2 := pow_le_pow_left'
+                    (le_trans hw (le_of_lt hylt1)) 2
+                _ = 1 := one_pow _
+          have huv2 : valuation k (u * v) ≤ valuation k y := by
+            rw [map_mul, hu, hv]
+            calc valuation k y * valuation k y
+                ≤ valuation k y * 1 := mul_le_mul' le_rfl (le_of_lt hylt1)
+              _ = valuation k y := mul_one _
+          refine le_trans (Valuation.map_add _ _ _) (max_le
+            (le_trans (Valuation.map_sub _ _ _) (max_le ?_ ?_)) ?_)
+          · rw [map_mul]
+            calc valuation k (u + v - u * v) *
+                valuation k (3 - 3 * (u + v - u * v) +
+                  (u + v - u * v) ^ 2)
+                ≤ valuation k y * 1 := mul_le_mul' hw hbr
+              _ = valuation k y := mul_one _
+          · rw [map_mul, map_mul]
+            calc valuation k 3 * valuation k u * valuation k v
+                ≤ 1 * valuation k y * 1 := mul_le_mul' (mul_le_mul'
+                  (by simpa using valuation_intCast_le_one (R := k) 3)
+                  (le_of_eq hu)) (le_of_lt (hv ▸ hylt1))
+              _ = valuation k y := by rw [one_mul, mul_one]
+          · rw [map_mul]
+            calc valuation k (u * v) * valuation k (u + v)
+                ≤ valuation k y * 1 := mul_le_mul' huv2
+                  (le_trans (Valuation.map_add _ _ _) (max_le
+                    (le_of_lt (hu ▸ hylt1)) (le_of_lt (hv ▸ hylt1))))
+              _ = valuation k y := mul_one _
+        calc valuation k (u - v) *
+            valuation k ((1 - 3 * u * v + u * v * (u + v)) -
+              (1 - u) ^ 3 * (1 - v) ^ 3)
+            ≤ valuation k (u - v) * valuation k y :=
+              mul_le_mul' le_rfl hQ3
+          _ = valuation k y * valuation k (u - v) := mul_comm _ _
+      -- direct cubic half, termwise
+      have htermB1 : ∀ m : ℕ+, valuation k
+          (q₀ ^ (m : ℕ) * u / (1 - q₀ ^ (m : ℕ) * u) ^ 3 -
+           q₀ ^ (m : ℕ) * v / (1 - q₀ ^ (m : ℕ) * v) ^ 3) ≤
+            valuation k y * valuation k (u - v) := by
+        intro m
+        have hbr : valuation k (1 - 3 * (q₀ ^ (m : ℕ)) ^ 2 * u * v +
+            (q₀ ^ (m : ℕ)) ^ 3 * u * v * (u + v)) ≤ 1 := by
+          refine le_trans (Valuation.map_add _ _ _) (max_le
+            (le_trans (Valuation.map_sub _ _ _) (max_le ?_ ?_)) ?_)
+          · rw [map_one]
+          · rw [map_mul, map_mul, map_mul]
+            calc valuation k 3 * valuation k ((q₀ ^ (m : ℕ)) ^ 2) *
+                valuation k u * valuation k v
+                ≤ 1 * 1 * 1 * 1 := by
+                  refine mul_le_mul' (mul_le_mul' (mul_le_mul'
+                    (by simpa using valuation_intCast_le_one (R := k) 3)
+                    ?_) (le_of_lt hult)) (le_of_lt hvlt)
+                  rw [map_pow, map_pow]
+                  calc (valuation k q₀ ^ (m : ℕ)) ^ 2 ≤ 1 ^ 2 :=
+                      pow_le_pow_left' (le_trans (hqpow_le m)
+                        (le_of_lt hq1)) 2
+                    _ = 1 := one_pow _
+              _ = 1 := by norm_num
+          · rw [map_mul, map_mul, map_mul]
+            calc valuation k ((q₀ ^ (m : ℕ)) ^ 3) * valuation k u *
+                valuation k v * valuation k (u + v)
+                ≤ 1 * 1 * 1 * 1 := by
+                  refine mul_le_mul' (mul_le_mul' (mul_le_mul' ?_
+                    (le_of_lt hult)) (le_of_lt hvlt))
+                    (le_trans (Valuation.map_add _ _ _) (max_le
+                      (le_of_lt hult) (le_of_lt hvlt)))
+                  rw [map_pow, map_pow]
+                  calc (valuation k q₀ ^ (m : ℕ)) ^ 3 ≤ 1 ^ 3 :=
+                      pow_le_pow_left' (le_trans (hqpow_le m)
+                        (le_of_lt hq1)) 3
+                    _ = 1 := one_pow _
+              _ = 1 := by norm_num
+        rw [hkeyD3 _ _ _ (hone_sub_ne'' _ (hsm1u m))
+          (hone_sub_ne'' _ (hsm1v m)), map_div₀, map_mul, map_mul,
+          map_mul]
+        simp only [map_pow]
+        rw [(valuation k).map_one_sub_of_lt (hsm1u m),
+          (valuation k).map_one_sub_of_lt (hsm1v m)]
+        simp only [one_pow, mul_one, div_one]
+        calc valuation k q₀ ^ (m : ℕ) * valuation k (u - v) *
+            valuation k (1 - 3 * (q₀ ^ (m : ℕ)) ^ 2 * u * v +
+              (q₀ ^ (m : ℕ)) ^ 3 * u * v * (u + v))
+            ≤ valuation k q₀ ^ (m : ℕ) * valuation k (u - v) * 1 :=
+              mul_le_mul' le_rfl hbr
+          _ = valuation k q₀ ^ (m : ℕ) * valuation k (u - v) := mul_one _
+          _ ≤ valuation k q₀ * valuation k (u - v) :=
+              mul_le_mul_left (hqpow_le m) _
+          _ ≤ valuation k y * valuation k (u - v) :=
+              mul_le_mul_left (le_of_lt hqlty) _
+      -- inverse quadratic half, termwise: regroup at the element level
+      -- so that every factor is a bounded window element
+      have hyinvge1 : (1 : ValueGroupWithZero k) ≤ (valuation k y)⁻¹ := by
+        rw [one_le_inv₀ (zero_lt_iff.mpr hY0)]
+        exact le_of_lt hylt1
+      have htermB2 : ∀ m : ℕ+, valuation k
+          ((q₀ ^ (m : ℕ) * u⁻¹) ^ 2 / (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 3 -
+           (q₀ ^ (m : ℕ) * v⁻¹) ^ 2 / (1 - q₀ ^ (m : ℕ) * v⁻¹) ^ 3) ≤
+            valuation k y * valuation k (u - v) := by
+        intro m
+        have hsm2u' : valuation k (q₀ ^ (m : ℕ) * u⁻¹) < 1 :=
+          lt_of_le_of_lt (hsm2u m) hylt1
+        have hsm2v' : valuation k (q₀ ^ (m : ℕ) * v⁻¹) < 1 :=
+          lt_of_le_of_lt (hsm2v m) hylt1
+        have huinv : valuation k u⁻¹ = (valuation k y)⁻¹ := by
+          rw [map_inv₀, hu]
+        have hvinv : valuation k v⁻¹ = (valuation k y)⁻¹ := by
+          rw [map_inv₀, hv]
+        -- the bracket is bounded by `|y|⁻¹`
+        have hbr : valuation k ((u⁻¹ + v⁻¹) -
+            3 * q₀ ^ (m : ℕ) * u⁻¹ * v⁻¹ +
+            (q₀ ^ (m : ℕ)) ^ 3 * (u⁻¹) ^ 2 * (v⁻¹) ^ 2) ≤
+            (valuation k y)⁻¹ := by
+          refine le_trans (Valuation.map_add _ _ _) (max_le
+            (le_trans (Valuation.map_sub _ _ _) (max_le ?_ ?_)) ?_)
+          · exact le_trans (Valuation.map_add _ _ _) (max_le
+              (le_of_eq huinv) (le_of_eq hvinv))
+          · have hgrp : (3 : k) * q₀ ^ (m : ℕ) * u⁻¹ * v⁻¹ =
+                3 * (q₀ ^ (m : ℕ) * u⁻¹) * v⁻¹ := by
+              ring
+            rw [hgrp, map_mul, map_mul]
+            refine le_trans ?_ hyinvge1
+            calc valuation k 3 * valuation k (q₀ ^ (m : ℕ) * u⁻¹) *
+                valuation k v⁻¹
+                ≤ 1 * valuation k y * (valuation k y)⁻¹ :=
+                  mul_le_mul' (mul_le_mul'
+                    (by simpa using valuation_intCast_le_one (R := k) 3)
+                    (hsm2u m)) (le_of_eq hvinv)
+              _ = valuation k y * (valuation k y)⁻¹ := by rw [one_mul]
+              _ = 1 := mul_inv_cancel₀ hY0
+          · have hgrp : (q₀ ^ (m : ℕ)) ^ 3 * (u⁻¹) ^ 2 * (v⁻¹) ^ 2 =
+                (q₀ ^ (m : ℕ) * u⁻¹) * (q₀ ^ (m : ℕ) * v⁻¹) *
+                  (q₀ ^ (m : ℕ) * u⁻¹ * v⁻¹) := by
+              ring
+            rw [hgrp, map_mul, map_mul]
+            refine le_trans ?_ hyinvge1
+            have h3 : valuation k (q₀ ^ (m : ℕ) * u⁻¹ * v⁻¹) ≤ 1 := by
+              rw [map_mul]
+              calc valuation k (q₀ ^ (m : ℕ) * u⁻¹) * valuation k v⁻¹
+                  ≤ valuation k y * (valuation k y)⁻¹ :=
+                    mul_le_mul' (hsm2u m) (le_of_eq hvinv)
+                _ = 1 := mul_inv_cancel₀ hY0
+            calc valuation k (q₀ ^ (m : ℕ) * u⁻¹) *
+                valuation k (q₀ ^ (m : ℕ) * v⁻¹) *
+                valuation k (q₀ ^ (m : ℕ) * u⁻¹ * v⁻¹)
+                ≤ 1 * 1 * 1 := mul_le_mul' (mul_le_mul'
+                    (le_of_lt hsm2u') (le_of_lt hsm2v')) h3
+              _ = 1 := by norm_num
+        -- regroup the numerator at the element level
+        have hgrp2 : (q₀ ^ (m : ℕ)) ^ 2 * (u⁻¹ - v⁻¹) *
+            ((u⁻¹ + v⁻¹) - 3 * q₀ ^ (m : ℕ) * u⁻¹ * v⁻¹ +
+              (q₀ ^ (m : ℕ)) ^ 3 * (u⁻¹) ^ 2 * (v⁻¹) ^ 2) =
+            ((v - u) * (q₀ ^ (m : ℕ) * u⁻¹) * (q₀ ^ (m : ℕ) * v⁻¹)) *
+            ((u⁻¹ + v⁻¹) - 3 * q₀ ^ (m : ℕ) * u⁻¹ * v⁻¹ +
+              (q₀ ^ (m : ℕ)) ^ 3 * (u⁻¹) ^ 2 * (v⁻¹) ^ 2) := by
+          have hu0' : u ≠ 0 := hu0
+          have hv0' : v ≠ 0 := hv0
+          field_simp
+        have hden : valuation k ((1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 3 *
+            (1 - q₀ ^ (m : ℕ) * v⁻¹) ^ 3) = 1 := by
+          rw [map_mul, map_pow, map_pow,
+            (valuation k).map_one_sub_of_lt hsm2u',
+            (valuation k).map_one_sub_of_lt hsm2v', one_pow, one_mul]
+        rw [hkeyD4 _ _ _ (hone_sub_ne'' _ hsm2u')
+          (hone_sub_ne'' _ hsm2v'), hgrp2, map_div₀, hden, div_one,
+          map_mul, map_mul, map_mul,
+          show v - u = -(u - v) from by ring, Valuation.map_neg]
+        calc valuation k (u - v) * valuation k (q₀ ^ (m : ℕ) * u⁻¹) *
+            valuation k (q₀ ^ (m : ℕ) * v⁻¹) *
+            valuation k ((u⁻¹ + v⁻¹) -
+              3 * q₀ ^ (m : ℕ) * u⁻¹ * v⁻¹ +
+              (q₀ ^ (m : ℕ)) ^ 3 * (u⁻¹) ^ 2 * (v⁻¹) ^ 2)
+            ≤ valuation k (u - v) * valuation k y * valuation k y *
+              (valuation k y)⁻¹ :=
+              mul_le_mul' (mul_le_mul' (mul_le_mul' le_rfl (hsm2u m))
+                (hsm2v m)) hbr
+          _ = valuation k (u - v) * valuation k y := by
+              rw [mul_assoc (valuation k (u - v) * valuation k y),
+                mul_inv_cancel₀ hY0, mul_one]
+          _ = valuation k y * valuation k (u - v) := mul_comm _ _
+      sorry
     sorry
 
 /-- **`x`-surjectivity onto the annulus** (DERIVED 2026-07-20 by case
