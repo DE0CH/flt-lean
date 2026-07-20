@@ -1790,6 +1790,80 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
               hnegAddYeq]
             simp only [WeierstrassCurve.Affine.addY]
           exact hsome hXeq hYeq
+  -- the zero rule in constructor spelling
+  have hred0' : redFun WeierstrassCurve.Affine.Point.zero = 0 := rfl
+  -- Step 3c-ii-l: the reduction map is injective on `p`-torsion (the
+  -- residue-injectivity theorems of the good-reduction machinery)
+  have hredInj : ∀ (P Q : ((W.map (algebraMap ℤ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Point),
+      ((p : ℕ) : ℤ) • P = 0 → ((p : ℕ) : ℤ) • Q = 0 →
+      redFun P = redFun Q → P = Q := by
+    intro P Q hP hQ hPQ
+    cases P with
+    | zero =>
+      cases Q with
+      | zero => rfl
+      | some x₂ y₂ h₂ =>
+        rw [hred0'] at hPQ
+        rw [hredSome h₂ (habs h₂ hQ) (hord h₂ hQ)] at hPQ
+        exact absurd hPQ.symm (WeierstrassCurve.Affine.Point.some_ne_zero _)
+    | some x₁ y₁ h₁ =>
+      cases Q with
+      | zero =>
+        rw [hred0'] at hPQ
+        rw [hredSome h₁ (habs h₁ hP) (hord h₁ hP)] at hPQ
+        exact absurd hPQ (WeierstrassCurve.Affine.Point.some_ne_zero _)
+      | some x₂ y₂ h₂ =>
+        have hx₁ := habs h₁ hP
+        have hy₁ := hord h₁ hP
+        have hx₂ := habs h₂ hQ
+        have hy₂ := hord h₂ hQ
+        rw [hredSome h₁ hx₁ hy₁, hredSome h₂ hx₂ hy₂] at hPQ
+        obtain ⟨hrx, hry⟩ : ((IsLocalRing.residue
+            (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨x₁, hx₁⟩) = ((IsLocalRing.residue
+            (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨x₂, hx₂⟩) ∧
+            ((IsLocalRing.residue
+            (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨y₁, hy₁⟩) = ((IsLocalRing.residue
+            (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ⟨y₂, hy₂⟩) := by
+          injection hPQ with h1 h2
+          exact ⟨h1, h2⟩
+        have hxx : x₁ = x₂ := by
+          by_contra hne
+          exact WeierstrassCurve.torsion_abscissa_residue_ne
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)
+            (W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))
+            p
+            (AlgebraicClosure
+                (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                  hq.toHeightOneSpectrumRingOfIntegersRat))
+            (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+            (Fact.out : p.Prime) hodd h𝒪 h₁ h₂ hP hQ hne hx₁ hx₂ hrx
+        subst hxx
+        have hyy : y₁ = y₂ :=
+          WeierstrassCurve.torsion_ordinate_eq_of_residue_eq
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)
+            (W.map (algebraMap ℤ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)))
+            p
+            (AlgebraicClosure
+                (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                  hq.toHeightOneSpectrumRingOfIntegersRat))
+            (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+            (Fact.out : p.Prime) hodd h𝒪 h₁ h₂ hP hx₁ hy₁ hy₂ hry
+        subst hyy
+        rfl
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
