@@ -679,6 +679,18 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
         positivity)
     refine (Nat.bijective_iff_injective_and_card τ₀).mpr ⟨hτinj, ?_⟩
     rw [hcardQ, hcardV]
+  set τadd : ((W.map (algebraMap ℤ (AlgebraicClosure ℚ))).nTorsion p) ≃+
+      ((W.map (algebraMap ℤ (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) :=
+    AddEquiv.ofBijective τ₀ hτbij with hτadddef
+  set τ : ((W.map (algebraMap ℤ (AlgebraicClosure ℚ))).nTorsion p)
+      ≃ₗ[ZMod p]
+      ((W.map (algebraMap ℤ (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) :=
+    { τadd with map_smul' := ZMod.map_smul τadd.toAddMonoidHom }
+    with hτdef
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
