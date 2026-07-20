@@ -789,7 +789,7 @@
     "name": "WeierstrassCurve.tateGluePointAt",
     "fullname": "WeierstrassCurve.tateGluePointAt",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure",
-    "text": "the level-L point of the glued Tate uniformisation (DEFINED 2026-07-20, sorry-free): pointMapQuot of the local field L (instances from isNonarchimedeanLocalField_intermediate on the canonical valuative topology) at the image of q, cast across tateCurve_map and pushed to Omega along Point.map L.val"
+    "text": "the level-L point of the glued Tate uniformisation (DEFINED 2026-07-20, sorry-free): pointMapQuot of the local field L at the image of q, transported by pointCastHom (the group-respecting substitution transport along tateCurve_map) and pushed to Omega along Point.map L.val; all type-spellings pinned by show-ascriptions so downstream rewrites typecheck"
   },
   {
     "name": "WeierstrassCurve.tateGluePointAt_inclusion",
@@ -808,13 +808,13 @@
     "name": "WeierstrassCurve.tateGluePointAt_mul",
     "fullname": "WeierstrassCurve.tateGluePointAt_mul",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure",
-    "text": "additivity of the level map in the unit (sorry node, expected mechanical): pointMapQuot_add at L (PROVEN in TateUniformization) transported across the curve cast (cast commutes with + since the curves are equal) and pushed along the additive Point.map"
+    "text": "additivity of the level map in the unit (PROVEN 2026-07-20): pointMapQuot_add at L composed with the additive transport pointCastHom (an AddMonoidHom by construction: substitution applied to the identity hom, so map_add applies without inspecting the equality proof) and the additive Point.map; opaque-composite device (set g := comp, rfl-representation via unfold + comp_apply) to avoid rewrite-motive typecheck failures on cast proofs"
   },
   {
     "name": "WeierstrassCurve.tateGluePointAt_eq_zero_iff",
     "fullname": "WeierstrassCurve.tateGluePointAt_eq_zero_iff",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure",
-    "text": "kernel of the level map (sorry node, expected mechanical): pointMapQuot_eq_zero_iff at L (PROVEN in TateUniformization) + Point.map sends only 0 to 0 (case analysis) + the cast preserves 0 + QuotientGroup.mk u trivial iff u in zpowers"
+    "text": "kernel of the level map (PROVEN 2026-07-20): pointMapQuot_eq_zero_iff at L + QuotientGroup.eq_one_iff + injectivity of the transport-and-pushforward composite (pointCastHom_injective, Point.map_injective); same opaque-composite device as _mul"
   },
   {
     "name": "WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel",

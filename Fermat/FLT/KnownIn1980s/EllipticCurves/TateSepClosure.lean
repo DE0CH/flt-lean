@@ -544,6 +544,23 @@ theorem isNonarchimedeanLocalField_intermediate
       exact absurd hγ1 (not_lt.mpr hge)
   exact { }
 
+/-- The additive transport of point groups along an equality of
+Weierstrass curves: substitution applied to the identity homomorphism.
+Unlike a bare `cast`, this is an `AddMonoidHom` by construction, so
+`map_add` and friends apply without inspecting the equality proof. -/
+noncomputable def WeierstrassCurve.pointCastHom {F : Type uΩ} [Field F]
+    [DecidableEq F] {W₁ W₂ : WeierstrassCurve F} (h : W₁ = W₂) :
+    W₁.toAffine.Point →+ W₂.toAffine.Point :=
+  h ▸ AddMonoidHom.id _
+
+omit [ValuativeRel k] [TopologicalSpace k] [IsNonarchimedeanLocalField k] [Algebra k Ω] [IsSepClosed Ω] [Algebra.IsSeparable k Ω] [DecidableEq Ω] in
+/-- The transport hom is injective (it is the identity in disguise). -/
+theorem WeierstrassCurve.pointCastHom_injective {F : Type uΩ} [Field F]
+    [DecidableEq F] {W₁ W₂ : WeierstrassCurve F} (h : W₁ = W₂) :
+    Function.Injective (pointCastHom h) := by
+  subst h
+  exact fun a b hab => hab
+
 /-- **The level-`L` point of the glued Tate uniformisation**: for a
 finite intermediate field `L` of `Ω/k` (a nonarchimedean local field by
 `isNonarchimedeanLocalField_intermediate`), the canonical point map of
@@ -566,10 +583,16 @@ noncomputable def WeierstrassCurve.tateGluePointAt [CharZero k] (q : kˣ)
     valuativeExtension_comap (k := k) Ω v hv L
   WeierstrassCurve.Affine.Point.map (W' := tateCurve ((q : k) : k)) (S := k)
     L.val
-    (cast (congrArg (fun W : WeierstrassCurve L => W.toAffine.Point)
-        (TateCurve.tateCurve_map (l := L) ((q : k) : k) hq)).symm
+    (pointCastHom
+      (show WeierstrassCurve.tateCurve
+            (((Units.map (algebraMap k L).toMonoidHom q : Lˣ) : L)) =
+          (((WeierstrassCurve.tateCurve ((q : k) : k))⁄L) :
+            WeierstrassCurve L) from
+        (TateCurve.tateCurve_map (l := L) ((q : k) : k) hq).symm)
       (TateCurve.pointMapQuot (Units.map (algebraMap k L).toMonoidHom q)
-        (TateCurve.valuation_algebraMap_lt_one hq)
+        (show valuation L
+            (((Units.map (algebraMap k L).toMonoidHom q : Lˣ) : L)) < 1 from
+          TateCurve.valuation_algebraMap_lt_one hq)
         (QuotientGroup.mk u)))
 
 set_option warn.sorry false in
@@ -614,33 +637,92 @@ theorem WeierstrassCurve.tateGluePointAt_conj [CharZero k] (q : kˣ)
         (Units.map (IntermediateField.intermediateFieldMap σ L).toAlgHom.toRingHom.toMonoidHom u) := by
   sorry
 
-set_option warn.sorry false in
-/-- **Additivity of the level map in the unit** (sorry node — expected
-mechanical): the level map turns unit multiplication into point
-addition, by `TateCurve.pointMapQuot_add` at the local field `L`
-transported across the curve identification and pushed forward along
-the additive `Point.map`. -/
+omit [IsSepClosed Ω] in
+/-- **Additivity of the level map in the unit** (PROVEN 2026-07-20): the
+level map turns unit multiplication into point addition, by
+`TateCurve.pointMapQuot_add` at the local field `L` composed with the
+additive transport and pushforward. -/
 theorem WeierstrassCurve.tateGluePointAt_mul [CharZero k] (q : kˣ)
     (hq : valuation k (q : k) < 1) (v : ValuativeRel Ω)
     (hv : @ValuativeExtension k Ω _ _ _ v _)
     (L : IntermediateField k Ω) [FiniteDimensional k L] (u w : Lˣ) :
     tateGluePointAt Ω q hq v hv L (u * w) =
       tateGluePointAt Ω q hq v hv L u + tateGluePointAt Ω q hq v hv L w := by
-  sorry
+  letI : ValuativeRel L := @ValuativeRel.comap L Ω _ _ v L.val.toRingHom
+  letI : TopologicalSpace L := ValuativeRel.topologicalSpace L
+  haveI : IsNonarchimedeanLocalField L :=
+    isNonarchimedeanLocalField_intermediate (k := k) Ω v hv L
+  haveI : CharZero L :=
+    charZero_of_injective_algebraMap (algebraMap k L).injective
+  haveI : ValuativeExtension k L :=
+    valuativeExtension_comap (k := k) Ω v hv L
+  set g := (WeierstrassCurve.Affine.Point.map
+      (W' := tateCurve ((q : k) : k)) (S := k) L.val).comp
+    (pointCastHom
+      (show WeierstrassCurve.tateCurve
+            (((Units.map (algebraMap k L).toMonoidHom q : Lˣ) : L)) =
+          (((WeierstrassCurve.tateCurve ((q : k) : k))⁄L) :
+            WeierstrassCurve L) from
+        (TateCurve.tateCurve_map (l := L) ((q : k) : k) hq).symm)) with hg
+  have hrepr : ∀ x : Lˣ, tateGluePointAt Ω q hq v hv L x =
+      g (TateCurve.pointMapQuot (Units.map (algebraMap k L).toMonoidHom q)
+        (show valuation L
+            (((Units.map (algebraMap k L).toMonoidHom q : Lˣ) : L)) < 1 from
+          TateCurve.valuation_algebraMap_lt_one hq)
+        (QuotientGroup.mk x)) := fun x => by
+    unfold WeierstrassCurve.tateGluePointAt
+    rw [hg, AddMonoidHom.comp_apply]
+  rw [hrepr, hrepr, hrepr,
+    show (QuotientGroup.mk (u * w) :
+        Lˣ ⧸ Subgroup.zpowers (Units.map (algebraMap k L).toMonoidHom q)) =
+      QuotientGroup.mk u * QuotientGroup.mk w from rfl,
+    TateCurve.pointMapQuot_add, map_add]
 
-set_option warn.sorry false in
-/-- **The kernel of the level map** (sorry node — expected mechanical):
-the level point of `u` vanishes iff `u` is a power of the image of `q`
-in `L`, by `TateCurve.pointMapQuot_eq_zero_iff` at `L`, injectivity of
-the point pushforward, and injectivity of the inclusion on `q`-power
-subgroups. -/
+omit [IsSepClosed Ω] in
+/-- **The kernel of the level map** (PROVEN 2026-07-20): the level point
+of `u` vanishes iff `u` is a power of the image of `q` in `L`, by
+`TateCurve.pointMapQuot_eq_zero_iff` at `L`, injectivity of the
+transport-and-pushforward, and `QuotientGroup.eq_one_iff`. -/
 theorem WeierstrassCurve.tateGluePointAt_eq_zero_iff [CharZero k] (q : kˣ)
     (hq : valuation k (q : k) < 1) (v : ValuativeRel Ω)
     (hv : @ValuativeExtension k Ω _ _ _ v _)
     (L : IntermediateField k Ω) [FiniteDimensional k L] (u : Lˣ) :
     tateGluePointAt Ω q hq v hv L u = 0 ↔
       u ∈ Subgroup.zpowers (Units.map (algebraMap k L).toMonoidHom q) := by
-  sorry
+  letI : ValuativeRel L := @ValuativeRel.comap L Ω _ _ v L.val.toRingHom
+  letI : TopologicalSpace L := ValuativeRel.topologicalSpace L
+  haveI : IsNonarchimedeanLocalField L :=
+    isNonarchimedeanLocalField_intermediate (k := k) Ω v hv L
+  haveI : CharZero L :=
+    charZero_of_injective_algebraMap (algebraMap k L).injective
+  haveI : ValuativeExtension k L :=
+    valuativeExtension_comap (k := k) Ω v hv L
+  set g := (WeierstrassCurve.Affine.Point.map
+      (W' := tateCurve ((q : k) : k)) (S := k) L.val).comp
+    (pointCastHom
+      (show WeierstrassCurve.tateCurve
+            (((Units.map (algebraMap k L).toMonoidHom q : Lˣ) : L)) =
+          (((WeierstrassCurve.tateCurve ((q : k) : k))⁄L) :
+            WeierstrassCurve L) from
+        (TateCurve.tateCurve_map (l := L) ((q : k) : k) hq).symm)) with hg
+  have hrepr : ∀ x : Lˣ, tateGluePointAt Ω q hq v hv L x =
+      g (TateCurve.pointMapQuot (Units.map (algebraMap k L).toMonoidHom q)
+        (show valuation L
+            (((Units.map (algebraMap k L).toMonoidHom q : Lˣ) : L)) < 1 from
+          TateCurve.valuation_algebraMap_lt_one hq)
+        (QuotientGroup.mk x)) := fun x => by
+    unfold WeierstrassCurve.tateGluePointAt
+    rw [hg, AddMonoidHom.comp_apply]
+  have hginj : Function.Injective g := by
+    rw [hg, AddMonoidHom.coe_comp]
+    exact (WeierstrassCurve.Affine.Point.map_injective
+        (W' := tateCurve ((q : k) : k)) (f := L.val)).comp
+      (pointCastHom_injective _)
+  have hgz : ∀ X, (g X = 0 ↔ X = 0) := fun X =>
+    ⟨fun h => hginj (h.trans (map_zero g).symm),
+     fun h => by rw [h, map_zero]⟩
+  rw [hrepr, hgz, TateCurve.pointMapQuot_eq_zero_iff,
+    QuotientGroup.eq_one_iff]
 
 set_option warn.sorry false in
 /-- **The gluing implication for Tate's uniformisation** (sorry node —
