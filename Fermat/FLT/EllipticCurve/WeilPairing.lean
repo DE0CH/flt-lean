@@ -157,7 +157,7 @@ injectivity of reduction on torsion), and inertia acts trivially
 the Frobenius compatibility is the definition of the global Frobenius
 on the residue extension. -/
 theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
-    [E.IsElliptic] (p : ℕ) [Fact p.Prime] (hppos : 0 < p) :
+    [E.IsElliptic] (p : ℕ) [Fact p.Prime] (hppos : 0 < p) (hodd : Odd p) :
     ∃ S : Finset (IsDedekindDomain.HeightOneSpectrum
         (NumberField.RingOfIntegers ℚ)),
       ∀ (q : ℕ) (hq : q.Prime),
@@ -1114,7 +1114,7 @@ character takes the same value `q` at `Frob_q`
 density the two characters agree everywhere — which is how
 `det_galoisRep_eq_cyclotomic` below consumes this node. -/
 theorem det_galoisRep_globalFrob (E : WeierstrassCurve ℚ)
-    [E.IsElliptic] (p : ℕ) [Fact p.Prime] (hppos : 0 < p) :
+    [E.IsElliptic] (p : ℕ) [Fact p.Prime] (hppos : 0 < p) (hodd : Odd p) :
     ∃ S : Finset (IsDedekindDomain.HeightOneSpectrum
         (NumberField.RingOfIntegers ℚ)),
       ∀ (q : ℕ) (hq : q.Prime),
@@ -1125,7 +1125,7 @@ theorem det_galoisRep_globalFrob (E : WeierstrassCurve ℚ)
               hq.toHeightOneSpectrumRingOfIntegersRat) : Module.End (ZMod p)
             ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p)) =
         (q : ZMod p) := by
-  obtain ⟨S, hS⟩ := exists_frobenius_reduction_model E p hppos
+  obtain ⟨S, hS⟩ := exists_frobenius_reduction_model E p hppos hodd
   refine ⟨S, ?_⟩
   intro q hq hqS
   haveI : Fact q.Prime := ⟨hq⟩
@@ -1193,7 +1193,7 @@ everything. Conversely `det ρ = χ` CONSTRUCTS the abstract Weil
 pairing (the coordinate determinant form), which is how the tree
 consumes it. -/
 theorem det_galoisRep_eq_cyclotomic (E : WeierstrassCurve ℚ)
-    [E.IsElliptic] (p : ℕ) [Fact p.Prime] (hppos : 0 < p)
+    [E.IsElliptic] (p : ℕ) [Fact p.Prime] (hppos : 0 < p) (hodd : Odd p)
     (g : Field.absoluteGaloisGroup ℚ) :
     LinearMap.det
       (E.galoisRep p hppos g : Module.End (ZMod p)
@@ -1201,7 +1201,7 @@ theorem det_galoisRep_eq_cyclotomic (E : WeierstrassCurve ℚ)
       algebraMap ℤ_[p] (ZMod p)
         (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) := by
   classical
-  obtain ⟨S, hS⟩ := det_galoisRep_globalFrob E p hppos
+  obtain ⟨S, hS⟩ := det_galoisRep_globalFrob E p hppos hodd
   set T := (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p with hT
   set ρ := E.galoisRep p hppos with hρ
   set f₁ : Field.absoluteGaloisGroup ℚ → ZMod p :=
@@ -1331,7 +1331,7 @@ the torsion a rank-`2` space; the Galois twist is the determinant of
 the representation (`pairing_map_eq_det_smul`), which is the
 cyclotomic character by the determinant node. -/
 theorem exists_weilPairing (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (p : ℕ) [Fact p.Prime] (hppos : 0 < p) :
+    (p : ℕ) [Fact p.Prime] (hppos : 0 < p) (hodd : Odd p) :
     ∃ e : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p
         →ₗ[ZMod p] ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p
         →ₗ[ZMod p] ZMod p),
@@ -1383,7 +1383,7 @@ theorem exists_weilPairing (E : WeierstrassCurve ℚ) [E.IsElliptic]
     simp only [Module.Basis.coord_apply, Module.Basis.repr_self]
     norm_num [Finsupp.single_apply]
   · intro g x y
-    rw [← det_galoisRep_eq_cyclotomic E p hppos g]
+    rw [← det_galoisRep_eq_cyclotomic E p hppos hodd g]
     exact pairing_map_eq_det_smul hrank e halt
       (E.galoisRep p hppos g) x y
 

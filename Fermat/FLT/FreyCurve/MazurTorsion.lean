@@ -1409,7 +1409,8 @@ theorem FreyPackage.stable_line_dichotomy_of_not_isIrreducible
     intro g
     rw [← det_eq_subCharacter_mul_quotCharacter (P.freyCurve.galoisRep P.p P.hppos) W hW1 hQ1 hstable
       χ₁ χ₂ hχ₁ hχ₂ g, WeilPairing.cyclotomicCharacterModL_eq_toZMod]
-    exact WeilPairing.det_galoisRep_eq_cyclotomic P.freyCurve P.p P.hppos g
+    exact WeilPairing.det_galoisRep_eq_cyclotomic P.freyCurve P.p P.hppos
+      (P.pp.odd_of_ne_two (by have := P.hp5; omega)) g
   -- the kernel of the representation is open …
   let Kρ : Subgroup (Field.absoluteGaloisGroup ℚ) :=
     { carrier := {g | (P.freyCurve.galoisRep P.p P.hppos) g = 1}

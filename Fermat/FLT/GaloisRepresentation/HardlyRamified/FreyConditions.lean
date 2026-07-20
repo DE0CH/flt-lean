@@ -85,6 +85,7 @@ theorem FreyCurve.torsion_det :
   intro g
   obtain ⟨e, halt, hnd, hequiv⟩ :=
     WeilPairing.exists_weilPairing P.freyCurve P.p P.hppos
+      (P.pp.odd_of_ne_two (by have := P.hp5; omega))
   have hrank : Module.rank (ZMod P.p)
       ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) = 2 :=
     (P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).p_torsion_rank
