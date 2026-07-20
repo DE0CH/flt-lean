@@ -6669,6 +6669,95 @@ theorem exists_annulus_bilateralX_eq_of_one_le (q₀ : k) (hq0 : q₀ ≠ 0)
           refine mul_le_mul' le_rfl ?_
           calc valuation k y = valuation k y * 1 := (mul_one _).symm
             _ ≤ valuation k y * valuation k y := mul_le_mul' le_rfl hy1
+  -- the seed `u₀ = y/(x+y)` lies on the shell and `F` moves it by at
+  -- most `|q₀|`
+  have hxy0 : x + y ≠ 0 := by
+    intro hz
+    have h2 : valuation k (y + x) = 0 := by
+      rw [show y + x = x + y from by ring, hz, map_zero]
+    rw [hyx] at h2
+    exact hY0 h2
+  have hvxy : valuation k (x + y) = valuation k y := by
+    rw [show x + y = y + x from by ring]
+    exact hyx
+  have hu₀shell : valuation k (y / (x + y)) = 1 ∧ y / (x + y) ≠ 1 := by
+    constructor
+    · rw [map_div₀, hvxy, div_self hY0]
+    · intro hh
+      rw [div_eq_one_iff_eq hxy0] at hh
+      exact hx0 (add_right_cancel (hh.symm.trans (zero_add y).symm))
+  have hseed : valuation k (F (y / (x + y)) - y / (x + y)) ≤
+      valuation k q₀ := by
+    have hkey : F (y / (x + y)) - y / (x + y) =
+        (y * TX (y / (x + y)) - x * TY (y / (x + y))) /
+          (((x - TX (y / (x + y))) + (y - TY (y / (x + y)))) * (x + y)) := by
+      simp only [hFdef]
+      rw [div_sub_div _ _ (hS0 _ hu₀shell.1 hu₀shell.2) hxy0]
+      congr 1
+      ring
+    rw [hkey, map_div₀, map_mul, hSval _ hu₀shell.1 hu₀shell.2, hvxy,
+      div_le_iff₀ (zero_lt_iff.mpr (mul_ne_zero hY0 hY0))]
+    have hn : valuation k
+        (y * TX (y / (x + y)) - x * TY (y / (x + y))) ≤
+        valuation k y * valuation k q₀ := by
+      refine le_trans (Valuation.map_sub _ _ _) (max_le ?_ ?_)
+      · rw [map_mul]
+        exact mul_le_mul' le_rfl (htail _ hu₀shell.1 hu₀shell.2)
+      · rw [map_mul]
+        exact mul_le_mul' hXY_le (htailY _ hu₀shell.1 hu₀shell.2)
+    calc valuation k (y * TX (y / (x + y)) - x * TY (y / (x + y))) ≤
+        valuation k y * valuation k q₀ := hn
+      _ = valuation k q₀ * valuation k y := mul_comm _ _
+      _ ≤ valuation k q₀ * (valuation k y * valuation k y) := by
+          refine mul_le_mul' le_rfl ?_
+          calc valuation k y = valuation k y * 1 := (mul_one _).symm
+            _ ≤ valuation k y * valuation k y := mul_le_mul' le_rfl hy1
+  -- the orbit of the seed under `F`
+  set seq : ℕ → k := fun n => F^[n] (y / (x + y)) with hseqdef
+  have hseq_zero : seq 0 = y / (x + y) := rfl
+  have hseq_succ : ∀ n, seq (n + 1) = F (seq n) := fun n =>
+    Function.iterate_succ_apply' F n _
+  have hseq_shell : ∀ n, valuation k (seq n) = 1 ∧ seq n ≠ 1 := by
+    intro n
+    induction n with
+    | zero => exact hu₀shell
+    | succ n ih =>
+      rw [hseq_succ n]
+      exact hFshell _ ih.1 ih.2
+  have hseq_one_sub : ∀ n, valuation k (1 - seq n) =
+      valuation k x / valuation k y := by
+    intro n
+    cases n with
+    | zero =>
+      have he : 1 - seq 0 = x / (x + y) := by
+        rw [hseq_zero, eq_div_iff hxy0, sub_mul, one_mul,
+          div_mul_cancel₀ _ hxy0]
+        ring
+      rw [he, map_div₀, hvxy]
+    | succ n =>
+      rw [hseq_succ n]
+      exact h1subF _ (hseq_shell n).1 (hseq_shell n).2
+  have hdiff : ∀ n, valuation k (seq (n + 1) - seq n) ≤
+      valuation k q₀ ^ (n + 1) := by
+    intro n
+    induction n with
+    | zero =>
+      rw [hseq_succ 0, hseq_zero, pow_one]
+      exact hseed
+    | succ n ih =>
+      rw [hseq_succ (n + 1), hseq_succ n]
+      calc valuation k (F (F (seq n)) - F (seq n)) ≤
+          valuation k q₀ * valuation k (F (seq n) - seq n) :=
+            hFlip _ _ (hFshell _ (hseq_shell n).1 (hseq_shell n).2).1
+              (hseq_shell n).1
+              (hFshell _ (hseq_shell n).1 (hseq_shell n).2).2
+              (hseq_shell n).2
+        _ ≤ valuation k q₀ * valuation k q₀ ^ (n + 1) := by
+            refine mul_le_mul' le_rfl ?_
+            have h5 := ih
+            rwa [hseq_succ n] at h5
+        _ = valuation k q₀ ^ (n + 2) := by
+            rw [← pow_succ']
   sorry
 
 set_option warn.sorry false in
