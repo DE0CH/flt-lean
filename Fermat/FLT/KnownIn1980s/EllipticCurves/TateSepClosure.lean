@@ -77,6 +77,94 @@ noncomputable def WeierstrassCurve.qUnitSepClosure : Ωˣ :=
 -- `DecidableEq Ω` is needed for the group law on `(E⁄Ω).Point`
 variable [DecidableEq Ω]
 
+/-- Pullback of a valuative relation along a ring homomorphism:
+`x ≤ᵥ y` iff `f x ≤ᵥ f y`. Used to restrict the (unique) valuative
+structure of a separable closure to its finite subextensions, making the
+restricted structures coherent by construction. -/
+@[reducible] def ValuativeRel.comap {S R : Type*} [Semiring S] [Semiring R]
+    [ValuativeRel R] (f : S →+* R) : ValuativeRel S where
+  vle x y := f x ≤ᵥ f y
+  vle_total x y := ValuativeRel.vle_total (f x) (f y)
+  vle_trans := ValuativeRel.vle_trans
+  vle_add h1 h2 := by
+    rw [map_add]
+    exact ValuativeRel.vle_add h1 h2
+  mul_vle_mul_left h z := by
+    rw [map_mul, map_mul]
+    exact ValuativeRel.mul_vle_mul_left h _
+  vle_mul_cancel h1 h2 := by
+    rw [map_mul, map_mul] at h2
+    refine ValuativeRel.vle_mul_cancel ?_ h2
+    rwa [map_zero] at h1
+  not_vle_one_zero := by
+    rw [map_one, map_zero]
+    exact ValuativeRel.not_vle_one_zero
+  vle_mul_comm {x y} := by
+    rw [map_mul, map_mul]
+    exact ValuativeRel.vle_mul_comm
+
+set_option warn.sorry false in
+/-- **The valuative structure of a separable closure** (sorry node — the
+missing prerequisite identified 2026-07-20): the valuation of a
+nonarchimedean local field extends to any separable algebraic
+extension, in particular to `Ω` — classically via the spectral norm
+(BGR §3.2; mathlib's `spectralNorm`/`Basis.norm` machinery gives
+existence and uniqueness of the extending power-multiplicative norm on
+each finite level, hence a compatible valuative relation on the
+union). -/
+theorem exists_valuativeRel_sepClosure :
+    ∃ v : ValuativeRel Ω, @ValuativeExtension k Ω _ _ _ v _ :=
+  sorry
+
+omit [TopologicalSpace k] [IsNonarchimedeanLocalField k] [IsSepClosed Ω] [Algebra.IsSeparable k Ω] [DecidableEq Ω] in
+/-- The restriction of a valuative structure of `Ω` to an intermediate
+field is a valuative extension of `k` (definitional unwinding through
+the tower `k ⊆ L ⊆ Ω`). -/
+theorem valuativeExtension_comap (v : ValuativeRel Ω)
+    (hv : @ValuativeExtension k Ω _ _ _ v _) (L : IntermediateField k Ω) :
+    @ValuativeExtension k L _ _ _
+      (@ValuativeRel.comap L Ω _ _ v L.val.toRingHom) _ := by
+  letI : ValuativeRel Ω := v
+  letI : ValuativeRel L := @ValuativeRel.comap L Ω _ _ v L.val.toRingHom
+  constructor
+  intro a b
+  show L.val.toRingHom (algebraMap k L a) ≤ᵥ
+    L.val.toRingHom (algebraMap k L b) ↔ a ≤ᵥ b
+  have hcomp : ∀ c : k, L.val.toRingHom (algebraMap k L c)
+      = algebraMap k Ω c := fun c => by
+    rw [IsScalarTower.algebraMap_apply k L Ω c]
+    rfl
+  rw [hcomp, hcomp]
+  exact hv.vle_iff_vle a b
+
+omit [ValuativeRel k] [TopologicalSpace k] [IsNonarchimedeanLocalField k] [IsSepClosed Ω] [Algebra.IsSeparable k Ω] [DecidableEq Ω] in
+/-- The restriction is definitionally a valuative extension of `Ω`
+along the inclusion. -/
+theorem valuativeExtension_comap_val (v : ValuativeRel Ω)
+    (L : IntermediateField k Ω) :
+    @ValuativeExtension L Ω _ _
+      (@ValuativeRel.comap L Ω _ _ v L.val.toRingHom) v _ := by
+  letI : ValuativeRel Ω := v
+  letI : ValuativeRel L := @ValuativeRel.comap L Ω _ _ v L.val.toRingHom
+  exact ⟨fun a b => Iff.rfl⟩
+
+set_option warn.sorry false in
+/-- **Finite subextensions of `Ω` are nonarchimedean local fields**
+(sorry node — the second half of the prerequisite): with the restricted
+valuative relation, a finite intermediate field `L` of `Ω/k` carries a
+topology making it a nonarchimedean local field — the valuative
+topology; locally compact since `L` is a finite-dimensional topological
+vector space over the locally compact complete field `k` (classical
+theory of complete discretely valued fields; mathlib's
+`Basis.norm`/`spectralNorm` route). -/
+theorem exists_isNonarchimedeanLocalField_intermediate
+    (v : ValuativeRel Ω) (hv : @ValuativeExtension k Ω _ _ _ v _)
+    (L : IntermediateField k Ω) [FiniteDimensional k L] :
+    ∃ t : TopologicalSpace L,
+      @IsNonarchimedeanLocalField L _
+        (@ValuativeRel.comap L Ω _ _ v L.val.toRingHom) t :=
+  sorry
+
 set_option warn.sorry false in
 /-- **The gluing implication for Tate's uniformisation** (sorry node —
 Ω-level from finite level): GIVEN the finite-level canonical
@@ -144,6 +232,26 @@ theorem WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel
       (WeierstrassCurve.tateCurve q₀).map (algebraMap k l) =
         WeierstrassCurve.tateCurve (algebraMap k l q₀) :=
     fun {l} _ _ _ _ _ _ _ q₀ hq0 => TateCurve.tateCurve_map q₀ hq0
+  -- The valuative structure of `Ω` and the local-field structure of each
+  -- finite subextension (the two prerequisite leaves above): every element
+  -- of `Ωˣ` and every point of `E_q(Ω)` lives in some finite intermediate
+  -- field `L`, which these leaves make a nonarchimedean local field
+  -- valuatively over `k`, so the finite-level hypothesis `hfin` applies.
+  obtain ⟨vΩ, hvΩ⟩ := exists_valuativeRel_sepClosure (k := k) Ω
+  have hL : ∀ (L : IntermediateField k Ω) (_ : FiniteDimensional k L),
+      ∃ t : TopologicalSpace L,
+        @IsNonarchimedeanLocalField L _
+          (@ValuativeRel.comap L Ω _ _ vΩ L.val.toRingHom) t :=
+    fun L hfd =>
+      exists_isNonarchimedeanLocalField_intermediate (k := k) Ω vΩ hvΩ L
+  have hLk : ∀ L : IntermediateField k Ω,
+      @ValuativeExtension k L _ _ _
+        (@ValuativeRel.comap L Ω _ _ vΩ L.val.toRingHom) _ :=
+    fun L => valuativeExtension_comap (k := k) Ω vΩ hvΩ L
+  have hLΩ : ∀ L : IntermediateField k Ω,
+      @ValuativeExtension L Ω _ _
+        (@ValuativeRel.comap L Ω _ _ vΩ L.val.toRingHom) vΩ _ :=
+    fun L => valuativeExtension_comap_val (k := k) Ω vΩ L
   sorry
 
 /-- **The Tate-curve uniformising homomorphism over a separable closure**

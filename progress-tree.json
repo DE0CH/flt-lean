@@ -187,7 +187,9 @@
   "TateCurve.evalA_YA_map": "✅✅",
   "TateCurve.bilateralX_map": "✅✅",
   "TateCurve.bilateralY_map": "✅✅",
-  "TateCurve.tateCurve_map": "✅✅"
+  "TateCurve.tateCurve_map": "✅✅",
+  "exists_valuativeRel_sepClosure": "❌",
+  "exists_isNonarchimedeanLocalField_intermediate": "❌"
  },
  "children": {
   "fermatLastTheoremThree": [],
@@ -707,7 +709,9 @@
    "TateCurve.tateCurve_map",
    "WeierstrassCurve.Δ_tateCurve_eq_evalInt",
    "TateCurve.bilateralX_map",
-   "TateCurve.bilateralY_map"
+   "TateCurve.bilateralY_map",
+   "exists_valuativeRel_sepClosure",
+   "exists_isNonarchimedeanLocalField_intermediate"
   ],
   "WeierstrassCurve.exists_tateTorsionQuotient": [],
   "hasMultiplicativeReduction_padic": [],
@@ -843,7 +847,9 @@
   "TateCurve.bilateralY_map": [
    "TateCurve.evalA_YA_map"
   ],
-  "TateCurve.tateCurve_map": []
+  "TateCurve.tateCurve_map": [],
+  "exists_valuativeRel_sepClosure": [],
+  "exists_isNonarchimedeanLocalField_intermediate": []
  },
  "roots": [
   "fermat_last_theorem"

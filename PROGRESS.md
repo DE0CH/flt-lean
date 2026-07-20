@@ -234,92 +234,70 @@ entries file). To add/remove/annotate a node, edit
                                                                           whether TateSepClosure’s
                                                                           Surjective-φ interface can be
                                                                           weakened accordingly.
-                                                            - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node):
-                                                              GIVEN the finite-level canonical
-                                                              uniformisation lˣ/q^ℤ ≃+ E_q(l) with
-                                                              underlying pointMapQuot for every NALF
-                                                              l, the Ω-level hom exists. Content:
-                                                              finite subextensions of Ω/k are NALFs
-                                                              (unique valuative extension over the
-                                                              complete k — infrastructure absent
-                                                              from mathlib at this pin), the maps
-                                                              are compatible with inclusions and
-                                                              σ-twists by naturality of the
-                                                              universal series, and
+                                                            - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the Ω-level
+                                                              Tate uniformisation (sorry node,
+                                                              NARROWED 2026-07-20: naturality of the
+                                                              bilateral coordinates and curve-level
+                                                              functoriality under valuative
+                                                              extensions are PROVEN and wired as
+                                                              hnat/hcurve; the missing local-field
+                                                              prerequisite is now decomposed into
+                                                              two explicit leaves —
+                                                              exists_valuativeRel_sepClosure and exi
+                                                              sts_isNonarchimedeanLocalField_interme
+                                                              diate — consumed in the proof skeleton
+                                                              together with the proven
+                                                              ValuativeRel.comap restriction
+                                                              infrastructure
+                                                              (valuativeExtension_comap,
+                                                              valuativeExtension_comap_val give the
+                                                              k ⊆ L ⊆ Ω coherence definitionally).
+                                                              REMAINING: the colimit construction
+                                                              proper — define φ(u) by choosing a
+                                                              finite L containing u and the relevant
+                                                              coordinates, apply hfin at L (letI the
+                                                              obtained structures), transport the
+                                                              point to Ω along L.val via Point.map +
+                                                              hcurve, prove independence of the
+                                                              choice of L via hnat, then additivity/
                                                               kernel/surjectivity/equivariance pass
-                                                              to the colimit. PROGRESS (2026-07-20):
-                                                              the naturality chain feeding this
-                                                              gluing (coeffRingEval_map/evalA_XA_map
-                                                              /evalA_YA_map/bilateralX_map/bilateral
-                                                              Y_map, all PROVEN in
-                                                              TateUniformization.lean) is now wired
-                                                              in as a real `have` (hnat) inside this
-                                                              theorem's proof, packaging the
-                                                              bilateral-coordinate naturality as an
-                                                              (X,Y) pair. REMAINING for the actual
-                                                              gluing: (1) DONE — tateCurve_map
-                                                              proven and wired (hcurve); (2)
-                                                              CONFIRMED MECHANISM, BLOCKED ON A
-                                                              MISSING PREREQUISITE (checked
-                                                              2026-07-20): the AlgHom needed for
-                                                              WeierstrassCurve.Affine.Point.map IS
-                                                              IntermediateField.val (confirmed by
-                                                              probe: for l : IntermediateField k Ω,
-                                                              l.val : l →ₐ[k] Ω typechecks directly
-                                                              — no need for an ad-hoc Algebra.ofId-
-                                                              style construction). BUT this requires
-                                                              l (as an IntermediateField k Ω, hence
-                                                              a finite-dimensional field extension
-                                                              of k) to carry [ValuativeRel l]
-                                                              [TopologicalSpace l]
-                                                              [IsNonarchimedeanLocalField l]
-                                                              [ValuativeExtension k l] instances,
-                                                              and NO SUCH GENERAL INSTANCE EXISTS in
-                                                              this codebase: Fermat/FLT/Mathlib/Numb
-                                                              erTheory/Padics/LocalField.lean only
-                                                              supplies the
-                                                              IsNonarchimedeanLocalField package for
-                                                              ℚ_[p] and IsDedekindDomain.HeightOneSp
-                                                              ectrum.adicCompletion — nothing
-                                                              generic for 'a finite extension of a
-                                                              nonarchimedean local field is again
-                                                              one, with the valuation extending
-                                                              uniquely'. This is itself a
-                                                              substantial classical fact
-                                                              (existence+uniqueness of the extended
-                                                              absolute value on a finite extension
-                                                              of a complete nonarchimedean field,
-                                                              completeness of the extension, local
-                                                              compactness) NOT YET FORMALIZED
-                                                              anywhere in this project — a genuine
-                                                              new prerequisite node, comparable in
-                                                              scope to the work already done on this
-                                                              file. NEXT ACTION for a fresh
-                                                              iteration: search mathlib for existing
-                                                              extension-of-valuation machinery for
-                                                              finite extensions of complete fields
-                                                              (candidates: Mathlib.RingTheory.Valuat
-                                                              ion.Extension?,
-                                                              Mathlib.NumberTheory.Padics/Complete
-                                                              field extension theory, or Spectral
-                                                              norm / Mathlib.Analysis.Normed.Field
-                                                              material) before attempting to prove
-                                                              it from scratch; if found, build the
-                                                              instance for IntermediateField k Ω
-                                                              under [FiniteDimensional k l], then
-                                                              resume steps (2)-(3) of this plan. (3)
-                                                              the colimit construction: every
-                                                              element of Ωˣ / every point of E_q(Ω)
-                                                              lies in a finite subextension l/k of
-                                                              Ω/k (mathlib: IsAlgebraic elements lie
-                                                              in finite subextensions — search
-                                                              IntermediateField/Algebra.IsAlgebraic
-                                                              API); define φ via the chosen l and
-                                                              hfin, prove independence of the choice
-                                                              using pointMap naturality from (2);
-                                                              surjectivity/kernel/equivariance
-                                                              descend from the finite-level
-                                                              properties.
+                                                              to the colimit.
+                                                                - ❌🟪 `exists_valuativeRel_sepClosure` — valuative structure of the
+                                                                  separable closure (sorry node —
+                                                                  prerequisite identified
+                                                                  2026-07-20): the valuation of a
+                                                                  nonarchimedean local field extends
+                                                                  to Ω. Route: mathlib’s BGR
+                                                                  machinery (Basis.norm: exists_nona
+                                                                  rchimedean_pow_mul_seminorm_of_fin
+                                                                  iteDimensional; spectralNorm with
+                                                                  spectralAlgNorm multiplicative
+                                                                  over complete base) gives a unique
+                                                                  extending rank-one norm on each
+                                                                  finite level, compatible by
+                                                                  uniqueness, hence a valuative
+                                                                  relation on the union; convert
+                                                                  ℝ-norm to ValuativeRel via the
+                                                                  norm-order (vle x y := ‖x‖ ≤ ‖y‖).
+                                                                  Alternative route: integral
+                                                                  closure of 𝒪[k] in Ω as a
+                                                                  valuation subring (henselian:
+                                                                  unique maximal ideal over the
+                                                                  complete DVR).
+                                                                - ❌· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
+                                                                  nonarchimedean local fields (sorry
+                                                                  node): with the restricted
+                                                                  valuative relation, L carries the
+                                                                  valuative topology; locally
+                                                                  compact since L ≅ k^n as a
+                                                                  topological k-vector space
+                                                                  (finite-dimensional over complete
+                                                                  locally compact k — mathlib has
+                                                                  the unique-topology/continuity
+                                                                  theory for finite-dimensional
+                                                                  spaces over complete nontrivially
+                                                                  normed fields); nontriviality
+                                                                  restricts from k.
                                             - ✅· `WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic` — the nonsplit half of the unipotence statement,
                                               assembled from the LOCAL nonsplit node
                                               `tate_inertia_unipotent_of_nonsplit` by the proven
@@ -468,104 +446,77 @@ entries file). To add/remove/annotate a node, edit
                                                                               whether TateSepClosure’s
                                                                               Surjective-φ interface can be
                                                                               weakened accordingly.
-                                                                - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry
-                                                                  node): GIVEN the finite-level
-                                                                  canonical uniformisation lˣ/q^ℤ ≃+
-                                                                  E_q(l) with underlying
-                                                                  pointMapQuot for every NALF l, the
-                                                                  Ω-level hom exists. Content:
-                                                                  finite subextensions of Ω/k are
-                                                                  NALFs (unique valuative extension
-                                                                  over the complete k —
-                                                                  infrastructure absent from mathlib
-                                                                  at this pin), the maps are
-                                                                  compatible with inclusions and
-                                                                  σ-twists by naturality of the
-                                                                  universal series, and
-                                                                  kernel/surjectivity/equivariance
-                                                                  pass to the colimit. PROGRESS
-                                                                  (2026-07-20): the naturality chain
-                                                                  feeding this gluing (coeffRingEval
-                                                                  _map/evalA_XA_map/evalA_YA_map/bil
-                                                                  ateralX_map/bilateralY_map, all
-                                                                  PROVEN in TateUniformization.lean)
-                                                                  is now wired in as a real `have`
-                                                                  (hnat) inside this theorem's
-                                                                  proof, packaging the bilateral-
-                                                                  coordinate naturality as an (X,Y)
-                                                                  pair. REMAINING for the actual
-                                                                  gluing: (1) DONE — tateCurve_map
-                                                                  proven and wired (hcurve); (2)
-                                                                  CONFIRMED MECHANISM, BLOCKED ON A
-                                                                  MISSING PREREQUISITE (checked
-                                                                  2026-07-20): the AlgHom needed for
-                                                                  WeierstrassCurve.Affine.Point.map
-                                                                  IS IntermediateField.val
-                                                                  (confirmed by probe: for l :
-                                                                  IntermediateField k Ω, l.val : l
-                                                                  →ₐ[k] Ω typechecks directly — no
-                                                                  need for an ad-hoc Algebra.ofId-
-                                                                  style construction). BUT this
-                                                                  requires l (as an
-                                                                  IntermediateField k Ω, hence a
-                                                                  finite-dimensional field extension
-                                                                  of k) to carry [ValuativeRel l]
-                                                                  [TopologicalSpace l]
-                                                                  [IsNonarchimedeanLocalField l]
-                                                                  [ValuativeExtension k l]
-                                                                  instances, and NO SUCH GENERAL
-                                                                  INSTANCE EXISTS in this codebase:
-                                                                  Fermat/FLT/Mathlib/NumberTheory/Pa
-                                                                  dics/LocalField.lean only supplies
-                                                                  the IsNonarchimedeanLocalField
-                                                                  package for ℚ_[p] and IsDedekindDo
-                                                                  main.HeightOneSpectrum.adicComplet
-                                                                  ion — nothing generic for 'a
-                                                                  finite extension of a
-                                                                  nonarchimedean local field is
-                                                                  again one, with the valuation
-                                                                  extending uniquely'. This is
-                                                                  itself a substantial classical
-                                                                  fact (existence+uniqueness of the
-                                                                  extended absolute value on a
-                                                                  finite extension of a complete
-                                                                  nonarchimedean field, completeness
-                                                                  of the extension, local
-                                                                  compactness) NOT YET FORMALIZED
-                                                                  anywhere in this project — a
-                                                                  genuine new prerequisite node,
-                                                                  comparable in scope to the work
-                                                                  already done on this file. NEXT
-                                                                  ACTION for a fresh iteration:
-                                                                  search mathlib for existing
-                                                                  extension-of-valuation machinery
-                                                                  for finite extensions of complete
-                                                                  fields (candidates: Mathlib.RingTh
-                                                                  eory.Valuation.Extension?, Mathlib
-                                                                  .NumberTheory.Padics/Complete
-                                                                  field extension theory, or
-                                                                  Spectral norm /
-                                                                  Mathlib.Analysis.Normed.Field
-                                                                  material) before attempting to
-                                                                  prove it from scratch; if found,
-                                                                  build the instance for
-                                                                  IntermediateField k Ω under
-                                                                  [FiniteDimensional k l], then
-                                                                  resume steps (2)-(3) of this plan.
-                                                                  (3) the colimit construction:
-                                                                  every element of Ωˣ / every point
-                                                                  of E_q(Ω) lies in a finite
-                                                                  subextension l/k of Ω/k (mathlib:
-                                                                  IsAlgebraic elements lie in finite
-                                                                  subextensions — search Intermediat
-                                                                  eField/Algebra.IsAlgebraic API);
-                                                                  define φ via the chosen l and
-                                                                  hfin, prove independence of the
-                                                                  choice using pointMap naturality
-                                                                  from (2);
-                                                                  surjectivity/kernel/equivariance
-                                                                  descend from the finite-level
-                                                                  properties.
+                                                                - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the Ω-level
+                                                                  Tate uniformisation (sorry node,
+                                                                  NARROWED 2026-07-20: naturality of
+                                                                  the bilateral coordinates and
+                                                                  curve-level functoriality under
+                                                                  valuative extensions are PROVEN
+                                                                  and wired as hnat/hcurve; the
+                                                                  missing local-field prerequisite
+                                                                  is now decomposed into two
+                                                                  explicit leaves —
+                                                                  exists_valuativeRel_sepClosure and
+                                                                  exists_isNonarchimedeanLocalField_
+                                                                  intermediate — consumed in the
+                                                                  proof skeleton together with the
+                                                                  proven ValuativeRel.comap
+                                                                  restriction infrastructure
+                                                                  (valuativeExtension_comap,
+                                                                  valuativeExtension_comap_val give
+                                                                  the k ⊆ L ⊆ Ω coherence
+                                                                  definitionally). REMAINING: the
+                                                                  colimit construction proper —
+                                                                  define φ(u) by choosing a finite L
+                                                                  containing u and the relevant
+                                                                  coordinates, apply hfin at L (letI
+                                                                  the obtained structures),
+                                                                  transport the point to Ω along
+                                                                  L.val via Point.map + hcurve,
+                                                                  prove independence of the choice
+                                                                  of L via hnat, then additivity/ker
+                                                                  nel/surjectivity/equivariance pass
+                                                                  to the colimit.
+                                                                    - ❌🟪 `exists_valuativeRel_sepClosure` — valuative structure of the
+                                                                      separable closure (sorry node
+                                                                      — prerequisite identified
+                                                                      2026-07-20): the valuation of
+                                                                      a nonarchimedean local field
+                                                                      extends to Ω. Route: mathlib’s
+                                                                      BGR machinery (Basis.norm: exi
+                                                                      sts_nonarchimedean_pow_mul_sem
+                                                                      inorm_of_finiteDimensional;
+                                                                      spectralNorm with
+                                                                      spectralAlgNorm multiplicative
+                                                                      over complete base) gives a
+                                                                      unique extending rank-one norm
+                                                                      on each finite level,
+                                                                      compatible by uniqueness,
+                                                                      hence a valuative relation on
+                                                                      the union; convert ℝ-norm to
+                                                                      ValuativeRel via the norm-
+                                                                      order (vle x y := ‖x‖ ≤ ‖y‖).
+                                                                      Alternative route: integral
+                                                                      closure of 𝒪[k] in Ω as a
+                                                                      valuation subring (henselian:
+                                                                      unique maximal ideal over the
+                                                                      complete DVR).
+                                                                    - ❌· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
+                                                                      nonarchimedean local fields
+                                                                      (sorry node): with the
+                                                                      restricted valuative relation,
+                                                                      L carries the valuative
+                                                                      topology; locally compact
+                                                                      since L ≅ k^n as a topological
+                                                                      k-vector space (finite-
+                                                                      dimensional over complete
+                                                                      locally compact k — mathlib
+                                                                      has the unique-
+                                                                      topology/continuity theory for
+                                                                      finite-dimensional spaces over
+                                                                      complete nontrivially normed
+                                                                      fields); nontriviality
+                                                                      restricts from k.
                                     - ❌· `FreyPackage.subquotient_character_unramified_at_p` — (stated 2026-07-17) — flat/ordinary at `p`: one of the two
                                       characters is unramified at `p` itself (connected-étale
                                       sequence in the ordinary/ multiplicative case; supersingular
@@ -736,116 +687,82 @@ entries file). To add/remove/annotate a node, edit
                                                                                   whether TateSepClosure’s
                                                                                   Surjective-φ interface can be
                                                                                   weakened accordingly.
-                                                                    - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
-                                                                      (sorry node): GIVEN the
-                                                                      finite-level canonical
-                                                                      uniformisation lˣ/q^ℤ ≃+
-                                                                      E_q(l) with underlying
-                                                                      pointMapQuot for every NALF l,
-                                                                      the Ω-level hom exists.
-                                                                      Content: finite subextensions
-                                                                      of Ω/k are NALFs (unique
-                                                                      valuative extension over the
-                                                                      complete k — infrastructure
-                                                                      absent from mathlib at this
-                                                                      pin), the maps are compatible
-                                                                      with inclusions and σ-twists
-                                                                      by naturality of the universal
-                                                                      series, and kernel/surjectivit
-                                                                      y/equivariance pass to the
-                                                                      colimit. PROGRESS
-                                                                      (2026-07-20): the naturality
-                                                                      chain feeding this gluing (coe
-                                                                      ffRingEval_map/evalA_XA_map/ev
-                                                                      alA_YA_map/bilateralX_map/bila
-                                                                      teralY_map, all PROVEN in
-                                                                      TateUniformization.lean) is
-                                                                      now wired in as a real `have`
-                                                                      (hnat) inside this theorem's
-                                                                      proof, packaging the
-                                                                      bilateral-coordinate
-                                                                      naturality as an (X,Y) pair.
-                                                                      REMAINING for the actual
-                                                                      gluing: (1) DONE —
-                                                                      tateCurve_map proven and wired
-                                                                      (hcurve); (2) CONFIRMED
-                                                                      MECHANISM, BLOCKED ON A
-                                                                      MISSING PREREQUISITE (checked
-                                                                      2026-07-20): the AlgHom needed
-                                                                      for WeierstrassCurve.Affine.Po
-                                                                      int.map IS
-                                                                      IntermediateField.val
-                                                                      (confirmed by probe: for l :
-                                                                      IntermediateField k Ω, l.val :
-                                                                      l →ₐ[k] Ω typechecks directly
-                                                                      — no need for an ad-hoc
-                                                                      Algebra.ofId-style
-                                                                      construction). BUT this
-                                                                      requires l (as an
-                                                                      IntermediateField k Ω, hence a
-                                                                      finite-dimensional field
-                                                                      extension of k) to carry
-                                                                      [ValuativeRel l]
-                                                                      [TopologicalSpace l]
-                                                                      [IsNonarchimedeanLocalField l]
-                                                                      [ValuativeExtension k l]
-                                                                      instances, and NO SUCH GENERAL
-                                                                      INSTANCE EXISTS in this
-                                                                      codebase: Fermat/FLT/Mathlib/N
-                                                                      umberTheory/Padics/LocalField.
-                                                                      lean only supplies the
-                                                                      IsNonarchimedeanLocalField
-                                                                      package for ℚ_[p] and IsDedeki
-                                                                      ndDomain.HeightOneSpectrum.adi
-                                                                      cCompletion — nothing generic
-                                                                      for 'a finite extension of a
-                                                                      nonarchimedean local field is
-                                                                      again one, with the valuation
-                                                                      extending uniquely'. This is
-                                                                      itself a substantial classical
-                                                                      fact (existence+uniqueness of
-                                                                      the extended absolute value on
-                                                                      a finite extension of a
-                                                                      complete nonarchimedean field,
-                                                                      completeness of the extension,
-                                                                      local compactness) NOT YET
-                                                                      FORMALIZED anywhere in this
-                                                                      project — a genuine new
-                                                                      prerequisite node, comparable
-                                                                      in scope to the work already
-                                                                      done on this file. NEXT ACTION
-                                                                      for a fresh iteration: search
-                                                                      mathlib for existing
-                                                                      extension-of-valuation
-                                                                      machinery for finite
-                                                                      extensions of complete fields
-                                                                      (candidates: Mathlib.RingTheor
-                                                                      y.Valuation.Extension?, Mathli
-                                                                      b.NumberTheory.Padics/Complete
-                                                                      field extension theory, or
-                                                                      Spectral norm /
-                                                                      Mathlib.Analysis.Normed.Field
-                                                                      material) before attempting to
-                                                                      prove it from scratch; if
-                                                                      found, build the instance for
-                                                                      IntermediateField k Ω under
-                                                                      [FiniteDimensional k l], then
-                                                                      resume steps (2)-(3) of this
-                                                                      plan. (3) the colimit
-                                                                      construction: every element of
-                                                                      Ωˣ / every point of E_q(Ω)
-                                                                      lies in a finite subextension
-                                                                      l/k of Ω/k (mathlib:
-                                                                      IsAlgebraic elements lie in
-                                                                      finite subextensions — search
-                                                                      IntermediateField/Algebra.IsAl
-                                                                      gebraic API); define φ via the
-                                                                      chosen l and hfin, prove
-                                                                      independence of the choice
-                                                                      using pointMap naturality from
-                                                                      (2); surjectivity/kernel/equiv
-                                                                      ariance descend from the
-                                                                      finite-level properties.
+                                                                    - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the
+                                                                      Ω-level Tate uniformisation
+                                                                      (sorry node, NARROWED
+                                                                      2026-07-20: naturality of the
+                                                                      bilateral coordinates and
+                                                                      curve-level functoriality
+                                                                      under valuative extensions are
+                                                                      PROVEN and wired as
+                                                                      hnat/hcurve; the missing
+                                                                      local-field prerequisite is
+                                                                      now decomposed into two
+                                                                      explicit leaves —
+                                                                      exists_valuativeRel_sepClosure
+                                                                      and exists_isNonarchimedeanLoc
+                                                                      alField_intermediate —
+                                                                      consumed in the proof skeleton
+                                                                      together with the proven
+                                                                      ValuativeRel.comap restriction
+                                                                      infrastructure
+                                                                      (valuativeExtension_comap,
+                                                                      valuativeExtension_comap_val
+                                                                      give the k ⊆ L ⊆ Ω coherence
+                                                                      definitionally). REMAINING:
+                                                                      the colimit construction
+                                                                      proper — define φ(u) by
+                                                                      choosing a finite L containing
+                                                                      u and the relevant
+                                                                      coordinates, apply hfin at L
+                                                                      (letI the obtained
+                                                                      structures), transport the
+                                                                      point to Ω along L.val via
+                                                                      Point.map + hcurve, prove
+                                                                      independence of the choice of
+                                                                      L via hnat, then additivity/ke
+                                                                      rnel/surjectivity/equivariance
+                                                                      pass to the colimit.
+                                                                        - ❌🟪 `exists_valuativeRel_sepClosure` — valuative structure of the
+                                                                          separable closure (sorry node
+                                                                          — prerequisite identified
+                                                                          2026-07-20): the valuation of
+                                                                          a nonarchimedean local field
+                                                                          extends to Ω. Route: mathlib’s
+                                                                          BGR machinery (Basis.norm: exi
+                                                                          sts_nonarchimedean_pow_mul_sem
+                                                                          inorm_of_finiteDimensional;
+                                                                          spectralNorm with
+                                                                          spectralAlgNorm multiplicative
+                                                                          over complete base) gives a
+                                                                          unique extending rank-one norm
+                                                                          on each finite level,
+                                                                          compatible by uniqueness,
+                                                                          hence a valuative relation on
+                                                                          the union; convert ℝ-norm to
+                                                                          ValuativeRel via the norm-
+                                                                          order (vle x y := ‖x‖ ≤ ‖y‖).
+                                                                          Alternative route: integral
+                                                                          closure of 𝒪[k] in Ω as a
+                                                                          valuation subring (henselian:
+                                                                          unique maximal ideal over the
+                                                                          complete DVR).
+                                                                        - ❌· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
+                                                                          nonarchimedean local fields
+                                                                          (sorry node): with the
+                                                                          restricted valuative relation,
+                                                                          L carries the valuative
+                                                                          topology; locally compact
+                                                                          since L ≅ k^n as a topological
+                                                                          k-vector space (finite-
+                                                                          dimensional over complete
+                                                                          locally compact k — mathlib
+                                                                          has the unique-
+                                                                          topology/continuity theory for
+                                                                          finite-dimensional spaces over
+                                                                          complete nontrivially normed
+                                                                          fields); nontriviality
+                                                                          restricts from k.
                                                     - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality statement,
                                                       assembled from the LOCAL nonsplit node
                                                       `tate_inertia_trivial_of_nonsplit` by the
@@ -1007,116 +924,82 @@ entries file). To add/remove/annotate a node, edit
                                                                                       whether TateSepClosure’s
                                                                                       Surjective-φ interface can be
                                                                                       weakened accordingly.
-                                                                        - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication
-                                                                          (sorry node): GIVEN the
-                                                                          finite-level canonical
-                                                                          uniformisation lˣ/q^ℤ ≃+
-                                                                          E_q(l) with underlying
-                                                                          pointMapQuot for every NALF l,
-                                                                          the Ω-level hom exists.
-                                                                          Content: finite subextensions
-                                                                          of Ω/k are NALFs (unique
-                                                                          valuative extension over the
-                                                                          complete k — infrastructure
-                                                                          absent from mathlib at this
-                                                                          pin), the maps are compatible
-                                                                          with inclusions and σ-twists
-                                                                          by naturality of the universal
-                                                                          series, and kernel/surjectivit
-                                                                          y/equivariance pass to the
-                                                                          colimit. PROGRESS
-                                                                          (2026-07-20): the naturality
-                                                                          chain feeding this gluing (coe
-                                                                          ffRingEval_map/evalA_XA_map/ev
-                                                                          alA_YA_map/bilateralX_map/bila
-                                                                          teralY_map, all PROVEN in
-                                                                          TateUniformization.lean) is
-                                                                          now wired in as a real `have`
-                                                                          (hnat) inside this theorem's
-                                                                          proof, packaging the
-                                                                          bilateral-coordinate
-                                                                          naturality as an (X,Y) pair.
-                                                                          REMAINING for the actual
-                                                                          gluing: (1) DONE —
-                                                                          tateCurve_map proven and wired
-                                                                          (hcurve); (2) CONFIRMED
-                                                                          MECHANISM, BLOCKED ON A
-                                                                          MISSING PREREQUISITE (checked
-                                                                          2026-07-20): the AlgHom needed
-                                                                          for WeierstrassCurve.Affine.Po
-                                                                          int.map IS
-                                                                          IntermediateField.val
-                                                                          (confirmed by probe: for l :
-                                                                          IntermediateField k Ω, l.val :
-                                                                          l →ₐ[k] Ω typechecks directly
-                                                                          — no need for an ad-hoc
-                                                                          Algebra.ofId-style
-                                                                          construction). BUT this
-                                                                          requires l (as an
-                                                                          IntermediateField k Ω, hence a
-                                                                          finite-dimensional field
-                                                                          extension of k) to carry
-                                                                          [ValuativeRel l]
-                                                                          [TopologicalSpace l]
-                                                                          [IsNonarchimedeanLocalField l]
-                                                                          [ValuativeExtension k l]
-                                                                          instances, and NO SUCH GENERAL
-                                                                          INSTANCE EXISTS in this
-                                                                          codebase: Fermat/FLT/Mathlib/N
-                                                                          umberTheory/Padics/LocalField.
-                                                                          lean only supplies the
-                                                                          IsNonarchimedeanLocalField
-                                                                          package for ℚ_[p] and IsDedeki
-                                                                          ndDomain.HeightOneSpectrum.adi
-                                                                          cCompletion — nothing generic
-                                                                          for 'a finite extension of a
-                                                                          nonarchimedean local field is
-                                                                          again one, with the valuation
-                                                                          extending uniquely'. This is
-                                                                          itself a substantial classical
-                                                                          fact (existence+uniqueness of
-                                                                          the extended absolute value on
-                                                                          a finite extension of a
-                                                                          complete nonarchimedean field,
-                                                                          completeness of the extension,
-                                                                          local compactness) NOT YET
-                                                                          FORMALIZED anywhere in this
-                                                                          project — a genuine new
-                                                                          prerequisite node, comparable
-                                                                          in scope to the work already
-                                                                          done on this file. NEXT ACTION
-                                                                          for a fresh iteration: search
-                                                                          mathlib for existing
-                                                                          extension-of-valuation
-                                                                          machinery for finite
-                                                                          extensions of complete fields
-                                                                          (candidates: Mathlib.RingTheor
-                                                                          y.Valuation.Extension?, Mathli
-                                                                          b.NumberTheory.Padics/Complete
-                                                                          field extension theory, or
-                                                                          Spectral norm /
-                                                                          Mathlib.Analysis.Normed.Field
-                                                                          material) before attempting to
-                                                                          prove it from scratch; if
-                                                                          found, build the instance for
-                                                                          IntermediateField k Ω under
-                                                                          [FiniteDimensional k l], then
-                                                                          resume steps (2)-(3) of this
-                                                                          plan. (3) the colimit
-                                                                          construction: every element of
-                                                                          Ωˣ / every point of E_q(Ω)
-                                                                          lies in a finite subextension
-                                                                          l/k of Ω/k (mathlib:
-                                                                          IsAlgebraic elements lie in
-                                                                          finite subextensions — search
-                                                                          IntermediateField/Algebra.IsAl
-                                                                          gebraic API); define φ via the
-                                                                          chosen l and hfin, prove
-                                                                          independence of the choice
-                                                                          using pointMap naturality from
-                                                                          (2); surjectivity/kernel/equiv
-                                                                          ariance descend from the
-                                                                          finite-level properties.
+                                                                        - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the
+                                                                          Ω-level Tate uniformisation
+                                                                          (sorry node, NARROWED
+                                                                          2026-07-20: naturality of the
+                                                                          bilateral coordinates and
+                                                                          curve-level functoriality
+                                                                          under valuative extensions are
+                                                                          PROVEN and wired as
+                                                                          hnat/hcurve; the missing
+                                                                          local-field prerequisite is
+                                                                          now decomposed into two
+                                                                          explicit leaves —
+                                                                          exists_valuativeRel_sepClosure
+                                                                          and exists_isNonarchimedeanLoc
+                                                                          alField_intermediate —
+                                                                          consumed in the proof skeleton
+                                                                          together with the proven
+                                                                          ValuativeRel.comap restriction
+                                                                          infrastructure
+                                                                          (valuativeExtension_comap,
+                                                                          valuativeExtension_comap_val
+                                                                          give the k ⊆ L ⊆ Ω coherence
+                                                                          definitionally). REMAINING:
+                                                                          the colimit construction
+                                                                          proper — define φ(u) by
+                                                                          choosing a finite L containing
+                                                                          u and the relevant
+                                                                          coordinates, apply hfin at L
+                                                                          (letI the obtained
+                                                                          structures), transport the
+                                                                          point to Ω along L.val via
+                                                                          Point.map + hcurve, prove
+                                                                          independence of the choice of
+                                                                          L via hnat, then additivity/ke
+                                                                          rnel/surjectivity/equivariance
+                                                                          pass to the colimit.
+                                                                            - ❌🟪 `exists_valuativeRel_sepClosure` — valuative structure of the
+                                                                              separable closure (sorry node
+                                                                              — prerequisite identified
+                                                                              2026-07-20): the valuation of
+                                                                              a nonarchimedean local field
+                                                                              extends to Ω. Route: mathlib’s
+                                                                              BGR machinery (Basis.norm: exi
+                                                                              sts_nonarchimedean_pow_mul_sem
+                                                                              inorm_of_finiteDimensional;
+                                                                              spectralNorm with
+                                                                              spectralAlgNorm multiplicative
+                                                                              over complete base) gives a
+                                                                              unique extending rank-one norm
+                                                                              on each finite level,
+                                                                              compatible by uniqueness,
+                                                                              hence a valuative relation on
+                                                                              the union; convert ℝ-norm to
+                                                                              ValuativeRel via the norm-
+                                                                              order (vle x y := ‖x‖ ≤ ‖y‖).
+                                                                              Alternative route: integral
+                                                                              closure of 𝒪[k] in Ω as a
+                                                                              valuation subring (henselian:
+                                                                              unique maximal ideal over the
+                                                                              complete DVR).
+                                                                            - ❌· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
+                                                                              nonarchimedean local fields
+                                                                              (sorry node): with the
+                                                                              restricted valuative relation,
+                                                                              L carries the valuative
+                                                                              topology; locally compact
+                                                                              since L ≅ k^n as a topological
+                                                                              k-vector space (finite-
+                                                                              dimensional over complete
+                                                                              locally compact k — mathlib
+                                                                              has the unique-
+                                                                              topology/continuity theory for
+                                                                              finite-dimensional spaces over
+                                                                              complete nontrivially normed
+                                                                              fields); nontriviality
+                                                                              restricts from k.
                                 - ✅· `det_galoisRep_eq_cyclotomic` — `det_galoisRep_eq_cyclotomic` — (2026-07-17): `det ρ̄` and `χ̄`
                                   are continuous conjugation-invariant `ZMod p`-valued functions on
                                   `Γ ℚ` (continuity of `det ∘ ρ` from discreteness of `End` via
@@ -1315,71 +1198,54 @@ entries file). To add/remove/annotate a node, edit
                                                               needed; check whether TateSepClosure’s
                                                               Surjective-φ interface can be weakened
                                                               accordingly.
-                                                - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the
-                                                  finite-level canonical uniformisation lˣ/q^ℤ ≃+
-                                                  E_q(l) with underlying pointMapQuot for every NALF
-                                                  l, the Ω-level hom exists. Content: finite
-                                                  subextensions of Ω/k are NALFs (unique valuative
-                                                  extension over the complete k — infrastructure
-                                                  absent from mathlib at this pin), the maps are
-                                                  compatible with inclusions and σ-twists by
-                                                  naturality of the universal series, and
-                                                  kernel/surjectivity/equivariance pass to the
-                                                  colimit. PROGRESS (2026-07-20): the naturality
-                                                  chain feeding this gluing (coeffRingEval_map/evalA
-                                                  _XA_map/evalA_YA_map/bilateralX_map/bilateralY_map
-                                                  , all PROVEN in TateUniformization.lean) is now
-                                                  wired in as a real `have` (hnat) inside this
-                                                  theorem's proof, packaging the bilateral-
-                                                  coordinate naturality as an (X,Y) pair. REMAINING
-                                                  for the actual gluing: (1) DONE — tateCurve_map
-                                                  proven and wired (hcurve); (2) CONFIRMED
-                                                  MECHANISM, BLOCKED ON A MISSING PREREQUISITE
-                                                  (checked 2026-07-20): the AlgHom needed for
-                                                  WeierstrassCurve.Affine.Point.map IS
-                                                  IntermediateField.val (confirmed by probe: for l :
-                                                  IntermediateField k Ω, l.val : l →ₐ[k] Ω
-                                                  typechecks directly — no need for an ad-hoc
-                                                  Algebra.ofId-style construction). BUT this
-                                                  requires l (as an IntermediateField k Ω, hence a
-                                                  finite-dimensional field extension of k) to carry
-                                                  [ValuativeRel l] [TopologicalSpace l]
-                                                  [IsNonarchimedeanLocalField l] [ValuativeExtension
-                                                  k l] instances, and NO SUCH GENERAL INSTANCE
-                                                  EXISTS in this codebase: Fermat/FLT/Mathlib/Number
-                                                  Theory/Padics/LocalField.lean only supplies the
-                                                  IsNonarchimedeanLocalField package for ℚ_[p] and
-                                                  IsDedekindDomain.HeightOneSpectrum.adicCompletion
-                                                  — nothing generic for 'a finite extension of a
-                                                  nonarchimedean local field is again one, with the
-                                                  valuation extending uniquely'. This is itself a
-                                                  substantial classical fact (existence+uniqueness
-                                                  of the extended absolute value on a finite
-                                                  extension of a complete nonarchimedean field,
-                                                  completeness of the extension, local compactness)
-                                                  NOT YET FORMALIZED anywhere in this project — a
-                                                  genuine new prerequisite node, comparable in scope
-                                                  to the work already done on this file. NEXT ACTION
-                                                  for a fresh iteration: search mathlib for existing
-                                                  extension-of-valuation machinery for finite
-                                                  extensions of complete fields (candidates:
-                                                  Mathlib.RingTheory.Valuation.Extension?,
-                                                  Mathlib.NumberTheory.Padics/Complete field
-                                                  extension theory, or Spectral norm /
-                                                  Mathlib.Analysis.Normed.Field material) before
-                                                  attempting to prove it from scratch; if found,
-                                                  build the instance for IntermediateField k Ω under
-                                                  [FiniteDimensional k l], then resume steps (2)-(3)
-                                                  of this plan. (3) the colimit construction: every
-                                                  element of Ωˣ / every point of E_q(Ω) lies in a
-                                                  finite subextension l/k of Ω/k (mathlib:
-                                                  IsAlgebraic elements lie in finite subextensions —
-                                                  search IntermediateField/Algebra.IsAlgebraic API);
-                                                  define φ via the chosen l and hfin, prove
-                                                  independence of the choice using pointMap
-                                                  naturality from (2);
-                                                  surjectivity/kernel/equivariance descend from the
-                                                  finite-level properties.
+                                                - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the Ω-level Tate
+                                                  uniformisation (sorry node, NARROWED 2026-07-20:
+                                                  naturality of the bilateral coordinates and curve-
+                                                  level functoriality under valuative extensions are
+                                                  PROVEN and wired as hnat/hcurve; the missing
+                                                  local-field prerequisite is now decomposed into
+                                                  two explicit leaves —
+                                                  exists_valuativeRel_sepClosure and
+                                                  exists_isNonarchimedeanLocalField_intermediate —
+                                                  consumed in the proof skeleton together with the
+                                                  proven ValuativeRel.comap restriction
+                                                  infrastructure (valuativeExtension_comap,
+                                                  valuativeExtension_comap_val give the k ⊆ L ⊆ Ω
+                                                  coherence definitionally). REMAINING: the colimit
+                                                  construction proper — define φ(u) by choosing a
+                                                  finite L containing u and the relevant
+                                                  coordinates, apply hfin at L (letI the obtained
+                                                  structures), transport the point to Ω along L.val
+                                                  via Point.map + hcurve, prove independence of the
+                                                  choice of L via hnat, then
+                                                  additivity/kernel/surjectivity/equivariance pass
+                                                  to the colimit.
+                                                    - ❌🟪 `exists_valuativeRel_sepClosure` — valuative structure of the separable closure
+                                                      (sorry node — prerequisite identified
+                                                      2026-07-20): the valuation of a nonarchimedean
+                                                      local field extends to Ω. Route: mathlib’s BGR
+                                                      machinery (Basis.norm: exists_nonarchimedean_p
+                                                      ow_mul_seminorm_of_finiteDimensional;
+                                                      spectralNorm with spectralAlgNorm
+                                                      multiplicative over complete base) gives a
+                                                      unique extending rank-one norm on each finite
+                                                      level, compatible by uniqueness, hence a
+                                                      valuative relation on the union; convert
+                                                      ℝ-norm to ValuativeRel via the norm-order (vle
+                                                      x y := ‖x‖ ≤ ‖y‖). Alternative route: integral
+                                                      closure of 𝒪[k] in Ω as a valuation subring
+                                                      (henselian: unique maximal ideal over the
+                                                      complete DVR).
+                                                    - ❌· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are nonarchimedean
+                                                      local fields (sorry node): with the restricted
+                                                      valuative relation, L carries the valuative
+                                                      topology; locally compact since L ≅ k^n as a
+                                                      topological k-vector space (finite-dimensional
+                                                      over complete locally compact k — mathlib has
+                                                      the unique-topology/continuity theory for
+                                                      finite-dimensional spaces over complete
+                                                      nontrivially normed fields); nontriviality
+                                                      restricts from k.
                                 - ✅· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality statement, assembled from the
                                   LOCAL nonsplit node `tate_inertia_trivial_of_nonsplit` by the
                                   proven `ℚ̄`-pullback glue; the `j`-hypothesis feeds through
@@ -1500,76 +1366,58 @@ entries file). To add/remove/annotate a node, edit
                                                                   check whether TateSepClosure’s
                                                                   Surjective-φ interface can be
                                                                   weakened accordingly.
-                                                    - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN
-                                                      the finite-level canonical uniformisation
-                                                      lˣ/q^ℤ ≃+ E_q(l) with underlying pointMapQuot
-                                                      for every NALF l, the Ω-level hom exists.
-                                                      Content: finite subextensions of Ω/k are NALFs
-                                                      (unique valuative extension over the complete
-                                                      k — infrastructure absent from mathlib at this
-                                                      pin), the maps are compatible with inclusions
-                                                      and σ-twists by naturality of the universal
-                                                      series, and kernel/surjectivity/equivariance
-                                                      pass to the colimit. PROGRESS (2026-07-20):
-                                                      the naturality chain feeding this gluing (coef
-                                                      fRingEval_map/evalA_XA_map/evalA_YA_map/bilate
-                                                      ralX_map/bilateralY_map, all PROVEN in
-                                                      TateUniformization.lean) is now wired in as a
-                                                      real `have` (hnat) inside this theorem's
-                                                      proof, packaging the bilateral-coordinate
-                                                      naturality as an (X,Y) pair. REMAINING for the
-                                                      actual gluing: (1) DONE — tateCurve_map proven
-                                                      and wired (hcurve); (2) CONFIRMED MECHANISM,
-                                                      BLOCKED ON A MISSING PREREQUISITE (checked
-                                                      2026-07-20): the AlgHom needed for
-                                                      WeierstrassCurve.Affine.Point.map IS
-                                                      IntermediateField.val (confirmed by probe: for
-                                                      l : IntermediateField k Ω, l.val : l →ₐ[k] Ω
-                                                      typechecks directly — no need for an ad-hoc
-                                                      Algebra.ofId-style construction). BUT this
-                                                      requires l (as an IntermediateField k Ω, hence
-                                                      a finite-dimensional field extension of k) to
-                                                      carry [ValuativeRel l] [TopologicalSpace l]
-                                                      [IsNonarchimedeanLocalField l]
-                                                      [ValuativeExtension k l] instances, and NO
-                                                      SUCH GENERAL INSTANCE EXISTS in this codebase:
-                                                      Fermat/FLT/Mathlib/NumberTheory/Padics/LocalFi
-                                                      eld.lean only supplies the
-                                                      IsNonarchimedeanLocalField package for ℚ_[p]
-                                                      and IsDedekindDomain.HeightOneSpectrum.adicCom
-                                                      pletion — nothing generic for 'a finite
-                                                      extension of a nonarchimedean local field is
-                                                      again one, with the valuation extending
-                                                      uniquely'. This is itself a substantial
-                                                      classical fact (existence+uniqueness of the
-                                                      extended absolute value on a finite extension
-                                                      of a complete nonarchimedean field,
-                                                      completeness of the extension, local
-                                                      compactness) NOT YET FORMALIZED anywhere in
-                                                      this project — a genuine new prerequisite
-                                                      node, comparable in scope to the work already
-                                                      done on this file. NEXT ACTION for a fresh
-                                                      iteration: search mathlib for existing
-                                                      extension-of-valuation machinery for finite
-                                                      extensions of complete fields (candidates:
-                                                      Mathlib.RingTheory.Valuation.Extension?,
-                                                      Mathlib.NumberTheory.Padics/Complete field
-                                                      extension theory, or Spectral norm /
-                                                      Mathlib.Analysis.Normed.Field material) before
-                                                      attempting to prove it from scratch; if found,
-                                                      build the instance for IntermediateField k Ω
-                                                      under [FiniteDimensional k l], then resume
-                                                      steps (2)-(3) of this plan. (3) the colimit
-                                                      construction: every element of Ωˣ / every
-                                                      point of E_q(Ω) lies in a finite subextension
-                                                      l/k of Ω/k (mathlib: IsAlgebraic elements lie
-                                                      in finite subextensions — search
-                                                      IntermediateField/Algebra.IsAlgebraic API);
-                                                      define φ via the chosen l and hfin, prove
-                                                      independence of the choice using pointMap
-                                                      naturality from (2);
-                                                      surjectivity/kernel/equivariance descend from
-                                                      the finite-level properties.
+                                                    - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the Ω-level Tate
+                                                      uniformisation (sorry node, NARROWED
+                                                      2026-07-20: naturality of the bilateral
+                                                      coordinates and curve-level functoriality
+                                                      under valuative extensions are PROVEN and
+                                                      wired as hnat/hcurve; the missing local-field
+                                                      prerequisite is now decomposed into two
+                                                      explicit leaves —
+                                                      exists_valuativeRel_sepClosure and
+                                                      exists_isNonarchimedeanLocalField_intermediate
+                                                      — consumed in the proof skeleton together with
+                                                      the proven ValuativeRel.comap restriction
+                                                      infrastructure (valuativeExtension_comap,
+                                                      valuativeExtension_comap_val give the k ⊆ L ⊆
+                                                      Ω coherence definitionally). REMAINING: the
+                                                      colimit construction proper — define φ(u) by
+                                                      choosing a finite L containing u and the
+                                                      relevant coordinates, apply hfin at L (letI
+                                                      the obtained structures), transport the point
+                                                      to Ω along L.val via Point.map + hcurve, prove
+                                                      independence of the choice of L via hnat, then
+                                                      additivity/kernel/surjectivity/equivariance
+                                                      pass to the colimit.
+                                                        - ❌🟪 `exists_valuativeRel_sepClosure` — valuative structure of the separable
+                                                          closure (sorry node — prerequisite
+                                                          identified 2026-07-20): the valuation of a
+                                                          nonarchimedean local field extends to Ω.
+                                                          Route: mathlib’s BGR machinery
+                                                          (Basis.norm: exists_nonarchimedean_pow_mul
+                                                          _seminorm_of_finiteDimensional;
+                                                          spectralNorm with spectralAlgNorm
+                                                          multiplicative over complete base) gives a
+                                                          unique extending rank-one norm on each
+                                                          finite level, compatible by uniqueness,
+                                                          hence a valuative relation on the union;
+                                                          convert ℝ-norm to ValuativeRel via the
+                                                          norm-order (vle x y := ‖x‖ ≤ ‖y‖).
+                                                          Alternative route: integral closure of
+                                                          𝒪[k] in Ω as a valuation subring
+                                                          (henselian: unique maximal ideal over the
+                                                          complete DVR).
+                                                        - ❌· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are
+                                                          nonarchimedean local fields (sorry node):
+                                                          with the restricted valuative relation, L
+                                                          carries the valuative topology; locally
+                                                          compact since L ≅ k^n as a topological
+                                                          k-vector space (finite-dimensional over
+                                                          complete locally compact k — mathlib has
+                                                          the unique-topology/continuity theory for
+                                                          finite-dimensional spaces over complete
+                                                          nontrivially normed fields); nontriviality
+                                                          restricts from k.
                 - ✅· `FreyCurve.torsion_isFlat` — flat at p: (2026-07-16) by the case split `p ∣ abc` or not, from the two nodes
                   below
                     - ✅· `FreyCurve.torsion_isFlat_of_good` — (2026-07-16) from the arithmetic node `freyCurve_hasGoodReduction_of_not_dvd`
@@ -1694,65 +1542,45 @@ entries file). To add/remove/annotate a node, edit
                                                       E_q[ℓ](K̄) — no analytic inversion needed;
                                                       check whether TateSepClosure’s Surjective-φ
                                                       interface can be weakened accordingly.
-                                        - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
-                                          level canonical uniformisation lˣ/q^ℤ ≃+ E_q(l) with
-                                          underlying pointMapQuot for every NALF l, the Ω-level hom
-                                          exists. Content: finite subextensions of Ω/k are NALFs
-                                          (unique valuative extension over the complete k —
-                                          infrastructure absent from mathlib at this pin), the maps
-                                          are compatible with inclusions and σ-twists by naturality
-                                          of the universal series, and
-                                          kernel/surjectivity/equivariance pass to the colimit.
-                                          PROGRESS (2026-07-20): the naturality chain feeding this
-                                          gluing (coeffRingEval_map/evalA_XA_map/evalA_YA_map/bilate
-                                          ralX_map/bilateralY_map, all PROVEN in
-                                          TateUniformization.lean) is now wired in as a real `have`
-                                          (hnat) inside this theorem's proof, packaging the
-                                          bilateral-coordinate naturality as an (X,Y) pair.
-                                          REMAINING for the actual gluing: (1) DONE — tateCurve_map
-                                          proven and wired (hcurve); (2) CONFIRMED MECHANISM,
-                                          BLOCKED ON A MISSING PREREQUISITE (checked 2026-07-20):
-                                          the AlgHom needed for WeierstrassCurve.Affine.Point.map IS
-                                          IntermediateField.val (confirmed by probe: for l :
-                                          IntermediateField k Ω, l.val : l →ₐ[k] Ω typechecks
-                                          directly — no need for an ad-hoc Algebra.ofId-style
-                                          construction). BUT this requires l (as an
-                                          IntermediateField k Ω, hence a finite-dimensional field
-                                          extension of k) to carry [ValuativeRel l]
-                                          [TopologicalSpace l] [IsNonarchimedeanLocalField l]
-                                          [ValuativeExtension k l] instances, and NO SUCH GENERAL
-                                          INSTANCE EXISTS in this codebase:
-                                          Fermat/FLT/Mathlib/NumberTheory/Padics/LocalField.lean
-                                          only supplies the IsNonarchimedeanLocalField package for
-                                          ℚ_[p] and
-                                          IsDedekindDomain.HeightOneSpectrum.adicCompletion —
-                                          nothing generic for 'a finite extension of a
-                                          nonarchimedean local field is again one, with the
-                                          valuation extending uniquely'. This is itself a
-                                          substantial classical fact (existence+uniqueness of the
-                                          extended absolute value on a finite extension of a
-                                          complete nonarchimedean field, completeness of the
-                                          extension, local compactness) NOT YET FORMALIZED anywhere
-                                          in this project — a genuine new prerequisite node,
-                                          comparable in scope to the work already done on this file.
-                                          NEXT ACTION for a fresh iteration: search mathlib for
-                                          existing extension-of-valuation machinery for finite
-                                          extensions of complete fields (candidates:
-                                          Mathlib.RingTheory.Valuation.Extension?,
-                                          Mathlib.NumberTheory.Padics/Complete field extension
-                                          theory, or Spectral norm / Mathlib.Analysis.Normed.Field
-                                          material) before attempting to prove it from scratch; if
-                                          found, build the instance for IntermediateField k Ω under
-                                          [FiniteDimensional k l], then resume steps (2)-(3) of this
-                                          plan. (3) the colimit construction: every element of Ωˣ /
-                                          every point of E_q(Ω) lies in a finite subextension l/k of
-                                          Ω/k (mathlib: IsAlgebraic elements lie in finite
-                                          subextensions — search
-                                          IntermediateField/Algebra.IsAlgebraic API); define φ via
-                                          the chosen l and hfin, prove independence of the choice
-                                          using pointMap naturality from (2);
-                                          surjectivity/kernel/equivariance descend from the finite-
-                                          level properties.
+                                        - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the Ω-level Tate uniformisation
+                                          (sorry node, NARROWED 2026-07-20: naturality of the
+                                          bilateral coordinates and curve-level functoriality under
+                                          valuative extensions are PROVEN and wired as hnat/hcurve;
+                                          the missing local-field prerequisite is now decomposed
+                                          into two explicit leaves — exists_valuativeRel_sepClosure
+                                          and exists_isNonarchimedeanLocalField_intermediate —
+                                          consumed in the proof skeleton together with the proven
+                                          ValuativeRel.comap restriction infrastructure
+                                          (valuativeExtension_comap, valuativeExtension_comap_val
+                                          give the k ⊆ L ⊆ Ω coherence definitionally). REMAINING:
+                                          the colimit construction proper — define φ(u) by choosing
+                                          a finite L containing u and the relevant coordinates,
+                                          apply hfin at L (letI the obtained structures), transport
+                                          the point to Ω along L.val via Point.map + hcurve, prove
+                                          independence of the choice of L via hnat, then
+                                          additivity/kernel/surjectivity/equivariance pass to the
+                                          colimit.
+                                            - ❌🟪 `exists_valuativeRel_sepClosure` — valuative structure of the separable closure (sorry
+                                              node — prerequisite identified 2026-07-20): the
+                                              valuation of a nonarchimedean local field extends to
+                                              Ω. Route: mathlib’s BGR machinery (Basis.norm: exists_
+                                              nonarchimedean_pow_mul_seminorm_of_finiteDimensional;
+                                              spectralNorm with spectralAlgNorm multiplicative over
+                                              complete base) gives a unique extending rank-one norm
+                                              on each finite level, compatible by uniqueness, hence
+                                              a valuative relation on the union; convert ℝ-norm to
+                                              ValuativeRel via the norm-order (vle x y := ‖x‖ ≤
+                                              ‖y‖). Alternative route: integral closure of 𝒪[k] in Ω
+                                              as a valuation subring (henselian: unique maximal
+                                              ideal over the complete DVR).
+                                            - ❌· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are nonarchimedean local
+                                              fields (sorry node): with the restricted valuative
+                                              relation, L carries the valuative topology; locally
+                                              compact since L ≅ k^n as a topological k-vector space
+                                              (finite-dimensional over complete locally compact k —
+                                              mathlib has the unique-topology/continuity theory for
+                                              finite-dimensional spaces over complete nontrivially
+                                              normed fields); nontriviality restricts from k.
                         - ✅· `WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two` — the nonsplit half of the tame-at-2 condition, now ASSEMBLED: the exponent
                           quotient of the twisted minimal model transports through the (χ-twisted)
                           composite point equivalence; δ is the quadratic character of the
@@ -1845,65 +1673,45 @@ entries file). To add/remove/annotate a node, edit
                                                       E_q[ℓ](K̄) — no analytic inversion needed;
                                                       check whether TateSepClosure’s Surjective-φ
                                                       interface can be weakened accordingly.
-                                        - ❌🟪 `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — the Ω-gluing implication (sorry node): GIVEN the finite-
-                                          level canonical uniformisation lˣ/q^ℤ ≃+ E_q(l) with
-                                          underlying pointMapQuot for every NALF l, the Ω-level hom
-                                          exists. Content: finite subextensions of Ω/k are NALFs
-                                          (unique valuative extension over the complete k —
-                                          infrastructure absent from mathlib at this pin), the maps
-                                          are compatible with inclusions and σ-twists by naturality
-                                          of the universal series, and
-                                          kernel/surjectivity/equivariance pass to the colimit.
-                                          PROGRESS (2026-07-20): the naturality chain feeding this
-                                          gluing (coeffRingEval_map/evalA_XA_map/evalA_YA_map/bilate
-                                          ralX_map/bilateralY_map, all PROVEN in
-                                          TateUniformization.lean) is now wired in as a real `have`
-                                          (hnat) inside this theorem's proof, packaging the
-                                          bilateral-coordinate naturality as an (X,Y) pair.
-                                          REMAINING for the actual gluing: (1) DONE — tateCurve_map
-                                          proven and wired (hcurve); (2) CONFIRMED MECHANISM,
-                                          BLOCKED ON A MISSING PREREQUISITE (checked 2026-07-20):
-                                          the AlgHom needed for WeierstrassCurve.Affine.Point.map IS
-                                          IntermediateField.val (confirmed by probe: for l :
-                                          IntermediateField k Ω, l.val : l →ₐ[k] Ω typechecks
-                                          directly — no need for an ad-hoc Algebra.ofId-style
-                                          construction). BUT this requires l (as an
-                                          IntermediateField k Ω, hence a finite-dimensional field
-                                          extension of k) to carry [ValuativeRel l]
-                                          [TopologicalSpace l] [IsNonarchimedeanLocalField l]
-                                          [ValuativeExtension k l] instances, and NO SUCH GENERAL
-                                          INSTANCE EXISTS in this codebase:
-                                          Fermat/FLT/Mathlib/NumberTheory/Padics/LocalField.lean
-                                          only supplies the IsNonarchimedeanLocalField package for
-                                          ℚ_[p] and
-                                          IsDedekindDomain.HeightOneSpectrum.adicCompletion —
-                                          nothing generic for 'a finite extension of a
-                                          nonarchimedean local field is again one, with the
-                                          valuation extending uniquely'. This is itself a
-                                          substantial classical fact (existence+uniqueness of the
-                                          extended absolute value on a finite extension of a
-                                          complete nonarchimedean field, completeness of the
-                                          extension, local compactness) NOT YET FORMALIZED anywhere
-                                          in this project — a genuine new prerequisite node,
-                                          comparable in scope to the work already done on this file.
-                                          NEXT ACTION for a fresh iteration: search mathlib for
-                                          existing extension-of-valuation machinery for finite
-                                          extensions of complete fields (candidates:
-                                          Mathlib.RingTheory.Valuation.Extension?,
-                                          Mathlib.NumberTheory.Padics/Complete field extension
-                                          theory, or Spectral norm / Mathlib.Analysis.Normed.Field
-                                          material) before attempting to prove it from scratch; if
-                                          found, build the instance for IntermediateField k Ω under
-                                          [FiniteDimensional k l], then resume steps (2)-(3) of this
-                                          plan. (3) the colimit construction: every element of Ωˣ /
-                                          every point of E_q(Ω) lies in a finite subextension l/k of
-                                          Ω/k (mathlib: IsAlgebraic elements lie in finite
-                                          subextensions — search
-                                          IntermediateField/Algebra.IsAlgebraic API); define φ via
-                                          the chosen l and hfin, prove independence of the choice
-                                          using pointMap naturality from (2);
-                                          surjectivity/kernel/equivariance descend from the finite-
-                                          level properties.
+                                        - ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — gluing implication for the Ω-level Tate uniformisation
+                                          (sorry node, NARROWED 2026-07-20: naturality of the
+                                          bilateral coordinates and curve-level functoriality under
+                                          valuative extensions are PROVEN and wired as hnat/hcurve;
+                                          the missing local-field prerequisite is now decomposed
+                                          into two explicit leaves — exists_valuativeRel_sepClosure
+                                          and exists_isNonarchimedeanLocalField_intermediate —
+                                          consumed in the proof skeleton together with the proven
+                                          ValuativeRel.comap restriction infrastructure
+                                          (valuativeExtension_comap, valuativeExtension_comap_val
+                                          give the k ⊆ L ⊆ Ω coherence definitionally). REMAINING:
+                                          the colimit construction proper — define φ(u) by choosing
+                                          a finite L containing u and the relevant coordinates,
+                                          apply hfin at L (letI the obtained structures), transport
+                                          the point to Ω along L.val via Point.map + hcurve, prove
+                                          independence of the choice of L via hnat, then
+                                          additivity/kernel/surjectivity/equivariance pass to the
+                                          colimit.
+                                            - ❌🟪 `exists_valuativeRel_sepClosure` — valuative structure of the separable closure (sorry
+                                              node — prerequisite identified 2026-07-20): the
+                                              valuation of a nonarchimedean local field extends to
+                                              Ω. Route: mathlib’s BGR machinery (Basis.norm: exists_
+                                              nonarchimedean_pow_mul_seminorm_of_finiteDimensional;
+                                              spectralNorm with spectralAlgNorm multiplicative over
+                                              complete base) gives a unique extending rank-one norm
+                                              on each finite level, compatible by uniqueness, hence
+                                              a valuative relation on the union; convert ℝ-norm to
+                                              ValuativeRel via the norm-order (vle x y := ‖x‖ ≤
+                                              ‖y‖). Alternative route: integral closure of 𝒪[k] in Ω
+                                              as a valuation subring (henselian: unique maximal
+                                              ideal over the complete DVR).
+                                            - ❌· `exists_isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are nonarchimedean local
+                                              fields (sorry node): with the restricted valuative
+                                              relation, L carries the valuative topology; locally
+                                              compact since L ≅ k^n as a topological k-vector space
+                                              (finite-dimensional over complete locally compact k —
+                                              mathlib has the unique-topology/continuity theory for
+                                              finite-dimensional spaces over complete nontrivially
+                                              normed fields); nontriviality restricts from k.
             - ✅· `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified` — B5 `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
               (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work) — now (2026-07-16)
               from three explicit nodes in `HardlyRamified/Lift.lean` (own work), following
