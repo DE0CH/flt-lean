@@ -311,7 +311,27 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
         ((WeierstrassCurve.Affine.Point.equivOfEq hmapbar).trans
           (WeierstrassCurve.Affine.Point.equivOfEq
             (hid (W.map (algebraMap ℤ (AlgebraicClosure ℚ)))).symm))))
-  -- Step 3 (sorried): the torsion reduction isomorphism and its
+  -- Step 3b: restrict the point identification to `p`-torsion, as a
+  -- `ZMod p`-linear equivalence
+  have hmem : ∀ {A B : Type} [AddCommGroup A] [AddCommGroup B]
+      (f : A ≃+ B) (x : A), (p : ℤ) • x = 0 → (p : ℤ) • f x = 0 := by
+    intro A B _ _ f x hx
+    rw [← map_zsmul f, hx, map_zero]
+  let ψ₀add : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) ≃+
+      ((W.map (algebraMap ℤ (AlgebraicClosure ℚ))).nTorsion p) :=
+    { toFun := fun x => ⟨hmodelPt x.1, (Submodule.mem_torsionBy_iff _ _).mpr
+        (hmem hmodelPt x.1 ((Submodule.mem_torsionBy_iff _ _).mp x.2))⟩
+      invFun := fun y => ⟨hmodelPt.symm y.1,
+        (Submodule.mem_torsionBy_iff _ _).mpr
+        (hmem hmodelPt.symm y.1
+          ((Submodule.mem_torsionBy_iff _ _).mp y.2))⟩
+      left_inv := fun x => Subtype.ext (hmodelPt.symm_apply_apply x.1)
+      right_inv := fun y => Subtype.ext (hmodelPt.apply_symm_apply y.1)
+      map_add' := fun x y => Subtype.ext (map_add hmodelPt x.1 y.1) }
+  let ψ₀ : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p)
+      ≃ₗ[ZMod p] ((W.map (algebraMap ℤ (AlgebraicClosure ℚ))).nTorsion p) :=
+    { ψ₀add with map_smul' := ZMod.map_smul ψ₀add.toAddMonoidHom }
+  -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
 
