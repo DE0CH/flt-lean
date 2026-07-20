@@ -960,6 +960,67 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
       = ((W.Δ : ℤ) : IsLocalRing.ResidueField
         (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))
       from eq_intCast _ _]
+  -- Step 3c-ii-h: the coordinatewise residue of an integral solution of
+  -- the Weierstrass equation is a nonsingular point of the reduced curve
+  have hredNS : ∀ (x y : (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))
+      (hx : x ∈ localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+      (hy : y ∈ localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat),
+      ((W.map (algebraMap ℤ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Equation x y →
+      (W.map (algebraMap ℤ (IsLocalRing.ResidueField
+        (localValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat)))).toAffine.Nonsingular
+        (IsLocalRing.residue
+          (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+          (⟨x, hx⟩ : localValuationSubring
+            hq.toHeightOneSpectrumRingOfIntegersRat))
+        (IsLocalRing.residue
+          (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)
+          (⟨y, hy⟩ : localValuationSubring
+            hq.toHeightOneSpectrumRingOfIntegersRat)) := by
+    intro x y hx hy heq
+    haveI : ((W.map (algebraMap ℤ (IsLocalRing.ResidueField
+        (localValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat)))).toAffine).IsElliptic :=
+      inferInstanceAs ((W.map (algebraMap ℤ (IsLocalRing.ResidueField
+        (localValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat)))).IsElliptic)
+    refine (WeierstrassCurve.Affine.equation_iff_nonsingular
+      (W := (W.map (algebraMap ℤ (IsLocalRing.ResidueField
+        (localValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat)))).toAffine)).mp ?_
+    rw [WeierstrassCurve.Affine.equation_iff] at heq ⊢
+    simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map_a₁,
+      WeierstrassCurve.map_a₂, WeierstrassCurve.map_a₃,
+      WeierstrassCurve.map_a₄, WeierstrassCurve.map_a₆, eq_intCast,
+      map_intCast] at heq ⊢
+    -- lift the equation to the valuation subring
+    have heqO : (⟨y, hy⟩ : localValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat) ^ 2 +
+        ((W.a₁ : ℤ) : localValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat) * ⟨x, hx⟩ * ⟨y, hy⟩ +
+        ((W.a₃ : ℤ) : localValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat) * ⟨y, hy⟩ =
+        (⟨x, hx⟩ : localValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat) ^ 3 +
+        ((W.a₂ : ℤ) : localValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat) * ⟨x, hx⟩ ^ 2 +
+        ((W.a₄ : ℤ) : localValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat) * ⟨x, hx⟩ +
+        ((W.a₆ : ℤ) : localValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat) := by
+      apply Subtype.ext
+      push_cast
+      exact heq
+    have hres := congrArg (IsLocalRing.residue
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) heqO
+    simp only [map_add, map_mul, map_pow, map_intCast] at hres
+    exact hres
   -- Step 3c (sorried): the reduction isomorphism to `Wbar` and the
   -- Frobenius compatibility
   sorry
