@@ -3467,6 +3467,52 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       · -- the hard direction: an integral element of the function field
         -- lies in the coordinate ring (normality)
         intro hx
+        -- decompose over the spanning set
+        have hxmem : x ∈ Submodule.span (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) ({1, (algebraMap Wb.toAffine.CoordinateRing
+        (FractionRing Wb.toAffine.CoordinateRing)
+        (AdjoinRoot.root Wb.toAffine.polynomial))} : Set (FractionRing Wb.toAffine.CoordinateRing)) := by
+          rw [hspan]
+          exact Submodule.mem_top
+        obtain ⟨sc, tc, hst⟩ := Submodule.mem_span_pair.mp hxmem
+        -- the element-level root relation over `L`
+        have hryel : (algebraMap Wb.toAffine.CoordinateRing
+        (FractionRing Wb.toAffine.CoordinateRing)
+        (AdjoinRoot.root Wb.toAffine.polynomial)) ^ 2 +
+            algebraMap (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (FractionRing Wb.toAffine.CoordinateRing) (algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+              (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃)) * (algebraMap Wb.toAffine.CoordinateRing
+        (FractionRing Wb.toAffine.CoordinateRing)
+        (AdjoinRoot.root Wb.toAffine.polynomial)) -
+            algebraMap (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (FractionRing Wb.toAffine.CoordinateRing) (algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+              (Polynomial.X ^ 3 + Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
+        Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆)) = 0 := by
+          have := congrArg (algebraMap Wb.toAffine.CoordinateRing (FractionRing Wb.toAffine.CoordinateRing)) hrel2
+          simp only [map_add, map_sub, map_mul, map_pow, map_zero,
+            ← IsScalarTower.algebraMap_apply (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (FractionRing Wb.toAffine.CoordinateRing),
+            IsScalarTower.algebraMap_apply (Polynomial (AlgebraicClosure (ZMod q)))
+              Wb.toAffine.CoordinateRing (FractionRing Wb.toAffine.CoordinateRing),
+            AdjoinRoot.algebraMap_eq] at this ⊢
+          linear_combination this
+        -- the monic quadratic relation satisfied by `x`
+        have hxquad : x ^ 2 -
+            algebraMap (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (FractionRing Wb.toAffine.CoordinateRing) (2 * sc - tc *
+              algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃)) * x +
+            algebraMap (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (FractionRing Wb.toAffine.CoordinateRing) (sc ^ 2 - sc * tc *
+              algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) - tc ^ 2 *
+              algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.X ^ 3 + Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
+        Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆)) = 0 := by
+          rw [← hst]
+          simp only [Algebra.smul_def, mul_one, map_sub, map_add, map_mul,
+            map_pow, map_ofNat,
+            ← IsScalarTower.algebraMap_apply (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (FractionRing Wb.toAffine.CoordinateRing),
+            IsScalarTower.algebraMap_apply (Polynomial (AlgebraicClosure (ZMod q)))
+              Wb.toAffine.CoordinateRing (FractionRing Wb.toAffine.CoordinateRing),
+            AdjoinRoot.algebraMap_eq]
+          simp only [map_add, map_mul, map_pow,
+            ← IsScalarTower.algebraMap_apply (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (FractionRing Wb.toAffine.CoordinateRing),
+            IsScalarTower.algebraMap_apply (Polynomial (AlgebraicClosure (ZMod q)))
+              Wb.toAffine.CoordinateRing (FractionRing Wb.toAffine.CoordinateRing),
+            AdjoinRoot.algebraMap_eq] at hryel
+          linear_combination (algebraMap (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (FractionRing Wb.toAffine.CoordinateRing) tc) ^ 2 * hryel
         sorry
       · rintro ⟨y, rfl⟩
         exact IsIntegral.map (IsScalarTower.toAlgHom (Polynomial (AlgebraicClosure (ZMod q)))
