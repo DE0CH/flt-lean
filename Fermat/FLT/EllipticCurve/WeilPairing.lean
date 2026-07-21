@@ -7267,6 +7267,153 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           aP, aQ, haP, haQ, hA,
           by rw [Units.val_mk0]
              exact div_mul_cancel₀ _ hA⟩
+  -- avoidance-parametrized Miller setup: for any finite subfield G
+  -- containing the (torsion) representatives' data there is a full setup
+  -- whose four divisor abscissas avoid G and whose evaluation products
+  -- are nonzero (the hexval construction, with G folded into the
+  -- avoidance finsets)
+  have hsetup3 : ∀ (G : Subfield (AlgebraicClosure (ZMod q))),
+      (G : Set (AlgebraicClosure (ZMod q))).Finite →
+      ∀ (xP yP : (AlgebraicClosure (ZMod q)))
+        (hP : Wb.toAffine.Nonsingular xP yP)
+        (xQ yQ : (AlgebraicClosure (ZMod q)))
+        (hQ : Wb.toAffine.Nonsingular xQ yQ),
+      (p : ℤ) • (WeierstrassCurve.Affine.Point.some xP yP hP :
+        Wb.toAffine.Point) = 0 →
+      (p : ℤ) • (WeierstrassCurve.Affine.Point.some xQ yQ hQ :
+        Wb.toAffine.Point) = 0 →
+      xP ∈ G → yP ∈ G → xQ ∈ G → yQ ∈ G →
+      ∃ (xS yS : (AlgebraicClosure (ZMod q)))
+        (hS : Wb.toAffine.Nonsingular xS yS)
+        (xR yR : (AlgebraicClosure (ZMod q)))
+        (hR : Wb.toAffine.Nonsingular xR yR)
+        (xPS yPS : (AlgebraicClosure (ZMod q)))
+        (hPS : Wb.toAffine.Nonsingular xPS yPS)
+        (xQR yQR : (AlgebraicClosure (ZMod q)))
+        (hQR : Wb.toAffine.Nonsingular xQR yQR)
+        (aP aQ : Wb.toAffine.CoordinateRing),
+        xS ∉ G ∧ xR ∉ G ∧ xPS ∉ G ∧ xQR ∉ G ∧
+        (WeierstrassCurve.Affine.Point.some xPS yPS hPS =
+          WeierstrassCurve.Affine.Point.some xP yP hP +
+          WeierstrassCurve.Affine.Point.some xS yS hS) ∧
+        (WeierstrassCurve.Affine.Point.some xQR yQR hQR =
+          WeierstrassCurve.Affine.Point.some xQ yQ hQ +
+          WeierstrassCurve.Affine.Point.some xR yR hR) ∧
+        Ideal.span {aP} =
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            xPS (Polynomial.C yPS)) ^ p *
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            xS (Polynomial.C (Wb.toAffine.negY xS yS))) ^ p ∧
+        Ideal.span {aQ} =
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            xQR (Polynomial.C yQR)) ^ p *
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            xR (Polynomial.C (Wb.toAffine.negY xR yR))) ^ p ∧
+        (AdjoinRoot.evalEval hQR.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS) ^ p) *
+          AdjoinRoot.evalEval hR.left aP *
+          AdjoinRoot.evalEval hS.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p) *
+          AdjoinRoot.evalEval hPS.left aQ) ≠ 0 ∧
+        (AdjoinRoot.evalEval hQR.left aP *
+          AdjoinRoot.evalEval hR.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS) ^ p) *
+          AdjoinRoot.evalEval hS.left aQ *
+          AdjoinRoot.evalEval hPS.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p)) ≠ 0 := by
+    sorry
+  -- GENERIC-PAIR RECIPROCITY (the Weil reciprocity core): a full
+  -- admissible setup over `F ≤ F'` and a second Miller quadruple whose
+  -- four divisor abscissas avoid `F'` have equal cross-ratios, in
+  -- cross-multiplied form — proven through the hgenfac words of the four
+  -- Miller numerators, hbaldiv bookkeeping, hevid evaluation identities,
+  -- and hww swaps; every cancelled factor is nonzero by the avoidances
+  have hrecgen : ∀ (F F' : Subfield (AlgebraicClosure (ZMod q))),
+      (F : Set (AlgebraicClosure (ZMod q))).Finite →
+      (F' : Set (AlgebraicClosure (ZMod q))).Finite → F ≤ F' →
+      ∀ (xP yP : (AlgebraicClosure (ZMod q)))
+        (hP : Wb.toAffine.Nonsingular xP yP)
+        (xQ yQ : (AlgebraicClosure (ZMod q)))
+        (hQ : Wb.toAffine.Nonsingular xQ yQ),
+      xP ∈ F → yP ∈ F → xQ ∈ F → yQ ∈ F →
+      ∀ (xS₁ yS₁ : (AlgebraicClosure (ZMod q)))
+        (hS₁ : Wb.toAffine.Nonsingular xS₁ yS₁),
+      xS₁ ∈ F' → yS₁ ∈ F' → xS₁ ∉ F →
+      ∀ (xR₁ yR₁ : (AlgebraicClosure (ZMod q)))
+        (hR₁ : Wb.toAffine.Nonsingular xR₁ yR₁), xR₁ ∉ F' →
+      ∀ (xPS₁ yPS₁ : (AlgebraicClosure (ZMod q)))
+        (hPS₁ : Wb.toAffine.Nonsingular xPS₁ yPS₁),
+      (WeierstrassCurve.Affine.Point.some xPS₁ yPS₁ hPS₁ =
+        WeierstrassCurve.Affine.Point.some xP yP hP +
+        WeierstrassCurve.Affine.Point.some xS₁ yS₁ hS₁) →
+      xPS₁ ∈ F' → yPS₁ ∈ F' →
+      ∀ (xQR₁ yQR₁ : (AlgebraicClosure (ZMod q)))
+        (hQR₁ : Wb.toAffine.Nonsingular xQR₁ yQR₁),
+      (WeierstrassCurve.Affine.Point.some xQR₁ yQR₁ hQR₁ =
+        WeierstrassCurve.Affine.Point.some xQ yQ hQ +
+        WeierstrassCurve.Affine.Point.some xR₁ yR₁ hR₁) →
+      ∀ (aP₁ aQ₁ : Wb.toAffine.CoordinateRing),
+      Ideal.span {aP₁} =
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+          xPS₁ (Polynomial.C yPS₁)) ^ p *
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+          xS₁ (Polynomial.C (Wb.toAffine.negY xS₁ yS₁))) ^ p →
+      Ideal.span {aQ₁} =
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+          xQR₁ (Polynomial.C yQR₁)) ^ p *
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+          xR₁ (Polynomial.C (Wb.toAffine.negY xR₁ yR₁))) ^ p →
+      ∀ (xS₃ yS₃ : (AlgebraicClosure (ZMod q)))
+        (hS₃ : Wb.toAffine.Nonsingular xS₃ yS₃)
+        (xR₃ yR₃ : (AlgebraicClosure (ZMod q)))
+        (hR₃ : Wb.toAffine.Nonsingular xR₃ yR₃)
+        (xPS₃ yPS₃ : (AlgebraicClosure (ZMod q)))
+        (hPS₃ : Wb.toAffine.Nonsingular xPS₃ yPS₃)
+        (xQR₃ yQR₃ : (AlgebraicClosure (ZMod q)))
+        (hQR₃ : Wb.toAffine.Nonsingular xQR₃ yQR₃)
+        (aP₃ aQ₃ : Wb.toAffine.CoordinateRing),
+      xS₃ ∉ F' → xR₃ ∉ F' → xPS₃ ∉ F' → xQR₃ ∉ F' →
+      (WeierstrassCurve.Affine.Point.some xPS₃ yPS₃ hPS₃ =
+        WeierstrassCurve.Affine.Point.some xP yP hP +
+        WeierstrassCurve.Affine.Point.some xS₃ yS₃ hS₃) →
+      (WeierstrassCurve.Affine.Point.some xQR₃ yQR₃ hQR₃ =
+        WeierstrassCurve.Affine.Point.some xQ yQ hQ +
+        WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃) →
+      Ideal.span {aP₃} =
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+          xPS₃ (Polynomial.C yPS₃)) ^ p *
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+          xS₃ (Polynomial.C (Wb.toAffine.negY xS₃ yS₃))) ^ p →
+      Ideal.span {aQ₃} =
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+          xQR₃ (Polynomial.C yQR₃)) ^ p *
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+          xR₃ (Polynomial.C (Wb.toAffine.negY xR₃ yR₃))) ^ p →
+      (AdjoinRoot.evalEval hQR₁.left aP₁ *
+        AdjoinRoot.evalEval hR₁.left
+          ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+        AdjoinRoot.evalEval hS₁.left aQ₁ *
+        AdjoinRoot.evalEval hPS₁.left
+          ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁) ^ p)) *
+      (AdjoinRoot.evalEval hQR₃.left
+          ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₃) ^ p) *
+        AdjoinRoot.evalEval hR₃.left aP₃ *
+        AdjoinRoot.evalEval hS₃.left
+          ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₃) ^ p) *
+        AdjoinRoot.evalEval hPS₃.left aQ₃) =
+      (AdjoinRoot.evalEval hQR₃.left aP₃ *
+        AdjoinRoot.evalEval hR₃.left
+          ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₃) ^ p) *
+        AdjoinRoot.evalEval hS₃.left aQ₃ *
+        AdjoinRoot.evalEval hPS₃.left
+          ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₃) ^ p)) *
+      (AdjoinRoot.evalEval hQR₁.left
+          ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+        AdjoinRoot.evalEval hR₁.left aP₁ *
+        AdjoinRoot.evalEval hS₁.left
+          ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁) ^ p) *
+        AdjoinRoot.evalEval hPS₁.left aQ₁) := by
+    sorry
   -- uniqueness of the Weil value across admissible setups: THE Weil
   -- reciprocity argument — both setups' cross-ratios reduce through
   -- hgenfac (F-rational words) + hbaldiv (divisor bookkeeping) + hevid
@@ -7325,7 +7472,70 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
             AdjoinRoot.evalEval hS₁.left
               ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁) ^ p) *
             AdjoinRoot.evalEval hPS₁.left aQ₁) := by
-        sorry
+        have hvp : (p : ℤ) • (WeierstrassCurve.Affine.Point.some xP yP hP₀ :
+            Wb.toAffine.Point) = 0 := by
+          have h := (Submodule.mem_torsionBy_iff _ _).mp v.2
+          rw [hcv] at h
+          exact h
+        have hwp : (p : ℤ) • (WeierstrassCurve.Affine.Point.some xQ yQ hQ₀ :
+            Wb.toAffine.Point) = 0 := by
+          have h := (Submodule.mem_torsionBy_iff _ _).mp w.2
+          rw [hcw] at h
+          exact h
+        obtain ⟨G, hGfin, hGmem⟩ := hsubfin
+          (hF₁'fin.toFinset ∪ hF₂'fin.toFinset)
+        have hF₁'G : F₁' ≤ G := fun a ha => hGmem a
+          (Finset.mem_union_left _ (hF₁'fin.mem_toFinset.mpr ha))
+        have hF₂'G : F₂' ≤ G := fun a ha => hGmem a
+          (Finset.mem_union_right _ (hF₂'fin.mem_toFinset.mpr ha))
+        obtain ⟨xS₃, yS₃, hS₃, xR₃, yR₃, hR₃, xPS₃, yPS₃, hPS₃,
+          xQR₃, yQR₃, hQR₃, aP₃, aQ₃, hxS₃, hxR₃, hxPS₃, hxQR₃,
+          hPSc₃, hQRc₃, haP₃, haQ₃, hA₃, hB₃⟩ :=
+          hsetup3 G hGfin xP yP hP₀ xQ yQ hQ₀ hvp hwp
+            (hF₁'G (hFF₁ hxPF₁)) (hF₁'G (hFF₁ hyPF₁))
+            (hF₁'G (hFF₁ hxQF₁)) (hF₁'G (hFF₁ hyQF₁))
+        have h13 := hrecgen F₁ F₁' hF₁fin hF₁'fin hFF₁ xP yP hP₀ xQ yQ hQ₀
+          hxPF₁ hyPF₁ hxQF₁ hyQF₁ xS₁ yS₁ hS₁ hxS₁F' hyS₁F' hxS₁F
+          xR₁ yR₁ hR₁ hxR₁ xPS₁ yPS₁ hPS₁ hPSc₁ hxPS₁F' hyPS₁F'
+          xQR₁ yQR₁ hQR₁ hQRc₁ aP₁ aQ₁ haP₁ haQ₁
+          xS₃ yS₃ hS₃ xR₃ yR₃ hR₃ xPS₃ yPS₃ hPS₃ xQR₃ yQR₃ hQR₃ aP₃ aQ₃
+          (fun h => hxS₃ (hF₁'G h)) (fun h => hxR₃ (hF₁'G h))
+          (fun h => hxPS₃ (hF₁'G h)) (fun h => hxQR₃ (hF₁'G h))
+          hPSc₃ hQRc₃ haP₃ haQ₃
+        have h23 := hrecgen F₂ F₂' hF₂fin hF₂'fin hFF₂ xP yP hP₀ xQ yQ hQ₀
+          hxPF₂ hyPF₂ hxQF₂ hyQF₂ xS₂ yS₂ hS₂ hxS₂F' hyS₂F' hxS₂F
+          xR₂ yR₂ hR₂ hxR₂ xPS₂ yPS₂ hPS₂ hPSc₂ hxPS₂F' hyPS₂F'
+          xQR₂ yQR₂ hQR₂ hQRc₂ aP₂ aQ₂ haP₂ haQ₂
+          xS₃ yS₃ hS₃ xR₃ yR₃ hR₃ xPS₃ yPS₃ hPS₃ xQR₃ yQR₃ hQR₃ aP₃ aQ₃
+          (fun h => hxS₃ (hF₂'G h)) (fun h => hxR₃ (hF₂'G h))
+          (fun h => hxPS₃ (hF₂'G h)) (fun h => hxQR₃ (hF₂'G h))
+          hPSc₃ hQRc₃ haP₃ haQ₃
+        refine mul_right_cancel₀ (mul_ne_zero hA₃ hB₃) ?_
+        linear_combination
+          ((AdjoinRoot.evalEval hQR₂.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₂) ^ p) *
+            AdjoinRoot.evalEval hR₂.left aP₂ *
+            AdjoinRoot.evalEval hS₂.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₂) ^ p) *
+            AdjoinRoot.evalEval hPS₂.left aQ₂) *
+           (AdjoinRoot.evalEval hQR₃.left aP₃ *
+            AdjoinRoot.evalEval hR₃.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₃) ^ p) *
+            AdjoinRoot.evalEval hS₃.left aQ₃ *
+            AdjoinRoot.evalEval hPS₃.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₃) ^ p))) * h13 -
+          ((AdjoinRoot.evalEval hQR₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+            AdjoinRoot.evalEval hR₁.left aP₁ *
+            AdjoinRoot.evalEval hS₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁) ^ p) *
+            AdjoinRoot.evalEval hPS₁.left aQ₁) *
+           (AdjoinRoot.evalEval hQR₃.left aP₃ *
+            AdjoinRoot.evalEval hR₃.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₃) ^ p) *
+            AdjoinRoot.evalEval hS₃.left aQ₃ *
+            AdjoinRoot.evalEval hPS₃.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₃) ^ p))) * h23
       refine Units.ext (mul_right_cancel₀ (mul_ne_zero hA₁ hA₂) ?_)
       calc (z₁ : (AlgebraicClosure (ZMod q))) *
             ((AdjoinRoot.evalEval hQR₁.left
