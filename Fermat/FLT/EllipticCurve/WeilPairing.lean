@@ -6187,6 +6187,123 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
     rw [hRL]
     rw [mul_comm (Multiset.card L₁) (Multiset.card L₂), pow_mul]
     ring
+  -- UNIQUENESS of the point divisor: equal products of point ideals force
+  -- equal point multisets (prime picking + maximality + `hXYinj` +
+  -- Dedekind cancellation)
+  have hdivuniq : ∀ (D E : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))),
+      (∀ P ∈ D, Wb.toAffine.Equation P.1 P.2) →
+      (∀ P ∈ E, Wb.toAffine.Equation P.1 P.2) →
+      (D.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          Wb.toAffine P.1 (Polynomial.C P.2))).prod =
+        (E.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          Wb.toAffine P.1 (Polynomial.C P.2))).prod →
+      D = E := by
+    intro D
+    induction D using Multiset.induction with
+    | empty =>
+      intro E _ hEeq h
+      rw [Multiset.map_zero, Multiset.prod_zero] at h
+      by_contra hne
+      obtain ⟨Q, hQ⟩ := Multiset.exists_mem_of_ne_zero (fun h0 => hne h0.symm)
+      obtain ⟨E', hE'⟩ := Multiset.exists_cons_of_mem (Multiset.mem_map_of_mem
+        (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          Wb.toAffine P.1 (Polynomial.C P.2)) hQ)
+      have hle : (E.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          Wb.toAffine P.1 (Polynomial.C P.2))).prod ≤
+          WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine Q.1 (Polynomial.C Q.2) := by
+        rw [hE', Multiset.prod_cons]
+        exact Ideal.mul_le_right
+      rw [← h] at hle
+      exact (hXYmax Q.1 Q.2 (hEeq Q hQ)).ne_top (top_le_iff.mp (by
+        rwa [Ideal.one_eq_top] at hle))
+    | cons P D' IH =>
+      intro E hDeq hEeq h
+      have hEP : Wb.toAffine.Equation P.1 P.2 := hDeq P (Multiset.mem_cons_self P D')
+      have hmaxP := hXYmax P.1 P.2 hEP
+      have hle : (E.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          Wb.toAffine P.1 (Polynomial.C P.2))).prod ≤
+          WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine P.1 (Polynomial.C P.2) := by
+        rw [← h, Multiset.map_cons, Multiset.prod_cons]
+        exact Ideal.mul_le_right
+      obtain ⟨Q, hQE, hQle⟩ := (hmaxP.isPrime.multiset_prod_map_le _).mp hle
+      have hQeq := hEeq Q hQE
+      have hQP : Q = P := by
+        obtain ⟨h1, h2⟩ := hXYinj Q.1 Q.2 P.1 P.2 hQeq
+          ((hXYmax Q.1 Q.2 hQeq).eq_of_le hmaxP.ne_top hQle)
+        exact Prod.ext h1 h2
+      obtain ⟨E', hE'⟩ := Multiset.exists_cons_of_mem hQE
+      rw [hQP] at hE'
+      have hne0 : WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+          P.1 (Polynomial.C P.2) ≠ ⊥ := by
+        intro hbot
+        exact WeierstrassCurve.Affine.CoordinateRing.XClass_ne_zero
+          (W' := Wb.toAffine) P.1 (Ideal.mem_bot.mp (hbot ▸ Ideal.subset_span
+            (Set.mem_insert _ _)))
+      have hcancel : ((D'.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          Wb.toAffine P.1 (Polynomial.C P.2))).prod : Ideal Wb.toAffine.CoordinateRing) =
+          (E'.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          Wb.toAffine P.1 (Polynomial.C P.2))).prod := by
+        refine mul_left_cancel₀ hne0 ?_
+        have h' := h
+        rw [Multiset.map_cons, Multiset.prod_cons, hE', Multiset.map_cons,
+          Multiset.prod_cons] at h'
+        exact h'
+      rw [hE', IH E' (fun T hT => hDeq T (Multiset.mem_cons_of_mem hT))
+        (fun T hT => hEeq T (by rw [hE']; exact Multiset.mem_cons_of_mem hT))
+        hcancel]
+  -- explicit vertical divisor at the canonical fiber: the span of a
+  -- vertical is the product of the two conjugate fiber point ideals
+  have hvertdiv' : ∀ c : (AlgebraicClosure (ZMod q)),
+      Ideal.span {WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine c} =
+        WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine c
+          (Polynomial.C (Wb.toAffine.negY c (yfib c))) *
+        WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine c
+          (Polynomial.C (yfib c)) := by
+    intro c
+    have hns := (WeierstrassCurve.Affine.equation_iff_nonsingular).mp (hyfib c)
+    exact (WeierstrassCurve.Affine.CoordinateRing.XYIdeal_neg_mul
+      (W := Wb.toAffine) hns).symm
+  -- the divisor of a WORD: the span of a product of line and vertical
+  -- elements is the product of the point ideals over its explicit divisor
+  have hworddiv : ∀ (L : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
+      (V : Multiset (AlgebraicClosure (ZMod q))),
+      Ideal.span {(L.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => AdjoinRoot.mk Wb.toAffine.polynomial
+          (Polynomial.X - Polynomial.C (Polynomial.C P.1 * Polynomial.X + Polynomial.C P.2)))).prod *
+        (V.map (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine)).prod} =
+      (((L.bind (fun ln => ((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - ln.1 ^ 2 - Wb.toAffine.a₁ * ln.1)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * ln.1 * ln.2 - Wb.toAffine.a₁ * ln.2
+            - Wb.toAffine.a₃ * ln.1) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - ln.2 ^ 2 - Wb.toAffine.a₃ * ln.2))).roots.map
+          (fun x => (x, ln.1 * x + ln.2)))) +
+        (V.bind (fun c' => {(c', Wb.toAffine.negY c' (yfib c')),
+          (c', yfib c')}))).map
+            (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+              Wb.toAffine P.1 (Polynomial.C P.2))).prod := by
+    intro L V
+    rw [Multiset.map_add, Multiset.prod_add,
+      ← Ideal.span_singleton_mul_span_singleton]
+    congr 1
+    · -- the line part, by induction through `hlinediv'`
+      induction L using Multiset.induction with
+      | empty => simp
+      | cons ln L' IHL =>
+        rw [Multiset.map_cons, Multiset.prod_cons,
+          ← Ideal.span_singleton_mul_span_singleton, Multiset.cons_bind,
+          Multiset.map_add, Multiset.prod_add, IHL, hlinediv' ln.1 ln.2]
+    · -- the vertical part, by induction through `hvertdiv'`
+      induction V using Multiset.induction with
+      | empty => simp
+      | cons c V' IHV =>
+        rw [Multiset.map_cons, Multiset.prod_cons,
+          ← Ideal.span_singleton_mul_span_singleton, Multiset.cons_bind,
+          Multiset.map_add, Multiset.prod_add, IHV, hvertdiv' c,
+          show ({(c, Wb.toAffine.negY c (yfib c)), (c, yfib c)} :
+            Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))) =
+            (c, Wb.toAffine.negY c (yfib c)) ::ₘ {(c, yfib c)} from rfl,
+          Multiset.map_cons, Multiset.prod_cons, Multiset.map_singleton,
+          Multiset.prod_singleton]
   sorry
 
 set_option warn.sorry false in
@@ -6677,4 +6794,3 @@ theorem exists_weilPairing (E : WeierstrassCurve ℚ) [E.IsElliptic]
       (E.galoisRep p hppos g) x y
 
 end WeilPairing
-
