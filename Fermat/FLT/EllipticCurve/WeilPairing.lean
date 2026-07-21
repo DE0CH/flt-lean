@@ -8618,7 +8618,41 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                   (((xS₁ - xR₁) * (xS₁ - xQR₃) *
                     ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
                 (((xS₁ - xM) * (xS₁ - xM) * ((xPS₁ - xM) * (xS₁ - xM))) ^ p) := by
-                sorry
+                -- normalize the pointwise t-word identities to scalars
+                simp only [Multiset.map_zero, Multiset.prod_zero, one_mul,
+                  mul_one, Multiset.insert_eq_cons, Multiset.map_cons,
+                  Multiset.map_singleton, Multiset.prod_cons,
+                  Multiset.prod_singleton] at het₁ het₂ het₃
+                -- the paired (σ-completed) t-eliminations
+                have heL : (AdjoinRoot.evalEval hS₁.left t * (xS₁ - xM)) * (AdjoinRoot.evalEval hS₁neg.left t * (xS₁ - xM)) =
+                    (c * ((yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) * (yS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁))))) * (c * ((Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) * (Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁))))) := by
+                  linear_combination (AdjoinRoot.evalEval hS₁neg.left t * (xS₁ - xM)) * het₁ +
+                    (c * ((yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) * (yS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁))))) * het₂
+                have heR : (AdjoinRoot.evalEval hPS₁.left t * (xPS₁ - xM)) * (AdjoinRoot.evalEval hS₁neg.left t * (xS₁ - xM)) =
+                    (c * ((yPS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) * (yPS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁))))) * (c * ((Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) * (Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁))))) := by
+                  linear_combination (AdjoinRoot.evalEval hS₁neg.left t * (xS₁ - xM)) * het₃ +
+                    (c * ((yPS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) * (yPS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁))))) * het₂
+                have heLp := congrArg (· ^ p) heL
+                have heRp := congrArg (· ^ p) heR
+                -- the t-free reciprocity over the explicit chord-line values
+                have hword1 :
+                    (AdjoinRoot.evalEval hQR₁.left aP₁ * AdjoinRoot.evalEval hR₁neg.left aP₁ * AdjoinRoot.evalEval hR₃.left aP₁ * AdjoinRoot.evalEval hQR₃neg.left aP₁) *
+                    ((xR₁ - xS₁) ^ p * (xR₁ - xS₁) ^ p * (xQR₃ - xS₁) ^ p * (xQR₃ - xS₁) ^ p) *
+                    ((c * ((yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) * (yS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁))))) * (c * ((Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) * (Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))))) ^ p *
+                    (((xPS₁ - xR₁) * (xPS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                    ((xPS₁ - xM) * (xS₁ - xM)) ^ p =
+                    (AdjoinRoot.evalEval hR₁.left aP₁ * AdjoinRoot.evalEval hR₁neg.left aP₁ * AdjoinRoot.evalEval hQR₃.left aP₁ * AdjoinRoot.evalEval hQR₃neg.left aP₁) *
+                    ((xQR₁ - xS₁) ^ p * (xR₁ - xS₁) ^ p * (xR₃ - xS₁) ^ p * (xQR₃ - xS₁) ^ p) *
+                    ((c * ((yPS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) * (yPS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁))))) * (c * ((Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) * (Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))))) ^ p *
+                    (((xS₁ - xR₁) * (xS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                    ((xS₁ - xM) * (xS₁ - xM)) ^ p := by
+                  sorry
+                simp only [mul_pow] at heLp heRp hword1 ⊢
+                linear_combination
+                  ((AdjoinRoot.evalEval hQR₁.left aP₁ * AdjoinRoot.evalEval hR₁neg.left aP₁ * AdjoinRoot.evalEval hR₃.left aP₁ * AdjoinRoot.evalEval hQR₃neg.left aP₁) * ((xR₁ - xS₁) ^ p * (xR₁ - xS₁) ^ p * (xQR₃ - xS₁) ^ p * (xQR₃ - xS₁) ^ p) * ((xPS₁ - xR₁) ^ p * (xPS₁ - xQR₃) ^ p * ((xS₁ - xR₁) ^ p * (xS₁ - xQR₃) ^ p)) *
+                    ((xPS₁ - xM) ^ p * (xS₁ - xM) ^ p)) * heLp -
+                  ((AdjoinRoot.evalEval hR₁.left aP₁ * AdjoinRoot.evalEval hR₁neg.left aP₁ * AdjoinRoot.evalEval hQR₃.left aP₁ * AdjoinRoot.evalEval hQR₃neg.left aP₁) * ((xQR₁ - xS₁) ^ p * (xR₁ - xS₁) ^ p * (xR₃ - xS₁) ^ p * (xQR₃ - xS₁) ^ p) * ((xS₁ - xR₁) ^ p * (xS₁ - xQR₃) ^ p * ((xS₁ - xR₁) ^ p * (xS₁ - xQR₃) ^ p)) *
+                    ((xS₁ - xM) ^ p * (xS₁ - xM) ^ p)) * heRp + hword1
               exact mul_right_cancel₀ hZne hword0
             simp only [map_pow, map_mul, hevvert]
             linear_combination hscalar
