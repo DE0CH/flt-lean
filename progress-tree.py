@@ -3,18 +3,20 @@
 
 The flat entries file lists the Lean declarations we track (name, defining
 module, prose, work-in-progress flag).  This driver:
-  1. emits a Lean scratch file that (a) `#print axioms` each entry and
-     (b) runs a meta program computing, for each entry, which OTHER listed
-     entries its proof depends on (BFS over used constants, stopping at
-     listed names) — the dependency tree, filtered to the list;
-  2. runs the Lean compiler once (`lake env lean`);
-  3. decides the mark for each entry:
-       cross      — the declaration's own source block contains `sorry`;
-       double     — `#print axioms` shows no `sorryAx` (whole cone clean);
-       single     — otherwise (own text complete, cone still has sorries);
-  4. renders the tree (roots = entries nobody else depends on) and splices
-     it into the `## Tree` section of PROGRESS.md; repeated subtrees are
-     rendered once, later occurrences get a `(see above)` reference.
+  1. asks the persistent Lean environment server (`lean-daemon.py`,
+     autostarted on demand) for each entry's status: missing / own-cone
+     sorry / whole-cone sorry / dependency edges to other listed entries
+     (BFS over used constants, stopping at listed names);
+  2. decides the mark for each entry:
+       cross      — a `sorry` lives in the entry's exclusive cone;
+       double     — no `sorryAx` anywhere in the cone (compiler-verified);
+       single     — otherwise (own content complete, sorries behind
+                    tracked children);
+  3. renders the tree (roots = entries nobody else depends on) and splices
+     it into the `## Tree` section of PROGRESS.md.
+
+The daemon's environment reflects the last BUILT state of each module
+(`stale_sources` in its response names modules edited since).
 """
 import json, re, subprocess, sys, textwrap, unicodedata, os
 
@@ -24,68 +26,33 @@ names = [e.get("fullname", e["name"]) for e in entries]
 disp = {e.get("fullname", e["name"]): e["name"] for e in entries}
 by_name = {e.get("fullname", e["name"]): e for e in entries}
 
-# ---------------------------------------------------------------- lean file
-mods = sorted({e["module"] for e in entries})
-lean = ["import " + m for m in mods]
-lean.append("open Lean in")
-lean.append("#eval show CoreM Unit from do")
-lean.append("  let names : Array Name := #[" + ", ".join("`" + n for n in names) + "]")
-lean.append("""  let listed : NameSet := names.foldl (fun s n => s.insert n) {}
-  let env ← getEnv
-  for root in names do
-    match env.find? root with
-    | none => IO.println s!"DEP\\t{root}\\tMISSING"
-    | some ci =>
-      let mut visited : NameSet := {}
-      let mut kids : Array Name := #[]
-      let mut ownSorry := false
-      let mut stack : Array Name := ci.getUsedConstantsAsSet.toArray
-      while !stack.isEmpty do
-        let c := stack.back!
-        stack := stack.pop
-        if !(visited.contains c) then
-          visited := visited.insert c
-          if c == `sorryAx then
-            ownSorry := true
-          else if listed.contains c && c != root then
-            kids := kids.push c
-          else
-            match env.find? c with
-            | some ci' => stack := stack ++ ci'.getUsedConstantsAsSet.toArray
-            | none => pure ()
-      IO.println s!"DEP\\t{root}\\t{ownSorry}\\t{kids}"
-""")
-for n in names:
-    q = "«%s»" % n if False else n
-    lean.append(f"#print axioms {n}")
-open(f"{ROOT}/.progress_status.lean", "w").write("\n".join(lean) + "\n")
+# ------------------------------------------------- query the lean daemon
+res = subprocess.run(
+    [sys.executable, f"{ROOT}/lean-daemon.py", "--query",
+     json.dumps({"cmd": "report", "names": names})],
+    capture_output=True, text=True, cwd=ROOT, timeout=3600)
+if res.returncode != 0:
+    print("DAEMON FAILED:", res.stderr[:500], file=sys.stderr)
+    sys.exit(1)
+resp = json.loads(res.stdout)
+if "error" in resp:
+    print("DAEMON ERROR:", resp["error"], file=sys.stderr)
+    sys.exit(1)
+for mod in resp.get("stale_sources", []):
+    print(f"NOTE: {mod} edited since last build — status reflects the "
+          "built state", file=sys.stderr)
 
-# ------------------------------------------------------------------- run it
-res = subprocess.run(["lake", "env", "lean", f"{ROOT}/.progress_status.lean"],
-                     capture_output=True, text=True, cwd=ROOT, timeout=3600)
-out = res.stdout + res.stderr
-if "MISSING" in out or res.returncode not in (0,):
-    # axioms lines still usable; report problems
-    for l in out.splitlines():
-        if "MISSING" in l or "error" in l:
-            print("LEAN:", l[:200], file=sys.stderr)
-
-# ------------------------------------------------------- parse deps + axioms
 deps = {n: [] for n in names}
 own = {}
 clean = {}
-for l in out.splitlines():
-    if l.startswith("DEP\t"):
-        _, root, osf, kids = l.split("\t")
-        kids = kids.strip("#[] ")
-        deps[root] = [k.strip() for k in kids.split(",") if k.strip()] if kids else []
-        own[root] = (osf == "true")
-
-
-for m in re.finditer(r"'([^\n]+)' depends on axioms: \[(.*?)\]", out, re.S):
-    clean[m.group(1)] = "sorryAx" not in m.group(2)
-for m in re.finditer(r"'([^']+)' does not depend on any axioms", out):
-    clean[m.group(1)] = True
+for item in resp["entries"]:
+    n = item["name"]
+    if item.get("missing"):
+        print(f"LEAN: {n} MISSING", file=sys.stderr)
+        continue
+    deps[n] = item["kids"]
+    own[n] = item["own"]
+    clean[n] = item["clean"]
 
 # ------------------------------------------------------------------ marks
 # cross  — a `sorry` lives in the node's EXCLUSIVE cone (reached without

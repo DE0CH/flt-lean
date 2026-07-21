@@ -1,2 +1,5 @@
 .lake/
 .progress_status.lean
+.lean-daemon.sock
+.lean-daemon.log
+.lean-daemon-server.lean
