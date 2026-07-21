@@ -3810,7 +3810,75 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                     algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₂) * algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) Polynomial.X ^ 2 +
                     algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₄) * algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) Polynomial.X +
                     algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₆))) * hτA
-                sorry
+                -- characteristic-two facts in the base field
+                have ha1' : Wb.a₁ ≠ 0 := ha1
+                have h2F0 : (2 : (AlgebraicClosure (ZMod q))) = 0 := by
+                  haveI h1 : CharP (AlgebraicClosure (ZMod q)) q :=
+                    charP_of_injective_algebraMap
+                      (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+                  haveI h2 : CharP (AlgebraicClosure (ZMod q)) 2 := CharP.congr q hq2
+                  exact_mod_cast CharP.cast_eq_zero (AlgebraicClosure (ZMod q)) 2
+                -- the root of the linear form
+                set r : (AlgebraicClosure (ZMod q)) := Wb.a₃ * Wb.a₁⁻¹ with hrdef
+                have hAr : Polynomial.eval r (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) = 0 := by
+                  simp only [Polynomial.eval_add, Polynomial.eval_mul,
+                    Polynomial.eval_C, Polynomial.eval_X, hrdef]
+                  field_simp
+                  linear_combination Wb.a₃ * h2F0
+                -- `A` divides `τ₀` (else the reduced curve is singular)
+                have hdvdAτ : (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) ∣ τ₀ := by
+                  by_contra hAndvd
+                  have hτr : Polynomial.eval r τ₀ ≠ 0 := by
+                    intro h0
+                    apply hAndvd
+                    have hAfac : ((Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) : Polynomial (AlgebraicClosure (ZMod q))) =
+                        Polynomial.C Wb.a₁ * (Polynomial.X -
+                          Polynomial.C r) := by
+                      rw [hrdef]
+                      rw [mul_sub, ← Polynomial.C_mul]
+                      congr 1
+                      rw [← Polynomial.C_neg]
+                      congr 1
+                      field_simp
+                      linear_combination Wb.a₃ * h2F0
+                    rw [hAfac]
+                    exact (IsUnit.mul_left_dvd (Polynomial.isUnit_C.mpr
+                      (isUnit_iff_ne_zero.mpr ha1'))).mpr
+                      ((Polynomial.dvd_iff_isRoot).mpr h0)
+                  -- evaluation of the identity at `r`
+                  have hE1 := congrArg (Polynomial.eval r) hstar
+                  simp only [Polynomial.eval_sub, Polynomial.eval_add,
+                    Polynomial.eval_mul, Polynomial.eval_pow,
+                    Polynomial.eval_zero, hAr, mul_zero, zero_mul,
+                    sub_zero] at hE1
+                  -- derivative of the identity, evaluated at `r`
+                  have hE2 := congrArg (Polynomial.eval r)
+                    (congrArg Polynomial.derivative hstar)
+                  simp only [Polynomial.derivative_sub,
+                    Polynomial.derivative_add, Polynomial.derivative_mul,
+                    Polynomial.derivative_pow, Polynomial.derivative_C,
+                    Polynomial.derivative_X, Polynomial.derivative_zero,
+                    Polynomial.eval_sub, Polynomial.eval_add,
+                    Polynomial.eval_mul, Polynomial.eval_pow,
+                    Polynomial.eval_zero,
+                    Polynomial.eval_C, Polynomial.eval_X,
+                    hAr, mul_zero, zero_mul,
+                    add_zero, zero_add, mul_one] at hE2
+                  sorry
+                obtain ⟨t₀', ht₀'⟩ := hdvdAτ
+                have hAK : algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) ≠
+                    0 := by
+                  intro h0
+                  have h1 := (IsFractionRing.injective (Polynomial (AlgebraicClosure (ZMod q)))
+                    (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))) (h0.trans (map_zero _).symm)
+                  have h2 := congrArg (fun f => Polynomial.coeff f 1) h1
+                  simp at h2
+                  exact ha1' h2
+                refine ⟨t₀', ?_⟩
+                have := hτtcA
+                rw [ht₀', map_mul] at this
+                field_simp at this
+                exact this.symm
             obtain ⟨t₀, ht₀⟩ := htcrange
             -- `sc` is integral over `k[X]` via its monic quadratic
             have hscint : IsIntegral (Polynomial (AlgebraicClosure (ZMod q))) sc := by
