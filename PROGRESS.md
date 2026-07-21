@@ -373,13 +373,38 @@ entries file). To add/remove/annotate a node, edit
                                                   products' nonvanishing; the chain closes by
                                                   mul_right_cancel0 + linear_combination with
                                                   coefficients B3-product * Bh and B1-product * Bh.
-                                                  BRICK QUEUE: hAh/hBh (hoffdiv avoidance
-                                                  bookkeeping, provable with existing patterns),
-                                                  hmill0 (zero-sum principality for the tau
-                                                  comparison function), then hstepR/hstepS (each:
-                                                  tau with explicit divisor (Q+R1)+(-R1)+... , f_P-
-                                                  pair hgenfac words over F', word reciprocity via
-                                                  hww/hbaldiv/hevid, p-th power cancellation).
+                                                  hAh/hBh PROVEN. HSTEP ARCHITECTURE (2026-07-21,
+                                                  the decisive design): the KEY SOUNDNESS INSIGHT is
+                                                  that the FULL-DIVISOR 4-function reciprocity
+                                                  (hstar) is unconditionally true -- for f1,f2,g1,g2
+                                                  with point-divisor factorizations and |Df1|=|Df2|,
+                                                  |Dg1|=|Dg2|: prod_{Dg1}f1 * prod_{Dg2}f2 *
+                                                  prod_{Df2}g1 * prod_{Df1}g2 = prod_{Dg2}f1 *
+                                                  prod_{Dg1}f2 * prod_{Df1}g1 * prod_{Df2}g2. Any
+                                                  support collision zeroes BOTH sides symmetrically
+                                                  (P in Dfi cap Dgj kills the (fi,Dgj)-factor on one
+                                                  side and the (gj,Dfi)-factor on the other), so NO
+                                                  avoidance hypotheses are needed; the proof is by
+                                                  hgenfac-word factorization of all four functions,
+                                                  hevid pointwise products, hbaldiv bookkeeping in
+                                                  the multiplicative form e_{divWN}(W) = e_D(W) *
+                                                  e_{divWD}(W), hww word-word swaps, with u-powers
+                                                  cancelling by balance and hww signs cancelling by
+                                                  parity. The un-powered (mu_p-free) content flows
+                                                  through the multiplicity-ONE comparison element t
+                                                  from hmill0 (zero-sum four-point principality: D_t
+                                                  = (Q+R1)+(-R1)+(R3)+(-(Q+R3)) sums to zero).
+                                                  hstepR then: (1) hmill0 gives t; (2) hcompQ: aQ1 *
+                                                  XClass(xQR3)^p * XClass(xR3)^p = C c * aQ3 * t^p
+                                                  (span equality + hCunits); (3) the hstar instance
+                                                  f1:=aP1, f2:=XClass(xS1)^p, g1:=t,
+                                                  g2:=XClass(xR1)*XClass(xQR3); (4) strip the sigma-
+                                                  companion common factors (aP1 at -R1/-QR3, t at
+                                                  -S1, verticals) using the avoidance nonvanishing
+                                                  available in hstepR's context, and combine with
+                                                  hcompQ evaluated at S1 and PS1. hstepS mirrors.
+                                                  BRICK QUEUE: hmill0, hcompQ, hstar (the big
+                                                  unconditional one), hstepR/hstepS assembly.
                                                   REMAINING SORRIES in the mu-node: hrecgen and
                                                   hleg1-hleg6 (bilinearity x2, alternation,
                                                   nondegeneracy, p-th powers, Frobenius naturality).
@@ -730,35 +755,57 @@ entries file). To add/remove/annotate a node, edit
                                           multiplied 16-evaluation identities; hAh/hBh state the
                                           hybrid products' nonvanishing; the chain closes by
                                           mul_right_cancel0 + linear_combination with coefficients
-                                          B3-product * Bh and B1-product * Bh. BRICK QUEUE: hAh/hBh
-                                          (hoffdiv avoidance bookkeeping, provable with existing
-                                          patterns), hmill0 (zero-sum principality for the tau
-                                          comparison function), then hstepR/hstepS (each: tau with
-                                          explicit divisor (Q+R1)+(-R1)+... , f_P-pair hgenfac words
-                                          over F', word reciprocity via hww/hbaldiv/hevid, p-th
-                                          power cancellation). REMAINING SORRIES in the mu-node:
-                                          hrecgen and hleg1-hleg6 (bilinearity x2, alternation,
-                                          nondegeneracy, p-th powers, Frobenius naturality).
-                                          Superseded: FRONTIER (7 named sorried steps) description.
-                                          Superseded: NEXT: line-vs-word (hlw, sign (-1)^lines) then
-                                          word-vs-word (hww), then the balanced reciprocity for
-                                          functions via hgenfac and the pairing. Remaining assembly:
-                                          the balanced cross-product reciprocity for arbitrary
-                                          disjoint pairs from the generator cases, then the pairing
-                                          and its six legs. Superseded plan text: REMAINING for
-                                          reciprocity: the class-group descent hgenfac (every
-                                          function with point-divisor factorization equals a
-                                          constant times a quotient of products of line/vertical
-                                          elements, by strong induction on divisor size through
-                                          hline + XYIdeal_neg_mul + toClass-nontriviality) and the
-                                          multiplicative assembly of the balanced cross-product
-                                          reciprocity; then the pairing definition (ratio over hgen2
-                                          generators at hpoints-generic translates) and its six
-                                          legs. Older per-brick log follows: NEXT: divisor
-                                          evaluation f(D) := prod of evalEval over D; nonvanishing
-                                          off the divisor; the reciprocity statement f(div g) =
-                                          g(div f) for disjoint supports, by induction via
-                                          line/vertical factorization (hline + XYIdeal_neg_mul)
+                                          B3-product * Bh and B1-product * Bh. hAh/hBh PROVEN. HSTEP
+                                          ARCHITECTURE (2026-07-21, the decisive design): the KEY
+                                          SOUNDNESS INSIGHT is that the FULL-DIVISOR 4-function
+                                          reciprocity (hstar) is unconditionally true -- for
+                                          f1,f2,g1,g2 with point-divisor factorizations and
+                                          |Df1|=|Df2|, |Dg1|=|Dg2|: prod_{Dg1}f1 * prod_{Dg2}f2 *
+                                          prod_{Df2}g1 * prod_{Df1}g2 = prod_{Dg2}f1 * prod_{Dg1}f2
+                                          * prod_{Df1}g1 * prod_{Df2}g2. Any support collision
+                                          zeroes BOTH sides symmetrically (P in Dfi cap Dgj kills
+                                          the (fi,Dgj)-factor on one side and the (gj,Dfi)-factor on
+                                          the other), so NO avoidance hypotheses are needed; the
+                                          proof is by hgenfac-word factorization of all four
+                                          functions, hevid pointwise products, hbaldiv bookkeeping
+                                          in the multiplicative form e_{divWN}(W) = e_D(W) *
+                                          e_{divWD}(W), hww word-word swaps, with u-powers
+                                          cancelling by balance and hww signs cancelling by parity.
+                                          The un-powered (mu_p-free) content flows through the
+                                          multiplicity-ONE comparison element t from hmill0 (zero-
+                                          sum four-point principality: D_t =
+                                          (Q+R1)+(-R1)+(R3)+(-(Q+R3)) sums to zero). hstepR then:
+                                          (1) hmill0 gives t; (2) hcompQ: aQ1 * XClass(xQR3)^p *
+                                          XClass(xR3)^p = C c * aQ3 * t^p (span equality + hCunits);
+                                          (3) the hstar instance f1:=aP1, f2:=XClass(xS1)^p, g1:=t,
+                                          g2:=XClass(xR1)*XClass(xQR3); (4) strip the sigma-
+                                          companion common factors (aP1 at -R1/-QR3, t at -S1,
+                                          verticals) using the avoidance nonvanishing available in
+                                          hstepR's context, and combine with hcompQ evaluated at S1
+                                          and PS1. hstepS mirrors. BRICK QUEUE: hmill0, hcompQ,
+                                          hstar (the big unconditional one), hstepR/hstepS assembly.
+                                          REMAINING SORRIES in the mu-node: hrecgen and hleg1-hleg6
+                                          (bilinearity x2, alternation, nondegeneracy, p-th powers,
+                                          Frobenius naturality). Superseded: FRONTIER (7 named
+                                          sorried steps) description. Superseded: NEXT: line-vs-word
+                                          (hlw, sign (-1)^lines) then word-vs-word (hww), then the
+                                          balanced reciprocity for functions via hgenfac and the
+                                          pairing. Remaining assembly: the balanced cross-product
+                                          reciprocity for arbitrary disjoint pairs from the
+                                          generator cases, then the pairing and its six legs.
+                                          Superseded plan text: REMAINING for reciprocity: the
+                                          class-group descent hgenfac (every function with point-
+                                          divisor factorization equals a constant times a quotient
+                                          of products of line/vertical elements, by strong induction
+                                          on divisor size through hline + XYIdeal_neg_mul + toClass-
+                                          nontriviality) and the multiplicative assembly of the
+                                          balanced cross-product reciprocity; then the pairing
+                                          definition (ratio over hgen2 generators at hpoints-generic
+                                          translates) and its six legs. Older per-brick log follows:
+                                          NEXT: divisor evaluation f(D) := prod of evalEval over D;
+                                          nonvanishing off the divisor; the reciprocity statement
+                                          f(div g) = g(div f) for disjoint supports, by induction
+                                          via line/vertical factorization (hline + XYIdeal_neg_mul)
                                           reducing to the proven cores hlinerec (line-line) and
                                           hnormeval + hrecP1 (vertical cases); then the pairing and
                                           its six legs. hmax COMPLETE (with hresfin + hkill): every
