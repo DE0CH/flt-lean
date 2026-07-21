@@ -5585,6 +5585,55 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
               (AdjoinRoot.mk Wb.toAffine.polynomial (Polynomial.X -
                 Polynomial.C (Polynomial.C (Wb.toAffine.slope P.1 Q.1 P.2 Q.2) * Polynomial.X +
                   Polynomial.C (P.2 - (Wb.toAffine.slope P.1 Q.1 P.2 Q.2) * P.1)))) * heq
+  -- every abscissa carries a fiber point (the fiber quadratic has a root)
+  have hfiber : ∀ c : (AlgebraicClosure (ZMod q)), ∃ y : (AlgebraicClosure (ZMod q)), Wb.toAffine.Equation c y := by
+    intro c
+    obtain ⟨y₀, hy₀⟩ := IsAlgClosed.exists_root
+      (Wb.toAffine.polynomial.map (Polynomial.evalRingHom c)) (by
+        rw [Polynomial.degree_map_eq_of_leadingCoeff_ne_zero]
+        · rw [WeierstrassCurve.Affine.degree_polynomial]
+          norm_num
+        · rw [show Wb.toAffine.polynomial.leadingCoeff =
+            (1 : Polynomial (AlgebraicClosure (ZMod q))) from
+            WeierstrassCurve.Affine.monic_polynomial]
+          simp)
+    refine ⟨y₀, ?_⟩
+    rw [WeierstrassCurve.Affine.Equation]
+    rw [Polynomial.IsRoot, Polynomial.eval_map] at hy₀
+    rw [show Wb.toAffine.polynomial.evalEval c y₀ =
+      Wb.toAffine.polynomial.eval₂ (Polynomial.evalRingHom c) y₀ from
+      (Polynomial.eval₂_evalRingHom c ▸ rfl)]
+    exact hy₀
+  -- the divisor witness of a vertical element
+  have hvertdiv : ∀ c : (AlgebraicClosure (ZMod q)), ∃ D : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))),
+      (∀ P ∈ D, Wb.toAffine.Equation P.1 P.2) ∧ D.card = 2 ∧
+      (∀ P ∈ D, P.1 = c) ∧
+      Ideal.span {WeierstrassCurve.Affine.CoordinateRing.XClass
+        Wb.toAffine c} =
+      (D.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+        WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine P.1
+          (Polynomial.C P.2))).prod := by
+    intro c
+    obtain ⟨y, hy⟩ := hfiber c
+    have hns := (WeierstrassCurve.Affine.equation_iff_nonsingular).mp hy
+    refine ⟨{(c, Wb.toAffine.negY c y), (c, y)}, ?_, rfl, ?_, ?_⟩
+    · intro P hP
+      rcases Multiset.mem_cons.mp hP with h | h
+      · rw [h]
+        exact (WeierstrassCurve.Affine.equation_neg c y).mpr hy
+      · rw [Multiset.mem_singleton.mp h]
+        exact hy
+    · intro P hP
+      rcases Multiset.mem_cons.mp hP with h | h
+      · rw [h]
+      · rw [Multiset.mem_singleton.mp h]
+    · rw [show ({(c, Wb.toAffine.negY c y), (c, y)} :
+        Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))) =
+        (c, Wb.toAffine.negY c y) ::ₘ {(c, y)} from rfl,
+        Multiset.map_cons, Multiset.prod_cons, Multiset.map_singleton,
+        Multiset.prod_singleton]
+      exact (WeierstrassCurve.Affine.CoordinateRing.XYIdeal_neg_mul
+        (W := Wb.toAffine) hns).symm
   sorry
 
 set_option warn.sorry false in
