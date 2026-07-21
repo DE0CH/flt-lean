@@ -306,26 +306,41 @@ entries file). To add/remove/annotate a node, edit
                                                   Weil reciprocity through the hgenfac words of the
                                                   four Miller numerators (hbaldiv bookkeeping, hevid
                                                   evaluation identities, hww swaps, F-avoidance
-                                                  nonvanishing). REMAINING SORRIES in the mu-node:
-                                                  hcross and hleg1-hleg6 (bilinearity x2,
-                                                  alternation, nondegeneracy, p-th powers, Frobenius
-                                                  naturality). Superseded: FRONTIER (7 named sorried
-                                                  steps) description. Superseded: NEXT: line-vs-word
-                                                  (hlw, sign (-1)^lines) then word-vs-word (hww),
-                                                  then the balanced reciprocity for functions via
-                                                  hgenfac and the pairing. Remaining assembly: the
-                                                  balanced cross-product reciprocity for arbitrary
-                                                  disjoint pairs from the generator cases, then the
-                                                  pairing and its six legs. Superseded plan text:
-                                                  REMAINING for reciprocity: the class-group descent
-                                                  hgenfac (every function with point-divisor
-                                                  factorization equals a constant times a quotient
-                                                  of products of line/vertical elements, by strong
-                                                  induction on divisor size through hline +
-                                                  XYIdeal_neg_mul + toClass-nontriviality) and the
-                                                  multiplicative assembly of the balanced cross-
-                                                  product reciprocity; then the pairing definition
-                                                  (ratio over hgen2 generators at hpoints-generic
+                                                  nonvanishing). HCROSS PLAN (third-setup
+                                                  comparison): two arbitrary setups may share
+                                                  translates, so cross-evaluations can vanish; prove
+                                                  hcross by constructing a THIRD setup generic
+                                                  relative to F1' union F2' (hexval-style: hsubfin
+                                                  over both, hpoints avoidance), proving B_i*A_3 =
+                                                  B_3*A_i for i=1,2 by the DIRECT generic-pair
+                                                  reciprocity (the true Weil reciprocity
+                                                  computation: hgenfac words of the four Miller
+                                                  numerators over their subfields, hbaldiv divisor
+                                                  bookkeeping, hevid pointwise identities at the
+                                                  eight evaluation points, hww word-word swaps; all
+                                                  cancelled factors nonzero since setup-3 avoids
+                                                  both subfields), then combining the two identities
+                                                  by cancelling the nonzero A3/B3. REMAINING SORRIES
+                                                  in the mu-node: hcross and hleg1-hleg6
+                                                  (bilinearity x2, alternation, nondegeneracy, p-th
+                                                  powers, Frobenius naturality). Superseded:
+                                                  FRONTIER (7 named sorried steps) description.
+                                                  Superseded: NEXT: line-vs-word (hlw, sign
+                                                  (-1)^lines) then word-vs-word (hww), then the
+                                                  balanced reciprocity for functions via hgenfac and
+                                                  the pairing. Remaining assembly: the balanced
+                                                  cross-product reciprocity for arbitrary disjoint
+                                                  pairs from the generator cases, then the pairing
+                                                  and its six legs. Superseded plan text: REMAINING
+                                                  for reciprocity: the class-group descent hgenfac
+                                                  (every function with point-divisor factorization
+                                                  equals a constant times a quotient of products of
+                                                  line/vertical elements, by strong induction on
+                                                  divisor size through hline + XYIdeal_neg_mul +
+                                                  toClass-nontriviality) and the multiplicative
+                                                  assembly of the balanced cross-product
+                                                  reciprocity; then the pairing definition (ratio
+                                                  over hgen2 generators at hpoints-generic
                                                   translates) and its six legs. Older per-brick log
                                                   follows: NEXT: divisor evaluation f(D) := prod of
                                                   evalEval over D; nonvanishing off the divisor; the
@@ -599,8 +614,20 @@ entries file). To add/remove/annotate a node, edit
                                           proven by Weil reciprocity through the hgenfac words of
                                           the four Miller numerators (hbaldiv bookkeeping, hevid
                                           evaluation identities, hww swaps, F-avoidance
-                                          nonvanishing). REMAINING SORRIES in the mu-node: hcross
-                                          and hleg1-hleg6 (bilinearity x2, alternation,
+                                          nonvanishing). HCROSS PLAN (third-setup comparison): two
+                                          arbitrary setups may share translates, so cross-
+                                          evaluations can vanish; prove hcross by constructing a
+                                          THIRD setup generic relative to F1' union F2' (hexval-
+                                          style: hsubfin over both, hpoints avoidance), proving
+                                          B_i*A_3 = B_3*A_i for i=1,2 by the DIRECT generic-pair
+                                          reciprocity (the true Weil reciprocity computation:
+                                          hgenfac words of the four Miller numerators over their
+                                          subfields, hbaldiv divisor bookkeeping, hevid pointwise
+                                          identities at the eight evaluation points, hww word-word
+                                          swaps; all cancelled factors nonzero since setup-3 avoids
+                                          both subfields), then combining the two identities by
+                                          cancelling the nonzero A3/B3. REMAINING SORRIES in the mu-
+                                          node: hcross and hleg1-hleg6 (bilinearity x2, alternation,
                                           nondegeneracy, p-th powers, Frobenius naturality).
                                           Superseded: FRONTIER (7 named sorried steps) description.
                                           Superseded: NEXT: line-vs-word (hlw, sign (-1)^lines) then
