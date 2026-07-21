@@ -558,28 +558,58 @@ entries file). To add/remove/annotate a node, edit
                                                   SORRY of the chain: hword2 = the fully word-level
                                                   reciprocity (uf-normalized numerator word values
                                                   both sides, complementary denominator extras), to
-                                                  be closed by hcvP/hcvt balance projections + hww
-                                                  swaps between the aP1 word (Ln/Ld/Vn/Vd) and the
-                                                  explicit two-chord word (Lnt/{xM}). Historical:
-                                                  hstitch was the sigma-completed Weil reciprocity
-                                                  equation itself, provable by: convert XClass-evals
-                                                  to scalars (hevvert+map_pow), eliminate aP1-evals
-                                                  by heP1-6 and t-evals by het1-3, project hbalP by
-                                                  hcvP at the t-word value functions (LambdaA,
-                                                  LambdaB, x-xM) and hbalt by hcvt at the aP1-word
-                                                  value functions, swap with hww instances
-                                                  (Ln/Ld/Vn/Vd vs the explicit two-line word and
-                                                  {xM}), and close with mul_right_cancel0 over the
-                                                  junk product (all factors nonzero by the
-                                                  avoidances). REMAINING inside hgrand: ONLY step 5,
-                                                  the stitch -- normalize the goal and all bound
-                                                  ingredients (nine hevid points, thirteen hww
-                                                  instances, hcvt/hcvP at the value functions of (Ln
-                                                  ,Vn)/(Ld,Vd)/(Mn,Wn')/(Md,Wd')/{xS1}/{xR1,xQR3},
-                                                  hfibpair identifications) with the canonical
-                                                  multiset-unfolding simp set, then combine via
-                                                  calc/linear_combination; prune unused hww
-                                                  instances after. REMAINING: hgrand (in
+                                                  be closed by the projection cycle, worked out as
+                                                  follows. (i) For PHI := the aP1-word value
+                                                  functions (PHIN(T) = (Ln.map lam_T).prod * (Vn.map
+                                                  vert_T).prod, PHID likewise with Ld/Vd), hcvt PHI
+                                                  reads: PHI over the four Dt points times PHI over
+                                                  the two xM-fiber points = PHI over can(Lnt) —
+                                                  because Lnt is the two-chord multiset, its bind IS
+                                                  can(chordA) + can(chordB). (ii) hww Ln Lnt Vn 0
+                                                  gives prod over can(Lnt) of PHIN = prod over
+                                                  can(Ln)+fib(Vn) of (LamA*LamB), sign (-1)^(2|Ln|)
+                                                  = 1 (EVEN — no sign bookkeeping); hww Ln 0 Vn {xM}
+                                                  gives prod over fib(xM) of PHIN = prod over
+                                                  can(Ln)+fib(Vn) of (x - xM); mirrors with Ld/Vd.
+                                                  (iii) hcvP at LamA, LamB, (x - xM) converts prod
+                                                  over can(Ln)+fib(Vn) minus can(Ld)+fib(Vd) into
+                                                  the explicit DP-point values LamA(PS1)^p
+                                                  LamA(-S1)^p etc — exactly the T1/T2 and Z1/Z2
+                                                  factors already present in hword2's rest-groups.
+                                                  (iv) The junk to cancel at the end: PHIN/PHID at
+                                                  the two xM-fiber points — nonzero exactly as in
+                                                  hDne since the fiber abscissa xM avoids F' (use
+                                                  hfibpair to identify the canonical fiber pair with
+                                                  the actual sigma-pair). (v) The V1/V2/W1/W2
+                                                  explicit mismatches reconcile through the same
+                                                  projections at the vertical value functions (x -
+                                                  xS1), (x - xR1), (x - xQR3) via the already-bound
+                                                  hwv3/4/7/8/9 instances. Execute as: bind the four
+                                                  hww instances + six hcvP projections + hcvt at
+                                                  PHIN/PHID/(x-xM), normalize DP-multiset products
+                                                  by map_add/prod_add/map_replicate/prod_replicate
+                                                  and the Lnt/Dt literals by the cons simp set,
+                                                  state the residual as one linear_combination (pre-
+                                                  split product-powers), cancel the M-fiber junk by
+                                                  mul_right_cancel0. Historical: hstitch was the
+                                                  sigma-completed Weil reciprocity equation itself,
+                                                  provable by: convert XClass-evals to scalars
+                                                  (hevvert+map_pow), eliminate aP1-evals by heP1-6
+                                                  and t-evals by het1-3, project hbalP by hcvP at
+                                                  the t-word value functions (LambdaA, LambdaB,
+                                                  x-xM) and hbalt by hcvt at the aP1-word value
+                                                  functions, swap with hww instances (Ln/Ld/Vn/Vd vs
+                                                  the explicit two-line word and {xM}), and close
+                                                  with mul_right_cancel0 over the junk product (all
+                                                  factors nonzero by the avoidances). REMAINING
+                                                  inside hgrand: ONLY step 5, the stitch --
+                                                  normalize the goal and all bound ingredients (nine
+                                                  hevid points, thirteen hww instances, hcvt/hcvP at
+                                                  the value functions of (Ln,Vn)/(Ld,Vd)/(Mn,Wn')/(M
+                                                  d,Wd')/{xS1}/{xR1,xQR3}, hfibpair identifications)
+                                                  with the canonical multiset-unfolding simp set,
+                                                  then combine via calc/linear_combination; prune
+                                                  unused hww instances after. REMAINING: hgrand (in
                                                   hstepR/hstarinst), then hstepS mirrors the whole
                                                   R-step, and hleg1-hleg6. REMAINING SORRIES in the
                                                   mu-node: hrecgen and hleg1-hleg6 (bilinearity x2,
@@ -1089,9 +1119,36 @@ entries file). To add/remove/annotate a node, edit
                                           linear_combination over heP1-6). SINGLE REMAINING SORRY of
                                           the chain: hword2 = the fully word-level reciprocity (uf-
                                           normalized numerator word values both sides, complementary
-                                          denominator extras), to be closed by hcvP/hcvt balance
-                                          projections + hww swaps between the aP1 word (Ln/Ld/Vn/Vd)
-                                          and the explicit two-chord word (Lnt/{xM}). Historical:
+                                          denominator extras), to be closed by the projection cycle,
+                                          worked out as follows. (i) For PHI := the aP1-word value
+                                          functions (PHIN(T) = (Ln.map lam_T).prod * (Vn.map
+                                          vert_T).prod, PHID likewise with Ld/Vd), hcvt PHI reads:
+                                          PHI over the four Dt points times PHI over the two xM-
+                                          fiber points = PHI over can(Lnt) — because Lnt is the two-
+                                          chord multiset, its bind IS can(chordA) + can(chordB).
+                                          (ii) hww Ln Lnt Vn 0 gives prod over can(Lnt) of PHIN =
+                                          prod over can(Ln)+fib(Vn) of (LamA*LamB), sign
+                                          (-1)^(2|Ln|) = 1 (EVEN — no sign bookkeeping); hww Ln 0 Vn
+                                          {xM} gives prod over fib(xM) of PHIN = prod over
+                                          can(Ln)+fib(Vn) of (x - xM); mirrors with Ld/Vd. (iii)
+                                          hcvP at LamA, LamB, (x - xM) converts prod over
+                                          can(Ln)+fib(Vn) minus can(Ld)+fib(Vd) into the explicit
+                                          DP-point values LamA(PS1)^p LamA(-S1)^p etc — exactly the
+                                          T1/T2 and Z1/Z2 factors already present in hword2's rest-
+                                          groups. (iv) The junk to cancel at the end: PHIN/PHID at
+                                          the two xM-fiber points — nonzero exactly as in hDne since
+                                          the fiber abscissa xM avoids F' (use hfibpair to identify
+                                          the canonical fiber pair with the actual sigma-pair). (v)
+                                          The V1/V2/W1/W2 explicit mismatches reconcile through the
+                                          same projections at the vertical value functions (x -
+                                          xS1), (x - xR1), (x - xQR3) via the already-bound
+                                          hwv3/4/7/8/9 instances. Execute as: bind the four hww
+                                          instances + six hcvP projections + hcvt at
+                                          PHIN/PHID/(x-xM), normalize DP-multiset products by
+                                          map_add/prod_add/map_replicate/prod_replicate and the
+                                          Lnt/Dt literals by the cons simp set, state the residual
+                                          as one linear_combination (pre-split product-powers),
+                                          cancel the M-fiber junk by mul_right_cancel0. Historical:
                                           hstitch was the sigma-completed Weil reciprocity equation
                                           itself, provable by: convert XClass-evals to scalars
                                           (hevvert+map_pow), eliminate aP1-evals by heP1-6 and
