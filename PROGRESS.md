@@ -177,8 +177,23 @@ entries file). To add/remove/annotate a node, edit
                                                   P.1) over the divisor -- the bridge between
                                                   hnormeval fiber-products and hrecP1 root-products
                                                   for the vertical-vs-anything reciprocity case.
-                                                  NEXT: divisor evaluation f(D) := prod of evalEval
-                                                  over D; nonvanishing off the divisor; the
+                                                  GENERATOR RECIPROCITY COMPLETE: hrecfib (vertical
+                                                  fiber-quotient form, via
+                                                  hnormeval'/hspanprod/hNconst) and hrecline (line-
+                                                  line divisor form, via
+                                                  hNline/hevline/hevvert/hondiv/habs + the hlinerec
+                                                  core). REMAINING for reciprocity: the class-group
+                                                  descent hgenfac (every function with point-divisor
+                                                  factorization equals a constant times a quotient
+                                                  of products of line/vertical elements, by strong
+                                                  induction on divisor size through hline +
+                                                  XYIdeal_neg_mul + toClass-nontriviality) and the
+                                                  multiplicative assembly of the balanced cross-
+                                                  product reciprocity; then the pairing definition
+                                                  (ratio over hgen2 generators at hpoints-generic
+                                                  translates) and its six legs. Older per-brick log
+                                                  follows: NEXT: divisor evaluation f(D) := prod of
+                                                  evalEval over D; nonvanishing off the divisor; the
                                                   reciprocity statement f(div g) = g(div f) for
                                                   disjoint supports, by induction via line/vertical
                                                   factorization (hline + XYIdeal_neg_mul) reducing
@@ -339,11 +354,24 @@ entries file). To add/remove/annotate a node, edit
                                           Ideal.spanNorm_singleton / spanNorm_mul API), giving N f =
                                           unit * prod (X - P.1) over the divisor -- the bridge
                                           between hnormeval fiber-products and hrecP1 root-products
-                                          for the vertical-vs-anything reciprocity case. NEXT:
-                                          divisor evaluation f(D) := prod of evalEval over D;
-                                          nonvanishing off the divisor; the reciprocity statement
-                                          f(div g) = g(div f) for disjoint supports, by induction
-                                          via line/vertical factorization (hline + XYIdeal_neg_mul)
+                                          for the vertical-vs-anything reciprocity case. GENERATOR
+                                          RECIPROCITY COMPLETE: hrecfib (vertical fiber-quotient
+                                          form, via hnormeval'/hspanprod/hNconst) and hrecline
+                                          (line-line divisor form, via
+                                          hNline/hevline/hevvert/hondiv/habs + the hlinerec core).
+                                          REMAINING for reciprocity: the class-group descent hgenfac
+                                          (every function with point-divisor factorization equals a
+                                          constant times a quotient of products of line/vertical
+                                          elements, by strong induction on divisor size through
+                                          hline + XYIdeal_neg_mul + toClass-nontriviality) and the
+                                          multiplicative assembly of the balanced cross-product
+                                          reciprocity; then the pairing definition (ratio over hgen2
+                                          generators at hpoints-generic translates) and its six
+                                          legs. Older per-brick log follows: NEXT: divisor
+                                          evaluation f(D) := prod of evalEval over D; nonvanishing
+                                          off the divisor; the reciprocity statement f(div g) =
+                                          g(div f) for disjoint supports, by induction via
+                                          line/vertical factorization (hline + XYIdeal_neg_mul)
                                           reducing to the proven cores hlinerec (line-line) and
                                           hnormeval + hrecP1 (vertical cases); then the pairing and
                                           its six legs. hmax COMPLETE (with hresfin + hkill): every
