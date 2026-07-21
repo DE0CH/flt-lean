@@ -437,6 +437,37 @@ entries file). To add/remove/annotate a node, edit
                                                   word-vs-word products with hww (including the
                                                   vertical words XS1^p and XR1*XQR3 directly), and
                                                   cancel the balanced u-powers and paired hww signs.
+                                                  HGRAND REDUCTION DERIVED (the complete roadmap):
+                                                  multiply both sides by the four d-word value
+                                                  products (WdV over D_t and Dg2, MdV^p over the
+                                                  S-pair and PS-pair); the hevid product instances
+                                                  (A1/A2 for aP1 over the four t-points and four
+                                                  vertical-points, B1/B2 for t over the two sigma-
+                                                  pairs) eliminate the ring-element evaluations with
+                                                  BALANCED constant powers uf^4 and ut^2p on both
+                                                  sides; the goal becomes the pure word identity
+                                                  (star-w): WnV[D_t]*WdV[Dg2]*(MnV[Sp])^p*(MdV[Pp])^
+                                                  p*(vS1V[Dg2])^p*(vRQV[Pp])^p = WdV[D_t]*WnV[Dg2]*(
+                                                  MdV[Sp])^p*(MnV[Pp])^p*(vS1V[D_t])^p*(vRQV[Sp])^p.
+                                                  Every multiset there is a word divisor: D_t
+                                                  converts through hbalt (phi[D_t]*phi[div Md-word]
+                                                  = phi[div Mn-word], multiplicative and division-
+                                                  free), the p-th-power pair products ARE phi[D_P] =
+                                                  phi[div Ln-word]/phi[div Ld-word] through hbalP,
+                                                  and Dg2/Sp are the canonical fiber divisors of the
+                                                  vertical words {xR1,xQR3} and {xS1} after the
+                                                  hfib2 pair identification (vertical values only
+                                                  see abscissas; line values need the multiset
+                                                  identification {(c,y),(c,negY y)} = canonical
+                                                  pair). The final stitch is hww instances (signs 1
+                                                  against the vertical words since |L|=0; the
+                                                  (Ln/Ld)x(Mn/Md) signs pair up on both sides)
+                                                  combined in one linear_combination. IMPLEMENTATION
+                                                  ORDER for hgrand: (1) the fiber-pair
+                                                  identification lemma, (2) the four hevid product
+                                                  instances, (3) the multiset conversions via
+                                                  hbalt/hbalP + map_add/prod_add, (4) the four hww
+                                                  instances, (5) the stitching linear_combination.
                                                   REMAINING: hgrand (in hstepR/hstarinst), then
                                                   hstepS mirrors the whole R-step, and hleg1-hleg6.
                                                   REMAINING SORRIES in the mu-node: hrecgen and
@@ -844,20 +875,47 @@ entries file). To add/remove/annotate a node, edit
                                           hbaldiv multiset identities (multiplicative, division-
                                           free), swap word-vs-word products with hww (including the
                                           vertical words XS1^p and XR1*XQR3 directly), and cancel
-                                          the balanced u-powers and paired hww signs. REMAINING:
-                                          hgrand (in hstepR/hstarinst), then hstepS mirrors the
-                                          whole R-step, and hleg1-hleg6. REMAINING SORRIES in the
-                                          mu-node: hrecgen and hleg1-hleg6 (bilinearity x2,
-                                          alternation, nondegeneracy, p-th powers, Frobenius
-                                          naturality). Superseded: FRONTIER (7 named sorried steps)
-                                          description. Superseded: NEXT: line-vs-word (hlw, sign
-                                          (-1)^lines) then word-vs-word (hww), then the balanced
-                                          reciprocity for functions via hgenfac and the pairing.
-                                          Remaining assembly: the balanced cross-product reciprocity
-                                          for arbitrary disjoint pairs from the generator cases,
-                                          then the pairing and its six legs. Superseded plan text:
-                                          REMAINING for reciprocity: the class-group descent hgenfac
-                                          (every function with point-divisor factorization equals a
+                                          the balanced u-powers and paired hww signs. HGRAND
+                                          REDUCTION DERIVED (the complete roadmap): multiply both
+                                          sides by the four d-word value products (WdV over D_t and
+                                          Dg2, MdV^p over the S-pair and PS-pair); the hevid product
+                                          instances (A1/A2 for aP1 over the four t-points and four
+                                          vertical-points, B1/B2 for t over the two sigma-pairs)
+                                          eliminate the ring-element evaluations with BALANCED
+                                          constant powers uf^4 and ut^2p on both sides; the goal
+                                          becomes the pure word identity (star-w): WnV[D_t]*WdV[Dg2]
+                                          *(MnV[Sp])^p*(MdV[Pp])^p*(vS1V[Dg2])^p*(vRQV[Pp])^p = WdV[
+                                          D_t]*WnV[Dg2]*(MdV[Sp])^p*(MnV[Pp])^p*(vS1V[D_t])^p*(vRQV[
+                                          Sp])^p. Every multiset there is a word divisor: D_t
+                                          converts through hbalt (phi[D_t]*phi[div Md-word] =
+                                          phi[div Mn-word], multiplicative and division-free), the
+                                          p-th-power pair products ARE phi[D_P] = phi[div Ln-
+                                          word]/phi[div Ld-word] through hbalP, and Dg2/Sp are the
+                                          canonical fiber divisors of the vertical words {xR1,xQR3}
+                                          and {xS1} after the hfib2 pair identification (vertical
+                                          values only see abscissas; line values need the multiset
+                                          identification {(c,y),(c,negY y)} = canonical pair). The
+                                          final stitch is hww instances (signs 1 against the
+                                          vertical words since |L|=0; the (Ln/Ld)x(Mn/Md) signs pair
+                                          up on both sides) combined in one linear_combination.
+                                          IMPLEMENTATION ORDER for hgrand: (1) the fiber-pair
+                                          identification lemma, (2) the four hevid product
+                                          instances, (3) the multiset conversions via hbalt/hbalP +
+                                          map_add/prod_add, (4) the four hww instances, (5) the
+                                          stitching linear_combination. REMAINING: hgrand (in
+                                          hstepR/hstarinst), then hstepS mirrors the whole R-step,
+                                          and hleg1-hleg6. REMAINING SORRIES in the mu-node: hrecgen
+                                          and hleg1-hleg6 (bilinearity x2, alternation,
+                                          nondegeneracy, p-th powers, Frobenius naturality).
+                                          Superseded: FRONTIER (7 named sorried steps) description.
+                                          Superseded: NEXT: line-vs-word (hlw, sign (-1)^lines) then
+                                          word-vs-word (hww), then the balanced reciprocity for
+                                          functions via hgenfac and the pairing. Remaining assembly:
+                                          the balanced cross-product reciprocity for arbitrary
+                                          disjoint pairs from the generator cases, then the pairing
+                                          and its six legs. Superseded plan text: REMAINING for
+                                          reciprocity: the class-group descent hgenfac (every
+                                          function with point-divisor factorization equals a
                                           constant times a quotient of products of line/vertical
                                           elements, by strong induction on divisor size through
                                           hline + XYIdeal_neg_mul + toClass-nontriviality) and the
