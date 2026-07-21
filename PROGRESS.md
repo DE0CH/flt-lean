@@ -295,11 +295,19 @@ entries file). To add/remove/annotate a node, edit
                                                   u2)^p by mul_pow + inv_mul_cancel, the calc chain
                                                   lands on spanSingleton (t g^p), and the generator
                                                   descends by mem_coeIdeal + coeIdeal_injective.
-                                                  REMAINING SORRIES in the mu-node: huniqval
-                                                  (uniqueness of the Weil value across admissible
-                                                  setups = the Weil reciprocity argument through
-                                                  hgenfac/hbaldiv/hevid/hww with F-avoidance
-                                                  nonvanishing) and hleg1-hleg6 (bilinearity x2,
+                                                  huniqval GLUE COMPILING (2026-07-21): degenerate
+                                                  case and the full cancellation algebra proven
+                                                  (both setups destructured, z1 = z2 via Units.ext +
+                                                  mul_right_cancel0 on A1*A2 through a calc chain
+                                                  using the two defining equations); the single
+                                                  remaining sorry is hcross -- the cross-setup
+                                                  reciprocity B1*A2 = B2*A1 for two admissible
+                                                  Miller setups of the same (P,Q), to be proven by
+                                                  Weil reciprocity through the hgenfac words of the
+                                                  four Miller numerators (hbaldiv bookkeeping, hevid
+                                                  evaluation identities, hww swaps, F-avoidance
+                                                  nonvanishing). REMAINING SORRIES in the mu-node:
+                                                  hcross and hleg1-hleg6 (bilinearity x2,
                                                   alternation, nondegeneracy, p-th powers, Frobenius
                                                   naturality). Superseded: FRONTIER (7 named sorried
                                                   steps) description. Superseded: NEXT: line-vs-word
@@ -581,10 +589,17 @@ entries file). To add/remove/annotate a node, edit
                                           rearrangement u1^p u2^p = J^p (u2n u2)^p by mul_pow +
                                           inv_mul_cancel, the calc chain lands on spanSingleton (t
                                           g^p), and the generator descends by mem_coeIdeal +
-                                          coeIdeal_injective. REMAINING SORRIES in the mu-node:
-                                          huniqval (uniqueness of the Weil value across admissible
-                                          setups = the Weil reciprocity argument through
-                                          hgenfac/hbaldiv/hevid/hww with F-avoidance nonvanishing)
+                                          coeIdeal_injective. huniqval GLUE COMPILING (2026-07-21):
+                                          degenerate case and the full cancellation algebra proven
+                                          (both setups destructured, z1 = z2 via Units.ext +
+                                          mul_right_cancel0 on A1*A2 through a calc chain using the
+                                          two defining equations); the single remaining sorry is
+                                          hcross -- the cross-setup reciprocity B1*A2 = B2*A1 for
+                                          two admissible Miller setups of the same (P,Q), to be
+                                          proven by Weil reciprocity through the hgenfac words of
+                                          the four Miller numerators (hbaldiv bookkeeping, hevid
+                                          evaluation identities, hww swaps, F-avoidance
+                                          nonvanishing). REMAINING SORRIES in the mu-node: hcross
                                           and hleg1-hleg6 (bilinearity x2, alternation,
                                           nondegeneracy, p-th powers, Frobenius naturality).
                                           Superseded: FRONTIER (7 named sorried steps) description.

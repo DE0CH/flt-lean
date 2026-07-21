@@ -7275,7 +7275,134 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
   -- cancelled factor nonzero
   have huniqval : ∀ v w z₁ z₂,
       IsWeilValue v w z₁ → IsWeilValue v w z₂ → z₁ = z₂ := by
-    sorry
+    intro v w z₁ z₂ hz₁ hz₂
+    by_cases hdeg : v.val = 0 ∨ w.val = 0
+    · rw [hz₁.1 hdeg, hz₂.1 hdeg]
+    · obtain ⟨hv0, hw0⟩ := not_or.mp hdeg
+      rcases hcv : v.val with _ | ⟨xP, yP, hP₀⟩
+      · exact absurd (by rw [hcv, WeierstrassCurve.Affine.Point.zero_def])
+          hv0
+      rcases hcw : w.val with _ | ⟨xQ, yQ, hQ₀⟩
+      · exact absurd (by rw [hcw, WeierstrassCurve.Affine.Point.zero_def])
+          hw0
+      obtain ⟨F₁, F₁', hF₁fin, hF₁'fin, hFF₁, hxPF₁, hyPF₁, hxQF₁, hyQF₁,
+        xS₁, yS₁, hS₁, hxS₁F', hyS₁F', hxS₁F, xR₁, yR₁, hR₁, hxR₁,
+        xPS₁, yPS₁, hPS₁, hPSc₁, hxPS₁F', hyPS₁F',
+        xQR₁, yQR₁, hQR₁, hQRc₁, aP₁, aQ₁, haP₁, haQ₁, hA₁, heq₁⟩ :=
+        hz₁.2 xP yP hP₀ xQ yQ hQ₀ hcv hcw
+      obtain ⟨F₂, F₂', hF₂fin, hF₂'fin, hFF₂, hxPF₂, hyPF₂, hxQF₂, hyQF₂,
+        xS₂, yS₂, hS₂, hxS₂F', hyS₂F', hxS₂F, xR₂, yR₂, hR₂, hxR₂,
+        xPS₂, yPS₂, hPS₂, hPSc₂, hxPS₂F', hyPS₂F',
+        xQR₂, yQR₂, hQR₂, hQRc₂, aP₂, aQ₂, haP₂, haQ₂, hA₂, heq₂⟩ :=
+        hz₂.2 xP yP hP₀ xQ yQ hQ₀ hcv hcw
+      -- THE CROSS-SETUP RECIPROCITY: the two Miller cross-ratios agree,
+      -- in cross-multiplied form B₁ · A₂ = B₂ · A₁ — by Weil reciprocity
+      -- through the hgenfac words of the four Miller functions
+      -- (hbaldiv bookkeeping, hevid evaluation identities, hww swaps),
+      -- with every cancelled factor nonzero by the F-avoidances
+      have hcross :
+          (AdjoinRoot.evalEval hQR₁.left aP₁ *
+            AdjoinRoot.evalEval hR₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+            AdjoinRoot.evalEval hS₁.left aQ₁ *
+            AdjoinRoot.evalEval hPS₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁) ^ p)) *
+          (AdjoinRoot.evalEval hQR₂.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₂) ^ p) *
+            AdjoinRoot.evalEval hR₂.left aP₂ *
+            AdjoinRoot.evalEval hS₂.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₂) ^ p) *
+            AdjoinRoot.evalEval hPS₂.left aQ₂) =
+          (AdjoinRoot.evalEval hQR₂.left aP₂ *
+            AdjoinRoot.evalEval hR₂.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₂) ^ p) *
+            AdjoinRoot.evalEval hS₂.left aQ₂ *
+            AdjoinRoot.evalEval hPS₂.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₂) ^ p)) *
+          (AdjoinRoot.evalEval hQR₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+            AdjoinRoot.evalEval hR₁.left aP₁ *
+            AdjoinRoot.evalEval hS₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁) ^ p) *
+            AdjoinRoot.evalEval hPS₁.left aQ₁) := by
+        sorry
+      refine Units.ext (mul_right_cancel₀ (mul_ne_zero hA₁ hA₂) ?_)
+      calc (z₁ : (AlgebraicClosure (ZMod q))) *
+            ((AdjoinRoot.evalEval hQR₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+            AdjoinRoot.evalEval hR₁.left aP₁ *
+            AdjoinRoot.evalEval hS₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁) ^ p) *
+            AdjoinRoot.evalEval hPS₁.left aQ₁) *
+            (AdjoinRoot.evalEval hQR₂.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₂) ^ p) *
+            AdjoinRoot.evalEval hR₂.left aP₂ *
+            AdjoinRoot.evalEval hS₂.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₂) ^ p) *
+            AdjoinRoot.evalEval hPS₂.left aQ₂))
+          = ((z₁ : (AlgebraicClosure (ZMod q))) *
+            (AdjoinRoot.evalEval hQR₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+            AdjoinRoot.evalEval hR₁.left aP₁ *
+            AdjoinRoot.evalEval hS₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁) ^ p) *
+            AdjoinRoot.evalEval hPS₁.left aQ₁)) *
+            (AdjoinRoot.evalEval hQR₂.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₂) ^ p) *
+            AdjoinRoot.evalEval hR₂.left aP₂ *
+            AdjoinRoot.evalEval hS₂.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₂) ^ p) *
+            AdjoinRoot.evalEval hPS₂.left aQ₂) := by ring
+          _ = (AdjoinRoot.evalEval hQR₁.left aP₁ *
+            AdjoinRoot.evalEval hR₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+            AdjoinRoot.evalEval hS₁.left aQ₁ *
+            AdjoinRoot.evalEval hPS₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁) ^ p)) *
+            (AdjoinRoot.evalEval hQR₂.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₂) ^ p) *
+            AdjoinRoot.evalEval hR₂.left aP₂ *
+            AdjoinRoot.evalEval hS₂.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₂) ^ p) *
+            AdjoinRoot.evalEval hPS₂.left aQ₂) := by rw [heq₁]
+          _ = (AdjoinRoot.evalEval hQR₂.left aP₂ *
+            AdjoinRoot.evalEval hR₂.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₂) ^ p) *
+            AdjoinRoot.evalEval hS₂.left aQ₂ *
+            AdjoinRoot.evalEval hPS₂.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₂) ^ p)) *
+            (AdjoinRoot.evalEval hQR₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+            AdjoinRoot.evalEval hR₁.left aP₁ *
+            AdjoinRoot.evalEval hS₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁) ^ p) *
+            AdjoinRoot.evalEval hPS₁.left aQ₁) := hcross
+          _ = ((z₂ : (AlgebraicClosure (ZMod q))) *
+            (AdjoinRoot.evalEval hQR₂.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₂) ^ p) *
+            AdjoinRoot.evalEval hR₂.left aP₂ *
+            AdjoinRoot.evalEval hS₂.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₂) ^ p) *
+            AdjoinRoot.evalEval hPS₂.left aQ₂)) *
+            (AdjoinRoot.evalEval hQR₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+            AdjoinRoot.evalEval hR₁.left aP₁ *
+            AdjoinRoot.evalEval hS₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁) ^ p) *
+            AdjoinRoot.evalEval hPS₁.left aQ₁) := by rw [heq₂]
+          _ = (z₂ : (AlgebraicClosure (ZMod q))) *
+            ((AdjoinRoot.evalEval hQR₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+            AdjoinRoot.evalEval hR₁.left aP₁ *
+            AdjoinRoot.evalEval hS₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁) ^ p) *
+            AdjoinRoot.evalEval hPS₁.left aQ₁) *
+            (AdjoinRoot.evalEval hQR₂.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₂) ^ p) *
+            AdjoinRoot.evalEval hR₂.left aP₂ *
+            AdjoinRoot.evalEval hS₂.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₂) ^ p) *
+            AdjoinRoot.evalEval hPS₂.left aQ₂)) := by ring
   have hvalue : ∀ v w, ∃! z, IsWeilValue v w z := fun v w =>
     ⟨(hexval v w).choose, (hexval v w).choose_spec,
       fun z' hz' => huniqval v w z' _ hz' (hexval v w).choose_spec⟩
