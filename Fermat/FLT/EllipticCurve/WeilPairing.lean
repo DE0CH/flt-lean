@@ -4846,6 +4846,71 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           (Multiset.attach_map_val _)
       rw [hMeq]
       exact hprodeq.symm
+  -- the kernel of evaluation at a curve point is exactly the point ideal
+  have hker : ∀ (x₀ y₀ : (AlgebraicClosure (ZMod q))) (hE : Wb.toAffine.Equation x₀ y₀),
+      RingHom.ker (AdjoinRoot.evalEval (p := Wb.toAffine.polynomial)
+        (x := x₀) (y := y₀) hE) =
+      WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₀
+        (Polynomial.C y₀) := by
+    intro x₀ y₀ hE
+    have hsurj : Function.Surjective
+        (AdjoinRoot.evalEval (p := Wb.toAffine.polynomial)
+          (x := x₀) (y := y₀) hE) := by
+      intro a
+      refine ⟨AdjoinRoot.mk _ (Polynomial.C (Polynomial.C a)), ?_⟩
+      rw [AdjoinRoot.evalEval_mk]
+      simp [Polynomial.evalEval]
+    have hkermax : (RingHom.ker (AdjoinRoot.evalEval
+        (p := Wb.toAffine.polynomial) (x := x₀) (y := y₀) hE)).IsMaximal :=
+      RingHom.ker_isMaximal_of_surjective _ hsurj
+    have hsub : WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₀
+        (Polynomial.C y₀) ≤
+        RingHom.ker (AdjoinRoot.evalEval (p := Wb.toAffine.polynomial)
+          (x := x₀) (y := y₀) hE) := by
+      rw [WeierstrassCurve.Affine.CoordinateRing.XYIdeal, Ideal.span_le]
+      rintro z (rfl | rfl) <;>
+        rw [SetLike.mem_coe, RingHom.mem_ker]
+      · show AdjoinRoot.evalEval hE (AdjoinRoot.mk _
+          (Polynomial.C (Polynomial.X - Polynomial.C x₀))) = 0
+        rw [AdjoinRoot.evalEval_mk]
+        simp [Polynomial.evalEval]
+      · show AdjoinRoot.evalEval hE (AdjoinRoot.mk _
+          (Polynomial.X - Polynomial.C (Polynomial.C y₀))) = 0
+        rw [AdjoinRoot.evalEval_mk]
+        simp [Polynomial.evalEval]
+    exact ((hXYmax x₀ y₀ hE).eq_of_le hkermax.ne_top hsub).symm
+  -- the point determines the point ideal and conversely
+  have hXYinj : ∀ (x₀ y₀ x₁ y₁ : (AlgebraicClosure (ZMod q))), Wb.toAffine.Equation x₀ y₀ →
+      WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₀
+        (Polynomial.C y₀) =
+      WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₁
+        (Polynomial.C y₁) →
+      x₀ = x₁ ∧ y₀ = y₁ := by
+    intro x₀ y₀ x₁ y₁ hE₀ hId
+    have hX1 : WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine x₁ ∈
+        RingHom.ker (AdjoinRoot.evalEval (p := Wb.toAffine.polynomial)
+          (x := x₀) (y := y₀) hE₀) := by
+      rw [hker x₀ y₀ hE₀, hId]
+      exact Ideal.subset_span (Set.mem_insert _ _)
+    have hY1 : WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
+        (Polynomial.C y₁) ∈
+        RingHom.ker (AdjoinRoot.evalEval (p := Wb.toAffine.polynomial)
+          (x := x₀) (y := y₀) hE₀) := by
+      rw [hker x₀ y₀ hE₀, hId]
+      exact Ideal.subset_span (Set.mem_insert_of_mem _ rfl)
+    rw [RingHom.mem_ker] at hX1 hY1
+    constructor
+    · rw [show WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine x₁ =
+        AdjoinRoot.mk _ (Polynomial.C (Polynomial.X - Polynomial.C x₁))
+        from rfl, AdjoinRoot.evalEval_mk] at hX1
+      simp [Polynomial.evalEval] at hX1
+      exact sub_eq_zero.mp (by simpa using hX1)
+    · rw [show WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
+          (Polynomial.C y₁) =
+        AdjoinRoot.mk _ (Polynomial.X - Polynomial.C (Polynomial.C y₁))
+        from rfl, AdjoinRoot.evalEval_mk] at hY1
+      simp [Polynomial.evalEval] at hY1
+      exact sub_eq_zero.mp (by simpa using hY1)
   sorry
 
 set_option warn.sorry false in
