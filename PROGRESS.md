@@ -151,9 +151,31 @@ entries file). To add/remove/annotate a node, edit
                                                   mathlib's XYIdeal_neg_mul itself); hcubtrans +
                                                   hlinerec (line-line reciprocity core: shared-
                                                   intersection-point Vieta, the two fiber cubics
-                                                  agree at the common abscissa). REMAINING (the
-                                                  single sorry): the evaluation-ratio pairing e(P,Q)
-                                                  = f_P(D_Q)/f_Q(D_P) with disjoint affine supports
+                                                  agree at the common abscissa). Also PROVEN:
+                                                  hnormeval (norm-evaluation compatibility (N f)(x0)
+                                                  = f(x0,y0) f(x0,negY) via norm_smul_basis + the
+                                                  Weierstrass equation) and hXYmax (point ideals are
+                                                  maximal, via quotientXYIdealEquiv). NEXT: hmax --
+                                                  every maximal ideal of the coordinate ring is a
+                                                  point ideal (route: M cap k[x] contains X - c via
+                                                  the norm-membership trick f*sigma-f = algebraMap(N
+                                                  f) from coe_norm_smul_basis with N f nonzero by
+                                                  degree_norm_smul_basis; residue field is spanned
+                                                  over k by the images of the basis {1, y} since X -
+                                                  c dies, so it is finite over k, hence = k by
+                                                  IsAlgClosed.algebraMap_bijective_of_isIntegral;
+                                                  then the coordinate images x0, y0 give
+                                                  XClass/YClass in M, the Weierstrass polynomial
+                                                  Taylor-decomposes to give the equation, and hXYmax
+                                                  + IsMaximal.eq_of_le forces M = XYIdeal x0 (C
+                                                  y0)). Then: divisor factorization of principal
+                                                  ideals into point primes, line/vertical
+                                                  factorization of functions with O-free principal
+                                                  divisors, reciprocity assembly from
+                                                  hlinerec/hnormeval/hrecP1, then the pairing
+                                                  definition and its six legs. REMAINING (the single
+                                                  sorry): the evaluation-ratio pairing e(P,Q) =
+                                                  f_P(D_Q)/f_Q(D_P) with disjoint affine supports
                                                   (D_P = (P+S)-(S), D_Q = (Q+R)-(R)); scalar-
                                                   invariance is automatic in the ratios; well-
                                                   definedness/bilinearity via Weil reciprocity
@@ -259,7 +281,26 @@ entries file). To add/remove/annotate a node, edit
                                           cancellation; the vertical identity is mathlib's
                                           XYIdeal_neg_mul itself); hcubtrans + hlinerec (line-line
                                           reciprocity core: shared-intersection-point Vieta, the two
-                                          fiber cubics agree at the common abscissa). REMAINING (the
+                                          fiber cubics agree at the common abscissa). Also PROVEN:
+                                          hnormeval (norm-evaluation compatibility (N f)(x0) =
+                                          f(x0,y0) f(x0,negY) via norm_smul_basis + the Weierstrass
+                                          equation) and hXYmax (point ideals are maximal, via
+                                          quotientXYIdealEquiv). NEXT: hmax -- every maximal ideal
+                                          of the coordinate ring is a point ideal (route: M cap k[x]
+                                          contains X - c via the norm-membership trick f*sigma-f =
+                                          algebraMap(N f) from coe_norm_smul_basis with N f nonzero
+                                          by degree_norm_smul_basis; residue field is spanned over k
+                                          by the images of the basis {1, y} since X - c dies, so it
+                                          is finite over k, hence = k by
+                                          IsAlgClosed.algebraMap_bijective_of_isIntegral; then the
+                                          coordinate images x0, y0 give XClass/YClass in M, the
+                                          Weierstrass polynomial Taylor-decomposes to give the
+                                          equation, and hXYmax + IsMaximal.eq_of_le forces M =
+                                          XYIdeal x0 (C y0)). Then: divisor factorization of
+                                          principal ideals into point primes, line/vertical
+                                          factorization of functions with O-free principal divisors,
+                                          reciprocity assembly from hlinerec/hnormeval/hrecP1, then
+                                          the pairing definition and its six legs. REMAINING (the
                                           single sorry): the evaluation-ratio pairing e(P,Q) =
                                           f_P(D_Q)/f_Q(D_P) with disjoint affine supports (D_P =
                                           (P+S)-(S), D_Q = (Q+R)-(R)); scalar-invariance is
