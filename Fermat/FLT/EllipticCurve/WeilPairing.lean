@@ -6793,7 +6793,13 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       -- P ⊕ S is affine (xS avoids F ∋ xP)
       have hPSne : WeierstrassCurve.Affine.Point.some xP yP hP +
           WeierstrassCurve.Affine.Point.some xS yS hSns ≠ 0 := by
-        sorry
+        intro h0
+        have h1 : WeierstrassCurve.Affine.Point.some xS yS hSns =
+            -(WeierstrassCurve.Affine.Point.some xP yP hP) :=
+          eq_neg_of_add_eq_zero_right h0
+        rw [WeierstrassCurve.Affine.Point.neg_some hP] at h1
+        injection h1 with e1 e2
+        exact hxS (by rw [e1]; exact hFmem xP (by simp))
       rcases hPSc : (WeierstrassCurve.Affine.Point.some xP yP hP +
           WeierstrassCurve.Affine.Point.some xS yS hSns) with _ | ⟨xPS, yPS, hPS⟩
       · exact absurd (by rw [hPSc, WeierstrassCurve.Affine.Point.zero_def])
@@ -6836,7 +6842,13 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       -- Q ⊕ R is affine
       have hQRne : WeierstrassCurve.Affine.Point.some xQ yQ hQ +
           WeierstrassCurve.Affine.Point.some xR yR hRns ≠ 0 := by
-        sorry
+        intro h0
+        have h1 : WeierstrassCurve.Affine.Point.some xR yR hRns =
+            -(WeierstrassCurve.Affine.Point.some xQ yQ hQ) :=
+          eq_neg_of_add_eq_zero_right h0
+        rw [WeierstrassCurve.Affine.Point.neg_some hQ] at h1
+        injection h1 with e1 e2
+        exact hxR (by rw [e1]; exact hFF' (hFmem xQ (by simp)))
       rcases hQRc : (WeierstrassCurve.Affine.Point.some xQ yQ hQ +
           WeierstrassCurve.Affine.Point.some xR yR hRns) with _ | ⟨xQR, yQR, hQR⟩
       · exact absurd (by rw [hQRc, WeierstrassCurve.Affine.Point.zero_def])
@@ -6847,12 +6859,22 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           (WeierstrassCurve.Affine.Point.some xPS yPS hPS +
             WeierstrassCurve.Affine.Point.some xS
               (Wb.toAffine.negY xS yS) hSneg : Wb.toAffine.Point) = 0 := by
-        sorry
+        have hne : (WeierstrassCurve.Affine.Point.some xS
+            (Wb.toAffine.negY xS yS) hSneg : Wb.toAffine.Point) =
+            -(WeierstrassCurve.Affine.Point.some xS yS hSns) :=
+          (WeierstrassCurve.Affine.Point.neg_some hSns).symm
+        rw [hne, ← hPSc, add_neg_cancel_right]
+        exact hvp
       have hQRtor : (p : ℤ) •
           (WeierstrassCurve.Affine.Point.some xQR yQR hQR +
             WeierstrassCurve.Affine.Point.some xR
               (Wb.toAffine.negY xR yR) hRneg : Wb.toAffine.Point) = 0 := by
-        sorry
+        have hne : (WeierstrassCurve.Affine.Point.some xR
+            (Wb.toAffine.negY xR yR) hRneg : Wb.toAffine.Point) =
+            -(WeierstrassCurve.Affine.Point.some xR yR hRns) :=
+          (WeierstrassCurve.Affine.Point.neg_some hRns).symm
+        rw [hne, ← hQRc, add_neg_cancel_right]
+        exact hwp
       -- Miller numerators
       obtain ⟨aP, haP⟩ := hmill2 xPS yPS xS (Wb.toAffine.negY xS yS) hPS
         hSneg hPStor
@@ -6874,14 +6896,10 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
             ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p)) ≠ 0 := by
         sorry
       -- remaining memberships for the enlarged subfield
-      have hxSF' : xS ∈ F' := by
-        sorry
-      have hySF' : yS ∈ F' := by
-        sorry
-      have hxPSF' : xPS ∈ F' := by
-        sorry
-      have hyPSF' : yPS ∈ F' := by
-        sorry
+      have hxSF' : xS ∈ F' := hF'mem xS (by simp)
+      have hySF' : yS ∈ F' := hF'mem yS (by simp)
+      have hxPSF' : xPS ∈ F' := hF'mem xPS (by simp)
+      have hyPSF' : yPS ∈ F' := hF'mem yPS (by simp)
       -- the value and its defining equation
       refine ⟨Units.mk0
         ((AdjoinRoot.evalEval hQR.left aP *
@@ -6906,9 +6924,11 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           simp at h0
       · intro xP' yP' hP' xQ' yQ' hQ' hv' hw'
         have hPP : xP' = xP ∧ yP' = yP := by
-          sorry
+          injection hv'.symm.trans hcv with e1 e2
+          exact ⟨e1, e2⟩
         have hQQ : xQ' = xQ ∧ yQ' = yQ := by
-          sorry
+          injection hw'.symm.trans hcw with e1 e2
+          exact ⟨e1, e2⟩
         obtain ⟨hx1, hy1⟩ := hPP
         obtain ⟨hx2, hy2⟩ := hQQ
         subst hx1
