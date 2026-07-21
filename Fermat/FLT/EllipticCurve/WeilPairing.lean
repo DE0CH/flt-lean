@@ -3168,8 +3168,11 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
     letI : Algebra (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
         (FractionRing Wb.toAffine.CoordinateRing) :=
       FractionRing.liftAlgebra _ _
-    haveI hfd : FiniteDimensional (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
-        (FractionRing Wb.toAffine.CoordinateRing) := by
+    have hspan : Submodule.span (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+        ({1, algebraMap Wb.toAffine.CoordinateRing
+          (FractionRing Wb.toAffine.CoordinateRing)
+          (AdjoinRoot.root Wb.toAffine.polynomial)} :
+          Set (FractionRing Wb.toAffine.CoordinateRing)) = ⊤ := by
       -- the images of `1` and the root span the fraction field over
       -- `k(X)`: clear denominators with the conjugate norm
       have hofinj : Function.Injective
@@ -3188,9 +3191,6 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       have hconjinj : Function.Injective conj := fun a b hab => by
         have := congrArg conj hab
         rwa [hconj_conj, hconj_conj] at this
-      refine ⟨⟨{1, algebraMap Wb.toAffine.CoordinateRing
-        (FractionRing Wb.toAffine.CoordinateRing)
-        (AdjoinRoot.root Wb.toAffine.polynomial)}, ?_⟩⟩
       rw [eq_top_iff]
       intro ξ _
       obtain ⟨c, d, hd, hξ⟩ := IsFractionRing.div_surjective
@@ -3264,6 +3264,21 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           rfl
         rw [hpiece]
         exact Submodule.smul_mem _ _ (Submodule.subset_span (by simp))
+    haveI hfd : FiniteDimensional (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+        (FractionRing Wb.toAffine.CoordinateRing) := by
+      refine ⟨⟨{1, algebraMap Wb.toAffine.CoordinateRing
+        (FractionRing Wb.toAffine.CoordinateRing)
+        (AdjoinRoot.root Wb.toAffine.polynomial)}, ?_⟩⟩
+      rw [show (↑({1, algebraMap Wb.toAffine.CoordinateRing
+        (FractionRing Wb.toAffine.CoordinateRing)
+        (AdjoinRoot.root Wb.toAffine.polynomial)} :
+        Finset (FractionRing Wb.toAffine.CoordinateRing)) :
+        Set (FractionRing Wb.toAffine.CoordinateRing)) =
+        ({1, algebraMap Wb.toAffine.CoordinateRing
+          (FractionRing Wb.toAffine.CoordinateRing)
+          (AdjoinRoot.root Wb.toAffine.polynomial)} :
+          Set (FractionRing Wb.toAffine.CoordinateRing)) by simp]
+      exact hspan
     haveI hsep : Algebra.IsSeparable (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
         (FractionRing Wb.toAffine.CoordinateRing) := by
       sorry
