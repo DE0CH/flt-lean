@@ -8765,6 +8765,8 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                     have hpjB := hcvP (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
                       T.2 - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * T.1 + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))
                     have hpjM := hcvP (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - xM)
+                    have hpjR := hcvP (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - xR₁)
+                    have hpjQ := hcvP (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - xQR₃)
                     -- normalize: expand literal multisets, replicates, and
                     -- product-of-product maps; kill the even hww signs
                     simp only [Multiset.map_add, Multiset.prod_add,
@@ -8781,7 +8783,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                       Function.comp_apply, Nat.mul_zero, pow_zero,
                       mul_one, one_mul]
                       at hwwN hwwNM hwwD hwwDM hcvtN hcvtD hpjA hpjB hpjM
-                        hwv₃ hwv₄ hwv₇ hwv₈ hwv₉
+                        hpjR hpjQ hwv₃ hwv₄ hwv₇ hwv₈ hwv₉
                     rw [Even.neg_one_pow ⟨Multiset.card Ln, by ring⟩,
                       one_mul] at hwwN
                     rw [Even.neg_one_pow ⟨Multiset.card Ld, by ring⟩,
