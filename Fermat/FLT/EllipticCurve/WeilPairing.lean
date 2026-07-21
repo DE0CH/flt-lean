@@ -3170,6 +3170,57 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       FractionRing.liftAlgebra _ _
     haveI hfd : FiniteDimensional (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
         (FractionRing Wb.toAffine.CoordinateRing) := by
+      -- the images of `1` and the root span the fraction field over
+      -- `k(X)`: clear denominators with the conjugate norm
+      have hofinj : Function.Injective
+          (AdjoinRoot.of Wb.toAffine.polynomial) :=
+        AdjoinRoot.of.injective_of_degree_ne_zero (by
+          rw [WeierstrassCurve.Affine.degree_polynomial]
+          norm_num)
+      have hconj_conj : ∀ z : Wb.toAffine.CoordinateRing,
+          conj (conj z) = z := by
+        intro z
+        obtain ⟨⟨pp, qq⟩, rfl⟩ := hdecomp z
+        rw [map_add, map_mul, hconj_of, hconj_of, hconj_root, map_add,
+          map_mul, hconj_of, hconj_of, map_sub, map_neg, hconj_of,
+          hconj_root]
+        ring
+      have hconjinj : Function.Injective conj := fun a b hab => by
+        have := congrArg conj hab
+        rwa [hconj_conj, hconj_conj] at this
+      refine ⟨⟨{1, algebraMap Wb.toAffine.CoordinateRing
+        (FractionRing Wb.toAffine.CoordinateRing)
+        (AdjoinRoot.root Wb.toAffine.polynomial)}, ?_⟩⟩
+      rw [eq_top_iff]
+      intro ξ _
+      obtain ⟨c, d, hd, hξ⟩ := IsFractionRing.div_surjective
+        (A := Wb.toAffine.CoordinateRing) ξ
+      have hd0 : d ≠ 0 := nonZeroDivisors.ne_zero hd
+      have hcd0 : conj d ≠ 0 := fun h =>
+        hd0 (hconjinj (h.trans (map_zero conj).symm))
+      obtain ⟨n, hn⟩ := hnorm d
+      have hn0 : n ≠ 0 := by
+        intro h0
+        have h1 := hn
+        rw [h0, map_zero] at h1
+        exact (mul_ne_zero hd0 hcd0) h1
+      obtain ⟨⟨p', q'⟩, hcd⟩ := hdecomp (c * conj d)
+      -- rewrite the fraction with denominator `of n`
+      have hξ2 : ξ = algebraMap Wb.toAffine.CoordinateRing
+          (FractionRing Wb.toAffine.CoordinateRing) (c * conj d) /
+          algebraMap Wb.toAffine.CoordinateRing
+          (FractionRing Wb.toAffine.CoordinateRing)
+          (AdjoinRoot.of Wb.toAffine.polynomial n) := by
+        rw [← hn, ← hξ]
+        rw [map_mul, map_mul]
+        rw [div_mul_eq_div_div_swap]
+        congr 1
+        rw [mul_div_assoc, div_self (fun h => hcd0
+          ((IsFractionRing.injective Wb.toAffine.CoordinateRing
+            (FractionRing Wb.toAffine.CoordinateRing))
+            (h.trans (map_zero (algebraMap Wb.toAffine.CoordinateRing
+              (FractionRing Wb.toAffine.CoordinateRing))).symm))),
+          mul_one]
       sorry
     haveI hsep : Algebra.IsSeparable (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
         (FractionRing Wb.toAffine.CoordinateRing) := by
