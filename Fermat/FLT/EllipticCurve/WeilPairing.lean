@@ -5385,6 +5385,108 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       rw [Ideal.span_singleton_mul_span_singleton, ← hg, hfac]
     exact mul_left_cancel₀ (by
       simpa [Ideal.span_singleton_eq_bot] using ha) hspanmul
+  -- THE CLASS-GROUP DESCENT: every function whose span factors through point
+  -- ideals equals a constant times a quotient of products of line elements
+  -- and vertical elements (Miller reduction, by induction on divisor size)
+  have hgenfac : ∀ (n : ℕ) (f : Wb.toAffine.CoordinateRing)
+      (D : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))), D.card ≤ n →
+      (∀ P ∈ D, Wb.toAffine.Equation P.1 P.2) →
+      Ideal.span {f} = (D.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          Wb.toAffine P.1 (Polynomial.C P.2))).prod →
+      ∃ (Ln Ld : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))) (Vn Vd : Multiset (AlgebraicClosure (ZMod q)))
+        (u : (AlgebraicClosure (ZMod q))), u ≠ 0 ∧
+        f * (Ld.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => AdjoinRoot.mk Wb.toAffine.polynomial
+        (Polynomial.X - Polynomial.C (Polynomial.C P.1 * Polynomial.X +
+          Polynomial.C P.2)))).prod * (Vd.map (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine)).prod =
+        AdjoinRoot.of Wb.toAffine.polynomial (Polynomial.C u) *
+          (Ln.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => AdjoinRoot.mk Wb.toAffine.polynomial
+        (Polynomial.X - Polynomial.C (Polynomial.C P.1 * Polynomial.X +
+          Polynomial.C P.2)))).prod * (Vn.map (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine)).prod := by
+    intro n
+    induction n with
+    | zero =>
+      intro f D hcard hDeq hDfac
+      rw [Nat.le_zero, Multiset.card_eq_zero] at hcard
+      subst hcard
+      rw [Multiset.map_zero, Multiset.prod_zero, Ideal.one_eq_top,
+        Ideal.span_singleton_eq_top] at hDfac
+      obtain ⟨c, hc0, hcu⟩ := hCunits f hDfac
+      exact ⟨0, 0, 0, 0, c, hc0, by simp [hcu]⟩
+    | succ n IH =>
+      intro f D hcard hDeq hDfac
+      by_cases hle : D.card ≤ n
+      · exact IH f D hle hDeq hDfac
+      · have hcards : D.card = n + 1 := le_antisymm hcard (not_le.mp hle)
+        by_cases hone : D.card = 1
+        · -- a single point ideal cannot be principal: its class is the
+          -- nonzero class of an affine point
+          exfalso
+          obtain ⟨P, hDP⟩ := Multiset.card_eq_one.mp hone
+          subst hDP
+          have hEP : Wb.toAffine.Equation P.1 P.2 :=
+            hDeq P (Multiset.mem_singleton_self P)
+          have hnsP := (WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+            hEP
+          rw [Multiset.map_singleton, Multiset.prod_singleton] at hDfac
+          have h1 : ClassGroup.mk Wb.toAffine.FunctionField
+              (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' hnsP) = 1 := by
+            rw [ClassGroup.mk_eq_one_iff]
+            rw [show ((WeierstrassCurve.Affine.CoordinateRing.XYIdeal' hnsP :
+              FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+                Wb.toAffine.FunctionField) :
+              Submodule Wb.toAffine.CoordinateRing
+                Wb.toAffine.FunctionField) =
+              ((WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+                P.1 (Polynomial.C P.2) : Ideal Wb.toAffine.CoordinateRing) :
+                FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+                  Wb.toAffine.FunctionField) from by
+              rw [WeierstrassCurve.Affine.CoordinateRing.XYIdeal'_eq]]
+            rw [← hDfac, FractionalIdeal.coeIdeal_span_singleton]
+            exact ⟨⟨algebraMap _ _ f,
+              FractionalIdeal.coe_spanSingleton _ _⟩⟩
+          have h0 : WeierstrassCurve.Affine.Point.toClass
+              (WeierstrassCurve.Affine.Point.some P.1 P.2 hnsP :
+                Wb.toAffine.Point) = 0 := by
+            rw [WeierstrassCurve.Affine.Point.toClass_some, h1]
+            rfl
+          have := (WeierstrassCurve.Affine.Point.toClass_eq_zero _).mp h0
+          simp at this
+        · -- at least two points: peel a pair by a vertical or a line
+          have hne : D ≠ 0 := by
+            intro h0
+            rw [h0] at hcards
+            simp at hcards
+          obtain ⟨P, hP⟩ := Multiset.exists_mem_of_ne_zero hne
+          have hD1 : P ::ₘ D.erase P = D := Multiset.cons_erase hP
+          have hne1 : D.erase P ≠ 0 := by
+            intro h0
+            rw [← hD1, h0] at hone
+            simp at hone
+          obtain ⟨Q, hQ⟩ := Multiset.exists_mem_of_ne_zero hne1
+          have hD2 : Q ::ₘ (D.erase P).erase Q = D.erase P :=
+            Multiset.cons_erase hQ
+          have hEP : Wb.toAffine.Equation P.1 P.2 := hDeq P hP
+          have hEQ : Wb.toAffine.Equation Q.1 Q.2 :=
+            hDeq Q (Multiset.mem_of_mem_erase hQ)
+          have hDeq'' : ∀ T ∈ (D.erase P).erase Q,
+              Wb.toAffine.Equation T.1 T.2 := fun T hT =>
+            hDeq T (Multiset.mem_of_mem_erase (Multiset.mem_of_mem_erase hT))
+          have hcard'' : ((D.erase P).erase Q).card = n - 1 := by
+            have h1 := Multiset.card_erase_of_mem hQ
+            have h2 := Multiset.card_erase_of_mem hP
+            simp only [Nat.pred_eq_sub_one] at h1 h2
+            omega
+          have hprodD : (D.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          Wb.toAffine P.1 (Polynomial.C P.2))).prod =
+              WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+                P.1 (Polynomial.C P.2) *
+              (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+                Q.1 (Polynomial.C Q.2) *
+              (((D.erase P).erase Q).map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          Wb.toAffine P.1 (Polynomial.C P.2))).prod) := by
+            conv_lhs => rw [← hD1, ← hD2, Multiset.map_cons,
+              Multiset.prod_cons, Multiset.map_cons, Multiset.prod_cons]
+          sorry
   sorry
 
 set_option warn.sorry false in
