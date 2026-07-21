@@ -5208,6 +5208,36 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       exact Multiset.map_congr rfl fun P _ => by simp
     rw [hnormeval' f c₁ y₁ hE₁, hnormeval' f c₂ y₂ hE₂, hev c₁, hev c₂]
     ring
+  -- the norm of a line element is minus the fiber cubic of `hlinerec`
+  have hNline : ∀ l n : (AlgebraicClosure (ZMod q)),
+      Algebra.norm (Polynomial (AlgebraicClosure (ZMod q)))
+        (AdjoinRoot.mk Wb.toAffine.polynomial (Polynomial.X -
+          Polynomial.C (Polynomial.C l * Polynomial.X + Polynomial.C n))) =
+      -(Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - l ^ 2 - Wb.toAffine.a₁ * l)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * l * n - Wb.toAffine.a₁ * n
+            - Wb.toAffine.a₃ * l) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - n ^ 2 - Wb.toAffine.a₃ * n)) := by
+    intro l n
+    rw [show (AdjoinRoot.mk Wb.toAffine.polynomial (Polynomial.X -
+        Polynomial.C (Polynomial.C l * Polynomial.X + Polynomial.C n))) =
+      (-(Polynomial.C l * Polynomial.X + Polynomial.C n)) •
+        (1 : Wb.toAffine.CoordinateRing) +
+        (1 : Polynomial (AlgebraicClosure (ZMod q))) • WeierstrassCurve.Affine.CoordinateRing.mk
+          Wb.toAffine Polynomial.X from by
+      rw [map_sub, Algebra.smul_def, Algebra.smul_def, map_one, one_mul,
+        map_neg, AdjoinRoot.algebraMap_eq]
+      rw [show ((AdjoinRoot.of Wb.toAffine.polynomial)
+          (Polynomial.C l * Polynomial.X + Polynomial.C n)) =
+        (AdjoinRoot.mk Wb.toAffine.polynomial)
+          (Polynomial.C (Polynomial.C l * Polynomial.X + Polynomial.C n))
+        from rfl]
+      ring]
+    rw [WeierstrassCurve.Affine.CoordinateRing.norm_smul_basis]
+    simp only [Polynomial.C_mul, Polynomial.C_pow, Polynomial.C_sub,
+      map_ofNat]
+    ring
   sorry
 
 set_option warn.sorry false in
