@@ -3635,6 +3635,55 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           · -- characteristic-two branch
             sorry
           · -- reduced-fraction descent against the squarefree cubic
+            have hDsf : Squarefree ((Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) ^ 2 + 4 * (Polynomial.X ^ 3 + Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
+        Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆) :
+                Polynomial (AlgebraicClosure (ZMod q))) := by
+              sorry
+            obtain ⟨nn, dd, hrel, hmk⟩ :=
+              IsFractionRing.exists_reduced_fraction
+                (A := Polynomial (AlgebraicClosure (ZMod q))) (K := (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))) tc
+            obtain ⟨ww, hww⟩ : ∃ ww, algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+                (τ₀ ^ 2 - 4 * ν₀) = tc ^ 2 *
+                algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) ww ∧ ww =
+                (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) ^ 2 + 4 * (Polynomial.X ^ 3 + Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
+        Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆) := ⟨_, hkey, rfl⟩
+            obtain ⟨hww1, hww2⟩ := hww
+            -- clear denominators: `dd² ∣ nn² · D`
+            have hmkdiv : tc = algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) nn /
+                algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) dd := by
+              rw [← hmk, IsFractionRing.mk'_eq_div]
+            have hdd0 : (dd : Polynomial (AlgebraicClosure (ZMod q))) ≠ 0 :=
+              nonZeroDivisors.ne_zero dd.2
+            have hddK : algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) dd ≠ 0 :=
+              fun h => hdd0 ((IsFractionRing.injective _ _)
+                (h.trans (map_zero _).symm))
+            have hpolyeq : nn ^ 2 * ww = (dd : Polynomial (AlgebraicClosure (ZMod q))) ^ 2 *
+                (τ₀ ^ 2 - 4 * ν₀) := by
+              apply IsFractionRing.injective (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+              rw [map_mul, map_mul, map_pow, map_pow, hww1, hmkdiv]
+              field_simp
+            have hdvd2 : (dd : Polynomial (AlgebraicClosure (ZMod q))) ^ 2 ∣ nn ^ 2 * ww :=
+              ⟨_, hpolyeq⟩
+            have hddD : (dd : Polynomial (AlgebraicClosure (ZMod q))) ^ 2 ∣ ww := by
+              have hdvd2' : (dd : Polynomial (AlgebraicClosure (ZMod q))) ^ 2 ∣ ww * nn ^ 2 :=
+                (mul_comm (nn ^ 2) ww) ▸ hdvd2
+              exact (hrel.symm.pow (n := 2) (m := 2)).dvd_of_dvd_mul_right
+                hdvd2'
+            have hdunit : IsUnit ((dd : Polynomial (AlgebraicClosure (ZMod q)))) := by
+              refine hDsf ((dd : Polynomial (AlgebraicClosure (ZMod q)))) ?_
+              rw [← hww2, ← sq]
+              exact hddD
+            -- so `tc` is the image of a polynomial
+            obtain ⟨ee, hee⟩ := hdunit.exists_right_inv
+            have hinvdd : (algebraMap (Polynomial (AlgebraicClosure (ZMod q)))
+                (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) dd)⁻¹ =
+                algebraMap (Polynomial (AlgebraicClosure (ZMod q)))
+                  (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) ee := by
+              refine inv_eq_of_mul_eq_one_right ?_
+              rw [← map_mul, hee, map_one]
+            have htcmem : tc = algebraMap (Polynomial (AlgebraicClosure (ZMod q)))
+                (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (nn * ee) := by
+              rw [hmkdiv, div_eq_mul_inv, hinvdd, ← map_mul]
             sorry
       · rintro ⟨y, rfl⟩
         exact IsIntegral.map (IsScalarTower.toAlgHom (Polynomial (AlgebraicClosure (ZMod q)))
