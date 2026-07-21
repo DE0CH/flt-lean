@@ -4341,21 +4341,21 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
   -- Weil reciprocity on the affine line: the double-product swap identity
   -- `prod_{a in roots F} G(a) = (-1)^(deg F * deg G) * prod_{b in roots G} F(b)`
   -- for monic polynomials over the algebraically closed base
+  have hcard : ∀ H : Polynomial (AlgebraicClosure (ZMod q)),
+      Multiset.card H.roots = H.natDegree := fun H =>
+    Polynomial.splits_iff_card_roots.mp (IsAlgClosed.splits H)
+  have hevalprod : ∀ (H : Polynomial (AlgebraicClosure (ZMod q))), H.Monic →
+      ∀ a : (AlgebraicClosure (ZMod q)),
+      H.eval a = (H.roots.map fun b => a - b).prod := by
+    intro H hH a
+    conv_lhs => rw [← Polynomial.prod_multiset_X_sub_C_of_monic_of_roots_card_eq
+      hH (hcard H)]
+    rw [Polynomial.eval_multiset_prod, Multiset.map_map]
+    exact congrArg Multiset.prod (Multiset.map_congr rfl fun b _ => by
+      simp)
   have hrecP1 : ∀ F G : Polynomial (AlgebraicClosure (ZMod q)), F.Monic → G.Monic →
       (F.roots.map G.eval).prod =
         (-1) ^ (F.natDegree * G.natDegree) * (G.roots.map F.eval).prod := by
-    have hcard : ∀ H : Polynomial (AlgebraicClosure (ZMod q)),
-        Multiset.card H.roots = H.natDegree := fun H =>
-      Polynomial.splits_iff_card_roots.mp (IsAlgClosed.splits H)
-    have hevalprod : ∀ (H : Polynomial (AlgebraicClosure (ZMod q))), H.Monic →
-        ∀ a : (AlgebraicClosure (ZMod q)),
-        H.eval a = (H.roots.map fun b => a - b).prod := by
-      intro H hH a
-      conv_lhs => rw [← Polynomial.prod_multiset_X_sub_C_of_monic_of_roots_card_eq
-        hH (hcard H)]
-      rw [Polynomial.eval_multiset_prod, Multiset.map_map]
-      exact congrArg Multiset.prod (Multiset.map_congr rfl fun b _ => by
-        simp)
     intro F G hF hG
     calc (F.roots.map G.eval).prod
         = (F.roots.map fun a => (G.roots.map fun b => a - b).prod).prod :=
@@ -4448,6 +4448,68 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₂
             (Polynomial.C y₂)) := key.symm
       _ = _ := by ring
+  -- root-product transform: for a monic split cubic `H` and `c ≠ 0`,
+  -- `prod_{b in roots H} (c b + d) = -c^3 H(z)` where `z = -d/c`
+  have hcubtrans : ∀ (H : Polynomial (AlgebraicClosure (ZMod q))), H.Monic → H.natDegree = 3 →
+      ∀ (c d z : (AlgebraicClosure (ZMod q))), d = -c * z →
+      (H.roots.map (fun b => c * b + d)).prod = - c ^ 3 * H.eval z := by
+    intro H hH hdeg c d z hd
+    calc (H.roots.map fun b => c * b + d).prod
+        = (H.roots.map fun b => c * (b - z)).prod :=
+          congrArg Multiset.prod (Multiset.map_congr rfl fun b _ => by
+            rw [hd]; ring)
+      _ = c ^ 3 * (H.roots.map fun b => b - z).prod := by
+          rw [Multiset.prod_map_mul, Multiset.map_const', Multiset.prod_replicate,
+            hcard H, hdeg]
+      _ = c ^ 3 * ((-1) ^ 3 * (H.roots.map fun b => z - b).prod) := by
+          have hneg : (H.roots.map fun b => b - z) =
+              (H.roots.map fun b => z - b).map Neg.neg := by
+            rw [Multiset.map_map]
+            exact Multiset.map_congr rfl fun a _ => by simp
+          rw [hneg, Multiset.prod_map_neg, Multiset.card_map, hcard H, hdeg]
+      _ = - c ^ 3 * H.eval z := by rw [← hevalprod H hH z]; ring
+  -- line-line Weil reciprocity core: for two non-vertical lines
+  -- `y = l_i x + n_i` with distinct slopes, the product of the values of
+  -- line 1 at the affine intersection points of line 2 with the curve equals
+  -- MINUS the product of the values of line 2 at those of line 1 -- via the
+  -- shared intersection point `z` of the two lines and Vieta
+  have hlinerec : ∀ (l₁ n₁ l₂ n₂ : (AlgebraicClosure (ZMod q))), l₁ ≠ l₂ →
+      ∀ C₁ C₂ : Polynomial (AlgebraicClosure (ZMod q)),
+      C₁ = Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - l₁ ^ 2 - Wb.toAffine.a₁ * l₁)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * l₁ * n₁ - Wb.toAffine.a₁ * n₁
+            - Wb.toAffine.a₃ * l₁) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - n₁ ^ 2 - Wb.toAffine.a₃ * n₁) →
+      C₂ = Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - l₂ ^ 2 - Wb.toAffine.a₁ * l₂)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * l₂ * n₂ - Wb.toAffine.a₁ * n₂
+            - Wb.toAffine.a₃ * l₂) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - n₂ ^ 2 - Wb.toAffine.a₃ * n₂) →
+      (C₂.roots.map (fun b => (l₂ - l₁) * b + (n₂ - n₁))).prod =
+        - (C₁.roots.map (fun a => (l₁ - l₂) * a + (n₁ - n₂))).prod := by
+    intro l₁ n₁ l₂ n₂ hl C₁ C₂ hC₁ hC₂
+    have hsub : l₂ - l₁ ≠ 0 := sub_ne_zero.mpr (Ne.symm hl)
+    set z : (AlgebraicClosure (ZMod q)) := (n₁ - n₂) / (l₂ - l₁) with hz
+    have hkey : l₁ * z + n₁ = l₂ * z + n₂ := by
+      rw [hz]; field_simp; ring
+    have hmon₁ : C₁.Monic := by rw [hC₁]; monicity!
+    have hmon₂ : C₂.Monic := by rw [hC₂]; monicity!
+    have hdeg₁ : C₁.natDegree = 3 := by rw [hC₁]; compute_degree!
+    have hdeg₂ : C₂.natDegree = 3 := by rw [hC₂]; compute_degree!
+    have ht₂ := hcubtrans C₂ hmon₂ hdeg₂ (l₂ - l₁) (n₂ - n₁) z (by
+      rw [hz]; field_simp; ring)
+    have ht₁ := hcubtrans C₁ hmon₁ hdeg₁ (l₁ - l₂) (n₁ - n₂) z (by
+      rw [hz]; field_simp; ring)
+    have heq : C₁.eval z = C₂.eval z := by
+      rw [hC₁, hC₂]
+      simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow,
+        Polynomial.eval_X, Polynomial.eval_C]
+      linear_combination (-(l₁ * z + n₁) - (l₂ * z + n₂)
+        - Wb.toAffine.a₁ * z - Wb.toAffine.a₃) * hkey
+    rw [ht₂, ht₁, heq]
+    ring
   sorry
 
 set_option warn.sorry false in
