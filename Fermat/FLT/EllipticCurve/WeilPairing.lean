@@ -6800,7 +6800,137 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
             x₁ (Polynomial.C y₁)) ^ p *
           (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
             x₂ (Polynomial.C y₂)) ^ p := by
-      sorry
+      obtain ⟨t, ht⟩ := hprin.principal
+      have hJt : (((WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₁ *
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂neg)⁻¹) ^ p :
+          (FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+            Wb.toAffine.FunctionField)ˣ) :
+          FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+            Wb.toAffine.FunctionField) =
+          FractionalIdeal.spanSingleton
+            (nonZeroDivisors Wb.toAffine.CoordinateRing) t :=
+        FractionalIdeal.coeToSubmodule_injective (by
+          beta_reduce
+          rw [FractionalIdeal.coe_spanSingleton]
+          exact ht)
+      -- the vertical identity, fractionally
+      have hvert : ((WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂neg :
+            (FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+              Wb.toAffine.FunctionField)ˣ) :
+          FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+            Wb.toAffine.FunctionField) *
+          ((WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂ :
+            (FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+              Wb.toAffine.FunctionField)ˣ) :
+          FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+            Wb.toAffine.FunctionField) =
+          FractionalIdeal.spanSingleton
+            (nonZeroDivisors Wb.toAffine.CoordinateRing)
+            (algebraMap Wb.toAffine.CoordinateRing Wb.toAffine.FunctionField
+              (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine x₂)) := by
+        rw [WeierstrassCurve.Affine.CoordinateRing.XYIdeal'_eq,
+          WeierstrassCurve.Affine.CoordinateRing.XYIdeal'_eq,
+          ← FractionalIdeal.coeIdeal_mul,
+          WeierstrassCurve.Affine.CoordinateRing.XYIdeal_neg_mul
+            (W := Wb.toAffine) h₂,
+          show WeierstrassCurve.Affine.CoordinateRing.XIdeal Wb.toAffine x₂ =
+            Ideal.span {WeierstrassCurve.Affine.CoordinateRing.XClass
+              Wb.toAffine x₂} from rfl,
+          FractionalIdeal.coeIdeal_span_singleton]
+      -- the unit-group rearrangement
+      have hunit : (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₁) ^ p *
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂) ^ p =
+          ((WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₁ *
+            (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂neg)⁻¹) ^ p) *
+          ((WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂neg) *
+            (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂)) ^ p := by
+        rw [← mul_pow, ← mul_pow]
+        congr 1
+        rw [mul_assoc, ← mul_assoc
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂neg)⁻¹,
+          inv_mul_cancel, one_mul]
+      -- the coerced target is the principal fractional t * g^p
+      have hcoe : ((((WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+            Wb.toAffine x₁ (Polynomial.C y₁)) ^ p *
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            x₂ (Polynomial.C y₂)) ^ p : Ideal Wb.toAffine.CoordinateRing)) :
+          FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+            Wb.toAffine.FunctionField) =
+          FractionalIdeal.spanSingleton
+            (nonZeroDivisors Wb.toAffine.CoordinateRing)
+            (t * (algebraMap Wb.toAffine.CoordinateRing
+              Wb.toAffine.FunctionField
+              (WeierstrassCurve.Affine.CoordinateRing.XClass
+                Wb.toAffine x₂)) ^ p) := by
+        rw [FractionalIdeal.coeIdeal_mul, FractionalIdeal.coeIdeal_pow,
+          FractionalIdeal.coeIdeal_pow,
+          ← WeierstrassCurve.Affine.CoordinateRing.XYIdeal'_eq h₁,
+          ← WeierstrassCurve.Affine.CoordinateRing.XYIdeal'_eq h₂]
+        calc ((WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₁ :
+              FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+                Wb.toAffine.FunctionField)) ^ p *
+            ((WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂ :
+              FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+                Wb.toAffine.FunctionField)) ^ p
+            = (((WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₁) ^ p *
+                (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂) ^ p :
+                (FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+                  Wb.toAffine.FunctionField)ˣ) :
+                FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+                  Wb.toAffine.FunctionField) := by
+              simp only [Units.val_mul, Units.val_pow_eq_pow_val]
+          _ = ((((WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₁ *
+                (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂neg)⁻¹) ^ p) *
+                ((WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂neg) *
+                  (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂)) ^ p :
+                (FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+                  Wb.toAffine.FunctionField)ˣ) :
+                FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+                  Wb.toAffine.FunctionField) := by
+              rw [hunit]
+          _ = FractionalIdeal.spanSingleton
+                (nonZeroDivisors Wb.toAffine.CoordinateRing) t *
+              ((((WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂neg) *
+                (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂) :
+                (FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+                  Wb.toAffine.FunctionField)ˣ) :
+                FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+                  Wb.toAffine.FunctionField)) ^ p := by
+              rw [Units.val_mul, hJt, Units.val_pow_eq_pow_val]
+          _ = FractionalIdeal.spanSingleton
+                (nonZeroDivisors Wb.toAffine.CoordinateRing)
+                (t * (algebraMap Wb.toAffine.CoordinateRing
+                  Wb.toAffine.FunctionField
+                  (WeierstrassCurve.Affine.CoordinateRing.XClass
+                    Wb.toAffine x₂)) ^ p) := by
+              rw [Units.val_mul, hvert, FractionalIdeal.spanSingleton_pow,
+                FractionalIdeal.spanSingleton_mul_spanSingleton]
+      -- descend the generator to the coordinate ring
+      have hmem : (t * (algebraMap Wb.toAffine.CoordinateRing
+            Wb.toAffine.FunctionField
+            (WeierstrassCurve.Affine.CoordinateRing.XClass
+              Wb.toAffine x₂)) ^ p) ∈
+          ((((WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+            Wb.toAffine x₁ (Polynomial.C y₁)) ^ p *
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            x₂ (Polynomial.C y₂)) ^ p : Ideal Wb.toAffine.CoordinateRing)) :
+          FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+            Wb.toAffine.FunctionField) := by
+        rw [hcoe]
+        exact FractionalIdeal.mem_spanSingleton_self _ _
+      obtain ⟨a, haI, hag⟩ := (FractionalIdeal.mem_coeIdeal _).mp hmem
+      refine ⟨a, ?_⟩
+      have : ((Ideal.span {a} : Ideal Wb.toAffine.CoordinateRing) :
+          FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+            Wb.toAffine.FunctionField) =
+          ((((WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+            Wb.toAffine x₁ (Polynomial.C y₁)) ^ p *
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            x₂ (Polynomial.C y₂)) ^ p : Ideal Wb.toAffine.CoordinateRing)) :
+          FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+            Wb.toAffine.FunctionField) := by
+        rw [hcoe, FractionalIdeal.coeIdeal_span_singleton, hag]
+      exact FractionalIdeal.coeIdeal_injective this
     exact hextract
   -- abscissa of a point (`0` for the point at infinity)
   let xOf : Wb.toAffine.Point → (AlgebraicClosure (ZMod q)) := fun T =>

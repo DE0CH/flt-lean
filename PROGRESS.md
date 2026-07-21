@@ -283,32 +283,41 @@ entries file). To add/remove/annotate a node, edit
                                                   evaluations via map_pow + hevvert, mul_ne_zero
                                                   assembly), and hmill2 reduced to hgen2 via the
                                                   negated translate (neg_some + negY_negY +
-                                                  sub_eq_add_neg). REMAINING SORRIES: hextract
-                                                  inside hmill2 (fractional-ideal extraction:
-                                                  (XYIdeal'1 * (XYIdeal'2neg)^-1)^p principal from
-                                                  hgen2, XYIdeal_neg_mul turns the inverse into
-                                                  XYIdeal'2 over the principal vertical, so the
-                                                  coeIdeal of XYIdeal1^p * XYIdeal2^p is principal;
-                                                  descend the generator via mem_coeIdeal + coeIdeal
-                                                  injectivity), then huniqval (uniqueness = Weil
-                                                  reciprocity) and hleg1-hleg6. Superseded: FRONTIER
-                                                  (7 named sorried steps) description. Superseded:
-                                                  NEXT: line-vs-word (hlw, sign (-1)^lines) then
-                                                  word-vs-word (hww), then the balanced reciprocity
-                                                  for functions via hgenfac and the pairing.
-                                                  Remaining assembly: the balanced cross-product
-                                                  reciprocity for arbitrary disjoint pairs from the
-                                                  generator cases, then the pairing and its six
-                                                  legs. Superseded plan text: REMAINING for
-                                                  reciprocity: the class-group descent hgenfac
-                                                  (every function with point-divisor factorization
-                                                  equals a constant times a quotient of products of
-                                                  line/vertical elements, by strong induction on
-                                                  divisor size through hline + XYIdeal_neg_mul +
-                                                  toClass-nontriviality) and the multiplicative
-                                                  assembly of the balanced cross-product
-                                                  reciprocity; then the pairing definition (ratio
-                                                  over hgen2 generators at hpoints-generic
+                                                  sub_eq_add_neg). hexval FULLY PROVEN (2026-07-21,
+                                                  zero sorries in the existence half): hmill2
+                                                  completed via the units formulation -- XYIdeal'
+                                                  lands in (FractionalIdeal)units, hgen2's
+                                                  principality gives the spanSingleton witness
+                                                  (coeToSubmodule_injective + beta_reduce), the
+                                                  vertical identity coerces through
+                                                  XYIdeal'_eq/coeIdeal_mul/XYIdeal_neg_mul, the
+                                                  unit-group rearrangement u1^p u2^p = J^p (u2n
+                                                  u2)^p by mul_pow + inv_mul_cancel, the calc chain
+                                                  lands on spanSingleton (t g^p), and the generator
+                                                  descends by mem_coeIdeal + coeIdeal_injective.
+                                                  REMAINING SORRIES in the mu-node: huniqval
+                                                  (uniqueness of the Weil value across admissible
+                                                  setups = the Weil reciprocity argument through
+                                                  hgenfac/hbaldiv/hevid/hww with F-avoidance
+                                                  nonvanishing) and hleg1-hleg6 (bilinearity x2,
+                                                  alternation, nondegeneracy, p-th powers, Frobenius
+                                                  naturality). Superseded: FRONTIER (7 named sorried
+                                                  steps) description. Superseded: NEXT: line-vs-word
+                                                  (hlw, sign (-1)^lines) then word-vs-word (hww),
+                                                  then the balanced reciprocity for functions via
+                                                  hgenfac and the pairing. Remaining assembly: the
+                                                  balanced cross-product reciprocity for arbitrary
+                                                  disjoint pairs from the generator cases, then the
+                                                  pairing and its six legs. Superseded plan text:
+                                                  REMAINING for reciprocity: the class-group descent
+                                                  hgenfac (every function with point-divisor
+                                                  factorization equals a constant times a quotient
+                                                  of products of line/vertical elements, by strong
+                                                  induction on divisor size through hline +
+                                                  XYIdeal_neg_mul + toClass-nontriviality) and the
+                                                  multiplicative assembly of the balanced cross-
+                                                  product reciprocity; then the pairing definition
+                                                  (ratio over hgen2 generators at hpoints-generic
                                                   translates) and its six legs. Older per-brick log
                                                   follows: NEXT: divisor evaluation f(D) := prod of
                                                   evalEval over D; nonvanishing off the divisor; the
@@ -561,23 +570,32 @@ entries file). To add/remove/annotate a node, edit
                                           (replicate divisors hDP/hDQ, four hoffdiv instances,
                                           vertical evaluations via map_pow + hevvert, mul_ne_zero
                                           assembly), and hmill2 reduced to hgen2 via the negated
-                                          translate (neg_some + negY_negY + sub_eq_add_neg).
-                                          REMAINING SORRIES: hextract inside hmill2 (fractional-
-                                          ideal extraction: (XYIdeal'1 * (XYIdeal'2neg)^-1)^p
-                                          principal from hgen2, XYIdeal_neg_mul turns the inverse
-                                          into XYIdeal'2 over the principal vertical, so the
-                                          coeIdeal of XYIdeal1^p * XYIdeal2^p is principal; descend
-                                          the generator via mem_coeIdeal + coeIdeal injectivity),
-                                          then huniqval (uniqueness = Weil reciprocity) and
-                                          hleg1-hleg6. Superseded: FRONTIER (7 named sorried steps)
-                                          description. Superseded: NEXT: line-vs-word (hlw, sign
-                                          (-1)^lines) then word-vs-word (hww), then the balanced
-                                          reciprocity for functions via hgenfac and the pairing.
-                                          Remaining assembly: the balanced cross-product reciprocity
-                                          for arbitrary disjoint pairs from the generator cases,
-                                          then the pairing and its six legs. Superseded plan text:
-                                          REMAINING for reciprocity: the class-group descent hgenfac
-                                          (every function with point-divisor factorization equals a
+                                          translate (neg_some + negY_negY + sub_eq_add_neg). hexval
+                                          FULLY PROVEN (2026-07-21, zero sorries in the existence
+                                          half): hmill2 completed via the units formulation --
+                                          XYIdeal' lands in (FractionalIdeal)units, hgen2's
+                                          principality gives the spanSingleton witness
+                                          (coeToSubmodule_injective + beta_reduce), the vertical
+                                          identity coerces through
+                                          XYIdeal'_eq/coeIdeal_mul/XYIdeal_neg_mul, the unit-group
+                                          rearrangement u1^p u2^p = J^p (u2n u2)^p by mul_pow +
+                                          inv_mul_cancel, the calc chain lands on spanSingleton (t
+                                          g^p), and the generator descends by mem_coeIdeal +
+                                          coeIdeal_injective. REMAINING SORRIES in the mu-node:
+                                          huniqval (uniqueness of the Weil value across admissible
+                                          setups = the Weil reciprocity argument through
+                                          hgenfac/hbaldiv/hevid/hww with F-avoidance nonvanishing)
+                                          and hleg1-hleg6 (bilinearity x2, alternation,
+                                          nondegeneracy, p-th powers, Frobenius naturality).
+                                          Superseded: FRONTIER (7 named sorried steps) description.
+                                          Superseded: NEXT: line-vs-word (hlw, sign (-1)^lines) then
+                                          word-vs-word (hww), then the balanced reciprocity for
+                                          functions via hgenfac and the pairing. Remaining assembly:
+                                          the balanced cross-product reciprocity for arbitrary
+                                          disjoint pairs from the generator cases, then the pairing
+                                          and its six legs. Superseded plan text: REMAINING for
+                                          reciprocity: the class-group descent hgenfac (every
+                                          function with point-divisor factorization equals a
                                           constant times a quotient of products of line/vertical
                                           elements, by strong induction on divisor size through
                                           hline + XYIdeal_neg_mul + toClass-nontriviality) and the
