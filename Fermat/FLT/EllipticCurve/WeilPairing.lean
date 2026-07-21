@@ -8352,7 +8352,171 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
               AdjoinRoot.evalEval hS₁neg.left
                 (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁ *
                   WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQR₃)) ^ p) := by
-          sorry
+          -- t's explicit word in the hbaldiv/hevid format: numerator
+          -- lines = the two chords, denominator vertical = xQ
+          obtain ⟨c, hc0, htfac⟩ := hlfac
+          have htword : t *
+              ((0 : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))).map
+                (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                  AdjoinRoot.mk Wb.toAffine.polynomial
+                    (Polynomial.X - Polynomial.C (Polynomial.C P.1 * Polynomial.X +
+                      Polynomial.C P.2)))).prod *
+              (({xQ} : Multiset (AlgebraicClosure (ZMod q))).map
+                (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine)).prod =
+              AdjoinRoot.of Wb.toAffine.polynomial (Polynomial.C c) *
+              (({(Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁),
+                  yQR₁ - Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁) * xQR₁),
+                 (Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃),
+                  yR₃ - Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃) * xR₃)} :
+                Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))).map
+                (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                  AdjoinRoot.mk Wb.toAffine.polynomial
+                    (Polynomial.X - Polynomial.C (Polynomial.C P.1 * Polynomial.X +
+                      Polynomial.C P.2)))).prod *
+              ((0 : Multiset (AlgebraicClosure (ZMod q))).map
+                (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine)).prod := by
+            simp only [Multiset.map_zero, Multiset.prod_zero, mul_one,
+              Multiset.map_singleton, Multiset.prod_singleton,
+              Multiset.insert_eq_cons, Multiset.map_cons, Multiset.prod_cons]
+            have hclA : AdjoinRoot.mk Wb.toAffine.polynomial
+                (Polynomial.X - Polynomial.C (Polynomial.C
+                    (Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁)) *
+                  Polynomial.X + Polynomial.C (yQR₁ -
+                    Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁) * xQR₁))) =
+                WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
+                  (WeierstrassCurve.Affine.linePolynomial xQR₁ yQR₁
+                    (Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁))) := by
+              have harg : (Polynomial.C
+                    (Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁)) *
+                  Polynomial.X + Polynomial.C (yQR₁ -
+                    Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁) * xQR₁) :
+                  Polynomial (AlgebraicClosure (ZMod q))) =
+                  WeierstrassCurve.Affine.linePolynomial xQR₁ yQR₁
+                    (Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁)) := by
+                simp only [WeierstrassCurve.Affine.linePolynomial,
+                  Polynomial.C_sub, Polynomial.C_mul]
+                ring
+              exact congrArg (AdjoinRoot.mk Wb.toAffine.polynomial)
+                (by rw [harg])
+            have hclB : AdjoinRoot.mk Wb.toAffine.polynomial
+                (Polynomial.X - Polynomial.C (Polynomial.C
+                    (Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃)) *
+                  Polynomial.X + Polynomial.C (yR₃ -
+                    Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃) * xR₃))) =
+                WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
+                  (WeierstrassCurve.Affine.linePolynomial xR₃ yR₃
+                    (Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃))) := by
+              have harg : (Polynomial.C
+                    (Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃)) *
+                  Polynomial.X + Polynomial.C (yR₃ -
+                    Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃) * xR₃) :
+                  Polynomial (AlgebraicClosure (ZMod q))) =
+                  WeierstrassCurve.Affine.linePolynomial xR₃ yR₃
+                    (Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃)) := by
+                simp only [WeierstrassCurve.Affine.linePolynomial,
+                  Polynomial.C_sub, Polynomial.C_mul]
+                ring
+              exact congrArg (AdjoinRoot.mk Wb.toAffine.polynomial)
+                (by rw [harg])
+            rw [hclA, hclB]
+            exact htfac
+          -- t's divisor balance: D_t + fiber pair over xQ = the two
+          -- chord-cubic root divisors
+          have hbalt := hbaldiv t
+            ({(xQR₁, yQR₁), (xR₁, Wb.toAffine.negY xR₁ yR₁), (xR₃, yR₃),
+                 (xQR₃, Wb.toAffine.negY xQR₃ yQR₃)} :
+                Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
+            ({(Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁),
+                  yQR₁ - Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁) * xQR₁),
+                 (Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃),
+                  yR₃ - Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃) * xR₃)} :
+                Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
+            0 0 ({xQ} : Multiset (AlgebraicClosure (ZMod q))) c hc0
+            (by intro T hT
+                simp only [Multiset.insert_eq_cons, Multiset.mem_cons,
+                  Multiset.mem_singleton] at hT
+                rcases hT with h | h | h | h
+                · rw [h]; exact hQR₁.left
+                · rw [h]; exact hR₁neg.left
+                · rw [h]; exact hR₃.left
+                · rw [h]; exact hQR₃neg.left)
+            (by simp only [Multiset.insert_eq_cons, Multiset.map_cons,
+                  Multiset.map_singleton, Multiset.prod_cons,
+                  Multiset.prod_singleton]
+                rw [ht]; ring)
+            htword
+          -- pointwise evaluations of t's word identity at S₁, ⊖S₁, PS₁
+          have het₁ := hevid t
+            ({(Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁),
+                  yQR₁ - Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁) * xQR₁),
+                 (Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃),
+                  yR₃ - Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃) * xR₃)} :
+                Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
+            0 0 ({xQ} : Multiset (AlgebraicClosure (ZMod q))) c htword xS₁ yS₁ hS₁.left
+          have het₂ := hevid t
+            ({(Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁),
+                  yQR₁ - Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁) * xQR₁),
+                 (Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃),
+                  yR₃ - Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃) * xR₃)} :
+                Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
+            0 0 ({xQ} : Multiset (AlgebraicClosure (ZMod q))) c htword xS₁
+            (Wb.toAffine.negY xS₁ yS₁) hS₁neg.left
+          have het₃ := hevid t
+            ({(Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁),
+                  yQR₁ - Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁) * xQR₁),
+                 (Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃),
+                  yR₃ - Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃) * xR₃)} :
+                Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
+            0 0 ({xQ} : Multiset (AlgebraicClosure (ZMod q))) c htword xPS₁ yPS₁ hPS₁.left
+          -- the product-projection of the t-side balance
+          have hcvt := fun φ : ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) → (AlgebraicClosure (ZMod q)) =>
+            congrArg (fun A : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) =>
+              (A.map φ).prod) hbalt
+          -- the residual stitch: pure balanced-product arithmetic over the
+          -- two explicit words (hww swaps + the projections above)
+          have hstitch :
+              (AdjoinRoot.evalEval hQR₁.left aP₁ *
+                AdjoinRoot.evalEval hR₁neg.left aP₁ *
+                AdjoinRoot.evalEval hR₃.left aP₁ *
+                AdjoinRoot.evalEval hQR₃neg.left aP₁) *
+              (AdjoinRoot.evalEval hR₁.left
+                  ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+                AdjoinRoot.evalEval hR₁neg.left
+                  ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+                AdjoinRoot.evalEval hQR₃.left
+                  ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+                AdjoinRoot.evalEval hQR₃neg.left
+                  ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p)) *
+              ((AdjoinRoot.evalEval hS₁.left t *
+                AdjoinRoot.evalEval hS₁neg.left t) ^ p) *
+              ((AdjoinRoot.evalEval hPS₁.left
+                  (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁ *
+                    WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQR₃) *
+                AdjoinRoot.evalEval hS₁neg.left
+                  (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁ *
+                    WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQR₃)) ^ p) =
+              (AdjoinRoot.evalEval hR₁.left aP₁ *
+                AdjoinRoot.evalEval hR₁neg.left aP₁ *
+                AdjoinRoot.evalEval hQR₃.left aP₁ *
+                AdjoinRoot.evalEval hQR₃neg.left aP₁) *
+              (AdjoinRoot.evalEval hQR₁.left
+                  ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+                AdjoinRoot.evalEval hR₁neg.left
+                  ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+                AdjoinRoot.evalEval hR₃.left
+                  ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+                AdjoinRoot.evalEval hQR₃neg.left
+                  ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p)) *
+              ((AdjoinRoot.evalEval hPS₁.left t *
+                AdjoinRoot.evalEval hS₁neg.left t) ^ p) *
+              ((AdjoinRoot.evalEval hS₁.left
+                  (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁ *
+                    WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQR₃) *
+                AdjoinRoot.evalEval hS₁neg.left
+                  (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁ *
+                    WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQR₃)) ^ p) := by
+            sorry
+          exact hstitch
         exact hgrand
       -- the final assembly: substitute hcomp at S₁ and PS₁, strip the
       -- σ-companion common factors (all nonzero by the avoidances), and
