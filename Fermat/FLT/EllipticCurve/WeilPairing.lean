@@ -7794,7 +7794,111 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
               xR₃ (Polynomial.C yR₃) *
             WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
               xQR₃ (Polynomial.C (Wb.toAffine.negY xQR₃ yQR₃)) := by
-        sorry
+        -- the four points sum to zero
+        have h1 : (WeierstrassCurve.Affine.Point.some xR₁
+            (Wb.toAffine.negY xR₁ yR₁) hR₁neg : Wb.toAffine.Point) =
+            -(WeierstrassCurve.Affine.Point.some xR₁ yR₁ hR₁) :=
+          (WeierstrassCurve.Affine.Point.neg_some hR₁).symm
+        have h2 : (WeierstrassCurve.Affine.Point.some xQR₃
+            (Wb.toAffine.negY xQR₃ yQR₃) hQR₃neg : Wb.toAffine.Point) =
+            -(WeierstrassCurve.Affine.Point.some xQR₃ yQR₃ hQR₃) :=
+          (WeierstrassCurve.Affine.Point.neg_some hQR₃).symm
+        have hsum : (WeierstrassCurve.Affine.Point.some xQR₁ yQR₁ hQR₁ +
+            WeierstrassCurve.Affine.Point.some xR₁
+              (Wb.toAffine.negY xR₁ yR₁) hR₁neg +
+            WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃ +
+            WeierstrassCurve.Affine.Point.some xQR₃
+              (Wb.toAffine.negY xQR₃ yQR₃) hQR₃neg :
+            Wb.toAffine.Point) = 0 := by
+          rw [h1, h2, hQRc₁, hQRc₃]
+          abel
+        -- the class of the four-fold product is trivial
+        have hcl := congrArg WeierstrassCurve.Affine.Point.toClass hsum
+        rw [map_zero, map_add, map_add, map_add,
+          WeierstrassCurve.Affine.Point.toClass_some,
+          WeierstrassCurve.Affine.Point.toClass_some,
+          WeierstrassCurve.Affine.Point.toClass_some,
+          WeierstrassCurve.Affine.Point.toClass_some] at hcl
+        have hmk : ClassGroup.mk Wb.toAffine.FunctionField
+            (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' hQR₁ *
+              WeierstrassCurve.Affine.CoordinateRing.XYIdeal' hR₁neg *
+              WeierstrassCurve.Affine.CoordinateRing.XYIdeal' hR₃ *
+              WeierstrassCurve.Affine.CoordinateRing.XYIdeal' hQR₃neg) = 1 := by
+          rw [map_mul, map_mul, map_mul]
+          exact hcl
+        rw [ClassGroup.mk_eq_one_iff] at hmk
+        obtain ⟨tK, htK⟩ := hmk.principal
+        have hUt : (((WeierstrassCurve.Affine.CoordinateRing.XYIdeal' hQR₁ *
+              WeierstrassCurve.Affine.CoordinateRing.XYIdeal' hR₁neg *
+              WeierstrassCurve.Affine.CoordinateRing.XYIdeal' hR₃ *
+              WeierstrassCurve.Affine.CoordinateRing.XYIdeal' hQR₃neg :
+            (FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+              Wb.toAffine.FunctionField)ˣ) :
+            FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+              Wb.toAffine.FunctionField)) =
+            FractionalIdeal.spanSingleton
+              (nonZeroDivisors Wb.toAffine.CoordinateRing) tK :=
+          FractionalIdeal.coeToSubmodule_injective (by
+            beta_reduce
+            rw [FractionalIdeal.coe_spanSingleton]
+            exact htK)
+        have hUcoe : (((WeierstrassCurve.Affine.CoordinateRing.XYIdeal' hQR₁ *
+              WeierstrassCurve.Affine.CoordinateRing.XYIdeal' hR₁neg *
+              WeierstrassCurve.Affine.CoordinateRing.XYIdeal' hR₃ *
+              WeierstrassCurve.Affine.CoordinateRing.XYIdeal' hQR₃neg :
+            (FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+              Wb.toAffine.FunctionField)ˣ) :
+            FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+              Wb.toAffine.FunctionField)) =
+            ((WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              xQR₁ (Polynomial.C yQR₁) *
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              xR₁ (Polynomial.C (Wb.toAffine.negY xR₁ yR₁)) *
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              xR₃ (Polynomial.C yR₃) *
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              xQR₃ (Polynomial.C (Wb.toAffine.negY xQR₃ yQR₃)) :
+              Ideal Wb.toAffine.CoordinateRing) :
+            FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+              Wb.toAffine.FunctionField) := by
+          rw [Units.val_mul, Units.val_mul, Units.val_mul,
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal'_eq,
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal'_eq,
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal'_eq,
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal'_eq,
+            ← FractionalIdeal.coeIdeal_mul, ← FractionalIdeal.coeIdeal_mul,
+            ← FractionalIdeal.coeIdeal_mul]
+        have hmem : tK ∈ ((( WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+              Wb.toAffine xQR₁ (Polynomial.C yQR₁) *
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              xR₁ (Polynomial.C (Wb.toAffine.negY xR₁ yR₁)) *
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              xR₃ (Polynomial.C yR₃) *
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              xQR₃ (Polynomial.C (Wb.toAffine.negY xQR₃ yQR₃)) :
+              Ideal Wb.toAffine.CoordinateRing) :
+            FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+              Wb.toAffine.FunctionField)) := by
+          rw [← hUcoe, hUt]
+          exact FractionalIdeal.mem_spanSingleton_self _ _
+        obtain ⟨t, htI, htmap⟩ := (FractionalIdeal.mem_coeIdeal _).mp hmem
+        refine ⟨t, ?_⟩
+        have hspan : ((Ideal.span {t} : Ideal Wb.toAffine.CoordinateRing) :
+            FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+              Wb.toAffine.FunctionField) =
+            ((( WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+              Wb.toAffine xQR₁ (Polynomial.C yQR₁) *
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              xR₁ (Polynomial.C (Wb.toAffine.negY xR₁ yR₁)) *
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              xR₃ (Polynomial.C yR₃) *
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              xQR₃ (Polynomial.C (Wb.toAffine.negY xQR₃ yQR₃)) :
+              Ideal Wb.toAffine.CoordinateRing) :
+            FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+              Wb.toAffine.FunctionField)) := by
+          rw [FractionalIdeal.coeIdeal_span_singleton, htmap, ← hUcoe, hUt]
+        exact FractionalIdeal.coeIdeal_injective hspan
       obtain ⟨t, ht⟩ := htex
       -- the function comparison: aQ₁ and aQ₃ differ by the p-th power of
       -- the comparison element and verticals, up to a constant
