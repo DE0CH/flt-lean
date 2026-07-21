@@ -5112,6 +5112,69 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
     refine Multiset.map_congr rfl fun P hP => ?_
     exact hnormpt P.1 P.2
       ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp (hDeq P hP))
+  -- abstract norm-evaluation: for any coordinate-ring element, the value of
+  -- its norm at an abscissa is the product of its values on the fiber
+  have hnormeval' : ∀ (f : Wb.toAffine.CoordinateRing) (c y : (AlgebraicClosure (ZMod q)))
+      (hE : Wb.toAffine.Equation c y),
+      AdjoinRoot.evalEval (p := Wb.toAffine.polynomial) hE f *
+        AdjoinRoot.evalEval (p := Wb.toAffine.polynomial)
+          ((WeierstrassCurve.Affine.equation_neg (W' := Wb.toAffine) c
+            y).mpr hE) f =
+      (Algebra.norm (Polynomial (AlgebraicClosure (ZMod q))) f).eval c := by
+    intro f c y hE
+    obtain ⟨a, b, rfl⟩ :=
+      WeierstrassCurve.Affine.CoordinateRing.exists_smul_basis_eq
+        (W' := Wb.toAffine) f
+    rw [hnormeval a b c y hE]
+    have hev : ∀ (y' : (AlgebraicClosure (ZMod q))) (hE' : Wb.toAffine.Equation c y'),
+        AdjoinRoot.evalEval (p := Wb.toAffine.polynomial) hE'
+          (a • (1 : Wb.toAffine.CoordinateRing) +
+            b • WeierstrassCurve.Affine.CoordinateRing.mk Wb.toAffine
+              Polynomial.X) = a.eval c + b.eval c * y' := by
+      intro y' hE'
+      rw [show a • (1 : Wb.toAffine.CoordinateRing) +
+          b • WeierstrassCurve.Affine.CoordinateRing.mk Wb.toAffine
+            Polynomial.X =
+        AdjoinRoot.mk Wb.toAffine.polynomial
+          (Polynomial.C a + Polynomial.C b * Polynomial.X) from by
+        rw [map_add, map_mul, Algebra.smul_def, Algebra.smul_def,
+          AdjoinRoot.algebraMap_eq, mul_one]
+        rfl]
+      rw [AdjoinRoot.evalEval_mk]
+      simp [Polynomial.evalEval]
+    rw [hev y hE, hev _ ((WeierstrassCurve.Affine.equation_neg
+      (W' := Wb.toAffine) c y).mpr hE)]
+  -- products of vertical spans collapse to the span of the product
+  have hspanprod : ∀ D : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))),
+      (D.map (fun P => Ideal.span ({Polynomial.X - Polynomial.C P.1} :
+        Set (Polynomial (AlgebraicClosure (ZMod q)))))).prod =
+      Ideal.span {(D.map (fun P =>
+        Polynomial.X - Polynomial.C P.1)).prod} := by
+    intro D
+    induction D using Multiset.induction_on with
+    | empty => simp [Ideal.one_eq_top, Ideal.span_singleton_one]
+    | cons P D ih =>
+      rw [Multiset.map_cons, Multiset.prod_cons, ih, Multiset.map_cons,
+        Multiset.prod_cons, Ideal.span_singleton_mul_span_singleton]
+  -- the norm IS a nonzero constant times the vertical product of the divisor
+  have hNconst : ∀ (f : Wb.toAffine.CoordinateRing)
+      (D : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))),
+      (∀ P ∈ D, Wb.toAffine.Equation P.1 P.2) →
+      Ideal.span {f} =
+        (D.map (fun P => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          Wb.toAffine P.1 (Polynomial.C P.2))).prod →
+      ∃ u : (AlgebraicClosure (ZMod q)), u ≠ 0 ∧
+        Algebra.norm (Polynomial (AlgebraicClosure (ZMod q))) f =
+          Polynomial.C u * (D.map (fun P =>
+            Polynomial.X - Polynomial.C P.1)).prod := by
+    intro f D hDeq hDfac
+    have h1 := hNfac f D hDeq hDfac
+    rw [hspanprod D] at h1
+    obtain ⟨v, hv⟩ := Ideal.span_singleton_eq_span_singleton.mp h1
+    obtain ⟨u, huu, hCu⟩ := Polynomial.isUnit_iff.mp (v⁻¹ : _ˣ).isUnit
+    refine ⟨u, huu.ne_zero, ?_⟩
+    rw [mul_comm, hCu]
+    rw [← hv, mul_assoc, Units.mul_inv, mul_one]
   sorry
 
 set_option warn.sorry false in
