@@ -3536,6 +3536,36 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           rw [minpoly.isIntegrallyClosed_eq_field_fractions' (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) hx,
             Polynomial.coeff_map]
           exact ⟨_, rfl⟩
+        -- the annihilating quadratic is monic of degree two
+        have hqmonic : (Polynomial.X ^ 2 - Polynomial.C τ * Polynomial.X +
+            Polynomial.C ν : Polynomial (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))).Monic := by
+          rw [show (Polynomial.X ^ 2 - Polynomial.C τ * Polynomial.X +
+            Polynomial.C ν : Polynomial (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))) = Polynomial.X ^ 2 -
+            (Polynomial.C τ * Polynomial.X - Polynomial.C ν) from by ring]
+          refine Polynomial.monic_X_pow_sub ?_
+          rw [sub_eq_add_neg, ← Polynomial.C_neg]
+          refine lt_of_le_of_lt Polynomial.degree_linear_le ?_
+          norm_num
+        have hqdeg : (Polynomial.X ^ 2 - Polynomial.C τ * Polynomial.X +
+            Polynomial.C ν : Polynomial (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))).natDegree = 2 := by
+          have h1 : (Polynomial.X ^ 2 - Polynomial.C τ * Polynomial.X +
+              Polynomial.C ν : Polynomial (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))).natDegree ≤ 2 := by
+            refine le_trans (Polynomial.natDegree_add_le _ _) (max_le ?_ ?_)
+            · refine le_trans (Polynomial.natDegree_sub_le _ _)
+                (max_le ?_ ?_)
+              · simp
+              · refine le_trans Polynomial.natDegree_mul_le ?_
+                simp
+            · simp
+          have h2 : (Polynomial.X ^ 2 - Polynomial.C τ * Polynomial.X +
+              Polynomial.C ν : Polynomial (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))).coeff 2 ≠ 0 := by
+            simp [Polynomial.coeff_add, Polynomial.coeff_sub]
+          exact le_antisymm h1 (Polynomial.le_natDegree_of_ne_zero h2)
+        -- degree dichotomy for the minimal polynomial
+        have hd1 : 1 ≤ (minpoly (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) x).natDegree := minpoly.natDegree_pos hxK
+        have hd2 : (minpoly (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) x).natDegree ≤ 2 := by
+          have := Polynomial.natDegree_le_of_dvd hdvd hqmonic.ne_zero
+          omega
         sorry
       · rintro ⟨y, rfl⟩
         exact IsIntegral.map (IsScalarTower.toAlgHom (Polynomial (AlgebraicClosure (ZMod q)))
