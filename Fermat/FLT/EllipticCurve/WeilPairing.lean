@@ -6302,6 +6302,23 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
             (c, Wb.toAffine.negY c (yfib c)) ::ₘ {(c, yfib c)} from rfl,
           Multiset.map_cons, Multiset.prod_cons, Multiset.map_singleton,
           Multiset.prod_singleton]
+  -- evaluation of a line/vertical word at a curve point: the ring-hom
+  -- image of the word product is the corresponding value product
+  have hwordeval : ∀ (L : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
+      (V : Multiset (AlgebraicClosure (ZMod q)))
+      (x y : (AlgebraicClosure (ZMod q))) (hE : Wb.toAffine.Equation x y),
+      AdjoinRoot.evalEval hE
+        ((L.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => AdjoinRoot.mk Wb.toAffine.polynomial
+          (Polynomial.X - Polynomial.C (Polynomial.C P.1 * Polynomial.X + Polynomial.C P.2)))).prod *
+        (V.map (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine)).prod) =
+      (L.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => y - (ln.1 * x + ln.2))).prod *
+      (V.map (fun c => x - c)).prod := by
+    intro L V x y hE
+    rw [map_mul, map_multiset_prod, map_multiset_prod,
+      Multiset.map_map, Multiset.map_map]
+    congr 2
+    · exact Multiset.map_congr rfl fun ln _ => hevline ln.1 ln.2 x y hE
+    · exact Multiset.map_congr rfl fun c _ => hevvert c x y hE
   sorry
 
 /-- **The Weil pairing over a finite field, Frobenius-twisted form**

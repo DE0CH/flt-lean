@@ -32,628 +32,901 @@ Second symbol: `·` normal, `🟪` currently being worked on (from the
 entries file). To add/remove/annotate a node, edit
 `progress-entries.json` and re-run the generator.
 
-- ✅· `fermat_last_theorem` — the goal: `FermatLastTheorem`, assembled from the mathlib reductions and
+- ❌· `fermatLastTheoremThree` — (mathlib)
+- ❌· `fermatLastTheoremFour` — (mathlib)
+- ❌· `FermatLastTheorem.of_odd_primes` — (mathlib, NumberTheory/FLT/Four.lean)
+- ❌· `fermat_last_theorem` — the goal: `FermatLastTheorem`, assembled from the mathlib reductions and
   `fermatLastTheoremFor_of_five_le`.
-    - ✅· `fermatLastTheoremFor_of_five_le` — ∀ p, p.Prime → 5 ≤ p → FermatLastTheoremFor p` (`Fermat/PrimeFive.lean`) — proven from:
-        - ✅· `FreyPackage.mazur` — (`Fermat/FLT/FreyCurve/Mazur.lean`) — the mod-p rep of the Frey curve is irreducible — now
-          (2026-07-16) from two explicit nodes in `Fermat/FLT/FreyCurve/MazurTorsion.lean` (own
-          work), following Serre (Duke 1987, §4.1):
-            - ✅· `FreyPackage.exists_torsion_embedding_of_not_isIrreducible` — (2026-07-16) from the two nodes below: Serre's analysis produces full 2-torsion plus a
-              rational point of order p on some curve; the `embedding_assembly` combines them into
-              an injective ℤ/2 × ℤ/2p via CRT
-                - ✅· `FreyPackage.exists_two_torsion_and_p_point_of_not_isIrreducible` — (2026-07-16) from the disjunction node below plus the Frey 2-torsion
-                    - ✅· `FreyPackage.exists_p_point_of_not_isIrreducible` — (2026-07-16): the Minkowski input is discharged by the node below
-                        - ✅· `FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski` — (2026-07-17) from the stable-line dichotomy leaf, the Galois descent for
-                          points, and the Vélu quotient leaf (all `MazurTorsion.lean`)
-                            - ✅· `FreyPackage.stable_line_dichotomy_of_not_isIrreducible` — (2026-07-17) from the semistability leaf below + the character
-                              bookkeeping: the stable line
-                              (`exists_stable_line_of_not_isIrreducible`) carries unit-valued
-                              characters (`exists_subCharacter`/`exists_quotCharacter`, the scalar-
-                              action-on-rank-1 argument `exists_unit_character_of_finrank_one`),
-                              with `det = χ₁χ₂` (`det_eq_subCharacter_mul_quotCharacter` via
-                              `LinearMap.det_eq_det_mul_det`) `= ω̄` (the det node +
-                              `cyclotomicCharacterModL_eq_toZMod`); kernels are open (they contain
-                              the open kernel of ρ, `isOpen_setOf_galoisRep_eq_one` +
-                              `Subgroup.isOpen_mono`); Minkowski (hmink) kills the everywhere-
-                              unramified character; `χ₁ = 1` fixes a nonzero `w₀ ∈ W` (a fixed point
-                              of exact order `p`), `χ₂ = 1` trivializes the quotient action.
-                              SPELLING GOTCHAS (all resolved): (a) quotient triviality must be
-                              phrased via `W.mkQ`, not `ρ g v − v ∈ W` (HSub instance search
-                              sticks); (b) `P.freyCurve`-instantiated nTorsion carries
-                              `Rat.commRing` vs the `Field.toCommRing` spelling baked into
-                              `galoisRep`'s codomain — defeq at DEFAULT transparency but NOT at
-                              instance transparency, so `letI`/`haveI` instances for the local
-                              spelling are invisible to TC search against the baked spelling; the
-                              cure is general-`V` lemmas whose instance binders are pinned by
-                              unification with the `ρbar` argument (pass `ρbar` FIRST, extra
-                              finiteness as a plain hypothesis, never an instance binder)
-                                - ✅· `FreyPackage.subquotient_character_unramified` — (2026-07-17): away from `{2, p}` the whole representation kills
-                                  inertia (`FreyCurve.torsion_isUnramified`, transported by the new
-                                  generic-`K` bridge
-                                  `character_localInertia_le_ker_of_isUnramifiedAt` +
-                                  `Rat.subsingleton_ringHom`/`convert using 5` to reconcile the
-                                  local-vs-generic `algebraMap` spellings — the local ℚ-spelling and
-                                  `toLocal`'s generic one are NOT defeq-bridgeable because
-                                  `Field.absoluteGaloisGroup.map` is unexposed; ring homs out of `ℚ`
-                                  are unique, so propositional bridging works); the unipotent-scalar
-                                  lemmas (`subCharacter_eq_one_of_sq_eq_zero`,
-                                  `quotCharacter_eq_one_of_sq_eq_zero`, ) turn `(ρσ−1)² = 0` into
-                                  character-triviality
-                                    - ❌· `FreyPackage.subquotient_character_unramified_at_p` — (stated 2026-07-17) — flat/ordinary at `p`: one of the two
-                                      characters is unramified at `p` itself (connected-étale
-                                      sequence in the ordinary/ multiplicative case; supersingular
-                                      excluded by reducibility)
-                                - ✅· `det_galoisRep_eq_cyclotomic` — `det_galoisRep_eq_cyclotomic` — (2026-07-17): `det ρ̄` and `χ̄`
-                                  are continuous conjugation-invariant `ZMod p`-valued functions on
-                                  `Γ ℚ` (continuity of `det ∘ ρ` from discreteness of `End` via
-                                  `discreteTopology_moduleTopology`; `χ̄`-continuity in
-                                  `Chebotarev.lean`); they agree at `Frob_q` for almost all `q` (the
-                                  leaf below + `cyclotomicCharacterModL_globalFrob`, ), and the
-                                  Frobenius conjugacy classes are dense
-                                  (`dense_conjClasses_globalFrob`, rooted in the Chebotarev node),
-                                  so the closed agreement set is everything. Bridge
-                                  `cyclotomicCharacterModL_eq_toZMod` (`χ̄ = toZMod ∘ χ`) via
-                                  `modularCyclotomicCharacter.unique` +
-                                  `toZMod_eq_ringEquivCongr_comp_toZModPow`
-                                    - ✅· `det_galoisRep_globalFrob` — Frobenius determinant at good primes (DECOMPOSED 2026-07-20):
-                                      the proof now conjugates the global Frobenius action to the
-                                      finite-field side via the (sorried) reduction-transfer model
-                                      and applies the (sorried) finite-field Frobenius determinant,
-                                      with LinearEquiv.conj + LinearMap.det_conj closing the
-                                      transport. New machinery: frobAlgHom (the q-power Frobenius of
-                                      F_q-bar as a ZMod q-AlgHom, Fermat little theorem for the
-                                      commutation) and frobeniusTorsionEnd (its ZMod p-linear action
-                                      on p-torsion, via Point.map + endRestrict + toZModLinearMap,
-                                      mirroring galoisRep).
-                                        - ✅· `WeilPairing.det_frobeniusTorsionEnd` — Frobenius determinant over a finite field (DERIVED
-                                          2026-07-20 from the Weil pairing): the q-power Frobenius
-                                          scales the pairing by q, and det_eq_of_conj (the proven
-                                          2-dimensional alternating-form linear algebra) gives det =
-                                          q; the rank-2 input is p_torsion_rank over the separably
-                                          closed F_q-bar with (p : F_q-bar) != 0 from p != q.
-                                            - ✅· `WeilPairing.exists_weilPairing_frobenius` — Frobenius-twisted ZMod p Weil pairing over F_q
-                                              (DERIVED 2026-07-21 from exists_weilPairing_mu by
-                                              discrete logarithm: primitive root via
-                                              HasEnoughRootsOfUnity, zmodEquivZPowers, Frobenius
-                                              naturality becomes q-scaling since frobAlgHom is x^q).
-                                                - ❌🟪 `WeilPairing.exists_weilPairing_mu` — the mu_p-valued Weil pairing over F_q (single
-                                                  sorry 2026-07-21: N1 COMPLETE):
-                                                  IsDedekindDomain(CoordinateRing) of the base-
-                                                  changed curve is FULLY PROVEN via Krull-Akizuki --
-                                                  FaithfulSMul, FiniteDimensional (conjugate-norm
-                                                  span), IsSeparable (Bezout certificate / char-2
-                                                  unit-derivative with Delta-vanishing),
-                                                  IsIntegralClosure (normality: minpoly coefficient
-                                                  descent, degree dichotomy, reduced-fraction
-                                                  descent against the squarefree b2-cubic with disc
-                                                  = 16 Delta in odd characteristic; in
-                                                  characteristic two the tau0 = tc A collapse, w =
-                                                  sc A integrality, and the Taylor/singular-point
-                                                  contradiction at the root of A -- both affine
-                                                  partials vanish, contradicting
-                                                  equation_iff_nonsingular). IN-PROOF ALSO PROVEN
-                                                  (2026-07-21): hCunits (units of the coordinate
-                                                  ring are the nonzero constants, via
-                                                  degree_norm_smul_basis) and hgen (p-torsion points
-                                                  have principal p-th ideal-class powers -- the
-                                                  Miller-generator existence, via toClass +
-                                                  ClassGroup.mk_eq_one_iff). ALSO PROVEN: hpoints
-                                                  (points outside any finite abscissa set) and hgen2
-                                                  (two-point Miller generators for translated
-                                                  divisors); point evaluation is mathlib's
-                                                  AdjoinRoot.evalEval. PROVEN reciprocity
-                                                  ingredients: hrecP1 (P^1 Weil reciprocity: double-
-                                                  product swap with the (-1)^(mn) sign, via
-                                                  hcard/hevalprod root-product machinery); hline
-                                                  (line ideal identity (l) = I_P I_Q I_{-(P+Q)} from
-                                                  mathlib's XYIdeal_mul_XYIdeal + XYIdeal_neg_mul by
-                                                  Dedekind cancellation; the vertical identity is
-                                                  mathlib's XYIdeal_neg_mul itself); hcubtrans +
-                                                  hlinerec (line-line reciprocity core: shared-
-                                                  intersection-point Vieta, the two fiber cubics
-                                                  agree at the common abscissa). Also PROVEN:
-                                                  hnormeval (norm-evaluation compatibility (N f)(x0)
-                                                  = f(x0,y0) f(x0,negY) via norm_smul_basis + the
-                                                  Weierstrass equation) and hXYmax (point ideals are
-                                                  maximal, via quotientXYIdealEquiv). hfactor
-                                                  COMPLETE (principal spans factor as point-divisor
-                                                  multisets via normalizedFactors + hmax), hker
-                                                  COMPLETE (kernel of point evaluation = the point
-                                                  ideal), hXYinj COMPLETE (point-ideal injectivity).
-                                                  hoffdiv COMPLETE (nonvanishing off the divisor).
-                                                  hNle + hnormpt COMPLETE: relNorm of a point ideal
-                                                  IS the vertical span (X - x_P) (conjugate-product
-                                                  pinning; PerfectField route unavailable in char
-                                                  q). NEXT: span{N f} = relNorm(span f) = prod of
-                                                  verticals over div f (relNorm_singleton +
-                                                  map_multiset_prod over hfactor), so N f = unit *
-                                                  prod (X - P.1) -- then vertical reciprocity:
-                                                  f(fiber c) = (N f)(c) (hnormeval) vs vertical(div
-                                                  f) = prod (P.1 - c) via hrecP1/evaluation of the
-                                                  product form. Formerly recorded as: NEXT brick:
-                                                  spanNorm of a point ideal is the vertical span (X
-                                                  - x_P) (check Ideal.spanNorm_singleton /
-                                                  spanNorm_mul API), giving N f = unit * prod (X -
-                                                  P.1) over the divisor -- the bridge between
-                                                  hnormeval fiber-products and hrecP1 root-products
-                                                  for the vertical-vs-anything reciprocity case.
-                                                  GENERATOR RECIPROCITY COMPLETE: hrecfib (vertical
-                                                  fiber-quotient form, via
-                                                  hnormeval'/hspanprod/hNconst) and hrecline (line-
-                                                  line divisor form, via
-                                                  hNline/hevline/hevvert/hondiv/habs + the hlinerec
-                                                  core). hgenfac COMPLETE (the class-group descent /
-                                                  Miller factorization, with hdvdspan). Generator
-                                                  divisor witnesses COMPLETE (hfiber, hvertdiv,
-                                                  hlinediv). Signed generator-pair table COMPLETE
-                                                  (hggll unconditional line-line incl.
-                                                  parallel/identical; hgglv line-vertical; hggvv
-                                                  vertical-vertical, adopted from the accidental
-                                                  parallel session; hrecfib). hlinediv' explicit
-                                                  line divisor; hvw vertical-vs-word assembly
-                                                  PROVEN. hlw PROVEN (line-vs-word, sign
-                                                  (-1)^lines). hww PROVEN (word-vs-word, sign
-                                                  (-1)^(|L1| x |L2|), 2026-07-21 first-attempt
-                                                  green: prod_map_prod_map swap per part, hlw per
-                                                  line of L1 / hvw per vertical of V1, sign
-                                                  collected by map_const'/prod_replicate, closed by
-                                                  pow_mul + ring; binder-capture avoided by fresh
-                                                  outer binder ab and beta-reduced ab.1/ab.2
-                                                  instantiations per the parent session's warning).
-                                                  DIVISOR-DICTIONARY BRICKS PROVEN (2026-07-21):
-                                                  hdivuniq (equal products of point ideals force
-                                                  equal point multisets: prime picking via
-                                                  IsPrime.multiset_prod_map_le, maximality, hXYinj,
-                                                  Dedekind cancellation), hvertdiv' (explicit
-                                                  vertical divisor at the canonical yfib fiber =
-                                                  XYIdeal_neg_mul), hworddiv (span of a
-                                                  line/vertical word = product of point ideals over
-                                                  its explicit hww-shaped divisor, by induction
-                                                  through hlinediv'/hvertdiv'). ASSEMBLY DESIGN
-                                                  (2026-07-21, agent7): genericity via the FINITE-
-                                                  SUBFIELD trick -- strengthen hgenfac with an
-                                                  F-rationality invariant (for F a finite subfield
-                                                  containing the divisor coordinates, all Miller
-                                                  chords/verticals have parameters AND line-cubic
-                                                  roots in F, since chord data is rational in the
-                                                  current divisor points and the invariant
-                                                  propagates); consumers then choose test abscissas
-                                                  OUTSIDE F via hpoints, killing all
-                                                  collision/nonvanishing obligations. Pairing
-                                                  generators in junk-free form: b_P := (XClass
-                                                  x_S)^p with div = p(S)+p(-S), a_P := gamma*b_P
-                                                  with div = p(P+S)+p(-S) (integrality by
-                                                  fractional-ideal arithmetic), so all supports
-                                                  explicit. NEXT: balanced reciprocity for functions
-                                                  via the strengthened hgenfac (u-constants and
-                                                  signs cancel in balanced cross-ratios; 8-fold
-                                                  division-free form, cancel the Pi of d-word
-                                                  evaluations at the end under the F-avoidance
-                                                  hypotheses), then the pairing. Superseded: NEXT:
-                                                  line-vs-word (hlw, sign (-1)^lines) then word-vs-
-                                                  word (hww), then the balanced reciprocity for
-                                                  functions via hgenfac and the pairing. Remaining
-                                                  assembly: the balanced cross-product reciprocity
-                                                  for arbitrary disjoint pairs from the generator
-                                                  cases, then the pairing and its six legs.
-                                                  Superseded plan text: REMAINING for reciprocity:
-                                                  the class-group descent hgenfac (every function
-                                                  with point-divisor factorization equals a constant
-                                                  times a quotient of products of line/vertical
-                                                  elements, by strong induction on divisor size
-                                                  through hline + XYIdeal_neg_mul + toClass-
-                                                  nontriviality) and the multiplicative assembly of
-                                                  the balanced cross-product reciprocity; then the
-                                                  pairing definition (ratio over hgen2 generators at
-                                                  hpoints-generic translates) and its six legs.
-                                                  Older per-brick log follows: NEXT: divisor
-                                                  evaluation f(D) := prod of evalEval over D;
-                                                  nonvanishing off the divisor; the reciprocity
-                                                  statement f(div g) = g(div f) for disjoint
-                                                  supports, by induction via line/vertical
-                                                  factorization (hline + XYIdeal_neg_mul) reducing
-                                                  to the proven cores hlinerec (line-line) and
-                                                  hnormeval + hrecP1 (vertical cases); then the
-                                                  pairing and its six legs. hmax COMPLETE (with
-                                                  hresfin + hkill): every maximal ideal of the
-                                                  coordinate ring IS a point ideal XYIdeal x0 (C y0)
-                                                  at a curve point -- the divisor language is
-                                                  available. Also PROVEN: hlinfac (every maximal
-                                                  ideal contains a vertical X - c: the lying-over
-                                                  leg of hmax, via the norm-membership trick and
-                                                  prime factor-picking). NEXT: hmax -- every maximal
-                                                  ideal of the coordinate ring is a point ideal
-                                                  (route: M cap k[x] contains X - c via the norm-
-                                                  membership trick f*sigma-f = algebraMap(N f) from
-                                                  coe_norm_smul_basis with N f nonzero by
-                                                  degree_norm_smul_basis; residue field is spanned
-                                                  over k by the images of the basis {1, y} since X -
-                                                  c dies, so it is finite over k, hence = k by
-                                                  IsAlgClosed.algebraMap_bijective_of_isIntegral;
-                                                  then the coordinate images x0, y0 give
-                                                  XClass/YClass in M, the Weierstrass polynomial
-                                                  Taylor-decomposes to give the equation, and hXYmax
-                                                  + IsMaximal.eq_of_le forces M = XYIdeal x0 (C
-                                                  y0)). Then: divisor factorization of principal
-                                                  ideals into point primes, line/vertical
-                                                  factorization of functions with O-free principal
-                                                  divisors, reciprocity assembly from
-                                                  hlinerec/hnormeval/hrecP1, then the pairing
-                                                  definition and its six legs. REMAINING (the single
-                                                  sorry): the evaluation-ratio pairing e(P,Q) =
-                                                  f_P(D_Q)/f_Q(D_P) with disjoint affine supports
-                                                  (D_P = (P+S)-(S), D_Q = (Q+R)-(R)); scalar-
-                                                  invariance is automatic in the ratios; well-
-                                                  definedness/bilinearity via Weil reciprocity
-                                                  (norm-pushforward to P^1 or direct); alternation,
-                                                  nondegeneracy, Frobenius naturality. Formerly
-                                                  listed route e(P,Q) = f_P(D_Q)/f_Q(D_P),
-                                                  bilinearity/alternation/nondegeneracy via Weil
-                                                  reciprocity on HeightOneSpectrum divisors plus the
-                                                  infinite place, Frobenius naturality from
-                                                  functoriality of the whole construction.
-                                    - ✅· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density,
-                                      topological form — now (2026-07-16) by the profinite limit
-                                      argument (: cosets of fixing subgroups of finite subextensions
-                                      are a neighborhood basis, `krullTopology_mem_nhds_one_iff`;
-                                      the finite-level statement puts a Frobenius conjugate in every
-                                      coset):
-                                        - ❌· `exists_frobenius_conj_mem_coset` — `exists_frobenius_conj_mem_coset` — Chebotarev, finite
-                                          level: for every finite subextension `E` of `K̄/K` and
-                                          every `σ`, the coset `σ·Gal(K̄/E)` contains a conjugate of
-                                          a `globalFrob v` with `v ∉ S` (existence form of
-                                          Chebotarev for the Galois closure of `E/K`)
-                            - ❌· `FreyPackage.exists_quotient_curve_point` — (stated 2026-07-17) — the Vélu quotient leaf: a stable line with
-                              trivial quotient action produces `E'/ℚ` with full rational 2-torsion
-                              and a rational `p`-point (quotient by the rational subgroup;
-                              quantified over Weierstrass models)
-            - ✅· `WeierstrassCurve.mazur_torsion_bound` — Mazur's torsion theorem, weak form: no elliptic curve over ℚ has a subgroup of
-              rational points ≅ ℤ/2 × ℤ/2p for p ≥ 5 (primality dropped as unneeded) — now
-              (2026-07-16) from the faithful classification below: images of an injective hom from
-              the finite group ℤ/2 × ℤ/2p are torsion (finite additive order), the hom corestricts
-              into the torsion submodule, and 4p ≥ 20 > 16 ≥ the order of every group in Mazur's
-              list (`Nat.card` comparison)
-                - ❌· `WeierstrassCurve.mazur_classification` — Mazur's torsion theorem, stated faithfully: the torsion submodule
-                  (`Submodule.torsion ℤ E(ℚ)`) is ≃+ to one of the fifteen groups ℤ/n (n ∈
-                  {1,…,10,12}) or ℤ/2 × ℤ/2m (m ∈ {1,…,4}). Mazur, Publ. Math. IHÉS 47 (1977);
-                  Invent. Math. 44 (1978)
-        - ✅· `FreyPackage.galoisRep_not_irreducible` — (B4, `Fermat/PrimeFive.lean`) — now (2026-07-16) from two explicit nodes, mirroring the
-          FLT project's hardly-ramified plan (their B5/B6, stated in Lean here before upstream):
-            - ✅· `FreyCurve.torsion_isHardlyRamified` — (`GaloisRepresentation/HardlyRamified/Frey.lean`) — now (2026-07-16) as the structure
-              constructor applied to the four defining conditions, each an explicit node in
-              `HardlyRamified/FreyConditions.lean` (own work):
-                - ✅· `FreyCurve.torsion_det` — det ρ̄ = mod-p cyclotomic character — now (2026-07-16) via the Weil pairing route
-                  (`EllipticCurve/WeilPairing.lean`, own work):
-                    - ✅· `WeilPairing.exists_weilPairing` — the Weil pairing: (2026-07-17) as the coordinate determinant form in a
-                      `finBasis` (`#E[p] = p²` ⟹ rank 2), Galois-scaled by `det ρ`
-                      (`pairing_map_eq_det_smul`) = the cyclotomic character by the det node below
-                        - ✅· `det_galoisRep_eq_cyclotomic` — `det_galoisRep_eq_cyclotomic` — (2026-07-17): `det ρ̄` and `χ̄` are
-                          continuous conjugation-invariant `ZMod p`-valued functions on `Γ ℚ`
-                          (continuity of `det ∘ ρ` from discreteness of `End` via
-                          `discreteTopology_moduleTopology`; `χ̄`-continuity in `Chebotarev.lean`);
-                          they agree at `Frob_q` for almost all `q` (the leaf below +
-                          `cyclotomicCharacterModL_globalFrob`, ), and the Frobenius conjugacy
-                          classes are dense (`dense_conjClasses_globalFrob`, rooted in the
-                          Chebotarev node), so the closed agreement set is everything. Bridge
-                          `cyclotomicCharacterModL_eq_toZMod` (`χ̄ = toZMod ∘ χ`) via
-                          `modularCyclotomicCharacter.unique` +
-                          `toZMod_eq_ringEquivCongr_comp_toZModPow`
-                            - ✅· `det_galoisRep_globalFrob` — Frobenius determinant at good primes (DECOMPOSED 2026-07-20): the
-                              proof now conjugates the global Frobenius action to the finite-field
-                              side via the (sorried) reduction-transfer model and applies the
-                              (sorried) finite-field Frobenius determinant, with LinearEquiv.conj +
-                              LinearMap.det_conj closing the transport. New machinery: frobAlgHom
-                              (the q-power Frobenius of F_q-bar as a ZMod q-AlgHom, Fermat little
-                              theorem for the commutation) and frobeniusTorsionEnd (its ZMod
-                              p-linear action on p-torsion, via Point.map + endRestrict +
-                              toZModLinearMap, mirroring galoisRep).
-                                - ✅· `WeilPairing.det_frobeniusTorsionEnd` — Frobenius determinant over a finite field (DERIVED 2026-07-20 from
-                                  the Weil pairing): the q-power Frobenius scales the pairing by q,
-                                  and det_eq_of_conj (the proven 2-dimensional alternating-form
-                                  linear algebra) gives det = q; the rank-2 input is p_torsion_rank
-                                  over the separably closed F_q-bar with (p : F_q-bar) != 0 from p
-                                  != q.
-                                    - ✅· `WeilPairing.exists_weilPairing_frobenius` — Frobenius-twisted ZMod p Weil pairing over F_q (DERIVED
-                                      2026-07-21 from exists_weilPairing_mu by discrete logarithm:
-                                      primitive root via HasEnoughRootsOfUnity, zmodEquivZPowers,
-                                      Frobenius naturality becomes q-scaling since frobAlgHom is
-                                      x^q).
-                                        - ❌🟪 `WeilPairing.exists_weilPairing_mu` — the mu_p-valued Weil pairing over F_q (single sorry
-                                          2026-07-21: N1 COMPLETE): IsDedekindDomain(CoordinateRing)
-                                          of the base-changed curve is FULLY PROVEN via Krull-
-                                          Akizuki -- FaithfulSMul, FiniteDimensional (conjugate-norm
-                                          span), IsSeparable (Bezout certificate / char-2 unit-
-                                          derivative with Delta-vanishing), IsIntegralClosure
-                                          (normality: minpoly coefficient descent, degree dichotomy,
-                                          reduced-fraction descent against the squarefree b2-cubic
-                                          with disc = 16 Delta in odd characteristic; in
-                                          characteristic two the tau0 = tc A collapse, w = sc A
-                                          integrality, and the Taylor/singular-point contradiction
-                                          at the root of A -- both affine partials vanish,
-                                          contradicting equation_iff_nonsingular). IN-PROOF ALSO
-                                          PROVEN (2026-07-21): hCunits (units of the coordinate ring
-                                          are the nonzero constants, via degree_norm_smul_basis) and
-                                          hgen (p-torsion points have principal p-th ideal-class
-                                          powers -- the Miller-generator existence, via toClass +
-                                          ClassGroup.mk_eq_one_iff). ALSO PROVEN: hpoints (points
-                                          outside any finite abscissa set) and hgen2 (two-point
-                                          Miller generators for translated divisors); point
-                                          evaluation is mathlib's AdjoinRoot.evalEval. PROVEN
-                                          reciprocity ingredients: hrecP1 (P^1 Weil reciprocity:
-                                          double-product swap with the (-1)^(mn) sign, via
-                                          hcard/hevalprod root-product machinery); hline (line ideal
-                                          identity (l) = I_P I_Q I_{-(P+Q)} from mathlib's
-                                          XYIdeal_mul_XYIdeal + XYIdeal_neg_mul by Dedekind
-                                          cancellation; the vertical identity is mathlib's
-                                          XYIdeal_neg_mul itself); hcubtrans + hlinerec (line-line
-                                          reciprocity core: shared-intersection-point Vieta, the two
-                                          fiber cubics agree at the common abscissa). Also PROVEN:
-                                          hnormeval (norm-evaluation compatibility (N f)(x0) =
-                                          f(x0,y0) f(x0,negY) via norm_smul_basis + the Weierstrass
-                                          equation) and hXYmax (point ideals are maximal, via
-                                          quotientXYIdealEquiv). hfactor COMPLETE (principal spans
-                                          factor as point-divisor multisets via normalizedFactors +
-                                          hmax), hker COMPLETE (kernel of point evaluation = the
-                                          point ideal), hXYinj COMPLETE (point-ideal injectivity).
-                                          hoffdiv COMPLETE (nonvanishing off the divisor). hNle +
-                                          hnormpt COMPLETE: relNorm of a point ideal IS the vertical
-                                          span (X - x_P) (conjugate-product pinning; PerfectField
-                                          route unavailable in char q). NEXT: span{N f} =
-                                          relNorm(span f) = prod of verticals over div f
-                                          (relNorm_singleton + map_multiset_prod over hfactor), so N
-                                          f = unit * prod (X - P.1) -- then vertical reciprocity:
-                                          f(fiber c) = (N f)(c) (hnormeval) vs vertical(div f) =
-                                          prod (P.1 - c) via hrecP1/evaluation of the product form.
-                                          Formerly recorded as: NEXT brick: spanNorm of a point
-                                          ideal is the vertical span (X - x_P) (check
-                                          Ideal.spanNorm_singleton / spanNorm_mul API), giving N f =
-                                          unit * prod (X - P.1) over the divisor -- the bridge
-                                          between hnormeval fiber-products and hrecP1 root-products
-                                          for the vertical-vs-anything reciprocity case. GENERATOR
-                                          RECIPROCITY COMPLETE: hrecfib (vertical fiber-quotient
-                                          form, via hnormeval'/hspanprod/hNconst) and hrecline
-                                          (line-line divisor form, via
-                                          hNline/hevline/hevvert/hondiv/habs + the hlinerec core).
-                                          hgenfac COMPLETE (the class-group descent / Miller
-                                          factorization, with hdvdspan). Generator divisor witnesses
-                                          COMPLETE (hfiber, hvertdiv, hlinediv). Signed generator-
-                                          pair table COMPLETE (hggll unconditional line-line incl.
-                                          parallel/identical; hgglv line-vertical; hggvv vertical-
-                                          vertical, adopted from the accidental parallel session;
-                                          hrecfib). hlinediv' explicit line divisor; hvw vertical-
-                                          vs-word assembly PROVEN. hlw PROVEN (line-vs-word, sign
-                                          (-1)^lines). hww PROVEN (word-vs-word, sign (-1)^(|L1| x
-                                          |L2|), 2026-07-21 first-attempt green: prod_map_prod_map
-                                          swap per part, hlw per line of L1 / hvw per vertical of
-                                          V1, sign collected by map_const'/prod_replicate, closed by
-                                          pow_mul + ring; binder-capture avoided by fresh outer
-                                          binder ab and beta-reduced ab.1/ab.2 instantiations per
-                                          the parent session's warning). DIVISOR-DICTIONARY BRICKS
-                                          PROVEN (2026-07-21): hdivuniq (equal products of point
-                                          ideals force equal point multisets: prime picking via
-                                          IsPrime.multiset_prod_map_le, maximality, hXYinj, Dedekind
-                                          cancellation), hvertdiv' (explicit vertical divisor at the
-                                          canonical yfib fiber = XYIdeal_neg_mul), hworddiv (span of
-                                          a line/vertical word = product of point ideals over its
-                                          explicit hww-shaped divisor, by induction through
-                                          hlinediv'/hvertdiv'). ASSEMBLY DESIGN (2026-07-21,
-                                          agent7): genericity via the FINITE-SUBFIELD trick --
-                                          strengthen hgenfac with an F-rationality invariant (for F
-                                          a finite subfield containing the divisor coordinates, all
-                                          Miller chords/verticals have parameters AND line-cubic
-                                          roots in F, since chord data is rational in the current
-                                          divisor points and the invariant propagates); consumers
-                                          then choose test abscissas OUTSIDE F via hpoints, killing
-                                          all collision/nonvanishing obligations. Pairing generators
-                                          in junk-free form: b_P := (XClass x_S)^p with div =
-                                          p(S)+p(-S), a_P := gamma*b_P with div = p(P+S)+p(-S)
-                                          (integrality by fractional-ideal arithmetic), so all
-                                          supports explicit. NEXT: balanced reciprocity for
-                                          functions via the strengthened hgenfac (u-constants and
-                                          signs cancel in balanced cross-ratios; 8-fold division-
-                                          free form, cancel the Pi of d-word evaluations at the end
-                                          under the F-avoidance hypotheses), then the pairing.
-                                          Superseded: NEXT: line-vs-word (hlw, sign (-1)^lines) then
-                                          word-vs-word (hww), then the balanced reciprocity for
-                                          functions via hgenfac and the pairing. Remaining assembly:
-                                          the balanced cross-product reciprocity for arbitrary
-                                          disjoint pairs from the generator cases, then the pairing
-                                          and its six legs. Superseded plan text: REMAINING for
-                                          reciprocity: the class-group descent hgenfac (every
-                                          function with point-divisor factorization equals a
-                                          constant times a quotient of products of line/vertical
-                                          elements, by strong induction on divisor size through
-                                          hline + XYIdeal_neg_mul + toClass-nontriviality) and the
-                                          multiplicative assembly of the balanced cross-product
-                                          reciprocity; then the pairing definition (ratio over hgen2
-                                          generators at hpoints-generic translates) and its six
-                                          legs. Older per-brick log follows: NEXT: divisor
-                                          evaluation f(D) := prod of evalEval over D; nonvanishing
-                                          off the divisor; the reciprocity statement f(div g) =
-                                          g(div f) for disjoint supports, by induction via
-                                          line/vertical factorization (hline + XYIdeal_neg_mul)
-                                          reducing to the proven cores hlinerec (line-line) and
-                                          hnormeval + hrecP1 (vertical cases); then the pairing and
-                                          its six legs. hmax COMPLETE (with hresfin + hkill): every
-                                          maximal ideal of the coordinate ring IS a point ideal
-                                          XYIdeal x0 (C y0) at a curve point -- the divisor language
-                                          is available. Also PROVEN: hlinfac (every maximal ideal
-                                          contains a vertical X - c: the lying-over leg of hmax, via
-                                          the norm-membership trick and prime factor-picking). NEXT:
-                                          hmax -- every maximal ideal of the coordinate ring is a
-                                          point ideal (route: M cap k[x] contains X - c via the
-                                          norm-membership trick f*sigma-f = algebraMap(N f) from
-                                          coe_norm_smul_basis with N f nonzero by
-                                          degree_norm_smul_basis; residue field is spanned over k by
-                                          the images of the basis {1, y} since X - c dies, so it is
-                                          finite over k, hence = k by
-                                          IsAlgClosed.algebraMap_bijective_of_isIntegral; then the
-                                          coordinate images x0, y0 give XClass/YClass in M, the
-                                          Weierstrass polynomial Taylor-decomposes to give the
-                                          equation, and hXYmax + IsMaximal.eq_of_le forces M =
-                                          XYIdeal x0 (C y0)). Then: divisor factorization of
-                                          principal ideals into point primes, line/vertical
-                                          factorization of functions with O-free principal divisors,
-                                          reciprocity assembly from hlinerec/hnormeval/hrecP1, then
-                                          the pairing definition and its six legs. REMAINING (the
-                                          single sorry): the evaluation-ratio pairing e(P,Q) =
-                                          f_P(D_Q)/f_Q(D_P) with disjoint affine supports (D_P =
-                                          (P+S)-(S), D_Q = (Q+R)-(R)); scalar-invariance is
-                                          automatic in the ratios; well-definedness/bilinearity via
-                                          Weil reciprocity (norm-pushforward to P^1 or direct);
-                                          alternation, nondegeneracy, Frobenius naturality. Formerly
-                                          listed route e(P,Q) = f_P(D_Q)/f_Q(D_P),
-                                          bilinearity/alternation/nondegeneracy via Weil reciprocity
-                                          on HeightOneSpectrum divisors plus the infinite place,
-                                          Frobenius naturality from functoriality of the whole
-                                          construction.
-                            - ✅· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density, topological form
-                              — now (2026-07-16) by the profinite limit argument (: cosets of fixing
-                              subgroups of finite subextensions are a neighborhood basis,
-                              `krullTopology_mem_nhds_one_iff`; the finite-level statement puts a
-                              Frobenius conjugate in every coset):
-                                - ❌· `exists_frobenius_conj_mem_coset` — `exists_frobenius_conj_mem_coset` — Chebotarev, finite level: for
-                                  every finite subextension `E` of `K̄/K` and every `σ`, the coset
-                                  `σ·Gal(K̄/E)` contains a conjugate of a `globalFrob v` with `v ∉
-                                  S` (existence form of Chebotarev for the Galois closure of `E/K`)
-                - ✅· `FreyCurve.torsion_isFlat` — flat at p: (2026-07-16) by the case split `p ∣ abc` or not, from the two nodes
-                  below
-                    - ✅· `FreyCurve.torsion_isFlat_of_good` — (2026-07-16) from the arithmetic node `freyCurve_hasGoodReduction_of_not_dvd`
-                      (applied at `q := p`) and the flat glue node below
-                        - ✅· `WeierstrassCurve.isFlatAt_of_hasGoodReduction` — (`FreyCurve/Semistable.lean`, own work): (2026-07-17) — good reduction at
-                          `p` ⟹ `IsFlatAt p` for the mod-`p` torsion rep, from the leaf below plus
-                          the shared flat transport `GaloisRep.isFlatAt_of_dvr_package` (see its own
-                          subtree entry under the multiplicative case)
-                            - ❌· `torsion_flat_of_good_reduction` — `torsion_flat_of_good_reduction`
-                              (`KnownIn1980s/EllipticCurves/Flat.lean`, 2026-07-16): good reduction
-                              over a DVR makes the `n`-torsion a finite flat group scheme (Hopf
-                              algebra, finite flat, étale generic fibre, equivariant points
-                              isomorphism). Plus the division-polynomial node `isCoprime_Φ_ΨSq` —
-                              restated for fields and directly (2026-07-17; the former
-                              `resultant_Φ_ΨSq` node was DELETED, see the session-6 log)
-                    - ✅· `FreyCurve.torsion_isFlat_of_multiplicative` — (2026-07-16) from the arithmetic
-                      (`freyCurve_hasMultiplicativeReduction_of_dvd` at `q := p` +
-                      `j_valuation_of_bad_prime`) and the glue node below
-                        - ✅· `WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction` — (`FreyCurve/Semistable.lean`, own work): (2026-07-17) — the peu-ramifiée
-                          glue: multiplicative reduction at `p` with `p ∣ v_p(j)` ⟹ `IsFlatAt p`,
-                          from the new content leaf below plus the shared flat transport
-                            - ❌· `torsion_flat_of_multiplicative_reduction` — `torsion_flat_of_multiplicative_reduction`
-                              (`FreyCurve/Semistable.lean`, stated 2026-07-17): multiplicative
-                              reduction over `ℤ_(p)` with `p ∣ v_p(j)` produces a finite flat Hopf
-                              algebra over `ℤ_(p)` (étale generic fibre) whose `ℚ̄`-points are `Γ
-                              ℚ`-equivariantly the `p`-torsion — the peu-ramifiée package in the
-                              same DVR-`∃`-shape as the good-reduction leaf (Tate curve + Kummer
-                              theory content)
-            - ✅· `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified` — B5 `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
-              (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work) — now (2026-07-16)
-              from three explicit nodes in `HardlyRamified/Lift.lean` (own work), following
-              Buzzard's 2026 EPSRC Lecture 4 (his B5a/B5b/B5c):
-                - ❌· `exists_hardlyRamifiedLift` — B6a `exists_hardlyRamifiedLift` — an irreducible hardly ramified mod-ℓ rep (ℓ ≥ 5)
-                  lifts to a hardly ramified ℓ-adic rep over the integers `O` of a finite extension
-                  of `ℚ_ℓ` (bundled in `structure HardlyRamifiedLift`: `O` + framed rep + reduction
-                  map + Frobenius-charpoly compatibility). Deformation theory / modularity lifting
-                  without residual modularity
-                - ✅· `residual_charFrob_eq` — B6bc `residual_charFrob_eq` — the residual Frobenius charpolys of a liftable rep
-                  are those of `1 ⊕ χ̄` (`X² − (q+1)X + q`) — now (2026-07-16) from the faithful
-                  split ( from the FLT project's newer layer):
-                    - ❌· `IsHardlyRamified.mem_isCompatible` — B6b `IsHardlyRamified.mem_isCompatible` (`HardlyRamified/Family.lean`, ;
-                      conclusion named `IsInHardlyRamifiedFamily` as a marked ) — a hardly ramified
-                      ℓ-adic rep lives in a compatible family (`GaloisRepFamily.lean`, defs, ) all
-                      of whose odd members are hardly ramified. STRENGTHENED (2026-07-16): the
-                      package now records injectivity of the coefficient-ring embeddings into `ℚ̄_p`
-                      — an audit of the glue's proof skeleton showed the upstream statement is too
-                      weak for the charpoly descent (algebraMap from a domain to a field need not be
-                      injective); true for the intended subrings of `ℚ̄_p`
-                    - ✅· `residual_charFrob_eq_of_family` — `residual_charFrob_eq_of_family` (own work, `Lift.lean`) — compatibility
-                      BOOKKEEPING — now (2026-07-16): extract the 3-adic member via the number-field
-                      embedding; its charpoly at Frob_q is `X² − (1+q)X + q` by B6c's trace + the
-                      cyclotomic determinant at Frobenius + the 2-dim reconstruction (generalized to
-                      comm rings); transport through baseChange-conj to the family, descend to the
-                      coefficient field by injectivity of the embedding, ride compatibility to the
-                      ℓ-adic member, descend to `O` by the strengthened-B6b injectivity, and reduce
-                      through `charFrob_compat`. Exceptional set: `S₀ ∪ {2-place, 3-place}`.
-                      Consumes B6c and the ℓ-adic Frobenius-value node. AUDIT RESTATEMENT
-                      (2026-07-16): the conclusion (and B6bc's, and the Chebotarev–Brauer–Nesbitt
-                      hypothesis) now carries a finite exceptional set `S` of places — the family's
-                      `isCompatible` only pins charpolys outside an unspecified finite set, so the
-                      `∀ q ∉ {2,3,ℓ}` form was unprovable; the density argument absorbs any finite
-                      `S` (new bridge: `toHeightOneSpectrumRingOfIntegersRat_injective`, distinct
-                      primes give distinct places, so a finite set of places excludes only finitely
-                      many primes in the auxiliary-prime selection). Proof ingredients consumed:
-                        - ✅· `IsHardlyRamified.three_adic` — B6c: trace(Frob_p) = 1 + p for p ≥ 5. DERIVED 2026-07-18 from
-                          exists_frobenius_triangular by LinearMap.trace_eq_matrix_trace +
-                          Matrix.trace_fin_two on the triangular form [[p, *], [0, 1]].
-                            - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular` — Frobenius triangularity for p ≥ 5. DERIVED 2026-07-18 by chaining
-                              exists_residual_isHardlyRamified → mod_three (ModThree.lean, RE-
-                              VENDORED into the tree) →
-                              exists_frobenius_triangular_of_residual_trivial_quotient.
-                                - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three` — mod-3 classification (DERIVED, re-vendored 2026-07-18): a mod-3
-                                  hardly ramified rep has a Γℚ-equivariant surjection onto the
-                                  trivial 1-dim rep. From mod_three_reducible +
-                                  mod_three_of_stable_line (Minkowski bookkeeping PROVEN).
-                                    - ✅· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter` — the stable line with quotient character unramified at 2 AND 3
-                                      — DERIVED 2026-07-18 from the at-3 Serre-swap leaf plus the
-                                      at-2 tame bookkeeping (`quotCharacter_unramified_at_two`,
-                                      itself fully proven).
-                                        - ❌· `exists_line_with_unramified_quotCharacter_at_three` — (sorry node — the connected–étale content) a reducible
-                                          mod-3 hardly ramified rep has a stable line with quotient
-                                          character unramified at 3: the IsFlatAt prolongation over
-                                          ℤ₃, unramified étale quotient of the connected–étale
-                                          sequence, and the Serre swap to the other stable line when
-                                          needed.
-                                    - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible` — mod-3 reducibility — DERIVED 2026-07-18: no stable submodule ⇒
-                                      irreducible (Slop.OddRep.isIrreducible_iff_forall); complex
-                                      conjugation is an involution with det = χ₃(c) = −1 and 2 ≠ 0
-                                      in k, so its 1-eigenspace is a line and OddAbsIrred upgrades
-                                      to absolute irreducibility, contradicting
-                                      `not_isAbsolutelyIrreducible`.
-                                        - ✅· `not_isAbsolutelyIrreducible` — no absolutely irreducible mod-3 hardly ramified
-                                          representation — DERIVED 2026-07-18: base change to 𝔽̄₃
-                                          (IsAlgClosure.equiv over ZMod 3, CharP k 3), matrix form
-                                          in a finBasis, projectivization to PGL₂(𝔽̄₃) with finite
-                                          image (the action factors through the finite End k V),
-                                          then the vendored Dickson classification feeds
-                                          `serre_elimination`.
-                                            - ✅· `serre_elimination` — the Serre elimination over the Dickson eight-case list
-                                              — cyclic case PROVEN 2026-07-18 (cyclic projective
-                                              image ⇒ abelian matrix image ⇒ scalar action ⇒ stable
-                                              line, contradiction); the rest dispatched to
-                                              `serre_elimination_noncyclic`.
-                                                - ✅· `serre_elimination_noncyclic` — the seven noncyclic Dickson cases — DERIVED (case
-                                                  dispatch to the semidirect and arithmetic leaves).
-                                                    - ❌· `serre_elimination_arith` — (sorry node — the deep arithmetic core)
-                                                      dihedral / A₄ / S₄ / A₅ / PSL₂(𝔽_{3^m}) /
-                                                      PGL₂(𝔽_{3^m}) eliminated via Serre's
-                                                      discriminant/conductor bounds over ℚ (Duke
-                                                      1987 §5.4); needs discriminant-bound machinery
-                                                      absent from mathlib.
-                                - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient` — ordinarity lifting. DERIVED 2026-07-18 from the global triangular
-                                  form + the cyclotomic-at-Frobenius leaf: the local Frobenius
-                                  matrix is the global form at the Frobenius image; the diagonal
-                                  value is p through the determinant (det of the triangular matrix =
-                                  χ, IsHardlyRamified.det, and the leaf), with the two Frobenius
-                                  spellings reconciled by congr + Subsingleton (Algebra ℚ _) — the
-                                  Rat-algebra uniqueness bridging the module-system elaboration
-                                  divergence.
-                                    - ❌· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient` — the global triangular form (sorry node — the Serre
-                                      classification core): given the residual trivial quotient, the
-                                      WHOLE 3-adic rep is an extension of the trivial character by χ
-                                      in a suitable basis. The 3-adic reducibility of Serre §5.4,
-                                      lifted through the complete local ring by flatness + tameness.
-                - ✅· `not_isIrreducible_of_charFrob_eq` — `not_isIrreducible_of_charFrob_eq` — Chebotarev + Brauer– Nesbitt — now
-                  (2026-07-16, `Chebotarev.lean` + proof in `Lift.lean`): the agreement set with `1
-                  ⊕ χ̄`'s charpolys is closed (module topology on `End` over `ZMod ℓ` is discrete ;
-                  coefficient maps continuous) and contains the dense Frobenius conjugates, so
-                  Brauer–Nesbitt applies. Children:
-                    - ✅· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density, topological form — now
-                      (2026-07-16) by the profinite limit argument (: cosets of fixing subgroups of
-                      finite subextensions are a neighborhood basis,
-                      `krullTopology_mem_nhds_one_iff`; the finite-level statement puts a Frobenius
-                      conjugate in every coset):
-                        - ❌· `exists_frobenius_conj_mem_coset` — `exists_frobenius_conj_mem_coset` — Chebotarev, finite level: for every
-                          finite subextension `E` of `K̄/K` and every `σ`, the coset `σ·Gal(K̄/E)`
-                          contains a conjugate of a `globalFrob v` with `v ∉ S` (existence form of
-                          Chebotarev for the Galois closure of `E/K`)
+- ❌· `fermatLastTheoremFor_of_five_le` — ∀ p, p.Prime → 5 ≤ p → FermatLastTheoremFor p` (`Fermat/PrimeFive.lean`) — proven from:
+- ❌· `FreyPackage` — + `FreyPackage.of_not_FermatLastTheoremFor_p_ge_5` + `FreyPackage.fermatLastTheoremFor_p_ge_5`
+  (`Fermat/FreyPackage.lean`, adapted from the FLT project, Apache 2.0) — a counterexample for prime
+  `p ≥ 5` normalizes to a Frey package (coprime, `a ≡ 3 mod 4`, `b` even). Fully proven, no sorry
+- ❌· `FreyPackage.freyCurve` — WeierstrassCurve ℚ` with `IsElliptic` instance, `Δ`, `b₂`, `b₄`, `c₄`, `j`, and
+  `FreyCurve.j_valuation_of_bad_prime` (`Fermat/FreyCurve.lean`, adapted from the FLT project).
+  Fully proven, no sorry
+- ❌· `FreyPackage.mazur` — (`Fermat/FLT/FreyCurve/Mazur.lean`) — the mod-p rep of the Frey curve is irreducible — now
+  (2026-07-16) from two explicit nodes in `Fermat/FLT/FreyCurve/MazurTorsion.lean` (own work),
+  following Serre (Duke 1987, §4.1):
+- ❌· `FreyPackage.exists_torsion_embedding_of_not_isIrreducible` — (2026-07-16) from the two nodes below: Serre's analysis produces full 2-torsion plus a rational
+  point of order p on some curve; the `embedding_assembly` combines them into an injective ℤ/2 ×
+  ℤ/2p via CRT
+- ❌· `FreyPackage.exists_two_torsion_and_p_point_of_not_isIrreducible` — (2026-07-16) from the disjunction node below plus the Frey 2-torsion
+- ❌· `FreyPackage.exists_p_point_of_not_isIrreducible` — (2026-07-16): the Minkowski input is discharged by the node below
+- ❌· `minkowski_character_trivial` — (2026-07-16) from the subgroup form below: the kernel is an open normal subgroup containing every
+  inertia image (`Subgroup.map_le_iff_le_comap` + `ker (χ∘res) = comap res (ker χ)`), hence
+  everything, so χ = 1
+- ❌· `open_normal_subgroup_eq_top_of_inertia_le` — Minkowski, subgroup form: (2026-07-16) from the inertia dictionary below plus mathlib's
+  discriminant theory (fixed field of the open normal kernel via the infinite Galois correspondence;
+  finite Galois number field by `isOpen_iff_finite`/`normal_iff_isGalois`; `1 < finrank` from `H ≠
+  ⊤`; `exists_not_isUnramifiedAt_int_of_isGalois` gives an everywhere-ramified prime `p`; going-up
+  lifts it; the dictionary contradicts)
+- ❌· `isUnramifiedAt_of_inertia_le_fixingSubgroup` — THE inertia dictionary: (2026-07-16, compiled in ONE shot from the pre-verified chain:
+  `liesOver_span_iff` for `LiesOver`, residue-field finiteness via the fraction-ring bridge,
+  `card_inertia_eq_ramificationIdxIn`, `ramificationIdxIn_eq_ramificationIdx`,
+  `ramificationIdx_eq_one_iff.mp`)
+- ❌· `inertia_eq_bot_of_le_fixingSubgroup` — the inertia transport (; whole chain now rests on the ONE local node below): the image of
+  `localInertiaGroup q` fixing `L` pointwise trivializes `Q.inertia (L ≃ₐ[ℚ] L)`. SPLIT EXECUTED
+  (2026-07-16): the transport is from `exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup` (SOME
+  prime above `q` has trivial inertia — 2026-07-16 via the VALUATION route, no decomposition groups
+  and no henselian lifting: the chosen embedding `ι` carries `L` into the finite subextension `M =
+  ℚ_q(ι L)` of `ℚ_qᵃˡᵍ`; `hle` + the `lift_map` put `M` inside the fixed field of the local inertia;
+  the local node below then makes `q` a uniformizer of `𝒪_M`; pulling `𝔪_M` back along the ring hom
+  `𝓞 L → 𝒪_M` induced by `ι` gives a prime `Q₀ ∋ q` with `e(Q₀|q) = 1` — if `e ≠ 1` then `q ∈ Q₀²`
+  (`ramificationIdx'_ne_one_iff`), so `q = q²c` in `𝒪_M`, making `q` a unit in a proper ideal — and
+  `#I(Q₀) = e = 1` closes via `card_inertia_eq_ramificationIdxIn`. Helper lemmas unconditionally:
+  `asIdeal_toHeightOneSpectrumRingOfIntegersRat` (`v_q = span q` in `𝓞 ℚ`) and
+  `maximalIdeal_adicCompletionIntegers_eq_span` (`𝔪(ℤ_qˆ) = span q`, via `intValuation_singleton` +
+  `maximalIdeal_eq_span_uniformizer`); rests on
+  `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`
+  (`Deformations/RepresentationTheory/LocalInertiaFixedField.lean` — 2026-07-16/17, Neukirch II.9.11
+  from scratch: a finite subextension `M/Kᵥ` of `Kᵥᵃˡᵍ` fixed pointwise by `localInertiaGroup v` has
+  `e(M/Kᵥ) = 1`. Proof as planned: Galois closure `N/Kᵥ`; `|I(N/Kᵥ)| = e(N/Kᵥ)` at each finite level
+  via `card_inertia_eq_ramificationIdxIn`, tower multiplicativity of `e`, finite-level inertia
+  surjectivity by counting, and profinite compactness lifting of finite-level inertia elements to
+  `localInertiaGroup v`) and `inertia_eq_bot_of_exists_prime_over` (conjugacy propagation —
+  2026-07-16: `exists_smul_eq_of_isGaloisGroup` gives transitivity on primes over `q`; the
+  conjugation identity `g ∈ inertia (σ • Q) ↔ σ⁻¹gσ ∈ inertia Q` is a short definitional argument
+  from `mem_inertia` + the pointwise-smul API `Ideal.IsPrime.smul`/`pointwise_smul_eq_comap`)
+- ❌· `FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski` — (2026-07-17) from the stable-line dichotomy leaf, the Galois descent for points, and the Vélu
+  quotient leaf (all `MazurTorsion.lean`)
+- ❌· `FreyPackage.stable_line_dichotomy_of_not_isIrreducible` — (2026-07-17) from the semistability leaf below + the character bookkeeping: the stable line
+  (`exists_stable_line_of_not_isIrreducible`) carries unit-valued characters
+  (`exists_subCharacter`/`exists_quotCharacter`, the scalar-action-on-rank-1 argument
+  `exists_unit_character_of_finrank_one`), with `det = χ₁χ₂`
+  (`det_eq_subCharacter_mul_quotCharacter` via `LinearMap.det_eq_det_mul_det`) `= ω̄` (the det node
+  + `cyclotomicCharacterModL_eq_toZMod`); kernels are open (they contain the open kernel of ρ,
+  `isOpen_setOf_galoisRep_eq_one` + `Subgroup.isOpen_mono`); Minkowski (hmink) kills the everywhere-
+  unramified character; `χ₁ = 1` fixes a nonzero `w₀ ∈ W` (a fixed point of exact order `p`), `χ₂ =
+  1` trivializes the quotient action. SPELLING GOTCHAS (all resolved): (a) quotient triviality must
+  be phrased via `W.mkQ`, not `ρ g v − v ∈ W` (HSub instance search sticks); (b)
+  `P.freyCurve`-instantiated nTorsion carries `Rat.commRing` vs the `Field.toCommRing` spelling
+  baked into `galoisRep`'s codomain — defeq at DEFAULT transparency but NOT at instance
+  transparency, so `letI`/`haveI` instances for the local spelling are invisible to TC search
+  against the baked spelling; the cure is general-`V` lemmas whose instance binders are pinned by
+  unification with the `ρbar` argument (pass `ρbar` FIRST, extra finiteness as a plain hypothesis,
+  never an instance binder)
+- ❌· `FreyPackage.subquotient_character_unramified` — (2026-07-17): away from `{2, p}` the whole representation kills inertia
+  (`FreyCurve.torsion_isUnramified`, transported by the new generic-`K` bridge
+  `character_localInertia_le_ker_of_isUnramifiedAt` + `Rat.subsingleton_ringHom`/`convert using 5`
+  to reconcile the local-vs-generic `algebraMap` spellings — the local ℚ-spelling and `toLocal`'s
+  generic one are NOT defeq-bridgeable because `Field.absoluteGaloisGroup.map` is unexposed; ring
+  homs out of `ℚ` are unique, so propositional bridging works); the unipotent-scalar lemmas
+  (`subCharacter_eq_one_of_sq_eq_zero`, `quotCharacter_eq_one_of_sq_eq_zero`, ) turn `(ρσ−1)² = 0`
+  into character-triviality
+- ❌· `FreyPackage.inertia_two_unipotent` — (2026-07-17): the Frey curve has multiplicative reduction at `2`
+  (`freyCurve_hasMultiplicativeReduction_at_two`, ), and the pointwise Tate unipotence leaf below
+  transports through `map_mem_inertiaSubgroup_of_mem_localInertiaGroup`, the `(A−1)² = A·A − A − A +
+  1` End-expansion (pointwise via `abel`), and the show-cast `⁄`-ambient collapse. SPELLING NOTE: a
+  direct `exact` across the generic-vs-`Rat` `algebraMap` spellings is impossible (unexposed
+  `IsAlgClosed.lift`); the working recipe is atom-level `rfl`-bridges (`hb`) for the representation-
+  vs-`Point.map` steps plus `convert hp using 8` with closers `rfl`, `Subsingleton.elim`, and
+  `congrArg` of `Field.absoluteGaloisGroup.map` (hom-level AND `σ`-applied) over
+  `Rat.subsingleton_ringHom`
+- ❌· `WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction` — (`FreyCurve/Semistable.lean`, stated 2026-07-17) — pointwise Tate unipotence: multiplicative
+  reduction at `q ≠ p` (`q = 2` allowed, no `p ∣ v(j)`) makes every inertia element at a valuation
+  subring over `ℤ_(q)` act with `σ(σP) − σP − σP + P = 0` on the `p`-torsion (to be closed against
+  the Tate-uniformization leaves)
+- ❌· `FreyPackage.subquotient_character_unramified_at_p` — (stated 2026-07-17) — flat/ordinary at `p`: one of the two characters is unramified at `p` itself
+  (connected-étale sequence in the ordinary/ multiplicative case; supersingular excluded by
+  reducibility)
+- ❌· `FreyPackage.exists_quotient_curve_point` — (stated 2026-07-17) — the Vélu quotient leaf: a stable line with trivial quotient action produces
+  `E'/ℚ` with full rational 2-torsion and a rational `p`-point (quotient by the rational subgroup;
+  quantified over Weierstrass models)
+- ❌· `WeierstrassCurve.exists_point_eq_baseChange_of_fixed` — (2026-07-17): Galois descent for points: a point of `E(ℚ̄)` fixed by every `σ ∈ Γℚ` is the base
+  change of a rational point (`InfiniteGalois.mem_range_algebraMap_iff_fixed` on the coordinates +
+  `baseChange_nonsingular` descent + `Point.map_injective` order transfer)
+- ❌· `exists_stable_line_of_not_isIrreducible` — `exists_stable_line_of_not_isIrreducible` (`Chebotarev.lean`, 2026-07-16) — a non-irreducible
+  2-dim mod-ℓ rep has a Galois-stable line
+- ❌· `FreyPackage.freyCurve_two_torsion_embedding` — (2026-07-16): the Frey model has rational 2-torsion points (0, 0) and (aᵖ/4, −aᵖ/8) (the quadratic
+  factors as (x − aᵖ/4)(x + bᵖ/4)); they are distinct, of order 2 (fixed by negation `negY`), and
+  generate an injective (ℤ/2)² →+ E(ℚ) via two `ZMod.lift`s and a coprod, with injectivity by the
+  four-element case analysis
+- ❌· `embedding_assembly` — ( 2026-07-16): in an abelian group, an injective (ℤ/2)² and an element of order exactly p (odd
+  prime) assemble into an injective ℤ/2 × ℤ/2p (`ZMod.chineseRemainder`; the parts are separated by
+  the coprime annihilators 2 and p)
+- ❌· `WeierstrassCurve.mazur_torsion_bound` — Mazur's torsion theorem, weak form: no elliptic curve over ℚ has a subgroup of rational points ≅
+  ℤ/2 × ℤ/2p for p ≥ 5 (primality dropped as unneeded) — now (2026-07-16) from the faithful
+  classification below: images of an injective hom from the finite group ℤ/2 × ℤ/2p are torsion
+  (finite additive order), the hom corestricts into the torsion submodule, and 4p ≥ 20 > 16 ≥ the
+  order of every group in Mazur's list (`Nat.card` comparison)
+- ❌· `WeierstrassCurve.mazur_classification` — Mazur's torsion theorem, stated faithfully: the torsion submodule (`Submodule.torsion ℤ E(ℚ)`) is
+  ≃+ to one of the fifteen groups ℤ/n (n ∈ {1,…,10,12}) or ℤ/2 × ℤ/2m (m ∈ {1,…,4}). Mazur, Publ.
+  Math. IHÉS 47 (1977); Invent. Math. 44 (1978)
+- ❌· `FreyPackage.galoisRep_not_irreducible` — (B4, `Fermat/PrimeFive.lean`) — now (2026-07-16) from two explicit nodes, mirroring the FLT
+  project's hardly-ramified plan (their B5/B6, stated in Lean here before upstream):
+- ❌· `FreyCurve.torsion_isHardlyRamified` — (`GaloisRepresentation/HardlyRamified/Frey.lean`) — now (2026-07-16) as the structure constructor
+  applied to the four defining conditions, each an explicit node in
+  `HardlyRamified/FreyConditions.lean` (own work):
+- ❌· `FreyCurve.torsion_det` — det ρ̄ = mod-p cyclotomic character — now (2026-07-16) via the Weil pairing route
+  (`EllipticCurve/WeilPairing.lean`, own work):
+- ❌· `WeilPairing.exists_weilPairing` — the Weil pairing: (2026-07-17) as the coordinate determinant form in a `finBasis` (`#E[p] = p²` ⟹
+  rank 2), Galois-scaled by `det ρ` (`pairing_map_eq_det_smul`) = the cyclotomic character by the
+  det node below
+- ❌· `det_galoisRep_eq_cyclotomic` — `det_galoisRep_eq_cyclotomic` — (2026-07-17): `det ρ̄` and `χ̄` are continuous conjugation-
+  invariant `ZMod p`-valued functions on `Γ ℚ` (continuity of `det ∘ ρ` from discreteness of `End`
+  via `discreteTopology_moduleTopology`; `χ̄`-continuity in `Chebotarev.lean`); they agree at
+  `Frob_q` for almost all `q` (the leaf below + `cyclotomicCharacterModL_globalFrob`, ), and the
+  Frobenius conjugacy classes are dense (`dense_conjClasses_globalFrob`, rooted in the Chebotarev
+  node), so the closed agreement set is everything. Bridge `cyclotomicCharacterModL_eq_toZMod` (`χ̄
+  = toZMod ∘ χ`) via `modularCyclotomicCharacter.unique` + `toZMod_eq_ringEquivCongr_comp_toZModPow`
+- ❌· `WeilPairing.exists_frobenius_reduction_model` — reduction transfer at good primes (PROVEN 2026-07-20, axioms clean): the full Neron-Ogg-
+  Shafarevich reduction equivalence psi = identL . redL . tau . psi_0 : E[p](Q-bar) = Wbar[p](F_q-
+  bar) with Frobenius compatibility psi(rho(Frob_q) x) = frobeniusTorsionEnd(psi x). Built in-proof:
+  integral model + minimality + HasGoodReduction at v; torsion transport to the completed closure
+  (p^2-counting); the reduction map redFun (coordinatewise residue through localValuationSubring)
+  proven additive by the affine slope case analysis with residue-injectivity exclusions (Odd p),
+  injective, and bijective by counting over the residue field -- proven algebraically closed by
+  monic root-lifting; residue field identified with AlgebraicClosure (ZMod q) via CharP q + kappa_v
+  = ZMod q + algebraicity of integral residues (IsAlgClosure.equiv); Frobenius leg by
+  isArithFrobAt_adicArithFrob (residue of Frob z = (residue z)^q), lift_map intertwining, sigma-
+  commutation of the variable-change formulas, and frobenius naturality.
+- ❌· `WeilPairing.exists_weilPairing_frobenius` — Frobenius-twisted ZMod p Weil pairing over F_q (DERIVED 2026-07-21 from exists_weilPairing_mu by
+  discrete logarithm: primitive root via HasEnoughRootsOfUnity, zmodEquivZPowers, Frobenius
+  naturality becomes q-scaling since frobAlgHom is x^q).
+- ❌· `WeilPairing.det_frobeniusTorsionEnd` — Frobenius determinant over a finite field (DERIVED 2026-07-20 from the Weil pairing): the q-power
+  Frobenius scales the pairing by q, and det_eq_of_conj (the proven 2-dimensional alternating-form
+  linear algebra) gives det = q; the rank-2 input is p_torsion_rank over the separably closed F_q-
+  bar with (p : F_q-bar) != 0 from p != q.
+- ❌· `det_galoisRep_globalFrob` — Frobenius determinant at good primes (DECOMPOSED 2026-07-20): the proof now conjugates the global
+  Frobenius action to the finite-field side via the (sorried) reduction-transfer model and applies
+  the (sorried) finite-field Frobenius determinant, with LinearEquiv.conj + LinearMap.det_conj
+  closing the transport. New machinery: frobAlgHom (the q-power Frobenius of F_q-bar as a ZMod
+  q-AlgHom, Fermat little theorem for the commutation) and frobeniusTorsionEnd (its ZMod p-linear
+  action on p-torsion, via Point.map + endRestrict + toZModLinearMap, mirroring galoisRep).
+- ❌· `WeilPairing.pairing_map_eq_det_smul` — + `WeilPairing.det_eq_of_conj` — : on a 2-dimensional space an alternating form transforms under
+  any endomorphism by the determinant (basis + 2×2 computation), so scaling by `c` forces `det = c`
+- ❌· `FreyCurve.torsion_isUnramified` — unramified outside {2, p}: (2026-07-16) by the case split `q ∣ abc` or not, from the two nodes
+  below
+- ❌· `FreyCurve.torsion_isUnramified_of_good` — (2026-07-16) from the two `FreyCurve/Semistable.lean` nodes below
+- ❌· `FreyPackage.freyCurve_hasGoodReduction_of_not_dvd` — (`FreyCurve/Semistable.lean`, own work): (2026-07-16) — at odd `q ∤ abc` the Frey equation is
+  `q`-integral (integrality via `freyCurveInt` + `FreyCurve.map`) with unit discriminant
+  `(abc)^{2p}/2⁸` (numerator and denominator prime to `q`, hence a unit of `ℤ_(q)`; adic valuation
+  `1` via `mker_valuation_eq_isUnitSubmonoid`), hence minimal (valuation `1` is maximal among
+  integral models) with good reduction over `ℤ_(q) = Localization.AtPrime`
+- ❌· `WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction` — (`FreyCurve/Semistable.lean`, own work): (2026-07-17) — the NOS local-global glue: good reduction
+  at `q ≠ p` gives `IsUnramifiedAt q` for the mod-`p` torsion rep, closed against the NOS leaf below
+  via the embedded-valuation-subring machinery + spelling bridge
+  (`map_mem_inertiaSubgroup_of_mem_localInertiaGroup`, `LocalInertiaFixedField.lean`)
+- ❌· `torsion_unramified_of_good_reduction` — `torsion_unramified_of_good_reduction` (`KnownIn1980s/EllipticCurves/GoodReduction.lean`):
+  2026-07-17, AXIOM-CLEAN — the NOS easy direction for odd primes `n` (hypotheses `(hp : n.Prime)
+  (hodd : Odd n)` added and threaded through `isUnramifiedAt_of_hasGoodReduction` and
+  `FreyCurve.torsion_isUnramified_of_good`; Frey callers supply oddness from `P.hp5`). Proof:
+  inertia fixes residues (`MonoidHom.mem_ker` + `toRingAut` + `ResidueField.residue_smul`); a
+  torsion point `some x y h` has integral coordinates
+  (`torsion_abscissa_mem`/`torsion_ordinate_mem`, Cassels); `σP` is again `n`-torsion with the same
+  residues, so `torsion_abscissa_residue_ne` (separable reduction of `preΨ'ₙ`) forces `σx = x` and
+  `torsion_ordinate_eq_of_residue_eq` (the `ψ₂`-Bézout y-quadratic argument) forces `σy = y`; `congr
+  1` closes the `Point.some` equality via `Affine.Point.map_some _ h`
+- ❌· `FreyCurve.torsion_isUnramified_of_multiplicative` — (2026-07-16) from the arithmetic (`freyCurve_hasMultiplicativeReduction_of_dvd` +
+  `j_valuation_of_bad_prime`) and the Tate glue node below
+- ❌· `FreyPackage.freyCurve_hasMultiplicativeReduction_of_dvd` — (`FreyCurve/Semistable.lean`, own work): (2026-07-16) — at odd `q ∣ abc` the equation is
+  `q`-integral, `c₄ = c^{2p} - (ab)^p` is prime to `q` (pairwise coprimality forces exactly one of
+  `ab`, `c` divisible by `q`), so `v(c₄) = 1` (minimality by the unit-`c₄` Kraus–Laska criterion)
+  while `Δ = (abc)^{2p}/2⁸` lies in the maximal ideal
+- ❌· `WeierstrassCurve.isUnramifiedAt_of_hasMultiplicativeReduction` — (`FreyCurve/Semistable.lean`, own work): (2026-07-17) — the Tate glue: multiplicative reduction at
+  odd `q ≠ p` with `p ∣ v_q(j)` ⟹ `IsUnramifiedAt q`, by the same embedded-subring transport as the
+  good case, against the new pure-Tate content leaf below
+- ❌· `FreyCurve.torsion_isFlat` — flat at p: (2026-07-16) by the case split `p ∣ abc` or not, from the two nodes below
+- ❌· `FreyCurve.torsion_isFlat_of_good` — (2026-07-16) from the arithmetic node `freyCurve_hasGoodReduction_of_not_dvd` (applied at `q :=
+  p`) and the flat glue node below
+- ❌· `WeierstrassCurve.isFlatAt_of_hasGoodReduction` — (`FreyCurve/Semistable.lean`, own work): (2026-07-17) — good reduction at `p` ⟹ `IsFlatAt p` for
+  the mod-`p` torsion rep, from the leaf below plus the shared flat transport
+  `GaloisRep.isFlatAt_of_dvr_package` (see its own subtree entry under the multiplicative case)
+- ❌· `torsion_flat_of_good_reduction` — `torsion_flat_of_good_reduction` (`KnownIn1980s/EllipticCurves/Flat.lean`, 2026-07-16): good
+  reduction over a DVR makes the `n`-torsion a finite flat group scheme (Hopf algebra, finite flat,
+  étale generic fibre, equivariant points isomorphism). Plus the division-polynomial node
+  `isCoprime_Φ_ΨSq` — restated for fields and directly (2026-07-17; the former `resultant_Φ_ΨSq`
+  node was DELETED, see the session-6 log)
+- ❌· `FreyCurve.torsion_isFlat_of_multiplicative` — (2026-07-16) from the arithmetic (`freyCurve_hasMultiplicativeReduction_of_dvd` at `q := p` +
+  `j_valuation_of_bad_prime`) and the glue node below
+- ❌· `WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction` — (`FreyCurve/Semistable.lean`, own work): (2026-07-17) — the peu-ramifiée glue: multiplicative
+  reduction at `p` with `p ∣ v_p(j)` ⟹ `IsFlatAt p`, from the new content leaf below plus the shared
+  flat transport
+- ❌· `torsion_flat_of_multiplicative_reduction` — `torsion_flat_of_multiplicative_reduction` (`FreyCurve/Semistable.lean`, stated 2026-07-17):
+  multiplicative reduction over `ℤ_(p)` with `p ∣ v_p(j)` produces a finite flat Hopf algebra over
+  `ℤ_(p)` (étale generic fibre) whose `ℚ̄`-points are `Γ ℚ`-equivariantly the `p`-torsion — the peu-
+  ramifiée package in the same DVR-`∃`-shape as the good-reduction leaf (Tate curve + Kummer theory
+  content)
+- ❌· `GaloisRep.isFlatAt_of_dvr_package` — (`Deformations/RepresentationTheory/FlatProlongation.lean`) — the shared flat transport,
+  (2026-07-17): a DVR package over `ℤ_(q)` with equivariant `WithConv`-points iso onto the rep's
+  space (over a field `A`) gives `IsFlatAt q`. The open-ideal quantifier runs over the two ideals of
+  `A`: `⊤` via `hasFlatProlongationAt_of_subsingleton` ( — trivial Hopf algebra `𝒪ᵥ`), `⊥` via the
+  transport `HasFlatProlongationAt.of_addEquiv` across `M ≃+ (A ⧸ ⊥) ⊗[A] M` (`AlgEquiv.quotientBot`
+  + `baseChange_tmul`)
+- ❌· `GaloisRep.hasFlatProlongationAt_of_dvr_package` — (same file) — the core points comparison, (2026-07-17): instantiation of the general-`K` core
+  `hasFlatProlongationAt_of_hopf_package` at the proven arc `ℤ_(q) → ℚ → Kᵥ`
+  (`localizationToAdicCompletionIntegers`). The ENTIRE shared flat transport is now ; the two
+  `IsFlatAt` glue nodes rest only on the two content leaves
+- ❌· `hasFlatProlongationAt_of_hopf_package` — `hasFlatProlongationAt_of_hopf_package` ( 2026-07-17): `G := 𝒪ᵥ ⊗[R] H` (Hopf/flat/finite by base
+  change; étale generic fibre by `cancelBaseChange` twice + étale base change), points by
+  `dvrPointsEquiv` (`AlgHom.liftEquiv` three times + `algHomEquivOfFinite`), convolution and `Γ
+  Kᵥ`-equivariance by the layer lemmas below
+- ❌· `algHomEquivOfFinite` — layer C `algHomEquivOfFinite` + `algebraicClosureMapAlgHom` +
+  `mem_range_algebraicClosureMap_of_isIntegral` ( 2026-07-17): postcomposition with the embedding `ι
+  : ℚ̄ → Kᵥᵃˡᵍ` is a bijection on points of any finite `ℚ`-algebra
+- ❌· `FreyCurve.torsion_isTameAtTwo` — (2026-07-16) from the arithmetic and the tame glue node below
+- ❌· `FreyPackage.freyCurve_hasMultiplicativeReduction_at_two` — (`FreyCurve/Semistable.lean`, own work): (2026-07-16) — the Frey model is semistable at 2 by
+  design: `c₄ = c^{2p} - (ab)^p` is odd (`a ≡ 3 mod 4`, `b` even force `c` odd), giving `v(c₄) = 1`
+  and Kraus–Laska minimality; `Δ = 2^{2p-8}(ab'c)^{2p}` (with `b = 2b'`) is in the maximal ideal
+  since `2p > 8`
+- ❌· `WeierstrassCurve.isTameAtTwo_of_hasMultiplicativeReduction` — tame quotient at 2 from multiplicative reduction, now assembled by the split/nonsplit case split
+  over the transferred reduction (`hasMultiplicativeReduction_padic`): the split half is the Tate
+  exponent quotient, the nonsplit half is the leaf below.
+- ❌· `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified` — B5 `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
+  (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work) — now (2026-07-16) from three
+  explicit nodes in `HardlyRamified/Lift.lean` (own work), following Buzzard's 2026 EPSRC Lecture 4
+  (his B5a/B5b/B5c):
+- ❌· `exists_hardlyRamifiedLift` — B6a `exists_hardlyRamifiedLift` — an irreducible hardly ramified mod-ℓ rep (ℓ ≥ 5) lifts to a
+  hardly ramified ℓ-adic rep over the integers `O` of a finite extension of `ℚ_ℓ` (bundled in
+  `structure HardlyRamifiedLift`: `O` + framed rep + reduction map + Frobenius-charpoly
+  compatibility). Deformation theory / modularity lifting without residual modularity
+- ❌· `residual_charFrob_eq` — B6bc `residual_charFrob_eq` — the residual Frobenius charpolys of a liftable rep are those of `1 ⊕
+  χ̄` (`X² − (q+1)X + q`) — now (2026-07-16) from the faithful split ( from the FLT project's newer
+  layer):
+- ❌· `IsHardlyRamified.mem_isCompatible` — B6b `IsHardlyRamified.mem_isCompatible` (`HardlyRamified/Family.lean`, ; conclusion named
+  `IsInHardlyRamifiedFamily` as a marked ) — a hardly ramified ℓ-adic rep lives in a compatible
+  family (`GaloisRepFamily.lean`, defs, ) all of whose odd members are hardly ramified. STRENGTHENED
+  (2026-07-16): the package now records injectivity of the coefficient-ring embeddings into `ℚ̄_p` —
+  an audit of the glue's proof skeleton showed the upstream statement is too weak for the charpoly
+  descent (algebraMap from a domain to a field need not be injective); true for the intended
+  subrings of `ℚ̄_p`
+- ❌· `residual_charFrob_eq_of_family` — `residual_charFrob_eq_of_family` (own work, `Lift.lean`) — compatibility BOOKKEEPING — now
+  (2026-07-16): extract the 3-adic member via the number-field embedding; its charpoly at Frob_q is
+  `X² − (1+q)X + q` by B6c's trace + the cyclotomic determinant at Frobenius + the 2-dim
+  reconstruction (generalized to comm rings); transport through baseChange-conj to the family,
+  descend to the coefficient field by injectivity of the embedding, ride compatibility to the ℓ-adic
+  member, descend to `O` by the strengthened-B6b injectivity, and reduce through `charFrob_compat`.
+  Exceptional set: `S₀ ∪ {2-place, 3-place}`. Consumes B6c and the ℓ-adic Frobenius-value node.
+  AUDIT RESTATEMENT (2026-07-16): the conclusion (and B6bc's, and the Chebotarev–Brauer–Nesbitt
+  hypothesis) now carries a finite exceptional set `S` of places — the family's `isCompatible` only
+  pins charpolys outside an unspecified finite set, so the `∀ q ∉ {2,3,ℓ}` form was unprovable; the
+  density argument absorbs any finite `S` (new bridge:
+  `toHeightOneSpectrumRingOfIntegersRat_injective`, distinct primes give distinct places, so a
+  finite set of places excludes only finitely many primes in the auxiliary-prime selection). Proof
+  ingredients consumed:
+- ❌· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter` — the stable line with quotient character unramified at 2 AND 3 — DERIVED 2026-07-18 from the at-3
+  Serre-swap leaf plus the at-2 tame bookkeeping (`quotCharacter_unramified_at_two`, itself fully
+  proven).
+- ❌· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible` — mod-3 reducibility — DERIVED 2026-07-18: no stable submodule ⇒ irreducible
+  (Slop.OddRep.isIrreducible_iff_forall); complex conjugation is an involution with det = χ₃(c) = −1
+  and 2 ≠ 0 in k, so its 1-eigenspace is a line and OddAbsIrred upgrades to absolute irreducibility,
+  contradicting `not_isAbsolutelyIrreducible`.
+- ❌· `GaloisRepresentation.IsHardlyRamified.mod_three` — mod-3 classification (DERIVED, re-vendored 2026-07-18): a mod-3 hardly ramified rep has a Γℚ-
+  equivariant surjection onto the trivial 1-dim rep. From mod_three_reducible +
+  mod_three_of_stable_line (Minkowski bookkeeping PROVEN).
+- ❌· `valued_natCast_adicCompletionIntegers_eq_one` — the completed valuation of 3 at the p-place is 1 — PROVEN 2026-07-18 (class-6 numeral bridge
+  closed: the Algebra (𝓞 ℚ) Kᵥ instance diamond pinned to instAlgebraAdicCompletion, discharged by
+  map_natCast + algebraMap.coe_natCast).
+- ❌· `adicArithFrob_rootsOfUnity_pow` — the arithmetic Frobenius raises 3-power roots of unity to the p-th power — FULLY PROVEN 2026-07-18
+  (IsArithFrobAt on the integral closure + residue cardinality via the moved
+  `natCard_residue_quotient_toHeightOneSpectrum`).
+- ❌· `cyclotomicCharacter_adicArithFrob` — the 3-adic cyclotomic character at an arithmetic Frobenius = p. DERIVED 2026-07-18 from the roots-
+  of-unity action leaf by 3-adic continuity: PadicInt.ext_of_toZModPow level-by-level,
+  cyclotomicCharacter.toZModPow + modularCyclotomicCharacter.unique identifying each level with p
+  from the action; HasEnoughRootsOfUnity instances from RootsOfUnity.AlgebraicallyClosed.
+- ❌· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient` — the global triangular form (sorry node — the Serre classification core): given the residual
+  trivial quotient, the WHOLE 3-adic rep is an extension of the trivial character by χ in a suitable
+  basis. The 3-adic reducibility of Serre §5.4, lifted through the complete local ring by flatness +
+  tameness.
+- ❌· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient` — ordinarity lifting. DERIVED 2026-07-18 from the global triangular form + the cyclotomic-at-
+  Frobenius leaf: the local Frobenius matrix is the global form at the Frobenius image; the diagonal
+  value is p through the determinant (det of the triangular matrix = χ, IsHardlyRamified.det, and
+  the leaf), with the two Frobenius spellings reconciled by congr + Subsingleton (Algebra ℚ _) — the
+  Rat-algebra uniqueness bridging the module-system elaboration divergence.
+- ❌· `GaloisRepresentation.IsHardlyRamified.isTameAtTwo_baseChange_residue` — tameness-at-2 transfer — PROVEN 2026-07-18, sorry-free. π̄ := AlgebraTensorModule.rid ∘ baseChange
+  π (surjective via c ⊗ v₀ over a preimage of 1); δ̄ := (δ.baseChange kk).conj rid; equivariance by
+  TensorProduct.induction_on with the R-linearity smul juggle; the inertia and quadratic conditions
+  transfer through the monoid-hom structure (map_mul + baseChange of 1).
+- ❌· `GaloisRepresentation.IsHardlyRamified.flat_space_equiv_residue` — the residual space identification — PROVEN 2026-07-18, sorry-free. φ := quotientBot.trans
+  (quotientKerEquivOfSurjective.symm.trans quotEquivOfEq hker), R-linearized via hφalg (φ ∘
+  algebraMap = algebraMap, each component rfl); e := cancelBaseChange.trans (congr φlin refl);
+  equivariance by nested TensorProduct.induction_on, the tmul case closing on rfl (both sides are
+  φ(d•c) ⊗ ρ(g)v definitionally).
+- ❌· `GaloisRepresentation.IsHardlyRamified.hasFlatProlongationAt_of_subsingleton` — degenerate flatness — PROVEN 2026-07-18, sorry-free: G := 𝒪ᵥ with mathlib's HopfAlgebra R R self-
+  instance; étale generic fibre by the FormallyEtale base-change instance; the AlgHom-points are a
+  subsingleton (every Kᵥ-algebra map out of Kᵥ ⊗ 𝒪ᵥ ≅ Kᵥ is the canonical one, by ext), matched with
+  the subsingleton space by the zero equivariant map.
+- ❌· `GaloisRepresentation.IsHardlyRamified.isFlatAt_baseChange_residue` — flatness transfer — now FULLY SORRY-FREE (both leaves proven): ⊥-case transported through
+  HasFlatProlongationAt.of_equiv along the proven space identification; ⊤-case by the proven
+  trivial-group-scheme leaf.
+- ❌· `GaloisRepresentation.IsHardlyRamified.exists_residue_package` — the residue package — PROVEN 2026-07-18, sorry-free [propext, Classical.choice, Quot.sound]. kk :=
+  ResidueField R: 3 ∈ 𝔪 by Nakayama over ℤ₃ (eq_bot_of_le_smul_of_le_jacobson_bot);
+  CompactSpace/T2Space R by transporting ℤ₃ⁿ along chooseBasis.equivFun (continuous both ways by
+  IsModuleTopology.continuous_of_linearMap); 𝔪 open + residue field finite by
+  IsLocalRing.isOpen_maximalIdeal / finite_residueField_of_compactSpace (Noetherian via
+  IsNoetherianRing.of_finite); discrete topology on kk with IsTopologicalRing; residue map
+  continuous (open cosets), giving ContinuousSMul; scalar tower rfl; rank via
+  Module.rank_baseChange.
+- ❌· `GaloisRepresentation.IsHardlyRamified.exists_residual_isHardlyRamified` — residual hardly-ramifiedness — FULLY SORRY-FREE 2026-07-18: residue package (Nakayama +
+  compactness transport) + det transfer (det_baseChange) + unramifiedness (base-change instance) +
+  flatness transfer (of_equiv + space identification + trivial scheme) + tameness transfer (rid ∘
+  baseChange π, conj δ). The mod-3 reduction step of B6c is complete.
+- ❌· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular` — Frobenius triangularity for p ≥ 5. DERIVED 2026-07-18 by chaining exists_residual_isHardlyRamified
+  → mod_three (ModThree.lean, RE-VENDORED into the tree) →
+  exists_frobenius_triangular_of_residual_trivial_quotient.
+- ❌· `IsHardlyRamified.three_adic` — B6c: trace(Frob_p) = 1 + p for p ≥ 5. DERIVED 2026-07-18 from exists_frobenius_triangular by
+  LinearMap.trace_eq_matrix_trace + Matrix.trace_fin_two on the triangular form [[p, *], [0, 1]].
+- ❌· `not_isIrreducible_of_charFrob_eq` — `not_isIrreducible_of_charFrob_eq` — Chebotarev + Brauer– Nesbitt — now (2026-07-16,
+  `Chebotarev.lean` + proof in `Lift.lean`): the agreement set with `1 ⊕ χ̄`'s charpolys is closed
+  (module topology on `End` over `ZMod ℓ` is discrete ; coefficient maps continuous) and contains
+  the dense Frobenius conjugates, so Brauer–Nesbitt applies. Children:
+- ❌· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density, topological form — now (2026-07-16) by the
+  profinite limit argument (: cosets of fixing subgroups of finite subextensions are a neighborhood
+  basis, `krullTopology_mem_nhds_one_iff`; the finite-level statement puts a Frobenius conjugate in
+  every coset):
+- ❌· `exists_frobenius_conj_mem_coset` — `exists_frobenius_conj_mem_coset` — Chebotarev, finite level: for every finite subextension `E` of
+  `K̄/K` and every `σ`, the coset `σ·Gal(K̄/E)` contains a conjugate of a `globalFrob v` with `v ∉
+  S` (existence form of Chebotarev for the Galois closure of `E/K`)
+- ❌· `not_isIrreducible_of_charpoly_eq` — `not_isIrreducible_of_charpoly_eq` — Brauer–Nesbitt, 2-dim mod-ℓ instance — SORRY-FREE
+  (2026-07-16): Cayley–Hamilton turns the charpoly hypothesis into `(ρg − 1)(ρg − χ̄g) = 0`; on `H
+  := ker χ̄` every element is unipotent, Kolchin gives a nonzero `H`-fixed space, stable under Γ (H
+  normal); if proper it refutes irreducibility (`not_isIrreducible_of_invariant_submodule`, via
+  `Subrepresentation`); if everything, the image commutes (commutators die in H) and the common-
+  eigenvector lemma yields an invariant line. Children (both proven):
+- ❌· `BrauerNesbitt.exists_fixed_of_unipotent` — Kolchin, 2-dim: a group of unipotent endomorphisms has a common nonzero fixed vector —
+  (2026-07-16, ). Route: matrix helpers `trace_eq_zero_and_det_eq_zero_of_sq_eq_zero` (square-zero
+  2×2 has zero trace/det, entry computation) and `sandwich_of_det_eq_zero` (rank-one identity `N₀NN₀
+  = tr(NN₀)•N₀`); unipotency of `ρ g`, `ρ g₀`, `ρ (g g₀)` forces `tr(NN₀) = 0`, so `n₀ (ρ g − 1) n₀
+  = 0`; the line `range n₀ = ker n₀` is preserved with square-zero scalar action, hence fixed
+  pointwise
+- ❌· `BrauerNesbitt.exists_common_eigenvector_of_commuting` — a commuting family annihilated by split quadratics on a 2-dim space has a common eigenvector —
+  (2026-07-16, ): all-scalar case is trivial; otherwise a non-scalar member's eigenspace `ker (f₀ −
+  a)` is nonzero (else `f₀ − b = 0` by injectivity), proper, hence 1-dimensional, preserved by
+  commutativity, and its generator is the common eigenvector
+- ❌· `cyclotomicCharacterModL_globalFrob` — `cyclotomicCharacterModL_globalFrob` — χ̄(Frob_q) = q for q ≠ ℓ — now (2026-07-16) by mod-ℓ
+  reduction (`cyclotomicCharacter.spec` at n = 1 + `modularCyclotomicCharacter.unique`) from:
+- ❌· `cyclotomicCharacter_globalFrob` — `cyclotomicCharacter_globalFrob` — the ℓ-adic cyclotomic character evaluates to q at `globalFrob
+  q` (q ≠ ℓ) — now (2026-07-16, the hardest assembly of the session): `lift_map` transports the
+  action to `ℚ_qᵃˡᵍ`; `ℓ^k`-th roots of unity are integral (`IsIntegral.of_pow`);
+  `apply_of_pow_eq_one` at the maximal ideal of the integral closure gives the q-power action
+  (exponent = q by the residue node, side condition by the unit node); descend by injectivity of the
+  chosen embedding (forcing the adic-completion algebra instance against the `ratAlgebra` diamond);
+  conclude by `modularCyclotomicCharacter.unique` at every level and `PadicInt.ext_of_toZModPow`.
+  Serves the glue at ℓ = 3 and ChebBN at ℓ. Children: DERIVATION MAPPED (2026-07-16), all
+  ingredients in-tree: (i) equivariance of `absoluteGaloisGroup.map` along the chosen embedding —
+  ALREADY in the tree as `Field.absoluteGaloisGroup.lift_map` (`AbsoluteGaloisGroup.lean`), and
+  `AlgebraicClosure.map` is definitionally `IsAlgClosed.lift` (`Deformations/Lemmas.lean`); (ii)
+  `natCard_residue_quotient_toHeightOneSpectrum` — (2026-07-16): the contraction of the maximal
+  ideal is the maximal ideal (`Ideal.IsMaximal.under` on the integral closure + local uniqueness);
+  transport to `ℤ_[q]` by `adicCompletionIntegers.padicIntEquiv` (maximal ideals correspond via
+  `Ideal.comap_symm`), the `ℤ_[p]` residue count is `p` (`toZMod` surjective with kernel `𝔪`), and
+  `natGenerator (q-place) = q` via `span_natGenerator` and the `ringOfIntegersEquiv` bridge. WITH
+  THIS, `cyclotomicCharacter_globalFrob` and its mod-ℓ corollary are UNCONDITIONALLY ([propext,
+  Classical.choice, Quot.sound]); the Chebotarev–Brauer–Nesbitt chain now rests on the single leaf
+  `exists_frobenius_conj_mem_coset`; (ii′) `isUnit_natCast_adicCompletionIntegers` — (2026-07-16): a
+  valuation-subring unit is an element of valuation one; the completion's valuation restricts to the
+  global one, which on integers is the `intValuation`, equal to one iff `p ∉ v` — i.e. `p ≠ q` by
+  `natCast_mem_toHeightOneSpectrum_iff`; (iii) `AlgHom.IsArithFrobAt.apply_of_pow_eq_one` (
+  `Frobenius.lean`): a Frobenius sends m-th roots of unity to their q-th powers when q ∤ m — apply
+  at m = ℓ^k via `isArithFrobAt_adicArithFrob`; (iv) transport through the embedding and conclude by
+  `cyclotomicCharacter.unique`-mod-ℓ^k plus `PadicInt.ext_of_toZModPow`
+- ❌· `toZMod_eq_ringEquivCongr_comp_toZModPow` — `toZMod_eq_ringEquivCongr_comp_toZModPow` — (kernel rigidity of ring homs into `ZMod p`)
+- ❌· `n_torsion_finite` — `n_torsion_finite` — (re-derived 2026-07-16, second route): the torsion count `card_torsionBy` is
+  `n² > 0`, and positive `Nat.card` forces finiteness. Statement specialized to separably closed
+  characteristic-zero fields — the only fields at which the tree uses it (`galoisRep` gained
+  `[CharZero K]`). The former division-polynomial route (`TorsionFinite.lean` with nodes
+  `eval_ΨSq_eq_zero_of_smul_eq_zero`, `ΨSq_ne_zero_of_charDvd`, covering arbitrary characteristic)
+  is SUPERSEDED and removed — the frontier shrinks by two nodes
+- ❌· `n_torsion_card` — `n_torsion_card` (= n² over sep. closed fields, `(n : k) ≠ 0`) — now (2026-07-16,
+  `TorsionCard.lean`, own work): `card_torsionBy` by strong induction peeling off the minimal prime
+  factor — multiplication by `p := n.minFac` restricts to a surjection `E[n] → E[n/p]` with kernel
+  `E[p]`, so Lagrange + the first isomorphism theorem give `#E[n] = p²·(n/p)²`; no CRT needed.
+  Faithful leaves:
+- ❌· `TorsionCard.smul_surjective` — (2026-07-17) from the three division-polynomial point nodes below: the fibre node gives a curve
+  point `(x₀, y₀)` with `Φ n (x₀) = ξ·ΨSq n (x₀)`; `ΨSq n (x₀) ≠ 0` by `isCoprime_Φ_ΨSq` (Bézout,
+  from the resultant node); the formula node computes `n • (x₀, y₀)` with `x`-coordinate `ξ`;
+  `Y_eq_of_X_eq` gives `y = η` or `negY`, negating the preimage in the latter case
+- ❌· `TorsionCard.smul_some_eq_zero_iff` — (2026-07-17) from `zsmul_some_aux` via the evaluation bridges (`ψₙ(x,y)² = ΨSqₙ(x)` on the curve)
+  and the `ΨSq_neg`/`neg_smul` reduction to positive `n`; the characteristic hypothesis dropped (not
+  needed)
+- ❌· `TorsionCard.exists_smul_some_eq` — (2026-07-17) from `zsmul_some_aux` (negative `n` via negating the point, `Φ_neg`/`ΨSq_neg`);
+  characteristic hypothesis dropped
+- ❌· `TorsionCard.zsmul_some_aux` — the multiplication formula (Washington Thm 3.6) — WIRED (2026-07-17): full strong induction
+  `zsmul_some_aux_strong` (iff-strengthened, x-formula + ψ₂-tracking package; generic case
+  `zsmul_consec_step`, `ψₘ₋₁ = 0` case, collision cases, all closed) + the 2-torsion branch
+  (`evalEval_ψ_of_even` + parity + `d = 2` Ward pattern). Rests on the four sharp nodes below
+- ❌· `TorsionCard.evalEval_ψ_quadratic` — the `T(n,2)` elliptic-sequence relation on the curve `ψₙ₊₂ψₙ₋₂ = ψₙ₊₁ψₙ₋₁ψ₂² - ψ₃ψₙ²` (pure
+  specialisation of the universal `T`-family, no curve input)
+- ❌· `TorsionCard.psi_tracking_prev_zero` — degenerate tracking `ψ₂ψₙ⁴ = ψ₂ₙ` at `ψₙ₋₁ = 0` (fixed-window consequence of the T-family + sum-
+  companion; numerically verified)
+- ❌· `TorsionCard.psi_tracking_prev2_zero` — degenerate tracking `ψ₄ψₙ⁴ = ψ₂ₙψ₂⁴` at `ψₙ₋₂ = 0` (ditto)
+- ❌· `TorsionCard.psi_eq_zero_iff_dvd` — the Ward rank-of-apparition pattern: minimal vanishing index `d` ⟹ vanishing set is `dℤ`; `d = 2`
+  instance seeded by `Res(Ψ₂Sq, Ψ₃) = -Δ²` (where `IsElliptic` enters)
+- ❌· `TorsionCard.evalEval_ψ_sum` — `TorsionCard.evalEval_ψ_sum` — (2026-07-17) from the universal EDS route (`PsiSumCompanion`:
+  anchor identity + coordinate-ring membership + domain cancellation over the universal curve + base
+  change)
+- ❌· `EllipticDivisibilitySequence.normEDS_sum_companion` — the universal `(★s′)` identity `bc(Wₙ₋₁²Wₙ₊₂ + Wₙ₋₂Wₙ₊₁²) = Wₙ₋₁WₙWₙ₊₁(db+b⁵) − Wₙ³b³c` for `W =
+  normEDS b c d` over any ring — pure EDS, no geometry; to be proven by Stange-style double parity
+  descent through the two-parameter family `T(p,q)` (mathlib TODO `IsEllipticSequence normEDS`;
+  descent certificates verified to exist, `scripts/eds/`)
+- ❌· `TorsionCard.exists_point_x_smul` — rational points in multiplication fibres over a separably closed field (where separability of
+  `[n]` enters)
+- ❌· `TorsionCard.prime_torsion_card` — (2026-07-17): the nonzero `p`-torsion is fibred over the roots of the division polynomial by the
+  dictionary node; a shared counting skeleton (`key`) computes `#E[p] = 1 + m·deg g` for a separable
+  `g` cutting out the torsion `x`-coordinates with uniform `y`-fibre size `m`. Odd `p`: `g = preΨ'
+  p` (separability node), `m = 2` (the `y`-fibre quadratic is separable since `Ψ₂Sq(x₀) ≠ 0` by the
+  coprimality node), `1 + 2·(p²-1)/2 = p²`. `p = 2`: `g = Ψ₂Sq` (separability node), `m = 1` (the
+  `y`-quadratic has discriminant `Ψ₂Sq(x₀) = 0`, hence a unique root `-(a₁x₀+a₃)/2`), `1 + 3 = 4`.
+  infrastructure: `yQuad` (the `y`-fibre quadratic), `derivative_yQuad_sq_sub` (the characteristic-
+  free discriminant identity `(∂Q)² - 4Q = C (Ψ₂Sq x₀)`), `yQuad_separable` (explicit Bézout),
+  `pointsAt` finset + biUnion counting
+- ❌· `TorsionCard.separable_preΨ'` — separability of the odd-`p` division polynomial (disc companion identity, `disc(ψₚ) = ±pᵃΔᵇ`)
+- ❌· `TorsionCard.isCoprime_Ψ₂Sq_preΨ'` — (2026-07-17) from the dictionary node, NOT from EDS strong divisibility: a common root `α` over
+  `k̄` would carry a curve point `(α, y₀)` that is `negY`-fixed (the discriminant identity `(∂Q)² -
+  4Q = C (Ψ₂Sq α) = 0` forces `2y₀ + a₁α + a₃ = 0`, uniformly in the characteristic), hence
+  `2`-torsion, and `p`-torsion by the dictionary — trivial by `gcd(2,p) = 1`, contradicting
+  affineness. Route: `¬coprime → gcd non-unit → root of the mapped gcd over `k̄`
+  (`IsAlgClosed.exists_root`) → common root (`root_gcd_iff_root_left_right`)`, with the division
+  polynomials transferred by `map_Ψ₂Sq`/`map_preΨ'`
+- ❌· `TorsionCard.separable_Ψ₂Sq` — (2026-07-17): disc = 16Δ ≠ 0 (`twoTorsionPolynomial_discr_ne_zero_of_isElliptic`), distinct roots
+  over the algebraic closure (`Cubic.discr_ne_zero_iff_roots_nodup` + `nodup_roots_iff_of_splits`),
+  separability descends along `Polynomial.separable_map`. Audits clean
+- ❌· `WeierstrassCurve.galoisRep` — CONSTRUCTED (2026-07-16). The formerly sorry-d DATA is now the genuine representation: the Galois
+  action on points (`Point.map`, via the `DistribMulAction` instance) restricted to the `n`-torsion
+  and made `ZMod n`-linear (`AddMonoidHom.toZModLinearMap`). Continuity: the coordinates of the
+  (finitely many, via `n_torsion_finite`) torsion points generate a finite extension `F/K`; the rep
+  kills the open subgroup `Gal(Kᵃˡᵍ/F)` (`fixingSubgroup_isOpen`), so every fiber is a union of open
+  cosets — continuous into any topology on the target. `#print axioms`: sorryAx enters only through
+  `n_torsion_finite`. Mazur/B4 are now statements about the REAL representation
+- ❌· `group_theory_lemma` — (2026-07-16) in `Fermat/FLT/EllipticCurve/TorsionCounting.lean` (own work, not ): structure
+  theorem for finite abelian groups + torsion counting in `ZMod m` (`#torsionBy d (ZMod m) = gcd d
+  m`, via the first isomorphism theorem) + multiset determination (each prime `q ∣ n` occurs exactly
+  `r` times, each exponent forced to `v_q(n)`) + CRT reassembly (`ZMod.equivPi`). Axioms: `[propext,
+  Classical.choice, Quot.sound]`
+- ❌· `torsion_unipotent_of_split_multiplicative_adic` — pointwise unipotence in the split case: the Tate uniformization witness feeds
+  `tate_inertia_unipotent` at the local valuation subring, pulled back to `E(ℚ̄)` along the
+  equivariant embedding; the remaining content is the base-change instance identification of the two
+  `Ω`-stage curve spellings.
+- ❌· `WeierstrassCurve.exists_tateEquivSepClosure` — Tate's uniformisation over a separable closure, now DERIVED from the choice-free Tate-curve
+  uniformisation and Tate's variable-change theorem: the variable change is `k`-rational, so its
+  base-changed point equivalence is Galois-equivariant, and the equivariance transports through the
+  composite.
+- ❌· `WeierstrassCurve.exists_variableChange_tateCurve` — Tate's theorem V.5.3, now DERIVED from the j-identity leaf, the descent leaf, and the PROVEN split
+  reduction type of the Tate curve.
+- ❌· `WeierstrassCurve.tate_inertia_unipotent` — local unipotence of inertia on Tate torsion, for ANY uniformization witness: the torsion class is
+  represented by `u` with `u^p` a power of the Tate parameter; the parameter is base-field-fixed so
+  `σ(u)/u` is a `p`-th root of unity; inertia fixes it (residue characteristic prime to `p`).
+- ❌· `WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic` — the nonsplit half of the unipotence statement, assembled from the LOCAL nonsplit node
+  `tate_inertia_unipotent_of_nonsplit` by the proven `ℚ̄`-pullback glue (equivariant embedding +
+  `Point.map` injectivity).
+- ❌· `ValuationSubring.inertia_fixes_of_pow_eq` — step (b′), the generalized root-fixing lemma: if `x^p` is a σ-fixed constant of the valuation
+  subring with nonzero residue (and `p` prime to the residue characteristic), inertia fixes `x` —
+  `X^p − c` is separable over the residue field, so distinct roots have distinct residues.
+- ❌· `WeierstrassCurve.tate_inertia_trivial` — local TRIVIALITY of inertia on Tate torsion when the parameter is a `p`-th power up to units, for
+  ANY uniformization witness: the torsion representative is recentred by a base-field unit power so
+  that its `p`-th power is a σ-fixed unit constant of the valuation subring;
+  `inertia_fixes_of_pow_eq` then fixes it outright.
+- ❌· `valuation_eq_one_of_padicValRat_eq_zero` — the reduced-fraction dictionary at `q`: a nonzero rational with vanishing `q`-adic `padicValRat`
+  has `v_q`-adic valuation `1` (equal multiplicities on coprime numerator/denominator force both to
+  vanish).
+- ❌· `exists_unit_qUnit_mul_inv_pow_isUnit` — the step-(d) witness: with `p ∣ v_q(j)`, the Tate parameter of the completed base change is a unit
+  of the completed integers times the `p`-th power of the image of `q^m` — via `|q_E| = |j|⁻¹`, the
+  reduced-fraction dictionary, and the `Valued`/canonical valuation equivalence.
+- ❌· `torsion_trivial_of_split_multiplicative_adic` — pointwise inertia-TRIVIALITY in the split case with `p ∣ v_q(j)`: the Tate uniformization witness
+  feeds `tate_inertia_trivial` at the local valuation subring with the step-(d) witness, pulled back
+  to `E(ℚ̄)` along the equivariant embedding.
+- ❌· `WeierstrassCurve.torsion_trivial_of_nonsplit_multiplicative_adic` — the nonsplit half of the triviality statement, assembled from the LOCAL nonsplit node
+  `tate_inertia_trivial_of_nonsplit` by the proven `ℚ̄`-pullback glue; the `j`-hypothesis feeds
+  through `map_j`.
+- ❌· `WeierstrassCurve.torsion_trivial_of_multiplicative_reduction` — pointwise inertia-triviality on torsion at multiplicative primes with `p ∣ v_q(j)` — the
+  split/nonsplit case split; the local input to `isUnramifiedAt_of_hasMultiplicativeReduction`.
+- ❌· `WeierstrassCurve.tate_inertia_unipotent_of_nonsplit` — the LOCAL twist-transfer of nonsplit unipotence, now assembled: the enriched twist witness, the
+  inertia-fixed embedding of the unramified quadratic extension, and the equivariant composite point
+  equivalence transport `tate_inertia_unipotent` from the twisted minimal model.
+- ❌· `WeierstrassCurve.tate_inertia_trivial_of_nonsplit` — the LOCAL twist-transfer of nonsplit triviality, now assembled: as the unipotent analogue via
+  `tate_inertia_trivial`, with the step-(d) witness applied to the twisted minimal model (same
+  `j`-invariant through `variableChange_j` and `j_quadraticTwist`).
+- ❌· `inertia_fixes_algHom_of_unramified_gen` — inertia fixes every embedding of an unramified extension of `ℚ_qˆ` (generator with monic integral
+  lift of separable residue reduction): the master root-fixing lemma applied to the image of the
+  generator, extended by the adjoin-⊤ equalizer argument.
+- ❌· `ValuationSubring.inertia_fixes_root_of_separable_residue` — the master root-fixing lemma: inertia fixes any `A`-integral root of a polynomial over `A` with
+  base-field coefficients and separable residue reduction (subsumes the `X^p − 1` and `X^p − c`
+  steps).
+- ❌· `WeierstrassCurve.exists_tateCurveEquivSepClosure` — the uniformization core, quotient form: Galois-equivariant Ωˣ/q^ℤ ≃+ E_q(Ω). DERIVED 2026-07-18
+  from the pre-quotient node exists_tateCurveHomSepClosure by the first isomorphism theorem:
+  multiplicative lift ψ of the hom, QuotientGroup.lift over zpowers q, injectivity from the kernel
+  characterization, MulEquiv.ofBijective, MulEquiv.toAdditiveLeft; equivariance descends
+  definitionally on ofMul-classes.
+- ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure` — the uniformization core, pre-quotient form: surjective Galois-equivariant hom Ωˣ →+ E_q(Ω) with
+  kernel exactly q^ℤ. DERIVED 2026-07-18 by feeding the finite-level canonical uniformisation
+  tateCurveEquiv (underlying function pointMapQuot) into the sorried gluing implication
+  exists_tateCurveHomSepClosure_of_finiteLevel.
+- ❌· `TateCurve.exists_annulus_bilateralX_eq` — x-surjectivity onto the annulus (DERIVED 2026-07-20: case split on valuation x vs 1, dispatching
+  to exists_annulus_bilateralX_eq_of_one_le / _of_lt_one).
+- ❌· `TateCurve.pointMapQuot_surjective` — surjectivity of the uniformisation (Silverman ATAEC V.3.1(d)/V.4). DERIVED 2026-07-18 from the
+  x-onto leaf exists_annulus_bilateralX_eq: the leaf gives an annulus parameter u over the
+  x-coordinate; Y_eq_of_X_eq gives y = bilateralY u or its negY, the latter realised by the inverse
+  partner (u⁻¹ on the shell, q·u⁻¹ in the interior) via the PROVEN vertical case
+  bilateral_negY_of_mul_trivial.
+- ❌· `TateCurve.bilateral_chordY_cleared` — cleared chord Y-identity (DERIVED 2026-07-18: same case dispatch as the X-identity; statement
+  strengthened with hu1/hv1).
+- ❌· `TateCurve.bilateral_chordX_cleared` — cleared chord X-identity (DERIVED 2026-07-18: case dispatch on whether u₀v₀ stays in the
+  fundamental annulus, val q₀ < val(u₀v₀), delegating to the window and shifted leaves). Statement
+  strengthened with hu1 : u₀ ≠ 1, hv1 : v₀ ≠ 1 (available at the pointMap_mul call site), needed for
+  the evalA bridges (X has a pole at u = 1).
+- ❌· `TateCurve.bilateral_add_of_X_ne` — the chord identity (V.3.1(c) generic case). DERIVED 2026-07-18 from the cleared chord identities
+  bilateral_chordX_cleared / bilateral_chordY_cleared: the triviality exclusions follow from
+  distinct x-values via the proven inversion/shift identities, and the slope/addX/addY division
+  bookkeeping is field_simp + linear_combination against the cleared forms.
+- ❌· `TateCurve.pointMapQuot_add` — the addition law (Silverman ATAEC V.3.1(c)). DERIVED 2026-07-18 from three sorried series-identity
+  leaves (chord, tangent, X-fibre) + the PROVEN vertical case bilateral_negY_of_mul_trivial
+  (inversion/shift identities), the PROVEN bilateral coordinate bridge pointMap_eq_bilateral on the
+  extended window |q|² < |w| ≤ 1, and quotient bookkeeping (annulus normalisation, trivial classes).
+- ❌· `TateCurve.tateCurveEquiv` — the finite-level Tate uniformisation kˣ/q^ℤ ≃+ E_q(k), DERIVED from pointMapQuot_add +
+  pointMapQuot_bijective with pointMapQuot (canonical, choice-free) as underlying function — the
+  object the Ω-gluing consumes. RE-VENDORED 2026-07-18 (stripped form): the annulus/evalA/pointMap
+  machinery is in the tree (all PROVEN: CoeffRing evaluation, summability on the fundamental
+  annulus, evaluated Weierstrass equation, annulusPoint nonsingularity, strict fundamental domain,
+  kernel characterization pointMap_eq_zero_iff); the bilateral/Lambert negation-translation
+  machinery stays in the reference commit 8282dfb^ until the addition-law proof consumes it.
+- ❌· `WeierstrassCurve.tateGluePointAt` — the level-L point of the glued Tate uniformisation (DEFINED 2026-07-20, sorry-free): pointMapQuot
+  of the local field L at the image of q, transported by pointCastHom (the group-respecting
+  substitution transport along tateCurve_map) and pushed to Omega along Point.map L.val; all type-
+  spellings pinned by show-ascriptions so downstream rewrites typecheck
+- ❌· `WeierstrassCurve.tateGluePointAt_inclusion` — naturality of the level maps under inclusions L <= L-prime (PROVEN 2026-07-20 -- the gluing well-
+  definedness): the inclusion is definitionally a valuative extension of local fields (both
+  relations restricted from Omega, Iff.rfl); the canonical annulus representative w of u still
+  represents the image with the SAME exponent (pointMap_zpow_mul, no exponent-uniqueness needed); w
+  = 1 gives vanishing on both sides, otherwise both points are bilateral-coordinate points
+  (pointMap_eq_bilateral on both levels) whose coordinates commute with the inclusion by
+  bilateralX_map/bilateralY_map instantiated at base L; assembled with pointCastHom-on-some and
+  Point.map_some, closed by point_some_congr
+- ❌· `WeierstrassCurve.tateGluePointAt_conj` — Galois-naturality of the level maps (PROVEN 2026-07-20 -- the equivariance leg): the twist L =
+  sigma(L) is a valuative extension of local fields BY the sigma-invariance conjunct of
+  exists_valuativeRel_sepClosure (vle_iff_vle := hsigmainv applied to underlying Omega-elements);
+  q-image transfer via sigma.commutes; the proof then mirrors tateGluePointAt_inclusion verbatim
+  (same-exponent representative, zero case, bilateral case with bilateralX/Y_map at base L)
+- ❌· `WeierstrassCurve.tateGluePointAt_mul` — additivity of the level map in the unit (PROVEN 2026-07-20): pointMapQuot_add at L composed with
+  the additive transport pointCastHom (an AddMonoidHom by construction: substitution applied to the
+  identity hom, so map_add applies without inspecting the equality proof) and the additive
+  Point.map; opaque-composite device (set g := comp, rfl-representation via unfold + comp_apply) to
+  avoid rewrite-motive typecheck failures on cast proofs
+- ❌· `WeierstrassCurve.tateGluePointAt_eq_zero_iff` — kernel of the level map (PROVEN 2026-07-20): pointMapQuot_eq_zero_iff at L +
+  QuotientGroup.eq_one_iff + injectivity of the transport-and-pushforward composite
+  (pointCastHom_injective, Point.map_injective); same opaque-composite device as _mul
+- ❌· `WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel` — Omega-level uniformising homomorphism from the finite-level hypothesis (FULLY PROVEN 2026-07-20):
+  glued map Phi at the subextension generated by the input; additivity via compositum +
+  tateGluePointAt_mul; kernel via tateGluePointAt_eq_zero_iff + q-power transfer; equivariance via
+  tateGluePointAt_conj; surjectivity via pullback to the coordinate field + the finite-level
+  equivalence (only use of hfin). The whole TateSepClosure gluing chain is now sorry-free.
+- ❌· `WeierstrassCurve.exists_tateTorsionQuotient` — the Tate valuation-exponent quotient on `p`-torsion, over any uniformization witness: a Galois-
+  invariant surjection `E[p] → ℤ/p` by the exponent of the Tate parameter in the `p`-th power of any
+  representative — the quotient of `0 → μ_p → E[p] → ℤ/p → 0`, carrying the trivial action in the
+  split case. Step one of the tame-at-2 derivation.
+- ❌· `hasMultiplicativeReduction_padic` — multiplicative reduction transfers from ℤ_(q) to the ring of integers of mathlib's ℚ_[q] (the
+  tame-at-2 interface field): all valuation conversions are IsEquiv-chains through
+  Rat.padicValuation and Padic.mulValuation; minimality is the unit-c₄ Kraus–Laska criterion.
+- ❌· `exists_tame_quotient_of_split_padic_two` — the split half of the tame-at-2 condition: the Tate valuation-exponent quotient of
+  `exists_tateTorsionQuotient` transported to global torsion along the (bijective, by torsion
+  counting) embedding into `ℚ_[2]`-torsion; the quotient carries the TRIVIAL local action, which is
+  unramified and squares to 1.
+- ❌· `WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two` — the nonsplit half of the tame-at-2 condition, now ASSEMBLED: the exponent quotient of the twisted
+  minimal model transports through the (χ-twisted) composite point equivalence; δ is the quadratic
+  character of the unramified L as a continuous GaloisRep (locally constant on cosets of the open
+  fixing subgroup of the embedded L), unramified by the Z2bar embedding-fixing leaf, squaring to 1
+  by Int.units_mul_self.
+- ❌· `inertia_fixes_algHom_of_unramified_gen_padic_two` — the Z2bar-spelling of inertia-fixes-unramified-embeddings, now PROVEN: spectral-norm membership
+  dictionaries (mulValuation_le_one_iff, algebraMap_mem_Z2bar_iff), the decomposition/inertia
+  bridges at Z2bar (spectralNorm_eq_of_equiv closure, Ideal.Quotient.eq), the local coefficient hom
+  with norm-based unit descent, and the master root-fixing lemma.
+- ❌· `WeierstrassCurve.hasSplitMultiplicativeReduction_tateCurve` — the Tate curve has split multiplicative reduction: coefficients in the maximal ideal, c₄ ≡ 1
+  (Kraus–Laska minimal), Δ ∈ (a₄, a₆), and the reduced nodal curve's node polynomial X(X+1) splits.
+  The reduction-type half of Tate's theorem V.5.3, toward deriving exists_variableChange_tateCurve.
+- ❌· `WeierstrassCurve.isElliptic_tateCurve_and_j` — the j-invariant of the Tate curve is j(E), now DERIVED: ellipticity from the Δ-evaluation leaf via
+  valuation_evalInt_eq (linear coefficient 1); j(E_q)⁻¹ = evalInt q jInv by the proven c₄-identity,
+  evalInt_mul/pow, and evalInt_invOfUnit; the composition through tateParameter by the substitution-
+  evaluation leaf and jInv_subst_jInvReverse.
+- ❌· `WeierstrassCurve.exists_variableChange_of_j_eq_of_split` — split multiplicative curves with equal j differ by a variable change over k, now DERIVED (short
+  normal forms via mathlib exists_variableChange_isShortNF in char 0; A≠0 from unit c₄, B≠0 from
+  |j|>1 vs j=1728; equal j gives A₁³B₂²=A₂³B₁², so w := B₂A₁/(B₁A₂) realizes the second short model
+  as the w-scaling twist of the first; both leaves now PROVEN — the whole descent is axiom-clean).
+- ❌· `WeierstrassCurve.Δ_tateCurve_eq_evalInt` — the discriminant of the Tate curve is the value of ΔFormal, now DERIVED from the pure formal
+  identity leaf by the evaluation ring homomorphism (evalInt_add/mul/pow + the integer-scalar
+  lemma).
+- ❌· `TateCurve.evalInt_subst` — evaluation commutes with formal substitution, now PROVEN: evalInt is mathlib's topological
+  eval₂Hom over 𝒪[k] (the evalInt_mul key-identification), and MvPowerSeries.eval₂_subst supplies
+  the compatibility, with the value-point identified by Subtype-injectivity and the discrete
+  uniformity on ℤ.
+- ❌· `TateCurve.ΔFormal_eq` — the formal discriminant identity in ℤ⟦X⟧, now definitional (rfl): ΔFormal is defined in
+  TateParameter.lean as the discriminant polynomial of the Tate quintuple ⟨1,0,0,a₄Formal,a₆Formal⟩;
+  the classical η²⁴-product description X·∏(1−Xⁿ)²⁴ (Jacobi/ATAEC V.3.1(b)) was consumed nowhere —
+  only constantCoeff_ΔFormal = 0 and coeff_one_ΔFormal = 1, both re-proven directly from the
+  polynomial coefficients (σ₃(1)=σ₅(1)=1, (5+7)/12 = 1).
+- ❌· `WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul` — invariance of split multiplicative reduction under change of Weierstrass coordinates via the
+  minimal model, now DERIVED from the vendored HasSplitMultiplicativeReduction.of_isMinimal_smul
+  (Silverman VII.1.3(b): connecting change of two minimal models has unit u and integral r,s,t; node
+  polynomial transforms by affine substitution + unit-square scaling).
+- ❌· `WeierstrassCurve.isSquare_of_scaled_split` — split+split scaling twist forces w square, now DERIVED from the split criterion leaf: sq-class of
+  −c₄c₆ is a variable-change invariant ((u⁻⁵)²-scaling), the criterion makes −c₄c₆ of both minimal
+  models squares, c₄/c₆ are units by multiplicative reduction, and −c₄c₆ scales by w⁵ under the
+  twist, so w⁵ and hence w is a square.
+- ❌· `WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split` — the split criterion over the local field k, PROVEN: split multiplicative reduction implies −c₄c₆ ∈
+  (kˣ)². Both residue characteristics via Hensel over 𝒪[k] (HenselianRing from the IsAdicComplete
+  instance of LocalField/Basic under a rightUniformSpace letI): odd — the reduced node polynomial's
+  splitting means its discriminant −c₄c₆ is a residue square (nodePoly_map_splits_iff_isSquare) and
+  X²−x Hensel-lifts (derivative 2z̄ a unit); residue char 2 — splitness is the Artin–Schreier
+  condition (nodePoly_map_splits_iff_of_two_eq_zero), normalized by the unit b = a₁c₄ to z²+z = c̄,
+  Hensel-lifted through X²+X−c (derivative 2z̄+1 ≡ 1 a unit), and −c₄c₆ = b²(1+4c) = (b(1+2t))² by
+  the discriminant identity splitPolynomial_discrim.
+- ❌· `natCard_residue_quotient_toHeightOneSpectrum` — residue cardinality at a prime's place is the prime — was already fully proven in Chebotarev.lean
+  under a stale sorry-marking; moved 2026-07-18 to the new module `ResidueCardinality` so the
+  Frobenius/roots-of-unity leaf can consume it.
+- ❌· `exists_conj_cyclotomicCharacter_three` — complex conjugation with χ₃(c) = −1 — PROVEN 2026-07-18: Γ ℝ has two elements (ℝᵃˡᵍ ≃ₐ[ℝ] ℂ,
+  card_aut = finrank = 2); the nontrivial one maps to an involution of Γ ℚ; χ₃(c)² = 1 in the domain
+  ℤ_[3] and χ₃(c) = 1 is refuted since c would fix a primitive cube root, forcing the real-Galois
+  element to fix ℝ(ι ζ) = ℝᵃˡᵍ.
+- ❌· `finrank_eigenspace_one_of_involution` — an odd involution on a 2-dimensional space has a 1-dimensional fixed space — PROVEN (E₁ ⊕ E₋₁
+  split via 2⁻¹(v ± fv), determinant case analysis).
+- ❌· `not_isAbsolutelyIrreducible` — no absolutely irreducible mod-3 hardly ramified representation — DERIVED 2026-07-18: base change
+  to 𝔽̄₃ (IsAlgClosure.equiv over ZMod 3, CharP k 3), matrix form in a finBasis, projectivization to
+  PGL₂(𝔽̄₃) with finite image (the action factors through the finite End k V), then the vendored
+  Dickson classification feeds `serre_elimination`.
+- ❌· `serre_elimination` — the Serre elimination over the Dickson eight-case list — cyclic case PROVEN 2026-07-18 (cyclic
+  projective image ⇒ abelian matrix image ⇒ scalar action ⇒ stable line, contradiction); the rest
+  dispatched to `serre_elimination_noncyclic`.
+- ❌· `serre_elimination_noncyclic` — the seven noncyclic Dickson cases — DERIVED (case dispatch to the semidirect and arithmetic
+  leaves).
+- ❌· `serre_elimination_semidirect` — the elementary-abelian ⋊ cyclic case — FULLY PROVEN 2026-07-18: kernel of the right-component
+  character has central cubes ⇒ char-3 Frobenius square-nilpotency with μ ≠ 0; all-scalar kills the
+  left factor; otherwise the 1-dim eigenline is shared (commutator scalars ±1 by determinants, −1
+  refuted by the char-3 expansion identity) and normality makes it Γℚ-stable — contradicting
+  absolute irreducibility.
+- ❌· `serre_elimination_arith` — (sorry node — the deep arithmetic core) dihedral / A₄ / S₄ / A₅ / PSL₂(𝔽_{3^m}) / PGL₂(𝔽_{3^m})
+  eliminated via Serre's discriminant/conductor bounds over ℚ (Duke 1987 §5.4); needs discriminant-
+  bound machinery absent from mathlib.
+- ❌· `exists_line_with_unramified_quotCharacter_at_three` — (sorry node — the connected–étale content) a reducible mod-3 hardly ramified rep has a stable line
+  with quotient character unramified at 3: the IsFlatAt prolongation over ℤ₃, unramified étale
+  quotient of the connected–étale sequence, and the Serre swap to the other stable line when needed.
+- ❌· `quotCharacter_unramified_at_two` — quotient characters of stable lines are unramified at 2 — FULLY PROVEN 2026-07-18 from the ℚ_[2]
+  tame dichotomy and the completion bridge (characters absorb the conjugator).
+- ❌· `quotCharacter_inertia_two_ker` — the ℚ_[2] tame dichotomy — FULLY PROVEN 2026-07-18: either the line dies in the tame quotient π₂
+  (χ₂ scales π₂ through liftQ, δ-triviality on inertia forces χ₂ = 1) or the sub-character agrees
+  with δ and χ₂ = det/χ₁ with det the mod-3 cyclotomic character, unramified at 2.
+- ❌· `cyclotomicCharacter_algebraMap_eq_one_of_inertia_two` — the mod-3 cyclotomic character is unramified at 2 — FULLY PROVEN 2026-07-18: inertia fixes the
+  cube roots of unity in ℚ_[2]ᵃˡᵍ ((z−1)² = −3z with ‖3‖₂ = 1), lift_map transports to Γ ℚ, spec at
+  level one + ker_toZModPow + char-3 target.
+- ❌· `localInertia_two_eq_map_padic` — the at-2 completion bridge (up to conjugacy) — FULLY PROVEN 2026-07-18: E = padicEquiv with
+  integers-compatibility, τ = conjugation of σ through the bijective closure map of E.symm, inertia
+  transported via spectral-integrality over PadicInt.subring 2 and nonunit push-forward, conjugator
+  from Normal.algHomEquivAut, final square through injective ι₁.
+- ❌· `Dickson.classification_tame` — Dickson's classification, tame case (order coprime to p) — vendored PROVEN
+  (Slop.PGL2.FiniteSubgroups, restored 2026-07-18).
+- ❌· `Dickson.classification_wild` — Dickson's classification, wild case (order divisible by p) — vendored PROVEN
+  (Slop.PGL2.FiniteSubgroups, restored 2026-07-18).
+- ❌· `OddRep.isIrreducible_iff_isAbsolutelyIrreducible` — irreducible ↔ absolutely irreducible given a 1-dimensional fixed space — vendored PROVEN
+  (Slop.OddAbsIrredSlop, restored 2026-07-18).
+- ❌· `TateCurve.bilateral_chordX_cleared_window` — window case of the cleared chord X-identity (DERIVED 2026-07-18: bilateral values rewritten to
+  evalA-sums via evalA_XA_eq_bilateralX / evalA_YA_eq_bilateralY, delegating to evalA_chordX).
+- ❌· `TateCurve.bilateral_chordX_cleared_shifted` — shifted case of the cleared chord X-identity (DERIVED 2026-07-18: replace v₀ by v₀/q₀ in the upper
+  extended annulus — in the shifted case |v₀| < 1 strictly so v₀/q₀ stays below |q₀|⁻¹ — and the
+  product by u₀v₀/q₀ back in the fundamental annulus; bilateral values invariant by the proven shift
+  identities; conclude by the summability-parameterized transport with the extended-annulus
+  summability/bridge leaves).
+- ❌· `TateCurve.bilateral_chordY_cleared_window` — window case of the cleared chord Y-identity (DERIVED 2026-07-18: same bridge rewrite, delegating
+  to evalA_chordY).
+- ❌· `TateCurve.bilateral_chordY_cleared_shifted` — shifted case of the cleared chord Y-identity (DERIVED 2026-07-18: replace v₀ by v₀/q₀ in the upper
+  extended annulus — in the shifted case |v₀| < 1 strictly so v₀/q₀ stays below |q₀|⁻¹ — and the
+  product by u₀v₀/q₀ back in the fundamental annulus; bilateral values invariant by the proven shift
+  identities; conclude by the summability-parameterized transport with the extended-annulus
+  summability/bridge leaves).
+- ❌· `TateCurve.evalA_chordX` — evalA-level chord X-identity (DERIVED 2026-07-18: applies the two-variable evaluation transport to
+  the formal identity chordX_formal).
+- ❌· `TateCurve.evalA_chordY` — evalA-level chord Y-identity (DERIVED 2026-07-18: same via chordY_formal and its transport).
+- ❌· `TateCurve.chordX_formal` — formal chord X-identity in CoeffRing₂⟦q⟧ (DERIVED 2026-07-18: injectivity pullback along
+  coeffRing₂ToRatFunc — CoeffRing₂ ↪ ℚ(u)(v) built with the three slot compatibilities
+  coeffRing₂ToRatFunc∘{u,v,uv}Slot = {u,v,uv}EmbR∘coeffRingToRatFunc; all three embeddings are
+  substHom-substitutions with instance-robust transcendence proofs).
+- ❌· `TateCurve.chordY_formal` — formal chord Y-identity in CoeffRing₂⟦q⟧ (DERIVED 2026-07-18: same injectivity pullback).
+- ❌· `TateCurve.evalA_chordX_of_formal` — two-variable evaluation transport for the chord X-identity (PROVEN 2026-07-18: coeffRingEval₂ +
+  slot bridges + generic hom-evaluation arithmetic summable/tsum_hom_eval_add/neg/mul
+  (nonarchimedean Cauchy product, mirroring evalA_mul) + calc assembly against the product-normal
+  form of the formal identity).
+- ❌· `TateCurve.evalA_chordY_of_formal` — two-variable evaluation transport for the chord Y-identity (PROVEN 2026-07-18: same assembly).
+- ❌· `TateCurve.chordX_ratFunc₂` — chord X-identity in ℚ(u)(v)⟦q⟧ (PROVEN 2026-07-18 by the two-variable descent: one algebraically
+  independent pair (u₀ := liouvilleNumber 2 − 1 ∈ (1/4,1/2), v₀ := a real in (1/2,1) transcendental
+  over the image of ℚ(u₀) — exists by Algebraic.countable + cardinality of the interval, Countable
+  (RatFunc ℚ) via Polynomial.cardinalMk_le_max); H := substHom v₀ under (evalAtHom u₀).toAlgebra is
+  an injective field hom ℚ(u)(v) → ℂ; hom compatibilities H∘{u,v,uv}EmbR = evalAtHom {u₀,v₀,u₀v₀} by
+  ratFuncQ_ringHom_ext; coefficient sequences identified with the one-variable evalAt sequences;
+  hasSum_X/Y_eval at the three points on the window ‖q‖<1/8; archimedean Cauchy assembly
+  hasSum_homC_add/neg/sub/mul; value identity from analytic_chordX;
+  coeffs_eq_zero_of_hasSum_punctured + H-injectivity finish coefficientwise).
+- ❌· `TateCurve.chordY_ratFunc₂` — chord Y-identity in ℚ(u)(v)⟦q⟧ (PROVEN 2026-07-18: same descent with analytic_chordY).
+- ❌· `TateCurve.summable_evalA_XA_ext` — extended-annulus summability for XA (PROVEN 2026-07-18): on 1 < |u₀| < |q₀|⁻¹ the coefficient
+  bound is |u₀|ⁿ (dominant u^d-terms, d ≤ n), beaten by |q₀u₀|ⁿ < 1 — mirror
+  summable_evalA_XA/valuation_coeffRingEval_XA_le with the max-bound.
+- ❌· `TateCurve.summable_evalA_YA_ext` — extended-annulus summability for YA (PROVEN 2026-07-18): same as the XA version.
+- ❌· `TateCurve.evalA_XA_eq_bilateralX_ext` — extended-annulus bilateral bridge (PROVEN 2026-07-18): the fundamental-annulus bridge proof only
+  ever used the two Lambert conditions |q₀u₀| < 1 and |q₀u₀⁻¹| < 1, both of which hold on the upper
+  extended annulus — the body replays verbatim with the new prologue.
+- ❌· `TateCurve.evalA_YA_eq_bilateralY_ext` — extended-annulus bilateral bridge (PROVEN 2026-07-18): the fundamental-annulus bridge proof only
+  ever used the two Lambert conditions |q₀u₀| < 1 and |q₀u₀⁻¹| < 1, both of which hold on the upper
+  extended annulus — the body replays verbatim with the new prologue.
+- ❌· `TateCurve.pointMap_mul` — homomorphism property of the Tate point map (PROVEN 2026-07-20 by the Silverman completion-lemma
+  restructure, ATAEC V.3.1.2): hom_of_partial_hom (abstract: partial additivity away from φu = ±φv
+  plus infinitude of values gives a homomorphism) + pointMap_range_infinite (the family 1+q₀^(j+1)
+  has x-valuations |q₀|^(-2(j+1)), pairwise distinct, via valuation_tsum_le and head domination) +
+  pointMap_mul_of_ne (vertical and chord branches; the equal-X branch dispatched by the y-dichotomy
+  against the two exclusion hypotheses). The doubling/tangent formulas, the 2-torsion analysis, the
+  X-fibre lemma and coordinate-pair injectivity were all DELETED as unnecessary — Silverman never
+  proves them for V.3.1(c).
+- ❌· `TateCurve.exists_annulus_bilateralX_eq_of_one_le` — x-surjectivity, identity-component case |x| >= 1 (FULLY PROVEN 2026-07-20; Silverman ATAEC V.4
+  formal-group half, via a branch-free nodal linear solve instead of Hensel): (1) htail/hlip +
+  htailY/hlipY: the bilateral X- and Y-series deviate from their nodal leading terms by <= |q0| and
+  are |q0|-Lipschitz on the unit shell; (2) y-magnitudes from the Tate equation: |y+x| = |y|, |y|^2
+  = |x|^3, 1 <= |y| <= |x|^2; (3) the map F u = (y - T_Y u)/((x - T_X u) + (y - T_Y u)) is a
+  |q0|-contraction fixing the shell, never equal to 1, with |1 - F u| = |x|/|y| constant; (4) the
+  orbit from y/(x+y) is Cauchy (rank-one norm recipe + cauchySeq_of_le_geometric) with limit ustar
+  on the shell, a fixed point by an ultrametric squeeze; (5) at the fixed point: division-free
+  identities N = u*S, D = (1-u)*S, u*D^2 = N*S*(1-u)^2, defect formulas eps*D^2 = D^3 - N*S and
+  delta*D = N*eps (linear_combination), the defect bound |eps| <= |q0| (Tate-equation expansion of
+  D^3 - N*S into ten tail terms <= |q0||x|^2), and the exclusion: eps*B = 0 (linear_combination from
+  the two curve equations + the delta relation) with |B| = |x|^2 by the bracket identity 3Xl^2 - tXl
+  - 2tYl - Yl = u^2/(1-u)^4 dominating all corrections (<= |x||q0|), so eps = 0. Characteristic-
+  free. Axioms: propext/Classical.choice/Quot.sound.
+- ❌· `TateCurve.exists_annulus_bilateralX_eq_of_lt_one` — x-surjectivity, non-identity components |x| < 1 (FULLY PROVEN 2026-07-20, replacing Silverman
+  coset counting with two direct contractions): Case A (|q0| < |x|^2): identity-map contraction on
+  the shell |u| = |x|. Case B (|x|^2 <= |q0|, the W-shell): |tateA6| = |q0| exactly forces |y|^2 =
+  |q0| and |x+y| = |y| from the curve equation (y provides the square root of |q0| in the value
+  group -- no evenness hypothesis); the sum bilateralX + bilateralY has collapsed kernels v/(1-v)^3
+  and -v^2/(1-v)^3 (the q/u term cancels exactly), the iteration u -> (x+y) - (S(u) - u) contracts
+  with ratio |y| < 1 from seed x+y, and at the fixed point the delta = -eps subtraction identity
+  factors with the |x+y| = |y|-dominant bracket, so eps = 0. All estimates via element-level
+  regrouping (every factor a bounded window element). Axioms: propext/Classical.choice/Quot.sound.
+  With this, TateUniformization is SORRY-FREE: the full finite-level Tate uniformisation
+  (additivity, kernel, x-surjectivity) is proven.
+- ❌· `TateCurve.coeffRingEval_map` — coeffRingEval commutes with a valuative extension k → l of nonarchimedean local fields (PROVEN
+  2026-07-20): IsLocalization.ringHom_ext + Polynomial.ringHom_ext, checking constants (ℚ-hom
+  uniqueness via Subsingleton) and X (both sides = algebraMap k l u₀ by coeffRingEval_algebraMap).
+- ❌· `TateCurve.valuation_hasSum_sub_sum_le` — ultrametric bound for a HasSum tail after splitting off N terms (PROVEN): hasSum_nat_add_iff
+  identifies the remainder as the shifted-sequence sum, then valuation_tsum_le bounds it.
+- ❌· `TateCurve.evalA_XA_map` — evalA … XA commutes with a valuative extension on the fundamental annulus (PROVEN): mirror of
+  TateCurve.evalInt_map — the k-side tail bound (valuation_coeffRingEval_XA_le) transported via
+  ValuativeExtension.mapValueGroupWithZero sandwiched against a freshly proven l-side tail bound,
+  contradiction route via exists_pow_valuation_lt.
+- ❌· `TateCurve.evalA_YA_map` — evalA … YA commutes with a valuative extension (PROVEN): same route as evalA_XA_map with the YA
+  coefficient bound.
+- ❌· `TateCurve.bilateralX_map` — bilateralX commutes with a valuative extension on the fundamental annulus (PROVEN): transport
+  evalA_XA_map through the evalA_XA_eq_bilateralX bridge.
+- ❌· `TateCurve.bilateralY_map` — bilateralY commutes with a valuative extension (PROVEN): mirror of bilateralX_map.
+- ❌· `TateCurve.tateCurve_map` — the Tate curve is functorial in a valuative extension (PROVEN 2026-07-20): (tateCurve q₀).map
+  (algebraMap k l) = tateCurve (algebraMap k l q₀), from tateA₄/A₆_eq_evalInt (both sides are
+  evalInt-evaluations of the SAME fixed integral power series) + the existing TateCurve.evalInt_map
+  (TateCurveBaseChange.lean). Wired into the gluing consumer as hcurve.
+- ❌· `exists_valuativeRel_sepClosure` — valuative structure of the separable closure (PROVEN 2026-07-20, same iteration as stated): letI
+  the uniform/rank-one-Valued/NontriviallyNormedField structure on k (the LocalField.Basic recipe),
+  then the integral closure of 𝒪[k] in Ω is a ValuationSubring by the spectral-norm dichotomy
+  (vendored isIntegral_of_spectralNorm_le_one + spectralNorm_inv from
+  Deformations/AbsoluteGaloisGroup); ValuativeRel.ofValuation of its valuation; the
+  ValuativeExtension compatibility reduces by the divisibility form (div_le_one₀ +
+  valuation_le_one_iff) to “base-field element integral over 𝒪[k] iff in 𝒪[k]” —
+  IsIntegrallyClosed.isIntegral_iff for the DVR.
+- ❌· `isNonarchimedeanLocalField_intermediate` — finite subextensions of Ω are nonarchimedean local fields (DERIVED 2026-07-20): topology := the
+  canonical valuative topology (ValuativeRel.topologicalSpace), which is valuative by mathlib’s
+  ValuativeRel.isValuativeTopology; nontriviality transports from k through the proven valuative
+  extension (valuation_surjective + Compatible.vle_iff_le); local compactness delegated to the
+  remaining leaf locallyCompactSpace_intermediate.
+- ❌· `locallyCompactSpace_intermediate` — local compactness of finite subextensions in the valuative topology (PROVEN 2026-07-20): in-proof
+  chain -- (1) hkle/hint_le: any O[k]-integral element of Omega has value at most 1 (classical
+  power-comparison mirroring Valuation.Integers.isIntegral_iff_v_le_one, coefficient bound through
+  the valuative extension); (2) hOk: k is algebraic over O[k] by the valuation-ring dichotomy
+  (degree-one witness C(1/c)X - 1), lifted to Omega via IsAlgebraic.restrictScalars; (3) hsmall:
+  below any nonzero value of L lies a nonzero base value (exists_integral_multiple on 1/w over O[k]
+  + one strict shrink by the uniformizing element p); (4) T2Space L via
+  IsTopologicalAddGroup.t2Space_of_zero_sep; (5) the structure map algebraMap k L is continuous
+  (preimage of every basic ball contains a basic ball, by hsmall + strict vlt transfer through
+  valuativeExtension_comap), hence ContinuousSMul k L; (6) Module.finBasis equivFun is a
+  homeomorphism by LinearMap.continuous_of_finiteDimensional over the complete field k (both
+  directions), and local compactness transports from k^finrank via
+  Homeomorph.locallyCompactSpace_iff. Axioms: propext/Classical.choice/Quot.sound only.
+- ❌🟪 `WeilPairing.exists_weilPairing_mu` — the mu_p-valued Weil pairing over F_q (single sorry 2026-07-21: N1 COMPLETE):
+  IsDedekindDomain(CoordinateRing) of the base-changed curve is FULLY PROVEN via Krull-Akizuki --
+  FaithfulSMul, FiniteDimensional (conjugate-norm span), IsSeparable (Bezout certificate / char-2
+  unit-derivative with Delta-vanishing), IsIntegralClosure (normality: minpoly coefficient descent,
+  degree dichotomy, reduced-fraction descent against the squarefree b2-cubic with disc = 16 Delta in
+  odd characteristic; in characteristic two the tau0 = tc A collapse, w = sc A integrality, and the
+  Taylor/singular-point contradiction at the root of A -- both affine partials vanish, contradicting
+  equation_iff_nonsingular). IN-PROOF ALSO PROVEN (2026-07-21): hCunits (units of the coordinate
+  ring are the nonzero constants, via degree_norm_smul_basis) and hgen (p-torsion points have
+  principal p-th ideal-class powers -- the Miller-generator existence, via toClass +
+  ClassGroup.mk_eq_one_iff). ALSO PROVEN: hpoints (points outside any finite abscissa set) and hgen2
+  (two-point Miller generators for translated divisors); point evaluation is mathlib's
+  AdjoinRoot.evalEval. PROVEN reciprocity ingredients: hrecP1 (P^1 Weil reciprocity: double-product
+  swap with the (-1)^(mn) sign, via hcard/hevalprod root-product machinery); hline (line ideal
+  identity (l) = I_P I_Q I_{-(P+Q)} from mathlib's XYIdeal_mul_XYIdeal + XYIdeal_neg_mul by Dedekind
+  cancellation; the vertical identity is mathlib's XYIdeal_neg_mul itself); hcubtrans + hlinerec
+  (line-line reciprocity core: shared-intersection-point Vieta, the two fiber cubics agree at the
+  common abscissa). Also PROVEN: hnormeval (norm-evaluation compatibility (N f)(x0) = f(x0,y0)
+  f(x0,negY) via norm_smul_basis + the Weierstrass equation) and hXYmax (point ideals are maximal,
+  via quotientXYIdealEquiv). hfactor COMPLETE (principal spans factor as point-divisor multisets via
+  normalizedFactors + hmax), hker COMPLETE (kernel of point evaluation = the point ideal), hXYinj
+  COMPLETE (point-ideal injectivity). hoffdiv COMPLETE (nonvanishing off the divisor). hNle +
+  hnormpt COMPLETE: relNorm of a point ideal IS the vertical span (X - x_P) (conjugate-product
+  pinning; PerfectField route unavailable in char q). NEXT: span{N f} = relNorm(span f) = prod of
+  verticals over div f (relNorm_singleton + map_multiset_prod over hfactor), so N f = unit * prod (X
+  - P.1) -- then vertical reciprocity: f(fiber c) = (N f)(c) (hnormeval) vs vertical(div f) = prod
+  (P.1 - c) via hrecP1/evaluation of the product form. Formerly recorded as: NEXT brick: spanNorm of
+  a point ideal is the vertical span (X - x_P) (check Ideal.spanNorm_singleton / spanNorm_mul API),
+  giving N f = unit * prod (X - P.1) over the divisor -- the bridge between hnormeval fiber-products
+  and hrecP1 root-products for the vertical-vs-anything reciprocity case. GENERATOR RECIPROCITY
+  COMPLETE: hrecfib (vertical fiber-quotient form, via hnormeval'/hspanprod/hNconst) and hrecline
+  (line-line divisor form, via hNline/hevline/hevvert/hondiv/habs + the hlinerec core). hgenfac
+  COMPLETE (the class-group descent / Miller factorization, with hdvdspan). Generator divisor
+  witnesses COMPLETE (hfiber, hvertdiv, hlinediv). Signed generator-pair table COMPLETE (hggll
+  unconditional line-line incl. parallel/identical; hgglv line-vertical; hggvv vertical-vertical,
+  adopted from the accidental parallel session; hrecfib). hlinediv' explicit line divisor; hvw
+  vertical-vs-word assembly PROVEN. hlw PROVEN (line-vs-word, sign (-1)^lines). hww PROVEN (word-vs-
+  word, sign (-1)^(|L1| x |L2|), 2026-07-21 first-attempt green: prod_map_prod_map swap per part,
+  hlw per line of L1 / hvw per vertical of V1, sign collected by map_const'/prod_replicate, closed
+  by pow_mul + ring; binder-capture avoided by fresh outer binder ab and beta-reduced ab.1/ab.2
+  instantiations per the parent session's warning). DIVISOR-DICTIONARY BRICKS PROVEN (2026-07-21):
+  hdivuniq (equal products of point ideals force equal point multisets: prime picking via
+  IsPrime.multiset_prod_map_le, maximality, hXYinj, Dedekind cancellation), hvertdiv' (explicit
+  vertical divisor at the canonical yfib fiber = XYIdeal_neg_mul), hworddiv (span of a line/vertical
+  word = product of point ideals over its explicit hww-shaped divisor, by induction through
+  hlinediv'/hvertdiv'). ASSEMBLY DESIGN (2026-07-21, agent7): genericity via the FINITE-SUBFIELD
+  trick -- strengthen hgenfac with an F-rationality invariant (for F a finite subfield containing
+  the divisor coordinates, all Miller chords/verticals have parameters AND line-cubic roots in F,
+  since chord data is rational in the current divisor points and the invariant propagates);
+  consumers then choose test abscissas OUTSIDE F via hpoints, killing all collision/nonvanishing
+  obligations. Pairing generators in junk-free form: b_P := (XClass x_S)^p with div = p(S)+p(-S),
+  a_P := gamma*b_P with div = p(P+S)+p(-S) (integrality by fractional-ideal arithmetic), so all
+  supports explicit. hwordeval PROVEN (evaluation of a line/vertical word at a curve point = the
+  value product, via map_multiset_prod + hevline/hevvert). NEXT: balanced reciprocity for functions
+  via the strengthened hgenfac (u-constants and signs cancel in balanced cross-ratios; 8-fold
+  division-free form, cancel the Pi of d-word evaluations at the end under the F-avoidance
+  hypotheses), then the pairing. Superseded: NEXT: line-vs-word (hlw, sign (-1)^lines) then word-vs-
+  word (hww), then the balanced reciprocity for functions via hgenfac and the pairing. Remaining
+  assembly: the balanced cross-product reciprocity for arbitrary disjoint pairs from the generator
+  cases, then the pairing and its six legs. Superseded plan text: REMAINING for reciprocity: the
+  class-group descent hgenfac (every function with point-divisor factorization equals a constant
+  times a quotient of products of line/vertical elements, by strong induction on divisor size
+  through hline + XYIdeal_neg_mul + toClass-nontriviality) and the multiplicative assembly of the
+  balanced cross-product reciprocity; then the pairing definition (ratio over hgen2 generators at
+  hpoints-generic translates) and its six legs. Older per-brick log follows: NEXT: divisor
+  evaluation f(D) := prod of evalEval over D; nonvanishing off the divisor; the reciprocity
+  statement f(div g) = g(div f) for disjoint supports, by induction via line/vertical factorization
+  (hline + XYIdeal_neg_mul) reducing to the proven cores hlinerec (line-line) and hnormeval + hrecP1
+  (vertical cases); then the pairing and its six legs. hmax COMPLETE (with hresfin + hkill): every
+  maximal ideal of the coordinate ring IS a point ideal XYIdeal x0 (C y0) at a curve point -- the
+  divisor language is available. Also PROVEN: hlinfac (every maximal ideal contains a vertical X -
+  c: the lying-over leg of hmax, via the norm-membership trick and prime factor-picking). NEXT: hmax
+  -- every maximal ideal of the coordinate ring is a point ideal (route: M cap k[x] contains X - c
+  via the norm-membership trick f*sigma-f = algebraMap(N f) from coe_norm_smul_basis with N f
+  nonzero by degree_norm_smul_basis; residue field is spanned over k by the images of the basis {1,
+  y} since X - c dies, so it is finite over k, hence = k by
+  IsAlgClosed.algebraMap_bijective_of_isIntegral; then the coordinate images x0, y0 give
+  XClass/YClass in M, the Weierstrass polynomial Taylor-decomposes to give the equation, and hXYmax
+  + IsMaximal.eq_of_le forces M = XYIdeal x0 (C y0)). Then: divisor factorization of principal
+  ideals into point primes, line/vertical factorization of functions with O-free principal divisors,
+  reciprocity assembly from hlinerec/hnormeval/hrecP1, then the pairing definition and its six legs.
+  REMAINING (the single sorry): the evaluation-ratio pairing e(P,Q) = f_P(D_Q)/f_Q(D_P) with
+  disjoint affine supports (D_P = (P+S)-(S), D_Q = (Q+R)-(R)); scalar-invariance is automatic in the
+  ratios; well-definedness/bilinearity via Weil reciprocity (norm-pushforward to P^1 or direct);
+  alternation, nondegeneracy, Frobenius naturality. Formerly listed route e(P,Q) =
+  f_P(D_Q)/f_Q(D_P), bilinearity/alternation/nondegeneracy via Weil reciprocity on HeightOneSpectrum
+  divisors plus the infinite place, Frobenius naturality from functoriality of the whole
+  construction.
 
 ## Canonical frontier (2026-07-16, session 4 close — audit-verified)
 
