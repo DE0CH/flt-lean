@@ -5257,6 +5257,70 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
         (Polynomial.C (Polynomial.X - Polynomial.C c)) from rfl,
       AdjoinRoot.evalEval_mk]
     simp [Polynomial.evalEval]
+  -- a function vanishes at every point of its divisor
+  have hondiv : ∀ (f : Wb.toAffine.CoordinateRing)
+      (D : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))),
+      Ideal.span {f} =
+        (D.map (fun P => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          Wb.toAffine P.1 (Polynomial.C P.2))).prod →
+      ∀ P ∈ D, ∀ (hE : Wb.toAffine.Equation P.1 P.2),
+      AdjoinRoot.evalEval (p := Wb.toAffine.polynomial) hE f = 0 := by
+    intro f D hDfac P hPD hE
+    have hdvd : WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+        P.1 (Polynomial.C P.2) ∣ Ideal.span {f} := by
+      rw [hDfac]
+      exact Multiset.dvd_prod (Multiset.mem_map_of_mem _ hPD)
+    have hfmem : f ∈ WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+        Wb.toAffine P.1 (Polynomial.C P.2) :=
+      Ideal.le_of_dvd hdvd (Ideal.subset_span rfl)
+    rw [← hker P.1 P.2 hE] at hfmem
+    exact hfmem
+  -- the abscissa multiset of a line's divisor is the root multiset of its
+  -- fiber cubic
+  have habs : ∀ (l n : (AlgebraicClosure (ZMod q))) (D : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))),
+      (∀ P ∈ D, Wb.toAffine.Equation P.1 P.2) →
+      Ideal.span {(AdjoinRoot.mk Wb.toAffine.polynomial (Polynomial.X -
+        Polynomial.C (Polynomial.C l * Polynomial.X + Polynomial.C n)))} =
+        (D.map (fun P => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          Wb.toAffine P.1 (Polynomial.C P.2))).prod →
+      D.map Prod.fst = (Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - l ^ 2 - Wb.toAffine.a₁ * l)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * l * n - Wb.toAffine.a₁ * n
+            - Wb.toAffine.a₃ * l) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - n ^ 2 - Wb.toAffine.a₃ * n)).roots
+      := by
+    intro l n D hDeq hDfac
+    obtain ⟨u, hu0, hNf⟩ := hNconst _ D hDeq hDfac
+    rw [hNline l n] at hNf
+    -- compare leading coefficients: the cubic is monic, the product is monic
+    have hmonprod : ((D.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => Polynomial.X -
+        Polynomial.C P.1)).prod).Monic :=
+      Polynomial.monic_multiset_prod_of_monic D
+        (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => Polynomial.X - Polynomial.C P.1)
+        (fun P _ => Polynomial.monic_X_sub_C P.1)
+    have hmoncub : (Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - l ^ 2 - Wb.toAffine.a₁ * l)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * l * n - Wb.toAffine.a₁ * n
+            - Wb.toAffine.a₃ * l) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - n ^ 2 - Wb.toAffine.a₃ * n)).Monic
+      := by monicity!
+    have hlc := congrArg Polynomial.leadingCoeff hNf
+    rw [Polynomial.leadingCoeff_neg, hmoncub.leadingCoeff,
+      Polynomial.leadingCoeff_mul, Polynomial.leadingCoeff_C,
+      hmonprod.leadingCoeff, mul_one] at hlc
+    -- so u = -1 and the cubic IS the vertical product
+    rw [← hlc] at hNf
+    rw [show (Polynomial.C (-1 : (AlgebraicClosure (ZMod q)))) = -1 from by
+      simp, neg_one_mul] at hNf
+    have hprodeq := (neg_inj.mp hNf).symm
+    rw [show (D.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+        Polynomial.X - Polynomial.C P.1)) =
+      (D.map Prod.fst).map (fun a => Polynomial.X - Polynomial.C a) from
+      (Multiset.map_map (fun a => Polynomial.X - Polynomial.C a)
+        Prod.fst D).symm] at hprodeq
+    rw [← hprodeq, Polynomial.roots_multiset_prod_X_sub_C]
   sorry
 
 set_option warn.sorry false in
