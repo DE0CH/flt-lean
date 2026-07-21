@@ -70,3 +70,50 @@ The goal's word-value atoms at the six setup points close as follows:
 
 NEXT: bind hcvP at (x - xR1) and (x - xQR3), then assemble the
 telescoped linear_combination; multiply-cancel the M-fiber junk last.
+
+## THE TELESCOPE, fully derived (2026-07-21, third pass)
+
+Write Phi_N(i)/Phi_D(i) for the aP1 numerator/denominator word values at
+point Pi (P1..P4 = the Dt points, P5/P6 the sigma-companions of P2/P4),
+m/m' for Phi_N/Phi_D at the two xM-fiber points, TLam :=
+LamA(PS1)^p LamA(-S1)^p LamB(PS1)^p LamB(-S1)^p, ZM/ZR/ZQ the
+(xPS1-x*)^p (xS1-x*)^p pairs for xM/xR1/xQR3.
+
+(i)  hcvtN + hwwN:  Phi_N(1)..Phi_N(4) * m = LnA LnB VnfA VnfB =: Y
+(ii) hcvtD + hwwD:  Phi_D(1)..Phi_D(4) * m' = Y'
+(iii) hpjA + hpjB:  Y = TLam * Y'   =>  Phi_N(1234) m = TLam Phi_D(1234) m'
+(iv) hwwNM + hwwDM + hpjM:  m = ZM * m'
+(v)  hwv7 + hwv8 + hpjR + hpjQ:  Phi_N(2546) = ZR ZQ Phi_D(2546)
+
+Multiply the GOAL by (ZM * m'); substitute (iii)+(iv) on the left and
+(v) on the right. Both sides then carry the SAME factor
+Phi_D(1)...Phi_D(6) * m', leaving the explicit-scalar residue
+   restL * TLam  vs  restR * ZR ZQ ZM,
+whose mismatch is exactly [LamA(S1)LamB(S1)LamA(-S1)LamB(-S1)]^p.
+This closes by the SIGMA-NORM identities (pure consequences of the
+curve equation at S1 via equation_iff):
+   LamA(S1)*LamA(-S1) = -cubicA(xS1)  (up to sign convention)
+   LamB(S1)*LamB(-S1) = -cubicB(xS1)
+where cubicA(xS1) = (xS1-xQR1)(xS1-xR3)(xS1-xM)-monic-cubic VALUE (as a
+polynomial identity in the coordinates — do NOT use hbalt for this, just
+expand: (y-l)(negY-l) with negY = -y - a1 x - a3 and the curve equation
+eliminates y^2). Raised to p these supply exactly the leftover
+(xS1-xM)^{2p}, V2's (xQR1-xS1)^p (xR3-xS1)^p, and W2/ZR/ZQ's
+(xS1-xR1)^p (xS1-xQR3)^p factors. Sign bookkeeping: (a-b)^p vs (b-a)^p
+pairs need hm1 : (-1:K)^p * (-1:K)^p = 1 (by <- mul_pow; norm_num) as a
+combination input; count the pairs to place hm1's coefficient.
+
+FINAL SHAPE of hword2's closure:
+  have hnormA : LamA(S1)*LamA(-S1) = <explicit cubic value at xS1> := by
+    linear_combination <coeff> * ((equation_iff xS1 yS1).mp hS1.left)
+  have hnormB : ... (same with chord B)
+  have hm1 : ((-1:K))^p * ((-1:K))^p = 1 := by rw [<- mul_pow]; norm_num
+  have hmfne : m' (both Phi_D Mf-values) ≠ 0  -- hDne-style, xM notin F'
+  refine mul_right_cancel₀ (mul_ne_zero ... hDne-factors 1..6 ... hmfne) ?_
+  linear_combination (telescope coefficients as derived above — partial
+    products along the two substitution chains, congrArg (·^p) on
+    hnormA/hnormB for the powered norm identities)
+
+NOTE: hDne (in scope from hword1!) already certifies Phi_D at P1..P6
+nonzero — reuse it for the common-factor cancellation; only the two
+Mf-values need a new nonzero argument.
