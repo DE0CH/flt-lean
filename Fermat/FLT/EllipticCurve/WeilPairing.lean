@@ -5366,6 +5366,25 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       hside l₂ n₂ l₁ n₁ D₁ hDeq₁ (hy l₁ n₁ D₁ hDeq₁ hfac₁),
       habs l₁ n₁ D₁ hDeq₁ hfac₁, habs l₂ n₂ D₂ hDeq₂ hfac₂]
     exact hlinerec l₁ n₁ l₂ n₂ hl _ _ rfl rfl
+  -- exact division along a span factorization: if span f = span a * J then
+  -- f = a * g with span g = J
+  have hdvdspan : ∀ (a f : Wb.toAffine.CoordinateRing)
+      (J : Ideal Wb.toAffine.CoordinateRing), a ≠ 0 →
+      Ideal.span {f} = Ideal.span {a} * J →
+      ∃ g, f = a * g ∧ Ideal.span {g} = J := by
+    intro a f J ha hfac
+    have hmem : f ∈ Ideal.span ({a} : Set Wb.toAffine.CoordinateRing) := by
+      have hle : Ideal.span {f} ≤ Ideal.span {a} := by
+        rw [hfac]
+        exact Ideal.mul_le_right
+      exact hle (Ideal.subset_span rfl)
+    obtain ⟨g, hg⟩ := Ideal.mem_span_singleton.mp hmem
+    refine ⟨g, hg, ?_⟩
+    have hspanmul : Ideal.span ({a} : Set Wb.toAffine.CoordinateRing) *
+        Ideal.span {g} = Ideal.span {a} * J := by
+      rw [Ideal.span_singleton_mul_span_singleton, ← hg, hfac]
+    exact mul_left_cancel₀ (by
+      simpa [Ideal.span_singleton_eq_bot] using ha) hspanmul
   sorry
 
 set_option warn.sorry false in
