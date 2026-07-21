@@ -160,10 +160,18 @@ entries file). To add/remove/annotate a node, edit
                                                   multisets via normalizedFactors + hmax), hker
                                                   COMPLETE (kernel of point evaluation = the point
                                                   ideal), hXYinj COMPLETE (point-ideal injectivity).
-                                                  NEXT: divisor evaluation f(D) := prod of evalEval
-                                                  over D; nonvanishing off the divisor; the
-                                                  reciprocity statement f(div g) = g(div f) for
-                                                  disjoint supports, by induction via line/vertical
+                                                  hoffdiv COMPLETE (nonvanishing off the divisor).
+                                                  NEXT brick: spanNorm of a point ideal is the
+                                                  vertical span (X - x_P) (check
+                                                  Ideal.spanNorm_singleton / spanNorm_mul API),
+                                                  giving N f = unit * prod (X - P.1) over the
+                                                  divisor -- the bridge between hnormeval fiber-
+                                                  products and hrecP1 root-products for the
+                                                  vertical-vs-anything reciprocity case. NEXT:
+                                                  divisor evaluation f(D) := prod of evalEval over
+                                                  D; nonvanishing off the divisor; the reciprocity
+                                                  statement f(div g) = g(div f) for disjoint
+                                                  supports, by induction via line/vertical
                                                   factorization (hline + XYIdeal_neg_mul) reducing
                                                   to the proven cores hlinerec (line-line) and
                                                   hnormeval + hrecP1 (vertical cases); then the
@@ -308,6 +316,12 @@ entries file). To add/remove/annotate a node, edit
                                           factor as point-divisor multisets via normalizedFactors +
                                           hmax), hker COMPLETE (kernel of point evaluation = the
                                           point ideal), hXYinj COMPLETE (point-ideal injectivity).
+                                          hoffdiv COMPLETE (nonvanishing off the divisor). NEXT
+                                          brick: spanNorm of a point ideal is the vertical span (X -
+                                          x_P) (check Ideal.spanNorm_singleton / spanNorm_mul API),
+                                          giving N f = unit * prod (X - P.1) over the divisor -- the
+                                          bridge between hnormeval fiber-products and hrecP1 root-
+                                          products for the vertical-vs-anything reciprocity case.
                                           NEXT: divisor evaluation f(D) := prod of evalEval over D;
                                           nonvanishing off the divisor; the reciprocity statement
                                           f(div g) = g(div f) for disjoint supports, by induction
