@@ -7909,7 +7909,55 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
               xR₃) ^ p =
           AdjoinRoot.of Wb.toAffine.polynomial (Polynomial.C c) *
             (aQ₃ * t ^ p) := by
-        sorry
+        have hvQR₃ : Ideal.span {(WeierstrassCurve.Affine.CoordinateRing.XClass
+            Wb.toAffine xQR₃ : Wb.toAffine.CoordinateRing)} =
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              xQR₃ (Polynomial.C (Wb.toAffine.negY xQR₃ yQR₃)) *
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              xQR₃ (Polynomial.C yQR₃) :=
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal_neg_mul
+            (W := Wb.toAffine) hQR₃).symm
+        have hvR₃ : Ideal.span {(WeierstrassCurve.Affine.CoordinateRing.XClass
+            Wb.toAffine xR₃ : Wb.toAffine.CoordinateRing)} =
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              xR₃ (Polynomial.C (Wb.toAffine.negY xR₃ yR₃)) *
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              xR₃ (Polynomial.C yR₃) :=
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal_neg_mul
+            (W := Wb.toAffine) hR₃).symm
+        have hspaneq : Ideal.span {aQ₁ *
+            (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+              xQR₃) ^ p *
+            (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+              xR₃) ^ p} = Ideal.span {aQ₃ * t ^ p} := by
+          rw [← Ideal.span_singleton_mul_span_singleton,
+            ← Ideal.span_singleton_mul_span_singleton,
+            ← Ideal.span_singleton_mul_span_singleton (r := aQ₃),
+            ← Ideal.span_singleton_pow, ← Ideal.span_singleton_pow,
+            ← Ideal.span_singleton_pow, haQ₁, haQ₃, ht, hvQR₃, hvR₃]
+          ring
+        obtain ⟨u, hu⟩ := Ideal.span_singleton_eq_span_singleton.mp hspaneq
+        obtain ⟨c, hc0, hcu⟩ := hCunits (↑u⁻¹) (Units.isUnit _)
+        refine ⟨c, hc0, ?_⟩
+        rw [← hcu]
+        calc aQ₁ * (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+              xQR₃) ^ p *
+            (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+              xR₃) ^ p
+            = aQ₁ * (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+              xQR₃) ^ p *
+            (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+              xR₃) ^ p * (↑u * ↑u⁻¹) := by
+              rw [Units.mul_inv, mul_one]
+          _ = (aQ₁ * (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+              xQR₃) ^ p *
+            (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+              xR₃) ^ p * ↑u) * ↑u⁻¹ := by
+              ring
+          _ = (aQ₃ * t ^ p) * ↑u⁻¹ := by
+              rw [hu]
+          _ = ↑u⁻¹ * (aQ₃ * t ^ p) := by
+              ring
       obtain ⟨c, hc0, hceq⟩ := hcomp
       -- the FULL-DIVISOR reciprocity instance (unconditional): the pair
       -- (aP₁, XS₁^p) against the pair (t, XR₁·XQR₃), with every σ-point
