@@ -6910,8 +6910,58 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       have hyPSF' : yPS ∈ F' := hF'mem yPS (by simp)
       -- the second divisor's abscissa avoids the first divisor's (else
       -- R would be one of the four bad points folded into F')
+      have hptfun : ∀ (x y c y' : (AlgebraicClosure (ZMod q)))
+          (h : Wb.toAffine.Nonsingular x y)
+          (h' : Wb.toAffine.Nonsingular c y'), x = c → y = y' →
+          (WeierstrassCurve.Affine.Point.some x y h : Wb.toAffine.Point) =
+            WeierstrassCurve.Affine.Point.some c y' h' := by
+        intro x y c y' h h' hx hy
+        subst hx
+        subst hy
+        rfl
+      have hxRof : ∀ (c y' : (AlgebraicClosure (ZMod q)))
+          (h' : Wb.toAffine.Nonsingular c y'),
+          (WeierstrassCurve.Affine.Point.some xQR yQR hQR :
+            Wb.toAffine.Point) =
+            WeierstrassCurve.Affine.Point.some c y' h' →
+          xR = xOf (-(WeierstrassCurve.Affine.Point.some xQ yQ hQ) +
+            WeierstrassCurve.Affine.Point.some c y' h') := by
+        intro c y' h' hpt
+        rw [← hpt, ← hQRc, neg_add_cancel_left]
       have hxQRne : xQR ≠ xS ∧ xQR ≠ xPS := by
-        sorry
+        constructor
+        · intro hx
+          rcases hfib2 xS yQR (hx ▸ hQR.left) with hy | hy
+          · refine hxR ?_
+            rw [hxRof xS (yfib xS)
+              ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                (hyfib xS)) (hptfun _ _ _ _ hQR _ hx hy)]
+            exact hF'mem _ (Finset.mem_union_right _
+              (Finset.mem_insert_self _ _))
+          · refine hxR ?_
+            rw [hxRof xS (Wb.toAffine.negY xS (yfib xS))
+              ((WeierstrassCurve.Affine.nonsingular_neg xS (yfib xS)).mpr
+                ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                  (hyfib xS))) (hptfun _ _ _ _ hQR _ hx hy)]
+            exact hF'mem _ (Finset.mem_union_right _
+              (Finset.mem_insert_of_mem (Finset.mem_insert_self _ _)))
+        · intro hx
+          rcases hfib2 xPS yQR (hx ▸ hQR.left) with hy | hy
+          · refine hxR ?_
+            rw [hxRof xPS (yfib xPS)
+              ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                (hyfib xPS)) (hptfun _ _ _ _ hQR _ hx hy)]
+            exact hF'mem _ (Finset.mem_union_right _
+              (Finset.mem_insert_of_mem (Finset.mem_insert_of_mem
+                (Finset.mem_insert_self _ _))))
+          · refine hxR ?_
+            rw [hxRof xPS (Wb.toAffine.negY xPS (yfib xPS))
+              ((WeierstrassCurve.Affine.nonsingular_neg xPS (yfib xPS)).mpr
+                ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                  (hyfib xPS))) (hptfun _ _ _ _ hQR _ hx hy)]
+            exact hF'mem _ (Finset.mem_union_right _
+              (Finset.mem_insert_of_mem (Finset.mem_insert_of_mem
+                (Finset.mem_insert_of_mem (Finset.mem_singleton_self _)))))
       -- the explicit point divisors of the Miller numerators
       have hDP : Ideal.span {aP} =
           ((Multiset.replicate p ((xPS, yPS) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) +
