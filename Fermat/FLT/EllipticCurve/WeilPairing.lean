@@ -3368,8 +3368,42 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           rw [zero_mul, zero_add, ← map_mul, inv_mul_cancel₀ hA'ne,
             map_one]
         · -- characteristic away from two: explicit Bézout certificate
+          have h2F : (2 : (AlgebraicClosure (ZMod q))) ≠ 0 := by
+            haveI h1 : CharP (AlgebraicClosure (ZMod q)) q :=
+              charP_of_injective_algebraMap
+                (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+            exact CharP.cast_ne_zero_of_ne_of_prime (R := (AlgebraicClosure (ZMod q)))
+              Nat.prime_two (fun h => hq2 h)
           have hD'ne : A' ^ 2 + 4 * G' ≠ 0 := by
-            sorry
+            rw [hA'def, hG'def, ← map_pow, ← map_ofNat
+              (algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))) 4, ← map_mul, ← map_add]
+            intro h0
+            have hpoly0 : (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) ^ 2 + 4 * (Polynomial.X ^ 3 + Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
+        Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆) = (0 : Polynomial (AlgebraicClosure (ZMod q))) :=
+              (IsFractionRing.injective (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))))
+                (h0.trans (map_zero _).symm)
+            -- the cubic coefficient is `4 ≠ 0`
+            have hc3 := congrArg (fun f => Polynomial.coeff f 3) hpoly0
+            simp only [Polynomial.coeff_add, Polynomial.coeff_ofNat_mul,
+              Polynomial.coeff_zero, Polynomial.coeff_X_pow,
+              Polynomial.coeff_C_mul, Polynomial.coeff_C,
+              Polynomial.coeff_X] at hc3
+            have hA2deg : (((Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) : Polynomial (AlgebraicClosure (ZMod q))) ^ 2).coeff 3 = 0 := by
+              refine Polynomial.coeff_eq_zero_of_natDegree_lt ?_
+              have h1 : ((Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) : Polynomial (AlgebraicClosure (ZMod q))).natDegree ≤ 1 := by
+                refine le_trans (Polynomial.natDegree_add_le _ _)
+                  (max_le ?_ ?_)
+                · exact le_trans Polynomial.natDegree_mul_le (by simp)
+                · simp
+              have h2 := Polynomial.natDegree_pow_le
+                (p := ((Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) : Polynomial (AlgebraicClosure (ZMod q)))) (n := 2)
+              omega
+            rw [hA2deg] at hc3
+            norm_num at hc3
+            exact (mul_ne_zero h2F h2F) (by
+              have h4 : (4 : (AlgebraicClosure (ZMod q))) = 2 * 2 := by norm_num
+              rw [← h4]
+              exact_mod_cast hc3)
           rw [Polynomial.separable_def, hderiv]
           refine ⟨Polynomial.C (-(4 * (A' ^ 2 + 4 * G')⁻¹)),
             Polynomial.C ((A' ^ 2 + 4 * G')⁻¹) *
@@ -3377,8 +3411,11 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           rw [hQdef]
           have hDinv : (A' ^ 2 + 4 * G') * (A' ^ 2 + 4 * G')⁻¹ = 1 :=
             mul_inv_cancel₀ hD'ne
-          ring_nf
-          sorry
+          have hDinvC := congrArg (Polynomial.C :
+            (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) → Polynomial (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))) hDinv
+          simp only [map_mul, map_add, map_pow, map_one, map_ofNat] at hDinvC
+          simp only [map_neg, map_mul, map_ofNat]
+          linear_combination hDinvC
       sorry
     haveI hic : IsIntegralClosure Wb.toAffine.CoordinateRing
         (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing Wb.toAffine.CoordinateRing) := by
