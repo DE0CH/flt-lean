@@ -4338,6 +4338,45 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂ ^ p)⁻¹ from by
       rw [mul_pow, inv_pow]]
     exact ClassGroup.mk_eq_one_iff.mp h1
+  -- Weil reciprocity on the affine line: the double-product swap identity
+  -- `prod_{a in roots F} G(a) = (-1)^(deg F * deg G) * prod_{b in roots G} F(b)`
+  -- for monic polynomials over the algebraically closed base
+  have hrecP1 : ∀ F G : Polynomial (AlgebraicClosure (ZMod q)), F.Monic → G.Monic →
+      (F.roots.map G.eval).prod =
+        (-1) ^ (F.natDegree * G.natDegree) * (G.roots.map F.eval).prod := by
+    have hcard : ∀ H : Polynomial (AlgebraicClosure (ZMod q)),
+        Multiset.card H.roots = H.natDegree := fun H =>
+      Polynomial.splits_iff_card_roots.mp (IsAlgClosed.splits H)
+    have hevalprod : ∀ (H : Polynomial (AlgebraicClosure (ZMod q))), H.Monic →
+        ∀ a : (AlgebraicClosure (ZMod q)),
+        H.eval a = (H.roots.map fun b => a - b).prod := by
+      intro H hH a
+      conv_lhs => rw [← Polynomial.prod_multiset_X_sub_C_of_monic_of_roots_card_eq
+        hH (hcard H)]
+      rw [Polynomial.eval_multiset_prod, Multiset.map_map]
+      exact congrArg Multiset.prod (Multiset.map_congr rfl fun b _ => by
+        simp)
+    intro F G hF hG
+    calc (F.roots.map G.eval).prod
+        = (F.roots.map fun a => (G.roots.map fun b => a - b).prod).prod :=
+          congrArg Multiset.prod
+            (Multiset.map_congr rfl fun a _ => hevalprod G hG a)
+      _ = (G.roots.map fun b => (F.roots.map fun a => a - b).prod).prod :=
+          Multiset.prod_map_prod_map F.roots G.roots
+      _ = (G.roots.map fun b =>
+            ((-1 : (AlgebraicClosure (ZMod q))) ^ F.natDegree *
+              (F.roots.map fun a => b - a).prod)).prod := by
+          refine congrArg Multiset.prod (Multiset.map_congr rfl fun b _ => ?_)
+          have hneg : (F.roots.map fun a => a - b) =
+              (F.roots.map fun a => b - a).map Neg.neg := by
+            rw [Multiset.map_map]
+            exact Multiset.map_congr rfl fun a _ => by simp
+          rw [hneg, Multiset.prod_map_neg, Multiset.card_map, hcard F]
+      _ = (-1) ^ (F.natDegree * G.natDegree) * (G.roots.map F.eval).prod := by
+          rw [Multiset.prod_map_mul, Multiset.map_const', Multiset.prod_replicate,
+            ← pow_mul, hcard G]
+          exact congrArg _ (congrArg Multiset.prod
+            (Multiset.map_congr rfl fun b _ => (hevalprod F hF b).symm))
   sorry
 
 set_option warn.sorry false in
