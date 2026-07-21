@@ -525,10 +525,40 @@ entries file). To add/remove/annotate a node, edit
                                                   F) and xPS1 <> xQ (else PS1 = +-Q makes S1 = -P +
                                                   (+-Q) whose abscissa is F-rational by the
                                                   addition-formula closure haddXF/hslopeF,
-                                                  contradicting xS1 notin F). NEXT: implement hlfac,
-                                                  then rebuild the hgrand stitch on the explicit
-                                                  word. REMAINING inside hgrand: ONLY step 5, the
-                                                  stitch -- normalize the goal and all bound
+                                                  contradicting xS1 notin F). UPGRADE (gamma,
+                                                  implemented): the chords are paired as (Q+R1,R3)
+                                                  and (-R1,-(Q+R3)) so their third points are -M and
+                                                  M with M = Q+R1+R3 — and M's abscissa is kept OUT
+                                                  of F' by hypothesis (new hrecgen binders xM yM hM
+                                                  hMc hxMF', plus the mirror xM' etc. for the future
+                                                  hstepS chord P+S1+S3), discharged in hcross by
+                                                  enlarging the avoided subfield G with generators
+                                                  xQR1,yQR1,xQR2,yQR2 and the yfib-images of F1',F2'
+                                                  (transport: xM in F' would put xR3 resp. xS3 in G
+                                                  via the addition-formula closure
+                                                  haddXF/hslopeF/hnegYF — contradiction with
+                                                  hsetup3's avoidance). CONSEQUENCE: every divisor
+                                                  point of t's explicit word (QR1, -R1, R3, -QR3, M,
+                                                  -M) has non-F' abscissa, so NO collision with the
+                                                  aP1-word (roots in F') anywhere — the stitch is
+                                                  fully cancellation-safe with no symmetric-zero
+                                                  caveats. DONE: hlfac (t*(X-xM) = c*lA*lB, fully
+                                                  proven), htword (word format), hbalt (divisor
+                                                  balance), het1-3 (pointwise at S1/-S1/PS1), hcvt,
+                                                  all inside hgrand; hcross discharges all four
+                                                  M-binder groups. REMAINING SORRY inside hstepR:
+                                                  hstitch = the sigma-completed Weil reciprocity
+                                                  equation itself, provable by: convert XClass-evals
+                                                  to scalars (hevvert+map_pow), eliminate aP1-evals
+                                                  by heP1-6 and t-evals by het1-3, project hbalP by
+                                                  hcvP at the t-word value functions (LambdaA,
+                                                  LambdaB, x-xM) and hbalt by hcvt at the aP1-word
+                                                  value functions, swap with hww instances
+                                                  (Ln/Ld/Vn/Vd vs the explicit two-line word and
+                                                  {xM}), and close with mul_right_cancel0 over the
+                                                  junk product (all factors nonzero by the
+                                                  avoidances). REMAINING inside hgrand: ONLY step 5,
+                                                  the stitch -- normalize the goal and all bound
                                                   ingredients (nine hevid points, thirteen hww
                                                   instances, hcvt/hcvP at the value functions of (Ln
                                                   ,Vn)/(Ld,Vd)/(Mn,Wn')/(Md,Wd')/{xS1}/{xR1,xQR3},
@@ -1018,9 +1048,35 @@ entries file). To add/remove/annotate a node, edit
                                           in F, xS1 notin F) and xPS1 <> xQ (else PS1 = +-Q makes S1
                                           = -P + (+-Q) whose abscissa is F-rational by the addition-
                                           formula closure haddXF/hslopeF, contradicting xS1 notin
-                                          F). NEXT: implement hlfac, then rebuild the hgrand stitch
-                                          on the explicit word. REMAINING inside hgrand: ONLY step
-                                          5, the stitch -- normalize the goal and all bound
+                                          F). UPGRADE (gamma, implemented): the chords are paired as
+                                          (Q+R1,R3) and (-R1,-(Q+R3)) so their third points are -M
+                                          and M with M = Q+R1+R3 — and M's abscissa is kept OUT of
+                                          F' by hypothesis (new hrecgen binders xM yM hM hMc hxMF',
+                                          plus the mirror xM' etc. for the future hstepS chord
+                                          P+S1+S3), discharged in hcross by enlarging the avoided
+                                          subfield G with generators xQR1,yQR1,xQR2,yQR2 and the
+                                          yfib-images of F1',F2' (transport: xM in F' would put xR3
+                                          resp. xS3 in G via the addition-formula closure
+                                          haddXF/hslopeF/hnegYF — contradiction with hsetup3's
+                                          avoidance). CONSEQUENCE: every divisor point of t's
+                                          explicit word (QR1, -R1, R3, -QR3, M, -M) has non-F'
+                                          abscissa, so NO collision with the aP1-word (roots in F')
+                                          anywhere — the stitch is fully cancellation-safe with no
+                                          symmetric-zero caveats. DONE: hlfac (t*(X-xM) = c*lA*lB,
+                                          fully proven), htword (word format), hbalt (divisor
+                                          balance), het1-3 (pointwise at S1/-S1/PS1), hcvt, all
+                                          inside hgrand; hcross discharges all four M-binder groups.
+                                          REMAINING SORRY inside hstepR: hstitch = the sigma-
+                                          completed Weil reciprocity equation itself, provable by:
+                                          convert XClass-evals to scalars (hevvert+map_pow),
+                                          eliminate aP1-evals by heP1-6 and t-evals by het1-3,
+                                          project hbalP by hcvP at the t-word value functions
+                                          (LambdaA, LambdaB, x-xM) and hbalt by hcvt at the aP1-word
+                                          value functions, swap with hww instances (Ln/Ld/Vn/Vd vs
+                                          the explicit two-line word and {xM}), and close with
+                                          mul_right_cancel0 over the junk product (all factors
+                                          nonzero by the avoidances). REMAINING inside hgrand: ONLY
+                                          step 5, the stitch -- normalize the goal and all bound
                                           ingredients (nine hevid points, thirteen hww instances,
                                           hcvt/hcvP at the value functions of
                                           (Ln,Vn)/(Ld,Vd)/(Mn,Wn')/(Md,Wd')/{xS1}/{xR1,xQR3},

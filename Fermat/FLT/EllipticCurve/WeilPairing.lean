@@ -7750,6 +7750,18 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           xQR₃ (Polynomial.C yQR₃)) ^ p *
         (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
           xR₃ (Polynomial.C (Wb.toAffine.negY xR₃ yR₃))) ^ p →
+      ∀ (xM yM : (AlgebraicClosure (ZMod q)))
+        (hM : Wb.toAffine.Nonsingular xM yM),
+      (WeierstrassCurve.Affine.Point.some xM yM hM =
+        WeierstrassCurve.Affine.Point.some xQR₁ yQR₁ hQR₁ +
+        WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃) →
+      xM ∉ F' →
+      ∀ (xM' yM' : (AlgebraicClosure (ZMod q)))
+        (hM' : Wb.toAffine.Nonsingular xM' yM'),
+      (WeierstrassCurve.Affine.Point.some xM' yM' hM' =
+        WeierstrassCurve.Affine.Point.some xPS₁ yPS₁ hPS₁ +
+        WeierstrassCurve.Affine.Point.some xS₃ yS₃ hS₃) →
+      xM' ∉ F' →
       (AdjoinRoot.evalEval hQR₁.left aP₁ *
         AdjoinRoot.evalEval hR₁.left
           ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
@@ -7780,6 +7792,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       hxQR₁nS hxQR₁nPS hxQR₁F' aP₁ aQ₁ haP₁ haQ₁
       xS₃ yS₃ hS₃ xR₃ yR₃ hR₃ xPS₃ yPS₃ hPS₃ xQR₃ yQR₃ hQR₃ aP₃ aQ₃
       hxS₃ hxR₃ hxPS₃ hxQR₃ hPSc₃ hQRc₃ haP₃ haQ₃
+      xM yM hM hMc hxMF' xM' yM' hM' hM'c hxM'F'
     -- the R-STEP: with the first translate S₁ fixed, moving the second
     -- translate R₁ → R₃ preserves the cross-ratio (the τ-telescoping:
     -- τ has explicit divisor (Q⊕R₁)+(⊖R₁)... vs ...(Q⊕R₃)+(⊖R₃), its
@@ -8138,45 +8151,21 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           congrArg (fun A : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) =>
             (A.map φ).prod) hbalP
         -- THE EXPLICIT FACTORIZATION OF t: the four points of div t pair
-        -- into the chord through (Q⊕R₁), ⊖R₁ (third point ⊖Q) and the
-        -- chord through R₃, ⊖(Q⊕R₃) (third point Q), so t·(X - xQ) is a
+        -- into the chord through (Q⊕R₁), R₃ (third point ⊖M) and the
+        -- chord through ⊖R₁, ⊖(Q⊕R₃) (third point M), where
+        -- M = Q⊕R₁⊕R₃ has abscissa OUTSIDE F'; so t·(X - xM) is a
         -- constant times the product of the two line classes
-        have hQpt0 : (WeierstrassCurve.Affine.Point.some xQ yQ hQ :
+        have hMpt0 : (WeierstrassCurve.Affine.Point.some xM yM hM :
             Wb.toAffine.Point) ≠ 0 := by
           simp [WeierstrassCurve.Affine.Point.zero_def]
-        have hQnegpt : Wb.toAffine.Nonsingular xQ (Wb.toAffine.negY xQ yQ) :=
-          (WeierstrassCurve.Affine.nonsingular_neg xQ yQ).mpr hQ
-        have hcaseA : ¬(xQR₁ = xR₁ ∧
-            yQR₁ = Wb.toAffine.negY xR₁ (Wb.toAffine.negY xR₁ yR₁)) := by
-          rw [WeierstrassCurve.Affine.negY_negY]
+        have hMnegpt : Wb.toAffine.Nonsingular xM (Wb.toAffine.negY xM yM) :=
+          (WeierstrassCurve.Affine.nonsingular_neg xM yM).mpr hM
+        have hcaseA : ¬(xQR₁ = xR₃ ∧ yQR₁ = Wb.toAffine.negY xR₃ yR₃) := by
           rintro ⟨hx, hy⟩
-          apply hQpt0
-          have hpteq : (WeierstrassCurve.Affine.Point.some xQR₁ yQR₁ hQR₁ :
-              Wb.toAffine.Point) =
-              WeierstrassCurve.Affine.Point.some xR₁ yR₁ hR₁ := by
-            cases hx; cases hy; rfl
-          have h0 : (WeierstrassCurve.Affine.Point.some xQ yQ hQ +
-              WeierstrassCurve.Affine.Point.some xR₁ yR₁ hR₁ :
-              Wb.toAffine.Point) =
-              0 + WeierstrassCurve.Affine.Point.some xR₁ yR₁ hR₁ := by
-            rw [zero_add, ← hQRc₁, hpteq]
-          exact add_right_cancel h0
-        have hcaseB : ¬(xR₃ = xQR₃ ∧
-            yR₃ = Wb.toAffine.negY xQR₃ (Wb.toAffine.negY xQR₃ yQR₃)) := by
-          rw [WeierstrassCurve.Affine.negY_negY]
-          rintro ⟨hx, hy⟩
-          apply hQpt0
-          have hpteq : (WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃ :
-              Wb.toAffine.Point) =
-              WeierstrassCurve.Affine.Point.some xQR₃ yQR₃ hQR₃ := by
-            cases hx; cases hy; rfl
-          have h0 : (WeierstrassCurve.Affine.Point.some xQ yQ hQ +
-              WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃ :
-              Wb.toAffine.Point) =
-              0 + WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃ := by
-            rw [zero_add, ← hQRc₃, ← hpteq]
-          exact add_right_cancel h0
-        -- the chord sums, at the point level
+          apply hMpt0
+          rw [hMc]
+          exact WeierstrassCurve.Affine.Point.add_of_Y_eq hx hy
+        -- the σ-companion negation links
         have hnegR₁pt : (WeierstrassCurve.Affine.Point.some xR₁
             (Wb.toAffine.negY xR₁ yR₁) hR₁neg : Wb.toAffine.Point) =
             -(WeierstrassCurve.Affine.Point.some xR₁ yR₁ hR₁) :=
@@ -8185,127 +8174,162 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
             (Wb.toAffine.negY xQR₃ yQR₃) hQR₃neg : Wb.toAffine.Point) =
             -(WeierstrassCurve.Affine.Point.some xQR₃ yQR₃ hQR₃) :=
           (WeierstrassCurve.Affine.Point.neg_some hQR₃).symm
-        have hsumA : (WeierstrassCurve.Affine.Point.some xQR₁ yQR₁ hQR₁ +
-            WeierstrassCurve.Affine.Point.some xR₁
+        have hcaseB : ¬(xR₁ = xQR₃ ∧ Wb.toAffine.negY xR₁ yR₁ =
+            Wb.toAffine.negY xQR₃ (Wb.toAffine.negY xQR₃ yQR₃)) := by
+          rw [WeierstrassCurve.Affine.negY_negY]
+          rintro ⟨hx, hy⟩
+          apply hMpt0
+          have hpteq : (WeierstrassCurve.Affine.Point.some xR₁
               (Wb.toAffine.negY xR₁ yR₁) hR₁neg : Wb.toAffine.Point) =
-            WeierstrassCurve.Affine.Point.some xQ yQ hQ := by
-          rw [hnegR₁pt, hQRc₁, add_neg_cancel_right]
-        have hsumB : (WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃ +
+              WeierstrassCurve.Affine.Point.some xQR₃ yQR₃ hQR₃ := by
+            cases hx; cases hy; rfl
+          have hneg : -(WeierstrassCurve.Affine.Point.some xR₁ yR₁ hR₁ :
+              Wb.toAffine.Point) =
+              WeierstrassCurve.Affine.Point.some xQR₃ yQR₃ hQR₃ :=
+            hnegR₁pt.symm.trans hpteq
+          have h2 : (WeierstrassCurve.Affine.Point.some xQ yQ hQ +
+              WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃ :
+              Wb.toAffine.Point) =
+              -(WeierstrassCurve.Affine.Point.some xR₁ yR₁ hR₁) := by
+            rw [hneg]
+            exact hQRc₃.symm
+          rw [hMc, hQRc₁]
+          calc (WeierstrassCurve.Affine.Point.some xQ yQ hQ +
+              WeierstrassCurve.Affine.Point.some xR₁ yR₁ hR₁ +
+              WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃ :
+              Wb.toAffine.Point)
+              = (WeierstrassCurve.Affine.Point.some xQ yQ hQ +
+                WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃) +
+                WeierstrassCurve.Affine.Point.some xR₁ yR₁ hR₁ := by abel
+            _ = -(WeierstrassCurve.Affine.Point.some xR₁ yR₁ hR₁) +
+                WeierstrassCurve.Affine.Point.some xR₁ yR₁ hR₁ := by rw [h2]
+            _ = 0 := neg_add_cancel _
+        -- the chord sums, at the point level
+        have hsumA : (WeierstrassCurve.Affine.Point.some xQR₁ yQR₁ hQR₁ +
+            WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃ :
+            Wb.toAffine.Point) =
+            WeierstrassCurve.Affine.Point.some xM yM hM := hMc.symm
+        have hsumB : (WeierstrassCurve.Affine.Point.some xR₁
+            (Wb.toAffine.negY xR₁ yR₁) hR₁neg +
             WeierstrassCurve.Affine.Point.some xQR₃
               (Wb.toAffine.negY xQR₃ yQR₃) hQR₃neg : Wb.toAffine.Point) =
-            WeierstrassCurve.Affine.Point.some xQ
-              (Wb.toAffine.negY xQ yQ) hQnegpt := by
-          rw [hnegQR₃pt, hQRc₃, neg_add_rev, add_neg_cancel_left]
-          exact WeierstrassCurve.Affine.Point.neg_some hQ
-        -- the addition-formula links: the chords' third points are ⊖Q, Q
+            WeierstrassCurve.Affine.Point.some xM
+              (Wb.toAffine.negY xM yM) hMnegpt := by
+          rw [hnegR₁pt, hnegQR₃pt, ← neg_add_rev]
+          have hQR3R1 : (WeierstrassCurve.Affine.Point.some xQR₃ yQR₃ hQR₃ +
+              WeierstrassCurve.Affine.Point.some xR₁ yR₁ hR₁ :
+              Wb.toAffine.Point) =
+              WeierstrassCurve.Affine.Point.some xM yM hM := by
+            rw [hQRc₃, hMc, hQRc₁]
+            abel
+          rw [hQR3R1]
+          exact WeierstrassCurve.Affine.Point.neg_some hM
+        -- the addition-formula links: the chords' third points are ⊖M, M
         have hlinkA := WeierstrassCurve.Affine.Point.add_some
-          hcaseA (h₁ := hQR₁) (h₂ := hR₁neg)
+          hcaseA (h₁ := hQR₁) (h₂ := hR₃)
         have hlinkB := WeierstrassCurve.Affine.Point.add_some
-          hcaseB (h₁ := hR₃) (h₂ := hQR₃neg)
-        obtain ⟨hXA, hYA⟩ : Wb.toAffine.addX xQR₁ xR₁
-              (Wb.toAffine.slope xQR₁ xR₁ yQR₁
-                (Wb.toAffine.negY xR₁ yR₁)) = xQ ∧
-            Wb.toAffine.addY xQR₁ xR₁ yQR₁
-              (Wb.toAffine.slope xQR₁ xR₁ yQR₁
-                (Wb.toAffine.negY xR₁ yR₁)) = yQ := by
+          hcaseB (h₁ := hR₁neg) (h₂ := hQR₃neg)
+        obtain ⟨hXA, hYA⟩ : Wb.toAffine.addX xQR₁ xR₃
+              (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) = xM ∧
+            Wb.toAffine.addY xQR₁ xR₃ yQR₁
+              (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) = yM := by
           have h := hlinkA.symm.trans hsumA
           injection h with e1 e2
           exact ⟨e1, e2⟩
-        obtain ⟨hXB, hYB⟩ : Wb.toAffine.addX xR₃ xQR₃
-              (Wb.toAffine.slope xR₃ xQR₃ yR₃
-                (Wb.toAffine.negY xQR₃ yQR₃)) = xQ ∧
-            Wb.toAffine.addY xR₃ xQR₃ yR₃
-              (Wb.toAffine.slope xR₃ xQR₃ yR₃
+        obtain ⟨hXB, hYB⟩ : Wb.toAffine.addX xR₁ xQR₃
+              (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
+                (Wb.toAffine.negY xQR₃ yQR₃)) = xM ∧
+            Wb.toAffine.addY xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
+              (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
                 (Wb.toAffine.negY xQR₃ yQR₃)) =
-              Wb.toAffine.negY xQ yQ := by
+              Wb.toAffine.negY xM yM := by
           have h := hlinkB.symm.trans hsumB
           injection h with e1 e2
           exact ⟨e1, e2⟩
-        -- the two chord line identities, with third factor rewritten to ±Q
-        have hlineA := hline xQR₁ yQR₁ xR₁ (Wb.toAffine.negY xR₁ yR₁)
-          hQR₁ hR₁neg hcaseA
-        have hlineB := hline xR₃ yR₃ xQR₃ (Wb.toAffine.negY xQR₃ yQR₃)
-          hR₃ hQR₃neg hcaseB
+        -- the two chord line identities, with third factor rewritten to ∓M
+        have hlineA := hline xQR₁ yQR₁ xR₃ yR₃ hQR₁ hR₃ hcaseA
+        have hlineB := hline xR₁ (Wb.toAffine.negY xR₁ yR₁) xQR₃
+          (Wb.toAffine.negY xQR₃ yQR₃) hR₁neg hQR₃neg hcaseB
         rw [hXA, hYA] at hlineA
         rw [hXB, hYB, WeierstrassCurve.Affine.negY_negY] at hlineB
-        -- the vertical at xQ
-        have hvQ : Ideal.span {(WeierstrassCurve.Affine.CoordinateRing.XClass
-            Wb.toAffine xQ : Wb.toAffine.CoordinateRing)} =
+        -- the vertical at xM
+        have hvM : Ideal.span {(WeierstrassCurve.Affine.CoordinateRing.XClass
+            Wb.toAffine xM : Wb.toAffine.CoordinateRing)} =
             WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
-              xQ (Polynomial.C (Wb.toAffine.negY xQ yQ)) *
+              xM (Polynomial.C (Wb.toAffine.negY xM yM)) *
             WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
-              xQ (Polynomial.C yQ) :=
+              xM (Polynomial.C yM) :=
           (WeierstrassCurve.Affine.CoordinateRing.XYIdeal_neg_mul
-            (W := Wb.toAffine) hQ).symm
-        -- the span-level factorization of t·(X - xQ)
+            (W := Wb.toAffine) hM).symm
+        -- the span-level factorization of t·(X - xM)
         have hspanfac : Ideal.span
-            {t * WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQ} =
+            {t * WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xM} =
             Ideal.span {WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
               (WeierstrassCurve.Affine.linePolynomial xQR₁ yQR₁
-                (Wb.toAffine.slope xQR₁ xR₁ yQR₁
-                  (Wb.toAffine.negY xR₁ yR₁))) *
+                (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃)) *
               WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
-              (WeierstrassCurve.Affine.linePolynomial xR₃ yR₃
-                (Wb.toAffine.slope xR₃ xQR₃ yR₃
+              (WeierstrassCurve.Affine.linePolynomial xR₁
+                (Wb.toAffine.negY xR₁ yR₁)
+                (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
                   (Wb.toAffine.negY xQR₃ yQR₃)))} := by
           rw [← Ideal.span_singleton_mul_span_singleton,
-            ← Ideal.span_singleton_mul_span_singleton, ht, hvQ]
+            ← Ideal.span_singleton_mul_span_singleton, ht, hvM]
           have hYA' : (Ideal.span {WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
               (WeierstrassCurve.Affine.linePolynomial xQR₁ yQR₁
-                (Wb.toAffine.slope xQR₁ xR₁ yQR₁
-                  (Wb.toAffine.negY xR₁ yR₁)))} :
+                (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃))} :
               Ideal Wb.toAffine.CoordinateRing) =
               WeierstrassCurve.Affine.CoordinateRing.YIdeal Wb.toAffine
                 (WeierstrassCurve.Affine.linePolynomial xQR₁ yQR₁
-                  (Wb.toAffine.slope xQR₁ xR₁ yQR₁
-                    (Wb.toAffine.negY xR₁ yR₁))) := rfl
+                  (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃)) := rfl
           have hYB' : (Ideal.span {WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
-              (WeierstrassCurve.Affine.linePolynomial xR₃ yR₃
-                (Wb.toAffine.slope xR₃ xQR₃ yR₃
+              (WeierstrassCurve.Affine.linePolynomial xR₁
+                (Wb.toAffine.negY xR₁ yR₁)
+                (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
                   (Wb.toAffine.negY xQR₃ yQR₃)))} :
               Ideal Wb.toAffine.CoordinateRing) =
               WeierstrassCurve.Affine.CoordinateRing.YIdeal Wb.toAffine
-                (WeierstrassCurve.Affine.linePolynomial xR₃ yR₃
-                  (Wb.toAffine.slope xR₃ xQR₃ yR₃
-                    (Wb.toAffine.negY xQR₃ yQR₃))) := rfl
+                (WeierstrassCurve.Affine.linePolynomial xR₁
+                  (Wb.toAffine.negY xR₁ yR₁)
+                  (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
+              (Wb.toAffine.negY xQR₃ yQR₃))) := rfl
           rw [hYA', hYB', hlineA, hlineB]
           ring
         -- the element-level factorization, up to a nonzero constant
         have hlfac : ∃ c : (AlgebraicClosure (ZMod q)), c ≠ 0 ∧
-            t * WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQ =
+            t * WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xM =
             AdjoinRoot.of Wb.toAffine.polynomial (Polynomial.C c) *
               (WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
               (WeierstrassCurve.Affine.linePolynomial xQR₁ yQR₁
-                (Wb.toAffine.slope xQR₁ xR₁ yQR₁
-                  (Wb.toAffine.negY xR₁ yR₁))) *
+                (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃)) *
               WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
-              (WeierstrassCurve.Affine.linePolynomial xR₃ yR₃
-                (Wb.toAffine.slope xR₃ xQR₃ yR₃
+              (WeierstrassCurve.Affine.linePolynomial xR₁
+                (Wb.toAffine.negY xR₁ yR₁)
+                (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
                   (Wb.toAffine.negY xQR₃ yQR₃)))) := by
           obtain ⟨u, hu⟩ := Ideal.span_singleton_eq_span_singleton.mp hspanfac
           obtain ⟨c, hc0, hcu⟩ := hCunits (↑u⁻¹) (Units.isUnit _)
           refine ⟨c, hc0, ?_⟩
           rw [← hcu]
-          calc t * WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQ
+          calc t * WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xM
               = t * WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
-                xQ * (↑u * ↑u⁻¹) := by rw [Units.mul_inv, mul_one]
+                xM * (↑u * ↑u⁻¹) := by rw [Units.mul_inv, mul_one]
             _ = (t * WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
-                xQ * ↑u) * ↑u⁻¹ := by ring
+                xM * ↑u) * ↑u⁻¹ := by ring
             _ = (WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
               (WeierstrassCurve.Affine.linePolynomial xQR₁ yQR₁
-                (Wb.toAffine.slope xQR₁ xR₁ yQR₁
-                  (Wb.toAffine.negY xR₁ yR₁))) *
+                (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃)) *
               WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
-              (WeierstrassCurve.Affine.linePolynomial xR₃ yR₃
-                (Wb.toAffine.slope xR₃ xQR₃ yR₃
+              (WeierstrassCurve.Affine.linePolynomial xR₁
+                (Wb.toAffine.negY xR₁ yR₁)
+                (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
                   (Wb.toAffine.negY xQR₃ yQR₃)))) * ↑u⁻¹ := by rw [hu]
             _ = ↑u⁻¹ * (WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
               (WeierstrassCurve.Affine.linePolynomial xQR₁ yQR₁
-                (Wb.toAffine.slope xQR₁ xR₁ yQR₁
-                  (Wb.toAffine.negY xR₁ yR₁))) *
+                (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃)) *
               WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
-              (WeierstrassCurve.Affine.linePolynomial xR₃ yR₃
-                (Wb.toAffine.slope xR₃ xQR₃ yR₃
+              (WeierstrassCurve.Affine.linePolynomial xR₁
+                (Wb.toAffine.negY xR₁ yR₁)
+                (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
                   (Wb.toAffine.negY xQR₃ yQR₃)))) := by ring
         -- THE GRAND WORD-LEVEL ASSEMBLY: evaluate the two word identities
         -- over all eight points, convert word-divisor evaluations through
@@ -8353,7 +8377,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                 (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁ *
                   WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQR₃)) ^ p) := by
           -- t's explicit word in the hbaldiv/hevid format: numerator
-          -- lines = the two chords, denominator vertical = xQ
+          -- lines = the two chords, denominator vertical = xM
           obtain ⟨c, hc0, htfac⟩ := hlfac
           have htword : t *
               ((0 : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))).map
@@ -8361,13 +8385,16 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                   AdjoinRoot.mk Wb.toAffine.polynomial
                     (Polynomial.X - Polynomial.C (Polynomial.C P.1 * Polynomial.X +
                       Polynomial.C P.2)))).prod *
-              (({xQ} : Multiset (AlgebraicClosure (ZMod q))).map
+              (({xM} : Multiset (AlgebraicClosure (ZMod q))).map
                 (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine)).prod =
               AdjoinRoot.of Wb.toAffine.polynomial (Polynomial.C c) *
-              (({(Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁),
-                  yQR₁ - Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁) * xQR₁),
-                 (Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃),
-                  yR₃ - Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃) * xR₃)} :
+              (({(Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃,
+                  yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁),
+                 (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
+                    (Wb.toAffine.negY xQR₃ yQR₃),
+                  Wb.toAffine.negY xR₁ yR₁ -
+                    (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
+                    (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)} :
                 Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))).map
                 (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
                   AdjoinRoot.mk Wb.toAffine.polynomial
@@ -8380,19 +8407,19 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
               Multiset.insert_eq_cons, Multiset.map_cons, Multiset.prod_cons]
             have hclA : AdjoinRoot.mk Wb.toAffine.polynomial
                 (Polynomial.X - Polynomial.C (Polynomial.C
-                    (Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁)) *
+                    (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) *
                   Polynomial.X + Polynomial.C (yQR₁ -
-                    Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁) * xQR₁))) =
+                    (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) =
                 WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
                   (WeierstrassCurve.Affine.linePolynomial xQR₁ yQR₁
-                    (Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁))) := by
+                    (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃)) := by
               have harg : (Polynomial.C
-                    (Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁)) *
+                    (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) *
                   Polynomial.X + Polynomial.C (yQR₁ -
-                    Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁) * xQR₁) :
+                    (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁) :
                   Polynomial (AlgebraicClosure (ZMod q))) =
                   WeierstrassCurve.Affine.linePolynomial xQR₁ yQR₁
-                    (Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁)) := by
+                    (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) := by
                 simp only [WeierstrassCurve.Affine.linePolynomial,
                   Polynomial.C_sub, Polynomial.C_mul]
                 ring
@@ -8400,19 +8427,27 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                 (by rw [harg])
             have hclB : AdjoinRoot.mk Wb.toAffine.polynomial
                 (Polynomial.X - Polynomial.C (Polynomial.C
-                    (Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃)) *
-                  Polynomial.X + Polynomial.C (yR₃ -
-                    Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃) * xR₃))) =
+                    (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
+                    (Wb.toAffine.negY xQR₃ yQR₃)) *
+                  Polynomial.X + Polynomial.C (Wb.toAffine.negY xR₁ yR₁ -
+                    (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
+                    (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁))) =
                 WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
-                  (WeierstrassCurve.Affine.linePolynomial xR₃ yR₃
-                    (Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃))) := by
+                  (WeierstrassCurve.Affine.linePolynomial xR₁
+                    (Wb.toAffine.negY xR₁ yR₁)
+                    (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
+                    (Wb.toAffine.negY xQR₃ yQR₃))) := by
               have harg : (Polynomial.C
-                    (Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃)) *
-                  Polynomial.X + Polynomial.C (yR₃ -
-                    Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃) * xR₃) :
+                    (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
+                    (Wb.toAffine.negY xQR₃ yQR₃)) *
+                  Polynomial.X + Polynomial.C (Wb.toAffine.negY xR₁ yR₁ -
+                    (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
+                    (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁) :
                   Polynomial (AlgebraicClosure (ZMod q))) =
-                  WeierstrassCurve.Affine.linePolynomial xR₃ yR₃
-                    (Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃)) := by
+                  WeierstrassCurve.Affine.linePolynomial xR₁
+                    (Wb.toAffine.negY xR₁ yR₁)
+                    (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
+                    (Wb.toAffine.negY xQR₃ yQR₃)) := by
                 simp only [WeierstrassCurve.Affine.linePolynomial,
                   Polynomial.C_sub, Polynomial.C_mul]
                 ring
@@ -8420,18 +8455,21 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                 (by rw [harg])
             rw [hclA, hclB]
             exact htfac
-          -- t's divisor balance: D_t + fiber pair over xQ = the two
+          -- t's divisor balance: D_t + fiber pair over xM = the two
           -- chord-cubic root divisors
           have hbalt := hbaldiv t
             ({(xQR₁, yQR₁), (xR₁, Wb.toAffine.negY xR₁ yR₁), (xR₃, yR₃),
                  (xQR₃, Wb.toAffine.negY xQR₃ yQR₃)} :
                 Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
-            ({(Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁),
-                  yQR₁ - Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁) * xQR₁),
-                 (Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃),
-                  yR₃ - Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃) * xR₃)} :
+            ({(Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃,
+                  yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁),
+                 (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
+                    (Wb.toAffine.negY xQR₃ yQR₃),
+                  Wb.toAffine.negY xR₁ yR₁ -
+                    (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
+                    (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)} :
                 Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
-            0 0 ({xQ} : Multiset (AlgebraicClosure (ZMod q))) c hc0
+            0 0 ({xM} : Multiset (AlgebraicClosure (ZMod q))) c hc0
             (by intro T hT
                 simp only [Multiset.insert_eq_cons, Multiset.mem_cons,
                   Multiset.mem_singleton] at hT
@@ -8447,27 +8485,36 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
             htword
           -- pointwise evaluations of t's word identity at S₁, ⊖S₁, PS₁
           have het₁ := hevid t
-            ({(Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁),
-                  yQR₁ - Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁) * xQR₁),
-                 (Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃),
-                  yR₃ - Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃) * xR₃)} :
+            ({(Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃,
+                  yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁),
+                 (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
+                    (Wb.toAffine.negY xQR₃ yQR₃),
+                  Wb.toAffine.negY xR₁ yR₁ -
+                    (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
+                    (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)} :
                 Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
-            0 0 ({xQ} : Multiset (AlgebraicClosure (ZMod q))) c htword xS₁ yS₁ hS₁.left
+            0 0 ({xM} : Multiset (AlgebraicClosure (ZMod q))) c htword xS₁ yS₁ hS₁.left
           have het₂ := hevid t
-            ({(Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁),
-                  yQR₁ - Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁) * xQR₁),
-                 (Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃),
-                  yR₃ - Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃) * xR₃)} :
+            ({(Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃,
+                  yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁),
+                 (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
+                    (Wb.toAffine.negY xQR₃ yQR₃),
+                  Wb.toAffine.negY xR₁ yR₁ -
+                    (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
+                    (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)} :
                 Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
-            0 0 ({xQ} : Multiset (AlgebraicClosure (ZMod q))) c htword xS₁
+            0 0 ({xM} : Multiset (AlgebraicClosure (ZMod q))) c htword xS₁
             (Wb.toAffine.negY xS₁ yS₁) hS₁neg.left
           have het₃ := hevid t
-            ({(Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁),
-                  yQR₁ - Wb.toAffine.slope xQR₁ xR₁ yQR₁ (Wb.toAffine.negY xR₁ yR₁) * xQR₁),
-                 (Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃),
-                  yR₃ - Wb.toAffine.slope xR₃ xQR₃ yR₃ (Wb.toAffine.negY xQR₃ yQR₃) * xR₃)} :
+            ({(Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃,
+                  yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁),
+                 (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
+                    (Wb.toAffine.negY xQR₃ yQR₃),
+                  Wb.toAffine.negY xR₁ yR₁ -
+                    (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁)
+                    (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)} :
                 Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
-            0 0 ({xQ} : Multiset (AlgebraicClosure (ZMod q))) c htword xPS₁ yPS₁ hPS₁.left
+            0 0 ({xM} : Multiset (AlgebraicClosure (ZMod q))) c htword xPS₁ yPS₁ hPS₁.left
           -- the product-projection of the t-side balance
           have hcvt := fun φ : ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) → (AlgebraicClosure (ZMod q)) =>
             congrArg (fun A : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) =>
@@ -8898,17 +8945,115 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           rw [hcw] at h
           exact h
         obtain ⟨G, hGfin, hGmem⟩ := hsubfin
-          (hF₁'fin.toFinset ∪ hF₂'fin.toFinset)
-        have hF₁'G : F₁' ≤ G := fun a ha => hGmem a
-          (Finset.mem_union_left _ (hF₁'fin.mem_toFinset.mpr ha))
-        have hF₂'G : F₂' ≤ G := fun a ha => hGmem a
-          (Finset.mem_union_right _ (hF₂'fin.mem_toFinset.mpr ha))
+          (hF₁'fin.toFinset ∪ hF₂'fin.toFinset ∪
+            {xQR₁, yQR₁, xQR₂, yQR₂} ∪
+            hF₁'fin.toFinset.image yfib ∪ hF₂'fin.toFinset.image yfib)
+        have hF₁'G : F₁' ≤ G := fun a ha => hGmem a (by
+          simp only [Finset.mem_union]
+          exact Or.inl (Or.inl (Or.inl (Or.inl
+            (hF₁'fin.mem_toFinset.mpr ha)))))
+        have hF₂'G : F₂' ≤ G := fun a ha => hGmem a (by
+          simp only [Finset.mem_union]
+          exact Or.inl (Or.inl (Or.inl (Or.inr
+            (hF₂'fin.mem_toFinset.mpr ha)))))
+        have hQR₁G : xQR₁ ∈ G ∧ yQR₁ ∈ G :=
+          ⟨hGmem _ (by
+            simp only [Finset.mem_union, Finset.mem_insert,
+              Finset.mem_singleton]
+            tauto), hGmem _ (by
+            simp only [Finset.mem_union, Finset.mem_insert,
+              Finset.mem_singleton]
+            tauto)⟩
+        have hQR₂G : xQR₂ ∈ G ∧ yQR₂ ∈ G :=
+          ⟨hGmem _ (by
+            simp only [Finset.mem_union, Finset.mem_insert,
+              Finset.mem_singleton]
+            tauto), hGmem _ (by
+            simp only [Finset.mem_union, Finset.mem_insert,
+              Finset.mem_singleton]
+            tauto)⟩
+        have hyfibG₁ : ∀ c ∈ F₁', yfib c ∈ G := fun c hc => hGmem _ (by
+          simp only [Finset.mem_union]
+          exact Or.inl (Or.inr (Finset.mem_image.mpr
+            ⟨c, hF₁'fin.mem_toFinset.mpr hc, rfl⟩)))
+        have hyfibG₂ : ∀ c ∈ F₂', yfib c ∈ G := fun c hc => hGmem _ (by
+          simp only [Finset.mem_union]
+          exact Or.inr (Finset.mem_image.mpr
+            ⟨c, hF₂'fin.mem_toFinset.mpr hc, rfl⟩))
         obtain ⟨xS₃, yS₃, hS₃, xR₃, yR₃, hR₃, xPS₃, yPS₃, hPS₃,
           xQR₃, yQR₃, hQR₃, aP₃, aQ₃, hxS₃, hxR₃, hxPS₃, hxQR₃,
           hPSc₃, hQRc₃, haP₃, haQ₃, hA₃, hB₃⟩ :=
           hsetup3 G hGfin xP yP hP₀ xQ yQ hQ₀ hvp hwp
             (hF₁'G (hFF₁ hxPF₁)) (hF₁'G (hFF₁ hyPF₁))
             (hF₁'G (hFF₁ hxQF₁)) (hF₁'G (hFF₁ hyQF₁))
+        have hxneA13 : xQR₁ ≠ xR₃ := fun h => hxR₃ (h ▸ hQR₁G.1)
+        have hMA13 := WeierstrassCurve.Affine.nonsingular_add hQR₁ hR₃
+          (fun hxy => hxneA13 hxy.1)
+        have hMcA13 : (WeierstrassCurve.Affine.Point.some (Wb.toAffine.addX xQR₁ xR₃ (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃)) (Wb.toAffine.addY xQR₁ xR₃ yQR₁ (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃)) hMA13 : Wb.toAffine.Point) =
+            WeierstrassCurve.Affine.Point.some xQR₁ yQR₁ hQR₁ + WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃ :=
+          (WeierstrassCurve.Affine.Point.add_some
+            (fun hxy => hxneA13 hxy.1)).symm
+        have hxMA13F : (Wb.toAffine.addX xQR₁ xR₃ (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃)) ∉ F₁' := by
+          intro hin
+          have hyMG : (Wb.toAffine.addY xQR₁ xR₃ yQR₁ (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃)) ∈ G := by
+            rcases hfib2 _ _ hMA13.left with hy | hy
+            · rw [hy]; exact hyfibG₁ _ hin
+            · rw [hy]
+              exact hnegYF G _ _ (hF₁'G hin) (hyfibG₁ _ hin)
+          have hAneg : Wb.toAffine.Nonsingular xQR₁ (Wb.toAffine.negY xQR₁ yQR₁) :=
+            (WeierstrassCurve.Affine.nonsingular_neg xQR₁ yQR₁).mpr hQR₁
+          have hBeq : (WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃ : Wb.toAffine.Point) =
+              WeierstrassCurve.Affine.Point.some xQR₁ (Wb.toAffine.negY xQR₁ yQR₁) hAneg +
+              WeierstrassCurve.Affine.Point.some (Wb.toAffine.addX xQR₁ xR₃ (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃)) (Wb.toAffine.addY xQR₁ xR₃ yQR₁ (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃)) hMA13 := by
+            rw [show (WeierstrassCurve.Affine.Point.some xQR₁ (Wb.toAffine.negY xQR₁ yQR₁) hAneg :
+                Wb.toAffine.Point) = -(WeierstrassCurve.Affine.Point.some xQR₁ yQR₁ hQR₁) from
+              (WeierstrassCurve.Affine.Point.neg_some hQR₁).symm,
+              hMcA13, neg_add_cancel_left]
+          by_cases hxy : xQR₁ = (Wb.toAffine.addX xQR₁ xR₃ (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃)) ∧
+              Wb.toAffine.negY xQR₁ yQR₁ = Wb.toAffine.negY (Wb.toAffine.addX xQR₁ xR₃ (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃)) (Wb.toAffine.addY xQR₁ xR₃ yQR₁ (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃))
+          · rw [WeierstrassCurve.Affine.Point.add_of_Y_eq hxy.1 hxy.2] at hBeq
+            simp [WeierstrassCurve.Affine.Point.zero_def] at hBeq
+          · rw [WeierstrassCurve.Affine.Point.add_some hxy] at hBeq
+            injection hBeq with e1 e2
+            apply hxR₃
+            rw [e1]
+            exact haddXF G _ _ _ hQR₁G.1 (hF₁'G hin)
+              (hslopeF G _ _ _ _ hQR₁G.1 (hF₁'G hin)
+                (hnegYF G _ _ hQR₁G.1 hQR₁G.2) hyMG)
+        have hxneB13 : xPS₁ ≠ xS₃ := fun h => hxS₃ (h ▸ (hF₁'G hxPS₁F'))
+        have hMB13 := WeierstrassCurve.Affine.nonsingular_add hPS₁ hS₃
+          (fun hxy => hxneB13 hxy.1)
+        have hMcB13 : (WeierstrassCurve.Affine.Point.some (Wb.toAffine.addX xPS₁ xS₃ (Wb.toAffine.slope xPS₁ xS₃ yPS₁ yS₃)) (Wb.toAffine.addY xPS₁ xS₃ yPS₁ (Wb.toAffine.slope xPS₁ xS₃ yPS₁ yS₃)) hMB13 : Wb.toAffine.Point) =
+            WeierstrassCurve.Affine.Point.some xPS₁ yPS₁ hPS₁ + WeierstrassCurve.Affine.Point.some xS₃ yS₃ hS₃ :=
+          (WeierstrassCurve.Affine.Point.add_some
+            (fun hxy => hxneB13 hxy.1)).symm
+        have hxMB13F : (Wb.toAffine.addX xPS₁ xS₃ (Wb.toAffine.slope xPS₁ xS₃ yPS₁ yS₃)) ∉ F₁' := by
+          intro hin
+          have hyMG : (Wb.toAffine.addY xPS₁ xS₃ yPS₁ (Wb.toAffine.slope xPS₁ xS₃ yPS₁ yS₃)) ∈ G := by
+            rcases hfib2 _ _ hMB13.left with hy | hy
+            · rw [hy]; exact hyfibG₁ _ hin
+            · rw [hy]
+              exact hnegYF G _ _ (hF₁'G hin) (hyfibG₁ _ hin)
+          have hAneg : Wb.toAffine.Nonsingular xPS₁ (Wb.toAffine.negY xPS₁ yPS₁) :=
+            (WeierstrassCurve.Affine.nonsingular_neg xPS₁ yPS₁).mpr hPS₁
+          have hBeq : (WeierstrassCurve.Affine.Point.some xS₃ yS₃ hS₃ : Wb.toAffine.Point) =
+              WeierstrassCurve.Affine.Point.some xPS₁ (Wb.toAffine.negY xPS₁ yPS₁) hAneg +
+              WeierstrassCurve.Affine.Point.some (Wb.toAffine.addX xPS₁ xS₃ (Wb.toAffine.slope xPS₁ xS₃ yPS₁ yS₃)) (Wb.toAffine.addY xPS₁ xS₃ yPS₁ (Wb.toAffine.slope xPS₁ xS₃ yPS₁ yS₃)) hMB13 := by
+            rw [show (WeierstrassCurve.Affine.Point.some xPS₁ (Wb.toAffine.negY xPS₁ yPS₁) hAneg :
+                Wb.toAffine.Point) = -(WeierstrassCurve.Affine.Point.some xPS₁ yPS₁ hPS₁) from
+              (WeierstrassCurve.Affine.Point.neg_some hPS₁).symm,
+              hMcB13, neg_add_cancel_left]
+          by_cases hxy : xPS₁ = (Wb.toAffine.addX xPS₁ xS₃ (Wb.toAffine.slope xPS₁ xS₃ yPS₁ yS₃)) ∧
+              Wb.toAffine.negY xPS₁ yPS₁ = Wb.toAffine.negY (Wb.toAffine.addX xPS₁ xS₃ (Wb.toAffine.slope xPS₁ xS₃ yPS₁ yS₃)) (Wb.toAffine.addY xPS₁ xS₃ yPS₁ (Wb.toAffine.slope xPS₁ xS₃ yPS₁ yS₃))
+          · rw [WeierstrassCurve.Affine.Point.add_of_Y_eq hxy.1 hxy.2] at hBeq
+            simp [WeierstrassCurve.Affine.Point.zero_def] at hBeq
+          · rw [WeierstrassCurve.Affine.Point.add_some hxy] at hBeq
+            injection hBeq with e1 e2
+            apply hxS₃
+            rw [e1]
+            exact haddXF G _ _ _ (hF₁'G hxPS₁F') (hF₁'G hin)
+              (hslopeF G _ _ _ _ (hF₁'G hxPS₁F') (hF₁'G hin)
+                (hnegYF G _ _ (hF₁'G hxPS₁F') (hF₁'G hyPS₁F')) hyMG)
         have h13 := hrecgen F₁ F₁' hF₁fin hF₁'fin hFF₁ xP yP hP₀ xQ yQ hQ₀
           hxPF₁ hyPF₁ hxQF₁ hyQF₁ xS₁ yS₁ hS₁ hxS₁F' hyS₁F' hxS₁F
           xR₁ yR₁ hR₁ hxR₁ xPS₁ yPS₁ hPS₁ hPSc₁ hxPS₁F' hyPS₁F'
@@ -8917,6 +9062,75 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           (fun h => hxS₃ (hF₁'G h)) (fun h => hxR₃ (hF₁'G h))
           (fun h => hxPS₃ (hF₁'G h)) (fun h => hxQR₃ (hF₁'G h))
           hPSc₃ hQRc₃ haP₃ haQ₃
+          _ _ hMA13 hMcA13 hxMA13F _ _ hMB13 hMcB13 hxMB13F
+        have hxneA23 : xQR₂ ≠ xR₃ := fun h => hxR₃ (h ▸ hQR₂G.1)
+        have hMA23 := WeierstrassCurve.Affine.nonsingular_add hQR₂ hR₃
+          (fun hxy => hxneA23 hxy.1)
+        have hMcA23 : (WeierstrassCurve.Affine.Point.some (Wb.toAffine.addX xQR₂ xR₃ (Wb.toAffine.slope xQR₂ xR₃ yQR₂ yR₃)) (Wb.toAffine.addY xQR₂ xR₃ yQR₂ (Wb.toAffine.slope xQR₂ xR₃ yQR₂ yR₃)) hMA23 : Wb.toAffine.Point) =
+            WeierstrassCurve.Affine.Point.some xQR₂ yQR₂ hQR₂ + WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃ :=
+          (WeierstrassCurve.Affine.Point.add_some
+            (fun hxy => hxneA23 hxy.1)).symm
+        have hxMA23F : (Wb.toAffine.addX xQR₂ xR₃ (Wb.toAffine.slope xQR₂ xR₃ yQR₂ yR₃)) ∉ F₂' := by
+          intro hin
+          have hyMG : (Wb.toAffine.addY xQR₂ xR₃ yQR₂ (Wb.toAffine.slope xQR₂ xR₃ yQR₂ yR₃)) ∈ G := by
+            rcases hfib2 _ _ hMA23.left with hy | hy
+            · rw [hy]; exact hyfibG₂ _ hin
+            · rw [hy]
+              exact hnegYF G _ _ (hF₂'G hin) (hyfibG₂ _ hin)
+          have hAneg : Wb.toAffine.Nonsingular xQR₂ (Wb.toAffine.negY xQR₂ yQR₂) :=
+            (WeierstrassCurve.Affine.nonsingular_neg xQR₂ yQR₂).mpr hQR₂
+          have hBeq : (WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃ : Wb.toAffine.Point) =
+              WeierstrassCurve.Affine.Point.some xQR₂ (Wb.toAffine.negY xQR₂ yQR₂) hAneg +
+              WeierstrassCurve.Affine.Point.some (Wb.toAffine.addX xQR₂ xR₃ (Wb.toAffine.slope xQR₂ xR₃ yQR₂ yR₃)) (Wb.toAffine.addY xQR₂ xR₃ yQR₂ (Wb.toAffine.slope xQR₂ xR₃ yQR₂ yR₃)) hMA23 := by
+            rw [show (WeierstrassCurve.Affine.Point.some xQR₂ (Wb.toAffine.negY xQR₂ yQR₂) hAneg :
+                Wb.toAffine.Point) = -(WeierstrassCurve.Affine.Point.some xQR₂ yQR₂ hQR₂) from
+              (WeierstrassCurve.Affine.Point.neg_some hQR₂).symm,
+              hMcA23, neg_add_cancel_left]
+          by_cases hxy : xQR₂ = (Wb.toAffine.addX xQR₂ xR₃ (Wb.toAffine.slope xQR₂ xR₃ yQR₂ yR₃)) ∧
+              Wb.toAffine.negY xQR₂ yQR₂ = Wb.toAffine.negY (Wb.toAffine.addX xQR₂ xR₃ (Wb.toAffine.slope xQR₂ xR₃ yQR₂ yR₃)) (Wb.toAffine.addY xQR₂ xR₃ yQR₂ (Wb.toAffine.slope xQR₂ xR₃ yQR₂ yR₃))
+          · rw [WeierstrassCurve.Affine.Point.add_of_Y_eq hxy.1 hxy.2] at hBeq
+            simp [WeierstrassCurve.Affine.Point.zero_def] at hBeq
+          · rw [WeierstrassCurve.Affine.Point.add_some hxy] at hBeq
+            injection hBeq with e1 e2
+            apply hxR₃
+            rw [e1]
+            exact haddXF G _ _ _ hQR₂G.1 (hF₂'G hin)
+              (hslopeF G _ _ _ _ hQR₂G.1 (hF₂'G hin)
+                (hnegYF G _ _ hQR₂G.1 hQR₂G.2) hyMG)
+        have hxneB23 : xPS₂ ≠ xS₃ := fun h => hxS₃ (h ▸ (hF₂'G hxPS₂F'))
+        have hMB23 := WeierstrassCurve.Affine.nonsingular_add hPS₂ hS₃
+          (fun hxy => hxneB23 hxy.1)
+        have hMcB23 : (WeierstrassCurve.Affine.Point.some (Wb.toAffine.addX xPS₂ xS₃ (Wb.toAffine.slope xPS₂ xS₃ yPS₂ yS₃)) (Wb.toAffine.addY xPS₂ xS₃ yPS₂ (Wb.toAffine.slope xPS₂ xS₃ yPS₂ yS₃)) hMB23 : Wb.toAffine.Point) =
+            WeierstrassCurve.Affine.Point.some xPS₂ yPS₂ hPS₂ + WeierstrassCurve.Affine.Point.some xS₃ yS₃ hS₃ :=
+          (WeierstrassCurve.Affine.Point.add_some
+            (fun hxy => hxneB23 hxy.1)).symm
+        have hxMB23F : (Wb.toAffine.addX xPS₂ xS₃ (Wb.toAffine.slope xPS₂ xS₃ yPS₂ yS₃)) ∉ F₂' := by
+          intro hin
+          have hyMG : (Wb.toAffine.addY xPS₂ xS₃ yPS₂ (Wb.toAffine.slope xPS₂ xS₃ yPS₂ yS₃)) ∈ G := by
+            rcases hfib2 _ _ hMB23.left with hy | hy
+            · rw [hy]; exact hyfibG₂ _ hin
+            · rw [hy]
+              exact hnegYF G _ _ (hF₂'G hin) (hyfibG₂ _ hin)
+          have hAneg : Wb.toAffine.Nonsingular xPS₂ (Wb.toAffine.negY xPS₂ yPS₂) :=
+            (WeierstrassCurve.Affine.nonsingular_neg xPS₂ yPS₂).mpr hPS₂
+          have hBeq : (WeierstrassCurve.Affine.Point.some xS₃ yS₃ hS₃ : Wb.toAffine.Point) =
+              WeierstrassCurve.Affine.Point.some xPS₂ (Wb.toAffine.negY xPS₂ yPS₂) hAneg +
+              WeierstrassCurve.Affine.Point.some (Wb.toAffine.addX xPS₂ xS₃ (Wb.toAffine.slope xPS₂ xS₃ yPS₂ yS₃)) (Wb.toAffine.addY xPS₂ xS₃ yPS₂ (Wb.toAffine.slope xPS₂ xS₃ yPS₂ yS₃)) hMB23 := by
+            rw [show (WeierstrassCurve.Affine.Point.some xPS₂ (Wb.toAffine.negY xPS₂ yPS₂) hAneg :
+                Wb.toAffine.Point) = -(WeierstrassCurve.Affine.Point.some xPS₂ yPS₂ hPS₂) from
+              (WeierstrassCurve.Affine.Point.neg_some hPS₂).symm,
+              hMcB23, neg_add_cancel_left]
+          by_cases hxy : xPS₂ = (Wb.toAffine.addX xPS₂ xS₃ (Wb.toAffine.slope xPS₂ xS₃ yPS₂ yS₃)) ∧
+              Wb.toAffine.negY xPS₂ yPS₂ = Wb.toAffine.negY (Wb.toAffine.addX xPS₂ xS₃ (Wb.toAffine.slope xPS₂ xS₃ yPS₂ yS₃)) (Wb.toAffine.addY xPS₂ xS₃ yPS₂ (Wb.toAffine.slope xPS₂ xS₃ yPS₂ yS₃))
+          · rw [WeierstrassCurve.Affine.Point.add_of_Y_eq hxy.1 hxy.2] at hBeq
+            simp [WeierstrassCurve.Affine.Point.zero_def] at hBeq
+          · rw [WeierstrassCurve.Affine.Point.add_some hxy] at hBeq
+            injection hBeq with e1 e2
+            apply hxS₃
+            rw [e1]
+            exact haddXF G _ _ _ (hF₂'G hxPS₂F') (hF₂'G hin)
+              (hslopeF G _ _ _ _ (hF₂'G hxPS₂F') (hF₂'G hin)
+                (hnegYF G _ _ (hF₂'G hxPS₂F') (hF₂'G hyPS₂F')) hyMG)
         have h23 := hrecgen F₂ F₂' hF₂fin hF₂'fin hFF₂ xP yP hP₀ xQ yQ hQ₀
           hxPF₂ hyPF₂ hxQF₂ hyQF₂ xS₂ yS₂ hS₂ hxS₂F' hyS₂F' hxS₂F
           xR₂ yR₂ hR₂ hxR₂ xPS₂ yPS₂ hPS₂ hPSc₂ hxPS₂F' hyPS₂F'
@@ -8925,6 +9139,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           (fun h => hxS₃ (hF₂'G h)) (fun h => hxR₃ (hF₂'G h))
           (fun h => hxPS₃ (hF₂'G h)) (fun h => hxQR₃ (hF₂'G h))
           hPSc₃ hQRc₃ haP₃ haQ₃
+          _ _ hMA23 hMcA23 hxMA23F _ _ hMB23 hMcB23 hxMB23F
         refine mul_right_cancel₀ (mul_ne_zero hA₃ hB₃) ?_
         linear_combination
           ((AdjoinRoot.evalEval hQR₂.left
