@@ -8087,6 +8087,17 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                   exact ⟨hHtmem _ (by simp), hHtmem _ (by simp)⟩)
             hDtw
         have hbalt := hbaldiv t _ Mn Md Wn' Wd' ut hut0 hDtweq hDtw hwordt
+        -- canonical fiber pair = actual σ-pair, for any curve point
+        have hfibpair : ∀ (c y : (AlgebraicClosure (ZMod q))),
+            Wb.toAffine.Equation c y →
+            ({(c, Wb.toAffine.negY c (yfib c)), (c, yfib c)} :
+              Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))) =
+            {(c, Wb.toAffine.negY c y), (c, y)} := by
+          intro c y hE
+          rcases hfib2 c y hE with h | h
+          · rw [h]
+          · rw [h, WeierstrassCurve.Affine.negY_negY]
+            exact Multiset.cons_swap _ _ _
         -- THE GRAND WORD-LEVEL ASSEMBLY: evaluate the two word identities
         -- over all eight points, convert word-divisor evaluations through
         -- the hbaldiv bookkeeping, swap with hww, and cancel the balanced
