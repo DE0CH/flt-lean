@@ -4640,6 +4640,20 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
         (hprime.multiset_prod_mem_iff_exists_mem _).mp hprod
       obtain ⟨c, -, rfl⟩ := Multiset.mem_map.mp hg
       exact ⟨c, Ideal.mem_comap.mp hgM⟩
+  -- polynomial scalars die modulo a maximal ideal containing the matching
+  -- vertical: `g • z ≡ g(c) • z` modulo `M` when `x - c ∈ M`
+  have hkill : ∀ (M : Ideal Wb.toAffine.CoordinateRing) (c : (AlgebraicClosure (ZMod q))),
+      algebraMap (Polynomial (AlgebraicClosure (ZMod q))) Wb.toAffine.CoordinateRing
+        (Polynomial.X - Polynomial.C c) ∈ M →
+      ∀ g : Polynomial (AlgebraicClosure (ZMod q)),
+      Ideal.Quotient.mk M (algebraMap (Polynomial (AlgebraicClosure (ZMod q)))
+        Wb.toAffine.CoordinateRing (g - Polynomial.C (g.eval c))) = 0 := by
+    intro M c hc g
+    rw [Ideal.Quotient.eq_zero_iff_mem]
+    obtain ⟨h, hh⟩ := (Polynomial.dvd_iff_isRoot
+      (p := g - Polynomial.C (g.eval c)) (a := c)).mpr (by simp)
+    rw [hh, map_mul]
+    exact M.mul_mem_right _ hc
   sorry
 
 set_option warn.sorry false in
