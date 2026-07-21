@@ -4654,6 +4654,48 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       (p := g - Polynomial.C (g.eval c)) (a := c)).mpr (by simp)
     rw [hh, map_mul]
     exact M.mul_mem_right _ hc
+  -- residue-field finiteness: modulo a maximal ideal containing a vertical,
+  -- the quotient is spanned over the base field by the images of the basis
+  -- `{1, y}`, hence a finite module
+  have hresfin : ∀ (M : Ideal Wb.toAffine.CoordinateRing) (c : (AlgebraicClosure (ZMod q))),
+      algebraMap (Polynomial (AlgebraicClosure (ZMod q))) Wb.toAffine.CoordinateRing
+        (Polynomial.X - Polynomial.C c) ∈ M →
+      Module.Finite (AlgebraicClosure (ZMod q)) (Wb.toAffine.CoordinateRing ⧸ M) := by
+    intro M c hc
+    have hsplit : ∀ (g : Polynomial (AlgebraicClosure (ZMod q))) (z : Wb.toAffine.CoordinateRing),
+        Ideal.Quotient.mk M (g • z) =
+          g.eval c • Ideal.Quotient.mk M z := by
+      intro g z
+      have h1 : g • z = (g - Polynomial.C (g.eval c)) • z +
+          (Polynomial.C (g.eval c)) • z := by
+        rw [← add_smul, sub_add_cancel]
+      rw [h1, map_add]
+      have h2 : Ideal.Quotient.mk M ((g - Polynomial.C (g.eval c)) • z) = 0 := by
+        rw [Algebra.smul_def, map_mul, hkill M c hc g, zero_mul]
+      rw [h2, zero_add, Algebra.smul_def, map_mul]
+      rw [show algebraMap (Polynomial (AlgebraicClosure (ZMod q))) Wb.toAffine.CoordinateRing
+          (Polynomial.C (g.eval c)) =
+        algebraMap (AlgebraicClosure (ZMod q)) Wb.toAffine.CoordinateRing (g.eval c) from
+        (IsScalarTower.algebraMap_apply (AlgebraicClosure (ZMod q)) (Polynomial (AlgebraicClosure (ZMod q)))
+          Wb.toAffine.CoordinateRing (g.eval c)).symm]
+      rw [← Ideal.Quotient.algebraMap_eq]
+      rw [← IsScalarTower.algebraMap_apply (AlgebraicClosure (ZMod q)) Wb.toAffine.CoordinateRing
+        (Wb.toAffine.CoordinateRing ⧸ M) (g.eval c)]
+      rw [← Algebra.smul_def]
+    refine ⟨⟨{Ideal.Quotient.mk M 1, Ideal.Quotient.mk M
+      (WeierstrassCurve.Affine.CoordinateRing.mk Wb.toAffine Polynomial.X)},
+      ?_⟩⟩
+    rw [eq_top_iff]
+    rintro z -
+    obtain ⟨w, rfl⟩ := Ideal.Quotient.mk_surjective z
+    obtain ⟨a, b, rfl⟩ :=
+      WeierstrassCurve.Affine.CoordinateRing.exists_smul_basis_eq
+        (W' := Wb.toAffine) w
+    rw [map_add, hsplit a 1, hsplit b _]
+    refine add_mem (Submodule.smul_mem _ _ (Submodule.subset_span ?_))
+      (Submodule.smul_mem _ _ (Submodule.subset_span ?_))
+    · simp
+    · simp
   sorry
 
 set_option warn.sorry false in
