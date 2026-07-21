@@ -3633,6 +3633,56 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
             ring
           by_cases hq2 : (q : ℕ) = 2
           · -- characteristic-two branch
+            haveI hchar2K : CharP (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) 2 := by
+              haveI h1 : CharP (AlgebraicClosure (ZMod q)) q :=
+                charP_of_injective_algebraMap
+                  (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+              haveI h2 : CharP (Polynomial (AlgebraicClosure (ZMod q))) q :=
+                charP_of_injective_algebraMap Polynomial.C_injective q
+              haveI h3 : CharP (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) q :=
+                charP_of_injective_algebraMap
+                  (IsFractionRing.injective (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))) q
+              exact CharP.congr q hq2
+            have h2K : (2 : (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))) = 0 := by
+              exact_mod_cast CharP.cast_eq_zero (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) 2
+            -- in characteristic two the discriminant identity collapses
+            -- to `τ₀ = tc · A` (fully decomposed atoms)
+            have hτtcA : algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) τ₀ =
+                tc * algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) := by
+              have h4K : (4 : (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))) = 0 := by
+                have h44 : (4 : (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))) = 2 * 2 := by norm_num
+                rw [h44, h2K, mul_zero]
+              have hk := hkey
+              simp only [map_sub, map_add, map_mul, map_pow,
+                map_ofNat] at hk
+              have hsq : (algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) τ₀ -
+                  tc * algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃)) ^ 2 =
+                  0 := by
+                simp only [map_add, map_mul]
+                linear_combination hk +
+                  (algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) ν₀ + tc ^ 2 *
+                    (algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) Polynomial.X ^ 3 +
+                    algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+                      (Polynomial.C Wb.a₂) *
+                    algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) Polynomial.X ^ 2 +
+                    algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+                      (Polynomial.C Wb.a₄) *
+                    algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) Polynomial.X +
+                    algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+                      (Polynomial.C Wb.a₆))) * h4K +
+                  (tc ^ 2 * (algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+                      (Polynomial.C Wb.a₁) *
+                    algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) Polynomial.X +
+                    algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+                      (Polynomial.C Wb.a₃)) ^ 2 -
+                  algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) τ₀ * tc *
+                    (algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+                      (Polynomial.C Wb.a₁) *
+                    algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) Polynomial.X +
+                    algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+                      (Polynomial.C Wb.a₃))) * h2K
+              have h0 := pow_eq_zero_iff (n := 2) (by norm_num) |>.mp hsq
+              exact sub_eq_zero.mp h0
             sorry
           · -- reduced-fraction descent against the squarefree cubic
             have hDsf : Squarefree ((Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) ^ 2 + 4 * (Polynomial.X ^ 3 + Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
