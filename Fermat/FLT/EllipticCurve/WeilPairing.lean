@@ -3513,6 +3513,29 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
               Wb.toAffine.CoordinateRing (FractionRing Wb.toAffine.CoordinateRing),
             AdjoinRoot.algebraMap_eq] at hryel
           linear_combination (algebraMap (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (FractionRing Wb.toAffine.CoordinateRing) tc) ^ 2 * hryel
+        -- the annihilating quadratic over `k(X)` and the minimal
+        -- polynomial's integral coefficients
+        set τ : (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) := 2 * sc - tc * (algebraMap (Polynomial (AlgebraicClosure (ZMod q)))
+          (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃)) with hτdef
+        set ν : (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) := sc ^ 2 - sc * tc * (algebraMap (Polynomial (AlgebraicClosure (ZMod q)))
+          (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃)) - tc ^ 2 * (algebraMap (Polynomial (AlgebraicClosure (ZMod q)))
+          (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.X ^ 3 + Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
+        Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆)) with hνdef
+        have hxK : IsIntegral (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) x := hx.tower_top
+        have hxaeval : Polynomial.aeval x (Polynomial.X ^ 2 -
+            Polynomial.C τ * Polynomial.X + Polynomial.C ν) = 0 := by
+          simp only [map_add, map_sub, map_mul, map_pow,
+            Polynomial.aeval_X, Polynomial.aeval_C]
+          exact hxquad
+        have hdvd : minpoly (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) x ∣ (Polynomial.X ^ 2 -
+            Polynomial.C τ * Polynomial.X + Polynomial.C ν) :=
+          minpoly.dvd _ _ hxaeval
+        have hcoeffs : ∀ n, (minpoly (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) x).coeff n ∈
+            (algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))).range := by
+          intro n
+          rw [minpoly.isIntegrallyClosed_eq_field_fractions' (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) hx,
+            Polynomial.coeff_map]
+          exact ⟨_, rfl⟩
         sorry
       · rintro ⟨y, rfl⟩
         exact IsIntegral.map (IsScalarTower.toAlgHom (Polynomial (AlgebraicClosure (ZMod q)))
