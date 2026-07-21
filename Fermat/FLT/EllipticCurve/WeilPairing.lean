@@ -3770,7 +3770,24 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                     algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₂) * algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) Polynomial.X ^ 2 +
                     algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₄) * algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) Polynomial.X +
                     algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₆))) * ht₀
-            sorry
+            obtain ⟨s₀, hs₀⟩ := IsIntegrallyClosed.isIntegral_iff.mp hscint
+            refine ⟨AdjoinRoot.of Wb.toAffine.polynomial s₀ +
+              AdjoinRoot.of Wb.toAffine.polynomial t₀ *
+                AdjoinRoot.root Wb.toAffine.polynomial, ?_⟩
+            have hofL : ∀ z : Polynomial (AlgebraicClosure (ZMod q)),
+                algebraMap Wb.toAffine.CoordinateRing
+                  (FractionRing Wb.toAffine.CoordinateRing)
+                  (AdjoinRoot.of Wb.toAffine.polynomial z) =
+                algebraMap (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (FractionRing Wb.toAffine.CoordinateRing)
+                  (algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) z) := fun z => by
+              rw [← IsScalarTower.algebraMap_apply (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+                (FractionRing Wb.toAffine.CoordinateRing),
+                IsScalarTower.algebraMap_apply (Polynomial (AlgebraicClosure (ZMod q)))
+                  Wb.toAffine.CoordinateRing
+                  (FractionRing Wb.toAffine.CoordinateRing),
+                AdjoinRoot.algebraMap_eq]
+            rw [← hst, ← hs₀, ht₀]
+            simp only [map_add, map_mul, hofL, Algebra.smul_def, mul_one]
           · -- reduced-fraction descent against the squarefree cubic
             have hDsf : Squarefree ((Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) ^ 2 + 4 * (Polynomial.X ^ 3 + Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
         Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆) :
