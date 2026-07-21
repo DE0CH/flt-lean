@@ -6725,12 +6725,35 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
   have hsubfin : ∀ s : Finset (AlgebraicClosure (ZMod q)),
       ∃ F : Subfield (AlgebraicClosure (ZMod q)),
         (F : Set (AlgebraicClosure (ZMod q))).Finite ∧ ∀ a ∈ s, a ∈ F := by
-    sorry
+    intro s
+    have halg : ∀ x ∈ (s : Set (AlgebraicClosure (ZMod q))),
+        IsIntegral (ZMod q) x := fun x _ =>
+      Algebra.IsIntegral.isIntegral x
+    haveI := IntermediateField.finiteDimensional_adjoin
+      (K := ZMod q) (S := (s : Set (AlgebraicClosure (ZMod q)))) halg
+    haveI : Finite (IntermediateField.adjoin (ZMod q)
+        (s : Set (AlgebraicClosure (ZMod q)))) :=
+      Module.finite_of_finite (ZMod q)
+    refine ⟨(IntermediateField.adjoin (ZMod q)
+      (s : Set (AlgebraicClosure (ZMod q)))).toSubfield, ?_, ?_⟩
+    · exact Set.toFinite _
+    · intro a ha
+      exact IntermediateField.subset_adjoin (ZMod q) _ ha
   -- the fiber over an abscissa has exactly the two canonical ordinates
   have hfib2 : ∀ (c y : (AlgebraicClosure (ZMod q))),
       Wb.toAffine.Equation c y →
       y = yfib c ∨ y = Wb.toAffine.negY c (yfib c) := by
-    sorry
+    intro c y hy
+    have h1 := (WeierstrassCurve.Affine.equation_iff (W := Wb.toAffine)
+      c y).mp hy
+    have h2 := (WeierstrassCurve.Affine.equation_iff (W := Wb.toAffine)
+      c (yfib c)).mp (hyfib c)
+    have h0 : (y - yfib c) * (y - Wb.toAffine.negY c (yfib c)) = 0 := by
+      rw [WeierstrassCurve.Affine.negY]
+      linear_combination h1 - h2
+    rcases mul_eq_zero.mp h0 with h | h
+    · exact Or.inl (sub_eq_zero.mp h)
+    · exact Or.inr (sub_eq_zero.mp h)
   -- Miller principality: the p-th power of the product of two point
   -- ideals whose points sum to a p-torsion point is principal
   have hmill2 : ∀ (x₁ y₁ x₂ y₂ : (AlgebraicClosure (ZMod q)))
