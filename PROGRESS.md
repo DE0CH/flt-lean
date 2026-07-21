@@ -474,9 +474,41 @@ entries file). To add/remove/annotate a node, edit
                                                   parametrized congrArg product images of
                                                   hbalt/hbalP (no giant restatements; normalize with
                                                   map_add/prod_add/map_replicate/prod_replicate/mul_
-                                                  pow at use time). REMAINING inside hgrand: ONLY
-                                                  step 5, the stitch -- normalize the goal and all
-                                                  bound ingredients (nine hevid points, thirteen hww
+                                                  pow at use time). STITCH ANALYSIS (decisive): the
+                                                  chain must at the end cancel word-value factors,
+                                                  so their nonvanishing is REQUIRED; word-divisor
+                                                  points of the F'-words are F'-ABSCISSA points
+                                                  (line points fully F'-rational; vertical points
+                                                  have F'-abscissae), so ALL aP1-word collisions
+                                                  with the evaluation points die once xQR1 is NOT in
+                                                  F' -- amendment (alpha): add xQR notin F' to
+                                                  IsWeilValue; it is constructible in hexval by
+                                                  folding the finitely many bad R over the F'-fibers
+                                                  (R = -Q + fiber point of an F'-abscissa) into the
+                                                  R-avoidance finset, exactly the existing badxs
+                                                  pattern with a Finset.image over F'.toFinset --
+                                                  and then all four div-t abscissas lie outside F',
+                                                  so t is nonzero at every F'-abscissa point as
+                                                  well. The remaining (beta) obstruction is the
+                                                  t-word side (t's own hgenfac words over Ht can
+                                                  collide with the S1/PS1 evaluation points); the
+                                                  candidate resolutions are (i) eliminate t-evals
+                                                  through word-vs-t swaps instead of t-words (needs
+                                                  the line-vs-explicit-divisor reciprocity hlinet,
+                                                  unconditional form pending) or (ii) prove the
+                                                  sigma-paired norm-level identity via
+                                                  hrecfib/hNconst and recover singles -- rejected:
+                                                  it loses the anti-symmetric mu_p-content
+                                                  (companions differ per side). NEXT CONCRETE STEP:
+                                                  implement amendment (alpha) end-to-end (predicate,
+                                                  hexval construction with the F'-fiber bad-R
+                                                  images, hsetup3 mirror, huniqval destructurings,
+                                                  hrecgen hypotheses/intro, hcross applications),
+                                                  then re-derive the stitch with the aP1-side
+                                                  collision-free and only the t-side elimination
+                                                  remaining. REMAINING inside hgrand: ONLY step 5,
+                                                  the stitch -- normalize the goal and all bound
+                                                  ingredients (nine hevid points, thirteen hww
                                                   instances, hcvt/hcvP at the value functions of (Ln
                                                   ,Vn)/(Ld,Vd)/(Mn,Wn')/(Md,Wd')/{xS1}/{xR1,xQR3},
                                                   hfibpair identifications) with the canonical
@@ -921,10 +953,37 @@ entries file). To add/remove/annotate a node, edit
                                           bindings: hcvt/hcvP are phi-parametrized congrArg product
                                           images of hbalt/hbalP (no giant restatements; normalize
                                           with map_add/prod_add/map_replicate/prod_replicate/mul_pow
-                                          at use time). REMAINING inside hgrand: ONLY step 5, the
-                                          stitch -- normalize the goal and all bound ingredients
-                                          (nine hevid points, thirteen hww instances, hcvt/hcvP at
-                                          the value functions of
+                                          at use time). STITCH ANALYSIS (decisive): the chain must
+                                          at the end cancel word-value factors, so their
+                                          nonvanishing is REQUIRED; word-divisor points of the
+                                          F'-words are F'-ABSCISSA points (line points fully
+                                          F'-rational; vertical points have F'-abscissae), so ALL
+                                          aP1-word collisions with the evaluation points die once
+                                          xQR1 is NOT in F' -- amendment (alpha): add xQR notin F'
+                                          to IsWeilValue; it is constructible in hexval by folding
+                                          the finitely many bad R over the F'-fibers (R = -Q + fiber
+                                          point of an F'-abscissa) into the R-avoidance finset,
+                                          exactly the existing badxs pattern with a Finset.image
+                                          over F'.toFinset -- and then all four div-t abscissas lie
+                                          outside F', so t is nonzero at every F'-abscissa point as
+                                          well. The remaining (beta) obstruction is the t-word side
+                                          (t's own hgenfac words over Ht can collide with the S1/PS1
+                                          evaluation points); the candidate resolutions are (i)
+                                          eliminate t-evals through word-vs-t swaps instead of
+                                          t-words (needs the line-vs-explicit-divisor reciprocity
+                                          hlinet, unconditional form pending) or (ii) prove the
+                                          sigma-paired norm-level identity via hrecfib/hNconst and
+                                          recover singles -- rejected: it loses the anti-symmetric
+                                          mu_p-content (companions differ per side). NEXT CONCRETE
+                                          STEP: implement amendment (alpha) end-to-end (predicate,
+                                          hexval construction with the F'-fiber bad-R images,
+                                          hsetup3 mirror, huniqval destructurings, hrecgen
+                                          hypotheses/intro, hcross applications), then re-derive the
+                                          stitch with the aP1-side collision-free and only the
+                                          t-side elimination remaining. REMAINING inside hgrand:
+                                          ONLY step 5, the stitch -- normalize the goal and all
+                                          bound ingredients (nine hevid points, thirteen hww
+                                          instances, hcvt/hcvP at the value functions of
                                           (Ln,Vn)/(Ld,Vd)/(Mn,Wn')/(Md,Wd')/{xS1}/{xR1,xQR3},
                                           hfibpair identifications) with the canonical multiset-
                                           unfolding simp set, then combine via
