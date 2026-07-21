@@ -3566,7 +3566,61 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
         have hd2 : (minpoly (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) x).natDegree ≤ 2 := by
           have := Polynomial.natDegree_le_of_dvd hdvd hqmonic.ne_zero
           omega
-        sorry
+        have hmono := minpoly.monic hxK
+        rcases (show (minpoly (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) x).natDegree = 1 ∨
+            (minpoly (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) x).natDegree = 2 by omega) with hdeg | hdeg
+        · -- linear case: `x` lies in `k(X)` and is integral, so it is
+          -- the image of a polynomial
+          have hlin := hmono.eq_X_add_C hdeg
+          have haev := minpoly.aeval (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) x
+          rw [hlin] at haev
+          simp only [map_add, Polynomial.aeval_X, Polynomial.aeval_C] at haev
+          obtain ⟨c₀, hc₀⟩ := hcoeffs 0
+          have hxval : x = algebraMap (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (FractionRing Wb.toAffine.CoordinateRing)
+              (- ((minpoly (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) x).coeff 0)) := by
+            rw [map_neg]
+            exact eq_neg_of_add_eq_zero_left haev
+          refine ⟨AdjoinRoot.of Wb.toAffine.polynomial (-c₀), ?_⟩
+          rw [hxval, ← hc₀, ← map_neg (algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))))
+            c₀, ← IsScalarTower.algebraMap_apply (Polynomial (AlgebraicClosure (ZMod q)))
+            (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (FractionRing Wb.toAffine.CoordinateRing), IsScalarTower.algebraMap_apply (Polynomial (AlgebraicClosure (ZMod q)))
+            Wb.toAffine.CoordinateRing (FractionRing Wb.toAffine.CoordinateRing), AdjoinRoot.algebraMap_eq]
+        · -- quadratic case: the minimal polynomial IS the quadratic
+          obtain ⟨u, hu⟩ := hdvd
+          have hune0 : u ≠ 0 := by
+            intro h0
+            rw [h0, mul_zero] at hu
+            exact hqmonic.ne_zero hu
+          have hudeg : u.natDegree = 0 := by
+            have := Polynomial.natDegree_mul (minpoly.ne_zero hxK) hune0
+            rw [← hu, hqdeg, hdeg] at this
+            omega
+          have humonic : u.Monic := by
+            have hlead := congrArg Polynomial.leadingCoeff hu
+            rw [Polynomial.leadingCoeff_mul, hqmonic.leadingCoeff,
+              hmono.leadingCoeff, one_mul] at hlead
+            exact hlead.symm
+          have hu1 : u = 1 := humonic.natDegree_eq_zero.mp hudeg
+          rw [hu1, mul_one] at hu
+          -- extract the coefficients
+          have hτmem : τ ∈ (algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))).range := by
+            have h1 := hcoeffs 1
+            rw [← hu] at h1
+            have hc1 : (Polynomial.X ^ 2 - Polynomial.C τ * Polynomial.X +
+                Polynomial.C ν : Polynomial (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))).coeff 1 = -τ := by
+              simp [Polynomial.coeff_add, Polynomial.coeff_sub]
+            rw [hc1] at h1
+            obtain ⟨w, hw⟩ := h1
+            exact ⟨-w, by rw [map_neg, hw, neg_neg]⟩
+          have hνmem : ν ∈ (algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))).range := by
+            have h0 := hcoeffs 0
+            rw [← hu] at h0
+            have hc0 : (Polynomial.X ^ 2 - Polynomial.C τ * Polynomial.X +
+                Polynomial.C ν : Polynomial (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))).coeff 0 = ν := by
+              simp [Polynomial.coeff_add, Polynomial.coeff_sub]
+            rw [hc0] at h0
+            exact h0
+          sorry
       · rintro ⟨y, rfl⟩
         exact IsIntegral.map (IsScalarTower.toAlgHom (Polynomial (AlgebraicClosure (ZMod q)))
           Wb.toAffine.CoordinateRing
