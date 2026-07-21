@@ -6903,6 +6903,85 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
         hSneg hPStor
       obtain ⟨aQ, haQ⟩ := hmill2 xQR yQR xR (Wb.toAffine.negY xR yR) hQR
         hRneg hQRtor
+      -- remaining memberships for the enlarged subfield
+      have hxSF' : xS ∈ F' := hF'mem xS (by simp)
+      have hySF' : yS ∈ F' := hF'mem yS (by simp)
+      have hxPSF' : xPS ∈ F' := hF'mem xPS (by simp)
+      have hyPSF' : yPS ∈ F' := hF'mem yPS (by simp)
+      -- the second divisor's abscissa avoids the first divisor's (else
+      -- R would be one of the four bad points folded into F')
+      have hxQRne : xQR ≠ xS ∧ xQR ≠ xPS := by
+        sorry
+      -- the explicit point divisors of the Miller numerators
+      have hDP : Ideal.span {aP} =
+          ((Multiset.replicate p ((xPS, yPS) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) +
+            Multiset.replicate p ((xS, Wb.toAffine.negY xS yS) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))).map
+            (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+              WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+                P.1 (Polynomial.C P.2))).prod := by
+        rw [Multiset.map_add, Multiset.prod_add, Multiset.map_replicate,
+          Multiset.map_replicate, Multiset.prod_replicate,
+          Multiset.prod_replicate, haP]
+      have hDQ : Ideal.span {aQ} =
+          ((Multiset.replicate p ((xQR, yQR) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) +
+            Multiset.replicate p ((xR, Wb.toAffine.negY xR yR) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))).map
+            (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+              WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+                P.1 (Polynomial.C P.2))).prod := by
+        rw [Multiset.map_add, Multiset.prod_add, Multiset.map_replicate,
+          Multiset.map_replicate, Multiset.prod_replicate,
+          Multiset.prod_replicate, haQ]
+      have hDPeq : ∀ T ∈ (Multiset.replicate p ((xPS, yPS) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) +
+          Multiset.replicate p ((xS, Wb.toAffine.negY xS yS) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))),
+          Wb.toAffine.Equation T.1 T.2 := by
+        intro T hT
+        rcases Multiset.mem_add.mp hT with h | h
+        · rw [Multiset.eq_of_mem_replicate h]
+          exact hPS.left
+        · rw [Multiset.eq_of_mem_replicate h]
+          exact (WeierstrassCurve.Affine.equation_neg
+            (W' := Wb.toAffine) _ _).mpr hSns.left
+      have hDQeq : ∀ T ∈ (Multiset.replicate p ((xQR, yQR) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) +
+          Multiset.replicate p ((xR, Wb.toAffine.negY xR yR) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))),
+          Wb.toAffine.Equation T.1 T.2 := by
+        intro T hT
+        rcases Multiset.mem_add.mp hT with h | h
+        · rw [Multiset.eq_of_mem_replicate h]
+          exact hQR.left
+        · rw [Multiset.eq_of_mem_replicate h]
+          exact (WeierstrassCurve.Affine.equation_neg
+            (W' := Wb.toAffine) _ _).mpr hRns.left
+      -- evaluation nonvanishing off the divisors
+      have hevPR : AdjoinRoot.evalEval hRns.left aP ≠ 0 := by
+        refine hoffdiv aP _ hDPeq hDP xR yR hRns.left ?_
+        intro hmem
+        rcases Multiset.mem_add.mp hmem with h | h
+        · have h1 := congrArg Prod.fst (Multiset.eq_of_mem_replicate h)
+          exact hxR (by rw [show xR = xPS from h1]; exact hxPSF')
+        · have h1 := congrArg Prod.fst (Multiset.eq_of_mem_replicate h)
+          exact hxR (by rw [show xR = xS from h1]; exact hxSF')
+      have hevPQR : AdjoinRoot.evalEval hQR.left aP ≠ 0 := by
+        refine hoffdiv aP _ hDPeq hDP xQR yQR hQR.left ?_
+        intro hmem
+        rcases Multiset.mem_add.mp hmem with h | h
+        · exact hxQRne.2 (congrArg Prod.fst (Multiset.eq_of_mem_replicate h))
+        · exact hxQRne.1 (congrArg Prod.fst (Multiset.eq_of_mem_replicate h))
+      have hevQPS : AdjoinRoot.evalEval hPS.left aQ ≠ 0 := by
+        refine hoffdiv aQ _ hDQeq hDQ xPS yPS hPS.left ?_
+        intro hmem
+        rcases Multiset.mem_add.mp hmem with h | h
+        · exact hxQRne.2 (congrArg Prod.fst
+            (Multiset.eq_of_mem_replicate h)).symm
+        · have h1 := congrArg Prod.fst (Multiset.eq_of_mem_replicate h)
+          exact hxR (by rw [← show xPS = xR from h1]; exact hxPSF')
+      have hevQS : AdjoinRoot.evalEval hSns.left aQ ≠ 0 := by
+        refine hoffdiv aQ _ hDQeq hDQ xS yS hSns.left ?_
+        intro hmem
+        rcases Multiset.mem_add.mp hmem with h | h
+        · exact hxQRne.1 (congrArg Prod.fst
+            (Multiset.eq_of_mem_replicate h)).symm
+        · have h1 := congrArg Prod.fst (Multiset.eq_of_mem_replicate h)
+          exact hxR (by rw [← show xS = xR from h1]; exact hxSF')
       -- the eight evaluations and their nonvanishing (abscissa avoidance)
       have hA : (AdjoinRoot.evalEval hQR.left
             ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS) ^ p) *
@@ -6910,19 +6989,25 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           AdjoinRoot.evalEval hSns.left
             ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p) *
           AdjoinRoot.evalEval hPS.left aQ) ≠ 0 := by
-        sorry
+        refine mul_ne_zero (mul_ne_zero (mul_ne_zero ?_ hevPR) ?_) hevQPS
+        · rw [map_pow, hevvert xS xQR yQR hQR.left]
+          exact pow_ne_zero _ (sub_ne_zero.mpr hxQRne.1)
+        · rw [map_pow, hevvert xR xS yS hSns.left]
+          exact pow_ne_zero _ (sub_ne_zero.mpr
+            (fun h => hxR (h ▸ hxSF')))
       have hB : (AdjoinRoot.evalEval hQR.left aP *
           AdjoinRoot.evalEval hRns.left
             ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS) ^ p) *
           AdjoinRoot.evalEval hSns.left aQ *
           AdjoinRoot.evalEval hPS.left
             ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p)) ≠ 0 := by
-        sorry
-      -- remaining memberships for the enlarged subfield
-      have hxSF' : xS ∈ F' := hF'mem xS (by simp)
-      have hySF' : yS ∈ F' := hF'mem yS (by simp)
-      have hxPSF' : xPS ∈ F' := hF'mem xPS (by simp)
-      have hyPSF' : yPS ∈ F' := hF'mem yPS (by simp)
+        refine mul_ne_zero (mul_ne_zero (mul_ne_zero hevPQR ?_) hevQS) ?_
+        · rw [map_pow, hevvert xS xR yR hRns.left]
+          exact pow_ne_zero _ (sub_ne_zero.mpr
+            (fun h => hxR (h.symm ▸ hxSF')))
+        · rw [map_pow, hevvert xR xPS yPS hPS.left]
+          exact pow_ne_zero _ (sub_ne_zero.mpr
+            (fun h => hxR (h ▸ hxPSF')))
       -- the value and its defining equation
       refine ⟨Units.mk0
         ((AdjoinRoot.evalEval hQR.left aP *
