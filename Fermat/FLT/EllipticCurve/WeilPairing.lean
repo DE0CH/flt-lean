@@ -6693,6 +6693,12 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
             xQR (Polynomial.C yQR)) ^ p *
           (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
             xR (Polynomial.C (Wb.toAffine.negY xR yR))) ^ p ∧
+        (AdjoinRoot.evalEval hQR.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS) ^ p) *
+            AdjoinRoot.evalEval hR.left aP *
+            AdjoinRoot.evalEval hS.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p) *
+            AdjoinRoot.evalEval hPS.left aQ) ≠ 0 ∧
         (z : (AlgebraicClosure (ZMod q))) *
           (AdjoinRoot.evalEval hQR.left
               ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS) ^ p) *
@@ -6706,12 +6712,28 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
             AdjoinRoot.evalEval hS.left aQ *
             AdjoinRoot.evalEval hPS.left
               ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p))
-  -- existence and uniqueness of the Weil value: existence by choosing
-  -- generic subfields/translates (hpoints + hgen2-style principality);
-  -- uniqueness across admissible setups IS Weil reciprocity (hww +
-  -- hbaldiv + hevid + the F-avoidance nonvanishing)
-  have hvalue : ∀ v w, ∃! z, IsWeilValue v w z := by
+  -- existence of an admissible Weil value: in the degenerate cases `1`;
+  -- otherwise construct the generic setup — finite subfield `F` from the
+  -- `P, Q` data, translate `S` via `hpoints` off `F`, enlarged `F'`,
+  -- translate `R` via `hpoints` off `F'`, Miller numerators by the
+  -- class-group principality (the `hgen`/`hgen2` technique for the
+  -- product of two point ideals summing to a `p`-torsion point), and
+  -- the value from the eight evaluations, nonvanishing by abscissa
+  -- avoidance (`hoffdiv` + the explicit divisors)
+  have hexval : ∀ v w, ∃ z, IsWeilValue v w z := by
     sorry
+  -- uniqueness of the Weil value across admissible setups: THE Weil
+  -- reciprocity argument — both setups' cross-ratios reduce through
+  -- hgenfac (F-rational words) + hbaldiv (divisor bookkeeping) + hevid
+  -- (evaluation identities) + hww (word-vs-word reciprocity) to the
+  -- same word-free quantity; the F-avoidance hypotheses make every
+  -- cancelled factor nonzero
+  have huniqval : ∀ v w z₁ z₂,
+      IsWeilValue v w z₁ → IsWeilValue v w z₂ → z₁ = z₂ := by
+    sorry
+  have hvalue : ∀ v w, ∃! z, IsWeilValue v w z := fun v w =>
+    ⟨(hexval v w).choose, (hexval v w).choose_spec,
+      fun z' hz' => huniqval v w z' _ hz' (hexval v w).choose_spec⟩
   -- the pairing
   let e : ((Wbar.map (algebraMap (ZMod q)
         (AlgebraicClosure (ZMod q)))).nTorsion p) →
