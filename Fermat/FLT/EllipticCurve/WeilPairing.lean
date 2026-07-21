@@ -4292,6 +4292,52 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       Wb.toAffine.polynomial.eval₂ (Polynomial.evalRingHom x₀) y₀ from
       (Polynomial.eval₂_evalRingHom x₀ ▸ rfl)]
     exact hy₀
+  -- two-point Miller generators: if `p(P₁ − P₂) = 0` then
+  -- `(I_{P₁} I_{P₂}⁻¹)^p` is principal
+  have hgen2 : ∀ (x₁ y₁ x₂ y₂ : (AlgebraicClosure (ZMod q)))
+      (h₁ : Wb.toAffine.Nonsingular x₁ y₁)
+      (h₂ : Wb.toAffine.Nonsingular x₂ y₂),
+      ((p : ℤ) • ((WeierstrassCurve.Affine.Point.some x₁ y₁ h₁ :
+        Wb.toAffine.Point) - WeierstrassCurve.Affine.Point.some x₂ y₂ h₂)
+        = 0) →
+      ((((WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₁ *
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂)⁻¹) ^ p :
+        (FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+          Wb.toAffine.FunctionField)ˣ) :
+        FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+          Wb.toAffine.FunctionField) :
+        Submodule Wb.toAffine.CoordinateRing
+          Wb.toAffine.FunctionField).IsPrincipal := by
+    intro x₁ y₁ x₂ y₂ h₁ h₂ htor
+    have hclass := congrArg WeierstrassCurve.Affine.Point.toClass htor
+    rw [map_zsmul, map_sub, map_zero] at hclass
+    have hmk : ((p : ℤ) •
+        ((WeierstrassCurve.Affine.Point.toClass
+          (WeierstrassCurve.Affine.Point.some x₁ y₁ h₁)) -
+        (WeierstrassCurve.Affine.Point.toClass
+          (WeierstrassCurve.Affine.Point.some x₂ y₂ h₂))) :
+        Additive (ClassGroup Wb.toAffine.CoordinateRing)) =
+        Additive.ofMul (((ClassGroup.mk Wb.toAffine.FunctionField
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₁)) *
+        (ClassGroup.mk Wb.toAffine.FunctionField
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂))⁻¹) ^
+          (p : ℤ)) := by
+      rfl
+    rw [hmk] at hclass
+    have h1 : (ClassGroup.mk Wb.toAffine.FunctionField
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₁)) ^ p *
+        ((ClassGroup.mk Wb.toAffine.FunctionField
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂)) ^ p)⁻¹ =
+        1 := by
+      have := congrArg Additive.toMul hclass
+      simpa using this
+    rw [← map_pow, ← map_pow, ← map_inv, ← map_mul] at h1
+    rw [show (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₁ *
+      (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂)⁻¹) ^ p =
+      WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₁ ^ p *
+      (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h₂ ^ p)⁻¹ from by
+      rw [mul_pow, inv_pow]]
+    exact ClassGroup.mk_eq_one_iff.mp h1
   sorry
 
 set_option warn.sorry false in
