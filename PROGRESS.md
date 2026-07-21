@@ -499,15 +499,36 @@ entries file). To add/remove/annotate a node, edit
                                                   sigma-paired norm-level identity via
                                                   hrecfib/hNconst and recover singles -- rejected:
                                                   it loses the anti-symmetric mu_p-content
-                                                  (companions differ per side). NEXT CONCRETE STEP:
-                                                  implement amendment (alpha) end-to-end (predicate,
-                                                  hexval construction with the F'-fiber bad-R
-                                                  images, hsetup3 mirror, huniqval destructurings,
-                                                  hrecgen hypotheses/intro, hcross applications),
-                                                  then re-derive the stitch with the aP1-side
-                                                  collision-free and only the t-side elimination
-                                                  remaining. REMAINING inside hgrand: ONLY step 5,
-                                                  the stitch -- normalize the goal and all bound
+                                                  (companions differ per side). amendment (alpha)
+                                                  DONE. BETA RESOLVED -- THE EXPLICIT
+                                                  t-FACTORIZATION: the four points of div t pair as
+                                                  chord(QR1, -R1) with third point -Q and chord(R3,
+                                                  -(Q+R3)) with third point Q, so t * XClass(xQ) = C
+                                                  c * l1 * l2 (hlfac; span computation via ht + two
+                                                  hline instances + XYIdeal_neg_mul at xQ + hCunits,
+                                                  exactly the hcomp pattern) with the chords'
+                                                  slopes/intercepts EXPLICIT. No hgenfac for t at
+                                                  all: drop Mn/Md/Wn'/Wd'/hbalt/het and the
+                                                  M-flavored hww instances; t's evaluations
+                                                  eliminate pointwise through hlfac (t(T)*(x_T - xQ)
+                                                  = c*l1V(T)*l2V(T)), and the swaps are hlw/hvw/hww
+                                                  against the explicit two-line-one-vertical word.
+                                                  Collision control: aP1-word roots lie in F' and
+                                                  all t-word divisor abscissas except xQ (namely
+                                                  xQR1, xR1, xR3, xQR3) avoid F' by (alpha); the +-Q
+                                                  points appear with the SAME multiset {Q,-Q} on
+                                                  both sides of hlfac (div l1 + div l2 contains -Q
+                                                  and Q; div vertical-xQ = {Q,-Q}), so aP1-word
+                                                  values at +-Q cancel symmetrically and never need
+                                                  nonvanishing. Two small new inequalities,
+                                                  derivable in place: xS1 <> xQ (xQ in F, xS1 notin
+                                                  F) and xPS1 <> xQ (else PS1 = +-Q makes S1 = -P +
+                                                  (+-Q) whose abscissa is F-rational by the
+                                                  addition-formula closure haddXF/hslopeF,
+                                                  contradicting xS1 notin F). NEXT: implement hlfac,
+                                                  then rebuild the hgrand stitch on the explicit
+                                                  word. REMAINING inside hgrand: ONLY step 5, the
+                                                  stitch -- normalize the goal and all bound
                                                   ingredients (nine hevid points, thirteen hww
                                                   instances, hcvt/hcvP at the value functions of (Ln
                                                   ,Vn)/(Ld,Vd)/(Mn,Wn')/(Md,Wd')/{xS1}/{xR1,xQR3},
@@ -974,16 +995,34 @@ entries file). To add/remove/annotate a node, edit
                                           hlinet, unconditional form pending) or (ii) prove the
                                           sigma-paired norm-level identity via hrecfib/hNconst and
                                           recover singles -- rejected: it loses the anti-symmetric
-                                          mu_p-content (companions differ per side). NEXT CONCRETE
-                                          STEP: implement amendment (alpha) end-to-end (predicate,
-                                          hexval construction with the F'-fiber bad-R images,
-                                          hsetup3 mirror, huniqval destructurings, hrecgen
-                                          hypotheses/intro, hcross applications), then re-derive the
-                                          stitch with the aP1-side collision-free and only the
-                                          t-side elimination remaining. REMAINING inside hgrand:
-                                          ONLY step 5, the stitch -- normalize the goal and all
-                                          bound ingredients (nine hevid points, thirteen hww
-                                          instances, hcvt/hcvP at the value functions of
+                                          mu_p-content (companions differ per side). amendment
+                                          (alpha) DONE. BETA RESOLVED -- THE EXPLICIT
+                                          t-FACTORIZATION: the four points of div t pair as
+                                          chord(QR1, -R1) with third point -Q and chord(R3, -(Q+R3))
+                                          with third point Q, so t * XClass(xQ) = C c * l1 * l2
+                                          (hlfac; span computation via ht + two hline instances +
+                                          XYIdeal_neg_mul at xQ + hCunits, exactly the hcomp
+                                          pattern) with the chords' slopes/intercepts EXPLICIT. No
+                                          hgenfac for t at all: drop Mn/Md/Wn'/Wd'/hbalt/het and the
+                                          M-flavored hww instances; t's evaluations eliminate
+                                          pointwise through hlfac (t(T)*(x_T - xQ) =
+                                          c*l1V(T)*l2V(T)), and the swaps are hlw/hvw/hww against
+                                          the explicit two-line-one-vertical word. Collision
+                                          control: aP1-word roots lie in F' and all t-word divisor
+                                          abscissas except xQ (namely xQR1, xR1, xR3, xQR3) avoid F'
+                                          by (alpha); the +-Q points appear with the SAME multiset
+                                          {Q,-Q} on both sides of hlfac (div l1 + div l2 contains -Q
+                                          and Q; div vertical-xQ = {Q,-Q}), so aP1-word values at
+                                          +-Q cancel symmetrically and never need nonvanishing. Two
+                                          small new inequalities, derivable in place: xS1 <> xQ (xQ
+                                          in F, xS1 notin F) and xPS1 <> xQ (else PS1 = +-Q makes S1
+                                          = -P + (+-Q) whose abscissa is F-rational by the addition-
+                                          formula closure haddXF/hslopeF, contradicting xS1 notin
+                                          F). NEXT: implement hlfac, then rebuild the hgrand stitch
+                                          on the explicit word. REMAINING inside hgrand: ONLY step
+                                          5, the stitch -- normalize the goal and all bound
+                                          ingredients (nine hevid points, thirteen hww instances,
+                                          hcvt/hcvP at the value functions of
                                           (Ln,Vn)/(Ld,Vd)/(Mn,Wn')/(Md,Wd')/{xS1}/{xR1,xQR3},
                                           hfibpair identifications) with the canonical multiset-
                                           unfolding simp set, then combine via
