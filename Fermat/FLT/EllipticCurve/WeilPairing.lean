@@ -5238,6 +5238,25 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
     simp only [Polynomial.C_mul, Polynomial.C_pow, Polynomial.C_sub,
       map_ofNat]
     ring
+  -- evaluations of the generator elements at curve points
+  have hevline : ∀ (l n x y : (AlgebraicClosure (ZMod q))) (hE : Wb.toAffine.Equation x y),
+      AdjoinRoot.evalEval (p := Wb.toAffine.polynomial) hE
+        (AdjoinRoot.mk Wb.toAffine.polynomial (Polynomial.X -
+          Polynomial.C (Polynomial.C l * Polynomial.X + Polynomial.C n))) =
+      y - (l * x + n) := by
+    intro l n x y hE
+    rw [AdjoinRoot.evalEval_mk]
+    simp [Polynomial.evalEval]
+  have hevvert : ∀ (c x y : (AlgebraicClosure (ZMod q))) (hE : Wb.toAffine.Equation x y),
+      AdjoinRoot.evalEval (p := Wb.toAffine.polynomial) hE
+        (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine c) =
+      x - c := by
+    intro c x y hE
+    rw [show WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine c =
+      AdjoinRoot.mk Wb.toAffine.polynomial
+        (Polynomial.C (Polynomial.X - Polynomial.C c)) from rfl,
+      AdjoinRoot.evalEval_mk]
+    simp [Polynomial.evalEval]
   sorry
 
 set_option warn.sorry false in
