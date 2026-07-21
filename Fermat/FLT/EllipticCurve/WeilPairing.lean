@@ -5829,6 +5829,80 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
     rw [e1, e2, Multiset.map_const', Multiset.prod_replicate,
       Multiset.map_const', Multiset.prod_replicate, h1card, h2card]
     ring
+  -- canonical fiber ordinates
+  obtain ⟨yfib, hyfib⟩ := Classical.axiomOfChoice hfiber
+  -- vertical-vs-word reciprocity (sign +1): the vertical value product over
+  -- a word's divisor equals the word's value product over the vertical fiber
+  have hvw : ∀ (c : (AlgebraicClosure (ZMod q))) (L : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
+      (V : Multiset (AlgebraicClosure (ZMod q))),
+      (((L.bind (fun ln => ((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - ln.1 ^ 2 - Wb.toAffine.a₁ * ln.1)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * ln.1 * ln.2 - Wb.toAffine.a₁ * ln.2
+            - Wb.toAffine.a₃ * ln.1) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - ln.2 ^ 2 - Wb.toAffine.a₃ * ln.2))).roots.map
+          (fun x => (x, ln.1 * x + ln.2)))) +
+        (V.bind (fun c' => {(c', Wb.toAffine.negY c' (yfib c')),
+          (c', yfib c')}))).map (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - c)).prod =
+      ((({(c, Wb.toAffine.negY c (yfib c)), (c, yfib c)} :
+          Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))).map (fun P =>
+        (L.map (fun ln => P.2 - (ln.1 * P.1 + ln.2))).prod *
+        (V.map (fun c' => P.1 - c')).prod))).prod := by
+    intro c L V
+    rw [Multiset.map_add, Multiset.prod_add]
+    rw [show (({(c, Wb.toAffine.negY c (yfib c)), (c, yfib c)} :
+        Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))).map (fun P =>
+        (L.map (fun ln => P.2 - (ln.1 * P.1 + ln.2))).prod *
+        (V.map (fun c' => P.1 - c')).prod)).prod =
+      ((L.map (fun ln => Wb.toAffine.negY c (yfib c) -
+          (ln.1 * c + ln.2))).prod *
+        (V.map (fun c' => c - c')).prod) *
+      ((L.map (fun ln => yfib c - (ln.1 * c + ln.2))).prod *
+        (V.map (fun c' => c - c')).prod) from by
+      rw [show ({(c, Wb.toAffine.negY c (yfib c)), (c, yfib c)} :
+        Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))) =
+        (c, Wb.toAffine.negY c (yfib c)) ::ₘ {(c, yfib c)} from rfl,
+        Multiset.map_cons, Multiset.prod_cons, Multiset.map_singleton,
+        Multiset.prod_singleton]]
+    have hLpart : ((L.bind (fun ln => ((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - ln.1 ^ 2 - Wb.toAffine.a₁ * ln.1)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * ln.1 * ln.2 - Wb.toAffine.a₁ * ln.2
+            - Wb.toAffine.a₃ * ln.1) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - ln.2 ^ 2 - Wb.toAffine.a₃ * ln.2))).roots.map
+        (fun x => (x, ln.1 * x + ln.2)))).map
+          (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - c)).prod =
+        (L.map (fun ln => (Wb.toAffine.negY c (yfib c) -
+          (ln.1 * c + ln.2)) * (yfib c - (ln.1 * c + ln.2)))).prod := by
+      rw [Multiset.map_bind, Multiset.prod_bind]
+      refine congrArg Multiset.prod (Multiset.map_congr rfl fun ln _ => ?_)
+      rw [Multiset.map_map]
+      rw [show (((fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - c) ∘
+          fun x => (x, ln.1 * x + ln.2))) = fun x => x - c from rfl]
+      exact (hgglv ln.1 ln.2 c (yfib c) (hyfib c)).symm
+    have hVpart : ((V.bind (fun c' => ({(c', Wb.toAffine.negY c'
+        (yfib c')), (c', yfib c')} : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))))).map
+          (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - c)).prod =
+        (V.map (fun c' => (c - c') * (c - c'))).prod := by
+      rw [Multiset.map_bind, Multiset.prod_bind]
+      refine congrArg Multiset.prod (Multiset.map_congr rfl fun c' _ => ?_)
+      rw [show ({(c', Wb.toAffine.negY c' (yfib c')), (c', yfib c')} :
+        Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))) =
+        (c', Wb.toAffine.negY c' (yfib c')) ::ₘ {(c', yfib c')} from rfl,
+        Multiset.map_cons, Multiset.prod_cons, Multiset.map_singleton,
+        Multiset.prod_singleton]
+      ring
+    rw [hLpart, hVpart]
+    rw [show (V.map (fun c' => (c - c') * (c - c'))).prod =
+      (V.map (fun c' => c - c')).prod * (V.map (fun c' => c - c')).prod
+      from by rw [← Multiset.prod_map_mul]]
+    rw [show (L.map (fun ln => (Wb.toAffine.negY c (yfib c) -
+        (ln.1 * c + ln.2)) * (yfib c - (ln.1 * c + ln.2)))).prod =
+      (L.map (fun ln => Wb.toAffine.negY c (yfib c) -
+        (ln.1 * c + ln.2))).prod *
+      (L.map (fun ln => yfib c - (ln.1 * c + ln.2))).prod
+      from by rw [← Multiset.prod_map_mul]]
+    ring
   sorry
 
 set_option warn.sorry false in
