@@ -328,27 +328,40 @@ entries file). To add/remove/annotate a node, edit
                                                   over F' (divisor coordinates all in F'), hbaldiv
                                                   bookkeeping, hevid pointwise identities, hww word-
                                                   word swaps, nonvanishing from the avoidances since
-                                                  all word roots lie in F'). REMAINING SORRIES in
-                                                  the mu-node: hsetup3, hrecgen, hleg1-hleg6
-                                                  (bilinearity x2, alternation, nondegeneracy, p-th
-                                                  powers, Frobenius naturality). Superseded:
-                                                  FRONTIER (7 named sorried steps) description.
-                                                  Superseded: NEXT: line-vs-word (hlw, sign
-                                                  (-1)^lines) then word-vs-word (hww), then the
-                                                  balanced reciprocity for functions via hgenfac and
-                                                  the pairing. Remaining assembly: the balanced
-                                                  cross-product reciprocity for arbitrary disjoint
-                                                  pairs from the generator cases, then the pairing
-                                                  and its six legs. Superseded plan text: REMAINING
-                                                  for reciprocity: the class-group descent hgenfac
-                                                  (every function with point-divisor factorization
-                                                  equals a constant times a quotient of products of
-                                                  line/vertical elements, by strong induction on
-                                                  divisor size through hline + XYIdeal_neg_mul +
-                                                  toClass-nontriviality) and the multiplicative
-                                                  assembly of the balanced cross-product
-                                                  reciprocity; then the pairing definition (ratio
-                                                  over hgen2 generators at hpoints-generic
+                                                  all word roots lie in F'). hsetup3 PROVEN
+                                                  (2026-07-21, first pass): the hexval construction
+                                                  parametrized by the avoid-subfield G -- base field
+                                                  F := hsubfin over G's carrier; S chosen off F and
+                                                  off the G-fiber bad-S images (Finset.image over
+                                                  G.toFinset of xOf(-P + fiber point)); x(P+S)
+                                                  avoids G by the transport argument (hxSof via
+                                                  neg_add_cancel_left + hptfun + definitional image
+                                                  membership); F' additionally folds the four
+                                                  xS/xPS-fiber bad-R points and the G-fiber bad-R
+                                                  images; x(Q+R) avoids G and {xS, xPS} likewise;
+                                                  torsion, hmill2 numerators, replicate divisors,
+                                                  four hoffdiv nonvanishings, and both products
+                                                  nonzero, exactly as in hexval. REMAINING SORRIES
+                                                  in the mu-node: hrecgen (the generic-pair Weil
+                                                  reciprocity core) and hleg1-hleg6 (bilinearity x2,
+                                                  alternation, nondegeneracy, p-th powers, Frobenius
+                                                  naturality). Superseded: FRONTIER (7 named sorried
+                                                  steps) description. Superseded: NEXT: line-vs-word
+                                                  (hlw, sign (-1)^lines) then word-vs-word (hww),
+                                                  then the balanced reciprocity for functions via
+                                                  hgenfac and the pairing. Remaining assembly: the
+                                                  balanced cross-product reciprocity for arbitrary
+                                                  disjoint pairs from the generator cases, then the
+                                                  pairing and its six legs. Superseded plan text:
+                                                  REMAINING for reciprocity: the class-group descent
+                                                  hgenfac (every function with point-divisor
+                                                  factorization equals a constant times a quotient
+                                                  of products of line/vertical elements, by strong
+                                                  induction on divisor size through hline +
+                                                  XYIdeal_neg_mul + toClass-nontriviality) and the
+                                                  multiplicative assembly of the balanced cross-
+                                                  product reciprocity; then the pairing definition
+                                                  (ratio over hgen2 generators at hpoints-generic
                                                   translates) and its six legs. Older per-brick log
                                                   follows: NEXT: divisor evaluation f(D) := prod of
                                                   evalEval over D; nonvanishing off the divisor; the
@@ -641,18 +654,30 @@ entries file). To add/remove/annotate a node, edit
                                           numerators over F' (divisor coordinates all in F'),
                                           hbaldiv bookkeeping, hevid pointwise identities, hww word-
                                           word swaps, nonvanishing from the avoidances since all
-                                          word roots lie in F'). REMAINING SORRIES in the mu-node:
-                                          hsetup3, hrecgen, hleg1-hleg6 (bilinearity x2,
-                                          alternation, nondegeneracy, p-th powers, Frobenius
-                                          naturality). Superseded: FRONTIER (7 named sorried steps)
-                                          description. Superseded: NEXT: line-vs-word (hlw, sign
-                                          (-1)^lines) then word-vs-word (hww), then the balanced
-                                          reciprocity for functions via hgenfac and the pairing.
-                                          Remaining assembly: the balanced cross-product reciprocity
-                                          for arbitrary disjoint pairs from the generator cases,
-                                          then the pairing and its six legs. Superseded plan text:
-                                          REMAINING for reciprocity: the class-group descent hgenfac
-                                          (every function with point-divisor factorization equals a
+                                          word roots lie in F'). hsetup3 PROVEN (2026-07-21, first
+                                          pass): the hexval construction parametrized by the avoid-
+                                          subfield G -- base field F := hsubfin over G's carrier; S
+                                          chosen off F and off the G-fiber bad-S images
+                                          (Finset.image over G.toFinset of xOf(-P + fiber point));
+                                          x(P+S) avoids G by the transport argument (hxSof via
+                                          neg_add_cancel_left + hptfun + definitional image
+                                          membership); F' additionally folds the four xS/xPS-fiber
+                                          bad-R points and the G-fiber bad-R images; x(Q+R) avoids G
+                                          and {xS, xPS} likewise; torsion, hmill2 numerators,
+                                          replicate divisors, four hoffdiv nonvanishings, and both
+                                          products nonzero, exactly as in hexval. REMAINING SORRIES
+                                          in the mu-node: hrecgen (the generic-pair Weil reciprocity
+                                          core) and hleg1-hleg6 (bilinearity x2, alternation,
+                                          nondegeneracy, p-th powers, Frobenius naturality).
+                                          Superseded: FRONTIER (7 named sorried steps) description.
+                                          Superseded: NEXT: line-vs-word (hlw, sign (-1)^lines) then
+                                          word-vs-word (hww), then the balanced reciprocity for
+                                          functions via hgenfac and the pairing. Remaining assembly:
+                                          the balanced cross-product reciprocity for arbitrary
+                                          disjoint pairs from the generator cases, then the pairing
+                                          and its six legs. Superseded plan text: REMAINING for
+                                          reciprocity: the class-group descent hgenfac (every
+                                          function with point-divisor factorization equals a
                                           constant times a quotient of products of line/vertical
                                           elements, by strong induction on divisor size through
                                           hline + XYIdeal_neg_mul + toClass-nontriviality) and the
