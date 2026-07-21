@@ -8785,6 +8785,22 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                       ({xPS₁} : Multiset (AlgebraicClosure (ZMod q)))
                     have hcvtS := hcvt (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - xS₁)
                     have hcvtPS := hcvt (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - xPS₁)
+                    have hnormhelpS :
+                        (((yfib xS₁) - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) *
+                          ((yfib xS₁) - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))) *
+                        ((Wb.toAffine.negY xS₁ (yfib xS₁) - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) *
+                          (Wb.toAffine.negY xS₁ (yfib xS₁) - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))) =
+                        (xQR₁ - xS₁) * (xR₁ - xS₁) * (xR₃ - xS₁) *
+                          (xQR₃ - xS₁) * ((xM - xS₁) * (xM - xS₁)) := by
+                      sorry
+                    have hnormhelpP :
+                        (((yfib xPS₁) - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) *
+                          ((yfib xPS₁) - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))) *
+                        ((Wb.toAffine.negY xPS₁ (yfib xPS₁) - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) *
+                          (Wb.toAffine.negY xPS₁ (yfib xPS₁) - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))) =
+                        (xQR₁ - xPS₁) * (xR₁ - xPS₁) * (xR₃ - xPS₁) *
+                          (xQR₃ - xPS₁) * ((xM - xPS₁) * (xM - xPS₁)) := by
+                      sorry
                     have hpjR := hcvP (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - xR₁)
                     have hpjQ := hcvP (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - xQR₃)
                     -- normalize: expand literal multisets, replicates, and
