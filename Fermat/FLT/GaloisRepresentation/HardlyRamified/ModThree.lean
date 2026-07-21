@@ -911,7 +911,6 @@ theorem serre_elimination_semidirect {k : Type u} [Finite k] [Field k]
       rw [finrank_top, hfr2] at hWfr
       omega
 
-set_option warn.sorry false in
 /-- **The Serre §5.4/Tate elimination, arithmetic cases** (sorry node —
 the deep number-theoretic core): with the notation of `serre_elimination`
 below, the dihedral, `A₄`, `S₄`, `A₅`, `PSL₂(𝔽_{3^m})`, `PGL₂(𝔽_{3^m})`
@@ -1324,7 +1323,6 @@ theorem mod_three_reducible {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k
   exact not_isAbsolutelyIrreducible V hV hρ
     ((OddRep.isIrreducible_iff_isAbsolutelyIrreducible ρ' heig).mp hirr)
 
-set_option warn.sorry false in
 /-- **The stable line with unramified-at-`3` quotient character** (sorry
 node — the connected–étale content of Serre's §5.4 mod-3 analysis): a
 reducible mod-3 hardly ramified representation has a stable LINE whose

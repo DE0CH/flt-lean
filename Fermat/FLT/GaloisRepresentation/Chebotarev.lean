@@ -81,7 +81,6 @@ lemma GaloisRep.charFrob_eq_charpoly_globalFrob {A : Type*} [CommRing A]
     ρ.charFrob v = (ρ (globalFrob v)).charpoly :=
   rfl
 
-set_option warn.sorry false in
 /-- **Chebotarev, finite level** (sorry node): modulo the fixing subgroup
 of any finite subextension `E` of `K̄/K`, every element of the absolute
 Galois group is a conjugate of a global Frobenius at a place outside any

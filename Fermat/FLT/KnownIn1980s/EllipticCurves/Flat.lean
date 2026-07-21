@@ -137,7 +137,6 @@ variable (n : ℕ) [NeZero n]
 -- Let Ksep be a separable closure of K (`DecidableEq` is needed for the group law on points)
 variable (Ksep : Type*) [Field Ksep] [Algebra K Ksep] [IsSepClosure K Ksep] [DecidableEq Ksep]
 
-set_option warn.sorry false in
 /-- (Sorry node; vendored from the FLT project.) If `E` is an elliptic curve
 over the field of fractions `K` of a discrete valuation
 ring `R` with good reduction over `R`, then the `n`-torsion of `E` is a finite flat group

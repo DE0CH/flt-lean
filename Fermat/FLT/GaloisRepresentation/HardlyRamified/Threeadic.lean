@@ -503,7 +503,6 @@ theorem exists_residual_isHardlyRamified {R : Type u} [CommRing R]
   · -- tameness at 2 (sorried transfer leaf)
     exact isTameAtTwo_baseChange_residue kk hsurj hρ.isTameAtTwo
 
-set_option warn.sorry false in
 /-- **The global triangular form** (sorry node — the Serre classification
 core for 3-adic hardly ramified representations): given the residual
 trivial-quotient surjection, the WHOLE representation is triangular in a

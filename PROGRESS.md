@@ -200,9 +200,36 @@ entries file). To add/remove/annotate a node, edit
                                                   pow_mul + ring; binder-capture avoided by fresh
                                                   outer binder ab and beta-reduced ab.1/ab.2
                                                   instantiations per the parent session's warning).
-                                                  NEXT: balanced reciprocity for functions via
-                                                  hgenfac (u-constants and signs cancel in balanced
-                                                  cross-ratios), then the pairing. Superseded: NEXT:
+                                                  DIVISOR-DICTIONARY BRICKS PROVEN (2026-07-21):
+                                                  hdivuniq (equal products of point ideals force
+                                                  equal point multisets: prime picking via
+                                                  IsPrime.multiset_prod_map_le, maximality, hXYinj,
+                                                  Dedekind cancellation), hvertdiv' (explicit
+                                                  vertical divisor at the canonical yfib fiber =
+                                                  XYIdeal_neg_mul), hworddiv (span of a
+                                                  line/vertical word = product of point ideals over
+                                                  its explicit hww-shaped divisor, by induction
+                                                  through hlinediv'/hvertdiv'). ASSEMBLY DESIGN
+                                                  (2026-07-21, agent7): genericity via the FINITE-
+                                                  SUBFIELD trick -- strengthen hgenfac with an
+                                                  F-rationality invariant (for F a finite subfield
+                                                  containing the divisor coordinates, all Miller
+                                                  chords/verticals have parameters AND line-cubic
+                                                  roots in F, since chord data is rational in the
+                                                  current divisor points and the invariant
+                                                  propagates); consumers then choose test abscissas
+                                                  OUTSIDE F via hpoints, killing all
+                                                  collision/nonvanishing obligations. Pairing
+                                                  generators in junk-free form: b_P := (XClass
+                                                  x_S)^p with div = p(S)+p(-S), a_P := gamma*b_P
+                                                  with div = p(P+S)+p(-S) (integrality by
+                                                  fractional-ideal arithmetic), so all supports
+                                                  explicit. NEXT: balanced reciprocity for functions
+                                                  via the strengthened hgenfac (u-constants and
+                                                  signs cancel in balanced cross-ratios; 8-fold
+                                                  division-free form, cancel the Pi of d-word
+                                                  evaluations at the end under the F-avoidance
+                                                  hypotheses), then the pairing. Superseded: NEXT:
                                                   line-vs-word (hlw, sign (-1)^lines) then word-vs-
                                                   word (hww), then the balanced reciprocity for
                                                   functions via hgenfac and the pairing. Remaining
@@ -401,42 +428,65 @@ entries file). To add/remove/annotate a node, edit
                                           V1, sign collected by map_const'/prod_replicate, closed by
                                           pow_mul + ring; binder-capture avoided by fresh outer
                                           binder ab and beta-reduced ab.1/ab.2 instantiations per
-                                          the parent session's warning). NEXT: balanced reciprocity
-                                          for functions via hgenfac (u-constants and signs cancel in
-                                          balanced cross-ratios), then the pairing. Superseded:
-                                          NEXT: line-vs-word (hlw, sign (-1)^lines) then word-vs-
-                                          word (hww), then the balanced reciprocity for functions
-                                          via hgenfac and the pairing. Remaining assembly: the
-                                          balanced cross-product reciprocity for arbitrary disjoint
-                                          pairs from the generator cases, then the pairing and its
-                                          six legs. Superseded plan text: REMAINING for reciprocity:
-                                          the class-group descent hgenfac (every function with
-                                          point-divisor factorization equals a constant times a
-                                          quotient of products of line/vertical elements, by strong
-                                          induction on divisor size through hline + XYIdeal_neg_mul
-                                          + toClass-nontriviality) and the multiplicative assembly
-                                          of the balanced cross-product reciprocity; then the
-                                          pairing definition (ratio over hgen2 generators at
-                                          hpoints-generic translates) and its six legs. Older per-
-                                          brick log follows: NEXT: divisor evaluation f(D) := prod
-                                          of evalEval over D; nonvanishing off the divisor; the
-                                          reciprocity statement f(div g) = g(div f) for disjoint
-                                          supports, by induction via line/vertical factorization
-                                          (hline + XYIdeal_neg_mul) reducing to the proven cores
-                                          hlinerec (line-line) and hnormeval + hrecP1 (vertical
-                                          cases); then the pairing and its six legs. hmax COMPLETE
-                                          (with hresfin + hkill): every maximal ideal of the
-                                          coordinate ring IS a point ideal XYIdeal x0 (C y0) at a
-                                          curve point -- the divisor language is available. Also
-                                          PROVEN: hlinfac (every maximal ideal contains a vertical X
-                                          - c: the lying-over leg of hmax, via the norm-membership
-                                          trick and prime factor-picking). NEXT: hmax -- every
-                                          maximal ideal of the coordinate ring is a point ideal
-                                          (route: M cap k[x] contains X - c via the norm-membership
-                                          trick f*sigma-f = algebraMap(N f) from coe_norm_smul_basis
-                                          with N f nonzero by degree_norm_smul_basis; residue field
-                                          is spanned over k by the images of the basis {1, y} since
-                                          X - c dies, so it is finite over k, hence = k by
+                                          the parent session's warning). DIVISOR-DICTIONARY BRICKS
+                                          PROVEN (2026-07-21): hdivuniq (equal products of point
+                                          ideals force equal point multisets: prime picking via
+                                          IsPrime.multiset_prod_map_le, maximality, hXYinj, Dedekind
+                                          cancellation), hvertdiv' (explicit vertical divisor at the
+                                          canonical yfib fiber = XYIdeal_neg_mul), hworddiv (span of
+                                          a line/vertical word = product of point ideals over its
+                                          explicit hww-shaped divisor, by induction through
+                                          hlinediv'/hvertdiv'). ASSEMBLY DESIGN (2026-07-21,
+                                          agent7): genericity via the FINITE-SUBFIELD trick --
+                                          strengthen hgenfac with an F-rationality invariant (for F
+                                          a finite subfield containing the divisor coordinates, all
+                                          Miller chords/verticals have parameters AND line-cubic
+                                          roots in F, since chord data is rational in the current
+                                          divisor points and the invariant propagates); consumers
+                                          then choose test abscissas OUTSIDE F via hpoints, killing
+                                          all collision/nonvanishing obligations. Pairing generators
+                                          in junk-free form: b_P := (XClass x_S)^p with div =
+                                          p(S)+p(-S), a_P := gamma*b_P with div = p(P+S)+p(-S)
+                                          (integrality by fractional-ideal arithmetic), so all
+                                          supports explicit. NEXT: balanced reciprocity for
+                                          functions via the strengthened hgenfac (u-constants and
+                                          signs cancel in balanced cross-ratios; 8-fold division-
+                                          free form, cancel the Pi of d-word evaluations at the end
+                                          under the F-avoidance hypotheses), then the pairing.
+                                          Superseded: NEXT: line-vs-word (hlw, sign (-1)^lines) then
+                                          word-vs-word (hww), then the balanced reciprocity for
+                                          functions via hgenfac and the pairing. Remaining assembly:
+                                          the balanced cross-product reciprocity for arbitrary
+                                          disjoint pairs from the generator cases, then the pairing
+                                          and its six legs. Superseded plan text: REMAINING for
+                                          reciprocity: the class-group descent hgenfac (every
+                                          function with point-divisor factorization equals a
+                                          constant times a quotient of products of line/vertical
+                                          elements, by strong induction on divisor size through
+                                          hline + XYIdeal_neg_mul + toClass-nontriviality) and the
+                                          multiplicative assembly of the balanced cross-product
+                                          reciprocity; then the pairing definition (ratio over hgen2
+                                          generators at hpoints-generic translates) and its six
+                                          legs. Older per-brick log follows: NEXT: divisor
+                                          evaluation f(D) := prod of evalEval over D; nonvanishing
+                                          off the divisor; the reciprocity statement f(div g) =
+                                          g(div f) for disjoint supports, by induction via
+                                          line/vertical factorization (hline + XYIdeal_neg_mul)
+                                          reducing to the proven cores hlinerec (line-line) and
+                                          hnormeval + hrecP1 (vertical cases); then the pairing and
+                                          its six legs. hmax COMPLETE (with hresfin + hkill): every
+                                          maximal ideal of the coordinate ring IS a point ideal
+                                          XYIdeal x0 (C y0) at a curve point -- the divisor language
+                                          is available. Also PROVEN: hlinfac (every maximal ideal
+                                          contains a vertical X - c: the lying-over leg of hmax, via
+                                          the norm-membership trick and prime factor-picking). NEXT:
+                                          hmax -- every maximal ideal of the coordinate ring is a
+                                          point ideal (route: M cap k[x] contains X - c via the
+                                          norm-membership trick f*sigma-f = algebraMap(N f) from
+                                          coe_norm_smul_basis with N f nonzero by
+                                          degree_norm_smul_basis; residue field is spanned over k by
+                                          the images of the basis {1, y} since X - c dies, so it is
+                                          finite over k, hence = k by
                                           IsAlgClosed.algebraMap_bijective_of_isIntegral; then the
                                           coordinate images x0, y0 give XClass/YClass in M, the
                                           Weierstrass polynomial Taylor-decomposes to give the

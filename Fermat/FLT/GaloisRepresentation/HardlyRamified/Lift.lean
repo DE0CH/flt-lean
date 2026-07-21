@@ -98,7 +98,6 @@ structure HardlyRamifiedLift (ρbar : GaloisRep ℚ (ZMod ℓ) V) where
     (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
       ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat
 
-set_option warn.sorry false in
 /-- **B6a** (sorry node): an irreducible hardly ramified mod-`ℓ`
 representation with `ℓ ≥ 5` admits a hardly ramified `ℓ`-adic lift.
 

@@ -141,7 +141,6 @@ noncomputable def frobeniusTorsionEnd (q : ℕ) [Fact q.Prime]
         (frobAlgHom q)) p)
 
 set_option maxHeartbeats 8000000 in
-set_option warn.sorry false in
 set_option linter.unusedSimpArgs false in
 /-- **Reduction transfer at good primes** (sorry node — the
 Néron–Ogg–Shafarevich reduction isomorphism): away from a finite set of
@@ -3010,7 +3009,6 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
 
 
 set_option maxHeartbeats 4000000 in
-set_option warn.sorry false in
 /-- **The `μ_p`-valued Weil pairing over a finite field** (sorry node —
 the canonical arithmetic input): on the `p`-torsion of an elliptic
 curve over `𝔽_q` (`p ≠ q`) there is a multiplicatively bilinear,
@@ -6306,7 +6304,6 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           Multiset.prod_singleton]
   sorry
 
-set_option warn.sorry false in
 /-- **The Weil pairing over a finite field, Frobenius-twisted form**
 (DERIVED from `exists_weilPairing_mu` by discrete logarithm): on the
 `p`-torsion of an elliptic curve over `𝔽_q` (`p ≠ q`) there is an
@@ -6505,7 +6502,6 @@ theorem det_frobeniusTorsionEnd (q : ℕ) [Fact q.Prime]
     (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))) hpk
   exact det_eq_of_conj hrank e halt hnd hconj
 
-set_option warn.sorry false in
 /-- **Frobenius determinant at good primes** (sorry node): away from a
 finite set `S` of places, the determinant of the mod-`p` representation
 evaluates at the global arithmetic Frobenius of the prime `q` to

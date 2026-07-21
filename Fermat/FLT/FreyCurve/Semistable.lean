@@ -2824,7 +2824,6 @@ theorem WeierstrassCurve.isUnramifiedAt_of_hasMultiplicativeReduction
 
 open TensorProduct in
 open scoped WeierstrassCurve.Affine in
-set_option warn.sorry false in
 /-- **The peu-ramifiée finite-flat package at multiplicative primes**
 (sorry node — the TATE-THEORETIC content, stated in the SAME
 DVR-package shape as the vendored good-reduction leaf so that the

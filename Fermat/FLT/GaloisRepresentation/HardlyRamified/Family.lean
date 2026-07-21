@@ -91,7 +91,6 @@ def IsInHardlyRamifiedFamily (ρ : GaloisRep ℚ R V) : Prop :=
         Fin 2 → AlgebraicClosure ℚ_[p]),
       (ρ.baseChange (AlgebraicClosure ℚ_[p])).conj r' = σ hp ψ)
 
-set_option warn.sorry false in
 /-- **B6b** (sorry node): a hardly ramified `p`-adic representation lives in
 a compatible family of Galois representations, all of whose
 odd-residue-characteristic members are themselves hardly ramified. -/

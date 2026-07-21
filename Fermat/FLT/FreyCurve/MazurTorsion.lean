@@ -86,7 +86,6 @@ import Fermat.FLT.DedekindDomain.AdicValuation
 
 open WeierstrassCurve WeierstrassCurve.Affine
 
-set_option warn.sorry false in
 /-- **Mazur's torsion theorem** (sorry node): the torsion subgroup of the
 rational points of an elliptic curve over `ℚ` is isomorphic to one of the
 fifteen groups `ℤ/n` with `n ∈ {1, …, 10, 12}` or `ℤ/2 × ℤ/2m` with
@@ -1112,7 +1111,6 @@ theorem FreyPackage.inertia_two_unipotent (P : FreyPackage) :
   rw [hgoal, hb (A v), hb v]
   exact hp
 
-set_option warn.sorry false in
 /-- **The flat/ordinary analysis at `p`** (sorry node — the deepest
 piece of Serre's §4.1 argument): given the stable line of the reducible
 mod-`p` Frey representation with its characters `χ₁`, `χ₂`
@@ -1509,7 +1507,6 @@ theorem FreyPackage.stable_line_dichotomy_of_not_isIrreducible
     simp only [MonoidHom.one_apply, Units.val_one, one_smul] at h1
     exact h1
 
-set_option warn.sorry false in
 /-- **The Vélu quotient leaf** (sorry node): given a Galois-stable line
 `W` in the `p`-torsion of the Frey curve on whose quotient the Galois
 action is trivial, the quotient curve `E/C` by the rational subgroup
