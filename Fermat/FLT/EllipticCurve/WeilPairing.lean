@@ -6074,6 +6074,119 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
         + Polynomial.C (Wb.toAffine.a₆ - n₀ ^ 2 - Wb.toAffine.a₃ * n₀))).roots
     rw [hswapL, hswapV]
     ring
+  -- word-vs-word reciprocity (sign `(-1)^(lines * lines)`): the value
+  -- product of one line/vertical word over the other word's divisor,
+  -- against the reverse product, assembled from `hlw` per line of the
+  -- first word and `hvw` per vertical of the first word
+  have hww : ∀ (L₁ L₂ : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
+      (V₁ V₂ : Multiset (AlgebraicClosure (ZMod q))),
+      (((L₂.bind (fun ln => ((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - ln.1 ^ 2 - Wb.toAffine.a₁ * ln.1)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * ln.1 * ln.2 - Wb.toAffine.a₁ * ln.2
+            - Wb.toAffine.a₃ * ln.1) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - ln.2 ^ 2 - Wb.toAffine.a₃ * ln.2))).roots.map
+          (fun x => (x, ln.1 * x + ln.2)))) +
+        (V₂.bind (fun c' => {(c', Wb.toAffine.negY c' (yfib c')),
+          (c', yfib c')}))).map
+            (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+              (L₁.map (fun ab : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                T.2 - (ab.1 * T.1 + ab.2))).prod *
+              (V₁.map (fun cv => T.1 - cv)).prod)).prod =
+      (-1) ^ (Multiset.card L₁ * Multiset.card L₂) *
+        (((L₁.bind (fun ab => ((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - ab.1 ^ 2 - Wb.toAffine.a₁ * ab.1)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * ab.1 * ab.2 - Wb.toAffine.a₁ * ab.2
+            - Wb.toAffine.a₃ * ab.1) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - ab.2 ^ 2 - Wb.toAffine.a₃ * ab.2))).roots.map
+          (fun x => (x, ab.1 * x + ab.2)))) +
+        (V₁.bind (fun cv => {(cv, Wb.toAffine.negY cv (yfib cv)),
+          (cv, yfib cv)}))).map
+            (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+              (L₂.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                T.2 - (ln.1 * T.1 + ln.2))).prod *
+              (V₂.map (fun c' => T.1 - c')).prod)).prod := by
+    intro L₁ L₂ V₁ V₂
+    rw [Multiset.prod_map_mul]
+    -- the `L₁`-line part over the second word's divisor, by `hlw` per line
+    have hLpart : (((L₂.bind (fun ln => ((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - ln.1 ^ 2 - Wb.toAffine.a₁ * ln.1)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * ln.1 * ln.2 - Wb.toAffine.a₁ * ln.2
+            - Wb.toAffine.a₃ * ln.1) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - ln.2 ^ 2 - Wb.toAffine.a₃ * ln.2))).roots.map
+          (fun x => (x, ln.1 * x + ln.2)))) +
+        (V₂.bind (fun c' => {(c', Wb.toAffine.negY c' (yfib c')),
+          (c', yfib c')}))).map
+            (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+              (L₁.map (fun ab : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                T.2 - (ab.1 * T.1 + ab.2))).prod)).prod =
+        (L₁.map (fun ab : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+          (-1) ^ Multiset.card L₂ *
+          (((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - ab.1 ^ 2 - Wb.toAffine.a₁ * ab.1)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * ab.1 * ab.2 - Wb.toAffine.a₁ * ab.2
+            - Wb.toAffine.a₃ * ab.1) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - ab.2 ^ 2 - Wb.toAffine.a₃ * ab.2))).roots.map (fun x =>
+            (L₂.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+              (ab.1 * x + ab.2) - (ln.1 * x + ln.2))).prod *
+            (V₂.map (fun c' => x - c')).prod)).prod)).prod :=
+      (Multiset.prod_map_prod_map _ L₁).trans (congrArg Multiset.prod
+        (Multiset.map_congr rfl fun ab _ => hlw ab.1 ab.2 L₂ V₂))
+    -- the `V₁`-vertical part over the second word's divisor, by `hvw`
+    have hVpart : (((L₂.bind (fun ln => ((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - ln.1 ^ 2 - Wb.toAffine.a₁ * ln.1)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * ln.1 * ln.2 - Wb.toAffine.a₁ * ln.2
+            - Wb.toAffine.a₃ * ln.1) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - ln.2 ^ 2 - Wb.toAffine.a₃ * ln.2))).roots.map
+          (fun x => (x, ln.1 * x + ln.2)))) +
+        (V₂.bind (fun c' => {(c', Wb.toAffine.negY c' (yfib c')),
+          (c', yfib c')}))).map
+            (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+              (V₁.map (fun cv => T.1 - cv)).prod)).prod =
+        (V₁.map (fun cv => ((({(cv, Wb.toAffine.negY cv (yfib cv)), (cv, yfib cv)} :
+            Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))).map (fun P =>
+          (L₂.map (fun ln => P.2 - (ln.1 * P.1 + ln.2))).prod *
+          (V₂.map (fun c' => P.1 - c')).prod))).prod)).prod :=
+      (Multiset.prod_map_prod_map _ V₁).trans (congrArg Multiset.prod
+        (Multiset.map_congr rfl fun cv _ => hvw cv L₂ V₂))
+    rw [hLpart, hVpart]
+    rw [Multiset.prod_map_mul, Multiset.map_const', Multiset.prod_replicate]
+    -- expand the first word's divisor on the right-hand side
+    rw [Multiset.map_add, Multiset.prod_add, Multiset.map_bind, Multiset.prod_bind,
+      Multiset.map_bind, Multiset.prod_bind]
+    -- beta-reduce the per-line composite on the right-hand side
+    have hRL : L₁.map (fun ab : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+        ((((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - ab.1 ^ 2 - Wb.toAffine.a₁ * ab.1)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * ab.1 * ab.2 - Wb.toAffine.a₁ * ab.2
+            - Wb.toAffine.a₃ * ab.1) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - ab.2 ^ 2 - Wb.toAffine.a₃ * ab.2))).roots.map
+          (fun x => (x, ab.1 * x + ab.2))).map
+            (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+              (L₂.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                T.2 - (ln.1 * T.1 + ln.2))).prod *
+              (V₂.map (fun c' => T.1 - c')).prod)).prod) =
+      L₁.map (fun ab : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+        (((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - ab.1 ^ 2 - Wb.toAffine.a₁ * ab.1)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * ab.1 * ab.2 - Wb.toAffine.a₁ * ab.2
+            - Wb.toAffine.a₃ * ab.1) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - ab.2 ^ 2 - Wb.toAffine.a₃ * ab.2))).roots.map (fun x =>
+            (L₂.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+              (ab.1 * x + ab.2) - (ln.1 * x + ln.2))).prod *
+            (V₂.map (fun c' => x - c')).prod)).prod) :=
+      Multiset.map_congr rfl fun ab _ => by
+        rw [Multiset.map_map]
+        rfl
+    rw [hRL]
+    rw [mul_comm (Multiset.card L₁) (Multiset.card L₂), pow_mul]
+    ring
   sorry
 
 set_option warn.sorry false in
