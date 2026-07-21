@@ -191,14 +191,20 @@ entries file). To add/remove/annotate a node, edit
                                                   vertical-vertical, adopted from the accidental
                                                   parallel session; hrecfib). hlinediv' explicit
                                                   line divisor; hvw vertical-vs-word assembly
-                                                  PROVEN. NEXT: line-vs-word (hlw, sign (-1)^lines)
-                                                  then word-vs-word (hww), then the balanced
-                                                  reciprocity for functions via hgenfac and the
-                                                  pairing. Remaining assembly: the balanced cross-
-                                                  product reciprocity for arbitrary disjoint pairs
-                                                  from the generator cases, then the pairing and its
-                                                  six legs. Superseded plan text: REMAINING for
-                                                  reciprocity: the class-group descent hgenfac
+                                                  PROVEN. hlw PROVEN (line-vs-word, sign
+                                                  (-1)^lines). NEXT: word-vs-word (hww, sign
+                                                  (-1)^(lines x lines), one more bind-induction over
+                                                  the same pattern), then balanced reciprocity for
+                                                  functions via hgenfac (u-constants and signs
+                                                  cancel in balanced cross-ratios), then the
+                                                  pairing. Superseded: NEXT: line-vs-word (hlw, sign
+                                                  (-1)^lines) then word-vs-word (hww), then the
+                                                  balanced reciprocity for functions via hgenfac and
+                                                  the pairing. Remaining assembly: the balanced
+                                                  cross-product reciprocity for arbitrary disjoint
+                                                  pairs from the generator cases, then the pairing
+                                                  and its six legs. Superseded plan text: REMAINING
+                                                  for reciprocity: the class-group descent hgenfac
                                                   (every function with point-divisor factorization
                                                   equals a constant times a quotient of products of
                                                   line/vertical elements, by strong induction on
@@ -382,25 +388,30 @@ entries file). To add/remove/annotate a node, edit
                                           parallel/identical; hgglv line-vertical; hggvv vertical-
                                           vertical, adopted from the accidental parallel session;
                                           hrecfib). hlinediv' explicit line divisor; hvw vertical-
-                                          vs-word assembly PROVEN. NEXT: line-vs-word (hlw, sign
-                                          (-1)^lines) then word-vs-word (hww), then the balanced
-                                          reciprocity for functions via hgenfac and the pairing.
-                                          Remaining assembly: the balanced cross-product reciprocity
-                                          for arbitrary disjoint pairs from the generator cases,
-                                          then the pairing and its six legs. Superseded plan text:
-                                          REMAINING for reciprocity: the class-group descent hgenfac
-                                          (every function with point-divisor factorization equals a
-                                          constant times a quotient of products of line/vertical
-                                          elements, by strong induction on divisor size through
-                                          hline + XYIdeal_neg_mul + toClass-nontriviality) and the
-                                          multiplicative assembly of the balanced cross-product
-                                          reciprocity; then the pairing definition (ratio over hgen2
-                                          generators at hpoints-generic translates) and its six
-                                          legs. Older per-brick log follows: NEXT: divisor
-                                          evaluation f(D) := prod of evalEval over D; nonvanishing
-                                          off the divisor; the reciprocity statement f(div g) =
-                                          g(div f) for disjoint supports, by induction via
-                                          line/vertical factorization (hline + XYIdeal_neg_mul)
+                                          vs-word assembly PROVEN. hlw PROVEN (line-vs-word, sign
+                                          (-1)^lines). NEXT: word-vs-word (hww, sign (-1)^(lines x
+                                          lines), one more bind-induction over the same pattern),
+                                          then balanced reciprocity for functions via hgenfac
+                                          (u-constants and signs cancel in balanced cross-ratios),
+                                          then the pairing. Superseded: NEXT: line-vs-word (hlw,
+                                          sign (-1)^lines) then word-vs-word (hww), then the
+                                          balanced reciprocity for functions via hgenfac and the
+                                          pairing. Remaining assembly: the balanced cross-product
+                                          reciprocity for arbitrary disjoint pairs from the
+                                          generator cases, then the pairing and its six legs.
+                                          Superseded plan text: REMAINING for reciprocity: the
+                                          class-group descent hgenfac (every function with point-
+                                          divisor factorization equals a constant times a quotient
+                                          of products of line/vertical elements, by strong induction
+                                          on divisor size through hline + XYIdeal_neg_mul + toClass-
+                                          nontriviality) and the multiplicative assembly of the
+                                          balanced cross-product reciprocity; then the pairing
+                                          definition (ratio over hgen2 generators at hpoints-generic
+                                          translates) and its six legs. Older per-brick log follows:
+                                          NEXT: divisor evaluation f(D) := prod of evalEval over D;
+                                          nonvanishing off the divisor; the reciprocity statement
+                                          f(div g) = g(div f) for disjoint supports, by induction
+                                          via line/vertical factorization (hline + XYIdeal_neg_mul)
                                           reducing to the proven cores hlinerec (line-line) and
                                           hnormeval + hrecP1 (vertical cases); then the pairing and
                                           its six legs. hmax COMPLETE (with hresfin + hkill): every
