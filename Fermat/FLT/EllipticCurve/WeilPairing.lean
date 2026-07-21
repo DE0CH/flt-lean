@@ -5700,6 +5700,117 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       exact hDrec
     rw [hkey]
     exact hDfac
+  -- generic facts about the fiber cubic: monic of degree three
+  have hcubmon : ∀ l n : (AlgebraicClosure (ZMod q)), ((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - l ^ 2 - Wb.toAffine.a₁ * l)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * l * n - Wb.toAffine.a₁ * n
+            - Wb.toAffine.a₃ * l) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - n ^ 2 - Wb.toAffine.a₃ * n))).Monic := by
+    intro l n
+    monicity!
+  have hcubdeg : ∀ l n : (AlgebraicClosure (ZMod q)), ((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - l ^ 2 - Wb.toAffine.a₁ * l)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * l * n - Wb.toAffine.a₁ * n
+            - Wb.toAffine.a₃ * l) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - n ^ 2 - Wb.toAffine.a₃ * n))).natDegree = 3 := by
+    intro l n
+    compute_degree!
+  -- signed generator-pair reciprocity, line-line, UNCONDITIONAL: covers the
+  -- generic-slope case (hlinerec), parallel lines, and identical lines
+  have hggll : ∀ l₁ n₁ l₂ n₂ : (AlgebraicClosure (ZMod q)),
+      (((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - l₂ ^ 2 - Wb.toAffine.a₁ * l₂)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * l₂ * n₂ - Wb.toAffine.a₁ * n₂
+            - Wb.toAffine.a₃ * l₂) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - n₂ ^ 2 - Wb.toAffine.a₃ * n₂))).roots.map
+        (fun x => (l₂ * x + n₂) - (l₁ * x + n₁))).prod =
+      - (((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - l₁ ^ 2 - Wb.toAffine.a₁ * l₁)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * l₁ * n₁ - Wb.toAffine.a₁ * n₁
+            - Wb.toAffine.a₃ * l₁) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - n₁ ^ 2 - Wb.toAffine.a₃ * n₁))).roots.map
+        (fun x => (l₁ * x + n₁) - (l₂ * x + n₂))).prod := by
+    intro l₁ n₁ l₂ n₂
+    by_cases hl : l₁ = l₂
+    · subst hl
+      have hc1 : ∀ x : (AlgebraicClosure (ZMod q)), (l₁ * x + n₂) - (l₁ * x + n₁) = n₂ - n₁ := by
+        intro x
+        ring
+      have hc2 : ∀ x : (AlgebraicClosure (ZMod q)), (l₁ * x + n₁) - (l₁ * x + n₂) = n₁ - n₂ := by
+        intro x
+        ring
+      rw [Multiset.map_congr rfl (fun x _ => hc1 x),
+        Multiset.map_congr rfl (fun x _ => hc2 x),
+        Multiset.map_const', Multiset.prod_replicate,
+        Multiset.map_const', Multiset.prod_replicate,
+        hcard _, hcubdeg l₁ n₂, hcard _, hcubdeg l₁ n₁]
+      ring
+    · have h1 : ∀ x : (AlgebraicClosure (ZMod q)), (l₂ * x + n₂) - (l₁ * x + n₁) =
+          (l₂ - l₁) * x + (n₂ - n₁) := by
+        intro x
+        ring
+      have h2 : ∀ x : (AlgebraicClosure (ZMod q)), (l₁ * x + n₁) - (l₂ * x + n₂) =
+          (l₁ - l₂) * x + (n₁ - n₂) := by
+        intro x
+        ring
+      rw [Multiset.map_congr rfl (fun x _ => h1 x),
+        Multiset.map_congr rfl (fun x _ => h2 x)]
+      exact hlinerec l₁ n₁ l₂ n₂ hl _ _ rfl rfl
+  -- signed generator-pair reciprocity, line-vertical (sign +1): the fiber
+  -- product of the line equals the vertical product over the line divisor
+  have hgglv : ∀ (l n c y : (AlgebraicClosure (ZMod q))), Wb.toAffine.Equation c y →
+      (Wb.toAffine.negY c y - (l * c + n)) * (y - (l * c + n)) =
+      (((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - l ^ 2 - Wb.toAffine.a₁ * l)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * l * n - Wb.toAffine.a₁ * n
+            - Wb.toAffine.a₃ * l) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - n ^ 2 - Wb.toAffine.a₃ * n))).roots.map (fun x => x - c)).prod := by
+    intro l n c y hE
+    have hEneg := (WeierstrassCurve.Affine.equation_neg (W' := Wb.toAffine)
+      c y).mpr hE
+    have hL := hnormeval'
+      (AdjoinRoot.mk Wb.toAffine.polynomial (Polynomial.X -
+        Polynomial.C (Polynomial.C l * Polynomial.X + Polynomial.C n)))
+      c y hE
+    rw [hevline l n c y hE, hevline l n c _ hEneg, hNline l n] at hL
+    rw [mul_comm, hL]
+    have hroots : (((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - l ^ 2 - Wb.toAffine.a₁ * l)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * l * n - Wb.toAffine.a₁ * n
+            - Wb.toAffine.a₃ * l) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - n ^ 2 - Wb.toAffine.a₃ * n))).roots.map (fun x => x - c)).prod =
+        (-1) ^ 3 * (((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - l ^ 2 - Wb.toAffine.a₁ * l)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * l * n - Wb.toAffine.a₁ * n
+            - Wb.toAffine.a₃ * l) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - n ^ 2 - Wb.toAffine.a₃ * n))).roots.map (fun x => c - x)).prod := by
+      have hneg : ((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - l ^ 2 - Wb.toAffine.a₁ * l)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * l * n - Wb.toAffine.a₁ * n
+            - Wb.toAffine.a₃ * l) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - n ^ 2 - Wb.toAffine.a₃ * n))).roots.map (fun x : (AlgebraicClosure (ZMod q)) => x - c) =
+          (((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - l ^ 2 - Wb.toAffine.a₁ * l)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * l * n - Wb.toAffine.a₁ * n
+            - Wb.toAffine.a₃ * l) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - n ^ 2 - Wb.toAffine.a₃ * n))).roots.map (fun x => c - x)).map Neg.neg := by
+        rw [Multiset.map_map]
+        exact Multiset.map_congr rfl fun x _ => by simp
+      rw [hneg, Multiset.prod_map_neg, Multiset.card_map, hcard _,
+        hcubdeg l n]
+    rw [hroots, ← hevalprod _ (hcubmon l n) c]
+    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow,
+      Polynomial.eval_X, Polynomial.eval_C, Polynomial.eval_neg]
+    ring
   sorry
 
 set_option warn.sorry false in
