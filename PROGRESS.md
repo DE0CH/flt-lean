@@ -422,13 +422,25 @@ entries file). To add/remove/annotate a node, edit
                                                   mul_right_cancel0 against the sigma-product + one-
                                                   shot linear_combination hstarinst, and the final
                                                   telescoping linear_combination with hdS/hdP (the
-                                                  pointwise hcomp images) and hXY. REMAINING in
-                                                  hstepR: ONLY hstarinst (the unconditional full-
-                                                  divisor reciprocity instance -- the word-level
-                                                  computation via hgenfac/hevid/hbaldiv/hww); then
-                                                  hstepS mirrors the whole R-step, and hleg1-hleg6
-                                                  remain. REMAINING SORRIES in the mu-node: hrecgen
-                                                  and hleg1-hleg6 (bilinearity x2, alternation,
+                                                  pointwise hcomp images) and hXY. hstarinst WORD-
+                                                  DATA GLUE COMPILING: aP1's Miller words obtained
+                                                  from the F-rational hgenfac over F' (2p-card
+                                                  replicate divisor, memberships from the predicate
+                                                  + negY closure), t's words over hsubfin of its
+                                                  eight coordinates, and both hbaldiv divisor
+                                                  bookkeepings established; the single remaining
+                                                  sorry inside hstarinst is hgrand -- the assembly:
+                                                  evaluate the two word identities (hevid) over the
+                                                  eight sigma-closed points, convert word-divisor
+                                                  evaluation products through the hbaldiv multiset
+                                                  identities (multiplicative, division-free), swap
+                                                  word-vs-word products with hww (including the
+                                                  vertical words XS1^p and XR1*XQR3 directly), and
+                                                  cancel the balanced u-powers and paired hww signs.
+                                                  REMAINING: hgrand (in hstepR/hstarinst), then
+                                                  hstepS mirrors the whole R-step, and hleg1-hleg6.
+                                                  REMAINING SORRIES in the mu-node: hrecgen and
+                                                  hleg1-hleg6 (bilinearity x2, alternation,
                                                   nondegeneracy, p-th powers, Frobenius naturality).
                                                   Superseded: FRONTIER (7 named sorried steps)
                                                   description. Superseded: NEXT: line-vs-word (hlw,
@@ -820,32 +832,43 @@ entries file). To add/remove/annotate a node, edit
                                           strip hXY by mul_right_cancel0 against the sigma-product +
                                           one-shot linear_combination hstarinst, and the final
                                           telescoping linear_combination with hdS/hdP (the pointwise
-                                          hcomp images) and hXY. REMAINING in hstepR: ONLY hstarinst
-                                          (the unconditional full-divisor reciprocity instance --
-                                          the word-level computation via hgenfac/hevid/hbaldiv/hww);
-                                          then hstepS mirrors the whole R-step, and hleg1-hleg6
-                                          remain. REMAINING SORRIES in the mu-node: hrecgen and
-                                          hleg1-hleg6 (bilinearity x2, alternation, nondegeneracy,
-                                          p-th powers, Frobenius naturality). Superseded: FRONTIER
-                                          (7 named sorried steps) description. Superseded: NEXT:
-                                          line-vs-word (hlw, sign (-1)^lines) then word-vs-word
-                                          (hww), then the balanced reciprocity for functions via
-                                          hgenfac and the pairing. Remaining assembly: the balanced
-                                          cross-product reciprocity for arbitrary disjoint pairs
-                                          from the generator cases, then the pairing and its six
-                                          legs. Superseded plan text: REMAINING for reciprocity: the
-                                          class-group descent hgenfac (every function with point-
-                                          divisor factorization equals a constant times a quotient
-                                          of products of line/vertical elements, by strong induction
-                                          on divisor size through hline + XYIdeal_neg_mul + toClass-
-                                          nontriviality) and the multiplicative assembly of the
-                                          balanced cross-product reciprocity; then the pairing
-                                          definition (ratio over hgen2 generators at hpoints-generic
-                                          translates) and its six legs. Older per-brick log follows:
-                                          NEXT: divisor evaluation f(D) := prod of evalEval over D;
-                                          nonvanishing off the divisor; the reciprocity statement
-                                          f(div g) = g(div f) for disjoint supports, by induction
-                                          via line/vertical factorization (hline + XYIdeal_neg_mul)
+                                          hcomp images) and hXY. hstarinst WORD-DATA GLUE COMPILING:
+                                          aP1's Miller words obtained from the F-rational hgenfac
+                                          over F' (2p-card replicate divisor, memberships from the
+                                          predicate + negY closure), t's words over hsubfin of its
+                                          eight coordinates, and both hbaldiv divisor bookkeepings
+                                          established; the single remaining sorry inside hstarinst
+                                          is hgrand -- the assembly: evaluate the two word
+                                          identities (hevid) over the eight sigma-closed points,
+                                          convert word-divisor evaluation products through the
+                                          hbaldiv multiset identities (multiplicative, division-
+                                          free), swap word-vs-word products with hww (including the
+                                          vertical words XS1^p and XR1*XQR3 directly), and cancel
+                                          the balanced u-powers and paired hww signs. REMAINING:
+                                          hgrand (in hstepR/hstarinst), then hstepS mirrors the
+                                          whole R-step, and hleg1-hleg6. REMAINING SORRIES in the
+                                          mu-node: hrecgen and hleg1-hleg6 (bilinearity x2,
+                                          alternation, nondegeneracy, p-th powers, Frobenius
+                                          naturality). Superseded: FRONTIER (7 named sorried steps)
+                                          description. Superseded: NEXT: line-vs-word (hlw, sign
+                                          (-1)^lines) then word-vs-word (hww), then the balanced
+                                          reciprocity for functions via hgenfac and the pairing.
+                                          Remaining assembly: the balanced cross-product reciprocity
+                                          for arbitrary disjoint pairs from the generator cases,
+                                          then the pairing and its six legs. Superseded plan text:
+                                          REMAINING for reciprocity: the class-group descent hgenfac
+                                          (every function with point-divisor factorization equals a
+                                          constant times a quotient of products of line/vertical
+                                          elements, by strong induction on divisor size through
+                                          hline + XYIdeal_neg_mul + toClass-nontriviality) and the
+                                          multiplicative assembly of the balanced cross-product
+                                          reciprocity; then the pairing definition (ratio over hgen2
+                                          generators at hpoints-generic translates) and its six
+                                          legs. Older per-brick log follows: NEXT: divisor
+                                          evaluation f(D) := prod of evalEval over D; nonvanishing
+                                          off the divisor; the reciprocity statement f(div g) =
+                                          g(div f) for disjoint supports, by induction via
+                                          line/vertical factorization (hline + XYIdeal_neg_mul)
                                           reducing to the proven cores hlinerec (line-line) and
                                           hnormeval + hrecP1 (vertical cases); then the pairing and
                                           its six legs. hmax COMPLETE (with hresfin + hkill): every

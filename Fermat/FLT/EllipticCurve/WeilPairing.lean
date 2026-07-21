@@ -8005,7 +8005,135 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
             AdjoinRoot.evalEval hS₁neg.left
               (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁ *
                 WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQR₃)) ^ p) := by
-        sorry
+        -- the divisor data of the two non-word functions, as words
+        have hDPw : Ideal.span {aP₁} =
+            ((Multiset.replicate p ((xPS₁, yPS₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) +
+              Multiset.replicate p ((xS₁, Wb.toAffine.negY xS₁ yS₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))).map
+              (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+                  P.1 (Polynomial.C P.2))).prod := by
+          rw [Multiset.map_add, Multiset.prod_add, Multiset.map_replicate,
+            Multiset.map_replicate, Multiset.prod_replicate,
+            Multiset.prod_replicate, haP₁]
+        have hDPweq : ∀ T ∈ (Multiset.replicate p ((xPS₁, yPS₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) +
+            Multiset.replicate p ((xS₁, Wb.toAffine.negY xS₁ yS₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))),
+            Wb.toAffine.Equation T.1 T.2 := by
+          intro T hT
+          rcases Multiset.mem_add.mp hT with h | h
+          · rw [Multiset.eq_of_mem_replicate h]
+            exact hPS₁.left
+          · rw [Multiset.eq_of_mem_replicate h]
+            exact (WeierstrassCurve.Affine.equation_neg
+              (W' := Wb.toAffine) _ _).mpr hS₁.left
+        have hDtw : Ideal.span {t} =
+            ((((xQR₁, yQR₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) ::ₘ
+              ((xR₁, Wb.toAffine.negY xR₁ yR₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) ::ₘ
+              ((xR₃, yR₃) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) ::ₘ
+              {((xQR₃, Wb.toAffine.negY xQR₃ yQR₃) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))}).map
+              (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+                  P.1 (Polynomial.C P.2))).prod := by
+          rw [Multiset.map_cons, Multiset.prod_cons, Multiset.map_cons,
+            Multiset.prod_cons, Multiset.map_cons, Multiset.prod_cons,
+            Multiset.map_singleton, Multiset.prod_singleton, ht]
+          ring
+        have hDtweq : ∀ T ∈ (((xQR₁, yQR₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) ::ₘ
+            ((xR₁, Wb.toAffine.negY xR₁ yR₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) ::ₘ
+            ((xR₃, yR₃) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) ::ₘ
+            {((xQR₃, Wb.toAffine.negY xQR₃ yQR₃) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))}),
+            Wb.toAffine.Equation T.1 T.2 := by
+          intro T hT
+          rcases Multiset.mem_cons.mp hT with h | hT
+          · rw [h]; exact hQR₁.left
+          rcases Multiset.mem_cons.mp hT with h | hT
+          · rw [h]; exact hR₁neg.left
+          rcases Multiset.mem_cons.mp hT with h | hT
+          · rw [h]; exact hR₃.left
+          · rw [Multiset.mem_singleton.mp hT]; exact hQR₃neg.left
+        -- the Miller words of aP₁ over F' (F-rational, roots in F')
+        obtain ⟨Ln, Ld, Vn, Vd, uf, huf0, hLnF, hVnF, hRtF, hwordP⟩ :=
+          hgenfac (2 * p) aP₁ _ F'
+            (by rw [Multiset.card_add, Multiset.card_replicate,
+                  Multiset.card_replicate]
+                omega)
+            hDPweq
+            (by intro T hT
+                rcases Multiset.mem_add.mp hT with h | h
+                · rw [Multiset.eq_of_mem_replicate h]
+                  exact ⟨hxPS₁F', hyPS₁F'⟩
+                · rw [Multiset.eq_of_mem_replicate h]
+                  exact ⟨hxS₁F', hnegYF F' xS₁ yS₁ hxS₁F' hyS₁F'⟩)
+            hDPw
+        have hbalP := hbaldiv aP₁ _ Ln Ld Vn Vd uf huf0 hDPweq hDPw hwordP
+        -- the Miller words of t over a field containing its data
+        obtain ⟨Ht, hHtfin, hHtmem⟩ := hsubfin
+          {xQR₁, yQR₁, xR₁, Wb.toAffine.negY xR₁ yR₁, xR₃, yR₃, xQR₃,
+            Wb.toAffine.negY xQR₃ yQR₃}
+        obtain ⟨Mn, Md, Wn', Wd', ut, hut0, hMnH, hWnH, hMtH, hwordt⟩ :=
+          hgenfac 4 t _ Ht
+            (by simp)
+            hDtweq
+            (by intro T hT
+                rcases Multiset.mem_cons.mp hT with h | hT
+                · rw [h]
+                  exact ⟨hHtmem _ (by simp), hHtmem _ (by simp)⟩
+                rcases Multiset.mem_cons.mp hT with h | hT
+                · rw [h]
+                  exact ⟨hHtmem _ (by simp), hHtmem _ (by simp)⟩
+                rcases Multiset.mem_cons.mp hT with h | hT
+                · rw [h]
+                  exact ⟨hHtmem _ (by simp), hHtmem _ (by simp)⟩
+                · rw [Multiset.mem_singleton.mp hT]
+                  exact ⟨hHtmem _ (by simp), hHtmem _ (by simp)⟩)
+            hDtw
+        have hbalt := hbaldiv t _ Mn Md Wn' Wd' ut hut0 hDtweq hDtw hwordt
+        -- THE GRAND WORD-LEVEL ASSEMBLY: evaluate the two word identities
+        -- over all eight points, convert word-divisor evaluations through
+        -- the hbaldiv bookkeeping, swap with hww, and cancel the balanced
+        -- u-powers and paired hww signs
+        have hgrand :
+            (AdjoinRoot.evalEval hQR₁.left aP₁ *
+              AdjoinRoot.evalEval hR₁neg.left aP₁ *
+              AdjoinRoot.evalEval hR₃.left aP₁ *
+              AdjoinRoot.evalEval hQR₃neg.left aP₁) *
+            (AdjoinRoot.evalEval hR₁.left
+                ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+              AdjoinRoot.evalEval hR₁neg.left
+                ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+              AdjoinRoot.evalEval hQR₃.left
+                ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+              AdjoinRoot.evalEval hQR₃neg.left
+                ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p)) *
+            ((AdjoinRoot.evalEval hS₁.left t *
+              AdjoinRoot.evalEval hS₁neg.left t) ^ p) *
+            ((AdjoinRoot.evalEval hPS₁.left
+                (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁ *
+                  WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQR₃) *
+              AdjoinRoot.evalEval hS₁neg.left
+                (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁ *
+                  WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQR₃)) ^ p) =
+            (AdjoinRoot.evalEval hR₁.left aP₁ *
+              AdjoinRoot.evalEval hR₁neg.left aP₁ *
+              AdjoinRoot.evalEval hQR₃.left aP₁ *
+              AdjoinRoot.evalEval hQR₃neg.left aP₁) *
+            (AdjoinRoot.evalEval hQR₁.left
+                ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+              AdjoinRoot.evalEval hR₁neg.left
+                ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+              AdjoinRoot.evalEval hR₃.left
+                ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+              AdjoinRoot.evalEval hQR₃neg.left
+                ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p)) *
+            ((AdjoinRoot.evalEval hPS₁.left t *
+              AdjoinRoot.evalEval hS₁neg.left t) ^ p) *
+            ((AdjoinRoot.evalEval hS₁.left
+                (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁ *
+                  WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQR₃) *
+              AdjoinRoot.evalEval hS₁neg.left
+                (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁ *
+                  WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQR₃)) ^ p) := by
+          sorry
+        exact hgrand
       -- the final assembly: substitute hcomp at S₁ and PS₁, strip the
       -- σ-companion common factors (all nonzero by the avoidances), and
       -- close with the stripped reciprocity
