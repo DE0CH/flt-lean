@@ -8099,28 +8099,6 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                   exact ⟨hxS₁F', hnegYF F' xS₁ yS₁ hxS₁F' hyS₁F'⟩)
             hDPw
         have hbalP := hbaldiv aP₁ _ Ln Ld Vn Vd uf huf0 hDPweq hDPw hwordP
-        -- the Miller words of t over a field containing its data
-        obtain ⟨Ht, hHtfin, hHtmem⟩ := hsubfin
-          {xQR₁, yQR₁, xR₁, Wb.toAffine.negY xR₁ yR₁, xR₃, yR₃, xQR₃,
-            Wb.toAffine.negY xQR₃ yQR₃}
-        obtain ⟨Mn, Md, Wn', Wd', ut, hut0, hMnH, hWnH, hMtH, hwordt⟩ :=
-          hgenfac 4 t _ Ht
-            (by simp)
-            hDtweq
-            (by intro T hT
-                rcases Multiset.mem_cons.mp hT with h | hT
-                · rw [h]
-                  exact ⟨hHtmem _ (by simp), hHtmem _ (by simp)⟩
-                rcases Multiset.mem_cons.mp hT with h | hT
-                · rw [h]
-                  exact ⟨hHtmem _ (by simp), hHtmem _ (by simp)⟩
-                rcases Multiset.mem_cons.mp hT with h | hT
-                · rw [h]
-                  exact ⟨hHtmem _ (by simp), hHtmem _ (by simp)⟩
-                · rw [Multiset.mem_singleton.mp hT]
-                  exact ⟨hHtmem _ (by simp), hHtmem _ (by simp)⟩)
-            hDtw
-        have hbalt := hbaldiv t _ Mn Md Wn' Wd' ut hut0 hDtweq hDtw hwordt
         -- canonical fiber pair = actual σ-pair, for any curve point
         have hfibpair : ∀ (c y : (AlgebraicClosure (ZMod q))),
             Wb.toAffine.Equation c y →
@@ -8142,24 +8120,12 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           (Wb.toAffine.negY xQR₃ yQR₃) hQR₃neg.left
         have heP₅ := hevid aP₁ Ln Ld Vn Vd uf hwordP xR₁ yR₁ hR₁.left
         have heP₆ := hevid aP₁ Ln Ld Vn Vd uf hwordP xQR₃ yQR₃ hQR₃.left
-        have het₁ := hevid t Mn Md Wn' Wd' ut hwordt xS₁ yS₁ hS₁.left
-        have het₂ := hevid t Mn Md Wn' Wd' ut hwordt xS₁
-          (Wb.toAffine.negY xS₁ yS₁) hS₁neg.left
-        have het₃ := hevid t Mn Md Wn' Wd' ut hwordt xPS₁ yPS₁ hPS₁.left
         -- the word-vs-word reciprocity instances between the two words
         -- and against the two vertical words
-        have hw₁ := hww Ln Mn Vn Wn'
-        have hw₂ := hww Ln Md Vn Wd'
-        have hw₃ := hww Ld Mn Vd Wn'
-        have hw₄ := hww Ld Md Vd Wd'
-        have hwv₁ := hww 0 Mn {xS₁} Wn'
-        have hwv₂ := hww 0 Md {xS₁} Wd'
         have hwv₃ := hww 0 Ln ({xR₁, xQR₃} :
           Multiset (AlgebraicClosure (ZMod q))) Vn
         have hwv₄ := hww 0 Ld ({xR₁, xQR₃} :
           Multiset (AlgebraicClosure (ZMod q))) Vd
-        have hwv₅ := hww Mn 0 Wn' {xS₁}
-        have hwv₆ := hww Md 0 Wd' {xS₁}
         have hwv₇ := hww Ln 0 Vn ({xR₁, xQR₃} :
           Multiset (AlgebraicClosure (ZMod q)))
         have hwv₈ := hww Ld 0 Vd ({xR₁, xQR₃} :
@@ -8167,13 +8133,180 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
         have hwv₉ := hww 0 0 ({xS₁} : Multiset (AlgebraicClosure (ZMod q)))
           ({xR₁, xQR₃} : Multiset (AlgebraicClosure (ZMod q)))
         -- the divisor-bookkeeping conversions, as product equations
-        -- (types inferred from hbalt/hbalP; normalized at use time)
-        have hcvt := fun φ : ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) → (AlgebraicClosure (ZMod q)) =>
-          congrArg (fun A : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) =>
-            (A.map φ).prod) hbalt
+        -- (type inferred from hbalP; normalized at use time)
         have hcvP := fun φ : ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) → (AlgebraicClosure (ZMod q)) =>
           congrArg (fun A : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) =>
             (A.map φ).prod) hbalP
+        -- THE EXPLICIT FACTORIZATION OF t: the four points of div t pair
+        -- into the chord through (Q⊕R₁), ⊖R₁ (third point ⊖Q) and the
+        -- chord through R₃, ⊖(Q⊕R₃) (third point Q), so t·(X - xQ) is a
+        -- constant times the product of the two line classes
+        have hQpt0 : (WeierstrassCurve.Affine.Point.some xQ yQ hQ :
+            Wb.toAffine.Point) ≠ 0 := by
+          simp [WeierstrassCurve.Affine.Point.zero_def]
+        have hQnegpt : Wb.toAffine.Nonsingular xQ (Wb.toAffine.negY xQ yQ) :=
+          (WeierstrassCurve.Affine.nonsingular_neg xQ yQ).mpr hQ
+        have hcaseA : ¬(xQR₁ = xR₁ ∧
+            yQR₁ = Wb.toAffine.negY xR₁ (Wb.toAffine.negY xR₁ yR₁)) := by
+          rw [WeierstrassCurve.Affine.negY_negY]
+          rintro ⟨hx, hy⟩
+          apply hQpt0
+          have hpteq : (WeierstrassCurve.Affine.Point.some xQR₁ yQR₁ hQR₁ :
+              Wb.toAffine.Point) =
+              WeierstrassCurve.Affine.Point.some xR₁ yR₁ hR₁ := by
+            cases hx; cases hy; rfl
+          have h0 : (WeierstrassCurve.Affine.Point.some xQ yQ hQ +
+              WeierstrassCurve.Affine.Point.some xR₁ yR₁ hR₁ :
+              Wb.toAffine.Point) =
+              0 + WeierstrassCurve.Affine.Point.some xR₁ yR₁ hR₁ := by
+            rw [zero_add, ← hQRc₁, hpteq]
+          exact add_right_cancel h0
+        have hcaseB : ¬(xR₃ = xQR₃ ∧
+            yR₃ = Wb.toAffine.negY xQR₃ (Wb.toAffine.negY xQR₃ yQR₃)) := by
+          rw [WeierstrassCurve.Affine.negY_negY]
+          rintro ⟨hx, hy⟩
+          apply hQpt0
+          have hpteq : (WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃ :
+              Wb.toAffine.Point) =
+              WeierstrassCurve.Affine.Point.some xQR₃ yQR₃ hQR₃ := by
+            cases hx; cases hy; rfl
+          have h0 : (WeierstrassCurve.Affine.Point.some xQ yQ hQ +
+              WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃ :
+              Wb.toAffine.Point) =
+              0 + WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃ := by
+            rw [zero_add, ← hQRc₃, ← hpteq]
+          exact add_right_cancel h0
+        -- the chord sums, at the point level
+        have hnegR₁pt : (WeierstrassCurve.Affine.Point.some xR₁
+            (Wb.toAffine.negY xR₁ yR₁) hR₁neg : Wb.toAffine.Point) =
+            -(WeierstrassCurve.Affine.Point.some xR₁ yR₁ hR₁) :=
+          (WeierstrassCurve.Affine.Point.neg_some hR₁).symm
+        have hnegQR₃pt : (WeierstrassCurve.Affine.Point.some xQR₃
+            (Wb.toAffine.negY xQR₃ yQR₃) hQR₃neg : Wb.toAffine.Point) =
+            -(WeierstrassCurve.Affine.Point.some xQR₃ yQR₃ hQR₃) :=
+          (WeierstrassCurve.Affine.Point.neg_some hQR₃).symm
+        have hsumA : (WeierstrassCurve.Affine.Point.some xQR₁ yQR₁ hQR₁ +
+            WeierstrassCurve.Affine.Point.some xR₁
+              (Wb.toAffine.negY xR₁ yR₁) hR₁neg : Wb.toAffine.Point) =
+            WeierstrassCurve.Affine.Point.some xQ yQ hQ := by
+          rw [hnegR₁pt, hQRc₁, add_neg_cancel_right]
+        have hsumB : (WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃ +
+            WeierstrassCurve.Affine.Point.some xQR₃
+              (Wb.toAffine.negY xQR₃ yQR₃) hQR₃neg : Wb.toAffine.Point) =
+            WeierstrassCurve.Affine.Point.some xQ
+              (Wb.toAffine.negY xQ yQ) hQnegpt := by
+          rw [hnegQR₃pt, hQRc₃, neg_add_rev, add_neg_cancel_left]
+          exact WeierstrassCurve.Affine.Point.neg_some hQ
+        -- the addition-formula links: the chords' third points are ⊖Q, Q
+        have hlinkA := WeierstrassCurve.Affine.Point.add_some
+          hcaseA (h₁ := hQR₁) (h₂ := hR₁neg)
+        have hlinkB := WeierstrassCurve.Affine.Point.add_some
+          hcaseB (h₁ := hR₃) (h₂ := hQR₃neg)
+        obtain ⟨hXA, hYA⟩ : Wb.toAffine.addX xQR₁ xR₁
+              (Wb.toAffine.slope xQR₁ xR₁ yQR₁
+                (Wb.toAffine.negY xR₁ yR₁)) = xQ ∧
+            Wb.toAffine.addY xQR₁ xR₁ yQR₁
+              (Wb.toAffine.slope xQR₁ xR₁ yQR₁
+                (Wb.toAffine.negY xR₁ yR₁)) = yQ := by
+          have h := hlinkA.symm.trans hsumA
+          injection h with e1 e2
+          exact ⟨e1, e2⟩
+        obtain ⟨hXB, hYB⟩ : Wb.toAffine.addX xR₃ xQR₃
+              (Wb.toAffine.slope xR₃ xQR₃ yR₃
+                (Wb.toAffine.negY xQR₃ yQR₃)) = xQ ∧
+            Wb.toAffine.addY xR₃ xQR₃ yR₃
+              (Wb.toAffine.slope xR₃ xQR₃ yR₃
+                (Wb.toAffine.negY xQR₃ yQR₃)) =
+              Wb.toAffine.negY xQ yQ := by
+          have h := hlinkB.symm.trans hsumB
+          injection h with e1 e2
+          exact ⟨e1, e2⟩
+        -- the two chord line identities, with third factor rewritten to ±Q
+        have hlineA := hline xQR₁ yQR₁ xR₁ (Wb.toAffine.negY xR₁ yR₁)
+          hQR₁ hR₁neg hcaseA
+        have hlineB := hline xR₃ yR₃ xQR₃ (Wb.toAffine.negY xQR₃ yQR₃)
+          hR₃ hQR₃neg hcaseB
+        rw [hXA, hYA] at hlineA
+        rw [hXB, hYB, WeierstrassCurve.Affine.negY_negY] at hlineB
+        -- the vertical at xQ
+        have hvQ : Ideal.span {(WeierstrassCurve.Affine.CoordinateRing.XClass
+            Wb.toAffine xQ : Wb.toAffine.CoordinateRing)} =
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              xQ (Polynomial.C (Wb.toAffine.negY xQ yQ)) *
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              xQ (Polynomial.C yQ) :=
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal_neg_mul
+            (W := Wb.toAffine) hQ).symm
+        -- the span-level factorization of t·(X - xQ)
+        have hspanfac : Ideal.span
+            {t * WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQ} =
+            Ideal.span {WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
+              (WeierstrassCurve.Affine.linePolynomial xQR₁ yQR₁
+                (Wb.toAffine.slope xQR₁ xR₁ yQR₁
+                  (Wb.toAffine.negY xR₁ yR₁))) *
+              WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
+              (WeierstrassCurve.Affine.linePolynomial xR₃ yR₃
+                (Wb.toAffine.slope xR₃ xQR₃ yR₃
+                  (Wb.toAffine.negY xQR₃ yQR₃)))} := by
+          rw [← Ideal.span_singleton_mul_span_singleton,
+            ← Ideal.span_singleton_mul_span_singleton, ht, hvQ]
+          have hYA' : (Ideal.span {WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
+              (WeierstrassCurve.Affine.linePolynomial xQR₁ yQR₁
+                (Wb.toAffine.slope xQR₁ xR₁ yQR₁
+                  (Wb.toAffine.negY xR₁ yR₁)))} :
+              Ideal Wb.toAffine.CoordinateRing) =
+              WeierstrassCurve.Affine.CoordinateRing.YIdeal Wb.toAffine
+                (WeierstrassCurve.Affine.linePolynomial xQR₁ yQR₁
+                  (Wb.toAffine.slope xQR₁ xR₁ yQR₁
+                    (Wb.toAffine.negY xR₁ yR₁))) := rfl
+          have hYB' : (Ideal.span {WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
+              (WeierstrassCurve.Affine.linePolynomial xR₃ yR₃
+                (Wb.toAffine.slope xR₃ xQR₃ yR₃
+                  (Wb.toAffine.negY xQR₃ yQR₃)))} :
+              Ideal Wb.toAffine.CoordinateRing) =
+              WeierstrassCurve.Affine.CoordinateRing.YIdeal Wb.toAffine
+                (WeierstrassCurve.Affine.linePolynomial xR₃ yR₃
+                  (Wb.toAffine.slope xR₃ xQR₃ yR₃
+                    (Wb.toAffine.negY xQR₃ yQR₃))) := rfl
+          rw [hYA', hYB', hlineA, hlineB]
+          ring
+        -- the element-level factorization, up to a nonzero constant
+        have hlfac : ∃ c : (AlgebraicClosure (ZMod q)), c ≠ 0 ∧
+            t * WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQ =
+            AdjoinRoot.of Wb.toAffine.polynomial (Polynomial.C c) *
+              (WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
+              (WeierstrassCurve.Affine.linePolynomial xQR₁ yQR₁
+                (Wb.toAffine.slope xQR₁ xR₁ yQR₁
+                  (Wb.toAffine.negY xR₁ yR₁))) *
+              WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
+              (WeierstrassCurve.Affine.linePolynomial xR₃ yR₃
+                (Wb.toAffine.slope xR₃ xQR₃ yR₃
+                  (Wb.toAffine.negY xQR₃ yQR₃)))) := by
+          obtain ⟨u, hu⟩ := Ideal.span_singleton_eq_span_singleton.mp hspanfac
+          obtain ⟨c, hc0, hcu⟩ := hCunits (↑u⁻¹) (Units.isUnit _)
+          refine ⟨c, hc0, ?_⟩
+          rw [← hcu]
+          calc t * WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQ
+              = t * WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+                xQ * (↑u * ↑u⁻¹) := by rw [Units.mul_inv, mul_one]
+            _ = (t * WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+                xQ * ↑u) * ↑u⁻¹ := by ring
+            _ = (WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
+              (WeierstrassCurve.Affine.linePolynomial xQR₁ yQR₁
+                (Wb.toAffine.slope xQR₁ xR₁ yQR₁
+                  (Wb.toAffine.negY xR₁ yR₁))) *
+              WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
+              (WeierstrassCurve.Affine.linePolynomial xR₃ yR₃
+                (Wb.toAffine.slope xR₃ xQR₃ yR₃
+                  (Wb.toAffine.negY xQR₃ yQR₃)))) * ↑u⁻¹ := by rw [hu]
+            _ = ↑u⁻¹ * (WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
+              (WeierstrassCurve.Affine.linePolynomial xQR₁ yQR₁
+                (Wb.toAffine.slope xQR₁ xR₁ yQR₁
+                  (Wb.toAffine.negY xR₁ yR₁))) *
+              WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
+              (WeierstrassCurve.Affine.linePolynomial xR₃ yR₃
+                (Wb.toAffine.slope xR₃ xQR₃ yR₃
+                  (Wb.toAffine.negY xQR₃ yQR₃)))) := by ring
         -- THE GRAND WORD-LEVEL ASSEMBLY: evaluate the two word identities
         -- over all eight points, convert word-divisor evaluations through
         -- the hbaldiv bookkeeping, swap with hww, and cancel the balanced
