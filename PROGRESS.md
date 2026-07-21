@@ -155,18 +155,21 @@ entries file). To add/remove/annotate a node, edit
                                                   hnormeval (norm-evaluation compatibility (N f)(x0)
                                                   = f(x0,y0) f(x0,negY) via norm_smul_basis + the
                                                   Weierstrass equation) and hXYmax (point ideals are
-                                                  maximal, via quotientXYIdealEquiv). Also PROVEN:
-                                                  hlinfac (every maximal ideal contains a vertical X
-                                                  - c: the lying-over leg of hmax, via the norm-
-                                                  membership trick and prime factor-picking). NEXT:
-                                                  hmax -- every maximal ideal of the coordinate ring
-                                                  is a point ideal (route: M cap k[x] contains X - c
-                                                  via the norm-membership trick f*sigma-f =
-                                                  algebraMap(N f) from coe_norm_smul_basis with N f
-                                                  nonzero by degree_norm_smul_basis; residue field
-                                                  is spanned over k by the images of the basis {1,
-                                                  y} since X - c dies, so it is finite over k, hence
-                                                  = k by
+                                                  maximal, via quotientXYIdealEquiv). hmax COMPLETE
+                                                  (with hresfin + hkill): every maximal ideal of the
+                                                  coordinate ring IS a point ideal XYIdeal x0 (C y0)
+                                                  at a curve point -- the divisor language is
+                                                  available. Also PROVEN: hlinfac (every maximal
+                                                  ideal contains a vertical X - c: the lying-over
+                                                  leg of hmax, via the norm-membership trick and
+                                                  prime factor-picking). NEXT: hmax -- every maximal
+                                                  ideal of the coordinate ring is a point ideal
+                                                  (route: M cap k[x] contains X - c via the norm-
+                                                  membership trick f*sigma-f = algebraMap(N f) from
+                                                  coe_norm_smul_basis with N f nonzero by
+                                                  degree_norm_smul_basis; residue field is spanned
+                                                  over k by the images of the basis {1, y} since X -
+                                                  c dies, so it is finite over k, hence = k by
                                                   IsAlgClosed.algebraMap_bijective_of_isIntegral;
                                                   then the coordinate images x0, y0 give
                                                   XClass/YClass in M, the Weierstrass polynomial
@@ -289,10 +292,13 @@ entries file). To add/remove/annotate a node, edit
                                           hnormeval (norm-evaluation compatibility (N f)(x0) =
                                           f(x0,y0) f(x0,negY) via norm_smul_basis + the Weierstrass
                                           equation) and hXYmax (point ideals are maximal, via
-                                          quotientXYIdealEquiv). Also PROVEN: hlinfac (every maximal
-                                          ideal contains a vertical X - c: the lying-over leg of
-                                          hmax, via the norm-membership trick and prime factor-
-                                          picking). NEXT: hmax -- every maximal ideal of the
+                                          quotientXYIdealEquiv). hmax COMPLETE (with hresfin +
+                                          hkill): every maximal ideal of the coordinate ring IS a
+                                          point ideal XYIdeal x0 (C y0) at a curve point -- the
+                                          divisor language is available. Also PROVEN: hlinfac (every
+                                          maximal ideal contains a vertical X - c: the lying-over
+                                          leg of hmax, via the norm-membership trick and prime
+                                          factor-picking). NEXT: hmax -- every maximal ideal of the
                                           coordinate ring is a point ideal (route: M cap k[x]
                                           contains X - c via the norm-membership trick f*sigma-f =
                                           algebraMap(N f) from coe_norm_smul_basis with N f nonzero
