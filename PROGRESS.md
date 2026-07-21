@@ -243,28 +243,43 @@ entries file). To add/remove/annotate a node, edit
                                                   the embedded constant via evalEval_mk/evalEval_C;
                                                   the pointwise evaluation form of the hgenfac
                                                   identity: f(T) * dword(T) = u * nword(T) at every
-                                                  curve point T). NEXT: balanced reciprocity for
-                                                  functions via the strengthened hgenfac
-                                                  (u-constants and signs cancel in balanced cross-
-                                                  ratios; 8-fold division-free form, cancel the Pi
-                                                  of d-word evaluations at the end under the
-                                                  F-avoidance hypotheses), then the pairing.
-                                                  Superseded: NEXT: line-vs-word (hlw, sign
-                                                  (-1)^lines) then word-vs-word (hww), then the
-                                                  balanced reciprocity for functions via hgenfac and
-                                                  the pairing. Remaining assembly: the balanced
-                                                  cross-product reciprocity for arbitrary disjoint
-                                                  pairs from the generator cases, then the pairing
-                                                  and its six legs. Superseded plan text: REMAINING
-                                                  for reciprocity: the class-group descent hgenfac
-                                                  (every function with point-divisor factorization
-                                                  equals a constant times a quotient of products of
-                                                  line/vertical elements, by strong induction on
-                                                  divisor size through hline + XYIdeal_neg_mul +
-                                                  toClass-nontriviality) and the multiplicative
-                                                  assembly of the balanced cross-product
-                                                  reciprocity; then the pairing definition (ratio
-                                                  over hgen2 generators at hpoints-generic
+                                                  curve point T). GLUE WRITTEN AND COMPILING
+                                                  (2026-07-21, per Deyao's glue-first policy): the
+                                                  full assembly of the pairing now typechecks end-
+                                                  to-end -- IsWeilValue v w z spells the Miller
+                                                  cross-ratio characterization (degenerate cases
+                                                  z=1; affine case: finite subfields F <= F',
+                                                  translate S with data in F' and abscissa outside
+                                                  F, translate R with abscissa outside F', Miller
+                                                  elements aP with div = p(P+S)+p(-S) and bP =
+                                                  XClass(xS)^p, same for Q with R, and the division-
+                                                  free 8-evaluation equation for z =
+                                                  [fP(Q+R)/fP(R)]*[fQ(S)/fQ(P+S)]); e := unique
+                                                  choice from hvalue; exact <e, legs> closes the
+                                                  theorem. FRONTIER (7 named sorried steps): hvalue
+                                                  (exists-unique of the Weil value: existence via
+                                                  hpoints-generic subfield choices + hgen2-style
+                                                  principality for aP; uniqueness across setups IS
+                                                  Weil reciprocity via hww/hbaldiv/hevid +
+                                                  F-avoidance nonvanishing), hleg1/hleg2
+                                                  (bilinearity), hleg3 (alternation), hleg4
+                                                  (nondegeneracy), hleg5 (p-th powers), hleg6
+                                                  (Frobenius naturality). Superseded: NEXT: line-vs-
+                                                  word (hlw, sign (-1)^lines) then word-vs-word
+                                                  (hww), then the balanced reciprocity for functions
+                                                  via hgenfac and the pairing. Remaining assembly:
+                                                  the balanced cross-product reciprocity for
+                                                  arbitrary disjoint pairs from the generator cases,
+                                                  then the pairing and its six legs. Superseded plan
+                                                  text: REMAINING for reciprocity: the class-group
+                                                  descent hgenfac (every function with point-divisor
+                                                  factorization equals a constant times a quotient
+                                                  of products of line/vertical elements, by strong
+                                                  induction on divisor size through hline +
+                                                  XYIdeal_neg_mul + toClass-nontriviality) and the
+                                                  multiplicative assembly of the balanced cross-
+                                                  product reciprocity; then the pairing definition
+                                                  (ratio over hgen2 generators at hpoints-generic
                                                   translates) and its six legs. Older per-brick log
                                                   follows: NEXT: divisor evaluation f(D) := prod of
                                                   evalEval over D; nonvanishing off the divisor; the
@@ -483,14 +498,27 @@ entries file). To add/remove/annotate a node, edit
                                           hdivuniq). hevconst + hevid PROVEN (evaluation of the
                                           embedded constant via evalEval_mk/evalEval_C; the
                                           pointwise evaluation form of the hgenfac identity: f(T) *
-                                          dword(T) = u * nword(T) at every curve point T). NEXT:
-                                          balanced reciprocity for functions via the strengthened
-                                          hgenfac (u-constants and signs cancel in balanced cross-
-                                          ratios; 8-fold division-free form, cancel the Pi of d-word
-                                          evaluations at the end under the F-avoidance hypotheses),
-                                          then the pairing. Superseded: NEXT: line-vs-word (hlw,
-                                          sign (-1)^lines) then word-vs-word (hww), then the
-                                          balanced reciprocity for functions via hgenfac and the
+                                          dword(T) = u * nword(T) at every curve point T). GLUE
+                                          WRITTEN AND COMPILING (2026-07-21, per Deyao's glue-first
+                                          policy): the full assembly of the pairing now typechecks
+                                          end-to-end -- IsWeilValue v w z spells the Miller cross-
+                                          ratio characterization (degenerate cases z=1; affine case:
+                                          finite subfields F <= F', translate S with data in F' and
+                                          abscissa outside F, translate R with abscissa outside F',
+                                          Miller elements aP with div = p(P+S)+p(-S) and bP =
+                                          XClass(xS)^p, same for Q with R, and the division-free
+                                          8-evaluation equation for z =
+                                          [fP(Q+R)/fP(R)]*[fQ(S)/fQ(P+S)]); e := unique choice from
+                                          hvalue; exact <e, legs> closes the theorem. FRONTIER (7
+                                          named sorried steps): hvalue (exists-unique of the Weil
+                                          value: existence via hpoints-generic subfield choices +
+                                          hgen2-style principality for aP; uniqueness across setups
+                                          IS Weil reciprocity via hww/hbaldiv/hevid + F-avoidance
+                                          nonvanishing), hleg1/hleg2 (bilinearity), hleg3
+                                          (alternation), hleg4 (nondegeneracy), hleg5 (p-th powers),
+                                          hleg6 (Frobenius naturality). Superseded: NEXT: line-vs-
+                                          word (hlw, sign (-1)^lines) then word-vs-word (hww), then
+                                          the balanced reciprocity for functions via hgenfac and the
                                           pairing. Remaining assembly: the balanced cross-product
                                           reciprocity for arbitrary disjoint pairs from the
                                           generator cases, then the pairing and its six legs.

@@ -6633,7 +6633,113 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
     exact congrArg (AdjoinRoot.evalEval hE) (by
       rw [← mul_assoc, ← mul_assoc]
       exact heq)
-  sorry
+  -- =====================================================================
+  -- THE GLUE: the full assembly of the pairing, written top-down. Each
+  -- sorried `have` below is a frontier item; the final `exact` consumes
+  -- them all, so nothing here is floating.
+  --
+  -- `IsWeilValue v w z` says: `z` is the Miller cross-ratio of the pair
+  -- of torsion points `(v, w)` for SOME admissible generic setup — `1`
+  -- in the degenerate cases; otherwise, with affine representatives
+  -- `P = (xP, yP)`, `Q = (xQ, yQ)`, choose finite subfields `F ≤ F'`
+  -- containing the `P, Q` data, a translate `S` with data in `F'` but
+  -- abscissa outside `F`, a second translate `R` with abscissa outside
+  -- `F'`, Miller elements `aP` (divisor `p(P⊕S) + p(⊖S)`),
+  -- `bP = XClass(xS)^p` (divisor `p(S) + p(⊖S)`), so that
+  -- `fP = aP/bP` has divisor `p(P⊕S) - p(S)`, similarly `aQ, bQ` for
+  -- `Q` with `R`; then `z = [fP(Q⊕R)/fP(R)] · [fQ(S)/fQ(P⊕S)]`, stated
+  -- division-free through the eight evaluations.
+  -- =====================================================================
+  let IsWeilValue : ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p) →
+      ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p) →
+      (AlgebraicClosure (ZMod q))ˣ → Prop := fun v w z =>
+    ((v.val = 0 ∨ w.val = 0) → z = 1) ∧
+    (∀ (xP yP : (AlgebraicClosure (ZMod q)))
+        (hP : Wb.toAffine.Nonsingular xP yP)
+        (xQ yQ : (AlgebraicClosure (ZMod q)))
+        (hQ : Wb.toAffine.Nonsingular xQ yQ),
+      v.val = WeierstrassCurve.Affine.Point.some xP yP hP →
+      w.val = WeierstrassCurve.Affine.Point.some xQ yQ hQ →
+      ∃ (F F' : Subfield (AlgebraicClosure (ZMod q))),
+        (F : Set (AlgebraicClosure (ZMod q))).Finite ∧
+        (F' : Set (AlgebraicClosure (ZMod q))).Finite ∧ F ≤ F' ∧
+        xP ∈ F ∧ yP ∈ F ∧ xQ ∈ F ∧ yQ ∈ F ∧
+      ∃ (xS yS : (AlgebraicClosure (ZMod q)))
+        (hS : Wb.toAffine.Nonsingular xS yS),
+        xS ∈ F' ∧ yS ∈ F' ∧ xS ∉ F ∧
+      ∃ (xR yR : (AlgebraicClosure (ZMod q)))
+        (hR : Wb.toAffine.Nonsingular xR yR), xR ∉ F' ∧
+      ∃ (xPS yPS : (AlgebraicClosure (ZMod q)))
+        (hPS : Wb.toAffine.Nonsingular xPS yPS),
+        (WeierstrassCurve.Affine.Point.some xPS yPS hPS =
+          WeierstrassCurve.Affine.Point.some xP yP hP +
+          WeierstrassCurve.Affine.Point.some xS yS hS) ∧
+        xPS ∈ F' ∧ yPS ∈ F' ∧
+      ∃ (xQR yQR : (AlgebraicClosure (ZMod q)))
+        (hQR : Wb.toAffine.Nonsingular xQR yQR),
+        (WeierstrassCurve.Affine.Point.some xQR yQR hQR =
+          WeierstrassCurve.Affine.Point.some xQ yQ hQ +
+          WeierstrassCurve.Affine.Point.some xR yR hR) ∧
+      ∃ (aP aQ : Wb.toAffine.CoordinateRing),
+        Ideal.span {aP} =
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            xPS (Polynomial.C yPS)) ^ p *
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            xS (Polynomial.C (Wb.toAffine.negY xS yS))) ^ p ∧
+        Ideal.span {aQ} =
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            xQR (Polynomial.C yQR)) ^ p *
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            xR (Polynomial.C (Wb.toAffine.negY xR yR))) ^ p ∧
+        (z : (AlgebraicClosure (ZMod q))) *
+          (AdjoinRoot.evalEval hQR.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS) ^ p) *
+            AdjoinRoot.evalEval hR.left aP *
+            AdjoinRoot.evalEval hS.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p) *
+            AdjoinRoot.evalEval hPS.left aQ) =
+          AdjoinRoot.evalEval hQR.left aP *
+            AdjoinRoot.evalEval hR.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS) ^ p) *
+            AdjoinRoot.evalEval hS.left aQ *
+            AdjoinRoot.evalEval hPS.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p))
+  -- existence and uniqueness of the Weil value: existence by choosing
+  -- generic subfields/translates (hpoints + hgen2-style principality);
+  -- uniqueness across admissible setups IS Weil reciprocity (hww +
+  -- hbaldiv + hevid + the F-avoidance nonvanishing)
+  have hvalue : ∀ v w, ∃! z, IsWeilValue v w z := by
+    sorry
+  -- the pairing
+  let e : ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p) →
+      ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p) →
+      (AlgebraicClosure (ZMod q))ˣ :=
+    fun v w => (hvalue v w).exists.choose
+  have hespec : ∀ v w, IsWeilValue v w (e v w) :=
+    fun v w => (hvalue v w).exists.choose_spec
+  have heuniq : ∀ v w z, IsWeilValue v w z → e v w = z :=
+    fun v w z hz => ((hvalue v w).unique (hespec v w) hz)
+  -- the six legs, each resolved from hespec/heuniq + the reciprocity
+  -- toolkit (Miller-function functional equations under point addition)
+  have hleg1 : ∀ x y z, e (x + y) z = e x z * e y z := by
+    sorry
+  have hleg2 : ∀ x y z, e x (y + z) = e x y * e x z := by
+    sorry
+  have hleg3 : ∀ x, e x x = 1 := by
+    sorry
+  have hleg4 : ∀ x, x ≠ 0 → ∃ y, e x y ≠ 1 := by
+    sorry
+  have hleg5 : ∀ x y, e x y ^ p = 1 := by
+    sorry
+  have hleg6 : ∀ x y, e ((frobeniusTorsionEnd q Wbar p) x)
+      ((frobeniusTorsionEnd q Wbar p) y) =
+      (Units.map (frobAlgHom q).toRingHom) (e x y) := by
+    sorry
+  exact ⟨e, hleg1, hleg2, hleg3, hleg4, hleg5, hleg6⟩
 
 /-- **The Weil pairing over a finite field, Frobenius-twisted form**
 (DERIVED from `exists_weilPairing_mu` by discrete logarithm): on the
