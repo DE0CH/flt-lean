@@ -209,16 +209,20 @@ entries file). To add/remove/annotate a node, edit
                                                   XYIdeal_neg_mul), hworddiv (span of a
                                                   line/vertical word = product of point ideals over
                                                   its explicit hww-shaped divisor, by induction
-                                                  through hlinediv'/hvertdiv'). ASSEMBLY DESIGN
-                                                  (2026-07-21, agent7): genericity via the FINITE-
-                                                  SUBFIELD trick -- strengthen hgenfac with an
-                                                  F-rationality invariant (for F a finite subfield
-                                                  containing the divisor coordinates, all Miller
-                                                  chords/verticals have parameters AND line-cubic
-                                                  roots in F, since chord data is rational in the
-                                                  current divisor points and the invariant
-                                                  propagates); consumers then choose test abscissas
-                                                  OUTSIDE F via hpoints, killing all
+                                                  through hlinediv'/hvertdiv'). hgenfac STRENGTHENED
+                                                  with the F-rationality invariant (2026-07-21,
+                                                  PROVEN): for any subfield F containing the divisor
+                                                  coordinates, the Miller words have line
+                                                  parameters, intercepts, and vertical parameters in
+                                                  F, AND every line-cubic root lies in F (the new
+                                                  line's divisor is the explicit three-point
+                                                  multiset {P, Q, -(P+Q)} via hline + hlelt + habs,
+                                                  so its roots are the three F-rational abscissas;
+                                                  slope/addX/addY memberships by the subfield
+                                                  arsenal
+                                                  hnatF/hZF/haF/hnegYF/hslopeF/haddXF/haddYF).
+                                                  Consumers choose test abscissas OUTSIDE F via
+                                                  hpoints (F finite in applications), killing all
                                                   collision/nonvanishing obligations. Pairing
                                                   generators in junk-free form: b_P := (XClass
                                                   x_S)^p with div = p(S)+p(-S), a_P := gamma*b_P
@@ -438,59 +442,62 @@ entries file). To add/remove/annotate a node, edit
                                           canonical yfib fiber = XYIdeal_neg_mul), hworddiv (span of
                                           a line/vertical word = product of point ideals over its
                                           explicit hww-shaped divisor, by induction through
-                                          hlinediv'/hvertdiv'). ASSEMBLY DESIGN (2026-07-21,
-                                          agent7): genericity via the FINITE-SUBFIELD trick --
-                                          strengthen hgenfac with an F-rationality invariant (for F
-                                          a finite subfield containing the divisor coordinates, all
-                                          Miller chords/verticals have parameters AND line-cubic
-                                          roots in F, since chord data is rational in the current
-                                          divisor points and the invariant propagates); consumers
-                                          then choose test abscissas OUTSIDE F via hpoints, killing
-                                          all collision/nonvanishing obligations. Pairing generators
-                                          in junk-free form: b_P := (XClass x_S)^p with div =
-                                          p(S)+p(-S), a_P := gamma*b_P with div = p(P+S)+p(-S)
-                                          (integrality by fractional-ideal arithmetic), so all
-                                          supports explicit. hwordeval PROVEN (evaluation of a
-                                          line/vertical word at a curve point = the value product,
-                                          via map_multiset_prod + hevline/hevvert). NEXT: balanced
-                                          reciprocity for functions via the strengthened hgenfac
-                                          (u-constants and signs cancel in balanced cross-ratios;
-                                          8-fold division-free form, cancel the Pi of d-word
-                                          evaluations at the end under the F-avoidance hypotheses),
-                                          then the pairing. Superseded: NEXT: line-vs-word (hlw,
-                                          sign (-1)^lines) then word-vs-word (hww), then the
-                                          balanced reciprocity for functions via hgenfac and the
-                                          pairing. Remaining assembly: the balanced cross-product
-                                          reciprocity for arbitrary disjoint pairs from the
-                                          generator cases, then the pairing and its six legs.
-                                          Superseded plan text: REMAINING for reciprocity: the
-                                          class-group descent hgenfac (every function with point-
-                                          divisor factorization equals a constant times a quotient
-                                          of products of line/vertical elements, by strong induction
-                                          on divisor size through hline + XYIdeal_neg_mul + toClass-
-                                          nontriviality) and the multiplicative assembly of the
-                                          balanced cross-product reciprocity; then the pairing
-                                          definition (ratio over hgen2 generators at hpoints-generic
-                                          translates) and its six legs. Older per-brick log follows:
-                                          NEXT: divisor evaluation f(D) := prod of evalEval over D;
-                                          nonvanishing off the divisor; the reciprocity statement
-                                          f(div g) = g(div f) for disjoint supports, by induction
-                                          via line/vertical factorization (hline + XYIdeal_neg_mul)
-                                          reducing to the proven cores hlinerec (line-line) and
-                                          hnormeval + hrecP1 (vertical cases); then the pairing and
-                                          its six legs. hmax COMPLETE (with hresfin + hkill): every
-                                          maximal ideal of the coordinate ring IS a point ideal
-                                          XYIdeal x0 (C y0) at a curve point -- the divisor language
-                                          is available. Also PROVEN: hlinfac (every maximal ideal
-                                          contains a vertical X - c: the lying-over leg of hmax, via
-                                          the norm-membership trick and prime factor-picking). NEXT:
-                                          hmax -- every maximal ideal of the coordinate ring is a
-                                          point ideal (route: M cap k[x] contains X - c via the
-                                          norm-membership trick f*sigma-f = algebraMap(N f) from
-                                          coe_norm_smul_basis with N f nonzero by
-                                          degree_norm_smul_basis; residue field is spanned over k by
-                                          the images of the basis {1, y} since X - c dies, so it is
-                                          finite over k, hence = k by
+                                          hlinediv'/hvertdiv'). hgenfac STRENGTHENED with the
+                                          F-rationality invariant (2026-07-21, PROVEN): for any
+                                          subfield F containing the divisor coordinates, the Miller
+                                          words have line parameters, intercepts, and vertical
+                                          parameters in F, AND every line-cubic root lies in F (the
+                                          new line's divisor is the explicit three-point multiset
+                                          {P, Q, -(P+Q)} via hline + hlelt + habs, so its roots are
+                                          the three F-rational abscissas; slope/addX/addY
+                                          memberships by the subfield arsenal
+                                          hnatF/hZF/haF/hnegYF/hslopeF/haddXF/haddYF). Consumers
+                                          choose test abscissas OUTSIDE F via hpoints (F finite in
+                                          applications), killing all collision/nonvanishing
+                                          obligations. Pairing generators in junk-free form: b_P :=
+                                          (XClass x_S)^p with div = p(S)+p(-S), a_P := gamma*b_P
+                                          with div = p(P+S)+p(-S) (integrality by fractional-ideal
+                                          arithmetic), so all supports explicit. hwordeval PROVEN
+                                          (evaluation of a line/vertical word at a curve point = the
+                                          value product, via map_multiset_prod + hevline/hevvert).
+                                          NEXT: balanced reciprocity for functions via the
+                                          strengthened hgenfac (u-constants and signs cancel in
+                                          balanced cross-ratios; 8-fold division-free form, cancel
+                                          the Pi of d-word evaluations at the end under the
+                                          F-avoidance hypotheses), then the pairing. Superseded:
+                                          NEXT: line-vs-word (hlw, sign (-1)^lines) then word-vs-
+                                          word (hww), then the balanced reciprocity for functions
+                                          via hgenfac and the pairing. Remaining assembly: the
+                                          balanced cross-product reciprocity for arbitrary disjoint
+                                          pairs from the generator cases, then the pairing and its
+                                          six legs. Superseded plan text: REMAINING for reciprocity:
+                                          the class-group descent hgenfac (every function with
+                                          point-divisor factorization equals a constant times a
+                                          quotient of products of line/vertical elements, by strong
+                                          induction on divisor size through hline + XYIdeal_neg_mul
+                                          + toClass-nontriviality) and the multiplicative assembly
+                                          of the balanced cross-product reciprocity; then the
+                                          pairing definition (ratio over hgen2 generators at
+                                          hpoints-generic translates) and its six legs. Older per-
+                                          brick log follows: NEXT: divisor evaluation f(D) := prod
+                                          of evalEval over D; nonvanishing off the divisor; the
+                                          reciprocity statement f(div g) = g(div f) for disjoint
+                                          supports, by induction via line/vertical factorization
+                                          (hline + XYIdeal_neg_mul) reducing to the proven cores
+                                          hlinerec (line-line) and hnormeval + hrecP1 (vertical
+                                          cases); then the pairing and its six legs. hmax COMPLETE
+                                          (with hresfin + hkill): every maximal ideal of the
+                                          coordinate ring IS a point ideal XYIdeal x0 (C y0) at a
+                                          curve point -- the divisor language is available. Also
+                                          PROVEN: hlinfac (every maximal ideal contains a vertical X
+                                          - c: the lying-over leg of hmax, via the norm-membership
+                                          trick and prime factor-picking). NEXT: hmax -- every
+                                          maximal ideal of the coordinate ring is a point ideal
+                                          (route: M cap k[x] contains X - c via the norm-membership
+                                          trick f*sigma-f = algebraMap(N f) from coe_norm_smul_basis
+                                          with N f nonzero by degree_norm_smul_basis; residue field
+                                          is spanned over k by the images of the basis {1, y} since
+                                          X - c dies, so it is finite over k, hence = k by
                                           IsAlgClosed.algebraMap_bijective_of_isIntegral; then the
                                           coordinate images x0, y0 give XClass/YClass in M, the
                                           Weierstrass polynomial Taylor-decomposes to give the
