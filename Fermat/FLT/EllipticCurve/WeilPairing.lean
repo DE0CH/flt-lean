@@ -8034,7 +8034,135 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
             AdjoinRoot.evalEval hS₁.left
               ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁) ^ p) *
             AdjoinRoot.evalEval hPS₁.left aQ₁) := by
-        sorry
+        -- explicit divisor facts for aP₁ and t
+        have hDP : Ideal.span {aP₁} =
+            ((Multiset.replicate p ((xPS₁, yPS₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) +
+              Multiset.replicate p ((xS₁, Wb.toAffine.negY xS₁ yS₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))).map
+              (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+                  P.1 (Polynomial.C P.2))).prod := by
+          rw [Multiset.map_add, Multiset.prod_add, Multiset.map_replicate,
+            Multiset.map_replicate, Multiset.prod_replicate,
+            Multiset.prod_replicate, haP₁]
+        have hDPeq : ∀ T ∈ (Multiset.replicate p ((xPS₁, yPS₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) +
+            Multiset.replicate p ((xS₁, Wb.toAffine.negY xS₁ yS₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))),
+            Wb.toAffine.Equation T.1 T.2 := by
+          intro T hT
+          rcases Multiset.mem_add.mp hT with h | h
+          · rw [Multiset.eq_of_mem_replicate h]
+            exact hPS₁.left
+          · rw [Multiset.eq_of_mem_replicate h]
+            exact (WeierstrassCurve.Affine.equation_neg
+              (W' := Wb.toAffine) _ _).mpr hS₁.left
+        have hDt : Ideal.span {t} =
+            ((((xQR₁, yQR₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) ::ₘ
+              ((xR₁, Wb.toAffine.negY xR₁ yR₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) ::ₘ
+              ((xR₃, yR₃) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) ::ₘ
+              {((xQR₃, Wb.toAffine.negY xQR₃ yQR₃) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))}).map
+              (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+                  P.1 (Polynomial.C P.2))).prod := by
+          rw [Multiset.map_cons, Multiset.prod_cons, Multiset.map_cons,
+            Multiset.prod_cons, Multiset.map_cons, Multiset.prod_cons,
+            Multiset.map_singleton, Multiset.prod_singleton, ht]
+          ring
+        have hDteq : ∀ T ∈ (((xQR₁, yQR₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) ::ₘ
+            ((xR₁, Wb.toAffine.negY xR₁ yR₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) ::ₘ
+            ((xR₃, yR₃) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) ::ₘ
+            {((xQR₃, Wb.toAffine.negY xQR₃ yQR₃) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))}),
+            Wb.toAffine.Equation T.1 T.2 := by
+          intro T hT
+          rcases Multiset.mem_cons.mp hT with h | hT
+          · rw [h]; exact hQR₁.left
+          rcases Multiset.mem_cons.mp hT with h | hT
+          · rw [h]; exact hR₁neg.left
+          rcases Multiset.mem_cons.mp hT with h | hT
+          · rw [h]; exact hR₃.left
+          · rw [Multiset.mem_singleton.mp hT]; exact hQR₃neg.left
+        -- σ-companion nonvanishing
+        have hb1 : AdjoinRoot.evalEval hR₁neg.left aP₁ ≠ 0 := by
+          refine hoffdiv aP₁ _ hDPeq hDP xR₁ (Wb.toAffine.negY xR₁ yR₁)
+            hR₁neg.left ?_
+          intro hmem
+          rcases Multiset.mem_add.mp hmem with h | h
+          · have h1 := congrArg Prod.fst (Multiset.eq_of_mem_replicate h)
+            exact hxR₁ (by rw [show xR₁ = xPS₁ from h1]; exact hxPS₁F')
+          · have h1 := congrArg Prod.fst (Multiset.eq_of_mem_replicate h)
+            exact hxR₁ (by rw [show xR₁ = xS₁ from h1]; exact hxS₁F')
+        have hb2 : AdjoinRoot.evalEval hQR₃neg.left aP₁ ≠ 0 := by
+          refine hoffdiv aP₁ _ hDPeq hDP xQR₃ (Wb.toAffine.negY xQR₃ yQR₃)
+            hQR₃neg.left ?_
+          intro hmem
+          rcases Multiset.mem_add.mp hmem with h | h
+          · have h1 := congrArg Prod.fst (Multiset.eq_of_mem_replicate h)
+            exact hxQR₃ (by rw [show xQR₃ = xPS₁ from h1]; exact hxPS₁F')
+          · have h1 := congrArg Prod.fst (Multiset.eq_of_mem_replicate h)
+            exact hxQR₃ (by rw [show xQR₃ = xS₁ from h1]; exact hxS₁F')
+        have hb3 : AdjoinRoot.evalEval hS₁neg.left t ≠ 0 := by
+          refine hoffdiv t _ hDteq hDt xS₁ (Wb.toAffine.negY xS₁ yS₁)
+            hS₁neg.left ?_
+          intro hmem
+          rcases Multiset.mem_cons.mp hmem with h | hmem
+          · exact hxQR₁nS (congrArg Prod.fst h).symm
+          rcases Multiset.mem_cons.mp hmem with h | hmem
+          · exact hxR₁ (by
+              rw [← show xS₁ = xR₁ from congrArg Prod.fst h]
+              exact hxS₁F')
+          rcases Multiset.mem_cons.mp hmem with h | hmem
+          · exact hxR₃ (by
+              rw [← show xS₁ = xR₃ from congrArg Prod.fst h]
+              exact hxS₁F')
+          · exact hxQR₃ (by
+              rw [← show xS₁ = xQR₃ from congrArg Prod.fst
+                (Multiset.mem_singleton.mp hmem)]
+              exact hxS₁F')
+        -- normalize every vertical and constant evaluation
+        simp only [map_pow, map_mul, mul_pow, hevvert, hevconst] at hstarinst ⊢
+        have hdS := congrArg (AdjoinRoot.evalEval hS₁.left) hceq
+        have hdP := congrArg (AdjoinRoot.evalEval hPS₁.left) hceq
+        simp only [map_pow, map_mul, mul_pow, hevvert, hevconst] at hdS hdP
+        -- the recurring nonzero abscissa differences
+        have hne1 : xR₁ - xS₁ ≠ 0 := sub_ne_zero.mpr
+          (fun h => hxR₁ (by rw [h]; exact hxS₁F'))
+        have hne2 : xQR₃ - xS₁ ≠ 0 := sub_ne_zero.mpr
+          (fun h => hxQR₃ (by rw [h]; exact hxS₁F'))
+        have hne3 : xS₁ - xR₁ ≠ 0 := sub_ne_zero.mpr
+          (fun h => hxR₁ (by rw [← h]; exact hxS₁F'))
+        have hne4 : xS₁ - xQR₃ ≠ 0 := sub_ne_zero.mpr
+          (fun h => hxQR₃ (by rw [← h]; exact hxS₁F'))
+        have hne5 : xPS₁ - xQR₃ ≠ 0 := sub_ne_zero.mpr
+          (fun h => hxQR₃ (by rw [← h]; exact hxPS₁F'))
+        -- strip the σ-companions from the reciprocity
+        have hXY : AdjoinRoot.evalEval hQR₁.left aP₁ *
+            AdjoinRoot.evalEval hR₃.left aP₁ *
+            ((xR₁ - xS₁) ^ p * (xQR₃ - xS₁) ^ p) *
+            AdjoinRoot.evalEval hS₁.left t ^ p *
+            ((xPS₁ - xR₁) ^ p * (xPS₁ - xQR₃) ^ p) =
+            AdjoinRoot.evalEval hR₁.left aP₁ *
+            AdjoinRoot.evalEval hQR₃.left aP₁ *
+            ((xQR₁ - xS₁) ^ p * (xR₃ - xS₁) ^ p) *
+            AdjoinRoot.evalEval hPS₁.left t ^ p *
+            ((xS₁ - xR₁) ^ p * (xS₁ - xQR₃) ^ p) := by
+          refine mul_right_cancel₀ (mul_ne_zero (mul_ne_zero (mul_ne_zero
+            (mul_ne_zero hb1 hb2)
+            (mul_ne_zero (pow_ne_zero p hne1) (pow_ne_zero p hne2)))
+            (pow_ne_zero p hb3))
+            (mul_ne_zero (pow_ne_zero p hne3) (pow_ne_zero p hne4))) ?_
+          linear_combination hstarinst
+        -- close: multiply by the two enabling verticals and telescope
+        refine mul_right_cancel₀ (mul_ne_zero
+          (pow_ne_zero p hne4) (pow_ne_zero p hne5)) ?_
+        linear_combination
+          (AdjoinRoot.evalEval hQR₁.left aP₁ * (xR₁ - xS₁) ^ p *
+            (xPS₁ - xR₁) ^ p * (xQR₃ - xS₁) ^ p *
+            AdjoinRoot.evalEval hR₃.left aP₁ *
+            AdjoinRoot.evalEval hPS₁.left aQ₃ * (xPS₁ - xQR₃) ^ p) * hdS -
+          (AdjoinRoot.evalEval hQR₃.left aP₁ * (xR₃ - xS₁) ^ p *
+            AdjoinRoot.evalEval hS₁.left aQ₃ * (xQR₁ - xS₁) ^ p *
+            AdjoinRoot.evalEval hR₁.left aP₁ * (xS₁ - xR₁) ^ p *
+            (xS₁ - xQR₃) ^ p) * hdP +
+          (c * AdjoinRoot.evalEval hS₁.left aQ₃ *
+            AdjoinRoot.evalEval hPS₁.left aQ₃) * hXY
       exact hfin
     -- the S-STEP: with the second translate R₃ fixed, moving the first
     -- translate S₁ → S₃ preserves the cross-ratio (mirror argument)
