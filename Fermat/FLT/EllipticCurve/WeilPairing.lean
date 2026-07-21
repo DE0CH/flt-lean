@@ -3684,7 +3684,50 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
             have htcmem : tc = algebraMap (Polynomial (AlgebraicClosure (ZMod q)))
                 (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (nn * ee) := by
               rw [hmkdiv, div_eq_mul_inv, hinvdd, ← map_mul]
-            sorry
+            -- recover `sc` (2 is invertible away from characteristic two)
+            have h2F : (2 : (AlgebraicClosure (ZMod q))) ≠ 0 := by
+              haveI h1 : CharP (AlgebraicClosure (ZMod q)) q :=
+                charP_of_injective_algebraMap
+                  (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+              exact CharP.cast_ne_zero_of_ne_of_prime (R := (AlgebraicClosure (ZMod q)))
+                Nat.prime_two (fun h => hq2 h)
+            have h2img : algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+                (Polynomial.C (2 : (AlgebraicClosure (ZMod q)))) = 2 := by
+              rw [map_ofNat Polynomial.C 2, map_ofNat]
+            have h2sc : 2 * sc = algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) τ₀ +
+                tc * algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) := by
+              rw [hτ₀, hτdef]
+              ring
+            have hscmem : sc = algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+                (Polynomial.C ((2 : (AlgebraicClosure (ZMod q)))⁻¹) *
+                  (τ₀ + (nn * ee) * (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃))) := by
+              rw [map_mul, map_add, map_mul, ← htcmem, ← h2sc]
+              have h1 : algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+                  (Polynomial.C ((2 : (AlgebraicClosure (ZMod q)))⁻¹)) * 2 = 1 := by
+                rw [← h2img, ← map_mul, ← Polynomial.C_mul,
+                  inv_mul_cancel₀ h2F, Polynomial.C_1, map_one]
+              rw [← mul_assoc, h1, one_mul]
+            -- assemble the coordinate-ring witness
+            refine ⟨AdjoinRoot.of Wb.toAffine.polynomial
+              (Polynomial.C ((2 : (AlgebraicClosure (ZMod q)))⁻¹) *
+                (τ₀ + (nn * ee) * (Polynomial.C Wb.a₁ * Polynomial.X +
+                  Polynomial.C Wb.a₃))) +
+              AdjoinRoot.of Wb.toAffine.polynomial (nn * ee) *
+                AdjoinRoot.root Wb.toAffine.polynomial, ?_⟩
+            have hofL : ∀ z : Polynomial (AlgebraicClosure (ZMod q)),
+                algebraMap Wb.toAffine.CoordinateRing
+                  (FractionRing Wb.toAffine.CoordinateRing)
+                  (AdjoinRoot.of Wb.toAffine.polynomial z) =
+                algebraMap (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (FractionRing Wb.toAffine.CoordinateRing)
+                  (algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) z) := fun z => by
+              rw [← IsScalarTower.algebraMap_apply (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+                (FractionRing Wb.toAffine.CoordinateRing),
+                IsScalarTower.algebraMap_apply (Polynomial (AlgebraicClosure (ZMod q)))
+                  Wb.toAffine.CoordinateRing
+                  (FractionRing Wb.toAffine.CoordinateRing),
+                AdjoinRoot.algebraMap_eq]
+            rw [← hst, hscmem, htcmem]
+            simp only [map_add, map_mul, hofL, Algebra.smul_def, mul_one]
       · rintro ⟨y, rfl⟩
         exact IsIntegral.map (IsScalarTower.toAlgHom (Polynomial (AlgebraicClosure (ZMod q)))
           Wb.toAffine.CoordinateRing
