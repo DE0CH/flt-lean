@@ -8562,7 +8562,32 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                 AdjoinRoot.evalEval hS₁neg.left
                   (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁ *
                     WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQR₃)) ^ p) := by
-            sorry
+            -- reduce to the fully scalar form: all vertical evaluations
+            -- are explicit abscissa differences
+            have hscalar :
+                (AdjoinRoot.evalEval hQR₁.left aP₁ *
+                  AdjoinRoot.evalEval hR₁neg.left aP₁ *
+                  AdjoinRoot.evalEval hR₃.left aP₁ *
+                  AdjoinRoot.evalEval hQR₃neg.left aP₁) *
+                ((xR₁ - xS₁) ^ p * (xR₁ - xS₁) ^ p *
+                  (xQR₃ - xS₁) ^ p * (xQR₃ - xS₁) ^ p) *
+                ((AdjoinRoot.evalEval hS₁.left t *
+                  AdjoinRoot.evalEval hS₁neg.left t) ^ p) *
+                (((xPS₁ - xR₁) * (xPS₁ - xQR₃) *
+                  ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) =
+                (AdjoinRoot.evalEval hR₁.left aP₁ *
+                  AdjoinRoot.evalEval hR₁neg.left aP₁ *
+                  AdjoinRoot.evalEval hQR₃.left aP₁ *
+                  AdjoinRoot.evalEval hQR₃neg.left aP₁) *
+                ((xQR₁ - xS₁) ^ p * (xR₁ - xS₁) ^ p *
+                  (xR₃ - xS₁) ^ p * (xQR₃ - xS₁) ^ p) *
+                ((AdjoinRoot.evalEval hPS₁.left t *
+                  AdjoinRoot.evalEval hS₁neg.left t) ^ p) *
+                (((xS₁ - xR₁) * (xS₁ - xQR₃) *
+                  ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) := by
+              sorry
+            simp only [map_pow, map_mul, hevvert]
+            linear_combination hscalar
           exact hstitch
         exact hgrand
       -- the final assembly: substitute hcomp at S₁ and PS₁, strip the
