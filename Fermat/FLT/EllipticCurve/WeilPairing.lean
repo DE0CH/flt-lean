@@ -5175,6 +5175,39 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
     refine ⟨u, huu.ne_zero, ?_⟩
     rw [mul_comm, hCu]
     rw [← hv, mul_assoc, Units.mul_inv, mul_one]
+  -- VERTICAL WEIL RECIPROCITY (fiber-quotient form): for any function and
+  -- any two abscissas, the fiber products of the function against the
+  -- cross-evaluated vertical products agree -- both sides are the constant
+  -- of `hNconst` times the symmetric double product
+  have hrecfib : ∀ (f : Wb.toAffine.CoordinateRing)
+      (D : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))),
+      (∀ P ∈ D, Wb.toAffine.Equation P.1 P.2) →
+      Ideal.span {f} =
+        (D.map (fun P => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          Wb.toAffine P.1 (Polynomial.C P.2))).prod →
+      ∀ (c₁ y₁ c₂ y₂ : (AlgebraicClosure (ZMod q))) (hE₁ : Wb.toAffine.Equation c₁ y₁)
+        (hE₂ : Wb.toAffine.Equation c₂ y₂),
+      (AdjoinRoot.evalEval (p := Wb.toAffine.polynomial) hE₁ f *
+        AdjoinRoot.evalEval (p := Wb.toAffine.polynomial)
+          ((WeierstrassCurve.Affine.equation_neg (W' := Wb.toAffine) c₁
+            y₁).mpr hE₁) f) *
+        (D.map (fun P => c₂ - P.1)).prod =
+      (AdjoinRoot.evalEval (p := Wb.toAffine.polynomial) hE₂ f *
+        AdjoinRoot.evalEval (p := Wb.toAffine.polynomial)
+          ((WeierstrassCurve.Affine.equation_neg (W' := Wb.toAffine) c₂
+            y₂).mpr hE₂) f) *
+        (D.map (fun P => c₁ - P.1)).prod := by
+    intro f D hDeq hDfac c₁ y₁ c₂ y₂ hE₁ hE₂
+    obtain ⟨u, -, hNf⟩ := hNconst f D hDeq hDfac
+    have hev : ∀ c : (AlgebraicClosure (ZMod q)), (Algebra.norm (Polynomial (AlgebraicClosure (ZMod q))) f).eval c =
+        u * (D.map (fun P => c - P.1)).prod := by
+      intro c
+      rw [hNf, Polynomial.eval_mul, Polynomial.eval_C,
+        Polynomial.eval_multiset_prod, Multiset.map_map]
+      congr 2
+      exact Multiset.map_congr rfl fun P _ => by simp
+    rw [hnormeval' f c₁ y₁ hE₁, hnormeval' f c₂ y₂ hE₂, hev c₁, hev c₂]
+    ring
   sorry
 
 set_option warn.sorry false in
