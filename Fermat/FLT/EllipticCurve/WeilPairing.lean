@@ -3221,7 +3221,49 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
             (h.trans (map_zero (algebraMap Wb.toAffine.CoordinateRing
               (FractionRing Wb.toAffine.CoordinateRing))).symm))),
           mul_one]
-      sorry
+      -- distribute and read off the span membership
+      rw [hξ2, hcd, map_add, map_mul, add_div]
+      refine Submodule.add_mem _ ?_ ?_
+      · have hpiece : algebraMap Wb.toAffine.CoordinateRing
+            (FractionRing Wb.toAffine.CoordinateRing)
+            (AdjoinRoot.of Wb.toAffine.polynomial p') /
+            algebraMap Wb.toAffine.CoordinateRing
+            (FractionRing Wb.toAffine.CoordinateRing)
+            (AdjoinRoot.of Wb.toAffine.polynomial n) =
+            (algebraMap (Polynomial (AlgebraicClosure (ZMod q)))
+              (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) p' /
+            algebraMap (Polynomial (AlgebraicClosure (ZMod q)))
+              (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) n) •
+            (1 : FractionRing Wb.toAffine.CoordinateRing) := by
+          rw [Algebra.smul_def, mul_one, map_div₀]
+          rw [← IsScalarTower.algebraMap_apply,
+            ← IsScalarTower.algebraMap_apply]
+          rfl
+        rw [hpiece]
+        exact Submodule.smul_mem _ _ (Submodule.subset_span (by simp))
+      · have hpiece : algebraMap Wb.toAffine.CoordinateRing
+            (FractionRing Wb.toAffine.CoordinateRing)
+            (AdjoinRoot.of Wb.toAffine.polynomial q') *
+            algebraMap Wb.toAffine.CoordinateRing
+            (FractionRing Wb.toAffine.CoordinateRing)
+            (AdjoinRoot.root Wb.toAffine.polynomial) /
+            algebraMap Wb.toAffine.CoordinateRing
+            (FractionRing Wb.toAffine.CoordinateRing)
+            (AdjoinRoot.of Wb.toAffine.polynomial n) =
+            (algebraMap (Polynomial (AlgebraicClosure (ZMod q)))
+              (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) q' /
+            algebraMap (Polynomial (AlgebraicClosure (ZMod q)))
+              (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) n) •
+            (algebraMap Wb.toAffine.CoordinateRing
+              (FractionRing Wb.toAffine.CoordinateRing)
+              (AdjoinRoot.root Wb.toAffine.polynomial)) := by
+          rw [Algebra.smul_def, map_div₀]
+          rw [← IsScalarTower.algebraMap_apply,
+            ← IsScalarTower.algebraMap_apply]
+          rw [mul_div_right_comm]
+          rfl
+        rw [hpiece]
+        exact Submodule.smul_mem _ _ (Submodule.subset_span (by simp))
     haveI hsep : Algebra.IsSeparable (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
         (FractionRing Wb.toAffine.CoordinateRing) := by
       sorry
