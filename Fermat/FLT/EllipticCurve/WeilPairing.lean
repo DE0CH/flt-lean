@@ -3281,6 +3281,104 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       exact hspan
     haveI hsep : Algebra.IsSeparable (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
         (FractionRing Wb.toAffine.CoordinateRing) := by
+      -- the quadratic over `k(X)` annihilating the root image
+      set A' : (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) := algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃)
+        with hA'def
+      set G' : (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) := algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.X ^ 3 + Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
+        Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆)
+        with hG'def
+      set Qpoly : Polynomial (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) := Polynomial.X ^ 2 +
+        Polynomial.C A' * Polynomial.X - Polynomial.C G' with hQdef
+      -- the root image satisfies it
+      have hrootL : Polynomial.aeval (algebraMap Wb.toAffine.CoordinateRing
+        (FractionRing Wb.toAffine.CoordinateRing)
+        (AdjoinRoot.root Wb.toAffine.polynomial)) Qpoly = 0 := by
+        rw [hQdef]
+        simp only [map_add, map_sub, map_mul, map_pow, Polynomial.aeval_X,
+          Polynomial.aeval_C]
+        have := congrArg (algebraMap Wb.toAffine.CoordinateRing (FractionRing Wb.toAffine.CoordinateRing)) hrel2
+        simp only [map_add, map_sub, map_mul, map_pow, map_zero] at this
+        rw [hA'def, hG'def]
+        simp only [map_add, map_mul, map_pow,
+          ← IsScalarTower.algebraMap_apply (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (FractionRing Wb.toAffine.CoordinateRing),
+          IsScalarTower.algebraMap_apply (Polynomial (AlgebraicClosure (ZMod q)))
+            Wb.toAffine.CoordinateRing (FractionRing Wb.toAffine.CoordinateRing),
+          AdjoinRoot.algebraMap_eq]
+        linear_combination this
+      -- the quadratic is separable
+      have hQsep : Qpoly.Separable := by
+        have hderiv : Polynomial.derivative Qpoly =
+            Polynomial.C 2 * Polynomial.X + Polynomial.C A' := by
+          rw [hQdef]
+          simp only [Polynomial.derivative_sub, Polynomial.derivative_add,
+            Polynomial.derivative_C_mul, Polynomial.derivative_X_pow,
+            Polynomial.derivative_X, Polynomial.derivative_C,
+            Nat.cast_ofNat, mul_one, sub_zero]
+          ring
+        by_cases hq2 : (q : ℕ) = 2
+        · -- characteristic two: the derivative is the unit constant `A'`
+          haveI hchar2 : CharP (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) 2 := by
+            haveI h1 : CharP (AlgebraicClosure (ZMod q)) q :=
+              charP_of_injective_algebraMap
+                (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+            haveI h2 : CharP (Polynomial (AlgebraicClosure (ZMod q))) q :=
+              charP_of_injective_algebraMap
+                (Polynomial.C_injective) q
+            haveI h3 : CharP (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) q :=
+              charP_of_injective_algebraMap
+                (IsFractionRing.injective (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))) q
+            exact CharP.congr q hq2
+          have h20 : (2 : (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))) = 0 := by
+            exact_mod_cast CharP.cast_eq_zero (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) 2
+          have hA'ne : A' ≠ 0 := by
+            rw [hA'def]
+            intro h0
+            have hApoly0 : (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) = (0 : Polynomial (AlgebraicClosure (ZMod q))) :=
+              (IsFractionRing.injective (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))))
+                (h0.trans (map_zero _).symm)
+            -- then `a₁ = a₃ = 0`, forcing `Δ = 0` in characteristic two
+            have ha1 : Wb.a₁ = 0 := by
+              have := congrArg (fun f => Polynomial.coeff f 1) hApoly0
+              simpa using this
+            have ha3 : Wb.a₃ = 0 := by
+              have := congrArg (fun f => Polynomial.coeff f 0) hApoly0
+              simpa using this
+            have hq2F : (2 : (AlgebraicClosure (ZMod q))) = 0 := by
+              haveI h1 : CharP (AlgebraicClosure (ZMod q)) q :=
+                charP_of_injective_algebraMap
+                  (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+              haveI h2 : CharP (AlgebraicClosure (ZMod q)) 2 := CharP.congr q hq2
+              exact_mod_cast CharP.cast_eq_zero (AlgebraicClosure (ZMod q)) 2
+            have hΔ0 : Wb.Δ = 0 := by
+              rw [WeierstrassCurve.Δ, WeierstrassCurve.b₂,
+                WeierstrassCurve.b₄, WeierstrassCurve.b₆,
+                WeierstrassCurve.b₈, ha1, ha3]
+              linear_combination (8 * Wb.a₂ ^ 2 * Wb.a₄ ^ 2 -
+                32 * Wb.a₂ ^ 3 * Wb.a₆ - 32 * Wb.a₄ ^ 3 +
+                144 * Wb.a₂ * Wb.a₄ * Wb.a₆ - 216 * Wb.a₆ ^ 2) * hq2F
+            haveI : Wb.IsElliptic := by
+              rw [hWbdef]
+              infer_instance
+            exact (WeierstrassCurve.isElliptic_iff Wb).mp
+              (by infer_instance) |>.ne_zero hΔ0
+          rw [Polynomial.separable_def, hderiv]
+          rw [show Polynomial.C (2 : (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))) = 0 by rw [h20, map_zero],
+            zero_mul, zero_add]
+          refine ⟨0, Polynomial.C A'⁻¹, ?_⟩
+          rw [zero_mul, zero_add, ← map_mul, inv_mul_cancel₀ hA'ne,
+            map_one]
+        · -- characteristic away from two: explicit Bézout certificate
+          have hD'ne : A' ^ 2 + 4 * G' ≠ 0 := by
+            sorry
+          rw [Polynomial.separable_def, hderiv]
+          refine ⟨Polynomial.C (-(4 * (A' ^ 2 + 4 * G')⁻¹)),
+            Polynomial.C ((A' ^ 2 + 4 * G')⁻¹) *
+              (Polynomial.C 2 * Polynomial.X + Polynomial.C A'), ?_⟩
+          rw [hQdef]
+          have hDinv : (A' ^ 2 + 4 * G') * (A' ^ 2 + 4 * G')⁻¹ = 1 :=
+            mul_inv_cancel₀ hD'ne
+          ring_nf
+          sorry
       sorry
     haveI hic : IsIntegralClosure Wb.toAffine.CoordinateRing
         (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing Wb.toAffine.CoordinateRing) := by
