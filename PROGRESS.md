@@ -462,34 +462,42 @@ entries file). To add/remove/annotate a node, edit
                                                   pair). The final stitch is hww instances (signs 1
                                                   against the vertical words since |L|=0; the
                                                   (Ln/Ld)x(Mn/Md) signs pair up on both sides)
-                                                  combined in one linear_combination. IMPLEMENTATION
-                                                  ORDER for hgrand: (1) the fiber-pair
-                                                  identification lemma, (2) the four hevid product
-                                                  instances, (3) the multiset conversions via
-                                                  hbalt/hbalP + map_add/prod_add, (4) the four hww
-                                                  instances, (5) the stitching linear_combination.
-                                                  REMAINING: hgrand (in hstepR/hstarinst), then
-                                                  hstepS mirrors the whole R-step, and hleg1-hleg6.
-                                                  REMAINING SORRIES in the mu-node: hrecgen and
-                                                  hleg1-hleg6 (bilinearity x2, alternation,
-                                                  nondegeneracy, p-th powers, Frobenius naturality).
-                                                  Superseded: FRONTIER (7 named sorried steps)
-                                                  description. Superseded: NEXT: line-vs-word (hlw,
-                                                  sign (-1)^lines) then word-vs-word (hww), then the
-                                                  balanced reciprocity for functions via hgenfac and
-                                                  the pairing. Remaining assembly: the balanced
-                                                  cross-product reciprocity for arbitrary disjoint
-                                                  pairs from the generator cases, then the pairing
-                                                  and its six legs. Superseded plan text: REMAINING
-                                                  for reciprocity: the class-group descent hgenfac
-                                                  (every function with point-divisor factorization
-                                                  equals a constant times a quotient of products of
-                                                  line/vertical elements, by strong induction on
-                                                  divisor size through hline + XYIdeal_neg_mul +
-                                                  toClass-nontriviality) and the multiplicative
-                                                  assembly of the balanced cross-product
-                                                  reciprocity; then the pairing definition (ratio
-                                                  over hgen2 generators at hpoints-generic
+                                                  combined in one linear_combination. hgrand steps
+                                                  1-2-4 IN PLACE: hfibpair proven; the nine
+                                                  pointwise hevid instances (aP1 at
+                                                  QR1/-R1/R3/-QR3/R1/QR3, t at S1/-S1/PS1) and
+                                                  thirteen hww instances (the four (Ln/Ld)x(Mn/Md)
+                                                  swaps and the vertical-word swaps against {xS1}
+                                                  and {xR1,xQR3}, including the vertical-vertical
+                                                  one) are bound in context. REMAINING inside
+                                                  hgrand: step 3 (the hbalt/hbalP multiset
+                                                  conversions as product equations via congrArg +
+                                                  map_add/prod_add/map_replicate/prod_replicate,
+                                                  plus the Dg2/Sp canonical-divisor identifications
+                                                  through hfibpair) and step 5 (the stitching
+                                                  linear_combination combining everything; prune
+                                                  unused hww instances then). REMAINING: hgrand (in
+                                                  hstepR/hstarinst), then hstepS mirrors the whole
+                                                  R-step, and hleg1-hleg6. REMAINING SORRIES in the
+                                                  mu-node: hrecgen and hleg1-hleg6 (bilinearity x2,
+                                                  alternation, nondegeneracy, p-th powers, Frobenius
+                                                  naturality). Superseded: FRONTIER (7 named sorried
+                                                  steps) description. Superseded: NEXT: line-vs-word
+                                                  (hlw, sign (-1)^lines) then word-vs-word (hww),
+                                                  then the balanced reciprocity for functions via
+                                                  hgenfac and the pairing. Remaining assembly: the
+                                                  balanced cross-product reciprocity for arbitrary
+                                                  disjoint pairs from the generator cases, then the
+                                                  pairing and its six legs. Superseded plan text:
+                                                  REMAINING for reciprocity: the class-group descent
+                                                  hgenfac (every function with point-divisor
+                                                  factorization equals a constant times a quotient
+                                                  of products of line/vertical elements, by strong
+                                                  induction on divisor size through hline +
+                                                  XYIdeal_neg_mul + toClass-nontriviality) and the
+                                                  multiplicative assembly of the balanced cross-
+                                                  product reciprocity; then the pairing definition
+                                                  (ratio over hgen2 generators at hpoints-generic
                                                   translates) and its six legs. Older per-brick log
                                                   follows: NEXT: divisor evaluation f(D) := prod of
                                                   evalEval over D; nonvanishing off the divisor; the
@@ -898,35 +906,41 @@ entries file). To add/remove/annotate a node, edit
                                           final stitch is hww instances (signs 1 against the
                                           vertical words since |L|=0; the (Ln/Ld)x(Mn/Md) signs pair
                                           up on both sides) combined in one linear_combination.
-                                          IMPLEMENTATION ORDER for hgrand: (1) the fiber-pair
-                                          identification lemma, (2) the four hevid product
-                                          instances, (3) the multiset conversions via hbalt/hbalP +
-                                          map_add/prod_add, (4) the four hww instances, (5) the
-                                          stitching linear_combination. REMAINING: hgrand (in
-                                          hstepR/hstarinst), then hstepS mirrors the whole R-step,
-                                          and hleg1-hleg6. REMAINING SORRIES in the mu-node: hrecgen
-                                          and hleg1-hleg6 (bilinearity x2, alternation,
-                                          nondegeneracy, p-th powers, Frobenius naturality).
-                                          Superseded: FRONTIER (7 named sorried steps) description.
-                                          Superseded: NEXT: line-vs-word (hlw, sign (-1)^lines) then
-                                          word-vs-word (hww), then the balanced reciprocity for
-                                          functions via hgenfac and the pairing. Remaining assembly:
-                                          the balanced cross-product reciprocity for arbitrary
-                                          disjoint pairs from the generator cases, then the pairing
-                                          and its six legs. Superseded plan text: REMAINING for
-                                          reciprocity: the class-group descent hgenfac (every
-                                          function with point-divisor factorization equals a
-                                          constant times a quotient of products of line/vertical
-                                          elements, by strong induction on divisor size through
-                                          hline + XYIdeal_neg_mul + toClass-nontriviality) and the
-                                          multiplicative assembly of the balanced cross-product
-                                          reciprocity; then the pairing definition (ratio over hgen2
-                                          generators at hpoints-generic translates) and its six
-                                          legs. Older per-brick log follows: NEXT: divisor
-                                          evaluation f(D) := prod of evalEval over D; nonvanishing
-                                          off the divisor; the reciprocity statement f(div g) =
-                                          g(div f) for disjoint supports, by induction via
-                                          line/vertical factorization (hline + XYIdeal_neg_mul)
+                                          hgrand steps 1-2-4 IN PLACE: hfibpair proven; the nine
+                                          pointwise hevid instances (aP1 at QR1/-R1/R3/-QR3/R1/QR3,
+                                          t at S1/-S1/PS1) and thirteen hww instances (the four
+                                          (Ln/Ld)x(Mn/Md) swaps and the vertical-word swaps against
+                                          {xS1} and {xR1,xQR3}, including the vertical-vertical one)
+                                          are bound in context. REMAINING inside hgrand: step 3 (the
+                                          hbalt/hbalP multiset conversions as product equations via
+                                          congrArg + map_add/prod_add/map_replicate/prod_replicate,
+                                          plus the Dg2/Sp canonical-divisor identifications through
+                                          hfibpair) and step 5 (the stitching linear_combination
+                                          combining everything; prune unused hww instances then).
+                                          REMAINING: hgrand (in hstepR/hstarinst), then hstepS
+                                          mirrors the whole R-step, and hleg1-hleg6. REMAINING
+                                          SORRIES in the mu-node: hrecgen and hleg1-hleg6
+                                          (bilinearity x2, alternation, nondegeneracy, p-th powers,
+                                          Frobenius naturality). Superseded: FRONTIER (7 named
+                                          sorried steps) description. Superseded: NEXT: line-vs-word
+                                          (hlw, sign (-1)^lines) then word-vs-word (hww), then the
+                                          balanced reciprocity for functions via hgenfac and the
+                                          pairing. Remaining assembly: the balanced cross-product
+                                          reciprocity for arbitrary disjoint pairs from the
+                                          generator cases, then the pairing and its six legs.
+                                          Superseded plan text: REMAINING for reciprocity: the
+                                          class-group descent hgenfac (every function with point-
+                                          divisor factorization equals a constant times a quotient
+                                          of products of line/vertical elements, by strong induction
+                                          on divisor size through hline + XYIdeal_neg_mul + toClass-
+                                          nontriviality) and the multiplicative assembly of the
+                                          balanced cross-product reciprocity; then the pairing
+                                          definition (ratio over hgen2 generators at hpoints-generic
+                                          translates) and its six legs. Older per-brick log follows:
+                                          NEXT: divisor evaluation f(D) := prod of evalEval over D;
+                                          nonvanishing off the divisor; the reciprocity statement
+                                          f(div g) = g(div f) for disjoint supports, by induction
+                                          via line/vertical factorization (hline + XYIdeal_neg_mul)
                                           reducing to the proven cores hlinerec (line-line) and
                                           hnormeval + hrecP1 (vertical cases); then the pairing and
                                           its six legs. hmax COMPLETE (with hresfin + hkill): every

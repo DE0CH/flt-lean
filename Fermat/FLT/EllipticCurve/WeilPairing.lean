@@ -8098,6 +8098,40 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           · rw [h]
           · rw [h, WeierstrassCurve.Affine.negY_negY]
             exact Multiset.cons_swap _ _ _
+        -- the pointwise evaluation identities of the two word identities
+        -- at the six aP₁-relevant and three t-relevant points
+        have heP₁ := hevid aP₁ Ln Ld Vn Vd uf hwordP xQR₁ yQR₁ hQR₁.left
+        have heP₂ := hevid aP₁ Ln Ld Vn Vd uf hwordP xR₁
+          (Wb.toAffine.negY xR₁ yR₁) hR₁neg.left
+        have heP₃ := hevid aP₁ Ln Ld Vn Vd uf hwordP xR₃ yR₃ hR₃.left
+        have heP₄ := hevid aP₁ Ln Ld Vn Vd uf hwordP xQR₃
+          (Wb.toAffine.negY xQR₃ yQR₃) hQR₃neg.left
+        have heP₅ := hevid aP₁ Ln Ld Vn Vd uf hwordP xR₁ yR₁ hR₁.left
+        have heP₆ := hevid aP₁ Ln Ld Vn Vd uf hwordP xQR₃ yQR₃ hQR₃.left
+        have het₁ := hevid t Mn Md Wn' Wd' ut hwordt xS₁ yS₁ hS₁.left
+        have het₂ := hevid t Mn Md Wn' Wd' ut hwordt xS₁
+          (Wb.toAffine.negY xS₁ yS₁) hS₁neg.left
+        have het₃ := hevid t Mn Md Wn' Wd' ut hwordt xPS₁ yPS₁ hPS₁.left
+        -- the word-vs-word reciprocity instances between the two words
+        -- and against the two vertical words
+        have hw₁ := hww Ln Mn Vn Wn'
+        have hw₂ := hww Ln Md Vn Wd'
+        have hw₃ := hww Ld Mn Vd Wn'
+        have hw₄ := hww Ld Md Vd Wd'
+        have hwv₁ := hww 0 Mn {xS₁} Wn'
+        have hwv₂ := hww 0 Md {xS₁} Wd'
+        have hwv₃ := hww 0 Ln ({xR₁, xQR₃} :
+          Multiset (AlgebraicClosure (ZMod q))) Vn
+        have hwv₄ := hww 0 Ld ({xR₁, xQR₃} :
+          Multiset (AlgebraicClosure (ZMod q))) Vd
+        have hwv₅ := hww Mn 0 Wn' {xS₁}
+        have hwv₆ := hww Md 0 Wd' {xS₁}
+        have hwv₇ := hww Ln 0 Vn ({xR₁, xQR₃} :
+          Multiset (AlgebraicClosure (ZMod q)))
+        have hwv₈ := hww Ld 0 Vd ({xR₁, xQR₃} :
+          Multiset (AlgebraicClosure (ZMod q)))
+        have hwv₉ := hww 0 0 ({xS₁} : Multiset (AlgebraicClosure (ZMod q)))
+          ({xR₁, xQR₃} : Multiset (AlgebraicClosure (ZMod q)))
         -- THE GRAND WORD-LEVEL ASSEMBLY: evaluate the two word identities
         -- over all eight points, convert word-divisor evaluations through
         -- the hbaldiv bookkeeping, swap with hww, and cancel the balanced
