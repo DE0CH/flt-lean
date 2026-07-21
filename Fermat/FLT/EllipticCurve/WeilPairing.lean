@@ -5811,6 +5811,24 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
     simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow,
       Polynomial.eval_X, Polynomial.eval_C, Polynomial.eval_neg]
     ring
+  -- signed generator-pair reciprocity, vertical-vertical (sign +1): both
+  -- sides are the constant square of the abscissa difference
+  have hggvv : ∀ (c₁ c₂ : (AlgebraicClosure (ZMod q)))
+      (D₁ D₂ : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))),
+      D₁.card = 2 → (∀ P ∈ D₁, P.1 = c₁) →
+      D₂.card = 2 → (∀ P ∈ D₂, P.1 = c₂) →
+      (D₂.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => P.1 - c₁)).prod =
+      (D₁.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => P.1 - c₂)).prod := by
+    intro c₁ c₂ D₁ D₂ h1card h1abs h2card h2abs
+    have e2 : D₂.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => P.1 - c₁) =
+        D₂.map (fun _ => c₂ - c₁) :=
+      Multiset.map_congr rfl (fun P hP => by rw [h2abs P hP])
+    have e1 : D₁.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => P.1 - c₂) =
+        D₁.map (fun _ => c₁ - c₂) :=
+      Multiset.map_congr rfl (fun P hP => by rw [h1abs P hP])
+    rw [e1, e2, Multiset.map_const', Multiset.prod_replicate,
+      Multiset.map_const', Multiset.prod_replicate, h1card, h2card]
+    ring
   sorry
 
 set_option warn.sorry false in
