@@ -141,9 +141,19 @@ entries file). To add/remove/annotate a node, edit
                                                   (points outside any finite abscissa set) and hgen2
                                                   (two-point Miller generators for translated
                                                   divisors); point evaluation is mathlib's
-                                                  AdjoinRoot.evalEval. REMAINING (the single sorry):
-                                                  the evaluation-ratio pairing e(P,Q) =
-                                                  f_P(D_Q)/f_Q(D_P) with disjoint affine supports
+                                                  AdjoinRoot.evalEval. PROVEN reciprocity
+                                                  ingredients: hrecP1 (P^1 Weil reciprocity: double-
+                                                  product swap with the (-1)^(mn) sign, via
+                                                  hcard/hevalprod root-product machinery); hline
+                                                  (line ideal identity (l) = I_P I_Q I_{-(P+Q)} from
+                                                  mathlib's XYIdeal_mul_XYIdeal + XYIdeal_neg_mul by
+                                                  Dedekind cancellation; the vertical identity is
+                                                  mathlib's XYIdeal_neg_mul itself); hcubtrans +
+                                                  hlinerec (line-line reciprocity core: shared-
+                                                  intersection-point Vieta, the two fiber cubics
+                                                  agree at the common abscissa). REMAINING (the
+                                                  single sorry): the evaluation-ratio pairing e(P,Q)
+                                                  = f_P(D_Q)/f_Q(D_P) with disjoint affine supports
                                                   (D_P = (P+S)-(S), D_Q = (Q+R)-(R)); scalar-
                                                   invariance is automatic in the ratios; well-
                                                   definedness/bilinearity via Weil reciprocity
@@ -240,8 +250,17 @@ entries file). To add/remove/annotate a node, edit
                                           ClassGroup.mk_eq_one_iff). ALSO PROVEN: hpoints (points
                                           outside any finite abscissa set) and hgen2 (two-point
                                           Miller generators for translated divisors); point
-                                          evaluation is mathlib's AdjoinRoot.evalEval. REMAINING
-                                          (the single sorry): the evaluation-ratio pairing e(P,Q) =
+                                          evaluation is mathlib's AdjoinRoot.evalEval. PROVEN
+                                          reciprocity ingredients: hrecP1 (P^1 Weil reciprocity:
+                                          double-product swap with the (-1)^(mn) sign, via
+                                          hcard/hevalprod root-product machinery); hline (line ideal
+                                          identity (l) = I_P I_Q I_{-(P+Q)} from mathlib's
+                                          XYIdeal_mul_XYIdeal + XYIdeal_neg_mul by Dedekind
+                                          cancellation; the vertical identity is mathlib's
+                                          XYIdeal_neg_mul itself); hcubtrans + hlinerec (line-line
+                                          reciprocity core: shared-intersection-point Vieta, the two
+                                          fiber cubics agree at the common abscissa). REMAINING (the
+                                          single sorry): the evaluation-ratio pairing e(P,Q) =
                                           f_P(D_Q)/f_Q(D_P) with disjoint affine supports (D_P =
                                           (P+S)-(S), D_Q = (Q+R)-(R)); scalar-invariance is
                                           automatic in the ratios; well-definedness/bilinearity via
