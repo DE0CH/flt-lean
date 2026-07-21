@@ -231,12 +231,21 @@ entries file). To add/remove/annotate a node, edit
                                                   explicit. hwordeval PROVEN (evaluation of a
                                                   line/vertical word at a curve point = the value
                                                   product, via map_multiset_prod + hevline/hevvert).
-                                                  NEXT: balanced reciprocity for functions via the
-                                                  strengthened hgenfac (u-constants and signs cancel
-                                                  in balanced cross-ratios; 8-fold division-free
-                                                  form, cancel the Pi of d-word evaluations at the
-                                                  end under the F-avoidance hypotheses), then the
-                                                  pairing. Superseded: NEXT: line-vs-word (hlw, sign
+                                                  hlineptE + hworddivE + hbaldiv PROVEN
+                                                  (2026-07-21): line-cubic roots are curve-point
+                                                  abscissas; every hww-shaped word divisor satisfies
+                                                  the curve equation; and the BALANCED DIVISOR
+                                                  BOOKKEEPING -- the hgenfac identity forces D +
+                                                  div(d-word) = div(n-word) as point multisets (span
+                                                  multiplicativity, span_singleton_mul_left_unit for
+                                                  the C u factor, hworddiv on both words, uniqueness
+                                                  hdivuniq). NEXT: balanced reciprocity for
+                                                  functions via the strengthened hgenfac
+                                                  (u-constants and signs cancel in balanced cross-
+                                                  ratios; 8-fold division-free form, cancel the Pi
+                                                  of d-word evaluations at the end under the
+                                                  F-avoidance hypotheses), then the pairing.
+                                                  Superseded: NEXT: line-vs-word (hlw, sign
                                                   (-1)^lines) then word-vs-word (hww), then the
                                                   balanced reciprocity for functions via hgenfac and
                                                   the pairing. Remaining assembly: the balanced
@@ -460,8 +469,15 @@ entries file). To add/remove/annotate a node, edit
                                           arithmetic), so all supports explicit. hwordeval PROVEN
                                           (evaluation of a line/vertical word at a curve point = the
                                           value product, via map_multiset_prod + hevline/hevvert).
-                                          NEXT: balanced reciprocity for functions via the
-                                          strengthened hgenfac (u-constants and signs cancel in
+                                          hlineptE + hworddivE + hbaldiv PROVEN (2026-07-21): line-
+                                          cubic roots are curve-point abscissas; every hww-shaped
+                                          word divisor satisfies the curve equation; and the
+                                          BALANCED DIVISOR BOOKKEEPING -- the hgenfac identity
+                                          forces D + div(d-word) = div(n-word) as point multisets
+                                          (span multiplicativity, span_singleton_mul_left_unit for
+                                          the C u factor, hworddiv on both words, uniqueness
+                                          hdivuniq). NEXT: balanced reciprocity for functions via
+                                          the strengthened hgenfac (u-constants and signs cancel in
                                           balanced cross-ratios; 8-fold division-free form, cancel
                                           the Pi of d-word evaluations at the end under the
                                           F-avoidance hypotheses), then the pairing. Superseded:

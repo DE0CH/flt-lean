@@ -6495,6 +6495,110 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
     congr 2
     · exact Multiset.map_congr rfl fun ln _ => hevline ln.1 ln.2 x y hE
     · exact Multiset.map_congr rfl fun c _ => hevvert c x y hE
+  -- roots of a line cubic are abscissas of curve points on the line
+  have hlineptE : ∀ (l n x : (AlgebraicClosure (ZMod q))),
+      x ∈ ((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - l ^ 2 - Wb.toAffine.a₁ * l)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * l * n - Wb.toAffine.a₁ * n
+            - Wb.toAffine.a₃ * l) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - n ^ 2 - Wb.toAffine.a₃ * n))).roots →
+      Wb.toAffine.Equation x (l * x + n) := by
+    intro l n x hx
+    obtain ⟨D, hDeq, hDline, hDabs, hDfac⟩ := hlinediv l n
+    rw [← hDabs] at hx
+    obtain ⟨P, hP, hPx⟩ := Multiset.mem_map.mp hx
+    have := hDeq P hP
+    rwa [← hPx, ← hDline P hP]
+  -- the equation set of a word's hww-shaped divisor
+  have hworddivE : ∀ (L : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
+      (V : Multiset (AlgebraicClosure (ZMod q))),
+      ∀ T ∈ ((L.bind (fun ln => ((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - ln.1 ^ 2 - Wb.toAffine.a₁ * ln.1)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * ln.1 * ln.2 - Wb.toAffine.a₁ * ln.2
+            - Wb.toAffine.a₃ * ln.1) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - ln.2 ^ 2 - Wb.toAffine.a₃ * ln.2))).roots.map
+          (fun x => (x, ln.1 * x + ln.2)))) +
+        (V.bind (fun c' => {(c', Wb.toAffine.negY c' (yfib c')),
+          (c', yfib c')}))), Wb.toAffine.Equation T.1 T.2 := by
+    intro L V T hT
+    rcases Multiset.mem_add.mp hT with hT | hT
+    · obtain ⟨ln, _, hT⟩ := Multiset.mem_bind.mp hT
+      obtain ⟨x, hx, hxT⟩ := Multiset.mem_map.mp hT
+      rw [← hxT]
+      exact hlineptE ln.1 ln.2 x hx
+    · obtain ⟨c, _, hT⟩ := Multiset.mem_bind.mp hT
+      rcases Multiset.mem_cons.mp hT with hT | hT
+      · rw [hT]
+        exact (WeierstrassCurve.Affine.equation_neg
+          (W' := Wb.toAffine) _ _).mpr (hyfib c)
+      · rw [Multiset.mem_singleton.mp hT]
+        exact hyfib c
+  -- BALANCED DIVISOR BOOKKEEPING: the hgenfac identity forces, at the
+  -- level of point multisets, D + div(denominator word) = div(numerator
+  -- word) — by span multiplicativity, hworddiv, and uniqueness hdivuniq
+  have hbaldiv : ∀ (f : Wb.toAffine.CoordinateRing)
+      (D : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
+      (Ln Ld : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
+      (Vn Vd : Multiset (AlgebraicClosure (ZMod q)))
+      (u : (AlgebraicClosure (ZMod q))), u ≠ 0 →
+      (∀ P ∈ D, Wb.toAffine.Equation P.1 P.2) →
+      Ideal.span {f} = (D.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          Wb.toAffine P.1 (Polynomial.C P.2))).prod →
+      f * (Ld.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => AdjoinRoot.mk Wb.toAffine.polynomial
+        (Polynomial.X - Polynomial.C (Polynomial.C P.1 * Polynomial.X +
+          Polynomial.C P.2)))).prod * (Vd.map (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine)).prod =
+        AdjoinRoot.of Wb.toAffine.polynomial (Polynomial.C u) *
+          (Ln.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => AdjoinRoot.mk Wb.toAffine.polynomial
+        (Polynomial.X - Polynomial.C (Polynomial.C P.1 * Polynomial.X +
+          Polynomial.C P.2)))).prod * (Vn.map (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine)).prod →
+      D + ((Ld.bind (fun ln => ((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - ln.1 ^ 2 - Wb.toAffine.a₁ * ln.1)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * ln.1 * ln.2 - Wb.toAffine.a₁ * ln.2
+            - Wb.toAffine.a₃ * ln.1) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - ln.2 ^ 2 - Wb.toAffine.a₃ * ln.2))).roots.map
+          (fun x => (x, ln.1 * x + ln.2)))) +
+        (Vd.bind (fun c' => {(c', Wb.toAffine.negY c' (yfib c')),
+          (c', yfib c')}))) =
+      ((Ln.bind (fun ln => ((Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - ln.1 ^ 2 - Wb.toAffine.a₁ * ln.1)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * ln.1 * ln.2 - Wb.toAffine.a₁ * ln.2
+            - Wb.toAffine.a₃ * ln.1) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - ln.2 ^ 2 - Wb.toAffine.a₃ * ln.2))).roots.map
+          (fun x => (x, ln.1 * x + ln.2)))) +
+        (Vn.bind (fun c' => {(c', Wb.toAffine.negY c' (yfib c')),
+          (c', yfib c')}))) := by
+    intro f D Ln Ld Vn Vd u hu0 hDeq hDfac heq
+    have hassoc : f * ((Ld.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => AdjoinRoot.mk Wb.toAffine.polynomial
+        (Polynomial.X - Polynomial.C (Polynomial.C P.1 * Polynomial.X +
+          Polynomial.C P.2)))).prod * (Vd.map (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine)).prod) =
+        AdjoinRoot.of Wb.toAffine.polynomial (Polynomial.C u) *
+          ((Ln.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => AdjoinRoot.mk Wb.toAffine.polynomial
+        (Polynomial.X - Polynomial.C (Polynomial.C P.1 * Polynomial.X +
+          Polynomial.C P.2)))).prod * (Vn.map (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine)).prod) := by
+      rw [← mul_assoc, ← mul_assoc]
+      exact heq
+    have huu : IsUnit (AdjoinRoot.of Wb.toAffine.polynomial
+        (Polynomial.C u)) :=
+      (Polynomial.isUnit_C.mpr (Ne.isUnit hu0)).map _
+    have hspan2 : Ideal.span ({f} : Set Wb.toAffine.CoordinateRing) *
+        Ideal.span {(Ld.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => AdjoinRoot.mk Wb.toAffine.polynomial
+        (Polynomial.X - Polynomial.C (Polynomial.C P.1 * Polynomial.X +
+          Polynomial.C P.2)))).prod * (Vd.map (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine)).prod} =
+        Ideal.span {(Ln.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => AdjoinRoot.mk Wb.toAffine.polynomial
+        (Polynomial.X - Polynomial.C (Polynomial.C P.1 * Polynomial.X +
+          Polynomial.C P.2)))).prod * (Vn.map (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine)).prod} := by
+      rw [Ideal.span_singleton_mul_span_singleton, hassoc,
+        Ideal.span_singleton_mul_left_unit huu]
+    rw [hDfac, hworddiv Ld Vd, hworddiv Ln Vn, ← Multiset.prod_add,
+      ← Multiset.map_add] at hspan2
+    exact hdivuniq _ _
+      (fun T hT => (Multiset.mem_add.mp hT).elim (hDeq T)
+        (hworddivE Ld Vd T))
+      (hworddivE Ln Vn) hspan2
   sorry
 
 /-- **The Weil pairing over a finite field, Frobenius-twisted form**
