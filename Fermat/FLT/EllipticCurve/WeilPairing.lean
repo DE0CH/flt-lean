@@ -6682,6 +6682,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
         (WeierstrassCurve.Affine.Point.some xQR yQR hQR =
           WeierstrassCurve.Affine.Point.some xQ yQ hQ +
           WeierstrassCurve.Affine.Point.some xR yR hR) ∧
+        xQR ≠ xS ∧ xQR ≠ xPS ∧
       ∃ (aP aQ : Wb.toAffine.CoordinateRing),
         Ideal.span {aP} =
           (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
@@ -7263,7 +7264,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           xS, yS, hSns, hxSF', hySF', hxS,
           xR, yR, hRns, hxR,
           xPS, yPS, hPS, hPSc.symm, hxPSF', hyPSF',
-          xQR, yQR, hQR, hQRc.symm,
+          xQR, yQR, hQR, hQRc.symm, hxQRne.1, hxQRne.2,
           aP, aQ, haP, haQ, hA,
           by rw [Units.val_mk0]
              exact div_mul_cancel₀ _ hA⟩
@@ -7677,6 +7678,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       (WeierstrassCurve.Affine.Point.some xQR₁ yQR₁ hQR₁ =
         WeierstrassCurve.Affine.Point.some xQ yQ hQ +
         WeierstrassCurve.Affine.Point.some xR₁ yR₁ hR₁) →
+      xQR₁ ≠ xS₁ → xQR₁ ≠ xPS₁ →
       ∀ (aP₁ aQ₁ : Wb.toAffine.CoordinateRing),
       Ideal.span {aP₁} =
         (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
@@ -7741,7 +7743,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
     intro F F' hFfin hF'fin hFF' xP yP hP xQ yQ hQ hxPF hyPF hxQF hyQF
       xS₁ yS₁ hS₁ hxS₁F' hyS₁F' hxS₁F xR₁ yR₁ hR₁ hxR₁
       xPS₁ yPS₁ hPS₁ hPSc₁ hxPS₁F' hyPS₁F' xQR₁ yQR₁ hQR₁ hQRc₁
-      aP₁ aQ₁ haP₁ haQ₁
+      hxQR₁nS hxQR₁nPS aP₁ aQ₁ haP₁ haQ₁
       xS₃ yS₃ hS₃ xR₃ yR₃ hR₃ xPS₃ yPS₃ hPS₃ xQR₃ yQR₃ hQR₃ aP₃ aQ₃
       hxS₃ hxR₃ hxPS₃ hxQR₃ hPSc₃ hQRc₃ haP₃ haQ₃
     -- the R-STEP: with the first translate S₁ fixed, moving the second
@@ -8206,12 +8208,14 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       obtain ⟨F₁, F₁', hF₁fin, hF₁'fin, hFF₁, hxPF₁, hyPF₁, hxQF₁, hyQF₁,
         xS₁, yS₁, hS₁, hxS₁F', hyS₁F', hxS₁F, xR₁, yR₁, hR₁, hxR₁,
         xPS₁, yPS₁, hPS₁, hPSc₁, hxPS₁F', hyPS₁F',
-        xQR₁, yQR₁, hQR₁, hQRc₁, aP₁, aQ₁, haP₁, haQ₁, hA₁, heq₁⟩ :=
+        xQR₁, yQR₁, hQR₁, hQRc₁, hxQR₁nS, hxQR₁nPS,
+        aP₁, aQ₁, haP₁, haQ₁, hA₁, heq₁⟩ :=
         hz₁.2 xP yP hP₀ xQ yQ hQ₀ hcv hcw
       obtain ⟨F₂, F₂', hF₂fin, hF₂'fin, hFF₂, hxPF₂, hyPF₂, hxQF₂, hyQF₂,
         xS₂, yS₂, hS₂, hxS₂F', hyS₂F', hxS₂F, xR₂, yR₂, hR₂, hxR₂,
         xPS₂, yPS₂, hPS₂, hPSc₂, hxPS₂F', hyPS₂F',
-        xQR₂, yQR₂, hQR₂, hQRc₂, aP₂, aQ₂, haP₂, haQ₂, hA₂, heq₂⟩ :=
+        xQR₂, yQR₂, hQR₂, hQRc₂, hxQR₂nS, hxQR₂nPS,
+        aP₂, aQ₂, haP₂, haQ₂, hA₂, heq₂⟩ :=
         hz₂.2 xP yP hP₀ xQ yQ hQ₀ hcv hcw
       -- THE CROSS-SETUP RECIPROCITY: the two Miller cross-ratios agree,
       -- in cross-multiplied form B₁ · A₂ = B₂ · A₁ — by Weil reciprocity
@@ -8268,7 +8272,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
         have h13 := hrecgen F₁ F₁' hF₁fin hF₁'fin hFF₁ xP yP hP₀ xQ yQ hQ₀
           hxPF₁ hyPF₁ hxQF₁ hyQF₁ xS₁ yS₁ hS₁ hxS₁F' hyS₁F' hxS₁F
           xR₁ yR₁ hR₁ hxR₁ xPS₁ yPS₁ hPS₁ hPSc₁ hxPS₁F' hyPS₁F'
-          xQR₁ yQR₁ hQR₁ hQRc₁ aP₁ aQ₁ haP₁ haQ₁
+          xQR₁ yQR₁ hQR₁ hQRc₁ hxQR₁nS hxQR₁nPS aP₁ aQ₁ haP₁ haQ₁
           xS₃ yS₃ hS₃ xR₃ yR₃ hR₃ xPS₃ yPS₃ hPS₃ xQR₃ yQR₃ hQR₃ aP₃ aQ₃
           (fun h => hxS₃ (hF₁'G h)) (fun h => hxR₃ (hF₁'G h))
           (fun h => hxPS₃ (hF₁'G h)) (fun h => hxQR₃ (hF₁'G h))
@@ -8276,7 +8280,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
         have h23 := hrecgen F₂ F₂' hF₂fin hF₂'fin hFF₂ xP yP hP₀ xQ yQ hQ₀
           hxPF₂ hyPF₂ hxQF₂ hyQF₂ xS₂ yS₂ hS₂ hxS₂F' hyS₂F' hxS₂F
           xR₂ yR₂ hR₂ hxR₂ xPS₂ yPS₂ hPS₂ hPSc₂ hxPS₂F' hyPS₂F'
-          xQR₂ yQR₂ hQR₂ hQRc₂ aP₂ aQ₂ haP₂ haQ₂
+          xQR₂ yQR₂ hQR₂ hQRc₂ hxQR₂nS hxQR₂nPS aP₂ aQ₂ haP₂ haQ₂
           xS₃ yS₃ hS₃ xR₃ yR₃ hR₃ xPS₃ yPS₃ hPS₃ xQR₃ yQR₃ hQR₃ aP₃ aQ₃
           (fun h => hxS₃ (hF₂'G h)) (fun h => hxR₃ (hF₂'G h))
           (fun h => hxPS₃ (hF₂'G h)) (fun h => hxQR₃ (hF₂'G h))
