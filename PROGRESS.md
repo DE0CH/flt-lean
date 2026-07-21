@@ -137,9 +137,19 @@ entries file). To add/remove/annotate a node, edit
                                                   degree_norm_smul_basis) and hgen (p-torsion points
                                                   have principal p-th ideal-class powers -- the
                                                   Miller-generator existence, via toClass +
-                                                  ClassGroup.mk_eq_one_iff). REMAINING (the single
-                                                  sorry): the evaluation-ratio pairing e(P,Q) =
-                                                  f_P(D_Q)/f_Q(D_P),
+                                                  ClassGroup.mk_eq_one_iff). ALSO PROVEN: hpoints
+                                                  (points outside any finite abscissa set) and hgen2
+                                                  (two-point Miller generators for translated
+                                                  divisors); point evaluation is mathlib's
+                                                  AdjoinRoot.evalEval. REMAINING (the single sorry):
+                                                  the evaluation-ratio pairing e(P,Q) =
+                                                  f_P(D_Q)/f_Q(D_P) with disjoint affine supports
+                                                  (D_P = (P+S)-(S), D_Q = (Q+R)-(R)); scalar-
+                                                  invariance is automatic in the ratios; well-
+                                                  definedness/bilinearity via Weil reciprocity
+                                                  (norm-pushforward to P^1 or direct); alternation,
+                                                  nondegeneracy, Frobenius naturality. Formerly
+                                                  listed route e(P,Q) = f_P(D_Q)/f_Q(D_P),
                                                   bilinearity/alternation/nondegeneracy via Weil
                                                   reciprocity on HeightOneSpectrum divisors plus the
                                                   infinite place, Frobenius naturality from
@@ -227,8 +237,17 @@ entries file). To add/remove/annotate a node, edit
                                           are the nonzero constants, via degree_norm_smul_basis) and
                                           hgen (p-torsion points have principal p-th ideal-class
                                           powers -- the Miller-generator existence, via toClass +
-                                          ClassGroup.mk_eq_one_iff). REMAINING (the single sorry):
-                                          the evaluation-ratio pairing e(P,Q) = f_P(D_Q)/f_Q(D_P),
+                                          ClassGroup.mk_eq_one_iff). ALSO PROVEN: hpoints (points
+                                          outside any finite abscissa set) and hgen2 (two-point
+                                          Miller generators for translated divisors); point
+                                          evaluation is mathlib's AdjoinRoot.evalEval. REMAINING
+                                          (the single sorry): the evaluation-ratio pairing e(P,Q) =
+                                          f_P(D_Q)/f_Q(D_P) with disjoint affine supports (D_P =
+                                          (P+S)-(S), D_Q = (Q+R)-(R)); scalar-invariance is
+                                          automatic in the ratios; well-definedness/bilinearity via
+                                          Weil reciprocity (norm-pushforward to P^1 or direct);
+                                          alternation, nondegeneracy, Frobenius naturality. Formerly
+                                          listed route e(P,Q) = f_P(D_Q)/f_Q(D_P),
                                           bilinearity/alternation/nondegeneracy via Weil reciprocity
                                           on HeightOneSpectrum divisors plus the infinite place,
                                           Frobenius naturality from functoriality of the whole
