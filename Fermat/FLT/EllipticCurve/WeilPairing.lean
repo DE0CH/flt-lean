@@ -5486,7 +5486,105 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           Wb.toAffine P.1 (Polynomial.C P.2))).prod) := by
             conv_lhs => rw [← hD1, ← hD2, Multiset.map_cons,
               Multiset.prod_cons, Multiset.map_cons, Multiset.prod_cons]
-          sorry
+          by_cases hcase : P.1 = Q.1 ∧ P.2 = Wb.toAffine.negY Q.1 Q.2
+          · -- vertical Miller move: P and Q are a conjugate fiber pair
+            obtain ⟨hx, hy⟩ := hcase
+            have hnsQ := (WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+              hEQ
+            have hneg := WeierstrassCurve.Affine.CoordinateRing.XYIdeal_neg_mul
+              (W := Wb.toAffine) hnsQ
+            have hfacv : Ideal.span {f} =
+                Ideal.span {WeierstrassCurve.Affine.CoordinateRing.XClass
+                  Wb.toAffine Q.1} *
+                ((((D.erase P).erase Q)).map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+              WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+                Wb.toAffine P.1 (Polynomial.C P.2))).prod := by
+              rw [hDfac, hprodD, hx, hy, ← mul_assoc, hneg]
+              rfl
+            obtain ⟨g, hfg, hspang⟩ := hdvdspan _ f _
+              (WeierstrassCurve.Affine.CoordinateRing.XClass_ne_zero
+                (W' := Wb.toAffine) Q.1) hfacv
+            obtain ⟨Ln, Ld, Vn, Vd, u, hu0, heq⟩ := IH g _
+              (by omega) hDeq'' hspang
+            refine ⟨Ln, Ld, Q.1 ::ₘ Vn, Vd, u, hu0, ?_⟩
+            rw [hfg, Multiset.map_cons, Multiset.prod_cons]
+            linear_combination (WeierstrassCurve.Affine.CoordinateRing.XClass
+              Wb.toAffine Q.1) * heq
+          · -- line Miller move: peel P, Q through the line and push the sum
+            have hnsP := (WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+              hEP
+            have hnsQ := (WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+              hEQ
+            have hnsS := WeierstrassCurve.Affine.nonsingular_add hnsP hnsQ
+              hcase
+            have hlineId := hline P.1 P.2 Q.1 Q.2 hnsP hnsQ hcase
+            have hnegS := WeierstrassCurve.Affine.CoordinateRing.XYIdeal_neg_mul
+              (W := Wb.toAffine) hnsS
+            have hn1 : n ≥ 1 := by omega
+            have hfacl : Ideal.span {f *
+                WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+                  (Wb.toAffine.addX P.1 Q.1 (Wb.toAffine.slope P.1 Q.1 P.2 Q.2))} =
+                Ideal.span {WeierstrassCurve.Affine.CoordinateRing.YClass
+                  Wb.toAffine (WeierstrassCurve.Affine.linePolynomial P.1 P.2
+                    (Wb.toAffine.slope P.1 Q.1 P.2 Q.2))} *
+                ((((Wb.toAffine.addX P.1 Q.1 (Wb.toAffine.slope P.1 Q.1 P.2 Q.2)), (Wb.toAffine.addY P.1 Q.1 P.2 (Wb.toAffine.slope P.1 Q.1 P.2 Q.2))) ::ₘ ((D.erase P).erase Q)).map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+              WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+                Wb.toAffine P.1 (Polynomial.C P.2))).prod
+                := by
+              rw [← Ideal.span_singleton_mul_span_singleton, hDfac, hprodD]
+              rw [show (Ideal.span {WeierstrassCurve.Affine.CoordinateRing.XClass
+                Wb.toAffine (Wb.toAffine.addX P.1 Q.1 (Wb.toAffine.slope P.1 Q.1 P.2 Q.2))} : Ideal Wb.toAffine.CoordinateRing) =
+                WeierstrassCurve.Affine.CoordinateRing.XIdeal Wb.toAffine
+                  (Wb.toAffine.addX P.1 Q.1 (Wb.toAffine.slope P.1 Q.1 P.2 Q.2)) from rfl, ← hnegS]
+              rw [Multiset.map_cons, Multiset.prod_cons]
+              rw [show (Ideal.span
+                {WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
+                  (WeierstrassCurve.Affine.linePolynomial P.1 P.2
+                    (Wb.toAffine.slope P.1 Q.1 P.2 Q.2))} :
+                Ideal Wb.toAffine.CoordinateRing) =
+                WeierstrassCurve.Affine.CoordinateRing.YIdeal Wb.toAffine
+                  (WeierstrassCurve.Affine.linePolynomial P.1 P.2
+                    (Wb.toAffine.slope P.1 Q.1 P.2 Q.2)) from rfl, hlineId]
+              ring
+            obtain ⟨h, hfg, hspanh⟩ := hdvdspan _ _ _
+              (WeierstrassCurve.Affine.CoordinateRing.YClass_ne_zero
+                (W' := Wb.toAffine) _) hfacl
+            have hDeqS : ∀ T ∈ ((Wb.toAffine.addX P.1 Q.1 (Wb.toAffine.slope P.1 Q.1 P.2 Q.2)), (Wb.toAffine.addY P.1 Q.1 P.2 (Wb.toAffine.slope P.1 Q.1 P.2 Q.2))) ::ₘ ((D.erase P).erase Q),
+                Wb.toAffine.Equation T.1 T.2 := by
+              intro T hT
+              rcases Multiset.mem_cons.mp hT with hTS | hTD
+              · rw [hTS]
+                exact hnsS.left
+              · exact hDeq'' T hTD
+            obtain ⟨Ln, Ld, Vn, Vd, u, hu0, heq⟩ := IH h _
+              (by rw [Multiset.card_cons]; omega) hDeqS hspanh
+            have hlelt : WeierstrassCurve.Affine.CoordinateRing.YClass
+                Wb.toAffine (WeierstrassCurve.Affine.linePolynomial P.1 P.2
+                  (Wb.toAffine.slope P.1 Q.1 P.2 Q.2)) =
+                AdjoinRoot.mk Wb.toAffine.polynomial (Polynomial.X -
+                  Polynomial.C (Polynomial.C (Wb.toAffine.slope P.1 Q.1 P.2 Q.2) * Polynomial.X +
+                    Polynomial.C (P.2 - (Wb.toAffine.slope P.1 Q.1 P.2 Q.2) * P.1))) := by
+              rw [show WeierstrassCurve.Affine.linePolynomial P.1 P.2 (Wb.toAffine.slope P.1 Q.1 P.2 Q.2) =
+                Polynomial.C (Wb.toAffine.slope P.1 Q.1 P.2 Q.2) * Polynomial.X +
+                  Polynomial.C (P.2 - (Wb.toAffine.slope P.1 Q.1 P.2 Q.2) * P.1) from by
+                rw [WeierstrassCurve.Affine.linePolynomial]
+                simp only [Polynomial.C_sub, Polynomial.C_mul]
+                ring]
+              rfl
+            refine ⟨((Wb.toAffine.slope P.1 Q.1 P.2 Q.2), P.2 - (Wb.toAffine.slope P.1 Q.1 P.2 Q.2) * P.1) ::ₘ Ln, Ld, Vn,
+              (Wb.toAffine.addX P.1 Q.1 (Wb.toAffine.slope P.1 Q.1 P.2 Q.2)) ::ₘ Vd, u, hu0, ?_⟩
+            rw [hlelt] at hfg
+            rw [Multiset.map_cons, Multiset.prod_cons, Multiset.map_cons,
+              Multiset.prod_cons]
+            linear_combination ((Ld.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                AdjoinRoot.mk Wb.toAffine.polynomial
+                  (Polynomial.X - Polynomial.C (Polynomial.C P.1 *
+                    Polynomial.X + Polynomial.C P.2)))).prod *
+              (Vd.map (WeierstrassCurve.Affine.CoordinateRing.XClass
+                Wb.toAffine)).prod) * hfg +
+              (AdjoinRoot.mk Wb.toAffine.polynomial (Polynomial.X -
+                Polynomial.C (Polynomial.C (Wb.toAffine.slope P.1 Q.1 P.2 Q.2) * Polynomial.X +
+                  Polynomial.C (P.2 - (Wb.toAffine.slope P.1 Q.1 P.2 Q.2) * P.1)))) * heq
   sorry
 
 set_option warn.sorry false in
