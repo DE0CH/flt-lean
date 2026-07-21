@@ -3620,7 +3620,22 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
               simp [Polynomial.coeff_add, Polynomial.coeff_sub]
             rw [hc0] at h0
             exact h0
-          sorry
+          -- the discriminant identity: `τ² − 4ν = tc² · (A² + 4G)`
+          obtain ⟨τ₀, hτ₀⟩ := hτmem
+          obtain ⟨ν₀, hν₀⟩ := hνmem
+          have hkey : algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+              (τ₀ ^ 2 - 4 * ν₀) = tc ^ 2 *
+              algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+                ((Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) ^ 2 + 4 * (Polynomial.X ^ 3 + Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
+        Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆)) := by
+            rw [map_sub, map_pow, map_mul, hτ₀, hν₀, hτdef, hνdef]
+            simp only [map_add, map_pow, map_mul, map_ofNat]
+            ring
+          by_cases hq2 : (q : ℕ) = 2
+          · -- characteristic-two branch
+            sorry
+          · -- reduced-fraction descent against the squarefree cubic
+            sorry
       · rintro ⟨y, rfl⟩
         exact IsIntegral.map (IsScalarTower.toAlgHom (Polynomial (AlgebraicClosure (ZMod q)))
           Wb.toAffine.CoordinateRing
