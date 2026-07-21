@@ -364,16 +364,28 @@ entries file). To add/remove/annotate a node, edit
                                                   are nonzero since those abscissas lie in F1'. The
                                                   word-level computation uses hbaldiv + hevid + hww
                                                   + hwordeval. S-step mirrors with the roles of the
-                                                  S-translates. BRICK QUEUE for hrecgen: hmill0
-                                                  (zero-sum principality), the function-vs-quad
-                                                  reciprocity, the R-step and S-step ratio
-                                                  identities, the two-step chain. REMAINING SORRIES
-                                                  in the mu-node: hrecgen and hleg1-hleg6
-                                                  (bilinearity x2, alternation, nondegeneracy, p-th
-                                                  powers, Frobenius naturality). Superseded:
-                                                  FRONTIER (7 named sorried steps) description.
-                                                  Superseded: NEXT: line-vs-word (hlw, sign
-                                                  (-1)^lines) then word-vs-word (hww), then the
+                                                  S-translates. hrecgen TELESCOPING SKELETON
+                                                  COMPILING (2026-07-21): the hybrid setup (S1, R3)
+                                                  reuses aP1 and aQ3 unchanged; hstepR (move R1 ->
+                                                  R3, S1 fixed) and hstepS (move S1 -> S3, R3 fixed)
+                                                  are stated as the two cross-multiplied
+                                                  16-evaluation identities; hAh/hBh state the hybrid
+                                                  products' nonvanishing; the chain closes by
+                                                  mul_right_cancel0 + linear_combination with
+                                                  coefficients B3-product * Bh and B1-product * Bh.
+                                                  BRICK QUEUE: hAh/hBh (hoffdiv avoidance
+                                                  bookkeeping, provable with existing patterns),
+                                                  hmill0 (zero-sum principality for the tau
+                                                  comparison function), then hstepR/hstepS (each:
+                                                  tau with explicit divisor (Q+R1)+(-R1)+... , f_P-
+                                                  pair hgenfac words over F', word reciprocity via
+                                                  hww/hbaldiv/hevid, p-th power cancellation).
+                                                  REMAINING SORRIES in the mu-node: hrecgen and
+                                                  hleg1-hleg6 (bilinearity x2, alternation,
+                                                  nondegeneracy, p-th powers, Frobenius naturality).
+                                                  Superseded: FRONTIER (7 named sorried steps)
+                                                  description. Superseded: NEXT: line-vs-word (hlw,
+                                                  sign (-1)^lines) then word-vs-word (hww), then the
                                                   balanced reciprocity for functions via hgenfac and
                                                   the pairing. Remaining assembly: the balanced
                                                   cross-product reciprocity for arbitrary disjoint
@@ -711,31 +723,42 @@ entries file). To add/remove/annotate a node, edit
                                           evaluations at PS1, S1 are nonzero since those abscissas
                                           lie in F1'. The word-level computation uses hbaldiv +
                                           hevid + hww + hwordeval. S-step mirrors with the roles of
-                                          the S-translates. BRICK QUEUE for hrecgen: hmill0 (zero-
-                                          sum principality), the function-vs-quad reciprocity, the
-                                          R-step and S-step ratio identities, the two-step chain.
-                                          REMAINING SORRIES in the mu-node: hrecgen and hleg1-hleg6
-                                          (bilinearity x2, alternation, nondegeneracy, p-th powers,
-                                          Frobenius naturality). Superseded: FRONTIER (7 named
-                                          sorried steps) description. Superseded: NEXT: line-vs-word
-                                          (hlw, sign (-1)^lines) then word-vs-word (hww), then the
-                                          balanced reciprocity for functions via hgenfac and the
-                                          pairing. Remaining assembly: the balanced cross-product
-                                          reciprocity for arbitrary disjoint pairs from the
-                                          generator cases, then the pairing and its six legs.
-                                          Superseded plan text: REMAINING for reciprocity: the
-                                          class-group descent hgenfac (every function with point-
-                                          divisor factorization equals a constant times a quotient
-                                          of products of line/vertical elements, by strong induction
-                                          on divisor size through hline + XYIdeal_neg_mul + toClass-
-                                          nontriviality) and the multiplicative assembly of the
-                                          balanced cross-product reciprocity; then the pairing
-                                          definition (ratio over hgen2 generators at hpoints-generic
-                                          translates) and its six legs. Older per-brick log follows:
-                                          NEXT: divisor evaluation f(D) := prod of evalEval over D;
-                                          nonvanishing off the divisor; the reciprocity statement
-                                          f(div g) = g(div f) for disjoint supports, by induction
-                                          via line/vertical factorization (hline + XYIdeal_neg_mul)
+                                          the S-translates. hrecgen TELESCOPING SKELETON COMPILING
+                                          (2026-07-21): the hybrid setup (S1, R3) reuses aP1 and aQ3
+                                          unchanged; hstepR (move R1 -> R3, S1 fixed) and hstepS
+                                          (move S1 -> S3, R3 fixed) are stated as the two cross-
+                                          multiplied 16-evaluation identities; hAh/hBh state the
+                                          hybrid products' nonvanishing; the chain closes by
+                                          mul_right_cancel0 + linear_combination with coefficients
+                                          B3-product * Bh and B1-product * Bh. BRICK QUEUE: hAh/hBh
+                                          (hoffdiv avoidance bookkeeping, provable with existing
+                                          patterns), hmill0 (zero-sum principality for the tau
+                                          comparison function), then hstepR/hstepS (each: tau with
+                                          explicit divisor (Q+R1)+(-R1)+... , f_P-pair hgenfac words
+                                          over F', word reciprocity via hww/hbaldiv/hevid, p-th
+                                          power cancellation). REMAINING SORRIES in the mu-node:
+                                          hrecgen and hleg1-hleg6 (bilinearity x2, alternation,
+                                          nondegeneracy, p-th powers, Frobenius naturality).
+                                          Superseded: FRONTIER (7 named sorried steps) description.
+                                          Superseded: NEXT: line-vs-word (hlw, sign (-1)^lines) then
+                                          word-vs-word (hww), then the balanced reciprocity for
+                                          functions via hgenfac and the pairing. Remaining assembly:
+                                          the balanced cross-product reciprocity for arbitrary
+                                          disjoint pairs from the generator cases, then the pairing
+                                          and its six legs. Superseded plan text: REMAINING for
+                                          reciprocity: the class-group descent hgenfac (every
+                                          function with point-divisor factorization equals a
+                                          constant times a quotient of products of line/vertical
+                                          elements, by strong induction on divisor size through
+                                          hline + XYIdeal_neg_mul + toClass-nontriviality) and the
+                                          multiplicative assembly of the balanced cross-product
+                                          reciprocity; then the pairing definition (ratio over hgen2
+                                          generators at hpoints-generic translates) and its six
+                                          legs. Older per-brick log follows: NEXT: divisor
+                                          evaluation f(D) := prod of evalEval over D; nonvanishing
+                                          off the divisor; the reciprocity statement f(div g) =
+                                          g(div f) for disjoint supports, by induction via
+                                          line/vertical factorization (hline + XYIdeal_neg_mul)
                                           reducing to the proven cores hlinerec (line-line) and
                                           hnormeval + hrecP1 (vertical cases); then the pairing and
                                           its six legs. hmax COMPLETE (with hresfin + hkill): every

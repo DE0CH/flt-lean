@@ -7738,7 +7738,112 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
         AdjoinRoot.evalEval hS₁.left
           ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁) ^ p) *
         AdjoinRoot.evalEval hPS₁.left aQ₁) := by
-    sorry
+    intro F F' hFfin hF'fin hFF' xP yP hP xQ yQ hQ hxPF hyPF hxQF hyQF
+      xS₁ yS₁ hS₁ hxS₁F' hyS₁F' hxS₁F xR₁ yR₁ hR₁ hxR₁
+      xPS₁ yPS₁ hPS₁ hPSc₁ hxPS₁F' hyPS₁F' xQR₁ yQR₁ hQR₁ hQRc₁
+      aP₁ aQ₁ haP₁ haQ₁
+      xS₃ yS₃ hS₃ xR₃ yR₃ hR₃ xPS₃ yPS₃ hPS₃ xQR₃ yQR₃ hQR₃ aP₃ aQ₃
+      hxS₃ hxR₃ hxPS₃ hxQR₃ hPSc₃ hQRc₃ haP₃ haQ₃
+    -- the R-STEP: with the first translate S₁ fixed, moving the second
+    -- translate R₁ → R₃ preserves the cross-ratio (the τ-telescoping:
+    -- τ has explicit divisor (Q⊕R₁)+(⊖R₁)... vs ...(Q⊕R₃)+(⊖R₃), its
+    -- p-th power appears equally through f_Q's change and through
+    -- f_P(div τ) = τ(div f_P) by word reciprocity over F')
+    have hstepR :
+        (AdjoinRoot.evalEval hQR₁.left aP₁ *
+          AdjoinRoot.evalEval hR₁.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+          AdjoinRoot.evalEval hS₁.left aQ₁ *
+          AdjoinRoot.evalEval hPS₁.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁) ^ p)) *
+        (AdjoinRoot.evalEval hQR₃.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+          AdjoinRoot.evalEval hR₃.left aP₁ *
+          AdjoinRoot.evalEval hS₁.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₃) ^ p) *
+          AdjoinRoot.evalEval hPS₁.left aQ₃) =
+        (AdjoinRoot.evalEval hQR₃.left aP₁ *
+          AdjoinRoot.evalEval hR₃.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+          AdjoinRoot.evalEval hS₁.left aQ₃ *
+          AdjoinRoot.evalEval hPS₁.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₃) ^ p)) *
+        (AdjoinRoot.evalEval hQR₁.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+          AdjoinRoot.evalEval hR₁.left aP₁ *
+          AdjoinRoot.evalEval hS₁.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁) ^ p) *
+          AdjoinRoot.evalEval hPS₁.left aQ₁) := by
+      sorry
+    -- the S-STEP: with the second translate R₃ fixed, moving the first
+    -- translate S₁ → S₃ preserves the cross-ratio (mirror argument)
+    have hstepS :
+        (AdjoinRoot.evalEval hQR₃.left aP₁ *
+          AdjoinRoot.evalEval hR₃.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+          AdjoinRoot.evalEval hS₁.left aQ₃ *
+          AdjoinRoot.evalEval hPS₁.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₃) ^ p)) *
+        (AdjoinRoot.evalEval hQR₃.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₃) ^ p) *
+          AdjoinRoot.evalEval hR₃.left aP₃ *
+          AdjoinRoot.evalEval hS₃.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₃) ^ p) *
+          AdjoinRoot.evalEval hPS₃.left aQ₃) =
+        (AdjoinRoot.evalEval hQR₃.left aP₃ *
+          AdjoinRoot.evalEval hR₃.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₃) ^ p) *
+          AdjoinRoot.evalEval hS₃.left aQ₃ *
+          AdjoinRoot.evalEval hPS₃.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₃) ^ p)) *
+        (AdjoinRoot.evalEval hQR₃.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+          AdjoinRoot.evalEval hR₃.left aP₁ *
+          AdjoinRoot.evalEval hS₁.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₃) ^ p) *
+          AdjoinRoot.evalEval hPS₁.left aQ₃) := by
+      sorry
+    -- the hybrid setup's products are nonzero (avoidance bookkeeping)
+    have hAh : (AdjoinRoot.evalEval hQR₃.left
+          ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+        AdjoinRoot.evalEval hR₃.left aP₁ *
+        AdjoinRoot.evalEval hS₁.left
+          ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₃) ^ p) *
+        AdjoinRoot.evalEval hPS₁.left aQ₃) ≠ 0 := by
+      sorry
+    have hBh : (AdjoinRoot.evalEval hQR₃.left aP₁ *
+        AdjoinRoot.evalEval hR₃.left
+          ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+        AdjoinRoot.evalEval hS₁.left aQ₃ *
+        AdjoinRoot.evalEval hPS₁.left
+          ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₃) ^ p)) ≠ 0 := by
+      sorry
+    refine mul_right_cancel₀ (mul_ne_zero hAh hBh) ?_
+    linear_combination
+      ((AdjoinRoot.evalEval hQR₃.left
+          ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₃) ^ p) *
+        AdjoinRoot.evalEval hR₃.left aP₃ *
+        AdjoinRoot.evalEval hS₃.left
+          ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₃) ^ p) *
+        AdjoinRoot.evalEval hPS₃.left aQ₃) *
+       (AdjoinRoot.evalEval hQR₃.left aP₁ *
+        AdjoinRoot.evalEval hR₃.left
+          ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+        AdjoinRoot.evalEval hS₁.left aQ₃ *
+        AdjoinRoot.evalEval hPS₁.left
+          ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₃) ^ p))) * hstepR +
+      ((AdjoinRoot.evalEval hQR₁.left
+          ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+        AdjoinRoot.evalEval hR₁.left aP₁ *
+        AdjoinRoot.evalEval hS₁.left
+          ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁) ^ p) *
+        AdjoinRoot.evalEval hPS₁.left aQ₁) *
+       (AdjoinRoot.evalEval hQR₃.left aP₁ *
+        AdjoinRoot.evalEval hR₃.left
+          ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+        AdjoinRoot.evalEval hS₁.left aQ₃ *
+        AdjoinRoot.evalEval hPS₁.left
+          ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₃) ^ p))) * hstepS
   -- uniqueness of the Weil value across admissible setups: THE Weil
   -- reciprocity argument — both setups' cross-ratios reduce through
   -- hgenfac (F-rational words) + hbaldiv (divisor bookkeeping) + hevid
