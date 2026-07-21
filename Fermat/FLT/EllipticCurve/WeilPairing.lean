@@ -30,6 +30,7 @@ public import Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 public import Mathlib.LinearAlgebra.Determinant
 public import Mathlib.RingTheory.Valuation.Integral
 public import Mathlib.NumberTheory.Cyclotomic.CyclotomicCharacter
+public import Mathlib.RingTheory.Ideal.Norm.RelNorm
 
 @[expose] public section
 
@@ -4950,6 +4951,145 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       (hXYmax x₂ y₂ hE₂).ne_top (Ideal.le_of_dvd hIdvd)
     obtain ⟨hx, hy⟩ := hXYinj P.1 P.2 x₂ y₂ (hDeq P hPD) hPeq
     exact hQD (by rw [← hx, ← hy]; exact hPD)
+  haveI : Module.Free (Polynomial (AlgebraicClosure (ZMod q))) Wb.toAffine.CoordinateRing :=
+    Module.Free.of_basis (WeierstrassCurve.Affine.CoordinateRing.basis
+      Wb.toAffine)
+  haveI : Module.Finite (Polynomial (AlgebraicClosure (ZMod q))) Wb.toAffine.CoordinateRing :=
+    Module.Finite.of_basis (WeierstrassCurve.Affine.CoordinateRing.basis
+      Wb.toAffine)
+  -- norms of ideal members stay in the ideal's contraction
+  have hNle : ∀ I : Ideal Wb.toAffine.CoordinateRing,
+      Ideal.relNorm (Polynomial (AlgebraicClosure (ZMod q))) I ≤
+        I.comap (algebraMap (Polynomial (AlgebraicClosure (ZMod q)))
+          Wb.toAffine.CoordinateRing) := by
+    intro I
+    rw [Ideal.relNorm_apply, Ideal.span_le]
+    rintro n ⟨z, hzI, rfl⟩
+    rw [SetLike.mem_coe, Ideal.mem_comap]
+    obtain ⟨a, b, rfl⟩ :=
+      WeierstrassCurve.Affine.CoordinateRing.exists_smul_basis_eq
+        (W' := Wb.toAffine) z
+    rw [show Algebra.intNorm (Polynomial (AlgebraicClosure (ZMod q)))
+        Wb.toAffine.CoordinateRing = Algebra.norm (Polynomial (AlgebraicClosure (ZMod q))) from
+      Algebra.intNorm_eq_norm (Polynomial (AlgebraicClosure (ZMod q)))
+        Wb.toAffine.CoordinateRing]
+    rw [AdjoinRoot.algebraMap_eq,
+      WeierstrassCurve.Affine.CoordinateRing.coe_norm_smul_basis]
+    rw [map_mul]
+    refine I.mul_mem_right _ ?_
+    rw [show (AdjoinRoot.mk Wb.toAffine.polynomial)
+        (Polynomial.C a + Polynomial.C b * Polynomial.X) =
+      a • (1 : Wb.toAffine.CoordinateRing) +
+        b • WeierstrassCurve.Affine.CoordinateRing.mk Wb.toAffine
+          Polynomial.X from by
+      rw [map_add, map_mul, Algebra.smul_def, Algebra.smul_def,
+        AdjoinRoot.algebraMap_eq, mul_one]
+      rfl]
+    exact hzI
+  -- THE NORM OF A POINT IDEAL IS ITS VERTICAL: relNorm of `XYIdeal x₀ (C y₀)`
+  -- is `span {X - C x₀}` -- the ideal-theoretic pushforward of a point to
+  -- its abscissa, with inertia degree one pinned by the conjugate product
+  have hnormpt : ∀ (x₀ y₀ : (AlgebraicClosure (ZMod q))), Wb.toAffine.Nonsingular x₀ y₀ →
+      Ideal.relNorm (Polynomial (AlgebraicClosure (ZMod q)))
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₀
+          (Polynomial.C y₀)) =
+      Ideal.span {Polynomial.X - Polynomial.C x₀} := by
+    intro x₀ y₀ hns
+    have hE := hns.left
+    have hEneg : Wb.toAffine.Equation x₀ (Wb.toAffine.negY x₀ y₀) :=
+      (WeierstrassCurve.Affine.equation_neg x₀ y₀).mpr hE
+    haveI hpmax : (Ideal.span {Polynomial.X - Polynomial.C x₀} :
+        Ideal (Polynomial (AlgebraicClosure (ZMod q)))).IsMaximal :=
+      PrincipalIdealRing.isMaximal_of_irreducible
+        (Polynomial.irreducible_X_sub_C x₀)
+    -- the contraction of either fiber point ideal is the vertical
+    have hcomapEq : ∀ y₁ : (AlgebraicClosure (ZMod q)), Wb.toAffine.Equation x₀ y₁ →
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₀
+          (Polynomial.C y₁)).comap (algebraMap (Polynomial (AlgebraicClosure (ZMod q)))
+            Wb.toAffine.CoordinateRing) =
+        Ideal.span {Polynomial.X - Polynomial.C x₀} := by
+      intro y₁ hE₁
+      haveI : ((WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₀
+          (Polynomial.C y₁)).comap (algebraMap (Polynomial (AlgebraicClosure (ZMod q)))
+            Wb.toAffine.CoordinateRing)).IsPrime :=
+        Ideal.IsPrime.comap _ (hK := (hXYmax x₀ y₁ hE₁).isPrime)
+      refine (hpmax.eq_of_le ‹Ideal.IsPrime _›.ne_top ?_).symm
+      rw [Ideal.span_le, Set.singleton_subset_iff, SetLike.mem_coe,
+        Ideal.mem_comap]
+      exact Ideal.subset_span (Set.mem_insert _ _)
+    haveI hlies : (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+        x₀ (Polynomial.C y₀)).LiesOver
+        (Ideal.span {Polynomial.X - Polynomial.C x₀}) :=
+      ⟨(hcomapEq y₀ hE).symm⟩
+    haveI hliesneg : (WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+        Wb.toAffine x₀ (Polynomial.C (Wb.toAffine.negY x₀ y₀))).LiesOver
+        (Ideal.span {Polynomial.X - Polynomial.C x₀}) :=
+      ⟨(hcomapEq _ hEneg).symm⟩
+    obtain ⟨t, ht⟩ := Ideal.exists_relNorm_eq_pow_of_isPrime
+      (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₀
+        (Polynomial.C (Wb.toAffine.negY x₀ y₀)))
+      (Ideal.span {Polynomial.X - Polynomial.C x₀})
+    obtain ⟨u, hu⟩ := Ideal.exists_relNorm_eq_pow_of_isPrime
+      (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₀
+        (Polynomial.C y₀))
+      (Ideal.span {Polynomial.X - Polynomial.C x₀})
+    -- the conjugate product is the extended vertical, of norm the square
+    have hXid : Ideal.relNorm (Polynomial (AlgebraicClosure (ZMod q)))
+        (WeierstrassCurve.Affine.CoordinateRing.XIdeal Wb.toAffine x₀) =
+        Ideal.span {(Polynomial.X - Polynomial.C x₀) ^ 2} := by
+      rw [show WeierstrassCurve.Affine.CoordinateRing.XIdeal Wb.toAffine x₀ =
+        Ideal.span {algebraMap (Polynomial (AlgebraicClosure (ZMod q)))
+          Wb.toAffine.CoordinateRing (Polynomial.X - Polynomial.C x₀)}
+        from rfl]
+      rw [Ideal.relNorm_singleton]
+      rw [show Algebra.intNorm (Polynomial (AlgebraicClosure (ZMod q)))
+          Wb.toAffine.CoordinateRing = Algebra.norm (Polynomial (AlgebraicClosure (ZMod q))) from
+        Algebra.intNorm_eq_norm (Polynomial (AlgebraicClosure (ZMod q)))
+        Wb.toAffine.CoordinateRing]
+      rw [Algebra.norm_algebraMap]
+      rw [show Module.finrank (Polynomial (AlgebraicClosure (ZMod q)))
+          Wb.toAffine.CoordinateRing = 2 from by
+        rw [Module.finrank_eq_card_basis
+          (WeierstrassCurve.Affine.CoordinateRing.basis Wb.toAffine)]
+        simp]
+    have hmul : Ideal.relNorm (Polynomial (AlgebraicClosure (ZMod q)))
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₀
+          (Polynomial.C (Wb.toAffine.negY x₀ y₀))) *
+        Ideal.relNorm (Polynomial (AlgebraicClosure (ZMod q)))
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₀
+          (Polynomial.C y₀)) =
+        Ideal.span {(Polynomial.X - Polynomial.C x₀) ^ 2} := by
+      rw [← hXid, ← map_mul,
+        WeierstrassCurve.Affine.CoordinateRing.XYIdeal_neg_mul hns]
+    rw [ht, hu, ← pow_add, Ideal.span_singleton_pow] at hmul
+    -- compare exponents through degrees of associated generators
+    have hassoc := Ideal.span_singleton_eq_span_singleton.mp hmul
+    have hXc0 : (Polynomial.X - Polynomial.C x₀ : Polynomial (AlgebraicClosure (ZMod q))) ≠ 0 :=
+      Polynomial.X_sub_C_ne_zero x₀
+    have hd1 : t + u ≤ 2 := by
+      have := Polynomial.natDegree_le_of_dvd hassoc.dvd (pow_ne_zero _ hXc0)
+      simpa [Polynomial.natDegree_pow] using this
+    have hd2 : 2 ≤ t + u := by
+      have := Polynomial.natDegree_le_of_dvd hassoc.symm.dvd
+        (pow_ne_zero _ hXc0)
+      simpa [Polynomial.natDegree_pow] using this
+    -- neither exponent is zero: the relNorm sits inside the proper vertical
+    have hu1 : u ≠ 0 := by
+      intro h0
+      rw [h0, pow_zero, Ideal.one_eq_top] at hu
+      have := hNle (WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+        Wb.toAffine x₀ (Polynomial.C y₀))
+      rw [hu, hcomapEq y₀ hE, top_le_iff] at this
+      exact hpmax.ne_top this
+    have ht1 : t ≠ 0 := by
+      intro h0
+      rw [h0, pow_zero, Ideal.one_eq_top] at ht
+      have := hNle (WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+        Wb.toAffine x₀ (Polynomial.C (Wb.toAffine.negY x₀ y₀)))
+      rw [ht, hcomapEq _ hEneg, top_le_iff] at this
+      exact hpmax.ne_top this
+    have : u = 1 := by omega
+    rw [hu, this, pow_one]
   sorry
 
 set_option warn.sorry false in
