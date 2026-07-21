@@ -8776,7 +8776,9 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                       Multiset.bind_singleton, Multiset.bind_zero,
                       Multiset.zero_bind, Multiset.singleton_bind,
                       Multiset.cons_bind, Multiset.card_cons,
-                      Multiset.card_singleton, Multiset.prod_map_mul,
+                      Multiset.card_singleton, Multiset.card_zero,
+                      Multiset.prod_map_mul, Multiset.map_map,
+                      Function.comp_apply, Nat.mul_zero, pow_zero,
                       mul_one, one_mul]
                       at hwwN hwwNM hwwD hwwDM hcvtN hcvtD hpjA hpjB hpjM
                     rw [Even.neg_one_pow ⟨Multiset.card Ln, by ring⟩,
