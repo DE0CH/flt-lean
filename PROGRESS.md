@@ -116,25 +116,35 @@ entries file). To add/remove/annotate a node, edit
                                               discrete logarithm: primitive root via
                                               HasEnoughRootsOfUnity, zmodEquivZPowers, Frobenius
                                               naturality becomes q-scaling since frobAlgHom is x^q).
-                                                - ❌🟪 `WeilPairing.exists_weilPairing_mu` — the mu_p-valued Weil pairing over F_q (sorry node,
-                                                  stated 2026-07-21): multiplicatively bilinear,
-                                                  alternating, nondegenerate pairing on Wbar[p](F_q-
-                                                  bar) valued in p-th roots of unity, natural for
-                                                  the q-power Frobenius (Silverman AEC III.8.1 +
-                                                  III.8.1(e)). The whole Weil-pairing/determinant
-                                                  tower (det_frobeniusTorsionEnd ->
-                                                  det_galoisRep_globalFrob ->
-                                                  det_galoisRep_eq_cyclotomic -> exists_weilPairing
-                                                  -> FreyConditions) now rests on this single node.
-                                                  Construction plan: mathlib's coordinate-
-                                                  ring/class-group machinery (Affine.CoordinateRing,
-                                                  Point.toClass into ClassGroup) gives divisors of
-                                                  degree-zero; the pairing via functions with
-                                                  divisor p(P) - p(O) and Weil reciprocity (the hard
-                                                  classical lemma), OR via the alternative Miller-
-                                                  function normalization; reference: Silverman AEC
-                                                  III.8, Books/silverman1994ataec.txt for the ATAEC
-                                                  side.
+                                                - ❌🟪 `WeilPairing.exists_weilPairing_mu` — the mu_p-valued Weil pairing over F_q (sorry node;
+                                                  N1 in progress 2026-07-21): construction plan
+                                                  recorded in-proof (divisor-theoretic via the
+                                                  Dedekind coordinate ring, class-group divisors
+                                                  through mathlib's injective Point.toClass, Miller
+                                                  generators, evaluation-ratio pairing, Weil
+                                                  reciprocity). N1 =
+                                                  IsDedekindDomain(CoordinateRing) framed by Krull-
+                                                  Akizuki (IsIntegralClosure.isDedekindDomain):
+                                                  PROVEN so far: the conjugation AlgHom conj (root
+                                                  to -A-root, via liftAlgHom with the element-level
+                                                  root relation hrel2), involution + injectivity,
+                                                  power-basis decomposition hdecomp, the norm hnorm
+                                                  (z * conj z = of(p^2 - pqA - q^2 G)), FaithfulSMul
+                                                  (i), and FiniteDimensional k(X) Frac(C) (ii, span
+                                                  of {1, root} by conjugate-norm denominator
+                                                  clearing). REMAINING: (iii) Algebra.IsSeparable
+                                                  k(X) Frac(C) -- quadratic separable; char 2 needs
+                                                  A != 0 from Delta != 0 (if a1 = a3 = 0 in char 2
+                                                  then all b-invariants vanish and Delta = 0); (iv)
+                                                  IsIntegralClosure (normality): decompose an
+                                                  integral x = s + t*root-image over the L-basis,
+                                                  trace/norm land in k[X] (integrally closed),
+                                                  derive t^2 * D in k[X] with D = A^2 + 4G the
+                                                  b2-cubic, D squarefree from disc(D) = 16 Delta
+                                                  (Cubic.discr + squarefree iff nodup roots over the
+                                                  algebraically closed base), valuation argument;
+                                                  char-2 branch via u = tA integral-quadratic. Then
+                                                  the outer construction (class-group pairing).
                                     - ✅· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density,
                                       topological form — now (2026-07-16) by the profinite limit
                                       argument (: cosets of fixing subgroups of finite subextensions
@@ -201,22 +211,31 @@ entries file). To add/remove/annotate a node, edit
                                       primitive root via HasEnoughRootsOfUnity, zmodEquivZPowers,
                                       Frobenius naturality becomes q-scaling since frobAlgHom is
                                       x^q).
-                                        - ❌🟪 `WeilPairing.exists_weilPairing_mu` — the mu_p-valued Weil pairing over F_q (sorry node, stated
-                                          2026-07-21): multiplicatively bilinear, alternating,
-                                          nondegenerate pairing on Wbar[p](F_q-bar) valued in p-th
-                                          roots of unity, natural for the q-power Frobenius
-                                          (Silverman AEC III.8.1 + III.8.1(e)). The whole Weil-
-                                          pairing/determinant tower (det_frobeniusTorsionEnd ->
-                                          det_galoisRep_globalFrob -> det_galoisRep_eq_cyclotomic ->
-                                          exists_weilPairing -> FreyConditions) now rests on this
-                                          single node. Construction plan: mathlib's coordinate-
-                                          ring/class-group machinery (Affine.CoordinateRing,
-                                          Point.toClass into ClassGroup) gives divisors of degree-
-                                          zero; the pairing via functions with divisor p(P) - p(O)
-                                          and Weil reciprocity (the hard classical lemma), OR via
-                                          the alternative Miller-function normalization; reference:
-                                          Silverman AEC III.8, Books/silverman1994ataec.txt for the
-                                          ATAEC side.
+                                        - ❌🟪 `WeilPairing.exists_weilPairing_mu` — the mu_p-valued Weil pairing over F_q (sorry node; N1 in
+                                          progress 2026-07-21): construction plan recorded in-proof
+                                          (divisor-theoretic via the Dedekind coordinate ring,
+                                          class-group divisors through mathlib's injective
+                                          Point.toClass, Miller generators, evaluation-ratio
+                                          pairing, Weil reciprocity). N1 =
+                                          IsDedekindDomain(CoordinateRing) framed by Krull-Akizuki
+                                          (IsIntegralClosure.isDedekindDomain): PROVEN so far: the
+                                          conjugation AlgHom conj (root to -A-root, via liftAlgHom
+                                          with the element-level root relation hrel2), involution +
+                                          injectivity, power-basis decomposition hdecomp, the norm
+                                          hnorm (z * conj z = of(p^2 - pqA - q^2 G)), FaithfulSMul
+                                          (i), and FiniteDimensional k(X) Frac(C) (ii, span of {1,
+                                          root} by conjugate-norm denominator clearing). REMAINING:
+                                          (iii) Algebra.IsSeparable k(X) Frac(C) -- quadratic
+                                          separable; char 2 needs A != 0 from Delta != 0 (if a1 = a3
+                                          = 0 in char 2 then all b-invariants vanish and Delta = 0);
+                                          (iv) IsIntegralClosure (normality): decompose an integral
+                                          x = s + t*root-image over the L-basis, trace/norm land in
+                                          k[X] (integrally closed), derive t^2 * D in k[X] with D =
+                                          A^2 + 4G the b2-cubic, D squarefree from disc(D) = 16
+                                          Delta (Cubic.discr + squarefree iff nodup roots over the
+                                          algebraically closed base), valuation argument; char-2
+                                          branch via u = tA integral-quadratic. Then the outer
+                                          construction (class-group pairing).
                             - ✅· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density, topological form
                               — now (2026-07-16) by the profinite limit argument (: cosets of fixing
                               subgroups of finite subextensions are a neighborhood basis,
