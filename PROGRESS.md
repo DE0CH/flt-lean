@@ -270,18 +270,29 @@ entries file). To add/remove/annotate a node, edit
                                                   principal when the points sum to p-torsion); value
                                                   z := Units.mk0 (B/A) with the defining equation by
                                                   div_mul_cancel0; representative matching by
-                                                  hPP/hQQ + subst. FRONTIER (all sorries against
-                                                  explicit statements): hsubfin (finite subfield
-                                                  containing a finite set), hfib2 (two ordinates per
-                                                  fiber), hmill2 (Miller principality), hPSne/hQRne
-                                                  (sums affine), hPStor/hQRtor (torsion of the
-                                                  summed pairs), hA/hB (eight-evaluation
-                                                  nonvanishing by abscissa avoidance),
-                                                  hxSF'/hySF'/hxPSF'/hyPSF' (memberships), hPP/hQQ
-                                                  (constructor injectivity); then huniqval
-                                                  (uniqueness = Weil reciprocity) and hleg1-hleg6
-                                                  (the six pairing legs). Superseded: FRONTIER (7
-                                                  named sorried steps) description. Superseded:
+                                                  hPP/hQQ + subst. hexval ALL BUT ONE RESOLVED
+                                                  (2026-07-21): hsubfin (adjoin +
+                                                  finiteDimensional_adjoin +
+                                                  Module.finite_of_finite), hfib2
+                                                  (Vieta/linear_combination on the fiber quadratic),
+                                                  hPSne/hQRne, hPStor/hQRtor, memberships, hPP/hQQ,
+                                                  hxQRne (the bad-point argument: hfib2 + hptfun
+                                                  point transport + hxRof via neg_add_cancel_left +
+                                                  definitional finset matching), hA/hB (replicate
+                                                  divisors hDP/hDQ, four hoffdiv instances, vertical
+                                                  evaluations via map_pow + hevvert, mul_ne_zero
+                                                  assembly), and hmill2 reduced to hgen2 via the
+                                                  negated translate (neg_some + negY_negY +
+                                                  sub_eq_add_neg). REMAINING SORRIES: hextract
+                                                  inside hmill2 (fractional-ideal extraction:
+                                                  (XYIdeal'1 * (XYIdeal'2neg)^-1)^p principal from
+                                                  hgen2, XYIdeal_neg_mul turns the inverse into
+                                                  XYIdeal'2 over the principal vertical, so the
+                                                  coeIdeal of XYIdeal1^p * XYIdeal2^p is principal;
+                                                  descend the generator via mem_coeIdeal + coeIdeal
+                                                  injectivity), then huniqval (uniqueness = Weil
+                                                  reciprocity) and hleg1-hleg6. Superseded: FRONTIER
+                                                  (7 named sorried steps) description. Superseded:
                                                   NEXT: line-vs-word (hlw, sign (-1)^lines) then
                                                   word-vs-word (hww), then the balanced reciprocity
                                                   for functions via hgenfac and the pairing.
@@ -540,24 +551,33 @@ entries file). To add/remove/annotate a node, edit
                                           XYIdeal1^p * XYIdeal2^p principal when the points sum to
                                           p-torsion); value z := Units.mk0 (B/A) with the defining
                                           equation by div_mul_cancel0; representative matching by
-                                          hPP/hQQ + subst. FRONTIER (all sorries against explicit
-                                          statements): hsubfin (finite subfield containing a finite
-                                          set), hfib2 (two ordinates per fiber), hmill2 (Miller
-                                          principality), hPSne/hQRne (sums affine), hPStor/hQRtor
-                                          (torsion of the summed pairs), hA/hB (eight-evaluation
-                                          nonvanishing by abscissa avoidance),
-                                          hxSF'/hySF'/hxPSF'/hyPSF' (memberships), hPP/hQQ
-                                          (constructor injectivity); then huniqval (uniqueness =
-                                          Weil reciprocity) and hleg1-hleg6 (the six pairing legs).
-                                          Superseded: FRONTIER (7 named sorried steps) description.
-                                          Superseded: NEXT: line-vs-word (hlw, sign (-1)^lines) then
-                                          word-vs-word (hww), then the balanced reciprocity for
-                                          functions via hgenfac and the pairing. Remaining assembly:
-                                          the balanced cross-product reciprocity for arbitrary
-                                          disjoint pairs from the generator cases, then the pairing
-                                          and its six legs. Superseded plan text: REMAINING for
-                                          reciprocity: the class-group descent hgenfac (every
-                                          function with point-divisor factorization equals a
+                                          hPP/hQQ + subst. hexval ALL BUT ONE RESOLVED (2026-07-21):
+                                          hsubfin (adjoin + finiteDimensional_adjoin +
+                                          Module.finite_of_finite), hfib2 (Vieta/linear_combination
+                                          on the fiber quadratic), hPSne/hQRne, hPStor/hQRtor,
+                                          memberships, hPP/hQQ, hxQRne (the bad-point argument:
+                                          hfib2 + hptfun point transport + hxRof via
+                                          neg_add_cancel_left + definitional finset matching), hA/hB
+                                          (replicate divisors hDP/hDQ, four hoffdiv instances,
+                                          vertical evaluations via map_pow + hevvert, mul_ne_zero
+                                          assembly), and hmill2 reduced to hgen2 via the negated
+                                          translate (neg_some + negY_negY + sub_eq_add_neg).
+                                          REMAINING SORRIES: hextract inside hmill2 (fractional-
+                                          ideal extraction: (XYIdeal'1 * (XYIdeal'2neg)^-1)^p
+                                          principal from hgen2, XYIdeal_neg_mul turns the inverse
+                                          into XYIdeal'2 over the principal vertical, so the
+                                          coeIdeal of XYIdeal1^p * XYIdeal2^p is principal; descend
+                                          the generator via mem_coeIdeal + coeIdeal injectivity),
+                                          then huniqval (uniqueness = Weil reciprocity) and
+                                          hleg1-hleg6. Superseded: FRONTIER (7 named sorried steps)
+                                          description. Superseded: NEXT: line-vs-word (hlw, sign
+                                          (-1)^lines) then word-vs-word (hww), then the balanced
+                                          reciprocity for functions via hgenfac and the pairing.
+                                          Remaining assembly: the balanced cross-product reciprocity
+                                          for arbitrary disjoint pairs from the generator cases,
+                                          then the pairing and its six legs. Superseded plan text:
+                                          REMAINING for reciprocity: the class-group descent hgenfac
+                                          (every function with point-divisor factorization equals a
                                           constant times a quotient of products of line/vertical
                                           elements, by strong induction on divisor size through
                                           hline + XYIdeal_neg_mul + toClass-nontriviality) and the

@@ -6767,7 +6767,41 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
             x₁ (Polynomial.C y₁)) ^ p *
           (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
             x₂ (Polynomial.C y₂)) ^ p := by
-    sorry
+    intro x₁ y₁ x₂ y₂ h₁ h₂ htor
+    have h₂neg : Wb.toAffine.Nonsingular x₂ (Wb.toAffine.negY x₂ y₂) :=
+      (WeierstrassCurve.Affine.nonsingular_neg x₂ y₂).mpr h₂
+    have htrans : ∀ (y y' : (AlgebraicClosure (ZMod q)))
+        (h : Wb.toAffine.Nonsingular x₂ y)
+        (h' : Wb.toAffine.Nonsingular x₂ y'), y = y' →
+        (WeierstrassCurve.Affine.Point.some x₂ y h : Wb.toAffine.Point) =
+          WeierstrassCurve.Affine.Point.some x₂ y' h' := by
+      intro y y' h h' hy
+      subst hy
+      rfl
+    have hnegneg : (-(WeierstrassCurve.Affine.Point.some x₂
+        (Wb.toAffine.negY x₂ y₂) h₂neg) : Wb.toAffine.Point) =
+        WeierstrassCurve.Affine.Point.some x₂ y₂ h₂ :=
+      (WeierstrassCurve.Affine.Point.neg_some h₂neg).trans
+        (htrans _ _ _ _ (WeierstrassCurve.Affine.negY_negY x₂ y₂))
+    have hsub : (p : ℤ) •
+        (WeierstrassCurve.Affine.Point.some x₁ y₁ h₁ -
+          WeierstrassCurve.Affine.Point.some x₂
+            (Wb.toAffine.negY x₂ y₂) h₂neg) = 0 := by
+      rw [sub_eq_add_neg, hnegneg]
+      exact htor
+    have hprin := hgen2 x₁ y₁ x₂ (Wb.toAffine.negY x₂ y₂) h₁ h₂neg hsub
+    -- fractional-ideal extraction: (XYIdeal'₁ · (XYIdeal'₂neg)⁻¹)^p
+    -- principal, XYIdeal'₂neg · XYIdeal'₂ = the principal vertical span,
+    -- so XYIdeal₁^p · XYIdeal₂^p is principal as an integral ideal, and
+    -- its generator descends to the coordinate ring
+    have hextract : ∃ a : Wb.toAffine.CoordinateRing,
+        Ideal.span {a} =
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            x₁ (Polynomial.C y₁)) ^ p *
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            x₂ (Polynomial.C y₂)) ^ p := by
+      sorry
+    exact hextract
   -- abscissa of a point (`0` for the point at infinity)
   let xOf : Wb.toAffine.Point → (AlgebraicClosure (ZMod q)) := fun T =>
     match T with
