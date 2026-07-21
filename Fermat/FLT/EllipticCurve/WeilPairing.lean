@@ -5090,6 +5090,28 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       exact hpmax.ne_top this
     have : u = 1 := by omega
     rw [hu, this, pow_one]
+  -- the norm of a function factors over the verticals of its divisor
+  have hNfac : ∀ (f : Wb.toAffine.CoordinateRing)
+      (D : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))),
+      (∀ P ∈ D, Wb.toAffine.Equation P.1 P.2) →
+      Ideal.span {f} =
+        (D.map (fun P => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          Wb.toAffine P.1 (Polynomial.C P.2))).prod →
+      Ideal.span {Algebra.norm (Polynomial (AlgebraicClosure (ZMod q))) f} =
+        (D.map (fun P => Ideal.span
+          {Polynomial.X - Polynomial.C P.1})).prod := by
+    intro f D hDeq hDfac
+    have hrel := congrArg (Ideal.relNorm (Polynomial (AlgebraicClosure (ZMod q)))) hDfac
+    rw [Ideal.relNorm_singleton, map_multiset_prod, Multiset.map_map] at hrel
+    rw [show Algebra.intNorm (Polynomial (AlgebraicClosure (ZMod q)))
+        Wb.toAffine.CoordinateRing f = Algebra.norm (Polynomial (AlgebraicClosure (ZMod q))) f from
+      congrFun (congrArg DFunLike.coe (Algebra.intNorm_eq_norm
+        (Polynomial (AlgebraicClosure (ZMod q))) Wb.toAffine.CoordinateRing)) f] at hrel
+    rw [hrel]
+    congr 1
+    refine Multiset.map_congr rfl fun P hP => ?_
+    exact hnormpt P.1 P.2
+      ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp (hDeq P hP))
   sorry
 
 set_option warn.sorry false in
