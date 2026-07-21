@@ -3008,6 +3008,7 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
       rw [frobenius_def, frobenius_def, map_pow]
 
 
+set_option maxHeartbeats 4000000 in
 set_option warn.sorry false in
 /-- **The `μ_p`-valued Weil pairing over a finite field** (sorry node —
 the canonical arithmetic input): on the `p`-torsion of an elliptic
@@ -3416,7 +3417,46 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           simp only [map_mul, map_add, map_pow, map_one, map_ofNat] at hDinvC
           simp only [map_neg, map_mul, map_ofNat]
           linear_combination hDinvC
-      sorry
+      -- the root image is separable, and it generates the field
+      have hryint : IsIntegral (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (algebraMap Wb.toAffine.CoordinateRing
+        (FractionRing Wb.toAffine.CoordinateRing)
+        (AdjoinRoot.root Wb.toAffine.polynomial)) :=
+        Algebra.IsIntegral.isIntegral _
+      have hrysep : IsSeparable (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (algebraMap Wb.toAffine.CoordinateRing
+        (FractionRing Wb.toAffine.CoordinateRing)
+        (AdjoinRoot.root Wb.toAffine.polynomial)) :=
+        hQsep.of_dvd (minpoly.dvd _ _ hrootL)
+      have hadj : IntermediateField.adjoin (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) {((algebraMap Wb.toAffine.CoordinateRing
+        (FractionRing Wb.toAffine.CoordinateRing)
+        (AdjoinRoot.root Wb.toAffine.polynomial)) : (FractionRing Wb.toAffine.CoordinateRing))} = ⊤ := by
+        rw [eq_top_iff]
+        intro ξ _
+        have h1 : Submodule.span (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+            ({1, (algebraMap Wb.toAffine.CoordinateRing
+        (FractionRing Wb.toAffine.CoordinateRing)
+        (AdjoinRoot.root Wb.toAffine.polynomial))} : Set (FractionRing Wb.toAffine.CoordinateRing)) ≤
+            Subalgebra.toSubmodule
+              (IntermediateField.adjoin (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+                {((algebraMap Wb.toAffine.CoordinateRing
+        (FractionRing Wb.toAffine.CoordinateRing)
+        (AdjoinRoot.root Wb.toAffine.polynomial)) : (FractionRing Wb.toAffine.CoordinateRing))}).toSubalgebra := by
+          rw [Submodule.span_le]
+          rintro z hz
+          rcases hz with rfl | hz
+          · exact (IntermediateField.adjoin _ _).one_mem
+          · rw [Set.mem_singleton_iff] at hz
+            subst hz
+            exact IntermediateField.mem_adjoin_simple_self _ _
+        exact h1 (by rw [hspan]; exact Submodule.mem_top)
+      haveI hadjsep : Algebra.IsSeparable (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
+          (IntermediateField.adjoin (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) {((algebraMap Wb.toAffine.CoordinateRing
+        (FractionRing Wb.toAffine.CoordinateRing)
+        (AdjoinRoot.root Wb.toAffine.polynomial)) : (FractionRing Wb.toAffine.CoordinateRing))}) :=
+        (IntermediateField.isSeparable_adjoin_simple_iff_isSeparable
+          _ _).mpr hrysep
+      exact Algebra.IsSeparable.of_algHom _ _
+        ((IntermediateField.equivOfEq hadj.symm).toAlgHom.comp
+          IntermediateField.topEquiv.symm.toAlgHom)
     haveI hic : IsIntegralClosure Wb.toAffine.CoordinateRing
         (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing Wb.toAffine.CoordinateRing) := by
       sorry
