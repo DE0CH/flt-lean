@@ -3459,7 +3459,20 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           IntermediateField.topEquiv.symm.toAlgHom)
     haveI hic : IsIntegralClosure Wb.toAffine.CoordinateRing
         (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing Wb.toAffine.CoordinateRing) := by
-      sorry
+      haveI hfinC : Module.Finite (Polynomial (AlgebraicClosure (ZMod q)))
+          Wb.toAffine.CoordinateRing :=
+        Module.Finite.of_basis
+          (WeierstrassCurve.Affine.CoordinateRing.basis Wb.toAffine)
+      refine ⟨IsFractionRing.injective _ _, fun {x} => ⟨?_, ?_⟩⟩
+      · -- the hard direction: an integral element of the function field
+        -- lies in the coordinate ring (normality)
+        intro hx
+        sorry
+      · rintro ⟨y, rfl⟩
+        exact IsIntegral.map (IsScalarTower.toAlgHom (Polynomial (AlgebraicClosure (ZMod q)))
+          Wb.toAffine.CoordinateRing
+          (FractionRing Wb.toAffine.CoordinateRing))
+          (Algebra.IsIntegral.isIntegral y)
     exact IsIntegralClosure.isDedekindDomain (Polynomial (AlgebraicClosure (ZMod q)))
       (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
       (FractionRing Wb.toAffine.CoordinateRing)
