@@ -3049,36 +3049,35 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
     Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) with hWbdef
   -- the conjugation of the coordinate ring over `k[X]`: the quadratic
   -- `Y² + A·Y − G` has second root `−A − Y`
+  have hPeq0 : Wb.toAffine.polynomial = Polynomial.X ^ 2 +
+      Polynomial.C (Polynomial.C Wb.a₁ * Polynomial.X +
+        Polynomial.C Wb.a₃) * Polynomial.X -
+      Polynomial.C (Polynomial.X ^ 3 +
+        Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
+        Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆) := rfl
+  have hrel2 : (AdjoinRoot.root Wb.toAffine.polynomial) ^ 2 +
+      AdjoinRoot.of Wb.toAffine.polynomial
+        (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) *
+        AdjoinRoot.root Wb.toAffine.polynomial -
+      AdjoinRoot.of Wb.toAffine.polynomial
+        (Polynomial.X ^ 3 + Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
+          Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆) = 0 := by
+    show (AdjoinRoot.mk Wb.toAffine.polynomial Polynomial.X) ^ 2 +
+      AdjoinRoot.mk Wb.toAffine.polynomial
+        (Polynomial.C (Polynomial.C Wb.a₁ * Polynomial.X +
+          Polynomial.C Wb.a₃)) *
+        AdjoinRoot.mk Wb.toAffine.polynomial Polynomial.X -
+      AdjoinRoot.mk Wb.toAffine.polynomial
+        (Polynomial.C (Polynomial.X ^ 3 +
+          Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
+          Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆)) = 0
+    rw [← map_pow, ← map_mul, ← map_add, ← map_sub, ← hPeq0]
+    exact AdjoinRoot.mk_self
   have hconjrel : Wb.toAffine.polynomial.eval₂
       (Algebra.ofId (Polynomial (AlgebraicClosure (ZMod q))) Wb.toAffine.CoordinateRing)
       (- (AdjoinRoot.of Wb.toAffine.polynomial
           (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃)) -
         AdjoinRoot.root Wb.toAffine.polynomial) = 0 := by
-    have hPeq : Wb.toAffine.polynomial = Polynomial.X ^ 2 +
-        Polynomial.C (Polynomial.C Wb.a₁ * Polynomial.X +
-          Polynomial.C Wb.a₃) * Polynomial.X -
-        Polynomial.C (Polynomial.X ^ 3 +
-          Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
-          Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆) := rfl
-    -- the defining relation of the root, in element form
-    have hrel2 : (AdjoinRoot.root Wb.toAffine.polynomial) ^ 2 +
-        AdjoinRoot.of Wb.toAffine.polynomial
-          (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) *
-          AdjoinRoot.root Wb.toAffine.polynomial -
-        AdjoinRoot.of Wb.toAffine.polynomial
-          (Polynomial.X ^ 3 + Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
-            Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆) = 0 := by
-      show (AdjoinRoot.mk Wb.toAffine.polynomial Polynomial.X) ^ 2 +
-        AdjoinRoot.mk Wb.toAffine.polynomial
-          (Polynomial.C (Polynomial.C Wb.a₁ * Polynomial.X +
-            Polynomial.C Wb.a₃)) *
-          AdjoinRoot.mk Wb.toAffine.polynomial Polynomial.X -
-        AdjoinRoot.mk Wb.toAffine.polynomial
-          (Polynomial.C (Polynomial.X ^ 3 +
-            Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
-            Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆)) = 0
-      rw [← map_pow, ← map_mul, ← map_add, ← map_sub, ← hPeq]
-      exact AdjoinRoot.mk_self
     show Polynomial.aeval (- (AdjoinRoot.of Wb.toAffine.polynomial
         (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃)) -
         AdjoinRoot.root Wb.toAffine.polynomial) Wb.toAffine.polynomial = 0
@@ -3091,7 +3090,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           Polynomial.C (Polynomial.X ^ 3 +
             Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
             Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆)) = 0 by
-      rwa [← hPeq] at h
+      rwa [← hPeq0] at h
     simp only [map_add, map_sub, map_mul, map_pow, Polynomial.aeval_X,
       Polynomial.aeval_C, AdjoinRoot.algebraMap_eq]
     simp only [map_add, map_mul, map_pow] at hrel2 ⊢
@@ -3103,6 +3102,53 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       (- (AdjoinRoot.of Wb.toAffine.polynomial
           (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃)) -
         AdjoinRoot.root Wb.toAffine.polynomial) hconjrel with hconjdef
+  -- the conjugation fixes the base and sends the root to the second root
+  have hconj_root : conj (AdjoinRoot.root Wb.toAffine.polynomial) =
+      - (AdjoinRoot.of Wb.toAffine.polynomial
+        (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃)) -
+      AdjoinRoot.root Wb.toAffine.polynomial := by
+    rw [hconjdef]
+    exact AdjoinRoot.lift_root hconjrel
+  have hconj_of : ∀ z : Polynomial (AlgebraicClosure (ZMod q)),
+      conj (AdjoinRoot.of Wb.toAffine.polynomial z) =
+      AdjoinRoot.of Wb.toAffine.polynomial z := fun z =>
+    conj.commutes z
+  -- every element decomposes over the power basis `{1, Y}`
+  have hdecomp : ∀ z : Wb.toAffine.CoordinateRing, ∃ pq :
+      Polynomial (AlgebraicClosure (ZMod q)) × Polynomial (AlgebraicClosure (ZMod q)),
+      z = AdjoinRoot.of Wb.toAffine.polynomial pq.1 +
+        AdjoinRoot.of Wb.toAffine.polynomial pq.2 *
+          AdjoinRoot.root Wb.toAffine.polynomial := by
+    intro z
+    have hsum := (WeierstrassCurve.Affine.CoordinateRing.basis
+      Wb.toAffine).sum_repr z
+    rw [Fin.sum_univ_two] at hsum
+    rw [WeierstrassCurve.Affine.CoordinateRing.basis_apply,
+      WeierstrassCurve.Affine.CoordinateRing.basis_apply,
+      show (AdjoinRoot.powerBasis' (
+        WeierstrassCurve.Affine.monic_polynomial)).gen =
+        AdjoinRoot.root Wb.toAffine.polynomial from rfl] at hsum
+    simp only [Fin.val_zero, Fin.val_one, pow_zero, pow_one,
+      Algebra.smul_def, AdjoinRoot.algebraMap_eq, mul_one] at hsum
+    exact ⟨⟨(WeierstrassCurve.Affine.CoordinateRing.basis
+        Wb.toAffine).repr z 0,
+      (WeierstrassCurve.Affine.CoordinateRing.basis Wb.toAffine).repr z 1⟩,
+      hsum.symm⟩
+  -- the norm `z · conj z` lands in the base
+  have hnorm : ∀ z : Wb.toAffine.CoordinateRing, ∃ n : Polynomial (AlgebraicClosure (ZMod q)),
+      z * conj z = AdjoinRoot.of Wb.toAffine.polynomial n := by
+    intro z
+    obtain ⟨⟨pp, qq⟩, hz⟩ := hdecomp z
+    refine ⟨pp ^ 2 - pp * qq * (Polynomial.C Wb.a₁ * Polynomial.X +
+        Polynomial.C Wb.a₃) - qq ^ 2 * (Polynomial.X ^ 3 +
+        Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
+        Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆), ?_⟩
+    rw [hz]
+    rw [map_add, map_mul, hconj_of, hconj_of, hconj_root]
+    simp only [map_sub, map_pow, map_mul, map_add]
+    simp only [map_add, map_mul, map_pow] at hrel2
+    linear_combination (-(AdjoinRoot.of Wb.toAffine.polynomial qq ^ 2)) *
+      hrel2
   haveI hDD : IsDedekindDomain Wb.toAffine.CoordinateRing := by
     -- Krull–Akizuki frame: the coordinate ring is the integral closure
     -- of `k[X]` (a PID) in the function field, which is a finite
