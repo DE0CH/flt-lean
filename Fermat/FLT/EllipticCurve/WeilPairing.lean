@@ -8585,7 +8585,41 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                   AdjoinRoot.evalEval hS₁neg.left t) ^ p) *
                 (((xS₁ - xR₁) * (xS₁ - xQR₃) *
                   ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) := by
-              sorry
+              -- the junk factors are nonzero: xM avoids F', S₁/PS₁ data in F'
+              have hZ1 : (xS₁ - xM) ≠ 0 :=
+                sub_ne_zero.mpr fun h => hxMF' (h ▸ hxS₁F')
+              have hZ2 : (xPS₁ - xM) ≠ 0 :=
+                sub_ne_zero.mpr fun h => hxMF' (h ▸ hxPS₁F')
+              have hZne : ((xS₁ - xM) * (xS₁ - xM) *
+                  ((xPS₁ - xM) * (xS₁ - xM))) ^ p ≠ 0 :=
+                pow_ne_zero p (mul_ne_zero (mul_ne_zero hZ1 hZ1)
+                  (mul_ne_zero hZ2 hZ1))
+              -- the multiplied-through form, ready for the t-elimination
+              have hword0 :
+                  (AdjoinRoot.evalEval hQR₁.left aP₁ *
+                    AdjoinRoot.evalEval hR₁neg.left aP₁ *
+                    AdjoinRoot.evalEval hR₃.left aP₁ *
+                    AdjoinRoot.evalEval hQR₃neg.left aP₁) *
+                  ((xR₁ - xS₁) ^ p * (xR₁ - xS₁) ^ p *
+                    (xQR₃ - xS₁) ^ p * (xQR₃ - xS₁) ^ p) *
+                  ((AdjoinRoot.evalEval hS₁.left t *
+                    AdjoinRoot.evalEval hS₁neg.left t) ^ p) *
+                  (((xPS₁ - xR₁) * (xPS₁ - xQR₃) *
+                    ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                (((xS₁ - xM) * (xS₁ - xM) * ((xPS₁ - xM) * (xS₁ - xM))) ^ p) =
+                  (AdjoinRoot.evalEval hR₁.left aP₁ *
+                    AdjoinRoot.evalEval hR₁neg.left aP₁ *
+                    AdjoinRoot.evalEval hQR₃.left aP₁ *
+                    AdjoinRoot.evalEval hQR₃neg.left aP₁) *
+                  ((xQR₁ - xS₁) ^ p * (xR₁ - xS₁) ^ p *
+                    (xR₃ - xS₁) ^ p * (xQR₃ - xS₁) ^ p) *
+                  ((AdjoinRoot.evalEval hPS₁.left t *
+                    AdjoinRoot.evalEval hS₁neg.left t) ^ p) *
+                  (((xS₁ - xR₁) * (xS₁ - xQR₃) *
+                    ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                (((xS₁ - xM) * (xS₁ - xM) * ((xPS₁ - xM) * (xS₁ - xM))) ^ p) := by
+                sorry
+              exact mul_right_cancel₀ hZne hword0
             simp only [map_pow, map_mul, hevvert]
             linear_combination hscalar
           exact hstitch
