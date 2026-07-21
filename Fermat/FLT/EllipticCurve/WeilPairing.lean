@@ -8132,6 +8132,14 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           Multiset (AlgebraicClosure (ZMod q)))
         have hwv₉ := hww 0 0 ({xS₁} : Multiset (AlgebraicClosure (ZMod q)))
           ({xR₁, xQR₃} : Multiset (AlgebraicClosure (ZMod q)))
+        -- the divisor-bookkeeping conversions, as product equations
+        -- (types inferred from hbalt/hbalP; normalized at use time)
+        have hcvt := fun φ : ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) → (AlgebraicClosure (ZMod q)) =>
+          congrArg (fun A : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) =>
+            (A.map φ).prod) hbalt
+        have hcvP := fun φ : ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) → (AlgebraicClosure (ZMod q)) =>
+          congrArg (fun A : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) =>
+            (A.map φ).prod) hbalP
         -- THE GRAND WORD-LEVEL ASSEMBLY: evaluate the two word identities
         -- over all eight points, convert word-divisor evaluations through
         -- the hbaldiv bookkeeping, swap with hww, and cancel the balanced

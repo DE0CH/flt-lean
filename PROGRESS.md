@@ -469,14 +469,20 @@ entries file). To add/remove/annotate a node, edit
                                                   thirteen hww instances (the four (Ln/Ld)x(Mn/Md)
                                                   swaps and the vertical-word swaps against {xS1}
                                                   and {xR1,xQR3}, including the vertical-vertical
-                                                  one) are bound in context. REMAINING inside
-                                                  hgrand: step 3 (the hbalt/hbalP multiset
-                                                  conversions as product equations via congrArg +
-                                                  map_add/prod_add/map_replicate/prod_replicate,
-                                                  plus the Dg2/Sp canonical-divisor identifications
-                                                  through hfibpair) and step 5 (the stitching
-                                                  linear_combination combining everything; prune
-                                                  unused hww instances then). REMAINING: hgrand (in
+                                                  one) are bound in context. step 3 DONE as
+                                                  inferred-type bindings: hcvt/hcvP are phi-
+                                                  parametrized congrArg product images of
+                                                  hbalt/hbalP (no giant restatements; normalize with
+                                                  map_add/prod_add/map_replicate/prod_replicate/mul_
+                                                  pow at use time). REMAINING inside hgrand: ONLY
+                                                  step 5, the stitch -- normalize the goal and all
+                                                  bound ingredients (nine hevid points, thirteen hww
+                                                  instances, hcvt/hcvP at the value functions of (Ln
+                                                  ,Vn)/(Ld,Vd)/(Mn,Wn')/(Md,Wd')/{xS1}/{xR1,xQR3},
+                                                  hfibpair identifications) with the canonical
+                                                  multiset-unfolding simp set, then combine via
+                                                  calc/linear_combination; prune unused hww
+                                                  instances after. REMAINING: hgrand (in
                                                   hstepR/hstarinst), then hstepS mirrors the whole
                                                   R-step, and hleg1-hleg6. REMAINING SORRIES in the
                                                   mu-node: hrecgen and hleg1-hleg6 (bilinearity x2,
@@ -911,12 +917,18 @@ entries file). To add/remove/annotate a node, edit
                                           t at S1/-S1/PS1) and thirteen hww instances (the four
                                           (Ln/Ld)x(Mn/Md) swaps and the vertical-word swaps against
                                           {xS1} and {xR1,xQR3}, including the vertical-vertical one)
-                                          are bound in context. REMAINING inside hgrand: step 3 (the
-                                          hbalt/hbalP multiset conversions as product equations via
-                                          congrArg + map_add/prod_add/map_replicate/prod_replicate,
-                                          plus the Dg2/Sp canonical-divisor identifications through
-                                          hfibpair) and step 5 (the stitching linear_combination
-                                          combining everything; prune unused hww instances then).
+                                          are bound in context. step 3 DONE as inferred-type
+                                          bindings: hcvt/hcvP are phi-parametrized congrArg product
+                                          images of hbalt/hbalP (no giant restatements; normalize
+                                          with map_add/prod_add/map_replicate/prod_replicate/mul_pow
+                                          at use time). REMAINING inside hgrand: ONLY step 5, the
+                                          stitch -- normalize the goal and all bound ingredients
+                                          (nine hevid points, thirteen hww instances, hcvt/hcvP at
+                                          the value functions of
+                                          (Ln,Vn)/(Ld,Vd)/(Mn,Wn')/(Md,Wd')/{xS1}/{xR1,xQR3},
+                                          hfibpair identifications) with the canonical multiset-
+                                          unfolding simp set, then combine via
+                                          calc/linear_combination; prune unused hww instances after.
                                           REMAINING: hgrand (in hstepR/hstarinst), then hstepS
                                           mirrors the whole R-step, and hleg1-hleg6. REMAINING
                                           SORRIES in the mu-node: hrecgen and hleg1-hleg6
