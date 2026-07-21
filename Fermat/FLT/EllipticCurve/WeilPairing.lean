@@ -7774,7 +7774,114 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           AdjoinRoot.evalEval hS₁.left
             ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁) ^ p) *
           AdjoinRoot.evalEval hPS₁.left aQ₁) := by
-      sorry
+      -- the σ-companion points
+      have hR₁neg : Wb.toAffine.Nonsingular xR₁ (Wb.toAffine.negY xR₁ yR₁) :=
+        (WeierstrassCurve.Affine.nonsingular_neg xR₁ yR₁).mpr hR₁
+      have hQR₃neg : Wb.toAffine.Nonsingular xQR₃
+          (Wb.toAffine.negY xQR₃ yQR₃) :=
+        (WeierstrassCurve.Affine.nonsingular_neg xQR₃ yQR₃).mpr hQR₃
+      have hS₁neg : Wb.toAffine.Nonsingular xS₁ (Wb.toAffine.negY xS₁ yS₁) :=
+        (WeierstrassCurve.Affine.nonsingular_neg xS₁ yS₁).mpr hS₁
+      -- the zero-sum comparison element: (Q⊕R₁) ⊖ R₁ ⊕ R₃ ⊖ (Q⊕R₃) = 0,
+      -- so the four-point ideal product is principal (multiplicity one)
+      have htex : ∃ t : Wb.toAffine.CoordinateRing,
+          Ideal.span {t} =
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              xQR₁ (Polynomial.C yQR₁) *
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              xR₁ (Polynomial.C (Wb.toAffine.negY xR₁ yR₁)) *
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              xR₃ (Polynomial.C yR₃) *
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              xQR₃ (Polynomial.C (Wb.toAffine.negY xQR₃ yQR₃)) := by
+        sorry
+      obtain ⟨t, ht⟩ := htex
+      -- the function comparison: aQ₁ and aQ₃ differ by the p-th power of
+      -- the comparison element and verticals, up to a constant
+      have hcomp : ∃ c : (AlgebraicClosure (ZMod q)), c ≠ 0 ∧
+          aQ₁ * (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+              xQR₃) ^ p *
+            (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+              xR₃) ^ p =
+          AdjoinRoot.of Wb.toAffine.polynomial (Polynomial.C c) *
+            (aQ₃ * t ^ p) := by
+        sorry
+      obtain ⟨c, hc0, hceq⟩ := hcomp
+      -- the FULL-DIVISOR reciprocity instance (unconditional): the pair
+      -- (aP₁, XS₁^p) against the pair (t, XR₁·XQR₃), with every σ-point
+      -- included so that support collisions zero both sides symmetrically
+      have hstarinst :
+          (AdjoinRoot.evalEval hQR₁.left aP₁ *
+            AdjoinRoot.evalEval hR₁neg.left aP₁ *
+            AdjoinRoot.evalEval hR₃.left aP₁ *
+            AdjoinRoot.evalEval hQR₃neg.left aP₁) *
+          (AdjoinRoot.evalEval hR₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+            AdjoinRoot.evalEval hR₁neg.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+            AdjoinRoot.evalEval hQR₃.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+            AdjoinRoot.evalEval hQR₃neg.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p)) *
+          ((AdjoinRoot.evalEval hS₁.left t *
+            AdjoinRoot.evalEval hS₁neg.left t) ^ p) *
+          ((AdjoinRoot.evalEval hPS₁.left
+              (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁ *
+                WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQR₃) *
+            AdjoinRoot.evalEval hS₁neg.left
+              (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁ *
+                WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQR₃)) ^ p) =
+          (AdjoinRoot.evalEval hR₁.left aP₁ *
+            AdjoinRoot.evalEval hR₁neg.left aP₁ *
+            AdjoinRoot.evalEval hQR₃.left aP₁ *
+            AdjoinRoot.evalEval hQR₃neg.left aP₁) *
+          (AdjoinRoot.evalEval hQR₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+            AdjoinRoot.evalEval hR₁neg.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+            AdjoinRoot.evalEval hR₃.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+            AdjoinRoot.evalEval hQR₃neg.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p)) *
+          ((AdjoinRoot.evalEval hPS₁.left t *
+            AdjoinRoot.evalEval hS₁neg.left t) ^ p) *
+          ((AdjoinRoot.evalEval hS₁.left
+              (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁ *
+                WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQR₃) *
+            AdjoinRoot.evalEval hS₁neg.left
+              (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁ *
+                WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xQR₃)) ^ p) := by
+        sorry
+      -- the final assembly: substitute hcomp at S₁ and PS₁, strip the
+      -- σ-companion common factors (all nonzero by the avoidances), and
+      -- close with the stripped reciprocity
+      have hfin :
+          (AdjoinRoot.evalEval hQR₁.left aP₁ *
+            AdjoinRoot.evalEval hR₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+            AdjoinRoot.evalEval hS₁.left aQ₁ *
+            AdjoinRoot.evalEval hPS₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁) ^ p)) *
+          (AdjoinRoot.evalEval hQR₃.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+            AdjoinRoot.evalEval hR₃.left aP₁ *
+            AdjoinRoot.evalEval hS₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₃) ^ p) *
+            AdjoinRoot.evalEval hPS₁.left aQ₃) =
+          (AdjoinRoot.evalEval hQR₃.left aP₁ *
+            AdjoinRoot.evalEval hR₃.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+            AdjoinRoot.evalEval hS₁.left aQ₃ *
+            AdjoinRoot.evalEval hPS₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₃) ^ p)) *
+          (AdjoinRoot.evalEval hQR₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
+            AdjoinRoot.evalEval hR₁.left aP₁ *
+            AdjoinRoot.evalEval hS₁.left
+              ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₁) ^ p) *
+            AdjoinRoot.evalEval hPS₁.left aQ₁) := by
+        sorry
+      exact hfin
     -- the S-STEP: with the second translate R₃ fixed, moving the first
     -- translate S₁ → S₃ preserves the cross-ratio (mirror argument)
     have hstepS :
