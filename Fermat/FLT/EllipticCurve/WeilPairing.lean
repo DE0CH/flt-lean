@@ -6599,6 +6599,40 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       (fun T hT => (Multiset.mem_add.mp hT).elim (hDeq T)
         (hworddivE Ld Vd T))
       (hworddivE Ln Vn) hspan2
+  -- point evaluation of an embedded constant
+  have hevconst : ∀ (u : (AlgebraicClosure (ZMod q)))
+      (x y : (AlgebraicClosure (ZMod q))) (hE : Wb.toAffine.Equation x y),
+      AdjoinRoot.evalEval hE (AdjoinRoot.of Wb.toAffine.polynomial
+        (Polynomial.C u)) = u := by
+    intro u x y hE
+    rw [show AdjoinRoot.of Wb.toAffine.polynomial (Polynomial.C u) =
+      AdjoinRoot.mk Wb.toAffine.polynomial
+        (Polynomial.C (Polynomial.C u)) from rfl,
+      AdjoinRoot.evalEval_mk, Polynomial.evalEval_C, Polynomial.eval_C]
+  -- the pointwise evaluation form of the hgenfac identity
+  have hevid : ∀ (f : Wb.toAffine.CoordinateRing)
+      (Ln Ld : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
+      (Vn Vd : Multiset (AlgebraicClosure (ZMod q)))
+      (u : (AlgebraicClosure (ZMod q))),
+      f * (Ld.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => AdjoinRoot.mk Wb.toAffine.polynomial
+        (Polynomial.X - Polynomial.C (Polynomial.C P.1 * Polynomial.X +
+          Polynomial.C P.2)))).prod * (Vd.map (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine)).prod =
+        AdjoinRoot.of Wb.toAffine.polynomial (Polynomial.C u) *
+          (Ln.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => AdjoinRoot.mk Wb.toAffine.polynomial
+        (Polynomial.X - Polynomial.C (Polynomial.C P.1 * Polynomial.X +
+          Polynomial.C P.2)))).prod * (Vn.map (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine)).prod →
+      ∀ (x y : (AlgebraicClosure (ZMod q))) (hE : Wb.toAffine.Equation x y),
+      AdjoinRoot.evalEval hE f *
+        ((Ld.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => y - (ln.1 * x + ln.2))).prod *
+         (Vd.map (fun c => x - c)).prod) =
+      u * ((Ln.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => y - (ln.1 * x + ln.2))).prod *
+         (Vn.map (fun c => x - c)).prod) := by
+    intro f Ln Ld Vn Vd u heq x y hE
+    rw [← hwordeval Ld Vd x y hE, ← hwordeval Ln Vn x y hE,
+      ← hevconst u x y hE, ← map_mul, ← map_mul]
+    exact congrArg (AdjoinRoot.evalEval hE) (by
+      rw [← mul_assoc, ← mul_assoc]
+      exact heq)
   sorry
 
 /-- **The Weil pairing over a finite field, Frobenius-twisted form**
