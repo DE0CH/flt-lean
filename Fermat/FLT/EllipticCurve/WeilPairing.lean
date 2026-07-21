@@ -8895,6 +8895,60 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                         · obtain ⟨cc, hcc, hval⟩ := Multiset.mem_map.mp h0
                           exact hxMF' (sub_eq_zero.mp hval ▸
                             hVnF cc (Multiset.mem_add.mpr (Or.inr hcc)))
+                    have hmfneN : ((Ln.map (fun ab : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => Wb.toAffine.negY xM (yfib xM) - (ab.1 * xM + ab.2))).prod * (Vn.map (fun cv => xM - cv)).prod) *
+                        ((Ln.map (fun ab : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => yfib xM - (ab.1 * xM + ab.2))).prod * (Vn.map (fun cv => xM - cv)).prod) ≠ 0 := by
+                      have hrootmem' : ∀ (l n x y : (AlgebraicClosure (ZMod q))),
+                          Wb.toAffine.Equation x y → y - (l * x + n) = 0 →
+                          x ∈ ((Polynomial.X ^ 3
+                            + Polynomial.C (Wb.toAffine.a₂ - l ^ 2 - Wb.toAffine.a₁ * l)
+                              * Polynomial.X ^ 2
+                            + Polynomial.C (Wb.toAffine.a₄ - 2 * l * n - Wb.toAffine.a₁ * n
+                                - Wb.toAffine.a₃ * l) * Polynomial.X
+                            + Polynomial.C (Wb.toAffine.a₆ - n ^ 2 - Wb.toAffine.a₃ * n))).roots := by
+                        intro l n x y hE hy
+                        have hcne : ((Polynomial.X ^ 3
+                            + Polynomial.C (Wb.toAffine.a₂ - l ^ 2 - Wb.toAffine.a₁ * l)
+                              * Polynomial.X ^ 2
+                            + Polynomial.C (Wb.toAffine.a₄ - 2 * l * n - Wb.toAffine.a₁ * n
+                                - Wb.toAffine.a₃ * l) * Polynomial.X
+                            + Polynomial.C (Wb.toAffine.a₆ - n ^ 2 - Wb.toAffine.a₃ * n))) ≠ 0 := fun h => by
+                          have h3 := congrArg (fun q : Polynomial (AlgebraicClosure (ZMod q)) =>
+                            Polynomial.coeff q 3) h
+                          simp only [Polynomial.coeff_add, Polynomial.coeff_X_pow,
+                            Polynomial.coeff_C_mul, Polynomial.coeff_C,
+                            Polynomial.coeff_X, Polynomial.coeff_zero, reduceIte,
+                            mul_zero, add_zero, zero_add] at h3
+                          norm_num at h3
+                        rw [Polynomial.mem_roots hcne]
+                        have hE' := (WeierstrassCurve.Affine.equation_iff
+                          (W := Wb.toAffine) x y).mp hE
+                        have hyv : y = l * x + n := sub_eq_zero.mp hy
+                        subst hyv
+                        simp only [Polynomial.IsRoot, Polynomial.eval_add,
+                          Polynomial.eval_mul, Polynomial.eval_pow,
+                          Polynomial.eval_C, Polynomial.eval_X]
+                        linear_combination -hE'
+                      have hEneg : Wb.toAffine.Equation xM
+                          (Wb.toAffine.negY xM (yfib xM)) :=
+                        (WeierstrassCurve.Affine.equation_neg
+                          (W' := Wb.toAffine) _ _).mpr (hyfib xM)
+                      refine mul_ne_zero ?_ ?_
+                      · refine mul_ne_zero (Multiset.prod_ne_zero fun h0 => ?_)
+                          (Multiset.prod_ne_zero fun h0 => ?_)
+                        · obtain ⟨ln, hln, hval⟩ := Multiset.mem_map.mp h0
+                          exact hxMF' (hRtF ln (Multiset.mem_add.mpr (Or.inl hln))
+                            xM (hrootmem' ln.1 ln.2 xM (Wb.toAffine.negY xM (yfib xM)) hEneg hval))
+                        · obtain ⟨cc, hcc, hval⟩ := Multiset.mem_map.mp h0
+                          exact hxMF' (sub_eq_zero.mp hval ▸
+                            hVnF cc (Multiset.mem_add.mpr (Or.inl hcc)))
+                      · refine mul_ne_zero (Multiset.prod_ne_zero fun h0 => ?_)
+                          (Multiset.prod_ne_zero fun h0 => ?_)
+                        · obtain ⟨ln, hln, hval⟩ := Multiset.mem_map.mp h0
+                          exact hxMF' (hRtF ln (Multiset.mem_add.mpr (Or.inl hln))
+                            xM (hrootmem' ln.1 ln.2 xM (yfib xM) (hyfib xM) hval))
+                        · obtain ⟨cc, hcc, hval⟩ := Multiset.mem_map.mp h0
+                          exact hxMF' (sub_eq_zero.mp hval ▸
+                            hVnF cc (Multiset.mem_add.mpr (Or.inl hcc)))
                     sorry
                   linear_combination
                     (((xR₁ - xS₁) ^ p * (xR₁ - xS₁) ^ p * (xQR₃ - xS₁) ^ p * (xQR₃ - xS₁) ^ p) * ((c * ((yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) * (yS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁))))) * (c * ((Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) * (Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))))) ^ p * (((xPS₁ - xR₁) * (xPS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) * ((xPS₁ - xM) * (xS₁ - xM)) ^ p * ((Ld.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => yR₁ - (ln.1 * xR₁ + ln.2))).prod * (Vd.map (fun c => xR₁ - c)).prod) * ((Ld.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => yQR₃ - (ln.1 * xQR₃ + ln.2))).prod * (Vd.map (fun c => xQR₃ - c)).prod) * (AdjoinRoot.evalEval hR₁neg.left aP₁ * ((Ld.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => Wb.toAffine.negY xR₁ yR₁ - (ln.1 * xR₁ + ln.2))).prod * (Vd.map (fun c => xR₁ - c)).prod)) * (AdjoinRoot.evalEval hR₃.left aP₁ * ((Ld.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => yR₃ - (ln.1 * xR₃ + ln.2))).prod * (Vd.map (fun c => xR₃ - c)).prod)) * (AdjoinRoot.evalEval hQR₃neg.left aP₁ * ((Ld.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => Wb.toAffine.negY xQR₃ yQR₃ - (ln.1 * xQR₃ + ln.2))).prod * (Vd.map (fun c => xQR₃ - c)).prod))) * heP₁ +
