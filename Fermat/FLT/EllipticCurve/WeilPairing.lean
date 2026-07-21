@@ -8765,6 +8765,24 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                     have hpjB := hcvP (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
                       T.2 - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * T.1 + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))
                     have hpjM := hcvP (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - xM)
+                    -- normalize: expand literal multisets, replicates, and
+                    -- product-of-product maps; kill the even hww signs
+                    simp only [Multiset.map_add, Multiset.prod_add,
+                      Multiset.map_replicate, Multiset.prod_replicate,
+                      Multiset.insert_eq_cons, Multiset.map_cons,
+                      Multiset.map_singleton, Multiset.prod_cons,
+                      Multiset.prod_singleton, Multiset.map_zero,
+                      Multiset.prod_zero, Multiset.bind_cons,
+                      Multiset.bind_singleton, Multiset.bind_zero,
+                      Multiset.zero_bind, Multiset.singleton_bind,
+                      Multiset.cons_bind, Multiset.card_cons,
+                      Multiset.card_singleton, Multiset.prod_map_mul,
+                      mul_one, one_mul]
+                      at hwwN hwwNM hwwD hwwDM hcvtN hcvtD hpjA hpjB hpjM
+                    rw [Even.neg_one_pow ⟨Multiset.card Ln, by ring⟩,
+                      one_mul] at hwwN
+                    rw [Even.neg_one_pow ⟨Multiset.card Ld, by ring⟩,
+                      one_mul] at hwwD
                     sorry
                   linear_combination
                     (((xR₁ - xS₁) ^ p * (xR₁ - xS₁) ^ p * (xQR₃ - xS₁) ^ p * (xQR₃ - xS₁) ^ p) * ((c * ((yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) * (yS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁))))) * (c * ((Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) * (Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))))) ^ p * (((xPS₁ - xR₁) * (xPS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) * ((xPS₁ - xM) * (xS₁ - xM)) ^ p * ((Ld.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => yR₁ - (ln.1 * xR₁ + ln.2))).prod * (Vd.map (fun c => xR₁ - c)).prod) * ((Ld.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => yQR₃ - (ln.1 * xQR₃ + ln.2))).prod * (Vd.map (fun c => xQR₃ - c)).prod) * (AdjoinRoot.evalEval hR₁neg.left aP₁ * ((Ld.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => Wb.toAffine.negY xR₁ yR₁ - (ln.1 * xR₁ + ln.2))).prod * (Vd.map (fun c => xR₁ - c)).prod)) * (AdjoinRoot.evalEval hR₃.left aP₁ * ((Ld.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => yR₃ - (ln.1 * xR₃ + ln.2))).prod * (Vd.map (fun c => xR₃ - c)).prod)) * (AdjoinRoot.evalEval hQR₃neg.left aP₁ * ((Ld.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => Wb.toAffine.negY xQR₃ yQR₃ - (ln.1 * xQR₃ + ln.2))).prod * (Vd.map (fun c => xQR₃ - c)).prod))) * heP₁ +
