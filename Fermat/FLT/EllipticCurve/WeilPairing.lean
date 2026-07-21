@@ -5321,6 +5321,51 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       (Multiset.map_map (fun a => Polynomial.X - Polynomial.C a)
         Prod.fst D).symm] at hprodeq
     rw [← hprodeq, Polynomial.roots_multiset_prod_X_sub_C]
+  -- LINE-LINE WEIL RECIPROCITY in divisor form: the value product of line 1
+  -- over the divisor of line 2 is MINUS that of line 2 over line 1
+  have hrecline : ∀ (l₁ n₁ l₂ n₂ : (AlgebraicClosure (ZMod q))), l₁ ≠ l₂ →
+      ∀ (D₁ D₂ : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))),
+      (∀ P ∈ D₁, Wb.toAffine.Equation P.1 P.2) →
+      (∀ P ∈ D₂, Wb.toAffine.Equation P.1 P.2) →
+      Ideal.span {(AdjoinRoot.mk Wb.toAffine.polynomial (Polynomial.X -
+        Polynomial.C (Polynomial.C l₁ * Polynomial.X + Polynomial.C n₁)))} =
+        (D₁.map (fun P => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          Wb.toAffine P.1 (Polynomial.C P.2))).prod →
+      Ideal.span {(AdjoinRoot.mk Wb.toAffine.polynomial (Polynomial.X -
+        Polynomial.C (Polynomial.C l₂ * Polynomial.X + Polynomial.C n₂)))} =
+        (D₂.map (fun P => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          Wb.toAffine P.1 (Polynomial.C P.2))).prod →
+      (D₂.map (fun P => P.2 - (l₁ * P.1 + n₁))).prod =
+        - (D₁.map (fun P => P.2 - (l₂ * P.1 + n₂))).prod := by
+    intro l₁ n₁ l₂ n₂ hl D₁ D₂ hDeq₁ hDeq₂ hfac₁ hfac₂
+    -- points of each divisor satisfy their line's equation
+    have hy : ∀ (l n : (AlgebraicClosure (ZMod q))) (D : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))),
+        (∀ P ∈ D, Wb.toAffine.Equation P.1 P.2) →
+        Ideal.span {(AdjoinRoot.mk Wb.toAffine.polynomial (Polynomial.X -
+        Polynomial.C (Polynomial.C l * Polynomial.X + Polynomial.C n)))} =
+          (D.map (fun P => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+            Wb.toAffine P.1 (Polynomial.C P.2))).prod →
+        ∀ P ∈ D, P.2 = l * P.1 + n := by
+      intro l n D hDeq hfac P hP
+      have h0 := hondiv _ D hfac P hP (hDeq P hP)
+      rw [hevline l n P.1 P.2 (hDeq P hP)] at h0
+      exact sub_eq_zero.mp h0
+    -- rewrite both value products through the lines and the abscissas
+    have hside : ∀ (la na lb nb : (AlgebraicClosure (ZMod q))) (D : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
+        (hDeq : ∀ P ∈ D, Wb.toAffine.Equation P.1 P.2)
+        (hyD : ∀ P ∈ D, P.2 = lb * P.1 + nb),
+        (D.map (fun P => P.2 - (la * P.1 + na))).prod =
+        ((D.map Prod.fst).map (fun x => (lb - la) * x + (nb - na))).prod := by
+      intro la na lb nb D hDeq hyD
+      rw [Multiset.map_map]
+      refine congrArg Multiset.prod (Multiset.map_congr rfl fun P hP => ?_)
+      rw [hyD P hP]
+      show lb * P.1 + nb - (la * P.1 + na) = (lb - la) * P.1 + (nb - na)
+      ring
+    rw [hside l₁ n₁ l₂ n₂ D₂ hDeq₂ (hy l₂ n₂ D₂ hDeq₂ hfac₂),
+      hside l₂ n₂ l₁ n₁ D₁ hDeq₁ (hy l₁ n₁ D₁ hDeq₁ hfac₁),
+      habs l₁ n₁ D₁ hDeq₁ hfac₁, habs l₂ n₂ D₂ hDeq₂ hfac₂]
+    exact hlinerec l₁ n₁ l₂ n₂ hl _ _ rfl rfl
   sorry
 
 set_option warn.sorry false in
