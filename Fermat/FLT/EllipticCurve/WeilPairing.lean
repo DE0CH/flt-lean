@@ -3737,7 +3737,48 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                     mul_inv_cancel₀ ha3, Polynomial.C_1, map_one]
                 rw [hinv, this, mul_assoc,
                   mul_inv_cancel₀ hA3ne, mul_one]
-              · -- the hard subcase: `a₁ ≠ 0`
+              · -- the hard subcase: `a₁ ≠ 0` — the Taylor/singularity
+                -- argument
+                -- `w := sc · A` is integral over `k[X]`
+                have hwint : IsIntegral (Polynomial (AlgebraicClosure (ZMod q)))
+                    (sc * algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃)) := by
+                  refine ⟨Polynomial.X ^ 2 -
+                    Polynomial.C (τ₀ * (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃)) * Polynomial.X -
+                    Polynomial.C ((Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) ^ 2 * ν₀ + τ₀ ^ 2 * (Polynomial.X ^ 3 + Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
+        Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆)),
+                    ?_, ?_⟩
+                  · rw [show (Polynomial.X ^ 2 -
+                      Polynomial.C (τ₀ * (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃)) * Polynomial.X -
+                      Polynomial.C ((Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) ^ 2 * ν₀ + τ₀ ^ 2 * (Polynomial.X ^ 3 + Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
+        Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆)) :
+                      Polynomial (Polynomial (AlgebraicClosure (ZMod q)))) = Polynomial.X ^ 2 -
+                      (Polynomial.C (τ₀ * (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃)) * Polynomial.X +
+                      Polynomial.C ((Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) ^ 2 * ν₀ + τ₀ ^ 2 * (Polynomial.X ^ 3 + Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
+        Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆)))
+                      from by ring]
+                    refine Polynomial.monic_X_pow_sub ?_
+                    refine lt_of_le_of_lt Polynomial.degree_linear_le ?_
+                    norm_num
+                  · simp only [Polynomial.eval₂_sub, Polynomial.eval₂_pow,
+                      Polynomial.eval₂_mul, Polynomial.eval₂_X,
+                      Polynomial.eval₂_C]
+                    simp only [map_mul, map_add, map_pow]
+                    have hνd := hνdef
+                    simp only [map_add, map_mul, map_pow] at hνd
+                    have hτA := hτtcA
+                    simp only [map_add, map_mul] at hτA
+                    linear_combination (- (algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₁) *
+                      algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) Polynomial.X + algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₃)) ^ 2) *
+                      hν₀ + (- (algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₁) *
+                      algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) Polynomial.X + algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₃)) ^ 2) *
+                      hνd + (- sc * (algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₁) *
+                      algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) Polynomial.X + algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₃)) ^ 2 -
+                      (algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) τ₀ + tc * (algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₁) *
+                      algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) Polynomial.X + algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₃))) *
+                      (algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) Polynomial.X ^ 3 +
+                      algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₂) * algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) Polynomial.X ^ 2 +
+                      algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₄) * algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) Polynomial.X +
+                      algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₆))) * hτA
                 sorry
             obtain ⟨t₀, ht₀⟩ := htcrange
             -- `sc` is integral over `k[X]` via its monic quadratic
