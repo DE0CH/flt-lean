@@ -3864,7 +3864,65 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                     Polynomial.eval_C, Polynomial.eval_X,
                     hAr, mul_zero, zero_mul,
                     add_zero, zero_add, mul_one] at hE2
-                  sorry
+                  simp only [Polynomial.eval_X, Polynomial.eval_C] at hE1
+                  push_cast at hE1 hE2
+                  -- normalized evaluation identities
+                  have hE1' : Polynomial.eval r w₀ ^ 2 =
+                      Polynomial.eval r τ₀ ^ 2 *
+                      (r ^ 3 + Wb.a₂ * r ^ 2 + Wb.a₄ * r + Wb.a₆) := by
+                    linear_combination hE1
+                  have hE2' : Wb.a₁ * Polynomial.eval r τ₀ *
+                      Polynomial.eval r w₀ = Polynomial.eval r τ₀ ^ 2 *
+                      (r ^ 2 + Wb.a₄) := by
+                    linear_combination (- 1 : (AlgebraicClosure (ZMod q))) * hE2 +
+                      (Polynomial.eval r w₀ *
+                        Polynomial.eval r (Polynomial.derivative w₀) -
+                      Polynomial.eval r τ₀ *
+                        Polynomial.eval r (Polynomial.derivative τ₀) *
+                        (r ^ 3 + Wb.a₂ * r ^ 2 + Wb.a₄ * r + Wb.a₆) -
+                      Polynomial.eval r τ₀ ^ 2 * (r ^ 2 + Wb.a₂ * r) -
+                      Polynomial.eval r τ₀ ^ 2 * r ^ 2 -
+                      Polynomial.eval r τ₀ ^ 2 * Wb.a₄) * h2F0
+                  -- the singular point
+                  set y₀ : (AlgebraicClosure (ZMod q)) := (r ^ 2 + Wb.a₄) * Wb.a₁⁻¹ with hy₀def
+                  have hwe : Polynomial.eval r w₀ =
+                      Polynomial.eval r τ₀ * y₀ := by
+                    refine mul_left_cancel₀
+                      (a := Wb.a₁ * Polynomial.eval r τ₀)
+                      (mul_ne_zero ha1' hτr) ?_
+                    rw [hE2', hy₀def]
+                    field_simp
+                  have hy₀sq : y₀ ^ 2 =
+                      r ^ 3 + Wb.a₂ * r ^ 2 + Wb.a₄ * r + Wb.a₆ := by
+                    have h1 := hE1'
+                    rw [hwe] at h1
+                    have h2 : Polynomial.eval r τ₀ ^ 2 * y₀ ^ 2 =
+                        Polynomial.eval r τ₀ ^ 2 *
+                        (r ^ 3 + Wb.a₂ * r ^ 2 + Wb.a₄ * r + Wb.a₆) := by
+                      linear_combination h1
+                    exact mul_left_cancel₀ (pow_ne_zero 2 hτr) h2
+                  have hArval : Wb.a₁ * r + Wb.a₃ = 0 := by
+                    simpa using hAr
+                  -- the point lies on the curve …
+                  haveI : Wb.IsElliptic := by rw [hWbdef]; infer_instance
+                  have hEqn : Wb.toAffine.Equation r y₀ := by
+                    rw [WeierstrassCurve.Affine.equation_iff]
+                    linear_combination hy₀sq + y₀ * hArval
+                  -- … and is nonsingular, but both partials vanish
+                  have hNS := WeierstrassCurve.Affine.equation_iff_nonsingular
+                    (W := Wb.toAffine).mp hEqn
+                  rcases (WeierstrassCurve.Affine.nonsingular_iff' _ _).mp
+                    hNS with ⟨-, hX | hY⟩
+                  · apply hX
+                    rw [hy₀def]
+                    field_simp
+                    linear_combination (Wb.a₂ * r * Wb.a₁ +
+                      r ^ 2 * Wb.a₁ - Wb.a₃ * Wb.a₁ * Wb.a₁⁻¹ *
+                      Wb.toAffine.a₂ - Wb.a₃ * Wb.a₁⁻¹ * Wb.toAffine.a₂ -
+                      Wb.a₃ ^ 2 * Wb.a₁ * Wb.a₁⁻¹ ^ 2 -
+                      Wb.a₃ ^ 2 * Wb.a₁⁻¹ ^ 2) * h2F0
+                  · apply hY
+                    linear_combination y₀ * h2F0 + hArval
                 obtain ⟨t₀', ht₀'⟩ := hdvdAτ
                 have hAK : algebraMap (Polynomial (AlgebraicClosure (ZMod q))) (FractionRing (Polynomial (AlgebraicClosure (ZMod q)))) (Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) ≠
                     0 := by
