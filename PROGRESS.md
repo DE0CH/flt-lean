@@ -546,8 +546,22 @@ entries file). To add/remove/annotate a node, edit
                                                   proven), htword (word format), hbalt (divisor
                                                   balance), het1-3 (pointwise at S1/-S1/PS1), hcvt,
                                                   all inside hgrand; hcross discharges all four
-                                                  M-binder groups. REMAINING SORRY inside hstepR:
-                                                  hstitch = the sigma-completed Weil reciprocity
+                                                  M-binder groups. STITCH CHAIN PROVEN THROUGH:
+                                                  hstitch -> hscalar (hevvert scalarization) ->
+                                                  hword0 (t-elimination via heL/heR from het1-3,
+                                                  junk (x-xM) powers cancelled, hZ1/hZ2 nonzero by
+                                                  xM notin F') -> hword1 (aP1-elimination:
+                                                  mul_right_cancel0 over hDne = the six word-
+                                                  denominator values, proven nonzero via hrootmem +
+                                                  hRtF/hVnF + avoidances; eight-term
+                                                  linear_combination over heP1-6). SINGLE REMAINING
+                                                  SORRY of the chain: hword2 = the fully word-level
+                                                  reciprocity (uf-normalized numerator word values
+                                                  both sides, complementary denominator extras), to
+                                                  be closed by hcvP/hcvt balance projections + hww
+                                                  swaps between the aP1 word (Ln/Ld/Vn/Vd) and the
+                                                  explicit two-chord word (Lnt/{xM}). Historical:
+                                                  hstitch was the sigma-completed Weil reciprocity
                                                   equation itself, provable by: convert XClass-evals
                                                   to scalars (hevvert+map_pow), eliminate aP1-evals
                                                   by heP1-6 and t-evals by het1-3, project hbalP by
@@ -1066,19 +1080,30 @@ entries file). To add/remove/annotate a node, edit
                                           fully proven), htword (word format), hbalt (divisor
                                           balance), het1-3 (pointwise at S1/-S1/PS1), hcvt, all
                                           inside hgrand; hcross discharges all four M-binder groups.
-                                          REMAINING SORRY inside hstepR: hstitch = the sigma-
-                                          completed Weil reciprocity equation itself, provable by:
-                                          convert XClass-evals to scalars (hevvert+map_pow),
-                                          eliminate aP1-evals by heP1-6 and t-evals by het1-3,
-                                          project hbalP by hcvP at the t-word value functions
-                                          (LambdaA, LambdaB, x-xM) and hbalt by hcvt at the aP1-word
-                                          value functions, swap with hww instances (Ln/Ld/Vn/Vd vs
-                                          the explicit two-line word and {xM}), and close with
-                                          mul_right_cancel0 over the junk product (all factors
-                                          nonzero by the avoidances). REMAINING inside hgrand: ONLY
-                                          step 5, the stitch -- normalize the goal and all bound
-                                          ingredients (nine hevid points, thirteen hww instances,
-                                          hcvt/hcvP at the value functions of
+                                          STITCH CHAIN PROVEN THROUGH: hstitch -> hscalar (hevvert
+                                          scalarization) -> hword0 (t-elimination via heL/heR from
+                                          het1-3, junk (x-xM) powers cancelled, hZ1/hZ2 nonzero by
+                                          xM notin F') -> hword1 (aP1-elimination: mul_right_cancel0
+                                          over hDne = the six word-denominator values, proven
+                                          nonzero via hrootmem + hRtF/hVnF + avoidances; eight-term
+                                          linear_combination over heP1-6). SINGLE REMAINING SORRY of
+                                          the chain: hword2 = the fully word-level reciprocity (uf-
+                                          normalized numerator word values both sides, complementary
+                                          denominator extras), to be closed by hcvP/hcvt balance
+                                          projections + hww swaps between the aP1 word (Ln/Ld/Vn/Vd)
+                                          and the explicit two-chord word (Lnt/{xM}). Historical:
+                                          hstitch was the sigma-completed Weil reciprocity equation
+                                          itself, provable by: convert XClass-evals to scalars
+                                          (hevvert+map_pow), eliminate aP1-evals by heP1-6 and
+                                          t-evals by het1-3, project hbalP by hcvP at the t-word
+                                          value functions (LambdaA, LambdaB, x-xM) and hbalt by hcvt
+                                          at the aP1-word value functions, swap with hww instances
+                                          (Ln/Ld/Vn/Vd vs the explicit two-line word and {xM}), and
+                                          close with mul_right_cancel0 over the junk product (all
+                                          factors nonzero by the avoidances). REMAINING inside
+                                          hgrand: ONLY step 5, the stitch -- normalize the goal and
+                                          all bound ingredients (nine hevid points, thirteen hww
+                                          instances, hcvt/hcvP at the value functions of
                                           (Ln,Vn)/(Ld,Vd)/(Mn,Wn')/(Md,Wd')/{xS1}/{xR1,xQR3},
                                           hfibpair identifications) with the canonical multiset-
                                           unfolding simp set, then combine via
