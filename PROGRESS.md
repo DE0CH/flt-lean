@@ -185,7 +185,16 @@ entries file). To add/remove/annotate a node, edit
                                                   core). hgenfac COMPLETE (the class-group descent /
                                                   Miller factorization, with hdvdspan). Generator
                                                   divisor witnesses COMPLETE (hfiber, hvertdiv,
-                                                  hlinediv). Remaining assembly: the balanced cross-
+                                                  hlinediv). Signed generator-pair table COMPLETE
+                                                  (hggll unconditional line-line incl.
+                                                  parallel/identical; hgglv line-vertical; hggvv
+                                                  vertical-vertical, adopted from the accidental
+                                                  parallel session; hrecfib). hlinediv' explicit
+                                                  line divisor; hvw vertical-vs-word assembly
+                                                  PROVEN. NEXT: line-vs-word (hlw, sign (-1)^lines)
+                                                  then word-vs-word (hww), then the balanced
+                                                  reciprocity for functions via hgenfac and the
+                                                  pairing. Remaining assembly: the balanced cross-
                                                   product reciprocity for arbitrary disjoint pairs
                                                   from the generator cases, then the pairing and its
                                                   six legs. Superseded plan text: REMAINING for
@@ -368,12 +377,19 @@ entries file). To add/remove/annotate a node, edit
                                           hNline/hevline/hevvert/hondiv/habs + the hlinerec core).
                                           hgenfac COMPLETE (the class-group descent / Miller
                                           factorization, with hdvdspan). Generator divisor witnesses
-                                          COMPLETE (hfiber, hvertdiv, hlinediv). Remaining assembly:
-                                          the balanced cross-product reciprocity for arbitrary
-                                          disjoint pairs from the generator cases, then the pairing
-                                          and its six legs. Superseded plan text: REMAINING for
-                                          reciprocity: the class-group descent hgenfac (every
-                                          function with point-divisor factorization equals a
+                                          COMPLETE (hfiber, hvertdiv, hlinediv). Signed generator-
+                                          pair table COMPLETE (hggll unconditional line-line incl.
+                                          parallel/identical; hgglv line-vertical; hggvv vertical-
+                                          vertical, adopted from the accidental parallel session;
+                                          hrecfib). hlinediv' explicit line divisor; hvw vertical-
+                                          vs-word assembly PROVEN. NEXT: line-vs-word (hlw, sign
+                                          (-1)^lines) then word-vs-word (hww), then the balanced
+                                          reciprocity for functions via hgenfac and the pairing.
+                                          Remaining assembly: the balanced cross-product reciprocity
+                                          for arbitrary disjoint pairs from the generator cases,
+                                          then the pairing and its six legs. Superseded plan text:
+                                          REMAINING for reciprocity: the class-group descent hgenfac
+                                          (every function with point-divisor factorization equals a
                                           constant times a quotient of products of line/vertical
                                           elements, by strong induction on divisor size through
                                           hline + XYIdeal_neg_mul + toClass-nontriviality) and the
