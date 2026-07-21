@@ -4696,6 +4696,111 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       (Submodule.smul_mem _ _ (Submodule.subset_span ?_))
     · simp
     · simp
+  -- CLASSIFICATION: every maximal ideal of the coordinate ring is a point
+  -- ideal `XYIdeal x₀ (C y₀)` at a point of the curve
+  have hmax : ∀ M : Ideal Wb.toAffine.CoordinateRing, M.IsMaximal →
+      ∃ (x₀ y₀ : (AlgebraicClosure (ZMod q))), Wb.toAffine.Equation x₀ y₀ ∧
+        M = WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₀
+          (Polynomial.C y₀) := by
+    intro M hM
+    obtain ⟨c, hc⟩ := hlinfac M hM
+    haveI := hM
+    letI : Field (Wb.toAffine.CoordinateRing ⧸ M) := Ideal.Quotient.field M
+    haveI := hresfin M c hc
+    haveI : Algebra.IsIntegral (AlgebraicClosure (ZMod q)) (Wb.toAffine.CoordinateRing ⧸ M) :=
+      Algebra.IsIntegral.of_finite _ _
+    have hbij : Function.Bijective (algebraMap (AlgebraicClosure (ZMod q))
+        (Wb.toAffine.CoordinateRing ⧸ M)) :=
+      IsAlgClosed.algebraMap_bijective_of_isIntegral
+    obtain ⟨y₀, hy₀⟩ := hbij.2 (Ideal.Quotient.mk M
+      (WeierstrassCurve.Affine.CoordinateRing.mk Wb.toAffine Polynomial.X))
+    -- the two coordinate classes lie in `M`
+    have hXmem : WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine c ∈
+        M := by
+      show AdjoinRoot.mk Wb.toAffine.polynomial
+        (Polynomial.C (Polynomial.X - Polynomial.C c)) ∈ M
+      exact hc
+    have hYmem : WeierstrassCurve.Affine.CoordinateRing.YClass Wb.toAffine
+        (Polynomial.C y₀) ∈ M := by
+      rw [← Ideal.Quotient.eq_zero_iff_mem]
+      show Ideal.Quotient.mk M (AdjoinRoot.mk Wb.toAffine.polynomial
+        (Polynomial.X - Polynomial.C (Polynomial.C y₀))) = 0
+      rw [map_sub, map_sub]
+      rw [show (AdjoinRoot.mk Wb.toAffine.polynomial)
+          (Polynomial.C (Polynomial.C y₀)) =
+        algebraMap (AlgebraicClosure (ZMod q)) Wb.toAffine.CoordinateRing y₀ from by
+        rw [IsScalarTower.algebraMap_apply (AlgebraicClosure (ZMod q))
+          (Polynomial (AlgebraicClosure (ZMod q)))
+          Wb.toAffine.CoordinateRing, Polynomial.algebraMap_eq,
+          AdjoinRoot.algebraMap_eq]
+        rfl]
+      rw [← Ideal.Quotient.algebraMap_eq,
+        ← IsScalarTower.algebraMap_apply (AlgebraicClosure (ZMod q)) Wb.toAffine.CoordinateRing
+          (Wb.toAffine.CoordinateRing ⧸ M) y₀]
+      rw [Ideal.Quotient.algebraMap_eq, hy₀, sub_self]
+    -- the point satisfies the equation: Taylor-decompose the Weierstrass
+    -- polynomial at `(c, y₀)` and push into the quotient
+    have hEq : Wb.toAffine.Equation c y₀ := by
+      obtain ⟨B, hB⟩ := (Polynomial.dvd_iff_isRoot
+        (p := Wb.toAffine.polynomial -
+          Polynomial.C (Wb.toAffine.polynomial.eval (Polynomial.C y₀)))
+        (a := Polynomial.C y₀)).mpr (by
+          simp [Polynomial.IsRoot, Polynomial.eval_sub])
+      obtain ⟨A, hA⟩ := (Polynomial.dvd_iff_isRoot
+        (p := Wb.toAffine.polynomial.eval (Polynomial.C y₀) -
+          Polynomial.C ((Wb.toAffine.polynomial.eval
+            (Polynomial.C y₀)).eval c)) (a := c)).mpr (by
+          simp [Polynomial.IsRoot, Polynomial.eval_sub])
+      have hpoly : Wb.toAffine.polynomial =
+          Polynomial.C (Polynomial.C ((Wb.toAffine.polynomial.eval
+            (Polynomial.C y₀)).eval c)) +
+          Polynomial.C ((Polynomial.X - Polynomial.C c) * A) +
+          (Polynomial.X - Polynomial.C (Polynomial.C y₀)) * B := by
+        rw [show (Polynomial.X - Polynomial.C c) * A =
+          Wb.toAffine.polynomial.eval (Polynomial.C y₀) -
+            Polynomial.C ((Wb.toAffine.polynomial.eval
+              (Polynomial.C y₀)).eval c) from hA.symm]
+        rw [show (Polynomial.X - Polynomial.C (Polynomial.C y₀)) * B =
+          Wb.toAffine.polynomial -
+            Polynomial.C (Wb.toAffine.polynomial.eval (Polynomial.C y₀))
+          from hB.symm]
+        rw [Polynomial.C_sub]
+        ring
+      have h0 : Ideal.Quotient.mk M (AdjoinRoot.mk Wb.toAffine.polynomial
+          (Polynomial.C (Polynomial.C ((Wb.toAffine.polynomial.eval
+            (Polynomial.C y₀)).eval c)) +
+          Polynomial.C ((Polynomial.X - Polynomial.C c) * A) +
+          (Polynomial.X - Polynomial.C (Polynomial.C y₀)) * B)) = 0 := by
+        rw [← hpoly, AdjoinRoot.mk_self, map_zero]
+      simp only [map_add, map_mul] at h0
+      have hz1 : Ideal.Quotient.mk M ((AdjoinRoot.mk Wb.toAffine.polynomial)
+          (Polynomial.C (Polynomial.X - Polynomial.C c))) = 0 :=
+        Ideal.Quotient.eq_zero_iff_mem.mpr hXmem
+      have hz2 : Ideal.Quotient.mk M ((AdjoinRoot.mk Wb.toAffine.polynomial)
+          (Polynomial.X - Polynomial.C (Polynomial.C y₀))) = 0 :=
+        Ideal.Quotient.eq_zero_iff_mem.mpr hYmem
+      rw [hz1, hz2, zero_mul, zero_mul, add_zero, add_zero] at h0
+      rw [show (AdjoinRoot.mk Wb.toAffine.polynomial)
+          (Polynomial.C (Polynomial.C ((Wb.toAffine.polynomial.eval
+            (Polynomial.C y₀)).eval c))) =
+        algebraMap (AlgebraicClosure (ZMod q)) Wb.toAffine.CoordinateRing
+          ((Wb.toAffine.polynomial.eval (Polynomial.C y₀)).eval c) from by
+        rw [IsScalarTower.algebraMap_apply (AlgebraicClosure (ZMod q))
+          (Polynomial (AlgebraicClosure (ZMod q)))
+          Wb.toAffine.CoordinateRing, Polynomial.algebraMap_eq,
+          AdjoinRoot.algebraMap_eq]
+        rfl] at h0
+      rw [← Ideal.Quotient.algebraMap_eq,
+        ← IsScalarTower.algebraMap_apply (AlgebraicClosure (ZMod q)) Wb.toAffine.CoordinateRing
+          (Wb.toAffine.CoordinateRing ⧸ M)] at h0
+      have hval : (Wb.toAffine.polynomial.eval (Polynomial.C y₀)).eval c = 0 :=
+        (map_eq_zero_iff _ (algebraMap (AlgebraicClosure (ZMod q)) _).injective).mp h0
+      exact hval
+    refine ⟨c, y₀, hEq, ((hXYmax c y₀ hEq).eq_of_le hM.ne_top ?_).symm⟩
+    rw [WeierstrassCurve.Affine.CoordinateRing.XYIdeal, Ideal.span_le]
+    rintro z (rfl | rfl)
+    · exact hXmem
+    · exact hYmem
   sorry
 
 set_option warn.sorry false in
