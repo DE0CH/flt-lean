@@ -5634,6 +5634,34 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
         Multiset.prod_singleton]
       exact (WeierstrassCurve.Affine.CoordinateRing.XYIdeal_neg_mul
         (W := Wb.toAffine) hns).symm
+  -- the divisor witness of a line element: points on the line, abscissas
+  -- the roots of the fiber cubic
+  have hlinediv : ∀ l n : (AlgebraicClosure (ZMod q)), ∃ D : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))),
+      (∀ P ∈ D, Wb.toAffine.Equation P.1 P.2) ∧
+      (∀ P ∈ D, P.2 = l * P.1 + n) ∧
+      D.map Prod.fst = (Polynomial.X ^ 3
+        + Polynomial.C (Wb.toAffine.a₂ - l ^ 2 - Wb.toAffine.a₁ * l)
+          * Polynomial.X ^ 2
+        + Polynomial.C (Wb.toAffine.a₄ - 2 * l * n - Wb.toAffine.a₁ * n
+            - Wb.toAffine.a₃ * l) * Polynomial.X
+        + Polynomial.C (Wb.toAffine.a₆ - n ^ 2 - Wb.toAffine.a₃ * n)).roots ∧
+      Ideal.span {AdjoinRoot.mk Wb.toAffine.polynomial (Polynomial.X -
+        Polynomial.C (Polynomial.C l * Polynomial.X + Polynomial.C n))} =
+      (D.map (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+        WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine P.1
+          (Polynomial.C P.2))).prod := by
+    intro l n
+    obtain ⟨D, hDeq, hDfac⟩ := hfactor
+      (AdjoinRoot.mk Wb.toAffine.polynomial (Polynomial.X -
+        Polynomial.C (Polynomial.C l * Polynomial.X + Polynomial.C n)))
+      (WeierstrassCurve.Affine.CoordinateRing.YClass_ne_zero
+        (W' := Wb.toAffine) (Polynomial.C l * Polynomial.X +
+          Polynomial.C n))
+    refine ⟨D, hDeq, ?_, habs l n D hDeq hDfac, hDfac⟩
+    intro P hP
+    have h0 := hondiv _ D hDfac P hP (hDeq P hP)
+    rw [hevline l n P.1 P.2 (hDeq P hP)] at h0
+    exact sub_eq_zero.mp h0
   sorry
 
 set_option warn.sorry false in
