@@ -4267,6 +4267,31 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       simpa using this
     rw [zpow_natCast, ← map_pow] at h1
     exact ClassGroup.mk_eq_one_iff.mp h1
+  -- point evaluation is `AdjoinRoot.evalEval` (mathlib); the curve has
+  -- points outside any finite set of abscissas (algebraically closed
+  -- base: the quadratic in `Y` always has a root)
+  have hpoints : ∀ S : Finset (AlgebraicClosure (ZMod q)), ∃ x₀ ∉ S, ∃ y₀,
+      Wb.toAffine.Nonsingular x₀ y₀ := by
+    intro S
+    obtain ⟨x₀, hx₀⟩ := S.exists_notMem
+    -- solve the quadratic in `y` at `x₀`
+    obtain ⟨y₀, hy₀⟩ := IsAlgClosed.exists_root
+      (Wb.toAffine.polynomial.map (Polynomial.evalRingHom x₀)) (by
+        rw [Polynomial.degree_map_eq_of_leadingCoeff_ne_zero]
+        · rw [WeierstrassCurve.Affine.degree_polynomial]
+          norm_num
+        · rw [show Wb.toAffine.polynomial.leadingCoeff =
+            (1 : Polynomial (AlgebraicClosure (ZMod q))) from
+            WeierstrassCurve.Affine.monic_polynomial]
+          simp)
+    refine ⟨x₀, hx₀, y₀, ?_⟩
+    rw [← WeierstrassCurve.Affine.equation_iff_nonsingular]
+    rw [WeierstrassCurve.Affine.Equation]
+    rw [Polynomial.IsRoot, Polynomial.eval_map] at hy₀
+    rw [show Wb.toAffine.polynomial.evalEval x₀ y₀ =
+      Wb.toAffine.polynomial.eval₂ (Polynomial.evalRingHom x₀) y₀ from
+      (Polynomial.eval₂_evalRingHom x₀ ▸ rfl)]
+    exact hy₀
   sorry
 
 set_option warn.sorry false in
