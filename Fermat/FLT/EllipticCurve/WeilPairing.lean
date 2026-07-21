@@ -4510,6 +4510,27 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
         - Wb.toAffine.a₁ * z - Wb.toAffine.a₃) * hkey
     rw [ht₂, ht₁, heq]
     ring
+  -- norm-evaluation compatibility: the norm of `f = a + b y` down to `k[x]`,
+  -- evaluated at an abscissa `x₀` of a curve point `(x₀, y₀)`, is the product
+  -- of the values of `f` at the two fiber points `(x₀, y₀)` and
+  -- `(x₀, -y₀ - a₁x₀ - a₃)`
+  have hnormeval : ∀ (a b : Polynomial (AlgebraicClosure (ZMod q))) (x₀ y₀ : (AlgebraicClosure (ZMod q))),
+      Wb.toAffine.Equation x₀ y₀ →
+      Polynomial.eval x₀ (Algebra.norm (Polynomial (AlgebraicClosure (ZMod q)))
+        (a • (1 : Wb.toAffine.CoordinateRing) +
+          b • AdjoinRoot.mk Wb.toAffine.polynomial Polynomial.X)) =
+      (a.eval x₀ + b.eval x₀ * y₀) *
+        (a.eval x₀ + b.eval x₀ * Wb.toAffine.negY x₀ y₀) := by
+    intro a b x₀ y₀ hE
+    have heq := (WeierstrassCurve.Affine.equation_iff (W := Wb.toAffine) x₀ y₀).mp hE
+    rw [show (AdjoinRoot.mk Wb.toAffine.polynomial Polynomial.X :
+        Wb.toAffine.CoordinateRing) =
+      WeierstrassCurve.Affine.CoordinateRing.mk Wb.toAffine Polynomial.X from rfl]
+    rw [WeierstrassCurve.Affine.CoordinateRing.norm_smul_basis]
+    simp only [Polynomial.eval_sub, Polynomial.eval_add, Polynomial.eval_mul,
+      Polynomial.eval_pow, Polynomial.eval_X, Polynomial.eval_C,
+      WeierstrassCurve.Affine.negY]
+    linear_combination (b.eval x₀) ^ 2 * heq
   sorry
 
 set_option warn.sorry false in
