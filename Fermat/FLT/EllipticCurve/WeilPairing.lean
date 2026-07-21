@@ -4236,6 +4236,37 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
     · conv_lhs => rw [hqq, zero_smul, add_zero, hppC]
       rw [Algebra.smul_def, mul_one]
       rfl
+  -- Miller generators: the `p`-th power of a torsion point's ideal
+  -- class is principal
+  have hgen : ∀ (x y : (AlgebraicClosure (ZMod q))) (h : Wb.toAffine.Nonsingular x y),
+      ((p : ℤ) • (WeierstrassCurve.Affine.Point.some x y h :
+        Wb.toAffine.Point) = 0) →
+      (((WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h ^ p :
+        (FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+          Wb.toAffine.FunctionField)ˣ) :
+        FractionalIdeal (nonZeroDivisors Wb.toAffine.CoordinateRing)
+          Wb.toAffine.FunctionField) :
+        Submodule Wb.toAffine.CoordinateRing
+          Wb.toAffine.FunctionField).IsPrincipal := by
+    intro x y h htor
+    have hclass := congrArg WeierstrassCurve.Affine.Point.toClass htor
+    rw [map_zsmul, map_zero] at hclass
+    have hmk : ((p : ℤ) •
+        (WeierstrassCurve.Affine.Point.toClass
+          (WeierstrassCurve.Affine.Point.some x y h)) :
+        Additive (ClassGroup Wb.toAffine.CoordinateRing)) =
+        Additive.ofMul ((ClassGroup.mk Wb.toAffine.FunctionField
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h)) ^
+          (p : ℤ)) := by
+      rfl
+    rw [hmk] at hclass
+    have h1 : (ClassGroup.mk Wb.toAffine.FunctionField
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal' h)) ^ (p : ℤ) =
+        1 := by
+      have := congrArg Additive.toMul hclass
+      simpa using this
+    rw [zpow_natCast, ← map_pow] at h1
+    exact ClassGroup.mk_eq_one_iff.mp h1
   sorry
 
 set_option warn.sorry false in
