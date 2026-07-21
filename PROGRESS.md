@@ -341,27 +341,53 @@ entries file). To add/remove/annotate a node, edit
                                                   images; x(Q+R) avoids G and {xS, xPS} likewise;
                                                   torsion, hmill2 numerators, replicate divisors,
                                                   four hoffdiv nonvanishings, and both products
-                                                  nonzero, exactly as in hexval. REMAINING SORRIES
-                                                  in the mu-node: hrecgen (the generic-pair Weil
-                                                  reciprocity core) and hleg1-hleg6 (bilinearity x2,
-                                                  alternation, nondegeneracy, p-th powers, Frobenius
-                                                  naturality). Superseded: FRONTIER (7 named sorried
-                                                  steps) description. Superseded: NEXT: line-vs-word
-                                                  (hlw, sign (-1)^lines) then word-vs-word (hww),
-                                                  then the balanced reciprocity for functions via
-                                                  hgenfac and the pairing. Remaining assembly: the
-                                                  balanced cross-product reciprocity for arbitrary
-                                                  disjoint pairs from the generator cases, then the
-                                                  pairing and its six legs. Superseded plan text:
-                                                  REMAINING for reciprocity: the class-group descent
-                                                  hgenfac (every function with point-divisor
-                                                  factorization equals a constant times a quotient
-                                                  of products of line/vertical elements, by strong
-                                                  induction on divisor size through hline +
-                                                  XYIdeal_neg_mul + toClass-nontriviality) and the
-                                                  multiplicative assembly of the balanced cross-
-                                                  product reciprocity; then the pairing definition
-                                                  (ratio over hgen2 generators at hpoints-generic
+                                                  nonzero, exactly as in hexval. HRECGEN REFINED
+                                                  PLAN (2026-07-21): change one translate at a time
+                                                  (R-step then S-step). For the R-step, the
+                                                  comparison function tau has EXPLICIT divisor
+                                                  (QR1)+(R3)+(-R1)+(-QR3) [points summing to zero,
+                                                  so the 4-fold point-ideal product is principal --
+                                                  new brick hmill0: n points summing to zero give a
+                                                  principal product, by the toClass homomorphism +
+                                                  the hmill2 units/ClassGroup extraction; NO junk
+                                                  divisor], with denominator the two verticals
+                                                  XClass(xR1)*XClass(xQR3) [explicit divisor]. The
+                                                  z-ratio telescopes: the f_Q-difference contributes
+                                                  [tau(PS1)/tau(S1)]^p directly, and f_P(div tau) =
+                                                  tau(div f_P) = the same p-th power by the
+                                                  function-vs-tau Weil reciprocity -- f_P =
+                                                  aP1/XS1^p has ALL divisor data in F1' (no
+                                                  R-data!), so factor its pair into hgenfac words
+                                                  over F1' (roots in F1') and evaluate at tau's
+                                                  divisor points whose abscissas xQR1, xR1, xR3,
+                                                  xQR3 all avoid F1'; tau's evaluations at PS1, S1
+                                                  are nonzero since those abscissas lie in F1'. The
+                                                  word-level computation uses hbaldiv + hevid + hww
+                                                  + hwordeval. S-step mirrors with the roles of the
+                                                  S-translates. BRICK QUEUE for hrecgen: hmill0
+                                                  (zero-sum principality), the function-vs-quad
+                                                  reciprocity, the R-step and S-step ratio
+                                                  identities, the two-step chain. REMAINING SORRIES
+                                                  in the mu-node: hrecgen and hleg1-hleg6
+                                                  (bilinearity x2, alternation, nondegeneracy, p-th
+                                                  powers, Frobenius naturality). Superseded:
+                                                  FRONTIER (7 named sorried steps) description.
+                                                  Superseded: NEXT: line-vs-word (hlw, sign
+                                                  (-1)^lines) then word-vs-word (hww), then the
+                                                  balanced reciprocity for functions via hgenfac and
+                                                  the pairing. Remaining assembly: the balanced
+                                                  cross-product reciprocity for arbitrary disjoint
+                                                  pairs from the generator cases, then the pairing
+                                                  and its six legs. Superseded plan text: REMAINING
+                                                  for reciprocity: the class-group descent hgenfac
+                                                  (every function with point-divisor factorization
+                                                  equals a constant times a quotient of products of
+                                                  line/vertical elements, by strong induction on
+                                                  divisor size through hline + XYIdeal_neg_mul +
+                                                  toClass-nontriviality) and the multiplicative
+                                                  assembly of the balanced cross-product
+                                                  reciprocity; then the pairing definition (ratio
+                                                  over hgen2 generators at hpoints-generic
                                                   translates) and its six legs. Older per-brick log
                                                   follows: NEXT: divisor evaluation f(D) := prod of
                                                   evalEval over D; nonvanishing off the divisor; the
@@ -665,30 +691,51 @@ entries file). To add/remove/annotate a node, edit
                                           bad-R points and the G-fiber bad-R images; x(Q+R) avoids G
                                           and {xS, xPS} likewise; torsion, hmill2 numerators,
                                           replicate divisors, four hoffdiv nonvanishings, and both
-                                          products nonzero, exactly as in hexval. REMAINING SORRIES
-                                          in the mu-node: hrecgen (the generic-pair Weil reciprocity
-                                          core) and hleg1-hleg6 (bilinearity x2, alternation,
-                                          nondegeneracy, p-th powers, Frobenius naturality).
-                                          Superseded: FRONTIER (7 named sorried steps) description.
-                                          Superseded: NEXT: line-vs-word (hlw, sign (-1)^lines) then
-                                          word-vs-word (hww), then the balanced reciprocity for
-                                          functions via hgenfac and the pairing. Remaining assembly:
-                                          the balanced cross-product reciprocity for arbitrary
-                                          disjoint pairs from the generator cases, then the pairing
-                                          and its six legs. Superseded plan text: REMAINING for
-                                          reciprocity: the class-group descent hgenfac (every
-                                          function with point-divisor factorization equals a
-                                          constant times a quotient of products of line/vertical
-                                          elements, by strong induction on divisor size through
-                                          hline + XYIdeal_neg_mul + toClass-nontriviality) and the
-                                          multiplicative assembly of the balanced cross-product
-                                          reciprocity; then the pairing definition (ratio over hgen2
-                                          generators at hpoints-generic translates) and its six
-                                          legs. Older per-brick log follows: NEXT: divisor
-                                          evaluation f(D) := prod of evalEval over D; nonvanishing
-                                          off the divisor; the reciprocity statement f(div g) =
-                                          g(div f) for disjoint supports, by induction via
-                                          line/vertical factorization (hline + XYIdeal_neg_mul)
+                                          products nonzero, exactly as in hexval. HRECGEN REFINED
+                                          PLAN (2026-07-21): change one translate at a time (R-step
+                                          then S-step). For the R-step, the comparison function tau
+                                          has EXPLICIT divisor (QR1)+(R3)+(-R1)+(-QR3) [points
+                                          summing to zero, so the 4-fold point-ideal product is
+                                          principal -- new brick hmill0: n points summing to zero
+                                          give a principal product, by the toClass homomorphism +
+                                          the hmill2 units/ClassGroup extraction; NO junk divisor],
+                                          with denominator the two verticals
+                                          XClass(xR1)*XClass(xQR3) [explicit divisor]. The z-ratio
+                                          telescopes: the f_Q-difference contributes
+                                          [tau(PS1)/tau(S1)]^p directly, and f_P(div tau) = tau(div
+                                          f_P) = the same p-th power by the function-vs-tau Weil
+                                          reciprocity -- f_P = aP1/XS1^p has ALL divisor data in F1'
+                                          (no R-data!), so factor its pair into hgenfac words over
+                                          F1' (roots in F1') and evaluate at tau's divisor points
+                                          whose abscissas xQR1, xR1, xR3, xQR3 all avoid F1'; tau's
+                                          evaluations at PS1, S1 are nonzero since those abscissas
+                                          lie in F1'. The word-level computation uses hbaldiv +
+                                          hevid + hww + hwordeval. S-step mirrors with the roles of
+                                          the S-translates. BRICK QUEUE for hrecgen: hmill0 (zero-
+                                          sum principality), the function-vs-quad reciprocity, the
+                                          R-step and S-step ratio identities, the two-step chain.
+                                          REMAINING SORRIES in the mu-node: hrecgen and hleg1-hleg6
+                                          (bilinearity x2, alternation, nondegeneracy, p-th powers,
+                                          Frobenius naturality). Superseded: FRONTIER (7 named
+                                          sorried steps) description. Superseded: NEXT: line-vs-word
+                                          (hlw, sign (-1)^lines) then word-vs-word (hww), then the
+                                          balanced reciprocity for functions via hgenfac and the
+                                          pairing. Remaining assembly: the balanced cross-product
+                                          reciprocity for arbitrary disjoint pairs from the
+                                          generator cases, then the pairing and its six legs.
+                                          Superseded plan text: REMAINING for reciprocity: the
+                                          class-group descent hgenfac (every function with point-
+                                          divisor factorization equals a constant times a quotient
+                                          of products of line/vertical elements, by strong induction
+                                          on divisor size through hline + XYIdeal_neg_mul + toClass-
+                                          nontriviality) and the multiplicative assembly of the
+                                          balanced cross-product reciprocity; then the pairing
+                                          definition (ratio over hgen2 generators at hpoints-generic
+                                          translates) and its six legs. Older per-brick log follows:
+                                          NEXT: divisor evaluation f(D) := prod of evalEval over D;
+                                          nonvanishing off the divisor; the reciprocity statement
+                                          f(div g) = g(div f) for disjoint supports, by induction
+                                          via line/vertical factorization (hline + XYIdeal_neg_mul)
                                           reducing to the proven cores hlinerec (line-line) and
                                           hnormeval + hrecP1 (vertical cases); then the pairing and
                                           its six legs. hmax COMPLETE (with hresfin + hkill): every
