@@ -3638,7 +3638,71 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
             have hDsf : Squarefree ((Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) ^ 2 + 4 * (Polynomial.X ^ 3 + Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
         Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆) :
                 Polynomial (AlgebraicClosure (ZMod q))) := by
-              sorry
+              have h2F : (2 : (AlgebraicClosure (ZMod q))) ≠ 0 := by
+                haveI h1 : CharP (AlgebraicClosure (ZMod q)) q :=
+                  charP_of_injective_algebraMap
+                    (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+                exact CharP.cast_ne_zero_of_ne_of_prime (R := (AlgebraicClosure (ZMod q)))
+                  Nat.prime_two (fun h => hq2 h)
+              have h4F : (4 : (AlgebraicClosure (ZMod q))) ≠ 0 := by
+                have : (4 : (AlgebraicClosure (ZMod q))) = 2 * 2 := by norm_num
+                rw [this]
+                exact mul_ne_zero h2F h2F
+              have hWbΔ : Wb.Δ ≠ 0 := by
+                haveI : Wb.IsElliptic := by
+                  rw [hWbdef]; infer_instance
+                exact ((WeierstrassCurve.isElliptic_iff Wb).mp
+                  inferInstance).ne_zero
+              -- the polynomial is the `b`-cubic
+              have hDeq : ((Polynomial.C Wb.a₁ * Polynomial.X + Polynomial.C Wb.a₃) ^ 2 + 4 * (Polynomial.X ^ 3 + Polynomial.C Wb.a₂ * Polynomial.X ^ 2 +
+        Polynomial.C Wb.a₄ * Polynomial.X + Polynomial.C Wb.a₆) : Polynomial (AlgebraicClosure (ZMod q))) =
+                  (⟨4, Wb.b₂, 2 * Wb.b₄, Wb.b₆⟩ : Cubic (AlgebraicClosure (ZMod q))).toPoly := by
+                rw [Cubic.toPoly]
+                simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+                  WeierstrassCurve.b₆, map_add, map_mul, map_pow, map_ofNat]
+                ring
+              -- its discriminant is `16Δ ≠ 0`
+              have hdisc16 : (⟨4, Wb.b₂, 2 * Wb.b₄, Wb.b₆⟩ :
+                  Cubic (AlgebraicClosure (ZMod q))).discr = 16 * Wb.Δ := by
+                rw [Cubic.discr, WeierstrassCurve.Δ]
+                linear_combination (4 * Wb.b₂ ^ 2) *
+                  (WeierstrassCurve.b_relation Wb)
+              have hdisc : (⟨4, Wb.b₂, 2 * Wb.b₄, Wb.b₆⟩ :
+                  Cubic (AlgebraicClosure (ZMod q))).discr ≠ 0 := by
+                rw [hdisc16]
+                refine mul_ne_zero ?_ hWbΔ
+                have : (16 : (AlgebraicClosure (ZMod q))) = 4 * 4 := by norm_num
+                rw [this]
+                exact mul_ne_zero h4F h4F
+              -- squarefree via nodup roots and separability
+              have hne0 : (⟨4, Wb.b₂, 2 * Wb.b₄, Wb.b₆⟩ :
+                  Cubic (AlgebraicClosure (ZMod q))).toPoly ≠ 0 := by
+                intro h0
+                have := Cubic.coeff_eq_a (P := (⟨4, Wb.b₂, 2 * Wb.b₄,
+                  Wb.b₆⟩ : Cubic (AlgebraicClosure (ZMod q))))
+                rw [h0] at this
+                simp at this
+                exact h4F this.symm
+              have hsplits : ((⟨4, Wb.b₂, 2 * Wb.b₄, Wb.b₆⟩ :
+                  Cubic (AlgebraicClosure (ZMod q))).toPoly.map (RingHom.id (AlgebraicClosure (ZMod q)))).Splits :=
+                IsAlgClosed.splits _
+              have hnodup := (Cubic.discr_ne_zero_iff_roots_nodup
+                (P := (⟨4, Wb.b₂, 2 * Wb.b₄, Wb.b₆⟩ : Cubic (AlgebraicClosure (ZMod q))))
+                (φ := RingHom.id (AlgebraicClosure (ZMod q))) (by
+                  show (4 : (AlgebraicClosure (ZMod q))) ≠ 0
+                  exact h4F) hsplits).mp hdisc
+              rw [hDeq]
+              refine Polynomial.Separable.squarefree ?_
+              refine (Polynomial.nodup_roots_iff_of_splits hne0 ?_).mp ?_
+              · have := hsplits
+                rwa [Polynomial.map_id] at this
+              · have hmap : (Cubic.map (RingHom.id (AlgebraicClosure (ZMod q)))
+                    (⟨4, Wb.b₂, 2 * Wb.b₄, Wb.b₆⟩ : Cubic (AlgebraicClosure (ZMod q)))).toPoly =
+                    (⟨4, Wb.b₂, 2 * Wb.b₄, Wb.b₆⟩ :
+                      Cubic (AlgebraicClosure (ZMod q))).toPoly := by
+                  rw [Cubic.map_toPoly, Polynomial.map_id]
+                rw [Cubic.roots, hmap] at hnodup
+                exact hnodup
             obtain ⟨nn, dd, hrel, hmk⟩ :=
               IsFractionRing.exists_reduced_fraction
                 (A := Polynomial (AlgebraicClosure (ZMod q))) (K := (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))) tc
