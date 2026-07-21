@@ -137,15 +137,23 @@ entries file). To add/remove/annotate a node, edit
                                                   derivative char 2 with the Delta-vanishing
                                                   computation; adjoin-simple transfer via hspan +
                                                   topEquiv). REMAINING: (iv) IsIntegralClosure
-                                                  (normality): decompose an integral x = s + t*root-
-                                                  image over the L-basis, trace/norm land in k[X]
-                                                  (integrally closed), derive t^2 * D in k[X] with D
-                                                  = A^2 + 4G the b2-cubic, D squarefree from disc(D)
-                                                  = 16 Delta (Cubic.discr + squarefree iff nodup
-                                                  roots over the algebraically closed base),
-                                                  valuation argument; char-2 branch via u = tA
-                                                  integral-quadratic. Then the outer construction
-                                                  (class-group pairing).
+                                                  (normality) NEARLY DONE 2026-07-21: easy
+                                                  direction, span decomposition, the monic quadratic
+                                                  for x, minpoly-coefficient integrality
+                                                  (isIntegrallyClosed_eq_field_fractions'), degree
+                                                  dichotomy with the linear case CLOSED, coefficient
+                                                  pinning, the discriminant identity tau^2 - 4nu =
+                                                  tc^2 (A^2+4G), and the FULL reduced-fraction
+                                                  descent + witness assembly for odd characteristic
+                                                  -- ALL PROVEN. Remaining three sorries: (iv-a)
+                                                  hDsf: Squarefree (A^2 + 4G) via Cubic.discr = 16
+                                                  Delta (b_relation), roots-nodup over the
+                                                  algebraically closed base, separable ->
+                                                  squarefree; (iv-b) the characteristic-two branch
+                                                  (u = tA satisfies a monic quadratic over k[X];
+                                                  regularity at roots of A from Delta != 0 via
+                                                  b_relation_of_char_two); (outer) the class-group
+                                                  pairing construction itself.
                                     - ✅· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density,
                                       topological form — now (2026-07-16) by the profinite limit
                                       argument (: cosets of fixing subgroups of finite subextensions
@@ -229,15 +237,22 @@ entries file). To add/remove/annotate a node, edit
                                           IsSeparable PROVEN 2026-07-21 (Bezout certificate char !=
                                           2; unit-constant derivative char 2 with the Delta-
                                           vanishing computation; adjoin-simple transfer via hspan +
-                                          topEquiv). REMAINING: (iv) IsIntegralClosure (normality):
-                                          decompose an integral x = s + t*root-image over the
-                                          L-basis, trace/norm land in k[X] (integrally closed),
-                                          derive t^2 * D in k[X] with D = A^2 + 4G the b2-cubic, D
-                                          squarefree from disc(D) = 16 Delta (Cubic.discr +
-                                          squarefree iff nodup roots over the algebraically closed
-                                          base), valuation argument; char-2 branch via u = tA
-                                          integral-quadratic. Then the outer construction (class-
-                                          group pairing).
+                                          topEquiv). REMAINING: (iv) IsIntegralClosure (normality)
+                                          NEARLY DONE 2026-07-21: easy direction, span
+                                          decomposition, the monic quadratic for x, minpoly-
+                                          coefficient integrality
+                                          (isIntegrallyClosed_eq_field_fractions'), degree dichotomy
+                                          with the linear case CLOSED, coefficient pinning, the
+                                          discriminant identity tau^2 - 4nu = tc^2 (A^2+4G), and the
+                                          FULL reduced-fraction descent + witness assembly for odd
+                                          characteristic -- ALL PROVEN. Remaining three sorries:
+                                          (iv-a) hDsf: Squarefree (A^2 + 4G) via Cubic.discr = 16
+                                          Delta (b_relation), roots-nodup over the algebraically
+                                          closed base, separable -> squarefree; (iv-b) the
+                                          characteristic-two branch (u = tA satisfies a monic
+                                          quadratic over k[X]; regularity at roots of A from Delta
+                                          != 0 via b_relation_of_char_two); (outer) the class-group
+                                          pairing construction itself.
                             - ✅· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density, topological form
                               — now (2026-07-16) by the profinite limit argument (: cosets of fixing
                               subgroups of finite subextensions are a neighborhood basis,
