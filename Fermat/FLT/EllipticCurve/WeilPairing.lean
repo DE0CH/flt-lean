@@ -8781,6 +8781,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                       Function.comp_apply, Nat.mul_zero, pow_zero,
                       mul_one, one_mul]
                       at hwwN hwwNM hwwD hwwDM hcvtN hcvtD hpjA hpjB hpjM
+                        hwv₃ hwv₄ hwv₇ hwv₈ hwv₉
                     rw [Even.neg_one_pow ⟨Multiset.card Ln, by ring⟩,
                       one_mul] at hwwN
                     rw [Even.neg_one_pow ⟨Multiset.card Ld, by ring⟩,

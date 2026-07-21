@@ -32,3 +32,41 @@ hpjM : (xPS₁ - xM) ^ p * (xS₁ - xM) ^ p * ((M.map (fun x => x.1 - xM) (Ld.bi
 
 ## GOAL
 ⊢ uf * ((M.map (fun ln => yQR₁ - (ln.1 * xQR₁ + ln.2)) Ln).prod * (M.map (fun c => xQR₁ - c) Vn).prod) * (uf * ((M.map (fun ln => W.negY xR₁ yR₁ - (ln.1 * xR₁ + ln.2)) Ln).prod * (M.map (fun c => xR₁ - c) Vn).prod)) * (uf * ((M.map (fun ln => yR₃ - (ln.1 * xR₃ + ln.2)) Ln).prod * (M.map (fun c => xR₃ - c) Vn).prod)) * (uf * ((M.map (fun ln => W.negY xQR₃ yQR₃ - (ln.1 * xQR₃ + ln.2)) Ln).prod * (M.map (fun c => xQR₃ - c) Vn).prod)) * ((xR₁ - xS₁) ^ p * (xR₁ - xS₁) ^ p * (xQR₃ - xS₁) ^ p * (xQR₃ - xS₁) ^ p) * (c * ((yS₁ - (SA * xS₁ + (NA))) * (yS₁ - (SB * xS₁ + (W.negY xR₁ yR₁ - SB * xR₁)))) * (c * ((W.negY xS₁ yS₁ - (SA * xS₁ + (NA))) * (W.negY xS₁ yS₁ - (SB * xS₁ + (W.negY xR₁ yR₁ - SB * xR₁)))))) ^ p * ((xPS₁ - xR₁) * (xPS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p * ((xPS₁ - xM) * (xS₁ - xM)) ^ p * ((M.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod * (M.map (fun c => xR₁ - c) Vd).prod) * ((M.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod * (M.map (fun c => xQR₃ - c) Vd).prod) = uf * ((M.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ln).prod * (M.map (fun c => xR₁ - c) Vn).prod) * (uf * ((M.map (fun ln => W.negY xR₁ yR₁ - (ln.1 * xR₁ + ln.2)) Ln).prod * (M.map (fun c => xR₁ - c) Vn).prod)) * (uf * ((M.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ln).prod * (M.map (fun c => xQR₃ - c) Vn).prod)) * (uf * ((M.map (fun ln => W.negY xQR₃ yQR₃ - (ln.1 * xQR₃ + ln.2)) Ln).prod * (M.map (fun c => xQR₃ - c) Vn).prod)) * ((xQR₁ - xS₁) ^ p * (xR₁ - xS₁) ^ p * (xR₃ - xS₁) ^ p * (xQR₃ - xS₁) ^ p) * (c * ((yPS₁ - (SA * xPS₁ + (NA))) * (yPS₁ - (SB * xPS₁ + (W.negY xR₁ yR₁ - SB * xR₁)))) * (c * ((W.negY xS₁ yS₁ - (SA * xS₁ + (NA))) * (W.negY xS₁ yS₁ - (SB * xS₁ + (W.negY xR₁ yR₁ - SB * xR₁)))))) ^ p * ((xS₁ - xR₁) * (xS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p * ((xS₁ - xM) * (xS₁ - xM)) ^ p * ((M.map (fun ln => yQR₁ - (ln.1 * xQR₁ + ln.2)) Ld).prod * (M.map (fun c => xQR₁ - c) Vd).prod) * ((M.map (fun ln => yR₃ - (ln.1 * xR₃ + ln.2)) Ld).prod * (M.map (fun c => xR₃ - c) Vd).prod)
+
+## Atom-closure map (derived 2026-07-21, second pass)
+
+The goal's word-value atoms at the six setup points close as follows:
+- P1..P4 (the Dt points): through hcvtN/hcvtD (LHS gives PhiN/PhiD at
+  P1..P4 times the two xM-fiber values; RHS = the per-chord ROOTS_A/B
+  products) chained with hwwN/hwwD (per-chord products = LnA*LnB*VnfA*VnfB
+  resp. Ld-versions) and hpjA/hpjB (DP-values times Ld-side = Ln-side).
+- P5, P6 (the sigma-companions (xR1,yR1), (xQR3,yQR3)): through the OUTER
+  instances hwv7 (= hww Ln 0 Vn {xR1,xQR3}) and hwv8 (= hww Ld 0 Vd
+  {xR1,xQR3}): PhiN(P2)PhiN(P5)PhiN(P4)PhiN(P6) = prod over
+  can(Ln)+fib(Vn) of (x-xR1)(x-xQR3), and the D-version. The P2/P4
+  factors also occur in the P1..P4 chain, so they cancel between the two
+  chains in the telescope.
+- The W-groups ((xPS1-xR1)(xPS1-xQR3)... ^p) and V-groups pair with
+  hpjM-analogues at (x-xR1),(x-xQR3): NOT bound — instead hwv3/hwv4
+  (= hww 0 Ln {xR1,xQR3} Vn / Ld-version) give prod over can+fib of
+  (x-xR1)(x-xQR3) — the same RHS atoms as hwv7/hwv8's LHS — and their
+  fiber sides are the explicit S1-fiber... CORRECTION: hwv3/4's RHS is
+  over fib({xR1,xQR3}) = PhiN at P2,P5,P4,P6 — same as hwv7/8. The
+  DP-side (x-xR1)(x-xQR3) values (the W-groups, at PS1 and -S1, ^p)
+  connect via hcvP at (fun T => T.1 - xR1) and (fun T => T.1 - xQR3):
+  TWO MORE PROJECTIONS TO BIND (safe: xR1, xQR3 differ from xS1, xPS1
+  in F'-membership, no zero trap).
+- ZERO TRAP: do NOT bind hcvP at (x - xS1) — its DP-side contains
+  (xS1 - xS1)^p = 0. The V-group reconciliation must come through the
+  (x - xR1)/(x - xQR3) projections and hwv9 (explicit fiber identity),
+  never through an (x - xS1) projection.
+- M-fiber junk (PhiN/PhiD at Mf+-): related to Lnm/Vnfm/Ldm/Vdfm by
+  hwwNM/hwwDM and to the (xPS1-xM)^p(xS1-xM)^p factors by hpjM; all
+  fiber values nonzero by the hDne argument (xM notin F'), needed for
+  the final mul_right_cancel0.
+- uf^4 appears on both goal sides and cancels; the c-powers live inside
+  the T-groups and match the hpjA/hpjB DP-values raised to p exactly as
+  in hword1's derivation.
+
+NEXT: bind hcvP at (x - xR1) and (x - xQR3), then assemble the
+telescoped linear_combination; multiply-cancel the M-fiber junk last.
