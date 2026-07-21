@@ -6682,7 +6682,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
         (WeierstrassCurve.Affine.Point.some xQR yQR hQR =
           WeierstrassCurve.Affine.Point.some xQ yQ hQ +
           WeierstrassCurve.Affine.Point.some xR yR hR) ∧
-        xQR ≠ xS ∧ xQR ≠ xPS ∧
+        xQR ≠ xS ∧ xQR ≠ xPS ∧ xQR ∉ F' ∧
       ∃ (aP aQ : Wb.toAffine.CoordinateRing),
         Ideal.span {aP} =
           (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
@@ -7023,8 +7023,23 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           simp only [Finset.mem_union]
           exact Or.inl (Or.inl (hFfin.mem_toFinset.mpr ha)))
       -- the second translate, off F'
-      obtain ⟨xR, hxR, yR, hRns⟩ := hpoints hF'fin.toFinset
-      rw [Set.Finite.mem_toFinset] at hxR
+      obtain ⟨xR, hxRavoid, yR, hRns⟩ := hpoints (hF'fin.toFinset ∪
+        hF'fin.toFinset.image (fun c => xOf
+          (-(WeierstrassCurve.Affine.Point.some xQ yQ hQ) +
+            WeierstrassCurve.Affine.Point.some c (yfib c)
+              ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                (hyfib c)))) ∪
+        hF'fin.toFinset.image (fun c => xOf
+          (-(WeierstrassCurve.Affine.Point.some xQ yQ hQ) +
+            WeierstrassCurve.Affine.Point.some c
+              (Wb.toAffine.negY c (yfib c))
+              ((WeierstrassCurve.Affine.nonsingular_neg c (yfib c)).mpr
+                ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                  (hyfib c))))))
+      have hxR : xR ∉ (F' : Set (AlgebraicClosure (ZMod q))) := fun h =>
+        hxRavoid (by
+          simp only [Finset.mem_union]
+          exact Or.inl (Or.inl (hF'fin.mem_toFinset.mpr h)))
       have hRneg : Wb.toAffine.Nonsingular xR (Wb.toAffine.negY xR yR) :=
         (WeierstrassCurve.Affine.nonsingular_neg xR yR).mpr hRns
       -- Q ⊕ R is affine
@@ -7127,6 +7142,25 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
             exact hF'mem _ (Finset.mem_union_right _
               (Finset.mem_insert_of_mem (Finset.mem_insert_of_mem
                 (Finset.mem_insert_of_mem (Finset.mem_singleton_self _)))))
+      -- x(Q⊕R) also avoids the enlarged subfield itself
+      have hxQRF' : xQR ∉ (F' : Set (AlgebraicClosure (ZMod q))) := by
+        intro hin
+        rcases hfib2 xQR yQR hQR.left with hy | hy
+        · refine hxRavoid ?_
+          rw [hxRof xQR (yfib xQR)
+            ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+              (hyfib xQR)) (hptfun _ _ _ _ hQR _ rfl hy)]
+          simp only [Finset.mem_union]
+          exact Or.inl (Or.inr (Finset.mem_image.mpr
+            ⟨xQR, hF'fin.mem_toFinset.mpr hin, rfl⟩))
+        · refine hxRavoid ?_
+          rw [hxRof xQR (Wb.toAffine.negY xQR (yfib xQR))
+            ((WeierstrassCurve.Affine.nonsingular_neg xQR (yfib xQR)).mpr
+              ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                (hyfib xQR))) (hptfun _ _ _ _ hQR _ rfl hy)]
+          simp only [Finset.mem_union]
+          exact Or.inr (Finset.mem_image.mpr
+            ⟨xQR, hF'fin.mem_toFinset.mpr hin, rfl⟩)
       -- the explicit point divisors of the Miller numerators
       have hDP : Ideal.span {aP} =
           ((Multiset.replicate p ((xPS, yPS) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) +
@@ -7264,7 +7298,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           xS, yS, hSns, hxSF', hySF', hxS,
           xR, yR, hRns, hxR,
           xPS, yPS, hPS, hPSc.symm, hxPSF', hyPSF',
-          xQR, yQR, hQR, hQRc.symm, hxQRne.1, hxQRne.2,
+          xQR, yQR, hQR, hQRc.symm, hxQRne.1, hxQRne.2, hxQRF',
           aP, aQ, haP, haQ, hA,
           by rw [Units.val_mk0]
              exact div_mul_cancel₀ _ hA⟩
@@ -7678,7 +7712,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       (WeierstrassCurve.Affine.Point.some xQR₁ yQR₁ hQR₁ =
         WeierstrassCurve.Affine.Point.some xQ yQ hQ +
         WeierstrassCurve.Affine.Point.some xR₁ yR₁ hR₁) →
-      xQR₁ ≠ xS₁ → xQR₁ ≠ xPS₁ →
+      xQR₁ ≠ xS₁ → xQR₁ ≠ xPS₁ → xQR₁ ∉ F' →
       ∀ (aP₁ aQ₁ : Wb.toAffine.CoordinateRing),
       Ideal.span {aP₁} =
         (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
@@ -7743,7 +7777,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
     intro F F' hFfin hF'fin hFF' xP yP hP xQ yQ hQ hxPF hyPF hxQF hyQF
       xS₁ yS₁ hS₁ hxS₁F' hyS₁F' hxS₁F xR₁ yR₁ hR₁ hxR₁
       xPS₁ yPS₁ hPS₁ hPSc₁ hxPS₁F' hyPS₁F' xQR₁ yQR₁ hQR₁ hQRc₁
-      hxQR₁nS hxQR₁nPS aP₁ aQ₁ haP₁ haQ₁
+      hxQR₁nS hxQR₁nPS hxQR₁F' aP₁ aQ₁ haP₁ haQ₁
       xS₃ yS₃ hS₃ xR₃ yR₃ hR₃ xPS₃ yPS₃ hPS₃ xQR₃ yQR₃ hQR₃ aP₃ aQ₃
       hxS₃ hxR₃ hxPS₃ hxQR₃ hPSc₃ hQRc₃ haP₃ haQ₃
     -- the R-STEP: with the first translate S₁ fixed, moving the second
@@ -8517,13 +8551,13 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       obtain ⟨F₁, F₁', hF₁fin, hF₁'fin, hFF₁, hxPF₁, hyPF₁, hxQF₁, hyQF₁,
         xS₁, yS₁, hS₁, hxS₁F', hyS₁F', hxS₁F, xR₁, yR₁, hR₁, hxR₁,
         xPS₁, yPS₁, hPS₁, hPSc₁, hxPS₁F', hyPS₁F',
-        xQR₁, yQR₁, hQR₁, hQRc₁, hxQR₁nS, hxQR₁nPS,
+        xQR₁, yQR₁, hQR₁, hQRc₁, hxQR₁nS, hxQR₁nPS, hxQR₁F',
         aP₁, aQ₁, haP₁, haQ₁, hA₁, heq₁⟩ :=
         hz₁.2 xP yP hP₀ xQ yQ hQ₀ hcv hcw
       obtain ⟨F₂, F₂', hF₂fin, hF₂'fin, hFF₂, hxPF₂, hyPF₂, hxQF₂, hyQF₂,
         xS₂, yS₂, hS₂, hxS₂F', hyS₂F', hxS₂F, xR₂, yR₂, hR₂, hxR₂,
         xPS₂, yPS₂, hPS₂, hPSc₂, hxPS₂F', hyPS₂F',
-        xQR₂, yQR₂, hQR₂, hQRc₂, hxQR₂nS, hxQR₂nPS,
+        xQR₂, yQR₂, hQR₂, hQRc₂, hxQR₂nS, hxQR₂nPS, hxQR₂F',
         aP₂, aQ₂, haP₂, haQ₂, hA₂, heq₂⟩ :=
         hz₂.2 xP yP hP₀ xQ yQ hQ₀ hcv hcw
       -- THE CROSS-SETUP RECIPROCITY: the two Miller cross-ratios agree,
@@ -8581,7 +8615,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
         have h13 := hrecgen F₁ F₁' hF₁fin hF₁'fin hFF₁ xP yP hP₀ xQ yQ hQ₀
           hxPF₁ hyPF₁ hxQF₁ hyQF₁ xS₁ yS₁ hS₁ hxS₁F' hyS₁F' hxS₁F
           xR₁ yR₁ hR₁ hxR₁ xPS₁ yPS₁ hPS₁ hPSc₁ hxPS₁F' hyPS₁F'
-          xQR₁ yQR₁ hQR₁ hQRc₁ hxQR₁nS hxQR₁nPS aP₁ aQ₁ haP₁ haQ₁
+          xQR₁ yQR₁ hQR₁ hQRc₁ hxQR₁nS hxQR₁nPS hxQR₁F' aP₁ aQ₁ haP₁ haQ₁
           xS₃ yS₃ hS₃ xR₃ yR₃ hR₃ xPS₃ yPS₃ hPS₃ xQR₃ yQR₃ hQR₃ aP₃ aQ₃
           (fun h => hxS₃ (hF₁'G h)) (fun h => hxR₃ (hF₁'G h))
           (fun h => hxPS₃ (hF₁'G h)) (fun h => hxQR₃ (hF₁'G h))
@@ -8589,7 +8623,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
         have h23 := hrecgen F₂ F₂' hF₂fin hF₂'fin hFF₂ xP yP hP₀ xQ yQ hQ₀
           hxPF₂ hyPF₂ hxQF₂ hyQF₂ xS₂ yS₂ hS₂ hxS₂F' hyS₂F' hxS₂F
           xR₂ yR₂ hR₂ hxR₂ xPS₂ yPS₂ hPS₂ hPSc₂ hxPS₂F' hyPS₂F'
-          xQR₂ yQR₂ hQR₂ hQRc₂ hxQR₂nS hxQR₂nPS aP₂ aQ₂ haP₂ haQ₂
+          xQR₂ yQR₂ hQR₂ hQRc₂ hxQR₂nS hxQR₂nPS hxQR₂F' aP₂ aQ₂ haP₂ haQ₂
           xS₃ yS₃ hS₃ xR₃ yR₃ hR₃ xPS₃ yPS₃ hPS₃ xQR₃ yQR₃ hQR₃ aP₃ aQ₃
           (fun h => hxS₃ (hF₂'G h)) (fun h => hxR₃ (hF₂'G h))
           (fun h => hxPS₃ (hF₂'G h)) (fun h => hxQR₃ (hF₂'G h))
