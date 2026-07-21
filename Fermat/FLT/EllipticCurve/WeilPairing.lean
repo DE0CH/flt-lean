@@ -4801,6 +4801,51 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
     rintro z (rfl | rfl)
     · exact hXmem
     · exact hYmem
+  -- principal-divisor factorization: every nonzero element's span is a
+  -- product of point ideals with multiplicity -- its affine divisor
+  have hfactor : ∀ f : Wb.toAffine.CoordinateRing, f ≠ 0 →
+      ∃ D : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))),
+        (∀ P ∈ D, Wb.toAffine.Equation P.1 P.2) ∧
+        Ideal.span {f} =
+          (D.map (fun P => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+            Wb.toAffine P.1 (Polynomial.C P.2))).prod := by
+    intro f hf
+    classical
+    have hspan : Ideal.span {f} ≠ ⊥ := by
+      simpa [Ideal.span_singleton_eq_bot] using hf
+    have hprodeq := Ideal.prod_normalizedFactors_eq_self hspan
+    -- each normalized factor is maximal, hence a point ideal by `hmax`
+    have hptfun : ∀ I ∈ UniqueFactorizationMonoid.normalizedFactors
+        (Ideal.span {f}), ∃ (x₀ y₀ : (AlgebraicClosure (ZMod q))),
+        Wb.toAffine.Equation x₀ y₀ ∧
+        I = WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₀
+          (Polynomial.C y₀) := by
+      intro I hI
+      have hprime := UniqueFactorizationMonoid.prime_of_normalized_factor I hI
+      have hmaximal : I.IsMaximal :=
+        ((Ideal.prime_iff_isPrime hprime.ne_zero).mp hprime).isMaximal
+          hprime.ne_zero
+      exact hmax I hmaximal
+    refine ⟨(UniqueFactorizationMonoid.normalizedFactors
+        (Ideal.span {f})).attach.map (fun I =>
+        ((hptfun I.1 I.2).choose, (hptfun I.1 I.2).choose_spec.choose)), ?_, ?_⟩
+    · intro P hP
+      obtain ⟨I, -, hIP⟩ := Multiset.mem_map.mp hP
+      rw [← hIP]
+      exact (hptfun I.1 I.2).choose_spec.choose_spec.1
+    · have hMeq : ((UniqueFactorizationMonoid.normalizedFactors
+          (Ideal.span {f})).attach.map (fun I =>
+          ((hptfun I.1 I.2).choose,
+            (hptfun I.1 I.2).choose_spec.choose))).map
+          (fun P => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+            Wb.toAffine P.1 (Polynomial.C P.2)) =
+          UniqueFactorizationMonoid.normalizedFactors (Ideal.span {f}) := by
+        rw [Multiset.map_map]
+        exact (Multiset.map_congr rfl (fun I _ =>
+          (hptfun I.1 I.2).choose_spec.choose_spec.2.symm)).trans
+          (Multiset.attach_map_val _)
+      rw [hMeq]
+      exact hprodeq.symm
   sorry
 
 set_option warn.sorry false in
