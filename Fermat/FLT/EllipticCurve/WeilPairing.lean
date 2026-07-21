@@ -4153,6 +4153,89 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       (FractionRing (Polynomial (AlgebraicClosure (ZMod q))))
       (FractionRing Wb.toAffine.CoordinateRing)
       Wb.toAffine.CoordinateRing
+  -- units of the coordinate ring are the nonzero constants (the norm
+  -- has degree zero, forcing the basis components down)
+  have hCunits : ∀ u : Wb.toAffine.CoordinateRing, IsUnit u →
+      ∃ c : (AlgebraicClosure (ZMod q)), c ≠ 0 ∧ u = AdjoinRoot.of Wb.toAffine.polynomial
+        (Polynomial.C c) := by
+    intro u hu
+    obtain ⟨pp, qq, rfl⟩ :=
+      WeierstrassCurve.Affine.CoordinateRing.exists_smul_basis_eq u
+    -- the norm of a unit is a unit of `k[X]`, so it has degree zero
+    obtain ⟨v, hv⟩ := hu
+    have hnu : IsUnit (Algebra.norm (Polynomial (AlgebraicClosure (ZMod q)))
+        (pp • 1 + qq • AdjoinRoot.mk Wb.toAffine.polynomial
+          Polynomial.X)) := by
+      refine isUnit_iff_exists.mpr ⟨Algebra.norm (Polynomial (AlgebraicClosure (ZMod q)))
+        ((v⁻¹ : Wb.toAffine.CoordinateRingˣ) :
+          Wb.toAffine.CoordinateRing), ?_, ?_⟩
+      · rw [← map_mul]
+        rw [show (pp • 1 + qq • AdjoinRoot.mk Wb.toAffine.polynomial
+          Polynomial.X) * ((v⁻¹ : Wb.toAffine.CoordinateRingˣ) :
+          Wb.toAffine.CoordinateRing) = ((v * v⁻¹ :
+          Wb.toAffine.CoordinateRingˣ) : Wb.toAffine.CoordinateRing)
+          from by rw [Units.val_mul, hv]]
+        rw [mul_inv_cancel, Units.val_one, map_one]
+      · rw [← map_mul]
+        rw [show ((v⁻¹ : Wb.toAffine.CoordinateRingˣ) :
+          Wb.toAffine.CoordinateRing) * (pp • 1 + qq •
+          AdjoinRoot.mk Wb.toAffine.polynomial Polynomial.X) =
+          ((v⁻¹ * v : Wb.toAffine.CoordinateRingˣ) :
+          Wb.toAffine.CoordinateRing) from by rw [Units.val_mul, hv]]
+        rw [inv_mul_cancel, Units.val_one, map_one]
+    have hdeg0 : (Algebra.norm (Polynomial (AlgebraicClosure (ZMod q)))
+        (pp • 1 + qq • AdjoinRoot.mk Wb.toAffine.polynomial
+          Polynomial.X)).degree = 0 :=
+      Polynomial.degree_eq_zero_of_isUnit hnu
+    rw [WeierstrassCurve.Affine.CoordinateRing.degree_norm_smul_basis]
+      at hdeg0
+    -- the max forces `qq = 0` and `pp` constant
+    have hqq : qq = 0 := by
+      by_contra hqq0
+      have h1 : (2 • qq.degree + 3 : WithBot ℕ) ≤ 0 := by
+        rw [← hdeg0]
+        exact le_max_right _ _
+      have h2 : (0 : WithBot ℕ) ≤ 2 • qq.degree + 3 := by
+        have h3 : (0 : WithBot ℕ) ≤ qq.degree :=
+          Polynomial.zero_le_degree_iff.mpr hqq0
+        calc (0 : WithBot ℕ) ≤ 2 • qq.degree := by
+              rw [show (2 : ℕ) • qq.degree = qq.degree + qq.degree from
+                two_nsmul qq.degree]
+              exact le_trans h3 (le_add_of_nonneg_left h3)
+          _ ≤ 2 • qq.degree + 3 := le_add_of_nonneg_right (by norm_num)
+      have h4 : (2 • qq.degree + 3 : WithBot ℕ) = 0 := le_antisymm h1 h2
+      have h5 : (0 : WithBot ℕ) < 2 • qq.degree + 3 := by
+        refine lt_of_lt_of_le (by norm_num : (0 : WithBot ℕ) < 3) ?_
+        refine le_add_of_nonneg_left ?_
+        rw [show (2 : ℕ) • qq.degree = qq.degree + qq.degree from
+          two_nsmul qq.degree]
+        have h3 : (0 : WithBot ℕ) ≤ qq.degree :=
+          Polynomial.zero_le_degree_iff.mpr hqq0
+        exact le_trans h3 (le_add_of_nonneg_left h3)
+      exact absurd h4 (ne_of_gt h5)
+    have hpp : pp.degree = 0 := by
+      rw [hqq] at hdeg0
+      simp only [Polynomial.degree_zero] at hdeg0
+      have : (2 • pp.degree : WithBot ℕ) = 0 := by
+        rw [← hdeg0]
+        rw [max_eq_left]
+        rw [show (2 : ℕ) • (⊥ : WithBot ℕ) + 3 = ⊥ from by rfl]
+        exact bot_le
+      rw [two_nsmul, Nat.WithBot.add_eq_zero_iff] at this
+      exact this.1
+    -- conclude: `pp` is the constant `c`
+    have hppC : pp = Polynomial.C (pp.coeff 0) :=
+      Polynomial.eq_C_of_degree_le_zero (le_of_eq hpp)
+    refine ⟨pp.coeff 0, ?_, ?_⟩
+    · intro h0
+      have hppz : pp = 0 := by rw [hppC, h0, Polynomial.C_0]
+      have hz : (pp • 1 + qq • AdjoinRoot.mk Wb.toAffine.polynomial
+          Polynomial.X : Wb.toAffine.CoordinateRing) = 0 := by
+        rw [hppz, hqq, zero_smul, zero_smul, add_zero]
+      exact Units.ne_zero v (hv.trans hz)
+    · conv_lhs => rw [hqq, zero_smul, add_zero, hppC]
+      rw [Algebra.smul_def, mul_one]
+      rfl
   sorry
 
 set_option warn.sorry false in
