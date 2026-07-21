@@ -4541,6 +4541,105 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
     exact (WeierstrassCurve.Affine.CoordinateRing.quotientXYIdealEquiv
       (W' := Wb.toAffine) hE).toMulEquiv.isField
       (Field.toIsField (AlgebraicClosure (ZMod q)))
+  -- every maximal ideal of the coordinate ring contains a vertical `x - c`:
+  -- the norm of a nonzero member is a nonzero polynomial of `k[x]` lying in
+  -- the (prime) contraction, which therefore contains a linear factor
+  have hlinfac : ∀ M : Ideal Wb.toAffine.CoordinateRing, M.IsMaximal →
+      ∃ c : (AlgebraicClosure (ZMod q)), algebraMap (Polynomial (AlgebraicClosure (ZMod q))) Wb.toAffine.CoordinateRing
+        (Polynomial.X - Polynomial.C c) ∈ M := by
+    intro M hM
+    obtain ⟨x₁, -, y₁, hns₁⟩ := hpoints ∅
+    have hbot : M ≠ ⊥ := by
+      intro hMbot
+      have hXYm := hXYmax x₁ y₁ hns₁.left
+      have hbotmax : (⊥ : Ideal Wb.toAffine.CoordinateRing).IsMaximal := hMbot ▸ hM
+      have hEq := hbotmax.eq_of_le hXYm.ne_top bot_le
+      refine WeierstrassCurve.Affine.CoordinateRing.XClass_ne_zero
+        (W' := Wb.toAffine) x₁ ?_
+      have hmem : WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine x₁ ∈
+          WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₁
+            (Polynomial.C y₁) :=
+        Ideal.subset_span (Set.mem_insert _ _)
+      rw [← hEq] at hmem
+      exact (Submodule.mem_bot _).mp hmem
+    obtain ⟨f, hfM, hf0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hbot
+    obtain ⟨a, b, rfl⟩ :=
+      WeierstrassCurve.Affine.CoordinateRing.exists_smul_basis_eq
+        (W' := Wb.toAffine) f
+    -- the norm is nonzero
+    have hab : ¬(a = 0 ∧ b = 0) := by
+      rintro ⟨rfl, rfl⟩
+      simp at hf0
+    have hN0 : Algebra.norm (Polynomial (AlgebraicClosure (ZMod q)))
+        (a • (1 : Wb.toAffine.CoordinateRing) +
+          b • WeierstrassCurve.Affine.CoordinateRing.mk Wb.toAffine
+            Polynomial.X) ≠ 0 := by
+      intro h0
+      have hdeg := WeierstrassCurve.Affine.CoordinateRing.degree_norm_smul_basis
+        (W' := Wb.toAffine) a b
+      rw [h0, Polynomial.degree_zero] at hdeg
+      rcases max_eq_bot.mp hdeg.symm with ⟨ha, hb⟩
+      have h2 : ∀ d : WithBot ℕ, 2 • d = ⊥ → d = ⊥ := by
+        intro d hd
+        cases d with
+        | bot => rfl
+        | coe n => simp [two_smul, WithBot.add_eq_bot] at hd
+      refine hab ⟨Polynomial.degree_eq_bot.mp (h2 _ ha),
+        Polynomial.degree_eq_bot.mp (h2 _ ?_)⟩
+      rcases WithBot.add_eq_bot.mp hb with h | h
+      · exact h
+      · exact absurd h (by simp)
+    -- the norm lies in `M` (it is `f` times the explicit conjugate) hence in
+    -- the contraction, which is prime; the norm splits into linear factors,
+    -- so one linear factor lies in the contraction
+    have hmkf : WeierstrassCurve.Affine.CoordinateRing.mk Wb.toAffine
+        (Polynomial.C a + Polynomial.C b * Polynomial.X) =
+        a • (1 : Wb.toAffine.CoordinateRing) +
+          b • WeierstrassCurve.Affine.CoordinateRing.mk Wb.toAffine
+            Polynomial.X := by
+      rw [map_add, map_mul, Algebra.smul_def, Algebra.smul_def,
+        AdjoinRoot.algebraMap_eq, mul_one]
+      rfl
+    have hNfM : algebraMap (Polynomial (AlgebraicClosure (ZMod q)))
+        Wb.toAffine.CoordinateRing
+        (Algebra.norm (Polynomial (AlgebraicClosure (ZMod q)))
+          (a • (1 : Wb.toAffine.CoordinateRing) +
+            b • WeierstrassCurve.Affine.CoordinateRing.mk Wb.toAffine
+              Polynomial.X)) ∈ M := by
+      rw [AdjoinRoot.algebraMap_eq,
+        WeierstrassCurve.Affine.CoordinateRing.coe_norm_smul_basis]
+      rw [map_mul, hmkf]
+      exact M.mul_mem_right _ hfM
+    have hprime : (M.comap (algebraMap (Polynomial (AlgebraicClosure (ZMod q)))
+        Wb.toAffine.CoordinateRing)).IsPrime :=
+      Ideal.IsPrime.comap _ (hK := hM.isPrime)
+    have hfac := Polynomial.C_leadingCoeff_mul_prod_multiset_X_sub_C
+      (p := Algebra.norm (Polynomial (AlgebraicClosure (ZMod q)))
+        (a • (1 : Wb.toAffine.CoordinateRing) +
+          b • WeierstrassCurve.Affine.CoordinateRing.mk Wb.toAffine
+            Polynomial.X)) (hcard _)
+    have hmemfac : Polynomial.C (Algebra.norm
+          (Polynomial (AlgebraicClosure (ZMod q)))
+          (a • (1 : Wb.toAffine.CoordinateRing) +
+            b • WeierstrassCurve.Affine.CoordinateRing.mk Wb.toAffine
+              Polynomial.X)).leadingCoeff *
+        ((Algebra.norm (Polynomial (AlgebraicClosure (ZMod q)))
+          (a • (1 : Wb.toAffine.CoordinateRing) +
+            b • WeierstrassCurve.Affine.CoordinateRing.mk Wb.toAffine
+              Polynomial.X)).roots.map
+          (fun r => Polynomial.X - Polynomial.C r)).prod ∈
+        M.comap (algebraMap (Polynomial (AlgebraicClosure (ZMod q)))
+          Wb.toAffine.CoordinateRing) := by
+      rw [hfac]
+      exact Ideal.mem_comap.mpr hNfM
+    rcases hprime.mem_or_mem hmemfac with hlc | hprod
+    · exact absurd (Ideal.eq_top_of_isUnit_mem _ hlc
+        ((Polynomial.isUnit_C).mpr (IsUnit.mk0 _
+          (Polynomial.leadingCoeff_ne_zero.mpr hN0)))) hprime.ne_top
+    · obtain ⟨g, hg, hgM⟩ :=
+        (hprime.multiset_prod_mem_iff_exists_mem _).mp hprod
+      obtain ⟨c, -, rfl⟩ := Multiset.mem_map.mp hg
+      exact ⟨c, Ideal.mem_comap.mp hgM⟩
   sorry
 
 set_option warn.sorry false in
