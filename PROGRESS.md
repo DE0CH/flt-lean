@@ -116,44 +116,32 @@ entries file). To add/remove/annotate a node, edit
                                               discrete logarithm: primitive root via
                                               HasEnoughRootsOfUnity, zmodEquivZPowers, Frobenius
                                               naturality becomes q-scaling since frobAlgHom is x^q).
-                                                - ❌🟪 `WeilPairing.exists_weilPairing_mu` — the mu_p-valued Weil pairing over F_q (sorry node;
-                                                  N1 in progress 2026-07-21): construction plan
-                                                  recorded in-proof (divisor-theoretic via the
-                                                  Dedekind coordinate ring, class-group divisors
-                                                  through mathlib's injective Point.toClass, Miller
-                                                  generators, evaluation-ratio pairing, Weil
-                                                  reciprocity). N1 =
-                                                  IsDedekindDomain(CoordinateRing) framed by Krull-
-                                                  Akizuki (IsIntegralClosure.isDedekindDomain):
-                                                  PROVEN so far: the conjugation AlgHom conj (root
-                                                  to -A-root, via liftAlgHom with the element-level
-                                                  root relation hrel2), involution + injectivity,
-                                                  power-basis decomposition hdecomp, the norm hnorm
-                                                  (z * conj z = of(p^2 - pqA - q^2 G)), FaithfulSMul
-                                                  (i), and FiniteDimensional k(X) Frac(C) (ii, span
-                                                  of {1, root} by conjugate-norm denominator
-                                                  clearing). (iii) IsSeparable PROVEN 2026-07-21
-                                                  (Bezout certificate char != 2; unit-constant
-                                                  derivative char 2 with the Delta-vanishing
-                                                  computation; adjoin-simple transfer via hspan +
-                                                  topEquiv). REMAINING: (iv) IsIntegralClosure
-                                                  (normality) NEARLY DONE 2026-07-21: easy
-                                                  direction, span decomposition, the monic quadratic
-                                                  for x, minpoly-coefficient integrality
-                                                  (isIntegrallyClosed_eq_field_fractions'), degree
-                                                  dichotomy with the linear case CLOSED, coefficient
-                                                  pinning, the discriminant identity tau^2 - 4nu =
-                                                  tc^2 (A^2+4G), and the FULL reduced-fraction
-                                                  descent + witness assembly for odd characteristic
-                                                  -- ALL PROVEN. Remaining three sorries: (iv-a)
-                                                  hDsf: Squarefree (A^2 + 4G) via Cubic.discr = 16
-                                                  Delta (b_relation), roots-nodup over the
-                                                  algebraically closed base, separable ->
-                                                  squarefree; (iv-b) the characteristic-two branch
-                                                  (u = tA satisfies a monic quadratic over k[X];
-                                                  regularity at roots of A from Delta != 0 via
-                                                  b_relation_of_char_two); (outer) the class-group
-                                                  pairing construction itself.
+                                                - ❌🟪 `WeilPairing.exists_weilPairing_mu` — the mu_p-valued Weil pairing over F_q (single
+                                                  sorry 2026-07-21: N1 COMPLETE):
+                                                  IsDedekindDomain(CoordinateRing) of the base-
+                                                  changed curve is FULLY PROVEN via Krull-Akizuki --
+                                                  FaithfulSMul, FiniteDimensional (conjugate-norm
+                                                  span), IsSeparable (Bezout certificate / char-2
+                                                  unit-derivative with Delta-vanishing),
+                                                  IsIntegralClosure (normality: minpoly coefficient
+                                                  descent, degree dichotomy, reduced-fraction
+                                                  descent against the squarefree b2-cubic with disc
+                                                  = 16 Delta in odd characteristic; in
+                                                  characteristic two the tau0 = tc A collapse, w =
+                                                  sc A integrality, and the Taylor/singular-point
+                                                  contradiction at the root of A -- both affine
+                                                  partials vanish, contradicting
+                                                  equation_iff_nonsingular). REMAINING (the single
+                                                  sorry): the pairing construction itself on the
+                                                  now-Dedekind coordinate ring: mathlib's injective
+                                                  Point.toClass into ClassGroup, p-torsion classes
+                                                  have principal p-th ideal powers with Miller
+                                                  generators, the evaluation-ratio pairing e(P,Q) =
+                                                  f_P(D_Q)/f_Q(D_P),
+                                                  bilinearity/alternation/nondegeneracy via Weil
+                                                  reciprocity on HeightOneSpectrum divisors plus the
+                                                  infinite place, Frobenius naturality from
+                                                  functoriality of the whole construction.
                                     - ✅· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density,
                                       topological form — now (2026-07-16) by the profinite limit
                                       argument (: cosets of fixing subgroups of finite subextensions
@@ -220,39 +208,28 @@ entries file). To add/remove/annotate a node, edit
                                       primitive root via HasEnoughRootsOfUnity, zmodEquivZPowers,
                                       Frobenius naturality becomes q-scaling since frobAlgHom is
                                       x^q).
-                                        - ❌🟪 `WeilPairing.exists_weilPairing_mu` — the mu_p-valued Weil pairing over F_q (sorry node; N1 in
-                                          progress 2026-07-21): construction plan recorded in-proof
-                                          (divisor-theoretic via the Dedekind coordinate ring,
-                                          class-group divisors through mathlib's injective
-                                          Point.toClass, Miller generators, evaluation-ratio
-                                          pairing, Weil reciprocity). N1 =
-                                          IsDedekindDomain(CoordinateRing) framed by Krull-Akizuki
-                                          (IsIntegralClosure.isDedekindDomain): PROVEN so far: the
-                                          conjugation AlgHom conj (root to -A-root, via liftAlgHom
-                                          with the element-level root relation hrel2), involution +
-                                          injectivity, power-basis decomposition hdecomp, the norm
-                                          hnorm (z * conj z = of(p^2 - pqA - q^2 G)), FaithfulSMul
-                                          (i), and FiniteDimensional k(X) Frac(C) (ii, span of {1,
-                                          root} by conjugate-norm denominator clearing). (iii)
-                                          IsSeparable PROVEN 2026-07-21 (Bezout certificate char !=
-                                          2; unit-constant derivative char 2 with the Delta-
-                                          vanishing computation; adjoin-simple transfer via hspan +
-                                          topEquiv). REMAINING: (iv) IsIntegralClosure (normality)
-                                          NEARLY DONE 2026-07-21: easy direction, span
-                                          decomposition, the monic quadratic for x, minpoly-
-                                          coefficient integrality
-                                          (isIntegrallyClosed_eq_field_fractions'), degree dichotomy
-                                          with the linear case CLOSED, coefficient pinning, the
-                                          discriminant identity tau^2 - 4nu = tc^2 (A^2+4G), and the
-                                          FULL reduced-fraction descent + witness assembly for odd
-                                          characteristic -- ALL PROVEN. Remaining three sorries:
-                                          (iv-a) hDsf: Squarefree (A^2 + 4G) via Cubic.discr = 16
-                                          Delta (b_relation), roots-nodup over the algebraically
-                                          closed base, separable -> squarefree; (iv-b) the
-                                          characteristic-two branch (u = tA satisfies a monic
-                                          quadratic over k[X]; regularity at roots of A from Delta
-                                          != 0 via b_relation_of_char_two); (outer) the class-group
-                                          pairing construction itself.
+                                        - ❌🟪 `WeilPairing.exists_weilPairing_mu` — the mu_p-valued Weil pairing over F_q (single sorry
+                                          2026-07-21: N1 COMPLETE): IsDedekindDomain(CoordinateRing)
+                                          of the base-changed curve is FULLY PROVEN via Krull-
+                                          Akizuki -- FaithfulSMul, FiniteDimensional (conjugate-norm
+                                          span), IsSeparable (Bezout certificate / char-2 unit-
+                                          derivative with Delta-vanishing), IsIntegralClosure
+                                          (normality: minpoly coefficient descent, degree dichotomy,
+                                          reduced-fraction descent against the squarefree b2-cubic
+                                          with disc = 16 Delta in odd characteristic; in
+                                          characteristic two the tau0 = tc A collapse, w = sc A
+                                          integrality, and the Taylor/singular-point contradiction
+                                          at the root of A -- both affine partials vanish,
+                                          contradicting equation_iff_nonsingular). REMAINING (the
+                                          single sorry): the pairing construction itself on the now-
+                                          Dedekind coordinate ring: mathlib's injective
+                                          Point.toClass into ClassGroup, p-torsion classes have
+                                          principal p-th ideal powers with Miller generators, the
+                                          evaluation-ratio pairing e(P,Q) = f_P(D_Q)/f_Q(D_P),
+                                          bilinearity/alternation/nondegeneracy via Weil reciprocity
+                                          on HeightOneSpectrum divisors plus the infinite place,
+                                          Frobenius naturality from functoriality of the whole
+                                          construction.
                             - ✅· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density, topological form
                               — now (2026-07-16) by the profinite limit argument (: cosets of fixing
                               subgroups of finite subextensions are a neighborhood basis,
