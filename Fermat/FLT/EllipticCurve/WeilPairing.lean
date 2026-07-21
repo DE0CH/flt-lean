@@ -8765,6 +8765,26 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                     have hpjB := hcvP (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
                       T.2 - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * T.1 + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))
                     have hpjM := hcvP (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - xM)
+                    have hwvS := hww
+                      ({(Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃,
+                        yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁),
+                       (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃),
+                        Wb.toAffine.negY xR₁ yR₁ -
+                          (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)} :
+                      Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
+                      (0 : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))) (0 : Multiset (AlgebraicClosure (ZMod q)))
+                      ({xS₁} : Multiset (AlgebraicClosure (ZMod q)))
+                    have hwvP := hww
+                      ({(Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃,
+                        yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁),
+                       (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃),
+                        Wb.toAffine.negY xR₁ yR₁ -
+                          (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)} :
+                      Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
+                      (0 : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))) (0 : Multiset (AlgebraicClosure (ZMod q)))
+                      ({xPS₁} : Multiset (AlgebraicClosure (ZMod q)))
+                    have hcvtS := hcvt (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - xS₁)
+                    have hcvtPS := hcvt (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - xPS₁)
                     have hpjR := hcvP (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - xR₁)
                     have hpjQ := hcvP (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - xQR₃)
                     -- normalize: expand literal multisets, replicates, and
@@ -8783,7 +8803,8 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                       Function.comp_apply, Nat.mul_zero, pow_zero,
                       mul_one, one_mul]
                       at hwwN hwwNM hwwD hwwDM hcvtN hcvtD hpjA hpjB hpjM
-                        hpjR hpjQ hwv₃ hwv₄ hwv₇ hwv₈ hwv₉
+                        hpjR hpjQ hwv₃ hwv₄ hwv₇ hwv₈ hwv₉ hwvS hwvP
+                        hcvtS hcvtPS
                     rw [Even.neg_one_pow ⟨Multiset.card Ln, by ring⟩,
                       one_mul] at hwwN
                     rw [Even.neg_one_pow ⟨Multiset.card Ld, by ring⟩,
