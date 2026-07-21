@@ -4911,6 +4911,45 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
         from rfl, AdjoinRoot.evalEval_mk] at hY1
       simp [Polynomial.evalEval] at hY1
       exact sub_eq_zero.mp (by simpa using hY1)
+  -- nonvanishing off the divisor: a nonzero function does not vanish at any
+  -- curve point outside its divisor
+  have hoffdiv : ∀ (f : Wb.toAffine.CoordinateRing),
+      ∀ D : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))),
+      (∀ P ∈ D, Wb.toAffine.Equation P.1 P.2) →
+      Ideal.span {f} =
+        (D.map (fun P => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          Wb.toAffine P.1 (Polynomial.C P.2))).prod →
+      ∀ (x₂ y₂ : (AlgebraicClosure (ZMod q))) (hE₂ : Wb.toAffine.Equation x₂ y₂), (x₂, y₂) ∉ D →
+      AdjoinRoot.evalEval (p := Wb.toAffine.polynomial) hE₂ f ≠ 0 := by
+    intro f D hDeq hDfac x₂ y₂ hE₂ hQD h0
+    have hfker : f ∈ RingHom.ker (AdjoinRoot.evalEval
+        (p := Wb.toAffine.polynomial) hE₂) := h0
+    rw [hker x₂ y₂ hE₂] at hfker
+    have hdvd : WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₂
+        (Polynomial.C y₂) ∣
+        (D.map (fun P => WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          Wb.toAffine P.1 (Polynomial.C P.2))).prod := by
+      rw [← hDfac]
+      exact Ideal.dvd_iff_le.mpr
+        ((Ideal.span_singleton_le_iff_mem _).mpr hfker)
+    have hQnz : WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₂
+        (Polynomial.C y₂) ≠ ⊥ := by
+      intro hb
+      have hmem : WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+          x₂ ∈ WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₂
+            (Polynomial.C y₂) := Ideal.subset_span (Set.mem_insert _ _)
+      rw [hb] at hmem
+      exact WeierstrassCurve.Affine.CoordinateRing.XClass_ne_zero
+        (W' := Wb.toAffine) x₂ ((Submodule.mem_bot _).mp hmem)
+    have hQprime : Prime (WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+        Wb.toAffine x₂ (Polynomial.C y₂)) :=
+      (Ideal.prime_iff_isPrime hQnz).mpr (hXYmax x₂ y₂ hE₂).isPrime
+    obtain ⟨I, hImem, hIdvd⟩ := hQprime.exists_mem_multiset_dvd hdvd
+    obtain ⟨P, hPD, rfl⟩ := Multiset.mem_map.mp hImem
+    have hPeq := (hXYmax P.1 P.2 (hDeq P hPD)).eq_of_le
+      (hXYmax x₂ y₂ hE₂).ne_top (Ideal.le_of_dvd hIdvd)
+    obtain ⟨hx, hy⟩ := hXYinj P.1 P.2 x₂ y₂ (hDeq P hPD) hPeq
+    exact hQD (by rw [← hx, ← hy]; exact hPD)
   sorry
 
 set_option warn.sorry false in
