@@ -4377,6 +4377,77 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
             ← pow_mul, hcard G]
           exact congrArg _ (congrArg Multiset.prod
             (Multiset.map_congr rfl fun b _ => (hevalprod F hF b).symm))
+  -- the line identity: the ideal of the line through `P`, `Q` (in the
+  -- generic-slope case) is exactly `I_P * I_Q * I_{-(P + Q)}` -- the affine
+  -- divisor of the line function, with no point at infinity anywhere
+  have hline : ∀ (x₁ y₁ x₂ y₂ : (AlgebraicClosure (ZMod q)))
+      (h₁ : Wb.toAffine.Nonsingular x₁ y₁)
+      (h₂ : Wb.toAffine.Nonsingular x₂ y₂)
+      (hxy : ¬(x₁ = x₂ ∧ y₁ = Wb.toAffine.negY x₂ y₂)),
+      WeierstrassCurve.Affine.CoordinateRing.YIdeal Wb.toAffine
+        (WeierstrassCurve.Affine.linePolynomial x₁ y₁
+          (Wb.toAffine.slope x₁ x₂ y₁ y₂)) =
+      WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₁
+        (Polynomial.C y₁) *
+      WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₂
+        (Polynomial.C y₂) *
+      WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+        (Wb.toAffine.addX x₁ x₂ (Wb.toAffine.slope x₁ x₂ y₁ y₂))
+        (Polynomial.C (Wb.toAffine.negY
+          (Wb.toAffine.addX x₁ x₂ (Wb.toAffine.slope x₁ x₂ y₁ y₂))
+          (Wb.toAffine.addY x₁ x₂ y₁ (Wb.toAffine.slope x₁ x₂ y₁ y₂)))) := by
+    intro x₁ y₁ x₂ y₂ h₁ h₂ hxy
+    classical
+    have hns₃ := WeierstrassCurve.Affine.nonsingular_add h₁ h₂ hxy
+    have key := WeierstrassCurve.Affine.CoordinateRing.XYIdeal_mul_XYIdeal
+      (W := Wb.toAffine) h₁.left h₂.left hxy
+    have hneg := WeierstrassCurve.Affine.CoordinateRing.XYIdeal_neg_mul
+      (W := Wb.toAffine) hns₃
+    rw [← hneg] at key
+    have hI₃ : WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+        (Wb.toAffine.addX x₁ x₂ (Wb.toAffine.slope x₁ x₂ y₁ y₂))
+        (Polynomial.C (Wb.toAffine.addY x₁ x₂ y₁
+          (Wb.toAffine.slope x₁ x₂ y₁ y₂))) ≠ 0 := by
+      intro h0
+      have hmem : WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+          (Wb.toAffine.addX x₁ x₂ (Wb.toAffine.slope x₁ x₂ y₁ y₂)) ∈
+          WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            (Wb.toAffine.addX x₁ x₂ (Wb.toAffine.slope x₁ x₂ y₁ y₂))
+            (Polynomial.C (Wb.toAffine.addY x₁ x₂ y₁
+              (Wb.toAffine.slope x₁ x₂ y₁ y₂))) :=
+        Ideal.subset_span (Set.mem_insert _ _)
+      rw [h0] at hmem
+      exact WeierstrassCurve.Affine.CoordinateRing.XClass_ne_zero
+        (W' := Wb.toAffine) _ ((Submodule.mem_bot _).mp hmem)
+    refine mul_left_cancel₀ hI₃ ?_
+    calc WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+          (Wb.toAffine.addX x₁ x₂ (Wb.toAffine.slope x₁ x₂ y₁ y₂))
+          (Polynomial.C (Wb.toAffine.addY x₁ x₂ y₁
+            (Wb.toAffine.slope x₁ x₂ y₁ y₂))) *
+        WeierstrassCurve.Affine.CoordinateRing.YIdeal Wb.toAffine
+          (WeierstrassCurve.Affine.linePolynomial x₁ y₁
+            (Wb.toAffine.slope x₁ x₂ y₁ y₂))
+        = WeierstrassCurve.Affine.CoordinateRing.YIdeal Wb.toAffine
+            (WeierstrassCurve.Affine.linePolynomial x₁ y₁
+              (Wb.toAffine.slope x₁ x₂ y₁ y₂)) *
+          WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            (Wb.toAffine.addX x₁ x₂ (Wb.toAffine.slope x₁ x₂ y₁ y₂))
+            (Polynomial.C (Wb.toAffine.addY x₁ x₂ y₁
+              (Wb.toAffine.slope x₁ x₂ y₁ y₂))) := mul_comm _ _
+      _ = WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            (Wb.toAffine.addX x₁ x₂ (Wb.toAffine.slope x₁ x₂ y₁ y₂))
+            (Polynomial.C (Wb.toAffine.negY
+              (Wb.toAffine.addX x₁ x₂ (Wb.toAffine.slope x₁ x₂ y₁ y₂))
+              (Wb.toAffine.addY x₁ x₂ y₁ (Wb.toAffine.slope x₁ x₂ y₁ y₂)))) *
+          WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            (Wb.toAffine.addX x₁ x₂ (Wb.toAffine.slope x₁ x₂ y₁ y₂))
+            (Polynomial.C (Wb.toAffine.addY x₁ x₂ y₁
+              (Wb.toAffine.slope x₁ x₂ y₁ y₂))) *
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₁
+            (Polynomial.C y₁) *
+          WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₂
+            (Polynomial.C y₂)) := key.symm
+      _ = _ := by ring
   sorry
 
 set_option warn.sorry false in
