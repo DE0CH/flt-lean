@@ -7804,20 +7804,102 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           AdjoinRoot.evalEval hPS₁.left aQ₃) := by
       sorry
     -- the hybrid setup's products are nonzero (avoidance bookkeeping)
+    have hDP₁ : Ideal.span {aP₁} =
+        ((Multiset.replicate p ((xPS₁, yPS₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) +
+          Multiset.replicate p ((xS₁, Wb.toAffine.negY xS₁ yS₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))).map
+          (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              P.1 (Polynomial.C P.2))).prod := by
+      rw [Multiset.map_add, Multiset.prod_add, Multiset.map_replicate,
+        Multiset.map_replicate, Multiset.prod_replicate,
+        Multiset.prod_replicate, haP₁]
+    have hDQ₃ : Ideal.span {aQ₃} =
+        ((Multiset.replicate p ((xQR₃, yQR₃) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) +
+          Multiset.replicate p ((xR₃, Wb.toAffine.negY xR₃ yR₃) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))).map
+          (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+            WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              P.1 (Polynomial.C P.2))).prod := by
+      rw [Multiset.map_add, Multiset.prod_add, Multiset.map_replicate,
+        Multiset.map_replicate, Multiset.prod_replicate,
+        Multiset.prod_replicate, haQ₃]
+    have hDP₁eq : ∀ T ∈ (Multiset.replicate p ((xPS₁, yPS₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) +
+        Multiset.replicate p ((xS₁, Wb.toAffine.negY xS₁ yS₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))),
+        Wb.toAffine.Equation T.1 T.2 := by
+      intro T hT
+      rcases Multiset.mem_add.mp hT with h | h
+      · rw [Multiset.eq_of_mem_replicate h]
+        exact hPS₁.left
+      · rw [Multiset.eq_of_mem_replicate h]
+        exact (WeierstrassCurve.Affine.equation_neg
+          (W' := Wb.toAffine) _ _).mpr hS₁.left
+    have hDQ₃eq : ∀ T ∈ (Multiset.replicate p ((xQR₃, yQR₃) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) +
+        Multiset.replicate p ((xR₃, Wb.toAffine.negY xR₃ yR₃) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))),
+        Wb.toAffine.Equation T.1 T.2 := by
+      intro T hT
+      rcases Multiset.mem_add.mp hT with h | h
+      · rw [Multiset.eq_of_mem_replicate h]
+        exact hQR₃.left
+      · rw [Multiset.eq_of_mem_replicate h]
+        exact (WeierstrassCurve.Affine.equation_neg
+          (W' := Wb.toAffine) _ _).mpr hR₃.left
+    have hevP₁R₃ : AdjoinRoot.evalEval hR₃.left aP₁ ≠ 0 := by
+      refine hoffdiv aP₁ _ hDP₁eq hDP₁ xR₃ yR₃ hR₃.left ?_
+      intro hmem
+      rcases Multiset.mem_add.mp hmem with h | h
+      · have h1 := congrArg Prod.fst (Multiset.eq_of_mem_replicate h)
+        exact hxR₃ (by rw [show xR₃ = xPS₁ from h1]; exact hxPS₁F')
+      · have h1 := congrArg Prod.fst (Multiset.eq_of_mem_replicate h)
+        exact hxR₃ (by rw [show xR₃ = xS₁ from h1]; exact hxS₁F')
+    have hevP₁QR₃ : AdjoinRoot.evalEval hQR₃.left aP₁ ≠ 0 := by
+      refine hoffdiv aP₁ _ hDP₁eq hDP₁ xQR₃ yQR₃ hQR₃.left ?_
+      intro hmem
+      rcases Multiset.mem_add.mp hmem with h | h
+      · have h1 := congrArg Prod.fst (Multiset.eq_of_mem_replicate h)
+        exact hxQR₃ (by rw [show xQR₃ = xPS₁ from h1]; exact hxPS₁F')
+      · have h1 := congrArg Prod.fst (Multiset.eq_of_mem_replicate h)
+        exact hxQR₃ (by rw [show xQR₃ = xS₁ from h1]; exact hxS₁F')
+    have hevQ₃PS₁ : AdjoinRoot.evalEval hPS₁.left aQ₃ ≠ 0 := by
+      refine hoffdiv aQ₃ _ hDQ₃eq hDQ₃ xPS₁ yPS₁ hPS₁.left ?_
+      intro hmem
+      rcases Multiset.mem_add.mp hmem with h | h
+      · have h1 := congrArg Prod.fst (Multiset.eq_of_mem_replicate h)
+        exact hxQR₃ (by rw [← show xPS₁ = xQR₃ from h1]; exact hxPS₁F')
+      · have h1 := congrArg Prod.fst (Multiset.eq_of_mem_replicate h)
+        exact hxR₃ (by rw [← show xPS₁ = xR₃ from h1]; exact hxPS₁F')
+    have hevQ₃S₁ : AdjoinRoot.evalEval hS₁.left aQ₃ ≠ 0 := by
+      refine hoffdiv aQ₃ _ hDQ₃eq hDQ₃ xS₁ yS₁ hS₁.left ?_
+      intro hmem
+      rcases Multiset.mem_add.mp hmem with h | h
+      · have h1 := congrArg Prod.fst (Multiset.eq_of_mem_replicate h)
+        exact hxQR₃ (by rw [← show xS₁ = xQR₃ from h1]; exact hxS₁F')
+      · have h1 := congrArg Prod.fst (Multiset.eq_of_mem_replicate h)
+        exact hxR₃ (by rw [← show xS₁ = xR₃ from h1]; exact hxS₁F')
     have hAh : (AdjoinRoot.evalEval hQR₃.left
           ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
         AdjoinRoot.evalEval hR₃.left aP₁ *
         AdjoinRoot.evalEval hS₁.left
           ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₃) ^ p) *
         AdjoinRoot.evalEval hPS₁.left aQ₃) ≠ 0 := by
-      sorry
+      refine mul_ne_zero (mul_ne_zero (mul_ne_zero ?_ hevP₁R₃) ?_) hevQ₃PS₁
+      · rw [map_pow, hevvert xS₁ xQR₃ yQR₃ hQR₃.left]
+        exact pow_ne_zero _ (sub_ne_zero.mpr
+          (fun h => hxQR₃ (by rw [h]; exact hxS₁F')))
+      · rw [map_pow, hevvert xR₃ xS₁ yS₁ hS₁.left]
+        exact pow_ne_zero _ (sub_ne_zero.mpr
+          (fun h => hxR₃ (by rw [← h]; exact hxS₁F')))
     have hBh : (AdjoinRoot.evalEval hQR₃.left aP₁ *
         AdjoinRoot.evalEval hR₃.left
           ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
         AdjoinRoot.evalEval hS₁.left aQ₃ *
         AdjoinRoot.evalEval hPS₁.left
           ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₃) ^ p)) ≠ 0 := by
-      sorry
+      refine mul_ne_zero (mul_ne_zero (mul_ne_zero hevP₁QR₃ ?_) hevQ₃S₁) ?_
+      · rw [map_pow, hevvert xS₁ xR₃ yR₃ hR₃.left]
+        exact pow_ne_zero _ (sub_ne_zero.mpr
+          (fun h => hxR₃ (by rw [h]; exact hxS₁F')))
+      · rw [map_pow, hevvert xR₃ xPS₁ yPS₁ hPS₁.left]
+        exact pow_ne_zero _ (sub_ne_zero.mpr
+          (fun h => hxR₃ (by rw [← h]; exact hxPS₁F')))
     refine mul_right_cancel₀ (mul_ne_zero hAh hBh) ?_
     linear_combination
       ((AdjoinRoot.evalEval hQR₃.left
