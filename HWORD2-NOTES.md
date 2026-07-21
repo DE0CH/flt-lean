@@ -117,3 +117,25 @@ FINAL SHAPE of hword2's closure:
 NOTE: hDne (in scope from hword1!) already certifies Phi_D at P1..P6
 nonzero — reuse it for the common-factor cancellation; only the two
 Mf-values need a new nonzero argument.
+
+## Residue closure WITHOUT Vieta (fourth pass — supersedes the hnorm route)
+
+The scalar residue restL*TLam = restR*ZR*ZQ*ZM closes explicitly:
+- hww Lnt 0 0 {xS1}: [Lam-values at the xS1-fiber pair] = prod over
+  can(Lnt) of (x - xS1)  (sign (-1)^0 = 1); transport the canonical
+  fiber pair to (yS1, negY yS1) by hfibpair xS1 yS1.
+- hcvt (fun T => T.1 - xS1): prod over Dt+Mfib of (x - xS1) = prod over
+  can(Lnt) of (x - xS1) — so [LamLamLamLam at S1-fiber] =
+  (xQR1-xS1)(xR1-xS1)(xR3-xS1)(xQR3-xS1)(xM-xS1)^2, ALL EXPLICIT.
+- Same pair with {xPS1} for the PS1-flavored Lambda values in TLam/T2.
+- The V/W/Z-group reconciliation is then pure ring over these explicit
+  products (raised to p after mul_pow splitting; signs pair as
+  (a-b)^p(b-a)^p handled by hm1-type inputs or exponent-pairing).
+The hnormA/hnormB coefficient-form identities (committed, proven) are
+NOT needed on this route — retain them as backup.
+Chains verified syntactically (string-normalized): hcvtN.R == hwwN.L,
+hcvtD.R == hwwD.L, hwwNM.R == hpjM.R, hwwDM.R ⊂ hpjM.L — so
+hN := hcvtN.trans hwwN and hD := hcvtD.trans hwwD are exact.
+Raw post-simp hypothesis texts saved at scratchpad hword2-hyps.json.
+J (cancel factor) := hDne-subject * hwwNM.LHS (the Phi_N M-fiber pair);
+needs the N-version of hmfne (Ln/Vn, Or.inl memberships) — TO BIND.
