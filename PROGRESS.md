@@ -183,25 +183,26 @@ entries file). To add/remove/annotate a node, edit
                                                   line divisor form, via
                                                   hNline/hevline/hevvert/hondiv/habs + the hlinerec
                                                   core). hgenfac COMPLETE (the class-group descent /
-                                                  Miller factorization, with hdvdspan). Remaining
-                                                  assembly: the balanced cross-product reciprocity
-                                                  for arbitrary disjoint pairs from the generator
-                                                  cases, then the pairing and its six legs.
-                                                  Superseded plan text: REMAINING for reciprocity:
-                                                  the class-group descent hgenfac (every function
-                                                  with point-divisor factorization equals a constant
-                                                  times a quotient of products of line/vertical
-                                                  elements, by strong induction on divisor size
-                                                  through hline + XYIdeal_neg_mul + toClass-
-                                                  nontriviality) and the multiplicative assembly of
-                                                  the balanced cross-product reciprocity; then the
-                                                  pairing definition (ratio over hgen2 generators at
-                                                  hpoints-generic translates) and its six legs.
-                                                  Older per-brick log follows: NEXT: divisor
-                                                  evaluation f(D) := prod of evalEval over D;
-                                                  nonvanishing off the divisor; the reciprocity
-                                                  statement f(div g) = g(div f) for disjoint
-                                                  supports, by induction via line/vertical
+                                                  Miller factorization, with hdvdspan). Generator
+                                                  divisor witnesses COMPLETE (hfiber, hvertdiv,
+                                                  hlinediv). Remaining assembly: the balanced cross-
+                                                  product reciprocity for arbitrary disjoint pairs
+                                                  from the generator cases, then the pairing and its
+                                                  six legs. Superseded plan text: REMAINING for
+                                                  reciprocity: the class-group descent hgenfac
+                                                  (every function with point-divisor factorization
+                                                  equals a constant times a quotient of products of
+                                                  line/vertical elements, by strong induction on
+                                                  divisor size through hline + XYIdeal_neg_mul +
+                                                  toClass-nontriviality) and the multiplicative
+                                                  assembly of the balanced cross-product
+                                                  reciprocity; then the pairing definition (ratio
+                                                  over hgen2 generators at hpoints-generic
+                                                  translates) and its six legs. Older per-brick log
+                                                  follows: NEXT: divisor evaluation f(D) := prod of
+                                                  evalEval over D; nonvanishing off the divisor; the
+                                                  reciprocity statement f(div g) = g(div f) for
+                                                  disjoint supports, by induction via line/vertical
                                                   factorization (hline + XYIdeal_neg_mul) reducing
                                                   to the proven cores hlinerec (line-line) and
                                                   hnormeval + hrecP1 (vertical cases); then the
@@ -366,37 +367,39 @@ entries file). To add/remove/annotate a node, edit
                                           (line-line divisor form, via
                                           hNline/hevline/hevvert/hondiv/habs + the hlinerec core).
                                           hgenfac COMPLETE (the class-group descent / Miller
-                                          factorization, with hdvdspan). Remaining assembly: the
-                                          balanced cross-product reciprocity for arbitrary disjoint
-                                          pairs from the generator cases, then the pairing and its
-                                          six legs. Superseded plan text: REMAINING for reciprocity:
-                                          the class-group descent hgenfac (every function with
-                                          point-divisor factorization equals a constant times a
-                                          quotient of products of line/vertical elements, by strong
-                                          induction on divisor size through hline + XYIdeal_neg_mul
-                                          + toClass-nontriviality) and the multiplicative assembly
-                                          of the balanced cross-product reciprocity; then the
-                                          pairing definition (ratio over hgen2 generators at
-                                          hpoints-generic translates) and its six legs. Older per-
-                                          brick log follows: NEXT: divisor evaluation f(D) := prod
-                                          of evalEval over D; nonvanishing off the divisor; the
-                                          reciprocity statement f(div g) = g(div f) for disjoint
-                                          supports, by induction via line/vertical factorization
-                                          (hline + XYIdeal_neg_mul) reducing to the proven cores
-                                          hlinerec (line-line) and hnormeval + hrecP1 (vertical
-                                          cases); then the pairing and its six legs. hmax COMPLETE
-                                          (with hresfin + hkill): every maximal ideal of the
-                                          coordinate ring IS a point ideal XYIdeal x0 (C y0) at a
-                                          curve point -- the divisor language is available. Also
-                                          PROVEN: hlinfac (every maximal ideal contains a vertical X
-                                          - c: the lying-over leg of hmax, via the norm-membership
-                                          trick and prime factor-picking). NEXT: hmax -- every
-                                          maximal ideal of the coordinate ring is a point ideal
-                                          (route: M cap k[x] contains X - c via the norm-membership
-                                          trick f*sigma-f = algebraMap(N f) from coe_norm_smul_basis
-                                          with N f nonzero by degree_norm_smul_basis; residue field
-                                          is spanned over k by the images of the basis {1, y} since
-                                          X - c dies, so it is finite over k, hence = k by
+                                          factorization, with hdvdspan). Generator divisor witnesses
+                                          COMPLETE (hfiber, hvertdiv, hlinediv). Remaining assembly:
+                                          the balanced cross-product reciprocity for arbitrary
+                                          disjoint pairs from the generator cases, then the pairing
+                                          and its six legs. Superseded plan text: REMAINING for
+                                          reciprocity: the class-group descent hgenfac (every
+                                          function with point-divisor factorization equals a
+                                          constant times a quotient of products of line/vertical
+                                          elements, by strong induction on divisor size through
+                                          hline + XYIdeal_neg_mul + toClass-nontriviality) and the
+                                          multiplicative assembly of the balanced cross-product
+                                          reciprocity; then the pairing definition (ratio over hgen2
+                                          generators at hpoints-generic translates) and its six
+                                          legs. Older per-brick log follows: NEXT: divisor
+                                          evaluation f(D) := prod of evalEval over D; nonvanishing
+                                          off the divisor; the reciprocity statement f(div g) =
+                                          g(div f) for disjoint supports, by induction via
+                                          line/vertical factorization (hline + XYIdeal_neg_mul)
+                                          reducing to the proven cores hlinerec (line-line) and
+                                          hnormeval + hrecP1 (vertical cases); then the pairing and
+                                          its six legs. hmax COMPLETE (with hresfin + hkill): every
+                                          maximal ideal of the coordinate ring IS a point ideal
+                                          XYIdeal x0 (C y0) at a curve point -- the divisor language
+                                          is available. Also PROVEN: hlinfac (every maximal ideal
+                                          contains a vertical X - c: the lying-over leg of hmax, via
+                                          the norm-membership trick and prime factor-picking). NEXT:
+                                          hmax -- every maximal ideal of the coordinate ring is a
+                                          point ideal (route: M cap k[x] contains X - c via the
+                                          norm-membership trick f*sigma-f = algebraMap(N f) from
+                                          coe_norm_smul_basis with N f nonzero by
+                                          degree_norm_smul_basis; residue field is spanned over k by
+                                          the images of the basis {1, y} since X - c dies, so it is
+                                          finite over k, hence = k by
                                           IsAlgClosed.algebraMap_bijective_of_isIntegral; then the
                                           coordinate images x0, y0 give XClass/YClass in M, the
                                           Weierstrass polynomial Taylor-decomposes to give the
