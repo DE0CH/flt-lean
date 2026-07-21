@@ -131,12 +131,14 @@ entries file). To add/remove/annotate a node, edit
                                                   sc A integrality, and the Taylor/singular-point
                                                   contradiction at the root of A -- both affine
                                                   partials vanish, contradicting
-                                                  equation_iff_nonsingular). REMAINING (the single
-                                                  sorry): the pairing construction itself on the
-                                                  now-Dedekind coordinate ring: mathlib's injective
-                                                  Point.toClass into ClassGroup, p-torsion classes
-                                                  have principal p-th ideal powers with Miller
-                                                  generators, the evaluation-ratio pairing e(P,Q) =
+                                                  equation_iff_nonsingular). IN-PROOF ALSO PROVEN
+                                                  (2026-07-21): hCunits (units of the coordinate
+                                                  ring are the nonzero constants, via
+                                                  degree_norm_smul_basis) and hgen (p-torsion points
+                                                  have principal p-th ideal-class powers -- the
+                                                  Miller-generator existence, via toClass +
+                                                  ClassGroup.mk_eq_one_iff). REMAINING (the single
+                                                  sorry): the evaluation-ratio pairing e(P,Q) =
                                                   f_P(D_Q)/f_Q(D_P),
                                                   bilinearity/alternation/nondegeneracy via Weil
                                                   reciprocity on HeightOneSpectrum divisors plus the
@@ -220,12 +222,13 @@ entries file). To add/remove/annotate a node, edit
                                           characteristic two the tau0 = tc A collapse, w = sc A
                                           integrality, and the Taylor/singular-point contradiction
                                           at the root of A -- both affine partials vanish,
-                                          contradicting equation_iff_nonsingular). REMAINING (the
-                                          single sorry): the pairing construction itself on the now-
-                                          Dedekind coordinate ring: mathlib's injective
-                                          Point.toClass into ClassGroup, p-torsion classes have
-                                          principal p-th ideal powers with Miller generators, the
-                                          evaluation-ratio pairing e(P,Q) = f_P(D_Q)/f_Q(D_P),
+                                          contradicting equation_iff_nonsingular). IN-PROOF ALSO
+                                          PROVEN (2026-07-21): hCunits (units of the coordinate ring
+                                          are the nonzero constants, via degree_norm_smul_basis) and
+                                          hgen (p-torsion points have principal p-th ideal-class
+                                          powers -- the Miller-generator existence, via toClass +
+                                          ClassGroup.mk_eq_one_iff). REMAINING (the single sorry):
+                                          the evaluation-ratio pairing e(P,Q) = f_P(D_Q)/f_Q(D_P),
                                           bilinearity/alternation/nondegeneracy via Weil reciprocity
                                           on HeightOneSpectrum divisors plus the infinite place,
                                           Frobenius naturality from functoriality of the whole
