@@ -4531,6 +4531,16 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       Polynomial.eval_pow, Polynomial.eval_X, Polynomial.eval_C,
       WeierstrassCurve.Affine.negY]
     linear_combination (b.eval x₀) ^ 2 * heq
+  -- point ideals are maximal: the quotient by `XYIdeal x₀ (C y₀)` is the
+  -- base field, via mathlib's `quotientXYIdealEquiv`
+  have hXYmax : ∀ (x₀ y₀ : (AlgebraicClosure (ZMod q))), Wb.toAffine.Equation x₀ y₀ →
+      (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine x₀
+        (Polynomial.C y₀)).IsMaximal := by
+    intro x₀ y₀ hE
+    refine Ideal.Quotient.maximal_of_isField _ ?_
+    exact (WeierstrassCurve.Affine.CoordinateRing.quotientXYIdealEquiv
+      (W' := Wb.toAffine) hE).toMulEquiv.isField
+      (Field.toIsField (AlgebraicClosure (ZMod q)))
   sorry
 
 set_option warn.sorry false in
