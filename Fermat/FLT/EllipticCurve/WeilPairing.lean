@@ -6720,8 +6720,211 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
   -- product of two point ideals summing to a `p`-torsion point), and
   -- the value from the eight evaluations, nonvanishing by abscissa
   -- avoidance (`hoffdiv` + the explicit divisors)
-  have hexval : ∀ v w, ∃ z, IsWeilValue v w z := by
+  -- every finite set of elements of the algebraic closure lies in a
+  -- FINITE subfield (adjoin the algebraic generators to the prime field)
+  have hsubfin : ∀ s : Finset (AlgebraicClosure (ZMod q)),
+      ∃ F : Subfield (AlgebraicClosure (ZMod q)),
+        (F : Set (AlgebraicClosure (ZMod q))).Finite ∧ ∀ a ∈ s, a ∈ F := by
     sorry
+  -- the fiber over an abscissa has exactly the two canonical ordinates
+  have hfib2 : ∀ (c y : (AlgebraicClosure (ZMod q))),
+      Wb.toAffine.Equation c y →
+      y = yfib c ∨ y = Wb.toAffine.negY c (yfib c) := by
+    sorry
+  -- Miller principality: the p-th power of the product of two point
+  -- ideals whose points sum to a p-torsion point is principal
+  have hmill2 : ∀ (x₁ y₁ x₂ y₂ : (AlgebraicClosure (ZMod q)))
+      (h₁ : Wb.toAffine.Nonsingular x₁ y₁)
+      (h₂ : Wb.toAffine.Nonsingular x₂ y₂),
+      (p : ℤ) • (WeierstrassCurve.Affine.Point.some x₁ y₁ h₁ +
+        WeierstrassCurve.Affine.Point.some x₂ y₂ h₂) = 0 →
+      ∃ a : Wb.toAffine.CoordinateRing,
+        Ideal.span {a} =
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            x₁ (Polynomial.C y₁)) ^ p *
+          (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            x₂ (Polynomial.C y₂)) ^ p := by
+    sorry
+  -- abscissa of a point (`0` for the point at infinity)
+  let xOf : Wb.toAffine.Point → (AlgebraicClosure (ZMod q)) := fun T =>
+    match T with
+    | .zero => 0
+    | .some x _ _ => x
+  have hexval : ∀ v w, ∃ z, IsWeilValue v w z := by
+    intro v w
+    by_cases hdeg : v.val = 0 ∨ w.val = 0
+    · refine ⟨1, fun _ => rfl, ?_⟩
+      intro xP yP hP xQ yQ hQ hv hw
+      exfalso
+      rcases hdeg with h0 | h0
+      · rw [hv, WeierstrassCurve.Affine.Point.zero_def] at h0
+        simp at h0
+      · rw [hw, WeierstrassCurve.Affine.Point.zero_def] at h0
+        simp at h0
+    · obtain ⟨hv0, hw0⟩ := not_or.mp hdeg
+      rcases hcv : v.val with _ | ⟨xP, yP, hP₀⟩
+      · exact absurd (by rw [hcv, WeierstrassCurve.Affine.Point.zero_def])
+          hv0
+      rcases hcw : w.val with _ | ⟨xQ, yQ, hQ₀⟩
+      · exact absurd (by rw [hcw, WeierstrassCurve.Affine.Point.zero_def])
+          hw0
+      -- retype the representatives' nonsingularity along the definitional
+      -- identification of the base-changed curve with `Wb`
+      have hP : Wb.toAffine.Nonsingular xP yP := hP₀
+      have hQ : Wb.toAffine.Nonsingular xQ yQ := hQ₀
+      -- torsion facts for the affine representatives
+      have hvp : (p : ℤ) • (WeierstrassCurve.Affine.Point.some xP yP hP :
+          Wb.toAffine.Point) = 0 := by
+        have h := (Submodule.mem_torsionBy_iff _ _).mp v.2
+        rw [hcv] at h
+        exact h
+      have hwp : (p : ℤ) • (WeierstrassCurve.Affine.Point.some xQ yQ hQ :
+          Wb.toAffine.Point) = 0 := by
+        have h := (Submodule.mem_torsionBy_iff _ _).mp w.2
+        rw [hcw] at h
+        exact h
+      -- the data subfield
+      obtain ⟨F, hFfin, hFmem⟩ := hsubfin {xP, yP, xQ, yQ}
+      -- the first translate, off F
+      obtain ⟨xS, hxS, yS, hSns⟩ := hpoints hFfin.toFinset
+      rw [Set.Finite.mem_toFinset] at hxS
+      have hSneg : Wb.toAffine.Nonsingular xS (Wb.toAffine.negY xS yS) :=
+        (WeierstrassCurve.Affine.nonsingular_neg xS yS).mpr hSns
+      -- P ⊕ S is affine (xS avoids F ∋ xP)
+      have hPSne : WeierstrassCurve.Affine.Point.some xP yP hP +
+          WeierstrassCurve.Affine.Point.some xS yS hSns ≠ 0 := by
+        sorry
+      rcases hPSc : (WeierstrassCurve.Affine.Point.some xP yP hP +
+          WeierstrassCurve.Affine.Point.some xS yS hSns) with _ | ⟨xPS, yPS, hPS⟩
+      · exact absurd (by rw [hPSc, WeierstrassCurve.Affine.Point.zero_def])
+          hPSne
+      -- the enlarged subfield: F, the S and P⊕S data, and the abscissas
+      -- of the finitely many R-choices that would collide the second
+      -- divisor with the first (Q ⊕ R landing over xS or xPS)
+      obtain ⟨F', hF'fin, hF'mem⟩ := hsubfin (hFfin.toFinset ∪
+        ({xS, yS, xPS, yPS} : Finset (AlgebraicClosure (ZMod q))) ∪
+        ({xOf (-(WeierstrassCurve.Affine.Point.some xQ yQ hQ) +
+            WeierstrassCurve.Affine.Point.some xS (yfib xS)
+              ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                (hyfib xS))),
+          xOf (-(WeierstrassCurve.Affine.Point.some xQ yQ hQ) +
+            WeierstrassCurve.Affine.Point.some xS
+              (Wb.toAffine.negY xS (yfib xS))
+              ((WeierstrassCurve.Affine.nonsingular_neg xS (yfib xS)).mpr
+                ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                  (hyfib xS)))),
+          xOf (-(WeierstrassCurve.Affine.Point.some xQ yQ hQ) +
+            WeierstrassCurve.Affine.Point.some xPS (yfib xPS)
+              ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                (hyfib xPS))),
+          xOf (-(WeierstrassCurve.Affine.Point.some xQ yQ hQ) +
+            WeierstrassCurve.Affine.Point.some xPS
+              (Wb.toAffine.negY xPS (yfib xPS))
+              ((WeierstrassCurve.Affine.nonsingular_neg xPS (yfib xPS)).mpr
+                ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                  (hyfib xPS))))} : Finset (AlgebraicClosure (ZMod q))))
+      have hFF' : F ≤ F' := by
+        intro a ha
+        exact hF'mem a (by
+          simp only [Finset.mem_union]
+          exact Or.inl (Or.inl (hFfin.mem_toFinset.mpr ha)))
+      -- the second translate, off F'
+      obtain ⟨xR, hxR, yR, hRns⟩ := hpoints hF'fin.toFinset
+      rw [Set.Finite.mem_toFinset] at hxR
+      have hRneg : Wb.toAffine.Nonsingular xR (Wb.toAffine.negY xR yR) :=
+        (WeierstrassCurve.Affine.nonsingular_neg xR yR).mpr hRns
+      -- Q ⊕ R is affine
+      have hQRne : WeierstrassCurve.Affine.Point.some xQ yQ hQ +
+          WeierstrassCurve.Affine.Point.some xR yR hRns ≠ 0 := by
+        sorry
+      rcases hQRc : (WeierstrassCurve.Affine.Point.some xQ yQ hQ +
+          WeierstrassCurve.Affine.Point.some xR yR hRns) with _ | ⟨xQR, yQR, hQR⟩
+      · exact absurd (by rw [hQRc, WeierstrassCurve.Affine.Point.zero_def])
+          hQRne
+      -- torsion facts for the Miller numerators: (P⊕S) ⊕ (⊖S) = P and
+      -- (Q⊕R) ⊕ (⊖R) = Q are p-torsion
+      have hPStor : (p : ℤ) •
+          (WeierstrassCurve.Affine.Point.some xPS yPS hPS +
+            WeierstrassCurve.Affine.Point.some xS
+              (Wb.toAffine.negY xS yS) hSneg : Wb.toAffine.Point) = 0 := by
+        sorry
+      have hQRtor : (p : ℤ) •
+          (WeierstrassCurve.Affine.Point.some xQR yQR hQR +
+            WeierstrassCurve.Affine.Point.some xR
+              (Wb.toAffine.negY xR yR) hRneg : Wb.toAffine.Point) = 0 := by
+        sorry
+      -- Miller numerators
+      obtain ⟨aP, haP⟩ := hmill2 xPS yPS xS (Wb.toAffine.negY xS yS) hPS
+        hSneg hPStor
+      obtain ⟨aQ, haQ⟩ := hmill2 xQR yQR xR (Wb.toAffine.negY xR yR) hQR
+        hRneg hQRtor
+      -- the eight evaluations and their nonvanishing (abscissa avoidance)
+      have hA : (AdjoinRoot.evalEval hQR.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS) ^ p) *
+          AdjoinRoot.evalEval hRns.left aP *
+          AdjoinRoot.evalEval hSns.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p) *
+          AdjoinRoot.evalEval hPS.left aQ) ≠ 0 := by
+        sorry
+      have hB : (AdjoinRoot.evalEval hQR.left aP *
+          AdjoinRoot.evalEval hRns.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS) ^ p) *
+          AdjoinRoot.evalEval hSns.left aQ *
+          AdjoinRoot.evalEval hPS.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p)) ≠ 0 := by
+        sorry
+      -- remaining memberships for the enlarged subfield
+      have hxSF' : xS ∈ F' := by
+        sorry
+      have hySF' : yS ∈ F' := by
+        sorry
+      have hxPSF' : xPS ∈ F' := by
+        sorry
+      have hyPSF' : yPS ∈ F' := by
+        sorry
+      -- the value and its defining equation
+      refine ⟨Units.mk0
+        ((AdjoinRoot.evalEval hQR.left aP *
+          AdjoinRoot.evalEval hRns.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS) ^ p) *
+          AdjoinRoot.evalEval hSns.left aQ *
+          AdjoinRoot.evalEval hPS.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p)) /
+        (AdjoinRoot.evalEval hQR.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS) ^ p) *
+          AdjoinRoot.evalEval hRns.left aP *
+          AdjoinRoot.evalEval hSns.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p) *
+          AdjoinRoot.evalEval hPS.left aQ))
+        (div_ne_zero hB hA), ?_, ?_⟩
+      · intro h0
+        exfalso
+        rcases h0 with h0 | h0
+        · rw [hcv, WeierstrassCurve.Affine.Point.zero_def] at h0
+          simp at h0
+        · rw [hcw, WeierstrassCurve.Affine.Point.zero_def] at h0
+          simp at h0
+      · intro xP' yP' hP' xQ' yQ' hQ' hv' hw'
+        have hPP : xP' = xP ∧ yP' = yP := by
+          sorry
+        have hQQ : xQ' = xQ ∧ yQ' = yQ := by
+          sorry
+        obtain ⟨hx1, hy1⟩ := hPP
+        obtain ⟨hx2, hy2⟩ := hQQ
+        subst hx1
+        subst hy1
+        subst hx2
+        subst hy2
+        exact ⟨F, F', hFfin, hF'fin, hFF',
+          hFmem xP' (by simp), hFmem yP' (by simp),
+          hFmem xQ' (by simp), hFmem yQ' (by simp),
+          xS, yS, hSns, hxSF', hySF', hxS,
+          xR, yR, hRns, hxR,
+          xPS, yPS, hPS, hPSc.symm, hxPSF', hyPSF',
+          xQR, yQR, hQR, hQRc.symm,
+          aP, aQ, haP, haQ, hA,
+          by rw [Units.val_mk0]
+             exact div_mul_cancel₀ _ hA⟩
   -- uniqueness of the Weil value across admissible setups: THE Weil
   -- reciprocity argument — both setups' cross-ratios reduce through
   -- hgenfac (F-rational words) + hbaldiv (divisor bookkeeping) + hevid

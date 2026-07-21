@@ -256,30 +256,48 @@ entries file). To add/remove/annotate a node, edit
                                                   free 8-evaluation equation for z =
                                                   [fP(Q+R)/fP(R)]*[fQ(S)/fQ(P+S)]); e := unique
                                                   choice from hvalue; exact <e, legs> closes the
-                                                  theorem. FRONTIER (7 named sorried steps): hvalue
-                                                  (exists-unique of the Weil value: existence via
-                                                  hpoints-generic subfield choices + hgen2-style
-                                                  principality for aP; uniqueness across setups IS
-                                                  Weil reciprocity via hww/hbaldiv/hevid +
-                                                  F-avoidance nonvanishing), hleg1/hleg2
-                                                  (bilinearity), hleg3 (alternation), hleg4
-                                                  (nondegeneracy), hleg5 (p-th powers), hleg6
-                                                  (Frobenius naturality). Superseded: NEXT: line-vs-
-                                                  word (hlw, sign (-1)^lines) then word-vs-word
-                                                  (hww), then the balanced reciprocity for functions
-                                                  via hgenfac and the pairing. Remaining assembly:
-                                                  the balanced cross-product reciprocity for
-                                                  arbitrary disjoint pairs from the generator cases,
-                                                  then the pairing and its six legs. Superseded plan
-                                                  text: REMAINING for reciprocity: the class-group
-                                                  descent hgenfac (every function with point-divisor
-                                                  factorization equals a constant times a quotient
-                                                  of products of line/vertical elements, by strong
-                                                  induction on divisor size through hline +
-                                                  XYIdeal_neg_mul + toClass-nontriviality) and the
-                                                  multiplicative assembly of the balanced cross-
-                                                  product reciprocity; then the pairing definition
-                                                  (ratio over hgen2 generators at hpoints-generic
+                                                  theorem. hexval CONSTRUCTION GLUE COMPILING
+                                                  (2026-07-21): the full generic-setup existence
+                                                  proof is written -- degenerate cases; affine
+                                                  representatives with retyped nonsingularity (base-
+                                                  change defeq bridge); F from hsubfin over the P,Q
+                                                  data; S via hpoints off F; P+S affine (rcases with
+                                                  hPSne); F' from hsubfin over F + S,PS data + the
+                                                  four bad-R abscissas xOf(-Q + T) over the xS/xPS
+                                                  fibers (so xR nonmembership kills the collision
+                                                  cases); R via hpoints off F'; Miller numerators
+                                                  from hmill2 (statement: XYIdeal1^p * XYIdeal2^p
+                                                  principal when the points sum to p-torsion); value
+                                                  z := Units.mk0 (B/A) with the defining equation by
+                                                  div_mul_cancel0; representative matching by
+                                                  hPP/hQQ + subst. FRONTIER (all sorries against
+                                                  explicit statements): hsubfin (finite subfield
+                                                  containing a finite set), hfib2 (two ordinates per
+                                                  fiber), hmill2 (Miller principality), hPSne/hQRne
+                                                  (sums affine), hPStor/hQRtor (torsion of the
+                                                  summed pairs), hA/hB (eight-evaluation
+                                                  nonvanishing by abscissa avoidance),
+                                                  hxSF'/hySF'/hxPSF'/hyPSF' (memberships), hPP/hQQ
+                                                  (constructor injectivity); then huniqval
+                                                  (uniqueness = Weil reciprocity) and hleg1-hleg6
+                                                  (the six pairing legs). Superseded: FRONTIER (7
+                                                  named sorried steps) description. Superseded:
+                                                  NEXT: line-vs-word (hlw, sign (-1)^lines) then
+                                                  word-vs-word (hww), then the balanced reciprocity
+                                                  for functions via hgenfac and the pairing.
+                                                  Remaining assembly: the balanced cross-product
+                                                  reciprocity for arbitrary disjoint pairs from the
+                                                  generator cases, then the pairing and its six
+                                                  legs. Superseded plan text: REMAINING for
+                                                  reciprocity: the class-group descent hgenfac
+                                                  (every function with point-divisor factorization
+                                                  equals a constant times a quotient of products of
+                                                  line/vertical elements, by strong induction on
+                                                  divisor size through hline + XYIdeal_neg_mul +
+                                                  toClass-nontriviality) and the multiplicative
+                                                  assembly of the balanced cross-product
+                                                  reciprocity; then the pairing definition (ratio
+                                                  over hgen2 generators at hpoints-generic
                                                   translates) and its six legs. Older per-brick log
                                                   follows: NEXT: divisor evaluation f(D) := prod of
                                                   evalEval over D; nonvanishing off the divisor; the
@@ -509,32 +527,48 @@ entries file). To add/remove/annotate a node, edit
                                           XClass(xS)^p, same for Q with R, and the division-free
                                           8-evaluation equation for z =
                                           [fP(Q+R)/fP(R)]*[fQ(S)/fQ(P+S)]); e := unique choice from
-                                          hvalue; exact <e, legs> closes the theorem. FRONTIER (7
-                                          named sorried steps): hvalue (exists-unique of the Weil
-                                          value: existence via hpoints-generic subfield choices +
-                                          hgen2-style principality for aP; uniqueness across setups
-                                          IS Weil reciprocity via hww/hbaldiv/hevid + F-avoidance
-                                          nonvanishing), hleg1/hleg2 (bilinearity), hleg3
-                                          (alternation), hleg4 (nondegeneracy), hleg5 (p-th powers),
-                                          hleg6 (Frobenius naturality). Superseded: NEXT: line-vs-
-                                          word (hlw, sign (-1)^lines) then word-vs-word (hww), then
-                                          the balanced reciprocity for functions via hgenfac and the
-                                          pairing. Remaining assembly: the balanced cross-product
-                                          reciprocity for arbitrary disjoint pairs from the
-                                          generator cases, then the pairing and its six legs.
-                                          Superseded plan text: REMAINING for reciprocity: the
-                                          class-group descent hgenfac (every function with point-
-                                          divisor factorization equals a constant times a quotient
-                                          of products of line/vertical elements, by strong induction
-                                          on divisor size through hline + XYIdeal_neg_mul + toClass-
-                                          nontriviality) and the multiplicative assembly of the
-                                          balanced cross-product reciprocity; then the pairing
-                                          definition (ratio over hgen2 generators at hpoints-generic
-                                          translates) and its six legs. Older per-brick log follows:
-                                          NEXT: divisor evaluation f(D) := prod of evalEval over D;
-                                          nonvanishing off the divisor; the reciprocity statement
-                                          f(div g) = g(div f) for disjoint supports, by induction
-                                          via line/vertical factorization (hline + XYIdeal_neg_mul)
+                                          hvalue; exact <e, legs> closes the theorem. hexval
+                                          CONSTRUCTION GLUE COMPILING (2026-07-21): the full
+                                          generic-setup existence proof is written -- degenerate
+                                          cases; affine representatives with retyped nonsingularity
+                                          (base-change defeq bridge); F from hsubfin over the P,Q
+                                          data; S via hpoints off F; P+S affine (rcases with hPSne);
+                                          F' from hsubfin over F + S,PS data + the four bad-R
+                                          abscissas xOf(-Q + T) over the xS/xPS fibers (so xR
+                                          nonmembership kills the collision cases); R via hpoints
+                                          off F'; Miller numerators from hmill2 (statement:
+                                          XYIdeal1^p * XYIdeal2^p principal when the points sum to
+                                          p-torsion); value z := Units.mk0 (B/A) with the defining
+                                          equation by div_mul_cancel0; representative matching by
+                                          hPP/hQQ + subst. FRONTIER (all sorries against explicit
+                                          statements): hsubfin (finite subfield containing a finite
+                                          set), hfib2 (two ordinates per fiber), hmill2 (Miller
+                                          principality), hPSne/hQRne (sums affine), hPStor/hQRtor
+                                          (torsion of the summed pairs), hA/hB (eight-evaluation
+                                          nonvanishing by abscissa avoidance),
+                                          hxSF'/hySF'/hxPSF'/hyPSF' (memberships), hPP/hQQ
+                                          (constructor injectivity); then huniqval (uniqueness =
+                                          Weil reciprocity) and hleg1-hleg6 (the six pairing legs).
+                                          Superseded: FRONTIER (7 named sorried steps) description.
+                                          Superseded: NEXT: line-vs-word (hlw, sign (-1)^lines) then
+                                          word-vs-word (hww), then the balanced reciprocity for
+                                          functions via hgenfac and the pairing. Remaining assembly:
+                                          the balanced cross-product reciprocity for arbitrary
+                                          disjoint pairs from the generator cases, then the pairing
+                                          and its six legs. Superseded plan text: REMAINING for
+                                          reciprocity: the class-group descent hgenfac (every
+                                          function with point-divisor factorization equals a
+                                          constant times a quotient of products of line/vertical
+                                          elements, by strong induction on divisor size through
+                                          hline + XYIdeal_neg_mul + toClass-nontriviality) and the
+                                          multiplicative assembly of the balanced cross-product
+                                          reciprocity; then the pairing definition (ratio over hgen2
+                                          generators at hpoints-generic translates) and its six
+                                          legs. Older per-brick log follows: NEXT: divisor
+                                          evaluation f(D) := prod of evalEval over D; nonvanishing
+                                          off the divisor; the reciprocity statement f(div g) =
+                                          g(div f) for disjoint supports, by induction via
+                                          line/vertical factorization (hline + XYIdeal_neg_mul)
                                           reducing to the proven cores hlinerec (line-line) and
                                           hnormeval + hrecP1 (vertical cases); then the pairing and
                                           its six legs. hmax COMPLETE (with hresfin + hkill): every
