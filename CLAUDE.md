@@ -10,6 +10,19 @@ Lean package (formerly the `fermat/` subfolder).
 (Deyao, 2026-07-21.) If a needed tool is missing and available through
 Homebrew, run `brew install <tool>` directly — no need to ask first.
 
+## File edits: prefer the Write/Edit tool calls over scripts (soft rule)
+
+(Deyao, 2026-07-22.) Edit files with the harness's Write/Edit tools by
+default — not with shell/python scripts (heredoc `python3 - <<EOF`
+string-replaces, `sed -i`, etc.). A scripted edit that is semantically
+equivalent to a Write/Edit call (fixed string replace, whole-file
+rewrite of known content) must BE a Write/Edit call: the script form
+bypasses read-before-write and diff tracking for zero gain. Scripts
+remain allowed where they are genuinely more capable than the tools —
+e.g. programmatic transforms over structured data (bulk json updates
+computed from state, generated content) — capability, not convenience,
+is the test.
+
 ## THE GOAL: fully formalize Fermat's Last Theorem, no sorry, no undue axioms
 
 (Deyao, restated 2026-07-16.) The goal is to **fully formalize Fermat's
