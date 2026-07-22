@@ -28,11 +28,12 @@ here. This file provides:
   `infinite_setOf_isArithFrobAt`, the classical ideal-theoretic
   Chebotarev existence statement for a finite Galois extension of
   number fields — itself now PROVEN by the classical Deuring reduction
-  to the cyclic case over the fixed field of `⟨τ⟩`, from the two
-  remaining sorry leaves `infinite_setOf_isArithFrobAt_zpowers` (the
-  analytic core: Chebotarev for a cyclic extension, restricted to
-  degree-one primes) and `finite_setOf_exists_inertia_ne_bot`
-  (finiteness of the ramified places of a number field extension).
+  to the cyclic case over the fixed field of `⟨τ⟩`, using the PROVEN
+  ramification-finiteness theorem `finite_setOf_exists_inertia_ne_bot`
+  (via the different ideal). The single remaining sorry leaf of this
+  module is `infinite_setOf_isArithFrobAt_zpowers`, the analytic core:
+  Chebotarev for a cyclic extension of number fields, restricted to
+  degree-one primes.
 
 The remaining pieces of the decomposition (Brauer–Nesbitt for
 2-dimensional mod-`ℓ` representations, the mod-`ℓ` cyclotomic character as
@@ -60,6 +61,11 @@ public import Mathlib.FieldTheory.KrullTopology
 public import Mathlib.FieldTheory.Normal.Closure
 import Mathlib.FieldTheory.Galois.Basic
 public import Mathlib.Topology.Instances.ZMod
+import Mathlib.RingTheory.DedekindDomain.Factorization
+import Mathlib.RingTheory.DedekindDomain.Different
+import Mathlib.NumberTheory.RamificationInertia.Galois
+import Mathlib.NumberTheory.RamificationInertia.Unramified
+import Mathlib.RingTheory.Ideal.Quotient.HasFiniteQuotients
 
 @[expose] public section
 
@@ -251,24 +257,106 @@ theorem infinite_setOf_isArithFrobAt_zpowers
         IsArithFrobAt (𝓞 F) τ Q}.Infinite :=
   sorry
 
+/-- The Galois group of a Galois extension of number fields acts
+faithfully on the ring of integers: two automorphisms agreeing on `𝓞 E`
+agree on `E = Frac(𝓞 E)`. -/
+instance {F E : Type*} [Field F] [Field E] [NumberField E] [Algebra F E] :
+    FaithfulSMul (E ≃ₐ[F] E) (𝓞 E) where
+  eq_of_smul_eq_smul {σ τ} h := by
+    refine AlgEquiv.ext fun e => ?_
+    obtain ⟨x, y, hy, rfl⟩ := IsFractionRing.div_surjective (A := 𝓞 E) e
+    have hcoe : ∀ (g : E ≃ₐ[F] E) (a : 𝓞 E),
+        g (algebraMap (𝓞 E) E a) = algebraMap (𝓞 E) E (g • a) := fun _ _ => rfl
+    rw [map_div₀, map_div₀, hcoe σ x, hcoe σ y, hcoe τ x, hcoe τ y, h x, h y]
+
+/-- The fixed points of the Galois action on `𝓞 E` are exactly the image
+of `𝓞 F`, for a Galois extension `E/F` of number fields (general form of
+the intermediate-field instance above). -/
+instance {F E : Type*} [Field F] [Field E] [NumberField E] [Algebra F E]
+    [IsGalois F E] : Algebra.IsInvariant (𝓞 F) (𝓞 E) (E ≃ₐ[F] E) where
+  isInvariant x hx := by
+    have hfixE : ∀ e : E ≃ₐ[F] E, e • (x : E) = (x : E) := fun e =>
+      congrArg (algebraMap (𝓞 E) E) (hx e)
+    obtain ⟨y, hy⟩ := Algebra.IsInvariant.isInvariant (A := F)
+      (G := E ≃ₐ[F] E) (x : E) hfixE
+    have hyint : IsIntegral ℤ y := by
+      rw [← isIntegral_algebraMap_iff (B := E) (algebraMap F E).injective, hy]
+      exact x.2
+    exact ⟨⟨y, hyint⟩, NumberField.RingOfIntegers.ext hy⟩
+
+/-- The Galois group of a Galois extension of number fields is a Galois
+group for the extension of rings of integers (with respect to the ambient
+project action on `𝓞 E`). -/
+instance {F E : Type*} [Field F] [Field E] [NumberField E] [Algebra F E]
+    [IsGalois F E] : IsGaloisGroup (E ≃ₐ[F] E) (𝓞 F) (𝓞 E) where
+  faithful := inferInstance
+  commutes := inferInstance
+  isInvariant := inferInstance
+
 open IsDedekindDomain in
-/-- **Finiteness of ramified places** (sorry node): for an extension `E/F`
+/-- **Finiteness of ramified places**: for a finite Galois extension `E/F`
 of number fields, only finitely many places of `F` carry a prime of
-`𝓞 E` with nontrivial inertia in `Gal(E/F)`. Classically: a prime with
-nontrivial inertia is ramified (the inertia group has order equal to the
-ramification index, `Ideal.card_inertia_eq_ramificationIdxIn`), a
-ramified prime divides the different ideal
-(`Ideal.dvd_differentIdeal_iff`, via
-`Ideal.ramificationIdx_eq_one_of_isUnramifiedAt`), the different ideal is
-nonzero (`differentIdeal_ne_bot`), and a nonzero ideal of the Dedekind
-domain `𝓞 E` has only finitely many prime divisors, each contracting to
-a single place of `F`. -/
+`𝓞 E` with nontrivial inertia in `Gal(E/F)`. DERIVED: a prime with
+nontrivial inertia has inertia group of order equal to the ramification
+index (`Ideal.card_inertia_eq_ramificationIdxIn`), hence is not
+unramified (`Ideal.ramificationIdx_eq_one_of_isUnramifiedAt`), hence
+divides the different ideal (`Ideal.dvd_differentIdeal_iff`), which is
+nonzero (`differentIdeal_ne_bot`); and a nonzero ideal of the Dedekind
+domain `𝓞 E` has only finitely many prime divisors
+(`Ideal.finite_factors`), each contracting to a single place of `F`. -/
 theorem finite_setOf_exists_inertia_ne_bot
     {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
-    [Algebra F E] :
+    [Algebra F E] [FiniteDimensional F E] [IsGalois F E] :
     {P : HeightOneSpectrum (𝓞 F) | ∃ Q : Ideal (𝓞 E), Q.IsPrime ∧
-      Q.LiesOver P.asIdeal ∧ Q.inertia (E ≃ₐ[F] E) ≠ ⊥}.Finite :=
-  sorry
+      Q.LiesOver P.asIdeal ∧ Q.inertia (E ≃ₐ[F] E) ≠ ⊥}.Finite := by
+  classical
+  haveI : Module.Finite (𝓞 F) (𝓞 E) :=
+    Module.Finite.of_restrictScalars_finite ℤ (𝓞 F) (𝓞 E)
+  -- separability of the fraction-field extension, transported from `E/F`
+  letI : Algebra (FractionRing (𝓞 F)) (FractionRing (𝓞 E)) :=
+    FractionRing.liftAlgebra _ _
+  haveI hsep : Algebra.IsSeparable (FractionRing (𝓞 F)) (FractionRing (𝓞 E)) := by
+    refine Algebra.IsSeparable.of_equiv_equiv
+      (FractionRing.algEquiv (𝓞 F) F).symm.toRingEquiv
+      (FractionRing.algEquiv (𝓞 E) E).symm.toRingEquiv ?_
+    ext x
+    exact IsFractionRing.algEquiv_commutes (FractionRing.algEquiv (𝓞 F) F).symm
+      (FractionRing.algEquiv (𝓞 E) E).symm x
+  -- the different ideal is nonzero, so it has finitely many prime divisors
+  have h𝔡ne : differentIdeal (𝓞 F) (𝓞 E) ≠ ⊥ := differentIdeal_ne_bot
+  have h𝔡fin : {w : HeightOneSpectrum (𝓞 E) |
+      w.asIdeal ∣ differentIdeal (𝓞 F) (𝓞 E)}.Finite :=
+    Ideal.finite_factors h𝔡ne
+  -- reduce the bad set to the image of these prime divisors
+  refine (h𝔡fin.image (fun w => w.under (𝓞 F))).subset ?_
+  rintro P ⟨Q, hQprime, hQover, hQin⟩
+  haveI := hQprime
+  haveI : Q.LiesOver P.asIdeal := hQover
+  -- `Q` is nonzero, hence a height-one prime of `𝓞 E`
+  have hQne : Q ≠ ⊥ := by
+    intro h
+    apply P.ne_bot
+    rw [hQover.over, h, Ideal.under_def]
+    exact Ideal.comap_bot_of_injective _
+      (FaithfulSMul.algebraMap_injective (𝓞 F) (𝓞 E))
+  -- nontrivial inertia forces ramification, i.e. `Q` divides the different
+  have hQdvd : Q ∣ differentIdeal (𝓞 F) (𝓞 E) := by
+    rw [dvd_differentIdeal_iff]
+    intro hunram
+    apply hQin
+    haveI := hunram
+    haveI : (Q.under (𝓞 F)).IsPrime := Ideal.IsPrime.under (𝓞 F) Q
+    haveI : CharZero (FractionRing (𝓞 F)) :=
+      charZero_of_injective_algebraMap
+        (IsFractionRing.injective (𝓞 F) (FractionRing (𝓞 F)))
+    have hcard : Nat.card (Q.inertia (E ≃ₐ[F] E)) =
+        Ideal.ramificationIdxIn (Q.under (𝓞 F)) (𝓞 E) :=
+      Ideal.card_inertia_eq_ramificationIdxIn (G := E ≃ₐ[F] E) (Q.under (𝓞 F)) Q
+    rw [Ideal.ramificationIdxIn_eq_ramificationIdx (Q.under (𝓞 F)) Q (E ≃ₐ[F] E),
+      Ideal.ramificationIdx_eq_one_of_isUnramifiedAt] at hcard
+    exact Subgroup.eq_bot_of_card_eq _ hcard
+  exact ⟨⟨Q, hQprime, hQne⟩, hQdvd, IsDedekindDomain.HeightOneSpectrum.ext
+    hQover.over.symm⟩
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
