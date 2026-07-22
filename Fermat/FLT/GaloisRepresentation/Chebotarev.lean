@@ -175,26 +175,113 @@ theorem infinite_setOf_isArithFrobAt
       Q.inertia (L ≃ₐ[K] L) = ⊥ ∧ IsArithFrobAt (𝓞 K) τ Q}.Infinite :=
   sorry
 
-/-- **Local–global Frobenius compatibility** (sorry node): away from
-finitely many places (the places ramified in `L`), the restriction to
-`L` of the completion-theoretic global Frobenius `globalFrob v` is an
-arithmetic Frobenius at some prime `Q` of `𝓞 L` over `v`. Believed-true
-argument: the embedding of algebraic closures fixed in
-`Field.absoluteGaloisGroup.map` realizes `K̄` inside the algebraic
-closure of the completion `Kᵥ`, and the maximal ideal of the integral
-closure of `𝓞ᵥ` there pulls back to a prime `Q` of `𝓞 L` over `v`; the
-local arithmetic Frobenius `adicArithFrob v` is an arithmetic Frobenius
-upstairs (`Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob`), the
-residue field of `𝓞ᵥ` agrees with `𝓞 K / v`, and the congruence
-`Frob x ≡ x ^ #(𝓞 K / v)` descends along `𝓞 L → (integral closure)` to
-make `restrictNormalHom L (globalFrob v)` a Frobenius at `Q`. -/
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **Local–global Frobenius compatibility, pointwise form**: at EVERY
+finite place `v` of `K`, the restriction to `L` of the
+completion-theoretic global Frobenius `globalFrob v` is an arithmetic
+Frobenius at the prime `Q` of `𝓞 L` obtained by contracting the maximal
+ideal of the integral closure of `𝒪ᵥ` in `K̄ᵥ` along the chosen
+embedding `K̄ → K̄ᵥ`. No unramifiedness hypothesis is needed:
+`IsArithFrobAt` is the raw congruence `σ x ≡ x ^ #(𝓞 K/v) (mod Q)`,
+which the local arithmetic Frobenius satisfies at the big maximal ideal
+(`Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob`) and which
+contracts along `𝓞 L → IntegralClosure 𝒪ᵥ K̄ᵥ`. -/
+theorem exists_isArithFrobAt_restrictNormalHom_globalFrob
+    (L : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K L]
+    [Normal K L] (v : Ω K) :
+    ∃ Q : Ideal (𝓞 L), Q.IsPrime ∧ Q.LiesOver v.asIdeal ∧
+      IsArithFrobAt (𝓞 K)
+        (AlgEquiv.restrictNormalHom L (globalFrob v)) Q := by
+  classical
+  -- the chosen embedding of algebraic closures
+  set ι : AlgebraicClosure K →+* AlgebraicClosure (v.adicCompletion K) :=
+    AlgebraicClosure.map (algebraMap K (v.adicCompletion K)) with hιdef
+  -- integral elements land in the integral closure of the completed integers
+  have hint : ∀ x : 𝓞 L, ι (algebraMap L (AlgebraicClosure K) (x : L)) ∈
+      integralClosure (v.adicCompletionIntegers K)
+        (AlgebraicClosure (v.adicCompletion K)) := by
+    sorry
+  -- the contraction homomorphism into the big integral closure
+  set j : 𝓞 L →+* IntegralClosure (v.adicCompletionIntegers K)
+      (AlgebraicClosure (v.adicCompletion K)) :=
+    RingHom.codRestrict
+      ((ι.comp (algebraMap L (AlgebraicClosure K))).comp
+        (algebraMap (𝓞 L) L))
+      (integralClosure (v.adicCompletionIntegers K)
+        (AlgebraicClosure (v.adicCompletion K))).toSubring
+      (fun x => hint x) with hjdef
+  set M : Ideal (IntegralClosure (v.adicCompletionIntegers K)
+      (AlgebraicClosure (v.adicCompletion K))) :=
+    IsLocalRing.maximalIdeal _ with hMdef
+  set Q : Ideal (𝓞 L) := M.comap j with hQdef
+  -- the big maximal ideal contracts to the maximal ideal of `𝒪ᵥ`
+  have hMunder : M.under (v.adicCompletionIntegers K) =
+      IsLocalRing.maximalIdeal (v.adicCompletionIntegers K) :=
+    IsLocalRing.eq_maximalIdeal (Ideal.IsMaximal.under _ M)
+  -- `j` intertwines the two algebra maps from `𝓞 K`
+  have hcomm : ∀ a : 𝓞 K, j (algebraMap (𝓞 K) (𝓞 L) a) =
+      algebraMap (v.adicCompletionIntegers K)
+        (IntegralClosure (v.adicCompletionIntegers K)
+          (AlgebraicClosure (v.adicCompletion K)))
+        (algebraMap (𝓞 K) (v.adicCompletionIntegers K) a) := by
+    sorry
+  -- `Q` lies over `v`
+  have hover : v.asIdeal = (v.completionIdeal K).under (𝓞 K) :=
+    Ideal.LiesOver.over
+  have hQunder : Q.under (𝓞 K) = v.asIdeal := by
+    ext a
+    rw [Ideal.under_def, Ideal.mem_comap, hQdef, Ideal.mem_comap, hcomm a,
+      ← Ideal.mem_comap (f := algebraMap (v.adicCompletionIntegers K)
+        (IntegralClosure (v.adicCompletionIntegers K)
+          (AlgebraicClosure (v.adicCompletion K)))),
+      show M.comap (algebraMap (v.adicCompletionIntegers K)
+        (IntegralClosure (v.adicCompletionIntegers K)
+          (AlgebraicClosure (v.adicCompletion K)))) = M.under _ from rfl,
+      hMunder, hover, Ideal.under_def, Ideal.mem_comap]
+  -- residue cardinalities agree
+  have hcard : Nat.card ((v.adicCompletionIntegers K) ⧸
+      M.under (v.adicCompletionIntegers K)) =
+      Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) := by
+    rw [hMunder, hQunder]
+    exact (Nat.card_congr
+      (IsDedekindDomain.HeightOneSpectrum.ResidueFieldEquivCompletionResidueField
+        K v).toEquiv).symm
+  -- the Frobenius congruence upstairs
+  have harith := Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob (v := v)
+  -- `j` intertwines the restricted global Frobenius with `adicArithFrob`
+  have hfrob : ∀ x : 𝓞 L,
+      MulSemiringAction.toAlgHom (v.adicCompletionIntegers K) _
+        (Field.AbsoluteGaloisGroup.adicArithFrob v) (j x) =
+      j ((MulSemiringAction.toAlgHom (𝓞 K) (𝓞 L)
+        (AlgEquiv.restrictNormalHom L (globalFrob v))) x) := by
+    sorry
+  refine ⟨Q, Ideal.IsPrime.comap j, ⟨hQunder.symm⟩, fun x => ?_⟩
+  have h1 := harith (j x)
+  rw [hfrob x, ← map_pow, ← map_sub] at h1
+  rw [hcard] at h1
+  exact h1
+
+/-- **Local–global Frobenius compatibility** (finite exceptional set —
+in fact empty): away from finitely many places, the restriction to `L`
+of the completion-theoretic global Frobenius `globalFrob v` is an
+arithmetic Frobenius at some prime `Q` of `𝓞 L` over `v`. DERIVED from
+the pointwise form `exists_isArithFrobAt_restrictNormalHom_globalFrob`,
+which produces such a prime at every place. -/
 theorem finite_setOf_not_isArithFrobAt_restrictNormalHom_globalFrob
     (L : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K L]
     [Normal K L] :
     {v : Ω K | ¬ ∃ Q : Ideal (𝓞 L), Q.IsPrime ∧ Q.LiesOver v.asIdeal ∧
       IsArithFrobAt (𝓞 K)
-        (AlgEquiv.restrictNormalHom L (globalFrob v)) Q}.Finite :=
-  sorry
+        (AlgEquiv.restrictNormalHom L (globalFrob v)) Q}.Finite := by
+  have hempty : {v : Ω K | ¬ ∃ Q : Ideal (𝓞 L), Q.IsPrime ∧
+      Q.LiesOver v.asIdeal ∧ IsArithFrobAt (𝓞 K)
+        (AlgEquiv.restrictNormalHom L (globalFrob v)) Q} = ∅ := by
+    rw [Set.eq_empty_iff_forall_notMem]
+    intro v hv
+    exact hv (exists_isArithFrobAt_restrictNormalHom_globalFrob L v)
+  rw [hempty]
+  exact Set.finite_empty
 
 open scoped Pointwise in
 /-- **Chebotarev, finite Galois-group form**: for a finite Galois
