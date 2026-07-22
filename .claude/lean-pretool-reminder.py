@@ -17,10 +17,16 @@ REMINDER = (
 
 
 def main() -> int:
-    # hook input is unused; strict-parse it anyway so malformed harness
-    # input crashes loudly (no-fallback directive, Deyao 2026-07-22)
-    # instead of being silently swallowed
-    json.load(sys.stdin)
+    # GRACEFUL policy (Deyao's caller principle, 2026-07-22): this hook is
+    # harness-called and purely advisory — its absence must never break a
+    # tool call. The input is unused; on malformed/unreadable stdin still
+    # emit the allow-JSON, with one stderr line noting the parse failure.
+    try:
+        json.load(sys.stdin)
+    except Exception as exc:
+        sys.stderr.write(
+            f"lean-pretool-reminder: could not parse hook input ({exc!r}); "
+            "emitting the reminder anyway.\n")
     print(json.dumps({
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
