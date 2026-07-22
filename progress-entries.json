@@ -1390,5 +1390,12 @@
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
     "wip": true,
     "text": "`FreyPackage.exists_etale_line_of_good_of_stable_line` — connected-étale line at good reduction with stable line (leaf of the proven flat/ordinary linear-algebra assembly)"
+  },
+  {
+    "name": "infinite_setOf_isArithFrobAt_zpowers",
+    "fullname": "GaloisRepresentation.infinite_setOf_isArithFrobAt_zpowers",
+    "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
+    "wip": true,
+    "text": "`infinite_setOf_isArithFrobAt_zpowers` (stated 2026-07-22, the analytic cyclic core after the PROVEN Deuring reduction): for number fields E/F with Gal(E/F) = ⟨τ⟩, infinitely many degree-one places of F carry a prime with IsArithFrobAt τ. Dirichlet-AP structurally insufficient (docstring records the reduction analysis); the classical route is the Dedekind-zeta pole / Hecke L-function nonvanishing, or Chebotarev's field-crossing with zero-density of higher-degree places."
   }
 ]
