@@ -14,10 +14,6 @@ map where helpful.
 
 ## Tree (generated — do not edit by hand; run `python3 progress-tree.py`)
 
-**Sorried declarations (compiler-counted, last consistent daemon answer 2026-07-22): 7** — torsion_flat_of_good_reduction_of_isUnit, torsion_flat_of_good_reduction_mul, torsion_flat_of_good_reduction_prime_pow, exists_globalFrob_restrictNormalHom_conj, exists_weilPairing_mu, mem_isCompatible, torsion_flat_of_multiplicative_reduction (plus the newly decomposed not-yet-recounted leaves: 6 Serre eliminations in ModThree, hloc/hdesc in Semistable, hZinj/hcore in Family, G''-existence + hleg1-6 inside exists_weilPairing_mu).
-
-**STALE-STATE NOTE (2026-07-22): the tree below is the restored state as of commit f194364 — regeneration is currently refused while parallel agents rebuild (tracked entries missing from the daemon environment); this note disappears at the next successful `python3 progress-tree.py` run.**
-
 The tree below is GENERATED from `progress-entries.json` (the flat list
 of tracked Lean declarations with their descriptions): the dependency
 structure is computed from the compiled proofs (which listed
@@ -35,6 +31,8 @@ through are directly visible.
 Second symbol: `·` normal, `🟪` currently being worked on (from the
 entries file). To add/remove/annotate a node, edit
 `progress-entries.json` and re-run the generator.
+
+**Sorried declarations (compiler-counted): 17** — `torsion_flat_of_good_reduction_of_isUnit`, `torsion_flat_of_good_reduction_prime_pow`, `exists_globalFrob_restrictNormalHom_conj`, `exists_weilPairing_mu`, `mem_isCompatible`, `torsion_flat_of_multiplicative_reduction`, `mazur_classification`, `exists_quotient_curve_point`, `subquotient_character_unramified_at_p`, `serre_elimination_alt5`, `serre_elimination_pgl`, `subCharacter_unramified_at_three_of_quot_ramified`, `exists_line_with_quotCharacter_eq_subCharacter`, `serre_elimination_dihedral`, `serre_elimination_psl`, `serre_elimination_alt4`, `serre_elimination_sym4`
 
 - ✅· `fermat_last_theorem` — the goal: `FermatLastTheorem`, assembled from the mathlib reductions and
   `fermatLastTheoremFor_of_five_le`.
@@ -83,7 +81,7 @@ entries file). To add/remove/annotate a node, edit
                                   lemmas (`subCharacter_eq_one_of_sq_eq_zero`,
                                   `quotCharacter_eq_one_of_sq_eq_zero`, ) turn `(ρσ−1)² = 0` into
                                   character-triviality
-                                    - ❌· `FreyPackage.subquotient_character_unramified_at_p` — (stated 2026-07-17) — flat/ordinary at `p`: one of the two
+                                    - ❌🟪 `FreyPackage.subquotient_character_unramified_at_p` — (stated 2026-07-17) — flat/ordinary at `p`: one of the two
                                       characters is unramified at `p` itself (connected-étale
                                       sequence in the ordinary/ multiplicative case; supersingular
                                       excluded by reducibility)
@@ -680,19 +678,58 @@ entries file). To add/remove/annotate a node, edit
                                                   bilinearity/alternation/nondegeneracy via Weil
                                                   reciprocity on HeightOneSpectrum divisors plus the
                                                   infinite place, Frobenius naturality from
-                                                  functoriality of the whole construction.
+                                                  functoriality of the whole construction. — MODULE
+                                                  SPLIT (2026-07-22, this machine compiles the mega-
+                                                  lc block in ~98s): the R-step telescoping monster
+                                                  hstepR is EXTRACTED VERBATIM as the standalone
+                                                  `WeilPairing.stepR` (WeilPairingStepR.lean, engine
+                                                  facts as hypothesis-parameters, field-generic:
+                                                  quantified over an arbitrary subfield F' with
+                                                  exactly the used membership facts, NO finiteness)
+                                                  and the two-level reciprocity `hrecgen` as
+                                                  `WeilPairing.recgen` (WeilPairingRecgen.lean,
+                                                  imports StepR; contains the hstepS sorry). The
+                                                  prune fallout (htrRN/htrQN/htrRD/htrQD + their
+                                                  maxRecDepth simp, deleted 6acdb95) is RESTORED and
+                                                  re-verified inside stepR. hstepS PLAN (σ-mirror,
+                                                  verified at the statement level: atoms of σ(stepR)
+                                                  = atoms of hstepS with sides swapped): instantiate
+                                                  stepR at a second field G'' with (R₃,QR₃-coords ∈
+                                                  G''; xS₁,xPS₁,xS₂,xPS₂,xS₃,xPS₃,x(M'₁),x(M'₂) ∉
+                                                  G''), close by linear_combination; the
+                                                  G''-existence discharges by DEGREE ARITHMETIC in
+                                                  the subfield lattice of 𝔽̄_q (finite subfields
+                                                  totally ordered; K(n) := frobⁿ-fixed subfield;
+                                                  promises against the FIXED field K(2f₀), f₀ = deg
+                                                  𝔽_q(P,Q-coords); prime ℓ > all fixed degrees; R₃-
+                                                  family chosen with x ∈ K(ℓ)∖K(1) so G'' ⊆ K(2ℓf₀)
+                                                  and each promised element stays out via
+                                                  gcd(d,ℓ)=1) — requires widening the S-side avoid-
+                                                  sets to K(2f₀)-closures and strengthening hsetup3
+                                                  (extra avoid-finset input Aout with
+                                                  K(2f₀)-promises + G''-conclusion).
                                     - ✅· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density,
                                       topological form — now (2026-07-16) by the profinite limit
                                       argument (: cosets of fixing subgroups of finite subextensions
                                       are a neighborhood basis, `krullTopology_mem_nhds_one_iff`;
                                       the finite-level statement puts a Frobenius conjugate in every
                                       coset):
-                                        - ❌· `exists_frobenius_conj_mem_coset` — `exists_frobenius_conj_mem_coset` — Chebotarev, finite
+                                        - ✅· `exists_frobenius_conj_mem_coset` — `exists_frobenius_conj_mem_coset` — Chebotarev, finite
                                           level: for every finite subextension `E` of `K̄/K` and
                                           every `σ`, the coset `σ·Gal(K̄/E)` contains a conjugate of
                                           a `globalFrob v` with `v ∉ S` (existence form of
                                           Chebotarev for the Galois closure of `E/K`)
-                            - ❌· `FreyPackage.exists_quotient_curve_point` — (stated 2026-07-17) — the Vélu quotient leaf: a stable line with
+                                            - ❌🟪 `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj` — `exists_globalFrob_restrictNormalHom_conj` (stated
+                                              2026-07-22, agent decomposition of
+                                              exists_frobenius_conj_mem_coset): for a finite Galois
+                                              subextension L of Kbar/K, tau in Gal(L/K), and finite
+                                              S, there exist a place v outside S and h with h *
+                                              restrictNormalHom L (globalFrob v) * h^-1 = tau — the
+                                              finite-Galois-quotient existence form of Chebotarev;
+                                              the profinite coset form is PROVEN from this leaf
+                                              (normal closure +
+                                              AlgEquiv.restrictNormalHom_surjective lifting).
+                            - ❌🟪 `FreyPackage.exists_quotient_curve_point` — (stated 2026-07-17) — the Vélu quotient leaf: a stable line with
                               trivial quotient action produces `E'/ℚ` with full rational 2-torsion
                               and a rational `p`-point (quotient by the rational subgroup;
                               quantified over Weierstrass models)
@@ -702,7 +739,7 @@ entries file). To add/remove/annotate a node, edit
               the finite group ℤ/2 × ℤ/2p are torsion (finite additive order), the hom corestricts
               into the torsion submodule, and 4p ≥ 20 > 16 ≥ the order of every group in Mazur's
               list (`Nat.card` comparison)
-                - ❌· `WeierstrassCurve.mazur_classification` — Mazur's torsion theorem, stated faithfully: the torsion submodule
+                - ❌🟪 `WeierstrassCurve.mazur_classification` — Mazur's torsion theorem, stated faithfully: the torsion submodule
                   (`Submodule.torsion ℤ E(ℚ)`) is ≃+ to one of the fifteen groups ℤ/n (n ∈
                   {1,…,10,12}) or ℤ/2 × ℤ/2m (m ∈ {1,…,4}). Mazur, Publ. Math. IHÉS 47 (1977);
                   Invent. Math. 44 (1978)
@@ -1227,16 +1264,49 @@ entries file). To add/remove/annotate a node, edit
                                           bilinearity/alternation/nondegeneracy via Weil reciprocity
                                           on HeightOneSpectrum divisors plus the infinite place,
                                           Frobenius naturality from functoriality of the whole
-                                          construction.
+                                          construction. — MODULE SPLIT (2026-07-22, this machine
+                                          compiles the mega-lc block in ~98s): the R-step
+                                          telescoping monster hstepR is EXTRACTED VERBATIM as the
+                                          standalone `WeilPairing.stepR` (WeilPairingStepR.lean,
+                                          engine facts as hypothesis-parameters, field-generic:
+                                          quantified over an arbitrary subfield F' with exactly the
+                                          used membership facts, NO finiteness) and the two-level
+                                          reciprocity `hrecgen` as `WeilPairing.recgen`
+                                          (WeilPairingRecgen.lean, imports StepR; contains the
+                                          hstepS sorry). The prune fallout (htrRN/htrQN/htrRD/htrQD
+                                          + their maxRecDepth simp, deleted 6acdb95) is RESTORED and
+                                          re-verified inside stepR. hstepS PLAN (σ-mirror, verified
+                                          at the statement level: atoms of σ(stepR) = atoms of
+                                          hstepS with sides swapped): instantiate stepR at a second
+                                          field G'' with (R₃,QR₃-coords ∈ G'';
+                                          xS₁,xPS₁,xS₂,xPS₂,xS₃,xPS₃,x(M'₁),x(M'₂) ∉ G''), close by
+                                          linear_combination; the G''-existence discharges by DEGREE
+                                          ARITHMETIC in the subfield lattice of 𝔽̄_q (finite
+                                          subfields totally ordered; K(n) := frobⁿ-fixed subfield;
+                                          promises against the FIXED field K(2f₀), f₀ = deg
+                                          𝔽_q(P,Q-coords); prime ℓ > all fixed degrees; R₃-family
+                                          chosen with x ∈ K(ℓ)∖K(1) so G'' ⊆ K(2ℓf₀) and each
+                                          promised element stays out via gcd(d,ℓ)=1) — requires
+                                          widening the S-side avoid-sets to K(2f₀)-closures and
+                                          strengthening hsetup3 (extra avoid-finset input Aout with
+                                          K(2f₀)-promises + G''-conclusion).
                             - ✅· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density, topological form
                               — now (2026-07-16) by the profinite limit argument (: cosets of fixing
                               subgroups of finite subextensions are a neighborhood basis,
                               `krullTopology_mem_nhds_one_iff`; the finite-level statement puts a
                               Frobenius conjugate in every coset):
-                                - ❌· `exists_frobenius_conj_mem_coset` — `exists_frobenius_conj_mem_coset` — Chebotarev, finite level: for
+                                - ✅· `exists_frobenius_conj_mem_coset` — `exists_frobenius_conj_mem_coset` — Chebotarev, finite level: for
                                   every finite subextension `E` of `K̄/K` and every `σ`, the coset
                                   `σ·Gal(K̄/E)` contains a conjugate of a `globalFrob v` with `v ∉
                                   S` (existence form of Chebotarev for the Galois closure of `E/K`)
+                                    - ❌🟪 `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj` — `exists_globalFrob_restrictNormalHom_conj` (stated 2026-07-22,
+                                      agent decomposition of exists_frobenius_conj_mem_coset): for a
+                                      finite Galois subextension L of Kbar/K, tau in Gal(L/K), and
+                                      finite S, there exist a place v outside S and h with h *
+                                      restrictNormalHom L (globalFrob v) * h^-1 = tau — the finite-
+                                      Galois-quotient existence form of Chebotarev; the profinite
+                                      coset form is PROVEN from this leaf (normal closure +
+                                      AlgEquiv.restrictNormalHom_surjective lifting).
                 - ✅· `FreyCurve.torsion_isFlat` — flat at p: (2026-07-16) by the case split `p ∣ abc` or not, from the two nodes
                   below
                     - ✅· `FreyCurve.torsion_isFlat_of_good` — (2026-07-16) from the arithmetic node `freyCurve_hasGoodReduction_of_not_dvd`
@@ -1245,20 +1315,27 @@ entries file). To add/remove/annotate a node, edit
                           `p` ⟹ `IsFlatAt p` for the mod-`p` torsion rep, from the leaf below plus
                           the shared flat transport `GaloisRep.isFlatAt_of_dvr_package` (see its own
                           subtree entry under the multiplicative case)
-                            - ❌· `torsion_flat_of_good_reduction` — `torsion_flat_of_good_reduction`
+                            - ✅🟪 `torsion_flat_of_good_reduction` — `torsion_flat_of_good_reduction`
                               (`KnownIn1980s/EllipticCurves/Flat.lean`, 2026-07-16): good reduction
                               over a DVR makes the `n`-torsion a finite flat group scheme (Hopf
                               algebra, finite flat, étale generic fibre, equivariant points
                               isomorphism). Plus the division-polynomial node `isCoprime_Φ_ΨSq` —
                               restated for fields and directly (2026-07-17; the former
                               `resultant_Φ_ΨSq` node was DELETED, see the session-6 log)
+                                - ❌🟪 `WeierstrassCurve.torsion_flat_of_good_reduction_of_isUnit` — (stated 2026-07-22, agent decomposition of
+                                  torsion_flat_of_good_reduction): the good-reduction finite-flat
+                                  package leaf (isUnit case); owned by the worktree fleet's flat
+                                  agent.
+                                - ❌🟪 `WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow` — (stated 2026-07-22, agent decomposition of
+                                  torsion_flat_of_good_reduction): the good-reduction finite-flat
+                                  package leaf (pow case); owned by the worktree fleet's flat agent.
                     - ✅· `FreyCurve.torsion_isFlat_of_multiplicative` — (2026-07-16) from the arithmetic
                       (`freyCurve_hasMultiplicativeReduction_of_dvd` at `q := p` +
                       `j_valuation_of_bad_prime`) and the glue node below
                         - ✅· `WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction` — (`FreyCurve/Semistable.lean`, own work): (2026-07-17) — the peu-ramifiée
                           glue: multiplicative reduction at `p` with `p ∣ v_p(j)` ⟹ `IsFlatAt p`,
                           from the new content leaf below plus the shared flat transport
-                            - ❌· `torsion_flat_of_multiplicative_reduction` — `torsion_flat_of_multiplicative_reduction`
+                            - ❌🟪 `torsion_flat_of_multiplicative_reduction` — `torsion_flat_of_multiplicative_reduction`
                               (`FreyCurve/Semistable.lean`, stated 2026-07-17): multiplicative
                               reduction over `ℤ_(p)` with `p ∣ v_p(j)` produces a finite flat Hopf
                               algebra over `ℤ_(p)` (étale generic fibre) whose `ℚ̄`-points are `Γ
@@ -1269,7 +1346,7 @@ entries file). To add/remove/annotate a node, edit
               (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work) — now (2026-07-16)
               from three explicit nodes in `HardlyRamified/Lift.lean` (own work), following
               Buzzard's 2026 EPSRC Lecture 4 (his B5a/B5b/B5c):
-                - ❌· `exists_hardlyRamifiedLift` — B6a `exists_hardlyRamifiedLift` — an irreducible hardly ramified mod-ℓ rep (ℓ ≥ 5)
+                - ❌🟪 `exists_hardlyRamifiedLift` — B6a `exists_hardlyRamifiedLift` — an irreducible hardly ramified mod-ℓ rep (ℓ ≥ 5)
                   lifts to a hardly ramified ℓ-adic rep over the integers `O` of a finite extension
                   of `ℚ_ℓ` (bundled in `structure HardlyRamifiedLift`: `O` + framed rep + reduction
                   map + Frobenius-charpoly compatibility). Deformation theory / modularity lifting
@@ -1277,7 +1354,7 @@ entries file). To add/remove/annotate a node, edit
                 - ✅· `residual_charFrob_eq` — B6bc `residual_charFrob_eq` — the residual Frobenius charpolys of a liftable rep
                   are those of `1 ⊕ χ̄` (`X² − (q+1)X + q`) — now (2026-07-16) from the faithful
                   split ( from the FLT project's newer layer):
-                    - ❌· `IsHardlyRamified.mem_isCompatible` — B6b `IsHardlyRamified.mem_isCompatible` (`HardlyRamified/Family.lean`, ;
+                    - ❌🟪 `IsHardlyRamified.mem_isCompatible` — B6b `IsHardlyRamified.mem_isCompatible` (`HardlyRamified/Family.lean`, ;
                       conclusion named `IsInHardlyRamifiedFamily` as a marked ) — a hardly ramified
                       ℓ-adic rep lives in a compatible family (`GaloisRepFamily.lean`, defs, ) all
                       of whose odd members are hardly ramified. STRENGTHENED (2026-07-16): the
@@ -1316,7 +1393,7 @@ entries file). To add/remove/annotate a node, edit
                                       — DERIVED 2026-07-18 from the at-3 Serre-swap leaf plus the
                                       at-2 tame bookkeeping (`quotCharacter_unramified_at_two`,
                                       itself fully proven).
-                                        - ❌· `exists_line_with_unramified_quotCharacter_at_three` — (sorry node — the connected–étale content) a reducible
+                                        - ❌🟪 `exists_line_with_unramified_quotCharacter_at_three` — (sorry node — the connected–étale content) a reducible
                                           mod-3 hardly ramified rep has a stable line with quotient
                                           character unramified at 3: the IsFlatAt prolongation over
                                           ℤ₃, unramified étale quotient of the connected–étale
@@ -1340,9 +1417,9 @@ entries file). To add/remove/annotate a node, edit
                                               image ⇒ abelian matrix image ⇒ scalar action ⇒ stable
                                               line, contradiction); the rest dispatched to
                                               `serre_elimination_noncyclic`.
-                                                - ✅· `serre_elimination_noncyclic` — the seven noncyclic Dickson cases — DERIVED (case
+                                                - ✅🟪 `serre_elimination_noncyclic` — the seven noncyclic Dickson cases — DERIVED (case
                                                   dispatch to the semidirect and arithmetic leaves).
-                                                    - ❌· `serre_elimination_arith` — (sorry node — the deep arithmetic core)
+                                                    - ❌🟪 `serre_elimination_arith` — (sorry node — the deep arithmetic core)
                                                       dihedral / A₄ / S₄ / A₅ / PSL₂(𝔽_{3^m}) /
                                                       PGL₂(𝔽_{3^m}) eliminated via Serre's
                                                       discriminant/conductor bounds over ℚ (Duke
@@ -1356,7 +1433,7 @@ entries file). To add/remove/annotate a node, edit
                                   spellings reconciled by congr + Subsingleton (Algebra ℚ _) — the
                                   Rat-algebra uniqueness bridging the module-system elaboration
                                   divergence.
-                                    - ❌· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient` — the global triangular form (sorry node — the Serre
+                                    - ❌🟪 `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient` — the global triangular form (sorry node — the Serre
                                       classification core): given the residual trivial quotient, the
                                       WHOLE 3-adic rep is an extension of the trivial character by χ
                                       in a suitable basis. The 3-adic reducibility of Serre §5.4,
@@ -1371,10 +1448,47 @@ entries file). To add/remove/annotate a node, edit
                       finite subextensions are a neighborhood basis,
                       `krullTopology_mem_nhds_one_iff`; the finite-level statement puts a Frobenius
                       conjugate in every coset):
-                        - ❌· `exists_frobenius_conj_mem_coset` — `exists_frobenius_conj_mem_coset` — Chebotarev, finite level: for every
+                        - ✅· `exists_frobenius_conj_mem_coset` — `exists_frobenius_conj_mem_coset` — Chebotarev, finite level: for every
                           finite subextension `E` of `K̄/K` and every `σ`, the coset `σ·Gal(K̄/E)`
                           contains a conjugate of a `globalFrob v` with `v ∉ S` (existence form of
                           Chebotarev for the Galois closure of `E/K`)
+                            - ❌🟪 `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj` — `exists_globalFrob_restrictNormalHom_conj` (stated 2026-07-22, agent
+                              decomposition of exists_frobenius_conj_mem_coset): for a finite Galois
+                              subextension L of Kbar/K, tau in Gal(L/K), and finite S, there exist a
+                              place v outside S and h with h * restrictNormalHom L (globalFrob v) *
+                              h^-1 = tau — the finite-Galois-quotient existence form of Chebotarev;
+                              the profinite coset form is PROVEN from this leaf (normal closure +
+                              AlgEquiv.restrictNormalHom_surjective lifting).
+- ❌🟪 `serre_elimination_dihedral` — (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the
+  projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of
+  type dihedral — False from the case data; doc-comment in ModThree.lean records the intended
+  argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types:
+  root-discriminant vs Minkowski/Odlyzko bounds).
+- ❌🟪 `serre_elimination_alt4` — (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the
+  projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of
+  type alt4 — False from the case data; doc-comment in ModThree.lean records the intended argument
+  (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-
+  discriminant vs Minkowski/Odlyzko bounds).
+- ❌🟪 `serre_elimination_sym4` — (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the
+  projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of
+  type sym4 — False from the case data; doc-comment in ModThree.lean records the intended argument
+  (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-
+  discriminant vs Minkowski/Odlyzko bounds).
+- ❌🟪 `serre_elimination_alt5` — (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the
+  projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of
+  type alt5 — False from the case data; doc-comment in ModThree.lean records the intended argument
+  (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-
+  discriminant vs Minkowski/Odlyzko bounds).
+- ❌🟪 `serre_elimination_psl` — (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the
+  projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of
+  type psl — False from the case data; doc-comment in ModThree.lean records the intended argument
+  (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-
+  discriminant vs Minkowski/Odlyzko bounds).
+- ❌🟪 `serre_elimination_pgl` — (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the
+  projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of
+  type pgl — False from the case data; doc-comment in ModThree.lean records the intended argument
+  (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-
+  discriminant vs Minkowski/Odlyzko bounds).
 
 ## Canonical frontier (2026-07-16, session 4 close — audit-verified)
 

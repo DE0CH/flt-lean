@@ -16,7 +16,17 @@ module, prose, work-in-progress flag).  This driver:
      it into the `## Tree` section of PROGRESS.md.
 
 The daemon's environment reflects the last BUILT state of each module
-(`stale_sources` in its response names modules edited since).
+(`stale_sources` in its response names modules edited since), and the
+daemon SELF-MATERIALIZES its input: unbuilt/stale modules are built on
+demand (targeted `lake build`) before the environment is imported, so
+tracked entries are present in normal operation.
+
+Generation NEVER refuses and never surfaces transient state (Deyao,
+2026-07-22): a module that genuinely fails to build is the daemon's to
+log (`.lean-daemon.log`, `failed_modules` in its responses); the
+affected entries are rendered here from the previous generation's
+cached marks/edges (`progress-tree.json`), keeping their last-known
+subtree shape. Only a bug in the scripts themselves may crash this.
 """
 import json, re, subprocess, sys, textwrap, unicodedata, os
 
@@ -27,47 +37,54 @@ disp = {e.get("fullname", e["name"]): e["name"] for e in entries}
 by_name = {e.get("fullname", e["name"]): e for e in entries}
 
 # ------------------------------------------------- query the lean daemon
+# The previous generation's marks/edges: the fallback for any entry the
+# daemon cannot report on right now (module genuinely failing to build,
+# daemon unreachable). Merging from it keeps the last-known subtree
+# shape instead of orphaning entries into fake flat roots.
+try:
+    _cache = json.load(open(f"{ROOT}/progress-tree.json"))
+except (OSError, ValueError):
+    _cache = {}
+cache_marks = _cache.get("marks", {})
+cache_children = _cache.get("children", {})
+
 res = subprocess.run(
     [sys.executable, f"{ROOT}/lean-daemon.py", "--query",
      json.dumps({"cmd": "report", "names": names})],
     capture_output=True, text=True, cwd=ROOT, timeout=3600)
-if res.returncode != 0:
-    print("DAEMON FAILED:", res.stderr[:500], file=sys.stderr)
-    sys.exit(1)
-resp = json.loads(res.stdout)
-if "error" in resp:
-    print("DAEMON ERROR:", resp["error"], file=sys.stderr)
-    sys.exit(1)
-for mod in resp.get("stale_sources", []):
-    print(f"NOTE: {mod} edited since last build — status reflects the "
-          "built state", file=sys.stderr)
+resp = {}
+if res.returncode == 0:
+    try:
+        resp = json.loads(res.stdout)
+    except ValueError:
+        resp = {}
+if "error" in resp or "entries" not in resp:
+    # daemon unavailable/transient — fall back to cache for everything
+    resp = {"entries": []}
 
 deps = {n: [] for n in names}
 own = {}
 clean = {}
-missing = []
 for item in resp["entries"]:
     n = item["name"]
     if item.get("missing"):
-        print(f"LEAN: {n} MISSING", file=sys.stderr)
-        missing.append(n)
         continue
     deps[n] = item["kids"]
     own[n] = item["own"]
     clean[n] = item["clean"]
 
-# A missing entry has no dependency edges, which orphans its whole
-# subtree into fake roots and flattens the display (the 2026-07-22
-# breakage: a half-started daemon child reported most entries missing
-# and the flattened tree was written and committed). Missing entries
-# mean the daemon's environment does not reflect a consistent build —
-# REFUSE to write rather than corrupt PROGRESS.md.
-if missing and "--force-degraded" not in sys.argv:
-    print(f"REFUSING to regenerate: {len(missing)} tracked entries "
-          "missing from the daemon environment (inconsistent/partial "
-          "build state). Rebuild first, or pass --force-degraded.",
-          file=sys.stderr)
-    sys.exit(1)
+# Entries the daemon could not report (module failed to build, or the
+# daemon itself was unavailable): render from the cached previous
+# generation. Silent by design — the daemon log carries the failure
+# signal; PROGRESS.md and the operator see a complete tree either way.
+fallback = [n for n in names if n not in clean]
+fallback_mark = {}
+for n in fallback:
+    fallback_mark[n] = cache_marks.get(n, "❌")
+    deps[n] = [k for k in cache_children.get(n, []) if k in by_name]
+if fallback:
+    print(f"note: {len(fallback)} entries rendered from cached previous "
+          "generation", file=sys.stderr)
 
 # ------------------------------------------------- compiler sorry count
 sres = subprocess.run(
@@ -97,8 +114,8 @@ if sres.returncode == 0:
 mark = {}
 for e in entries:
     n = e.get("fullname", e["name"])
-    if n not in clean:
-        mark[n] = "❌"
+    if n in fallback_mark:
+        mark[n] = fallback_mark[n]
     elif clean[n]:
         mark[n] = "✅✅"
     elif own.get(n, False):
@@ -163,7 +180,12 @@ for _j, (_i, _l) in enumerate(_items):
 if _viol:
     for _v in _viol:
         print("INVARIANT VIOLATION:", _v, file=sys.stderr)
-    sys.exit(1)
+    # Only a fully compiler-backed generation may be held to the display
+    # invariants; a cache-merged one (some entries at their last-known
+    # state) can transiently violate them and must still be written —
+    # generation never refuses (Deyao, 2026-07-22).
+    if not fallback:
+        sys.exit(1)
 
 # ------------------------------------------------------------- splice + dump
 json.dump({"marks": mark, "children": children, "roots": roots},

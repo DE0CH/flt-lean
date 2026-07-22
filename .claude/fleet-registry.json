@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-07-22 18:02:42",
+ "updated_at": "2026-07-22 18:28:11",
  "note": "Live fleet ownership map, maintained by the orchestrator at dispatch/integration. The Stop hook uses transcript mtimes as the liveness signal (fresh = agent alive).",
  "agents": [
   {
@@ -82,6 +82,11 @@
     "hleg1-hleg6 (exists_weilPairing_mu)"
    ],
    "transcript_glob": "/home/chend/.claude/projects/-home-chend-flt-lean/8e948ad7-2925-4f81-a46b-38fef37021d4/subagents/workflows/wf_47bdbe41-94f/agent-*.jsonl"
+  },
+  {
+   "label": "progress-selfsufficient",
+   "nodes": [],
+   "transcript_glob": "/tmp/claude-25789/-home-chend-flt-lean/8e948ad7-2925-4f81-a46b-38fef37021d4/tasks/a758bbd9027a0f8fd.output"
   }
  ]
 }

@@ -28,7 +28,19 @@ Queries (JSON, one object per line over the socket):
 Every response is augmented by the daemon with freshness metadata:
   stale_sources    modules whose .lean source is newer than their .olean
                    (the environment reflects the LAST BUILD of those);
-  unbuilt_modules  modules with no .olean at all (excluded from imports).
+  unbuilt_modules  modules with no .olean at all (excluded from imports);
+  failed_modules   modules whose last materialization attempt FAILED to
+                   compile (the genuine dirty-input signal; retried when
+                   their source or a project import's olean changes).
+
+The daemon SELF-MATERIALIZES its input: before importing, it builds the
+oleans of every unbuilt/stale project module with a targeted
+`lake build <mod> ...` — the same on-demand behavior as the language
+server compiling a file's imports when it is opened. Lake's content
+hashing makes already-fresh modules free, so this is incremental. The
+root aggregator module `Fermat` (the sorry gate, which fails by design)
+is never a target: scan_modules never lists it and no bare `lake build`
+is ever run.
 """
 
 import json
@@ -323,11 +335,130 @@ class Daemon:
         # retry round does not forget its exclusions; pruned per call
         # when the olean reappears (module rebuilt -> re-admit).
         self.force_bad = set()
+        # Modules whose last materialization attempt failed to COMPILE,
+        # mapped to the fingerprint (source mtime + direct-import olean
+        # mtimes) at failure time. Skipped by materialize() until the
+        # fingerprint changes (source edited, or an import rebuilt) —
+        # so a genuinely broken committed module costs one compile per
+        # state, not one per query. Reported as `failed_modules`.
+        self.build_failed = {}
         self.log = open(LOG, "a", encoding="utf-8")
 
     def _log(self, msg):
         self.log.write(f"[{time.strftime('%F %T')}] {msg}\n")
         self.log.flush()
+
+    # ----------------------------------------------- self-materialization
+
+    @staticmethod
+    def _fingerprint(mod, src_of, olean_of):
+        """Retry key for a failed module: its own source mtime plus the
+        olean mtimes of its direct project imports. Changes when the
+        module is edited or when a (possibly deep, via the dependents'
+        own rebuild cascade) import gets rebuilt."""
+        try:
+            smt = os.path.getmtime(src_of[mod])
+        except OSError:
+            smt = 0.0
+        imps = []
+        for i in project_imports(src_of[mod]):
+            if i in olean_of:
+                try:
+                    imps.append((i, os.path.getmtime(olean_of[i])))
+                except OSError:
+                    imps.append((i, 0.0))
+        return (smt, tuple(sorted(imps)))
+
+    @staticmethod
+    def _needs_build(mod, src_of, olean_of):
+        """True if the module has no olean or its source is newer."""
+        o = olean_of[mod]
+        if not os.path.exists(o):
+            return True
+        try:
+            return os.path.getmtime(src_of[mod]) > os.path.getmtime(o)
+        except OSError:
+            return False
+
+    def _lake_build(self, targets):
+        """Targeted incremental build; returns (exit code, output tail)."""
+        try:
+            res = subprocess.run(
+                ["lake", "build"] + targets, cwd=ROOT,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                text=True, timeout=3600)
+        except subprocess.TimeoutExpired:
+            return 1, "lake build timed out after 3600s"
+        except OSError as exc:
+            return 1, f"lake could not be invoked: {exc}"
+        tail = "\n".join(res.stdout.splitlines()[-15:])
+        return res.returncode, tail
+
+    def materialize(self):
+        """Self-serve the daemon's input: build the oleans of every
+        unbuilt/stale project module (never the root gate) before the
+        import, exactly like the language server compiles imports for an
+        opened file. A module that fails to compile is remembered in
+        self.build_failed (fingerprinted, see above), its dependents are
+        skipped via the import closure, and everything else proceeds —
+        a broken module degrades only its own subtree, never the run."""
+        modules = scan_modules()
+        src_of = {m: s for m, s, _o in modules}
+        olean_of = {m: o for m, _s, o in modules}
+        # forget failures that vanished from the scan, got built by
+        # someone else, or whose fingerprint changed (retry those)
+        for m in list(self.build_failed):
+            if (m not in src_of or not self._needs_build(m, src_of, olean_of)
+                    or self.build_failed[m]
+                    != self._fingerprint(m, src_of, olean_of)):
+                del self.build_failed[m]
+        need = [m for m, _s, _o in modules
+                if self._needs_build(m, src_of, olean_of)]
+        if not need:
+            return
+        # exclude known-failed modules AND their import-closure
+        # dependents (building a dependent would just re-fail the compile
+        # of its broken import on every query)
+        skip = set(self.build_failed)
+        imports = {m: [i for i in project_imports(src_of[m])
+                       if i in src_of] for m in src_of}
+        changed = True
+        while changed:
+            changed = False
+            for m, imps in imports.items():
+                if m not in skip and any(i in skip for i in imps):
+                    skip.add(m)
+                    changed = True
+        targets = [m for m in need if m not in skip]
+        if not targets:
+            return
+        self._log(f"materializing {len(targets)} modules: "
+                  + " ".join(targets))
+        t0 = time.time()
+        code, tail = self._lake_build(targets)
+        if code == 0:
+            self._log(f"materialized {len(targets)} modules in "
+                      f"{time.time() - t0:.1f}s")
+            return
+        self._log(f"batch materialization failed (exit {code}); "
+                  f"attributing per module\n{tail}")
+        # Per-module attribution: fresh modules are content-hash free,
+        # so only genuinely broken ones (and their dependents, skipped
+        # next round via the closure) pay a compile here.
+        for mod in targets:
+            if not self._needs_build(mod, src_of, olean_of):
+                continue
+            code, tail = self._lake_build([mod])
+            if code != 0 and self._needs_build(mod, src_of, olean_of):
+                self.build_failed[mod] = self._fingerprint(
+                    mod, src_of, olean_of)
+                self._log(f"MATERIALIZATION FAILED for {mod} "
+                          f"(exit {code}):\n{tail}")
+        ok = [m for m in targets if m not in self.build_failed
+              and not self._needs_build(m, src_of, olean_of)]
+        self._log(f"materialized {len(ok)}/{len(targets)} modules in "
+                  f"{time.time() - t0:.1f}s; failed: "
+                  + (" ".join(sorted(self.build_failed)) or "none"))
 
     def ensure_child(self, retries=5):
         # Oleans can vanish BETWEEN the scan and the import (a parallel
@@ -336,6 +467,14 @@ class Daemon:
         # then seen as missing and the import-closure filter drops the
         # module and its dependents.
         last_exc = None
+        # Self-serve the input first: build whatever is unbuilt/stale so
+        # the import below sees a complete, current environment. Any
+        # exception here must not kill the query path — materialization
+        # is best-effort; freshness() below re-reads reality either way.
+        try:
+            self.materialize()
+        except Exception as exc:
+            self._log(f"materialize step crashed: {exc!r}")
         # Re-admit force_bad modules whose olean has reappeared (the
         # parallel agent finished rebuilding them). Modules failing
         # WITHIN this call's retries are re-added below and stay
@@ -468,6 +607,7 @@ class Daemon:
             return {"error": f"lean child query failed: {exc}"}
         resp["stale_sources"] = stale
         resp["unbuilt_modules"] = unbuilt
+        resp["failed_modules"] = sorted(self.build_failed)
         return resp
 
     def serve(self):
