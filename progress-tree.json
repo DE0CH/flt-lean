@@ -203,12 +203,12 @@
   "GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj": "❌",
   "WeilPairing.stepR": "✅✅",
   "WeilPairing.recgen": "✅✅",
-  "serre_elimination_dihedral": "❌",
-  "serre_elimination_alt4": "❌",
-  "serre_elimination_sym4": "❌",
-  "serre_elimination_alt5": "❌",
-  "serre_elimination_psl": "❌",
-  "serre_elimination_pgl": "❌",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral": "❌",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt4": "❌",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_sym4": "❌",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt5": "❌",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_psl": "❌",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_pgl": "❌",
   "WeierstrassCurve.torsion_flat_of_good_reduction_of_isUnit": "❌",
   "WeierstrassCurve.torsion_flat_of_good_reduction_mul": "✅✅",
   "WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow": "❌"
@@ -314,8 +314,12 @@
   ],
   "FreyPackage.subquotient_character_unramified_at_p": [
    "FreyPackage",
+   "WeierstrassCurve.galoisRep",
    "FreyPackage.freyCurve",
-   "WeierstrassCurve.galoisRep"
+   "FreyPackage.freyCurve_hasGoodReduction_of_not_dvd",
+   "TorsionCard.prime_torsion_card",
+   "TorsionCard.smul_surjective",
+   "FreyPackage.freyCurve_hasMultiplicativeReduction_of_dvd"
   ],
   "FreyPackage.exists_quotient_curve_point": [
    "FreyPackage",
@@ -332,7 +336,10 @@
   "WeierstrassCurve.mazur_torsion_bound": [
    "WeierstrassCurve.mazur_classification"
   ],
-  "WeierstrassCurve.mazur_classification": [],
+  "WeierstrassCurve.mazur_classification": [
+   "TorsionCard.prime_torsion_card",
+   "TorsionCard.smul_surjective"
+  ],
   "FreyPackage.galoisRep_not_irreducible": [
    "FreyPackage",
    "group_theory_lemma",
@@ -489,6 +496,7 @@
    "WeierstrassCurve.galoisRep"
   ],
   "WeierstrassCurve.torsion_flat_of_multiplicative_reduction": [
+   "WeierstrassCurve.n_torsion_finite",
    "exists_unit_qUnit_mul_inv_pow_isUnit"
   ],
   "GaloisRep.isFlatAt_of_dvr_package": [
@@ -956,23 +964,23 @@
   "WeilPairing.recgen": [
    "WeilPairing.stepR"
   ],
-  "serre_elimination_dihedral": [],
-  "serre_elimination_alt4": [],
-  "serre_elimination_sym4": [],
-  "serre_elimination_alt5": [],
-  "serre_elimination_psl": [],
-  "serre_elimination_pgl": [],
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral": [],
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt4": [],
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_sym4": [],
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt5": [],
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_psl": [],
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_pgl": [],
   "WeierstrassCurve.torsion_flat_of_good_reduction_of_isUnit": [],
   "WeierstrassCurve.torsion_flat_of_good_reduction_mul": [],
   "WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow": []
  },
  "roots": [
   "fermat_last_theorem",
-  "serre_elimination_dihedral",
-  "serre_elimination_alt4",
-  "serre_elimination_sym4",
-  "serre_elimination_alt5",
-  "serre_elimination_psl",
-  "serre_elimination_pgl"
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt4",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_sym4",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt5",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_psl",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_pgl"
  ]
 }

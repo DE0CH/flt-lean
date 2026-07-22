@@ -32,7 +32,7 @@ Second symbol: `·` normal, `🟪` currently being worked on (from the
 entries file). To add/remove/annotate a node, edit
 `progress-entries.json` and re-run the generator.
 
-**Sorried declarations (compiler-counted): 17** — `torsion_flat_of_good_reduction_of_isUnit`, `torsion_flat_of_good_reduction_prime_pow`, `exists_globalFrob_restrictNormalHom_conj`, `exists_weilPairing_mu`, `mem_isCompatible`, `torsion_flat_of_multiplicative_reduction`, `mazur_classification`, `exists_quotient_curve_point`, `subquotient_character_unramified_at_p`, `serre_elimination_alt5`, `serre_elimination_pgl`, `subCharacter_unramified_at_three_of_quot_ramified`, `exists_line_with_quotCharacter_eq_subCharacter`, `serre_elimination_dihedral`, `serre_elimination_psl`, `serre_elimination_alt4`, `serre_elimination_sym4`
+**Sorried declarations (compiler-counted): 19** — `torsion_flat_of_inertia_fixes`, `torsion_inertia_fixes_of_prime_pow_isUnit`, `torsion_flat_of_good_reduction_prime_pow`, `infinite_setOf_isArithFrobAt`, `exists_weilPairing_mu`, `mem_isCompatible`, `torsionFlatPackage_localization_of_packages`, `exists_galoisModulePackage_of_finiteQuotient`, `torsionFlatPackage_of_split_adic`, `torsionFlatPackage_of_nonsplit_adic`, `torsion_finite_rat`, `mazur_point_order`, `exists_etale_line_of_good_of_stable_line`, `not_full_torsion_rat`, `exists_rank_le_two_decomposition`, `exists_etale_line_of_multiplicative_self`, `exists_quotient_curve_point`, `not_two_twelve_torsion`, `not_two_ten_torsion`
 
 - ✅· `fermat_last_theorem` — the goal: `FermatLastTheorem`, assembled from the mathlib reductions and
   `fermatLastTheoremFor_of_five_le`.
@@ -1459,36 +1459,36 @@ entries file). To add/remove/annotate a node, edit
                               h^-1 = tau — the finite-Galois-quotient existence form of Chebotarev;
                               the profinite coset form is PROVEN from this leaf (normal closure +
                               AlgEquiv.restrictNormalHom_surjective lifting).
-- ❌🟪 `serre_elimination_dihedral` — (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the
-  projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of
-  type dihedral — False from the case data; doc-comment in ModThree.lean records the intended
-  argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types:
-  root-discriminant vs Minkowski/Odlyzko bounds).
-- ❌🟪 `serre_elimination_alt4` — (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the
-  projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of
-  type alt4 — False from the case data; doc-comment in ModThree.lean records the intended argument
-  (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-
-  discriminant vs Minkowski/Odlyzko bounds).
-- ❌🟪 `serre_elimination_sym4` — (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the
-  projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of
-  type sym4 — False from the case data; doc-comment in ModThree.lean records the intended argument
-  (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-
-  discriminant vs Minkowski/Odlyzko bounds).
-- ❌🟪 `serre_elimination_alt5` — (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the
-  projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of
-  type alt5 — False from the case data; doc-comment in ModThree.lean records the intended argument
-  (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-
-  discriminant vs Minkowski/Odlyzko bounds).
-- ❌🟪 `serre_elimination_psl` — (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the
-  projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of
-  type psl — False from the case data; doc-comment in ModThree.lean records the intended argument
-  (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-
-  discriminant vs Minkowski/Odlyzko bounds).
-- ❌🟪 `serre_elimination_pgl` — (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the
-  projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of
-  type pgl — False from the case data; doc-comment in ModThree.lean records the intended argument
-  (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-
-  discriminant vs Minkowski/Odlyzko bounds).
+- ❌🟪 `serre_elimination_dihedral` — `serre_elimination_dihedral` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre
+  Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified
+  representation cannot be of type dihedral — False from the case data; doc-comment in ModThree.lean
+  records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class
+  bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds).
+- ❌🟪 `serre_elimination_alt4` — `serre_elimination_alt4` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre
+  Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified
+  representation cannot be of type alt4 — False from the case data; doc-comment in ModThree.lean
+  records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class
+  bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds).
+- ❌🟪 `serre_elimination_sym4` — `serre_elimination_sym4` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre
+  Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified
+  representation cannot be of type sym4 — False from the case data; doc-comment in ModThree.lean
+  records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class
+  bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds).
+- ❌🟪 `serre_elimination_alt5` — `serre_elimination_alt5` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre
+  Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified
+  representation cannot be of type alt5 — False from the case data; doc-comment in ModThree.lean
+  records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class
+  bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds).
+- ❌🟪 `serre_elimination_psl` — `serre_elimination_psl` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke
+  1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation
+  cannot be of type psl — False from the case data; doc-comment in ModThree.lean records the
+  intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds;
+  exceptional types: root-discriminant vs Minkowski/Odlyzko bounds).
+- ❌🟪 `serre_elimination_pgl` — `serre_elimination_pgl` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke
+  1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation
+  cannot be of type pgl — False from the case data; doc-comment in ModThree.lean records the
+  intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds;
+  exceptional types: root-discriminant vs Minkowski/Odlyzko bounds).
 
 ## Canonical frontier (2026-07-16, session 4 close — audit-verified)
 
