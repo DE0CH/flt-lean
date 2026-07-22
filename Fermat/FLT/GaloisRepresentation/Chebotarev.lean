@@ -201,7 +201,11 @@ theorem exists_isArithFrobAt_restrictNormalHom_globalFrob
   have hint : ∀ x : 𝓞 L, ι (algebraMap L (AlgebraicClosure K) (x : L)) ∈
       integralClosure (v.adicCompletionIntegers K)
         (AlgebraicClosure (v.adicCompletion K)) := by
-    sorry
+    intro x
+    exact IsIntegral.map_of_comp_eq
+      (algebraMap ℤ (v.adicCompletionIntegers K))
+      (ι.comp (algebraMap L (AlgebraicClosure K)))
+      (Subsingleton.elim _ _) (x.2 : IsIntegral ℤ (x : L))
   -- the contraction homomorphism into the big integral closure
   set j : 𝓞 L →+* IntegralClosure (v.adicCompletionIntegers K)
       (AlgebraicClosure (v.adicCompletion K)) :=
@@ -225,7 +229,31 @@ theorem exists_isArithFrobAt_restrictNormalHom_globalFrob
         (IntegralClosure (v.adicCompletionIntegers K)
           (AlgebraicClosure (v.adicCompletion K)))
         (algebraMap (𝓞 K) (v.adicCompletionIntegers K) a) := by
-    sorry
+    intro a
+    apply Subtype.ext
+    show ι (algebraMap L (AlgebraicClosure K)
+        (algebraMap K L (algebraMap (𝓞 K) K a))) =
+      algebraMap (IntegralClosure (v.adicCompletionIntegers K)
+          (AlgebraicClosure (v.adicCompletion K)))
+        (AlgebraicClosure (v.adicCompletion K))
+        (algebraMap (v.adicCompletionIntegers K)
+          (IntegralClosure (v.adicCompletionIntegers K)
+            (AlgebraicClosure (v.adicCompletion K)))
+          (algebraMap (𝓞 K) (v.adicCompletionIntegers K) a))
+    rw [← IsScalarTower.algebraMap_apply K L (AlgebraicClosure K),
+      hιdef, AlgebraicClosure.map_algebraMap,
+      ← IsScalarTower.algebraMap_apply (v.adicCompletionIntegers K)
+        (IntegralClosure (v.adicCompletionIntegers K)
+          (AlgebraicClosure (v.adicCompletion K)))
+        (AlgebraicClosure (v.adicCompletion K)),
+      IsScalarTower.algebraMap_apply (v.adicCompletionIntegers K)
+        (v.adicCompletion K) (AlgebraicClosure (v.adicCompletion K)),
+      show algebraMap (v.adicCompletionIntegers K) (v.adicCompletion K)
+          (algebraMap (𝓞 K) (v.adicCompletionIntegers K) a) =
+        ((algebraMap (𝓞 K) (v.adicCompletionIntegers K) a :
+          v.adicCompletionIntegers K) : v.adicCompletion K) from rfl,
+      IsDedekindDomain.HeightOneSpectrum.algebraMap_completionIntegers K v a,
+      IsScalarTower.algebraMap_apply (𝓞 K) K (v.adicCompletion K)]
   -- `Q` lies over `v`
   have hover : v.asIdeal = (v.completionIdeal K).under (𝓞 K) :=
     Ideal.LiesOver.over
@@ -255,7 +283,22 @@ theorem exists_isArithFrobAt_restrictNormalHom_globalFrob
         (Field.AbsoluteGaloisGroup.adicArithFrob v) (j x) =
       j ((MulSemiringAction.toAlgHom (𝓞 K) (𝓞 L)
         (AlgEquiv.restrictNormalHom L (globalFrob v))) x) := by
-    sorry
+    intro x
+    apply Subtype.ext
+    show Field.AbsoluteGaloisGroup.adicArithFrob v
+        (ι (algebraMap L (AlgebraicClosure K) (x : L))) =
+      ι (algebraMap L (AlgebraicClosure K)
+        ((AlgEquiv.restrictNormalHom L (globalFrob v)) (x : L)))
+    have hres : algebraMap L (AlgebraicClosure K)
+        ((AlgEquiv.restrictNormalHom L (globalFrob v)) (x : L)) =
+        globalFrob v (algebraMap L (AlgebraicClosure K) (x : L)) :=
+      AlgEquiv.restrictNormal_commutes (globalFrob v) L (x : L)
+    have hlift := Field.absoluteGaloisGroup.lift_map
+      (algebraMap K (v.adicCompletion K))
+      (Field.AbsoluteGaloisGroup.adicArithFrob v)
+      (algebraMap L (AlgebraicClosure K) (x : L))
+    rw [hres, hιdef]
+    exact hlift.symm
   refine ⟨Q, Ideal.IsPrime.comap j, ⟨hQunder.symm⟩, fun x => ?_⟩
   have h1 := harith (j x)
   rw [hfrob x, ← map_pow, ← map_sub] at h1
