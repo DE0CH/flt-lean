@@ -77,6 +77,10 @@ import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
 import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 public import Mathlib.RingTheory.Bialgebra.Convolution
 public import Mathlib.RingTheory.HopfAlgebra.TensorProduct
+-- finite Galois theory (`normalClosure`, `IsGalois`), consumed by the
+-- finite-factorization glue of `exists_galoisModulePackage`; PUBLIC
+-- because the finite-Galois core leaf is STATED with `IsGalois`
+public import Mathlib.FieldTheory.Galois.Basic
 
 @[expose] public section
 
@@ -2872,6 +2876,34 @@ the `Ω`-points of `H` are the evaluations at the elements of `A`,
 equivariantly by construction. Stated with the redundant base change
 `K ⊗[K] H` to match the component shape of
 `WeierstrassCurve.TorsionFlatPackage` verbatim. -/
+theorem exists_galoisModulePackage_of_finiteGalois
+    (K : Type) [Field K] [CharZero K]
+    (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
+    (A : Type) [AddCommGroup A] [Finite A]
+    (ρ : (Ω ≃ₐ[K] Ω) →* AddMonoid.End A)
+    (L : IntermediateField K Ω) [FiniteDimensional K L] [IsGalois K L]
+    (hker : ∀ σ : Ω ≃ₐ[K] Ω, σ ∈ L.fixingSubgroup → ρ σ = 1) :
+    ∃ (H : Type) (_ : CommRing H) (_ : HopfAlgebra K H)
+      (_ : Module.Finite K H) (_ : Module.Flat K H)
+      (_ : Algebra.Etale K (K ⊗[K] H))
+      (f : Additive (WithConv ((K ⊗[K] H) →ₐ[K] Ω)) ≃+ A),
+      ∀ (σ : Ω ≃ₐ[K] Ω) (φ : (K ⊗[K] H) →ₐ[K] Ω),
+        f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
+          ρ σ (f (Additive.ofMul (WithConv.toConv φ))) := by
+  sorry
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The finite-étale package of a discrete Galois module** (DERIVED
+2026-07-22 from the finite-Galois core leaf above): the discreteness
+hypothesis is upgraded to a SINGLE finite Galois subextension through
+which the whole action factors — the compositum of the pointwise
+fields `L_a` is finite-dimensional (`A` is finite), and its normal
+closure is finite Galois over `K` (separability is automatic in
+characteristic zero); an automorphism fixing it fixes every `L_a`,
+hence acts trivially on `A`. -/
 theorem exists_galoisModulePackage
     (K : Type) [Field K] [CharZero K]
     (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
@@ -2886,7 +2918,29 @@ theorem exists_galoisModulePackage
       ∀ (σ : Ω ≃ₐ[K] Ω) (φ : (K ⊗[K] H) →ₐ[K] Ω),
         f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
           ρ σ (f (Additive.ofMul (WithConv.toConv φ))) := by
-  sorry
+  classical
+  -- choose the pointwise fixing fields
+  choose La hLafd hLafix using hdisc
+  haveI : ∀ a : A, FiniteDimensional K (La a) := hLafd
+  -- their compositum is finite-dimensional since `A` is finite
+  haveI hL0 : FiniteDimensional K
+      (⨆ a : A, La a : IntermediateField K Ω) :=
+    IntermediateField.finiteDimensional_iSup_of_finite
+  -- its normal closure is finite Galois over `K` (char 0)
+  have hker : ∀ σ : Ω ≃ₐ[K] Ω,
+      σ ∈ (IntermediateField.normalClosure K
+        (⨆ a : A, La a : IntermediateField K Ω) Ω).fixingSubgroup → ρ σ = 1 := by
+    intro σ hσ
+    refine AddMonoidHom.ext fun a => ?_
+    have hσa : σ ∈ (La a).fixingSubgroup := by
+      refine (IntermediateField.mem_fixingSubgroup_iff _ _).mpr fun x hx => ?_
+      exact ((IntermediateField.mem_fixingSubgroup_iff _ _).mp hσ) x
+        ((IntermediateField.le_normalClosure _)
+          ((le_iSup (fun a : A => (La a : IntermediateField K Ω)) a) hx))
+    exact hLafix a σ hσa
+  exact exists_galoisModulePackage_of_finiteGalois K Ω A ρ
+    (IntermediateField.normalClosure K
+      (⨆ a : A, La a : IntermediateField K Ω) Ω) hker
 
 open TensorProduct in
 open scoped WeierstrassCurve.Affine in
