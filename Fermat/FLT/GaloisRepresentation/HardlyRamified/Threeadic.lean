@@ -503,24 +503,63 @@ theorem exists_residual_isHardlyRamified {R : Type u} [CommRing R]
   · -- tameness at 2 (sorried transfer leaf)
     exact isTameAtTwo_baseChange_residue kk hsurj hρ.isTameAtTwo
 
-/-- **The one-step equivariant lift** (sorry node — the deep arithmetic
-core, Serre §5.4/Fontaine, at a single level of the maximal-adic
-filtration): an `R`-linear functional on `V` which is Galois-equivariant
-modulo `𝔪 ^ (n + 1)` and residually nonvanishing at the marked vector
-`v₀` (a vector where the residual trivial-quotient functional `π` is
-nonzero) can be corrected to a functional equivariant modulo
-`𝔪 ^ (n + 2)`, still residually nonvanishing at `v₀`. Recorded route:
-the defect `g ↦ f ∘ ρ g - f` takes values in `Hom(V, 𝔪ⁿ⁺¹)` and,
-reduced modulo `𝔪ⁿ⁺²`, is a `1`-cocycle for the contragredient residual
-action on `Hom(V̄, 𝔪ⁿ⁺¹/𝔪ⁿ⁺²)` — the residual dual is an extension of
-the inverse mod-3 cyclotomic character `ω⁻¹ = ω` by the trivial
-character. The hardly ramified conditions (flat at `3`, tame quadratic
-at `2`, unramified elsewhere) place its class in the corresponding
-Selmer group, which vanishes by Serre's computation for `p = 3` (the
-class number of `ℚ(ζ₃)` is `1`; the unit contributions die against the
-local conditions at `3` and `2`). A coboundary witness is a correction
-`h : V →ₗ[R] R` with values in `𝔪ⁿ⁺¹`; then `f' = f - h` is equivariant
-modulo `𝔪ⁿ⁺²` and `f' v₀ = f v₀ - h v₀ ∉ 𝔪` since `h v₀ ∈ 𝔪ⁿ⁺¹ ≤ 𝔪`. -/
+/-- **The coboundary form of the one-level obstruction** (sorry node —
+the deep arithmetic core, Serre §5.4/Fontaine): for an `R`-linear
+functional `f` on `V` which is Galois-equivariant modulo `𝔪 ^ (n + 1)`,
+the defect `(g, v) ↦ f (ρ g v) - f v` — a `1`-cocycle on `Γ ℚ` valued
+in `Hom(V, 𝔪ⁿ⁺¹)`, reduced modulo `𝔪ⁿ⁺²` a cocycle for the
+contragredient residual action on `Hom(V̄, 𝔪ⁿ⁺¹/𝔪ⁿ⁺²)` — is a
+coboundary modulo `𝔪ⁿ⁺²`: there is a correction functional `h` with
+values in `𝔪ⁿ⁺¹` whose coboundary cancels the defect one level deeper.
+Recorded route: the residual dual `V̄*` is an extension of the inverse
+mod-3 cyclotomic character `ω⁻¹ = ω` by the trivial character (the
+trivial quotient `π` dualizes to the trivial sub). The hardly ramified
+conditions (flat at `3`, tame quadratic at `2`, unramified elsewhere)
+place the class of the defect cocycle in the Selmer group of
+`V̄* ⊗ 𝔪ⁿ⁺¹/𝔪ⁿ⁺²` with local conditions "finite flat at `3`, tame at
+`2`, unramified outside `{2, 3}`", and that Selmer group vanishes by
+Serre's computation for `p = 3`: its graded pieces are Selmer groups of
+the trivial character and of `ω`, killed by the class number `1` of `ℚ`
+resp. `ℚ(ζ₃)` and the unit computations against the local conditions.
+A witness for the vanishing class is the correction `h`. -/
+theorem exists_equivariant_defect_coboundary
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (n : ℕ) (f : V →ₗ[R] R)
+    (hf : ∀ (g : Γ ℚ) (v : V),
+      f (ρ g v) - f v ∈ IsLocalRing.maximalIdeal R ^ (n + 1))
+    (hfv₀ : f v₀ ∉ IsLocalRing.maximalIdeal R) :
+    ∃ h : V →ₗ[R] R,
+      (∀ v : V, h v ∈ IsLocalRing.maximalIdeal R ^ (n + 1)) ∧
+      (∀ (g : Γ ℚ) (v : V),
+        (f (ρ g v) - f v) + (h (ρ g v) - h v) ∈
+          IsLocalRing.maximalIdeal R ^ (n + 2)) := by
+  sorry
+
+/-- **The one-step equivariant lift** (DERIVED 2026-07-22 from the
+coboundary leaf `exists_equivariant_defect_coboundary`): an `R`-linear
+functional on `V` which is Galois-equivariant modulo `𝔪 ^ (n + 1)` and
+residually nonvanishing at the marked vector `v₀` (a vector where the
+residual trivial-quotient functional `π` is nonzero) can be corrected
+to a functional equivariant modulo `𝔪 ^ (n + 2)`, still residually
+nonvanishing at `v₀`. The correction is `f' = f + h` for a coboundary
+witness `h` valued in `𝔪ⁿ⁺¹`: the new defect is the old defect plus the
+coboundary of `h`, which lies in `𝔪ⁿ⁺²` by the leaf, and
+`f' v₀ = f v₀ + h v₀ ∉ 𝔪` since `h v₀ ∈ 𝔪ⁿ⁺¹ ≤ 𝔪`. -/
 theorem exists_equivariant_functional_lift_step
     {R : Type u} [CommRing R]
     [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
@@ -546,7 +585,22 @@ theorem exists_equivariant_functional_lift_step
       (∀ (g : Γ ℚ) (v : V),
         f' (ρ g v) - f' v ∈ IsLocalRing.maximalIdeal R ^ (n + 2)) ∧
       f' v₀ ∉ IsLocalRing.maximalIdeal R := by
-  sorry
+  obtain ⟨h, hval, hcob⟩ :=
+    exists_equivariant_defect_coboundary V hV hρ kk hsurj π hπsurj hπequiv
+      v₀ hv₀ n f hf hfv₀
+  refine ⟨f + h, fun g v => ?_, fun hmem => ?_⟩
+  · have hsplit : (f + h) (ρ g v) - (f + h) v
+        = (f (ρ g v) - f v) + (h (ρ g v) - h v) := by
+      rw [LinearMap.add_apply, LinearMap.add_apply]
+      ring
+    rw [hsplit]
+    exact hcob g v
+  · have hh : h v₀ ∈ IsLocalRing.maximalIdeal R :=
+      Ideal.pow_le_self (Nat.succ_ne_zero n) (hval v₀)
+    have hfv : f v₀ = (f + h) v₀ - h v₀ := by
+      rw [LinearMap.add_apply]
+      ring
+    exact hfv₀ (hfv ▸ Submodule.sub_mem _ hmem hh)
 
 /-- **The equivariant functional lift** (DERIVED 2026-07-22 from the
 one-step lift leaf `exists_equivariant_functional_lift_step`; the
