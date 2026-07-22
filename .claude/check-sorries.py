@@ -14,9 +14,10 @@ instead of a full `lake build`): the daemon's Lean child reports every
 project declaration whose proof term uses `sorryAx` (the compiler's own
 verdict) plus the root-cone sorry/axiom status. The daemon's environment
 reflects the last BUILT state of each module; modules edited since are
-reported as `stale_sources` and surfaced in the block message. Only in
-the endgame (daemon reports zero sorries) does the hook run one real
-`lake build` to confirm against fresh sources and the actual root gate.
+reported as `stale_sources` and surfaced in the block message. The hook
+NEVER runs `lake build` (Deyao, 2026-07-22 — nothing automatic does):
+the endgame verdict rests on the daemon's evidence alone, and the
+insurance build confirming a zero-sorry state is Deyao's manual job.
 Deliberately NO `stop_hook_active` guard: while the exit condition is
 unmet the hook keeps blocking (the built-in block cap /
 CLAUDE_CODE_STOP_HOOK_BLOCK_CAP bounds a single turn); Deyao terminates
@@ -163,28 +164,21 @@ def main() -> int:
         or root.get("badAxioms")
     )
 
-    if not sorries and not root_open and not unbuilt:
-        # Endgame: the daemon (last-built state) says done. Confirm against
-        # fresh sources and the actual root gate with one real build.
-        proc = subprocess.run(
-            ["lake", "build"],
-            cwd=fermat,
-            capture_output=True,
-            text=True,
-            timeout=3000,
-        )
-        if proc.returncode == 0:
-            return 0  # compiler-verified: gate passed, no sorries anywhere
-        sys.stderr.write(
-            "Not done: the daemon reports zero sorried declarations, but "
-            "the confirming `lake build` fails — fix the build; the loop "
-            "exit condition is a clean build through the root sorry "
-            "gate.\n"
-        )
-        for line in (proc.stdout + proc.stderr).splitlines():
-            if line.startswith("error"):
-                sys.stderr.write(f"  {line}\n")
-        return 2
+    if not sorries and not root_open:
+        # Endgame (Deyao, 2026-07-22): NOTHING automatic runs `lake build`
+        # — this hook decides on the daemon's evidence alone. Zero sorries
+        # + clean root cone + no caveats -> allow. If the verdict is
+        # incomplete (stale sources or unbuilt modules), still allow
+        # (fail open, nudge not gate) with a one-line note; the insurance
+        # build confirming the zero-sorry state is Deyao's manual job.
+        if stale or unbuilt:
+            sys.stderr.write(
+                "Note: daemon reports zero sorried declarations, but the "
+                f"verdict is partial ({len(stale)} stale-source, "
+                f"{len(unbuilt)} unbuilt module(s)) — allowing the stop; "
+                "Deyao's own insurance `lake build` would confirm it.\n"
+            )
+        return 0
 
     # Fleet idleness was already established by the gate above; prepend
     # the FLEET IDLE line to the blocking message.
