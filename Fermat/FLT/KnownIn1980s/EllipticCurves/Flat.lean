@@ -218,7 +218,16 @@ residues, and reduction is injective on the prime torsion through the residue cu
 separability. The intended proof here upgrades that argument from `p` to `p ^ k` — the
 division-polynomial coprimality input at composite order is `isCoprime_Φ_ΨSq`, proven
 at the bottom of this file (over the residue field `Δ` is a unit by good reduction) —
-and covers `p = 2` by the ordinate-flip case analysis at even order. -/
+and covers `p = 2` by the ordinate-flip case analysis at even order.
+
+INTEGRATION NOTE (2026-07-22): the odd `k = 1` case CANNOT currently be discharged
+here by applying the proven theorem, because `GoodReduction.lean` sits DOWNSTREAM of
+this file (`TorsionCard`/`TorsionCardSep` consume `isCoprime_Φ_ΨSq` from this file,
+and `GoodReduction` imports `TorsionCardSep`): `import GoodReduction` from here is a
+build cycle (verified 2026-07-22). To consume the proven case, either move
+`isCoprime_Φ_ΨSq` upstream (e.g. into `Fermat.FLT.EllipticCurve.PhiPsiCoprime`, its
+proof's real home) and flip this file downstream of `GoodReduction`, or prove this
+leaf in a new module downstream of both and re-export. -/
 theorem WeierstrassCurve.torsion_inertia_fixes_of_prime_pow_isUnit
     (p k : ℕ) (hp : p.Prime) (hpk : IsUnit ((p ^ k : ℕ) : R))
     (𝒪 : ValuationSubring Ksep)
