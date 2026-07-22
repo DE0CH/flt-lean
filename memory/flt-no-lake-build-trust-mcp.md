@@ -24,5 +24,5 @@ destabilizing the daemon and other agents.
 **How to apply:** Orchestrator integration verification = MCP diagnostics
 on merged files in main. Worktree agents (whose files the main-rooted MCP
 cannot see) use `lake env lean <file>` single-file checks — the daemon's
-own direct mechanism, not a build. NOTHING automatic runs `lake build` — the Stop hook included (its endgame decides on the daemon's zero-sorry + root-cone evidence alone, fail-open on partial verdicts); all insurance builds are Deyao's manual domain ([[flt-stop-hook-session-guard]],
+own direct mechanism, not a build. The directive concerns VERIFICATION GATES: nobody gates on `lake build` (MCP/daemon verdicts decide; the Stop hook's endgame builds nothing). STATE-REFRESH builds are different and fine: the orchestrator may run consolidated builds (e.g. `lake build Fermat.Basic`) at integration points to materialize oleans so the daemon/progress generation can read current state — Deyao 2026-07-22: 'when did i tell you to stop running builds?' after I over-generalized. Insurance builds remain Deyao's own manual habit ([[flt-stop-hook-session-guard]],
 [[flt-stop-hook-is-a-nudge]], [[flt-orchestrator-role]]).
