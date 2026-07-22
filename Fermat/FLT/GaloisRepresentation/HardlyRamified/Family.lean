@@ -40,12 +40,19 @@ order `3`). The same defect is present in the upstream FLT project's
 statement. The intended reading ("`R` is the integers in a finite
 extension of `ℚ_p`") forces `algebraMap ℤ_[p] R` to be injective, and
 the sole consumer (`residual_charFrob_eq` in `Lift.lean`) instantiates
-`R` with such a ring. **The node must eventually be restated with the
-extra hypothesis `Function.Injective (algebraMap ℤ_[p] R)`** (a
-coordinated change with the call site in `Lift.lean`, where the
-hypothesis is provable for `L.O`); this file quarantines exactly that
-statement as the inner sorried step `hZinj` of the proof skeleton
-below, from which the coefficient embedding `R ↪ ℚ̄_p` is *proven*
+`R` with such a ring.
+
+RESTATEMENT (2026-07-22, coordinated with the call site in
+`Lift.lean`): `mem_isCompatible` now takes the extra hypothesis
+`hZinj : Function.Injective (algebraMap ℤ_[p] R)`, which repairs the
+defect. The previous revision quarantined exactly this statement as an
+inner *sorried step* `hZinj` of the proof skeleton (recording that it
+was false-as-stated in full generality); that sorry is superseded by —
+and deleted in favour of — the hypothesis. At the sole call site
+(`residual_charFrob_eq` in `Lift.lean`) the hypothesis is discharged
+by the `algebraMap_injective` field of `HardlyRamifiedLift`, which
+holds for the intended `L.O` (integers in a finite extension of
+`ℚ_p`). From `hZinj` the coefficient embedding `R ↪ ℚ̄_p` is *proven*
 (torsion-free + integral ⇒ `IsAlgClosed.lift`; injectivity by
 contracting the kernel to `ℤ_[p]`; continuity from the module
 topology). The remaining sorried step `hcore` is the true
@@ -116,17 +123,19 @@ def IsInHardlyRamifiedFamily (ρ : GaloisRep ℚ R V) : Prop :=
         Fin 2 → AlgebraicClosure ℚ_[p]),
       (ρ.baseChange (AlgebraicClosure ℚ_[p])).conj r' = σ hp ψ)
 
-/-- **B6b** (sorry node): a hardly ramified `p`-adic representation lives in
-a compatible family of Galois representations, all of whose
-odd-residue-characteristic members are themselves hardly ramified.
+/-- **B6b** (sorry node): a hardly ramified `p`-adic representation over a
+coefficient ring of characteristic zero (`hZinj`: `ℤ_[p]` embeds — the
+audit hypothesis added 2026-07-22, without which the statement is false;
+see the module docstring) lives in a compatible family of Galois
+representations, all of whose odd-residue-characteristic members are
+themselves hardly ramified.
 
-DECOMPOSED (2026-07-22) into a compiling skeleton with two sorried steps:
+DECOMPOSED (2026-07-22) into a compiling skeleton with one sorried step
+(a second sorried step, the false-as-stated injectivity of
+`algebraMap ℤ_[p] R`, was the quarantine of the audit defect and is
+superseded by the hypothesis `hZinj`):
 
-1. `hZinj` — injectivity of `algebraMap ℤ_[p] R`. **Unprovable as
-   stated** (see the audit note in the module docstring: `R = 𝔽₃`
-   is a counterexample to the full node); this is the exact statement
-   that must migrate into the hypotheses of a future restatement.
-   From `hZinj` the coefficient embedding `hembed : R ↪ ℚ̄_p`
+1. `hembed` — from `hZinj`, the coefficient embedding `R ↪ ℚ̄_p`
    (injective, `ℤ_[p]`-compatible, continuous) is PROVEN.
 2. `hcore` — the automorphy core: given the fixed continuous embedding
    `R ↪ ℚ̄_p` (as the `Algebra R ℚ̄_p` instance `ia` in context), the
@@ -141,17 +150,14 @@ NOTE (elaboration): the final repackaging must be `refine` +
 a deferred `exact` — an anonymous-constructor `exact ⟨…, ψ, r', hψ⟩`
 against the `∃ (_ : Algebra R ℚ̄_p) …` telescope sends `isDefEq` into
 a heartbeat timeout. -/
-theorem mem_isCompatible (hρ : IsHardlyRamified hpodd hv ρ) :
+theorem mem_isCompatible (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hρ : IsHardlyRamified hpodd hv ρ) :
     IsInHardlyRamifiedFamily (p := p) ρ := by
   -- Step 1: the coefficient ring embeds into `ℚ̄_p` over `ℤ_[p]`,
   -- injectively and continuously.
   have hembed : ∃ i : R →+* AlgebraicClosure ℚ_[p], Function.Injective i ∧
       i.comp (algebraMap ℤ_[p] R) = algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p]) ∧
       Continuous i := by
-    -- The quarantined false-as-stated core (audit note in the module
-    -- docstring): must become a hypothesis of the restated node.
-    have hZinj : Function.Injective (algebraMap ℤ_[p] R) := by
-      sorry
     haveI : Module.IsTorsionFree ℤ_[p] R :=
       Module.isTorsionFree_iff_algebraMap_injective.mpr hZinj
     have hZbarinj : Function.Injective (algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])) := by
