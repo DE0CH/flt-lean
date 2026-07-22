@@ -95,10 +95,9 @@ open WeierstrassCurve WeierstrassCurve.Affine
 /-!
 ### Decomposition of Mazur's classification (2026-07-22)
 
-`mazur_classification` is decomposed; after the second pass
-(2026-07-22, evening) the remaining SORRY leaves are exactly the
-genuinely modular-curve-theoretic inputs plus one root-of-unity fact
-at level `4`:
+`mazur_classification` is decomposed; after the third pass
+(2026-07-22, night) the remaining SORRY leaves are exactly the
+genuinely modular-curve-theoretic inputs:
 
 * `mazur_point_order` (sorry node): Mazur's uniform bound — the order
   of a rational torsion point lies in `{1, …, 10, 12}` (Mazur 1977,
@@ -112,9 +111,10 @@ at level `4`:
   rational full level-`ℓ` structure trivializes the mod-`ℓ`
   representation, hence its determinant, the mod-`ℓ` cyclotomic
   character, forcing `μ_ℓ ⊆ ℚ`.
-* `not_full_four_torsion_rat` (sorry node): no rational `(ℤ/4)²`
-  (`μ₄ ⊄ ℚ` through the level-`4` Weil pairing, or the elementary
-  square-product argument on the `2`-torsion abscissae).
+* `not_full_four_torsion_rat` (PROVEN 2026-07-22): no rational
+  `(ℤ/4)²`, by the elementary square-product argument on the
+  `2`-torsion abscissae (`cubic_vieta` + `halving_square` +
+  `exists_halving_coords`, all PROVEN pure algebra).
 * `not_full_torsion_rat` (DERIVED from the two preceding nodes): for
   `n ≥ 3` the full `n`-torsion is never rational.
 * `not_two_ten_torsion`, `not_two_twelve_torsion` (sorry nodes): no
@@ -350,23 +350,248 @@ theorem WeierstrassCurve.not_full_odd_prime_torsion_rat (E : WeierstrassCurve �
   rw [hqone, map_one] at hq
   exact hζ.ne_one hℓ.one_lt hq.symm
 
-/-- **Irrationality of full `4`-torsion** (sorry node): the rational
-points of an elliptic curve over `ℚ` contain no subgroup isomorphic to
-`(ℤ/4)²`. The arithmetic content is `μ₄ ⊄ ℚ`: a rational basis of
-`E[4]` makes the Weil pairing `e₄` of the basis vectors a Galois-fixed
-primitive fourth root of unity, i.e. `i ∈ ℚ` — absurd. (Equivalently,
-elementarily: full rational `2`-torsion puts `E` in the form
-`y² = (x−e₁)(x−e₂)(x−e₃)`, rationality of the halves of each `2`-torsion
-point forces every `(eᵢ−eⱼ)(eᵢ−eₖ)` to be a rational square, and the
-product of the three is `−((e₁−e₂)(e₂−e₃)(e₃−e₁))² < 0` — absurd.) The
-determinant route used for odd primes is unavailable here: the
-determinant node `det_galoisRep_eq_cyclotomic` requires `Odd p`, and
-the obstruction lives at level `4`, not at a prime. Silverman AEC
-III.8, Cor 8.1.1. -/
+/-- **Vieta's formulas for the `2`-division cubic** (PROVEN — pure field
+algebra by pairwise root elimination): if `4t³ + Bt² + Ct + D` has three
+distinct roots `T`, `U`, `V`, then its coefficients are the scaled
+elementary symmetric functions of the roots. Consumed by
+`not_full_four_torsion_rat` to identify the `2`-division cubic
+`4x³ + b₂x² + 2b₄x + b₆` of a curve with full rational `2`-torsion. -/
+lemma MazurFourTorsion.cubic_vieta {B C D T U V : ℚ} (hTU : T ≠ U)
+    (hTV : T ≠ V) (hUV : U ≠ V)
+    (h1 : 4 * T ^ 3 + B * T ^ 2 + C * T + D = 0)
+    (h2 : 4 * U ^ 3 + B * U ^ 2 + C * U + D = 0)
+    (h3 : 4 * V ^ 3 + B * V ^ 2 + C * V + D = 0) :
+    B = -4 * (T + U + V) ∧ C = 4 * (T * U + T * V + U * V) ∧
+      D = -4 * (T * U * V) := by
+  have q12 : (T - U) * (4 * (T ^ 2 + T * U + U ^ 2) + B * (T + U) + C) = 0 := by
+    linear_combination h1 - h2
+  have h12 : 4 * (T ^ 2 + T * U + U ^ 2) + B * (T + U) + C = 0 :=
+    (mul_eq_zero.mp q12).resolve_left (sub_ne_zero.mpr hTU)
+  have q13 : (T - V) * (4 * (T ^ 2 + T * V + V ^ 2) + B * (T + V) + C) = 0 := by
+    linear_combination h1 - h3
+  have h13 : 4 * (T ^ 2 + T * V + V ^ 2) + B * (T + V) + C = 0 :=
+    (mul_eq_zero.mp q13).resolve_left (sub_ne_zero.mpr hTV)
+  have q23 : (U - V) * (4 * (T + U + V) + B) = 0 := by
+    linear_combination h12 - h13
+  have hB : B = -4 * (T + U + V) := by
+    have h0 := (mul_eq_zero.mp q23).resolve_left (sub_ne_zero.mpr hUV)
+    linarith
+  have hC : C = 4 * (T * U + T * V + U * V) := by
+    linear_combination h12 - (T + U) * hB
+  have hD : D = -4 * (T * U * V) := by
+    linear_combination h1 - T ^ 2 * hB - T * hC
+  exact ⟨hB, hC, hD⟩
+
+/-- **The halving square identity** (PROVEN — pure field algebra): if a
+point `(x, y)` on a Weierstrass curve doubles, by the tangent-line
+formula (`hl` is the cleared slope equation, `hx` the `addX` output),
+onto the `2`-torsion abscissa `T`, and `T`, `U`, `V` satisfy the Vieta
+identities of the `2`-division cubic (`b₂ = -4σ₁`, `2b₄ = 4σ₂`,
+`b₆ = -4σ₃`), then `(T − U)(T − V) = (x − T)²` is a square. This is the
+classical identity `x(2P) − e₁ = ((x − e₁)² − (e₁ − e₂)(e₁ − e₃))²/w²`
+(`w = 2y + a₁x + a₃`) behind the criterion for halving `2`-torsion
+points; the proof is a chain of `linear_combination` certificates
+through the completed-square substitution `Y = y + (a₁x + a₃)/2`.
+Consumed by `not_full_four_torsion_rat`. -/
+lemma MazurFourTorsion.halving_square {a₁ a₂ a₃ a₄ a₆ x y l T U V : ℚ}
+    (heq : y ^ 2 + a₁ * x * y + a₃ * y = x ^ 3 + a₂ * x ^ 2 + a₄ * x + a₆)
+    (hB : a₁ ^ 2 + 4 * a₂ = -4 * (T + U + V))
+    (hC : 2 * a₁ * a₃ + 4 * a₄ = 4 * (T * U + T * V + U * V))
+    (hD : a₃ ^ 2 + 4 * a₆ = -4 * (T * U * V))
+    (hl : l * (2 * y + a₁ * x + a₃) = 3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y)
+    (hx : l ^ 2 + a₁ * l - a₂ - x - x = T) :
+    (T - U) * (T - V) = (x - T) ^ 2 := by
+  -- the `2`-division cubic factors through the three abscissae
+  have hw2 : (2 * y + a₁ * x + a₃) ^ 2 = 4 * ((x - T) * (x - U) * (x - V)) := by
+    linear_combination 4 * heq + x ^ 2 * hB + x * hC + hD
+  -- the completed-square slope `l + a₁/2` clears to the derivative
+  have hFp : (l + a₁ / 2) * (2 * y + a₁ * x + a₃) =
+      3 * x ^ 2 - 2 * (T + U + V) * x + (T * U + T * V + U * V) := by
+    linear_combination hl + x / 2 * hB + (1 : ℚ) / 4 * hC
+  -- the doubling output in completed-square form
+  have hly : (l + a₁ / 2) ^ 2 = 2 * x + T - (T + U + V) := by
+    linear_combination hx + (1 : ℚ) / 4 * hB
+  -- the square of the defect vanishes …
+  have hN2 : ((x - T) ^ 2 - (T - U) * (T - V)) ^ 2 = 0 := by
+    linear_combination
+      (-(3 * x ^ 2 - 2 * (T + U + V) * x + (T * U + T * V + U * V)) -
+          (l + a₁ / 2) * (2 * y + a₁ * x + a₃)) * hFp +
+        (2 * y + a₁ * x + a₃) ^ 2 * hly + (2 * x + T - (T + U + V)) * hw2
+  -- … so the defect vanishes
+  have hN : (x - T) ^ 2 - (T - U) * (T - V) = 0 := sq_eq_zero_iff.mp hN2
+  linarith
+
+/-- **Coordinate extraction for a halved `2`-torsion point** (PROVEN):
+if `P + P = T` with `T ≠ 0` of order dividing `2`, then `T` is an affine
+point `(θ, u)` on the `2`-torsion locus (`u = negY θ u`), `P` is an
+affine point `(x, y)`, and the tangent-line doubling formula lands on
+`θ`: the slope `l` satisfies the cleared slope equation and
+`l² + a₁l − a₂ − 2x = θ`. Consumed by `not_full_four_torsion_rat`. -/
+lemma MazurFourTorsion.exists_halving_coords {W : WeierstrassCurve.Affine ℚ}
+    (P T : W.Point) (hPT : P + P = T) (hT2 : T + T = 0) (hT0 : T ≠ 0) :
+    ∃ θ u x y l : ℚ,
+      (∃ hns : W.Nonsingular θ u, T = Point.some θ u hns) ∧
+      W.Equation θ u ∧ u = W.negY θ u ∧ W.Equation x y ∧
+      l * (2 * y + W.a₁ * x + W.a₃) =
+        3 * x ^ 2 + 2 * W.a₂ * x + W.a₄ - W.a₁ * y ∧
+      l ^ 2 + W.a₁ * l - W.a₂ - x - x = θ := by
+  have hP0 : P ≠ 0 := by
+    intro h
+    rw [h, add_zero] at hPT
+    exact hT0 hPT.symm
+  rcases T with _ | ⟨θ, u, hns⟩
+  · exact absurd rfl hT0
+  · -- the `2`-torsion condition pins the ordinate: `u = negY θ u`
+    have hneg : -Point.some θ u hns = Point.some θ u hns :=
+      neg_eq_of_add_eq_zero_left hT2
+    rw [Point.neg_some] at hneg
+    have hu : W.negY θ u = u := (Point.some.inj hneg).2
+    rcases P with _ | ⟨x, y, hPns⟩
+    · exact absurd rfl hP0
+    · -- `P` is not `2`-torsion (its double `T` is nonzero), so the
+      -- tangent-line doubling formula applies
+      have hy : y ≠ W.negY x y := fun h =>
+        hT0 (hPT.symm.trans (Point.add_self_of_Y_eq h))
+      have hadd := Point.add_self_of_Y_ne (h₁ := hPns) hy
+      have hθ : W.addX x x (W.slope x x y y) = θ :=
+        (Point.some.inj (hadd.symm.trans hPT)).1
+      have hsub : y - W.negY x y = 2 * y + W.a₁ * x + W.a₃ := by
+        rw [negY]; ring
+      have hlm : W.slope x x y y * (2 * y + W.a₁ * x + W.a₃) =
+          3 * x ^ 2 + 2 * W.a₂ * x + W.a₄ - W.a₁ * y := by
+        rw [← hsub, slope_of_Y_ne rfl hy,
+          div_mul_cancel₀ _ (sub_ne_zero.mpr hy)]
+      simp only [addX] at hθ
+      exact ⟨θ, u, x, y, W.slope x x y y, ⟨hns, rfl⟩, hns.1, hu.symm,
+        hPns.1, hlm, hθ⟩
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Irrationality of full `4`-torsion** (PROVEN 2026-07-22 by the
+elementary square-product argument): the rational points of an elliptic
+curve over `ℚ` contain no subgroup isomorphic to `(ℤ/4)²`. A rational
+full level-`4` structure gives three rational points of order `4`
+doubling onto the three distinct rational `2`-torsion points
+`(θᵢ, uᵢ)`; the θᵢ are then the roots of the `2`-division cubic
+`4x³ + b₂x² + 2b₄x + b₆` (`cubic_vieta`), and each halving forces
+`(θᵢ − θⱼ)(θᵢ − θₖ)` to be a rational square (`halving_square`). But
+the product of the three is `−((θ₁−θ₂)(θ₁−θ₃)(θ₂−θ₃))² < 0`, while a
+product of nonzero rational squares is positive — absurd. (The
+arithmetic content is `μ₄ ⊄ ℚ`; the Weil-pairing/determinant route
+used for odd primes is unavailable here since
+`det_galoisRep_eq_cyclotomic` requires `Odd p`.) Silverman AEC III.8,
+Cor 8.1.1. -/
 theorem WeierstrassCurve.not_full_four_torsion_rat (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (φ : (ZMod 4 × ZMod 4) →+ (E⁄ℚ).Point) :
-    ¬ Function.Injective φ :=
-  sorry
+    ¬ Function.Injective φ := by
+  intro hφ
+  -- the doubling relations `φ(z) + φ(z) = φ(2z)` for the three order-`4`
+  -- elements `(1,0)`, `(0,1)`, `(1,1)` …
+  have hdb1 : φ (1, 0) + φ (1, 0) = φ (2, 0) := by
+    rw [← map_add]; exact congrArg φ (by decide)
+  have hdb2 : φ (0, 1) + φ (0, 1) = φ (0, 2) := by
+    rw [← map_add]; exact congrArg φ (by decide)
+  have hdb3 : φ (1, 1) + φ (1, 1) = φ (2, 2) := by
+    rw [← map_add]; exact congrArg φ (by decide)
+  -- … the `2`-torsion relations for their doubles …
+  have htor1 : φ (2, 0) + φ (2, 0) = 0 := by
+    rw [← map_add, show ((2 : ZMod 4), (0 : ZMod 4)) + (2, 0) = 0 by decide,
+      map_zero]
+  have htor2 : φ (0, 2) + φ (0, 2) = 0 := by
+    rw [← map_add, show ((0 : ZMod 4), (2 : ZMod 4)) + (0, 2) = 0 by decide,
+      map_zero]
+  have htor3 : φ (2, 2) + φ (2, 2) = 0 := by
+    rw [← map_add, show ((2 : ZMod 4), (2 : ZMod 4)) + (2, 2) = 0 by decide,
+      map_zero]
+  -- … and their nontriviality and pairwise distinctness, by injectivity
+  have hne1 : φ (2, 0) ≠ 0 := fun h =>
+    absurd (hφ (h.trans (map_zero φ).symm)) (by decide)
+  have hne2 : φ (0, 2) ≠ 0 := fun h =>
+    absurd (hφ (h.trans (map_zero φ).symm)) (by decide)
+  have hne3 : φ (2, 2) ≠ 0 := fun h =>
+    absurd (hφ (h.trans (map_zero φ).symm)) (by decide)
+  have hne12 : φ (2, 0) ≠ φ (0, 2) := fun h => absurd (hφ h) (by decide)
+  have hne13 : φ (2, 0) ≠ φ (2, 2) := fun h => absurd (hφ h) (by decide)
+  have hne23 : φ (0, 2) ≠ φ (2, 2) := fun h => absurd (hφ h) (by decide)
+  -- extract the affine coordinates of the three halvings
+  obtain ⟨θ₁, u₁, x₁, y₁, l₁, ⟨hns₁, hTeq₁⟩, hE₁, hu₁, hP₁, hl₁, hx₁⟩ :=
+    MazurFourTorsion.exists_halving_coords _ _ hdb1 htor1 hne1
+  obtain ⟨θ₂, u₂, x₂, y₂, l₂, ⟨hns₂, hTeq₂⟩, hE₂, hu₂, hP₂, hl₂, hx₂⟩ :=
+    MazurFourTorsion.exists_halving_coords _ _ hdb2 htor2 hne2
+  obtain ⟨θ₃, u₃, x₃, y₃, l₃, ⟨hns₃, hTeq₃⟩, hE₃, hu₃, hP₃, hl₃, hx₃⟩ :=
+    MazurFourTorsion.exists_halving_coords _ _ hdb3 htor3 hne3
+  rw [negY] at hu₁ hu₂ hu₃
+  rw [equation_iff] at hE₁ hE₂ hE₃ hP₁ hP₂ hP₃
+  -- distinct `2`-torsion points have distinct abscissae (the ordinate
+  -- is determined by `2u = -(a₁θ + a₃)`)
+  have hd12 : θ₁ ≠ θ₂ := by
+    intro h
+    subst h
+    have huu : u₁ = u₂ := by linarith
+    subst huu
+    rw [hTeq₁, hTeq₂] at hne12
+    exact hne12 rfl
+  have hd13 : θ₁ ≠ θ₃ := by
+    intro h
+    subst h
+    have huu : u₁ = u₃ := by linarith
+    subst huu
+    rw [hTeq₁, hTeq₃] at hne13
+    exact hne13 rfl
+  have hd23 : θ₂ ≠ θ₃ := by
+    intro h
+    subst h
+    have huu : u₂ = u₃ := by linarith
+    subst huu
+    rw [hTeq₂, hTeq₃] at hne23
+    exact hne23 rfl
+  -- the three abscissae are roots of the `2`-division cubic
+  have hroot₁ : 4 * θ₁ ^ 3 + ((E⁄ℚ).a₁ ^ 2 + 4 * (E⁄ℚ).a₂) * θ₁ ^ 2 +
+      (2 * (E⁄ℚ).a₁ * (E⁄ℚ).a₃ + 4 * (E⁄ℚ).a₄) * θ₁ +
+      ((E⁄ℚ).a₃ ^ 2 + 4 * (E⁄ℚ).a₆) = 0 := by
+    linear_combination (2 * u₁ + (E⁄ℚ).a₁ * θ₁ + (E⁄ℚ).a₃) * hu₁ - 4 * hE₁
+  have hroot₂ : 4 * θ₂ ^ 3 + ((E⁄ℚ).a₁ ^ 2 + 4 * (E⁄ℚ).a₂) * θ₂ ^ 2 +
+      (2 * (E⁄ℚ).a₁ * (E⁄ℚ).a₃ + 4 * (E⁄ℚ).a₄) * θ₂ +
+      ((E⁄ℚ).a₃ ^ 2 + 4 * (E⁄ℚ).a₆) = 0 := by
+    linear_combination (2 * u₂ + (E⁄ℚ).a₁ * θ₂ + (E⁄ℚ).a₃) * hu₂ - 4 * hE₂
+  have hroot₃ : 4 * θ₃ ^ 3 + ((E⁄ℚ).a₁ ^ 2 + 4 * (E⁄ℚ).a₂) * θ₃ ^ 2 +
+      (2 * (E⁄ℚ).a₁ * (E⁄ℚ).a₃ + 4 * (E⁄ℚ).a₄) * θ₃ +
+      ((E⁄ℚ).a₃ ^ 2 + 4 * (E⁄ℚ).a₆) = 0 := by
+    linear_combination (2 * u₃ + (E⁄ℚ).a₁ * θ₃ + (E⁄ℚ).a₃) * hu₃ - 4 * hE₃
+  obtain ⟨hB, hC, hD⟩ :=
+    MazurFourTorsion.cubic_vieta hd12 hd13 hd23 hroot₁ hroot₂ hroot₃
+  -- each halving makes `(θᵢ − θⱼ)(θᵢ − θₖ)` a rational square
+  have k₁ : (θ₁ - θ₂) * (θ₁ - θ₃) = (x₁ - θ₁) ^ 2 :=
+    MazurFourTorsion.halving_square hP₁ hB hC hD hl₁ hx₁
+  have hB₂ : (E⁄ℚ).a₁ ^ 2 + 4 * (E⁄ℚ).a₂ = -4 * (θ₂ + θ₁ + θ₃) := by
+    linear_combination hB
+  have hC₂ : 2 * (E⁄ℚ).a₁ * (E⁄ℚ).a₃ + 4 * (E⁄ℚ).a₄ =
+      4 * (θ₂ * θ₁ + θ₂ * θ₃ + θ₁ * θ₃) := by
+    linear_combination hC
+  have hD₂ : (E⁄ℚ).a₃ ^ 2 + 4 * (E⁄ℚ).a₆ = -4 * (θ₂ * θ₁ * θ₃) := by
+    linear_combination hD
+  have k₂ : (θ₂ - θ₁) * (θ₂ - θ₃) = (x₂ - θ₂) ^ 2 :=
+    MazurFourTorsion.halving_square hP₂ hB₂ hC₂ hD₂ hl₂ hx₂
+  have hB₃ : (E⁄ℚ).a₁ ^ 2 + 4 * (E⁄ℚ).a₂ = -4 * (θ₃ + θ₁ + θ₂) := by
+    linear_combination hB
+  have hC₃ : 2 * (E⁄ℚ).a₁ * (E⁄ℚ).a₃ + 4 * (E⁄ℚ).a₄ =
+      4 * (θ₃ * θ₁ + θ₃ * θ₂ + θ₁ * θ₂) := by
+    linear_combination hC
+  have hD₃ : (E⁄ℚ).a₃ ^ 2 + 4 * (E⁄ℚ).a₆ = -4 * (θ₃ * θ₁ * θ₂) := by
+    linear_combination hD
+  have k₃ : (θ₃ - θ₁) * (θ₃ - θ₂) = (x₃ - θ₃) ^ 2 :=
+    MazurFourTorsion.halving_square hP₃ hB₃ hC₃ hD₃ hl₃ hx₃
+  -- but the product of the three squares is minus a nonzero square
+  have hDne : (θ₁ - θ₂) * (θ₁ - θ₃) * (θ₂ - θ₃) ≠ 0 :=
+    mul_ne_zero (mul_ne_zero (sub_ne_zero.mpr hd12) (sub_ne_zero.mpr hd13))
+      (sub_ne_zero.mpr hd23)
+  have hprod : ((x₁ - θ₁) * (x₂ - θ₂) * (x₃ - θ₃)) ^ 2 =
+      -(((θ₁ - θ₂) * (θ₁ - θ₃) * (θ₂ - θ₃)) ^ 2) := by
+    linear_combination (-(x₂ - θ₂) ^ 2 * (x₃ - θ₃) ^ 2) * k₁ -
+      ((θ₁ - θ₂) * (θ₁ - θ₃) * (x₃ - θ₃) ^ 2) * k₂ -
+      ((θ₁ - θ₂) * (θ₁ - θ₃) * (θ₂ - θ₁) * (θ₂ - θ₃)) * k₃
+  have hpos : (0 : ℚ) < ((θ₁ - θ₂) * (θ₁ - θ₃) * (θ₂ - θ₃)) ^ 2 :=
+    lt_of_le_of_ne (sq_nonneg _) (Ne.symm (pow_ne_zero 2 hDne))
+  linarith [sq_nonneg ((x₁ - θ₁) * (x₂ - θ₂) * (x₃ - θ₃)), hprod, hpos]
 
 /-- **Irrationality of full `n`-torsion for `n ≥ 3`** (DERIVED
 2026-07-22 from the PROVEN odd-prime case
@@ -1799,20 +2024,42 @@ theorem FreyPackage.inertia_two_unipotent (P : FreyPackage) :
 `subquotient_character_unramified_at_p` is decomposed into two
 reduction-type leaves producing an *étale line* `L` — a line in the
 `p`-torsion on whose QUOTIENT the inertia at `p` acts trivially — and a
-PROVEN linear-algebra assembly:
+PROVEN linear-algebra assembly. After the third pass (2026-07-22,
+night) the two reduction-type nodes are themselves DERIVED from three
+sharper leaves cut along the same seams as the `Semistable.lean`
+development:
 
-* `exists_etale_line_of_multiplicative_self` (sorry node): at a prime
-  `p` of MULTIPLICATIVE reduction the Tate parametrization presents
-  `E[p]` as an extension of `ℤ/p` (spanned by a `p`-th root of the Tate
-  parameter, moved by inertia only within `μ_p`) by `μ_p`; the `μ_p`
-  line is the étale-quotient line. Silverman ATAEC V.5.
-* `exists_etale_line_of_good_of_stable_line` (sorry node): at a prime
-  `p` of GOOD reduction, if the mod-`p` representation has a stable
-  line at all, the reduction is ordinary (supersingular inertia acts
-  through the level-2 fundamental character, irreducibly — Serre 1972,
-  Prop. 12), and the connected-étale sequence of `E[p]` over `ℤ_p`
-  makes inertia act trivially on the étale quotient. Serre Duke 1987,
-  §4.1; Serre 1972 §1.11–1.12.
+* `exists_etale_line_of_split_multiplicative_self` (sorry node — the
+  Tate/Kummer content proper): at a prime `p` where the COMPLETED
+  curve has SPLIT multiplicative reduction, the Tate parametrization
+  (`exists_tateEquivSepClosure`, stated at exactly this interface in
+  `TateSepClosure.lean`) presents `E[p] ⊂ ℚ̂̄_pˣ/q_Eᶻ` as generated by
+  `μ_p` and a `p`-th root `u` of `q_E`; for ANY `σ` in the local
+  Galois group, `σ(u)/u` is a `p`-th root of unity (Kummer — no
+  valuation estimate needed), so `(σ − 1)E[p]` lands in the `μ_p`
+  line, which is the étale-quotient line. Silverman ATAEC V.3, V.5.
+* `exists_etale_line_of_nonsplit_multiplicative_self` (sorry node —
+  the quadratic-twist descent): if the completed curve is
+  multiplicative but NOT split, the unramified quadratic twist to
+  split reduction
+  (`exists_quadraticTwist_hasSplitMultiplicativeReduction`)
+  identifies the two `p`-torsion inertia modules (the twist character
+  is unramified at `p`), transferring the split-case line.
+* `exists_etale_line_of_multiplicative_self` (DERIVED 2026-07-22 from
+  the two preceding leaves by the split/nonsplit case split, via
+  `hasMultiplicativeReduction_adicCompletion`).
+* `exists_etale_line_or_no_stable_line_of_good` (sorry node — the
+  ordinary/supersingular dichotomy, with the stable-line hypothesis
+  factored out): at a prime `p ≠ 2` of good reduction, EITHER the
+  connected-étale sequence of `E[p]/ℤ_p` provides an étale-quotient
+  line (the ordinary case), OR no line of `E[p]` is Galois-stable at
+  all (the supersingular case: inertia acts through the level-2
+  fundamental character, whose eigenvalues are `𝔽_{p²}`-conjugate and
+  not `𝔽_p`-rational — Serre, Propriétés galoisiennes…, Invent. Math.
+  15 (1972), §1.11–1.12, Prop. 12). Serre Duke 1987, §4.1.
+* `exists_etale_line_of_good_of_stable_line` (DERIVED 2026-07-22 from
+  the dichotomy leaf: the given stable line refutes the second
+  disjunct).
 * `character_unramified_at_p_of_etale_line` (PROVEN): given ANY such
   line `L`, either the stable line `W` equals `L` — then `χ₂` is the
   quotient character of `L` and is unramified at `p` — or `W ∩ L = 0` —
@@ -1820,16 +2067,77 @@ PROVEN linear-algebra assembly:
   `χ₁` to be trivial on inertia at `p`.
 -/
 
+open ValuativeRel IsDedekindDomain in
 set_option backward.isDefEq.respectTransparency false in
-/-- **The Tate étale line at `p`, multiplicative case** (sorry node):
-for an elliptic curve over `ℚ` with multiplicative reduction at `p`,
-there is a line `L ⊆ E[p]` such that the local inertia at `p` acts
-trivially on `E[p]/L`. Content (Silverman ATAEC V.3, V.5): over
-`ℚ̄_p` the Tate uniformization gives `E[p] ≅ ⟨ζ_p, q_E^{1/p}⟩ ⊆
-ℚ̄_pˣ/q_Eᶻ` (up to the unramified quadratic twist, which does not
-change the inertia action); inertia moves `q_E^{1/p}` at most by an
-element of `μ_p`, so with `L` the image of `μ_p` the quotient action of
-inertia is trivial. -/
+/-- **The Tate étale line at `p`, split multiplicative case** (sorry
+node — the Tate/Kummer content proper): for an elliptic curve over `ℚ`
+whose base change to `ℚ̂_p` has SPLIT multiplicative reduction, there is
+a line `L ⊆ E[p]` such that the local inertia at `p` acts trivially on
+`E[p]/L`. Content (Silverman ATAEC V.3, V.5): the Tate uniformization
+`exists_tateEquivSepClosure` gives a Galois-equivariant
+`ℚ̂̄_pˣ/q_Eᶻ ≅ E(ℚ̂̄_p)`; a `p`-torsion class is represented by `u` with
+`u^p = q_E^a` (`exists_rep_pow_eq_zpow_of_torsion`), and for `σ` in the
+local Galois group `σ(u)/u ∈ μ_p` since `σ` fixes `q_E` — so with `L`
+the image of the `μ_p` classes (a line: `μ_p ∩ q_Eᶻ = 1` by valuations)
+the quotient action of the WHOLE local Galois group, in particular of
+inertia, is trivial; transport to the global torsion rides the chosen
+embedding `ℚ̄ ↪ ℚ̂̄_p` as in the unramifiedness glue of
+`Semistable.lean`. -/
+theorem WeierstrassCurve.exists_etale_line_of_split_multiplicative_self
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime)
+    [(E.map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))).HasSplitMultiplicativeReduction
+      𝒪[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat]] :
+    ∃ L : Submodule (ZMod p) ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p),
+      Module.finrank (ZMod p) L = 1 ∧
+      ∀ σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat,
+        ∀ v, L.mkQ (E.galoisRep p hp.pos
+            ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat))) σ) v) = L.mkQ v :=
+  sorry
+
+open ValuativeRel IsDedekindDomain in
+set_option backward.isDefEq.respectTransparency false in
+/-- **The Tate étale line at `p`, nonsplit multiplicative case** (sorry
+node — the quadratic-twist descent): for an elliptic curve over `ℚ`
+with multiplicative reduction at `p` whose completed base change is NOT
+split, the étale-quotient line still exists. Content: the quadratic
+twist by the unramified quadratic extension of `ℚ̂_p`
+(`exists_quadraticTwist_hasSplitMultiplicativeReduction`) has split
+multiplicative reduction and the same `j`-invariant; the twist
+character is unramified at `p`, so the two mod-`p` INERTIA modules are
+isomorphic, and the line of the split case transfers. Silverman ATAEC
+V.5.4; Serre Duke 1987, §4.1. -/
+theorem WeierstrassCurve.exists_etale_line_of_nonsplit_multiplicative_self
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime)
+    [E.HasMultiplicativeReduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
+    (hns : ¬ (E.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))).HasSplitMultiplicativeReduction
+      𝒪[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat]) :
+    ∃ L : Submodule (ZMod p) ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p),
+      Module.finrank (ZMod p) L = 1 ∧
+      ∀ σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat,
+        ∀ v, L.mkQ (E.galoisRep p hp.pos
+            ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat))) σ) v) = L.mkQ v :=
+  sorry
+
+open ValuativeRel IsDedekindDomain in
+set_option backward.isDefEq.respectTransparency false in
+/-- **The Tate étale line at `p`, multiplicative case** (DERIVED
+2026-07-22 from the split leaf
+`exists_etale_line_of_split_multiplicative_self` and the nonsplit
+twist leaf `exists_etale_line_of_nonsplit_multiplicative_self`, by the
+split/nonsplit case split on the completed base change): for an
+elliptic curve over `ℚ` with multiplicative reduction at `p`, there is
+a line `L ⊆ E[p]` such that the local inertia at `p` acts trivially on
+`E[p]/L`. Silverman ATAEC V.3, V.5. -/
 theorem WeierstrassCurve.exists_etale_line_of_multiplicative_self
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime)
     [E.HasMultiplicativeReduction
@@ -1840,23 +2148,59 @@ theorem WeierstrassCurve.exists_etale_line_of_multiplicative_self
         ∀ v, L.mkQ (E.galoisRep p hp.pos
             ((Field.absoluteGaloisGroup.map (algebraMap ℚ
               (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-                hp.toHeightOneSpectrumRingOfIntegersRat))) σ) v) = L.mkQ v :=
+                hp.toHeightOneSpectrumRingOfIntegersRat))) σ) v) = L.mkQ v := by
+  classical
+  haveI := hasMultiplicativeReduction_adicCompletion hp E
+  by_cases hsp : (E.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))).HasSplitMultiplicativeReduction
+      𝒪[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat]
+  · haveI := hsp
+    exact E.exists_etale_line_of_split_multiplicative_self hp
+  · exact E.exists_etale_line_of_nonsplit_multiplicative_self hp hsp
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The connected-étale dichotomy at a good prime** (sorry node — the
+ordinary/supersingular dichotomy, with the stable-line hypothesis
+factored out): for an elliptic curve over `ℚ` with good reduction at an
+odd prime `p`, EITHER there is a line `L ⊆ E[p]` such that the local
+inertia at `p` acts trivially on `E[p]/L`, OR no line of `E[p]` is
+stable under the full mod-`p` representation. Content: if the reduction
+is ORDINARY, the connected-étale sequence of the finite flat group
+scheme `E[p]/ℤ_p` has étale quotient of order `p`, on whose geometric
+points inertia acts trivially — the first disjunct with `L` the
+connected (multiplicative-type) line; if the reduction is
+SUPERSINGULAR, inertia at `p` acts on `E[p]` through the fundamental
+character of level 2, whose eigenvalues are conjugate over `𝔽_{p²}`
+but not `𝔽_p`-rational, so not even a line stable under all of `Γℚ`
+exists — the second disjunct (Serre, Propriétés galoisiennes…, Invent.
+Math. 15 (1972), §1.11–1.12, Prop. 12). Serre Duke 1987, §4.1. -/
+theorem WeierstrassCurve.exists_etale_line_or_no_stable_line_of_good
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime) (hodd : p ≠ 2)
+    [E.HasGoodReduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)] :
+    (∃ L : Submodule (ZMod p) ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p),
+      Module.finrank (ZMod p) L = 1 ∧
+      ∀ σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat,
+        ∀ v, L.mkQ (E.galoisRep p hp.pos
+            ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat))) σ) v) = L.mkQ v) ∨
+    (∀ W : Submodule (ZMod p)
+        ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p),
+      Module.finrank (ZMod p) W = 1 →
+      ¬ ∀ g v, v ∈ W → E.galoisRep p hp.pos g v ∈ W) :=
   sorry
 
 set_option backward.isDefEq.respectTransparency false in
-/-- **The connected-étale line at `p`, good case** (sorry node): for an
-elliptic curve over `ℚ` with good reduction at an odd prime `p` whose
-mod-`p` representation admits a stable line, there is a line
-`L ⊆ E[p]` such that the local inertia at `p` acts trivially on
-`E[p]/L`. Content: a stable line forces the reduction to be ORDINARY —
-in the supersingular case inertia at `p` acts on `E[p]` through the
-fundamental character of level 2, whose eigenvalues are conjugate over
-`𝔽_{p²}` but not `𝔽_p`-rational, so no stable line exists (Serre,
-Propriétés galoisiennes…, Invent. Math. 15 (1972), §1.11–1.12, Prop.
-12); in the ordinary case the connected-étale sequence of the finite
-flat group scheme `E[p]/ℤ_p` has étale quotient of order `p`, on whose
-geometric points inertia acts trivially, and `L` is the connected
-(multiplicative-type) line. Serre Duke 1987, §4.1. -/
+/-- **The connected-étale line at `p`, good case** (DERIVED 2026-07-22
+from the dichotomy leaf `exists_etale_line_or_no_stable_line_of_good`:
+the given stable line refutes the second disjunct): for an elliptic
+curve over `ℚ` with good reduction at an odd prime `p` whose mod-`p`
+representation admits a stable line, there is a line `L ⊆ E[p]` such
+that the local inertia at `p` acts trivially on `E[p]/L`. Serre Duke
+1987, §4.1. -/
 theorem WeierstrassCurve.exists_etale_line_of_good_of_stable_line
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime) (hodd : p ≠ 2)
     [E.HasGoodReduction
@@ -1870,8 +2214,10 @@ theorem WeierstrassCurve.exists_etale_line_of_good_of_stable_line
         ∀ v, L.mkQ (E.galoisRep p hp.pos
             ((Field.absoluteGaloisGroup.map (algebraMap ℚ
               (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-                hp.toHeightOneSpectrumRingOfIntegersRat))) σ) v) = L.mkQ v :=
-  sorry
+                hp.toHeightOneSpectrumRingOfIntegersRat))) σ) v) = L.mkQ v := by
+  rcases E.exists_etale_line_or_no_stable_line_of_good hp hodd with h | h
+  · exact h
+  · exact absurd hstable (h W hW1)
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Linear algebra of the étale line** (PROVEN 2026-07-22): given the
