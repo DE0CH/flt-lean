@@ -1341,5 +1341,12 @@
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
     "wip": true,
     "text": "`WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow_of_eqChar` — equal-characteristic branch (Cartier-dual étale-part route) (2026-07-22)"
+  },
+  {
+    "name": "exists_equivariant_defect_coboundary",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.exists_equivariant_defect_coboundary",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
+    "wip": true,
+    "text": "`exists_equivariant_defect_coboundary` (stated 2026-07-22, sole surviving leaf of the proven two-level Threeadic lifting chain): the defect 1-cocycle valued in Hom(V̄, 𝔪ⁿ⁺¹/𝔪ⁿ⁺²) is a coboundary — its class lies in the (flat-at-3, tame-at-2, unramified-elsewhere) Selmer group, which vanishes by class number 1 of ℚ/ℚ(ζ₃) plus unit computations (route in the docstring)."
   }
 ]
