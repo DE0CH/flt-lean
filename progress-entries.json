@@ -1432,5 +1432,33 @@
     "text": "`exists_family_of_eigensystem` (`Family.lean`, own work) — B6b stratum 2/2 (2026-07-22): a hardly ramified rep with a number-field eigensystem spreads into a compatible family with hardly ramified odd members — Eichler–Shimura/Deligne construction + local-global compatibility (Carayol, Saito). Docstring records why the alternative 'abstract family inheritance' split is unsound (Kummer-class counterexample)",
     "fullname": "GaloisRepresentation.IsHardlyRamified.exists_family_of_eigensystem",
     "wip": true
+  },
+  {
+    "name": "exists_hardlyRamified_number_field_of_card",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field_of_card",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+    "wip": true,
+    "text": "`exists_hardlyRamified_number_field_of_card` — field cut by ker ρ: totally complex, degree = |image| ≥ 48, |d_K|⁶ ≤ 314928^[K:ℚ] (Fontaine at 3, tame at 2) — strictly smaller successor of the proven 48-bound glue (2026-07-22)"
+  },
+  {
+    "name": "odlyzko_bound_totallyComplex",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.odlyzko_bound_totallyComplex",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+    "wip": true,
+    "text": "`odlyzko_bound_totallyComplex` — the analytic leaf in exact numeric form: 314928^n < |d_K|⁶ for totally complex n ≥ 48 (Minkowski provably insufficient; Odlyzko-type explicit formula needed)"
+  },
+  {
+    "name": "quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+    "wip": true,
+    "text": "`quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified` — Oort–Tate/Raynaud at 3: the quotient character on inertia at 3 in the ramified case"
+  },
+  {
+    "name": "exists_line_with_quotCharacter_eq_subCharacter",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.exists_line_with_quotCharacter_eq_subCharacter",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+    "wip": true,
+    "text": "`exists_line_with_quotCharacter_eq_subCharacter` — the Serre swap / peu-ramifié Selmer vanishing line"
   }
 ]
