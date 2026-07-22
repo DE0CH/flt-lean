@@ -503,6 +503,421 @@ theorem exists_residual_isHardlyRamified {R : Type u} [CommRing R]
   · -- tameness at 2 (sorried transfer leaf)
     exact isTameAtTwo_baseChange_residue kk hsurj hρ.isTameAtTwo
 
+/-- **Ideal-filtration transport for functionals** (helper, proven): an
+`R`-linear functional with all values in an ideal `I` maps `J • ⊤` into
+`J * I` — by induction on the generators `j • v` of the smul submodule. -/
+theorem linearMap_apply_mem_mul_of_forall_mem {R : Type u} [CommRing R]
+    {V : Type v} [AddCommGroup V] [Module R V]
+    {I J : Ideal R} (h : V →ₗ[R] R) (hval : ∀ v : V, h v ∈ I)
+    {x : V} (hx : x ∈ J • (⊤ : Submodule R V)) :
+    h x ∈ J * I := by
+  refine Submodule.smul_induction_on hx (fun r hr v _ => ?_)
+    fun y z hy hz => ?_
+  · rw [map_smul, smul_eq_mul]
+    exact Ideal.mul_mem_mul hr (hval v)
+  · rw [map_add]
+    exact Ideal.add_mem _ hy hz
+
+/-- **Residual scalar transport** (helper, proven): in `kk ⊗[R] V` the
+element `1 ⊗ (r • w)` is the residue of `r` acting on `1 ⊗ w`. -/
+theorem one_tmul_smul {R : Type u} [CommRing R]
+    {V : Type v} [AddCommGroup V] [Module R V]
+    (kk : Type*) [CommRing kk] [Algebra R kk] (r : R) (w : V) :
+    (1 : kk) ⊗ₜ[R] (r • w) = algebraMap R kk r • ((1 : kk) ⊗ₜ[R] w) := by
+  rw [← TensorProduct.smul_tmul, ← Algebra.algebraMap_eq_smul_one,
+    TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+
+/-- **Residual vanishing detects the maximal-adic filtration** (helper,
+proven): an element of `V` whose image `1 ⊗ u` vanishes in the residual
+space `kk ⊗[R] V` lies in `𝔪V`. Coordinates along a base-changed basis:
+the residual coordinates are the residues of the coordinates, and the
+kernel of the (surjective) structure map `R → kk` is the maximal ideal
+since `kk` is a field and `R` is local. -/
+theorem mem_maximalIdeal_smul_top_of_one_tmul_eq_zero {R : Type u}
+    [CommRing R] [IsLocalRing R]
+    {V : Type v} [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (kk : Type*) [Field kk] [Algebra R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    {u : V} (hu : (1 : kk) ⊗ₜ[R] u = 0) :
+    u ∈ (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+  classical
+  have hker : RingHom.ker (algebraMap R kk) = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.eq_maximalIdeal
+      (RingHom.ker_isMaximal_of_surjective _ hsurj)
+  let bV := Module.Free.chooseBasis R V
+  have hcoord : ∀ i, bV.repr u i ∈ IsLocalRing.maximalIdeal R := by
+    intro i
+    have h1 := Module.Basis.baseChange_repr_tmul kk bV (1 : kk) u i
+    rw [hu] at h1
+    simp only [map_zero, Finsupp.coe_zero, Pi.zero_apply, Algebra.smul_def,
+      mul_one] at h1
+    rw [← hker, RingHom.mem_ker]
+    exact h1.symm
+  have hsum : u = ∑ i, bV.repr u i • bV i := (bV.sum_repr u).symm
+  rw [hsum]
+  exact Submodule.sum_mem _ fun i _ =>
+    Submodule.smul_mem_smul (hcoord i) trivial
+
+/-- **The residually adapted basis** (helper, proven): given the residual
+trivial-quotient functional `π` and a vector `v₀` with `π (1 ⊗ v₀) ≠ 0`,
+there is an `R`-basis `(w₀, v₀)` of `V` whose first vector residually
+spans the line `ker π`. Content: a nonzero vector of the rank-1 kernel
+of `π` lifts to `V` (the residue map `V → kk ⊗ V` is onto since `R → kk`
+is); the pair is residually a basis, so it generates `V` by Nakayama,
+and generators of the right cardinality of a free module over the
+Noetherian local `R` form a basis by the surjective-endomorphism trick. -/
+theorem exists_residual_adapted_basis {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R] [Module.Free ℤ_[3] R]
+    [IsLocalRing R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2)
+    (kk : Type u) [Field kk] [Algebra R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0) :
+    ∃ b : Module.Basis (Fin 2) R V,
+      π ((1 : kk) ⊗ₜ[R] b 0) = 0 ∧ (1 : kk) ⊗ₜ[R] b 0 ≠ 0 ∧ b 1 = v₀ := by
+  classical
+  haveI : IsNoetherianRing R := IsNoetherianRing.of_finite ℤ_[3] R
+  haveI : IsNoetherian R V := isNoetherian_of_isNoetherianRing_of_finite R V
+  haveI : Module.Finite kk (kk ⊗[R] V) :=
+    Module.Finite.of_basis ((Module.Free.chooseBasis R V).baseChange kk)
+  -- the residual space is 2-dimensional over `kk`
+  have hfr : Module.finrank kk (kk ⊗[R] V) = 2 :=
+    Module.finrank_eq_of_rank_eq
+      (by rw [Module.rank_baseChange, hV]; simp)
+  -- rank-nullity: the kernel of `π` is a line
+  have hker1 : Module.finrank kk (LinearMap.ker π) = 1 := by
+    have h := LinearMap.finrank_range_add_finrank_ker π
+    rw [LinearMap.range_eq_top.mpr hπsurj, finrank_top, Module.finrank_self,
+      hfr] at h
+    omega
+  -- a nonzero residual kernel vector
+  have hne : (LinearMap.ker π : Submodule kk (kk ⊗[R] V)) ≠ ⊥ := by
+    intro hbot
+    rw [hbot, finrank_bot] at hker1
+    exact one_ne_zero hker1.symm
+  obtain ⟨z, hzmem, hzne⟩ := (Submodule.ne_bot_iff _).mp hne
+  -- every residual vector is `1 ⊗ (some vector of V)`
+  have hone_tmul_surj : ∀ z' : kk ⊗[R] V, ∃ w : V, (1 : kk) ⊗ₜ[R] w = z' := by
+    intro z'
+    induction z' using TensorProduct.induction_on with
+    | zero => exact ⟨0, TensorProduct.tmul_zero _ _⟩
+    | tmul cc v =>
+      obtain ⟨r, hr⟩ := hsurj cc
+      exact ⟨r • v, by
+        rw [one_tmul_smul, hr, TensorProduct.smul_tmul', smul_eq_mul,
+          mul_one]⟩
+    | add x y hx hy =>
+      obtain ⟨wx, hwx⟩ := hx
+      obtain ⟨wy, hwy⟩ := hy
+      exact ⟨wx + wy, by rw [TensorProduct.tmul_add, hwx, hwy]⟩
+  obtain ⟨w₀, hw₀⟩ := hone_tmul_surj z
+  have hw₀π : π ((1 : kk) ⊗ₜ[R] w₀) = 0 := by
+    rw [hw₀]
+    exact LinearMap.mem_ker.mp hzmem
+  have hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0 := by
+    rw [hw₀]
+    exact hzne
+  -- the pair is residually linearly independent
+  have hli : LinearIndependent kk
+      ![(1 : kk) ⊗ₜ[R] w₀, (1 : kk) ⊗ₜ[R] v₀] := by
+    rw [LinearIndependent.pair_iff]
+    intro s t hst
+    have ht : t = 0 := by
+      have h0 := congrArg π hst
+      simp only [map_add, map_smul, map_zero, hw₀π, smul_eq_mul, mul_zero,
+        zero_add] at h0
+      exact (mul_eq_zero.mp h0).resolve_right hv₀
+    subst ht
+    refine ⟨?_, rfl⟩
+    rw [zero_smul, add_zero] at hst
+    exact (smul_eq_zero.mp hst).resolve_right hw₀ne
+  -- hence residually a basis: everything is a combination of the pair
+  have hcard : Fintype.card (Fin 2) = Module.finrank kk (kk ⊗[R] V) := by
+    rw [hfr, Fintype.card_fin]
+  have hBres : ∀ z' : kk ⊗[R] V, ∃ x y : kk,
+      z' = x • ((1 : kk) ⊗ₜ[R] w₀) + y • ((1 : kk) ⊗ₜ[R] v₀) := by
+    intro z'
+    set Bres : Module.Basis (Fin 2) kk (kk ⊗[R] V) :=
+      basisOfLinearIndependentOfCardEqFinrank hli hcard with hBresDef
+    refine ⟨Bres.repr z' 0, Bres.repr z' 1, ?_⟩
+    have hz := Bres.sum_repr z'
+    rw [Fin.sum_univ_two] at hz
+    have h0 : Bres 0 = (1 : kk) ⊗ₜ[R] w₀ := by
+      rw [hBresDef, coe_basisOfLinearIndependentOfCardEqFinrank]
+      simp
+    have h1 : Bres 1 = (1 : kk) ⊗ₜ[R] v₀ := by
+      rw [hBresDef, coe_basisOfLinearIndependentOfCardEqFinrank]
+      simp
+    rw [h0, h1] at hz
+    exact hz.symm
+  -- Nakayama: the pair generates `V`
+  set N : Submodule R V := Submodule.span R {w₀, v₀} with hN
+  have hsup : ∀ v : V,
+      v ∈ N ⊔ (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+    intro v
+    obtain ⟨x, y, hxy⟩ := hBres ((1 : kk) ⊗ₜ[R] v)
+    obtain ⟨r, hr⟩ := hsurj x
+    obtain ⟨r', hr'⟩ := hsurj y
+    have hu : r • w₀ + r' • v₀ ∈ N :=
+      Submodule.add_mem _
+        (Submodule.smul_mem _ r (Submodule.subset_span (by simp)))
+        (Submodule.smul_mem _ r' (Submodule.subset_span (by simp)))
+    have hdiff : v - (r • w₀ + r' • v₀) ∈
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+      refine mem_maximalIdeal_smul_top_of_one_tmul_eq_zero kk hsurj ?_
+      rw [TensorProduct.tmul_sub, TensorProduct.tmul_add, one_tmul_smul,
+        one_tmul_smul, hr, hr', ← hxy, sub_self]
+    have hv : v = (r • w₀ + r' • v₀) + (v - (r • w₀ + r' • v₀)) := by abel
+    rw [hv]
+    exact Submodule.add_mem_sup hu hdiff
+  have hNtop : N = ⊤ := by
+    have hle : (⊤ : Submodule R (V ⧸ N)) ≤
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R (V ⧸ N)) := by
+      intro q _
+      obtain ⟨v, rfl⟩ := N.mkQ_surjective q
+      obtain ⟨u, hu, m, hm, huv⟩ := Submodule.mem_sup.mp (hsup v)
+      have hu0 : N.mkQ u = 0 := (Submodule.Quotient.mk_eq_zero N).mpr hu
+      have hqm : N.mkQ v = N.mkQ m := by
+        rw [← huv, map_add, hu0, zero_add]
+      rw [hqm]
+      have hmap : N.mkQ m ∈ Submodule.map N.mkQ
+          ((IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V)) :=
+        Submodule.mem_map_of_mem hm
+      rw [Submodule.map_smul''] at hmap
+      exact Submodule.smul_mono le_rfl le_top hmap
+    have hbot := Submodule.eq_bot_of_le_smul_of_le_jacobson_bot
+      (IsLocalRing.maximalIdeal R) ⊤ (Module.finite_def.mp inferInstance) hle
+      (IsLocalRing.maximalIdeal_le_jacobson ⊥)
+    rw [eq_top_iff]
+    intro v _
+    have hv : N.mkQ v ∈ (⊤ : Submodule R (V ⧸ N)) := trivial
+    rw [hbot, Submodule.mem_bot] at hv
+    exact (Submodule.Quotient.mk_eq_zero N).mp hv
+  -- the pair is a basis: image of a basis under a bijective endomorphism
+  have hfinrank : Module.finrank R V = 2 :=
+    Module.finrank_eq_of_rank_eq (by rw [hV]; norm_num)
+  set bF : Module.Basis (Fin 2) R V := Module.finBasisOfFinrankEq R V hfinrank
+    with hbF
+  set T : V →ₗ[R] V :=
+    (LinearMap.toSpanSingleton R V w₀).comp (bF.coord 0) +
+      (LinearMap.toSpanSingleton R V v₀).comp (bF.coord 1) with hT
+  have hTapp : ∀ v : V, T v = bF.repr v 0 • w₀ + bF.repr v 1 • v₀ := by
+    intro v
+    rw [hT]
+    simp [LinearMap.toSpanSingleton_apply, Module.Basis.coord_apply]
+  have hT0 : T (bF 0) = w₀ := by
+    rw [hTapp, Module.Basis.repr_self]
+    simp
+  have hT1 : T (bF 1) = v₀ := by
+    rw [hTapp, Module.Basis.repr_self]
+    simp
+  have hTsurj : Function.Surjective T := by
+    rw [← LinearMap.range_eq_top, eq_top_iff, ← hNtop, hN, Submodule.span_le]
+    intro x hx
+    simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hx
+    rcases hx with rfl | rfl
+    · exact ⟨bF 0, hT0⟩
+    · exact ⟨bF 1, hT1⟩
+  have hTinj : Function.Injective T :=
+    IsNoetherian.injective_of_surjective_endomorphism T hTsurj
+  refine ⟨bF.map (LinearEquiv.ofBijective T ⟨hTinj, hTsurj⟩), ?_, ?_, ?_⟩
+  · rw [Module.Basis.map_apply, LinearEquiv.ofBijective_apply, hT0]
+    exact hw₀π
+  · rw [Module.Basis.map_apply, LinearEquiv.ofBijective_apply, hT0]
+    exact hw₀ne
+  · rw [Module.Basis.map_apply, LinearEquiv.ofBijective_apply, hT1]
+
+/-- **The residual matrix entries** (helper, proven): relative to a
+residually adapted pair `(w₀, v₀)` — with `w₀` residually spanning
+`ker π` — the `π`-equivariance of the residual representation forces
+`ρ g w₀ ≡ a g • w₀` and `ρ g v₀ ≡ v₀ + c g • w₀` modulo `𝔪V`: the
+reduction of `ρ` is triangular in this pair, with a diagonal entry `a`
+(residually the mod-3 cyclotomic character, by the determinant
+condition — not needed at this level) and an off-diagonal entry `c`. -/
+theorem exists_residual_matrix_entries {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    {V : Type v} [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (w₀ v₀ : V) (hw₀π : π ((1 : kk) ⊗ₜ[R] w₀) = 0)
+    (hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0) :
+    ∃ a c : Γ ℚ → R, ∀ g : Γ ℚ,
+      ρ g w₀ - a g • w₀ ∈
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) ∧
+      ρ g v₀ - (v₀ + c g • w₀) ∈
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+  classical
+  haveI : Module.Finite kk (kk ⊗[R] V) :=
+    Module.Finite.of_basis ((Module.Free.chooseBasis R V).baseChange kk)
+  have hfr : Module.finrank kk (kk ⊗[R] V) = 2 :=
+    Module.finrank_eq_of_rank_eq
+      (by rw [Module.rank_baseChange, hV]; simp)
+  have hker1 : Module.finrank kk (LinearMap.ker π) = 1 := by
+    have h := LinearMap.finrank_range_add_finrank_ker π
+    rw [LinearMap.range_eq_top.mpr hπsurj, finrank_top, Module.finrank_self,
+      hfr] at h
+    omega
+  -- `ker π` is the residual line spanned by `1 ⊗ w₀`
+  have hkerspan : (LinearMap.ker π : Submodule kk (kk ⊗[R] V)) =
+      Submodule.span kk {(1 : kk) ⊗ₜ[R] w₀} := by
+    refine (Submodule.eq_of_le_of_finrank_eq ?_ ?_).symm
+    · rw [Submodule.span_le, Set.singleton_subset_iff]
+      exact LinearMap.mem_ker.mpr hw₀π
+    · rw [hker1, finrank_span_singleton hw₀ne]
+  -- residual kernel vectors are congruent to multiples of `w₀` mod `𝔪V`
+  have key : ∀ u : V, π ((1 : kk) ⊗ₜ[R] u) = 0 →
+      ∃ r : R, u - r • w₀ ∈
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+    intro u hu
+    have humem : (1 : kk) ⊗ₜ[R] u ∈
+        Submodule.span kk {(1 : kk) ⊗ₜ[R] w₀} := by
+      rw [← hkerspan]
+      exact LinearMap.mem_ker.mpr hu
+    obtain ⟨x, hx⟩ := Submodule.mem_span_singleton.mp humem
+    obtain ⟨r, hr⟩ := hsurj x
+    refine ⟨r, mem_maximalIdeal_smul_top_of_one_tmul_eq_zero kk hsurj ?_⟩
+    rw [TensorProduct.tmul_sub, one_tmul_smul, hr, hx, sub_self]
+  -- residual equivariance of `π` against the integral action
+  have hres : ∀ (g : Γ ℚ) (v : V),
+      π ((1 : kk) ⊗ₜ[R] (ρ g v)) = π ((1 : kk) ⊗ₜ[R] v) := by
+    intro g v
+    rw [show (1 : kk) ⊗ₜ[R] (ρ g v) =
+      (ρ.baseChange kk) g ((1 : kk) ⊗ₜ[R] v) from rfl, hπequiv]
+  have H : ∀ g : Γ ℚ, ∃ r r' : R,
+      (ρ g w₀ - r • w₀ ∈
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V)) ∧
+      (ρ g v₀ - (v₀ + r' • w₀) ∈
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V)) := by
+    intro g
+    obtain ⟨r, hrmem⟩ := key (ρ g w₀) (by rw [hres g w₀]; exact hw₀π)
+    have hv' : π ((1 : kk) ⊗ₜ[R] (ρ g v₀ - v₀)) = 0 := by
+      rw [TensorProduct.tmul_sub, map_sub, hres g v₀, sub_self]
+    obtain ⟨r', hr'mem⟩ := key (ρ g v₀ - v₀) hv'
+    refine ⟨r, r', hrmem, ?_⟩
+    have hre : ρ g v₀ - (v₀ + r' • w₀) = (ρ g v₀ - v₀) - r' • w₀ := by abel
+    rw [hre]
+    exact hr'mem
+  choose a c hac using H
+  exact ⟨a, c, hac⟩
+
+/-- **The ω-component Selmer vanishing** (sorry node — Serre, Duke 1987,
+§5.4, `sources/serre1987duke-ocr.txt`; Neukirch for the class-field
+inputs): along a residually adapted vector `w₀` spanning the ω-line
+`ker π̄` of the residual representation, the defect
+`g ↦ f (ρ g w₀) - f w₀` of the approximately equivariant functional `f`
+is, modulo `𝔪ⁿ⁺²`, a `1`-cocycle of `Γ ℚ` valued in the ω-isotypic
+component of `Hom(V̄, 𝔪ⁿ⁺¹/𝔪ⁿ⁺²)` — the twist is the diagonal entry `a`,
+residually the mod-3 cyclotomic character `ω` by the determinant
+condition of `hρ`. The hardly ramified local conditions (flat at `3`,
+tame quadratic at `2`, unramified elsewhere) place its class in the
+Selmer group `H¹_{Serre}(ℚ, ω ⊗ 𝔪ⁿ⁺¹/𝔪ⁿ⁺²)`, which vanishes because
+`ℚ(ζ₃)` has class number `1` and its units `±1, ±ζ₃` are excluded by
+the local conditions at `3` (Serre's unit computation for `p = 3`). The
+witness of the vanishing class is a correction scalar `s ∈ 𝔪ⁿ⁺¹` — the
+value `h w₀` of the sought coboundary — with
+`(f (ρ g w₀) - f w₀) + (a g - 1) s ∈ 𝔪ⁿ⁺²` for every `g`. -/
+theorem exists_omega_component_coboundary
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (w₀ : V) (hw₀π : π ((1 : kk) ⊗ₜ[R] w₀) = 0)
+    (hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0)
+    (a : Γ ℚ → R)
+    (ha : ∀ g : Γ ℚ, ρ g w₀ - a g • w₀ ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V))
+    (n : ℕ) (f : V →ₗ[R] R)
+    (hf : ∀ (g : Γ ℚ) (v : V),
+      f (ρ g v) - f v ∈ IsLocalRing.maximalIdeal R ^ (n + 1))
+    (hfv₀ : f v₀ ∉ IsLocalRing.maximalIdeal R) :
+    ∃ s ∈ IsLocalRing.maximalIdeal R ^ (n + 1),
+      ∀ g : Γ ℚ,
+        (f (ρ g w₀) - f w₀) + (a g - 1) * s ∈
+          IsLocalRing.maximalIdeal R ^ (n + 2) := by
+  sorry
+
+/-- **The trivial-component Selmer vanishing** (sorry node — Serre, Duke
+1987, §5.4, `sources/serre1987duke-ocr.txt`; the class-number-1 input
+is Minkowski's theorem that `ℚ` admits no everywhere-unramified
+extension): once the ω-component of the defect has been corrected by
+`s` (hypothesis `hsA`), the trivial component
+`g ↦ (f (ρ g v₀) - f v₀) + c g * s` — the corrected defect evaluated
+along the residual trivial-quotient direction `v₀` — is, modulo
+`𝔪ⁿ⁺²`, a homomorphism `Γ ℚ → 𝔪ⁿ⁺¹/𝔪ⁿ⁺²`: the cocycle identity for the
+corrected defect has vanishing twist term on this graded piece, and
+coboundaries of the trivial character are zero. The hardly ramified
+conditions make it everywhere unramified modulo `𝔪ⁿ⁺²`: unramified
+outside `{2, 3}` directly from `hρ.isUnramified`; at `2` because the
+inertia image acts through a group of order dividing `2` (tame
+quadratic quotient) while the coefficient module is `3`-torsion; at `3`
+by the flat (peu-ramifié) condition for extensions of the trivial
+character by itself (Fontaine, via `hρ.isFlat`). A nonzero such
+homomorphism would cut out a nontrivial abelian `3`-extension of `ℚ`
+unramified everywhere, contradicting Minkowski. Hence the trivial
+component already lies in `𝔪ⁿ⁺²`. -/
+theorem trivial_component_defect_vanishes
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (w₀ : V) (hw₀π : π ((1 : kk) ⊗ₜ[R] w₀) = 0)
+    (hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0)
+    (a : Γ ℚ → R)
+    (ha : ∀ g : Γ ℚ, ρ g w₀ - a g • w₀ ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V))
+    (c : Γ ℚ → R)
+    (hc : ∀ g : Γ ℚ, ρ g v₀ - (v₀ + c g • w₀) ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V))
+    (n : ℕ) (f : V →ₗ[R] R)
+    (hf : ∀ (g : Γ ℚ) (v : V),
+      f (ρ g v) - f v ∈ IsLocalRing.maximalIdeal R ^ (n + 1))
+    (hfv₀ : f v₀ ∉ IsLocalRing.maximalIdeal R)
+    (s : R) (hs : s ∈ IsLocalRing.maximalIdeal R ^ (n + 1))
+    (hsA : ∀ g : Γ ℚ,
+      (f (ρ g w₀) - f w₀) + (a g - 1) * s ∈
+        IsLocalRing.maximalIdeal R ^ (n + 2)) :
+    ∀ g : Γ ℚ,
+      (f (ρ g v₀) - f v₀) + c g * s ∈
+        IsLocalRing.maximalIdeal R ^ (n + 2) := by
+  sorry
+
 /-- **The coboundary form of the one-level obstruction** (sorry node —
 the deep arithmetic core, Serre §5.4/Fontaine): for an `R`-linear
 functional `f` on `V` which is Galois-equivariant modulo `𝔪 ^ (n + 1)`,
@@ -548,7 +963,102 @@ theorem exists_equivariant_defect_coboundary
       (∀ (g : Γ ℚ) (v : V),
         (f (ρ g v) - f v) + (h (ρ g v) - h v) ∈
           IsLocalRing.maximalIdeal R ^ (n + 2)) := by
-  sorry
+  classical
+  -- Stratum 1 (proven): the residually adapted basis `(w₀, v₀)`
+  obtain ⟨b, hb0π, hb0ne, hb1⟩ :=
+    exists_residual_adapted_basis V hV kk hsurj π hπsurj v₀ hv₀
+  -- Stratum 2 (proven): the residual triangular entries along this basis
+  obtain ⟨a, c, hac⟩ :=
+    exists_residual_matrix_entries hV kk hsurj π hπsurj hπequiv (b 0) v₀
+      hb0π hb0ne
+  -- Stratum 3 (leaf): the ω-component correction scalar `s`
+  obtain ⟨s, hs, hsA⟩ :=
+    exists_omega_component_coboundary V hV hρ kk hsurj π hπsurj hπequiv
+      v₀ hv₀ (b 0) hb0π hb0ne a (fun g => (hac g).1) n f hf hfv₀
+  -- Stratum 4 (leaf): with this correction the trivial component vanishes
+  have hsB :=
+    trivial_component_defect_vanishes V hV hρ kk hsurj π hπsurj hπequiv
+      v₀ hv₀ (b 0) hb0π hb0ne a (fun g => (hac g).1) c (fun g => (hac g).2)
+      n f hf hfv₀ s hs hsA
+  -- the correction functional: `s` times the coordinate along `w₀`
+  have hval : ∀ v : V,
+      (s • b.coord 0) v ∈ IsLocalRing.maximalIdeal R ^ (n + 1) := by
+    intro v
+    rw [LinearMap.smul_apply, smul_eq_mul]
+    exact Ideal.mul_mem_right _ _ hs
+  refine ⟨s • b.coord 0, hval, fun g v => ?_⟩
+  -- the corrected defect, packaged as a linear map in `v`
+  have hLapp : ∀ w : V,
+      (f (ρ g w) - f w) + ((s • b.coord 0) (ρ g w) - (s • b.coord 0) w)
+        = (((f + s • b.coord 0).comp (ρ g : V →ₗ[R] V))
+            - (f + s • b.coord 0)) w := by
+    intro w
+    simp only [LinearMap.sub_apply, LinearMap.comp_apply, LinearMap.add_apply]
+    ring
+  -- the two basis-vector cases, on clean goals
+  have hcase0 : (((f + s • b.coord 0).comp (ρ g : V →ₗ[R] V))
+        - (f + s • b.coord 0)) (b 0)
+      ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+    -- at `b 0`: the ω-component condition plus the `𝔪V`-error
+    have hrw : (((f + s • b.coord 0).comp (ρ g : V →ₗ[R] V))
+          - (f + s • b.coord 0)) (b 0)
+        = ((f (ρ g (b 0)) - f (b 0)) + (a g - 1) * s)
+          + (s • b.coord 0) (ρ g (b 0) - a g • b 0) := by
+      simp only [LinearMap.sub_apply, LinearMap.comp_apply,
+        LinearMap.add_apply, map_sub, map_smul, LinearMap.smul_apply,
+        Module.Basis.coord_apply, Module.Basis.repr_self,
+        Finsupp.single_eq_same, smul_eq_mul]
+      ring
+    rw [hrw]
+    refine Submodule.add_mem _ (hsA g) ?_
+    have h2 := linearMap_apply_mem_mul_of_forall_mem (s • b.coord 0)
+      hval ((hac g).1)
+    rwa [← pow_succ'] at h2
+  have hcase1 : (((f + s • b.coord 0).comp (ρ g : V →ₗ[R] V))
+        - (f + s • b.coord 0)) (b 1)
+      ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+    -- at `b 1 = v₀`: the trivial-component condition plus the error
+    rw [show b 1 = v₀ from hb1]
+    have hrw : (((f + s • b.coord 0).comp (ρ g : V →ₗ[R] V))
+          - (f + s • b.coord 0)) v₀
+        = ((f (ρ g v₀) - f v₀) + c g * s)
+          + (s • b.coord 0) (ρ g v₀ - (v₀ + c g • b 0)) := by
+      simp only [LinearMap.sub_apply, LinearMap.comp_apply,
+        LinearMap.add_apply, map_sub, map_add, map_smul,
+        LinearMap.smul_apply, Module.Basis.coord_apply,
+        Module.Basis.repr_self, Finsupp.single_eq_same, smul_eq_mul]
+      ring
+    rw [hrw]
+    refine Submodule.add_mem _ (hsB g) ?_
+    have h2 := linearMap_apply_mem_mul_of_forall_mem (s • b.coord 0)
+      hval ((hac g).2)
+    rwa [← pow_succ'] at h2
+  have hmem : ∀ w : V,
+      (((f + s • b.coord 0).comp (ρ g : V →ₗ[R] V))
+          - (f + s • b.coord 0)) w
+        ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+    intro w
+    have hw : w ∈ Submodule.span R (Set.range b) := by
+      rw [b.span_eq]
+      trivial
+    induction hw using Submodule.span_induction with
+    | mem x hx =>
+      obtain ⟨i, rfl⟩ := hx
+      fin_cases i
+      · exact hcase0
+      · exact hcase1
+    | zero =>
+      rw [map_zero]
+      exact Submodule.zero_mem _
+    | add x y _ _ hx hy =>
+      rw [map_add]
+      exact Submodule.add_mem _ hx hy
+    | smul r x _ hx =>
+      rw [map_smul, smul_eq_mul]
+      exact Ideal.mul_mem_left _ r hx
+  have h3 := hmem v
+  rw [← hLapp v] at h3
+  exact h3
 
 /-- **The one-step equivariant lift** (DERIVED 2026-07-22 from the
 coboundary leaf `exists_equivariant_defect_coboundary`): an `R`-linear
