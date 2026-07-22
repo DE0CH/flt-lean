@@ -81,6 +81,12 @@ import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
 -- `adicCompletion.maximalIdeal_eq_span_uniformizer`, used to identify
 -- the maximal ideal of `ℤ_q` with the span of `q`.
 import Fermat.FLT.DedekindDomain.AdicValuation
+-- The structure theorem for finite abelian groups
+-- (`AddCommGroup.equiv_directSum_zmod_of_finite`) and the `ZMod` Chinese
+-- remainder theorem (`ZMod.prodEquivPi`), used in the PROVEN rank-`≤ 2`
+-- decomposition backing Mazur's classification.
+import Mathlib.GroupTheory.FiniteAbelian.Basic
+import Mathlib.Data.ZMod.QuotientRing
 
 @[expose] public section
 
@@ -89,41 +95,40 @@ open WeierstrassCurve WeierstrassCurve.Affine
 /-!
 ### Decomposition of Mazur's classification (2026-07-22)
 
-`mazur_classification` is decomposed into five arithmetic leaves, one
-PROVEN geometric-torsion bound, one purely group-theoretic structure
-leaf, and a PROVEN casework assembly:
+`mazur_classification` is decomposed; after the second pass
+(2026-07-22, evening) the remaining SORRY leaves are exactly the
+genuinely modular-curve-theoretic inputs plus one root-of-unity fact
+at level `4`:
 
-* `torsion_finite_rat` (sorry node): the rational torsion subgroup is
-  finite (Lutz–Nagell, or injectivity of reduction at a good prime).
 * `mazur_point_order` (sorry node): Mazur's uniform bound — the order
   of a rational torsion point lies in `{1, …, 10, 12}` (Mazur 1977,
   Thm 8; Mazur 1978, "Rational isogenies of prime degree").
-* `not_full_torsion_rat` (sorry node): for `n ≥ 3` the full `n`-torsion
-  is never rational — the Weil pairing is surjective on `E[n] × E[n]`,
-  so a rational full level-`n` structure forces `μ_n ⊆ ℚ`, impossible
-  for `n ≥ 3` (Silverman AEC III.8, Cor 8.1.1).
+* `torsion_finite_rat` (DERIVED from `mazur_point_order`): the
+  rational torsion subgroup is finite — every rational torsion point
+  is killed by `2520 = lcm(1, …, 10, 12)`, and the geometric
+  `2520`-torsion is finite.
+* `not_full_odd_prime_torsion_rat` (PROVEN, from the DERIVED
+  determinant node): no rational `(ℤ/ℓ)²` for an odd prime `ℓ` — a
+  rational full level-`ℓ` structure trivializes the mod-`ℓ`
+  representation, hence its determinant, the mod-`ℓ` cyclotomic
+  character, forcing `μ_ℓ ⊆ ℚ`.
+* `not_full_four_torsion_rat` (sorry node): no rational `(ℤ/4)²`
+  (`μ₄ ⊄ ℚ` through the level-`4` Weil pairing, or the elementary
+  square-product argument on the `2`-torsion abscissae).
+* `not_full_torsion_rat` (DERIVED from the two preceding nodes): for
+  `n ≥ 3` the full `n`-torsion is never rational.
 * `not_two_ten_torsion`, `not_two_twelve_torsion` (sorry nodes): no
   rational `ℤ/2 × ℤ/10` or `ℤ/2 × ℤ/12` (the modular curves
   `X_1(2,10)` and `X_1(2,12)` have genus ≥ 1 and no non-cuspidal
   rational points; part of the fifteen-groups list of Mazur 1977).
 * `not_two_cube_torsion` (PROVEN): no rational `(ℤ/2)³` — the geometric
   `2`-torsion has only `2² = 4` points.
-* `AddCommGroup.exists_rank_le_two_decomposition` (sorry node, PURE
-  GROUP THEORY, no arithmetic): a finite abelian group containing no
-  `(ℤ/n)²` for any `n ≥ 3` and no `(ℤ/2)³` is isomorphic to
-  `ℤ/d × ℤ/n` with `d ∈ {1, 2}` (structure-theorem bookkeeping).
+* `AddCommGroup.exists_rank_le_two_decomposition` (PROVEN — pure
+  finite-abelian-group bookkeeping over the structure theorem and the
+  `ZMod` Chinese remainder theorem).
 * `mazur_group_casework` (PROVEN): given the `ℤ/d × ℤ/n` shape, the
   order bound, and the two exclusions, the group is one of the fifteen.
 -/
-
-/-- **Finiteness of the rational torsion subgroup** (sorry node): the
-torsion subgroup of `E(ℚ)` is finite. Standard content: the reduction
-map is injective on prime-to-`q` torsion at a good odd prime `q`
-(or Lutz–Nagell: torsion points have integral coordinates with `y²`
-dividing the discriminant). Silverman AEC VII.3, VIII.7. -/
-theorem WeierstrassCurve.torsion_finite_rat (E : WeierstrassCurve ℚ) [E.IsElliptic] :
-    Finite (Submodule.torsion ℤ (E⁄ℚ).Point) :=
-  sorry
 
 /-- **Mazur's uniform bound on orders of rational torsion points** (sorry
 node): a rational torsion point of an elliptic curve over `ℚ` has order
@@ -135,16 +140,277 @@ theorem WeierstrassCurve.mazur_point_order (E : WeierstrassCurve ℚ) [E.IsEllip
     addOrderOf Q ∈ ({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12} : Finset ℕ) :=
   sorry
 
-/-- **Irrationality of full `n`-torsion for `n ≥ 3`** (sorry node): the
-rational points of an elliptic curve over `ℚ` contain no subgroup
-isomorphic to `(ℤ/n)²` for `n ≥ 3`. The Weil pairing restricted to a
-rational basis of `E[n]` is a primitive `n`-th root of unity fixed by
-the Galois action, so `μ_n ⊆ ℚ` — impossible for `n ≥ 3` since `ℚ`
-contains only the roots of unity `±1`. Silverman AEC III.8. -/
-theorem WeierstrassCurve.not_full_torsion_rat (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    {n : ℕ} (hn : 3 ≤ n) (φ : (ZMod n × ZMod n) →+ (E⁄ℚ).Point) :
+set_option backward.isDefEq.respectTransparency false in
+/-- **Finiteness of the rational torsion subgroup** (DERIVED 2026-07-22
+from the `mazur_point_order` leaf): the torsion subgroup of `E(ℚ)` is
+finite. Every rational torsion point has order in `{1, …, 10, 12}` by
+Mazur's uniform bound, hence is killed by `2520 = lcm(1, …, 10, 12)`;
+the rational torsion therefore base-changes injectively into the
+geometric `2520`-torsion, which has exactly `2520²` elements
+(`TorsionCard.card_torsionBy`). The classical standalone routes
+(Lutz–Nagell, injectivity of reduction at a good prime) are not needed
+once the uniform bound is taken as the leaf. -/
+theorem WeierstrassCurve.torsion_finite_rat (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    Finite (Submodule.torsion ℤ (E⁄ℚ).Point) := by
+  classical
+  have hcard : Nat.card
+      ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 2520) = 2520 ^ 2 :=
+    TorsionCard.card_torsionBy (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) 2520
+      (by norm_num)
+  haveI hfin : Finite ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 2520) :=
+    Nat.finite_of_card_ne_zero (by rw [hcard]; norm_num)
+  let ψ : (E⁄ℚ).Point →+ (E⁄(AlgebraicClosure ℚ)).Point :=
+    Affine.Point.map (W' := E) (Algebra.ofId ℚ (AlgebraicClosure ℚ))
+  let f : Submodule.torsion ℤ (E⁄ℚ).Point →
+      (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 2520 := fun Q =>
+    ⟨show ((E.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).Point from
+      ψ Q.1, by
+        rw [Submodule.mem_torsionBy_iff]
+        have h2520 : (2520 : ℕ) • (Q.1 : (E⁄ℚ).Point) = 0 := by
+          have horder := E.mazur_point_order Q.1 Q.2
+          simp only [Finset.mem_insert, Finset.mem_singleton] at horder
+          have hdvd : addOrderOf (Q.1 : (E⁄ℚ).Point) ∣ 2520 := by
+            rcases horder with h | h | h | h | h | h | h | h | h | h | h <;>
+              rw [h] <;> norm_num
+          exact addOrderOf_dvd_iff_nsmul_eq_zero.mp hdvd
+        show ((2520 : ℕ) : ℤ) • (ψ Q.1) = 0
+        rw [natCast_zsmul, ← map_nsmul, h2520, map_zero]⟩
+  have hfinj : Function.Injective f := by
+    intro Q Q' hQQ
+    have h1 : ψ Q.1 = ψ Q'.1 := congrArg Subtype.val hQQ
+    exact Subtype.ext (Affine.Point.map_injective (W' := E)
+      (f := Algebra.ofId ℚ (AlgebraicClosure ℚ)) h1)
+  exact Finite.of_injective f hfinj
+
+/-- The standard embedding of `ℤ/m` into `ℤ/N` for `0 < m ∣ N ≠ 0`
+(sending `1` to `N/m`), packaged as an existential (PROVEN): used to
+push a full level-`n` structure down to full level-`ℓ` structures at
+the prime(-power) divisors `ℓ` of `n`, and to inject cyclic pieces of a
+finite abelian group into the factors of its primary decomposition. -/
+lemma ZMod.exists_injective_addMonoidHom_of_dvd {m N : ℕ} (hm : 0 < m)
+    (hdvd : m ∣ N) (hN : 0 < N) :
+    ∃ g : ZMod m →+ ZMod N, Function.Injective g := by
+  classical
+  obtain ⟨t, rfl⟩ := hdvd
+  have ht : 0 < t := Nat.pos_of_ne_zero fun h => by simp [h] at hN
+  haveI : NeZero m := ⟨hm.ne'⟩
+  haveI : NeZero (m * t) := ⟨hN.ne'⟩
+  have hker : (zmultiplesHom (ZMod (m * t))) ((t : ZMod (m * t))) (m : ℤ) = 0 := by
+    rw [zmultiplesHom_apply, zsmul_eq_mul]
+    push_cast
+    rw [← Nat.cast_mul, ZMod.natCast_self]
+  refine ⟨ZMod.lift m ⟨(zmultiplesHom (ZMod (m * t))) ((t : ZMod (m * t))), hker⟩, ?_⟩
+  intro x y hxy
+  -- reduce to the vanishing on the difference
+  have hsub : ZMod.lift m ⟨(zmultiplesHom (ZMod (m * t))) ((t : ZMod (m * t))), hker⟩
+      (x - y) = 0 := by rw [map_sub, hxy, sub_self]
+  set z : ZMod m := x - y
+  -- compute the lift on `z` as a natural multiple of `t`
+  have hcast : ((((z.val : ℕ) : ℤ) : ZMod m)) = z := by
+    push_cast
+    exact ZMod.natCast_rightInverse z
+  have hgz : ZMod.lift m ⟨(zmultiplesHom (ZMod (m * t))) ((t : ZMod (m * t))), hker⟩
+      ((((z.val : ℕ) : ℤ) : ZMod m)) = ((z.val * t : ℕ) : ZMod (m * t)) := by
+    rw [ZMod.lift_coe, zmultiplesHom_apply, zsmul_eq_mul]
+    push_cast
+    ring
+  rw [hcast, hsub] at hgz
+  have hz0 : ((z.val * t : ℕ) : ZMod (m * t)) = 0 := hgz.symm
+  rw [ZMod.natCast_eq_zero_iff] at hz0
+  -- cancel `t`: `m ∣ z.val`, so `z.val = 0` by size
+  have hdvd' : m ∣ z.val := by
+    rcases hz0 with ⟨c, hc⟩
+    refine ⟨c, ?_⟩
+    have h2 : z.val * t = (m * c) * t := by rw [hc]; ring
+    exact Nat.eq_of_mul_eq_mul_right ht h2
+  have hzero : z.val = 0 := Nat.eq_zero_of_dvd_of_lt hdvd' (ZMod.val_lt z)
+  have hz : z = 0 := by rw [← hcast, hzero]; simp
+  exact sub_eq_zero.mp hz
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Irrationality of full `ℓ`-torsion at an odd prime** (PROVEN
+2026-07-22 from the DERIVED determinant node
+`det_galoisRep_eq_cyclotomic`): the rational points of an elliptic
+curve over `ℚ` contain no subgroup isomorphic to `(ℤ/ℓ)²` for an odd
+prime `ℓ`. A rational full level-`ℓ` structure base-changes to all of
+the geometric `ℓ`-torsion (both sides have `ℓ²` elements), so the mod-`ℓ`
+representation is trivial; its determinant — the mod-`ℓ` cyclotomic
+character, by the determinant node — is then trivial, making every
+`ℓ`-th root of unity Galois-fixed, hence rational
+(`InfiniteGalois.mem_range_algebraMap_iff_fixed`). But a primitive
+`ℓ`-th root of unity is not `1`, while `x ↦ x^ℓ` is injective on `ℚ`
+for odd `ℓ`. Silverman AEC III.8, Cor 8.1.1. -/
+theorem WeierstrassCurve.not_full_odd_prime_torsion_rat (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] {ℓ : ℕ} (hℓ : ℓ.Prime) (hodd : Odd ℓ)
+    (φ : (ZMod ℓ × ZMod ℓ) →+ (E⁄ℚ).Point) :
+    ¬ Function.Injective φ := by
+  classical
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  haveI : NeZero ℓ := ⟨hℓ.ne_zero⟩
+  intro hφ
+  -- the geometric `ℓ`-torsion has `ℓ²` elements
+  have hcard : Nat.card
+      ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion ℓ) = ℓ ^ 2 :=
+    TorsionCard.card_torsionBy (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) ℓ
+      (Nat.cast_ne_zero.mpr hℓ.ne_zero)
+  haveI hfin : Finite ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion ℓ) :=
+    Nat.finite_of_card_ne_zero (by rw [hcard]; exact pow_ne_zero 2 hℓ.ne_zero)
+  -- base-change the rational level structure into the geometric torsion
+  let ψ : (E⁄ℚ).Point →+ (E⁄(AlgebraicClosure ℚ)).Point :=
+    Affine.Point.map (W' := E) (Algebra.ofId ℚ (AlgebraicClosure ℚ))
+  have hkill : ∀ z : ZMod ℓ × ZMod ℓ, (ℓ : ℕ) • z = 0 := by
+    intro z
+    have h1 : ∀ w : ZMod ℓ, (ℓ : ℕ) • w = 0 := fun w => by
+      rw [nsmul_eq_mul, ZMod.natCast_self, zero_mul]
+    exact Prod.ext (h1 z.1) (h1 z.2)
+  let f : (ZMod ℓ × ZMod ℓ) →
+      (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion ℓ := fun z =>
+    ⟨show ((E.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).Point from
+      ψ (φ z), by
+        rw [Submodule.mem_torsionBy_iff]
+        show ((ℓ : ℕ) : ℤ) • (ψ (φ z)) = 0
+        rw [natCast_zsmul, ← map_nsmul, ← map_nsmul, hkill z, map_zero, map_zero]⟩
+  have hfinj : Function.Injective f := by
+    intro z z' hzz
+    exact hφ (Affine.Point.map_injective (W' := E)
+      (f := Algebra.ofId ℚ (AlgebraicClosure ℚ)) (congrArg Subtype.val hzz))
+  -- by cardinality the level structure exhausts the geometric torsion
+  have hfbij : Function.Bijective f :=
+    (Nat.bijective_iff_injective_and_card f).mpr
+      ⟨hfinj, by rw [hcard, Nat.card_prod, Nat.card_zmod]; ring⟩
+  -- so the mod-`ℓ` representation is trivial …
+  have hfixall : ∀ (g : Field.absoluteGaloisGroup ℚ)
+      (v : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion ℓ),
+      E.galoisRep ℓ hℓ.pos g v = v := by
+    intro g v
+    obtain ⟨z, rfl⟩ := hfbij.surjective v
+    refine Subtype.ext ?_
+    show Affine.Point.map
+        (g : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (ψ (φ z)) =
+      ψ (φ z)
+    show Affine.Point.map
+        (g : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+        (Affine.Point.map (Algebra.ofId ℚ (AlgebraicClosure ℚ)) (φ z)) =
+      Affine.Point.map (Algebra.ofId ℚ (AlgebraicClosure ℚ)) (φ z)
+    rw [Affine.Point.map_map]
+    have hcomp : ((g : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) :
+          AlgebraicClosure ℚ →ₐ[ℚ] AlgebraicClosure ℚ).comp
+        (Algebra.ofId ℚ (AlgebraicClosure ℚ)) =
+        Algebra.ofId ℚ (AlgebraicClosure ℚ) :=
+      AlgHom.ext fun x => by
+        simp only [AlgHom.comp_apply, Algebra.ofId_apply]
+        exact AlgHom.commutes _ x
+    rw [hcomp]
+  have hrep1 : ∀ g : Field.absoluteGaloisGroup ℚ, E.galoisRep ℓ hℓ.pos g = 1 := by
+    intro g
+    apply LinearMap.ext
+    intro v
+    rw [Module.End.one_apply]
+    exact hfixall g v
+  -- … its determinant, the mod-`ℓ` cyclotomic character, is trivial …
+  have hchar : ∀ g : Field.absoluteGaloisGroup ℚ,
+      GaloisRepresentation.cyclotomicCharacterModL ℓ g = 1 := by
+    intro g
+    have hdet := WeilPairing.det_galoisRep_eq_cyclotomic E ℓ hℓ.pos hodd g
+    rw [hrep1 g, Module.End.one_eq_id, LinearMap.det_id] at hdet
+    apply Units.ext
+    rw [Units.val_one, WeilPairing.cyclotomicCharacterModL_eq_toZMod ℓ g]
+    exact hdet.symm
+  -- … so every `ℓ`-th root of unity is Galois-fixed, hence rational
+  obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure ℚ) ℓ
+  have hζfix : ∀ σ : Field.absoluteGaloisGroup ℚ, σ ζ = ζ := by
+    intro σ
+    have h1 := modularCyclotomicCharacter.spec (AlgebraicClosure ℚ)
+      (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) ℓ)
+      (MulSemiringAction.toRingAut (Field.absoluteGaloisGroup ℚ)
+        (AlgebraicClosure ℚ) σ) hζ.toRootsOfUnity.2
+    have h2 : modularCyclotomicCharacter (AlgebraicClosure ℚ)
+        (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) ℓ)
+        (MulSemiringAction.toRingAut (Field.absoluteGaloisGroup ℚ)
+          (AlgebraicClosure ℚ) σ) =
+        GaloisRepresentation.cyclotomicCharacterModL ℓ σ := rfl
+    rw [h2, hchar σ, Units.val_one, ZMod.val_one, pow_one] at h1
+    have h3 : ((hζ.toRootsOfUnity : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) =
+        ζ := hζ.val_toRootsOfUnity_coe
+    rw [h3] at h1
+    exact h1
+  have hrat : ζ ∈ Set.range (algebraMap ℚ (AlgebraicClosure ℚ)) :=
+    (InfiniteGalois.mem_range_algebraMap_iff_fixed ζ).mpr hζfix
+  obtain ⟨q, hq⟩ := hrat
+  -- a rational `ℓ`-th root of unity is `1` for odd `ℓ` …
+  have hq1 : q ^ ℓ = 1 := by
+    have h1 : ζ ^ ℓ = 1 := hζ.pow_eq_one
+    rw [← hq, ← map_pow] at h1
+    have h2 : algebraMap ℚ (AlgebraicClosure ℚ) (q ^ ℓ) =
+        algebraMap ℚ (AlgebraicClosure ℚ) 1 := by rw [map_one]; exact h1
+    exact (algebraMap ℚ (AlgebraicClosure ℚ)).injective h2
+  have hqone : q = 1 := (hodd.strictMono_pow (R := ℚ)).injective
+    (by simpa using hq1)
+  -- … contradicting primitivity (`ℓ ≥ 3 > 1`)
+  rw [hqone, map_one] at hq
+  exact hζ.ne_one hℓ.one_lt hq.symm
+
+/-- **Irrationality of full `4`-torsion** (sorry node): the rational
+points of an elliptic curve over `ℚ` contain no subgroup isomorphic to
+`(ℤ/4)²`. The arithmetic content is `μ₄ ⊄ ℚ`: a rational basis of
+`E[4]` makes the Weil pairing `e₄` of the basis vectors a Galois-fixed
+primitive fourth root of unity, i.e. `i ∈ ℚ` — absurd. (Equivalently,
+elementarily: full rational `2`-torsion puts `E` in the form
+`y² = (x−e₁)(x−e₂)(x−e₃)`, rationality of the halves of each `2`-torsion
+point forces every `(eᵢ−eⱼ)(eᵢ−eₖ)` to be a rational square, and the
+product of the three is `−((e₁−e₂)(e₂−e₃)(e₃−e₁))² < 0` — absurd.) The
+determinant route used for odd primes is unavailable here: the
+determinant node `det_galoisRep_eq_cyclotomic` requires `Odd p`, and
+the obstruction lives at level `4`, not at a prime. Silverman AEC
+III.8, Cor 8.1.1. -/
+theorem WeierstrassCurve.not_full_four_torsion_rat (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (φ : (ZMod 4 × ZMod 4) →+ (E⁄ℚ).Point) :
     ¬ Function.Injective φ :=
   sorry
+
+/-- **Irrationality of full `n`-torsion for `n ≥ 3`** (DERIVED
+2026-07-22 from the PROVEN odd-prime case
+`not_full_odd_prime_torsion_rat` and the level-`4` leaf
+`not_full_four_torsion_rat`): the rational points of an elliptic curve
+over `ℚ` contain no subgroup isomorphic to `(ℤ/n)²` for `n ≥ 3`.
+Reduction: if an odd prime `ℓ` divides `n`, the `(n/ℓ)`-multiples give
+`(ℤ/ℓ)² ↪ (ℤ/n)²`; otherwise `n ≥ 3` is a power of `2`, so `4 ∣ n` and
+`(ℤ/4)² ↪ (ℤ/n)²`. Silverman AEC III.8. -/
+theorem WeierstrassCurve.not_full_torsion_rat (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    {n : ℕ} (hn : 3 ≤ n) (φ : (ZMod n × ZMod n) →+ (E⁄ℚ).Point) :
+    ¬ Function.Injective φ := by
+  intro hφ
+  by_cases hoddfac : ∃ ℓ : ℕ, ℓ.Prime ∧ Odd ℓ ∧ ℓ ∣ n
+  · obtain ⟨ℓ, hℓp, hℓodd, hℓdvd⟩ := hoddfac
+    obtain ⟨g, hg⟩ := ZMod.exists_injective_addMonoidHom_of_dvd hℓp.pos hℓdvd
+      (by omega)
+    have hgg : Function.Injective (g.prodMap g) := by
+      rw [AddMonoidHom.coe_prodMap]
+      exact hg.prodMap hg
+    exact E.not_full_odd_prime_torsion_rat hℓp hℓodd (φ.comp (g.prodMap g))
+      (hφ.comp hgg)
+  · -- `n` is a power of `2`, so `4 ∣ n`
+    have h4 : 4 ∣ n := by
+      have h2 : ∀ {d : ℕ}, d.Prime → d ∣ n → d = 2 := by
+        intro d hd hdvd
+        by_contra hne
+        exact hoddfac ⟨d, hd, hd.odd_of_ne_two hne, hdvd⟩
+      have hpow := Nat.eq_prime_pow_of_unique_prime_dvd
+        (n := n) (p := 2) (by omega) h2
+      set k := n.primeFactorsList.length
+      have hk2 : 2 ≤ k := by
+        by_contra hklt
+        have hklt' : k < 2 := by omega
+        interval_cases k <;> norm_num at hpow <;> omega
+      calc (4 : ℕ) = 2 ^ 2 := rfl
+        _ ∣ 2 ^ k := pow_dvd_pow 2 hk2
+        _ = n := hpow.symm
+    obtain ⟨g, hg⟩ := ZMod.exists_injective_addMonoidHom_of_dvd
+      (by norm_num) h4 (by omega)
+    have hgg : Function.Injective (g.prodMap g) := by
+      rw [AddMonoidHom.coe_prodMap]
+      exact hg.prodMap hg
+    exact E.not_full_four_torsion_rat (φ.comp (g.prodMap g)) (hφ.comp hgg)
 
 /-- **Exclusion of rational `ℤ/2 × ℤ/10`** (sorry node): the modular
 curve `X_1(2,10)` has no non-cuspidal rational point (Mazur 1977; the
@@ -202,20 +468,188 @@ theorem WeierstrassCurve.not_two_cube_torsion (E : WeierstrassCurve ℚ) [E.IsEl
   rw [hcard, Nat.card_prod, Nat.card_prod, Nat.card_zmod] at hle
   norm_num at hle
 
-/-- **Rank-`≤ 2` structure of the candidate torsion groups** (sorry node
-— PURE FINITE ABELIAN GROUP THEORY, no arithmetic input): a finite
-abelian group containing no subgroup `(ℤ/n)²` for any `n ≥ 3` and no
-subgroup `(ℤ/2)³` is isomorphic to `ℤ/d × ℤ/n` with `d ∈ {1, 2}`.
-Bookkeeping over the structure theorem
-(`AddCommGroup.equiv_directSum_zmod_of_finite`): the constraint kills a
-second cyclic factor at every odd prime and bounds the `2`-part by
-`ℤ/2 × ℤ/2^k`; the coprime cyclic pieces merge by CRT. -/
+open scoped Function in
+set_option backward.isDefEq.respectTransparency false in
+/-- **Rank-`≤ 2` structure of the candidate torsion groups** (PROVEN
+2026-07-22 — PURE FINITE ABELIAN GROUP THEORY, no arithmetic input): a
+finite abelian group containing no subgroup `(ℤ/n)²` for any `n ≥ 3`
+and no subgroup `(ℤ/2)³` is isomorphic to `ℤ/d × ℤ/n` with
+`d ∈ {1, 2}`. Bookkeeping over the structure theorem
+(`AddCommGroup.equiv_directSum_zmod_of_finite`): two prime-power
+factors at the same odd prime `q` would give `(ℤ/q)²`, two `2`-power
+factors of exponents `≥ 2` would give `(ℤ/4)²`, and three even factors
+would give `(ℤ/2)³` — so at most one factor per odd prime, and the
+`2`-part is at worst `ℤ/2 × ℤ/2^k`. Splitting off the (single) `ℤ/2`
+factor if present, the remaining factors are pairwise coprime and merge
+into a single cyclic group by the Chinese remainder theorem
+(`ZMod.prodEquivPi`). -/
 theorem AddCommGroup.exists_rank_le_two_decomposition
     (T : Type*) [AddCommGroup T] [Finite T]
     (hfull : ∀ n : ℕ, 3 ≤ n → ∀ φ : (ZMod n × ZMod n) →+ T, ¬ Function.Injective φ)
     (hcube : ∀ φ : (ZMod 2 × ZMod 2 × ZMod 2) →+ T, ¬ Function.Injective φ) :
-    ∃ (d n : ℕ), (d = 1 ∨ d = 2) ∧ Nonempty (T ≃+ (ZMod d × ZMod n)) :=
-  sorry
+    ∃ (d n : ℕ), (d = 1 ∨ d = 2) ∧ Nonempty (T ≃+ (ZMod d × ZMod n)) := by
+  classical
+  obtain ⟨ι, hι, p, hp, e, ⟨eqv0⟩⟩ := AddCommGroup.equiv_directSum_zmod_of_finite T
+  haveI := hι
+  set a : ι → ℕ := fun i => p i ^ e i
+  have hapos : ∀ i, 0 < a i := fun i => pow_pos (hp i).pos _
+  let eqv : T ≃+ ∀ i, ZMod (a i) := eqv0.trans (DirectSum.addEquivProd _)
+  -- (i) two distinct factors both divisible by `m ≥ 3` embed `(ℤ/m)²`
+  have hpair : ∀ (m : ℕ), 3 ≤ m → ∀ i j : ι, i ≠ j → m ∣ a i → m ∣ a j → False := by
+    intro m hm i j hij hdi hdj
+    obtain ⟨gi, hgi⟩ := ZMod.exists_injective_addMonoidHom_of_dvd
+      (by omega) hdi (hapos i)
+    obtain ⟨gj, hgj⟩ := ZMod.exists_injective_addMonoidHom_of_dvd
+      (by omega) hdj (hapos j)
+    let Φ : (ZMod m × ZMod m) →+ ∀ k, ZMod (a k) :=
+      ((AddMonoidHom.single (fun k => ZMod (a k)) i).comp gi).coprod
+        ((AddMonoidHom.single (fun k => ZMod (a k)) j).comp gj)
+    have hΦ : Function.Injective Φ := by
+      intro x y hxy
+      have hxi : Φ x i = Φ y i := congrFun hxy i
+      have hxj : Φ x j = Φ y j := congrFun hxy j
+      simp only [Φ, AddMonoidHom.coprod_apply, AddMonoidHom.comp_apply,
+        AddMonoidHom.single_apply, Pi.add_apply, Pi.single_eq_same,
+        Pi.single_eq_of_ne hij, Pi.single_eq_of_ne hij.symm,
+        add_zero, zero_add] at hxi hxj
+      exact Prod.ext (hgi hxi) (hgj hxj)
+    exact hfull m hm ((eqv.symm.toAddMonoidHom).comp Φ)
+      ((eqv.symm.injective).comp hΦ)
+  -- (ii) three distinct even factors embed `(ℤ/2)³`
+  have htriple : ∀ i j k : ι, i ≠ j → i ≠ k → j ≠ k →
+      2 ∣ a i → 2 ∣ a j → 2 ∣ a k → False := by
+    intro i j k hij hik hjk hdi hdj hdk
+    obtain ⟨gi, hgi⟩ := ZMod.exists_injective_addMonoidHom_of_dvd
+      (by omega) hdi (hapos i)
+    obtain ⟨gj, hgj⟩ := ZMod.exists_injective_addMonoidHom_of_dvd
+      (by omega) hdj (hapos j)
+    obtain ⟨gk, hgk⟩ := ZMod.exists_injective_addMonoidHom_of_dvd
+      (by omega) hdk (hapos k)
+    let Φ : (ZMod 2 × ZMod 2 × ZMod 2) →+ ∀ l, ZMod (a l) :=
+      ((AddMonoidHom.single (fun l => ZMod (a l)) i).comp gi).coprod
+        ((((AddMonoidHom.single (fun l => ZMod (a l)) j).comp gj).coprod
+          ((AddMonoidHom.single (fun l => ZMod (a l)) k).comp gk)))
+    have hΦ : Function.Injective Φ := by
+      intro x y hxy
+      have hxi : Φ x i = Φ y i := congrFun hxy i
+      have hxj : Φ x j = Φ y j := congrFun hxy j
+      have hxk : Φ x k = Φ y k := congrFun hxy k
+      simp only [Φ, AddMonoidHom.coprod_apply, AddMonoidHom.comp_apply,
+        AddMonoidHom.single_apply, Pi.add_apply, Pi.single_eq_same,
+        Pi.single_eq_of_ne hij, Pi.single_eq_of_ne hij.symm,
+        Pi.single_eq_of_ne hik, Pi.single_eq_of_ne hik.symm,
+        Pi.single_eq_of_ne hjk, Pi.single_eq_of_ne hjk.symm,
+        add_zero, zero_add] at hxi hxj hxk
+      exact Prod.ext (hgi hxi) (Prod.ext (hgj hxj) (hgk hxk))
+    exact hcube ((eqv.symm.toAddMonoidHom).comp Φ)
+      ((eqv.symm.injective).comp hΦ)
+  -- the genuinely-even factors
+  set S₂ : Finset ι := Finset.univ.filter (fun i => p i = 2 ∧ 1 ≤ e i) with hS₂
+  have hS₂mem : ∀ {i}, i ∈ S₂ ↔ p i = 2 ∧ 1 ≤ e i := fun {i} => by
+    simp [hS₂]
+  have hdvd2 : ∀ {i}, i ∈ S₂ → 2 ∣ a i := by
+    intro i hi
+    rcases hS₂mem.mp hi with ⟨hp2, he⟩
+    show 2 ∣ p i ^ e i
+    rw [hp2]
+    exact dvd_pow_self 2 (by omega)
+  -- distinct same-prime genuine factors force the prime to be `2`
+  have hsameprime : ∀ i j : ι, i ≠ j → 1 ≤ e i → 1 ≤ e j → p i = p j →
+      p i = 2 := by
+    intro i j hij hei hej hpp
+    by_contra hne2
+    have h3 : 3 ≤ p i := by
+      have h2 := (hp i).two_le
+      omega
+    refine hpair (p i) h3 i j hij (dvd_pow_self (p i) (by omega)) ?_
+    rw [hpp]
+    show p j ∣ p j ^ e j
+    exact dvd_pow_self (p j) (by omega)
+  -- at most two genuinely-even factors
+  have hS₂card : S₂.card ≤ 2 := by
+    by_contra hgt
+    obtain ⟨u, husub, hucard⟩ := Finset.exists_subset_card_eq (show 3 ≤ S₂.card by omega)
+    obtain ⟨i, j, k, hij, hik, hjk, rfl⟩ := Finset.card_eq_three.mp hucard
+    exact htriple i j k hij hik hjk
+      (hdvd2 (husub (by simp))) (hdvd2 (husub (by simp))) (hdvd2 (husub (by simp)))
+  by_cases hcard2 : S₂.card = 2
+  · -- the `2`-part is `ℤ/2 × ℤ/2^k`: split off the `ℤ/2` factor
+    obtain ⟨i₀, j₀, hij₀, hS₂eq⟩ := Finset.card_eq_two.mp hcard2
+    have hi₀ : p i₀ = 2 ∧ 1 ≤ e i₀ := hS₂mem.mp (by rw [hS₂eq]; simp)
+    have hj₀ : p j₀ = 2 ∧ 1 ≤ e j₀ := hS₂mem.mp (by rw [hS₂eq]; simp)
+    -- one of the two exponents is exactly `1` (else `(ℤ/4)²`)
+    have hnot44 : ¬ (2 ≤ e i₀ ∧ 2 ≤ e j₀) := by
+      rintro ⟨h2i, h2j⟩
+      refine hpair 4 (by norm_num) i₀ j₀ hij₀ ?_ ?_
+      · show 4 ∣ p i₀ ^ e i₀
+        rw [hi₀.1]
+        exact (show (4 : ℕ) = 2 ^ 2 from rfl) ▸ pow_dvd_pow 2 h2i
+      · show 4 ∣ p j₀ ^ e j₀
+        rw [hj₀.1]
+        exact (show (4 : ℕ) = 2 ^ 2 from rfl) ▸ pow_dvd_pow 2 h2j
+    obtain ⟨i₁, j₁, hij₁, hS₂eq', hei₁⟩ :
+        ∃ i₁ j₁ : ι, i₁ ≠ j₁ ∧ S₂ = {i₁, j₁} ∧ e i₁ = 1 := by
+      rcases (show e i₀ = 1 ∨ e j₀ = 1 by
+        rcases hi₀ with ⟨-, h1⟩; rcases hj₀ with ⟨-, h2⟩; omega) with h1 | h1
+      · exact ⟨i₀, j₀, hij₀, hS₂eq, h1⟩
+      · exact ⟨j₀, i₀, hij₀.symm, by rw [hS₂eq, Finset.pair_comm], h1⟩
+    have hi₁ : p i₁ = 2 ∧ 1 ≤ e i₁ := hS₂mem.mp (by rw [hS₂eq']; simp)
+    -- the factors away from `i₁` are pairwise coprime
+    have hcop' : Pairwise (Nat.Coprime on fun x : {x : ι // x ≠ i₁} => a x.1) := by
+      intro x y hxy
+      show Nat.Coprime (p x.1 ^ e x.1) (p y.1 ^ e y.1)
+      have hne : x.1 ≠ y.1 := fun h => hxy (Subtype.ext h)
+      rcases Nat.eq_zero_or_pos (e x.1) with hex | hex
+      · rw [hex, pow_zero]; exact Nat.coprime_one_left _
+      rcases Nat.eq_zero_or_pos (e y.1) with hey | hey
+      · rw [hey, pow_zero]; exact Nat.coprime_one_right _
+      by_cases hpp : p x.1 = p y.1
+      · exfalso
+        have hp2 := hsameprime x.1 y.1 hne hex hey hpp
+        have hxS : x.1 ∈ S₂ := hS₂mem.mpr ⟨hp2, hex⟩
+        have hyS : y.1 ∈ S₂ := hS₂mem.mpr ⟨by rw [← hpp]; exact hp2, hey⟩
+        rw [hS₂eq'] at hxS hyS
+        simp only [Finset.mem_insert, Finset.mem_singleton] at hxS hyS
+        rcases hxS with h | h
+        · exact x.2 h
+        rcases hyS with h' | h'
+        · exact y.2 h'
+        exact hne (h.trans h'.symm)
+      · exact Nat.Coprime.pow (e x.1) (e y.1)
+          ((Nat.coprime_primes (hp _) (hp _)).mpr hpp)
+    refine ⟨2, ∏ x : {x : ι // x ≠ i₁}, a x.1, Or.inr rfl, ⟨?_⟩⟩
+    have hsplit : (∀ i, ZMod (a i)) ≃+
+        ZMod (a i₁) × ∀ x : {x : ι // x ≠ i₁}, ZMod (a x.1) :=
+      { Equiv.piSplitAt i₁ (fun i => ZMod (a i)) with
+        map_add' := fun f g => rfl }
+    have hai₁ : a i₁ = 2 := by
+      show p i₁ ^ e i₁ = 2
+      rw [hi₁.1, hei₁, pow_one]
+    exact eqv.trans (hsplit.trans (AddEquiv.prodCongr
+      (ZMod.ringEquivCongr hai₁).toAddEquiv
+      (ZMod.prodEquivPi (fun x : {x : ι // x ≠ i₁} => a x.1)
+        hcop').toAddEquiv.symm))
+  · -- at most one genuinely-even factor: everything is pairwise coprime
+    have hcard1 : S₂.card ≤ 1 := by omega
+    have hcop : Pairwise (Nat.Coprime on a) := by
+      intro i j hij
+      show Nat.Coprime (p i ^ e i) (p j ^ e j)
+      rcases Nat.eq_zero_or_pos (e i) with hei | hei
+      · rw [hei, pow_zero]; exact Nat.coprime_one_left _
+      rcases Nat.eq_zero_or_pos (e j) with hej | hej
+      · rw [hej, pow_zero]; exact Nat.coprime_one_right _
+      by_cases hpp : p i = p j
+      · exfalso
+        have hp2 := hsameprime i j hij hei hej hpp
+        have hiS : i ∈ S₂ := hS₂mem.mpr ⟨hp2, hei⟩
+        have hjS : j ∈ S₂ := hS₂mem.mpr ⟨by rw [← hpp]; exact hp2, hej⟩
+        have h2 : 1 < S₂.card := Finset.one_lt_card.mpr ⟨i, hiS, j, hjS, hij⟩
+        omega
+      · exact Nat.Coprime.pow (e i) (e j)
+          ((Nat.coprime_primes (hp i) (hp j)).mpr hpp)
+    refine ⟨1, ∏ i, a i, Or.inl rfl, ⟨?_⟩⟩
+    exact eqv.trans ((ZMod.prodEquivPi a hcop).toAddEquiv.symm.trans
+      AddEquiv.uniqueProd.symm)
 
 /-- **The fifteen-groups casework** (PROVEN 2026-07-22): an abelian
 group of the shape `ℤ/d × ℤ/n` with `d ∈ {1, 2}`, all of whose element
