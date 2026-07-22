@@ -15,12 +15,19 @@ here. This file provides:
   (ρ (globalFrob v)).charpoly` holds by definition
   (`charFrob_eq_charpoly_globalFrob`).
 
-* **Chebotarev density** (`dense_conjClasses_globalFrob`, sorry node): for
-  any finite set `S` of finite places of `ℚ`, the union of the conjugacy
-  classes of the global Frobenius elements at places outside `S` is dense
-  in `Γ ℚ`. This is the topological form of the Chebotarev density theorem
-  needed here (density of Frobenii); the full measure-theoretic statement
-  is strictly stronger and not required.
+* **Chebotarev density** (`dense_conjClasses_globalFrob`): for any finite
+  set `S` of finite places of `ℚ`, the union of the conjugacy classes of
+  the global Frobenius elements at places outside `S` is dense in `Γ ℚ`.
+  This is the topological form of the Chebotarev density theorem needed
+  here (density of Frobenii); the full measure-theoretic statement is
+  strictly stronger and not required. DERIVED (through
+  `exists_frobenius_conj_mem_coset` and
+  `exists_globalFrob_restrictNormalHom_conj`, both proven, and the
+  PROVEN local–global bridge
+  `exists_isArithFrobAt_restrictNormalHom_globalFrob`) from the single
+  remaining sorry node `infinite_setOf_isArithFrobAt`, the classical
+  ideal-theoretic Chebotarev existence statement for a finite Galois
+  extension of number fields.
 
 The remaining pieces of the decomposition (Brauer–Nesbitt for
 2-dimensional mod-`ℓ` representations, the mod-`ℓ` cyclotomic character as
@@ -35,7 +42,8 @@ public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 -- used in the proof of `not_isIrreducible_of_charpoly_eq`.
 import Fermat.FLT.GaloisRepresentation.BrauerNesbitt
 import Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup
-import Mathlib.RingTheory.Frobenius
+public import Mathlib.RingTheory.Frobenius
+public import Mathlib.FieldTheory.Galois.IsGaloisGroup
 public import Mathlib.NumberTheory.Padics.HeightOneSpectrum
 import Mathlib.RepresentationTheory.Subrepresentation
 import Mathlib.RepresentationTheory.Irreducible
@@ -83,21 +91,288 @@ lemma GaloisRep.charFrob_eq_charpoly_globalFrob {A : Type*} [CommRing A]
     ρ.charFrob v = (ρ (globalFrob v)).charpoly :=
   rfl
 
-/-- **Chebotarev, finite Galois-group form** (sorry node): for a finite
-Galois subextension `L` of `K̄/K` and any element `τ` of the finite
-Galois group `Gal(L/K)`, some global Frobenius at a place outside the
-given finite set `S` restricts to a conjugate of `τ` on `L`. This is the
+/-!
+## Decomposition of the finite Galois-group Chebotarev node
+
+The finite Galois-group form `exists_globalFrob_restrictNormalHom_conj`
+is ASSEMBLED below from two sorried arithmetic leaves, both stated in
+mathlib's finite-level Frobenius vocabulary
+(`IsArithFrobAt`, `Mathlib.RingTheory.Frobenius`):
+
+* `infinite_setOf_isArithFrobAt` — the arithmetic core: the classical
+  Chebotarev existence statement for the finite Galois extension `L/K`
+  in its finite, ideal-theoretic form (no completions): for every
+  `τ ∈ Gal(L/K)` there are infinitely many places `v` of `K` carrying a
+  prime `Q` of `𝓞 L` over `v`, with trivial inertia, at which `τ` is an
+  arithmetic Frobenius.
+
+* `finite_setOf_not_isArithFrobAt_restrictNormalHom_globalFrob` — the
+  local–global bridge: for all but finitely many `v`, the restriction to
+  `L` of the completion-theoretic `globalFrob v` is an arithmetic
+  Frobenius at some prime of `𝓞 L` over `v`.
+
+The assembly is pure Galois/ideal theory and is PROVEN: pick `v` in the
+first (infinite) set avoiding both `S` and the second (finite bad) set;
+the two Frobenius data at `v` live at primes `Q₁`, `Q₂` over `v`;
+`Gal(L/K)` acts transitively on the primes over `v`
+(`Algebra.IsInvariant.exists_smul_of_under_eq`), so conjugating by some
+`g` moves `Q₂` to `Q₁` and makes `g · (Frob_v|_L) · g⁻¹` a Frobenius at
+`Q₁` (`IsArithFrobAt.conj`); two Frobenii at the same prime differ by
+inertia (`IsArithFrobAt.mul_inv_mem_inertia`), which is trivial at `Q₁`.
+-/
+
+/-- A finite-dimensional intermediate field of `K̄/K` is a number field. -/
+instance (L : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K L] :
+    NumberField L :=
+  NumberField.of_module_finite K L
+
+/-- A normal finite-dimensional subextension of `K̄/K` is Galois:
+separability is automatic in characteristic zero. -/
+instance (L : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K L]
+    [Normal K L] : IsGalois K L :=
+  ⟨⟩
+
+/-- The Galois action on `𝓞 L` commutes with the `𝓞 K`-scalar action:
+`e ∈ Gal(L/K)` fixes `K` pointwise, hence fixes the image of `𝓞 K`.
+(Stated here against the ambient project action instance on `𝓞 L` —
+the vendored `MulSemiringAction G (𝓞 K)` instance in
+`Fermat.FLT.Deformations.Lemmas` shadows mathlib's, so mathlib's
+`IsGaloisGroup`-derived instance does not apply.) -/
+instance (L : IntermediateField K (AlgebraicClosure K)) :
+    SMulCommClass (L ≃ₐ[K] L) (𝓞 K) (𝓞 L) where
+  smul_comm e r x := by
+    refine NumberField.RingOfIntegers.ext ?_
+    have hcoe : ∀ y : 𝓞 L, ((e • y : 𝓞 L) : L) = e (y : L) := fun _ => rfl
+    have hsm : ∀ y : 𝓞 L, ((r • y : 𝓞 L) : L) =
+        algebraMap K L (algebraMap (𝓞 K) K r) * (y : L) := by
+      intro y
+      rw [Algebra.smul_def]
+      rfl
+    rw [hcoe, hsm x, hsm (e • x), map_mul, AlgEquiv.commutes, hcoe]
+
+/-- The fixed points of the Galois action on `𝓞 L` are exactly the image
+of `𝓞 K`: a fixed integer is a fixed field element (hence in `K` by
+Galois theory) that is integral over `ℤ`. -/
+instance (L : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K L]
+    [Normal K L] : Algebra.IsInvariant (𝓞 K) (𝓞 L) (L ≃ₐ[K] L) where
+  isInvariant x hx := by
+    have hfixL : ∀ e : L ≃ₐ[K] L, e • (x : L) = (x : L) := fun e =>
+      congrArg (algebraMap (𝓞 L) L) (hx e)
+    obtain ⟨y, hy⟩ := Algebra.IsInvariant.isInvariant (A := K)
+      (G := L ≃ₐ[K] L) (x : L) hfixL
+    have hyint : IsIntegral ℤ y := by
+      rw [← isIntegral_algebraMap_iff (B := L) (algebraMap K L).injective, hy]
+      exact x.2
+    exact ⟨⟨y, hyint⟩, NumberField.RingOfIntegers.ext hy⟩
+
+/-- **Chebotarev, arithmetic core** (sorry node): for a finite Galois
+subextension `L` of `K̄/K` and any `τ ∈ Gal(L/K)`, infinitely many
+finite places `v` of `K` carry a prime `Q` of `𝓞 L` lying over `v`,
+with trivial inertia (i.e. `v` unramified in `L`), at which `τ` is an
+arithmetic Frobenius (`τ x ≡ x ^ #(𝓞 K / v) (mod Q)`). This is the
+classical existence form of the Chebotarev density theorem in purely
+finite, ideal-theoretic vocabulary — exactly the statement produced by
+the standard analytic proof (Lagarias–Odlyzko, or the classical
+reduction to cyclic extensions and Hecke L-functions; see Neukirch VII
+§13); no completions or absolute Galois groups appear. Analytic base
+available in mathlib for a future proof: Dirichlet's theorem on primes
+in arithmetic progressions (`Mathlib.NumberTheory.LSeries.PrimesInAP`,
+covering the cyclotomic-over-`ℚ` case) and the L-series nonvanishing
+machinery under it; the remaining mathematical content is the Deuring
+reduction to the cyclic case, which needs a notion of Dirichlet density
+of sets of places (to discard the residue-degree-`≥ 2` places), not
+just infinitude. -/
+theorem infinite_setOf_isArithFrobAt
+    (L : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K L]
+    [Normal K L] (τ : L ≃ₐ[K] L) :
+    {v : Ω K | ∃ Q : Ideal (𝓞 L), Q.IsPrime ∧ Q.LiesOver v.asIdeal ∧
+      Q.inertia (L ≃ₐ[K] L) = ⊥ ∧ IsArithFrobAt (𝓞 K) τ Q}.Infinite :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **Local–global Frobenius compatibility, pointwise form**: at EVERY
+finite place `v` of `K`, the restriction to `L` of the
+completion-theoretic global Frobenius `globalFrob v` is an arithmetic
+Frobenius at the prime `Q` of `𝓞 L` obtained by contracting the maximal
+ideal of the integral closure of `𝒪ᵥ` in `K̄ᵥ` along the chosen
+embedding `K̄ → K̄ᵥ`. No unramifiedness hypothesis is needed:
+`IsArithFrobAt` is the raw congruence `σ x ≡ x ^ #(𝓞 K/v) (mod Q)`,
+which the local arithmetic Frobenius satisfies at the big maximal ideal
+(`Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob`) and which
+contracts along `𝓞 L → IntegralClosure 𝒪ᵥ K̄ᵥ`. -/
+theorem exists_isArithFrobAt_restrictNormalHom_globalFrob
+    (L : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K L]
+    [Normal K L] (v : Ω K) :
+    ∃ Q : Ideal (𝓞 L), Q.IsPrime ∧ Q.LiesOver v.asIdeal ∧
+      IsArithFrobAt (𝓞 K)
+        (AlgEquiv.restrictNormalHom L (globalFrob v)) Q := by
+  classical
+  -- the chosen embedding of algebraic closures
+  set ι : AlgebraicClosure K →+* AlgebraicClosure (v.adicCompletion K) :=
+    AlgebraicClosure.map (algebraMap K (v.adicCompletion K)) with hιdef
+  -- integral elements land in the integral closure of the completed integers
+  have hint : ∀ x : 𝓞 L, ι (algebraMap L (AlgebraicClosure K) (x : L)) ∈
+      integralClosure (v.adicCompletionIntegers K)
+        (AlgebraicClosure (v.adicCompletion K)) := by
+    intro x
+    exact IsIntegral.map_of_comp_eq
+      (algebraMap ℤ (v.adicCompletionIntegers K))
+      (ι.comp (algebraMap L (AlgebraicClosure K)))
+      (Subsingleton.elim _ _) (x.2 : IsIntegral ℤ (x : L))
+  -- the contraction homomorphism into the big integral closure
+  set j : 𝓞 L →+* IntegralClosure (v.adicCompletionIntegers K)
+      (AlgebraicClosure (v.adicCompletion K)) :=
+    RingHom.codRestrict
+      ((ι.comp (algebraMap L (AlgebraicClosure K))).comp
+        (algebraMap (𝓞 L) L))
+      (integralClosure (v.adicCompletionIntegers K)
+        (AlgebraicClosure (v.adicCompletion K))).toSubring
+      (fun x => hint x)
+  set M : Ideal (IntegralClosure (v.adicCompletionIntegers K)
+      (AlgebraicClosure (v.adicCompletion K))) :=
+    IsLocalRing.maximalIdeal _
+  set Q : Ideal (𝓞 L) := M.comap j with hQdef
+  -- the big maximal ideal contracts to the maximal ideal of `𝒪ᵥ`
+  have hMunder : M.under (v.adicCompletionIntegers K) =
+      IsLocalRing.maximalIdeal (v.adicCompletionIntegers K) :=
+    IsLocalRing.eq_maximalIdeal (Ideal.IsMaximal.under _ M)
+  -- `j` intertwines the two algebra maps from `𝓞 K`
+  have hcomm : ∀ a : 𝓞 K, j (algebraMap (𝓞 K) (𝓞 L) a) =
+      algebraMap (v.adicCompletionIntegers K)
+        (IntegralClosure (v.adicCompletionIntegers K)
+          (AlgebraicClosure (v.adicCompletion K)))
+        (algebraMap (𝓞 K) (v.adicCompletionIntegers K) a) := by
+    intro a
+    apply Subtype.ext
+    show ι (algebraMap L (AlgebraicClosure K)
+        (algebraMap K L (algebraMap (𝓞 K) K a))) =
+      algebraMap (IntegralClosure (v.adicCompletionIntegers K)
+          (AlgebraicClosure (v.adicCompletion K)))
+        (AlgebraicClosure (v.adicCompletion K))
+        (algebraMap (v.adicCompletionIntegers K)
+          (IntegralClosure (v.adicCompletionIntegers K)
+            (AlgebraicClosure (v.adicCompletion K)))
+          (algebraMap (𝓞 K) (v.adicCompletionIntegers K) a))
+    rw [← IsScalarTower.algebraMap_apply K L (AlgebraicClosure K),
+      hιdef, AlgebraicClosure.map_algebraMap,
+      ← IsScalarTower.algebraMap_apply (v.adicCompletionIntegers K)
+        (IntegralClosure (v.adicCompletionIntegers K)
+          (AlgebraicClosure (v.adicCompletion K)))
+        (AlgebraicClosure (v.adicCompletion K)),
+      IsScalarTower.algebraMap_apply (v.adicCompletionIntegers K)
+        (v.adicCompletion K) (AlgebraicClosure (v.adicCompletion K)),
+      show algebraMap (v.adicCompletionIntegers K) (v.adicCompletion K)
+          (algebraMap (𝓞 K) (v.adicCompletionIntegers K) a) =
+        ((algebraMap (𝓞 K) (v.adicCompletionIntegers K) a :
+          v.adicCompletionIntegers K) : v.adicCompletion K) from rfl,
+      IsDedekindDomain.HeightOneSpectrum.algebraMap_completionIntegers K v a,
+      IsScalarTower.algebraMap_apply (𝓞 K) K (v.adicCompletion K)]
+  -- `Q` lies over `v`
+  have hover : v.asIdeal = (v.completionIdeal K).under (𝓞 K) :=
+    Ideal.LiesOver.over
+  have hQunder : Q.under (𝓞 K) = v.asIdeal := by
+    ext a
+    rw [Ideal.under_def, Ideal.mem_comap, hQdef, Ideal.mem_comap, hcomm a,
+      ← Ideal.mem_comap (f := algebraMap (v.adicCompletionIntegers K)
+        (IntegralClosure (v.adicCompletionIntegers K)
+          (AlgebraicClosure (v.adicCompletion K)))),
+      show M.comap (algebraMap (v.adicCompletionIntegers K)
+        (IntegralClosure (v.adicCompletionIntegers K)
+          (AlgebraicClosure (v.adicCompletion K)))) = M.under _ from rfl,
+      hMunder, hover, Ideal.under_def, Ideal.mem_comap]
+  -- residue cardinalities agree
+  have hcard : Nat.card ((v.adicCompletionIntegers K) ⧸
+      M.under (v.adicCompletionIntegers K)) =
+      Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) := by
+    rw [hMunder, hQunder]
+    exact (Nat.card_congr
+      (IsDedekindDomain.HeightOneSpectrum.ResidueFieldEquivCompletionResidueField
+        K v).toEquiv).symm
+  -- the Frobenius congruence upstairs
+  have harith := Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob (v := v)
+  -- `j` intertwines the restricted global Frobenius with `adicArithFrob`
+  have hfrob : ∀ x : 𝓞 L,
+      MulSemiringAction.toAlgHom (v.adicCompletionIntegers K) _
+        (Field.AbsoluteGaloisGroup.adicArithFrob v) (j x) =
+      j ((MulSemiringAction.toAlgHom (𝓞 K) (𝓞 L)
+        (AlgEquiv.restrictNormalHom L (globalFrob v))) x) := by
+    intro x
+    apply Subtype.ext
+    show Field.AbsoluteGaloisGroup.adicArithFrob v
+        (ι (algebraMap L (AlgebraicClosure K) (x : L))) =
+      ι (algebraMap L (AlgebraicClosure K)
+        ((AlgEquiv.restrictNormalHom L (globalFrob v)) (x : L)))
+    have hres : algebraMap L (AlgebraicClosure K)
+        ((AlgEquiv.restrictNormalHom L (globalFrob v)) (x : L)) =
+        globalFrob v (algebraMap L (AlgebraicClosure K) (x : L)) :=
+      AlgEquiv.restrictNormal_commutes (globalFrob v) L (x : L)
+    have hlift := Field.absoluteGaloisGroup.lift_map
+      (algebraMap K (v.adicCompletion K))
+      (Field.AbsoluteGaloisGroup.adicArithFrob v)
+      (algebraMap L (AlgebraicClosure K) (x : L))
+    rw [hres, hιdef]
+    exact hlift.symm
+  refine ⟨Q, Ideal.IsPrime.comap j, ⟨hQunder.symm⟩, fun x => ?_⟩
+  have h1 := harith (j x)
+  rw [hfrob x, ← map_pow, ← map_sub] at h1
+  rw [hcard] at h1
+  exact h1
+
+/-- **Local–global Frobenius compatibility** (finite exceptional set —
+in fact empty): away from finitely many places, the restriction to `L`
+of the completion-theoretic global Frobenius `globalFrob v` is an
+arithmetic Frobenius at some prime `Q` of `𝓞 L` over `v`. DERIVED from
+the pointwise form `exists_isArithFrobAt_restrictNormalHom_globalFrob`,
+which produces such a prime at every place. -/
+theorem finite_setOf_not_isArithFrobAt_restrictNormalHom_globalFrob
+    (L : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K L]
+    [Normal K L] :
+    {v : Ω K | ¬ ∃ Q : Ideal (𝓞 L), Q.IsPrime ∧ Q.LiesOver v.asIdeal ∧
+      IsArithFrobAt (𝓞 K)
+        (AlgEquiv.restrictNormalHom L (globalFrob v)) Q}.Finite := by
+  have hempty : {v : Ω K | ¬ ∃ Q : Ideal (𝓞 L), Q.IsPrime ∧
+      Q.LiesOver v.asIdeal ∧ IsArithFrobAt (𝓞 K)
+        (AlgEquiv.restrictNormalHom L (globalFrob v)) Q} = ∅ := by
+    rw [Set.eq_empty_iff_forall_notMem]
+    intro v hv
+    exact hv (exists_isArithFrobAt_restrictNormalHom_globalFrob L v)
+  rw [hempty]
+  exact Set.finite_empty
+
+open scoped Pointwise in
+/-- **Chebotarev, finite Galois-group form**: for a finite Galois
+subextension `L` of `K̄/K` and any element `τ` of the finite Galois
+group `Gal(L/K)`, some global Frobenius at a place outside the given
+finite set `S` restricts to a conjugate of `τ` on `L`. This is the
 classical existence form of the Chebotarev density theorem for the
 finite Galois extension `L/K`: every element of `Gal(L/K)` is the
-Frobenius at infinitely many places of `K`. The profinite coset form
+Frobenius at infinitely many places of `K`. DERIVED from the arithmetic
+core `infinite_setOf_isArithFrobAt` and the local–global bridge
+`finite_setOf_not_isArithFrobAt_restrictNormalHom_globalFrob` by
+transitivity of the Galois action on the primes over `v` and uniqueness
+of Frobenius modulo (trivial) inertia. The profinite coset form
 `exists_frobenius_conj_mem_coset` is DERIVED from this below (normal
 closure + surjectivity of restriction). -/
 theorem exists_globalFrob_restrictNormalHom_conj (S : Finset (Ω K))
     (L : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K L]
     [Normal K L] (τ : L ≃ₐ[K] L) :
     ∃ v : Ω K, v ∉ S ∧ ∃ h : L ≃ₐ[K] L,
-      h * AlgEquiv.restrictNormalHom L (globalFrob v) * h⁻¹ = τ :=
-  sorry
+      h * AlgEquiv.restrictNormalHom L (globalFrob v) * h⁻¹ = τ := by
+  obtain ⟨v, hv, hvS⟩ := ((infinite_setOf_isArithFrobAt L τ).sdiff
+    (finite_setOf_not_isArithFrobAt_restrictNormalHom_globalFrob L)).exists_notMem_finset S
+  obtain ⟨⟨Q₁, hQ₁prime, hQ₁over, hQ₁inert, hQ₁frob⟩, hgood⟩ := hv
+  obtain ⟨Q₂, hQ₂prime, hQ₂over, hQ₂frob⟩ := not_not.mp hgood
+  haveI := hQ₁prime
+  haveI := hQ₂prime
+  obtain ⟨g, hg⟩ := Algebra.IsInvariant.exists_smul_of_under_eq
+    (𝓞 K) (𝓞 L) (L ≃ₐ[K] L) Q₂ Q₁
+    (hQ₂over.over.symm.trans hQ₁over.over)
+  have hconj := hQ₂frob.conj g
+  rw [← hg] at hconj
+  have hmem := hQ₁frob.mul_inv_mem_inertia hconj
+  rw [hQ₁inert, Subgroup.mem_bot, mul_inv_eq_one] at hmem
+  exact ⟨v, hvS, g, hmem.symm⟩
 
 /-- **Chebotarev, finite level**: modulo the fixing subgroup
 of any finite subextension `E` of `K̄/K`, every element of the absolute
