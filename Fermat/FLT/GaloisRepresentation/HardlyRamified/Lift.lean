@@ -6,11 +6,20 @@ The decomposition of **B5** ("hardly ramified mod-ℓ with ℓ ≥ 5 is not
 irreducible") following the FLT project's plan (Buzzard, 2026 EPSRC course,
 Lecture 4):
 
-* **B6a** (`exists_hardlyRamifiedLift`, sorry node): an irreducible hardly
-  ramified mod-`ℓ` representation lifts to a hardly ramified `ℓ`-adic
-  representation over the integers `O` of a finite extension of `ℚ_ℓ`,
-  compatibly with characteristic polynomials of Frobenius. The lift data is
-  bundled in the structure `HardlyRamifiedLift`.
+* **B6a** (`exists_hardlyRamifiedLift`): an irreducible hardly ramified
+  mod-`ℓ` representation lifts to a hardly ramified `ℓ`-adic representation
+  over the integers `O` of a finite extension of `ℚ_ℓ`, compatibly with
+  characteristic polynomials of Frobenius. The lift data is bundled in the
+  structure `HardlyRamifiedLift`. DECOMPOSED (2026-07-22) into the
+  Khare–Wintenberger-style core `exists_finite_lift` (sorry node: a lift
+  over a module-finite local topological `ℤ_ℓ`-algebra `R` of
+  characteristic zero, not necessarily a domain — mathematically the
+  universal hardly-ramified deformation ring, finite over `ℤ_ℓ` by
+  potential modularity and of dimension `≥ 1` by Galois-cohomological
+  presentation counting) plus commutative-algebra glue: quotient `R` by a
+  prime lying over `(0) ⊆ ℤ_ℓ` and specialize (the specialization
+  stability of `IsHardlyRamified` is the remaining sorried step inside the
+  glue).
 
 * **B6bc** (`residual_charFrob_eq`, sorry node): the residual
   characteristic polynomials of Frobenius of a liftable representation are
@@ -92,23 +101,18 @@ structure HardlyRamifiedLift (ρbar : GaloisRep ℚ (ZMod ℓ) V) where
     (rank_finTwoFun O) ρ
   /-- The reduction map to the residue characteristic-`ℓ` world. -/
   π : O →+* ZMod ℓ
+  /-- The coefficient ring has characteristic zero: `ℤ_ℓ` embeds. (AUDIT
+  STRENGTHENING 2026-07-22: true for the intended `O` — the integers of a
+  finite extension of `ℚ_ℓ` — and recorded so that the downstream
+  compatible-family layer, whose coefficient rings must embed into `ℚ̄_ℓ`,
+  can consume it; without it the structure would be satisfiable by
+  `O = ℤ/ℓℤ` itself, trivializing the lift.) -/
+  algebraMap_injective : Function.Injective (algebraMap ℤ_[ℓ] O)
   /-- The lift reduces to `ρbar`: the characteristic polynomials of
   Frobenius match at every prime `q ∉ {2, ℓ}`. -/
   charFrob_compat : ∀ q (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
     (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
       ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat
-
-/-- **B6a** (sorry node): an irreducible hardly ramified mod-`ℓ`
-representation with `ℓ ≥ 5` admits a hardly ramified `ℓ`-adic lift.
-
-This is a modularity-lifting-style deformation-theoretic statement with no
-residual modularity hypothesis (the hypothesis is replaced by "the residual
-representation is valued in `GL₂(ℤ/ℓℤ)`"). -/
-theorem exists_hardlyRamifiedLift (hℓ5 : 5 ≤ ℓ)
-    {ρbar : GaloisRep ℚ (ZMod ℓ) V} (h : IsHardlyRamified hℓOdd hdim ρbar)
-    (hirr : ρbar.IsIrreducible) :
-    Nonempty (HardlyRamifiedLift hℓOdd ρbar) :=
-  sorry
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Any number field embeds into the algebraic closure of `ℚ_p` — the
@@ -145,6 +149,173 @@ lemma charpoly_baseChange_conj {A : Type*} [CommRing A] [TopologicalSpace A]
   show ((Module.End.baseChangeHom A B W) (τ g)).charpoly = _
   rw [show (Module.End.baseChangeHom A B W) (τ g) =
     LinearMap.baseChange B (τ g) from rfl, LinearMap.charpoly_baseChange]
+
+/-- **B6a-core** (sorry node): the Khare–Wintenberger-style lifting core.
+An irreducible hardly ramified mod-`ℓ` representation with `ℓ ≥ 5` lifts to
+a hardly ramified representation over *some* coefficient ring `R` — a local
+topological `ℤ_ℓ`-algebra, finite as a `ℤ_ℓ`-module, carrying the
+`ℤ_ℓ`-module topology, of characteristic zero (`ℤ_ℓ` embeds) — with a
+reduction map matching the characteristic polynomials of Frobenius of
+`ρbar` at all good primes. `R` is *not* required to be a domain.
+
+Mathematically `R` is the universal deformation ring of `ρbar` for the
+hardly ramified deformation problem (representable since `ρbar` is
+irreducible: Schur's lemma plus Mazur's criterion), and the two deep
+inputs pinning it down are:
+
+* a presentation `R ≅ ℤ_ℓ[[x₁,…,x_g]]/(f₁,…,f_r)` with `g − r ≥ 1`, from
+  the global Euler characteristic formula and Poitou–Tate duality with
+  balanced local conditions (Mazur; Böckle) — since a complete local
+  Noetherian `ℤ_ℓ`-algebra presented with more generators than relations
+  has Krull dimension `≥ 1`, this forces a characteristic-zero fiber,
+  i.e. the injectivity clause below once `R` is known to be `ℤ_ℓ`-finite;
+* finiteness of `R` as a `ℤ_ℓ`-module — the potential-modularity /
+  Taylor–Wiles–Kisin input (the residual-modularity hypothesis is bypassed
+  via Moret-Bailly, following Taylor and Khare–Wintenberger).
+
+References: Khare–Wintenberger, *Serre's modularity conjecture (I)*,
+Thm. 4.1 and §4; Böckle's appendix to Khare's *Serre's conjecture* notes;
+Buzzard's 2026 EPSRC course, Lecture 4. -/
+theorem exists_finite_lift (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ (ZMod ℓ) V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible) :
+    ∃ (R : Type) (_ : CommRing R) (_ : TopologicalSpace R)
+      (_ : IsTopologicalRing R) (_ : IsLocalRing R) (_ : Algebra ℤ_[ℓ] R)
+      (_ : Module.Finite ℤ_[ℓ] R) (_ : IsModuleTopology ℤ_[ℓ] R),
+      Function.Injective (algebraMap ℤ_[ℓ] R) ∧
+      ∃ ρ : FramedGaloisRep ℚ R (Fin 2),
+        IsHardlyRamified hℓOdd (rank_finTwoFun R) ρ ∧
+        ∃ π : R →+* ZMod ℓ, ∀ q (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+          (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+            ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **B6a**: an irreducible hardly ramified mod-`ℓ` representation with
+`ℓ ≥ 5` admits a hardly ramified `ℓ`-adic lift over a characteristic-zero
+local topological domain finite over `ℤ_ℓ`.
+
+DERIVED (2026-07-22) from the Khare–Wintenberger core `exists_finite_lift`
+by commutative algebra: `ℓ` is not nilpotent in `R` (characteristic-zero
+injectivity), so some prime `P` of `R` avoids it, and — every nonzero
+element of `ℤ_ℓ` being a unit times a power of `ℓ` — `P` lies over
+`(0) ⊆ ℤ_ℓ`. The quotient `O := R ⧸ P` is then a characteristic-zero
+local topological domain, finite over `ℤ_ℓ` with the `ℤ_ℓ`-module
+topology; the reduction map factors through it (`P ⊆ 𝔪 = ker π`, the
+kernel being maximal because `R/ker π` is a finite domain), and the
+characteristic polynomials of Frobenius transport through the
+specialization by `charpoly_baseChange_conj`. The remaining sorried step
+inside this proof is the specialization stability of `IsHardlyRamified`
+along `R → R ⧸ P` (determinant and unramifiedness are immediate; flatness
+and the tame quotient at `2` need the base-change transfer arguments of
+`Threeadic.lean` adapted to the quotient map). -/
+theorem exists_hardlyRamifiedLift (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ (ZMod ℓ) V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible) :
+    Nonempty (HardlyRamifiedLift hℓOdd ρbar) := by
+  classical
+  obtain ⟨R, iR1, iR2, iR3, iR4, iR5, iR6, iR7, hinj, ρR, hρR, πR, hπR⟩ :=
+    exists_finite_lift hℓOdd hdim hℓ5 h hirr
+  letI := iR1; letI := iR2; letI := iR3; letI := iR4; letI := iR5
+  letI := iR6; letI := iR7
+  -- Step 1: a prime of `R` lying over `(0) ⊆ ℤ_ℓ`.
+  obtain ⟨P, hPp, hP0⟩ : ∃ P : Ideal R, P.IsPrime ∧
+      ∀ x : ℤ_[ℓ], algebraMap ℤ_[ℓ] R x ∈ P → x = 0 := by
+    have hℓR : algebraMap ℤ_[ℓ] R (ℓ : ℤ_[ℓ]) ∉ nilradical R := by
+      rw [mem_nilradical]
+      rintro ⟨n, hn⟩
+      rw [← map_pow] at hn
+      exact pow_ne_zero n
+        (Nat.cast_ne_zero.mpr (Fact.out : ℓ.Prime).ne_zero)
+        (hinj (hn.trans (map_zero (algebraMap ℤ_[ℓ] R)).symm))
+    obtain ⟨P, hPp, hℓP⟩ : ∃ P : Ideal R, Ideal.IsPrime P ∧
+        algebraMap ℤ_[ℓ] R (ℓ : ℤ_[ℓ]) ∉ P := by
+      by_contra hcon
+      push Not at hcon
+      refine hℓR ?_
+      rw [nilradical_eq_sInf]
+      exact Submodule.mem_sInf.mpr fun J hJ => hcon J hJ
+    refine ⟨P, hPp, fun x hx => by_contra fun hx0 => ?_⟩
+    rw [PadicInt.unitCoeff_spec hx0, map_mul, map_pow] at hx
+    rcases hPp.mem_or_mem hx with hu | hpow
+    · exact hPp.ne_top (Ideal.eq_top_of_isUnit_mem P hu
+        (IsUnit.map (algebraMap ℤ_[ℓ] R) (PadicInt.unitCoeff hx0).isUnit))
+    · exact hℓP (hPp.mem_of_pow_mem _ hpow)
+  haveI := hPp
+  -- Step 2: `O := R ⧸ P` is a local topological domain of characteristic
+  -- zero, finite over `ℤ_ℓ` with the `ℤ_ℓ`-module topology.
+  have hloc : IsLocalRing (R ⧸ P) :=
+    .of_surjective' (Ideal.Quotient.mk P) Ideal.Quotient.mk_surjective
+  letI := hloc
+  have hfin : Module.Finite ℤ_[ℓ] (R ⧸ P) :=
+    Module.Finite.of_surjective (Ideal.Quotient.mkₐ ℤ_[ℓ] P).toLinearMap
+      (Ideal.Quotient.mkₐ_surjective ℤ_[ℓ] P)
+  letI := hfin
+  have hmt : IsModuleTopology ℤ_[ℓ] (R ⧸ P) := by
+    constructor
+    have hquot :=
+      (QuotientRing.isOpenQuotientMap_mk P).isQuotientMap.eq_coinduced
+    have hmod := ModuleTopology.eq_coinduced_of_surjective
+      (φ := (Ideal.Quotient.mkₐ ℤ_[ℓ] P).toLinearMap)
+      (Ideal.Quotient.mkₐ_surjective ℤ_[ℓ] P)
+    rw [hquot, hmod]
+    rfl
+  letI := hmt
+  have hinjO : Function.Injective (algebraMap ℤ_[ℓ] (R ⧸ P)) := by
+    refine (injective_iff_map_eq_zero _).mpr fun x hx => hP0 x ?_
+    rwa [IsScalarTower.algebraMap_apply ℤ_[ℓ] R (R ⧸ P),
+      Ideal.Quotient.algebraMap_eq, Ideal.Quotient.eq_zero_iff_mem] at hx
+  -- Step 3: specialize the framed representation along `R → R ⧸ P`.
+  let e : (R ⧸ P) ⊗[R] (Fin 2 → R) ≃ₗ[R ⧸ P] (Fin 2 → R ⧸ P) :=
+    TensorProduct.piScalarRight R (R ⧸ P) (R ⧸ P) (Fin 2)
+  let ρO : FramedGaloisRep ℚ (R ⧸ P) (Fin 2) := (ρR.baseChange (R ⧸ P)).conj e
+  -- Specialization stability of hardly-ramifiedness (sorried step): the
+  -- determinant and unramifiedness conditions are immediate; flatness and
+  -- the tame quotient at `2` transfer as in `Threeadic.lean`'s base-change
+  -- arguments, with the residue field replaced by the quotient `R ⧸ P`.
+  have hHRO : IsHardlyRamified hℓOdd (rank_finTwoFun (R ⧸ P)) ρO := by
+    sorry
+  -- Step 4: the reduction map factors through the quotient: `ker πR` is
+  -- maximal (its quotient is a finite domain, hence a field), so it is the
+  -- maximal ideal of the local ring `R`, which contains the prime `P`.
+  have hPle : P ≤ RingHom.ker πR := by
+    haveI : (RingHom.ker πR).IsPrime := RingHom.ker_isPrime πR
+    haveI : NeZero ℓ := ⟨(Fact.out : ℓ.Prime).ne_zero⟩
+    haveI : Finite (R ⧸ RingHom.ker πR) :=
+      Finite.of_equiv _ (RingHom.quotientKerEquivRange πR).symm.toEquiv
+    calc P ≤ IsLocalRing.maximalIdeal R :=
+          IsLocalRing.le_maximalIdeal hPp.ne_top
+      _ = RingHom.ker πR := (IsLocalRing.eq_maximalIdeal
+          (Ideal.Quotient.maximal_of_isField _
+            (Finite.isField_of_domain (R ⧸ RingHom.ker πR)))).symm
+  let πO : R ⧸ P →+* ZMod ℓ :=
+    Ideal.Quotient.lift P πR fun a ha => by
+      rw [← RingHom.mem_ker]
+      exact hPle ha
+  -- Step 5: assemble; the characteristic polynomials of Frobenius
+  -- transport through the specialization.
+  have hcompat : ∀ q (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρO.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map πO =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat := by
+    intro q hq hq2 hqℓ
+    have hcf : ρO.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+        (ρR.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
+          (algebraMap R (R ⧸ P)) :=
+      charpoly_baseChange_conj ρR e
+        (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    have hπcomp : πO.comp (algebraMap R (R ⧸ P)) = πR := by
+      ext a
+      rw [RingHom.comp_apply, Ideal.Quotient.algebraMap_eq]
+      exact Ideal.Quotient.lift_mk P πR _
+    rw [hcf, Polynomial.map_map, hπcomp]
+    exact hπR q hq hq2 hqℓ
+  exact ⟨{ O := R ⧸ P
+           ρ := ρO
+           isHardlyRamified := hHRO
+           π := πO
+           algebraMap_injective := hinjO
+           charFrob_compat := hcompat }⟩
 
 /-- **Compatibility bookkeeping** (sorry node): if the hardly ramified
 `ℓ`-adic lift of `ρbar` lives in a compatible family of hardly ramified
@@ -328,8 +499,10 @@ theorem residual_charFrob_eq (hℓ5 : 5 ≤ ℓ)
     (letI := L.commRing; letI := L.isDomain; letI := L.topologicalSpace
      letI := L.isTopologicalRing; letI := L.isLocalRing; letI := L.algebra
      letI := L.moduleFinite; letI := L.isModuleTopology
+     -- the characteristic-zero hypothesis of the restated B6b node is
+     -- exactly the `algebraMap_injective` field of the lift package
      IsHardlyRamified.mem_isCompatible hℓOdd (rank_finTwoFun L.O)
-       L.isHardlyRamified)
+       L.algebraMap_injective L.isHardlyRamified)
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Chebotarev + Brauer–Nesbitt**: a continuous mod-`ℓ` representation
