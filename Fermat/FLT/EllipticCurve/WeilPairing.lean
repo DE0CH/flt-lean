@@ -7531,18 +7531,18 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
               Wb.toAffine.Point) =
             WeierstrassCurve.Affine.Point.some xM yM hM →
           xM ∉ F := by
-      intro xT yT hT havoid₊ havoid₋ xM yM hM hMc hin
+      intro xT yT hT havoidp havoidm xM yM hM hMc hin
       have hxSofT : xS = xOf
           (-(WeierstrassCurve.Affine.Point.some xT yT hT) +
             WeierstrassCurve.Affine.Point.some xM yM hM) := by
         rw [← hMc, neg_add_cancel_left]
       rcases hfib2 xM yM hM.left with hy | hy
-      · exact havoid₊ xM hin (hxSofT.trans (congrArg (fun T' => xOf
+      · exact havoidp xM hin (hxSofT.trans (congrArg (fun T' => xOf
           (-(WeierstrassCurve.Affine.Point.some xT yT hT) + T'))
           (hptfun _ _ _ _ hM
             ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
               (hyfib xM)) rfl hy)))
-      · exact havoid₋ xM hin (hxSofT.trans (congrArg (fun T' => xOf
+      · exact havoidm xM hin (hxSofT.trans (congrArg (fun T' => xOf
           (-(WeierstrassCurve.Affine.Point.some xT yT hT) + T'))
           (hptfun _ _ _ _ hM
             ((WeierstrassCurve.Affine.nonsingular_neg xM (yfib xM)).mpr
