@@ -176,6 +176,472 @@ theorem IsLocalRing.isUnit_natCast_or_isUnit_natCast {A : Type*} [CommRing A] [I
         ((IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr hcon.2)))
   exact mem_nonunits_iff.mp ((IsLocalRing.mem_maximalIdeal _).mp h1) isUnit_one
 
+/-!
+### Valuation helpers for the kernel-of-reduction leaves
+
+The two kernel leaves below (`kernel_add_abscissa_notMem`,
+`kernel_sub_abscissa_notMem_of_residue_eq`) are pure valuation arithmetic on
+Weierstrass coordinates (Silverman *AEC* VII.2.1–2). The helpers in this section carry
+that arithmetic out over an arbitrary valuation subring `A` of a field `F`, for a
+Weierstrass curve with `A`-integral coefficients: an affine point with integral
+abscissa has integral ordinate (`ordinate_mem_of_abscissa_mem`), while a non-integral
+abscissa forces `v x < v y` (`val_abscissa_lt_val_ordinate`, the `y²`/`x³` dominance);
+the chord–tangent line through two kernel points has slope of strictly smaller
+valuation than its intercept `c = y₁ - λx₁`, which satisfies `v c > 1`
+(`kernel_slope_facts`, computed in the `(z, w) = (x/y, 1/y)` chart, where the line is
+`λz + cw = 1` and the slope `-λ/c` of its chart form lies in the maximal ideal by the
+subtracted-curve-equations factorization); and the two endgames: an affine point on
+such a deep line has non-integral abscissa (`abscissa_notMem_of_line_deep`), and
+`addX` over a slope of valuation `> 1` is non-integral
+(`addX_notMem_of_one_lt_val_slope`).
+-/
+
+section KernelValuationHelpers
+
+variable {F : Type*} [Field F] (A : ValuationSubring F)
+
+/-- An `A`-integral multiple of an element of valuation `< 1` has valuation `< 1`.
+(Glue for the kernel-of-reduction leaves.) -/
+theorem ValuationSubring.val_mul_lt_one_of_mem_of_lt {a b : F} (ha : a ∈ A)
+    (hb : A.valuation b < 1) : A.valuation (a * b) < 1 := by
+  rw [map_mul]
+  calc A.valuation a * A.valuation b ≤ 1 * A.valuation b :=
+    mul_le_mul_left ((A.valuation_le_one_iff a).mpr ha) _
+  _ = A.valuation b := one_mul _
+  _ < 1 := hb
+
+/-- If `L * d` has valuation `1` while `d` has valuation `< 1`, then `L` has valuation
+`> 1`. (Glue for the congruent-points leaf: `L` is a chord or tangent slope, `d` its
+denominator, `L * d` its numerator.) -/
+theorem ValuationSubring.one_lt_val_of_val_mul_eq_one {L d : F}
+    (hd : A.valuation d < 1) (hprod : A.valuation (L * d) = 1) :
+    1 < A.valuation L := by
+  by_contra hle
+  rw [not_lt] at hle
+  rw [map_mul] at hprod
+  have hlt : A.valuation L * A.valuation d < 1 :=
+    lt_of_le_of_lt (mul_le_mul_left hle _) (by rwa [one_mul])
+  exact absurd hprod hlt.ne
+
+variable (W : WeierstrassCurve F)
+
+/-- **Integral abscissa forces integral ordinate**: on a Weierstrass curve with
+`A`-integral coefficients, an affine point with `x ∈ A` has `y ∈ A` — otherwise `y²`
+strictly dominates the `y`-side of the Weierstrass equation while the `x`-side stays
+integral. -/
+theorem WeierstrassCurve.ordinate_mem_of_abscissa_mem
+    (ha₁ : W.a₁ ∈ A) (ha₂ : W.a₂ ∈ A) (ha₃ : W.a₃ ∈ A) (ha₄ : W.a₄ ∈ A) (ha₆ : W.a₆ ∈ A)
+    {x y : F} (hE : W.toAffine.Equation x y) (hx : x ∈ A) : y ∈ A := by
+  by_contra hy
+  rw [← A.valuation_le_one_iff, not_le] at hy
+  have hE' := (WeierstrassCurve.Affine.equation_iff x y).mp hE
+  have hR : A.valuation (x ^ 3 + W.a₂ * x ^ 2 + W.a₄ * x + W.a₆) ≤ 1 :=
+    (A.valuation_le_one_iff _).mpr
+      (add_mem (add_mem (add_mem (pow_mem hx 3) (mul_mem ha₂ (pow_mem hx 2)))
+        (mul_mem ha₄ hx)) ha₆)
+  have hyadd : A.valuation (y + (W.a₁ * x + W.a₃)) = A.valuation y :=
+    A.valuation.map_add_eq_of_lt_left
+      (lt_of_le_of_lt ((A.valuation_le_one_iff _).mpr (add_mem (mul_mem ha₁ hx) ha₃)) hy)
+  have hL : A.valuation (y ^ 2 + W.a₁ * x * y + W.a₃ * y)
+      = A.valuation y * A.valuation y := by
+    rw [show y ^ 2 + W.a₁ * x * y + W.a₃ * y = y * (y + (W.a₁ * x + W.a₃)) from by ring,
+      map_mul, hyadd]
+  rw [hE'] at hL
+  rw [hL] at hR
+  exact absurd hR (not_le.mpr (hy.trans_le (le_mul_of_one_le_left' hy.le)))
+
+/-- **Kernel points have dominant ordinate**: on a Weierstrass curve with `A`-integral
+coefficients, an affine point with non-integral abscissa satisfies `v x < v y` — the
+Weierstrass equation forces `v(y)² = v(x)³`, so in particular `y` strictly dominates
+`x`. -/
+theorem WeierstrassCurve.val_abscissa_lt_val_ordinate
+    (ha₁ : W.a₁ ∈ A) (ha₂ : W.a₂ ∈ A) (ha₃ : W.a₃ ∈ A) (ha₄ : W.a₄ ∈ A) (ha₆ : W.a₆ ∈ A)
+    {x y : F} (hE : W.toAffine.Equation x y) (hx : x ∉ A) :
+    A.valuation x < A.valuation y := by
+  rw [← A.valuation_le_one_iff, not_le] at hx
+  by_contra hle
+  rw [not_lt] at hle
+  have hE' := (WeierstrassCurve.Affine.equation_iff x y).mp hE
+  -- the `x`-side has valuation exactly `v(x)³`
+  have hR : A.valuation (x ^ 3 + W.a₂ * x ^ 2 + W.a₄ * x + W.a₆) = A.valuation x ^ 3 := by
+    rw [show x ^ 3 + W.a₂ * x ^ 2 + W.a₄ * x + W.a₆
+        = x ^ 3 + (W.a₂ * x ^ 2 + (W.a₄ * x + W.a₆)) from by ring]
+    have h2 : A.valuation (W.a₂ * x ^ 2 + (W.a₄ * x + W.a₆)) < A.valuation (x ^ 3) := by
+      rw [map_pow]
+      refine A.valuation.map_add_lt ?_ (A.valuation.map_add_lt ?_ ?_)
+      · rw [map_mul, map_pow]
+        calc A.valuation W.a₂ * A.valuation x ^ 2 ≤ 1 * A.valuation x ^ 2 :=
+          mul_le_mul_left ((A.valuation_le_one_iff _).mpr ha₂) _
+        _ = A.valuation x ^ 2 := one_mul _
+        _ < A.valuation x ^ 3 := pow_lt_pow_right₀ hx (by omega)
+      · rw [map_mul]
+        calc A.valuation W.a₄ * A.valuation x ≤ 1 * A.valuation x :=
+          mul_le_mul_left ((A.valuation_le_one_iff _).mpr ha₄) _
+        _ = A.valuation x ^ 1 := by rw [one_mul, pow_one]
+        _ < A.valuation x ^ 3 := pow_lt_pow_right₀ hx (by omega)
+      · calc A.valuation W.a₆ ≤ 1 := (A.valuation_le_one_iff _).mpr ha₆
+        _ = A.valuation x ^ 0 := (pow_zero _).symm
+        _ < A.valuation x ^ 3 := pow_lt_pow_right₀ hx (by omega)
+    rw [A.valuation.map_add_eq_of_lt_left h2, map_pow]
+  -- the `y`-side has valuation at most `v(x)²`
+  have hLest : A.valuation (y ^ 2 + W.a₁ * x * y + W.a₃ * y) ≤ A.valuation x ^ 2 := by
+    refine A.valuation.map_add_le (A.valuation.map_add_le ?_ ?_) ?_
+    · rw [map_pow]
+      exact pow_le_pow_left' hle 2
+    · rw [map_mul, map_mul]
+      calc A.valuation W.a₁ * A.valuation x * A.valuation y
+          ≤ 1 * A.valuation x * A.valuation x := by
+            exact mul_le_mul' (mul_le_mul_left ((A.valuation_le_one_iff _).mpr ha₁) _) hle
+      _ = A.valuation x ^ 2 := by rw [one_mul, sq]
+    · rw [map_mul]
+      calc A.valuation W.a₃ * A.valuation y ≤ 1 * A.valuation y :=
+        mul_le_mul_left ((A.valuation_le_one_iff _).mpr ha₃) _
+      _ = A.valuation y := one_mul _
+      _ ≤ A.valuation x := hle
+      _ ≤ A.valuation x ^ 2 := le_self_pow hx.le (by omega)
+  rw [hE', hR] at hLest
+  exact absurd hLest (not_le.mpr (pow_lt_pow_right₀ hx (by omega)))
+
+/-- **Points on a deep line are non-integral**: if an affine point of a Weierstrass
+curve with `A`-integral coefficients lies on a line `Y = L·X + c` whose slope has
+strictly smaller valuation than its intercept and whose intercept is non-integral,
+then the abscissa is non-integral — else the ordinate `L·x + c` would have valuation
+`v c > 1` while the Weierstrass equation over the integral abscissa forces it
+integral. (Endgame of the kernel-addition leaf.) -/
+theorem WeierstrassCurve.abscissa_notMem_of_line_deep
+    (ha₁ : W.a₁ ∈ A) (ha₂ : W.a₂ ∈ A) (ha₃ : W.a₃ ∈ A) (ha₄ : W.a₄ ∈ A) (ha₆ : W.a₆ ∈ A)
+    {x L c : F} (hE : W.toAffine.Equation x (L * x + c))
+    (hLc : A.valuation L < A.valuation c) (hc : 1 < A.valuation c) : x ∉ A := by
+  intro hx
+  have hy : L * x + c ∈ A := W.ordinate_mem_of_abscissa_mem A ha₁ ha₂ ha₃ ha₄ ha₆ hE hx
+  have hvLx : A.valuation (L * x) < A.valuation c := by
+    rw [map_mul]
+    calc A.valuation L * A.valuation x ≤ A.valuation L * 1 :=
+      mul_le_mul_right ((A.valuation_le_one_iff _).mpr hx) _
+    _ = A.valuation L := mul_one _
+    _ < A.valuation c := hLc
+  have hvy := (A.valuation_le_one_iff _).mpr hy
+  rw [A.valuation.map_add_eq_of_lt_right hvLx] at hvy
+  exact absurd hvy (not_le.mpr hc)
+
+/-- **`addX` over a steep slope is non-integral**: if `1 < v L` and `x₁, x₂ ∈ A`, then
+`L² + a₁L - a₂ - x₁ - x₂ ∉ A` — the `L²` term strictly dominates. (Endgame of the
+congruent-points leaf.) -/
+theorem WeierstrassCurve.addX_notMem_of_one_lt_val_slope
+    (ha₁ : W.a₁ ∈ A) (ha₂ : W.a₂ ∈ A) {x₁ x₂ L : F}
+    (hx₁ : x₁ ∈ A) (hx₂ : x₂ ∈ A) (hL : 1 < A.valuation L) :
+    L ^ 2 + W.a₁ * L - W.a₂ - x₁ - x₂ ∉ A := by
+  intro hmem
+  have hL2 : A.valuation L < A.valuation L ^ 2 := by
+    calc A.valuation L = A.valuation L ^ 1 := (pow_one _).symm
+    _ < A.valuation L ^ 2 := pow_lt_pow_right₀ hL (by omega)
+  have hsmall : ∀ {t : F}, t ∈ A → A.valuation t < A.valuation L ^ 2 := fun ht =>
+    lt_of_le_of_lt ((A.valuation_le_one_iff _).mpr ht) (lt_trans hL hL2)
+  have hrest : A.valuation (W.a₁ * L - W.a₂ - x₁ - x₂) < A.valuation (L ^ 2) := by
+    rw [map_pow]
+    refine A.valuation.map_sub_lt (A.valuation.map_sub_lt (A.valuation.map_sub_lt ?_
+      (hsmall ha₂)) (hsmall hx₁)) (hsmall hx₂)
+    rw [map_mul]
+    calc A.valuation W.a₁ * A.valuation L ≤ 1 * A.valuation L :=
+      mul_le_mul_left ((A.valuation_le_one_iff _).mpr ha₁) _
+    _ = A.valuation L := one_mul _
+    _ < A.valuation L ^ 2 := hL2
+  have hvx₃ := (A.valuation_le_one_iff _).mpr hmem
+  rw [show L ^ 2 + W.a₁ * L - W.a₂ - x₁ - x₂
+      = L ^ 2 + (W.a₁ * L - W.a₂ - x₁ - x₂) from by ring,
+    A.valuation.map_add_eq_of_lt_left hrest, map_pow] at hvx₃
+  exact absurd hvx₃ (not_le.mpr (lt_trans hL hL2))
+
+set_option maxHeartbeats 1000000 in
+/-- **The chord–tangent line through kernel points is deep** (the heart of the
+kernel-addition leaf; Silverman *AEC* VII.2.2 computed in the `(z, w) = (x/y, 1/y)`
+chart without formal groups): through two (possibly equal) affine points with
+non-integral abscissae whose sum is affine, the line `Y = L·X + c` of the mathlib
+addition law satisfies `c ≠ 0`, `v L < v c` and `1 < v c`. Proof: on each kernel
+point `v x < v y` (`val_abscissa_lt_val_ordinate`), so `z = x/y` and `w = 1/y` lie in
+the maximal ideal and satisfy the chart equation
+`w + a₁zw + a₃w² = z³ + a₂z²w + a₄zw² + a₆w³`; subtracting the chart equations of the
+two points (resp. implicit differentiation for the tangent) factors the chart slope as
+`B/A` with `A ∈ 1 + 𝔪` a unit and `B ∈ 𝔪`; the line in the chart is `Lz + cw = 1`,
+whose chart slope is `-L/c`, giving `v L < v c`; and `v c > 1` because `Lz₁ + cw₁ = 1`
+could not reach valuation `1` with `v c ≤ 1`. -/
+theorem WeierstrassCurve.kernel_slope_facts {F : Type*} [Field F] [DecidableEq F]
+    (A : ValuationSubring F) (W : WeierstrassCurve F)
+    (ha₁ : W.a₁ ∈ A) (ha₂ : W.a₂ ∈ A) (ha₃ : W.a₃ ∈ A) (ha₄ : W.a₄ ∈ A) (ha₆ : W.a₆ ∈ A)
+    {x₁ y₁ x₂ y₂ L c : F}
+    (hE₁ : W.toAffine.Equation x₁ y₁) (hE₂ : W.toAffine.Equation x₂ y₂)
+    (hx₁ : x₁ ∉ A) (hx₂ : x₂ ∉ A)
+    (hxy : ¬(x₁ = x₂ ∧ y₁ = W.toAffine.negY x₂ y₂))
+    (hL : L = W.toAffine.slope x₁ x₂ y₁ y₂) (hc : c = y₁ - L * x₁) :
+    c ≠ 0 ∧ A.valuation L < A.valuation c ∧ 1 < A.valuation c := by
+  have h2A : (2 : F) ∈ A := by
+    rw [show (2 : F) = 1 + 1 from by norm_num]
+    exact add_mem (one_mem A) (one_mem A)
+  have h3A : (3 : F) ∈ A := by
+    rw [show (3 : F) = 1 + 1 + 1 from by norm_num]
+    exact add_mem (add_mem (one_mem A) (one_mem A)) (one_mem A)
+  -- valuation facts for the first point and its chart coordinates
+  have hvx₁ : 1 < A.valuation x₁ := by rwa [← A.valuation_le_one_iff, not_le] at hx₁
+  have hvxy₁ : A.valuation x₁ < A.valuation y₁ :=
+    W.val_abscissa_lt_val_ordinate A ha₁ ha₂ ha₃ ha₄ ha₆ hE₁ hx₁
+  have hvy₁ : 1 < A.valuation y₁ := lt_trans hvx₁ hvxy₁
+  have hy₁0 : y₁ ≠ 0 := by
+    intro h0
+    rw [h0, map_zero] at hvy₁
+    exact absurd hvy₁ (by simp)
+  have hvy₁0 : (0 : A.ValueGroup) < A.valuation y₁ :=
+    zero_lt_iff.mpr ((Valuation.ne_zero_iff _).mpr hy₁0)
+  set z₁ := x₁ / y₁ with hz₁def
+  set w₁ := 1 / y₁ with hw₁def
+  have hvz₁ : A.valuation z₁ < 1 := by
+    rw [hz₁def, map_div₀]
+    exact (div_lt_one₀ hvy₁0).mpr hvxy₁
+  have hvw₁ : A.valuation w₁ < 1 := by
+    rw [hw₁def, one_div, map_inv₀]
+    exact (inv_lt_one₀ hvy₁0).mpr hvy₁
+  have hz₁A : z₁ ∈ A := (A.valuation_le_one_iff _).mp hvz₁.le
+  have hw₁A : w₁ ∈ A := (A.valuation_le_one_iff _).mp hvw₁.le
+  have hE₁' := (WeierstrassCurve.Affine.equation_iff x₁ y₁).mp hE₁
+  have hzw₁ : w₁ + W.a₁ * z₁ * w₁ + W.a₃ * w₁ ^ 2
+      = z₁ ^ 3 + W.a₂ * z₁ ^ 2 * w₁ + W.a₄ * z₁ * w₁ ^ 2 + W.a₆ * w₁ ^ 3 := by
+    rw [hz₁def, hw₁def]
+    field_simp
+    linear_combination hE₁'
+  -- the line of the addition law passes through the first chart point
+  have hlz₁ : L * z₁ + c * w₁ = 1 := by
+    rw [hz₁def, hw₁def, hc]
+    field_simp
+    ring
+  -- each case produces `c ≠ 0` and `v L < v c`
+  have hmain : c ≠ 0 ∧ A.valuation L < A.valuation c := by
+    by_cases hxx : x₁ = x₂
+    · -- tangent case: the two points coincide
+      subst hxx
+      have hy12 : y₁ = y₂ :=
+        WeierstrassCurve.Affine.Y_eq_of_Y_ne hE₁ hE₂ rfl fun h => hxy ⟨rfl, h⟩
+      subst hy12
+      have hyne : y₁ ≠ W.toAffine.negY x₁ y₁ := fun h => hxy ⟨rfl, h⟩
+      have hD0 : y₁ - W.toAffine.negY x₁ y₁ ≠ 0 := sub_ne_zero.mpr hyne
+      have hDeq : y₁ - W.toAffine.negY x₁ y₁ = 2 * y₁ + W.a₁ * x₁ + W.a₃ := by
+        simp only [WeierstrassCurve.Affine.negY]
+        ring
+      have hslope : L * (2 * y₁ + W.a₁ * x₁ + W.a₃)
+          = 3 * x₁ ^ 2 + 2 * W.a₂ * x₁ + W.a₄ - W.a₁ * y₁ := by
+        rw [hL, WeierstrassCurve.Affine.slope_of_Y_ne rfl hyne, hDeq]
+        exact div_mul_cancel₀ _ (hDeq ▸ hD0)
+      -- the key identity: tangency transported to the chart
+      have hID : L * (y₁ ^ 2 + W.a₁ * x₁ * y₁ + 2 * W.a₃ * y₁ - W.a₂ * x₁ ^ 2
+            - 2 * W.a₄ * x₁ - 3 * W.a₆)
+          = -(c * (3 * x₁ ^ 2 + 2 * W.a₂ * x₁ + W.a₄ - W.a₁ * y₁)) := by
+        rw [hc]
+        linear_combination (3 * L) * hE₁' - y₁ * hslope
+      -- chart forms of the two brackets
+      have hA : y₁ ^ 2 + W.a₁ * x₁ * y₁ + 2 * W.a₃ * y₁ - W.a₂ * x₁ ^ 2
+            - 2 * W.a₄ * x₁ - 3 * W.a₆
+          = y₁ ^ 2 * (1 + (W.a₁ * z₁ + 2 * W.a₃ * w₁ - W.a₂ * z₁ ^ 2
+            - 2 * W.a₄ * (z₁ * w₁) - 3 * W.a₆ * w₁ ^ 2)) := by
+        rw [hz₁def, hw₁def]
+        field_simp
+        ring
+      have hB : 3 * x₁ ^ 2 + 2 * W.a₂ * x₁ + W.a₄ - W.a₁ * y₁
+          = y₁ ^ 2 * (3 * z₁ ^ 2 + 2 * W.a₂ * (z₁ * w₁) + W.a₄ * w₁ ^ 2 - W.a₁ * w₁) := by
+        rw [hz₁def, hw₁def]
+        field_simp
+      -- valuations of the chart brackets
+      have hvA : A.valuation (1 + (W.a₁ * z₁ + 2 * W.a₃ * w₁ - W.a₂ * z₁ ^ 2
+          - 2 * W.a₄ * (z₁ * w₁) - 3 * W.a₆ * w₁ ^ 2)) = 1 := by
+        refine A.valuation.map_one_add_of_lt ?_
+        refine A.valuation.map_sub_lt (A.valuation.map_sub_lt (A.valuation.map_sub_lt
+          (A.valuation.map_add_lt ?_ ?_) ?_) ?_) ?_
+        · exact A.val_mul_lt_one_of_mem_of_lt ha₁ hvz₁
+        · exact A.val_mul_lt_one_of_mem_of_lt (mul_mem h2A ha₃) hvw₁
+        · refine A.val_mul_lt_one_of_mem_of_lt ha₂ ?_
+          rw [map_pow]
+          exact pow_lt_one₀ zero_le hvz₁ (by omega)
+        · exact A.val_mul_lt_one_of_mem_of_lt (mul_mem h2A ha₄)
+            (A.val_mul_lt_one_of_mem_of_lt hz₁A hvw₁)
+        · refine A.val_mul_lt_one_of_mem_of_lt (mul_mem h3A ha₆) ?_
+          rw [map_pow]
+          exact pow_lt_one₀ zero_le hvw₁ (by omega)
+      have hvB : A.valuation (3 * z₁ ^ 2 + 2 * W.a₂ * (z₁ * w₁) + W.a₄ * w₁ ^ 2
+          - W.a₁ * w₁) < 1 := by
+        refine A.valuation.map_sub_lt (A.valuation.map_add_lt (A.valuation.map_add_lt
+          ?_ ?_) ?_) ?_
+        · refine A.val_mul_lt_one_of_mem_of_lt h3A ?_
+          rw [map_pow]
+          exact pow_lt_one₀ zero_le hvz₁ (by omega)
+        · exact A.val_mul_lt_one_of_mem_of_lt (mul_mem h2A ha₂)
+            (A.val_mul_lt_one_of_mem_of_lt hz₁A hvw₁)
+        · refine A.val_mul_lt_one_of_mem_of_lt ha₄ ?_
+          rw [map_pow]
+          exact pow_lt_one₀ zero_le hvw₁ (by omega)
+        · exact A.val_mul_lt_one_of_mem_of_lt ha₁ hvw₁
+      -- `c ≠ 0`: otherwise the tangent identity forces `L = 0`, hence `y₁ = 0`
+      have hc0 : c ≠ 0 := by
+        intro h0
+        rw [h0, zero_mul, neg_zero, mul_eq_zero] at hID
+        rcases hID with hL0 | hA0
+        · rw [hL0, zero_mul, sub_zero] at hc
+          exact hy₁0 (hc.symm.trans h0)
+        · have := congrArg A.valuation hA0
+          rw [hA, map_zero, map_mul, hvA, mul_one] at this
+          exact (Valuation.ne_zero_iff _).mpr (pow_ne_zero 2 hy₁0) this
+      -- `v L < v c` from the valuations of the identity
+      refine ⟨hc0, ?_⟩
+      set vB := A.valuation (3 * z₁ ^ 2 + 2 * W.a₂ * (z₁ * w₁) + W.a₄ * w₁ ^ 2
+        - W.a₁ * w₁) with hvBdef
+      have hY0 : A.valuation (y₁ ^ 2) ≠ 0 :=
+        (Valuation.ne_zero_iff _).mpr (pow_ne_zero 2 hy₁0)
+      have hkeyv := congrArg A.valuation hID
+      rw [Valuation.map_neg, map_mul, map_mul, hA, hB, map_mul, map_mul, hvA,
+        mul_one, ← hvBdef] at hkeyv
+      have hLeq : A.valuation L = A.valuation c * vB := by
+        apply mul_right_cancel₀ hY0
+        rw [hkeyv, mul_assoc, mul_comm vB]
+      have hvc0 : A.valuation c ≠ 0 := (Valuation.ne_zero_iff _).mpr hc0
+      rw [hLeq]
+      refine lt_of_le_of_ne (mul_le_of_le_one_right' hvB.le) fun h => hvB.ne ?_
+      exact mul_left_cancel₀ hvc0 (h.trans (mul_one _).symm)
+    · -- chord case: the two points are distinct in abscissa
+      have hvx₂' : 1 < A.valuation x₂ := by rwa [← A.valuation_le_one_iff, not_le] at hx₂
+      have hvxy₂ : A.valuation x₂ < A.valuation y₂ :=
+        W.val_abscissa_lt_val_ordinate A ha₁ ha₂ ha₃ ha₄ ha₆ hE₂ hx₂
+      have hvy₂ : 1 < A.valuation y₂ := lt_trans hvx₂' hvxy₂
+      have hy₂0 : y₂ ≠ 0 := by
+        intro h0
+        rw [h0, map_zero] at hvy₂
+        exact absurd hvy₂ (by simp)
+      have hvy₂0 : (0 : A.ValueGroup) < A.valuation y₂ :=
+        zero_lt_iff.mpr ((Valuation.ne_zero_iff _).mpr hy₂0)
+      set z₂ := x₂ / y₂ with hz₂def
+      set w₂ := 1 / y₂ with hw₂def
+      have hvz₂ : A.valuation z₂ < 1 := by
+        rw [hz₂def, map_div₀]
+        exact (div_lt_one₀ hvy₂0).mpr hvxy₂
+      have hvw₂ : A.valuation w₂ < 1 := by
+        rw [hw₂def, one_div, map_inv₀]
+        exact (inv_lt_one₀ hvy₂0).mpr hvy₂
+      have hz₂A : z₂ ∈ A := (A.valuation_le_one_iff _).mp hvz₂.le
+      have hw₂A : w₂ ∈ A := (A.valuation_le_one_iff _).mp hvw₂.le
+      have hE₂' := (WeierstrassCurve.Affine.equation_iff x₂ y₂).mp hE₂
+      have hzw₂ : w₂ + W.a₁ * z₂ * w₂ + W.a₃ * w₂ ^ 2
+          = z₂ ^ 3 + W.a₂ * z₂ ^ 2 * w₂ + W.a₄ * z₂ * w₂ ^ 2 + W.a₆ * w₂ ^ 3 := by
+        rw [hz₂def, hw₂def]
+        field_simp
+        linear_combination hE₂'
+      -- subtracting the chart equations factors the chart chord
+      have hkey : (w₂ - w₁) * (1 + (W.a₁ * z₂ + W.a₃ * (w₂ + w₁) - W.a₂ * z₂ ^ 2
+            - W.a₄ * (z₂ * (w₂ + w₁)) - W.a₆ * (w₂ ^ 2 + w₂ * w₁ + w₁ ^ 2)))
+          = (z₂ - z₁) * ((z₂ ^ 2 + z₂ * z₁ + z₁ ^ 2) + W.a₂ * (w₁ * (z₂ + z₁))
+            + W.a₄ * w₁ ^ 2 - W.a₁ * w₁) := by
+        linear_combination hzw₂ - hzw₁
+      have hvA : A.valuation (1 + (W.a₁ * z₂ + W.a₃ * (w₂ + w₁) - W.a₂ * z₂ ^ 2
+          - W.a₄ * (z₂ * (w₂ + w₁)) - W.a₆ * (w₂ ^ 2 + w₂ * w₁ + w₁ ^ 2))) = 1 := by
+        refine A.valuation.map_one_add_of_lt ?_
+        have hww : A.valuation (w₂ + w₁) < 1 := A.valuation.map_add_lt hvw₂ hvw₁
+        refine A.valuation.map_sub_lt (A.valuation.map_sub_lt (A.valuation.map_sub_lt
+          (A.valuation.map_add_lt ?_ ?_) ?_) ?_) ?_
+        · exact A.val_mul_lt_one_of_mem_of_lt ha₁ hvz₂
+        · exact A.val_mul_lt_one_of_mem_of_lt ha₃ hww
+        · refine A.val_mul_lt_one_of_mem_of_lt ha₂ ?_
+          rw [map_pow]
+          exact pow_lt_one₀ zero_le hvz₂ (by omega)
+        · exact A.val_mul_lt_one_of_mem_of_lt ha₄
+            (A.val_mul_lt_one_of_mem_of_lt hz₂A hww)
+        · refine A.val_mul_lt_one_of_mem_of_lt ha₆ ?_
+          refine A.valuation.map_add_lt (A.valuation.map_add_lt ?_ ?_) ?_
+          · rw [map_pow]
+            exact pow_lt_one₀ zero_le hvw₂ (by omega)
+          · exact A.val_mul_lt_one_of_mem_of_lt hw₂A hvw₁
+          · rw [map_pow]
+            exact pow_lt_one₀ zero_le hvw₁ (by omega)
+      have hvB : A.valuation ((z₂ ^ 2 + z₂ * z₁ + z₁ ^ 2) + W.a₂ * (w₁ * (z₂ + z₁))
+          + W.a₄ * w₁ ^ 2 - W.a₁ * w₁) < 1 := by
+        refine A.valuation.map_sub_lt (A.valuation.map_add_lt (A.valuation.map_add_lt
+          (A.valuation.map_add_lt (A.valuation.map_add_lt ?_ ?_) ?_) ?_) ?_) ?_
+        · rw [map_pow]
+          exact pow_lt_one₀ zero_le hvz₂ (by omega)
+        · exact A.val_mul_lt_one_of_mem_of_lt hz₂A hvz₁
+        · rw [map_pow]
+          exact pow_lt_one₀ zero_le hvz₁ (by omega)
+        · exact A.val_mul_lt_one_of_mem_of_lt ha₂
+            (A.val_mul_lt_one_of_mem_of_lt hw₁A (A.valuation.map_add_lt hvz₂ hvz₁))
+        · refine A.val_mul_lt_one_of_mem_of_lt ha₄ ?_
+          rw [map_pow]
+          exact pow_lt_one₀ zero_le hvw₁ (by omega)
+        · exact A.val_mul_lt_one_of_mem_of_lt ha₁ hvw₁
+      -- the unit bracket is nonzero
+      have hA0 : (1 + (W.a₁ * z₂ + W.a₃ * (w₂ + w₁) - W.a₂ * z₂ ^ 2
+          - W.a₄ * (z₂ * (w₂ + w₁)) - W.a₆ * (w₂ ^ 2 + w₂ * w₁ + w₁ ^ 2))) ≠ 0 := by
+        intro h0
+        rw [h0, map_zero] at hvA
+        exact zero_ne_one hvA
+      -- distinct kernel points have distinct chart abscissae
+      have hzne : z₁ ≠ z₂ := by
+        intro hzeq
+        have hz0 : z₂ - z₁ = 0 := by rw [hzeq, sub_self]
+        rw [hz0, zero_mul, mul_eq_zero] at hkey
+        have hw12 : w₂ = w₁ := sub_eq_zero.mp (hkey.resolve_right hA0)
+        have hy12 : y₁ = y₂ := by
+          rw [hw₂def, hw₁def, one_div, one_div] at hw12
+          exact (inv_injective hw12).symm
+        apply hxx
+        have := congrArg (· * y₁) hzeq
+        simp only [hz₁def, hz₂def, ← hy12] at this
+        rwa [div_mul_cancel₀ _ hy₁0, div_mul_cancel₀ _ hy₁0] at this
+      -- the line passes through the second chart point
+      have hline₂ : y₂ = L * x₂ + c := by
+        rw [hc, hL, WeierstrassCurve.Affine.slope_of_X_ne hxx]
+        field_simp
+        ring
+      have hlz₂ : L * z₂ + c * w₂ = 1 := by
+        rw [hz₂def, hw₂def]
+        field_simp
+        linear_combination -hline₂
+      -- `c ≠ 0`: otherwise the line goes through the chart origin and `z₁ = z₂`
+      have hc0 : c ≠ 0 := by
+        intro h0
+        rw [h0, zero_mul, add_zero] at hlz₁ hlz₂
+        exact hzne (mul_left_cancel₀ (left_ne_zero_of_mul_eq_one hlz₁)
+          (hlz₁.trans hlz₂.symm))
+      refine ⟨hc0, ?_⟩
+      -- the chart slope of the line is `-L/c`, and it equals `B/A`
+      have hμ : L * (z₂ - z₁) = -(c * (w₂ - w₁)) := by
+        linear_combination hlz₂ - hlz₁
+      have h5 : (z₂ - z₁) * (L * (1 + (W.a₁ * z₂ + W.a₃ * (w₂ + w₁) - W.a₂ * z₂ ^ 2
+            - W.a₄ * (z₂ * (w₂ + w₁)) - W.a₆ * (w₂ ^ 2 + w₂ * w₁ + w₁ ^ 2))))
+          = (z₂ - z₁) * (-(c * ((z₂ ^ 2 + z₂ * z₁ + z₁ ^ 2) + W.a₂ * (w₁ * (z₂ + z₁))
+            + W.a₄ * w₁ ^ 2 - W.a₁ * w₁))) := by
+        linear_combination (1 + (W.a₁ * z₂ + W.a₃ * (w₂ + w₁) - W.a₂ * z₂ ^ 2
+            - W.a₄ * (z₂ * (w₂ + w₁)) - W.a₆ * (w₂ ^ 2 + w₂ * w₁ + w₁ ^ 2))) * hμ
+          - c * hkey
+      have hLA := mul_left_cancel₀ (sub_ne_zero.mpr fun h => hzne h.symm) h5
+      have hkeyv := congrArg A.valuation hLA
+      rw [Valuation.map_neg, map_mul, map_mul, hvA, mul_one] at hkeyv
+      have hvc0 : A.valuation c ≠ 0 := (Valuation.ne_zero_iff _).mpr hc0
+      rw [hkeyv]
+      refine lt_of_le_of_ne (mul_le_of_le_one_right' hvB.le) fun h => hvB.ne ?_
+      exact mul_left_cancel₀ hvc0 (h.trans (mul_one _).symm)
+  -- shared ending: `1 < v c` from the line through the first chart point
+  obtain ⟨hc0, hvLc⟩ := hmain
+  refine ⟨hc0, hvLc, ?_⟩
+  by_contra hle
+  rw [not_lt] at hle
+  have h1 : A.valuation (L * z₁) < 1 := by
+    rw [map_mul]
+    calc A.valuation L * A.valuation z₁ ≤ A.valuation L * 1 :=
+      mul_le_mul_right hvz₁.le _
+    _ = A.valuation L := mul_one _
+    _ < A.valuation c := hvLc
+    _ ≤ 1 := hle
+  have h2 : A.valuation (c * w₁) < 1 :=
+    A.val_mul_lt_one_of_mem_of_lt ((A.valuation_le_one_iff _).mp hle) hvw₁
+  have h3 := A.valuation.map_add_lt h1 h2
+  rw [hlz₁, map_one] at h3
+  exact absurd h3 (lt_irrefl _)
+
+end KernelValuationHelpers
+
 -- let R be a discrete valuation ring with field of fractions K
 variable (R : Type u) [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
 variable (K : Type*) [Field K] [Algebra R K] [IsFractionRing R K]
@@ -214,18 +680,40 @@ two descent leaves (`exists_torsion_etale_package_over_fractionField`,
 `torsion_flat_of_inertia_fixes_prolong`).
 -/
 
-/-- **The kernel of reduction is closed under addition, abscissa form** (sorry node;
-Silverman *AEC* VII.2.2 in coordinates, characteristic-free and torsion-free): on the
-minimal model, if two affine points of `E(Kˢᵉᵖ)` both have non-integral abscissa over a
-valuation subring `𝒪` of `Kˢᵉᵖ` above `R`, then any affine value of their sum again has
-non-integral abscissa. Intended proof: `xᵢ ∉ 𝒪` forces `v(xᵢ) < 0`, and on the curve
-`2 v(yᵢ) = 3 v(xᵢ)` (once `v(x) < 0` and the `aᵢ` are integral, the dominant terms of
-the Weierstrass equation are `y²` and `x³`), so both points lie in the formal-group
-chart `zᵢ = -xᵢ/yᵢ` with `v(zᵢ) = -v(xᵢ)/2... > 0`; the formal group law
-`z₃ = z₁ + z₂ + (higher order, integral coefficients)` gives
-`v(z₃) ≥ min (v(z₁)) (v(z₂)) > 0`, and `v(x₃) = -2 v(z₃) < 0`. Alternatively, direct
-chord/tangent slope bookkeeping on the addition formulas avoids introducing the formal
-group law. -/
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] [IsSepClosure K Ksep] [DecidableEq Ksep] in
+/-- **The base-changed minimal model has integral coefficients** over any valuation
+subring of `Kˢᵉᵖ` above `R` (glue for the two kernel-of-reduction leaves): the
+coefficients of `E` come from the integral model over `R`, and `h𝒪` pulls the image of
+`R` into `𝒪`. -/
+theorem WeierstrassCurve.baseChange_coeff_mem
+    (𝒪 : ValuationSubring Ksep)
+    (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range) :
+    (E⁄Ksep).a₁ ∈ 𝒪 ∧ (E⁄Ksep).a₂ ∈ 𝒪 ∧ (E⁄Ksep).a₃ ∈ 𝒪 ∧ (E⁄Ksep).a₄ ∈ 𝒪 ∧
+      (E⁄Ksep).a₆ ∈ 𝒪 := by
+  haveI : E.IsIntegral R := inferInstance
+  have hamem : ∀ z : R, algebraMap K Ksep (algebraMap R K z) ∈ 𝒪 := by
+    intro z
+    have hmem : algebraMap R K z ∈ (algebraMap R K).range := ⟨_, rfl⟩
+    rw [← h𝒪] at hmem
+    exact hmem
+  have hEeq : ((E.integralModel R)⁄K) = E :=
+    WeierstrassCurve.baseChange_integralModel_eq R E
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;>
+    (rw [show (E⁄Ksep) = (((E.integralModel R)⁄K)⁄Ksep) from by rw [hEeq]]; exact hamem _)
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The kernel of reduction is closed under addition, abscissa form** (PROVEN
+2026-07-22; Silverman *AEC* VII.2.2 in coordinates, characteristic-free and
+torsion-free, no formal groups): on the minimal model, if two affine points of
+`E(Kˢᵉᵖ)` both have non-integral abscissa over a valuation subring `𝒪` of `Kˢᵉᵖ` above
+`R`, then any affine value of their sum again has non-integral abscissa. Proof: `xᵢ ∉ 𝒪`
+forces `v yᵢ > v xᵢ > 1` (`val_abscissa_lt_val_ordinate`), so both points lie in the
+chart `(z, w) = (x/y, 1/y)` with `z, w` in the maximal ideal; the chord–tangent line
+`Y = LX + c` of the addition law then has `v L < v c` and `v c > 1`
+(`kernel_slope_facts`), and the third intersection ordinate `L(x₃ - x₁) + y₁ = Lx₃ + c`
+on the curve over an integral `x₃` would contradict `v c > 1`
+(`abscissa_notMem_of_line_deep`). -/
 theorem WeierstrassCurve.kernel_add_abscissa_notMem
     (𝒪 : ValuationSubring Ksep)
     (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
@@ -236,8 +724,166 @@ theorem WeierstrassCurve.kernel_add_abscissa_notMem
     (hx₁ : x₁ ∉ 𝒪) (hx₂ : x₂ ∉ 𝒪)
     (hadd : (Affine.Point.some x₁ y₁ h₁ : (E⁄Ksep).Point) +
       Affine.Point.some x₂ y₂ h₂ = Affine.Point.some x₃ y₃ h₃) :
-    x₃ ∉ 𝒪 :=
-  sorry
+    x₃ ∉ 𝒪 := by
+  classical
+  obtain ⟨ha₁, ha₂, ha₃, ha₄, ha₆⟩ :=
+    WeierstrassCurve.baseChange_coeff_mem R K E Ksep 𝒪 h𝒪
+  -- the sum is affine, so it is computed by the slope formulas
+  have hxy : ¬(x₁ = x₂ ∧ y₁ = (E⁄Ksep).toAffine.negY x₂ y₂) := by
+    rintro ⟨hx, hy⟩
+    rw [Affine.Point.add_of_Y_eq hx hy] at hadd
+    exact Affine.Point.some_ne_zero h₃ hadd.symm
+  rw [Affine.Point.add_some hxy] at hadd
+  injection hadd with hX hY
+  set L := (E⁄Ksep).toAffine.slope x₁ x₂ y₁ y₂ with hLdef
+  -- the negated-sum ordinate lies on the curve over `x₃`
+  have hE₃ : (E⁄Ksep).toAffine.Equation x₃ (L * (x₃ - x₁) + y₁) := by
+    have h0 := WeierstrassCurve.Affine.equation_negAdd h₁.1 h₂.1 hxy
+    simp only [WeierstrassCurve.Affine.negAddY] at h0
+    rw [← hLdef, hX] at h0
+    exact h0
+  -- the line of the addition law is deep
+  obtain ⟨hc0, hvLc, hvc⟩ := WeierstrassCurve.kernel_slope_facts 𝒪 (E⁄Ksep)
+    ha₁ ha₂ ha₃ ha₄ ha₆ h₁.1 h₂.1 hx₁ hx₂ hxy hLdef rfl
+  have hE₃' : (E⁄Ksep).toAffine.Equation x₃ (L * x₃ + (y₁ - L * x₁)) := by
+    rwa [show L * (x₃ - x₁) + y₁ = L * x₃ + (y₁ - L * x₁) from by ring] at hE₃
+  exact WeierstrassCurve.abscissa_notMem_of_line_deep 𝒪 (E⁄Ksep)
+    ha₁ ha₂ ha₃ ha₄ ha₆ hE₃' hvLc hvc
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **The tangent numerator is a unit where `ψ₂` degenerates** (glue for the
+congruent-points leaf, the good-reduction input): for an integral point of the
+base-changed minimal model whose `ψ₂ = 2y + a₁x + a₃` falls into the maximal ideal of
+`𝒪`, the other partial derivative `3x² + 2a₂x + a₄ - a₁y` is a unit of `𝒪` — otherwise
+the residues `(x̄, ȳ)` would be a singular point of the reduced curve, which good
+reduction (`Δ̄ ≠ 0`, through `hasGoodReduction_iff_isElliptic_reduction`) forbids. -/
+theorem WeierstrassCurve.val_tangent_numerator_eq_one
+    (𝒪 : ValuationSubring Ksep)
+    (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    {x y : Ksep} (hx : x ∈ 𝒪) (hy : y ∈ 𝒪)
+    (hE : (E⁄Ksep).toAffine.Equation x y)
+    (hψ : 𝒪.valuation (2 * y + (E⁄Ksep).a₁ * x + (E⁄Ksep).a₃) < 1) :
+    𝒪.valuation (3 * x ^ 2 + 2 * (E⁄Ksep).a₂ * x + (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y)
+      = 1 := by
+  classical
+  haveI : E.IsIntegral R := inferInstance
+  set φ := WeierstrassCurve.RtoO R K Ksep 𝒪 h𝒪 with hφdef
+  set ψm := IsLocalRing.ResidueField.map φ with hψmdef
+  set Ered := (E.reduction R).map ψm with hEreddef
+  haveI hredell : (E.reduction R).IsElliptic :=
+    (WeierstrassCurve.hasGoodReduction_iff_isElliptic_reduction R).mp inferInstance
+  haveI : Ered.IsElliptic := inferInstanceAs (((E.reduction R).map ψm).IsElliptic)
+  have hEeq : ((E.integralModel R)⁄K) = E :=
+    WeierstrassCurve.baseChange_integralModel_eq R E
+  -- identification of the coefficients, on both sides of `𝒪`
+  have hcoe : ∀ r : R, ((φ r : 𝒪) : Ksep) = algebraMap K Ksep (algebraMap R K r) :=
+    fun r => WeierstrassCurve.RtoO_coe R K Ksep 𝒪 h𝒪 r
+  have hered : ∀ r : R, IsLocalRing.residue 𝒪 (φ r) = ψm (IsLocalRing.residue R r) :=
+    fun r => (IsLocalRing.ResidueField.map_residue φ r).symm
+  have hcoe₁ : ((φ ((E.integralModel R).a₁) : 𝒪) : Ksep) = (E⁄Ksep).a₁ := by
+    rw [hcoe, show (E⁄Ksep) = (((E.integralModel R)⁄K)⁄Ksep) from by rw [hEeq]]
+    rfl
+  have hcoe₂ : ((φ ((E.integralModel R).a₂) : 𝒪) : Ksep) = (E⁄Ksep).a₂ := by
+    rw [hcoe, show (E⁄Ksep) = (((E.integralModel R)⁄K)⁄Ksep) from by rw [hEeq]]
+    rfl
+  have hcoe₃ : ((φ ((E.integralModel R).a₃) : 𝒪) : Ksep) = (E⁄Ksep).a₃ := by
+    rw [hcoe, show (E⁄Ksep) = (((E.integralModel R)⁄K)⁄Ksep) from by rw [hEeq]]
+    rfl
+  have hcoe₄ : ((φ ((E.integralModel R).a₄) : 𝒪) : Ksep) = (E⁄Ksep).a₄ := by
+    rw [hcoe, show (E⁄Ksep) = (((E.integralModel R)⁄K)⁄Ksep) from by rw [hEeq]]
+    rfl
+  have hcoe₆ : ((φ ((E.integralModel R).a₆) : 𝒪) : Ksep) = (E⁄Ksep).a₆ := by
+    rw [hcoe, show (E⁄Ksep) = (((E.integralModel R)⁄K)⁄Ksep) from by rw [hEeq]]
+    rfl
+  have hEreda₁ : Ered.a₁ = IsLocalRing.residue 𝒪 (φ ((E.integralModel R).a₁)) := by
+    rw [hered]; rfl
+  have hEreda₂ : Ered.a₂ = IsLocalRing.residue 𝒪 (φ ((E.integralModel R).a₂)) := by
+    rw [hered]; rfl
+  have hEreda₃ : Ered.a₃ = IsLocalRing.residue 𝒪 (φ ((E.integralModel R).a₃)) := by
+    rw [hered]; rfl
+  have hEreda₄ : Ered.a₄ = IsLocalRing.residue 𝒪 (φ ((E.integralModel R).a₄)) := by
+    rw [hered]; rfl
+  have hEreda₆ : Ered.a₆ = IsLocalRing.residue 𝒪 (φ ((E.integralModel R).a₆)) := by
+    rw [hered]; rfl
+  -- the `𝒪`-integral model of the point satisfies the `𝒪`-level equation
+  have hE' := (WeierstrassCurve.Affine.equation_iff x y).mp hE
+  have hEO : (⟨y, hy⟩ : 𝒪) ^ 2 + φ ((E.integralModel R).a₁) * ⟨x, hx⟩ * ⟨y, hy⟩
+        + φ ((E.integralModel R).a₃) * ⟨y, hy⟩
+      = (⟨x, hx⟩ : 𝒪) ^ 3 + φ ((E.integralModel R).a₂) * ⟨x, hx⟩ ^ 2
+        + φ ((E.integralModel R).a₄) * ⟨x, hx⟩ + φ ((E.integralModel R).a₆) := by
+    apply Subtype.ext
+    push_cast
+    rw [hcoe₁, hcoe₂, hcoe₃, hcoe₄, hcoe₆]
+    exact hE'
+  -- hence the residues satisfy the reduced curve's equation, which is nonsingular
+  have hEredEq : Ered.toAffine.Equation (IsLocalRing.residue 𝒪 ⟨x, hx⟩)
+      (IsLocalRing.residue 𝒪 ⟨y, hy⟩) := by
+    rw [WeierstrassCurve.Affine.equation_iff, hEreda₁, hEreda₂, hEreda₃, hEreda₄,
+      hEreda₆]
+    have hres := congrArg (IsLocalRing.residue 𝒪) hEO
+    simpa only [map_add, map_mul, map_pow] using hres
+  have hns : Ered.toAffine.Nonsingular (IsLocalRing.residue 𝒪 ⟨x, hx⟩)
+      (IsLocalRing.residue 𝒪 ⟨y, hy⟩) :=
+    WeierstrassCurve.Affine.equation_iff_nonsingular.mp hEredEq
+  -- the `ψ₂`-partial vanishes at the residues
+  have hψO : (2 * ⟨y, hy⟩ + φ ((E.integralModel R).a₁) * ⟨x, hx⟩
+      + φ ((E.integralModel R).a₃) : 𝒪) ∈ IsLocalRing.maximalIdeal 𝒪 := by
+    rw [ValuationSubring.valuation_lt_one_iff]
+    have hc : ((2 * ⟨y, hy⟩ + φ ((E.integralModel R).a₁) * ⟨x, hx⟩
+        + φ ((E.integralModel R).a₃) : 𝒪) : Ksep)
+        = 2 * y + (E⁄Ksep).a₁ * x + (E⁄Ksep).a₃ := by
+      push_cast
+      rw [hcoe₁, hcoe₃]
+      norm_cast
+    rw [hc]
+    exact hψ
+  have hψres : IsLocalRing.residue 𝒪 (2 * ⟨y, hy⟩ + φ ((E.integralModel R).a₁) * ⟨x, hx⟩
+      + φ ((E.integralModel R).a₃) : 𝒪) = 0 :=
+    Ideal.Quotient.eq_zero_iff_mem.mpr hψO
+  -- so the `X`-partial cannot also vanish there
+  obtain ⟨-, hdisj⟩ := (WeierstrassCurve.Affine.nonsingular_iff' _ _).mp hns
+  have hXne : Ered.a₁ * IsLocalRing.residue 𝒪 ⟨y, hy⟩
+      - (3 * IsLocalRing.residue 𝒪 ⟨x, hx⟩ ^ 2
+        + 2 * Ered.a₂ * IsLocalRing.residue 𝒪 ⟨x, hx⟩ + Ered.a₄) ≠ 0 := by
+    refine hdisj.resolve_right fun hYne => hYne ?_
+    rw [hEreda₁, hEreda₃]
+    calc 2 * IsLocalRing.residue 𝒪 ⟨y, hy⟩
+          + IsLocalRing.residue 𝒪 (φ ((E.integralModel R).a₁))
+            * IsLocalRing.residue 𝒪 ⟨x, hx⟩
+          + IsLocalRing.residue 𝒪 (φ ((E.integralModel R).a₃))
+        = IsLocalRing.residue 𝒪 (2 * ⟨y, hy⟩ + φ ((E.integralModel R).a₁) * ⟨x, hx⟩
+            + φ ((E.integralModel R).a₃) : 𝒪) := by
+          simp only [map_add, map_mul, map_ofNat]
+      _ = 0 := hψres
+  -- the tangent numerator is integral with nonzero residue, hence a unit
+  have hNres : IsLocalRing.residue 𝒪 (3 * ⟨x, hx⟩ ^ 2
+      + 2 * φ ((E.integralModel R).a₂) * ⟨x, hx⟩ + φ ((E.integralModel R).a₄)
+      - φ ((E.integralModel R).a₁) * ⟨y, hy⟩ : 𝒪) ≠ 0 := by
+    intro h0
+    apply hXne
+    have hexp : IsLocalRing.residue 𝒪 (3 * ⟨x, hx⟩ ^ 2
+        + 2 * φ ((E.integralModel R).a₂) * ⟨x, hx⟩ + φ ((E.integralModel R).a₄)
+        - φ ((E.integralModel R).a₁) * ⟨y, hy⟩ : 𝒪)
+        = 3 * IsLocalRing.residue 𝒪 ⟨x, hx⟩ ^ 2
+          + 2 * Ered.a₂ * IsLocalRing.residue 𝒪 ⟨x, hx⟩ + Ered.a₄
+          - Ered.a₁ * IsLocalRing.residue 𝒪 ⟨y, hy⟩ := by
+      rw [hEreda₁, hEreda₂, hEreda₄]
+      simp only [map_add, map_sub, map_mul, map_pow, map_ofNat]
+    linear_combination hexp - h0
+  have hNnotmem : (3 * ⟨x, hx⟩ ^ 2 + 2 * φ ((E.integralModel R).a₂) * ⟨x, hx⟩
+      + φ ((E.integralModel R).a₄) - φ ((E.integralModel R).a₁) * ⟨y, hy⟩ : 𝒪)
+      ∉ IsLocalRing.maximalIdeal 𝒪 :=
+    fun hmem => hNres (Ideal.Quotient.eq_zero_iff_mem.mpr hmem)
+  have hNcoe : ((3 * ⟨x, hx⟩ ^ 2 + 2 * φ ((E.integralModel R).a₂) * ⟨x, hx⟩
+      + φ ((E.integralModel R).a₄) - φ ((E.integralModel R).a₁) * ⟨y, hy⟩ : 𝒪) : Ksep)
+      = 3 * x ^ 2 + 2 * (E⁄Ksep).a₂ * x + (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y := by
+    push_cast
+    rw [hcoe₁, hcoe₂, hcoe₄]
+    norm_cast
+  rw [← hNcoe]
+  refine le_antisymm ((𝒪.valuation_le_one_iff _).mpr (Subtype.mem _)) (not_lt.mp ?_)
+  exact fun hlt => hNnotmem ((ValuationSubring.valuation_lt_one_iff 𝒪 _).mpr hlt)
 
 /-- **Congruent distinct integral points differ by a kernel element** (sorry node;
 Silverman *AEC* VII.2.1-2 in coordinates, characteristic-free and torsion-free): on the
