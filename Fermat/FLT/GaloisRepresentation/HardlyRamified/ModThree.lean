@@ -24,6 +24,13 @@ import Mathlib.LinearAlgebra.Complex.FiniteDimensional
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 import Mathlib.LinearAlgebra.Eigenspace.Zero
 import Mathlib.RingTheory.RootsOfUnity.AlgebraicallyClosed
+-- The number-field vocabulary (`NumberField.discr`,
+-- `NumberField.IsTotallyComplex`) of the root-discriminant skeleton
+-- for the exceptional Serre-elimination cases.
+public import Mathlib.NumberTheory.NumberField.Discriminant.Basic
+public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
+-- `LinearMap.trace`, for the trace-zero interface of the dihedral case.
+public import Mathlib.LinearAlgebra.Trace
 
 /-!
 # Mod-3 hardly ramified representations
@@ -911,17 +918,214 @@ theorem serre_elimination_semidirect {k : Type u} [Finite k] [Field k]
       rw [finrank_top, hfr2] at hWfr
       omega
 
-/-- **The Serre/Tate elimination, dihedral case** (sorry node): the
-projective image of an absolutely irreducible mod-3 hardly ramified
-representation cannot be dihedral. Content: a dihedral projective
-image means `ρ` is induced from a character of the absolute Galois
-group of a quadratic field `K` cut out by the composite
-`Γ ℚ → D_n → ℤ/2`; `K` is ramified only in `{2, 3}` (so
-`K = ℚ(√d)`, `d ∈ {-1, ±2, ±3, ±6}`), and the hardly-ramified local
-constraints (flat at `3`, tame quadratic quotient at `2`, cyclotomic
-determinant) bound the conductor of the inducing character so tightly
-that the relevant ray class groups are too small to support it
-(Serre, Duke 1987, §5.4 and the analogous 2-adic argument of Tate). -/
+/-- **The hardly ramified number field** (sorry node — the
+field-cutting and ramification-bound content of the Serre/Tate
+elimination, stated 2026-07-22): an absolutely irreducible mod-3
+hardly ramified representation whose projective image is one of the
+five exceptional Dickson groups (`A₄`, `S₄`, `A₅`, `PSL₂(𝔽_{3^m})`,
+`PGL₂(𝔽_{3^m})`) cuts out a number field `K` (the fixed field of
+`ker ρ` inside `ℚᵃˡᵍ`) that is totally complex, has degree `≥ 48`,
+and has root discriminant at most `2^{2/3}·3^{3/2} = 314928^{1/6} =
+8.2497…`, stated integrally as `|d_K|⁶ ≤ 314928^{[K:ℚ]}`.
+
+Content of the individual conclusions:
+* *Field*: `ker ρ` is open (`ρ` is continuous with finite image since
+  `V` is finite), so its fixed field is a finite Galois extension of
+  `ℚ` with group `≃ ρ.range`, of degree `Nat.card ρ.range`.
+* *Totally complex*: complex conjugation acts with determinant
+  `χ₃(c) = −1 ≠ 1` (`2 ≠ 0` in char `3`), hence nontrivially.
+* *Degree `≥ 48`*: `det ρ = χ₃` has image exactly `{±1}` (order `2`),
+  so `|ρ.range| = 2·|ρ.range ∩ SL(V)|`, and
+  `ρ.range ∩ SL(V)` surjects projectively onto a subgroup of index
+  `≤ 2` of `π.range`; in each of the five exceptional cases that
+  subgroup has even order `≥ 12` (`A₄`, `A₅`, `PSL₂` have no index-2
+  subgroup; `S₄`, `PGL₂` retract at worst onto `A₄`, `PSL₂`), so by
+  Cauchy and the uniqueness of the involution `−1` of `SL₂` in odd
+  characteristic the intersection contains `−1` and has cardinality
+  `≥ 2·12`; hence `|ρ.range| ≥ 2·2·12 = 48`.
+* *Root discriminant*: at a prime `p ∉ {2,3}` the representation is
+  unramified (`hρ.isUnramified`); at `2` the inertia acts through the
+  unipotent upper-triangular subgroup (the quotient character `δ` is
+  unramified and `χ₃` is unramified at `2`), and the tame quotient of
+  the local inertia is procyclic, so the inertia image at `2` is
+  cyclic of order `1` or `3` and tame, giving a local different
+  exponent `≤ (e−1)/e ≤ 2/3` per unit degree; at `3` flatness
+  (`hρ.isFlat`) prolongs the local representation to a finite flat
+  group scheme over `ℤ₃` killed by `3`, and Fontaine's ramification
+  bound (the upper-numbering ramification of `ℚ₃(V)/ℚ₃` vanishes
+  above `1 + 1/(3−1) = 3/2`) gives a different exponent `≤ 3/2` per
+  unit degree — attained by the peu-ramifié case `ℚ₃(ζ₃, u^{1/3})`,
+  which is why the bound is stated with `≤`. Multiplying,
+  `|d_K| ≤ (2^{2/3}·3^{3/2})^{[K:ℚ]}`, i.e. the stated sixth-power
+  form. (Fontaine, *Il n'y a pas de variété abélienne sur ℤ*, Invent.
+  Math. 81 (1985); Serre's and Tate's letters on mod-3/mod-2
+  representations unramified outside small sets; Moon–Taguchi,
+  *Refinement of Tate's discriminant bound…*, Doc. Math. 2003.) -/
+theorem exists_hardlyRamified_number_field {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (habs : Slop.OddRep.IsAbsolutelyIrreducible
+      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V))
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (π : Γ ℚ →* Dickson.PGL 3)
+    (hπ : ∀ g, π g = QuotientGroup.mk (u g))
+    (hcase :
+      (Nonempty (π.range ≃* alternatingGroup (Fin 4))) ∨
+      (Nonempty (π.range ≃* Equiv.Perm (Fin 4))) ∨
+      (Nonempty (π.range ≃* alternatingGroup (Fin 5))) ∨
+      (∃ m : ℕ, m ≥ 1 ∧ Nonempty (π.range ≃*
+        Matrix.ProjectiveSpecialLinearGroup (Fin 2) (GaloisField 3 m))) ∨
+      (∃ m : ℕ, m ≥ 1 ∧ Nonempty (π.range ≃*
+        (GL (Fin 2) (GaloisField 3 m) ⧸
+          Subgroup.center (GL (Fin 2) (GaloisField 3 m)))))) :
+    ∃ (K : IntermediateField ℚ (AlgebraicClosure ℚ)) (_ : NumberField K),
+      NumberField.IsTotallyComplex K ∧
+      48 ≤ Module.finrank ℚ K ∧
+      |NumberField.discr K| ^ 6 ≤ 314928 ^ Module.finrank ℚ K :=
+  sorry
+
+/-- **The Odlyzko discriminant bound** (sorry node — the analytic
+input of the Serre/Tate elimination, stated 2026-07-22): a totally
+complex number field of degree `n ≥ 48` has root discriminant
+strictly greater than `2^{2/3}·3^{3/2} = 314928^{1/6} = 8.2497…`,
+stated integrally as `314928^n < |d_K|⁶`.
+
+This is Odlyzko's unconditional discriminant bound (A. M. Odlyzko,
+*Lower bounds for discriminants of number fields*, Acta Arith. 29
+(1976); tables in *Bounds for discriminants and related estimates for
+class numbers, regulators and zeros of zeta functions: a survey of
+recent results*, Sém. Théor. Nombres Bordeaux 2 (1990), 119–141): for
+totally complex fields the unconditional lower bound on the root
+discriminant is increasing in the degree, exceeds `10.3` at degree
+`48`, and tends to `4πe^γ = 22.38…`; only the (weaker) threshold
+`> 314928^{1/6} = 8.2497…` at every degree `≥ 48` is asserted here.
+(Minkowski's bound alone, asymptotically `πe²/4 = 5.803…`, does NOT
+suffice for this statement — the eventual proof must formalize an
+explicit-formula bound of Odlyzko/Poitou type.) -/
+theorem odlyzko_bound_totallyComplex (K : Type*) [Field K] [NumberField K]
+    (htc : NumberField.IsTotallyComplex K)
+    (hdeg : 48 ≤ Module.finrank ℚ K) :
+    (314928 : ℤ) ^ Module.finrank ℚ K < |NumberField.discr K| ^ 6 :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The Serre/Tate elimination, exceptional cases** (DERIVED
+2026-07-22 from the two sorry nodes above): the five exceptional
+Dickson cases (`A₄`, `S₄`, `A₅`, `PSL₂(𝔽_{3^m})`, `PGL₂(𝔽_{3^m})`)
+are eliminated by comparing the hardly-ramified root-discriminant
+bound `|d_K|⁶ ≤ 314928^{[K:ℚ]}` of the cut-out number field
+(`exists_hardlyRamified_number_field`) with the Odlyzko lower bound
+`314928^{[K:ℚ]} < |d_K|⁶` valid in degree `≥ 48`
+(`odlyzko_bound_totallyComplex`). -/
+theorem serre_elimination_exceptional {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (habs : Slop.OddRep.IsAbsolutelyIrreducible
+      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V))
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (π : Γ ℚ →* Dickson.PGL 3)
+    (hπ : ∀ g, π g = QuotientGroup.mk (u g))
+    (hcase :
+      (Nonempty (π.range ≃* alternatingGroup (Fin 4))) ∨
+      (Nonempty (π.range ≃* Equiv.Perm (Fin 4))) ∨
+      (Nonempty (π.range ≃* alternatingGroup (Fin 5))) ∨
+      (∃ m : ℕ, m ≥ 1 ∧ Nonempty (π.range ≃*
+        Matrix.ProjectiveSpecialLinearGroup (Fin 2) (GaloisField 3 m))) ∨
+      (∃ m : ℕ, m ≥ 1 ∧ Nonempty (π.range ≃*
+        (GL (Fin 2) (GaloisField 3 m) ⧸
+          Subgroup.center (GL (Fin 2) (GaloisField 3 m)))))) :
+    False := by
+  obtain ⟨K, _, htc, hdeg, hdisc⟩ :=
+    exists_hardlyRamified_number_field V hV hρ habs b e u hu π hπ hcase
+  exact absurd hdisc (not_le.mpr (odlyzko_bound_totallyComplex K htc hdeg))
+
+/-- **The Serre/Tate elimination, dihedral arithmetic** (sorry node —
+the class-field-theoretic content of the dihedral case): an
+absolutely irreducible mod-3 hardly ramified representation admits no
+surjective quadratic character `θ` of `Γ ℚ` such that the projective
+images of kernel elements commute and every element outside the
+kernel has trace zero. Content: the kernel of `θ` is open (`ρ g = 1`
+forces `tr ρ g = 2 ≠ 0`, so `ker ρ ≤ ker θ` by the trace hypothesis,
+and `ker ρ` is open by continuity), so `θ` cuts out a quadratic field
+`K` unramified outside `{2, 3}` (by `hρ.isUnramified`), i.e.
+`K = ℚ(√d)` with `d ∈ {-1, 2, -2, 3, -3, 6, -6}`; the trace-zero and
+projective-commutation hypotheses make `ρ` induced from a character
+`χ` of `Γ_K` (`ρ ≅ Ind_{Γ_K}^{Γ_ℚ} χ`, irreducible so `χ ≠ χ^σ`);
+the hardly-ramified constraints bound the conductor of `χ`: trivial
+outside `{2,3}`, at `2` the inertia acts unipotently (order `1` or
+`3`), at `3` flatness restricts `χ` on inertia to the Raynaud
+characters of level `≤ 2`; the class numbers of the seven fields are
+`1, 1, 1, 1, 1, 1, 2` and the resulting ray class groups modulo the
+allowed conductors are generated by classes on which `χ/χ^σ` is
+forced to vanish, so `χ = χ^σ` — contradiction (Serre's mod-3
+analogue, in the style of §5 of the Duke 1987 paper, of Tate's 2-adic
+letter argument). -/
+theorem serre_elimination_dihedral_arith {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (habs : Slop.OddRep.IsAbsolutelyIrreducible
+      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V))
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (π : Γ ℚ →* Dickson.PGL 3)
+    (hπ : ∀ g, π g = QuotientGroup.mk (u g))
+    (θ : Γ ℚ →* Multiplicative (ZMod 2))
+    (hθsurj : Function.Surjective θ)
+    (hcomm : ∀ g h : Γ ℚ, θ g = 1 → θ h = 1 → π g * π h = π h * π g)
+    (htr : ∀ g : Γ ℚ, θ g ≠ 1 →
+      LinearMap.trace k V
+        ((MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V) g) = 0) :
+    False :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **The Serre/Tate elimination, dihedral case** (DECOMPOSED
+2026-07-22 into the arithmetic sorry node
+`serre_elimination_dihedral_arith` above; the reduction is proven):
+the projective image of an absolutely irreducible mod-3 hardly
+ramified representation cannot be dihedral. The proven reduction:
+composing `π` with the dihedral isomorphism and the parity map
+`D_n → ℤ/2` (rotations `↦ 0`, reflections `↦ 1`) yields a surjective
+quadratic character `θ` of `Γ ℚ`; kernel elements have projectively
+commuting images (rotations commute); and any `g` outside the kernel
+maps to a reflection, so `π g ≠ 1` and `(π g)² = 1`, whence
+`(σρ g)² = ν • 1` is a scalar while `σρ g` is not, and the `2×2`
+Cayley–Hamilton identity forces `tr (σρ g) = 0`, which descends along
+the base change to `tr (ρ g) = 0` in `k`. The remaining content — no
+such `θ` exists, by the classification of the quadratic fields
+`ℚ(√d)`, `d ∈ {-1, ±2, ±3, ±6}` ramified only in `{2, 3}` and the
+smallness of their ray class groups — is the sorry node above
+(Serre's mod-3 analogue of Tate's 2-adic letter argument). -/
 theorem serre_elimination_dihedral {k : Type u} [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
@@ -941,17 +1145,204 @@ theorem serre_elimination_dihedral {k : Type u} [Finite k] [Field k]
     (π : Γ ℚ →* Dickson.PGL 3)
     (hπ : ∀ g, π g = QuotientGroup.mk (u g))
     (hcase : ∃ n : ℕ, n ≥ 2 ∧ Nonempty (π.range ≃* DihedralGroup n)) :
-    False :=
-  sorry
+    False := by
+  classical
+  obtain ⟨n, hn2, ⟨eiso⟩⟩ := hcase
+  haveI h3 : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
+  set L := AlgebraicClosure k with hL
+  set σρ : Representation L (Γ ℚ) (L ⊗[k] V) :=
+    Slop.OddRep.baseChange L (MonoidHomClass.toMonoidHom ρ) with hσρ
+  have hirr : σρ.IsIrreducible := habs
+  haveI : Module.Finite L (L ⊗[k] V) := Module.Finite.base_change k L V
+  have hfr2 : Module.finrank L (L ⊗[k] V) = 2 := by
+    rw [Module.finrank_baseChange]
+    exact Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
+  haveI : Nontrivial (L ⊗[k] V) :=
+    Module.nontrivial_of_finrank_pos (R := L) (by omega)
+  obtain ⟨hnt, hsub⟩ := (Slop.OddRep.isIrreducible_iff_forall σρ).mp hirr
+  -- transport toolkit (as in the semidirect case)
+  have hmap_inj : ∀ M N : Matrix (Fin 2) (Fin 2) (AlgebraicClosure k),
+      M.map e = N.map e → M = N := by
+    intro M N h
+    ext i j
+    exact e.injective (congrFun (congrFun (congrArg Matrix.of.symm h) i) j)
+  have hmulM : ∀ gg₁ gg₂ : Γ ℚ, LinearMap.toMatrix b b (σρ gg₁) *
+      LinearMap.toMatrix b b (σρ gg₂) =
+      LinearMap.toMatrix b b (σρ gg₁ * σρ gg₂) :=
+    fun gg₁ gg₂ => (LinearMap.toMatrix_comp b b b _ _).symm
+  -- commuting with the whole action forces a scalar
+  have hscalar_of_comm : ∀ T : Module.End L (L ⊗[k] V),
+      (∀ h : Γ ℚ, T * σρ h = σρ h * T) → ∃ ν : L, T = ν • 1 := by
+    intro T hT
+    obtain ⟨ν, hν⟩ := Module.End.exists_eigenvalue T
+    have hEinv : ∀ h : Γ ℚ, ∀ w ∈ Module.End.eigenspace T ν,
+        σρ h w ∈ Module.End.eigenspace T ν := by
+      intro h w hw
+      rw [Module.End.mem_eigenspace_iff] at hw ⊢
+      have hc := congrFun (congrArg DFunLike.coe (hT h)) w
+      simp only [Module.End.mul_apply] at hc
+      rw [hc, hw, map_smul]
+    rcases hsub (Module.End.eigenspace T ν) hEinv with hE | hE
+    · exact absurd hE hν
+    · refine ⟨ν, LinearMap.ext fun v => ?_⟩
+      have hv : v ∈ Module.End.eigenspace T ν := hE ▸ Submodule.mem_top
+      rw [Module.End.mem_eigenspace_iff] at hv
+      simpa using hv
+  -- a `g` whose projective class is trivial acts by a scalar
+  have hscalar_of_pi_one : ∀ g : Γ ℚ, π g = 1 → ∃ ν : L, σρ g = ν • 1 := by
+    intro g hg
+    refine hscalar_of_comm (σρ g) fun h => ?_
+    have hcen : (u g : GL (Fin 2) (Dickson.K 3)) ∈
+        Subgroup.center (GL (Fin 2) (Dickson.K 3)) := by
+      rw [← QuotientGroup.ker_mk' (Subgroup.center
+        (GL (Fin 2) (Dickson.K 3))), MonoidHom.mem_ker]
+      exact ((hπ g).symm.trans hg : _)
+    have hcommGL : u g * u h = u h * u g :=
+      (Subgroup.mem_center_iff.mp hcen (u h)).symm
+    have hval := congrArg Units.val hcommGL
+    rw [Units.val_mul, Units.val_mul, hu, hu, ← Matrix.map_mul,
+      ← Matrix.map_mul] at hval
+    have hmat := hmap_inj _ _ hval
+    rw [hmulM, hmulM] at hmat
+    exact (LinearMap.toMatrix b b).injective hmat
+  -- conversely: a scalar action has trivial projective class
+  have hpi_one_of_scalar : ∀ g : Γ ℚ, (∃ ν : L, σρ g = ν • 1) → π g = 1 := by
+    rintro g ⟨ν, hν⟩
+    have hval : ((u g : GL (Fin 2) (Dickson.K 3)) :
+        Matrix (Fin 2) (Fin 2) (Dickson.K 3)) = e ν • 1 := by
+      rw [hu, hν, map_smul, LinearMap.toMatrix_one]
+      ext i j
+      by_cases hij : i = j <;>
+        simp [Matrix.map_apply, Matrix.smul_apply, hij]
+    have hcen : (u g : GL (Fin 2) (Dickson.K 3)) ∈
+        Subgroup.center (GL (Fin 2) (Dickson.K 3)) := by
+      refine Subgroup.mem_center_iff.mpr fun y => ?_
+      apply Units.ext
+      rw [Units.val_mul, Units.val_mul, hval]
+      rw [smul_mul_assoc, one_mul, mul_smul_comm, mul_one]
+    rw [hπ g]
+    have : QuotientGroup.mk' (Subgroup.center
+        (GL (Fin 2) (Dickson.K 3))) (u g) = 1 := by
+      rw [← MonoidHom.mem_ker, QuotientGroup.ker_mk']
+      exact hcen
+    exact this
+  -- the parity map of the dihedral group: rotations ↦ 0, reflections ↦ 1
+  let q : DihedralGroup n →* Multiplicative (ZMod 2) :=
+    { toFun := fun x => match x with
+        | .r _ => 1
+        | .sr _ => Multiplicative.ofAdd 1
+      map_one' := rfl
+      map_mul' := by rintro (i | i) (j | j) <;> rfl }
+  -- the quadratic character of `Γ ℚ` cut out by the rotation subgroup
+  let θ : Γ ℚ →* Multiplicative (ZMod 2) :=
+    q.comp (eiso.toMonoidHom.comp π.rangeRestrict)
+  have hθ_eval : ∀ g : Γ ℚ, θ g = q (eiso (π.rangeRestrict g)) := fun g => rfl
+  -- values of `q`
+  have hq_r : ∀ i : ZMod n, q (.r i) = 1 := fun i => rfl
+  have hq_sr : ∀ i : ZMod n, q (.sr i) = Multiplicative.ofAdd 1 := fun i => rfl
+  have h01 : ∀ y : Multiplicative (ZMod 2),
+      y = 1 ∨ y = Multiplicative.ofAdd 1 := by decide
+  have hne1 : (Multiplicative.ofAdd (1 : ZMod 2)) ≠ 1 := by decide
+  -- surjectivity of `θ`
+  have hθsurj : Function.Surjective θ := by
+    intro y
+    rcases h01 y with rfl | rfl
+    · exact ⟨1, map_one θ⟩
+    · obtain ⟨x, hx⟩ := π.rangeRestrict_surjective (eiso.symm (.sr 0))
+      refine ⟨x, ?_⟩
+      rw [hθ_eval, hx, MulEquiv.apply_symm_apply, hq_sr]
+  -- kernel elements are rotations, hence commute projectively
+  have hrot : ∀ x : Γ ℚ, θ x = 1 →
+      ∃ i, eiso (π.rangeRestrict x) = .r i := by
+    intro x hx
+    rcases hex : eiso (π.rangeRestrict x) with i | i
+    · exact ⟨i, rfl⟩
+    · exfalso
+      rw [hθ_eval, hex, hq_sr] at hx
+      exact hne1 hx
+  have hcomm : ∀ g h : Γ ℚ, θ g = 1 → θ h = 1 →
+      π g * π h = π h * π g := by
+    intro g h hg hh
+    obtain ⟨i, hi⟩ := hrot g hg
+    obtain ⟨j, hj⟩ := hrot h hh
+    have hx : π.rangeRestrict g * π.rangeRestrict h =
+        π.rangeRestrict h * π.rangeRestrict g := by
+      apply eiso.injective
+      rw [map_mul, map_mul, hi, hj, DihedralGroup.r_mul_r,
+        DihedralGroup.r_mul_r, add_comm]
+    have := congrArg Subtype.val hx
+    simpa using this
+  -- elements outside the kernel are reflections: trace zero
+  have htr : ∀ g : Γ ℚ, θ g ≠ 1 →
+      LinearMap.trace k V
+        ((MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V) g) = 0 := by
+    intro g hg
+    -- the image of `g` is a reflection
+    have hsr : ∃ i, eiso (π.rangeRestrict g) = .sr i := by
+      rcases hex : eiso (π.rangeRestrict g) with i | i
+      · exact absurd (by rw [hθ_eval, hex, hq_r]) hg
+      · exact ⟨i, rfl⟩
+    obtain ⟨i, hi⟩ := hsr
+    -- `π g ≠ 1` and `π (g * g) = 1`
+    have hπg_ne : π g ≠ 1 := by
+      intro h1
+      have hx1 : π.rangeRestrict g = 1 := Subtype.ext (by simpa using h1)
+      rw [hx1, map_one] at hi
+      rw [DihedralGroup.one_def] at hi
+      exact absurd hi (by simp)
+    have hπg2 : π (g * g) = 1 := by
+      have hx : π.rangeRestrict (g * g) = 1 := by
+        apply eiso.injective
+        rw [map_mul, map_mul, map_one, hi, DihedralGroup.sr_mul_sr, sub_self,
+          ← DihedralGroup.one_def]
+      have := congrArg Subtype.val hx
+      simpa using this
+    -- `σρ (g * g)` is a scalar while `σρ g` is not
+    obtain ⟨ν, hν⟩ := hscalar_of_pi_one (g * g) hπg2
+    have hg_ns : ¬ ∃ μ : L, σρ g = μ • 1 := fun hs => hπg_ne
+      (hpi_one_of_scalar g hs)
+    -- matrix form and the 2×2 Cayley–Hamilton identity
+    set A := LinearMap.toMatrix b b (σρ g) with hA
+    have hA2 : A * A = ν • 1 := by
+      rw [hA, hmulM, ← map_mul, hν, map_smul, LinearMap.toMatrix_one]
+    have hCH : A * A = (Matrix.trace A) • A - A.det • 1 := by
+      ext i' j'
+      fin_cases i' <;> fin_cases j' <;>
+        simp [Matrix.mul_apply, Matrix.trace, Matrix.diag, Matrix.det_fin_two,
+          Fin.sum_univ_two, Matrix.one_apply] <;> ring
+    -- if the trace were nonzero, `A` would be scalar
+    have htrA : Matrix.trace A = 0 := by
+      by_contra htA
+      have h1 : (Matrix.trace A) • A =
+          (ν + A.det) • (1 : Matrix (Fin 2) (Fin 2) L) := by
+        have h := hA2.symm.trans hCH
+        rw [eq_sub_iff_add_eq] at h
+        rw [← h, add_smul]
+      have hAs : A = ((Matrix.trace A)⁻¹ * (ν + A.det)) •
+          (1 : Matrix (Fin 2) (Fin 2) L) := by
+        rw [mul_smul, ← h1, smul_smul, inv_mul_cancel₀ htA, one_smul]
+      refine hg_ns ⟨(Matrix.trace A)⁻¹ * (ν + A.det),
+        (LinearMap.toMatrix b b).injective ?_⟩
+      rw [map_smul, LinearMap.toMatrix_one, ← hA]
+      exact hAs
+    -- descend the trace along the base change
+    have h1 : LinearMap.trace L (L ⊗[k] V) (σρ g) = 0 := by
+      rw [LinearMap.trace_eq_matrix_trace b, ← hA]
+      exact htrA
+    have h2 : σρ g = ((MonoidHomClass.toMonoidHom ρ :
+        Representation k (Γ ℚ) V) g).baseChange L := rfl
+    rw [h2, LinearMap.trace_baseChange] at h1
+    exact (algebraMap k L).injective (by rw [h1, map_zero])
+  exact serre_elimination_dihedral_arith V hV hρ habs b e u hu π hπ
+    θ hθsurj hcomm htr
 
-/-- **The Serre/Tate elimination, `A₄` case** (sorry node): the
-projective image of a mod-3 hardly ramified representation cannot be
-`A₄`. Content: the fixed field of `ker π` is an `A₄`-extension of `ℚ`
-unramified outside `{2, 3}` whose ramification is bounded by the
-hardly-ramified constraints — inertia at `2` has order at most `2`
-(tame quadratic quotient), and flatness at `3` bounds the different at
-`3` — so its root discriminant violates the Minkowski/Odlyzko lower
-bounds (Serre, Duke 1987, §5.4). -/
+/-- **The Serre/Tate elimination, `A₄` case** (DERIVED 2026-07-22
+from the shared root-discriminant skeleton
+`serre_elimination_exceptional`): the projective image of a mod-3
+hardly ramified representation cannot be `A₄` — the cut-out number
+field would be totally complex of degree `≥ 48` with root
+discriminant `≤ 2^{2/3}·3^{3/2} = 8.2497…`, contradicting the
+Odlyzko bound. -/
 theorem serre_elimination_alt4 {k : Type u} [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
@@ -972,12 +1363,11 @@ theorem serre_elimination_alt4 {k : Type u} [Finite k] [Field k]
     (hπ : ∀ g, π g = QuotientGroup.mk (u g))
     (hcase : Nonempty (π.range ≃* alternatingGroup (Fin 4))) :
     False :=
-  sorry
+  serre_elimination_exceptional V hV hρ habs b e u hu π hπ (Or.inl hcase)
 
-/-- **The Serre/Tate elimination, `S₄` case** (sorry node): the
-projective image of a mod-3 hardly ramified representation cannot be
-`S₄`; same discriminant-bound strategy as the `A₄` case, on the
-degree-24 projective field (Serre, Duke 1987, §5.4). -/
+/-- **The Serre/Tate elimination, `S₄` case** (DERIVED 2026-07-22
+from the shared root-discriminant skeleton
+`serre_elimination_exceptional`). -/
 theorem serre_elimination_sym4 {k : Type u} [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
@@ -998,12 +1388,12 @@ theorem serre_elimination_sym4 {k : Type u} [Finite k] [Field k]
     (hπ : ∀ g, π g = QuotientGroup.mk (u g))
     (hcase : Nonempty (π.range ≃* Equiv.Perm (Fin 4))) :
     False :=
-  sorry
+  serre_elimination_exceptional V hV hρ habs b e u hu π hπ
+    (Or.inr (Or.inl hcase))
 
-/-- **The Serre/Tate elimination, `A₅` case** (sorry node): the
-projective image of a mod-3 hardly ramified representation cannot be
-`A₅`; same discriminant-bound strategy, on the degree-60 projective
-field (Serre, Duke 1987, §5.4). -/
+/-- **The Serre/Tate elimination, `A₅` case** (DERIVED 2026-07-22
+from the shared root-discriminant skeleton
+`serre_elimination_exceptional`). -/
 theorem serre_elimination_alt5 {k : Type u} [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
@@ -1024,16 +1414,13 @@ theorem serre_elimination_alt5 {k : Type u} [Finite k] [Field k]
     (hπ : ∀ g, π g = QuotientGroup.mk (u g))
     (hcase : Nonempty (π.range ≃* alternatingGroup (Fin 5))) :
     False :=
-  sorry
+  serre_elimination_exceptional V hV hρ habs b e u hu π hπ
+    (Or.inr (Or.inr (Or.inl hcase)))
 
-/-- **The Serre/Tate elimination, `PSL₂(𝔽_{3^m})` case** (sorry node):
-the projective image of a mod-3 hardly ramified representation cannot
-be `PSL₂(𝔽_{3^m})` (`m ≥ 1`). For `m = 1` this is the `A₄` situation
-(`PSL₂(𝔽₃) ≅ A₄`); for `m ≥ 2` the group is nonsolvable of order
-divisible by `9` and the flat-at-`3` bound on the wild ramification at
-`3` together with the tame quadratic bound at `2` again forces a root
-discriminant below the Minkowski/Odlyzko threshold for the projective
-field (Serre, Duke 1987, §5.4). -/
+/-- **The Serre/Tate elimination, `PSL₂(𝔽_{3^m})` case** (DERIVED
+2026-07-22 from the shared root-discriminant skeleton
+`serre_elimination_exceptional`; `PSL₂(𝔽₃) ≅ A₄` is subsumed in the
+degree-`≥ 48` bound of the skeleton). -/
 theorem serre_elimination_psl {k : Type u} [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
@@ -1055,13 +1442,13 @@ theorem serre_elimination_psl {k : Type u} [Finite k] [Field k]
     (hcase : ∃ m : ℕ, m ≥ 1 ∧ Nonempty (π.range ≃*
       Matrix.ProjectiveSpecialLinearGroup (Fin 2) (GaloisField 3 m))) :
     False :=
-  sorry
+  serre_elimination_exceptional V hV hρ habs b e u hu π hπ
+    (Or.inr (Or.inr (Or.inr (Or.inl hcase))))
 
-/-- **The Serre/Tate elimination, `PGL₂(𝔽_{3^m})` case** (sorry node):
-the projective image of a mod-3 hardly ramified representation cannot
-be `PGL₂(𝔽_{3^m})` (`m ≥ 1`). For `m = 1` this is the `S₄` situation
-(`PGL₂(𝔽₃) ≅ S₄`); for `m ≥ 2` the same discriminant-bound strategy
-as the `PSL₂` case applies (Serre, Duke 1987, §5.4). -/
+/-- **The Serre/Tate elimination, `PGL₂(𝔽_{3^m})` case** (DERIVED
+2026-07-22 from the shared root-discriminant skeleton
+`serre_elimination_exceptional`; `PGL₂(𝔽₃) ≅ S₄` is subsumed in the
+degree-`≥ 48` bound of the skeleton). -/
 theorem serre_elimination_pgl {k : Type u} [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
@@ -1084,7 +1471,8 @@ theorem serre_elimination_pgl {k : Type u} [Finite k] [Field k]
       (GL (Fin 2) (GaloisField 3 m) ⧸
         Subgroup.center (GL (Fin 2) (GaloisField 3 m))))) :
     False :=
-  sorry
+  serre_elimination_exceptional V hV hρ habs b e u hu π hπ
+    (Or.inr (Or.inr (Or.inr (Or.inr hcase))))
 
 /-- **The Serre §5.4/Tate elimination, arithmetic cases** (DECOMPOSED
 2026-07-22 into the six per-case sorry nodes above — `dihedral`,
@@ -1506,17 +1894,56 @@ theorem mod_three_reducible {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k
   exact not_isAbsolutelyIrreducible V hV hρ
     ((OddRep.isIrreducible_iff_isAbsolutelyIrreducible ρ' heig).mp hirr)
 
-/-- **The Raynaud dichotomy at `3`** (sorry node — the local flatness
-content): if the quotient character `χ` of a stable line of a mod-3
-hardly ramified representation is RAMIFIED at `3`, then the
-sub-character `ψ` is unramified at `3`. Content: flatness (`IsFlatAt`
-at `3`) prolongs the local representation at `3` to a finite flat
-group scheme over `ℤ₃` killed by `3`; by Raynaud, the characters by
-which the inertia at `3` acts on the subquotients of a stable
-filtration are powers `ε^a`, `a ∈ {0, 1}`, of the level-one
-fundamental character `ε` = (mod-3 cyclotomic on inertia); since
-`ψ·χ = det = ε` on inertia, exactly one of the exponents is `1` — so
-`χ` ramified forces `ψ` trivial on the inertia at `3`. -/
+/-- **Raynaud's inertia characters at `3`** (sorry node — the local
+flatness content): if the quotient character `χ` of a stable line of
+a mod-3 hardly ramified representation is RAMIFIED at `3`, then on
+the inertia at `3` it EQUALS the mod-3 cyclotomic character. Content:
+flatness (`IsFlatAt` at `3`) prolongs the local representation at `3`
+to a finite flat group scheme over `ℤ₃` killed by `3`, and the stable
+line makes it an extension of order-`3` group schemes; by Oort–Tate /
+Raynaud, the characters by which the inertia at `3` acts on the two
+subquotients are powers `ε^a`, `a ∈ {0, 1}`, of the level-one
+fundamental character `ε` (= the mod-3 cyclotomic character on
+inertia); so a RAMIFIED subquotient character restricted to inertia
+is exactly `ε`. -/
+theorem quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (W₀ : Submodule k V) (hW₀fr : Module.finrank k W₀ = 1)
+    (hstable : ∀ g v, v ∈ W₀ → ρ g v ∈ W₀)
+    (ψ : Γ ℚ →* kˣ) (hψ : ∀ g, ∀ v ∈ W₀, ρ g v = (ψ g : k) • v)
+    (χ : Γ ℚ →* kˣ)
+    (hχ : ∀ g v, W₀.mkQ (ρ g v) = (χ g : k) • W₀.mkQ v)
+    (h3 : ¬ (localInertiaGroup
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ≤
+        (χ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker)) :
+    ∀ g ∈ localInertiaGroup
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+      ((χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) g) : k)) =
+        algebraMap ℤ_[3] k (cyclotomicCharacter (AlgebraicClosure ℚ) 3
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))
+                g).toRingEquiv)) :=
+  sorry
+
+/-- **The Raynaud dichotomy at `3`** (DECOMPOSED 2026-07-22 into the
+sorry node `quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified`
+above; the determinant bookkeeping is proven): if the quotient
+character `χ` of a stable line of a mod-3 hardly ramified
+representation is RAMIFIED at `3`, then the sub-character `ψ` is
+unramified at `3`. Derivation: on the inertia at `3`,
+`ψ·χ = det ρ = χ₃` (the triangular determinant plus `hρ.det`), and by
+the Raynaud leaf the ramified `χ` equals `χ₃` there, so cancelling
+the unit `χ` gives `ψ = 1` on inertia. -/
 theorem subCharacter_unramified_at_three_of_quot_ramified
     {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
     [TopologicalSpace k] [DiscreteTopology k]
@@ -1538,8 +1965,41 @@ theorem subCharacter_unramified_at_three_of_quot_ramified
         Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ≤
       (ψ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker :=
-  sorry
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker := by
+  intro g hg
+  -- notation: the image of `g` in `Γ ℚ`
+  set g' : Γ ℚ := Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) g with hg'
+  -- the quotient of `V` by the line is a line
+  have hfr : Module.finrank k V = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
+  have hQ1 : Module.finrank k (V ⧸ W₀) = 1 := by
+    have hsum := Submodule.finrank_quotient_add_finrank W₀
+    omega
+  -- the triangular determinant identity at `g'`
+  have hdet1 : LinearMap.det (ρ g' : Module.End k V) =
+      (ψ g' : k) * (χ g' : k) :=
+    det_eq_subCharacter_mul_quotCharacter ρ W₀ hW₀fr hQ1 hstable ψ χ hψ hχ g'
+  -- the hardly-ramified determinant is the cyclotomic character
+  have hdet2 : LinearMap.det (ρ g' : Module.End k V) =
+      algebraMap ℤ_[3] k (cyclotomicCharacter (AlgebraicClosure ℚ) 3
+        g'.toRingEquiv) := by
+    have h := hρ.det g'
+    rwa [GaloisRep.det_apply] at h
+  -- the Raynaud leaf: the ramified `χ` is cyclotomic on inertia
+  have hcyc := quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified
+    V hV hρ W₀ hW₀fr hstable ψ hψ χ hχ h3 g hg
+  rw [← hg'] at hcyc
+  -- cancel the unit `χ g'`
+  have hψ1 : (ψ g' : k) = 1 := by
+    have hne : (χ g' : k) ≠ 0 := Units.ne_zero (χ g')
+    have h1 : (ψ g' : k) * (χ g' : k) = 1 * (χ g' : k) := by
+      rw [one_mul, ← hdet1, hdet2, ← hcyc]
+    exact mul_right_cancel₀ hne h1
+  -- conclude in the unit group
+  rw [MonoidHom.mem_ker]
+  exact Units.ext hψ1
 
 /-- **The Serre swap: the second stable line** (sorry node — the global
 splitting content): if the quotient character `χ` of a stable line
