@@ -911,14 +911,191 @@ theorem serre_elimination_semidirect {k : Type u} [Finite k] [Field k]
       rw [finrank_top, hfr2] at hWfr
       omega
 
-/-- **The Serre §5.4/Tate elimination, arithmetic cases** (sorry node —
-the deep number-theoretic core): with the notation of `serre_elimination`
-below, the dihedral, `A₄`, `S₄`, `A₅`, `PSL₂(𝔽_{3^m})`, `PGL₂(𝔽_{3^m})`
-cases contradict the hardly-ramified ramification constraints
-(cyclotomic determinant, unramified outside `{2, 3}`, flat at `3`, tame
-quadratic quotient at `2`) via Serre's discriminant/conductor bounds
-over `ℚ` (Serre, Duke 1987, §5.4: no extension of `ℚ` with these Galois
-groups and local conditions exists). -/
+/-- **The Serre/Tate elimination, dihedral case** (sorry node): the
+projective image of an absolutely irreducible mod-3 hardly ramified
+representation cannot be dihedral. Content: a dihedral projective
+image means `ρ` is induced from a character of the absolute Galois
+group of a quadratic field `K` cut out by the composite
+`Γ ℚ → D_n → ℤ/2`; `K` is ramified only in `{2, 3}` (so
+`K = ℚ(√d)`, `d ∈ {-1, ±2, ±3, ±6}`), and the hardly-ramified local
+constraints (flat at `3`, tame quadratic quotient at `2`, cyclotomic
+determinant) bound the conductor of the inducing character so tightly
+that the relevant ray class groups are too small to support it
+(Serre, Duke 1987, §5.4 and the analogous 2-adic argument of Tate). -/
+theorem serre_elimination_dihedral {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (habs : Slop.OddRep.IsAbsolutelyIrreducible
+      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V))
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (π : Γ ℚ →* Dickson.PGL 3)
+    (hπ : ∀ g, π g = QuotientGroup.mk (u g))
+    (hcase : ∃ n : ℕ, n ≥ 2 ∧ Nonempty (π.range ≃* DihedralGroup n)) :
+    False :=
+  sorry
+
+/-- **The Serre/Tate elimination, `A₄` case** (sorry node): the
+projective image of a mod-3 hardly ramified representation cannot be
+`A₄`. Content: the fixed field of `ker π` is an `A₄`-extension of `ℚ`
+unramified outside `{2, 3}` whose ramification is bounded by the
+hardly-ramified constraints — inertia at `2` has order at most `2`
+(tame quadratic quotient), and flatness at `3` bounds the different at
+`3` — so its root discriminant violates the Minkowski/Odlyzko lower
+bounds (Serre, Duke 1987, §5.4). -/
+theorem serre_elimination_alt4 {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (habs : Slop.OddRep.IsAbsolutelyIrreducible
+      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V))
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (π : Γ ℚ →* Dickson.PGL 3)
+    (hπ : ∀ g, π g = QuotientGroup.mk (u g))
+    (hcase : Nonempty (π.range ≃* alternatingGroup (Fin 4))) :
+    False :=
+  sorry
+
+/-- **The Serre/Tate elimination, `S₄` case** (sorry node): the
+projective image of a mod-3 hardly ramified representation cannot be
+`S₄`; same discriminant-bound strategy as the `A₄` case, on the
+degree-24 projective field (Serre, Duke 1987, §5.4). -/
+theorem serre_elimination_sym4 {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (habs : Slop.OddRep.IsAbsolutelyIrreducible
+      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V))
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (π : Γ ℚ →* Dickson.PGL 3)
+    (hπ : ∀ g, π g = QuotientGroup.mk (u g))
+    (hcase : Nonempty (π.range ≃* Equiv.Perm (Fin 4))) :
+    False :=
+  sorry
+
+/-- **The Serre/Tate elimination, `A₅` case** (sorry node): the
+projective image of a mod-3 hardly ramified representation cannot be
+`A₅`; same discriminant-bound strategy, on the degree-60 projective
+field (Serre, Duke 1987, §5.4). -/
+theorem serre_elimination_alt5 {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (habs : Slop.OddRep.IsAbsolutelyIrreducible
+      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V))
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (π : Γ ℚ →* Dickson.PGL 3)
+    (hπ : ∀ g, π g = QuotientGroup.mk (u g))
+    (hcase : Nonempty (π.range ≃* alternatingGroup (Fin 5))) :
+    False :=
+  sorry
+
+/-- **The Serre/Tate elimination, `PSL₂(𝔽_{3^m})` case** (sorry node):
+the projective image of a mod-3 hardly ramified representation cannot
+be `PSL₂(𝔽_{3^m})` (`m ≥ 1`). For `m = 1` this is the `A₄` situation
+(`PSL₂(𝔽₃) ≅ A₄`); for `m ≥ 2` the group is nonsolvable of order
+divisible by `9` and the flat-at-`3` bound on the wild ramification at
+`3` together with the tame quadratic bound at `2` again forces a root
+discriminant below the Minkowski/Odlyzko threshold for the projective
+field (Serre, Duke 1987, §5.4). -/
+theorem serre_elimination_psl {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (habs : Slop.OddRep.IsAbsolutelyIrreducible
+      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V))
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (π : Γ ℚ →* Dickson.PGL 3)
+    (hπ : ∀ g, π g = QuotientGroup.mk (u g))
+    (hcase : ∃ m : ℕ, m ≥ 1 ∧ Nonempty (π.range ≃*
+      Matrix.ProjectiveSpecialLinearGroup (Fin 2) (GaloisField 3 m))) :
+    False :=
+  sorry
+
+/-- **The Serre/Tate elimination, `PGL₂(𝔽_{3^m})` case** (sorry node):
+the projective image of a mod-3 hardly ramified representation cannot
+be `PGL₂(𝔽_{3^m})` (`m ≥ 1`). For `m = 1` this is the `S₄` situation
+(`PGL₂(𝔽₃) ≅ S₄`); for `m ≥ 2` the same discriminant-bound strategy
+as the `PSL₂` case applies (Serre, Duke 1987, §5.4). -/
+theorem serre_elimination_pgl {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (habs : Slop.OddRep.IsAbsolutelyIrreducible
+      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V))
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (π : Γ ℚ →* Dickson.PGL 3)
+    (hπ : ∀ g, π g = QuotientGroup.mk (u g))
+    (hcase : ∃ m : ℕ, m ≥ 1 ∧ Nonempty (π.range ≃*
+      (GL (Fin 2) (GaloisField 3 m) ⧸
+        Subgroup.center (GL (Fin 2) (GaloisField 3 m))))) :
+    False :=
+  sorry
+
+/-- **The Serre §5.4/Tate elimination, arithmetic cases** (DECOMPOSED
+2026-07-22 into the six per-case sorry nodes above — `dihedral`,
+`alt4`, `sym4`, `alt5`, `psl`, `pgl`): with the notation of
+`serre_elimination` below, the dihedral, `A₄`, `S₄`, `A₅`,
+`PSL₂(𝔽_{3^m})`, `PGL₂(𝔽_{3^m})` cases contradict the hardly-ramified
+ramification constraints (cyclotomic determinant, unramified outside
+`{2, 3}`, flat at `3`, tame quadratic quotient at `2`) via Serre's
+discriminant/conductor bounds over `ℚ` (Serre, Duke 1987, §5.4: no
+extension of `ℚ` with these Galois groups and local conditions
+exists). -/
 theorem serre_elimination_arith {k : Type u} [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
@@ -947,8 +1124,14 @@ theorem serre_elimination_arith {k : Type u} [Finite k] [Field k]
       (∃ m : ℕ, m ≥ 1 ∧ Nonempty (π.range ≃*
         (GL (Fin 2) (GaloisField 3 m) ⧸
           Subgroup.center (GL (Fin 2) (GaloisField 3 m)))))) :
-    False :=
-  sorry
+    False := by
+  rcases hcase with h | h | h | h | h | h
+  · exact serre_elimination_dihedral V hV hρ habs b e u hu π hπ h
+  · exact serre_elimination_alt4 V hV hρ habs b e u hu π hπ h
+  · exact serre_elimination_sym4 V hV hρ habs b e u hu π hπ h
+  · exact serre_elimination_alt5 V hV hρ habs b e u hu π hπ h
+  · exact serre_elimination_psl V hV hρ habs b e u hu π hπ h
+  · exact serre_elimination_pgl V hV hρ habs b e u hu π hπ h
 
 set_option backward.isDefEq.respectTransparency false in
 /-- The seven noncyclic Dickson cases, split into the rep-theoretic

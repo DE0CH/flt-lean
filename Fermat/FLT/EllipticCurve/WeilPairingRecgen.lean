@@ -19,6 +19,7 @@ open WeierstrassCurve
 
 set_option maxHeartbeats 16000000 in
 set_option linter.unusedSimpArgs false in
+set_option linter.unusedVariables false in
 theorem recgen (q p : ℕ) [Fact q.Prime]
     (Wb : WeierstrassCurve (AlgebraicClosure (ZMod q)))
     (yfib : AlgebraicClosure (ZMod q) → AlgebraicClosure (ZMod q))
@@ -242,6 +243,9 @@ theorem recgen (q p : ℕ) [Fact q.Prime]
       WeierstrassCurve.Affine.Point.some xPS₁ yPS₁ hPS₁ +
       WeierstrassCurve.Affine.Point.some xS₃ yS₃ hS₃) →
     xM' ∉ F' →
+    ∀ (G'' : Subfield (AlgebraicClosure (ZMod q))),
+    xR₃ ∈ G'' → yR₃ ∈ G'' → xQR₃ ∈ G'' → yQR₃ ∈ G'' →
+    xS₁ ∉ G'' → xPS₁ ∉ G'' → xS₃ ∉ G'' → xPS₃ ∉ G'' → xM' ∉ G'' →
     (AdjoinRoot.evalEval hQR₁.left aP₁ *
       AdjoinRoot.evalEval hR₁.left
         ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS₁) ^ p) *
@@ -273,6 +277,8 @@ theorem recgen (q p : ℕ) [Fact q.Prime]
     xS₃ yS₃ hS₃ xR₃ yR₃ hR₃ xPS₃ yPS₃ hPS₃ xQR₃ yQR₃ hQR₃ aP₃ aQ₃
     hxS₃ hxR₃ hxPS₃ hxQR₃ hPSc₃ hQRc₃ haP₃ haQ₃
     xM yM hM hMc hxMF' xM' yM' hM' hM'c hxM'F'
+    G'' hxR₃G'' hyR₃G'' hxQR₃G'' hyQR₃G'' hxS₁G'' hxPS₁G'' hxS₃G'' hxPS₃G''
+    hxM'G''
   have hstepR := stepR q p Wb yfib hyfib hCunits hline hoffdiv hevvert hnegYF hgenfac hww hbaldiv hevconst hevid hfib2 F' xQ yQ hQ xS₁ yS₁ hS₁ hxS₁F' hyS₁F' xR₁ yR₁ hR₁ hxR₁ xPS₁ yPS₁ hPS₁ hxPS₁F' hyPS₁F' xQR₁ yQR₁ hQR₁ hQRc₁ hxQR₁nS hxQR₁F' aP₁ aQ₁ haP₁ haQ₁ xR₃ yR₃ hR₃ hxR₃ xQR₃ yQR₃ hQR₃ hxQR₃ hQRc₃ aQ₃ haQ₃ xM yM hM hMc hxMF'
   -- the S-STEP: with the second translate R₃ fixed, moving the first
   -- translate S₁ → S₃ preserves the cross-ratio (mirror argument)
@@ -301,7 +307,21 @@ theorem recgen (q p : ℕ) [Fact q.Prime]
         AdjoinRoot.evalEval hS₁.left
           ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR₃) ^ p) *
         AdjoinRoot.evalEval hPS₁.left aQ₃) := by
-    sorry
+    -- the σ-mirror instance of the R-step: P↔Q, the S-family
+    -- (S₁,PS₁,S₃,PS₃, words aP₁,aP₃) becomes the moving family, the
+    -- R₃-family (R₃,QR₃, word aQ₃) the spectator, at the field G''
+    have hinst := stepR q p Wb yfib hyfib hCunits hline hoffdiv hevvert hnegYF
+      hgenfac hww hbaldiv hevconst hevid hfib2 G'' xP yP hP
+      xR₃ yR₃ hR₃ hxR₃G'' hyR₃G''
+      xS₁ yS₁ hS₁ hxS₁G''
+      xQR₃ yQR₃ hQR₃ hxQR₃G'' hyQR₃G''
+      xPS₁ yPS₁ hPS₁ hPSc₁ (fun h => hxR₃ (h ▸ hxPS₁F')) hxPS₁G''
+      aQ₃ aP₁ haQ₃ haP₁
+      xS₃ yS₃ hS₃ hxS₃G''
+      xPS₃ yPS₃ hPS₃ hxPS₃G'' hPSc₃
+      aP₃ haP₃
+      xM' yM' hM' hM'c hxM'G''
+    linear_combination -hinst
   -- the hybrid setup's products are nonzero (avoidance bookkeeping)
   have hDP₁ : Ideal.span {aP₁} =
       ((Multiset.replicate p ((xPS₁, yPS₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) +

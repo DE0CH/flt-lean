@@ -117,19 +117,22 @@
     "name": "WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction",
     "module": "Fermat.FLT.FreyCurve.Semistable",
     "text": "`WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction` (`FreyCurve/Semistable.lean`, stated 2026-07-17) — pointwise Tate unipotence: multiplicative reduction at `q ≠ p` (`q = 2` allowed, no `p ∣ v(j)`) makes every inertia element at a valuation subring over `ℤ_(q)` act with `σ(σP) − σP − σP + P = 0` on the `p`-torsion (to be closed against the Tate-uniformization leaves)",
-    "fullname": "WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction"
+    "fullname": "WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction",
+    "wip": true
   },
   {
     "name": "FreyPackage.subquotient_character_unramified_at_p",
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
     "text": "`FreyPackage.subquotient_character_unramified_at_p` (stated 2026-07-17) — flat/ordinary at `p`: one of the two characters is unramified at `p` itself (connected-étale sequence in the ordinary/ multiplicative case; supersingular excluded by reducibility)",
-    "fullname": "FreyPackage.subquotient_character_unramified_at_p"
+    "fullname": "FreyPackage.subquotient_character_unramified_at_p",
+    "wip": true
   },
   {
     "name": "FreyPackage.exists_quotient_curve_point",
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
     "text": "`FreyPackage.exists_quotient_curve_point` (stated 2026-07-17) — the Vélu quotient leaf: a stable line with trivial quotient action produces `E'/ℚ` with full rational 2-torsion and a rational `p`-point (quotient by the rational subgroup; quantified over Weierstrass models)",
-    "fullname": "FreyPackage.exists_quotient_curve_point"
+    "fullname": "FreyPackage.exists_quotient_curve_point",
+    "wip": true
   },
   {
     "name": "WeierstrassCurve.exists_point_eq_baseChange_of_fixed",
@@ -165,7 +168,8 @@
     "name": "WeierstrassCurve.mazur_classification",
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
     "text": "`WeierstrassCurve.mazur_classification` — Mazur's torsion theorem, stated faithfully: the torsion submodule (`Submodule.torsion ℤ E(ℚ)`) is ≃+ to one of the fifteen groups ℤ/n (n ∈ {1,…,10,12}) or ℤ/2 × ℤ/2m (m ∈ {1,…,4}). Mazur, Publ. Math. IHÉS 47 (1977); Invent. Math. 44 (1978)",
-    "fullname": "WeierstrassCurve.mazur_classification"
+    "fullname": "WeierstrassCurve.mazur_classification",
+    "wip": true
   },
   {
     "name": "FreyPackage.galoisRep_not_irreducible",
@@ -297,7 +301,8 @@
     "name": "torsion_flat_of_good_reduction",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
     "text": "`torsion_flat_of_good_reduction` (`KnownIn1980s/EllipticCurves/Flat.lean`, 2026-07-16): good reduction over a DVR makes the `n`-torsion a finite flat group scheme (Hopf algebra, finite flat, étale generic fibre, equivariant points isomorphism). Plus the division-polynomial node `isCoprime_Φ_ΨSq` — restated for fields and directly (2026-07-17; the former `resultant_Φ_ΨSq` node was DELETED, see the session-6 log)",
-    "fullname": "WeierstrassCurve.torsion_flat_of_good_reduction"
+    "fullname": "WeierstrassCurve.torsion_flat_of_good_reduction",
+    "wip": true
   },
   {
     "name": "FreyCurve.torsion_isFlat_of_multiplicative",
@@ -315,7 +320,8 @@
     "name": "torsion_flat_of_multiplicative_reduction",
     "module": "Fermat.FLT.FreyCurve.Semistable",
     "text": "`torsion_flat_of_multiplicative_reduction` (`FreyCurve/Semistable.lean`, stated 2026-07-17): multiplicative reduction over `ℤ_(p)` with `p ∣ v_p(j)` produces a finite flat Hopf algebra over `ℤ_(p)` (étale generic fibre) whose `ℚ̄`-points are `Γ ℚ`-equivariantly the `p`-torsion — the peu-ramifiée package in the same DVR-`∃`-shape as the good-reduction leaf (Tate curve + Kummer theory content)",
-    "fullname": "WeierstrassCurve.torsion_flat_of_multiplicative_reduction"
+    "fullname": "WeierstrassCurve.torsion_flat_of_multiplicative_reduction",
+    "wip": true
   },
   {
     "name": "GaloisRep.isFlatAt_of_dvr_package",
@@ -369,7 +375,8 @@
     "name": "exists_hardlyRamifiedLift",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
     "text": "B6a `exists_hardlyRamifiedLift` — an irreducible hardly ramified mod-ℓ rep (ℓ ≥ 5) lifts to a hardly ramified ℓ-adic rep over the integers `O` of a finite extension of `ℚ_ℓ` (bundled in `structure HardlyRamifiedLift`: `O` + framed rep + reduction map + Frobenius-charpoly compatibility). Deformation theory / modularity lifting without residual modularity",
-    "fullname": "GaloisRepresentation.exists_hardlyRamifiedLift"
+    "fullname": "GaloisRepresentation.exists_hardlyRamifiedLift",
+    "wip": true
   },
   {
     "name": "residual_charFrob_eq",
@@ -381,7 +388,8 @@
     "name": "IsHardlyRamified.mem_isCompatible",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
     "text": "B6b `IsHardlyRamified.mem_isCompatible` (`HardlyRamified/Family.lean`, ; conclusion named `IsInHardlyRamifiedFamily` as a marked ) — a hardly ramified ℓ-adic rep lives in a compatible family (`GaloisRepFamily.lean`, defs, ) all of whose odd members are hardly ramified. STRENGTHENED (2026-07-16): the package now records injectivity of the coefficient-ring embeddings into `ℚ̄_p` — an audit of the glue's proof skeleton showed the upstream statement is too weak for the charpoly descent (algebraMap from a domain to a field need not be injective); true for the intended subrings of `ℚ̄_p`",
-    "fullname": "GaloisRepresentation.IsHardlyRamified.mem_isCompatible"
+    "fullname": "GaloisRepresentation.IsHardlyRamified.mem_isCompatible",
+    "wip": true
   },
   {
     "name": "residual_charFrob_eq_of_family",
@@ -429,7 +437,8 @@
     "name": "GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
     "fullname": "GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient",
-    "text": "the global triangular form (sorry node — the Serre classification core): given the residual trivial quotient, the WHOLE 3-adic rep is an extension of the trivial character by χ in a suitable basis. The 3-adic reducibility of Serre §5.4, lifted through the complete local ring by flatness + tameness."
+    "text": "the global triangular form (sorry node — the Serre classification core): given the residual trivial quotient, the WHOLE 3-adic rep is an extension of the trivial character by χ in a suitable basis. The 3-adic reducibility of Serre §5.4, lifted through the complete local ring by flatness + tameness.",
+    "wip": true
   },
   {
     "name": "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient",
@@ -501,7 +510,8 @@
     "name": "exists_frobenius_conj_mem_coset",
     "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
     "text": "`exists_frobenius_conj_mem_coset` — Chebotarev, finite level: for every finite subextension `E` of `K̄/K` and every `σ`, the coset `σ·Gal(K̄/E)` contains a conjugate of a `globalFrob v` with `v ∉ S` (existence form of Chebotarev for the Galois closure of `E/K`)",
-    "fullname": "GaloisRepresentation.exists_frobenius_conj_mem_coset"
+    "fullname": "GaloisRepresentation.exists_frobenius_conj_mem_coset",
+    "wip": true
   },
   {
     "name": "not_isIrreducible_of_charpoly_eq",
@@ -969,13 +979,15 @@
     "name": "serre_elimination_arith",
     "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_arith",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-    "text": "(sorry node — the deep arithmetic core) dihedral / A₄ / S₄ / A₅ / PSL₂(𝔽_{3^m}) / PGL₂(𝔽_{3^m}) eliminated via Serre's discriminant/conductor bounds over ℚ (Duke 1987 §5.4); needs discriminant-bound machinery absent from mathlib."
+    "text": "(sorry node — the deep arithmetic core) dihedral / A₄ / S₄ / A₅ / PSL₂(𝔽_{3^m}) / PGL₂(𝔽_{3^m}) eliminated via Serre's discriminant/conductor bounds over ℚ (Duke 1987 §5.4); needs discriminant-bound machinery absent from mathlib.",
+    "wip": true
   },
   {
     "name": "exists_line_with_unramified_quotCharacter_at_three",
     "fullname": "GaloisRepresentation.IsHardlyRamified.exists_line_with_unramified_quotCharacter_at_three",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-    "text": "(sorry node — the connected–étale content) a reducible mod-3 hardly ramified rep has a stable line with quotient character unramified at 3: the IsFlatAt prolongation over ℤ₃, unramified étale quotient of the connected–étale sequence, and the Serre swap to the other stable line when needed."
+    "text": "(sorry node — the connected–étale content) a reducible mod-3 hardly ramified rep has a stable line with quotient character unramified at 3: the IsFlatAt prolongation over ℤ₃, unramified étale quotient of the connected–étale sequence, and the Serre swap to the other stable line when needed.",
+    "wip": true
   },
   {
     "name": "quotCharacter_unramified_at_two",

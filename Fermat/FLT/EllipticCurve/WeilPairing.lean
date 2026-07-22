@@ -7865,6 +7865,22 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
             exact haddXF G _ _ _ (hF₁'G hxPS₁F') (hF₁'G hin)
               (hslopeF G _ _ _ _ (hF₁'G hxPS₁F') (hF₁'G hin)
                 (hnegYF G _ _ (hF₁'G hxPS₁F') (hF₁'G hyPS₁F')) hyMG)
+        -- the σ-mirror field for the S-steps: contains the R₃-family,
+        -- avoids both hybrids' S-side abscissae and the two M'-points.
+        -- Discharge plan (degree arithmetic in the subfield lattice of
+        -- 𝔽̄_q, see progress-entries): requires strengthening hsetup3 +
+        -- widening the S-side avoid-sets to K(2f₀)-closures.
+        obtain ⟨G'', hxR₃G'', hyR₃G'', hxQR₃G'', hyQR₃G'', hxS₁G'', hxPS₁G'',
+            hxS₂G'', hxPS₂G'', hxS₃G'', hxPS₃G'', hxM'₁G'', hxM'₂G''⟩ :
+            ∃ G'' : Subfield (AlgebraicClosure (ZMod q)),
+              xR₃ ∈ G'' ∧ yR₃ ∈ G'' ∧ xQR₃ ∈ G'' ∧ yQR₃ ∈ G'' ∧
+              xS₁ ∉ G'' ∧ xPS₁ ∉ G'' ∧ xS₂ ∉ G'' ∧ xPS₂ ∉ G'' ∧
+              xS₃ ∉ G'' ∧ xPS₃ ∉ G'' ∧
+              Wb.toAffine.addX xPS₁ xS₃
+                (Wb.toAffine.slope xPS₁ xS₃ yPS₁ yS₃) ∉ G'' ∧
+              Wb.toAffine.addX xPS₂ xS₃
+                (Wb.toAffine.slope xPS₂ xS₃ yPS₂ yS₃) ∉ G'' := by
+          sorry
         have h13 := hrecgen F₁ F₁' hF₁fin hF₁'fin hFF₁ xP yP hP₀ xQ yQ hQ₀
           hxPF₁ hyPF₁ hxQF₁ hyQF₁ xS₁ yS₁ hS₁ hxS₁F' hyS₁F' hxS₁F
           xR₁ yR₁ hR₁ hxR₁ xPS₁ yPS₁ hPS₁ hPSc₁ hxPS₁F' hyPS₁F'
@@ -7874,6 +7890,8 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           (fun h => hxPS₃ (hF₁'G h)) (fun h => hxQR₃ (hF₁'G h))
           hPSc₃ hQRc₃ haP₃ haQ₃
           _ _ hMA13 hMcA13 hxMA13F _ _ hMB13 hMcB13 hxMB13F
+          G'' hxR₃G'' hyR₃G'' hxQR₃G'' hyQR₃G''
+          hxS₁G'' hxPS₁G'' hxS₃G'' hxPS₃G'' hxM'₁G''
         have hxneA23 : xQR₂ ≠ xR₃ := fun h => hxR₃ (h ▸ hQR₂G.1)
         have hMA23 := WeierstrassCurve.Affine.nonsingular_add hQR₂ hR₃
           (fun hxy => hxneA23 hxy.1)
@@ -7951,6 +7969,8 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           (fun h => hxPS₃ (hF₂'G h)) (fun h => hxQR₃ (hF₂'G h))
           hPSc₃ hQRc₃ haP₃ haQ₃
           _ _ hMA23 hMcA23 hxMA23F _ _ hMB23 hMcB23 hxMB23F
+          G'' hxR₃G'' hyR₃G'' hxQR₃G'' hyQR₃G''
+          hxS₂G'' hxPS₂G'' hxS₃G'' hxPS₃G'' hxM'₂G''
         refine mul_right_cancel₀ (mul_ne_zero hA₃ hB₃) ?_
         linear_combination
           ((AdjoinRoot.evalEval hQR₂.left

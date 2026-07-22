@@ -44,6 +44,8 @@ public import Mathlib.NumberTheory.Cyclotomic.CyclotomicCharacter
 public import Mathlib.RingTheory.RootsOfUnity.AlgebraicallyClosed
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 public import Mathlib.FieldTheory.KrullTopology
+public import Mathlib.FieldTheory.Normal.Closure
+import Mathlib.FieldTheory.Galois.Basic
 public import Mathlib.Topology.Instances.ZMod
 
 @[expose] public section
@@ -81,20 +83,49 @@ lemma GaloisRep.charFrob_eq_charpoly_globalFrob {A : Type*} [CommRing A]
     ρ.charFrob v = (ρ (globalFrob v)).charpoly :=
   rfl
 
-/-- **Chebotarev, finite level** (sorry node): modulo the fixing subgroup
+/-- **Chebotarev, finite Galois-group form** (sorry node): for a finite
+Galois subextension `L` of `K̄/K` and any element `τ` of the finite
+Galois group `Gal(L/K)`, some global Frobenius at a place outside the
+given finite set `S` restricts to a conjugate of `τ` on `L`. This is the
+classical existence form of the Chebotarev density theorem for the
+finite Galois extension `L/K`: every element of `Gal(L/K)` is the
+Frobenius at infinitely many places of `K`. The profinite coset form
+`exists_frobenius_conj_mem_coset` is DERIVED from this below (normal
+closure + surjectivity of restriction). -/
+theorem exists_globalFrob_restrictNormalHom_conj (S : Finset (Ω K))
+    (L : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K L]
+    [Normal K L] (τ : L ≃ₐ[K] L) :
+    ∃ v : Ω K, v ∉ S ∧ ∃ h : L ≃ₐ[K] L,
+      h * AlgEquiv.restrictNormalHom L (globalFrob v) * h⁻¹ = τ :=
+  sorry
+
+/-- **Chebotarev, finite level**: modulo the fixing subgroup
 of any finite subextension `E` of `K̄/K`, every element of the absolute
 Galois group is a conjugate of a global Frobenius at a place outside any
-given finite set `S`. This is the existence form of the Chebotarev
-density theorem for the finite Galois closure of `E/K` (every element of
-`Gal(E'/K)` is a Frobenius at infinitely many places), stated without
-finite-quotient vocabulary: the coset `σ · Gal(K̄/E)` meets the Frobenius
-conjugates. -/
+given finite set `S`, stated without finite-quotient vocabulary: the
+coset `σ · Gal(K̄/E)` meets the Frobenius conjugates. DERIVED from the
+finite Galois-group form `exists_globalFrob_restrictNormalHom_conj` at
+the normal closure `L` of `E` in `K̄`: choose `v ∉ S` and `h ∈ Gal(L/K)`
+with `h · (Frob_v|_L) · h⁻¹ = σ|_L`, lift `h` to `g ∈ Γ K` by
+surjectivity of restriction (`K̄/K` is normal); then
+`σ⁻¹ · (g · Frob_v · g⁻¹)` restricts to the identity of `Gal(L/K)`,
+i.e. lies in `L.fixingSubgroup ≤ E.fixingSubgroup`. -/
 theorem exists_frobenius_conj_mem_coset (S : Finset (Ω K))
     (E : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K E]
     (σ : Γ K) :
     ∃ v : Ω K, v ∉ S ∧ ∃ g : Γ K,
-      σ⁻¹ * (g * globalFrob v * g⁻¹) ∈ E.fixingSubgroup :=
-  sorry
+      σ⁻¹ * (g * globalFrob v * g⁻¹) ∈ E.fixingSubgroup := by
+  set L : IntermediateField K (AlgebraicClosure K) :=
+    IntermediateField.normalClosure K E (AlgebraicClosure K)
+  obtain ⟨v, hvS, h, hh⟩ :=
+    exists_globalFrob_restrictNormalHom_conj S L
+      (AlgEquiv.restrictNormalHom L σ)
+  obtain ⟨g, hg⟩ := AlgEquiv.restrictNormalHom_surjective
+    (F := K) (K₁ := L) (AlgebraicClosure K) h
+  refine ⟨v, hvS, g,
+    IntermediateField.fixingSubgroup_le E.le_normalClosure ?_⟩
+  rw [← IntermediateField.restrictNormalHom_ker, MonoidHom.mem_ker,
+    map_mul, map_inv, map_mul, map_mul, map_inv, hg, hh, inv_mul_cancel]
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Chebotarev density, topological form**: for a finite set `S` of

@@ -528,8 +528,70 @@ theorem exists_global_triangular_of_residual_trivial_quotient
     (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
       π ((ρ.baseChange kk) g w) = π w) :
     ∃ (b : Module.Basis (Fin 2) R V) (χ : Γ ℚ →* R) (cc : Γ ℚ → R),
-      ∀ g : Γ ℚ, LinearMap.toMatrix b b (ρ g) = !![χ g, cc g; 0, 1] :=
-  sorry
+      ∀ g : Γ ℚ, LinearMap.toMatrix b b (ρ g) = !![χ g, cc g; 0, 1] := by
+  classical
+  -- **Step A** (sorry node — the deep arithmetic step, Serre §5.4/Fontaine):
+  -- the residual trivial quotient lifts through the complete local ring `R`
+  -- to an integral equivariant surjection onto the trivial representation.
+  have hA : ∃ πR : V →ₗ[R] R, Function.Surjective πR ∧
+      ∀ (g : Γ ℚ) (v : V), πR (ρ g v) = πR v := by
+    sorry
+  obtain ⟨πR, hπRsurj, hπRequiv⟩ := hA
+  -- **Step B** (linear algebra over the local ring `R`): a basis adapted to
+  -- the split exact sequence `0 → ker πR → V → R → 0` — the kernel of the
+  -- split surjection is finite projective over the local `R`, hence free,
+  -- of rank `2 - 1 = 1`.
+  have hB : ∃ b : Module.Basis (Fin 2) R V,
+      LinearMap.ker πR = Submodule.span R {b 0} ∧ πR (b 1) = 1 := by
+    sorry
+  obtain ⟨b, hkerspan, hb1⟩ := hB
+  -- `b 0` lies in the kernel
+  have hb0 : πR (b 0) = 0 := by
+    have hmem : b 0 ∈ LinearMap.ker πR := by
+      rw [hkerspan]; exact Submodule.mem_span_singleton_self _
+    exact LinearMap.mem_ker.mp hmem
+  -- coefficients on the basis vector `b 0` are unique
+  have hcoeff : ∀ r r' : R, r • b 0 = r' • b 0 → r = r' := by
+    intro r r' h
+    have h0 := congrArg (fun v => b.repr v 0) h
+    simpa using h0
+  -- the line `R • b 0 = ker πR` is Galois-stable: the eigenvalue exists
+  have hstab : ∀ g : Γ ℚ, ∃ r : R, ρ g (b 0) = r • b 0 := by
+    intro g
+    have hmem : ρ g (b 0) ∈ LinearMap.ker πR := by
+      rw [LinearMap.mem_ker, hπRequiv g (b 0), hb0]
+    rw [hkerspan, Submodule.mem_span_singleton] at hmem
+    obtain ⟨r, hr⟩ := hmem
+    exact ⟨r, hr.symm⟩
+  choose χ₀ hχ₀ using hstab
+  -- the off-diagonal coefficient: `ρ g (b 1) - b 1` is in the kernel
+  have hccex : ∀ g : Γ ℚ, ∃ r : R, ρ g (b 1) = r • b 0 + b 1 := by
+    intro g
+    have hmem : ρ g (b 1) - b 1 ∈ LinearMap.ker πR := by
+      rw [LinearMap.mem_ker, map_sub, hπRequiv g (b 1), sub_self]
+    rw [hkerspan, Submodule.mem_span_singleton] at hmem
+    obtain ⟨r, hr⟩ := hmem
+    exact ⟨r, by rw [hr]; abel⟩
+  choose cc hcc using hccex
+  -- multiplicativity of the eigenvalue system
+  have hmul : ∀ g h : Γ ℚ, χ₀ (g * h) = χ₀ g * χ₀ h := by
+    intro g h
+    apply hcoeff
+    calc χ₀ (g * h) • b 0 = ρ (g * h) (b 0) := (hχ₀ (g * h)).symm
+      _ = ρ g (ρ h (b 0)) := by rw [map_mul]; rfl
+      _ = ρ g (χ₀ h • b 0) := by rw [hχ₀ h]
+      _ = χ₀ h • ρ g (b 0) := map_smul _ _ _
+      _ = χ₀ h • (χ₀ g • b 0) := by rw [hχ₀ g]
+      _ = (χ₀ g * χ₀ h) • b 0 := by rw [smul_smul, mul_comm]
+  have hone : χ₀ 1 = 1 := by
+    apply hcoeff
+    rw [← hχ₀ 1, map_one, one_smul]
+    rfl
+  refine ⟨b, ⟨⟨χ₀, hone⟩, hmul⟩, cc, fun g => ?_⟩
+  ext i j
+  rw [LinearMap.toMatrix_apply]
+  fin_cases i <;> fin_cases j <;>
+    simp [hχ₀ g, hcc g, Basis.repr_self]
 
 /-- **Ordinarity lifting from the residual trivial quotient** (DERIVED
 2026-07-18 from the global triangular form and the cyclotomic-at-Frobenius
