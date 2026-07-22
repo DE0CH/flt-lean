@@ -2900,7 +2900,25 @@ written and compiling:
   layer C of `FlatProlongation`
   (`algHomEquivOfFinite`/`mem_range_algebraicClosureMap_of_isIntegral`)
   together with the torsion-point transport `algClosureEmbeddingRat`
-  already used by the unramifiedness glue in this file. -/
+  already used by the unramifiedness glue in this file.
+
+FURTHER DECOMPOSED (2026-07-22), assemblies written and compiling;
+four sorried sub-leaves remain:
+
+* `hloc` is split by `by_cases` on split multiplicative reduction of
+  the completed base change, consuming the PROVEN recentring witness
+  `exists_unit_qUnit_mul_inv_pow_isUnit` (`q_E·w⁻ᵖ ∈ 𝒪ˣ` from
+  `p ∣ v_p(j)`): `hsplitpkg` (the explicit Kummer Hopf model
+  `∏_{i<p} 𝒪[x]/(xᵖ − uⁱ)` with equivariant points via
+  `exists_tateEquivSepClosure`) and `hnonsplitpkg` (unramified
+  quadratic-twist descent of the split model).
+
+* `hdesc` factors through `hglobal` (the generic-fibre package
+  `TorsionFlatPackage ℚ ℚ E p ℚ̄` — Galois descent of the split
+  torsion algebra, no local input) and `hlattice` (the
+  lattice-intersection gluing
+  `TorsionFlatPackage ℚ ℚ → TorsionFlatPackage 𝒪[ℚ_pˆ] ℚ_pˆ →
+  TorsionFlatPackage ℤ_(p) ℚ`). -/
 theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp' : p.Prime)
     [Fact p.Prime] (hp2 : p ≠ 2)
@@ -2940,7 +2958,78 @@ theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
       p
       (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
         hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
-    sorry
+    by_cases hsp : (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat))).HasSplitMultiplicativeReduction
+        𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+    · haveI := hsp
+      -- the recentring witness (PROVEN, the step-(d) lemma above): from
+      -- `p ∣ v_p(j)` the Tate parameter is a `p`-th power times a unit,
+      -- `q_E · w⁻ᵖ ∈ 𝒪ˣ`
+      obtain ⟨w, hmemw, hunitw⟩ :=
+        exists_unit_qUnit_mul_inv_pow_isUnit hp'
+          (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))) (p := p)
+          (WeierstrassCurve.map_j _ _) hj
+      -- SPLIT KUMMER leaf (sorry node): with the Tate parameter
+      -- recentred to a unit `u = q_E·w'⁻ᵖ` of the completed integers,
+      -- the uniformization `exists_tateEquivSepClosure` presents
+      -- `E[p] ⊂ Ω̂ˣ/q_Eᶻ` as `⟨ζ_p, w'·u^{1/p}⟩`, a *peu-ramifiée*
+      -- extension of `ℤ/p` by `μ_p`; the finite flat model is the
+      -- explicit Kummer group scheme with Hopf algebra
+      -- `∏_{i<p} 𝒪[x]/(xᵖ − uⁱ)` (finite free of rank `p²`, étale
+      -- generic fibre in characteristic zero), whose `Ω̂`-points are
+      -- the `p²` torsion points `ζ_p^j·(w'·u^{1/p})^i` equivariantly
+      have hsplitpkg : ∀ (w' : (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)ˣ)
+          (hmem : (((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat))).qUnit * w'⁻¹ ^ p :
+              (HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat)ˣ) :
+              HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat) ∈
+            HeightOneSpectrum.adicCompletionIntegers ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat),
+          IsUnit (⟨_, hmem⟩ : HeightOneSpectrum.adicCompletionIntegers ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) →
+          WeierstrassCurve.TorsionFlatPackage
+            𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]
+            (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat)
+            (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat)))
+            p
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
+        sorry
+      exact hsplitpkg w hmemw hunitw
+    · -- NONSPLIT TWIST leaf (sorry node): the quadratic unramified
+      -- twist to split reduction
+      -- (`exists_quadraticTwist_hasSplitMultiplicativeReduction`, as in
+      -- `tate_inertia_unipotent_of_nonsplit` above) has the same
+      -- `j`-invariant, so the split leaf provides its package;
+      -- unramified quadratic descent of the Hopf model (the twisted
+      -- form is the invariants of the base-changed model under the
+      -- Galois-twisted involution, a finite flat Hopf order because
+      -- the extension is unramified) yields the package for `E` itself
+      have hnonsplitpkg :
+          ¬(E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat))).HasSplitMultiplicativeReduction
+            𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat] →
+          WeierstrassCurve.TorsionFlatPackage
+            𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]
+            (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat)
+            (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat)))
+            p
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
+        sorry
+      exact hnonsplitpkg hsp
   -- DESCENT leaf (sorry node): the completed-integers package descends
   -- to `ℤ_(p)` with globally equivariant points
   have hdesc : WeierstrassCurve.TorsionFlatPackage
@@ -2973,7 +3062,43 @@ theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
             (E⁄(AlgebraicClosure ℚ)).Point) =
             WeierstrassCurve.Affine.Point.map σ.toAlgHom
               (f (Additive.ofMul (WithConv.toConv φ))) := by
-    sorry
+    intro hl
+    -- GLOBAL GENERIC-FIBRE leaf (sorry node): the package over `ℚ`
+    -- itself (`R = K = ℚ`, flatness trivial) — the étale `ℚ`-Hopf
+    -- algebra of Galois-equivariant functions on the finite Galois set
+    -- `E[p](ℚ̄)` (Galois descent of the split algebra
+    -- `Maps(E[p](ℚ̄), ℚ̄)`), whose `ℚ̄`-points are globally
+    -- equivariantly the `p`-torsion; no local input
+    have hglobal : WeierstrassCurve.TorsionFlatPackage ℚ ℚ E p
+        (AlgebraicClosure ℚ) := by
+      sorry
+    -- LATTICE-INTERSECTION leaf (sorry node): a global generic-fibre
+    -- package and a local completed-integers package glue to a package
+    -- over `ℤ_(p) = ℚ ∩ ℤ_p`: the model is the intersection of the
+    -- global algebra with the local Hopf model inside its completed
+    -- base change (finite flat because finitely generated torsion-free
+    -- over the DVR `ℤ_(p)`, a Hopf order because both intersectands
+    -- are); the local-vs-global points comparison rides the chosen
+    -- embedding `ℚ̄ ↪ ℚ̄_p` (`algClosureEmbeddingRat`,
+    -- `algHomEquivOfFinite`/`mem_range_algebraicClosureMap_of_isIntegral`
+    -- as in layer C of `FlatProlongation`)
+    have hlattice : WeierstrassCurve.TorsionFlatPackage ℚ ℚ E p
+          (AlgebraicClosure ℚ) →
+        WeierstrassCurve.TorsionFlatPackage
+          𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)))
+          p
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)) →
+        WeierstrassCurve.TorsionFlatPackage
+          (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)
+          ℚ E p (AlgebraicClosure ℚ) := by
+      sorry
+    exact hlattice hglobal hl
   exact hdesc hloc
 
 open TensorProduct in
