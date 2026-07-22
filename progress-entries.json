@@ -1358,7 +1358,7 @@
     "name": "exists_equivariant_defect_coboundary",
     "fullname": "GaloisRepresentation.IsHardlyRamified.exists_equivariant_defect_coboundary",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
-    "wip": true,
+    "wip": false,
     "text": "`exists_equivariant_defect_coboundary` (stated 2026-07-22, sole surviving leaf of the proven two-level Threeadic lifting chain): the defect 1-cocycle valued in Hom(V̄, 𝔪ⁿ⁺¹/𝔪ⁿ⁺²) is a coboundary — its class lies in the (flat-at-3, tame-at-2, unramified-elsewhere) Selmer group, which vanishes by class number 1 of ℚ/ℚ(ζ₃) plus unit computations (route in the docstring).",
     "parent": "GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient"
   },
@@ -1396,7 +1396,7 @@
   },
   {
     "name": "exists_etale_line_of_multiplicative_self",
-    "fullname": "FreyPackage.exists_etale_line_of_multiplicative_self",
+    "fullname": "WeierstrassCurve.exists_etale_line_of_multiplicative_self",
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
     "wip": false,
     "text": "`FreyPackage.exists_etale_line_of_multiplicative_self` — Tate/connected-étale line at multiplicative self-reduction (leaf of the proven flat/ordinary linear-algebra assembly)",
@@ -1404,7 +1404,7 @@
   },
   {
     "name": "exists_etale_line_of_good_of_stable_line",
-    "fullname": "FreyPackage.exists_etale_line_of_good_of_stable_line",
+    "fullname": "WeierstrassCurve.exists_etale_line_of_good_of_stable_line",
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
     "wip": false,
     "text": "`FreyPackage.exists_etale_line_of_good_of_stable_line` — connected-étale line at good reduction with stable line (leaf of the proven flat/ordinary linear-algebra assembly)",
@@ -1524,26 +1524,42 @@
   },
   {
     "name": "exists_etale_line_of_split_multiplicative_self",
-    "fullname": "FreyPackage.exists_etale_line_of_split_multiplicative_self",
+    "fullname": "WeierstrassCurve.exists_etale_line_of_split_multiplicative_self",
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
     "wip": true,
     "text": "`exists_etale_line_of_split_multiplicative_self` — split-multiplicative étale line: pure Kummer at the exists_tateEquivSepClosure interface (σ(u)/u ∈ μ_p for the whole local Galois group; only the μ_p-line rank-1 fact + global transport remain) — 2026-07-22",
-    "parent": "FreyPackage.exists_etale_line_of_multiplicative_self"
+    "parent": "WeierstrassCurve.exists_etale_line_of_multiplicative_self"
   },
   {
     "name": "exists_etale_line_of_nonsplit_multiplicative_self",
-    "fullname": "FreyPackage.exists_etale_line_of_nonsplit_multiplicative_self",
+    "fullname": "WeierstrassCurve.exists_etale_line_of_nonsplit_multiplicative_self",
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
     "wip": true,
     "text": "`exists_etale_line_of_nonsplit_multiplicative_self` — nonsplit case: unramified quadratic-twist descent via exists_quadraticTwist_hasSplitMultiplicativeReduction — 2026-07-22",
-    "parent": "FreyPackage.exists_etale_line_of_multiplicative_self"
+    "parent": "WeierstrassCurve.exists_etale_line_of_multiplicative_self"
   },
   {
     "name": "exists_etale_line_or_no_stable_line_of_good",
-    "fullname": "FreyPackage.exists_etale_line_or_no_stable_line_of_good",
+    "fullname": "WeierstrassCurve.exists_etale_line_or_no_stable_line_of_good",
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
     "wip": true,
     "text": "`exists_etale_line_or_no_stable_line_of_good` — ordinary/supersingular dichotomy with the stable line factored out (Serre 1972 Prop 12 shape) — 2026-07-22",
-    "parent": "FreyPackage.exists_etale_line_of_good_of_stable_line"
+    "parent": "WeierstrassCurve.exists_etale_line_of_good_of_stable_line"
+  },
+  {
+    "name": "exists_omega_cocycle_coboundary",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.exists_omega_cocycle_coboundary",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
+    "wip": true,
+    "text": "`exists_omega_cocycle_coboundary` — an a-twisted 1-cocycle mod 𝔪ⁿ⁺² arising as the w₀-defect is a twisted coboundary one level deeper — H¹(ℚ, ω ⊗ 𝔪ⁿ⁺¹/𝔪ⁿ⁺²) with Serre's local conditions vanishes (ℚ(ζ₃) class number 1 + units, Serre Duke §5.4) — 2026-07-22",
+    "parent": "GaloisRepresentation.IsHardlyRamified.exists_equivariant_defect_coboundary"
+  },
+  {
+    "name": "trivial_component_hom_vanishes",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.trivial_component_hom_vanishes",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
+    "wip": true,
+    "text": "`trivial_component_hom_vanishes` — the corrected trivial component (approximate hom Γℚ → 𝔪ⁿ⁺¹/𝔪ⁿ⁺²) vanishes: everywhere-unramified from hardly-ramifiedness, then Minkowski (NumberField.abs_discr_gt_two on the pin; missing bridge = absolute-Galois inertia/discriminant infrastructure) — 2026-07-22",
+    "parent": "GaloisRepresentation.IsHardlyRamified.exists_equivariant_defect_coboundary"
   }
 ]
