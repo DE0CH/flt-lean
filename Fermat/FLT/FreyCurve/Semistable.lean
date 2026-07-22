@@ -2876,6 +2876,34 @@ the `Ω`-points of `H` are the evaluations at the elements of `A`,
 equivariantly by construction. Stated with the redundant base change
 `K ⊗[K] H` to match the component shape of
 `WeierstrassCurve.TorsionFlatPackage` verbatim. -/
+theorem exists_galoisModulePackage_of_finiteQuotient
+    (K : Type) [Field K] [CharZero K]
+    (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
+    (A : Type) [AddCommGroup A] [Finite A]
+    (L : IntermediateField K Ω) [FiniteDimensional K L] [IsGalois K L]
+    (ρ' : (L ≃ₐ[K] L) →* AddMonoid.End A) :
+    ∃ (H : Type) (_ : CommRing H) (_ : HopfAlgebra K H)
+      (_ : Module.Finite K H) (_ : Module.Flat K H)
+      (_ : Algebra.Etale K (K ⊗[K] H))
+      (f : Additive (WithConv ((K ⊗[K] H) →ₐ[K] Ω)) ≃+ A),
+      ∀ (σ : Ω ≃ₐ[K] Ω) (φ : (K ⊗[K] H) →ₐ[K] Ω),
+        f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
+          ρ' (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ)
+            (f (Additive.ofMul (WithConv.toConv φ))) := by
+  sorry
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The finite-étale package of a Galois module killed by a finite
+Galois fixing subgroup** (DERIVED 2026-07-22 from the finite-quotient
+core leaf above): a `Gal(Ω/K)`-action killed by `Gal(Ω/L)` descends to
+a genuine `Gal(L/K)`-action along the restriction epimorphism
+`AlgEquiv.restrictNormalHom` (well-defined by the kernel hypothesis,
+multiplicative by surjectivity of restriction), and the finite-quotient
+package for the descended action is the required package — its
+equivariance transports back through the factorization. -/
 theorem exists_galoisModulePackage_of_finiteGalois
     (K : Type) [Field K] [CharZero K]
     (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
@@ -2890,7 +2918,47 @@ theorem exists_galoisModulePackage_of_finiteGalois
       ∀ (σ : Ω ≃ₐ[K] Ω) (φ : (K ⊗[K] H) →ₐ[K] Ω),
         f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
           ρ σ (f (Additive.ofMul (WithConv.toConv φ))) := by
-  sorry
+  classical
+  haveI : Normal K Ω := IsAlgClosure.normal K Ω
+  -- restriction to the finite Galois quotient is surjective
+  have hsur : Function.Surjective
+      (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L) :=
+    AlgEquiv.restrictNormalHom_surjective Ω
+  choose sec hsec using hsur
+  -- `ρ` kills every automorphism restricting to the identity of `L`
+  have hker' : ∀ η : Ω ≃ₐ[K] Ω,
+      AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L η = 1 → ρ η = 1 := by
+    intro η hη
+    refine hker η ((IntermediateField.mem_fixingSubgroup_iff _ _).mpr
+      fun x hx => ?_)
+    exact ((AlgEquiv.restrictNormal_eq_one_iff L η).mp hη) x hx
+  -- `ρ` factors through the restriction
+  have hfac : ∀ σ τ : Ω ≃ₐ[K] Ω,
+      AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ =
+        AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L τ →
+      ρ σ = ρ τ := by
+    intro σ τ h
+    have h1 : ρ (σ * τ⁻¹) = 1 :=
+      hker' _ (by rw [map_mul, map_inv, h, mul_inv_cancel])
+    calc ρ σ = ρ ((σ * τ⁻¹) * τ) := by rw [inv_mul_cancel_right]
+      _ = ρ (σ * τ⁻¹) * ρ τ := map_mul ρ _ _
+      _ = ρ τ := by rw [h1, one_mul]
+  -- the descended finite-group action
+  let ρ' : (L ≃ₐ[K] L) →* AddMonoid.End A :=
+    { toFun := fun g => ρ (sec g)
+      map_one' := by
+        rw [hfac (sec 1) 1 (by rw [hsec, map_one]), map_one]
+      map_mul' := fun g h => by
+        rw [hfac (sec (g * h)) (sec g * sec h)
+          (by rw [hsec, map_mul, hsec, hsec]), map_mul] }
+  have hρ' : ∀ σ : Ω ≃ₐ[K] Ω,
+      ρ' (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ) = ρ σ :=
+    fun σ => hfac (sec (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ))
+      σ (hsec _)
+  obtain ⟨H, i1, i2, i3, i4, i5, f, hf⟩ :=
+    exists_galoisModulePackage_of_finiteQuotient K Ω A L ρ'
+  refine ⟨H, i1, i2, i3, i4, i5, f, fun σ φ => ?_⟩
+  rw [hf σ φ, hρ']
 
 open TensorProduct in
 set_option backward.isDefEq.respectTransparency false in
