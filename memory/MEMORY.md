@@ -14,3 +14,4 @@
 - [Stop hook is a nudge](flt-stop-hook-is-a-nudge.md) — Deyao 2026-07-22: automatic back-to-work prompt, not a safety net; fail open, best-effort
 - [Report blocker class](flt-report-blocker-class.md) — Deyao 2026-07-22: every wait/blockage report must name the blocker AND its class: trusted tool (fine) vs Claude automation (defect)
 - [Worktree fan-out seeds artifacts](flt-worktree-seed-artifacts.md) — Deyao 2026-07-22: seed agent worktrees with build artifacts from a consistent settled state; never let agents build from fresh
+- [Scripts get a server, not MCP](scripts-get-a-server-not-mcp.md) — Deyao: headless scripts that can't use MCP effectively get a thin persistent server; delegate loading/invalidation to standard tooling
