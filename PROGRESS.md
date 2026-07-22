@@ -14,6 +14,8 @@ map where helpful.
 
 ## Tree (generated — do not edit by hand; run `python3 progress-tree.py`)
 
+**Sorried declarations (compiler-counted, last consistent daemon answer 2026-07-22): 7** — torsion_flat_of_good_reduction_of_isUnit, torsion_flat_of_good_reduction_mul, torsion_flat_of_good_reduction_prime_pow, exists_globalFrob_restrictNormalHom_conj, exists_weilPairing_mu, mem_isCompatible, torsion_flat_of_multiplicative_reduction (plus the newly decomposed not-yet-recounted leaves: 6 Serre eliminations in ModThree, hloc/hdesc in Semistable, hZinj/hcore in Family, G''-existence + hleg1-6 inside exists_weilPairing_mu).
+
 **STALE-STATE NOTE (2026-07-22): the tree below is the restored state as of commit f194364 — regeneration is currently refused while parallel agents rebuild (tracked entries missing from the daemon environment); this note disappears at the next successful `python3 progress-tree.py` run.**
 
 The tree below is GENERATED from `progress-entries.json` (the flat list
