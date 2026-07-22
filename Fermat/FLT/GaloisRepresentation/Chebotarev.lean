@@ -24,10 +24,16 @@ here. This file provides:
   `exists_frobenius_conj_mem_coset` and
   `exists_globalFrob_restrictNormalHom_conj`, both proven, and the
   PROVEN local–global bridge
-  `exists_isArithFrobAt_restrictNormalHom_globalFrob`) from the single
-  remaining sorry node `infinite_setOf_isArithFrobAt`, the classical
-  ideal-theoretic Chebotarev existence statement for a finite Galois
-  extension of number fields.
+  `exists_isArithFrobAt_restrictNormalHom_globalFrob`) from
+  `infinite_setOf_isArithFrobAt`, the classical ideal-theoretic
+  Chebotarev existence statement for a finite Galois extension of
+  number fields — itself now PROVEN by the classical Deuring reduction
+  to the cyclic case over the fixed field of `⟨τ⟩`, using the PROVEN
+  ramification-finiteness theorem `finite_setOf_exists_inertia_ne_bot`
+  (via the different ideal). The single remaining sorry leaf of this
+  module is `infinite_setOf_isArithFrobAt_zpowers`, the analytic core:
+  Chebotarev for a cyclic extension of number fields, restricted to
+  degree-one primes.
 
 The remaining pieces of the decomposition (Brauer–Nesbitt for
 2-dimensional mod-`ℓ` representations, the mod-`ℓ` cyclotomic character as
@@ -55,6 +61,11 @@ public import Mathlib.FieldTheory.KrullTopology
 public import Mathlib.FieldTheory.Normal.Closure
 import Mathlib.FieldTheory.Galois.Basic
 public import Mathlib.Topology.Instances.ZMod
+import Mathlib.RingTheory.DedekindDomain.Factorization
+import Mathlib.RingTheory.DedekindDomain.Different
+import Mathlib.NumberTheory.RamificationInertia.Galois
+import Mathlib.NumberTheory.RamificationInertia.Unramified
+import Mathlib.RingTheory.Ideal.Quotient.HasFiniteQuotients
 
 @[expose] public section
 
@@ -165,29 +176,312 @@ instance (L : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K L]
       exact x.2
     exact ⟨⟨y, hyint⟩, NumberField.RingOfIntegers.ext hy⟩
 
-/-- **Chebotarev, arithmetic core** (sorry node): for a finite Galois
-subextension `L` of `K̄/K` and any `τ ∈ Gal(L/K)`, infinitely many
-finite places `v` of `K` carry a prime `Q` of `𝓞 L` lying over `v`,
-with trivial inertia (i.e. `v` unramified in `L`), at which `τ` is an
-arithmetic Frobenius (`τ x ≡ x ^ #(𝓞 K / v) (mod Q)`). This is the
-classical existence form of the Chebotarev density theorem in purely
-finite, ideal-theoretic vocabulary — exactly the statement produced by
-the standard analytic proof (Lagarias–Odlyzko, or the classical
-reduction to cyclic extensions and Hecke L-functions; see Neukirch VII
-§13); no completions or absolute Galois groups appear. Analytic base
-available in mathlib for a future proof: Dirichlet's theorem on primes
-in arithmetic progressions (`Mathlib.NumberTheory.LSeries.PrimesInAP`,
-covering the cyclotomic-over-`ℚ` case) and the L-series nonvanishing
-machinery under it; the remaining mathematical content is the Deuring
-reduction to the cyclic case, which needs a notion of Dirichlet density
-of sets of places (to discard the residue-degree-`≥ 2` places), not
-just infinitude. -/
+/-- The Galois action on `𝓞 E` commutes with the `𝓞 F`-scalar action, for
+an arbitrary extension `E/F` of number fields — the general form of the
+intermediate-field instance above, needed to state the cyclic Chebotarev
+core over the fixed field of `⟨τ⟩` (which is an abstract number field,
+not an intermediate field of `K̄/K`). -/
+instance {F E : Type*} [Field F] [Field E] [Algebra F E] [NumberField E] :
+    SMulCommClass (E ≃ₐ[F] E) (𝓞 F) (𝓞 E) where
+  smul_comm e r x := by
+    refine NumberField.RingOfIntegers.ext ?_
+    have hcoe : ∀ y : 𝓞 E, ((e • y : 𝓞 E) : E) = e (y : E) := fun _ => rfl
+    have hsm : ∀ y : 𝓞 E, ((r • y : 𝓞 E) : E) =
+        algebraMap F E (algebraMap (𝓞 F) F r) * (y : E) := by
+      intro y
+      show algebraMap (𝓞 E) E (r • y) = _
+      rw [Algebra.smul_def, map_mul, ← IsScalarTower.algebraMap_apply (𝓞 F) (𝓞 E) E,
+        IsScalarTower.algebraMap_apply (𝓞 F) F E]
+    rw [hcoe, hsm x, hsm (e • x), map_mul, AlgEquiv.commutes, hcoe]
+
+/-- **Residue fields of degree-one primes do not grow**: if a prime `P` of
+`B` has residue field of prime cardinality `p`, then the residue field of
+the prime `P ∩ A` below it also has cardinality `p`. (The residue field of
+`P ∩ A` embeds into that of `P`, and a subgroup of a group of prime order
+`p` that is not trivial has order `p`.) Used to transfer the arithmetic
+Frobenius property `σ x ≡ x ^ #(residue field) (mod P)` from an
+intermediate base field down to the bottom field at degree-one primes. -/
+lemma natCard_quotient_under_eq_of_natCard_prime {A B : Type*} [CommRing A]
+    [CommRing B] [Algebra A B] (P : Ideal B) [P.IsPrime]
+    (hp : (Nat.card (B ⧸ P)).Prime) :
+    Nat.card (A ⧸ P.under A) = Nat.card (B ⧸ P) := by
+  haveI hBfin : Finite (B ⧸ P) := Nat.finite_of_card_ne_zero hp.ne_zero
+  set g : (A ⧸ P.under A) →+* (B ⧸ P) :=
+    Ideal.quotientMap P (algebraMap A B) le_rfl
+  have hginj : Function.Injective g := Ideal.quotientMap_injective' le_rfl
+  haveI : Finite (A ⧸ P.under A) := Finite.of_injective g hginj
+  have hdvd : Nat.card (A ⧸ P.under A) ∣ Nat.card (B ⧸ P) :=
+    AddSubgroup.card_dvd_of_injective g.toAddMonoidHom hginj
+  have hone : Nat.card (A ⧸ P.under A) ≠ 1 := by
+    haveI : (P.under A).IsPrime := Ideal.IsPrime.under A P
+    haveI : Nontrivial (A ⧸ P.under A) :=
+      Ideal.Quotient.nontrivial_iff.mpr (Ideal.IsPrime.ne_top inferInstance)
+    have h2 : 1 < Nat.card (A ⧸ P.under A) := Finite.one_lt_card
+    omega
+  rcases hp.eq_one_or_self_of_dvd _ hdvd with h | h
+  · exact absurd h hone
+  · exact h
+
+open IsDedekindDomain in
+/-- **Chebotarev, cyclic core** (sorry node): let `E/F` be an extension of
+number fields whose Galois group is generated by a single element `τ` (so
+`E/F` is finite cyclic; finiteness of the group, hence of the extension,
+follows from topological finiteness of cyclic Galois groups — no
+separate hypothesis is needed because `Gal(E/F)` of an infinite algebraic
+extension is uncountable, never cyclic). Then infinitely many finite
+places `P` of `F` have prime residue cardinality (residue degree one over
+`ℚ`) and carry a prime `Q` of `𝓞 E` lying over `P` at which `τ` is an
+arithmetic Frobenius (`τ x ≡ x ^ #(𝓞 F / P) (mod Q)`).
+
+This is the analytic core of the Chebotarev density theorem after the
+Deuring reduction (performed, PROVEN, in `infinite_setOf_isArithFrobAt`
+below): only the cyclic case is stated, and only existence of infinitely
+many degree-one primes is asked, exactly what the classical proof via
+Hecke L-functions for the cyclic extension `E/F` produces (Neukirch VII
+§13, or Lagarias–Odlyzko). The prime-residue-cardinality condition
+encodes "residue degree one over `ℚ`", which is free density-wise (the
+degree-`≥ 2` places of `F` have Dirichlet density zero) and is what makes
+the statement push down through `F` to any subfield. Analytic base
+available in mathlib for a future proof: Dirichlet's theorem on primes in
+arithmetic progressions (`Mathlib.NumberTheory.LSeries.PrimesInAP`,
+covering the case `F = ℚ`, `E` cyclotomic) and the L-series
+nonvanishing machinery under it; the remaining mathematical content is
+Chebotarev's field-crossing argument reducing the cyclic case to the
+cyclotomic one, plus the zero-density estimate for degree-`≥ 2` places.
+
+Why this leaf cannot be narrowed to the base `F = ℚ` even though every
+consumer of the Chebotarev chain instantiates `K = ℚ`
+(`dense_conjClasses_globalFrob (K := ℚ)` in `HardlyRamified/Lift.lean`
+and `WeilPairing.lean`): the consumers need density of Frobenii in the
+full absolute Galois group `Γ ℚ`, i.e. the finite-Galois-level statement
+for EVERY finite Galois `L/ℚ` and every `τ ∈ Gal(L/ℚ)` — not only
+abelian `L`. The Deuring reduction of that statement passes through the
+fixed field `F = L^⟨τ⟩`, an arbitrary number field; so the cyclic core
+is genuinely needed over arbitrary bases `F`, and mathlib's Dirichlet
+theorem (base `ℚ`) alone cannot close it: the cyclotomic case over a
+general base needs the Dedekind-zeta pole (or Hecke L-functions), which
+is precisely the analytic content this leaf isolates. -/
+theorem infinite_setOf_isArithFrobAt_zpowers
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] [IsGalois F E] (τ : E ≃ₐ[F] E)
+    (hgen : ∀ σ : E ≃ₐ[F] E, σ ∈ Subgroup.zpowers τ) :
+    {P : HeightOneSpectrum (𝓞 F) | (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+      ∃ Q : Ideal (𝓞 E), Q.IsPrime ∧ Q.LiesOver P.asIdeal ∧
+        IsArithFrobAt (𝓞 F) τ Q}.Infinite :=
+  sorry
+
+/-- The Galois group of a Galois extension of number fields acts
+faithfully on the ring of integers: two automorphisms agreeing on `𝓞 E`
+agree on `E = Frac(𝓞 E)`. -/
+instance {F E : Type*} [Field F] [Field E] [NumberField E] [Algebra F E] :
+    FaithfulSMul (E ≃ₐ[F] E) (𝓞 E) where
+  eq_of_smul_eq_smul {σ τ} h := by
+    refine AlgEquiv.ext fun e => ?_
+    obtain ⟨x, y, hy, rfl⟩ := IsFractionRing.div_surjective (A := 𝓞 E) e
+    have hcoe : ∀ (g : E ≃ₐ[F] E) (a : 𝓞 E),
+        g (algebraMap (𝓞 E) E a) = algebraMap (𝓞 E) E (g • a) := fun _ _ => rfl
+    rw [map_div₀, map_div₀, hcoe σ x, hcoe σ y, hcoe τ x, hcoe τ y, h x, h y]
+
+/-- The fixed points of the Galois action on `𝓞 E` are exactly the image
+of `𝓞 F`, for a Galois extension `E/F` of number fields (general form of
+the intermediate-field instance above). -/
+instance {F E : Type*} [Field F] [Field E] [NumberField E] [Algebra F E]
+    [IsGalois F E] : Algebra.IsInvariant (𝓞 F) (𝓞 E) (E ≃ₐ[F] E) where
+  isInvariant x hx := by
+    have hfixE : ∀ e : E ≃ₐ[F] E, e • (x : E) = (x : E) := fun e =>
+      congrArg (algebraMap (𝓞 E) E) (hx e)
+    obtain ⟨y, hy⟩ := Algebra.IsInvariant.isInvariant (A := F)
+      (G := E ≃ₐ[F] E) (x : E) hfixE
+    have hyint : IsIntegral ℤ y := by
+      rw [← isIntegral_algebraMap_iff (B := E) (algebraMap F E).injective, hy]
+      exact x.2
+    exact ⟨⟨y, hyint⟩, NumberField.RingOfIntegers.ext hy⟩
+
+/-- The Galois group of a Galois extension of number fields is a Galois
+group for the extension of rings of integers (with respect to the ambient
+project action on `𝓞 E`). -/
+instance {F E : Type*} [Field F] [Field E] [NumberField E] [Algebra F E]
+    [IsGalois F E] : IsGaloisGroup (E ≃ₐ[F] E) (𝓞 F) (𝓞 E) where
+  faithful := inferInstance
+  commutes := inferInstance
+  isInvariant := inferInstance
+
+open IsDedekindDomain in
+/-- **Finiteness of ramified places**: for a finite Galois extension `E/F`
+of number fields, only finitely many places of `F` carry a prime of
+`𝓞 E` with nontrivial inertia in `Gal(E/F)`. DERIVED: a prime with
+nontrivial inertia has inertia group of order equal to the ramification
+index (`Ideal.card_inertia_eq_ramificationIdxIn`), hence is not
+unramified (`Ideal.ramificationIdx_eq_one_of_isUnramifiedAt`), hence
+divides the different ideal (`Ideal.dvd_differentIdeal_iff`), which is
+nonzero (`differentIdeal_ne_bot`); and a nonzero ideal of the Dedekind
+domain `𝓞 E` has only finitely many prime divisors
+(`Ideal.finite_factors`), each contracting to a single place of `F`. -/
+theorem finite_setOf_exists_inertia_ne_bot
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] [FiniteDimensional F E] [IsGalois F E] :
+    {P : HeightOneSpectrum (𝓞 F) | ∃ Q : Ideal (𝓞 E), Q.IsPrime ∧
+      Q.LiesOver P.asIdeal ∧ Q.inertia (E ≃ₐ[F] E) ≠ ⊥}.Finite := by
+  classical
+  haveI : Module.Finite (𝓞 F) (𝓞 E) :=
+    Module.Finite.of_restrictScalars_finite ℤ (𝓞 F) (𝓞 E)
+  -- separability of the fraction-field extension, transported from `E/F`
+  letI : Algebra (FractionRing (𝓞 F)) (FractionRing (𝓞 E)) :=
+    FractionRing.liftAlgebra _ _
+  haveI hsep : Algebra.IsSeparable (FractionRing (𝓞 F)) (FractionRing (𝓞 E)) := by
+    refine Algebra.IsSeparable.of_equiv_equiv
+      (FractionRing.algEquiv (𝓞 F) F).symm.toRingEquiv
+      (FractionRing.algEquiv (𝓞 E) E).symm.toRingEquiv ?_
+    ext x
+    exact IsFractionRing.algEquiv_commutes (FractionRing.algEquiv (𝓞 F) F).symm
+      (FractionRing.algEquiv (𝓞 E) E).symm x
+  -- the different ideal is nonzero, so it has finitely many prime divisors
+  have h𝔡ne : differentIdeal (𝓞 F) (𝓞 E) ≠ ⊥ := differentIdeal_ne_bot
+  have h𝔡fin : {w : HeightOneSpectrum (𝓞 E) |
+      w.asIdeal ∣ differentIdeal (𝓞 F) (𝓞 E)}.Finite :=
+    Ideal.finite_factors h𝔡ne
+  -- reduce the bad set to the image of these prime divisors
+  refine (h𝔡fin.image (fun w => w.under (𝓞 F))).subset ?_
+  rintro P ⟨Q, hQprime, hQover, hQin⟩
+  haveI := hQprime
+  haveI : Q.LiesOver P.asIdeal := hQover
+  -- `Q` is nonzero, hence a height-one prime of `𝓞 E`
+  have hQne : Q ≠ ⊥ := by
+    intro h
+    apply P.ne_bot
+    rw [hQover.over, h, Ideal.under_def]
+    exact Ideal.comap_bot_of_injective _
+      (FaithfulSMul.algebraMap_injective (𝓞 F) (𝓞 E))
+  -- nontrivial inertia forces ramification, i.e. `Q` divides the different
+  have hQdvd : Q ∣ differentIdeal (𝓞 F) (𝓞 E) := by
+    rw [dvd_differentIdeal_iff]
+    intro hunram
+    apply hQin
+    haveI := hunram
+    haveI : (Q.under (𝓞 F)).IsPrime := Ideal.IsPrime.under (𝓞 F) Q
+    haveI : CharZero (FractionRing (𝓞 F)) :=
+      charZero_of_injective_algebraMap
+        (IsFractionRing.injective (𝓞 F) (FractionRing (𝓞 F)))
+    have hcard : Nat.card (Q.inertia (E ≃ₐ[F] E)) =
+        Ideal.ramificationIdxIn (Q.under (𝓞 F)) (𝓞 E) :=
+      Ideal.card_inertia_eq_ramificationIdxIn (G := E ≃ₐ[F] E) (Q.under (𝓞 F)) Q
+    rw [Ideal.ramificationIdxIn_eq_ramificationIdx (Q.under (𝓞 F)) Q (E ≃ₐ[F] E),
+      Ideal.ramificationIdx_eq_one_of_isUnramifiedAt] at hcard
+    exact Subgroup.eq_bot_of_card_eq _ hcard
+  exact ⟨⟨Q, hQprime, hQne⟩, hQdvd, IsDedekindDomain.HeightOneSpectrum.ext
+    hQover.over.symm⟩
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **Chebotarev, arithmetic core**: for a finite Galois subextension `L`
+of `K̄/K` and any `τ ∈ Gal(L/K)`, infinitely many finite places `v` of
+`K` carry a prime `Q` of `𝓞 L` lying over `v`, with trivial inertia
+(i.e. `v` unramified in `L`), at which `τ` is an arithmetic Frobenius
+(`τ x ≡ x ^ #(𝓞 K / v) (mod Q)`). This is the classical existence form
+of the Chebotarev density theorem in purely finite, ideal-theoretic
+vocabulary; no completions or absolute Galois groups appear.
+
+DERIVED by the classical **Deuring reduction** from the cyclic-case leaf
+`infinite_setOf_isArithFrobAt_zpowers` and the ramification-finiteness
+leaf `finite_setOf_exists_inertia_ne_bot`: let `F = L^⟨τ⟩` be the fixed
+field of the cyclic subgroup generated by `τ`, so that `L/F` is cyclic
+with Galois group generated by (the restriction-of-scalars lift of) `τ`.
+The cyclic leaf produces infinitely many places `P` of `F` of residue
+degree one over `ℚ` carrying a Frobenius prime `Q` for `τ` over `F`; at
+such `P` the Frobenius congruence over `F` IS the Frobenius congruence
+over `K` (the residue fields of `v = P ∩ K` and `P` coincide, both of
+prime cardinality — `natCard_quotient_under_eq_of_natCard_prime`).
+Discarding the finitely many places of `K` ramified in `L` (each carrying
+only finitely many `P`, by finiteness of the fibers of `P ↦ P ∩ K`)
+leaves infinitely many places of `K` with trivial inertia and the
+required Frobenius prime. -/
 theorem infinite_setOf_isArithFrobAt
     (L : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K L]
     [Normal K L] (τ : L ≃ₐ[K] L) :
     {v : Ω K | ∃ Q : Ideal (𝓞 L), Q.IsPrime ∧ Q.LiesOver v.asIdeal ∧
-      Q.inertia (L ≃ₐ[K] L) = ⊥ ∧ IsArithFrobAt (𝓞 K) τ Q}.Infinite :=
-  sorry
+      Q.inertia (L ≃ₐ[K] L) = ⊥ ∧ IsArithFrobAt (𝓞 K) τ Q}.Infinite := by
+  classical
+  -- the fixed field of the cyclic subgroup generated by `τ`
+  set F : IntermediateField K L := IntermediateField.fixedField (Subgroup.zpowers τ)
+  haveI : NumberField F := NumberField.of_module_finite K F
+  -- `τ` fixes `F` pointwise, so it lifts to an `F`-automorphism `τ'` of `L`
+  have hτmem : τ ∈ F.fixingSubgroup :=
+    (IntermediateField.le_iff_le (Subgroup.zpowers τ) F).mp le_rfl
+      (Subgroup.mem_zpowers τ)
+  set τ' : L ≃ₐ[F] L := IntermediateField.fixingSubgroupEquiv F ⟨τ, hτmem⟩ with hτ'def
+  -- `τ'` generates `Gal(L/F)`: Galois correspondence for the fixed field
+  have hgen : ∀ σ : L ≃ₐ[F] L, σ ∈ Subgroup.zpowers τ' := by
+    intro σ
+    obtain ⟨g, hg⟩ := (IntermediateField.fixingSubgroupEquiv F).surjective σ
+    have hgmem : (g : L ≃ₐ[K] L) ∈ Subgroup.zpowers τ := by
+      have h1 : F.fixingSubgroup = Subgroup.zpowers τ :=
+        IntermediateField.fixingSubgroup_fixedField (Subgroup.zpowers τ)
+      exact h1 ▸ g.2
+    obtain ⟨n, hn⟩ := Subgroup.mem_zpowers_iff.mp hgmem
+    refine ⟨n, ?_⟩
+    show τ' ^ n = σ
+    rw [← hg, hτ'def, ← map_zpow]
+    congr 1
+    exact Subtype.ext (by rw [SubgroupClass.coe_zpow]; exact hn)
+  -- the cyclic core over `F` and the ramification bound over `K`
+  have hA := infinite_setOf_isArithFrobAt_zpowers τ' hgen
+  have hB := finite_setOf_exists_inertia_ne_bot (F := K) (E := L)
+  -- pushing places of `F` down to places of `K`: finite fibers
+  set π : IsDedekindDomain.HeightOneSpectrum (𝓞 F) → Ω K :=
+    fun P => P.under (𝓞 K)
+  have hfiber : ∀ v : Ω K,
+      {P : IsDedekindDomain.HeightOneSpectrum (𝓞 F) | π P = v}.Finite := by
+    intro v
+    refine Set.Finite.of_finite_image (f := IsDedekindDomain.HeightOneSpectrum.asIdeal)
+      ?_ fun a _ b _ h => IsDedekindDomain.HeightOneSpectrum.ext h
+    refine (IsDedekindDomain.primesOver_finite v.asIdeal (𝓞 F)).subset ?_
+    rintro _ ⟨P, hP, rfl⟩
+    exact ⟨P.isPrime, ⟨by rw [← hP]; rfl⟩⟩
+  have hpreim : ∀ s : Set (Ω K), s.Finite → (π ⁻¹' s).Finite := by
+    intro s hs
+    have hcover : π ⁻¹' s = ⋃ v ∈ s, {P | π P = v} := by
+      ext P
+      simp [Set.mem_iUnion]
+    rw [hcover]
+    exact hs.biUnion fun v _ => hfiber v
+  -- the good places of `F`: cyclic-core data, over a `K`-unramified place
+  set T : Set (IsDedekindDomain.HeightOneSpectrum (𝓞 F)) :=
+    {P | (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+      ∃ Q : Ideal (𝓞 L), Q.IsPrime ∧ Q.LiesOver P.asIdeal ∧
+        IsArithFrobAt (𝓞 F) τ' Q} \
+      π ⁻¹' {v : Ω K | ∃ Q : Ideal (𝓞 L), Q.IsPrime ∧ Q.LiesOver v.asIdeal ∧
+        Q.inertia (L ≃ₐ[K] L) ≠ ⊥} with hTdef
+  have hTinf : T.Infinite := hA.sdiff (hpreim _ hB)
+  have himg : (π '' T).Infinite := fun hfin =>
+    hTinf ((hpreim _ hfin).subset (Set.subset_preimage_image π T))
+  -- every pushed-down place carries the required Frobenius prime
+  refine himg.mono ?_
+  rintro _ ⟨P, hPmem, rfl⟩
+  rw [hTdef] at hPmem
+  obtain ⟨⟨hcard, Q, hQprime, hQover, hQfrob⟩, hgood⟩ := hPmem
+  haveI := hQprime
+  haveI : Q.LiesOver P.asIdeal := hQover
+  haveI : P.asIdeal.LiesOver (π P).asIdeal := ⟨rfl⟩
+  haveI hQoverv : Q.LiesOver (π P).asIdeal :=
+    Ideal.LiesOver.trans Q P.asIdeal (π P).asIdeal
+  refine ⟨Q, hQprime, hQoverv, ?_, ?_⟩
+  · -- trivial inertia: `π P` avoids the ramified places
+    by_contra hne
+    exact hgood ⟨Q, hQprime, hQoverv, hne⟩
+  · -- the Frobenius congruence descends from `F` to `K` at degree-one primes
+    intro x
+    have h1 := hQfrob x
+    have h2 : Q.under (𝓞 F) = P.asIdeal := hQover.over.symm
+    have hcardeq : Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) =
+        Nat.card (𝓞 F ⧸ Q.under (𝓞 F)) := by
+      have h3 : Q.under (𝓞 K) = P.asIdeal.under (𝓞 K) := by
+        rw [← h2, Ideal.under_under]
+      rw [h3, h2]
+      exact natCard_quotient_under_eq_of_natCard_prime (A := 𝓞 K) P.asIdeal hcard
+    have hact : τ • x = τ' • x := NumberField.RingOfIntegers.ext rfl
+    show τ • x - x ^ Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ∈ Q
+    rw [hcardeq, hact]
+    exact h1
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
@@ -528,7 +822,7 @@ lemma natCast_mem_toHeightOneSpectrum_iff {p q : ℕ}
   exact ⟨fun hdvd => ((Nat.prime_dvd_prime_iff_eq hq hp).mp hdvd).symm,
     fun h => h ▸ dvd_rfl⟩
 
-/-- **Units away from the residue characteristic** (sorry node): a prime
+/-- **Units away from the residue characteristic**: a prime
 `p ≠ q` is a unit in the completed integers at the `q`-place of `ℚ` (its
 `q`-adic valuation is `1`). Ensures `ℓ^k ∉ Q` in the Frobenius
 roots-of-unity argument of `cyclotomicCharacter_globalFrob`. -/
@@ -558,7 +852,7 @@ theorem isUnit_natCast_adicCompletionIntegers {p q : ℕ} (hp : p.Prime)
     natCast_mem_toHeightOneSpectrum_iff hp hq]
   exact hne
 
-/-- **The `ℓ`-adic cyclotomic character at Frobenius** (sorry node): the
+/-- **The `ℓ`-adic cyclotomic character at Frobenius**: the
 `ℓ`-adic cyclotomic character evaluates to `q` at the global arithmetic
 Frobenius of a prime `q ≠ ℓ` — the arithmetic Frobenius at `q` acts on
 all `ℓ`-power roots of unity by `ζ ↦ ζ^q` (`μ_{ℓ^∞}` is unramified at
