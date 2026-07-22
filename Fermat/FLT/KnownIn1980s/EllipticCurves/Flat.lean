@@ -18,6 +18,7 @@ import Mathlib.RingTheory.HopfAlgebra.TensorProduct
 import Mathlib.RingTheory.TensorProduct.Finite
 public import Mathlib.RingTheory.Polynomial.Resultant.Basic
 public import Fermat.FLT.EllipticCurve.PhiPsiCoprime
+public import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
 
 /-!
 
@@ -109,9 +110,10 @@ above honest; compare the corresponding condition in `GaloisRep.HasFlatProlongat
   Galois module of points, prolongs to a finite flat group scheme over `R`; as explained
   above, this is insensitive to the characteristic of `K`.
 
-* Prove the division polynomial lemmas at the bottom of this file
-  (`WeierstrassCurve.resultant_Φ_ΨSq` and `WeierstrassCurve.isCoprime_Φ_ΨSq`), which
-  isolate the arithmetic input to the theorem as a purely polynomial statement.
+* The division polynomial lemma `WeierstrassCurve.isCoprime_Φ_ΨSq`, which isolates the
+  arithmetic input to the theorem as a purely polynomial statement, is PROVEN and now
+  lives upstream in `Fermat.FLT.EllipticCurve.PhiPsiCoprime` (see the note at the bottom
+  of this file).
 
 -/
 
@@ -805,17 +807,10 @@ Reference for the resultant identity in short Weierstrass form: M. Ayad, *Points
 S-entiers des courbes elliptiques*, Manuscripta Math. 76 (1992), 305–324.
 -/
 
-/-- If the discriminant of a Weierstrass curve over a field is a unit then the division
-polynomials `Φ n` and `ΨSq n` are coprime, i.e. there is a Bézout identity
-`F * Φ n + G * ΨSq n = 1`. PROVEN (2026-07-17) directly — without the classical
-resultant formula `res(Φₙ, ΨSqₙ) = ±Δ^((n⁴−n²)/6)` — by the elliptic-divisibility-
-sequence rank argument: a common root over the algebraic closure lifts to a curve point
-whose `ψ`-value sequence has a rank of apparition dividing two consecutive integers,
-with the degenerate adjacent-zero cases excluded by the explicit Bézout certificates
-`F ⬝ Ψ₂Sq + G ⬝ Ψ₃ = −Δ²` and `F ⬝ Ψ₃ + G ⬝ preΨ₄ = Δ⁴` (see
-`Fermat.FLT.EllipticCurve.PhiPsiCoprime` and
-`Fermat.FLT.Mathlib.NumberTheory.EDSRank`). -/
-theorem WeierstrassCurve.isCoprime_Φ_ΨSq {k₀ : Type*} [Field k₀] (W : WeierstrassCurve k₀)
-    {n : ℤ} (hn : n ≠ 0) (hΔ : IsUnit W.Δ) :
-    IsCoprime (W.Φ n) (W.ΨSq n) :=
-  PhiPsiCoprime.isCoprime_Φ_ΨSq_field W hΔ.ne_zero hn
+-- `WeierstrassCurve.isCoprime_Φ_ΨSq` — the Bézout identity `F * Φ n + G * ΨSq n = 1`
+-- for a Weierstrass curve with unit discriminant over a field — was PROVEN here
+-- (2026-07-17) and MOVED upstream to `Fermat.FLT.EllipticCurve.PhiPsiCoprime`
+-- (2026-07-22, still re-exported through this module's public import) to untangle the
+-- import cycle recorded in the history of this file: `TorsionCard`/`TorsionCardSep`
+-- consume it and `GoodReduction` builds on them, while this file consumes the proven
+-- Néron–Ogg–Shafarevich theorem of `GoodReduction`.
