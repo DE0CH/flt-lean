@@ -32,10 +32,52 @@ rebuilding per-iteration would be wrong. The mechanics (session guard,
 daemon query, exit-code semantics, endgame build) are unchanged.
 """
 
+import glob
 import json
 import os
 import subprocess
 import sys
+import time
+
+# Fleet-aware gate (Deyao, 2026-07-22): an orchestrator waiting on live
+# background agents should not be reprompted on every stop — task
+# notifications wake it. Liveness source: the orchestrator-maintained
+# fleet registry; an agent is ALIVE iff any file matching its
+# transcript_glob was modified within the last 15 minutes.
+FLEET_STALE_SECONDS = 15 * 60
+
+
+def fleet_is_live(project_dir: str) -> bool:
+    """True iff >=1 registered agent has a fresh transcript file.
+
+    Any failure (missing/unreadable registry, bad shape, missing paths)
+    degrades to False — i.e. the hook blocks, never silently allows.
+    """
+    reg_path = os.environ.get("FLEET_REGISTRY_PATH") or os.path.join(
+        project_dir, ".claude", "fleet-registry.json")
+    try:
+        with open(reg_path, "r", encoding="utf-8") as fh:
+            agents = json.load(fh).get("agents", [])
+    except Exception:
+        return False
+    now = time.time()
+    for agent in agents:
+        if not isinstance(agent, dict):
+            continue
+        pattern = agent.get("transcript_glob")
+        if not pattern:
+            continue
+        try:
+            paths = glob.glob(pattern)
+        except Exception:
+            continue
+        for path in paths:
+            try:
+                if now - os.path.getmtime(path) < FLEET_STALE_SECONDS:
+                    return True
+            except OSError:
+                continue
+    return False
 
 
 def main() -> int:
@@ -132,6 +174,21 @@ def main() -> int:
             if line.startswith("error"):
                 sys.stderr.write(f"  {line}\n")
         return 2
+
+    # FLEET-AWARE GATE (sorries-present branch only): while >=1 registered
+    # agent is alive, allow the stop silently — the orchestrator is woken
+    # by task notifications, not by hook reprompts. Fleet idle (registry
+    # missing/empty/all transcripts stale) falls through to the full
+    # blocking message with one prepended FLEET IDLE line.
+    if sorries:
+        if fleet_is_live(project_dir):
+            return 0
+        print(
+            "FLEET IDLE: no live agents detected (registry "
+            ".claude/fleet-registry.json; stale >15min) while sorries "
+            "remain — re-dispatch or integrate now.",
+            file=sys.stderr,
+        )
 
     # Uncommitted changes: INFORMATION for the orchestrator, not an order
     # to commit everything — most dirty files are subagents' work-in-flight.

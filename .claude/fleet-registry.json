@@ -1,0 +1,87 @@
+{
+ "updated_at": "2026-07-22 17:54:28",
+ "note": "Live fleet ownership map, maintained by the orchestrator at dispatch/integration. The Stop hook uses transcript mtimes as the liveness signal (fresh = agent alive).",
+ "agents": [
+  {
+   "label": "flat",
+   "nodes": [
+    "torsion_flat_of_good_reduction_of_isUnit",
+    "torsion_flat_of_good_reduction_mul",
+    "torsion_flat_of_good_reduction_prime_pow"
+   ],
+   "transcript_glob": "/home/chend/.claude/projects/-home-chend-flt-lean/e68e4f89-102e-4f9f-8119-8fd03437ed31/subagents/workflows/wf_e6d74263-4a3/agent-*.jsonl"
+  },
+  {
+   "label": "mazur",
+   "nodes": [
+    "mazur_classification",
+    "subquotient_character_unramified_at_p",
+    "exists_quotient_curve_point"
+   ],
+   "transcript_glob": "/home/chend/.claude/projects/-home-chend-flt-lean/e68e4f89-102e-4f9f-8119-8fd03437ed31/subagents/workflows/wf_e6d74263-4a3/agent-*.jsonl"
+  },
+  {
+   "label": "threeadic",
+   "nodes": [
+    "exists_global_triangular_of_residual_trivial_quotient"
+   ],
+   "transcript_glob": "/home/chend/.claude/projects/-home-chend-flt-lean/e68e4f89-102e-4f9f-8119-8fd03437ed31/subagents/workflows/wf_e6d74263-4a3/agent-*.jsonl"
+  },
+  {
+   "label": "lift-family",
+   "nodes": [
+    "exists_hardlyRamifiedLift",
+    "mem_isCompatible"
+   ],
+   "transcript_glob": "/home/chend/.claude/projects/-home-chend-flt-lean/e68e4f89-102e-4f9f-8119-8fd03437ed31/subagents/workflows/wf_e6d74263-4a3/agent-*.jsonl"
+  },
+  {
+   "label": "chebotarev",
+   "nodes": [
+    "exists_globalFrob_restrictNormalHom_conj"
+   ],
+   "transcript_glob": "/home/chend/.claude/projects/-home-chend-flt-lean/e68e4f89-102e-4f9f-8119-8fd03437ed31/subagents/workflows/wf_e6d74263-4a3/agent-*.jsonl"
+  },
+  {
+   "label": "serre",
+   "nodes": [
+    "serre_elimination_dihedral",
+    "serre_elimination_alt4",
+    "serre_elimination_sym4",
+    "serre_elimination_alt5",
+    "serre_elimination_psl",
+    "serre_elimination_pgl"
+   ],
+   "transcript_glob": "/home/chend/.claude/projects/-home-chend-flt-lean/e68e4f89-102e-4f9f-8119-8fd03437ed31/subagents/workflows/wf_e6d74263-4a3/agent-*.jsonl"
+  },
+  {
+   "label": "tate",
+   "nodes": [
+    "hsplitpkg",
+    "hnonsplitpkg",
+    "hglobal",
+    "hlattice"
+   ],
+   "transcript_glob": "/home/chend/.claude/projects/-home-chend-flt-lean/e68e4f89-102e-4f9f-8119-8fd03437ed31/subagents/workflows/wf_e6d74263-4a3/agent-*.jsonl"
+  },
+  {
+   "label": "snapshot",
+   "nodes": [],
+   "transcript_glob": "/home/chend/.claude/projects/-home-chend-flt-lean/e68e4f89-102e-4f9f-8119-8fd03437ed31/subagents/workflows/wf_e6d74263-4a3/agent-*.jsonl"
+  },
+  {
+   "label": "gpp",
+   "nodes": [
+    "G''-existence (exists_weilPairing_mu)"
+   ],
+   "transcript_glob": "/home/chend/.claude/projects/-home-chend-flt-lean/e68e4f89-102e-4f9f-8119-8fd03437ed31/subagents/workflows/wf_e6d74263-4a3/agent-*.jsonl"
+  },
+  {
+   "label": "hlegs",
+   "nodes": [
+    "hleg1-hleg6 (exists_weilPairing_mu)"
+   ],
+   "transcript_glob": "/home/chend/.claude/projects/-home-chend-flt-lean/e68e4f89-102e-4f9f-8119-8fd03437ed31/subagents/workflows/wf_e6d74263-4a3/agent-*.jsonl"
+  }
+ ]
+}
