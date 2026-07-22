@@ -25,5 +25,4 @@ a proof skeleton that uses the new material; state the needed sub-lemmas
 (sorried, with `set_option warn.sorry false in`) at their point of use, so the
 compiler sees the dependency edge immediately; only then resolve them, layer
 by layer, downward. If a lemma would have no consumer edge after the current
-iteration, do not write it yet. Related: [[wstar-top-down-dependency-tree]],
-[[wstar-no-deferral-all-sorries-active]].
+iteration, do not write it yet. Related: [[flt-continuous-loop-directives]].

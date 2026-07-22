@@ -21,4 +21,4 @@ the repo; Deyao wants exactly one designated loop session.
 loop (e.g. after this session ends), it must first write its own session id
 (the transcript-file UUID) into `.claude/stop-hook-session-id` and commit
 that change — otherwise the hook will wedge it in the refusal branch.
-Related: [[flt-notify-mu-node]], [[wstar-continuous-tool-loop-no-wakeup]].
+Related: [[flt-notify-mu-node]], [[flt-continuous-loop-directives]].

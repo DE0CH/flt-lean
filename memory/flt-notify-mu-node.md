@@ -24,4 +24,4 @@ ToolSearch (`select:PushNotification`) if its schema is not in context, then
 send one message under 200 chars leading with the outcome (e.g.
 "exists_weilPairing_mu PROVEN — 11 sorries left" or
 "paused mu-node: <reason>"). This fires once per event, not per iteration.
-Related: [[wstar-top-down-dependency-tree]].
+Related: [[flt-continuous-loop-directives]].

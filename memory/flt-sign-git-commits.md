@@ -21,4 +21,4 @@ local verification, not a signing failure).
 **How to apply:** in every `git commit` for this project, simply omit
 `--no-gpg-sign`. If a commit ever fails due to signing, surface the error to
 Deyao instead of silently falling back to unsigned. Related:
-[[wstar-top-down-dependency-tree]].
+[[flt-continuous-loop-directives]].

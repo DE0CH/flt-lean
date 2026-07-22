@@ -24,4 +24,4 @@ gets silently overwritten on the next regeneration.
 **How to apply:** each loop iteration, put new sorried/derived declarations
 (with distilled descriptions) into `progress-entries.json`, delete entries for
 removed declarations, and regenerate; never mark or describe nodes by editing
-the tree text directly. This connects to [[wstar-top-down-dependency-tree]].
+the tree text directly. This connects to [[flt-continuous-loop-directives]].
