@@ -77,6 +77,10 @@ import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
 import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 public import Mathlib.RingTheory.Bialgebra.Convolution
 public import Mathlib.RingTheory.HopfAlgebra.TensorProduct
+-- finite Galois theory (`normalClosure`, `IsGalois`), consumed by the
+-- finite-factorization glue of `exists_galoisModulePackage`; PUBLIC
+-- because the finite-Galois core leaf is STATED with `IsGalois`
+public import Mathlib.FieldTheory.Galois.Basic
 
 @[expose] public section
 
@@ -2850,6 +2854,385 @@ def WeierstrassCurve.TorsionFlatPackage
         WeierstrassCurve.Affine.Point.map σ.toAlgHom
           (f (Additive.ofMul (WithConv.toConv φ)))
 
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The finite-étale package of a discrete Galois module over a
+characteristic-zero field** (sorry node — the étale-algebras/Galois-sets
+correspondence, WITH group structure; the only curve-independent leaf of
+the peu-ramifiée decomposition): for a finite abelian group `A` with an
+action of `Gal(Ω/K)` that is *discrete* (every point is fixed by the
+fixing subgroup of some finite subextension), there is a finite étale
+`K`-Hopf algebra whose `Ω`-points are `Gal(Ω/K)`-equivariantly
+isomorphic to `A`. Content (Grothendieck's Galois theory of étale
+`K`-algebras): `H` is the algebra of equivariant functions `A → Ω`;
+evaluation at orbit representatives identifies `H` with
+`∏_{orbits O} Fix(Stab O)`, a product of finite subextensions, hence
+finite étale of `K`-dimension `|A|`; the comultiplication is the
+pullback of the addition `A × A → A` through the analogous descent
+identification of `H ⊗[K] H` with the equivariant functions on `A × A`;
+the `Ω`-points of `H` are the evaluations at the elements of `A`,
+equivariantly by construction. Stated with the redundant base change
+`K ⊗[K] H` to match the component shape of
+`WeierstrassCurve.TorsionFlatPackage` verbatim. -/
+theorem exists_galoisModulePackage_of_finiteQuotient
+    (K : Type) [Field K] [CharZero K]
+    (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
+    (A : Type) [AddCommGroup A] [Finite A]
+    (L : IntermediateField K Ω) [FiniteDimensional K L] [IsGalois K L]
+    (ρ' : (L ≃ₐ[K] L) →* AddMonoid.End A) :
+    ∃ (H : Type) (_ : CommRing H) (_ : HopfAlgebra K H)
+      (_ : Module.Finite K H) (_ : Module.Flat K H)
+      (_ : Algebra.Etale K (K ⊗[K] H))
+      (f : Additive (WithConv ((K ⊗[K] H) →ₐ[K] Ω)) ≃+ A),
+      ∀ (σ : Ω ≃ₐ[K] Ω) (φ : (K ⊗[K] H) →ₐ[K] Ω),
+        f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
+          ρ' (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ)
+            (f (Additive.ofMul (WithConv.toConv φ))) := by
+  sorry
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The finite-étale package of a Galois module killed by a finite
+Galois fixing subgroup** (DERIVED 2026-07-22 from the finite-quotient
+core leaf above): a `Gal(Ω/K)`-action killed by `Gal(Ω/L)` descends to
+a genuine `Gal(L/K)`-action along the restriction epimorphism
+`AlgEquiv.restrictNormalHom` (well-defined by the kernel hypothesis,
+multiplicative by surjectivity of restriction), and the finite-quotient
+package for the descended action is the required package — its
+equivariance transports back through the factorization. -/
+theorem exists_galoisModulePackage_of_finiteGalois
+    (K : Type) [Field K] [CharZero K]
+    (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
+    (A : Type) [AddCommGroup A] [Finite A]
+    (ρ : (Ω ≃ₐ[K] Ω) →* AddMonoid.End A)
+    (L : IntermediateField K Ω) [FiniteDimensional K L] [IsGalois K L]
+    (hker : ∀ σ : Ω ≃ₐ[K] Ω, σ ∈ L.fixingSubgroup → ρ σ = 1) :
+    ∃ (H : Type) (_ : CommRing H) (_ : HopfAlgebra K H)
+      (_ : Module.Finite K H) (_ : Module.Flat K H)
+      (_ : Algebra.Etale K (K ⊗[K] H))
+      (f : Additive (WithConv ((K ⊗[K] H) →ₐ[K] Ω)) ≃+ A),
+      ∀ (σ : Ω ≃ₐ[K] Ω) (φ : (K ⊗[K] H) →ₐ[K] Ω),
+        f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
+          ρ σ (f (Additive.ofMul (WithConv.toConv φ))) := by
+  classical
+  haveI : Normal K Ω := IsAlgClosure.normal K Ω
+  -- restriction to the finite Galois quotient is surjective
+  have hsur : Function.Surjective
+      (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L) :=
+    AlgEquiv.restrictNormalHom_surjective Ω
+  choose sec hsec using hsur
+  -- `ρ` kills every automorphism restricting to the identity of `L`
+  have hker' : ∀ η : Ω ≃ₐ[K] Ω,
+      AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L η = 1 → ρ η = 1 := by
+    intro η hη
+    refine hker η ((IntermediateField.mem_fixingSubgroup_iff _ _).mpr
+      fun x hx => ?_)
+    exact ((AlgEquiv.restrictNormal_eq_one_iff L η).mp hη) x hx
+  -- `ρ` factors through the restriction
+  have hfac : ∀ σ τ : Ω ≃ₐ[K] Ω,
+      AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ =
+        AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L τ →
+      ρ σ = ρ τ := by
+    intro σ τ h
+    have h1 : ρ (σ * τ⁻¹) = 1 :=
+      hker' _ (by rw [map_mul, map_inv, h, mul_inv_cancel])
+    calc ρ σ = ρ ((σ * τ⁻¹) * τ) := by rw [inv_mul_cancel_right]
+      _ = ρ (σ * τ⁻¹) * ρ τ := map_mul ρ _ _
+      _ = ρ τ := by rw [h1, one_mul]
+  -- the descended finite-group action
+  let ρ' : (L ≃ₐ[K] L) →* AddMonoid.End A :=
+    { toFun := fun g => ρ (sec g)
+      map_one' := by
+        rw [hfac (sec 1) 1 (by rw [hsec, map_one]), map_one]
+      map_mul' := fun g h => by
+        rw [hfac (sec (g * h)) (sec g * sec h)
+          (by rw [hsec, map_mul, hsec, hsec]), map_mul] }
+  have hρ' : ∀ σ : Ω ≃ₐ[K] Ω,
+      ρ' (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ) = ρ σ :=
+    fun σ => hfac (sec (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ))
+      σ (hsec _)
+  obtain ⟨H, i1, i2, i3, i4, i5, f, hf⟩ :=
+    exists_galoisModulePackage_of_finiteQuotient K Ω A L ρ'
+  refine ⟨H, i1, i2, i3, i4, i5, f, fun σ φ => ?_⟩
+  rw [hf σ φ, hρ']
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The finite-étale package of a discrete Galois module** (DERIVED
+2026-07-22 from the finite-Galois core leaf above): the discreteness
+hypothesis is upgraded to a SINGLE finite Galois subextension through
+which the whole action factors — the compositum of the pointwise
+fields `L_a` is finite-dimensional (`A` is finite), and its normal
+closure is finite Galois over `K` (separability is automatic in
+characteristic zero); an automorphism fixing it fixes every `L_a`,
+hence acts trivially on `A`. -/
+theorem exists_galoisModulePackage
+    (K : Type) [Field K] [CharZero K]
+    (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
+    (A : Type) [AddCommGroup A] [Finite A]
+    (ρ : (Ω ≃ₐ[K] Ω) →* AddMonoid.End A)
+    (hdisc : ∀ a : A, ∃ L : IntermediateField K Ω, FiniteDimensional K L ∧
+      ∀ σ : Ω ≃ₐ[K] Ω, σ ∈ L.fixingSubgroup → ρ σ a = a) :
+    ∃ (H : Type) (_ : CommRing H) (_ : HopfAlgebra K H)
+      (_ : Module.Finite K H) (_ : Module.Flat K H)
+      (_ : Algebra.Etale K (K ⊗[K] H))
+      (f : Additive (WithConv ((K ⊗[K] H) →ₐ[K] Ω)) ≃+ A),
+      ∀ (σ : Ω ≃ₐ[K] Ω) (φ : (K ⊗[K] H) →ₐ[K] Ω),
+        f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
+          ρ σ (f (Additive.ofMul (WithConv.toConv φ))) := by
+  classical
+  -- choose the pointwise fixing fields
+  choose La hLafd hLafix using hdisc
+  haveI : ∀ a : A, FiniteDimensional K (La a) := hLafd
+  -- their compositum is finite-dimensional since `A` is finite
+  haveI hL0 : FiniteDimensional K
+      (⨆ a : A, La a : IntermediateField K Ω) :=
+    IntermediateField.finiteDimensional_iSup_of_finite
+  -- its normal closure is finite Galois over `K` (char 0)
+  have hker : ∀ σ : Ω ≃ₐ[K] Ω,
+      σ ∈ (IntermediateField.normalClosure K
+        (⨆ a : A, La a : IntermediateField K Ω) Ω).fixingSubgroup → ρ σ = 1 := by
+    intro σ hσ
+    refine AddMonoidHom.ext fun a => ?_
+    have hσa : σ ∈ (La a).fixingSubgroup := by
+      refine (IntermediateField.mem_fixingSubgroup_iff _ _).mpr fun x hx => ?_
+      exact ((IntermediateField.mem_fixingSubgroup_iff _ _).mp hσ) x
+        ((IntermediateField.le_normalClosure _)
+          ((le_iSup (fun a : A => (La a : IntermediateField K Ω)) a) hx))
+    exact hLafix a σ hσa
+  exact exists_galoisModulePackage_of_finiteGalois K Ω A ρ
+    (IntermediateField.normalClosure K
+      (⨆ a : A, La a : IntermediateField K Ω) Ω) hker
+
+open TensorProduct in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The global generic-fibre torsion package** (DERIVED 2026-07-22
+from the discrete-Galois-module package `exists_galoisModulePackage`):
+over `R = K = ℚ` the `p`-torsion of any elliptic curve is the group of
+`ℚ̄`-points of a finite étale `ℚ`-Hopf algebra, globally
+Galois-equivariantly — no local input and no flatness content
+(`ℚ` is a field). The glue proven here: the `p`-torsion is finite
+(`n_torsion_finite`), the Galois action on it is by additive
+automorphisms (the ambient `DistribMulAction` restricted to the torsion
+subgroup), and the action is discrete (a torsion point is fixed by the
+fixing subgroup of the finite extension generated by its two
+coordinates — the same argument as the continuity of `galoisRep`). -/
+theorem WeierstrassCurve.torsionFlatPackage_global
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (p : ℕ) [Fact p.Prime] :
+    WeierstrassCurve.TorsionFlatPackage ℚ ℚ E p (AlgebraicClosure ℚ) := by
+  classical
+  -- the `p`-torsion subgroup is finite
+  haveI hTfin : Finite (AddSubgroup.torsionBy
+      (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ)) := by
+    haveI hfin' : Finite ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) :=
+      WeierstrassCurve.n_torsion_finite _ (Fact.out : p.Prime).pos
+    exact Finite.of_equiv _
+      { toFun := fun (x : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) =>
+          (⟨x.1, by
+            have h1 := x.2
+            rw [Submodule.mem_torsionBy_iff] at h1
+            show ((p : ℕ) : ℤ) • x.1 = 0
+            exact_mod_cast h1⟩ :
+            AddSubgroup.torsionBy (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ))
+        invFun := fun x => ⟨x.1, by
+          rw [Submodule.mem_torsionBy_iff]
+          have h0 : ((p : ℕ) : ℤ) • x.1 = 0 := x.2
+          exact_mod_cast h0⟩
+        left_inv := fun _ => rfl
+        right_inv := fun _ => rfl }
+  -- stability of the torsion subgroup under the ambient Galois action
+  have hmem : ∀ (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+      (t : (E⁄(AlgebraicClosure ℚ)).Point),
+      t ∈ AddSubgroup.torsionBy (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ) →
+      σ • t ∈ AddSubgroup.torsionBy
+        (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ) := by
+    intro σ t ht
+    have h0 : ((p : ℕ) : ℤ) • t = 0 := ht
+    show ((p : ℕ) : ℤ) • (σ • t) = 0
+    have h1 := map_zsmul (DistribMulAction.toAddMonoidEnd
+      (AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+      ((E⁄(AlgebraicClosure ℚ)).Point) σ) ((p : ℕ) : ℤ) t
+    rw [h0, map_zero] at h1
+    exact h1.symm
+  -- the Galois action on the torsion subgroup, as a monoid hom into
+  -- additive endomorphisms
+  let ρ : (AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) →*
+      AddMonoid.End (AddSubgroup.torsionBy
+        (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ)) :=
+    { toFun := fun σ =>
+        { toFun := fun t => ⟨σ • t.1, hmem σ t.1 t.2⟩
+          map_zero' := Subtype.ext (smul_zero σ)
+          map_add' := fun s t => Subtype.ext (smul_add σ s.1 t.1) }
+      map_one' := AddMonoidHom.ext fun t => Subtype.ext (one_smul _ t.1)
+      map_mul' := fun σ τ =>
+        AddMonoidHom.ext fun t => Subtype.ext (mul_smul σ τ t.1) }
+  -- discreteness: a torsion point is fixed by the fixing subgroup of the
+  -- finite extension generated by its coordinates
+  have hdisc : ∀ t : AddSubgroup.torsionBy
+      (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ),
+      ∃ L : IntermediateField ℚ (AlgebraicClosure ℚ), FiniteDimensional ℚ L ∧
+        ∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ,
+          σ ∈ L.fixingSubgroup → ρ σ t = t := by
+    rintro ⟨t, ht⟩
+    cases t with
+    | zero =>
+      exact ⟨⊥, inferInstance, fun σ _ => Subtype.ext rfl⟩
+    | some x y hxy =>
+      refine ⟨IntermediateField.adjoin ℚ {x, y},
+        IntermediateField.finiteDimensional_adjoin fun z _ =>
+          (Algebra.IsAlgebraic.isAlgebraic z).isIntegral, fun σ hσ => ?_⟩
+      have hx : (σ : AlgebraicClosure ℚ →ₐ[ℚ] AlgebraicClosure ℚ) x = x :=
+        ((IntermediateField.mem_fixingSubgroup_iff _ _).mp hσ) x
+          (IntermediateField.subset_adjoin ℚ _ (Set.mem_insert x {y}))
+      have hy : (σ : AlgebraicClosure ℚ →ₐ[ℚ] AlgebraicClosure ℚ) y = y :=
+        ((IntermediateField.mem_fixingSubgroup_iff _ _).mp hσ) y
+          (IntermediateField.subset_adjoin ℚ _ (Set.mem_insert_of_mem x rfl))
+      refine Subtype.ext ?_
+      show WeierstrassCurve.Affine.Point.map (W' := E)
+        (σ : AlgebraicClosure ℚ →ₐ[ℚ] AlgebraicClosure ℚ) (.some x y hxy) =
+          .some x y hxy
+      rw [WeierstrassCurve.Affine.Point.map_some]
+      simp only [hx, hy]
+  obtain ⟨H, i1, i2, i3, i4, i5, f, hf⟩ :=
+    exists_galoisModulePackage ℚ (AlgebraicClosure ℚ)
+      (AddSubgroup.torsionBy (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ))
+      ρ hdisc
+  exact ⟨H, i1, i2, i3, i4, i5, f,
+    fun σ φ => congrArg Subtype.val (hf σ φ)⟩
+
+open TensorProduct ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The split Kummer package** (sorry node — the SPLIT-CASE local
+Tate/Kummer content, hoisted out of
+`torsion_flat_of_multiplicative_reduction` as a standalone leaf): for
+the completed base change with split multiplicative reduction and a
+recentring witness `w'` making `u = q_E·w'⁻ᵖ` a UNIT of the completed
+integers, the `p`-torsion carries a `TorsionFlatPackage` over
+`𝒪[ℚ_pˆ]`. Content: the uniformization `exists_tateEquivSepClosure`
+presents `E[p] ⊂ Ω̂ˣ/q_Eᶻ` as `⟨ζ_p, w'·u^{1/p}⟩`, a *peu-ramifiée*
+extension of `ℤ/p` by `μ_p`; the finite flat model is the explicit
+Kummer group scheme with Hopf algebra `∏_{i<p} 𝒪[x]/(xᵖ − uⁱ)` (finite
+free of rank `p²`, étale generic fibre in characteristic zero), whose
+`Ω̂`-points are the `p²` torsion points `ζ_pʲ·(w'·u^{1/p})ⁱ`,
+equivariantly by the Galois-equivariance of the uniformization. -/
+theorem WeierstrassCurve.torsionFlatPackage_of_split_adic
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp' : p.Prime)
+    [Fact p.Prime] (_hp2 : p ≠ 2)
+    [hsplit : (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat))).HasSplitMultiplicativeReduction
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] :
+    ∀ (w' : (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)ˣ)
+        (hmem : (((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))).qUnit * w'⁻¹ ^ p :
+            (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat)ˣ) :
+            HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat) ∈
+          HeightOneSpectrum.adicCompletionIntegers ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat),
+        IsUnit (⟨_, hmem⟩ : HeightOneSpectrum.adicCompletionIntegers ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) →
+        WeierstrassCurve.TorsionFlatPackage
+          𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)))
+          p
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
+  sorry
+
+open TensorProduct ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The nonsplit twist package** (sorry node — the NONSPLIT-CASE
+local content, hoisted out of `torsion_flat_of_multiplicative_reduction`
+as a standalone leaf; the extra hypotheses `hj` and the global
+multiplicative-reduction instance are available to the prover): if the
+completed base change does NOT have split multiplicative reduction, the
+quadratic unramified twist to split reduction
+(`exists_quadraticTwist_hasSplitMultiplicativeReduction`) has the same
+`j`-invariant, so the split leaf provides its package; unramified
+quadratic descent of the Hopf model (the twisted form is the invariants
+of the base-changed model under the Galois-twisted involution, a finite
+flat Hopf order because the extension is unramified) yields the package
+for `E` itself. -/
+theorem WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp' : p.Prime)
+    [Fact p.Prime] (_hp2 : p ≠ 2)
+    [E.HasMultiplicativeReduction
+      (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
+    (_hj : (p : ℤ) ∣ padicValRat p E.j) :
+    ¬(E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat))).HasSplitMultiplicativeReduction
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat] →
+    WeierstrassCurve.TorsionFlatPackage
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)))
+      p
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
+  sorry
+
+open TensorProduct ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The lattice-intersection descent** (sorry node — the gluing leaf,
+hoisted out of `torsion_flat_of_multiplicative_reduction` as a
+standalone implication): a global generic-fibre package and a local
+completed-integers package glue to a package over `ℤ_(p) = ℚ ∩ ℤ_p`.
+The model is the intersection of the global algebra with the local Hopf
+model inside its completed base change (finite flat because finitely
+generated torsion-free over the DVR `ℤ_(p)`, a Hopf order because both
+intersectands are); the local-vs-global points comparison rides the
+chosen embedding `ℚ̄ ↪ ℚ̄_p` (`algClosureEmbeddingRat`,
+`algHomEquivOfFinite`/`mem_range_algebraicClosureMap_of_isIntegral` as
+in layer C of `FlatProlongation`) together with the torsion-point
+transport already used by the unramifiedness glue in this file. -/
+theorem WeierstrassCurve.torsionFlatPackage_localization_of_packages
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp' : p.Prime)
+    [Fact p.Prime] :
+    WeierstrassCurve.TorsionFlatPackage ℚ ℚ E p (AlgebraicClosure ℚ) →
+    WeierstrassCurve.TorsionFlatPackage
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)))
+      p
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) →
+    WeierstrassCurve.TorsionFlatPackage
+      (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)
+      ℚ E p (AlgebraicClosure ℚ) := by
+  sorry
+
 open TensorProduct ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
@@ -3002,7 +3385,7 @@ theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
             p
             (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
               hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
-        sorry
+        exact WeierstrassCurve.torsionFlatPackage_of_split_adic E hp' hp2
       exact hsplitpkg w hmemw hunitw
     · -- NONSPLIT TWIST leaf (sorry node): the quadratic unramified
       -- twist to split reduction
@@ -3028,7 +3411,7 @@ theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
             p
             (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
               hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
-        sorry
+        exact WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic E hp' hp2 hj
       exact hnonsplitpkg hsp
   -- DESCENT leaf (sorry node): the completed-integers package descends
   -- to `ℤ_(p)` with globally equivariant points
@@ -3071,7 +3454,7 @@ theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
     -- equivariantly the `p`-torsion; no local input
     have hglobal : WeierstrassCurve.TorsionFlatPackage ℚ ℚ E p
         (AlgebraicClosure ℚ) := by
-      sorry
+      exact WeierstrassCurve.torsionFlatPackage_global E p
     -- LATTICE-INTERSECTION leaf (sorry node): a global generic-fibre
     -- package and a local completed-integers package glue to a package
     -- over `ℤ_(p) = ℚ ∩ ℤ_p`: the model is the intersection of the
@@ -3097,7 +3480,7 @@ theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
         WeierstrassCurve.TorsionFlatPackage
           (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)
           ℚ E p (AlgebraicClosure ℚ) := by
-      sorry
+      exact WeierstrassCurve.torsionFlatPackage_localization_of_packages E hp'
     exact hlattice hglobal hl
   exact hdesc hloc
 
