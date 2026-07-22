@@ -44,40 +44,35 @@ import time
 # notifications wake it. Liveness source: the orchestrator-maintained
 # fleet registry; an agent is ALIVE iff any file matching its
 # transcript_glob was modified within the last 15 minutes.
+# FAIL OPEN (Deyao, 2026-07-22): this hook is a back-to-work nudge, not
+# a safety net — automation failure is acceptable. Block only on the
+# clean positive case (sorries remain AND the registry is readable AND
+# no transcript is fresh); every ambiguous or error path allows the stop.
 FLEET_STALE_SECONDS = 15 * 60
 
 
-def fleet_is_live(project_dir: str) -> bool:
-    """True iff >=1 registered agent has a fresh transcript file.
+def fleet_is_idle(project_dir: str) -> bool:
+    """True iff the registry is readable AND no agent transcript is fresh.
 
-    Any failure (missing/unreadable registry, bad shape, missing paths)
-    degrades to False — i.e. the hook blocks, never silently allows.
+    Fail open: any error (missing/unreadable registry, bad shape, glob
+    or stat failure) returns False, i.e. the stop is allowed.
     """
     reg_path = os.environ.get("FLEET_REGISTRY_PATH") or os.path.join(
         project_dir, ".claude", "fleet-registry.json")
     try:
         with open(reg_path, "r", encoding="utf-8") as fh:
             agents = json.load(fh).get("agents", [])
-    except Exception:
-        return False
-    now = time.time()
-    for agent in agents:
-        if not isinstance(agent, dict):
-            continue
-        pattern = agent.get("transcript_glob")
-        if not pattern:
-            continue
-        try:
-            paths = glob.glob(pattern)
-        except Exception:
-            continue
-        for path in paths:
-            try:
-                if now - os.path.getmtime(path) < FLEET_STALE_SECONDS:
-                    return True
-            except OSError:
+        now = time.time()
+        for agent in agents:
+            pattern = agent.get("transcript_glob")
+            if not pattern:
                 continue
-    return False
+            for path in glob.glob(pattern):
+                if now - os.path.getmtime(path) < FLEET_STALE_SECONDS:
+                    return False  # a live agent -> fleet not idle
+    except Exception:
+        return False  # fail open: idleness not cleanly established
+    return True
 
 
 def main() -> int:
@@ -133,14 +128,13 @@ def main() -> int:
         if "error" in resp:
             raise RuntimeError(resp["error"])
     except Exception as exc:
+        # FAIL OPEN (Deyao, 2026-07-22): the hook is a nudge, not a
+        # safety net — a daemon hiccup must not block the stop.
         sys.stderr.write(
-            f"Stop hook could not query the lean daemon ({exc}); the loop "
-            "exit condition is unverified. Get the daemon healthy "
-            "(dispatch an infra agent if nontrivial): fermat/"
-            "lean-daemon.py, log in fermat/.lean-daemon.log; then continue "
-            "the loop.\n"
+            f"Stop hook: lean daemon query failed ({exc}); allowing the "
+            "stop (fail open).\n"
         )
-        return 2
+        return 0
 
     sorries = [f"{s['name']} ({s['module']})" for s in resp["sorried"]]
     root = resp.get("root", {})
@@ -176,12 +170,13 @@ def main() -> int:
         return 2
 
     # FLEET-AWARE GATE (sorries-present branch only): while >=1 registered
-    # agent is alive, allow the stop silently — the orchestrator is woken
-    # by task notifications, not by hook reprompts. Fleet idle (registry
-    # missing/empty/all transcripts stale) falls through to the full
-    # blocking message with one prepended FLEET IDLE line.
+    # agent is alive — or the fleet state cannot be cleanly established
+    # (fail open) — allow the stop silently; task notifications wake the
+    # orchestrator. Only a readable registry with all transcripts stale
+    # falls through to the full blocking message with one prepended
+    # FLEET IDLE line.
     if sorries:
-        if fleet_is_live(project_dir):
+        if not fleet_is_idle(project_dir):
             return 0
         print(
             "FLEET IDLE: no live agents detected (registry "
