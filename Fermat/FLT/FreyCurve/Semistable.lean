@@ -3742,27 +3742,376 @@ noncomputable instance kummerBialgebra [NeZero p] : Bialgebra R (KummerAlg R p u
     (kummerComul_rTensor_counit R p u)
     (kummerComul_lTensor_counit R p u)
 
-/-- **The antipode axiom, right form** (sorry node — `μ ∘ (S ⊗ id) ∘ Δ
-= η ∘ ε` on the explicit model: on the `(i,t)`-component the composite
-classifies `(i,t)⁻¹·(i,t) = (0,1)`, the identity; chase the root and
-compare carries). -/
+/-- The antipode on a one-component element supported at a negated
+index (PROVEN — cast-free by phrasing the index as `-j`):
+`S(single₋ⱼ x) = singleⱼ(Sⱼ x)`. -/
+theorem kummerAntipode_single_neg [NeZero p] (j : ZMod p)
+    (x : KummerComponent R p u (-j)) :
+    kummerAntipode R p u (Pi.single (-j) x) =
+      Pi.single j (kummerAntipodeComponent R p u j x) := by
+  funext i'
+  simp only [kummerAntipode, AlgHom.pi_apply, AlgHom.comp_apply]
+  rw [show (Pi.evalAlgHom R (KummerComponent R p u) (-i'))
+    (Pi.single (-j) x) = (Pi.single (-j) x : KummerAlg R p u) (-i') from rfl]
+  by_cases hij : i' = j
+  · subst hij
+    rw [Pi.single_eq_same, Pi.single_eq_same]
+  · rw [Pi.single_eq_of_ne (fun h' => hij (neg_injective h')), map_zero,
+      Pi.single_eq_of_ne hij]
+
+/-- The antipode of a one-component element is supported at the negated
+index (PROVEN). -/
+theorem kummerAntipode_single_support [NeZero p] {i i' : ZMod p}
+    (h : i' ≠ -i) (x : KummerComponent R p u i) :
+    kummerAntipode R p u (Pi.single i x) i' = 0 := by
+  simp only [kummerAntipode, AlgHom.pi_apply, AlgHom.comp_apply]
+  rw [show (Pi.evalAlgHom R (KummerComponent R p u) (-i'))
+    (Pi.single i x) = (Pi.single i x : KummerAlg R p u) (-i') from rfl]
+  rw [Pi.single_eq_of_ne (fun h' : -i' = i => h (by rw [← h', neg_neg])),
+    map_zero]
+
+/-- The antipode block on the root (PROVEN — `liftAlgHom` on the
+adjoined root). -/
+theorem kummerAntipodeComponent_root [NeZero p] (i : ZMod p) :
+    kummerAntipodeComponent R p u i (kummerRoot R p u (-i)) =
+      kummerAntipodeRoot R p u i :=
+  AdjoinRoot.liftAlgHom_root _ _ _ _
+
+/-- The carry of the diagonal comultiplication block `(−j, j)` is the
+identity-component indicator (PROVEN). -/
+theorem kummer_neg_val_carry [NeZero p] (j : ZMod p) :
+    (if (-j).val + j.val < p then 0 else 1) =
+      (if j = 0 then (0 : ℕ) else 1) := by
+  by_cases hj : j = 0
+  · subst hj
+    have h0 : (-(0 : ZMod p)).val + (0 : ZMod p).val < p := by
+      rw [neg_zero, ZMod.val_zero, add_zero]
+      exact Nat.pos_of_ne_zero (NeZero.ne p)
+    rw [if_pos h0, if_pos rfl]
+  · have h1 : ¬((-j).val + j.val < p) := by
+      rw [ZMod.neg_val, if_neg hj, Nat.sub_add_cancel (ZMod.val_lt j).le]
+      exact lt_irrefl p
+    rw [if_neg h1, if_neg hj]
+
+/-- The carry of the diagonal comultiplication block `(i, −i)` is the
+identity-component indicator (PROVEN). -/
+theorem kummer_val_neg_carry [NeZero p] (i : ZMod p) :
+    (if i.val + (-i).val < p then 0 else 1) =
+      (if i = 0 then (0 : ℕ) else 1) := by
+  rw [Nat.add_comm]
+  exact kummer_neg_val_carry p i
+
+/-- `μ ∘ (S ⊗ id)` kills the off-diagonal tensor blocks (PROVEN by
+tensor induction: the antipode factor is supported at the negated
+index, so the product of one-component elements vanishes). -/
+theorem kummer_antipode_rTensor_kill [NeZero p] {i j : ZMod p}
+    (h : i + j ≠ 0)
+    (T : TensorProduct R (KummerComponent R p u i) (KummerComponent R p u j)) :
+    (Algebra.TensorProduct.lift (kummerAntipode R p u)
+      (AlgHom.id R (KummerAlg R p u)) fun _ _ => Commute.all _ _)
+      ((TensorProduct.map (LinearMap.single R (KummerComponent R p u) i)
+        (LinearMap.single R (KummerComponent R p u) j)) T) = 0 := by
+  induction T using TensorProduct.induction_on with
+  | zero => rw [map_zero, map_zero]
+  | tmul x y =>
+    rw [TensorProduct.map_tmul, Algebra.TensorProduct.lift_tmul,
+      show (LinearMap.single R (KummerComponent R p u) i) x =
+        (Pi.single i x : KummerAlg R p u) from rfl,
+      show (LinearMap.single R (KummerComponent R p u) j) y =
+        (Pi.single j y : KummerAlg R p u) from rfl,
+      AlgHom.id_apply]
+    funext k
+    rw [Pi.mul_apply]
+    by_cases hk : k = j
+    · subst hk
+      rw [kummerAntipode_single_support R p u
+        (fun h' : k = -i => h (by rw [h', add_neg_cancel])) x, zero_mul]
+      exact (Pi.zero_apply k).symm
+    · rw [Pi.single_eq_of_ne hk, mul_zero]
+      exact (Pi.zero_apply k).symm
+  | add s t hs ht => rw [map_add, map_add, hs, ht, add_zero]
+
+/-- `μ ∘ (id ⊗ S)` kills the off-diagonal tensor blocks (PROVEN,
+mirror image). -/
+theorem kummer_antipode_lTensor_kill [NeZero p] {i j : ZMod p}
+    (h : i + j ≠ 0)
+    (T : TensorProduct R (KummerComponent R p u i) (KummerComponent R p u j)) :
+    (Algebra.TensorProduct.lift (AlgHom.id R (KummerAlg R p u))
+      (kummerAntipode R p u) fun _ _ => Commute.all _ _)
+      ((TensorProduct.map (LinearMap.single R (KummerComponent R p u) i)
+        (LinearMap.single R (KummerComponent R p u) j)) T) = 0 := by
+  induction T using TensorProduct.induction_on with
+  | zero => rw [map_zero, map_zero]
+  | tmul x y =>
+    rw [TensorProduct.map_tmul, Algebra.TensorProduct.lift_tmul,
+      show (LinearMap.single R (KummerComponent R p u) i) x =
+        (Pi.single i x : KummerAlg R p u) from rfl,
+      show (LinearMap.single R (KummerComponent R p u) j) y =
+        (Pi.single j y : KummerAlg R p u) from rfl,
+      AlgHom.id_apply]
+    funext k
+    rw [Pi.mul_apply]
+    by_cases hk : k = i
+    · subst hk
+      rw [kummerAntipode_single_support R p u
+        (fun h' : k = -j => h (by rw [h', neg_add_cancel])) y, mul_zero]
+      exact (Pi.zero_apply k).symm
+    · rw [Pi.single_eq_of_ne hk, zero_mul]
+      exact (Pi.zero_apply k).symm
+  | add s t hs ht => rw [map_add, map_add, hs, ht, add_zero]
+
+/-- The diagonal `(−j, j)` block of `μ ∘ (S ⊗ id) ∘ Δ` on the unit
+(PROVEN): `S(e₋ⱼ)·eⱼ = eⱼ`. -/
+theorem kummer_antipode_rTensor_diag_one [NeZero p] (j : ZMod p) :
+    (Algebra.TensorProduct.lift (kummerAntipode R p u)
+      (AlgHom.id R (KummerAlg R p u)) fun _ _ => Commute.all _ _)
+      ((TensorProduct.map (LinearMap.single R (KummerComponent R p u) (-j))
+        (LinearMap.single R (KummerComponent R p u) j))
+        (kummerComulComponent R p u (-j) j
+          (kummerCast R p u (neg_add_cancel j).symm 1))) = Pi.single j 1 := by
+  rw [map_one, map_one, Algebra.TensorProduct.one_def, TensorProduct.map_tmul,
+    Algebra.TensorProduct.lift_tmul,
+    show (LinearMap.single R (KummerComponent R p u) (-j))
+      (1 : KummerComponent R p u (-j)) =
+      (Pi.single (-j) 1 : KummerAlg R p u) from rfl,
+    show (LinearMap.single R (KummerComponent R p u) j)
+      (1 : KummerComponent R p u j) =
+      (Pi.single j 1 : KummerAlg R p u) from rfl,
+    AlgHom.id_apply, kummerAntipode_single_neg, map_one, ← Pi.single_mul,
+    one_mul]
+
+/-- The diagonal `(−j, j)` block of `μ ∘ (S ⊗ id) ∘ Δ` on the root
+(PROVEN — the peu-ramifiée unit bookkeeping `S(x)·x = u^{εⱼ}` cancels
+against the carry `u^{−εⱼ}` of the diagonal block). -/
+theorem kummer_antipode_rTensor_diag_root [NeZero p] (j : ZMod p) :
+    (Algebra.TensorProduct.lift (kummerAntipode R p u)
+      (AlgHom.id R (KummerAlg R p u)) fun _ _ => Commute.all _ _)
+      ((TensorProduct.map (LinearMap.single R (KummerComponent R p u) (-j))
+        (LinearMap.single R (KummerComponent R p u) j))
+        (kummerComulComponent R p u (-j) j
+          (kummerCast R p u (neg_add_cancel j).symm
+            (kummerRoot R p u 0)))) = Pi.single j 1 := by
+  rw [kummerCast_root, kummerComulComponent_root, kummerComulRoot,
+    kummer_neg_val_carry, mul_comm, ← Algebra.smul_def, map_smul, map_smul,
+    TensorProduct.map_tmul, Algebra.TensorProduct.lift_tmul,
+    show (LinearMap.single R (KummerComponent R p u) (-j))
+      (kummerRoot R p u (-j)) =
+      (Pi.single (-j) (kummerRoot R p u (-j)) : KummerAlg R p u) from rfl,
+    show (LinearMap.single R (KummerComponent R p u) j)
+      (kummerRoot R p u j) =
+      (Pi.single j (kummerRoot R p u j) : KummerAlg R p u) from rfl,
+    AlgHom.id_apply, kummerAntipode_single_neg, kummerAntipodeComponent_root,
+    ← Pi.single_mul, kummerAntipodeRoot, mul_assoc, ← pow_succ,
+    Nat.sub_add_cancel (Nat.one_le_iff_ne_zero.mpr (NeZero.ne p)),
+    kummerRoot_pow_p, ← map_mul, mul_assoc, ← mul_pow, Units.inv_mul,
+    one_pow, mul_one, ← Pi.single_smul, Algebra.smul_def, ← map_mul,
+    ← mul_pow, Units.inv_mul, one_pow, map_one]
+
+/-- The diagonal `(i, −i)` block of `μ ∘ (id ⊗ S) ∘ Δ` on the unit
+(PROVEN). -/
+theorem kummer_antipode_lTensor_diag_one [NeZero p] (i : ZMod p) :
+    (Algebra.TensorProduct.lift (AlgHom.id R (KummerAlg R p u))
+      (kummerAntipode R p u) fun _ _ => Commute.all _ _)
+      ((TensorProduct.map (LinearMap.single R (KummerComponent R p u) i)
+        (LinearMap.single R (KummerComponent R p u) (-i)))
+        (kummerComulComponent R p u i (-i)
+          (kummerCast R p u (add_neg_cancel i).symm 1))) = Pi.single i 1 := by
+  rw [map_one, map_one, Algebra.TensorProduct.one_def, TensorProduct.map_tmul,
+    Algebra.TensorProduct.lift_tmul,
+    show (LinearMap.single R (KummerComponent R p u) i)
+      (1 : KummerComponent R p u i) =
+      (Pi.single i 1 : KummerAlg R p u) from rfl,
+    show (LinearMap.single R (KummerComponent R p u) (-i))
+      (1 : KummerComponent R p u (-i)) =
+      (Pi.single (-i) 1 : KummerAlg R p u) from rfl,
+    AlgHom.id_apply, kummerAntipode_single_neg, map_one, ← Pi.single_mul,
+    one_mul]
+
+/-- The diagonal `(i, −i)` block of `μ ∘ (id ⊗ S) ∘ Δ` on the root
+(PROVEN, mirror image). -/
+theorem kummer_antipode_lTensor_diag_root [NeZero p] (i : ZMod p) :
+    (Algebra.TensorProduct.lift (AlgHom.id R (KummerAlg R p u))
+      (kummerAntipode R p u) fun _ _ => Commute.all _ _)
+      ((TensorProduct.map (LinearMap.single R (KummerComponent R p u) i)
+        (LinearMap.single R (KummerComponent R p u) (-i)))
+        (kummerComulComponent R p u i (-i)
+          (kummerCast R p u (add_neg_cancel i).symm
+            (kummerRoot R p u 0)))) = Pi.single i 1 := by
+  rw [kummerCast_root, kummerComulComponent_root, kummerComulRoot,
+    kummer_val_neg_carry, mul_comm, ← Algebra.smul_def, map_smul, map_smul,
+    TensorProduct.map_tmul, Algebra.TensorProduct.lift_tmul,
+    show (LinearMap.single R (KummerComponent R p u) i)
+      (kummerRoot R p u i) =
+      (Pi.single i (kummerRoot R p u i) : KummerAlg R p u) from rfl,
+    show (LinearMap.single R (KummerComponent R p u) (-i))
+      (kummerRoot R p u (-i)) =
+      (Pi.single (-i) (kummerRoot R p u (-i)) : KummerAlg R p u) from rfl,
+    AlgHom.id_apply, kummerAntipode_single_neg, kummerAntipodeComponent_root,
+    ← Pi.single_mul, kummerAntipodeRoot, mul_left_comm, ← pow_succ',
+    Nat.sub_add_cancel (Nat.one_le_iff_ne_zero.mpr (NeZero.ne p)),
+    kummerRoot_pow_p, ← map_mul, mul_assoc, ← mul_pow, Units.inv_mul,
+    one_pow, mul_one, ← Pi.single_smul, Algebra.smul_def, ← map_mul,
+    ← mul_pow, Units.inv_mul, one_pow, map_one]
+
+/-- **The antipode axiom, right form** (PROVEN 2026-07-22 — `μ ∘ (S ⊗
+id) ∘ Δ = η ∘ ε` on the explicit model: for a generator supported at
+`c ≠ 0` every block dies — off the fibre `i+j = c` by the
+one-component evaluation, on it because the antipode factor sits at
+`−i ≠ j` — matching `ε = 0`; for `c = 0` the diagonal blocks `(−j, j)`
+survive and sum to `∑ⱼ eⱼ = 1 = η(ε)`). -/
 theorem kummerAntipode_rTensor [NeZero p] :
     ((Algebra.TensorProduct.lift (kummerAntipode R p u)
         (AlgHom.id R (KummerAlg R p u)) fun _ _ => Commute.all _ _).comp
       (Bialgebra.comulAlgHom R (KummerAlg R p u)))
       = (Algebra.ofId R (KummerAlg R p u)).comp
         (Bialgebra.counitAlgHom R (KummerAlg R p u)) := by
-  sorry
+  classical
+  have hcm : Bialgebra.comulAlgHom R (KummerAlg R p u) = kummerComul R p u :=
+    AlgHom.ext fun _ => rfl
+  have hct : Bialgebra.counitAlgHom R (KummerAlg R p u) = kummerCounit R p u :=
+    AlgHom.ext fun _ => rfl
+  rw [hcm, hct]
+  have hoff : ∀ (c : ZMod p) (a : KummerComponent R p u c), c ≠ 0 →
+      (Algebra.TensorProduct.lift (kummerAntipode R p u)
+        (AlgHom.id R (KummerAlg R p u)) fun _ _ => Commute.all _ _)
+        (kummerComul R p u (Pi.single c a)) = 0 := by
+    intro c a hc
+    rw [kummerComul_apply_eq_sum, map_sum]
+    refine Finset.sum_eq_zero fun j _ => ?_
+    rw [map_sum]
+    refine Finset.sum_eq_zero fun i _ => ?_
+    by_cases hij : i + j = c
+    · exact kummer_antipode_rTensor_kill R p u (by rw [hij]; exact hc) _
+    · rw [Pi.single_eq_of_ne hij, map_zero, map_zero, map_zero]
+  have hdiag : ∀ (a : KummerComponent R p u 0),
+      (∀ j : ZMod p, (Algebra.TensorProduct.lift (kummerAntipode R p u)
+        (AlgHom.id R (KummerAlg R p u)) fun _ _ => Commute.all _ _)
+        ((TensorProduct.map (LinearMap.single R (KummerComponent R p u) (-j))
+          (LinearMap.single R (KummerComponent R p u) j))
+          (kummerComulComponent R p u (-j) j
+            (kummerCast R p u (neg_add_cancel j).symm a))) = Pi.single j 1) →
+      (Algebra.TensorProduct.lift (kummerAntipode R p u)
+        (AlgHom.id R (KummerAlg R p u)) fun _ _ => Commute.all _ _)
+        (kummerComul R p u (Pi.single 0 a)) = 1 := by
+    intro a hblock
+    rw [kummerComul_apply_eq_sum, map_sum]
+    have hj : ∀ j : ZMod p,
+        (Algebra.TensorProduct.lift (kummerAntipode R p u)
+          (AlgHom.id R (KummerAlg R p u)) fun _ _ => Commute.all _ _)
+          (∑ i : ZMod p,
+            (TensorProduct.map (LinearMap.single R (KummerComponent R p u) i)
+              (LinearMap.single R (KummerComponent R p u) j))
+            (kummerComulComponent R p u i j
+              ((Pi.single (0 : ZMod p) a : KummerAlg R p u) (i + j)))) =
+        Pi.single j 1 := by
+      intro j
+      rw [map_sum]
+      refine (Finset.sum_eq_single (-j) (fun i _ hi => ?_)
+        (fun hmem => absurd (Finset.mem_univ _) hmem)).trans ?_
+      · by_cases hij : i + j = 0
+        · exact absurd (eq_neg_of_add_eq_zero_left hij) hi
+        · rw [Pi.single_eq_of_ne hij, map_zero, map_zero, map_zero]
+      · rw [kummerSingle_apply_of_eq R p u (neg_add_cancel j).symm]
+        exact hblock j
+    rw [Finset.sum_congr rfl fun j _ => hj j]
+    exact Finset.univ_sum_single 1
+  refine kummerAlg_algHom_ext R p u (fun c => ?_) (fun c => ?_)
+  · by_cases hc : c = 0
+    · subst hc
+      rw [AlgHom.comp_apply, AlgHom.comp_apply, kummerCounit_single_zero_one,
+        map_one]
+      exact hdiag 1 fun j => kummer_antipode_rTensor_diag_one R p u j
+    · rw [AlgHom.comp_apply, AlgHom.comp_apply,
+        kummerCounit_single_of_ne R p u hc, map_zero]
+      exact hoff c 1 hc
+  · by_cases hc : c = 0
+    · subst hc
+      rw [AlgHom.comp_apply, AlgHom.comp_apply, kummerCounit_single_zero_root,
+        map_one]
+      exact hdiag (kummerRoot R p u 0)
+        fun j => kummer_antipode_rTensor_diag_root R p u j
+    · rw [AlgHom.comp_apply, AlgHom.comp_apply,
+        kummerCounit_single_of_ne R p u hc, map_zero]
+      exact hoff c (kummerRoot R p u c) hc
 
-/-- **The antipode axiom, left form** (sorry node — symmetric to the
-right form; the Kummer algebra is commutative, so the two coincide). -/
+/-- **The antipode axiom, left form** (PROVEN 2026-07-22 — mirror
+image: the surviving diagonal blocks are `(i, −i)` after commuting the
+double sum). -/
 theorem kummerAntipode_lTensor [NeZero p] :
     ((Algebra.TensorProduct.lift (AlgHom.id R (KummerAlg R p u))
         (kummerAntipode R p u) fun _ _ => Commute.all _ _).comp
       (Bialgebra.comulAlgHom R (KummerAlg R p u)))
       = (Algebra.ofId R (KummerAlg R p u)).comp
         (Bialgebra.counitAlgHom R (KummerAlg R p u)) := by
-  sorry
+  classical
+  have hcm : Bialgebra.comulAlgHom R (KummerAlg R p u) = kummerComul R p u :=
+    AlgHom.ext fun _ => rfl
+  have hct : Bialgebra.counitAlgHom R (KummerAlg R p u) = kummerCounit R p u :=
+    AlgHom.ext fun _ => rfl
+  rw [hcm, hct]
+  have hoff : ∀ (c : ZMod p) (a : KummerComponent R p u c), c ≠ 0 →
+      (Algebra.TensorProduct.lift (AlgHom.id R (KummerAlg R p u))
+        (kummerAntipode R p u) fun _ _ => Commute.all _ _)
+        (kummerComul R p u (Pi.single c a)) = 0 := by
+    intro c a hc
+    rw [kummerComul_apply_eq_sum, map_sum]
+    refine Finset.sum_eq_zero fun j _ => ?_
+    rw [map_sum]
+    refine Finset.sum_eq_zero fun i _ => ?_
+    by_cases hij : i + j = c
+    · exact kummer_antipode_lTensor_kill R p u (by rw [hij]; exact hc) _
+    · rw [Pi.single_eq_of_ne hij, map_zero, map_zero, map_zero]
+  have hdiag : ∀ (a : KummerComponent R p u 0),
+      (∀ i : ZMod p, (Algebra.TensorProduct.lift (AlgHom.id R (KummerAlg R p u))
+        (kummerAntipode R p u) fun _ _ => Commute.all _ _)
+        ((TensorProduct.map (LinearMap.single R (KummerComponent R p u) i)
+          (LinearMap.single R (KummerComponent R p u) (-i)))
+          (kummerComulComponent R p u i (-i)
+            (kummerCast R p u (add_neg_cancel i).symm a))) = Pi.single i 1) →
+      (Algebra.TensorProduct.lift (AlgHom.id R (KummerAlg R p u))
+        (kummerAntipode R p u) fun _ _ => Commute.all _ _)
+        (kummerComul R p u (Pi.single 0 a)) = 1 := by
+    intro a hblock
+    rw [kummerComul_apply_eq_sum, map_sum]
+    simp only [map_sum]
+    rw [Finset.sum_comm]
+    have hi : ∀ i : ZMod p,
+        (∑ j : ZMod p,
+          (Algebra.TensorProduct.lift (AlgHom.id R (KummerAlg R p u))
+            (kummerAntipode R p u) fun _ _ => Commute.all _ _)
+            ((TensorProduct.map (LinearMap.single R (KummerComponent R p u) i)
+              (LinearMap.single R (KummerComponent R p u) j))
+            (kummerComulComponent R p u i j
+              ((Pi.single (0 : ZMod p) a : KummerAlg R p u) (i + j))))) =
+        Pi.single i 1 := by
+      intro i
+      refine (Finset.sum_eq_single (-i) (fun j _ hj => ?_)
+        (fun hmem => absurd (Finset.mem_univ _) hmem)).trans ?_
+      · by_cases hij : i + j = 0
+        · exact absurd (eq_neg_of_add_eq_zero_right hij) hj
+        · rw [Pi.single_eq_of_ne hij, map_zero, map_zero, map_zero]
+      · rw [kummerSingle_apply_of_eq R p u (add_neg_cancel i).symm]
+        exact hblock i
+    rw [Finset.sum_congr rfl fun i _ => hi i]
+    exact Finset.univ_sum_single 1
+  refine kummerAlg_algHom_ext R p u (fun c => ?_) (fun c => ?_)
+  · by_cases hc : c = 0
+    · subst hc
+      rw [AlgHom.comp_apply, AlgHom.comp_apply, kummerCounit_single_zero_one,
+        map_one]
+      exact hdiag 1 fun i => kummer_antipode_lTensor_diag_one R p u i
+    · rw [AlgHom.comp_apply, AlgHom.comp_apply,
+        kummerCounit_single_of_ne R p u hc, map_zero]
+      exact hoff c 1 hc
+  · by_cases hc : c = 0
+    · subst hc
+      rw [AlgHom.comp_apply, AlgHom.comp_apply, kummerCounit_single_zero_root,
+        map_one]
+      exact hdiag (kummerRoot R p u 0)
+        fun i => kummer_antipode_lTensor_diag_root R p u i
+    · rw [AlgHom.comp_apply, AlgHom.comp_apply,
+        kummerCounit_single_of_ne R p u hc, map_zero]
+      exact hoff c (kummerRoot R p u c) hc
 
 /-- The Kummer Hopf algebra: the antipode is the pullback of
 point-inversion; the antipode axioms are the two sorried leaves
