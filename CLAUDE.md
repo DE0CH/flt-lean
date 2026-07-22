@@ -10,6 +10,19 @@ Lean package (formerly the `fermat/` subfolder).
 (Deyao, 2026-07-21.) If a needed tool is missing and available through
 Homebrew, run `brew install <tool>` directly — no need to ask first.
 
+## Fleet integration: rescan sorries at every agent completion and re-dispatch
+
+(Deyao, 2026-07-22.) When a subagent finishes: merge and verify its
+branch, then SCAN its file(s) for the sorries it left (its report lists
+them; confirm against the source), and DISPATCH new agents onto those
+leaves — possibly several agents per completion when the leaves are
+independent (disjoint decomposable clusters get separate owners rather
+than one successor inheriting the whole file by default). The loop
+invariant: every sorry has an owner at all times; an agent completing
+must never strand its remaining leaves unowned. Track the new leaves in
+progress-entries.json (wip flags at dispatch) as part of the same
+integration step.
+
 ## File edits: prefer the Write/Edit tool calls over scripts (soft rule)
 
 (Deyao, 2026-07-22.) Edit files with the harness's Write/Edit tools by
