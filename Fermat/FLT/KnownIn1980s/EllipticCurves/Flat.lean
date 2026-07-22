@@ -703,6 +703,7 @@ theorem WeierstrassCurve.baseChange_coeff_mem
     (rw [show (E⁄Ksep) = (((E.integralModel R)⁄K)⁄Ksep) from by rw [hEeq]]; exact hamem _)
 
 set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] [IsSepClosure K Ksep] in
 /-- **The kernel of reduction is closed under addition, abscissa form** (PROVEN
 2026-07-22; Silverman *AEC* VII.2.2 in coordinates, characteristic-free and
 torsion-free, no formal groups): on the minimal model, if two affine points of
@@ -752,6 +753,7 @@ theorem WeierstrassCurve.kernel_add_abscissa_notMem
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
+omit [E.IsElliptic] [IsSepClosure K Ksep] [DecidableEq Ksep] in
 /-- **The tangent numerator is a unit where `ψ₂` degenerates** (glue for the
 congruent-points leaf, the good-reduction input): for an integral point of the
 base-changed minimal model whose `ψ₂ = 2y + a₁x + a₃` falls into the maximal ideal of
@@ -885,23 +887,26 @@ theorem WeierstrassCurve.val_tangent_numerator_eq_one
   refine le_antisymm ((𝒪.valuation_le_one_iff _).mpr (Subtype.mem _)) (not_lt.mp ?_)
   exact fun hlt => hNnotmem ((ValuationSubring.valuation_lt_one_iff 𝒪 _).mpr hlt)
 
-/-- **Congruent distinct integral points differ by a kernel element** (sorry node;
-Silverman *AEC* VII.2.1-2 in coordinates, characteristic-free and torsion-free): on the
-minimal model, if two DISTINCT affine points of `E(Kˢᵉᵖ)` have integral coordinates
-with equal residues over a valuation subring `𝒪` of `Kˢᵉᵖ` above `R`, then any affine
-value of their difference has non-integral abscissa ("the difference lies in the kernel
-of reduction"). Intended proof, by the chord construction for
-`(x₁, y₁) + (x₂, -y₂ - a₁x₂ - a₃)`: if `x₁ ≠ x₂`, the slope
-`λ = (y₁ + y₂ + a₁x₂ + a₃)/(x₁ - x₂)` has denominator in the maximal ideal `𝔪` and
-numerator congruent to `ψ₂(x₂, y₂) mod 𝔪`; when `ψ₂(x₂, y₂) ∉ 𝔪` this gives
-`v(λ) < 0` and `v(x₃) = 2 v(λ) + (integral) < 0`; when `ψ₂(x₂, y₂) ∈ 𝔪` compare the
-valuations of the two ordinates above `x₂` via the `y`-quadratic. If `x₁ = x₂` the
-points differ by an ordinate flip, `y₁ ≠ y₂` congruent forces `ψ₂(x₁, y₁) ∈ 𝔪` with
-`ψ₂(x₁, y₁) ≠ 0`, and the difference is the DOUBLE of `(x₁, y₁)`: the duplication
-formula has denominator `ψ₂² ≡ 0 mod 𝔪` and numerator `x⁴ - b₄x² - 2b₆x - b₈`, whose
-common vanishing with `Ψ₂Sq = 4x³ + b₂x² + 2b₄x + b₆` modulo `𝔪` is excluded by a
-Bézout identity with resultant a power of `Δ` — a unit by good reduction (compare the
-proven `(2,3)` certificates in `Fermat.FLT.EllipticCurve.PhiPsiCoprime`). -/
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+omit [E.IsElliptic] [IsSepClosure K Ksep] in
+/-- **Congruent distinct integral points differ by a kernel element** (PROVEN
+2026-07-22; Silverman *AEC* VII.2.1-2 in coordinates, characteristic-free and
+torsion-free): on the minimal model, if two DISTINCT affine points of `E(Kˢᵉᵖ)` have
+integral coordinates with equal residues over a valuation subring `𝒪` of `Kˢᵉᵖ` above
+`R`, then any affine value of their difference has non-integral abscissa ("the
+difference lies in the kernel of reduction"). Proof, by the chord construction for
+`(x₁, y₁) + (x₂, -y₂ - a₁x₂ - a₃)`: in every case the slope `L` satisfies `v L > 1`,
+whence `x₃ = L² + a₁L - a₂ - x₁ - x₂` has `v x₃ = (v L)² > 1`
+(`addX_notMem_of_one_lt_val_slope`). If `x₁ ≠ x₂` and `ψ₂(x₂, y₂) = 2y₂ + a₁x₂ + a₃`
+is a unit, the slope numerator `y₁ + y₂ + a₁x₂ + a₃ ≡ ψ₂(x₂, y₂)` is a unit over the
+maximal-ideal denominator `x₁ - x₂`. If `ψ₂(x₂, y₂) ∈ 𝔪`, the subtracted curve
+equations factor the numerator as `(x₂ - x₁)G/(y₁ - y₂)` with
+`G ≡ -(3x₂² + 2a₂x₂ + a₄ - a₁y₂) mod 𝔪` a unit by the residue curve's nonsingularity
+(`val_tangent_numerator_eq_one`), so `v L = v G / v(y₁ - y₂) > 1`. If `x₁ = x₂` the
+points differ by an ordinate flip, the difference is the double of `(x₁, y₁)`, the
+tangent denominator is `y₁ - y₂ ∈ 𝔪 \ {0}` and the tangent numerator is again a unit
+by the same nonsingularity input. -/
 theorem WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq
     (𝒪 : ValuationSubring Ksep)
     (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
@@ -915,11 +920,140 @@ theorem WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq
     (hry : IsLocalRing.residue 𝒪 ⟨y₁, hn₁⟩ = IsLocalRing.residue 𝒪 ⟨y₂, hn₂⟩)
     (hsub : (Affine.Point.some x₁ y₁ h₁ : (E⁄Ksep).Point) -
       Affine.Point.some x₂ y₂ h₂ = Affine.Point.some x₃ y₃ h₃) :
-    x₃ ∉ 𝒪 :=
-  sorry
+    x₃ ∉ 𝒪 := by
+  classical
+  obtain ⟨ha₁, ha₂, ha₃, ha₄, ha₆⟩ :=
+    WeierstrassCurve.baseChange_coeff_mem R K E Ksep 𝒪 h𝒪
+  -- the residue congruences, as valuation bounds in `Kˢᵉᵖ`
+  have hvxx : 𝒪.valuation (x₁ - x₂) < 1 := by
+    have hmem : (⟨x₁, hm₁⟩ - ⟨x₂, hm₂⟩ : 𝒪) ∈ IsLocalRing.maximalIdeal 𝒪 :=
+      Ideal.Quotient.eq_zero_iff_mem.mp (by rw [map_sub]; exact sub_eq_zero.mpr hrx)
+    simpa using (ValuationSubring.valuation_lt_one_iff 𝒪 _).mp hmem
+  have hvyy : 𝒪.valuation (y₁ - y₂) < 1 := by
+    have hmem : (⟨y₁, hn₁⟩ - ⟨y₂, hn₂⟩ : 𝒪) ∈ IsLocalRing.maximalIdeal 𝒪 :=
+      Ideal.Quotient.eq_zero_iff_mem.mp (by rw [map_sub]; exact sub_eq_zero.mpr hry)
+    simpa using (ValuationSubring.valuation_lt_one_iff 𝒪 _).mp hmem
+  -- the difference is an addition with the ordinate-flipped second point
+  rw [sub_eq_add_neg, Affine.Point.neg_some] at hsub
+  have hxy : ¬(x₁ = x₂ ∧
+      y₁ = (E⁄Ksep).toAffine.negY x₂ ((E⁄Ksep).toAffine.negY x₂ y₂)) := by
+    rintro ⟨hx, hy⟩
+    rw [Affine.Point.add_of_Y_eq hx hy] at hsub
+    exact Affine.Point.some_ne_zero h₃ hsub.symm
+  rw [Affine.Point.add_some hxy] at hsub
+  injection hsub with hX hY
+  set L := (E⁄Ksep).toAffine.slope x₁ x₂ y₁ ((E⁄Ksep).toAffine.negY x₂ y₂) with hLdef
+  -- in every case the slope has valuation `> 1`
+  have hvL : 1 < 𝒪.valuation L := by
+    by_cases hxx : x₁ = x₂
+    · -- ordinate flip: the difference is the double of `(x₁, y₁)`
+      have hy12 : y₁ ≠ y₂ := by
+        intro h
+        exact hne (by subst hxx; subst h; rfl)
+      have hy1eq : y₁ = (E⁄Ksep).toAffine.negY x₂ y₂ :=
+        (WeierstrassCurve.Affine.Y_eq_of_X_eq h₁.1 h₂.1 hxx).resolve_left hy12
+      have hyne : y₁ ≠ (E⁄Ksep).toAffine.negY x₂ ((E⁄Ksep).toAffine.negY x₂ y₂) :=
+        fun h => hxy ⟨hxx, h⟩
+      have hnegYeq : (E⁄Ksep).toAffine.negY x₁ y₁ = y₂ := by
+        rw [hxx, hy1eq, WeierstrassCurve.Affine.negY_negY]
+      have hD0 : y₁ - (E⁄Ksep).toAffine.negY x₁ y₁ ≠ 0 := by
+        rw [hnegYeq]
+        exact sub_ne_zero.mpr hy12
+      have hslope : L * (y₁ - y₂)
+          = 3 * x₁ ^ 2 + 2 * (E⁄Ksep).a₂ * x₁ + (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y₁ := by
+        rw [hLdef, WeierstrassCurve.Affine.slope_of_Y_ne hxx hyne, ← hnegYeq]
+        exact div_mul_cancel₀ _ hD0
+      have hψ : 𝒪.valuation (2 * y₁ + (E⁄Ksep).a₁ * x₁ + (E⁄Ksep).a₃) < 1 := by
+        have hψeq : 2 * y₁ + (E⁄Ksep).a₁ * x₁ + (E⁄Ksep).a₃ = y₁ - y₂ := by
+          rw [← hnegYeq]
+          simp only [WeierstrassCurve.Affine.negY]
+          ring
+        rw [hψeq]
+        exact hvyy
+      have hN := WeierstrassCurve.val_tangent_numerator_eq_one R K E Ksep 𝒪 h𝒪
+        hm₁ hn₁ h₁.1 hψ
+      exact ValuationSubring.one_lt_val_of_val_mul_eq_one 𝒪 hvyy
+        (by rw [hslope]; exact hN)
+    · -- chord: distinct abscissae with congruent residues
+      have hx12 : x₁ - x₂ ≠ 0 := sub_ne_zero.mpr hxx
+      have hslope : L * (x₁ - x₂) = y₁ - (E⁄Ksep).toAffine.negY x₂ y₂ := by
+        rw [hLdef, WeierstrassCurve.Affine.slope_of_X_ne hxx]
+        exact div_mul_cancel₀ _ hx12
+      set ψ := 2 * y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃ with hψdef
+      have hNum : y₁ - (E⁄Ksep).toAffine.negY x₂ y₂ = ψ + (y₁ - y₂) := by
+        rw [hψdef]
+        simp only [WeierstrassCurve.Affine.negY]
+        ring
+      by_cases hψm : 𝒪.valuation ψ < 1
+      · -- `ψ₂` degenerates: route through the subtracted-equations factorization
+        have hN₂ := WeierstrassCurve.val_tangent_numerator_eq_one R K E Ksep 𝒪 h𝒪
+          hm₂ hn₂ h₂.1 (hψdef ▸ hψm)
+        have hE₁' := (WeierstrassCurve.Affine.equation_iff x₁ y₁).mp h₁.1
+        have hE₂' := (WeierstrassCurve.Affine.equation_iff x₂ y₂).mp h₂.1
+        have hGid : (y₁ - y₂) * (y₁ - (E⁄Ksep).toAffine.negY x₂ y₂)
+            = (x₂ - x₁) * ((E⁄Ksep).a₁ * y₁ - (x₂ ^ 2 + x₂ * x₁ + x₁ ^ 2)
+              - (E⁄Ksep).a₂ * (x₂ + x₁) - (E⁄Ksep).a₄) := by
+          simp only [WeierstrassCurve.Affine.negY]
+          linear_combination hE₁' - hE₂'
+        have hGval : 𝒪.valuation ((E⁄Ksep).a₁ * y₁ - (x₂ ^ 2 + x₂ * x₁ + x₁ ^ 2)
+            - (E⁄Ksep).a₂ * (x₂ + x₁) - (E⁄Ksep).a₄) = 1 := by
+          have hvxx' : 𝒪.valuation (x₂ - x₁) < 1 := by
+            rw [show x₂ - x₁ = -(x₁ - x₂) from by ring, Valuation.map_neg]
+            exact hvxx
+          have herr : (E⁄Ksep).a₁ * y₁ - (x₂ ^ 2 + x₂ * x₁ + x₁ ^ 2)
+              - (E⁄Ksep).a₂ * (x₂ + x₁) - (E⁄Ksep).a₄
+              = -(3 * x₂ ^ 2 + 2 * (E⁄Ksep).a₂ * x₂ + (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y₂)
+                + ((E⁄Ksep).a₁ * (y₁ - y₂) + (2 * x₂ + x₁) * (x₂ - x₁)
+                  + (E⁄Ksep).a₂ * (x₂ - x₁)) := by
+            ring
+          have hverr : 𝒪.valuation ((E⁄Ksep).a₁ * (y₁ - y₂) + (2 * x₂ + x₁) * (x₂ - x₁)
+              + (E⁄Ksep).a₂ * (x₂ - x₁)) < 1 := by
+            have h2mem : (2 : Ksep) ∈ 𝒪 := by
+              rw [show (2 : Ksep) = 1 + 1 from by norm_num]
+              exact add_mem (one_mem 𝒪) (one_mem 𝒪)
+            refine 𝒪.valuation.map_add_lt (𝒪.valuation.map_add_lt ?_ ?_) ?_
+            · exact 𝒪.val_mul_lt_one_of_mem_of_lt ha₁ hvyy
+            · exact 𝒪.val_mul_lt_one_of_mem_of_lt
+                (add_mem (mul_mem h2mem hm₂) hm₁) hvxx'
+            · exact 𝒪.val_mul_lt_one_of_mem_of_lt ha₂ hvxx'
+          rw [herr, 𝒪.valuation.map_add_eq_of_lt_left
+            (by rw [Valuation.map_neg, hN₂]; exact hverr), Valuation.map_neg, hN₂]
+        have hy12 : y₁ ≠ y₂ := by
+          intro h
+          rw [h, sub_self, zero_mul] at hGid
+          rcases mul_eq_zero.mp hGid.symm with h0 | h0
+          · exact hxx (sub_eq_zero.mp h0).symm
+          · rw [h] at hGval
+            rw [h0, map_zero] at hGval
+            exact zero_ne_one hGval
+        have hLG : L * (y₁ - y₂)
+            = -((E⁄Ksep).a₁ * y₁ - (x₂ ^ 2 + x₂ * x₁ + x₁ ^ 2)
+              - (E⁄Ksep).a₂ * (x₂ + x₁) - (E⁄Ksep).a₄) := by
+          apply mul_right_cancel₀ hx12
+          linear_combination (y₁ - y₂) * hslope + hGid
+        exact ValuationSubring.one_lt_val_of_val_mul_eq_one 𝒪 hvyy
+          (by rw [hLG, Valuation.map_neg]; exact hGval)
+      · -- `ψ₂` is a unit: the slope numerator is a unit outright
+        have h2mem : (2 : Ksep) ∈ 𝒪 := by
+          rw [show (2 : Ksep) = 1 + 1 from by norm_num]
+          exact add_mem (one_mem 𝒪) (one_mem 𝒪)
+        have hψ1 : 𝒪.valuation ψ = 1 := by
+          refine le_antisymm ((𝒪.valuation_le_one_iff _).mpr ?_) (not_lt.mp hψm)
+          rw [hψdef]
+          exact add_mem (add_mem (mul_mem h2mem hn₂) (mul_mem ha₁ hm₂)) ha₃
+        have hNumval : 𝒪.valuation (y₁ - (E⁄Ksep).toAffine.negY x₂ y₂) = 1 := by
+          rw [hNum, 𝒪.valuation.map_add_eq_of_lt_left (by rw [hψ1]; exact hvyy), hψ1]
+        exact ValuationSubring.one_lt_val_of_val_mul_eq_one 𝒪 hvxx
+          (by rw [hslope]; exact hNumval)
+  -- endgame: the `addX` over a steep slope is non-integral
+  have hnot := WeierstrassCurve.addX_notMem_of_one_lt_val_slope 𝒪 (E⁄Ksep)
+    ha₁ ha₂ hm₁ hm₂ hvL
+  rw [← hX]
+  exact hnot
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
+omit [IsSepClosure K Ksep] in
 /-- **Reduction is injective on prime-power torsion, deep cases** (dévissage assembly
 PROVEN 2026-07-22; rests on the two characteristic-free kernel-of-reduction leaves
 above): two `p ^ k`-torsion points of `E(Kˢᵉᵖ)` with integral coordinates and congruent
@@ -1051,6 +1185,7 @@ theorem WeierstrassCurve.torsion_eq_of_residue_eq_of_prime_pow_deep
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
+omit [IsSepClosure K Ksep] in
 /-- **Prime-power Néron–Ogg–Shafarevich, easy direction** (assembly PROVEN 2026-07-22;
 rests on the injectivity leaf `torsion_eq_of_residue_eq_of_prime_pow_deep` for `p = 2`
 or `k ≥ 2`): if `E` has good reduction over `R` and the prime power `p ^ k` is
@@ -1168,6 +1303,7 @@ theorem WeierstrassCurve.torsion_inertia_fixes_of_prime_pow_isUnit
           p k hp hpk hk0 hdeep 𝒪 h𝒪 hns' h hmaptor htor hσxm hxm hσym hym hrx hry
       congr 1
 
+omit [IsSepClosure K Ksep] in
 /-- **Composite Néron–Ogg–Shafarevich from its prime-power core** (PROVEN 2026-07-22):
 for `m` invertible in `R`, every inertia subgroup above `R` acts trivially on the
 `m`-torsion. Strong induction on `m`: split off a maximal prime power `m = p ^ k * m'`
