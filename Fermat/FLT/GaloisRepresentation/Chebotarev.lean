@@ -342,6 +342,135 @@ theorem Normal.of_isGalois_isCyclotomicExtension
   exact Normal.of_isSplittingField (minpoly F α * (X ^ ℓ - 1))
 
 open Polynomial in
+set_option maxHeartbeats 1000000 in
+/-- **The field-crossing lift**: let `E/F` be finite Galois, `ℓ` a prime
+with `orderOf τ ∣ ℓ - 1`, and `N = E(ζ_ℓ)` a cyclotomic extension with
+`cyclotomic ℓ E` irreducible (so `Gal(N/E) ≃ (ZMod ℓ)ˣ` in full). Then
+`τ ∈ Gal(E/F)` lifts to `σ ∈ Gal(N/F)` acting on `ζ_ℓ` through a
+*generator* of `(ZMod ℓ)ˣ`: any (integer) power of `σ` fixing `ζ_ℓ` has
+exponent divisible by `ℓ - 1`, hence by `orderOf τ`, hence is trivial —
+the fixed field of `⟨σ⟩` therefore recovers all of `N` by adjoining
+`ζ_ℓ`, which is Chebotarev's trick reducing the cyclic case to the
+cyclotomic one. -/
+theorem exists_algEquiv_lift_and_forall_zpow_eq_one
+    {F E N : Type*} [Field F] [Field E] [Field N] [Algebra F E] [Algebra E N]
+    [Algebra F N] [IsScalarTower F E N] [IsGalois F E] [FiniteDimensional F E]
+    [Normal F N] {ℓ : ℕ} [NeZero ℓ] (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} E N]
+    (hirr : Irreducible (cyclotomic ℓ E)) (τ : E ≃ₐ[F] E)
+    (hord : orderOf τ ∣ ℓ - 1) :
+    ∃ σ : N ≃ₐ[F] N,
+      (∀ x : E, σ (algebraMap E N x) = algebraMap E N (τ x)) ∧
+      ∀ k : ℤ, (σ ^ k) (IsCyclotomicExtension.zeta ℓ E N) =
+          IsCyclotomicExtension.zeta ℓ E N → σ ^ k = 1 := by
+  haveI := Fact.mk hℓ
+  set ζ : N := IsCyclotomicExtension.zeta ℓ E N with hζdef
+  have hζ : IsPrimitiveRoot ζ ℓ := IsCyclotomicExtension.zeta_spec ℓ E N
+  set χ : (N ≃ₐ[F] N) →* (ZMod ℓ)ˣ := hζ.autToPow F with hχdef
+  -- two units acting identically on `ζ` are equal
+  have key : ∀ u v : (ZMod ℓ)ˣ,
+      ζ ^ ((u : ZMod ℓ)).val = ζ ^ ((v : ZMod ℓ)).val → u = v := by
+    intro u v huv
+    exact Units.ext (ZMod.val_injective ℓ
+      (hζ.pow_inj (ZMod.val_lt _) (ZMod.val_lt _) huv))
+  -- the canonical lift of `τ` and a generator of `(ZMod ℓ)ˣ`
+  set σ₀ : N ≃ₐ[F] N := τ.liftNormal N with hσ₀def
+  have hσ₀ : ∀ x : E, σ₀ (algebraMap E N x) = algebraMap E N (τ x) := fun x =>
+    AlgEquiv.liftNormal_commutes τ N x
+  obtain ⟨g, hg⟩ := IsCyclic.exists_generator (α := (ZMod ℓ)ˣ)
+  -- correct `σ₀` by the `E`-automorphism with character `g * (χ σ₀)⁻¹`
+  set he : N ≃ₐ[E] N :=
+    (IsCyclotomicExtension.autEquivPow N hirr).symm (g * (χ σ₀)⁻¹) with hhedef
+  have hheχ : χ (he.restrictScalars F) = g * (χ σ₀)⁻¹ := by
+    refine key _ _ ?_
+    rw [hχdef, IsPrimitiveRoot.autToPow_spec, AlgEquiv.restrictScalars_apply]
+    have h1 := (IsCyclotomicExtension.autEquivPow N hirr).apply_symm_apply
+      (g * (χ σ₀)⁻¹)
+    rw [← hhedef] at h1
+    rw [← h1, IsCyclotomicExtension.autEquivPow_apply]
+    exact (IsPrimitiveRoot.autToPow_spec E (IsCyclotomicExtension.zeta_spec ℓ E N)
+      he).symm
+  set σ : N ≃ₐ[F] N := (he.restrictScalars F) * σ₀ with hσdef
+  have hσE : ∀ x : E, σ (algebraMap E N x) = algebraMap E N (τ x) := by
+    intro x
+    rw [hσdef, AlgEquiv.mul_apply, hσ₀, AlgEquiv.restrictScalars_apply]
+    exact he.commutes (τ x)
+  have hχσ : χ σ = g := by
+    rw [hσdef, map_mul, hheχ, inv_mul_cancel_right]
+  -- the constructions above are now fully characterized by `hζ`, `hσE`, `hχσ`;
+  -- make them opaque so later elaboration cannot unfold their large bodies
+  clear hheχ hσ₀ hζdef hhedef hσ₀def hσdef
+  clear_value ζ σ₀ he σ
+  -- the order of `g` is `ℓ - 1`
+  have hordg : orderOf g = ℓ - 1 := by
+    have h1 : orderOf g = Nat.card (ZMod ℓ)ˣ :=
+      orderOf_eq_card_of_forall_mem_zpowers hg
+    rw [h1, Nat.card_eq_fintype_card, ZMod.card_units_eq_totient,
+      Nat.totient_prime hℓ]
+  refine ⟨σ, hσE, ?_⟩
+  intro k hk
+  -- the character kills `σ ^ k`, so `ℓ - 1 ∣ k`, so `orderOf τ ∣ k`
+  have h2 : χ (σ ^ k) = 1 := by
+    refine key _ _ ?_
+    rw [hχdef, IsPrimitiveRoot.autToPow_spec, hk, Units.val_one, ZMod.val_one ℓ,
+      pow_one]
+  have h3 : g ^ k = 1 := by
+    rw [← hχσ, ← map_zpow]
+    exact h2
+  have h4 : ((ℓ - 1 : ℕ) : ℤ) ∣ k := by
+    rw [← hordg]
+    exact orderOf_dvd_iff_zpow_eq_one.mpr h3
+  have h5 : τ ^ k = 1 := by
+    have h6 : ((orderOf τ : ℕ) : ℤ) ∣ k :=
+      dvd_trans (Int.natCast_dvd_natCast.mpr hord) h4
+    exact orderOf_dvd_iff_zpow_eq_one.mp h6
+  -- `σ ^ k` acts on the image of `E` through `τ ^ k`
+  have hpow : ∀ m : ℕ, ∀ x : E,
+      (σ ^ m) (algebraMap E N x) = algebraMap E N ((τ ^ m) x) := by
+    intro m
+    induction m with
+    | zero => simp
+    | succ m ih =>
+      intro x
+      rw [pow_succ, AlgEquiv.mul_apply, hσE, ih, pow_succ, AlgEquiv.mul_apply]
+  have hzpow : ∀ x : E, (σ ^ k) (algebraMap E N x) = algebraMap E N ((τ ^ k) x) := by
+    intro x
+    obtain ⟨m, rfl | rfl⟩ := Int.eq_nat_or_neg k
+    · rw [zpow_natCast, zpow_natCast]
+      exact hpow m x
+    · rw [zpow_neg, zpow_natCast, zpow_neg, zpow_natCast, AlgEquiv.aut_inv,
+        AlgEquiv.aut_inv, AlgEquiv.symm_apply_eq, hpow m,
+        AlgEquiv.apply_symm_apply]
+  -- `N` is generated over `F` by the image of `E` together with `ζ`:
+  -- the `F`-subalgebra generated by them contains the image of `E`, hence is
+  -- an `E`-subalgebra, and as such contains `adjoin E {ζ} = ⊤`
+  have hgen_top : Algebra.adjoin F (Set.range (algebraMap E N) ∪ {ζ}) = ⊤ := by
+    have hE : Algebra.adjoin E {ζ} = ⊤ :=
+      IsCyclotomicExtension.adjoin_primitive_root_eq_top hζ
+    let T_E : Subalgebra E N :=
+      { (Algebra.adjoin F (Set.range (algebraMap E N) ∪ {ζ})).toSubsemiring with
+        algebraMap_mem' := fun r =>
+          Algebra.subset_adjoin (Set.mem_union_left _ ⟨r, rfl⟩) }
+    have h1 : Algebra.adjoin E {ζ} ≤ T_E :=
+      Algebra.adjoin_le (Set.singleton_subset_iff.mpr
+        (Algebra.subset_adjoin (Set.mem_union_right _ rfl)))
+    rw [hE] at h1
+    rw [eq_top_iff]
+    intro x hx
+    exact h1 (show x ∈ (⊤ : Subalgebra E N) from trivial)
+  -- `σ ^ k` agrees with the identity on the generators, hence everywhere
+  have hEqOn : Set.EqOn (↑(σ ^ k : N ≃ₐ[F] N) : N →ₐ[F] N) (AlgHom.id F N)
+      (Set.range (algebraMap E N) ∪ {ζ}) := by
+    rintro y (⟨x, rfl⟩ | rfl)
+    · show (σ ^ k) (algebraMap E N x) = algebraMap E N x
+      rw [hzpow, h5, AlgEquiv.one_apply]
+    · exact hk
+  have hAlgHom : ((σ ^ k : N ≃ₐ[F] N) : N →ₐ[F] N) = AlgHom.id F N :=
+    AlgHom.ext_of_adjoin_eq_top hgen_top hEqOn
+  refine AlgEquiv.ext fun x => ?_
+  have := DFunLike.congr_fun hAlgHom x
+  simpa using this
+
+open Polynomial in
 /-- **Auxiliary primes for the Chebotarev field-crossing** (sorry node):
 for every number field `E` and every `n ≠ 0` there is a prime `ℓ` with
 `n ∣ ℓ - 1` (i.e. `ℓ ≡ 1 (mod n)`) whose `ℓ`-th cyclotomic polynomial
