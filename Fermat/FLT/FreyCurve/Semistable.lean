@@ -3334,6 +3334,262 @@ noncomputable def kummerComul [NeZero p] :
       (kummerComulComponent R p u i j).comp
         (Pi.evalAlgHom R (KummerComponent R p u) (i + j)))
 
+/-- Transport between Kummer components along an index equality
+(the components at propositionally equal indices, e.g. `0 + c` and `c`,
+are equal but not definitionally so). -/
+noncomputable def kummerCast {i i' : ZMod p} (h : i = i') :
+    KummerComponent R p u i →ₐ[R] KummerComponent R p u i' :=
+  h ▸ AlgHom.id R (KummerComponent R p u i)
+
+/-- The cast transport fixes the adjoined root (PROVEN by `subst`). -/
+theorem kummerCast_root {i i' : ZMod p} (h : i = i') :
+    kummerCast R p u h (kummerRoot R p u i) = kummerRoot R p u i' := by
+  subst h
+  rfl
+
+/-- Evaluating a one-component element at a propositionally equal index
+(PROVEN by `subst`): `(Pi.single c a) i' = kummerCast h a` whenever
+`c = i'`. -/
+theorem kummerSingle_apply_of_eq {c i' : ZMod p} (h : c = i')
+    (a : KummerComponent R p u c) :
+    (Pi.single c a : KummerAlg R p u) i' = kummerCast R p u h a := by
+  subst h
+  rw [Pi.single_eq_same]
+  rfl
+
+/-- The counit kills the components away from the identity component
+(PROVEN): `ε(single i a) = 0` for `i ≠ 0`. -/
+theorem kummerCounit_single_of_ne [NeZero p] {i : ZMod p} (hi : i ≠ 0)
+    (a : KummerComponent R p u i) :
+    kummerCounit R p u (Pi.single i a) = 0 := by
+  simp only [kummerCounit, AlgHom.comp_apply]
+  rw [show (Pi.evalAlgHom R (KummerComponent R p u) (0 : ZMod p))
+      (Pi.single i a) = (Pi.single i a : KummerAlg R p u) 0 from rfl,
+    Pi.single_eq_of_ne (Ne.symm hi), map_zero]
+
+/-- The counit sends the identity-component unit to `1` (PROVEN). -/
+theorem kummerCounit_single_zero_one [NeZero p] :
+    kummerCounit R p u (Pi.single (0 : ZMod p) 1) = 1 := by
+  simp only [kummerCounit, AlgHom.comp_apply]
+  rw [show (Pi.evalAlgHom R (KummerComponent R p u) (0 : ZMod p))
+      (Pi.single (0 : ZMod p) 1) =
+      (Pi.single (0 : ZMod p) 1 : KummerAlg R p u) 0 from rfl,
+    Pi.single_eq_same, map_one]
+
+/-- The counit sends the identity-component root to `1` (PROVEN —
+evaluation of the identity point `(0, 1)` at the coordinate `x`). -/
+theorem kummerCounit_single_zero_root [NeZero p] :
+    kummerCounit R p u (Pi.single (0 : ZMod p) (kummerRoot R p u 0)) = 1 := by
+  simp only [kummerCounit, AlgHom.comp_apply]
+  rw [show (Pi.evalAlgHom R (KummerComponent R p u) (0 : ZMod p))
+      (Pi.single (0 : ZMod p) (kummerRoot R p u 0)) =
+      (Pi.single (0 : ZMod p) (kummerRoot R p u 0) : KummerAlg R p u) 0 from rfl,
+    Pi.single_eq_same]
+  exact AdjoinRoot.liftAlgHom_root _ _ _ _
+
+/-- One-component polynomials in the root, rewritten through the
+one-component idempotent (PROVEN): `single i (q(x)) = eᵢ · q(single i x)`
+— the unit discrepancy of the non-unital inclusion is absorbed by the
+idempotent `eᵢ = single i 1`. -/
+theorem kummerSingle_aeval (i : ZMod p) (q : Polynomial R) :
+    (Pi.single i (Polynomial.aeval (kummerRoot R p u i) q) : KummerAlg R p u) =
+      Pi.single i 1 *
+        Polynomial.aeval (Pi.single i (kummerRoot R p u i) : KummerAlg R p u) q := by
+  induction q using Polynomial.induction_on' with
+  | add f g hf hg =>
+    rw [map_add, Pi.single_add, hf, hg, map_add, mul_add]
+  | monomial k r =>
+    rw [Polynomial.aeval_monomial, Polynomial.aeval_monomial]
+    funext j
+    by_cases hj : j = i
+    · subst hj
+      simp only [Pi.mul_apply, Pi.pow_apply, Pi.single_eq_same, one_mul]
+      rfl
+    · simp only [Pi.mul_apply, Pi.single_eq_of_ne hj, zero_mul]
+
+/-- **Extensionality for algebra maps out of the Kummer algebra**
+(PROVEN): two `R`-algebra maps out of `∏_{i<p} R[x]/(xᵖ − uⁱ)` agree
+as soon as they agree on the component idempotents `single i 1` and
+the component roots `single i x`. Every element decomposes as
+`h = ∑ᵢ eᵢ·h` with `eᵢ·h = single i (h i)` a one-component polynomial
+in the root, which `kummerSingle_aeval` rewrites into the generators. -/
+theorem kummerAlg_algHom_ext [NeZero p] {B : Type} [CommRing B] [Algebra R B]
+    {f g : KummerAlg R p u →ₐ[R] B}
+    (hone : ∀ i, f (Pi.single i 1) = g (Pi.single i 1))
+    (hroot : ∀ i, f (Pi.single i (kummerRoot R p u i)) =
+      g (Pi.single i (kummerRoot R p u i))) :
+    f = g := by
+  classical
+  apply AlgHom.ext
+  intro h
+  -- decompose into one-component pieces
+  have hdec : h = ∑ i : ZMod p, Pi.single i (h i) :=
+    (Finset.univ_sum_single h).symm
+  rw [hdec, map_sum, map_sum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  -- each piece is a polynomial in the root
+  obtain ⟨q, hq⟩ := AdjoinRoot.mk_surjective (h i)
+  have hq' : Polynomial.aeval (kummerRoot R p u i) q = h i :=
+    (AdjoinRoot.aeval_eq q).trans hq
+  rw [← hq', kummerSingle_aeval, map_mul, map_mul,
+    hone i, ← Polynomial.aeval_algHom_apply, ← Polynomial.aeval_algHom_apply,
+    hroot i]
+
+/-- The tensor-block distribution on a tensor of one-component
+elements (PROVEN — chase the `piRight`/`comm` chain on pure
+tensors). -/
+theorem kummerTensorEquiv_single [NeZero p] (i j : ZMod p)
+    (x : KummerComponent R p u i) (y : KummerComponent R p u j) :
+    kummerTensorEquiv R p u
+        (TensorProduct.tmul R (Pi.single i x) (Pi.single j y)) =
+      Pi.single j (Pi.single i (TensorProduct.tmul R x y)) := by
+  classical
+  rw [kummerTensorEquiv, AlgEquiv.trans_apply,
+    Algebra.TensorProduct.piRight_tmul]
+  have h1 : (fun j' => TensorProduct.tmul R
+      (Pi.single i x : KummerAlg R p u)
+      ((Pi.single j y : KummerAlg R p u) j')) =
+      Pi.single j (TensorProduct.tmul R
+        (Pi.single i x : KummerAlg R p u) y) := by
+    funext j'
+    by_cases hj : j' = j
+    · subst hj
+      rw [Pi.single_eq_same, Pi.single_eq_same]
+    · rw [Pi.single_eq_of_ne hj, Pi.single_eq_of_ne hj,
+        TensorProduct.tmul_zero]
+  rw [h1]
+  funext j'
+  rw [AlgEquiv.piCongrRight_apply]
+  by_cases hj : j' = j
+  · subst hj
+    rw [Pi.single_eq_same, Pi.single_eq_same]
+    rw [AlgEquiv.trans_apply, Algebra.TensorProduct.comm_tmul,
+      AlgEquiv.trans_apply, Algebra.TensorProduct.piRight_tmul]
+    have h2 : (fun i' => TensorProduct.tmul R y
+        ((Pi.single i x : KummerAlg R p u) i')) =
+        Pi.single i (TensorProduct.tmul R y x) := by
+      funext i'
+      by_cases hi : i' = i
+      · subst hi
+        rw [Pi.single_eq_same, Pi.single_eq_same]
+      · rw [Pi.single_eq_of_ne hi, Pi.single_eq_of_ne hi,
+          TensorProduct.tmul_zero]
+    rw [h2]
+    funext i'
+    rw [AlgEquiv.piCongrRight_apply]
+    by_cases hi : i' = i
+    · subst hi
+      rw [Pi.single_eq_same, Pi.single_eq_same,
+        Algebra.TensorProduct.comm_tmul]
+    · rw [Pi.single_eq_of_ne hi, Pi.single_eq_of_ne hi, map_zero]
+  · rw [Pi.single_eq_of_ne hj, Pi.single_eq_of_ne hj, map_zero]
+
+/-- The inverse tensor-block distribution on doubly-one-component
+elements (PROVEN from the forward computation by injectivity and
+linearity). -/
+theorem kummerTensorEquiv_symm_single [NeZero p] (i j : ZMod p)
+    (T : TensorProduct R (KummerComponent R p u i) (KummerComponent R p u j)) :
+    (kummerTensorEquiv R p u).symm (Pi.single j (Pi.single i T)) =
+      (TensorProduct.map (LinearMap.single R (KummerComponent R p u) i)
+        (LinearMap.single R (KummerComponent R p u) j)) T := by
+  induction T using TensorProduct.induction_on with
+  | zero =>
+    rw [map_zero, Pi.single_zero, Pi.single_zero, map_zero]
+  | tmul x y =>
+    apply (kummerTensorEquiv R p u).injective
+    rw [AlgEquiv.apply_symm_apply, TensorProduct.map_tmul]
+    exact (kummerTensorEquiv_single R p u i j x y).symm
+  | add s t hs ht =>
+    rw [map_add, Pi.single_add, Pi.single_add, map_add, hs, ht]
+
+/-- The comultiplication, expanded as the double sum of its
+tensor-block components (PROVEN): `Δ(h) = ∑_{i,j} (ιᵢ ⊗ ιⱼ)(Δᵢⱼ(h_{i+j}))`
+with `ιᵢ` the one-component inclusions. -/
+theorem kummerComul_apply_eq_sum [NeZero p] (h : KummerAlg R p u) :
+    kummerComul R p u h =
+      ∑ j : ZMod p, ∑ i : ZMod p,
+        (TensorProduct.map (LinearMap.single R (KummerComponent R p u) i)
+          (LinearMap.single R (KummerComponent R p u) j))
+        (kummerComulComponent R p u i j (h (i + j))) := by
+  classical
+  rw [kummerComul, AlgHom.comp_apply]
+  have hD : (AlgHom.pi fun j => AlgHom.pi fun i =>
+      (kummerComulComponent R p u i j).comp
+        (Pi.evalAlgHom R (KummerComponent R p u) (i + j))) h =
+      ∑ j : ZMod p, ∑ i : ZMod p, Pi.single j (Pi.single i
+        (kummerComulComponent R p u i j (h (i + j)))) := by
+    funext j₀
+    simp only [Finset.sum_apply]
+    rw [Finset.sum_eq_single j₀ (fun j _ hj => Finset.sum_eq_zero fun i _ => by
+        rw [Pi.single_eq_of_ne (Ne.symm hj)])
+      (fun hj => absurd (Finset.mem_univ j₀) hj)]
+    simp only [Pi.single_eq_same]
+    exact (Finset.univ_sum_single _).symm
+  rw [hD, map_sum]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [map_sum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  exact kummerTensorEquiv_symm_single R p u i j _
+
+/-- The comultiplication block on the root (PROVEN — `liftAlgHom` on
+the adjoined root). -/
+theorem kummerComulComponent_root [NeZero p] (i j : ZMod p) :
+    kummerComulComponent R p u i j (kummerRoot R p u (i + j)) =
+      kummerComulRoot R p u i j :=
+  AdjoinRoot.liftAlgHom_root _ _ _ _
+
+/-- The comultiplication root has no carry when the left index is `0`
+(PROVEN). -/
+theorem kummerComulRoot_zero_left [NeZero p] (c : ZMod p) :
+    kummerComulRoot R p u 0 c =
+      TensorProduct.tmul R (kummerRoot R p u 0) (kummerRoot R p u c) := by
+  rw [kummerComulRoot, if_pos (show (0 : ZMod p).val + c.val < p by
+    rw [ZMod.val_zero, zero_add]; exact ZMod.val_lt c), pow_zero, map_one,
+    mul_one]
+
+/-- The comultiplication root has no carry when the right index is `0`
+(PROVEN). -/
+theorem kummerComulRoot_zero_right [NeZero p] (c : ZMod p) :
+    kummerComulRoot R p u c 0 =
+      TensorProduct.tmul R (kummerRoot R p u c) (kummerRoot R p u 0) := by
+  rw [kummerComulRoot, if_pos (show c.val + (0 : ZMod p).val < p by
+    rw [ZMod.val_zero, add_zero]; exact ZMod.val_lt c), pow_zero, map_one,
+    mul_one]
+
+/-- Applying `ε ⊗ id` kills the tensor blocks whose left index is not
+`0` (PROVEN by tensor induction). -/
+theorem kummer_rTensor_kill [NeZero p] {i : ZMod p} (hi : i ≠ 0) (j : ZMod p)
+    (T : TensorProduct R (KummerComponent R p u i) (KummerComponent R p u j)) :
+    (Algebra.TensorProduct.map (kummerCounit R p u)
+      (AlgHom.id R (KummerAlg R p u)))
+      ((TensorProduct.map (LinearMap.single R (KummerComponent R p u) i)
+        (LinearMap.single R (KummerComponent R p u) j)) T) = 0 := by
+  induction T using TensorProduct.induction_on with
+  | zero => rw [map_zero, map_zero]
+  | tmul x y =>
+    rw [TensorProduct.map_tmul, Algebra.TensorProduct.map_tmul,
+      show (LinearMap.single R (KummerComponent R p u) i) x =
+        Pi.single i x from rfl,
+      kummerCounit_single_of_ne R p u hi, TensorProduct.zero_tmul]
+  | add s t hs ht => rw [map_add, map_add, hs, ht, add_zero]
+
+/-- Applying `id ⊗ ε` kills the tensor blocks whose right index is not
+`0` (PROVEN by tensor induction). -/
+theorem kummer_lTensor_kill [NeZero p] (i : ZMod p) {j : ZMod p} (hj : j ≠ 0)
+    (T : TensorProduct R (KummerComponent R p u i) (KummerComponent R p u j)) :
+    (Algebra.TensorProduct.map (AlgHom.id R (KummerAlg R p u))
+      (kummerCounit R p u))
+      ((TensorProduct.map (LinearMap.single R (KummerComponent R p u) i)
+        (LinearMap.single R (KummerComponent R p u) j)) T) = 0 := by
+  induction T using TensorProduct.induction_on with
+  | zero => rw [map_zero, map_zero]
+  | tmul x y =>
+    rw [TensorProduct.map_tmul, Algebra.TensorProduct.map_tmul,
+      show (LinearMap.single R (KummerComponent R p u) j) y =
+        Pi.single j y from rfl,
+      kummerCounit_single_of_ne R p u hj, TensorProduct.tmul_zero]
+  | add s t hs ht => rw [map_add, map_add, hs, ht, add_zero]
+
 /-- **Coassociativity of the Kummer comultiplication** (sorry node —
 pure algebra on the explicit model: both sides classify the associative
 triple group law `(i,s)·(j,t)·(k,v)`; both are algebra maps out of a
@@ -3349,22 +3605,133 @@ theorem kummerComul_coassoc [NeZero p] :
         (kummerComul R p u)).comp (kummerComul R p u) := by
   sorry
 
-/-- **Left counit axiom for the Kummer bialgebra** (sorry node —
-`(ε ⊗ id) ∘ Δ = lid⁻¹`: evaluating the first tensor factor at the
-identity point recovers the identity map, componentwise on roots). -/
+/-- **Left counit axiom for the Kummer bialgebra** (PROVEN 2026-07-22
+— `(ε ⊗ id) ∘ Δ = lid⁻¹`: on the generators, the double block sum of
+the comultiplication collapses to the `(0, c)` block — the other
+blocks are killed by the one-component evaluation or by the counit —
+and the `(0, c)` block has no carry). -/
 theorem kummerComul_rTensor_counit [NeZero p] :
     (Algebra.TensorProduct.map (kummerCounit R p u)
       (AlgHom.id R (KummerAlg R p u))).comp (kummerComul R p u)
       = (Algebra.TensorProduct.lid R (KummerAlg R p u)).symm := by
-  sorry
+  classical
+  have hsum : ∀ (c : ZMod p) (a : KummerComponent R p u c),
+      (Algebra.TensorProduct.map (kummerCounit R p u)
+        (AlgHom.id R (KummerAlg R p u)))
+        (kummerComul R p u (Pi.single c a)) =
+      (Algebra.TensorProduct.map (kummerCounit R p u)
+        (AlgHom.id R (KummerAlg R p u)))
+        ((TensorProduct.map (LinearMap.single R (KummerComponent R p u) 0)
+          (LinearMap.single R (KummerComponent R p u) c))
+          (kummerComulComponent R p u 0 c
+            (kummerCast R p u (zero_add c).symm a))) := by
+    intro c a
+    rw [kummerComul_apply_eq_sum, map_sum]
+    refine (Finset.sum_eq_single c (fun j _ hj => ?_)
+      (fun hc => absurd (Finset.mem_univ c) hc)).trans ?_
+    · rw [map_sum]
+      refine Finset.sum_eq_zero fun i _ => ?_
+      by_cases hij : i + j = c
+      · exact kummer_rTensor_kill R p u
+          (fun h0 => hj (by rwa [h0, zero_add] at hij)) j _
+      · rw [Pi.single_eq_of_ne hij, map_zero, map_zero, map_zero]
+    · rw [map_sum]
+      refine (Finset.sum_eq_single 0 (fun i _ hi => ?_)
+        (fun h0 => absurd (Finset.mem_univ _) h0)).trans ?_
+      · by_cases hic : i + c = c
+        · exact absurd (add_eq_right.mp hic) hi
+        · rw [Pi.single_eq_of_ne hic, map_zero, map_zero, map_zero]
+      · rw [kummerSingle_apply_of_eq R p u (zero_add c).symm a]
+  refine kummerAlg_algHom_ext R p u (fun c => ?_) (fun c => ?_)
+  · rw [AlgHom.comp_apply, hsum c 1, map_one, map_one,
+      Algebra.TensorProduct.one_def, TensorProduct.map_tmul,
+      Algebra.TensorProduct.map_tmul,
+      show (LinearMap.single R (KummerComponent R p u) 0)
+        (1 : KummerComponent R p u 0) =
+        (Pi.single (0 : ZMod p) 1 : KummerAlg R p u) from rfl,
+      show (LinearMap.single R (KummerComponent R p u) c)
+        (1 : KummerComponent R p u c) =
+        (Pi.single c 1 : KummerAlg R p u) from rfl,
+      kummerCounit_single_zero_one, AlgHom.id_apply]
+    apply (Algebra.TensorProduct.lid R (KummerAlg R p u)).injective
+    rw [Algebra.TensorProduct.lid_tmul, one_smul]
+    exact ((Algebra.TensorProduct.lid R
+      (KummerAlg R p u)).apply_symm_apply _).symm
+  · rw [AlgHom.comp_apply, hsum c (kummerRoot R p u c), kummerCast_root,
+      kummerComulComponent_root, kummerComulRoot_zero_left,
+      TensorProduct.map_tmul, Algebra.TensorProduct.map_tmul,
+      show (LinearMap.single R (KummerComponent R p u) 0)
+        (kummerRoot R p u 0) =
+        (Pi.single (0 : ZMod p) (kummerRoot R p u 0) : KummerAlg R p u) from rfl,
+      show (LinearMap.single R (KummerComponent R p u) c)
+        (kummerRoot R p u c) =
+        (Pi.single c (kummerRoot R p u c) : KummerAlg R p u) from rfl,
+      kummerCounit_single_zero_root, AlgHom.id_apply]
+    apply (Algebra.TensorProduct.lid R (KummerAlg R p u)).injective
+    rw [Algebra.TensorProduct.lid_tmul, one_smul]
+    exact ((Algebra.TensorProduct.lid R
+      (KummerAlg R p u)).apply_symm_apply _).symm
 
-/-- **Right counit axiom for the Kummer bialgebra** (sorry node —
-`(id ⊗ ε) ∘ Δ = rid⁻¹`, symmetric to the left axiom). -/
+/-- **Right counit axiom for the Kummer bialgebra** (PROVEN 2026-07-22
+— `(id ⊗ ε) ∘ Δ = rid⁻¹`, symmetric to the left axiom: the double
+block sum collapses to the `(c, 0)` block). -/
 theorem kummerComul_lTensor_counit [NeZero p] :
     (Algebra.TensorProduct.map (AlgHom.id R (KummerAlg R p u))
       (kummerCounit R p u)).comp (kummerComul R p u)
       = (Algebra.TensorProduct.rid R R (KummerAlg R p u)).symm := by
-  sorry
+  classical
+  have hsum : ∀ (c : ZMod p) (a : KummerComponent R p u c),
+      (Algebra.TensorProduct.map (AlgHom.id R (KummerAlg R p u))
+        (kummerCounit R p u))
+        (kummerComul R p u (Pi.single c a)) =
+      (Algebra.TensorProduct.map (AlgHom.id R (KummerAlg R p u))
+        (kummerCounit R p u))
+        ((TensorProduct.map (LinearMap.single R (KummerComponent R p u) c)
+          (LinearMap.single R (KummerComponent R p u) 0))
+          (kummerComulComponent R p u c 0
+            (kummerCast R p u (add_zero c).symm a))) := by
+    intro c a
+    rw [kummerComul_apply_eq_sum, map_sum]
+    refine (Finset.sum_eq_single 0 (fun j _ hj => ?_)
+      (fun h0 => absurd (Finset.mem_univ _) h0)).trans ?_
+    · rw [map_sum]
+      exact Finset.sum_eq_zero fun i _ => kummer_lTensor_kill R p u i hj _
+    · rw [map_sum]
+      refine (Finset.sum_eq_single c (fun i _ hi => ?_)
+        (fun hc => absurd (Finset.mem_univ _) hc)).trans ?_
+      · by_cases hic : i + 0 = c
+        · exact absurd (by rwa [add_zero] at hic) hi
+        · rw [Pi.single_eq_of_ne hic, map_zero, map_zero, map_zero]
+      · rw [kummerSingle_apply_of_eq R p u (add_zero c).symm a]
+  refine kummerAlg_algHom_ext R p u (fun c => ?_) (fun c => ?_)
+  · rw [AlgHom.comp_apply, hsum c 1, map_one, map_one,
+      Algebra.TensorProduct.one_def, TensorProduct.map_tmul,
+      Algebra.TensorProduct.map_tmul,
+      show (LinearMap.single R (KummerComponent R p u) c)
+        (1 : KummerComponent R p u c) =
+        (Pi.single c 1 : KummerAlg R p u) from rfl,
+      show (LinearMap.single R (KummerComponent R p u) 0)
+        (1 : KummerComponent R p u 0) =
+        (Pi.single (0 : ZMod p) 1 : KummerAlg R p u) from rfl,
+      kummerCounit_single_zero_one, AlgHom.id_apply]
+    apply (Algebra.TensorProduct.rid R R (KummerAlg R p u)).injective
+    rw [Algebra.TensorProduct.rid_tmul, one_smul]
+    exact ((Algebra.TensorProduct.rid R R
+      (KummerAlg R p u)).apply_symm_apply _).symm
+  · rw [AlgHom.comp_apply, hsum c (kummerRoot R p u c), kummerCast_root,
+      kummerComulComponent_root, kummerComulRoot_zero_right,
+      TensorProduct.map_tmul, Algebra.TensorProduct.map_tmul,
+      show (LinearMap.single R (KummerComponent R p u) c)
+        (kummerRoot R p u c) =
+        (Pi.single c (kummerRoot R p u c) : KummerAlg R p u) from rfl,
+      show (LinearMap.single R (KummerComponent R p u) 0)
+        (kummerRoot R p u 0) =
+        (Pi.single (0 : ZMod p) (kummerRoot R p u 0) : KummerAlg R p u) from rfl,
+      kummerCounit_single_zero_root, AlgHom.id_apply]
+    apply (Algebra.TensorProduct.rid R R (KummerAlg R p u)).injective
+    rw [Algebra.TensorProduct.rid_tmul, one_smul]
+    exact ((Algebra.TensorProduct.rid R R
+      (KummerAlg R p u)).apply_symm_apply _).symm
 
 /-- The Kummer bialgebra structure: comultiplication and counit are the
 algebra maps classifying the group law and the identity point; the
