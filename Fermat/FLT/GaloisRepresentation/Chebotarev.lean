@@ -15,12 +15,19 @@ here. This file provides:
   (ρ (globalFrob v)).charpoly` holds by definition
   (`charFrob_eq_charpoly_globalFrob`).
 
-* **Chebotarev density** (`dense_conjClasses_globalFrob`, sorry node): for
-  any finite set `S` of finite places of `ℚ`, the union of the conjugacy
-  classes of the global Frobenius elements at places outside `S` is dense
-  in `Γ ℚ`. This is the topological form of the Chebotarev density theorem
-  needed here (density of Frobenii); the full measure-theoretic statement
-  is strictly stronger and not required.
+* **Chebotarev density** (`dense_conjClasses_globalFrob`): for any finite
+  set `S` of finite places of `ℚ`, the union of the conjugacy classes of
+  the global Frobenius elements at places outside `S` is dense in `Γ ℚ`.
+  This is the topological form of the Chebotarev density theorem needed
+  here (density of Frobenii); the full measure-theoretic statement is
+  strictly stronger and not required. DERIVED (through
+  `exists_frobenius_conj_mem_coset` and
+  `exists_globalFrob_restrictNormalHom_conj`, both proven, and the
+  PROVEN local–global bridge
+  `exists_isArithFrobAt_restrictNormalHom_globalFrob`) from the single
+  remaining sorry node `infinite_setOf_isArithFrobAt`, the classical
+  ideal-theoretic Chebotarev existence statement for a finite Galois
+  extension of number fields.
 
 The remaining pieces of the decomposition (Brauer–Nesbitt for
 2-dimensional mod-`ℓ` representations, the mod-`ℓ` cyclotomic character as
@@ -167,7 +174,14 @@ classical existence form of the Chebotarev density theorem in purely
 finite, ideal-theoretic vocabulary — exactly the statement produced by
 the standard analytic proof (Lagarias–Odlyzko, or the classical
 reduction to cyclic extensions and Hecke L-functions; see Neukirch VII
-§13); no completions or absolute Galois groups appear. -/
+§13); no completions or absolute Galois groups appear. Analytic base
+available in mathlib for a future proof: Dirichlet's theorem on primes
+in arithmetic progressions (`Mathlib.NumberTheory.LSeries.PrimesInAP`,
+covering the cyclotomic-over-`ℚ` case) and the L-series nonvanishing
+machinery under it; the remaining mathematical content is the Deuring
+reduction to the cyclic case, which needs a notion of Dirichlet density
+of sets of places (to discard the residue-degree-`≥ 2` places), not
+just infinitude. -/
 theorem infinite_setOf_isArithFrobAt
     (L : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K L]
     [Normal K L] (τ : L ≃ₐ[K] L) :
@@ -214,10 +228,10 @@ theorem exists_isArithFrobAt_restrictNormalHom_globalFrob
         (algebraMap (𝓞 L) L))
       (integralClosure (v.adicCompletionIntegers K)
         (AlgebraicClosure (v.adicCompletion K))).toSubring
-      (fun x => hint x) with hjdef
+      (fun x => hint x)
   set M : Ideal (IntegralClosure (v.adicCompletionIntegers K)
       (AlgebraicClosure (v.adicCompletion K))) :=
-    IsLocalRing.maximalIdeal _ with hMdef
+    IsLocalRing.maximalIdeal _
   set Q : Ideal (𝓞 L) := M.comap j with hQdef
   -- the big maximal ideal contracts to the maximal ideal of `𝒪ᵥ`
   have hMunder : M.under (v.adicCompletionIntegers K) =
