@@ -86,9 +86,227 @@ import Fermat.FLT.DedekindDomain.AdicValuation
 
 open WeierstrassCurve WeierstrassCurve.Affine
 
-/-- **Mazur's torsion theorem** (sorry node): the torsion subgroup of the
-rational points of an elliptic curve over `ℚ` is isomorphic to one of the
-fifteen groups `ℤ/n` with `n ∈ {1, …, 10, 12}` or `ℤ/2 × ℤ/2m` with
+/-!
+### Decomposition of Mazur's classification (2026-07-22)
+
+`mazur_classification` is decomposed into five arithmetic leaves, one
+PROVEN geometric-torsion bound, one purely group-theoretic structure
+leaf, and a PROVEN casework assembly:
+
+* `torsion_finite_rat` (sorry node): the rational torsion subgroup is
+  finite (Lutz–Nagell, or injectivity of reduction at a good prime).
+* `mazur_point_order` (sorry node): Mazur's uniform bound — the order
+  of a rational torsion point lies in `{1, …, 10, 12}` (Mazur 1977,
+  Thm 8; Mazur 1978, "Rational isogenies of prime degree").
+* `not_full_torsion_rat` (sorry node): for `n ≥ 3` the full `n`-torsion
+  is never rational — the Weil pairing is surjective on `E[n] × E[n]`,
+  so a rational full level-`n` structure forces `μ_n ⊆ ℚ`, impossible
+  for `n ≥ 3` (Silverman AEC III.8, Cor 8.1.1).
+* `not_two_ten_torsion`, `not_two_twelve_torsion` (sorry nodes): no
+  rational `ℤ/2 × ℤ/10` or `ℤ/2 × ℤ/12` (the modular curves
+  `X_1(2,10)` and `X_1(2,12)` have genus ≥ 1 and no non-cuspidal
+  rational points; part of the fifteen-groups list of Mazur 1977).
+* `not_two_cube_torsion` (PROVEN): no rational `(ℤ/2)³` — the geometric
+  `2`-torsion has only `2² = 4` points.
+* `AddCommGroup.exists_rank_le_two_decomposition` (sorry node, PURE
+  GROUP THEORY, no arithmetic): a finite abelian group containing no
+  `(ℤ/n)²` for any `n ≥ 3` and no `(ℤ/2)³` is isomorphic to
+  `ℤ/d × ℤ/n` with `d ∈ {1, 2}` (structure-theorem bookkeeping).
+* `mazur_group_casework` (PROVEN): given the `ℤ/d × ℤ/n` shape, the
+  order bound, and the two exclusions, the group is one of the fifteen.
+-/
+
+/-- **Finiteness of the rational torsion subgroup** (sorry node): the
+torsion subgroup of `E(ℚ)` is finite. Standard content: the reduction
+map is injective on prime-to-`q` torsion at a good odd prime `q`
+(or Lutz–Nagell: torsion points have integral coordinates with `y²`
+dividing the discriminant). Silverman AEC VII.3, VIII.7. -/
+theorem WeierstrassCurve.torsion_finite_rat (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    Finite (Submodule.torsion ℤ (E⁄ℚ).Point) :=
+  sorry
+
+/-- **Mazur's uniform bound on orders of rational torsion points** (sorry
+node): a rational torsion point of an elliptic curve over `ℚ` has order
+in `{1, …, 10, 12}`. Mazur, "Modular curves and the Eisenstein ideal"
+(Publ. Math. IHÉS 47, 1977), Thm 8, completed by "Rational isogenies of
+prime degree" (Invent. Math. 44, 1978) for the prime orders `≥ 11`. -/
+theorem WeierstrassCurve.mazur_point_order (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (Q : (E⁄ℚ).Point) (hQ : Q ∈ Submodule.torsion ℤ (E⁄ℚ).Point) :
+    addOrderOf Q ∈ ({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12} : Finset ℕ) :=
+  sorry
+
+/-- **Irrationality of full `n`-torsion for `n ≥ 3`** (sorry node): the
+rational points of an elliptic curve over `ℚ` contain no subgroup
+isomorphic to `(ℤ/n)²` for `n ≥ 3`. The Weil pairing restricted to a
+rational basis of `E[n]` is a primitive `n`-th root of unity fixed by
+the Galois action, so `μ_n ⊆ ℚ` — impossible for `n ≥ 3` since `ℚ`
+contains only the roots of unity `±1`. Silverman AEC III.8. -/
+theorem WeierstrassCurve.not_full_torsion_rat (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    {n : ℕ} (hn : 3 ≤ n) (φ : (ZMod n × ZMod n) →+ (E⁄ℚ).Point) :
+    ¬ Function.Injective φ :=
+  sorry
+
+/-- **Exclusion of rational `ℤ/2 × ℤ/10`** (sorry node): the modular
+curve `X_1(2,10)` has no non-cuspidal rational point (Mazur 1977; the
+list of fifteen). -/
+theorem WeierstrassCurve.not_two_ten_torsion (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (φ : (ZMod 2 × ZMod 10) →+ (E⁄ℚ).Point) :
+    ¬ Function.Injective φ :=
+  sorry
+
+/-- **Exclusion of rational `ℤ/2 × ℤ/12`** (sorry node): the modular
+curve `X_1(2,12)` has no non-cuspidal rational point (Mazur 1977; the
+list of fifteen). -/
+theorem WeierstrassCurve.not_two_twelve_torsion (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (φ : (ZMod 2 × ZMod 12) →+ (E⁄ℚ).Point) :
+    ¬ Function.Injective φ :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **No rational `(ℤ/2)³`** (PROVEN 2026-07-22): the geometric
+`2`-torsion of an elliptic curve has exactly `2² = 4` points
+(`TorsionCard.card_torsionBy`), so already over `ℚ̄` there is no
+injective `(ℤ/2)³`; a rational one would base-change to one. -/
+theorem WeierstrassCurve.not_two_cube_torsion (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (φ : (ZMod 2 × ZMod 2 × ZMod 2) →+ (E⁄ℚ).Point) :
+    ¬ Function.Injective φ := by
+  classical
+  intro hφ
+  -- the geometric `2`-torsion has `4` elements
+  have hcard : Nat.card ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 2) = 2 ^ 2 :=
+    TorsionCard.card_torsionBy (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) 2
+      (Nat.cast_ne_zero.mpr two_ne_zero)
+  haveI hfin : Finite ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 2) :=
+    Nat.finite_of_card_ne_zero (by rw [hcard]; norm_num)
+  -- every element of `(ℤ/2)³` is killed by `2`
+  have h2ann : ∀ z : ZMod 2 × ZMod 2 × ZMod 2, (2 : ℕ) • z = 0 := by decide
+  -- base-change the embedding to `ℚ̄` and corestrict to the `2`-torsion
+  let ψ : (ZMod 2 × ZMod 2 × ZMod 2) →+ (E⁄(AlgebraicClosure ℚ)).Point :=
+    (Affine.Point.map (W' := E) (Algebra.ofId ℚ (AlgebraicClosure ℚ))).comp φ
+  let f : (ZMod 2 × ZMod 2 × ZMod 2) → (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 2 :=
+    fun z => ⟨show ((E.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).Point from
+      ψ z, by
+        rw [Submodule.mem_torsionBy_iff]
+        show ((2 : ℕ) : ℤ) • (ψ z) = 0
+        rw [natCast_zsmul, ← map_nsmul, h2ann z, map_zero]⟩
+  have hfinj : Function.Injective f := by
+    intro z z' hzz
+    have h1 : ψ z = ψ z' := congrArg Subtype.val hzz
+    have h2 : Affine.Point.map (W' := E) (Algebra.ofId ℚ (AlgebraicClosure ℚ)) (φ z) =
+        Affine.Point.map (W' := E) (Algebra.ofId ℚ (AlgebraicClosure ℚ)) (φ z') := h1
+    exact hφ (Affine.Point.map_injective (W' := E)
+      (f := Algebra.ofId ℚ (AlgebraicClosure ℚ)) h2)
+  have hle : Nat.card (ZMod 2 × ZMod 2 × ZMod 2) ≤
+      Nat.card ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 2) :=
+    Nat.card_le_card_of_injective f hfinj
+  rw [hcard, Nat.card_prod, Nat.card_prod, Nat.card_zmod] at hle
+  norm_num at hle
+
+/-- **Rank-`≤ 2` structure of the candidate torsion groups** (sorry node
+— PURE FINITE ABELIAN GROUP THEORY, no arithmetic input): a finite
+abelian group containing no subgroup `(ℤ/n)²` for any `n ≥ 3` and no
+subgroup `(ℤ/2)³` is isomorphic to `ℤ/d × ℤ/n` with `d ∈ {1, 2}`.
+Bookkeeping over the structure theorem
+(`AddCommGroup.equiv_directSum_zmod_of_finite`): the constraint kills a
+second cyclic factor at every odd prime and bounds the `2`-part by
+`ℤ/2 × ℤ/2^k`; the coprime cyclic pieces merge by CRT. -/
+theorem AddCommGroup.exists_rank_le_two_decomposition
+    (T : Type*) [AddCommGroup T] [Finite T]
+    (hfull : ∀ n : ℕ, 3 ≤ n → ∀ φ : (ZMod n × ZMod n) →+ T, ¬ Function.Injective φ)
+    (hcube : ∀ φ : (ZMod 2 × ZMod 2 × ZMod 2) →+ T, ¬ Function.Injective φ) :
+    ∃ (d n : ℕ), (d = 1 ∨ d = 2) ∧ Nonempty (T ≃+ (ZMod d × ZMod n)) :=
+  sorry
+
+/-- **The fifteen-groups casework** (PROVEN 2026-07-22): an abelian
+group of the shape `ℤ/d × ℤ/n` with `d ∈ {1, 2}`, all of whose element
+orders lie in `{1, …, 10, 12}`, and containing no `ℤ/2 × ℤ/10` and no
+`ℤ/2 × ℤ/12`, is one of Mazur's fifteen groups. Casework: for `d = 1`
+the generator's order pins `n` in the list; for `d = 2` and `n` odd the
+group is cyclic of order `2n` by CRT and the generator's order pins
+`2n`; for `d = 2` and `n` even the element `(0, 1)` has order `n`, so
+`n ∈ {2, 4, 6, 8, 10, 12}`, and the two exclusions remove `10` and
+`12`. -/
+theorem mazur_group_casework (T : Type*) [AddCommGroup T]
+    (horder : ∀ x : T, addOrderOf x ∈ ({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12} : Finset ℕ))
+    (h210 : ∀ φ : (ZMod 2 × ZMod 10) →+ T, ¬ Function.Injective φ)
+    (h212 : ∀ φ : (ZMod 2 × ZMod 12) →+ T, ¬ Function.Injective φ)
+    (hdec : ∃ (d n : ℕ), (d = 1 ∨ d = 2) ∧ Nonempty (T ≃+ (ZMod d × ZMod n))) :
+    (∃ n ∈ ({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12} : Finset ℕ),
+      Nonempty (T ≃+ ZMod n)) ∨
+    (∃ m ∈ ({1, 2, 3, 4} : Finset ℕ),
+      Nonempty (T ≃+ (ZMod 2 × ZMod (2 * m)))) := by
+  classical
+  obtain ⟨d, n, hd, ⟨e⟩⟩ := hdec
+  rcases hd with rfl | rfl
+  · -- `d = 1`: the group is cyclic of order `n`
+    left
+    have e' : T ≃+ ZMod n := e.trans AddEquiv.uniqueProd
+    have hordx : addOrderOf (e'.symm 1) = n := by
+      have h1 := addOrderOf_injective e'.toAddMonoidHom e'.injective (e'.symm 1)
+      rw [show e'.toAddMonoidHom (e'.symm 1) = 1 from e'.apply_symm_apply 1,
+        ZMod.addOrderOf_one] at h1
+      exact h1.symm
+    have hmem := horder (e'.symm 1)
+    rw [hordx] at hmem
+    exact ⟨n, hmem, ⟨e'⟩⟩
+  · by_cases hpar : 2 ∣ n
+    · -- `d = 2`, `n` even: `(0, 1)` has order `n`, and the exclusions apply
+      -- the order of `(0, 1)` is `n`
+      have hord01 : addOrderOf ((0, 1) : ZMod 2 × ZMod n) = n := by
+        have h1 : n • ((0, 1) : ZMod 2 × ZMod n) = 0 := by
+          have hz : n • (0 : ZMod 2) = 0 := smul_zero n
+          have ho : n • (1 : ZMod n) = 0 := by
+            rw [nsmul_eq_mul, mul_one, ZMod.natCast_self]
+          rw [Prod.smul_mk, hz, ho]
+          rfl
+        have hdvd : addOrderOf ((0, 1) : ZMod 2 × ZMod n) ∣ n :=
+          addOrderOf_dvd_of_nsmul_eq_zero h1
+        have hdvd2 : n ∣ addOrderOf ((0, 1) : ZMod 2 × ZMod n) := by
+          have h2 : (addOrderOf ((0, 1) : ZMod 2 × ZMod n)) •
+              ((0, 1) : ZMod 2 × ZMod n) = 0 := addOrderOf_nsmul_eq_zero _
+          have h3 : (addOrderOf ((0, 1) : ZMod 2 × ZMod n)) • (1 : ZMod n) = 0 :=
+            congrArg Prod.snd h2
+          have h4 := addOrderOf_dvd_of_nsmul_eq_zero h3
+          rwa [ZMod.addOrderOf_one] at h4
+        exact Nat.dvd_antisymm hdvd hdvd2
+      have hordx : addOrderOf (e.symm ((0, 1) : ZMod 2 × ZMod n)) = n := by
+        have h1 := addOrderOf_injective e.toAddMonoidHom e.injective (e.symm (0, 1))
+        rw [show e.toAddMonoidHom (e.symm (0, 1)) = (0, 1) from e.apply_symm_apply _,
+          hord01] at h1
+        exact h1.symm
+      have hmem := horder (e.symm ((0, 1) : ZMod 2 × ZMod n))
+      rw [hordx] at hmem
+      fin_cases hmem
+      · exact absurd hpar (by norm_num)
+      · exact Or.inr ⟨1, by decide, ⟨e⟩⟩
+      · exact absurd hpar (by norm_num)
+      · exact Or.inr ⟨2, by decide, ⟨e⟩⟩
+      · exact absurd hpar (by norm_num)
+      · exact Or.inr ⟨3, by decide, ⟨e⟩⟩
+      · exact absurd hpar (by norm_num)
+      · exact Or.inr ⟨4, by decide, ⟨e⟩⟩
+      · exact absurd hpar (by norm_num)
+      · exact absurd e.symm.injective (h210 e.symm.toAddMonoidHom)
+      · exact absurd e.symm.injective (h212 e.symm.toAddMonoidHom)
+    · -- `d = 2`, `n` odd: the group is cyclic of order `2n` by CRT
+      left
+      have hcop : Nat.Coprime 2 n := (Nat.prime_two.coprime_iff_not_dvd).mpr hpar
+      have e' : T ≃+ ZMod (2 * n) :=
+        e.trans ((ZMod.chineseRemainder hcop).toAddEquiv).symm
+      have hordx : addOrderOf (e'.symm 1) = 2 * n := by
+        have h1 := addOrderOf_injective e'.toAddMonoidHom e'.injective (e'.symm 1)
+        rw [show e'.toAddMonoidHom (e'.symm 1) = 1 from e'.apply_symm_apply 1,
+          ZMod.addOrderOf_one] at h1
+        exact h1.symm
+      have hmem := horder (e'.symm 1)
+      rw [hordx] at hmem
+      exact ⟨2 * n, hmem, ⟨e'⟩⟩
+
+/-- **Mazur's torsion theorem** (DERIVED 2026-07-22 from the five
+arithmetic leaves, the PROVEN `(ℤ/2)³` bound, the group-theoretic
+rank-`≤2` leaf, and the PROVEN casework): the torsion subgroup of the
+rational points of an elliptic curve over `ℚ` is isomorphic to one of
+the fifteen groups `ℤ/n` with `n ∈ {1, …, 10, 12}` or `ℤ/2 × ℤ/2m` with
 `m ∈ {1, 2, 3, 4}`. Mazur, "Modular curves and the Eisenstein ideal"
 (Publ. Math. IHÉS 47, 1977) and "Rational isogenies of prime degree"
 (Invent. Math. 44, 1978). -/
@@ -96,8 +314,38 @@ theorem WeierstrassCurve.mazur_classification (E : WeierstrassCurve ℚ) [E.IsEl
     (∃ n ∈ ({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12} : Finset ℕ),
       Nonempty ((Submodule.torsion ℤ (E⁄ℚ).Point) ≃+ ZMod n)) ∨
     (∃ m ∈ ({1, 2, 3, 4} : Finset ℕ),
-      Nonempty ((Submodule.torsion ℤ (E⁄ℚ).Point) ≃+ (ZMod 2 × ZMod (2 * m)))) :=
-  sorry
+      Nonempty ((Submodule.torsion ℤ (E⁄ℚ).Point) ≃+ (ZMod 2 × ZMod (2 * m)))) := by
+  haveI : Finite (Submodule.torsion ℤ (E⁄ℚ).Point) := E.torsion_finite_rat
+  have hιinj : Function.Injective
+      ((Submodule.torsion ℤ (E⁄ℚ).Point).subtype.toAddMonoidHom) :=
+    Submodule.injective_subtype _
+  refine mazur_group_casework (Submodule.torsion ℤ (E⁄ℚ).Point) ?_ ?_ ?_ ?_
+  · -- element orders through Mazur's uniform bound
+    intro x
+    have h1 := addOrderOf_injective
+      ((Submodule.torsion ℤ (E⁄ℚ).Point).subtype.toAddMonoidHom) hιinj x
+    rw [← h1]
+    exact E.mazur_point_order _ x.2
+  · -- no `ℤ/2 × ℤ/10`
+    intro φ hφ
+    exact E.not_two_ten_torsion
+      (((Submodule.torsion ℤ (E⁄ℚ).Point).subtype.toAddMonoidHom).comp φ)
+      (hιinj.comp hφ)
+  · -- no `ℤ/2 × ℤ/12`
+    intro φ hφ
+    exact E.not_two_twelve_torsion
+      (((Submodule.torsion ℤ (E⁄ℚ).Point).subtype.toAddMonoidHom).comp φ)
+      (hιinj.comp hφ)
+  · -- the rank-`≤2` shape, from the Weil-pairing leaf and the `2`-torsion bound
+    refine AddCommGroup.exists_rank_le_two_decomposition _ ?_ ?_
+    · intro n hn φ hφ
+      exact E.not_full_torsion_rat hn
+        (((Submodule.torsion ℤ (E⁄ℚ).Point).subtype.toAddMonoidHom).comp φ)
+        (hιinj.comp hφ)
+    · intro φ hφ
+      exact E.not_two_cube_torsion
+        (((Submodule.torsion ℤ (E⁄ℚ).Point).subtype.toAddMonoidHom).comp φ)
+        (hιinj.comp hφ)
 
 /-- **Mazur's torsion theorem, weak form**: the rational points of an
 elliptic curve over `ℚ` contain no subgroup isomorphic to `ℤ/2 × ℤ/2p` for
@@ -1111,15 +1359,255 @@ theorem FreyPackage.inertia_two_unipotent (P : FreyPackage) :
   rw [hgoal, hb (A v), hb v]
   exact hp
 
-/-- **The flat/ordinary analysis at `p`** (sorry node — the deepest
-piece of Serre's §4.1 argument): given the stable line of the reducible
-mod-`p` Frey representation with its characters `χ₁`, `χ₂`
-(multiplying to `ω̄`), one of the two is unramified at `p` itself. The
-Frey curve is semistable at `p`; in the good-ordinary/multiplicative
-case the connected-étale sequence of the `p`-divisible group makes the
-quotient (étale) character unramified; the supersingular case cannot
-occur for a reducible representation (inertia at `p` would act through
-the level-2 fundamental character, irreducibly). -/
+/-!
+### Decomposition of the flat/ordinary analysis at `p` (2026-07-22)
+
+`subquotient_character_unramified_at_p` is decomposed into two
+reduction-type leaves producing an *étale line* `L` — a line in the
+`p`-torsion on whose QUOTIENT the inertia at `p` acts trivially — and a
+PROVEN linear-algebra assembly:
+
+* `exists_etale_line_of_multiplicative_self` (sorry node): at a prime
+  `p` of MULTIPLICATIVE reduction the Tate parametrization presents
+  `E[p]` as an extension of `ℤ/p` (spanned by a `p`-th root of the Tate
+  parameter, moved by inertia only within `μ_p`) by `μ_p`; the `μ_p`
+  line is the étale-quotient line. Silverman ATAEC V.5.
+* `exists_etale_line_of_good_of_stable_line` (sorry node): at a prime
+  `p` of GOOD reduction, if the mod-`p` representation has a stable
+  line at all, the reduction is ordinary (supersingular inertia acts
+  through the level-2 fundamental character, irreducibly — Serre 1972,
+  Prop. 12), and the connected-étale sequence of `E[p]` over `ℤ_p`
+  makes inertia act trivially on the étale quotient. Serre Duke 1987,
+  §4.1; Serre 1972 §1.11–1.12.
+* `character_unramified_at_p_of_etale_line` (PROVEN): given ANY such
+  line `L`, either the stable line `W` equals `L` — then `χ₂` is the
+  quotient character of `L` and is unramified at `p` — or `W ∩ L = 0` —
+  then `W` maps isomorphically onto the quotient by `L`, forcing
+  `χ₁` to be trivial on inertia at `p`.
+-/
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The Tate étale line at `p`, multiplicative case** (sorry node):
+for an elliptic curve over `ℚ` with multiplicative reduction at `p`,
+there is a line `L ⊆ E[p]` such that the local inertia at `p` acts
+trivially on `E[p]/L`. Content (Silverman ATAEC V.3, V.5): over
+`ℚ̄_p` the Tate uniformization gives `E[p] ≅ ⟨ζ_p, q_E^{1/p}⟩ ⊆
+ℚ̄_pˣ/q_Eᶻ` (up to the unramified quadratic twist, which does not
+change the inertia action); inertia moves `q_E^{1/p}` at most by an
+element of `μ_p`, so with `L` the image of `μ_p` the quotient action of
+inertia is trivial. -/
+theorem WeierstrassCurve.exists_etale_line_of_multiplicative_self
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime)
+    [E.HasMultiplicativeReduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)] :
+    ∃ L : Submodule (ZMod p) ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p),
+      Module.finrank (ZMod p) L = 1 ∧
+      ∀ σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat,
+        ∀ v, L.mkQ (E.galoisRep p hp.pos
+            ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat))) σ) v) = L.mkQ v :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The connected-étale line at `p`, good case** (sorry node): for an
+elliptic curve over `ℚ` with good reduction at an odd prime `p` whose
+mod-`p` representation admits a stable line, there is a line
+`L ⊆ E[p]` such that the local inertia at `p` acts trivially on
+`E[p]/L`. Content: a stable line forces the reduction to be ORDINARY —
+in the supersingular case inertia at `p` acts on `E[p]` through the
+fundamental character of level 2, whose eigenvalues are conjugate over
+`𝔽_{p²}` but not `𝔽_p`-rational, so no stable line exists (Serre,
+Propriétés galoisiennes…, Invent. Math. 15 (1972), §1.11–1.12, Prop.
+12); in the ordinary case the connected-étale sequence of the finite
+flat group scheme `E[p]/ℤ_p` has étale quotient of order `p`, on whose
+geometric points inertia acts trivially, and `L` is the connected
+(multiplicative-type) line. Serre Duke 1987, §4.1. -/
+theorem WeierstrassCurve.exists_etale_line_of_good_of_stable_line
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime) (hodd : p ≠ 2)
+    [E.HasGoodReduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
+    (W : Submodule (ZMod p) ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p))
+    (hW1 : Module.finrank (ZMod p) W = 1)
+    (hstable : ∀ g v, v ∈ W → E.galoisRep p hp.pos g v ∈ W) :
+    ∃ L : Submodule (ZMod p) ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p),
+      Module.finrank (ZMod p) L = 1 ∧
+      ∀ σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat,
+        ∀ v, L.mkQ (E.galoisRep p hp.pos
+            ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat))) σ) v) = L.mkQ v :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Linear algebra of the étale line** (PROVEN 2026-07-22): given the
+stable line `W` with its characters and ANY line `L` on whose quotient
+the inertia at `p` acts trivially, one of `χ₁`, `χ₂` is unramified at
+`p`. If `W = L`, the quotient character `χ₂` is trivial on inertia
+directly; if `W ≠ L`, the two lines of the 2-dimensional space meet
+trivially, so a nonzero vector of `W` has nonzero image in the quotient
+by `L`, and comparing the scalar action `χ₁` with the trivial quotient
+action kills `χ₁` on inertia. -/
+lemma FreyPackage.character_unramified_at_p_of_etale_line
+    (P : FreyPackage)
+    (W L : Submodule (ZMod P.p)
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p))
+    (hW1 : Module.finrank (ZMod P.p) W = 1)
+    (hL1 : Module.finrank (ZMod P.p) L = 1)
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ →* (ZMod P.p)ˣ)
+    (hχ₁ : ∀ g, ∀ v ∈ W,
+      P.freyCurve.galoisRep P.p P.hppos g v = (χ₁ g : ZMod P.p) • v)
+    (hχ₂ : ∀ g v, W.mkQ (P.freyCurve.galoisRep P.p P.hppos g v) =
+      (χ₂ g : ZMod P.p) • W.mkQ v)
+    (hL : ∀ σ ∈ localInertiaGroup P.pp.toHeightOneSpectrumRingOfIntegersRat,
+      ∀ v, L.mkQ (P.freyCurve.galoisRep P.p P.hppos
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              P.pp.toHeightOneSpectrumRingOfIntegersRat))) σ) v) = L.mkQ v) :
+    (localInertiaGroup P.pp.toHeightOneSpectrumRingOfIntegersRat ≤
+      (χ₁.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          P.pp.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) ∨
+    (localInertiaGroup P.pp.toHeightOneSpectrumRingOfIntegersRat ≤
+      (χ₂.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          P.pp.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) := by
+  classical
+  haveI : Fact P.p.Prime := ⟨P.pp⟩
+  -- finiteness bookkeeping: the torsion space has rank `2`
+  have hcard : Nat.card
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) =
+      P.p ^ 2 :=
+    TorsionCard.card_torsionBy
+      (P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))) P.p
+      (Nat.cast_ne_zero.mpr P.pp.ne_zero)
+  haveI hfin : Finite
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) :=
+    Nat.finite_of_card_ne_zero (by
+      rw [hcard]
+      have := P.pp.pos
+      positivity)
+  haveI : Fintype
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) :=
+    Fintype.ofFinite _
+  haveI : Module.Finite (ZMod P.p)
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) :=
+    Module.Finite.of_finite
+  have hfr : Module.finrank (ZMod P.p)
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) =
+      2 := by
+    have h1 := Module.card_eq_pow_finrank (K := ZMod P.p)
+      (V := ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p))
+    rw [ZMod.card] at h1
+    have h2 : P.p ^ 2 = P.p ^ Module.finrank (ZMod P.p)
+        ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) := by
+      rw [← hcard, Nat.card_eq_fintype_card]
+      exact h1
+    exact Nat.pow_right_injective P.pp.two_le h2.symm
+  by_cases hWL : W = L
+  · -- the stable line IS the étale line: `χ₂` is unramified at `p`
+    right
+    intro σ hσ
+    rw [MonoidHom.mem_ker]
+    have hWtop : W ≠ ⊤ := by
+      intro htop
+      rw [htop, finrank_top, hfr] at hW1
+      omega
+    haveI : Nontrivial
+        (((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) ⧸ W) :=
+      Submodule.Quotient.nontrivial_iff.mpr hWtop
+    obtain ⟨z, hz⟩ := exists_ne (0 :
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) ⧸ W)
+    obtain ⟨v, rfl⟩ := W.mkQ_surjective z
+    have h1 := hχ₂ ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        P.pp.toHeightOneSpectrumRingOfIntegersRat))) σ) v
+    have h2 := hL σ hσ v
+    rw [← hWL] at h2
+    rw [h2] at h1
+    have h3 : ((1 : ZMod P.p) -
+        (χ₂ ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            P.pp.toHeightOneSpectrumRingOfIntegersRat))) σ) : ZMod P.p)) •
+        W.mkQ v = 0 := by
+      rw [sub_smul, one_smul]
+      exact sub_eq_zero_of_eq h1
+    rcases smul_eq_zero.mp h3 with h4 | h4
+    · exact Units.ext (by
+        rw [Units.val_one]
+        exact (sub_eq_zero.mp h4).symm)
+    · exact absurd h4 hz
+  · -- the lines differ: `χ₁` is unramified at `p`
+    left
+    intro σ hσ
+    rw [MonoidHom.mem_ker]
+    have hW0 : W ≠ ⊥ := by
+      intro hbot
+      rw [hbot, finrank_bot] at hW1
+      omega
+    haveI : Nontrivial W := Submodule.nontrivial_iff_ne_bot.mpr hW0
+    obtain ⟨w₀, hw₀ne⟩ := exists_ne (0 : W)
+    have hw₀V : (w₀ : ((P.freyCurve.map (algebraMap ℚ
+        (AlgebraicClosure ℚ))).nTorsion P.p)) ≠ 0 :=
+      fun hc => hw₀ne (Subtype.ext hc)
+    -- `w₀ ∉ L`, else both lines are the span of `w₀`
+    have hw₀L : (w₀ : ((P.freyCurve.map (algebraMap ℚ
+        (AlgebraicClosure ℚ))).nTorsion P.p)) ∉ L := by
+      intro hmem
+      have hsp1 : Submodule.span (ZMod P.p) {(w₀ : ((P.freyCurve.map (algebraMap ℚ
+          (AlgebraicClosure ℚ))).nTorsion P.p))} ≤ W := by
+        rw [Submodule.span_le, Set.singleton_subset_iff]
+        exact w₀.2
+      have hsp2 : Submodule.span (ZMod P.p) {(w₀ : ((P.freyCurve.map (algebraMap ℚ
+          (AlgebraicClosure ℚ))).nTorsion P.p))} ≤ L := by
+        rw [Submodule.span_le, Set.singleton_subset_iff]
+        exact hmem
+      have hrk : Module.finrank (ZMod P.p)
+          (Submodule.span (ZMod P.p) {(w₀ : ((P.freyCurve.map (algebraMap ℚ
+            (AlgebraicClosure ℚ))).nTorsion P.p))}) = 1 :=
+        finrank_span_singleton hw₀V
+      have hWeq : Submodule.span (ZMod P.p) {(w₀ : ((P.freyCurve.map (algebraMap ℚ
+          (AlgebraicClosure ℚ))).nTorsion P.p))} = W :=
+        Submodule.eq_of_le_of_finrank_le hsp1 (le_of_eq (by rw [hW1, hrk]))
+      have hLeq : Submodule.span (ZMod P.p) {(w₀ : ((P.freyCurve.map (algebraMap ℚ
+          (AlgebraicClosure ℚ))).nTorsion P.p))} = L :=
+        Submodule.eq_of_le_of_finrank_le hsp2 (le_of_eq (by rw [hL1, hrk]))
+      exact hWL (hWeq.symm.trans hLeq)
+    have hquotne : L.mkQ (w₀ : ((P.freyCurve.map (algebraMap ℚ
+        (AlgebraicClosure ℚ))).nTorsion P.p)) ≠ 0 := by
+      rw [Submodule.mkQ_apply, ne_eq, Submodule.Quotient.mk_eq_zero]
+      exact hw₀L
+    have h1 := hχ₁ ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        P.pp.toHeightOneSpectrumRingOfIntegersRat))) σ)
+      (w₀ : ((P.freyCurve.map (algebraMap ℚ
+        (AlgebraicClosure ℚ))).nTorsion P.p)) w₀.2
+    have h2 := hL σ hσ (w₀ : ((P.freyCurve.map (algebraMap ℚ
+      (AlgebraicClosure ℚ))).nTorsion P.p))
+    rw [h1, map_smul] at h2
+    have h3 : ((1 : ZMod P.p) -
+        (χ₁ ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            P.pp.toHeightOneSpectrumRingOfIntegersRat))) σ) : ZMod P.p)) •
+        L.mkQ (w₀ : ((P.freyCurve.map (algebraMap ℚ
+          (AlgebraicClosure ℚ))).nTorsion P.p)) = 0 := by
+      rw [sub_smul, one_smul]
+      exact sub_eq_zero_of_eq h2.symm
+    rcases smul_eq_zero.mp h3 with h4 | h4
+    · exact Units.ext (by
+        rw [Units.val_one]
+        exact (sub_eq_zero.mp h4).symm)
+    · exact absurd h4 hquotne
+
+/-- **The flat/ordinary analysis at `p`** (DERIVED 2026-07-22 from the
+two étale-line leaves and the PROVEN linear-algebra assembly): given
+the stable line of the reducible mod-`p` Frey representation with its
+characters `χ₁`, `χ₂` (multiplying to `ω̄`), one of the two is
+unramified at `p` itself. The Frey curve is semistable at `p`
+(`freyCurve_hasGoodReduction_of_not_dvd` /
+`freyCurve_hasMultiplicativeReduction_of_dvd`, PROVEN, by `p ∣ abc` or
+not); each reduction type yields an étale line via its leaf, and the
+linear algebra compares it with the stable line. -/
 theorem FreyPackage.subquotient_character_unramified_at_p
     (P : FreyPackage)
     (W : Submodule (ZMod P.p)
@@ -1131,7 +1619,7 @@ theorem FreyPackage.subquotient_character_unramified_at_p
       P.freyCurve.galoisRep P.p P.hppos g v = (χ₁ g : ZMod P.p) • v)
     (hχ₂ : ∀ g v, W.mkQ (P.freyCurve.galoisRep P.p P.hppos g v) =
       (χ₂ g : ZMod P.p) • W.mkQ v)
-    (hcyclo : ∀ g : Field.absoluteGaloisGroup ℚ,
+    (_hcyclo : ∀ g : Field.absoluteGaloisGroup ℚ,
       (χ₁ g : ZMod P.p) * (χ₂ g : ZMod P.p) =
         ((@GaloisRepresentation.cyclotomicCharacterModL P.p ⟨P.pp⟩ g :
           (ZMod P.p)ˣ) : ZMod P.p)) :
@@ -1142,8 +1630,24 @@ theorem FreyPackage.subquotient_character_unramified_at_p
     (localInertiaGroup P.pp.toHeightOneSpectrumRingOfIntegersRat ≤
       (χ₂.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          P.pp.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) :=
-  sorry
+          P.pp.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) := by
+  classical
+  haveI : Fact P.p.Prime := ⟨P.pp⟩
+  have hp2 : P.p ≠ 2 := by
+    have := P.hp5
+    omega
+  by_cases hdvd : ((P.p : ℤ)) ∣ P.a * P.b * P.c
+  · -- multiplicative reduction at `p`: the Tate étale line
+    haveI := P.freyCurve_hasMultiplicativeReduction_of_dvd P.pp hp2 hdvd
+    obtain ⟨L, hL1, hL⟩ :=
+      WeierstrassCurve.exists_etale_line_of_multiplicative_self P.freyCurve P.pp
+    exact P.character_unramified_at_p_of_etale_line W L hW1 hL1 χ₁ χ₂ hχ₁ hχ₂ hL
+  · -- good reduction at `p`: the connected-étale line
+    haveI := P.freyCurve_hasGoodReduction_of_not_dvd P.pp hp2 hdvd
+    obtain ⟨L, hL1, hL⟩ :=
+      WeierstrassCurve.exists_etale_line_of_good_of_stable_line P.freyCurve P.pp hp2
+        W hW1 hstable
+    exact P.character_unramified_at_p_of_etale_line W L hW1 hL1 χ₁ χ₂ hχ₁ hχ₂ hL
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The semistability-unramifiedness statement** (DERIVED 2026-07-17
