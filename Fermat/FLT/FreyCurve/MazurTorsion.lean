@@ -1359,15 +1359,255 @@ theorem FreyPackage.inertia_two_unipotent (P : FreyPackage) :
   rw [hgoal, hb (A v), hb v]
   exact hp
 
-/-- **The flat/ordinary analysis at `p`** (sorry node — the deepest
-piece of Serre's §4.1 argument): given the stable line of the reducible
-mod-`p` Frey representation with its characters `χ₁`, `χ₂`
-(multiplying to `ω̄`), one of the two is unramified at `p` itself. The
-Frey curve is semistable at `p`; in the good-ordinary/multiplicative
-case the connected-étale sequence of the `p`-divisible group makes the
-quotient (étale) character unramified; the supersingular case cannot
-occur for a reducible representation (inertia at `p` would act through
-the level-2 fundamental character, irreducibly). -/
+/-!
+### Decomposition of the flat/ordinary analysis at `p` (2026-07-22)
+
+`subquotient_character_unramified_at_p` is decomposed into two
+reduction-type leaves producing an *étale line* `L` — a line in the
+`p`-torsion on whose QUOTIENT the inertia at `p` acts trivially — and a
+PROVEN linear-algebra assembly:
+
+* `exists_etale_line_of_multiplicative_self` (sorry node): at a prime
+  `p` of MULTIPLICATIVE reduction the Tate parametrization presents
+  `E[p]` as an extension of `ℤ/p` (spanned by a `p`-th root of the Tate
+  parameter, moved by inertia only within `μ_p`) by `μ_p`; the `μ_p`
+  line is the étale-quotient line. Silverman ATAEC V.5.
+* `exists_etale_line_of_good_of_stable_line` (sorry node): at a prime
+  `p` of GOOD reduction, if the mod-`p` representation has a stable
+  line at all, the reduction is ordinary (supersingular inertia acts
+  through the level-2 fundamental character, irreducibly — Serre 1972,
+  Prop. 12), and the connected-étale sequence of `E[p]` over `ℤ_p`
+  makes inertia act trivially on the étale quotient. Serre Duke 1987,
+  §4.1; Serre 1972 §1.11–1.12.
+* `character_unramified_at_p_of_etale_line` (PROVEN): given ANY such
+  line `L`, either the stable line `W` equals `L` — then `χ₂` is the
+  quotient character of `L` and is unramified at `p` — or `W ∩ L = 0` —
+  then `W` maps isomorphically onto the quotient by `L`, forcing
+  `χ₁` to be trivial on inertia at `p`.
+-/
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The Tate étale line at `p`, multiplicative case** (sorry node):
+for an elliptic curve over `ℚ` with multiplicative reduction at `p`,
+there is a line `L ⊆ E[p]` such that the local inertia at `p` acts
+trivially on `E[p]/L`. Content (Silverman ATAEC V.3, V.5): over
+`ℚ̄_p` the Tate uniformization gives `E[p] ≅ ⟨ζ_p, q_E^{1/p}⟩ ⊆
+ℚ̄_pˣ/q_Eᶻ` (up to the unramified quadratic twist, which does not
+change the inertia action); inertia moves `q_E^{1/p}` at most by an
+element of `μ_p`, so with `L` the image of `μ_p` the quotient action of
+inertia is trivial. -/
+theorem WeierstrassCurve.exists_etale_line_of_multiplicative_self
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime)
+    [E.HasMultiplicativeReduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)] :
+    ∃ L : Submodule (ZMod p) ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p),
+      Module.finrank (ZMod p) L = 1 ∧
+      ∀ σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat,
+        ∀ v, L.mkQ (E.galoisRep p hp.pos
+            ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat))) σ) v) = L.mkQ v :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The connected-étale line at `p`, good case** (sorry node): for an
+elliptic curve over `ℚ` with good reduction at an odd prime `p` whose
+mod-`p` representation admits a stable line, there is a line
+`L ⊆ E[p]` such that the local inertia at `p` acts trivially on
+`E[p]/L`. Content: a stable line forces the reduction to be ORDINARY —
+in the supersingular case inertia at `p` acts on `E[p]` through the
+fundamental character of level 2, whose eigenvalues are conjugate over
+`𝔽_{p²}` but not `𝔽_p`-rational, so no stable line exists (Serre,
+Propriétés galoisiennes…, Invent. Math. 15 (1972), §1.11–1.12, Prop.
+12); in the ordinary case the connected-étale sequence of the finite
+flat group scheme `E[p]/ℤ_p` has étale quotient of order `p`, on whose
+geometric points inertia acts trivially, and `L` is the connected
+(multiplicative-type) line. Serre Duke 1987, §4.1. -/
+theorem WeierstrassCurve.exists_etale_line_of_good_of_stable_line
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime) (hodd : p ≠ 2)
+    [E.HasGoodReduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
+    (W : Submodule (ZMod p) ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p))
+    (hW1 : Module.finrank (ZMod p) W = 1)
+    (hstable : ∀ g v, v ∈ W → E.galoisRep p hp.pos g v ∈ W) :
+    ∃ L : Submodule (ZMod p) ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p),
+      Module.finrank (ZMod p) L = 1 ∧
+      ∀ σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat,
+        ∀ v, L.mkQ (E.galoisRep p hp.pos
+            ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat))) σ) v) = L.mkQ v :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Linear algebra of the étale line** (PROVEN 2026-07-22): given the
+stable line `W` with its characters and ANY line `L` on whose quotient
+the inertia at `p` acts trivially, one of `χ₁`, `χ₂` is unramified at
+`p`. If `W = L`, the quotient character `χ₂` is trivial on inertia
+directly; if `W ≠ L`, the two lines of the 2-dimensional space meet
+trivially, so a nonzero vector of `W` has nonzero image in the quotient
+by `L`, and comparing the scalar action `χ₁` with the trivial quotient
+action kills `χ₁` on inertia. -/
+lemma FreyPackage.character_unramified_at_p_of_etale_line
+    (P : FreyPackage)
+    (W L : Submodule (ZMod P.p)
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p))
+    (hW1 : Module.finrank (ZMod P.p) W = 1)
+    (hL1 : Module.finrank (ZMod P.p) L = 1)
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ →* (ZMod P.p)ˣ)
+    (hχ₁ : ∀ g, ∀ v ∈ W,
+      P.freyCurve.galoisRep P.p P.hppos g v = (χ₁ g : ZMod P.p) • v)
+    (hχ₂ : ∀ g v, W.mkQ (P.freyCurve.galoisRep P.p P.hppos g v) =
+      (χ₂ g : ZMod P.p) • W.mkQ v)
+    (hL : ∀ σ ∈ localInertiaGroup P.pp.toHeightOneSpectrumRingOfIntegersRat,
+      ∀ v, L.mkQ (P.freyCurve.galoisRep P.p P.hppos
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              P.pp.toHeightOneSpectrumRingOfIntegersRat))) σ) v) = L.mkQ v) :
+    (localInertiaGroup P.pp.toHeightOneSpectrumRingOfIntegersRat ≤
+      (χ₁.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          P.pp.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) ∨
+    (localInertiaGroup P.pp.toHeightOneSpectrumRingOfIntegersRat ≤
+      (χ₂.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          P.pp.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) := by
+  classical
+  haveI : Fact P.p.Prime := ⟨P.pp⟩
+  -- finiteness bookkeeping: the torsion space has rank `2`
+  have hcard : Nat.card
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) =
+      P.p ^ 2 :=
+    TorsionCard.card_torsionBy
+      (P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))) P.p
+      (Nat.cast_ne_zero.mpr P.pp.ne_zero)
+  haveI hfin : Finite
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) :=
+    Nat.finite_of_card_ne_zero (by
+      rw [hcard]
+      have := P.pp.pos
+      positivity)
+  haveI : Fintype
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) :=
+    Fintype.ofFinite _
+  haveI : Module.Finite (ZMod P.p)
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) :=
+    Module.Finite.of_finite
+  have hfr : Module.finrank (ZMod P.p)
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) =
+      2 := by
+    have h1 := Module.card_eq_pow_finrank (K := ZMod P.p)
+      (V := ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p))
+    rw [ZMod.card] at h1
+    have h2 : P.p ^ 2 = P.p ^ Module.finrank (ZMod P.p)
+        ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) := by
+      rw [← hcard, Nat.card_eq_fintype_card]
+      exact h1
+    exact Nat.pow_right_injective P.pp.two_le h2.symm
+  by_cases hWL : W = L
+  · -- the stable line IS the étale line: `χ₂` is unramified at `p`
+    right
+    intro σ hσ
+    rw [MonoidHom.mem_ker]
+    have hWtop : W ≠ ⊤ := by
+      intro htop
+      rw [htop, finrank_top, hfr] at hW1
+      omega
+    haveI : Nontrivial
+        (((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) ⧸ W) :=
+      Submodule.Quotient.nontrivial_iff.mpr hWtop
+    obtain ⟨z, hz⟩ := exists_ne (0 :
+      ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) ⧸ W)
+    obtain ⟨v, rfl⟩ := W.mkQ_surjective z
+    have h1 := hχ₂ ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        P.pp.toHeightOneSpectrumRingOfIntegersRat))) σ) v
+    have h2 := hL σ hσ v
+    rw [← hWL] at h2
+    rw [h2] at h1
+    have h3 : ((1 : ZMod P.p) -
+        (χ₂ ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            P.pp.toHeightOneSpectrumRingOfIntegersRat))) σ) : ZMod P.p)) •
+        W.mkQ v = 0 := by
+      rw [sub_smul, one_smul]
+      exact sub_eq_zero_of_eq h1
+    rcases smul_eq_zero.mp h3 with h4 | h4
+    · exact Units.ext (by
+        rw [Units.val_one]
+        exact (sub_eq_zero.mp h4).symm)
+    · exact absurd h4 hz
+  · -- the lines differ: `χ₁` is unramified at `p`
+    left
+    intro σ hσ
+    rw [MonoidHom.mem_ker]
+    have hW0 : W ≠ ⊥ := by
+      intro hbot
+      rw [hbot, finrank_bot] at hW1
+      omega
+    haveI : Nontrivial W := Submodule.nontrivial_iff_ne_bot.mpr hW0
+    obtain ⟨w₀, hw₀ne⟩ := exists_ne (0 : W)
+    have hw₀V : (w₀ : ((P.freyCurve.map (algebraMap ℚ
+        (AlgebraicClosure ℚ))).nTorsion P.p)) ≠ 0 :=
+      fun hc => hw₀ne (Subtype.ext hc)
+    -- `w₀ ∉ L`, else both lines are the span of `w₀`
+    have hw₀L : (w₀ : ((P.freyCurve.map (algebraMap ℚ
+        (AlgebraicClosure ℚ))).nTorsion P.p)) ∉ L := by
+      intro hmem
+      have hsp1 : Submodule.span (ZMod P.p) {(w₀ : ((P.freyCurve.map (algebraMap ℚ
+          (AlgebraicClosure ℚ))).nTorsion P.p))} ≤ W := by
+        rw [Submodule.span_le, Set.singleton_subset_iff]
+        exact w₀.2
+      have hsp2 : Submodule.span (ZMod P.p) {(w₀ : ((P.freyCurve.map (algebraMap ℚ
+          (AlgebraicClosure ℚ))).nTorsion P.p))} ≤ L := by
+        rw [Submodule.span_le, Set.singleton_subset_iff]
+        exact hmem
+      have hrk : Module.finrank (ZMod P.p)
+          (Submodule.span (ZMod P.p) {(w₀ : ((P.freyCurve.map (algebraMap ℚ
+            (AlgebraicClosure ℚ))).nTorsion P.p))}) = 1 :=
+        finrank_span_singleton hw₀V
+      have hWeq : Submodule.span (ZMod P.p) {(w₀ : ((P.freyCurve.map (algebraMap ℚ
+          (AlgebraicClosure ℚ))).nTorsion P.p))} = W :=
+        Submodule.eq_of_le_of_finrank_le hsp1 (le_of_eq (by rw [hW1, hrk]))
+      have hLeq : Submodule.span (ZMod P.p) {(w₀ : ((P.freyCurve.map (algebraMap ℚ
+          (AlgebraicClosure ℚ))).nTorsion P.p))} = L :=
+        Submodule.eq_of_le_of_finrank_le hsp2 (le_of_eq (by rw [hL1, hrk]))
+      exact hWL (hWeq.symm.trans hLeq)
+    have hquotne : L.mkQ (w₀ : ((P.freyCurve.map (algebraMap ℚ
+        (AlgebraicClosure ℚ))).nTorsion P.p)) ≠ 0 := by
+      rw [Submodule.mkQ_apply, ne_eq, Submodule.Quotient.mk_eq_zero]
+      exact hw₀L
+    have h1 := hχ₁ ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        P.pp.toHeightOneSpectrumRingOfIntegersRat))) σ)
+      (w₀ : ((P.freyCurve.map (algebraMap ℚ
+        (AlgebraicClosure ℚ))).nTorsion P.p)) w₀.2
+    have h2 := hL σ hσ (w₀ : ((P.freyCurve.map (algebraMap ℚ
+      (AlgebraicClosure ℚ))).nTorsion P.p))
+    rw [h1, map_smul] at h2
+    have h3 : ((1 : ZMod P.p) -
+        (χ₁ ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            P.pp.toHeightOneSpectrumRingOfIntegersRat))) σ) : ZMod P.p)) •
+        L.mkQ (w₀ : ((P.freyCurve.map (algebraMap ℚ
+          (AlgebraicClosure ℚ))).nTorsion P.p)) = 0 := by
+      rw [sub_smul, one_smul]
+      exact sub_eq_zero_of_eq h2.symm
+    rcases smul_eq_zero.mp h3 with h4 | h4
+    · exact Units.ext (by
+        rw [Units.val_one]
+        exact (sub_eq_zero.mp h4).symm)
+    · exact absurd h4 hquotne
+
+/-- **The flat/ordinary analysis at `p`** (DERIVED 2026-07-22 from the
+two étale-line leaves and the PROVEN linear-algebra assembly): given
+the stable line of the reducible mod-`p` Frey representation with its
+characters `χ₁`, `χ₂` (multiplying to `ω̄`), one of the two is
+unramified at `p` itself. The Frey curve is semistable at `p`
+(`freyCurve_hasGoodReduction_of_not_dvd` /
+`freyCurve_hasMultiplicativeReduction_of_dvd`, PROVEN, by `p ∣ abc` or
+not); each reduction type yields an étale line via its leaf, and the
+linear algebra compares it with the stable line. -/
 theorem FreyPackage.subquotient_character_unramified_at_p
     (P : FreyPackage)
     (W : Submodule (ZMod P.p)
@@ -1379,7 +1619,7 @@ theorem FreyPackage.subquotient_character_unramified_at_p
       P.freyCurve.galoisRep P.p P.hppos g v = (χ₁ g : ZMod P.p) • v)
     (hχ₂ : ∀ g v, W.mkQ (P.freyCurve.galoisRep P.p P.hppos g v) =
       (χ₂ g : ZMod P.p) • W.mkQ v)
-    (hcyclo : ∀ g : Field.absoluteGaloisGroup ℚ,
+    (_hcyclo : ∀ g : Field.absoluteGaloisGroup ℚ,
       (χ₁ g : ZMod P.p) * (χ₂ g : ZMod P.p) =
         ((@GaloisRepresentation.cyclotomicCharacterModL P.p ⟨P.pp⟩ g :
           (ZMod P.p)ˣ) : ZMod P.p)) :
@@ -1390,8 +1630,24 @@ theorem FreyPackage.subquotient_character_unramified_at_p
     (localInertiaGroup P.pp.toHeightOneSpectrumRingOfIntegersRat ≤
       (χ₂.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          P.pp.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) :=
-  sorry
+          P.pp.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) := by
+  classical
+  haveI : Fact P.p.Prime := ⟨P.pp⟩
+  have hp2 : P.p ≠ 2 := by
+    have := P.hp5
+    omega
+  by_cases hdvd : ((P.p : ℤ)) ∣ P.a * P.b * P.c
+  · -- multiplicative reduction at `p`: the Tate étale line
+    haveI := P.freyCurve_hasMultiplicativeReduction_of_dvd P.pp hp2 hdvd
+    obtain ⟨L, hL1, hL⟩ :=
+      WeierstrassCurve.exists_etale_line_of_multiplicative_self P.freyCurve P.pp
+    exact P.character_unramified_at_p_of_etale_line W L hW1 hL1 χ₁ χ₂ hχ₁ hχ₂ hL
+  · -- good reduction at `p`: the connected-étale line
+    haveI := P.freyCurve_hasGoodReduction_of_not_dvd P.pp hp2 hdvd
+    obtain ⟨L, hL1, hL⟩ :=
+      WeierstrassCurve.exists_etale_line_of_good_of_stable_line P.freyCurve P.pp hp2
+        W hW1 hstable
+    exact P.character_unramified_at_p_of_etale_line W L hW1 hL1 χ₁ χ₂ hχ₁ hχ₂ hL
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The semistability-unramifiedness statement** (DERIVED 2026-07-17
