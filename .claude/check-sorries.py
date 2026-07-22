@@ -41,9 +41,12 @@ import time
 
 # Fleet-aware gate (Deyao, 2026-07-22): an orchestrator waiting on live
 # background agents should not be reprompted on every stop — task
-# notifications wake it. Liveness source: the orchestrator-maintained
-# fleet registry; an agent is ALIVE iff any file matching its
-# transcript_glob was modified within the last 15 minutes.
+# notifications wake it. The gate runs FIRST, immediately after the
+# session guard: fleet LIVE -> exit 0 instantly (no daemon query, no
+# sorry counting, no free-floating check). Liveness source: the
+# orchestrator-maintained fleet registry; an agent is ALIVE iff any
+# file matching its transcript_glob was modified within the last 15
+# minutes.
 # FAIL OPEN (Deyao, 2026-07-22): this hook is a back-to-work nudge, not
 # a safety net — automation failure is acceptable. Block only on the
 # clean positive case (sorries remain AND the registry is readable AND
@@ -112,6 +115,20 @@ def main() -> int:
     if not os.path.isdir(os.path.join(fermat, "Fermat")):
         return 0
 
+    # FLEET-AWARE GATE, FIRST (Deyao, 2026-07-22 refinement): the hook is
+    # only needed when the fleet is EMPTY — in all other cases task
+    # notifications already re-prompt the orchestrator. While >=1
+    # registered agent is alive — or liveness cannot be cleanly
+    # established (fail open, nudge-not-safety-net) — allow the stop
+    # instantly, skipping the daemon query, sorry counting, and
+    # free-floating check entirely. Only a readable registry with all
+    # transcripts stale falls through to the full pipeline below.
+    try:
+        if not fleet_is_idle(project_dir):
+            return 0
+    except Exception:
+        return 0  # any liveness-check failure counts as LIVE (fail open)
+
     # THE check: ask the persistent Lean environment server for the
     # compiler-verified list of sorried declarations and the root-cone
     # status (seconds, no build).
@@ -169,15 +186,9 @@ def main() -> int:
                 sys.stderr.write(f"  {line}\n")
         return 2
 
-    # FLEET-AWARE GATE (sorries-present branch only): while >=1 registered
-    # agent is alive — or the fleet state cannot be cleanly established
-    # (fail open) — allow the stop silently; task notifications wake the
-    # orchestrator. Only a readable registry with all transcripts stale
-    # falls through to the full blocking message with one prepended
-    # FLEET IDLE line.
+    # Fleet idleness was already established by the gate above; prepend
+    # the FLEET IDLE line to the blocking message.
     if sorries:
-        if not fleet_is_idle(project_dir):
-            return 0
         print(
             "FLEET IDLE: no live agents detected (registry "
             ".claude/fleet-registry.json; stale >15min) while sorries "
