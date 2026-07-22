@@ -7,6 +7,7 @@ module
 
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRepFamily
+import Mathlib.Algebra.Field.ULift
 
 /-!
 # Hardly ramified representations in compatible families
@@ -123,6 +124,57 @@ def IsInHardlyRamifiedFamily (ρ : GaloisRep ℚ R V) : Prop :=
         Fin 2 → AlgebraicClosure ℚ_[p]),
       (ρ.baseChange (AlgebraicClosure ℚ_[p])).conj r' = σ hp ψ)
 
+omit [IsDomain R] [IsTopologicalRing R] [IsLocalRing R] [IsModuleTopology ℤ_[p] R] in
+/-- **Integrality stratum of the eigensystem** (PROVEN): the
+coefficients of the Frobenius characteristic polynomials of `ρ`, pushed
+into `ℚ̄_p`, are integral over `ℤ_p` — integrality stated with respect
+to the composite `ℤ_[p] → R → ℚ̄_p`, so that no compatibility
+(`IsScalarTower`) between the arbitrary coefficient embedding
+`Algebra R ℚ̄_p` and the two `ℤ_[p]`-structures needs to be assumed
+(at the intended coefficient rings the composite IS the canonical
+`algebraMap ℤ_[p] ℚ̄_p`). This is the formal half of the eigensystem
+stratum: `R` is module-finite over `ℤ_[p]`, so every element of `R` —
+in particular every Frobenius trace and determinant — is integral over
+`ℤ_[p]`, and integrality pushes forward along ring homomorphisms. -/
+theorem charFrob_coeff_isIntegralElem
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ) :
+    ((algebraMap R (AlgebraicClosure ℚ_[p])).comp (algebraMap ℤ_[p] R)).IsIntegralElem
+      (((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n) := by
+  obtain ⟨P, hPmonic, hPeval⟩ := IsIntegral.of_finite ℤ_[p] ((ρ.charFrob v).coeff n)
+  refine ⟨P, hPmonic, ?_⟩
+  rw [Polynomial.coeff_map, ← Polynomial.hom_eval₂, hPeval, map_zero]
+
+/-- **Algebraicity/finiteness core of the eigensystem stratum** (sorry
+node): away from a finite set of places, the coefficients of the mapped
+Frobenius characteristic polynomials of a hardly ramified `p`-adic
+representation all lie in a single subfield of `ℚ̄_p` that is **finite
+over `ℚ`**. This is where the automorphy of `ρ` enters: the coefficients
+are a priori only integral over `ℤ_p` (hypothesis `hint`, the proven
+integrality stratum `charFrob_coeff_isIntegralElem`), and a finite
+extension of `ℚ_p` contains algebraic-over-`ℚ` subfields of infinite
+degree, so the finite-degree bound is not formal — it is the statement
+that the Frobenius traces are the Hecke eigenvalues of a cuspidal
+eigenform, which generate a number field (the Hecke field). The
+number-field/embedding/polynomial *packaging* of this statement is
+proven downstream in `exists_numberField_eigensystem`; this leaf is the
+bare mathematical content in minimal vocabulary. -/
+theorem exists_finiteDimensional_coeff_field
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (hint : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
+      ((algebraMap R (AlgebraicClosure ℚ_[p])).comp (algebraMap ℤ_[p] R)).IsIntegralElem
+        (((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n)) :
+    ∃ (E : IntermediateField ℚ (AlgebraicClosure ℚ_[p]))
+      (_ : FiniteDimensional ℚ E)
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ v ∉ S, ∀ n : ℕ,
+        ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n ∈ E :=
+  sorry
+
 /-- **Eigensystem stratum** (sorry node): the Frobenius characteristic
 polynomials of a hardly ramified `p`-adic representation over a
 characteristic-zero coefficient ring embedded in `ℚ̄_p` descend, away
@@ -144,7 +196,22 @@ VOCABULARY NOTE (2026-07-22): the mathlib pin has modular forms
 (`CuspForm` etc.) but no Hecke operators, no eigenforms and no attached
 Galois representations, so the requested "cuspidal eigenform congruence"
 split can only be stated at this trace level; this leaf is its faithful
-shadow in the available vocabulary. -/
+shadow in the available vocabulary.
+
+DECOMPOSED (2026-07-22) into a PROVEN assembly over two strata:
+
+1. `charFrob_coeff_isIntegralElem` (PROVEN) — the coefficients are
+   integral over `ℤ_[p]` (formal, from module-finiteness of `R`).
+2. `exists_finiteDimensional_coeff_field` (sorry node) — the
+   coefficients lie, away from finitely many places, in a subfield of
+   `ℚ̄_p` finite over `ℚ`. The sole surviving automorphy content at
+   this level.
+3. The packaging (PROVEN, below): the intermediate field is upgraded to
+   an abstract `NumberField` in the required universe via `ULift`, the
+   embedding `ψ` is the inclusion, and the polynomials `Pv` are
+   rebuilt over the subfield coefficient-by-coefficient
+   (`Polynomial.as_sum_support_C_mul_X_pow`), with value `0` at the
+   finitely many exceptional places. -/
 theorem exists_numberField_eigensystem
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -157,8 +224,44 @@ theorem exists_numberField_eigensystem
       (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E),
       ∀ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ S →
         (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
-          (Pv v).map ψ :=
-  sorry
+          (Pv v).map ψ := by
+  classical
+  obtain ⟨E₀, hFD, S, hmem⟩ :=
+    exists_finiteDimensional_coeff_field hpodd hv hZinj hRinj hρ
+      (charFrob_coeff_isIntegralElem (ρ := ρ))
+  haveI : FiniteDimensional ℚ E₀ := hFD
+  haveI : CharZero E₀ := charZero_of_injective_algebraMap (algebraMap ℚ E₀).injective
+  haveI : CharZero (ULift.{v} E₀) :=
+    charZero_of_injective_algebraMap (algebraMap ℚ (ULift.{v} E₀)).injective
+  haveI : Module.Finite ℚ (ULift.{v} E₀) := Module.Finite.equiv (ULift.moduleEquiv).symm
+  haveI : NumberField (ULift.{v} E₀) := ⟨⟩
+  -- rebuild each mapped characteristic polynomial over the subfield `E₀`
+  have hP₀ : ∀ w, w ∉ S → ∃ P : Polynomial E₀,
+      P.map (algebraMap E₀ (AlgebraicClosure ℚ_[p])) =
+        (ρ.charFrob w).map (algebraMap R (AlgebraicClosure ℚ_[p])) := by
+    intro w hw
+    refine ⟨∑ n ∈ ((ρ.charFrob w).map (algebraMap R (AlgebraicClosure ℚ_[p]))).support,
+      Polynomial.C
+        (⟨((ρ.charFrob w).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n,
+          hmem w hw n⟩ : E₀) * Polynomial.X ^ n, ?_⟩
+    rw [Polynomial.map_sum]
+    simp only [Polynomial.map_mul, Polynomial.map_C, Polynomial.map_pow, Polynomial.map_X,
+      IntermediateField.algebraMap_apply]
+    exact (Polynomial.as_sum_support_C_mul_X_pow _).symm
+  choose P₀ hP₀eq using hP₀
+  refine ⟨ULift.{v} E₀, inferInstance, inferInstance,
+    (algebraMap E₀ (AlgebraicClosure ℚ_[p])).comp (ULift.ringEquiv.toRingHom), S,
+    fun w => if h : w ∈ S then 0 else
+      (P₀ w h).map (ULift.ringEquiv (R := E₀)).symm.toRingHom, ?_⟩
+  intro w hw
+  simp only [dif_neg hw, Polynomial.map_map]
+  have hcomp : ((algebraMap E₀ (AlgebraicClosure ℚ_[p])).comp
+        (ULift.ringEquiv.toRingHom)).comp
+      (ULift.ringEquiv (R := E₀)).symm.toRingHom
+        = algebraMap E₀ (AlgebraicClosure ℚ_[p]) := by
+    ext x
+    simp
+  rw [hcomp, hP₀eq w hw]
 
 /-- **Spreading stratum** (sorry node): a hardly ramified `p`-adic
 representation whose Frobenius characteristic polynomials descend to a
