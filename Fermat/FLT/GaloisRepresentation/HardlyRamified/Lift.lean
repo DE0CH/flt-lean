@@ -16,10 +16,12 @@ Lecture 4):
   characteristic zero, not necessarily a domain — mathematically the
   universal hardly-ramified deformation ring, finite over `ℤ_ℓ` by
   potential modularity and of dimension `≥ 1` by Galois-cohomological
-  presentation counting) plus commutative-algebra glue: quotient `R` by a
-  prime lying over `(0) ⊆ ℤ_ℓ` and specialize (the specialization
-  stability of `IsHardlyRamified` is the remaining sorried step inside the
-  glue).
+  presentation counting) plus PROVEN commutative-algebra glue: quotient
+  `R` by a prime lying over `(0) ⊆ ℤ_ℓ` and specialize (the
+  specialization stability of `IsHardlyRamified` along the quotient and
+  the framing is fully proven: `isFlatAt_baseChange_quotient`,
+  `isTameAtTwo_baseChange`, `isHardlyRamified_baseChange_quotient`,
+  `isHardlyRamified_conj`).
 
 * **B6bc** (`residual_charFrob_eq`, sorry node): the residual
   characteristic polynomials of Frobenius of a liftable representation are
@@ -192,16 +194,17 @@ theorem exists_finite_lift (hℓ5 : 5 ≤ ℓ)
 
 set_option backward.isDefEq.respectTransparency false in
 open scoped TensorProduct in
-/-- **Flatness transfers along quotient specialization** (sorry node): if
+/-- **Flatness transfers along quotient specialization** (PROVEN
+2026-07-22, mirroring the residue-field transfer
+`IsHardlyRamified.isFlatAt_baseChange_residue` of `Threeadic.lean`): if
 `ρ` is flat at `ℓ`, so is its base change to a quotient `R ⧸ P` of the
-coefficient ring. The eventual proof mirrors the residue-field transfer
-`IsHardlyRamified.isFlatAt_baseChange_residue` of `Threeadic.lean`: the
-open ideals of `R ⧸ P` are the images of the open ideals `J ⊇ P` of `R`
-(preimages along the continuous quotient map are open), the double base
-change `((R ⧸ P) ⧸ I) ⊗ ((R ⧸ P) ⊗ M)` collapses `Γ ℚ₃`-equivariantly to
-`(R ⧸ J) ⊗ M` (tensor cancellation `AlgebraTensorModule.cancelBaseChange`
-plus the double-quotient isomorphism `DoubleQuot.quotQuotEquivQuotOfLE`
-along `I = J.map (Ideal.Quotient.mk P)`), and
+coefficient ring. The open ideals of `R ⧸ P` correspond to the open
+ideals `J ⊇ P` of `R` (preimages along the continuous quotient map are
+open), the double base change `((R ⧸ P) ⧸ I) ⊗ ((R ⧸ P) ⊗ M)` collapses
+equivariantly to `(R ⧸ J) ⊗ M` (tensor cancellation
+`AlgebraTensorModule.cancelBaseChange` plus the double-quotient
+isomorphism `DoubleQuot.quotQuotEquivQuotOfLE` along
+`I = J.map (Ideal.Quotient.mk P)`), and
 `HasFlatProlongationAt.of_equiv` transports the Hopf-algebra witness. -/
 theorem isFlatAt_baseChange_quotient {R : Type u} [CommRing R]
     [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
@@ -213,7 +216,86 @@ theorem isFlatAt_baseChange_quotient {R : Type u} [CommRing R]
       (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime))) :
     (ρ.baseChange (R ⧸ P)).IsFlatAt
       (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) := by
-  sorry
+  constructor
+  intro I hI
+  -- the corresponding open ideal of `R`, lying over `P`
+  let J : Ideal R := I.comap (Ideal.Quotient.mk P)
+  have hPJ : P ≤ J := fun x hx => by
+    show Ideal.Quotient.mk P x ∈ I
+    rw [Ideal.Quotient.eq_zero_iff_mem.mpr hx]
+    exact I.zero_mem
+  have hImap : I = J.map (Ideal.Quotient.mk P) :=
+    (Ideal.map_comap_of_surjective (Ideal.Quotient.mk P)
+      Ideal.Quotient.mk_surjective I).symm
+  have hJopen : IsOpen (J : Set R) := by
+    have hpre : (J : Set R) =
+        (Ideal.Quotient.mk P) ⁻¹' (I : Set (R ⧸ P)) := rfl
+    rw [hpre]
+    exact hI.preimage (QuotientRing.isOpenQuotientMap_mk P).continuous
+  -- the coefficient identification `((R ⧸ P) ⧸ I) ≃+* R ⧸ J`
+  let φ : ((R ⧸ P) ⧸ I) ≃+* (R ⧸ J) :=
+    (Ideal.quotEquivOfEq hImap).trans (DoubleQuot.quotQuotEquivQuotOfLE hPJ)
+  have hφalg : ∀ r : R,
+      φ (algebraMap R ((R ⧸ P) ⧸ I) r) = algebraMap R (R ⧸ J) r := by
+    intro r
+    show (DoubleQuot.quotQuotEquivQuotOfLE hPJ)
+        ((Ideal.quotEquivOfEq hImap)
+          (Ideal.Quotient.mk I (Ideal.Quotient.mk P r))) =
+      Ideal.Quotient.mk J r
+    rw [Ideal.quotEquivOfEq_mk]
+    exact DoubleQuot.quotQuotEquivQuotOfLE_quotQuotMk r hPJ
+  -- its `R`-linear form
+  let φlin : ((R ⧸ P) ⧸ I) ≃ₗ[R] (R ⧸ J) :=
+    { φ.toAddEquiv with
+      map_smul' := fun r x => by
+        show φ (r • x) = r • φ x
+        rw [Algebra.smul_def, Algebra.smul_def, map_mul, hφalg] }
+  -- assemble: cancel the middle base change, then transport coefficients
+  let e₁ := TensorProduct.AlgebraTensorModule.cancelBaseChange R (R ⧸ P)
+    ((R ⧸ P) ⧸ I) ((R ⧸ P) ⧸ I) M
+  let e₂ := TensorProduct.congr φlin (LinearEquiv.refl R M)
+  let eSp : ((((ρ.baseChange (R ⧸ P)).baseChange ((R ⧸ P) ⧸ I)).toLocal
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : ℓ.Prime))).Space ≃+
+      ((ρ.baseChange (R ⧸ J)).toLocal
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : ℓ.Prime))).Space) :=
+    e₁.toAddEquiv.trans e₂.toAddEquiv
+  have he : ∀ (g : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : ℓ.Prime))))
+      (x : (((ρ.baseChange (R ⧸ P)).baseChange ((R ⧸ P) ⧸ I)).toLocal
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : ℓ.Prime))).Space),
+      eSp (g • x) = g • eSp x := by
+    intro g x
+    show (e₁.toAddEquiv.trans e₂.toAddEquiv)
+        ((((ρ.baseChange (R ⧸ P)).baseChange ((R ⧸ P) ⧸ I)).toLocal
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : ℓ.Prime)) g) x) =
+      ((ρ.baseChange (R ⧸ J)).toLocal
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : ℓ.Prime)) g)
+        ((e₁.toAddEquiv.trans e₂.toAddEquiv) x)
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | add a b ha hb => simp only [map_add, ha, hb]
+    | tmul c y =>
+      induction y using TensorProduct.induction_on with
+      | zero =>
+        rw [show (c ⊗ₜ[R ⧸ P] (0 : (R ⧸ P) ⊗[R] M)) =
+          (0 : ((R ⧸ P) ⧸ I) ⊗[R ⧸ P] ((R ⧸ P) ⊗[R] M)) from
+          TensorProduct.tmul_zero _ _]
+        simp
+      | add a b ha hb =>
+        rw [TensorProduct.tmul_add]
+        simp only [map_add, ha, hb]
+      | tmul d m => rfl
+  refine (hflat.cond J hJopen).of_equiv _ eSp.symm ?_
+  intro g x
+  apply eSp.injective
+  rw [AddEquiv.apply_symm_apply, he, AddEquiv.apply_symm_apply]
 
 set_option backward.isDefEq.respectTransparency false in
 open scoped TensorProduct in
@@ -315,8 +397,7 @@ coefficients** (DERIVED 2026-07-22, mirroring the proven residue-field
 transfer `exists_residual_isHardlyRamified` of `Threeadic.lean`): the
 determinant condition maps along `R → R ⧸ P` (`LinearMap.det_baseChange`),
 unramifiedness passes to any base change (existing instance), tameness at
-`2` by the proven transfer above, and flatness at `ℓ` by the sorried
-transfer leaf `isFlatAt_baseChange_quotient`. -/
+`2` and flatness at `ℓ` by the proven transfers above. -/
 lemma isHardlyRamified_baseChange_quotient {R : Type u} [CommRing R]
     [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
     [Algebra ℤ_[ℓ] R]
@@ -434,11 +515,10 @@ local topological domain, finite over `ℤ_ℓ` with the `ℤ_ℓ`-module
 topology; the reduction map factors through it (`P ⊆ 𝔪 = ker π`, the
 kernel being maximal because `R/ker π` is a finite domain), and the
 characteristic polynomials of Frobenius transport through the
-specialization by `charpoly_baseChange_conj`. The remaining sorried step
-inside this proof is the specialization stability of `IsHardlyRamified`
-along `R → R ⧸ P` (determinant and unramifiedness are immediate; flatness
-and the tame quotient at `2` need the base-change transfer arguments of
-`Threeadic.lean` adapted to the quotient map). -/
+specialization by `charpoly_baseChange_conj`. The specialization
+stability of `IsHardlyRamified` along `R → R ⧸ P` is PROVEN by
+`isHardlyRamified_baseChange_quotient` + `isHardlyRamified_conj` above,
+so this derivation is sorry-free modulo `exists_finite_lift`. -/
 theorem exists_hardlyRamifiedLift (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ (ZMod ℓ) V} (h : IsHardlyRamified hℓOdd hdim ρbar)
     (hirr : ρbar.IsIrreducible) :
