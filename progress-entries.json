@@ -1242,42 +1242,48 @@
     "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
     "wip": true,
-    "text": "`serre_elimination_dihedral` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of type dihedral — False from the case data; doc-comment in ModThree.lean records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds)."
+    "text": "`serre_elimination_dihedral` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of type dihedral — False from the case data; doc-comment in ModThree.lean records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds).",
+    "parent": "GaloisRepresentation.IsHardlyRamified.serre_elimination_arith"
   },
   {
     "name": "serre_elimination_alt4",
     "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt4",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
     "wip": true,
-    "text": "`serre_elimination_alt4` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of type alt4 — False from the case data; doc-comment in ModThree.lean records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds)."
+    "text": "`serre_elimination_alt4` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of type alt4 — False from the case data; doc-comment in ModThree.lean records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds).",
+    "parent": "GaloisRepresentation.IsHardlyRamified.serre_elimination_arith"
   },
   {
     "name": "serre_elimination_sym4",
     "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_sym4",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
     "wip": true,
-    "text": "`serre_elimination_sym4` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of type sym4 — False from the case data; doc-comment in ModThree.lean records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds)."
+    "text": "`serre_elimination_sym4` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of type sym4 — False from the case data; doc-comment in ModThree.lean records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds).",
+    "parent": "GaloisRepresentation.IsHardlyRamified.serre_elimination_arith"
   },
   {
     "name": "serre_elimination_alt5",
     "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt5",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
     "wip": true,
-    "text": "`serre_elimination_alt5` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of type alt5 — False from the case data; doc-comment in ModThree.lean records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds)."
+    "text": "`serre_elimination_alt5` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of type alt5 — False from the case data; doc-comment in ModThree.lean records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds).",
+    "parent": "GaloisRepresentation.IsHardlyRamified.serre_elimination_arith"
   },
   {
     "name": "serre_elimination_psl",
     "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_psl",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
     "wip": true,
-    "text": "`serre_elimination_psl` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of type psl — False from the case data; doc-comment in ModThree.lean records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds)."
+    "text": "`serre_elimination_psl` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of type psl — False from the case data; doc-comment in ModThree.lean records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds).",
+    "parent": "GaloisRepresentation.IsHardlyRamified.serre_elimination_arith"
   },
   {
     "name": "serre_elimination_pgl",
     "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_pgl",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
     "wip": true,
-    "text": "`serre_elimination_pgl` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of type pgl — False from the case data; doc-comment in ModThree.lean records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds)."
+    "text": "`serre_elimination_pgl` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of type pgl — False from the case data; doc-comment in ModThree.lean records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds).",
+    "parent": "GaloisRepresentation.IsHardlyRamified.serre_elimination_arith"
   },
   {
     "name": "WeierstrassCurve.torsion_flat_of_good_reduction_of_isUnit",
@@ -1333,63 +1339,72 @@
     "fullname": "WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
     "wip": true,
-    "text": "`WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow` — Katz–Mazur 2.3.1 flat-prolongation core, mixed characteristic (the Frey application R=ℤ_(p), k=1 lands here) (2026-07-22)"
+    "text": "`WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow` — Katz–Mazur 2.3.1 flat-prolongation core, mixed characteristic (the Frey application R=ℤ_(p), k=1 lands here) (2026-07-22)",
+    "parent": "WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow"
   },
   {
     "name": "WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow_of_eqChar",
     "fullname": "WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow_of_eqChar",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
     "wip": true,
-    "text": "`WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow_of_eqChar` — equal-characteristic branch (Cartier-dual étale-part route) (2026-07-22)"
+    "text": "`WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow_of_eqChar` — equal-characteristic branch (Cartier-dual étale-part route) (2026-07-22)",
+    "parent": "WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow"
   },
   {
     "name": "exists_equivariant_defect_coboundary",
     "fullname": "GaloisRepresentation.IsHardlyRamified.exists_equivariant_defect_coboundary",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
     "wip": true,
-    "text": "`exists_equivariant_defect_coboundary` (stated 2026-07-22, sole surviving leaf of the proven two-level Threeadic lifting chain): the defect 1-cocycle valued in Hom(V̄, 𝔪ⁿ⁺¹/𝔪ⁿ⁺²) is a coboundary — its class lies in the (flat-at-3, tame-at-2, unramified-elsewhere) Selmer group, which vanishes by class number 1 of ℚ/ℚ(ζ₃) plus unit computations (route in the docstring)."
+    "text": "`exists_equivariant_defect_coboundary` (stated 2026-07-22, sole surviving leaf of the proven two-level Threeadic lifting chain): the defect 1-cocycle valued in Hom(V̄, 𝔪ⁿ⁺¹/𝔪ⁿ⁺²) is a coboundary — its class lies in the (flat-at-3, tame-at-2, unramified-elsewhere) Selmer group, which vanishes by class number 1 of ℚ/ℚ(ζ₃) plus unit computations (route in the docstring).",
+    "parent": "GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient"
   },
   {
     "name": "mazur_point_order",
     "fullname": "WeierstrassCurve.mazur_point_order",
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
     "wip": true,
-    "text": "`WeierstrassCurve.mazur_point_order` — order of a rational torsion point lies in {1..10,12} (Mazur 1977 Thm 8 / 1978) — kept as one faithful leaf; the Kubert per-X₁(N) split would multiply modular-curve leaves without reducing depth (2026-07-22)"
+    "text": "`WeierstrassCurve.mazur_point_order` — order of a rational torsion point lies in {1..10,12} (Mazur 1977 Thm 8 / 1978) — kept as one faithful leaf; the Kubert per-X₁(N) split would multiply modular-curve leaves without reducing depth (2026-07-22)",
+    "parent": "WeierstrassCurve.mazur_classification"
   },
   {
     "name": "not_full_four_torsion_rat",
     "fullname": "WeierstrassCurve.not_full_four_torsion_rat",
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
     "wip": true,
-    "text": "`WeierstrassCurve.not_full_four_torsion_rat` — no rational (ℤ/4)² level structure; minimal content μ₄ ⊄ ℚ — docstring records the level-4 Weil-pairing route and the elementary 2-torsion-abscissae square-product route (2026-07-22)"
+    "text": "`WeierstrassCurve.not_full_four_torsion_rat` — no rational (ℤ/4)² level structure; minimal content μ₄ ⊄ ℚ — docstring records the level-4 Weil-pairing route and the elementary 2-torsion-abscissae square-product route (2026-07-22)",
+    "parent": "WeierstrassCurve.mazur_classification"
   },
   {
     "name": "not_two_ten_torsion",
     "fullname": "WeierstrassCurve.not_two_ten_torsion",
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
     "wip": true,
-    "text": "`WeierstrassCurve.not_two_ten_torsion` — X₁(2,10) exclusion (modular-curve-theoretic; Mazur 1978)"
+    "text": "`WeierstrassCurve.not_two_ten_torsion` — X₁(2,10) exclusion (modular-curve-theoretic; Mazur 1978)",
+    "parent": "WeierstrassCurve.mazur_classification"
   },
   {
     "name": "not_two_twelve_torsion",
     "fullname": "WeierstrassCurve.not_two_twelve_torsion",
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
     "wip": true,
-    "text": "`WeierstrassCurve.not_two_twelve_torsion` — X₁(2,12) exclusion (modular-curve-theoretic; Mazur 1978)"
+    "text": "`WeierstrassCurve.not_two_twelve_torsion` — X₁(2,12) exclusion (modular-curve-theoretic; Mazur 1978)",
+    "parent": "WeierstrassCurve.mazur_classification"
   },
   {
     "name": "exists_etale_line_of_multiplicative_self",
     "fullname": "FreyPackage.exists_etale_line_of_multiplicative_self",
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
     "wip": true,
-    "text": "`FreyPackage.exists_etale_line_of_multiplicative_self` — Tate/connected-étale line at multiplicative self-reduction (leaf of the proven flat/ordinary linear-algebra assembly)"
+    "text": "`FreyPackage.exists_etale_line_of_multiplicative_self` — Tate/connected-étale line at multiplicative self-reduction (leaf of the proven flat/ordinary linear-algebra assembly)",
+    "parent": "FreyPackage.subquotient_character_unramified_at_p"
   },
   {
     "name": "exists_etale_line_of_good_of_stable_line",
     "fullname": "FreyPackage.exists_etale_line_of_good_of_stable_line",
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
     "wip": true,
-    "text": "`FreyPackage.exists_etale_line_of_good_of_stable_line` — connected-étale line at good reduction with stable line (leaf of the proven flat/ordinary linear-algebra assembly)"
+    "text": "`FreyPackage.exists_etale_line_of_good_of_stable_line` — connected-étale line at good reduction with stable line (leaf of the proven flat/ordinary linear-algebra assembly)",
+    "parent": "FreyPackage.subquotient_character_unramified_at_p"
   },
   {
     "name": "infinite_setOf_isArithFrobAt_zpowers",
@@ -1403,35 +1418,40 @@
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
     "text": "`exists_universal_hardlyRamifiedDeformation` (`Lift.lean`, own work) — B6a-core stratum 1/3 (2026-07-22): the hardly ramified deformation problem of an irreducible ρbar (ℓ ≥ 5) has a universal object in Mazur's category (structure `HardlyRamifiedDeformation`: Noetherian local adic complete ℤ_ℓ-algebra + hardly ramified framed rep + reduction; `IsUniversal` = ∃! trace-compatible map to every datum). Mazur representability + Ramakrishna flat condition + Carayol trace generation (oddness ⇒ absolute irreducibility)",
     "fullname": "GaloisRepresentation.exists_universal_hardlyRamifiedDeformation",
-    "wip": true
+    "wip": true,
+    "parent": "exists_hardlyRamifiedLift"
   },
   {
     "name": "moduleFinite_of_isUniversal",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
     "text": "`moduleFinite_of_isUniversal` (`Lift.lean`, own work) — B6a-core stratum 2/3 (2026-07-22): the universal hardly ramified deformation ring is a finite ℤ_ℓ-module — the potential-modularity / Taylor–Wiles–Kisin input of Khare–Wintenberger (residual modularity bypassed via Moret-Bailly)",
     "fullname": "GaloisRepresentation.moduleFinite_of_isUniversal",
-    "wip": true
+    "wip": true,
+    "parent": "exists_hardlyRamifiedLift"
   },
   {
     "name": "algebraMap_injective_of_isUniversal",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
     "text": "`algebraMap_injective_of_isUniversal` (`Lift.lean`, own work) — B6a-core stratum 3/3 (2026-07-22): the universal ring has characteristic zero — Böckle's presentation bound g − r ≥ 1 (global Euler characteristic + Poitou–Tate) forces Krull dimension ≥ 1, and a ℤ_ℓ-finite ring of dimension ≥ 1 cannot kill ℓ",
     "fullname": "GaloisRepresentation.algebraMap_injective_of_isUniversal",
-    "wip": true
+    "wip": true,
+    "parent": "exists_hardlyRamifiedLift"
   },
   {
     "name": "exists_numberField_eigensystem",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
     "text": "`exists_numberField_eigensystem` (`Family.lean`, own work) — B6b stratum 1/2 (2026-07-22): the Frobenius charpolys of a hardly ramified p-adic rep descend to a NUMBER field (the Hecke field) — trace-level shadow of 'congruent to a cuspidal eigenform' (mathlib pin has no Hecke operators/eigenforms, so the eigenform split can only be stated at trace level)",
     "fullname": "GaloisRepresentation.IsHardlyRamified.exists_numberField_eigensystem",
-    "wip": true
+    "wip": true,
+    "parent": "GaloisRepresentation.IsHardlyRamified.mem_isCompatible"
   },
   {
     "name": "exists_family_of_eigensystem",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
     "text": "`exists_family_of_eigensystem` (`Family.lean`, own work) — B6b stratum 2/2 (2026-07-22): a hardly ramified rep with a number-field eigensystem spreads into a compatible family with hardly ramified odd members — Eichler–Shimura/Deligne construction + local-global compatibility (Carayol, Saito). Docstring records why the alternative 'abstract family inheritance' split is unsound (Kummer-class counterexample)",
     "fullname": "GaloisRepresentation.IsHardlyRamified.exists_family_of_eigensystem",
-    "wip": true
+    "wip": true,
+    "parent": "GaloisRepresentation.IsHardlyRamified.mem_isCompatible"
   },
   {
     "name": "exists_hardlyRamified_number_field_of_card",
@@ -1445,20 +1465,23 @@
     "fullname": "GaloisRepresentation.IsHardlyRamified.odlyzko_bound_totallyComplex",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
     "wip": true,
-    "text": "`odlyzko_bound_totallyComplex` — the analytic leaf in exact numeric form: 314928^n < |d_K|⁶ for totally complex n ≥ 48 (Minkowski provably insufficient; Odlyzko-type explicit formula needed)"
+    "text": "`odlyzko_bound_totallyComplex` — the analytic leaf in exact numeric form: 314928^n < |d_K|⁶ for totally complex n ≥ 48 (Minkowski provably insufficient; Odlyzko-type explicit formula needed)",
+    "parent": "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field_of_card"
   },
   {
     "name": "quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified",
     "fullname": "GaloisRepresentation.IsHardlyRamified.quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
     "wip": true,
-    "text": "`quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified` — Oort–Tate/Raynaud at 3: the quotient character on inertia at 3 in the ramified case"
+    "text": "`quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified` — Oort–Tate/Raynaud at 3: the quotient character on inertia at 3 in the ramified case",
+    "parent": "GaloisRepresentation.IsHardlyRamified.exists_line_with_unramified_quotCharacter_at_three"
   },
   {
     "name": "exists_line_with_quotCharacter_eq_subCharacter",
     "fullname": "GaloisRepresentation.IsHardlyRamified.exists_line_with_quotCharacter_eq_subCharacter",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
     "wip": true,
-    "text": "`exists_line_with_quotCharacter_eq_subCharacter` — the Serre swap / peu-ramifié Selmer vanishing line"
+    "text": "`exists_line_with_quotCharacter_eq_subCharacter` — the Serre swap / peu-ramifié Selmer vanishing line",
+    "parent": "GaloisRepresentation.IsHardlyRamified.exists_line_with_unramified_quotCharacter_at_three"
   }
 ]
