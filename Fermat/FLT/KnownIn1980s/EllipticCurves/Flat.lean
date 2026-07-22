@@ -210,34 +210,162 @@ Néron–Ogg–Shafarevich core and the descent statement, neither of which ment
 other's mathematics.
 -/
 
-/-- **Prime-power Néron–Ogg–Shafarevich, easy direction** (sorry node): if `E` has good
-reduction over `R` and the prime power `p ^ k` is invertible in `R`, every inertia
-subgroup above `R` acts trivially on the `p ^ k`-torsion of `E(Kˢᵉᵖ)`. For `k = 1` and
-`p` odd this is PROVEN as `WeierstrassCurve.torsion_unramified_of_good_reduction`
-(`Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction`): torsion coordinates are
-integral over any valuation subring `𝒪` of `Kˢᵉᵖ` above `R`, inertia fixes their
-residues, and reduction is injective on the prime torsion through the residue curve's
-separability. The intended proof here upgrades that argument from `p` to `p ^ k` — the
-division-polynomial coprimality input at composite order is `isCoprime_Φ_ΨSq`, proven
-at the bottom of this file (over the residue field `Δ` is a unit by good reduction) —
-and covers `p = 2` by the ordinate-flip case analysis at even order.
+/-- **Reduction is injective on prime-power torsion, deep cases** (sorry node): two
+`p ^ k`-torsion points of `E(Kˢᵉᵖ)` with integral coordinates and congruent residues in
+a valuation subring `𝒪` above `R` are equal, for `p ^ k` invertible in `R` and either
+`p = 2` or `k ≥ 2` (the case `p` odd, `k = 1` is PROVEN — via
+`WeierstrassCurve.torsion_abscissa_residue_ne` and
+`WeierstrassCurve.torsion_ordinate_eq_of_residue_eq` in
+`Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction` — and is consumed by the
+assembly below through `torsion_unramified_of_good_reduction`, so it is excluded here).
 
-INTEGRATION NOTE (2026-07-22): the odd `k = 1` case CANNOT currently be discharged
-here by applying the proven theorem, because `GoodReduction.lean` sits DOWNSTREAM of
-this file (`TorsionCard`/`TorsionCardSep` consume `isCoprime_Φ_ΨSq` from this file,
-and `GoodReduction` imports `TorsionCardSep`): `import GoodReduction` from here is a
-build cycle (verified 2026-07-22). To consume the proven case, either move
-`isCoprime_Φ_ΨSq` upstream (e.g. into `Fermat.FLT.EllipticCurve.PhiPsiCoprime`, its
-proof's real home) and flip this file downstream of `GoodReduction`, or prove this
-leaf in a new module downstream of both and re-export. -/
+Intended proof (dévissage to the prime layer plus a formal-group valuation estimate):
+the difference `T = P₁ - P₂` of two congruent integral torsion points lies in the
+"kernel of reduction" — concretely, if `T ≠ 0` its abscissa has negative valuation:
+in the chord construction for `P₁ + (-P₂)` the denominator `x₁ - x₂ ∈ 𝔪` while the
+numerator is congruent to `ψ₂(P₂) mod 𝔪`, giving `v(x(T)) = 2 v(λ) < 0` when
+`ψ₂(P₂) ∉ 𝔪`, with the near-2-torsion case `ψ₂(P₂) ∈ 𝔪` handled by comparing the
+valuations of the two ordinate roots (for `p = 2` this ordinate-flip analysis is the
+whole content). On the other hand a suitable multiple `p ^ j • T` is a NONZERO
+`p`-torsion point (tower dévissage), whose abscissa is a root of `ΨSq p` — of unit
+leading coefficient `p²` since `p ∈ Rˣ` — hence integral over `𝒪`: contradiction.
+The division-polynomial coprimality input at composite order, `isCoprime_Φ_ΨSq`, is
+proven (`Fermat.FLT.EllipticCurve.PhiPsiCoprime`; over the residue field `Δ` is a unit
+by good reduction). -/
+theorem WeierstrassCurve.torsion_eq_of_residue_eq_of_prime_pow_deep
+    (p k : ℕ) (hp : p.Prime) (hpk : IsUnit ((p ^ k : ℕ) : R)) (hk : k ≠ 0)
+    (hdeep : p = 2 ∨ 2 ≤ k)
+    (𝒪 : ValuationSubring Ksep)
+    (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    {x₁ y₁ x₂ y₂ : Ksep}
+    (h₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (h₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (ht₁ : ((p ^ k : ℕ) : ℤ) • (Affine.Point.some x₁ y₁ h₁ : (E⁄Ksep).Point) = 0)
+    (ht₂ : ((p ^ k : ℕ) : ℤ) • (Affine.Point.some x₂ y₂ h₂ : (E⁄Ksep).Point) = 0)
+    (hm₁ : x₁ ∈ 𝒪) (hm₂ : x₂ ∈ 𝒪) (hn₁ : y₁ ∈ 𝒪) (hn₂ : y₂ ∈ 𝒪)
+    (hrx : IsLocalRing.residue 𝒪 ⟨x₁, hm₁⟩ = IsLocalRing.residue 𝒪 ⟨x₂, hm₂⟩)
+    (hry : IsLocalRing.residue 𝒪 ⟨y₁, hn₁⟩ = IsLocalRing.residue 𝒪 ⟨y₂, hn₂⟩) :
+    x₁ = x₂ ∧ y₁ = y₂ :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **Prime-power Néron–Ogg–Shafarevich, easy direction** (assembly PROVEN 2026-07-22;
+rests on the injectivity leaf `torsion_eq_of_residue_eq_of_prime_pow_deep` for `p = 2`
+or `k ≥ 2`): if `E` has good reduction over `R` and the prime power `p ^ k` is
+invertible in `R`, every inertia subgroup above `R` acts trivially on the
+`p ^ k`-torsion of `E(Kˢᵉᵖ)`. For `k = 1` and `p` odd this is discharged by the proven
+`WeierstrassCurve.torsion_unramified_of_good_reduction`
+(`Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction`, consumable here since the
+2026-07-22 import untangling): torsion coordinates are integral over any valuation
+subring `𝒪` of `Kˢᵉᵖ` above `R`, inertia fixes their residues, and reduction is
+injective on the prime torsion through the residue curve's separability. In the
+remaining cases the same three-step assembly is written out below, with the
+injectivity step supplied by the sorried deep leaf. -/
 theorem WeierstrassCurve.torsion_inertia_fixes_of_prime_pow_isUnit
     (p k : ℕ) (hp : p.Prime) (hpk : IsUnit ((p ^ k : ℕ) : R))
     (𝒪 : ValuationSubring Ksep)
     (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range) :
     ∀ σ ∈ 𝒪.inertiaSubgroup K,
       ∀ P ∈ AddSubgroup.torsionBy (E⁄Ksep).Point ((p ^ k : ℕ) : ℤ),
-        Affine.Point.map (σ : Ksep ≃ₐ[K] Ksep).toAlgHom P = P :=
-  sorry
+        Affine.Point.map (σ : Ksep ≃ₐ[K] Ksep).toAlgHom P = P := by
+  classical
+  intro σ hσ P hP
+  -- trivial case `k = 0`: the `1`-torsion is the zero subgroup
+  rcases eq_or_ne k 0 with rfl | hk0
+  · have h1 : ((p ^ 0 : ℕ) : ℤ) • P = 0 := hP
+    have hP0 : P = 0 := by simpa using h1
+    rw [hP0]
+    exact map_zero _
+  by_cases hcase : Odd p ∧ k = 1
+  -- the proven case: odd prime torsion
+  · obtain ⟨hodd, rfl⟩ := hcase
+    have hpu : IsUnit ((p : ℕ) : R) := by rwa [pow_one] at hpk
+    haveI : NeZero ((p : ℕ) : IsLocalRing.ResidueField R) := by
+      have h2 : IsUnit (IsLocalRing.residue R ((p : ℕ) : R)) :=
+        hpu.map (IsLocalRing.residue R)
+      rw [map_natCast] at h2
+      exact ⟨h2.ne_zero⟩
+    have hP' : P ∈ AddSubgroup.torsionBy (E⁄Ksep).Point ((p : ℕ) : ℤ) := by
+      have h1 : ((p ^ 1 : ℕ) : ℤ) • P = 0 := hP
+      rw [pow_one] at h1
+      exact h1
+    exact WeierstrassCurve.torsion_unramified_of_good_reduction R K E p Ksep 𝒪
+      hp hodd h𝒪 σ hσ P hP'
+  -- the deep cases `p = 2` or `k ≥ 2`: integrality + inertia congruence + injectivity
+  · have hdeep : p = 2 ∨ 2 ≤ k := by
+      rcases hp.eq_two_or_odd' with h2 | hodd
+      · exact Or.inl h2
+      · have hk1 : k ≠ 1 := fun h => hcase ⟨hodd, h⟩
+        exact Or.inr (by omega)
+    haveI : NeZero ((p ^ k : ℕ) : IsLocalRing.ResidueField R) := by
+      have h2 : IsUnit (IsLocalRing.residue R ((p ^ k : ℕ) : R)) :=
+        hpk.map (IsLocalRing.residue R)
+      rw [map_natCast] at h2
+      exact ⟨h2.ne_zero⟩
+    haveI : (E⁄Ksep).IsElliptic :=
+      inferInstanceAs ((E.map (algebraMap K Ksep)).IsElliptic)
+    -- inertia fixes residues in `𝒪`
+    have hres : ∀ z : 𝒪, IsLocalRing.residue 𝒪 (σ • z) =
+        IsLocalRing.residue 𝒪 z := by
+      intro z
+      rw [IsLocalRing.ResidueField.residue_smul]
+      have h1 := MonoidHom.mem_ker.mp hσ
+      calc (σ : 𝒪.decompositionSubgroup K) • IsLocalRing.residue 𝒪 z
+          = (MulSemiringAction.toRingAut (𝒪.decompositionSubgroup K)
+              (IsLocalRing.ResidueField 𝒪) σ)
+              (IsLocalRing.residue 𝒪 z) := rfl
+        _ = IsLocalRing.residue 𝒪 z := by rw [h1]; rfl
+    have hcoe : ∀ z : 𝒪, ((σ • z : 𝒪) : Ksep) =
+        ((σ : Ksep ≃ₐ[K] Ksep)).toAlgHom (z : Ksep) := fun z => rfl
+    have hPtor : ((p ^ k : ℕ) : ℤ) • P = 0 := hP
+    cases P with
+    | zero => rfl
+    | @some x y h =>
+      have htor : ((p ^ k : ℕ) : ℤ) •
+          (Affine.Point.some x y h : (E⁄Ksep).Point) = 0 := hPtor
+      -- the coordinates are integral over `𝒪`
+      have hxm := WeierstrassCurve.torsion_abscissa_mem R K E (p ^ k) Ksep 𝒪
+        h𝒪 h htor
+      have hym := WeierstrassCurve.torsion_ordinate_mem R K E (p ^ k) Ksep 𝒪
+        h𝒪 h htor
+      set σf := ((σ : Ksep ≃ₐ[K] Ksep)).toAlgHom with hσfdef
+      rw [Affine.Point.map_some]
+      have hns' : (E⁄Ksep).toAffine.Nonsingular (σf x) (σf y) :=
+        (WeierstrassCurve.Affine.baseChange_nonsingular (W := E)
+          σf.injective x y).mpr (show (E⁄Ksep).Nonsingular x y from h)
+      -- the image is torsion
+      have h1 : Affine.Point.map σf (Affine.Point.some x y h) =
+          (Affine.Point.some (σf x) (σf y) hns' : (E⁄Ksep).Point) :=
+        Affine.Point.map_some _ h
+      have hmaptor : ((p ^ k : ℕ) : ℤ) • (Affine.Point.some (σf x) (σf y) hns' :
+          (E⁄Ksep).Point) = 0 := by
+        rw [← h1, ← map_zsmul, htor, map_zero]
+      -- memberships of the image coordinates
+      have hσxm : σf x ∈ 𝒪 := by
+        have := hcoe ⟨x, hxm⟩
+        rw [← this]
+        exact Subtype.mem _
+      have hσym : σf y ∈ 𝒪 := by
+        have := hcoe ⟨y, hym⟩
+        rw [← this]
+        exact Subtype.mem _
+      -- inertia gives congruent residues
+      have hrx : IsLocalRing.residue 𝒪 ⟨σf x, hσxm⟩ =
+          IsLocalRing.residue 𝒪 ⟨x, hxm⟩ := by
+        have h2 := hres ⟨x, hxm⟩
+        rwa [show (σ • (⟨x, hxm⟩ : 𝒪)) = ⟨σf x, hσxm⟩ from
+          Subtype.ext (hcoe ⟨x, hxm⟩)] at h2
+      have hry : IsLocalRing.residue 𝒪 ⟨σf y, hσym⟩ =
+          IsLocalRing.residue 𝒪 ⟨y, hym⟩ := by
+        have h2 := hres ⟨y, hym⟩
+        rwa [show (σ • (⟨y, hym⟩ : 𝒪)) = ⟨σf y, hσym⟩ from
+          Subtype.ext (hcoe ⟨y, hym⟩)] at h2
+      -- the injectivity leaf identifies the image with the original point
+      obtain ⟨hxeq, hyeq⟩ :=
+        WeierstrassCurve.torsion_eq_of_residue_eq_of_prime_pow_deep R K E Ksep
+          p k hp hpk hk0 hdeep 𝒪 h𝒪 hns' h hmaptor htor hσxm hxm hσym hym hrx hry
+      congr 1
 
 /-- **Composite Néron–Ogg–Shafarevich from its prime-power core** (PROVEN 2026-07-22):
 for `m` invertible in `R`, every inertia subgroup above `R` acts trivially on the
