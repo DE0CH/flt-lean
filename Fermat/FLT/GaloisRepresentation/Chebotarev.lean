@@ -247,7 +247,20 @@ arithmetic progressions (`Mathlib.NumberTheory.LSeries.PrimesInAP`,
 covering the case `F = ℚ`, `E` cyclotomic) and the L-series
 nonvanishing machinery under it; the remaining mathematical content is
 Chebotarev's field-crossing argument reducing the cyclic case to the
-cyclotomic one, plus the zero-density estimate for degree-`≥ 2` places. -/
+cyclotomic one, plus the zero-density estimate for degree-`≥ 2` places.
+
+Why this leaf cannot be narrowed to the base `F = ℚ` even though every
+consumer of the Chebotarev chain instantiates `K = ℚ`
+(`dense_conjClasses_globalFrob (K := ℚ)` in `HardlyRamified/Lift.lean`
+and `WeilPairing.lean`): the consumers need density of Frobenii in the
+full absolute Galois group `Γ ℚ`, i.e. the finite-Galois-level statement
+for EVERY finite Galois `L/ℚ` and every `τ ∈ Gal(L/ℚ)` — not only
+abelian `L`. The Deuring reduction of that statement passes through the
+fixed field `F = L^⟨τ⟩`, an arbitrary number field; so the cyclic core
+is genuinely needed over arbitrary bases `F`, and mathlib's Dirichlet
+theorem (base `ℚ`) alone cannot close it: the cyclotomic case over a
+general base needs the Dedekind-zeta pole (or Hecke L-functions), which
+is precisely the analytic content this leaf isolates. -/
 theorem infinite_setOf_isArithFrobAt_zpowers
     {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
     [Algebra F E] [IsGalois F E] (τ : E ≃ₐ[F] E)
