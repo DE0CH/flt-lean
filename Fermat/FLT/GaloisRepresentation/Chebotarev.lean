@@ -823,7 +823,7 @@ lemma natCast_mem_toHeightOneSpectrum_iff {p q : ℕ}
   exact ⟨fun hdvd => ((Nat.prime_dvd_prime_iff_eq hq hp).mp hdvd).symm,
     fun h => h ▸ dvd_rfl⟩
 
-/-- **Units away from the residue characteristic** (sorry node): a prime
+/-- **Units away from the residue characteristic**: a prime
 `p ≠ q` is a unit in the completed integers at the `q`-place of `ℚ` (its
 `q`-adic valuation is `1`). Ensures `ℓ^k ∉ Q` in the Frobenius
 roots-of-unity argument of `cyclotomicCharacter_globalFrob`. -/
@@ -853,7 +853,7 @@ theorem isUnit_natCast_adicCompletionIntegers {p q : ℕ} (hp : p.Prime)
     natCast_mem_toHeightOneSpectrum_iff hp hq]
   exact hne
 
-/-- **The `ℓ`-adic cyclotomic character at Frobenius** (sorry node): the
+/-- **The `ℓ`-adic cyclotomic character at Frobenius**: the
 `ℓ`-adic cyclotomic character evaluates to `q` at the global arithmetic
 Frobenius of a prime `q ≠ ℓ` — the arithmetic Frobenius at `q` acts on
 all `ℓ`-power roots of unity by `ζ ↦ ζ^q` (`μ_{ℓ^∞}` is unramified at
