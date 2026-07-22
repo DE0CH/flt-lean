@@ -1311,28 +1311,32 @@
     "fullname": "WeierstrassCurve.kernel_add_abscissa_notMem",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
     "wip": true,
-    "text": "`WeierstrassCurve.kernel_add_abscissa_notMem` — kernel of reduction closed under addition (formal-group valuation estimate; Silverman AEC VII.2.1-2 shape) — leaf of the proven NOS dévissage (2026-07-22)"
+    "text": "`WeierstrassCurve.kernel_add_abscissa_notMem` — kernel of reduction closed under addition (formal-group valuation estimate; Silverman AEC VII.2.1-2 shape) — leaf of the proven NOS dévissage (2026-07-22)",
+    "parent": "WeierstrassCurve.torsion_inertia_fixes_of_prime_pow_isUnit"
   },
   {
     "name": "WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq",
     "fullname": "WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
     "wip": true,
-    "text": "`WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq` — congruent distinct integral points differ by a kernel element (chord-slope/duplication estimate; Δ-unit Bézout for the ordinate-flip case) — leaf of the proven NOS dévissage (2026-07-22)"
+    "text": "`WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq` — congruent distinct integral points differ by a kernel element (chord-slope/duplication estimate; Δ-unit Bézout for the ordinate-flip case) — leaf of the proven NOS dévissage (2026-07-22)",
+    "parent": "WeierstrassCurve.torsion_inertia_fixes_of_prime_pow_isUnit"
   },
   {
     "name": "WeierstrassCurve.exists_torsion_etale_package_over_fractionField",
     "fullname": "WeierstrassCurve.exists_torsion_etale_package_over_fractionField",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
     "wip": true,
-    "text": "`WeierstrassCurve.exists_torsion_etale_package_over_fractionField` — finite étale K-Hopf package of the m-torsion via the Grothendieck Galois correspondence (universe-honest); shared shape with Semistable's exists_galoisModulePackage_of_finiteQuotient — align later (2026-07-22)"
+    "text": "`WeierstrassCurve.exists_torsion_etale_package_over_fractionField` — finite étale K-Hopf package of the m-torsion via the Grothendieck Galois correspondence (universe-honest); shared shape with Semistable's exists_galoisModulePackage_of_finiteQuotient — align later (2026-07-22)",
+    "parent": "WeierstrassCurve.torsion_flat_of_inertia_fixes"
   },
   {
     "name": "WeierstrassCurve.torsion_flat_of_inertia_fixes_prolong",
     "fullname": "WeierstrassCurve.torsion_flat_of_inertia_fixes_prolong",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
     "wip": true,
-    "text": "`WeierstrassCurve.torsion_flat_of_inertia_fixes_prolong` — unramified ⟹ étale prolongation by normalization — leaf of the proven torsion_flat_of_inertia_fixes assembly (2026-07-22)"
+    "text": "`WeierstrassCurve.torsion_flat_of_inertia_fixes_prolong` — unramified ⟹ étale prolongation by normalization — leaf of the proven torsion_flat_of_inertia_fixes assembly (2026-07-22)",
+    "parent": "WeierstrassCurve.torsion_flat_of_inertia_fixes"
   },
   {
     "name": "WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow",
@@ -1411,7 +1415,8 @@
     "fullname": "GaloisRepresentation.infinite_setOf_isArithFrobAt_zpowers",
     "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
     "wip": true,
-    "text": "`infinite_setOf_isArithFrobAt_zpowers` (stated 2026-07-22, the analytic cyclic core after the PROVEN Deuring reduction): for number fields E/F with Gal(E/F) = ⟨τ⟩, infinitely many degree-one places of F carry a prime with IsArithFrobAt τ. Dirichlet-AP structurally insufficient (docstring records the reduction analysis); the classical route is the Dedekind-zeta pole / Hecke L-function nonvanishing, or Chebotarev's field-crossing with zero-density of higher-degree places."
+    "text": "`infinite_setOf_isArithFrobAt_zpowers` (stated 2026-07-22, the analytic cyclic core after the PROVEN Deuring reduction): for number fields E/F with Gal(E/F) = ⟨τ⟩, infinitely many degree-one places of F carry a prime with IsArithFrobAt τ. Dirichlet-AP structurally insufficient (docstring records the reduction analysis); the classical route is the Dedekind-zeta pole / Hecke L-function nonvanishing, or Chebotarev's field-crossing with zero-density of higher-degree places.",
+    "parent": "GaloisRepresentation.infinite_setOf_isArithFrobAt"
   },
   {
     "name": "exists_universal_hardlyRamifiedDeformation",
@@ -1458,7 +1463,8 @@
     "fullname": "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field_of_card",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
     "wip": true,
-    "text": "`exists_hardlyRamified_number_field_of_card` — field cut by ker ρ: totally complex, degree = |image| ≥ 48, |d_K|⁶ ≤ 314928^[K:ℚ] (Fontaine at 3, tame at 2) — strictly smaller successor of the proven 48-bound glue (2026-07-22)"
+    "text": "`exists_hardlyRamified_number_field_of_card` — field cut by ker ρ: totally complex, degree = |image| ≥ 48, |d_K|⁶ ≤ 314928^[K:ℚ] (Fontaine at 3, tame at 2) — strictly smaller successor of the proven 48-bound glue (2026-07-22)",
+    "parent": "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field"
   },
   {
     "name": "odlyzko_bound_totallyComplex",
@@ -1483,5 +1489,37 @@
     "wip": true,
     "text": "`exists_line_with_quotCharacter_eq_subCharacter` — the Serre swap / peu-ramifié Selmer vanishing line",
     "parent": "GaloisRepresentation.IsHardlyRamified.exists_line_with_unramified_quotCharacter_at_three"
+  },
+  {
+    "name": "torsion_inertia_fixes_of_prime_pow_isUnit",
+    "fullname": "WeierstrassCurve.torsion_inertia_fixes_of_prime_pow_isUnit",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+    "wip": false,
+    "text": "`torsion_inertia_fixes_of_prime_pow_isUnit` — PROVEN 2026-07-22 (flat-2): prime-power NOS core — k=1 odd via torsion_unramified_of_good_reduction, k≥2/p=2 via dévissage; consumes the two kernel coordinate leaves",
+    "parent": "WeierstrassCurve.torsion_flat_of_good_reduction_of_isUnit"
+  },
+  {
+    "name": "torsion_flat_of_inertia_fixes",
+    "fullname": "WeierstrassCurve.torsion_flat_of_inertia_fixes",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+    "wip": false,
+    "text": "`torsion_flat_of_inertia_fixes` — PROVEN assembly 2026-07-22 (flat-2): unramified ⟹ flat over the étale K-package + prolongation leaves",
+    "parent": "WeierstrassCurve.torsion_flat_of_good_reduction_of_isUnit"
+  },
+  {
+    "name": "exists_hardlyRamified_number_field",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+    "wip": false,
+    "text": "`exists_hardlyRamified_number_field` — PROVEN glue 2026-07-22 (serre-2) over the proven 48-bound card_matrixRange_ge_of_exceptional and the field-cut leaf",
+    "parent": "GaloisRepresentation.IsHardlyRamified.serre_elimination_arith"
+  },
+  {
+    "name": "infinite_setOf_isArithFrobAt",
+    "fullname": "GaloisRepresentation.infinite_setOf_isArithFrobAt",
+    "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
+    "wip": false,
+    "text": "`infinite_setOf_isArithFrobAt` — PROVEN 2026-07-22 (chebotarev-2, Deuring reduction); consumes the cyclic analytic core leaf",
+    "parent": "GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj"
   }
 ]
