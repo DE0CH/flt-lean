@@ -41,25 +41,36 @@ def search(query: str, type: ContentType = "book", limit: int = 10) -> list[dict
     return out
 
 
-def download(md5: str, output_dir: str = ".", domain_index: int | None = None, path_index: int | None = None) -> dict:
+def fetch_download_url(md5: str, domain_index: int | None = None, path_index: int | None = None) -> tuple[str, dict]:
+    """One fast_download.json API call (consumes a quota slot on a new md5).
+    Returns (download_url, full API response)."""
     key = os.environ["ANNAS_KEY"]
     params: dict = {"md5": md5, "key": key}
     if domain_index is not None:
         params["domain_index"] = domain_index
     if path_index is not None:
         params["path_index"] = path_index
-    meta = requests.get(
+    r = requests.get(
         f"{BASE}/dyn/api/fast_download.json",
         params=params,
         impersonate="chrome",
         timeout=30,
-    ).json()
+    )
+    r.raise_for_status()
+    meta = r.json()
     if not meta.get("download_url"):
         raise RuntimeError(f"no download_url in response: {meta}")
     url = meta["download_url"]
     if not url.startswith("https://"):
         raise RuntimeError(f"refusing non-https download URL: {url!r}")
-    name = urllib.parse.unquote(url.rsplit("/", 1)[-1]) or f"{md5}.bin"
+    return url, meta
+
+
+def download(md5: str, output_dir: str = ".", domain_index: int | None = None, path_index: int | None = None) -> dict:
+    url, meta = fetch_download_url(md5, domain_index=domain_index, path_index=path_index)
+    name = urllib.parse.unquote(url.rsplit("/", 1)[-1])
+    if not name:
+        raise RuntimeError(f"cannot derive a filename from download URL: {url!r}")
 
     out_dir = Path(output_dir).expanduser()
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -71,11 +82,18 @@ def download(md5: str, output_dir: str = ".", domain_index: int | None = None, p
         for chunk in r.iter_content(65536):
             f.write(chunk)
 
-    info = meta.get("account_fast_download_info", {})
+    try:
+        downloads_left = meta["account_fast_download_info"]["downloads_left"]
+    except (KeyError, TypeError) as exc:
+        raise RuntimeError(
+            f"file saved to {out_path.resolve()}, but the API response lacks "
+            f"account_fast_download_info.downloads_left ({exc!r}); "
+            f"full response: {meta}"
+        ) from exc
     return {
         "path": str(out_path.resolve()),
         "bytes": out_path.stat().st_size,
-        "downloads_left_today": info.get("downloads_left"),
+        "downloads_left_today": downloads_left,
     }
 
 
@@ -169,5 +187,11 @@ if __name__ == "__main__":
     elif args.cmd == "get":
         result = download(args.md5, output_dir=args.output_dir, domain_index=args.domain_index, path_index=args.path_index)
         print(f"{result['path']}  ({result['bytes']:,} bytes, {result['downloads_left_today']} downloads left today)")
+    elif args.cmd == "url":
+        # NOTE: this API call consumes a quota slot for a new md5, same as get
+        url, _meta = fetch_download_url(args.md5, domain_index=args.domain_index, path_index=args.path_index)
+        print(url)
     elif args.cmd == "mcp":
         build_mcp().run()
+    else:
+        raise RuntimeError(f"unhandled subcommand: {args.cmd!r}")

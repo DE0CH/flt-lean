@@ -18,7 +18,9 @@ import time
 SETUP_SESSION = sys.argv[1] if len(sys.argv) > 1 else "agent-0"
 SETTINGS = "/home/chend/flt-lean/.claude/settings.json"
 
-# 1. kill the setup tmux session (the session running this script's parent)
+# 1. kill the setup tmux session (the session running this script's parent).
+# check=False here is NOT error recovery: the session being already gone is
+# an expected state (the whole point is that it must be dead before step 2).
 subprocess.run(["tmux", "kill-session", "-t", SETUP_SESSION], check=False)
 time.sleep(2)
 
@@ -31,8 +33,14 @@ if "_DISABLED_Stop" in hooks:
     with open(SETTINGS, "w") as f:
         json.dump(settings, f, indent=2)
         f.write("\n")
+elif "Stop" not in hooks:
+    raise RuntimeError(
+        f"{SETTINGS} has neither a Stop nor a _DISABLED_Stop hook — "
+        "nothing to re-enable; fix the settings file")
+# ("Stop" already present -> already enabled: idempotent no-op)
 
-# 3. nudge agent2 so it picks up the config and keeps looping
-subprocess.run(["tmux", "send-keys", "-t", "agent2", "-l", "continue"], check=False)
+# 3. nudge agent2 so it picks up the config and keeps looping; a missing
+# agent2 session is unexpected — crash so the log shows the failure
+subprocess.run(["tmux", "send-keys", "-t", "agent2", "-l", "continue"], check=True)
 time.sleep(1)
-subprocess.run(["tmux", "send-keys", "-t", "agent2", "Enter"], check=False)
+subprocess.run(["tmux", "send-keys", "-t", "agent2", "Enter"], check=True)

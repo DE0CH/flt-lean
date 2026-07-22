@@ -12,9 +12,9 @@
 #      progress-entries.json — EXCLUDING the root gate module `Fermat`
 #      (whose #assert_no_sorry fails by design mid-project).  lake keys on
 #      content hashes, so this build is genuinely incremental.  A build
-#      FAILURE degrades to a warning: a broken module keeps its previous
-#      olean and is flagged stale by the daemon; progress-tree.py's own
-#      missing-entry guard is the gate that decides publishability.
+#      FAILURE aborts the snapshot (no-fallback directive, Deyao
+#      2026-07-22): the committed state must compile; the caller sees
+#      lake's error and decides.
 #   3. run the SNAPSHOT's progress-tree.py.  Its lean-daemon roots itself at
 #      its own file's directory, so the snapshot daemon binds
 #      $SNAP/.lean-daemon.sock — fully separate from main's daemon socket.
@@ -60,13 +60,10 @@ fi
 
 # 9>&-: do NOT leak the lock fd into lake's children — an orphaned lean
 # process from a killed run would otherwise hold the lock indefinitely.
-BUILD_STATE=ok
 ( cd "$SNAP" && lake build "${MODULES[@]}" ) 9>&- || {
-  BUILD_STATE=DEGRADED
-  echo "snapshot-progress: WARNING — lake build of tracked modules failed;" \
-       "broken modules keep their last-built olean (daemon flags them stale)." \
-       "Continuing; progress-tree.py's missing-entry guard decides" \
-       "publishability." >&2
+  echo "snapshot-progress: lake build of tracked modules FAILED at commit" \
+       "${HEAD:0:12} — aborting; main untouched (see lake output above)" >&2
+  exit 1
 }
 
 # -- 3. regenerate the tree in the snapshot ---------------------------------
@@ -79,4 +76,4 @@ SUMMARY=$( cd "$SNAP" && python3 progress-tree.py 9>&- ) || {
 cp "$SNAP/PROGRESS.md" "$MAIN/PROGRESS.md"
 cp "$SNAP/progress-tree.json" "$MAIN/progress-tree.json"
 
-echo "snapshot-progress: commit ${HEAD:0:12} [build $BUILD_STATE] — $SUMMARY"
+echo "snapshot-progress: commit ${HEAD:0:12} — $SUMMARY"

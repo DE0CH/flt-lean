@@ -36,11 +36,10 @@ def source_key() -> str:
     for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "Fermat")):
         for name in files:
             if name.endswith(".lean"):
-                try:
-                    latest = max(latest,
-                                 os.path.getmtime(os.path.join(dirpath, name)))
-                except OSError:
-                    pass
+                # a listed file vanishing mid-scan is unexpected: crash
+                # (OSError) rather than compute a key from partial data
+                latest = max(latest,
+                             os.path.getmtime(os.path.join(dirpath, name)))
     return str(latest)
 
 
@@ -60,13 +59,16 @@ def modules() -> list[str]:
 def main() -> int:
     key = source_key()
     if os.path.exists(CACHE):
-        try:
-            cached = json.load(open(CACHE))
-            if cached.get("key") == key:
-                print(json.dumps(cached))
-                return 0
-        except Exception:
-            pass
+        with open(CACHE) as fh:
+            try:
+                cached = json.load(fh)
+            except ValueError as exc:
+                raise RuntimeError(
+                    f"corrupt cache {CACHE}: {exc} — delete the file and "
+                    "rerun") from exc
+        if cached.get("key") == key:
+            print(json.dumps(cached))
+            return 0
 
     lean = ["import " + m for m in modules()]
     lean.append("open Lean in")
@@ -123,7 +125,16 @@ def main() -> int:
         try:
             os.remove(scratch)
         except OSError:
-            pass
+            pass  # resource cleanup only — never affects the result
+    if proc.returncode != 0:
+        # do NOT cache or emit a partial analysis — a broken run must not
+        # read as "zero floating declarations"; crash with the compiler's
+        # own tail so the caller can see which module failed
+        tail = "\n".join(
+            (proc.stdout + "\n" + proc.stderr).strip().splitlines()[-30:])
+        raise RuntimeError(
+            f"free-floating analysis failed (lake env lean exit "
+            f"{proc.returncode}); nothing cached:\n{tail}")
     # build-verified elaboration-invisible keepers: outside the term cone but
     # required by elaboration (deletion breaks the build); see
     # free-floating-keep.json and CLAUDE.md "Elaboration-invisible dependency
@@ -131,11 +142,14 @@ def main() -> int:
     keep = {}
     keep_path = os.path.join(ROOT, "free-floating-keep.json")
     if os.path.exists(keep_path):
-        try:
-            keep = {k: v for k, v in json.load(open(keep_path)).items()
-                    if not k.startswith("_")}
-        except Exception:
-            keep = {}
+        with open(keep_path) as fh:
+            try:
+                keep_data = json.load(fh)
+            except ValueError as exc:
+                raise RuntimeError(
+                    f"corrupt keep-list {keep_path}: {exc} — fix or delete "
+                    "it and rerun") from exc
+        keep = {k: v for k, v in keep_data.items() if not k.startswith("_")}
     floating = []
     kept_invisible = []
     for line in proc.stdout.splitlines():
@@ -148,14 +162,9 @@ def main() -> int:
     result = {"key": key, "returncode": proc.returncode,
               "kept_invisible": kept_invisible,
               "floating": floating}
-    if proc.returncode == 0:
-        json.dump(result, open(CACHE, "w"), ensure_ascii=False, indent=1)
-    else:
-        # do NOT cache a failed analysis — a broken run must not read as
-        # "zero floating declarations" (fail-safe, 2026-07-18)
-        result["error"] = proc.stdout[:400]
+    json.dump(result, open(CACHE, "w"), ensure_ascii=False, indent=1)
     print(json.dumps(result))
-    return 0 if proc.returncode == 0 else 1
+    return 0
 
 
 if __name__ == "__main__":

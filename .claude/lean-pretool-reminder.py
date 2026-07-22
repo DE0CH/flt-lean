@@ -17,10 +17,10 @@ REMINDER = (
 
 
 def main() -> int:
-    try:
-        json.load(sys.stdin)  # hook input is unused; consume it anyway
-    except Exception:
-        pass
+    # hook input is unused; strict-parse it anyway so malformed harness
+    # input crashes loudly (no-fallback directive, Deyao 2026-07-22)
+    # instead of being silently swallowed
+    json.load(sys.stdin)
     print(json.dumps({
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",

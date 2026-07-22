@@ -107,12 +107,17 @@ def background_work_is_idle(project_dir: str, session_id: str) -> bool:
 
 
 def main() -> int:
-    caller_session = ""
     try:
         hook_input = json.load(sys.stdin)
-        caller_session = str(hook_input.get("session_id", ""))
-    except Exception:
-        pass  # malformed/absent input must not disable the gate
+        caller_session = str(hook_input["session_id"])
+    except Exception as exc:
+        # graceful (harness-facing hook, Deyao 2026-07-22): without a
+        # readable session id the guard cannot attribute this stop —
+        # allow it with one informative line, never act on a made-up id
+        sys.stderr.write(
+            f"Stop hook: could not read session_id from hook input "
+            f"({exc!r}); allowing the stop.\n")
+        return 0
 
     project_dir = os.environ.get("CLAUDE_PROJECT_DIR")
     if not project_dir:
@@ -127,9 +132,19 @@ def main() -> int:
     try:
         with open(id_file, "r", encoding="utf-8") as fh:
             designated_session = fh.read().strip()
-    except OSError:
-        designated_session = ""
-    if designated_session and caller_session != designated_session:
+    except OSError as exc:
+        # no readable designation -> no session may be driven (the hook
+        # only ever drives the RECORDED session); allow with one line
+        sys.stderr.write(
+            f"Stop hook: cannot read {id_file} ({exc}); no designated "
+            "session — allowing the stop.\n")
+        return 0
+    if not designated_session:
+        sys.stderr.write(
+            f"Stop hook: {id_file} is empty; no designated session — "
+            "allowing the stop.\n")
+        return 0
+    if caller_session != designated_session:
         sys.stderr.write(
             "The stop hook is intended to be used by session "
             f"{designated_session}, and you are {caller_session}, so there "
@@ -181,15 +196,23 @@ def main() -> int:
         )
         return 0
 
-    sorries = [f"{s['name']} ({s['module']})" for s in resp["sorried"]]
-    root = resp.get("root", {})
+    try:
+        sorries = [f"{s['name']} ({s['module']})" for s in resp["sorried"]]
+        root = resp["root"]
+        # short-circuit: a missing root carries no coneSorry/badAxioms
+        root_open = (root["missing"] or root["coneSorry"]
+                     or root["badAxioms"])
+    except (KeyError, TypeError) as exc:
+        # never block (or allow the endgame) on a made-up reading of a
+        # malformed response — allow the stop with one informative line
+        sys.stderr.write(
+            f"Stop hook: malformed daemon response ({exc!r}, keys "
+            f"{sorted(resp)}); allowing the stop.\n")
+        return 0
+    # absence of these keys is the daemon's real answer "none", not an
+    # error (the daemon only includes them when nonempty)
     stale = resp.get("stale_sources", [])
     unbuilt = resp.get("unbuilt_modules", [])
-    root_open = (
-        root.get("missing", True)
-        or root.get("coneSorry", True)
-        or root.get("badAxioms")
-    )
 
     if not sorries and not root_open:
         # Endgame (Deyao, 2026-07-22): NOTHING automatic runs `lake build`
