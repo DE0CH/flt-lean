@@ -3005,6 +3005,537 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
       rw [frobenius_def, frobenius_def, map_pow]
 
 
+section FrobeniusTransport
+
+/-! ### Frobenius transport of admissible Weil values (for `hleg6`)
+
+The `q`-power Frobenius `frobAlgHom q` fixes the base-changed curve
+coefficientwise, hence induces an endomorphism `coordEnd` of the
+coordinate ring commuting with point evaluation, `XClass`/`XYIdeal`
+formation, and `negY`.  Applying it to every ingredient of an
+admissible Miller setup transports an `IsWeilValue` witness for
+`(v, w, z)` to one for `(φv, φw, σz)` — Silverman III.8.1(d)
+specialized to Frobenius.  `weilValueProp` is the (definitionally
+equal) top-level restatement of the in-proof `IsWeilValue`. -/
+
+open Polynomial
+open scoped Polynomial.Bivariate
+
+section CoordEnd
+
+variable {R : Type*} [CommRing R] (W' : WeierstrassCurve.Affine R)
+  (σ : R →+* R)
+
+/-- The coefficientwise endomorphism of the coordinate ring induced by a
+curve-preserving base endomorphism. -/
+noncomputable def coordEnd (hW : W'.map σ = W') :
+    W'.CoordinateRing →+* W'.CoordinateRing :=
+  AdjoinRoot.lift ((AdjoinRoot.of W'.polynomial).comp (mapRingHom σ))
+    (AdjoinRoot.root W'.polynomial)
+    (by
+      rw [← eval₂_map, ← WeierstrassCurve.Affine.map_polynomial, hW]
+      exact AdjoinRoot.eval₂_root _)
+
+lemma coordEnd_mk (hW : W'.map σ = W') (g : R[X][Y]) :
+    coordEnd W' σ hW (WeierstrassCurve.Affine.CoordinateRing.mk W' g) =
+      WeierstrassCurve.Affine.CoordinateRing.mk W' (g.map (mapRingHom σ)) := by
+  rw [coordEnd, AdjoinRoot.lift_mk, ← eval₂_map]
+  exact AdjoinRoot.aeval_eq _
+
+lemma coordEnd_XClass (hW : W'.map σ = W') (x : R) :
+    coordEnd W' σ hW (WeierstrassCurve.Affine.CoordinateRing.XClass W' x) =
+      WeierstrassCurve.Affine.CoordinateRing.XClass W' (σ x) := by
+  rw [WeierstrassCurve.Affine.CoordinateRing.XClass, coordEnd_mk,
+    WeierstrassCurve.Affine.CoordinateRing.XClass]
+  congr 1
+  simp
+
+lemma coordEnd_YClass_C (hW : W'.map σ = W') (y : R) :
+    coordEnd W' σ hW (WeierstrassCurve.Affine.CoordinateRing.YClass W' (C y)) =
+      WeierstrassCurve.Affine.CoordinateRing.YClass W' (C (σ y)) := by
+  rw [WeierstrassCurve.Affine.CoordinateRing.YClass, coordEnd_mk,
+    WeierstrassCurve.Affine.CoordinateRing.YClass]
+  congr 1
+  simp
+
+lemma coordEnd_evalEval (hW : W'.map σ = W') {x y : R}
+    (hE : W'.Equation x y) (hE' : W'.Equation (σ x) (σ y))
+    (f : W'.CoordinateRing) :
+    σ (AdjoinRoot.evalEval hE f) =
+      AdjoinRoot.evalEval hE' (coordEnd W' σ hW f) := by
+  induction f using AdjoinRoot.induction_on with
+  | ih g =>
+    rw [AdjoinRoot.evalEval_mk, coordEnd_mk, AdjoinRoot.evalEval_mk,
+      map_mapRingHom_evalEval]
+
+lemma coordEnd_map_XYIdeal (hW : W'.map σ = W') (x y : R) :
+    (WeierstrassCurve.Affine.CoordinateRing.XYIdeal W' x (C y)).map
+        (coordEnd W' σ hW) =
+      WeierstrassCurve.Affine.CoordinateRing.XYIdeal W' (σ x) (C (σ y)) := by
+  rw [WeierstrassCurve.Affine.CoordinateRing.XYIdeal, Ideal.map_span,
+    Set.image_pair, coordEnd_XClass, coordEnd_YClass_C,
+    WeierstrassCurve.Affine.CoordinateRing.XYIdeal]
+
+lemma coordEnd_XClass_pow (hW : W'.map σ = W') (x : R) (n : ℕ) :
+    coordEnd W' σ hW
+        ((WeierstrassCurve.Affine.CoordinateRing.XClass W' x) ^ n) =
+      (WeierstrassCurve.Affine.CoordinateRing.XClass W' (σ x)) ^ n := by
+  rw [map_pow, coordEnd_XClass]
+
+lemma coordEnd_map_span_singleton (hW : W'.map σ = W')
+    (a : W'.CoordinateRing) :
+    (Ideal.span {a}).map (coordEnd W' σ hW) =
+      Ideal.span {coordEnd W' σ hW a} := by
+  rw [Ideal.map_span, Set.image_singleton]
+
+lemma map_negY_self (hW : W'.map σ = W') (x y : R) :
+    σ (W'.negY x y) = W'.negY (σ x) (σ y) := by
+  have h := WeierstrassCurve.Affine.map_negY (f := σ) (W' := W') (x := x)
+    (y := y)
+  rw [hW] at h
+  exact h.symm
+
+end CoordEnd
+
+variable (q : ℕ) [Fact q.Prime]
+
+/-- The Frobenius period is invariant under the Frobenius itself. -/
+theorem frobPeriod_frobAlgHom (x : AlgebraicClosure (ZMod q)) :
+    frobPeriod q ((frobAlgHom q) x) = frobPeriod q x := by
+  obtain ⟨m, hm, hmem⟩ := exists_ne_zero_mem_frobFixed q x
+  exact Function.minimalPeriod_apply (Function.mem_periodicPts.mpr
+    ⟨m, Nat.pos_of_ne_zero hm, (mem_frobFixed_iff_isPeriodicPt q).mp hmem⟩)
+
+/-- A Frobenius-fixed subfield contained in `F` is also contained in the
+Frobenius image of `F`: the Frobenius is surjective on each finite
+level (`a = σ (a ^ q ^ (n - 1))`). -/
+theorem frobFixed_le_map_frobAlgHom {n : ℕ} (hn : n ≠ 0)
+    {F : Subfield (AlgebraicClosure (ZMod q))} (hle : frobFixed q n ≤ F) :
+    frobFixed q n ≤ F.map (frobAlgHom q).toRingHom := by
+  intro a ha
+  have haq := (mem_frobFixed_iff q).mp ha
+  refine Subfield.mem_map.mpr ⟨a ^ q ^ (n - 1),
+    hle ((mem_frobFixed_iff q).mpr ?_), ?_⟩
+  · show (a ^ q ^ (n - 1)) ^ q ^ n = a ^ q ^ (n - 1)
+    rw [← pow_mul, mul_comm, pow_mul, haq]
+  · show frobenius (AlgebraicClosure (ZMod q)) q (a ^ q ^ (n - 1)) = a
+    rw [frobenius_def, ← pow_mul, ← pow_succ,
+      Nat.sub_add_cancel (Nat.one_le_iff_ne_zero.mpr hn)]
+    exact haq
+
+/-- The body of the in-proof `IsWeilValue` of `exists_weilPairing_mu`
+(definitionally equal restatement at top level): `z` is the Miller
+cross-ratio of SOME admissible generic setup for the pair `(v, w)`. -/
+def weilValueProp (Wbar : WeierstrassCurve (ZMod q))
+    [Wbar.IsElliptic] (p : ℕ)
+    (v w : (Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p)
+    (z : (AlgebraicClosure (ZMod q))ˣ) : Prop :=
+  ((v.val = 0 ∨ w.val = 0) → z = 1) ∧
+  (∀ (xP yP : (AlgebraicClosure (ZMod q)))
+      (hP : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine.Nonsingular xP yP)
+      (xQ yQ : (AlgebraicClosure (ZMod q)))
+      (hQ : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine.Nonsingular xQ yQ),
+    v.val = WeierstrassCurve.Affine.Point.some xP yP hP →
+    w.val = WeierstrassCurve.Affine.Point.some xQ yQ hQ →
+    ∃ (F F' : Subfield (AlgebraicClosure (ZMod q))),
+      (F : Set (AlgebraicClosure (ZMod q))).Finite ∧
+      (F' : Set (AlgebraicClosure (ZMod q))).Finite ∧ F ≤ F' ∧
+      frobFixed q (2 * Nat.lcm
+        (Nat.lcm (frobPeriod q xP) (frobPeriod q yP))
+        (Nat.lcm (frobPeriod q xQ) (frobPeriod q yQ))) ≤ F ∧
+      xP ∈ F ∧ yP ∈ F ∧ xQ ∈ F ∧ yQ ∈ F ∧
+    ∃ (xS yS : (AlgebraicClosure (ZMod q)))
+      (hS : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine.Nonsingular xS yS),
+      xS ∈ F' ∧ yS ∈ F' ∧ xS ∉ F ∧
+    ∃ (xR yR : (AlgebraicClosure (ZMod q)))
+      (hR : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine.Nonsingular xR yR), xR ∉ F' ∧
+    ∃ (xPS yPS : (AlgebraicClosure (ZMod q)))
+      (hPS : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine.Nonsingular xPS yPS),
+      (WeierstrassCurve.Affine.Point.some xPS yPS hPS =
+        WeierstrassCurve.Affine.Point.some xP yP hP +
+        WeierstrassCurve.Affine.Point.some xS yS hS) ∧
+      xPS ∈ F' ∧ yPS ∈ F' ∧ xPS ∉ F ∧
+    ∃ (xQR yQR : (AlgebraicClosure (ZMod q)))
+      (hQR : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine.Nonsingular xQR yQR),
+      (WeierstrassCurve.Affine.Point.some xQR yQR hQR =
+        WeierstrassCurve.Affine.Point.some xQ yQ hQ +
+        WeierstrassCurve.Affine.Point.some xR yR hR) ∧
+      xQR ≠ xS ∧ xQR ≠ xPS ∧ xQR ∉ F' ∧
+    ∃ (aP aQ : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine.CoordinateRing),
+      Ideal.span {aP} =
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          (Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q)))).toAffine
+          xPS (Polynomial.C yPS)) ^ p *
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          (Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q)))).toAffine
+          xS (Polynomial.C ((Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q)))).toAffine.negY xS yS))) ^ p ∧
+      Ideal.span {aQ} =
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          (Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q)))).toAffine
+          xQR (Polynomial.C yQR)) ^ p *
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          (Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q)))).toAffine
+          xR (Polynomial.C ((Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q)))).toAffine.negY xR yR))) ^ p ∧
+      (AdjoinRoot.evalEval hQR.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass
+              (Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q)))).toAffine xS) ^ p) *
+          AdjoinRoot.evalEval hR.left aP *
+          AdjoinRoot.evalEval hS.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass
+              (Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q)))).toAffine xR) ^ p) *
+          AdjoinRoot.evalEval hPS.left aQ) ≠ 0 ∧
+      (z : (AlgebraicClosure (ZMod q))) *
+        (AdjoinRoot.evalEval hQR.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass
+              (Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q)))).toAffine xS) ^ p) *
+          AdjoinRoot.evalEval hR.left aP *
+          AdjoinRoot.evalEval hS.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass
+              (Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q)))).toAffine xR) ^ p) *
+          AdjoinRoot.evalEval hPS.left aQ) =
+        AdjoinRoot.evalEval hQR.left aP *
+          AdjoinRoot.evalEval hR.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass
+              (Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q)))).toAffine xS) ^ p) *
+          AdjoinRoot.evalEval hS.left aQ *
+          AdjoinRoot.evalEval hPS.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass
+              (Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q)))).toAffine xR) ^ p))
+
+set_option maxHeartbeats 1000000 in
+/-- **Frobenius transport of an admissible Weil value** (Silverman
+III.8.1(d) specialized to the `q`-power Frobenius): apply `σ` to every
+ingredient of the setup. -/
+theorem weilValueProp_frobenius_transport (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
+    (p : ℕ)
+    (v w : (Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p)
+    (z : (AlgebraicClosure (ZMod q))ˣ) (hz : weilValueProp q Wbar p v w z) :
+    weilValueProp q Wbar p ((frobeniusTorsionEnd q Wbar p) v)
+      ((frobeniusTorsionEnd q Wbar p) w)
+      ((Units.map (frobAlgHom q).toRingHom) z) := by
+  classical
+  -- curve stability under the Frobenius endomorphism
+  have hWσ : (Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).map (frobAlgHom q).toRingHom =
+      Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) := by
+    rw [WeierstrassCurve.map_map]
+    congr 1
+    exact RingHom.ext fun a => (frobAlgHom q).commutes a
+  have hWA : (Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).toAffine.map (frobAlgHom q).toRingHom =
+      (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine := hWσ
+  have hinj : Function.Injective ⇑(frobAlgHom q).toRingHom :=
+    (frobAlgHom q).toRingHom.injective
+  -- nonsingularity transport
+  have hns : ∀ {x y : AlgebraicClosure (ZMod q)},
+      (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine.Nonsingular x y →
+      (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine.Nonsingular
+        ((frobAlgHom q) x) ((frobAlgHom q) y) := by
+    intro x y h
+    have h2 := (WeierstrassCurve.Affine.map_nonsingular
+      (W := (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine)
+      hinj x y).mpr h
+    rwa [hWA] at h2
+  -- kernel triviality of the point map
+  have hker : ∀ u : (Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p,
+      ((frobeniusTorsionEnd q Wbar p) u).val = 0 → u.val = 0 := by
+    intro u hu
+    rcases hcu : u.val with _ | ⟨x, y, hxy⟩
+    · rfl
+    · exfalso
+      have hmap : ((frobeniusTorsionEnd q Wbar p) u).val =
+          WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
+            (frobAlgHom q) u.val := rfl
+      rw [hcu] at hmap
+      have hms := WeierstrassCurve.Affine.Point.map_some (W' := Wbar)
+        (S := ZMod q) (f := frobAlgHom q) (h := hxy)
+      have h2 := hms.symm.trans (hmap.symm.trans hu)
+      rw [WeierstrassCurve.Affine.Point.zero_def] at h2
+      simp at h2
+  constructor
+  · rintro (hd | hd)
+    · rw [hz.1 (Or.inl (hker v hd)), map_one]
+    · rw [hz.1 (Or.inr (hker w hd)), map_one]
+  · intro xP' yP' hP' xQ' yQ' hQ' hv' hw'
+    -- underlying affine representative of v
+    rcases hcv : v.val with _ | ⟨xP, yP, hPb⟩
+    · exfalso
+      have hmap : ((frobeniusTorsionEnd q Wbar p) v).val =
+          WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
+            (frobAlgHom q) v.val := rfl
+      rw [hcv] at hmap
+      have h0 := hv'.symm.trans (hmap.trans (map_zero _))
+      rw [WeierstrassCurve.Affine.Point.zero_def] at h0
+      simp at h0
+    rcases hcw : w.val with _ | ⟨xQ, yQ, hQb⟩
+    · exfalso
+      have hmap : ((frobeniusTorsionEnd q Wbar p) w).val =
+          WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
+            (frobAlgHom q) w.val := rfl
+      rw [hcw] at hmap
+      have h0 := hw'.symm.trans (hmap.trans (map_zero _))
+      rw [WeierstrassCurve.Affine.Point.zero_def] at h0
+      simp at h0
+    -- identify the primed coordinates with the Frobenius images
+    have hmapv : ((frobeniusTorsionEnd q Wbar p) v).val =
+        WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
+          (frobAlgHom q) v.val := rfl
+    rw [hcv] at hmapv
+    have hmsv := WeierstrassCurve.Affine.Point.map_some (W' := Wbar)
+      (S := ZMod q) (f := frobAlgHom q) (h := hPb)
+    have hveq := hv'.symm.trans (hmapv.trans hmsv)
+    obtain ⟨hxP', hyP'⟩ := WeierstrassCurve.Affine.Point.some.inj hveq
+    subst hxP'
+    subst hyP'
+    have hmapw : ((frobeniusTorsionEnd q Wbar p) w).val =
+        WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
+          (frobAlgHom q) w.val := rfl
+    rw [hcw] at hmapw
+    have hmsw := WeierstrassCurve.Affine.Point.map_some (W' := Wbar)
+      (S := ZMod q) (f := frobAlgHom q) (h := hQb)
+    have hweq := hw'.symm.trans (hmapw.trans hmsw)
+    obtain ⟨hxQ', hyQ'⟩ := WeierstrassCurve.Affine.Point.some.inj hweq
+    subst hxQ'
+    subst hyQ'
+    -- the original witness
+    have hP1 : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine.Nonsingular xP yP := hPb
+    have hQ1 : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine.Nonsingular xQ yQ := hQb
+    obtain ⟨F, F', hFfin, hF'fin, hFF', hK2F, hxPF, hyPF, hxQF, hyQF,
+      xS, yS, hS, hxSF', hySF', hxSF, xR, yR, hR, hxRF',
+      xPS, yPS, hPS, hPSeq, hxPSF', hyPSF', hxPSF,
+      xQR, yQR, hQR, hQReq, hQRS, hQRPS, hxQRF',
+      aP, aQ, haP, haQ, hA0, hval⟩ := hz.2 xP yP hP1 xQ yQ hQ1 hcv hcw
+    -- transported nonsingularity packages
+    have hS' := hns hS
+    have hR' := hns hR
+    have hPS' := hns hPS
+    have hQR' := hns hQR
+    -- membership/nonmembership transport helpers
+    have hmem : ∀ {F₀ : Subfield (AlgebraicClosure (ZMod q))}
+        {a : AlgebraicClosure (ZMod q)}, a ∈ F₀ →
+        (frobAlgHom q) a ∈ F₀.map (frobAlgHom q).toRingHom :=
+      fun ha => Subfield.mem_map.mpr ⟨_, ha, rfl⟩
+    have hnotmem : ∀ {F₀ : Subfield (AlgebraicClosure (ZMod q))}
+        {a : AlgebraicClosure (ZMod q)}, a ∉ F₀ →
+        (frobAlgHom q) a ∉ F₀.map (frobAlgHom q).toRingHom := by
+      intro F₀ a ha hmem'
+      obtain ⟨b, hb, hbe⟩ := Subfield.mem_map.mp hmem'
+      rw [hinj hbe] at hb
+      exact ha hb
+    -- the coordinate-ring endomorphism
+    set σA := coordEnd (Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).toAffine (frobAlgHom q).toRingHom hWA
+      with hσAdef
+    -- span transport for the two Miller elements
+    have haP' : Ideal.span {σA aP} =
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          (Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q)))).toAffine
+          ((frobAlgHom q) xPS) (Polynomial.C ((frobAlgHom q) yPS))) ^ p *
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          (Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q)))).toAffine
+          ((frobAlgHom q) xS) (Polynomial.C ((Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q)))).toAffine.negY
+              ((frobAlgHom q) xS) ((frobAlgHom q) yS)))) ^ p := by
+      have h1 := congrArg (Ideal.map σA) haP
+      rw [coordEnd_map_span_singleton, Ideal.map_mul, Ideal.map_pow,
+        Ideal.map_pow, coordEnd_map_XYIdeal, coordEnd_map_XYIdeal,
+        map_negY_self _ _ hWA] at h1
+      exact h1
+    have haQ' : Ideal.span {σA aQ} =
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          (Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q)))).toAffine
+          ((frobAlgHom q) xQR) (Polynomial.C ((frobAlgHom q) yQR))) ^ p *
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal
+          (Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q)))).toAffine
+          ((frobAlgHom q) xR) (Polynomial.C ((Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q)))).toAffine.negY
+              ((frobAlgHom q) xR) ((frobAlgHom q) yR)))) ^ p := by
+      have h1 := congrArg (Ideal.map σA) haQ
+      rw [coordEnd_map_span_singleton, Ideal.map_mul, Ideal.map_pow,
+        Ideal.map_pow, coordEnd_map_XYIdeal, coordEnd_map_XYIdeal,
+        map_negY_self _ _ hWA] at h1
+      exact h1
+    -- evaluation transport for the two sides of the value equation
+    have hAσ : (frobAlgHom q).toRingHom
+        (AdjoinRoot.evalEval hQR.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass
+              (Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q)))).toAffine xS) ^ p) *
+          AdjoinRoot.evalEval hR.left aP *
+          AdjoinRoot.evalEval hS.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass
+              (Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q)))).toAffine xR) ^ p) *
+          AdjoinRoot.evalEval hPS.left aQ) =
+        AdjoinRoot.evalEval hQR'.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass
+              (Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q)))).toAffine
+                ((frobAlgHom q) xS)) ^ p) *
+          AdjoinRoot.evalEval hR'.left (σA aP) *
+          AdjoinRoot.evalEval hS'.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass
+              (Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q)))).toAffine
+                ((frobAlgHom q) xR)) ^ p) *
+          AdjoinRoot.evalEval hPS'.left (σA aQ) := by
+      rw [map_mul, map_mul, map_mul,
+        coordEnd_evalEval _ _ hWA hQR.left hQR'.left,
+        coordEnd_evalEval _ _ hWA hR.left hR'.left,
+        coordEnd_evalEval _ _ hWA hS.left hS'.left,
+        coordEnd_evalEval _ _ hWA hPS.left hPS'.left,
+        coordEnd_XClass_pow _ _ hWA xS p, coordEnd_XClass_pow _ _ hWA xR p]
+      try simp only [AlgHom.toRingHom_eq_coe, RingHom.coe_coe]
+      try rfl
+    have hBσ : (frobAlgHom q).toRingHom
+        (AdjoinRoot.evalEval hQR.left aP *
+          AdjoinRoot.evalEval hR.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass
+              (Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q)))).toAffine xS) ^ p) *
+          AdjoinRoot.evalEval hS.left aQ *
+          AdjoinRoot.evalEval hPS.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass
+              (Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q)))).toAffine xR) ^ p)) =
+        AdjoinRoot.evalEval hQR'.left (σA aP) *
+          AdjoinRoot.evalEval hR'.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass
+              (Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q)))).toAffine
+                ((frobAlgHom q) xS)) ^ p) *
+          AdjoinRoot.evalEval hS'.left (σA aQ) *
+          AdjoinRoot.evalEval hPS'.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass
+              (Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q)))).toAffine
+                ((frobAlgHom q) xR)) ^ p) := by
+      rw [map_mul, map_mul, map_mul,
+        coordEnd_evalEval _ _ hWA hQR.left hQR'.left,
+        coordEnd_evalEval _ _ hWA hR.left hR'.left,
+        coordEnd_evalEval _ _ hWA hS.left hS'.left,
+        coordEnd_evalEval _ _ hWA hPS.left hPS'.left,
+        coordEnd_XClass_pow _ _ hWA xS p, coordEnd_XClass_pow _ _ hWA xR p]
+      try simp only [AlgHom.toRingHom_eq_coe, RingHom.coe_coe]
+      try rfl
+    -- the group equations, transported
+    have hPSeq' : (WeierstrassCurve.Affine.Point.some ((frobAlgHom q) xPS)
+          ((frobAlgHom q) yPS) hPS' :
+        (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).toAffine.Point) =
+        WeierstrassCurve.Affine.Point.some ((frobAlgHom q) xP)
+          ((frobAlgHom q) yP) (hns hP1) +
+        WeierstrassCurve.Affine.Point.some ((frobAlgHom q) xS)
+          ((frobAlgHom q) yS) hS' := by
+      have hadd := map_add (WeierstrassCurve.Affine.Point.map (W' := Wbar)
+          (S := ZMod q) (frobAlgHom q))
+        (WeierstrassCurve.Affine.Point.some xP yP hP1)
+        (WeierstrassCurve.Affine.Point.some xS yS hS)
+      have hmsPS := WeierstrassCurve.Affine.Point.map_some (W' := Wbar)
+        (S := ZMod q) (f := frobAlgHom q) (h := hPS)
+      have hmsP := WeierstrassCurve.Affine.Point.map_some (W' := Wbar)
+        (S := ZMod q) (f := frobAlgHom q) (h := hP1)
+      have hmsS := WeierstrassCurve.Affine.Point.map_some (W' := Wbar)
+        (S := ZMod q) (f := frobAlgHom q) (h := hS)
+      exact hmsPS.symm.trans ((congrArg _ hPSeq).trans (hadd.trans
+        (congrArg₂ (· + ·) hmsP hmsS)))
+    have hQReq' : (WeierstrassCurve.Affine.Point.some ((frobAlgHom q) xQR)
+          ((frobAlgHom q) yQR) hQR' :
+        (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).toAffine.Point) =
+        WeierstrassCurve.Affine.Point.some ((frobAlgHom q) xQ)
+          ((frobAlgHom q) yQ) (hns hQ1) +
+        WeierstrassCurve.Affine.Point.some ((frobAlgHom q) xR)
+          ((frobAlgHom q) yR) hR' := by
+      have hadd := map_add (WeierstrassCurve.Affine.Point.map (W' := Wbar)
+          (S := ZMod q) (frobAlgHom q))
+        (WeierstrassCurve.Affine.Point.some xQ yQ hQ1)
+        (WeierstrassCurve.Affine.Point.some xR yR hR)
+      have hmsQR := WeierstrassCurve.Affine.Point.map_some (W' := Wbar)
+        (S := ZMod q) (f := frobAlgHom q) (h := hQR)
+      have hmsQ := WeierstrassCurve.Affine.Point.map_some (W' := Wbar)
+        (S := ZMod q) (f := frobAlgHom q) (h := hQ1)
+      have hmsR := WeierstrassCurve.Affine.Point.map_some (W' := Wbar)
+        (S := ZMod q) (f := frobAlgHom q) (h := hR)
+      exact hmsQR.symm.trans ((congrArg _ hQReq).trans (hadd.trans
+        (congrArg₂ (· + ·) hmsQ hmsR)))
+    -- the β⁺ bound: the transported degree field
+    have h2f₀0 : 2 * Nat.lcm
+        (Nat.lcm (frobPeriod q xP) (frobPeriod q yP))
+        (Nat.lcm (frobPeriod q xQ) (frobPeriod q yQ)) ≠ 0 :=
+      Nat.mul_ne_zero two_ne_zero (Nat.lcm_ne_zero
+        (Nat.lcm_ne_zero (frobPeriod_pos q xP).ne'
+          (frobPeriod_pos q yP).ne')
+        (Nat.lcm_ne_zero (frobPeriod_pos q xQ).ne'
+          (frobPeriod_pos q yQ).ne'))
+    -- assemble the transported witness
+    refine ⟨F.map (frobAlgHom q).toRingHom, F'.map (frobAlgHom q).toRingHom,
+      ?_, ?_, ?_, ?_, hmem hxPF, hmem hyPF, hmem hxQF, hmem hyQF,
+      (frobAlgHom q) xS, (frobAlgHom q) yS, hS',
+      hmem hxSF', hmem hySF', hnotmem hxSF,
+      (frobAlgHom q) xR, (frobAlgHom q) yR, hR', hnotmem hxRF',
+      (frobAlgHom q) xPS, (frobAlgHom q) yPS, hPS', hPSeq',
+      hmem hxPSF', hmem hyPSF', hnotmem hxPSF,
+      (frobAlgHom q) xQR, (frobAlgHom q) yQR, hQR', hQReq',
+      fun h => hQRS (hinj h), fun h => hQRPS (hinj h), hnotmem hxQRF',
+      σA aP, σA aQ, haP', haQ', ?_, ?_⟩
+    · rw [Subfield.coe_map]
+      exact hFfin.image _
+    · rw [Subfield.coe_map]
+      exact hF'fin.image _
+    · intro a ha
+      obtain ⟨b, hb, rfl⟩ := Subfield.mem_map.mp ha
+      exact Subfield.mem_map.mpr ⟨b, hFF' hb, rfl⟩
+    · rw [frobPeriod_frobAlgHom, frobPeriod_frobAlgHom, frobPeriod_frobAlgHom,
+        frobPeriod_frobAlgHom]
+      exact frobFixed_le_map_frobAlgHom q h2f₀0 hK2F
+    · -- A' ≠ 0
+      have h := (map_ne_zero_iff _ hinj).mpr hA0
+      rw [hAσ] at h
+      exact h
+    · -- the transported value equation
+      have h := congrArg (⇑(frobAlgHom q).toRingHom) hval
+      rw [map_mul, hAσ, hBσ] at h
+      have hz' : ((Units.map (frobAlgHom q).toRingHom z :
+          (AlgebraicClosure (ZMod q))ˣ) : AlgebraicClosure (ZMod q)) =
+          (frobAlgHom q).toRingHom (z : AlgebraicClosure (ZMod q)) := rfl
+      rw [hz']
+      exact h
+
+end FrobeniusTransport
+
 /-- **Radical-triviality reduction** for a multiplicative pairing on a
 `2`-dimensional space over `ZMod p`: if a nonzero vector `x` pairs
 trivially with everything, then — by bilinearity, alternation, and the
@@ -8589,13 +9120,14 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
     -- setup — points, subfields, translates, Miller elements via the
     -- coefficientwise-Frobenius endomorphism of the coordinate ring —
     -- and the transported setup is admissible for `(σx, σy)` with value
-    -- `σz`). See HLEG-NOTES.md §6.
+    -- `σz`).  `IsWeilValue` is definitionally `weilValueProp`, so this
+    -- is exactly `weilValueProp_frobenius_transport`.
     have hwit : ∀ x y (z : (AlgebraicClosure (ZMod q))ˣ),
         IsWeilValue x y z →
         IsWeilValue ((frobeniusTorsionEnd q Wbar p) x)
           ((frobeniusTorsionEnd q Wbar p) y)
-          ((Units.map (frobAlgHom q).toRingHom) z) := by
-      sorry
+          ((Units.map (frobAlgHom q).toRingHom) z) := fun x y z hz =>
+      weilValueProp_frobenius_transport q Wbar p x y z hz
     intro x y
     exact heuniq _ _ _ (hwit x y (e x y) (hespec x y))
   exact ⟨e, hleg1, hleg2, hleg3, hleg4, hleg5, hleg6⟩
