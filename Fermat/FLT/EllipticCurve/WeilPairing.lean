@@ -8861,6 +8861,34 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                         Multiset.map_singleton, Multiset.prod_cons,
                         Multiset.prod_singleton] at htr
                       linear_combination hnormhelpP - htr
+                    have htrRN := congrArg (fun A : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) =>
+                      (A.map (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                        (Ln.map (fun ab : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                          T.2 - (ab.1 * T.1 + ab.2))).prod *
+                        (Vn.map (fun cv => T.1 - cv)).prod)).prod)
+                      (hfibpair xR₁ yR₁ hR₁.left)
+                    have htrQN := congrArg (fun A : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) =>
+                      (A.map (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                        (Ln.map (fun ab : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                          T.2 - (ab.1 * T.1 + ab.2))).prod *
+                        (Vn.map (fun cv => T.1 - cv)).prod)).prod)
+                      (hfibpair xQR₃ yQR₃ hQR₃.left)
+                    have htrRD := congrArg (fun A : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) =>
+                      (A.map (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                        (Ld.map (fun ab : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                          T.2 - (ab.1 * T.1 + ab.2))).prod *
+                        (Vd.map (fun cv => T.1 - cv)).prod)).prod)
+                      (hfibpair xR₁ yR₁ hR₁.left)
+                    have htrQD := congrArg (fun A : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) =>
+                      (A.map (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                        (Ld.map (fun ab : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                          T.2 - (ab.1 * T.1 + ab.2))).prod *
+                        (Vd.map (fun cv => T.1 - cv)).prod)).prod)
+                      (hfibpair xQR₃ yQR₃ hQR₃.left)
+                    set_option maxRecDepth 16384 in
+                    simp only [Multiset.insert_eq_cons, Multiset.map_cons,
+                      Multiset.map_singleton, Multiset.prod_cons,
+                      Multiset.prod_singleton] at htrRN htrQN htrRD htrQD
                     have hN := hcvtN.trans hwwN
                     have hD := hcvtD.trans hwwD
                     -- the sigma-norm identities at S₁ (curve equation)
