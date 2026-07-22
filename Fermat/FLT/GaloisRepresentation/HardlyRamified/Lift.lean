@@ -192,6 +192,235 @@ theorem exists_finite_lift (hℓ5 : 5 ≤ ℓ)
 
 set_option backward.isDefEq.respectTransparency false in
 open scoped TensorProduct in
+/-- **Flatness transfers along quotient specialization** (sorry node): if
+`ρ` is flat at `ℓ`, so is its base change to a quotient `R ⧸ P` of the
+coefficient ring. The eventual proof mirrors the residue-field transfer
+`IsHardlyRamified.isFlatAt_baseChange_residue` of `Threeadic.lean`: the
+open ideals of `R ⧸ P` are the images of the open ideals `J ⊇ P` of `R`
+(preimages along the continuous quotient map are open), the double base
+change `((R ⧸ P) ⧸ I) ⊗ ((R ⧸ P) ⊗ M)` collapses `Γ ℚ₃`-equivariantly to
+`(R ⧸ J) ⊗ M` (tensor cancellation `AlgebraTensorModule.cancelBaseChange`
+plus the double-quotient isomorphism `DoubleQuot.quotQuotEquivQuotOfLE`
+along `I = J.map (Ideal.Quotient.mk P)`), and
+`HasFlatProlongationAt.of_equiv` transports the Hopf-algebra witness. -/
+theorem isFlatAt_baseChange_quotient {R : Type u} [CommRing R]
+    [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
+    {M : Type v} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M]
+    (P : Ideal R) [P.IsPrime] [IsLocalRing (R ⧸ P)]
+    {ρ : GaloisRep ℚ R M}
+    (hflat : ρ.IsFlatAt
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime))) :
+    (ρ.baseChange (R ⧸ P)).IsFlatAt
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **Tameness at `2` transfers along base change** (generalization of the
+proven residue-field transfer `IsHardlyRamified.isTameAtTwo_baseChange_residue`
+in `Threeadic.lean` from finite residue fields to arbitrary topological
+coefficient algebras `B`, same proof): the rank-1 tame quadratic quotient
+`(π, δ)` of `ρ` at `2` base-changes to `(rid ∘ (π ⊗ 1), (δ ⊗ 1)ᵉ)` for
+`ρ ⊗ B`. -/
+lemma isTameAtTwo_baseChange {R : Type u} [CommRing R] [TopologicalSpace R]
+    [IsTopologicalRing R]
+    {M : Type v} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M]
+    (B : Type*) [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [Algebra R B] [ContinuousSMul R B]
+    {ρ : GaloisRep ℚ R M}
+    (htame : ∃ (π : M →ₗ[R] R) (_ : Function.Surjective π)
+      (δ : GaloisRep ℚ_[2] R R),
+      ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : M,
+        π (ρ.map (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
+        (AddSubgroup.inertia
+          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
+            AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1)) :
+    ∃ (π : (B ⊗[R] M) →ₗ[B] B) (_ : Function.Surjective π)
+      (δ : GaloisRep ℚ_[2] B B),
+      ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : B ⊗[R] M,
+        π ((ρ.baseChange B).map (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
+        (AddSubgroup.inertia
+          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
+            AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) := by
+  obtain ⟨π, hπsurj, δ, h⟩ := htame
+  -- the canonical identification `B ⊗[R] R ≃ₗ[B] B`
+  let e : (B ⊗[R] R) ≃ₗ[B] B := TensorProduct.AlgebraTensorModule.rid R B B
+  -- the base-changed projection and character
+  refine ⟨e.toLinearMap ∘ₗ LinearMap.baseChange B π, ?_,
+    (δ.baseChange B).conj e, ?_⟩
+  · -- surjectivity: hit `c` with `c ⊗ v₀` for a preimage `v₀` of `1`
+    intro c
+    obtain ⟨v₀, hv₀⟩ := hπsurj 1
+    refine ⟨c ⊗ₜ v₀, ?_⟩
+    simp [e, LinearMap.baseChange_tmul, hv₀,
+      TensorProduct.AlgebraTensorModule.rid_tmul]
+  · intro g w
+    refine ⟨?_, ?_, ?_⟩
+    · -- equivariance, by linearity on simple tensors
+      induction w using TensorProduct.induction_on with
+      | zero => simp
+      | tmul c v =>
+        have h1 := (h g v).1
+        simp only [LinearMap.comp_apply, LinearEquiv.coe_coe]
+        rw [show ((ρ.baseChange B).map (algebraMap ℚ ℚ_[2])) g (c ⊗ₜ v) =
+          c ⊗ₜ ((ρ.map (algebraMap ℚ ℚ_[2])) g v) from rfl,
+          LinearMap.baseChange_tmul, h1,
+          GaloisRep.conj_apply, LinearMap.baseChange_tmul]
+        rw [LinearEquiv.conj_apply, LinearMap.comp_apply, LinearMap.comp_apply,
+          LinearEquiv.coe_coe, LinearEquiv.coe_coe,
+          TensorProduct.AlgebraTensorModule.rid_symm_apply,
+          show ((δ.baseChange B) g : Module.End B (B ⊗[R] R)) =
+            LinearMap.baseChange B (δ g) from rfl,
+          LinearMap.baseChange_tmul,
+          TensorProduct.AlgebraTensorModule.rid_tmul]
+        rw [show (δ g) (π v) = π v • (δ g) 1 from by
+          conv_lhs => rw [show (π v : R) = π v • (1 : R) from by
+            rw [smul_eq_mul, mul_one]]
+          rw [map_smul]]
+        simp [e, TensorProduct.AlgebraTensorModule.rid_tmul, smul_smul,
+          mul_comm]
+      | add x y hx hy =>
+        simp only [map_add, hx, hy]
+    · -- unramifiedness: the kernel only grows under base change + conj
+      intro σ hσ
+      have hδσ : δ σ = 1 := (h 1 0).2.1 hσ
+      have : (δ.baseChange B).conj e σ = 1 := by
+        rw [GaloisRep.conj_apply]
+        rw [show (δ.baseChange B) σ =
+          LinearMap.baseChange B (δ σ) from rfl, hδσ]
+        refine LinearMap.ext fun c => ?_
+        simp
+      exact this
+    · -- the quadratic condition transfers through the monoid hom
+      intro g'
+      have hsq : δ g' * δ g' = 1 := (h 1 0).2.2 g'
+      calc (δ.baseChange B).conj e g' * (δ.baseChange B).conj e g'
+          = (δ.baseChange B).conj e (g' * g') := (map_mul _ _ _).symm
+        _ = 1 := by
+            rw [GaloisRep.conj_apply]
+            rw [show (δ.baseChange B) (g' * g') =
+              LinearMap.baseChange B (δ (g' * g')) from rfl,
+              map_mul δ, hsq]
+            refine LinearMap.ext fun c => ?_
+            simp
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **Hardly-ramifiedness transfers along quotient specialization of the
+coefficients** (DERIVED 2026-07-22, mirroring the proven residue-field
+transfer `exists_residual_isHardlyRamified` of `Threeadic.lean`): the
+determinant condition maps along `R → R ⧸ P` (`LinearMap.det_baseChange`),
+unramifiedness passes to any base change (existing instance), tameness at
+`2` by the proven transfer above, and flatness at `ℓ` by the sorried
+transfer leaf `isFlatAt_baseChange_quotient`. -/
+lemma isHardlyRamified_baseChange_quotient {R : Type u} [CommRing R]
+    [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
+    [Algebra ℤ_[ℓ] R]
+    {M : Type v} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M] {hdimM : Module.rank R M = 2}
+    (P : Ideal R) [P.IsPrime] [IsLocalRing (R ⧸ P)]
+    (hdimQ : Module.rank (R ⧸ P) ((R ⧸ P) ⊗[R] M) = 2)
+    {ρ : GaloisRep ℚ R M} (h : IsHardlyRamified hℓOdd hdimM ρ) :
+    IsHardlyRamified hℓOdd hdimQ (ρ.baseChange (R ⧸ P)) := by
+  constructor
+  · -- the determinant condition maps along the quotient map
+    intro g
+    have hdet : (ρ.baseChange (R ⧸ P)).det g =
+        algebraMap R (R ⧸ P) (ρ.det g) := by
+      show LinearMap.det ((ρ.baseChange (R ⧸ P)) g) = _
+      rw [show ((ρ.baseChange (R ⧸ P)) g :
+          Module.End (R ⧸ P) ((R ⧸ P) ⊗[R] M)) =
+        LinearMap.baseChange (R ⧸ P) (ρ g) from rfl,
+        LinearMap.det_baseChange]
+      rfl
+    rw [hdet, h.det g, ← IsScalarTower.algebraMap_apply]
+  · -- unramifiedness passes to the base change (existing instance)
+    intro p hp hpp
+    letI : ρ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat :=
+      h.isUnramified p hp hpp
+    infer_instance
+  · -- flatness at ℓ (sorried transfer leaf)
+    exact isFlatAt_baseChange_quotient P h.isFlat
+  · -- tameness at 2 (proven transfer)
+    exact isTameAtTwo_baseChange (R ⧸ P) h.isTameAtTwo
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **Hardly-ramifiedness transfers along conjugation** by a linear
+isomorphism of the representation space (PROVEN 2026-07-22): the
+determinant is conjugation-invariant, the kernels of the local
+representations only grow, flatness transports through
+`HasFlatProlongationAt.of_equiv` along the base-changed isomorphism, and
+the tame quadratic quotient is composed with the inverse isomorphism. -/
+lemma isHardlyRamified_conj {R : Type u} [CommRing R] [TopologicalSpace R]
+    [IsTopologicalRing R] [IsLocalRing R] [Algebra ℤ_[ℓ] R]
+    {M : Type v} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M]
+    {N : Type v} [AddCommGroup N] [Module R N] [Module.Finite R N]
+    [Module.Free R N]
+    {hdimM : Module.rank R M = 2} (hdimN : Module.rank R N = 2)
+    {ρ : GaloisRep ℚ R M} (h : IsHardlyRamified hℓOdd hdimM ρ)
+    (e : M ≃ₗ[R] N) :
+    IsHardlyRamified hℓOdd hdimN (ρ.conj e) := by
+  constructor
+  · -- determinant: conjugation-invariant
+    intro g
+    rw [GaloisRep.det_apply, GaloisRep.conj_apply, LinearEquiv.conj_apply,
+      LinearMap.comp_assoc, LinearMap.det_conj]
+    exact h.det g
+  · -- unramifiedness: the kernel of the local representation only grows
+    intro p hp hpp
+    have hun := h.isUnramified p hp hpp
+    refine ⟨le_trans hun.localInertiaGroup_le ?_⟩
+    intro σ hσ
+    have h1 : ρ.toLocal hp.toHeightOneSpectrumRingOfIntegersRat σ = 1 := hσ
+    show (ρ.conj e).toLocal hp.toHeightOneSpectrumRingOfIntegersRat σ = 1
+    rw [GaloisRep.toLocal_apply, GaloisRep.conj_apply,
+      ← GaloisRep.toLocal_apply, h1]
+    refine LinearMap.ext fun w => ?_
+    simp
+  · -- flatness: transport along the base-changed equivariant isomorphism
+    constructor
+    intro I hI
+    refine (h.isFlat.cond I hI).of_equiv _
+      (LinearEquiv.baseChange R (R ⧸ I) M N e).toAddEquiv ?_
+    intro g x
+    show (LinearEquiv.baseChange R (R ⧸ I) M N e)
+        (((ρ.baseChange (R ⧸ I)).toLocal
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : ℓ.Prime)) g) x) =
+      (((ρ.conj e).baseChange (R ⧸ I)).toLocal
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : ℓ.Prime)) g)
+        ((LinearEquiv.baseChange R (R ⧸ I) M N e) x)
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | add a b ha hb => simp only [map_add, ha, hb]
+    | tmul c m =>
+      simp only [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul,
+        LinearEquiv.baseChange_tmul, GaloisRep.conj_apply,
+        LinearEquiv.conj_apply_apply, LinearEquiv.symm_apply_apply]
+  · -- tameness at 2: compose the quotient with the inverse isomorphism
+    obtain ⟨π, hπsurj, δ, hδ⟩ := h.isTameAtTwo
+    refine ⟨π.comp (e.symm : N →ₗ[R] M), ?_, δ, ?_⟩
+    · intro r
+      obtain ⟨m, hm⟩ := hπsurj r
+      exact ⟨e m, by simp [hm]⟩
+    · intro g w
+      refine ⟨?_, (hδ 1 0).2.1, (hδ 1 0).2.2⟩
+      have h1 := (hδ g (e.symm w)).1
+      show π (e.symm ((ρ.conj e).map (algebraMap ℚ ℚ_[2]) g w)) =
+        δ g (π (e.symm w))
+      rw [GaloisRep.map_apply, GaloisRep.conj_apply,
+        LinearEquiv.conj_apply_apply, LinearEquiv.symm_apply_apply,
+        ← GaloisRep.map_apply, h1]
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
 /-- **B6a**: an irreducible hardly ramified mod-`ℓ` representation with
 `ℓ ≥ 5` admits a hardly ramified `ℓ`-adic lift over a characteristic-zero
 local topological domain finite over `ℤ_ℓ`.
@@ -270,12 +499,17 @@ theorem exists_hardlyRamifiedLift (hℓ5 : 5 ≤ ℓ)
   let e : (R ⧸ P) ⊗[R] (Fin 2 → R) ≃ₗ[R ⧸ P] (Fin 2 → R ⧸ P) :=
     TensorProduct.piScalarRight R (R ⧸ P) (R ⧸ P) (Fin 2)
   let ρO : FramedGaloisRep ℚ (R ⧸ P) (Fin 2) := (ρR.baseChange (R ⧸ P)).conj e
-  -- Specialization stability of hardly-ramifiedness (sorried step): the
-  -- determinant and unramifiedness conditions are immediate; flatness and
-  -- the tame quotient at `2` transfer as in `Threeadic.lean`'s base-change
-  -- arguments, with the residue field replaced by the quotient `R ⧸ P`.
-  have hHRO : IsHardlyRamified hℓOdd (rank_finTwoFun (R ⧸ P)) ρO := by
-    sorry
+  -- Specialization stability of hardly-ramifiedness: established for the
+  -- base change by `isHardlyRamified_baseChange_quotient` (determinant,
+  -- unramifiedness and tameness proven; flatness the sorried transfer
+  -- leaf `isFlatAt_baseChange_quotient`), then transported through the
+  -- standard-basis framing `e` by `isHardlyRamified_conj`.
+  have hrankQ : Module.rank (R ⧸ P) ((R ⧸ P) ⊗[R] (Fin 2 → R)) = 2 := by
+    rw [Module.rank_baseChange, rank_finTwoFun]
+    simp
+  have hHRO : IsHardlyRamified hℓOdd (rank_finTwoFun (R ⧸ P)) ρO :=
+    isHardlyRamified_conj hℓOdd (rank_finTwoFun (R ⧸ P))
+      (isHardlyRamified_baseChange_quotient hℓOdd P hrankQ hρR) e
   -- Step 4: the reduction map factors through the quotient: `ker πR` is
   -- maximal (its quotient is a finite domain, hence a field), so it is the
   -- maximal ideal of the local ring `R`, which contains the prime `P`.
