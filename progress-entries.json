@@ -1397,5 +1397,35 @@
     "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
     "wip": true,
     "text": "`infinite_setOf_isArithFrobAt_zpowers` (stated 2026-07-22, the analytic cyclic core after the PROVEN Deuring reduction): for number fields E/F with Gal(E/F) = ⟨τ⟩, infinitely many degree-one places of F carry a prime with IsArithFrobAt τ. Dirichlet-AP structurally insufficient (docstring records the reduction analysis); the classical route is the Dedekind-zeta pole / Hecke L-function nonvanishing, or Chebotarev's field-crossing with zero-density of higher-degree places."
+  },
+  {
+    "name": "exists_universal_hardlyRamifiedDeformation",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
+    "text": "`exists_universal_hardlyRamifiedDeformation` (`Lift.lean`, own work) — B6a-core stratum 1/3 (2026-07-22): the hardly ramified deformation problem of an irreducible ρbar (ℓ ≥ 5) has a universal object in Mazur's category (structure `HardlyRamifiedDeformation`: Noetherian local adic complete ℤ_ℓ-algebra + hardly ramified framed rep + reduction; `IsUniversal` = ∃! trace-compatible map to every datum). Mazur representability + Ramakrishna flat condition + Carayol trace generation (oddness ⇒ absolute irreducibility)",
+    "fullname": "GaloisRepresentation.exists_universal_hardlyRamifiedDeformation"
+  },
+  {
+    "name": "moduleFinite_of_isUniversal",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
+    "text": "`moduleFinite_of_isUniversal` (`Lift.lean`, own work) — B6a-core stratum 2/3 (2026-07-22): the universal hardly ramified deformation ring is a finite ℤ_ℓ-module — the potential-modularity / Taylor–Wiles–Kisin input of Khare–Wintenberger (residual modularity bypassed via Moret-Bailly)",
+    "fullname": "GaloisRepresentation.moduleFinite_of_isUniversal"
+  },
+  {
+    "name": "algebraMap_injective_of_isUniversal",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
+    "text": "`algebraMap_injective_of_isUniversal` (`Lift.lean`, own work) — B6a-core stratum 3/3 (2026-07-22): the universal ring has characteristic zero — Böckle's presentation bound g − r ≥ 1 (global Euler characteristic + Poitou–Tate) forces Krull dimension ≥ 1, and a ℤ_ℓ-finite ring of dimension ≥ 1 cannot kill ℓ",
+    "fullname": "GaloisRepresentation.algebraMap_injective_of_isUniversal"
+  },
+  {
+    "name": "exists_numberField_eigensystem",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
+    "text": "`exists_numberField_eigensystem` (`Family.lean`, own work) — B6b stratum 1/2 (2026-07-22): the Frobenius charpolys of a hardly ramified p-adic rep descend to a NUMBER field (the Hecke field) — trace-level shadow of 'congruent to a cuspidal eigenform' (mathlib pin has no Hecke operators/eigenforms, so the eigenform split can only be stated at trace level)",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.exists_numberField_eigensystem"
+  },
+  {
+    "name": "exists_family_of_eigensystem",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
+    "text": "`exists_family_of_eigensystem` (`Family.lean`, own work) — B6b stratum 2/2 (2026-07-22): a hardly ramified rep with a number-field eigensystem spreads into a compatible family with hardly ramified odd members — Eichler–Shimura/Deligne construction + local-global compatibility (Carayol, Saito). Docstring records why the alternative 'abstract family inheritance' split is unsound (Kummer-class counterexample)",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.exists_family_of_eigensystem"
   }
 ]

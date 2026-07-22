@@ -123,7 +123,106 @@ def IsInHardlyRamifiedFamily (ρ : GaloisRep ℚ R V) : Prop :=
         Fin 2 → AlgebraicClosure ℚ_[p]),
       (ρ.baseChange (AlgebraicClosure ℚ_[p])).conj r' = σ hp ψ)
 
-/-- **B6b** (sorry node): a hardly ramified `p`-adic representation over a
+/-- **Eigensystem stratum** (sorry node): the Frobenius characteristic
+polynomials of a hardly ramified `p`-adic representation over a
+characteristic-zero coefficient ring embedded in `ℚ̄_p` descend, away
+from a finite set of places, to a single **number field** `E`.
+
+This is the trace-level shadow of "`ρ` is congruent to a cuspidal Hecke
+eigenform": the number field `E` is the Hecke field, `Pv v` is
+`X² − a_v X + q_v`, and the finite exceptional set is the level. The
+genuine content is the *algebraicity and finiteness* of the trace field:
+the Frobenius traces of `ρ` live in the module-finite `ℤ_p`-algebra `R`,
+hence in a finite extension of `ℚ_p` — but a finite extension of `ℚ_p`
+contains algebraic subfields of infinite degree over `ℚ`, so the
+existence of a *number* field `E` capturing all of them (with a single
+embedding `ψ` matching the two sides) is not formal; it is where the
+automorphy of `ρ` first enters (Hecke eigenvalues are algebraic integers
+generating a finite extension).
+
+VOCABULARY NOTE (2026-07-22): the mathlib pin has modular forms
+(`CuspForm` etc.) but no Hecke operators, no eigenforms and no attached
+Galois representations, so the requested "cuspidal eigenform congruence"
+split can only be stated at this trace level; this leaf is its faithful
+shadow in the available vocabulary. -/
+theorem exists_numberField_eigensystem
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ) :
+    ∃ (E : Type v) (_ : Field E) (_ : NumberField E)
+      (ψ : E →+* AlgebraicClosure ℚ_[p])
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+      (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E),
+      ∀ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ S →
+        (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+          (Pv v).map ψ :=
+  sorry
+
+/-- **Spreading stratum** (sorry node): a hardly ramified `p`-adic
+representation whose Frobenius characteristic polynomials descend to a
+number field `E` spreads out into a compatible family of Galois
+representations with hardly ramified odd-residue-characteristic members,
+containing `ρ` as its member at some embedding of (a possibly larger)
+number field into `ℚ̄_p`.
+
+This is the construction of the compatible family attached to the
+eigensystem — Eichler–Shimura/Deligne's construction of the `λ`-adic
+representations attached to the eigenform underlying the eigensystem,
+plus local-global compatibility (Carayol, Saito) and the weight-2,
+level-2 analysis showing each odd-residue member is hardly ramified.
+The eigensystem hypothesis `heig` is the data the construction consumes;
+the conclusion is stated verbatim as the automorphy core of
+`mem_isCompatible` below.
+
+DECOMPOSITION AUDIT (2026-07-22, recording a rejected alternative): the
+seemingly natural split "(i) `ρ` lies in *some* compatible family; (ii)
+any compatible family with one hardly ramified member has hardly
+ramified odd members" is UNSOUND at (ii): `GaloisRepFamily.isCompatible`
+pins only charpoly data outside a finite set, so a compatible family
+containing the hardly ramified member `1 ⊕ χ_p` can place at another
+prime a *non-semisimple* extension of `1` by `χ_ℓ` ramified at an
+auxiliary prime (a Kummer class of `5`, say) — same Frobenius
+charpolys, but ramified outside `{2, ℓ}`, hence not isomorphic to any
+hardly ramified representation. The eigensystem/spreading split used
+here avoids quantifying over abstract families in the hypotheses. -/
+theorem exists_family_of_eigensystem
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (heig : ∃ (E : Type v) (_ : Field E) (_ : NumberField E)
+      (ψ : E →+* AlgebraicClosure ℚ_[p])
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+      (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E),
+      ∀ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ S →
+        (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+          (Pv v).map ψ) :
+    ∃ (E : Type v) (_ : Field E) (_ : NumberField E) (σ : GaloisRepFamily ℚ E 2),
+      σ.isCompatible ∧
+      (∀ {ℓ : ℕ} (hℓ : Fact ℓ.Prime) (hℓodd : Odd ℓ) (φ : E →+* AlgebraicClosure ℚ_[ℓ]),
+        ∃ (A : Type u) (_ : CommRing A) (_ : TopologicalSpace A) (_ : IsTopologicalRing A)
+          (_ : IsLocalRing A) (_ : Algebra ℤ_[ℓ] A) (_ : Module.Finite ℤ_[ℓ] A)
+          (_ : Module.Free ℤ_[ℓ] A) (_ : IsDomain A) (_ : Algebra A (AlgebraicClosure ℚ_[ℓ]))
+          (_ : IsScalarTower ℤ_[ℓ] A (AlgebraicClosure ℚ_[ℓ])) (_ : IsModuleTopology ℤ_[ℓ] A)
+          (_ : ContinuousSMul A (AlgebraicClosure ℚ_[ℓ]))
+          (_ : Function.Injective (algebraMap A (AlgebraicClosure ℚ_[ℓ])))
+          (W : Type v) (_ : AddCommGroup W) (_ : Module A W) (_ : Module.Finite A W)
+          (_ : Module.Free A W) (hW : Module.rank A W = 2)
+          (τ : GaloisRep ℚ A W)
+          (r : AlgebraicClosure ℚ_[ℓ] ⊗[A] W ≃ₗ[AlgebraicClosure ℚ_[ℓ]]
+            Fin 2 → AlgebraicClosure ℚ_[ℓ]),
+          IsHardlyRamified hℓodd hW τ ∧
+          (τ.baseChange (AlgebraicClosure ℚ_[ℓ])).conj r = σ hℓ φ) ∧
+      (∃ (ψ : E →+* AlgebraicClosure ℚ_[p])
+        (r' : AlgebraicClosure ℚ_[p] ⊗[R] V ≃ₗ[AlgebraicClosure ℚ_[p]]
+          Fin 2 → AlgebraicClosure ℚ_[p]),
+        (ρ.baseChange (AlgebraicClosure ℚ_[p])).conj r' = σ hp ψ) :=
+  sorry
+
+/-- **B6b**: a hardly ramified `p`-adic representation over a
 coefficient ring of characteristic zero (`hZinj`: `ℤ_[p]` embeds — the
 audit hypothesis added 2026-07-22, without which the statement is false;
 see the module docstring) lives in a compatible family of Galois
@@ -137,14 +236,17 @@ superseded by the hypothesis `hZinj`):
 
 1. `hembed` — from `hZinj`, the coefficient embedding `R ↪ ℚ̄_p`
    (injective, `ℤ_[p]`-compatible, continuous) is PROVEN.
-2. `hcore` — the automorphy core: given the fixed continuous embedding
+2. the automorphy core — given the fixed continuous embedding
    `R ↪ ℚ̄_p` (as the `Algebra R ℚ̄_p` instance `ia` in context), the
    hardly ramified `ρ` extends to a compatible family `σ` over a number
    field `E` with hardly ramified odd members, and `ρ ⊗ ℚ̄_p` is the
-   member at some `ψ : E →+* ℚ̄_p`. This is the deep content
-   (modularity of hardly ramified representations plus the compatible
-   family attached to the resulting automorphic form); the coefficient
-   bookkeeping of the original package has been stripped off it.
+   member at some `ψ : E →+* ℚ̄_p`. FURTHER DECOMPOSED (2026-07-22)
+   into the two sorried strata above: the eigensystem stratum
+   (`exists_numberField_eigensystem` — the Frobenius data descend to a
+   number field, i.e. the Hecke-field/eigenform-congruence content) and
+   the spreading stratum (`exists_family_of_eigensystem` — the
+   compatible family attached to the eigensystem, i.e.
+   Eichler–Shimura/Deligne plus local-global compatibility).
 
 NOTE (elaboration): the final repackaging must be `refine` +
 a deferred `exact` — an anonymous-constructor `exact ⟨…, ψ, r', hψ⟩`
@@ -186,32 +288,13 @@ theorem mem_isCompatible (hZinj : Function.Injective (algebraMap ℤ_[p] R))
   letI ia : Algebra R (AlgebraicClosure ℚ_[p]) := i.toAlgebra
   haveI ics : ContinuousSMul R (AlgebraicClosure ℚ_[p]) :=
     continuousSMul_of_algebraMap _ _ hconti
-  -- Step 2 (the automorphy core, sorried): over the fixed embedding, `ρ`
-  -- spreads out into a compatible family with hardly ramified odd members.
-  have hcore : IsHardlyRamified hpodd hv ρ →
-      ∃ (E : Type v) (_ : Field E) (_ : NumberField E) (σ : GaloisRepFamily ℚ E 2),
-      σ.isCompatible ∧
-      (∀ {ℓ : ℕ} (hℓ : Fact ℓ.Prime) (hℓodd : Odd ℓ) (φ : E →+* AlgebraicClosure ℚ_[ℓ]),
-        ∃ (A : Type u) (_ : CommRing A) (_ : TopologicalSpace A) (_ : IsTopologicalRing A)
-          (_ : IsLocalRing A) (_ : Algebra ℤ_[ℓ] A) (_ : Module.Finite ℤ_[ℓ] A)
-          (_ : Module.Free ℤ_[ℓ] A) (_ : IsDomain A) (_ : Algebra A (AlgebraicClosure ℚ_[ℓ]))
-          (_ : IsScalarTower ℤ_[ℓ] A (AlgebraicClosure ℚ_[ℓ])) (_ : IsModuleTopology ℤ_[ℓ] A)
-          (_ : ContinuousSMul A (AlgebraicClosure ℚ_[ℓ]))
-          (_ : Function.Injective (algebraMap A (AlgebraicClosure ℚ_[ℓ])))
-          (W : Type v) (_ : AddCommGroup W) (_ : Module A W) (_ : Module.Finite A W)
-          (_ : Module.Free A W) (hW : Module.rank A W = 2)
-          (τ : GaloisRep ℚ A W)
-          (r : AlgebraicClosure ℚ_[ℓ] ⊗[A] W ≃ₗ[AlgebraicClosure ℚ_[ℓ]]
-            Fin 2 → AlgebraicClosure ℚ_[ℓ]),
-          IsHardlyRamified hℓodd hW τ ∧
-          (τ.baseChange (AlgebraicClosure ℚ_[ℓ])).conj r = σ hℓ φ) ∧
-      (∃ (ψ : E →+* AlgebraicClosure ℚ_[p])
-        (r' : AlgebraicClosure ℚ_[p] ⊗[R] V ≃ₗ[AlgebraicClosure ℚ_[p]]
-          Fin 2 → AlgebraicClosure ℚ_[p]),
-        (ρ.baseChange (AlgebraicClosure ℚ_[p])).conj r' = σ hp ψ) := by
-    sorry
-  obtain ⟨E, iE, iNE, σ, hσcompat, hσodd, ψ, r', hψ⟩ := hcore hρ
   have hinj' : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])) := hinj
+  -- Step 2 (the automorphy core, decomposed 2026-07-22): the eigensystem
+  -- stratum descends the Frobenius data to a number field; the spreading
+  -- stratum builds the compatible family attached to that eigensystem.
+  obtain ⟨E, iE, iNE, σ, hσcompat, hσodd, ψ, r', hψ⟩ :=
+    exists_family_of_eigensystem hpodd hv hZinj hinj' hρ
+      (exists_numberField_eigensystem hpodd hv hZinj hinj' hρ)
   unfold IsInHardlyRamifiedFamily
   refine ⟨E, iE, iNE, σ, hσcompat, hσodd, ia, ics, hinj', ψ, r', ?_⟩
   exact hψ
