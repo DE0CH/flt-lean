@@ -200,16 +200,21 @@ def main() -> int:
         )
 
     # Deyao (2026-07-20, orchestrator framing 2026-07-22): the `wip`/`○`
-    # pointer in progress-entries.json marks the node(s) currently being
-    # worked on. Under orchestration it should track agent ownership and
-    # be refreshed at integration points via progress-entries.json +
-    # python3 progress-tree.py, never by hand-editing PROGRESS.md.
+    # pointer in progress-entries.json is the live ownership map — one
+    # cluster of marks per running agent — updated at BOTH transition
+    # moments (dispatch and completion/integration), always via
+    # progress-entries.json + the snapshot pipeline, never by
+    # hand-editing PROGRESS.md.
     print(
-        "WORK-IN-PROGRESS POINTER: at integration points, update "
-        "progress-entries.json's `wip` flags to match reality — set "
-        "`wip: true` on nodes owned by running agents or queued next, "
-        "clear it on nodes whose work was integrated or abandoned — "
-        "then regenerate PROGRESS.md with progress-tree.py.",
+        "WORK-IN-PROGRESS POINTER: keep progress-entries.json's `wip` "
+        "flags current at BOTH transitions — AT DISPATCH: immediately set "
+        "`wip: true` on exactly the node(s) the dispatched (or "
+        "re-dispatched) agent owns; AT COMPLETION/INTEGRATION: clear "
+        "`wip` on nodes the agent no longer owns and set it on newly "
+        "created leaves that got new owners. Multiple concurrent `wip` "
+        "marks are EXPECTED (one cluster per running agent) — the flags "
+        "are the live ownership map; regenerate PROGRESS.md via the "
+        "snapshot pipeline after each such update.",
         file=sys.stderr,
     )
     # Deyao (2026-07-18): the continuation must keep the user informed
