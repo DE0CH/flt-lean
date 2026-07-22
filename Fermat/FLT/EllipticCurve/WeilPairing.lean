@@ -3008,7 +3008,7 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
       rw [frobenius_def, frobenius_def, map_pow]
 
 
-set_option maxHeartbeats 4000000 in
+set_option maxHeartbeats 16000000 in
 /-- **The `μ_p`-valued Weil pairing over a finite field** (sorry node —
 the canonical arithmetic input): on the `p`-torsion of an elliptic
 curve over `𝔽_q` (`p ≠ q`) there is a multiplicatively bilinear,
@@ -8825,6 +8825,44 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                         (xQR₁ - xPS₁) * (xR₁ - xPS₁) * (xR₃ - xPS₁) *
                           (xQR₃ - xPS₁) * ((xM - xPS₁) * (xM - xPS₁)) := by
                       linear_combination hwvP - hcvtPS
+                    have hnormS' :
+                        ((yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) *
+                          (yS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))) *
+                        ((Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) *
+                          (Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))) =
+                        (xQR₁ - xS₁) * (xR₁ - xS₁) * (xR₃ - xS₁) *
+                          (xQR₃ - xS₁) * ((xM - xS₁) * (xM - xS₁)) := by
+                      have htr := congrArg (fun A : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) =>
+                        (A.map (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                        (T.2 - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * T.1 + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) *
+                        (T.2 - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * T.1 + (Wb.toAffine.negY xR₁ yR₁ -
+                          (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁))))).prod)
+                        (hfibpair xS₁ yS₁ hS₁.left)
+                      set_option maxRecDepth 16384 in
+                      simp only [Multiset.insert_eq_cons, Multiset.map_cons,
+                        Multiset.map_singleton, Multiset.prod_cons,
+                        Multiset.prod_singleton] at htr
+                      linear_combination hnormhelpS - htr
+                    have hnormP' :
+                        ((yPS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) *
+                          (yPS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))) *
+                        ((Wb.toAffine.negY xPS₁ yPS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) *
+                          (Wb.toAffine.negY xPS₁ yPS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))) =
+                        (xQR₁ - xPS₁) * (xR₁ - xPS₁) * (xR₃ - xPS₁) *
+                          (xQR₃ - xPS₁) * ((xM - xPS₁) * (xM - xPS₁)) := by
+                      have htr := congrArg (fun A : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) =>
+                        (A.map (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                        (T.2 - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * T.1 + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) *
+                        (T.2 - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * T.1 + (Wb.toAffine.negY xR₁ yR₁ -
+                          (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁))))).prod)
+                        (hfibpair xPS₁ yPS₁ hPS₁.left)
+                      set_option maxRecDepth 16384 in
+                      simp only [Multiset.insert_eq_cons, Multiset.map_cons,
+                        Multiset.map_singleton, Multiset.prod_cons,
+                        Multiset.prod_singleton] at htr
+                      linear_combination hnormhelpP - htr
+                    have hN := hcvtN.trans hwwN
+                    have hD := hcvtD.trans hwwD
                     -- the sigma-norm identities at S₁ (curve equation)
                     have hnormA : (yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) *
                         (Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) =
