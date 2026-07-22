@@ -2824,6 +2824,37 @@ theorem WeierstrassCurve.isUnramifiedAt_of_hasMultiplicativeReduction
 
 open TensorProduct in
 open scoped WeierstrassCurve.Affine in
+/-- **The DVR finite-flat torsion package** — the `∃`-shape shared by
+the vendored good-reduction leaf `torsion_flat_of_good_reduction`, the
+peu-ramifiée node below, and both sides of its local/descent
+decomposition: a commutative Hopf algebra `H` over `R`, finite flat as
+an `R`-module, with étale generic fibre `K ⊗[R] H`, whose group of
+`Ksep`-points (under convolution) is `Gal(Ksep/K)`-equivariantly
+isomorphic to the `n`-torsion of `E(Ksep)`. Naming the shape once as a
+`Prop` lets the peu-ramifiée decomposition below quote it at TWO
+different DVRs (the completed integers `𝒪[adicCompletion ℚ v_p]` for
+the local Tate/Kummer content, the localization `ℤ_(p)` for the
+descended global package) without restating the package. -/
+def WeierstrassCurve.TorsionFlatPackage
+    (R : Type*) [CommRing R] (K : Type*) [Field K] [Algebra R K]
+    (E : WeierstrassCurve K) (n : ℕ)
+    (Ksep : Type*) [Field Ksep] [Algebra K Ksep] [DecidableEq Ksep] : Prop :=
+  ∃ (H : Type) (_ : CommRing H) (_ : HopfAlgebra R H)
+    (_ : Module.Finite R H) (_ : Module.Flat R H)
+    (_ : Algebra.Etale K (K ⊗[R] H))
+    (f : Additive (WithConv ((K ⊗[R] H) →ₐ[K] Ksep)) ≃+
+      AddSubgroup.torsionBy (E⁄Ksep).Point (n : ℤ)),
+    ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : (K ⊗[R] H) →ₐ[K] Ksep),
+      (f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) :
+        (E⁄Ksep).Point) =
+        WeierstrassCurve.Affine.Point.map σ.toAlgHom
+          (f (Additive.ofMul (WithConv.toConv φ)))
+
+open TensorProduct ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
 /-- **The peu-ramifiée finite-flat package at multiplicative primes**
 (sorry node — the TATE-THEORETIC content, stated in the SAME
 DVR-package shape as the vendored good-reduction leaf so that the
@@ -2835,7 +2866,41 @@ group scheme over `ℤ_(p)`. Content: the Tate parameter is a `p`-th
 power times a unit (`p ∣ v_p(j) = -v_p(q_E)`), so the Tate-curve
 extension `0 → μ_p → E[p] → ℤ/p → 0` over `ℚ_p` is *peu ramifiée* in
 the sense of Serre, and such extensions prolong to finite flat group
-schemes over `ℤ_p`. -/
+schemes over `ℤ_p`.
+
+DECOMPOSED (2026-07-22) into two sorried leaves with the assembly
+written and compiling:
+
+* `hloc` — the LOCAL leaf: the same `TorsionFlatPackage` over the
+  COMPLETED integers `𝒪[adicCompletion ℚ v_p]` for the base-changed
+  curve, with local (`Gal(ℚ̄_pˆ/ℚ_pˆ)`) equivariance. This is the pure
+  Tate/Kummer content, to be proven with the `TateSepClosure`
+  uniformization machinery (`exists_tateEquivSepClosure`; the
+  reduction instance transfers by
+  `hasMultiplicativeReduction_adicCompletion`). Split case: `p ∣
+  v_p(q_E) = -v_p(j)` writes the Tate parameter as `u·π^{pm}` with `u`
+  a unit, so `E[p] = ⟨ζ_p, q^{1/p}⟩` is a *peu-ramifiée* extension of
+  `ℤ/p` by `μ_p`, and the finite flat model is the explicit Kummer
+  group scheme `∐_{i<p} Spec 𝒪[x]/(x^p − uⁱ)` (Hopf algebra
+  `∏_{i<p} 𝒪[x]/(x^p − uⁱ)`, finite free of rank `p²`, étale generic
+  fibre in characteristic zero). Nonsplit case: the quadratic
+  unramified twist of the split model (unramified descent preserves
+  finite flatness).
+
+* `hdesc` — the DESCENT leaf: a package over the completed integers
+  descends to `ℤ_(p) = ℚ ∩ ℤ_p` with GLOBALLY equivariant points. The
+  generic fibre is the global torsion algebra (the étale `ℚ`-algebra
+  of functions on the finite Galois set `E[p](ℚ̄)`, whose `ℚ̄`-points
+  are globally equivariantly `E[p]` — no local input needed there);
+  the model is the lattice intersection of this algebra with the local
+  Hopf model inside its completed base change (finite flat because
+  finitely generated torsion-free over the DVR `ℤ_(p)`, a Hopf order
+  because both intersectands are); the local-vs-global points
+  comparison rides the chosen embedding `ℚ̄ ↪ ℚ̄_p` exactly as in
+  layer C of `FlatProlongation`
+  (`algHomEquivOfFinite`/`mem_range_algebraicClosureMap_of_isIntegral`)
+  together with the torsion-point transport `algClosureEmbeddingRat`
+  already used by the unramifiedness glue in this file. -/
 theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp' : p.Prime)
     [Fact p.Prime] (hp2 : p ≠ 2)
@@ -2861,8 +2926,55 @@ theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
         (f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) :
           (E⁄(AlgebraicClosure ℚ)).Point) =
           WeierstrassCurve.Affine.Point.map σ.toAlgHom
-            (f (Additive.ofMul (WithConv.toConv φ))) :=
-  sorry
+            (f (Additive.ofMul (WithConv.toConv φ))) := by
+  classical
+  -- LOCAL leaf (sorry node): the peu-ramifiée package over the
+  -- COMPLETED integers — the pure Tate/Kummer content
+  have hloc : WeierstrassCurve.TorsionFlatPackage
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)))
+      p
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
+    sorry
+  -- DESCENT leaf (sorry node): the completed-integers package descends
+  -- to `ℤ_(p)` with globally equivariant points
+  have hdesc : WeierstrassCurve.TorsionFlatPackage
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)))
+      p
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) →
+      ∃ (H : Type) (_ : CommRing H)
+        (_ : HopfAlgebra
+          (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H)
+        (_ : Module.Finite
+          (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H)
+        (_ : Module.Flat
+          (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H)
+        (_ : Algebra.Etale ℚ
+          (ℚ ⊗[Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H))
+        (f : Additive (WithConv
+          ((ℚ ⊗[Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H)
+            →ₐ[ℚ] AlgebraicClosure ℚ)) ≃+
+          AddSubgroup.torsionBy (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ)),
+        ∀ (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+          (φ : (ℚ ⊗[Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H)
+            →ₐ[ℚ] AlgebraicClosure ℚ),
+          (f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) :
+            (E⁄(AlgebraicClosure ℚ)).Point) =
+            WeierstrassCurve.Affine.Point.map σ.toAlgHom
+              (f (Additive.ofMul (WithConv.toConv φ))) := by
+    sorry
+  exact hdesc hloc
 
 open TensorProduct in
 open scoped WeierstrassCurve.Affine in

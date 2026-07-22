@@ -21,6 +21,15 @@ Deliberately NO `stop_hook_active` guard: while the exit condition is
 unmet the hook keeps blocking (the built-in block cap /
 CLAUDE_CODE_STOP_HOOK_BLOCK_CAP bounds a single turn); Deyao terminates
 the loop externally when he chooses.
+
+ORCHESTRATOR MODE (Deyao, 2026-07-22): the driven session now
+ORCHESTRATES parallel subagents that edit disjoint Lean files, then
+integrates, verifies, and commits their results. The blocking messages
+below are therefore framed for an orchestrator, not a hands-on prover:
+uncommitted files and unbuilt modules are usually agents' work-in-flight
+(routine churn), reported as INFORMATION — committing half-edits or
+rebuilding per-iteration would be wrong. The mechanics (session guard,
+daemon query, exit-code semantics, endgame build) are unchanged.
 """
 
 import json
@@ -84,8 +93,9 @@ def main() -> int:
     except Exception as exc:
         sys.stderr.write(
             f"Stop hook could not query the lean daemon ({exc}); the loop "
-            "exit condition is unverified. Fix the daemon (fermat/"
-            "lean-daemon.py, log in fermat/.lean-daemon.log) and continue "
+            "exit condition is unverified. Get the daemon healthy "
+            "(dispatch an infra agent if nontrivial): fermat/"
+            "lean-daemon.py, log in fermat/.lean-daemon.log; then continue "
             "the loop.\n"
         )
         return 2
@@ -123,8 +133,8 @@ def main() -> int:
                 sys.stderr.write(f"  {line}\n")
         return 2
 
-    # Uncommitted work must be committed before (or as) the next iteration
-    # begins, so the git history reflects each iteration of the loop.
+    # Uncommitted changes: INFORMATION for the orchestrator, not an order
+    # to commit everything — most dirty files are subagents' work-in-flight.
     dirty = ""
     try:
         status = subprocess.run(
@@ -140,11 +150,12 @@ def main() -> int:
 
     if dirty:
         print(
-            "FIRST: the working tree has uncommitted changes — commit "
-            "and push the completed work NOW (with a descriptive "
-            "message and updated PROGRESS.md) before doing anything "
-            "else, so the git history reflects this iteration of the "
-            "loop. Uncommitted files:",
+            "UNCOMMITTED CHANGES (information): the working tree is "
+            "dirty. Files owned by still-running agents are work-in-"
+            "flight and must NOT be committed. Commit only integrated "
+            "AND verified work: your own bookkeeping files and the "
+            "outputs of agents that have completed and been verified. "
+            "Dirty files:",
             file=sys.stderr,
         )
         for line in dirty.splitlines()[:8]:
@@ -152,9 +163,10 @@ def main() -> int:
 
     if unbuilt:
         print(
-            f"UNBUILT MODULES: {len(unbuilt)} project module(s) have no "
-            ".olean yet, so the daemon could not check them — build them "
-            "(e.g. `lake build <module>`) as part of this iteration:",
+            f"UNBUILT MODULES (information): {len(unbuilt)} project "
+            "module(s) have no .olean yet, so the daemon could not check "
+            "them — expected during agent churn. Run a consolidated "
+            "rebuild at integration points, not per-iteration:",
             file=sys.stderr,
         )
         for mod in unbuilt[:5]:
@@ -168,9 +180,12 @@ def main() -> int:
         print(
             f"Not done: the Lean compiler reports {len(sorries)} sorried "
             f"declaration(s) in the FLT dependency tree{stale_note}. "
-            "Continue the loop (resolve or decompose a node -> verify via "
-            "lean-lsp MCP diagnostics -> axiom audit -> commit/push -> "
-            "update PROGRESS.md -> re-check). Next open nodes:",
+            "Continue orchestrating: ensure every open node has an owner "
+            "(a running agent, or an explicit orchestrator decision to "
+            "defer); dispatch new agents for orphaned nodes; monitor "
+            "running agents; integrate, verify (lean-lsp MCP diagnostics "
+            "or module builds), and commit completed work; then re-check. "
+            "Next open nodes:",
             file=sys.stderr,
         )
         for entry in sorries[:5]:
@@ -184,23 +199,17 @@ def main() -> int:
             file=sys.stderr,
         )
 
-    # Deyao (2026-07-20): the `wip`/`○` pointer in progress-entries.json
-    # marks the node(s) currently being worked on (renders as 🟪 in the
-    # generated PROGRESS.md tree; see the CLAUDE.md marker convention).
-    # It goes stale if a turn resolves or decomposes a node without
-    # updating it, so every iteration must: at the START of a block of
-    # work, set `"wip": true` on the target node(s) (clearing it from
-    # whatever was there before); at the END, clear it (delete the key
-    # or set it false) on finished nodes and set it on the new frontier
-    # node(s) picked up next -- via progress-entries.json + python3
-    # progress-tree.py, never by hand-editing PROGRESS.md.
+    # Deyao (2026-07-20, orchestrator framing 2026-07-22): the `wip`/`○`
+    # pointer in progress-entries.json marks the node(s) currently being
+    # worked on. Under orchestration it should track agent ownership and
+    # be refreshed at integration points via progress-entries.json +
+    # python3 progress-tree.py, never by hand-editing PROGRESS.md.
     print(
-        "WORK-IN-PROGRESS POINTER: before finishing this turn, make sure "
-        "progress-entries.json's `wip` flags reflect what you actually "
-        "worked on this iteration -- clear `wip` from nodes you finished "
-        "or abandoned, and set `wip: true` on whichever open node(s) you "
-        "are leaving as the active frontier, then regenerate "
-        "PROGRESS.md with progress-tree.py.",
+        "WORK-IN-PROGRESS POINTER: at integration points, update "
+        "progress-entries.json's `wip` flags to match reality — set "
+        "`wip: true` on nodes owned by running agents or queued next, "
+        "clear it on nodes whose work was integrated or abandoned — "
+        "then regenerate PROGRESS.md with progress-tree.py.",
         file=sys.stderr,
     )
     # Deyao (2026-07-18): the continuation must keep the user informed
@@ -220,7 +229,7 @@ def main() -> int:
     # so bottom-up material shows here until its consumer's proof
     # skeleton is written). The hook reads the cache and flags
     # staleness; regenerating (`python3 free-floating.py`) is part of
-    # the loop iteration, like progress-tree.py.
+    # the integration workflow, like progress-tree.py.
     try:
         cache_path = os.path.join(fermat, "free-floating.json")
         cached = json.load(open(cache_path))
@@ -240,15 +249,15 @@ def main() -> int:
             from collections import Counter
             counts = Counter(f["module"] for f in floating)
             marker = " (STALE cache — rerun `python3 free-floating.py` " \
-                "this iteration)" if stale else ""
+                "at the next integration point)" if stale else ""
             print(
                 f"FREE-FLOATING CODE: {len(floating)} project "
                 "declaration(s) are outside the dependency cone of "
-                f"`fermat_last_theorem`{marker}. free floating code "
-                "is not allowed, you must commit now if you haven't "
-                "done so, then delete those code immediately and use "
-                "an appoarch that does introduce leave free floating "
-                "code before you stop. Worst modules:",
+                f"`fermat_last_theorem`{marker}. Free-floating code is "
+                "not allowed: assign an owner to resolve it top-down "
+                "(write the consuming proof skeleton, or delete the "
+                "material after its verified state is committed). "
+                "Worst modules:",
                 file=sys.stderr,
             )
             for mod, n in counts.most_common(6):
