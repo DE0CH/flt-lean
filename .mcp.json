@@ -9,7 +9,7 @@
       ]
     },
     "annas-mcp": {
-      "command": "python3",
+      "command": ".venv/bin/python",
       "args": [
         "annas-mcp.py",
         "mcp"

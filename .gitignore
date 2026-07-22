@@ -3,3 +3,7 @@
 .lean-daemon.sock
 .lean-daemon.log
 .lean-daemon-server.lean
+.env
+.venv/
+sources/
+
