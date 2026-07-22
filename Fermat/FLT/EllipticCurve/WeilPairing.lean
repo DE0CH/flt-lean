@@ -3005,6 +3005,96 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
       rw [frobenius_def, frobenius_def, map_pow]
 
 
+/-- **Radical-triviality reduction** for a multiplicative pairing on a
+`2`-dimensional space over `ZMod p`: if a nonzero vector `x` pairs
+trivially with everything, then — by bilinearity, alternation, and the
+resulting skew-symmetry — the whole pairing is trivial. Read
+contrapositively, this reduces nondegeneracy of the Weil pairing at
+every nonzero point to a single globally nontrivial value
+(`hleg4`'s `hglobal`). -/
+theorem pairing_trivial_of_radical {p : ℕ} [Fact p.Prime]
+    {M : Type*} [AddCommGroup M] [Module (ZMod p) M]
+    [Module.Finite (ZMod p) M]
+    (hfr : Module.finrank (ZMod p) M = 2)
+    {G : Type*} [CommGroup G] (e : M → M → G)
+    (hl : ∀ x y z, e (x + y) z = e x z * e y z)
+    (hr : ∀ x y z, e x (y + z) = e x y * e x z)
+    (halt : ∀ x, e x x = 1)
+    (x : M) (hx : x ≠ 0) (hxall : ∀ y, e x y = 1) :
+    ∀ u v, e u v = 1 := by
+  haveI : NeZero p := ⟨(Fact.out : p.Prime).ne_zero⟩
+  -- zero laws by cancellation
+  have hzl : ∀ y, e 0 y = 1 := fun y => by
+    have h := hl 0 0 y
+    rw [add_zero] at h
+    have h2 : e 0 y * e 0 y = e 0 y * 1 := by rw [mul_one, ← h]
+    exact mul_left_cancel h2
+  have hzr : ∀ u, e u 0 = 1 := fun u => by
+    have h := hr u 0 0
+    rw [add_zero] at h
+    have h2 : e u 0 * e u 0 = e u 0 * 1 := by rw [mul_one, ← h]
+    exact mul_left_cancel h2
+  -- skew-symmetry from alternation + bilinearity
+  have hskew : ∀ a b, e b a = (e a b)⁻¹ := by
+    intro a b
+    have h := halt (a + b)
+    rw [hl, hr, hr, halt a, halt b, one_mul, mul_one] at h
+    exact eq_inv_of_mul_eq_one_right h
+  -- ℕ-power laws
+  have hnl : ∀ (n : ℕ) (u v : M), e (n • u) v = e u v ^ n := by
+    intro n u v
+    induction n with
+    | zero => rw [zero_nsmul, pow_zero]; exact hzl v
+    | succ n ih => rw [succ_nsmul, hl, ih, pow_succ]
+  have hnr : ∀ (n : ℕ) (u v : M), e u (n • v) = e u v ^ n := by
+    intro n u v
+    induction n with
+    | zero => rw [zero_nsmul, pow_zero]; exact hzr u
+    | succ n ih => rw [succ_nsmul, hr, ih, pow_succ]
+  -- `ZMod p`-scalars through their ℕ-lift
+  have hcast : ∀ (c : ZMod p) (u : M), c • u = c.val • u := by
+    intro c u
+    have h1 : ((c.val : ℕ) : ZMod p) = c := by
+      rw [ZMod.natCast_val, ZMod.cast_id]
+    conv_lhs => rw [← h1]
+    exact Nat.cast_smul_eq_nsmul _ _ _
+  -- a companion `s` making `{x, s}` a spanning pair
+  obtain ⟨s, hs⟩ : ∃ s : M, ∀ w : M, ∃ c d : ZMod p, w = c • x + d • s := by
+    let b := Module.finBasisOfFinrankEq (ZMod p) M hfr
+    by_cases h0 : b.repr x 0 = 0
+    · -- the second coordinate is nonzero; `s := b 0`
+      have h1 : b.repr x 1 ≠ 0 := by
+        intro h1
+        exact hx (b.ext_elem fun i => by fin_cases i <;> simp [h0, h1])
+      refine ⟨b 0, fun w => ⟨b.repr w 1 / b.repr x 1,
+        b.repr w 0 - b.repr w 1 / b.repr x 1 * b.repr x 0, ?_⟩⟩
+      refine b.ext_elem fun i => ?_
+      fin_cases i <;>
+        (simp only [map_add, map_smul, Finsupp.coe_add, Finsupp.coe_smul,
+          Pi.add_apply, Pi.smul_apply, smul_eq_mul,
+          Module.Basis.repr_self, Finsupp.single_apply]
+         try norm_num
+         try field_simp)
+    · -- the first coordinate is nonzero; `s := b 1`
+      have h0' : b.repr x 0 ≠ 0 := h0
+      refine ⟨b 1, fun w => ⟨b.repr w 0 / b.repr x 0,
+        b.repr w 1 - b.repr w 0 / b.repr x 0 * b.repr x 1, ?_⟩⟩
+      refine b.ext_elem fun i => ?_
+      fin_cases i <;>
+        (simp only [map_add, map_smul, Finsupp.coe_add, Finsupp.coe_smul,
+          Pi.add_apply, Pi.smul_apply, smul_eq_mul,
+          Module.Basis.repr_self, Finsupp.single_apply]
+         try norm_num
+         try field_simp)
+  -- `s` pairs trivially with `x`
+  have hsx : e s x = 1 := by rw [hskew, hxall, inv_one]
+  -- expand an arbitrary pair through the spanning pair
+  intro u v
+  obtain ⟨cu, du, hu⟩ := hs u
+  obtain ⟨cv, dv, hv⟩ := hs v
+  rw [hu, hv]
+  simp only [hl, hr, hcast, hnl, hnr, hxall, hsx, halt, one_pow, one_mul]
+
 set_option maxHeartbeats 16000000 in
 /-- **The `μ_p`-valued Weil pairing over a finite field** (sorry node —
 the canonical arithmetic input): on the `p`-torsion of an elliptic
@@ -8363,20 +8453,151 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
     fun v w z hz => ((hvalue v w).unique (hespec v w) hz)
   -- the six legs, each resolved from hespec/heuniq + the reciprocity
   -- toolkit (Miller-function functional equations under point addition)
+  -- degenerate values: the trivially-satisfied witness pins `e` to `1`
+  have hdegval : ∀ v w, (v.val = 0 ∨ w.val = 0) → e v w = 1 := by
+    intro v w hd
+    refine heuniq v w 1 ⟨fun _ => rfl, ?_⟩
+    intro xP yP hP xQ yQ hQ hv hw
+    exfalso
+    rcases hd with h0 | h0
+    · rw [hv, WeierstrassCurve.Affine.Point.zero_def] at h0
+      simp at h0
+    · rw [hw, WeierstrassCurve.Affine.Point.zero_def] at h0
+      simp at h0
   have hleg1 : ∀ x y z, e (x + y) z = e x z * e y z := by
-    sorry
+    -- the shared-translate-chain construction (Silverman III.8.1(a) in
+    -- divisor form): choose the `z`-slot setup ONCE and chain the
+    -- first-slot translates `S`, `T = P₁⊕S`, `U = P₂⊕T = (P₁+P₂)⊕S`, so
+    -- that `D_{P₁} + D_{P₂} = D_{P₁+P₂}` on the nose; the three
+    -- admissible witnesses then share their atoms, and the values
+    -- multiply through the single Miller word identity
+    -- `span{aP₁·aP₂} = span{aP₁₂·XClass(x_T)^p}` (the `hcomp`/`hCunits`
+    -- pattern of `WeilPairingStepR`). See HLEG-NOTES.md §1.
+    have hwit : ∀ x y z : ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p),
+        ∃ z₁ z₂ z₃ : (AlgebraicClosure (ZMod q))ˣ,
+        IsWeilValue x z z₁ ∧ IsWeilValue y z z₂ ∧
+        IsWeilValue (x + y) z z₃ ∧ z₃ = z₁ * z₂ := by
+      sorry
+    intro x y z
+    obtain ⟨z₁, z₂, z₃, h1, h2, h3, h123⟩ := hwit x y z
+    rw [heuniq _ _ _ h3, heuniq _ _ _ h1, heuniq _ _ _ h2, h123]
   have hleg2 : ∀ x y z, e x (y + z) = e x y * e x z := by
-    sorry
-  have hleg3 : ∀ x, e x x = 1 := by
-    sorry
-  have hleg4 : ∀ x, x ≠ 0 → ∃ y, e x y ≠ 1 := by
-    sorry
+    -- mirror of `hleg1` with the chain on the `R`-side: shared S-slot
+    -- `(S, PS, aP)`, R-chain `R`, `T' = Q₁⊕R`, `U' = Q₂⊕T'`, word
+    -- identity `span{aQ₁·aQ₂} = span{aQ₁₂·XClass(x_{T'})^p}`. See
+    -- HLEG-NOTES.md §2.
+    have hwit : ∀ x y z : ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p),
+        ∃ z₁ z₂ z₃ : (AlgebraicClosure (ZMod q))ˣ,
+        IsWeilValue x y z₁ ∧ IsWeilValue x z z₂ ∧
+        IsWeilValue x (y + z) z₃ ∧ z₃ = z₁ * z₂ := by
+      sorry
+    intro x y z
+    obtain ⟨z₁, z₂, z₃, h1, h2, h3, h123⟩ := hwit x y z
+    rw [heuniq _ _ _ h3, heuniq _ _ _ h1, heuniq _ _ _ h2, h123]
+  -- ℕ-scalar powers in the first slot, by induction from `hleg1`
+  have hsmulL : ∀ (n : ℕ) x y, e (n • x) y = e x y ^ n := by
+    intro n x y
+    induction n with
+    | zero =>
+      rw [zero_nsmul, pow_zero]
+      exact hdegval 0 y (Or.inl rfl)
+    | succ n ih => rw [succ_nsmul, hleg1, ih, pow_succ]
   have hleg5 : ∀ x y, e x y ^ p = 1 := by
-    sorry
+    intro x y
+    have hp0 : p • x = 0 := by
+      obtain ⟨P, hP⟩ := x
+      simpa using hP
+    calc e x y ^ p = e (p • x) y := (hsmulL p x y).symm
+      _ = 1 := by
+          rw [hp0]
+          exact hdegval 0 y (Or.inl rfl)
+  have hleg3 : ∀ x, e x x = 1 := by
+    -- self-pair skew via the swap construction: two setups from two
+    -- mutually generic translate families SHARING the two Miller
+    -- generators produce value equations with the two sides exchanged,
+    -- whence `z² = 1` (see HLEG-NOTES.md §3(a); the mutual-genericity
+    -- selection runs through the Frobenius-fixed-subfield lattice)
+    have hswap : ∀ x, e x x * e x x = 1 := by
+      sorry
+    -- the `p = 2` case: alternation is NOT implied by `z² = z^p = 1`
+    -- when `p = 2`; it needs the 2-torsion geometry — `⊖P = P`, so
+    -- `I_P² = span{XClass x_P}` (`XYIdeal_neg_mul`) factors both Miller
+    -- generators into line squares, making the value an explicit square
+    -- that the curve/addition relations force to `1`; alternatively the
+    -- `[p]`-pullback machinery of leg 4. See HLEG-NOTES.md §3(c).
+    have htwo : p = 2 → ∀ x, e x x = 1 := by
+      sorry
+    intro x
+    rcases eq_or_ne p 2 with h2 | hne
+    · exact htwo h2 x
+    · obtain ⟨k, hk⟩ := (Fact.out : p.Prime).odd_of_ne_two hne
+      have hk' : p = 2 * k + 1 := by omega
+      have hzz : e x x ^ p = e x x := by
+        rw [hk', pow_succ, pow_mul, pow_two, hswap x, one_pow, one_mul]
+      exact hzz.symm.trans (hleg5 x x)
+  have hleg4 : ∀ x, x ≠ 0 → ∃ y, e x y ≠ 1 := by
+    -- global nontriviality — THE descent core (Silverman III.8.1(c):
+    -- assuming `e ≡ 1`, the auxiliary function `g` with
+    -- `div g = Σ_κ (T'⊕κ) − (κ)` descends through the fixed field of
+    -- the `E[p]`-translation action to `g = h∘[p]`, forcing the point
+    -- ideal of any `P ≠ O` to be principal — contradiction with
+    -- `toClass` injectivity). See HLEG-NOTES.md §4(B).
+    have hglobal : ∃ u v, e u v ≠ 1 := by
+      sorry
+    -- the radical reduction on the rank-2 torsion space
+    haveI : CharP (AlgebraicClosure (ZMod q)) q :=
+      charP_of_injective_algebraMap
+        (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+    have hcard : Nat.card ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p) = p ^ 2 :=
+      TorsionCard.card_torsionBy _ p
+        (CharP.cast_ne_zero_of_ne_of_prime
+          (R := AlgebraicClosure (ZMod q)) (Fact.out : p.Prime) hqp)
+    haveI : Finite ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p) :=
+      Nat.finite_of_card_ne_zero (by
+        rw [hcard]
+        exact pow_ne_zero 2 (Fact.out : p.Prime).ne_zero)
+    haveI : Fintype ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p) := Fintype.ofFinite _
+    haveI : Module.Finite (ZMod p) ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p) := Module.Finite.of_finite
+    have hfr : Module.finrank (ZMod p) ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p) = 2 := by
+      have h := Module.card_eq_pow_finrank (K := ZMod p)
+        (V := ((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion p))
+      rw [ZMod.card] at h
+      have h2 : p ^ 2 = p ^ Module.finrank (ZMod p) ((Wbar.map (algebraMap
+          (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion p) := by
+        rw [← hcard, Nat.card_eq_fintype_card]
+        exact h
+      exact Nat.pow_right_injective (Fact.out : p.Prime).two_le h2.symm
+    intro x hx
+    by_contra hcon
+    push Not at hcon
+    obtain ⟨u, v, huv⟩ := hglobal
+    exact huv (pairing_trivial_of_radical hfr e hleg1 hleg2 hleg3 x hx
+      hcon u v)
   have hleg6 : ∀ x y, e ((frobeniusTorsionEnd q Wbar p) x)
       ((frobeniusTorsionEnd q Wbar p) y) =
       (Units.map (frobAlgHom q).toRingHom) (e x y) := by
-    sorry
+    -- Frobenius transport of the admissible witness (Silverman
+    -- III.8.1(d): apply `σ = frobAlgHom q` to every ingredient of the
+    -- setup — points, subfields, translates, Miller elements via the
+    -- coefficientwise-Frobenius endomorphism of the coordinate ring —
+    -- and the transported setup is admissible for `(σx, σy)` with value
+    -- `σz`). See HLEG-NOTES.md §6.
+    have hwit : ∀ x y (z : (AlgebraicClosure (ZMod q))ˣ),
+        IsWeilValue x y z →
+        IsWeilValue ((frobeniusTorsionEnd q Wbar p) x)
+          ((frobeniusTorsionEnd q Wbar p) y)
+          ((Units.map (frobAlgHom q).toRingHom) z) := by
+      sorry
+    intro x y
+    exact heuniq _ _ _ (hwit x y (e x y) (hespec x y))
   exact ⟨e, hleg1, hleg2, hleg3, hleg4, hleg5, hleg6⟩
 
 /-- **The Weil pairing over a finite field, Frobenius-twisted form**
