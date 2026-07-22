@@ -813,7 +813,122 @@ theorem exists_residual_matrix_entries {R : Type u} [CommRing R]
   choose a c hac using H
   exact ⟨a, c, hac⟩
 
-/-- **The ω-component Selmer vanishing** (sorry node — Serre, Duke 1987,
+/-- **Linear endomorphisms preserve the maximal-adic filtration** (helper,
+proven): a linear endomorphism maps `J • ⊤` into `J • ⊤`. -/
+theorem apply_mem_smul_top {R : Type u} [CommRing R]
+    {V : Type v} [AddCommGroup V] [Module R V]
+    (T : V →ₗ[R] V) {J : Ideal R} {x : V}
+    (hx : x ∈ J • (⊤ : Submodule R V)) :
+    T x ∈ J • (⊤ : Submodule R V) := by
+  refine Submodule.smul_induction_on hx (fun r hr v _ => ?_)
+    fun y z hy hz => ?_
+  · rw [map_smul]
+    exact Submodule.smul_mem_smul hr trivial
+  · rw [map_add]
+    exact Submodule.add_mem _ hy hz
+
+/-- **The maximal-adic filtration vanishes residually** (helper, proven):
+the converse of `mem_maximalIdeal_smul_top_of_one_tmul_eq_zero` — an
+element of `𝔪V` has vanishing image `1 ⊗ u` in `kk ⊗[R] V`. -/
+theorem one_tmul_eq_zero_of_mem_maximalIdeal_smul_top {R : Type u}
+    [CommRing R] [IsLocalRing R]
+    {V : Type v} [AddCommGroup V] [Module R V]
+    (kk : Type*) [Field kk] [Algebra R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    {u : V} (hu : u ∈ (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V)) :
+    (1 : kk) ⊗ₜ[R] u = 0 := by
+  have hker : RingHom.ker (algebraMap R kk) = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.eq_maximalIdeal
+      (RingHom.ker_isMaximal_of_surjective _ hsurj)
+  refine Submodule.smul_induction_on hu (fun r hr v _ => ?_)
+    fun y z hy hz => ?_
+  · have hr0 : algebraMap R kk r = 0 := by
+      rw [← RingHom.mem_ker, hker]
+      exact hr
+    rw [one_tmul_smul, hr0, zero_smul]
+  · rw [TensorProduct.tmul_add, hy, hz, add_zero]
+
+/-- **Scalar extraction along a residually nonzero vector** (helper,
+proven): if `r • w₀ ∈ 𝔪V` and `w₀` is residually nonzero then
+`r ∈ 𝔪` — residually `r̄ • w̄₀ = 0` with `w̄₀ ≠ 0` over the field `kk`. -/
+theorem mem_maximalIdeal_of_smul_mem_smul_top {R : Type u}
+    [CommRing R] [IsLocalRing R]
+    {V : Type v} [AddCommGroup V] [Module R V]
+    (kk : Type*) [Field kk] [Algebra R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    {w₀ : V} (hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0) {r : R}
+    (hr : r • w₀ ∈ (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V)) :
+    r ∈ IsLocalRing.maximalIdeal R := by
+  have hker : RingHom.ker (algebraMap R kk) = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.eq_maximalIdeal
+      (RingHom.ker_isMaximal_of_surjective _ hsurj)
+  have h0 := one_tmul_eq_zero_of_mem_maximalIdeal_smul_top kk hsurj hr
+  rw [one_tmul_smul] at h0
+  rcases smul_eq_zero.mp h0 with h | h
+  · rw [← hker, RingHom.mem_ker]
+    exact h
+  · exact absurd h hw₀ne
+
+/-- **The ω-twisted cocycle vanishing** (sorry node — the arithmetic core
+of the ω-component; Serre, Duke 1987, §5.4,
+`sources/serre1987duke-ocr.txt`; Neukirch for the class-field inputs):
+the function `d : g ↦ f (ρ g w₀) - f w₀` has values in `𝔪ⁿ⁺¹` and is,
+modulo `𝔪ⁿ⁺²`, an `a`-twisted `1`-cocycle (hypothesis `hcoc`, PROVEN by
+the consumer from the residual triangular shape) for the residually
+multiplicative twist `a` (hypothesis `hamul`) — residually the mod-3
+cyclotomic character `ω`, by the determinant condition of `hρ`. The
+claim is that `d` is a twisted coboundary one level deeper: some
+`s ∈ 𝔪ⁿ⁺¹` has `d g + (a g - 1) s ∈ 𝔪ⁿ⁺²` for all `g`. Route: modulo
+`𝔪ⁿ⁺²` this is a class in `H¹(Γ ℚ, ω ⊗ M)` for the finite module
+`M = 𝔪ⁿ⁺¹/𝔪ⁿ⁺²`; the local restrictions of `d` — computed from its
+defect origin and the hardly ramified conditions of `hρ` (flat at `3`,
+tame quadratic at `2`, unramified elsewhere) — place the class in
+Serre's Selmer group, which vanishes: `ℚ(ζ₃)` has class number `1`, and
+its units `±1, ±ζ₃, ±ζ₃²` are excluded by the local condition at `3`
+(Serre's unit computation for `p = 3`, inflation-restriction to
+`Gal(ℚ(ζ₃))` and Kummer theory over `ℚ(ζ₃)`). -/
+theorem exists_omega_cocycle_coboundary
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (w₀ : V) (hw₀π : π ((1 : kk) ⊗ₜ[R] w₀) = 0)
+    (hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0)
+    (a : Γ ℚ → R)
+    (ha : ∀ g : Γ ℚ, ρ g w₀ - a g • w₀ ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V))
+    (hamul : ∀ g h : Γ ℚ,
+      a (g * h) - a g * a h ∈ IsLocalRing.maximalIdeal R)
+    (n : ℕ) (f : V →ₗ[R] R)
+    (hf : ∀ (g : Γ ℚ) (v : V),
+      f (ρ g v) - f v ∈ IsLocalRing.maximalIdeal R ^ (n + 1))
+    (hfv₀ : f v₀ ∉ IsLocalRing.maximalIdeal R)
+    (hcoc : ∀ g h : Γ ℚ,
+      (f (ρ (g * h) w₀) - f w₀)
+        - (a h * (f (ρ g w₀) - f w₀) + (f (ρ h w₀) - f w₀))
+        ∈ IsLocalRing.maximalIdeal R ^ (n + 2)) :
+    ∃ s ∈ IsLocalRing.maximalIdeal R ^ (n + 1),
+      ∀ g : Γ ℚ,
+        (f (ρ g w₀) - f w₀) + (a g - 1) * s ∈
+          IsLocalRing.maximalIdeal R ^ (n + 2) := by
+  sorry
+
+/-- **The ω-component Selmer vanishing** (DERIVED 2026-07-22 from the
+twisted-cocycle leaf `exists_omega_cocycle_coboundary`; the twisted
+cocycle identity and the residual multiplicativity of the twist `a` are
+PROVEN here from the residual triangular shape — Serre, Duke 1987,
 §5.4, `sources/serre1987duke-ocr.txt`; Neukirch for the class-field
 inputs): along a residually adapted vector `w₀` spanning the ω-line
 `ker π̄` of the residual representation, the defect
@@ -859,27 +974,122 @@ theorem exists_omega_component_coboundary
       ∀ g : Γ ℚ,
         (f (ρ g w₀) - f w₀) + (a g - 1) * s ∈
           IsLocalRing.maximalIdeal R ^ (n + 2) := by
+  -- the twist is residually multiplicative
+  have hamul : ∀ g h : Γ ℚ,
+      a (g * h) - a g * a h ∈ IsLocalRing.maximalIdeal R := by
+    intro g h
+    refine mem_maximalIdeal_of_smul_mem_smul_top kk hsurj hw₀ne ?_
+    have hexp : (a (g * h) - a g * a h) • w₀
+        = -(ρ (g * h) w₀ - a (g * h) • w₀)
+          + (a h • (ρ g w₀ - a g • w₀) + ρ g (ρ h w₀ - a h • w₀)) := by
+      rw [show ρ (g * h) w₀ = ρ g (ρ h w₀) from by rw [map_mul]; rfl,
+        map_sub, map_smul]
+      module
+    rw [hexp]
+    exact Submodule.add_mem _ (Submodule.neg_mem _ (ha (g * h)))
+      (Submodule.add_mem _ (Submodule.smul_mem _ _ (ha g))
+        (apply_mem_smul_top (ρ g : V →ₗ[R] V) (ha h)))
+  -- the defect along `w₀` is an `a`-twisted cocycle modulo `𝔪ⁿ⁺²`
+  have hcoc : ∀ g h : Γ ℚ,
+      (f (ρ (g * h) w₀) - f w₀)
+        - (a h * (f (ρ g w₀) - f w₀) + (f (ρ h w₀) - f w₀))
+        ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+    intro g h
+    have hsplit : (f (ρ (g * h) w₀) - f w₀)
+          - (a h * (f (ρ g w₀) - f w₀) + (f (ρ h w₀) - f w₀))
+        = ((f.comp (ρ g : V →ₗ[R] V)) - f) (ρ h w₀ - a h • w₀) := by
+      rw [show ρ (g * h) w₀ = ρ g (ρ h w₀) from by rw [map_mul]; rfl]
+      simp only [LinearMap.sub_apply, LinearMap.comp_apply, map_sub,
+        map_smul, smul_eq_mul]
+      ring
+    rw [hsplit]
+    have hDv : ∀ v : V,
+        ((f.comp (ρ g : V →ₗ[R] V)) - f) v
+          ∈ IsLocalRing.maximalIdeal R ^ (n + 1) := by
+      intro v
+      simpa only [LinearMap.sub_apply, LinearMap.comp_apply] using hf g v
+    have h2 := linearMap_apply_mem_mul_of_forall_mem _ hDv (ha h)
+    rwa [← pow_succ'] at h2
+  exact exists_omega_cocycle_coboundary V hV hρ kk hsurj π hπsurj hπequiv
+    v₀ hv₀ w₀ hw₀π hw₀ne a ha hamul n f hf hfv₀ hcoc
+
+/-- **The approximate-homomorphism vanishing** (sorry node — the
+arithmetic core of the trivial component; Serre, Duke 1987, §5.4,
+`sources/serre1987duke-ocr.txt`; the class-number-1 input is
+Minkowski's theorem that `ℚ` admits no everywhere-unramified
+extension): the corrected trivial component
+`T : g ↦ (f (ρ g v₀) - f v₀) + c g * s` has values in `𝔪ⁿ⁺¹` and is,
+modulo `𝔪ⁿ⁺²`, a homomorphism `Γ ℚ → 𝔪ⁿ⁺¹/𝔪ⁿ⁺²` (hypothesis `hhom`,
+PROVEN by the consumer: the twist term of the cocycle identity on this
+graded piece is cancelled by the ω-correction `hsA`, using the
+residual multiplicativity `hcmul` of the off-diagonal entry). The
+claim is that `T` lands in `𝔪ⁿ⁺²` outright. Route: modulo `𝔪ⁿ⁺²`, `T`
+is a homomorphism into a finite abelian `3`-torsion group, so it
+factors through the Galois group of an abelian `3`-elementary
+extension of `ℚ`; the hardly ramified conditions of `hρ` force that
+extension to be unramified everywhere — unramified outside `{2, 3}`
+from `hρ.isUnramified` (the defect vanishes on inertia since `ρ`
+does), at `2` because the inertia image acts through the order-≤2 tame
+quadratic quotient (`hρ.isTameAtTwo`) while the target is `3`-torsion,
+and at `3` by the flat/peu-ramifié condition (`hρ.isFlat`, Fontaine)
+for extensions of the trivial character by itself. Minkowski then
+forces the extension to be trivial, i.e. `T ≡ 0 mod 𝔪ⁿ⁺²`. -/
+theorem trivial_component_hom_vanishes
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (w₀ : V) (hw₀π : π ((1 : kk) ⊗ₜ[R] w₀) = 0)
+    (hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0)
+    (a : Γ ℚ → R)
+    (ha : ∀ g : Γ ℚ, ρ g w₀ - a g • w₀ ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V))
+    (c : Γ ℚ → R)
+    (hc : ∀ g : Γ ℚ, ρ g v₀ - (v₀ + c g • w₀) ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V))
+    (hcmul : ∀ g h : Γ ℚ,
+      c (g * h) - (c g + a g * c h) ∈ IsLocalRing.maximalIdeal R)
+    (n : ℕ) (f : V →ₗ[R] R)
+    (hf : ∀ (g : Γ ℚ) (v : V),
+      f (ρ g v) - f v ∈ IsLocalRing.maximalIdeal R ^ (n + 1))
+    (hfv₀ : f v₀ ∉ IsLocalRing.maximalIdeal R)
+    (s : R) (hs : s ∈ IsLocalRing.maximalIdeal R ^ (n + 1))
+    (hsA : ∀ g : Γ ℚ,
+      (f (ρ g w₀) - f w₀) + (a g - 1) * s ∈
+        IsLocalRing.maximalIdeal R ^ (n + 2))
+    (hhom : ∀ g h : Γ ℚ,
+      ((f (ρ (g * h) v₀) - f v₀) + c (g * h) * s)
+        - (((f (ρ g v₀) - f v₀) + c g * s)
+          + ((f (ρ h v₀) - f v₀) + c h * s))
+        ∈ IsLocalRing.maximalIdeal R ^ (n + 2)) :
+    ∀ g : Γ ℚ,
+      (f (ρ g v₀) - f v₀) + c g * s ∈
+        IsLocalRing.maximalIdeal R ^ (n + 2) := by
   sorry
 
-/-- **The trivial-component Selmer vanishing** (sorry node — Serre, Duke
-1987, §5.4, `sources/serre1987duke-ocr.txt`; the class-number-1 input
-is Minkowski's theorem that `ℚ` admits no everywhere-unramified
-extension): once the ω-component of the defect has been corrected by
+/-- **The trivial-component Selmer vanishing** (DERIVED 2026-07-22 from
+the approximate-homomorphism leaf `trivial_component_hom_vanishes`; the
+homomorphism property of the corrected trivial component and the
+residual multiplicativity of the off-diagonal entry `c` are PROVEN here
+from the residual triangular shape and the ω-correction — Serre, Duke
+1987, §5.4): once the ω-component of the defect has been corrected by
 `s` (hypothesis `hsA`), the trivial component
 `g ↦ (f (ρ g v₀) - f v₀) + c g * s` — the corrected defect evaluated
-along the residual trivial-quotient direction `v₀` — is, modulo
-`𝔪ⁿ⁺²`, a homomorphism `Γ ℚ → 𝔪ⁿ⁺¹/𝔪ⁿ⁺²`: the cocycle identity for the
-corrected defect has vanishing twist term on this graded piece, and
-coboundaries of the trivial character are zero. The hardly ramified
-conditions make it everywhere unramified modulo `𝔪ⁿ⁺²`: unramified
-outside `{2, 3}` directly from `hρ.isUnramified`; at `2` because the
-inertia image acts through a group of order dividing `2` (tame
-quadratic quotient) while the coefficient module is `3`-torsion; at `3`
-by the flat (peu-ramifié) condition for extensions of the trivial
-character by itself (Fontaine, via `hρ.isFlat`). A nonzero such
-homomorphism would cut out a nontrivial abelian `3`-extension of `ℚ`
-unramified everywhere, contradicting Minkowski. Hence the trivial
-component already lies in `𝔪ⁿ⁺²`. -/
+along the residual trivial-quotient direction `v₀` — is a homomorphism
+modulo `𝔪ⁿ⁺²` and vanishes by the leaf (everywhere-unramifiedness from
+the hardly ramified conditions, then Minkowski). -/
 theorem trivial_component_defect_vanishes
     {R : Type u} [CommRing R]
     [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
@@ -916,7 +1126,55 @@ theorem trivial_component_defect_vanishes
     ∀ g : Γ ℚ,
       (f (ρ g v₀) - f v₀) + c g * s ∈
         IsLocalRing.maximalIdeal R ^ (n + 2) := by
-  sorry
+  -- the off-diagonal entry is residually a twisted crossed homomorphism
+  have hcmul : ∀ g h : Γ ℚ,
+      c (g * h) - (c g + a g * c h) ∈ IsLocalRing.maximalIdeal R := by
+    intro g h
+    refine mem_maximalIdeal_of_smul_mem_smul_top kk hsurj hw₀ne ?_
+    have hexp : (c (g * h) - (c g + a g * c h)) • w₀
+        = -(ρ (g * h) v₀ - (v₀ + c (g * h) • w₀))
+          + ((ρ g v₀ - (v₀ + c g • w₀))
+            + (c h • (ρ g w₀ - a g • w₀)
+              + ρ g (ρ h v₀ - (v₀ + c h • w₀)))) := by
+      rw [show ρ (g * h) v₀ = ρ g (ρ h v₀) from by rw [map_mul]; rfl,
+        map_sub, map_add, map_smul]
+      module
+    rw [hexp]
+    exact Submodule.add_mem _ (Submodule.neg_mem _ (hc (g * h)))
+      (Submodule.add_mem _ (hc g)
+        (Submodule.add_mem _ (Submodule.smul_mem _ _ (ha g))
+          (apply_mem_smul_top (ρ g : V →ₗ[R] V) (hc h))))
+  -- the corrected trivial component is a homomorphism modulo `𝔪ⁿ⁺²`
+  have hhom : ∀ g h : Γ ℚ,
+      ((f (ρ (g * h) v₀) - f v₀) + c (g * h) * s)
+        - (((f (ρ g v₀) - f v₀) + c g * s)
+          + ((f (ρ h v₀) - f v₀) + c h * s))
+        ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+    intro g h
+    have hsplit : ((f (ρ (g * h) v₀) - f v₀) + c (g * h) * s)
+          - (((f (ρ g v₀) - f v₀) + c g * s)
+            + ((f (ρ h v₀) - f v₀) + c h * s))
+        = c h * ((f (ρ g w₀) - f w₀) + (a g - 1) * s)
+          + (((f.comp (ρ g : V →ₗ[R] V)) - f) (ρ h v₀ - (v₀ + c h • w₀))
+            + (c (g * h) - (c g + a g * c h)) * s) := by
+      rw [show ρ (g * h) v₀ = ρ g (ρ h v₀) from by rw [map_mul]; rfl]
+      simp only [LinearMap.sub_apply, LinearMap.comp_apply, map_sub,
+        map_add, map_smul, smul_eq_mul]
+      ring
+    rw [hsplit]
+    refine Submodule.add_mem _ (Ideal.mul_mem_left _ _ (hsA g))
+      (Submodule.add_mem _ ?_ ?_)
+    · have hDv : ∀ v : V,
+          ((f.comp (ρ g : V →ₗ[R] V)) - f) v
+            ∈ IsLocalRing.maximalIdeal R ^ (n + 1) := by
+        intro v
+        simpa only [LinearMap.sub_apply, LinearMap.comp_apply] using hf g v
+      have h2 := linearMap_apply_mem_mul_of_forall_mem _ hDv (hc h)
+      rwa [← pow_succ'] at h2
+    · have h2 := Ideal.mul_mem_mul (hcmul g h) hs
+      rwa [← pow_succ'] at h2
+  exact trivial_component_hom_vanishes V hV hρ kk hsurj π hπsurj hπequiv
+    v₀ hv₀ w₀ hw₀π hw₀ne a ha c hc hcmul n f hf hfv₀ s hs hsA hhom
 
 /-- **The coboundary form of the one-level obstruction** (sorry node —
 the deep arithmetic core, Serre §5.4/Fontaine): for an `R`-linear
