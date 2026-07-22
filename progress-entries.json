@@ -1561,5 +1561,29 @@
     "wip": true,
     "text": "`trivial_component_hom_vanishes` — the corrected trivial component (approximate hom Γℚ → 𝔪ⁿ⁺¹/𝔪ⁿ⁺²) vanishes: everywhere-unramified from hardly-ramifiedness, then Minkowski (NumberField.abs_discr_gt_two on the pin; missing bridge = absolute-Galois inertia/discriminant infrastructure) — 2026-07-22",
     "parent": "GaloisRepresentation.IsHardlyRamified.exists_equivariant_defect_coboundary"
+  },
+  {
+    "name": "exists_isWeaklyUniversal_isTraceGenerated",
+    "fullname": "exists_isWeaklyUniversal_isTraceGenerated",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
+    "wip": true,
+    "text": "`exists_isWeaklyUniversal_isTraceGenerated` — Mazur/Ramakrishna representability + Carayol trace generation for the constructed weak universal datum (reference FLT project's own representability node is sorry — ecosystem frontier) — 2026-07-22",
+    "parent": "exists_universal_hardlyRamifiedDeformation"
+  },
+  {
+    "name": "moduleFinite_of_isWeaklyUniversal_isTraceGenerated",
+    "fullname": "moduleFinite_of_isWeaklyUniversal_isTraceGenerated",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
+    "wip": true,
+    "text": "`moduleFinite_of_isWeaklyUniversal_isTraceGenerated` — module-finiteness of the constructed universal ring (potential modularity / TWK / Khare–Wintenberger input) — 2026-07-22",
+    "parent": "moduleFinite_of_isUniversal"
+  },
+  {
+    "name": "exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated",
+    "fullname": "exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
+    "wip": true,
+    "text": "`exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated` — Krull dimension ≥ 1 of the constructed universal ring (Böckle presentation bound g−r ≥ 1) — 2026-07-22",
+    "parent": "algebraMap_injective_of_isUniversal"
   }
 ]
