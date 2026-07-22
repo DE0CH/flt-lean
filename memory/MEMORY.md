@@ -13,6 +13,6 @@
 - [Progress snapshot via worktree](flt-progress-snapshot-worktree.md) — Deyao 2026-07-22: regenerate PROGRESS.md from committed state in a secondary worktree at every agent-completion/milestone
 - [Stop hook is a nudge](flt-stop-hook-is-a-nudge.md) — Deyao 2026-07-22: automatic back-to-work prompt, not a safety net; fail open, best-effort
 - [Report blocker class](flt-report-blocker-class.md) — Deyao 2026-07-22: every wait/blockage report must name the blocker AND its class: trusted tool (fine) vs Claude automation (defect)
-- [Worktree fan-out seeds artifacts](flt-worktree-seed-artifacts.md) — Deyao 2026-07-22: seed agent worktrees with build artifacts from a consistent settled state; never let agents build from fresh
+- [No olean touching, ever](flt-worktree-seed-artifacts.md) — Deyao 2026-07-22 FINAL: nothing in the codebase touches olean files at all; seeding exception withdrawn — worktrees start cold, the toolchain builds on demand
 - [Scripts get a server, not MCP](scripts-get-a-server-not-mcp.md) — Deyao: headless scripts that can't use MCP effectively get a thin persistent server; delegate loading/invalidation to standard tooling
 - [Caller-directed script error policy](scripts-crash-dont-fallback.md) — Deyao 2026-07-22: Claude-called scripts crash loudly, no fallbacks; harness/Deyao-called scripts (Stop hook) need reasonable graceful fallbacks
