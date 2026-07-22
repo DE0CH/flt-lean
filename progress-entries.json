@@ -118,7 +118,7 @@
     "module": "Fermat.FLT.FreyCurve.Semistable",
     "text": "`WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction` (`FreyCurve/Semistable.lean`, stated 2026-07-17) — pointwise Tate unipotence: multiplicative reduction at `q ≠ p` (`q = 2` allowed, no `p ∣ v(j)`) makes every inertia element at a valuation subring over `ℤ_(q)` act with `σ(σP) − σP − σP + P = 0` on the `p`-torsion (to be closed against the Tate-uniformization leaves)",
     "fullname": "WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction",
-    "wip": true
+    "wip": false
   },
   {
     "name": "FreyPackage.subquotient_character_unramified_at_p",
@@ -511,7 +511,7 @@
     "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
     "text": "`exists_frobenius_conj_mem_coset` — Chebotarev, finite level: for every finite subextension `E` of `K̄/K` and every `σ`, the coset `σ·Gal(K̄/E)` contains a conjugate of a `globalFrob v` with `v ∉ S` (existence form of Chebotarev for the Galois closure of `E/K`)",
     "fullname": "GaloisRepresentation.exists_frobenius_conj_mem_coset",
-    "wip": true
+    "wip": false
   },
   {
     "name": "not_isIrreducible_of_charpoly_eq",
@@ -967,13 +967,15 @@
     "name": "serre_elimination_noncyclic",
     "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_noncyclic",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-    "text": "the seven noncyclic Dickson cases — DERIVED (case dispatch to the semidirect and arithmetic leaves)."
+    "text": "the seven noncyclic Dickson cases — DERIVED (case dispatch to the semidirect and arithmetic leaves).",
+    "wip": true
   },
   {
     "name": "serre_elimination_semidirect",
     "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_semidirect",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-    "text": "the elementary-abelian ⋊ cyclic case — FULLY PROVEN 2026-07-18: kernel of the right-component character has central cubes ⇒ char-3 Frobenius square-nilpotency with μ ≠ 0; all-scalar kills the left factor; otherwise the 1-dim eigenline is shared (commutator scalars ±1 by determinants, −1 refuted by the char-3 expansion identity) and normality makes it Γℚ-stable — contradicting absolute irreducibility."
+    "text": "the elementary-abelian ⋊ cyclic case — FULLY PROVEN 2026-07-18: kernel of the right-component character has central cubes ⇒ char-3 Frobenius square-nilpotency with μ ≠ 0; all-scalar kills the left factor; otherwise the 1-dim eigenline is shared (commutator scalars ±1 by determinants, −1 refuted by the char-3 expansion identity) and normality makes it Γℚ-stable — contradicting absolute irreducibility.",
+    "wip": true
   },
   {
     "name": "serre_elimination_arith",
@@ -1276,5 +1278,26 @@
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
     "wip": true,
     "text": "`serre_elimination_pgl` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of type pgl — False from the case data; doc-comment in ModThree.lean records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds)."
+  },
+  {
+    "name": "WeierstrassCurve.torsion_flat_of_good_reduction_of_isUnit",
+    "fullname": "WeierstrassCurve.torsion_flat_of_good_reduction_of_isUnit",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+    "wip": true,
+    "text": "`WeierstrassCurve.torsion_flat_of_good_reduction_of_isUnit` (stated 2026-07-22, agent decomposition of torsion_flat_of_good_reduction): the good-reduction finite-flat package leaf (isUnit case); owned by the worktree fleet's flat agent."
+  },
+  {
+    "name": "WeierstrassCurve.torsion_flat_of_good_reduction_mul",
+    "fullname": "WeierstrassCurve.torsion_flat_of_good_reduction_mul",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+    "wip": true,
+    "text": "`WeierstrassCurve.torsion_flat_of_good_reduction_mul` (stated 2026-07-22, agent decomposition of torsion_flat_of_good_reduction): the good-reduction finite-flat package leaf (mul case); owned by the worktree fleet's flat agent."
+  },
+  {
+    "name": "WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow",
+    "fullname": "WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+    "wip": true,
+    "text": "`WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow` (stated 2026-07-22, agent decomposition of torsion_flat_of_good_reduction): the good-reduction finite-flat package leaf (pow case); owned by the worktree fleet's flat agent."
   }
 ]
