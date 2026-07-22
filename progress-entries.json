@@ -1348,5 +1348,47 @@
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
     "wip": true,
     "text": "`exists_equivariant_defect_coboundary` (stated 2026-07-22, sole surviving leaf of the proven two-level Threeadic lifting chain): the defect 1-cocycle valued in Hom(V̄, 𝔪ⁿ⁺¹/𝔪ⁿ⁺²) is a coboundary — its class lies in the (flat-at-3, tame-at-2, unramified-elsewhere) Selmer group, which vanishes by class number 1 of ℚ/ℚ(ζ₃) plus unit computations (route in the docstring)."
+  },
+  {
+    "name": "mazur_point_order",
+    "fullname": "WeierstrassCurve.mazur_point_order",
+    "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+    "wip": true,
+    "text": "`WeierstrassCurve.mazur_point_order` — order of a rational torsion point lies in {1..10,12} (Mazur 1977 Thm 8 / 1978) — kept as one faithful leaf; the Kubert per-X₁(N) split would multiply modular-curve leaves without reducing depth (2026-07-22)"
+  },
+  {
+    "name": "not_full_four_torsion_rat",
+    "fullname": "WeierstrassCurve.not_full_four_torsion_rat",
+    "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+    "wip": true,
+    "text": "`WeierstrassCurve.not_full_four_torsion_rat` — no rational (ℤ/4)² level structure; minimal content μ₄ ⊄ ℚ — docstring records the level-4 Weil-pairing route and the elementary 2-torsion-abscissae square-product route (2026-07-22)"
+  },
+  {
+    "name": "not_two_ten_torsion",
+    "fullname": "WeierstrassCurve.not_two_ten_torsion",
+    "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+    "wip": true,
+    "text": "`WeierstrassCurve.not_two_ten_torsion` — X₁(2,10) exclusion (modular-curve-theoretic; Mazur 1978)"
+  },
+  {
+    "name": "not_two_twelve_torsion",
+    "fullname": "WeierstrassCurve.not_two_twelve_torsion",
+    "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+    "wip": true,
+    "text": "`WeierstrassCurve.not_two_twelve_torsion` — X₁(2,12) exclusion (modular-curve-theoretic; Mazur 1978)"
+  },
+  {
+    "name": "exists_etale_line_of_multiplicative_self",
+    "fullname": "FreyPackage.exists_etale_line_of_multiplicative_self",
+    "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+    "wip": true,
+    "text": "`FreyPackage.exists_etale_line_of_multiplicative_self` — Tate/connected-étale line at multiplicative self-reduction (leaf of the proven flat/ordinary linear-algebra assembly)"
+  },
+  {
+    "name": "exists_etale_line_of_good_of_stable_line",
+    "fullname": "FreyPackage.exists_etale_line_of_good_of_stable_line",
+    "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+    "wip": true,
+    "text": "`FreyPackage.exists_etale_line_of_good_of_stable_line` — connected-étale line at good reduction with stable line (leaf of the proven flat/ordinary linear-algebra assembly)"
   }
 ]
