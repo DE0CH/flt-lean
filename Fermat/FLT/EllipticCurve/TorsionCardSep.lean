@@ -14,7 +14,7 @@ public import Fermat.FLT.EllipticCurve.TorsionCard
 public import Fermat.FLT.EllipticCurve.WronskianInduction
 import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Points
 import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
-import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
+import Fermat.FLT.EllipticCurve.PhiPsiCoprime
 import Mathlib.GroupTheory.QuotientGroup.Basic
 import Mathlib.GroupTheory.Coset.Card
 import Mathlib.Data.Set.Card

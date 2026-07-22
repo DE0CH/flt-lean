@@ -36,7 +36,7 @@ public import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Basic
 import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
 -- `WeierstrassCurve.isCoprime_Φ_ΨSq` (Bézout from the resultant node),
 -- used to rule out common roots of `Φ n` and `ΨSq n` in the proofs
-import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
+import Fermat.FLT.EllipticCurve.PhiPsiCoprime
 -- the evaluation bridges `evalEval_ψ`, `evalEval_Ψ_sq`, `evalEval_φ`
 -- between bivariate and univariate division polynomials on the curve
 import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Points
