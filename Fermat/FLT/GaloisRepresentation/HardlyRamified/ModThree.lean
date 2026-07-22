@@ -1232,7 +1232,10 @@ theorem serre_elimination_dihedral {k : Type u} [Finite k] [Field k]
         | .r _ => 1
         | .sr _ => Multiplicative.ofAdd 1
       map_one' := rfl
-      map_mul' := by rintro (i | i) (j | j) <;> rfl }
+      map_mul' := by
+        rintro (i | i) (j | j) <;>
+          simp only [DihedralGroup.r_mul_r, DihedralGroup.r_mul_sr,
+            DihedralGroup.sr_mul_r, DihedralGroup.sr_mul_sr] <;> decide }
   -- the quadratic character of `Γ ℚ` cut out by the rotation subgroup
   let θ : Γ ℚ →* Multiplicative (ZMod 2) :=
     q.comp (eiso.toMonoidHom.comp π.rangeRestrict)
@@ -1289,7 +1292,7 @@ theorem serre_elimination_dihedral {k : Type u} [Finite k] [Field k]
       have hx1 : π.rangeRestrict g = 1 := Subtype.ext (by simpa using h1)
       rw [hx1, map_one] at hi
       rw [DihedralGroup.one_def] at hi
-      exact absurd hi (by simp)
+      injection hi
     have hπg2 : π (g * g) = 1 := by
       have hx : π.rangeRestrict (g * g) = 1 := by
         apply eiso.injective
@@ -1309,7 +1312,7 @@ theorem serre_elimination_dihedral {k : Type u} [Finite k] [Field k]
       ext i' j'
       fin_cases i' <;> fin_cases j' <;>
         simp [Matrix.mul_apply, Matrix.trace, Matrix.diag, Matrix.det_fin_two,
-          Fin.sum_univ_two, Matrix.one_apply] <;> ring
+          Fin.sum_univ_two] <;> ring
     -- if the trace were nonzero, `A` would be scalar
     have htrA : Matrix.trace A = 0 := by
       by_contra htA
@@ -1327,7 +1330,7 @@ theorem serre_elimination_dihedral {k : Type u} [Finite k] [Field k]
       exact hAs
     -- descend the trace along the base change
     have h1 : LinearMap.trace L (L ⊗[k] V) (σρ g) = 0 := by
-      rw [LinearMap.trace_eq_matrix_trace b, ← hA]
+      rw [LinearMap.trace_eq_matrix_trace L b, ← hA]
       exact htrA
     have h2 : σρ g = ((MonoidHomClass.toMonoidHom ρ :
         Representation k (Γ ℚ) V) g).baseChange L := rfl
