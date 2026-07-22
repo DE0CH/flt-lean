@@ -8135,16 +8135,10 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
         have heP₆ := hevid aP₁ Ln Ld Vn Vd uf hwordP xQR₃ yQR₃ hQR₃.left
         -- the word-vs-word reciprocity instances between the two words
         -- and against the two vertical words
-        have hwv₃ := hww 0 Ln ({xR₁, xQR₃} :
-          Multiset (AlgebraicClosure (ZMod q))) Vn
-        have hwv₄ := hww 0 Ld ({xR₁, xQR₃} :
-          Multiset (AlgebraicClosure (ZMod q))) Vd
         have hwv₇ := hww Ln 0 Vn ({xR₁, xQR₃} :
           Multiset (AlgebraicClosure (ZMod q)))
         have hwv₈ := hww Ld 0 Vd ({xR₁, xQR₃} :
           Multiset (AlgebraicClosure (ZMod q)))
-        have hwv₉ := hww 0 0 ({xS₁} : Multiset (AlgebraicClosure (ZMod q)))
-          ({xR₁, xQR₃} : Multiset (AlgebraicClosure (ZMod q)))
         -- the divisor-bookkeeping conversions, as product equations
         -- (type inferred from hbalP; normalized at use time)
         have hcvP := fun φ : ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) → (AlgebraicClosure (ZMod q)) =>
@@ -8774,17 +8768,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                       Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
                       (0 : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))) (0 : Multiset (AlgebraicClosure (ZMod q)))
                       ({xS₁} : Multiset (AlgebraicClosure (ZMod q)))
-                    have hwvP := hww
-                      ({(Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃,
-                        yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁),
-                       (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃),
-                        Wb.toAffine.negY xR₁ yR₁ -
-                          (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)} :
-                      Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))))
-                      (0 : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))) (0 : Multiset (AlgebraicClosure (ZMod q)))
-                      ({xPS₁} : Multiset (AlgebraicClosure (ZMod q)))
                     have hcvtS := hcvt (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - xS₁)
-                    have hcvtPS := hcvt (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - xPS₁)
                     have hpjR := hcvP (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - xR₁)
                     have hpjQ := hcvP (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => T.1 - xQR₃)
                     -- normalize: expand literal multisets, replicates, and
@@ -8803,8 +8787,8 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                       Function.comp_apply, Nat.mul_zero, pow_zero,
                       mul_one, one_mul]
                       at hwwN hwwNM hwwD hwwDM hcvtN hcvtD hpjA hpjB hpjM
-                        hpjR hpjQ hwv₃ hwv₄ hwv₇ hwv₈ hwv₉ hwvS hwvP
-                        hcvtS hcvtPS
+                        hpjR hpjQ hwv₇ hwv₈ hwvS
+                        hcvtS
                     rw [Even.neg_one_pow ⟨Multiset.card Ln, by ring⟩,
                       one_mul] at hwwN
                     rw [Even.neg_one_pow ⟨Multiset.card Ld, by ring⟩,
@@ -8817,14 +8801,6 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                         (xQR₁ - xS₁) * (xR₁ - xS₁) * (xR₃ - xS₁) *
                           (xQR₃ - xS₁) * ((xM - xS₁) * (xM - xS₁)) := by
                       linear_combination hwvS - hcvtS
-                    have hnormhelpP :
-                        (((yfib xPS₁) - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) *
-                          ((yfib xPS₁) - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))) *
-                        ((Wb.toAffine.negY xPS₁ (yfib xPS₁) - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) *
-                          (Wb.toAffine.negY xPS₁ (yfib xPS₁) - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))) =
-                        (xQR₁ - xPS₁) * (xR₁ - xPS₁) * (xR₃ - xPS₁) *
-                          (xQR₃ - xPS₁) * ((xM - xPS₁) * (xM - xPS₁)) := by
-                      linear_combination hwvP - hcvtPS
                     have hnormS' :
                         ((yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) *
                           (yS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))) *
@@ -8843,140 +8819,9 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                         Multiset.map_singleton, Multiset.prod_cons,
                         Multiset.prod_singleton] at htr
                       linear_combination hnormhelpS - htr
-                    have hnormP' :
-                        ((yPS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) *
-                          (yPS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))) *
-                        ((Wb.toAffine.negY xPS₁ yPS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) *
-                          (Wb.toAffine.negY xPS₁ yPS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))) =
-                        (xQR₁ - xPS₁) * (xR₁ - xPS₁) * (xR₃ - xPS₁) *
-                          (xQR₃ - xPS₁) * ((xM - xPS₁) * (xM - xPS₁)) := by
-                      have htr := congrArg (fun A : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) =>
-                        (A.map (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
-                        (T.2 - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * T.1 + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) *
-                        (T.2 - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * T.1 + (Wb.toAffine.negY xR₁ yR₁ -
-                          (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁))))).prod)
-                        (hfibpair xPS₁ yPS₁ hPS₁.left)
-                      set_option maxRecDepth 16384 in
-                      simp only [Multiset.insert_eq_cons, Multiset.map_cons,
-                        Multiset.map_singleton, Multiset.prod_cons,
-                        Multiset.prod_singleton] at htr
-                      linear_combination hnormhelpP - htr
-                    have htrRN := congrArg (fun A : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) =>
-                      (A.map (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
-                        (Ln.map (fun ab : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
-                          T.2 - (ab.1 * T.1 + ab.2))).prod *
-                        (Vn.map (fun cv => T.1 - cv)).prod)).prod)
-                      (hfibpair xR₁ yR₁ hR₁.left)
-                    have htrQN := congrArg (fun A : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) =>
-                      (A.map (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
-                        (Ln.map (fun ab : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
-                          T.2 - (ab.1 * T.1 + ab.2))).prod *
-                        (Vn.map (fun cv => T.1 - cv)).prod)).prod)
-                      (hfibpair xQR₃ yQR₃ hQR₃.left)
-                    have htrRD := congrArg (fun A : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) =>
-                      (A.map (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
-                        (Ld.map (fun ab : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
-                          T.2 - (ab.1 * T.1 + ab.2))).prod *
-                        (Vd.map (fun cv => T.1 - cv)).prod)).prod)
-                      (hfibpair xR₁ yR₁ hR₁.left)
-                    have htrQD := congrArg (fun A : Multiset ((AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) =>
-                      (A.map (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
-                        (Ld.map (fun ab : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
-                          T.2 - (ab.1 * T.1 + ab.2))).prod *
-                        (Vd.map (fun cv => T.1 - cv)).prod)).prod)
-                      (hfibpair xQR₃ yQR₃ hQR₃.left)
-                    set_option maxRecDepth 16384 in
-                    simp only [Multiset.insert_eq_cons, Multiset.map_cons,
-                      Multiset.map_singleton, Multiset.prod_cons,
-                      Multiset.prod_singleton] at htrRN htrQN htrRD htrQD
                     have hN := hcvtN.trans hwwN
                     have hD := hcvtD.trans hwwD
-                    -- the sigma-norm identities at S₁ (curve equation)
-                    have hnormA : (yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) *
-                        (Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) =
-                        -(xS₁ ^ 3 +
-                          (Wb.toAffine.a₂ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) ^ 2 -
-                            Wb.toAffine.a₁ * (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃)) * xS₁ ^ 2 +
-                          (Wb.toAffine.a₄ - 2 * (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁) -
-                            Wb.toAffine.a₁ * (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁) -
-                            Wb.toAffine.a₃ * (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃)) * xS₁ +
-                          (Wb.toAffine.a₆ - (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁) ^ 2 -
-                            Wb.toAffine.a₃ * (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) := by
-                      simp only [WeierstrassCurve.Affine.negY]
-                      linear_combination -((WeierstrassCurve.Affine.equation_iff
-                        (W := Wb.toAffine) xS₁ yS₁).mp hS₁.left)
-                    have hnormB : (yS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁))) *
-                        (Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁))) =
-                        -(xS₁ ^ 3 +
-                          (Wb.toAffine.a₂ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) ^ 2 -
-                            Wb.toAffine.a₁ * (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃))) * xS₁ ^ 2 +
-                          (Wb.toAffine.a₄ - 2 * (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁) -
-                            Wb.toAffine.a₁ * (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁) -
-                            Wb.toAffine.a₃ * (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃))) * xS₁ +
-                          (Wb.toAffine.a₆ - (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁) ^ 2 -
-                            Wb.toAffine.a₃ * (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁))) := by
-                      simp only [WeierstrassCurve.Affine.negY]
-                      linear_combination -((WeierstrassCurve.Affine.equation_iff
-                        (W := Wb.toAffine) xS₁ yS₁).mp hS₁.left)
-                    have hm1 : ((-1 : (AlgebraicClosure (ZMod q)))) ^ p *
-                        ((-1 : (AlgebraicClosure (ZMod q)))) ^ p = 1 := by
-                      rw [← mul_pow]
-                      norm_num
-                    -- the M-fiber word-denominator values are nonzero
-                    have hmfne : ((Ld.map (fun ab : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => Wb.toAffine.negY xM (yfib xM) - (ab.1 * xM + ab.2))).prod * (Vd.map (fun cv => xM - cv)).prod) *
-                        ((Ld.map (fun ab : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => yfib xM - (ab.1 * xM + ab.2))).prod * (Vd.map (fun cv => xM - cv)).prod) ≠ 0 := by
-                      have hrootmem' : ∀ (l n x y : (AlgebraicClosure (ZMod q))),
-                          Wb.toAffine.Equation x y → y - (l * x + n) = 0 →
-                          x ∈ ((Polynomial.X ^ 3
-                            + Polynomial.C (Wb.toAffine.a₂ - l ^ 2 - Wb.toAffine.a₁ * l)
-                              * Polynomial.X ^ 2
-                            + Polynomial.C (Wb.toAffine.a₄ - 2 * l * n - Wb.toAffine.a₁ * n
-                                - Wb.toAffine.a₃ * l) * Polynomial.X
-                            + Polynomial.C (Wb.toAffine.a₆ - n ^ 2 - Wb.toAffine.a₃ * n))).roots := by
-                        intro l n x y hE hy
-                        have hcne : ((Polynomial.X ^ 3
-                            + Polynomial.C (Wb.toAffine.a₂ - l ^ 2 - Wb.toAffine.a₁ * l)
-                              * Polynomial.X ^ 2
-                            + Polynomial.C (Wb.toAffine.a₄ - 2 * l * n - Wb.toAffine.a₁ * n
-                                - Wb.toAffine.a₃ * l) * Polynomial.X
-                            + Polynomial.C (Wb.toAffine.a₆ - n ^ 2 - Wb.toAffine.a₃ * n))) ≠ 0 := fun h => by
-                          have h3 := congrArg (fun q : Polynomial (AlgebraicClosure (ZMod q)) =>
-                            Polynomial.coeff q 3) h
-                          simp only [Polynomial.coeff_add, Polynomial.coeff_X_pow,
-                            Polynomial.coeff_C_mul, Polynomial.coeff_C,
-                            Polynomial.coeff_X, Polynomial.coeff_zero, reduceIte,
-                            mul_zero, add_zero, zero_add] at h3
-                          norm_num at h3
-                        rw [Polynomial.mem_roots hcne]
-                        have hE' := (WeierstrassCurve.Affine.equation_iff
-                          (W := Wb.toAffine) x y).mp hE
-                        have hyv : y = l * x + n := sub_eq_zero.mp hy
-                        subst hyv
-                        simp only [Polynomial.IsRoot, Polynomial.eval_add,
-                          Polynomial.eval_mul, Polynomial.eval_pow,
-                          Polynomial.eval_C, Polynomial.eval_X]
-                        linear_combination -hE'
-                      have hEneg : Wb.toAffine.Equation xM
-                          (Wb.toAffine.negY xM (yfib xM)) :=
-                        (WeierstrassCurve.Affine.equation_neg
-                          (W' := Wb.toAffine) _ _).mpr (hyfib xM)
-                      refine mul_ne_zero ?_ ?_
-                      · refine mul_ne_zero (Multiset.prod_ne_zero fun h0 => ?_)
-                          (Multiset.prod_ne_zero fun h0 => ?_)
-                        · obtain ⟨ln, hln, hval⟩ := Multiset.mem_map.mp h0
-                          exact hxMF' (hRtF ln (Multiset.mem_add.mpr (Or.inr hln))
-                            xM (hrootmem' ln.1 ln.2 xM (Wb.toAffine.negY xM (yfib xM)) hEneg hval))
-                        · obtain ⟨cc, hcc, hval⟩ := Multiset.mem_map.mp h0
-                          exact hxMF' (sub_eq_zero.mp hval ▸
-                            hVnF cc (Multiset.mem_add.mpr (Or.inr hcc)))
-                      · refine mul_ne_zero (Multiset.prod_ne_zero fun h0 => ?_)
-                          (Multiset.prod_ne_zero fun h0 => ?_)
-                        · obtain ⟨ln, hln, hval⟩ := Multiset.mem_map.mp h0
-                          exact hxMF' (hRtF ln (Multiset.mem_add.mpr (Or.inr hln))
-                            xM (hrootmem' ln.1 ln.2 xM (yfib xM) (hyfib xM) hval))
-                        · obtain ⟨cc, hcc, hval⟩ := Multiset.mem_map.mp h0
-                          exact hxMF' (sub_eq_zero.mp hval ▸
-                            hVnF cc (Multiset.mem_add.mpr (Or.inr hcc)))
+                    -- the numerator-word M-fiber values are nonzero
                     have hmfneN : ((Ln.map (fun ab : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => Wb.toAffine.negY xM (yfib xM) - (ab.1 * xM + ab.2))).prod * (Vn.map (fun cv => xM - cv)).prod) *
                         ((Ln.map (fun ab : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => yfib xM - (ab.1 * xM + ab.2))).prod * (Vn.map (fun cv => xM - cv)).prod) ≠ 0 := by
                       have hrootmem' : ∀ (l n x y : (AlgebraicClosure (ZMod q))),
@@ -9098,7 +8943,126 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                         ((xS₁ - xM) ^ p) *
                         ((xS₁ - xQR₃) ^ p) *
                         ((xS₁ - xR₁) ^ p) := by
-                      sorry
+                      have hnSp := congrArg (· ^ p) hnormS'
+                      have hsw1 := congrArg (· ^ p)
+                        (show (xR₁ - xS₁) * (xR₁ - xS₁) =
+                          (xS₁ - xR₁) * (xS₁ - xR₁) by ring)
+                      have hsw2 := congrArg (· ^ p)
+                        (show (xQR₃ - xS₁) * (xQR₃ - xS₁) =
+                          (xS₁ - xQR₃) * (xS₁ - xQR₃) by ring)
+                      have hsw3 := congrArg (· ^ p)
+                        (show (xM - xS₁) * (xM - xS₁) =
+                          (xS₁ - xM) * (xS₁ - xM) by ring)
+                      simp only [mul_pow] at hnSp hsw1 hsw2 hsw3 ⊢
+                      linear_combination
+                        (((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) ^ p) *
+                          ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁))) ^ p) *
+                          ((c) ^ p) *
+                          ((c) ^ p) *
+                          ((xPS₁ - xM) ^ p) *
+                          ((xPS₁ - xQR₃) ^ p) *
+                          ((xPS₁ - xR₁) ^ p) *
+                          ((xQR₃ - xS₁) ^ p) *
+                          ((xR₁ - xS₁) ^ p) *
+                          ((xS₁ - xM) ^ p) *
+                          ((xS₁ - xQR₃) ^ p) *
+                          ((xS₁ - xR₁) ^ p) *
+                          ((yPS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ + (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) ^ p) *
+                          ((yPS₁ -
+            (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ +
+              (Wb.toAffine.negY xR₁ yR₁ -
+                Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁))) ^
+          p)) * hnSp +
+                        (((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) ^ p) *
+                          ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁))) ^ p) *
+                          ((c) ^ p) *
+                          ((c) ^ p) *
+                          ((xM - xS₁) ^ p) *
+                          ((xM - xS₁) ^ p) *
+                          ((xPS₁ - xM) ^ p) *
+                          ((xPS₁ - xQR₃) ^ p) *
+                          ((xPS₁ - xR₁) ^ p) *
+                          ((xQR₁ - xS₁) ^ p) *
+                          ((xQR₃ - xS₁) ^ p) *
+                          ((xQR₃ - xS₁) ^ p) *
+                          ((xR₃ - xS₁) ^ p) *
+                          ((xS₁ - xM) ^ p) *
+                          ((xS₁ - xQR₃) ^ p) *
+                          ((xS₁ - xR₁) ^ p) *
+                          ((yPS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ + (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) ^ p) *
+                          ((yPS₁ -
+            (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ +
+              (Wb.toAffine.negY xR₁ yR₁ -
+                Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁))) ^
+          p)) * hsw1 +
+                        (((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) ^ p) *
+                          ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁))) ^ p) *
+                          ((c) ^ p) *
+                          ((c) ^ p) *
+                          ((xM - xS₁) ^ p) *
+                          ((xM - xS₁) ^ p) *
+                          ((xPS₁ - xM) ^ p) *
+                          ((xPS₁ - xQR₃) ^ p) *
+                          ((xPS₁ - xR₁) ^ p) *
+                          ((xQR₁ - xS₁) ^ p) *
+                          ((xR₃ - xS₁) ^ p) *
+                          ((xS₁ - xM) ^ p) *
+                          ((xS₁ - xQR₃) ^ p) *
+                          ((xS₁ - xR₁) ^ p) *
+                          ((xS₁ - xR₁) ^ p) *
+                          ((xS₁ - xR₁) ^ p) *
+                          ((yPS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ + (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) ^ p) *
+                          ((yPS₁ -
+            (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ +
+              (Wb.toAffine.negY xR₁ yR₁ -
+                Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁))) ^
+          p)) * hsw2 +
+                        (((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) ^ p) *
+                          ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁))) ^ p) *
+                          ((c) ^ p) *
+                          ((c) ^ p) *
+                          ((xPS₁ - xM) ^ p) *
+                          ((xPS₁ - xQR₃) ^ p) *
+                          ((xPS₁ - xR₁) ^ p) *
+                          ((xQR₁ - xS₁) ^ p) *
+                          ((xR₃ - xS₁) ^ p) *
+                          ((xS₁ - xM) ^ p) *
+                          ((xS₁ - xQR₃) ^ p) *
+                          ((xS₁ - xQR₃) ^ p) *
+                          ((xS₁ - xQR₃) ^ p) *
+                          ((xS₁ - xR₁) ^ p) *
+                          ((xS₁ - xR₁) ^ p) *
+                          ((xS₁ - xR₁) ^ p) *
+                          ((yPS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ + (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) ^ p) *
+                          ((yPS₁ -
+            (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ +
+              (Wb.toAffine.negY xR₁ yR₁ -
+                Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁))) ^
+          p)) * hsw3
                     refine mul_right_cancel₀ (mul_ne_zero hDne hmfneN) ?_
                     linear_combination
                       ((((xPS₁ - xM) * (xS₁ - xM)) ^ p) *
