@@ -7,7 +7,10 @@
       "WebSearch",
       "mcp__annas-mcp__search_annas",
       "mcp__annas-mcp__download_annas",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(lake exe cache get)",
+      "Bash(lake exe cache get:*)",
+      "Bash(cd * && lake exe cache get)"
     ],
     "deny": [
       "Bash(git push --force:*)",
@@ -16,15 +19,20 @@
       "Bash(git push*--force*)",
       "Bash(git push*-f)",
       "Bash(git push*-f *)",
-      "Bash(lake build:*)",
+      "Bash(lake:*)",
+      "Bash(lake *)",
       "Bash(*lake build*)",
-      "Bash(lake env lean:*)",
-      "Bash(*lake env lean*)",
-      "Bash(lake lean:*)",
-      "Bash(*lake lean *)"
+      "Bash(* lake *)",
+      "Bash(*&& lake*)",
+      "Bash(*; lake*)",
+      "Bash(*| lake*)",
+      "Bash(lean:*)",
+      "Bash(lean *)",
+      "Bash(elan:*)",
+      "Bash(elan *)"
     ],
     "denyExplanations": {
-      "lake": "BANNED (Deyao, 2026-07-22): please use the MCP (lean-lsp) — its diagnostics are the trusted verification gate for EVERYTHING; it accepts absolute paths into agent worktrees and compiles imports on demand. Nothing verifies outside an MCP door; headless scripts use the detached report server."
+      "lake": "BANNED (Deyao, 2026-07-22): all lake/lean/elan CLI invocations are denied except `lake exe cache get` (mathlib artifact fetch for a fresh worktree). Please use the MCP (lean-lsp) — its diagnostics are the trusted verification gate for everything; per-worktree servers exist and compile imports on demand. Headless scripts use the detached report server."
     },
     "additionalDirectories": [
       "/tmp"
