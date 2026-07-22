@@ -23,6 +23,13 @@ must never strand its remaining leaves unowned. Track the new leaves in
 progress-entries.json (wip flags at dispatch) as part of the same
 integration step.
 
+Same-FILE leaves may get concurrent owners (Deyao, 2026-07-22): each
+agent works in its own git worktree on its own branch, and merging
+concurrent edits to one file is what git is designed to handle — leaves
+are disjoint regions, so merges are clean or trivially resolvable at
+integration. Do not serialize a file's independent leaves behind one
+owner out of conflict fear; partition them.
+
 ## File edits: prefer the Write/Edit tool calls over scripts (soft rule)
 
 (Deyao, 2026-07-22.) Edit files with the harness's Write/Edit tools by
