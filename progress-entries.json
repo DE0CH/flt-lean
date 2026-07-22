@@ -1374,7 +1374,7 @@
     "name": "not_full_four_torsion_rat",
     "fullname": "WeierstrassCurve.not_full_four_torsion_rat",
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
-    "wip": true,
+    "wip": false,
     "text": "`WeierstrassCurve.not_full_four_torsion_rat` — no rational (ℤ/4)² level structure; minimal content μ₄ ⊄ ℚ — docstring records the level-4 Weil-pairing route and the elementary 2-torsion-abscissae square-product route (2026-07-22)",
     "parent": "WeierstrassCurve.mazur_classification"
   },
@@ -1398,7 +1398,7 @@
     "name": "exists_etale_line_of_multiplicative_self",
     "fullname": "FreyPackage.exists_etale_line_of_multiplicative_self",
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
-    "wip": true,
+    "wip": false,
     "text": "`FreyPackage.exists_etale_line_of_multiplicative_self` — Tate/connected-étale line at multiplicative self-reduction (leaf of the proven flat/ordinary linear-algebra assembly)",
     "parent": "FreyPackage.subquotient_character_unramified_at_p"
   },
@@ -1406,7 +1406,7 @@
     "name": "exists_etale_line_of_good_of_stable_line",
     "fullname": "FreyPackage.exists_etale_line_of_good_of_stable_line",
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
-    "wip": true,
+    "wip": false,
     "text": "`FreyPackage.exists_etale_line_of_good_of_stable_line` — connected-étale line at good reduction with stable line (leaf of the proven flat/ordinary linear-algebra assembly)",
     "parent": "FreyPackage.subquotient_character_unramified_at_p"
   },
@@ -1521,5 +1521,29 @@
     "wip": false,
     "text": "`infinite_setOf_isArithFrobAt` — PROVEN 2026-07-22 (chebotarev-2, Deuring reduction); consumes the cyclic analytic core leaf",
     "parent": "GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj"
+  },
+  {
+    "name": "exists_etale_line_of_split_multiplicative_self",
+    "fullname": "FreyPackage.exists_etale_line_of_split_multiplicative_self",
+    "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+    "wip": true,
+    "text": "`exists_etale_line_of_split_multiplicative_self` — split-multiplicative étale line: pure Kummer at the exists_tateEquivSepClosure interface (σ(u)/u ∈ μ_p for the whole local Galois group; only the μ_p-line rank-1 fact + global transport remain) — 2026-07-22",
+    "parent": "FreyPackage.exists_etale_line_of_multiplicative_self"
+  },
+  {
+    "name": "exists_etale_line_of_nonsplit_multiplicative_self",
+    "fullname": "FreyPackage.exists_etale_line_of_nonsplit_multiplicative_self",
+    "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+    "wip": true,
+    "text": "`exists_etale_line_of_nonsplit_multiplicative_self` — nonsplit case: unramified quadratic-twist descent via exists_quadraticTwist_hasSplitMultiplicativeReduction — 2026-07-22",
+    "parent": "FreyPackage.exists_etale_line_of_multiplicative_self"
+  },
+  {
+    "name": "exists_etale_line_or_no_stable_line_of_good",
+    "fullname": "FreyPackage.exists_etale_line_or_no_stable_line_of_good",
+    "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+    "wip": true,
+    "text": "`exists_etale_line_or_no_stable_line_of_good` — ordinary/supersingular dichotomy with the stable line factored out (Serre 1972 Prop 12 shape) — 2026-07-22",
+    "parent": "FreyPackage.exists_etale_line_of_good_of_stable_line"
   }
 ]
