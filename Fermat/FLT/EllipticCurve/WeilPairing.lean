@@ -9009,7 +9009,827 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
         ∃ z₁ z₂ z₃ : (AlgebraicClosure (ZMod q))ˣ,
         IsWeilValue x z z₁ ∧ IsWeilValue y z z₂ ∧
         IsWeilValue (x + y) z z₃ ∧ z₃ = z₁ * z₂ := by
-      sorry
+      intro x y z
+      -- degenerate second argument: all three values are 1
+      by_cases hz0 : z.val = 0
+      · refine ⟨1, 1, 1, ⟨fun _ => rfl, ?_⟩, ⟨fun _ => rfl, ?_⟩,
+          ⟨fun _ => rfl, ?_⟩, (one_mul 1).symm⟩
+        all_goals intro xP yP hP xQ yQ hQ hv hw
+        all_goals exfalso
+        all_goals rw [hz0, WeierstrassCurve.Affine.Point.zero_def] at hw
+        all_goals simp at hw
+      -- degenerate first arguments
+      by_cases hx0 : x.val = 0
+      · obtain ⟨z₂, hz₂⟩ := hexval y z
+        have hx0' : x = 0 := Subtype.ext (by rw [hx0]; try rfl)
+        have hxy : x + y = y := by rw [hx0', zero_add]
+        refine ⟨1, z₂, z₂, ⟨fun _ => rfl, ?_⟩, hz₂,
+          by rw [hxy]; exact hz₂, (one_mul z₂).symm⟩
+        intro xP yP hP xQ yQ hQ hv hw
+        exfalso
+        rw [hx0, WeierstrassCurve.Affine.Point.zero_def] at hv
+        simp at hv
+      by_cases hy0 : y.val = 0
+      · obtain ⟨z₁, hz₁⟩ := hexval x z
+        have hy0' : y = 0 := Subtype.ext (by rw [hy0]; try rfl)
+        have hxy : x + y = x := by rw [hy0', add_zero]
+        refine ⟨z₁, 1, z₁, hz₁, ⟨fun _ => rfl, ?_⟩,
+          by rw [hxy]; exact hz₁, (mul_one z₁).symm⟩
+        intro xP yP hP xQ yQ hQ hv hw
+        exfalso
+        rw [hy0, WeierstrassCurve.Affine.Point.zero_def] at hv
+        simp at hv
+      -- opposite arguments: the sum degenerates and the two values are
+      -- mutually inverse (the U = S collapsed chain; the word identity
+      -- reads aP₁·aP₂ = C c · X_S^p · X_T^p) — remaining sorry
+      by_cases hs0 : (x + y).val = 0
+      · have hpair : ∃ z₁ z₂ : (AlgebraicClosure (ZMod q))ˣ,
+            IsWeilValue x z z₁ ∧ IsWeilValue y z z₂ ∧ z₁ * z₂ = 1 := by
+          sorry
+        obtain ⟨z₁, z₂, h1, h2, h12⟩ := hpair
+        refine ⟨z₁, z₂, 1, h1, h2, ⟨fun _ => rfl, ?_⟩, h12.symm⟩
+        intro xP yP hP xQ yQ hQ hv hw
+        exfalso
+        rw [hs0, WeierstrassCurve.Affine.Point.zero_def] at hv
+        simp at hv
+      -- ================= the main shared-chain case =================
+      -- affine representatives of x, y, x+y, z
+      rcases hcx : x.val with _ | ⟨xP1, yP1, hP1b⟩
+      · exact absurd (by rw [hcx, WeierstrassCurve.Affine.Point.zero_def])
+          hx0
+      rcases hcy : y.val with _ | ⟨xP2, yP2, hP2b⟩
+      · exact absurd (by rw [hcy, WeierstrassCurve.Affine.Point.zero_def])
+          hy0
+      rcases hcs : (x + y).val with _ | ⟨xP12, yP12, hP12b⟩
+      · exact absurd (by rw [hcs, WeierstrassCurve.Affine.Point.zero_def])
+          hs0
+      rcases hcz : z.val with _ | ⟨xQ, yQ, hQb⟩
+      · exact absurd (by rw [hcz, WeierstrassCurve.Affine.Point.zero_def])
+          hz0
+      have hP1 : Wb.toAffine.Nonsingular xP1 yP1 := hP1b
+      have hP2 : Wb.toAffine.Nonsingular xP2 yP2 := hP2b
+      have hP12 : Wb.toAffine.Nonsingular xP12 yP12 := hP12b
+      have hQ : Wb.toAffine.Nonsingular xQ yQ := hQb
+      -- the group identity P₁ + P₂ = P₁₂
+      have hsum0 : (WeierstrassCurve.Affine.Point.some xP1 yP1 hP1 :
+          Wb.toAffine.Point) + WeierstrassCurve.Affine.Point.some xP2 yP2 hP2 =
+          WeierstrassCurve.Affine.Point.some xP12 yP12 hP12 := by
+        have h : x.val + y.val = (x + y).val := rfl
+        rw [hcx, hcy, hcs] at h
+        exact h
+      -- torsion facts
+      have hvp1 : (p : ℤ) • (WeierstrassCurve.Affine.Point.some xP1 yP1 hP1 :
+          Wb.toAffine.Point) = 0 := by
+        have h := (Submodule.mem_torsionBy_iff _ _).mp x.2
+        rw [hcx] at h
+        exact h
+      have hvp2 : (p : ℤ) • (WeierstrassCurve.Affine.Point.some xP2 yP2 hP2 :
+          Wb.toAffine.Point) = 0 := by
+        have h := (Submodule.mem_torsionBy_iff _ _).mp y.2
+        rw [hcy] at h
+        exact h
+      have hvp12 : (p : ℤ) • (WeierstrassCurve.Affine.Point.some xP12 yP12 hP12 :
+          Wb.toAffine.Point) = 0 := by
+        have h := (Submodule.mem_torsionBy_iff _ _).mp (x + y).2
+        rw [hcs] at h
+        exact h
+      have hwq : (p : ℤ) • (WeierstrassCurve.Affine.Point.some xQ yQ hQ :
+          Wb.toAffine.Point) = 0 := by
+        have h := (Submodule.mem_torsionBy_iff _ _).mp z.2
+        rw [hcz] at h
+        exact h
+      -- the three β⁺ degree fields
+      have h2f₁ : 2 * Nat.lcm
+          (Nat.lcm (frobPeriod q xP1) (frobPeriod q yP1))
+          (Nat.lcm (frobPeriod q xQ) (frobPeriod q yQ)) ≠ 0 :=
+        Nat.mul_ne_zero two_ne_zero (Nat.lcm_ne_zero
+          (Nat.lcm_ne_zero (frobPeriod_pos q xP1).ne' (frobPeriod_pos q yP1).ne')
+          (Nat.lcm_ne_zero (frobPeriod_pos q xQ).ne' (frobPeriod_pos q yQ).ne'))
+      have h2f₂ : 2 * Nat.lcm
+          (Nat.lcm (frobPeriod q xP2) (frobPeriod q yP2))
+          (Nat.lcm (frobPeriod q xQ) (frobPeriod q yQ)) ≠ 0 :=
+        Nat.mul_ne_zero two_ne_zero (Nat.lcm_ne_zero
+          (Nat.lcm_ne_zero (frobPeriod_pos q xP2).ne' (frobPeriod_pos q yP2).ne')
+          (Nat.lcm_ne_zero (frobPeriod_pos q xQ).ne' (frobPeriod_pos q yQ).ne'))
+      have h2f₃ : 2 * Nat.lcm
+          (Nat.lcm (frobPeriod q xP12) (frobPeriod q yP12))
+          (Nat.lcm (frobPeriod q xQ) (frobPeriod q yQ)) ≠ 0 :=
+        Nat.mul_ne_zero two_ne_zero (Nat.lcm_ne_zero
+          (Nat.lcm_ne_zero (frobPeriod_pos q xP12).ne' (frobPeriod_pos q yP12).ne')
+          (Nat.lcm_ne_zero (frobPeriod_pos q xQ).ne' (frobPeriod_pos q yQ).ne'))
+      -- the data subfield F₀, containing all three degree fields
+      obtain ⟨F, hFfin, hFmem⟩ := hsubfin
+        ({xP1, yP1, xP2, yP2, xP12, yP12, xQ, yQ} ∪
+        (frobFixed_finite q h2f₁).toFinset ∪
+        (frobFixed_finite q h2f₂).toFinset ∪
+        (frobFixed_finite q h2f₃).toFinset)
+      have hK2F₁ : frobFixed q (2 * Nat.lcm
+          (Nat.lcm (frobPeriod q xP1) (frobPeriod q yP1))
+          (Nat.lcm (frobPeriod q xQ) (frobPeriod q yQ))) ≤ F := fun a ha =>
+        hFmem a (by
+          simp only [Finset.mem_union]
+          exact Or.inl (Or.inl (Or.inr
+            ((frobFixed_finite q h2f₁).mem_toFinset.mpr ha))))
+      have hK2F₂ : frobFixed q (2 * Nat.lcm
+          (Nat.lcm (frobPeriod q xP2) (frobPeriod q yP2))
+          (Nat.lcm (frobPeriod q xQ) (frobPeriod q yQ))) ≤ F := fun a ha =>
+        hFmem a (by
+          simp only [Finset.mem_union]
+          exact Or.inl (Or.inr
+            ((frobFixed_finite q h2f₂).mem_toFinset.mpr ha)))
+      have hK2F₃ : frobFixed q (2 * Nat.lcm
+          (Nat.lcm (frobPeriod q xP12) (frobPeriod q yP12))
+          (Nat.lcm (frobPeriod q xQ) (frobPeriod q yQ))) ≤ F := fun a ha =>
+        hFmem a (Finset.mem_union_right _
+          ((frobFixed_finite q h2f₃).mem_toFinset.mpr ha))
+      -- the chained first translate S: off F and off the S-choices that
+      -- would put x(P₁⊕S) or x(P₁₂⊕S) into F
+      obtain ⟨xS, hxS, yS, hSns⟩ := hpoints (hFfin.toFinset ∪
+        hFfin.toFinset.image (fun c => xOf
+          (-(WeierstrassCurve.Affine.Point.some xP1 yP1 hP1) +
+            WeierstrassCurve.Affine.Point.some c (yfib c)
+              ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                (hyfib c)))) ∪
+        hFfin.toFinset.image (fun c => xOf
+          (-(WeierstrassCurve.Affine.Point.some xP1 yP1 hP1) +
+            WeierstrassCurve.Affine.Point.some c
+              (Wb.toAffine.negY c (yfib c))
+              ((WeierstrassCurve.Affine.nonsingular_neg c (yfib c)).mpr
+                ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                  (hyfib c))))) ∪
+        hFfin.toFinset.image (fun c => xOf
+          (-(WeierstrassCurve.Affine.Point.some xP12 yP12 hP12) +
+            WeierstrassCurve.Affine.Point.some c (yfib c)
+              ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                (hyfib c)))) ∪
+        hFfin.toFinset.image (fun c => xOf
+          (-(WeierstrassCurve.Affine.Point.some xP12 yP12 hP12) +
+            WeierstrassCurve.Affine.Point.some c
+              (Wb.toAffine.negY c (yfib c))
+              ((WeierstrassCurve.Affine.nonsingular_neg c (yfib c)).mpr
+                ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                  (hyfib c))))))
+      have hxSF : xS ∉ (F : Set (AlgebraicClosure (ZMod q))) := fun h =>
+        hxS (by
+          simp only [Finset.mem_union]
+          exact Or.inl (Or.inl (Or.inl (Or.inl
+            (hFfin.mem_toFinset.mpr h)))))
+      have hSneg : Wb.toAffine.Nonsingular xS (Wb.toAffine.negY xS yS) :=
+        (WeierstrassCurve.Affine.nonsingular_neg xS yS).mpr hSns
+      -- T := P₁ ⊕ S is affine
+      have hTne : WeierstrassCurve.Affine.Point.some xP1 yP1 hP1 +
+          WeierstrassCurve.Affine.Point.some xS yS hSns ≠ 0 := by
+        intro h0
+        have h1 : WeierstrassCurve.Affine.Point.some xS yS hSns =
+            -(WeierstrassCurve.Affine.Point.some xP1 yP1 hP1) :=
+          eq_neg_of_add_eq_zero_right h0
+        rw [WeierstrassCurve.Affine.Point.neg_some hP1] at h1
+        injection h1 with e1 e2
+        exact hxSF (by rw [e1]; exact hFmem xP1 (by simp))
+      rcases hTc : (WeierstrassCurve.Affine.Point.some xP1 yP1 hP1 +
+          WeierstrassCurve.Affine.Point.some xS yS hSns) with _ | ⟨xT, yT, hT⟩
+      · exact absurd (by rw [hTc, WeierstrassCurve.Affine.Point.zero_def])
+          hTne
+      -- U := P₁₂ ⊕ S is affine
+      have hUne : WeierstrassCurve.Affine.Point.some xP12 yP12 hP12 +
+          WeierstrassCurve.Affine.Point.some xS yS hSns ≠ 0 := by
+        intro h0
+        have h1 : WeierstrassCurve.Affine.Point.some xS yS hSns =
+            -(WeierstrassCurve.Affine.Point.some xP12 yP12 hP12) :=
+          eq_neg_of_add_eq_zero_right h0
+        rw [WeierstrassCurve.Affine.Point.neg_some hP12] at h1
+        injection h1 with e1 e2
+        exact hxSF (by rw [e1]; exact hFmem xP12 (by simp))
+      rcases hUc : (WeierstrassCurve.Affine.Point.some xP12 yP12 hP12 +
+          WeierstrassCurve.Affine.Point.some xS yS hSns) with _ | ⟨xU, yU, hU⟩
+      · exact absurd (by rw [hUc, WeierstrassCurve.Affine.Point.zero_def])
+          hUne
+      -- point transport along coordinate equalities
+      have hptfun : ∀ (x₀ y₀ c y' : (AlgebraicClosure (ZMod q)))
+          (h : Wb.toAffine.Nonsingular x₀ y₀)
+          (h' : Wb.toAffine.Nonsingular c y'), x₀ = c → y₀ = y' →
+          (WeierstrassCurve.Affine.Point.some x₀ y₀ h : Wb.toAffine.Point) =
+            WeierstrassCurve.Affine.Point.some c y' h' := by
+        intro x₀ y₀ c y' h h' hx hy
+        subst hx
+        subst hy
+        rfl
+      -- any representation of T (resp. U) pins down xS
+      have hxSofT : ∀ (c y' : (AlgebraicClosure (ZMod q)))
+          (h' : Wb.toAffine.Nonsingular c y'),
+          (WeierstrassCurve.Affine.Point.some xT yT hT :
+            Wb.toAffine.Point) =
+            WeierstrassCurve.Affine.Point.some c y' h' →
+          xS = xOf (-(WeierstrassCurve.Affine.Point.some xP1 yP1 hP1) +
+            WeierstrassCurve.Affine.Point.some c y' h') := by
+        intro c y' h' hpt
+        rw [← hpt, ← hTc, neg_add_cancel_left]
+      have hxSofU : ∀ (c y' : (AlgebraicClosure (ZMod q)))
+          (h' : Wb.toAffine.Nonsingular c y'),
+          (WeierstrassCurve.Affine.Point.some xU yU hU :
+            Wb.toAffine.Point) =
+            WeierstrassCurve.Affine.Point.some c y' h' →
+          xS = xOf (-(WeierstrassCurve.Affine.Point.some xP12 yP12 hP12) +
+            WeierstrassCurve.Affine.Point.some c y' h') := by
+        intro c y' h' hpt
+        rw [← hpt, ← hUc, neg_add_cancel_left]
+      -- amendment (β) for the chain: x_T and x_U avoid F
+      have hxTF : xT ∉ (F : Set (AlgebraicClosure (ZMod q))) := by
+        intro hin
+        rcases hfib2 xT yT hT.left with hy | hy
+        · refine hxS ?_
+          rw [hxSofT xT (yfib xT)
+            ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+              (hyfib xT)) (hptfun _ _ _ _ hT _ rfl hy)]
+          simp only [Finset.mem_union]
+          exact Or.inl (Or.inl (Or.inl (Or.inr (Finset.mem_image.mpr
+            ⟨xT, hFfin.mem_toFinset.mpr hin, rfl⟩))))
+        · refine hxS ?_
+          rw [hxSofT xT (Wb.toAffine.negY xT (yfib xT))
+            ((WeierstrassCurve.Affine.nonsingular_neg xT (yfib xT)).mpr
+              ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                (hyfib xT))) (hptfun _ _ _ _ hT _ rfl hy)]
+          simp only [Finset.mem_union]
+          exact Or.inl (Or.inl (Or.inr (Finset.mem_image.mpr
+            ⟨xT, hFfin.mem_toFinset.mpr hin, rfl⟩)))
+      have hxUF : xU ∉ (F : Set (AlgebraicClosure (ZMod q))) := by
+        intro hin
+        rcases hfib2 xU yU hU.left with hy | hy
+        · refine hxS ?_
+          rw [hxSofU xU (yfib xU)
+            ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+              (hyfib xU)) (hptfun _ _ _ _ hU _ rfl hy)]
+          simp only [Finset.mem_union]
+          exact Or.inl (Or.inr (Finset.mem_image.mpr
+            ⟨xU, hFfin.mem_toFinset.mpr hin, rfl⟩))
+        · refine hxS ?_
+          rw [hxSofU xU (Wb.toAffine.negY xU (yfib xU))
+            ((WeierstrassCurve.Affine.nonsingular_neg xU (yfib xU)).mpr
+              ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                (hyfib xU))) (hptfun _ _ _ _ hU _ rfl hy)]
+          simp only [Finset.mem_union]
+          exact Or.inr (Finset.mem_image.mpr
+            ⟨xU, hFfin.mem_toFinset.mpr hin, rfl⟩)
+      -- the second slot of the chain: U = P₂ ⊕ T
+      have hUT : (WeierstrassCurve.Affine.Point.some xU yU hU :
+          Wb.toAffine.Point) =
+          WeierstrassCurve.Affine.Point.some xP2 yP2 hP2 +
+          WeierstrassCurve.Affine.Point.some xT yT hT := by
+        rw [← hUc, ← hTc, ← hsum0]
+        abel
+      -- the enlarged subfield F': F, the chain data, and the six bad-R
+      -- abscissas (Q ⊕ R landing over x_S, x_T or x_U)
+      obtain ⟨F', hF'fin, hF'mem⟩ := hsubfin (hFfin.toFinset ∪
+        ({xS, yS, xT, yT, xU, yU} : Finset (AlgebraicClosure (ZMod q))) ∪
+        ({xOf (-(WeierstrassCurve.Affine.Point.some xQ yQ hQ) +
+            WeierstrassCurve.Affine.Point.some xS (yfib xS)
+              ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                (hyfib xS))),
+          xOf (-(WeierstrassCurve.Affine.Point.some xQ yQ hQ) +
+            WeierstrassCurve.Affine.Point.some xS
+              (Wb.toAffine.negY xS (yfib xS))
+              ((WeierstrassCurve.Affine.nonsingular_neg xS (yfib xS)).mpr
+                ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                  (hyfib xS)))),
+          xOf (-(WeierstrassCurve.Affine.Point.some xQ yQ hQ) +
+            WeierstrassCurve.Affine.Point.some xT (yfib xT)
+              ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                (hyfib xT))),
+          xOf (-(WeierstrassCurve.Affine.Point.some xQ yQ hQ) +
+            WeierstrassCurve.Affine.Point.some xT
+              (Wb.toAffine.negY xT (yfib xT))
+              ((WeierstrassCurve.Affine.nonsingular_neg xT (yfib xT)).mpr
+                ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                  (hyfib xT)))),
+          xOf (-(WeierstrassCurve.Affine.Point.some xQ yQ hQ) +
+            WeierstrassCurve.Affine.Point.some xU (yfib xU)
+              ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                (hyfib xU))),
+          xOf (-(WeierstrassCurve.Affine.Point.some xQ yQ hQ) +
+            WeierstrassCurve.Affine.Point.some xU
+              (Wb.toAffine.negY xU (yfib xU))
+              ((WeierstrassCurve.Affine.nonsingular_neg xU (yfib xU)).mpr
+                ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                  (hyfib xU))))} : Finset (AlgebraicClosure (ZMod q))))
+      have hFF' : F ≤ F' := by
+        intro a ha
+        exact hF'mem a (by
+          simp only [Finset.mem_union]
+          exact Or.inl (Or.inl (hFfin.mem_toFinset.mpr ha)))
+      -- the second translate R, off F'
+      obtain ⟨xR, hxRavoid, yR, hRns⟩ := hpoints (hF'fin.toFinset ∪
+        hF'fin.toFinset.image (fun c => xOf
+          (-(WeierstrassCurve.Affine.Point.some xQ yQ hQ) +
+            WeierstrassCurve.Affine.Point.some c (yfib c)
+              ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                (hyfib c)))) ∪
+        hF'fin.toFinset.image (fun c => xOf
+          (-(WeierstrassCurve.Affine.Point.some xQ yQ hQ) +
+            WeierstrassCurve.Affine.Point.some c
+              (Wb.toAffine.negY c (yfib c))
+              ((WeierstrassCurve.Affine.nonsingular_neg c (yfib c)).mpr
+                ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                  (hyfib c))))))
+      have hxR : xR ∉ (F' : Set (AlgebraicClosure (ZMod q))) := fun h =>
+        hxRavoid (by
+          simp only [Finset.mem_union]
+          exact Or.inl (Or.inl (hF'fin.mem_toFinset.mpr h)))
+      have hRneg : Wb.toAffine.Nonsingular xR (Wb.toAffine.negY xR yR) :=
+        (WeierstrassCurve.Affine.nonsingular_neg xR yR).mpr hRns
+      -- Q ⊕ R is affine
+      have hQRne : WeierstrassCurve.Affine.Point.some xQ yQ hQ +
+          WeierstrassCurve.Affine.Point.some xR yR hRns ≠ 0 := by
+        intro h0
+        have h1 : WeierstrassCurve.Affine.Point.some xR yR hRns =
+            -(WeierstrassCurve.Affine.Point.some xQ yQ hQ) :=
+          eq_neg_of_add_eq_zero_right h0
+        rw [WeierstrassCurve.Affine.Point.neg_some hQ] at h1
+        injection h1 with e1 e2
+        exact hxR (by rw [e1]; exact hFF' (hFmem xQ (by simp)))
+      rcases hQRc : (WeierstrassCurve.Affine.Point.some xQ yQ hQ +
+          WeierstrassCurve.Affine.Point.some xR yR hRns) with _ | ⟨xQR, yQR, hQR⟩
+      · exact absurd (by rw [hQRc, WeierstrassCurve.Affine.Point.zero_def])
+          hQRne
+      -- negY facts for the chain
+      have hTneg : Wb.toAffine.Nonsingular xT (Wb.toAffine.negY xT yT) :=
+        (WeierstrassCurve.Affine.nonsingular_neg xT yT).mpr hT
+      -- torsion facts for the four Miller numerators
+      have hTtor : (p : ℤ) •
+          (WeierstrassCurve.Affine.Point.some xT yT hT +
+            WeierstrassCurve.Affine.Point.some xS
+              (Wb.toAffine.negY xS yS) hSneg : Wb.toAffine.Point) = 0 := by
+        have hne : (WeierstrassCurve.Affine.Point.some xS
+            (Wb.toAffine.negY xS yS) hSneg : Wb.toAffine.Point) =
+            -(WeierstrassCurve.Affine.Point.some xS yS hSns) :=
+          (WeierstrassCurve.Affine.Point.neg_some hSns).symm
+        rw [hne, ← hTc, add_neg_cancel_right]
+        exact hvp1
+      have hUtor2 : (p : ℤ) •
+          (WeierstrassCurve.Affine.Point.some xU yU hU +
+            WeierstrassCurve.Affine.Point.some xT
+              (Wb.toAffine.negY xT yT) hTneg : Wb.toAffine.Point) = 0 := by
+        have hne : (WeierstrassCurve.Affine.Point.some xT
+            (Wb.toAffine.negY xT yT) hTneg : Wb.toAffine.Point) =
+            -(WeierstrassCurve.Affine.Point.some xT yT hT) :=
+          (WeierstrassCurve.Affine.Point.neg_some hT).symm
+        rw [hne, hUT, add_neg_cancel_right]
+        exact hvp2
+      have hUtor3 : (p : ℤ) •
+          (WeierstrassCurve.Affine.Point.some xU yU hU +
+            WeierstrassCurve.Affine.Point.some xS
+              (Wb.toAffine.negY xS yS) hSneg : Wb.toAffine.Point) = 0 := by
+        have hne : (WeierstrassCurve.Affine.Point.some xS
+            (Wb.toAffine.negY xS yS) hSneg : Wb.toAffine.Point) =
+            -(WeierstrassCurve.Affine.Point.some xS yS hSns) :=
+          (WeierstrassCurve.Affine.Point.neg_some hSns).symm
+        rw [hne, ← hUc, add_neg_cancel_right]
+        exact hvp12
+      have hQRtor : (p : ℤ) •
+          (WeierstrassCurve.Affine.Point.some xQR yQR hQR +
+            WeierstrassCurve.Affine.Point.some xR
+              (Wb.toAffine.negY xR yR) hRneg : Wb.toAffine.Point) = 0 := by
+        have hne : (WeierstrassCurve.Affine.Point.some xR
+            (Wb.toAffine.negY xR yR) hRneg : Wb.toAffine.Point) =
+            -(WeierstrassCurve.Affine.Point.some xR yR hRns) :=
+          (WeierstrassCurve.Affine.Point.neg_some hRns).symm
+        rw [hne, ← hQRc, add_neg_cancel_right]
+        exact hwq
+      -- the four Miller numerators
+      obtain ⟨aP₁, haP₁⟩ := hmill2 xT yT xS (Wb.toAffine.negY xS yS) hT
+        hSneg hTtor
+      obtain ⟨aP₂, haP₂⟩ := hmill2 xU yU xT (Wb.toAffine.negY xT yT) hU
+        hTneg hUtor2
+      obtain ⟨aP₁₂, haP₁₂⟩ := hmill2 xU yU xS (Wb.toAffine.negY xS yS) hU
+        hSneg hUtor3
+      obtain ⟨aQ, haQ⟩ := hmill2 xQR yQR xR (Wb.toAffine.negY xR yR) hQR
+        hRneg hQRtor
+      -- chain data lies in F'
+      have hxSF' : xS ∈ F' := hF'mem xS (by simp)
+      have hySF' : yS ∈ F' := hF'mem yS (by simp)
+      have hxTF' : xT ∈ F' := hF'mem xT (by simp)
+      have hyTF' : yT ∈ F' := hF'mem yT (by simp)
+      have hxUF' : xU ∈ F' := hF'mem xU (by simp)
+      have hyUF' : yU ∈ F' := hF'mem yU (by simp)
+      -- any representation of Q⊕R pins down xR
+      have hxRof : ∀ (c y' : (AlgebraicClosure (ZMod q)))
+          (h' : Wb.toAffine.Nonsingular c y'),
+          (WeierstrassCurve.Affine.Point.some xQR yQR hQR :
+            Wb.toAffine.Point) =
+            WeierstrassCurve.Affine.Point.some c y' h' →
+          xR = xOf (-(WeierstrassCurve.Affine.Point.some xQ yQ hQ) +
+            WeierstrassCurve.Affine.Point.some c y' h') := by
+        intro c y' h' hpt
+        rw [← hpt, ← hQRc, neg_add_cancel_left]
+      -- x(Q⊕R) avoids the three chain abscissas
+      have hxQRbad : ∀ (c : (AlgebraicClosure (ZMod q))), xQR = c →
+          (∀ hcy : Wb.toAffine.Equation c (yfib c),
+            xOf (-(WeierstrassCurve.Affine.Point.some xQ yQ hQ) +
+              WeierstrassCurve.Affine.Point.some c (yfib c)
+                ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp hcy))
+              ∈ F') →
+          (∀ hcy : Wb.toAffine.Equation c (yfib c),
+            xOf (-(WeierstrassCurve.Affine.Point.some xQ yQ hQ) +
+              WeierstrassCurve.Affine.Point.some c
+                (Wb.toAffine.negY c (yfib c))
+                ((WeierstrassCurve.Affine.nonsingular_neg c (yfib c)).mpr
+                  ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp hcy)))
+              ∈ F') → False := by
+        intro c hx hmem1 hmem2
+        rcases hfib2 c yQR (hx ▸ hQR.left) with hy | hy
+        · refine hxR ?_
+          rw [hxRof c (yfib c)
+            ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+              (hyfib c)) (hptfun _ _ _ _ hQR _ hx hy)]
+          exact hmem1 (hyfib c)
+        · refine hxR ?_
+          rw [hxRof c (Wb.toAffine.negY c (yfib c))
+            ((WeierstrassCurve.Affine.nonsingular_neg c (yfib c)).mpr
+              ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                (hyfib c))) (hptfun _ _ _ _ hQR _ hx hy)]
+          exact hmem2 (hyfib c)
+      have hxQRnS : xQR ≠ xS := fun hx =>
+        hxQRbad xS hx
+          (fun _ => hF'mem _ (Finset.mem_union_right _
+            (Finset.mem_insert_self _ _)))
+          (fun _ => hF'mem _ (Finset.mem_union_right _
+            (Finset.mem_insert_of_mem (Finset.mem_insert_self _ _))))
+      have hxQRnT : xQR ≠ xT := fun hx =>
+        hxQRbad xT hx
+          (fun _ => hF'mem _ (Finset.mem_union_right _
+            (Finset.mem_insert_of_mem (Finset.mem_insert_of_mem
+              (Finset.mem_insert_self _ _)))))
+          (fun _ => hF'mem _ (Finset.mem_union_right _
+            (Finset.mem_insert_of_mem (Finset.mem_insert_of_mem
+              (Finset.mem_insert_of_mem (Finset.mem_insert_self _ _))))))
+      have hxQRnU : xQR ≠ xU := fun hx =>
+        hxQRbad xU hx
+          (fun _ => hF'mem _ (Finset.mem_union_right _
+            (Finset.mem_insert_of_mem (Finset.mem_insert_of_mem
+              (Finset.mem_insert_of_mem (Finset.mem_insert_of_mem
+                (Finset.mem_insert_self _ _)))))))
+          (fun _ => hF'mem _ (Finset.mem_union_right _
+            (Finset.mem_insert_of_mem (Finset.mem_insert_of_mem
+              (Finset.mem_insert_of_mem (Finset.mem_insert_of_mem
+                (Finset.mem_insert_of_mem (Finset.mem_singleton_self _))))))))
+      -- x(Q⊕R) avoids F' itself
+      have hxQRF' : xQR ∉ (F' : Set (AlgebraicClosure (ZMod q))) := by
+        intro hin
+        rcases hfib2 xQR yQR hQR.left with hy | hy
+        · refine hxRavoid ?_
+          rw [hxRof xQR (yfib xQR)
+            ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+              (hyfib xQR)) (hptfun _ _ _ _ hQR _ rfl hy)]
+          simp only [Finset.mem_union]
+          exact Or.inl (Or.inr (Finset.mem_image.mpr
+            ⟨xQR, hF'fin.mem_toFinset.mpr hin, rfl⟩))
+        · refine hxRavoid ?_
+          rw [hxRof xQR (Wb.toAffine.negY xQR (yfib xQR))
+            ((WeierstrassCurve.Affine.nonsingular_neg xQR (yfib xQR)).mpr
+              ((WeierstrassCurve.Affine.equation_iff_nonsingular).mp
+                (hyfib xQR))) (hptfun _ _ _ _ hQR _ rfl hy)]
+          simp only [Finset.mem_union]
+          exact Or.inr (Finset.mem_image.mpr
+            ⟨xQR, hF'fin.mem_toFinset.mpr hin, rfl⟩)
+      -- R avoids the chain abscissas
+      have hxRnS : xR ≠ xS := fun h => hxR (h ▸ hxSF')
+      have hxRnT : xR ≠ xT := fun h => hxR (h ▸ hxTF')
+      have hxRnU : xR ≠ xU := fun h => hxR (h ▸ hxUF')
+      -- explicit divisors of the four Miller numerators
+      have hDmk : ∀ (x₁ y₁ x₂ y₂ : (AlgebraicClosure (ZMod q)))
+          (a : Wb.toAffine.CoordinateRing),
+          Ideal.span {a} =
+            (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              x₁ (Polynomial.C y₁)) ^ p *
+            (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              x₂ (Polynomial.C y₂)) ^ p →
+          Ideal.span {a} =
+            ((Multiset.replicate p ((x₁, y₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) +
+              Multiset.replicate p ((x₂, y₂) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))).map
+              (fun P : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+                  P.1 (Polynomial.C P.2))).prod := by
+        intro x₁ y₁ x₂ y₂ a ha
+        rw [Multiset.map_add, Multiset.prod_add, Multiset.map_replicate,
+          Multiset.map_replicate, Multiset.prod_replicate,
+          Multiset.prod_replicate, ha]
+      have hDeqmk : ∀ (x₁ y₁ x₂ y₂ : (AlgebraicClosure (ZMod q))),
+          Wb.toAffine.Equation x₁ y₁ → Wb.toAffine.Equation x₂ y₂ →
+          ∀ T₀ ∈ (Multiset.replicate p ((x₁, y₁) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) +
+            Multiset.replicate p ((x₂, y₂) : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))),
+          Wb.toAffine.Equation T₀.1 T₀.2 := by
+        intro x₁ y₁ x₂ y₂ h₁ h₂ T₀ hT₀
+        rcases Multiset.mem_add.mp hT₀ with h | h
+        · rw [Multiset.eq_of_mem_replicate h]
+          exact h₁
+        · rw [Multiset.eq_of_mem_replicate h]
+          exact h₂
+      -- evaluation nonvanishing for the Miller numerators off their divisors
+      have hoffmk : ∀ (x₁ y₁ x₂ y₂ : (AlgebraicClosure (ZMod q)))
+          (a : Wb.toAffine.CoordinateRing)
+          (h₁ : Wb.toAffine.Equation x₁ y₁) (h₂ : Wb.toAffine.Equation x₂ y₂),
+          Ideal.span {a} =
+            (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              x₁ (Polynomial.C y₁)) ^ p *
+            (WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+              x₂ (Polynomial.C y₂)) ^ p →
+          ∀ (xe ye : (AlgebraicClosure (ZMod q)))
+            (hE : Wb.toAffine.Equation xe ye), xe ≠ x₁ → xe ≠ x₂ →
+          AdjoinRoot.evalEval hE a ≠ 0 := by
+        intro x₁ y₁ x₂ y₂ a h₁ h₂ ha xe ye hE hne₁ hne₂
+        refine hoffdiv a _ (hDeqmk x₁ y₁ x₂ y₂ h₁ h₂) (hDmk x₁ y₁ x₂ y₂ a ha)
+          xe ye hE ?_
+        intro hmem
+        rcases Multiset.mem_add.mp hmem with h | h
+        · exact hne₁ (congrArg Prod.fst (Multiset.eq_of_mem_replicate h))
+        · exact hne₂ (congrArg Prod.fst (Multiset.eq_of_mem_replicate h))
+      have hev1R : AdjoinRoot.evalEval hRns.left aP₁ ≠ 0 :=
+        hoffmk xT yT xS (Wb.toAffine.negY xS yS) aP₁ hT.left
+          ((WeierstrassCurve.Affine.equation_neg (W' := Wb.toAffine) _ _).mpr
+            hSns.left) haP₁ xR yR hRns.left hxRnT hxRnS
+      have hev1QR : AdjoinRoot.evalEval hQR.left aP₁ ≠ 0 :=
+        hoffmk xT yT xS (Wb.toAffine.negY xS yS) aP₁ hT.left
+          ((WeierstrassCurve.Affine.equation_neg (W' := Wb.toAffine) _ _).mpr
+            hSns.left) haP₁ xQR yQR hQR.left hxQRnT hxQRnS
+      have hev2R : AdjoinRoot.evalEval hRns.left aP₂ ≠ 0 :=
+        hoffmk xU yU xT (Wb.toAffine.negY xT yT) aP₂ hU.left
+          ((WeierstrassCurve.Affine.equation_neg (W' := Wb.toAffine) _ _).mpr
+            hT.left) haP₂ xR yR hRns.left hxRnU hxRnT
+      have hev2QR : AdjoinRoot.evalEval hQR.left aP₂ ≠ 0 :=
+        hoffmk xU yU xT (Wb.toAffine.negY xT yT) aP₂ hU.left
+          ((WeierstrassCurve.Affine.equation_neg (W' := Wb.toAffine) _ _).mpr
+            hT.left) haP₂ xQR yQR hQR.left hxQRnU hxQRnT
+      have hev3R : AdjoinRoot.evalEval hRns.left aP₁₂ ≠ 0 :=
+        hoffmk xU yU xS (Wb.toAffine.negY xS yS) aP₁₂ hU.left
+          ((WeierstrassCurve.Affine.equation_neg (W' := Wb.toAffine) _ _).mpr
+            hSns.left) haP₁₂ xR yR hRns.left hxRnU hxRnS
+      have hev3QR : AdjoinRoot.evalEval hQR.left aP₁₂ ≠ 0 :=
+        hoffmk xU yU xS (Wb.toAffine.negY xS yS) aP₁₂ hU.left
+          ((WeierstrassCurve.Affine.equation_neg (W' := Wb.toAffine) _ _).mpr
+            hSns.left) haP₁₂ xQR yQR hQR.left hxQRnU hxQRnS
+      have hevQS : AdjoinRoot.evalEval hSns.left aQ ≠ 0 :=
+        hoffmk xQR yQR xR (Wb.toAffine.negY xR yR) aQ hQR.left
+          ((WeierstrassCurve.Affine.equation_neg (W' := Wb.toAffine) _ _).mpr
+            hRns.left) haQ xS yS hSns.left (fun h => hxQRnS h.symm)
+          (fun h => hxRnS h.symm)
+      have hevQT : AdjoinRoot.evalEval hT.left aQ ≠ 0 :=
+        hoffmk xQR yQR xR (Wb.toAffine.negY xR yR) aQ hQR.left
+          ((WeierstrassCurve.Affine.equation_neg (W' := Wb.toAffine) _ _).mpr
+            hRns.left) haQ xT yT hT.left (fun h => hxQRnT h.symm)
+          (fun h => hxRnT h.symm)
+      have hevQU : AdjoinRoot.evalEval hU.left aQ ≠ 0 :=
+        hoffmk xQR yQR xR (Wb.toAffine.negY xR yR) aQ hQR.left
+          ((WeierstrassCurve.Affine.equation_neg (W' := Wb.toAffine) _ _).mpr
+            hRns.left) haQ xU yU hU.left (fun h => hxQRnU h.symm)
+          (fun h => hxRnU h.symm)
+      -- the six evaluation products (A and B of each pair)
+      have hA₁ : (AdjoinRoot.evalEval hQR.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS) ^ p) *
+          AdjoinRoot.evalEval hRns.left aP₁ *
+          AdjoinRoot.evalEval hSns.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p) *
+          AdjoinRoot.evalEval hT.left aQ) ≠ 0 := by
+        refine mul_ne_zero (mul_ne_zero (mul_ne_zero ?_ hev1R) ?_) hevQT
+        · rw [map_pow, hevvert xS xQR yQR hQR.left]
+          exact pow_ne_zero _ (sub_ne_zero.mpr hxQRnS)
+        · rw [map_pow, hevvert xR xS yS hSns.left]
+          exact pow_ne_zero _ (sub_ne_zero.mpr (fun h => hxRnS h.symm))
+      have hB₁ : (AdjoinRoot.evalEval hQR.left aP₁ *
+          AdjoinRoot.evalEval hRns.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS) ^ p) *
+          AdjoinRoot.evalEval hSns.left aQ *
+          AdjoinRoot.evalEval hT.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p)) ≠ 0 := by
+        refine mul_ne_zero (mul_ne_zero (mul_ne_zero hev1QR ?_) hevQS) ?_
+        · rw [map_pow, hevvert xS xR yR hRns.left]
+          exact pow_ne_zero _ (sub_ne_zero.mpr hxRnS)
+        · rw [map_pow, hevvert xR xT yT hT.left]
+          exact pow_ne_zero _ (sub_ne_zero.mpr (fun h => hxRnT h.symm))
+      have hA₂ : (AdjoinRoot.evalEval hQR.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xT) ^ p) *
+          AdjoinRoot.evalEval hRns.left aP₂ *
+          AdjoinRoot.evalEval hT.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p) *
+          AdjoinRoot.evalEval hU.left aQ) ≠ 0 := by
+        refine mul_ne_zero (mul_ne_zero (mul_ne_zero ?_ hev2R) ?_) hevQU
+        · rw [map_pow, hevvert xT xQR yQR hQR.left]
+          exact pow_ne_zero _ (sub_ne_zero.mpr hxQRnT)
+        · rw [map_pow, hevvert xR xT yT hT.left]
+          exact pow_ne_zero _ (sub_ne_zero.mpr (fun h => hxRnT h.symm))
+      have hB₂ : (AdjoinRoot.evalEval hQR.left aP₂ *
+          AdjoinRoot.evalEval hRns.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xT) ^ p) *
+          AdjoinRoot.evalEval hT.left aQ *
+          AdjoinRoot.evalEval hU.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p)) ≠ 0 := by
+        refine mul_ne_zero (mul_ne_zero (mul_ne_zero hev2QR ?_) hevQT) ?_
+        · rw [map_pow, hevvert xT xR yR hRns.left]
+          exact pow_ne_zero _ (sub_ne_zero.mpr hxRnT)
+        · rw [map_pow, hevvert xR xU yU hU.left]
+          exact pow_ne_zero _ (sub_ne_zero.mpr (fun h => hxRnU h.symm))
+      have hA₃ : (AdjoinRoot.evalEval hQR.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS) ^ p) *
+          AdjoinRoot.evalEval hRns.left aP₁₂ *
+          AdjoinRoot.evalEval hSns.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p) *
+          AdjoinRoot.evalEval hU.left aQ) ≠ 0 := by
+        refine mul_ne_zero (mul_ne_zero (mul_ne_zero ?_ hev3R) ?_) hevQU
+        · rw [map_pow, hevvert xS xQR yQR hQR.left]
+          exact pow_ne_zero _ (sub_ne_zero.mpr hxQRnS)
+        · rw [map_pow, hevvert xR xS yS hSns.left]
+          exact pow_ne_zero _ (sub_ne_zero.mpr (fun h => hxRnS h.symm))
+      have hB₃ : (AdjoinRoot.evalEval hQR.left aP₁₂ *
+          AdjoinRoot.evalEval hRns.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS) ^ p) *
+          AdjoinRoot.evalEval hSns.left aQ *
+          AdjoinRoot.evalEval hU.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p)) ≠ 0 := by
+        refine mul_ne_zero (mul_ne_zero (mul_ne_zero hev3QR ?_) hevQS) ?_
+        · rw [map_pow, hevvert xS xR yR hRns.left]
+          exact pow_ne_zero _ (sub_ne_zero.mpr hxRnS)
+        · rw [map_pow, hevvert xR xU yU hU.left]
+          exact pow_ne_zero _ (sub_ne_zero.mpr (fun h => hxRnU h.symm))
+      -- the Miller word identity: aP₁·aP₂ = C c · aP₁₂ · X_T^p
+      have hvT : Ideal.span {(WeierstrassCurve.Affine.CoordinateRing.XClass
+          Wb.toAffine xT : Wb.toAffine.CoordinateRing)} =
+          WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            xT (Polynomial.C (Wb.toAffine.negY xT yT)) *
+          WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+            xT (Polynomial.C yT) :=
+        (WeierstrassCurve.Affine.CoordinateRing.XYIdeal_neg_mul
+          (W := Wb.toAffine) hT).symm
+      have hspaneq : Ideal.span {aP₁ * aP₂} =
+          Ideal.span {aP₁₂ *
+            (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xT) ^ p} := by
+        rw [← Ideal.span_singleton_mul_span_singleton,
+          ← Ideal.span_singleton_mul_span_singleton,
+          ← Ideal.span_singleton_pow, haP₁, haP₂, haP₁₂, hvT]
+        ring
+      obtain ⟨u, hu⟩ := Ideal.span_singleton_eq_span_singleton.mp hspaneq
+      obtain ⟨c, -, hcu⟩ := hCunits (↑u⁻¹) (Units.isUnit _)
+      have hfac : aP₁ * aP₂ =
+          AdjoinRoot.of Wb.toAffine.polynomial (Polynomial.C c) *
+            (aP₁₂ *
+              (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xT) ^ p) := by
+        rw [← hcu]
+        calc aP₁ * aP₂ = aP₁ * aP₂ * (↑u * ↑u⁻¹) := by
+              rw [Units.mul_inv, mul_one]
+          _ = (aP₁ * aP₂ * ↑u) * ↑u⁻¹ := by ring
+          _ = (aP₁₂ *
+              (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xT) ^ p) * ↑u⁻¹ := by
+              rw [hu]
+          _ = ↑u⁻¹ * (aP₁₂ *
+              (WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xT) ^ p) := by
+              ring
+      -- the word identity, evaluated at Q⊕R and at R
+      have hE1 : AdjoinRoot.evalEval hQR.left aP₁ *
+          AdjoinRoot.evalEval hQR.left aP₂ =
+          c * (AdjoinRoot.evalEval hQR.left aP₁₂ * (xQR - xT) ^ p) := by
+        have h := congrArg (AdjoinRoot.evalEval hQR.left) hfac
+        rw [map_mul, map_mul, map_mul, map_pow,
+          hevvert xT xQR yQR hQR.left, hevconst] at h
+        exact h
+      have hE2 : AdjoinRoot.evalEval hRns.left aP₁ *
+          AdjoinRoot.evalEval hRns.left aP₂ =
+          c * (AdjoinRoot.evalEval hRns.left aP₁₂ * (xR - xT) ^ p) := by
+        have h := congrArg (AdjoinRoot.evalEval hRns.left) hfac
+        rw [map_mul, map_mul, map_mul, map_pow,
+          hevvert xT xR yR hRns.left, hevconst] at h
+        exact h
+      -- the three values and the multiplicativity
+      refine ⟨Units.mk0
+        ((AdjoinRoot.evalEval hQR.left aP₁ *
+          AdjoinRoot.evalEval hRns.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS) ^ p) *
+          AdjoinRoot.evalEval hSns.left aQ *
+          AdjoinRoot.evalEval hT.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p)) /
+        (AdjoinRoot.evalEval hQR.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS) ^ p) *
+          AdjoinRoot.evalEval hRns.left aP₁ *
+          AdjoinRoot.evalEval hSns.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p) *
+          AdjoinRoot.evalEval hT.left aQ)) (div_ne_zero hB₁ hA₁),
+        Units.mk0
+        ((AdjoinRoot.evalEval hQR.left aP₂ *
+          AdjoinRoot.evalEval hRns.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xT) ^ p) *
+          AdjoinRoot.evalEval hT.left aQ *
+          AdjoinRoot.evalEval hU.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p)) /
+        (AdjoinRoot.evalEval hQR.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xT) ^ p) *
+          AdjoinRoot.evalEval hRns.left aP₂ *
+          AdjoinRoot.evalEval hT.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p) *
+          AdjoinRoot.evalEval hU.left aQ)) (div_ne_zero hB₂ hA₂),
+        Units.mk0
+        ((AdjoinRoot.evalEval hQR.left aP₁₂ *
+          AdjoinRoot.evalEval hRns.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS) ^ p) *
+          AdjoinRoot.evalEval hSns.left aQ *
+          AdjoinRoot.evalEval hU.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p)) /
+        (AdjoinRoot.evalEval hQR.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xS) ^ p) *
+          AdjoinRoot.evalEval hRns.left aP₁₂ *
+          AdjoinRoot.evalEval hSns.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine xR) ^ p) *
+          AdjoinRoot.evalEval hU.left aQ)) (div_ne_zero hB₃ hA₃),
+        ⟨?_, ?_⟩, ⟨?_, ?_⟩, ⟨?_, ?_⟩, ?_⟩
+      · rintro (h0 | h0)
+        · exact absurd h0 hx0
+        · exact absurd h0 hz0
+      · intro xP' yP' hP' xQ' yQ' hQ' hv' hw'
+        have hPP : xP' = xP1 ∧ yP' = yP1 := by
+          injection hv'.symm.trans hcx with e1 e2
+          exact ⟨e1, e2⟩
+        have hQQ : xQ' = xQ ∧ yQ' = yQ := by
+          injection hw'.symm.trans hcz with e1 e2
+          exact ⟨e1, e2⟩
+        obtain ⟨hx1, hy1⟩ := hPP
+        obtain ⟨hx2, hy2⟩ := hQQ
+        subst hx1
+        subst hy1
+        subst hx2
+        subst hy2
+        exact ⟨F, F', hFfin, hF'fin, hFF', hK2F₁,
+          hFmem xP' (by simp), hFmem yP' (by simp),
+          hFmem xQ' (by simp), hFmem yQ' (by simp),
+          xS, yS, hSns, hxSF', hySF', hxSF,
+          xR, yR, hRns, hxR,
+          xT, yT, hT, hTc.symm, hxTF', hyTF', hxTF,
+          xQR, yQR, hQR, hQRc.symm, hxQRnS, hxQRnT, hxQRF',
+          aP₁, aQ, haP₁, haQ, hA₁,
+          by rw [Units.val_mk0]
+             exact div_mul_cancel₀ _ hA₁⟩
+      · rintro (h0 | h0)
+        · exact absurd h0 hy0
+        · exact absurd h0 hz0
+      · intro xP' yP' hP' xQ' yQ' hQ' hv' hw'
+        have hPP : xP' = xP2 ∧ yP' = yP2 := by
+          injection hv'.symm.trans hcy with e1 e2
+          exact ⟨e1, e2⟩
+        have hQQ : xQ' = xQ ∧ yQ' = yQ := by
+          injection hw'.symm.trans hcz with e1 e2
+          exact ⟨e1, e2⟩
+        obtain ⟨hx1, hy1⟩ := hPP
+        obtain ⟨hx2, hy2⟩ := hQQ
+        subst hx1
+        subst hy1
+        subst hx2
+        subst hy2
+        exact ⟨F, F', hFfin, hF'fin, hFF', hK2F₂,
+          hFmem xP' (by simp), hFmem yP' (by simp),
+          hFmem xQ' (by simp), hFmem yQ' (by simp),
+          xT, yT, hT, hxTF', hyTF', hxTF,
+          xR, yR, hRns, hxR,
+          xU, yU, hU, hUT, hxUF', hyUF', hxUF,
+          xQR, yQR, hQR, hQRc.symm, hxQRnT, hxQRnU, hxQRF',
+          aP₂, aQ, haP₂, haQ, hA₂,
+          by rw [Units.val_mk0]
+             exact div_mul_cancel₀ _ hA₂⟩
+      · rintro (h0 | h0)
+        · exact absurd h0 hs0
+        · exact absurd h0 hz0
+      · intro xP' yP' hP' xQ' yQ' hQ' hv' hw'
+        have hPP : xP' = xP12 ∧ yP' = yP12 := by
+          injection hv'.symm.trans hcs with e1 e2
+          exact ⟨e1, e2⟩
+        have hQQ : xQ' = xQ ∧ yQ' = yQ := by
+          injection hw'.symm.trans hcz with e1 e2
+          exact ⟨e1, e2⟩
+        obtain ⟨hx1, hy1⟩ := hPP
+        obtain ⟨hx2, hy2⟩ := hQQ
+        subst hx1
+        subst hy1
+        subst hx2
+        subst hy2
+        exact ⟨F, F', hFfin, hF'fin, hFF', hK2F₃,
+          hFmem xP' (by simp), hFmem yP' (by simp),
+          hFmem xQ' (by simp), hFmem yQ' (by simp),
+          xS, yS, hSns, hxSF', hySF', hxSF,
+          xR, yR, hRns, hxR,
+          xU, yU, hU, hUc.symm, hxUF', hyUF', hxUF,
+          xQR, yQR, hQR, hQRc.symm, hxQRnS, hxQRnU, hxQRF',
+          aP₁₂, aQ, haP₁₂, haQ, hA₃,
+          by rw [Units.val_mk0]
+             exact div_mul_cancel₀ _ hA₃⟩
+      · -- z₃ = z₁ · z₂, by the word identity at Q⊕R and R
+        refine Units.ext ?_
+        rw [Units.val_mul, Units.val_mk0, Units.val_mk0, Units.val_mk0,
+          div_mul_div_comm, div_eq_div_iff hA₃ (mul_ne_zero hA₁ hA₂)]
+        simp only [map_pow, hevvert]
+        linear_combination
+          ((xR - xS) ^ p * (xS - xR) ^ p * (xQR - xS) ^ p * (xT - xR) ^ p *
+            (xU - xR) ^ p * AdjoinRoot.evalEval hSns.left aQ *
+            AdjoinRoot.evalEval hT.left aQ *
+            AdjoinRoot.evalEval hU.left aQ *
+            AdjoinRoot.evalEval hQR.left aP₁₂ * (xQR - xT) ^ p) * hE2 -
+          ((xR - xS) ^ p * (xS - xR) ^ p * (xQR - xS) ^ p * (xT - xR) ^ p *
+            (xU - xR) ^ p * AdjoinRoot.evalEval hSns.left aQ *
+            AdjoinRoot.evalEval hT.left aQ *
+            AdjoinRoot.evalEval hU.left aQ *
+            AdjoinRoot.evalEval hRns.left aP₁₂ * (xR - xT) ^ p) * hE1
     intro x y z
     obtain ⟨z₁, z₂, z₃, h1, h2, h3, h123⟩ := hwit x y z
     rw [heuniq _ _ _ h3, heuniq _ _ _ h1, heuniq _ _ _ h2, h123]
