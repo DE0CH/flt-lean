@@ -8,6 +8,8 @@ module
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRepFamily
 import Mathlib.Algebra.Field.ULift
+import Mathlib.LinearAlgebra.Charpoly.ToMatrix
+import Mathlib.LinearAlgebra.Charpoly.BaseChange
 
 /-!
 # Hardly ramified representations in compatible families
@@ -262,6 +264,100 @@ theorem exists_numberField_eigensystem
     ext x
     simp
   rw [hcomp, hP₀eq w hw]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Characteristic-polynomial-of-Frobenius transport through base change
+and framing (PROVEN): the Frobenius characteristic polynomial of a
+conjugated base change is the image of the original one under the
+coefficient map. Local (`charFrob`-level) analog of the global
+`charpoly_baseChange_conj` of `Lift.lean` (which lives downstream and
+cannot be imported here); an ingredient of the spreading-stratum
+assembly below. -/
+lemma charFrob_baseChange_conj {A : Type*} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing A] {B : Type*} [CommRing B] [TopologicalSpace B]
+    [IsTopologicalRing B] [Algebra A B] [ContinuousSMul A B]
+    {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W]
+    [Module.Free A W] {N : Type*} [AddCommGroup N] [Module B N]
+    [Module.Finite B N] [Module.Free B N]
+    (τ : GaloisRep ℚ A W) (e : (B ⊗[A] W) ≃ₗ[B] N)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    ((τ.baseChange B).conj e).charFrob v = (τ.charFrob v).map (algebraMap A B) := by
+  have hBC : ∀ g : Field.absoluteGaloisGroup ℚ,
+      (τ.baseChange B) g = LinearMap.baseChange B (τ g) := fun g =>
+    LinearMap.ext fun x => by
+      induction x using TensorProduct.induction_on with
+      | zero => simp
+      | add a b ha hb => simp only [map_add, ha, hb]
+      | tmul c w => simp
+  show ((((τ.baseChange B).conj e)).toLocal v
+      (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly = _
+  rw [GaloisRep.toLocal_apply, GaloisRep.conj_apply, LinearEquiv.charpoly_conj,
+    hBC, LinearMap.charpoly_baseChange]
+  rfl
+
+/-- Unramifiedness transfers along conjugation by a linear isomorphism
+of the representation space (PROVEN): the kernel of the local
+representation is unchanged by conjugation. (Mirrors the unramifiedness
+bullet of `isHardlyRamified_conj` in `Lift.lean`, which lives downstream
+and cannot be imported here.) -/
+lemma isUnramifiedAt_conj {A : Type*} [CommRing A] [TopologicalSpace A]
+    {W : Type*} [AddCommGroup W] [Module A W]
+    {N : Type*} [AddCommGroup N] [Module A N]
+    (τ : GaloisRep ℚ A W) (e : W ≃ₗ[A] N)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    [τ.IsUnramifiedAt v] :
+    (τ.conj e).IsUnramifiedAt v := by
+  refine ⟨le_trans (GaloisRep.IsUnramifiedAt.localInertiaGroup_le (ρ := τ)) ?_⟩
+  intro σ hσ
+  have h1 : τ.toLocal v σ = 1 := hσ
+  show (τ.conj e).toLocal v σ = 1
+  rw [GaloisRep.toLocal_apply, GaloisRep.conj_apply,
+    ← GaloisRep.toLocal_apply, h1]
+  refine LinearMap.ext fun w => ?_
+  simp
+
+/-- Every finite place of `ℚ` is the place of a rational prime (PROVEN):
+the surjectivity half of the primes ↔ places dictionary, needed to
+convert the prime-indexed unramifiedness field of `IsHardlyRamified`
+into the place-indexed unramifiedness that
+`GaloisRepFamily.isCompatible` consumes. -/
+lemma exists_prime_toHeightOneSpectrumRingOfIntegersRat
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    ∃ (q : ℕ) (hq : q.Prime), v = hq.toHeightOneSpectrumRingOfIntegersRat := by
+  let E := Rat.ringOfIntegersEquiv.symm.heightOneSpectrum
+  obtain ⟨g, hg⟩ := (IsPrincipalIdealRing.principal (E.symm v).asIdeal).principal
+  have hg0 : g ≠ 0 := by
+    rintro rfl
+    exact (E.symm v).ne_bot (by simpa using hg)
+  have hg' : (E.symm v).asIdeal = Ideal.span {g} := hg
+  have hprime : Prime g := (Ideal.span_singleton_prime hg0).mp (hg' ▸ (E.symm v).isPrime)
+  refine ⟨g.natAbs, Int.prime_iff_natAbs_prime.mp hprime, ?_⟩
+  have hweq : E.symm v =
+      (Int.prime_iff_natAbs_prime.mp hprime).toHeightOneSpectrumInt := by
+    ext1
+    show (E.symm v).asIdeal = Ideal.span {(g.natAbs : ℤ)}
+    rw [Int.span_natAbs, hg']
+  have hv : v = E (E.symm v) := (E.apply_symm_apply v).symm
+  rw [hv, hweq]
+  rfl
+
+omit [IsDomain R] in
+/-- Away from `2` and `p`, a hardly ramified `p`-adic representation is
+unramified at every finite place of `ℚ` (PROVEN): the prime-indexed
+unramifiedness field of `IsHardlyRamified` in the place-indexed form
+that the compatibility clause of the spreading stratum consumes. -/
+lemma isUnramifiedAt_of_ne (hρ : IsHardlyRamified hpodd hv ρ)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (hv2 : v ≠ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+    (hvp : (p : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal) :
+    ρ.IsUnramifiedAt v := by
+  obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrumRingOfIntegersRat v
+  refine hρ.isUnramified q hq ⟨?_, ?_⟩
+  · rintro rfl
+    exact hv2 rfl
+  · rintro rfl
+    exact hvp
+      ((Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal hq _).mpr (by simp))
 
 /-- **Spreading stratum** (sorry node): a hardly ramified `p`-adic
 representation whose Frobenius characteristic polynomials descend to a
