@@ -86,9 +86,227 @@ import Fermat.FLT.DedekindDomain.AdicValuation
 
 open WeierstrassCurve WeierstrassCurve.Affine
 
-/-- **Mazur's torsion theorem** (sorry node): the torsion subgroup of the
-rational points of an elliptic curve over `ℚ` is isomorphic to one of the
-fifteen groups `ℤ/n` with `n ∈ {1, …, 10, 12}` or `ℤ/2 × ℤ/2m` with
+/-!
+### Decomposition of Mazur's classification (2026-07-22)
+
+`mazur_classification` is decomposed into five arithmetic leaves, one
+PROVEN geometric-torsion bound, one purely group-theoretic structure
+leaf, and a PROVEN casework assembly:
+
+* `torsion_finite_rat` (sorry node): the rational torsion subgroup is
+  finite (Lutz–Nagell, or injectivity of reduction at a good prime).
+* `mazur_point_order` (sorry node): Mazur's uniform bound — the order
+  of a rational torsion point lies in `{1, …, 10, 12}` (Mazur 1977,
+  Thm 8; Mazur 1978, "Rational isogenies of prime degree").
+* `not_full_torsion_rat` (sorry node): for `n ≥ 3` the full `n`-torsion
+  is never rational — the Weil pairing is surjective on `E[n] × E[n]`,
+  so a rational full level-`n` structure forces `μ_n ⊆ ℚ`, impossible
+  for `n ≥ 3` (Silverman AEC III.8, Cor 8.1.1).
+* `not_two_ten_torsion`, `not_two_twelve_torsion` (sorry nodes): no
+  rational `ℤ/2 × ℤ/10` or `ℤ/2 × ℤ/12` (the modular curves
+  `X_1(2,10)` and `X_1(2,12)` have genus ≥ 1 and no non-cuspidal
+  rational points; part of the fifteen-groups list of Mazur 1977).
+* `not_two_cube_torsion` (PROVEN): no rational `(ℤ/2)³` — the geometric
+  `2`-torsion has only `2² = 4` points.
+* `AddCommGroup.exists_rank_le_two_decomposition` (sorry node, PURE
+  GROUP THEORY, no arithmetic): a finite abelian group containing no
+  `(ℤ/n)²` for any `n ≥ 3` and no `(ℤ/2)³` is isomorphic to
+  `ℤ/d × ℤ/n` with `d ∈ {1, 2}` (structure-theorem bookkeeping).
+* `mazur_group_casework` (PROVEN): given the `ℤ/d × ℤ/n` shape, the
+  order bound, and the two exclusions, the group is one of the fifteen.
+-/
+
+/-- **Finiteness of the rational torsion subgroup** (sorry node): the
+torsion subgroup of `E(ℚ)` is finite. Standard content: the reduction
+map is injective on prime-to-`q` torsion at a good odd prime `q`
+(or Lutz–Nagell: torsion points have integral coordinates with `y²`
+dividing the discriminant). Silverman AEC VII.3, VIII.7. -/
+theorem WeierstrassCurve.torsion_finite_rat (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    Finite (Submodule.torsion ℤ (E⁄ℚ).Point) :=
+  sorry
+
+/-- **Mazur's uniform bound on orders of rational torsion points** (sorry
+node): a rational torsion point of an elliptic curve over `ℚ` has order
+in `{1, …, 10, 12}`. Mazur, "Modular curves and the Eisenstein ideal"
+(Publ. Math. IHÉS 47, 1977), Thm 8, completed by "Rational isogenies of
+prime degree" (Invent. Math. 44, 1978) for the prime orders `≥ 11`. -/
+theorem WeierstrassCurve.mazur_point_order (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (Q : (E⁄ℚ).Point) (hQ : Q ∈ Submodule.torsion ℤ (E⁄ℚ).Point) :
+    addOrderOf Q ∈ ({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12} : Finset ℕ) :=
+  sorry
+
+/-- **Irrationality of full `n`-torsion for `n ≥ 3`** (sorry node): the
+rational points of an elliptic curve over `ℚ` contain no subgroup
+isomorphic to `(ℤ/n)²` for `n ≥ 3`. The Weil pairing restricted to a
+rational basis of `E[n]` is a primitive `n`-th root of unity fixed by
+the Galois action, so `μ_n ⊆ ℚ` — impossible for `n ≥ 3` since `ℚ`
+contains only the roots of unity `±1`. Silverman AEC III.8. -/
+theorem WeierstrassCurve.not_full_torsion_rat (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    {n : ℕ} (hn : 3 ≤ n) (φ : (ZMod n × ZMod n) →+ (E⁄ℚ).Point) :
+    ¬ Function.Injective φ :=
+  sorry
+
+/-- **Exclusion of rational `ℤ/2 × ℤ/10`** (sorry node): the modular
+curve `X_1(2,10)` has no non-cuspidal rational point (Mazur 1977; the
+list of fifteen). -/
+theorem WeierstrassCurve.not_two_ten_torsion (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (φ : (ZMod 2 × ZMod 10) →+ (E⁄ℚ).Point) :
+    ¬ Function.Injective φ :=
+  sorry
+
+/-- **Exclusion of rational `ℤ/2 × ℤ/12`** (sorry node): the modular
+curve `X_1(2,12)` has no non-cuspidal rational point (Mazur 1977; the
+list of fifteen). -/
+theorem WeierstrassCurve.not_two_twelve_torsion (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (φ : (ZMod 2 × ZMod 12) →+ (E⁄ℚ).Point) :
+    ¬ Function.Injective φ :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **No rational `(ℤ/2)³`** (PROVEN 2026-07-22): the geometric
+`2`-torsion of an elliptic curve has exactly `2² = 4` points
+(`TorsionCard.card_torsionBy`), so already over `ℚ̄` there is no
+injective `(ℤ/2)³`; a rational one would base-change to one. -/
+theorem WeierstrassCurve.not_two_cube_torsion (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (φ : (ZMod 2 × ZMod 2 × ZMod 2) →+ (E⁄ℚ).Point) :
+    ¬ Function.Injective φ := by
+  classical
+  intro hφ
+  -- the geometric `2`-torsion has `4` elements
+  have hcard : Nat.card ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 2) = 2 ^ 2 :=
+    TorsionCard.card_torsionBy (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) 2
+      (Nat.cast_ne_zero.mpr two_ne_zero)
+  haveI hfin : Finite ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 2) :=
+    Nat.finite_of_card_ne_zero (by rw [hcard]; norm_num)
+  -- every element of `(ℤ/2)³` is killed by `2`
+  have h2ann : ∀ z : ZMod 2 × ZMod 2 × ZMod 2, (2 : ℕ) • z = 0 := by decide
+  -- base-change the embedding to `ℚ̄` and corestrict to the `2`-torsion
+  let ψ : (ZMod 2 × ZMod 2 × ZMod 2) →+ (E⁄(AlgebraicClosure ℚ)).Point :=
+    (Affine.Point.map (W' := E) (Algebra.ofId ℚ (AlgebraicClosure ℚ))).comp φ
+  let f : (ZMod 2 × ZMod 2 × ZMod 2) → (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 2 :=
+    fun z => ⟨show ((E.map (algebraMap ℚ (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)).Point from
+      ψ z, by
+        rw [Submodule.mem_torsionBy_iff]
+        show ((2 : ℕ) : ℤ) • (ψ z) = 0
+        rw [natCast_zsmul, ← map_nsmul, h2ann z, map_zero]⟩
+  have hfinj : Function.Injective f := by
+    intro z z' hzz
+    have h1 : ψ z = ψ z' := congrArg Subtype.val hzz
+    have h2 : Affine.Point.map (W' := E) (Algebra.ofId ℚ (AlgebraicClosure ℚ)) (φ z) =
+        Affine.Point.map (W' := E) (Algebra.ofId ℚ (AlgebraicClosure ℚ)) (φ z') := h1
+    exact hφ (Affine.Point.map_injective (W' := E)
+      (f := Algebra.ofId ℚ (AlgebraicClosure ℚ)) h2)
+  have hle : Nat.card (ZMod 2 × ZMod 2 × ZMod 2) ≤
+      Nat.card ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 2) :=
+    Nat.card_le_card_of_injective f hfinj
+  rw [hcard, Nat.card_prod, Nat.card_prod, Nat.card_zmod] at hle
+  norm_num at hle
+
+/-- **Rank-`≤ 2` structure of the candidate torsion groups** (sorry node
+— PURE FINITE ABELIAN GROUP THEORY, no arithmetic input): a finite
+abelian group containing no subgroup `(ℤ/n)²` for any `n ≥ 3` and no
+subgroup `(ℤ/2)³` is isomorphic to `ℤ/d × ℤ/n` with `d ∈ {1, 2}`.
+Bookkeeping over the structure theorem
+(`AddCommGroup.equiv_directSum_zmod_of_finite`): the constraint kills a
+second cyclic factor at every odd prime and bounds the `2`-part by
+`ℤ/2 × ℤ/2^k`; the coprime cyclic pieces merge by CRT. -/
+theorem AddCommGroup.exists_rank_le_two_decomposition
+    (T : Type*) [AddCommGroup T] [Finite T]
+    (hfull : ∀ n : ℕ, 3 ≤ n → ∀ φ : (ZMod n × ZMod n) →+ T, ¬ Function.Injective φ)
+    (hcube : ∀ φ : (ZMod 2 × ZMod 2 × ZMod 2) →+ T, ¬ Function.Injective φ) :
+    ∃ (d n : ℕ), (d = 1 ∨ d = 2) ∧ Nonempty (T ≃+ (ZMod d × ZMod n)) :=
+  sorry
+
+/-- **The fifteen-groups casework** (PROVEN 2026-07-22): an abelian
+group of the shape `ℤ/d × ℤ/n` with `d ∈ {1, 2}`, all of whose element
+orders lie in `{1, …, 10, 12}`, and containing no `ℤ/2 × ℤ/10` and no
+`ℤ/2 × ℤ/12`, is one of Mazur's fifteen groups. Casework: for `d = 1`
+the generator's order pins `n` in the list; for `d = 2` and `n` odd the
+group is cyclic of order `2n` by CRT and the generator's order pins
+`2n`; for `d = 2` and `n` even the element `(0, 1)` has order `n`, so
+`n ∈ {2, 4, 6, 8, 10, 12}`, and the two exclusions remove `10` and
+`12`. -/
+theorem mazur_group_casework (T : Type*) [AddCommGroup T]
+    (horder : ∀ x : T, addOrderOf x ∈ ({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12} : Finset ℕ))
+    (h210 : ∀ φ : (ZMod 2 × ZMod 10) →+ T, ¬ Function.Injective φ)
+    (h212 : ∀ φ : (ZMod 2 × ZMod 12) →+ T, ¬ Function.Injective φ)
+    (hdec : ∃ (d n : ℕ), (d = 1 ∨ d = 2) ∧ Nonempty (T ≃+ (ZMod d × ZMod n))) :
+    (∃ n ∈ ({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12} : Finset ℕ),
+      Nonempty (T ≃+ ZMod n)) ∨
+    (∃ m ∈ ({1, 2, 3, 4} : Finset ℕ),
+      Nonempty (T ≃+ (ZMod 2 × ZMod (2 * m)))) := by
+  classical
+  obtain ⟨d, n, hd, ⟨e⟩⟩ := hdec
+  rcases hd with rfl | rfl
+  · -- `d = 1`: the group is cyclic of order `n`
+    left
+    have e' : T ≃+ ZMod n := e.trans AddEquiv.uniqueProd
+    have hordx : addOrderOf (e'.symm 1) = n := by
+      have h1 := addOrderOf_injective e'.toAddMonoidHom e'.injective (e'.symm 1)
+      rw [show e'.toAddMonoidHom (e'.symm 1) = 1 from e'.apply_symm_apply 1,
+        ZMod.addOrderOf_one] at h1
+      exact h1.symm
+    have hmem := horder (e'.symm 1)
+    rw [hordx] at hmem
+    exact ⟨n, hmem, ⟨e'⟩⟩
+  · by_cases hpar : 2 ∣ n
+    · -- `d = 2`, `n` even: `(0, 1)` has order `n`, and the exclusions apply
+      -- the order of `(0, 1)` is `n`
+      have hord01 : addOrderOf ((0, 1) : ZMod 2 × ZMod n) = n := by
+        have h1 : n • ((0, 1) : ZMod 2 × ZMod n) = 0 := by
+          have hz : n • (0 : ZMod 2) = 0 := smul_zero n
+          have ho : n • (1 : ZMod n) = 0 := by
+            rw [nsmul_eq_mul, mul_one, ZMod.natCast_self]
+          rw [Prod.smul_mk, hz, ho]
+          rfl
+        have hdvd : addOrderOf ((0, 1) : ZMod 2 × ZMod n) ∣ n :=
+          addOrderOf_dvd_of_nsmul_eq_zero h1
+        have hdvd2 : n ∣ addOrderOf ((0, 1) : ZMod 2 × ZMod n) := by
+          have h2 : (addOrderOf ((0, 1) : ZMod 2 × ZMod n)) •
+              ((0, 1) : ZMod 2 × ZMod n) = 0 := addOrderOf_nsmul_eq_zero _
+          have h3 : (addOrderOf ((0, 1) : ZMod 2 × ZMod n)) • (1 : ZMod n) = 0 :=
+            congrArg Prod.snd h2
+          have h4 := addOrderOf_dvd_of_nsmul_eq_zero h3
+          rwa [ZMod.addOrderOf_one] at h4
+        exact Nat.dvd_antisymm hdvd hdvd2
+      have hordx : addOrderOf (e.symm ((0, 1) : ZMod 2 × ZMod n)) = n := by
+        have h1 := addOrderOf_injective e.toAddMonoidHom e.injective (e.symm (0, 1))
+        rw [show e.toAddMonoidHom (e.symm (0, 1)) = (0, 1) from e.apply_symm_apply _,
+          hord01] at h1
+        exact h1.symm
+      have hmem := horder (e.symm ((0, 1) : ZMod 2 × ZMod n))
+      rw [hordx] at hmem
+      fin_cases hmem
+      · exact absurd hpar (by norm_num)
+      · exact Or.inr ⟨1, by decide, ⟨e⟩⟩
+      · exact absurd hpar (by norm_num)
+      · exact Or.inr ⟨2, by decide, ⟨e⟩⟩
+      · exact absurd hpar (by norm_num)
+      · exact Or.inr ⟨3, by decide, ⟨e⟩⟩
+      · exact absurd hpar (by norm_num)
+      · exact Or.inr ⟨4, by decide, ⟨e⟩⟩
+      · exact absurd hpar (by norm_num)
+      · exact absurd e.symm.injective (h210 e.symm.toAddMonoidHom)
+      · exact absurd e.symm.injective (h212 e.symm.toAddMonoidHom)
+    · -- `d = 2`, `n` odd: the group is cyclic of order `2n` by CRT
+      left
+      have hcop : Nat.Coprime 2 n := (Nat.prime_two.coprime_iff_not_dvd).mpr hpar
+      have e' : T ≃+ ZMod (2 * n) :=
+        e.trans ((ZMod.chineseRemainder hcop).toAddEquiv).symm
+      have hordx : addOrderOf (e'.symm 1) = 2 * n := by
+        have h1 := addOrderOf_injective e'.toAddMonoidHom e'.injective (e'.symm 1)
+        rw [show e'.toAddMonoidHom (e'.symm 1) = 1 from e'.apply_symm_apply 1,
+          ZMod.addOrderOf_one] at h1
+        exact h1.symm
+      have hmem := horder (e'.symm 1)
+      rw [hordx] at hmem
+      exact ⟨2 * n, hmem, ⟨e'⟩⟩
+
+/-- **Mazur's torsion theorem** (DERIVED 2026-07-22 from the five
+arithmetic leaves, the PROVEN `(ℤ/2)³` bound, the group-theoretic
+rank-`≤2` leaf, and the PROVEN casework): the torsion subgroup of the
+rational points of an elliptic curve over `ℚ` is isomorphic to one of
+the fifteen groups `ℤ/n` with `n ∈ {1, …, 10, 12}` or `ℤ/2 × ℤ/2m` with
 `m ∈ {1, 2, 3, 4}`. Mazur, "Modular curves and the Eisenstein ideal"
 (Publ. Math. IHÉS 47, 1977) and "Rational isogenies of prime degree"
 (Invent. Math. 44, 1978). -/
@@ -96,8 +314,38 @@ theorem WeierstrassCurve.mazur_classification (E : WeierstrassCurve ℚ) [E.IsEl
     (∃ n ∈ ({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12} : Finset ℕ),
       Nonempty ((Submodule.torsion ℤ (E⁄ℚ).Point) ≃+ ZMod n)) ∨
     (∃ m ∈ ({1, 2, 3, 4} : Finset ℕ),
-      Nonempty ((Submodule.torsion ℤ (E⁄ℚ).Point) ≃+ (ZMod 2 × ZMod (2 * m)))) :=
-  sorry
+      Nonempty ((Submodule.torsion ℤ (E⁄ℚ).Point) ≃+ (ZMod 2 × ZMod (2 * m)))) := by
+  haveI : Finite (Submodule.torsion ℤ (E⁄ℚ).Point) := E.torsion_finite_rat
+  have hιinj : Function.Injective
+      ((Submodule.torsion ℤ (E⁄ℚ).Point).subtype.toAddMonoidHom) :=
+    Submodule.injective_subtype _
+  refine mazur_group_casework (Submodule.torsion ℤ (E⁄ℚ).Point) ?_ ?_ ?_ ?_
+  · -- element orders through Mazur's uniform bound
+    intro x
+    have h1 := addOrderOf_injective
+      ((Submodule.torsion ℤ (E⁄ℚ).Point).subtype.toAddMonoidHom) hιinj x
+    rw [← h1]
+    exact E.mazur_point_order _ x.2
+  · -- no `ℤ/2 × ℤ/10`
+    intro φ hφ
+    exact E.not_two_ten_torsion
+      (((Submodule.torsion ℤ (E⁄ℚ).Point).subtype.toAddMonoidHom).comp φ)
+      (hιinj.comp hφ)
+  · -- no `ℤ/2 × ℤ/12`
+    intro φ hφ
+    exact E.not_two_twelve_torsion
+      (((Submodule.torsion ℤ (E⁄ℚ).Point).subtype.toAddMonoidHom).comp φ)
+      (hιinj.comp hφ)
+  · -- the rank-`≤2` shape, from the Weil-pairing leaf and the `2`-torsion bound
+    refine AddCommGroup.exists_rank_le_two_decomposition _ ?_ ?_
+    · intro n hn φ hφ
+      exact E.not_full_torsion_rat hn
+        (((Submodule.torsion ℤ (E⁄ℚ).Point).subtype.toAddMonoidHom).comp φ)
+        (hιinj.comp hφ)
+    · intro φ hφ
+      exact E.not_two_cube_torsion
+        (((Submodule.torsion ℤ (E⁄ℚ).Point).subtype.toAddMonoidHom).comp φ)
+        (hιinj.comp hφ)
 
 /-- **Mazur's torsion theorem, weak form**: the rational points of an
 elliptic curve over `ℚ` contain no subgroup isomorphic to `ℤ/2 × ℤ/2p` for
