@@ -9031,7 +9031,950 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
                         · obtain ⟨cc, hcc, hval⟩ := Multiset.mem_map.mp h0
                           exact hxMF' (sub_eq_zero.mp hval ▸
                             hVnF cc (Multiset.mem_add.mpr (Or.inl hcc)))
-                    sorry
+                    -- the final telescope: cancel the nonzero junk and
+                    -- chain all substitutions; the residue is hres
+                    have hres :
+                        (((xPS₁ - xM) * (xS₁ - xM)) ^ p) *
+                        (((xPS₁ - xR₁) * (xPS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                        ((Wb.toAffine.negY xS₁ yS₁ -
+            (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) ^
+          p) *
+                        ((Wb.toAffine.negY xS₁ yS₁ -
+            (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+              (Wb.toAffine.negY xR₁ yR₁ -
+                Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁))) ^
+          p) *
+                        ((c *
+                    ((yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁)))) *
+                  (c *
+                    ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁)))))) ^
+                p) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        ((yPS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ + (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) ^ p) *
+                        ((yPS₁ -
+            (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ +
+              (Wb.toAffine.negY xR₁ yR₁ -
+                Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁))) ^
+          p) =
+                        (((xS₁ - xM) * (xS₁ - xM)) ^ p) *
+                        (((xS₁ - xR₁) * (xS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                        ((c *
+                    ((yPS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (yPS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁)))) *
+                  (c *
+                    ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁)))))) ^
+                p) *
+                        ((xPS₁ - xM) ^ p) *
+                        ((xPS₁ - xQR₃) ^ p) *
+                        ((xPS₁ - xR₁) ^ p) *
+                        ((xQR₁ - xS₁) ^ p) *
+                        ((xR₃ - xS₁) ^ p) *
+                        ((xS₁ - xM) ^ p) *
+                        ((xS₁ - xQR₃) ^ p) *
+                        ((xS₁ - xR₁) ^ p) := by
+                      sorry
+                    refine mul_right_cancel₀ (mul_ne_zero hDne hmfneN) ?_
+                    linear_combination
+                      ((((xPS₁ - xM) * (xS₁ - xM)) ^ p) *
+                        (((xPS₁ - xR₁) * (xPS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((c *
+                    ((yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁)))) *
+                  (c *
+                    ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁)))))) ^
+                p) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        (uf) *
+                        (uf) *
+                        (uf) *
+                        (uf)) * hN -
+                      ((((xPS₁ - xM) * (xS₁ - xM)) ^ p) *
+                        (((xPS₁ - xR₁) * (xPS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                        ((Multiset.map
+            (fun i =>
+              i.2 -
+                (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * i.1 +
+                  (Wb.toAffine.negY xR₁ yR₁ -
+                    Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁)))
+            (Ln.bind fun ln =>
+              Multiset.map (fun x => (x, ln.1 * x + ln.2))
+                (Polynomial.X ^ 3 + Polynomial.C (Wb.toAffine.a₂ - ln.1 ^ 2 - Wb.toAffine.a₁ * ln.1) * Polynomial.X ^ 2 +
+                      Polynomial.C (Wb.toAffine.a₄ - 2 * ln.1 * ln.2 - Wb.toAffine.a₁ * ln.2 - Wb.toAffine.a₃ * ln.1) *
+                        Polynomial.X +
+                    Polynomial.C (Wb.toAffine.a₆ - ln.2 ^ 2 - Wb.toAffine.a₃ * ln.2)).roots)).prod) *
+                        ((Multiset.map
+              (fun i =>
+                Wb.toAffine.negY i (yfib i) -
+                  (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * i +
+                    (Wb.toAffine.negY xR₁ yR₁ -
+                      Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁)))
+              Vn).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map
+              (fun i =>
+                yfib i -
+                  (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * i +
+                    (Wb.toAffine.negY xR₁ yR₁ -
+                      Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁)))
+              Vn).prod) *
+                        ((c *
+                    ((yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁)))) *
+                  (c *
+                    ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁)))))) ^
+                p) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        (uf) *
+                        (uf) *
+                        (uf) *
+                        (uf)) * hpjA -
+                      ((((xPS₁ - xM) * (xS₁ - xM)) ^ p) *
+                        (((xPS₁ - xR₁) * (xPS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                        ((Multiset.map
+            (fun i =>
+              i.2 - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * i.1 + (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁)))
+            (Ld.bind fun ln =>
+              Multiset.map (fun x => (x, ln.1 * x + ln.2))
+                (Polynomial.X ^ 3 + Polynomial.C (Wb.toAffine.a₂ - ln.1 ^ 2 - Wb.toAffine.a₁ * ln.1) * Polynomial.X ^ 2 +
+                      Polynomial.C (Wb.toAffine.a₄ - 2 * ln.1 * ln.2 - Wb.toAffine.a₁ * ln.2 - Wb.toAffine.a₃ * ln.1) *
+                        Polynomial.X +
+                    Polynomial.C (Wb.toAffine.a₆ - ln.2 ^ 2 - Wb.toAffine.a₃ * ln.2)).roots)).prod) *
+                        ((Multiset.map
+              (fun i =>
+                Wb.toAffine.negY i (yfib i) -
+                  (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * i + (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁)))
+              Vd).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map
+              (fun i =>
+                yfib i - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * i + (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁)))
+              Vd).prod) *
+                        ((Wb.toAffine.negY xS₁ yS₁ -
+            (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) ^
+          p) *
+                        ((c *
+                    ((yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁)))) *
+                  (c *
+                    ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁)))))) ^
+                p) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        ((yPS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ + (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) ^ p) *
+                        (uf) *
+                        (uf) *
+                        (uf) *
+                        (uf)) * hpjB -
+                      ((((xPS₁ - xM) * (xS₁ - xM)) ^ p) *
+                        (((xPS₁ - xR₁) * (xPS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Wb.toAffine.negY xS₁ yS₁ -
+            (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) ^
+          p) *
+                        ((Wb.toAffine.negY xS₁ yS₁ -
+            (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+              (Wb.toAffine.negY xR₁ yR₁ -
+                Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁))) ^
+          p) *
+                        ((c *
+                    ((yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁)))) *
+                  (c *
+                    ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁)))))) ^
+                p) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        ((yPS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ + (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) ^ p) *
+                        ((yPS₁ -
+            (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ +
+              (Wb.toAffine.negY xR₁ yR₁ -
+                Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁))) ^
+          p) *
+                        (uf) *
+                        (uf) *
+                        (uf) *
+                        (uf)) * hD +
+                      ((((xS₁ - xM) * (xS₁ - xM)) ^ p) *
+                        (((xS₁ - xR₁) * (xS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xM (yfib xM) - (x.1 * xM + x.2)) Ln).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ln).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => xM - x) Vn).prod) *
+                        ((Multiset.map (fun x => xM - x) Vn).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vn).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vn).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yQR₃ - (x.1 * xQR₃ + x.2)) Ln).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yfib xM - (x.1 * xM + x.2)) Ln).prod) *
+                        ((c *
+                    ((yPS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (yPS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁)))) *
+                  (c *
+                    ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁)))))) ^
+                p) *
+                        ((xQR₁ - xS₁) ^ p) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        ((xR₃ - xS₁) ^ p) *
+                        (uf) *
+                        (uf) *
+                        (uf) *
+                        (uf)) * htrRN +
+                      ((((xS₁ - xM) * (xS₁ - xM)) ^ p) *
+                        (((xS₁ - xR₁) * (xS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xM (yfib xM) - (x.1 * xM + x.2)) Ln).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ (yfib xR₁) - (x.1 * xR₁ + x.2)) Ln).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => xM - x) Vn).prod) *
+                        ((Multiset.map (fun x => xM - x) Vn).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vn).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vn).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yfib xM - (x.1 * xM + x.2)) Ln).prod) *
+                        ((Multiset.map (fun x => yfib xR₁ - (x.1 * xR₁ + x.2)) Ln).prod) *
+                        ((c *
+                    ((yPS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (yPS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁)))) *
+                  (c *
+                    ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁)))))) ^
+                p) *
+                        ((xQR₁ - xS₁) ^ p) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        ((xR₃ - xS₁) ^ p) *
+                        (uf) *
+                        (uf) *
+                        (uf) *
+                        (uf)) * htrQN -
+                      ((((xS₁ - xM) * (xS₁ - xM)) ^ p) *
+                        (((xS₁ - xR₁) * (xS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xM (yfib xM) - (x.1 * xM + x.2)) Ln).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => xM - x) Vn).prod) *
+                        ((Multiset.map (fun x => xM - x) Vn).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yfib xM - (x.1 * xM + x.2)) Ln).prod) *
+                        ((c *
+                    ((yPS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (yPS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁)))) *
+                  (c *
+                    ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁)))))) ^
+                p) *
+                        ((xQR₁ - xS₁) ^ p) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        ((xR₃ - xS₁) ^ p) *
+                        (uf) *
+                        (uf) *
+                        (uf) *
+                        (uf)) * hwv₇ +
+                      ((((xS₁ - xM) * (xS₁ - xM)) ^ p) *
+                        (((xS₁ - xR₁) * (xS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                        ((Multiset.map (fun x => x - xQR₃) Vn).prod) *
+                        ((Multiset.map (fun x => x - xQR₃) Vn).prod) *
+                        ((Multiset.map (fun x => x.1 - xQR₃)
+          (Ln.bind fun ln =>
+            Multiset.map (fun x => (x, ln.1 * x + ln.2))
+              (Polynomial.X ^ 3 + Polynomial.C (Wb.toAffine.a₂ - ln.1 ^ 2 - Wb.toAffine.a₁ * ln.1) * Polynomial.X ^ 2 +
+                    Polynomial.C (Wb.toAffine.a₄ - 2 * ln.1 * ln.2 - Wb.toAffine.a₁ * ln.2 - Wb.toAffine.a₃ * ln.1) *
+                      Polynomial.X +
+                  Polynomial.C (Wb.toAffine.a₆ - ln.2 ^ 2 - Wb.toAffine.a₃ * ln.2)).roots)).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xM (yfib xM) - (x.1 * xM + x.2)) Ln).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => xM - x) Vn).prod) *
+                        ((Multiset.map (fun x => xM - x) Vn).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yfib xM - (x.1 * xM + x.2)) Ln).prod) *
+                        ((c *
+                    ((yPS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (yPS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁)))) *
+                  (c *
+                    ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁)))))) ^
+                p) *
+                        ((xQR₁ - xS₁) ^ p) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        ((xR₃ - xS₁) ^ p) *
+                        (uf) *
+                        (uf) *
+                        (uf) *
+                        (uf)) * hpjR +
+                      ((((xS₁ - xM) * (xS₁ - xM)) ^ p) *
+                        (((xS₁ - xR₁) * (xS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                        ((Multiset.map (fun x => x - xR₁) Vd).prod) *
+                        ((Multiset.map (fun x => x - xR₁) Vd).prod) *
+                        ((Multiset.map (fun x => x.1 - xR₁)
+            (Ld.bind fun ln =>
+              Multiset.map (fun x => (x, ln.1 * x + ln.2))
+                (Polynomial.X ^ 3 + Polynomial.C (Wb.toAffine.a₂ - ln.1 ^ 2 - Wb.toAffine.a₁ * ln.1) * Polynomial.X ^ 2 +
+                      Polynomial.C (Wb.toAffine.a₄ - 2 * ln.1 * ln.2 - Wb.toAffine.a₁ * ln.2 - Wb.toAffine.a₃ * ln.1) *
+                        Polynomial.X +
+                    Polynomial.C (Wb.toAffine.a₆ - ln.2 ^ 2 - Wb.toAffine.a₃ * ln.2)).roots)).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xM (yfib xM) - (x.1 * xM + x.2)) Ln).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => xM - x) Vn).prod) *
+                        ((Multiset.map (fun x => xM - x) Vn).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yfib xM - (x.1 * xM + x.2)) Ln).prod) *
+                        ((c *
+                    ((yPS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (yPS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁)))) *
+                  (c *
+                    ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁)))))) ^
+                p) *
+                        ((xPS₁ - xR₁) ^ p) *
+                        ((xQR₁ - xS₁) ^ p) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        ((xR₃ - xS₁) ^ p) *
+                        ((xS₁ - xR₁) ^ p) *
+                        (uf) *
+                        (uf) *
+                        (uf) *
+                        (uf)) * hpjQ +
+                      ((((xS₁ - xM) * (xS₁ - xM)) ^ p) *
+                        (((xS₁ - xR₁) * (xS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xM (yfib xM) - (x.1 * xM + x.2)) Ln).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => xM - x) Vn).prod) *
+                        ((Multiset.map (fun x => xM - x) Vn).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yfib xM - (x.1 * xM + x.2)) Ln).prod) *
+                        ((c *
+                    ((yPS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (yPS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁)))) *
+                  (c *
+                    ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁)))))) ^
+                p) *
+                        ((xPS₁ - xQR₃) ^ p) *
+                        ((xPS₁ - xR₁) ^ p) *
+                        ((xQR₁ - xS₁) ^ p) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        ((xR₃ - xS₁) ^ p) *
+                        ((xS₁ - xQR₃) ^ p) *
+                        ((xS₁ - xR₁) ^ p) *
+                        (uf) *
+                        (uf) *
+                        (uf) *
+                        (uf)) * hwv₈ -
+                      ((((xS₁ - xM) * (xS₁ - xM)) ^ p) *
+                        (((xS₁ - xR₁) * (xS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xM (yfib xM) - (x.1 * xM + x.2)) Ln).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ (yfib xQR₃) - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => xM - x) Vn).prod) *
+                        ((Multiset.map (fun x => xM - x) Vn).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yfib xM - (x.1 * xM + x.2)) Ln).prod) *
+                        ((Multiset.map (fun x => yfib xQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((c *
+                    ((yPS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (yPS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁)))) *
+                  (c *
+                    ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁)))))) ^
+                p) *
+                        ((xPS₁ - xQR₃) ^ p) *
+                        ((xPS₁ - xR₁) ^ p) *
+                        ((xQR₁ - xS₁) ^ p) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        ((xR₃ - xS₁) ^ p) *
+                        ((xS₁ - xQR₃) ^ p) *
+                        ((xS₁ - xR₁) ^ p) *
+                        (uf) *
+                        (uf) *
+                        (uf) *
+                        (uf)) * htrRD -
+                      ((((xS₁ - xM) * (xS₁ - xM)) ^ p) *
+                        (((xS₁ - xR₁) * (xS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xM (yfib xM) - (x.1 * xM + x.2)) Ln).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => xM - x) Vn).prod) *
+                        ((Multiset.map (fun x => xM - x) Vn).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yfib xM - (x.1 * xM + x.2)) Ln).prod) *
+                        ((c *
+                    ((yPS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (yPS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁)))) *
+                  (c *
+                    ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁)))))) ^
+                p) *
+                        ((xPS₁ - xQR₃) ^ p) *
+                        ((xPS₁ - xR₁) ^ p) *
+                        ((xQR₁ - xS₁) ^ p) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        ((xR₃ - xS₁) ^ p) *
+                        ((xS₁ - xQR₃) ^ p) *
+                        ((xS₁ - xR₁) ^ p) *
+                        (uf) *
+                        (uf) *
+                        (uf) *
+                        (uf)) * htrQD -
+                      ((((xS₁ - xM) * (xS₁ - xM)) ^ p) *
+                        (((xS₁ - xR₁) * (xS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((c *
+                    ((yPS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (yPS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁)))) *
+                  (c *
+                    ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁)))))) ^
+                p) *
+                        ((xPS₁ - xQR₃) ^ p) *
+                        ((xPS₁ - xR₁) ^ p) *
+                        ((xQR₁ - xS₁) ^ p) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        ((xR₃ - xS₁) ^ p) *
+                        ((xS₁ - xQR₃) ^ p) *
+                        ((xS₁ - xR₁) ^ p) *
+                        (uf) *
+                        (uf) *
+                        (uf) *
+                        (uf)) * hwwNM +
+                      ((((xS₁ - xM) * (xS₁ - xM)) ^ p) *
+                        (((xS₁ - xR₁) * (xS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((c *
+                    ((yPS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (yPS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁)))) *
+                  (c *
+                    ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁)))))) ^
+                p) *
+                        ((xPS₁ - xQR₃) ^ p) *
+                        ((xPS₁ - xR₁) ^ p) *
+                        ((xQR₁ - xS₁) ^ p) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        ((xR₃ - xS₁) ^ p) *
+                        ((xS₁ - xQR₃) ^ p) *
+                        ((xS₁ - xR₁) ^ p) *
+                        (uf) *
+                        (uf) *
+                        (uf) *
+                        (uf)) * hpjM +
+                      ((((xS₁ - xM) * (xS₁ - xM)) ^ p) *
+                        (((xS₁ - xR₁) * (xS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((c *
+                    ((yPS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xPS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (yPS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xPS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xR₁)))) *
+                  (c *
+                    ((Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ +
+                          (yQR₁ - Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xQR₁))) *
+                      (Wb.toAffine.negY xS₁ yS₁ -
+                        (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ +
+                          (Wb.toAffine.negY xR₁ yR₁ -
+                            Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) *
+                              xR₁)))))) ^
+                p) *
+                        ((xPS₁ - xM) ^ p) *
+                        ((xPS₁ - xQR₃) ^ p) *
+                        ((xPS₁ - xR₁) ^ p) *
+                        ((xQR₁ - xS₁) ^ p) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        ((xR₃ - xS₁) ^ p) *
+                        ((xS₁ - xM) ^ p) *
+                        ((xS₁ - xQR₃) ^ p) *
+                        ((xS₁ - xR₁) ^ p) *
+                        (uf) *
+                        (uf) *
+                        (uf) *
+                        (uf)) * hwwDM +
+                      (((Multiset.map (fun x => Wb.toAffine.negY xM (yfib xM) - (x.1 * xM + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xQR₃ yQR₃ - (x.1 * xQR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => Wb.toAffine.negY xR₁ yR₁ - (x.1 * xR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => xM - x) Vd).prod) *
+                        ((Multiset.map (fun x => xM - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xQR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₁ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => xR₃ - x) Vd).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yQR₁ - (x.1 * xQR₁ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yQR₃ - (ln.1 * xQR₃ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun ln => yR₁ - (ln.1 * xR₁ + ln.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yR₃ - (x.1 * xR₃ + x.2)) Ld).prod) *
+                        ((Multiset.map (fun x => yfib xM - (x.1 * xM + x.2)) Ld).prod) *
+                        ((xQR₃ - xS₁) ^ p) *
+                        ((xR₁ - xS₁) ^ p) *
+                        (uf) *
+                        (uf) *
+                        (uf) *
+                        (uf)) * hres
                   linear_combination
                     (((xR₁ - xS₁) ^ p * (xR₁ - xS₁) ^ p * (xQR₃ - xS₁) ^ p * (xQR₃ - xS₁) ^ p) * ((c * ((yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) * (yS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁))))) * (c * ((Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) * (Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))))) ^ p * (((xPS₁ - xR₁) * (xPS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) * ((xPS₁ - xM) * (xS₁ - xM)) ^ p * ((Ld.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => yR₁ - (ln.1 * xR₁ + ln.2))).prod * (Vd.map (fun c => xR₁ - c)).prod) * ((Ld.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => yQR₃ - (ln.1 * xQR₃ + ln.2))).prod * (Vd.map (fun c => xQR₃ - c)).prod) * (AdjoinRoot.evalEval hR₁neg.left aP₁ * ((Ld.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => Wb.toAffine.negY xR₁ yR₁ - (ln.1 * xR₁ + ln.2))).prod * (Vd.map (fun c => xR₁ - c)).prod)) * (AdjoinRoot.evalEval hR₃.left aP₁ * ((Ld.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => yR₃ - (ln.1 * xR₃ + ln.2))).prod * (Vd.map (fun c => xR₃ - c)).prod)) * (AdjoinRoot.evalEval hQR₃neg.left aP₁ * ((Ld.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => Wb.toAffine.negY xQR₃ yQR₃ - (ln.1 * xQR₃ + ln.2))).prod * (Vd.map (fun c => xQR₃ - c)).prod))) * heP₁ +
                     (((xR₁ - xS₁) ^ p * (xR₁ - xS₁) ^ p * (xQR₃ - xS₁) ^ p * (xQR₃ - xS₁) ^ p) * ((c * ((yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) * (yS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁))))) * (c * ((Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃ * xS₁ + (yQR₁ - (Wb.toAffine.slope xQR₁ xR₃ yQR₁ yR₃) * xQR₁))) * (Wb.toAffine.negY xS₁ yS₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃) * xS₁ + (Wb.toAffine.negY xR₁ yR₁ - (Wb.toAffine.slope xR₁ xQR₃ (Wb.toAffine.negY xR₁ yR₁) (Wb.toAffine.negY xQR₃ yQR₃)) * xR₁)))))) ^ p * (((xPS₁ - xR₁) * (xPS₁ - xQR₃) * ((xS₁ - xR₁) * (xS₁ - xQR₃))) ^ p) * ((xPS₁ - xM) * (xS₁ - xM)) ^ p * ((Ld.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => yR₁ - (ln.1 * xR₁ + ln.2))).prod * (Vd.map (fun c => xR₁ - c)).prod) * ((Ld.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => yQR₃ - (ln.1 * xQR₃ + ln.2))).prod * (Vd.map (fun c => xQR₃ - c)).prod) * (uf * ((Ln.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => yQR₁ - (ln.1 * xQR₁ + ln.2))).prod * (Vn.map (fun c => xQR₁ - c)).prod)) * (AdjoinRoot.evalEval hR₃.left aP₁ * ((Ld.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => yR₃ - (ln.1 * xR₃ + ln.2))).prod * (Vd.map (fun c => xR₃ - c)).prod)) * (AdjoinRoot.evalEval hQR₃neg.left aP₁ * ((Ld.map (fun ln : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) => Wb.toAffine.negY xQR₃ yQR₃ - (ln.1 * xQR₃ + ln.2))).prod * (Vd.map (fun c => xQR₃ - c)).prod))) * heP₂ +
