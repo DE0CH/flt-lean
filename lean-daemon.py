@@ -33,6 +33,7 @@ Every response is augmented by the daemon with freshness metadata:
 
 import json
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -65,10 +66,78 @@ def scan_modules():
     return out
 
 
-def freshness(modules):
+_IMPORT_RE = re.compile(
+    r"^(?:public\s+)?(?:meta\s+)?import\s+(?:all\s+)?([A-Za-z_][\w.]*)")
+
+
+def project_imports(src):
+    """Project-internal imports of a module, parsed from its source
+    header. Handles every variant in use ('import X', 'public import X',
+    'public meta import X', 'import all X'), skips `/- ... -/` block
+    comments (tracking nesting — the typical copyright/docstring header
+    would otherwise end the scan before the imports), `--` line comments,
+    and the header keywords `module`/`prelude`; stops at the first real
+    declaration. Imports interleaved with comments or appearing after
+    `module` are found."""
+    imps = []
+    depth = 0  # block-comment nesting depth
+    try:
+        with open(src, encoding="utf-8") as fh:
+            for line in fh:
+                s = line.strip()
+                if depth > 0:
+                    depth += s.count("/-") - s.count("-/")
+                    if depth < 0:
+                        depth = 0
+                    continue
+                if not s or s.startswith("--"):
+                    continue
+                if s.startswith("/-"):
+                    depth = s.count("/-") - s.count("-/")
+                    if depth < 0:
+                        depth = 0
+                    continue
+                if s == "module" or s == "prelude":
+                    continue
+                m = _IMPORT_RE.match(s)
+                if m:
+                    if m.group(1).startswith("Fermat"):
+                        imps.append(m.group(1))
+                    continue
+                # first real declaration ends the header
+                break
+    except OSError:
+        pass
+    return imps
+
+
+def freshness(modules, force_bad=()):
+    """Partition project modules; a module is importable only if its
+    WHOLE project-internal import closure has oleans (a built olean
+    whose transitive import is missing crashes importModules — the
+    2026-07-22 daemon crash on a mid-edit module). `force_bad` names
+    modules to treat as unbuilt regardless of the olean scan (used for
+    modules that failed at import time — an agent's rebuild loop can
+    delete/recreate an olean faster than we scan)."""
+    have_olean = {}
+    src_of = {}
+    for mod, src, olean in modules:
+        have_olean[mod] = os.path.exists(olean) and mod not in force_bad
+        src_of[mod] = src
+    # transitive closure of "imports a missing-olean module"
+    imports = {mod: [i for i in project_imports(src_of[mod])
+                     if i in have_olean] for mod, _s, _o in modules}
+    bad = {mod for mod, ok in have_olean.items() if not ok}
+    changed = True
+    while changed:
+        changed = False
+        for mod, imps in imports.items():
+            if mod not in bad and any(i in bad for i in imps):
+                bad.add(mod)
+                changed = True
     built, unbuilt, stale = [], [], []
     for mod, src, olean in modules:
-        if not os.path.exists(olean):
+        if mod in bad:
             unbuilt.append(mod)
             continue
         built.append((mod, src, olean))
@@ -249,46 +318,119 @@ class Daemon:
     def __init__(self):
         self.child = None
         self.sig = None
+        # Modules that crashed importModules (olean vanished between scan
+        # and import). Persisted ACROSS ensure_child calls so a failed
+        # retry round does not forget its exclusions; pruned per call
+        # when the olean reappears (module rebuilt -> re-admit).
+        self.force_bad = set()
         self.log = open(LOG, "a", encoding="utf-8")
 
     def _log(self, msg):
         self.log.write(f"[{time.strftime('%F %T')}] {msg}\n")
         self.log.flush()
 
-    def ensure_child(self):
-        modules = scan_modules()
-        built, unbuilt, stale = freshness(modules)
-        sig = olean_signature(built)
-        if self.child is not None and self.child.poll() is not None:
-            self._log("child died; restarting")
-            self.child = None
-        if self.child is not None and sig != self.sig:
-            self._log("olean signature changed; restarting child")
-            self.stop_child()
-        if self.child is None:
-            write_server_lean(built)
-            self._log(f"starting child ({len(built)} modules)")
-            t0 = time.time()
-            self.child = subprocess.Popen(
-                ["lake", "env", "lean", "--run", SERVER_LEAN],
-                cwd=ROOT,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=self.log,
-                text=True,
-            )
-            # wait for the environment to finish importing
-            while True:
-                line = self.child.stdout.readline()
-                if line == "":
-                    raise RuntimeError(
-                        "lean child exited during startup; see .lean-daemon.log"
+    def ensure_child(self, retries=5):
+        # Oleans can vanish BETWEEN the scan and the import (a parallel
+        # agent rebuilding its module deletes the target olean first) —
+        # on a startup crash, rescan and retry: the vanished olean is
+        # then seen as missing and the import-closure filter drops the
+        # module and its dependents.
+        last_exc = None
+        # Re-admit force_bad modules whose olean has reappeared (the
+        # parallel agent finished rebuilding them). Modules failing
+        # WITHIN this call's retries are re-added below and stay
+        # excluded for the rest of the call even if the olean flickers
+        # back mid-round.
+        if self.force_bad:
+            olean_of = {mod: olean for mod, _s, olean in scan_modules()}
+            readmit = {m for m in self.force_bad
+                       if os.path.exists(olean_of.get(m, ""))}
+            for m in sorted(readmit):
+                self._log(f"re-admitting {m}: olean reappeared")
+            self.force_bad -= readmit
+            # entries whose source vanished entirely drop out of the scan
+            self.force_bad &= set(olean_of)
+        for _attempt in range(retries):
+            modules = scan_modules()
+            built, unbuilt, stale = freshness(modules, self.force_bad)
+            sig = olean_signature(built)
+            if self.child is not None and self.child.poll() is not None:
+                self._log("child died; restarting")
+                self.child = None
+            if self.child is not None and sig != self.sig:
+                self._log("olean signature changed; restarting child")
+                self.stop_child()
+            if self.child is None:
+                write_server_lean(built)
+                self._log(f"starting child ({len(built)} modules)")
+                t0 = time.time()
+                errpath = os.path.join(ROOT, ".lean-daemon-child-stderr")
+                errfh = open(errpath, "w", encoding="utf-8")
+                try:
+                    self.child = subprocess.Popen(
+                        ["lake", "env", "lean", "--run", SERVER_LEAN],
+                        cwd=ROOT,
+                        stdin=subprocess.PIPE,
+                        stdout=subprocess.PIPE,
+                        stderr=errfh,
+                        text=True,
                     )
-                if line.strip() == "DAEMON-READY":
-                    break
-            self.sig = sig
-            self._log(f"child ready in {time.time() - t0:.1f}s")
-        return unbuilt, stale
+                except Exception:
+                    errfh.close()
+                    raise
+                # wait for the environment to finish importing
+                try:
+                    while True:
+                        line = self.child.stdout.readline()
+                        if line == "":
+                            raise RuntimeError(
+                                "lean child exited during startup; "
+                                "see .lean-daemon.log"
+                            )
+                        if line.strip() == "DAEMON-READY":
+                            break
+                except Exception as exc:
+                    last_exc = exc
+                    errfh.close()
+                    # reap the dead child (or kill a wedged one) — no
+                    # zombie may survive into the next attempt
+                    try:
+                        self.child.kill()
+                    except Exception:
+                        pass
+                    try:
+                        self.child.wait(timeout=10)
+                    except Exception:
+                        pass
+                    self.child = None
+                    try:
+                        errtxt = open(errpath, encoding="utf-8").read()
+                    except OSError:
+                        errtxt = ""
+                    if errtxt:
+                        self.log.write(errtxt)
+                        self.log.flush()
+                    # a module whose olean vanished at import time gets
+                    # excluded — with its dependents, via the import
+                    # closure in freshness() — on the next attempt
+                    found = re.findall(
+                        r"of module (\S+) does not exist", errtxt)
+                    for m in found:
+                        self.force_bad.add(m)
+                        self._log(f"excluding {m} after import failure")
+                    if not found:
+                        self._log("startup failure without a recognizable "
+                                  "missing-olean message; retrying as-is")
+                    self._log(f"startup failed (attempt {_attempt + 1}"
+                              f"/{retries}); rescanning")
+                    time.sleep(2.0)
+                    continue
+                errfh.close()
+                self.sig = sig
+                self._log(f"child ready in {time.time() - t0:.1f}s")
+            return unbuilt, stale
+        raise RuntimeError(
+            f"lean child failed to start after {retries} attempts: {last_exc}")
 
     def stop_child(self):
         if self.child is not None:
@@ -297,7 +439,15 @@ class Daemon:
                 self.child.stdin.flush()
                 self.child.wait(timeout=10)
             except Exception:
-                self.child.kill()
+                # kill AND reap — a bare kill() leaves a zombie
+                try:
+                    self.child.kill()
+                except Exception:
+                    pass
+                try:
+                    self.child.wait(timeout=10)
+                except Exception:
+                    pass
             self.child = None
 
     def handle(self, request):

@@ -45,14 +45,47 @@ for mod in resp.get("stale_sources", []):
 deps = {n: [] for n in names}
 own = {}
 clean = {}
+missing = []
 for item in resp["entries"]:
     n = item["name"]
     if item.get("missing"):
         print(f"LEAN: {n} MISSING", file=sys.stderr)
+        missing.append(n)
         continue
     deps[n] = item["kids"]
     own[n] = item["own"]
     clean[n] = item["clean"]
+
+# A missing entry has no dependency edges, which orphans its whole
+# subtree into fake roots and flattens the display (the 2026-07-22
+# breakage: a half-started daemon child reported most entries missing
+# and the flattened tree was written and committed). Missing entries
+# mean the daemon's environment does not reflect a consistent build —
+# REFUSE to write rather than corrupt PROGRESS.md.
+if missing and "--force-degraded" not in sys.argv:
+    print(f"REFUSING to regenerate: {len(missing)} tracked entries "
+          "missing from the daemon environment (inconsistent/partial "
+          "build state). Rebuild first, or pass --force-degraded.",
+          file=sys.stderr)
+    sys.exit(1)
+
+# ------------------------------------------------- compiler sorry count
+sres = subprocess.run(
+    [sys.executable, f"{ROOT}/lean-daemon.py", "--query",
+     json.dumps({"cmd": "sorries"})],
+    capture_output=True, text=True, cwd=ROOT, timeout=3600)
+sorry_count = None
+sorried_names = []
+if sres.returncode == 0:
+    try:
+        sresp = json.loads(sres.stdout)
+        # only trust an actual sorried list — a daemon {"error": ...}
+        # response must NOT be rendered as "0 sorried declarations"
+        if "error" not in sresp and isinstance(sresp.get("sorried"), list):
+            sorried_names = [s["name"] for s in sresp["sorried"]]
+            sorry_count = len(sorried_names)
+    except Exception:
+        pass
 
 # ------------------------------------------------------------------ marks
 # cross  — a `sorry` lives in the node's EXCLUSIVE cone (reached without
@@ -161,9 +194,17 @@ legend = [
     "`progress-entries.json` and re-run the generator.",
     "",
 ]
+if sorry_count is not None:
+    legend += [
+        f"**Sorried declarations (compiler-counted): {sorry_count}**"
+        + (" — " + ", ".join(f"`{n.rsplit('.', 1)[-1]}`"
+                             for n in sorried_names) if sorried_names else ""),
+        "",
+    ]
 md = md[:t0] + legend + lines_out + [""] + md[t1:]
 open(f"{ROOT}/PROGRESS.md", "w").write("\n".join(md))
 print(f"entries: {len(entries)}  roots: {len(roots)}  "
       f"double: {sum(1 for v in mark.values() if v == '✅✅')}  "
       f"single: {sum(1 for v in mark.values() if v == '✅')}  "
-      f"cross: {sum(1 for v in mark.values() if v == '❌')}")
+      f"cross: {sum(1 for v in mark.values() if v == '❌')}  "
+      f"sorried-decls: {sorry_count}")
