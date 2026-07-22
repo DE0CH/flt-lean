@@ -1299,5 +1299,47 @@
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
     "wip": true,
     "text": "`WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow` (stated 2026-07-22, agent decomposition of torsion_flat_of_good_reduction): the good-reduction finite-flat package leaf (pow case); owned by the worktree fleet's flat agent."
+  },
+  {
+    "name": "WeierstrassCurve.kernel_add_abscissa_notMem",
+    "fullname": "WeierstrassCurve.kernel_add_abscissa_notMem",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+    "wip": true,
+    "text": "`WeierstrassCurve.kernel_add_abscissa_notMem` — kernel of reduction closed under addition (formal-group valuation estimate; Silverman AEC VII.2.1-2 shape) — leaf of the proven NOS dévissage (2026-07-22)"
+  },
+  {
+    "name": "WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq",
+    "fullname": "WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+    "wip": true,
+    "text": "`WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq` — congruent distinct integral points differ by a kernel element (chord-slope/duplication estimate; Δ-unit Bézout for the ordinate-flip case) — leaf of the proven NOS dévissage (2026-07-22)"
+  },
+  {
+    "name": "WeierstrassCurve.exists_torsion_etale_package_over_fractionField",
+    "fullname": "WeierstrassCurve.exists_torsion_etale_package_over_fractionField",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+    "wip": true,
+    "text": "`WeierstrassCurve.exists_torsion_etale_package_over_fractionField` — finite étale K-Hopf package of the m-torsion via the Grothendieck Galois correspondence (universe-honest); shared shape with Semistable's exists_galoisModulePackage_of_finiteQuotient — align later (2026-07-22)"
+  },
+  {
+    "name": "WeierstrassCurve.torsion_flat_of_inertia_fixes_prolong",
+    "fullname": "WeierstrassCurve.torsion_flat_of_inertia_fixes_prolong",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+    "wip": true,
+    "text": "`WeierstrassCurve.torsion_flat_of_inertia_fixes_prolong` — unramified ⟹ étale prolongation by normalization — leaf of the proven torsion_flat_of_inertia_fixes assembly (2026-07-22)"
+  },
+  {
+    "name": "WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow",
+    "fullname": "WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+    "wip": true,
+    "text": "`WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow` — Katz–Mazur 2.3.1 flat-prolongation core, mixed characteristic (the Frey application R=ℤ_(p), k=1 lands here) (2026-07-22)"
+  },
+  {
+    "name": "WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow_of_eqChar",
+    "fullname": "WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow_of_eqChar",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+    "wip": true,
+    "text": "`WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow_of_eqChar` — equal-characteristic branch (Cartier-dual étale-part route) (2026-07-22)"
   }
 ]
