@@ -1239,42 +1239,42 @@
   },
   {
     "name": "serre_elimination_dihedral",
-    "fullname": "serre_elimination_dihedral",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
     "wip": true,
     "text": "`serre_elimination_dihedral` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of type dihedral — False from the case data; doc-comment in ModThree.lean records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds)."
   },
   {
     "name": "serre_elimination_alt4",
-    "fullname": "serre_elimination_alt4",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt4",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
     "wip": true,
     "text": "`serre_elimination_alt4` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of type alt4 — False from the case data; doc-comment in ModThree.lean records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds)."
   },
   {
     "name": "serre_elimination_sym4",
-    "fullname": "serre_elimination_sym4",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_sym4",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
     "wip": true,
     "text": "`serre_elimination_sym4` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of type sym4 — False from the case data; doc-comment in ModThree.lean records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds)."
   },
   {
     "name": "serre_elimination_alt5",
-    "fullname": "serre_elimination_alt5",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt5",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
     "wip": true,
     "text": "`serre_elimination_alt5` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of type alt5 — False from the case data; doc-comment in ModThree.lean records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds)."
   },
   {
     "name": "serre_elimination_psl",
-    "fullname": "serre_elimination_psl",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_psl",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
     "wip": true,
     "text": "`serre_elimination_psl` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of type psl — False from the case data; doc-comment in ModThree.lean records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds)."
   },
   {
     "name": "serre_elimination_pgl",
-    "fullname": "serre_elimination_pgl",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_pgl",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
     "wip": true,
     "text": "`serre_elimination_pgl` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation cannot be of type pgl — False from the case data; doc-comment in ModThree.lean records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds)."
