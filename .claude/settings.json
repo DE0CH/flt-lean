@@ -17,10 +17,14 @@
       "Bash(git push*-f)",
       "Bash(git push*-f *)",
       "Bash(lake build:*)",
-      "Bash(*lake build*)"
+      "Bash(*lake build*)",
+      "Bash(lake env lean:*)",
+      "Bash(*lake env lean*)",
+      "Bash(lake lean:*)",
+      "Bash(*lake lean *)"
     ],
     "denyExplanations": {
-      "lake build": "BANNED (Deyao, 2026-07-22): please use the MCP (lean-lsp) — its diagnostics are the trusted, faster verification gate, and it compiles a file's imports on demand. Worktree agents use `lake env lean <file>` (still allowed). Full builds are Deyao's manual insurance only."
+      "lake": "BANNED (Deyao, 2026-07-22): please use the MCP (lean-lsp) — its diagnostics are the trusted verification gate for EVERYTHING; it accepts absolute paths into agent worktrees and compiles imports on demand. Nothing verifies outside an MCP door; headless scripts use the detached report server."
     },
     "additionalDirectories": [
       "/tmp"
