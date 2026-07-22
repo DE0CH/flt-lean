@@ -201,40 +201,100 @@ variable (Ksep : Type*) [Field Ksep] [Algebra K Ksep] [IsSepClosure K Ksep] [Dec
 The étale leaf `torsion_flat_of_good_reduction_of_isUnit` splits into an
 elliptic-curve half — inertia above `R` acts trivially on the `m`-torsion, the easy
 direction of Néron–Ogg–Shafarevich, proven in
-`Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction` for odd primes and reduced
-below to its prime-power core by a proven CRT/Bézout argument — and a pure descent
-half: an unramified torsion Galois module of order invertible in the residue field
-prolongs to a finite étale (in particular finite flat) Hopf algebra over `R`. The
-assembly is proven; the two remaining sorries in this subsection are the prime-power
-Néron–Ogg–Shafarevich core and the descent statement, neither of which mentions the
-other's mathematics.
+`Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction` for odd primes, reduced
+below to its prime-power core by a proven CRT/Bézout argument, with the prime-power
+core in turn assembled (proven) from a proven dévissage over two characteristic-free
+kernel-of-reduction leaves — and a pure descent half: an unramified torsion Galois
+module of order invertible in the residue field prolongs to a finite étale (in
+particular finite flat) Hopf algebra over `R`, decomposed further below into the
+Galois-correspondence and prolongation leaves. All assemblies are proven; the
+remaining sorries in this subsection are the two kernel-of-reduction leaves
+(`kernel_add_abscissa_notMem`, `kernel_sub_abscissa_notMem_of_residue_eq`) and the
+two descent leaves (`exists_torsion_etale_package_over_fractionField`,
+`torsion_flat_of_inertia_fixes_prolong`).
 -/
 
-/-- **Reduction is injective on prime-power torsion, deep cases** (sorry node): two
-`p ^ k`-torsion points of `E(Kˢᵉᵖ)` with integral coordinates and congruent residues in
-a valuation subring `𝒪` above `R` are equal, for `p ^ k` invertible in `R` and either
-`p = 2` or `k ≥ 2` (the case `p` odd, `k = 1` is PROVEN — via
+/-- **The kernel of reduction is closed under addition, abscissa form** (sorry node;
+Silverman *AEC* VII.2.2 in coordinates, characteristic-free and torsion-free): on the
+minimal model, if two affine points of `E(Kˢᵉᵖ)` both have non-integral abscissa over a
+valuation subring `𝒪` of `Kˢᵉᵖ` above `R`, then any affine value of their sum again has
+non-integral abscissa. Intended proof: `xᵢ ∉ 𝒪` forces `v(xᵢ) < 0`, and on the curve
+`2 v(yᵢ) = 3 v(xᵢ)` (once `v(x) < 0` and the `aᵢ` are integral, the dominant terms of
+the Weierstrass equation are `y²` and `x³`), so both points lie in the formal-group
+chart `zᵢ = -xᵢ/yᵢ` with `v(zᵢ) = -v(xᵢ)/2... > 0`; the formal group law
+`z₃ = z₁ + z₂ + (higher order, integral coefficients)` gives
+`v(z₃) ≥ min (v(z₁)) (v(z₂)) > 0`, and `v(x₃) = -2 v(z₃) < 0`. Alternatively, direct
+chord/tangent slope bookkeeping on the addition formulas avoids introducing the formal
+group law. -/
+theorem WeierstrassCurve.kernel_add_abscissa_notMem
+    (𝒪 : ValuationSubring Ksep)
+    (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    {x₁ y₁ x₂ y₂ x₃ y₃ : Ksep}
+    (h₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (h₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (h₃ : (E⁄Ksep).toAffine.Nonsingular x₃ y₃)
+    (hx₁ : x₁ ∉ 𝒪) (hx₂ : x₂ ∉ 𝒪)
+    (hadd : (Affine.Point.some x₁ y₁ h₁ : (E⁄Ksep).Point) +
+      Affine.Point.some x₂ y₂ h₂ = Affine.Point.some x₃ y₃ h₃) :
+    x₃ ∉ 𝒪 :=
+  sorry
+
+/-- **Congruent distinct integral points differ by a kernel element** (sorry node;
+Silverman *AEC* VII.2.1-2 in coordinates, characteristic-free and torsion-free): on the
+minimal model, if two DISTINCT affine points of `E(Kˢᵉᵖ)` have integral coordinates
+with equal residues over a valuation subring `𝒪` of `Kˢᵉᵖ` above `R`, then any affine
+value of their difference has non-integral abscissa ("the difference lies in the kernel
+of reduction"). Intended proof, by the chord construction for
+`(x₁, y₁) + (x₂, -y₂ - a₁x₂ - a₃)`: if `x₁ ≠ x₂`, the slope
+`λ = (y₁ + y₂ + a₁x₂ + a₃)/(x₁ - x₂)` has denominator in the maximal ideal `𝔪` and
+numerator congruent to `ψ₂(x₂, y₂) mod 𝔪`; when `ψ₂(x₂, y₂) ∉ 𝔪` this gives
+`v(λ) < 0` and `v(x₃) = 2 v(λ) + (integral) < 0`; when `ψ₂(x₂, y₂) ∈ 𝔪` compare the
+valuations of the two ordinates above `x₂` via the `y`-quadratic. If `x₁ = x₂` the
+points differ by an ordinate flip, `y₁ ≠ y₂` congruent forces `ψ₂(x₁, y₁) ∈ 𝔪` with
+`ψ₂(x₁, y₁) ≠ 0`, and the difference is the DOUBLE of `(x₁, y₁)`: the duplication
+formula has denominator `ψ₂² ≡ 0 mod 𝔪` and numerator `x⁴ - b₄x² - 2b₆x - b₈`, whose
+common vanishing with `Ψ₂Sq = 4x³ + b₂x² + 2b₄x + b₆` modulo `𝔪` is excluded by a
+Bézout identity with resultant a power of `Δ` — a unit by good reduction (compare the
+proven `(2,3)` certificates in `Fermat.FLT.EllipticCurve.PhiPsiCoprime`). -/
+theorem WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq
+    (𝒪 : ValuationSubring Ksep)
+    (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    {x₁ y₁ x₂ y₂ x₃ y₃ : Ksep}
+    (h₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (h₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (h₃ : (E⁄Ksep).toAffine.Nonsingular x₃ y₃)
+    (hne : (Affine.Point.some x₁ y₁ h₁ : (E⁄Ksep).Point) ≠ Affine.Point.some x₂ y₂ h₂)
+    (hm₁ : x₁ ∈ 𝒪) (hm₂ : x₂ ∈ 𝒪) (hn₁ : y₁ ∈ 𝒪) (hn₂ : y₂ ∈ 𝒪)
+    (hrx : IsLocalRing.residue 𝒪 ⟨x₁, hm₁⟩ = IsLocalRing.residue 𝒪 ⟨x₂, hm₂⟩)
+    (hry : IsLocalRing.residue 𝒪 ⟨y₁, hn₁⟩ = IsLocalRing.residue 𝒪 ⟨y₂, hn₂⟩)
+    (hsub : (Affine.Point.some x₁ y₁ h₁ : (E⁄Ksep).Point) -
+      Affine.Point.some x₂ y₂ h₂ = Affine.Point.some x₃ y₃ h₃) :
+    x₃ ∉ 𝒪 :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **Reduction is injective on prime-power torsion, deep cases** (dévissage assembly
+PROVEN 2026-07-22; rests on the two characteristic-free kernel-of-reduction leaves
+above): two `p ^ k`-torsion points of `E(Kˢᵉᵖ)` with integral coordinates and congruent
+residues in a valuation subring `𝒪` above `R` are equal, for `p ^ k` invertible in `R`
+and either `p = 2` or `k ≥ 2` (the case `p` odd, `k = 1` is PROVEN separately — via
 `WeierstrassCurve.torsion_abscissa_residue_ne` and
 `WeierstrassCurve.torsion_ordinate_eq_of_residue_eq` in
 `Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction` — and is consumed by the
-assembly below through `torsion_unramified_of_good_reduction`, so it is excluded here).
+Néron–Ogg–Shafarevich assembly below through `torsion_unramified_of_good_reduction`,
+so it is excluded here; the proof written here would in fact cover it too once the two
+kernel leaves are closed).
 
-Intended proof (dévissage to the prime layer plus a formal-group valuation estimate):
-the difference `T = P₁ - P₂` of two congruent integral torsion points lies in the
-"kernel of reduction" — concretely, if `T ≠ 0` its abscissa has negative valuation:
-in the chord construction for `P₁ + (-P₂)` the denominator `x₁ - x₂ ∈ 𝔪` while the
-numerator is congruent to `ψ₂(P₂) mod 𝔪`, giving `v(x(T)) = 2 v(λ) < 0` when
-`ψ₂(P₂) ∉ 𝔪`, with the near-2-torsion case `ψ₂(P₂) ∈ 𝔪` handled by comparing the
-valuations of the two ordinate roots (for `p = 2` this ordinate-flip analysis is the
-whole content). On the other hand a suitable multiple `p ^ j • T` is a NONZERO
-`p`-torsion point (tower dévissage), whose abscissa is a root of `ΨSq p` — of unit
-leading coefficient `p²` since `p ∈ Rˣ` — hence integral over `𝒪`: contradiction.
-The division-polynomial coprimality input at composite order, `isCoprime_Φ_ΨSq`, is
-proven (`Fermat.FLT.EllipticCurve.PhiPsiCoprime`; over the residue field `Δ` is a unit
-by good reduction). -/
+The dévissage: if the points differ, their difference `T ≠ 0` is `p ^ k`-torsion and
+lies in the kernel of reduction (`kernel_sub_abscissa_notMem_of_residue_eq`), every
+nonzero multiple of `T` stays in the kernel (`kernel_add_abscissa_notMem`, by induction
+on the multiplier), and the last nonzero point `T' = p ^ j • T` of the multiplication
+tower is a nonzero `p`-torsion point in the kernel — but `p`-torsion abscissas are
+integral (`torsion_abscissa_mem`, as `p` is a unit in `R`): contradiction. -/
 theorem WeierstrassCurve.torsion_eq_of_residue_eq_of_prime_pow_deep
     (p k : ℕ) (hp : p.Prime) (hpk : IsUnit ((p ^ k : ℕ) : R)) (hk : k ≠ 0)
-    (hdeep : p = 2 ∨ 2 ≤ k)
+    (_hdeep : p = 2 ∨ 2 ≤ k)
     (𝒪 : ValuationSubring Ksep)
     (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
     {x₁ y₁ x₂ y₂ : Ksep}
@@ -245,8 +305,103 @@ theorem WeierstrassCurve.torsion_eq_of_residue_eq_of_prime_pow_deep
     (hm₁ : x₁ ∈ 𝒪) (hm₂ : x₂ ∈ 𝒪) (hn₁ : y₁ ∈ 𝒪) (hn₂ : y₂ ∈ 𝒪)
     (hrx : IsLocalRing.residue 𝒪 ⟨x₁, hm₁⟩ = IsLocalRing.residue 𝒪 ⟨x₂, hm₂⟩)
     (hry : IsLocalRing.residue 𝒪 ⟨y₁, hn₁⟩ = IsLocalRing.residue 𝒪 ⟨y₂, hn₂⟩) :
-    x₁ = x₂ ∧ y₁ = y₂ :=
-  sorry
+    x₁ = x₂ ∧ y₁ = y₂ := by
+  classical
+  by_contra hcon
+  -- the two points are distinct
+  have hPne : (Affine.Point.some x₁ y₁ h₁ : (E⁄Ksep).Point) ≠
+      Affine.Point.some x₂ y₂ h₂ := by
+    intro heq
+    injection heq with e1 e2
+    exact hcon ⟨e1, e2⟩
+  -- their difference is a nonzero `p ^ k`-torsion point
+  set T : (E⁄Ksep).Point :=
+    Affine.Point.some x₁ y₁ h₁ - Affine.Point.some x₂ y₂ h₂ with hTdef
+  have hT0 : T ≠ 0 := sub_ne_zero.mpr hPne
+  have hTtor : ((p ^ k : ℕ) : ℤ) • T = 0 := by
+    rw [hTdef, smul_sub, ht₁, ht₂, sub_zero]
+  -- `T` is affine with non-integral abscissa: it lies in the kernel of reduction
+  obtain ⟨xT, yT, hT3, hTeq, hxT⟩ : ∃ (xT yT : Ksep)
+      (hT3 : (E⁄Ksep).toAffine.Nonsingular xT yT),
+      T = Affine.Point.some xT yT hT3 ∧ xT ∉ 𝒪 := by
+    cases hTc : T with
+    | zero => exact absurd hTc hT0
+    | @some xT yT hT3 =>
+      refine ⟨xT, yT, hT3, rfl, ?_⟩
+      refine WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq R K E Ksep 𝒪 h𝒪
+        h₁ h₂ hT3 hPne hm₁ hm₂ hn₁ hn₂ hrx hry ?_
+      rw [← hTdef]
+      exact hTc
+  -- every nonzero multiple of `T` stays in the kernel of reduction
+  have hmult : ∀ n : ℕ, 1 ≤ n → ∀ {xS yS : Ksep}
+      (hS : (E⁄Ksep).toAffine.Nonsingular xS yS),
+      (n : ℤ) • T = Affine.Point.some xS yS hS → xS ∉ 𝒪 := by
+    intro n hn
+    induction n, hn using Nat.le_induction with
+    | base =>
+      intro xS yS hS hSeq
+      rw [Nat.cast_one, one_smul, hTeq] at hSeq
+      injection hSeq with e1 e2
+      rw [← e1]
+      exact hxT
+    | succ n hn ih =>
+      intro xS yS hS hSeq
+      have hstep : ((n : ℤ) + 1) • T = (n : ℤ) • T + T := by
+        rw [add_smul, one_smul]
+      rw [show ((n + 1 : ℕ) : ℤ) = (n : ℤ) + 1 by push_cast; ring, hstep] at hSeq
+      cases hnT : (n : ℤ) • T with
+      | zero =>
+        rw [hnT, show (Affine.Point.zero : (E⁄Ksep).Point) = 0 from rfl,
+          zero_add, hTeq] at hSeq
+        injection hSeq with e1 e2
+        rw [← e1]
+        exact hxT
+      | @some xn yn hn3 =>
+        have hxn : xn ∉ 𝒪 := ih hn3 hnT
+        rw [hnT, hTeq] at hSeq
+        exact WeierstrassCurve.kernel_add_abscissa_notMem R K E Ksep 𝒪 h𝒪
+          hn3 hT3 hS hxn hxT hSeq
+  -- the multiplication tower: the last nonzero `p`-power multiple of `T`
+  have hex : ∃ j : ℕ, ((p ^ j : ℕ) : ℤ) • T = 0 := ⟨k, hTtor⟩
+  set j₁ := Nat.find hex with hj₁def
+  have hj₁spec : ((p ^ j₁ : ℕ) : ℤ) • T = 0 := Nat.find_spec hex
+  have hj₁0 : j₁ ≠ 0 := by
+    intro h0
+    rw [h0] at hj₁spec
+    simp only [pow_zero, Nat.cast_one, one_smul] at hj₁spec
+    exact hT0 hj₁spec
+  have hj₁pred : ((p ^ (j₁ - 1) : ℕ) : ℤ) • T ≠ 0 :=
+    Nat.find_min hex (Nat.sub_lt (Nat.pos_of_ne_zero hj₁0) one_pos)
+  set T' : (E⁄Ksep).Point := ((p ^ (j₁ - 1) : ℕ) : ℤ) • T with hT'def
+  -- `T'` is a nonzero `p`-torsion point
+  have hT'tor : ((p : ℕ) : ℤ) • T' = 0 := by
+    rw [hT'def, smul_smul, ← Nat.cast_mul, ← pow_succ',
+      Nat.sub_add_cancel (Nat.one_le_iff_ne_zero.mpr hj₁0)]
+    exact hj₁spec
+  cases hT'c : T' with
+  | zero => exact hj₁pred (hT'def ▸ hT'c)
+  | @some xT' yT' hT'3 =>
+    -- its abscissa is NOT integral: it is a nonzero multiple of `T`
+    have hxT'notMem : xT' ∉ 𝒪 := by
+      refine hmult (p ^ (j₁ - 1)) ?_ hT'3 (hT'def ▸ hT'c)
+      exact Nat.one_le_iff_ne_zero.mpr (pow_ne_zero _ hp.ne_zero)
+    -- but `p`-torsion abscissas ARE integral, since `p` is a unit in `R`
+    have hpu : IsUnit ((p : ℕ) : R) := by
+      have h2 : IsUnit (((p : ℕ) : R) ^ k) := by
+        have := hpk
+        rwa [Nat.cast_pow] at this
+      exact (isUnit_pow_iff hk).mp h2
+    haveI : NeZero ((p : ℕ) : IsLocalRing.ResidueField R) := by
+      have h2 : IsUnit (IsLocalRing.residue R ((p : ℕ) : R)) :=
+        hpu.map (IsLocalRing.residue R)
+      rw [map_natCast] at h2
+      exact ⟨h2.ne_zero⟩
+    have hT'torsome : ((p : ℕ) : ℤ) •
+        (Affine.Point.some xT' yT' hT'3 : (E⁄Ksep).Point) = 0 := by
+      rw [← hT'c]
+      exact hT'tor
+    exact hxT'notMem (WeierstrassCurve.torsion_abscissa_mem R K E p Ksep 𝒪
+      h𝒪 hT'3 hT'torsome)
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
