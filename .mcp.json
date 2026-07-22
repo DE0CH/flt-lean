@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "lean-lsp": {
+      "command": "uvx",
+      "args": [
+        "lean-lsp-mcp",
+        "--lean-project-path",
+        "."
+      ]
+    },
+    "annas-mcp": {
+      "command": "python3",
+      "args": [
+        "annas-mcp.py",
+        "mcp"
+      ],
+      "env": {
+        "ANNAS_KEY": "${ANNAS_KEY}"
+      }
+    }
+  }
+}

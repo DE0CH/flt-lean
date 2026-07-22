@@ -1,0 +1,54 @@
+{
+  "permissions": {
+    "allow": [
+      "Edit(**)",
+      "Bash(grep *)",
+      "Bash(head *)",
+      "WebSearch",
+      "mcp__annas-mcp__search_annas",
+      "mcp__annas-mcp__download_annas",
+      "Read(//tmp/**)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push --force-with-lease:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push*--force*)",
+      "Bash(git push*-f)",
+      "Bash(git push*-f *)"
+    ],
+    "additionalDirectories": [
+      "/tmp"
+    ]
+  },
+  "defaultMode": "acceptEdits",
+  "env": {
+    "CLAUDE_CODE_STOP_HOOK_BLOCK_CAP": "1000"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__lean-lsp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/lean-pretool-reminder.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/check-sorries.py\"",
+            "timeout": 3600,
+            "statusMessage": "Checking the FLT loop exit condition (sorries + sorry gate)"
+          }
+        ]
+      }
+    ]
+  }
+}

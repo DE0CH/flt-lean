@@ -1,3 +1,7 @@
+> NOTE (2026-07-22, post-split): this repo is the standalone flt-lean
+> extraction; paths below have been adjusted (project root = former
+> fermat/ folder).
+
 # Session handoff — 2026-07-22
 
 Written at Deyao's request: the driving session is being moved to a new
@@ -9,13 +13,13 @@ mission/policies live in `CLAUDE.md` (repo root), the tree state in
 
 1. **Update the session guard**: write your own session id into
    `.claude/stop-hook-session-id` (repo root), else the Stop hook will
-   refuse to drive you. Launch from the WORKTREE ROOT
-   (`/Users/deyaochen/cs/flt-worktree`), never from `fermat/`.
+   refuse to drive you. Launch from the REPO ROOT
+   (`/Users/deyaochen/cs/flt-lean`).
 2. **Verify the prune commit `ae59df2`**: the head commit contains the
    PROVEN `hres` closure (verified clean before the prune) PLUS an
    unused-have prune that has NOT been re-verified. Run
    `mcp__lean-lsp__lean_diagnostic_messages` on
-   `fermat/Fermat/FLT/EllipticCurve/WeilPairing.lean` (severity error)
+   `Fermat/FLT/EllipticCurve/WeilPairing.lean` (severity error)
    and WAIT — full elaboration of the μ-theorem takes ~40 minutes wall
    (two machine-generated mega `linear_combination`s under
    `maxHeartbeats 16000000` at line ~3011). "still_elaborating" for
@@ -28,7 +32,7 @@ mission/policies live in `CLAUDE.md` (repo root), the tree state in
 ## WHERE THE MATHEMATICS STANDS
 
 Active node: `WeilPairing.exists_weilPairing_mu`
-(`fermat/Fermat/FLT/EllipticCurve/WeilPairing.lean`, ~10k lines).
+(`Fermat/FLT/EllipticCurve/WeilPairing.lean`, ~10k lines).
 12 sorried declarations remain in the whole tree; this node is the wip
 frontier (flag set in `progress-entries.json`).
 
@@ -72,7 +76,7 @@ the progress entry):
 ## INFRASTRUCTURE NOTES
 
 - **Hooks**: Stop hook = `.claude/check-sorries.py` (drives the loop,
-  queries the persistent daemon `fermat/lean-daemon.py`); NEW PreToolUse
+  queries the persistent daemon `lean-daemon.py`); NEW PreToolUse
   hook = `.claude/lean-pretool-reminder.py` (fires before every
   lean-lsp call: sorry only in place of a proof, every have consumed —
   Deyao's no-floating rule at the have level; the just-committed prune
