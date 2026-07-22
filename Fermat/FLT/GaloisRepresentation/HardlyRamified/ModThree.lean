@@ -1506,16 +1506,86 @@ theorem mod_three_reducible {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k
   exact not_isAbsolutelyIrreducible V hV hρ
     ((OddRep.isIrreducible_iff_isAbsolutelyIrreducible ρ' heig).mp hirr)
 
-/-- **The stable line with unramified-at-`3` quotient character** (sorry
-node — the connected–étale content of Serre's §5.4 mod-3 analysis): a
+/-- **The Raynaud dichotomy at `3`** (sorry node — the local flatness
+content): if the quotient character `χ` of a stable line of a mod-3
+hardly ramified representation is RAMIFIED at `3`, then the
+sub-character `ψ` is unramified at `3`. Content: flatness (`IsFlatAt`
+at `3`) prolongs the local representation at `3` to a finite flat
+group scheme over `ℤ₃` killed by `3`; by Raynaud, the characters by
+which the inertia at `3` acts on the subquotients of a stable
+filtration are powers `ε^a`, `a ∈ {0, 1}`, of the level-one
+fundamental character `ε` = (mod-3 cyclotomic on inertia); since
+`ψ·χ = det = ε` on inertia, exactly one of the exponents is `1` — so
+`χ` ramified forces `ψ` trivial on the inertia at `3`. -/
+theorem subCharacter_unramified_at_three_of_quot_ramified
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (W₀ : Submodule k V) (hW₀fr : Module.finrank k W₀ = 1)
+    (hstable : ∀ g v, v ∈ W₀ → ρ g v ∈ W₀)
+    (ψ : Γ ℚ →* kˣ) (hψ : ∀ g, ∀ v ∈ W₀, ρ g v = (ψ g : k) • v)
+    (χ : Γ ℚ →* kˣ)
+    (hχ : ∀ g v, W₀.mkQ (ρ g v) = (χ g : k) • W₀.mkQ v)
+    (h3 : ¬ (localInertiaGroup
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ≤
+        (χ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker)) :
+    localInertiaGroup
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ≤
+      (ψ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker :=
+  sorry
+
+/-- **The Serre swap: the second stable line** (sorry node — the global
+splitting content): if the quotient character `χ` of a stable line
+`W₀` of a mod-3 hardly ramified representation is ramified at `3`,
+then the representation has a SECOND stable line whose quotient
+character is the sub-character `ψ` of `W₀` — i.e. the extension
+`0 → ψ → V → χ → 0` splits. Content: locally at `3` the connected–étale
+sequence of the flat prolongation provides a stable line with
+unramified quotient, necessarily different from `W₀` (whose quotient
+is ramified), so the extension splits locally at `3`; globally the
+extension class lies in the subgroup of `H¹(ℚ, k(ψχ⁻¹))` of classes
+unramified outside `{2, 3}`, flat (peu ramifié) at `3` and tame
+quadratic at `2`, and this Selmer-type group vanishes (Serre's
+`peu ramifié` argument, Duke 1987, §5.4). -/
+theorem exists_line_with_quotCharacter_eq_subCharacter
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (W₀ : Submodule k V) (hW₀fr : Module.finrank k W₀ = 1)
+    (hstable : ∀ g v, v ∈ W₀ → ρ g v ∈ W₀)
+    (ψ : Γ ℚ →* kˣ) (hψ : ∀ g, ∀ v ∈ W₀, ρ g v = (ψ g : k) • v)
+    (χ : Γ ℚ →* kˣ)
+    (hχ : ∀ g v, W₀.mkQ (ρ g v) = (χ g : k) • W₀.mkQ v)
+    (h3 : ¬ (localInertiaGroup
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ≤
+        (χ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker)) :
+    ∃ W₁ : Submodule k V, Module.finrank k W₁ = 1 ∧
+      (∀ g v, v ∈ W₁ → ρ g v ∈ W₁) ∧
+      (∀ g v, W₁.mkQ (ρ g v) = (ψ g : k) • W₁.mkQ v) :=
+  sorry
+
+/-- **The stable line with unramified-at-`3` quotient character**
+(DECOMPOSED 2026-07-22 into the two sorry nodes above — the Raynaud
+dichotomy `subCharacter_unramified_at_three_of_quot_ramified` and the
+Serre swap `exists_line_with_quotCharacter_eq_subCharacter`): a
 reducible mod-3 hardly ramified representation has a stable LINE whose
-quotient character is unramified at `3`. Content: the flatness
-condition (`IsFlatAt` at `3`) prolongs the representation to a finite
-flat group scheme over `ℤ₃`; the étale quotient of its connected–étale
-sequence is unramified, so if the given stable line has ramified
-quotient at `3`, the connected part is multiplicative and the
-connected–étale splitting provides the OTHER stable line whose quotient
-IS the étale part (the Serre swap). -/
+quotient character is unramified at `3`. Assembly: the given stable
+submodule is a line with sub-character `ψ` and quotient character `χ`;
+either `χ` is already unramified at `3` (take `W₀`), or the Raynaud
+dichotomy makes `ψ` unramified at `3` and the Serre swap provides a
+second stable line whose quotient character is `ψ`. -/
 theorem exists_line_with_unramified_quotCharacter_at_three
     {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
     [TopologicalSpace k] [DiscreteTopology k]
@@ -1533,8 +1603,40 @@ theorem exists_line_with_unramified_quotCharacter_at_three
           Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ≤
         (χ₂.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) :=
-  sorry
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) := by
+  classical
+  -- the given stable submodule is a line with a line quotient
+  have hfr : Module.finrank k V = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
+  have hstable : ∀ g v, v ∈ W₀ → ρ g v ∈ W₀ := fun g v hv =>
+    hW₀stable g ⟨v, hv, rfl⟩
+  have hW₀fr : Module.finrank k W₀ = 1 := by
+    have hle : Module.finrank k W₀ ≤ 2 := hfr ▸ Submodule.finrank_le W₀
+    have h0 : Module.finrank k W₀ ≠ 0 := fun h0 =>
+      hW₀0 (Submodule.finrank_eq_zero.mp h0)
+    have h2 : Module.finrank k W₀ ≠ 2 := fun h2 =>
+      hW₀top (Submodule.eq_top_of_finrank_eq (h2.trans hfr.symm))
+    omega
+  have hQ1 : Module.finrank k (V ⧸ W₀) = 1 := by
+    have hsum := Submodule.finrank_quotient_add_finrank W₀
+    omega
+  obtain ⟨χ, hχ⟩ := exists_quotCharacter ρ W₀ hQ1 hstable
+  by_cases h3 : localInertiaGroup
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ≤
+    (χ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker
+  · -- the quotient character of `W₀` is already unramified at `3`
+    exact ⟨W₀, χ, hW₀fr, hstable, hχ, h3⟩
+  · -- the Serre swap: the second line, whose quotient character is the
+    -- sub-character of `W₀`, unramified at `3` by the Raynaud dichotomy
+    obtain ⟨ψ, hψ⟩ := exists_subCharacter ρ W₀ hW₀fr hstable
+    obtain ⟨W₁, hW₁fr, hW₁stable, hW₁χ⟩ :=
+      exists_line_with_quotCharacter_eq_subCharacter V hV hρ W₀ hW₀fr
+        hstable ψ hψ χ hχ h3
+    exact ⟨W₁, ψ, hW₁fr, hW₁stable, hW₁χ,
+      subCharacter_unramified_at_three_of_quot_ramified V hV hρ W₀ hW₀fr
+        hstable ψ hψ χ hχ h3⟩
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
