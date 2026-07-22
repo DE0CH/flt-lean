@@ -503,18 +503,126 @@ theorem exists_residual_isHardlyRamified {R : Type u} [CommRing R]
   · -- tameness at 2 (sorried transfer leaf)
     exact isTameAtTwo_baseChange_residue kk hsurj hρ.isTameAtTwo
 
-/-- **The equivariant functional lift** (sorry node — the deep arithmetic
-core, Serre §5.4/Fontaine): the residual trivial-quotient functional lifts
-through the complete local coefficient ring to a Galois-equivariant
-`R`-linear functional on `V` that survives in the residue field. Content:
-the obstruction to lifting the trivial quotient level by level along the
-maximal-adic filtration lies in a Selmer-type `H¹` that the hardly
-ramified conditions (flatness at `3`, tameness at `2`, unramifiedness
-elsewhere, cyclotomic determinant) force to vanish; completeness of the
-module-finite `ℤ₃`-algebra `R` assembles the compatible system. Note the
-conclusion is deliberately weak — no surjectivity and no compatibility
-with `π` is demanded, only equivariance plus residual nonvanishing at a
-single vector; the consumer upgrades this to a split surjection by the
+/-- **The coboundary form of the one-level obstruction** (sorry node —
+the deep arithmetic core, Serre §5.4/Fontaine): for an `R`-linear
+functional `f` on `V` which is Galois-equivariant modulo `𝔪 ^ (n + 1)`,
+the defect `(g, v) ↦ f (ρ g v) - f v` — a `1`-cocycle on `Γ ℚ` valued
+in `Hom(V, 𝔪ⁿ⁺¹)`, reduced modulo `𝔪ⁿ⁺²` a cocycle for the
+contragredient residual action on `Hom(V̄, 𝔪ⁿ⁺¹/𝔪ⁿ⁺²)` — is a
+coboundary modulo `𝔪ⁿ⁺²`: there is a correction functional `h` with
+values in `𝔪ⁿ⁺¹` whose coboundary cancels the defect one level deeper.
+Recorded route: the residual dual `V̄*` is an extension of the inverse
+mod-3 cyclotomic character `ω⁻¹ = ω` by the trivial character (the
+trivial quotient `π` dualizes to the trivial sub). The hardly ramified
+conditions (flat at `3`, tame quadratic at `2`, unramified elsewhere)
+place the class of the defect cocycle in the Selmer group of
+`V̄* ⊗ 𝔪ⁿ⁺¹/𝔪ⁿ⁺²` with local conditions "finite flat at `3`, tame at
+`2`, unramified outside `{2, 3}`", and that Selmer group vanishes by
+Serre's computation for `p = 3`: its graded pieces are Selmer groups of
+the trivial character and of `ω`, killed by the class number `1` of `ℚ`
+resp. `ℚ(ζ₃)` and the unit computations against the local conditions.
+A witness for the vanishing class is the correction `h`. -/
+theorem exists_equivariant_defect_coboundary
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (n : ℕ) (f : V →ₗ[R] R)
+    (hf : ∀ (g : Γ ℚ) (v : V),
+      f (ρ g v) - f v ∈ IsLocalRing.maximalIdeal R ^ (n + 1))
+    (hfv₀ : f v₀ ∉ IsLocalRing.maximalIdeal R) :
+    ∃ h : V →ₗ[R] R,
+      (∀ v : V, h v ∈ IsLocalRing.maximalIdeal R ^ (n + 1)) ∧
+      (∀ (g : Γ ℚ) (v : V),
+        (f (ρ g v) - f v) + (h (ρ g v) - h v) ∈
+          IsLocalRing.maximalIdeal R ^ (n + 2)) := by
+  sorry
+
+/-- **The one-step equivariant lift** (DERIVED 2026-07-22 from the
+coboundary leaf `exists_equivariant_defect_coboundary`): an `R`-linear
+functional on `V` which is Galois-equivariant modulo `𝔪 ^ (n + 1)` and
+residually nonvanishing at the marked vector `v₀` (a vector where the
+residual trivial-quotient functional `π` is nonzero) can be corrected
+to a functional equivariant modulo `𝔪 ^ (n + 2)`, still residually
+nonvanishing at `v₀`. The correction is `f' = f + h` for a coboundary
+witness `h` valued in `𝔪ⁿ⁺¹`: the new defect is the old defect plus the
+coboundary of `h`, which lies in `𝔪ⁿ⁺²` by the leaf, and
+`f' v₀ = f v₀ + h v₀ ∉ 𝔪` since `h v₀ ∈ 𝔪ⁿ⁺¹ ≤ 𝔪`. -/
+theorem exists_equivariant_functional_lift_step
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (n : ℕ) (f : V →ₗ[R] R)
+    (hf : ∀ (g : Γ ℚ) (v : V),
+      f (ρ g v) - f v ∈ IsLocalRing.maximalIdeal R ^ (n + 1))
+    (hfv₀ : f v₀ ∉ IsLocalRing.maximalIdeal R) :
+    ∃ f' : V →ₗ[R] R,
+      (∀ (g : Γ ℚ) (v : V),
+        f' (ρ g v) - f' v ∈ IsLocalRing.maximalIdeal R ^ (n + 2)) ∧
+      f' v₀ ∉ IsLocalRing.maximalIdeal R := by
+  obtain ⟨h, hval, hcob⟩ :=
+    exists_equivariant_defect_coboundary V hV hρ kk hsurj π hπsurj hπequiv
+      v₀ hv₀ n f hf hfv₀
+  refine ⟨f + h, fun g v => ?_, fun hmem => ?_⟩
+  · have hsplit : (f + h) (ρ g v) - (f + h) v
+        = (f (ρ g v) - f v) + (h (ρ g v) - h v) := by
+      rw [LinearMap.add_apply, LinearMap.add_apply]
+      ring
+    rw [hsplit]
+    exact hcob g v
+  · have hh : h v₀ ∈ IsLocalRing.maximalIdeal R :=
+      Ideal.pow_le_self (Nat.succ_ne_zero n) (hval v₀)
+    have hfv : f v₀ = (f + h) v₀ - h v₀ := by
+      rw [LinearMap.add_apply]
+      ring
+    exact hfv₀ (hfv ▸ Submodule.sub_mem _ hmem hh)
+
+/-- **The equivariant functional lift** (DERIVED 2026-07-22 from the
+one-step lift leaf `exists_equivariant_functional_lift_step`; the
+level-by-level system is assembled here WITHOUT a compatibility
+requirement, by compactness): the residual trivial-quotient functional
+lifts through the complete local coefficient ring to a Galois-equivariant
+`R`-linear functional on `V` that survives in the residue field. Proof
+shape: (i) pick `v₀` with `π (1 ⊗ v₀) ≠ 0` (possible since `π` is onto
+and simple tensors generate); (ii) the base approximation is the
+coordinate lift of `π` through a basis of `V`, equivariant modulo `𝔪` by
+`hπequiv`; (iii) induction with the one-step leaf gives, for every `n`,
+a functional equivariant modulo `𝔪ⁿ⁺¹` and residually nonvanishing at
+`v₀`; (iv) `R` is compact (finite free over `ℤ₃`, module topology), the
+approximants at level `n` form a nonempty closed subset of the compact
+coordinate square `R²` (each `𝔪ⁿ⁺¹` is finitely generated, hence a
+compact — closed — subset; the nonvanishing locus at `v₀` is closed
+since `𝔪` is open), and the sets are nested, so the intersection is
+nonempty; (v) a functional in the intersection is equivariant exactly,
+by Krull's intersection theorem `⨅ n, 𝔪ⁿ = ⊥`. Note the conclusion is
+deliberately weak — no surjectivity and no compatibility with `π` is
+demanded, only equivariance plus residual nonvanishing at a single
+vector; the consumer upgrades this to a split surjection by the
 local-ring unit argument. -/
 theorem exists_equivariant_functional_residually_nonzero
     {R : Type u} [CommRing R]
@@ -534,7 +642,170 @@ theorem exists_equivariant_functional_residually_nonzero
       π ((ρ.baseChange kk) g w) = π w) :
     ∃ πR : V →ₗ[R] R, (∀ (g : Γ ℚ) (v : V), πR (ρ g v) = πR v) ∧
       ∃ v : V, algebraMap R kk (πR v) ≠ 0 := by
-  sorry
+  classical
+  -- the kernel of the residue map is the maximal ideal
+  have hker : RingHom.ker (algebraMap R kk) = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.eq_maximalIdeal
+      (RingHom.ker_isMaximal_of_surjective _ hsurj)
+  -- the marked vector: `π` cannot vanish on the image of `V`
+  have hv₀ex : ∃ v₀ : V, π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0 := by
+    by_contra hcon
+    push Not at hcon
+    have hall : ∀ w : kk ⊗[R] V, π w = 0 := by
+      intro w
+      induction w using TensorProduct.induction_on with
+      | zero => simp
+      | tmul c v =>
+        have hc : c ⊗ₜ[R] v = c • ((1 : kk) ⊗ₜ[R] v) := by
+          rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+        rw [hc, map_smul, hcon v, smul_zero]
+      | add x y hx hy => rw [map_add, hx, hy, add_zero]
+    obtain ⟨w, hw⟩ := hπsurj 1
+    exact one_ne_zero (α := kk) (by rw [← hw]; exact hall w)
+  obtain ⟨v₀, hv₀⟩ := hv₀ex
+  -- a basis of `V`
+  have hfinrank : Module.finrank R V = 2 :=
+    Module.finrank_eq_of_rank_eq (by rw [hV]; norm_num)
+  let b : Module.Basis (Fin 2) R V := Module.finBasisOfFinrankEq R V hfinrank
+  -- the base approximation: a coordinate lift of `π` through `b`
+  have hlift : ∀ i : Fin 2,
+      ∃ r : R, algebraMap R kk r = π ((1 : kk) ⊗ₜ[R] b i) := fun i => hsurj _
+  choose rlift hrlift using hlift
+  let f₀ : V →ₗ[R] R := ∑ i, rlift i • b.coord i
+  -- the reduction of `f₀` computes `π` on the image of `V`
+  have hkey : ∀ v : V, algebraMap R kk (f₀ v) = π ((1 : kk) ⊗ₜ[R] v) := by
+    intro v
+    have hexp : f₀ v = ∑ i, rlift i * b.repr v i := by
+      show (∑ i, rlift i • b.coord i) v = _
+      rw [LinearMap.sum_apply]
+      exact Finset.sum_congr rfl fun i _ => by
+        rw [LinearMap.smul_apply, Module.Basis.coord_apply, smul_eq_mul]
+    conv_rhs => rw [← b.sum_repr v]
+    rw [hexp, map_sum, TensorProduct.tmul_sum, map_sum]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    have hsm : (1 : kk) ⊗ₜ[R] (b.repr v i • b i)
+        = algebraMap R kk (b.repr v i) • ((1 : kk) ⊗ₜ[R] b i) := by
+      rw [← TensorProduct.smul_tmul, TensorProduct.smul_tmul',
+        ← Algebra.algebraMap_eq_smul_one, smul_eq_mul, mul_one]
+    rw [map_mul, hrlift i, hsm, map_smul, smul_eq_mul]
+    exact mul_comm _ _
+  -- level-by-level approximation, assembled by induction from the leaf
+  have approx : ∀ n : ℕ, ∃ f : V →ₗ[R] R,
+      (∀ (g : Γ ℚ) (v : V),
+        f (ρ g v) - f v ∈ IsLocalRing.maximalIdeal R ^ (n + 1)) ∧
+      f v₀ ∉ IsLocalRing.maximalIdeal R := by
+    intro n
+    induction n with
+    | zero =>
+      refine ⟨f₀, fun g v => ?_, fun hmem => ?_⟩
+      · rw [zero_add, pow_one, ← hker, RingHom.mem_ker, map_sub, hkey, hkey,
+          show (1 : kk) ⊗ₜ[R] (ρ g v) = (ρ.baseChange kk) g ((1 : kk) ⊗ₜ[R] v)
+            from rfl,
+          hπequiv g, sub_self]
+      · rw [← hker, RingHom.mem_ker, hkey] at hmem
+        exact hv₀ hmem
+    | succ n ih =>
+      obtain ⟨f, hfeq, hfv⟩ := ih
+      exact exists_equivariant_functional_lift_step V hV hρ kk hsurj π
+        hπsurj hπequiv v₀ hv₀ n f hfeq hfv
+  -- compactness of `R`: transport along a `ℤ₃`-basis
+  let bR := Module.Free.chooseBasis ℤ_[3] R
+  let eR : R ≃ₗ[ℤ_[3]] (Module.Free.ChooseBasisIndex ℤ_[3] R → ℤ_[3]) :=
+    bR.equivFun
+  have hcont₁ : Continuous eR :=
+    IsModuleTopology.continuous_of_linearMap eR.toLinearMap
+  have hcont₂ : Continuous eR.symm :=
+    IsModuleTopology.continuous_of_linearMap eR.symm.toLinearMap
+  let hom : R ≃ₜ (Module.Free.ChooseBasisIndex ℤ_[3] R → ℤ_[3]) :=
+    { toEquiv := eR.toEquiv
+      continuous_toFun := hcont₁
+      continuous_invFun := hcont₂ }
+  haveI : CompactSpace R := hom.symm.compactSpace
+  haveI : T2Space R := hom.symm.symm.isEmbedding.t2Space
+  haveI : IsNoetherianRing R := IsNoetherianRing.of_finite ℤ_[3] R
+  -- the functionals, coordinatized over the compact square `R²`
+  let F : (Fin 2 → R) → (V →ₗ[R] R) := fun a => ∑ i, a i • b.coord i
+  have hFapply : ∀ (a : Fin 2 → R) (v : V),
+      F a v = ∑ i, a i * b.repr v i := by
+    intro a v
+    show (∑ i, a i • b.coord i) v = _
+    rw [LinearMap.sum_apply]
+    exact Finset.sum_congr rfl fun i _ => by
+      rw [LinearMap.smul_apply, Module.Basis.coord_apply, smul_eq_mul]
+  have hFcont : ∀ v : V, Continuous fun a : Fin 2 → R => F a v := by
+    intro v
+    have hrw : (fun a : Fin 2 → R => F a v)
+        = fun a : Fin 2 → R => ∑ i, a i * b.repr v i :=
+      funext fun a => hFapply a v
+    rw [hrw]
+    exact continuous_finsetSum _ fun i _ =>
+      (continuous_apply i).mul continuous_const
+  have hFrep : ∀ f : V →ₗ[R] R, F (fun i => f (b i)) = f := by
+    intro f
+    refine b.ext fun j => ?_
+    rw [hFapply]
+    simp [Module.Basis.repr_self, Finsupp.single_apply]
+  -- the nested closed sets of approximate solutions
+  let S : ℕ → Set (Fin 2 → R) := fun n =>
+    {a | (∀ (g : Γ ℚ) (v : V), F a (ρ g v) - F a v ∈
+        IsLocalRing.maximalIdeal R ^ (n + 1)) ∧
+      F a v₀ ∉ IsLocalRing.maximalIdeal R}
+  have hSclosed : ∀ n : ℕ, IsClosed (S n) := by
+    intro n
+    have h1 : IsClosed {a : Fin 2 → R | ∀ (g : Γ ℚ) (v : V),
+        F a (ρ g v) - F a v ∈ IsLocalRing.maximalIdeal R ^ (n + 1)} := by
+      have hrw : {a : Fin 2 → R | ∀ (g : Γ ℚ) (v : V),
+          F a (ρ g v) - F a v ∈ IsLocalRing.maximalIdeal R ^ (n + 1)}
+          = ⋂ (g : Γ ℚ), ⋂ (v : V),
+            (fun a : Fin 2 → R => F a (ρ g v) - F a v) ⁻¹'
+              ((IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) : Set R) := by
+        ext a
+        simp [Set.mem_iInter]
+      rw [hrw]
+      exact isClosed_iInter fun g => isClosed_iInter fun v =>
+        IsClosed.preimage ((hFcont _).sub (hFcont v))
+          (Ideal.isCompact_of_fg (IsNoetherian.noetherian _)).isClosed
+    have h2 : IsClosed
+        {a : Fin 2 → R | F a v₀ ∉ IsLocalRing.maximalIdeal R} := by
+      have hrw : {a : Fin 2 → R | F a v₀ ∉ IsLocalRing.maximalIdeal R}
+          = (fun a : Fin 2 → R => F a v₀) ⁻¹'
+            (((IsLocalRing.maximalIdeal R : Ideal R) : Set R))ᶜ := rfl
+      rw [hrw]
+      exact IsClosed.preimage (hFcont v₀)
+        (isClosed_compl_iff.mpr (IsLocalRing.isOpen_maximalIdeal R))
+    exact h1.inter h2
+  have hSnonempty : ∀ n : ℕ, (S n).Nonempty := by
+    intro n
+    obtain ⟨f, hfeq, hfv⟩ := approx n
+    refine ⟨fun i => f (b i), fun g v => ?_, ?_⟩
+    · rw [hFrep f]
+      exact hfeq g v
+    · rw [hFrep f]
+      exact hfv
+  have hSnested : ∀ n : ℕ, S (n + 1) ⊆ S n := by
+    intro n a ha
+    exact ⟨fun g v => Ideal.pow_le_pow_right (by omega) (ha.1 g v), ha.2⟩
+  obtain ⟨alim, halim⟩ :=
+    IsCompact.nonempty_iInter_of_sequence_nonempty_isCompact_isClosed S
+      hSnested hSnonempty ((hSclosed 0).isCompact) hSclosed
+  have hmem : ∀ n : ℕ, alim ∈ S n := fun n => Set.mem_iInter.mp halim n
+  -- Krull intersection: the limit functional is exactly equivariant
+  have hKrull : (⨅ i : ℕ, IsLocalRing.maximalIdeal R ^ i) = (⊥ : Ideal R) :=
+    Ideal.iInf_pow_eq_bot_of_isLocalRing (I := IsLocalRing.maximalIdeal R)
+      (Ideal.IsMaximal.ne_top inferInstance)
+  refine ⟨F alim, fun g v => ?_, v₀, fun h0 => ?_⟩
+  · have hx : F alim (ρ g v) - F alim v ∈
+        (⨅ i : ℕ, IsLocalRing.maximalIdeal R ^ i) := by
+      rw [Submodule.mem_iInf]
+      intro i
+      cases i with
+      | zero =>
+        rw [pow_zero, Ideal.one_eq_top]
+        exact Submodule.mem_top
+      | succ m => exact (hmem m).1 g v
+    rw [hKrull, Submodule.mem_bot] at hx
+    exact sub_eq_zero.mp hx
+  · exact (hmem 0).2 (hker ▸ RingHom.mem_ker.mpr h0)
 
 /-- **The global triangular form** (DERIVED 2026-07-22 from the
 equivariant-functional-lift leaf; Step A's surjectivity upgrade — the
