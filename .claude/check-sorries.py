@@ -40,40 +40,67 @@ import subprocess
 import sys
 import time
 
-# Fleet-aware gate (Deyao, 2026-07-22): an orchestrator waiting on live
-# background agents should not be reprompted on every stop — task
-# notifications wake it. The gate runs FIRST, immediately after the
-# session guard: fleet LIVE -> exit 0 instantly (no daemon query, no
-# sorry counting, no free-floating check). Liveness source: the
-# orchestrator-maintained fleet registry; an agent is ALIVE iff any
-# file matching its transcript_glob was modified within the last 15
-# minutes.
+# Liveness gate (Deyao, 2026-07-22, generic rework): an orchestrator
+# with ANY live background work — subagents, background bash tasks,
+# workflows — should not be reprompted on every stop, because every one
+# of those produces a task notification on completion that re-prompts
+# the session by itself. This hook is a CATCH-ALL for exactly the case
+# where nothing else can wake the session. The gate runs FIRST,
+# immediately after the session guard: any wakeable work LIVE -> exit 0
+# instantly (no daemon query, no sorry counting, no free-floating
+# check). Liveness source: the harness's own on-disk traces for the
+# CURRENT session id (no manually maintained registry) — a file under
+# any liveness root modified within the last 15 minutes = live.
+# Verified on disk 2026-07-22 for session 8e948ad7-…:
+#   /tmp/claude-*/<slug>/<session_id>/tasks/            (*.output)
+#   ~/.claude/projects/<slug>/<session_id>/subagents/   (agent-*.jsonl,
+#       plus a subagents/workflows/ subdir — covered by recursive walk)
+#   ~/.claude/projects/<slug>/<session_id>/workflows/   (wf_*.json)
+# where <slug> is the project dir with '/' and '.' mapped to '-'
+# (-home-chend-flt-lean). Override for testing: LIVENESS_DIRS, a
+# colon-separated list of roots that replaces the defaults.
 # FAIL OPEN (Deyao, 2026-07-22): this hook is a back-to-work nudge, not
 # a safety net — automation failure is acceptable. Block only on the
-# clean positive case (sorries remain AND the registry is readable AND
-# no transcript is fresh); every ambiguous or error path allows the stop.
-FLEET_STALE_SECONDS = 15 * 60
+# clean positive case (sorries remain AND the scan succeeded AND no
+# trace is fresh); every ambiguous or error path allows the stop.
+LIVENESS_STALE_SECONDS = 15 * 60
 
 
-def fleet_is_idle(project_dir: str) -> bool:
-    """True iff the registry is readable AND no agent transcript is fresh.
+def _default_liveness_dirs(project_dir: str, session_id: str) -> list:
+    """Roots holding the harness's wakeable-work traces for this session."""
+    slug = project_dir.replace("/", "-").replace(".", "-")
+    roots = glob.glob(f"/tmp/claude-*/{slug}/{session_id}/tasks")
+    session_base = os.path.join(
+        os.path.expanduser("~"), ".claude", "projects", slug, session_id)
+    roots.append(os.path.join(session_base, "subagents"))
+    roots.append(os.path.join(session_base, "workflows"))
+    return roots
 
-    Fail open: any error (missing/unreadable registry, bad shape, glob
-    or stat failure) returns False, i.e. the stop is allowed.
+
+def background_work_is_idle(project_dir: str, session_id: str) -> bool:
+    """True iff the liveness scan succeeded AND no trace file is fresh.
+
+    A fresh file (mtime within LIVENESS_STALE_SECONDS) under any root
+    means some background work can still re-prompt the session. Roots
+    that do not exist contribute nothing (a session that never launched
+    background work is genuinely idle). Fail open: any error returns
+    False, i.e. the stop is allowed.
     """
-    reg_path = os.environ.get("FLEET_REGISTRY_PATH") or os.path.join(
-        project_dir, ".claude", "fleet-registry.json")
     try:
-        with open(reg_path, "r", encoding="utf-8") as fh:
-            agents = json.load(fh).get("agents", [])
+        env_dirs = os.environ.get("LIVENESS_DIRS")
+        if env_dirs is not None:
+            roots = [d for d in env_dirs.split(":") if d]
+        else:
+            if not session_id:
+                return False  # cannot derive the roots; fail open
+            roots = _default_liveness_dirs(project_dir, session_id)
         now = time.time()
-        for agent in agents:
-            pattern = agent.get("transcript_glob")
-            if not pattern:
-                continue
-            for path in glob.glob(pattern):
-                if now - os.path.getmtime(path) < FLEET_STALE_SECONDS:
-                    return False  # a live agent -> fleet not idle
+        for root in roots:
+            for dirpath, _dirs, files in os.walk(root):
+                for name in files:
+                    path = os.path.join(dirpath, name)
+                    if now - os.path.getmtime(path) < LIVENESS_STALE_SECONDS:
+                        return False  # live wakeable work
     except Exception:
         return False  # fail open: idleness not cleanly established
     return True
@@ -116,16 +143,16 @@ def main() -> int:
     if not os.path.isdir(os.path.join(fermat, "Fermat")):
         return 0
 
-    # FLEET-AWARE GATE, FIRST (Deyao, 2026-07-22 refinement): the hook is
-    # only needed when the fleet is EMPTY — in all other cases task
-    # notifications already re-prompt the orchestrator. While >=1
-    # registered agent is alive — or liveness cannot be cleanly
-    # established (fail open, nudge-not-safety-net) — allow the stop
-    # instantly, skipping the daemon query, sorry counting, and
-    # free-floating check entirely. Only a readable registry with all
-    # transcripts stale falls through to the full pipeline below.
+    # LIVENESS GATE, FIRST (Deyao, 2026-07-22 generic rework): the hook
+    # is only needed when NOTHING wakeable exists — subagents, background
+    # bash tasks, and workflows all re-prompt the orchestrator via task
+    # notifications on completion. While any such trace for THIS session
+    # is fresh — or liveness cannot be cleanly established (fail open,
+    # nudge-not-safety-net) — allow the stop instantly, skipping the
+    # daemon query, sorry counting, and free-floating check entirely.
+    # Only a clean all-stale scan falls through to the pipeline below.
     try:
-        if not fleet_is_idle(project_dir):
+        if not background_work_is_idle(project_dir, caller_session):
             return 0
     except Exception:
         return 0  # any liveness-check failure counts as LIVE (fail open)
@@ -180,13 +207,13 @@ def main() -> int:
             )
         return 0
 
-    # Fleet idleness was already established by the gate above; prepend
-    # the FLEET IDLE line to the blocking message.
+    # Idleness was already established by the gate above; prepend the
+    # no-live-work line to the blocking message.
     if sorries:
         print(
-            "FLEET IDLE: no live agents detected (registry "
-            ".claude/fleet-registry.json; stale >15min) while sorries "
-            "remain — re-dispatch or integrate now.",
+            "NO LIVE BACKGROUND WORK: nothing running can re-prompt this "
+            "session, and sorries remain — dispatch agents or integrate "
+            "now.",
             file=sys.stderr,
         )
 
