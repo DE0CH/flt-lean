@@ -3110,23 +3110,147 @@ theorem WeierstrassCurve.torsionFlatPackage_global
     fun σ φ => congrArg Subtype.val (hf σ φ)⟩
 
 open TensorProduct ValuativeRel IsDedekindDomain in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The Kummer torsion package** (sorry node — the CURVE-FREE local
+Kummer content of the split multiplicative case, extracted 2026-07-22
+from `torsionFlatPackage_of_split_adic`; no elliptic curve appears —
+the statement is pure Kummer theory of the completed local field):
+given `Q ∈ ℚ_pˆˣ` of valuation `< 1` together with a recentring
+witness `w` making `u = Q·w⁻ᵖ` a UNIT of the completed integers, the
+`p`-torsion of `Ω̂ˣ/Qᶻ` is, Galois-equivariantly, the group of
+`Ω̂`-points of (the generic fibre of) a finite flat `𝒪`-Hopf algebra.
+Content: the `p`-torsion of `Ω̂ˣ/Qᶻ` is `⟨ζ_p, w·u^{1/p}⟩` — an
+extension of `ℤ/p` by `μ_p`, *peu ramifiée* because `u` is a unit; the
+model is the explicit Kummer group scheme with Hopf algebra
+`∏_{i<p} 𝒪[x]/(xᵖ − uⁱ)` (finite free of rank `p²`, étale generic
+fibre in characteristic zero), whose `Ω̂`-points `(i, t) ↦ [wⁱ·t]`
+(where `tᵖ = uⁱ`) are exactly the `p²` torsion classes — injectively
+because `v(w) ≠ 1`, surjectively because `vᵖ = Qᵃ` forces
+`v ≡ wᵃ·t mod Qᶻ` with `tᵖ = uᵃ` — equivariantly because `w, u ∈ ℚ_pˆ`
+are Galois-fixed. Equivariance is stated through representatives: if
+`f φ` is the class of `u'`, then `f (σ ∘ φ)` is the class of
+`σ u'`. -/
+theorem exists_kummerTorsionPackage {p : ℕ} (hp' : p.Prime) [Fact p.Prime]
+    (Q w : (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)ˣ)
+    (_hQ : ValuativeRel.valuation (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      ((Q : (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)ˣ) :
+        HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) < 1)
+    (hmem : (((Q * w⁻¹ ^ p :
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)ˣ) :
+        HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)) ∈
+      HeightOneSpectrum.adicCompletionIntegers ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+    (_hunit : IsUnit (⟨_, hmem⟩ : HeightOneSpectrum.adicCompletionIntegers ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)) :
+    ∃ (H : Type) (_ : CommRing H)
+      (_ : HopfAlgebra 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat] H)
+      (_ : Module.Finite 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat] H)
+      (_ : Module.Flat 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat] H)
+      (_ : Algebra.Etale (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ((HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] H))
+      (f : Additive (WithConv (((HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] H)
+          →ₐ[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)))) ≃+
+        AddSubgroup.torsionBy (Additive
+          ((AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))ˣ ⧸
+          Subgroup.zpowers (Units.map (algebraMap
+            (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat)
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom Q)))
+          ((p : ℕ) : ℤ)),
+      ∀ (σ : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]
+          AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))
+        (φ : ((HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] H)
+          →ₐ[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)))
+        (u : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))ˣ),
+        ((f (Additive.ofMul (WithConv.toConv φ)) :
+          AddSubgroup.torsionBy (Additive
+            ((AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat))ˣ ⧸
+            Subgroup.zpowers (Units.map (algebraMap
+              (HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat)
+              (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom Q)))
+            ((p : ℕ) : ℤ)) :
+          Additive ((AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat))ˣ ⧸
+            Subgroup.zpowers (Units.map (algebraMap
+              (HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat)
+              (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom Q))) =
+          Additive.ofMul ↑u →
+        ((f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) :
+          AddSubgroup.torsionBy (Additive
+            ((AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat))ˣ ⧸
+            Subgroup.zpowers (Units.map (algebraMap
+              (HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat)
+              (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom Q)))
+            ((p : ℕ) : ℤ)) :
+          Additive ((AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat))ˣ ⧸
+            Subgroup.zpowers (Units.map (algebraMap
+              (HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat)
+              (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom Q))) =
+          Additive.ofMul
+            ↑(Units.map σ.toAlgHom.toRingHom.toMonoidHom u) := by
+  sorry
+
+open TensorProduct ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **The split Kummer package** (sorry node — the SPLIT-CASE local
-Tate/Kummer content, hoisted out of
-`torsion_flat_of_multiplicative_reduction` as a standalone leaf): for
-the completed base change with split multiplicative reduction and a
-recentring witness `w'` making `u = q_E·w'⁻ᵖ` a UNIT of the completed
-integers, the `p`-torsion carries a `TorsionFlatPackage` over
-`𝒪[ℚ_pˆ]`. Content: the uniformization `exists_tateEquivSepClosure`
-presents `E[p] ⊂ Ω̂ˣ/q_Eᶻ` as `⟨ζ_p, w'·u^{1/p}⟩`, a *peu-ramifiée*
-extension of `ℤ/p` by `μ_p`; the finite flat model is the explicit
-Kummer group scheme with Hopf algebra `∏_{i<p} 𝒪[x]/(xᵖ − uⁱ)` (finite
-free of rank `p²`, étale generic fibre in characteristic zero), whose
-`Ω̂`-points are the `p²` torsion points `ζ_pʲ·(w'·u^{1/p})ⁱ`,
-equivariantly by the Galois-equivariance of the uniformization. -/
+/-- **The split Kummer package** (DERIVED 2026-07-22 from the
+curve-free Kummer leaf `exists_kummerTorsionPackage` and the PROVEN
+uniformization `exists_tateEquivSepClosure`): for the completed base
+change with split multiplicative reduction and a recentring witness
+`w'` making `u = q_E·w'⁻ᵖ` a UNIT of the completed integers, the
+`p`-torsion carries a `TorsionFlatPackage` over `𝒪[ℚ_pˆ]`. Glue proven
+here: the Kummer leaf provides the finite flat Hopf model whose
+`Ω̂`-points are the `p`-torsion of `Ω̂ˣ/q_Eᶻ`; the uniformization
+restricts to an equivariant isomorphism from that torsion onto `E[p]`
+(an `AddEquiv` maps `p`-torsion onto `p`-torsion), and equivariance
+composes through a chosen unit representative of each class. -/
 theorem WeierstrassCurve.torsionFlatPackage_of_split_adic
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp' : p.Prime)
     [Fact p.Prime] (_hp2 : p ≠ 2)
@@ -3156,7 +3280,79 @@ theorem WeierstrassCurve.torsionFlatPackage_of_split_adic
           p
           (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
             hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
-  sorry
+  classical
+  intro w' hmem hunit
+  -- the curve-free Kummer package at the recentred Tate parameter
+  obtain ⟨H, i1, i2, i3, i4, i5, f0, hf0⟩ :=
+    exists_kummerTorsionPackage hp'
+      (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat))).qUnit w'
+      (WeierstrassCurve.valuation_q_lt_one
+        (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))))
+      hmem hunit
+  -- the uniformization witness
+  obtain ⟨e, he⟩ := WeierstrassCurve.exists_tateEquivSepClosure
+    (k := HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)
+    (E := E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)))
+    (Ω := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))
+  -- the uniformization restricted to the `p`-torsion subgroups
+  let eT : AddSubgroup.torsionBy (Additive
+        ((AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))ˣ ⧸
+        Subgroup.zpowers (Units.map (algebraMap
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+          (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))).qUnit)))
+        ((p : ℕ) : ℤ) ≃+
+      AddSubgroup.torsionBy ((E.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ) :=
+    { toFun := fun x => ⟨e x.1, by
+        have hx : ((p : ℕ) : ℤ) • x.1 = 0 := x.2
+        show ((p : ℕ) : ℤ) • e x.1 = 0
+        rw [← map_zsmul, hx, map_zero]⟩
+      invFun := fun y => ⟨e.symm y.1, by
+        have hy : ((p : ℕ) : ℤ) • y.1 = 0 := y.2
+        show ((p : ℕ) : ℤ) • e.symm y.1 = 0
+        rw [← map_zsmul e.symm ((p : ℕ) : ℤ) y.1, hy, map_zero]⟩
+      left_inv := fun x => Subtype.ext (e.symm_apply_apply x.1)
+      right_inv := fun y => Subtype.ext (e.apply_symm_apply y.1)
+      map_add' := fun x y => Subtype.ext (map_add e x.1 y.1) }
+  refine ⟨H, i1, i2, i3, i4, i5, f0.trans eT, ?_⟩
+  intro σ φ
+  -- a unit representative of the Kummer class of `φ`
+  obtain ⟨u, hu⟩ := QuotientGroup.mk_surjective
+    (Additive.toMul (f0 (Additive.ofMul (WithConv.toConv φ))).1)
+  have hux : ((f0 (Additive.ofMul (WithConv.toConv φ))).1 :
+      Additive ((AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))ˣ ⧸
+        Subgroup.zpowers (Units.map (algebraMap
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+          (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))).qUnit))) =
+      Additive.ofMul ↑u := by
+    rw [hu, ofMul_toMul]
+  -- Kummer equivariance at the representative
+  have hstep := hf0 σ φ u hux
+  -- unfold the composite at both sides and close with the
+  -- uniformization equivariance
+  show e (f0 (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ)))).1 =
+    WeierstrassCurve.Affine.Point.map σ.toAlgHom
+      (e (f0 (Additive.ofMul (WithConv.toConv φ))).1)
+  rw [hstep, hux]
+  exact (he σ u).symm
 
 open TensorProduct ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
