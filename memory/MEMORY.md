@@ -11,3 +11,4 @@
 - [Stop-hook restart pattern](stop-hook-tmux-restart.md) — hook disabled as `_DISABLED_Stop`; re-enable only via detached kill→rename→continue script
 - [Orchestrator role in parallel mode](flt-orchestrator-role.md) — Deyao 2026-07-22: driver dispatches/integrates/commits only; all hands-on work goes to agents
 - [Progress snapshot via worktree](flt-progress-snapshot-worktree.md) — Deyao 2026-07-22: regenerate PROGRESS.md from committed state in a secondary worktree at every agent-completion/milestone
+- [Stop hook is a nudge](flt-stop-hook-is-a-nudge.md) — Deyao 2026-07-22: automatic back-to-work prompt, not a safety net; fail open, best-effort
