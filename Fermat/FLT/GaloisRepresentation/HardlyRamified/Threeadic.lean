@@ -503,14 +503,49 @@ theorem exists_residual_isHardlyRamified {R : Type u} [CommRing R]
   · -- tameness at 2 (sorried transfer leaf)
     exact isTameAtTwo_baseChange_residue kk hsurj hρ.isTameAtTwo
 
-/-- **The global triangular form** (sorry node — the Serre classification
-core for 3-adic hardly ramified representations): given the residual
-trivial-quotient surjection, the WHOLE representation is triangular in a
-suitable basis — an extension of the trivial character by a character
-`χ` (which the determinant condition identifies with the cyclotomic
-character). Content: the 3-adic reducibility of Serre's §5.4 analysis,
-lifted through the complete local coefficient ring by the flatness and
-tameness constraints. -/
+/-- **The equivariant functional lift** (sorry node — the deep arithmetic
+core, Serre §5.4/Fontaine): the residual trivial-quotient functional lifts
+through the complete local coefficient ring to a Galois-equivariant
+`R`-linear functional on `V` that survives in the residue field. Content:
+the obstruction to lifting the trivial quotient level by level along the
+maximal-adic filtration lies in a Selmer-type `H¹` that the hardly
+ramified conditions (flatness at `3`, tameness at `2`, unramifiedness
+elsewhere, cyclotomic determinant) force to vanish; completeness of the
+module-finite `ℤ₃`-algebra `R` assembles the compatible system. Note the
+conclusion is deliberately weak — no surjectivity and no compatibility
+with `π` is demanded, only equivariance plus residual nonvanishing at a
+single vector; the consumer upgrades this to a split surjection by the
+local-ring unit argument. -/
+theorem exists_equivariant_functional_residually_nonzero
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w) :
+    ∃ πR : V →ₗ[R] R, (∀ (g : Γ ℚ) (v : V), πR (ρ g v) = πR v) ∧
+      ∃ v : V, algebraMap R kk (πR v) ≠ 0 := by
+  sorry
+
+/-- **The global triangular form** (DERIVED 2026-07-22 from the
+equivariant-functional-lift leaf; Step A's surjectivity upgrade — the
+kernel of `R → kk` is the maximal ideal since `kk` is a field and `R` is
+local, so residual nonvanishing makes the functional hit a unit — and
+Step B's adapted basis — the kernel of the split surjection is finite
+flat over the local `R`, hence free of rank `2 - 1 = 1` — are proven
+here directly): given the residual trivial-quotient surjection, the
+WHOLE representation is triangular in a suitable basis — an extension of
+the trivial character by a character `χ` (which the determinant
+condition identifies with the cyclotomic character). -/
 theorem exists_global_triangular_of_residual_trivial_quotient
     {R : Type u} [CommRing R]
     [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
@@ -530,20 +565,97 @@ theorem exists_global_triangular_of_residual_trivial_quotient
     ∃ (b : Module.Basis (Fin 2) R V) (χ : Γ ℚ →* R) (cc : Γ ℚ → R),
       ∀ g : Γ ℚ, LinearMap.toMatrix b b (ρ g) = !![χ g, cc g; 0, 1] := by
   classical
-  -- **Step A** (sorry node — the deep arithmetic step, Serre §5.4/Fontaine):
-  -- the residual trivial quotient lifts through the complete local ring `R`
+  -- **Step A** (DERIVED from the equivariant-functional-lift leaf): the
+  -- residual trivial quotient lifts through the complete local ring `R`
   -- to an integral equivariant surjection onto the trivial representation.
+  -- The upgrade from residual nonvanishing to surjectivity: the kernel of
+  -- `R → kk` is a maximal ideal (`kk` is a field), hence THE maximal ideal
+  -- (`R` is local), so a residually nonzero value is a unit.
   have hA : ∃ πR : V →ₗ[R] R, Function.Surjective πR ∧
       ∀ (g : Γ ℚ) (v : V), πR (ρ g v) = πR v := by
-    sorry
+    obtain ⟨πR, hequiv, v₀, hv₀⟩ :=
+      exists_equivariant_functional_residually_nonzero V hV hρ kk hsurj
+        π hπsurj hπequiv
+    have hker : RingHom.ker (algebraMap R kk) = IsLocalRing.maximalIdeal R :=
+      IsLocalRing.eq_maximalIdeal
+        (RingHom.ker_isMaximal_of_surjective _ hsurj)
+    have hunit : IsUnit (πR v₀) := by
+      by_contra hnu
+      have hmem : πR v₀ ∈ IsLocalRing.maximalIdeal R := by
+        rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]; exact hnu
+      rw [← hker, RingHom.mem_ker] at hmem
+      exact hv₀ hmem
+    refine ⟨πR, fun s => ?_, hequiv⟩
+    obtain ⟨u, hu⟩ := hunit
+    refine ⟨(s * (↑u⁻¹ : R)) • v₀, ?_⟩
+    rw [map_smul, smul_eq_mul, ← hu, mul_assoc, Units.inv_mul, mul_one]
   obtain ⟨πR, hπRsurj, hπRequiv⟩ := hA
   -- **Step B** (linear algebra over the local ring `R`): a basis adapted to
   -- the split exact sequence `0 → ker πR → V → R → 0` — the kernel of the
-  -- split surjection is finite projective over the local `R`, hence free,
-  -- of rank `2 - 1 = 1`.
+  -- split surjection is finite flat over the local `R`, hence free, of
+  -- rank `2 - 1 = 1`.
   have hB : ∃ b : Module.Basis (Fin 2) R V,
       LinearMap.ker πR = Submodule.span R {b 0} ∧ πR (b 1) = 1 := by
-    sorry
+    obtain ⟨e₁, he₁⟩ := hπRsurj 1
+    haveI : IsNoetherianRing R := IsNoetherianRing.of_finite ℤ_[3] R
+    haveI : IsNoetherian R V := isNoetherian_of_isNoetherianRing_of_finite R V
+    set N : Submodule R V := LinearMap.ker πR with hN
+    -- the projection of `V` onto the kernel, along `e₁`
+    let prV : V →ₗ[R] V :=
+      LinearMap.id - (LinearMap.toSpanSingleton R V e₁).comp πR
+    have hprmem : ∀ v : V, prV v ∈ N := fun v => by
+      simp [prV, N, LinearMap.mem_ker, he₁]
+    let pr : V →ₗ[R] N := prV.codRestrict N hprmem
+    have hpr : ∀ x : N, pr x = x := fun x => Subtype.ext (by
+      show prV (x : V) = (x : V)
+      have hx : πR (x : V) = 0 := LinearMap.mem_ker.mp x.2
+      simp [prV, hx])
+    -- the kernel is a finite flat module over the local ring `R`, hence free
+    haveI : Module.Flat R N :=
+      Module.Flat.of_retract N.subtype pr (LinearMap.ext hpr)
+    haveI : Module.Free R N := Module.free_of_flat_of_isLocalRing
+    -- the rank count: `V ≃ₗ N × R` gives `finrank N = 1`
+    let eVNR : V ≃ₗ[R] N × R :=
+      LinearMap.equivProdOfSurjectiveOfIsCompl pr πR
+        (LinearMap.range_eq_of_proj hpr) (LinearMap.range_eq_top.mpr hπRsurj)
+        ((LinearMap.isCompl_of_proj hpr).symm)
+    have hfinrank : Module.finrank R N = 1 := by
+      have h2 : Module.finrank R V = 2 :=
+        Module.finrank_eq_of_rank_eq (by rw [hV]; norm_num)
+      have h3 := eVNR.finrank_eq
+      rw [Module.finrank_prod, Module.finrank_self, h2] at h3
+      omega
+    let bN : Module.Basis (Fin 1) R N := Module.finBasisOfFinrankEq R N hfinrank
+    -- assemble the basis of `V` via `mkFinCons`
+    have hli : ∀ c : R, ∀ x ∈ N, c • e₁ + x = 0 → c = 0 := by
+      intro c x hx hcx
+      have h0 := congrArg πR hcx
+      simpa [he₁, LinearMap.mem_ker.mp hx] using h0
+    have hsp : ∀ z : V, ∃ c : R, z + c • e₁ ∈ N := by
+      intro z
+      exact ⟨-(πR z), by simp [N, LinearMap.mem_ker, he₁]⟩
+    let b' : Module.Basis (Fin 2) R V := Module.Basis.mkFinCons e₁ bN hli hsp
+    have hb'0 : b' 0 = e₁ := by
+      simp [b', Module.Basis.coe_mkFinCons]
+    have hb'1 : b' 1 = (bN 0 : V) := by
+      have h1 := congrFun (Module.Basis.coe_mkFinCons e₁ bN hli hsp) (Fin.succ 0)
+      rw [Fin.cons_succ] at h1
+      exact h1
+    refine ⟨b'.reindex (Equiv.swap 0 1), ?_, ?_⟩
+    · -- the kernel is spanned by `b 0 = ↑(bN 0)`
+      rw [Module.Basis.reindex_apply, Equiv.symm_swap, Equiv.swap_apply_left,
+        hb'1]
+      calc N = Submodule.map N.subtype ⊤ := (Submodule.map_subtype_top N).symm
+        _ = Submodule.map N.subtype (Submodule.span R (Set.range ⇑bN)) := by
+            rw [Module.Basis.span_eq]
+        _ = Submodule.span R (⇑N.subtype '' Set.range ⇑bN) :=
+            (Submodule.span_image _).symm
+        _ = Submodule.span R {(bN 0 : V)} := by
+            rw [Set.range_unique, Set.image_singleton]
+            rfl
+    · rw [Module.Basis.reindex_apply, Equiv.symm_swap, Equiv.swap_apply_right,
+        hb'0]
+      exact he₁
   obtain ⟨b, hkerspan, hb1⟩ := hB
   -- `b 0` lies in the kernel
   have hb0 : πR (b 0) = 0 := by
@@ -591,7 +703,7 @@ theorem exists_global_triangular_of_residual_trivial_quotient
   ext i j
   rw [LinearMap.toMatrix_apply]
   fin_cases i <;> fin_cases j <;>
-    simp [hχ₀ g, hcc g, Basis.repr_self]
+    simp [hχ₀ g, hcc g, Module.Basis.repr_self]
 
 /-- **Ordinarity lifting from the residual trivial quotient** (DERIVED
 2026-07-18 from the global triangular form and the cyclotomic-at-Frobenius
