@@ -3993,9 +3993,16 @@ end TwoTorsion
   quotient by multiplication by `ℓ`; the image of `C` in the quotient
   is stable of strictly smaller cardinality, and the composite of the
   two quotient maps has kernel exactly `C`.
-* `WeierstrassCurve.exists_quotient_isogeny_of_prime_card` (sorry
-  node) — the true Vélu core, now cut at the literature statement:
-  the quotient by a Galois-stable CYCLIC subgroup of PRIME order
+* `WeierstrassCurve.exists_quotient_isogeny_of_prime_card` (DERIVED
+  2026-07-23 from the two leaves below by the parity fork on `ℓ`; at
+  `ℓ = 2` the unique nonzero element of `C` is Galois-fixed and
+  descends to a rational `2`-torsion point).
+* `WeierstrassCurve.exists_quotient_isogeny_of_rational_two_torsion`
+  (sorry node) — the classical `2`-isogeny by a rational `2`-torsion
+  point (Vélu 1971; Silverman AEC III.4.5, X.4.9).
+* `WeierstrassCurve.exists_quotient_isogeny_of_odd_prime_card` (sorry
+  node) — the true Vélu core, cut at the literature statement: the
+  quotient by a Galois-stable CYCLIC subgroup of ODD prime order
   (Vélu 1971; Silverman AEC III.4.12).
 * `FreyPackage.freyCurve_two_torsion_embedding` (PROVEN 2026-07-16,
   moved above this section) — the Frey curve's full rational
@@ -4010,18 +4017,76 @@ kernel has odd exponent `p`), and descends both to `ℚ`-points by
 `exists_point_eq_baseChange_of_fixed`.
 -/
 
-/-- **The prime-order quotient-isogeny leaf — Vélu's construction**
-(sorry node, sharpened 2026-07-23 from the general finite-subgroup
-statement): for a Galois-stable cyclic subgroup `C` of PRIME order `ℓ`
-in the geometric points of an elliptic curve `E/ℚ` there are an
-elliptic curve `E'/ℚ` (the quotient `E/C`) and a Galois-equivariant
-group homomorphism `E(ℚ̄) →+ E'(ℚ̄)` (the quotient isogeny on points)
-with kernel exactly `C`. Vélu's explicit formulas (Vélu 1971;
-Silverman AEC III.4.12 and Exercise 3.13) give the quotient curve's
-Weierstrass coefficients as symmetric functions of the coordinates of
-the nonzero points of `C` — rational because `C` is Galois-stable —
-and the isogeny's coordinate functions as explicit rational functions;
-none of this is in mathlib yet. -/
+/-- **The rational two-torsion quotient isogeny — the classical
+`2`-isogeny** (sorry node, cut out of
+`exists_quotient_isogeny_of_prime_card` 2026-07-23): for a RATIONAL
+`2`-torsion point `T ≠ 0` of an elliptic curve `E/ℚ` there are an
+elliptic curve `E'/ℚ` (the quotient `E/⟨T⟩`) and a Galois-equivariant
+group homomorphism `E(ℚ̄) →+ E'(ℚ̄)` whose kernel is exactly
+`{0, T}`. This is the classical `2`-isogeny with explicit formulas:
+after translating `T` to `(0, 0)` the curve reads
+`y² + a₁xy + a₃y = x³ + a₂x² + a₄x` and the quotient is
+`y² + a₁xy + a₃y = x³ + a₂x² + (a₄ - 5t)x + (a₆' …)` with
+`φ(x, y) = (x + t/x + …, …)` (Vélu 1971 for the kernel `{0, (0,0)}`;
+Silverman AEC III.4.5 and X.4.9). -/
+theorem WeierstrassCurve.exists_quotient_isogeny_of_rational_two_torsion
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (T : (E⁄ℚ).Point) (hT2 : T + T = 0) (hT0 : T ≠ 0) :
+    ∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic)
+      (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point),
+      (∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+        φ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
+      (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+        φ Pt = 0 ↔ Pt = 0 ∨
+          Pt = Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) T) :=
+  sorry
+
+/-- **The odd-prime-order quotient-isogeny leaf — Vélu's construction**
+(sorry node, sharpened 2026-07-23 from the general prime-order
+statement by splitting off the rational `2`-isogeny case): for a
+Galois-stable cyclic subgroup `C` of ODD prime order `ℓ` in the
+geometric points of an elliptic curve `E/ℚ` there are an elliptic
+curve `E'/ℚ` (the quotient `E/C`) and a Galois-equivariant group
+homomorphism `E(ℚ̄) →+ E'(ℚ̄)` (the quotient isogeny on points) with
+kernel exactly `C`. Vélu's explicit formulas (Vélu 1971; Silverman AEC
+III.4.12 and Exercise 3.13) give the quotient curve's Weierstrass
+coefficients as symmetric functions of the coordinates of the nonzero
+points of `C` — rational because `C` is Galois-stable — and the
+isogeny's coordinate functions as explicit rational functions; none of
+this is in mathlib yet. -/
+theorem WeierstrassCurve.exists_quotient_isogeny_of_odd_prime_card
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (C : AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point))
+    {ℓ : ℕ} (hℓ : ℓ.Prime) (hodd : Odd ℓ) (hcard : Nat.card C = ℓ)
+    (hCstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ C,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈ C) :
+    ∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic)
+      (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point),
+      (∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+        φ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
+      (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, φ Pt = 0 ↔ Pt ∈ C) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The prime-order quotient isogeny** (DERIVED 2026-07-23 from the
+rational `2`-isogeny leaf `exists_quotient_isogeny_of_rational_two_torsion`
+and the odd-order Vélu leaf `exists_quotient_isogeny_of_odd_prime_card`):
+for a Galois-stable cyclic subgroup `C` of prime order `ℓ` there is a
+quotient isogeny with kernel exactly `C`. For odd `ℓ` this is the Vélu
+leaf verbatim; for `ℓ = 2` the subgroup is `{0, t}` with `t` its unique
+nonzero element, which is Galois-FIXED (stability moves `t` to a
+nonzero element of `C`, i.e. to `t`), hence descends to a rational
+`2`-torsion point (`exists_point_eq_baseChange_of_fixed`), and the
+rational `2`-isogeny leaf applies. -/
 theorem WeierstrassCurve.exists_quotient_isogeny_of_prime_card
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (C : AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point))
@@ -4037,8 +4102,87 @@ theorem WeierstrassCurve.exists_quotient_isogeny_of_prime_card
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
-      (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, φ Pt = 0 ↔ Pt ∈ C) :=
-  sorry
+      (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, φ Pt = 0 ↔ Pt ∈ C) := by
+  classical
+  rcases hℓ.eq_two_or_odd' with h2 | hodd
+  · -- `ℓ = 2`: extract the unique nonzero element of `C`
+    subst h2
+    obtain ⟨a, b, hab, huniv⟩ := Nat.card_eq_two_iff.mp hcard
+    have hall : ∀ z : C, z = a ∨ z = b := by
+      intro z
+      have hz : z ∈ ({a, b} : Set C) := by rw [huniv]; exact Set.mem_univ _
+      simpa [Set.mem_insert_iff, Set.mem_singleton_iff] using hz
+    have hextract : ∃ t : C, t ≠ 0 ∧ ∀ z : C, z = 0 ∨ z = t := by
+      rcases hall 0 with h0 | h0
+      · refine ⟨b, fun h => hab (h0.symm.trans h.symm), fun z => ?_⟩
+        rcases hall z with hz' | hz'
+        · exact Or.inl (hz'.trans h0.symm)
+        · exact Or.inr hz'
+      · refine ⟨a, fun h => hab (h.trans h0), fun z => ?_⟩
+        rcases hall z with hz' | hz'
+        · exact Or.inr hz'
+        · exact Or.inl (hz'.trans h0.symm)
+    obtain ⟨t, ht0, htall⟩ := hextract
+    -- `t` is `2`-torsion: its double is an element of `C` equal to `t` or `0`
+    have htt : t + t = 0 := by
+      rcases htall (t + t) with h | h
+      · exact h
+      · exact absurd (add_left_cancel (a := t)
+          (h.trans (add_zero t).symm)) ht0
+    -- `t` is Galois-fixed: its image is a nonzero element of `C`
+    have htfix : ∀ σ : Field.absoluteGaloisGroup ℚ,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+          (t : (E⁄(AlgebraicClosure ℚ)).Point) =
+        (t : (E⁄(AlgebraicClosure ℚ)).Point) := by
+      intro σ
+      have hmem : Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+          (t : (E⁄(AlgebraicClosure ℚ)).Point) ∈ C := hCstable σ _ t.2
+      rcases htall ⟨_, hmem⟩ with h | h
+      · exfalso
+        have h0 : Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+            (t : (E⁄(AlgebraicClosure ℚ)).Point) = 0 :=
+          congrArg Subtype.val h
+        have hcoe : (t : (E⁄(AlgebraicClosure ℚ)).Point) = 0 :=
+          Affine.Point.map_injective
+            (f := (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom)
+            (by rw [h0, map_zero])
+        exact ht0 (Subtype.ext hcoe)
+      · exact congrArg Subtype.val h
+    -- descend `t` to a rational `2`-torsion point
+    obtain ⟨T, hT⟩ := WeierstrassCurve.exists_point_eq_baseChange_of_fixed E
+      (t : (E⁄(AlgebraicClosure ℚ)).Point) htfix
+    have hT2 : T + T = 0 := by
+      apply Affine.Point.map_injective (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))
+      rw [map_add, map_zero]
+      show Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) T +
+        Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) T = 0
+      rw [hT]
+      exact_mod_cast congrArg Subtype.val htt
+    have hT0 : T ≠ 0 := by
+      intro h
+      refine ht0 (Subtype.ext ?_)
+      rw [← hT, h, map_zero]
+      rfl
+    -- the rational `2`-isogeny leaf, with kernel `{0, t} = C`
+    obtain ⟨E', hE', φ, hφeq, hφker⟩ :=
+      E.exists_quotient_isogeny_of_rational_two_torsion T hT2 hT0
+    refine ⟨E', hE', φ, hφeq, fun Pt => ?_⟩
+    rw [hφker Pt]
+    constructor
+    · rintro (rfl | hPt)
+      · exact zero_mem C
+      · rw [hPt, hT]
+        exact t.2
+    · intro hPt
+      rcases htall ⟨Pt, hPt⟩ with h | h
+      · exact Or.inl (congrArg Subtype.val h)
+      · refine Or.inr ?_
+        rw [hT]
+        exact congrArg Subtype.val h
+  · exact E.exists_quotient_isogeny_of_odd_prime_card C hℓ hodd hcard hCstable
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
