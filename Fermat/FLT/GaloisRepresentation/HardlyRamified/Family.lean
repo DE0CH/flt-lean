@@ -177,7 +177,8 @@ theorem exists_finiteDimensional_coeff_field
         ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n ∈ E :=
   sorry
 
-/-- **Eigensystem stratum** (sorry node): the Frobenius characteristic
+/-- **Eigensystem stratum** (PROVEN assembly, see the DECOMPOSED note
+below): the Frobenius characteristic
 polynomials of a hardly ramified `p`-adic representation over a
 characteristic-zero coefficient ring embedded in `ℚ̄_p` descend, away
 from a finite set of places, to a single **number field** `E`.
@@ -418,7 +419,8 @@ theorem exists_realizations_of_eigensystem
             (τ.baseChange (AlgebraicClosure ℚ_[ℓ])).conj r = m :=
   sorry
 
-/-- **Spreading stratum** (sorry node): a hardly ramified `p`-adic
+/-- **Spreading stratum** (PROVEN assembly, see the DECOMPOSED note
+below): a hardly ramified `p`-adic
 representation whose Frobenius characteristic polynomials descend to a
 number field `E` spreads out into a compatible family of Galois
 representations with hardly ramified odd-residue-characteristic members,
@@ -630,12 +632,16 @@ superseded by the hypothesis `hZinj`):
    hardly ramified `ρ` extends to a compatible family `σ` over a number
    field `E` with hardly ramified odd members, and `ρ ⊗ ℚ̄_p` is the
    member at some `ψ : E →+* ℚ̄_p`. FURTHER DECOMPOSED (2026-07-22)
-   into the two sorried strata above: the eigensystem stratum
+   into the two strata above: the eigensystem stratum
    (`exists_numberField_eigensystem` — the Frobenius data descend to a
    number field, i.e. the Hecke-field/eigenform-congruence content) and
    the spreading stratum (`exists_family_of_eigensystem` — the
    compatible family attached to the eigensystem, i.e.
-   Eichler–Shimura/Deligne plus local-global compatibility).
+   Eichler–Shimura/Deligne plus local-global compatibility). AS OF
+   2026-07-23 both strata are PROVEN assemblies; the surviving sorried
+   leaves are `exists_finiteDimensional_coeff_field` (the Hecke-field
+   finiteness core) and `exists_realizations_of_eigensystem` (the
+   `λ`-adic realizations of the eigensystem).
 
 NOTE (elaboration): the final repackaging must be `refine` +
 a deferred `exact` — an anonymous-constructor `exact ⟨…, ψ, r', hψ⟩`
