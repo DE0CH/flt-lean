@@ -1526,7 +1526,7 @@
     "name": "exists_etale_line_of_split_multiplicative_self",
     "fullname": "WeierstrassCurve.exists_etale_line_of_split_multiplicative_self",
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
-    "wip": true,
+    "wip": false,
     "text": "`exists_etale_line_of_split_multiplicative_self` — split-multiplicative étale line: pure Kummer at the exists_tateEquivSepClosure interface (σ(u)/u ∈ μ_p for the whole local Galois group; only the μ_p-line rank-1 fact + global transport remain) — 2026-07-22",
     "parent": "WeierstrassCurve.exists_etale_line_of_multiplicative_self"
   },
@@ -1534,7 +1534,7 @@
     "name": "exists_etale_line_of_nonsplit_multiplicative_self",
     "fullname": "WeierstrassCurve.exists_etale_line_of_nonsplit_multiplicative_self",
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
-    "wip": true,
+    "wip": false,
     "text": "`exists_etale_line_of_nonsplit_multiplicative_self` — nonsplit case: unramified quadratic-twist descent via exists_quadraticTwist_hasSplitMultiplicativeReduction — 2026-07-22",
     "parent": "WeierstrassCurve.exists_etale_line_of_multiplicative_self"
   },
@@ -1542,7 +1542,7 @@
     "name": "exists_etale_line_or_no_stable_line_of_good",
     "fullname": "WeierstrassCurve.exists_etale_line_or_no_stable_line_of_good",
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
-    "wip": true,
+    "wip": false,
     "text": "`exists_etale_line_or_no_stable_line_of_good` — ordinary/supersingular dichotomy with the stable line factored out (Serre 1972 Prop 12 shape) — 2026-07-22",
     "parent": "WeierstrassCurve.exists_etale_line_of_good_of_stable_line"
   },
@@ -1713,5 +1713,13 @@
     "wip": false,
     "text": "`exists_splitting_scalar_of_quot_ramified` — peu-ramifié cocycle vanishing: the extension cocycle is a coboundary c g = t·(χ g − ψ g) (H¹ Selmer vanishing, Serre Duke §5.4) — 2026-07-23",
     "parent": "GaloisRepresentation.IsHardlyRamified.exists_line_with_quotCharacter_eq_subCharacter"
+  },
+  {
+    "name": "exists_etale_line_of_good_of_inertia_stable_line",
+    "fullname": "WeierstrassCurve.exists_etale_line_of_good_of_inertia_stable_line",
+    "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+    "wip": true,
+    "text": "`exists_etale_line_of_good_of_inertia_stable_line` — good reduction at odd p + inertia-stable line ⟹ étale line (supersingular excluded via Serre 1972 Prop 12 level-2 fundamental characters; ordinary gives the connected-étale line; needs tame-fundamental-character theory at residue characteristic p — nothing in the repo reaches q = p) — 2026-07-23",
+    "parent": "WeierstrassCurve.exists_etale_line_or_no_stable_line_of_good"
   }
 ]
