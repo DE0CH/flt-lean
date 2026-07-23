@@ -27,3 +27,12 @@ merge nothing, then SendMessage each dead agent ("you were killed
 mid-call; your worktree is exactly as you left it; continue").
 Integration (merge, pool free, queue pop) happens only at an agent's
 NORMAL completion, exactly as in [[flt-fleet-13-worktree-protocol]].
+
+**Cross-restart detail (learned same day):** if the Claude Code
+process itself restarted since the agents were spawned, the session id
+changed and SendMessage reports "No transcript found" — the transcripts
+still exist under the OLD session's directory
+(`~/.claude/projects/<slug>/<old-session-id>/subagents/agent-<id>.jsonl`).
+Copy them into the CURRENT session's `subagents/` directory and
+SendMessage resumes them normally (verified 2026-07-23, 13/13
+resumed).
