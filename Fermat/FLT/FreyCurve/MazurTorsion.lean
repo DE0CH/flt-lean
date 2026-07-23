@@ -2791,6 +2791,116 @@ theorem FreyPackage.stable_line_dichotomy_of_not_isIrreducible
     simp only [MonoidHom.one_apply, Units.val_one, one_smul] at h1
     exact h1
 
+section TwoTorsion
+
+open WeierstrassCurve.Affine
+
+/-- The trivial base change of the Frey curve to `ℚ` is elliptic. (Mathlib
+has this instance for `E.map f`, but `WeierstrassCurve.baseChange` is a
+non-reducible `def`, so instance search cannot see through it; several
+derivations in this branch of the tree need the instance.) -/
+instance (P : FreyPackage) : ((P.freyCurve)⁄ℚ).IsElliptic :=
+  inferInstanceAs (P.freyCurve.map (algebraMap ℚ ℚ)).IsElliptic
+
+/-- **Full rational 2-torsion of the Frey curve** (PROVEN 2026-07-16): the
+Frey model has rational 2-torsion points `(0, 0)` and `(aᵖ/4, -aᵖ/8)` (in
+the untransformed model `y² = x(x - aᵖ)(x + bᵖ)` the full 2-torsion is
+visible; the transformed model retains it rationally, the quadratic
+`x² + ((bᵖ-aᵖ)/4)x - aᵖbᵖ/16` factoring as `(x - aᵖ/4)(x + bᵖ/4)`). The
+two points generate an injective `(ℤ/2)² →+ E(ℚ)`. -/
+theorem FreyPackage.freyCurve_two_torsion_embedding (P : FreyPackage) :
+    ∃ φ₂ : (ZMod 2 × ZMod 2) →+ ((P.freyCurve)⁄ℚ).Point, Function.Injective φ₂ := by
+  -- the coefficients of the base-changed model
+  have h1 : ((P.freyCurve)⁄ℚ).a₁ = 1 := by
+    simp [WeierstrassCurve.baseChange, FreyPackage.freyCurve]
+  have h2 : ((P.freyCurve)⁄ℚ).a₂ = (P.b ^ P.p - 1 - P.a ^ P.p) / 4 := by
+    simp [WeierstrassCurve.baseChange, FreyPackage.freyCurve]
+  have h3 : ((P.freyCurve)⁄ℚ).a₃ = 0 := by
+    simp [WeierstrassCurve.baseChange, FreyPackage.freyCurve]
+  have h4 : ((P.freyCurve)⁄ℚ).a₄ = -(P.a ^ P.p) * (P.b ^ P.p) / 16 := by
+    simp [WeierstrassCurve.baseChange, FreyPackage.freyCurve]
+  have h6 : ((P.freyCurve)⁄ℚ).a₆ = 0 := by
+    simp [WeierstrassCurve.baseChange, FreyPackage.freyCurve]
+  have hap : (P.a : ℚ) ^ P.p ≠ 0 := pow_ne_zero _ (by exact_mod_cast P.ha0)
+  -- the two points satisfy the equation
+  have heq₁ : ((P.freyCurve)⁄ℚ).Equation 0 0 := by
+    rw [equation_iff, h1, h2, h3, h4, h6]
+    ring
+  have heq₂ : ((P.freyCurve)⁄ℚ).Equation
+      ((P.a : ℚ) ^ P.p / 4) (-((P.a : ℚ) ^ P.p) / 8) := by
+    rw [equation_iff, h1, h2, h3, h4, h6]
+    field_simp
+    ring
+  have hns₁ : ((P.freyCurve)⁄ℚ).Nonsingular 0 0 :=
+    equation_iff_nonsingular.mp heq₁
+  have hns₂ : ((P.freyCurve)⁄ℚ).Nonsingular
+      ((P.a : ℚ) ^ P.p / 4) (-((P.a : ℚ) ^ P.p) / 8) :=
+    equation_iff_nonsingular.mp heq₂
+  -- the points, their order-2 property, and their distinctness
+  set Q₁ : ((P.freyCurve)⁄ℚ).Point := Point.some _ _ hns₁ with hQ₁def
+  set Q₂ : ((P.freyCurve)⁄ℚ).Point := Point.some _ _ hns₂ with hQ₂def
+  have hneg₁ : -Q₁ = Q₁ := by
+    rw [hQ₁def, Point.neg_some]
+    rw [Point.some.injEq]
+    refine ⟨rfl, ?_⟩
+    rw [negY, h1, h3]
+    ring
+  have hneg₂ : -Q₂ = Q₂ := by
+    rw [hQ₂def, Point.neg_some]
+    rw [Point.some.injEq]
+    refine ⟨rfl, ?_⟩
+    rw [negY, h1, h3]
+    ring
+  have h2Q₁ : (2 : ℤ) • Q₁ = 0 := by
+    rw [two_zsmul]
+    exact add_eq_zero_iff_eq_neg.mpr hneg₁.symm
+  have h2Q₂ : (2 : ℤ) • Q₂ = 0 := by
+    rw [two_zsmul]
+    exact add_eq_zero_iff_eq_neg.mpr hneg₂.symm
+  have hQ₁0 : Q₁ ≠ 0 := Point.some_ne_zero _
+  have hQ₂0 : Q₂ ≠ 0 := Point.some_ne_zero _
+  have hQ₁₂ : Q₁ ≠ Q₂ := by
+    rw [hQ₁def, hQ₂def]
+    intro h
+    have hx := (Point.some.inj h).1
+    rw [eq_comm, div_eq_iff (by norm_num : (4 : ℚ) ≠ 0), zero_mul] at hx
+    exact hap hx
+  -- assemble the embedding from the two order-2 points
+  have hz₁ : (zmultiplesHom _ Q₁) (2 : ℤ) = 0 := h2Q₁
+  have hz₂ : (zmultiplesHom _ Q₂) (2 : ℤ) = 0 := h2Q₂
+  let f₁ : ZMod 2 →+ ((P.freyCurve)⁄ℚ).Point := ZMod.lift 2 ⟨zmultiplesHom _ Q₁, hz₁⟩
+  let f₂ : ZMod 2 →+ ((P.freyCurve)⁄ℚ).Point := ZMod.lift 2 ⟨zmultiplesHom _ Q₂, hz₂⟩
+  have hf₁ : f₁ 1 = Q₁ := by
+    have := ZMod.lift_coe 2 (⟨zmultiplesHom _ Q₁, hz₁⟩ :
+      {f : ℤ →+ ((P.freyCurve)⁄ℚ).Point // f 2 = 0}) (1 : ℤ)
+    rw [show ((1 : ℤ) : ZMod 2) = 1 by norm_cast] at this
+    rw [this]
+    show (1 : ℤ) • Q₁ = Q₁
+    rw [one_smul]
+  have hf₂ : f₂ 1 = Q₂ := by
+    have := ZMod.lift_coe 2 (⟨zmultiplesHom _ Q₂, hz₂⟩ :
+      {f : ℤ →+ ((P.freyCurve)⁄ℚ).Point // f 2 = 0}) (1 : ℤ)
+    rw [show ((1 : ℤ) : ZMod 2) = 1 by norm_cast] at this
+    rw [this]
+    show (1 : ℤ) • Q₂ = Q₂
+    rw [one_smul]
+  refine ⟨f₁.coprod f₂, (injective_iff_map_eq_zero _).mpr ?_⟩
+  rintro ⟨i, j⟩ hx
+  rw [AddMonoidHom.coprod_apply] at hx
+  have hcases : ∀ i : ZMod 2, i = 0 ∨ i = 1 := by decide
+  rcases hcases i with rfl | rfl <;> rcases hcases j with rfl | rfl
+  · rfl
+  · rw [map_zero, zero_add, hf₂] at hx
+    exact absurd hx hQ₂0
+  · rw [map_zero, add_zero, hf₁] at hx
+    exact absurd hx hQ₁0
+  · rw [hf₁, hf₂] at hx
+    have h12 : Q₁ = Q₂ := by
+      rw [eq_neg_of_add_eq_zero_left hx, hneg₂]
+    exact absurd h12 hQ₁₂
+
+end TwoTorsion
+
 /-!
 ### The Vélu quotient (decomposed 2026-07-22)
 
@@ -2802,8 +2912,9 @@ theorem FreyPackage.stable_line_dichotomy_of_not_isIrreducible
   points exists as an elliptic curve over `ℚ`, together with the
   Galois-equivariant quotient homomorphism on `ℚ̄`-points whose kernel
   is exactly the subgroup.
-* `FreyPackage.exists_two_torsion_embedding` (PROVEN) — the Frey
-  curve's full rational `2`-torsion.
+* `FreyPackage.freyCurve_two_torsion_embedding` (PROVEN 2026-07-16,
+  moved above this section) — the Frey curve's full rational
+  `2`-torsion.
 
 The assembly takes `C` to be the image of the line `W` (a cyclic
 subgroup of order `p`, Galois-stable by `hstable`), pushes a vector
@@ -2844,104 +2955,9 @@ theorem WeierstrassCurve.exists_quotient_isogeny
   sorry
 
 set_option backward.isDefEq.respectTransparency false in
-/-- **Full rational `2`-torsion of the Frey curve** (PROVEN
-2026-07-22): in the semistable model `y² + xy = x³ + a₂x² + a₄x` of
-the Frey curve (`a₂ = (bᵖ − 1 − aᵖ)/4`, `a₄ = −aᵖbᵖ/16`) the
-`2`-division polynomial `4x³ + b₂x² + 2b₄x + b₆` factors as
-`4x(x − aᵖ/4)(x + bᵖ/4)` over `ℚ`: the points `(0, 0)` and
-`(aᵖ/4, −aᵖ/8)` are rational of exact order `2` with distinct
-`x`-coordinates, so they generate an injective `(ℤ/2)² →+ E(ℚ)`. -/
-theorem FreyPackage.exists_two_torsion_embedding (P : FreyPackage) :
-    ∃ φ₂ : (ZMod 2 × ZMod 2) →+ ((P.freyCurve)⁄ℚ).Point,
-      Function.Injective φ₂ := by
-  classical
-  have ha0 : ((P.a : ℚ)) ^ P.p ≠ 0 :=
-    pow_ne_zero _ (Int.cast_ne_zero.mpr P.ha0)
-  -- the two affine points of order `2`
-  have hE₁ : ((P.freyCurve)⁄ℚ).Equation 0 0 := by
-    rw [WeierstrassCurve.Affine.equation_iff]
-    simp [FreyPackage.freyCurve]
-  have hE₂ : ((P.freyCurve)⁄ℚ).Equation
-      ((P.a : ℚ) ^ P.p / 4) (-((P.a : ℚ) ^ P.p) / 8) := by
-    rw [WeierstrassCurve.Affine.equation_iff]
-    simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map_a₁,
-      WeierstrassCurve.map_a₂, WeierstrassCurve.map_a₃,
-      WeierstrassCurve.map_a₄, WeierstrassCurve.map_a₆,
-      FreyPackage.freyCurve, Algebra.algebraMap_self, RingHom.id_apply]
-    push_cast
-    ring
-  have h₁ : ((P.freyCurve)⁄ℚ).Nonsingular 0 0 :=
-    WeierstrassCurve.Affine.equation_iff_nonsingular.mp hE₁
-  have h₂ : ((P.freyCurve)⁄ℚ).Nonsingular
-      ((P.a : ℚ) ^ P.p / 4) (-((P.a : ℚ) ^ P.p) / 8) :=
-    WeierstrassCurve.Affine.equation_iff_nonsingular.mp hE₂
-  set Pt₁ : ((P.freyCurve)⁄ℚ).Point :=
-    WeierstrassCurve.Affine.Point.some _ _ h₁
-  set Pt₂ : ((P.freyCurve)⁄ℚ).Point :=
-    WeierstrassCurve.Affine.Point.some _ _ h₂
-  -- both points have order `2`
-  have hneg₁ : (0 : ℚ) = ((P.freyCurve)⁄ℚ).negY 0 0 := by
-    simp [WeierstrassCurve.Affine.negY, FreyPackage.freyCurve]
-  have hneg₂ : -((P.a : ℚ) ^ P.p) / 8 =
-      ((P.freyCurve)⁄ℚ).negY ((P.a : ℚ) ^ P.p / 4) (-((P.a : ℚ) ^ P.p) / 8) := by
-    simp only [WeierstrassCurve.Affine.negY, WeierstrassCurve.baseChange,
-      WeierstrassCurve.map_a₁, WeierstrassCurve.map_a₃,
-      FreyPackage.freyCurve, Algebra.algebraMap_self, RingHom.id_apply]
-    push_cast
-    ring
-  have h2Pt₁ : Pt₁ + Pt₁ = 0 :=
-    WeierstrassCurve.Affine.Point.add_self_of_Y_eq hneg₁
-  have h2Pt₂ : Pt₂ + Pt₂ = 0 :=
-    WeierstrassCurve.Affine.Point.add_self_of_Y_eq hneg₂
-  -- assemble the homomorphism `(ℤ/2)² →+ E(ℚ)` on the two generators
-  have hz₁ : zmultiplesHom _ Pt₁ (2 : ℤ) = 0 := by
-    show (2 : ℤ) • Pt₁ = 0
-    rw [two_zsmul]
-    exact h2Pt₁
-  have hz₂ : zmultiplesHom _ Pt₂ (2 : ℤ) = 0 := by
-    show (2 : ℤ) • Pt₂ = 0
-    rw [two_zsmul]
-    exact h2Pt₂
-  let f₁ : ZMod 2 →+ ((P.freyCurve)⁄ℚ).Point :=
-    ZMod.lift 2 ⟨zmultiplesHom _ Pt₁, hz₁⟩
-  let f₂ : ZMod 2 →+ ((P.freyCurve)⁄ℚ).Point :=
-    ZMod.lift 2 ⟨zmultiplesHom _ Pt₂, hz₂⟩
-  have hf₁ : f₁ 1 = Pt₁ := by
-    have h := ZMod.lift_coe 2 ⟨zmultiplesHom _ Pt₁, hz₁⟩ (1 : ℤ)
-    rw [show (((1 : ℤ)) : ZMod 2) = 1 by norm_num] at h
-    rw [h]
-    exact one_zsmul Pt₁
-  have hf₂ : f₂ 1 = Pt₂ := by
-    have h := ZMod.lift_coe 2 ⟨zmultiplesHom _ Pt₂, hz₂⟩ (1 : ℤ)
-    rw [show (((1 : ℤ)) : ZMod 2) = 1 by norm_num] at h
-    rw [h]
-    exact one_zsmul Pt₂
-  refine ⟨f₁.coprod f₂, ?_⟩
-  rw [injective_iff_map_eq_zero]
-  intro z hz
-  have h01 : ∀ w : ZMod 2, w = 0 ∨ w = 1 := by decide
-  obtain ⟨z₁, z₂⟩ := z
-  rw [AddMonoidHom.coprod_apply] at hz
-  -- the four cases: images `0`, `Pt₁`, `Pt₂`, `Pt₁ + Pt₂`
-  rcases h01 z₁ with rfl | rfl <;> rcases h01 z₂ with rfl | rfl
-  · rfl
-  · rw [map_zero, zero_add, hf₂] at hz
-    exact absurd hz (WeierstrassCurve.Affine.Point.some_ne_zero h₂)
-  · rw [map_zero, add_zero, hf₁] at hz
-    exact absurd hz (WeierstrassCurve.Affine.Point.some_ne_zero h₁)
-  · rw [hf₁, hf₂] at hz
-    have hxne : ¬((0 : ℚ) = (P.a : ℚ) ^ P.p / 4 ∧
-        (0 : ℚ) = ((P.freyCurve)⁄ℚ).negY ((P.a : ℚ) ^ P.p / 4)
-          (-((P.a : ℚ) ^ P.p) / 8)) := by
-      rintro ⟨hx, -⟩
-      exact ha0 (by linarith [hx.symm] : ((P.a : ℚ)) ^ P.p = 0)
-    rw [WeierstrassCurve.Affine.Point.add_some hxne] at hz
-    exact absurd hz (WeierstrassCurve.Affine.Point.some_ne_zero _)
-
-set_option backward.isDefEq.respectTransparency false in
 /-- **The Vélu quotient node** (DERIVED 2026-07-22 from the
 quotient-isogeny leaf `exists_quotient_isogeny` and the PROVEN
-`2`-torsion embedding `exists_two_torsion_embedding`): given a
+`2`-torsion embedding `freyCurve_two_torsion_embedding`): given a
 Galois-stable line `W` in the `p`-torsion of the Frey curve on whose
 quotient the Galois action is trivial, the quotient curve `E/C` by the
 rational subgroup `C` corresponding to `W` (a `ℚ`-rational cyclic
@@ -2954,7 +2970,7 @@ theorem FreyPackage.exists_quotient_curve_point
     (P : FreyPackage)
     (W : Submodule (ZMod P.p)
       ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p))
-    (hW0 : W ≠ ⊥) (hWtop : W ≠ ⊤)
+    (_hW0 : W ≠ ⊥) (hWtop : W ≠ ⊤)
     (hstable : ∀ g : Field.absoluteGaloisGroup ℚ,
       ∀ v ∈ W, P.freyCurve.galoisRep P.p P.hppos g v ∈ W)
     (hquot : ∀ (g : Field.absoluteGaloisGroup ℚ)
@@ -2979,9 +2995,9 @@ theorem FreyPackage.exists_quotient_curve_point
     intro Pt
     constructor
     · rintro ⟨v, hv, rfl⟩
-      exact ⟨v, Submodule.mem_toAddSubgroup.mp hv, rfl⟩
+      exact ⟨v, hv, rfl⟩
     · rintro ⟨v, hv, rfl⟩
-      exact ⟨v, Submodule.mem_toAddSubgroup.mpr hv, rfl⟩
+      exact ⟨v, hv, rfl⟩
   have hcard : Nat.card
       ((P.freyCurve.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion P.p) =
       P.p ^ 2 :=
@@ -3007,10 +3023,7 @@ theorem FreyPackage.exists_quotient_curve_point
     WeierstrassCurve.exists_quotient_isogeny P.freyCurve C hCfin hCstable
   haveI := hE'
   -- Part 1: a Galois-fixed point of exact order `p` on the quotient
-  obtain ⟨v, hvW⟩ : ∃ v, v ∉ W := by
-    by_contra h
-    push_neg at h
-    exact hWtop (Submodule.eq_top_iff'.mpr h)
+  obtain ⟨v, -, hvW⟩ := SetLike.exists_of_lt (lt_top_iff_ne_top.mpr hWtop)
   have hQbar0 : φ (ι v) ≠ 0 := by
     intro h0
     obtain ⟨w, hw, hwv⟩ := (hmemC _).mp ((hφker _).mp h0)
@@ -3042,13 +3055,8 @@ theorem FreyPackage.exists_quotient_curve_point
         (hφker _).mpr ((hmemC _).mpr ⟨_, hsub, map_sub ι _ _⟩)
       rw [map_sub, sub_eq_zero] at hzero
       exact hzero
-    calc Affine.Point.map
-        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ (ι v))
-        = φ (Affine.Point.map
-            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (ι v)) :=
-          (hφeq σ (ι v)).symm
-      _ = φ (ι (P.freyCurve.galoisRep P.p P.hppos σ v)) := by rw [hcompat]
-      _ = φ (ι v) := hker
+    rw [← hφeq σ (ι v), hcompat]
+    exact hker
   obtain ⟨Q, hQ⟩ :=
     WeierstrassCurve.exists_point_eq_baseChange_of_fixed E' (φ (ι v)) hfixQ
   have hordQ : addOrderOf Q = P.p := by
@@ -3056,7 +3064,7 @@ theorem FreyPackage.exists_quotient_curve_point
     exact (addOrderOf_injective _
       (Affine.Point.map_injective (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))) Q).symm
   -- Part 2: the full rational `2`-torsion of the quotient
-  obtain ⟨φ₂, hφ₂⟩ := P.exists_two_torsion_embedding
+  obtain ⟨φ₂, hφ₂⟩ := P.freyCurve_two_torsion_embedding
   let ψ : (ZMod 2 × ZMod 2) →+ (E'⁄(AlgebraicClosure ℚ)).Point :=
     φ.comp ((Affine.Point.baseChange (W' := P.freyCurve) ℚ
       (AlgebraicClosure ℚ)).comp φ₂)
@@ -3276,116 +3284,6 @@ theorem embedding_assembly {A : Type*} [AddCommGroup A]
   have hx2 : x.2 = 0 := e.injective (by rw [hex, map_zero])
   have hx1 : x.1 = 0 := congrArg Prod.fst h1
   exact Prod.ext hx1 hx2
-
-section TwoTorsion
-
-open WeierstrassCurve.Affine
-
-/-- The trivial base change of the Frey curve to `ℚ` is elliptic. (Mathlib
-has this instance for `E.map f`, but `WeierstrassCurve.baseChange` is a
-non-reducible `def`, so instance search cannot see through it; several
-derivations in this branch of the tree need the instance.) -/
-instance (P : FreyPackage) : ((P.freyCurve)⁄ℚ).IsElliptic :=
-  inferInstanceAs (P.freyCurve.map (algebraMap ℚ ℚ)).IsElliptic
-
-/-- **Full rational 2-torsion of the Frey curve** (PROVEN 2026-07-16): the
-Frey model has rational 2-torsion points `(0, 0)` and `(aᵖ/4, -aᵖ/8)` (in
-the untransformed model `y² = x(x - aᵖ)(x + bᵖ)` the full 2-torsion is
-visible; the transformed model retains it rationally, the quadratic
-`x² + ((bᵖ-aᵖ)/4)x - aᵖbᵖ/16` factoring as `(x - aᵖ/4)(x + bᵖ/4)`). The
-two points generate an injective `(ℤ/2)² →+ E(ℚ)`. -/
-theorem FreyPackage.freyCurve_two_torsion_embedding (P : FreyPackage) :
-    ∃ φ₂ : (ZMod 2 × ZMod 2) →+ ((P.freyCurve)⁄ℚ).Point, Function.Injective φ₂ := by
-  -- the coefficients of the base-changed model
-  have h1 : ((P.freyCurve)⁄ℚ).a₁ = 1 := by
-    simp [WeierstrassCurve.baseChange, FreyPackage.freyCurve]
-  have h2 : ((P.freyCurve)⁄ℚ).a₂ = (P.b ^ P.p - 1 - P.a ^ P.p) / 4 := by
-    simp [WeierstrassCurve.baseChange, FreyPackage.freyCurve]
-  have h3 : ((P.freyCurve)⁄ℚ).a₃ = 0 := by
-    simp [WeierstrassCurve.baseChange, FreyPackage.freyCurve]
-  have h4 : ((P.freyCurve)⁄ℚ).a₄ = -(P.a ^ P.p) * (P.b ^ P.p) / 16 := by
-    simp [WeierstrassCurve.baseChange, FreyPackage.freyCurve]
-  have h6 : ((P.freyCurve)⁄ℚ).a₆ = 0 := by
-    simp [WeierstrassCurve.baseChange, FreyPackage.freyCurve]
-  have hap : (P.a : ℚ) ^ P.p ≠ 0 := pow_ne_zero _ (by exact_mod_cast P.ha0)
-  -- the two points satisfy the equation
-  have heq₁ : ((P.freyCurve)⁄ℚ).Equation 0 0 := by
-    rw [equation_iff, h1, h2, h3, h4, h6]
-    ring
-  have heq₂ : ((P.freyCurve)⁄ℚ).Equation
-      ((P.a : ℚ) ^ P.p / 4) (-((P.a : ℚ) ^ P.p) / 8) := by
-    rw [equation_iff, h1, h2, h3, h4, h6]
-    field_simp
-    ring
-  have hns₁ : ((P.freyCurve)⁄ℚ).Nonsingular 0 0 :=
-    equation_iff_nonsingular.mp heq₁
-  have hns₂ : ((P.freyCurve)⁄ℚ).Nonsingular
-      ((P.a : ℚ) ^ P.p / 4) (-((P.a : ℚ) ^ P.p) / 8) :=
-    equation_iff_nonsingular.mp heq₂
-  -- the points, their order-2 property, and their distinctness
-  set Q₁ : ((P.freyCurve)⁄ℚ).Point := Point.some _ _ hns₁ with hQ₁def
-  set Q₂ : ((P.freyCurve)⁄ℚ).Point := Point.some _ _ hns₂ with hQ₂def
-  have hneg₁ : -Q₁ = Q₁ := by
-    rw [hQ₁def, Point.neg_some]
-    rw [Point.some.injEq]
-    refine ⟨rfl, ?_⟩
-    rw [negY, h1, h3]
-    ring
-  have hneg₂ : -Q₂ = Q₂ := by
-    rw [hQ₂def, Point.neg_some]
-    rw [Point.some.injEq]
-    refine ⟨rfl, ?_⟩
-    rw [negY, h1, h3]
-    ring
-  have h2Q₁ : (2 : ℤ) • Q₁ = 0 := by
-    rw [two_zsmul]
-    exact add_eq_zero_iff_eq_neg.mpr hneg₁.symm
-  have h2Q₂ : (2 : ℤ) • Q₂ = 0 := by
-    rw [two_zsmul]
-    exact add_eq_zero_iff_eq_neg.mpr hneg₂.symm
-  have hQ₁0 : Q₁ ≠ 0 := Point.some_ne_zero _
-  have hQ₂0 : Q₂ ≠ 0 := Point.some_ne_zero _
-  have hQ₁₂ : Q₁ ≠ Q₂ := by
-    rw [hQ₁def, hQ₂def]
-    intro h
-    have hx := (Point.some.inj h).1
-    rw [eq_comm, div_eq_iff (by norm_num : (4 : ℚ) ≠ 0), zero_mul] at hx
-    exact hap hx
-  -- assemble the embedding from the two order-2 points
-  have hz₁ : (zmultiplesHom _ Q₁) (2 : ℤ) = 0 := h2Q₁
-  have hz₂ : (zmultiplesHom _ Q₂) (2 : ℤ) = 0 := h2Q₂
-  let f₁ : ZMod 2 →+ ((P.freyCurve)⁄ℚ).Point := ZMod.lift 2 ⟨zmultiplesHom _ Q₁, hz₁⟩
-  let f₂ : ZMod 2 →+ ((P.freyCurve)⁄ℚ).Point := ZMod.lift 2 ⟨zmultiplesHom _ Q₂, hz₂⟩
-  have hf₁ : f₁ 1 = Q₁ := by
-    have := ZMod.lift_coe 2 (⟨zmultiplesHom _ Q₁, hz₁⟩ :
-      {f : ℤ →+ ((P.freyCurve)⁄ℚ).Point // f 2 = 0}) (1 : ℤ)
-    rw [show ((1 : ℤ) : ZMod 2) = 1 by norm_cast] at this
-    rw [this]
-    show (1 : ℤ) • Q₁ = Q₁
-    rw [one_smul]
-  have hf₂ : f₂ 1 = Q₂ := by
-    have := ZMod.lift_coe 2 (⟨zmultiplesHom _ Q₂, hz₂⟩ :
-      {f : ℤ →+ ((P.freyCurve)⁄ℚ).Point // f 2 = 0}) (1 : ℤ)
-    rw [show ((1 : ℤ) : ZMod 2) = 1 by norm_cast] at this
-    rw [this]
-    show (1 : ℤ) • Q₂ = Q₂
-    rw [one_smul]
-  refine ⟨f₁.coprod f₂, (injective_iff_map_eq_zero _).mpr ?_⟩
-  rintro ⟨i, j⟩ hx
-  rw [AddMonoidHom.coprod_apply] at hx
-  have hcases : ∀ i : ZMod 2, i = 0 ∨ i = 1 := by decide
-  rcases hcases i with rfl | rfl <;> rcases hcases j with rfl | rfl
-  · rfl
-  · rw [map_zero, zero_add, hf₂] at hx
-    exact absurd hx hQ₂0
-  · rw [map_zero, add_zero, hf₁] at hx
-    exact absurd hx hQ₁0
-  · rw [hf₁, hf₂] at hx
-    have h12 : Q₁ = Q₂ := by
-      rw [eq_neg_of_add_eq_zero_left hx, hneg₂]
-    exact absurd h12 hQ₁₂
-
-end TwoTorsion
 
 /-- **Serre's core, packaged with the 2-torsion** (DERIVED 2026-07-16 from
 `exists_p_point_of_not_isIrreducible` and the PROVEN
