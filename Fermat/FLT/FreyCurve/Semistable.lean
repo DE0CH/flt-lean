@@ -6626,18 +6626,77 @@ open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **The lattice-intersection descent** (sorry node — the gluing leaf,
-hoisted out of `torsion_flat_of_multiplicative_reduction` as a
-standalone implication): a global generic-fibre package and a local
-completed-integers package glue to a package over `ℤ_(p) = ℚ ∩ ℤ_p`.
-The model is the intersection of the global algebra with the local Hopf
-model inside its completed base change (finite flat because finitely
-generated torsion-free over the DVR `ℤ_(p)`, a Hopf order because both
-intersectands are); the local-vs-global points comparison rides the
-chosen embedding `ℚ̄ ↪ ℚ̄_p` (`algClosureEmbeddingRat`,
-`algHomEquivOfFinite`/`mem_range_algebraicClosureMap_of_isIntegral` as
-in layer C of `FlatProlongation`) together with the torsion-point
-transport already used by the unramifiedness glue in this file. -/
+/-- **The lattice-intersection Hopf order** (sorry node — the core of
+the localization gluing, isolated so that the points/étale/convolution
+transport is PROVEN glue): given the COMPONENTS of a global
+generic-fibre package (an étale `ℚ`-Hopf algebra `Hg` whose `ℚ̄`-points
+are equivariantly the `p`-torsion) and a local completed-integers
+package, there is a finite flat `ℤ_(p)`-Hopf algebra whose generic
+fibre is `Hg` as a `ℚ`-BIALGEBRA. Content: the comparison of the two
+étale `ℚ_pˆ`-algebras `ℚ_pˆ ⊗ Hg` and `ℚ_pˆ ⊗ H_loc` through their
+equivariantly identified `Ω̂`-points (the étale/Galois-sets
+correspondence, riding the chosen embedding `ℚ̄ ↪ ℚ̄_p` —
+`algClosureEmbeddingRat` — for the torsion comparison), and the lattice
+`H := Hg ∩ H_loc` inside it: finitely generated torsion-free over the
+DVR `ℤ_(p) = ℚ ∩ ℤ_p`, hence finite flat, a Hopf order because both
+intersectands are, with `ℚ ⊗ H = Hg` because `H_loc` spans over
+`ℚ_pˆ`. -/
+theorem WeierstrassCurve.exists_hopfOrder_of_adicPackage
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp' : p.Prime)
+    [Fact p.Prime]
+    (Hg : Type) [CommRing Hg] [HopfAlgebra ℚ Hg] [Module.Finite ℚ Hg]
+    [Algebra.Etale ℚ (ℚ ⊗[ℚ] Hg)]
+    (fg : Additive (WithConv ((ℚ ⊗[ℚ] Hg) →ₐ[ℚ] AlgebraicClosure ℚ)) ≃+
+      AddSubgroup.torsionBy (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ))
+    (hfg : ∀ (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+        (φ : (ℚ ⊗[ℚ] Hg) →ₐ[ℚ] AlgebraicClosure ℚ),
+        (fg (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) :
+          (E⁄(AlgebraicClosure ℚ)).Point) =
+          WeierstrassCurve.Affine.Point.map σ.toAlgHom
+            (fg (Additive.ofMul (WithConv.toConv φ))))
+    (hl : WeierstrassCurve.TorsionFlatPackage
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)))
+      p
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat))) :
+    ∃ (H : Type) (_ : CommRing H)
+      (_ : HopfAlgebra
+        (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H)
+      (_ : Module.Finite
+        (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H)
+      (_ : Module.Flat
+        (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H)
+      (_ : Algebra.Etale ℚ
+        (ℚ ⊗[Localization.AtPrime
+          hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H)),
+      Nonempty
+        ((ℚ ⊗[Localization.AtPrime
+            hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H)
+          ≃ₐc[ℚ] (ℚ ⊗[ℚ] Hg)) := by
+  sorry
+
+open TensorProduct ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The lattice-intersection descent** (DECOMPOSED 2026-07-23 — the
+gluing leaf, hoisted out of `torsion_flat_of_multiplicative_reduction`
+as a standalone implication): a global generic-fibre package and a
+local completed-integers package glue to a package over
+`ℤ_(p) = ℚ ∩ ℤ_p`. The Hopf-order core is the single sorried leaf
+`exists_hopfOrder_of_adicPackage` above; PROVEN here is the transport
+of the whole package structure along the generic-fibre bialgebra
+isomorphism it provides: étaleness is carried by the iso, the
+`ℚ̄`-points equivalence composes with precomposition by the iso — a
+morphism of the convolution monoids by
+`AlgHom.convMul_comp_bialgHom_distrib` — and Galois equivariance is
+associativity of composition. -/
 theorem WeierstrassCurve.torsionFlatPackage_localization_of_packages
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp' : p.Prime)
     [Fact p.Prime] :
@@ -6655,7 +6714,74 @@ theorem WeierstrassCurve.torsionFlatPackage_localization_of_packages
     WeierstrassCurve.TorsionFlatPackage
       (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)
       ℚ E p (AlgebraicClosure ℚ) := by
-  sorry
+  classical
+  intro hg hl
+  obtain ⟨Hg, cg, hopfg, fing, _flatg, etg, fg, hfg⟩ := hg
+  letI := cg
+  letI := hopfg
+  letI := fing
+  letI := etg
+  -- the Hopf-order core (sorried leaf)
+  obtain ⟨H, cH, hopfH, finH, flatH, etH, ⟨e⟩⟩ :=
+    WeierstrassCurve.exists_hopfOrder_of_adicPackage E hp' Hg fg hfg hl
+  letI := cH
+  letI := hopfH
+  -- the coerced generic-fibre comparison maps
+  let c : (ℚ ⊗[ℚ] Hg) →ₐ[ℚ] (ℚ ⊗[Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H) := e.symm.toBialgHom
+  let c' : (ℚ ⊗[Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H) →ₐ[ℚ]
+      (ℚ ⊗[ℚ] Hg) := e.toBialgHom
+  have hcc' : ∀ φ : (ℚ ⊗[Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H) →ₐ[ℚ]
+      AlgebraicClosure ℚ, (φ.comp c).comp c' = φ := by
+    intro φ
+    apply AlgHom.ext
+    intro z
+    show φ (e.symm (e z)) = φ z
+    rw [BialgEquiv.symm_apply_apply]
+  have hc'c : ∀ ψ : (ℚ ⊗[ℚ] Hg) →ₐ[ℚ] AlgebraicClosure ℚ,
+      (ψ.comp c').comp c = ψ := by
+    intro ψ
+    apply AlgHom.ext
+    intro z
+    show ψ (e (e.symm z)) = ψ z
+    rw [BialgEquiv.apply_symm_apply]
+  -- precomposition with the comparison map, as an isomorphism of the
+  -- convolution monoids (`convMul_comp_bialgHom_distrib`)
+  let mulE : WithConv ((ℚ ⊗[Localization.AtPrime
+        hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H) →ₐ[ℚ]
+        AlgebraicClosure ℚ) ≃*
+      WithConv ((ℚ ⊗[ℚ] Hg) →ₐ[ℚ] AlgebraicClosure ℚ) :=
+    { toFun := fun u => WithConv.toConv ((WithConv.ofConv u).comp c)
+      invFun := fun v => WithConv.toConv ((WithConv.ofConv v).comp c')
+      left_inv := fun u => by
+        dsimp only
+        rw [WithConv.ofConv_toConv, hcc', WithConv.toConv_ofConv]
+      right_inv := fun v => by
+        dsimp only
+        rw [WithConv.ofConv_toConv, hc'c, WithConv.toConv_ofConv]
+      map_mul' := fun u v => by
+        rw [show (WithConv.ofConv (u * v)).comp c =
+            AlgHom.comp (u * v).ofConv
+              (e.symm.toBialgHom : (ℚ ⊗[ℚ] Hg) →ₐ[ℚ]
+                (ℚ ⊗[Localization.AtPrime
+                  hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H))
+            from rfl,
+          AlgHom.convMul_comp_bialgHom_distrib u v e.symm.toBialgHom,
+          WithConv.toConv_ofConv] }
+  refine ⟨H, cH, hopfH, finH, flatH, etH,
+    (MulEquiv.toAdditive mulE).trans fg, ?_⟩
+  intro σ φ
+  have happ : ∀ ψ : (ℚ ⊗[Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H) →ₐ[ℚ]
+      AlgebraicClosure ℚ,
+      (MulEquiv.toAdditive mulE) (Additive.ofMul (WithConv.toConv ψ)) =
+        Additive.ofMul (WithConv.toConv (ψ.comp c)) := fun ψ => rfl
+  rw [AddEquiv.trans_apply, AddEquiv.trans_apply, happ, happ,
+    show (σ.toAlgHom.comp φ).comp c = σ.toAlgHom.comp (φ.comp c) from
+      AlgHom.comp_assoc σ.toAlgHom φ c]
+  exact hfg σ (φ.comp c)
 
 open TensorProduct ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
