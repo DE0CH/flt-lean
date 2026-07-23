@@ -1851,6 +1851,101 @@ theorem summable_rpow_neg_natCard_quotient {F : Type*} [Field F] [NumberField F]
   rw [NNReal.coe_rpow, NNReal.coe_natCast]
 
 open IsDedekindDomain in
+/-- Every ideal of a Dedekind domain other than `⊥` and `⊤` is divisible
+by some height-one prime: pick an irreducible factor in the unique
+factorization monoid of ideals. -/
+theorem exists_heightOneSpectrum_dvd {R : Type*} [CommRing R] [IsDedekindDomain R]
+    {I : Ideal R} (h0 : I ≠ ⊥) (h1 : I ≠ ⊤) :
+    ∃ Q : HeightOneSpectrum R, Q.asIdeal ∣ I := by
+  obtain ⟨i, hirr, hdvd⟩ := WfDvdMonoid.exists_irreducible_factor
+    (fun h => h1 (Ideal.isUnit_iff.mp h)) (by rwa [Ideal.zero_eq_bot])
+  exact ⟨HeightOneSpectrum.ofPrime
+    (UniqueFactorizationMonoid.irreducible_iff_prime.mp hirr), hdvd⟩
+
+open IsDedekindDomain in
+/-- Uniqueness of the `P`-power decomposition `I = P^e · J` with `P ∤ J`
+in the ideal monoid of a Dedekind domain. -/
+theorem eq_and_eq_of_pow_mul_eq_pow_mul {R : Type*} [CommRing R] [IsDedekindDomain R]
+    (P₀ : HeightOneSpectrum R) {e e' : ℕ} {J J' : Ideal R}
+    (hJ : ¬P₀.asIdeal ∣ J) (hJ' : ¬P₀.asIdeal ∣ J')
+    (h : P₀.asIdeal ^ e * J = P₀.asIdeal ^ e' * J') : e = e' ∧ J = J' := by
+  have hPne : P₀.asIdeal ≠ 0 := by rw [Ideal.zero_eq_bot]; exact P₀.ne_bot
+  have key : ∀ {a a' : ℕ} {B B' : Ideal R}, a ≤ a' → ¬P₀.asIdeal ∣ B →
+      P₀.asIdeal ^ a * B = P₀.asIdeal ^ a' * B' → a = a' ∧ B = B' := by
+    intro a a' B B' hle hB hEq
+    have h1 : P₀.asIdeal ^ a * B = P₀.asIdeal ^ a * (P₀.asIdeal ^ (a' - a) * B') := by
+      rw [← mul_assoc, ← pow_add, Nat.add_sub_cancel' hle]
+      exact hEq
+    have h2 : B = P₀.asIdeal ^ (a' - a) * B' :=
+      mul_left_cancel₀ (pow_ne_zero a hPne) h1
+    have h3 : a' - a = 0 := by
+      by_contra h4
+      apply hB
+      rw [h2]
+      exact dvd_mul_of_dvd_left (dvd_pow_self _ h4) B'
+    refine ⟨by omega, ?_⟩
+    rw [h3, pow_zero, one_mul] at h2
+    exact h2
+  rcases le_total e e' with hle | hle
+  · exact key hle hJ h
+  · obtain ⟨h1, h2⟩ := key hle hJ' h.symm
+    exact ⟨h1.symm, h2.symm⟩
+
+/-- Complete multiplicativity in the `ℕ`-argument of the twisted power
+term `k ↦ χ(k)·k^{-w}` (for `w ≠ 0`; at `k = 0` both sides vanish). -/
+theorem dirichletCharacter_mul_cpow_natCast_mul {ℓ : ℕ} (χ : DirichletCharacter ℂ ℓ)
+    {w : ℂ} (hw : w ≠ 0) (m n : ℕ) :
+    χ ((m * n : ℕ) : ZMod ℓ) * ((m * n : ℕ) : ℂ) ^ (-w) =
+      (χ (m : ZMod ℓ) * (m : ℂ) ^ (-w)) * (χ (n : ZMod ℓ) * (n : ℂ) ^ (-w)) :=
+  sorry
+
+/-- Iterated form of `dirichletCharacter_mul_cpow_natCast_mul`: the
+twisted power term at `m ^ e * n` splits off the `e`-th power of the
+term at `m`. -/
+theorem dirichletCharacter_mul_cpow_natCast_pow_mul {ℓ : ℕ}
+    (χ : DirichletCharacter ℂ ℓ) {w : ℂ} (hw : w ≠ 0) (m n e : ℕ) :
+    χ ((m ^ e * n : ℕ) : ZMod ℓ) * ((m ^ e * n : ℕ) : ℂ) ^ (-w) =
+      (χ (m : ZMod ℓ) * (m : ℂ) ^ (-w)) ^ e *
+        (χ (n : ZMod ℓ) * (n : ℂ) ^ (-w)) := by
+  induction e with
+  | zero => rw [pow_zero, one_mul, pow_zero, one_mul]
+  | succ e ih =>
+      have h1 : m ^ (e + 1) * n = m * (m ^ e * n) := by ring
+      rw [h1, dirichletCharacter_mul_cpow_natCast_mul χ hw m (m ^ e * n), ih,
+        pow_succ]
+      ring
+
+open IsDedekindDomain in
+/-- Norm summability of the twisted ideal sum for `1 < re w`,
+transferred from the `ℝ≥0∞`-valued full-ideal-sum leaf
+`tsum_rpow_neg_absNorm_ne_top`. -/
+theorem summable_norm_dirichletCharacter_mul_cpow_neg_absNorm
+    (F : Type*) [Field F] [NumberField F] {ℓ : ℕ} (χ : DirichletCharacter ℂ ℓ)
+    {w : ℂ} (hw : 1 < w.re) :
+    Summable (fun I : {I : Ideal (𝓞 F) // I ≠ ⊥} =>
+      ‖χ ((Ideal.absNorm I.1 : ℕ) : ZMod ℓ) * (Ideal.absNorm I.1 : ℂ) ^ (-w)‖) :=
+  sorry
+
+open IsDedekindDomain in
+/-- **Finite-level Euler product over the ideals of `𝓞 F`**: for a
+finite set `S` of finite places, the product of the inverted Euler
+factors at the places in `S` equals the twisted ideal sum restricted to
+the ideals all of whose prime divisors lie in `S`. This is the
+ideal-monoid mirror of mathlib's
+`EulerProduct.prod_filter_prime_geometric_eq_tsum_factoredNumbers`,
+proven by induction on `S` along the unique `P`-power decomposition of
+the `S`-factored ideals. -/
+theorem prod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum_factored
+    (F : Type*) [Field F] [NumberField F] {ℓ : ℕ} (χ : DirichletCharacter ℂ ℓ)
+    {w : ℂ} (hw : 1 < w.re) (S : Finset (HeightOneSpectrum (𝓞 F))) :
+    (∏ P ∈ S, (1 - χ ((Ideal.absNorm P.asIdeal : ℕ) : ZMod ℓ) *
+        (Ideal.absNorm P.asIdeal : ℂ) ^ (-w))⁻¹) =
+      ∑' I : {I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+          ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S},
+        χ ((Ideal.absNorm I.1.1 : ℕ) : ZMod ℓ) * (Ideal.absNorm I.1.1 : ℂ) ^ (-w) :=
+  sorry
+
+open IsDedekindDomain in
 /-- **Euler product for the `χ`-twisted Dedekind zeta function** (sorry
 leaf): for `1 < re w`, the product of the inverted Euler factors
 `(1 - χ(N P)·N P^{-w})⁻¹` over the finite places of `F` equals the
@@ -1873,8 +1968,52 @@ theorem tprod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum
         (1 - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
           (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w))⁻¹) =
       ∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥},
-        χ ((Ideal.absNorm I.1 : ℕ) : ZMod ℓ) * (Ideal.absNorm I.1 : ℂ) ^ (-w) :=
-  sorry
+        χ ((Ideal.absNorm I.1 : ℕ) : ZMod ℓ) * (Ideal.absNorm I.1 : ℂ) ^ (-w) := by
+  classical
+  -- replace the residue cardinalities by absolute norms in the factors
+  have hfac : ∀ P : HeightOneSpectrum (𝓞 F),
+      (1 - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w))⁻¹ =
+      (1 - χ ((Ideal.absNorm P.asIdeal : ℕ) : ZMod ℓ) *
+        (Ideal.absNorm P.asIdeal : ℂ) ^ (-w))⁻¹ := by
+    intro P
+    rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+  rw [tprod_congr hfac]
+  -- the twisted ideal sum is (absolutely) summable
+  have hsummable : Summable (fun I : {I : Ideal (𝓞 F) // I ≠ ⊥} =>
+      χ ((Ideal.absNorm I.1 : ℕ) : ZMod ℓ) * (Ideal.absNorm I.1 : ℂ) ^ (-w)) :=
+    (summable_norm_dirichletCharacter_mul_cpow_neg_absNorm F χ hw).of_norm
+  -- `HasProd` towards the full twisted ideal sum
+  refine HasProd.tprod_eq ?_
+  rw [HasProd, SummationFilter.unconditional, Metric.tendsto_atTop]
+  intro ε hε
+  -- tail control: a finite set of ideals capturing the sum up to `ε`
+  obtain ⟨T₀, hT₀⟩ := hsummable.tsum_vanishing (Metric.ball_mem_nhds 0 hε)
+  refine ⟨T₀.biUnion (fun I =>
+    (Ideal.finite_factors (fun h => I.2 (h.trans Ideal.zero_eq_bot))).toFinset),
+    fun S hS => ?_⟩
+  -- every ideal in `T₀` is `S`-factored
+  have hT₀sub : ∀ I ∈ T₀, ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S := by
+    intro I hI Q hQ
+    refine hS (Finset.mem_biUnion.mpr ⟨I, hI, ?_⟩)
+    rw [Set.Finite.mem_toFinset]
+    exact hQ
+  -- hence the complement of the `S`-factored ideals is disjoint from `T₀`
+  have hdisj : Disjoint ({I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+      ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S}ᶜ) (↑T₀ : Set _) := by
+    rw [Set.disjoint_left]
+    intro I hIc hIT
+    exact hIc (fun Q hQ => hT₀sub I hIT Q hQ)
+  have htail := hT₀ _ hdisj
+  rw [mem_ball_zero_iff] at htail
+  -- split the full sum along the `S`-factored ideals
+  have hkey := hsummable.tsum_subtype_add_tsum_subtype_compl
+    {I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+      ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S}
+  have hprodS := prod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum_factored
+    F χ hw S
+  rw [dist_eq_norm, hprodS, ← hkey, sub_add_cancel_left, norm_neg]
+  exact htail
 
 open IsDedekindDomain in
 /-- **Norm fibration of the twisted ideal sum**: grouping
