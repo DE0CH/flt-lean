@@ -32,6 +32,7 @@ Output (one compressed JSON object on stdout):
 This file lives at the repo root, OUTSIDE the `Fermat` lib glob
 (lakefile: `lean_lib Fermat`), so `lake build` never picks it up.
 -/
+import ImportGraph.Imports.RequiredModules
 -- BEGIN GENERATED IMPORTS
 import Fermat.Basic
 import Fermat.FLT.DedekindDomain.AdicValuation
@@ -146,7 +147,7 @@ import Fermat.FLT.Slop.RepresentationTheory.OddAbsIrredSlop
 import Fermat.PrimeFive
 import Fermat.SorryGate
 def censusInputPath : System.FilePath := "/home/chend/flt-lean/progress-census-input.json"
--- census-input fingerprint: 1914611510c281a3742b386ad0e86664b6847ddc
+-- census-input fingerprint: 3036ea9d5d0b164f785ceb5399ac596d02e6f9ef
 -- END GENERATED IMPORTS
 
 open Lean
@@ -158,7 +159,8 @@ Fermat-module constants — mathlib cannot depend on the project, so
 every path to `sorryAx` or to a tracked name stays inside Fermat
 modules), plus the compiler-verified sorried-declaration list, plus the
 root-cone sorry/axiom-whitelist status. -/
-def runCensus (env : Environment) (req : Json) : Json := Id.run do
+def runCensus (req : Json) : CoreM Json := do
+  let env ← getEnv
   let modNames := env.header.moduleNames
   let modData := env.header.moduleData
   let isFermatMod : Name → Bool := fun m => Name.isPrefixOf `Fermat m
@@ -236,6 +238,38 @@ def runCensus (env : Environment) (req : Json) : Json := Id.run do
                 [("name", Json.str nm.toString),
                  ("module", Json.str modNames[i]!.toString)])
           | none => pure ()
+  -- ---------------------------------------------------------- floating
+  -- free-floating sweep: every Fermat-module declaration outside the
+  -- transitive used-constant cone of `fermat_last_theorem` (not the
+  -- query's `root` param -- always the project root). The cone itself
+  -- comes from ImportGraph's `Name.transitivelyUsedConstants` (already
+  -- a vendored transitive dependency via mathlib's own lakefile) rather
+  -- than a hand-rolled BFS -- same `getUsedConstantsAsSet` walk mathlib
+  -- ships and tests. Auto-generated members share source lines with
+  -- their parent declaration, so they are reportable only through it.
+  let mut floating : Array Json := #[]
+  match env.find? `fermat_last_theorem with
+  | none => pure ()
+  | some _ =>
+    let cone ← Name.transitivelyUsedConstants `fermat_last_theorem
+    for i in [0:modNames.size] do
+      if isFermatMod modNames[i]! then
+        for nm in modData[i]!.constNames do
+          if !nm.isInternalDetail && !cone.contains nm then
+            let isAutogen := match nm.componentsRev with
+              | c :: _ =>
+                let last := c.toString
+                last ∈ ["rec", "recOn", "casesOn", "brecOn", "below", "ibelow",
+                  "binductionOn", "noConfusion", "noConfusionType", "mk", "injEq",
+                  "ctorIdx", "inj", "sizeOf_spec", "ext", "ext_iff", "congr_simp",
+                  "eq_def"] ||
+                last.startsWith "eq_" || last.startsWith "match_" ||
+                last.startsWith "proof_" || last.startsWith "_proof_"
+              | _ => false
+            unless isAutogen do
+              floating := floating.push (Json.mkObj
+                [("module", Json.str modNames[i]!.toString),
+                 ("name", Json.str nm.toString)])
   -- ------------------------------------------------------------- root
   let rootStr :=
     (req.getObjValAs? String "root").toOption.getD "fermat_last_theorem"
@@ -271,12 +305,14 @@ def runCensus (env : Environment) (req : Json) : Json := Id.run do
   return Json.mkObj [
     ("entries", Json.arr items),
     ("sorried", Json.arr sorried),
-    ("root", rootJson)]
+    ("root", rootJson),
+    ("floating", Json.arr floating)]
 
 open Elab Command in
 #eval show CommandElabM Unit from do
-  let env ← getEnv
   let inputStr ← IO.FS.readFile censusInputPath
   match Json.parse inputStr with
   | .error e => throwError "census input parse error: {e}"
-  | .ok req => IO.println (runCensus env req).compress
+  | .ok req =>
+    let result ← liftCoreM (runCensus req)
+    IO.println result.compress
