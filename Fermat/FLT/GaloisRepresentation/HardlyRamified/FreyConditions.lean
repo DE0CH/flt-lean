@@ -728,9 +728,9 @@ theorem WeierstrassCurve.exists_tame_quotient_of_nonsplit_padic_two
       (E := E.map (algebraMap ℚ ℚ_[2]))
       (R := (ValuativeRel.valuation ℚ_[2]).integer) hnonsplit
   set Tw : WeierstrassCurve ℚ_[2] :=
-    (E.map (algebraMap ℚ ℚ_[2])).quadraticTwist L with hTwdef
+    (E.map (algebraMap ℚ ℚ_[2])).quadraticTwist L
   set Mt : WeierstrassCurve ℚ_[2] :=
-    Tw.minimal (ValuativeRel.valuation ℚ_[2]).integer with hMtdef
+    Tw.minimal (ValuativeRel.valuation ℚ_[2]).integer
   set Cb : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ_[2]) :=
     ((Tw.exists_isMinimal
       (ValuativeRel.valuation ℚ_[2]).integer).choose.baseChange

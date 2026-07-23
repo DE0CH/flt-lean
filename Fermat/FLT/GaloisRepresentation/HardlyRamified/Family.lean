@@ -322,8 +322,8 @@ theorem adicArithFrob_rootsOfUnity_pow_of_ne {q : ℕ}
   classical
   -- the `q` of the Frobenius specification is the residue cardinality
   have hcard := GaloisRepresentation.natCard_residue_quotient_toHeightOneSpectrum hq
-  set v := hq.toHeightOneSpectrumRingOfIntegersRat with hv
-  set f := algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v) with hf
+  set v := hq.toHeightOneSpectrumRingOfIntegersRat
+  set f := algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v)
   -- the root of unity, its power identity, and its image under the chosen
   -- embedding of algebraic closures
   have htL : ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ (p ^ n)

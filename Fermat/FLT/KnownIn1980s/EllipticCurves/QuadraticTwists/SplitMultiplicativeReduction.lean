@@ -204,7 +204,7 @@ theorem nodePoly_map_root_relations [E.HasMultiplicativeReduction R]
         + residue R (54 * (E.integralModel R).b₆
           - 3 * (E.integralModel R).b₂ * (E.integralModel R).b₄
           + (E.integralModel R).a₂ * (E.integralModel R).c₄) = 0 := by
-  set P := (E.integralModel R).nodePoly.map (algebraMap R (ResidueField R)) with hP
+  set P := (E.integralModel R).nodePoly.map (algebraMap R (ResidueField R))
   have : Fact (Irreducible P) := ⟨hirr⟩
   have hPdeg2 : P.natDegree = 2 := natDegree_nodePoly_map E R
   have hρ2 : algebraMap (ResidueField R) (AdjoinRoot P)
@@ -415,7 +415,7 @@ theorem exists_quadraticTwist_hasSplitMultiplicativeReduction [E.HasMultiplicati
   -- (`irreducible_nodePoly_map`), and multiplicative reduction makes it separable
   -- (`separable_nodePoly_map`). Its root field `k' = k[X]/(P)` is therefore a separable
   -- quadratic extension of `k`.
-  set P := (E.integralModel R).nodePoly.map (algebraMap R (ResidueField R)) with hP
+  set P := (E.integralModel R).nodePoly.map (algebraMap R (ResidueField R))
   have hirr : Irreducible P := irreducible_nodePoly_map E R h
   have : Fact (Irreducible P) := ⟨hirr⟩
   have hPdeg2 : P.natDegree = 2 := natDegree_nodePoly_map E R

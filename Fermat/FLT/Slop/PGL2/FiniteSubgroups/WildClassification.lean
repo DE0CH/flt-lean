@@ -556,11 +556,10 @@ theorem partition_equation
   · exact Nat.div_pos (Subgroup.card_le_of_le Subgroup.le_normalizer) Nat.card_pos
   · exact normalizer_complement_divides_main p G P hG_p
   · intro i; right; rfl
-  · intro i; exact nonsplit_torus_ge_two p G hG_p P hn_p_gt1
+  · intro _; exact nonsplit_torus_ge_two p G hG_p P hn_p_gt1
   · exact group_order_gt_normalizer p G P hn_p_gt1
   ·
     have hpm3 : 3 ≤ pm := sylow_card_ge_3 p G hG_p P
-    have hnp_gt1 : np > 1 := hn_p_gt1
     have hz1_ge1 : 1 ≤ z1 := Nat.div_pos (Subgroup.card_le_of_le Subgroup.le_normalizer) Nat.card_pos
     have hpm_pos : (pm : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
     have hz1_pos : (z1 : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)

@@ -313,7 +313,7 @@ theorem valued_natCast_adicCompletionIntegers_eq_one {p : ℕ}
           hp.toHeightOneSpectrumRingOfIntegersRat)) :
       IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
         hp.toHeightOneSpectrumRingOfIntegersRat) = 1 := by
-  set v := hp.toHeightOneSpectrumRingOfIntegersRat with hv
+  set v := hp.toHeightOneSpectrumRingOfIntegersRat
   have h3compl : (3 : NumberField.RingOfIntegers ℚ) ∈
       v.asIdeal.primeCompl := by
     intro hmem
@@ -367,9 +367,9 @@ theorem adicArithFrob_rootsOfUnity_pow
   classical
   -- the `q` of the Frobenius specification is `p` (the residue cardinality)
   have hq := GaloisRepresentation.natCard_residue_quotient_toHeightOneSpectrum hp
-  set v := hp.toHeightOneSpectrumRingOfIntegersRat with hv
+  set v := hp.toHeightOneSpectrumRingOfIntegersRat
   set f := algebraMap ℚ
-    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) with hf
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)
   -- the root of unity, its power identity, and its image under the chosen
   -- embedding of algebraic closures
   have htL : ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ (3 ^ n)

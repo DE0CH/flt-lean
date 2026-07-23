@@ -327,7 +327,7 @@ theorem dihedral_of_hasCyclicPartition_odd (G : Type*) [Group G] [Fintype G] (n 
     (hN : Nat.card G = 2 * n)
     (h : HasCyclicPartition G [{d := n, f := 2}, {d := 2, f := 1}]) :
     Nonempty (G ≃* DihedralGroup n) := by
-  obtain ⟨H_list, hLen, hProps, _, hCover⟩ := h
+  obtain ⟨H_list, _, hProps, _, hCover⟩ := h
   obtain ⟨H0, hH0_opt, hH0_cyc, hH0_card, hH0_norm⟩ := hProps ⟨0, Nat.zero_lt_succ 1⟩
   obtain ⟨H1, hH1_opt, _, hH1_card, _⟩ := hProps ⟨1, Nat.lt_succ_self 1⟩
   haveI hH0_Normal : H0.Normal := Subgroup.normalizer_eq_top_iff.mp
@@ -376,7 +376,7 @@ theorem dihedral_of_hasCyclicPartition_even (G : Type*) [Group G] [Fintype G] (n
     (hN : Nat.card G = 2 * n)
     (h : HasCyclicPartition G [{d := n, f := 2}, {d := 2, f := 2}, {d := 2, f := 2}]) :
     Nonempty (G ≃* DihedralGroup n) := by
-  obtain ⟨H_list, hLen, hProps, _, hCover⟩ := h
+  obtain ⟨H_list, _, hProps, _, hCover⟩ := h
   obtain ⟨H0, hH0_opt, hH0_cyc, hH0_card, hH0_norm⟩ := hProps ⟨0, Nat.zero_lt_succ 2⟩
   obtain ⟨H1, hH1_opt, _, hH1_card, _⟩ := hProps ⟨1, Nat.lt_succ_of_le (Nat.le_succ 1)⟩
   obtain ⟨H2, hH2_opt, _, hH2_card, _⟩ := hProps ⟨2, Nat.lt_succ_self 2⟩
