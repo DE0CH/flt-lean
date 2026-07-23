@@ -3142,35 +3142,90 @@ theorem WeierstrassCurve.torsion_flat_of_good_reduction_mul
   dsimp only
   simp [hfa σ, hfb σ, map_add]
 
-/-- **The Katz–Mazur flat Hopf form, mixed characteristic** (sorry node; the
-mathematical core of flatness at `p`, stripped by
-`torsion_flat_package_of_flat_hopf_form` of all point bookkeeping — what remains
-is exactly the existence of a finite flat `R`-FORM of the torsion Hopf algebra):
-under the hypotheses of `torsion_flat_prolong_of_good_reduction_prime_pow`, the
-finite étale Hopf `K`-algebra `HK` of the `p ^ k`-torsion admits a finite flat
-Hopf `R`-form. Unlike the unramified case, `H` is NOT the normalization:
-division polynomials cannot produce `H` here (part of the torsion group scheme
-sits in the kernel of reduction, outside the affine chart), and the integral
-closure of `R` in `HK` is in general not a Hopf algebra (for `μ_p` over `ℤ_p`
-the normalization has a special fibre with two connected components of lengths
-`1` and `p - 1`, which is not a group scheme). The intended construction is the
-schematic one of [Katz–Mazur, *Arithmetic moduli of elliptic curves*,
-Thm 2.3.1]: good reduction makes the minimal Weierstrass equation an elliptic
-scheme `𝓔` over `R`; multiplication by `p ^ k` on `𝓔` is finite locally free of
-degree `p ^ (2k)` — the arithmetic input being that
-`(Φ n).eval X - ξ * (ΨSq n).eval X` is monic of degree `n²` over `R[ξ]`
-together with the fibrewise coprimality `isCoprime_Φ_ΨSq` (proven,
+set_option backward.isDefEq.respectTransparency false in
+omit [IsDomain R] [IsDiscreteValuationRing R] [E.IsElliptic]
+  [E.HasGoodReduction R] in
+/-- **Grothendieck full faithfulness for torsion points** (sorry node; the
+COMPARISON half of the Katz–Mazur leaf, curve-generic in content): two finite
+étale Hopf `K`-algebras whose `Kˢᵉᵖ`-point groups are `Gal(Kˢᵉᵖ/K)`-equivariantly
+isomorphic to the same `m`-torsion Galois module are isomorphic as Hopf algebras.
+Intended proof: this is the full faithfulness of the Grothendieck
+anti-equivalence between finite étale Hopf `K`-algebras and finite Galois
+modules; concretely, the composite points-bijection
+`(HK₁ →ₐ[K] Kˢᵉᵖ) ≃ (HK₂ →ₐ[K] Kˢᵉᵖ)` is equivariant, so it descends through
+the equivariant-functions construction of the `GaloisEtalePackage` section
+(both algebras embed, via evaluation of points, into the equivariant functions
+on their common point group with values in a splitting subextension `L`, and
+the two images coincide because the point sets match equivariantly). -/
+theorem WeierstrassCurve.exists_bialgEquiv_of_torsion_points_equiv
+    (m : ℕ)
+    (HK₁ : Type*) [CommRing HK₁] [HopfAlgebra K HK₁]
+    [Module.Finite K HK₁] [Algebra.Etale K HK₁]
+    (HK₂ : Type*) [CommRing HK₂] [HopfAlgebra K HK₂]
+    [Module.Finite K HK₂] [Algebra.Etale K HK₂]
+    (f₁ : Additive (WithConv (HK₁ →ₐ[K] Ksep)) ≃+
+      AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))
+    (hf₁ : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : HK₁ →ₐ[K] Ksep),
+      (f₁ (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
+        Affine.Point.map σ.toAlgHom (f₁ (Additive.ofMul (WithConv.toConv φ))))
+    (f₂ : Additive (WithConv (HK₂ →ₐ[K] Ksep)) ≃+
+      AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))
+    (hf₂ : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : HK₂ →ₐ[K] Ksep),
+      (f₂ (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
+        Affine.Point.map σ.toAlgHom (f₂ (Additive.ofMul (WithConv.toConv φ)))) :
+    Nonempty (HK₁ ≃ₐc[K] HK₂) :=
+  sorry
+
+/-- **The Katz–Mazur flat model, mixed characteristic** (sorry node; the
+EXISTENCE half of the Katz–Mazur leaf — the flat-package statement with no
+reference algebra to compare against): when the prime `p` is not invertible in
+`R` but nonzero in `K`, SOME finite flat Hopf `R`-algebra has étale generic
+fibre whose `Kˢᵉᵖ`-points are, `Gal(Kˢᵉᵖ/K)`-equivariantly, the
+`p ^ k`-torsion of `E(Kˢᵉᵖ)`. Unlike the unramified case, `H` is NOT a
+normalization: division polynomials cannot produce `H` here (part of the
+torsion group scheme sits in the kernel of reduction, outside the affine
+chart), and the integral closure of `R` in the torsion algebra is in general
+not a Hopf algebra (for `μ_p` over `ℤ_p` the normalization has a special fibre
+with two connected components of lengths `1` and `p - 1`, which is not a group
+scheme). The intended construction is the schematic one of [Katz–Mazur,
+*Arithmetic moduli of elliptic curves*, Thm 2.3.1]: good reduction makes the
+minimal Weierstrass equation an elliptic scheme `𝓔` over `R`; multiplication
+by `p ^ k` on `𝓔` is finite locally free of degree `p ^ (2k)` — the arithmetic
+input being that `(Φ n).eval X - ξ * (ΨSq n).eval X` is monic of degree `n²`
+over `R[ξ]` together with the fibrewise coprimality `isCoprime_Φ_ΨSq` (proven,
 `Fermat.FLT.EllipticCurve.PhiPsiCoprime`) — and `H` is the affine algebra of
 its kernel `𝓔[p ^ k]`, glued from the division-polynomial chart and a
-formal-group chart `R[[T]]/([p ^ k](T))` at the origin; the identification of
-`K ⊗[R] H` with `HK` is Cartier's theorem (étaleness of the generic fibre) plus
-the matching of `Kˢᵉᵖ`-points with the torsion, transported through `f`/`hf`
-(Galois descent: two finite étale `K`-Hopf algebras with equivariantly
-isomorphic point groups are isomorphic). For the Frey curve application
-(`R = ℤ_(p)`, `K = ℚ`, `k = 1`) the same object is more concretely the kernel
-of `[p]` on the good-reduction Weierstrass model; the `k = 1` specialization
-admits no genuine shortcut past the origin chart, because the connected
-component of `𝓔[p]` (where the model is NOT étale) is present for every `k`. -/
+formal-group chart `R[[T]]/([p ^ k](T))` at the origin; étaleness of the
+generic fibre is Cartier's theorem, and its points match the torsion by the
+division-polynomial dictionary on the affine chart. For the Frey curve
+application (`R = ℤ_(p)`, `K = ℚ`, `k = 1`) the same object is more concretely
+the kernel of `[p]` on the good-reduction Weierstrass model; the `k = 1`
+specialization admits no genuine shortcut past the origin chart, because the
+connected component of `𝓔[p]` (where the model is NOT étale) is present for
+every `k`. -/
+theorem WeierstrassCurve.exists_torsion_flat_model_of_good_reduction_prime_pow
+    (p : ℕ) (hp : p.Prime) (hpu : ¬IsUnit (p : R)) (k : ℕ) (hk : k ≠ 0)
+    (hpK : (p : K) ≠ 0) :
+    ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
+      (_ : Module.Finite R H) (_ : Module.Flat R H)
+      (_ : Algebra.Etale K (K ⊗[R] H))
+      (g : Additive (WithConv (K ⊗[R] H →ₐ[K] Ksep)) ≃+
+        AddSubgroup.torsionBy (E⁄Ksep).Point ((p ^ k : ℕ) : ℤ)),
+      ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : K ⊗[R] H →ₐ[K] Ksep),
+        (g (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
+          Affine.Point.map σ.toAlgHom (g (Additive.ofMul (WithConv.toConv φ))) :=
+  sorry
+
+/-- **The Katz–Mazur flat Hopf form, mixed characteristic** (DECOMPOSED
+2026-07-23 into the existence leaf
+`exists_torsion_flat_model_of_good_reduction_prime_pow` — the Katz–Mazur
+2.3.1 kernel model with equivariant torsion points, see its docstring — and
+the comparison leaf `exists_bialgEquiv_of_torsion_points_equiv` — Grothendieck
+full faithfulness: the given `HK` and the model's generic fibre have
+equivariantly isomorphic point groups, hence are Hopf-isomorphic; the assembly
+below is proven): under the hypotheses of
+`torsion_flat_prolong_of_good_reduction_prime_pow`, the finite étale Hopf
+`K`-algebra `HK` of the `p ^ k`-torsion admits a finite flat Hopf `R`-form. -/
 theorem WeierstrassCurve.exists_finite_flat_hopf_form_of_good_reduction_prime_pow
     (p : ℕ) (hp : p.Prime) (hpu : ¬IsUnit (p : R)) (k : ℕ) (hk : k ≠ 0)
     (hpK : (p : K) ≠ 0)
@@ -3183,8 +3238,18 @@ theorem WeierstrassCurve.exists_finite_flat_hopf_form_of_good_reduction_prime_po
         Affine.Point.map σ.toAlgHom (f (Additive.ofMul (WithConv.toConv φ)))) :
     ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
       (_ : Module.Finite R H) (_ : Module.Flat R H),
-      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) :=
-  sorry
+      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) := by
+  obtain ⟨H, iCR, iHopf, iFin, iFlat, iEt, g, hg⟩ :=
+    WeierstrassCurve.exists_torsion_flat_model_of_good_reduction_prime_pow
+      R K E Ksep p hp hpu k hk hpK
+  letI := iCR
+  letI := iHopf
+  letI := iFin
+  letI := iFlat
+  haveI := iEt
+  exact ⟨H, iCR, iHopf, iFin, iFlat,
+    WeierstrassCurve.exists_bialgEquiv_of_torsion_points_equiv K E Ksep
+      (p ^ k) (K ⊗[R] H) HK g hg f hf⟩
 
 /-- **The Katz–Mazur flat prolongation, mixed characteristic** (DECOMPOSED
 2026-07-22 into the flat Hopf-form leaf
