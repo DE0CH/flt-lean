@@ -78,9 +78,19 @@ import Mathlib.LinearAlgebra.Charpoly.BaseChange
 -- `ℤ_ℓ[[x₁,…,x_g]]`; they appear in exposed signatures).
 public import Mathlib.RingTheory.MvPowerSeries.Inverse
 public import Mathlib.RingTheory.Ideal.Height
+-- single-variable power series: the variable-splitting leaf
+-- `nonempty_ringEquiv_mvPowerSeries_powerSeries` is stated on them.
+public import Mathlib.RingTheory.PowerSeries.Basic
 -- Krull's height theorem, consumed by the PROVEN Krull glue
 -- `exists_isPrime_lt_maximalIdeal_of_mvPowerSeries_presentation`.
 import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
+-- proof-only: the Hilbert-basis instance `IsNoetherianRing R⟦X⟧`, the
+-- domain instances for (multivariate) power series — consumed by the
+-- PROVEN inductions `isNoetherianRing_mvPowerSeries` and
+-- `exists_isPrime_chain_mvPowerSeries`.
+import Mathlib.RingTheory.PowerSeries.Ideal
+import Mathlib.RingTheory.PowerSeries.NoZeroDivisors
+import Mathlib.RingTheory.MvPowerSeries.NoZeroDivisors
 -- proof-only imports for the topology glue
 -- `isModuleTopology_of_isAdic_maximalIdeal`: compactness of `ℤ_ℓ`,
 -- finite presentations, open-subgroup closedness, Noetherian stabilization.
@@ -736,39 +746,150 @@ theorem exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated
       RingHom.ker φ = Ideal.span (Set.range f) :=
   sorry
 
-/-- **Noetherianness of multivariate power series** (sorry node, pure
-commutative algebra — a mathlib gap: the single-variable instance
-`IsNoetherianRing R⟦X⟧` exists in the pin, the finitely-many-variables
-version does not): power series in finitely many variables over a
-Noetherian commutative ring form a Noetherian ring. Provable by
-induction on the number of variables along the ring isomorphism
-`R[[x₀,…,x_n]] ≅ (R[[x₀,…,x_{n−1}]])[[x_n]]`, the single-variable step
-being mathlib's Hilbert-basis-style instance. Stated over an arbitrary
+/-- **Variable-splitting isomorphism for power series** (sorry node,
+pure commutative algebra — the missing mathlib bridge between
+multivariate power series in `n + 1` variables and single-variable
+power series over multivariate power series in `n` variables):
+separating one variable. Provable by reindexing coefficients along the
+equivalence `(Fin (n + 1) →₀ ℕ) ≃ ℕ × (Fin n →₀ ℕ)` (split off the
+last exponent), multiplicativity being the Cauchy-product
+rearrangement of the convolution over split monomials. Stated over an
+arbitrary commutative base ring: both consumers below induct with a
+changing base. -/
+theorem nonempty_ringEquiv_mvPowerSeries_powerSeries {R : Type*}
+    [CommRing R] (n : ℕ) :
+    Nonempty (MvPowerSeries (Fin (n + 1)) R ≃+*
+      PowerSeries (MvPowerSeries (Fin n) R)) :=
+  sorry
+
+/-- **Noetherianness of multivariate power series** (PROVEN 2026-07-23
+modulo the variable-splitting leaf above — a mathlib gap: the
+single-variable instance `IsNoetherianRing R⟦X⟧` exists in the pin, the
+finitely-many-variables version does not): power series in finitely
+many variables over a Noetherian commutative ring form a Noetherian
+ring, by induction on the number of variables along the splitting
+isomorphism, the single-variable step being mathlib's
+Hilbert-basis-style instance and the base case the constants
+isomorphism `MvPowerSeries (Fin 0) R ≅ R`. Stated over an arbitrary
 Noetherian base (rather than `ℤ_ℓ`) because the induction changes the
 base at every step. -/
 theorem isNoetherianRing_mvPowerSeries {R : Type*} [CommRing R]
     [IsNoetherianRing R] (g : ℕ) :
-    IsNoetherianRing (MvPowerSeries (Fin g) R) :=
-  sorry
+    IsNoetherianRing (MvPowerSeries (Fin g) R) := by
+  induction g with
+  | zero =>
+    exact isNoetherianRing_of_ringEquiv R (RingEquiv.ofBijective
+      (MvPowerSeries.C : R →+* MvPowerSeries (Fin 0) R)
+      ⟨MvPowerSeries.C_injective, MvPowerSeries.C_surjective⟩)
+  | succ n ih =>
+    obtain ⟨e⟩ := nonempty_ringEquiv_mvPowerSeries_powerSeries (R := R) n
+    haveI := ih
+    exact isNoetherianRing_of_ringEquiv _ e.symm
 
-/-- **Prime chain in `ℤ_ℓ[[x₁,…,x_g]]`** (sorry node, pure commutative
-algebra): a strictly increasing chain of `g + 1` primes inside the
-maximal ideal. The intended chain is
-`(0) ⊂ (x₁) ⊂ (x₁,x₂) ⊂ ⋯ ⊂ (x₁,…,x_g)`: each `(x₁,…,xᵢ)` is the
-kernel of the kill-variables substitution
-`ℤ_ℓ[[x₁,…,x_g]] → ℤ_ℓ[[x_{i+1},…,x_g]]` (`MvPowerSeries.subst`,
-`x_j ↦ 0` for `j ≤ i`, `x_j ↦ x_j` for `j > i`; the kernel is the span
-by splitting each monomial at its least killed variable), and the
-target is a power series ring over the domain `ℤ_ℓ`, hence a domain
-(`MvPowerSeries.NoZeroDivisors`), so the kernel is prime; strictness is
-`x_{i+1} ∈ (x₁,…,x_{i+1}) \ (x₁,…,xᵢ)`, and the top link consists of
-non-units. -/
+/-- **Prime chain in `ℤ_ℓ[[x₁,…,x_g]]`** (PROVEN 2026-07-23 modulo the
+variable-splitting leaf `nonempty_ringEquiv_mvPowerSeries_powerSeries`):
+a strictly increasing chain of `g + 1` primes inside the maximal ideal
+— morally `(0) ⊂ (x_g) ⊂ (x_{g−1}, x_g) ⊂ ⋯ ⊂ (x₁,…,x_g)`.
+
+Proof, by induction on `g`: for `g = 0` the constant chain `(⊥)` works
+(the ring is a domain by `MvPowerSeries`' `NoZeroDivisors` instance).
+For the step, split off one variable: pull the chain of the `n`-variable
+ring back along the (surjective) constant-coefficient map of the
+single-variable power series ring over it — pullback along a surjection
+is strictly monotone and preserves primality — and prepend `⊥` (prime:
+power series over a domain form a domain; strictly below the pullback
+of the bottom link, which contains `X` while `⊥` does not); transport
+the resulting chain along the splitting isomorphism; the top link stays
+inside the maximal ideal because a power series with non-unit constant
+coefficient is a non-unit. -/
 theorem exists_isPrime_chain_mvPowerSeries (g : ℕ) :
     ∃ c : Fin (g + 1) → Ideal (MvPowerSeries (Fin g) ℤ_[ℓ]),
       StrictMono c ∧ (∀ i, (c i).IsPrime) ∧
       c (Fin.last g) ≤
-        IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) ℤ_[ℓ]) :=
-  sorry
+        IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) ℤ_[ℓ]) := by
+  induction g with
+  | zero =>
+    haveI : IsDomain (MvPowerSeries (Fin 0) ℤ_[ℓ]) :=
+      NoZeroDivisors.to_isDomain _
+    exact ⟨fun _ => ⊥, fun i j hij => (hij.ne (Fin.ext (by omega))).elim,
+      fun _ => Ideal.isPrime_bot, bot_le⟩
+  | succ n ih =>
+    obtain ⟨c, hmono, hprime, hle⟩ := ih
+    obtain ⟨e⟩ :=
+      nonempty_ringEquiv_mvPowerSeries_powerSeries (R := ℤ_[ℓ]) n
+    haveI : IsDomain (MvPowerSeries (Fin n) ℤ_[ℓ]) :=
+      NoZeroDivisors.to_isDomain _
+    -- the pulled-back chain over the split ring, with `⊥` prepended
+    let c' : Fin (n + 1 + 1) →
+        Ideal (PowerSeries (MvPowerSeries (Fin n) ℤ_[ℓ])) :=
+      Fin.cases ⊥ fun i => (c i).comap
+        (PowerSeries.constantCoeff (R := MvPowerSeries (Fin n) ℤ_[ℓ]))
+    have hc'zero : c' 0 = ⊥ := rfl
+    have hc'succ : ∀ i : Fin (n + 1), c' i.succ = (c i).comap
+        (PowerSeries.constantCoeff (R := MvPowerSeries (Fin n) ℤ_[ℓ])) :=
+      fun i => rfl
+    -- pulling back along the (surjective) constant-coefficient map is
+    -- strictly monotone
+    have hccSM : StrictMono
+        fun I : Ideal (MvPowerSeries (Fin n) ℤ_[ℓ]) => I.comap
+          (PowerSeries.constantCoeff (R := MvPowerSeries (Fin n) ℤ_[ℓ])) :=
+      Monotone.strictMono_of_injective (fun _ _ h => Ideal.comap_mono h)
+        (Ideal.comap_injective_of_surjective _
+          PowerSeries.constantCoeff_surj)
+    have hSM : StrictMono c' := by
+      rw [Fin.strictMono_iff_lt_succ]
+      intro i
+      induction i using Fin.induction with
+      | zero =>
+        rw [Fin.castSucc_zero, hc'zero, hc'succ 0]
+        refine bot_lt_iff_ne_bot.mpr fun hbot => ?_
+        have hX : PowerSeries.X ∈ (c 0).comap
+            (PowerSeries.constantCoeff (R := MvPowerSeries (Fin n) ℤ_[ℓ])) := by
+          show PowerSeries.constantCoeff (R := MvPowerSeries (Fin n) ℤ_[ℓ])
+            PowerSeries.X ∈ c 0
+          rw [PowerSeries.constantCoeff_X]
+          exact (c 0).zero_mem
+        rw [hbot] at hX
+        exact PowerSeries.X_ne_zero (Ideal.mem_bot.mp hX)
+      | succ j _ =>
+        rw [← Fin.succ_castSucc, hc'succ j.castSucc, hc'succ j.succ]
+        exact hccSM (hmono (Fin.castSucc_lt_succ (i := j)))
+    -- primality along the pulled-back chain
+    have hprime' : ∀ i, (c' i).IsPrime := by
+      intro i
+      induction i using Fin.induction with
+      | zero =>
+        rw [hc'zero]
+        exact Ideal.isPrime_bot
+      | succ j _ =>
+        rw [hc'succ j]
+        haveI := hprime j
+        exact Ideal.IsPrime.comap _
+    -- transport along the splitting isomorphism
+    have heSM : StrictMono
+        fun I : Ideal (PowerSeries (MvPowerSeries (Fin n) ℤ_[ℓ])) =>
+          I.comap (e : MvPowerSeries (Fin (n + 1)) ℤ_[ℓ] →+*
+            PowerSeries (MvPowerSeries (Fin n) ℤ_[ℓ])) :=
+      Monotone.strictMono_of_injective (fun _ _ h => Ideal.comap_mono h)
+        (Ideal.comap_injective_of_surjective _ e.surjective)
+    refine ⟨fun i => (c' i).comap
+      (e : MvPowerSeries (Fin (n + 1)) ℤ_[ℓ] →+*
+        PowerSeries (MvPowerSeries (Fin n) ℤ_[ℓ])),
+      heSM.comp hSM, fun i => ?_, ?_⟩
+    · haveI := hprime' i
+      exact Ideal.IsPrime.comap _
+    · intro x hx
+      rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+      intro hu
+      have hx' : PowerSeries.constantCoeff (R := MvPowerSeries (Fin n) ℤ_[ℓ])
+          (e x) ∈ c (Fin.last n) := by
+        have hmem : e x ∈ c' (Fin.last (n + 1)) := hx
+        rw [← Fin.succ_last, hc'succ (Fin.last n)] at hmem
+        exact hmem
+      have hnonu := hle hx'
+      rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff] at hnonu
+      exact hnonu ((hu.map e).map
+        (PowerSeries.constantCoeff (R := MvPowerSeries (Fin n) ℤ_[ℓ])))
 
 /-- **Height of the maximal ideal of `ℤ_ℓ[[x₁,…,x_g]]`** (PROVEN
 2026-07-23 modulo the prime-chain leaf above): at least `g`. Walking up
