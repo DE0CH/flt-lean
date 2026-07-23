@@ -132,7 +132,7 @@
     "module": "Fermat.FLT.FreyCurve.MazurTorsion",
     "text": "`FreyPackage.exists_quotient_curve_point` (stated 2026-07-17) — the Vélu quotient leaf: a stable line with trivial quotient action produces `E'/ℚ` with full rational 2-torsion and a rational `p`-point (quotient by the rational subgroup; quantified over Weierstrass models)",
     "fullname": "FreyPackage.exists_quotient_curve_point",
-    "wip": true
+    "wip": false
   },
   {
     "name": "WeierstrassCurve.exists_point_eq_baseChange_of_fixed",
@@ -1785,5 +1785,13 @@
     "wip": false,
     "text": "`trivial_component_vanishes_on_localInertia_at_three` — Fontaine's flat/peu-ramifié bound at 3 — 2026-07-23",
     "parent": "GaloisRepresentation.IsHardlyRamified.trivial_component_hom_vanishes"
+  },
+  {
+    "name": "exists_quotient_isogeny",
+    "fullname": "WeierstrassCurve.exists_quotient_isogeny",
+    "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+    "wip": false,
+    "text": "`exists_quotient_isogeny` — the curve-independent Vélu core (Vélu 1971 / AEC III.4.12): finite Galois-stable subgroup ⟹ quotient elliptic curve + equivariant hom with the prescribed kernel; no isogeny material on the pin or in the reference project; successor task = a Vélu/isogeny mini-theory feeding this one statement (fake-decomposition warning recorded) — 2026-07-23",
+    "parent": "WeierstrassCurve.exists_quotient_curve_point"
   }
 ]
