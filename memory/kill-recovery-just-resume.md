@@ -23,8 +23,10 @@ kills). Pre-merging committed branches was merely unnecessary (the
 completion-time merge handles it); the reverts were actively harmful.
 
 **How to apply:** On any fleet kill: touch NOTHING in the worktrees,
-merge nothing, then SendMessage each dead agent ("you were killed
-mid-call; your worktree is exactly as you left it; continue").
+merge nothing, then SendMessage each dead agent with the simple prompt
+**"continue"** (Deyao, 2026-07-23: no per-agent state summaries — the
+agent's transcript already has everything; a resume message that
+narrates state is redundant at best and misleading at worst).
 Integration (merge, pool free, queue pop) happens only at an agent's
 NORMAL completion, exactly as in [[flt-fleet-13-worktree-protocol]].
 
