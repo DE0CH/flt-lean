@@ -72,10 +72,11 @@ here. This file provides:
   `exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries`
   (the Euler product for the `χ`-twisted Dedekind zeta function in
   exponential form — itself PROVEN, through the proven norm-fibration
-  `tsum_dirichletCharacter_mul_cpow_neg_absNorm_eq_LSeries`, from the
-  sorry leaf
+  `tsum_dirichletCharacter_mul_cpow_neg_absNorm_eq_LSeries` and
   `tprod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum`, the
-  ideal-theoretic Euler product: pure unique factorization) and
+  ideal-theoretic Euler product, now also PROVEN — pure unique
+  factorization, mirroring mathlib's `ℕ`-indexed machinery on the
+  ideal monoid; see its docstring) and
   `exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le` (good
   behaviour of the twisted ideal `L`-series on `(1, 2]` — itself
   PROVEN, with the away-from-`1` positivity supplied by the Euler
@@ -1896,8 +1897,23 @@ term `k ↦ χ(k)·k^{-w}` (for `w ≠ 0`; at `k = 0` both sides vanish). -/
 theorem dirichletCharacter_mul_cpow_natCast_mul {ℓ : ℕ} (χ : DirichletCharacter ℂ ℓ)
     {w : ℂ} (hw : w ≠ 0) (m n : ℕ) :
     χ ((m * n : ℕ) : ZMod ℓ) * ((m * n : ℕ) : ℂ) ^ (-w) =
-      (χ (m : ZMod ℓ) * (m : ℂ) ^ (-w)) * (χ (n : ZMod ℓ) * (n : ℂ) ^ (-w)) :=
-  sorry
+      (χ (m : ZMod ℓ) * (m : ℂ) ^ (-w)) * (χ (n : ZMod ℓ) * (n : ℂ) ^ (-w)) := by
+  have hw' : -w ≠ 0 := neg_ne_zero.mpr hw
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · simp only [Nat.zero_mul, Nat.cast_zero, Complex.zero_cpow hw']
+    ring
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp only [Nat.mul_zero, Nat.cast_zero, Complex.zero_cpow hw']
+    ring
+  have hcast : ((m * n : ℕ) : ℂ) = ((m : ℝ) : ℂ) * ((n : ℝ) : ℂ) := by
+    push_cast
+    ring
+  have hcpow : ((m * n : ℕ) : ℂ) ^ (-w) = (m : ℂ) ^ (-w) * (n : ℂ) ^ (-w) := by
+    rw [hcast,
+      Complex.mul_cpow_ofReal_nonneg (Nat.cast_nonneg m) (Nat.cast_nonneg n)]
+    norm_cast
+  rw [Nat.cast_mul, map_mul, hcpow]
+  ring
 
 /-- Iterated form of `dirichletCharacter_mul_cpow_natCast_mul`: the
 twisted power term at `m ^ e * n` splits off the `e`-th power of the
@@ -1923,8 +1939,29 @@ theorem summable_norm_dirichletCharacter_mul_cpow_neg_absNorm
     (F : Type*) [Field F] [NumberField F] {ℓ : ℕ} (χ : DirichletCharacter ℂ ℓ)
     {w : ℂ} (hw : 1 < w.re) :
     Summable (fun I : {I : Ideal (𝓞 F) // I ≠ ⊥} =>
-      ‖χ ((Ideal.absNorm I.1 : ℕ) : ZMod ℓ) * (Ideal.absNorm I.1 : ℂ) ^ (-w)‖) :=
-  sorry
+      ‖χ ((Ideal.absNorm I.1 : ℕ) : ZMod ℓ) * (Ideal.absNorm I.1 : ℂ) ^ (-w)‖) := by
+  have habs : Summable (fun I : {I : Ideal (𝓞 F) // I ≠ ⊥} =>
+      (Ideal.absNorm I.1 : ℝ) ^ (-w.re)) := by
+    have h2 := tsum_rpow_neg_absNorm_ne_top F hw
+    have h3 : ∀ I : {I : Ideal (𝓞 F) // I ≠ ⊥},
+        (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-w.re) =
+          (((Ideal.absNorm I.1 : NNReal) ^ (-w.re) : NNReal) : ℝ≥0∞) := by
+      intro I
+      rw [ENNReal.coe_rpow_of_ne_zero (by
+          exact_mod_cast (fun h => I.2 (Ideal.absNorm_eq_zero_iff.mp h) :
+            Ideal.absNorm I.1 ≠ 0)),
+        ENNReal.coe_natCast]
+    rw [tsum_congr h3] at h2
+    have h4 := ENNReal.tsum_coe_ne_top_iff_summable.mp h2
+    refine (NNReal.summable_coe.mpr h4).congr ?_
+    intro I
+    rw [NNReal.coe_rpow, NNReal.coe_natCast]
+  refine Summable.of_nonneg_of_le (fun _ => norm_nonneg _) (fun I => ?_) habs
+  have hNpos : 0 < Ideal.absNorm I.1 :=
+    Nat.pos_of_ne_zero fun h => I.2 (Ideal.absNorm_eq_zero_iff.mp h)
+  rw [norm_mul, Complex.norm_natCast_cpow_of_pos hNpos, Complex.neg_re]
+  exact mul_le_of_le_one_left (Real.rpow_nonneg (Nat.cast_nonneg _) _)
+    (DirichletCharacter.norm_le_one χ _)
 
 open IsDedekindDomain in
 /-- **Finite-level Euler product over the ideals of `𝓞 F`**: for a
@@ -1942,25 +1979,186 @@ theorem prod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum_factored
         (Ideal.absNorm P.asIdeal : ℂ) ^ (-w))⁻¹) =
       ∑' I : {I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
           ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S},
-        χ ((Ideal.absNorm I.1.1 : ℕ) : ZMod ℓ) * (Ideal.absNorm I.1.1 : ℂ) ^ (-w) :=
-  sorry
+        χ ((Ideal.absNorm I.1.1 : ℕ) : ZMod ℓ) * (Ideal.absNorm I.1.1 : ℂ) ^ (-w) := by
+  classical
+  have hw0 : w ≠ 0 := fun h => by rw [h, Complex.zero_re] at hw; linarith
+  have hTop : (⊤ : Ideal (𝓞 F)) ≠ ⊥ := by
+    intro h
+    exact one_ne_zero (Ideal.mem_bot.mp (h ▸ Submodule.mem_top (x := (1 : 𝓞 F))))
+  induction S using Finset.induction_on with
+  | empty =>
+      have hset : {I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+          ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 →
+            Q ∈ (∅ : Finset (HeightOneSpectrum (𝓞 F)))} =
+          {(⟨⊤, hTop⟩ : {I : Ideal (𝓞 F) // I ≠ ⊥})} := by
+        ext I
+        simp only [Set.mem_setOf_eq, Set.mem_singleton_iff]
+        constructor
+        · intro hI
+          by_contra hne
+          have hItop : I.1 ≠ ⊤ := fun h => hne (Subtype.ext h)
+          obtain ⟨Q, hQ⟩ := exists_heightOneSpectrum_dvd I.2 hItop
+          exact absurd (hI Q hQ) (Finset.notMem_empty Q)
+        · rintro rfl Q hQ
+          exact absurd (top_le_iff.mp (Ideal.le_of_dvd hQ)) Q.isPrime.ne_top
+      rw [Finset.prod_empty, hset,
+        tsum_singleton (⟨⊤, hTop⟩ : {I : Ideal (𝓞 F) // I ≠ ⊥})
+          (fun J => χ ((Ideal.absNorm J.1 : ℕ) : ZMod ℓ) *
+            (Ideal.absNorm J.1 : ℂ) ^ (-w))]
+      simp [Ideal.absNorm_top, Complex.one_cpow]
+  | @insert P₀ S hP₀ ih =>
+      -- the Euler factor at `P₀` has norm `< 1`
+      have hN2 : 2 ≤ Ideal.absNorm P₀.asIdeal := by
+        rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+        exact two_le_natCard_quotient P₀
+      have hnormlt : ‖χ ((Ideal.absNorm P₀.asIdeal : ℕ) : ZMod ℓ) *
+          (Ideal.absNorm P₀.asIdeal : ℂ) ^ (-w)‖ < 1 := by
+        have hNpos : 0 < Ideal.absNorm P₀.asIdeal := by omega
+        rw [norm_mul, Complex.norm_natCast_cpow_of_pos hNpos, Complex.neg_re]
+        calc ‖χ ((Ideal.absNorm P₀.asIdeal : ℕ) : ZMod ℓ)‖ *
+              (Ideal.absNorm P₀.asIdeal : ℝ) ^ (-w.re)
+            ≤ (Ideal.absNorm P₀.asIdeal : ℝ) ^ (-w.re) :=
+              mul_le_of_le_one_left (Real.rpow_nonneg (Nat.cast_nonneg _) _)
+                (DirichletCharacter.norm_le_one χ _)
+          _ < 1 := Real.rpow_lt_one_of_one_lt_of_neg
+              (by exact_mod_cast Nat.lt_of_lt_of_le Nat.one_lt_two hN2)
+              (by linarith)
+      have hPne0 : P₀.asIdeal ≠ 0 := fun h => P₀.ne_bot (h.trans Ideal.zero_eq_bot)
+      have hPnotdvdmem : ∀ J : {I : Ideal (𝓞 F) // I ≠ ⊥},
+          (∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ J.1 → Q ∈ S) →
+          ¬P₀.asIdeal ∣ J.1 := fun J hJ hdvd => hP₀ (hJ P₀ hdvd)
+      -- the unique `P₀`-power decomposition of the `insert P₀ S`-factored ideals
+      have hmapmem : ∀ (e : ℕ) (J : {I : Ideal (𝓞 F) // I ≠ ⊥}),
+          (∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ J.1 → Q ∈ S) →
+          (P₀.asIdeal ^ e * J.1 ≠ ⊥ ∧
+            ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ P₀.asIdeal ^ e * J.1 →
+              Q ∈ insert P₀ S) := by
+        intro e J hJ
+        constructor
+        · exact fun h => mul_ne_zero (pow_ne_zero e hPne0)
+            (fun hh => J.2 (hh.trans Ideal.zero_eq_bot))
+            (h.trans Ideal.zero_eq_bot.symm)
+        · intro Q hQ
+          rcases (Q.prime.dvd_mul).mp hQ with h | h
+          · have hQP : Q.asIdeal ∣ P₀.asIdeal := Q.prime.dvd_of_dvd_pow h
+            have hle : P₀.asIdeal ≤ Q.asIdeal := Ideal.le_of_dvd hQP
+            have hQeq : Q = P₀ := HeightOneSpectrum.ext
+              (P₀.isMaximal.eq_of_le Q.isPrime.ne_top hle).symm
+            rw [hQeq]
+            exact Finset.mem_insert_self P₀ S
+          · exact Finset.mem_insert_of_mem (hJ Q h)
+      let f : ℕ × ↥{I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+          ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S} →
+          ↥{I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+            ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ insert P₀ S} :=
+        fun p => ⟨⟨P₀.asIdeal ^ p.1 * p.2.1.1, (hmapmem p.1 p.2.1 p.2.2).1⟩,
+          (hmapmem p.1 p.2.1 p.2.2).2⟩
+      have hbij : Function.Bijective f := by
+        constructor
+        · rintro ⟨e, J⟩ ⟨e', J'⟩ hEq
+          have h1 : P₀.asIdeal ^ e * J.1.1 = P₀.asIdeal ^ e' * J'.1.1 :=
+            congrArg (fun x => x.1.1) hEq
+          obtain ⟨h2, h3⟩ := eq_and_eq_of_pow_mul_eq_pow_mul P₀
+            (hPnotdvdmem J.1 J.2) (hPnotdvdmem J'.1 J'.2) h1
+          exact Prod.ext h2 (Subtype.ext (Subtype.ext h3))
+        · rintro ⟨⟨I, hI0⟩, hImem⟩
+          obtain ⟨e, J, hJdvd, hIeq⟩ := WfDvdMonoid.max_power_factor
+            (fun h => hI0 (h.trans Ideal.zero_eq_bot)) P₀.irreducible
+          have hJ0 : J ≠ ⊥ := by
+            intro h
+            apply hI0
+            rw [hIeq, h, Ideal.mul_bot]
+          have hJmem : ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ J → Q ∈ S := by
+            intro Q hQ
+            have hQI : Q.asIdeal ∣ I := by
+              rw [hIeq]
+              exact hQ.mul_left _
+            rcases Finset.mem_insert.mp (hImem Q hQI) with h | h
+            · rw [h] at hQ
+              exact absurd hQ hJdvd
+            · exact h
+          exact ⟨⟨e, ⟨⟨J, hJ0⟩, hJmem⟩⟩, Subtype.ext (Subtype.ext hIeq.symm)⟩
+      -- the twisted term is completely multiplicative along the decomposition
+      have hgf : ∀ p : ℕ × ↥{I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+          ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S},
+          χ ((Ideal.absNorm (f p).1.1 : ℕ) : ZMod ℓ) *
+            (Ideal.absNorm (f p).1.1 : ℂ) ^ (-w) =
+          (χ ((Ideal.absNorm P₀.asIdeal : ℕ) : ZMod ℓ) *
+            (Ideal.absNorm P₀.asIdeal : ℂ) ^ (-w)) ^ p.1 *
+          (χ ((Ideal.absNorm p.2.1.1 : ℕ) : ZMod ℓ) *
+            (Ideal.absNorm p.2.1.1 : ℂ) ^ (-w)) := by
+        rintro ⟨e, J⟩
+        show χ ((Ideal.absNorm (P₀.asIdeal ^ e * J.1.1) : ℕ) : ZMod ℓ) *
+            (Ideal.absNorm (P₀.asIdeal ^ e * J.1.1) : ℂ) ^ (-w) = _
+        rw [map_mul, map_pow]
+        exact dirichletCharacter_mul_cpow_natCast_pow_mul χ hw0 _ _ e
+      -- summability inputs for the product of the two series
+      have hgeom : Summable (fun e : ℕ =>
+          ‖(χ ((Ideal.absNorm P₀.asIdeal : ℕ) : ZMod ℓ) *
+            (Ideal.absNorm P₀.asIdeal : ℂ) ^ (-w)) ^ e‖) :=
+        (summable_geometric_of_lt_one (norm_nonneg _) hnormlt).congr
+          fun e => (norm_pow _ _).symm
+      have hsubnorm : Summable (fun I : ↥{I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+          ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S} =>
+          ‖χ ((Ideal.absNorm I.1.1 : ℕ) : ZMod ℓ) *
+            (Ideal.absNorm I.1.1 : ℂ) ^ (-w)‖) :=
+        (summable_norm_dirichletCharacter_mul_cpow_neg_absNorm F χ hw).subtype _
+      -- the insert-step reindexing along the decomposition
+      have hstep : (∑' I : {I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+            ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ insert P₀ S},
+          χ ((Ideal.absNorm I.1.1 : ℕ) : ZMod ℓ) *
+            (Ideal.absNorm I.1.1 : ℂ) ^ (-w)) =
+          (∑' e : ℕ, (χ ((Ideal.absNorm P₀.asIdeal : ℕ) : ZMod ℓ) *
+            (Ideal.absNorm P₀.asIdeal : ℂ) ^ (-w)) ^ e) *
+          ∑' I : {I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+            ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S},
+          χ ((Ideal.absNorm I.1.1 : ℕ) : ZMod ℓ) *
+            (Ideal.absNorm I.1.1 : ℂ) ^ (-w) := by
+        calc (∑' I : {I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+              ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ insert P₀ S},
+            χ ((Ideal.absNorm I.1.1 : ℕ) : ZMod ℓ) *
+              (Ideal.absNorm I.1.1 : ℂ) ^ (-w))
+            = ∑' p : ℕ × ↥{I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+                ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S},
+              χ ((Ideal.absNorm (f p).1.1 : ℕ) : ZMod ℓ) *
+                (Ideal.absNorm (f p).1.1 : ℂ) ^ (-w) :=
+              ((Equiv.ofBijective f hbij).tsum_eq _).symm
+          _ = ∑' p : ℕ × ↥{I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+                ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S},
+              (χ ((Ideal.absNorm P₀.asIdeal : ℕ) : ZMod ℓ) *
+                (Ideal.absNorm P₀.asIdeal : ℂ) ^ (-w)) ^ p.1 *
+              (χ ((Ideal.absNorm p.2.1.1 : ℕ) : ZMod ℓ) *
+                (Ideal.absNorm p.2.1.1 : ℂ) ^ (-w)) := tsum_congr hgf
+          _ = (∑' e : ℕ, (χ ((Ideal.absNorm P₀.asIdeal : ℕ) : ZMod ℓ) *
+                (Ideal.absNorm P₀.asIdeal : ℂ) ^ (-w)) ^ e) *
+              ∑' I : {I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+                ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S},
+              χ ((Ideal.absNorm I.1.1 : ℕ) : ZMod ℓ) *
+                (Ideal.absNorm I.1.1 : ℂ) ^ (-w) :=
+              (tsum_mul_tsum_of_summable_norm hgeom hsubnorm).symm
+      rw [Finset.prod_insert hP₀, ih, ← tsum_geometric_of_norm_lt_one hnormlt]
+      exact hstep.symm
 
 open IsDedekindDomain in
-/-- **Euler product for the `χ`-twisted Dedekind zeta function** (sorry
-leaf): for `1 < re w`, the product of the inverted Euler factors
+/-- **Euler product for the `χ`-twisted Dedekind zeta function**: for
+`1 < re w`, the product of the inverted Euler factors
 `(1 - χ(N P)·N P^{-w})⁻¹` over the finite places of `F` equals the
 absolutely convergent sum of `χ(N I)·N I^{-w}` over the nonzero ideals
 of `𝓞 F`. Pure unique factorization — no counting asymptotics, no
-nonvanishing. Intended proof: mirror mathlib's
-`EulerProduct.eulerProduct_hasProd` (stated there only for `ℕ`), with
-`Ideal (𝓞 F)` in place of `ℕ`: a finite partial product over a finite
-set `S` of places expands as the twisted sum over the ideals whose
-prime factors lie in `S` (geometric series for each factor, then
-multiplicativity of `Ideal.absNorm` and complete multiplicativity of
-`χ ∘ cast` along the `UniqueFactorizationMonoid` structure of the
-nonzero ideals of the Dedekind domain `𝓞 F`), and the difference from
-the full ideal sum is dominated by the tail of the convergent ideal
-norm sum (`tsum_rpow_neg_absNorm_ne_top`). -/
+nonvanishing. PROVEN, mirroring mathlib's
+`EulerProduct.eulerProduct_hasProd` (stated there only for `ℕ`) with
+`Ideal (𝓞 F)` in place of `ℕ`: the finite-level identity
+`prod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum_factored`
+expands a partial product over a finite set `S` of places as the
+twisted sum over the `S`-factored ideals (geometric series for each
+factor, then the unique `P`-power decomposition
+`eq_and_eq_of_pow_mul_eq_pow_mul` and complete multiplicativity
+`dirichletCharacter_mul_cpow_natCast_pow_mul` along `Ideal.absNorm`),
+and the difference from the full ideal sum is killed along the net of
+finite `S` by `Summable.tsum_vanishing` for the absolutely convergent
+twisted ideal sum
+(`summable_norm_dirichletCharacter_mul_cpow_neg_absNorm`, from the
+full-ideal-sum leaf `tsum_rpow_neg_absNorm_ne_top`). -/
 theorem tprod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum
     (F : Type*) [Field F] [NumberField F] {ℓ : ℕ} (χ : DirichletCharacter ℂ ℓ)
     {w : ℂ} (hw : 1 < w.re) :
