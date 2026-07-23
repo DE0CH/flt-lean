@@ -19,3 +19,4 @@
 - [Don't invent — use existing tools](dont-invent-delegate-to-existing-tools.md) — Deyao 2026-07-23: every infra incident traced to a Claude invention; name the existing owner (compiler/LSP/lake/git/fs) before building anything
 - [Spawned resources have owners](spawned-resources-have-owners.md) — Deyao 2026-07-23: pair every spawn with a release at task end; reap agents' workers at integration; outliving a task requires a named new owner
 - [Why-question is not consent](why-question-is-not-consent.md) — Deyao 2026-07-23: a why question is investigation, not consent to a pending action and not a request to go fix the thing
+- [Orchestrator sync-only; async via agents](orchestrator-sync-only-async-via-agents.md) — Deyao 2026-07-23: background Bash banned (source of bugs); slow work = a task queue dispatched to a subagent that runs it synchronously, merged later
