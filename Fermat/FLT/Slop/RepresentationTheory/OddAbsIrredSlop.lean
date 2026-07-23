@@ -267,7 +267,7 @@ lemma adjoinRange_baseChange_eq_top [FiniteDimensional k V]
   classical
   -- `E : End_k V →ₐ[k] End_l (l ⊗ V)`, `T ↦ T.baseChange l` (base change of endomorphisms).
   set E : Module.End k V →ₐ[k] Module.End l (l ⊗[k] V) :=
-    Module.End.baseChangeHom k l V with hE
+    Module.End.baseChangeHom k l V
   have hEapp : ∀ T : Module.End k V, E T = LinearMap.baseChange l T := fun T => rfl
   -- The generators base change correctly: `(baseChange l ρ) g = E (ρ g)`.
   have hgen : ∀ g : G, baseChange l ρ g = E (ρ g) := fun g => by rw [hEapp]; rfl
@@ -288,9 +288,9 @@ lemma adjoinRange_baseChange_eq_top [FiniteDimensional k V]
     rwa [Subalgebra.mem_restrictScalars] at this
   -- Step 2 : the images `E (b.end ij)` of the matrix-unit basis of `End_k V` are a basis of
   -- `End_l (l ⊗ V)`, so `E` has `l`-dense image; combined with Step 1 this forces `B = ⊤`.
-  set ι := Module.Free.ChooseBasisIndex k V with hι
-  set b : Basis ι k V := Module.Free.chooseBasis k V with hb
-  set bl : Basis ι l (l ⊗[k] V) := Algebra.TensorProduct.basis l b with hbl
+  set ι := Module.Free.ChooseBasisIndex k V
+  set b : Basis ι k V := Module.Free.chooseBasis k V
+  set bl : Basis ι l (l ⊗[k] V) := Algebra.TensorProduct.basis l b
   have hsub : Set.range ⇑bl.end ⊆ Set.range ⇑E := by
     rintro _ ⟨ij, rfl⟩
     exact ⟨b.end ij, by rw [hEapp]; exact b.baseChange_end (A := l) ij⟩

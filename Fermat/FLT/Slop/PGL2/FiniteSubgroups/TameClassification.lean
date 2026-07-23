@@ -296,7 +296,7 @@ lemma pairStabilizer_isCyclic (G : Subgroup (PGLOf (K p))) [Fintype G]
     rw [Projectivization.mk_eq_mk_iff] at h_fix
     obtain ⟨c, hc⟩ := h_fix
     exact ⟨c, c.ne_zero, hc.symm⟩
-  choose c hc_ne_zero hc_x using extract_c
+  choose c _ hc_x using extract_c
 
   have hf_mul : ∀ g₁ g₂ : pairStabilizer p G x y, f (g₁ * g₂) = f g₁ * f g₂ := by
     intro g₁ g₂
@@ -1530,7 +1530,7 @@ lemma tame_hasCyclicPartition (G : Subgroup (PGLOf (K p))) [Fintype G]
         (by rw [hnorm, hf2, hσ.1]) (by rw [hnorm, hf2, hσ.2.1]) (by rw [hnorm, hf2, hk_d])
         (h_r3_disj σ) (h_r3_cover σ)
 
-    · rcases ‹_› with ⟨σ, hσ₀, hσ₁, hσ₂, hσ₃⟩ | ⟨σ, hσ₀, hσ₁, hσ₂, hσ₃⟩ | ⟨σ, hσ₀, hσ₁, hσ₂, hσ₃⟩
+    · rcases ‹_› with ⟨σ, _, hσ₁, _, hσ₃⟩ | ⟨σ, hσ₀, hσ₁, hσ₂, hσ₃⟩ | ⟨σ, hσ₀, hσ₁, hσ₂, hσ₃⟩
       ·
         exfalso; exact r3D233Contradiction G hσ₃ (H (σ 1))
           (by rw [hcard, hσ₁]) (by rw [hnorm, hf2, hσ₁])
@@ -1561,7 +1561,7 @@ theorem classification_tame_slop (G : Subgroup (PGLOf (K p))) [Fintype G]
     (Nonempty (G ≃* alternatingGroup (Fin 5))) := by
 
   rcases tame_hasCyclicPartition p G hG_tame hG_nontrivial with
-    ⟨N, hN_card, hN_part⟩ | ⟨n, hn_odd, hn_ge, hn_card, hn_part⟩ |
+    ⟨N, hN_card, hN_part⟩ | ⟨n, _, hn_ge, hn_card, hn_part⟩ |
     ⟨n, hn_even, hn_ge, hn_card, hn_part⟩ |
     ⟨h12_card, h12_part⟩ | ⟨h24_card, h24_part⟩ | ⟨h60_card, h60_part⟩
 
