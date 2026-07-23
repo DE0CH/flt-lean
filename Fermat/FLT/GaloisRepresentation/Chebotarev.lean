@@ -100,6 +100,8 @@ import Mathlib.Topology.Baire.Lemmas
 import Mathlib.Topology.Baire.LocallyCompactRegular
 import Mathlib.RingTheory.Ideal.GoingUp
 public import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
+public import Mathlib.RingTheory.Ideal.Norm.AbsNorm
+import Mathlib.NumberTheory.NumberField.DedekindZeta
 
 @[expose] public section
 
@@ -840,6 +842,121 @@ theorem exists_prime_dvd_sub_one_and_irreducible_cyclotomic
       algebraMap ℚ W₂ q from ((IsScalarTower.algebraMap_apply ℚ E W₂ q).symm), hq]
   exact (IsScalarTower.toAlgHom ℚ E W₂).injective h4
 
+/-!
+### Analytic auxiliaries for the Dedekind-zeta half
+
+The divergence leaf `exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne`
+is ASSEMBLED below from seven strictly shallower pieces. Writing
+`Z(t) = ∑_{I ≠ 0} N(I)^{-t}` (ideals of `𝓞 F`) and
+`Π(s) = ∑_P N(P)^{-s}` (finite places), the chain is: were the
+degree-one prime sum bounded by `C` for all `s > 1`, then `Π(s) ≤
+C + B` uniformly (tail lemmas `tsum_not_prime_natCard_rpow_neg_one_ne_top`
+and `finite_setOf_natCard_quotient_eq`), hence by the square-times-
+squarefree decomposition (`tsum_rpow_neg_absNorm_le_mul_tsum_finset_prod`)
+and the exponential bound over finite subsets
+(`tsum_finset_prod_le_tsum_pow_div_factorial`,
+`tsum_pow_div_factorial_ne_top`) the whole ideal sum satisfies
+`Z(s) ≤ Z(2) · exp-series(C + B) < ⊤` uniformly in `s > 1` —
+contradicting the divergence `Z(s) → ∞` as `s → 1⁺`
+(`exists_one_lt_lt_tsum_rpow_neg_absNorm`, from the simple pole of the
+Dedekind zeta function). No Euler product and no `ENNReal`
+subtraction appear anywhere.
+-/
+
+/-- The `ℝ≥0∞`-valued exponential series `∑ S ^ k / k!` is finite for
+finite `S` (sorry leaf): writing `S = ENNReal.ofReal r`, each term is
+`ENNReal.ofReal (r ^ k / k!)` and the series sums to
+`ENNReal.ofReal (Real.exp r)` by `Real.summable_pow_div_factorial` and
+`ENNReal.ofReal_tsum_of_nonneg`. -/
+theorem tsum_pow_div_factorial_ne_top (S : ℝ≥0∞) (hS : S ≠ ⊤) :
+    ∑' k : ℕ, S ^ k / (Nat.factorial k : ℝ≥0∞) ≠ ⊤ :=
+  sorry
+
+/-- **Exponential bound for sums of products over finite subsets**
+(sorry leaf): for any family `x : ι → ℝ≥0∞`,
+`∑_{T : Finset ι} ∏_{i ∈ T} x i ≤ ∑_k (∑ x)^k / k!`. Intended proof:
+fibre the left side over `k = #T`; each `T` with `#T = k` arises from
+exactly `k!` injections `Fin k ↪ ι` (with `∏_{j} x (f j) = ∏_{i ∈ T} x i`
+for any injection with image `T`), and the sum over ALL functions
+`Fin k → ι` of `∏_j x (f j)` is exactly `(∑ x)^k`
+(`ENNReal.tsum_prod` and induction on `k`), so
+`k! · ∑_{#T = k} ∏_{T} x ≤ (∑ x)^k`. -/
+theorem tsum_finset_prod_le_tsum_pow_div_factorial {ι : Type*} (x : ι → ℝ≥0∞) :
+    ∑' T : Finset ι, ∏ i ∈ T, x i ≤
+      ∑' k : ℕ, (∑' i : ι, x i) ^ k / (Nat.factorial k : ℝ≥0∞) :=
+  sorry
+
+open IsDedekindDomain in
+/-- Finiteness of the set of finite places with prescribed residue
+cardinality (sorry leaf): `P ↦ P.asIdeal` embeds it into the finite set
+of ideals of absolute norm `ℓ` (`Ideal.finite_setOf_absNorm_eq`). -/
+theorem finite_setOf_natCard_quotient_eq (F : Type*) [Field F] [NumberField F]
+    (ℓ : ℕ) :
+    {P : HeightOneSpectrum (𝓞 F) | Nat.card (𝓞 F ⧸ P.asIdeal) = ℓ}.Finite :=
+  sorry
+
+open IsDedekindDomain in
+/-- **Uniform tail bound for the higher-degree places** (sorry leaf): the
+sum of `#(𝓞 F / P)⁻¹` over the finite places whose residue cardinality
+is NOT prime (residue degree `≥ 2` over `ℚ`) is finite. Intended proof:
+such a place has `#(𝓞 F / P) = p ^ f ≥ p ^ 2` for `p` its residue
+characteristic; at most `[F : ℚ]` places share a residue characteristic
+(`Ideal.card_primesOverFinset_le_finrank`), so the sum is at most
+`[F : ℚ] · ∑_p p⁻²  < ⊤`. -/
+theorem tsum_not_prime_natCard_rpow_neg_one_ne_top
+    (F : Type*) [Field F] [NumberField F] :
+    ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+        ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+        (-(1 : ℝ)) ≠ ⊤ :=
+  sorry
+
+open IsDedekindDomain in
+/-- **Square-times-squarefree decomposition** (sorry leaf): every
+nonzero ideal `I` of `𝓞 F` factors as `I = J ^ 2 * ∏_{P ∈ T} P.asIdeal`
+with `J ≠ ⊥` and `T` a finite set of finite places (halve each exponent
+in the prime factorization; `T` collects the odd exponents), and `I` is
+recoverable from `(J, T)`, so `I ↦ (J, T)` is injective and
+multiplicativity of `Ideal.absNorm` bounds the ideal sum by the product
+of the square sum and the squarefree sum
+(`ENNReal.tsum_comp_le_tsum_of_injective`, `ENNReal.tsum_prod`). -/
+theorem tsum_rpow_neg_absNorm_le_mul_tsum_finset_prod
+    (F : Type*) [Field F] [NumberField F] (s : ℝ) :
+    ∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥}, (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s) ≤
+      (∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥},
+          (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-(2 * s))) *
+        ∑' T : Finset (HeightOneSpectrum (𝓞 F)),
+          ∏ P ∈ T, (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s) :=
+  sorry
+
+/-- Finiteness of the full ideal sum `∑_{I ≠ 0} N(I)^{-s}` for `s > 1`
+(sorry leaf). Intended proof: fibre the sum over `n = N(I)`
+(`Ideal.finite_setOf_absNorm_eq`, `Equiv.sigmaFiberEquiv`) to get the
+`ℝ≥0∞` form of the Dedekind-zeta Dirichlet series; the ideal-counting
+asymptotics `Ideal.tendsto_norm_le_div_atTop₀` make the partial sums of
+the coefficients `O(n)`, so `LSeriesSummable_of_sum_norm_bigO` applies
+at real `s > 1`. -/
+theorem tsum_rpow_neg_absNorm_ne_top (F : Type*) [Field F] [NumberField F]
+    {s : ℝ} (hs : 1 < s) :
+    ∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥}, (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s) ≠ ⊤ :=
+  sorry
+
+/-- **Divergence of the ideal sum as `s → 1⁺`** (sorry leaf): the
+`ℝ≥0∞`-valued Dirichlet series of the ideals of `𝓞 F` exceeds any
+`C ≠ ⊤` for some `s > 1`. Intended proof: by
+`tsum_rpow_neg_absNorm_ne_top` the sum is finite for `s > 1` and (via
+the fibration over `n = N(I)`) equals `NumberField.dedekindZeta F s` at
+real `s`; the simple pole with positive residue
+(`NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT`,
+`NumberField.dedekindZeta_residue_pos`) forces `(s-1) · Z(s) → κ > 0`,
+so were `Z(s) ≤ C` for all `s > 1` the product `(s-1) · Z(s)` would tend
+to `0` — squeeze contradiction, no explicit choice of `s` needed. -/
+theorem exists_one_lt_lt_tsum_rpow_neg_absNorm (F : Type*) [Field F]
+    [NumberField F] (C : ℝ≥0∞) (hC : C ≠ ⊤) :
+    ∃ s : ℝ, 1 < s ∧
+      C < ∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥}, (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s) :=
+  sorry
+
 open IsDedekindDomain in
 /-- **Divergence of the degree-one prime sum of a number field** (sorry
 node) — the Dedekind-zeta half of Deuring's route: for a number field
@@ -850,23 +967,112 @@ any `C ≠ ⊤` for some `s > 1`. No Galois theory, no congruence classes:
 this is the statement that `log ζ_F(s) → ∞` as `s → 1⁺` is carried by
 the degree-one primes.
 
-Intended proof: `ζ_F(s) → ∞` as `s → 1⁺` from the simple pole with
-positive residue (`NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT`,
-`NumberField.dedekindZeta_residue_pos`); the Euler-product inequality
-`∑_{N I ≤ x} N I ^ (-s) ≤ ∏_{N P ≤ x} (1 - N P ^ (-s))⁻¹` (unique
-factorization of ideals, a `Finset`-level estimate — the full Euler
-product is NOT needed) shows a bounded prime sum would bound `ζ_F`
-near `1`; primes of residue degree `≥ 2` contribute `≤ [F : ℚ] · ζ(2)`
-(at most `[F : ℚ]` primes above each rational prime `p`, each with
-`N P ≥ p ^ 2`), and the finitely many primes above `ℓ` contribute
-boundedly, so the degree-one primes away from `ℓ` must carry the
-divergence. -/
+DERIVED from the seven analytic auxiliaries above (see the section
+docstring for the chain): were the degree-one sum bounded by `C`, the
+full prime sum would be uniformly bounded by `C + B` for `1 < s` (tail
+lemmas), hence the whole ideal sum would satisfy
+`Z(s) ≤ Z(2) · exp-series(C + B) < ⊤` uniformly (square-times-squarefree
+plus the exponential bound), contradicting `Z(s) → ∞` as `s → 1⁺` (the
+simple pole of the Dedekind zeta function). -/
 theorem exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne
     (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) (C : ℝ≥0∞) (hC : C ≠ ⊤) :
     ∃ s : ℝ, 1 < s ∧ C < ∑' P : {P : HeightOneSpectrum (𝓞 F) //
         (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
-      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) :=
-  sorry
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) := by
+  classical
+  by_contra hcon
+  push Not at hcon
+  -- `1 ≤ #(𝓞 F / P)` for every finite place
+  have hone : ∀ P : HeightOneSpectrum (𝓞 F),
+      1 ≤ (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) := by
+    intro P
+    have h0 : Ideal.absNorm P.asIdeal ≠ 0 := fun h =>
+      P.ne_bot (Ideal.absNorm_eq_zero_iff.mp h)
+    rw [Ideal.absNorm_apply, Submodule.cardQuot_apply] at h0
+    exact_mod_cast Nat.one_le_iff_ne_zero.mpr h0
+  -- the full prime sum is uniformly bounded for `1 < s`
+  have htail : ∃ B : ℝ≥0∞, B ≠ ⊤ ∧ ∀ s : ℝ, 1 < s →
+      (∑' P : HeightOneSpectrum (𝓞 F),
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s)) ≤ C + B := by
+    have hfinℓ := finite_setOf_natCard_quotient_eq F ℓ
+    haveI : Finite ↥{P : HeightOneSpectrum (𝓞 F) |
+        Nat.card (𝓞 F ⧸ P.asIdeal) = ℓ} := hfinℓ.to_subtype
+    haveI := Fintype.ofFinite ↥{P : HeightOneSpectrum (𝓞 F) |
+        Nat.card (𝓞 F ⧸ P.asIdeal) = ℓ}
+    refine ⟨(∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+          (-(1 : ℝ))) +
+        (Nat.card ↥{P : HeightOneSpectrum (𝓞 F) |
+          Nat.card (𝓞 F ⧸ P.asIdeal) = ℓ} : ℝ≥0∞),
+      ENNReal.add_ne_top.mpr ⟨tsum_not_prime_natCard_rpow_neg_one_ne_top F,
+        ENNReal.natCast_ne_top _⟩, fun s hs => ?_⟩
+    rw [← ENNReal.summable.tsum_add_tsum_compl
+      (s := {P : HeightOneSpectrum (𝓞 F) |
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ})
+      ENNReal.summable]
+    refine add_le_add (hcon s hs) ?_
+    refine le_trans (ENNReal.tsum_mono_subtype
+      (fun P : HeightOneSpectrum (𝓞 F) =>
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s))
+      (t := {P : HeightOneSpectrum (𝓞 F) |
+          ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} ∪
+        {P : HeightOneSpectrum (𝓞 F) | Nat.card (𝓞 F ⧸ P.asIdeal) = ℓ}) ?_) ?_
+    · intro P hP
+      simp only [Set.mem_compl_iff, Set.mem_setOf_eq, not_and, not_not] at hP
+      by_cases hp : (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime
+      · exact Or.inr (hP hp)
+      · exact Or.inl hp
+    refine le_trans (ENNReal.tsum_union_le
+      (fun P : HeightOneSpectrum (𝓞 F) =>
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s)) _ _) (add_le_add ?_ ?_)
+    · -- monotone in the exponent down to the fixed `s = 1` tail
+      exact ENNReal.tsum_le_tsum fun P =>
+        ENNReal.rpow_le_rpow_of_exponent_le (hone _) (by linarith)
+    · -- finitely many places of residue cardinality `ℓ`, each term `≤ 1`
+      calc ∑' P : {P : HeightOneSpectrum (𝓞 F) |
+              Nat.card (𝓞 F ⧸ P.asIdeal) = ℓ},
+            (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+              (-s)
+          = ∑ P : ↥{P : HeightOneSpectrum (𝓞 F) |
+              Nat.card (𝓞 F ⧸ P.asIdeal) = ℓ},
+            (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+              (-s) := tsum_fintype _
+        _ ≤ ∑ _P : ↥{P : HeightOneSpectrum (𝓞 F) |
+              Nat.card (𝓞 F ⧸ P.asIdeal) = ℓ}, (1 : ℝ≥0∞) :=
+          Finset.sum_le_sum fun P _ =>
+            ENNReal.rpow_le_one_of_one_le_of_neg (hone _) (by linarith)
+        _ = _ := by
+          rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_one,
+            Nat.card_eq_fintype_card]
+  obtain ⟨B, hBne, hB⟩ := htail
+  -- the whole ideal sum is then uniformly bounded for `1 < s`
+  have hchain : ∀ s : ℝ, 1 < s →
+      (∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥}, (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s)) ≤
+        (∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥},
+          (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-(2 : ℝ))) *
+          ∑' k : ℕ, (C + B) ^ k / (Nat.factorial k : ℝ≥0∞) := by
+    intro s hs
+    refine le_trans (tsum_rpow_neg_absNorm_le_mul_tsum_finset_prod F s)
+      (mul_le_mul' ?_ ?_)
+    · refine ENNReal.tsum_le_tsum fun I =>
+        ENNReal.rpow_le_rpow_of_exponent_le ?_ (by linarith)
+      have h0 : Ideal.absNorm I.1 ≠ 0 := fun h =>
+        I.2 (Ideal.absNorm_eq_zero_iff.mp h)
+      exact_mod_cast Nat.one_le_iff_ne_zero.mpr h0
+    · refine le_trans (tsum_finset_prod_le_tsum_pow_div_factorial _) ?_
+      refine ENNReal.tsum_le_tsum fun k => ?_
+      gcongr
+      exact hB s hs
+  -- contradiction with the divergence of the ideal sum as `s → 1⁺`
+  obtain ⟨s, hs1, hslt⟩ := exists_one_lt_lt_tsum_rpow_neg_absNorm F
+    ((∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥},
+      (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-(2 : ℝ))) *
+      ∑' k : ℕ, (C + B) ^ k / (Nat.factorial k : ℝ≥0∞))
+    (ENNReal.mul_ne_top (tsum_rpow_neg_absNorm_ne_top F one_lt_two)
+      (tsum_pow_div_factorial_ne_top (C + B)
+        (ENNReal.add_ne_top.mpr ⟨hC, hBne⟩)))
+  exact absurd (hchain s hs1) (not_le.mpr hslt)
 
 /-- The Galois group of a Galois extension of number fields acts
 faithfully on the ring of integers: two automorphisms agreeing on `𝓞 E`
