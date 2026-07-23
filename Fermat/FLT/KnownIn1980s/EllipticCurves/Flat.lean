@@ -3684,32 +3684,36 @@ theorem WeierstrassCurve.exists_bialgEquiv_of_torsion_points_equiv
     simp only [gdef, WithConv.toConv_ofConv, ofMul_mul, map_add, toMul_add]
   exact exists_bialgEquiv_of_algEquiv_conv K Ksep HK₁ HK₂ e hone hmul
 
-/-- **The Katz–Mazur flat model, mixed characteristic** (sorry node; the
-EXISTENCE half of the Katz–Mazur leaf — the flat-package statement with no
-reference algebra to compare against): when the prime `p` is not invertible in
-`R` but nonzero in `K`, SOME finite flat Hopf `R`-algebra has étale generic
-fibre whose `Kˢᵉᵖ`-points are, `Gal(Kˢᵉᵖ/K)`-equivariantly, the
-`p ^ k`-torsion of `E(Kˢᵉᵖ)`. Unlike the unramified case, `H` is NOT a
-normalization: division polynomials cannot produce `H` here (part of the
-torsion group scheme sits in the kernel of reduction, outside the affine
-chart), and the integral closure of `R` in the torsion algebra is in general
-not a Hopf algebra (for `μ_p` over `ℤ_p` the normalization has a special fibre
-with two connected components of lengths `1` and `p - 1`, which is not a group
-scheme). The mathematical content is [Katz–Mazur, *Arithmetic moduli of
-elliptic curves*, Thm 2.3.1]: `H` is the affine algebra of the kernel
-`𝓔[p ^ k]` of multiplication by `p ^ k` on the elliptic scheme `𝓔` of the
-minimal (good-reduction) Weierstrass equation.
+set_option backward.isDefEq.respectTransparency false in
+/-- **The Katz–Mazur Hopf order** (sorry node; the CURVE half of the decomposed
+Katz–Mazur existence leaf `exists_torsion_flat_model_of_good_reduction_prime_pow`,
+freed 2026-07-23 of all structure transport, and stated for ANY torsion order
+`m` nonzero in `K` — no primality and no non-invertibility in `R` is needed for
+the order to exist): inside the finite étale Hopf `K`-algebra `HK` of the
+`m`-torsion of a good-reduction curve, some finitely generated `R`-subalgebra
+`H₀` spans `HK` over `K` and is closed under the Hopf structure maps — the
+counit takes `H₀` into `R`, the antipode preserves `H₀`, and the
+comultiplication takes `H₀` into the `R`-span of the pure tensors of `H₀`.
+Unlike the unramified case, `H₀` is NOT the integral closure of `R` (for `μ_p`
+over `ℤ_p` the normalization has a special fibre with two connected components
+of lengths `1` and `p - 1`, which is not a group scheme). The mathematical
+content is [Katz–Mazur, *Arithmetic moduli of elliptic curves*, Thm 2.3.1]:
+`H₀` is (the image in the generic fibre of) the affine algebra of the kernel
+`𝓔[m]` of multiplication by `m` on the elliptic scheme `𝓔` of the minimal
+(good-reduction) Weierstrass equation. It suffices to construct the order for
+ONE `HK` carrying an equivariant points isomorphism: any other is Hopf-isomorphic
+to it by `exists_bialgEquiv_of_torsion_points_equiv` (proven), and Hopf-closed
+orders transport along Hopf isomorphisms.
 
-SCHEME-FREE CONSTRUCTION ROADMAP (worked out 2026-07-23, for the next owner —
-a Hopf-ORDER presentation of the same object; `𝓔[p ^ k]` is flat, so it is
-the schematic closure of its generic fibre, so `H` is the image of the
-functions on any affine open `U ⊇ 𝓔[p ^ k]` inside the étale generic-fibre
-algebra):
+SCHEME-FREE CONSTRUCTION ROADMAP (worked out 2026-07-23, restated for the
+Hopf-ORDER formulation; `𝓔[m]` is flat, so it is the schematic closure of its
+generic fibre, so `H₀` is the image of the functions on any affine open
+`U ⊇ 𝓔[m]` inside the étale generic-fibre algebra):
 
-1. Carrier. Realize the generic fibre concretely as the
-   `Gal(L/K)`-equivariant functions `V → L` of the `GaloisEtalePackage`
-   section, `V := E(Kˢᵉᵖ)[p ^ k]` (finite by `torsion_finite_of_ne_zero`),
-   `L` a finite Galois splitting subextension.
+1. Carrier. Realize `HK` concretely as the `Gal(L/K)`-equivariant functions
+   `V → L` of the `GaloisEtalePackage` section, `V := E(Kˢᵉᵖ)[m]` (finite by
+   `torsion_finite_of_ne_zero`), `L` a finite Galois splitting subextension —
+   or transport the order constructed there along the Hopf isomorphism above.
 2. Avoiding denominator. Choose `h ∈ R[X]` monic of degree `d ≥ 2` whose
    reduction is coprime to the reduced affine-torsion locus: `h(x(P))` is a
    unit of the valuation ring for every torsion point `P` with integral
@@ -3718,41 +3722,115 @@ algebra):
    residues; for non-integral abscissas `v(h(x(P))) = d·v(x(P)) < 0`
    automatically). Then `U := 𝓔 ∖ V(h ∘ x)` contains the whole kernel,
    including the origin.
-3. Generators. `H` := the `R`-subalgebra of equivariant functions generated
-   by the finitely many `g_{a,b} : P ↦ x(P)^a y(P)^b / h(x(P))^m` (with
-   `2a + 3b ≤ 2dm`, `b ≤ 1`, value `0`-or-limit at `P = 0`; these are the
+3. Generators. `H₀` := the `R`-subalgebra of equivariant functions generated
+   by the finitely many `g_{a,b} : P ↦ x(P)^a y(P)^b / h(x(P))^j` (with
+   `2a + 3b ≤ 2dj`, `b ≤ 1`, value `0`-or-limit at `P = 0`; these are the
    monomial sections of `Γ(U)` restricted to the kernel). Each `g_{a,b}` has
    integral values at every point (choice of `h`), hence is integral over
-   `R`: `H` is module-finite; it is torsion-free inside a `K`-space, hence
-   FREE over the DVR `R`: finite flat.
-4. Spanning. `K · H` is a `K`-subalgebra of the étale algebra separating the
+   `R`: `H₀` is module-finite (`(Subalgebra.toSubmodule H₀).FG`).
+4. Spanning. `K · H₀` is a `K`-subalgebra of the étale algebra separating the
    `Kˢᵉᵖ`-points (the `g_{a,b}` separate affine torsion points from each
    other and from the origin), and a separating subalgebra of a finite étale
    algebra is everything (both are étale — subalgebras of separable algebras
    are separable — so `dim = #points` on both sides, restriction of points is
-   injective by separation and surjective by integrality lifting).
-5. Hopf-closure — THE Katz–Mazur core: `Δ g_{a,b} ∈ H ⊗[R] H`, i.e. the
-   two-variable functions `(P, Q) ↦ g_{a,b}(P + Q)` are `R`-polynomial in
-   `g_{a',b'}(P), g_{a'',b''}(Q)`. This is the integrality of the addition
-   law relative to `h` on the kernel — the point where the division-polynomial
-   arithmetic enters: the addition formulas have denominators
-   `(x(P) - x(Q))²` resp. `ψ²`, controlled on the torsion locus by the monic
+   injective by separation and surjective by integrality lifting; compare the
+   dimension-squeeze route of `exists_eval_eq_of_equivariant`, which proves
+   the spanning without any point counting). This is the span hypothesis
+   `Submodule.span K H₀ = ⊤`.
+5. Hopf-closure — THE Katz–Mazur core: `Δ g_{a,b}` lies in the `R`-span of
+   pure tensors of `H₀`, i.e. the two-variable functions
+   `(P, Q) ↦ g_{a,b}(P + Q)` are `R`-polynomial in `g_{a',b'}(P),
+   g_{a'',b''}(Q)`. This is the integrality of the addition law relative to
+   `h` on the kernel — the point where the division-polynomial arithmetic
+   enters: the addition formulas have denominators `(x(P) - x(Q))²` resp.
+   `ψ²`, controlled on the torsion locus by the monic
    `(Φ n).eval X - ξ * (ΨSq n).eval X` (degree `n²` over `R[ξ]`) and the
    fibrewise coprimality `isCoprime_Φ_ΨSq` (proven,
    `Fermat.FLT.EllipticCurve.PhiPsiCoprime`). Counit and antipode closure are
-   immediate (`ε g = g(0) ∈ R`, `S g = g ∘ (-1)` is again a generator up to
-   the curve relation). Étaleness of the generic fibre is by construction
-   (step 4 identifies it with the étale package); the points identification
-   and its equivariance are the evaluation dictionary of the
-   `GaloisEtalePackage` section.
+   immediate (`ε g = g(0)`, integral over `R` and in `K`, hence in the
+   integrally closed DVR `R`; `S g = g ∘ (-1)` is again a generator up to the
+   curve relation).
 
-For the Frey curve application (`R = ℤ_(p)`, `K = ℚ`, `k = 1`) the same
+For the Frey curve application (`R = ℤ_(p)`, `K = ℚ`, `m = p`) the same
 object is the kernel of `[p]` on the good-reduction Weierstrass model; the
-`k = 1` specialization admits no genuine shortcut past the origin chart,
-because the connected component of `𝓔[p]` (where the model is NOT étale) is
-present for every `k`. -/
+prime case admits no genuine shortcut past the origin chart, because the
+connected component of `𝓔[p]` (where the model is NOT étale) is present
+whenever `p` is not invertible in `R`. -/
+theorem WeierstrassCurve.exists_hopf_order_of_good_reduction
+    (m : ℕ) (hm : (m : K) ≠ 0)
+    (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
+    [Module.Finite K HK] [Algebra.Etale K HK]
+    [Algebra R HK] [IsScalarTower R K HK]
+    (f : Additive (WithConv (HK →ₐ[K] Ksep)) ≃+
+      AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))
+    (hf : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : HK →ₐ[K] Ksep),
+      (f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
+        Affine.Point.map σ.toAlgHom (f (Additive.ofMul (WithConv.toConv φ)))) :
+    ∃ H₀ : Subalgebra R HK,
+      (Subalgebra.toSubmodule H₀).FG ∧
+      Submodule.span K (H₀ : Set HK) = ⊤ ∧
+      (∀ x ∈ H₀, Bialgebra.counitAlgHom K HK x ∈ (algebraMap R K).range) ∧
+      (∀ x ∈ H₀, HopfAlgebra.antipode K x ∈ H₀) ∧
+      (∀ x ∈ H₀, Bialgebra.comulAlgHom K HK x ∈
+        Submodule.span R {z : HK ⊗[K] HK | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K] b = z}) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Hopf orders are flat Hopf forms** (sorry node; the curve-free STRUCTURE
+half of the decomposed Katz–Mazur existence leaf
+`exists_torsion_flat_model_of_good_reduction_prime_pow` — commutative algebra
+over the DVR `R`, no Galois theory and no elliptic curve): a finitely
+generated `R`-subalgebra `H₀` of a Hopf `K`-algebra `HK`, finite as a
+`K`-module, which spans `HK` over `K` and is closed under counit (into `R`),
+antipode, and comultiplication (into the `R`-span of its pure tensors), is a
+finite flat Hopf `R`-form of `HK`. Intended proof: `H₀` is torsion-free (it
+sits inside a `K`-vector space and `R` injects into `K`) and finitely
+generated over the DVR `R`, hence finite FREE, hence flat; an `R`-basis of
+`H₀` is a `K`-basis of `HK` (it spans by the span hypothesis after clearing
+denominators, and an `R`-independent family in a `K`-vector space is
+`K`-independent over the fraction field), so the base-change algebra map
+`K ⊗[R] H₀ → HK` is bijective, and the induced maps
+`H₀ ⊗[R] H₀ → HK ⊗[K] HK` (and the triple-tensor analogue) are injective
+with image exactly the `R`-span of the pure tensors of `H₀`; the three
+closure hypotheses then corestrict the comultiplication, counit and antipode
+to `H₀`, every Hopf-algebra axiom transfers along the injections, and the
+base-change equivalence is a bialgebra equivalence by construction. The `μ_p`
+counterexample (normalization over `ℤ_p` not a Hopf order) does not
+contradict this: there the COMULTIPLICATION-closure hypothesis fails for the
+normalization. -/
+theorem exists_flat_hopf_form_of_hopf_order
+    (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
+    [Module.Finite K HK] [Algebra R HK] [IsScalarTower R K HK]
+    (H₀ : Subalgebra R HK)
+    (hfg : (Subalgebra.toSubmodule H₀).FG)
+    (hspan : Submodule.span K (H₀ : Set HK) = ⊤)
+    (hcounit : ∀ x ∈ H₀, Bialgebra.counitAlgHom K HK x ∈ (algebraMap R K).range)
+    (hantipode : ∀ x ∈ H₀, HopfAlgebra.antipode K x ∈ H₀)
+    (hcomul : ∀ x ∈ H₀, Bialgebra.comulAlgHom K HK x ∈
+      Submodule.span R {z : HK ⊗[K] HK | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K] b = z}) :
+    ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
+      (_ : Module.Finite R H) (_ : Module.Flat R H),
+      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) :=
+  sorry
+
+/-- **The Katz–Mazur flat model, mixed characteristic** (DECOMPOSED 2026-07-23
+into the curve leaf `exists_hopf_order_of_good_reduction` — the Katz–Mazur
+2.3.1 kernel model presented as a Hopf ORDER, a set-level statement inside the
+étale generic-fibre algebra, carrying the whole construction roadmap in its
+docstring — and the curve-free structure leaf
+`exists_flat_hopf_form_of_hopf_order` — Hopf orders over a DVR are flat Hopf
+forms; the assembly below is proven, through the proven transports
+`exists_torsion_etale_package_over_fractionField` and
+`torsion_flat_package_of_flat_hopf_form`): when the prime `p` is not
+invertible in `R` but nonzero in `K`, SOME finite flat Hopf `R`-algebra has
+étale generic fibre whose `Kˢᵉᵖ`-points are, `Gal(Kˢᵉᵖ/K)`-equivariantly, the
+`p ^ k`-torsion of `E(Kˢᵉᵖ)`. Routes examined and rejected for the order:
+normalization (the `μ_p` special fibre is not a group scheme),
+connected-étale splitting and `k`-dévissage (see the git history of this
+docstring). For the Frey curve application (`R = ℤ_(p)`, `K = ℚ`, `k = 1`)
+the object is the kernel of `[p]` on the good-reduction Weierstrass model. -/
 theorem WeierstrassCurve.exists_torsion_flat_model_of_good_reduction_prime_pow
-    (p : ℕ) (hp : p.Prime) (hpu : ¬IsUnit (p : R)) (k : ℕ) (hk : k ≠ 0)
+    (p : ℕ) (_hp : p.Prime) (_hpu : ¬IsUnit (p : R)) (k : ℕ) (hk : k ≠ 0)
     (hpK : (p : K) ≠ 0) :
     ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
       (_ : Module.Finite R H) (_ : Module.Flat R H)
@@ -3761,8 +3839,38 @@ theorem WeierstrassCurve.exists_torsion_flat_model_of_good_reduction_prime_pow
         AddSubgroup.torsionBy (E⁄Ksep).Point ((p ^ k : ℕ) : ℤ)),
       ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : K ⊗[R] H →ₐ[K] Ksep),
         (g (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
-          Affine.Point.map σ.toAlgHom (g (Additive.ofMul (WithConv.toConv φ))) :=
-  sorry
+          Affine.Point.map σ.toAlgHom (g (Additive.ofMul (WithConv.toConv φ))) := by
+  classical
+  -- `p ^ k` is nonzero in `R`, so the étale `K`-package of the torsion applies
+  have hpR : ((p ^ k : ℕ) : R) ≠ 0 := by
+    intro h0
+    apply hpK
+    have h1 : ((p ^ k : ℕ) : K) = 0 := by
+      rw [← map_natCast (algebraMap R K), h0, map_zero]
+    push_cast at h1
+    exact (pow_eq_zero_iff hk).mp h1
+  have hmK : ((p ^ k : ℕ) : K) ≠ 0 := by
+    push_cast
+    exact pow_ne_zero k hpK
+  obtain ⟨HK, iCR, iHopf, iFin, iEt, f, hf⟩ :=
+    WeierstrassCurve.exists_torsion_etale_package_over_fractionField R K E Ksep
+      (p ^ k) hpR
+  letI := iCR; letI := iHopf; letI := iFin; haveI := iEt
+  -- give `HK` its `R`-algebra structure through `K`
+  letI : Algebra R HK := ((algebraMap K HK).comp (algebraMap R K)).toAlgebra
+  haveI : IsScalarTower R K HK := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  -- the Katz–Mazur Hopf order (the curve leaf)
+  obtain ⟨H₀, hfg, hspan, hcounit, hantipode, hcomul⟩ :=
+    WeierstrassCurve.exists_hopf_order_of_good_reduction R K E Ksep
+      (p ^ k) hmK HK f hf
+  -- the order is a flat Hopf form (the structure leaf)
+  obtain ⟨H, jCR, jHopf, jFin, jFlat, ⟨e⟩⟩ :=
+    exists_flat_hopf_form_of_hopf_order R K HK H₀ hfg hspan hcounit
+      hantipode hcomul
+  letI := jCR; letI := jHopf; letI := jFin; letI := jFlat
+  -- transport the étale package along the form (proven plumbing)
+  exact WeierstrassCurve.torsion_flat_package_of_flat_hopf_form R K E Ksep
+    (p ^ k) HK f hf H e
 
 /-- **The Katz–Mazur flat Hopf form, mixed characteristic** (DECOMPOSED
 2026-07-23 into the existence leaf
