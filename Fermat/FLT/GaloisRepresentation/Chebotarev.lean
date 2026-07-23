@@ -2539,8 +2539,142 @@ theorem exists_forall_norm_sum_log_mul_le_rpow {c : ℕ → ℂ} {r C : ℝ}
     (hbound : ∀ n : ℕ, ‖∑ k ∈ Finset.Icc 1 n, c k‖ ≤ C * (n : ℝ) ^ r) :
     ∃ D : ℝ, 0 ≤ D ∧ ∀ n : ℕ,
       ‖∑ k ∈ Finset.Icc 1 n, Complex.log (k : ℂ) * c k‖ ≤
-        D * (n : ℝ) ^ ((1 + r) / 2) :=
-  sorry
+        D * (n : ℝ) ^ ((1 + r) / 2) := by
+  have hδ : 0 < (1 + r) / 2 - r := by linarith
+  refine ⟨C / ((1 + r) / 2 - r) + C / r, by positivity, fun n => ?_⟩
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · rw [show Finset.Icc 1 0 = (∅ : Finset ℕ) by rfl, Finset.sum_empty, norm_zero,
+      Nat.cast_zero, Real.zero_rpow (by positivity), mul_zero]
+  have hn1 : (1 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
+  have hn0 : (0 : ℝ) < (n : ℝ) := by linarith
+  -- the `Icc 0` sums shed their `k = 0` term
+  have hsplit : Finset.Icc 0 n = insert 0 (Finset.Icc 1 n) := by
+    ext k
+    simp only [Finset.mem_Icc, Finset.mem_insert]
+    omega
+  have hshift : ∀ m : ℕ, ∑ k ∈ Finset.Icc 0 m, c k = ∑ k ∈ Finset.Icc 1 m, c k := by
+    intro m
+    have hsplit' : Finset.Icc 0 m = insert 0 (Finset.Icc 1 m) := by
+      ext k
+      simp only [Finset.mem_Icc, Finset.mem_insert]
+      omega
+    rw [hsplit', Finset.sum_insert (by simp), hc0, zero_add]
+  -- differentiability and derivative of the (complexified) logarithm
+  have hlogD : ∀ t ∈ Set.Icc (1 : ℝ) (n : ℝ), DifferentiableAt ℝ
+      (fun t : ℝ => ((Real.log t : ℝ) : ℂ)) t := by
+    intro t ht
+    have ht0 : t ≠ 0 := by
+      have := ht.1
+      intro h
+      rw [h] at this
+      linarith
+    exact ((Real.hasDerivAt_log ht0).ofReal_comp).differentiableAt
+  have hderiv : ∀ t ∈ Set.Icc (1 : ℝ) (n : ℝ),
+      deriv (fun t : ℝ => ((Real.log t : ℝ) : ℂ)) t = ((t⁻¹ : ℝ) : ℂ) := by
+    intro t ht
+    have ht0 : t ≠ 0 := by
+      have := ht.1
+      intro h
+      rw [h] at this
+      linarith
+    exact ((Real.hasDerivAt_log ht0).ofReal_comp).deriv
+  have hinvint : MeasureTheory.IntegrableOn
+      (fun t : ℝ => ((t⁻¹ : ℝ) : ℂ)) (Set.Icc (1 : ℝ) (n : ℝ)) := by
+    refine (Complex.continuous_ofReal.comp_continuousOn ?_).integrableOn_Icc
+    refine continuousOn_id.inv₀ fun t ht => ?_
+    intro h
+    rw [id_eq] at h
+    rw [h] at ht
+    exact absurd ht.1 (by norm_num)
+  have hint : MeasureTheory.IntegrableOn
+      (deriv (fun t : ℝ => ((Real.log t : ℝ) : ℂ))) (Set.Icc (1 : ℝ) (n : ℝ)) :=
+    hinvint.congr_fun (fun t ht => (hderiv t ht).symm) measurableSet_Icc
+  -- Abel summation against `log`
+  have habel := sum_mul_eq_sub_integral_mul₀'
+    (f := fun t : ℝ => ((Real.log t : ℝ) : ℂ)) c hc0 n hlogD hint
+  -- pass from `Icc 0` to `Icc 1` and from `Real.log` to `Complex.log`
+  have hlhs : ∑ k ∈ Finset.Icc 0 n, ((Real.log (k : ℝ) : ℝ) : ℂ) * c k =
+      ∑ k ∈ Finset.Icc 1 n, Complex.log (k : ℂ) * c k := by
+    rw [hsplit, Finset.sum_insert (by simp), hc0, mul_zero, zero_add]
+    refine Finset.sum_congr rfl fun k hk => ?_
+    rw [Complex.ofReal_log (Nat.cast_nonneg k)]
+    norm_num
+  rw [hlhs, hshift n] at habel
+  rw [habel]
+  -- bound the two terms
+  have hterm1 : ‖((Real.log (n : ℝ) : ℝ) : ℂ) * ∑ k ∈ Finset.Icc 1 n, c k‖ ≤
+      C / ((1 + r) / 2 - r) * (n : ℝ) ^ ((1 + r) / 2) := by
+    rw [norm_mul, Complex.norm_real,
+      Real.norm_of_nonneg (Real.log_nonneg hn1)]
+    calc Real.log (n : ℝ) * ‖∑ k ∈ Finset.Icc 1 n, c k‖
+        ≤ ((n : ℝ) ^ ((1 + r) / 2 - r) / ((1 + r) / 2 - r)) * (C * (n : ℝ) ^ r) := by
+          refine mul_le_mul (Real.log_le_rpow_div (Nat.cast_nonneg n) hδ)
+            (hbound n) (norm_nonneg _) (by positivity)
+      _ = C / ((1 + r) / 2 - r) * (n : ℝ) ^ ((1 + r) / 2) := by
+          rw [div_mul_eq_mul_div,
+            show (n : ℝ) ^ ((1 + r) / 2 - r) * (C * (n : ℝ) ^ r) =
+              C * ((n : ℝ) ^ r * (n : ℝ) ^ ((1 + r) / 2 - r)) by ring,
+            ← Real.rpow_add hn0,
+            show r + ((1 + r) / 2 - r) = (1 + r) / 2 by ring]
+          ring
+  have hterm2 : ‖∫ t in Set.Ioc (1 : ℝ) (n : ℝ),
+      deriv (fun t : ℝ => ((Real.log t : ℝ) : ℂ)) t *
+        ∑ k ∈ Finset.Icc 0 ⌊t⌋₊, c k‖ ≤ C / r * (n : ℝ) ^ ((1 + r) / 2) := by
+    have hdom : MeasureTheory.IntegrableOn
+        (fun t : ℝ => C * t ^ (r - 1)) (Set.Ioc (1 : ℝ) (n : ℝ)) := by
+      have hcont : ContinuousOn (fun t : ℝ => C * t ^ (r - 1))
+          (Set.Icc (1 : ℝ) (n : ℝ)) := by
+        refine ContinuousOn.mul continuousOn_const ?_
+        refine continuousOn_id.rpow_const fun t ht => Or.inl ?_
+        intro h
+        rw [id_eq] at h
+        rw [h] at ht
+        exact absurd ht.1 (by norm_num)
+      exact hcont.integrableOn_Icc.mono_set Set.Ioc_subset_Icc_self
+    have hbnd : ∀ t ∈ Set.Ioc (1 : ℝ) (n : ℝ),
+        ‖deriv (fun t : ℝ => ((Real.log t : ℝ) : ℂ)) t *
+          ∑ k ∈ Finset.Icc 0 ⌊t⌋₊, c k‖ ≤ C * t ^ (r - 1) := by
+      intro t ht
+      have ht1 : (1 : ℝ) < t := ht.1
+      have ht0 : (0 : ℝ) < t := lt_trans one_pos ht1
+      rw [norm_mul, hderiv t ⟨le_of_lt ht1, ht.2⟩, Complex.norm_real,
+        Real.norm_of_nonneg (inv_nonneg.mpr ht0.le), hshift ⌊t⌋₊]
+      calc t⁻¹ * ‖∑ k ∈ Finset.Icc 1 ⌊t⌋₊, c k‖
+          ≤ t⁻¹ * (C * t ^ r) := by
+            refine mul_le_mul_of_nonneg_left ?_ (inv_nonneg.mpr ht0.le)
+            refine le_trans (hbound ⌊t⌋₊) ?_
+            exact mul_le_mul_of_nonneg_left
+              (Real.rpow_le_rpow (Nat.cast_nonneg _) (Nat.floor_le ht0.le) hr0.le)
+              hC
+        _ = C * t ^ (r - 1) := by
+            rw [← Real.rpow_neg_one t, mul_comm (t ^ (-1 : ℝ)) _, mul_assoc,
+              ← Real.rpow_add ht0, show r + -1 = r - 1 by ring]
+    refine le_trans (MeasureTheory.norm_integral_le_of_norm_le hdom
+      ((MeasureTheory.ae_restrict_iff' measurableSet_Ioc).mpr
+        (Filter.Eventually.of_forall hbnd))) ?_
+    rw [← intervalIntegral.integral_of_le hn1,
+      intervalIntegral.integral_const_mul,
+      integral_rpow (Or.inl (by linarith : (-1 : ℝ) < r - 1)),
+      show r - 1 + 1 = r by ring, Real.one_rpow]
+    calc C * (((n : ℝ) ^ r - 1) / r) ≤ C * ((n : ℝ) ^ r / r) := by
+          refine mul_le_mul_of_nonneg_left ?_ hC
+          gcongr
+          linarith
+      _ ≤ C / r * (n : ℝ) ^ ((1 + r) / 2) := by
+          rw [show C * ((n : ℝ) ^ r / r) = C / r * (n : ℝ) ^ r by ring]
+          refine mul_le_mul_of_nonneg_left ?_ (by positivity)
+          exact Real.rpow_le_rpow_of_exponent_le hn1 (by linarith)
+  calc ‖((Real.log (n : ℝ) : ℝ) : ℂ) * ∑ k ∈ Finset.Icc 1 n, c k -
+        ∫ t in Set.Ioc (1 : ℝ) (n : ℝ),
+          deriv (fun t : ℝ => ((Real.log t : ℝ) : ℂ)) t *
+            ∑ k ∈ Finset.Icc 0 ⌊t⌋₊, c k‖
+      ≤ ‖((Real.log (n : ℝ) : ℝ) : ℂ) * ∑ k ∈ Finset.Icc 1 n, c k‖ +
+        ‖∫ t in Set.Ioc (1 : ℝ) (n : ℝ),
+          deriv (fun t : ℝ => ((Real.log t : ℝ) : ℂ)) t *
+            ∑ k ∈ Finset.Icc 0 ⌊t⌋₊, c k‖ := norm_sub_le _ _
+    _ ≤ C / ((1 + r) / 2 - r) * (n : ℝ) ^ ((1 + r) / 2) +
+        C / r * (n : ℝ) ^ ((1 + r) / 2) := add_le_add hterm1 hterm2
+    _ = (C / ((1 + r) / 2 - r) + C / r) * (n : ℝ) ^ ((1 + r) / 2) := by ring
 
 open Filter Asymptotics MeasureTheory in
 /-- **Uniform bound for an `L`-series with power-saving coefficient
