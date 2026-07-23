@@ -8,38 +8,6 @@
         "."
       ]
     },
-    "lean-lsp-flat": {
-      "command": "uvx",
-      "args": ["lean-lsp-mcp", "--lean-project-path", "/home/chend/flt-agent-flat"]
-    },
-    "lean-lsp-mazur": {
-      "command": "uvx",
-      "args": ["lean-lsp-mcp", "--lean-project-path", "/home/chend/flt-agent-mazur"]
-    },
-    "lean-lsp-threeadic": {
-      "command": "uvx",
-      "args": ["lean-lsp-mcp", "--lean-project-path", "/home/chend/flt-agent-threeadic"]
-    },
-    "lean-lsp-lift-family": {
-      "command": "uvx",
-      "args": ["lean-lsp-mcp", "--lean-project-path", "/home/chend/flt-agent-lift-family"]
-    },
-    "lean-lsp-chebotarev": {
-      "command": "uvx",
-      "args": ["lean-lsp-mcp", "--lean-project-path", "/home/chend/flt-agent-chebotarev"]
-    },
-    "lean-lsp-serre": {
-      "command": "uvx",
-      "args": ["lean-lsp-mcp", "--lean-project-path", "/home/chend/flt-agent-serre"]
-    },
-    "lean-lsp-tate": {
-      "command": "uvx",
-      "args": ["lean-lsp-mcp", "--lean-project-path", "/home/chend/flt-agent-tate"]
-    },
-    "lean-lsp-gpp": {
-      "command": "uvx",
-      "args": ["lean-lsp-mcp", "--lean-project-path", "/home/chend/flt-agent-gpp"]
-    },
     "annas-mcp": {
       "command": ".venv/bin/python",
       "args": [
