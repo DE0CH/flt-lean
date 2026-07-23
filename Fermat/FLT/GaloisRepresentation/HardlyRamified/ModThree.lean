@@ -50,6 +50,7 @@ public import Mathlib.Analysis.Complex.Trigonometric
 public import Mathlib.MeasureTheory.Integral.Bochner.Set
 public import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 import Mathlib.Analysis.Real.Pi.Bounds
 import Mathlib.Analysis.Complex.ExponentialBounds
 -- `LinearMap.trace`, for the trace-zero interface of the dihedral case.
@@ -2428,17 +2429,175 @@ theorem poitou_explicit_formula_bound (K : Type*) [Field K] [NumberField K]
   sorry
 
 /-- **Numeric bound on the archimedean integral of the Fejér–Poitou
-decomposition** (sorry node, elementary real analysis, stated
-2026-07-23): `∫₀^∞ (1 − odlyzkoTestFn x)/sinh x dx ≤ 5/8`.  The true
-value is `0.4104…`, so the bound is generous.  Elementary proof
-route: the integrand equals `min (x/6) 1 / sinh x`; bound it by `1/6`
-on `[0, 1]` (via `x ≤ sinh x`), by `(x/6)·2e^{-x}/(1 − e^{-2})` on
-`[1, 2]`, by `(x/6)·2e^{-x}/(1 − e^{-4})` on `[2, 6]`, and by
-`2e^{-x}/(1 − e^{-4})` on `[6, ∞)`; the resulting elementary
-integrals sum to `< 0.44`. -/
+decomposition** (PROVEN 2026-07-23):
+`∫₀^∞ (1 − odlyzkoTestFn x)/sinh x dx ≤ 5/8`.  The true value is
+`0.4104…`, so the bound is generous.  Proof: the integrand is `≤ 1/6`
+on `(0, 1]` (numerator `≤ x/6` and `x ≤ sinh x`) and
+`≤ (7/9)·e^{-1}·e^{-x/2}` on `(1, ∞)` (numerator `≤ x/6`,
+`sinh x ≥ (3/7)·eˣ` from `e^{2x} ≥ e² > 7`, and `x ≤ 2e^{x/2-1}` from
+`1 + t ≤ eᵗ`); the two pieces integrate to
+`1/6 + (14/9)·e^{-3/2} ≤ 1/6 + 14/36 < 5/8` using `e^{3/2} ≥ 4`. -/
 theorem integral_one_sub_odlyzkoTestFn_div_sinh_le :
-    (∫ x in Set.Ioi (0 : ℝ), (1 - odlyzkoTestFn x) / Real.sinh x) ≤ 5 / 8 :=
-  sorry
+    (∫ x in Set.Ioi (0 : ℝ), (1 - odlyzkoTestFn x) / Real.sinh x) ≤ 5 / 8 := by
+  set h : ℝ → ℝ := fun x => (1 - odlyzkoTestFn x) / Real.sinh x with hh
+  -- measurability of the integrand
+  have hmeas : Measurable h := by
+    have hcont : Continuous odlyzkoTestFn := by
+      have hrfl : odlyzkoTestFn = fun x : ℝ => max (1 - |x| / 6) 0 := rfl
+      rw [hrfl]
+      exact (continuous_const.sub (continuous_abs.div_const 6)).max continuous_const
+    exact (measurable_const.sub hcont.measurable).div Real.continuous_sinh.measurable
+  -- elementary pointwise facts about the numerator
+  have hf_le : ∀ x : ℝ, 0 ≤ x → 1 - odlyzkoTestFn x ≤ x / 6 := by
+    intro x hx
+    have h1 : (1 : ℝ) - x / 6 ≤ odlyzkoTestFn x := by
+      rw [odlyzkoTestFn, abs_of_nonneg hx]
+      exact le_max_left _ _
+    linarith
+  have hf_nonneg : ∀ x : ℝ, 0 ≤ 1 - odlyzkoTestFn x := by
+    intro x
+    have h2 : (0 : ℝ) ≤ |x| / 6 := by positivity
+    have h1 : odlyzkoTestFn x ≤ 1 := by
+      rw [odlyzkoTestFn]
+      exact max_le (by linarith) (by norm_num)
+    linarith
+  have hnonneg : ∀ x : ℝ, 0 < x → 0 ≤ h x := fun x hx =>
+    div_nonneg (hf_nonneg x) (Real.sinh_nonneg_iff.mpr hx.le)
+  -- the pointwise bound on `(0, 1]`
+  have hpiece1 : ∀ x ∈ Set.Ioc (0 : ℝ) 1, h x ≤ 1 / 6 := by
+    intro x hx
+    have hx0 : 0 < x := hx.1
+    have hsinh : 0 < Real.sinh x := Real.sinh_pos_iff.mpr hx0
+    have hxs : x ≤ Real.sinh x := Real.self_le_sinh_iff.mpr hx0.le
+    have hnum := hf_le x hx0.le
+    calc h x ≤ (x / 6) / Real.sinh x := by
+          simp only [hh]
+          gcongr
+      _ ≤ (x / 6) / x := by gcongr
+      _ = 1 / 6 := by field_simp
+  -- the pointwise bound on `(1, ∞)`
+  have hpiece2 : ∀ x ∈ Set.Ioi (1 : ℝ), h x ≤
+      7 / 9 * Real.exp (-1) * Real.exp (-(1 / 2) * x) := by
+    intro x hx
+    simp only [Set.mem_Ioi] at hx
+    have hx0 : (0 : ℝ) < x := by linarith
+    have hsinh : 0 < Real.sinh x := Real.sinh_pos_iff.mpr hx0
+    have hprod : Real.exp (-x) * Real.exp x = 1 := by
+      rw [← Real.exp_add]; simp
+    -- `sinh x ≥ (3/7)·eˣ`, because `e^{2x} ≥ e² > 7`
+    have hsinh_ge : 3 / 7 * Real.exp x ≤ Real.sinh x := by
+      have h1 : (2.7182818283 : ℝ) < Real.exp 1 := Real.exp_one_gt_d9
+      have h2 : Real.exp 1 ≤ Real.exp x := Real.exp_le_exp.mpr hx.le
+      have h4 : Real.exp (-x) ≤ Real.exp x / 7 := by
+        nlinarith [Real.exp_pos (-x)]
+      rw [Real.sinh_eq]
+      linarith
+    -- `x ≤ 2·e^{x/2 - 1}`, from `1 + t ≤ eᵗ`
+    have hxle : x ≤ 2 * Real.exp (x / 2 - 1) := by
+      have := Real.add_one_le_exp (x / 2 - 1)
+      linarith
+    have hden : 1 / Real.sinh x ≤ 7 / 3 * Real.exp (-x) := by
+      rw [div_le_iff₀ hsinh]
+      nlinarith [Real.exp_pos (-x)]
+    have hchain : h x ≤ 7 / 18 * (x * Real.exp (-x)) := by
+      have hnum := hf_le x hx0.le
+      calc h x = (1 - odlyzkoTestFn x) * (1 / Real.sinh x) := by
+            simp only [hh]; ring
+        _ ≤ (x / 6) * (7 / 3 * Real.exp (-x)) := by
+            refine mul_le_mul hnum hden (by positivity) (by positivity)
+        _ = 7 / 18 * (x * Real.exp (-x)) := by ring
+    have hkey : Real.exp (x / 2 - 1) * Real.exp (-x) =
+        Real.exp (-1) * Real.exp (-(1 / 2) * x) := by
+      rw [← Real.exp_add, ← Real.exp_add]
+      ring_nf
+    have h5 : x * Real.exp (-x) ≤ 2 * Real.exp (x / 2 - 1) * Real.exp (-x) := by
+      have := Real.exp_pos (-x)
+      nlinarith
+    calc h x ≤ 7 / 18 * (x * Real.exp (-x)) := hchain
+      _ ≤ 7 / 18 * (2 * Real.exp (x / 2 - 1) * Real.exp (-x)) := by linarith
+      _ = 7 / 9 * (Real.exp (x / 2 - 1) * Real.exp (-x)) := by ring
+      _ = 7 / 9 * (Real.exp (-1) * Real.exp (-(1 / 2) * x)) := by rw [hkey]
+      _ = 7 / 9 * Real.exp (-1) * Real.exp (-(1 / 2) * x) := by ring
+  -- integrability of the two piecewise majorants and hence of the integrand
+  have hint_g : MeasureTheory.IntegrableOn
+      (fun x : ℝ => 7 / 9 * Real.exp (-1) * Real.exp (-(1 / 2) * x))
+      (Set.Ioi (1 : ℝ)) := by
+    have h1 : MeasureTheory.IntegrableOn
+        (fun x : ℝ => Real.exp (-(1 / 2) * x)) (Set.Ioi (1 : ℝ)) :=
+      exp_neg_integrableOn_Ioi 1 (by norm_num)
+    exact h1.const_mul _
+  have hint_h2 : MeasureTheory.IntegrableOn h (Set.Ioi (1 : ℝ)) := by
+    refine MeasureTheory.Integrable.mono' hint_g
+      hmeas.aestronglyMeasurable.restrict ?_
+    filter_upwards [MeasureTheory.ae_restrict_mem measurableSet_Ioi] with x hx
+    rw [Real.norm_eq_abs, abs_of_nonneg (hnonneg x (lt_trans one_pos hx))]
+    exact hpiece2 x hx
+  have hint_c : MeasureTheory.IntegrableOn (fun _ : ℝ => (1 : ℝ) / 6)
+      (Set.Ioc (0 : ℝ) 1) :=
+    MeasureTheory.integrableOn_const measure_Ioc_lt_top.ne
+  have hint_h1 : MeasureTheory.IntegrableOn h (Set.Ioc (0 : ℝ) 1) := by
+    refine MeasureTheory.Integrable.mono' hint_c
+      hmeas.aestronglyMeasurable.restrict ?_
+    filter_upwards [MeasureTheory.ae_restrict_mem measurableSet_Ioc] with x hx
+    rw [Real.norm_eq_abs, abs_of_nonneg (hnonneg x hx.1)]
+    exact hpiece1 x hx
+  -- split the integral at `1` and bound the two pieces
+  have hsplit : (∫ x in Set.Ioi (0 : ℝ), h x) =
+      (∫ x in Set.Ioc (0 : ℝ) 1, h x) + ∫ x in Set.Ioi (1 : ℝ), h x := by
+    rw [← MeasureTheory.setIntegral_union Set.Ioc_disjoint_Ioi_same
+      measurableSet_Ioi hint_h1 hint_h2, Set.Ioc_union_Ioi_eq_Ioi zero_le_one]
+  have hb1 : (∫ x in Set.Ioc (0 : ℝ) 1, h x) ≤ 1 / 6 := by
+    have h1 : (∫ x in Set.Ioc (0 : ℝ) 1, h x) ≤
+        ∫ _ in Set.Ioc (0 : ℝ) 1, (1 / 6 : ℝ) :=
+      MeasureTheory.setIntegral_mono_on hint_h1 hint_c measurableSet_Ioc hpiece1
+    rw [MeasureTheory.setIntegral_const, smul_eq_mul] at h1
+    have h2 : MeasureTheory.volume.real (Set.Ioc (0 : ℝ) 1) = 1 := by
+      simp [MeasureTheory.measureReal_def, Real.volume_Ioc]
+    rw [h2, one_mul] at h1
+    exact h1
+  have hb2 : (∫ x in Set.Ioi (1 : ℝ), h x) ≤
+      7 / 9 * Real.exp (-1) * (2 * Real.exp (-(1 / 2))) := by
+    have h1 : (∫ x in Set.Ioi (1 : ℝ), h x) ≤
+        ∫ x in Set.Ioi (1 : ℝ), 7 / 9 * Real.exp (-1) * Real.exp (-(1 / 2) * x) :=
+      MeasureTheory.setIntegral_mono_on hint_h2 hint_g measurableSet_Ioi hpiece2
+    have h2 : (∫ x in Set.Ioi (1 : ℝ), 7 / 9 * Real.exp (-1) *
+        Real.exp (-(1 / 2) * x)) =
+        7 / 9 * Real.exp (-1) * ∫ x in Set.Ioi (1 : ℝ), Real.exp (-(1 / 2) * x) :=
+      MeasureTheory.integral_const_mul _ _
+    have h4 := MeasureTheory.integral_comp_mul_left_Ioi
+      (fun y : ℝ => Real.exp (-y)) 1 (by norm_num : (0 : ℝ) < (1 / 2 : ℝ))
+    simp only [smul_eq_mul] at h4
+    have h5 : (∫ x in Set.Ioi (1 : ℝ), Real.exp (-(1 / 2) * x)) =
+        2 * Real.exp (-(1 / 2)) := by
+      simp only [neg_mul]
+      rw [h4, show (1 / 2 : ℝ) * 1 = 1 / 2 by norm_num, integral_exp_neg_Ioi]
+      norm_num
+    rw [h2, h5] at h1
+    exact h1
+  -- the numeric endgame: `1/6 + (14/9)·e^{-3/2} ≤ 5/8` via `e^{3/2} ≥ 4`
+  have hE : (4 : ℝ) ≤ Real.exp (3 / 2) := by
+    have h3 : Real.exp (3 / 2) * Real.exp (3 / 2) = Real.exp 3 := by
+      rw [← Real.exp_add]; norm_num
+    have h4 : (16 : ℝ) ≤ Real.exp 3 := by
+      have h5 : Real.exp 3 = Real.exp 1 ^ (3 : ℕ) := by
+        rw [← Real.exp_nat_mul]; norm_num
+      rw [h5]
+      calc (16 : ℝ) ≤ 2.7182818283 ^ (3 : ℕ) := by norm_num
+        _ ≤ Real.exp 1 ^ (3 : ℕ) :=
+          pow_le_pow_left₀ (by norm_num) Real.exp_one_gt_d9.le 3
+    nlinarith [Real.exp_pos (3 / 2)]
+  have hEinv : (Real.exp (3 / 2))⁻¹ ≤ 1 / 4 := by
+    have h7 : (0 : ℝ) < Real.exp (3 / 2) := Real.exp_pos _
+    have h8 : (Real.exp (3 / 2))⁻¹ * Real.exp (3 / 2) = 1 :=
+      inv_mul_cancel₀ (ne_of_gt h7)
+    nlinarith [inv_pos.mpr h7]
+  have hnum : 7 / 9 * Real.exp (-1) * (2 * Real.exp (-(1 / 2))) ≤ 11 / 24 := by
+    have h1 : Real.exp (-1) * Real.exp (-(1 / 2)) = (Real.exp (3 / 2))⁻¹ := by
+      rw [← Real.exp_add, ← Real.exp_neg]
+      norm_num
+    nlinarith [Real.exp_pos (-(1 : ℝ)), Real.exp_pos (-(1 / 2 : ℝ))]
+  rw [hsplit]
+  linarith [hb1, hb2, hnum]
 
 /-- **The integral of the Fejér–Poitou test function** (PROVEN
 2026-07-23): `∫₀^∞ odlyzkoTestFn = 3` (stated as `≤ 3`, which is what
