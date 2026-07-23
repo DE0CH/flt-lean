@@ -1566,7 +1566,7 @@
     "name": "exists_isWeaklyUniversal_isTraceGenerated",
     "fullname": "GaloisRepresentation.exists_isWeaklyUniversal_isTraceGenerated",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
-    "wip": true,
+    "wip": false,
     "text": "`exists_isWeaklyUniversal_isTraceGenerated` — Mazur/Ramakrishna representability + Carayol trace generation for the constructed weak universal datum (reference FLT project's own representability node is sorry — ecosystem frontier) — 2026-07-22",
     "parent": "exists_universal_hardlyRamifiedDeformation"
   },
@@ -1582,7 +1582,7 @@
     "name": "exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated",
     "fullname": "GaloisRepresentation.exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
-    "wip": true,
+    "wip": false,
     "text": "`exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated` — Krull dimension ≥ 1 of the constructed universal ring (Böckle presentation bound g−r ≥ 1) — 2026-07-22",
     "parent": "algebraMap_injective_of_isUniversal"
   },
@@ -1617,5 +1617,53 @@
     "wip": true,
     "text": "`infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow` — the sole surviving analytic core after the PROVEN field-crossing reduction: for E = F(ζ_ℓ) cyclotomic over a number field F, infinitely many degree-one places of F with residue characteristic in a prescribed class mod ℓ (pure prime counting; pin has the Dedekind-zeta pole, lacks Euler products/Hecke L-functions — route in the docstring) — 2026-07-23",
     "parent": "GaloisRepresentation.infinite_setOf_isArithFrobAt_zpowers"
+  },
+  {
+    "name": "exists_isWeaklyUniversal",
+    "fullname": "GaloisRepresentation.exists_isWeaklyUniversal",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
+    "wip": true,
+    "text": "`exists_isWeaklyUniversal` — Mazur/Schlessinger representability (de Smit–Lenstra presentation; Chebotarev–Brauer–Nesbitt reduction-matching recorded) — 2026-07-23",
+    "parent": "GaloisRepresentation.exists_isWeaklyUniversal_isTraceGenerated"
+  },
+  {
+    "name": "exists_isWeaklyUniversal_isTraceGenerated_of_isWeaklyUniversal",
+    "fullname": "GaloisRepresentation.exists_isWeaklyUniversal_isTraceGenerated_of_isWeaklyUniversal",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
+    "wip": true,
+    "text": "`exists_isWeaklyUniversal_isTraceGenerated_of_isWeaklyUniversal` — Carayol trace-descent to the closed trace subalgebra, weak universality preserved — 2026-07-23",
+    "parent": "GaloisRepresentation.exists_isWeaklyUniversal_isTraceGenerated"
+  },
+  {
+    "name": "exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated",
+    "fullname": "GaloisRepresentation.exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
+    "wip": true,
+    "text": "`exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated` — Böckle presentation ℤ_ℓ[[x₁..x_g]]/(f₁..f_r), r < g — the sole Galois-cohomological input of the proven Krull assembly — 2026-07-23",
+    "parent": "GaloisRepresentation.exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated"
+  },
+  {
+    "name": "nonempty_ringEquiv_mvPowerSeries_powerSeries",
+    "fullname": "GaloisRepresentation.nonempty_ringEquiv_mvPowerSeries_powerSeries",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
+    "wip": true,
+    "text": "`nonempty_ringEquiv_mvPowerSeries_powerSeries` — MvPowerSeries (Fin (n+1)) R ≃+* PowerSeries (MvPowerSeries (Fin n) R) — coefficient reindexing along (Fin (n+1) →₀ ℕ) ≃ ℕ × (Fin n →₀ ℕ); subst route proven impossible — 2026-07-23",
+    "parent": "GaloisRepresentation.exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated"
+  },
+  {
+    "name": "exists_kummerTorsionPackage",
+    "fullname": "exists_kummerTorsionPackage",
+    "module": "Fermat.FLT.FreyCurve.Semistable",
+    "wip": true,
+    "text": "`exists_kummerTorsionPackage` — the Ω̂-points equivalence leaf's parent: curve-free Kummer torsion package, PROVEN over the explicit Hopf model except exists_kummerAlg_pointsEquiv — 2026-07-23",
+    "parent": "torsionFlatPackage_of_split_adic"
+  },
+  {
+    "name": "exists_kummerAlg_pointsEquiv",
+    "fullname": "exists_kummerAlg_pointsEquiv",
+    "module": "Fermat.FLT.FreyCurve.Semistable",
+    "wip": true,
+    "text": "`exists_kummerAlg_pointsEquiv` — the Ω̂-points of the explicit Kummer model are the p-torsion of Ωˣ/Qᶻ, equivariantly (product-factoring into a field + StandardEtalePair.homEquiv + the (i,t)↦[wⁱt] valuation argument, recorded) — 2026-07-23",
+    "parent": "exists_kummerTorsionPackage"
   }
 ]
