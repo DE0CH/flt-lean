@@ -632,46 +632,288 @@ theorem exists_universal_hardlyRamifiedDeformation (hℓ5 : 5 ≤ ℓ)
     exists_isWeaklyUniversal_isTraceGenerated hℓOdd hdim hℓ5 h hirr
   exact ⟨D, isUniversal_of_isWeaklyUniversal_isTraceGenerated hℓOdd D hw ht⟩
 
-/-- **Finiteness leaf** (sorry node — the arithmetic core of the
-finiteness stratum): the weakly universal, trace-generated hardly
-ramified deformation ring — i.e. the genuine universal ring, as
-constructed by `exists_isWeaklyUniversal_isTraceGenerated` — is finite
-as a `ℤ_ℓ`-module.
+/-- **Mod-`ℓ` finiteness leaf** (sorry node — the arithmetic core of
+the finiteness stratum, restated modulo `ℓ`): the weakly universal,
+trace-generated hardly ramified deformation ring — i.e. the genuine
+universal ring, as constructed by
+`exists_isWeaklyUniversal_isTraceGenerated` — is *finite modulo `ℓ`*:
+`D.R ⧸ (ℓ)` is a finite ring.
 
 This is the potential-modularity / Taylor–Wiles–Kisin input of
 Khare–Wintenberger — the single genuinely deep arithmetic node of the
-lifting core, deliberately NOT decomposed further here: no principled
-intermediate statement exists in the repository's current vocabulary
-(stating "`R = T`" needs Hecke algebras; stating potential modularity
-needs Hilbert modular forms over totally real fields). The
+lifting core, not decomposed further here: no principled intermediate
+statement exists in the repository's current vocabulary (stating
+"`R = T`" needs Hecke algebras; stating potential modularity needs
+Hilbert modular forms over totally real fields). The
 residual-modularity hypothesis is bypassed via potential modularity
 (Taylor's Moret-Bailly argument), which after a solvable base change
 `F/ℚ` (totally real, in which the deformation problem's conditions
 remain balanced) proves an `R = T` theorem by the Taylor–Wiles–Kisin
-patching method; `T` is a finite `ℤ_ℓ`-algebra, and finiteness of the
-`ℚ`-level ring descends by Khare–Wintenberger's argument. Given the
-Böckle presentation leaf above, finiteness is equivalent to
-`D.R/(ℓ)` being Artinian — the eventual proof may target either form.
-The hypotheses characterize `D` up to canonical isomorphism (weak
-universality + trace generation = universality, by
+patching method; `T` is a finite `ℤ_ℓ`-algebra, so `T/ℓT` — and with
+it the mod-`ℓ` fibre of the `ℚ`-level ring, by Khare–Wintenberger's
+descent — is finite. The mod-`ℓ` form is chosen over
+`Module.Finite ℤ_[ℓ] D.R` because it is what the patching literature
+produces directly (the "`R/λ` is Artinian" form of finiteness, cf. the
+Böckle presentation stratum); the lift back to `ℤ_ℓ`-module finiteness
+is the pure commutative-algebra completeness bootstrap
+`moduleFinite_of_finite_quotient_span` below. The hypotheses
+characterize `D` up to canonical isomorphism (weak universality +
+trace generation = universality, by
 `isUniversal_of_isWeaklyUniversal_isTraceGenerated` and the rigidity
 theorem `exists_ringEquiv_of_isUniversal`), so a future proof may
-construct its own universal datum, prove IT finite, and transport the
-result along the canonical isomorphism.
+construct its own universal datum, prove ITS mod-`ℓ` fibre finite, and
+transport the result along the canonical isomorphism.
 
 References: Khare–Wintenberger, *Serre's modularity conjecture (I)*,
 Thm. 4.1 and §4, and *(II)*; Taylor, *Remarks on a conjecture of
 Fontaine and Mazur* and *On the meromorphic continuation of degree two
 L-functions*; Kisin, *Moduli of finite flat group schemes, and
 modularity*; Buzzard's 2026 EPSRC course, Lecture 4. -/
+theorem finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ (ZMod ℓ) V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing
+    Finite (D.R ⧸ Ideal.span {(ℓ : D.R)}) :=
+  sorry
+
+/-- **Completeness bootstrap** (PROVEN 2026-07-23, pure commutative
+algebra — no arithmetic content): a Noetherian local `ℤ_ℓ`-algebra `R`,
+separated for its maximal-adic topology, with residue characteristic
+`ℓ` (it maps to `ℤ/ℓℤ`) and finite modulo `ℓ`, is finite as a
+`ℤ_ℓ`-module.
+
+Proof (standard: Mazur, *Deforming Galois representations*, §1.1;
+Matsumura, Thm. 8.4): `ℓ` lies in the maximal ideal (it dies under the
+reduction map, whose kernel is the maximal ideal of the local ring, `π`
+being surjective onto the prime field `ℤ/ℓℤ`), so `ℓ^t R ⊆ 𝔪^t`.
+Choose representatives `x₁, …, x_s ∈ R` of the finitely many classes of
+`R/(ℓ)`; every `r ∈ R` unwinds as `r = Σ_j ℓ^j a_j` with each `a_j`
+among the `xᵢ`, the coordinatewise partial sums of the resulting
+`ℤ_ℓ`-coefficients converge in the complete `ℤ_ℓ` (`IsPrecomplete`,
+purely algebraically), and adic separatedness identifies `r` with the
+limit combination — so the `xᵢ` generate `R` as a `ℤ_ℓ`-module.
+
+(The `IsNoetherianRing` hypothesis is DELIBERATELY retained although
+this proof does not consume it: it keeps the statement aligned with the
+literature form of the bootstrap, and its sole use site — the
+finiteness-stratum assembly `moduleFinite_of_isWeaklyUniversal_...`
+below — discharges it with the `isNoetherianRing` field of
+`HardlyRamifiedDeformation`, which keeps that structure field inside
+the root theorem's dependency cone. Do not remove it.) -/
+theorem moduleFinite_of_finite_quotient_span {R : Type*} [CommRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R] [IsNoetherianRing R]
+    [IsHausdorff (IsLocalRing.maximalIdeal R) R]
+    (π : R →+* ZMod ℓ)
+    (hfin : Finite (R ⧸ Ideal.span {(ℓ : R)})) :
+    Module.Finite ℤ_[ℓ] R := by
+  classical
+  -- `ℓ` lies in the maximal ideal: it dies under the reduction map, whose
+  -- kernel is the maximal ideal
+  have hker : RingHom.ker π = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.eq_maximalIdeal
+      (RingHom.ker_isMaximal_of_surjective π (ZMod.ringHom_surjective π))
+  have hℓm : (ℓ : R) ∈ IsLocalRing.maximalIdeal R := by
+    rw [← hker, RingHom.mem_ker, map_natCast, ZMod.natCast_self]
+  haveI := hfin
+  haveI : Fintype (R ⧸ Ideal.span {(ℓ : R)}) := Fintype.ofFinite _
+  -- a set-theoretic section of the reduction onto the finite quotient
+  let s : (R ⧸ Ideal.span {(ℓ : R)}) → R :=
+    Function.surjInv Ideal.Quotient.mk_surjective
+  have hs : ∀ q, Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (s q) = q :=
+    fun q => Function.surjInv_eq Ideal.Quotient.mk_surjective q
+  -- division step: subtracting the representative of the class leaves a
+  -- multiple of `ℓ`
+  have hstep : ∀ x : R, ∃ c : R,
+      x - s (Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) x) = (ℓ : R) * c := by
+    intro x
+    have hx : x - s (Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) x) ∈
+        Ideal.span {(ℓ : R)} := by
+      rw [← Ideal.Quotient.eq]
+      exact (hs _).symm
+    obtain ⟨c, hc⟩ := Ideal.mem_span_singleton'.mp hx
+    exact ⟨c, by rw [← hc, mul_comm]⟩
+  choose step hstepEq using hstep
+  -- the `ℤ_ℓ`-span of the representatives is everything: unwind an
+  -- arbitrary element into `ℓ`-adic digits, converge the coefficients in
+  -- the complete `ℤ_ℓ`, and identify by adic separatedness
+  have hspan : Submodule.span ℤ_[ℓ] (Set.range s) = ⊤ := by
+    rw [Submodule.eq_top_iff']
+    intro r
+    -- remainders of the iterated division
+    let rem : ℕ → R := fun t =>
+      Nat.rec (motive := fun _ => R) r (fun _ prev => step prev) t
+    have hremS : ∀ t, rem (t + 1) = step (rem t) := fun _ => rfl
+    -- partial coefficient sums, one per representative
+    set c : ℕ → (R ⧸ Ideal.span {(ℓ : R)}) → ℤ_[ℓ] := fun t q =>
+      ∑ j ∈ Finset.range t,
+        if Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j) = q
+        then (ℓ : ℤ_[ℓ]) ^ j else 0 with hcdef
+    -- the partial sums are Cauchy for the `ℓ`-adic filtration of `ℤ_ℓ`
+    have hcauchy : ∀ q, ∀ {a b : ℕ}, a ≤ b →
+        c a q ≡ c b q [SMOD
+          (IsLocalRing.maximalIdeal ℤ_[ℓ] ^ a • ⊤ :
+            Submodule ℤ_[ℓ] ℤ_[ℓ])] := by
+      intro q a b hab
+      rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top]
+      have hsplit : c b q - c a q = ∑ j ∈ Finset.Ico a b,
+          (if Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j) = q
+           then (ℓ : ℤ_[ℓ]) ^ j else 0) := by
+        simp only [hcdef]
+        rw [← Finset.sum_range_add_sum_Ico _ hab]
+        ring
+      have hmem : ∑ j ∈ Finset.Ico a b,
+          (if Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j) = q
+           then (ℓ : ℤ_[ℓ]) ^ j else 0) ∈
+          (IsLocalRing.maximalIdeal ℤ_[ℓ] ^ a : Ideal ℤ_[ℓ]) := by
+        refine Submodule.sum_mem _ fun j hj => ?_
+        rw [Finset.mem_Ico] at hj
+        rw [PadicInt.maximalIdeal_eq_span_p, Ideal.span_singleton_pow]
+        split_ifs
+        · exact Ideal.mem_span_singleton.mpr (pow_dvd_pow _ hj.1)
+        · exact Submodule.zero_mem _
+      have hflip : c a q - c b q = -(c b q - c a q) := by ring
+      rw [hflip, hsplit]
+      exact neg_mem hmem
+    -- converge the coefficients in the complete `ℤ_ℓ`
+    have hex : ∀ q, ∃ Lq : ℤ_[ℓ], ∀ t, c t q ≡ Lq [SMOD
+        (IsLocalRing.maximalIdeal ℤ_[ℓ] ^ t • ⊤ :
+          Submodule ℤ_[ℓ] ℤ_[ℓ])] :=
+      fun q => IsPrecomplete.prec inferInstance
+        (fun {a b} hab => hcauchy q hab)
+    choose L hL using hex
+    -- the finite-stage identity: `r` is the digit combination plus an
+    -- `ℓ^t`-divisible remainder
+    have hA : ∀ t, r = (∑ j ∈ Finset.range t, (ℓ : R) ^ j *
+        s (Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j))) +
+        (ℓ : R) ^ t * rem t := by
+      intro t
+      induction t with
+      | zero =>
+        rw [Finset.sum_range_zero, pow_zero, one_mul, zero_add]
+        rfl
+      | succ t ih =>
+        have hdiv : rem t =
+            s (Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem t)) +
+              (ℓ : R) * rem (t + 1) := by
+          have h1 := hstepEq (rem t)
+          rw [← hremS t] at h1
+          rw [← h1]
+          ring
+        calc r = (∑ j ∈ Finset.range t, (ℓ : R) ^ j *
+              s (Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j))) +
+              (ℓ : R) ^ t * rem t := ih
+          _ = (∑ j ∈ Finset.range (t + 1), (ℓ : R) ^ j *
+              s (Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j))) +
+              (ℓ : R) ^ (t + 1) * rem (t + 1) := by
+            conv_lhs => rw [hdiv]
+            rw [Finset.sum_range_succ]
+            ring
+    -- regroup the digit combination by representative
+    have hB : ∀ t, (∑ j ∈ Finset.range t, (ℓ : R) ^ j *
+        s (Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j))) =
+        ∑ q, algebraMap ℤ_[ℓ] R (c t q) * s q := by
+      intro t
+      have hterm : ∀ q, algebraMap ℤ_[ℓ] R (c t q) * s q =
+          ∑ j ∈ Finset.range t,
+            (if Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j) = q
+             then (ℓ : R) ^ j * s q else 0) := by
+        intro q
+        simp only [hcdef]
+        rw [map_sum, Finset.sum_mul]
+        refine Finset.sum_congr rfl fun j _ => ?_
+        split_ifs
+        · rw [map_pow, map_natCast]
+        · rw [map_zero, zero_mul]
+      refine Eq.symm ?_
+      calc ∑ q, algebraMap ℤ_[ℓ] R (c t q) * s q
+          = ∑ q, ∑ j ∈ Finset.range t,
+              (if Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j) = q
+               then (ℓ : R) ^ j * s q else 0) :=
+            Finset.sum_congr rfl fun q _ => hterm q
+        _ = ∑ j ∈ Finset.range t, ∑ q,
+              (if Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j) = q
+               then (ℓ : R) ^ j * s q else 0) :=
+            Finset.sum_comm
+        _ = ∑ j ∈ Finset.range t, (ℓ : R) ^ j *
+              s (Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j)) := by
+            refine Finset.sum_congr rfl fun j _ => ?_
+            rw [Finset.sum_ite_eq]
+            simp
+    -- the limit combination differs from `r` by an element of every power
+    -- of the maximal ideal …
+    have hsmul : ∑ q, L q • s q = ∑ q, algebraMap ℤ_[ℓ] R (L q) * s q :=
+      Finset.sum_congr rfl fun q _ => Algebra.smul_def _ _
+    have hmemt : ∀ t : ℕ, r - ∑ q, L q • s q ∈
+        (IsLocalRing.maximalIdeal R ^ t : Ideal R) := by
+      intro t
+      have hsub : r - ∑ q, L q • s q =
+          (ℓ : R) ^ t * rem t +
+          ∑ q, algebraMap ℤ_[ℓ] R (c t q - L q) * s q := by
+        calc r - ∑ q, L q • s q
+            = ((∑ q, algebraMap ℤ_[ℓ] R (c t q) * s q) +
+                (ℓ : R) ^ t * rem t) -
+                ∑ q, algebraMap ℤ_[ℓ] R (L q) * s q := by
+              rw [← hB t, ← hA t, hsmul]
+          _ = (ℓ : R) ^ t * rem t +
+              ∑ q, (algebraMap ℤ_[ℓ] R (c t q) * s q -
+                algebraMap ℤ_[ℓ] R (L q) * s q) := by
+              rw [Finset.sum_sub_distrib]
+              ring
+          _ = (ℓ : R) ^ t * rem t +
+              ∑ q, algebraMap ℤ_[ℓ] R (c t q - L q) * s q := by
+              refine congrArg (fun z => (ℓ : R) ^ t * rem t + z) ?_
+              exact Finset.sum_congr rfl fun q _ => by
+                rw [map_sub, sub_mul]
+      rw [hsub]
+      refine Submodule.add_mem _ ?_ ?_
+      · exact Ideal.mul_mem_right _ _ (Ideal.pow_mem_pow hℓm t)
+      · refine Submodule.sum_mem _ fun q _ => ?_
+        have hLqt := hL q t
+        rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top,
+          PadicInt.maximalIdeal_eq_span_p, Ideal.span_singleton_pow,
+          Ideal.mem_span_singleton] at hLqt
+        obtain ⟨d, hd⟩ := hLqt
+        rw [hd, map_mul, map_pow, map_natCast, mul_assoc]
+        exact Ideal.mul_mem_right _ _ (Ideal.pow_mem_pow hℓm t)
+    -- … hence vanishes by adic separatedness
+    have hzero : r - ∑ q, L q • s q = 0 := by
+      refine IsHausdorff.haus (inferInstance :
+        IsHausdorff (IsLocalRing.maximalIdeal R) R) _ fun t => ?_
+      rw [SModEq.zero, smul_eq_mul, Ideal.mul_top]
+      exact hmemt t
+    rw [sub_eq_zero.mp hzero]
+    exact Submodule.sum_mem _ fun q _ =>
+      Submodule.smul_mem _ _ (Submodule.subset_span ⟨q, rfl⟩)
+  -- conclude module finiteness from the finite generating set
+  exact Module.finite_def.mpr
+    ⟨(Set.finite_range s).toFinset, by
+      rw [Set.Finite.coe_toFinset]; exact hspan⟩
+
+/-- **Finiteness leaf** (DECOMPOSED 2026-07-23 into the mod-`ℓ`
+finiteness leaf `finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated`
+— the potential-modularity / Taylor–Wiles–Kisin content, producing
+finiteness of `D.R ⧸ (ℓ)` — plus the pure commutative-algebra
+completeness bootstrap `moduleFinite_of_finite_quotient_span`; the
+assembly below is proven): the weakly universal, trace-generated hardly
+ramified deformation ring is finite as a `ℤ_ℓ`-module. -/
 theorem moduleFinite_of_isWeaklyUniversal_isTraceGenerated (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ (ZMod ℓ) V} (h : IsHardlyRamified hℓOdd hdim ρbar)
     (hirr : ρbar.IsIrreducible)
     (D : HardlyRamifiedDeformation hℓOdd ρbar)
     (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
     letI := D.commRing; letI := D.algebra
-    Module.Finite ℤ_[ℓ] D.R :=
-  sorry
+    Module.Finite ℤ_[ℓ] D.R := by
+  letI := D.commRing; letI := D.isLocalRing; letI := D.algebra
+  haveI := D.isNoetherianRing
+  haveI : IsHausdorff (IsLocalRing.maximalIdeal D.R) D.R :=
+    (D.isAdicComplete).toIsHausdorff
+  have hfin : Finite (D.R ⧸ Ideal.span {(ℓ : D.R)}) :=
+    finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated hℓOdd hdim
+      hℓ5 h hirr D hw ht
+  exact moduleFinite_of_finite_quotient_span D.π hfin
 
 /-- **Finiteness stratum** (DECOMPOSED 2026-07-22 into the arithmetic
 leaf `moduleFinite_of_isWeaklyUniversal_isTraceGenerated` — potential
@@ -746,21 +988,141 @@ theorem exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated
       RingHom.ker φ = Ideal.span (Set.range f) :=
   sorry
 
-/-- **Variable-splitting isomorphism for power series** (sorry node,
-pure commutative algebra — the missing mathlib bridge between
-multivariate power series in `n + 1` variables and single-variable
-power series over multivariate power series in `n` variables):
-separating one variable. Provable by reindexing coefficients along the
-equivalence `(Fin (n + 1) →₀ ℕ) ≃ ℕ × (Fin n →₀ ℕ)` (split off the
-last exponent), multiplicativity being the Cauchy-product
-rearrangement of the convolution over split monomials. Stated over an
-arbitrary commutative base ring: both consumers below induct with a
+/-- Auxiliary for the variable-splitting isomorphism: `Finsupp.tail` is
+additive. -/
+lemma finsupp_tail_add {n : ℕ} (p q : Fin (n + 1) →₀ ℕ) :
+    Finsupp.tail (p + q) = Finsupp.tail p + Finsupp.tail q :=
+  Finsupp.ext fun i => by simp [Finsupp.tail_apply]
+
+/-- Auxiliary for the variable-splitting isomorphism: `Finsupp.cons` is
+additive. -/
+lemma finsupp_cons_add_cons {n : ℕ} (a b : ℕ) (s t : Fin n →₀ ℕ) :
+    Finsupp.cons a s + Finsupp.cons b t = Finsupp.cons (a + b) (s + t) :=
+  Finsupp.ext fun i => by
+    induction i using Fin.cases with
+    | zero => simp
+    | succ j => simp
+
+/-- Auxiliary for the variable-splitting isomorphism: a sum over the
+antidiagonal of `Finsupp.cons k m` is an iterated sum over the
+antidiagonals of `k` and of `m` — the monomial-splitting rearrangement
+underlying the Cauchy-product compatibility. -/
+lemma sum_antidiagonal_cons {S : Type*} [AddCommMonoid S] {n : ℕ} (k : ℕ)
+    (m : Fin n →₀ ℕ)
+    (F : (Fin (n + 1) →₀ ℕ) × (Fin (n + 1) →₀ ℕ) → S) :
+    ∑ p ∈ Finset.antidiagonal (Finsupp.cons k m), F p =
+      ∑ ij ∈ Finset.antidiagonal k, ∑ ab ∈ Finset.antidiagonal m,
+        F (Finsupp.cons ij.1 ab.1, Finsupp.cons ij.2 ab.2) := by
+  calc ∑ p ∈ Finset.antidiagonal (Finsupp.cons k m), F p
+      = ∑ x ∈ Finset.antidiagonal k ×ˢ Finset.antidiagonal m,
+          F (Finsupp.cons x.1.1 x.2.1, Finsupp.cons x.1.2 x.2.2) := ?_
+    _ = ∑ ij ∈ Finset.antidiagonal k, ∑ ab ∈ Finset.antidiagonal m,
+          F (Finsupp.cons ij.1 ab.1, Finsupp.cons ij.2 ab.2) :=
+        Finset.sum_product' (Finset.antidiagonal k) (Finset.antidiagonal m)
+          (fun ij ab => F (Finsupp.cons ij.1 ab.1, Finsupp.cons ij.2 ab.2))
+  refine Finset.sum_nbij'
+    (i := fun p => ((p.1 0, p.2 0), (Finsupp.tail p.1, Finsupp.tail p.2)))
+    (j := fun x => (Finsupp.cons x.1.1 x.2.1, Finsupp.cons x.1.2 x.2.2))
+    ?_ ?_ ?_ ?_ ?_
+  · rintro ⟨p, q⟩ hp
+    rw [Finset.mem_antidiagonal] at hp
+    rw [Finset.mem_product, Finset.mem_antidiagonal, Finset.mem_antidiagonal]
+    refine ⟨?_, ?_⟩
+    · have h0 := DFunLike.congr_fun hp 0
+      simpa using h0
+    · rw [← finsupp_tail_add, hp, Finsupp.tail_cons]
+  · rintro ⟨⟨i, j⟩, a, b⟩ hx
+    rw [Finset.mem_product, Finset.mem_antidiagonal,
+      Finset.mem_antidiagonal] at hx
+    rw [Finset.mem_antidiagonal]
+    show Finsupp.cons i a + Finsupp.cons j b = Finsupp.cons k m
+    rw [finsupp_cons_add_cons, hx.1, hx.2]
+  · rintro ⟨p, q⟩ -
+    simp
+  · rintro ⟨⟨i, j⟩, a, b⟩ -
+    simp
+  · rintro ⟨p, q⟩ -
+    simp
+
+/-- Auxiliary for the variable-splitting isomorphism: the splitting map
+itself, carrying `f ∈ R[[x₀,…,x_n]]` to the single-variable power series
+in `x₀` whose `k`-th coefficient is the `n`-variable series of
+`x₀`-degree-`k` coefficients of `f`. -/
+noncomputable def mvPowerSeriesSplit {R : Type*} [CommRing R] (n : ℕ)
+    (f : MvPowerSeries (Fin (n + 1)) R) :
+    PowerSeries (MvPowerSeries (Fin n) R) :=
+  PowerSeries.mk fun k =>
+    (fun m => MvPowerSeries.coeff (Finsupp.cons k m) f :
+      MvPowerSeries (Fin n) R)
+
+/-- Auxiliary: coefficient formula for `mvPowerSeriesSplit`. -/
+lemma coeff_coeff_mvPowerSeriesSplit {R : Type*} [CommRing R] (n : ℕ)
+    (f : MvPowerSeries (Fin (n + 1)) R) (k : ℕ) (m : Fin n →₀ ℕ) :
+    MvPowerSeries.coeff m (PowerSeries.coeff k (mvPowerSeriesSplit n f)) =
+      MvPowerSeries.coeff (Finsupp.cons k m) f := by
+  rw [mvPowerSeriesSplit, PowerSeries.coeff_mk]
+  rfl
+
+/-- Auxiliary for the variable-splitting isomorphism: the merging map,
+inverse to `mvPowerSeriesSplit`. -/
+noncomputable def mvPowerSeriesUnsplit {R : Type*} [CommRing R] (n : ℕ)
+    (G : PowerSeries (MvPowerSeries (Fin n) R)) :
+    MvPowerSeries (Fin (n + 1)) R :=
+  (fun p => MvPowerSeries.coeff (Finsupp.tail p)
+      (PowerSeries.coeff (p 0) G) :
+    MvPowerSeries (Fin (n + 1)) R)
+
+/-- Auxiliary: coefficient formula for `mvPowerSeriesUnsplit`. -/
+lemma coeff_mvPowerSeriesUnsplit {R : Type*} [CommRing R] (n : ℕ)
+    (G : PowerSeries (MvPowerSeries (Fin n) R)) (p : Fin (n + 1) →₀ ℕ) :
+    MvPowerSeries.coeff p (mvPowerSeriesUnsplit n G) =
+      MvPowerSeries.coeff (Finsupp.tail p) (PowerSeries.coeff (p 0) G) :=
+  rfl
+
+/-- **Variable-splitting isomorphism for power series** (PROVEN
+2026-07-23, pure commutative algebra — the missing mathlib bridge
+between multivariate power series in `n + 1` variables and
+single-variable power series over multivariate power series in `n`
+variables): separating one variable. Proven by reindexing coefficients
+along `Finsupp.cons`/`Finsupp.tail` (split off the exponent of `x₀`),
+multiplicativity being the Cauchy-product rearrangement of the
+convolution over split monomials (`sum_antidiagonal_cons`). Stated over
+an arbitrary commutative base ring: both consumers below induct with a
 changing base. -/
 theorem nonempty_ringEquiv_mvPowerSeries_powerSeries {R : Type*}
     [CommRing R] (n : ℕ) :
     Nonempty (MvPowerSeries (Fin (n + 1)) R ≃+*
-      PowerSeries (MvPowerSeries (Fin n) R)) :=
-  sorry
+      PowerSeries (MvPowerSeries (Fin n) R)) := by
+  refine ⟨{
+    toFun := mvPowerSeriesSplit n
+    invFun := mvPowerSeriesUnsplit n
+    left_inv := fun f => ?_
+    right_inv := fun G => ?_
+    map_mul' := fun f g => ?_
+    map_add' := fun f g => ?_ }⟩
+  · -- left inverse: recombine the split exponents
+    refine MvPowerSeries.ext fun p => ?_
+    rw [coeff_mvPowerSeriesUnsplit, coeff_coeff_mvPowerSeriesSplit,
+      Finsupp.cons_tail]
+  · -- right inverse: split the recombined exponents
+    refine PowerSeries.ext fun k => ?_
+    refine MvPowerSeries.ext fun m => ?_
+    rw [coeff_coeff_mvPowerSeriesSplit, coeff_mvPowerSeriesUnsplit,
+      Finsupp.tail_cons, Finsupp.cons_zero]
+  · -- multiplicativity: the Cauchy product rearranges over split monomials
+    classical
+    refine PowerSeries.ext fun k => ?_
+    refine MvPowerSeries.ext fun m => ?_
+    rw [coeff_coeff_mvPowerSeriesSplit, MvPowerSeries.coeff_mul,
+      PowerSeries.coeff_mul, map_sum]
+    simp only [MvPowerSeries.coeff_mul, coeff_coeff_mvPowerSeriesSplit]
+    exact sum_antidiagonal_cons k m fun p =>
+      MvPowerSeries.coeff p.1 f * MvPowerSeries.coeff p.2 g
+  · -- additivity: coefficientwise
+    refine PowerSeries.ext fun k => ?_
+    refine MvPowerSeries.ext fun m => ?_
+    rw [coeff_coeff_mvPowerSeriesSplit, map_add, map_add, map_add,
+      coeff_coeff_mvPowerSeriesSplit, coeff_coeff_mvPowerSeriesSplit]
 
 /-- **Noetherianness of multivariate power series** (PROVEN 2026-07-23
 modulo the variable-splitting leaf above — a mathlib gap: the
