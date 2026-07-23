@@ -2096,20 +2096,21 @@ theorem WeierstrassCurve.torsion_finite_of_ne_zero (m : ℕ) (hm : m ≠ 0) :
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
-omit [IsDomain R] [IsDiscreteValuationRing R] [E.HasGoodReduction R] in
-/-- **The torsion Galois action factors through a finite Galois quotient** (PROVEN
-2026-07-22; the curve-specific half of the torsion-package decomposition —
-everything about elliptic curves in it is the finiteness and Galois-stability of the
-torsion): for `m` nonzero in `R`, there is a finite Galois subextension `L/K` inside
-`Kˢᵉᵖ` and an action of `Gal(L/K)` on the `m`-torsion through which the geometric
-action of `Gal(Kˢᵉᵖ/K)` factors. Proof: the torsion set is finite (`torsion_finite`),
-so the coordinates of its points are finitely many separable elements of `Kˢᵉᵖ`; `L`
-is the normal closure of their adjunction, finite Galois; the action of an
-automorphism on a torsion point only depends on its restriction to `L` (the
+omit [IsDomain R] [IsDiscreteValuationRing R] [E.IsElliptic] [E.HasGoodReduction R] in
+/-- **The torsion Galois action factors through a finite Galois quotient, finiteness
+form** (PROVEN 2026-07-22, generalized 2026-07-23 to consume the finiteness of the
+torsion as a hypothesis — everything about elliptic curves in it is the finiteness
+and Galois-stability of the torsion, so this form serves both the `(m : R) ≠ 0` case
+and the equal-characteristic case at once): there is a finite Galois subextension
+`L/K` inside `Kˢᵉᵖ` and an action of `Gal(L/K)` on the `m`-torsion through which the
+geometric action of `Gal(Kˢᵉᵖ/K)` factors. Proof: the torsion set is finite by
+hypothesis, so the coordinates of its points are finitely many separable elements of
+`Kˢᵉᵖ`; `L` is the normal closure of their adjunction, finite Galois; the action of
+an automorphism on a torsion point only depends on its restriction to `L` (the
 coordinates lie in `L`), so `σ' : Gal(L/K)` acts through `AlgEquiv.liftNormal`,
 multiplicatively because lifts of equal restrictions act equally. -/
-theorem WeierstrassCurve.exists_torsion_galois_finiteQuotient
-    (m : ℕ) (hm : (m : R) ≠ 0) :
+theorem WeierstrassCurve.exists_torsion_galois_finiteQuotient_of_finite
+    (m : ℕ) (hT : Finite (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))) :
     ∃ (L : IntermediateField K Ksep) (_ : FiniteDimensional K L) (_ : IsGalois K L)
       (ρ : (L ≃ₐ[K] L) →*
         AddMonoid.End (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))),
@@ -2119,8 +2120,7 @@ theorem WeierstrassCurve.exists_torsion_galois_finiteQuotient
             AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) : (E⁄Ksep).Point) =
           Affine.Point.map σ.toAlgHom (P : (E⁄Ksep).Point) := by
   classical
-  haveI hT : Finite (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :=
-    WeierstrassCurve.torsion_finite R K E Ksep m hm
+  haveI := hT
   -- the (finite) set of coordinates of the torsion points
   set pcs : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ) → Set Ksep := fun P =>
     WeierstrassCurve.Affine.Point.casesOn (P : (E⁄Ksep).Point) ∅
@@ -2248,17 +2248,39 @@ theorem WeierstrassCurve.exists_torsion_galois_finiteQuotient
 
 set_option backward.isDefEq.respectTransparency false in
 omit [IsDomain R] [IsDiscreteValuationRing R] [E.HasGoodReduction R] in
-/-- **The finite étale Hopf package of the torsion over the fraction field**
-(DECOMPOSED 2026-07-22 into the curve-independent Galois-correspondence core
+/-- **The torsion Galois action factors through a finite Galois quotient** (PROVEN
+2026-07-22; since 2026-07-23 a wrapper around the finiteness form
+`exists_torsion_galois_finiteQuotient_of_finite`, supplying the finiteness of the
+torsion from `(m : R) ≠ 0` via `torsion_finite`). -/
+theorem WeierstrassCurve.exists_torsion_galois_finiteQuotient
+    (m : ℕ) (hm : (m : R) ≠ 0) :
+    ∃ (L : IntermediateField K Ksep) (_ : FiniteDimensional K L) (_ : IsGalois K L)
+      (ρ : (L ≃ₐ[K] L) →*
+        AddMonoid.End (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))),
+      ∀ (σ : Ksep ≃ₐ[K] Ksep)
+        (P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)),
+        ((ρ (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ksep) L σ) P :
+            AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) : (E⁄Ksep).Point) =
+          Affine.Point.map σ.toAlgHom (P : (E⁄Ksep).Point) :=
+  WeierstrassCurve.exists_torsion_galois_finiteQuotient_of_finite K E Ksep m
+    (WeierstrassCurve.torsion_finite R K E Ksep m hm)
+
+set_option backward.isDefEq.respectTransparency false in
+omit [IsDomain R] [IsDiscreteValuationRing R] [E.IsElliptic] [E.HasGoodReduction R] in
+include R in
+/-- **The finite étale Hopf package of the torsion, finiteness form** (DECOMPOSED
+2026-07-22 into the curve-independent Galois-correspondence core
 `exists_finiteQuotient_galoisModule_etale_package` — kept aligned with the
 structurally parallel Semistable node, see its docstring — and the curve-specific
-finite-quotient leaf `exists_torsion_galois_finiteQuotient`; the assembly below is
-proven, including the finiteness of the torsion via `TorsionCard.card_torsionBy` and
-the `u`-smallness of `K` via `FractionRing.algEquiv`): for `m` nonzero in `R`, the
-`m`-torsion Galois module `E(Kˢᵉᵖ)[m]` is, `Gal(Kˢᵉᵖ/K)`-equivariantly, the group of
-`Kˢᵉᵖ`-points of a finite étale Hopf algebra over `K`. -/
-theorem WeierstrassCurve.exists_torsion_etale_package_over_fractionField
-    (m : ℕ) (hm : (m : R) ≠ 0) :
+finite-quotient leaf `exists_torsion_galois_finiteQuotient_of_finite`; the assembly
+below is proven, including the `u`-smallness of `K` via `FractionRing.algEquiv`;
+generalized 2026-07-23 to consume the finiteness of the torsion as a hypothesis, so
+that the `(m : R) ≠ 0` case and the equal-characteristic case share it): given that
+the `m`-torsion of `E(Kˢᵉᵖ)` is finite, the `m`-torsion Galois module `E(Kˢᵉᵖ)[m]`
+is, `Gal(Kˢᵉᵖ/K)`-equivariantly, the group of `Kˢᵉᵖ`-points of a finite étale Hopf
+algebra over `K`. -/
+theorem WeierstrassCurve.exists_torsion_etale_package_of_finite
+    (m : ℕ) (hT : Finite (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))) :
     ∃ (HK : Type u) (_ : CommRing HK) (_ : HopfAlgebra K HK)
       (_ : Module.Finite K HK) (_ : Algebra.Etale K HK)
       (f : Additive (WithConv (HK →ₐ[K] Ksep)) ≃+
@@ -2269,14 +2291,13 @@ theorem WeierstrassCurve.exists_torsion_etale_package_over_fractionField
   classical
   -- the geometric action factors through a finite Galois quotient
   obtain ⟨L, hFD, hGal, ρ, hρ⟩ :=
-    WeierstrassCurve.exists_torsion_galois_finiteQuotient R K E Ksep m hm
+    WeierstrassCurve.exists_torsion_galois_finiteQuotient_of_finite K E Ksep m hT
   haveI := hFD
   haveI := hGal
   -- `K` is `u`-small, being a fraction field of `R : Type u`
   haveI : Small.{u} K := ⟨⟨FractionRing R, ⟨(FractionRing.algEquiv R K).toEquiv.symm⟩⟩⟩
-  -- the `m`-torsion is finite, by the torsion count over the separable closure
-  haveI hfin : Finite (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :=
-    WeierstrassCurve.torsion_finite R K E Ksep m hm
+  -- the `m`-torsion is finite, by hypothesis
+  haveI := hT
   -- apply the curve-independent core to the descended action
   obtain ⟨HK, hCR, hHopf, hFin, hEt, f, hf⟩ :=
     exists_finiteQuotient_galoisModule_etale_package K Ksep
@@ -2285,6 +2306,26 @@ theorem WeierstrassCurve.exists_torsion_etale_package_over_fractionField
   intro σ φ
   rw [hf σ φ]
   exact hρ σ (f (Additive.ofMul (WithConv.toConv φ)))
+
+set_option backward.isDefEq.respectTransparency false in
+omit [IsDomain R] [IsDiscreteValuationRing R] [E.HasGoodReduction R] in
+/-- **The finite étale Hopf package of the torsion over the fraction field**
+(DECOMPOSED 2026-07-22; since 2026-07-23 a wrapper around the finiteness form
+`exists_torsion_etale_package_of_finite`, supplying the finiteness of the torsion
+from `(m : R) ≠ 0` via `torsion_finite`): for `m` nonzero in `R`, the `m`-torsion
+Galois module `E(Kˢᵉᵖ)[m]` is, `Gal(Kˢᵉᵖ/K)`-equivariantly, the group of
+`Kˢᵉᵖ`-points of a finite étale Hopf algebra over `K`. -/
+theorem WeierstrassCurve.exists_torsion_etale_package_over_fractionField
+    (m : ℕ) (hm : (m : R) ≠ 0) :
+    ∃ (HK : Type u) (_ : CommRing HK) (_ : HopfAlgebra K HK)
+      (_ : Module.Finite K HK) (_ : Algebra.Etale K HK)
+      (f : Additive (WithConv (HK →ₐ[K] Ksep)) ≃+
+        AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)),
+      ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : HK →ₐ[K] Ksep),
+        (f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
+          Affine.Point.map σ.toAlgHom (f (Additive.ofMul (WithConv.toConv φ))) :=
+  WeierstrassCurve.exists_torsion_etale_package_of_finite R K E Ksep m
+    (WeierstrassCurve.torsion_finite R K E Ksep m hm)
 
 /-!
 ### Shared machinery: flat Hopf `R`-forms and package transport
@@ -2569,6 +2610,7 @@ theorem WeierstrassCurve.torsion_flat_of_inertia_fixes_prolong
   exact WeierstrassCurve.torsion_flat_package_of_flat_hopf_form R K E Ksep m HK
     f hf H e
 
+omit [E.HasGoodReduction R] in
 /-- **Unramified implies flat, order invertible in the residue field** (DECOMPOSED
 2026-07-22 into the Galois-correspondence leaf
 `exists_torsion_etale_package_over_fractionField` and the prolongation leaf
@@ -3210,25 +3252,27 @@ theorem WeierstrassCurve.torsion_inertia_fixes_of_eqChar
       exact WeierstrassCurve.kernel_prime_pow_torsion_of_eqChar R K E Ksep
         p k hp hpK 𝒪 h𝒪 h₃ hx₃ hDtor'
 
-/-- **The finite étale torsion package, equal characteristic** (sorry node; the
-Galois-correspondence half of the equal-characteristic case — the sibling of
+omit [IsDomain R] [IsDiscreteValuationRing R] [E.HasGoodReduction R] in
+/-- **The finite étale torsion package, equal characteristic** (PROVEN 2026-07-23;
+the Galois-correspondence half of the equal-characteristic case — the sibling of
 `exists_torsion_etale_package_over_fractionField`, whose hypothesis
 `(m : R) ≠ 0` FAILS here since `(p : R) = 0` when `(p : K) = 0`): the
 `p ^ k`-torsion Galois module `E(Kˢᵉᵖ)[p ^ k]` — finite of order at most
 `p ^ k` in equal characteristic (the étale-quotient points; order `p ^ k` for
 ordinary reduction, `1` for supersingular) — is, `Gal(Kˢᵉᵖ/K)`-equivariantly,
-the group of `Kˢᵉᵖ`-points of a finite étale Hopf algebra over `K`. The
-intended proof is the SAME Grothendieck Galois correspondence as in the
-`(m : R) ≠ 0` leaf (equivariant maps `E(Kˢᵉᵖ)[p ^ k] → Kˢᵉᵖ`, evaluation at
-orbit representatives): the correspondence needs only finiteness of the torsion
-and discreteness of the action, both of which hold in every characteristic;
-when either leaf is resolved the other should be aligned with it, ideally by
-generalizing the correspondence to any nonzero `m : ℕ`. (The characteristic
-hypothesis is stated in `R` — equivalent to `(p : K) = 0` through the injective
-`algebraMap R K` — so that the carrier universe `u` stays tied to `R`, exactly
-as in the `(m : R) ≠ 0` sibling.) -/
+the group of `Kˢᵉᵖ`-points of a finite étale Hopf algebra over `K`. The proof
+is the anticipated alignment with the `(m : R) ≠ 0` sibling: the Grothendieck
+Galois correspondence was generalized to the finiteness form
+`exists_torsion_etale_package_of_finite` (it needs only finiteness of the
+torsion and discreteness of the action), and the finiteness of the torsion
+holds in EVERY characteristic by `torsion_finite_of_ne_zero` — the division
+polynomial `ΨSq (p ^ k)` is nonzero even when `p` is the characteristic. (The
+characteristic hypothesis is stated in `R` — equivalent to `(p : K) = 0`
+through the injective `algebraMap R K` — so that the carrier universe `u` stays
+tied to `R`, exactly as in the `(m : R) ≠ 0` sibling; it is not needed by the
+proof, precisely because the finiteness argument is characteristic-free.) -/
 theorem WeierstrassCurve.exists_torsion_etale_package_of_eqChar
-    (p k : ℕ) (hp : p.Prime) (hpR : (p : R) = 0) :
+    (p k : ℕ) (hp : p.Prime) (_hpR : (p : R) = 0) :
     ∃ (HK : Type u) (_ : CommRing HK) (_ : HopfAlgebra K HK)
       (_ : Module.Finite K HK) (_ : Algebra.Etale K HK)
       (f : Additive (WithConv (HK →ₐ[K] Ksep)) ≃+
@@ -3236,7 +3280,9 @@ theorem WeierstrassCurve.exists_torsion_etale_package_of_eqChar
       ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : HK →ₐ[K] Ksep),
         (f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
           Affine.Point.map σ.toAlgHom (f (Additive.ofMul (WithConv.toConv φ))) :=
-  sorry
+  WeierstrassCurve.exists_torsion_etale_package_of_finite R K E Ksep (p ^ k)
+    (WeierstrassCurve.torsion_finite_of_ne_zero K E Ksep (p ^ k)
+      (pow_ne_zero k hp.ne_zero))
 
 /-- **The equal-characteristic prime-power case** (DECOMPOSED 2026-07-22 into
 the equal-characteristic Néron–Ogg–Shafarevich leaf
