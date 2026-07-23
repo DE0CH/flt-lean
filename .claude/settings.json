@@ -45,22 +45,24 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "mcp__report-flt-lean.*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/lean-pretool-reminder.py\"",
-            "timeout": 10
-          }
-        ]
-      },
-      {
         "matcher": "Agent",
         "hooks": [
           {
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/worktree-pool-hook.py\"",
             "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/post-merge-reminder.py\"",
+            "timeout": 10
           }
         ]
       }
