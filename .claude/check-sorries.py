@@ -8,16 +8,19 @@ Exit-code protocol (Claude Code Stop hooks):
 
 The loop has exactly one exit condition: zero sorried declarations in
 the project and the root gate (`#assert_no_sorry fermat_last_theorem`)
-clean. The check queries the persistent Lean environment server
-(`fermat/lean-daemon.py`, autostarted on demand — seconds per query
-instead of a full `lake build`): the daemon's Lean child reports every
-project declaration whose proof term uses `sorryAx` (the compiler's own
-verdict) plus the root-cone sorry/axiom status. The daemon's environment
-reflects the last BUILT state of each module; modules edited since are
-reported as `stale_sources` and surfaced in the block message. The hook
-NEVER runs `lake build` (Deyao, 2026-07-22 — nothing automatic does):
-the endgame verdict rests on the daemon's evidence alone, and the
-insurance build confirming a zero-sorry state is Deyao's manual job.
+clean. The check runs the census route (Deyao, 2026-07-23: the
+resident lean-daemon.py middleman is deleted): `python3
+progress-tree.py --census`, which queries the resident REPORT SERVER
+— `lake serve` run as the systemd user unit flt-report-server.service,
+its stdin/stdout on FIFOs under `.report-server/` — for one JSON
+object with every project declaration whose proof term uses `sorryAx`
+(the compiler's own verdict) plus the root-cone sorry/axiom status.
+Seconds on a warm session; changed modules pay their incremental
+rebuild inside the census run. The hook NEVER
+runs a whole-project `lake build` (Deyao, 2026-07-22 — nothing
+automatic does): the endgame verdict rests on the census's evidence
+alone, and the insurance build confirming a zero-sorry state is
+Deyao's manual job.
 Deliberately NO `stop_hook_active` guard: while the exit condition is
 unmet the hook keeps blocking (the built-in block cap /
 CLAUDE_CODE_STOP_HOOK_BLOCK_CAP bounds a single turn); Deyao terminates
@@ -27,10 +30,10 @@ ORCHESTRATOR MODE (Deyao, 2026-07-22): the driven session now
 ORCHESTRATES parallel subagents that edit disjoint Lean files, then
 integrates, verifies, and commits their results. The blocking messages
 below are therefore framed for an orchestrator, not a hands-on prover:
-uncommitted files and unbuilt modules are usually agents' work-in-flight
-(routine churn), reported as INFORMATION — committing half-edits or
-rebuilding per-iteration would be wrong. The mechanics (session guard,
-daemon query, exit-code semantics, endgame build) are unchanged.
+uncommitted files are usually agents' work-in-flight (routine churn),
+reported as INFORMATION — committing half-edits or rebuilding
+per-iteration would be wrong. The mechanics (session guard, census
+run, exit-code semantics) are unchanged.
 """
 
 import glob
@@ -164,7 +167,7 @@ def main() -> int:
     # notifications on completion. While any such trace for THIS session
     # is fresh — or liveness cannot be cleanly established (fail open,
     # nudge-not-safety-net) — allow the stop instantly, skipping the
-    # daemon query, sorry counting, and free-floating check entirely.
+    # census run, sorry counting, and free-floating check entirely.
     # Only a clean all-stale scan falls through to the pipeline below.
     try:
         if not background_work_is_idle(project_dir, caller_session):
@@ -172,27 +175,37 @@ def main() -> int:
     except Exception:
         return 0  # any liveness-check failure counts as LIVE (fail open)
 
-    # THE check: ask the persistent Lean environment server for the
-    # compiler-verified list of sorried declarations and the root-cone
-    # status (seconds, no build).
+    # THE check: run the one-shot census (progress-tree.py --census →
+    # `lake lean ProgressCensus.lean`) for the compiler-verified list
+    # of sorried declarations and the root-cone status. Seconds on a
+    # warm tree; the census only runs when the fleet is idle, so the
+    # cost is irrelevant here. Graceful, not crash-loud: this is a
+    # harness-called hook (Deyao's caller-directed error policy).
     try:
         proc = subprocess.run(
-            [sys.executable, os.path.join(fermat, "lean-daemon.py"),
-             "--query", '{"cmd": "sorries"}'],
+            [sys.executable, os.path.join(fermat, "progress-tree.py"),
+             "--census"],
             cwd=fermat,
             capture_output=True,
             text=True,
             timeout=3000,
         )
+        if proc.returncode != 0:
+            raise RuntimeError(
+                (proc.stderr.strip() or proc.stdout.strip()
+                 or f"exit {proc.returncode}")[-2000:])
         resp = json.loads(proc.stdout)
         if "error" in resp:
             raise RuntimeError(resp["error"])
     except Exception as exc:
         # FAIL OPEN (Deyao, 2026-07-22): the hook is a nudge, not a
-        # safety net — a daemon hiccup must not block the stop.
+        # safety net — a census hiccup (including an absent report
+        # server) must not block the stop. Deliberately terse: a hook
+        # message must not instruct anyone to start servers (Deyao,
+        # 2026-07-23); the generator route surfaces the full error.
         sys.stderr.write(
-            f"Stop hook: lean daemon query failed ({exc}); allowing the "
-            "stop (fail open).\n"
+            f"Stop hook: census unavailable or failed "
+            f"({type(exc).__name__}); allowing the stop (fail open).\n"
         )
         return 0
 
@@ -206,24 +219,25 @@ def main() -> int:
         # never block (or allow the endgame) on a made-up reading of a
         # malformed response — allow the stop with one informative line
         sys.stderr.write(
-            f"Stop hook: malformed daemon response ({exc!r}, keys "
+            f"Stop hook: malformed census response ({exc!r}, keys "
             f"{sorted(resp)}); allowing the stop.\n")
         return 0
-    # absence of these keys is the daemon's real answer "none", not an
-    # error (the daemon only includes them when nonempty)
+    # absence of these keys is the census's real answer "none", not an
+    # error (they are only present when nonempty; the report-server
+    # census never emits them — kept for response-shape tolerance)
     stale = resp.get("stale_sources", [])
     unbuilt = resp.get("unbuilt_modules", [])
 
     if not sorries and not root_open:
         # Endgame (Deyao, 2026-07-22): NOTHING automatic runs `lake build`
-        # — this hook decides on the daemon's evidence alone. Zero sorries
+        # — this hook decides on the census's evidence alone. Zero sorries
         # + clean root cone + no caveats -> allow. If the verdict is
         # incomplete (stale sources or unbuilt modules), still allow
         # (fail open, nudge not gate) with a one-line note; the insurance
         # build confirming the zero-sorry state is Deyao's manual job.
         if stale or unbuilt:
             sys.stderr.write(
-                "Note: daemon reports zero sorried declarations, but the "
+                "Note: census reports zero sorried declarations, but the "
                 f"verdict is partial ({len(stale)} stale-source, "
                 f"{len(unbuilt)} unbuilt module(s)) — allowing the stop; "
                 "Deyao's own insurance `lake build` would confirm it.\n"
@@ -271,7 +285,7 @@ def main() -> int:
     if unbuilt:
         print(
             f"UNBUILT MODULES (information): {len(unbuilt)} project "
-            "module(s) have no .olean yet, so the daemon could not check "
+            "module(s) have no .olean yet, so the census could not check "
             "them — expected during agent churn. Run a consolidated "
             "rebuild at integration points, not per-iteration:",
             file=sys.stderr,

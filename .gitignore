@@ -1,8 +1,6 @@
 .lake/
 .progress_status.lean
-.lean-daemon.sock
-.lean-daemon.log
-.lean-daemon-lsp-stderr
+.report-server/
 progress-census-input.json
 .env
 .venv/

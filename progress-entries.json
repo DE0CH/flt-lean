@@ -1724,7 +1724,7 @@
   },
   {
     "name": "exists_hardlyRamified_integral_realizations",
-    "fullname": "exists_hardlyRamified_integral_realizations",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_integral_realizations",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
     "wip": false,
     "text": "`exists_hardlyRamified_integral_realizations` — integral hardly-ramified realizations at odd ℓ — the sole automorphy content of the proven realization assembly (statement inverted per the soundness audit: the leaf produces the integral model; weight-2 eigensystem vocabulary unstatable on the pin, obstruction recorded) — 2026-07-23",
@@ -1732,7 +1732,7 @@
   },
   {
     "name": "exists_realizations_at_two",
-    "fullname": "exists_realizations_at_two",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.exists_realizations_at_two",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
     "wip": false,
     "text": "`exists_realizations_at_two` — bare 2-adic member matching the shared Pv (no hardly-ramified model demanded at ℓ=2) — 2026-07-23",
@@ -1740,7 +1740,7 @@
   },
   {
     "name": "exists_finiteDimensional_trace_field",
-    "fullname": "exists_finiteDimensional_trace_field",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.exists_finiteDimensional_trace_field",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
     "wip": false,
     "text": "`exists_finiteDimensional_trace_field` — the Hecke-field finiteness core confined to the trace coefficient (ℚ_p-confinement now hypotheses; genuinely non-formal — automorphy enters here; deferred to the automorphy campaign) — 2026-07-23",
