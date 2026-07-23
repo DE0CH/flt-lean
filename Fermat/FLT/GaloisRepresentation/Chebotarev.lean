@@ -118,6 +118,15 @@ import Mathlib.FieldTheory.Finite.Basic
 import Mathlib.RingTheory.PrincipalIdealDomain
 public import Mathlib.NumberTheory.DirichletCharacter.Orthogonality
 public import Mathlib.NumberTheory.DirichletCharacter.Bounds
+public import Mathlib.NumberTheory.LSeries.Basic
+public import Mathlib.Analysis.SpecialFunctions.Complex.Log
+public import Mathlib.Analysis.SpecialFunctions.Pow.Complex
+public import Mathlib.Analysis.Calculus.Deriv.Basic
+import Mathlib.NumberTheory.LSeries.Deriv
+import Mathlib.Analysis.SpecialFunctions.Complex.LogBounds
+import Mathlib.Analysis.Complex.LocallyUniformLimit
+import Mathlib.Analysis.Complex.RealDeriv
+import Mathlib.Analysis.Calculus.MeanValue
 
 @[expose] public section
 
@@ -1602,6 +1611,82 @@ theorem tsum_rpow_neg_natCard_quotient_prime_and_ne_ne_top
     (fun I => (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s))
 
 open IsDedekindDomain in
+/-- **Euler product for the `χ`-twisted Dedekind zeta function, in
+exponential form** (sorry leaf): for a number field `F`, a Dirichlet
+character `χ mod ℓ` with values in `ℂ`, and complex `w` with
+`1 < re w`, the exponential of the prime log-sum
+`∑_P -log(1 - χ(N P) · N P ^ (-w))` over ALL finite places of `F`
+equals the `L`-series of the coefficient function
+`k ↦ χ(k) · #{I : N(I) = k}` (the `χ`-twisted ideal Dirichlet series;
+same coefficient shape as `NumberField.dedekindZeta`). Pure
+absolute-convergence bookkeeping — no counting asymptotics, no
+nonvanishing: unique factorization of ideals of the Dedekind domain
+`𝓞 F` fibres the norm-grouped ideal sum over finitely supported prime
+exponent vectors. Intended route: `Complex.cexp_tsum_eq_tprod`
+(`Mathlib.Analysis.SpecialFunctions.Log.Summable`) turns the left side
+into `∏_P (1 - χ(N P) N P^{-w})⁻¹`; each factor is the geometric series
+`∑_k (χ(N P) N P^{-w})^k`; the product of these series over `P` is the
+sum of `χ(N I) N I^{-w}` over nonzero ideals `I` (multiplicativity of
+`Ideal.absNorm`, complete multiplicativity of `χ ∘ Nat.cast`, and
+`UniqueFactorizationMonoid` for `Ideal (𝓞 F)`), which regrouped along
+the fibres of `Ideal.absNorm` (`Ideal.finite_setOf_absNorm_eq`,
+`Equiv.sigmaFiberEquiv`) is the right side. -/
+theorem exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries
+    (F : Type*) [Field F] [NumberField F] {ℓ : ℕ} (χ : DirichletCharacter ℂ ℓ)
+    {w : ℂ} (hw : 1 < w.re) :
+    Complex.exp (∑' P : HeightOneSpectrum (𝓞 F),
+        -Complex.log (1 - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w))) =
+      LSeries (fun k => χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) w :=
+  sorry
+
+open IsDedekindDomain in
+/-- **Good behaviour of the twisted `L`-series on `[1, 2]`** (sorry
+leaf) — the analytic-continuation-plus-nonvanishing core, now separated
+from all Euler-product and prime-sum bookkeeping: for a cyclotomic
+extension `E = F(ζ_ℓ)` (`ℓ` prime) and a Dirichlet character `χ mod ℓ`
+(values in `ℂ`) nontrivial on the image of `Gal(E/F)` in `(ZMod ℓ)ˣ`
+(hypothesis `hχ`, phrased through the Galois action on `ζ`), the
+`χ`-twisted ideal Dirichlet series `L(s) = ∑_k χ(k)·#{I : N(I) = k}/k^s`
+is, uniformly for real `s ∈ (1, 2]`, bounded away from `0` (some
+`0 < c ≤ ‖L(s)‖`) and bounded above together with its derivative
+(`‖L(s)‖ ≤ C`, `‖L'(s)‖ ≤ C`).
+
+Intended proof (Hecke's route, Lang ANT VIII §4): the nontriviality of
+`χ` on the image of `Gal(E/F)` makes the summatory function
+`∑_{k ≤ x} χ(k)·#{I : N(I) = k}` grow like `O(x^{1-1/[F:ℚ]})` (the
+per-ray-class ideal count `ρx + O(x^{1-1/[F:ℚ]})` — the power-saving
+form of `Ideal.tendsto_norm_le_div_atTop₀`, which the mathlib pin has
+only as a plain limit — plus exact cancellation of the main terms:
+`∑_c χ(N c) = 0` over the ray classes mod `ℓ`, the point where the
+hypothesis `hχ` enters through the surjectivity of the norm-class map
+onto the image of `Gal(E/F)`); by `LSeriesSummable_of_sum_norm_bigO`
+-type partial summation this continues `L` to `re s > 1 - 1/[F:ℚ]`
+with `L` and `L'` continuous, giving the two upper bounds and reducing
+the lower bound to the single value `L(1) ≠ 0` — which follows from the
+factorization `ζ_{E'}(s) = ζ_F(s) · ∏_{ψ ≠ 1} L(s, ψ) · (finite Euler
+corrections)` over the fixed field `E'` of `ker(χ|_{Gal(E/F)})`
+together with the simple poles of `ζ_{E'}` and `ζ_F`
+(`NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT`,
+`NumberField.dedekindZeta_residue_pos` — both in the pin): were
+`L(1, χ) = 0`, the product would stay bounded as `s → 1⁺` while
+`ζ_{E'}` diverges. -/
+theorem exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (χ : DirichletCharacter ℂ ℓ)
+    (hχ : ∃ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n ∧ χ (n : ZMod ℓ) ≠ 1) :
+    ∃ c C : ℝ, 0 < c ∧ ∀ s : ℝ, 1 < s → s ≤ 2 →
+      c ≤ ‖LSeries (fun k => χ (k : ZMod ℓ) *
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) s‖ ∧
+      ‖LSeries (fun k => χ (k : ZMod ℓ) *
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) s‖ ≤ C ∧
+      ‖deriv (LSeries (fun k => χ (k : ZMod ℓ) *
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ))) s‖ ≤ C :=
+  sorry
+
+open IsDedekindDomain in
 /-- **Boundedness near `s = 1` of the nontrivial Dirichlet character sums
 over degree-one primes** (sorry node) — the `L(1, χ) ≠ 0` core of the
 Chebotarev/Dirichlet argument, now stripped of ALL bookkeeping: for a
@@ -1634,8 +1719,74 @@ theorem exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le
           (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
         χ ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ) *
           (((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) : ℝ) :
-            ℂ)‖ ≤ B :=
-  sorry
+            ℂ)‖ ≤ B := by
+  classical
+  -- the degree-one character sum, the prime log-sum `𝒮` (complex
+  -- variable), the twisted ideal `L`-series, and the tail constants
+  set Sχ : ℝ → ℂ := fun t => ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+      (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+    χ ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ) *
+      (((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-t) : ℝ) : ℂ)
+  set 𝒮 : ℂ → ℂ := fun w => ∑' P : HeightOneSpectrum (𝓞 F),
+    -Complex.log (1 - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+      (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w))
+  set L : ℂ → ℂ := LSeries (fun k => χ (k : ZMod ℓ) *
+    (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ))
+  set B₀ : ℝ := ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+      (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+    (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-(3 / 2 : ℝ))
+  set CR : ℝ := ∑' P : HeightOneSpectrum (𝓞 F),
+    (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-(2 : ℝ))
+  set Cnp : ℝ := ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+      ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime},
+    (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-(1 : ℝ))
+  -- the two sorried analytic leaves
+  have hEuler : ∀ w : ℂ, 1 < w.re → Complex.exp (𝒮 w) = L w := fun w hw =>
+    exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries F χ hw
+  obtain ⟨c, C, hc, hLbounds⟩ :=
+    exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le hℓ hζ χ hχ
+  -- `2 ≤ #(𝓞 F / P)` for every finite place
+  have htwo : ∀ P : HeightOneSpectrum (𝓞 F), 2 ≤ Nat.card (𝓞 F ⧸ P.asIdeal) := by
+    sorry
+  -- summability of the full place sum for every real `s > 1`
+  have hAll : ∀ s : ℝ, 1 < s → Summable (fun P : HeightOneSpectrum (𝓞 F) =>
+      (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s)) := by
+    sorry
+  -- summability of the `N(P)⁻¹` sum over the higher-degree places
+  have hnp : Summable (fun P : {P : HeightOneSpectrum (𝓞 F) //
+      ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-(1 : ℝ))) := by
+    sorry
+  -- crude bound for `3/2 ≤ s`: absolute values, termwise monotone in `s`
+  have hlarge : ∀ s : ℝ, (3 / 2 : ℝ) ≤ s → ‖Sχ s‖ ≤ B₀ := by
+    sorry
+  -- the prime log-sum is `ℂ`-differentiable on `re w > 1` (Weierstrass)
+  have hdiff : ∀ w : ℂ, 1 < w.re → DifferentiableAt ℂ 𝒮 w := by
+    sorry
+  -- its derivative at real `t ∈ (1, 2]` is `L'/L`, hence bounded by `C/c`
+  have hderiv : ∀ t : ℝ, 1 < t → t ≤ 2 → ‖deriv 𝒮 (t : ℂ)‖ ≤ C / c := by
+    sorry
+  -- mean value inequality on `[s, 3/2]`
+  have hnear : ∀ s : ℝ, 1 < s → s ≤ 3 / 2 →
+      ‖𝒮 (s : ℂ)‖ ≤ ‖𝒮 ((3 / 2 : ℝ) : ℂ)‖ + C / c * (1 / 2) := by
+    sorry
+  -- uniform comparison of `𝒮` with the degree-one character sum: the
+  -- log-Taylor remainders cost `CR`, the higher-degree places `Cnp`,
+  -- and the places with `N(P) ∈ {ℓ, ℓ², …}` vanish under `χ`
+  have htail : ∀ s : ℝ, 1 < s → ‖𝒮 (s : ℂ) - Sχ s‖ ≤ CR + Cnp := by
+    sorry
+  -- assemble the uniform bound
+  refine ⟨max B₀ ((CR + Cnp) + (‖𝒮 ((3 / 2 : ℝ) : ℂ)‖ + C / c * (1 / 2))), ?_⟩
+  intro s hs
+  show ‖Sχ s‖ ≤ _
+  rcases le_or_gt (3 / 2 : ℝ) s with h32 | h32
+  · exact le_max_of_le_left (hlarge s h32)
+  · refine le_max_of_le_right ?_
+    calc ‖Sχ s‖ = ‖𝒮 (s : ℂ) - (𝒮 (s : ℂ) - Sχ s)‖ := by rw [sub_sub_cancel]
+      _ ≤ ‖𝒮 (s : ℂ)‖ + ‖𝒮 (s : ℂ) - Sχ s‖ := norm_sub_le _ _
+      _ ≤ (‖𝒮 ((3 / 2 : ℝ) : ℂ)‖ + C / c * (1 / 2)) + (CR + Cnp) :=
+          add_le_add (hnear s hs h32.le) (htail s hs)
+      _ = (CR + Cnp) + (‖𝒮 ((3 / 2 : ℝ) : ℂ)‖ + C / c * (1 / 2)) := by ring
 
 open IsDedekindDomain in
 /-- **Pairwise comparison of cyclotomic congruence classes of degree-one
