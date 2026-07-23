@@ -1644,17 +1644,42 @@ theorem exists_kernel_field_of_matrixRange {k : Type u} [Finite k] [Field k]
   rw [← hcard1]
   exact ((Nat.card_congr e1.toEquiv).symm).trans (Nat.card_congr e2.toEquiv)
 
-/-- **The kernel field is totally complex** (sorry node — the oddness
-input of the field cut, isolated 2026-07-23): the number field cut
-out by the kernel of the matrix form of a mod-3 hardly ramified
-representation has no real place. Intended content: a real place of
-`K` extends to an embedding `ℚᵃˡᵍ → ℂ` under which the restriction of
-complex conjugation is an element `c ∈ Γ ℚ` fixing `K` pointwise,
-i.e. `c ∈ fixingSubgroup K = ker u`; but the determinant of `u c` is
-the image in `Dickson.K 3` of `χ₃(c) = −1` (`hρ.det` transported
-along `hu`, as in the two-element determinant image argument of
-`card_matrixRange_ge_of_exceptional`), and `−1 ≠ 1` in characteristic
-`3`, so `u c ≠ 1` — contradiction. -/
+/-- **Complex conjugation at a real place** (sorry node — the
+embedding plumbing of the oddness argument, isolated 2026-07-23; a
+`ρ`-free statement about number fields): a subfield `K ⊆ ℚᵃˡᵍ` that
+is NOT totally complex admits an element `c ∈ Γ ℚ` fixing `K`
+pointwise on which the 3-adic cyclotomic character is `−1`. Intended
+proof: a real infinite place of `K` is induced by an embedding
+`φ : K → ℝ ⊆ ℂ`; extend `φ` to `φ̄ : ℚᵃˡᵍ → ℂ` (`IsAlgClosed.lift`
+over the algebraic extension `K ⊆ ℚᵃˡᵍ`); complex conjugation
+restricts to the (normal) image `φ̄(ℚᵃˡᵍ)`, and its pullback
+`c := φ̄⁻¹ ∘ conj ∘ φ̄ ∈ Γ ℚ` fixes `K` pointwise (`φ(K) ⊆ ℝ`) and is
+an involution moving the primitive cube roots of unity (they are not
+real), so `χ₃(c)² = 1` and `χ₃(c) ≠ 1` in the domain `ℤ_[3]`, forcing
+`χ₃(c) = −1` — the argument of `exists_conj_cyclotomicCharacter_three`
+relative to the place. -/
+theorem exists_conj_fixingSubgroup_of_not_isTotallyComplex
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    (hK : ¬ NumberField.IsTotallyComplex K) :
+    ∃ c : Γ ℚ, c ∈ K.fixingSubgroup ∧
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 c.toRingEquiv :
+        ℤ_[3]ˣ) : ℤ_[3]) = -1 :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The kernel field is totally complex** (DECOMPOSED 2026-07-23
+into the conjugation-at-a-real-place sorry node
+`exists_conj_fixingSubgroup_of_not_isTotallyComplex` above; the
+determinant bookkeeping is proven): the number field cut out by the
+kernel of the matrix form of a mod-3 hardly ramified representation
+has no real place. The proven reduction: were `K` not totally
+complex, the leaf would produce `c ∈ fixingSubgroup K = ker u` with
+`χ₃(c) = −1`; but the determinant of `u c` is the image in
+`Dickson.K 3` of `χ₃(c)` (`hρ.det` transported along `hu` and
+`LinearMap.det_baseChange`, as in the two-element determinant image
+argument of `card_matrixRange_ge_of_exceptional`), so `u c = 1`
+forces `1 = −1` in `Dickson.K 3` — impossible in characteristic
+`3`. -/
 theorem isTotallyComplex_of_kernel_field {k : Type u} [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
@@ -1671,8 +1696,57 @@ theorem isTotallyComplex_of_kernel_field {k : Type u} [Finite k] [Field k]
         (MonoidHomClass.toMonoidHom ρ)) g)).map e)
     (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
     [IsGalois ℚ K] (hfix : K.fixingSubgroup = u.ker) :
-    NumberField.IsTotallyComplex K :=
-  sorry
+    NumberField.IsTotallyComplex K := by
+  classical
+  by_contra hK
+  obtain ⟨c, hcfix, hcχ⟩ :=
+    exists_conj_fixingSubgroup_of_not_isTotallyComplex K hK
+  -- `c` kills the matrix form
+  have hcker : u c = 1 := by
+    have h1 : c ∈ u.ker := by
+      rw [← hfix]
+      exact hcfix
+    exact MonoidHom.mem_ker.mp h1
+  -- `2 ≠ 0` in `𝔽̄₃`
+  have h2ne : (2 : Dickson.K 3) ≠ 0 := by
+    intro h
+    have h3ne : ((2 : ℕ) : Dickson.K 3) ≠ 0 := by
+      rw [Ne, CharP.cast_eq_zero_iff (Dickson.K 3) 3]
+      omega
+    exact h3ne (by push_cast; exact h)
+  -- the determinant of `u c` is the image of `χ₃ c`
+  have hdet_val :
+      ((Matrix.GeneralLinearGroup.det (u c) : (Dickson.K 3)ˣ) : Dickson.K 3) =
+        ((e : AlgebraicClosure k →+* Dickson.K 3).comp
+          ((algebraMap k (AlgebraicClosure k)).comp (algebraMap ℤ_[3] k)))
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 c.toRingEquiv :
+            ℤ_[3]ˣ) : ℤ_[3]) := by
+    calc ((Matrix.GeneralLinearGroup.det (u c) : (Dickson.K 3)ˣ) : Dickson.K 3)
+        = ((u c : GL (Fin 2) (Dickson.K 3)) :
+            Matrix (Fin 2) (Fin 2) (Dickson.K 3)).det := rfl
+      _ = ((LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+            (MonoidHomClass.toMonoidHom ρ)) c)).map e).det := by rw [hu c]
+      _ = e ((LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+            (MonoidHomClass.toMonoidHom ρ)) c)).det) :=
+          (RingEquiv.map_det e _).symm
+      _ = e (LinearMap.det ((Slop.OddRep.baseChange (AlgebraicClosure k)
+            (MonoidHomClass.toMonoidHom ρ)) c)) := by rw [LinearMap.det_toMatrix]
+      _ = e (algebraMap k (AlgebraicClosure k)
+            (LinearMap.det ((MonoidHomClass.toMonoidHom ρ :
+              Representation k (Γ ℚ) V) c))) := by
+          rw [show (Slop.OddRep.baseChange (AlgebraicClosure k)
+              (MonoidHomClass.toMonoidHom ρ)) c =
+            ((MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V) c).baseChange
+              (AlgebraicClosure k) from rfl, LinearMap.det_baseChange]
+      _ = _ := by
+          have hdg := hρ.det c
+          rw [GaloisRep.det_apply] at hdg
+          rw [show LinearMap.det ((MonoidHomClass.toMonoidHom ρ :
+              Representation k (Γ ℚ) V) c) = LinearMap.det (ρ c) from rfl, hdg]
+          rfl
+  -- `u c = 1` forces `1 = −1` in `𝔽̄₃`
+  rw [hcker, map_one, Units.val_one, hcχ, map_neg, map_one] at hdet_val
+  exact h2ne (by linear_combination hdet_val)
 
 /-- **The discriminant bound of the kernel field** (sorry node — the
 ramification-theoretic core of the field cut, isolated 2026-07-23):
