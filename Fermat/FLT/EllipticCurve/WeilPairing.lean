@@ -11900,7 +11900,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           AdjoinRoot.evalEval hR₂.left
             ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
               xR₃) ^ p) *
-          AdjoinRoot.evalEval hP₂.left a₃
+          AdjoinRoot.evalEval hP₂.left a₃ with hLAdef
       set RA : AlgebraicClosure (ZMod q) :=
         AdjoinRoot.evalEval hP₃.left a₂ *
           AdjoinRoot.evalEval hR₃.left
@@ -11909,7 +11909,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           AdjoinRoot.evalEval hR₂.left a₃ *
           AdjoinRoot.evalEval hP₂.left
             ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
-              xR₃) ^ p)
+              xR₃) ^ p) with hRAdef
       -- THE RESIDUAL PACKAGING LEAF (sorry): setup A takes S-slot
       -- `(R₂, P⊕R₂, a₂)` in `F' := K(2mℓ₂)` and R-slot `(R₃, P⊕R₃, a₃)`
       -- off `K(2mℓ₂)`; setup B swaps the roles (`F' := K(2mℓ₃)`); both
@@ -11949,7 +11949,187 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           LA ≠ 0 ∧
           (e x x : AlgebraicClosure (ZMod q)) * LA = RA ∧
           (e x x : AlgebraicClosure (ZMod q)) * RA = LA := by
-        sorry
+        intro _
+        -- level sizes
+        have h2mℓ₂0 : 2 * m * ℓ₂ ≠ 0 := Nat.mul_ne_zero h2m0 hℓ₂p.ne_zero
+        have h2mℓ₃0 : 2 * m * ℓ₃ ≠ 0 := Nat.mul_ne_zero h2m0 hℓ₃p.ne_zero
+        -- the explicit point divisors of the two shared generators
+        have hD₂ : Ideal.span {a₂} =
+            ((Multiset.replicate p ((xP₂, yP₂) : (AlgebraicClosure (ZMod q)) ×
+                (AlgebraicClosure (ZMod q))) +
+              Multiset.replicate p ((xR₂, Wb.toAffine.negY xR₂ yR₂) :
+                (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))).map
+              (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+                  T.1 (Polynomial.C T.2))).prod := by
+          rw [Multiset.map_add, Multiset.prod_add, Multiset.map_replicate,
+            Multiset.map_replicate, Multiset.prod_replicate,
+            Multiset.prod_replicate, ha₂]
+        have hD₂eq : ∀ T ∈ (Multiset.replicate p ((xP₂, yP₂) :
+            (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) +
+            Multiset.replicate p ((xR₂, Wb.toAffine.negY xR₂ yR₂) :
+              (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))),
+            Wb.toAffine.Equation T.1 T.2 := by
+          intro T hT
+          rcases Multiset.mem_add.mp hT with h | h
+          · rw [Multiset.eq_of_mem_replicate h]
+            exact hP₂.left
+          · rw [Multiset.eq_of_mem_replicate h]
+            exact (WeierstrassCurve.Affine.equation_neg
+              (W' := Wb.toAffine) _ _).mpr hR₂.left
+        have hD₃ : Ideal.span {a₃} =
+            ((Multiset.replicate p ((xP₃, yP₃) : (AlgebraicClosure (ZMod q)) ×
+                (AlgebraicClosure (ZMod q))) +
+              Multiset.replicate p ((xR₃, Wb.toAffine.negY xR₃ yR₃) :
+                (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))).map
+              (fun T : (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)) =>
+                WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+                  T.1 (Polynomial.C T.2))).prod := by
+          rw [Multiset.map_add, Multiset.prod_add, Multiset.map_replicate,
+            Multiset.map_replicate, Multiset.prod_replicate,
+            Multiset.prod_replicate, ha₃]
+        have hD₃eq : ∀ T ∈ (Multiset.replicate p ((xP₃, yP₃) :
+            (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q))) +
+            Multiset.replicate p ((xR₃, Wb.toAffine.negY xR₃ yR₃) :
+              (AlgebraicClosure (ZMod q)) × (AlgebraicClosure (ZMod q)))),
+            Wb.toAffine.Equation T.1 T.2 := by
+          intro T hT
+          rcases Multiset.mem_add.mp hT with h | h
+          · rw [Multiset.eq_of_mem_replicate h]
+            exact hP₃.left
+          · rw [Multiset.eq_of_mem_replicate h]
+            exact (WeierstrassCurve.Affine.equation_neg
+              (W' := Wb.toAffine) _ _).mpr hR₃.left
+        -- abscissa separations
+        have hx₃₂ : xP₃ ≠ xR₂ := fun h => hxP₃nF'A (h ▸ hxR₂F'A)
+        have hx₃₂' : xP₃ ≠ xP₂ := fun h => hxP₃nF'A (h ▸ hxP₂F'A)
+        have hxR₃R₂ : xR₃ ≠ xR₂ := fun h => hxR₃nF'A (h ▸ hxR₂F'A)
+        have hx₂₃ : xP₂ ≠ xR₃ := fun h => hxP₂nF'B (h ▸ hxR₃F'B)
+        have hx₂₃' : xP₂ ≠ xP₃ := fun h => hxP₂nF'B (h ▸ hxP₃F'B)
+        -- the four off-divisor Miller evaluations
+        have hev₂R₃ : AdjoinRoot.evalEval hR₃.left a₂ ≠ 0 := by
+          refine hoffdiv a₂ _ hD₂eq hD₂ xR₃ yR₃ hR₃.left ?_
+          intro hmem
+          rcases Multiset.mem_add.mp hmem with h | h
+          · have h1 := congrArg Prod.fst (Multiset.eq_of_mem_replicate h)
+            exact hxR₃nF'A (by rw [show xR₃ = xP₂ from h1]; exact hxP₂F'A)
+          · have h1 := congrArg Prod.fst (Multiset.eq_of_mem_replicate h)
+            exact hxR₃nF'A (by rw [show xR₃ = xR₂ from h1]; exact hxR₂F'A)
+        have hev₂P₃ : AdjoinRoot.evalEval hP₃.left a₂ ≠ 0 := by
+          refine hoffdiv a₂ _ hD₂eq hD₂ xP₃ yP₃ hP₃.left ?_
+          intro hmem
+          rcases Multiset.mem_add.mp hmem with h | h
+          · exact hx₃₂' (congrArg Prod.fst (Multiset.eq_of_mem_replicate h))
+          · exact hx₃₂ (congrArg Prod.fst (Multiset.eq_of_mem_replicate h))
+        have hev₃R₂ : AdjoinRoot.evalEval hR₂.left a₃ ≠ 0 := by
+          refine hoffdiv a₃ _ hD₃eq hD₃ xR₂ yR₂ hR₂.left ?_
+          intro hmem
+          rcases Multiset.mem_add.mp hmem with h | h
+          · have h1 := congrArg Prod.fst (Multiset.eq_of_mem_replicate h)
+            exact hxR₂nF'B (by rw [show xR₂ = xP₃ from h1]; exact hxP₃F'B)
+          · have h1 := congrArg Prod.fst (Multiset.eq_of_mem_replicate h)
+            exact hxR₂nF'B (by rw [show xR₂ = xR₃ from h1]; exact hxR₃F'B)
+        have hev₃P₂ : AdjoinRoot.evalEval hP₂.left a₃ ≠ 0 := by
+          refine hoffdiv a₃ _ hD₃eq hD₃ xP₂ yP₂ hP₂.left ?_
+          intro hmem
+          rcases Multiset.mem_add.mp hmem with h | h
+          · exact hx₂₃' (congrArg Prod.fst (Multiset.eq_of_mem_replicate h))
+          · exact hx₂₃ (congrArg Prod.fst (Multiset.eq_of_mem_replicate h))
+        -- the four vertical evaluations
+        have hv₃₂ : AdjoinRoot.evalEval hP₃.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+              xR₂) ^ p) ≠ 0 := by
+          rw [map_pow, hevvert xR₂ xP₃ yP₃ hP₃.left]
+          exact pow_ne_zero _ (sub_ne_zero.mpr hx₃₂)
+        have hvR₃R₂ : AdjoinRoot.evalEval hR₃.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+              xR₂) ^ p) ≠ 0 := by
+          rw [map_pow, hevvert xR₂ xR₃ yR₃ hR₃.left]
+          exact pow_ne_zero _ (sub_ne_zero.mpr hxR₃R₂)
+        have hvR₂R₃ : AdjoinRoot.evalEval hR₂.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+              xR₃) ^ p) ≠ 0 := by
+          rw [map_pow, hevvert xR₃ xR₂ yR₂ hR₂.left]
+          exact pow_ne_zero _ (sub_ne_zero.mpr
+            (fun h => hxR₃nF'A (h ▸ hxR₂F'A)))
+        have hv₂₃ : AdjoinRoot.evalEval hP₂.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+              xR₃) ^ p) ≠ 0 := by
+          rw [map_pow, hevvert xR₃ xP₂ yP₂ hP₂.left]
+          exact pow_ne_zero _ (sub_ne_zero.mpr hx₂₃)
+        -- the two atom products are nonzero
+        have hLA0 : LA ≠ 0 :=
+          mul_ne_zero (mul_ne_zero (mul_ne_zero hv₃₂ hev₂R₃) hvR₂R₃) hev₃P₂
+        have hRA0 : RA ≠ 0 :=
+          mul_ne_zero (mul_ne_zero (mul_ne_zero hev₂P₃ hvR₃R₂) hev₃R₂) hv₂₃
+        -- the affine representative is nonzero
+        have hx0 : x.val ≠ 0 := by
+          rw [hcx]
+          exact WeierstrassCurve.Affine.Point.some_ne_zero hP
+        -- witness A: S-slot (R₂, P⊕R₂, a₂) over F' = K(2mℓ₂), R-slot
+        -- (R₃, P⊕R₃, a₃); pins e x x to RA/LA
+        have hzA : e x x = Units.mk0 (RA / LA) (div_ne_zero hRA0 hLA0) := by
+          refine heuniq x x _ ⟨fun h0 => absurd (h0.elim id id) hx0, ?_⟩
+          intro xP' yP' hP' xQ' yQ' hQ' hv hw
+          have hPP : xP' = xP ∧ yP' = yP := by
+            injection hv.symm.trans hcx with e1 e2
+            exact ⟨e1, e2⟩
+          have hQQ : xQ' = xP ∧ yQ' = yP := by
+            injection hw.symm.trans hcx with e1 e2
+            exact ⟨e1, e2⟩
+          obtain ⟨hx1, hy1⟩ := hPP
+          obtain ⟨hx2, hy2⟩ := hQQ
+          subst hx1
+          subst hy1
+          subst hx2
+          subst hy2
+          refine ⟨frobFixed q (2 * m), frobFixed q (2 * m * ℓ₂),
+            frobFixed_finite q h2m0, frobFixed_finite q h2mℓ₂0, hFleF'A, ?_,
+            hxPF, hyPF, hxPF, hyPF,
+            xR₂, yR₂, hR₂, hxR₂F'A, hyR₂F'A, hxR₂F,
+            xR₃, yR₃, hR₃, hxR₃nF'A,
+            xP₂, yP₂, hP₂, hcP₂.symm, hxP₂F'A, hyP₂F'A, hxP₂F,
+            xP₃, yP₃, hP₃, hcP₃.symm, hx₃₂, hx₃₂', hxP₃nF'A,
+            a₂, a₃, ha₂, ha₃, hLA0, ?_⟩
+          · rw [hmdef]
+          · rw [Units.val_mk0]
+            exact div_mul_cancel₀ _ hLA0
+        -- witness B: the roles of the two translates exchanged; pins
+        -- e x x to LA/RA
+        have hzB : e x x = Units.mk0 (LA / RA) (div_ne_zero hLA0 hRA0) := by
+          refine heuniq x x _ ⟨fun h0 => absurd (h0.elim id id) hx0, ?_⟩
+          intro xP' yP' hP' xQ' yQ' hQ' hv hw
+          have hPP : xP' = xP ∧ yP' = yP := by
+            injection hv.symm.trans hcx with e1 e2
+            exact ⟨e1, e2⟩
+          have hQQ : xQ' = xP ∧ yQ' = yP := by
+            injection hw.symm.trans hcx with e1 e2
+            exact ⟨e1, e2⟩
+          obtain ⟨hx1, hy1⟩ := hPP
+          obtain ⟨hx2, hy2⟩ := hQQ
+          subst hx1
+          subst hy1
+          subst hx2
+          subst hy2
+          refine ⟨frobFixed q (2 * m), frobFixed q (2 * m * ℓ₃),
+            frobFixed_finite q h2m0, frobFixed_finite q h2mℓ₃0, hFleF'B, ?_,
+            hxPF, hyPF, hxPF, hyPF,
+            xR₃, yR₃, hR₃, hxR₃F'B, hyR₃F'B, hxR₃F,
+            xR₂, yR₂, hR₂, hxR₂nF'B,
+            xP₃, yP₃, hP₃, hcP₃.symm, hxP₃F'B, hyP₃F'B, hxP₃F,
+            xP₂, yP₂, hP₂, hcP₂.symm, hx₂₃, hx₂₃', hxP₂nF'B,
+            a₃, a₂, ha₃, ha₂, ?_, ?_⟩
+          · rw [hmdef]
+          · exact mul_ne_zero (mul_ne_zero (mul_ne_zero hv₂₃ hev₃R₂)
+              hvR₃R₂) hev₂P₃
+          · rw [Units.val_mk0, div_mul_eq_mul_div, div_eq_iff hRA0,
+              hLAdef, hRAdef]
+            ring
+        refine ⟨hLA0, ?_, ?_⟩
+        · rw [hzA, Units.val_mk0]
+          exact div_mul_cancel₀ _ hLA0
+        · rw [hzB, Units.val_mk0]
+          exact div_mul_cancel₀ _ hRA0
       obtain ⟨hLA0, hEA, hEB⟩ := hswapkey ⟨ha₂, ha₃, hcP₂, hcP₃, hcx,
         hxR₂F'A, hyR₂F'A, hxP₂F'A, hyP₂F'A,
         hxR₃F'B, hyR₃F'B, hxP₃F'B, hyP₃F'B,
