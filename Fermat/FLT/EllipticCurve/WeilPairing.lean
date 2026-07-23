@@ -249,7 +249,6 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
   -- Step 1: the excluded places — the primes dividing the integral
   -- discriminant, together with `p`
   set badPrimes : Finset ℕ := W.Δ.natAbs.primeFactors ∪ {p}
-    with hbaddef
   refine ⟨badPrimes.image (fun r =>
     if h : r.Prime then h.toHeightOneSpectrumRingOfIntegersRat
     else Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat), ?_⟩
@@ -513,7 +512,7 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
     refine ⟨?_, ?_⟩
     · simp only [one_smul]
       exact hWvInt
-    · intro C' hC'
+    · intro C' _
       have h2 : (WeierstrassCurve.valuation_Δ_aux
           (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
             hq.toHeightOneSpectrumRingOfIntegersRat)
@@ -605,7 +604,7 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
           eq_intCast (algebraMap ℤ (AlgebraicClosure
             (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
               hq.toHeightOneSpectrumRingOfIntegersRat))) n,
-          map_intCast] } with hιalgdef
+          map_intCast] }
   have hcollapseQ : (((W.map (algebraMap ℤ
       (AlgebraicClosure ℚ)))⁄(AlgebraicClosure ℚ)) :
         WeierstrassCurve (AlgebraicClosure ℚ)) =
@@ -665,7 +664,7 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
         (Submodule.mem_torsionBy_iff _ _).mpr (hτmem x.1
           ((Submodule.mem_torsionBy_iff _ _).mp x.2))⟩
       map_zero' := Subtype.ext (map_zero _)
-      map_add' := fun x y => Subtype.ext (map_add _ x.1 y.1) } with hτ₀def
+      map_add' := fun x y => Subtype.ext (map_add _ x.1 y.1) }
   have hτinj : Function.Injective τ₀ := by
     intro x y hxy
     apply Subtype.ext
@@ -683,14 +682,13 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
       ((W.map (algebraMap ℤ (AlgebraicClosure
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) :=
-    AddEquiv.ofBijective τ₀ hτbij with hτadddef
+    AddEquiv.ofBijective τ₀ hτbij
   set τ : ((W.map (algebraMap ℤ (AlgebraicClosure ℚ))).nTorsion p)
       ≃ₗ[ZMod p]
       ((W.map (algebraMap ℤ (AlgebraicClosure
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) :=
     { τadd with map_smul' := ZMod.map_smul τadd.toAddMonoidHom }
-    with hτdef
   -- Step 3c-ii-a: every nonzero projective triple over the completed
   -- closure has a scaling with integral coordinates, one of them a unit
   -- of the valuation subring (divide by a dominant coordinate)
@@ -737,47 +735,6 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
     have hrw : a / c = a / b * (b / c) := by
       rw [div_mul_div_comm, mul_comm b c, mul_div_mul_right _ _ hb]
     rw [hrw]; exact mul_mem hab hbc
-  -- Step 3c-ii-a: every projective triple with a nonzero coordinate has a
-  -- dominant coordinate: all three ratios into it are integral
-  have hnorm3 : ∀ P : Fin 3 → (AlgebraicClosure
-      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-        hq.toHeightOneSpectrumRingOfIntegersRat)), (∃ i, P i ≠ 0) →
-      ∃ j, P j ≠ 0 ∧ ∀ i, P i / P j ∈
-        localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat := by
-    intro P hP
-    obtain ⟨i, hi⟩ := hP
-    obtain ⟨c₁, hc₁or, hc₁ne, hic₁, h0c₁⟩ := hdom' (P i) (P 0) hi
-    obtain ⟨c₂, hc₂or, hc₂ne, hc₁c₂, h1c₂⟩ := hdom' c₁ (P 1) hc₁ne
-    obtain ⟨c₃, hc₃or, hc₃ne, hc₂c₃, h2c₃⟩ := hdom' c₂ (P 2) hc₂ne
-    have hc₁c₃ : c₁ / c₃ ∈
-        localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat :=
-      hdivtrans _ _ _ hc₂ne hc₁c₂ hc₂c₃
-    have h0c₃ : P 0 / c₃ ∈
-        localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat :=
-      hdivtrans _ _ _ hc₁ne h0c₁ hc₁c₃
-    have h1c₃ : P 1 / c₃ ∈
-        localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat :=
-      hdivtrans _ _ _ hc₂ne h1c₂ hc₂c₃
-    have hic₃ : P i / c₃ ∈
-        localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat :=
-      hdivtrans _ _ _ hc₁ne hic₁ hc₁c₃
-    have hall : ∀ k, P k / c₃ ∈
-        localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat := by
-      intro k
-      fin_cases k
-      · exact h0c₃
-      · exact h1c₃
-      · exact h2c₃
-    have hc₃eq : ∃ j, c₃ = P j := by
-      rcases hc₃or with rfl | rfl
-      · rcases hc₂or with rfl | rfl
-        · rcases hc₁or with rfl | rfl
-          · exact ⟨i, rfl⟩
-          · exact ⟨0, rfl⟩
-        · exact ⟨1, rfl⟩
-      · exact ⟨2, rfl⟩
-    obtain ⟨j, rfl⟩ := hc₃eq
-    exact ⟨j, hc₃ne, hall⟩
   -- Step 3c-ii-b: `p` is invertible in the residue field of the
   -- completed integers (`p` is a unit of `𝒪ᵥ` since `p ≠ q`)
   haveI hpres : NeZero ((p : ℕ) : IsLocalRing.ResidueField
@@ -1477,7 +1434,6 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
                 refine hunit _ ?_
                 rw [map_sub]
                 exact sub_ne_zero.mpr hxres
-              have hdenne : x₁ - x₂ ≠ 0 := sub_ne_zero.mpr hx12
               obtain ⟨v, hv⟩ := hdenU
               have hinvval : (((v⁻¹ : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)ˣ) : (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) :
                   (AlgebraicClosure
@@ -1939,7 +1895,7 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
     intro n
     induction n with
     | zero =>
-      intro P hP
+      intro P _
       simp only [Nat.cast_zero, zero_zsmul]
       exact hred0
     | succ m ih =>
@@ -2042,7 +1998,7 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
         rw [map_add eup, hredAdd (eup x.1) (eup y.1)
           (hmem eup x.1 ((Submodule.mem_torsionBy_iff _ _).mp x.2))
           (hmem eup y.1 ((Submodule.mem_torsionBy_iff _ _).mp y.2)),
-          map_add] } with hredEdef
+          map_add] }
   -- Step 3c-ii-s: the reduction is injective on `p`-torsion, hence a
   -- `ZMod p`-linear equivalence by the matching `p²` counts
   have hredEinj : Function.Injective redE := by
@@ -2068,14 +2024,13 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
         hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) ≃+
       ((W.map (algebraMap ℤ (IsLocalRing.ResidueField
       (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) :=
-    AddEquiv.ofBijective redE hredEbij with hredEadddef
+    AddEquiv.ofBijective redE hredEbij
   set redL : ((W.map (algebraMap ℤ (AlgebraicClosure
       (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
         hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) ≃ₗ[ZMod p]
       ((W.map (algebraMap ℤ (IsLocalRing.ResidueField
       (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)))).nTorsion p) :=
     { redEadd with map_smul' := ZMod.map_smul redEadd.toAddMonoidHom }
-    with hredLdef
   -- Step 3c-iii-a: `q` is not a unit of the completed integers (its
   -- valuation is strictly below one at the `q`-adic place)
   have hqNotUnit : ¬ IsUnit ((q : ℕ) : (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
@@ -2255,7 +2210,7 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
     rw [Nat.card_zmod, hcardKv]
   set eKv : ZMod q ≃+* IsLocalRing.ResidueField (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
       hq.toHeightOneSpectrumRingOfIntegersRat) :=
-    RingEquiv.ofBijective _ ebij with heKvdef
+    RingEquiv.ofBijective _ ebij
   -- Step 3c-iii-e: the inclusion of the completed integers into the
   -- local valuation subring, as a ring homomorphism
   set ov2ol : (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
@@ -2293,7 +2248,6 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
       hq.toHeightOneSpectrumRingOfIntegersRat)) : (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
       hq.toHeightOneSpectrumRingOfIntegersRat)) = 0 from rfl, map_zero])
       map_add' := fun a b => Subtype.ext (by push_cast; ring) }
-    with hov2oldef
   -- it kills the maximal ideal (nonzero residue would descend an
   -- inverse through the lying-over identity, as before)
   have hkill : ∀ a ∈ IsLocalRing.maximalIdeal (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
@@ -2380,7 +2334,6 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
       hq.toHeightOneSpectrumRingOfIntegersRat) →+* (IsLocalRing.ResidueField
       (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) :=
     Ideal.Quotient.lift _ ((IsLocalRing.residue (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)).comp ov2ol) hkill
-    with hρresdef
   letI algZq : Algebra (ZMod q) (IsLocalRing.ResidueField
       (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) :=
     (ρres.comp (eKv : ZMod q →+* IsLocalRing.ResidueField (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
@@ -2454,7 +2407,7 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
   set identA : (IsLocalRing.ResidueField
       (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) ≃ₐ[ZMod q] (AlgebraicClosure (ZMod q)) :=
     IsAlgClosure.equiv (ZMod q) (IsLocalRing.ResidueField
-      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) (AlgebraicClosure (ZMod q)) with hidentAdef
+      (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat)) (AlgebraicClosure (ZMod q))
   -- the identification as a `ℤ`-algebra homomorphism (the manual
   -- `commutes'` avoids the `ℤ`-algebra instance diamond)
   set identZ : (IsLocalRing.ResidueField
@@ -2466,7 +2419,6 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
         rw [eq_intCast (algebraMap ℤ (IsLocalRing.ResidueField
       (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))), eq_intCast (algebraMap ℤ (AlgebraicClosure (ZMod q))),
           map_intCast] }
-    with hidentZdef
   -- the transported point homomorphism (the model `W` is defined over
   -- `ℤ`)
   set imap : ((W⁄(IsLocalRing.ResidueField
@@ -2521,7 +2473,6 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
             (x.1 + y.1))) = _
         rw [map_add, map_add, map_add]
         rfl) }
-    with hident₀def
   have hidentinj : Function.Injective ident₀ := by
     intro x y hxy
     have h1 := congrArg Subtype.val hxy
@@ -2551,7 +2502,6 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
     { AddEquiv.ofBijective ident₀ hidentbij with
       map_smul' := ZMod.map_smul (AddEquiv.ofBijective ident₀
         hidentbij).toAddMonoidHom }
-    with hidentLdef
   -- Step 3c-iv: assemble the equivalence and reduce the node to the
   -- Frobenius-compatibility equation
   refine ⟨(((ψ₀.trans τ).trans redL).trans identL), ?_⟩
@@ -2656,7 +2606,6 @@ theorem exists_frobenius_reduction_model (E : WeierstrassCurve ℚ)
       (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))) n) = _
         rw [eq_intCast (algebraMap ℤ (IsLocalRing.ResidueField
       (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))), map_intCast] }
-    with hfrobZdef
   -- proof-irrelevant congruence for reduced points (top-level copy)
   have hsome' : ∀ {xa xb ya yb : (IsLocalRing.ResidueField
       (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat))}
@@ -3353,7 +3302,6 @@ theorem weilValueProp_frobenius_transport (Wbar : WeierstrassCurve (ZMod q)) [Wb
     -- the coordinate-ring endomorphism
     set σA := coordEnd (Wbar.map (algebraMap (ZMod q)
       (AlgebraicClosure (ZMod q)))).toAffine (frobAlgHom q).toRingHom hWA
-      with hσAdef
     -- span transport for the two Miller elements
     have haP' : Ideal.span {σA aP} =
         (WeierstrassCurve.Affine.CoordinateRing.XYIdeal
@@ -11794,12 +11742,12 @@ theorem exists_weilPairing_frobenius (q : ℕ) [Fact q.Prime]
   have hζu : IsPrimitiveRoot (hζ.isUnit (Fact.out : p.Prime).ne_zero).unit p :=
     hζ.isUnit_unit (Fact.out : p.Prime).ne_zero
   -- the discrete logarithm on the `p`-th roots of unity
-  set ζu : (AlgebraicClosure (ZMod q))ˣ := (hζ.isUnit (Fact.out : p.Prime).ne_zero).unit with hζudef
+  set ζu : (AlgebraicClosure (ZMod q))ˣ := (hζ.isUnit (Fact.out : p.Prime).ne_zero).unit
   have hmem : ∀ x y, e₀ x y ∈ Subgroup.zpowers ζu := by
     intro x y
     rw [hζu.zpowers_eq]
     exact (mem_rootsOfUnity p _).mpr (hord x y)
-  set dlog : ∀ (x y : ((Wbar.map (algebraMap (ZMod q)
+  set dlog : ∀ (_ _ : ((Wbar.map (algebraMap (ZMod q)
       (AlgebraicClosure (ZMod q)))).nTorsion p)), ZMod p :=
     fun x y => hζu.zmodEquivZPowers.symm
       (Additive.ofMul (⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu))
