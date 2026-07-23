@@ -2550,20 +2550,22 @@ section DifferentTransport
 
 open scoped Pointwise
 
-/-- **Automorphism-invariance of the different ideal** (sorry node,
-isolated 2026-07-23 as the ideal-theoretic transport input to the
+/-- **Automorphism-invariance of the different ideal** (PROVEN
+2026-07-23 — the ideal-theoretic transport input to the
 Fontaine-at-`3` conjugacy reduction below): a `ℚ`-automorphism of a
 number field `F` fixes the different ideal `𝔡_{F/ℚ}` (as an ideal of
-`𝓞 F`, under the pointwise action). Intended proof: the different is
-defined through the trace dual of `𝓞 F` in `F`, and the trace form is
-invariant under any `ℤ`-algebra automorphism
+`𝓞 F`, under the pointwise action). Immediate from
+`smul_differentIdeal_eq` of `Fermat.FLT.FreyCurve.InertiaCardTransport`,
+proven there for an arbitrary `A`-algebra automorphism
+(`map_differentIdeal_eq_of_algEquiv`): the trace form is invariant
+under the induced automorphism of the fraction field
 (`Algebra.trace_eq_of_algEquiv`), so the automorphism permutes the
 trace-dual lattice and hence fixes its inverse ideal. -/
 theorem smul_differentIdeal {F : Type*} [Field F] [NumberField F]
     (σ : F ≃ₐ[ℚ] F) :
     σ • differentIdeal ℤ (NumberField.RingOfIntegers F) =
       differentIdeal ℤ (NumberField.RingOfIntegers F) :=
-  sorry
+  smul_differentIdeal_eq σ
 
 /-- **The Fontaine bound at a distinguished prime over `3`** (sorry
 node, isolated 2026-07-23 as the residual local core of the

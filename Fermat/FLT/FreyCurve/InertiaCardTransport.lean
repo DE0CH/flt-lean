@@ -40,6 +40,7 @@ module
 public import Fermat.FLT.FreyCurve.MazurTorsion
 public import Mathlib.NumberTheory.RamificationInertia.Galois
 public import Mathlib.RingTheory.RamificationInertia.Ramification
+public import Mathlib.RingTheory.DedekindDomain.Different
 import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
 import Mathlib.RingTheory.Ideal.GoingUp
 import Mathlib.RingTheory.Flat.TorsionFree
@@ -458,3 +459,111 @@ theorem inertia_card_dvd_of_card_map_localInertiaGroup_dvd
     rw [hQcard, hIn, htower, hP'e1, one_mul]
   rw [hchain, ← hQ₀card]
   exact (hLag.trans (dvd_of_eq (hcardGal.trans hcard_eq))).trans hn
+
+/-! ## Automorphism-invariance of the different ideal
+
+The transport input to the Fontaine-at-`3` conjugacy reduction in
+`Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree`: an
+`A`-algebra automorphism of `B` fixes `differentIdeal A B`, because the
+trace form is invariant under the induced automorphism of the fraction
+field (`Algebra.trace_eq_of_algEquiv`), so the automorphism permutes
+the trace-dual lattice `(traceDual A K 1)` and hence fixes
+`𝔡 = (1 / traceDual A K 1) ∩ B`. -/
+
+section DifferentInvariance
+
+attribute [local instance] FractionRing.liftAlgebra
+  FractionRing.isScalarTower_liftAlgebra
+
+variable {A B : Type*} [CommRing A] [CommRing B] [IsDomain A]
+  [Algebra A B] [IsIntegrallyClosed A] [IsDedekindDomain B]
+  [Module.IsTorsionFree A B]
+
+omit [IsIntegrallyClosed A] in
+/-- One inclusion of the automorphism-invariance of the different
+ideal: `g(𝔡_{B/A}) ≤ 𝔡_{B/A}` for an `A`-algebra automorphism `g` of
+`B`.  Unfolding the definition, `x ∈ 𝔡` iff `x · y ∈ B` for every `y`
+in the trace-dual lattice `T := (traceDual A K 1)`; for such `x` and
+`y ∈ T`, the extension `ĝ` of `g` to the fraction field satisfies
+`ĝ⁻¹ y ∈ T` (the trace form is `ĝ`-invariant), so
+`g x · y = ĝ(x · ĝ⁻¹ y) ∈ ĝ(B) = B`. -/
+theorem map_differentIdeal_le_of_algEquiv (g : B ≃ₐ[A] B) :
+    (differentIdeal A B).map g ≤ differentIdeal A B := by
+  classical
+  set K := FractionRing A
+  set L := FractionRing B
+  -- the extension of `g` to the fraction field
+  set ĝ : L ≃ₐ[K] L := IsFractionRing.fieldEquivOfAlgEquiv K L L g with hĝdef
+  have hĝalg : ∀ b : B, ĝ (algebraMap B L b) = algebraMap B L (g b) := fun b =>
+    IsFractionRing.fieldEquivOfAlgEquiv_algebraMap K L L g b
+  rw [Ideal.map_le_iff_le_comap]
+  intro x hx
+  rw [Ideal.mem_comap]
+  -- unfold the definition of the different ideal on both sides
+  have hx' : algebraMap B L x ∈
+      (1 / Submodule.traceDual A K 1 : Submodule B L) := hx
+  show algebraMap B L (g x) ∈ (1 / Submodule.traceDual A K 1 : Submodule B L)
+  rw [Submodule.mem_div_iff_forall_mul_mem] at hx' ⊢
+  intro y hy
+  -- `ĝ⁻¹ y` is again in the trace-dual lattice
+  have hy' : ĝ.symm y ∈ Submodule.traceDual A K (1 : Submodule B L) := by
+    rw [Submodule.mem_traceDual] at hy ⊢
+    intro a ha
+    rw [Submodule.one_eq_range, LinearMap.mem_range] at ha
+    obtain ⟨b, rfl⟩ := ha
+    have htr : Algebra.traceForm K L (ĝ.symm y) (Algebra.linearMap B L b) =
+        Algebra.traceForm K L y (algebraMap B L (g b)) := by
+      rw [Algebra.traceForm_apply, Algebra.traceForm_apply,
+        ← Algebra.trace_eq_of_algEquiv ĝ, map_mul,
+        AlgEquiv.apply_symm_apply]
+      congr 1
+      exact congrArg (y * ·) (hĝalg b)
+    rw [htr]
+    exact hy _ (by rw [Submodule.one_eq_range]; exact ⟨g b, rfl⟩)
+  -- transport the product back through `ĝ`
+  have hmem := hx' (ĝ.symm y) hy'
+  rw [Submodule.one_eq_range, LinearMap.mem_range] at hmem ⊢
+  obtain ⟨c, hc⟩ := hmem
+  refine ⟨g c, ?_⟩
+  have h3 : ĝ (algebraMap B L c) = algebraMap B L (g x) * y := by
+    have h4 := congrArg ĝ hc
+    rw [Algebra.linearMap_apply] at h4
+    rw [h4, map_mul, AlgEquiv.apply_symm_apply, hĝalg x]
+  rw [Algebra.linearMap_apply, ← hĝalg c, h3]
+
+omit [IsIntegrallyClosed A] in
+/-- **Automorphism-invariance of the different ideal**: an `A`-algebra
+automorphism of `B` fixes `differentIdeal A B`.  Both inclusions come
+from `map_differentIdeal_le_of_algEquiv` (applied to `g` and `g⁻¹`). -/
+theorem map_differentIdeal_eq_of_algEquiv (g : B ≃ₐ[A] B) :
+    (differentIdeal A B).map g = differentIdeal A B := by
+  refine le_antisymm (map_differentIdeal_le_of_algEquiv g) fun x hx => ?_
+  have h1 : g.symm x ∈ differentIdeal A B :=
+    map_differentIdeal_le_of_algEquiv g.symm (Ideal.mem_map_of_mem _ hx)
+  have h2 : g (g.symm x) ∈ (differentIdeal A B).map g :=
+    Ideal.mem_map_of_mem _ h1
+  rwa [AlgEquiv.apply_symm_apply] at h2
+
+end DifferentInvariance
+
+open scoped Pointwise in
+/-- **Automorphism-invariance of the different ideal of a number
+field**, in the pointwise-action form consumed by the Fontaine-at-`3`
+conjugacy reduction: a `ℚ`-automorphism `σ` of a number field `F`
+fixes `𝔡_{F/ℚ}` under the pointwise action of `Gal(F/ℚ)` on ideals of
+`𝓞 F`. -/
+theorem smul_differentIdeal_eq {F : Type*} [Field F] [NumberField F]
+    (σ : F ≃ₐ[ℚ] F) :
+    σ • differentIdeal ℤ (NumberField.RingOfIntegers F) =
+      differentIdeal ℤ (NumberField.RingOfIntegers F) := by
+  -- the automorphism of `𝓞 F` induced by `σ`, as a `ℤ`-algebra
+  -- automorphism
+  let g : NumberField.RingOfIntegers F ≃ₐ[ℤ] NumberField.RingOfIntegers F :=
+    AlgEquiv.ofRingEquiv (f := NumberField.RingOfIntegers.mapRingEquiv
+      (σ : F ≃+* F))
+      (fun n => by
+        rw [algebraMap_int_eq]
+        exact map_intCast _ n)
+  have h1 : σ • differentIdeal ℤ (NumberField.RingOfIntegers F) =
+      (differentIdeal ℤ (NumberField.RingOfIntegers F)).map g := rfl
+  rw [h1, map_differentIdeal_eq_of_algEquiv]
