@@ -5890,26 +5890,148 @@ lemma cyclotomicCharacter_algebraMap_eq_one_iff_fix {k : Type*} [Field k]
     rw [hcast, hw1]
     norm_num
 
-/-- **The tame generator of the inertia image at `3`** (sorry node,
-isolated 2026-07-23 — the SINGLE local-structure input to both
-`quotCharacter_inertia_three_sq_one` and
-`quotCharacter_inertia_three_dichotomy_of_sq_one`, whose assemblies
-are proven): for a character `χ` of `Γ ℚ` with open kernel, valued in
-a commutative group without `3`-torsion, the image under
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Restriction of the local inertia at `3` to a finite Galois
+level** (PROVEN 2026-07-23 — the downward companion of the compactness
+lifting `exists_mem_localInertiaGroup_restrictNormalHom_eq`): the
+restriction to a finite Galois subextension `N` of an element of the
+full local inertia group at `3` lies in the finite-level inertia
+subgroup. If a displacement `τ • x − x` were NOT in `𝔪(IC-N)`, it
+would be a unit of the local ring `IC-N`; its image under
+`integralClosureInclusion` — which equals `σ • x̂ − x̂` by
+`AlgEquiv.restrictNormal_commutes` — would then be a unit of the big
+integral closure lying in `𝔪(IC-big)` (the defining property of
+`localInertiaGroup`), forcing `𝔪(IC-big) = ⊤`. -/
+theorem restrictNormalHom_mem_inertia_of_mem_localInertiaGroup_three
+    (N : IntermediateField
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)))
+    [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N]
+    [IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N]
+    (σ : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+      ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat]
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))
+    (hσ : σ ∈ localInertiaGroup
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) :
+    AlgEquiv.restrictNormalHom N σ ∈
+      (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
+        (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] N) := by
+  rw [show (IsLocalRing.maximalIdeal (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
+      (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] N) =
+    (IsLocalRing.maximalIdeal (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N)).toAddSubgroup.inertia _
+    from rfl, AddSubgroup.mem_inertia]
+  intro x
+  rw [Submodule.mem_toAddSubgroup]
+  by_contra hnot
+  -- the displacement would be a unit of the local ring `IC-N`
+  have hunit : IsUnit ((AlgEquiv.restrictNormalHom N σ) • x - x) := by
+    by_contra hnu
+    exact hnot ((IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr hnu))
+  -- push the displacement into the big integral closure
+  have hkey : integralClosureInclusion
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat N
+      ((AlgEquiv.restrictNormalHom N σ) • x - x) =
+      σ • (integralClosureInclusion
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat N x) -
+      integralClosureInclusion
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat N x := by
+    rw [map_sub]
+    congr 1
+    exact Subtype.ext (AlgEquiv.restrictNormal_commutes σ N x.1)
+  -- the defining property of the full local inertia group
+  have hbig := AddSubgroup.mem_inertia.mp hσ
+    (integralClosureInclusion
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat N x)
+  rw [Submodule.mem_toAddSubgroup] at hbig
+  -- a unit inside the big maximal ideal: absurd
+  have hmap := hunit.map (integralClosureInclusion
+    Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat N)
+  rw [hkey] at hmap
+  exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+    (Ideal.eq_top_of_isUnit_mem _ hbig hmap)
+
+/-- **Finite-level tame ramification at `3`** (sorry node, isolated
+2026-07-23 — the genuine local-structure core of the tame-generator
+leaf below, unformalized in project and mathlib; Serre, *Corps
+Locaux* IV §1–2): for every finite Galois subextension `N` of the
+algebraic closure of `ℚ₃ᵥ` there is a finite-level inertia element
+`t` such that (a) every finite-level inertia element agrees with a
+power of `t` up to an element of `3`-power order — the wild inertia
+`P` is the (normal) `3`-Sylow of the inertia `I`, the tame quotient
+`I/P` is CYCLIC (it embeds into the multiplicative group of the
+residue field of `N` via `σ ↦ σ(π)/π` for a uniformizer `π`), `t` is
+any preimage of a generator, and the error `(tᵐ)⁻¹σ` lies in `P` —
+and (b) some automorphism `φ` of `N` (any Frobenius lift) conjugates
+`t` into `t³` up to an element of `3`-power order: the tame character
+is Frobenius-semilinear, `φtφ⁻¹ ≡ t^q (mod P)` with
+`q = |𝒪ᵥ/𝔪ᵥ| = |𝔽₃| = 3`. -/
+theorem exists_finite_level_tame_generator_three
+    (N : IntermediateField
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)))
+    [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N]
+    [IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N] :
+    ∃ t ∈ (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
+        (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] N),
+      (∀ σ ∈ (IsLocalRing.maximalIdeal (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
+          (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] N),
+        ∃ m j : ℕ, ((t ^ m)⁻¹ * σ) ^ 3 ^ j = 1) ∧
+      (∃ φ : N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] N,
+        ∃ j : ℕ, (φ * t * φ⁻¹ * (t ^ 3)⁻¹) ^ 3 ^ j = 1) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **The tame generator of the inertia image at `3`** (DECOMPOSED
+2026-07-23 into the finite-level tame-ramification leaf
+`exists_finite_level_tame_generator_three` above; the profinite
+assembly is PROVEN): for a character `χ` of `Γ ℚ` with open kernel,
+valued in a commutative group without `3`-torsion, the image under
 `χ ∘ (Γ ℚ₃ᵥ → Γ ℚ)` of the local inertia at `3` is generated by a
-single element whose square is `1`. Intended proof (Serre, *Local
-Fields* IV; equivalently local CFT, `I₃ᵃᵇ ≅ ℤ₃ˣ` with prime-to-`3`
-quotient `𝔽₃ˣ = {±1}`): the open kernel cuts out a finite Galois
-level at which the image of the full local inertia is the
-finite-level inertia group `I` (the compactness lifting
-`exists_mem_localInertiaGroup_restrictNormalHom_eq` of
-`LocalInertiaFixedField` gives the lifting direction); the wild part
-`P ⊴ I` is a `3`-group, killed by `χ` (`h3`: no `3`-torsion in the
-target); the tame quotient `I/P` is cyclic, so the image of `I` is
-generated by the image `a` of a tame generator `t`; and Frobenius
-conjugation `φtφ⁻¹ ≡ t³ (mod P)` forces `a³ = χ(φtφ⁻¹) = a` — `χ` is
-defined on ALL of `Γ ℚ` with abelian values, so conjugation acts
-trivially on it — i.e. `a² = 1`. -/
+single element whose square is `1`. Assembly: the open kernel of
+`χ ∘ Emb` contains (Krull topology,
+`krullTopology_mem_nhds_one_iff_of_normal`) the fixing subgroup of a
+finite Galois level `N`, so the composite factors through a genuine
+homomorphism `f` on `Gal(N/ℚ₃ᵥ)` (`MonoidHom.liftOfSurjective` over
+`AlgEquiv.restrictNormalHom_surjective`); the finite-level leaf hands
+a tame generator `t̄` whose `3`-power-order errors die under `f`
+(`h3` iterated), so `f` is `⟨f t̄⟩`-valued on the finite-level
+inertia; the restriction lemma
+`restrictNormalHom_mem_inertia_of_mem_localInertiaGroup_three` maps
+the full local inertia INTO the finite level, and the compactness
+lifting `exists_mem_localInertiaGroup_restrictNormalHom_eq` lifts
+`t̄` back to the sought profinite witness `t`; Frobenius conjugation
+`φt̄φ⁻¹ ≡ t̄³` gives `(f t̄)³ = f t̄` since `A` is abelian, i.e.
+`(f t̄)² = 1`. -/
 theorem exists_localInertia_three_generator {A : Type*} [CommGroup A]
     (h3 : ∀ a : A, a ^ 3 = 1 → a = 1)
     (χ : Γ ℚ →* A) (hopen : IsOpen (χ.ker : Set (Γ ℚ))) :
@@ -5926,7 +6048,96 @@ theorem exists_localInertia_three_generator {A : Type*} [CommGroup A]
           (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
             (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
               Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) t)) ^ m := by
-  sorry
+  classical
+  set v := Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+  set Emb := Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+  -- `3`-power-order elements die in the `3`-torsion-free target
+  have h3pow : ∀ (a : A) (j : ℕ), a ^ 3 ^ j = 1 → a = 1 := by
+    intro a j
+    induction j with
+    | zero => intro h; simpa using h
+    | succ n ih =>
+      intro h
+      apply ih
+      apply h3
+      rw [← pow_mul, ← pow_succ]
+      exact h
+  -- the open kernel of the composite contains a finite Galois level
+  have hopen' : IsOpen (((χ.comp Emb.toMonoidHom).ker :
+      Subgroup (Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :
+      Set (Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+    have hpre : (((χ.comp Emb.toMonoidHom).ker :
+        Subgroup (Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :
+        Set (Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) =
+        Emb ⁻¹' (χ.ker : Set (Γ ℚ)) := rfl
+    rw [hpre]
+    exact hopen.preimage Emb.continuous
+  have hnhds : (((χ.comp Emb.toMonoidHom).ker :
+      Subgroup (Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :
+      Set (Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) ∈
+      nhds (1 : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+    hopen'.mem_nhds (one_mem _)
+  obtain ⟨N, hfdN, hnormN, hle⟩ :=
+    (krullTopology_mem_nhds_one_iff_of_normal
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+      _).mp hnhds
+  haveI := hfdN
+  haveI := hnormN
+  haveI : Algebra.IsSeparable
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) N :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI : IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) N := ⟨⟩
+  -- the composite character factors through the finite Galois group
+  have hsurj : Function.Surjective (AlgEquiv.restrictNormalHom N :
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)
+        ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v]
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) →*
+      (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v] N)) :=
+    AlgEquiv.restrictNormalHom_surjective _
+  have hkerle : (AlgEquiv.restrictNormalHom (F :=
+      IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) N).ker ≤
+      (χ.comp Emb.toMonoidHom).ker := by
+    rw [IntermediateField.restrictNormalHom_ker]
+    intro g hg
+    exact hle hg
+  set f : (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v] N) →* A :=
+    (AlgEquiv.restrictNormalHom N).liftOfSurjective hsurj
+      ⟨χ.comp Emb.toMonoidHom, hkerle⟩
+  have hf : ∀ σ, f (AlgEquiv.restrictNormalHom N σ) = χ (Emb σ) := fun σ =>
+    MonoidHom.liftOfRightInverse_comp_apply _ _ _ _ σ
+  -- the finite-level tame generator and its profinite lift
+  obtain ⟨tbar, htbarI, htbargen, φ, j0, hφ⟩ :=
+    exists_finite_level_tame_generator_three N
+  obtain ⟨t, htmem, htres⟩ :=
+    exists_mem_localInertiaGroup_restrictNormalHom_eq v N tbar htbarI
+  have hχt : χ (Emb t) = f tbar := by
+    rw [← htres]
+    exact (hf t).symm
+  -- Frobenius conjugation forces the square to be `1`
+  have hsq : (χ (Emb t)) ^ 2 = 1 := by
+    have h1 : f (φ * tbar * φ⁻¹ * (tbar ^ 3)⁻¹) = 1 :=
+      h3pow _ j0 (by rw [← map_pow, hφ, map_one])
+    rw [map_mul, map_mul, map_mul, map_inv, map_inv, map_pow] at h1
+    have hconj : f φ * f tbar * (f φ)⁻¹ = f tbar := by
+      rw [mul_comm (f φ) (f tbar), mul_assoc, mul_inv_cancel, mul_one]
+    rw [hconj] at h1
+    have h2 : f tbar = f tbar ^ 3 := mul_inv_eq_one.mp h1
+    have h3' : (f tbar)⁻¹ * f tbar ^ 3 = f tbar ^ 2 := by group
+    rw [hχt, ← h3', ← h2, inv_mul_cancel]
+  refine ⟨t, htmem, hsq, ?_⟩
+  -- generation: every inertia element maps to a power of `χ (Emb t)`
+  intro σ hσ
+  obtain ⟨m, j, hmj⟩ := htbargen (AlgEquiv.restrictNormalHom N σ)
+    (restrictNormalHom_mem_inertia_of_mem_localInertiaGroup_three N σ hσ)
+  refine ⟨m, ?_⟩
+  have h1 : f ((tbar ^ m)⁻¹ * AlgEquiv.restrictNormalHom N σ) = 1 :=
+    h3pow _ j (by rw [← map_pow, hmj, map_one])
+  rw [map_mul, map_inv, map_pow] at h1
+  calc χ (Emb σ) = f (AlgEquiv.restrictNormalHom N σ) := (hf σ).symm
+    _ = (f tbar) ^ m := (inv_mul_eq_one.mp h1).symm
+    _ = (χ (Emb t)) ^ m := by rw [hχt]
 
 /-- **`ℚ₃ᵥ` contains no cube root of unity besides `1`** (PROVEN
 2026-07-23 — the no-root input to the finite-level leaf below): the
@@ -7014,38 +7225,102 @@ theorem subCharacter_unramified_at_three_of_quot_ramified
   rw [MonoidHom.mem_ker]
   exact Units.ext hψ1
 
-/-- **The connected–étale inertia subgroup at `3`** (sorry node — the
-finite-flat/Raynaud content of the local splitting, isolated
-2026-07-23 from `exists_inertia_eigenvector_complement_at_three`
-below, whose eigenvector assembly is proven): the space of a
-representation FLAT at `3` (over a finite char-3 coefficient field)
-carries an additive subgroup `U` — intended: the points of the
-connected part `G⁰` of the finite flat prolongation `G` at `3` —
+/-- **The connected–étale inertia subgroup of a Hopf package at `3`**
+(sorry node, isolated 2026-07-23 — the finite-flat/Raynaud content of
+the connected–étale node below, whose flatness-to-package assembly is
+proven): given an EXPLICIT finite flat Hopf algebra `G` over
+`𝒪ᵥ ≅ ℤ₃` with étale generic fibre whose geometric points are
+`Γ ℚ₃ᵥ`-equivariantly identified with the space `V` of `ρ` (the
+witness packaged by `GaloisRep.HasFlatProlongationAt`), the space
+carries an additive subgroup `U` — intended: the image under `f` of
+the points of the connected part `G⁰` — such that (i) every inertia
+displacement `ρ(σ)v − v` lies in `U`, and (ii) `U` contains no
+nonzero inertia-fixed vector. Intended proof (Raynaud 1974; Serre,
+Duke 1987, §5.4): for (i), the étale quotient `G/G⁰` of the
+connected–étale sequence is finite étale over the henselian local
+`ℤ₃`, so its points are defined over the maximal unramified extension
+and inertia fixes them; hence every inertia displacement dies in the
+étale points and lands in `U = ker(V → (G/G⁰)-points)`
+(left-exactness of points). For (ii): `G⁰` is killed by `3` (its
+generic fibre is — the points are `3`-torsion since `V` is a char-3
+space — and `𝒪(G⁰)` is `ℤ₃`-free), and the schematic closures of a
+local-Galois composition series of its generic fibre filter `G⁰` by
+finite flat closed subgroups with CONNECTED simple graded pieces
+(quotients of the local ring `𝒪(G⁰)` stay local); a nonzero
+inertia-fixed vector in `U` would make the points of some graded
+piece unramified (the inertia-fixed points form a local-Galois
+submodule, so by simplicity the whole piece), hence the piece étale
+by Raynaud's criterion at `e = 1 < 2 = p − 1` — an unramified finite
+flat group scheme killed by `p` over `ℤ_p` is étale — contradicting
+connectedness. Concretely, at order `3` the Oort–Tate list over `ℤ₃`
+contains only `ℤ/3`-forms (étale, unramified points) and `μ₃`-forms
+(connected, inertia acting through the nontrivial quadratic tame
+character `χ₃ mod 3`). -/
+theorem exists_connectedEtale_subgroup_of_hopf_package
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρ : GaloisRep ℚ k V}
+    (G : Type) [CommRing G]
+    [HopfAlgebra (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) G]
+    [Module.Flat (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) G]
+    [Module.Finite (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) G]
+    [Algebra.Etale (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+      ((IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) ⊗[
+        IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] G)]
+    (f : Additive ((IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) ⊗[
+        IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] G →ₐ[
+        IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat]
+        AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) →+[
+        Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)]
+      ((ρ.toLocal
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat).Space))
+    (hf : Function.Bijective f) :
+    ∃ U : AddSubgroup V,
+      (∀ σ ∈ localInertiaGroup
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat, ∀ v : V,
+        ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) v - v ∈ U) ∧
+      (∀ u ∈ U, (∀ σ ∈ localInertiaGroup
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+        ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) u = u) →
+        u = 0) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **The connected–étale inertia subgroup at `3`** (DECOMPOSED
+2026-07-23 into the Hopf-package leaf
+`exists_connectedEtale_subgroup_of_hopf_package` above — the
+finite-flat/Raynaud content; the flatness-to-package assembly is
+PROVEN here): the space of a representation FLAT at `3` (over a
+finite char-3 coefficient field) carries an additive subgroup `U`
 such that (i) every inertia displacement `ρ(σ)v − v` lies in `U`,
-and (ii) `U` contains no nonzero inertia-fixed vector. Intended
-proof (Raynaud 1974; Serre, Duke 1987, §5.4): `ρ.IsFlatAt` at the
-open ideal `⊥` produces a finite flat Hopf algebra over `𝒪ᵥ ≅ ℤ₃`
-whose generic-fibre points are `V`, Galois-equivariantly
-(`GaloisRep.HasFlatProlongationAt`). For (i): the étale quotient
-`G/G⁰` of the connected–étale sequence is finite étale over the
-henselian local `ℤ₃`, so its points are defined over the maximal
-unramified extension and inertia fixes them; hence every inertia
-displacement dies in the étale points and lands in
-`U = ker(V → (G/G⁰)-points)` (left-exactness of points). For (ii):
-`G⁰` is killed by `3` (its generic fibre is, and `𝒪(G⁰)` is
-`ℤ₃`-free), and the schematic closures of a local-Galois composition
-series of its generic fibre filter `G⁰` by finite flat closed
-subgroups with CONNECTED simple graded pieces (quotients of the
-local ring `𝒪(G⁰)` stay local); a nonzero inertia-fixed vector in
-`U` would make the points of some graded piece unramified (the
-inertia-fixed points form a local-Galois submodule, so by simplicity
-the whole piece), hence the piece étale by Raynaud's criterion at
-`e = 1 < 2 = p − 1` — an unramified finite flat group scheme killed
-by `p` over `ℤ_p` is étale — contradicting connectedness.
-Concretely, at order `3` the Oort–Tate list over `ℤ₃` contains only
-`ℤ/3`-forms (étale, unramified points) and `μ₃`-forms (connected,
-inertia acting through the nontrivial quadratic tame character
-`χ₃ mod 3`). -/
+and (ii) `U` contains no nonzero inertia-fixed vector. Assembly:
+`ρ.IsFlatAt` at the open ideal `⊥` of the discrete field `k`
+produces the `GaloisRep.HasFlatProlongationAt` package for the
+base change `ρ ⊗ (k ⧸ ⊥)`; the coefficient collapse
+`k ⧸ ⊥ ≃+* k` (`RingEquiv.quotientBot`) induces a
+`Γ ℚ₃ᵥ`-equivariant additive isomorphism
+`(k ⧸ ⊥) ⊗[k] V ≃+ V` (tensor `congr` + `lid`), along which
+`HasFlatProlongationAt.of_equiv` transports the package to `ρ`
+itself; the leaf consumes the explicit package. -/
 theorem exists_connectedEtale_subgroup_at_three
     {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
     [TopologicalSpace k] [DiscreteTopology k]
@@ -7065,7 +7340,50 @@ theorem exists_connectedEtale_subgroup_at_three
             (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
               Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) u = u) →
         u = 0) := by
-  sorry
+  classical
+  set v := Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+  -- flatness at the open ideal `⊥` of the discrete field `k`
+  have h0 := hflat.cond ⊥ (isOpen_discrete _)
+  -- the coefficient collapse `k ⧸ ⊥ ≃ₗ[k] k`
+  let φq : (k ⧸ (⊥ : Ideal k)) ≃+* k := RingEquiv.quotientBot k
+  have hφalg : ∀ r : k, φq (algebraMap k (k ⧸ (⊥ : Ideal k)) r) = r :=
+    fun _ => rfl
+  let φlin : (k ⧸ (⊥ : Ideal k)) ≃ₗ[k] k :=
+    { φq.toAddEquiv with
+      map_smul' := fun r x => by
+        show φq (r • x) = r • φq x
+        rw [Algebra.smul_def, Algebra.smul_def, map_mul, hφalg,
+          Algebra.algebraMap_self_apply] }
+  -- the equivariant space identification `(k ⧸ ⊥) ⊗[k] V ≃+ V`
+  let e : (((ρ.baseChange (k ⧸ (⊥ : Ideal k))).toLocal v).Space ≃+
+      ((ρ.toLocal v).Space)) :=
+    ((TensorProduct.congr φlin (LinearEquiv.refl k V)).trans
+      (TensorProduct.lid k V)).toAddEquiv
+  have he : ∀ (g : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+      (x : ((ρ.baseChange (k ⧸ (⊥ : Ideal k))).toLocal v).Space),
+      e (g • x) = g • e x := by
+    intro g x
+    show e (((ρ.baseChange (k ⧸ (⊥ : Ideal k))).toLocal v) g x) =
+      ((ρ.toLocal v) g) (e x)
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | add a b ha hb => simp only [map_add, ha, hb]
+    | tmul c y =>
+      show ((TensorProduct.congr φlin (LinearEquiv.refl k V)).trans
+          (TensorProduct.lid k V)) (c ⊗ₜ[k] ((ρ.toLocal v) g y)) =
+        ((ρ.toLocal v) g) (((TensorProduct.congr φlin
+          (LinearEquiv.refl k V)).trans (TensorProduct.lid k V)) (c ⊗ₜ[k] y))
+      simp only [LinearEquiv.trans_apply, TensorProduct.congr_tmul,
+        LinearEquiv.refl_apply, TensorProduct.lid_tmul, map_smul]
+  -- transport the package to `ρ` itself and hand it to the leaf
+  have hpro : ρ.HasFlatProlongationAt v := h0.of_equiv _ e he
+  obtain ⟨G, i1, i2, i3, i4, i5, f, hbij⟩ := hpro
+  letI := i1
+  letI := i2
+  letI := i3
+  letI := i4
+  letI := i5
+  exact exists_connectedEtale_subgroup_of_hopf_package V (ρ := ρ) G f hbij
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
