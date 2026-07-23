@@ -20,7 +20,13 @@ hold; several were worked around during setup.
   with `.venv/bin/python`.
 - `ANNAS_KEY` is in the gitignored `.env` at repo root
   (`set -a; source .env` for CLI use); mirror `--domain-index 2`
-  works when the default mirror throws TLS errors.
+  works when the default mirror throws TLS errors. If the session was
+  launched without the key exported, the annas-mcp MCP fails with a
+  key/401 error and CANNOT be fixed without a restart — Deyao's ruling
+  (2026-07-23): don't restart, use the command line as the fallback:
+  source `.env`, then
+  `curl -s "https://annas-archive.pk/dyn/api/fast_download.json?md5=<md5>&key=$ANNAS_KEY"`
+  (the `search_annas` tool needs no key and still works).
 - No docker: OCR = `.venv/bin/ocrmypdf` + system tesseract with
   `TESSDATA_PREFIX=~/.local/share/tessdata` (eng+fra+osd + configs
   copied there; the override dir must contain EVERYTHING tesseract
