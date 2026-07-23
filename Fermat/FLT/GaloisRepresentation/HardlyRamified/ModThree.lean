@@ -3821,6 +3821,82 @@ theorem exists_localInertia_three_generator {A : Type*} [CommGroup A]
               Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) t)) ^ m := by
   sorry
 
+/-- **`ℚ₃ᵥ` contains no cube root of unity besides `1`** (PROVEN
+2026-07-23 — the no-root input to the finite-level leaf below): the
+polynomial `X² + X + 1` has no root in the `3`-adic completion. A
+root `r` gives `x = 2r + 1` with `x² = −3`; `x` is integral over the
+(integrally closed) valuation ring `𝒪ᵥ`, so `x ∈ 𝒪ᵥ`; then
+`x² ∈ 𝔪ᵥ = (3)` (`maximalIdeal_adicCompletionIntegers_eq_span`)
+forces `x = 3y` by primality, whence `3y² = −1` puts the unit `−1`
+in the maximal ideal — absurd. -/
+theorem no_root_sq_add_self_add_one_adicCompletion_three
+    (r : IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) :
+    r ^ 2 + r + 1 ≠ 0 := by
+  intro hroot
+  have hx2 : (2 * r + 1) ^ 2 = -3 := by linear_combination 4 * hroot
+  -- `2r + 1` is integral over the valuation ring, hence in it
+  have hxint : IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) (2 * r + 1) := by
+    refine ⟨Polynomial.X ^ 2 + Polynomial.C 3,
+      Polynomial.monic_X_pow_add_C _ two_ne_zero, ?_⟩
+    rw [Polynomial.eval₂_add, Polynomial.eval₂_pow, Polynomial.eval₂_X,
+      Polynomial.eval₂_C, map_ofNat]
+    linear_combination hx2
+  obtain ⟨X, hX⟩ := IsIntegrallyClosed.isIntegral_iff.mp hxint
+  -- the valuation-ring-level equation `X² = −3`
+  have hX2 : X ^ 2 = -3 := by
+    apply IsFractionRing.injective
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+    rw [map_pow, hX, map_neg, map_ofNat]
+    exact hx2
+  -- descend along `𝔪ᵥ = (3)`
+  have hspan := maximalIdeal_adicCompletionIntegers_eq_span Nat.prime_three
+  have hXm : X ∈ IsLocalRing.maximalIdeal
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) := by
+    have hsq : X ^ 2 ∈ IsLocalRing.maximalIdeal
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) := by
+      rw [hspan, Ideal.mem_span_singleton]
+      exact ⟨-1, by rw [hX2]; push_cast; ring⟩
+    exact (IsLocalRing.maximalIdeal.isMaximal _).isPrime.mem_of_pow_mem _ hsq
+  rw [hspan, Ideal.mem_span_singleton] at hXm
+  obtain ⟨Y, hY⟩ := hXm
+  have h3ne : ((3 : ℕ) : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) ≠ 0 := by
+    intro h
+    have h2 := congrArg (algebraMap
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) h
+    rw [map_natCast, map_zero] at h2
+    norm_num at h2
+  have h3Y : 3 * Y ^ 2 = -1 := by
+    have h9 : ((3 : ℕ) : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) * (3 * Y ^ 2) =
+        ((3 : ℕ) : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) * (-1) := by
+      have h4 := hX2
+      rw [hY] at h4
+      push_cast at h4 ⊢
+      linear_combination h4
+    exact mul_left_cancel₀ h3ne h9
+  -- the unit `−1` cannot lie in the maximal ideal
+  have hunit : (-1 : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) ∈
+      IsLocalRing.maximalIdeal
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) := by
+    rw [hspan, Ideal.mem_span_singleton]
+    exact ⟨Y ^ 2, by push_cast; linear_combination -h3Y⟩
+  exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+    (Ideal.eq_top_of_isUnit_mem _ hunit isUnit_one.neg)
+
 /-- **The ramified quadratic extension `ℚ₃ᵥ(ζ₃)` at finite level**
 (sorry node, isolated 2026-07-23 — the finite-level content of the
 ramification witness below; everything profinite is already assembled
