@@ -112,7 +112,10 @@ import Mathlib.Topology.Baire.LocallyCompactRegular
 import Mathlib.RingTheory.Ideal.GoingUp
 public import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
 public import Mathlib.RingTheory.Ideal.Norm.AbsNorm
-import Mathlib.NumberTheory.NumberField.DedekindZeta
+public import Mathlib.NumberTheory.NumberField.DedekindZeta
+import Mathlib.NumberTheory.RamificationInertia.Basic
+import Mathlib.FieldTheory.Finite.Basic
+import Mathlib.RingTheory.PrincipalIdealDomain
 public import Mathlib.NumberTheory.DirichletCharacter.Orthogonality
 public import Mathlib.NumberTheory.DirichletCharacter.Bounds
 
@@ -934,8 +937,159 @@ theorem tsum_not_prime_natCard_rpow_neg_one_ne_top
     ∑' P : {P : HeightOneSpectrum (𝓞 F) //
         ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime},
       (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
-        (-(1 : ℝ)) ≠ ⊤ :=
-  sorry
+        (-(1 : ℝ)) ≠ ⊤ := by
+  classical
+  -- per-place data: the residue characteristic is prime, and its square
+  -- is at most the residue cardinality (the residue degree is `≥ 2`)
+  have hdata : ∀ P : {P : HeightOneSpectrum (𝓞 F) //
+      ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime},
+      (ringChar (𝓞 F ⧸ P.1.asIdeal)).Prime ∧
+        ringChar (𝓞 F ⧸ P.1.asIdeal) ^ 2 ≤ Nat.card (𝓞 F ⧸ P.1.asIdeal) := by
+    rintro ⟨P, hnp⟩
+    have hcard0 : Nat.card (𝓞 F ⧸ P.asIdeal) ≠ 0 := by
+      have h1 : Ideal.absNorm P.asIdeal ≠ 0 := fun h =>
+        P.ne_bot (Ideal.absNorm_eq_zero_iff.mp h)
+      rwa [Ideal.absNorm_apply, Submodule.cardQuot_apply] at h1
+    haveI hfin : Finite (𝓞 F ⧸ P.asIdeal) := (Nat.card_ne_zero.mp hcard0).2
+    haveI := P.isPrime.isMaximal P.ne_bot
+    have hCharP := ringChar.charP (𝓞 F ⧸ P.asIdeal)
+    haveI := Ideal.Quotient.field P.asIdeal
+    haveI := Fintype.ofFinite (𝓞 F ⧸ P.asIdeal)
+    obtain ⟨f, hp, hcard⟩ := @FiniteField.card (𝓞 F ⧸ P.asIdeal)
+      (Ideal.Quotient.field P.asIdeal) _
+      (ringChar (𝓞 F ⧸ P.asIdeal)) hCharP
+    simp only [Nat.card_eq_fintype_card] at hnp ⊢
+    refine ⟨hp, ?_⟩
+    rcases Nat.lt_or_ge (f : ℕ) 2 with hf | hf
+    · exfalso
+      have hf1 : (f : ℕ) = 1 := by have := f.pos; omega
+      apply hnp
+      rw [hcard, hf1, pow_one]
+      exact hp
+    · rw [hcard]
+      exact Nat.pow_le_pow_right hp.pos hf
+  -- termwise bound by the inverse square of the residue characteristic
+  have hbound : ∀ P : {P : HeightOneSpectrum (𝓞 F) //
+      ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime},
+      (Nat.card (𝓞 F ⧸ P.1.asIdeal) : ℝ≥0∞) ^ (-(1 : ℝ)) ≤
+        ((ringChar (𝓞 F ⧸ P.1.asIdeal) : ℝ≥0∞) ^ (2 : ℕ))⁻¹ := by
+    intro P
+    rw [ENNReal.rpow_neg_one]
+    refine ENNReal.inv_le_inv' ?_
+    calc (ringChar (𝓞 F ⧸ P.1.asIdeal) : ℝ≥0∞) ^ (2 : ℕ)
+        = ((ringChar (𝓞 F ⧸ P.1.asIdeal) ^ 2 : ℕ) : ℝ≥0∞) := by push_cast; rfl
+      _ ≤ (Nat.card (𝓞 F ⧸ P.1.asIdeal) : ℝ≥0∞) :=
+          Nat.cast_le.mpr (hdata P).2
+  refine ne_top_of_le_ne_top ?_ (ENNReal.tsum_le_tsum hbound)
+  -- group by the residue characteristic
+  rw [← ENNReal.tsum_fiberwise
+    (fun P : {P : HeightOneSpectrum (𝓞 F) //
+      ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+      ((ringChar (𝓞 F ⧸ P.1.asIdeal) : ℝ≥0∞) ^ (2 : ℕ))⁻¹)
+    (fun P => ringChar (𝓞 F ⧸ P.1.asIdeal))]
+  -- each fiber has at most `[F : ℚ]` elements, and vanishes off primes
+  have hfiber : ∀ p : ℕ,
+      (∑' P : ((fun P : {P : HeightOneSpectrum (𝓞 F) //
+          ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+          ringChar (𝓞 F ⧸ P.1.asIdeal)) ⁻¹' {p}),
+        ((ringChar (𝓞 F ⧸ P.1.1.asIdeal) : ℝ≥0∞) ^ (2 : ℕ))⁻¹) ≤
+      (Module.finrank ℚ F : ℝ≥0∞) * ENNReal.ofReal (1 / (p : ℝ) ^ 2) := by
+    intro p
+    by_cases hp : p.Prime
+    · -- inject the fiber into the primes over `p`
+      set 𝔭 : Ideal ℤ := Ideal.span {(p : ℤ)} with h𝔭
+      have h𝔭0 : 𝔭 ≠ ⊥ := by
+        rw [h𝔭, Ne, Ideal.span_singleton_eq_bot]
+        exact_mod_cast hp.ne_zero
+      haveI h𝔭max : 𝔭.IsMaximal := by
+        rw [h𝔭]
+        exact PrincipalIdealRing.isMaximal_of_irreducible
+          (Nat.prime_iff_prime_int.mp hp).irreducible
+      have hmem : ∀ P : ((fun P : {P : HeightOneSpectrum (𝓞 F) //
+          ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+          ringChar (𝓞 F ⧸ P.1.asIdeal)) ⁻¹' {p}),
+          P.1.1.asIdeal ∈ IsDedekindDomain.primesOverFinset 𝔭 (𝓞 F) := by
+        intro P
+        rw [IsDedekindDomain.mem_primesOverFinset_iff h𝔭0]
+        refine ⟨P.1.1.isPrime, ⟨?_⟩⟩
+        have hchar : ringChar (𝓞 F ⧸ P.1.1.asIdeal) = p := P.2
+        have hle : 𝔭 ≤ P.1.1.asIdeal.under ℤ := by
+          rw [h𝔭, Ideal.span_le, Set.singleton_subset_iff, SetLike.mem_coe,
+            Ideal.under, Ideal.mem_comap]
+          have hdvd : ringChar (𝓞 F ⧸ P.1.1.asIdeal) ∣ p := by
+            rw [hchar]
+          have h0 : ((p : ℕ) : 𝓞 F ⧸ P.1.1.asIdeal) = 0 :=
+            (CharP.cast_eq_zero_iff _ (ringChar _) p).mpr hdvd
+          rw [← Ideal.Quotient.eq_zero_iff_mem]
+          push_cast
+          rw [map_natCast]
+          exact h0
+        have hne : P.1.1.asIdeal.under ℤ ≠ ⊤ := by
+          intro htop
+          apply P.1.1.isPrime.ne_top
+          rw [Ideal.eq_top_iff_one] at htop ⊢
+          have := Ideal.mem_comap.mp htop
+          simpa using this
+        exact h𝔭max.eq_of_le hne hle
+      have hinj : Function.Injective
+          (fun P : ((fun P : {P : HeightOneSpectrum (𝓞 F) //
+            ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+            ringChar (𝓞 F ⧸ P.1.asIdeal)) ⁻¹' {p}) =>
+            (⟨P.1.1.asIdeal, hmem P⟩ :
+              {I : Ideal (𝓞 F) //
+                I ∈ IsDedekindDomain.primesOverFinset 𝔭 (𝓞 F)})) := by
+        intro P Q h
+        exact Subtype.ext (Subtype.ext (HeightOneSpectrum.ext
+          (congrArg Subtype.val h)))
+      haveI : Finite ((fun P : {P : HeightOneSpectrum (𝓞 F) //
+          ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+          ringChar (𝓞 F ⧸ P.1.asIdeal)) ⁻¹' {p}) :=
+        Finite.of_injective _ hinj
+      calc (∑' P : ((fun P : {P : HeightOneSpectrum (𝓞 F) //
+              ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+              ringChar (𝓞 F ⧸ P.1.asIdeal)) ⁻¹' {p}),
+            ((ringChar (𝓞 F ⧸ P.1.1.asIdeal) : ℝ≥0∞) ^ (2 : ℕ))⁻¹)
+          = ∑' _P : ((fun P : {P : HeightOneSpectrum (𝓞 F) //
+              ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+              ringChar (𝓞 F ⧸ P.1.asIdeal)) ⁻¹' {p}),
+            (((p : ℝ≥0∞)) ^ (2 : ℕ))⁻¹ :=
+            tsum_congr fun P : ((fun P : {P : HeightOneSpectrum (𝓞 F) //
+                ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+                ringChar (𝓞 F ⧸ P.1.asIdeal)) ⁻¹' {p}) => by
+              rw [show ringChar (𝓞 F ⧸ P.1.1.asIdeal) = p from P.2]
+        _ = ENat.card ((fun P : {P : HeightOneSpectrum (𝓞 F) //
+              ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+              ringChar (𝓞 F ⧸ P.1.asIdeal)) ⁻¹' {p}) *
+            (((p : ℝ≥0∞)) ^ (2 : ℕ))⁻¹ := ENNReal.tsum_const _
+        _ ≤ (Module.finrank ℚ F : ℝ≥0∞) * (((p : ℝ≥0∞)) ^ (2 : ℕ))⁻¹ := by
+            gcongr
+            rw [ENat.card_eq_coe_natCard]
+            have hcardle : Nat.card ((fun P : {P : HeightOneSpectrum (𝓞 F) //
+                ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+                ringChar (𝓞 F ⧸ P.1.asIdeal)) ⁻¹' {p}) ≤
+                Module.finrank ℚ F := by
+              refine le_trans (Nat.card_le_card_of_injective _ hinj) ?_
+              rw [Nat.card_eq_fintype_card, Fintype.card_coe]
+              exact Ideal.card_primesOverFinset_le_finrank (𝓞 F) ℚ F h𝔭0
+            exact_mod_cast hcardle
+        _ = (Module.finrank ℚ F : ℝ≥0∞) * ENNReal.ofReal (1 / (p : ℝ) ^ 2) := by
+            congr 1
+            rw [ENNReal.ofReal_div_of_pos
+                (by exact_mod_cast pow_pos hp.pos 2),
+              ENNReal.ofReal_one, ENNReal.ofReal_pow (by positivity),
+              ENNReal.ofReal_natCast, one_div]
+    · -- the fiber over a non-prime is empty
+      have hzero : ∀ P : ((fun P : {P : HeightOneSpectrum (𝓞 F) //
+          ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+          ringChar (𝓞 F ⧸ P.1.asIdeal)) ⁻¹' {p}),
+          ((ringChar (𝓞 F ⧸ P.1.1.asIdeal) : ℝ≥0∞) ^ (2 : ℕ))⁻¹ = 0 :=
+        fun P => (hp (P.2 ▸ (hdata P.1).1)).elim
+      rw [ENNReal.tsum_eq_zero.mpr hzero]
+      positivity
+  refine ne_top_of_le_ne_top ?_ (ENNReal.tsum_le_tsum hfiber)
+  rw [ENNReal.tsum_mul_left, ← ENNReal.ofReal_tsum_of_nonneg
+    (fun n => by positivity) (Real.summable_one_div_nat_pow.mpr one_lt_two)]
+  exact ENNReal.mul_ne_top (ENNReal.natCast_ne_top _) ENNReal.ofReal_ne_top
 
 open IsDedekindDomain in
 /-- **Square-times-squarefree decomposition** (sorry leaf): every
@@ -955,33 +1109,210 @@ theorem tsum_rpow_neg_absNorm_le_mul_tsum_finset_prod
           ∏ P ∈ T, (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s) :=
   sorry
 
-/-- Finiteness of the full ideal sum `∑_{I ≠ 0} N(I)^{-s}` for `s > 1`
-(sorry leaf). Intended proof: fibre the sum over `n = N(I)`
-(`Ideal.finite_setOf_absNorm_eq`, `Equiv.sigmaFiberEquiv`) to get the
-`ℝ≥0∞` form of the Dedekind-zeta Dirichlet series; the ideal-counting
-asymptotics `Ideal.tendsto_norm_le_div_atTop₀` make the partial sums of
-the coefficients `O(n)`, so `LSeriesSummable_of_sum_norm_bigO` applies
-at real `s > 1`. -/
+/-- The `n`-th term of the Dedekind-zeta `L`-series of `F` at real
+`s > 0` is the real number `#{I : N(I) = n} · n ^ (-s)` (both sides
+vanish at `n = 0`). -/
+theorem term_natCard_absNorm_eq (F : Type*) [Field F] [NumberField F]
+    {s : ℝ} (hs : 0 < s) (n : ℕ) :
+    LSeries.term
+        (fun n => (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℂ))
+        s n =
+      (((Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) *
+        (n : ℝ) ^ (-s) : ℝ) : ℂ) := by
+  rcases eq_or_ne n 0 with rfl | hn
+  · simp [Real.zero_rpow (neg_ne_zero.mpr hs.ne')]
+  · rw [LSeries.term_of_ne_zero hn, Real.rpow_neg (Nat.cast_nonneg n),
+      Complex.ofReal_mul, Complex.ofReal_inv,
+      Complex.ofReal_cpow (Nat.cast_nonneg n)]
+    push_cast
+    rw [div_eq_mul_inv]
+
+/-- Real summability of the Dedekind-zeta Dirichlet series of `F` at
+real `s > 1`: the ideal-counting asymptotics
+(`Ideal.tendsto_norm_le_div_atTop₀`) make the partial sums of the
+coefficients `O(n)`, so `LSeriesSummable_of_sum_norm_bigO_and_nonneg`
+applies. -/
+theorem summable_natCard_absNorm_mul_rpow_neg (F : Type*) [Field F]
+    [NumberField F] {s : ℝ} (hs : 1 < s) :
+    Summable (fun n : ℕ =>
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) *
+        (n : ℝ) ^ (-s)) := by
+  classical
+  -- Cesàro behaviour of the coefficients, as in `NumberField.dedekindZeta`
+  obtain ⟨c, hces⟩ : ∃ c : ℝ, Filter.Tendsto (fun n : ℕ ↦
+      (∑ k ∈ Finset.Icc 1 n,
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ)) / n)
+      Filter.atTop (nhds c) := by
+    refine ⟨_, ((NumberField.Ideal.tendsto_norm_le_div_atTop₀ F).comp
+      tendsto_natCast_atTop_atTop).congr fun n ↦ ?_⟩
+    simp only [Function.comp_apply, Nat.cast_le, ← Nat.cast_sum]
+    congr
+    rw [← add_left_inj 1,
+      ← Ideal.card_norm_le_eq_card_norm_le_add_one,
+      show Finset.Icc 1 n = Finset.Ioc 0 n from Finset.Icc_succ_left_eq_Ioc _ _,
+      show 1 = Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = 0} by
+        simp [Ideal.absNorm_eq_zero_iff],
+      Finset.sum_Ioc_add_eq_sum_Icc n.zero_le,
+      ← Finset.card_preimage_eq_sum_card_image_eq
+        (fun k _ ↦ Ideal.finite_setOf_absNorm_eq k)]
+    simp [Set.coe_eq_subtype]
+  -- hence the partial sums of the (nonnegative) coefficients are `O(n)`
+  have hO : (fun n : ℕ ↦ ∑ k ∈ Finset.Icc 1 n,
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ))
+      =O[Filter.atTop] (fun n : ℕ ↦ (n : ℝ) ^ (1 : ℝ)) := by
+    simp_rw [Real.rpow_one]
+    refine Asymptotics.isBigO_of_div_tendsto_nhds ?_ c hces
+    filter_upwards [Filter.eventually_ne_atTop 0] with n hn h0
+    exact absurd h0 (Nat.cast_ne_zero.mpr hn)
+  have hsum := LSeriesSummable_of_sum_norm_bigO_and_nonneg (s := (s : ℂ)) hO
+    (fun n => Nat.cast_nonneg _) zero_le_one (by simpa using hs)
+  have hsum₂ : Summable (fun n : ℕ => LSeries.term
+      (fun n => ((Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) : ℂ))
+      (s : ℂ) n) := hsum
+  simp only [Complex.ofReal_natCast] at hsum₂
+  rw [funext (term_natCard_absNorm_eq F (by linarith : (0 : ℝ) < s))] at hsum₂
+  exact Complex.summable_ofReal.mp hsum₂
+
+/-- **Fibration of the ideal sum over the norm**: the `ℝ≥0∞`-valued
+Dirichlet series of the nonzero ideals of `𝓞 F` equals the series of
+its norm-counting coefficients (the `n = 0` term vanishes on both
+sides, so the sums may run over all ideals and all of `ℕ`). -/
+theorem tsum_rpow_neg_absNorm_eq (F : Type*) [Field F] [NumberField F]
+    {s : ℝ} (hs : 0 < s) :
+    ∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥}, (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s) =
+      ∑' n : ℕ, ENNReal.ofReal
+        ((Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) *
+          (n : ℝ) ^ (-s)) := by
+  classical
+  -- each term is `ofReal` of the real term
+  have hterm : ∀ I : {I : Ideal (𝓞 F) // I ≠ ⊥},
+      (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s) =
+        ENNReal.ofReal ((Ideal.absNorm I.1 : ℝ) ^ (-s)) := by
+    intro I
+    have h1 : Ideal.absNorm I.1 ≠ 0 := fun h =>
+      I.2 (Ideal.absNorm_eq_zero_iff.mp h)
+    have h0 : (0 : ℝ) < (Ideal.absNorm I.1 : ℝ) := by
+      exact_mod_cast Nat.pos_of_ne_zero h1
+    rw [← ENNReal.ofReal_natCast, ENNReal.ofReal_rpow_of_pos h0]
+  rw [tsum_congr hterm]
+  -- extend to all ideals: the `⊥` term vanishes
+  have hsupp : Function.support (fun I : Ideal (𝓞 F) =>
+      ENNReal.ofReal ((Ideal.absNorm I : ℝ) ^ (-s))) ⊆
+      {I : Ideal (𝓞 F) | I ≠ ⊥} := by
+    intro I hI
+    rintro rfl
+    apply hI
+    simp [Ideal.absNorm_bot, Real.zero_rpow (neg_ne_zero.mpr hs.ne')]
+  rw [show ∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥},
+      ENNReal.ofReal ((Ideal.absNorm I.1 : ℝ) ^ (-s)) =
+      ∑' I : Ideal (𝓞 F), ENNReal.ofReal ((Ideal.absNorm I : ℝ) ^ (-s)) from
+    tsum_subtype_eq_of_support_subset hsupp]
+  -- fibre over the norm
+  rw [← ENNReal.tsum_fiberwise (fun I : Ideal (𝓞 F) =>
+    ENNReal.ofReal ((Ideal.absNorm I : ℝ) ^ (-s)))
+    (fun I : Ideal (𝓞 F) => Ideal.absNorm I)]
+  refine tsum_congr fun n => ?_
+  haveI : Finite ↥((fun I : Ideal (𝓞 F) => Ideal.absNorm I) ⁻¹' {n}) :=
+    (Ideal.finite_setOf_absNorm_eq (S := 𝓞 F) n).to_subtype
+  calc ∑' I : ((fun I : Ideal (𝓞 F) => Ideal.absNorm I) ⁻¹' {n}),
+        ENNReal.ofReal ((Ideal.absNorm I.1 : ℝ) ^ (-s))
+      = ∑' _I : ((fun I : Ideal (𝓞 F) => Ideal.absNorm I) ⁻¹' {n}),
+        ENNReal.ofReal ((n : ℝ) ^ (-s)) :=
+        tsum_congr fun I => by rw [show Ideal.absNorm I.1 = n from I.2]
+    _ = ENat.card ((fun I : Ideal (𝓞 F) => Ideal.absNorm I) ⁻¹' {n}) *
+        ENNReal.ofReal ((n : ℝ) ^ (-s)) := ENNReal.tsum_const _
+    _ = (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ≥0∞) *
+        ENNReal.ofReal ((n : ℝ) ^ (-s)) := by
+        rw [ENat.card_eq_coe_natCard,
+          Nat.card_congr (Equiv.subtypeEquivRight
+            (fun I : Ideal (𝓞 F) => Iff.rfl))]
+        simp
+    _ = ENNReal.ofReal
+        ((Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) *
+          (n : ℝ) ^ (-s)) := by
+        rw [ENNReal.ofReal_mul (Nat.cast_nonneg _), ENNReal.ofReal_natCast]
+
+/-- Finiteness of the full ideal sum `∑_{I ≠ 0} N(I)^{-s}` for `s > 1`:
+combine the fibration over the norm with the real summability of the
+coefficient series. -/
 theorem tsum_rpow_neg_absNorm_ne_top (F : Type*) [Field F] [NumberField F]
     {s : ℝ} (hs : 1 < s) :
-    ∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥}, (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s) ≠ ⊤ :=
-  sorry
+    ∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥}, (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s) ≠ ⊤ := by
+  rw [tsum_rpow_neg_absNorm_eq F (by linarith : (0 : ℝ) < s),
+    ← ENNReal.ofReal_tsum_of_nonneg (fun n => by positivity)
+      (summable_natCard_absNorm_mul_rpow_neg F hs)]
+  exact ENNReal.ofReal_ne_top
 
-/-- **Divergence of the ideal sum as `s → 1⁺`** (sorry leaf): the
-`ℝ≥0∞`-valued Dirichlet series of the ideals of `𝓞 F` exceeds any
-`C ≠ ⊤` for some `s > 1`. Intended proof: by
-`tsum_rpow_neg_absNorm_ne_top` the sum is finite for `s > 1` and (via
-the fibration over `n = N(I)`) equals `NumberField.dedekindZeta F s` at
-real `s`; the simple pole with positive residue
+/-- The Dedekind zeta function at real `s > 1` is dominated by the real
+Dirichlet series of its (nonnegative) coefficients. -/
+theorem norm_dedekindZeta_le (F : Type*) [Field F] [NumberField F]
+    {s : ℝ} (hs : 1 < s) :
+    ‖NumberField.dedekindZeta F s‖ ≤
+      ∑' n : ℕ, (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) *
+        (n : ℝ) ^ (-s) := by
+  have hpos : (0 : ℝ) < s := by linarith
+  have hnorm : ∀ n : ℕ, ‖LSeries.term
+      (fun n => (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℂ))
+      (s : ℂ) n‖ =
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) *
+        (n : ℝ) ^ (-s) := by
+    intro n
+    rw [term_natCard_absNorm_eq F hpos n, Complex.norm_real,
+      Real.norm_of_nonneg (by positivity)]
+  have hsummable : Summable (fun n : ℕ => ‖LSeries.term
+      (fun n => (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℂ))
+      (s : ℂ) n‖) :=
+    (summable_natCard_absNorm_mul_rpow_neg F hs).congr fun n => (hnorm n).symm
+  rw [show NumberField.dedekindZeta F s = ∑' n : ℕ, LSeries.term
+      (fun n => (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℂ))
+      (s : ℂ) n from rfl]
+  exact le_trans (norm_tsum_le_tsum_norm hsummable) (le_of_eq (tsum_congr hnorm))
+
+/-- **Divergence of the ideal sum as `s → 1⁺`**: the `ℝ≥0∞`-valued
+Dirichlet series of the ideals of `𝓞 F` exceeds any `C ≠ ⊤` for some
+`s > 1`: were it bounded by `C` for all `s > 1`, the product
+`(s-1) · ζ_F(s)` would be squeezed to `0` along `𝓝[>] 1`
+(`norm_dedekindZeta_le` and the fibration), contradicting the simple
+pole with positive residue
 (`NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT`,
-`NumberField.dedekindZeta_residue_pos`) forces `(s-1) · Z(s) → κ > 0`,
-so were `Z(s) ≤ C` for all `s > 1` the product `(s-1) · Z(s)` would tend
-to `0` — squeeze contradiction, no explicit choice of `s` needed. -/
+`NumberField.dedekindZeta_residue_pos`). -/
 theorem exists_one_lt_lt_tsum_rpow_neg_absNorm (F : Type*) [Field F]
     [NumberField F] (C : ℝ≥0∞) (hC : C ≠ ⊤) :
     ∃ s : ℝ, 1 < s ∧
-      C < ∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥}, (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s) :=
-  sorry
+      C < ∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥}, (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s) := by
+  by_contra hcon
+  push Not at hcon
+  -- the eventual bound `‖(t-1) ζ_F(t)‖ ≤ (t-1) C.toReal` near `1⁺`
+  have hbound : ∀ᶠ t : ℝ in nhdsWithin 1 (Set.Ioi 1),
+      ‖((t : ℂ) - 1) * NumberField.dedekindZeta F t‖ ≤ (t - 1) * C.toReal := by
+    filter_upwards [self_mem_nhdsWithin] with t ht
+    have ht1 : (1 : ℝ) < t := ht
+    rw [norm_mul, show ((t : ℂ) - 1) = ((t - 1 : ℝ) : ℂ) by push_cast; ring,
+      Complex.norm_real, Real.norm_of_nonneg (by linarith)]
+    refine mul_le_mul_of_nonneg_left ?_ (by linarith)
+    refine le_trans (norm_dedekindZeta_le F ht1) ?_
+    have hZ := hcon t ht1
+    rw [tsum_rpow_neg_absNorm_eq F (by linarith : (0 : ℝ) < t),
+      ← ENNReal.ofReal_tsum_of_nonneg (fun n => by positivity)
+        (summable_natCard_absNorm_mul_rpow_neg F ht1)] at hZ
+    have hmono := ENNReal.toReal_mono hC hZ
+    rwa [ENNReal.toReal_ofReal
+      (tsum_nonneg fun n => by positivity)] at hmono
+  -- the bounding function tends to `0`
+  have h0 : Filter.Tendsto (fun t : ℝ => (t - 1) * C.toReal)
+      (nhdsWithin 1 (Set.Ioi 1)) (nhds 0) := by
+    have h1 : Filter.Tendsto (fun t : ℝ => (t - 1) * C.toReal) (nhds 1)
+        (nhds ((1 - 1) * C.toReal)) :=
+      (Filter.tendsto_id.sub tendsto_const_nhds).mul_const C.toReal
+    rw [sub_self, zero_mul] at h1
+    exact h1.mono_left nhdsWithin_le_nhds
+  -- compare with the limit `‖κ‖`, forcing `κ ≤ 0` — contradiction
+  have hnorm := (NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT F).norm
+  have hle : ‖((NumberField.dedekindZeta_residue F : ℝ) : ℂ)‖ ≤ 0 :=
+    le_of_tendsto_of_tendsto hnorm h0 hbound
+  rw [Complex.norm_real, Real.norm_of_nonneg
+    (NumberField.dedekindZeta_residue_pos F).le] at hle
+  exact absurd hle (not_le.mpr (NumberField.dedekindZeta_residue_pos F))
 
 open IsDedekindDomain in
 /-- **Divergence of the degree-one prime sum of a number field** (sorry
