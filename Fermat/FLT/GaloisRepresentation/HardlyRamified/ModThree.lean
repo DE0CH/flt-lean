@@ -1903,7 +1903,19 @@ theorem kernel_field_not_dvd_discr {k : Type u} [Finite k] [Field k]
     rw [h1, h2, Module.End.one_eq_id, LinearMap.baseChange_id,
       ← Module.End.one_eq_id, LinearMap.toMatrix_one,
       Matrix.map_one _ (map_zero e) (map_one e)]
-  -- the local inertia image at `p` fixes `K` (through `hρ.isUnramified`)
+  -- the local inertia image at `p` kills `u` (through `hρ.isUnramified`)
+  have hunram : ∀ σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat,
+      u (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+    intro σ hσ
+    apply htriv
+    have h1 : (ρ.toLocal hp.toHeightOneSpectrumRingOfIntegersRat) σ = 1 :=
+      (hρ.isUnramified p hp ⟨hp2, hp3⟩).localInertiaGroup_le hσ
+    rw [GaloisRep.toLocal_apply] at h1
+    convert h1 using 4
+    exact Subsingleton.elim _ _
+  -- … so the mapped local inertia fixes `K`
   have hle : Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
       (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
         hp.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
@@ -1911,12 +1923,7 @@ theorem kernel_field_not_dvd_discr {k : Type u} [Finite k] [Field k]
       ≤ K.fixingSubgroup := by
     rintro g ⟨σ, hσ, rfl⟩
     rw [hfix]
-    refine MonoidHom.mem_ker.mpr (htriv _ ?_)
-    have h1 : (ρ.toLocal hp.toHeightOneSpectrumRingOfIntegersRat) σ = 1 :=
-      (hρ.isUnramified p hp ⟨hp2, hp3⟩).localInertiaGroup_le hσ
-    rw [GaloisRep.toLocal_apply] at h1
-    convert h1 using 4
-    exact Subsingleton.elim _ _
+    exact MonoidHom.mem_ker.mpr (hunram σ hσ)
   -- every prime of `𝓞 K` over `p` is unramified, so `p ∤ d_K`
   have hpZ : Prime ((p : ℤ)) := Nat.prime_iff_prime_int.mp hp
   rw [NumberField.not_dvd_discr_iff_forall_mem K
@@ -2102,6 +2109,31 @@ theorem kernel_field_discr_two_exponent {k : Type u} [Finite k] [Field k]
       ((Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp hmaxZ)
   haveI : Finite ((Ideal.span {((2 : ℕ) : ℤ)} : Ideal ℤ).ResidueField) :=
     Finite.of_surjective _ hsurjZ
+  -- `Gal(K/ℚ)` is a Galois group of `𝓞 K` over `ℤ` (the assembly of
+  -- `differentIdeal_eq_top_of_forall_inertia_eq_bot`, against the
+  -- vendored action instance)
+  haveI : IsGaloisGroup (K ≃ₐ[ℚ] K) ℤ (NumberField.RingOfIntegers K) := by
+    refine ⟨inferInstance, inferInstance, ?_⟩
+    constructor
+    intro x hx
+    -- the underlying field element is Galois-fixed, hence rational
+    have hfixL : ∀ g : K ≃ₐ[ℚ] K, g (x : K) = (x : K) := fun g =>
+      congrArg (algebraMap (NumberField.RingOfIntegers K) K) (hx g)
+    have hbot : (x : K) ∈ (⊥ : IntermediateField ℚ K) :=
+      (IsGalois.mem_bot_iff_fixed _).mpr hfixL
+    obtain ⟨q, hq⟩ := IntermediateField.mem_bot.mp hbot
+    -- the rational number is integral over `ℤ`, hence an integer
+    have hqint : IsIntegral ℤ q := by
+      rw [← isIntegral_algebraMap_iff (B := K)
+        (algebraMap ℚ K).injective, hq]
+      exact x.2
+    obtain ⟨m, hm⟩ := IsIntegrallyClosed.isIntegral_iff.mp hqint
+    refine ⟨m, NumberField.RingOfIntegers.ext ?_⟩
+    show algebraMap (NumberField.RingOfIntegers K) K
+      (algebraMap ℤ (NumberField.RingOfIntegers K) m) = (x : K)
+    rw [← hq, ← hm,
+      ← IsScalarTower.algebraMap_apply ℤ (NumberField.RingOfIntegers K) K,
+      ← IsScalarTower.algebraMap_apply ℤ ℚ K]
   -- `e(Q∣2) = |I(Q)|` divides `3`
   have hcard := Ideal.card_inertia_eq_ramificationIdxIn
     (G := (K ≃ₐ[ℚ] K)) (Ideal.span {((2 : ℕ) : ℤ)}) Q
