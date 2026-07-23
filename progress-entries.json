@@ -1670,7 +1670,7 @@
     "name": "exists_conj_fixingSubgroup_of_not_isTotallyComplex",
     "fullname": "GaloisRepresentation.IsHardlyRamified.exists_conj_fixingSubgroup_of_not_isTotallyComplex",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-    "wip": true,
+    "wip": false,
     "text": "`exists_conj_fixingSubgroup_of_not_isTotallyComplex` — ρ-free embedding plumbing: a real place yields a conjugation fixing the kernel field with χ₃ = −1 (repo's absoluteGaloisGroup.map arbitrary-embedding caveat documented) — 2026-07-23",
     "parent": "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field_of_card"
   },
@@ -1686,7 +1686,7 @@
     "name": "exists_sqrt_of_quadratic_character_unramified_outside_two_three",
     "fullname": "GaloisRepresentation.IsHardlyRamified.exists_sqrt_of_quadratic_character_unramified_outside_two_three",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-    "wip": true,
+    "wip": false,
     "text": "`exists_sqrt_of_quadratic_character_unramified_outside_two_three` — quadratic fields ramified only in {2,3}: the character cuts ℚ(√d), d ∈ {−1,±2,±3,±6} — self-contained number theory — 2026-07-23",
     "parent": "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral_arith"
   },
