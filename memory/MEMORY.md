@@ -16,3 +16,4 @@
 - [Atomic-snapshot fan-out seeding](flt-worktree-seed-artifacts.md) — Deyao 2026-07-22: seed .lake by atomic copy from the latest ZFS hourly autosnap (.zfs/snapshot); otherwise nothing touches olean files
 - [Scripts get a server, not MCP](scripts-get-a-server-not-mcp.md) — Deyao: headless scripts that can't use MCP effectively get a thin persistent server; delegate loading/invalidation to standard tooling
 - [Caller-directed script error policy](scripts-crash-dont-fallback.md) — Deyao 2026-07-22: Claude-called scripts crash loudly, no fallbacks; harness/Deyao-called scripts (Stop hook) need reasonable graceful fallbacks
+- [Don't invent — use existing tools](dont-invent-delegate-to-existing-tools.md) — Deyao 2026-07-23: every infra incident traced to a Claude invention; name the existing owner (compiler/LSP/lake/git/fs) before building anything
