@@ -3656,64 +3656,271 @@ theorem mod_three_reducible {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k
   exact not_isAbsolutelyIrreducible V hV hρ
     ((OddRep.isIrreducible_iff_isAbsolutelyIrreducible ρ' heig).mp hirr)
 
-/-- **Order two on the inertia at `3`** (sorry node, isolated
-2026-07-23 from `quotCharacter_inertia_three_dichotomy`): the
+/-- **No `3`-torsion in the units of a characteristic-`3` field**
+(PROVEN 2026-07-23 — glue for the inertia-at-`3` leaves below): in a
+field where `3 = 0`, a unit with `a³ = 1` is `1`, since
+`X³ − 1 = (X − 1)³`. -/
+lemma units_eq_one_of_pow_three_eq_one {k : Type*} [Field k]
+    (h3k : (3 : k) = 0) (a : kˣ) (ha : a ^ 3 = 1) : a = 1 := by
+  have hval : (a : k) ^ 3 = 1 := by
+    rw [← Units.val_pow_eq_pow_val, ha, Units.val_one]
+  have hcube : ((a : k) - 1) ^ 3 = 0 := by
+    have hexp : ((a : k) - 1) ^ 3 =
+        (a : k) ^ 3 - 1 - 3 * ((a : k) ^ 2 - (a : k)) := by ring
+    rw [hexp, hval, h3k]
+    ring
+  exact Units.ext (by
+    rw [Units.val_one]
+    exact sub_eq_zero.mp
+      (pow_eq_zero_iff (by norm_num : (3 : ℕ) ≠ 0) |>.mp hcube))
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Openness of the kernel of a quotient character** (PROVEN
+2026-07-23 — shared continuity bookkeeping for the two inertia-at-`3`
+leaves below, the same argument as inside `mod_three_of_stable_line`):
+the kernel of the quotient character of a proper stable submodule of a
+continuous representation on a finite discrete module is open — it
+contains the open kernel of the representation. -/
+lemma isOpen_ker_of_quotCharacter {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type*} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    {ρ : GaloisRep ℚ k V}
+    (W₀ : Submodule k V) (hW₀top : W₀ ≠ ⊤)
+    (χ : Γ ℚ →* kˣ)
+    (hχ : ∀ g v, W₀.mkQ (ρ g v) = (χ g : k) • W₀.mkQ v) :
+    IsOpen (χ.ker : Set (Γ ℚ)) := by
+  haveI hfinV : Finite V := Module.finite_of_finite k
+  have htriv : ∀ g, ρ g = 1 → χ g = 1 := by
+    intro g hg
+    apply Units.ext
+    rw [Units.val_one]
+    refine quotCharacter_eq_one_of_sq_eq_zero (ρ g) ?_ W₀ hW₀top (hχ g)
+    rw [hg, sub_self]
+    exact zero_pow two_ne_zero
+  let Kρ : Subgroup (Γ ℚ) :=
+    { carrier := {g | ρ g = 1}
+      one_mem' := map_one ρ
+      mul_mem' := by
+        intro a b ha hb
+        show ρ (a * b) = 1
+        rw [map_mul, ha, hb, mul_one]
+      inv_mem' := by
+        intro a ha
+        show ρ a⁻¹ = 1
+        have h1 : ρ a⁻¹ * ρ a = 1 := by
+          rw [← map_mul, inv_mul_cancel, map_one]
+        rwa [ha, mul_one] at h1 }
+  have hKρ_open : IsOpen (Kρ : Set (Γ ℚ)) :=
+    isOpen_setOf_galoisRep_eq_one ρ hfinV
+  have hker : Kρ ≤ χ.ker := fun g hg => MonoidHom.mem_ker.mpr (htriv g hg)
+  exact Subgroup.isOpen_mono hker hKρ_open
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Level-one detection of the mod-3 cyclotomic character** (PROVEN
+2026-07-23): through `algebraMap ℤ_[3] k` into a field of
+characteristic `3`, the `3`-adic cyclotomic character of `g` becomes
+`1` exactly when `g` fixes a (hence every) primitive cube root of
+unity — the ring map sees only the level-one value `w ∈ {1, 2}` of
+the character (`w = 0` is excluded since the character is a unit),
+and `w` is detected on `ζ` by `cyclotomicCharacter.spec`. -/
+lemma cyclotomicCharacter_algebraMap_eq_one_iff_fix {k : Type*} [Field k]
+    [Algebra ℤ_[3] k] (h3k : (3 : k) = 0)
+    {ζ : AlgebraicClosure ℚ} (hζ : IsPrimitiveRoot ζ 3) (g : Γ ℚ) :
+    algebraMap ℤ_[3] k ((cyclotomicCharacter (AlgebraicClosure ℚ) 3
+      g.toRingEquiv : ℤ_[3]ˣ) : ℤ_[3]) = 1 ↔ g ζ = ζ := by
+  haveI : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
+  set w : ℕ := ((PadicInt.toZModPow 1)
+    ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 g.toRingEquiv : ℤ_[3]ˣ) :
+      ℤ_[3])).val with hwdef
+  have hspec : g.toRingEquiv ζ = ζ ^ w :=
+    cyclotomicCharacter.spec 3 (n := 1) g.toRingEquiv ζ
+      (by rw [pow_one]; exact hζ.pow_eq_one)
+  have hwlt : w < 3 := by
+    have h := ZMod.val_lt ((PadicInt.toZModPow 1)
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 g.toRingEquiv : ℤ_[3]ˣ) :
+        ℤ_[3]))
+    rw [hwdef]
+    simpa using h
+  have hcast : algebraMap ℤ_[3] k
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 g.toRingEquiv : ℤ_[3]ˣ) :
+        ℤ_[3]) = (w : k) := by
+    have hker : ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 g.toRingEquiv :
+        ℤ_[3]ˣ) : ℤ_[3]) - ((w : ℕ) : ℤ_[3]) ∈
+        RingHom.ker (PadicInt.toZModPow (p := 3) 1) := by
+      rw [RingHom.mem_ker, map_sub, map_natCast, hwdef, ZMod.natCast_val,
+        ZMod.cast_id, sub_self]
+    rw [PadicInt.ker_toZModPow] at hker
+    obtain ⟨t3, ht3⟩ := Ideal.mem_span_singleton'.mp hker
+    have hu : ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 g.toRingEquiv :
+        ℤ_[3]ˣ) : ℤ_[3]) = ((w : ℕ) : ℤ_[3]) + t3 * ((3 : ℕ) : ℤ_[3]) ^ 1 := by
+      linear_combination -ht3
+    rw [hu, map_add, map_natCast, map_mul, map_pow, map_natCast]
+    rw [show ((3 : ℕ) : k) = 0 by exact_mod_cast h3k]
+    ring
+  constructor
+  · intro halg
+    rw [hcast] at halg
+    have hw1 : w = 1 := by
+      have h012 : w = 0 ∨ w = 1 ∨ w = 2 := by omega
+      rcases h012 with h | h | h
+      · exfalso
+        rw [h] at halg
+        exact one_ne_zero (α := k) (by exact_mod_cast halg.symm)
+      · exact h
+      · exfalso
+        rw [h] at halg
+        refine one_ne_zero (α := k) ?_
+        have h2 : (2 : k) = 1 := by exact_mod_cast halg
+        linear_combination h2
+    have hfix : g.toRingEquiv ζ = ζ := by
+      rw [hspec, hw1, pow_one]
+    exact hfix
+  · intro hfix
+    have hw1 : w = 1 := by
+      refine hζ.pow_inj hwlt (by norm_num) ?_
+      rw [← hspec, pow_one]
+      exact hfix
+    rw [hcast, hw1]
+    norm_num
+
+/-- **The tame generator of the inertia image at `3`** (sorry node,
+isolated 2026-07-23 — the SINGLE local-structure input to both
+`quotCharacter_inertia_three_sq_one` and
+`quotCharacter_inertia_three_dichotomy_of_sq_one`, whose assemblies
+are proven): for a character `χ` of `Γ ℚ` with open kernel, valued in
+a commutative group without `3`-torsion, the image under
+`χ ∘ (Γ ℚ₃ᵥ → Γ ℚ)` of the local inertia at `3` is generated by a
+single element whose square is `1`. Intended proof (Serre, *Local
+Fields* IV; equivalently local CFT, `I₃ᵃᵇ ≅ ℤ₃ˣ` with prime-to-`3`
+quotient `𝔽₃ˣ = {±1}`): the open kernel cuts out a finite Galois
+level at which the image of the full local inertia is the
+finite-level inertia group `I` (the compactness lifting
+`exists_mem_localInertiaGroup_restrictNormalHom_eq` of
+`LocalInertiaFixedField` gives the lifting direction); the wild part
+`P ⊴ I` is a `3`-group, killed by `χ` (`h3`: no `3`-torsion in the
+target); the tame quotient `I/P` is cyclic, so the image of `I` is
+generated by the image `a` of a tame generator `t`; and Frobenius
+conjugation `φtφ⁻¹ ≡ t³ (mod P)` forces `a³ = χ(φtφ⁻¹) = a` — `χ` is
+defined on ALL of `Γ ℚ` with abelian values, so conjugation acts
+trivially on it — i.e. `a² = 1`. -/
+theorem exists_localInertia_three_generator {A : Type*} [CommGroup A]
+    (h3 : ∀ a : A, a ^ 3 = 1 → a = 1)
+    (χ : Γ ℚ →* A) (hopen : IsOpen (χ.ker : Set (Γ ℚ))) :
+    ∃ t ∈ localInertiaGroup
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+      (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) t)) ^ 2 = 1 ∧
+      ∀ σ ∈ localInertiaGroup
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+        ∃ m : ℕ, χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) =
+          (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) t)) ^ m := by
+  sorry
+
+/-- **The inertia at `3` moves the cube roots of unity** (sorry node,
+isolated 2026-07-23 — the ramification witness of the dichotomy: it
+realizes the nontrivial quadratic character of the tame inertia at `3`
+as the mod-3 cyclotomic character): some element of the local inertia
+group at `3` fixes no primitive cube root of unity. Content: `3`
+ramifies in `ℚ(ζ₃) = ℚ(√−3)`. Intended proof, all ingredients
+present: `ζ₃ ∉ ℚ₃ᵥ` (a root of `X² + X + 1` gives a square root of
+`−3`, whose valuation would be half the odd valuation of `3` —
+transport through
+`Rat.HeightOneSpectrum.adicCompletion.padicEquiv` as in
+`localInertia_two_eq_map_padic`), so `N = ℚ₃ᵥ(ζ₃)` is a quadratic
+Galois extension whose nontrivial automorphism `τ` swaps the two
+primitive cube roots; `τ` lies in the finite-level inertia of `N`
+(for integral `y` and `s = τ y − y`, both `s²` and `s·(2ζ₃+1)` are
+`τ`-invariant hence in `𝒪ᵥ`, with `(s·(2ζ₃+1))² = −3·s²`, and
+`𝔪ᵥ = (3)` prime forces `s² ∈ 3𝒪ᵥ ⊆ 𝔪` — the local analogue of
+`mem_inertia_of_dvd_squarefree`); the compactness lifting
+`exists_mem_localInertiaGroup_restrictNormalHom_eq` produces
+`σ ∈ localInertiaGroup` restricting to `τ` on `N`; and `σ` fixes no
+primitive cube root of `ℚᵃˡᵍ`, since by
+`Field.absoluteGaloisGroup.lift_map` such a root embeds onto one of
+the two primitive roots living in `N`, which `σ` swaps. -/
+theorem exists_localInertia_three_not_fix_primitiveRoot :
+    ∃ σ ∈ localInertiaGroup
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+      ∀ ζ : AlgebraicClosure ℚ, IsPrimitiveRoot ζ 3 →
+        Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ ζ ≠ ζ := by
+  sorry
+
+/-- **Order two on the inertia at `3`** (DECOMPOSED 2026-07-23 into
+the tame-generator leaf `exists_localInertia_three_generator` above;
+the assembly is proven — kernel openness is
+`isOpen_ker_of_quotCharacter`, `3`-torsion-freeness of `kˣ` is
+`units_eq_one_of_pow_three_eq_one`, and any power of the square-one
+generator has square one): the
 quotient character `χ` of a stable line of a mod-3 hardly ramified
-representation SQUARES TO `1` on the inertia at `3`. Intended proof
-(no flatness needed — pure local structure): `χ` is continuous (it is
-the matrix coefficient of the continuous `ρ` on the quotient line
-`V/W₀`, and `ρ` has open kernel since `V` is finite), so `χ` kills
-the wild inertia at `3` (a continuous map from a pro-3 group to the
-prime-to-3 finite group `kˣ` is trivial); on the tame quotient the
-Frobenius conjugation relation `φσφ⁻¹ ≡ σ³ (mod wild)` and the fact
-that `χ` is defined on the WHOLE local Galois group (not merely on
-inertia) force `χ(σ) = χ(φσφ⁻¹) = χ(σ³) = χ(σ)³`, whence
-`χ(σ)² = 1` in the unit group `kˣ`. Equivalently: by local class
-field theory the abelianized inertia at `3` is `ℤ₃ˣ`, whose
-prime-to-3 quotient is `𝔽₃ˣ = {±1}`. -/
+representation SQUARES TO `1` on the inertia at `3` (no flatness
+needed — pure local structure, recorded in the leaf's docstring). -/
 theorem quotCharacter_inertia_three_sq_one
     {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
     [TopologicalSpace k] [DiscreteTopology k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
-    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (_hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
     (W₀ : Submodule k V) (hW₀fr : Module.finrank k W₀ = 1)
-    (hstable : ∀ g v, v ∈ W₀ → ρ g v ∈ W₀)
-    (ψ : Γ ℚ →* kˣ) (hψ : ∀ g, ∀ v ∈ W₀, ρ g v = (ψ g : k) • v)
+    (_hstable : ∀ g v, v ∈ W₀ → ρ g v ∈ W₀)
+    (ψ : Γ ℚ →* kˣ) (_hψ : ∀ g, ∀ v ∈ W₀, ρ g v = (ψ g : k) • v)
     (χ : Γ ℚ →* kˣ)
     (hχ : ∀ g v, W₀.mkQ (ρ g v) = (χ g : k) • W₀.mkQ v) :
     ∀ g ∈ localInertiaGroup
         Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
       (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) g)) ^ 2 = 1 :=
-  sorry
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) g)) ^ 2 = 1 := by
+  intro g hg
+  have hfr : Module.finrank k V = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
+  have hW₀top : W₀ ≠ ⊤ := by
+    intro htop
+    rw [htop, finrank_top, hfr] at hW₀fr
+    omega
+  have hopen : IsOpen (χ.ker : Set (Γ ℚ)) :=
+    isOpen_ker_of_quotCharacter W₀ hW₀top χ hχ
+  have h3k : (3 : k) = 0 := three_eq_zero_of_finite_padicIntThree_algebra
+  obtain ⟨t, -, htsq, hgen⟩ := exists_localInertia_three_generator
+    (units_eq_one_of_pow_three_eq_one h3k) χ hopen
+  obtain ⟨m, hm⟩ := hgen g hg
+  rw [hm, ← pow_mul, mul_comm m 2, pow_mul, htsq, one_pow]
 
-/-- **The unique quadratic quotient of the inertia at `3`** (sorry
-node, isolated 2026-07-23 from
-`quotCharacter_inertia_three_dichotomy`): a quotient character `χ` of
-a stable line of a mod-3 hardly ramified representation whose square
-is trivial on the inertia at `3` is, on that inertia, either TRIVIAL
-or the mod-3 CYCLOTOMIC character. Intended content: `χ` is
-continuous and kills the wild inertia (pro-3, mapping to the
-prime-to-3 group `kˣ`), so it factors through the tame quotient,
-which is procyclic (`≅ ∏_{ℓ≠3} ℤ_ℓ`); a procyclic group has AT MOST
-ONE quotient of order `2`, and the mod-3 cyclotomic character is a
-surjection from the inertia at `3` onto `{±1}` (the ramification of
-`3` in `ℚ(ζ₃)`), realizing that unique quotient; hence a character
-that is quadratic on inertia agrees there with a power `ε^a`,
-`a ∈ {0, 1}`, of the mod-3 cyclotomic character `ε`. -/
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **The unique quadratic quotient of the inertia at `3`**
+(DECOMPOSED 2026-07-23 into the tame-generator leaf
+`exists_localInertia_three_generator` and the ramification witness
+`exists_localInertia_three_not_fix_primitiveRoot` above; the assembly
+is proven): a quotient character `χ` of a stable line of a mod-3
+hardly ramified representation whose square is trivial on the inertia
+at `3` is, on that inertia, either TRIVIAL or the mod-3 CYCLOTOMIC
+character. Assembly: apply the generator leaf to the PAIR character
+`χ × ε` into `kˣ × kˣ` (`ε` = mod-3 cyclotomic; kernel openness from
+`isOpen_ker_of_quotCharacter` and the finite level `ℚ(ζ₃)`); on the
+inertia every value `(χσ, εσ)` is a power `(a, b)^m` of the single
+generator value; `a² = b² = 1` with values `±1`, `b ≠ 1` by the
+ramification witness (via
+`cyclotomicCharacter_algebraMap_eq_one_iff_fix`); so either `a = 1`
+(`χ` trivial on inertia) or `a = b = −1`, and then
+`χσ = (−1)^m = εσ` on all of the inertia. -/
 theorem quotCharacter_inertia_three_dichotomy_of_sq_one
     {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
     [TopologicalSpace k] [DiscreteTopology k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
-    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (_hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
     (W₀ : Submodule k V) (hW₀fr : Module.finrank k W₀ = 1)
-    (hstable : ∀ g v, v ∈ W₀ → ρ g v ∈ W₀)
-    (ψ : Γ ℚ →* kˣ) (hψ : ∀ g, ∀ v ∈ W₀, ρ g v = (ψ g : k) • v)
+    (_hstable : ∀ g v, v ∈ W₀ → ρ g v ∈ W₀)
+    (ψ : Γ ℚ →* kˣ) (_hψ : ∀ g, ∀ v ∈ W₀, ρ g v = (ψ g : k) • v)
     (χ : Γ ℚ →* kˣ)
     (hχ : ∀ g v, W₀.mkQ (ρ g v) = (χ g : k) • W₀.mkQ v)
     (hsq : ∀ g ∈ localInertiaGroup
@@ -3735,8 +3942,132 @@ theorem quotCharacter_inertia_three_dichotomy_of_sq_one
           ((Field.absoluteGaloisGroup.map (algebraMap ℚ
             (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
               Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))
-                g).toRingEquiv))) :=
-  sorry
+                g).toRingEquiv))) := by
+  classical
+  set Emb := Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))
+  have h3k : (3 : k) = 0 := three_eq_zero_of_finite_padicIntThree_algebra
+  -- the mod-3 cyclotomic character as a `kˣ`-valued character
+  set ε : Γ ℚ →* kˣ := MonoidHom.mk'
+    (fun g => Units.map (algebraMap ℤ_[3] k).toMonoidHom
+      (cyclotomicCharacter (AlgebraicClosure ℚ) 3 g.toRingEquiv))
+    (fun a b => by
+      have hab : (a * b).toRingEquiv = a.toRingEquiv * b.toRingEquiv :=
+        RingEquiv.ext fun x => rfl
+      rw [hab, map_mul, map_mul])
+  have hεval : ∀ g : Γ ℚ, ((ε g : kˣ) : k) =
+      algebraMap ℤ_[3] k ((cyclotomicCharacter (AlgebraicClosure ℚ) 3
+        g.toRingEquiv : ℤ_[3]ˣ) : ℤ_[3]) := fun g => rfl
+  -- openness of the kernel of the pair character
+  have hfr : Module.finrank k V = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
+  have hW₀top : W₀ ≠ ⊤ := by
+    intro htop
+    rw [htop, finrank_top, hfr] at hW₀fr
+    omega
+  have hχopen : IsOpen (χ.ker : Set (Γ ℚ)) :=
+    isOpen_ker_of_quotCharacter W₀ hW₀top χ hχ
+  haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) :=
+    AlgebraicClosure.isAlgebraic ℚ
+  haveI hacQ : IsAlgClosure ℚ (AlgebraicClosure ℚ) := ⟨inferInstance, halgQ⟩
+  haveI hnormQ : Normal ℚ (AlgebraicClosure ℚ) :=
+    IsAlgClosure.normal ℚ (AlgebraicClosure ℚ)
+  haveI hsepQ : Algebra.IsSeparable ℚ (AlgebraicClosure ℚ) :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI hgalQ : IsGalois ℚ (AlgebraicClosure ℚ) := ⟨⟩
+  haveI : Algebra.IsIntegral ℚ (AlgebraicClosure ℚ) :=
+    Algebra.IsAlgebraic.isIntegral
+  obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot
+    (AlgebraicClosure ℚ) 3
+  have hζint : IsIntegral ℚ ζ := Algebra.IsIntegral.isIntegral ζ
+  haveI : FiniteDimensional ℚ (IntermediateField.adjoin ℚ {ζ}) :=
+    IntermediateField.adjoin.finiteDimensional hζint
+  have hfixopen : IsOpen
+      ((IntermediateField.adjoin ℚ {ζ}).fixingSubgroup : Set (Γ ℚ)) :=
+    (InfiniteGalois.isOpen_iff_finite (IntermediateField.adjoin ℚ {ζ})).mpr
+      inferInstance
+  have hεker : (IntermediateField.adjoin ℚ {ζ}).fixingSubgroup ≤ ε.ker := by
+    intro g hg
+    have hgζ : g ζ = ζ := by
+      rw [IntermediateField.mem_fixingSubgroup_iff] at hg
+      exact hg ζ (IntermediateField.mem_adjoin_simple_self ℚ ζ)
+    rw [MonoidHom.mem_ker]
+    apply Units.ext
+    rw [Units.val_one, hεval g]
+    exact (cyclotomicCharacter_algebraMap_eq_one_iff_fix h3k hζ g).mpr hgζ
+  have hpairopen : IsOpen ((χ.prod ε).ker : Set (Γ ℚ)) := by
+    have hle : χ.ker ⊓ (IntermediateField.adjoin ℚ {ζ}).fixingSubgroup ≤
+        (χ.prod ε).ker := by
+      intro g hg
+      obtain ⟨hg1, hg2⟩ := Subgroup.mem_inf.mp hg
+      rw [MonoidHom.mem_ker, MonoidHom.prod_apply, Prod.mk_eq_one]
+      exact ⟨MonoidHom.mem_ker.mp hg1, MonoidHom.mem_ker.mp (hεker hg2)⟩
+    refine Subgroup.isOpen_mono hle ?_
+    rw [Subgroup.coe_inf]
+    exact hχopen.inter hfixopen
+  -- no 3-torsion in `kˣ × kˣ`
+  have h3t : ∀ a : kˣ × kˣ, a ^ 3 = 1 → a = 1 := by
+    intro a ha
+    have h1 : a.1 ^ 3 = 1 := congrArg Prod.fst ha
+    have h2 : a.2 ^ 3 = 1 := congrArg Prod.snd ha
+    exact Prod.ext (units_eq_one_of_pow_three_eq_one h3k a.1 h1)
+      (units_eq_one_of_pow_three_eq_one h3k a.2 h2)
+  -- the generator of the inertia image at `3`
+  obtain ⟨t, ht, -, hgen⟩ := exists_localInertia_three_generator h3t
+    (χ.prod ε) hpairopen
+  by_cases ha1 : χ (Emb t) = 1
+  · -- `χ` is trivial on the inertia at `3`
+    refine Or.inl ?_
+    intro σ hσ
+    rw [MonoidHom.mem_ker]
+    obtain ⟨m, hm⟩ := hgen σ hσ
+    have hfst : χ (Emb σ) = χ (Emb t) ^ m := congrArg Prod.fst hm
+    show χ (Emb σ) = 1
+    rw [hfst, ha1, one_pow]
+  · -- `χ` agrees with the mod-3 cyclotomic character on the inertia
+    refine Or.inr ?_
+    obtain ⟨σ₀, hσ₀, hσ₀fix⟩ := exists_localInertia_three_not_fix_primitiveRoot
+    have hεσ₀ : ε (Emb σ₀) ≠ 1 := by
+      intro h1
+      refine hσ₀fix ζ hζ ?_
+      refine (cyclotomicCharacter_algebraMap_eq_one_iff_fix h3k hζ
+        (Emb σ₀)).mp ?_
+      rw [← hεval (Emb σ₀)]
+      exact congrArg Units.val h1
+    -- the `χ`-component of the generator value is `−1`
+    have haval : ((χ (Emb t) : kˣ) : k) * ((χ (Emb t) : kˣ) : k) = 1 := by
+      rw [← pow_two, ← Units.val_pow_eq_pow_val, hsq t ht, Units.val_one]
+    have ha : ((χ (Emb t) : kˣ) : k) = -1 := by
+      rcases mul_self_eq_one_iff.mp haval with h | h
+      · exact absurd (Units.ext (by rw [Units.val_one]; exact h)) ha1
+      · exact h
+    -- the `ε`-component of the generator value is `−1`
+    have hbne : ε (Emb t) ≠ 1 := by
+      intro hb1
+      obtain ⟨m₀, hm₀⟩ := hgen σ₀ hσ₀
+      have hsnd₀ : ε (Emb σ₀) = ε (Emb t) ^ m₀ := congrArg Prod.snd hm₀
+      rw [hb1, one_pow] at hsnd₀
+      exact hεσ₀ hsnd₀
+    have hb : ((ε (Emb t) : kˣ) : k) = -1 := by
+      haveI : CharP k 3 := charP_three_of_finite_padicIntThree_algebra
+      rcases padic_three_ringHom_pm_one (algebraMap ℤ_[3] k)
+        (cyclotomicCharacter (AlgebraicClosure ℚ) 3 (Emb t).toRingEquiv)
+        with h | h
+      · exact absurd (Units.ext (by
+          rw [Units.val_one, hεval (Emb t)]; exact h)) hbne
+      · rw [hεval (Emb t)]
+        exact h
+    -- conclude on every inertia element
+    intro σ hσ
+    obtain ⟨m, hm⟩ := hgen σ hσ
+    have hfst : χ (Emb σ) = χ (Emb t) ^ m := congrArg Prod.fst hm
+    have hsnd : ε (Emb σ) = ε (Emb t) ^ m := congrArg Prod.snd hm
+    have hval2 : ((χ (Emb σ) : kˣ) : k) = ((ε (Emb σ) : kˣ) : k) := by
+      rw [hfst, hsnd, Units.val_pow_eq_pow_val, Units.val_pow_eq_pow_val,
+        ha, hb]
+    rw [← hεval (Emb σ)]
+    exact hval2
 
 /-- **The Oort–Tate/Raynaud dichotomy at `3`** (DECOMPOSED 2026-07-23
 into the two sorry nodes above — the order-two leaf
