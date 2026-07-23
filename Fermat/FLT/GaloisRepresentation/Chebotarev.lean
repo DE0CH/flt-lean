@@ -525,7 +525,7 @@ lemma adjoin_inf_adjoin_eq_bot_of_isPrimitiveRoot {W : Type*} [Field W]
   have hξ0 := hζ.pow_mul_pow_lcm hη hl.pos.ne' hl'.pos.ne'
   rw [Nat.Coprime.lcm_eq_mul hcop] at hξ0
   set ξ : W := ζ ^ (l / Nat.factorizationLCMLeft l l') *
-    η ^ (l' / Nat.factorizationLCMRight l l') with hξdef
+    η ^ (l' / Nat.factorizationLCMRight l l')
   -- the compositum is the `l*l'`-th cyclotomic subfield
   have hsup : IntermediateField.adjoin ℚ ({ζ} : Set W) ⊔
       IntermediateField.adjoin ℚ ({η} : Set W) =
@@ -574,12 +574,12 @@ lemma irreducible_cyclotomic_of_inf_eq_bot {E : Type*} [Field E] [NumberField E]
         ({IsCyclotomicExtension.zeta l E (CyclotomicField l E)} :
           Set (CyclotomicField l E)) = ⊥) :
     Irreducible (cyclotomic l E) := by
-  set W := CyclotomicField l E with hWdef
-  set ζ : W := IsCyclotomicExtension.zeta l E W with hζdef
+  set W := CyclotomicField l E
+  set ζ : W := IsCyclotomicExtension.zeta l E W
   have hζ : IsPrimitiveRoot ζ l := IsCyclotomicExtension.zeta_spec l E W
-  set A : IntermediateField ℚ W := IntermediateField.adjoin ℚ {ζ} with hAdef
+  set A : IntermediateField ℚ W := IntermediateField.adjoin ℚ {ζ}
   set E₀ : IntermediateField ℚ W :=
-    (IsScalarTower.toAlgHom ℚ E W).fieldRange with hE₀def
+    (IsScalarTower.toAlgHom ℚ E W).fieldRange
   haveI hcycA : IsCyclotomicExtension {l} ℚ A :=
     hζ.intermediateField_adjoin_isCyclotomicExtension (K := ℚ)
   haveI hGalA : IsGalois ℚ A :=
@@ -682,7 +682,7 @@ theorem exists_prime_dvd_sub_one_and_irreducible_cyclotomic
   by_contra hcon
   push Not at hcon
   -- the set of auxiliary primes is infinite, and all of them are "bad"
-  set S : Set ℕ := {ℓ | ℓ.Prime ∧ n ∣ ℓ - 1} with hSdef
+  set S : Set ℕ := {ℓ | ℓ.Prime ∧ n ∣ ℓ - 1}
   have hSinf : S.Infinite := by
     refine Set.infinite_of_not_bddAbove ?_
     rintro ⟨m, hm⟩
@@ -697,8 +697,8 @@ theorem exists_prime_dvd_sub_one_and_irreducible_cyclotomic
               M ≤ IntermediateField.adjoin ℚ ({μ} : Set (CyclotomicField m E)) := by
     intro ℓ hℓ hℓn
     haveI : NeZero ℓ := ⟨hℓ.pos.ne'⟩
-    set W₀ := CyclotomicField ℓ E with hW₀def
-    set ζ : W₀ := IsCyclotomicExtension.zeta ℓ E W₀ with hζdef
+    set W₀ := CyclotomicField ℓ E
+    set ζ : W₀ := IsCyclotomicExtension.zeta ℓ E W₀
     have hζ : IsPrimitiveRoot ζ ℓ := IsCyclotomicExtension.zeta_spec ℓ E W₀
     -- the intersection is nontrivial since `cyclotomic ℓ E` is reducible
     have hbad : (IsScalarTower.toAlgHom ℚ E W₀).fieldRange ⊓
@@ -744,7 +744,7 @@ theorem exists_prime_dvd_sub_one_and_irreducible_cyclotomic
       -- lift the splitting field into `CyclotomicField m E`
       haveI := IsCyclotomicExtension.splitting_field_cyclotomic ℓ E W₀
       set j : W₀ →ₐ[E] CyclotomicField m E :=
-        IsSplittingField.lift W₀ (cyclotomic ℓ E) hsplits with hjdef
+        IsSplittingField.lift W₀ (cyclotomic ℓ E) hsplits
       rintro _ ⟨x, hx, rfl⟩
       obtain hxA : (IsScalarTower.toAlgHom ℚ E W₀) x ∈
           IntermediateField.adjoin ℚ ({ζ} : Set W₀) := hx.2
@@ -791,8 +791,8 @@ theorem exists_prime_dvd_sub_one_and_irreducible_cyclotomic
   obtain ⟨y, hyM, hyB⟩ := SetLike.not_le_iff_exists.mp
     (fun hle => hMne ℓ hℓS (eq_bot_iff.mpr hle))
   -- the common cyclotomic home for the pair
-  set W₂ := CyclotomicField (ℓ * ℓ') E with hW₂def
-  set ξ : W₂ := IsCyclotomicExtension.zeta (ℓ * ℓ') E W₂ with hξdef
+  set W₂ := CyclotomicField (ℓ * ℓ') E
+  set ξ : W₂ := IsCyclotomicExtension.zeta (ℓ * ℓ') E W₂
   have hξ : IsPrimitiveRoot ξ (ℓ * ℓ') := IsCyclotomicExtension.zeta_spec _ E W₂
   have hμℓ : IsPrimitiveRoot (ξ ^ ℓ') ℓ := by
     have := hξ.pow (NeZero.pos (ℓ * ℓ')) (mul_comm ℓ ℓ')
@@ -923,7 +923,7 @@ theorem infinite_setOf_isArithFrobAt_zpowers
   haveI : NeZero ℓ := ⟨hℓ.pos.ne'⟩
   haveI := Fact.mk hℓ
   -- the cyclotomic compositum `N = E(ζ_ℓ)`, Galois over `F`
-  set N := CyclotomicField ℓ E with hNdef
+  set N := CyclotomicField ℓ E
   letI : Algebra F N := ((algebraMap E N).comp (algebraMap F E)).toAlgebra
   haveI : IsScalarTower F E N := IsScalarTower.of_algebraMap_eq fun x => rfl
   haveI : FiniteDimensional F N := Module.Finite.trans E N
@@ -932,11 +932,11 @@ theorem infinite_setOf_isArithFrobAt_zpowers
   -- the crossing lift `σ` of `τ`
   obtain ⟨σ, hσE, hσpow⟩ :=
     exists_algEquiv_lift_and_forall_zpow_eq_one (F := F) (N := N) hℓ hirr τ hdvd
-  set ζ : N := IsCyclotomicExtension.zeta ℓ E N with hζdef
+  set ζ : N := IsCyclotomicExtension.zeta ℓ E N
   have hζ : IsPrimitiveRoot ζ ℓ := IsCyclotomicExtension.zeta_spec ℓ E N
   -- the fixed field `F'` of `⟨σ⟩`, a number field with `Gal(N/F') = ⟨σ⟩`
   set F' : IntermediateField F N :=
-    IntermediateField.fixedField (Subgroup.zpowers σ) with hF'def
+    IntermediateField.fixedField (Subgroup.zpowers σ)
   haveI : NumberField F' := NumberField.of_module_finite F F'
   have hσmem : σ ∈ F'.fixingSubgroup :=
     (IntermediateField.le_iff_le (Subgroup.zpowers σ) F').mp le_rfl
@@ -1004,7 +1004,7 @@ theorem infinite_setOf_isArithFrobAt_zpowers
   haveI : Module.Finite (𝓞 F) (𝓞 F') :=
     Module.Finite.of_restrictScalars_finite ℤ (𝓞 F) (𝓞 F')
   set π : HeightOneSpectrum (𝓞 F') → HeightOneSpectrum (𝓞 F) :=
-    fun P' => P'.under (𝓞 F) with hπdef
+    fun P' => P'.under (𝓞 F)
   have hfiber : ∀ v : HeightOneSpectrum (𝓞 F), {P' | π P' = v}.Finite := by
     intro v
     refine Set.Finite.of_finite_image
@@ -1016,7 +1016,7 @@ theorem infinite_setOf_isArithFrobAt_zpowers
   set S' : Set (HeightOneSpectrum (𝓞 F')) :=
     {P' : HeightOneSpectrum (𝓞 F') |
       (Nat.card (𝓞 F' ⧸ P'.asIdeal)).Prime ∧
-      σ' ζ = ζ ^ Nat.card (𝓞 F' ⧸ P'.asIdeal)} with hS'def
+      σ' ζ = ζ ^ Nat.card (𝓞 F' ⧸ P'.asIdeal)}
   have himg : (π '' S').Infinite := by
     refine fun hfin => hinf ?_
     have hpre : (π ⁻¹' (π '' S')).Finite := by
@@ -1052,7 +1052,7 @@ theorem infinite_setOf_isArithFrobAt_zpowers
     refine IsIntegral.of_pow hℓ.pos ?_
     rw [hζ.pow_eq_one]
     exact isIntegral_one
-  set ζO : 𝓞 N := ⟨ζ, hζint⟩ with hζOdef
+  set ζO : 𝓞 N := ⟨ζ, hζint⟩
   -- the residue characteristic is not `ℓ`
   have hpℓ : Nat.card (𝓞 F' ⧸ P'.asIdeal) ≠ ℓ := by
     intro h
