@@ -1,14 +1,13 @@
 ---
 name: flt-fleet-13-worktree-protocol
-description: "Deyao 2026-07-23 — standing subagent-dispatch protocol over the fixed pool of 13 renamed worktrees (flt-lean-1..13) plus their per-instance systemd report servers; supersedes the ZFS-seeding and per-fanout-worktree model"
+description: "Deyao 2026-07-23 — standing subagent-dispatch protocol over the fixed pool of 13 renamed worktrees (flt-lean-1..13) plus their per-instance systemd report servers"
 metadata:
   node_type: memory
   type: feedback
   originSessionId: 8e948ad7-2925-4f81-a46b-38fef37021d4
-  modified: 2026-07-23T03:19:15.118Z
 ---
 
-Deyao (2026-07-23), lifting the earlier dispatch suspension with a concrete protocol:
+Deyao (2026-07-23):
 
 "here's how you are going to use subagents, use a maximum of 13 subagents. each
 using one of the worktree. once they are done, the orchestrator (you), merge it
@@ -36,16 +35,6 @@ go to [in]finite over time."
    no memory-conservation tooling): "memory will increase but they will not
    go to infinite over time" — Deyao has explicitly accepted bounded growth
    here as fine, not a leak to manage.
-
-**Supersedes (deleted, not just cross-referenced):**
-- The ZFS-autosnap atomic-copy `.lake` seeding memory — that was for creating a
-  NEW worktree per fan-out; this protocol reuses a FIXED pool of 13
-  pre-existing, already-warm worktrees, so there is no seeding step at all,
-  just `--ff-only`.
-- The dispatch-suspension clause in [[flt-orchestrator-role]] — Deyao specified
-  this protocol directly, which counts as the design approval that clause
-  required. Subagent dispatch is live again UNDER THIS SPECIFIC PROTOCOL, not
-  a blanket return to the old free-form fan-out model.
 
 **How to apply:** Every dispatch cycle: (a) integrate any just-finished agent's
 branch into main from the main worktree; (b) select a free numbered worktree;
