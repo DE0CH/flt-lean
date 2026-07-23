@@ -6422,15 +6422,18 @@ open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **Package transport along a variable change** (sorry node — a
-`VariableChange` over the base field induces a Galois-equivariant
-group isomorphism of points over the algebraic closure, so a
-`TorsionFlatPackage` for `C • Y` yields one for `Y` by composing the
-points identification; the Hopf model is unchanged). -/
+/-- **Package transport along a variable change** (PROVEN 2026-07-23 —
+a `VariableChange` over the base field induces a Galois-equivariant
+group isomorphism of points over the algebraic closure
+(`Affine.Point.equivVariableChangeBaseChange` with its `_galois`
+equivariance: the coefficients of the change of variables are fixed by
+the Galois action), so a `TorsionFlatPackage` for `C • Y` yields one
+for `Y` by composing the points identification; the Hopf model is
+unchanged). -/
 theorem WeierstrassCurve.torsionFlatPackage_of_variableChange
     {p : ℕ} (hp' : p.Prime) [Fact p.Prime]
     (Y : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
-      hp'.toHeightOneSpectrumRingOfIntegersRat))
+      hp'.toHeightOneSpectrumRingOfIntegersRat)) [Y.IsElliptic]
     (C : WeierstrassCurve.VariableChange (HeightOneSpectrum.adicCompletion ℚ
       hp'.toHeightOneSpectrumRingOfIntegersRat)) :
     WeierstrassCurve.TorsionFlatPackage
@@ -6449,6 +6452,147 @@ theorem WeierstrassCurve.torsionFlatPackage_of_variableChange
       Y p
       (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
         hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
+  classical
+  intro hpkg
+  obtain ⟨H, i1, i2, i3, i4, i5, f0, hf0⟩ := hpkg
+  -- the Galois-equivariant point identification induced by `C`
+  let e : ((C • Y)⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Point ≃+
+      (Y⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Point :=
+    WeierstrassCurve.Affine.Point.equivVariableChangeBaseChange Y C
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat))
+  have he := WeierstrassCurve.Affine.Point.equivVariableChangeBaseChange_galois Y C
+    (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))
+  -- the point identification restricted to the `p`-torsion subgroups
+  let eT : AddSubgroup.torsionBy ((C • Y)⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ) ≃+
+      AddSubgroup.torsionBy (Y⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ) :=
+    { toFun := fun x => ⟨e x.1, by
+        have hx : ((p : ℕ) : ℤ) • x.1 = 0 := x.2
+        show ((p : ℕ) : ℤ) • e x.1 = 0
+        rw [← map_zsmul, hx, map_zero]⟩
+      invFun := fun y => ⟨e.symm y.1, by
+        have hy : ((p : ℕ) : ℤ) • y.1 = 0 := y.2
+        show ((p : ℕ) : ℤ) • e.symm y.1 = 0
+        rw [← map_zsmul e.symm ((p : ℕ) : ℤ) y.1, hy, map_zero]⟩
+      left_inv := fun x => Subtype.ext (e.symm_apply_apply x.1)
+      right_inv := fun y => Subtype.ext (e.apply_symm_apply y.1)
+      map_add' := fun x y => Subtype.ext (map_add e x.1 y.1) }
+  refine ⟨H, i1, i2, i3, i4, i5, f0.trans eT, ?_⟩
+  intro σ φ
+  show e (f0 (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ)))).1 =
+    WeierstrassCurve.Affine.Point.map σ.toAlgHom
+      (e (f0 (Additive.ofMul (WithConv.toConv φ))).1)
+  rw [hf0 σ φ]
+  exact he σ ((f0 (Additive.ofMul (WithConv.toConv φ))).1)
+
+open TensorProduct ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Unramified quadratic descent of the Hopf model** (sorry node —
+the DESCENT core of the nonsplit case, isolated so that the twist
+point-equivalence transport is PROVEN glue): given a finite flat
+`𝒪`-Hopf algebra `H` with étale generic fibre whose `Ω̂`-points are
+identified with the `p`-torsion of `X` EQUIVARIANTLY UP TO the
+quadratic character `χ` of the UNRAMIFIED quadratic extension `L/ℚ_pˆ`
+(witnessed by a generator `θL` that is a root of a monic integral
+polynomial `Q` with separable residue), there is an honest
+`TorsionFlatPackage` for `X`. Content: the descended Hopf model is the
+invariants of `𝒪_L ⊗ H` under the character-twisted involution
+`τ ⊗ S` (`τ` the conjugation of `𝒪_L/𝒪`, `S` the antipode) — a finite
+flat Hopf order because `𝒪_L/𝒪` is unramified (equivalently: `2` is
+invertible since the residue characteristic `p` is odd, so the
+invariants are a direct summand), with `Ω̂`-points the `χ`-twist of
+those of `H`, which is exactly the identification `f` untwisted. -/
+theorem WeierstrassCurve.torsionFlatPackage_of_quadraticCharacter_twist
+    {p : ℕ} (hp' : p.Prime) [Fact p.Prime] (hp2 : p ≠ 2)
+    (X : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)) [X.IsElliptic]
+    (L : Type) [Field L]
+    [Algebra (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) L]
+    [Algebra.IsQuadraticExtension (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) L]
+    [Algebra.IsSeparable (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) L]
+    [Algebra L (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))]
+    [IsScalarTower (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) L
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat))]
+    (θL : L)
+    (Q : Polynomial 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat])
+    (hQm : Q.Monic)
+    (hθtop : Algebra.adjoin (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) ({θL} : Set L) = ⊤)
+    (hθQ : Polynomial.aeval θL
+      (Q.map (algebraMap 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))) = 0)
+    (hQsep : (Q.map (IsLocalRing.residue
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat])).Separable)
+    (H : Type) [CommRing H]
+    [HopfAlgebra 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] H]
+    [Module.Finite 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] H]
+    [Module.Flat 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] H]
+    [Algebra.Etale (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)
+      ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] H)]
+    (f : Additive (WithConv (((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] H) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))) ≃+
+      AddSubgroup.torsionBy (X⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ))
+    (hf : ∀ (σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))
+          ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)))
+        (φ : ((HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] H) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))),
+        (f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) :
+          (X⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))).Point) =
+          (quadraticCharacter (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat) L
+              (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat)) σ : ℤ) •
+            WeierstrassCurve.Affine.Point.map σ.toAlgHom
+              (f (Additive.ofMul (WithConv.toConv φ)))) :
+    WeierstrassCurve.TorsionFlatPackage
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      X p
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
   sorry
 
 open TensorProduct ValuativeRel IsDedekindDomain in
@@ -6456,19 +6600,21 @@ open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **Unramified quadratic descent of the torsion package** (sorry node
-— the DESCENT core of the nonsplit case): if `L/ℚ_pˆ` is a quadratic
-separable extension that is UNRAMIFIED (witnessed by a generator `θL`
-that is a root of a monic integral polynomial `Q` with separable
-residue), then a `TorsionFlatPackage` for the quadratic twist
-`X.quadraticTwist L` yields one for `X` itself. Content: over `L` the
-curves are isomorphic (`quadraticTwistPointEquiv`), with Galois actions
-differing by the quadratic character of `L/K`
-(`quadraticTwistPointEquiv_galois`); the descended Hopf model is the
-invariants of `𝒪_L ⊗ H` under the character-twisted involution — a
-finite flat Hopf order because `𝒪_L/𝒪` is unramified (equivalently:
-`2` is invertible since the residue characteristic `p` is odd, so the
-invariants are a direct summand). -/
+/-- **Unramified quadratic descent of the torsion package**
+(DECOMPOSED 2026-07-23 — the twist point-equivalence transport is
+PROVEN glue; the descent core is the sorried leaf
+`torsionFlatPackage_of_quadraticCharacter_twist` above): if `L/ℚ_pˆ`
+is a quadratic separable extension that is UNRAMIFIED (witnessed by a
+generator `θL` that is a root of a monic integral polynomial `Q` with
+separable residue), then a `TorsionFlatPackage` for the quadratic
+twist `X.quadraticTwist L` yields one for `X` itself. Proven here:
+fixing an embedding `L ↪ Ω̂` (`IsAlgClosed.lift`), the twist
+isomorphism on points (`quadraticTwistPointEquiv`) restricts to the
+`p`-torsion subgroups, and composing the twist package's points
+identification with it yields an identification onto the `p`-torsion
+of `X` that is equivariant up to the quadratic character
+(`quadraticTwistPointEquiv_galois`) — the hypothesis shape of the
+descent leaf. -/
 theorem WeierstrassCurve.torsionFlatPackage_of_unramified_quadraticTwist
     {p : ℕ} (hp' : p.Prime) [Fact p.Prime] (hp2 : p ≠ 2)
     (X : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
@@ -6510,7 +6656,98 @@ theorem WeierstrassCurve.torsionFlatPackage_of_unramified_quadraticTwist
       X p
       (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
         hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
-  sorry
+  classical
+  intro hpkg
+  -- fix an embedding of `L` into the local algebraic closure, over
+  -- the base field
+  letI algLΩ : Algebra L (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)) :=
+    (IsAlgClosed.lift (M := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))
+      (R := HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) (S := L)).toAlgebra
+  haveI : IsScalarTower (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) L
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) :=
+    IsScalarTower.of_algebraMap_eq (fun x =>
+      ((IsAlgClosed.lift (M := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat))
+        (R := HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (S := L)).commutes x).symm)
+  obtain ⟨H, i1, i2, i3, i4, i5, f0, hf0⟩ := hpkg
+  letI := i1
+  letI := i2
+  letI := i3
+  letI := i4
+  letI := i5
+  -- the twist point identification over the algebraic closure
+  let qe : ((X.quadraticTwist L)⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))).Point ≃+
+      (X⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat))).Point :=
+    X.quadraticTwistPointEquiv L (AlgebraicClosure
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat))
+  -- restricted to the `p`-torsion subgroups
+  let qeT : AddSubgroup.torsionBy ((X.quadraticTwist L)⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ) ≃+
+      AddSubgroup.torsionBy (X⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ) :=
+    { toFun := fun x => ⟨qe x.1, by
+        have hx : ((p : ℕ) : ℤ) • x.1 = 0 := x.2
+        show ((p : ℕ) : ℤ) • qe x.1 = 0
+        rw [← map_zsmul, hx, map_zero]⟩
+      invFun := fun y => ⟨qe.symm y.1, by
+        have hy : ((p : ℕ) : ℤ) • y.1 = 0 := y.2
+        show ((p : ℕ) : ℤ) • qe.symm y.1 = 0
+        rw [← map_zsmul qe.symm ((p : ℕ) : ℤ) y.1, hy, map_zero]⟩
+      left_inv := fun x => Subtype.ext (qe.symm_apply_apply x.1)
+      right_inv := fun y => Subtype.ext (qe.apply_symm_apply y.1)
+      map_add' := fun x y => Subtype.ext (map_add qe x.1 y.1) }
+  -- the composed points identification is equivariant up to the
+  -- quadratic character (`quadraticTwistPointEquiv_galois`)
+  have hft : ∀ (σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat))
+        ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))
+      (φ : ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] H) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))),
+      ((f0.trans qeT) (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) :
+        (X⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))).Point) =
+        (quadraticCharacter (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) L
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat)) σ : ℤ) •
+          WeierstrassCurve.Affine.Point.map σ.toAlgHom
+            ((f0.trans qeT) (Additive.ofMul (WithConv.toConv φ))) := by
+    intro σ φ
+    show qe (f0 (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ)))).1 =
+      (quadraticCharacter (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) L
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)) σ : ℤ) •
+        WeierstrassCurve.Affine.Point.map σ.toAlgHom
+          (qe (f0 (Additive.ofMul (WithConv.toConv φ))).1)
+    rw [hf0 σ φ]
+    exact X.quadraticTwistPointEquiv_galois L (AlgebraicClosure
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) σ
+      ((f0 (Additive.ofMul (WithConv.toConv φ))).1)
+  -- the descent core (sorried leaf)
+  exact WeierstrassCurve.torsionFlatPackage_of_quadraticCharacter_twist
+    hp' hp2 X L θL Q hQm hθtop hθQ hQsep H (f0.trans qeT) hft
 
 open TensorProduct ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
@@ -6626,21 +6863,151 @@ open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **The lattice-intersection Hopf order** (sorry node — the core of
-the localization gluing, isolated so that the points/étale/convolution
-transport is PROVEN glue): given the COMPONENTS of a global
+/-- **The adic étale/Galois-sets comparison** (sorry node — the
+GENERIC-FIBRE comparison half of the lattice gluing): the two étale
+`ℚ_pˆ`-bialgebras `ℚ_pˆ ⊗_ℚ Hg` and `ℚ_pˆ ⊗_𝒪 H_loc` are isomorphic
+as `ℚ_pˆ`-BIALGEBRAS. Content: by the étale/Galois-sets
+correspondence, both are determined by their `Ω̂`-points with the
+`Gal(Ω̂/ℚ_pˆ)`-action and convolution structure; through the chosen
+embedding `ℚ̄ ↪ Ω̂` (`algClosureEmbeddingRat`, along which the global
+Galois action restricts) both point groups are equivariantly the
+`p`-torsion of `E` — the global one by `fg`/`hfg` (torsion over `ℚ̄`
+maps isomorphically onto torsion over `Ω̂`), the local one by
+`fl`/`hfl` — and matching the convolution group structures upgrades
+the algebra comparison to a bialgebra isomorphism. -/
+theorem WeierstrassCurve.exists_adic_bialgEquiv_of_torsion_packages
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp' : p.Prime)
+    [Fact p.Prime]
+    (Hg : Type) [CommRing Hg] [HopfAlgebra ℚ Hg] [Module.Finite ℚ Hg]
+    [Algebra.Etale ℚ (ℚ ⊗[ℚ] Hg)]
+    (fg : Additive (WithConv ((ℚ ⊗[ℚ] Hg) →ₐ[ℚ] AlgebraicClosure ℚ)) ≃+
+      AddSubgroup.torsionBy (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ))
+    (hfg : ∀ (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+        (φ : (ℚ ⊗[ℚ] Hg) →ₐ[ℚ] AlgebraicClosure ℚ),
+        (fg (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) :
+          (E⁄(AlgebraicClosure ℚ)).Point) =
+          WeierstrassCurve.Affine.Point.map σ.toAlgHom
+            (fg (Additive.ofMul (WithConv.toConv φ))))
+    (Hl : Type) [CommRing Hl]
+    [HopfAlgebra 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] Hl]
+    [Module.Finite 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] Hl]
+    [Module.Flat 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] Hl]
+    [Algebra.Etale (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)
+      ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl)]
+    (fl : Additive (WithConv (((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))) ≃+
+      AddSubgroup.torsionBy ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ))
+    (hfl : ∀ (σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))
+          ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)))
+        (φ : ((HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))),
+        (fl (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) :
+          ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+            (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat))).Point) =
+          WeierstrassCurve.Affine.Point.map σ.toAlgHom
+            (fl (Additive.ofMul (WithConv.toConv φ)))) :
+    Nonempty (((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[ℚ] Hg)
+      ≃ₐc[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl)) := by
+  sorry
+
+open TensorProduct ValuativeRel IsDedekindDomain in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The lattice intersection** (sorry node — the INTEGRAL half of
+the lattice gluing, curve-free): given a finite-dimensional `ℚ`-Hopf
+algebra `Hg` with étale generic fibre, a finite flat Hopf algebra
+`H_loc` over the completed integers `𝒪 = ℤ_pˆ`, and a
+`ℚ_pˆ`-BIALGEBRA isomorphism `ψ` of their base changes, the lattice
+`H := {x ∈ Hg : ψ(1 ⊗ x) ∈ H_loc}` is a finite flat Hopf algebra over
+the DVR `ℤ_(p) = ℚ ∩ ℤ_p` with generic fibre `Hg`. Content: `H` is
+the intersection of the `ℚ`-form `Hg` with the `𝒪`-lattice
+`H_loc ⊆ ℚ_pˆ ⊗ H_loc`, hence a full `ℤ_(p)`-lattice in `Hg`
+(finitely generated torsion-free over a DVR, so finite flat; full
+because every element of `ℚ_pˆ ⊗ H_loc` is `p⁻ⁿ` times a lattice
+element); it is a sub-bialgebra because `ψ` matches the structure maps
+and `H_loc` is one, and antipode-stable because bialgebra morphisms of
+Hopf algebras commute with antipodes; `ℚ ⊗ H = Hg` gives the étale
+generic fibre and the required `ℚ`-bialgebra isomorphism. -/
+theorem exists_hopfOrder_of_adic_bialgEquiv
+    {p : ℕ} (hp' : p.Prime) [Fact p.Prime]
+    (Hg : Type) [CommRing Hg] [HopfAlgebra ℚ Hg] [Module.Finite ℚ Hg]
+    [Algebra.Etale ℚ (ℚ ⊗[ℚ] Hg)]
+    (Hl : Type) [CommRing Hl]
+    [HopfAlgebra 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] Hl]
+    [Module.Finite 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] Hl]
+    [Module.Flat 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] Hl]
+    (ψ : ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[ℚ] Hg)
+      ≃ₐc[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl)) :
+    ∃ (H : Type) (_ : CommRing H)
+      (_ : HopfAlgebra
+        (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H)
+      (_ : Module.Finite
+        (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H)
+      (_ : Module.Flat
+        (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H)
+      (_ : Algebra.Etale ℚ
+        (ℚ ⊗[Localization.AtPrime
+          hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H)),
+      Nonempty
+        ((ℚ ⊗[Localization.AtPrime
+            hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H)
+          ≃ₐc[ℚ] (ℚ ⊗[ℚ] Hg)) := by
+  sorry
+
+open TensorProduct ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The lattice-intersection Hopf order** (DECOMPOSED 2026-07-23 —
+the core of the localization gluing, split into its two halves with
+the destructuring glue PROVEN here): given the COMPONENTS of a global
 generic-fibre package (an étale `ℚ`-Hopf algebra `Hg` whose `ℚ̄`-points
 are equivariantly the `p`-torsion) and a local completed-integers
 package, there is a finite flat `ℤ_(p)`-Hopf algebra whose generic
-fibre is `Hg` as a `ℚ`-BIALGEBRA. Content: the comparison of the two
-étale `ℚ_pˆ`-algebras `ℚ_pˆ ⊗ Hg` and `ℚ_pˆ ⊗ H_loc` through their
-equivariantly identified `Ω̂`-points (the étale/Galois-sets
-correspondence, riding the chosen embedding `ℚ̄ ↪ ℚ̄_p` —
-`algClosureEmbeddingRat` — for the torsion comparison), and the lattice
-`H := Hg ∩ H_loc` inside it: finitely generated torsion-free over the
-DVR `ℤ_(p) = ℚ ∩ ℤ_p`, hence finite flat, a Hopf order because both
-intersectands are, with `ℚ ⊗ H = Hg` because `H_loc` spans over
-`ℚ_pˆ`. -/
+fibre is `Hg` as a `ℚ`-BIALGEBRA. The two sorried halves above:
+`exists_adic_bialgEquiv_of_torsion_packages` (the étale/Galois-sets
+comparison of the two `ℚ_pˆ`-bialgebras through their equivariantly
+identified `Ω̂`-points, riding `algClosureEmbeddingRat`) and
+`exists_hopfOrder_of_adic_bialgEquiv` (the curve-free lattice
+intersection `H := Hg ∩ H_loc` over `ℤ_(p) = ℚ ∩ ℤ_p`). -/
 theorem WeierstrassCurve.exists_hopfOrder_of_adicPackage
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp' : p.Prime)
     [Fact p.Prime]
@@ -6678,7 +7045,18 @@ theorem WeierstrassCurve.exists_hopfOrder_of_adicPackage
         ((ℚ ⊗[Localization.AtPrime
             hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H)
           ≃ₐc[ℚ] (ℚ ⊗[ℚ] Hg)) := by
-  sorry
+  classical
+  obtain ⟨Hl, cl, hopfl, finl, flatl, etl, fl, hfl⟩ := hl
+  letI := cl
+  letI := hopfl
+  letI := finl
+  letI := flatl
+  letI := etl
+  -- the generic-fibre comparison (sorried leaf)
+  obtain ⟨ψ⟩ := WeierstrassCurve.exists_adic_bialgEquiv_of_torsion_packages
+    E hp' Hg fg hfg Hl fl hfl
+  -- the lattice intersection (sorried leaf)
+  exact exists_hopfOrder_of_adic_bialgEquiv hp' Hg Hl ψ
 
 open TensorProduct ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
