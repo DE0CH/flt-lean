@@ -40,6 +40,9 @@ import Mathlib.RingTheory.Coalgebra.CoassocSimps
 -- `HopfAlgebra.antipodeAlgHom` (the antipode of a commutative Hopf algebra is
 -- an algebra homomorphism), same leaf
 import Mathlib.RingTheory.HopfAlgebra.Convolution
+-- `IsGalois.normalBasis`: the Dedekind-matrix inversion step of the
+-- Galois-descent core `galoisEquivariant_mem_span`
+import Mathlib.FieldTheory.Galois.NormalBasis
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
 
 /-!
@@ -1884,23 +1887,315 @@ noncomputable def galoisEquivariantTensorHom {B C : Type*}
     (galoisEquivariantPullback L (galoisProdAction L ρB ρC) ρC
       (AddMonoidHom.snd B C) fun _ _ => rfl)
 
+omit [FiniteDimensional K₀ ↥L] [IsGalois K₀ ↥L] in
+/-- Membership in the equivariant-functions algebra, unfolded. -/
+theorem mem_galoisEquivariantAlgebra_iff {B : Type*} [AddCommGroup B]
+    {ρB : (L ≃ₐ[K₀] L) →* AddMonoid.End B} {f : B → L} :
+    f ∈ galoisEquivariantAlgebra L ρB ↔ ∀ g b, f (ρB g b) = g (f b) :=
+  Iff.rfl
+
+/-- **Linear disjointness of equivariant functions** (the injectivity half of
+split Galois descent, ported 2026-07-23 from the proven
+`galDesc_linearIndependent` of `Fermat.FLT.FreyCurve.Semistable`): a
+`K₀`-linearly independent family in the equivariant-functions algebra stays
+`L`-linearly independent as functions `B → L`. Minimal-relation argument:
+normalize a shortest nontrivial `L`-relation to have a coefficient `1`,
+subtract its Galois translates (again relations, by equivariance of the
+functions), conclude all coefficients are Galois-fixed, hence in `K₀` —
+contradiction. -/
+theorem galoisEquivariant_linearIndependent {B : Type*} [AddCommGroup B]
+    (ρB : (L ≃ₐ[K₀] L) →* AddMonoid.End B) {ι : Type*}
+    {v : ι → galoisEquivariantAlgebra L ρB} (hv : LinearIndependent K₀ v) :
+    LinearIndependent ↥L fun i => (v i : B → L) := by
+  classical
+  rw [linearIndependent_iff']
+  intro s
+  induction s using Finset.strongInduction with
+  | H s ih =>
+    intro c hc
+    by_contra hne
+    push Not at hne
+    obtain ⟨i₀, hi₀s, hi₀⟩ := hne
+    set c' : ι → ↥L := fun i => (c i₀)⁻¹ * c i with hc'def
+    have hrel : ∑ i ∈ s, c' i • (v i : B → L) = 0 := by
+      have h1 := congrArg (fun f : B → ↥L => (c i₀)⁻¹ • f) hc
+      simpa [Finset.smul_sum, smul_smul, hc'def] using h1
+    have hc'i₀ : c' i₀ = 1 := by
+      simp only [hc'def]
+      exact inv_mul_cancel₀ hi₀
+    have hrelg : ∀ g : ↥L ≃ₐ[K₀] ↥L,
+        ∑ i ∈ s, g (c' i) • (v i : B → L) = 0 := by
+      intro g
+      have h0 : ∀ b : B, ∑ i ∈ s, c' i * (v i : B → L) (ρB g⁻¹ b) = 0 := by
+        intro b
+        have h2 := congrFun hrel (ρB g⁻¹ b)
+        simpa using h2
+      funext b
+      simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, Pi.zero_apply]
+      calc ∑ i ∈ s, g (c' i) * (v i : B → L) b
+          = ∑ i ∈ s, g (c' i) * g ((v i : B → L) (ρB g⁻¹ b)) := by
+            refine Finset.sum_congr rfl fun i _ => ?_
+            rw [(v i).2 g⁻¹ b, AlgEquiv.aut_inv, AlgEquiv.apply_symm_apply]
+        _ = g (∑ i ∈ s, c' i * (v i : B → L) (ρB g⁻¹ b)) := by
+            rw [map_sum]
+            exact Finset.sum_congr rfl fun i _ => (map_mul g _ _).symm
+        _ = 0 := by rw [h0 b, map_zero]
+    have hfix : ∀ (g : ↥L ≃ₐ[K₀] ↥L) (i : ι), i ∈ s → g (c' i) = c' i := by
+      intro g i hi
+      have h3 : ∑ j ∈ s, (g (c' j) - c' j) • (v j : B → L) = 0 := by
+        simp only [sub_smul, Finset.sum_sub_distrib, hrelg g, hrel, sub_zero]
+      have h4 : ∑ j ∈ s.erase i₀, (g (c' j) - c' j) • (v j : B → L) = 0 := by
+        rwa [← Finset.add_sum_erase _ _ hi₀s, hc'i₀, map_one, sub_self, zero_smul,
+          zero_add] at h3
+      have h5 := ih (s.erase i₀) (Finset.erase_ssubset hi₀s) _ h4
+      rcases eq_or_ne i i₀ with rfl | hne'
+      · rw [hc'i₀, map_one]
+      · exact sub_eq_zero.mp (h5 i (Finset.mem_erase.mpr ⟨hne', hi⟩))
+    have hK : ∀ i : ι, ∃ k : K₀, i ∈ s → algebraMap K₀ ↥L k = c' i := by
+      intro i
+      by_cases hi : i ∈ s
+      · have hmem : c' i ∈ Set.range (algebraMap K₀ ↥L) := by
+          rw [IsGalois.mem_range_algebraMap_iff_fixed]
+          exact fun g => hfix g i hi
+        exact ⟨hmem.choose, fun _ => hmem.choose_spec⟩
+      · exact ⟨0, fun h => absurd h hi⟩
+    choose k hk using hK
+    have hrelK : ∑ i ∈ s, k i • v i = 0 := by
+      have hcoe : ((∑ i ∈ s, k i • v i : galoisEquivariantAlgebra L ρB) :
+          B → L) = ∑ i ∈ s, c' i • (v i : B → L) := by
+        rw [AddSubmonoidClass.coe_finsetSum]
+        refine Finset.sum_congr rfl fun i hi => ?_
+        rw [SetLike.val_smul, ← hk i hi, algebraMap_smul]
+      exact Subtype.ext (by rw [hcoe, hrel]; rfl)
+    have h6 := linearIndependent_iff'.mp hv s k hrelK i₀ hi₀s
+    rw [← hk i₀ hi₀s, h6, map_zero] at hc'i₀
+    exact zero_ne_one hc'i₀
+
+/-- **Spanning by equivariant functions** (the surjectivity half of split
+Galois descent, ported 2026-07-23 from the proven `galDesc_mem_span` of
+`Fermat.FLT.FreyCurve.Semistable`): every function `B → L` is an `L`-linear
+combination of equivariant ones. For `c : L` the averaged function
+`b ↦ ∑ g, g (c · f (ρB g⁻¹ b))` is equivariant; running `c` through a normal
+basis of `L/K₀` and inverting the Dedekind matrix `(g (nb j))` recovers `f`
+itself as a combination of averages. -/
+theorem galoisEquivariant_mem_span {B : Type*} [AddCommGroup B]
+    (ρB : (L ≃ₐ[K₀] L) →* AddMonoid.End B) (f : B → L) :
+    f ∈ Submodule.span ↥L (galoisEquivariantAlgebra L ρB : Set (B → L)) := by
+  classical
+  have hmul : ∀ (g₁ g₂ : L ≃ₐ[K₀] L) (b : B),
+      ρB (g₁ * g₂) b = ρB g₁ (ρB g₂ b) := fun g₁ g₂ b => by rw [map_mul]; rfl
+  have havg : ∀ c : ↥L,
+      (fun b => ∑ g : ↥L ≃ₐ[K₀] ↥L, g (c * f (ρB g⁻¹ b))) ∈
+        galoisEquivariantAlgebra L ρB := by
+    intro c
+    refine (mem_galoisEquivariantAlgebra_iff L).mpr fun g₀ b => ?_
+    have hstep : ∀ g : ↥L ≃ₐ[K₀] ↥L,
+        (g₀ * g) (c * f (ρB (g₀ * g)⁻¹ (ρB g₀ b))) = g₀ (g (c * f (ρB g⁻¹ b))) := by
+      intro g
+      have hact : ρB (g₀ * g)⁻¹ (ρB g₀ b) = ρB g⁻¹ b := by
+        rw [← hmul, mul_inv_rev, inv_mul_cancel_right]
+      rw [hact, AlgEquiv.mul_apply]
+    calc (fun b => ∑ g : ↥L ≃ₐ[K₀] ↥L, g (c * f (ρB g⁻¹ b))) (ρB g₀ b)
+        = ∑ g : ↥L ≃ₐ[K₀] ↥L, (g₀ * g) (c * f (ρB (g₀ * g)⁻¹ (ρB g₀ b))) :=
+          (Fintype.sum_equiv (Equiv.mulLeft g₀) _ _ fun g => rfl).symm
+      _ = ∑ g : ↥L ≃ₐ[K₀] ↥L, g₀ (g (c * f (ρB g⁻¹ b))) :=
+          Finset.sum_congr rfl fun g _ => hstep g
+      _ = g₀ ((fun b => ∑ g : ↥L ≃ₐ[K₀] ↥L, g (c * f (ρB g⁻¹ b))) b) :=
+          (map_sum g₀ _ _).symm
+  set nb : Module.Basis (↥L ≃ₐ[K₀] ↥L) K₀ ↥L := IsGalois.normalBasis K₀ ↥L
+  set M : Matrix (↥L ≃ₐ[K₀] ↥L) (↥L ≃ₐ[K₀] ↥L) ↥L :=
+    Matrix.of fun g j => g (nb j) with hM
+  have hMinj : Function.Injective M.vecMul := by
+    have hli : LinearIndependent ↥L
+        fun g : ↥L ≃ₐ[K₀] ↥L => (g : ↥L →ₐ[K₀] ↥L).toLinearMap :=
+      (linearIndependent_toLinearMap K₀ ↥L ↥L).comp
+        (fun g : ↥L ≃ₐ[K₀] ↥L => (g : ↥L →ₐ[K₀] ↥L))
+        AlgEquiv.coe_toAlgHom_injective
+    have hker : ∀ z : (↥L ≃ₐ[K₀] ↥L) → ↥L, M.vecMul z = 0 → z = 0 := by
+      intro z hz
+      have hzero : (∑ g : ↥L ≃ₐ[K₀] ↥L, z g • (g : ↥L →ₐ[K₀] ↥L).toLinearMap)
+          = (0 : ↥L →ₗ[K₀] ↥L) := by
+        refine nb.ext fun j => ?_
+        have hj : ∑ g : ↥L ≃ₐ[K₀] ↥L, z g * g (nb j) = 0 := by
+          have h1 := congrFun hz j
+          simpa [Matrix.vecMul, dotProduct, hM] using h1
+        simpa using hj
+      funext g
+      exact Fintype.linearIndependent_iff.mp hli z hzero g
+    intro x y hxy
+    have hxy' : Matrix.vecMul x M = Matrix.vecMul y M := hxy
+    have hsub := hker (x - y) (by rw [Matrix.sub_vecMul, hxy', sub_self])
+    exact sub_eq_zero.mp hsub
+  obtain ⟨d, hd⟩ := (Matrix.mulVec_surjective_iff_isUnit.mpr
+    (Matrix.vecMul_injective_iff_isUnit.mp hMinj)) (Pi.single 1 1)
+  have hfeq : f = ∑ j : ↥L ≃ₐ[K₀] ↥L,
+      d j • fun b => ∑ g : ↥L ≃ₐ[K₀] ↥L, g (nb j * f (ρB g⁻¹ b)) := by
+    funext b
+    have hpt : ∀ g j : ↥L ≃ₐ[K₀] ↥L,
+        d j * g (nb j * f (ρB g⁻¹ b)) = M g j * d j * g (f (ρB g⁻¹ b)) := by
+      intro g j
+      rw [map_mul, hM, Matrix.of_apply]
+      ring
+    have hRHS : (∑ j : ↥L ≃ₐ[K₀] ↥L, d j • fun b' =>
+        ∑ g : ↥L ≃ₐ[K₀] ↥L, g (nb j * f (ρB g⁻¹ b'))) b
+        = ∑ g : ↥L ≃ₐ[K₀] ↥L, M.mulVec d g * g (f (ρB g⁻¹ b)) := by
+      simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+      calc ∑ j : ↥L ≃ₐ[K₀] ↥L, d j * ∑ g : ↥L ≃ₐ[K₀] ↥L, g (nb j * f (ρB g⁻¹ b))
+          = ∑ j : ↥L ≃ₐ[K₀] ↥L, ∑ g : ↥L ≃ₐ[K₀] ↥L, d j * g (nb j * f (ρB g⁻¹ b)) :=
+            Finset.sum_congr rfl fun j _ => Finset.mul_sum _ _ _
+        _ = ∑ g : ↥L ≃ₐ[K₀] ↥L, ∑ j : ↥L ≃ₐ[K₀] ↥L, d j * g (nb j * f (ρB g⁻¹ b)) :=
+            Finset.sum_comm
+        _ = ∑ g : ↥L ≃ₐ[K₀] ↥L, ∑ j : ↥L ≃ₐ[K₀] ↥L, M g j * d j * g (f (ρB g⁻¹ b)) :=
+            Finset.sum_congr rfl fun g _ => Finset.sum_congr rfl fun j _ => hpt g j
+        _ = ∑ g : ↥L ≃ₐ[K₀] ↥L, (∑ j : ↥L ≃ₐ[K₀] ↥L, M g j * d j) * g (f (ρB g⁻¹ b)) :=
+            Finset.sum_congr rfl fun g _ => (Finset.sum_mul _ _ _).symm
+        _ = ∑ g : ↥L ≃ₐ[K₀] ↥L, M.mulVec d g * g (f (ρB g⁻¹ b)) := by
+            refine Finset.sum_congr rfl fun g _ => ?_
+            congr 1
+    rw [hRHS, hd]
+    simp [Pi.single_apply, ite_mul]
+  rw [hfeq]
+  exact Submodule.sum_mem _ fun j _ =>
+    Submodule.smul_mem _ _ (Submodule.subset_span (havg (nb j)))
+
+/-- **The dimension count of split descent** (ported 2026-07-23 from the proven
+`galDesc_finrank` of `Fermat.FLT.FreyCurve.Semistable`): the
+equivariant-functions algebra of a finite `Gal(L/K₀)`-module `B` has
+`K₀`-dimension `|B|` — the split base-change map `θ : L ⊗[K₀] H_B → (B → L)`,
+`l ⊗ h ↦ l·h`, is bijective (injective by
+`galoisEquivariant_linearIndependent` on a basis, surjective by
+`galoisEquivariant_mem_span`), and `dim_L (B → L) = |B|`. -/
+theorem galoisEquivariant_finrank {B : Type*} [AddCommGroup B] [Finite B]
+    (ρB : (L ≃ₐ[K₀] L) →* AddMonoid.End B) :
+    Module.finrank K₀ (galoisEquivariantAlgebra L ρB) = Nat.card B := by
+  classical
+  haveI := Fintype.ofFinite B
+  set θ : ↥L ⊗[K₀] (galoisEquivariantAlgebra L ρB) →ₗ[↥L] (B → L) :=
+    ((Subalgebra.toSubmodule (galoisEquivariantAlgebra L ρB)).subtype).liftBaseChange
+      ↥L with hθ
+  have hinj : Function.Injective θ := by
+    rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
+    intro t ht
+    set β := Module.finBasis K₀ (galoisEquivariantAlgebra L ρB)
+    have hLI := galoisEquivariant_linearIndependent L ρB β.linearIndependent
+    have hcoeff : ∀ i, (β.baseChange ↥L).repr t i = 0 := by
+      have hθt : ∑ i, (β.baseChange ↥L).repr t i • (β i : B → L) = 0 := by
+        have hsum : θ (∑ i, (β.baseChange ↥L).repr t i • β.baseChange ↥L i)
+            = ∑ i, (β.baseChange ↥L).repr t i • (β i : B → L) := by
+          rw [map_sum]
+          refine Finset.sum_congr rfl fun i _ => ?_
+          rw [map_smul, Module.Basis.baseChange_apply, hθ,
+            LinearMap.liftBaseChange_tmul, one_smul]
+          rfl
+        rw [← hsum, Module.Basis.sum_repr, ht]
+      exact fun i => Fintype.linearIndependent_iff.mp hLI _ hθt i
+    rw [← Module.Basis.sum_repr (β.baseChange ↥L) t]
+    simp [hcoeff]
+  have hsurj : Function.Surjective θ := by
+    intro f
+    have hle : Submodule.span ↥L (galoisEquivariantAlgebra L ρB : Set (B → L)) ≤
+        LinearMap.range θ := by
+      rw [Submodule.span_le]
+      intro x hx
+      exact ⟨(1 : ↥L) ⊗ₜ[K₀] ⟨x, hx⟩, by
+        rw [hθ, LinearMap.liftBaseChange_tmul, one_smul]; rfl⟩
+    exact LinearMap.mem_range.mp (hle (galoisEquivariant_mem_span L ρB f))
+  have hfr := (LinearEquiv.ofBijective θ ⟨hinj, hsurj⟩).finrank_eq
+  rw [Module.finrank_baseChange, Module.finrank_pi] at hfr
+  rw [Nat.card_eq_fintype_card]
+  exact hfr
+
+omit [FiniteDimensional K₀ ↥L] [IsGalois K₀ ↥L] in
+/-- Evaluating the tensor-comparison homomorphism on a pure tensor at a point
+of `B × C` multiplies the two evaluations. -/
+theorem galoisEquivariantTensorHom_tmul_apply {B C : Type*}
+    [AddCommGroup B] [AddCommGroup C]
+    (ρB : (L ≃ₐ[K₀] L) →* AddMonoid.End B)
+    (ρC : (L ≃ₐ[K₀] L) →* AddMonoid.End C)
+    (h : galoisEquivariantAlgebra L ρB) (k : galoisEquivariantAlgebra L ρC)
+    (x : B × C) :
+    (galoisEquivariantTensorHom L ρB ρC (h ⊗ₜ[K₀] k) : (B × C) → L) x
+      = (h : B → L) x.1 * (k : C → L) x.2 := rfl
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
 /-- **Galois descent for the tensor product of equivariant-functions algebras**
-(sorry node; the descent core of the equivariant-functions Hopf package): the
-tensor-comparison homomorphism is bijective. Both sides have `K₀`-dimension
-`|B| ⬝ |C|`: equivariant functions on a finite `Gal(L/K₀)`-set `S` have
-`K₀`-dimension `|S|` — evaluation at orbit representatives identifies them
-with `∏_{orbits} Fix(Stab)`, and `dim Fix(Stab O) = [L:K₀]/|Stab O| = |O|` by
-the fundamental theorem of Galois theory — and the map is injective by linear
-disjointness of the evaluations (a nonzero kernel element would give a
-nontrivial vanishing linear combination of the evaluation characters of the
-left factor with coefficients evaluations of the right factor, contradicting
-Dedekind's independence of characters over `L`). -/
+(PROVEN 2026-07-23, ported from the proven `galDescProdHom_bijective` of
+`Fermat.FLT.FreyCurve.Semistable`; the descent core of the
+equivariant-functions Hopf package): the tensor-comparison homomorphism is
+bijective. Both sides have `K₀`-dimension `|B| ⬝ |C|`
+(`galoisEquivariant_finrank`), and the map is injective by linear disjointness
+of the evaluations: expanding a kernel element along a `K₀`-basis of the right
+factor, the coefficient functions vanish because the basis stays `L`-linearly
+independent (`galoisEquivariant_linearIndependent` — Dedekind's independence). -/
 theorem galoisEquivariantTensorHom_bijective {B C : Type*}
     [AddCommGroup B] [AddCommGroup C] [Finite B] [Finite C]
     (ρB : (L ≃ₐ[K₀] L) →* AddMonoid.End B)
     (ρC : (L ≃ₐ[K₀] L) →* AddMonoid.End C) :
-    Function.Bijective (galoisEquivariantTensorHom L ρB ρC) :=
-  sorry
+    Function.Bijective (galoisEquivariantTensorHom L ρB ρC) := by
+  classical
+  haveI : Module.Finite K₀ (galoisEquivariantAlgebra L ρB) :=
+    galoisEquivariantAlgebra_finite L ρB
+  haveI : Module.Finite K₀ (galoisEquivariantAlgebra L ρC) :=
+    galoisEquivariantAlgebra_finite L ρC
+  haveI : Module.Finite K₀
+      (galoisEquivariantAlgebra L (galoisProdAction L ρB ρC)) :=
+    galoisEquivariantAlgebra_finite L _
+  have hinj : Function.Injective (galoisEquivariantTensorHom L ρB ρC) := by
+    rw [injective_iff_map_eq_zero]
+    intro t ht
+    set γ := Module.finBasis K₀ (galoisEquivariantAlgebra L ρC)
+    obtain ⟨w, rfl⟩ : ∃ w : Fin (Module.finrank K₀ (galoisEquivariantAlgebra L ρC))
+        → galoisEquivariantAlgebra L ρB, t = ∑ i, w i ⊗ₜ[K₀] γ i := by
+      clear ht
+      induction t using TensorProduct.induction_on with
+      | zero => exact ⟨0, by simp⟩
+      | tmul h k =>
+        refine ⟨fun i => γ.repr k i • h, ?_⟩
+        conv_lhs => rw [← Module.Basis.sum_repr γ k]
+        rw [TensorProduct.tmul_sum]
+        exact Finset.sum_congr rfl fun i _ => (TensorProduct.smul_tmul _ _ _).symm
+      | add t₁ t₂ h₁ h₂ =>
+        obtain ⟨w₁, rfl⟩ := h₁
+        obtain ⟨w₂, rfl⟩ := h₂
+        refine ⟨w₁ + w₂, ?_⟩
+        rw [← Finset.sum_add_distrib]
+        exact Finset.sum_congr rfl fun i _ => (TensorProduct.add_tmul _ _ _).symm
+    have hLI := galoisEquivariant_linearIndependent L ρC γ.linearIndependent
+    have hpt : ∀ (b : B) (cc : C),
+        ∑ i, ((w i : B → L) b) * ((γ i : C → L) cc) = 0 := by
+      intro b cc
+      have h1 := congrArg
+        (fun F : galoisEquivariantAlgebra L (galoisProdAction L ρB ρC) =>
+          (F : (B × C) → L) (b, cc)) ht
+      simpa [map_sum, galoisEquivariantTensorHom_tmul_apply] using h1
+    have hw : ∀ i, w i = 0 := by
+      intro i
+      apply Subtype.ext
+      funext b
+      have hrel : ∑ j, ((w j : B → L) b) • (γ j : C → L) = 0 := by
+        funext cc
+        simpa using hpt b cc
+      exact Fintype.linearIndependent_iff.mp hLI _ hrel i
+    simp [hw]
+  refine ⟨hinj, ?_⟩
+  have hfr : Module.finrank K₀
+      ((galoisEquivariantAlgebra L ρB) ⊗[K₀] (galoisEquivariantAlgebra L ρC))
+      = Module.finrank K₀
+        (galoisEquivariantAlgebra L (galoisProdAction L ρB ρC)) := by
+    rw [Module.finrank_tensorProduct,
+      galoisEquivariant_finrank L ρB,
+      galoisEquivariant_finrank L ρC,
+      galoisEquivariant_finrank L (galoisProdAction L ρB ρC),
+      Nat.card_prod]
+  have hsurjlin := (LinearMap.injective_iff_surjective_of_finrank_eq_finrank
+    (K := K₀)
+    (V := (galoisEquivariantAlgebra L ρB) ⊗[K₀] (galoisEquivariantAlgebra L ρC))
+    (V₂ := galoisEquivariantAlgebra L (galoisProdAction L ρB ρC))
+    hfr (f := (galoisEquivariantTensorHom L ρB ρC).toLinearMap)).mp
+    (by simpa using hinj)
+  simpa using hsurjlin
 
 /-- **A structureless copy of the equivariant-functions algebra**, used as the
 carrier of its Hopf-algebra structure in `exists_hopfAlgebra_galoisHopfCarrier`: a
