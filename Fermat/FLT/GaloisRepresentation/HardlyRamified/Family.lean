@@ -360,7 +360,119 @@ lemma isUnramifiedAt_of_ne (hρ : IsHardlyRamified hpodd hv ρ)
     exact hvp
       ((Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal hq _).mpr (by simp))
 
-/-- **Realization stratum of the spreading** (sorry node): the
+/-- **Automorphy core of the realization stratum, odd residue
+characteristics** (sorry node): the eigensystem `(E, S, Pv)` attached
+to a hardly ramified `p`-adic representation is realized *integrally*
+at every odd prime `ℓ` and embedding `φ : E →+* ℚ̄_ℓ`: there is a
+hardly ramified representation `τ` over a module-finite local
+`ℤ_ℓ`-algebra `A ↪ ℚ̄_ℓ` (with a framing `r` of its base extension)
+which, away from a single finite exceptional set `T` ("the level",
+uniform in `(ℓ, φ)`) and the places over `ℓ`, is unramified with
+Frobenius characteristic polynomials mapping to `(Pv v).map φ`. This
+is Eichler–Shimura/Deligne (the `λ`-adic representations attached to
+the weight-2 eigenform underlying the eigensystem) with the lattice
+argument giving the integral model, plus local–global compatibility
+(Carayol, Saito) for the unramifiedness and charpoly matching, plus
+the weight-2 level-2 analysis showing the model is hardly ramified.
+
+VOCABULARY OBSTRUCTION (2026-07-23, recording why the requested
+"(a) a weight-2 newform-like eigensystem datum matching `Pv`;
+(b) Deligne: the datum yields each `(ℓ, φ)` member" split is NOT
+statable on this pin: the pattern established at
+`exists_numberField_eigensystem`): mathlib has `ModularForm`/`CuspForm`
+but no Hecke operators, no eigenforms, and no Galois representations
+attached to them, so a "newform-like datum" has no carrier type. The
+reference FLT project states the datum as an `ℤ_p`-algebra hom
+`π : HeckeAlgebra D … →ₐ[ℤ_[p]] A` out of a quaternionic Hecke algebra
+(`GaloisRep.IsAutomorphicOfLevel`,
+`FLT/GaloisRepresentation/Automorphic.lean`), but its entire
+`AutomorphicForm/QuaternionAlgebra` tower is absent from both the
+mathlib pin and the vendored subset, so that interface cannot be
+vendored as a leaf statement here.
+
+SOUNDNESS AUDIT (2026-07-23, why the hardly ramified model is fused
+with the member existence instead of derived from it): the tempting
+intermediate interface "any member `m` matching `Pv` outside `T`
+admits a hardly ramified integral model" is FALSE — the same
+Brauer–Nesbitt trap as the rejected alternative in the DECOMPOSITION
+AUDIT on `exists_family_of_eigensystem`: matching Frobenius charpolys
+outside a finite set do not pin the isomorphism class of `m`, and a
+rogue non-semisimple `m` ramified at an auxiliary prime matches the
+charpolys of a hardly ramified representation without being one. So
+the integral model must be produced BY the automorphy leaf, and the
+`(ℓ, φ)` member of `exists_realizations_of_eigensystem` is DERIVED
+from it by the proven base-change/conjugation glue there — i.e. the
+"datum ⇒ member" (Deligne-direction) arrow is the PROVEN half, and
+this leaf is the sole surviving automorphy sorry at odd `ℓ`. -/
+theorem exists_hardlyRamified_integral_realizations
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {E : Type v} [Field E] [NumberField E] (ψ : E →+* AlgebraicClosure ℚ_[p])
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E)
+    (heig : ∀ v ∉ S,
+      (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) = (Pv v).map ψ) :
+    ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ (ℓ : ℕ) (hℓ : Fact ℓ.Prime) (hℓodd : Odd ℓ)
+        (φ : E →+* AlgebraicClosure ℚ_[ℓ]),
+      ∃ (A : Type u) (_ : CommRing A) (_ : TopologicalSpace A)
+        (_ : IsTopologicalRing A) (_ : IsLocalRing A) (_ : Algebra ℤ_[ℓ] A)
+        (_ : Module.Finite ℤ_[ℓ] A) (_ : Module.Free ℤ_[ℓ] A) (_ : IsDomain A)
+        (_ : Algebra A (AlgebraicClosure ℚ_[ℓ]))
+        (_ : IsScalarTower ℤ_[ℓ] A (AlgebraicClosure ℚ_[ℓ]))
+        (_ : IsModuleTopology ℤ_[ℓ] A)
+        (_ : ContinuousSMul A (AlgebraicClosure ℚ_[ℓ]))
+        (_ : Function.Injective (algebraMap A (AlgebraicClosure ℚ_[ℓ])))
+        (W : Type v) (_ : AddCommGroup W) (_ : Module A W) (_ : Module.Finite A W)
+        (_ : Module.Free A W) (hW : Module.rank A W = 2)
+        (τ : GaloisRep ℚ A W)
+        (r : AlgebraicClosure ℚ_[ℓ] ⊗[A] W ≃ₗ[AlgebraicClosure ℚ_[ℓ]]
+          Fin 2 → AlgebraicClosure ℚ_[ℓ]),
+        IsHardlyRamified hℓodd hW τ ∧
+        ∀ v ∉ T, (ℓ : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal →
+          τ.IsUnramifiedAt v ∧
+          (τ.charFrob v).map (algebraMap A (AlgebraicClosure ℚ_[ℓ])) =
+            (Pv v).map φ :=
+  sorry
+
+/-- **Residue characteristic 2 member of the realization stratum**
+(sorry node): the eigensystem `(E, S, Pv)` is realized at the even
+prime as well — for each embedding `φ : E →+* ℚ̄_₂` there is a
+2-dimensional `2`-adic representation, unramified away from a finite
+exceptional set `T` (uniform in `φ`) and the places over `2`, whose
+Frobenius characteristic polynomials there are `(Pv v).map φ`. This is
+Eichler–Shimura/Deligne at `λ | 2` plus local–global compatibility;
+no hardly-ramifiedness demand is made (the notion requires odd residue
+characteristic), so this is the bare member existence — the reason it
+is a separate leaf from
+`exists_hardlyRamified_integral_realizations`, whose conclusion
+packages the member together with its hardly ramified integral
+model. -/
+theorem exists_realizations_at_two
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {E : Type v} [Field E] [NumberField E] (ψ : E →+* AlgebraicClosure ℚ_[p])
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E)
+    (heig : ∀ v ∉ S,
+      (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) = (Pv v).map ψ) :
+    ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ (φ : E →+* AlgebraicClosure ℚ_[2]),
+      ∃ (m : GaloisRep ℚ (AlgebraicClosure ℚ_[2]) (Fin 2 → AlgebraicClosure ℚ_[2])),
+        ∀ v ∉ T, ((2 : ℕ) : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal →
+          m.IsUnramifiedAt v ∧
+          (m.toLocal v (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly =
+            (Pv v).map φ :=
+  sorry
+
+/-- **Realization stratum of the spreading** (PROVEN assembly, see the
+DECOMPOSED note below): the
 eigensystem `(E, S, Pv)` attached to a hardly ramified `p`-adic
 representation is realized at every finite place of every residue
 characteristic: for each prime `ℓ` and each embedding `φ : E →+* ℚ̄_ℓ`
@@ -382,7 +494,30 @@ of the family AT `(p, ψ)` to `ρ` itself is deliberately NOT part of
 this leaf — recovering `ρ` from its charpolys alone is the
 Brauer–Nesbitt-unsound direction (see the DECOMPOSITION AUDIT on
 `exists_family_of_eigensystem`); the assembly there instead places
-`ρ ⊗ ℚ̄_p` at `(p, ψ)` by hand and uses this leaf everywhere else. -/
+`ρ ⊗ ℚ̄_p` at `(p, ψ)` by hand and uses this leaf everywhere else.
+
+DECOMPOSED (2026-07-23) into a PROVEN assembly over two sorried
+leaves, split along residue characteristic:
+
+1. `exists_hardlyRamified_integral_realizations` (sorry node) — at odd
+   `ℓ`, the hardly ramified integral model `τ` over `A ↪ ℚ̄_ℓ` with
+   the unramifiedness and charpoly matching stated at the integral
+   level (with exceptional set `T₁`). The sole automorphy content at
+   odd `ℓ`; see its docstring for the vocabulary obstruction to a
+   further newform-datum split and the Brauer–Nesbitt soundness
+   constraint forcing the model to be produced there.
+2. `exists_realizations_at_two` (sorry node) — the bare member at
+   `ℓ = 2` (with exceptional set `T₂`), where no integral-model demand
+   is made.
+3. The assembly (PROVEN, below) takes `T := T₁ ∪ T₂` and derives the
+   odd-`ℓ` member as `(τ.baseChange ℚ̄_ℓ).conj r` — its
+   unramifiedness by the `baseChange` instance of
+   `GaloisRep.IsUnramifiedAt` plus `isUnramifiedAt_conj`, its
+   charpoly matching by `charFrob_baseChange_conj`, and its
+   integral-model clause by `rfl` — i.e. the Deligne-direction
+   "datum ⇒ member" arrow is proven glue; at `ℓ = 2` (the only
+   non-odd prime) it uses leaf 2's member, the integral-model clause
+   holding vacuously. -/
 theorem exists_realizations_of_eigensystem
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -395,7 +530,7 @@ theorem exists_realizations_of_eigensystem
     (heig : ∀ v ∉ S,
       (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) = (Pv v).map ψ) :
     ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
-      ∀ (ℓ : ℕ) (hℓ : Fact ℓ.Prime) (φ : E →+* AlgebraicClosure ℚ_[ℓ]),
+      ∀ (ℓ : ℕ) (_hℓ : Fact ℓ.Prime) (φ : E →+* AlgebraicClosure ℚ_[ℓ]),
       ∃ (m : GaloisRep ℚ (AlgebraicClosure ℚ_[ℓ]) (Fin 2 → AlgebraicClosure ℚ_[ℓ])),
         (∀ v ∉ T, (ℓ : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal →
           m.IsUnramifiedAt v ∧
@@ -416,8 +551,40 @@ theorem exists_realizations_of_eigensystem
             (r : AlgebraicClosure ℚ_[ℓ] ⊗[A] W ≃ₗ[AlgebraicClosure ℚ_[ℓ]]
               Fin 2 → AlgebraicClosure ℚ_[ℓ]),
             IsHardlyRamified hℓodd hW τ ∧
-            (τ.baseChange (AlgebraicClosure ℚ_[ℓ])).conj r = m :=
-  sorry
+            (τ.baseChange (AlgebraicClosure ℚ_[ℓ])).conj r = m := by
+  classical
+  obtain ⟨T₁, hT₁⟩ :=
+    exists_hardlyRamified_integral_realizations hpodd hv hZinj hRinj hρ ψ S Pv heig
+  obtain ⟨T₂, hT₂⟩ :=
+    exists_realizations_at_two hpodd hv hZinj hRinj hρ ψ S Pv heig
+  refine ⟨T₁ ∪ T₂, ?_⟩
+  intro ℓ hℓ φ
+  by_cases hℓodd : Odd ℓ
+  · -- odd `ℓ`: the member is the framed base extension of the integral model
+    obtain ⟨A, iA1, iA2, iA3, iA4, iA5, iA6, iA7, iA8, iA9, iA10, iA11, iA12,
+      hAinj, W, iW1, iW2, iW3, iW4, hW, τ, r, hτ, hmatch⟩ := hT₁ ℓ hℓ hℓodd φ
+    refine ⟨(τ.baseChange (AlgebraicClosure ℚ_[ℓ])).conj r, ?_, ?_⟩
+    · intro v hvT hvℓ
+      obtain ⟨hunr, hchar⟩ :=
+        hmatch v (fun h => hvT (Finset.mem_union_left _ h)) hvℓ
+      refine ⟨isUnramifiedAt_conj (τ.baseChange (AlgebraicClosure ℚ_[ℓ])) r v, ?_⟩
+      calc (((τ.baseChange (AlgebraicClosure ℚ_[ℓ])).conj r).toLocal v
+            (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly
+          = ((τ.baseChange (AlgebraicClosure ℚ_[ℓ])).conj r).charFrob v := rfl
+        _ = (τ.charFrob v).map (algebraMap A (AlgebraicClosure ℚ_[ℓ])) :=
+            charFrob_baseChange_conj τ r v
+        _ = (Pv v).map φ := hchar
+    · intro hℓodd'
+      refine ⟨A, iA1, iA2, iA3, iA4, iA5, iA6, iA7, iA8, iA9, iA10, iA11, iA12,
+        hAinj, W, iW1, iW2, iW3, iW4, hW, τ, r, hτ, ?_⟩
+      rfl
+  · -- `ℓ = 2`: the bare member from the even-prime leaf
+    have hℓ2 : ℓ = 2 := (hℓ.out.eq_two_or_odd').resolve_right hℓodd
+    subst hℓ2
+    obtain ⟨m, hm⟩ := hT₂ φ
+    refine ⟨m, ?_, fun hℓodd' => absurd hℓodd' (by decide)⟩
+    intro v hvT hvℓ
+    exact hm v (fun h => hvT (Finset.mem_union_right _ h)) hvℓ
 
 /-- **Spreading stratum** (PROVEN assembly, see the DECOMPOSED note
 below): a hardly ramified `p`-adic
