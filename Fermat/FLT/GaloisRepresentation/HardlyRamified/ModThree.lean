@@ -29,6 +29,19 @@ import Mathlib.RingTheory.RootsOfUnity.AlgebraicallyClosed
 -- for the exceptional Serre-elimination cases.
 public import Mathlib.NumberTheory.NumberField.Discriminant.Basic
 public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
+-- Analytic vocabulary of the Poitou–Odlyzko root-discriminant
+-- decomposition (`odlyzko_rootDiscr_totallyComplex`): the
+-- Euler–Mascheroni constant, `Real.sinh`, and the Bochner set
+-- integral against Lebesgue measure appear in the leaf STATEMENTS
+-- (hence public); the numeric bounds on `π`/`exp` and the elementary
+-- interval-integral computations are proof-only.
+public import Mathlib.NumberTheory.Harmonic.EulerMascheroni
+public import Mathlib.Analysis.Complex.Trigonometric
+public import Mathlib.MeasureTheory.Integral.Bochner.Set
+public import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
+import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
+import Mathlib.Analysis.Real.Pi.Bounds
+import Mathlib.Analysis.Complex.ExponentialBounds
 -- `LinearMap.trace`, for the trace-zero interface of the dihedral case.
 public import Mathlib.LinearAlgebra.Trace
 -- The vendored Dickson `SL₂`/`PSL₂` toolkit (elementary generation,
@@ -2112,30 +2125,177 @@ theorem exists_hardlyRamified_number_field {k : Type u} [Finite k] [Field k]
   exists_hardlyRamified_number_field_of_card V hV hρ b e u hu
     (card_matrixRange_ge_of_exceptional V hV hρ b e u hu π hπ hcase)
 
-/-- **The Odlyzko discriminant bound** (sorry node — the analytic
-input of the Serre/Tate elimination, stated 2026-07-22): a totally
-complex number field of degree `n ≥ 48` has root discriminant
-strictly greater than `2^{2/3}·3^{3/2} = 314928^{1/6} = 8.2497…`,
-stated integrally as `314928^n < |d_K|⁶`.
+/-- **The Fejér–Poitou test function** (introduced 2026-07-23 for the
+decomposition of `odlyzko_rootDiscr_totallyComplex`): the triangular
+Fejér kernel `x ↦ max (1 - |x|/6) 0` of half-width `6`.  It is even,
+nonnegative, satisfies `f 0 = 1`, has compact support `[-6, 6]`,
+integral `3` over `(0, ∞)`, and nonnegative Fourier transform
+`t ↦ 6·(sin (3t)/(3t))²` — exactly the admissibility conditions of
+Poitou's unconditional explicit-formula inequality (G. Poitou, *Sur
+les petits discriminants*, Sém. Delange–Pisot–Poitou 18 (1976/77),
+exp. 6, inequality (8) and Proposition 5, p. 6-08). -/
+noncomputable def odlyzkoTestFn (x : ℝ) : ℝ := max (1 - |x| / 6) 0
+
+/-- **Poitou's unconditional explicit-formula inequality at the Fejér
+test function** (sorry node — THE analytic input of the Serre/Tate
+elimination, stated 2026-07-23): for a totally complex number field
+`K` of degree `n`,
+
+`n·(γ + log 4π − ∫₀^∞ (1 − f x)/sinh x dx) − 4·∫₀^∞ f ≤ log |d_K|`
+
+where `f = odlyzkoTestFn` and `γ` is the Euler–Mascheroni constant.
+This is inequality (8) of G. Poitou, *Sur les petits discriminants*,
+Sém. Delange–Pisot–Poitou 18 (1976/77), exp. 6 (Proposition 5,
+p. 6-08), specialized to `r₁ = 0` (totally complex), with the
+everywhere-nonnegative prime-ideal sum
+`(4/n)·Σ_{𝔭,m} log N𝔭 · f(m log N𝔭)/(1 + N𝔭^m)` dropped — legitimate
+since `odlyzkoTestFn ≥ 0`.  The admissibility conditions of
+Proposition 5 hold for `odlyzkoTestFn`: `f 0 = 1`, `∫₀^∞ f` converges
+(compact support), `f/cosh(x/2)` and `(1 − f x)/x` are of bounded
+variation, and the Fourier transform `t ↦ 6·(sin (3t)/(3t))²` is
+nonnegative (Fejér).  The eventual proof must formalize Weil's
+explicit formula for the Dedekind zeta function (functional equation
++ Hadamard product; Poitou §1, Propositions 1–3 and the Théorème
+(A. Weil) there); note the official FLT project takes the analogous
+statement as a standing AXIOM (`FLT.Assumptions.Odlyzko`, tracking
+issue #458) — here it must be proven.  Numerically the left side at
+`n = 48` is `log (11.56…ⁿ/e¹²)`, far above the needed
+`log 8.25ⁿ`. -/
+theorem poitou_explicit_formula_bound (K : Type*) [Field K] [NumberField K]
+    (htc : NumberField.IsTotallyComplex K) :
+    (Module.finrank ℚ K : ℝ) *
+        (Real.eulerMascheroniConstant + Real.log (4 * Real.pi) -
+          ∫ x in Set.Ioi (0 : ℝ), (1 - odlyzkoTestFn x) / Real.sinh x) -
+      4 * ∫ x in Set.Ioi (0 : ℝ), odlyzkoTestFn x ≤
+      Real.log |(NumberField.discr K : ℝ)| :=
+  sorry
+
+/-- **Numeric bound on the archimedean integral of the Fejér–Poitou
+decomposition** (sorry node, elementary real analysis, stated
+2026-07-23): `∫₀^∞ (1 − odlyzkoTestFn x)/sinh x dx ≤ 5/8`.  The true
+value is `0.4104…`, so the bound is generous.  Elementary proof
+route: the integrand equals `min (x/6) 1 / sinh x`; bound it by `1/6`
+on `[0, 1]` (via `x ≤ sinh x`), by `(x/6)·2e^{-x}/(1 − e^{-2})` on
+`[1, 2]`, by `(x/6)·2e^{-x}/(1 − e^{-4})` on `[2, 6]`, and by
+`2e^{-x}/(1 − e^{-4})` on `[6, ∞)`; the resulting elementary
+integrals sum to `< 0.44`. -/
+theorem integral_one_sub_odlyzkoTestFn_div_sinh_le :
+    (∫ x in Set.Ioi (0 : ℝ), (1 - odlyzkoTestFn x) / Real.sinh x) ≤ 5 / 8 :=
+  sorry
+
+/-- **The integral of the Fejér–Poitou test function** (PROVEN
+2026-07-23): `∫₀^∞ odlyzkoTestFn = 3` (stated as `≤ 3`, which is what
+the assembly consumes): on `(0, 6]` the function is `1 − x/6` with
+integral `6 − 3 = 3`, and it vanishes beyond `6`. -/
+theorem integral_odlyzkoTestFn_le :
+    (∫ x in Set.Ioi (0 : ℝ), odlyzkoTestFn x) ≤ 3 := by
+  have hcongr : ∀ x ∈ Set.Ioi (0 : ℝ),
+      odlyzkoTestFn x = (Set.Ioc (0 : ℝ) 6).indicator (fun y => 1 - y / 6) x := by
+    intro x hx
+    simp only [Set.mem_Ioi] at hx
+    simp only [odlyzkoTestFn, abs_of_pos hx]
+    rcases le_or_gt x 6 with h6 | h6
+    · rw [Set.indicator_of_mem (Set.mem_Ioc.mpr ⟨hx, h6⟩)]
+      exact max_eq_left (by linarith)
+    · rw [Set.indicator_of_notMem
+        (by simp only [Set.mem_Ioc, not_and, not_le]; exact fun _ => h6)]
+      exact max_eq_right (by linarith)
+  rw [MeasureTheory.setIntegral_congr_fun measurableSet_Ioi hcongr,
+    MeasureTheory.setIntegral_indicator measurableSet_Ioc,
+    Set.inter_eq_self_of_subset_right Set.Ioc_subset_Ioi_self,
+    ← intervalIntegral.integral_of_le (by norm_num : (0 : ℝ) ≤ 6),
+    intervalIntegral.integral_sub intervalIntegrable_const
+      (intervalIntegral.intervalIntegrable_id.div_const 6),
+    intervalIntegral.integral_div, integral_id,
+    intervalIntegral.integral_const]
+  norm_num
+
+/-- **The Odlyzko discriminant bound** (DECOMPOSED 2026-07-23 into
+the explicit-formula sorry node `poitou_explicit_formula_bound`, the
+elementary numeric sorry node
+`integral_one_sub_odlyzkoTestFn_div_sinh_le`, and the PROVEN
+`integral_odlyzkoTestFn_le`; the assembly below is proven): a totally
+complex number field of degree `n ≥ 48` has root discriminant at
+least `33/4 = 8.25 > 314928^{1/6} = 8.2497…`, stated integrally as
+`33^n ≤ 4^n·|d_K|`.
 
 This is Odlyzko's unconditional discriminant bound (A. M. Odlyzko,
 *Lower bounds for discriminants of number fields*, Acta Arith. 29
-(1976); tables in *Bounds for discriminants and related estimates for
-class numbers, regulators and zeros of zeta functions: a survey of
-recent results*, Sém. Théor. Nombres Bordeaux 2 (1990), 119–141): for
-totally complex fields the unconditional lower bound on the root
-discriminant is increasing in the degree, exceeds `10.3` at degree
-`48`, and tends to `4πe^γ = 22.38…`; only the (weaker) threshold
-`> 314928^{1/6} = 8.2497…` at every degree `≥ 48` is asserted here.
+(1976); G. Poitou, *Sur les petits discriminants*, Sém.
+Delange–Pisot–Poitou 18 (1976/77), exp. 6, whose table p. 6-17 gives
+`13.77` at degree `48`; the asymptote is `4πe^γ = 22.38…`).
 (Minkowski's bound alone, asymptotically `πe²/4 = 5.803…`, does NOT
-suffice for this statement — the eventual proof must formalize an
-explicit-formula bound of Odlyzko/Poitou type.) -/
+suffice for this statement, and the plain Stark-lemma bound tops out
+near `7` at degree 48 — hence the explicit-formula leaf.)  The
+assembly: with `γ > 1/2` (mathlib), `J ≤ 5/8` and `C ≤ 3` (the two
+integral leaves), the explicit-formula leaf gives
+`log |d_K| ≥ n(γ + log 4π − 5/8) − 12 ≥ n(log 4π − 1/8) − 12`, and
+`log 4π − 1/8 − log (33/4) = log (16π/33) − 1/8 ≥ 3/8 − 1/8 = 1/4`
+(via `e^{3/8} < 1.46` from `e³ < 1.46⁸` and `33·1.46 < 16·3.14 <
+16π`), so `log |d_K| − n·log (33/4) ≥ n/4 − 12 ≥ 0` for `n ≥ 48`. -/
 theorem odlyzko_rootDiscr_totallyComplex (K : Type*) [Field K] [NumberField K]
     (htc : NumberField.IsTotallyComplex K)
     (hdeg : 48 ≤ Module.finrank ℚ K) :
     (33 : ℤ) ^ Module.finrank ℚ K ≤
-      4 ^ Module.finrank ℚ K * |NumberField.discr K| :=
-  sorry
+      4 ^ Module.finrank ℚ K * |NumberField.discr K| := by
+  set n := Module.finrank ℚ K with hn
+  have hA := poitou_explicit_formula_bound K htc
+  have hB := integral_one_sub_odlyzkoTestFn_div_sinh_le
+  have hC := integral_odlyzkoTestFn_le
+  have hγ : (1 : ℝ) / 2 < Real.eulerMascheroniConstant :=
+    Real.one_half_lt_eulerMascheroniConstant
+  -- `e^{3/8} < 1.46`, via eighth powers: `e³ < 2.7182818286³ < 1.46⁸`
+  have hexp : Real.exp (3 / 8) < 1.46 := by
+    refine lt_of_pow_lt_pow_left₀ 8 (by norm_num) ?_
+    have h8 : Real.exp (3 / 8) ^ (8 : ℕ) = Real.exp 3 := by
+      rw [← Real.exp_nat_mul]; norm_num
+    have h3 : Real.exp 3 = Real.exp 1 ^ (3 : ℕ) := by
+      rw [← Real.exp_nat_mul]; norm_num
+    calc Real.exp (3 / 8) ^ (8 : ℕ) = Real.exp 1 ^ (3 : ℕ) := by rw [h8, h3]
+      _ < 2.7182818286 ^ (3 : ℕ) :=
+        pow_lt_pow_left₀ Real.exp_one_lt_d9 (Real.exp_pos 1).le (by norm_num)
+      _ < 1.46 ^ (8 : ℕ) := by norm_num
+  -- the per-degree margin: `3/8 ≤ log (16π/33)`
+  have hmargin : (3 : ℝ) / 8 ≤ Real.log (16 * Real.pi / 33) := by
+    rw [Real.le_log_iff_exp_le (by positivity)]
+    have h146 : (1.46 : ℝ) ≤ 16 * Real.pi / 33 := by
+      have hpi : (3.14 : ℝ) < Real.pi := Real.pi_gt_d2
+      linarith
+    linarith [hexp]
+  -- the logarithmic form of the goal
+  have key : (n : ℝ) * Real.log (33 / 4) ≤
+      Real.log |(NumberField.discr K : ℝ)| := by
+    have hn48 : (48 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hdeg
+    have hn0 : (0 : ℝ) ≤ (n : ℝ) := by linarith
+    have hJ' : (0 : ℝ) ≤ (n : ℝ) *
+        (5 / 8 - ∫ x in Set.Ioi (0 : ℝ), (1 - odlyzkoTestFn x) / Real.sinh x) :=
+      mul_nonneg hn0 (by linarith [hB])
+    have hγ' : (0 : ℝ) ≤ (n : ℝ) * (Real.eulerMascheroniConstant - 1 / 2) :=
+      mul_nonneg hn0 (by linarith [hγ])
+    have hM' : (0 : ℝ) ≤ (n : ℝ) * (Real.log (16 * Real.pi / 33) - 3 / 8) :=
+      mul_nonneg hn0 (by linarith [hmargin])
+    have hsplit : (n : ℝ) * Real.log (16 * Real.pi / 33) =
+        (n : ℝ) * Real.log (4 * Real.pi) - (n : ℝ) * Real.log (33 / 4) := by
+      rw [show (16 * Real.pi / 33 : ℝ) = (4 * Real.pi) / (33 / 4) by ring,
+        Real.log_div (by positivity) (by norm_num)]
+      ring
+    nlinarith [hA, hC, hn48, hJ', hγ', hM', hsplit]
+  -- exponentiate and cast back to `ℤ`
+  have hD0 : (0 : ℝ) < |(NumberField.discr K : ℝ)| := by
+    rw [abs_pos, Int.cast_ne_zero]
+    exact NumberField.discr_ne_zero K
+  have hpow : ((33 : ℝ) / 4) ^ n ≤ |(NumberField.discr K : ℝ)| := by
+    have h1 : Real.log (((33 : ℝ) / 4) ^ n) ≤
+        Real.log |(NumberField.discr K : ℝ)| := by
+      rw [Real.log_pow]; exact key
+    have h2 := Real.exp_le_exp.mpr h1
+    rwa [Real.exp_log (by positivity), Real.exp_log hD0] at h2
+  have hfin : (33 : ℝ) ^ n ≤ (4 : ℝ) ^ n * |(NumberField.discr K : ℝ)| := by
+    calc (33 : ℝ) ^ n = (4 : ℝ) ^ n * ((33 : ℝ) / 4) ^ n := by
+          rw [← mul_pow]; norm_num
+      _ ≤ (4 : ℝ) ^ n * |(NumberField.discr K : ℝ)| :=
+        mul_le_mul_of_nonneg_left hpow (by positivity)
+  exact_mod_cast hfin
 
 /-- **The Odlyzko discriminant bound, sixth-power form** (DECOMPOSED
 2026-07-23 into the root-discriminant sorry node
