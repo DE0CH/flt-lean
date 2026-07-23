@@ -38,14 +38,20 @@ here. This file provides:
   pairwise linearly disjoint prime cyclotomic fields — no ramification
   theory). The infinitude statement
   `infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow` is PROVEN
-  from the SINGLE remaining sorry leaf of this module,
-  `exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_map_zeta_eq_pow`,
-  the analytic core in Dirichlet-density form: unboundedness as
-  `s → 1⁺` of the Dirichlet sum over the degree-one primes of a number
-  field in a prescribed cyclotomic congruence class (Dirichlet's
-  theorem over an arbitrary number-field base; see its docstring for
-  the intended Deuring-route proof and the exact state of the mathlib
-  pin).
+  from the Dirichlet-density divergence statement
+  `exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_map_zeta_eq_pow`
+  (unboundedness as `s → 1⁺` of the Dirichlet sum over the degree-one
+  primes of a number field in a prescribed cyclotomic congruence
+  class — Dirichlet's theorem over an arbitrary number-field base),
+  itself PROVEN by Deuring's-route bookkeeping from the TWO remaining
+  sorry leaves of this module:
+  `exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne` (the
+  Dedekind-zeta half: the full degree-one prime sum diverges as
+  `s → 1⁺`) and
+  `tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add` (the
+  `L`-function half: the congruence class of `τ` carries the full sum
+  up to `ℓ ×` and a bounded error); see their docstrings for the
+  intended proofs and the exact state of the mathlib pin.
 
 The remaining pieces of the decomposition (Brauer–Nesbitt for
 2-dimensional mod-`ℓ` representations, the mod-`ℓ` cyclotomic character as
@@ -829,8 +835,80 @@ theorem exists_prime_dvd_sub_one_and_irreducible_cyclotomic
   exact (IsScalarTower.toAlgHom ℚ E W₂).injective h4
 
 open IsDedekindDomain in
+/-- **Divergence of the degree-one prime sum of a number field** (sorry
+node) — the Dedekind-zeta half of Deuring's route: for a number field
+`F` and any excluded residue characteristic `ℓ`, the `ℝ≥0∞`-valued sum
+`∑ #(𝓞 F / P) ^ (-s)` over the finite places `P` of `F` with prime
+residue cardinality (degree one over `ℚ`) different from `ℓ` exceeds
+any `C ≠ ⊤` for some `s > 1`. No Galois theory, no congruence classes:
+this is the statement that `log ζ_F(s) → ∞` as `s → 1⁺` is carried by
+the degree-one primes.
+
+Intended proof: `ζ_F(s) → ∞` as `s → 1⁺` from the simple pole with
+positive residue (`NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT`,
+`NumberField.dedekindZeta_residue_pos`); the Euler-product inequality
+`∑_{N I ≤ x} N I ^ (-s) ≤ ∏_{N P ≤ x} (1 - N P ^ (-s))⁻¹` (unique
+factorization of ideals, a `Finset`-level estimate — the full Euler
+product is NOT needed) shows a bounded prime sum would bound `ζ_F`
+near `1`; primes of residue degree `≥ 2` contribute `≤ [F : ℚ] · ζ(2)`
+(at most `[F : ℚ]` primes above each rational prime `p`, each with
+`N P ≥ p ^ 2`), and the finitely many primes above `ℓ` contribute
+boundedly, so the degree-one primes away from `ℓ` must carry the
+divergence. -/
+theorem exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne
+    (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) (C : ℝ≥0∞) (hC : C ≠ ⊤) :
+    ∃ s : ℝ, 1 < s ∧ C < ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) :=
+  sorry
+
+open IsDedekindDomain in
+/-- **Equidistribution of degree-one primes over the cyclotomic
+congruence classes** (sorry node) — the `L`-function half of Deuring's
+route: for a cyclotomic extension `E = F(ζ_ℓ)` (`ℓ` prime) and ANY
+`τ ∈ Gal(E/F)`, the full degree-one prime sum away from `ℓ` is
+carried, up to an error bounded uniformly in `s > 1`, by `ℓ` times the
+sub-sum over the congruence class of `τ` (the places with
+`τ ζ = ζ ^ #(𝓞 F / P)`). Both sums are `ℝ≥0∞`-valued, so no
+summability side conditions appear, and the bounded error is additive
+— no `ENNReal` subtraction.
+
+Intended proof: with `H = Gal(E/F) ⊆ (ZMod ℓ)ˣ` (via the action on
+`ζ`) and `a` the exponent of `τ`, every degree-one `P` with
+`#(𝓞 F / P) ≠ ℓ` has `#(𝓞 F / P) mod ℓ ∈ H` (a Frobenius at any prime
+`Q` of `𝓞 E` above `P` exists by `IsArithFrobAt.exists_of_isInvariant`
+and acts on `ζ` by `ζ ↦ ζ ^ #(𝓞 F / P)` by
+`AlgHom.IsArithFrobAt.apply_of_pow_eq_one`, as in the proof of
+`infinite_setOf_isArithFrobAt_zpowers`); orthogonality for the
+Dirichlet characters `χ mod ℓ` then gives `(ℓ - 1) · ∑_{class of a} =
+∑_χ χ(a)⁻¹ S_χ(s)` with `S_χ(s) = ∑_P χ(N P) N P ^ (-s)`; the
+`m = (ℓ - 1)/|H| ≥ 1` characters trivial on `H` each contribute
+`S_χ = S_1` exactly (and `χ(a) = 1` since `a ∈ H`), while each `χ`
+nontrivial on `H` has `S_χ` bounded as `s → 1⁺` — the `L(1, χ) ≠ 0`
+content, classically from the factorization `ζ_E(s) = ∏_ψ L(s, ψ)`
+over the characters `ψ` of `H` (up to finitely many Euler factors) and
+the SIMPLE pole of `ζ_E` at `s = 1` (for `ψ` nontrivial the partial
+sums of the coefficients of `L(s, ψ)` need a power-saving error term —
+Hecke's ray-class lattice-point count, Lang ANT VI §3 — to make sense
+of `L(1, ψ)`; this is the deepest missing mathlib ingredient). Hence
+`S_1 ≤ (ℓ/m) · ∑_{class} + bounded ≤ ℓ · ∑_{class} + bounded`. -/
+theorem tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (τ : E ≃ₐ[F] E) :
+    ∃ B : ℝ≥0∞, B ≠ ⊤ ∧ ∀ s : ℝ, 1 < s →
+      (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) ≤
+      (ℓ : ℝ≥0∞) * (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          τ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) + B :=
+  sorry
+
+open IsDedekindDomain in
 /-- **Divergence of the Dirichlet sum over a cyclotomic congruence class
-of degree-one primes** (sorry node) — the analytic core of the
+of degree-one primes** — the analytic core of the
 Chebotarev density theorem after the full field-crossing reduction, in
 Dirichlet-density form: for a cyclotomic extension `E = F(ζ_ℓ)` of a
 number field `F` (`ℓ` prime) and ANY `τ ∈ Gal(E/F)`, the sum
@@ -845,30 +923,20 @@ consequence the consumer needs. This makes the class infinite
 (`infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow`): a finite
 class has sum bounded by its cardinality.
 
-Intended proof (Deuring's route, real `s > 1` only, no analytic
-continuation): with `H = Gal(E/F) ⊆ (ZMod ℓ)ˣ` (via the action on `ζ`)
-and `a` the exponent of `τ`, orthogonality for the characters `ψ` of `H`
-gives `|H| · ∑_{N P ≡ a} N P ^ (-s) = ∑_ψ ψ(a)⁻¹ ∑_P ψ(N P) N P ^ (-s)`
-(unramified degree-one `P`; `N P mod ℓ ∈ H` is Frobenius existence).
-The trivial-`ψ` term diverges like `log ζ_F(s) → ∞` (Euler product for
-the Dedekind zeta function of `F` plus its simple pole at `s = 1`,
-`NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT`, with positive
-residue `NumberField.dedekindZeta_residue_pos`); each nontrivial-`ψ`
-term stays bounded as `s → 1⁺` — the `L(1, ψ) ≠ 0` content, classically
-from the factorization `ζ_E(s) = ∏_ψ L(s, ψ)` (up to finitely many
-Euler factors) and the SIMPLE pole of `ζ_E` at `s = 1`. State of the
-mathlib pin (re-verified 2026-07-23): `Mathlib.NumberTheory.LSeries.PrimesInAP`
-has Dirichlet's theorem over `ℚ` (`Nat.setOf_prime_and_eq_mod_infinite`),
-i.e. the `F = ℚ` case; `Mathlib.NumberTheory.NumberField.DedekindZeta`
-has the Dedekind zeta function and its residue at `s = 1`;
-`Mathlib.NumberTheory.NumberField.Ideal.Asymptotics` has ideal counting
-per class-group class as a plain limit (no error term). Missing: the
-Euler product of `dedekindZeta` over prime ideals, the character
-`L`-series over `F` and their factorization of `ζ_E`, and the
-boundedness of the nontrivial character sums (the latter needs either
-ray-class ideal counting with a power-saving error term — Hecke's
-lattice-point argument, Lang ANT VI §3 — or another route to
-`L(1, ψ) ≠ 0`). -/
+DERIVED (Deuring's route, real `s > 1` only, no analytic continuation)
+from the two strictly shallower sorried leaves above:
+
+* `exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne` (the
+  Dedekind-zeta half): the FULL degree-one prime sum away from `ℓ`
+  is unbounded as `s → 1⁺`;
+* `tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add` (the
+  `L`-function half): the full sum is at most `ℓ` times the sub-sum
+  over the congruence class of `τ` plus a uniformly bounded error.
+
+The assembly is pure `ℝ≥0∞` bookkeeping: pick `s > 1` with the full
+sum exceeding `ℓ · C + B`; were the class sum `≤ C`, the comparison
+would bound the full sum by `ℓ · C + B` — contradiction, with no
+`ENNReal` subtraction anywhere. -/
 theorem exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_map_zeta_eq_pow
     {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
     [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
@@ -877,8 +945,19 @@ theorem exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_map_zeta_eq_pow
     ∃ s : ℝ, 1 < s ∧ C < ∑' P : {P : HeightOneSpectrum (𝓞 F) //
         (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
         τ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)},
-      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) :=
-  sorry
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) := by
+  obtain ⟨B, hBne, hB⟩ :=
+    tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add hℓ hζ τ
+  obtain ⟨s, hs1, hsgt⟩ :=
+    exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne F ℓ
+      ((ℓ : ℝ≥0∞) * C + B)
+      (ENNReal.add_ne_top.mpr ⟨ENNReal.mul_ne_top (ENNReal.natCast_ne_top ℓ) hC, hBne⟩)
+  refine ⟨s, hs1, ?_⟩
+  by_contra hcon
+  rw [not_lt] at hcon
+  refine absurd hsgt (not_lt.mpr ?_)
+  refine (hB s hs1).trans ?_
+  gcongr
 
 open IsDedekindDomain in
 /-- **Degree-one primes in cyclotomic Frobenius classes** — for a
