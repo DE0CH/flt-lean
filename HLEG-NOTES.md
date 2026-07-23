@@ -320,6 +320,32 @@ grind the two `slope` branches separately against `E(S), E(R)` and
 the substituted `E(PS), E(QR)` — this mirrors the verified numeric
 computation exactly).
 
+Relations (1), (3), (5) are PROTOTYPED AND COMPILING (2026-07-23,
+run_code-verified against this mathlib pin, ready to paste into
+`hkey`'s proof — the hypotheses named here are all in scope at the
+`hkey` sorry inside `weilValue_two_torsion_config_eq_one`):
+
+```lean
+-- (1): rw [Affine.addX] at hthird₁.1
+-- (3): from hthird₁ + h2t:
+--   rw [Affine.addY, Affine.negAddY, hthird₁.1] at (hthird₁.2);
+--   apply congrArg (W.negY xP); rw [W.negY_negY, h2t]
+-- (5): by_cases hx : xPS = xS
+--   tangent: rw [W.negY_negY] at hPne; yPS ≠ yS;
+--     (Y_eq_of_X_eq hPS.left hS.left rfl).resolve_left; rw [hx,
+--     sub_self, mul_zero, zero_add, hy']
+--   chord: rw [slope_of_X_ne hx]; field_simp [sub_ne_zero.mpr hx]; ring
+```
+
+An additional certificate-free route for the final grind: the **norm
+factorization** `ℓ₁(T)·ℓ₁(⊖T) = −(x_T−x_PS)(x_T−x_S)(x_T−x_P)` for
+any `T` on the curve — provable from (1)+(3)+(5)+`E(T)` alone
+coefficient-wise (monic cubic vanishing at `x_P ≠ x_S` (= `hxSP`)
+with root sum pinned by (1); Vieta pins the third root to `x_PS`) —
+turns each squared line value into a norm times a fiber ratio; this
+is the direction to try if the Groebner certificate over
+13 variables stays out of reach.
+
 Verified numerically on 1500 random on-curve
 configurations over seven prime fields (q = 2003 … 10⁶+3), value
 always exactly 1, chord case; AND on 380 degenerate configurations
