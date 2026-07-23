@@ -10,7 +10,7 @@
 - [Shared-terminal environment](shared-terminal-environment.md) — no docker/sudo, .venv, .env key, sources/, agent2 tmux pattern (since 2026-07-22)
 - [Stop-hook restart pattern](stop-hook-tmux-restart.md) — hook disabled as `_DISABLED_Stop`; re-enable only via detached kill→rename→continue script
 - [Orchestrator role in parallel mode](flt-orchestrator-role.md) — Deyao 2026-07-22: driver dispatches/integrates/commits only; all hands-on work goes to agents
-- [Progress snapshot via worktree](flt-progress-snapshot-worktree.md) — Deyao 2026-07-22: regenerate PROGRESS.md from committed state in a secondary worktree at every agent-completion/milestone
+- [Bookkeeping cadence: one combined agent](flt-bookkeeping-cadence.md) — Deyao 2026-07-23: floating check + PROGRESS.md regen are ONE periodic dispatched agent; its runtime is the period; relaunch on completion
 - [Stop hook is a nudge](flt-stop-hook-is-a-nudge.md) — Deyao 2026-07-22: automatic back-to-work prompt, not a safety net; fail open, best-effort
 - [Report blocker class](flt-report-blocker-class.md) — Deyao 2026-07-22: every wait/blockage report must name the blocker AND its class: trusted tool (fine) vs Claude automation (defect)
 - [Fleet dispatch: 13-worktree protocol](flt-fleet-13-worktree-protocol.md) — Deyao 2026-07-23: fixed pool flt-lean-1..13, ff-only before dispatch, merge-and-leave-alone on completion, no .lake seeding, no server/file lifecycle management
