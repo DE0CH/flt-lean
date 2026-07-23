@@ -101,7 +101,7 @@ import Mathlib.Topology.Baire.LocallyCompactRegular
 import Mathlib.RingTheory.Ideal.GoingUp
 public import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
 public import Mathlib.RingTheory.Ideal.Norm.AbsNorm
-import Mathlib.NumberTheory.NumberField.DedekindZeta
+public import Mathlib.NumberTheory.NumberField.DedekindZeta
 public import Mathlib.NumberTheory.DirichletCharacter.Orthogonality
 public import Mathlib.NumberTheory.DirichletCharacter.Bounds
 
@@ -943,6 +943,24 @@ theorem tsum_rpow_neg_absNorm_le_mul_tsum_finset_prod
         ∑' T : Finset (HeightOneSpectrum (𝓞 F)),
           ∏ P ∈ T, (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s) :=
   sorry
+
+/-- The `n`-th term of the Dedekind-zeta `L`-series of `F` at real
+`s > 0` is the real number `#{I : N(I) = n} · n ^ (-s)` (both sides
+vanish at `n = 0`). -/
+theorem term_natCard_absNorm_eq (F : Type*) [Field F] [NumberField F]
+    {s : ℝ} (hs : 0 < s) (n : ℕ) :
+    LSeries.term
+        (fun n => (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℂ))
+        s n =
+      (((Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) *
+        (n : ℝ) ^ (-s) : ℝ) : ℂ) := by
+  rcases eq_or_ne n 0 with rfl | hn
+  · simp [Real.zero_rpow (neg_ne_zero.mpr hs.ne')]
+  · rw [LSeries.term_of_ne_zero hn, Real.rpow_neg (Nat.cast_nonneg n),
+      Complex.ofReal_mul, Complex.ofReal_inv,
+      Complex.ofReal_cpow (Nat.cast_nonneg n)]
+    push_cast
+    rw [div_eq_mul_inv]
 
 /-- Finiteness of the full ideal sum `∑_{I ≠ 0} N(I)^{-s}` for `s > 1`
 (sorry leaf). Intended proof: fibre the sum over `n = N(I)`
