@@ -1821,18 +1821,22 @@ theorem galoisEquivariantEval_surjective [Finite A] [IsSepClosure K₀ Ω] :
   exact galoisEquivariantEval_of_ker_eq L ρ φ a₀
     (hmax.eq_of_le hprime.ne_top ha₀).symm
 
-/-- **The diagonal Galois action on `A × A`** (glue for the Hopf package of the
+/-- **The product Galois action on `B × C`** (glue for the Hopf package of the
 equivariant-functions algebra: its tensor square is identified with the
-equivariant functions on `A × A` carrying this action). -/
-def galoisProdAction : (L ≃ₐ[K₀] L) →* AddMonoid.End (A × A) where
-  toFun g := AddMonoidHom.prodMap (ρ g) (ρ g)
+equivariant functions on `A × A` carrying the diagonal instance of this
+action; the mixed instances appear in the coassociativity diagrams). -/
+def galoisProdAction {B C : Type*} [AddCommGroup B] [AddCommGroup C]
+    (ρB : (L ≃ₐ[K₀] L) →* AddMonoid.End B)
+    (ρC : (L ≃ₐ[K₀] L) →* AddMonoid.End C) :
+    (L ≃ₐ[K₀] L) →* AddMonoid.End (B × C) where
+  toFun g := AddMonoidHom.prodMap (ρB g) (ρC g)
   map_one' := AddMonoidHom.ext fun x => by
-    show ((ρ 1) x.1, (ρ 1) x.2) = x
-    rw [map_one]
+    show ((ρB 1) x.1, (ρC 1) x.2) = x
+    rw [map_one, map_one]
     rfl
   map_mul' g₁ g₂ := AddMonoidHom.ext fun x => by
-    show ((ρ (g₁ * g₂)) x.1, (ρ (g₁ * g₂)) x.2) = _
-    rw [map_mul]
+    show ((ρB (g₁ * g₂)) x.1, (ρC (g₁ * g₂)) x.2) = _
+    rw [map_mul, map_mul]
     rfl
 
 /-- **Pullback of equivariant functions along an equivariant map** (glue for
@@ -1857,32 +1861,40 @@ def galoisEquivariantPullback {B C : Type*} [AddCommGroup B] [AddCommGroup C]
   commutes' _ := rfl
 
 /-- **The tensor-comparison homomorphism** (glue for the Hopf package):
-`h₁ ⊗ h₂` acts on `A × A` as `(a, b) ↦ h₁ a * h₂ b`, giving a `K₀`-algebra map
-from the tensor square of the equivariant-functions algebra to the equivariant
-functions on `A × A`. Its bijectivity is the sorried Galois-descent core
-`galoisEquivariantTensorHom_bijective`. -/
-noncomputable def galoisEquivariantTensorHom :
-    (galoisEquivariantAlgebra L ρ) ⊗[K₀] (galoisEquivariantAlgebra L ρ) →ₐ[K₀]
-      galoisEquivariantAlgebra L (galoisProdAction L ρ) :=
+`h₁ ⊗ h₂` acts on `B × C` as `(b, c) ↦ h₁ b * h₂ c`, giving a `K₀`-algebra map
+from the tensor product of two equivariant-functions algebras to the
+equivariant functions on `B × C`. Its bijectivity is the sorried
+Galois-descent core `galoisEquivariantTensorHom_bijective`; the Hopf package
+uses the diagonal instance `B = C = A` and (for the coassociativity diagrams)
+the mixed instances with `A × A`. -/
+noncomputable def galoisEquivariantTensorHom {B C : Type*}
+    [AddCommGroup B] [AddCommGroup C]
+    (ρB : (L ≃ₐ[K₀] L) →* AddMonoid.End B)
+    (ρC : (L ≃ₐ[K₀] L) →* AddMonoid.End C) :
+    (galoisEquivariantAlgebra L ρB) ⊗[K₀] (galoisEquivariantAlgebra L ρC)
+      →ₐ[K₀] galoisEquivariantAlgebra L (galoisProdAction L ρB ρC) :=
   Algebra.TensorProduct.productMap
-    (galoisEquivariantPullback L (galoisProdAction L ρ) ρ
-      (AddMonoidHom.fst A A) fun _ _ => rfl)
-    (galoisEquivariantPullback L (galoisProdAction L ρ) ρ
-      (AddMonoidHom.snd A A) fun _ _ => rfl)
+    (galoisEquivariantPullback L (galoisProdAction L ρB ρC) ρB
+      (AddMonoidHom.fst B C) fun _ _ => rfl)
+    (galoisEquivariantPullback L (galoisProdAction L ρB ρC) ρC
+      (AddMonoidHom.snd B C) fun _ _ => rfl)
 
-/-- **Galois descent for the tensor square** (sorry node; the descent core of
-the equivariant-functions Hopf package): the tensor-comparison homomorphism is
-bijective. Both sides have `K₀`-dimension `|A|²`: equivariant functions on a
-finite `Gal(L/K₀)`-set `S` have `K₀`-dimension `|S|` — evaluation at orbit
-representatives identifies them with `∏_{orbits} Fix(Stab)`, and
-`dim Fix(Stab O) = [L:K₀]/|Stab O| = |O|` by the fundamental theorem of Galois
-theory — and the map is injective by linear disjointness of the evaluations
-(a nonzero kernel element would give a nontrivial vanishing linear combination
-of the evaluation characters of the left factor with coefficients evaluations
-of the right factor, contradicting Dedekind's independence of characters over
-`L`). -/
-theorem galoisEquivariantTensorHom_bijective [Finite A] :
-    Function.Bijective (galoisEquivariantTensorHom L ρ) :=
+/-- **Galois descent for the tensor product of equivariant-functions algebras**
+(sorry node; the descent core of the equivariant-functions Hopf package): the
+tensor-comparison homomorphism is bijective. Both sides have `K₀`-dimension
+`|B| ⬝ |C|`: equivariant functions on a finite `Gal(L/K₀)`-set `S` have
+`K₀`-dimension `|S|` — evaluation at orbit representatives identifies them
+with `∏_{orbits} Fix(Stab)`, and `dim Fix(Stab O) = [L:K₀]/|Stab O| = |O|` by
+the fundamental theorem of Galois theory — and the map is injective by linear
+disjointness of the evaluations (a nonzero kernel element would give a
+nontrivial vanishing linear combination of the evaluation characters of the
+left factor with coefficients evaluations of the right factor, contradicting
+Dedekind's independence of characters over `L`). -/
+theorem galoisEquivariantTensorHom_bijective {B C : Type*}
+    [AddCommGroup B] [AddCommGroup C] [Finite B] [Finite C]
+    (ρB : (L ≃ₐ[K₀] L) →* AddMonoid.End B)
+    (ρC : (L ≃ₐ[K₀] L) →* AddMonoid.End C) :
+    Function.Bijective (galoisEquivariantTensorHom L ρB ρC) :=
   sorry
 
 /-- **A structureless copy of the equivariant-functions algebra**, used as the
@@ -1916,7 +1928,7 @@ the convolution identity is the computation
 `(eval a ⊛ eval b) f = (eval a ⊗ eval b) (Δ f) = f (a + b)` holding by
 construction of `Δ`. -/
 theorem exists_hopfAlgebra_galoisHopfCarrier_of_tensorHom_bijective [Finite A]
-    (hbij : Function.Bijective (galoisEquivariantTensorHom L ρ)) :
+    (hbij : Function.Bijective (galoisEquivariantTensorHom L ρ ρ)) :
     ∃ (_ : CommRing (GaloisHopfCarrier L ρ))
       (_ : HopfAlgebra K₀ (GaloisHopfCarrier L ρ))
       (e : GaloisHopfCarrier L ρ ≃ₐ[K₀] galoisEquivariantAlgebra L ρ),
@@ -1946,7 +1958,7 @@ theorem exists_hopfAlgebra_galoisHopfCarrier [Finite A] :
           WithConv.toConv ((galoisEquivariantEval L ρ b).comp e.toAlgHom) =
         WithConv.toConv ((galoisEquivariantEval L ρ (a + b)).comp e.toAlgHom) :=
   exists_hopfAlgebra_galoisHopfCarrier_of_tensorHom_bijective L ρ
-    (galoisEquivariantTensorHom_bijective L ρ)
+    (galoisEquivariantTensorHom_bijective L ρ ρ)
 
 universe v in
 /-- **Hopf algebras have Hopf-algebra copies in every admissible universe** (PROVEN
