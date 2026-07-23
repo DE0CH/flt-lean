@@ -2,7 +2,8 @@
 .progress_status.lean
 .lean-daemon.sock
 .lean-daemon.log
-.lean-daemon-server.lean
+.lean-daemon-lsp-stderr
+progress-census-input.json
 .env
 .venv/
 sources/

@@ -20,14 +20,14 @@
   "FreyPackage.subquotient_character_unramified": "✅",
   "FreyPackage.inertia_two_unipotent": "✅✅",
   "WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction": "✅✅",
-  "FreyPackage.subquotient_character_unramified_at_p": "❌",
+  "FreyPackage.subquotient_character_unramified_at_p": "✅",
   "FreyPackage.exists_quotient_curve_point": "❌",
   "WeierstrassCurve.exists_point_eq_baseChange_of_fixed": "✅✅",
   "GaloisRepresentation.exists_stable_line_of_not_isIrreducible": "✅✅",
   "FreyPackage.freyCurve_two_torsion_embedding": "✅✅",
   "embedding_assembly": "✅✅",
   "WeierstrassCurve.mazur_torsion_bound": "✅",
-  "WeierstrassCurve.mazur_classification": "❌",
+  "WeierstrassCurve.mazur_classification": "✅",
   "FreyPackage.galoisRep_not_irreducible": "✅",
   "FreyCurve.torsion_isHardlyRamified": "✅",
   "FreyCurve.torsion_det": "✅",
@@ -61,9 +61,9 @@
   "FreyPackage.freyCurve_hasMultiplicativeReduction_at_two": "✅✅",
   "WeierstrassCurve.isTameAtTwo_of_hasMultiplicativeReduction": "✅✅",
   "GaloisRepresentation.not_isIrreducible_of_isHardlyRamified": "✅",
-  "GaloisRepresentation.exists_hardlyRamifiedLift": "❌",
+  "GaloisRepresentation.exists_hardlyRamifiedLift": "✅",
   "GaloisRepresentation.residual_charFrob_eq": "✅",
-  "GaloisRepresentation.IsHardlyRamified.mem_isCompatible": "❌",
+  "GaloisRepresentation.IsHardlyRamified.mem_isCompatible": "✅",
   "GaloisRepresentation.residual_charFrob_eq_of_family": "✅",
   "GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter": "✅",
   "GaloisRepresentation.IsHardlyRamified.mod_three_reducible": "✅",
@@ -71,7 +71,7 @@
   "valued_natCast_adicCompletionIntegers_eq_one": "✅✅",
   "adicArithFrob_rootsOfUnity_pow": "✅✅",
   "cyclotomicCharacter_adicArithFrob": "✅✅",
-  "GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient": "❌",
+  "GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient": "✅",
   "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient": "✅",
   "GaloisRepresentation.IsHardlyRamified.isTameAtTwo_baseChange_residue": "✅✅",
   "GaloisRepresentation.IsHardlyRamified.flat_space_equiv_residue": "✅✅",
@@ -161,8 +161,8 @@
   "GaloisRepresentation.IsHardlyRamified.serre_elimination": "✅",
   "GaloisRepresentation.IsHardlyRamified.serre_elimination_noncyclic": "✅",
   "GaloisRepresentation.IsHardlyRamified.serre_elimination_semidirect": "✅✅",
-  "GaloisRepresentation.IsHardlyRamified.serre_elimination_arith": "❌",
-  "GaloisRepresentation.IsHardlyRamified.exists_line_with_unramified_quotCharacter_at_three": "❌",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_arith": "✅",
+  "GaloisRepresentation.IsHardlyRamified.exists_line_with_unramified_quotCharacter_at_three": "✅",
   "GaloisRepresentation.IsHardlyRamified.quotCharacter_unramified_at_two": "✅✅",
   "GaloisRepresentation.IsHardlyRamified.quotCharacter_inertia_two_ker": "✅✅",
   "GaloisRepresentation.IsHardlyRamified.cyclotomicCharacter_algebraMap_eq_one_of_inertia_two": "✅✅",
@@ -200,18 +200,56 @@
   "isNonarchimedeanLocalField_intermediate": "✅✅",
   "locallyCompactSpace_intermediate": "✅✅",
   "WeilPairing.exists_weilPairing_mu": "❌",
-  "GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj": "❌",
+  "GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj": "✅",
   "WeilPairing.stepR": "✅✅",
   "WeilPairing.recgen": "✅✅",
   "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral": "❌",
-  "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt4": "❌",
-  "GaloisRepresentation.IsHardlyRamified.serre_elimination_sym4": "❌",
-  "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt5": "❌",
-  "GaloisRepresentation.IsHardlyRamified.serre_elimination_psl": "❌",
-  "GaloisRepresentation.IsHardlyRamified.serre_elimination_pgl": "❌",
-  "WeierstrassCurve.torsion_flat_of_good_reduction_of_isUnit": "❌",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt4": "✅",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_sym4": "✅",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt5": "✅",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_psl": "✅",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_pgl": "✅",
+  "WeierstrassCurve.torsion_flat_of_good_reduction_of_isUnit": "✅",
   "WeierstrassCurve.torsion_flat_of_good_reduction_mul": "✅✅",
-  "WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow": "❌"
+  "WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow": "✅",
+  "WeierstrassCurve.kernel_add_abscissa_notMem": "✅✅",
+  "WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq": "✅✅",
+  "WeierstrassCurve.exists_torsion_etale_package_over_fractionField": "✅",
+  "WeierstrassCurve.torsion_flat_of_inertia_fixes_prolong": "❌",
+  "WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow": "❌",
+  "WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow_of_eqChar": "❌",
+  "GaloisRepresentation.IsHardlyRamified.exists_equivariant_defect_coboundary": "✅",
+  "WeierstrassCurve.mazur_point_order": "❌",
+  "WeierstrassCurve.not_full_four_torsion_rat": "✅✅",
+  "WeierstrassCurve.not_two_ten_torsion": "❌",
+  "WeierstrassCurve.not_two_twelve_torsion": "❌",
+  "WeierstrassCurve.exists_etale_line_of_multiplicative_self": "✅",
+  "WeierstrassCurve.exists_etale_line_of_good_of_stable_line": "✅",
+  "GaloisRepresentation.infinite_setOf_isArithFrobAt_zpowers": "❌",
+  "GaloisRepresentation.exists_universal_hardlyRamifiedDeformation": "✅",
+  "GaloisRepresentation.moduleFinite_of_isUniversal": "✅",
+  "GaloisRepresentation.algebraMap_injective_of_isUniversal": "✅",
+  "GaloisRepresentation.IsHardlyRamified.exists_numberField_eigensystem": "✅",
+  "GaloisRepresentation.IsHardlyRamified.exists_family_of_eigensystem": "✅",
+  "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field_of_card": "❌",
+  "GaloisRepresentation.IsHardlyRamified.odlyzko_bound_totallyComplex": "❌",
+  "GaloisRepresentation.IsHardlyRamified.quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified": "❌",
+  "GaloisRepresentation.IsHardlyRamified.exists_line_with_quotCharacter_eq_subCharacter": "❌",
+  "WeierstrassCurve.torsion_inertia_fixes_of_prime_pow_isUnit": "✅✅",
+  "WeierstrassCurve.torsion_flat_of_inertia_fixes": "✅",
+  "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field": "✅",
+  "GaloisRepresentation.infinite_setOf_isArithFrobAt": "✅",
+  "WeierstrassCurve.exists_etale_line_of_split_multiplicative_self": "❌",
+  "WeierstrassCurve.exists_etale_line_of_nonsplit_multiplicative_self": "❌",
+  "WeierstrassCurve.exists_etale_line_or_no_stable_line_of_good": "❌",
+  "GaloisRepresentation.IsHardlyRamified.exists_omega_cocycle_coboundary": "❌",
+  "GaloisRepresentation.IsHardlyRamified.trivial_component_hom_vanishes": "❌",
+  "GaloisRepresentation.exists_isWeaklyUniversal_isTraceGenerated": "❌",
+  "GaloisRepresentation.moduleFinite_of_isWeaklyUniversal_isTraceGenerated": "❌",
+  "GaloisRepresentation.exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated": "❌",
+  "GaloisRepresentation.IsHardlyRamified.exists_finiteDimensional_coeff_field": "❌",
+  "GaloisRepresentation.IsHardlyRamified.exists_realizations_of_eigensystem": "❌",
+  "exists_finiteQuotient_galoisModule_etale_package": "❌"
  },
  "children": {
   "fermatLastTheoremThree": [],
@@ -314,9 +352,11 @@
   ],
   "FreyPackage.subquotient_character_unramified_at_p": [
    "FreyPackage",
-   "WeierstrassCurve.galoisRep",
+   "WeierstrassCurve.exists_etale_line_of_good_of_stable_line",
    "FreyPackage.freyCurve",
+   "WeierstrassCurve.galoisRep",
    "FreyPackage.freyCurve_hasGoodReduction_of_not_dvd",
+   "WeierstrassCurve.exists_etale_line_of_multiplicative_self",
    "TorsionCard.prime_torsion_card",
    "TorsionCard.smul_surjective",
    "FreyPackage.freyCurve_hasMultiplicativeReduction_of_dvd"
@@ -338,7 +378,14 @@
   ],
   "WeierstrassCurve.mazur_classification": [
    "TorsionCard.prime_torsion_card",
-   "TorsionCard.smul_surjective"
+   "TorsionCard.smul_surjective",
+   "WeierstrassCurve.not_full_four_torsion_rat",
+   "WeierstrassCurve.galoisRep",
+   "GaloisRepresentation.toZMod_eq_ringEquivCongr_comp_toZModPow",
+   "WeilPairing.det_galoisRep_eq_cyclotomic",
+   "WeierstrassCurve.not_two_ten_torsion",
+   "WeierstrassCurve.not_two_twelve_torsion",
+   "WeierstrassCurve.mazur_point_order"
   ],
   "FreyPackage.galoisRep_not_irreducible": [
    "FreyPackage",
@@ -530,12 +577,19 @@
    "GaloisRepresentation.exists_hardlyRamifiedLift",
    "GaloisRepresentation.residual_charFrob_eq"
   ],
-  "GaloisRepresentation.exists_hardlyRamifiedLift": [],
+  "GaloisRepresentation.exists_hardlyRamifiedLift": [
+   "GaloisRepresentation.moduleFinite_of_isUniversal",
+   "GaloisRepresentation.exists_universal_hardlyRamifiedDeformation",
+   "GaloisRepresentation.algebraMap_injective_of_isUniversal"
+  ],
   "GaloisRepresentation.residual_charFrob_eq": [
    "GaloisRepresentation.residual_charFrob_eq_of_family",
    "GaloisRepresentation.IsHardlyRamified.mem_isCompatible"
   ],
-  "GaloisRepresentation.IsHardlyRamified.mem_isCompatible": [],
+  "GaloisRepresentation.IsHardlyRamified.mem_isCompatible": [
+   "GaloisRepresentation.IsHardlyRamified.exists_family_of_eigensystem",
+   "GaloisRepresentation.IsHardlyRamified.exists_numberField_eigensystem"
+  ],
   "GaloisRepresentation.residual_charFrob_eq_of_family": [
    "GaloisRepresentation.IsHardlyRamified.three_adic",
    "GaloisRepresentation.cyclotomicCharacter_globalFrob"
@@ -563,7 +617,9 @@
   "cyclotomicCharacter_adicArithFrob": [
    "adicArithFrob_rootsOfUnity_pow"
   ],
-  "GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient": [],
+  "GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient": [
+   "GaloisRepresentation.IsHardlyRamified.exists_equivariant_defect_coboundary"
+  ],
   "GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient": [
    "GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient",
    "cyclotomicCharacter_adicArithFrob"
@@ -866,8 +922,18 @@
    "GaloisRepresentation.IsHardlyRamified.serre_elimination_semidirect"
   ],
   "GaloisRepresentation.IsHardlyRamified.serre_elimination_semidirect": [],
-  "GaloisRepresentation.IsHardlyRamified.serre_elimination_arith": [],
-  "GaloisRepresentation.IsHardlyRamified.exists_line_with_unramified_quotCharacter_at_three": [],
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_arith": [
+   "GaloisRepresentation.IsHardlyRamified.serre_elimination_pgl",
+   "GaloisRepresentation.IsHardlyRamified.serre_elimination_psl",
+   "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt5",
+   "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral",
+   "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt4",
+   "GaloisRepresentation.IsHardlyRamified.serre_elimination_sym4"
+  ],
+  "GaloisRepresentation.IsHardlyRamified.exists_line_with_unramified_quotCharacter_at_three": [
+   "GaloisRepresentation.IsHardlyRamified.quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified",
+   "GaloisRepresentation.IsHardlyRamified.exists_line_with_quotCharacter_eq_subCharacter"
+  ],
   "GaloisRepresentation.IsHardlyRamified.quotCharacter_unramified_at_two": [
    "GaloisRepresentation.IsHardlyRamified.quotCharacter_inertia_two_ker",
    "GaloisRepresentation.IsHardlyRamified.localInertia_two_eq_map_padic"
@@ -959,28 +1025,165 @@
   "WeilPairing.exists_weilPairing_mu": [
    "WeilPairing.recgen"
   ],
-  "GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj": [],
+  "GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj": [
+   "GaloisRepresentation.infinite_setOf_isArithFrobAt"
+  ],
   "WeilPairing.stepR": [],
   "WeilPairing.recgen": [
    "WeilPairing.stepR"
   ],
   "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral": [],
-  "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt4": [],
-  "GaloisRepresentation.IsHardlyRamified.serre_elimination_sym4": [],
-  "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt5": [],
-  "GaloisRepresentation.IsHardlyRamified.serre_elimination_psl": [],
-  "GaloisRepresentation.IsHardlyRamified.serre_elimination_pgl": [],
-  "WeierstrassCurve.torsion_flat_of_good_reduction_of_isUnit": [],
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt4": [
+   "GaloisRepresentation.IsHardlyRamified.odlyzko_bound_totallyComplex",
+   "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field"
+  ],
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_sym4": [
+   "GaloisRepresentation.IsHardlyRamified.odlyzko_bound_totallyComplex",
+   "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field"
+  ],
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt5": [
+   "GaloisRepresentation.IsHardlyRamified.odlyzko_bound_totallyComplex",
+   "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field"
+  ],
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_psl": [
+   "GaloisRepresentation.IsHardlyRamified.odlyzko_bound_totallyComplex",
+   "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field"
+  ],
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_pgl": [
+   "GaloisRepresentation.IsHardlyRamified.odlyzko_bound_totallyComplex",
+   "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field"
+  ],
+  "WeierstrassCurve.torsion_flat_of_good_reduction_of_isUnit": [
+   "WeierstrassCurve.torsion_inertia_fixes_of_prime_pow_isUnit",
+   "WeierstrassCurve.torsion_flat_of_inertia_fixes"
+  ],
   "WeierstrassCurve.torsion_flat_of_good_reduction_mul": [],
-  "WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow": []
+  "WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow": [
+   "WeierstrassCurve.exists_torsion_etale_package_over_fractionField",
+   "WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow",
+   "WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow_of_eqChar"
+  ],
+  "WeierstrassCurve.kernel_add_abscissa_notMem": [],
+  "WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq": [],
+  "WeierstrassCurve.exists_torsion_etale_package_over_fractionField": [
+   "TorsionCard.prime_torsion_card",
+   "TorsionCard.smul_surjective",
+   "exists_finiteQuotient_galoisModule_etale_package"
+  ],
+  "WeierstrassCurve.torsion_flat_of_inertia_fixes_prolong": [],
+  "WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow": [],
+  "WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow_of_eqChar": [
+   "WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq"
+  ],
+  "GaloisRepresentation.IsHardlyRamified.exists_equivariant_defect_coboundary": [
+   "GaloisRepresentation.IsHardlyRamified.exists_omega_cocycle_coboundary",
+   "GaloisRepresentation.IsHardlyRamified.trivial_component_hom_vanishes"
+  ],
+  "WeierstrassCurve.mazur_point_order": [],
+  "WeierstrassCurve.not_full_four_torsion_rat": [],
+  "WeierstrassCurve.not_two_ten_torsion": [],
+  "WeierstrassCurve.not_two_twelve_torsion": [],
+  "WeierstrassCurve.exists_etale_line_of_multiplicative_self": [
+   "WeierstrassCurve.exists_etale_line_of_split_multiplicative_self",
+   "WeierstrassCurve.galoisRep",
+   "WeierstrassCurve.exists_etale_line_of_nonsplit_multiplicative_self"
+  ],
+  "WeierstrassCurve.exists_etale_line_of_good_of_stable_line": [
+   "WeierstrassCurve.galoisRep",
+   "WeierstrassCurve.exists_etale_line_or_no_stable_line_of_good"
+  ],
+  "GaloisRepresentation.infinite_setOf_isArithFrobAt_zpowers": [],
+  "GaloisRepresentation.exists_universal_hardlyRamifiedDeformation": [
+   "GaloisRepresentation.exists_isWeaklyUniversal_isTraceGenerated"
+  ],
+  "GaloisRepresentation.moduleFinite_of_isUniversal": [
+   "GaloisRepresentation.moduleFinite_of_isWeaklyUniversal_isTraceGenerated",
+   "GaloisRepresentation.exists_isWeaklyUniversal_isTraceGenerated"
+  ],
+  "GaloisRepresentation.algebraMap_injective_of_isUniversal": [
+   "GaloisRepresentation.exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated",
+   "GaloisRepresentation.moduleFinite_of_isUniversal",
+   "GaloisRepresentation.exists_isWeaklyUniversal_isTraceGenerated"
+  ],
+  "GaloisRepresentation.IsHardlyRamified.exists_numberField_eigensystem": [
+   "GaloisRepresentation.IsHardlyRamified.exists_finiteDimensional_coeff_field"
+  ],
+  "GaloisRepresentation.IsHardlyRamified.exists_family_of_eigensystem": [
+   "GaloisRepresentation.IsHardlyRamified.exists_realizations_of_eigensystem"
+  ],
+  "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field_of_card": [],
+  "GaloisRepresentation.IsHardlyRamified.odlyzko_bound_totallyComplex": [],
+  "GaloisRepresentation.IsHardlyRamified.quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified": [],
+  "GaloisRepresentation.IsHardlyRamified.exists_line_with_quotCharacter_eq_subCharacter": [],
+  "WeierstrassCurve.torsion_inertia_fixes_of_prime_pow_isUnit": [
+   "WeierstrassCurve.torsion_unramified_of_good_reduction",
+   "TorsionCard.smul_some_eq_zero_iff",
+   "WeierstrassCurve.kernel_add_abscissa_notMem",
+   "WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq"
+  ],
+  "WeierstrassCurve.torsion_flat_of_inertia_fixes": [
+   "WeierstrassCurve.exists_torsion_etale_package_over_fractionField",
+   "WeierstrassCurve.torsion_flat_of_inertia_fixes_prolong"
+  ],
+  "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field": [
+   "GaloisRepresentation.IsHardlyRamified.exists_conj_cyclotomicCharacter_three",
+   "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field_of_card"
+  ],
+  "GaloisRepresentation.infinite_setOf_isArithFrobAt": [
+   "GaloisRepresentation.infinite_setOf_isArithFrobAt_zpowers"
+  ],
+  "WeierstrassCurve.exists_etale_line_of_split_multiplicative_self": [
+   "WeierstrassCurve.galoisRep"
+  ],
+  "WeierstrassCurve.exists_etale_line_of_nonsplit_multiplicative_self": [
+   "WeierstrassCurve.galoisRep"
+  ],
+  "WeierstrassCurve.exists_etale_line_or_no_stable_line_of_good": [
+   "WeierstrassCurve.galoisRep"
+  ],
+  "GaloisRepresentation.IsHardlyRamified.exists_omega_cocycle_coboundary": [],
+  "GaloisRepresentation.IsHardlyRamified.trivial_component_hom_vanishes": [],
+  "GaloisRepresentation.exists_isWeaklyUniversal_isTraceGenerated": [],
+  "GaloisRepresentation.moduleFinite_of_isWeaklyUniversal_isTraceGenerated": [],
+  "GaloisRepresentation.exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated": [],
+  "GaloisRepresentation.IsHardlyRamified.exists_finiteDimensional_coeff_field": [],
+  "GaloisRepresentation.IsHardlyRamified.exists_realizations_of_eigensystem": [],
+  "exists_finiteQuotient_galoisModule_etale_package": []
  },
  "roots": [
-  "fermat_last_theorem",
-  "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral",
-  "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt4",
-  "GaloisRepresentation.IsHardlyRamified.serre_elimination_sym4",
-  "GaloisRepresentation.IsHardlyRamified.serre_elimination_alt5",
-  "GaloisRepresentation.IsHardlyRamified.serre_elimination_psl",
-  "GaloisRepresentation.IsHardlyRamified.serre_elimination_pgl"
+  "fermat_last_theorem"
+ ],
+ "sorried": [
+  "GaloisRepresentation.infinite_setOf_isArithFrobAt_zpowers",
+  "WeilPairing.exists_weilPairing_mu",
+  "WeierstrassCurve.exists_torsion_etale_package_of_eqChar",
+  "WeierstrassCurve.kernel_prime_pow_torsion_of_eqChar",
+  "exists_finiteQuotient_galoisModule_etale_package",
+  "WeierstrassCurve.exists_finite_flat_hopf_form_of_good_reduction_prime_pow",
+  "exists_finite_etale_algebra_form_of_inertia_fixes",
+  "exists_finite_flat_hopf_form_of_etale_algebra_form",
+  "WeierstrassCurve.torsionFlatPackage_localization_of_packages",
+  "exists_galoisModulePackage_of_finiteQuotient",
+  "WeierstrassCurve.torsionFlatPackage_of_split_adic",
+  "WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic",
+  "WeierstrassCurve.mazur_point_order",
+  "WeierstrassCurve.exists_etale_line_of_split_multiplicative_self",
+  "WeierstrassCurve.exists_etale_line_of_nonsplit_multiplicative_self",
+  "FreyPackage.exists_quotient_curve_point",
+  "WeierstrassCurve.not_two_twelve_torsion",
+  "WeierstrassCurve.exists_etale_line_or_no_stable_line_of_good",
+  "WeierstrassCurve.not_two_ten_torsion",
+  "GaloisRepresentation.IsHardlyRamified.exists_finiteDimensional_coeff_field",
+  "GaloisRepresentation.IsHardlyRamified.exists_realizations_of_eigensystem",
+  "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral_arith",
+  "GaloisRepresentation.IsHardlyRamified.exists_line_with_quotCharacter_eq_subCharacter",
+  "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field_of_card",
+  "GaloisRepresentation.IsHardlyRamified.quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified",
+  "GaloisRepresentation.IsHardlyRamified.odlyzko_bound_totallyComplex",
+  "GaloisRepresentation.IsHardlyRamified.trivial_component_hom_vanishes",
+  "GaloisRepresentation.IsHardlyRamified.exists_omega_cocycle_coboundary",
+  "GaloisRepresentation.exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated",
+  "GaloisRepresentation.exists_isWeaklyUniversal_isTraceGenerated",
+  "GaloisRepresentation.moduleFinite_of_isWeaklyUniversal_isTraceGenerated"
  ]
 }

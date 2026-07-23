@@ -1,51 +1,54 @@
 #!/usr/bin/env python3
-"""Persistent Lean environment server for the FLT loop tooling.
+"""Thin LSP-client server for the FLT progress tooling.
 
-Loading the full Fermat+mathlib environment costs minutes; paying it on
-every `progress-tree.py` run and every Stop-hook check is what made both
-slow. This daemon pays it ONCE: it keeps a `lake env lean` child alive
-whose `#eval` loop holds the imported environment and answers queries
-over a Unix socket, restarting the child only when the built `.olean`s
-actually change.
+The report backend is the LEAN LANGUAGE SERVER (Deyao, 2026-07-22,
+final design): this process keeps ONE `lake serve` child alive and
+speaks LSP (JSON-RPC over stdio) to it — exactly what the lean-lsp-mcp
+bridge does, minus the MCP. Per query it (re)opens the census file
+`ProgressCensus.lean` (whose generated header imports every tracked
+module and whose `#eval` prints the whole census as one JSON object),
+waits for elaboration, and returns the JSON that arrives as the
+`#eval`'s info diagnostic. The socket interface below is unchanged —
+the hook and progress-tree.py keep their query API.
 
   python3 lean-daemon.py --serve            # run the daemon (foreground)
   python3 lean-daemon.py --query '<json>'   # one query (autostarts daemon)
   python3 lean-daemon.py --stop             # shut the daemon down
 
-Queries (JSON, one object per line over the socket):
-  {"cmd": "report", "names": [...]}  -> per tracked declaration: missing /
-      own (sorry in its exclusive cone) / clean (whole cone sorry-free) /
-      kids (which other tracked declarations its proof uses); computed by
-      BFS over `getUsedConstantsAsSet`, pruned to Fermat-module constants
-      (mathlib cannot depend on the project, so every path to `sorryAx`
-      or to a tracked name stays inside Fermat modules).
-  {"cmd": "sorries"}  -> the compiler-verified list of project
-      declarations whose proof term uses `sorryAx` directly (the same
-      set the `declaration uses 'sorry'` build warnings mark), plus the
-      root check for `fermat_last_theorem` (cone sorry + axiom
-      whitelist over encountered axioms).
+Queries: {"cmd": "report", "names": [...]} and {"cmd": "sorries"} both
+run the same census (names default to []); the response is the census
+JSON verbatim — {"entries": [...], "sorried": [...], "root": {...}} —
+so a "report" response also carries the sorried list and root status
+(progress-tree.py uses that to make one query per generation).
 
-Every response is augmented by the daemon with freshness metadata:
-  stale_sources    modules whose .lean source is newer than their .olean
-                   (the environment reflects the LAST BUILD of those);
-  unbuilt_modules  modules with no .olean at all (excluded from imports);
-  failed_modules   modules whose last materialization attempt FAILED to
-                   compile (the genuine dirty-input signal; retried when
-                   their source or a project import's olean changes).
+DIVISION OF LABOR (Deyao's standing directives, absolute):
+  * NOTHING here touches olean files or anything under .lake — no
+    mtimes, no signatures, no existence checks, no lake subprocesses.
+    Building and invalidation belong to the language server: on each
+    query the census file is didClose'd and didOpen'd afresh, which
+    makes the watchdog re-run the file's setup (rebuilding stale
+    imports itself) and re-elaborate against the current dependency
+    state.
+  * NO fallbacks, NO self-recovery: if elaboration reports errors (a
+    tracked module does not compile, the census file is broken, the
+    setup failed), the query returns {"error": <the compiler's error
+    text>} — the generator then crashes loudly with it, the Stop hook
+    fails open. The only "recovery" is lazy respawn: a dead `lake
+    serve` child (crash, kill -9) is respawned on the next query.
+  * The broad except blocks in handle()/serve() are protocol ERROR
+    TRANSPORT only — they forward the real exception text to the
+    caller; they never substitute partial data.
 
-The daemon SELF-MATERIALIZES its input: before importing, it builds the
-oleans of every unbuilt/stale project module with a targeted
-`lake build <mod> ...` — the same on-demand behavior as the language
-server compiling a file's imports when it is opened. Lake's content
-hashing makes already-fresh modules free, so this is incremental. The
-root aggregator module `Fermat` (the sorry gate, which fails by design)
-is never a target: scan_modules never lists it and no bare `lake build`
-is ever run.
+The client is HAND-ROLLED (~100 lines): the `leanclient` package the
+MCP bridge builds on is not installed in this environment, and our
+flow needs exactly four verbs (initialize, didOpen, didClose,
+waitForDiagnostics) — vendoring a package for that is more moving
+parts than the protocol code itself.
 """
 
+import importlib.util
 import json
 import os
-import re
 import socket
 import subprocess
 import sys
@@ -54,273 +57,153 @@ import time
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SOCK = os.path.join(ROOT, ".lean-daemon.sock")
 LOG = os.path.join(ROOT, ".lean-daemon.log")
-SERVER_LEAN = os.path.join(ROOT, ".lean-daemon-server.lean")
-OLEAN_ROOT = os.path.join(ROOT, ".lake", "build", "lib", "lean")
-
-# ------------------------------------------------------------ module scan
-
-
-def scan_modules():
-    """(module name, source path, olean path) for every project module
-    under Fermat/ (the root aggregator Fermat.lean is excluded — its
-    olean does not exist while the sorry gate fails)."""
-    out = []
-    src_root = os.path.join(ROOT, "Fermat")
-    for dirpath, _dirs, files in os.walk(src_root):
-        for name in sorted(files):
-            if not name.endswith(".lean"):
-                continue
-            src = os.path.join(dirpath, name)
-            rel = os.path.relpath(src, ROOT)[: -len(".lean")]
-            mod = rel.replace(os.sep, ".")
-            olean = os.path.join(OLEAN_ROOT, rel + ".olean")
-            out.append((mod, src, olean))
-    return out
+CENSUS_LEAN = os.path.join(ROOT, "ProgressCensus.lean")
+CENSUS_URI = "file://" + CENSUS_LEAN
+LSP_STDERR = os.path.join(ROOT, ".lean-daemon-lsp-stderr")
 
 
-_IMPORT_RE = re.compile(
-    r"^(?:public\s+)?(?:meta\s+)?import\s+(?:all\s+)?([A-Za-z_][\w.]*)")
+def _progress_tree():
+    """Import the (import-safe) progress-tree.py module for its census
+    header/input helpers — single source of truth for both routes."""
+    spec = importlib.util.spec_from_file_location(
+        "progress_tree", os.path.join(ROOT, "progress-tree.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
-def project_imports(src):
-    """Project-internal imports of a module, parsed from its source
-    header. Handles every variant in use ('import X', 'public import X',
-    'public meta import X', 'import all X'), skips `/- ... -/` block
-    comments (tracking nesting — the typical copyright/docstring header
-    would otherwise end the scan before the imports), `--` line comments,
-    and the header keywords `module`/`prelude`; stops at the first real
-    declaration. Imports interleaved with comments or appearing after
-    `module` are found."""
-    imps = []
-    depth = 0  # block-comment nesting depth
-    try:
-        with open(src, encoding="utf-8") as fh:
-            for line in fh:
-                s = line.strip()
-                if depth > 0:
-                    depth += s.count("/-") - s.count("-/")
-                    if depth < 0:
-                        depth = 0
-                    continue
-                if not s or s.startswith("--"):
-                    continue
-                if s.startswith("/-"):
-                    depth = s.count("/-") - s.count("-/")
-                    if depth < 0:
-                        depth = 0
-                    continue
-                if s == "module" or s == "prelude":
-                    continue
-                m = _IMPORT_RE.match(s)
-                if m:
-                    if m.group(1).startswith("Fermat"):
-                        imps.append(m.group(1))
-                    continue
-                # first real declaration ends the header
-                break
-    except OSError:
-        pass
-    return imps
+# ------------------------------------------------------------- LSP client
 
 
-def freshness(modules, force_bad=()):
-    """Partition project modules; a module is importable only if its
-    WHOLE project-internal import closure has oleans (a built olean
-    whose transitive import is missing crashes importModules — the
-    2026-07-22 daemon crash on a mid-edit module). `force_bad` names
-    modules to treat as unbuilt regardless of the olean scan (used for
-    modules that failed at import time — an agent's rebuild loop can
-    delete/recreate an olean faster than we scan)."""
-    have_olean = {}
-    src_of = {}
-    for mod, src, olean in modules:
-        have_olean[mod] = os.path.exists(olean) and mod not in force_bad
-        src_of[mod] = src
-    # transitive closure of "imports a missing-olean module"
-    imports = {mod: [i for i in project_imports(src_of[mod])
-                     if i in have_olean] for mod, _s, _o in modules}
-    bad = {mod for mod, ok in have_olean.items() if not ok}
-    changed = True
-    while changed:
-        changed = False
-        for mod, imps in imports.items():
-            if mod not in bad and any(i in bad for i in imps):
-                bad.add(mod)
-                changed = True
-    built, unbuilt, stale = [], [], []
-    for mod, src, olean in modules:
-        if mod in bad:
-            unbuilt.append(mod)
-            continue
-        built.append((mod, src, olean))
-        try:
-            if os.path.getmtime(src) > os.path.getmtime(olean):
-                stale.append(mod)
-        except OSError:
-            pass
-    return built, unbuilt, stale
+class LspClient:
+    """Minimal JSON-RPC/LSP client over one `lake serve` child."""
 
+    def __init__(self, logfn):
+        self._log = logfn
+        self.proc = None
+        self.req_id = 0
+        self.version = 0
+        self.opened = False
+        self.diags = {}   # uri -> latest published diagnostics
 
-def olean_signature(built):
-    sig = []
-    for mod, _src, olean in built:
-        try:
-            sig.append((mod, os.path.getmtime(olean)))
-        except OSError:
-            sig.append((mod, 0.0))
-    return tuple(sig)
+    def alive(self):
+        return self.proc is not None and self.proc.poll() is None
 
+    def start(self):
+        errfh = open(LSP_STDERR, "a", encoding="utf-8")
+        self.proc = subprocess.Popen(
+            ["lake", "serve"], cwd=ROOT,
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=errfh)
+        self.req_id = 0
+        self.opened = False
+        self.diags = {}
+        t0 = time.time()
+        self._request("initialize", {
+            "processId": os.getpid(),
+            "rootUri": "file://" + ROOT,
+            "capabilities": {},
+        })
+        self._notify("initialized", {})
+        self._log(f"lake serve up (initialize in {time.time() - t0:.1f}s, "
+                  f"pid {self.proc.pid})")
 
-# ------------------------------------------------------- Lean server file
+    def stop(self):
+        if self.proc is not None:
+            try:
+                self.proc.kill()
+            except Exception:
+                pass
+            try:
+                self.proc.wait(timeout=10)
+            except Exception:
+                pass
+        self.proc = None
+        self.opened = False
 
-LEAN_SERVER_BODY = r'''
-open Lean
+    # ---- wire
 
-def main : IO Unit := do
-  initSearchPath (← findSysroot)
-  let env ← importModules (fermatModules.map (fun m => { module := m })) {}
-  let stdin ← IO.getStdin
-  let stdout ← IO.getStdout
-  let modNames := env.header.moduleNames
-  let modData := env.header.moduleData
-  let isFermatMod : Name → Bool := fun m => Name.isPrefixOf `Fermat m
-  let expandable : Name → Bool := fun n =>
-    match env.getModuleIdxFor? n with
-    | some i => isFermatMod modNames[i.toNat]!
-    | none => false
-  let usedOf : Name → Array Name := fun n =>
-    match env.find? n with
-    | some ci => ci.getUsedConstantsAsSet.toArray
-    | none => #[]
-  let sorryName : Name := `sorryAx
-  IO.println "DAEMON-READY"
-  stdout.flush
-  let mut done := false
-  while !done do
-    let line ← stdin.getLine
-    if line.trimAscii.isEmpty then
-      done := true
-    else
-      let mut out : Json := Json.null
-      match Json.parse line with
-      | .error e => out := Json.mkObj [("error", Json.str e)]
-      | .ok req =>
-        let cmd := (req.getObjValAs? String "cmd").toOption.getD ""
-        if cmd == "quit" then
-          done := true
-        else if cmd == "report" then
-          let nameJsons : Array Json :=
-            ((req.getObjVal? "names").toOption.bind
-              (fun j => j.getArr?.toOption)).getD #[]
-          let listedArr : Array Name :=
-            nameJsons.filterMap (fun j => j.getStr?.toOption.map String.toName)
-          let listed : NameSet :=
-            listedArr.foldl (fun s n => s.insert n) {}
-          let mut items : Array Json := #[]
-          for nm in listedArr do
-            match env.find? nm with
-            | none =>
-              items := items.push (Json.mkObj
-                [("name", Json.str nm.toString), ("missing", Json.bool true)])
-            | some ci =>
-              -- stopped BFS: dependency edges to other tracked names, and
-              -- whether a sorry lives in the EXCLUSIVE cone (not behind a
-              -- tracked child)
-              let mut visited : NameSet := {}
-              let mut kids : Array Name := #[]
-              let mut own := false
-              let mut stack : Array Name := ci.getUsedConstantsAsSet.toArray
-              while !stack.isEmpty do
-                let c := stack.back!
-                stack := stack.pop
-                if !(visited.contains c) then
-                  visited := visited.insert c
-                  if c == sorryName then own := true
-                  else if listed.contains c && c != nm then
-                    kids := kids.push c
-                  else if expandable c then stack := stack ++ usedOf c
-              -- full BFS: whole-cone sorry check (the `#print axioms`
-              -- criterion, restricted to sorryAx)
-              let mut visited2 : NameSet := {}
-              let mut dirty := false
-              let mut stack2 : Array Name := ci.getUsedConstantsAsSet.toArray
-              while !stack2.isEmpty && !dirty do
-                let c := stack2.back!
-                stack2 := stack2.pop
-                if !(visited2.contains c) then
-                  visited2 := visited2.insert c
-                  if c == sorryName then dirty := true
-                  else if expandable c then stack2 := stack2 ++ usedOf c
-              items := items.push (Json.mkObj [
-                ("name", Json.str nm.toString),
-                ("missing", Json.bool false),
-                ("own", Json.bool own),
-                ("clean", Json.bool (!dirty)),
-                ("kids", Json.arr (kids.map (fun k => Json.str k.toString)))])
-          out := Json.mkObj [("entries", Json.arr items)]
-        else if cmd == "sorries" then
-          -- the compiler-verified open-node list: project declarations
-          -- whose own proof term uses sorryAx directly (the set the
-          -- `declaration uses 'sorry'` warnings mark)
-          let mut sorried : Array Json := #[]
-          for i in [0:modNames.size] do
-            if isFermatMod modNames[i]! then
-              for nm in modData[i]!.constNames do
-                if !nm.isInternal then
-                  match env.find? nm with
-                  | some ci =>
-                    if ci.getUsedConstantsAsSet.contains sorryName then
-                      sorried := sorried.push (Json.mkObj
-                        [("name", Json.str nm.toString),
-                         ("module", Json.str modNames[i]!.toString)])
-                  | none => pure ()
-          let rootStr :=
-            (req.getObjValAs? String "root").toOption.getD "fermat_last_theorem"
-          let mut rootJson := Json.mkObj [("missing", Json.bool true)]
-          match env.find? rootStr.toName with
-          | none => pure ()
-          | some ci =>
-            let mut visited : NameSet := {}
-            let mut hasSorry := false
-            let mut axs : Array Name := #[]
-            let mut stack : Array Name := ci.getUsedConstantsAsSet.toArray
-            while !stack.isEmpty do
-              let c := stack.back!
-              stack := stack.pop
-              if !(visited.contains c) then
-                visited := visited.insert c
-                if c == sorryName then hasSorry := true
-                else
-                  match env.find? c with
-                  | some (.axiomInfo _) => axs := axs.push c
-                  | some ci' =>
-                    if expandable c then
-                      stack := stack ++ ci'.getUsedConstantsAsSet.toArray
-                  | none => pure ()
-            let whitelist : NameSet := ({} : NameSet)
-              |>.insert `propext |>.insert `Classical.choice
-              |>.insert `Quot.sound
-            let bad := axs.filter (fun a => !whitelist.contains a)
-            rootJson := Json.mkObj [
-              ("missing", Json.bool false),
-              ("coneSorry", Json.bool hasSorry),
-              ("badAxioms", Json.arr (bad.map (fun a => Json.str a.toString)))]
-          out := Json.mkObj [("sorried", Json.arr sorried), ("root", rootJson)]
-        else
-          out := Json.mkObj [("error", Json.str s!"unknown cmd {cmd}")]
-      if !done then
-        IO.println out.compress
-        stdout.flush
-'''
+    def _send(self, obj):
+        data = json.dumps(obj).encode()
+        self.proc.stdin.write(
+            b"Content-Length: " + str(len(data)).encode() + b"\r\n\r\n"
+            + data)
+        self.proc.stdin.flush()
 
+    def _read_msg(self):
+        """One framed message from the server (blocking); raises if the
+        child died."""
+        headers = b""
+        while not headers.endswith(b"\r\n\r\n"):
+            c = self.proc.stdout.read(1)
+            if c == b"":
+                raise RuntimeError(
+                    "lake serve closed its stdout (crashed or killed)")
+            headers += c
+        length = None
+        for line in headers.decode("ascii", "replace").split("\r\n"):
+            if line.lower().startswith("content-length:"):
+                length = int(line.split(":", 1)[1].strip())
+        if length is None:
+            raise RuntimeError(f"malformed LSP header: {headers!r}")
+        body = b""
+        while len(body) < length:
+            chunk = self.proc.stdout.read(length - len(body))
+            if chunk == b"":
+                raise RuntimeError(
+                    "lake serve closed its stdout mid-message")
+            body += chunk
+        return json.loads(body)
 
-def write_server_lean(built):
-    mods = ", ".join(f"`{mod}" for mod, _s, _o in built)
-    with open(SERVER_LEAN, "w", encoding="utf-8") as fh:
-        fh.write("-- GENERATED by lean-daemon.py; do not edit.\n")
-        fh.write("import Lean\n")
-        fh.write(f"def fermatModules : Array Lean.Name := #[{mods}]\n")
-        fh.write(LEAN_SERVER_BODY)
+    def _dispatch(self, msg):
+        method = msg.get("method")
+        if method == "textDocument/publishDiagnostics":
+            p = msg["params"]
+            self.diags[p["uri"]] = p["diagnostics"]
+        elif method is not None and "id" in msg:
+            # server->client request: a minimal client answers null
+            self._send({"jsonrpc": "2.0", "id": msg["id"], "result": None})
+
+    def _request(self, method, params, timeout=3600):
+        self.req_id += 1
+        rid = self.req_id
+        self._send({"jsonrpc": "2.0", "id": rid,
+                    "method": method, "params": params})
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            msg = self._read_msg()
+            self._dispatch(msg)
+            if msg.get("id") == rid and "method" not in msg:
+                if "error" in msg:
+                    raise RuntimeError(f"LSP {method}: {msg['error']}")
+                return msg.get("result")
+        raise RuntimeError(f"LSP {method} timed out after {timeout}s")
+
+    def _notify(self, method, params):
+        self._send({"jsonrpc": "2.0", "method": method, "params": params})
+
+    # ---- the one flow we need
+
+    def census(self, timeout=3600):
+        """didClose (if open) + didOpen the census file from disk, wait
+        until the server finishes elaborating that version, and return
+        its final diagnostics. The reopen is the invalidation protocol:
+        the watchdog re-runs the file's setup (building stale imports
+        itself) and elaborates against the current dependency state."""
+        if self.opened:
+            self._notify("textDocument/didClose",
+                         {"textDocument": {"uri": CENSUS_URI}})
+            self.opened = False
+        text = open(CENSUS_LEAN, encoding="utf-8").read()
+        self.version += 1
+        self.diags.pop(CENSUS_URI, None)
+        self._notify("textDocument/didOpen", {"textDocument": {
+            "uri": CENSUS_URI, "languageId": "lean4",
+            "version": self.version, "text": text}})
+        self.opened = True
+        self._request("textDocument/waitForDiagnostics",
+                      {"uri": CENSUS_URI, "version": self.version},
+                      timeout=timeout)
+        return self.diags.get(CENSUS_URI, [])
 
 
 # ----------------------------------------------------------------- daemon
@@ -328,287 +211,58 @@ def write_server_lean(built):
 
 class Daemon:
     def __init__(self):
-        self.child = None
-        self.sig = None
-        # Modules that crashed importModules (olean vanished between scan
-        # and import). Persisted ACROSS ensure_child calls so a failed
-        # retry round does not forget its exclusions; pruned per call
-        # when the olean reappears (module rebuilt -> re-admit).
-        self.force_bad = set()
-        # Modules whose last materialization attempt failed to COMPILE,
-        # mapped to the fingerprint (source mtime + direct-import olean
-        # mtimes) at failure time. Skipped by materialize() until the
-        # fingerprint changes (source edited, or an import rebuilt) —
-        # so a genuinely broken committed module costs one compile per
-        # state, not one per query. Reported as `failed_modules`.
-        self.build_failed = {}
         self.log = open(LOG, "a", encoding="utf-8")
+        self.lsp = LspClient(self._log)
 
     def _log(self, msg):
         self.log.write(f"[{time.strftime('%F %T')}] {msg}\n")
         self.log.flush()
 
-    # ----------------------------------------------- self-materialization
-
-    @staticmethod
-    def _fingerprint(mod, src_of, olean_of):
-        """Retry key for a failed module: its own source mtime plus the
-        olean mtimes of its direct project imports. Changes when the
-        module is edited or when a (possibly deep, via the dependents'
-        own rebuild cascade) import gets rebuilt."""
-        try:
-            smt = os.path.getmtime(src_of[mod])
-        except OSError:
-            smt = 0.0
-        imps = []
-        for i in project_imports(src_of[mod]):
-            if i in olean_of:
-                try:
-                    imps.append((i, os.path.getmtime(olean_of[i])))
-                except OSError:
-                    imps.append((i, 0.0))
-        return (smt, tuple(sorted(imps)))
-
-    @staticmethod
-    def _needs_build(mod, src_of, olean_of):
-        """True if the module has no olean or its source is newer."""
-        o = olean_of[mod]
-        if not os.path.exists(o):
-            return True
-        try:
-            return os.path.getmtime(src_of[mod]) > os.path.getmtime(o)
-        except OSError:
-            return False
-
-    def _lake_build(self, targets):
-        """Targeted incremental build; returns (exit code, output tail)."""
-        try:
-            res = subprocess.run(
-                ["lake", "build"] + targets, cwd=ROOT,
-                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                text=True, timeout=3600)
-        except subprocess.TimeoutExpired:
-            return 1, "lake build timed out after 3600s"
-        except OSError as exc:
-            return 1, f"lake could not be invoked: {exc}"
-        tail = "\n".join(res.stdout.splitlines()[-15:])
-        return res.returncode, tail
-
-    def materialize(self):
-        """Self-serve the daemon's input: build the oleans of every
-        unbuilt/stale project module (never the root gate) before the
-        import, exactly like the language server compiles imports for an
-        opened file. A module that fails to compile is remembered in
-        self.build_failed (fingerprinted, see above), its dependents are
-        skipped via the import closure, and everything else proceeds —
-        a broken module degrades only its own subtree, never the run."""
-        modules = scan_modules()
-        src_of = {m: s for m, s, _o in modules}
-        olean_of = {m: o for m, _s, o in modules}
-        # forget failures that vanished from the scan, got built by
-        # someone else, or whose fingerprint changed (retry those)
-        for m in list(self.build_failed):
-            if (m not in src_of or not self._needs_build(m, src_of, olean_of)
-                    or self.build_failed[m]
-                    != self._fingerprint(m, src_of, olean_of)):
-                del self.build_failed[m]
-        need = [m for m, _s, _o in modules
-                if self._needs_build(m, src_of, olean_of)]
-        if not need:
-            return
-        # exclude known-failed modules AND their import-closure
-        # dependents (building a dependent would just re-fail the compile
-        # of its broken import on every query)
-        skip = set(self.build_failed)
-        imports = {m: [i for i in project_imports(src_of[m])
-                       if i in src_of] for m in src_of}
-        changed = True
-        while changed:
-            changed = False
-            for m, imps in imports.items():
-                if m not in skip and any(i in skip for i in imps):
-                    skip.add(m)
-                    changed = True
-        targets = [m for m in need if m not in skip]
-        if not targets:
-            return
-        self._log(f"materializing {len(targets)} modules: "
-                  + " ".join(targets))
+    def _handle(self, request):
+        pt = _progress_tree()
+        pt.regenerate_census_header()
+        with open(pt.CENSUS_INPUT, "w", encoding="utf-8") as fh:
+            json.dump({"names": list(request.get("names", [])),
+                       "root": request.get("root", "fermat_last_theorem")},
+                      fh)
+        if not self.lsp.alive():
+            self.lsp.stop()   # reap a dead child if any
+            self._log("starting lake serve")
+            self.lsp.start()
         t0 = time.time()
-        code, tail = self._lake_build(targets)
-        if code == 0:
-            self._log(f"materialized {len(targets)} modules in "
-                      f"{time.time() - t0:.1f}s")
-            return
-        self._log(f"batch materialization failed (exit {code}); "
-                  f"attributing per module\n{tail}")
-        # Per-module attribution: fresh modules are content-hash free,
-        # so only genuinely broken ones (and their dependents, skipped
-        # next round via the closure) pay a compile here.
-        for mod in targets:
-            if not self._needs_build(mod, src_of, olean_of):
+        diags = self.lsp.census()
+        self._log(f"census elaborated in {time.time() - t0:.1f}s "
+                  f"({len(diags)} diagnostics)")
+        errors = [d for d in diags if d.get("severity") == 1]
+        if errors:
+            msgs = "\n".join(
+                f"{CENSUS_LEAN}:{d['range']['start']['line'] + 1}: "
+                f"{d['message']}" for d in errors[:10])
+            raise RuntimeError(f"census elaboration failed:\n{msgs}")
+        for d in diags:
+            msg = d.get("message", "")
+            k = msg.find("{")
+            if k < 0:
                 continue
-            code, tail = self._lake_build([mod])
-            if code != 0 and self._needs_build(mod, src_of, olean_of):
-                self.build_failed[mod] = self._fingerprint(
-                    mod, src_of, olean_of)
-                self._log(f"MATERIALIZATION FAILED for {mod} "
-                          f"(exit {code}):\n{tail}")
-        ok = [m for m in targets if m not in self.build_failed
-              and not self._needs_build(m, src_of, olean_of)]
-        self._log(f"materialized {len(ok)}/{len(targets)} modules in "
-                  f"{time.time() - t0:.1f}s; failed: "
-                  + (" ".join(sorted(self.build_failed)) or "none"))
-
-    def ensure_child(self, retries=5):
-        # Oleans can vanish BETWEEN the scan and the import (a parallel
-        # agent rebuilding its module deletes the target olean first) —
-        # on a startup crash, rescan and retry: the vanished olean is
-        # then seen as missing and the import-closure filter drops the
-        # module and its dependents.
-        last_exc = None
-        # Self-serve the input first: build whatever is unbuilt/stale so
-        # the import below sees a complete, current environment. Any
-        # exception here must not kill the query path — materialization
-        # is best-effort; freshness() below re-reads reality either way.
-        try:
-            self.materialize()
-        except Exception as exc:
-            self._log(f"materialize step crashed: {exc!r}")
-        # Re-admit force_bad modules whose olean has reappeared (the
-        # parallel agent finished rebuilding them). Modules failing
-        # WITHIN this call's retries are re-added below and stay
-        # excluded for the rest of the call even if the olean flickers
-        # back mid-round.
-        if self.force_bad:
-            olean_of = {mod: olean for mod, _s, olean in scan_modules()}
-            readmit = {m for m in self.force_bad
-                       if os.path.exists(olean_of.get(m, ""))}
-            for m in sorted(readmit):
-                self._log(f"re-admitting {m}: olean reappeared")
-            self.force_bad -= readmit
-            # entries whose source vanished entirely drop out of the scan
-            self.force_bad &= set(olean_of)
-        for _attempt in range(retries):
-            modules = scan_modules()
-            built, unbuilt, stale = freshness(modules, self.force_bad)
-            sig = olean_signature(built)
-            if self.child is not None and self.child.poll() is not None:
-                self._log("child died; restarting")
-                self.child = None
-            if self.child is not None and sig != self.sig:
-                self._log("olean signature changed; restarting child")
-                self.stop_child()
-            if self.child is None:
-                write_server_lean(built)
-                self._log(f"starting child ({len(built)} modules)")
-                t0 = time.time()
-                errpath = os.path.join(ROOT, ".lean-daemon-child-stderr")
-                errfh = open(errpath, "w", encoding="utf-8")
-                try:
-                    self.child = subprocess.Popen(
-                        ["lake", "env", "lean", "--run", SERVER_LEAN],
-                        cwd=ROOT,
-                        stdin=subprocess.PIPE,
-                        stdout=subprocess.PIPE,
-                        stderr=errfh,
-                        text=True,
-                    )
-                except Exception:
-                    errfh.close()
-                    raise
-                # wait for the environment to finish importing
-                try:
-                    while True:
-                        line = self.child.stdout.readline()
-                        if line == "":
-                            raise RuntimeError(
-                                "lean child exited during startup; "
-                                "see .lean-daemon.log"
-                            )
-                        if line.strip() == "DAEMON-READY":
-                            break
-                except Exception as exc:
-                    last_exc = exc
-                    errfh.close()
-                    # reap the dead child (or kill a wedged one) — no
-                    # zombie may survive into the next attempt
-                    try:
-                        self.child.kill()
-                    except Exception:
-                        pass
-                    try:
-                        self.child.wait(timeout=10)
-                    except Exception:
-                        pass
-                    self.child = None
-                    try:
-                        errtxt = open(errpath, encoding="utf-8").read()
-                    except OSError:
-                        errtxt = ""
-                    if errtxt:
-                        self.log.write(errtxt)
-                        self.log.flush()
-                    # a module whose olean vanished at import time gets
-                    # excluded — with its dependents, via the import
-                    # closure in freshness() — on the next attempt
-                    found = re.findall(
-                        r"of module (\S+) does not exist", errtxt)
-                    for m in found:
-                        self.force_bad.add(m)
-                        self._log(f"excluding {m} after import failure")
-                    if not found:
-                        self._log("startup failure without a recognizable "
-                                  "missing-olean message; retrying as-is")
-                    self._log(f"startup failed (attempt {_attempt + 1}"
-                              f"/{retries}); rescanning")
-                    time.sleep(2.0)
-                    continue
-                errfh.close()
-                self.sig = sig
-                self._log(f"child ready in {time.time() - t0:.1f}s")
-            return unbuilt, stale
-        raise RuntimeError(
-            f"lean child failed to start after {retries} attempts: {last_exc}")
-
-    def stop_child(self):
-        if self.child is not None:
             try:
-                self.child.stdin.write('{"cmd": "quit"}\n')
-                self.child.stdin.flush()
-                self.child.wait(timeout=10)
-            except Exception:
-                # kill AND reap — a bare kill() leaves a zombie
-                try:
-                    self.child.kill()
-                except Exception:
-                    pass
-                try:
-                    self.child.wait(timeout=10)
-                except Exception:
-                    pass
-            self.child = None
+                cand = json.loads(msg[k:])
+            except ValueError:
+                continue
+            if isinstance(cand, dict) and "sorried" in cand:
+                return cand
+        raise RuntimeError(
+            "census elaboration produced no JSON output "
+            f"({len(diags)} diagnostics, none parseable)")
 
     def handle(self, request):
+        """Protocol error TRANSPORT only: any failure is forwarded as
+        {"error": <real exception text>} — never converted to partial
+        data, never silently retried."""
         try:
-            unbuilt, stale = self.ensure_child()
+            return self._handle(request)
         except Exception as exc:
-            return {"error": f"daemon could not start lean child: {exc}"}
-        try:
-            self.child.stdin.write(json.dumps(request) + "\n")
-            self.child.stdin.flush()
-            line = self.child.stdout.readline()
-            if line == "":
-                raise RuntimeError("lean child closed its stdout")
-            resp = json.loads(line)
-        except Exception as exc:
-            self._log(f"query failed: {exc}")
-            self.stop_child()
-            return {"error": f"lean child query failed: {exc}"}
-        resp["stale_sources"] = stale
-        resp["unbuilt_modules"] = unbuilt
-        resp["failed_modules"] = sorted(self.build_failed)
-        return resp
+            self._log(f"query failed: {exc!r}")
+            return {"error": f"{type(exc).__name__}: {exc}"}
 
     def serve(self):
         try:
@@ -638,7 +292,8 @@ class Daemon:
                 resp = self.handle(request)
                 conn.sendall((json.dumps(resp) + "\n").encode())
             except Exception as exc:
-                self._log(f"connection error: {exc}")
+                # error transport for connection-level failures
+                self._log(f"connection error: {exc!r}")
                 try:
                     conn.sendall(
                         (json.dumps({"error": str(exc)}) + "\n").encode())
@@ -649,7 +304,7 @@ class Daemon:
                     conn.close()
                 except Exception:
                     pass
-        self.stop_child()
+        self.lsp.stop()
         try:
             os.unlink(SOCK)
         except OSError:
@@ -667,11 +322,30 @@ def _connect(timeout):
     return s
 
 
+def _attempt(request, timeout):
+    """One connect+send+receive round; raises OSError on any
+    connection-level failure (absent daemon, stale socket, daemon shut
+    down mid-conversation)."""
+    s = _connect(timeout)
+    with s:
+        s.sendall((json.dumps(request) + "\n").encode())
+        data = b""
+        while not data.endswith(b"\n"):
+            chunk = s.recv(65536)
+            if not chunk:
+                break
+            data += chunk
+    if not data.strip():
+        raise OSError("daemon closed the connection without a response")
+    return json.loads(data)
+
+
 def query(request, autostart=True, timeout=3600):
-    """Send one request to the daemon, autostarting it if needed. The
-    first query after a (re)start waits for the full environment import."""
+    """Send one request to the daemon. If no daemon answers, spawn one,
+    wait a bounded moment for its socket, then make a SINGLE attempt —
+    any failure after that propagates (crash policy; no retry loops)."""
     try:
-        s = _connect(timeout)
+        return _attempt(request, timeout)
     except OSError:
         if not autostart:
             raise
@@ -682,25 +356,17 @@ def query(request, autostart=True, timeout=3600):
             stderr=subprocess.DEVNULL,
             start_new_session=True,
         )
-        deadline = time.time() + 60
-        s = None
+        deadline = time.time() + 15
         while time.time() < deadline:
             try:
-                s = _connect(timeout)
+                _connect(1).close()
                 break
             except OSError:
-                time.sleep(0.5)
-        if s is None:
-            raise RuntimeError("could not start lean-daemon")
-    with s:
-        s.sendall((json.dumps(request) + "\n").encode())
-        data = b""
-        while not data.endswith(b"\n"):
-            chunk = s.recv(65536)
-            if not chunk:
-                break
-            data += chunk
-    return json.loads(data)
+                time.sleep(0.25)
+        else:
+            raise RuntimeError(
+                "lean-daemon socket did not appear within 15s of spawn")
+        return _attempt(request, timeout)
 
 
 def main():

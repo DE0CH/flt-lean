@@ -32,7 +32,7 @@ Second symbol: `·` normal, `🟪` currently being worked on (from the
 entries file). To add/remove/annotate a node, edit
 `progress-entries.json` and re-run the generator.
 
-**Sorried declarations (compiler-counted): 19** — `torsion_flat_of_inertia_fixes`, `torsion_inertia_fixes_of_prime_pow_isUnit`, `torsion_flat_of_good_reduction_prime_pow`, `infinite_setOf_isArithFrobAt`, `exists_weilPairing_mu`, `mem_isCompatible`, `torsionFlatPackage_localization_of_packages`, `exists_galoisModulePackage_of_finiteQuotient`, `torsionFlatPackage_of_split_adic`, `torsionFlatPackage_of_nonsplit_adic`, `torsion_finite_rat`, `mazur_point_order`, `exists_etale_line_of_good_of_stable_line`, `not_full_torsion_rat`, `exists_rank_le_two_decomposition`, `exists_etale_line_of_multiplicative_self`, `exists_quotient_curve_point`, `not_two_twelve_torsion`, `not_two_ten_torsion`
+**Sorried declarations (compiler-counted): 31** — `infinite_setOf_isArithFrobAt_zpowers`, `exists_weilPairing_mu`, `exists_torsion_etale_package_of_eqChar`, `kernel_prime_pow_torsion_of_eqChar`, `exists_finiteQuotient_galoisModule_etale_package`, `exists_finite_flat_hopf_form_of_good_reduction_prime_pow`, `exists_finite_etale_algebra_form_of_inertia_fixes`, `exists_finite_flat_hopf_form_of_etale_algebra_form`, `torsionFlatPackage_localization_of_packages`, `exists_galoisModulePackage_of_finiteQuotient`, `torsionFlatPackage_of_split_adic`, `torsionFlatPackage_of_nonsplit_adic`, `mazur_point_order`, `exists_etale_line_of_split_multiplicative_self`, `exists_etale_line_of_nonsplit_multiplicative_self`, `exists_quotient_curve_point`, `not_two_twelve_torsion`, `exists_etale_line_or_no_stable_line_of_good`, `not_two_ten_torsion`, `exists_finiteDimensional_coeff_field`, `exists_realizations_of_eigensystem`, `serre_elimination_dihedral_arith`, `exists_line_with_quotCharacter_eq_subCharacter`, `exists_hardlyRamified_number_field_of_card`, `quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified`, `odlyzko_bound_totallyComplex`, `trivial_component_hom_vanishes`, `exists_omega_cocycle_coboundary`, `exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated`, `exists_isWeaklyUniversal_isTraceGenerated`, `moduleFinite_of_isWeaklyUniversal_isTraceGenerated`
 
 - ✅· `fermat_last_theorem` — the goal: `FermatLastTheorem`, assembled from the mathlib reductions and
   `fermatLastTheoremFor_of_five_le`.
@@ -81,10 +81,28 @@ entries file). To add/remove/annotate a node, edit
                                   lemmas (`subCharacter_eq_one_of_sq_eq_zero`,
                                   `quotCharacter_eq_one_of_sq_eq_zero`, ) turn `(ρσ−1)² = 0` into
                                   character-triviality
-                                    - ❌🟪 `FreyPackage.subquotient_character_unramified_at_p` — (stated 2026-07-17) — flat/ordinary at `p`: one of the two
+                                    - ✅🟪 `FreyPackage.subquotient_character_unramified_at_p` — (stated 2026-07-17) — flat/ordinary at `p`: one of the two
                                       characters is unramified at `p` itself (connected-étale
                                       sequence in the ordinary/ multiplicative case; supersingular
                                       excluded by reducibility)
+                                        - ✅· `exists_etale_line_of_multiplicative_self` — `FreyPackage.exists_etale_line_of_multiplicative_self` —
+                                          Tate/connected-étale line at multiplicative self-reduction
+                                          (leaf of the proven flat/ordinary linear-algebra assembly)
+                                            - ❌🟪 `exists_etale_line_of_split_multiplicative_self` — `exists_etale_line_of_split_multiplicative_self` —
+                                              split-multiplicative étale line: pure Kummer at the
+                                              exists_tateEquivSepClosure interface (σ(u)/u ∈ μ_p for
+                                              the whole local Galois group; only the μ_p-line rank-1
+                                              fact + global transport remain) — 2026-07-22
+                                            - ❌🟪 `exists_etale_line_of_nonsplit_multiplicative_self` — `exists_etale_line_of_nonsplit_multiplicative_self` —
+                                              nonsplit case: unramified quadratic-twist descent via
+                                              exists_quadraticTwist_hasSplitMultiplicativeReduction
+                                              — 2026-07-22
+                                        - ✅· `exists_etale_line_of_good_of_stable_line` — `FreyPackage.exists_etale_line_of_good_of_stable_line` —
+                                          connected-étale line at good reduction with stable line
+                                          (leaf of the proven flat/ordinary linear-algebra assembly)
+                                            - ❌🟪 `exists_etale_line_or_no_stable_line_of_good` — `exists_etale_line_or_no_stable_line_of_good` —
+                                              ordinary/supersingular dichotomy with the stable line
+                                              factored out (Serre 1972 Prop 12 shape) — 2026-07-22
                                 - ✅· `det_galoisRep_eq_cyclotomic` — `det_galoisRep_eq_cyclotomic` — (2026-07-17): `det ρ̄` and `χ̄`
                                   are continuous conjugation-invariant `ZMod p`-valued functions on
                                   `Γ ℚ` (continuity of `det ∘ ρ` from discreteness of `End` via
@@ -719,7 +737,7 @@ entries file). To add/remove/annotate a node, edit
                                           every `σ`, the coset `σ·Gal(K̄/E)` contains a conjugate of
                                           a `globalFrob v` with `v ∉ S` (existence form of
                                           Chebotarev for the Galois closure of `E/K`)
-                                            - ❌🟪 `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj` — `exists_globalFrob_restrictNormalHom_conj` (stated
+                                            - ✅🟪 `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj` — `exists_globalFrob_restrictNormalHom_conj` (stated
                                               2026-07-22, agent decomposition of
                                               exists_frobenius_conj_mem_coset): for a finite Galois
                                               subextension L of Kbar/K, tau in Gal(L/K), and finite
@@ -729,6 +747,20 @@ entries file). To add/remove/annotate a node, edit
                                               the profinite coset form is PROVEN from this leaf
                                               (normal closure +
                                               AlgEquiv.restrictNormalHom_surjective lifting).
+                                                - ✅· `infinite_setOf_isArithFrobAt` — `infinite_setOf_isArithFrobAt` — PROVEN 2026-07-22
+                                                  (chebotarev-2, Deuring reduction); consumes the
+                                                  cyclic analytic core leaf
+                                                    - ❌🟪 `infinite_setOf_isArithFrobAt_zpowers` — `infinite_setOf_isArithFrobAt_zpowers` (stated
+                                                      2026-07-22, the analytic cyclic core after the
+                                                      PROVEN Deuring reduction): for number fields
+                                                      E/F with Gal(E/F) = ⟨τ⟩, infinitely many
+                                                      degree-one places of F carry a prime with
+                                                      IsArithFrobAt τ. Dirichlet-AP structurally
+                                                      insufficient (docstring records the reduction
+                                                      analysis); the classical route is the
+                                                      Dedekind-zeta pole / Hecke L-function
+                                                      nonvanishing, or Chebotarev's field-crossing
+                                                      with zero-density of higher-degree places.
                             - ❌🟪 `FreyPackage.exists_quotient_curve_point` — (stated 2026-07-17) — the Vélu quotient leaf: a stable line with
                               trivial quotient action produces `E'/ℚ` with full rational 2-torsion
                               and a rational `p`-point (quotient by the rational subgroup;
@@ -739,10 +771,545 @@ entries file). To add/remove/annotate a node, edit
               the finite group ℤ/2 × ℤ/2p are torsion (finite additive order), the hom corestricts
               into the torsion submodule, and 4p ≥ 20 > 16 ≥ the order of every group in Mazur's
               list (`Nat.card` comparison)
-                - ❌🟪 `WeierstrassCurve.mazur_classification` — Mazur's torsion theorem, stated faithfully: the torsion submodule
+                - ✅🟪 `WeierstrassCurve.mazur_classification` — Mazur's torsion theorem, stated faithfully: the torsion submodule
                   (`Submodule.torsion ℤ E(ℚ)`) is ≃+ to one of the fifteen groups ℤ/n (n ∈
                   {1,…,10,12}) or ℤ/2 × ℤ/2m (m ∈ {1,…,4}). Mazur, Publ. Math. IHÉS 47 (1977);
                   Invent. Math. 44 (1978)
+                    - ✅· `det_galoisRep_eq_cyclotomic` — `det_galoisRep_eq_cyclotomic` — (2026-07-17): `det ρ̄` and `χ̄` are continuous
+                      conjugation-invariant `ZMod p`-valued functions on `Γ ℚ` (continuity of `det ∘
+                      ρ` from discreteness of `End` via `discreteTopology_moduleTopology`;
+                      `χ̄`-continuity in `Chebotarev.lean`); they agree at `Frob_q` for almost all
+                      `q` (the leaf below + `cyclotomicCharacterModL_globalFrob`, ), and the
+                      Frobenius conjugacy classes are dense (`dense_conjClasses_globalFrob`, rooted
+                      in the Chebotarev node), so the closed agreement set is everything. Bridge
+                      `cyclotomicCharacterModL_eq_toZMod` (`χ̄ = toZMod ∘ χ`) via
+                      `modularCyclotomicCharacter.unique` +
+                      `toZMod_eq_ringEquivCongr_comp_toZModPow`
+                        - ✅· `det_galoisRep_globalFrob` — Frobenius determinant at good primes (DECOMPOSED 2026-07-20): the proof
+                          now conjugates the global Frobenius action to the finite-field side via
+                          the (sorried) reduction-transfer model and applies the (sorried) finite-
+                          field Frobenius determinant, with LinearEquiv.conj + LinearMap.det_conj
+                          closing the transport. New machinery: frobAlgHom (the q-power Frobenius of
+                          F_q-bar as a ZMod q-AlgHom, Fermat little theorem for the commutation) and
+                          frobeniusTorsionEnd (its ZMod p-linear action on p-torsion, via Point.map
+                          + endRestrict + toZModLinearMap, mirroring galoisRep).
+                            - ✅· `WeilPairing.det_frobeniusTorsionEnd` — Frobenius determinant over a finite field (DERIVED 2026-07-20 from the
+                              Weil pairing): the q-power Frobenius scales the pairing by q, and
+                              det_eq_of_conj (the proven 2-dimensional alternating-form linear
+                              algebra) gives det = q; the rank-2 input is p_torsion_rank over the
+                              separably closed F_q-bar with (p : F_q-bar) != 0 from p != q.
+                                - ✅· `WeilPairing.exists_weilPairing_frobenius` — Frobenius-twisted ZMod p Weil pairing over F_q (DERIVED 2026-07-21
+                                  from exists_weilPairing_mu by discrete logarithm: primitive root
+                                  via HasEnoughRootsOfUnity, zmodEquivZPowers, Frobenius naturality
+                                  becomes q-scaling since frobAlgHom is x^q).
+                                    - ❌🟪 `WeilPairing.exists_weilPairing_mu` — the mu_p-valued Weil pairing over F_q (single sorry
+                                      2026-07-21: N1 COMPLETE): IsDedekindDomain(CoordinateRing) of
+                                      the base-changed curve is FULLY PROVEN via Krull-Akizuki --
+                                      FaithfulSMul, FiniteDimensional (conjugate-norm span),
+                                      IsSeparable (Bezout certificate / char-2 unit-derivative with
+                                      Delta-vanishing), IsIntegralClosure (normality: minpoly
+                                      coefficient descent, degree dichotomy, reduced-fraction
+                                      descent against the squarefree b2-cubic with disc = 16 Delta
+                                      in odd characteristic; in characteristic two the tau0 = tc A
+                                      collapse, w = sc A integrality, and the Taylor/singular-point
+                                      contradiction at the root of A -- both affine partials vanish,
+                                      contradicting equation_iff_nonsingular). IN-PROOF ALSO PROVEN
+                                      (2026-07-21): hCunits (units of the coordinate ring are the
+                                      nonzero constants, via degree_norm_smul_basis) and hgen
+                                      (p-torsion points have principal p-th ideal-class powers --
+                                      the Miller-generator existence, via toClass +
+                                      ClassGroup.mk_eq_one_iff). ALSO PROVEN: hpoints (points
+                                      outside any finite abscissa set) and hgen2 (two-point Miller
+                                      generators for translated divisors); point evaluation is
+                                      mathlib's AdjoinRoot.evalEval. PROVEN reciprocity ingredients:
+                                      hrecP1 (P^1 Weil reciprocity: double-product swap with the
+                                      (-1)^(mn) sign, via hcard/hevalprod root-product machinery);
+                                      hline (line ideal identity (l) = I_P I_Q I_{-(P+Q)} from
+                                      mathlib's XYIdeal_mul_XYIdeal + XYIdeal_neg_mul by Dedekind
+                                      cancellation; the vertical identity is mathlib's
+                                      XYIdeal_neg_mul itself); hcubtrans + hlinerec (line-line
+                                      reciprocity core: shared-intersection-point Vieta, the two
+                                      fiber cubics agree at the common abscissa). Also PROVEN:
+                                      hnormeval (norm-evaluation compatibility (N f)(x0) = f(x0,y0)
+                                      f(x0,negY) via norm_smul_basis + the Weierstrass equation) and
+                                      hXYmax (point ideals are maximal, via quotientXYIdealEquiv).
+                                      hfactor COMPLETE (principal spans factor as point-divisor
+                                      multisets via normalizedFactors + hmax), hker COMPLETE (kernel
+                                      of point evaluation = the point ideal), hXYinj COMPLETE
+                                      (point-ideal injectivity). hoffdiv COMPLETE (nonvanishing off
+                                      the divisor). hNle + hnormpt COMPLETE: relNorm of a point
+                                      ideal IS the vertical span (X - x_P) (conjugate-product
+                                      pinning; PerfectField route unavailable in char q). NEXT:
+                                      span{N f} = relNorm(span f) = prod of verticals over div f
+                                      (relNorm_singleton + map_multiset_prod over hfactor), so N f =
+                                      unit * prod (X - P.1) -- then vertical reciprocity: f(fiber c)
+                                      = (N f)(c) (hnormeval) vs vertical(div f) = prod (P.1 - c) via
+                                      hrecP1/evaluation of the product form. Formerly recorded as:
+                                      NEXT brick: spanNorm of a point ideal is the vertical span (X
+                                      - x_P) (check Ideal.spanNorm_singleton / spanNorm_mul API),
+                                      giving N f = unit * prod (X - P.1) over the divisor -- the
+                                      bridge between hnormeval fiber-products and hrecP1 root-
+                                      products for the vertical-vs-anything reciprocity case.
+                                      GENERATOR RECIPROCITY COMPLETE: hrecfib (vertical fiber-
+                                      quotient form, via hnormeval'/hspanprod/hNconst) and hrecline
+                                      (line-line divisor form, via
+                                      hNline/hevline/hevvert/hondiv/habs + the hlinerec core).
+                                      hgenfac COMPLETE (the class-group descent / Miller
+                                      factorization, with hdvdspan). Generator divisor witnesses
+                                      COMPLETE (hfiber, hvertdiv, hlinediv). Signed generator-pair
+                                      table COMPLETE (hggll unconditional line-line incl.
+                                      parallel/identical; hgglv line-vertical; hggvv vertical-
+                                      vertical, adopted from the accidental parallel session;
+                                      hrecfib). hlinediv' explicit line divisor; hvw vertical-vs-
+                                      word assembly PROVEN. hlw PROVEN (line-vs-word, sign
+                                      (-1)^lines). hww PROVEN (word-vs-word, sign (-1)^(|L1| x
+                                      |L2|), 2026-07-21 first-attempt green: prod_map_prod_map swap
+                                      per part, hlw per line of L1 / hvw per vertical of V1, sign
+                                      collected by map_const'/prod_replicate, closed by pow_mul +
+                                      ring; binder-capture avoided by fresh outer binder ab and
+                                      beta-reduced ab.1/ab.2 instantiations per the parent session's
+                                      warning). DIVISOR-DICTIONARY BRICKS PROVEN (2026-07-21):
+                                      hdivuniq (equal products of point ideals force equal point
+                                      multisets: prime picking via IsPrime.multiset_prod_map_le,
+                                      maximality, hXYinj, Dedekind cancellation), hvertdiv'
+                                      (explicit vertical divisor at the canonical yfib fiber =
+                                      XYIdeal_neg_mul), hworddiv (span of a line/vertical word =
+                                      product of point ideals over its explicit hww-shaped divisor,
+                                      by induction through hlinediv'/hvertdiv'). hgenfac
+                                      STRENGTHENED with the F-rationality invariant (2026-07-21,
+                                      PROVEN): for any subfield F containing the divisor
+                                      coordinates, the Miller words have line parameters,
+                                      intercepts, and vertical parameters in F, AND every line-cubic
+                                      root lies in F (the new line's divisor is the explicit three-
+                                      point multiset {P, Q, -(P+Q)} via hline + hlelt + habs, so its
+                                      roots are the three F-rational abscissas; slope/addX/addY
+                                      memberships by the subfield arsenal
+                                      hnatF/hZF/haF/hnegYF/hslopeF/haddXF/haddYF). Consumers choose
+                                      test abscissas OUTSIDE F via hpoints (F finite in
+                                      applications), killing all collision/nonvanishing obligations.
+                                      Pairing generators in junk-free form: b_P := (XClass x_S)^p
+                                      with div = p(S)+p(-S), a_P := gamma*b_P with div =
+                                      p(P+S)+p(-S) (integrality by fractional-ideal arithmetic), so
+                                      all supports explicit. hwordeval PROVEN (evaluation of a
+                                      line/vertical word at a curve point = the value product, via
+                                      map_multiset_prod + hevline/hevvert). hlineptE + hworddivE +
+                                      hbaldiv PROVEN (2026-07-21): line-cubic roots are curve-point
+                                      abscissas; every hww-shaped word divisor satisfies the curve
+                                      equation; and the BALANCED DIVISOR BOOKKEEPING -- the hgenfac
+                                      identity forces D + div(d-word) = div(n-word) as point
+                                      multisets (span multiplicativity, span_singleton_mul_left_unit
+                                      for the C u factor, hworddiv on both words, uniqueness
+                                      hdivuniq). hevconst + hevid PROVEN (evaluation of the embedded
+                                      constant via evalEval_mk/evalEval_C; the pointwise evaluation
+                                      form of the hgenfac identity: f(T) * dword(T) = u * nword(T)
+                                      at every curve point T). GLUE WRITTEN AND COMPILING
+                                      (2026-07-21, per Deyao's glue-first policy): the full assembly
+                                      of the pairing now typechecks end-to-end -- IsWeilValue v w z
+                                      spells the Miller cross-ratio characterization (degenerate
+                                      cases z=1; affine case: finite subfields F <= F', translate S
+                                      with data in F' and abscissa outside F, translate R with
+                                      abscissa outside F', Miller elements aP with div =
+                                      p(P+S)+p(-S) and bP = XClass(xS)^p, same for Q with R, and the
+                                      division-free 8-evaluation equation for z =
+                                      [fP(Q+R)/fP(R)]*[fQ(S)/fQ(P+S)]); e := unique choice from
+                                      hvalue; exact <e, legs> closes the theorem. hexval
+                                      CONSTRUCTION GLUE COMPILING (2026-07-21): the full generic-
+                                      setup existence proof is written -- degenerate cases; affine
+                                      representatives with retyped nonsingularity (base-change defeq
+                                      bridge); F from hsubfin over the P,Q data; S via hpoints off
+                                      F; P+S affine (rcases with hPSne); F' from hsubfin over F +
+                                      S,PS data + the four bad-R abscissas xOf(-Q + T) over the
+                                      xS/xPS fibers (so xR nonmembership kills the collision cases);
+                                      R via hpoints off F'; Miller numerators from hmill2
+                                      (statement: XYIdeal1^p * XYIdeal2^p principal when the points
+                                      sum to p-torsion); value z := Units.mk0 (B/A) with the
+                                      defining equation by div_mul_cancel0; representative matching
+                                      by hPP/hQQ + subst. hexval ALL BUT ONE RESOLVED (2026-07-21):
+                                      hsubfin (adjoin + finiteDimensional_adjoin +
+                                      Module.finite_of_finite), hfib2 (Vieta/linear_combination on
+                                      the fiber quadratic), hPSne/hQRne, hPStor/hQRtor, memberships,
+                                      hPP/hQQ, hxQRne (the bad-point argument: hfib2 + hptfun point
+                                      transport + hxRof via neg_add_cancel_left + definitional
+                                      finset matching), hA/hB (replicate divisors hDP/hDQ, four
+                                      hoffdiv instances, vertical evaluations via map_pow + hevvert,
+                                      mul_ne_zero assembly), and hmill2 reduced to hgen2 via the
+                                      negated translate (neg_some + negY_negY + sub_eq_add_neg).
+                                      hexval FULLY PROVEN (2026-07-21, zero sorries in the existence
+                                      half): hmill2 completed via the units formulation -- XYIdeal'
+                                      lands in (FractionalIdeal)units, hgen2's principality gives
+                                      the spanSingleton witness (coeToSubmodule_injective +
+                                      beta_reduce), the vertical identity coerces through
+                                      XYIdeal'_eq/coeIdeal_mul/XYIdeal_neg_mul, the unit-group
+                                      rearrangement u1^p u2^p = J^p (u2n u2)^p by mul_pow +
+                                      inv_mul_cancel, the calc chain lands on spanSingleton (t g^p),
+                                      and the generator descends by mem_coeIdeal +
+                                      coeIdeal_injective. huniqval GLUE COMPILING (2026-07-21):
+                                      degenerate case and the full cancellation algebra proven (both
+                                      setups destructured, z1 = z2 via Units.ext + mul_right_cancel0
+                                      on A1*A2 through a calc chain using the two defining
+                                      equations); the single remaining sorry is hcross -- the cross-
+                                      setup reciprocity B1*A2 = B2*A1 for two admissible Miller
+                                      setups of the same (P,Q), to be proven by Weil reciprocity
+                                      through the hgenfac words of the four Miller numerators
+                                      (hbaldiv bookkeeping, hevid evaluation identities, hww swaps,
+                                      F-avoidance nonvanishing). hcross PROVEN (2026-07-21, third-
+                                      setup comparison): G := hsubfin over both setups' F' carriers;
+                                      hsetup3 G produces the generic third setup; two hrecgen
+                                      instances give B_i*A_3 = B_3*A_i; mul_right_cancel0 against
+                                      A3*B3 with a linear_combination (coefficients A_2*B_3 and
+                                      -A_1*B_3) closes it. NEW NAMED CORES (sorried, stated in
+                                      full): hsetup3 (avoidance-parametrized Miller setup: for any
+                                      finite subfield G containing the torsion representatives'
+                                      data, a full setup whose four divisor abscissas avoid G, with
+                                      both evaluation products nonzero -- proof = the hexval
+                                      construction with G folded into the avoidance finsets) and
+                                      hrecgen (GENERIC-PAIR RECIPROCITY, the Weil reciprocity core:
+                                      a full admissible setup over F <= F' against a second Miller
+                                      quadruple whose four divisor abscissas avoid F', cross-
+                                      multiplied equality of the 16 evaluations; proof plan: hgenfac
+                                      words of the four Miller numerators over F' (divisor
+                                      coordinates all in F'), hbaldiv bookkeeping, hevid pointwise
+                                      identities, hww word-word swaps, nonvanishing from the
+                                      avoidances since all word roots lie in F'). hsetup3 PROVEN
+                                      (2026-07-21, first pass): the hexval construction parametrized
+                                      by the avoid-subfield G -- base field F := hsubfin over G's
+                                      carrier; S chosen off F and off the G-fiber bad-S images
+                                      (Finset.image over G.toFinset of xOf(-P + fiber point));
+                                      x(P+S) avoids G by the transport argument (hxSof via
+                                      neg_add_cancel_left + hptfun + definitional image membership);
+                                      F' additionally folds the four xS/xPS-fiber bad-R points and
+                                      the G-fiber bad-R images; x(Q+R) avoids G and {xS, xPS}
+                                      likewise; torsion, hmill2 numerators, replicate divisors, four
+                                      hoffdiv nonvanishings, and both products nonzero, exactly as
+                                      in hexval. HRECGEN REFINED PLAN (2026-07-21): change one
+                                      translate at a time (R-step then S-step). For the R-step, the
+                                      comparison function tau has EXPLICIT divisor
+                                      (QR1)+(R3)+(-R1)+(-QR3) [points summing to zero, so the 4-fold
+                                      point-ideal product is principal -- new brick hmill0: n points
+                                      summing to zero give a principal product, by the toClass
+                                      homomorphism + the hmill2 units/ClassGroup extraction; NO junk
+                                      divisor], with denominator the two verticals
+                                      XClass(xR1)*XClass(xQR3) [explicit divisor]. The z-ratio
+                                      telescopes: the f_Q-difference contributes
+                                      [tau(PS1)/tau(S1)]^p directly, and f_P(div tau) = tau(div f_P)
+                                      = the same p-th power by the function-vs-tau Weil reciprocity
+                                      -- f_P = aP1/XS1^p has ALL divisor data in F1' (no R-data!),
+                                      so factor its pair into hgenfac words over F1' (roots in F1')
+                                      and evaluate at tau's divisor points whose abscissas xQR1,
+                                      xR1, xR3, xQR3 all avoid F1'; tau's evaluations at PS1, S1 are
+                                      nonzero since those abscissas lie in F1'. The word-level
+                                      computation uses hbaldiv + hevid + hww + hwordeval. S-step
+                                      mirrors with the roles of the S-translates. hrecgen
+                                      TELESCOPING SKELETON COMPILING (2026-07-21): the hybrid setup
+                                      (S1, R3) reuses aP1 and aQ3 unchanged; hstepR (move R1 -> R3,
+                                      S1 fixed) and hstepS (move S1 -> S3, R3 fixed) are stated as
+                                      the two cross-multiplied 16-evaluation identities; hAh/hBh
+                                      state the hybrid products' nonvanishing; the chain closes by
+                                      mul_right_cancel0 + linear_combination with coefficients
+                                      B3-product * Bh and B1-product * Bh. hAh/hBh PROVEN. HSTEP
+                                      ARCHITECTURE (2026-07-21, the decisive design): the KEY
+                                      SOUNDNESS INSIGHT is that the FULL-DIVISOR 4-function
+                                      reciprocity (hstar) is unconditionally true -- for f1,f2,g1,g2
+                                      with point-divisor factorizations and |Df1|=|Df2|,
+                                      |Dg1|=|Dg2|: prod_{Dg1}f1 * prod_{Dg2}f2 * prod_{Df2}g1 *
+                                      prod_{Df1}g2 = prod_{Dg2}f1 * prod_{Dg1}f2 * prod_{Df1}g1 *
+                                      prod_{Df2}g2. Any support collision zeroes BOTH sides
+                                      symmetrically (P in Dfi cap Dgj kills the (fi,Dgj)-factor on
+                                      one side and the (gj,Dfi)-factor on the other), so NO
+                                      avoidance hypotheses are needed; the proof is by hgenfac-word
+                                      factorization of all four functions, hevid pointwise products,
+                                      hbaldiv bookkeeping in the multiplicative form e_{divWN}(W) =
+                                      e_D(W) * e_{divWD}(W), hww word-word swaps, with u-powers
+                                      cancelling by balance and hww signs cancelling by parity. The
+                                      un-powered (mu_p-free) content flows through the multiplicity-
+                                      ONE comparison element t from hmill0 (zero-sum four-point
+                                      principality: D_t = (Q+R1)+(-R1)+(R3)+(-(Q+R3)) sums to zero).
+                                      hstepR then: (1) hmill0 gives t; (2) hcompQ: aQ1 *
+                                      XClass(xQR3)^p * XClass(xR3)^p = C c * aQ3 * t^p (span
+                                      equality + hCunits); (3) the hstar instance f1:=aP1,
+                                      f2:=XClass(xS1)^p, g1:=t, g2:=XClass(xR1)*XClass(xQR3); (4)
+                                      strip the sigma-companion common factors (aP1 at -R1/-QR3, t
+                                      at -S1, verticals) using the avoidance nonvanishing available
+                                      in hstepR's context, and combine with hcompQ evaluated at S1
+                                      and PS1. hstepS mirrors. htex PROVEN (the zero-sum four-point
+                                      principality: neg_some + abel for the sum, toClass additivity,
+                                      ClassGroup.mk_eq_one_iff, hextract-style descent with no
+                                      inverses) and hcomp PROVEN (span computation through
+                                      span_singleton_pow/XYIdeal_neg_mul + ring, then Associated via
+                                      span_singleton_eq_span_singleton and hCunits for the
+                                      constant). hfin PROVEN (2026-07-21): the complete R-step
+                                      stripping -- explicit divisors for aP1 and t, six sigma-
+                                      companion nonvanishings (hoffdiv + the new xQR1-avoidance
+                                      conjunct), normalization by simp only [map_pow, map_mul,
+                                      mul_pow, hevvert, hevconst] (CRUCIAL: mul_pow splits every
+                                      product-power since ring cannot merge sum-based power atoms
+                                      under a symbolic exponent), the strip hXY by mul_right_cancel0
+                                      against the sigma-product + one-shot linear_combination
+                                      hstarinst, and the final telescoping linear_combination with
+                                      hdS/hdP (the pointwise hcomp images) and hXY. hstarinst WORD-
+                                      DATA GLUE COMPILING: aP1's Miller words obtained from the
+                                      F-rational hgenfac over F' (2p-card replicate divisor,
+                                      memberships from the predicate + negY closure), t's words over
+                                      hsubfin of its eight coordinates, and both hbaldiv divisor
+                                      bookkeepings established; the single remaining sorry inside
+                                      hstarinst is hgrand -- the assembly: evaluate the two word
+                                      identities (hevid) over the eight sigma-closed points, convert
+                                      word-divisor evaluation products through the hbaldiv multiset
+                                      identities (multiplicative, division-free), swap word-vs-word
+                                      products with hww (including the vertical words XS1^p and
+                                      XR1*XQR3 directly), and cancel the balanced u-powers and
+                                      paired hww signs. HGRAND REDUCTION DERIVED (the complete
+                                      roadmap): multiply both sides by the four d-word value
+                                      products (WdV over D_t and Dg2, MdV^p over the S-pair and PS-
+                                      pair); the hevid product instances (A1/A2 for aP1 over the
+                                      four t-points and four vertical-points, B1/B2 for t over the
+                                      two sigma-pairs) eliminate the ring-element evaluations with
+                                      BALANCED constant powers uf^4 and ut^2p on both sides; the
+                                      goal becomes the pure word identity (star-w): WnV[D_t]*WdV[Dg2
+                                      ]*(MnV[Sp])^p*(MdV[Pp])^p*(vS1V[Dg2])^p*(vRQV[Pp])^p = WdV[D_t
+                                      ]*WnV[Dg2]*(MdV[Sp])^p*(MnV[Pp])^p*(vS1V[D_t])^p*(vRQV[Sp])^p.
+                                      Every multiset there is a word divisor: D_t converts through
+                                      hbalt (phi[D_t]*phi[div Md-word] = phi[div Mn-word],
+                                      multiplicative and division-free), the p-th-power pair
+                                      products ARE phi[D_P] = phi[div Ln-word]/phi[div Ld-word]
+                                      through hbalP, and Dg2/Sp are the canonical fiber divisors of
+                                      the vertical words {xR1,xQR3} and {xS1} after the hfib2 pair
+                                      identification (vertical values only see abscissas; line
+                                      values need the multiset identification {(c,y),(c,negY y)} =
+                                      canonical pair). The final stitch is hww instances (signs 1
+                                      against the vertical words since |L|=0; the (Ln/Ld)x(Mn/Md)
+                                      signs pair up on both sides) combined in one
+                                      linear_combination. hgrand steps 1-2-4 IN PLACE: hfibpair
+                                      proven; the nine pointwise hevid instances (aP1 at
+                                      QR1/-R1/R3/-QR3/R1/QR3, t at S1/-S1/PS1) and thirteen hww
+                                      instances (the four (Ln/Ld)x(Mn/Md) swaps and the vertical-
+                                      word swaps against {xS1} and {xR1,xQR3}, including the
+                                      vertical-vertical one) are bound in context. step 3 DONE as
+                                      inferred-type bindings: hcvt/hcvP are phi-parametrized
+                                      congrArg product images of hbalt/hbalP (no giant restatements;
+                                      normalize with
+                                      map_add/prod_add/map_replicate/prod_replicate/mul_pow at use
+                                      time). STITCH ANALYSIS (decisive): the chain must at the end
+                                      cancel word-value factors, so their nonvanishing is REQUIRED;
+                                      word-divisor points of the F'-words are F'-ABSCISSA points
+                                      (line points fully F'-rational; vertical points have
+                                      F'-abscissae), so ALL aP1-word collisions with the evaluation
+                                      points die once xQR1 is NOT in F' -- amendment (alpha): add
+                                      xQR notin F' to IsWeilValue; it is constructible in hexval by
+                                      folding the finitely many bad R over the F'-fibers (R = -Q +
+                                      fiber point of an F'-abscissa) into the R-avoidance finset,
+                                      exactly the existing badxs pattern with a Finset.image over
+                                      F'.toFinset -- and then all four div-t abscissas lie outside
+                                      F', so t is nonzero at every F'-abscissa point as well. The
+                                      remaining (beta) obstruction is the t-word side (t's own
+                                      hgenfac words over Ht can collide with the S1/PS1 evaluation
+                                      points); the candidate resolutions are (i) eliminate t-evals
+                                      through word-vs-t swaps instead of t-words (needs the line-vs-
+                                      explicit-divisor reciprocity hlinet, unconditional form
+                                      pending) or (ii) prove the sigma-paired norm-level identity
+                                      via hrecfib/hNconst and recover singles -- rejected: it loses
+                                      the anti-symmetric mu_p-content (companions differ per side).
+                                      amendment (alpha) DONE. BETA RESOLVED -- THE EXPLICIT
+                                      t-FACTORIZATION: the four points of div t pair as chord(QR1,
+                                      -R1) with third point -Q and chord(R3, -(Q+R3)) with third
+                                      point Q, so t * XClass(xQ) = C c * l1 * l2 (hlfac; span
+                                      computation via ht + two hline instances + XYIdeal_neg_mul at
+                                      xQ + hCunits, exactly the hcomp pattern) with the chords'
+                                      slopes/intercepts EXPLICIT. No hgenfac for t at all: drop
+                                      Mn/Md/Wn'/Wd'/hbalt/het and the M-flavored hww instances; t's
+                                      evaluations eliminate pointwise through hlfac (t(T)*(x_T - xQ)
+                                      = c*l1V(T)*l2V(T)), and the swaps are hlw/hvw/hww against the
+                                      explicit two-line-one-vertical word. Collision control:
+                                      aP1-word roots lie in F' and all t-word divisor abscissas
+                                      except xQ (namely xQR1, xR1, xR3, xQR3) avoid F' by (alpha);
+                                      the +-Q points appear with the SAME multiset {Q,-Q} on both
+                                      sides of hlfac (div l1 + div l2 contains -Q and Q; div
+                                      vertical-xQ = {Q,-Q}), so aP1-word values at +-Q cancel
+                                      symmetrically and never need nonvanishing. Two small new
+                                      inequalities, derivable in place: xS1 <> xQ (xQ in F, xS1
+                                      notin F) and xPS1 <> xQ (else PS1 = +-Q makes S1 = -P + (+-Q)
+                                      whose abscissa is F-rational by the addition-formula closure
+                                      haddXF/hslopeF, contradicting xS1 notin F). UPGRADE (gamma,
+                                      implemented): the chords are paired as (Q+R1,R3) and
+                                      (-R1,-(Q+R3)) so their third points are -M and M with M =
+                                      Q+R1+R3 — and M's abscissa is kept OUT of F' by hypothesis
+                                      (new hrecgen binders xM yM hM hMc hxMF', plus the mirror xM'
+                                      etc. for the future hstepS chord P+S1+S3), discharged in
+                                      hcross by enlarging the avoided subfield G with generators
+                                      xQR1,yQR1,xQR2,yQR2 and the yfib-images of F1',F2' (transport:
+                                      xM in F' would put xR3 resp. xS3 in G via the addition-formula
+                                      closure haddXF/hslopeF/hnegYF — contradiction with hsetup3's
+                                      avoidance). CONSEQUENCE: every divisor point of t's explicit
+                                      word (QR1, -R1, R3, -QR3, M, -M) has non-F' abscissa, so NO
+                                      collision with the aP1-word (roots in F') anywhere — the
+                                      stitch is fully cancellation-safe with no symmetric-zero
+                                      caveats. DONE: hlfac (t*(X-xM) = c*lA*lB, fully proven),
+                                      htword (word format), hbalt (divisor balance), het1-3
+                                      (pointwise at S1/-S1/PS1), hcvt, all inside hgrand; hcross
+                                      discharges all four M-binder groups. STITCH CHAIN PROVEN
+                                      THROUGH: hstitch -> hscalar (hevvert scalarization) -> hword0
+                                      (t-elimination via heL/heR from het1-3, junk (x-xM) powers
+                                      cancelled, hZ1/hZ2 nonzero by xM notin F') -> hword1
+                                      (aP1-elimination: mul_right_cancel0 over hDne = the six word-
+                                      denominator values, proven nonzero via hrootmem + hRtF/hVnF +
+                                      avoidances; eight-term linear_combination over heP1-6). SINGLE
+                                      REMAINING SORRY of the chain: hword2 = the fully word-level
+                                      reciprocity (uf-normalized numerator word values both sides,
+                                      complementary denominator extras), to be closed by the
+                                      projection cycle, worked out as follows. (i) For PHI := the
+                                      aP1-word value functions (PHIN(T) = (Ln.map lam_T).prod *
+                                      (Vn.map vert_T).prod, PHID likewise with Ld/Vd), hcvt PHI
+                                      reads: PHI over the four Dt points times PHI over the two xM-
+                                      fiber points = PHI over can(Lnt) — because Lnt is the two-
+                                      chord multiset, its bind IS can(chordA) + can(chordB). (ii)
+                                      hww Ln Lnt Vn 0 gives prod over can(Lnt) of PHIN = prod over
+                                      can(Ln)+fib(Vn) of (LamA*LamB), sign (-1)^(2|Ln|) = 1 (EVEN —
+                                      no sign bookkeeping); hww Ln 0 Vn {xM} gives prod over fib(xM)
+                                      of PHIN = prod over can(Ln)+fib(Vn) of (x - xM); mirrors with
+                                      Ld/Vd. (iii) hcvP at LamA, LamB, (x - xM) converts prod over
+                                      can(Ln)+fib(Vn) minus can(Ld)+fib(Vd) into the explicit DP-
+                                      point values LamA(PS1)^p LamA(-S1)^p etc — exactly the T1/T2
+                                      and Z1/Z2 factors already present in hword2's rest-groups.
+                                      (iv) The junk to cancel at the end: PHIN/PHID at the two xM-
+                                      fiber points — nonzero exactly as in hDne since the fiber
+                                      abscissa xM avoids F' (use hfibpair to identify the canonical
+                                      fiber pair with the actual sigma-pair). (v) The V1/V2/W1/W2
+                                      explicit mismatches reconcile through the same projections at
+                                      the vertical value functions (x - xS1), (x - xR1), (x - xQR3)
+                                      via the already-bound hwv3/4/7/8/9 instances. Execute as: bind
+                                      the four hww instances + six hcvP projections + hcvt at
+                                      PHIN/PHID/(x-xM), normalize DP-multiset products by
+                                      map_add/prod_add/map_replicate/prod_replicate and the Lnt/Dt
+                                      literals by the cons simp set, state the residual as one
+                                      linear_combination (pre-split product-powers), cancel the
+                                      M-fiber junk by mul_right_cancel0. Historical: hstitch was the
+                                      sigma-completed Weil reciprocity equation itself, provable by:
+                                      convert XClass-evals to scalars (hevvert+map_pow), eliminate
+                                      aP1-evals by heP1-6 and t-evals by het1-3, project hbalP by
+                                      hcvP at the t-word value functions (LambdaA, LambdaB, x-xM)
+                                      and hbalt by hcvt at the aP1-word value functions, swap with
+                                      hww instances (Ln/Ld/Vn/Vd vs the explicit two-line word and
+                                      {xM}), and close with mul_right_cancel0 over the junk product
+                                      (all factors nonzero by the avoidances). REMAINING inside
+                                      hgrand: ONLY step 5, the stitch -- normalize the goal and all
+                                      bound ingredients (nine hevid points, thirteen hww instances,
+                                      hcvt/hcvP at the value functions of
+                                      (Ln,Vn)/(Ld,Vd)/(Mn,Wn')/(Md,Wd')/{xS1}/{xR1,xQR3}, hfibpair
+                                      identifications) with the canonical multiset-unfolding simp
+                                      set, then combine via calc/linear_combination; prune unused
+                                      hww instances after. REMAINING: hgrand (in hstepR/hstarinst),
+                                      then hstepS mirrors the whole R-step, and hleg1-hleg6.
+                                      REMAINING SORRIES in the mu-node: hrecgen and hleg1-hleg6
+                                      (bilinearity x2, alternation, nondegeneracy, p-th powers,
+                                      Frobenius naturality). Superseded: FRONTIER (7 named sorried
+                                      steps) description. Superseded: NEXT: line-vs-word (hlw, sign
+                                      (-1)^lines) then word-vs-word (hww), then the balanced
+                                      reciprocity for functions via hgenfac and the pairing.
+                                      Remaining assembly: the balanced cross-product reciprocity for
+                                      arbitrary disjoint pairs from the generator cases, then the
+                                      pairing and its six legs. Superseded plan text: REMAINING for
+                                      reciprocity: the class-group descent hgenfac (every function
+                                      with point-divisor factorization equals a constant times a
+                                      quotient of products of line/vertical elements, by strong
+                                      induction on divisor size through hline + XYIdeal_neg_mul +
+                                      toClass-nontriviality) and the multiplicative assembly of the
+                                      balanced cross-product reciprocity; then the pairing
+                                      definition (ratio over hgen2 generators at hpoints-generic
+                                      translates) and its six legs. Older per-brick log follows:
+                                      NEXT: divisor evaluation f(D) := prod of evalEval over D;
+                                      nonvanishing off the divisor; the reciprocity statement f(div
+                                      g) = g(div f) for disjoint supports, by induction via
+                                      line/vertical factorization (hline + XYIdeal_neg_mul) reducing
+                                      to the proven cores hlinerec (line-line) and hnormeval +
+                                      hrecP1 (vertical cases); then the pairing and its six legs.
+                                      hmax COMPLETE (with hresfin + hkill): every maximal ideal of
+                                      the coordinate ring IS a point ideal XYIdeal x0 (C y0) at a
+                                      curve point -- the divisor language is available. Also PROVEN:
+                                      hlinfac (every maximal ideal contains a vertical X - c: the
+                                      lying-over leg of hmax, via the norm-membership trick and
+                                      prime factor-picking). NEXT: hmax -- every maximal ideal of
+                                      the coordinate ring is a point ideal (route: M cap k[x]
+                                      contains X - c via the norm-membership trick f*sigma-f =
+                                      algebraMap(N f) from coe_norm_smul_basis with N f nonzero by
+                                      degree_norm_smul_basis; residue field is spanned over k by the
+                                      images of the basis {1, y} since X - c dies, so it is finite
+                                      over k, hence = k by
+                                      IsAlgClosed.algebraMap_bijective_of_isIntegral; then the
+                                      coordinate images x0, y0 give XClass/YClass in M, the
+                                      Weierstrass polynomial Taylor-decomposes to give the equation,
+                                      and hXYmax + IsMaximal.eq_of_le forces M = XYIdeal x0 (C y0)).
+                                      Then: divisor factorization of principal ideals into point
+                                      primes, line/vertical factorization of functions with O-free
+                                      principal divisors, reciprocity assembly from
+                                      hlinerec/hnormeval/hrecP1, then the pairing definition and its
+                                      six legs. REMAINING (the single sorry): the evaluation-ratio
+                                      pairing e(P,Q) = f_P(D_Q)/f_Q(D_P) with disjoint affine
+                                      supports (D_P = (P+S)-(S), D_Q = (Q+R)-(R)); scalar-invariance
+                                      is automatic in the ratios; well-definedness/bilinearity via
+                                      Weil reciprocity (norm-pushforward to P^1 or direct);
+                                      alternation, nondegeneracy, Frobenius naturality. Formerly
+                                      listed route e(P,Q) = f_P(D_Q)/f_Q(D_P),
+                                      bilinearity/alternation/nondegeneracy via Weil reciprocity on
+                                      HeightOneSpectrum divisors plus the infinite place, Frobenius
+                                      naturality from functoriality of the whole construction. —
+                                      MODULE SPLIT (2026-07-22, this machine compiles the mega-lc
+                                      block in ~98s): the R-step telescoping monster hstepR is
+                                      EXTRACTED VERBATIM as the standalone `WeilPairing.stepR`
+                                      (WeilPairingStepR.lean, engine facts as hypothesis-parameters,
+                                      field-generic: quantified over an arbitrary subfield F' with
+                                      exactly the used membership facts, NO finiteness) and the two-
+                                      level reciprocity `hrecgen` as `WeilPairing.recgen`
+                                      (WeilPairingRecgen.lean, imports StepR; contains the hstepS
+                                      sorry). The prune fallout (htrRN/htrQN/htrRD/htrQD + their
+                                      maxRecDepth simp, deleted 6acdb95) is RESTORED and re-verified
+                                      inside stepR. hstepS PLAN (σ-mirror, verified at the statement
+                                      level: atoms of σ(stepR) = atoms of hstepS with sides
+                                      swapped): instantiate stepR at a second field G'' with
+                                      (R₃,QR₃-coords ∈ G''; xS₁,xPS₁,xS₂,xPS₂,xS₃,xPS₃,x(M'₁),x(M'₂)
+                                      ∉ G''), close by linear_combination; the G''-existence
+                                      discharges by DEGREE ARITHMETIC in the subfield lattice of
+                                      𝔽̄_q (finite subfields totally ordered; K(n) := frobⁿ-fixed
+                                      subfield; promises against the FIXED field K(2f₀), f₀ = deg
+                                      𝔽_q(P,Q-coords); prime ℓ > all fixed degrees; R₃-family chosen
+                                      with x ∈ K(ℓ)∖K(1) so G'' ⊆ K(2ℓf₀) and each promised element
+                                      stays out via gcd(d,ℓ)=1) — requires widening the S-side
+                                      avoid-sets to K(2f₀)-closures and strengthening hsetup3 (extra
+                                      avoid-finset input Aout with K(2f₀)-promises +
+                                      G''-conclusion).
+                        - ✅· `dense_conjClasses_globalFrob` — `dense_conjClasses_globalFrob` — Chebotarev density, topological form —
+                          now (2026-07-16) by the profinite limit argument (: cosets of fixing
+                          subgroups of finite subextensions are a neighborhood basis,
+                          `krullTopology_mem_nhds_one_iff`; the finite-level statement puts a
+                          Frobenius conjugate in every coset):
+                            - ✅· `exists_frobenius_conj_mem_coset` — `exists_frobenius_conj_mem_coset` — Chebotarev, finite level: for
+                              every finite subextension `E` of `K̄/K` and every `σ`, the coset
+                              `σ·Gal(K̄/E)` contains a conjugate of a `globalFrob v` with `v ∉ S`
+                              (existence form of Chebotarev for the Galois closure of `E/K`)
+                                - ✅🟪 `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj` — `exists_globalFrob_restrictNormalHom_conj` (stated 2026-07-22,
+                                  agent decomposition of exists_frobenius_conj_mem_coset): for a
+                                  finite Galois subextension L of Kbar/K, tau in Gal(L/K), and
+                                  finite S, there exist a place v outside S and h with h *
+                                  restrictNormalHom L (globalFrob v) * h^-1 = tau — the finite-
+                                  Galois-quotient existence form of Chebotarev; the profinite coset
+                                  form is PROVEN from this leaf (normal closure +
+                                  AlgEquiv.restrictNormalHom_surjective lifting).
+                                    - ✅· `infinite_setOf_isArithFrobAt` — `infinite_setOf_isArithFrobAt` — PROVEN 2026-07-22
+                                      (chebotarev-2, Deuring reduction); consumes the cyclic
+                                      analytic core leaf
+                                        - ❌🟪 `infinite_setOf_isArithFrobAt_zpowers` — `infinite_setOf_isArithFrobAt_zpowers` (stated 2026-07-22,
+                                          the analytic cyclic core after the PROVEN Deuring
+                                          reduction): for number fields E/F with Gal(E/F) = ⟨τ⟩,
+                                          infinitely many degree-one places of F carry a prime with
+                                          IsArithFrobAt τ. Dirichlet-AP structurally insufficient
+                                          (docstring records the reduction analysis); the classical
+                                          route is the Dedekind-zeta pole / Hecke L-function
+                                          nonvanishing, or Chebotarev's field-crossing with zero-
+                                          density of higher-degree places.
+                    - ❌🟪 `mazur_point_order` — order of a rational torsion point lies in {1..10,12} (Mazur 1977 Thm 8 / 1978)
+                      — kept as one faithful leaf; the Kubert per-X₁(N) split would multiply
+                      modular-curve leaves without reducing depth (2026-07-22)
+                    - ❌🟪 `not_two_ten_torsion` — X₁(2,10) exclusion (modular-curve-theoretic; Mazur 1978)
+                    - ❌🟪 `not_two_twelve_torsion` — X₁(2,12) exclusion (modular-curve-theoretic; Mazur 1978)
         - ✅· `FreyPackage.galoisRep_not_irreducible` — (B4, `Fermat/PrimeFive.lean`) — now (2026-07-16) from two explicit nodes, mirroring the
           FLT project's hardly-ramified plan (their B5/B6, stated in Lean here before upstream):
             - ✅· `FreyCurve.torsion_isHardlyRamified` — (`GaloisRepresentation/HardlyRamified/Frey.lean`) — now (2026-07-16) as the structure
@@ -1299,7 +1866,7 @@ entries file). To add/remove/annotate a node, edit
                                   every finite subextension `E` of `K̄/K` and every `σ`, the coset
                                   `σ·Gal(K̄/E)` contains a conjugate of a `globalFrob v` with `v ∉
                                   S` (existence form of Chebotarev for the Galois closure of `E/K`)
-                                    - ❌🟪 `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj` — `exists_globalFrob_restrictNormalHom_conj` (stated 2026-07-22,
+                                    - ✅🟪 `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj` — `exists_globalFrob_restrictNormalHom_conj` (stated 2026-07-22,
                                       agent decomposition of exists_frobenius_conj_mem_coset): for a
                                       finite Galois subextension L of Kbar/K, tau in Gal(L/K), and
                                       finite S, there exist a place v outside S and h with h *
@@ -1307,6 +1874,19 @@ entries file). To add/remove/annotate a node, edit
                                       Galois-quotient existence form of Chebotarev; the profinite
                                       coset form is PROVEN from this leaf (normal closure +
                                       AlgEquiv.restrictNormalHom_surjective lifting).
+                                        - ✅· `infinite_setOf_isArithFrobAt` — `infinite_setOf_isArithFrobAt` — PROVEN 2026-07-22
+                                          (chebotarev-2, Deuring reduction); consumes the cyclic
+                                          analytic core leaf
+                                            - ❌🟪 `infinite_setOf_isArithFrobAt_zpowers` — `infinite_setOf_isArithFrobAt_zpowers` (stated
+                                              2026-07-22, the analytic cyclic core after the PROVEN
+                                              Deuring reduction): for number fields E/F with
+                                              Gal(E/F) = ⟨τ⟩, infinitely many degree-one places of F
+                                              carry a prime with IsArithFrobAt τ. Dirichlet-AP
+                                              structurally insufficient (docstring records the
+                                              reduction analysis); the classical route is the
+                                              Dedekind-zeta pole / Hecke L-function nonvanishing, or
+                                              Chebotarev's field-crossing with zero-density of
+                                              higher-degree places.
                 - ✅· `FreyCurve.torsion_isFlat` — flat at p: (2026-07-16) by the case split `p ∣ abc` or not, from the two nodes
                   below
                     - ✅· `FreyCurve.torsion_isFlat_of_good` — (2026-07-16) from the arithmetic node `freyCurve_hasGoodReduction_of_not_dvd`
@@ -1322,13 +1902,46 @@ entries file). To add/remove/annotate a node, edit
                               isomorphism). Plus the division-polynomial node `isCoprime_Φ_ΨSq` —
                               restated for fields and directly (2026-07-17; the former
                               `resultant_Φ_ΨSq` node was DELETED, see the session-6 log)
-                                - ❌🟪 `WeierstrassCurve.torsion_flat_of_good_reduction_of_isUnit` — (stated 2026-07-22, agent decomposition of
+                                - ✅🟪 `WeierstrassCurve.torsion_flat_of_good_reduction_of_isUnit` — (stated 2026-07-22, agent decomposition of
                                   torsion_flat_of_good_reduction): the good-reduction finite-flat
                                   package leaf (isUnit case); owned by the worktree fleet's flat
                                   agent.
-                                - ❌🟪 `WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow` — (stated 2026-07-22, agent decomposition of
+                                    - ✅· `torsion_flat_of_inertia_fixes` — `torsion_flat_of_inertia_fixes` — PROVEN assembly 2026-07-22
+                                      (flat-2): unramified ⟹ flat over the étale K-package +
+                                      prolongation leaves
+                                        - ✅· `WeierstrassCurve.exists_torsion_etale_package_over_fractionField` — finite étale K-Hopf package of the m-torsion via the
+                                          Grothendieck Galois correspondence (universe-honest);
+                                          shared shape with Semistable's
+                                          exists_galoisModulePackage_of_finiteQuotient — align later
+                                          (2026-07-22)
+                                            - ❌🟪 `exists_finiteQuotient_galoisModule_etale_package` — the curve-independent Grothendieck Galois
+                                              correspondence for a finite abelian group with finite-
+                                              Galois-quotient action (Small.{u} formulation);
+                                              statement deliberately aligned with Semistable's
+                                              exists_galoisModulePackage_of_finiteQuotient so one
+                                              proof serves both (docstring records the deltas) —
+                                              2026-07-23
+                                        - ❌🟪 `WeierstrassCurve.torsion_flat_of_inertia_fixes_prolong` — unramified ⟹ étale prolongation by normalization — leaf of
+                                          the proven torsion_flat_of_inertia_fixes assembly
+                                          (2026-07-22)
+                                - ✅🟪 `WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow` — (stated 2026-07-22, agent decomposition of
                                   torsion_flat_of_good_reduction): the good-reduction finite-flat
                                   package leaf (pow case); owned by the worktree fleet's flat agent.
+                                    - ✅· `WeierstrassCurve.exists_torsion_etale_package_over_fractionField` — finite étale K-Hopf package of the m-torsion via the
+                                      Grothendieck Galois correspondence (universe-honest); shared
+                                      shape with Semistable's
+                                      exists_galoisModulePackage_of_finiteQuotient — align later
+                                      (2026-07-22)
+                                        - ❌🟪 `exists_finiteQuotient_galoisModule_etale_package` — the curve-independent Grothendieck Galois correspondence
+                                          for a finite abelian group with finite-Galois-quotient
+                                          action (Small.{u} formulation); statement deliberately
+                                          aligned with Semistable's
+                                          exists_galoisModulePackage_of_finiteQuotient so one proof
+                                          serves both (docstring records the deltas) — 2026-07-23
+                                    - ❌🟪 `WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow` — Katz–Mazur 2.3.1 flat-prolongation core, mixed characteristic
+                                      (the Frey application R=ℤ_(p), k=1 lands here) (2026-07-22)
+                                    - ❌🟪 `WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow_of_eqChar` — equal-characteristic branch (Cartier-dual étale-part route)
+                                      (2026-07-22)
                     - ✅· `FreyCurve.torsion_isFlat_of_multiplicative` — (2026-07-16) from the arithmetic
                       (`freyCurve_hasMultiplicativeReduction_of_dvd` at `q := p` +
                       `j_valuation_of_bad_prime`) and the glue node below
@@ -1346,15 +1959,60 @@ entries file). To add/remove/annotate a node, edit
               (`GaloisRepresentation/HardlyRamified/Reducible.lean`, own work) — now (2026-07-16)
               from three explicit nodes in `HardlyRamified/Lift.lean` (own work), following
               Buzzard's 2026 EPSRC Lecture 4 (his B5a/B5b/B5c):
-                - ❌🟪 `exists_hardlyRamifiedLift` — B6a `exists_hardlyRamifiedLift` — an irreducible hardly ramified mod-ℓ rep (ℓ ≥ 5)
+                - ✅🟪 `exists_hardlyRamifiedLift` — B6a `exists_hardlyRamifiedLift` — an irreducible hardly ramified mod-ℓ rep (ℓ ≥ 5)
                   lifts to a hardly ramified ℓ-adic rep over the integers `O` of a finite extension
                   of `ℚ_ℓ` (bundled in `structure HardlyRamifiedLift`: `O` + framed rep + reduction
                   map + Frobenius-charpoly compatibility). Deformation theory / modularity lifting
                   without residual modularity
+                    - ✅🟪 `exists_universal_hardlyRamifiedDeformation` — `exists_universal_hardlyRamifiedDeformation` (`Lift.lean`, own work) —
+                      B6a-core stratum 1/3 (2026-07-22): the hardly ramified deformation problem of
+                      an irreducible ρbar (ℓ ≥ 5) has a universal object in Mazur's category
+                      (structure `HardlyRamifiedDeformation`: Noetherian local adic complete ℤ_ℓ-
+                      algebra + hardly ramified framed rep + reduction; `IsUniversal` = ∃! trace-
+                      compatible map to every datum). Mazur representability + Ramakrishna flat
+                      condition + Carayol trace generation (oddness ⇒ absolute irreducibility)
+                        - ❌🟪 `exists_isWeaklyUniversal_isTraceGenerated` — `exists_isWeaklyUniversal_isTraceGenerated` — Mazur/Ramakrishna
+                          representability + Carayol trace generation for the constructed weak
+                          universal datum (reference FLT project's own representability node is
+                          sorry — ecosystem frontier) — 2026-07-22
+                    - ✅🟪 `moduleFinite_of_isUniversal` — `moduleFinite_of_isUniversal` (`Lift.lean`, own work) — B6a-core stratum 2/3
+                      (2026-07-22): the universal hardly ramified deformation ring is a finite ℤ_ℓ-
+                      module — the potential-modularity / Taylor–Wiles–Kisin input of
+                      Khare–Wintenberger (residual modularity bypassed via Moret-Bailly)
+                        - ❌🟪 `exists_isWeaklyUniversal_isTraceGenerated` — `exists_isWeaklyUniversal_isTraceGenerated` — Mazur/Ramakrishna
+                          representability + Carayol trace generation for the constructed weak
+                          universal datum (reference FLT project's own representability node is
+                          sorry — ecosystem frontier) — 2026-07-22
+                        - ❌🟪 `moduleFinite_of_isWeaklyUniversal_isTraceGenerated` — `moduleFinite_of_isWeaklyUniversal_isTraceGenerated` — module-finiteness
+                          of the constructed universal ring (potential modularity / TWK /
+                          Khare–Wintenberger input) — 2026-07-22
+                    - ✅🟪 `algebraMap_injective_of_isUniversal` — `algebraMap_injective_of_isUniversal` (`Lift.lean`, own work) — B6a-core
+                      stratum 3/3 (2026-07-22): the universal ring has characteristic zero —
+                      Böckle's presentation bound g − r ≥ 1 (global Euler characteristic +
+                      Poitou–Tate) forces Krull dimension ≥ 1, and a ℤ_ℓ-finite ring of dimension ≥
+                      1 cannot kill ℓ
+                        - ✅🟪 `moduleFinite_of_isUniversal` — `moduleFinite_of_isUniversal` (`Lift.lean`, own work) — B6a-core stratum
+                          2/3 (2026-07-22): the universal hardly ramified deformation ring is a
+                          finite ℤ_ℓ-module — the potential-modularity / Taylor–Wiles–Kisin input of
+                          Khare–Wintenberger (residual modularity bypassed via Moret-Bailly)
+                            - ❌🟪 `exists_isWeaklyUniversal_isTraceGenerated` — `exists_isWeaklyUniversal_isTraceGenerated` — Mazur/Ramakrishna
+                              representability + Carayol trace generation for the constructed weak
+                              universal datum (reference FLT project's own representability node is
+                              sorry — ecosystem frontier) — 2026-07-22
+                            - ❌🟪 `moduleFinite_of_isWeaklyUniversal_isTraceGenerated` — `moduleFinite_of_isWeaklyUniversal_isTraceGenerated` — module-
+                              finiteness of the constructed universal ring (potential modularity /
+                              TWK / Khare–Wintenberger input) — 2026-07-22
+                        - ❌🟪 `exists_isWeaklyUniversal_isTraceGenerated` — `exists_isWeaklyUniversal_isTraceGenerated` — Mazur/Ramakrishna
+                          representability + Carayol trace generation for the constructed weak
+                          universal datum (reference FLT project's own representability node is
+                          sorry — ecosystem frontier) — 2026-07-22
+                        - ❌🟪 `exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated` — `exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated` —
+                          Krull dimension ≥ 1 of the constructed universal ring (Böckle presentation
+                          bound g−r ≥ 1) — 2026-07-22
                 - ✅· `residual_charFrob_eq` — B6bc `residual_charFrob_eq` — the residual Frobenius charpolys of a liftable rep
                   are those of `1 ⊕ χ̄` (`X² − (q+1)X + q`) — now (2026-07-16) from the faithful
                   split ( from the FLT project's newer layer):
-                    - ❌🟪 `IsHardlyRamified.mem_isCompatible` — B6b `IsHardlyRamified.mem_isCompatible` (`HardlyRamified/Family.lean`, ;
+                    - ✅🟪 `IsHardlyRamified.mem_isCompatible` — B6b `IsHardlyRamified.mem_isCompatible` (`HardlyRamified/Family.lean`, ;
                       conclusion named `IsInHardlyRamifiedFamily` as a marked ) — a hardly ramified
                       ℓ-adic rep lives in a compatible family (`GaloisRepFamily.lean`, defs, ) all
                       of whose odd members are hardly ramified. STRENGTHENED (2026-07-16): the
@@ -1362,6 +2020,27 @@ entries file). To add/remove/annotate a node, edit
                       — an audit of the glue's proof skeleton showed the upstream statement is too
                       weak for the charpoly descent (algebraMap from a domain to a field need not be
                       injective); true for the intended subrings of `ℚ̄_p`
+                        - ✅🟪 `exists_numberField_eigensystem` — `exists_numberField_eigensystem` (`Family.lean`, own work) — B6b stratum
+                          1/2 (2026-07-22): the Frobenius charpolys of a hardly ramified p-adic rep
+                          descend to a NUMBER field (the Hecke field) — trace-level shadow of
+                          'congruent to a cuspidal eigenform' (mathlib pin has no Hecke
+                          operators/eigenforms, so the eigenform split can only be stated at trace
+                          level)
+                            - ❌🟪 `exists_finiteDimensional_coeff_field` — `exists_finiteDimensional_coeff_field` — Hecke-field finiteness core:
+                              away from finitely many places, all mapped charpoly coefficients lie
+                              in one FiniteDimensional-over-ℚ intermediate field of ℚ̄_p —
+                              2026-07-23
+                        - ✅🟪 `exists_family_of_eigensystem` — `exists_family_of_eigensystem` (`Family.lean`, own work) — B6b stratum 2/2
+                          (2026-07-22): a hardly ramified rep with a number-field eigensystem
+                          spreads into a compatible family with hardly ramified odd members —
+                          Eichler–Shimura/Deligne construction + local-global compatibility
+                          (Carayol, Saito). Docstring records why the alternative 'abstract family
+                          inheritance' split is unsound (Kummer-class counterexample)
+                            - ❌🟪 `exists_realizations_of_eigensystem` — `exists_realizations_of_eigensystem` — λ-adic realizations per (ℓ,φ)
+                              matching the shared Pv outside a uniform finite set, hardly-ramified
+                              integral model at odd ℓ (Eichler–Shimura/Deligne + Carayol/Saito;
+                              anchor direction deliberately excluded per the refuted split) —
+                              2026-07-23
                     - ✅· `residual_charFrob_eq_of_family` — `residual_charFrob_eq_of_family` (own work, `Lift.lean`) — compatibility
                       BOOKKEEPING — now (2026-07-16): extract the 3-adic member via the number-field
                       embedding; its charpoly at Frob_q is `X² − (1+q)X + q` by B6c's trace + the
@@ -1393,12 +2072,17 @@ entries file). To add/remove/annotate a node, edit
                                       — DERIVED 2026-07-18 from the at-3 Serre-swap leaf plus the
                                       at-2 tame bookkeeping (`quotCharacter_unramified_at_two`,
                                       itself fully proven).
-                                        - ❌🟪 `exists_line_with_unramified_quotCharacter_at_three` — (sorry node — the connected–étale content) a reducible
+                                        - ✅🟪 `exists_line_with_unramified_quotCharacter_at_three` — (sorry node — the connected–étale content) a reducible
                                           mod-3 hardly ramified rep has a stable line with quotient
                                           character unramified at 3: the IsFlatAt prolongation over
                                           ℤ₃, unramified étale quotient of the connected–étale
                                           sequence, and the Serre swap to the other stable line when
                                           needed.
+                                            - ❌🟪 `quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified` — `quotCharacter_eq_cyclotomic_on_inertia_three_of_ramif
+                                              ied` — Oort–Tate/Raynaud at 3: the quotient character
+                                              on inertia at 3 in the ramified case
+                                            - ❌🟪 `exists_line_with_quotCharacter_eq_subCharacter` — `exists_line_with_quotCharacter_eq_subCharacter` — the
+                                              Serre swap / peu-ramifié Selmer vanishing line
                                     - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible` — mod-3 reducibility — DERIVED 2026-07-18: no stable submodule ⇒
                                       irreducible (Slop.OddRep.isIrreducible_iff_forall); complex
                                       conjugation is an involution with det = χ₃(c) = −1 and 2 ≠ 0
@@ -1419,12 +2103,174 @@ entries file). To add/remove/annotate a node, edit
                                               `serre_elimination_noncyclic`.
                                                 - ✅🟪 `serre_elimination_noncyclic` — the seven noncyclic Dickson cases — DERIVED (case
                                                   dispatch to the semidirect and arithmetic leaves).
-                                                    - ❌🟪 `serre_elimination_arith` — (sorry node — the deep arithmetic core)
+                                                    - ✅🟪 `serre_elimination_arith` — (sorry node — the deep arithmetic core)
                                                       dihedral / A₄ / S₄ / A₅ / PSL₂(𝔽_{3^m}) /
                                                       PGL₂(𝔽_{3^m}) eliminated via Serre's
                                                       discriminant/conductor bounds over ℚ (Duke
                                                       1987 §5.4); needs discriminant-bound machinery
                                                       absent from mathlib.
+                                                        - ❌🟪 `serre_elimination_dihedral` — `serre_elimination_dihedral` (stated
+                                                          2026-07-22, rcases split of
+                                                          serre_elimination_arith per Serre Duke
+                                                          1987 §5.4): the projective image of an
+                                                          absolutely irreducible mod-3 hardly-
+                                                          ramified representation cannot be of type
+                                                          dihedral — False from the case data; doc-
+                                                          comment in ModThree.lean records the
+                                                          intended argument (dihedral: quadratic
+                                                          fields ramified only in {2,3} + ray-class
+                                                          bounds; exceptional types: root-
+                                                          discriminant vs Minkowski/Odlyzko bounds).
+                                                        - ✅🟪 `serre_elimination_alt4` — `serre_elimination_alt4` (stated
+                                                          2026-07-22, rcases split of
+                                                          serre_elimination_arith per Serre Duke
+                                                          1987 §5.4): the projective image of an
+                                                          absolutely irreducible mod-3 hardly-
+                                                          ramified representation cannot be of type
+                                                          alt4 — False from the case data; doc-
+                                                          comment in ModThree.lean records the
+                                                          intended argument (dihedral: quadratic
+                                                          fields ramified only in {2,3} + ray-class
+                                                          bounds; exceptional types: root-
+                                                          discriminant vs Minkowski/Odlyzko bounds).
+                                                            - ❌🟪 `odlyzko_bound_totallyComplex` — `odlyzko_bound_totallyComplex` — the
+                                                              analytic leaf in exact numeric form:
+                                                              314928^n < |d_K|⁶ for totally complex
+                                                              n ≥ 48 (Minkowski provably
+                                                              insufficient; Odlyzko-type explicit
+                                                              formula needed)
+                                                            - ✅· `exists_hardlyRamified_number_field` — `exists_hardlyRamified_number_field` —
+                                                              PROVEN glue 2026-07-22 (serre-2) over
+                                                              the proven 48-bound
+                                                              card_matrixRange_ge_of_exceptional and
+                                                              the field-cut leaf
+                                                                - ❌🟪 `exists_hardlyRamified_number_field_of_card` — `exists_hardlyRamified_number_fiel
+                                                                  d_of_card` — field cut by ker ρ:
+                                                                  totally complex, degree = |image|
+                                                                  ≥ 48, |d_K|⁶ ≤ 314928^[K:ℚ]
+                                                                  (Fontaine at 3, tame at 2) —
+                                                                  strictly smaller successor of the
+                                                                  proven 48-bound glue (2026-07-22)
+                                                        - ✅🟪 `serre_elimination_sym4` — `serre_elimination_sym4` (stated
+                                                          2026-07-22, rcases split of
+                                                          serre_elimination_arith per Serre Duke
+                                                          1987 §5.4): the projective image of an
+                                                          absolutely irreducible mod-3 hardly-
+                                                          ramified representation cannot be of type
+                                                          sym4 — False from the case data; doc-
+                                                          comment in ModThree.lean records the
+                                                          intended argument (dihedral: quadratic
+                                                          fields ramified only in {2,3} + ray-class
+                                                          bounds; exceptional types: root-
+                                                          discriminant vs Minkowski/Odlyzko bounds).
+                                                            - ❌🟪 `odlyzko_bound_totallyComplex` — `odlyzko_bound_totallyComplex` — the
+                                                              analytic leaf in exact numeric form:
+                                                              314928^n < |d_K|⁶ for totally complex
+                                                              n ≥ 48 (Minkowski provably
+                                                              insufficient; Odlyzko-type explicit
+                                                              formula needed)
+                                                            - ✅· `exists_hardlyRamified_number_field` — `exists_hardlyRamified_number_field` —
+                                                              PROVEN glue 2026-07-22 (serre-2) over
+                                                              the proven 48-bound
+                                                              card_matrixRange_ge_of_exceptional and
+                                                              the field-cut leaf
+                                                                - ❌🟪 `exists_hardlyRamified_number_field_of_card` — `exists_hardlyRamified_number_fiel
+                                                                  d_of_card` — field cut by ker ρ:
+                                                                  totally complex, degree = |image|
+                                                                  ≥ 48, |d_K|⁶ ≤ 314928^[K:ℚ]
+                                                                  (Fontaine at 3, tame at 2) —
+                                                                  strictly smaller successor of the
+                                                                  proven 48-bound glue (2026-07-22)
+                                                        - ✅🟪 `serre_elimination_alt5` — `serre_elimination_alt5` (stated
+                                                          2026-07-22, rcases split of
+                                                          serre_elimination_arith per Serre Duke
+                                                          1987 §5.4): the projective image of an
+                                                          absolutely irreducible mod-3 hardly-
+                                                          ramified representation cannot be of type
+                                                          alt5 — False from the case data; doc-
+                                                          comment in ModThree.lean records the
+                                                          intended argument (dihedral: quadratic
+                                                          fields ramified only in {2,3} + ray-class
+                                                          bounds; exceptional types: root-
+                                                          discriminant vs Minkowski/Odlyzko bounds).
+                                                            - ❌🟪 `odlyzko_bound_totallyComplex` — `odlyzko_bound_totallyComplex` — the
+                                                              analytic leaf in exact numeric form:
+                                                              314928^n < |d_K|⁶ for totally complex
+                                                              n ≥ 48 (Minkowski provably
+                                                              insufficient; Odlyzko-type explicit
+                                                              formula needed)
+                                                            - ✅· `exists_hardlyRamified_number_field` — `exists_hardlyRamified_number_field` —
+                                                              PROVEN glue 2026-07-22 (serre-2) over
+                                                              the proven 48-bound
+                                                              card_matrixRange_ge_of_exceptional and
+                                                              the field-cut leaf
+                                                                - ❌🟪 `exists_hardlyRamified_number_field_of_card` — `exists_hardlyRamified_number_fiel
+                                                                  d_of_card` — field cut by ker ρ:
+                                                                  totally complex, degree = |image|
+                                                                  ≥ 48, |d_K|⁶ ≤ 314928^[K:ℚ]
+                                                                  (Fontaine at 3, tame at 2) —
+                                                                  strictly smaller successor of the
+                                                                  proven 48-bound glue (2026-07-22)
+                                                        - ✅🟪 `serre_elimination_psl` — `serre_elimination_psl` (stated
+                                                          2026-07-22, rcases split of
+                                                          serre_elimination_arith per Serre Duke
+                                                          1987 §5.4): the projective image of an
+                                                          absolutely irreducible mod-3 hardly-
+                                                          ramified representation cannot be of type
+                                                          psl — False from the case data; doc-
+                                                          comment in ModThree.lean records the
+                                                          intended argument (dihedral: quadratic
+                                                          fields ramified only in {2,3} + ray-class
+                                                          bounds; exceptional types: root-
+                                                          discriminant vs Minkowski/Odlyzko bounds).
+                                                            - ❌🟪 `odlyzko_bound_totallyComplex` — `odlyzko_bound_totallyComplex` — the
+                                                              analytic leaf in exact numeric form:
+                                                              314928^n < |d_K|⁶ for totally complex
+                                                              n ≥ 48 (Minkowski provably
+                                                              insufficient; Odlyzko-type explicit
+                                                              formula needed)
+                                                            - ✅· `exists_hardlyRamified_number_field` — `exists_hardlyRamified_number_field` —
+                                                              PROVEN glue 2026-07-22 (serre-2) over
+                                                              the proven 48-bound
+                                                              card_matrixRange_ge_of_exceptional and
+                                                              the field-cut leaf
+                                                                - ❌🟪 `exists_hardlyRamified_number_field_of_card` — `exists_hardlyRamified_number_fiel
+                                                                  d_of_card` — field cut by ker ρ:
+                                                                  totally complex, degree = |image|
+                                                                  ≥ 48, |d_K|⁶ ≤ 314928^[K:ℚ]
+                                                                  (Fontaine at 3, tame at 2) —
+                                                                  strictly smaller successor of the
+                                                                  proven 48-bound glue (2026-07-22)
+                                                        - ✅🟪 `serre_elimination_pgl` — `serre_elimination_pgl` (stated
+                                                          2026-07-22, rcases split of
+                                                          serre_elimination_arith per Serre Duke
+                                                          1987 §5.4): the projective image of an
+                                                          absolutely irreducible mod-3 hardly-
+                                                          ramified representation cannot be of type
+                                                          pgl — False from the case data; doc-
+                                                          comment in ModThree.lean records the
+                                                          intended argument (dihedral: quadratic
+                                                          fields ramified only in {2,3} + ray-class
+                                                          bounds; exceptional types: root-
+                                                          discriminant vs Minkowski/Odlyzko bounds).
+                                                            - ❌🟪 `odlyzko_bound_totallyComplex` — `odlyzko_bound_totallyComplex` — the
+                                                              analytic leaf in exact numeric form:
+                                                              314928^n < |d_K|⁶ for totally complex
+                                                              n ≥ 48 (Minkowski provably
+                                                              insufficient; Odlyzko-type explicit
+                                                              formula needed)
+                                                            - ✅· `exists_hardlyRamified_number_field` — `exists_hardlyRamified_number_field` —
+                                                              PROVEN glue 2026-07-22 (serre-2) over
+                                                              the proven 48-bound
+                                                              card_matrixRange_ge_of_exceptional and
+                                                              the field-cut leaf
+                                                                - ❌🟪 `exists_hardlyRamified_number_field_of_card` — `exists_hardlyRamified_number_fiel
+                                                                  d_of_card` — field cut by ker ρ:
+                                                                  totally complex, degree = |image|
+                                                                  ≥ 48, |d_K|⁶ ≤ 314928^[K:ℚ]
+                                                                  (Fontaine at 3, tame at 2) —
+                                                                  strictly smaller successor of the
+                                                                  proven 48-bound glue (2026-07-22)
                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient` — ordinarity lifting. DERIVED 2026-07-18 from the global triangular
                                   form + the cyclotomic-at-Frobenius leaf: the local Frobenius
                                   matrix is the global form at the Frobenius image; the diagonal
@@ -1433,11 +2279,31 @@ entries file). To add/remove/annotate a node, edit
                                   spellings reconciled by congr + Subsingleton (Algebra ℚ _) — the
                                   Rat-algebra uniqueness bridging the module-system elaboration
                                   divergence.
-                                    - ❌🟪 `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient` — the global triangular form (sorry node — the Serre
+                                    - ✅🟪 `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient` — the global triangular form (sorry node — the Serre
                                       classification core): given the residual trivial quotient, the
                                       WHOLE 3-adic rep is an extension of the trivial character by χ
                                       in a suitable basis. The 3-adic reducibility of Serre §5.4,
                                       lifted through the complete local ring by flatness + tameness.
+                                        - ✅· `exists_equivariant_defect_coboundary` — `exists_equivariant_defect_coboundary` (stated 2026-07-22,
+                                          sole surviving leaf of the proven two-level Threeadic
+                                          lifting chain): the defect 1-cocycle valued in Hom(V̄,
+                                          𝔪ⁿ⁺¹/𝔪ⁿ⁺²) is a coboundary — its class lies in the (flat-
+                                          at-3, tame-at-2, unramified-elsewhere) Selmer group, which
+                                          vanishes by class number 1 of ℚ/ℚ(ζ₃) plus unit
+                                          computations (route in the docstring).
+                                            - ❌🟪 `exists_omega_cocycle_coboundary` — `exists_omega_cocycle_coboundary` — an a-twisted
+                                              1-cocycle mod 𝔪ⁿ⁺² arising as the w₀-defect is a
+                                              twisted coboundary one level deeper — H¹(ℚ, ω ⊗
+                                              𝔪ⁿ⁺¹/𝔪ⁿ⁺²) with Serre's local conditions vanishes
+                                              (ℚ(ζ₃) class number 1 + units, Serre Duke §5.4) —
+                                              2026-07-22
+                                            - ❌🟪 `trivial_component_hom_vanishes` — `trivial_component_hom_vanishes` — the corrected
+                                              trivial component (approximate hom Γℚ → 𝔪ⁿ⁺¹/𝔪ⁿ⁺²)
+                                              vanishes: everywhere-unramified from hardly-
+                                              ramifiedness, then Minkowski
+                                              (NumberField.abs_discr_gt_two on the pin; missing
+                                              bridge = absolute-Galois inertia/discriminant
+                                              infrastructure) — 2026-07-22
                 - ✅· `not_isIrreducible_of_charFrob_eq` — `not_isIrreducible_of_charFrob_eq` — Chebotarev + Brauer– Nesbitt — now
                   (2026-07-16, `Chebotarev.lean` + proof in `Lift.lean`): the agreement set with `1
                   ⊕ χ̄`'s charpolys is closed (module topology on `End` over `ZMod ℓ` is discrete ;
@@ -1452,43 +2318,23 @@ entries file). To add/remove/annotate a node, edit
                           finite subextension `E` of `K̄/K` and every `σ`, the coset `σ·Gal(K̄/E)`
                           contains a conjugate of a `globalFrob v` with `v ∉ S` (existence form of
                           Chebotarev for the Galois closure of `E/K`)
-                            - ❌🟪 `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj` — `exists_globalFrob_restrictNormalHom_conj` (stated 2026-07-22, agent
+                            - ✅🟪 `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj` — `exists_globalFrob_restrictNormalHom_conj` (stated 2026-07-22, agent
                               decomposition of exists_frobenius_conj_mem_coset): for a finite Galois
                               subextension L of Kbar/K, tau in Gal(L/K), and finite S, there exist a
                               place v outside S and h with h * restrictNormalHom L (globalFrob v) *
                               h^-1 = tau — the finite-Galois-quotient existence form of Chebotarev;
                               the profinite coset form is PROVEN from this leaf (normal closure +
                               AlgEquiv.restrictNormalHom_surjective lifting).
-- ❌🟪 `serre_elimination_dihedral` — `serre_elimination_dihedral` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre
-  Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified
-  representation cannot be of type dihedral — False from the case data; doc-comment in ModThree.lean
-  records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class
-  bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds).
-- ❌🟪 `serre_elimination_alt4` — `serre_elimination_alt4` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre
-  Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified
-  representation cannot be of type alt4 — False from the case data; doc-comment in ModThree.lean
-  records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class
-  bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds).
-- ❌🟪 `serre_elimination_sym4` — `serre_elimination_sym4` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre
-  Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified
-  representation cannot be of type sym4 — False from the case data; doc-comment in ModThree.lean
-  records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class
-  bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds).
-- ❌🟪 `serre_elimination_alt5` — `serre_elimination_alt5` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre
-  Duke 1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified
-  representation cannot be of type alt5 — False from the case data; doc-comment in ModThree.lean
-  records the intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class
-  bounds; exceptional types: root-discriminant vs Minkowski/Odlyzko bounds).
-- ❌🟪 `serre_elimination_psl` — `serre_elimination_psl` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke
-  1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation
-  cannot be of type psl — False from the case data; doc-comment in ModThree.lean records the
-  intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds;
-  exceptional types: root-discriminant vs Minkowski/Odlyzko bounds).
-- ❌🟪 `serre_elimination_pgl` — `serre_elimination_pgl` (stated 2026-07-22, rcases split of serre_elimination_arith per Serre Duke
-  1987 §5.4): the projective image of an absolutely irreducible mod-3 hardly-ramified representation
-  cannot be of type pgl — False from the case data; doc-comment in ModThree.lean records the
-  intended argument (dihedral: quadratic fields ramified only in {2,3} + ray-class bounds;
-  exceptional types: root-discriminant vs Minkowski/Odlyzko bounds).
+                                - ✅· `infinite_setOf_isArithFrobAt` — `infinite_setOf_isArithFrobAt` — PROVEN 2026-07-22 (chebotarev-2,
+                                  Deuring reduction); consumes the cyclic analytic core leaf
+                                    - ❌🟪 `infinite_setOf_isArithFrobAt_zpowers` — `infinite_setOf_isArithFrobAt_zpowers` (stated 2026-07-22, the
+                                      analytic cyclic core after the PROVEN Deuring reduction): for
+                                      number fields E/F with Gal(E/F) = ⟨τ⟩, infinitely many degree-
+                                      one places of F carry a prime with IsArithFrobAt τ. Dirichlet-
+                                      AP structurally insufficient (docstring records the reduction
+                                      analysis); the classical route is the Dedekind-zeta pole /
+                                      Hecke L-function nonvanishing, or Chebotarev's field-crossing
+                                      with zero-density of higher-degree places.
 
 ## Canonical frontier (2026-07-16, session 4 close — audit-verified)
 
