@@ -1747,19 +1747,101 @@ theorem exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le
     exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le hℓ hζ χ hχ
   -- `2 ≤ #(𝓞 F / P)` for every finite place
   have htwo : ∀ P : HeightOneSpectrum (𝓞 F), 2 ≤ Nat.card (𝓞 F ⧸ P.asIdeal) := by
-    sorry
+    intro P
+    haveI : Finite (𝓞 F ⧸ P.asIdeal) :=
+      Ring.HasFiniteQuotients.finiteQuotient P.ne_bot
+    haveI : Nontrivial (𝓞 F ⧸ P.asIdeal) :=
+      Ideal.Quotient.nontrivial_iff.mpr P.isPrime.ne_top
+    exact Finite.one_lt_card
   -- summability of the full place sum for every real `s > 1`
   have hAll : ∀ s : ℝ, 1 < s → Summable (fun P : HeightOneSpectrum (𝓞 F) =>
       (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s)) := by
-    sorry
+    intro s hs
+    have h1 : ∀ P : HeightOneSpectrum (𝓞 F),
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s) =
+          (Ideal.absNorm P.asIdeal : ℝ≥0∞) ^ (-s) := by
+      intro P
+      rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+    have h2 : (∑' P : HeightOneSpectrum (𝓞 F),
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s)) ≠ ⊤ := by
+      refine ne_top_of_le_ne_top (tsum_rpow_neg_absNorm_ne_top F hs) ?_
+      rw [tsum_congr h1]
+      exact ENNReal.tsum_comp_le_tsum_of_injective
+        (f := fun P : HeightOneSpectrum (𝓞 F) =>
+          (⟨P.asIdeal, P.ne_bot⟩ : {I : Ideal (𝓞 F) // I ≠ ⊥}))
+        (fun P Q h => HeightOneSpectrum.ext (congrArg Subtype.val h))
+        (fun I => (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s))
+    have h3 : ∀ P : HeightOneSpectrum (𝓞 F),
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s) =
+          (((Nat.card (𝓞 F ⧸ P.asIdeal) : NNReal) ^ (-s) : NNReal) : ℝ≥0∞) := by
+      intro P
+      rw [ENNReal.coe_rpow_of_ne_zero (by
+          have h4 := htwo P
+          exact_mod_cast (by omega : Nat.card (𝓞 F ⧸ P.asIdeal) ≠ 0)),
+        ENNReal.coe_natCast]
+    rw [tsum_congr h3] at h2
+    have h4 := ENNReal.tsum_coe_ne_top_iff_summable.mp h2
+    refine (NNReal.summable_coe.mpr h4).congr ?_
+    intro P
+    rw [NNReal.coe_rpow, NNReal.coe_natCast]
   -- summability of the `N(P)⁻¹` sum over the higher-degree places
   have hnp : Summable (fun P : {P : HeightOneSpectrum (𝓞 F) //
       ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
       (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-(1 : ℝ))) := by
-    sorry
+    have h2 := tsum_not_prime_natCard_rpow_neg_one_ne_top F
+    have h3 : ∀ P : {P : HeightOneSpectrum (𝓞 F) //
+        ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-(1 : ℝ)) =
+          (((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : NNReal) ^
+            (-(1 : ℝ)) : NNReal) : ℝ≥0∞) := by
+      intro P
+      rw [ENNReal.coe_rpow_of_ne_zero (by
+          have h4 := htwo (P : HeightOneSpectrum (𝓞 F))
+          exact_mod_cast (by omega :
+            Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) ≠ 0)),
+        ENNReal.coe_natCast]
+    rw [tsum_congr h3] at h2
+    have h4 := ENNReal.tsum_coe_ne_top_iff_summable.mp h2
+    refine (NNReal.summable_coe.mpr h4).congr ?_
+    intro P
+    rw [NNReal.coe_rpow, NNReal.coe_natCast]
+  -- termwise norm bound for the degree-one character sum
+  have hterm : ∀ (t : ℝ) (P : HeightOneSpectrum (𝓞 F)),
+      ‖χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (((Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-t) : ℝ) : ℂ)‖ ≤
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-t) := by
+    intro t P
+    rw [norm_mul, Complex.norm_real, Real.norm_eq_abs,
+      abs_of_nonneg (Real.rpow_nonneg (Nat.cast_nonneg _) _)]
+    exact mul_le_of_le_one_left (Real.rpow_nonneg (Nat.cast_nonneg _) _)
+      (DirichletCharacter.norm_le_one χ _)
   -- crude bound for `3/2 ≤ s`: absolute values, termwise monotone in `s`
   have hlarge : ∀ s : ℝ, (3 / 2 : ℝ) ≤ s → ‖Sχ s‖ ≤ B₀ := by
-    sorry
+    intro s h32
+    have hs : (1 : ℝ) < s := lt_of_lt_of_le (by norm_num) h32
+    have hsub : Summable (fun P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ} =>
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)) :=
+      (hAll s hs).subtype _
+    have hsub32 : Summable (fun P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ} =>
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^
+          (-(3 / 2 : ℝ))) :=
+      (hAll (3 / 2) (by norm_num)).subtype _
+    calc ‖Sχ s‖
+        ≤ ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+            (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+          (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) :=
+        tsum_of_norm_bounded hsub.hasSum fun P =>
+          hterm s (P : HeightOneSpectrum (𝓞 F))
+      _ ≤ B₀ := by
+        refine hsub.tsum_le_tsum (fun P => ?_) hsub32
+        have h2 : (1 : ℝ) <
+            (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) := by
+          have h3 := htwo (P : HeightOneSpectrum (𝓞 F))
+          exact_mod_cast (by omega :
+            1 < Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal))
+        exact (Real.rpow_le_rpow_left_iff h2).mpr (by linarith)
   -- the prime log-sum is `ℂ`-differentiable on `re w > 1` (Weierstrass)
   have hdiff : ∀ w : ℂ, 1 < w.re → DifferentiableAt ℂ 𝒮 w := by
     sorry
