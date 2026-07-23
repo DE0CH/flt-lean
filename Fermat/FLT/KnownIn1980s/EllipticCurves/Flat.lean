@@ -1802,31 +1802,112 @@ theorem galoisEquivariantEval_surjective [Finite A] [IsSepClosure K₀ Ω] :
   exact galoisEquivariantEval_of_ker_eq L ρ φ a₀
     (hmax.eq_of_le hprime.ne_top ha₀).symm
 
+/-- **A structureless copy of the equivariant-functions algebra**, used as the
+carrier of its Hopf-algebra structure in `exists_hopfAlgebra_galoisHopfCarrier`: a
+type synonym deliberately carrying NO instances, so that the Hopf-algebra package —
+whose convolution structure is keyed to the Bialgebra-derived algebra instance of its
+carrier, incompatible with any pre-existing canonical instance — can bind all its
+instances existentially without a diamond. -/
+def GaloisHopfCarrier : Type _ := galoisEquivariantAlgebra L ρ
+
+/-- **The Hopf-algebra package on the canonical-universe carrier** (sorry node; the
+comultiplication half of the package, freed 2026-07-23 of all universe bookkeeping —
+the `Type u` realization is now the separate transport leaf
+`exists_hopfAlgebra_small_copy`, assembled in
+`exists_hopfAlgebra_galoisEquivariantAlgebra`): the structureless copy
+`GaloisHopfCarrier L ρ` of the equivariant-functions algebra carries a
+`K₀`-Hopf-algebra structure together with an algebra equivalence `e` to the
+equivariant-functions algebra for which the convolution product of evaluation points
+is the evaluation at the sum. Intended proof: transfer the commutative ring and
+algebra structure of `galoisEquivariantAlgebra L ρ` along the definitional equality
+of the type synonym (so `e` is the identity equivalence); the comultiplication is
+the pullback of the addition `A × A → A` through the descent identification of
+`galoisEquivariantAlgebra L ρ ⊗[K₀] galoisEquivariantAlgebra L ρ` with the
+equivariant functions on `A × A` (the tensor square of the descent isomorphism of
+`galoisEquivariantEval_surjective`'s docstring), the counit is evaluation at `0 : A`
+(which lands in the bottom fixed field `K₀` since `0` is `ρ`-fixed), and the
+antipode is the pullback of negation; the required convolution identity is then the
+computation `(eval a ⊛ eval b) f = (eval a ⊗ eval b) (Δ f) = f (a + b)` holding by
+construction. -/
+theorem exists_hopfAlgebra_galoisHopfCarrier [Finite A] :
+    ∃ (_ : CommRing (GaloisHopfCarrier L ρ))
+      (_ : HopfAlgebra K₀ (GaloisHopfCarrier L ρ))
+      (e : GaloisHopfCarrier L ρ ≃ₐ[K₀] galoisEquivariantAlgebra L ρ),
+      ∀ a b : A,
+        WithConv.toConv ((galoisEquivariantEval L ρ a).comp e.toAlgHom) *
+          WithConv.toConv ((galoisEquivariantEval L ρ b).comp e.toAlgHom) =
+        WithConv.toConv ((galoisEquivariantEval L ρ (a + b)).comp e.toAlgHom) :=
+  sorry
+
+universe v in
+/-- **Hopf algebras have Hopf-algebra copies in every admissible universe** (sorry
+node; pure transfer of structure, curve-free and Galois-free — the universe half of
+the equivariant-functions package): a Hopf algebra `B` over `K₁` that is `v`-small
+as a type admits a `Type v` copy: a commutative ring `C` in `Type v` with a
+`K₁`-Hopf-algebra structure, an algebra equivalence `ê : C ≃ₐ[K₁] B`, and a
+bialgebra homomorphism `êc` witnessing that `ê` respects the comultiplications.
+Intended proof: `C := Shrink.{v} B` with the ring and algebra structure transported
+along `equivShrink` (`Shrink.instCommRing`, `Shrink.instAlgebra`, `Shrink.algEquiv`),
+the comultiplication `(ê ⊗ ê).symm ∘ Δ_B ∘ ê`, counit `ε_B ∘ ê`, antipode
+`ê.symm ∘ S_B ∘ ê`; each Hopf axiom is the corresponding axiom of `B` conjugated by
+`ê` (`Algebra.TensorProduct.congr` supplies the tensor legs), and the
+bialgebra-homomorphism property of `ê` then holds by construction. -/
+theorem exists_hopfAlgebra_small_copy {K₁ : Type*} [CommSemiring K₁]
+    {B : Type*} [CommRing B] [HopfAlgebra K₁ B] [Small.{v} B] :
+    ∃ (C : Type v) (_ : CommRing C) (_ : HopfAlgebra K₁ C) (ê : C ≃ₐ[K₁] B)
+      (êc : C →ₐc[K₁] B), (êc : C →ₐ[K₁] B) = ê.toAlgHom :=
+  sorry
+
 /-- **The Hopf-algebra structure on a `u`-small carrier of the equivariant-functions
-algebra** (sorry node; the comultiplication half of the package): a `Type u` copy of
-the equivariant-functions algebra carrying a `K₀`-Hopf-algebra structure for which the
-convolution product of evaluation points is the evaluation at the sum. Intended proof:
-the comultiplication is the pullback of the addition `A × A → A` through the descent
-identification of `galoisEquivariantAlgebra L ρ ⊗[K₀] galoisEquivariantAlgebra L ρ`
-with the equivariant functions on `A × A` (the tensor square of the descent
-isomorphism of `galoisEquivariantEval_surjective`'s docstring), the counit is
-evaluation at `0 : A`, and the antipode is the pullback of negation; the required
-convolution identity is then the computation
-`(eval a ⊛ eval b) f = (eval a ⊗ eval b) (Δ f) = f (a + b)` holding by construction.
-For the carrier: the algebra itself is `u`-small — it embeds into `A → L` with `A`
-finite and `L` finite-dimensional over the `u`-small `K₀` (`Basis.equivFun` +
-`small_Pi` + `small_subtype`) — so the structure can be transported to
-`Shrink.{u}` along `Shrink.algEquiv`, and the carrier together with its instances is
-existentially bound here precisely so that the transported (rather than canonical)
-instances can be supplied without a diamond. -/
+algebra** (DECOMPOSED 2026-07-23 into the canonical-universe package leaf
+`exists_hopfAlgebra_galoisHopfCarrier` — the comultiplication content — and the
+universe-transport leaf `exists_hopfAlgebra_small_copy`; the smallness of the
+carrier and the assembly below are PROVEN): a `Type u` copy of the
+equivariant-functions algebra carrying a `K₀`-Hopf-algebra structure for which the
+convolution product of evaluation points is the evaluation at the sum. The algebra
+is `u`-small — finite-dimensional over the `u`-small `K₀`, hence in linear bijection
+with `Fin d → K₀` (`Module.finBasis` + `Basis.equivFun` + `small_Pi`) — hence so is
+the carrier of its Hopf package, which the transport leaf copies into `Type u`; the
+convolution identity transports along the bialgebra homomorphism underlying the copy
+equivalence by `AlgHom.convMul_comp_bialgHom_distrib`. -/
 theorem exists_hopfAlgebra_galoisEquivariantAlgebra [Finite A] [Small.{u} K₀] :
     ∃ (HK : Type u) (_ : CommRing HK) (_ : HopfAlgebra K₀ HK)
       (e : HK ≃ₐ[K₀] galoisEquivariantAlgebra L ρ),
       ∀ a b : A,
         WithConv.toConv ((galoisEquivariantEval L ρ a).comp e.toAlgHom) *
           WithConv.toConv ((galoisEquivariantEval L ρ b).comp e.toAlgHom) =
-        WithConv.toConv ((galoisEquivariantEval L ρ (a + b)).comp e.toAlgHom) :=
-  sorry
+        WithConv.toConv ((galoisEquivariantEval L ρ (a + b)).comp e.toAlgHom) := by
+  classical
+  obtain ⟨instCR, instH, e₀, hconv₀⟩ := exists_hopfAlgebra_galoisHopfCarrier L ρ
+  letI := instCR
+  letI := instH
+  -- the equivariant-functions algebra, hence the carrier, is `u`-small
+  haveI : Small.{u} (galoisEquivariantAlgebra L ρ) :=
+    small_of_injective
+      (Module.finBasis K₀ (galoisEquivariantAlgebra L ρ)).equivFun.injective
+  haveI : Small.{u} (GaloisHopfCarrier L ρ) := small_of_injective e₀.injective
+  -- copy the package into `Type u`
+  obtain ⟨HK, jCR, jH, ê, êc, hêc⟩ :=
+    exists_hopfAlgebra_small_copy (K₁ := K₀) (B := GaloisHopfCarrier L ρ)
+  letI := jCR
+  letI := jH
+  refine ⟨HK, jCR, jH, ê.trans e₀, ?_⟩
+  intro a b
+  -- fold compositions through the copy equivalence
+  have key : ∀ c : A, ((galoisEquivariantEval L ρ c).comp e₀.toAlgHom).comp
+      (êc : HK →ₐ[K₀] GaloisHopfCarrier L ρ) =
+      (galoisEquivariantEval L ρ c).comp (ê.trans e₀).toAlgHom := by
+    intro c
+    rw [hêc]
+    exact AlgHom.ext fun x => rfl
+  -- transport the convolution identity along the bialgebra homomorphism
+  have hd := AlgHom.convMul_comp_bialgHom_distrib
+    (WithConv.toConv ((galoisEquivariantEval L ρ a).comp e₀.toAlgHom))
+    (WithConv.toConv ((galoisEquivariantEval L ρ b).comp e₀.toAlgHom)) êc
+  rw [hconv₀ a b] at hd
+  have hd' := (congrArg WithConv.toConv hd).trans (WithConv.toConv_ofConv _)
+  rw [key a, key b, key (a + b)] at hd'
+  exact hd'.symm
 
 end GaloisEtalePackage
 
