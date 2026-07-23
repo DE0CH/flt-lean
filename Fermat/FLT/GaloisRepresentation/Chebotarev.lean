@@ -1008,15 +1008,75 @@ theorem summable_natCard_absNorm_mul_rpow_neg (F : Type*) [Field F]
   rw [funext (term_natCard_absNorm_eq F (by linarith : (0 : ℝ) < s))] at hsum₂
   exact Complex.summable_ofReal.mp hsum₂
 
-/-- Finiteness of the full ideal sum `∑_{I ≠ 0} N(I)^{-s}` for `s > 1`
-(sorry leaf). Intended proof: fibre the sum over `n = N(I)`
-(`Ideal.finite_setOf_absNorm_eq`, `Equiv.sigmaFiberEquiv`) to get the
-`ℝ≥0∞` form of the Dedekind-zeta Dirichlet series; the summability
-input is `summable_natCard_absNorm_mul_rpow_neg`. -/
+/-- **Fibration of the ideal sum over the norm**: the `ℝ≥0∞`-valued
+Dirichlet series of the nonzero ideals of `𝓞 F` equals the series of
+its norm-counting coefficients (the `n = 0` term vanishes on both
+sides, so the sums may run over all ideals and all of `ℕ`). -/
+theorem tsum_rpow_neg_absNorm_eq (F : Type*) [Field F] [NumberField F]
+    {s : ℝ} (hs : 0 < s) :
+    ∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥}, (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s) =
+      ∑' n : ℕ, ENNReal.ofReal
+        ((Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) *
+          (n : ℝ) ^ (-s)) := by
+  classical
+  -- each term is `ofReal` of the real term
+  have hterm : ∀ I : {I : Ideal (𝓞 F) // I ≠ ⊥},
+      (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s) =
+        ENNReal.ofReal ((Ideal.absNorm I.1 : ℝ) ^ (-s)) := by
+    intro I
+    have h1 : Ideal.absNorm I.1 ≠ 0 := fun h =>
+      I.2 (Ideal.absNorm_eq_zero_iff.mp h)
+    have h0 : (0 : ℝ) < (Ideal.absNorm I.1 : ℝ) := by
+      exact_mod_cast Nat.pos_of_ne_zero h1
+    rw [← ENNReal.ofReal_natCast, ENNReal.ofReal_rpow_of_pos h0]
+  rw [tsum_congr hterm]
+  -- extend to all ideals: the `⊥` term vanishes
+  have hsupp : Function.support (fun I : Ideal (𝓞 F) =>
+      ENNReal.ofReal ((Ideal.absNorm I : ℝ) ^ (-s))) ⊆
+      {I : Ideal (𝓞 F) | I ≠ ⊥} := by
+    intro I hI
+    rintro rfl
+    apply hI
+    simp [Ideal.absNorm_bot, Real.zero_rpow (neg_ne_zero.mpr hs.ne')]
+  rw [show ∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥},
+      ENNReal.ofReal ((Ideal.absNorm I.1 : ℝ) ^ (-s)) =
+      ∑' I : Ideal (𝓞 F), ENNReal.ofReal ((Ideal.absNorm I : ℝ) ^ (-s)) from
+    tsum_subtype_eq_of_support_subset hsupp]
+  -- fibre over the norm
+  rw [← ENNReal.tsum_fiberwise (fun I : Ideal (𝓞 F) =>
+    ENNReal.ofReal ((Ideal.absNorm I : ℝ) ^ (-s)))
+    (fun I : Ideal (𝓞 F) => Ideal.absNorm I)]
+  refine tsum_congr fun n => ?_
+  haveI : Finite ↥((fun I : Ideal (𝓞 F) => Ideal.absNorm I) ⁻¹' {n}) :=
+    (Ideal.finite_setOf_absNorm_eq (S := 𝓞 F) n).to_subtype
+  calc ∑' I : ((fun I : Ideal (𝓞 F) => Ideal.absNorm I) ⁻¹' {n}),
+        ENNReal.ofReal ((Ideal.absNorm I.1 : ℝ) ^ (-s))
+      = ∑' _I : ((fun I : Ideal (𝓞 F) => Ideal.absNorm I) ⁻¹' {n}),
+        ENNReal.ofReal ((n : ℝ) ^ (-s)) :=
+        tsum_congr fun I => by rw [show Ideal.absNorm I.1 = n from I.2]
+    _ = ENat.card ((fun I : Ideal (𝓞 F) => Ideal.absNorm I) ⁻¹' {n}) *
+        ENNReal.ofReal ((n : ℝ) ^ (-s)) := ENNReal.tsum_const _
+    _ = (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ≥0∞) *
+        ENNReal.ofReal ((n : ℝ) ^ (-s)) := by
+        rw [ENat.card_eq_coe_natCard,
+          Nat.card_congr (Equiv.subtypeEquivRight
+            (fun I : Ideal (𝓞 F) => Iff.rfl))]
+        simp
+    _ = ENNReal.ofReal
+        ((Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) *
+          (n : ℝ) ^ (-s)) := by
+        rw [ENNReal.ofReal_mul (Nat.cast_nonneg _), ENNReal.ofReal_natCast]
+
+/-- Finiteness of the full ideal sum `∑_{I ≠ 0} N(I)^{-s}` for `s > 1`:
+combine the fibration over the norm with the real summability of the
+coefficient series. -/
 theorem tsum_rpow_neg_absNorm_ne_top (F : Type*) [Field F] [NumberField F]
     {s : ℝ} (hs : 1 < s) :
-    ∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥}, (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s) ≠ ⊤ :=
-  sorry
+    ∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥}, (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s) ≠ ⊤ := by
+  rw [tsum_rpow_neg_absNorm_eq F (by linarith : (0 : ℝ) < s),
+    ← ENNReal.ofReal_tsum_of_nonneg (fun n => by positivity)
+      (summable_natCard_absNorm_mul_rpow_neg F hs)]
+  exact ENNReal.ofReal_ne_top
 
 /-- **Divergence of the ideal sum as `s → 1⁺`** (sorry leaf): the
 `ℝ≥0∞`-valued Dirichlet series of the ideals of `𝓞 F` exceeds any
