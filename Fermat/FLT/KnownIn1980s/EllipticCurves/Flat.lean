@@ -26,6 +26,20 @@ import Mathlib.RingTheory.Etale.Field
 -- assembly of `exists_finite_etale_algebra_form_of_inertia_fixes`
 import Mathlib.RingTheory.TensorProduct.Pi
 import Mathlib.RingTheory.Etale.Pi
+-- étale ⟹ smooth ⟹ flat: the injectivity of `H₀ → K ⊗[R] H₀` for an étale
+-- `R`-form `H₀`, in the canonicity leaf
+-- `range_comp_includeRight_eq_integralClosure_of_etale_form`
+import Mathlib.RingTheory.Smooth.Flat
+-- radicality of `𝔪 H₀` for an unramified `R`-algebra `H₀`
+-- (`Algebra.FormallyUnramified.isRadical_map_isMaximal`), same leaf
+import Mathlib.RingTheory.Unramified.Field
+-- ring/algebra structure on `Shrink` and the `coassoc_simps` normalization set:
+-- the universe-transport leaf `exists_hopfAlgebra_small_copy`
+import Mathlib.Algebra.Algebra.Shrink
+import Mathlib.RingTheory.Coalgebra.CoassocSimps
+-- `HopfAlgebra.antipodeAlgHom` (the antipode of a commutative Hopf algebra is
+-- an algebra homomorphism), same leaf
+import Mathlib.RingTheory.HopfAlgebra.Convolution
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
 
 /-!
@@ -1812,6 +1826,82 @@ theorem galoisEquivariantEval_surjective [Finite A] [IsSepClosure K₀ Ω] :
   exact galoisEquivariantEval_of_ker_eq L ρ φ a₀
     (hmax.eq_of_le hprime.ne_top ha₀).symm
 
+/-- **The product Galois action on `B × C`** (glue for the Hopf package of the
+equivariant-functions algebra: its tensor square is identified with the
+equivariant functions on `A × A` carrying the diagonal instance of this
+action; the mixed instances appear in the coassociativity diagrams). -/
+def galoisProdAction {B C : Type*} [AddCommGroup B] [AddCommGroup C]
+    (ρB : (L ≃ₐ[K₀] L) →* AddMonoid.End B)
+    (ρC : (L ≃ₐ[K₀] L) →* AddMonoid.End C) :
+    (L ≃ₐ[K₀] L) →* AddMonoid.End (B × C) where
+  toFun g := AddMonoidHom.prodMap (ρB g) (ρC g)
+  map_one' := AddMonoidHom.ext fun x => by
+    show ((ρB 1) x.1, (ρC 1) x.2) = x
+    rw [map_one, map_one]
+    rfl
+  map_mul' g₁ g₂ := AddMonoidHom.ext fun x => by
+    show ((ρB (g₁ * g₂)) x.1, (ρC (g₁ * g₂)) x.2) = _
+    rw [map_mul, map_mul]
+    rfl
+
+/-- **Pullback of equivariant functions along an equivariant map** (glue for
+the Hopf package): precomposition with an equivariant additive map `f : B → C`
+carries `Gal(L/K₀)`-equivariant functions on `C` to equivariant functions on
+`B`, as a `K₀`-algebra homomorphism. The comultiplication, antipode and the
+tensor-comparison legs of the equivariant-functions Hopf algebra are all
+instances of this. -/
+def galoisEquivariantPullback {B C : Type*} [AddCommGroup B] [AddCommGroup C]
+    (ρB : (L ≃ₐ[K₀] L) →* AddMonoid.End B)
+    (ρC : (L ≃ₐ[K₀] L) →* AddMonoid.End C)
+    (f : B →+ C) (hf : ∀ g b, f (ρB g b) = ρC g (f b)) :
+    galoisEquivariantAlgebra L ρC →ₐ[K₀] galoisEquivariantAlgebra L ρB where
+  toFun h := ⟨fun b => (h : C → L) (f b), fun g b => by
+    show (h : C → L) (f (ρB g b)) = g ((h : C → L) (f b))
+    rw [hf g b]
+    exact h.2 g (f b)⟩
+  map_one' := rfl
+  map_mul' _ _ := rfl
+  map_zero' := rfl
+  map_add' _ _ := rfl
+  commutes' _ := rfl
+
+/-- **The tensor-comparison homomorphism** (glue for the Hopf package):
+`h₁ ⊗ h₂` acts on `B × C` as `(b, c) ↦ h₁ b * h₂ c`, giving a `K₀`-algebra map
+from the tensor product of two equivariant-functions algebras to the
+equivariant functions on `B × C`. Its bijectivity is the sorried
+Galois-descent core `galoisEquivariantTensorHom_bijective`; the Hopf package
+uses the diagonal instance `B = C = A` and (for the coassociativity diagrams)
+the mixed instances with `A × A`. -/
+noncomputable def galoisEquivariantTensorHom {B C : Type*}
+    [AddCommGroup B] [AddCommGroup C]
+    (ρB : (L ≃ₐ[K₀] L) →* AddMonoid.End B)
+    (ρC : (L ≃ₐ[K₀] L) →* AddMonoid.End C) :
+    (galoisEquivariantAlgebra L ρB) ⊗[K₀] (galoisEquivariantAlgebra L ρC)
+      →ₐ[K₀] galoisEquivariantAlgebra L (galoisProdAction L ρB ρC) :=
+  Algebra.TensorProduct.productMap
+    (galoisEquivariantPullback L (galoisProdAction L ρB ρC) ρB
+      (AddMonoidHom.fst B C) fun _ _ => rfl)
+    (galoisEquivariantPullback L (galoisProdAction L ρB ρC) ρC
+      (AddMonoidHom.snd B C) fun _ _ => rfl)
+
+/-- **Galois descent for the tensor product of equivariant-functions algebras**
+(sorry node; the descent core of the equivariant-functions Hopf package): the
+tensor-comparison homomorphism is bijective. Both sides have `K₀`-dimension
+`|B| ⬝ |C|`: equivariant functions on a finite `Gal(L/K₀)`-set `S` have
+`K₀`-dimension `|S|` — evaluation at orbit representatives identifies them
+with `∏_{orbits} Fix(Stab)`, and `dim Fix(Stab O) = [L:K₀]/|Stab O| = |O|` by
+the fundamental theorem of Galois theory — and the map is injective by linear
+disjointness of the evaluations (a nonzero kernel element would give a
+nontrivial vanishing linear combination of the evaluation characters of the
+left factor with coefficients evaluations of the right factor, contradicting
+Dedekind's independence of characters over `L`). -/
+theorem galoisEquivariantTensorHom_bijective {B C : Type*}
+    [AddCommGroup B] [AddCommGroup C] [Finite B] [Finite C]
+    (ρB : (L ≃ₐ[K₀] L) →* AddMonoid.End B)
+    (ρC : (L ≃ₐ[K₀] L) →* AddMonoid.End C) :
+    Function.Bijective (galoisEquivariantTensorHom L ρB ρC) :=
+  sorry
+
 /-- **A structureless copy of the equivariant-functions algebra**, used as the
 carrier of its Hopf-algebra structure in `exists_hopfAlgebra_galoisHopfCarrier`: a
 type synonym deliberately carrying NO instances, so that the Hopf-algebra package —
@@ -1820,26 +1910,30 @@ carrier, incompatible with any pre-existing canonical instance — can bind all 
 instances existentially without a diamond. -/
 def GaloisHopfCarrier : Type _ := galoisEquivariantAlgebra L ρ
 
-/-- **The Hopf-algebra package on the canonical-universe carrier** (sorry node; the
-comultiplication half of the package, freed 2026-07-23 of all universe bookkeeping —
-the `Type u` realization is now the separate transport leaf
-`exists_hopfAlgebra_small_copy`, assembled in
-`exists_hopfAlgebra_galoisEquivariantAlgebra`): the structureless copy
+/-- **The Hopf-algebra package given the tensor-comparison isomorphism** (sorry
+node; the construction-and-axioms core of the package, isolated 2026-07-23 —
+the comparison data and the assembly are built outside): granted bijectivity
+of the tensor-comparison homomorphism, the structureless copy
 `GaloisHopfCarrier L ρ` of the equivariant-functions algebra carries a
 `K₀`-Hopf-algebra structure together with an algebra equivalence `e` to the
-equivariant-functions algebra for which the convolution product of evaluation points
-is the evaluation at the sum. Intended proof: transfer the commutative ring and
-algebra structure of `galoisEquivariantAlgebra L ρ` along the definitional equality
-of the type synonym (so `e` is the identity equivalence); the comultiplication is
-the pullback of the addition `A × A → A` through the descent identification of
-`galoisEquivariantAlgebra L ρ ⊗[K₀] galoisEquivariantAlgebra L ρ` with the
-equivariant functions on `A × A` (the tensor square of the descent isomorphism of
-`galoisEquivariantEval_surjective`'s docstring), the counit is evaluation at `0 : A`
-(which lands in the bottom fixed field `K₀` since `0` is `ρ`-fixed), and the
-antipode is the pullback of negation; the required convolution identity is then the
-computation `(eval a ⊛ eval b) f = (eval a ⊗ eval b) (Δ f) = f (a + b)` holding by
-construction. -/
-theorem exists_hopfAlgebra_galoisHopfCarrier [Finite A] :
+equivariant-functions algebra for which the convolution product of evaluation
+points is the evaluation at the sum. Intended proof: transfer the commutative
+ring and algebra structure of `galoisEquivariantAlgebra L ρ` along the
+definitional equality of the type synonym (so `e` is the identity equivalence);
+the comultiplication is `(comparison)⁻¹ ∘ (pullback of the addition)`
+(`galoisEquivariantPullback` along `AddMonoidHom.coprod id id`, then
+`AlgEquiv.ofBijective _ hbij |>.symm`), the counit is evaluation at `0 : A`
+(landing in the bottom fixed field `K₀` since `0` is `ρ`-fixed —
+`IsGalois.mem_range_algebraMap_iff_fixed` as in the parallel `galDescCounit`),
+and the antipode is the pullback of negation; the coalgebra and antipode
+axioms hold after composing with the injective comparison maps, where all
+sides become pullbacks along the corresponding additive maps
+(`(a,b,c) ↦ a+b+c` for coassociativity, `a ↦ (-a)+a = 0` for the antipode);
+the convolution identity is the computation
+`(eval a ⊛ eval b) f = (eval a ⊗ eval b) (Δ f) = f (a + b)` holding by
+construction of `Δ`. -/
+theorem exists_hopfAlgebra_galoisHopfCarrier_of_tensorHom_bijective [Finite A]
+    (hbij : Function.Bijective (galoisEquivariantTensorHom L ρ ρ)) :
     ∃ (_ : CommRing (GaloisHopfCarrier L ρ))
       (_ : HopfAlgebra K₀ (GaloisHopfCarrier L ρ))
       (e : GaloisHopfCarrier L ρ ≃ₐ[K₀] galoisEquivariantAlgebra L ρ),
@@ -1849,24 +1943,235 @@ theorem exists_hopfAlgebra_galoisHopfCarrier [Finite A] :
         WithConv.toConv ((galoisEquivariantEval L ρ (a + b)).comp e.toAlgHom) :=
   sorry
 
+/-- **The Hopf-algebra package on the canonical-universe carrier** (DECOMPOSED
+2026-07-23 into the Galois-descent core `galoisEquivariantTensorHom_bijective`
+— the tensor square of the equivariant-functions algebra is the equivariant
+functions on `A × A` — and the construction-and-axioms core
+`exists_hopfAlgebra_galoisHopfCarrier_of_tensorHom_bijective`; the comparison
+data — diagonal action, equivariant pullbacks, comparison homomorphism — and
+the assembly below are PROVEN): the structureless copy `GaloisHopfCarrier L ρ`
+of the equivariant-functions algebra carries a `K₀`-Hopf-algebra structure
+together with an algebra equivalence `e` to the equivariant-functions algebra
+for which the convolution product of evaluation points is the evaluation at
+the sum. -/
+theorem exists_hopfAlgebra_galoisHopfCarrier [Finite A] :
+    ∃ (_ : CommRing (GaloisHopfCarrier L ρ))
+      (_ : HopfAlgebra K₀ (GaloisHopfCarrier L ρ))
+      (e : GaloisHopfCarrier L ρ ≃ₐ[K₀] galoisEquivariantAlgebra L ρ),
+      ∀ a b : A,
+        WithConv.toConv ((galoisEquivariantEval L ρ a).comp e.toAlgHom) *
+          WithConv.toConv ((galoisEquivariantEval L ρ b).comp e.toAlgHom) =
+        WithConv.toConv ((galoisEquivariantEval L ρ (a + b)).comp e.toAlgHom) :=
+  exists_hopfAlgebra_galoisHopfCarrier_of_tensorHom_bijective L ρ
+    (galoisEquivariantTensorHom_bijective L ρ ρ)
+
 universe v in
-/-- **Hopf algebras have Hopf-algebra copies in every admissible universe** (sorry
-node; pure transfer of structure, curve-free and Galois-free — the universe half of
-the equivariant-functions package): a Hopf algebra `B` over `K₁` that is `v`-small
-as a type admits a `Type v` copy: a commutative ring `C` in `Type v` with a
-`K₁`-Hopf-algebra structure, an algebra equivalence `ê : C ≃ₐ[K₁] B`, and a
+/-- **Hopf algebras have Hopf-algebra copies in every admissible universe** (PROVEN
+2026-07-23; pure transfer of structure, curve-free and Galois-free — the universe
+half of the equivariant-functions package): a Hopf algebra `B` over `K₁` that is
+`v`-small as a type admits a `Type v` copy: a commutative ring `C` in `Type v` with
+a `K₁`-Hopf-algebra structure, an algebra equivalence `ê : C ≃ₐ[K₁] B`, and a
 bialgebra homomorphism `êc` witnessing that `ê` respects the comultiplications.
-Intended proof: `C := Shrink.{v} B` with the ring and algebra structure transported
-along `equivShrink` (`Shrink.instCommRing`, `Shrink.instAlgebra`, `Shrink.algEquiv`),
-the comultiplication `(ê ⊗ ê).symm ∘ Δ_B ∘ ê`, counit `ε_B ∘ ê`, antipode
-`ê.symm ∘ S_B ∘ ê`; each Hopf axiom is the corresponding axiom of `B` conjugated by
-`ê` (`Algebra.TensorProduct.congr` supplies the tensor legs), and the
-bialgebra-homomorphism property of `ê` then holds by construction. -/
+Proof: `C := Shrink.{v} B` with the ring and algebra structure transported along
+`equivShrink` (`Shrink.instCommRing`, `Shrink.instAlgebra`, `Shrink.algEquiv`),
+the comultiplication `(ê⁻¹ ⊗ ê⁻¹) ∘ Δ_B ∘ ê`, counit `ε_B ∘ ê`, antipode
+`ê⁻¹ ∘ S_B ∘ ê` (all through `Bialgebra.ofAlgHom`/`HopfAlgebra.ofAlgHom`); the
+coalgebra axioms are the axioms of `B` conjugated by `ê`, checked at the linear
+level after cancelling along the surjection `ê.symm` (the `coassoc_simps`
+normalization set does the tensor bookkeeping); the antipode axioms are conjugated
+at the algebra-homomorphism level (`HopfAlgebra.antipodeAlgHom`,
+`mul_antipode_rTensor_comul`/`lTensor`); the bialgebra-homomorphism property of
+`ê` holds by construction. -/
 theorem exists_hopfAlgebra_small_copy {K₁ : Type*} [CommSemiring K₁]
     {B : Type*} [CommRing B] [HopfAlgebra K₁ B] [Small.{v} B] :
     ∃ (C : Type v) (_ : CommRing C) (_ : HopfAlgebra K₁ C) (ê : C ≃ₐ[K₁] B)
-      (êc : C →ₐc[K₁] B), (êc : C →ₐ[K₁] B) = ê.toAlgHom :=
-  sorry
+      (êc : C →ₐc[K₁] B), (êc : C →ₐ[K₁] B) = ê.toAlgHom := by
+  classical
+  -- the `Type v` copy with its transported ring and algebra structure
+  let ê : Shrink.{v} B ≃ₐ[K₁] B := Shrink.algEquiv K₁ B
+  -- the transported comultiplication, counit and antipode, as algebra maps
+  let Δ : Shrink.{v} B →ₐ[K₁] Shrink.{v} B ⊗[K₁] Shrink.{v} B :=
+    (Algebra.TensorProduct.map ê.symm.toAlgHom ê.symm.toAlgHom).comp
+      ((Bialgebra.comulAlgHom K₁ B).comp ê.toAlgHom)
+  let ε : Shrink.{v} B →ₐ[K₁] K₁ :=
+    (Bialgebra.counitAlgHom K₁ B).comp ê.toAlgHom
+  let S : Shrink.{v} B →ₐ[K₁] Shrink.{v} B :=
+    ê.symm.toAlgHom.comp ((HopfAlgebra.antipodeAlgHom K₁ B).comp ê.toAlgHom)
+  -- cancellation identities for the two directions of the copy equivalence
+  have hmm' : ê.toLinearMap ∘ₗ ê.symm.toLinearMap = LinearMap.id := by
+    ext x; simp
+  -- the structure maps, precomposed with the (surjective) inverse direction
+  have hΔ : Δ.toLinearMap ∘ₗ ê.symm.toLinearMap =
+      TensorProduct.map ê.symm.toLinearMap ê.symm.toLinearMap ∘ₗ
+        Coalgebra.comul := by
+    simp only [Δ, AlgHom.comp_toLinearMap, Algebra.TensorProduct.toLinearMap_map,
+      TensorProduct.AlgebraTensorModule.map_eq, AlgEquiv.toAlgHom_toLinearMap,
+      Bialgebra.toLinearMap_comulAlgHom, LinearMap.comp_assoc, hmm',
+      LinearMap.comp_id]
+  have hε : ε.toLinearMap ∘ₗ ê.symm.toLinearMap = Coalgebra.counit := by
+    simp only [ε, AlgHom.comp_toLinearMap, AlgEquiv.toAlgHom_toLinearMap,
+      Bialgebra.toLinearMap_counitAlgHom, LinearMap.comp_assoc, hmm',
+      LinearMap.comp_id]
+  -- the coalgebra axioms, conjugated: reduce along the surjection `ê.symm`
+  have hsurj : Function.Surjective ê.symm.toLinearMap := ê.symm.surjective
+  have h_coassoc :
+      (Algebra.TensorProduct.assoc K₁ K₁ K₁ (Shrink.{v} B) (Shrink.{v} B)
+          (Shrink.{v} B)).toAlgHom.comp
+        ((Algebra.TensorProduct.map Δ (AlgHom.id K₁ (Shrink.{v} B))).comp Δ) =
+      (Algebra.TensorProduct.map (AlgHom.id K₁ (Shrink.{v} B)) Δ).comp Δ := by
+    apply AlgHom.toLinearMap_injective
+    refine (LinearMap.cancel_right hsurj).mp ?_
+    simp only [coassoc_simps, AlgHom.comp_toLinearMap,
+      Algebra.TensorProduct.toLinearMap_map, AlgHom.toLinearMap_id,
+      AlgEquiv.toAlgHom_toLinearMap, Algebra.TensorProduct.assoc_toLinearEquiv,
+      hΔ]
+  have h_rTensor :
+      (Algebra.TensorProduct.map ε (AlgHom.id K₁ (Shrink.{v} B))).comp Δ =
+        ((Algebra.TensorProduct.lid K₁ (Shrink.{v} B)).symm :
+          Shrink.{v} B →ₐ[K₁] K₁ ⊗[K₁] Shrink.{v} B) := by
+    apply AlgHom.toLinearMap_injective
+    refine (LinearMap.cancel_right hsurj).mp ?_
+    simp only [coassoc_simps, AlgHom.comp_toLinearMap,
+      Algebra.TensorProduct.toLinearMap_map, AlgHom.toLinearMap_id,
+      AlgEquiv.toAlgHom_toLinearMap, hΔ, hε]
+    rw [CoassocSimps.map_counit_comp_comul_left]
+    rfl
+  have h_lTensor :
+      (Algebra.TensorProduct.map (AlgHom.id K₁ (Shrink.{v} B)) ε).comp Δ =
+        ((Algebra.TensorProduct.rid K₁ K₁ (Shrink.{v} B)).symm :
+          Shrink.{v} B →ₐ[K₁] Shrink.{v} B ⊗[K₁] K₁) := by
+    apply AlgHom.toLinearMap_injective
+    refine (LinearMap.cancel_right hsurj).mp ?_
+    simp only [coassoc_simps, AlgHom.comp_toLinearMap,
+      Algebra.TensorProduct.toLinearMap_map, AlgHom.toLinearMap_id,
+      AlgEquiv.toAlgHom_toLinearMap, hΔ, hε]
+    rw [CoassocSimps.map_counit_comp_comul_right]
+    rfl
+  letI instBi : Bialgebra K₁ (Shrink.{v} B) :=
+    Bialgebra.ofAlgHom Δ ε h_coassoc h_rTensor h_lTensor
+  -- the structure maps of the new instance are the transported ones
+  have hcomul_new : Bialgebra.comulAlgHom K₁ (Shrink.{v} B) = Δ :=
+    AlgHom.toLinearMap_injective rfl
+  have hcounit_new : Bialgebra.counitAlgHom K₁ (Shrink.{v} B) = ε :=
+    AlgHom.toLinearMap_injective rfl
+  -- multiplicativity of the copy inverse against the tensor multiplication
+  have hmul : (Algebra.TensorProduct.lmul' K₁ (S := Shrink.{v} B)).comp
+      (Algebra.TensorProduct.map ê.symm.toAlgHom ê.symm.toAlgHom) =
+      ê.symm.toAlgHom.comp (Algebra.TensorProduct.lmul' K₁) := by
+    ext <;> simp
+  -- the structure maps, conjugated at the algebra-homomorphism level
+  have hΔa : Δ.comp ê.symm.toAlgHom =
+      (Algebra.TensorProduct.map ê.symm.toAlgHom ê.symm.toAlgHom).comp
+        (Bialgebra.comulAlgHom K₁ B) :=
+    AlgHom.toLinearMap_injective (by
+      simpa only [AlgHom.comp_toLinearMap, AlgEquiv.toAlgHom_toLinearMap,
+        Bialgebra.toLinearMap_comulAlgHom, Algebra.TensorProduct.toLinearMap_map,
+        TensorProduct.AlgebraTensorModule.map_eq] using hΔ)
+  have hSa : S.comp ê.symm.toAlgHom =
+      ê.symm.toAlgHom.comp (HopfAlgebra.antipodeAlgHom K₁ B) := by
+    apply AlgHom.ext
+    intro b
+    show ê.symm (HopfAlgebra.antipodeAlgHom K₁ B (ê (ê.symm b))) = _
+    rw [ê.apply_symm_apply]
+    rfl
+  have hεa : ε.comp ê.symm.toAlgHom = Bialgebra.counitAlgHom K₁ B := by
+    apply AlgHom.ext
+    intro b
+    show Bialgebra.counitAlgHom K₁ B (ê (ê.symm b)) = _
+    rw [ê.apply_symm_apply]
+  -- the two `map` conjugation identities for the antipode legs
+  have hmapS : (Algebra.TensorProduct.map S (AlgHom.id K₁ (Shrink.{v} B))).comp
+      (Algebra.TensorProduct.map ê.symm.toAlgHom ê.symm.toAlgHom) =
+      (Algebra.TensorProduct.map ê.symm.toAlgHom ê.symm.toAlgHom).comp
+        (Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom K₁ B)
+          (AlgHom.id K₁ B)) := by
+    rw [← Algebra.TensorProduct.map_comp, ← Algebra.TensorProduct.map_comp, hSa,
+      AlgHom.comp_id, AlgHom.id_comp]
+  have hmapS' : (Algebra.TensorProduct.map (AlgHom.id K₁ (Shrink.{v} B)) S).comp
+      (Algebra.TensorProduct.map ê.symm.toAlgHom ê.symm.toAlgHom) =
+      (Algebra.TensorProduct.map ê.symm.toAlgHom ê.symm.toAlgHom).comp
+        (Algebra.TensorProduct.map (AlgHom.id K₁ B)
+          (HopfAlgebra.antipodeAlgHom K₁ B)) := by
+    rw [← Algebra.TensorProduct.map_comp, ← Algebra.TensorProduct.map_comp, hSa,
+      AlgHom.comp_id, AlgHom.id_comp]
+  -- the antipode axioms of `B`, in `lmul' ∘ map` form
+  have hB1 : (Algebra.TensorProduct.lmul' K₁ (S := B)).comp
+      ((Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom K₁ B)
+        (AlgHom.id K₁ B)).comp (Bialgebra.comulAlgHom K₁ B)) =
+      (Algebra.ofId K₁ B).comp (Bialgebra.counitAlgHom K₁ B) := by
+    apply AlgHom.toLinearMap_injective
+    simp only [AlgHom.comp_toLinearMap, Algebra.TensorProduct.lmul'_toLinearMap,
+      Algebra.TensorProduct.toLinearMap_map,
+      TensorProduct.AlgebraTensorModule.map_eq,
+      HopfAlgebra.toLinearMap_antipodeAlgHom, AlgHom.toLinearMap_id,
+      Bialgebra.toLinearMap_comulAlgHom, Bialgebra.toLinearMap_counitAlgHom]
+    rw [← LinearMap.rTensor_def]
+    exact HopfAlgebra.mul_antipode_rTensor_comul
+  have hB2 : (Algebra.TensorProduct.lmul' K₁ (S := B)).comp
+      ((Algebra.TensorProduct.map (AlgHom.id K₁ B)
+        (HopfAlgebra.antipodeAlgHom K₁ B)).comp (Bialgebra.comulAlgHom K₁ B)) =
+      (Algebra.ofId K₁ B).comp (Bialgebra.counitAlgHom K₁ B) := by
+    apply AlgHom.toLinearMap_injective
+    simp only [AlgHom.comp_toLinearMap, Algebra.TensorProduct.lmul'_toLinearMap,
+      Algebra.TensorProduct.toLinearMap_map,
+      TensorProduct.AlgebraTensorModule.map_eq,
+      HopfAlgebra.toLinearMap_antipodeAlgHom, AlgHom.toLinearMap_id,
+      Bialgebra.toLinearMap_comulAlgHom, Bialgebra.toLinearMap_counitAlgHom]
+    rw [← LinearMap.lTensor_def]
+    exact HopfAlgebra.mul_antipode_lTensor_comul
+  -- the antipode axioms for the copy, by conjugation
+  have h_S1 : (Algebra.TensorProduct.lift S (AlgHom.id K₁ (Shrink.{v} B))
+        fun _ => Commute.all _).comp (Bialgebra.comulAlgHom K₁ (Shrink.{v} B)) =
+      (Algebra.ofId K₁ (Shrink.{v} B)).comp
+        (Bialgebra.counitAlgHom K₁ (Shrink.{v} B)) := by
+    rw [← Algebra.TensorProduct.lmul'_comp_map, hcomul_new, hcounit_new]
+    refine (AlgHom.cancel_right (f := ê.symm.toAlgHom)
+      (show Function.Surjective ⇑ê.symm.toAlgHom from ê.symm.surjective)).mp ?_
+    rw [AlgHom.comp_assoc, AlgHom.comp_assoc, hΔa, ← AlgHom.comp_assoc _ _
+      (Bialgebra.comulAlgHom K₁ B), hmapS, AlgHom.comp_assoc _ _
+      (Bialgebra.comulAlgHom K₁ B), ← AlgHom.comp_assoc, hmul,
+      AlgHom.comp_assoc, hB1, AlgHom.comp_assoc, hεa]
+    apply AlgHom.ext
+    intro b
+    show ê.symm (algebraMap K₁ B (Bialgebra.counitAlgHom K₁ B b)) = _
+    rw [AlgEquiv.commutes]
+    rfl
+  have h_S2 : (Algebra.TensorProduct.lift (AlgHom.id K₁ (Shrink.{v} B)) S
+        fun _ _ => Commute.all _ _).comp
+        (Bialgebra.comulAlgHom K₁ (Shrink.{v} B)) =
+      (Algebra.ofId K₁ (Shrink.{v} B)).comp
+        (Bialgebra.counitAlgHom K₁ (Shrink.{v} B)) := by
+    rw [← Algebra.TensorProduct.lmul'_comp_map, hcomul_new, hcounit_new]
+    refine (AlgHom.cancel_right (f := ê.symm.toAlgHom)
+      (show Function.Surjective ⇑ê.symm.toAlgHom from ê.symm.surjective)).mp ?_
+    rw [AlgHom.comp_assoc, AlgHom.comp_assoc, hΔa, ← AlgHom.comp_assoc _ _
+      (Bialgebra.comulAlgHom K₁ B), hmapS', AlgHom.comp_assoc _ _
+      (Bialgebra.comulAlgHom K₁ B), ← AlgHom.comp_assoc, hmul,
+      AlgHom.comp_assoc, hB2, AlgHom.comp_assoc, hεa]
+    apply AlgHom.ext
+    intro b
+    show ê.symm (algebraMap K₁ B (Bialgebra.counitAlgHom K₁ B b)) = _
+    rw [AlgEquiv.commutes]
+    rfl
+  letI instHopf : HopfAlgebra K₁ (Shrink.{v} B) :=
+    HopfAlgebra.ofAlgHom S h_S1 h_S2
+  -- the copy equivalence respects the comultiplications by construction
+  refine ⟨Shrink.{v} B, inferInstance, instHopf, ê,
+    BialgHom.ofAlgHom ê.toAlgHom ?_ ?_, ?_⟩
+  · rw [hcounit_new]
+  · rw [hcomul_new]
+    have hcomp : ê.toAlgHom.comp ê.symm.toAlgHom = AlgHom.id K₁ B :=
+      AlgHom.ext fun b => ê.apply_symm_apply b
+    have hmapinv : (Algebra.TensorProduct.map ê.toAlgHom ê.toAlgHom).comp
+        (Algebra.TensorProduct.map ê.symm.toAlgHom ê.symm.toAlgHom) =
+        AlgHom.id K₁ (B ⊗[K₁] B) := by
+      rw [← Algebra.TensorProduct.map_comp, hcomp, Algebra.TensorProduct.map_id]
+    show (Algebra.TensorProduct.map ê.toAlgHom ê.toAlgHom).comp
+        ((Algebra.TensorProduct.map ê.symm.toAlgHom ê.symm.toAlgHom).comp
+          ((Bialgebra.comulAlgHom K₁ B).comp ê.toAlgHom)) =
+      (Bialgebra.comulAlgHom K₁ B).comp ê.toAlgHom
+    rw [← AlgHom.comp_assoc, hmapinv, AlgHom.id_comp]
+  · rfl
 
 /-- **The Hopf-algebra structure on a `u`-small carrier of the equivariant-functions
 algebra** (DECOMPOSED 2026-07-23 into the canonical-universe package leaf
@@ -2546,20 +2851,132 @@ theorem WeierstrassCurve.algHom_comp_eq_of_torsion_inertia_fixes
       WithConv.toConv φ := h1
   exact WithConv.toConv_injective h2
 
+/-- **Denominator clearing in a base-changed algebra** (PROVEN 2026-07-23; glue
+for the canonicity leaf `range_comp_includeRight_eq_integralClosure_of_etale_form`
+and the Hopf-order multiplication-map bijectivity
+`integralClosureMul_bijective`): every element of `K ⊗[R] B` has a nonzero
+`R`-multiple in the image of `B`, `K` being the fraction field of the domain
+`R` — collect the denominators of the (finitely many) left tensor legs. -/
+theorem exists_ne_zero_algebraMap_mul_eq_includeRight
+    (B : Type*) [CommRing B] [Algebra R B] (w : K ⊗[R] B) :
+    ∃ r : R, r ≠ 0 ∧ ∃ b : B,
+      algebraMap R (K ⊗[R] B) r * w =
+        (Algebra.TensorProduct.includeRight : B →ₐ[R] K ⊗[R] B) b := by
+  induction w with
+  | zero => exact ⟨1, one_ne_zero, 0, by simp⟩
+  | tmul k b =>
+    obtain ⟨c, hc⟩ :=
+      IsLocalization.exists_integer_multiple (nonZeroDivisors R) k
+    obtain ⟨s, hs⟩ := hc
+    refine ⟨(c : R), nonZeroDivisors.ne_zero c.2, s • b, ?_⟩
+    have hs' : algebraMap R K (c : R) * k = algebraMap R K s :=
+      (hs.trans (Algebra.smul_def (c : R) k)).symm
+    rw [IsScalarTower.algebraMap_apply R K (K ⊗[R] B),
+      Algebra.TensorProduct.algebraMap_apply,
+      Algebra.TensorProduct.tmul_mul_tmul, one_mul,
+      Algebra.algebraMap_self, RingHom.id_apply, hs',
+      Algebra.algebraMap_eq_smul_one, TensorProduct.smul_tmul,
+      Algebra.TensorProduct.includeRight_apply]
+  | add w₁ w₂ ih₁ ih₂ =>
+    obtain ⟨r₁, hr₁, b₁, he₁⟩ := ih₁
+    obtain ⟨r₂, hr₂, b₂, he₂⟩ := ih₂
+    refine ⟨r₁ * r₂, mul_ne_zero hr₁ hr₂,
+      algebraMap R B r₂ * b₁ + algebraMap R B r₁ * b₂, ?_⟩
+    have h1 : (Algebra.TensorProduct.includeRight : B →ₐ[R] K ⊗[R] B)
+        (algebraMap R B r₂ * b₁ + algebraMap R B r₁ * b₂) =
+        algebraMap R (K ⊗[R] B) r₂ * (algebraMap R (K ⊗[R] B) r₁ * w₁) +
+          algebraMap R (K ⊗[R] B) r₁ *
+            (algebraMap R (K ⊗[R] B) r₂ * w₂) := by
+      rw [map_add, map_mul, map_mul, AlgHom.commutes, AlgHom.commutes,
+        he₁, he₂]
+    rw [h1, map_mul]
+    ring
+
+/-- **The canonical multiplication map from the base change of the integral
+closure** (glue for the field-extension form leaf below and for the Hopf-order
+leaf): `k ⊗ h ↦ k • h`, as a `K`-algebra homomorphism
+`K ⊗[R] integralClosure R HK →ₐ[K] HK`. Unlike an abstract form equivalence
+from `Nonempty`-data, this CANONICAL map is compatible with the subalgebra
+inclusion by definition, which is what lets the comultiplication, counit and
+antipode corestrict along it in the Hopf-order leaf. -/
+noncomputable def integralClosureMul
+    (HK : Type*) [CommRing HK] [Algebra K HK] [Algebra R HK]
+    [IsScalarTower R K HK] :
+    (K ⊗[R] (integralClosure R HK)) →ₐ[K] HK :=
+  Algebra.TensorProduct.lift (Algebra.ofId K HK) (integralClosure R HK).val
+    fun _ _ => Commute.all _ _
+
+/-- **Injectivity of the canonical multiplication map** (PROVEN 2026-07-23;
+needs no form hypothesis): a kernel element has a nonzero `R`-multiple of the
+form `1 ⊗ h` (denominator clearing), whose image `h` vanishes, and
+multiplication by a nonzero `r : R` is invertible on the `K`-module
+`K ⊗[R] integralClosure R HK`. -/
+theorem integralClosureMul_injective
+    (HK : Type*) [CommRing HK] [Algebra K HK] [Algebra R HK]
+    [IsScalarTower R K HK] :
+    Function.Injective (integralClosureMul R K HK) := by
+  rw [injective_iff_map_eq_zero]
+  intro w hw
+  obtain ⟨r, hr, h, hrh⟩ :=
+    exists_ne_zero_algebraMap_mul_eq_includeRight R K
+      (integralClosure R HK) w
+  -- the image of `h` in `HK` vanishes, so `h = 0`
+  have h3 : integralClosureMul R K HK
+      ((Algebra.TensorProduct.includeRight :
+        _ →ₐ[R] K ⊗[R] (integralClosure R HK)) h) = (h : HK) := by
+    simp [integralClosureMul, Algebra.ofId_apply]
+  have h1 : (h : HK) = 0 := by
+    rw [← h3, ← hrh, map_mul, hw, mul_zero]
+  have h0 : h = 0 := Subtype.ext h1
+  rw [h0, map_zero] at hrh
+  -- multiplication by the nonzero `r` is injective on a `K`-module
+  have hu : IsUnit (algebraMap R (K ⊗[R] (integralClosure R HK)) r) := by
+    rw [IsScalarTower.algebraMap_apply R K (K ⊗[R] (integralClosure R HK))]
+    exact (isUnit_iff_ne_zero.mpr fun hzero => hr
+      ((injective_iff_map_eq_zero _).mp (IsFractionRing.injective R K) r
+        hzero)).map (algebraMap K (K ⊗[R] (integralClosure R HK)))
+  exact (hu.mul_right_eq_zero).mp hrh
+
+/-- **Étaleness of the integral closure under inertia-fixed embeddings** (sorry
+node; the DVR-Galois core of the single-factor leaf, isolated 2026-07-23 — the
+finiteness of the integral closure and the form equivalence via the canonical
+multiplication map are PROVEN in
+`exists_finite_etale_algebra_form_of_inertia_fixes_field`): for a finite
+separable field extension `L/K`, all of whose embeddings into `Kˢᵉᵖ` are fixed
+by every inertia subgroup above `R`, the integral closure of `R` in `L` is
+étale over `R`. Intended proof: finite presentation is Noetherian-automatic
+(the closure is module-finite over `R` by separability); for formal
+étaleness, the closure is flat (torsion-free over the DVR `R`) and it remains
+to see it is unramified: the inertia hypothesis places each embedding
+`L → Kˢᵉᵖ` inside the inertia field of every extension of the valuation of `R`
+to `Kˢᵉᵖ`, so for every prime `𝔮` above `𝔪 = (π)` the extension of complete
+local fields is inertia-trivial, i.e. `e(𝔮/𝔪) = 1` with separable residue
+extension (Neukirch I.9/II.9, Serre *Local Fields* I–II); hence `π` generates
+the maximal ideal at every `𝔮` and `𝔪`-fibre is a finite product of separable
+residue field extensions, which is `Algebra.FormallyUnramified`; finally
+flat + unramified + finitely presented over the DVR is étale (fibrewise
+smoothness of dimension zero). -/
+theorem integralClosure_etale_of_inertia_fixes_field
+    (L : Type u) [Field L] [Algebra K L]
+    [Module.Finite K L] [Algebra.IsSeparable K L]
+    [Algebra R L] [IsScalarTower R K L]
+    (hfix : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ σ ∈ 𝒪.inertiaSubgroup K, ∀ φ : L →ₐ[K] Ksep,
+        (σ : Ksep ≃ₐ[K] Ksep).toAlgHom.comp φ = φ) :
+    Algebra.Etale R (integralClosure R L) :=
+  sorry
+
 /-- **Unramified finite separable field extensions have finite étale `R`-forms**
-(sorry node; the single-factor core of the Galois half of the curve-free
-Hopf-form leaf, isolated 2026-07-23 — the product assembly is proven in
-`exists_finite_etale_algebra_form_of_inertia_fixes`): a finite separable field
-extension `L/K`, all of whose embeddings into `Kˢᵉᵖ` are fixed by every inertia
-subgroup above `R`, admits a finite étale `R`-form. Intended proof: the
-hypothesis places each embedding `L → Kˢᵉᵖ` inside the inertia field of every
-valuation subring above `R`, so `L` is unramified with separable residue
-extension at every prime above the maximal ideal of `R`; take `H₀` to be the
-integral closure of `R` in `L` (transported to `Type u` along an `R`-basis):
-it is finite over `R` (separability + Noetherian normal base, Neukirch I.8/
-Serre *Local Fields* I–II), free (torsion-free finite over a DVR), and étale
-over `R` (finite flat with unramified fibres, by the inertia hypothesis), and
-`K ⊗[R] H₀ → L` is an isomorphism (clearing denominators). -/
+(DECOMPOSED 2026-07-23 into the étaleness core
+`integralClosure_etale_of_inertia_fixes_field`; the finiteness of the integral
+closure — separability over the Noetherian integrally closed `R`
+(`IsIntegralClosure.finite`) — and the form equivalence — bijectivity of the
+canonical multiplication map `K ⊗[R] integralClosure R L → L`, by denominator
+clearing on both sides — are PROVEN in the assembly below): a finite separable
+field extension `L/K`, all of whose embeddings into `Kˢᵉᵖ` are fixed by every
+inertia subgroup above `R`, admits a finite étale `R`-form, namely the
+integral closure of `R` in `L`. -/
 theorem exists_finite_etale_algebra_form_of_inertia_fixes_field
     (L : Type u) [Field L] [Algebra K L]
     [Module.Finite K L] [Algebra.IsSeparable K L]
@@ -2569,8 +2986,34 @@ theorem exists_finite_etale_algebra_form_of_inertia_fixes_field
         (σ : Ksep ≃ₐ[K] Ksep).toAlgHom.comp φ = φ) :
     ∃ (H₀ : Type u) (_ : CommRing H₀) (_ : Algebra R H₀)
       (_ : Module.Finite R H₀) (_ : Algebra.Etale R H₀),
-      Nonempty ((K ⊗[R] H₀) ≃ₐ[K] L) :=
-  sorry
+      Nonempty ((K ⊗[R] H₀) ≃ₐ[K] L) := by
+  letI : Algebra R L := ((algebraMap K L).comp (algebraMap R K)).toAlgebra
+  haveI : IsScalarTower R K L := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  -- finiteness of the integral closure: separability over the Noetherian
+  -- integrally closed base `R`
+  have hfin : Module.Finite R (integralClosure R L) :=
+    IsIntegralClosure.finite R K L (integralClosure R L)
+  -- étaleness: the sorried DVR-Galois core
+  have het : Algebra.Etale R (integralClosure R L) :=
+    integralClosure_etale_of_inertia_fixes_field R K Ksep L hfix
+  -- the canonical multiplication map realizes the form equivalence
+  have hbij : Function.Bijective (integralClosureMul R K L) := by
+    refine ⟨integralClosureMul_injective R K L, fun z => ?_⟩
+    obtain ⟨r, hr, hint⟩ := exists_integral_multiples R K ({z} : Finset L)
+    have hz : IsIntegral R (r • z) := hint z (Finset.mem_singleton_self z)
+    have hr' : algebraMap R K r ≠ 0 := fun h0 => hr
+      ((injective_iff_map_eq_zero _).mp (IsFractionRing.injective R K) r h0)
+    have hrL : algebraMap K L (algebraMap R K r) ≠ 0 :=
+      fun h0 => hr' ((algebraMap K L).injective (h0.trans (map_zero _).symm))
+    refine ⟨(algebraMap R K r)⁻¹ ⊗ₜ ⟨r • z, hz⟩, ?_⟩
+    simp only [integralClosureMul, Algebra.TensorProduct.lift_tmul,
+      Algebra.ofId_apply]
+    rw [map_inv₀]
+    show (algebraMap K L (algebraMap R K r))⁻¹ * (r • z) = z
+    rw [Algebra.smul_def, IsScalarTower.algebraMap_apply R K L,
+      inv_mul_cancel_left₀ hrL]
+  exact ⟨integralClosure R L, inferInstance, inferInstance, hfin, het,
+    ⟨AlgEquiv.ofBijective (integralClosureMul R K L) hbij⟩⟩
 
 /-- **Unramified finite étale `K`-algebras have finite étale `R`-forms**
 (DECOMPOSED 2026-07-23 into the single-field-extension leaf
@@ -2631,17 +3074,139 @@ theorem exists_finite_etale_algebra_form_of_inertia_fixes
   exact (Algebra.TensorProduct.piRight R K K H₀).trans
     ((AlgEquiv.piCongrRight fun i => (hEq i).some).trans e.symm)
 
-/-- **Étale algebra forms are the integral closure** (sorry node; the CANONICITY
-half of the Hopf-upgrade leaf — pure commutative algebra over the DVR `R`, no
-Hopf structure): if the finite étale `K`-algebra `HK` admits a finite étale
-`R`-algebra form `H₀`, then the integral closure of `R` in `HK` is itself a
-finite étale `R`-algebra form. Intended proof: a finite étale `R`-algebra is
-normal, hence integrally closed in its total fraction ring `K ⊗[R] H₀ ≅ HK`,
-and every element of `HK` integral over `R` is a fraction of elements of the
-image of `H₀` with denominator invertible in `K`, hence already in the image —
-so the image of `H₀` under `x ↦ e (1 ⊗ x)` IS the integral closure, and the
-form data transports along the induced isomorphism `H₀ ≅ integralClosure R HK`
-(étale forms are canonical). -/
+/-- **The image of a finite étale `R`-form is the integral closure** (PROVEN
+2026-07-23; the workhorse behind the canonicity leaf
+`integralClosure_finite_etale_form_of_etale_algebra_form`, stated separately so
+that the Hopf-order leaf can reuse it on the tensor square): for a finite étale
+`R`-algebra `H₀` and a `K`-algebra equivalence `e : K ⊗[R] H₀ ≃ₐ[K] HK`, the
+image of `H₀` in `HK` under `x ↦ e (1 ⊗ x)` is exactly the integral closure of
+`R` in `HK`. Inclusion `⊆`: `H₀` is module-finite over `R`, hence integral, and
+integrality is preserved by `R`-algebra maps. Inclusion `⊇`: an integral `z` has
+`π ^ k * z` in the image for some `k` (clearing denominators through `e`, `K`
+being the fraction field of the DVR `R`), and `k` descends to zero: if `π * z`
+is the image of `h`, then `h ^ m` lies in `π H₀` (root the integral equation of
+`z` scaled by `π` at `h` and pull back along the injective form map), and
+`π H₀ = 𝔪 H₀` is a RADICAL ideal by unramifiedness of the form
+(`Algebra.FormallyUnramified.isRadical_map_isMaximal` — exactly where étaleness
+enters, and where the `μ_p` counterexample fails), so `h = π * h'` and `z` is
+the image of `h'`, `π` being invertible in the `K`-algebra `HK`. -/
+theorem range_comp_includeRight_eq_integralClosure_of_etale_form
+    (HK : Type*) [CommRing HK] [Algebra K HK] [Algebra R HK]
+    [IsScalarTower R K HK]
+    (H₀ : Type*) [CommRing H₀] [Algebra R H₀] [Module.Finite R H₀]
+    [Algebra.Etale R H₀]
+    (e : (K ⊗[R] H₀) ≃ₐ[K] HK) :
+    ((e.toAlgHom.restrictScalars R).comp
+        (Algebra.TensorProduct.includeRight : H₀ →ₐ[R] K ⊗[R] H₀)).range =
+      integralClosure R HK := by
+  classical
+  set φ : H₀ →ₐ[R] HK :=
+    (e.toAlgHom.restrictScalars R).comp
+      (Algebra.TensorProduct.includeRight : H₀ →ₐ[R] K ⊗[R] H₀) with hφdef
+  -- the form map is injective (`H₀` is flat: étale ⟹ smooth ⟹ flat)
+  have hinj : Function.Injective φ :=
+    e.injective.comp
+      (Algebra.TensorProduct.includeRight_injective (IsFractionRing.injective R K))
+  -- a uniformizer of `R`, invertible in the `K`-algebra `HK`
+  obtain ⟨π, hπ⟩ := IsDiscreteValuationRing.exists_irreducible R
+  have hπ0 : π ≠ 0 := hπ.ne_zero
+  have hπK : IsUnit (algebraMap R HK π) := by
+    rw [IsScalarTower.algebraMap_apply R K HK]
+    exact (isUnit_iff_ne_zero.mpr fun h0 => hπ0
+      ((injective_iff_map_eq_zero _).mp (IsFractionRing.injective R K) π h0)).map
+      (algebraMap K HK)
+  -- the descent step: an integral `z` with `π * z` in the image is in the image
+  have hstep : ∀ z : HK, IsIntegral R z →
+      algebraMap R HK π * z ∈ φ.range → z ∈ φ.range := by
+    intro z hz hmem
+    obtain ⟨h, hh⟩ := hmem
+    replace hh : φ h = algebraMap R HK π * z := hh
+    obtain ⟨p, hpmonic, hp0⟩ := hz
+    -- scale the roots of the integral equation by `π` and evaluate at `h`
+    have hq0 : Polynomial.aeval (algebraMap R HK π * z) (p.scaleRoots π) = 0 :=
+      Polynomial.scaleRoots_aeval_eq_zero hp0
+    rw [← hh, Polynomial.aeval_algHom_apply] at hq0
+    have hqh : Polynomial.aeval h (p.scaleRoots π) = 0 :=
+      hinj (hq0.trans (map_zero φ).symm)
+    -- isolate the leading term: `h ^ m ∈ π H₀`
+    have hpow : h ^ p.natDegree ∈ Ideal.span {algebraMap R H₀ π} := by
+      have hsum := Polynomial.aeval_eq_sum_range (p := p.scaleRoots π) h
+      rw [hqh, Polynomial.natDegree_scaleRoots, Finset.sum_range_succ,
+        Polynomial.coeff_scaleRoots_natDegree, hpmonic.leadingCoeff, one_smul]
+        at hsum
+      have hneg : h ^ p.natDegree =
+          -∑ i ∈ Finset.range p.natDegree, (p.scaleRoots π).coeff i • h ^ i :=
+        eq_neg_of_add_eq_zero_right hsum.symm
+      rw [hneg]
+      refine neg_mem (Ideal.sum_mem _ fun i hi => ?_)
+      rw [Algebra.smul_def]
+      refine Ideal.mem_span_singleton.mpr (Dvd.dvd.mul_right ?_ _)
+      refine map_dvd (algebraMap R H₀) ?_
+      rw [Polynomial.coeff_scaleRoots]
+      exact ((dvd_pow_self π
+        (Nat.sub_ne_zero_of_lt (Finset.mem_range.mp hi))).mul_left _)
+    -- `π H₀ = 𝔪 H₀` is radical because the form is unramified
+    have hrad : (Ideal.span {algebraMap R H₀ π}).IsRadical := by
+      have h1 := Algebra.FormallyUnramified.isRadical_map_isMaximal R H₀
+        (IsLocalRing.maximalIdeal R)
+      rwa [hπ.maximalIdeal_eq, Ideal.map_span, Set.image_singleton] at h1
+    obtain ⟨h', hh'⟩ := Ideal.mem_span_singleton'.mp (hrad ⟨p.natDegree, hpow⟩)
+    -- cancel the (invertible in `HK`) factor `π`
+    refine ⟨h', hπK.mul_left_cancel ?_⟩
+    calc algebraMap R HK π * φ h'
+        = φ (algebraMap R H₀ π * h') := by rw [map_mul, AlgHom.commutes]
+      _ = φ h := by rw [mul_comm, hh']
+      _ = algebraMap R HK π * z := hh
+  -- clearing denominators: every element of `HK` has a `π`-power multiple in the image
+  have hden : ∀ z : HK, ∃ k : ℕ, algebraMap R HK π ^ k * z ∈ φ.range := by
+    have hden0 := exists_ne_zero_algebraMap_mul_eq_includeRight R K H₀
+    intro z
+    obtain ⟨r, hr, h, hrh⟩ := hden0 (e.symm z)
+    obtain ⟨n, u, hu⟩ := IsDiscreteValuationRing.eq_unit_mul_pow_irreducible hr hπ
+    have he1 : algebraMap R HK r * z = φ h := by
+      have h2 := congrArg e hrh
+      rw [map_mul, e.apply_symm_apply,
+        show e (algebraMap R (K ⊗[R] H₀) r) = algebraMap R HK r from
+          (e.toAlgHom.restrictScalars R).commutes r] at h2
+      exact h2
+    have hval : ((u⁻¹ : Rˣ) : R) * r = π ^ n := by
+      rw [hu, ← mul_assoc, Units.inv_mul, one_mul]
+    refine ⟨n, algebraMap R H₀ ((u⁻¹ : Rˣ) : R) * h, ?_⟩
+    calc φ (algebraMap R H₀ ((u⁻¹ : Rˣ) : R) * h)
+        = algebraMap R HK ((u⁻¹ : Rˣ) : R) * φ h := by
+          rw [map_mul, AlgHom.commutes]
+      _ = algebraMap R HK ((u⁻¹ : Rˣ) : R) * (algebraMap R HK r * z) := by
+          rw [he1]
+      _ = algebraMap R HK (((u⁻¹ : Rˣ) : R) * r) * z := by
+          rw [map_mul, mul_assoc]
+      _ = algebraMap R HK π ^ n * z := by rw [hval, map_pow]
+  -- descend the `π`-power by induction, using integrality of `z` throughout
+  have hall : ∀ k : ℕ, ∀ z : HK, IsIntegral R z →
+      algebraMap R HK π ^ k * z ∈ φ.range → z ∈ φ.range := by
+    intro k
+    induction k with
+    | zero => intro z _ h0; simpa using h0
+    | succ k ih =>
+      intro z hz hk
+      refine ih z hz (hstep _ (((isIntegral_algebraMap (x := π)).pow k).mul hz) ?_)
+      rw [← mul_assoc, ← pow_succ']
+      exact hk
+  -- assemble the two inclusions
+  refine le_antisymm ?_ ?_
+  · rintro x ⟨y, rfl⟩
+    exact (Algebra.IsIntegral.isIntegral y).map φ
+  · intro z hz
+    obtain ⟨k, hk⟩ := hden z
+    exact hall k z hz hk
+
+/-- **Étale algebra forms are the integral closure** (PROVEN 2026-07-23 from the
+range identity `range_comp_includeRight_eq_integralClosure_of_etale_form`; the
+CANONICITY half of the Hopf-upgrade leaf — pure commutative algebra over the DVR
+`R`, no Hopf structure): if the finite étale `K`-algebra `HK` admits a finite
+étale `R`-algebra form `H₀`, then the integral closure of `R` in `HK` is itself
+a finite étale `R`-algebra form. The image of `H₀` under `x ↦ e (1 ⊗ x)` IS the
+integral closure (the range identity), and the form data transports along the
+induced isomorphism `H₀ ≅ integralClosure R HK` (étale forms are canonical). -/
 theorem integralClosure_finite_etale_form_of_etale_algebra_form
     (HK : Type u) [CommRing HK] [Algebra K HK] [Algebra R HK]
     [IsScalarTower R K HK] [Module.Finite K HK] [Algebra.Etale K HK]
@@ -2650,29 +3215,120 @@ theorem integralClosure_finite_etale_form_of_etale_algebra_form
     (e : (K ⊗[R] H₀) ≃ₐ[K] HK) :
     Module.Finite R (integralClosure R HK) ∧
       Algebra.Etale R (integralClosure R HK) ∧
-      Nonempty ((K ⊗[R] (integralClosure R HK)) ≃ₐ[K] HK) :=
+      Nonempty ((K ⊗[R] (integralClosure R HK)) ≃ₐ[K] HK) := by
+  classical
+  set φ : H₀ →ₐ[R] HK :=
+    (e.toAlgHom.restrictScalars R).comp
+      (Algebra.TensorProduct.includeRight : H₀ →ₐ[R] K ⊗[R] H₀) with hφdef
+  have hrange : φ.range = integralClosure R HK :=
+    range_comp_includeRight_eq_integralClosure_of_etale_form R K HK H₀ e
+  have hinj : Function.Injective φ :=
+    e.injective.comp
+      (Algebra.TensorProduct.includeRight_injective (IsFractionRing.injective R K))
+  -- the induced isomorphism `H₀ ≃ₐ[R] integralClosure R HK`
+  let e₀ : H₀ ≃ₐ[R] integralClosure R HK :=
+    (AlgEquiv.ofInjective φ hinj).trans (Subalgebra.equivOfEq _ _ hrange)
+  exact ⟨Module.Finite.equiv e₀.toLinearEquiv, Algebra.Etale.of_equiv e₀,
+    ⟨(Algebra.TensorProduct.congr (AlgEquiv.refl (R := K) (A₁ := K))
+      e₀.symm).trans e⟩⟩
+
+/-- **Bijectivity of the canonical multiplication map** (PROVEN 2026-07-23):
+if SOME `K`-algebra form equivalence `K ⊗[R] integralClosure R HK ≃ₐ[K] HK`
+exists, then the canonical multiplication map is itself bijective.
+Surjectivity: `e` maps `1 ⊗ h` into the integral closure (integrality is
+preserved by `R`-algebra maps), so `e (k ⊗ h) = k • e (1 ⊗ h)` already lies in
+the image of the canonical map, and the `e (k ⊗ h)` span the target. -/
+theorem integralClosureMul_bijective
+    (HK : Type*) [CommRing HK] [Algebra K HK] [Algebra R HK]
+    [IsScalarTower R K HK]
+    (heq : Nonempty ((K ⊗[R] (integralClosure R HK)) ≃ₐ[K] HK)) :
+    Function.Bijective (integralClosureMul R K HK) := by
+  obtain ⟨e⟩ := heq
+  constructor
+  · exact integralClosureMul_injective R K HK
+  · intro z
+    suffices h : ∀ w : K ⊗[R] (integralClosure R HK),
+        ∃ v, integralClosureMul R K HK v = e w by
+      obtain ⟨v, hv⟩ := h (e.symm z)
+      exact ⟨v, by rw [hv, e.apply_symm_apply]⟩
+    intro w
+    induction w with
+    | zero => exact ⟨0, by simp⟩
+    | tmul k h =>
+      -- `e (1 ⊗ h)` is integral over `R`, hence in the integral closure
+      have hint : IsIntegral R (e ((Algebra.TensorProduct.includeRight :
+          _ →ₐ[R] K ⊗[R] (integralClosure R HK)) h)) :=
+        (integralClosure.isIntegral (R := R) (A := HK) h).map
+          ((e.toAlgHom.restrictScalars R).comp
+            Algebra.TensorProduct.includeRight)
+      refine ⟨k ⊗ₜ ⟨e ((Algebra.TensorProduct.includeRight :
+          _ →ₐ[R] K ⊗[R] (integralClosure R HK)) h), hint⟩, ?_⟩
+      -- both sides are `algebraMap k * e (1 ⊗ h)`
+      have hsplit : (k ⊗ₜ h : K ⊗[R] (integralClosure R HK)) =
+          algebraMap K (K ⊗[R] (integralClosure R HK)) k *
+            (Algebra.TensorProduct.includeRight :
+              _ →ₐ[R] K ⊗[R] (integralClosure R HK)) h := by
+        rw [Algebra.TensorProduct.algebraMap_apply,
+          Algebra.TensorProduct.includeRight_apply,
+          Algebra.TensorProduct.tmul_mul_tmul, one_mul,
+          Algebra.algebraMap_self, RingHom.id_apply, mul_one]
+      rw [hsplit, map_mul, e.commutes]
+      simp [integralClosureMul, Algebra.ofId_apply]
+    | add w₁ w₂ ih₁ ih₂ =>
+      obtain ⟨v₁, hv₁⟩ := ih₁
+      obtain ⟨v₂, hv₂⟩ := ih₂
+      exact ⟨v₁ + v₂, by rw [map_add, map_add, hv₁, hv₂]⟩
+
+/-- **The Hopf-order structure on the integral closure** (sorry node; the
+corestriction core of the Hopf half of the Hopf-upgrade leaf, isolated
+2026-07-23 — the canonical multiplication map, its bijectivity and the final
+assembly are PROVEN): if the integral closure `H₀ := integralClosure R HK` of
+the DVR `R` in the finite étale Hopf `K`-algebra `HK` is finite étale over `R`
+and the canonical multiplication map `μ : K ⊗[R] H₀ → HK` is bijective, then
+`H₀` carries an `R`-Hopf-algebra structure whose base change is `HK` as a
+`K`-bialgebra. Intended proof: comultiplication is a ring homomorphism, so it
+sends `H₀` (integral over `R`) into elements of `HK ⊗[K] HK` integral over `R`;
+the integral closure of `R` there is the image of `H₀ ⊗[R] H₀` under
+`τ := e₂ ∘ (1 ⊗ ·)`, where `e₂ : K ⊗[R] (H₀ ⊗[R] H₀) ≃ HK ⊗[K] HK` is the
+base-change comparison (`Algebra.TensorProduct.assoc`/`cancelBaseChange`
+composed with `congr μ μ`) and the range identity is the canonicity workhorse
+`range_comp_includeRight_eq_integralClosure_of_etale_form` applied to the
+tensor square (`H₀ ⊗[R] H₀` is finite étale: étale is stable under base change
+and composition); so the comultiplication corestricts along the injective `τ`
+(injectivity: flatness of `H₀ ⊗[R] H₀`). The counit sends `H₀` into elements
+of `K` integral over `R`, i.e. into `R` (`IsIntegrallyClosed R`, `R` a DVR);
+the antipode is an algebra endomorphism of `HK`, so it preserves the integral
+closure. The corestricted operations satisfy the Hopf axioms because `τ` and
+its double/triple analogues are injective, and `μ` becomes a bialgebra
+equivalence because its compatibility with `τ` holds by construction. The
+`μ_p` counterexample (whose normalization over `ℤ_p` is NOT a Hopf order) does
+not contradict this: there the normalization is not étale over `R`, so the
+étale hypothesis fails. NOTE the conclusion carries its own abstract carrier
+`H` with ALL instances existential rather than a Hopf structure on
+`integralClosure R HK` itself: the carrier has canonical `CommRing`/`Algebra`
+instances, and an existentially bound Hopf structure on it cannot state the
+`≃ₐc` conclusion without an instance diamond (the same probe-verified
+obstruction as for `GaloisHopfCarrier`); the intended `H` is a structureless
+copy of the integral closure. -/
+theorem exists_hopfAlgebra_integralClosure_of_mul_bijective
+    (HK : Type u) [CommRing HK] [HopfAlgebra K HK] [Algebra R HK]
+    [IsScalarTower R K HK] [Module.Finite K HK] [Algebra.Etale K HK]
+    (hfin : Module.Finite R (integralClosure R HK))
+    (het : Algebra.Etale R (integralClosure R HK))
+    (hbij : Function.Bijective (integralClosureMul R K HK)) :
+    ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
+      (_ : Module.Finite R H) (_ : Module.Flat R H),
+      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) :=
   sorry
 
 /-- **The integral closure in an étale-formed Hopf algebra is a Hopf order**
-(sorry node; the HOPF half of the Hopf-upgrade leaf): if the integral closure
-`H₀ := integralClosure R HK` of `R` in the finite étale Hopf `K`-algebra `HK`
-is a finite étale `R`-algebra form, then `HK` admits a finite flat Hopf
-`R`-form (namely `H₀` itself). Intended proof: comultiplication is a ring
-homomorphism, so it sends `H₀` (integral over `R`) into elements of
-`HK ⊗[K] HK` integral over `R`, and the integral closure of `R` there is the
-image of `H₀ ⊗[R] H₀` (étale ⊗ étale is étale over the normal base `R`, hence
-normal, hence integrally closed in its total fraction ring, and
-`K ⊗ (H₀ ⊗[R] H₀) ≅ HK ⊗[K] HK` — the canonicity leaf
-`integralClosure_finite_etale_form_of_etale_algebra_form` applied to the
-tensor square); the counit sends `H₀` into elements of `K` integral over `R`,
-i.e. into `R` (a DVR is integrally closed); the antipode is an algebra
-endomorphism, so it preserves integrality; the corestricted operations
-satisfy the Hopf axioms because the inclusions `H₀ → HK` and
-`H₀ ⊗[R] H₀ → HK ⊗[K] HK` are injective (`H₀` is finite free over the DVR
-`R`); flatness is freeness of a finite torsion-free module over a DVR. The
-`μ_p` counterexample (whose normalization over `ℤ_p` is NOT a Hopf order)
-does not contradict this: there the normalization is not étale over `R`, so
-the étale-form hypothesis fails. -/
+(DECOMPOSED 2026-07-23 into the bijectivity of the canonical multiplication
+map `integralClosureMul_bijective` — PROVEN — and the corestriction core
+`exists_hopfAlgebra_integralClosure_of_mul_bijective`; the assembly below is
+proven): if the integral closure `H₀ := integralClosure R HK` of `R` in the
+finite étale Hopf `K`-algebra `HK` is a finite étale `R`-algebra form, then
+`HK` admits a finite flat Hopf `R`-form (namely `H₀` itself); flatness is
+étale ⟹ smooth ⟹ flat. -/
 theorem exists_finite_flat_hopf_form_integralClosure
     (HK : Type u) [CommRing HK] [HopfAlgebra K HK] [Algebra R HK]
     [IsScalarTower R K HK] [Module.Finite K HK] [Algebra.Etale K HK]
@@ -2682,7 +3338,8 @@ theorem exists_finite_flat_hopf_form_integralClosure
     ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
       (_ : Module.Finite R H) (_ : Module.Flat R H),
       Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) :=
-  sorry
+  exists_hopfAlgebra_integralClosure_of_mul_bijective R K HK hfin het
+    (integralClosureMul_bijective R K HK heq)
 
 /-- **Étale algebra forms of Hopf algebras are Hopf forms** (DECOMPOSED
 2026-07-23 into the canonicity leaf
