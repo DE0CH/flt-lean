@@ -19,6 +19,7 @@ import Mathlib.RingTheory.TensorProduct.Finite
 public import Mathlib.RingTheory.Polynomial.Resultant.Basic
 public import Fermat.FLT.EllipticCurve.PhiPsiCoprime
 import Fermat.FLT.EllipticCurve.TorsionCardSep
+import Mathlib.FieldTheory.Normal.Closure
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
 
 /-!
@@ -1431,19 +1432,51 @@ theorem exists_finiteQuotient_galoisModule_etale_package
             (f (Additive.ofMul (WithConv.toConv φ))) :=
   sorry
 
-/-- **The torsion Galois action factors through a finite Galois quotient** (sorry
-node; the curve-specific half of the torsion-package decomposition — everything about
-elliptic curves that remains in it is the finiteness and Galois-stability of the
+set_option backward.isDefEq.respectTransparency false in
+omit [IsDomain R] [IsDiscreteValuationRing R] [E.HasGoodReduction R] in
+/-- **The `m`-torsion is finite** for `m` nonzero in `R` (PROVEN; glue for the two
+halves of the torsion-package decomposition): by the torsion count
+`TorsionCard.card_torsionBy` over the separable closure. -/
+theorem WeierstrassCurve.torsion_finite (m : ℕ) (hm : (m : R) ≠ 0) :
+    Finite (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) := by
+  haveI : IsSepClosed Ksep := IsSepClosure.sep_closed K
+  haveI : (E⁄Ksep).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap K Ksep)).IsElliptic)
+  have hmKsep : (m : Ksep) ≠ 0 := by
+    intro h0
+    apply hm
+    have h1 : algebraMap K Ksep ((m : K)) = algebraMap K Ksep 0 := by
+      rw [map_natCast, map_zero]
+      exact h0
+    have h2 : (m : K) = 0 := (algebraMap K Ksep).injective h1
+    have h3 : algebraMap R K ((m : R)) = algebraMap R K 0 := by
+      rw [map_natCast, map_zero]
+      exact h2
+    exact IsFractionRing.injective R K h3
+  have hm0 : m ≠ 0 := by
+    rintro rfl
+    simp at hmKsep
+  have hcard := TorsionCard.card_torsionBy (E.map (algebraMap K Ksep)) m hmKsep
+  have hpos : 0 < Nat.card
+      (Submodule.torsionBy ℤ ((E.map (algebraMap K Ksep))⁄Ksep).Point m) := by
+    rw [hcard]
+    exact pow_pos (Nat.pos_of_ne_zero hm0) 2
+  exact (Nat.card_pos_iff.mp hpos).2
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+omit [IsDomain R] [IsDiscreteValuationRing R] [E.HasGoodReduction R] in
+/-- **The torsion Galois action factors through a finite Galois quotient** (PROVEN
+2026-07-22; the curve-specific half of the torsion-package decomposition —
+everything about elliptic curves in it is the finiteness and Galois-stability of the
 torsion): for `m` nonzero in `R`, there is a finite Galois subextension `L/K` inside
 `Kˢᵉᵖ` and an action of `Gal(L/K)` on the `m`-torsion through which the geometric
-action of `Gal(Kˢᵉᵖ/K)` factors. Intended proof: the torsion set is finite
-(`TorsionCard.card_torsionBy`) and stable under `Gal(Kˢᵉᵖ/K)` (`Affine.Point.map`
-preserves torsion), so the coordinates of its points are finitely many elements of
-`Kˢᵉᵖ`, separable over `K`, whose orbit-closed adjunction `L` is finite and normal,
-hence Galois; an automorphism fixing `L` fixes every coordinate, hence every torsion
-point, so the geometric action descends along the restriction epimorphism
-`AlgEquiv.restrictNormalHom L` (well-defined by that kernel computation,
-multiplicative by surjectivity of restriction). -/
+action of `Gal(Kˢᵉᵖ/K)` factors. Proof: the torsion set is finite (`torsion_finite`),
+so the coordinates of its points are finitely many separable elements of `Kˢᵉᵖ`; `L`
+is the normal closure of their adjunction, finite Galois; the action of an
+automorphism on a torsion point only depends on its restriction to `L` (the
+coordinates lie in `L`), so `σ' : Gal(L/K)` acts through `AlgEquiv.liftNormal`,
+multiplicatively because lifts of equal restrictions act equally. -/
 theorem WeierstrassCurve.exists_torsion_galois_finiteQuotient
     (m : ℕ) (hm : (m : R) ≠ 0) :
     ∃ (L : IntermediateField K Ksep) (_ : FiniteDimensional K L) (_ : IsGalois K L)
@@ -1453,10 +1486,137 @@ theorem WeierstrassCurve.exists_torsion_galois_finiteQuotient
         (P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)),
         ((ρ (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ksep) L σ) P :
             AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) : (E⁄Ksep).Point) =
-          Affine.Point.map σ.toAlgHom (P : (E⁄Ksep).Point) :=
-  sorry
+          Affine.Point.map σ.toAlgHom (P : (E⁄Ksep).Point) := by
+  classical
+  haveI hT : Finite (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :=
+    WeierstrassCurve.torsion_finite R K E Ksep m hm
+  -- the (finite) set of coordinates of the torsion points
+  set pcs : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ) → Set Ksep := fun P =>
+    WeierstrassCurve.Affine.Point.casesOn (P : (E⁄Ksep).Point) ∅
+      (fun x y _ => {x, y}) with hpcsdef
+  have hpcs_fin : ∀ P, (pcs P).Finite := by
+    intro P
+    cases hP : (P : (E⁄Ksep).Point) with
+    | zero => simp [hpcsdef, hP]
+    | @some x y h =>
+      rw [hpcsdef]
+      simp only [hP]
+      exact (Set.finite_singleton y).insert x
+  set S : Set Ksep := ⋃ P, pcs P with hSdef
+  have hSfin : S.Finite := Set.finite_iUnion hpcs_fin
+  haveI : Finite ↥S := hSfin.to_subtype
+  -- its adjunction and the normal closure of that
+  set L₀ := IntermediateField.adjoin K S with hL₀def
+  haveI : FiniteDimensional K ↥L₀ :=
+    IntermediateField.finiteDimensional_adjoin fun x _ =>
+      (Algebra.IsSeparable.isSeparable K x).isIntegral
+  set L := IntermediateField.normalClosure K ↥L₀ Ksep with hLdef
+  haveI : Algebra.IsSeparable K ↥L :=
+    Algebra.isSeparable_tower_bot_of_isSeparable K ↥L Ksep
+  haveI hGalL : IsGalois K ↥L := ⟨⟩
+  -- coordinates of torsion points lie in `L`
+  have hcoordL : ∀ (P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) (x y : Ksep)
+      (h : (E⁄Ksep).toAffine.Nonsingular x y),
+      (P : (E⁄Ksep).Point) = Affine.Point.some x y h → x ∈ L ∧ y ∈ L := by
+    intro P x y h hP
+    have hsub : S ⊆ (L : Set Ksep) := fun z hz =>
+      IntermediateField.le_normalClosure L₀ (IntermediateField.subset_adjoin K S hz)
+    have hxy : x ∈ pcs P ∧ y ∈ pcs P := by
+      rw [hpcsdef]
+      simp only [hP]
+      exact ⟨Set.mem_insert x {y}, Set.mem_insert_of_mem x rfl⟩
+    exact ⟨hsub (Set.mem_iUnion.mpr ⟨P, hxy.1⟩), hsub (Set.mem_iUnion.mpr ⟨P, hxy.2⟩)⟩
+  -- the geometric action on a torsion point only sees the restriction to `L`
+  have key : ∀ σ τ : Ksep ≃ₐ[K] Ksep, (∀ l ∈ L, σ l = τ l) →
+      ∀ P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ),
+        Affine.Point.map σ.toAlgHom (P : (E⁄Ksep).Point)
+          = Affine.Point.map τ.toAlgHom (P : (E⁄Ksep).Point) := by
+    intro σ τ hστ P
+    cases hP : (P : (E⁄Ksep).Point) with
+    | zero => rfl
+    | @some x y h =>
+      obtain ⟨hxL, hyL⟩ := hcoordL P x y h hP
+      rw [Affine.Point.map_some, Affine.Point.map_some, Affine.Point.some.injEq]
+      exact ⟨hστ x hxL, hστ y hyL⟩
+  -- the geometric action restricted to the torsion subgroup
+  have hmemT : ∀ (σ : Ksep ≃ₐ[K] Ksep)
+      (P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)),
+      Affine.Point.map σ.toAlgHom (P : (E⁄Ksep).Point)
+        ∈ AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ) := by
+    intro σ P
+    have hP2 : ((m : ℤ)) • (P : (E⁄Ksep).Point) = 0 := P.2
+    show ((m : ℤ)) • Affine.Point.map σ.toAlgHom (P : (E⁄Ksep).Point) = 0
+    rw [← map_zsmul, hP2, map_zero]
+  set act : (Ksep ≃ₐ[K] Ksep) →
+      AddMonoid.End (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) := fun σ =>
+    { toFun := fun P => ⟨Affine.Point.map σ.toAlgHom (P : (E⁄Ksep).Point), hmemT σ P⟩
+      map_zero' := Subtype.ext (by exact rfl)
+      map_add' := fun P Q => Subtype.ext (by exact map_add _ _ _) } with hactdef
+  have hact_coe : ∀ (σ : Ksep ≃ₐ[K] Ksep)
+      (P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)),
+      ((act σ P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) : (E⁄Ksep).Point)
+        = Affine.Point.map σ.toAlgHom (P : (E⁄Ksep).Point) := fun σ P => rfl
+  -- one and mul of the full Galois group act correctly
+  have hone : ∀ P : (E⁄Ksep).Point,
+      Affine.Point.map (1 : Ksep ≃ₐ[K] Ksep).toAlgHom P = P := by
+    intro P
+    cases P <;> rfl
+  have hcomp : ∀ (σ τ : Ksep ≃ₐ[K] Ksep) (P : (E⁄Ksep).Point),
+      Affine.Point.map σ.toAlgHom (Affine.Point.map τ.toAlgHom P)
+        = Affine.Point.map (σ * τ : Ksep ≃ₐ[K] Ksep).toAlgHom P := by
+    intro σ τ P
+    rw [Affine.Point.map_map]
+    rfl
+  -- assemble the `Gal(L/K)`-action through `liftNormal`
+  refine ⟨L, inferInstance, hGalL,
+    { toFun := fun σ' => act (AlgEquiv.liftNormal σ' Ksep)
+      map_one' := ?_
+      map_mul' := ?_ }, ?_⟩
+  · refine DFunLike.ext _ _ fun P => Subtype.ext ?_
+    have hfix : ∀ l ∈ L, (AlgEquiv.liftNormal (1 : ↥L ≃ₐ[K] ↥L) Ksep) l
+        = (1 : Ksep ≃ₐ[K] Ksep) l := by
+      intro l hl
+      have hc := AlgEquiv.liftNormal_commutes (1 : ↥L ≃ₐ[K] ↥L) Ksep ⟨l, hl⟩
+      simpa using hc
+    show ((act (AlgEquiv.liftNormal (1 : ↥L ≃ₐ[K] ↥L) Ksep) P :
+        AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) : (E⁄Ksep).Point) = ↑P
+    rw [hact_coe, key _ _ hfix P, hone]
+  · intro σ' τ'
+    refine DFunLike.ext _ _ fun P => Subtype.ext ?_
+    have hfix : ∀ l ∈ L, (AlgEquiv.liftNormal (σ' * τ') Ksep) l
+        = ((AlgEquiv.liftNormal σ' Ksep) * (AlgEquiv.liftNormal τ' Ksep) :
+          Ksep ≃ₐ[K] Ksep) l := by
+      intro l hl
+      have hc := AlgEquiv.liftNormal_commutes (σ' * τ') Ksep ⟨l, hl⟩
+      have hcτ := AlgEquiv.liftNormal_commutes τ' Ksep ⟨l, hl⟩
+      have hcσ := AlgEquiv.liftNormal_commutes σ' Ksep (τ' ⟨l, hl⟩)
+      simp only [IntermediateField.algebraMap_apply] at hc hcτ hcσ
+      show (AlgEquiv.liftNormal (σ' * τ') Ksep) l
+        = (AlgEquiv.liftNormal σ' Ksep) ((AlgEquiv.liftNormal τ' Ksep) l)
+      rw [hc, hcτ, hcσ]
+      rfl
+    show ((act (AlgEquiv.liftNormal (σ' * τ') Ksep) P :
+        AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) : (E⁄Ksep).Point)
+      = ((act (AlgEquiv.liftNormal σ' Ksep) (act (AlgEquiv.liftNormal τ' Ksep) P) :
+          AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) : (E⁄Ksep).Point)
+    rw [hact_coe, key _ _ hfix P, hact_coe, hact_coe, hcomp]
+  · intro σ P
+    have hfix : ∀ l ∈ L, (AlgEquiv.liftNormal
+        (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ksep) L σ) Ksep) l = σ l := by
+      intro l hl
+      have hc := AlgEquiv.liftNormal_commutes
+        (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ksep) L σ) Ksep ⟨l, hl⟩
+      have hr := AlgEquiv.restrictNormalHom_apply (F := K) (K₁ := Ksep) L σ ⟨l, hl⟩
+      simp only [IntermediateField.algebraMap_apply] at hc
+      rw [hc, hr]
+    show ((act (AlgEquiv.liftNormal
+        (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ksep) L σ) Ksep) P :
+        AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) : (E⁄Ksep).Point)
+      = Affine.Point.map σ.toAlgHom (P : (E⁄Ksep).Point)
+    rw [hact_coe, key _ _ hfix P]
 
 set_option backward.isDefEq.respectTransparency false in
+omit [IsDomain R] [IsDiscreteValuationRing R] [E.HasGoodReduction R] in
 /-- **The finite étale Hopf package of the torsion over the fraction field**
 (DECOMPOSED 2026-07-22 into the curve-independent Galois-correspondence core
 `exists_finiteQuotient_galoisModule_etale_package` — kept aligned with the
@@ -1484,30 +1644,8 @@ theorem WeierstrassCurve.exists_torsion_etale_package_over_fractionField
   -- `K` is `u`-small, being a fraction field of `R : Type u`
   haveI : Small.{u} K := ⟨⟨FractionRing R, ⟨(FractionRing.algEquiv R K).toEquiv.symm⟩⟩⟩
   -- the `m`-torsion is finite, by the torsion count over the separable closure
-  haveI : IsSepClosed Ksep := IsSepClosure.sep_closed K
-  haveI : (E⁄Ksep).IsElliptic :=
-    inferInstanceAs ((E.map (algebraMap K Ksep)).IsElliptic)
-  have hmKsep : (m : Ksep) ≠ 0 := by
-    intro h0
-    apply hm
-    have h1 : algebraMap K Ksep ((m : K)) = algebraMap K Ksep 0 := by
-      rw [map_natCast, map_zero]
-      exact h0
-    have h2 : (m : K) = 0 := (algebraMap K Ksep).injective h1
-    have h3 : algebraMap R K ((m : R)) = algebraMap R K 0 := by
-      rw [map_natCast, map_zero]
-      exact h2
-    exact IsFractionRing.injective R K h3
-  haveI hfin : Finite (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) := by
-    have hcard := TorsionCard.card_torsionBy (E.map (algebraMap K Ksep)) m hmKsep
-    have hm0 : m ≠ 0 := by
-      rintro rfl
-      simp at hmKsep
-    have hpos : 0 < Nat.card
-        (Submodule.torsionBy ℤ ((E.map (algebraMap K Ksep))⁄Ksep).Point m) := by
-      rw [hcard]
-      exact pow_pos (Nat.pos_of_ne_zero hm0) 2
-    exact (Nat.card_pos_iff.mp hpos).2
+  haveI hfin : Finite (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :=
+    WeierstrassCurve.torsion_finite R K E Ksep m hm
   -- apply the curve-independent core to the descended action
   obtain ⟨HK, hCR, hHopf, hFin, hEt, f, hf⟩ :=
     exists_finiteQuotient_galoisModule_etale_package K Ksep
