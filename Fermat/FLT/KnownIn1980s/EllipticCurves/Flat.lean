@@ -1290,22 +1290,133 @@ theorem WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow
   exact WeierstrassCurve.torsion_flat_package_of_flat_hopf_form R K E Ksep
     (p ^ k) HK f hf H e
 
-/-- **Equal-characteristic Néron–Ogg–Shafarevich** (sorry node; the
-elliptic-curve half of the equal-characteristic case): when `p` vanishes in `K`
-(so `R` is an equal-characteristic-`p` DVR), every inertia subgroup above `R`
-acts trivially on the `p ^ k`-torsion of `E(Kˢᵉᵖ)` — even though `p ^ k` is NOT
-invertible in the residue field. Intended proof: the `p`-power torsion of the
-formal group of `E` over an equal-characteristic-`p` valuation ring is trivial
-(`[p] = V ∘ Frobenius` with `Frobenius` injective on points of a domain), so the
-kernel of reduction contains no nonzero `p ^ k`-torsion; hence every
-`p ^ k`-torsion point has integral coordinates (a non-integral abscissa would
-place some nonzero multiple in the kernel, via the proven dévissage of
-`torsion_eq_of_residue_eq_of_prime_pow_deep` and the two kernel-of-reduction
-leaves above), and reduction is INJECTIVE on the `p ^ k`-torsion (two congruent
-distinct torsion points would again produce a nonzero torsion point in the
-kernel, `kernel_sub_abscissa_notMem_of_residue_eq`). Inertia fixes residues, so
-injectivity forces it to fix the points. This is the statement that
-`E(Kˢᵉᵖ)[p ^ k]` sees only the maximal étale quotient of the torsion group
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+omit [E.IsElliptic] [IsSepClosure K Ksep] [DecidableEq Ksep] in
+/-- **Ordinates are integral once abscissas are** (PROVEN 2026-07-23; the
+`NeZero`-free core of `torsion_ordinate_mem`, needed at the residue
+characteristic where that lemma's `[NeZero (n : ResidueField R)]` hypothesis is
+unavailable — no torsion hypothesis is needed at all): on the minimal model, an
+affine point of `E(Kˢᵉᵖ)` with integral abscissa over a valuation subring `𝒪`
+above `R` has integral ordinate, because `y` satisfies the monic `y`-quadratic
+of the Weierstrass equation, whose coefficients are integral. -/
+theorem WeierstrassCurve.ordinate_mem_of_abscissa_mem
+    (𝒪 : ValuationSubring Ksep)
+    (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    {x y : Ksep} (h : (E⁄Ksep).toAffine.Nonsingular x y)
+    (hx : x ∈ 𝒪) : y ∈ 𝒪 := by
+  classical
+  haveI : E.IsIntegral R := inferInstance
+  obtain ⟨Eint, hEint⟩ := (inferInstance : E.IsIntegral R).integral
+  have hamem : ∀ z : R, algebraMap K Ksep (algebraMap R K z) ∈ 𝒪 := by
+    intro z
+    have hmem : algebraMap R K z ∈ (algebraMap R K).range := ⟨_, rfl⟩
+    rw [← h𝒪] at hmem
+    exact hmem
+  have ha1 : (E⁄Ksep).a₁ ∈ 𝒪 := by
+    rw [show (E⁄Ksep) = ((Eint⁄K)⁄Ksep) from by rw [hEint]]
+    exact hamem _
+  have ha2 : (E⁄Ksep).a₂ ∈ 𝒪 := by
+    rw [show (E⁄Ksep) = ((Eint⁄K)⁄Ksep) from by rw [hEint]]
+    exact hamem _
+  have ha3 : (E⁄Ksep).a₃ ∈ 𝒪 := by
+    rw [show (E⁄Ksep) = ((Eint⁄K)⁄Ksep) from by rw [hEint]]
+    exact hamem _
+  have ha4 : (E⁄Ksep).a₄ ∈ 𝒪 := by
+    rw [show (E⁄Ksep) = ((Eint⁄K)⁄Ksep) from by rw [hEint]]
+    exact hamem _
+  have ha6 : (E⁄Ksep).a₆ ∈ 𝒪 := by
+    rw [show (E⁄Ksep) = ((Eint⁄K)⁄Ksep) from by rw [hEint]]
+    exact hamem _
+  set f : Polynomial Ksep := Polynomial.X ^ 2 +
+    Polynomial.C ((E⁄Ksep).a₁ * x + (E⁄Ksep).a₃) * Polynomial.X -
+    Polynomial.C (x ^ 3 + (E⁄Ksep).a₂ * x ^ 2 + (E⁄Ksep).a₄ * x +
+      (E⁄Ksep).a₆) with hfdef
+  have hd2 : f.natDegree = 2 := by
+    rw [hfdef]
+    compute_degree!
+  have hfne : f ≠ 0 := by
+    intro h0
+    rw [h0, Polynomial.natDegree_zero] at hd2
+    exact two_ne_zero hd2.symm
+  have hroot : f.eval y = 0 := by
+    have heq := (Affine.equation_iff _ _).mp h.1
+    rw [hfdef]
+    simp only [Polynomial.eval_sub, Polynomial.eval_add,
+      Polynomial.eval_mul, Polynomial.eval_pow, Polynomial.eval_C,
+      Polynomial.eval_X]
+    linear_combination heq
+  have hcoeff : ∀ i, f.coeff i ∈ 𝒪 := by
+    intro i
+    rw [hfdef]
+    simp only [Polynomial.coeff_add, Polynomial.coeff_sub,
+      Polynomial.coeff_X_pow, Polynomial.coeff_C_mul,
+      Polynomial.coeff_X, Polynomial.coeff_C]
+    match i with
+    | 0 =>
+      norm_num
+      exact add_mem (neg_mem ha6) (add_mem (neg_mem (mul_mem ha4 hx))
+        (add_mem (neg_mem (mul_mem ha2 (pow_mem hx 2)))
+          (neg_mem (pow_mem hx 3))))
+    | 1 =>
+      norm_num
+      exact add_mem (mul_mem ha1 hx) ha3
+    | 2 =>
+      norm_num
+    | (j + 3) =>
+      norm_num
+      exact zero_mem _
+  have hlc : (f.leadingCoeff)⁻¹ ∈ 𝒪 := by
+    have h1 : f.leadingCoeff = 1 := by
+      rw [Polynomial.leadingCoeff, hd2, hfdef]
+      simp only [Polynomial.coeff_add, Polynomial.coeff_sub,
+        Polynomial.coeff_X_pow, Polynomial.coeff_C_mul,
+        Polynomial.coeff_X, Polynomial.coeff_C]
+      norm_num
+    rw [h1, inv_one]
+    exact one_mem _
+  exact 𝒪.mem_of_root_of_inv_leadingCoeff_mem hfne hcoeff hlc hroot
+
+/-- **The kernel of reduction is `p`-power-torsion-free in equal characteristic
+`p`** (sorry node; the whole surviving elliptic-curve content of the
+equal-characteristic Néron–Ogg–Shafarevich): when `p` vanishes in `K`, a
+nonzero `p ^ k`-torsion point of `E(Kˢᵉᵖ)` cannot lie in the kernel of
+reduction (non-integral abscissa) over a valuation subring `𝒪` above `R`.
+Intended proof: a point with `v(x) < 0` lies in the formal-group chart
+`z = -x/y` with `v(z) > 0`; over an equal-characteristic-`p` base the
+multiplication-by-`p` power series of the formal group of the minimal model
+factors as `[p](T) = g(T^(p^h))` with `h ≥ 1` the height and `g` with unit
+linear coefficient (`[p] = V ∘ Frobeniusʰ`), so `[p]` — hence `[p ^ k]` — is
+injective on the points of the valuation ideal (a domain), and the only
+`p ^ k`-torsion point of the kernel is the origin. Compare the multiplicative
+model: `(1 + z)^(p ^ k) = 1 + z^(p ^ k)` has no nonzero root in a domain of
+characteristic `p`. -/
+theorem WeierstrassCurve.kernel_prime_pow_torsion_of_eqChar
+    (p k : ℕ) (hp : p.Prime) (hpK : (p : K) = 0)
+    (𝒪 : ValuationSubring Ksep)
+    (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    {x y : Ksep} (h : (E⁄Ksep).toAffine.Nonsingular x y)
+    (hx : x ∉ 𝒪)
+    (htor : ((p ^ k : ℕ) : ℤ) • (Affine.Point.some x y h : (E⁄Ksep).Point) = 0) :
+    False :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **Equal-characteristic Néron–Ogg–Shafarevich** (DECOMPOSED 2026-07-23 into
+the kernel-torsion-freeness leaf `kernel_prime_pow_torsion_of_eqChar` — via the
+proven `ordinate_mem_of_abscissa_mem` and the kernel-of-reduction leaf
+`kernel_sub_abscissa_notMem_of_residue_eq`; the assembly below is proven): when
+`p` vanishes in `K` (so `R` is an equal-characteristic-`p` DVR), every inertia
+subgroup above `R` acts trivially on the `p ^ k`-torsion of `E(Kˢᵉᵖ)` — even
+though `p ^ k` is NOT invertible in the residue field. The assembly is simpler
+than the invertible-order dévissage because the kernel of reduction is entirely
+`p`-power-torsion-free here: torsion abscissas are integral (a non-integral
+abscissa would BE a nonzero torsion point of the kernel), ordinates follow by
+the `y`-quadratic, inertia fixes residues, and if `σP ≠ P` then `σP − P` is a
+nonzero `p ^ k`-torsion point of the kernel
+(`kernel_sub_abscissa_notMem_of_residue_eq`) — absurd. This is the statement
+that `E(Kˢᵉᵖ)[p ^ k]` sees only the maximal étale quotient of the torsion group
 scheme, whose points reduce injectively to the residue curve. -/
 theorem WeierstrassCurve.torsion_inertia_fixes_of_eqChar
     (p k : ℕ) (hp : p.Prime) (hpK : (p : K) = 0)
@@ -1313,8 +1424,93 @@ theorem WeierstrassCurve.torsion_inertia_fixes_of_eqChar
     (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range) :
     ∀ σ ∈ 𝒪.inertiaSubgroup K,
       ∀ P ∈ AddSubgroup.torsionBy (E⁄Ksep).Point ((p ^ k : ℕ) : ℤ),
-        Affine.Point.map (σ : Ksep ≃ₐ[K] Ksep).toAlgHom P = P :=
-  sorry
+        Affine.Point.map (σ : Ksep ≃ₐ[K] Ksep).toAlgHom P = P := by
+  classical
+  intro σ hσ P hP
+  haveI : (E⁄Ksep).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap K Ksep)).IsElliptic)
+  -- inertia fixes residues in `𝒪`
+  have hres : ∀ z : 𝒪, IsLocalRing.residue 𝒪 (σ • z) =
+      IsLocalRing.residue 𝒪 z := by
+    intro z
+    rw [IsLocalRing.ResidueField.residue_smul]
+    have h1 := MonoidHom.mem_ker.mp hσ
+    calc (σ : 𝒪.decompositionSubgroup K) • IsLocalRing.residue 𝒪 z
+        = (MulSemiringAction.toRingAut (𝒪.decompositionSubgroup K)
+            (IsLocalRing.ResidueField 𝒪) σ)
+            (IsLocalRing.residue 𝒪 z) := rfl
+      _ = IsLocalRing.residue 𝒪 z := by rw [h1]; rfl
+  have hcoe : ∀ z : 𝒪, ((σ • z : 𝒪) : Ksep) =
+      ((σ : Ksep ≃ₐ[K] Ksep)).toAlgHom (z : Ksep) := fun z => rfl
+  have hPtor : ((p ^ k : ℕ) : ℤ) • P = 0 := hP
+  cases P with
+  | zero => rfl
+  | @some x y h =>
+    have htor : ((p ^ k : ℕ) : ℤ) •
+        (Affine.Point.some x y h : (E⁄Ksep).Point) = 0 := hPtor
+    -- the coordinates are integral: a non-integral abscissa would be a nonzero
+    -- `p ^ k`-torsion point of the kernel of reduction
+    have hxm : x ∈ 𝒪 := by
+      by_contra hx
+      exact WeierstrassCurve.kernel_prime_pow_torsion_of_eqChar R K E Ksep
+        p k hp hpK 𝒪 h𝒪 h hx htor
+    have hym : y ∈ 𝒪 :=
+      WeierstrassCurve.ordinate_mem_of_abscissa_mem R K E Ksep 𝒪 h𝒪 h hxm
+    set σf := ((σ : Ksep ≃ₐ[K] Ksep)).toAlgHom
+    have hns' : (E⁄Ksep).toAffine.Nonsingular (σf x) (σf y) :=
+      (WeierstrassCurve.Affine.baseChange_nonsingular (W := E)
+        σf.injective x y).mpr (show (E⁄Ksep).Nonsingular x y from h)
+    have hmap : Affine.Point.map σf (Affine.Point.some x y h) =
+        (Affine.Point.some (σf x) (σf y) hns' : (E⁄Ksep).Point) :=
+      Affine.Point.map_some _ h
+    rw [hmap]
+    -- the image is torsion
+    have hmaptor : ((p ^ k : ℕ) : ℤ) • (Affine.Point.some (σf x) (σf y) hns' :
+        (E⁄Ksep).Point) = 0 := by
+      rw [← hmap, ← map_zsmul, htor, map_zero]
+    -- memberships and residue congruences for the image coordinates
+    have hσxm : σf x ∈ 𝒪 := by
+      have := hcoe ⟨x, hxm⟩
+      rw [← this]
+      exact Subtype.mem _
+    have hσym : σf y ∈ 𝒪 := by
+      have := hcoe ⟨y, hym⟩
+      rw [← this]
+      exact Subtype.mem _
+    have hrx : IsLocalRing.residue 𝒪 ⟨σf x, hσxm⟩ =
+        IsLocalRing.residue 𝒪 ⟨x, hxm⟩ := by
+      have h2 := hres ⟨x, hxm⟩
+      rwa [show (σ • (⟨x, hxm⟩ : 𝒪)) = ⟨σf x, hσxm⟩ from
+        Subtype.ext (hcoe ⟨x, hxm⟩)] at h2
+    have hry : IsLocalRing.residue 𝒪 ⟨σf y, hσym⟩ =
+        IsLocalRing.residue 𝒪 ⟨y, hym⟩ := by
+      have h2 := hres ⟨y, hym⟩
+      rwa [show (σ • (⟨y, hym⟩ : 𝒪)) = ⟨σf y, hσym⟩ from
+        Subtype.ext (hcoe ⟨y, hym⟩)] at h2
+    -- if `σP ≠ P`, the difference is a nonzero `p ^ k`-torsion point of the
+    -- kernel of reduction — absurd in equal characteristic
+    by_contra hne
+    set D : (E⁄Ksep).Point :=
+      Affine.Point.some (σf x) (σf y) hns' - Affine.Point.some x y h with hDdef
+    have hD0 : D ≠ 0 := sub_ne_zero.mpr hne
+    have hDtor : ((p ^ k : ℕ) : ℤ) • D = 0 := by
+      rw [hDdef, smul_sub, hmaptor, htor, sub_zero]
+    cases hDc : D with
+    | zero => exact absurd hDc hD0
+    | @some x₃ y₃ h₃ =>
+      have hsub : (Affine.Point.some (σf x) (σf y) hns' : (E⁄Ksep).Point) -
+          Affine.Point.some x y h = Affine.Point.some x₃ y₃ h₃ := by
+        rw [← hDdef]
+        exact hDc
+      have hx₃ : x₃ ∉ 𝒪 :=
+        WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq R K E Ksep 𝒪
+          h𝒪 hns' h h₃ hne hσxm hxm hσym hym hrx hry hsub
+      have hDtor' : ((p ^ k : ℕ) : ℤ) •
+          (Affine.Point.some x₃ y₃ h₃ : (E⁄Ksep).Point) = 0 := by
+        rw [← hDc]
+        exact hDtor
+      exact WeierstrassCurve.kernel_prime_pow_torsion_of_eqChar R K E Ksep
+        p k hp hpK 𝒪 h𝒪 h₃ hx₃ hDtor'
 
 /-- **The finite étale torsion package, equal characteristic** (sorry node; the
 Galois-correspondence half of the equal-characteristic case — the sibling of
