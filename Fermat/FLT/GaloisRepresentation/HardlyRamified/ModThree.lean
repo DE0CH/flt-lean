@@ -6059,24 +6059,80 @@ theorem subCharacter_unramified_at_three_of_quot_ramified
   rw [MonoidHom.mem_ker]
   exact Units.ext hψ1
 
-/-- **The second inertia-stable line at `3`** (sorry node — the
-finite-flat/connected–étale content of the local splitting, isolated
-2026-07-23): a mod-3 hardly ramified representation whose stable line
-`W₀` has quotient character `χ` RAMIFIED at `3` admits a vector
-`v' ∉ W₀` on which the inertia at `3` acts through `χ`. Intended
-content (Raynaud; Serre, Duke 1987, §5.4): flatness (`hρ.isFlat`)
-prolongs the local representation at `3` to a finite flat group
-scheme over `ℤ₃` killed by `3`; its connected–étale sequence has a
-nontrivial étale part (else `V` would be connected with all simple
-subquotients of `μ₃`-type — `e = 1 < 2 = p − 1` — forcing trivial
-inertia-invariants, contradicting the line `W₀`, on which inertia
-acts trivially by `subCharacter_unramified_at_three_of_quot_ramified`)
-and a nontrivial connected part (else `V` would be unramified at `3`,
-contradicting `h3`); the connected part's points then form an
-inertia-stable line on which inertia acts by the mod-3 cyclotomic
-character — which agrees with `χ` on inertia by
-`quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified` — and that
-line is distinct from `W₀` since their inertia actions differ. -/
+/-- **The connected–étale inertia subgroup at `3`** (sorry node — the
+finite-flat/Raynaud content of the local splitting, isolated
+2026-07-23 from `exists_inertia_eigenvector_complement_at_three`
+below, whose eigenvector assembly is proven): the space of a
+representation FLAT at `3` (over a finite char-3 coefficient field)
+carries an additive subgroup `U` — intended: the points of the
+connected part `G⁰` of the finite flat prolongation `G` at `3` —
+such that (i) every inertia displacement `ρ(σ)v − v` lies in `U`,
+and (ii) `U` contains no nonzero inertia-fixed vector. Intended
+proof (Raynaud 1974; Serre, Duke 1987, §5.4): `ρ.IsFlatAt` at the
+open ideal `⊥` produces a finite flat Hopf algebra over `𝒪ᵥ ≅ ℤ₃`
+whose generic-fibre points are `V`, Galois-equivariantly
+(`GaloisRep.HasFlatProlongationAt`). For (i): the étale quotient
+`G/G⁰` of the connected–étale sequence is finite étale over the
+henselian local `ℤ₃`, so its points are defined over the maximal
+unramified extension and inertia fixes them; hence every inertia
+displacement dies in the étale points and lands in
+`U = ker(V → (G/G⁰)-points)` (left-exactness of points). For (ii):
+`G⁰` is killed by `3` (its generic fibre is, and `𝒪(G⁰)` is
+`ℤ₃`-free), and the schematic closures of a local-Galois composition
+series of its generic fibre filter `G⁰` by finite flat closed
+subgroups with CONNECTED simple graded pieces (quotients of the
+local ring `𝒪(G⁰)` stay local); a nonzero inertia-fixed vector in
+`U` would make the points of some graded piece unramified (the
+inertia-fixed points form a local-Galois submodule, so by simplicity
+the whole piece), hence the piece étale by Raynaud's criterion at
+`e = 1 < 2 = p − 1` — an unramified finite flat group scheme killed
+by `p` over `ℤ_p` is étale — contradicting connectedness.
+Concretely, at order `3` the Oort–Tate list over `ℤ₃` contains only
+`ℤ/3`-forms (étale, unramified points) and `μ₃`-forms (connected,
+inertia acting through the nontrivial quadratic tame character
+`χ₃ mod 3`). -/
+theorem exists_connectedEtale_subgroup_at_three
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρ : GaloisRep ℚ k V}
+    (hflat : ρ.IsFlatAt Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) :
+    ∃ U : AddSubgroup V,
+      (∀ σ ∈ localInertiaGroup
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat, ∀ v : V,
+        ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) v - v ∈ U) ∧
+      (∀ u ∈ U, (∀ σ ∈ localInertiaGroup
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+        ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) u = u) →
+        u = 0) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **The second inertia-stable line at `3`** (DECOMPOSED 2026-07-23
+into the connected–étale sorry node
+`exists_connectedEtale_subgroup_at_three` above — the finite-flat
+content; the eigenvector assembly is proven here): a mod-3 hardly
+ramified representation whose stable line `W₀` has quotient character
+`χ` RAMIFIED at `3` admits a vector `v' ∉ W₀` on which the inertia at
+`3` acts through `χ`. The proven assembly: the leaf provides `U`
+containing all inertia displacements `ρ(σ)v − v` and no nonzero
+inertia-fixed vector; the inertia fixes `W₀` pointwise
+(`subCharacter_unramified_at_three_of_quot_ramified` plus `hψ`), so
+`U ∩ W₀ = 0`; the ramification hypothesis `h3` yields `σ₀` with
+`χ(σ₀) ≠ 1`, and `ρ(σ₀)` must move some `v₁` (else `hχ` at a vector
+outside the line `W₀` would force `χ(σ₀) = 1`); the displacement
+`v' := ρ(σ₀)v₁ − v₁` is then a nonzero element of `U`, hence
+`v' ∉ W₀`; and for every inertia `σ` the eigen-defect
+`ρ(σ)v' − χ(σ)•v'` lies in `W₀` (by `hχ`) and in `U` (it is the
+displacement of `v'` plus `(1 − χ(σ))•v'`, where `χ(σ) = ±1` on the
+inertia by `quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified`
+and `padic_three_ringHom_pm_one`), hence vanishes. -/
 theorem exists_inertia_eigenvector_complement_at_three
     {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
     [TopologicalSpace k] [DiscreteTopology k]
@@ -6101,8 +6157,90 @@ theorem exists_inertia_eigenvector_complement_at_three
             Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) v' =
         ((χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) : k)) • v' :=
-  sorry
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) : k)) • v' := by
+  classical
+  set Emb := Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))
+  -- the connected–étale subgroup of the flat prolongation (leaf)
+  obtain ⟨U, hUaug, hUfix⟩ :=
+    exists_connectedEtale_subgroup_at_three V (ρ := ρ) hρ.isFlat
+  -- the inertia at `3` fixes the stable line `W₀` pointwise
+  have hψun := subCharacter_unramified_at_three_of_quot_ramified
+    V hV hρ W₀ hW₀fr hstable ψ hψ χ hχ h3
+  have hW₀inv : ∀ τ ∈ localInertiaGroup
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+      ∀ w ∈ W₀, ρ (Emb τ) w = w := by
+    intro τ hτ w hw
+    have h1 : ψ (Emb τ) = 1 := MonoidHom.mem_ker.mp (hψun hτ)
+    rw [hψ (Emb τ) w hw, h1, Units.val_one, one_smul]
+  -- `U` meets `W₀` trivially
+  have hUW : ∀ x ∈ U, x ∈ W₀ → x = 0 := by
+    intro x hxU hxW
+    exact hUfix x hxU fun τ hτ => hW₀inv τ hτ x hxW
+  -- `χ` takes the values `±1` on the inertia at `3`
+  have hcyc := quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified
+    V hV hρ W₀ hW₀fr hstable ψ hψ χ hχ h3
+  haveI : CharP k 3 := charP_three_of_finite_padicIntThree_algebra
+  have hpm : ∀ σ ∈ localInertiaGroup
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+      ((χ (Emb σ) : kˣ) : k) = 1 ∨ ((χ (Emb σ) : kˣ) : k) = -1 := by
+    intro σ hσ
+    have hval : ((χ (Emb σ) : kˣ) : k) = algebraMap ℤ_[3] k
+        (cyclotomicCharacter (AlgebraicClosure ℚ) 3 ((Emb σ).toRingEquiv)) :=
+      hcyc σ hσ
+    rw [hval]
+    exact padic_three_ringHom_pm_one (algebraMap ℤ_[3] k)
+      (cyclotomicCharacter (AlgebraicClosure ℚ) 3 ((Emb σ).toRingEquiv))
+  -- a ramified inertia element for `χ`
+  obtain ⟨σ₀, hσ₀, hσ₀ker⟩ := SetLike.not_le_iff_exists.mp h3
+  have hχσ₀ : χ (Emb σ₀) ≠ 1 := fun h1 => hσ₀ker (MonoidHom.mem_ker.mpr h1)
+  -- `ρ (Emb σ₀)` moves some vector
+  have hmove : ∃ v₁ : V, ρ (Emb σ₀) v₁ - v₁ ≠ 0 := by
+    by_contra hall
+    push Not at hall
+    have hfr : Module.finrank k V = 2 :=
+      Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
+    have hW₀top : W₀ ≠ ⊤ := by
+      intro htop
+      rw [htop, finrank_top, hfr] at hW₀fr
+      omega
+    obtain ⟨vq, -, hvq⟩ := SetLike.exists_of_lt (lt_top_iff_ne_top.mpr hW₀top)
+    have hvq0 : W₀.mkQ vq ≠ 0 := by
+      intro h0
+      rw [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero] at h0
+      exact hvq h0
+    have hfixq : ρ (Emb σ₀) vq = vq := sub_eq_zero.mp (hall vq)
+    have h1 : ((χ (Emb σ₀) : kˣ) : k) • W₀.mkQ vq = W₀.mkQ vq := by
+      rw [← hχ (Emb σ₀) vq, hfixq]
+    have h2 : (((χ (Emb σ₀) : kˣ) : k) - 1) • W₀.mkQ vq = 0 := by
+      rw [sub_smul, one_smul, h1, sub_self]
+    rcases smul_eq_zero.mp h2 with hz | hz
+    · exact hχσ₀ (Units.ext (show ((χ (Emb σ₀) : kˣ) : k) = 1 by
+        linear_combination hz))
+    · exact hvq0 hz
+  obtain ⟨v₁, hv₁ne⟩ := hmove
+  set u₀ : V := ρ (Emb σ₀) v₁ - v₁
+  have hu₀U : u₀ ∈ U := hUaug σ₀ hσ₀ v₁
+  have hu₀W : u₀ ∉ W₀ := fun hmem => hv₁ne (hUW u₀ hu₀U hmem)
+  refine ⟨u₀, hu₀W, ?_⟩
+  intro σ hσ
+  -- the eigen-defect lies in `U ∩ W₀ = 0`
+  have hdW : ρ (Emb σ) u₀ - ((χ (Emb σ) : kˣ) : k) • u₀ ∈ W₀ := by
+    rw [← Submodule.Quotient.mk_eq_zero, ← Submodule.mkQ_apply, map_sub,
+      map_smul, hχ (Emb σ) u₀, sub_self]
+  have hdU : ρ (Emb σ) u₀ - ((χ (Emb σ) : kˣ) : k) • u₀ ∈ U := by
+    rcases hpm σ hσ with h1 | h1
+    · rw [h1, one_smul]
+      exact hUaug σ hσ u₀
+    · have he : ρ (Emb σ) u₀ - ((χ (Emb σ) : kˣ) : k) • u₀ =
+          (ρ (Emb σ) u₀ - u₀) + (u₀ + u₀) := by
+        rw [h1, neg_smul, one_smul, sub_neg_eq_add]
+        abel
+      rw [he]
+      exact U.add_mem (hUaug σ hσ u₀) (U.add_mem hu₀U hu₀U)
+  have hd0 : ρ (Emb σ) u₀ - ((χ (Emb σ) : kˣ) : k) • u₀ = 0 := hUW _ hdU hdW
+  exact sub_eq_zero.mp hd0
 
 /-- **The local splitting at `3`** (DECOMPOSED 2026-07-23 into the
 sorry node `exists_inertia_eigenvector_complement_at_three` above —
