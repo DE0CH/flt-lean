@@ -4287,39 +4287,158 @@ theorem no_common_eigenvector_of_absolutelyIrreducible {k : Type u}
     omega
 
 set_option maxHeartbeats 1000000 in
-/-- **The dihedral ray-class core for the induced eigenvalue
-character** (sorry node, isolated 2026-07-23 — the per-field
-class-field-theoretic core of the dihedral case, with the whole
-induced-representation step hoisted into PROVEN hypotheses: `χ₀` is
-the eigenvalue character of the common eigenline `K·v` of `u` on
-`H := ker θ' = Γ_{ℚ(√d)}` — multiplicative (`hχmul`), nonvanishing
-(`hχne0`), trivial on `ker ρ` (`hχker`, so its kernel is OPEN),
-trivial on the inertia of every prime `q ∉ {2, 3}` (`hχunr`) — and
-`hne` says that `χ₀` differs from its `σ₀`-conjugate on `H`, i.e.
-`ρ ≅ Ind_H^{Γ_ℚ} χ₀` genuinely dihedrally).
+/-- **The induced eigenvalue character is unramified at `2`** (sorry
+node, isolated 2026-07-23 — the local-at-`2` half of the dihedral
+ray-class core, independent of the at-`3`/ray-class arithmetic): the
+inertia at `2` lands in `H := ker θ'` and in the kernel of the
+eigenvalue character `χ₀`.
+
+Intended content: by `hρ.det` the determinant of `ρ` is the mod-3
+cyclotomic character, trivial on the inertia at `2`
+(`cyclotomicCharacter_algebraMap_eq_one_of_inertia_two` after the
+bridge `localInertia_two_eq_map_padic` — both PROVEN but stated
+LATER in this file, so move or re-derive them when resolving this
+node), and by `hρ.isTameAtTwo` the local representation at `2` is an
+extension of an unramified quadratic character `δ` by `det/δ`, so
+the inertia at `2` acts through `u` by matrices with both
+eigenvalues `1` (unipotent up to conjugation). A nontrivial
+unipotent has trace `2 = -1 ≠ 0` in characteristic `3`; but a matrix
+of an element OUTSIDE `H` maps the line `K·v` to the independent
+line `K·(u σ₀ ·ᵥ v)` (`hindep`) and back — antidiagonally in the
+basis `(v, u σ₀ ·ᵥ v)` — so it has trace `0`; and `u ι = 1` forces
+`ρ ι = 1` through the faithful base change (`hu`), hence `θ' ι = 1`
+(`htriv'`). So the inertia at `2` lies in `H`; there its matrices
+have `v` as an eigenvector (`hχ₀`) with eigenvalue `χ₀`, and the
+only eigenvalue of a unipotent is `1`. -/
+theorem induced_character_unramified_at_two {k : Type u}
+    [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (θ' : Γ ℚ →* Multiplicative (ZMod 2))
+    (htriv' : ∀ g : Γ ℚ, ρ g = 1 → θ' g = 1)
+    (v : Fin 2 → Dickson.K 3) (hv : v ≠ 0)
+    (σ₀ : Γ ℚ) (hσ₀ : θ' σ₀ ≠ 1)
+    (χ₀ : Γ ℚ → Dickson.K 3)
+    (hχ₀ : ∀ g : Γ ℚ, θ' g = 1 →
+      Matrix.mulVec ((u g : GL (Fin 2) (Dickson.K 3)) :
+        Matrix (Fin 2) (Fin 2) (Dickson.K 3)) v = χ₀ g • v)
+    (hindep : ¬ ∃ c : Dickson.K 3,
+      Matrix.mulVec ((u σ₀ : GL (Fin 2) (Dickson.K 3)) :
+        Matrix (Fin 2) (Fin 2) (Dickson.K 3)) v = c • v) :
+    ∀ σ ∈ localInertiaGroup
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+      θ' (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 ∧
+      χ₀ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **The dihedral ray-class computation given unramifiedness at `2`**
+(sorry node, isolated 2026-07-23 — the at-`3`/ray-class half of the
+dihedral core: the at-`2` local analysis is the separate sorry node
+`induced_character_unramified_at_two` above, consumed here as the
+hypothesis `h2unr`).
 
 Intended content (Serre's mod-3 analogue, Duke 1987 §5, of Tate's
-2-adic letter argument, per fixed `d`). (1) At `2`: the determinant
-of `ρ` is cyclotomic, unramified at `2`, and `hρ.isTameAtTwo` makes
-the local-at-`2` representation an extension of an unramified
-quadratic character `δ` by `det/δ`, so inertia at `2` acts through
-`u` by unipotent matrices; a matrix swapping the two lines `K·v`,
-`K·(u σ₀ ·ᵥ v)` has trace `0`, while a nontrivial unipotent has trace
-`2 = -1 ≠ 0` in characteristic `3`, and `u ι = 1` forces `θ' ι = 1`
-(`htriv'` after descending through the faithful base change `hu`);
-hence inertia at `2` lands in `H` fixing both eigenlines, and the
-eigenvalue of a unipotent is `1`: `χ₀` is unramified above `2`.
-(2) At `3`: `ρ|_{G_3}` is flat (`hρ.isFlat`); Raynaud's
-classification over the at-worst-quadratically-ramified completions
-of `ℚ(√d)` above `3` (`e ≤ 2 = 3 - 1`) bounds `χ₀` on the inertia at
-`3` to the fundamental characters of level `≤ 2`, so the ratio
-`ν := χ₀/χ₀^{σ₀}` has bounded conductor above `3` and is unramified
-elsewhere. (3) Ray class, per field: `ν` is a finite-order character
-of `Γ_{ℚ(√d)}` with `ν^{σ₀} = ν⁻¹`; the class numbers of the seven
-fields `ℚ(√-1), ℚ(√±2), ℚ(√±3), ℚ(√±6)` are `1, 1, 1, 1, 1, 1, 2`,
-and the ray class groups modulo the allowed conductor above `3` are
-generated by ramified classes on which the anti-equivariant `ν` is
-forced to vanish; so `ν = 1`, contradicting `hne`. -/
+2-adic letter argument, per fixed `d`). At `3`: `ρ|_{G_3}` is flat
+(`hρ.isFlat`); Raynaud's classification over the
+at-worst-quadratically-ramified completions of `ℚ(√d)` above `3`
+(`e ≤ 2 = 3 - 1`) bounds `χ₀` on the inertia at `3` to the
+fundamental characters of level `≤ 2`, so the ratio
+`ν := χ₀/χ₀^{σ₀}` has bounded conductor above `3` and — by `h2unr`,
+`hχunr` and the openness of `ker χ₀` through `hχker` — is unramified
+everywhere else. Ray class, per field: `ν` is a finite-order
+character of `Γ_{ℚ(√d)}` with `ν^{σ₀} = ν⁻¹` (anti-equivariance from
+`hχmul` across the induced structure); the class numbers of the
+seven fields `ℚ(√-1), ℚ(√±2), ℚ(√±3), ℚ(√±6)` are
+`1, 1, 1, 1, 1, 1, 2`, and the ray class groups modulo the allowed
+conductor above `3` are generated by ramified classes on which the
+anti-equivariant `ν` is forced to vanish; so `ν = 1`, contradicting
+`hne`. -/
+theorem dihedral_induced_ray_class_of_two_unramified {k : Type u}
+    [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (habs : Slop.OddRep.IsAbsolutelyIrreducible
+      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V))
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (θ' : Γ ℚ →* Multiplicative (ZMod 2))
+    (hθ'surj : Function.Surjective θ')
+    (htriv' : ∀ g : Γ ℚ, ρ g = 1 → θ' g = 1)
+    (v : Fin 2 → Dickson.K 3) (hv : v ≠ 0)
+    (d : ℤ)
+    (hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6)
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
+    (hθ'x : ∀ g : Γ ℚ, θ' g = 1 ↔ g x = x)
+    (σ₀ : Γ ℚ) (hσ₀ : θ' σ₀ ≠ 1)
+    (χ₀ : Γ ℚ → Dickson.K 3)
+    (hχ₀ : ∀ g : Γ ℚ, θ' g = 1 →
+      Matrix.mulVec ((u g : GL (Fin 2) (Dickson.K 3)) :
+        Matrix (Fin 2) (Fin 2) (Dickson.K 3)) v = χ₀ g • v)
+    (hχne0 : ∀ g : Γ ℚ, θ' g = 1 → χ₀ g ≠ 0)
+    (hχmul : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 →
+      χ₀ (g * h) = χ₀ g * χ₀ h)
+    (hχker : ∀ g : Γ ℚ, ρ g = 1 → χ₀ g = 1)
+    (hχunr : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ 3 →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        χ₀ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1)
+    (hindep : ¬ ∃ c : Dickson.K 3,
+      Matrix.mulVec ((u σ₀ : GL (Fin 2) (Dickson.K 3)) :
+        Matrix (Fin 2) (Fin 2) (Dickson.K 3)) v = c • v)
+    (h2unr : ∀ σ ∈ localInertiaGroup
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+      θ' (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 ∧
+      χ₀ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1)
+    (hne : ¬ ∀ g : Γ ℚ, θ' g = 1 → χ₀ g = χ₀ (σ₀⁻¹ * g * σ₀)) :
+    False := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **The dihedral ray-class core for the induced eigenvalue
+character** (DECOMPOSED 2026-07-23 into the two sorry nodes above —
+the local-at-`2` unipotence analysis
+`induced_character_unramified_at_two` and the at-`3`/ray-class
+computation `dihedral_induced_ray_class_of_two_unramified`; the
+assembly is proven): the per-field class-field-theoretic core of the
+dihedral case, with the whole induced-representation step hoisted
+into PROVEN hypotheses — `χ₀` is the eigenvalue character of the
+common eigenline `K·v` of `u` on `H := ker θ' = Γ_{ℚ(√d)}`,
+multiplicative (`hχmul`), nonvanishing (`hχne0`), trivial on `ker ρ`
+(`hχker`, so its kernel is OPEN), trivial on the inertia of every
+prime `q ∉ {2, 3}` (`hχunr`); the second line `K·(u σ₀ ·ᵥ v)` is
+independent (`hindep`); and `hne` says that `χ₀` differs from its
+`σ₀`-conjugate on `H`, i.e. `ρ ≅ Ind_H^{Γ_ℚ} χ₀` genuinely
+dihedrally. -/
 theorem dihedral_induced_character_ray_class {k : Type u}
     [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
@@ -4359,9 +4478,17 @@ theorem dihedral_induced_character_ray_class {k : Type u}
         χ₀ (Field.absoluteGaloisGroup.map (algebraMap ℚ
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
             hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1)
+    (hindep : ¬ ∃ c : Dickson.K 3,
+      Matrix.mulVec ((u σ₀ : GL (Fin 2) (Dickson.K 3)) :
+        Matrix (Fin 2) (Fin 2) (Dickson.K 3)) v = c • v)
     (hne : ¬ ∀ g : Γ ℚ, θ' g = 1 → χ₀ g = χ₀ (σ₀⁻¹ * g * σ₀)) :
-    False := by
-  sorry
+    False :=
+  dihedral_induced_ray_class_of_two_unramified V hV hρ habs b e u hu θ'
+    hθ'surj htriv' v hv d hd x hx hθ'x σ₀ hσ₀ χ₀ hχ₀ hχne0 hχmul hχker
+    hχunr hindep
+    (induced_character_unramified_at_two V hV hρ b e u hu θ' htriv' v hv
+      σ₀ hσ₀ χ₀ hχ₀ hindep)
+    hne
 
 set_option maxHeartbeats 1000000 in
 /-- **The Serre/Tate elimination, dihedral ray-class computation with
@@ -4589,7 +4716,8 @@ theorem serre_elimination_dihedral_ray_class_of_eigenvector {k : Type u}
             rw [smul_smul, mul_comm s (χ₀ (g * σ₀⁻¹))]
   -- the ray-class core (sorried leaf)
   exact dihedral_induced_character_ray_class V hV hρ habs b e u hu θ' hθ'surj
-    htriv' v hv d hd x hx hθ'x σ₀ hσ₀ χ₀ hχ₀ hχne0 hχmul hχker hχunr hne
+    htriv' v hv d hd x hx hθ'x σ₀ hσ₀ χ₀ hχ₀ hχne0 hχmul hχker hχunr hindep
+    hne
 
 set_option maxHeartbeats 1000000 in
 /-- **The Serre/Tate elimination, dihedral ray-class computation**
