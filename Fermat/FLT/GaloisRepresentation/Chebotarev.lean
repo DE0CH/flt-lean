@@ -465,7 +465,7 @@ theorem exists_algEquiv_lift_and_forall_zpow_eq_one
         (Algebra.subset_adjoin (Set.mem_union_right _ rfl)))
     rw [hE] at h1
     rw [eq_top_iff]
-    intro x hx
+    intro x _
     exact h1 (show x ∈ (⊤ : Subalgebra E N) from trivial)
   -- `σ ^ k` agrees with the identity on the generators, hence everywhere
   have hEqOn : Set.EqOn (↑(σ ^ k : N ≃ₐ[F] N) : N →ₐ[F] N) (AlgHom.id F N)
@@ -606,7 +606,7 @@ lemma irreducible_cyclotomic_of_inf_eq_bot {E : Type*} [Field E] [NumberField E]
           (IntermediateField.subset_adjoin ℚ {ζ} rfl)))
     rw [hE] at h1
     rw [eq_top_iff]
-    intro x hx
+    intro x _
     exact h1 (show x ∈ (⊤ : Subalgebra E W) from trivial)
   -- degree count: `[W : E] = φ(l)`
   have hcount : Module.finrank ℚ W = l.totient * Module.finrank ℚ E := by
@@ -1173,7 +1173,7 @@ instance {F E : Type*} [Field F] [Field E] [NumberField E] [Algebra F E] :
     FaithfulSMul (E ≃ₐ[F] E) (𝓞 E) where
   eq_of_smul_eq_smul {σ τ} h := by
     refine AlgEquiv.ext fun e => ?_
-    obtain ⟨x, y, hy, rfl⟩ := IsFractionRing.div_surjective (A := 𝓞 E) e
+    obtain ⟨x, y, _, rfl⟩ := IsFractionRing.div_surjective (A := 𝓞 E) e
     have hcoe : ∀ (g : E ≃ₐ[F] E) (a : 𝓞 E),
         g (algebraMap (𝓞 E) E a) = algebraMap (𝓞 E) E (g • a) := fun _ _ => rfl
     rw [map_div₀, map_div₀, hcoe σ x, hcoe σ y, hcoe τ x, hcoe τ y, h x, h y]
@@ -1650,7 +1650,7 @@ lemma cyclotomicCharacterModL_eq_one (ℓ : ℕ) [Fact ℓ.Prime]
         (rootsOfUnity ℓ (AlgebraicClosure ℚ) : Set (AlgebraicClosure ℚ)ˣ))).fixingSubgroup) :
     cyclotomicCharacterModL ℓ τ = 1 := by
   set L := AlgebraicClosure ℚ
-  set S : Set L := ((↑) : Lˣ → L) '' (rootsOfUnity ℓ L : Set Lˣ) with hS
+  set S : Set L := ((↑) : Lˣ → L) '' (rootsOfUnity ℓ L : Set Lˣ)
   have hfix : ∀ x ∈ S, τ x = x := fun x hx =>
     ((IntermediateField.mem_fixingSubgroup_iff _ _).mp hτ) x
       (IntermediateField.subset_adjoin ℚ S hx)
@@ -1766,7 +1766,7 @@ theorem cyclotomicCharacter_globalFrob {ℓ q : ℕ} [Fact ℓ.Prime]
       globalFrob (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq) ζ =
         ζ ^ q := by
     intro k ζ hζ
-    set v := Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq with hv
+    set v := Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq
     -- transport along the chosen embedding of algebraic closures
     have hι := Field.absoluteGaloisGroup.lift_map
       (@algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) _ _
@@ -2171,7 +2171,7 @@ lemma exists_prime_toHeightOneSpectrum
   obtain ⟨w, rfl⟩ := e.surjective v
   -- `w.asIdeal` is a nonzero prime ideal of the PID `ℤ`, hence generated
   -- by a prime integer
-  set a : ℤ := Submodule.IsPrincipal.generator (w.asIdeal) with hadef
+  set a : ℤ := Submodule.IsPrincipal.generator (w.asIdeal)
   have ha : Ideal.span {a} = w.asIdeal := Ideal.span_singleton_generator _
   have ha0 : a ≠ 0 := by
     intro h

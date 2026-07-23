@@ -394,7 +394,7 @@ theorem mem_maximalIdeal_iff_embeddedComparison
     intro h1 h2
     apply h1
     rw [isUnit_iff_exists] at h2
-    obtain ⟨w, hw1, hw2⟩ := h2
+    obtain ⟨w, hw1, _⟩ := h2
     -- push the unit equation down to the ambient field
     have h3 := congrArg (algebraMap
       (IntegralClosure 𝒪ᵥ (AlgebraicClosure
@@ -809,18 +809,6 @@ theorem card_inertia_intermediate [IsGalois Kᵥ N] :
     Nat.card ((𝔪 (IntegralClosure 𝒪ᵥ N)).inertia (N ≃ₐ[M'] N)) =
       Ideal.ramificationIdx' (𝔪 (IntegralClosure 𝒪ᵥ M'))
         (𝔪 (IntegralClosure 𝒪ᵥ N)) := by
-  -- the Galois action of `Gal(N/M')` commutes with `Kᵥ`-scalars (they
-  -- factor through `M'`-scalars)
-  haveI hscc : SMulCommClass (N ≃ₐ[M'] N)
-      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N := by
-    constructor
-    intro g k x
-    show g (k • x) = k • g x
-    rw [Algebra.smul_def, Algebra.smul_def, map_mul]
-    congr 1
-    rw [IsScalarTower.algebraMap_apply
-      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) M' N]
-    exact g.commutes _
   -- fraction-ring structure on both integral closures
   haveI : IsFractionRing (IntegralClosure 𝒪ᵥ M') M' :=
     IsIntegralClosure.isFractionRing_of_finite_extension 𝒪ᵥ Kᵥ M'
@@ -957,9 +945,9 @@ theorem restrictNormalHom_inertia_surjective [IsGalois
   -- the restricted homomorphism on the inertia subgroup
   set A : Subgroup (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N) :=
     (𝔪 (IntegralClosure 𝒪ᵥ N)).inertia
-      (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N) with hA
+      (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N)
   set f : A →* (M' ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] M') :=
-    (AlgEquiv.restrictNormalHom M').comp A.subtype with hf
+    (AlgEquiv.restrictNormalHom M').comp A.subtype
   -- the range of `f` sits inside the target inertia
   have hrange : f.range ≤ (𝔪 (IntegralClosure 𝒪ᵥ M')).inertia
       (M' ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] M') := by
@@ -1607,7 +1595,7 @@ theorem exists_mem_localInertiaGroup_restrictNormalHom_eq
       (algebraMap ↥Nx (AlgebraicClosure
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))).injective]
     exact (Algebra.IsIntegral.isIntegral (R := 𝒪ᵥ) x).algebraMap
-  set y : IntegralClosure 𝒪ᵥ ↥Nx := ⟨⟨_, hxmem⟩, hyint⟩ with hy
+  set y : IntegralClosure 𝒪ᵥ ↥Nx := ⟨⟨_, hxmem⟩, hyint⟩
   -- `σ` restricted to `Nx` is inertial there
   have hσx := (hσ ⟨Nx, hNle, hfdx, hgalx⟩).2
   have hyin := AddSubgroup.mem_inertia.mp hσx y
