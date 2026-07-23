@@ -2786,19 +2786,66 @@ theorem subCharacter_unramified_at_three_of_quot_ramified
   rw [MonoidHom.mem_ker]
   exact Units.ext hψ1
 
-/-- **The Serre swap: the second stable line** (sorry node — the global
-splitting content): if the quotient character `χ` of a stable line
+/-- **The Serre swap, cocycle form** (sorry node — the global
+splitting content in explicit coordinates, isolated 2026-07-23): with
+a basis adapted to the ramified-quotient situation — `w₀` spanning the
+stable line `W₀` and `v₁` a complement vector — the extension cocycle
+`c` (defined by `ρ g v₁ = χ g • v₁ + c g • w₀`) is a coboundary:
+there is a single scalar `t` with `c g = t·(χ g − ψ g)` for all `g`.
+This is exactly the vanishing of the class of the extension
+`0 → ψ → V → χ → 0` in `H¹(ℚ, k(ψχ⁻¹))` (the function
+`g ↦ c g / (ψ g)` is a `1`-cocycle for the `ψ⁻¹χ`-twisted action, and
+`t` is the element whose twisted coboundary it is). Intended content
+(Serre's `peu ramifié` argument, Duke 1987, §5.4): locally at `3` the
+connected–étale sequence of the flat prolongation provides a stable
+line with unramified quotient, necessarily different from `W₀` (whose
+quotient character is ramified at `3` by `h3`), so the extension
+splits locally at `3`; globally the class lies in the Selmer-type
+subgroup of `H¹(ℚ, k(ψχ⁻¹))` of classes unramified outside `{2, 3}`,
+flat (peu ramifié) at `3` and tame quadratic at `2`, and this group
+vanishes. -/
+theorem exists_splitting_scalar_of_quot_ramified
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (W₀ : Submodule k V) (hW₀fr : Module.finrank k W₀ = 1)
+    (hstable : ∀ g v, v ∈ W₀ → ρ g v ∈ W₀)
+    (ψ : Γ ℚ →* kˣ) (hψ : ∀ g, ∀ v ∈ W₀, ρ g v = (ψ g : k) • v)
+    (χ : Γ ℚ →* kˣ)
+    (hχ : ∀ g v, W₀.mkQ (ρ g v) = (χ g : k) • W₀.mkQ v)
+    (h3 : ¬ (localInertiaGroup
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ≤
+        (χ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker))
+    (w₀ : V) (hw₀ : w₀ ∈ W₀) (hw₀ne : w₀ ≠ 0)
+    (v₁ : V) (hv₁ : v₁ ∉ W₀)
+    (c : Γ ℚ → k)
+    (hc : ∀ g : Γ ℚ, ρ g v₁ = (χ g : k) • v₁ + c g • w₀) :
+    ∃ t : k, ∀ g : Γ ℚ, c g = t * ((χ g : k) - (ψ g : k)) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The Serre swap: the second stable line** (DECOMPOSED 2026-07-23
+into the cocycle-vanishing sorry node
+`exists_splitting_scalar_of_quot_ramified` above; the coordinate
+reduction is proven): if the quotient character `χ` of a stable line
 `W₀` of a mod-3 hardly ramified representation is ramified at `3`,
 then the representation has a SECOND stable line whose quotient
 character is the sub-character `ψ` of `W₀` — i.e. the extension
-`0 → ψ → V → χ → 0` splits. Content: locally at `3` the connected–étale
-sequence of the flat prolongation provides a stable line with
-unramified quotient, necessarily different from `W₀` (whose quotient
-is ramified), so the extension splits locally at `3`; globally the
-extension class lies in the subgroup of `H¹(ℚ, k(ψχ⁻¹))` of classes
-unramified outside `{2, 3}`, flat (peu ramifié) at `3` and tame
-quadratic at `2`, and this Selmer-type group vanishes (Serre's
-`peu ramifié` argument, Duke 1987, §5.4). -/
+`0 → ψ → V → χ → 0` splits. The proven reduction: choose `w₀`
+spanning `W₀` and `v₁ ∉ W₀`; since `mkQ (ρ g v₁) = χ g • mkQ v₁`, the
+element `ρ g v₁ − χ g • v₁` lies in `W₀ = k·w₀`, defining the cocycle
+`c` with `ρ g v₁ = χ g • v₁ + c g • w₀`; the leaf provides `t` with
+`c g = t·(χ g − ψ g)`; then `W₁ := k·(v₁ + t • w₀)` is stable with
+`ρ g` acting by `χ g` on it (`ρ g (v₁ + t•w₀) = χ g • v₁ +
+(t·(χ g − ψ g) + t·ψ g) • w₀ = χ g • (v₁ + t•w₀)`), and since
+`{v₁ + t•w₀, w₀}` spans `V` (the quotient `V/W₀` is the line spanned
+by `mkQ v₁`), the quotient `V/W₁` is spanned by the image of `w₀`, on
+which `ρ` acts through `ψ`. -/
 theorem exists_line_with_quotCharacter_eq_subCharacter
     {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
     [TopologicalSpace k] [DiscreteTopology k]
@@ -2818,8 +2865,116 @@ theorem exists_line_with_quotCharacter_eq_subCharacter
             Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker)) :
     ∃ W₁ : Submodule k V, Module.finrank k W₁ = 1 ∧
       (∀ g v, v ∈ W₁ → ρ g v ∈ W₁) ∧
-      (∀ g v, W₁.mkQ (ρ g v) = (ψ g : k) • W₁.mkQ v) :=
-  sorry
+      (∀ g v, W₁.mkQ (ρ g v) = (ψ g : k) • W₁.mkQ v) := by
+  classical
+  -- dimensions
+  have hfr : Module.finrank k V = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
+  have hQ1 : Module.finrank k (V ⧸ W₀) = 1 := by
+    have hsum := Submodule.finrank_quotient_add_finrank W₀
+    omega
+  -- a spanning vector of the line `W₀`
+  obtain ⟨w₀, hw₀, hw₀ne⟩ : ∃ w₀ ∈ W₀, w₀ ≠ (0 : V) := by
+    by_contra hno
+    push Not at hno
+    have hbot : W₀ = ⊥ := (Submodule.eq_bot_iff W₀).mpr hno
+    rw [hbot, finrank_bot] at hW₀fr
+    omega
+  -- every element of `W₀` is a multiple of `w₀`
+  have hspan : ∀ y ∈ W₀, ∃ a : k, y = a • w₀ := by
+    intro y hy
+    have hne : (⟨w₀, hw₀⟩ : W₀) ≠ 0 := fun h =>
+      hw₀ne (by simpa using congrArg Subtype.val h)
+    have h1 : Submodule.span k {(⟨w₀, hw₀⟩ : W₀)} = ⊤ :=
+      (finrank_eq_one_iff_of_nonzero _ hne).mp hW₀fr
+    have h2 : (⟨y, hy⟩ : W₀) ∈ Submodule.span k {(⟨w₀, hw₀⟩ : W₀)} := by
+      rw [h1]
+      exact Submodule.mem_top
+    obtain ⟨a, ha⟩ := Submodule.mem_span_singleton.mp h2
+    exact ⟨a, by simpa using (congrArg Subtype.val ha).symm⟩
+  -- a complement vector
+  obtain ⟨v₁, hv₁⟩ : ∃ v₁ : V, v₁ ∉ W₀ := by
+    by_contra hno
+    push Not at hno
+    have htop : W₀ = ⊤ := Submodule.eq_top_iff'.mpr hno
+    rw [htop, finrank_top] at hW₀fr
+    omega
+  -- the extension cocycle `c`
+  have hmem : ∀ g : Γ ℚ, ρ g v₁ - (χ g : k) • v₁ ∈ W₀ := by
+    intro g
+    have h0 : W₀.mkQ (ρ g v₁ - (χ g : k) • v₁) = 0 := by
+      rw [map_sub, map_smul, hχ g v₁, sub_self]
+    rwa [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero] at h0
+  choose cfun hcfun using fun g => hspan _ (hmem g)
+  have hc : ∀ g : Γ ℚ, ρ g v₁ = (χ g : k) • v₁ + cfun g • w₀ := by
+    intro g
+    have h1 : (χ g : k) • v₁ + (ρ g v₁ - (χ g : k) • v₁) = ρ g v₁ := by
+      abel
+    rw [hcfun g] at h1
+    exact h1.symm
+  -- the splitting scalar of the sorried leaf
+  obtain ⟨t, ht⟩ := exists_splitting_scalar_of_quot_ramified V hV hρ W₀
+    hW₀fr hstable ψ hψ χ hχ h3 w₀ hw₀ hw₀ne v₁ hv₁ cfun hc
+  -- the second line and its generator
+  set x : V := v₁ + t • w₀ with hxdef
+  have hgen : ∀ g : Γ ℚ, ρ g x = (χ g : k) • x := by
+    intro g
+    have h1 : ρ g x = ρ g v₁ + t • ρ g w₀ := by
+      rw [hxdef, map_add, map_smul]
+    rw [h1, hc g, hψ g w₀ hw₀, ht g, hxdef, smul_add]
+    module
+  have hxne : x ≠ 0 := by
+    intro h0
+    apply hv₁
+    have h1 : v₁ = -(t • w₀) := by
+      rw [hxdef] at h0
+      exact eq_neg_of_add_eq_zero_left h0
+    rw [h1]
+    exact W₀.neg_mem (W₀.smul_mem t hw₀)
+  refine ⟨Submodule.span k {x}, finrank_span_singleton hxne, ?_, ?_⟩
+  · -- stability
+    intro g v hv
+    obtain ⟨s, rfl⟩ := Submodule.mem_span_singleton.mp hv
+    rw [map_smul, hgen g]
+    exact Submodule.smul_mem _ s (Submodule.smul_mem _ _
+      (Submodule.mem_span_singleton_self x))
+  · -- the quotient character is `ψ`: `{x, w₀}` spans `V`
+    have hrepr : ∀ v : V, ∃ a bb : k, v = a • x + bb • w₀ := by
+      intro v
+      -- `mkQ v₁` spans the line `V ⧸ W₀`
+      have hv₁ne : W₀.mkQ v₁ ≠ 0 := by
+        intro h0
+        rw [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero] at h0
+        exact hv₁ h0
+      have hspanQ : Submodule.span k {W₀.mkQ v₁} = ⊤ :=
+        (finrank_eq_one_iff_of_nonzero _ hv₁ne).mp hQ1
+      have hmemQ : W₀.mkQ v ∈ Submodule.span k {W₀.mkQ v₁} := by
+        rw [hspanQ]
+        exact Submodule.mem_top
+      obtain ⟨μ, hμ⟩ := Submodule.mem_span_singleton.mp hmemQ
+      have hvmem : v - μ • v₁ ∈ W₀ := by
+        have h0 : W₀.mkQ (v - μ • v₁) = 0 := by
+          rw [map_sub, map_smul, hμ, sub_self]
+        rwa [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero] at h0
+      obtain ⟨bb₀, hbb₀⟩ := hspan _ hvmem
+      refine ⟨μ, bb₀ - μ * t, ?_⟩
+      have hveq : v = μ • v₁ + bb₀ • w₀ := by
+        have h1 : μ • v₁ + (v - μ • v₁) = v := by abel
+        rw [hbb₀] at h1
+        exact h1.symm
+      rw [hveq, hxdef]
+      module
+    intro g v
+    obtain ⟨a, bb, rfl⟩ := hrepr v
+    have hx0 : (Submodule.span k {x}).mkQ x = 0 := by
+      rw [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero]
+      exact Submodule.mem_span_singleton_self x
+    have hL : ρ g (a • x + bb • w₀) =
+        a • ((χ g : k) • x) + bb • ((ψ g : k) • w₀) := by
+      rw [map_add, map_smul, map_smul, hgen g, hψ g w₀ hw₀]
+    rw [hL]
+    simp only [map_add, map_smul, hx0, smul_zero, zero_add]
+    rw [smul_comm]
 
 /-- **The stable line with unramified-at-`3` quotient character**
 (DECOMPOSED 2026-07-22 into the two sorry nodes above — the Raynaud
