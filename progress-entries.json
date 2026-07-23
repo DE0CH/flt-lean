@@ -1737,5 +1737,13 @@
     "wip": false,
     "text": "`exists_realizations_at_two` — bare 2-adic member matching the shared Pv (no hardly-ramified model demanded at ℓ=2) — 2026-07-23",
     "parent": "exists_realizations_of_eigensystem"
+  },
+  {
+    "name": "exists_finiteDimensional_trace_field",
+    "fullname": "exists_finiteDimensional_trace_field",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
+    "wip": false,
+    "text": "`exists_finiteDimensional_trace_field` — the Hecke-field finiteness core confined to the trace coefficient (ℚ_p-confinement now hypotheses; genuinely non-formal — automorphy enters here; deferred to the automorphy campaign) — 2026-07-23",
+    "parent": "exists_finiteDimensional_coeff_field"
   }
 ]
