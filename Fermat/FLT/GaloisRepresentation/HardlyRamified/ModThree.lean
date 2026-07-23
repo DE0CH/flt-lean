@@ -2784,14 +2784,72 @@ theorem exists_smul_eq_of_mulVec_eq_zero {F : Type*} [Field F]
           (Matrix.of ![![v 0, w 0], ![v 1, w 1]])⁻¹ := by rw [mul_assoc]
       _ = 0 := by rw [hMN, zero_mul]
 
+/-- **The Klein-four pivot** (sorry node, isolated 2026-07-23 — the
+group/matrix-theoretic core of the dihedral dichotomy, needing no
+Galois-theoretic context): let `u : G → GL₂(F)` (`F` algebraically
+closed, `2 ≠ 0`) be a representation whose composition with the
+projection `π` to `PGL₂(F)` is abelian on the kernel of a surjective
+quadratic character `θ`, but which does NOT honestly commute on that
+kernel. Then there is a trace-zero invertible `f` — a member of the
+Klein four-group configuration — that anticommutes with some `u p`
+and commutes-or-anticommutes with EVERY `u g`, `g ∈ G` (not only the
+kernel!): the pivot whose `±1` conjugation-sign character is the
+switched quadratic character of the dihedral argument.
+
+Intended proof (recorded 2026-07-23). (1) By `hπ` and the scalar
+characterization of the center of `GL₂`
+(`Matrix.GeneralLinearGroup.mem_center_iff_val_mem_range_scalar`),
+`hcomm` gives for kernel elements `g, h`:
+`u h · u g = a • (u g · u h)` with `a² = 1` by determinants, so `±1`:
+the commutator pairing. (2) A noncommuting kernel pair `g₀, h₁`
+therefore ANTIcommutes: `a := u g₀`, `b := u h₁`, `ab = -(ba)`; both
+have trace `0` (conjugating by the partner negates the trace) and
+scalar squares `a² = (-det a) • 1` (Cayley–Hamilton). (3) Any matrix
+commuting with both `a` and `b` is scalar (it preserves the two
+eigenlines of `a`, which `b` swaps) — via the eigen-machinery and
+`exists_smul_eq_of_mulVec_eq_zero`. (4) Hence every kernel element is
+a scalar multiple of one of `{1, a, b, ab}`: multiply by the inverse
+of the member with the matching sign pattern against `(a, b)` and
+apply (3). (5) For `σ ∉ ker θ`, `D := u σ`: `σ²  ∈ ker θ`, so
+conjugation by `D²` fixes each of the lines `F·a`, `F·b`, `F·(ab)`
+(conjugation by any of `{1, a, b, ab}` does, by the pairing table).
+If `D a D⁻¹ ∈ F·a`, take `f := a`. If `D a D⁻¹ = c • b`, then
+`D b D⁻¹ = (ε/c) • a` (apply conjugation twice), so
+`D (ab) D⁻¹ ∈ F·(ab)`: take `f := ab`. If `D a D⁻¹ = c • (ab)`,
+then `D (ab) D⁻¹ ∈ F·a` and `D b D⁻¹ = D (a⁻¹·ab) D⁻¹ ∈ F·b⁻¹ = F·b`
+(`b⁻¹ = (1/det b?) hmm — b⁻¹ = δ_b⁻¹ • b` since `b² = δ_b • 1`):
+take `f := b`. (6) The global dichotomy for `f`: kernel elements are
+scalar multiples of `{1, a, b, ab}`, which commute-or-anticommute
+with `f` by the pairing table; an element `g ∉ ker θ` factors as
+`(g σ⁻¹) · σ` with `g σ⁻¹ ∈ ker θ`, and `D f D⁻¹ = ±f` (determinant
+squares again), so the sign multiplies through. -/
+theorem exists_klein_pivot_of_noncommuting_kernel {F : Type*} [Field F]
+    [IsAlgClosed F] (h2F : (2 : F) ≠ 0) {G : Type*} [Group G]
+    (u : G →* GL (Fin 2) F)
+    (π : G →* Matrix.ProjGenLinGroup (Fin 2) F)
+    (hπ : ∀ g, π g = QuotientGroup.mk (u g))
+    (θ : G →* Multiplicative (ZMod 2))
+    (hθsurj : Function.Surjective θ)
+    (hcomm : ∀ g h : G, θ g = 1 → θ h = 1 → π g * π h = π h * π g)
+    (hA : ¬∀ g h' : G, θ g = 1 → θ h' = 1 →
+      (u g).val * (u h').val = (u h').val * (u g).val) :
+    ∃ f : Matrix (Fin 2) (Fin 2) F,
+      Matrix.trace f = 0 ∧ Matrix.det f ≠ 0 ∧
+      (∃ p : G, (u p).val * f = -(f * (u p).val)) ∧
+      ∀ g : G, (u g).val * f = f * (u g).val ∨
+        (u g).val * f = -(f * (u g).val) := by
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **The dihedral dichotomy: a common eigenvector after a possible
-field switch** (sorry node, isolated 2026-07-23 — the SOUND
-replacement for the false "common eigenvector on `ker θ` itself"
-step): the projective-commutativity and trace-zero data of the
-dihedral situation produce a surjective quadratic character `θ'` —
-NOT necessarily `θ` — trivial on the kernel of `ρ`, such that `u`
-restricted to `ker θ'` has a genuine common eigenvector.
+field switch** (DERIVED 2026-07-23 from the Klein-four pivot
+`exists_klein_pivot_of_noncommuting_kernel` above — the reduction is
+PROVEN, and this is the SOUND replacement for the false "common
+eigenvector on `ker θ` itself" step): the projective-commutativity
+and trace-zero data of the dihedral situation produce a surjective
+quadratic character `θ'` — NOT necessarily `θ` — trivial on the
+kernel of `ρ`, such that `u` restricted to `ker θ'` has a genuine
+common eigenvector.
 
 Soundness note (recorded 2026-07-23; see the 2026-07-23 decomposition
 commit): `hcomm` only makes `u (ker θ)` projectively abelian, which
@@ -2803,26 +2861,20 @@ Hence the eigenvector is asserted only after an allowed switch of the
 quadratic character, and the consumer re-runs the quadratic-field
 classification on `θ'`.
 
-Intended proof: if all `u h`, `h ∈ ker θ`, pairwise commute, a finite
-commuting family over the algebraically closed `Dickson.K 3` has a
-common eigenvector and `θ' = θ` works (`ρ g = 1 → θ g = 1` follows
-from `htr` since `tr 1 = 2 ≠ 0` in characteristic `3`). Otherwise the
-scalar commutator pairing `c` on `ker θ` (well defined by `hcomm`,
-valued in `{±1}` by determinants) is somewhere `-1`: an anticommuting
-pair is trace-zero with scalar squares (Cayley–Hamilton), and
-`π (ker θ)` is then EXACTLY a Klein four-group `{1, a, b, ab}` (an
-element pairing trivially with both `a` and `b` commutes with a
-diagonalizable matrix with distinct eigenvalues and with one swapping
-its eigenlines, hence is scalar; the four sign patterns of
-`(c(·,a), c(·,b))` are realized by `1, a, b, ab`). Conjugation by any
-fixed `σ ∉ ker θ` is an involutive permutation of `{a, b, ab}`
-(`σ² ∈ ker θ` and `A` is abelian), so it fixes one of the three, say
-`f = [f̃]` with `f̃` trace-zero, `f̃² = δ • 1`, `δ ≠ 0`; then EVERY
-`u g` (`g ∈ Γ ℚ`) conjugates `f̃` to `ε g • f̃` with `ε g ∈ {±1}`
-(determinants again), `ε : Γ ℚ →* {±1}` is the switched character —
-surjective because the anticommuting partner of `f` lies in
-`π (ker θ)` and has sign `-1` — and `ker ε` preserves each of the two
-`1`-dimensional eigenlines of the diagonalizable `f̃`: a common
+The proven reduction: if all `u h`, `h ∈ ker θ`, pairwise commute,
+`θ' = θ` works — `ρ g = 1 → θ g = 1` follows from `htr` since
+`tr 1 = 2 ≠ 0` in characteristic `3`, and a commuting family over the
+algebraically closed `Dickson.K 3` shares an eigenline (all-scalar
+case: any vector; otherwise the eigenline of a nonscalar member,
+one-dimensional by `exists_smul_eq_of_mulVec_eq_zero`). Otherwise the
+pivot leaf yields a trace-zero invertible `f` anticommuting with some
+`u p` and commuting-or-anticommuting with every `u g`; the `±1`-sign
+of conjugation on `f` is a `MonoidHom` `θ' : Γ ℚ →* ℤ/2` (the four
+sign-composition cases are proven by explicit rewriting), surjective
+via `p`, trivial on `ker ρ` (`u g = 1` there), and elements of
+`ker θ'` commute with `f` honestly, hence preserve the eigenline of
+`f` cut out by a root of `det (f - t • 1)` (Cayley–Hamilton
+`f² = (-det f) • 1` and a square root of `-det f`): a common
 eigenvector for the SWITCHED quadratic field. -/
 theorem exists_index_two_common_eigenvector {k : Type u} [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
@@ -2927,12 +2979,8 @@ theorem exists_index_two_common_eigenvector {k : Type u} [Finite k] [Field k]
       exact Matrix.map_one e (map_zero e) (map_one e)
     -- the Klein-four analysis: a trace-zero anticommuting-pair member,
     -- conjugation-fixed up to sign by the whole image
-    have hklein : ∃ f : Matrix (Fin 2) (Fin 2) (Dickson.K 3),
-        Matrix.trace f = 0 ∧ Matrix.det f ≠ 0 ∧
-        (∃ p : Γ ℚ, (u p).val * f = -(f * (u p).val)) ∧
-        ∀ g : Γ ℚ, (u g).val * f = f * (u g).val ∨
-          (u g).val * f = -(f * (u g).val) := by
-      sorry
+    have hklein :=
+      exists_klein_pivot_of_noncommuting_kernel h2F u π hπ θ hθsurj hcomm hA
     obtain ⟨f, htr0, hdetf, ⟨p, hp⟩, hdich⟩ := hklein
     -- commuting and anticommuting with `f` are mutually exclusive
     have hexcl : ∀ g : Γ ℚ, (u g).val * f = f * (u g).val →
