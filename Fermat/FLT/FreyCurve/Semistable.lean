@@ -169,7 +169,7 @@ theorem FreyPackage.freyCurve_hasGoodReduction_of_not_dvd (P : FreyPackage)
     {q : ℕ} (hq : q.Prime) (hq2 : q ≠ 2) (hndvd : ¬((q : ℤ) ∣ P.a * P.b * P.c)) :
     P.freyCurve.HasGoodReduction
       (Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal) := by
-  set R := Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal with hR
+  set R := Localization.AtPrime hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal
   -- `q`-integrality: every coefficient of the Frey equation is an integer
   haveI hInt : IsIntegral R P.freyCurve := by
     rw [← FreyCurve.map P]
@@ -201,7 +201,7 @@ theorem FreyPackage.freyCurve_hasGoodReduction_of_not_dvd (P : FreyPackage)
     exact MonoidHom.mem_mker.mp hmem
   -- minimality: the valuation of the discriminant is `1`, the maximum
   -- possible among integral models
-  refine { val_Δ_maximal := ⟨?_, fun C hC _ => ?_⟩, goodReduction := hval }
+  refine { val_Δ_maximal := ⟨?_, fun C _ _ => ?_⟩, goodReduction := hval }
   · simpa using hInt
   · have hle : (valuation_Δ_aux R (C • P.freyCurve) : WithZero (Multiplicative ℤ)) ≤ 1 :=
       (valuation_Δ_aux R (C • P.freyCurve)).2
@@ -316,7 +316,6 @@ theorem FreyPackage.freyCurve_hasMultiplicativeReduction_at_two (P : FreyPackage
     P.freyCurve.HasMultiplicativeReduction
       (Localization.AtPrime Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat.asIdeal) := by
   set R := Localization.AtPrime Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat.asIdeal
-    with hR
   have h2Z : Prime (2 : ℤ) := Int.prime_two
   -- `2`-integrality: every coefficient of the Frey equation is an integer
   haveI hInt : IsIntegral R P.freyCurve := by
@@ -1595,7 +1594,7 @@ theorem exists_unit_qUnit_mul_inv_pow_isUnit {q : ℕ} (hq : q.Prime)
   set w : (HeightOneSpectrum.adicCompletion ℚ
       hq.toHeightOneSpectrumRingOfIntegersRat)ˣ :=
     Units.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
-      hq.toHeightOneSpectrumRingOfIntegersRat)).toMonoidHom r with hw
+      hq.toHeightOneSpectrumRingOfIntegersRat)).toMonoidHom r
   -- the recentred Tate parameter has canonical valuation `1`
   have hcoe : ((X.qUnit * w⁻¹ ^ p :
       (HeightOneSpectrum.adicCompletion ℚ
@@ -2074,11 +2073,11 @@ theorem WeierstrassCurve.tate_inertia_unipotent_of_nonsplit {q : ℕ}
       (E := X) (R := 𝒪[HeightOneSpectrum.adicCompletion ℚ
         hq.toHeightOneSpectrumRingOfIntegersRat]) hnonsplit
   set Tw : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
-    hq.toHeightOneSpectrumRingOfIntegersRat) := X.quadraticTwist L with hTwdef
+    hq.toHeightOneSpectrumRingOfIntegersRat) := X.quadraticTwist L
   set Mt : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
     hq.toHeightOneSpectrumRingOfIntegersRat) := Tw.minimal
     𝒪[HeightOneSpectrum.adicCompletion ℚ
-      hq.toHeightOneSpectrumRingOfIntegersRat] with hMtdef
+      hq.toHeightOneSpectrumRingOfIntegersRat]
   set Cb : WeierstrassCurve.VariableChange (AlgebraicClosure
     (HeightOneSpectrum.adicCompletion ℚ
       hq.toHeightOneSpectrumRingOfIntegersRat)) :=
@@ -2305,11 +2304,11 @@ theorem WeierstrassCurve.tate_inertia_trivial_of_nonsplit {q : ℕ}
       (E := X) (R := 𝒪[HeightOneSpectrum.adicCompletion ℚ
         hq.toHeightOneSpectrumRingOfIntegersRat]) hnonsplit
   set Tw : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
-    hq.toHeightOneSpectrumRingOfIntegersRat) := X.quadraticTwist L with hTwdef
+    hq.toHeightOneSpectrumRingOfIntegersRat) := X.quadraticTwist L
   set Mt : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
     hq.toHeightOneSpectrumRingOfIntegersRat) := Tw.minimal
     𝒪[HeightOneSpectrum.adicCompletion ℚ
-      hq.toHeightOneSpectrumRingOfIntegersRat] with hMtdef
+      hq.toHeightOneSpectrumRingOfIntegersRat]
   set Cb : WeierstrassCurve.VariableChange (AlgebraicClosure
     (HeightOneSpectrum.adicCompletion ℚ
       hq.toHeightOneSpectrumRingOfIntegersRat)) :=
@@ -5028,9 +5027,9 @@ theorem exists_kummerPointsEquiv (Q w : Kˣ)
             ↑(Units.map σ.toAlgHom.toRingHom.toMonoidHom u') := by
   classical
   -- images of the recentring data in `Ωˣ`
-  set Qb : Ωˣ := Units.map (algebraMap K Ω).toMonoidHom Q with hQb_def
-  set wb : Ωˣ := Units.map (algebraMap K Ω).toMonoidHom w with hwb_def
-  set ub : Ωˣ := Units.map (algebraMap R Ω).toMonoidHom u with hub_def
+  set Qb : Ωˣ := Units.map (algebraMap K Ω).toMonoidHom Q
+  set wb : Ωˣ := Units.map (algebraMap K Ω).toMonoidHom w
+  set ub : Ωˣ := Units.map (algebraMap R Ω).toMonoidHom u
   -- the recentring identity in `Ωˣ`
   have hubQ : ub = Qb * wb⁻¹ ^ p := by
     apply Units.ext
@@ -5256,7 +5255,7 @@ theorem exists_kummerPointsEquiv (Q w : Kˣ)
         rw [hcl_one]
         exact ofMul_one)
       map_add' := fun a b => Subtype.ext (congrArg Additive.ofMul
-        (hcl_mul (Additive.toMul a) (Additive.toMul b))) } with hF_def
+        (hcl_mul (Additive.toMul a) (Additive.toMul b))) }
   -- injectivity, through the point classification
   have hFinj : Function.Injective F := by
     intro x y hxy
@@ -5292,7 +5291,7 @@ theorem exists_kummerPointsEquiv (Q w : Kˣ)
     have hdiv : (p : ℤ) * (a / (p : ℤ)) + ((i.val : ℕ) : ℤ) = a := by
       rw [hival]
       exact Int.mul_ediv_add_emod a (p : ℤ)
-    set m : ℤ := a / (p : ℤ) with hm_def
+    set m : ℤ := a / (p : ℤ)
     set tu : Ωˣ := v * (wb ^ i.val)⁻¹ * (Qb ^ m)⁻¹ with htu_def
     have htu_p : tu ^ (p : ℕ) = ub ^ i.val := by
       have hz : Qb ^ a * (Qb ^ ((p : ℤ) * m))⁻¹ = Qb ^ ((i.val : ℕ) : ℤ) := by

@@ -480,10 +480,10 @@ theorem exists_ringEquiv_of_isUniversal {ρbar : GaloisRep ℚ (ZMod ℓ) V}
   letI := D.isLocalRing; letI := D.algebra
   letI := D'.commRing; letI := D'.topologicalSpace
   letI := D'.isTopologicalRing; letI := D'.isLocalRing; letI := D'.algebra
-  obtain ⟨f, hf, hfu⟩ := hD D'
-  obtain ⟨g, hg, hgu⟩ := hD' D
+  obtain ⟨f, hf, _⟩ := hD D'
+  obtain ⟨g, hg, _⟩ := hD' D
   have hgf : g.comp f = RingHom.id D.R := by
-    obtain ⟨i, hi, hiu⟩ := hD D
+    obtain ⟨i, _, hiu⟩ := hD D
     have h1 : g.comp f = i := by
       refine hiu (g.comp f) ⟨?_, ?_, ?_⟩
       · rw [RingHom.comp_assoc, hf.1, hg.1]
@@ -495,11 +495,11 @@ theorem exists_ringEquiv_of_isUniversal {ρbar : GaloisRep ℚ (ZMod ℓ) V}
       refine hiu (RingHom.id D.R) ⟨?_, ?_, ?_⟩
       · rw [RingHom.id_comp]
       · rw [RingHom.comp_id]
-      · intro q hq hq2 hqℓ
+      · intro q hq _ _
         exact Polynomial.map_id
     rw [h1, h2]
   have hfg : f.comp g = RingHom.id D'.R := by
-    obtain ⟨j, hj, hju⟩ := hD' D'
+    obtain ⟨j, _, hju⟩ := hD' D'
     have h1 : f.comp g = j := by
       refine hju (f.comp g) ⟨?_, ?_, ?_⟩
       · rw [RingHom.comp_assoc, hg.1, hf.1]
@@ -511,7 +511,7 @@ theorem exists_ringEquiv_of_isUniversal {ρbar : GaloisRep ℚ (ZMod ℓ) V}
       refine hju (RingHom.id D'.R) ⟨?_, ?_, ?_⟩
       · rw [RingHom.id_comp]
       · rw [RingHom.comp_id]
-      · intro q hq hq2 hqℓ
+      · intro q hq _ _
         exact Polynomial.map_id
     rw [h1, h2]
   refine ⟨RingEquiv.ofRingHom f g hfg hgf, fun c => ?_⟩
@@ -959,7 +959,7 @@ theorem exists_isPrime_lt_maximalIdeal_of_mvPowerSeries_presentation
   have hmin : IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) ℤ_[ℓ]) ∈
       (RingHom.ker φ).minimalPrimes := by
     refine ⟨⟨(IsLocalRing.maximalIdeal.isMaximal _).isPrime, hKle⟩, ?_⟩
-    rintro Q ⟨hQp, hKQ⟩ hQle
+    rintro Q ⟨hQp, hKQ⟩ _
     haveI := hQp
     -- the image of `Q` is a prime of `R` not strictly below the maximal
     -- ideal, hence equal to it
@@ -1136,7 +1136,7 @@ theorem algebraMap_injective_of_isUniversal (hℓ5 : 5 ≤ ℓ)
     exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated
       hℓOdd hdim hℓ5 h hirr D₀ hw₀ ht₀
   have hinf₀ : Infinite D₀.R := infinite_of_isPrime_lt_maximalIdeal hP hlt
-  obtain ⟨e, he⟩ := exists_ringEquiv_of_isUniversal hℓOdd D₀ D hD₀ hD
+  obtain ⟨e, _⟩ := exists_ringEquiv_of_isUniversal hℓOdd D₀ D hD₀ hD
   have hinf : Infinite D.R := @Infinite.of_injective _ _ hinf₀ e e.injective
   exact algebraMap_injective_of_moduleFinite_of_infinite hfin hinf
 
@@ -1829,7 +1829,7 @@ theorem residual_charFrob_eq_of_family (_hℓ5 : 5 ≤ ℓ)
   haveI h3fact : Fact (Nat.Prime 3) := ⟨by decide⟩
   obtain ⟨φ₃⟩ := nonempty_ringHom_to_padicAlgClosure E 3
   obtain ⟨A, iA1, iA2, iA3, iA4, iA5, iA6, iA7, iA8, iA9, iA10, iA11, iA12,
-      hinjA, W, iW1, iW2, iW3, iW4, hW, τ, r, hτHR, hτeq⟩ :=
+      _, W, iW1, iW2, iW3, iW4, hW, τ, r, hτHR, hτeq⟩ :=
     hodd h3fact (by decide) φ₃
   letI := iA1; letI := iA2; letI := iA3; letI := iA4; letI := iA5
   letI := iA6; letI := iA7; letI := iA8; letI := iA9; letI := iA10
@@ -1849,9 +1849,10 @@ theorem residual_charFrob_eq_of_family (_hℓ5 : 5 ≤ ℓ)
   have hqS₀ : Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq ∉ S₀ :=
     fun hmem => hqS (Finset.mem_insert_of_mem (Finset.mem_insert_of_mem hmem))
   have hq5 : 5 ≤ q := by
-    have h2 := hq.two_le
     rcases Nat.lt_or_ge q 5 with h5 | h5
     · interval_cases q
+      · exact absurd hq (by decide)
+      · exact absurd hq (by decide)
       · omega
       · omega
       · exact absurd hq (by decide)
