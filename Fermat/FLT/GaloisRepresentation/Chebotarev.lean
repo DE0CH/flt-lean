@@ -1694,10 +1694,10 @@ theorem tprod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum
   sorry
 
 open IsDedekindDomain in
-/-- **Norm fibration of the twisted ideal sum** (sorry leaf): grouping
+/-- **Norm fibration of the twisted ideal sum**: grouping
 the nonzero ideals of `𝓞 F` along `Ideal.absNorm` turns the twisted
-ideal sum into the `L`-series of `k ↦ χ(k)·#{I : N(I) = k}`. Intended
-proof: `Equiv.sigmaFiberEquiv` and `Summable.tsum_sigma` fibre the sum
+ideal sum into the `L`-series of `k ↦ χ(k)·#{I : N(I) = k}`. PROVEN:
+`Equiv.sigmaFiberEquiv` and `Summable.tsum_sigma'` fibre the sum
 over `k = N(I)`; each fibre is finite (`Ideal.finite_setOf_absNorm_eq`)
 with summand `χ(k)·k^{-w}` constant on the fibre, so its sum is
 `#{I : N(I) = k} · χ(k)·k^{-w} = LSeries.term _ w k` (the `k = 0` fibre
@@ -1709,8 +1709,99 @@ theorem tsum_dirichletCharacter_mul_cpow_neg_absNorm_eq_LSeries
     (∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥},
         χ ((Ideal.absNorm I.1 : ℕ) : ZMod ℓ) * (Ideal.absNorm I.1 : ℂ) ^ (-w)) =
       LSeries (fun k => χ (k : ZMod ℓ) *
-        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) w :=
-  sorry
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) w := by
+  classical
+  set G : {I : Ideal (𝓞 F) // I ≠ ⊥} → ℂ := fun I =>
+    χ ((Ideal.absNorm I.1 : ℕ) : ZMod ℓ) * (Ideal.absNorm I.1 : ℂ) ^ (-w) with hGdef
+  -- summability of the twisted ideal sum (transfer from the `ℝ≥0∞` leaf)
+  have habs : Summable (fun I : {I : Ideal (𝓞 F) // I ≠ ⊥} =>
+      (Ideal.absNorm I.1 : ℝ) ^ (-w.re)) := by
+    have h2 := tsum_rpow_neg_absNorm_ne_top F hw
+    have h3 : ∀ I : {I : Ideal (𝓞 F) // I ≠ ⊥},
+        (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-w.re) =
+          (((Ideal.absNorm I.1 : NNReal) ^ (-w.re) : NNReal) : ℝ≥0∞) := by
+      intro I
+      rw [ENNReal.coe_rpow_of_ne_zero (by
+          exact_mod_cast (fun h => I.2 (Ideal.absNorm_eq_zero_iff.mp h) :
+            Ideal.absNorm I.1 ≠ 0)),
+        ENNReal.coe_natCast]
+    rw [tsum_congr h3] at h2
+    have h4 := ENNReal.tsum_coe_ne_top_iff_summable.mp h2
+    refine (NNReal.summable_coe.mpr h4).congr ?_
+    intro I
+    rw [NNReal.coe_rpow, NNReal.coe_natCast]
+  have hsum : Summable G := by
+    refine Summable.of_norm_bounded habs ?_
+    intro I
+    have hNpos : 0 < Ideal.absNorm I.1 :=
+      Nat.pos_of_ne_zero fun h => I.2 (Ideal.absNorm_eq_zero_iff.mp h)
+    rw [hGdef, norm_mul, Complex.norm_natCast_cpow_of_pos hNpos, Complex.neg_re]
+    exact mul_le_of_le_one_left (Real.rpow_nonneg (Nat.cast_nonneg _) _)
+      (DirichletCharacter.norm_le_one χ _)
+  -- all norm fibres are finite
+  have hfibfin : ∀ k : ℕ, Finite {c : {I : Ideal (𝓞 F) // I ≠ ⊥} //
+      Ideal.absNorm c.1 = k} := by
+    intro k
+    haveI : Finite {I : Ideal (𝓞 F) // Ideal.absNorm I = k} :=
+      (Ideal.finite_setOf_absNorm_eq (S := 𝓞 F) k).to_subtype
+    refine Finite.of_injective
+      (fun c => (⟨c.1.1, c.2⟩ : {I : Ideal (𝓞 F) // Ideal.absNorm I = k}))
+      fun a b h => ?_
+    have h2 : a.1.1 = b.1.1 := by
+      have h3 := congrArg Subtype.val h
+      simpa using h3
+    exact Subtype.ext (Subtype.ext h2)
+  -- reindex along the fibres of the absolute norm
+  calc (∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥}, G I)
+      = ∑' σ : (Σ k : ℕ, {I : {I : Ideal (𝓞 F) // I ≠ ⊥} //
+          Ideal.absNorm I.1 = k}),
+        G ((Equiv.sigmaFiberEquiv
+          (fun I : {I : Ideal (𝓞 F) // I ≠ ⊥} => Ideal.absNorm I.1)) σ) :=
+      ((Equiv.sigmaFiberEquiv _).tsum_eq G).symm
+    _ = ∑' k : ℕ, ∑' c : {I : {I : Ideal (𝓞 F) // I ≠ ⊥} //
+          Ideal.absNorm I.1 = k},
+        G ((Equiv.sigmaFiberEquiv
+          (fun I : {I : Ideal (𝓞 F) // I ≠ ⊥} => Ideal.absNorm I.1)) ⟨k, c⟩) := by
+      refine Summable.tsum_sigma' (fun k => ?_) ?_
+      · haveI := hfibfin k
+        exact Summable.of_finite
+      · exact hsum.comp_injective (Equiv.sigmaFiberEquiv _).injective
+    _ = ∑' k : ℕ, LSeries.term (fun k => χ (k : ZMod ℓ) *
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) w k := by
+      refine tsum_congr fun k => ?_
+      have hconst : ∀ c : {I : {I : Ideal (𝓞 F) // I ≠ ⊥} //
+          Ideal.absNorm I.1 = k},
+          G ((Equiv.sigmaFiberEquiv
+            (fun I : {I : Ideal (𝓞 F) // I ≠ ⊥} => Ideal.absNorm I.1)) ⟨k, c⟩) =
+          χ (k : ZMod ℓ) * (k : ℂ) ^ (-w) := by
+        intro c
+        show χ ((Ideal.absNorm (c : {I : Ideal (𝓞 F) // I ≠ ⊥}).1 : ℕ) : ZMod ℓ) *
+          (Ideal.absNorm (c : {I : Ideal (𝓞 F) // I ≠ ⊥}).1 : ℂ) ^ (-w) = _
+        rw [show Ideal.absNorm (c : {I : Ideal (𝓞 F) // I ≠ ⊥}).1 = k from c.2]
+      rw [tsum_congr hconst]
+      rcases Nat.eq_zero_or_pos k with rfl | hk
+      · haveI : IsEmpty {c : {I : Ideal (𝓞 F) // I ≠ ⊥} //
+            Ideal.absNorm c.1 = 0} :=
+          ⟨fun c => c.1.2 (Ideal.absNorm_eq_zero_iff.mp c.2)⟩
+        rw [tsum_empty, LSeries.term_zero]
+      · haveI := hfibfin k
+        haveI := Fintype.ofFinite {c : {I : Ideal (𝓞 F) // I ≠ ⊥} //
+          Ideal.absNorm c.1 = k}
+        rw [tsum_fintype, Finset.sum_const, Finset.card_univ,
+          LSeries.term_of_ne_zero hk.ne']
+        have hcard : Fintype.card {c : {I : Ideal (𝓞 F) // I ≠ ⊥} //
+            Ideal.absNorm c.1 = k} =
+            Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} := by
+          rw [← Nat.card_eq_fintype_card]
+          exact Nat.card_congr
+            ⟨fun c => ⟨c.1.1, c.2⟩,
+             fun I => ⟨⟨I.1, fun h =>
+               hk.ne' (by rw [← I.2, h, Ideal.absNorm_bot])⟩, I.2⟩,
+             fun c => rfl, fun I => rfl⟩
+        rw [hcard, nsmul_eq_mul, Complex.cpow_neg]
+        ring
+    _ = LSeries (fun k => χ (k : ZMod ℓ) *
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) w := rfl
 
 open IsDedekindDomain in
 /-- **Euler product for the `χ`-twisted Dedekind zeta function, in
