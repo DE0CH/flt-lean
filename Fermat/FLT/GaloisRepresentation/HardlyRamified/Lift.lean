@@ -690,48 +690,78 @@ theorem exists_isWeaklyUniversalOnIdentified (hℓ5 : 5 ≤ ℓ)
       D.IsWeaklyUniversalOnIdentified :=
   sorry
 
-/-- **Mazur representability leaf** (sorry node — the mapping half of
-the representability stratum): the hardly ramified deformation problem
-of an irreducible hardly ramified `ρbar` (`ℓ ≥ 5`) admits a *weakly
+open scoped TensorProduct in
+/-- **Mazur representability stratum** (DECOMPOSED 2026-07-23 into the
+strict Mazur representability leaf
+`exists_isWeaklyUniversalOnIdentified` — the classifying maps for
+residually identified deformations — and the Chebotarev–Brauer–Nesbitt
+conjugacy leaf `exists_conj_of_charFrob_eq` — which produces the
+residual identification from the `charFrob_compat` matching; the
+assembly below is proven): the hardly ramified deformation problem of
+an irreducible hardly ramified `ρbar` (`ℓ ≥ 5`) admits a *weakly
 universal* object — a deformation mapping compatibly to every
-deformation. Trace generation is NOT part of this leaf (it is restored
-by the Carayol descent leaf
+deformation. Trace generation is NOT part of this node (it is restored
+by the Carayol descent stratum
 `exists_isWeaklyUniversal_isTraceGenerated_of_isWeaklyUniversal`
-below), so any inflation of the universal ring — `R^{univ}[[t]]` with
-the deformation constant in `t`, say — is an admissible witness; the
-leaf is exactly the *existence of maps*.
+below).
 
-Mathematical content: `ρbar` is odd (its determinant is the mod-`ℓ`
-cyclotomic character, which sends complex conjugation to `−1 ≠ 1` for
-odd `ℓ`), and an odd irreducible 2-dimensional representation over
-`𝔽_ℓ`, `ℓ` odd, is absolutely irreducible (complex conjugation has the
-distinct eigenvalues `±1`). Hence by Schlessinger's criteria / Mazur's
-theorem the framed deformation functor with the hardly ramified local
-conditions — cyclotomic determinant, unramified outside `{2, ℓ}`, flat
-at `ℓ` (a deformation condition by Ramakrishna), tame quadratic quotient
-at `2` — is representable by a complete Noetherian local `ℤ_ℓ`-algebra
-`R^{univ}` with residue field `𝔽_ℓ`: the de Smit–Lenstra
-generators-and-relations construction presents `R^{univ}` as
-`ℤ_ℓ[[x₁,…,x_g]]/I`, the `xᵢ` matrix-entry coordinates of a topological
-generating set of the image, `I` the closed ideal of relations forced by
-continuity and the hardly ramified conditions. A deformation `D'` of
-this category is matched with `ρbar` only through Frobenius
-characteristic polynomials at good primes, so the eventual proof also
-carries a Chebotarev–Brauer–Nesbitt step: the reduction of `D'.ρ` mod
-`ker D'.π` has the Frobenius characteristic polynomials of `ρbar`
-(clause `charFrob_compat`), hence by density and Brauer–Nesbitt is
-isomorphic to the irreducible `ρbar`, which produces the classifying
-map `R^{univ} → D'.R` from strict-deformation universality.
-
-References: Mazur, *Deforming Galois representations*; Ramakrishna,
-*On a variation of Mazur's deformation functor*; de Smit–Lenstra,
-*Explicit construction of universal deformation rings* (Prop. 2.3);
-Böckle's appendix to Khare's Serre-conjecture notes. -/
+The proven glue: given any deformation `D'`, its reduction — the base
+change of `D'.ρ` along the (continuous, by `continuous_pi`) reduction
+map `D'.π` — is a 2-dimensional mod-`ℓ` representation
+(`Module.rank_baseChange`) whose Frobenius characteristic polynomials
+are the reductions of those of `D'.ρ` (`LinearMap.charpoly_baseChange`)
+— i.e., by clause `charFrob_compat`, those of `ρbar`. The
+Chebotarev–Brauer–Nesbitt leaf turns this matching into a residual
+identification, and the strict leaf's classifying map is the required
+compatible homomorphism. -/
 theorem exists_isWeaklyUniversal (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ (ZMod ℓ) V} (h : IsHardlyRamified hℓOdd hdim ρbar)
     (hirr : ρbar.IsIrreducible) :
-    ∃ D : HardlyRamifiedDeformation hℓOdd ρbar, D.IsWeaklyUniversal :=
-  sorry
+    ∃ D : HardlyRamifiedDeformation hℓOdd ρbar, D.IsWeaklyUniversal := by
+  obtain ⟨D, hD⟩ :=
+    exists_isWeaklyUniversalOnIdentified hℓOdd hdim hℓ5 h hirr
+  refine ⟨D, ?_⟩
+  letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+  letI := D.isLocalRing; letI := D.algebra
+  intro D'
+  letI := D'.commRing; letI := D'.topologicalSpace
+  letI := D'.isTopologicalRing; letI := D'.isLocalRing; letI := D'.algebra
+  letI : Algebra D'.R (ZMod ℓ) := D'.π.toAlgebra
+  letI : ContinuousSMul D'.R (ZMod ℓ) :=
+    continuousSMul_of_algebraMap D'.R (ZMod ℓ)
+      (by rw [RingHom.algebraMap_toAlgebra]; exact D'.continuous_pi)
+  -- the reduction is 2-dimensional …
+  have hrankW :
+      Module.rank (ZMod ℓ) ((ZMod ℓ) ⊗[D'.R] (Fin 2 → D'.R)) = 2 := by
+    rw [Module.rank_baseChange, rank_finTwoFun]
+    simp
+  -- … and its Frobenius characteristic polynomials are those of `ρbar`
+  have hcf : ∀ q (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (D'.ρ.baseChange (ZMod ℓ)).charFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat := by
+    intro q hq hq2 hqℓ
+    have hcp : ((D'.ρ.baseChange (ZMod ℓ))
+        (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly =
+        ((D'.ρ (globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly).map
+          (algebraMap D'.R (ZMod ℓ)) := by
+      show ((Module.End.baseChangeHom D'.R (ZMod ℓ) (Fin 2 → D'.R))
+        (D'.ρ (globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat))).charpoly = _
+      rw [show (Module.End.baseChangeHom D'.R (ZMod ℓ) (Fin 2 → D'.R))
+          (D'.ρ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)) =
+        LinearMap.baseChange (ZMod ℓ)
+          (D'.ρ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat))
+        from rfl, LinearMap.charpoly_baseChange]
+    have hred := D'.charFrob_compat q hq hq2 hqℓ
+    show ((D'.ρ.baseChange (ZMod ℓ))
+      (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly = _
+    rw [hcp, RingHom.algebraMap_toAlgebra]
+    exact hred
+  obtain ⟨e, he⟩ := exists_conj_of_charFrob_eq hdim hrankW hirr
+    (D'.ρ.baseChange (ZMod ℓ)) hcf
+  exact hD D' ⟨e, he⟩
 
 /-- **Carayol subring-descent leaf** (sorry node — the genuine content
 of the trace-descent stratum): every hardly ramified deformation `D` of
