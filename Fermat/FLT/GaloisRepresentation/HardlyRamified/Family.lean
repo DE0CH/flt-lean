@@ -7,6 +7,9 @@ module
 
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRepFamily
+import Mathlib.Algebra.Field.ULift
+import Mathlib.LinearAlgebra.Charpoly.ToMatrix
+import Mathlib.LinearAlgebra.Charpoly.BaseChange
 
 /-!
 # Hardly ramified representations in compatible families
@@ -123,7 +126,59 @@ def IsInHardlyRamifiedFamily (ρ : GaloisRep ℚ R V) : Prop :=
         Fin 2 → AlgebraicClosure ℚ_[p]),
       (ρ.baseChange (AlgebraicClosure ℚ_[p])).conj r' = σ hp ψ)
 
-/-- **Eigensystem stratum** (sorry node): the Frobenius characteristic
+omit [IsDomain R] [IsTopologicalRing R] [IsLocalRing R] [IsModuleTopology ℤ_[p] R] in
+/-- **Integrality stratum of the eigensystem** (PROVEN): the
+coefficients of the Frobenius characteristic polynomials of `ρ`, pushed
+into `ℚ̄_p`, are integral over `ℤ_p` — integrality stated with respect
+to the composite `ℤ_[p] → R → ℚ̄_p`, so that no compatibility
+(`IsScalarTower`) between the arbitrary coefficient embedding
+`Algebra R ℚ̄_p` and the two `ℤ_[p]`-structures needs to be assumed
+(at the intended coefficient rings the composite IS the canonical
+`algebraMap ℤ_[p] ℚ̄_p`). This is the formal half of the eigensystem
+stratum: `R` is module-finite over `ℤ_[p]`, so every element of `R` —
+in particular every Frobenius trace and determinant — is integral over
+`ℤ_[p]`, and integrality pushes forward along ring homomorphisms. -/
+theorem charFrob_coeff_isIntegralElem
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ) :
+    ((algebraMap R (AlgebraicClosure ℚ_[p])).comp (algebraMap ℤ_[p] R)).IsIntegralElem
+      (((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n) := by
+  obtain ⟨P, hPmonic, hPeval⟩ := IsIntegral.of_finite ℤ_[p] ((ρ.charFrob v).coeff n)
+  refine ⟨P, hPmonic, ?_⟩
+  rw [Polynomial.coeff_map, ← Polynomial.hom_eval₂, hPeval, map_zero]
+
+/-- **Algebraicity/finiteness core of the eigensystem stratum** (sorry
+node): away from a finite set of places, the coefficients of the mapped
+Frobenius characteristic polynomials of a hardly ramified `p`-adic
+representation all lie in a single subfield of `ℚ̄_p` that is **finite
+over `ℚ`**. This is where the automorphy of `ρ` enters: the coefficients
+are a priori only integral over `ℤ_p` (hypothesis `hint`, the proven
+integrality stratum `charFrob_coeff_isIntegralElem`), and a finite
+extension of `ℚ_p` contains algebraic-over-`ℚ` subfields of infinite
+degree, so the finite-degree bound is not formal — it is the statement
+that the Frobenius traces are the Hecke eigenvalues of a cuspidal
+eigenform, which generate a number field (the Hecke field). The
+number-field/embedding/polynomial *packaging* of this statement is
+proven downstream in `exists_numberField_eigensystem`; this leaf is the
+bare mathematical content in minimal vocabulary. -/
+theorem exists_finiteDimensional_coeff_field
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (hint : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
+      ((algebraMap R (AlgebraicClosure ℚ_[p])).comp (algebraMap ℤ_[p] R)).IsIntegralElem
+        (((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n)) :
+    ∃ (E : IntermediateField ℚ (AlgebraicClosure ℚ_[p]))
+      (_ : FiniteDimensional ℚ E)
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ v ∉ S, ∀ n : ℕ,
+        ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n ∈ E :=
+  sorry
+
+/-- **Eigensystem stratum** (PROVEN assembly, see the DECOMPOSED note
+below): the Frobenius characteristic
 polynomials of a hardly ramified `p`-adic representation over a
 characteristic-zero coefficient ring embedded in `ℚ̄_p` descend, away
 from a finite set of places, to a single **number field** `E`.
@@ -144,7 +199,22 @@ VOCABULARY NOTE (2026-07-22): the mathlib pin has modular forms
 (`CuspForm` etc.) but no Hecke operators, no eigenforms and no attached
 Galois representations, so the requested "cuspidal eigenform congruence"
 split can only be stated at this trace level; this leaf is its faithful
-shadow in the available vocabulary. -/
+shadow in the available vocabulary.
+
+DECOMPOSED (2026-07-22) into a PROVEN assembly over two strata:
+
+1. `charFrob_coeff_isIntegralElem` (PROVEN) — the coefficients are
+   integral over `ℤ_[p]` (formal, from module-finiteness of `R`).
+2. `exists_finiteDimensional_coeff_field` (sorry node) — the
+   coefficients lie, away from finitely many places, in a subfield of
+   `ℚ̄_p` finite over `ℚ`. The sole surviving automorphy content at
+   this level.
+3. The packaging (PROVEN, below): the intermediate field is upgraded to
+   an abstract `NumberField` in the required universe via `ULift`, the
+   embedding `ψ` is the inclusion, and the polynomials `Pv` are
+   rebuilt over the subfield coefficient-by-coefficient
+   (`Polynomial.as_sum_support_C_mul_X_pow`), with value `0` at the
+   finitely many exceptional places. -/
 theorem exists_numberField_eigensystem
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -157,10 +227,200 @@ theorem exists_numberField_eigensystem
       (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E),
       ∀ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ S →
         (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
-          (Pv v).map ψ :=
+          (Pv v).map ψ := by
+  classical
+  obtain ⟨E₀, hFD, S, hmem⟩ :=
+    exists_finiteDimensional_coeff_field hpodd hv hZinj hRinj hρ
+      (charFrob_coeff_isIntegralElem (ρ := ρ))
+  haveI : FiniteDimensional ℚ E₀ := hFD
+  haveI : CharZero E₀ := charZero_of_injective_algebraMap (algebraMap ℚ E₀).injective
+  haveI : CharZero (ULift.{v} E₀) :=
+    charZero_of_injective_algebraMap (algebraMap ℚ (ULift.{v} E₀)).injective
+  haveI : Module.Finite ℚ (ULift.{v} E₀) := Module.Finite.equiv (ULift.moduleEquiv).symm
+  haveI : NumberField (ULift.{v} E₀) := ⟨⟩
+  -- rebuild each mapped characteristic polynomial over the subfield `E₀`
+  have hP₀ : ∀ w, w ∉ S → ∃ P : Polynomial E₀,
+      P.map (algebraMap E₀ (AlgebraicClosure ℚ_[p])) =
+        (ρ.charFrob w).map (algebraMap R (AlgebraicClosure ℚ_[p])) := by
+    intro w hw
+    refine ⟨∑ n ∈ ((ρ.charFrob w).map (algebraMap R (AlgebraicClosure ℚ_[p]))).support,
+      Polynomial.C
+        (⟨((ρ.charFrob w).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n,
+          hmem w hw n⟩ : E₀) * Polynomial.X ^ n, ?_⟩
+    rw [Polynomial.map_sum]
+    simp only [Polynomial.map_mul, Polynomial.map_C, Polynomial.map_pow, Polynomial.map_X,
+      IntermediateField.algebraMap_apply]
+    exact (Polynomial.as_sum_support_C_mul_X_pow _).symm
+  choose P₀ hP₀eq using hP₀
+  refine ⟨ULift.{v} E₀, inferInstance, inferInstance,
+    (algebraMap E₀ (AlgebraicClosure ℚ_[p])).comp (ULift.ringEquiv.toRingHom), S,
+    fun w => if h : w ∈ S then 0 else
+      (P₀ w h).map (ULift.ringEquiv (R := E₀)).symm.toRingHom, ?_⟩
+  intro w hw
+  simp only [dif_neg hw, Polynomial.map_map]
+  have hcomp : ((algebraMap E₀ (AlgebraicClosure ℚ_[p])).comp
+        (ULift.ringEquiv.toRingHom)).comp
+      (ULift.ringEquiv (R := E₀)).symm.toRingHom
+        = algebraMap E₀ (AlgebraicClosure ℚ_[p]) := by
+    ext x
+    simp
+  rw [hcomp, hP₀eq w hw]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Characteristic-polynomial-of-Frobenius transport through base change
+and framing (PROVEN): the Frobenius characteristic polynomial of a
+conjugated base change is the image of the original one under the
+coefficient map. Local (`charFrob`-level) analog of the global
+`charpoly_baseChange_conj` of `Lift.lean` (which lives downstream and
+cannot be imported here); an ingredient of the spreading-stratum
+assembly below. -/
+lemma charFrob_baseChange_conj {A : Type*} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing A] {B : Type*} [CommRing B] [TopologicalSpace B]
+    [IsTopologicalRing B] [Algebra A B] [ContinuousSMul A B]
+    {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W]
+    [Module.Free A W] {N : Type*} [AddCommGroup N] [Module B N]
+    [Module.Finite B N] [Module.Free B N]
+    (τ : GaloisRep ℚ A W) (e : (B ⊗[A] W) ≃ₗ[B] N)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    ((τ.baseChange B).conj e).charFrob v = (τ.charFrob v).map (algebraMap A B) := by
+  have hBC : ∀ g : Field.absoluteGaloisGroup ℚ,
+      (τ.baseChange B) g = LinearMap.baseChange B (τ g) := fun g =>
+    LinearMap.ext fun x => by
+      induction x using TensorProduct.induction_on with
+      | zero => simp
+      | add a b ha hb => simp only [map_add, ha, hb]
+      | tmul c w => simp
+  show ((((τ.baseChange B).conj e)).toLocal v
+      (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly = _
+  rw [GaloisRep.toLocal_apply, GaloisRep.conj_apply, LinearEquiv.charpoly_conj,
+    hBC, LinearMap.charpoly_baseChange]
+  rfl
+
+/-- Unramifiedness transfers along conjugation by a linear isomorphism
+of the representation space (PROVEN): the kernel of the local
+representation is unchanged by conjugation. (Mirrors the unramifiedness
+bullet of `isHardlyRamified_conj` in `Lift.lean`, which lives downstream
+and cannot be imported here.) -/
+lemma isUnramifiedAt_conj {A : Type*} [CommRing A] [TopologicalSpace A]
+    {W : Type*} [AddCommGroup W] [Module A W]
+    {N : Type*} [AddCommGroup N] [Module A N]
+    (τ : GaloisRep ℚ A W) (e : W ≃ₗ[A] N)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    [τ.IsUnramifiedAt v] :
+    (τ.conj e).IsUnramifiedAt v := by
+  refine ⟨le_trans (GaloisRep.IsUnramifiedAt.localInertiaGroup_le (ρ := τ)) ?_⟩
+  intro σ hσ
+  have h1 : τ.toLocal v σ = 1 := hσ
+  show (τ.conj e).toLocal v σ = 1
+  rw [GaloisRep.toLocal_apply, GaloisRep.conj_apply,
+    ← GaloisRep.toLocal_apply, h1]
+  refine LinearMap.ext fun w => ?_
+  simp
+
+/-- Every finite place of `ℚ` is the place of a rational prime (PROVEN):
+the surjectivity half of the primes ↔ places dictionary, needed to
+convert the prime-indexed unramifiedness field of `IsHardlyRamified`
+into the place-indexed unramifiedness that
+`GaloisRepFamily.isCompatible` consumes. -/
+lemma exists_prime_toHeightOneSpectrumRingOfIntegersRat
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    ∃ (q : ℕ) (hq : q.Prime), v = hq.toHeightOneSpectrumRingOfIntegersRat := by
+  let E := Rat.ringOfIntegersEquiv.symm.heightOneSpectrum
+  obtain ⟨g, hg⟩ := (IsPrincipalIdealRing.principal (E.symm v).asIdeal).principal
+  have hg0 : g ≠ 0 := by
+    rintro rfl
+    exact (E.symm v).ne_bot (by simpa using hg)
+  have hg' : (E.symm v).asIdeal = Ideal.span {g} := hg
+  have hprime : Prime g := (Ideal.span_singleton_prime hg0).mp (hg' ▸ (E.symm v).isPrime)
+  refine ⟨g.natAbs, Int.prime_iff_natAbs_prime.mp hprime, ?_⟩
+  have hweq : E.symm v =
+      (Int.prime_iff_natAbs_prime.mp hprime).toHeightOneSpectrumInt := by
+    ext1
+    show (E.symm v).asIdeal = Ideal.span {(g.natAbs : ℤ)}
+    rw [Int.span_natAbs, hg']
+  have hv : v = E (E.symm v) := (E.apply_symm_apply v).symm
+  rw [hv, hweq]
+  rfl
+
+omit [IsDomain R] in
+/-- Away from `2` and `p`, a hardly ramified `p`-adic representation is
+unramified at every finite place of `ℚ` (PROVEN): the prime-indexed
+unramifiedness field of `IsHardlyRamified` in the place-indexed form
+that the compatibility clause of the spreading stratum consumes. -/
+lemma isUnramifiedAt_of_ne (hρ : IsHardlyRamified hpodd hv ρ)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (hv2 : v ≠ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+    (hvp : (p : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal) :
+    ρ.IsUnramifiedAt v := by
+  obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrumRingOfIntegersRat v
+  refine hρ.isUnramified q hq ⟨?_, ?_⟩
+  · rintro rfl
+    exact hv2 rfl
+  · rintro rfl
+    exact hvp
+      ((Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal hq _).mpr (by simp))
+
+/-- **Realization stratum of the spreading** (sorry node): the
+eigensystem `(E, S, Pv)` attached to a hardly ramified `p`-adic
+representation is realized at every finite place of every residue
+characteristic: for each prime `ℓ` and each embedding `φ : E →+* ℚ̄_ℓ`
+there is a 2-dimensional `ℓ`-adic representation, unramified at the
+places outside a single finite exceptional set `T` (uniform in
+`(ℓ, φ)`) not dividing `ℓ`, whose Frobenius characteristic polynomials
+there are `(Pv v).map φ` — the *same* `Pv` for all `(ℓ, φ)`: the
+cross-`ℓ` charpoly agreement of the family is carried entirely by this
+sharing — and which for odd `ℓ` is the framed base extension of a
+hardly ramified representation over a module-finite local
+`ℤ_ℓ`-algebra.
+
+This is Eichler–Shimura/Deligne (the `λ`-adic representations attached
+to the weight-2 eigenform underlying the eigensystem), plus
+local–global compatibility (Carayol, Saito) for the unramifiedness and
+the charpoly matching, plus the weight-2 level-2 analysis showing the
+odd-residue-characteristic members are hardly ramified. The anchoring
+of the family AT `(p, ψ)` to `ρ` itself is deliberately NOT part of
+this leaf — recovering `ρ` from its charpolys alone is the
+Brauer–Nesbitt-unsound direction (see the DECOMPOSITION AUDIT on
+`exists_family_of_eigensystem`); the assembly there instead places
+`ρ ⊗ ℚ̄_p` at `(p, ψ)` by hand and uses this leaf everywhere else. -/
+theorem exists_realizations_of_eigensystem
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {E : Type v} [Field E] [NumberField E] (ψ : E →+* AlgebraicClosure ℚ_[p])
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E)
+    (heig : ∀ v ∉ S,
+      (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) = (Pv v).map ψ) :
+    ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ (ℓ : ℕ) (hℓ : Fact ℓ.Prime) (φ : E →+* AlgebraicClosure ℚ_[ℓ]),
+      ∃ (m : GaloisRep ℚ (AlgebraicClosure ℚ_[ℓ]) (Fin 2 → AlgebraicClosure ℚ_[ℓ])),
+        (∀ v ∉ T, (ℓ : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal →
+          m.IsUnramifiedAt v ∧
+          (m.toLocal v (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly =
+            (Pv v).map φ) ∧
+        ∀ (hℓodd : Odd ℓ),
+          ∃ (A : Type u) (_ : CommRing A) (_ : TopologicalSpace A)
+            (_ : IsTopologicalRing A) (_ : IsLocalRing A) (_ : Algebra ℤ_[ℓ] A)
+            (_ : Module.Finite ℤ_[ℓ] A) (_ : Module.Free ℤ_[ℓ] A) (_ : IsDomain A)
+            (_ : Algebra A (AlgebraicClosure ℚ_[ℓ]))
+            (_ : IsScalarTower ℤ_[ℓ] A (AlgebraicClosure ℚ_[ℓ]))
+            (_ : IsModuleTopology ℤ_[ℓ] A)
+            (_ : ContinuousSMul A (AlgebraicClosure ℚ_[ℓ]))
+            (_ : Function.Injective (algebraMap A (AlgebraicClosure ℚ_[ℓ])))
+            (W : Type v) (_ : AddCommGroup W) (_ : Module A W) (_ : Module.Finite A W)
+            (_ : Module.Free A W) (hW : Module.rank A W = 2)
+            (τ : GaloisRep ℚ A W)
+            (r : AlgebraicClosure ℚ_[ℓ] ⊗[A] W ≃ₗ[AlgebraicClosure ℚ_[ℓ]]
+              Fin 2 → AlgebraicClosure ℚ_[ℓ]),
+            IsHardlyRamified hℓodd hW τ ∧
+            (τ.baseChange (AlgebraicClosure ℚ_[ℓ])).conj r = m :=
   sorry
 
-/-- **Spreading stratum** (sorry node): a hardly ramified `p`-adic
+/-- **Spreading stratum** (PROVEN assembly, see the DECOMPOSED note
+below): a hardly ramified `p`-adic
 representation whose Frobenius characteristic polynomials descend to a
 number field `E` spreads out into a compatible family of Galois
 representations with hardly ramified odd-residue-characteristic members,
@@ -186,10 +446,36 @@ prime a *non-semisimple* extension of `1` by `χ_ℓ` ramified at an
 auxiliary prime (a Kummer class of `5`, say) — same Frobenius
 charpolys, but ramified outside `{2, ℓ}`, hence not isomorphic to any
 hardly ramified representation. The eigensystem/spreading split used
-here avoids quantifying over abstract families in the hypotheses. -/
+here avoids quantifying over abstract families in the hypotheses.
+
+AUDIT RESTATEMENT #2 (2026-07-23, coordinated with the sole call site
+`mem_isCompatible`, following the precedent of the `hZinj` restatement
+in the module docstring): the hypothesis
+`[IsScalarTower ℤ_[p] R ℚ̄_p]` is ADDED. Without it the conclusion
+resists proof at the anchor: the membership clause pins `σ (p, ψ)` to
+the base change of `ρ` along the AMBIENT `Algebra R ℚ̄_p`, and the
+hardly-ramified clause at `(p, ψ)` then demands an integral model over
+a coefficient ring `A` whose embedding `A → ℚ̄_p` IS
+`IsScalarTower`-compatible and whose framed base change EQUALS that
+member — for a rogue (non-tower) ambient algebra the natural witness
+`A := R` is unavailable, and conjugation cannot repair a coefficient
+embedding. At the call site the instance is discharged from the
+compatibility component of `hembed` (previously discarded).
+
+DECOMPOSED (2026-07-23) into a PROVEN assembly over one sorried leaf:
+`exists_realizations_of_eigensystem` provides members at all `(ℓ, φ)`
+matching the shared `Pv` (with hardly ramified integral models at odd
+`ℓ`); the assembly defines `σ` as those members overridden at `(p, ψ)`
+by `ρ ⊗ ℚ̄_p` — whose compatibility clauses come from `heig` via
+`charFrob_baseChange_conj` and from `isUnramifiedAt_of_ne`, and whose
+hardly ramified integral model is `ρ` over `R` itself (`hZinj` gives
+`Module.Free ℤ_[p] R` over the PID `ℤ_[p]`; the tower hypothesis gives
+the coefficient compatibility) — and takes the exceptional set
+`{place over 2} ∪ S ∪ T`. -/
 theorem exists_family_of_eigensystem
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    [IsScalarTower ℤ_[p] R (AlgebraicClosure ℚ_[p])]
     (hZinj : Function.Injective (algebraMap ℤ_[p] R))
     (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
     (hρ : IsHardlyRamified hpodd hv ρ)
@@ -219,8 +505,113 @@ theorem exists_family_of_eigensystem
       (∃ (ψ : E →+* AlgebraicClosure ℚ_[p])
         (r' : AlgebraicClosure ℚ_[p] ⊗[R] V ≃ₗ[AlgebraicClosure ℚ_[p]]
           Fin 2 → AlgebraicClosure ℚ_[p]),
-        (ρ.baseChange (AlgebraicClosure ℚ_[p])).conj r' = σ hp ψ) :=
-  sorry
+        (ρ.baseChange (AlgebraicClosure ℚ_[p])).conj r' = σ hp ψ) := by
+  classical
+  obtain ⟨E, iE, iNE, ψ, S, Pv, heigS⟩ := heig
+  obtain ⟨T, hreal⟩ :=
+    exists_realizations_of_eigensystem hpodd hv hZinj hRinj hρ ψ S Pv heigS
+  choose m hm using hreal
+  -- the anchor: `ρ ⊗ ℚ̄_p`, framed by a basis of `V`
+  haveI : Module.IsTorsionFree ℤ_[p] R :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr hZinj
+  haveI hRfree : Module.Free ℤ_[p] R := Module.free_of_finite_type_torsion_free'
+  have hfinrank : Module.finrank R V = 2 := Module.finrank_eq_of_rank_eq hv
+  let r' : AlgebraicClosure ℚ_[p] ⊗[R] V ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (Fin 2 → AlgebraicClosure ℚ_[p]) :=
+    ((Module.finBasisOfFinrankEq R V hfinrank).baseChange
+      (AlgebraicClosure ℚ_[p])).equivFun
+  let anchorRep : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p]) :=
+    (ρ.baseChange (AlgebraicClosure ℚ_[p])).conj r'
+  -- the family: the realization members, overridden at `(p, ψ)`
+  let σ : GaloisRepFamily ℚ E 2 := fun {ℓ} hℓ φ =>
+    if h : ℓ = p then
+      (by subst h
+          exact if φ = ψ then anchorRep else m ℓ hℓ φ)
+    else m ℓ hℓ φ
+  -- evaluation of `σ` at the anchor and away from it
+  have hσ_anchor : ∀ (hfp : Fact p.Prime), σ hfp ψ = anchorRep := by
+    intro hfp
+    show dite (p = p) _ _ = _
+    rw [dif_pos rfl]
+    show (if ψ = ψ then anchorRep else m p hfp ψ) = anchorRep
+    rw [if_pos rfl]
+  have hσ_p_ne : ∀ (hfp : Fact p.Prime) (φ : E →+* AlgebraicClosure ℚ_[p]),
+      φ ≠ ψ → σ hfp φ = m p hfp φ := by
+    intro hfp φ hφ
+    show dite (p = p) _ _ = _
+    rw [dif_pos rfl]
+    show (if φ = ψ then anchorRep else m p hfp φ) = m p hfp φ
+    rw [if_neg hφ]
+  have hσ_ne : ∀ (ℓ : ℕ) (hℓ : Fact ℓ.Prime) (φ : E →+* AlgebraicClosure ℚ_[ℓ]),
+      ℓ ≠ p → σ hℓ φ = m ℓ hℓ φ := by
+    intro ℓ hℓ φ hℓp
+    show dite (ℓ = p) _ _ = _
+    rw [dif_neg hℓp]
+  refine ⟨E, iE, iNE, σ, ⟨insert Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat
+    (S ∪ T), Pv, ?_⟩, ?_, ψ, r', (hσ_anchor hp).symm⟩
+  · -- compatibility of the family
+    intro ℓ hfp φ v hvS hvℓ
+    have hvS' : v ∉ S := fun h =>
+      hvS (Finset.mem_insert_of_mem (Finset.mem_union_left _ h))
+    have hvT : v ∉ T := fun h =>
+      hvS (Finset.mem_insert_of_mem (Finset.mem_union_right _ h))
+    have hv2 : v ≠ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat := fun h =>
+      hvS (h ▸ Finset.mem_insert_self _ _)
+    by_cases hℓp : ℓ = p
+    · subst hℓp
+      -- (the ambient prime is now named `ℓ`)
+      show (σ hfp φ).IsUnramifiedAt v ∧
+        ((σ hfp φ).toLocal v
+          (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly = (Pv v).map φ
+      by_cases hφ : φ = ψ
+      · rw [hφ, hσ_anchor hfp]
+        constructor
+        · -- unramifiedness of the anchor
+          haveI : ρ.IsUnramifiedAt v := isUnramifiedAt_of_ne hpodd hv hρ v hv2 hvℓ
+          exact isUnramifiedAt_conj (ρ.baseChange (AlgebraicClosure ℚ_[ℓ])) r' v
+        · -- charpoly of the anchor: the bridge plus the eigensystem
+          calc ((anchorRep.toLocal v
+                (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly)
+              = anchorRep.charFrob v := rfl
+            _ = (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[ℓ])) :=
+                charFrob_baseChange_conj ρ r' v
+            _ = (Pv v).map ψ := heigS v hvS'
+      · rw [hσ_p_ne hfp φ hφ]
+        exact (hm ℓ hfp φ).1 v hvT hvℓ
+    · show (σ hfp φ).IsUnramifiedAt v ∧
+        ((σ hfp φ).toLocal v
+          (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly = (Pv v).map φ
+      rw [hσ_ne ℓ hfp φ hℓp]
+      exact (hm ℓ hfp φ).1 v hvT hvℓ
+  · -- the odd-residue members are hardly ramified
+    intro ℓ hℓ hℓodd φ
+    by_cases hℓp : ℓ = p
+    · subst hℓp
+      -- (the ambient prime is now named `ℓ`)
+      by_cases hφ : φ = ψ
+      · refine ⟨R, inferInstance, inferInstance, inferInstance, inferInstance,
+          inferInstance, inferInstance, hRfree, inferInstance, inferInstance,
+          inferInstance, inferInstance, inferInstance, hRinj, V, inferInstance,
+          inferInstance, inferInstance, inferInstance, hv, ρ, r', ?_, ?_⟩
+        · exact hρ
+        · show (ρ.baseChange (AlgebraicClosure ℚ_[ℓ])).conj r' = σ hℓ φ
+          rw [hφ]
+          exact (hσ_anchor hℓ).symm
+      · obtain ⟨A, iA1, iA2, iA3, iA4, iA5, iA6, iA7, iA8, iA9, iA10, iA11, iA12,
+          hAinj, W, iW1, iW2, iW3, iW4, hW, τ, r, hτ, hτeq⟩ := (hm ℓ hℓ φ).2 hℓodd
+        refine ⟨A, iA1, iA2, iA3, iA4, iA5, iA6, iA7, iA8, iA9, iA10, iA11, iA12,
+          hAinj, W, iW1, iW2, iW3, iW4, hW, τ, r, hτ, ?_⟩
+        show (τ.baseChange (AlgebraicClosure ℚ_[ℓ])).conj r = σ hℓ φ
+        rw [hσ_p_ne hℓ φ hφ]
+        exact hτeq
+    · obtain ⟨A, iA1, iA2, iA3, iA4, iA5, iA6, iA7, iA8, iA9, iA10, iA11, iA12,
+        hAinj, W, iW1, iW2, iW3, iW4, hW, τ, r, hτ, hτeq⟩ := (hm ℓ hℓ φ).2 hℓodd
+      refine ⟨A, iA1, iA2, iA3, iA4, iA5, iA6, iA7, iA8, iA9, iA10, iA11, iA12,
+        hAinj, W, iW1, iW2, iW3, iW4, hW, τ, r, hτ, ?_⟩
+      show (τ.baseChange (AlgebraicClosure ℚ_[ℓ])).conj r = σ hℓ φ
+      rw [hσ_ne ℓ hℓ φ hℓp]
+      exact hτeq
 
 /-- **B6b**: a hardly ramified `p`-adic representation over a
 coefficient ring of characteristic zero (`hZinj`: `ℤ_[p]` embeds — the
@@ -241,12 +632,16 @@ superseded by the hypothesis `hZinj`):
    hardly ramified `ρ` extends to a compatible family `σ` over a number
    field `E` with hardly ramified odd members, and `ρ ⊗ ℚ̄_p` is the
    member at some `ψ : E →+* ℚ̄_p`. FURTHER DECOMPOSED (2026-07-22)
-   into the two sorried strata above: the eigensystem stratum
+   into the two strata above: the eigensystem stratum
    (`exists_numberField_eigensystem` — the Frobenius data descend to a
    number field, i.e. the Hecke-field/eigenform-congruence content) and
    the spreading stratum (`exists_family_of_eigensystem` — the
    compatible family attached to the eigensystem, i.e.
-   Eichler–Shimura/Deligne plus local-global compatibility).
+   Eichler–Shimura/Deligne plus local-global compatibility). AS OF
+   2026-07-23 both strata are PROVEN assemblies; the surviving sorried
+   leaves are `exists_finiteDimensional_coeff_field` (the Hecke-field
+   finiteness core) and `exists_realizations_of_eigensystem` (the
+   `λ`-adic realizations of the eigensystem).
 
 NOTE (elaboration): the final repackaging must be `refine` +
 a deferred `exact` — an anonymous-constructor `exact ⟨…, ψ, r', hψ⟩`
@@ -284,10 +679,12 @@ theorem mem_isCompatible (hZinj : Function.Injective (algebraMap ℤ_[p] R))
       exact (RingHom.injective_iff_ker_eq_bot _).mp hZbarinj
     have hj_cont : Continuous j := IsModuleTopology.continuous_of_linearMap j.toLinearMap
     exact ⟨j, hj_inj, AlgHom.comp_algebraMap j, hj_cont⟩
-  obtain ⟨i, hinj, -, hconti⟩ := hembed
+  obtain ⟨i, hinj, hcompat, hconti⟩ := hembed
   letI ia : Algebra R (AlgebraicClosure ℚ_[p]) := i.toAlgebra
   haveI ics : ContinuousSMul R (AlgebraicClosure ℚ_[p]) :=
     continuousSMul_of_algebraMap _ _ hconti
+  haveI itower : IsScalarTower ℤ_[p] R (AlgebraicClosure ℚ_[p]) :=
+    IsScalarTower.of_algebraMap_eq' hcompat.symm
   have hinj' : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])) := hinj
   -- Step 2 (the automorphy core, decomposed 2026-07-22): the eigensystem
   -- stratum descends the Frobenius data to a number field; the spreading
