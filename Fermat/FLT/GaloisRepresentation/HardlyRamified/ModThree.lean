@@ -76,6 +76,10 @@ import Mathlib.NumberTheory.RamificationInertia.Basic
 -- `Algebra.FormallyEtale.of_isSeparable`, for the Cohen-style
 -- multiplicative section in the tame different bound.
 import Mathlib.RingTheory.Etale.Field
+-- `Polynomial.irreducible_of_degree_le_three_of_not_isRoot`, for the
+-- irreducibility of `X² + X + 1` over `ℚ₃ᵥ` in the finite-level
+-- inertia leaf.
+import Mathlib.Algebra.Polynomial.SpecificDegree
 
 /-!
 # Mod-3 hardly ramified representations
@@ -6000,6 +6004,9 @@ theorem no_root_sq_add_self_add_one_adicCompletion_three
   exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
     (Ideal.eq_top_of_isUnit_mem _ hunit isUnit_one.neg)
 
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **The ramified quadratic extension `ℚ₃ᵥ(ζ₃)` at finite level**
 (sorry node, isolated 2026-07-23 — the finite-level content of the
 ramification witness below; everything profinite is already assembled
@@ -6045,7 +6052,522 @@ theorem exists_finite_level_inertia_swap_three :
           Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
         (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] N) := by
-  sorry
+  classical
+  -- a primitive cube root of the local closure
+  obtain ⟨ζQ, hζQ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot
+    (AlgebraicClosure ℚ) 3
+  set ζ : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) :=
+    AlgebraicClosure.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) ζQ with hζdef
+  have hζprim : IsPrimitiveRoot ζ 3 :=
+    hζQ.map_of_injective (RingHom.injective _)
+  have hζrel : ζ ^ 2 + ζ + 1 = 0 := by
+    have h := hζprim.geom_sum_eq_zero (by norm_num)
+    rw [Finset.sum_range_succ, Finset.sum_range_succ, Finset.sum_range_succ,
+      Finset.sum_range_zero, pow_zero, pow_one] at h
+    linear_combination h
+  -- the quadratic `X² + X + 1` over the completion
+  set p : Polynomial (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) :=
+    Polynomial.X ^ 2 + Polynomial.X + 1 with hpdef
+  have hpmonic : p.Monic := by rw [hpdef]; monicity!
+  have hpnat : p.natDegree = 2 := by rw [hpdef]; compute_degree!
+  have hζaeval : Polynomial.aeval ζ p = 0 := by
+    rw [hpdef]
+    simp only [map_add, map_pow, Polynomial.aeval_X, map_one]
+    exact hζrel
+  have hζint : IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) ζ :=
+    ⟨p, hpmonic, by rwa [← Polynomial.aeval_def]⟩
+  have hpirr : Irreducible p := by
+    refine Polynomial.irreducible_of_degree_le_three_of_not_isRoot ?_ ?_
+    · rw [hpnat]; decide
+    · intro x hx
+      have hx0 : x ^ 2 + x + 1 = 0 := by
+        have h := hx
+        rw [hpdef] at h
+        simpa [Polynomial.IsRoot] using h
+      exact no_root_sq_add_self_add_one_adicCompletion_three x hx0
+  have hmin : minpoly (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) ζ = p :=
+    (minpoly.eq_of_irreducible_of_monic hpirr hζaeval hpmonic).symm
+  -- the quadratic extension `N = ℚ₃ᵥ(ζ)`
+  haveI hfd : FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+      ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+      (IntermediateField.adjoin (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}) :=
+    IntermediateField.adjoin.finiteDimensional hζint
+  have hfr2 : Module.finrank (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+      ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+      (IntermediateField.adjoin (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}) = 2 := by
+    rw [IntermediateField.adjoin.finrank hζint, hmin, hpnat]
+  set A := IntermediateField.AdjoinSimple.gen
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) ζ with hAdef
+  have hAcoe : (algebraMap _ (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))) A = ζ :=
+    IntermediateField.AdjoinSimple.algebraMap_gen _ _
+  have hArel : A ^ 2 + A + 1 = 0 := by
+    apply RingHom.injective (algebraMap _ (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)))
+    rw [map_add, map_add, map_pow, map_one, map_zero, hAcoe]
+    exact hζrel
+  have hAaeval : Polynomial.aeval A p = 0 := by
+    rw [hpdef]
+    simp only [map_add, map_pow, Polynomial.aeval_X, map_one]
+    exact hArel
+  -- `p` splits in `N` with roots `A` and `B = −1 − A`
+  set B := -1 - A with hBdef
+  have hCA : (Polynomial.C A) ^ 2 + Polynomial.C A + 1 = 0 := by
+    have h := congrArg Polynomial.C hArel
+    rw [map_add, map_add, map_pow, map_one, map_zero] at h
+    exact h
+  have hfac : p.map (algebraMap _ _) =
+      (Polynomial.X - Polynomial.C A) * (Polynomial.X - Polynomial.C B) := by
+    have hCB : Polynomial.C B = -1 - Polynomial.C A := by
+      rw [hBdef, map_sub, map_neg, map_one]
+    rw [hpdef, Polynomial.map_add, Polynomial.map_add, Polynomial.map_pow,
+      Polynomial.map_X, Polynomial.map_one, hCB]
+    linear_combination hCA
+  have hsplits : (p.map (algebraMap
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+      (IntermediateField.adjoin (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}))).Splits := by
+    rw [hfac]
+    exact (Polynomial.Splits.X_sub_C _).mul (Polynomial.Splits.X_sub_C _)
+  have hgenroot : A ∈ p.rootSet
+      (IntermediateField.adjoin (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}) := by
+    rw [Polynomial.mem_rootSet]
+    exact ⟨hpmonic.ne_zero, hAaeval⟩
+  have hadj : Algebra.adjoin (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+      ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+      (p.rootSet (IntermediateField.adjoin
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ})) = ⊤ := by
+    rw [eq_top_iff, ← PowerBasis.adjoin_gen_eq_top
+      (IntermediateField.adjoin.powerBasis hζint)]
+    refine Algebra.adjoin_mono ?_
+    rw [IntermediateField.adjoin.powerBasis_gen, Set.singleton_subset_iff]
+    exact hgenroot
+  haveI hsf : Polynomial.IsSplittingField
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+      (IntermediateField.adjoin (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}) p :=
+    ⟨hsplits, hadj⟩
+  haveI hnorm : Normal (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+      (IntermediateField.adjoin (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}) :=
+    Normal.of_isSplittingField p
+  haveI hsep : Algebra.IsSeparable
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+      (IntermediateField.adjoin (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}) :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI hgal : IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+      (IntermediateField.adjoin (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}) := ⟨⟩
+  -- the automorphism group has exactly two elements
+  have hcard : Nat.card ((IntermediateField.adjoin
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}) ≃ₐ[
+      IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat]
+      (IntermediateField.adjoin (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ})) = 2 :=
+    (IsGalois.card_aut_eq_finrank _ _).trans hfr2
+  haveI : Finite ((IntermediateField.adjoin
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}) ≃ₐ[
+      IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat]
+      (IntermediateField.adjoin (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ})) :=
+    Nat.finite_of_card_ne_zero (by omega)
+  haveI : Nontrivial ((IntermediateField.adjoin
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}) ≃ₐ[
+      IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat]
+      (IntermediateField.adjoin (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ})) :=
+    Finite.one_lt_card_iff_nontrivial.mp (by omega)
+  obtain ⟨τ, hτne⟩ := exists_ne (1 : (IntermediateField.adjoin
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}) ≃ₐ[
+      IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat]
+      (IntermediateField.adjoin (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}))
+  have hτ2 : τ * τ = 1 := by
+    have h : τ ^ Nat.card _ = 1 := pow_card_eq_one'
+    rwa [hcard, pow_two] at h
+  have huniv : ∀ g, g = 1 ∨ g = τ := by
+    intro g
+    by_contra hg
+    push Not at hg
+    have h1 : ({1, τ, g} : Finset _).card = 3 := by
+      rw [Finset.card_insert_of_notMem (by
+        simp only [Finset.mem_insert, Finset.mem_singleton]
+        push Not
+        exact ⟨fun h => hτne h.symm, fun h => hg.1 h.symm⟩)]
+      rw [Finset.card_insert_of_notMem (by
+        simp only [Finset.mem_singleton]
+        exact fun h => hg.2 h.symm)]
+      rw [Finset.card_singleton]
+    have h3 := Finset.card_le_card
+      (Finset.subset_univ ({1, τ, g} : Finset _))
+    rw [h1, Finset.card_univ, ← Nat.card_eq_fintype_card, hcard] at h3
+    omega
+  have hσσ : ∀ z, τ (τ z) = z := by
+    intro z
+    have h := congrArg (fun g => g z) hτ2
+    simpa [AlgEquiv.mul_apply] using h
+  -- `τ` swaps the two roots
+  have hτA : τ A = B := by
+    have h0 : Polynomial.aeval (τ A) p = 0 := by
+      rw [Polynomial.aeval_algHom_apply τ A p, hAaeval, map_zero]
+    have h1 : Polynomial.eval (τ A) (p.map (algebraMap _ _)) = 0 := by
+      rw [Polynomial.eval_map, ← Polynomial.aeval_def]
+      exact h0
+    rw [hfac] at h1
+    simp only [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_X,
+      Polynomial.eval_C] at h1
+    rcases mul_eq_zero.mp h1 with h | h
+    · exfalso
+      apply hτne
+      have hAA : τ A = A := sub_eq_zero.mp h
+      have hext : τ.toAlgHom = AlgHom.id _ _ := by
+        refine PowerBasis.algHom_ext (IntermediateField.adjoin.powerBasis hζint) ?_
+        rw [IntermediateField.adjoin.powerBasis_gen]
+        simpa using hAA
+      refine AlgEquiv.ext fun z => ?_
+      have hz := DFunLike.congr_fun hext z
+      simpa using hz
+    · exact sub_eq_zero.mp h
+  -- membership and value of the coerced image
+  have hζmem : ζ ∈ IntermediateField.adjoin
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ} :=
+    IntermediateField.mem_adjoin_simple_self _ ζ
+  have hτζcoe : ((τ ⟨ζ, hζmem⟩ : (IntermediateField.adjoin
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ})) :
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) = ζ ^ 2 := by
+    have hcoeB : ((B : (IntermediateField.adjoin
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ})) :
+        AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) = -1 - ζ := by
+      rw [hBdef]
+      push_cast
+      rw [show ((A : (IntermediateField.adjoin
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ})) :
+          AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) = ζ from hAcoe]
+    have hτA' : τ ⟨ζ, hζmem⟩ = B := hτA
+    rw [hτA', hcoeB]
+    linear_combination -hζrel
+  -- `τ` lies in the finite-level inertia
+  have hspan := maximalIdeal_adicCompletionIntegers_eq_span Nat.prime_three
+  have hτin : τ ∈ (IsLocalRing.maximalIdeal (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+      (IntermediateField.adjoin (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}))).inertia
+      _ := by
+    rw [show (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+        (IntermediateField.adjoin
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}))).inertia _ =
+      (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+        (IntermediateField.adjoin
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+          {ζ}))).toAddSubgroup.inertia _ from rfl, AddSubgroup.mem_inertia]
+    intro y
+    rw [Submodule.mem_toAddSubgroup]
+    -- the anti-invariant difference
+    set s := τ y.1 - y.1 with hsdef
+    have hτs : τ s = -s := by
+      rw [hsdef, map_sub, hσσ]
+      ring
+    have hyint : IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers
+        ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) y.1 := y.2
+    have hsint : IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers
+        ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) s := by
+      rw [hsdef]
+      exact (hyint.map (τ.toAlgHom.restrictScalars
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).sub hyint
+    -- the anti-invariant scaled root
+    set x := 2 * A + 1 with hxdef
+    have hx2 : x ^ 2 = -3 := by
+      rw [hxdef]
+      linear_combination 4 * hArel
+    have hτx : τ x = -x := by
+      rw [hxdef, map_add, map_mul, hτA, hBdef, map_one, map_ofNat]
+      ring
+    have hxint : IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers
+        ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) x := by
+      refine ⟨Polynomial.X ^ 2 + Polynomial.C 3,
+        Polynomial.monic_X_pow_add_C _ two_ne_zero, ?_⟩
+      rw [Polynomial.eval₂_add, Polynomial.eval₂_pow, Polynomial.eval₂_X,
+        Polynomial.eval₂_C, map_ofNat]
+      rw [hx2]
+      ring
+    -- `s²` and `s·x` are Galois-invariant, hence in the base
+    obtain ⟨r2, hr2⟩ := Algebra.IsInvariant.isInvariant
+      (A := IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+      (s ^ 2) (by
+        intro g
+        rcases huniv g with hg | hg
+        · rw [hg]
+          exact one_smul _ _
+        · rw [hg]
+          show τ (s ^ 2) = s ^ 2
+          rw [map_pow, hτs]
+          ring)
+    obtain ⟨r1, hr1⟩ := Algebra.IsInvariant.isInvariant
+      (A := IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+      (s * x) (by
+        intro g
+        rcases huniv g with hg | hg
+        · rw [hg]
+          exact one_smul _ _
+        · rw [hg]
+          show τ (s * x) = s * x
+          rw [map_mul, hτs, hτx]
+          ring)
+    -- descend to the valuation ring
+    have hr2int : IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers
+        ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) r2 := by
+      rw [← isIntegral_algebraMap_iff (algebraMap
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+        (IntermediateField.adjoin
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ})).injective,
+        hr2]
+      exact hsint.pow 2
+    have hr1int : IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers
+        ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) r1 := by
+      rw [← isIntegral_algebraMap_iff (algebraMap
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+        (IntermediateField.adjoin
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ})).injective,
+        hr1]
+      exact hsint.mul hxint
+    obtain ⟨S2, hS2⟩ := IsIntegrallyClosed.isIntegral_iff.mp hr2int
+    obtain ⟨M, hM⟩ := IsIntegrallyClosed.isIntegral_iff.mp hr1int
+    -- the norm relation `M² = −3·S2` in the valuation ring
+    have hMS : M ^ 2 = -(3 * S2) := by
+      apply IsFractionRing.injective
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+      apply RingHom.injective (algebraMap
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+        (IntermediateField.adjoin (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+          ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}))
+      rw [map_pow, map_pow, hM, hr1, map_neg, map_neg, map_mul, map_mul,
+        map_ofNat, map_ofNat, hS2, hr2]
+      have hexp : (s * x) ^ 2 = s ^ 2 * x ^ 2 := by ring
+      rw [hexp, hx2]
+      ring
+    -- primality of `𝔪ᵥ = (3)` gives `S2 ∈ 3𝒪ᵥ`
+    have hMm : M ∈ IsLocalRing.maximalIdeal
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) := by
+      have hsq : M ^ 2 ∈ IsLocalRing.maximalIdeal
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) := by
+        rw [hspan, Ideal.mem_span_singleton]
+        exact ⟨-S2, by rw [hMS]; push_cast; ring⟩
+      exact (IsLocalRing.maximalIdeal.isMaximal _).isPrime.mem_of_pow_mem _ hsq
+    rw [hspan, Ideal.mem_span_singleton] at hMm
+    obtain ⟨M', hM'⟩ := hMm
+    have h3ne : ((3 : ℕ) : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers
+        ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) ≠ 0 := by
+      intro h
+      have h2 := congrArg (algebraMap
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) h
+      rw [map_natCast, map_zero] at h2
+      norm_num at h2
+    have hS2eq : S2 = -(3 * M' ^ 2) := by
+      have h9 : ((3 : ℕ) : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers
+          ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) * S2 =
+          ((3 : ℕ) : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers
+            ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) *
+            -(3 * M' ^ 2) := by
+        have h4 := hMS
+        rw [hM'] at h4
+        push_cast at h4 ⊢
+        linear_combination h4
+      exact mul_left_cancel₀ h3ne h9
+    -- `3` lies in the maximal ideal of the integral closure
+    have h3mem : ((3 : ℕ) : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+        (IntermediateField.adjoin (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+          ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ})) ∈
+        IsLocalRing.maximalIdeal _ := by
+      rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+      intro hu
+      obtain ⟨u, hu1⟩ := hu.exists_right_inv
+      have huN : ((3 : ℕ) : (IntermediateField.adjoin
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ})) *
+          u.1 = 1 := by
+        exact congrArg (fun z : IntegralClosure _ _ => z.1) hu1
+      have hval : u.1 =
+          algebraMap _ _ (((3 : ℕ) : IsDedekindDomain.HeightOneSpectrum.adicCompletion
+            ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)⁻¹) := by
+        have h3N : ((3 : ℕ) : (IntermediateField.adjoin
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ})) =
+            algebraMap _ _ ((3 : ℕ) : IsDedekindDomain.HeightOneSpectrum.adicCompletion
+              ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) := by
+          rw [map_natCast]
+        have h3ne' : ((3 : ℕ) : IsDedekindDomain.HeightOneSpectrum.adicCompletion
+            ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) ≠ 0 := by
+          norm_num
+        have h3Nne : ((3 : ℕ) : (IntermediateField.adjoin
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ})) ≠ 0 := by
+          intro h0
+          rw [h3N] at h0
+          apply h3ne'
+          apply RingHom.injective (algebraMap
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+            (IntermediateField.adjoin
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}))
+          rw [h0, map_zero]
+        have hcalc : ((3 : ℕ) : (IntermediateField.adjoin
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ})) * u.1 =
+            ((3 : ℕ) : (IntermediateField.adjoin
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ})) *
+            algebraMap _ _ (((3 : ℕ) :
+              IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)⁻¹) := by
+          rw [huN, h3N, ← map_mul, mul_inv_cancel₀ h3ne', map_one]
+        exact mul_left_cancel₀ h3Nne hcalc
+      have huint : IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers
+          ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+          (((3 : ℕ) : IsDedekindDomain.HeightOneSpectrum.adicCompletion
+            ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)⁻¹) := by
+        rw [← isIntegral_algebraMap_iff (algebraMap
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+          (IntermediateField.adjoin
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ})).injective,
+          ← hval]
+        exact u.2
+      obtain ⟨w, hw⟩ := IsIntegrallyClosed.isIntegral_iff.mp huint
+      have h3w : ((3 : ℕ) : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers
+          ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) * w = 1 := by
+        apply IsFractionRing.injective
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+        rw [map_mul, map_natCast, hw, map_one]
+        rw [mul_inv_cancel₀]
+        norm_num
+      have h3span : ((3 : ℕ) : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers
+          ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) ∈
+          IsLocalRing.maximalIdeal
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) := by
+        rw [hspan]
+        exact Ideal.mem_span_singleton_self _
+      exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+        (Ideal.eq_top_of_isUnit_mem _ h3span
+          (isUnit_iff_exists.mpr ⟨w, h3w, (mul_comm w _).trans h3w⟩))
+    -- assemble: `(τ•y − y)² = 3 · c` in the integral closure
+    have hT2 : (τ • y - y) * (τ • y - y) =
+        ((3 : ℕ) : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+          (IntermediateField.adjoin
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ})) *
+        (-(algebraMap _ _ M') ^ 2) := by
+      apply Subtype.ext
+      have h1 : (τ • y - y).1 = τ • y.1 - y.1 := by
+        rw [show (τ • y - y).1 = (τ • y).1 - y.1 from rfl,
+          IntegralClosure.coe_smul]
+      have hlhs : ((τ • y - y) * (τ • y - y)).1 = s * s := by
+        rw [show ((τ • y - y) * (τ • y - y)).1 =
+          (τ • y - y).1 * (τ • y - y).1 from rfl, h1, hsdef]
+        rfl
+      rw [hlhs]
+      show s * s = ((3 : ℕ) : (IntermediateField.adjoin
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ})) *
+        (-(algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+          (IntermediateField.adjoin
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}) M') ^ 2)
+      -- `s² = −3·(M')²` in `N`, from `S2 = −3 M'²`
+      have hs2 : s * s = algebraMap _ (IntermediateField.adjoin
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}) r2 := by
+        rw [hr2]
+        ring
+      rw [hs2, ← hS2, ← IsScalarTower.algebraMap_apply
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+        (IntermediateField.adjoin (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+          ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}), hS2eq,
+        map_neg, map_mul, map_ofNat, map_pow]
+      push_cast
+      ring
+    have hmul : (τ • y - y) * (τ • y - y) ∈ IsLocalRing.maximalIdeal
+        (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers
+          ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+        (IntermediateField.adjoin (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+          ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ})) := by
+      rw [hT2]
+      exact Ideal.mul_mem_right _ _ h3mem
+    rcases (IsLocalRing.maximalIdeal.isMaximal _).isPrime.mem_or_mem hmul
+      with h | h <;> exact h
+  exact ⟨IntermediateField.adjoin (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+      ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) {ζ}, τ, ζ, hζmem,
+    hfd, hgal, hζprim, hτζcoe, hτin⟩
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
