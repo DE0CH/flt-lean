@@ -7,6 +7,12 @@ module
 
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRepFamily
+-- `localInertia_two_eq_map_padic` (the PROVEN inertia bridge at `2`
+-- between the place-spelled `localInertiaGroup` and the
+-- `ℚ_[2]`/`Z2bar`-spelled inertia of the tame-at-two clause), consumed
+-- by the at-2 stage of the Eisenstein character dichotomy. Non-public:
+-- used in proofs only.
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree
 import Mathlib.Algebra.Field.ULift
 import Mathlib.Topology.Algebra.IntermediateField
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
@@ -865,27 +871,83 @@ theorem char_eq_one_of_mem_localInertiaGroup_of_ne
       Polynomial.eval_X, Polynomial.eval_C, Polynomial.eval_one, sub_self, mul_zero] at h
     rwa [sq_eq_zero_iff, sub_eq_zero] at h
 
-/-- **Diagonal characters die on inertia at `2`** (sorry node): second
-route stage of `char_add_char_eq_one_add_cyclotomicCharacter`.
-Intended proof, per Serre (Duke 1987, §4.1): the tame-at-two condition
-of `IsHardlyRamified` makes `ρ|_{G_2}` triangular with quotient
-character `δ` killed by inertia at `2` (that is literally the
-`inertia ≤ δ.ker` clause of `isTameAtTwo`); the sub-character is
-`χ_cyc/δ` by the cyclotomic-determinant clause, and the `p`-adic
-cyclotomic character is itself unramified at `2` (for odd `p` the
-extensions `ℚ_2(μ_{p^n})/ℚ_2` are unramified — inertia at `2` acts
-trivially on `p`-power roots of unity; this arithmetic input is a
-Frobenius-free sibling of `adicArithFrob_rootsOfUnity_pow`). Hence on
-inertia at `2` both diagonal entries of the triangular form are `1`,
-the mapped characteristic polynomial is `(X - 1)²`, and the `(X - 1)²`
-trick of `char_eq_one_of_mem_localInertiaGroup_of_ne` forces
-`χ₁ = χ₂ = 1` there. The bridge between the `ℚ_[2]`-spelled tameness
-clause (inertia for `Z2bar` inside `Γ ℚ_[2]`) and the place-spelled
-`localInertiaGroup` below is part of this node. -/
+include hpodd in
+/-- **The cyclotomic character dies on inertia at `2`** (sorry node):
+for an odd prime `p`, the `p`-adic cyclotomic character is trivial on
+the (image in `G_ℚ` of the) inertia at `2` — the extensions
+`ℚ_2(μ_{p^n})/ℚ_2` are unramified, i.e. inertia at `2` acts trivially
+on `p`-power roots of unity. Intended proof: the Frobenius-free core
+of `adicArithFrob_rootsOfUnity_pow`, exactly as carried out for
+`p = 3` in the PROVEN
+`cyclotomicCharacter_algebraMap_eq_one_of_inertia_two` (ModThree):
+a `p^n`-th root of unity `z` has spectral valuation `1`, so lies in
+`Z2bar`; an inertia element `τ` moves it to another root `z^i` with
+`v(τ z - z) < 1`, but distinct `p^n`-th roots of unity differ by a
+unit of `Z2bar` for `p ≠ 2` (their difference divides a `p`-power,
+which is a `2`-adic unit), forcing `τ z = z`; then every finite level
+of the cyclotomic character is trivial and `p`-adic continuity
+(`PadicInt.ext_of_toZModPow`) concludes. The generalization from the
+ModThree proof is `3 ↦ p` with `Odd p` supplying `p ≠ 2`. -/
+theorem cyclotomicCharacter_eq_one_of_mem_inertia_two
+    (τ : Field.absoluteGaloisGroup ℚ_[2])
+    (hτ : τ ∈ AddSubgroup.inertia
+      ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+      (Field.absoluteGaloisGroup ℚ_[2])) :
+    cyclotomicCharacter (AlgebraicClosure ℚ) p
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ).toRingEquiv) = 1 :=
+  sorry
+
+/-- **The tame-at-two triangular characteristic polynomial on inertia**
+(sorry node): for a hardly ramified `ρ` and an inertia element `τ` at
+`2` (spelled over `ℚ_[2]`, matching the `isTameAtTwo` clause), the
+characteristic polynomial of `ρ` at the image of `τ` is
+`(X - χ_cyc(τ))(X - 1)` over `R`. Intended proof, pure linear algebra
+over the local ring `R` plus the `IsHardlyRamified` clauses: the
+tame-at-two datum `(π, δ)` exhibits `ker π` as a `ρ(G_2)`-stable
+direct summand of `V` (free of rank `1`: a direct summand of a free
+rank-2 module over a local ring, of complementary rank `1`), on whose
+quotient `ρ` acts by `δ`; `δ τ = 1` because inertia lies in `δ.ker`
+by hypothesis; a basis adapted to `ker π ⊕ (complement)` makes
+`ρ (τ)` triangular with diagonal `(s, δ τ) = (s, 1)`, so the
+characteristic polynomial is `(X - s)(X - 1)` and
+`s = s · δ τ = det (ρ τ) = χ_cyc(τ)` by the cyclotomic-determinant
+clause. -/
+theorem charpoly_eq_of_mem_inertia_two
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (τ : Field.absoluteGaloisGroup ℚ_[2])
+    (hτ : τ ∈ AddSubgroup.inertia
+      ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+      (Field.absoluteGaloisGroup ℚ_[2])) :
+    (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ)).charpoly =
+      (Polynomial.X - Polynomial.C (algebraMap ℤ_[p] R
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2])
+            τ).toRingEquiv) : ℤ_[p]ˣ) : ℤ_[p]))) *
+      (Polynomial.X - Polynomial.C 1) :=
+  sorry
+
+/-- **Diagonal characters die on inertia at `2`** (PROVEN assembly,
+DECOMPOSED 2026-07-23 over two sorried sub-leaves): second route stage
+of `char_add_char_eq_one_add_cyclotomicCharacter`, per Serre (Duke
+1987, §4.1). Assembly: the PROVEN inertia bridge
+`localInertia_two_eq_map_padic` (ModThree) rewrites the place-spelled
+inertia element as a `G_ℚ`-conjugate of a `ℚ_[2]`-spelled one, and
+multiplicative characters into a commutative field are
+conjugation-invariant; at the `ℚ_[2]`-spelled element the
+characteristic polynomial is `(X - χ_cyc)(X - 1)` by the tame
+triangularity (sorry leaf `charpoly_eq_of_mem_inertia_two`), and
+`χ_cyc` is itself trivial there (sorry leaf
+`cyclotomicCharacter_eq_one_of_mem_inertia_two`), so the split mapped
+characteristic polynomial reads `(X - χ₁)(X - χ₂) = (X - 1)²` and
+evaluation kills both characters, as in
+`char_eq_one_of_mem_localInertiaGroup_of_ne`. -/
 theorem char_eq_one_of_mem_localInertiaGroup_two
     [Algebra R (AlgebraicClosure ℚ_[p])]
     (hρ : IsHardlyRamified hpodd hv ρ)
     (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hone₁ : χ₁ 1 = 1) (hone₂ : χ₂ 1 = 1)
+    (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
+    (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
     (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
       (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)))
     (σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
@@ -894,8 +956,46 @@ theorem char_eq_one_of_mem_localInertiaGroup_two
     χ₁ (Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
       Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 ∧
     χ₂ (Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
-      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 :=
-  sorry
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+  classical
+  obtain ⟨τ, hτ, c, hconj⟩ := localInertia_two_eq_map_padic hσ
+  -- conjugation-invariance of the characters: their value at the
+  -- place-spelled element is their value at the `ℚ_[2]`-spelled one
+  have hred : ∀ χ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p],
+      χ 1 = 1 → (∀ g h, χ (g * h) = χ g * χ h) →
+      χ (Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) =
+      χ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ) := by
+    intro χ hone hmul
+    rw [hconj]
+    calc χ (c * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ * c⁻¹)
+        = χ c * χ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ) * χ c⁻¹ := by
+          rw [hmul, hmul]
+      _ = χ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ) * (χ c * χ c⁻¹) := by
+          ring
+      _ = χ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ) := by
+          rw [← hmul, mul_inv_cancel, hone, mul_one]
+  -- the split characteristic polynomial at the `ℚ_[2]`-spelled element
+  -- is `(X - 1)²`, by the two sub-leaves
+  have hB := charpoly_eq_of_mem_inertia_two hpodd hv hρ τ hτ
+  rw [cyclotomicCharacter_eq_one_of_mem_inertia_two hpodd τ hτ, Units.val_one,
+    map_one] at hB
+  have hpoly := hchar (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ)
+  rw [hB, Polynomial.map_mul, Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C,
+    map_one, Polynomial.C_1] at hpoly
+  refine ⟨?_, ?_⟩
+  · rw [hred χ₁ hone₁ hmul₁]
+    have h := congrArg (Polynomial.eval
+      (χ₁ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ))) hpoly
+    simp only [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_X,
+      Polynomial.eval_C, Polynomial.eval_one, sub_self, zero_mul] at h
+    rwa [mul_self_eq_zero, sub_eq_zero] at h
+  · rw [hred χ₂ hone₂ hmul₂]
+    have h := congrArg (Polynomial.eval
+      (χ₂ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ))) hpoly
+    simp only [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_X,
+      Polynomial.eval_C, Polynomial.eval_one, sub_self, mul_zero] at h
+    rwa [mul_self_eq_zero, sub_eq_zero] at h
 
 /-- **The flat dichotomy on inertia at `p`** (sorry node): the
 Raynaud/Fontaine route stage of
@@ -982,8 +1082,11 @@ node per stage:
   die on inertia — PROVEN,
   `char_eq_one_of_mem_localInertiaGroup_of_ne`;
 * at inertia at `2`: the tame-at-two condition makes `ρ|_{G_2}`
-  triangular with both diagonal entries killed by inertia — sorry
-  leaf `char_eq_one_of_mem_localInertiaGroup_two`;
+  triangular with both diagonal entries killed by inertia — PROVEN
+  assembly `char_eq_one_of_mem_localInertiaGroup_two` over the sorry
+  leaves `cyclotomicCharacter_eq_one_of_mem_inertia_two` (arithmetic:
+  `μ_{p^∞}` is unramified at `2`) and `charpoly_eq_of_mem_inertia_two`
+  (linear algebra: the tame triangular factorization);
 * at `p`: flatness of `ρ` at `p` forces (Raynaud/Fontaine on the
   finite levels) one of `χ₁, χ₂` to die on inertia at `p` — sorry
   leaf `char_eq_one_on_localInertiaGroup_p_or`;
@@ -1038,19 +1141,21 @@ theorem char_add_char_eq_one_add_cyclotomicCharacter
   -- two proven stages and the at-2 leaf, hence trivial
   have hswap : ∀ χ χ' : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p],
       Continuous χ → χ 1 = 1 → (∀ g h, χ (g * h) = χ g * χ h) →
+      χ' 1 = 1 → (∀ g h, χ' (g * h) = χ' g * χ' h) →
       (∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
         (Polynomial.X - Polynomial.C (χ g)) * (Polynomial.X - Polynomial.C (χ' g))) →
       (∀ σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat,
         χ (Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
           hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1) →
       ∀ g, χ g = 1 := by
-    intro χ χ' hcont hone hmul hchar' hinertp
+    intro χ χ' hcont hone hmul hone' hmul' hchar' hinertp
     refine char_eq_one_of_forall_mem_localInertiaGroup χ hcont hone hmul ?_
     intro v σ hσ
     obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrumRingOfIntegersRat v
     by_cases hq2 : q = 2
     · subst hq2
-      exact (char_eq_one_of_mem_localInertiaGroup_two hpodd hv hρ χ χ' hchar' σ hσ).1
+      exact (char_eq_one_of_mem_localInertiaGroup_two hpodd hv hρ χ χ'
+        hone hone' hmul hmul' hchar' σ hσ).1
     · by_cases hqp : q = p
       · subst hqp
         exact hinertp σ hσ
@@ -1059,8 +1164,8 @@ theorem char_add_char_eq_one_add_cyclotomicCharacter
   have hkey : (∀ g, χ₁ g = 1) ∨ (∀ g, χ₂ g = 1) := by
     rcases char_eq_one_on_localInertiaGroup_p_or hpodd hv hZinj hRinj hρ χ₁ χ₂
         hcont₁ hcont₂ hone₁ hone₂ hmul₁ hmul₂ hchar with hIp | hIp
-    · exact Or.inl (hswap χ₁ χ₂ hcont₁ hone₁ hmul₁ hchar hIp)
-    · refine Or.inr (hswap χ₂ χ₁ hcont₂ hone₂ hmul₂ (fun g => ?_) hIp)
+    · exact Or.inl (hswap χ₁ χ₂ hcont₁ hone₁ hmul₁ hone₂ hmul₂ hchar hIp)
+    · refine Or.inr (hswap χ₂ χ₁ hcont₂ hone₂ hmul₂ hone₁ hmul₁ (fun g => ?_) hIp)
       rw [hchar g]
       exact mul_comm _ _
   rcases hkey with h1 | h1
@@ -1096,9 +1201,11 @@ and proven linear algebra:
    infrastructure, built here).
 2. `char_add_char_eq_one_add_cyclotomicCharacter` (PROVEN assembly,
    further DECOMPOSED 2026-07-23) — the Eisenstein core: for such a
-   pair, `χ₁ + χ₂ = 1 + χ_cyc` pointwise, assembled over one proven
-   route stage (inertia away from `{2, p}`) and three sorried
-   route-stage leaves (`char_eq_one_of_mem_localInertiaGroup_two`,
+   pair, `χ₁ + χ₂ = 1 + χ_cyc` pointwise, assembled over two proven
+   route stages (inertia away from `{2, p}`; inertia at `2` via the
+   ModThree inertia bridge) and four sorried leaves
+   (`cyclotomicCharacter_eq_one_of_mem_inertia_two`,
+   `charpoly_eq_of_mem_inertia_two`,
    `char_eq_one_on_localInertiaGroup_p_or`,
    `char_eq_one_of_forall_mem_localInertiaGroup`; see its docstring
    for the full route).
