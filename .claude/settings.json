@@ -45,7 +45,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "mcp__lean-lsp__.*",
+        "matcher": "mcp__report-flt-lean.*",
         "hooks": [
           {
             "type": "command",
