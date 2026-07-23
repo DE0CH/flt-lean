@@ -817,7 +817,7 @@ theorem AddCommGroup.exists_rank_le_two_decomposition
       · show 4 ∣ p j₀ ^ e j₀
         rw [hj₀.1]
         exact (show (4 : ℕ) = 2 ^ 2 from rfl) ▸ pow_dvd_pow 2 h2j
-    obtain ⟨i₁, j₁, hij₁, hS₂eq', hei₁⟩ :
+    obtain ⟨i₁, j₁, _, hS₂eq', hei₁⟩ :
         ∃ i₁ j₁ : ι, i₁ ≠ j₁ ∧ S₂ = {i₁, j₁} ∧ e i₁ = 1 := by
       rcases (show e i₀ = 1 ∨ e j₀ = 1 by
         rcases hi₀ with ⟨-, h1⟩; rcases hj₀ with ⟨-, h2⟩; omega) with h1 | h1
@@ -1141,11 +1141,11 @@ theorem exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup
   -- absolute Galois groups
   set f : ℚ →+* IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
       hq.toHeightOneSpectrumRingOfIntegersRat :=
-    algebraMap ℚ _ with hf
+    algebraMap ℚ _
   set ι : AlgebraicClosure ℚ →+* AlgebraicClosure
       (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
         hq.toHeightOneSpectrumRingOfIntegersRat) :=
-    AlgebraicClosure.map f with hι
+    AlgebraicClosure.map f
   -- a finite generating set for `L/ℚ`
   obtain ⟨s, hs⟩ := L.fg_iff_finiteType.mpr (inferInstanceAs (Algebra.FiniteType ℚ L))
   have hL : L = IntermediateField.adjoin ℚ ↑s :=
@@ -1540,7 +1540,7 @@ theorem open_normal_subgroup_eq_top_of_inertia_le
   have hclosed : IsClosed (H : Set (Field.absoluteGaloisGroup ℚ)) :=
     Subgroup.isClosed_of_isOpen H hopen
   set L : IntermediateField ℚ (AlgebraicClosure ℚ) :=
-    IntermediateField.fixedField (E := AlgebraicClosure ℚ) H with hLdef
+    IntermediateField.fixedField (E := AlgebraicClosure ℚ) H
   have hfix : L.fixingSubgroup = H :=
     InfiniteGalois.fixingSubgroup_fixedField ⟨H, hclosed⟩
   haveI hfd : FiniteDimensional ℚ L :=
@@ -1971,7 +1971,7 @@ theorem FreyPackage.inertia_two_unipotent (P : FreyPackage) :
   set A := P.freyCurve.galoisRep P.p P.hppos
     ((Field.absoluteGaloisGroup.map (algebraMap ℚ
       (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) σ) with hA
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) σ)
   apply LinearMap.ext
   intro v
   have hexp : ((A - 1) ^ 2 : Module.End (ZMod P.p)
@@ -2208,11 +2208,11 @@ theorem WeierstrassCurve.exists_localTorsionQuotient_of_nonsplit {q : ℕ}
       (E := X) (R := 𝒪[HeightOneSpectrum.adicCompletion ℚ
         hq.toHeightOneSpectrumRingOfIntegersRat]) hnonsplit
   set Tw : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
-    hq.toHeightOneSpectrumRingOfIntegersRat) := X.quadraticTwist L with hTwdef
+    hq.toHeightOneSpectrumRingOfIntegersRat) := X.quadraticTwist L
   set Mt : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
     hq.toHeightOneSpectrumRingOfIntegersRat) := Tw.minimal
     𝒪[HeightOneSpectrum.adicCompletion ℚ
-      hq.toHeightOneSpectrumRingOfIntegersRat] with hMtdef
+      hq.toHeightOneSpectrumRingOfIntegersRat]
   set Cb : WeierstrassCurve.VariableChange (AlgebraicClosure
     (HeightOneSpectrum.adicCompletion ℚ
       hq.toHeightOneSpectrumRingOfIntegersRat)) :=
@@ -2381,7 +2381,7 @@ theorem WeierstrassCurve.exists_localTorsionQuotient_of_nonsplit {q : ℕ}
         ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
           hq.toHeightOneSpectrumRingOfIntegersRat]
         (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
-          hq.toHeightOneSpectrumRingOfIntegersRat))) with hσΩdef
+          hq.toHeightOneSpectrumRingOfIntegersRat)))
     have hfixL : ∀ y : L,
         σΩ (algebraMap L (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
           hq.toHeightOneSpectrumRingOfIntegersRat)) y) =

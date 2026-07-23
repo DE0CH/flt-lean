@@ -253,7 +253,7 @@ theorem no_common_root [IsAlgClosed K] (hΔ : W.Δ ≠ 0) {n : ℕ}
   -- the rank of apparition
   have hex : ∃ r : ℕ, 2 ≤ r ∧ normEDS b c d r = 0 := ⟨n, hn, hwn⟩
   classical
-  set r := Nat.find hex with hrdef
+  set r := Nat.find hex
   obtain ⟨hr2, hr0⟩ := Nat.find_spec hex
   have hrank : EDSRank.IsRank b c d r := by
     refine ⟨hr2, hr0, ?_⟩
@@ -316,12 +316,11 @@ theorem isCoprime_Φ_ΨSq_field {k : Type*} [Field k]
     · conv_lhs => rw [h]
     · conv_lhs => rw [h, WeierstrassCurve.ΨSq_neg]
   rw [hΦabs, hΨabs]
-  set m : ℕ := n.natAbs with hmdef
+  set m : ℕ := n.natAbs
   have hm1 : 1 ≤ m := by
     have := Int.natAbs_pos.mpr hn
     omega
-  set nn : ℤ := ((m : ℕ) : ℤ) with hnndef
-  have hpos : 0 < nn := by omega
+  set nn : ℤ := ((m : ℕ) : ℤ)
   rcases eq_or_lt_of_le (by omega : (1 : ℤ) ≤ nn) with h1 | h2
   · -- `n = 1`: `ΨSq 1 = 1`
     rw [← h1, show W.ΨSq 1 = 1 from by
@@ -331,21 +330,12 @@ theorem isCoprime_Φ_ΨSq_field {k : Type*} [Field k]
     exact isCoprime_one_right
   -- `n ≥ 2`: no common root over the algebraic closure
   by_contra hcop
-  set g := EuclideanDomain.gcd (W.Φ nn) (W.ΨSq nn) with hgdef
-  have hΦne : W.Φ nn ≠ 0 := by
-    intro h0
-    have hc := congrArg (fun q => Polynomial.coeff q (nn.natAbs ^ 2)) h0
-    simp only [Polynomial.coeff_zero] at hc
-    rw [WeierstrassCurve.coeff_Φ] at hc
-    exact one_ne_zero hc
-  have hgne : g ≠ 0 := fun h0 =>
-    hΦne ((EuclideanDomain.gcd_eq_zero_iff.mp h0).1)
+  set g := EuclideanDomain.gcd (W.Φ nn) (W.ΨSq nn)
   have hgunit : ¬IsUnit g := fun h =>
     hcop (EuclideanDomain.gcd_isUnit_iff.mp h)
   -- a root of `g` in the algebraic closure
   set Kb := AlgebraicClosure k
   set φ : k →+* Kb := algebraMap k Kb
-  have hgmapne : g.map φ ≠ 0 := Polynomial.map_ne_zero hgne
   have hdeg : (g.map φ).degree ≠ 0 := by
     rw [Polynomial.degree_map]
     intro h0

@@ -142,7 +142,7 @@ theorem exists_good_chord [IsAlgClosed k] {p : ℕ} (hp : p.Prime)
       ((E⁄k).Ψ₂Sq).roots.toFinset with hBdef
   obtain ⟨c, hc⟩ := Infinite.exists_notMem_finset B
   have hcB1 : ∀ x : k, Wr.eval x = 0 → Sp.eval x ≠ 0 → c ≠ r x := by
-    intro x hx hSx hcr
+    intro x hx _ hcr
     apply hc
     rw [hBdef]
     refine Finset.mem_union_left _ (Finset.mem_image.mpr ⟨x, ?_, hcr.symm⟩)
@@ -191,16 +191,9 @@ theorem exists_good_chord [IsAlgClosed k] {p : ℕ} (hp : p.Prime)
   have hsep : (Φp - Polynomial.C c * Sp).Separable := by
     by_contra hsep
     set g := Φp - Polynomial.C c * Sp with hgdef
-    have hgne : g ≠ 0 := fun h0 => by
-      have hd := hdeg
-      rw [h0, Polynomial.natDegree_zero] at hd
-      have hp1 := Nat.one_le_pow 2 p hp.pos
-      omega
     rw [Polynomial.separable_def] at hsep
     have hgcd : ¬IsUnit (EuclideanDomain.gcd g (Polynomial.derivative g)) :=
       fun h => hsep (EuclideanDomain.gcd_isUnit_iff.mp h)
-    have hgcdne : EuclideanDomain.gcd g (Polynomial.derivative g) ≠ 0 :=
-      fun h0 => hgne ((EuclideanDomain.gcd_eq_zero_iff.mp h0).1)
     obtain ⟨x, hx⟩ := IsAlgClosed.exists_root
       (p := EuclideanDomain.gcd g (Polynomial.derivative g))
       (fun h0 => hgcd (Polynomial.isUnit_iff_degree_eq_zero.mpr h0))
@@ -387,7 +380,7 @@ theorem exists_large_fibre [IsAlgClosed k] {p : ℕ} (hp : p.Prime)
       rw [hSNdef, Finset.mem_filter]
       rw [hSRdef, Finset.mem_filter] at hP
       exact ⟨hnegmem P hP.1, by rw [smul_neg, hP.2]⟩
-    · intro P hP Q hQ h
+    · intro P _ Q _ h
       exact neg_injective h
     · intro Q hQ
       rw [hSNdef, Finset.mem_filter] at hQ
@@ -523,7 +516,7 @@ theorem separable_of_torsion_finset {p : ℕ} (hp : p.Prime)
   have hle2 : Multiset.card f.roots ≤ f.natDegree :=
     Polynomial.card_roots' _
   have hp2 : p ^ 2 - 1 = 2 * ((p ^ 2 - 1) / 2) := by
-    obtain ⟨s, hs⟩ := hodd.pow (n := 2)
+    obtain ⟨s, _⟩ := hodd.pow (n := 2)
     omega
   have h1 : f.roots.toFinset.card = f.natDegree := by omega
   have h2 : Multiset.card f.roots = f.natDegree := by omega
@@ -555,7 +548,7 @@ theorem separable_preΨ'_char_two {p : ℕ} (hp : p.Prime) (hodd : Odd p)
     ((E⁄k).preΨ' p).Separable := by
   classical
   set K := AlgebraicClosure k
-  set φ : k →+* K := algebraMap k K with hφ
+  set φ : k →+* K := algebraMap k K
   haveI : (E.map φ).IsElliptic :=
     inferInstanceAs ((E.map φ).IsElliptic)
   have hpK : (p : K) ≠ 0 := by
@@ -797,7 +790,7 @@ theorem prime_torsion_card [IsSepClosed k] {p : ℕ} (hp : p.Prime)
       with hF
     have hdisj : ∀ x₁ ∈ g.roots.toFinset, ∀ x₂ ∈ g.roots.toFinset, x₁ ≠ x₂ →
         Disjoint (pointsAt E x₁) (pointsAt E x₂) := by
-      intro x₁ hx₁ x₂ hx₂ hne
+      intro x₁ _ x₂ _ hne
       refine Finset.disjoint_left.mpr fun P hP₁ hP₂ => ?_
       obtain ⟨y₁, h₁, rfl⟩ := (mem_pointsAt_iff E).mp hP₁
       obtain ⟨y₂, h₂, hP⟩ := (mem_pointsAt_iff E).mp hP₂
@@ -984,7 +977,7 @@ theorem card_torsionBy [IsSepClosed k] :
             show (n.minFac : ℤ) • ((P + Q :
               Submodule.torsionBy ℤ (E⁄k).Point n) : (E⁄k).Point) = _
             rw [Submodule.coe_add, smul_add]
-            rfl } with hf
+            rfl }
       have hfsurj : Function.Surjective f := by
         rintro ⟨Q, hQ⟩
         obtain ⟨P, hP⟩ := smul_surjective E hpk Q
