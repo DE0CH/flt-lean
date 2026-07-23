@@ -8,6 +8,7 @@ module
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRepFamily
 import Mathlib.Algebra.Field.ULift
+import Mathlib.Topology.Algebra.IntermediateField
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
 import Mathlib.LinearAlgebra.Charpoly.BaseChange
 
@@ -1090,8 +1091,50 @@ theorem exists_hardlyRamified_integral_realizations
   exact ⟨A, iA1, iA2, iA3, iA4, iA5, iA6, iA7, iA8, iA10, iA11, iA12, iA13, hAinj,
     W, iW1, iW2, iW3, iW4, hW, τ, r, hτ, hmatch⟩
 
-/-- **Per-embedding member at residue characteristic 2** (sorry node):
-the eigensystem `(E, S, Pv)` is realized at the even prime at a SINGLE
+/-- **Automorphy core at the even prime, per embedding** (sorry node):
+the eigensystem `(E, S, Pv)` is realized at `λ | 2` at a single given
+embedding `φ : E →+* ℚ̄_₂` by a representation over a coefficient field
+`K` which is a FINITE-DIMENSIONAL subfield of `ℚ̄_₂` through which `φ`
+factors — the exact output shape of Eichler–Shimura/Deligne: the
+`λ`-adic representation attached to the weight-2 eigenform underlying
+the eigensystem is defined over the completion `E_λ = ℚ_2(φ(E))`, a
+finite extension of `ℚ_2` (Diamond–Shurman §9.5–9.6; Carayol/Saito
+local–global compatibility for the unramifiedness and the charpoly
+matching). No hardly-ramifiedness demand is made (the notion requires
+odd residue characteristic) and no `ℤ_2`-integral model is demanded —
+contrast the SOUNDNESS AUDIT at
+`exists_hardlyRamified_integral_realizations_core`, where the hardly
+ramified clause forces the integral model into the leaf; at `ℓ = 2`
+the consumer needs only the bare member, so this core stays at the
+field level. The exceptional set `T` absorbs the (single!) place of
+`ℚ` above `2`, so no "away from `2`" proviso appears; the
+finite-dimensionality of `K` over `ℚ_2` is the even-prime counterpart
+of the coefficient confinement demanded by the odd-`ℓ` core's
+module-finite `ℤ_ℓ`-algebra. -/
+theorem exists_realization_at_two_of_embedding_core
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {E : Type v} [Field E] [NumberField E] (ψ : E →+* AlgebraicClosure ℚ_[p])
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E)
+    (heig : ∀ v ∉ S,
+      (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) = (Pv v).map ψ)
+    (φ : E →+* AlgebraicClosure ℚ_[2]) :
+    ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+      (K : IntermediateField ℚ_[2] (AlgebraicClosure ℚ_[2]))
+      (_ : FiniteDimensional ℚ_[2] K)
+      (φ₀ : E →+* K)
+      (τ : GaloisRep ℚ K (Fin 2 → K)),
+        (∀ x : E, (φ₀ x : AlgebraicClosure ℚ_[2]) = φ x) ∧
+        ∀ v ∉ T, τ.IsUnramifiedAt v ∧ τ.charFrob v = (Pv v).map φ₀ :=
+  sorry
+
+/-- **Per-embedding member at residue characteristic 2** (PROVEN
+assembly, see the DECOMPOSED note below): the eigensystem `(E, S, Pv)`
+is realized at the even prime at a SINGLE
 given embedding `φ : E →+* ℚ̄_₂` — there is a 2-dimensional `2`-adic
 representation, unramified away from a finite exceptional set `T`
 (allowed to depend on `φ`) and the places over `2`, whose Frobenius
@@ -1101,7 +1144,24 @@ the one member; no hardly-ramifiedness demand is made (the notion
 requires odd residue characteristic). Strictly shallower than the
 φ-uniform `exists_realizations_at_two` below: the uniformity of the
 exceptional set over the (finitely many!) embeddings of the number
-field `E` into `ℚ̄_₂` is PROVEN glue there, not automorphy content. -/
+field `E` into `ℚ̄_₂` is PROVEN glue there, not automorphy content.
+
+DECOMPOSED (2026-07-23) into a PROVEN assembly over one strictly
+shallower sorried leaf: `exists_realization_at_two_of_embedding_core`
+realizes the member over a finite-dimensional subfield `K ⊆ ℚ̄_₂`
+through which `φ` factors — the coefficient-field shape
+Eichler–Shimura/Deligne actually outputs. The assembly (below) spreads
+it to `ℚ̄_₂` by framed base change along `K ↪ ℚ̄_₂`: the framing is
+`Basis.baseChange` of the standard basis followed by `Basis.equivFun`,
+the coefficient scalar action is continuous by the
+`IntermediateField.continuousSMul` instance, unramifiedness transports
+through the `baseChange` instance of `GaloisRep.IsUnramifiedAt` plus
+`isUnramifiedAt_conj`, the charpoly matching through
+`charFrob_baseChange_conj` and `Polynomial.map_map` (the factoring of
+`φ` through `K` recombines the two coefficient maps), and the
+`2 ∤ v` proviso is dropped in the core — its `T` already absorbs the
+single place of `ℚ` above `2`. Only the confined realization retains
+automorphy content. -/
 theorem exists_realization_at_two_of_embedding
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -1119,8 +1179,27 @@ theorem exists_realization_at_two_of_embedding
         ∀ v ∉ T, ((2 : ℕ) : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal →
           m.IsUnramifiedAt v ∧
           (m.toLocal v (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly =
-            (Pv v).map φ :=
-  sorry
+            (Pv v).map φ := by
+  obtain ⟨T, K, hKfin, φ₀, τ, hφ₀, hT⟩ :=
+    exists_realization_at_two_of_embedding_core hpodd hv hZinj hRinj hρ ψ S Pv heig φ
+  -- the framing of the base extension along `K ↪ ℚ̄_₂`
+  let r : AlgebraicClosure ℚ_[2] ⊗[K] (Fin 2 → K) ≃ₗ[AlgebraicClosure ℚ_[2]]
+      (Fin 2 → AlgebraicClosure ℚ_[2]) :=
+    ((Pi.basisFun K (Fin 2)).baseChange (AlgebraicClosure ℚ_[2])).equivFun
+  -- `φ` factors through `K` as ring homomorphisms
+  have hcomp : (algebraMap K (AlgebraicClosure ℚ_[2])).comp φ₀ = φ :=
+    RingHom.ext fun x => hφ₀ x
+  refine ⟨T, (τ.baseChange (AlgebraicClosure ℚ_[2])).conj r, ?_⟩
+  intro v hvT _hv2
+  obtain ⟨hunr, hchar⟩ := hT v hvT
+  refine ⟨isUnramifiedAt_conj (τ.baseChange (AlgebraicClosure ℚ_[2])) r v, ?_⟩
+  calc (((τ.baseChange (AlgebraicClosure ℚ_[2])).conj r).toLocal v
+        (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly
+      = ((τ.baseChange (AlgebraicClosure ℚ_[2])).conj r).charFrob v := rfl
+    _ = (τ.charFrob v).map (algebraMap K (AlgebraicClosure ℚ_[2])) :=
+        charFrob_baseChange_conj τ r v
+    _ = ((Pv v).map φ₀).map (algebraMap K (AlgebraicClosure ℚ_[2])) := by rw [hchar]
+    _ = (Pv v).map φ := by rw [Polynomial.map_map, hcomp]
 
 /-- **Residue characteristic 2 member of the realization stratum**
 (PROVEN assembly, see the DECOMPOSED note below): the eigensystem
@@ -1138,7 +1217,9 @@ packages the member together with its hardly ramified integral
 model.
 
 DECOMPOSED (2026-07-23) into a PROVEN assembly over one strictly
-shallower sorried leaf: `exists_realization_at_two_of_embedding`
+shallower leaf: `exists_realization_at_two_of_embedding` (itself as of
+2026-07-23 a PROVEN assembly over the confined sorried core
+`exists_realization_at_two_of_embedding_core`)
 realizes the eigensystem at each single embedding `φ` with a
 `φ`-dependent exceptional set `T φ`; the assembly (below) removes the
 `φ`-dependence by taking the union of the `T φ` over ALL embeddings —
@@ -1217,8 +1298,10 @@ leaves, split along residue characteristic:
    obstruction to a further newform-datum split and the Brauer–Nesbitt
    soundness constraint forcing the model to be produced there.
 2. `exists_realizations_at_two` (as of 2026-07-23 a PROVEN assembly
-   over the per-embedding sorried leaf
-   `exists_realization_at_two_of_embedding`) — the bare member at
+   over the per-embedding leaf
+   `exists_realization_at_two_of_embedding`, itself a PROVEN assembly
+   over the confined sorried core
+   `exists_realization_at_two_of_embedding_core`) — the bare member at
    `ℓ = 2` (with exceptional set `T₂`), where no integral-model demand
    is made.
 3. The assembly (PROVEN, below) takes `T := T₁ ∪ T₂` and derives the
@@ -1526,8 +1609,9 @@ superseded by the hypothesis `hZinj`):
    Hecke-field finiteness core for the TRACE coefficient),
    `exists_hardlyRamified_integral_realizations_core` (the `λ`-adic
    realizations at odd `ℓ`, minimal telescope) and
-   `exists_realization_at_two_of_embedding` (the per-embedding member
-   at `ℓ = 2`).
+   `exists_realization_at_two_of_embedding_core` (the per-embedding
+   member at `ℓ = 2`, confined to a finite-dimensional subfield of
+   `ℚ̄_₂`).
 
 NOTE (elaboration): the final repackaging must be `refine` +
 a deferred `exact` — an anonymous-constructor `exact ⟨…, ψ, r', hψ⟩`
