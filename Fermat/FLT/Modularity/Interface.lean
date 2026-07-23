@@ -88,16 +88,16 @@ it is split off as separate sorried leaves
    of forms with integer coefficients and the eigenvalues are algebraic
    integers of degree ≤ dim), so the coefficients of an eigenform
    generate a number field.
-3. **Dimension zero at level 2** (Diamond–Shurman ch. 3): `X₀(2)` has
-   genus 0, so `S₂(Γ₀(2)) = 0`; together with `a₁ = 1 ≠ 0` this
-   discharges the two level-2 attachment sorries
+3. **Dimension zero at level 2 — DONE (2026-07-23)**: `S₂(Γ₀(2)) = 0`
+   is proven below (`cuspForm_level_two_coe_eq_zero`, via the norm to
+   level 1, the index computation `[SL(2,ℤ) : Γ₀(2)] = 3`, and
+   mathlib's level-1 Sturm bound — no `X₀(2)` geometry needed);
+   together with `a₁ = 1 ≠ 0` (`weightTwoEigenform_level_two_false`)
+   this DISCHARGES the two level-2 attachment statements
    (`exists_ringOfIntegers_realizations_of_weightTwoEigenform` in
    `Family.lean`, `exists_realization_at_two_of_weightTwoEigenform`
-   here) by contradiction — their alternative, non-vacuous route is
-   Eichler–Shimura/Deligne via the Jacobian/Tate-module construction
-   (Diamond–Shurman ch. 8–9) plus local–global compatibility
-   (Carayol/Saito), which is NOT needed if the emptiness route is
-   taken first.
+   here) by contradiction — their alternative, non-vacuous route
+   (Eichler–Shimura/Deligne plus Carayol/Saito) is not needed.
 4. **The residual modularity sorries** `exists_weightTwoEigenform_*`
    below (Wiles–Taylor–Wiles + Skinner–Wiles + Ribet, per the FLT
    blueprint's hardly-ramified formulation): decompose along the
@@ -118,6 +118,8 @@ public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 public import Mathlib.NumberTheory.ModularForms.Basic
 public import Mathlib.NumberTheory.ModularForms.CongruenceSubgroups
 public import Mathlib.NumberTheory.ModularForms.QExpansion
+public import Mathlib.NumberTheory.ModularForms.NormTrace
+import Mathlib.NumberTheory.ModularForms.LevelOne.DimensionFormula
 import Mathlib.Topology.Algebra.IntermediateField
 
 @[expose] public section
@@ -137,6 +139,16 @@ level in. (The pin's `CongruenceSubgroup.Gamma0` lives in `SL(2, ℤ)`;
 the pin's own congruence-subgroup theory.) -/
 def Gamma0GL (N : ℕ) : Subgroup (GL (Fin 2) ℝ) :=
   (CongruenceSubgroup.Gamma0 N).map (Matrix.SpecialLinearGroup.mapGL ℝ)
+
+/-- `Γ₀(N)` (in its `GL₂(ℝ)` incarnation) is an arithmetic subgroup for
+`N ≠ 0` — mathlib's instance for GL-images of finite-index subgroups of
+`SL(2, ℤ)`, restated so that instance search sees through the `Gamma0GL`
+definition. This is what feeds the finite-relative-index and cusp
+theory (norms/traces to level 1) used in the level-2 emptiness proof
+below. -/
+instance (N : ℕ) [NeZero N] : (Gamma0GL N).IsArithmetic :=
+  inferInstanceAs
+    ((↑(CongruenceSubgroup.Gamma0 N) : Subgroup (GL (Fin 2) ℝ)).IsArithmetic)
 
 /-- The `n`-th `q`-expansion coefficient `aₙ(f)` of a weight-2 level-`N`
 cusp form, through the pin's `UpperHalfPlane.qExpansion` at width `1`
@@ -204,6 +216,181 @@ def MatchesEigensystem (N : ℕ) (f : CuspForm (Gamma0GL N) 2)
       Polynomial.X ^ 2 - Polynomial.C (qCoeff N f q) * Polynomial.X +
         Polynomial.C (q : ℂ)
 
+/-! ### `S₂(Γ₀(2)) = 0`: the dimension-formula discharge route
+
+DECOMPOSITION PLAN item 3, executed (2026-07-23): there is no nonzero
+weight-2 cusp form on `Γ₀(2)` (classically: the genus of `X₀(2)` is 0).
+The Lean argument avoids the geometry of `X₀(2)` entirely:
+
+* the norm of `f ∈ S₂(Γ₀(2))` over `SL(2, ℤ)` — the product of the
+  translates `f ∣[2] r⁻¹` over the cosets `r` of `Γ₀(2)` in `SL(2, ℤ)`
+  (mathlib's `ModularForm.norm`) — is a LEVEL-1 modular form of weight
+  `2 · [SL(2,ℤ) : Γ₀(2)] = 6`;
+* every factor vanishes at `i∞` (a cusp form vanishes at every cusp of
+  its arithmetic group), so the norm does too; hence the constant term
+  of its `q`-expansion vanishes and the expansion has positive order;
+* the level-1 Sturm bound (mathlib's `sturm_bound_levelOne`; for
+  weight 6 the bound is `6/12 = 0`) then forces the norm to vanish,
+  while a nonzero `f` has nonzero norm (`ModularForm.norm_ne_zero`) —
+  contradiction, so `f = 0` as a function;
+* finally a normalized eigenform has `a₁ = 1 ≠ 0`, refuting `f = 0`.
+
+The index `[SL(2,ℤ) : Γ₀(2)] = 3` is computed through the mod-2
+reduction: `Γ₀(2)` is the preimage of the Borel subgroup of
+`SL(2, 𝔽₂)` (order 2 inside a group of order 6, so index 3), and the
+reduction map is surjective — witnessed by six explicit integral lifts,
+one per element of `SL(2, 𝔽₂)`, checked by `decide`. -/
+
+section LevelTwoEmptiness
+
+open UpperHalfPlane Matrix Matrix.SpecialLinearGroup ModularForm CongruenceSubgroup
+
+/-- The "Borel" subgroup of `SL(2, ℤ/2)`: matrices whose lower-left
+entry vanishes. `Γ₀(2)` is its preimage under reduction mod 2; it has
+order 2 inside the order-6 group `SL(2, ℤ/2)`, giving index 3. -/
+def borelZModTwo : Subgroup (Matrix.SpecialLinearGroup (Fin 2) (ZMod 2)) where
+  carrier := { g | g.1 1 0 = 0 }
+  one_mem' := by decide
+  mul_mem' {a b} ha hb := by
+    have h := (Matrix.two_mul_expl a.1 b.1).2.2.1
+    simp only [Set.mem_setOf_eq, Matrix.SpecialLinearGroup.coe_mul] at *
+    simp [h, ha, hb]
+  inv_mem' {a} ha := by
+    simpa [Matrix.SpecialLinearGroup.SL2_inv_expl a] using ha
+
+instance : DecidablePred (· ∈ borelZModTwo) :=
+  fun g => inferInstanceAs (Decidable (g.1 1 0 = 0))
+
+/-- Explicit integral lifts of the six elements of `SL(2, ℤ/2)`,
+witnessing surjectivity of the reduction map `SL(2, ℤ) → SL(2, ℤ/2)`
+(so that comapping `borelZModTwo` preserves the index). -/
+def sl2zModTwoLift : Fin 6 → Matrix.SpecialLinearGroup (Fin 2) ℤ :=
+  ![⟨!![1, 0; 0, 1], by decide⟩, ⟨!![0, -1; 1, 0], by decide⟩,
+    ⟨!![1, 1; 0, 1], by decide⟩, ⟨!![1, 0; 1, 1], by decide⟩,
+    ⟨!![0, -1; 1, 1], by decide⟩, ⟨!![1, 1; -1, 0], by decide⟩]
+
+/-- `[SL(2, ℤ) : Γ₀(2)] = 3`: `Γ₀(2)` is the comap of the index-3
+Borel subgroup of `SL(2, ℤ/2)` along the (surjective) reduction map. -/
+theorem Gamma0_two_index : (CongruenceSubgroup.Gamma0 2).index = 3 := by
+  have hsurj : Function.Surjective
+      (Matrix.SpecialLinearGroup.map (n := Fin 2) (Int.castRingHom (ZMod 2))) := by
+    intro b
+    have h : ∃ i : Fin 6,
+        Matrix.SpecialLinearGroup.map (n := Fin 2) (Int.castRingHom (ZMod 2))
+          (sl2zModTwoLift i) = b := by
+      revert b; decide
+    obtain ⟨i, hi⟩ := h
+    exact ⟨sl2zModTwoLift i, hi⟩
+  have hcomap : CongruenceSubgroup.Gamma0 2 =
+      borelZModTwo.comap (Matrix.SpecialLinearGroup.map (Int.castRingHom (ZMod 2))) := by
+    ext g
+    simp [borelZModTwo, CongruenceSubgroup.Gamma0_mem, Subgroup.mem_comap]
+  have hidx : borelZModTwo.index = 3 := by
+    have h1 : borelZModTwo.index * Nat.card borelZModTwo
+        = Nat.card (Matrix.SpecialLinearGroup (Fin 2) (ZMod 2)) :=
+      borelZModTwo.index_mul_card
+    have h2 : Nat.card (Matrix.SpecialLinearGroup (Fin 2) (ZMod 2)) = 6 := by
+      rw [Nat.card_eq_fintype_card]; decide
+    have h3 : Nat.card borelZModTwo = 2 := by
+      rw [Nat.card_eq_fintype_card]; decide
+    rw [h2, h3] at h1
+    omega
+  rw [hcomap, Subgroup.index_comap_of_surjective _ hsurj, hidx]
+
+/-- The relative index of `Γ₀(2)` in `SL(2, ℤ)`, both viewed in
+`GL(2, ℝ)`, is 3 — the `mapGL`-transport of `Gamma0_two_index`. This
+number is the coset count in the norm construction below, hence the
+factor turning weight 2 into weight `2 · 3 = 6` at level 1. -/
+theorem Gamma0GL_two_relIndex : (Gamma0GL 2).relIndex 𝒮ℒ = 3 := by
+  show ((CongruenceSubgroup.Gamma0 2).map (mapGL ℝ)).relIndex 𝒮ℒ = 3
+  rw [MonoidHom.range_eq_map, ← Subgroup.relIndex_comap,
+    Subgroup.comap_map_eq_self_of_injective mapGL_injective,
+    Subgroup.relIndex_top_right, Gamma0_two_index]
+
+/-- Every `SL(2, ℤ)`-translate `f ∣[2] r⁻¹` of a weight-2 cusp form on
+`Γ₀(2)` vanishes at `i∞`: `r⁻¹ • ∞` is a cusp of the arithmetic group
+`Γ₀(2)`, and cusp forms vanish at every cusp. These are exactly the
+factors of the norm form. -/
+theorem quotientFunc_isZeroAtImInfty (f : CuspForm (Gamma0GL 2) 2)
+    (q : 𝒮ℒ ⧸ (Gamma0GL 2).subgroupOf 𝒮ℒ) :
+    IsZeroAtImInfty (SlashInvariantForm.quotientFunc f q) := by
+  induction q using Quotient.inductionOn with
+  | h r =>
+    rw [SlashInvariantForm.quotientFunc_mk]
+    have hinf : IsCusp OnePoint.infty 𝒮ℒ := isCusp_SL2Z_iff'.mpr ⟨1, by simp⟩
+    have hcusp : IsCusp ((r.val)⁻¹ • OnePoint.infty) (Gamma0GL 2) :=
+      (hinf.smul_of_mem (inv_mem r.2)).of_isFiniteRelIndex
+    exact CuspFormClass.zero_at_cusps f hcusp _ rfl
+
+/-- The norm (over `SL(2, ℤ)`) of a weight-2 cusp form on `Γ₀(2)`
+vanishes at `i∞`: it is a finite product of translates, each of which
+vanishes there by `quotientFunc_isZeroAtImInfty`. -/
+theorem norm_isZeroAtImInfty (f : CuspForm (Gamma0GL 2) 2) :
+    IsZeroAtImInfty ⇑(ModularForm.norm 𝒮ℒ f) := by
+  rw [ModularForm.coe_norm]
+  letI := Fintype.ofFinite (𝒮ℒ ⧸ (Gamma0GL 2).subgroupOf 𝒮ℒ)
+  rw [IsZeroAtImInfty, Filter.ZeroAtFilter]
+  have hzero : (0 : ℂ) = ∏ _q : 𝒮ℒ ⧸ (Gamma0GL 2).subgroupOf 𝒮ℒ, (0 : ℂ) := by
+    rw [Finset.prod_const, zero_pow]
+    simp [Finset.card_univ, Fintype.card_ne_zero]
+  rw [Finset.prod_fn, hzero]
+  exact tendsto_finsetProd _ fun q _ => quotientFunc_isZeroAtImInfty f q
+
+/-- The `q`-expansion of the zero function vanishes identically (its
+cusp function is the zero function, whose Taylor coefficients at `0`
+all vanish). Used to turn `⇑f = 0` into `a₁(f) = 0`. -/
+theorem qExpansion_zero_fn_coeff (h : ℝ) (n : ℕ) :
+    (UpperHalfPlane.qExpansion h (0 : ℍ → ℂ)).coeff n = 0 := by
+  rw [UpperHalfPlane.qExpansion_coeff]
+  have hc : cuspFunction h (0 : ℍ → ℂ) = fun _ => (0 : ℂ) := by
+    unfold UpperHalfPlane.cuspFunction
+    have h0 : ((0 : ℍ → ℂ) ∘ ofComplex) = fun _ => (0 : ℂ) := rfl
+    rw [h0]
+    unfold Function.Periodic.cuspFunction
+    have h1 : ((fun _ => (0 : ℂ)) ∘ Function.Periodic.invQParam h)
+        = fun _ => (0 : ℂ) := rfl
+    rw [h1, Filter.Tendsto.limUnder_eq tendsto_const_nhds]
+    simp
+  rw [hc]
+  simp [iteratedDeriv]
+
+/-- **`S₂(Γ₀(2)) = 0`** — every weight-2 cusp form on `Γ₀(2)` vanishes
+identically. Proof: its norm to level 1 is a weight-6 level-1 form
+vanishing at `i∞` (positive `q`-expansion order), so the level-1 Sturm
+bound kills the norm; a nonzero form has nonzero norm. -/
+theorem cuspForm_level_two_coe_eq_zero (f : CuspForm (Gamma0GL 2) 2) : ⇑f = 0 := by
+  by_contra hf
+  refine ModularForm.norm_ne_zero 𝒮ℒ hf ?_
+  apply sturm_bound_levelOne
+  have hcoeff0 : (qExpansion 1 ⇑(ModularForm.norm 𝒮ℒ f)).coeff 0 = 0 := by
+    rw [qExpansion_coeff_zero one_pos
+      (ModularFormClass.analyticAt_cuspFunction_zero _ one_pos one_mem_strictPeriods_SL)
+      (SlashInvariantFormClass.periodic_comp_ofComplex _ one_mem_strictPeriods_SL)]
+    exact (norm_isZeroAtImInfty f).valueAtInfty_eq_zero
+  rw [PowerSeries.coeff_zero_eq_constantCoeff] at hcoeff0
+  have horder : 1 ≤ (qExpansion 1 ⇑(ModularForm.norm 𝒮ℒ f)).order :=
+    PowerSeries.one_le_order_iff_constCoeff_eq_zero.mpr hcoeff0
+  have hwt : ((2 * (Nat.card (𝒮ℒ ⧸ (Gamma0GL 2).subgroupOf 𝒮ℒ) : ℤ)).toNat / 12) = 0 := by
+    rw [show Nat.card (𝒮ℒ ⧸ (Gamma0GL 2).subgroupOf 𝒮ℒ) = 3 from Gamma0GL_two_relIndex]
+    decide
+  rw [hwt]
+  exact lt_of_lt_of_le (by norm_num) horder
+
+/-- **There is no weight-2 level-2 normalized eigenform**: the carrier
+`IsWeightTwoEigenform 2` is empty, since `S₂(Γ₀(2)) = 0` while a
+normalized eigenform has `a₁ = 1`. This discharges both level-2
+attachment statements (`exists_realization_at_two_of_weightTwoEigenform`
+below and `exists_ringOfIntegers_realizations_of_weightTwoEigenform` in
+`Family.lean`) by contradiction — the dimension-formula route of the
+DECOMPOSITION PLAN. -/
+theorem weightTwoEigenform_level_two_false (f : CuspForm (Gamma0GL 2) 2)
+    (hf : IsWeightTwoEigenform 2 f) : False := by
+  have h1 := hf.qCoeff_one
+  rw [qCoeff, cuspForm_level_two_coe_eq_zero f, qExpansion_zero_fn_coeff] at h1
+  exact one_ne_zero h1.symm
+
+end LevelTwoEmptiness
+
 /-- **Hecke field finiteness** (sorry node; Diamond–Shurman §6.5,
 Theorem 6.5.1): the coefficients of a normalized weight-2 eigenform of
 level `N ≥ 1` generate a finite extension of `ℚ` inside `ℂ`. The
@@ -220,8 +407,10 @@ theorem heckeField_finiteDimensional {N : ℕ} (hN : 0 < N)
     FiniteDimensional ℚ (heckeField N f) :=
   sorry
 
-/-- **Attachment at the even prime, from a level-2 eigenform** (sorry
-node): a weight-2 level-2 normalized eigenform matching the eigensystem
+/-- **Attachment at the even prime, from a level-2 eigenform** (PROVEN
+via the dimension-formula route: `S₂(Γ₀(2)) = 0`, so the eigenform
+hypothesis is contradictory — `weightTwoEigenform_level_two_false`;
+DECOMPOSITION PLAN item 3): a weight-2 level-2 normalized eigenform matching the eigensystem
 `(E, S, Pv)` yields, over any finite-dimensional `K ⊆ ℚ̄_2` generated
 by an embedded copy `φ₀ : E →+* K` of the eigensystem field, a
 2-dimensional representation of `Γ ℚ` with coefficients in `K` itself,
@@ -242,15 +431,15 @@ theorem exists_realization_at_two_of_weightTwoEigenform
     (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
     (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E)
     {f : CuspForm (Gamma0GL 2) 2} (hf : IsWeightTwoEigenform 2 f)
-    (hmatch : MatchesEigensystem 2 f S Pv)
+    (_hmatch : MatchesEigensystem 2 f S Pv)
     (K : IntermediateField ℚ_[2] (AlgebraicClosure ℚ_[2]))
     [FiniteDimensional ℚ_[2] K] (φ₀ : E →+* K)
-    (hgen : K = IntermediateField.adjoin ℚ_[2]
+    (_hgen : K = IntermediateField.adjoin ℚ_[2]
       (Set.range fun x : E => (φ₀ x : AlgebraicClosure ℚ_[2]))) :
     ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
       (τ : GaloisRep ℚ K (Fin 2 → K)),
       ∀ v ∉ T, τ.IsUnramifiedAt v ∧ τ.charFrob v = (Pv v).map φ₀ :=
-  sorry
+  (weightTwoEigenform_level_two_false f hf).elim
 
 -- The hardly ramified representation whose eigensystem the modularity
 -- statements below attach to an eigenform: same coefficient-ring

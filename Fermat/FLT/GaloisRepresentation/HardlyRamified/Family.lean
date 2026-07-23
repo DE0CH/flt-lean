@@ -2617,8 +2617,12 @@ theorem exists_realization_package_of_concrete (hℓodd : Odd ℓ)
 end ConcreteCoefficientRing
 
 /-- **Attachment at odd residue characteristics, from a level-2
-eigenform** (sorry node of the modularity interface; Diamond–Shurman
-ch. 8–9): a normalized weight-2 eigenform of level `Γ₀(2)` matching the
+eigenform** (PROVEN via the dimension-formula route of the modularity
+interface: `S₂(Γ₀(2)) = 0`, so the eigenform hypothesis `hf` is
+contradictory — `Modularity.weightTwoEigenform_level_two_false`;
+DECOMPOSITION PLAN item 3 of
+`Fermat/FLT/Modularity/Interface.lean`. The non-vacuous reading,
+Diamond–Shurman ch. 8–9, kept for the record): a normalized weight-2 eigenform of level `Γ₀(2)` matching the
 eigensystem `(E, S, Pv)` yields, at every odd prime `ℓ` and embedding
 `φ : E →+* ℚ̄_ℓ`, a HARDLY RAMIFIED representation over the ring of
 integers `IntegralClosure ℤ_ℓ L` of a finite extension `L/ℚ_ℓ` whose
@@ -2644,7 +2648,7 @@ theorem exists_ringOfIntegers_realizations_of_weightTwoEigenform
     (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E)
     {f : CuspForm (Modularity.Gamma0GL 2) 2}
     (hf : Modularity.IsWeightTwoEigenform 2 f)
-    (hmatch : Modularity.MatchesEigensystem 2 f S Pv) :
+    (_hmatch : Modularity.MatchesEigensystem 2 f S Pv) :
     ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
       ∀ (ℓ : ℕ) (_hℓ : Fact ℓ.Prime) (hℓodd : Odd ℓ)
         (φ : E →+* AlgebraicClosure ℚ_[ℓ]),
@@ -2664,7 +2668,7 @@ theorem exists_ringOfIntegers_realizations_of_weightTwoEigenform
           (τ.charFrob v).map
               (algebraMap (IntegralClosure ℤ_[ℓ] L) (AlgebraicClosure ℚ_[ℓ])) =
             (Pv v).map φ :=
-  sorry
+  (Modularity.weightTwoEigenform_level_two_false f hf).elim
 
 /-- **Eisenstein realizations at odd residue characteristics** (sorry
 node; the REDUCIBLE branch of the realization atom below): if the base
