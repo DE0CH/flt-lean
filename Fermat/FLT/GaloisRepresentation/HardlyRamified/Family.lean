@@ -7,6 +7,9 @@ module
 
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRepFamily
+-- the modularity interface: the weight-2 eigenform carrier and the
+-- sorried modularity/attachment nodes consumed by the automorphy atoms
+public import Fermat.FLT.Modularity.Interface
 import Mathlib.Algebra.Field.ULift
 import Mathlib.Topology.Algebra.IntermediateField
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
@@ -956,7 +959,8 @@ theorem exists_rat_trace_coeff_of_not_isIrreducible
   rw [hcoeff, hsum, cyclotomicCharacter_adicArithFrob_natCast hq hqp, map_natCast,
     map_neg, map_add, map_one, map_natCast]
 
-/-- **The Hecke field on the irreducible branch** (sorry node): away
+/-- **The Hecke field on the irreducible branch** (PROVEN assembly,
+see the DECOMPOSED note below): away
 from a finite set of places, the TRACE coefficients of the mapped
 Frobenius characteristic polynomials of a hardly ramified `p`-adic
 representation whose base extension to `ℚ̄_p` IS irreducible lie in a
@@ -982,27 +986,91 @@ atomic automorphy sorries whose eventual proofs would each have been
 this whole modularity argument; they are now PROVEN assemblies over
 this single node (algebraicity: elements of a finite extension of `ℚ`
 are algebraic; batch bound: `d = finrank ℚ E`), so the automorphy
-content of the irreducible branch is carried by exactly one sorry. -/
+content of the irreducible branch is carried by exactly one sorry.
+
+DECOMPOSED (2026-07-23, opening the modularity subtree) into a PROVEN
+assembly over the modularity interface
+(`Fermat/FLT/Modularity/Interface.lean`), where the eigenform now has
+an actual carrier on the pin (`Modularity.IsWeightTwoEigenform`, the
+Diamond–Shurman 5.8.5 coefficient characterization on the pin's
+`CuspForm`):
+
+1. `Modularity.exists_weightTwoEigenform_trace_eq_of_isIrreducible`
+   (sorry node) — the modularity input: the Frobenius traces are, away
+   from finitely many places, the `ι`-images of the coefficients of a
+   normalized weight-2 eigenform `f` of some level `N ≥ 1`, for a
+   single embedding `ι : K_f →+* ℚ̄_p` of its Hecke field.
+2. `Modularity.heckeField_finiteDimensional` (sorry node) — the Hecke
+   field `K_f = ℚ({aₙ(f)})` is a number field (Diamond–Shurman §6.5).
+3. The assembly (below, PROVEN): `E` is `ℚ` with the `ι`-images of a
+   finite `ℚ`-spanning set of `K_f` adjoined — finite-dimensional
+   because each generator is integral over `ℚ` (image of an element of
+   a number field under a ring hom commuting with `ℚ`, ring homs out
+   of `ℚ` being unique); every trace is `−ι(a_q) ∈ E` by span
+   induction (the `ℚ`-scalars fall into `E` through the base field). -/
 theorem exists_finiteDimensional_trace_field_of_isIrreducible
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
     (hZinj : Function.Injective (algebraMap ℤ_[p] R))
     (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
     (hρ : IsHardlyRamified hpodd hv ρ)
-    (hint : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
+    (_hint : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
       ((algebraMap R (AlgebraicClosure ℚ_[p])).comp (algebraMap ℤ_[p] R)).IsIntegralElem
         (((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n))
     (K : IntermediateField ℚ_[p] (AlgebraicClosure ℚ_[p]))
-    (hKfd : FiniteDimensional ℚ_[p] K)
-    (hK : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
+    (_hKfd : FiniteDimensional ℚ_[p] K)
+    (_hK : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
       ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n ∈ K)
     (hirr : (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible) :
     ∃ (E : IntermediateField ℚ (AlgebraicClosure ℚ_[p]))
       (_ : FiniteDimensional ℚ E)
       (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
       ∀ v ∉ S,
-        ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 ∈ E :=
-  sorry
+        ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 ∈ E := by
+  classical
+  obtain ⟨N, hN, f, hf, ι, S, hS⟩ :=
+    Modularity.exists_weightTwoEigenform_trace_eq_of_isIrreducible hpodd hv
+      hZinj hRinj hρ hirr
+  haveI : FiniteDimensional ℚ (Modularity.heckeField N f) :=
+    Modularity.heckeField_finiteDimensional hN hf
+  -- a finite `ℚ`-spanning set of the Hecke field
+  obtain ⟨s, hs⟩ : (⊤ : Submodule ℚ (Modularity.heckeField N f)).FG :=
+    Module.finite_def.mp inferInstance
+  -- ring homs out of `ℚ` are unique, so `ι` restricts to the canonical map
+  have hQcomp : algebraMap ℚ (AlgebraicClosure ℚ_[p]) =
+      ι.comp (algebraMap ℚ (Modularity.heckeField N f)) := Subsingleton.elim _ _
+  -- the `ι`-image of the Hecke field is integral over `ℚ`
+  have hint' : ∀ x : Modularity.heckeField N f, IsIntegral ℚ (ι x) := by
+    intro x
+    obtain ⟨P, hPmonic, hPeval⟩ := IsIntegral.of_finite ℚ x
+    refine ⟨P, hPmonic, ?_⟩
+    rw [hQcomp, ← Polynomial.hom_eval₂, hPeval, map_zero]
+  -- every `ι`-image lies in the field the finite spanning set generates
+  have hmem : ∀ x : Modularity.heckeField N f,
+      ι x ∈ IntermediateField.adjoin ℚ (⇑ι '' ↑s) := by
+    intro x
+    have hx : x ∈ Submodule.span ℚ (↑s : Set (Modularity.heckeField N f)) := by
+      rw [hs]; exact Submodule.mem_top
+    induction hx using Submodule.span_induction with
+    | mem y hy => exact IntermediateField.subset_adjoin _ _ ⟨y, hy, rfl⟩
+    | zero => rw [map_zero]; exact zero_mem _
+    | add y z _ _ hy hz => rw [map_add]; exact add_mem hy hz
+    | smul c y _ hy =>
+      rw [Algebra.smul_def, map_mul]
+      refine mul_mem ?_ hy
+      have hc := RingHom.congr_fun hQcomp c
+      rw [RingHom.comp_apply] at hc
+      rw [← hc]
+      exact IntermediateField.algebraMap_mem _ _
+  refine ⟨IntermediateField.adjoin ℚ (⇑ι '' ↑s), ?_, S, ?_⟩
+  · haveI : Finite ↥(⇑ι '' ↑s) := (s.finite_toSet.image _).to_subtype
+    exact IntermediateField.finiteDimensional_adjoin fun x hx => by
+      obtain ⟨y, -, rfl⟩ := hx
+      exact hint' y
+  · intro v hv'
+    obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrumRingOfIntegersRat v
+    rw [hS q hq hv']
+    exact neg_mem (hmem _)
 
 /-- **Algebraicity shadow on the irreducible branch** (PROVEN assembly,
 see the DECOMPOSED note below):
@@ -2229,8 +2297,111 @@ theorem exists_realization_package_of_concrete (hℓodd : Odd ℓ)
 
 end ConcreteCoefficientRing
 
+/-- **Attachment at odd residue characteristics, from a level-2
+eigenform** (sorry node of the modularity interface; Diamond–Shurman
+ch. 8–9): a normalized weight-2 eigenform of level `Γ₀(2)` matching the
+eigensystem `(E, S, Pv)` yields, at every odd prime `ℓ` and embedding
+`φ : E →+* ℚ̄_ℓ`, a HARDLY RAMIFIED representation over the ring of
+integers `IntegralClosure ℤ_ℓ L` of a finite extension `L/ℚ_ℓ` whose
+Frobenius characteristic polynomials map to `(Pv v).map φ` away from a
+uniform finite `T` and the places over `ℓ`. This is Eichler–Shimura/
+Deligne (the `λ`-adic representations of the newform of level dividing
+2 underlying `f`, with the stabilized-lattice integral model over
+`E_λ`'s ring of integers), plus Carayol–Saito local–global
+compatibility, plus the level-2 weight-2 analysis giving the hardly
+ramified shape — the LEVEL-2 hypothesis is what makes that last clause
+sound for every inhabitant of the eigenform carrier (see the soundness
+audit in `Fermat/FLT/Modularity/Interface.lean`): at a general level a
+wildly-ramified-at-2 eigenform would falsify it. No `ρ` appears: the
+statement is purely about the eigenform, which is what makes it an
+interface node rather than a restatement of the consuming atom below.
+Since `S₂(Γ₀(2)) = 0` (genus of `X₀(2)` is zero), this node is also
+dischargeable through the dimension-formula route — DECOMPOSITION PLAN
+item 3 of the interface file: no such `f` exists, `qCoeff_one`
+refuting `f = 0`. -/
+theorem exists_ringOfIntegers_realizations_of_weightTwoEigenform
+    {E : Type v} [Field E] [NumberField E]
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E)
+    {f : CuspForm (Modularity.Gamma0GL 2) 2}
+    (hf : Modularity.IsWeightTwoEigenform 2 f)
+    (hmatch : Modularity.MatchesEigensystem 2 f S Pv) :
+    ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ (ℓ : ℕ) (_hℓ : Fact ℓ.Prime) (hℓodd : Odd ℓ)
+        (φ : E →+* AlgebraicClosure ℚ_[ℓ]),
+      ∃ (L : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ]))
+        (_ : FiniteDimensional ℚ_[ℓ] L)
+        (W : Type v) (_ : AddCommGroup W)
+        (_ : Module (IntegralClosure ℤ_[ℓ] L) W)
+        (_ : Module.Finite (IntegralClosure ℤ_[ℓ] L) W)
+        (_ : Module.Free (IntegralClosure ℤ_[ℓ] L) W)
+        (hW : Module.rank (IntegralClosure ℤ_[ℓ] L) W = 2)
+        (τ : GaloisRep ℚ (IntegralClosure ℤ_[ℓ] L) W)
+        (_r : AlgebraicClosure ℚ_[ℓ] ⊗[IntegralClosure ℤ_[ℓ] L] W
+          ≃ₗ[AlgebraicClosure ℚ_[ℓ]] Fin 2 → AlgebraicClosure ℚ_[ℓ]),
+        IsHardlyRamified hℓodd hW τ ∧
+        ∀ v ∉ T, (ℓ : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal →
+          τ.IsUnramifiedAt v ∧
+          (τ.charFrob v).map
+              (algebraMap (IntegralClosure ℤ_[ℓ] L) (AlgebraicClosure ℚ_[ℓ])) =
+            (Pv v).map φ :=
+  sorry
+
+/-- **Eisenstein realizations at odd residue characteristics** (sorry
+node; the REDUCIBLE branch of the realization atom below): if the base
+extension of the hardly ramified `ρ` to `ℚ̄_p` is NOT irreducible, its
+eigensystem is realized integrally at every odd `(ℓ, φ)` — with no
+modular form involved. The classical route: by the proven reducibility
+analysis (`exists_char_charpoly_map_eq_of_not_isIrreducible`) and the
+Eisenstein character dichotomy
+(`char_add_char_eq_one_add_cyclotomicCharacter`, with the determinant
+condition `χ₁χ₂ = χ_cyc`), the mapped charpolys degenerate to
+`(X − 1)(X − q)` away from finitely many places, so `Pv v` has RATIONAL
+coefficients there (`ψ` is injective and ring homs out of `ℚ` are
+unique), `(Pv v).map φ = (X − 1)(X − q)` for EVERY `φ`, and the
+explicit representation `1 ⊕ χ_cyc,ℓ` on `ℤ_ℓ²` (over `L = ⊥`,
+`IntegralClosure ℤ_ℓ ℚ_ℓ`) realizes it: hardly ramified (unramified
+outside `{ℓ}` ⊆ `{2, ℓ}`; flat at `ℓ` as the Tate module of
+`μ_{ℓ^∞} × ℚ_ℓ/ℤ_ℓ`; unramified hence tame at `2`; cyclotomic
+determinant) with `charFrob v = (X − 1)(X − q)` by the proven
+`cyclotomicCharacter_adicArithFrob_natCast`. See DECOMPOSITION PLAN
+item 5 in `Fermat/FLT/Modularity/Interface.lean`. -/
+theorem exists_hardlyRamified_ringOfIntegers_realizations_of_not_isIrreducible
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (hred : ¬ (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible)
+    {E : Type v} [Field E] [NumberField E] (ψ : E →+* AlgebraicClosure ℚ_[p])
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E)
+    (heig : ∀ v ∉ S,
+      (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) = (Pv v).map ψ) :
+    ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ (ℓ : ℕ) (_hℓ : Fact ℓ.Prime) (hℓodd : Odd ℓ)
+        (φ : E →+* AlgebraicClosure ℚ_[ℓ]),
+      ∃ (L : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ]))
+        (_ : FiniteDimensional ℚ_[ℓ] L)
+        (W : Type v) (_ : AddCommGroup W)
+        (_ : Module (IntegralClosure ℤ_[ℓ] L) W)
+        (_ : Module.Finite (IntegralClosure ℤ_[ℓ] L) W)
+        (_ : Module.Free (IntegralClosure ℤ_[ℓ] L) W)
+        (hW : Module.rank (IntegralClosure ℤ_[ℓ] L) W = 2)
+        (τ : GaloisRep ℚ (IntegralClosure ℤ_[ℓ] L) W)
+        (_r : AlgebraicClosure ℚ_[ℓ] ⊗[IntegralClosure ℤ_[ℓ] L] W
+          ≃ₗ[AlgebraicClosure ℚ_[ℓ]] Fin 2 → AlgebraicClosure ℚ_[ℓ]),
+        IsHardlyRamified hℓodd hW τ ∧
+        ∀ v ∉ T, (ℓ : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal →
+          τ.IsUnramifiedAt v ∧
+          (τ.charFrob v).map
+              (algebraMap (IntegralClosure ℤ_[ℓ] L) (AlgebraicClosure ℚ_[ℓ])) =
+            (Pv v).map φ :=
+  sorry
+
 /-- **Automorphy core over concrete rings of integers, odd residue
-characteristics** (sorry node): the eigensystem `(E, S, Pv)` attached
+characteristics** (PROVEN assembly as of 2026-07-23 — see the
+DECOMPOSED note at the end): the eigensystem `(E, S, Pv)` attached
 to a hardly ramified `p`-adic representation is realized *integrally*
 at every odd prime `ℓ` and embedding `φ : E →+* ℚ̄_ℓ`, with the
 coefficient ring CONCRETE: there are a finite extension `L/ℚ_ℓ` inside
@@ -2270,7 +2441,35 @@ obstruction stands; the pin's only new Hecke material is
 no ring product, no action on modular forms), and the reference
 project's `IsAutomorphicOfLevel` interface is confirmed unvendorable
 and non-restating (totally-real-`F` quaternionic shape, ≈22.8k-line
-closure with sorried definitions). -/
+closure with sorried definitions).
+
+DECOMPOSED (2026-07-23, opening the modularity subtree — this
+supersedes the "no carrier is statable" conclusion of the notes above:
+`Fermat/FLT/Modularity/Interface.lean` now provides a sound carrier as
+REAL code, the Diamond–Shurman 5.8.5 coefficient characterization
+`Modularity.IsWeightTwoEigenform` on the pin's analytic `CuspForm`,
+sidestepping the still-absent Hecke operators) into a PROVEN dichotomy
+assembly over three strictly shallower sorried nodes:
+
+1. `Modularity.exists_weightTwoEigenform_of_isIrreducible` (sorry
+   node, interface file; SHARED with the `λ ∣ 2` atom below) — on the
+   irreducible branch the eigensystem arises from a normalized
+   weight-2 eigenform of level `Γ₀(2)` (Wiles–Taylor–Wiles/
+   Skinner–Wiles + Ribet level lowering; the fused "member existence +
+   hardly ramified model" shape of the SOUNDNESS AUDIT is resolved by
+   the level-2 pin-down, which forces the hardly ramified shape of the
+   attached representations).
+2. `exists_ringOfIntegers_realizations_of_weightTwoEigenform` (sorry
+   node, above) — Eichler–Shimura/Deligne attachment with integral
+   model at odd `ℓ`, for level-2 eigenforms; `ρ`-free.
+3. `exists_hardlyRamified_ringOfIntegers_realizations_of_not_isIrreducible`
+   (sorry node, above) — the reducible/Eisenstein branch, where no
+   cusp form matches the eigensystem (`1 ⊕ χ_cyc` realizes it
+   explicitly).
+
+The assembly (below) is the excluded-middle split on irreducibility of
+`ρ ⊗ ℚ̄_p` — the same first move as the trace-shadow dichotomy
+(`exists_isAlgebraic_trace_coeff`). -/
 theorem exists_hardlyRamified_ringOfIntegers_realizations
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -2283,7 +2482,7 @@ theorem exists_hardlyRamified_ringOfIntegers_realizations
     (heig : ∀ v ∉ S,
       (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) = (Pv v).map ψ) :
     ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
-      ∀ (ℓ : ℕ) (hℓ : Fact ℓ.Prime) (hℓodd : Odd ℓ)
+      ∀ (ℓ : ℕ) (_hℓ : Fact ℓ.Prime) (hℓodd : Odd ℓ)
         (φ : E →+* AlgebraicClosure ℚ_[ℓ]),
       ∃ (L : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ]))
         (_ : FiniteDimensional ℚ_[ℓ] L)
@@ -2293,15 +2492,23 @@ theorem exists_hardlyRamified_ringOfIntegers_realizations
         (_ : Module.Free (IntegralClosure ℤ_[ℓ] L) W)
         (hW : Module.rank (IntegralClosure ℤ_[ℓ] L) W = 2)
         (τ : GaloisRep ℚ (IntegralClosure ℤ_[ℓ] L) W)
-        (r : AlgebraicClosure ℚ_[ℓ] ⊗[IntegralClosure ℤ_[ℓ] L] W
+        (_r : AlgebraicClosure ℚ_[ℓ] ⊗[IntegralClosure ℤ_[ℓ] L] W
           ≃ₗ[AlgebraicClosure ℚ_[ℓ]] Fin 2 → AlgebraicClosure ℚ_[ℓ]),
         IsHardlyRamified hℓodd hW τ ∧
         ∀ v ∉ T, (ℓ : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal →
           τ.IsUnramifiedAt v ∧
           (τ.charFrob v).map
               (algebraMap (IntegralClosure ℤ_[ℓ] L) (AlgebraicClosure ℚ_[ℓ])) =
-            (Pv v).map φ :=
-  sorry
+            (Pv v).map φ := by
+  by_cases hirr : (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible
+  · -- modular branch: level-2 eigenform existence + attachment
+    obtain ⟨f, S', hf, hmatch⟩ :=
+      Modularity.exists_weightTwoEigenform_of_isIrreducible hpodd hv hZinj hRinj
+        hρ hirr ψ S Pv heig
+    exact exists_ringOfIntegers_realizations_of_weightTwoEigenform S' Pv hf hmatch
+  · -- Eisenstein branch: the reducible eigensystem is realized explicitly
+    exact exists_hardlyRamified_ringOfIntegers_realizations_of_not_isIrreducible
+      hpodd hv hZinj hRinj hρ hirr ψ S Pv heig
 
 /-- **Automorphy core of the realization stratum, odd residue
 characteristics** (DECOMPOSED 2026-07-23 into the concrete automorphy
@@ -2522,8 +2729,45 @@ theorem exists_hardlyRamified_integral_realizations
   exact ⟨A, iA1, iA2, iA3, iA4, iA5, iA6, iA7, iA8, iA10, iA11, iA12, iA13, hAinj,
     W, iW1, iW2, iW3, iW4, hW, τ, r, hτ, hmatch⟩
 
-/-- **Automorphy atom at the even prime, generated coefficients** (sorry
-node): given a finite-dimensional coefficient subfield `K ⊆ ℚ̄_₂` which
+/-- **Eisenstein realization at the even prime** (sorry node; the
+REDUCIBLE branch of the `λ ∣ 2` atom below): if the base extension of
+the hardly ramified `ρ` to `ℚ̄_p` is NOT irreducible, its eigensystem
+is realized over any generated coefficient field `K ⊆ ℚ̄_₂` — with no
+modular form involved. The classical route mirrors the odd-`ℓ`
+Eisenstein leaf
+(`exists_hardlyRamified_ringOfIntegers_realizations_of_not_isIrreducible`):
+the reducible eigensystem degenerates to `(X − 1)(X − q)` with RATIONAL
+coefficients away from finitely many places (proven reducibility
+analysis + the Eisenstein character dichotomy + injectivity of `ψ`), so
+`(Pv v).map φ₀ = (X − 1)(X − q)` for the given `φ₀`, and the explicit
+representation `1 ⊕ χ_cyc,2` on `K²` realizes it (unramified outside
+`{2}`, absorbed by `T`; `charFrob v = (X − 1)(X − q)` by the proven
+`cyclotomicCharacter_adicArithFrob_natCast`). See DECOMPOSITION PLAN
+item 5 in `Fermat/FLT/Modularity/Interface.lean`. -/
+theorem exists_realization_at_two_generated_of_not_isIrreducible
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (hred : ¬ (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible)
+    {E : Type v} [Field E] [NumberField E] (ψ : E →+* AlgebraicClosure ℚ_[p])
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E)
+    (heig : ∀ v ∉ S,
+      (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) = (Pv v).map ψ)
+    (K : IntermediateField ℚ_[2] (AlgebraicClosure ℚ_[2]))
+    [FiniteDimensional ℚ_[2] K] (φ₀ : E →+* K)
+    (hgen : K = IntermediateField.adjoin ℚ_[2]
+      (Set.range fun x : E => (φ₀ x : AlgebraicClosure ℚ_[2]))) :
+    ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+      (τ : GaloisRep ℚ K (Fin 2 → K)),
+      ∀ v ∉ T, τ.IsUnramifiedAt v ∧ τ.charFrob v = (Pv v).map φ₀ :=
+  sorry
+
+/-- **Automorphy atom at the even prime, generated coefficients**
+(PROVEN assembly as of 2026-07-23 — see the DECOMPOSED note at the
+end): given a finite-dimensional coefficient subfield `K ⊆ ℚ̄_₂` which
 is EXACTLY the subfield generated over `ℚ_2` by the image of the
 eigensystem's number field under `φ₀ : E →+* K` (the hypothesis
 `hgen`), the eigensystem `(E, S, Pv)` is realized over `K` itself: a
@@ -2552,7 +2796,27 @@ item (3) there records why a minimal interface SHARED with the odd-ℓ
 atom was examined and rejected (no definable carrier; the carrier-free
 version degenerates to the conjunction of the two atoms; this leaf's
 generated-coefficient-field shape is already the zero-slack
-Eichler–Shimura output). -/
+Eichler–Shimura output).
+
+DECOMPOSED (2026-07-23, opening the modularity subtree — superseding
+the "no carrier" conclusion above exactly as at the odd-`ℓ` atom: the
+interface file provides the Diamond–Shurman 5.8.5 carrier
+`Modularity.IsWeightTwoEigenform` as real code) into a PROVEN
+dichotomy assembly over three strictly shallower sorried nodes:
+
+1. `Modularity.exists_weightTwoEigenform_of_isIrreducible` (interface
+   sorry, SHARED with the odd-`ℓ` atom) — the level-2 eigenform behind
+   the eigensystem on the irreducible branch.
+2. `Modularity.exists_realization_at_two_of_weightTwoEigenform`
+   (interface sorry, `ρ`-free) — Eichler–Shimura/Deligne at `λ ∣ 2`
+   for level-2 eigenforms, over exactly the generated coefficient
+   field; also dischargeable via `dim S₂(Γ₀(2)) = 0`.
+3. `exists_realization_at_two_generated_of_not_isIrreducible` (sorry
+   node, above) — the reducible/Eisenstein branch (`1 ⊕ χ_cyc,2` over
+   `K`).
+
+The assembly (below) is the same excluded-middle split on
+irreducibility of `ρ ⊗ ℚ̄_p` as at the odd-`ℓ` atom. -/
 theorem exists_realization_at_two_generated
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -2570,8 +2834,17 @@ theorem exists_realization_at_two_generated
       (Set.range fun x : E => (φ₀ x : AlgebraicClosure ℚ_[2]))) :
     ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
       (τ : GaloisRep ℚ K (Fin 2 → K)),
-      ∀ v ∉ T, τ.IsUnramifiedAt v ∧ τ.charFrob v = (Pv v).map φ₀ :=
-  sorry
+      ∀ v ∉ T, τ.IsUnramifiedAt v ∧ τ.charFrob v = (Pv v).map φ₀ := by
+  by_cases hirr : (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible
+  · -- modular branch: level-2 eigenform existence + attachment at `λ ∣ 2`
+    obtain ⟨f, S', hf, hmatch⟩ :=
+      Modularity.exists_weightTwoEigenform_of_isIrreducible hpodd hv hZinj hRinj
+        hρ hirr ψ S Pv heig
+    exact Modularity.exists_realization_at_two_of_weightTwoEigenform S' Pv hf
+      hmatch K φ₀ hgen
+  · -- Eisenstein branch: the reducible eigensystem is realized explicitly
+    exact exists_realization_at_two_generated_of_not_isIrreducible hpodd hv hZinj
+      hRinj hρ hirr ψ S Pv heig K φ₀ hgen
 
 /-- **Automorphy stratum at the even prime, confined coefficients**
 (PROVEN assembly, see the DECOMPOSED note below): given ANY
