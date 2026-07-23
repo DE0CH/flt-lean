@@ -124,6 +124,7 @@ public import Mathlib.Analysis.SpecialFunctions.Pow.Complex
 public import Mathlib.Analysis.Calculus.Deriv.Basic
 import Mathlib.NumberTheory.LSeries.Deriv
 import Mathlib.Analysis.SpecialFunctions.Complex.LogBounds
+import Mathlib.Analysis.SpecialFunctions.Complex.LogDeriv
 import Mathlib.Analysis.Complex.LocallyUniformLimit
 import Mathlib.Analysis.Complex.RealDeriv
 import Mathlib.Analysis.Calculus.MeanValue
@@ -1842,9 +1843,107 @@ theorem exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le
           exact_mod_cast (by omega :
             1 < Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal))
         exact (Real.rpow_le_rpow_left_iff h2).mpr (by linarith)
+  -- the norm of a factor `χ(N P)·N P^{-w}`, on `1 ≤ re w`, is at most
+  -- `N P^{-re w} ≤ 1/2`
+  have hzb : ∀ (P : HeightOneSpectrum (𝓞 F)) (w : ℂ),
+      ‖χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w)‖ ≤
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-w.re) := by
+    intro P w
+    have hNpos : 0 < Nat.card (𝓞 F ⧸ P.asIdeal) := by have h := htwo P; omega
+    rw [norm_mul, Complex.norm_natCast_cpow_of_pos hNpos, Complex.neg_re]
+    exact mul_le_of_le_one_left (Real.rpow_nonneg (Nat.cast_nonneg _) _)
+      (DirichletCharacter.norm_le_one χ _)
+  have hhalf : ∀ (P : HeightOneSpectrum (𝓞 F)) (x : ℝ), 1 ≤ x →
+      (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-x) ≤ 1 / 2 := by
+    intro P x hx
+    have h2N : (2 : ℝ) ≤ (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) := by
+      exact_mod_cast htwo P
+    calc (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-x)
+        ≤ (2 : ℝ) ^ (-x) :=
+          Real.rpow_le_rpow_of_nonpos two_pos h2N (by linarith)
+      _ ≤ (2 : ℝ) ^ (-1 : ℝ) :=
+          (Real.rpow_le_rpow_left_iff one_lt_two).mpr (by linarith)
+      _ = 1 / 2 := by rw [Real.rpow_neg_one]; norm_num
   -- the prime log-sum is `ℂ`-differentiable on `re w > 1` (Weierstrass)
   have hdiff : ∀ w : ℂ, 1 < w.re → DifferentiableAt ℂ 𝒮 w := by
-    sorry
+    intro w₀ hw₀
+    have hε : 0 < (w₀.re - 1) / 2 := by linarith
+    set ε : ℝ := (w₀.re - 1) / 2 with hεdef
+    have hU : IsOpen {w : ℂ | 1 + ε < w.re} :=
+      isOpen_lt continuous_const Complex.continuous_re
+    have hw₀U : w₀ ∈ {w : ℂ | 1 + ε < w.re} := by
+      simp only [Set.mem_setOf_eq, hεdef]
+      linarith
+    have hsum : Summable (fun P : HeightOneSpectrum (𝓞 F) =>
+        (3 / 2 : ℝ) * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-(1 + ε))) :=
+      (hAll (1 + ε) (by linarith)).mul_left _
+    -- on `U`, each factor norm is at most `N P^{-(1+ε)} ≤ 1/2`
+    have hzU : ∀ (P : HeightOneSpectrum (𝓞 F)) (w : ℂ), w ∈ {w : ℂ | 1 + ε < w.re} →
+        ‖χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w)‖ ≤
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-(1 + ε)) := by
+      intro P w hw
+      simp only [Set.mem_setOf_eq] at hw
+      have h5 : (1 : ℝ) < (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) := by
+        have h6 := htwo P
+        exact_mod_cast (by omega : 1 < Nat.card (𝓞 F ⧸ P.asIdeal))
+      exact le_trans (hzb P w) ((Real.rpow_le_rpow_left_iff h5).mpr (by linarith))
+    -- each summand is differentiable on `U`
+    have hdiffP : ∀ P : HeightOneSpectrum (𝓞 F), DifferentiableOn ℂ (fun w : ℂ =>
+        -Complex.log (1 - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w))) {w : ℂ | 1 + ε < w.re} := by
+      intro P
+      have hN0 : (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ≠ 0 := by
+        have h6 := htwo P
+        exact_mod_cast (by omega : Nat.card (𝓞 F ⧸ P.asIdeal) ≠ 0)
+      have hinner : DifferentiableOn ℂ (fun w : ℂ =>
+          1 - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w)) {w : ℂ | 1 + ε < w.re} :=
+        (differentiableOn_const _).sub
+          (((differentiable_id.neg.const_cpow (Or.inl hN0)).differentiableOn).const_mul _)
+      refine (DifferentiableOn.clog hinner ?_).neg
+      intro w hw
+      rw [Complex.mem_slitPlane_iff]
+      left
+      have h6 : ‖χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w)‖ ≤ 1 / 2 := by
+        refine le_trans (hzU P w hw) (hhalf P (1 + ε) (by linarith))
+      have h7 := le_trans (Complex.abs_re_le_norm _) h6
+      have h8 : (1 - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w)).re =
+          1 - (χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w)).re := by
+        simp [Complex.sub_re, Complex.one_re]
+      rw [h8]
+      have h9 := abs_le.mp h7
+      linarith [h9.2]
+    -- uniform summable bound for the log factors on `U`
+    have hlog : ∀ (P : HeightOneSpectrum (𝓞 F)) (w : ℂ), w ∈ {w : ℂ | 1 + ε < w.re} →
+        ‖-Complex.log (1 - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w))‖ ≤
+          (3 / 2 : ℝ) * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-(1 + ε)) := by
+      intro P w hw
+      rw [norm_neg]
+      have h6 : ‖-(χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w))‖ ≤ 1 / 2 := by
+        rw [norm_neg]
+        exact le_trans (hzU P w hw) (hhalf P (1 + ε) (by linarith))
+      calc ‖Complex.log (1 - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w))‖
+          = ‖Complex.log (1 + -(χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+              (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w)))‖ := by
+            rw [sub_eq_add_neg]
+        _ ≤ (3 / 2 : ℝ) * ‖-(χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+              (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w))‖ :=
+            Complex.norm_log_one_add_half_le_self h6
+        _ = (3 / 2 : ℝ) * ‖χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+              (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w)‖ := by rw [norm_neg]
+        _ ≤ (3 / 2 : ℝ) * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-(1 + ε)) := by
+            have h7 := hzU P w hw
+            linarith
+    exact (Complex.differentiableOn_tsum_of_summable_norm hsum hdiffP hU
+      hlog).differentiableAt (hU.mem_nhds hw₀U)
   -- its derivative at real `t ∈ (1, 2]` is `L'/L`, hence bounded by `C/c`
   have hderiv : ∀ t : ℝ, 1 < t → t ≤ 2 → ‖deriv 𝒮 (t : ℂ)‖ ≤ C / c := by
     sorry
