@@ -133,7 +133,16 @@ def regenerate_census_header():
     block = _BEGIN + "\n"
     for mod in scan_fermat_modules():
         block += f"import {mod}\n"
-    block += f'def censusInputPath : System.FilePath := "{CENSUS_INPUT}"\n'
+    # RELATIVE path (Deyao's fleet, 2026-07-23): the report server's cwd
+    # is its own worktree root (systemd WorkingDirectory=%h/%i), and the
+    # standalone `lake lean ProgressCensus.lean` route also runs from the
+    # root — so a relative path resolves correctly everywhere, and the
+    # generated file stays BYTE-IDENTICAL across all 14 worktrees at the
+    # same commit. An absolute path here made every worktree's census
+    # regeneration dirty its ProgressCensus.lean, tripping the dispatch
+    # pool-hook's clean-worktree guard.
+    block += ('def censusInputPath : System.FilePath := '
+              '"progress-census-input.json"\n')
     if os.path.exists(CENSUS_INPUT):
         fp = hashlib.sha1(open(CENSUS_INPUT, "rb").read()).hexdigest()
     else:

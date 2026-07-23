@@ -146,8 +146,8 @@ import Fermat.FLT.Slop.PGL2.FiniteSubgroups.WildClassification
 import Fermat.FLT.Slop.RepresentationTheory.OddAbsIrredSlop
 import Fermat.PrimeFive
 import Fermat.SorryGate
-def censusInputPath : System.FilePath := "/home/chend/flt-lean/progress-census-input.json"
--- census-input fingerprint: 3036ea9d5d0b164f785ceb5399ac596d02e6f9ef
+def censusInputPath : System.FilePath := "progress-census-input.json"
+-- census-input fingerprint: 1914611510c281a3742b386ad0e86664b6847ddc
 -- END GENERATED IMPORTS
 
 open Lean

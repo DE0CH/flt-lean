@@ -35,7 +35,14 @@ def _load_progress_tree():
 def compute():
     """Returns {"kept_invisible": [...], "floating": [...]}."""
     pt = _load_progress_tree()
-    resp = pt.run_census([], root="fermat_last_theorem")
+    # CANONICAL census input (same names, same construction, as
+    # progress-tree.py --census): the input json's bytes feed the
+    # fingerprint line inside generated ProgressCensus.lean, so every
+    # census route must produce identical input or each route's queries
+    # dirty the generated file against the committed one.
+    entries = json.load(open(os.path.join(ROOT, "progress-entries.json")))
+    names = [e.get("fullname", e["name"]) for e in entries]
+    resp = pt.run_census(names, root="fermat_last_theorem")
     raw = resp.get("floating")
     if raw is None:
         raise RuntimeError(
