@@ -632,46 +632,100 @@ theorem exists_universal_hardlyRamifiedDeformation (hℓ5 : 5 ≤ ℓ)
     exists_isWeaklyUniversal_isTraceGenerated hℓOdd hdim hℓ5 h hirr
   exact ⟨D, isUniversal_of_isWeaklyUniversal_isTraceGenerated hℓOdd D hw ht⟩
 
-/-- **Finiteness leaf** (sorry node — the arithmetic core of the
-finiteness stratum): the weakly universal, trace-generated hardly
-ramified deformation ring — i.e. the genuine universal ring, as
-constructed by `exists_isWeaklyUniversal_isTraceGenerated` — is finite
-as a `ℤ_ℓ`-module.
+/-- **Mod-`ℓ` finiteness leaf** (sorry node — the arithmetic core of
+the finiteness stratum, restated modulo `ℓ`): the weakly universal,
+trace-generated hardly ramified deformation ring — i.e. the genuine
+universal ring, as constructed by
+`exists_isWeaklyUniversal_isTraceGenerated` — is *finite modulo `ℓ`*:
+`D.R ⧸ (ℓ)` is a finite ring.
 
 This is the potential-modularity / Taylor–Wiles–Kisin input of
 Khare–Wintenberger — the single genuinely deep arithmetic node of the
-lifting core, deliberately NOT decomposed further here: no principled
-intermediate statement exists in the repository's current vocabulary
-(stating "`R = T`" needs Hecke algebras; stating potential modularity
-needs Hilbert modular forms over totally real fields). The
+lifting core, not decomposed further here: no principled intermediate
+statement exists in the repository's current vocabulary (stating
+"`R = T`" needs Hecke algebras; stating potential modularity needs
+Hilbert modular forms over totally real fields). The
 residual-modularity hypothesis is bypassed via potential modularity
 (Taylor's Moret-Bailly argument), which after a solvable base change
 `F/ℚ` (totally real, in which the deformation problem's conditions
 remain balanced) proves an `R = T` theorem by the Taylor–Wiles–Kisin
-patching method; `T` is a finite `ℤ_ℓ`-algebra, and finiteness of the
-`ℚ`-level ring descends by Khare–Wintenberger's argument. Given the
-Böckle presentation leaf above, finiteness is equivalent to
-`D.R/(ℓ)` being Artinian — the eventual proof may target either form.
-The hypotheses characterize `D` up to canonical isomorphism (weak
-universality + trace generation = universality, by
+patching method; `T` is a finite `ℤ_ℓ`-algebra, so `T/ℓT` — and with
+it the mod-`ℓ` fibre of the `ℚ`-level ring, by Khare–Wintenberger's
+descent — is finite. The mod-`ℓ` form is chosen over
+`Module.Finite ℤ_[ℓ] D.R` because it is what the patching literature
+produces directly (the "`R/λ` is Artinian" form of finiteness, cf. the
+Böckle presentation stratum); the lift back to `ℤ_ℓ`-module finiteness
+is the pure commutative-algebra completeness bootstrap
+`moduleFinite_of_finite_quotient_span` below. The hypotheses
+characterize `D` up to canonical isomorphism (weak universality +
+trace generation = universality, by
 `isUniversal_of_isWeaklyUniversal_isTraceGenerated` and the rigidity
 theorem `exists_ringEquiv_of_isUniversal`), so a future proof may
-construct its own universal datum, prove IT finite, and transport the
-result along the canonical isomorphism.
+construct its own universal datum, prove ITS mod-`ℓ` fibre finite, and
+transport the result along the canonical isomorphism.
 
 References: Khare–Wintenberger, *Serre's modularity conjecture (I)*,
 Thm. 4.1 and §4, and *(II)*; Taylor, *Remarks on a conjecture of
 Fontaine and Mazur* and *On the meromorphic continuation of degree two
 L-functions*; Kisin, *Moduli of finite flat group schemes, and
 modularity*; Buzzard's 2026 EPSRC course, Lecture 4. -/
+theorem finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ (ZMod ℓ) V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing
+    Finite (D.R ⧸ Ideal.span {(ℓ : D.R)}) :=
+  sorry
+
+/-- **Completeness bootstrap** (sorry node, pure commutative algebra —
+no arithmetic content): a Noetherian local `ℤ_ℓ`-algebra `R`, separated
+for its maximal-adic topology, with residue characteristic `ℓ` (it maps
+to `ℤ/ℓℤ`) and finite modulo `ℓ`, is finite as a `ℤ_ℓ`-module.
+
+Proof sketch (standard: Mazur, *Deforming Galois representations*,
+§1.1; Matsumura, Thm. 8.4): `ℓ` lies in the maximal ideal (it dies
+under the reduction map, whose kernel is the maximal ideal of the local
+ring, `π` being surjective onto the prime field `ℤ/ℓℤ`), so
+`ℓ^t R ⊆ 𝔪^t`. Choose representatives `x₁, …, x_s ∈ R` of the finitely
+many classes of `R/(ℓ)`; every `r ∈ R` unwinds as `r = Σ_j ℓ^j a_j`
+with each `a_j` among the `xᵢ`, the coordinatewise partial sums of the
+resulting `ℤ_ℓ`-coefficients converge in the complete `ℤ_ℓ`, and adic
+separatedness identifies `r` with the limit combination — so the `xᵢ`
+generate `R` as a `ℤ_ℓ`-module. (Noetherianness is kept in the
+hypotheses to match the literature statements; it is available at the
+sole use site.) -/
+theorem moduleFinite_of_finite_quotient_span {R : Type*} [CommRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R] [IsNoetherianRing R]
+    [IsHausdorff (IsLocalRing.maximalIdeal R) R]
+    (π : R →+* ZMod ℓ)
+    (hfin : Finite (R ⧸ Ideal.span {(ℓ : R)})) :
+    Module.Finite ℤ_[ℓ] R :=
+  sorry
+
+/-- **Finiteness leaf** (DECOMPOSED 2026-07-23 into the mod-`ℓ`
+finiteness leaf `finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated`
+— the potential-modularity / Taylor–Wiles–Kisin content, producing
+finiteness of `D.R ⧸ (ℓ)` — plus the pure commutative-algebra
+completeness bootstrap `moduleFinite_of_finite_quotient_span`; the
+assembly below is proven): the weakly universal, trace-generated hardly
+ramified deformation ring is finite as a `ℤ_ℓ`-module. -/
 theorem moduleFinite_of_isWeaklyUniversal_isTraceGenerated (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ (ZMod ℓ) V} (h : IsHardlyRamified hℓOdd hdim ρbar)
     (hirr : ρbar.IsIrreducible)
     (D : HardlyRamifiedDeformation hℓOdd ρbar)
     (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
     letI := D.commRing; letI := D.algebra
-    Module.Finite ℤ_[ℓ] D.R :=
-  sorry
+    Module.Finite ℤ_[ℓ] D.R := by
+  letI := D.commRing; letI := D.isLocalRing; letI := D.algebra
+  haveI := D.isNoetherianRing
+  haveI : IsHausdorff (IsLocalRing.maximalIdeal D.R) D.R :=
+    (D.isAdicComplete).toIsHausdorff
+  have hfin : Finite (D.R ⧸ Ideal.span {(ℓ : D.R)}) :=
+    finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated hℓOdd hdim
+      hℓ5 h hirr D hw ht
+  exact moduleFinite_of_finite_quotient_span D.π hfin
 
 /-- **Finiteness stratum** (DECOMPOSED 2026-07-22 into the arithmetic
 leaf `moduleFinite_of_isWeaklyUniversal_isTraceGenerated` — potential
