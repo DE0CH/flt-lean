@@ -1078,21 +1078,76 @@ theorem tsum_rpow_neg_absNorm_ne_top (F : Type*) [Field F] [NumberField F]
       (summable_natCard_absNorm_mul_rpow_neg F hs)]
   exact ENNReal.ofReal_ne_top
 
-/-- **Divergence of the ideal sum as `s → 1⁺`** (sorry leaf): the
-`ℝ≥0∞`-valued Dirichlet series of the ideals of `𝓞 F` exceeds any
-`C ≠ ⊤` for some `s > 1`. Intended proof: by
-`tsum_rpow_neg_absNorm_ne_top` the sum is finite for `s > 1` and (via
-the fibration over `n = N(I)`) equals `NumberField.dedekindZeta F s` at
-real `s`; the simple pole with positive residue
+/-- The Dedekind zeta function at real `s > 1` is dominated by the real
+Dirichlet series of its (nonnegative) coefficients. -/
+theorem norm_dedekindZeta_le (F : Type*) [Field F] [NumberField F]
+    {s : ℝ} (hs : 1 < s) :
+    ‖NumberField.dedekindZeta F s‖ ≤
+      ∑' n : ℕ, (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) *
+        (n : ℝ) ^ (-s) := by
+  have hpos : (0 : ℝ) < s := by linarith
+  have hnorm : ∀ n : ℕ, ‖LSeries.term
+      (fun n => (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℂ))
+      (s : ℂ) n‖ =
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) *
+        (n : ℝ) ^ (-s) := by
+    intro n
+    rw [term_natCard_absNorm_eq F hpos n, Complex.norm_real,
+      Real.norm_of_nonneg (by positivity)]
+  have hsummable : Summable (fun n : ℕ => ‖LSeries.term
+      (fun n => (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℂ))
+      (s : ℂ) n‖) :=
+    (summable_natCard_absNorm_mul_rpow_neg F hs).congr fun n => (hnorm n).symm
+  rw [show NumberField.dedekindZeta F s = ∑' n : ℕ, LSeries.term
+      (fun n => (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℂ))
+      (s : ℂ) n from rfl]
+  exact le_trans (norm_tsum_le_tsum_norm hsummable) (le_of_eq (tsum_congr hnorm))
+
+/-- **Divergence of the ideal sum as `s → 1⁺`**: the `ℝ≥0∞`-valued
+Dirichlet series of the ideals of `𝓞 F` exceeds any `C ≠ ⊤` for some
+`s > 1`: were it bounded by `C` for all `s > 1`, the product
+`(s-1) · ζ_F(s)` would be squeezed to `0` along `𝓝[>] 1`
+(`norm_dedekindZeta_le` and the fibration), contradicting the simple
+pole with positive residue
 (`NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT`,
-`NumberField.dedekindZeta_residue_pos`) forces `(s-1) · Z(s) → κ > 0`,
-so were `Z(s) ≤ C` for all `s > 1` the product `(s-1) · Z(s)` would tend
-to `0` — squeeze contradiction, no explicit choice of `s` needed. -/
+`NumberField.dedekindZeta_residue_pos`). -/
 theorem exists_one_lt_lt_tsum_rpow_neg_absNorm (F : Type*) [Field F]
     [NumberField F] (C : ℝ≥0∞) (hC : C ≠ ⊤) :
     ∃ s : ℝ, 1 < s ∧
-      C < ∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥}, (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s) :=
-  sorry
+      C < ∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥}, (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s) := by
+  by_contra hcon
+  push Not at hcon
+  -- the eventual bound `‖(t-1) ζ_F(t)‖ ≤ (t-1) C.toReal` near `1⁺`
+  have hbound : ∀ᶠ t : ℝ in nhdsWithin 1 (Set.Ioi 1),
+      ‖((t : ℂ) - 1) * NumberField.dedekindZeta F t‖ ≤ (t - 1) * C.toReal := by
+    filter_upwards [self_mem_nhdsWithin] with t ht
+    have ht1 : (1 : ℝ) < t := ht
+    rw [norm_mul, show ((t : ℂ) - 1) = ((t - 1 : ℝ) : ℂ) by push_cast; ring,
+      Complex.norm_real, Real.norm_of_nonneg (by linarith)]
+    refine mul_le_mul_of_nonneg_left ?_ (by linarith)
+    refine le_trans (norm_dedekindZeta_le F ht1) ?_
+    have hZ := hcon t ht1
+    rw [tsum_rpow_neg_absNorm_eq F (by linarith : (0 : ℝ) < t),
+      ← ENNReal.ofReal_tsum_of_nonneg (fun n => by positivity)
+        (summable_natCard_absNorm_mul_rpow_neg F ht1)] at hZ
+    have hmono := ENNReal.toReal_mono hC hZ
+    rwa [ENNReal.toReal_ofReal
+      (tsum_nonneg fun n => by positivity)] at hmono
+  -- the bounding function tends to `0`
+  have h0 : Filter.Tendsto (fun t : ℝ => (t - 1) * C.toReal)
+      (nhdsWithin 1 (Set.Ioi 1)) (nhds 0) := by
+    have h1 : Filter.Tendsto (fun t : ℝ => (t - 1) * C.toReal) (nhds 1)
+        (nhds ((1 - 1) * C.toReal)) :=
+      (Filter.tendsto_id.sub tendsto_const_nhds).mul_const C.toReal
+    rw [sub_self, zero_mul] at h1
+    exact h1.mono_left nhdsWithin_le_nhds
+  -- compare with the limit `‖κ‖`, forcing `κ ≤ 0` — contradiction
+  have hnorm := (NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT F).norm
+  have hle : ‖((NumberField.dedekindZeta_residue F : ℝ) : ℂ)‖ ≤ 0 :=
+    le_of_tendsto_of_tendsto hnorm h0 hbound
+  rw [Complex.norm_real, Real.norm_of_nonneg
+    (NumberField.dedekindZeta_residue_pos F).le] at hle
+  exact absurd hle (not_le.mpr (NumberField.dedekindZeta_residue_pos F))
 
 open IsDedekindDomain in
 /-- **Divergence of the degree-one prime sum of a number field** (sorry
