@@ -17,6 +17,62 @@
       "env": {
         "ANNAS_KEY": "${ANNAS_KEY}"
       }
+    },
+    "report-flt-lean": {
+      "command": ".venv/bin/python",
+      "args": ["report-mcp.py", "--project-path", "/home/chend/flt-lean"]
+    },
+    "report-flt-lean-1": {
+      "command": ".venv/bin/python",
+      "args": ["report-mcp.py", "--project-path", "/home/chend/flt-lean-1"]
+    },
+    "report-flt-lean-2": {
+      "command": ".venv/bin/python",
+      "args": ["report-mcp.py", "--project-path", "/home/chend/flt-lean-2"]
+    },
+    "report-flt-lean-3": {
+      "command": ".venv/bin/python",
+      "args": ["report-mcp.py", "--project-path", "/home/chend/flt-lean-3"]
+    },
+    "report-flt-lean-4": {
+      "command": ".venv/bin/python",
+      "args": ["report-mcp.py", "--project-path", "/home/chend/flt-lean-4"]
+    },
+    "report-flt-lean-5": {
+      "command": ".venv/bin/python",
+      "args": ["report-mcp.py", "--project-path", "/home/chend/flt-lean-5"]
+    },
+    "report-flt-lean-6": {
+      "command": ".venv/bin/python",
+      "args": ["report-mcp.py", "--project-path", "/home/chend/flt-lean-6"]
+    },
+    "report-flt-lean-7": {
+      "command": ".venv/bin/python",
+      "args": ["report-mcp.py", "--project-path", "/home/chend/flt-lean-7"]
+    },
+    "report-flt-lean-8": {
+      "command": ".venv/bin/python",
+      "args": ["report-mcp.py", "--project-path", "/home/chend/flt-lean-8"]
+    },
+    "report-flt-lean-9": {
+      "command": ".venv/bin/python",
+      "args": ["report-mcp.py", "--project-path", "/home/chend/flt-lean-9"]
+    },
+    "report-flt-lean-10": {
+      "command": ".venv/bin/python",
+      "args": ["report-mcp.py", "--project-path", "/home/chend/flt-lean-10"]
+    },
+    "report-flt-lean-11": {
+      "command": ".venv/bin/python",
+      "args": ["report-mcp.py", "--project-path", "/home/chend/flt-lean-11"]
+    },
+    "report-flt-lean-12": {
+      "command": ".venv/bin/python",
+      "args": ["report-mcp.py", "--project-path", "/home/chend/flt-lean-12"]
+    },
+    "report-flt-lean-13": {
+      "command": ".venv/bin/python",
+      "args": ["report-mcp.py", "--project-path", "/home/chend/flt-lean-13"]
     }
   }
 }

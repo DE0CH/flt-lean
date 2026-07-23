@@ -293,6 +293,36 @@ Deyao's agent; if signing fails with "No private key found", the
 agent — Bitwarden — is locked: ask Deyao). Commit trailers: the
 standard Co-Authored-By and Claude-Session lines.
 
+## Report-lsp MCP (report-mcp.py): diagnostics + build per worktree
+
+(Deyao, 2026-07-23.) `report-mcp.py` at the repo root is a minimal MCP
+server exposing exactly two tools — `diagnostics(file_path)` and
+`build(clean=False)` — talking directly over one `flt-report-server`
+instance's FIFOs (the same Content-Length-framed JSON-RPC protocol as
+`progress-tree.py`'s report-server client). It takes `--project-path`
+as an argument rather than doing any root-detection: the argument IS
+the routing.
+
+`lake serve` is single-rooted for its whole process lifetime (verified
+empirically via an isolated toy-project test) — a server rooted at one
+directory cannot correctly open or elaborate a file living under a
+different worktree. So there is one `report-mcp.py` process, and one
+`flt-report-server@<name>` systemd instance, PER worktree — 14 total
+(main + `flt-lean-1..13`), each independently rooted. `.mcp.json`
+registers all 14 as separate entries (`report-flt-lean`,
+`report-flt-lean-1` .. `report-flt-lean-13`), each pointing
+`--project-path` at its matching worktree. An agent working in
+`flt-lean-N` uses the `report-flt-lean-N` entry.
+
+`diagnostics` syncs the file with on-disk content (`didOpen` the first
+time, `didChange` after) and blocks on `textDocument/waitForDiagnostics`
+— no polling/settle heuristics needed. The `initialize` handshake is
+shared per SERVER SESSION via `.report-server/state.json` (the unit's
+`ExecStartPre` clears it on every (re)start): its presence means some
+earlier client already initialized this session (`lake serve` errors
+if sent `initialize` twice), so a client only sends it when the file is
+absent, then writes a marker.
+
 ## Anna's Archive MCP (annas-mcp)
 
 The server is `annas-mcp.py` at the repo root, registered in the
