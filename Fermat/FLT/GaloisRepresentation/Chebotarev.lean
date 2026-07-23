@@ -962,13 +962,57 @@ theorem term_natCard_absNorm_eq (F : Type*) [Field F] [NumberField F]
     push_cast
     rw [div_eq_mul_inv]
 
+/-- Real summability of the Dedekind-zeta Dirichlet series of `F` at
+real `s > 1`: the ideal-counting asymptotics
+(`Ideal.tendsto_norm_le_div_atTop₀`) make the partial sums of the
+coefficients `O(n)`, so `LSeriesSummable_of_sum_norm_bigO_and_nonneg`
+applies. -/
+theorem summable_natCard_absNorm_mul_rpow_neg (F : Type*) [Field F]
+    [NumberField F] {s : ℝ} (hs : 1 < s) :
+    Summable (fun n : ℕ =>
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) *
+        (n : ℝ) ^ (-s)) := by
+  classical
+  -- Cesàro behaviour of the coefficients, as in `NumberField.dedekindZeta`
+  obtain ⟨c, hces⟩ : ∃ c : ℝ, Filter.Tendsto (fun n : ℕ ↦
+      (∑ k ∈ Finset.Icc 1 n,
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ)) / n)
+      Filter.atTop (nhds c) := by
+    refine ⟨_, ((NumberField.Ideal.tendsto_norm_le_div_atTop₀ F).comp
+      tendsto_natCast_atTop_atTop).congr fun n ↦ ?_⟩
+    simp only [Function.comp_apply, Nat.cast_le, ← Nat.cast_sum]
+    congr
+    rw [← add_left_inj 1,
+      ← Ideal.card_norm_le_eq_card_norm_le_add_one,
+      show Finset.Icc 1 n = Finset.Ioc 0 n from Finset.Icc_succ_left_eq_Ioc _ _,
+      show 1 = Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = 0} by
+        simp [Ideal.absNorm_eq_zero_iff],
+      Finset.sum_Ioc_add_eq_sum_Icc n.zero_le,
+      ← Finset.card_preimage_eq_sum_card_image_eq
+        (fun k _ ↦ Ideal.finite_setOf_absNorm_eq k)]
+    simp [Set.coe_eq_subtype]
+  -- hence the partial sums of the (nonnegative) coefficients are `O(n)`
+  have hO : (fun n : ℕ ↦ ∑ k ∈ Finset.Icc 1 n,
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ))
+      =O[Filter.atTop] (fun n : ℕ ↦ (n : ℝ) ^ (1 : ℝ)) := by
+    simp_rw [Real.rpow_one]
+    refine Asymptotics.isBigO_of_div_tendsto_nhds ?_ c hces
+    filter_upwards [Filter.eventually_ne_atTop 0] with n hn h0
+    exact absurd h0 (Nat.cast_ne_zero.mpr hn)
+  have hsum := LSeriesSummable_of_sum_norm_bigO_and_nonneg (s := (s : ℂ)) hO
+    (fun n => Nat.cast_nonneg _) zero_le_one (by simpa using hs)
+  have hsum₂ : Summable (fun n : ℕ => LSeries.term
+      (fun n => ((Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) : ℂ))
+      (s : ℂ) n) := hsum
+  simp only [Complex.ofReal_natCast] at hsum₂
+  rw [funext (term_natCard_absNorm_eq F (by linarith : (0 : ℝ) < s))] at hsum₂
+  exact Complex.summable_ofReal.mp hsum₂
+
 /-- Finiteness of the full ideal sum `∑_{I ≠ 0} N(I)^{-s}` for `s > 1`
 (sorry leaf). Intended proof: fibre the sum over `n = N(I)`
 (`Ideal.finite_setOf_absNorm_eq`, `Equiv.sigmaFiberEquiv`) to get the
-`ℝ≥0∞` form of the Dedekind-zeta Dirichlet series; the ideal-counting
-asymptotics `Ideal.tendsto_norm_le_div_atTop₀` make the partial sums of
-the coefficients `O(n)`, so `LSeriesSummable_of_sum_norm_bigO` applies
-at real `s > 1`. -/
+`ℝ≥0∞` form of the Dedekind-zeta Dirichlet series; the summability
+input is `summable_natCard_absNorm_mul_rpow_neg`. -/
 theorem tsum_rpow_neg_absNorm_ne_top (F : Type*) [Field F] [NumberField F]
     {s : ℝ} (hs : 1 < s) :
     ∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥}, (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s) ≠ ⊤ :=
