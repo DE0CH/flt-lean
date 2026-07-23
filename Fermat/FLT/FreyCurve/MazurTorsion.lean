@@ -2272,13 +2272,18 @@ seams:
   PROVEN multiplicative quotients): the local `p`-torsion surjects
   onto `ℤ/p` inertia-invariantly; the kernel is the formal-group
   line.
-* `not_inertia_stable_line_of_good_of_supersingular` (sorry node —
-  the fundamental-character content): at a good supersingular prime
-  `p ≠ 2` (the reduced curve has trivial geometric `p`-torsion), no
-  line of `E[p]` is inertia-stable — inertia acts through the level-2
-  fundamental character, whose eigenvalues are `𝔽_{p²}`-conjugate and
-  not `𝔽_p`-rational (Serre, Propriétés galoisiennes…, Invent. Math.
-  15 (1972), §1.11–1.12, Prop. 12).
+* `not_inertia_stable_line_of_good_of_supersingular` (DERIVED
+  2026-07-23 from the local eigenvector leaf below by transporting a
+  generator of the stable line along the chosen embedding
+  `ℚ̄ ↪ ℚ̂̄_p`): at a good supersingular prime `p ≠ 2` (the reduced
+  curve has trivial geometric `p`-torsion), no line of `E[p]` is
+  inertia-stable.
+* `not_local_inertia_eigenvector_of_good_of_supersingular` (sorry
+  node — the local fundamental-character content): no nonzero local
+  `p`-torsion point is an inertia eigenvector — inertia acts through
+  the level-2 fundamental character, whose eigenvalues are
+  `𝔽_{p²}`-conjugate and not `𝔽_p`-rational (Serre, Propriétés
+  galoisiennes…, Invent. Math. 15 (1972), §1.11–1.12, Prop. 12).
 * `exists_etale_line_or_no_stable_line_of_good` (DERIVED 2026-07-23
   from the preceding leaf by the tautological fork on the existence
   of an inertia-stable line).
@@ -3205,19 +3210,69 @@ theorem WeierstrassCurve.exists_etale_line_of_good_of_ordinary
     E.exists_localTorsionQuotient_of_good_ordinary hp hodd hord
   exact E.exists_etale_line_of_localTorsionQuotient hp π hπsurj hπinv
 
+open ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
-/-- **No inertia-stable line at a good SUPERSINGULAR prime** (sorry
-node, cut out of `exists_etale_line_of_good_of_inertia_stable_line`
-2026-07-23 at the ordinary/supersingular dichotomy): for an elliptic
-curve over `ℚ` with good reduction at an odd prime `p` whose reduction
-is SUPERSINGULAR — stated as the triviality of the geometric
-`p`-torsion of the reduced curve `Ẽ/𝔽_p` — no line of `E[p]` is
-stable under the local inertia at `p`: inertia acts on `E[p]` through
-the level-2 fundamental character of the quadratic unramified
-extension, whose eigenvalues are `𝔽_{p²}`-conjugate and not
-`𝔽_p`-rational, so the inertia action admits no eigenvector. Serre,
-Propriétés galoisiennes des points d'ordre fini des courbes
-elliptiques, Invent. Math. 15 (1972), §1.11–1.12, Prop. 12. -/
+/-- **No local inertia eigenvector at a good SUPERSINGULAR prime**
+(sorry node — the local fundamental-character content, cut 2026-07-23
+at the same local seam as the multiplicative and ordinary quotients):
+for an elliptic curve over `ℚ` with good supersingular reduction at an
+odd prime `p` (supersingularity stated as the triviality of the
+geometric `p`-torsion of the reduced curve `Ẽ/𝔽_p`), no nonzero
+`p`-torsion point of the completed base change over the local
+algebraic closure is an eigenvector of the local inertia: inertia acts
+on the local `p`-torsion through the level-2 fundamental character of
+the quadratic unramified extension, whose eigenvalues are
+`𝔽_{p²}`-conjugate and not `𝔽_p`-rational. Serre, Propriétés
+galoisiennes des points d'ordre fini des courbes elliptiques, Invent.
+Math. 15 (1972), §1.11–1.12, Prop. 12. -/
+theorem WeierstrassCurve.not_local_inertia_eigenvector_of_good_of_supersingular
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime) (hodd : p ≠ 2)
+    [E.HasGoodReduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
+    (hss : ∀ P : ((E.reduction
+        (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))⁄
+        (AlgebraicClosure (IsLocalRing.ResidueField
+          (Localization.AtPrime
+            hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))).Point,
+      (p : ℤ) • P = 0 → P = 0)
+    (Q : ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))).Point)
+    (hQtor : ((p : ℕ) : ℤ) • Q = 0) (hQ0 : Q ≠ 0)
+    (heig : ∀ σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat,
+      ∃ c : ZMod p,
+        WeierstrassCurve.Affine.Point.map
+          (W' := E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat)))
+          ((σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat))
+            ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat]
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat)))).toAlgHom Q =
+        c.val • Q) :
+    False :=
+  sorry
+
+open IsDedekindDomain in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **No inertia-stable line at a good SUPERSINGULAR prime** (DERIVED
+2026-07-23 from the local eigenvector leaf
+`not_local_inertia_eigenvector_of_good_of_supersingular` by
+transporting a generator of the stable line along the chosen embedding
+`ℚ̄ ↪ ℚ̂̄_p`): for an elliptic curve over `ℚ` with good supersingular
+reduction at an odd prime `p`, no line of `E[p]` is stable under the
+local inertia at `p`. A stable line has a generator `w ≠ 0` with
+`W = span {w}`, so inertia moves `w` to scalar multiples of itself;
+the transported point `Q = ι(w)` is then a nonzero `p`-torsion local
+inertia EIGENVECTOR (equivariance of the transport:
+`point_map_algClosureEmbeddingRat_comm`), which the local leaf
+forbids. Serre, Propriétés galoisiennes…, Invent. Math. 15 (1972),
+§1.11–1.12, Prop. 12. -/
 theorem WeierstrassCurve.not_inertia_stable_line_of_good_of_supersingular
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime) (hodd : p ≠ 2)
     [E.HasGoodReduction
@@ -3235,8 +3290,138 @@ theorem WeierstrassCurve.not_inertia_stable_line_of_good_of_supersingular
         ((Field.absoluteGaloisGroup.map (algebraMap ℚ
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
             hp.toHeightOneSpectrumRingOfIntegersRat))) σ) v ∈ W) :
-    False :=
-  sorry
+    False := by
+  classical
+  haveI : Fact p.Prime := ⟨hp⟩
+  letI := algebraRatAlgClosureAdic hp.toHeightOneSpectrumRingOfIntegersRat
+  haveI hfinG : Finite ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) :=
+    Nat.finite_of_card_ne_zero (by
+      rw [TorsionCard.card_torsionBy (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) p
+        (Nat.cast_ne_zero.mpr hp.ne_zero)]
+      exact pow_ne_zero 2 hp.ne_zero)
+  haveI : Fintype ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) :=
+    Fintype.ofFinite _
+  haveI : Module.Finite (ZMod p)
+      ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion p) :=
+    Module.Finite.of_finite
+  -- a generator of the stable line
+  have hWbot : W ≠ ⊥ := by
+    intro h
+    rw [h, finrank_bot] at hW1
+    exact zero_ne_one hW1
+  obtain ⟨w, hwW, hw0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hWbot
+  have hspan : Submodule.span (ZMod p) {w} = W := by
+    apply Submodule.eq_of_le_of_finrank_le
+      ((Submodule.span_singleton_le_iff_mem w W).mpr hwW)
+    rw [hW1, finrank_span_singleton hw0]
+  have hWmem : ∀ u ∈ W, ∃ c : ZMod p, u = c • w := by
+    intro u hu
+    rw [← hspan] at hu
+    obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp hu
+    exact ⟨c, hc.symm⟩
+  -- transport the generator to the local `p`-torsion and apply the leaf
+  refine E.not_local_inertia_eigenvector_of_good_of_supersingular hp hodd hss
+    (show ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))).Point from
+      WeierstrassCurve.Affine.Point.map (W' := E)
+        (algClosureEmbeddingRat hp.toHeightOneSpectrumRingOfIntegersRat)
+        (show ((E)⁄(AlgebraicClosure ℚ)).Point from w.1)) ?_ ?_ ?_
+  · -- the transported point is `p`-torsion
+    have h1 : ((p : ℕ) : ℤ) •
+        (show ((E)⁄(AlgebraicClosure ℚ)).Point from w.1) = 0 := by
+      have h0 := w.2
+      rw [Submodule.mem_torsionBy_iff] at h0
+      exact h0
+    show ((p : ℕ) : ℤ) • WeierstrassCurve.Affine.Point.map (W' := E)
+        (algClosureEmbeddingRat hp.toHeightOneSpectrumRingOfIntegersRat)
+        (show ((E)⁄(AlgebraicClosure ℚ)).Point from w.1) = 0
+    rw [← map_zsmul, h1, map_zero]
+  · -- the transported point is nonzero
+    intro h
+    apply hw0
+    apply Subtype.ext
+    show (show ((E)⁄(AlgebraicClosure ℚ)).Point from w.1) = 0
+    apply WeierstrassCurve.Affine.Point.map_injective
+      (f := algClosureEmbeddingRat hp.toHeightOneSpectrumRingOfIntegersRat)
+    rw [map_zero]
+    exact h
+  · -- the transported point is an inertia eigenvector
+    intro σ hσ
+    obtain ⟨c, hc⟩ := hWmem _ (hWstable σ hσ w hwW)
+    refine ⟨c, ?_⟩
+    -- the stability relation with a `ℕ`-scalar
+    have h1 : E.galoisRep p hp.pos
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat))) σ) w = c.val • w := by
+      rw [hc]
+      conv_lhs => rw [← show ((c.val : ℕ) : ZMod p) = c from by
+        rw [ZMod.natCast_val, ZMod.cast_id]]
+      rw [Nat.cast_smul_eq_nsmul]
+    -- … at the level of underlying points
+    have hcoe : (show ((E)⁄(AlgebraicClosure ℚ)).Point from
+        (E.galoisRep p hp.pos
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat))) σ) w).1) =
+        c.val • (show ((E)⁄(AlgebraicClosure ℚ)).Point from w.1) := by
+      rw [h1]
+      push_cast
+      rfl
+    have hb : (show ((E)⁄(AlgebraicClosure ℚ)).Point from
+        (E.galoisRep p hp.pos
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat))) σ) w).1) =
+        WeierstrassCurve.Affine.Point.map
+          (((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat))) σ :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom
+          (show ((E)⁄(AlgebraicClosure ℚ)).Point from w.1) := rfl
+    have hcomm := point_map_algClosureEmbeddingRat_comm
+      hp.toHeightOneSpectrumRingOfIntegersRat E σ
+      (show ((E)⁄(AlgebraicClosure ℚ)).Point from w.1)
+    -- identify the `σ`-action on the mapped curve with `algClosureSigmaRat`
+    have hbb : ∀ Qp : ((E)⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))).Point,
+        WeierstrassCurve.Affine.Point.map (W' := E)
+          (algClosureSigmaRat hp.toHeightOneSpectrumRingOfIntegersRat σ) Qp =
+        (show ((E)⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat))).Point from
+          WeierstrassCurve.Affine.Point.map
+            (W' := E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat)))
+            ((σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat))
+              ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat]
+              (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat)))).toAlgHom
+            (show ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat))).Point from Qp)) := by
+      intro Qp
+      cases Qp with
+      | zero => rfl
+      | some x y h => rfl
+    -- assemble: `σ` after transport = transport after global `σ`
+    --           = the `c.val`-multiple of the transport
+    have hstep : WeierstrassCurve.Affine.Point.map (W' := E)
+        (algClosureSigmaRat hp.toHeightOneSpectrumRingOfIntegersRat σ)
+        (WeierstrassCurve.Affine.Point.map (W' := E)
+          (algClosureEmbeddingRat hp.toHeightOneSpectrumRingOfIntegersRat)
+          (show ((E)⁄(AlgebraicClosure ℚ)).Point from w.1)) =
+        c.val • WeierstrassCurve.Affine.Point.map (W' := E)
+          (algClosureEmbeddingRat hp.toHeightOneSpectrumRingOfIntegersRat)
+          (show ((E)⁄(AlgebraicClosure ℚ)).Point from w.1) := by
+      rw [← hcomm, ← hb, hcoe, map_nsmul]
+    rw [hbb] at hstep
+    exact hstep
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The connected-étale line at a good prime, given an
