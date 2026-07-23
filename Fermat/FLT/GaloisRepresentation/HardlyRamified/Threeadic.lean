@@ -1009,8 +1009,8 @@ theorem cyclotomicCharacter_add_one_mem_span_three (g : Γ ℚ)
     decide
   rwa [PadicInt.ker_toZModPow, pow_one] at hker
 
-/-- **The residual determinant is the diagonal entry** (sorry node — the
-determinant computation of the triangular reduction): along the
+/-- **The residual determinant is the diagonal entry** (PROVEN 2026-07-23
+— the determinant computation of the triangular reduction): along the
 residually adapted pair `(w₀, v₀)` — with `w₀` residually spanning the
 line `ker π` and the quotient character trivial (`hπequiv`) — the
 determinant of `ρ g` is residually the diagonal entry `a g`. Route:
@@ -1045,7 +1045,116 @@ theorem det_sub_residual_a_mem_maximalIdeal
       (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V))
     (g : Γ ℚ) :
     ρ.det g - a g ∈ IsLocalRing.maximalIdeal R := by
-  sorry
+  classical
+  have hker : RingHom.ker (algebraMap R kk) = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.eq_maximalIdeal
+      (RingHom.ker_isMaximal_of_surjective _ hsurj)
+  -- the residually adapted basis `(b 0, b 1) = (u₀, v₀)`
+  obtain ⟨b, hb0π, hb0ne, hb1⟩ :=
+    exists_residual_adapted_basis V hV kk hsurj π hπsurj v₀ hv₀
+  set bb : Module.Basis (Fin 2) kk (kk ⊗[R] V) := b.baseChange kk with hbbdef
+  have hbb0 : bb 0 = (1 : kk) ⊗ₜ[R] b 0 := Module.Basis.baseChange_apply kk b 0
+  have hbb1 : bb 1 = (1 : kk) ⊗ₜ[R] b 1 := Module.Basis.baseChange_apply kk b 1
+  -- the residual endomorphism is the base change of `ρ g`
+  have hT : ((ρ.baseChange kk) g : Module.End kk (kk ⊗[R] V)) =
+      LinearMap.baseChange kk (ρ g) := by
+    refine Module.Basis.ext bb fun i => ?_
+    rw [show bb i = (1 : kk) ⊗ₜ[R] (b i) from
+        Module.Basis.baseChange_apply kk b i,
+      LinearMap.baseChange_tmul]
+    exact GaloisRep.baseChange_tmul ρ g 1 (b i)
+  -- determinant transfer along base change
+  have hdet : LinearMap.det ((ρ.baseChange kk) g : Module.End kk (kk ⊗[R] V)) =
+      algebraMap R kk (ρ.det g) := by
+    rw [hT, LinearMap.det_baseChange, GaloisRep.det_apply]
+  -- the matrix of the residual endomorphism
+  set M2 : Matrix (Fin 2) (Fin 2) kk :=
+    LinearMap.toMatrix bb bb ((ρ.baseChange kk) g) with hM2
+  have hentry : ∀ i j, M2 i j =
+      bb.repr ((ρ.baseChange kk) g (bb j)) i := fun i j =>
+    LinearMap.toMatrix_apply bb bb _ i j
+  have hdet2 : LinearMap.det ((ρ.baseChange kk) g : Module.End kk (kk ⊗[R] V)) =
+      M2.det := (LinearMap.det_toMatrix bb _).symm
+  -- the kernel of `π` is the residual line through `1 ⊗ b 0`
+  haveI : Module.Finite kk (kk ⊗[R] V) := Module.Finite.of_basis bb
+  have hfr : Module.finrank kk (kk ⊗[R] V) = 2 := by
+    rw [Module.finrank_eq_card_basis bb, Fintype.card_fin]
+  have hker1 : Module.finrank kk (LinearMap.ker π) = 1 := by
+    have h := LinearMap.finrank_range_add_finrank_ker π
+    rw [LinearMap.range_eq_top.mpr hπsurj, finrank_top, Module.finrank_self,
+      hfr] at h
+    omega
+  have hkerspan : (LinearMap.ker π : Submodule kk (kk ⊗[R] V)) =
+      Submodule.span kk {(1 : kk) ⊗ₜ[R] b 0} := by
+    refine (Submodule.eq_of_le_of_finrank_eq ?_ ?_).symm
+    · rw [Submodule.span_le, Set.singleton_subset_iff]
+      exact LinearMap.mem_ker.mpr hb0π
+    · rw [hker1, finrank_span_singleton hb0ne]
+  -- the residual endomorphism preserves the line, with eigenvalue `x0`
+  have hDb0mem : (ρ.baseChange kk) g ((1 : kk) ⊗ₜ[R] b 0) ∈
+      Submodule.span kk {(1 : kk) ⊗ₜ[R] b 0} := by
+    rw [← hkerspan, LinearMap.mem_ker, hπequiv g]
+    exact hb0π
+  obtain ⟨x0, hx0⟩ := Submodule.mem_span_singleton.mp hDb0mem
+  -- lower-left entry vanishes
+  have hM10 : M2 1 0 = 0 := by
+    rw [hentry 1 0, hbb0, ← hx0, map_smul, ← hbb0, Module.Basis.repr_self]
+    simp
+  -- lower-right entry is `1` (the trivial quotient character)
+  have hM11 : M2 1 1 = 1 := by
+    have hsum1 := bb.sum_repr ((ρ.baseChange kk) g (bb 1))
+    rw [Fin.sum_univ_two] at hsum1
+    have hπ1 := hπequiv g (bb 1)
+    rw [← hsum1, map_add, map_smul, map_smul] at hπ1
+    have hπbb0 : π (bb 0) = 0 := by rw [hbb0]; exact hb0π
+    have hπbb1ne : π (bb 1) ≠ 0 := by rw [hbb1, hb1]; exact hv₀
+    rw [hπbb0, smul_zero, zero_add, smul_eq_mul] at hπ1
+    have h2 : (bb.repr ((ρ.baseChange kk) g (bb 1)) 1 - 1) * π (bb 1) = 0 := by
+      rw [sub_mul, one_mul, hπ1, sub_self]
+    rcases mul_eq_zero.mp h2 with h | h
+    · rw [hentry 1 1]
+      exact sub_eq_zero.mp h
+    · exact absurd h hπbb1ne
+  -- the eigenvalue is residually `a g`, through the `w₀`-line
+  have hw₀mem : (1 : kk) ⊗ₜ[R] w₀ ∈
+      Submodule.span kk {(1 : kk) ⊗ₜ[R] b 0} := by
+    rw [← hkerspan]
+    exact LinearMap.mem_ker.mpr hw₀π
+  obtain ⟨y0, hy0⟩ := Submodule.mem_span_singleton.mp hw₀mem
+  have hy0ne : y0 ≠ 0 := by
+    rintro rfl
+    rw [zero_smul] at hy0
+    exact hw₀ne hy0.symm
+  have hDw₀ : (ρ.baseChange kk) g ((1 : kk) ⊗ₜ[R] w₀) =
+      algebraMap R kk (a g) • ((1 : kk) ⊗ₜ[R] w₀) := by
+    have h0 : (1 : kk) ⊗ₜ[R] (ρ g w₀ - a g • w₀) = 0 :=
+      one_tmul_eq_zero_of_mem_maximalIdeal_smul_top kk hsurj (ha g)
+    rw [TensorProduct.tmul_sub, sub_eq_zero, one_tmul_smul] at h0
+    calc (ρ.baseChange kk) g ((1 : kk) ⊗ₜ[R] w₀)
+        = (1 : kk) ⊗ₜ[R] (ρ g w₀) := GaloisRep.baseChange_tmul ρ g 1 w₀
+      _ = algebraMap R kk (a g) • ((1 : kk) ⊗ₜ[R] w₀) := h0
+  have hxa : x0 = algebraMap R kk (a g) := by
+    have h1 : (ρ.baseChange kk) g ((1 : kk) ⊗ₜ[R] w₀) =
+        y0 • ((ρ.baseChange kk) g ((1 : kk) ⊗ₜ[R] b 0)) := by
+      rw [← map_smul, hy0]
+    rw [hDw₀, ← hy0, ← hx0, smul_smul, smul_smul] at h1
+    have h3 : algebraMap R kk (a g) * y0 = y0 * x0 :=
+      smul_left_injective kk hb0ne h1
+    have h4 : y0 * (algebraMap R kk (a g) - x0) = 0 := by
+      linear_combination h3
+    rcases mul_eq_zero.mp h4 with h5 | h5
+    · exact absurd h5 hy0ne
+    · exact (sub_eq_zero.mp h5).symm
+  -- upper-left entry is residually `a g`
+  have hM00 : M2 0 0 = algebraMap R kk (a g) := by
+    rw [hentry 0 0, hbb0, ← hx0, map_smul, ← hbb0, Module.Basis.repr_self,
+      ← hxa]
+    simp
+  -- assemble the determinant and read off the congruence
+  have hdetval : algebraMap R kk (ρ.det g) = algebraMap R kk (a g) := by
+    rw [← hdet, hdet2, Matrix.det_fin_two, hM00, hM11, hM10, mul_one,
+      mul_zero, sub_zero]
+  rw [← hker, RingHom.mem_ker, map_sub, hdetval, sub_self]
 
 /-- **The residual twist is the mod-3 cyclotomic character** (DERIVED
 2026-07-23 from the three leaves above — the determinant identification;
