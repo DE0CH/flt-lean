@@ -509,6 +509,360 @@ lemma charFrob_coeff_zero_eq_natCast
           hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly from rfl,
     ← hdet, hdetq, map_natCast]
 
+/-! ### Block-triangular linear algebra for the reducible branch
+
+The mathlib pin has `LinearMap.det_eq_det_mul_det` (the determinant of
+an endomorphism preserving a submodule is the product of the
+determinants of the restriction and of the induced quotient map) but
+no characteristic-polynomial analogue, and no API for evaluating the
+`1`-dimensional blocks. The reducible-branch trace analysis below
+reads the trace coefficient off the factored charpoly, so we prove the
+charpoly analogue here by the same `Module.Basis.sumQuot` block-matrix
+computation, together with the `1`-dimensional evaluation
+`charpoly = X - C (trace)`. -/
+
+open Module.Basis in
+/-- **Block-triangular characteristic polynomial** (PROVEN): if the
+endomorphism `e` preserves the submodule `W₀`, its characteristic
+polynomial factors as the product of the characteristic polynomials of
+the restriction to `W₀` and of the induced endomorphism of `V₀ ⧸ W₀`.
+Charpoly analogue of the pin's `LinearMap.det_eq_det_mul_det`, proven
+by the same block-matrix computation through the mixed basis
+`Module.Basis.sumQuot` and `Matrix.charpoly_fromBlocks_zero₂₁`. -/
+theorem _root_.LinearMap.charpoly_eq_charpoly_restrict_mul_charpoly_mapQ
+    {R₀ V₀ : Type*} [CommRing R₀] [AddCommGroup V₀] [Module R₀ V₀]
+    [Module.Finite R₀ V₀] [Module.Free R₀ V₀]
+    (W₀ : Submodule R₀ V₀) [Module.Free R₀ W₀] [Module.Finite R₀ W₀]
+    [Module.Free R₀ (V₀ ⧸ W₀)] [Module.Finite R₀ (V₀ ⧸ W₀)]
+    (e : V₀ →ₗ[R₀] V₀) (he : W₀ ≤ W₀.comap e) :
+    e.charpoly = (e.restrict he).charpoly * (W₀.mapQ W₀ e he).charpoly := by
+  classical
+  let m := Module.Free.ChooseBasisIndex R₀ W₀
+  let bW : Module.Basis m R₀ W₀ := Module.Free.chooseBasis R₀ W₀
+  let n := Module.Free.ChooseBasisIndex R₀ (V₀ ⧸ W₀)
+  let bQ : Module.Basis n R₀ (V₀ ⧸ W₀) := Module.Free.chooseBasis R₀ (V₀ ⧸ W₀)
+  let b := sumQuot bW bQ
+  let A : Matrix m m R₀ := LinearMap.toMatrix bW bW (e.restrict he)
+  let B : Matrix m n R₀ := Matrix.of fun i l ↦
+    ((sumQuot bW bQ).repr (e ((sumQuot bW bQ) (Sum.inr l)))) (Sum.inl i)
+  let D : Matrix n n R₀ := LinearMap.toMatrix bQ bQ (W₀.mapQ W₀ e he)
+  suffices LinearMap.toMatrix b b e = Matrix.fromBlocks A B 0 D by
+    rw [← e.charpoly_toMatrix b, this, Matrix.charpoly_fromBlocks_zero₂₁,
+      (e.restrict he).charpoly_toMatrix bW, (W₀.mapQ W₀ e he).charpoly_toMatrix bQ]
+  ext u v
+  cases u with
+  | inl i =>
+    cases v with
+    | inl k =>
+      simp only [b, sumQuot_inl, Matrix.fromBlocks_apply₁₁, A, LinearMap.toMatrix_apply]
+      apply sumQuot_repr_inl_of_mem
+    | inr l => simp [b, LinearMap.toMatrix_apply, Matrix.fromBlocks_apply₁₂, B]
+  | inr j =>
+    cases v with
+    | inl k =>
+      suffices W₀.mkQ (e (bW k)) = 0 by simp [LinearMap.toMatrix_apply, b, this]
+      rw [← LinearMap.mem_ker, Submodule.ker_mkQ]
+      exact he (Submodule.coe_mem (bW k))
+    | inr l =>
+      simp only [LinearMap.toMatrix_apply, sumQuot_repr_inr,
+        Matrix.fromBlocks_apply₂₂, b, D]
+      rw [← sumQuot_inr bW bQ l, W₀.mapQ_apply]
+      simp
+
+/-- **`1`-dimensional characteristic polynomial** (PROVEN): on a
+`1`-dimensional space every endomorphism has characteristic polynomial
+`X - C (trace)`. Used to evaluate the two blocks of
+`LinearMap.charpoly_eq_charpoly_restrict_mul_charpoly_mapQ` when the
+invariant submodule is a line in a plane. -/
+theorem _root_.LinearMap.charpoly_eq_X_sub_C_trace_of_finrank_eq_one
+    {K₀ V₀ : Type*} [Field K₀] [AddCommGroup V₀] [Module K₀ V₀]
+    [Module.Finite K₀ V₀] (h : Module.finrank K₀ V₀ = 1) (f : V₀ →ₗ[K₀] V₀) :
+    f.charpoly = Polynomial.X - Polynomial.C (LinearMap.trace K₀ V₀ f) := by
+  classical
+  let b : Module.Basis Unit K₀ V₀ := Module.basisUnique Unit h
+  rw [← f.charpoly_toMatrix b, LinearMap.trace_eq_matrix_trace K₀ b f,
+    Matrix.charpoly, Matrix.det_unique, Matrix.charmatrix_apply_eq, Matrix.trace]
+  simp
+
+/-- **Characteristic polynomial of a plane along an invariant line**
+(PROVEN): if `e` preserves a submodule `W₀` with `1`-dimensional source
+and quotient, acting on them by the scalars `a` resp. `b`, then
+`charpoly e = (X - C a)(X - C b)`. Combined form of the two lemmas
+above, packaged so that consumers only produce the two scalar-action
+equations — all charpoly manipulation of submodule/quotient modules
+stays inside this generic context (in the concrete consumer below, the
+mixed `AddCommGroup`/`AddCommMonoid` instance spellings of submodule
+endomorphism types fail to unify during standalone elaboration). -/
+theorem _root_.LinearMap.charpoly_eq_mul_of_line
+    {K₀ V₀ : Type*} [Field K₀] [AddCommGroup V₀] [Module K₀ V₀]
+    [Module.Finite K₀ V₀]
+    (W₀ : Submodule K₀ V₀) (e : V₀ →ₗ[K₀] V₀) (he : W₀ ≤ W₀.comap e)
+    (hW : Module.finrank K₀ W₀ = 1) (hQ : Module.finrank K₀ (V₀ ⧸ W₀) = 1)
+    {a b : K₀}
+    (ha : e.restrict he = a • (1 : Module.End K₀ W₀))
+    (hb : W₀.mapQ W₀ e he = b • (1 : Module.End K₀ (V₀ ⧸ W₀))) :
+    e.charpoly = (Polynomial.X - Polynomial.C a) * (Polynomial.X - Polynomial.C b) := by
+  rw [LinearMap.charpoly_eq_charpoly_restrict_mul_charpoly_mapQ W₀ e he, ha, hb,
+    LinearMap.charpoly_eq_X_sub_C_trace_of_finrank_eq_one hW,
+    LinearMap.charpoly_eq_X_sub_C_trace_of_finrank_eq_one hQ,
+    map_smul (LinearMap.trace K₀ ↥W₀) a 1,
+    map_smul (LinearMap.trace K₀ (V₀ ⧸ W₀)) b 1,
+    LinearMap.trace_one, LinearMap.trace_one, hW, hQ]
+  norm_num
+
+omit [Algebra ℤ_[p] R] [IsDomain R] [Module.Finite ℤ_[p] R] [IsTopologicalRing R]
+  [IsModuleTopology ℤ_[p] R] in
+include hv in
+set_option backward.isDefEq.respectTransparency false in
+/-- **Diagonal characters of a reducible base change** (PROVEN): if the
+base extension of `ρ` to `ℚ̄_p` is not irreducible, there is a pair of
+continuous multiplicative characters `χ₁, χ₂ : G_ℚ → ℚ̄_p` splitting
+every mapped characteristic polynomial:
+`charpoly (ρ g) ↦ (X - χ₁ g)(X - χ₂ g)`. This is the linear-algebra
+half of the Eisenstein branch, with no arithmetic content: a proper
+invariant subspace of the `2`-dimensional base change is a line with a
+line quotient; `χ₁` is the action on the line (extracted by a dual
+functional through a complement), `χ₂` the action on the quotient; the
+charpoly factors through the invariant line by the block-triangular
+`LinearMap.charpoly_eq_mul_of_line`, and continuity is
+`IsModuleTopology.continuous_of_linearMap` against the continuity of
+`ρ` itself. -/
+theorem exists_char_charpoly_map_eq_of_not_isIrreducible
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hred : ¬ (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible) :
+    ∃ χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p],
+      Continuous χ₁ ∧ Continuous χ₂ ∧ χ₁ 1 = 1 ∧ χ₂ 1 = 1 ∧
+      (∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h) ∧
+      (∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h) ∧
+      ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+        (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)) := by
+  classical
+  set σ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (AlgebraicClosure ℚ_[p] ⊗[R] V) :=
+    ρ.baseChange (AlgebraicClosure ℚ_[p]) with hσdef
+  -- dimension bookkeeping
+  have hfrM : Module.finrank (AlgebraicClosure ℚ_[p]) (AlgebraicClosure ℚ_[p] ⊗[R] V) = 2 := by
+    rw [Module.finrank_baseChange]
+    exact Module.finrank_eq_of_rank_eq hv
+  haveI hMnt : Nontrivial (AlgebraicClosure ℚ_[p] ⊗[R] V) :=
+    (Module.finrank_pos_iff (R := AlgebraicClosure ℚ_[p])).mp (by omega)
+  -- extract a proper invariant subspace from reducibility
+  obtain ⟨W, hWbot, hWtop⟩ :
+      ∃ W : Subrepresentation σ.toRepresentation, W ≠ ⊥ ∧ W ≠ ⊤ := by
+    by_contra hcon
+    push Not at hcon
+    exact hred
+      { toNontrivial :=
+          ⟨⊥, ⊤, fun hbt => bot_ne_top
+            (congrArg Subrepresentation.toSubmodule hbt)⟩
+        eq_bot_or_eq_top := fun a => or_iff_not_imp_left.mpr (hcon a) }
+  -- invariance of the subspace
+  have hle : ∀ g : Field.absoluteGaloisGroup ℚ,
+      W.toSubmodule ≤ W.toSubmodule.comap (σ g) :=
+    fun g x hx => W.apply_mem_toSubmodule g hx
+  -- the invariant subspace is a line with a line quotient
+  have hWfr : Module.finrank (AlgebraicClosure ℚ_[p]) W.toSubmodule = 1 := by
+    have h1 : Module.finrank (AlgebraicClosure ℚ_[p]) W.toSubmodule ≠ 0 := fun h =>
+      hWbot (Subrepresentation.toSubmodule_injective (Submodule.finrank_eq_zero.mp h))
+    have h2 : Module.finrank (AlgebraicClosure ℚ_[p]) W.toSubmodule <
+        Module.finrank (AlgebraicClosure ℚ_[p]) (AlgebraicClosure ℚ_[p] ⊗[R] V) :=
+      Submodule.finrank_lt fun h => hWtop (Subrepresentation.toSubmodule_injective h)
+    omega
+  have hQfr : Module.finrank (AlgebraicClosure ℚ_[p])
+      ((AlgebraicClosure ℚ_[p] ⊗[R] V) ⧸ W.toSubmodule) = 1 := by
+    have hq := Submodule.finrank_quotient_add_finrank W.toSubmodule
+    omega
+  -- every vector space is free (the instance is not picked up through the
+  -- import closure here, so record it by hand for the line and its quotient)
+  haveI : Module.Free (AlgebraicClosure ℚ_[p]) W.toSubmodule :=
+    Module.Free.of_basis (Module.Basis.ofVectorSpace (AlgebraicClosure ℚ_[p]) W.toSubmodule)
+  haveI : Module.Free (AlgebraicClosure ℚ_[p])
+      ((AlgebraicClosure ℚ_[p] ⊗[R] V) ⧸ W.toSubmodule) :=
+    Module.Free.of_divisionRing _ _
+  -- a basis vector of the line and its dual functional through a complement
+  let bW : Module.Basis Unit (AlgebraicClosure ℚ_[p]) W.toSubmodule :=
+    Module.basisUnique Unit hWfr
+  obtain ⟨c, hc⟩ := Submodule.exists_isCompl W.toSubmodule
+  let φ : (AlgebraicClosure ℚ_[p] ⊗[R] V) →ₗ[AlgebraicClosure ℚ_[p]]
+      AlgebraicClosure ℚ_[p] :=
+    (bW.coord default) ∘ₗ (W.toSubmodule.projectionOnto c hc)
+  set w : AlgebraicClosure ℚ_[p] ⊗[R] V :=
+    ((bW default : W.toSubmodule) : AlgebraicClosure ℚ_[p] ⊗[R] V) with hwdef
+  -- a lift of a basis vector of the quotient line and its dual functional
+  let bQ : Module.Basis Unit (AlgebraicClosure ℚ_[p])
+      ((AlgebraicClosure ℚ_[p] ⊗[R] V) ⧸ W.toSubmodule) :=
+    Module.basisUnique Unit hQfr
+  obtain ⟨u, hu⟩ := Submodule.mkQ_surjective W.toSubmodule (bQ default)
+  let Φ : (AlgebraicClosure ℚ_[p] ⊗[R] V) →ₗ[AlgebraicClosure ℚ_[p]]
+      AlgebraicClosure ℚ_[p] :=
+    (bQ.coord default) ∘ₗ W.toSubmodule.mkQ
+  -- the diagonal characters
+  set χ₁ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p] :=
+    fun g => φ (σ g w) with hχ₁def
+  set χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p] :=
+    fun g => Φ (σ g u) with hχ₂def
+  -- normalization of the two functionals on the chosen vectors
+  have hφw : φ w = 1 := by
+    simp only [φ, LinearMap.comp_apply, hwdef]
+    rw [Submodule.projectionOnto_apply_of_mem_left hc (bW default).2]
+    simp [Module.Basis.coord_apply]
+  have hΦu : Φ u = 1 := by
+    simp only [Φ, LinearMap.comp_apply, hu]
+    simp [Module.Basis.coord_apply]
+  -- the line is spanned by `w`: the action on it is by the scalar `χ₁`
+  have hscal₁ : ∀ g : Field.absoluteGaloisGroup ℚ, σ g w = χ₁ g • w := by
+    intro g
+    have hmem : σ g w ∈ W.toSubmodule := hle g (bW default).2
+    have hrepr : (⟨σ g w, hmem⟩ : W.toSubmodule) =
+        bW.repr ⟨σ g w, hmem⟩ default • bW default := by
+      conv_lhs => rw [← bW.sum_repr ⟨σ g w, hmem⟩]
+      simp
+    have hval : χ₁ g = bW.repr ⟨σ g w, hmem⟩ default := by
+      simp only [hχ₁def, φ, LinearMap.comp_apply]
+      rw [Submodule.projectionOnto_apply_of_mem_left hc hmem]
+      simp [Module.Basis.coord_apply]
+    have hcoe := congrArg (W.toSubmodule.subtype) hrepr
+    simp only [Submodule.subtype_apply, Submodule.coe_smul] at hcoe
+    rw [hval]
+    exact hcoe
+  -- the quotient line is spanned by `mkQ u`: the quotient action is by `χ₂`
+  have hscal₂ : ∀ g : Field.absoluteGaloisGroup ℚ,
+      W.toSubmodule.mkQ (σ g u) = χ₂ g • W.toSubmodule.mkQ u := by
+    intro g
+    have hrepr : W.toSubmodule.mkQ (σ g u) =
+        bQ.repr (W.toSubmodule.mkQ (σ g u)) default • bQ default := by
+      conv_lhs => rw [← bQ.sum_repr (W.toSubmodule.mkQ (σ g u))]
+      simp
+    have hval : χ₂ g = bQ.repr (W.toSubmodule.mkQ (σ g u)) default := by
+      simp only [hχ₂def, Φ, LinearMap.comp_apply]
+      simp [Module.Basis.coord_apply]
+    rw [hu, hval]
+    exact hrepr
+  -- multiplicativity
+  have hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h := by
+    intro g h
+    have happ : σ (g * h) w = σ g (σ h w) := by rw [map_mul]; rfl
+    calc χ₁ (g * h) = φ (σ g (σ h w)) := by rw [hχ₁def]; exact congrArg φ happ
+    _ = φ (σ g (χ₁ h • w)) := by rw [hscal₁ h]
+    _ = χ₁ h * φ (σ g w) := by rw [map_smul, map_smul, smul_eq_mul]
+    _ = χ₁ g * χ₁ h := mul_comm _ _
+  have hΦker : ∀ x ∈ W.toSubmodule, Φ x = 0 := by
+    intro x hx
+    have hx0 : W.toSubmodule.mkQ x = 0 := (Submodule.Quotient.mk_eq_zero _).mpr hx
+    simp [Φ, LinearMap.comp_apply, hx0]
+  have hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h := by
+    intro g h
+    have happ : σ (g * h) u = σ g (σ h u) := by rw [map_mul]; rfl
+    have hdiff : σ h u - χ₂ h • u ∈ W.toSubmodule := by
+      rw [← Submodule.Quotient.mk_eq_zero]
+      have : W.toSubmodule.mkQ (σ h u - χ₂ h • u) = 0 := by
+        rw [map_sub, map_smul, hscal₂ h, sub_self]
+      exact this
+    calc χ₂ (g * h) = Φ (σ g (σ h u)) := by rw [hχ₂def]; exact congrArg Φ happ
+    _ = Φ (σ g (σ h u - χ₂ h • u)) + χ₂ h * Φ (σ g u) := by
+        rw [map_sub (σ g), map_sub Φ, map_smul (σ g), map_smul Φ, smul_eq_mul]
+        ring
+    _ = χ₂ g * χ₂ h := by
+        rw [hΦker _ (hle g hdiff), zero_add]
+        exact mul_comm _ _
+  -- normalization at the identity
+  have hone₁ : χ₁ 1 = 1 := by
+    have : σ 1 w = w := by rw [map_one]; rfl
+    rw [hχ₁def]
+    simpa [this] using hφw
+  have hone₂ : χ₂ 1 = 1 := by
+    have : σ 1 u = u := by rw [map_one]; rfl
+    rw [hχ₂def]
+    simpa [this] using hΦu
+  -- continuity: evaluation-then-functional is linear in the endomorphism
+  have hcont : ∀ (L : (AlgebraicClosure ℚ_[p] ⊗[R] V) →ₗ[AlgebraicClosure ℚ_[p]]
+      AlgebraicClosure ℚ_[p]) (x : AlgebraicClosure ℚ_[p] ⊗[R] V),
+      Continuous fun g : Field.absoluteGaloisGroup ℚ => L (σ g x) := by
+    intro L x
+    letI := moduleTopology (AlgebraicClosure ℚ_[p])
+      (Module.End (AlgebraicClosure ℚ_[p]) (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    haveI : IsModuleTopology (AlgebraicClosure ℚ_[p])
+        (Module.End (AlgebraicClosure ℚ_[p]) (AlgebraicClosure ℚ_[p] ⊗[R] V)) := ⟨rfl⟩
+    have hL : Continuous fun f : Module.End (AlgebraicClosure ℚ_[p])
+        (AlgebraicClosure ℚ_[p] ⊗[R] V) => L (f x) :=
+      IsModuleTopology.continuous_of_linearMap (L ∘ₗ LinearMap.applyₗ x)
+    exact hL.comp σ.continuous_toFun
+  -- the factored characteristic polynomial
+  have hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+      (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)) := by
+    intro g
+    have hBC : σ g = LinearMap.baseChange (AlgebraicClosure ℚ_[p]) (ρ g) :=
+      LinearMap.ext fun x => by
+        induction x using TensorProduct.induction_on with
+        | zero => simp
+        | add a b ha hb => simp only [map_add, ha, hb]
+        | tmul r v => simp [hσdef]
+    have hres : (σ g).restrict (hle g) =
+        χ₁ g • (1 : Module.End (AlgebraicClosure ℚ_[p]) W.toSubmodule) := by
+      refine bW.ext fun i => ?_
+      apply Subtype.ext
+      have := hscal₁ g
+      simpa [LinearMap.restrict_apply] using this
+    have hqes : W.toSubmodule.mapQ W.toSubmodule (σ g) (hle g) =
+        χ₂ g • (1 : Module.End (AlgebraicClosure ℚ_[p])
+          ((AlgebraicClosure ℚ_[p] ⊗[R] V) ⧸ W.toSubmodule)) := by
+      refine bQ.ext fun i => ?_
+      rw [← hu, Submodule.mkQ_apply, Submodule.mapQ_apply]
+      simpa [Submodule.mkQ_apply] using hscal₂ g
+    rw [← LinearMap.charpoly_baseChange, ← hBC,
+      LinearMap.charpoly_eq_mul_of_line W.toSubmodule (σ g) (hle g) hWfr hQfr hres hqes]
+  exact ⟨χ₁, χ₂, hcont φ w, hcont Φ u, hone₁, hone₂, hmul₁, hmul₂, hchar⟩
+
+/-- **The Eisenstein character dichotomy** (sorry node): if a pair of
+continuous multiplicative characters `χ₁, χ₂ : G_ℚ → ℚ̄_p` splits every
+mapped characteristic polynomial of a hardly ramified `ρ` (i.e.
+`charpoly (ρ g) ↦ (X - χ₁ g)(X - χ₂ g)` for every `g`), then
+`{χ₁, χ₂} = {1, χ_cyc}` in the symmetric (summed) form
+`χ₁ + χ₂ = 1 + χ_cyc` pointwise. This is the class-field-theoretic
+core of the reducible branch, isolated from all linear algebra (the
+character extraction is the PROVEN
+`exists_char_charpoly_map_eq_of_not_isIrreducible`); the intended
+proof, with every ingredient determined by the hypotheses:
+
+* comparing coefficients, `χ₁ + χ₂ = trace ∘ ρ` (mapped) and
+  `χ₁ · χ₂ = det ∘ ρ = χ_cyc` (mapped, by the cyclotomic-determinant
+  condition of `IsHardlyRamified`);
+* at inertia away from `{2, p}`: `ρ` is unramified there, so on
+  inertia `χ₁ + χ₂ = 2` and (the cyclotomic character being
+  unramified there too) `χ₁χ₂ = 1`; hence `χ₁, χ₂` are roots of
+  `(X - 1)²` — both unramified;
+* at inertia at `2`: the tame-at-two condition makes `ρ|_{G_2}`
+  triangular with unramified diagonal (the quotient character is
+  unramified by hypothesis, the sub-character is `χ_cyc/δ` with both
+  factors unramified at `2` since `p ≠ 2`), so the same
+  `(X - 1)²` argument applies — `χ₁, χ₂` are unramified at `2`;
+* at `p`: flatness of `ρ` at `p` forces (Raynaud/Fontaine on the
+  finite levels) `{χ₁, χ₂}` restricted to inertia at `p` to be
+  `{1, χ_cyc}`;
+* Minkowski: `ℚ` has no nontrivial extension unramified everywhere,
+  so the member of the pair with everywhere-unramified inertia is
+  trivial and the other is exactly `χ_cyc`.
+
+The conclusion is stated in the swap-symmetric summed form so that no
+choice of matching survives into the statement. -/
+theorem char_add_char_eq_one_add_cyclotomicCharacter
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hcont₁ : Continuous χ₁) (hcont₂ : Continuous χ₂)
+    (hone₁ : χ₁ 1 = 1) (hone₂ : χ₂ 1 = 1)
+    (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
+    (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
+    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+      (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g))) :
+    ∀ g, χ₁ g + χ₂ g =
+      1 + algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv : ℤ_[p]ˣ) : ℤ_[p]) :=
+  sorry
+
 /-- **Rational traces on the reducible branch** (sorry node): away from
 a finite set of places, the TRACE coefficient (`coeff 1`) of the mapped
 Frobenius characteristic polynomials of a hardly ramified `p`-adic
