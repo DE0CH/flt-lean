@@ -2655,24 +2655,70 @@ theorem exists_finite_etale_algebra_form_of_inertia_fixes
   exact (Algebra.TensorProduct.piRight R K K H₀).trans
     ((AlgEquiv.piCongrRight fun i => (hEq i).some).trans e.symm)
 
-/-- **Étale algebra forms of Hopf algebras are Hopf forms** (sorry node; the
-HOPF half of the curve-free Hopf-form leaf — pure commutative algebra over the
-DVR `R`, no Galois theory and no elliptic curve): if the finite étale Hopf
-`K`-algebra `HK` admits a finite étale `R`-ALGEBRA form `H₀`, then it admits a
-finite flat Hopf `R`-form. The key point making this honest: a finite étale
-`R`-algebra is normal, hence integrally closed in its total fraction ring
-`K ⊗[R] H₀ ≅ HK`, hence `H₀` is THE integral closure of `R` in `HK` — étale
-forms are canonical, so Hopf-stability is a property, not extra data. Intended
-proof: comultiplication is a ring homomorphism, so it sends `H₀` (integral over
-`R`) into elements of `HK ⊗[K] HK` integral over `R`, and the integral closure
-of `R` there is `H₀ ⊗[R] H₀` (étale ⊗ étale is étale over the normal base `R`,
-hence normal, hence integrally closed in its total fraction ring, and
-`K ⊗ (H₀ ⊗[R] H₀) ≅ HK ⊗[K] HK`); the counit sends `H₀` into elements of `K`
-integral over `R`, i.e. into `R` (a DVR is integrally closed); the antipode is
-an algebra endomorphism, so it preserves integrality; flatness is freeness of
-a finite torsion-free module over a DVR. The `μ_p` counterexample (whose
-normalization over `ℤ_p` is NOT a Hopf order) does not contradict this: there
-the normalization is not étale over `R`, so it is not an étale algebra form. -/
+/-- **Étale algebra forms are the integral closure** (sorry node; the CANONICITY
+half of the Hopf-upgrade leaf — pure commutative algebra over the DVR `R`, no
+Hopf structure): if the finite étale `K`-algebra `HK` admits a finite étale
+`R`-algebra form `H₀`, then the integral closure of `R` in `HK` is itself a
+finite étale `R`-algebra form. Intended proof: a finite étale `R`-algebra is
+normal, hence integrally closed in its total fraction ring `K ⊗[R] H₀ ≅ HK`,
+and every element of `HK` integral over `R` is a fraction of elements of the
+image of `H₀` with denominator invertible in `K`, hence already in the image —
+so the image of `H₀` under `x ↦ e (1 ⊗ x)` IS the integral closure, and the
+form data transports along the induced isomorphism `H₀ ≅ integralClosure R HK`
+(étale forms are canonical). -/
+theorem integralClosure_finite_etale_form_of_etale_algebra_form
+    (HK : Type u) [CommRing HK] [Algebra K HK] [Algebra R HK]
+    [IsScalarTower R K HK] [Module.Finite K HK] [Algebra.Etale K HK]
+    (H₀ : Type u) [CommRing H₀] [Algebra R H₀] [Module.Finite R H₀]
+    [Algebra.Etale R H₀]
+    (e : (K ⊗[R] H₀) ≃ₐ[K] HK) :
+    Module.Finite R (integralClosure R HK) ∧
+      Algebra.Etale R (integralClosure R HK) ∧
+      Nonempty ((K ⊗[R] (integralClosure R HK)) ≃ₐ[K] HK) :=
+  sorry
+
+/-- **The integral closure in an étale-formed Hopf algebra is a Hopf order**
+(sorry node; the HOPF half of the Hopf-upgrade leaf): if the integral closure
+`H₀ := integralClosure R HK` of `R` in the finite étale Hopf `K`-algebra `HK`
+is a finite étale `R`-algebra form, then `HK` admits a finite flat Hopf
+`R`-form (namely `H₀` itself). Intended proof: comultiplication is a ring
+homomorphism, so it sends `H₀` (integral over `R`) into elements of
+`HK ⊗[K] HK` integral over `R`, and the integral closure of `R` there is the
+image of `H₀ ⊗[R] H₀` (étale ⊗ étale is étale over the normal base `R`, hence
+normal, hence integrally closed in its total fraction ring, and
+`K ⊗ (H₀ ⊗[R] H₀) ≅ HK ⊗[K] HK` — the canonicity leaf
+`integralClosure_finite_etale_form_of_etale_algebra_form` applied to the
+tensor square); the counit sends `H₀` into elements of `K` integral over `R`,
+i.e. into `R` (a DVR is integrally closed); the antipode is an algebra
+endomorphism, so it preserves integrality; the corestricted operations
+satisfy the Hopf axioms because the inclusions `H₀ → HK` and
+`H₀ ⊗[R] H₀ → HK ⊗[K] HK` are injective (`H₀` is finite free over the DVR
+`R`); flatness is freeness of a finite torsion-free module over a DVR. The
+`μ_p` counterexample (whose normalization over `ℤ_p` is NOT a Hopf order)
+does not contradict this: there the normalization is not étale over `R`, so
+the étale-form hypothesis fails. -/
+theorem exists_finite_flat_hopf_form_integralClosure
+    (HK : Type u) [CommRing HK] [HopfAlgebra K HK] [Algebra R HK]
+    [IsScalarTower R K HK] [Module.Finite K HK] [Algebra.Etale K HK]
+    (hfin : Module.Finite R (integralClosure R HK))
+    (het : Algebra.Etale R (integralClosure R HK))
+    (heq : Nonempty ((K ⊗[R] (integralClosure R HK)) ≃ₐ[K] HK)) :
+    ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
+      (_ : Module.Finite R H) (_ : Module.Flat R H),
+      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) :=
+  sorry
+
+/-- **Étale algebra forms of Hopf algebras are Hopf forms** (DECOMPOSED
+2026-07-23 into the canonicity leaf
+`integralClosure_finite_etale_form_of_etale_algebra_form` — étale forms are
+the integral closure — and the Hopf-order leaf
+`exists_finite_flat_hopf_form_integralClosure` — the integral closure is
+comultiplication-stable; the assembly below is proven — pure commutative
+algebra over the DVR `R`, no Galois theory and no elliptic curve): if the
+finite étale Hopf `K`-algebra `HK` admits a finite étale `R`-ALGEBRA form
+`H₀`, then it admits a finite flat Hopf `R`-form. The key point making this
+honest: étale forms are canonical (the canonicity leaf), so Hopf-stability is
+a property, not extra data. -/
 theorem exists_finite_flat_hopf_form_of_etale_algebra_form
     (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
     [Module.Finite K HK] [Algebra.Etale K HK]
@@ -2681,8 +2727,12 @@ theorem exists_finite_flat_hopf_form_of_etale_algebra_form
     (e : (K ⊗[R] H₀) ≃ₐ[K] HK) :
     ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
       (_ : Module.Finite R H) (_ : Module.Flat R H),
-      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) :=
-  sorry
+      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) := by
+  letI : Algebra R HK := ((algebraMap K HK).comp (algebraMap R K)).toAlgebra
+  haveI : IsScalarTower R K HK := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  obtain ⟨hfin, het, heq⟩ :=
+    integralClosure_finite_etale_form_of_etale_algebra_form R K HK H₀ e
+  exact exists_finite_flat_hopf_form_integralClosure R K HK hfin het heq
 
 /-- **Unramified finite étale Hopf algebras prolong over a DVR** (DECOMPOSED
 2026-07-23 into the Galois-half leaf
