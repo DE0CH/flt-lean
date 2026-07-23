@@ -3255,7 +3255,599 @@ theorem exists_klein_pivot_of_noncommuting_kernel {F : Type*} [Field F]
       (∃ p : G, (u p).val * f = -(f * (u p).val)) ∧
       ∀ g : G, (u g).val * f = f * (u g).val ∨
         (u g).val * f = -(f * (u g).val) := by
-  sorry
+  classical
+  push Not at hA
+  obtain ⟨g₀, h₁, hg₀, hh₁, hAB⟩ := hA
+  -- value-level bookkeeping
+  have hmul : ∀ x y : G, (u (x * y)).val = (u x).val * (u y).val := by
+    intro x y
+    rw [map_mul]
+    rfl
+  have hinvr : ∀ x : G, (u x).val * (u x⁻¹).val = 1 := by
+    intro x
+    rw [← hmul, mul_inv_cancel, map_one]
+    rfl
+  have hinvl : ∀ x : G, (u x⁻¹).val * (u x).val = 1 := by
+    intro x
+    rw [← hmul, inv_mul_cancel, map_one]
+    rfl
+  have hdetu : ∀ x : G, Matrix.det ((u x).val) ≠ 0 := fun x =>
+    ((Matrix.isUnit_iff_isUnit_det _).mp (u x).isUnit).ne_zero
+  -- (1) the ±1 commutator pairing on the kernel of θ
+  have hpm : ∀ g h' : G, θ g = 1 → θ h' = 1 →
+      (u h').val * (u g).val = (u g).val * (u h').val ∨
+      (u h').val * (u g).val = -((u g).val * (u h').val) := by
+    intro g h' hg hh'
+    have hc := hcomm g h' hg hh'
+    rw [hπ g, hπ h'] at hc
+    have hc2 : (QuotientGroup.mk (u g * u h') :
+        GL (Fin 2) F ⧸ Subgroup.center (GL (Fin 2) F)) =
+        QuotientGroup.mk (u h' * u g) := hc
+    have hz := QuotientGroup.eq.mp hc2
+    obtain ⟨a, ha⟩ :=
+      Matrix.GeneralLinearGroup.mem_center_iff_val_mem_range_scalar.mp hz
+    have hscal : Matrix.scalar (Fin 2) a =
+        a • (1 : Matrix (Fin 2) (Fin 2) F) :=
+      (Matrix.scalar_apply a).trans (Matrix.smul_one_eq_diagonal a).symm
+    have hz2 : (u h').val * (u g).val = a • ((u g).val * (u h').val) := by
+      have h1 : u h' * u g = (u g * u h') * ((u g * u h')⁻¹ * (u h' * u g)) :=
+        (mul_inv_cancel_left _ _).symm
+      calc (u h').val * (u g).val
+          = (u h' * u g).val := rfl
+        _ = ((u g * u h') * ((u g * u h')⁻¹ * (u h' * u g))).val := by
+            rw [← h1]
+        _ = (u g * u h').val * ((u g * u h')⁻¹ * (u h' * u g)).val := rfl
+        _ = (u g * u h').val * (a • 1) := by rw [← ha, hscal]
+        _ = a • ((u g).val * (u h').val) := by
+            rw [mul_smul_comm, mul_one]
+            rfl
+    have ha2 : a ^ 2 = 1 := by
+      have hdet_ne : Matrix.det ((u g).val * (u h').val) ≠ 0 := by
+        rw [Matrix.det_mul]
+        exact mul_ne_zero (hdetu g) (hdetu h')
+      have hd1 : Matrix.det ((u h').val * (u g).val) =
+          Matrix.det ((u g).val * (u h').val) := by
+        rw [Matrix.det_mul, Matrix.det_mul, mul_comm]
+      rw [hz2, Matrix.det_smul, Fintype.card_fin] at hd1
+      have h2 : (a ^ 2 - 1) * Matrix.det ((u g).val * (u h').val) = 0 := by
+        rw [sub_mul, one_mul, hd1, sub_self]
+      rcases mul_eq_zero.mp h2 with h3 | h3
+      · exact sub_eq_zero.mp h3
+      · exact absurd h3 hdet_ne
+    have ha1 : a = 1 ∨ a = -1 := by
+      have h4 : (a - 1) * (a + 1) = 0 := by linear_combination ha2
+      rcases mul_eq_zero.mp h4 with h5 | h5
+      · exact Or.inl (sub_eq_zero.mp h5)
+      · exact Or.inr (eq_neg_of_add_eq_zero_left h5)
+    rcases ha1 with rfl | rfl
+    · left
+      rw [hz2, one_smul]
+    · right
+      rw [hz2, neg_smul, one_smul]
+  -- (2) the anticommuting pair and its products
+  have hanti : (u g₀).val * (u h₁).val = -((u h₁).val * (u g₀).val) := by
+    rcases hpm g₀ h₁ hg₀ hh₁ with h1 | h1
+    · exact absurd h1.symm hAB
+    · rw [h1, neg_neg]
+  have hanti' : (u h₁).val * (u g₀).val = -((u g₀).val * (u h₁).val) := by
+    rw [hanti, neg_neg]
+  have h_ab_a : ((u g₀).val * (u h₁).val) * (u g₀).val =
+      -((u g₀).val * ((u g₀).val * (u h₁).val)) := by
+    rw [mul_assoc, hanti', mul_neg]
+  have h_a_ab : (u g₀).val * ((u g₀).val * (u h₁).val) =
+      -(((u g₀).val * (u h₁).val) * (u g₀).val) := by
+    rw [h_ab_a, neg_neg]
+  -- (3) trace zero from an anticommuting partner
+  have htrace0 : ∀ x y : G,
+      (u x).val * (u y).val = -((u y).val * (u x).val) →
+      Matrix.trace ((u x).val) = 0 := by
+    intro x y hxy
+    have h1 : (u x).val * ((u y).val * (u y⁻¹).val) =
+        -((u y).val * (u x).val * (u y⁻¹).val) := by
+      rw [← mul_assoc, hxy, neg_mul]
+    rw [hinvr y, mul_one] at h1
+    have h3 := congrArg Matrix.trace h1
+    rw [Matrix.trace_neg, mul_assoc, Matrix.trace_mul_comm, mul_assoc,
+      hinvl y, mul_one] at h3
+    have h4 : (2 : F) • Matrix.trace ((u x).val) = 0 := by
+      rw [two_smul]
+      exact add_eq_zero_iff_eq_neg.mpr h3
+    rcases smul_eq_zero.mp h4 with h5 | h5
+    · exact absurd h5 h2F
+    · exact h5
+  -- (4) Cayley–Hamilton squares and the remaining pair products
+  have hsq : ∀ x : G, Matrix.trace ((u x).val) = 0 →
+      (u x).val * (u x).val = (-Matrix.det ((u x).val)) •
+        (1 : Matrix (Fin 2) (Fin 2) F) := by
+    intro x htr
+    have hCH0 := Matrix.aeval_self_charpoly ((u x).val)
+    rw [Matrix.charpoly_fin_two, map_add, map_sub, map_pow, Polynomial.aeval_X,
+      map_mul, Polynomial.aeval_C, htr, map_zero, zero_mul, sub_zero,
+      Polynomial.aeval_C, Algebra.algebraMap_eq_smul_one] at hCH0
+    rw [← sq, neg_smul]
+    exact eq_neg_of_add_eq_zero_left hCH0
+  have htra := htrace0 g₀ h₁ hanti
+  have htrb := htrace0 h₁ g₀ hanti'
+  have htrab : Matrix.trace ((u g₀).val * (u h₁).val) = 0 := by
+    have h1 := htrace0 (g₀ * h₁) g₀ (by rw [hmul]; exact h_ab_a)
+    rwa [hmul] at h1
+  have hsqa := hsq g₀ htra
+  have hsqb := hsq h₁ htrb
+  have hsqab : ((u g₀).val * (u h₁).val) * ((u g₀).val * (u h₁).val) =
+      (-Matrix.det ((u g₀).val * (u h₁).val)) •
+        (1 : Matrix (Fin 2) (Fin 2) F) := by
+    have h1 := hsq (g₀ * h₁) (by rw [hmul]; exact htrab)
+    rwa [hmul] at h1
+  have hδa : (-Matrix.det ((u g₀).val)) ≠ 0 := neg_ne_zero.mpr (hdetu g₀)
+  have hδb : (-Matrix.det ((u h₁).val)) ≠ 0 := neg_ne_zero.mpr (hdetu h₁)
+  have hδab : (-Matrix.det ((u g₀).val * (u h₁).val)) ≠ 0 := by
+    rw [Matrix.det_mul]
+    exact neg_ne_zero.mpr (mul_ne_zero (hdetu g₀) (hdetu h₁))
+  have h_b_ab : (u h₁).val * ((u g₀).val * (u h₁).val) =
+      -(((u g₀).val * (u h₁).val) * (u h₁).val) := by
+    rw [← mul_assoc, hanti', neg_mul]
+  have h_ab_b : ((u g₀).val * (u h₁).val) * (u h₁).val =
+      -((u h₁).val * ((u g₀).val * (u h₁).val)) := by
+    rw [h_b_ab, neg_neg]
+  have h_abb : ((u g₀).val * (u h₁).val) * (u h₁).val =
+      (-Matrix.det ((u h₁).val)) • (u g₀).val := by
+    rw [mul_assoc, hsqb, mul_smul_comm, mul_one]
+  -- (5) the commutant of the anticommuting pair is scalar
+  have hcentral : ∀ M : Matrix (Fin 2) (Fin 2) F,
+      M * (u g₀).val = (u g₀).val * M → M * (u h₁).val = (u h₁).val * M →
+      ∃ c : F, M = c • 1 := by
+    obtain ⟨s, hs2⟩ := IsAlgClosed.exists_pow_nat_eq
+      (-Matrix.det ((u g₀).val)) (n := 2) (by norm_num)
+    have hfact : ((u g₀).val - s • 1) * ((u g₀).val + s • 1) = 0 := by
+      have h1 : ((u g₀).val - s • 1) * ((u g₀).val + s • 1) =
+          (u g₀).val * (u g₀).val -
+            (s * s) • (1 : Matrix (Fin 2) (Fin 2) F) := by
+        simp only [mul_add, sub_mul, smul_mul_assoc, mul_smul_comm, one_mul,
+          mul_one, smul_sub, smul_smul]
+        abel
+      rw [h1, hsqa, ← hs2, sq, sub_self]
+    obtain ⟨t, ht2, htdet⟩ : ∃ t : F, t ^ 2 = -Matrix.det ((u g₀).val) ∧
+        Matrix.det ((u g₀).val - t • 1) = 0 := by
+      have h1 : Matrix.det ((u g₀).val - s • 1) *
+          Matrix.det ((u g₀).val + s • 1) = 0 := by
+        rw [← Matrix.det_mul, hfact]
+        exact Matrix.det_zero
+      rcases mul_eq_zero.mp h1 with h2 | h2
+      · exact ⟨s, hs2, h2⟩
+      · refine ⟨-s, by rw [neg_sq]; exact hs2, ?_⟩
+        rw [neg_smul, sub_neg_eq_add]
+        exact h2
+    have htne : t ≠ 0 := by
+      intro h0
+      apply hdetu g₀
+      apply neg_eq_zero.mp
+      rw [← ht2, h0]
+      exact zero_pow (by norm_num)
+    obtain ⟨w, hw0, hwker⟩ := Matrix.exists_mulVec_eq_zero_iff.mpr htdet
+    have haw : Matrix.mulVec ((u g₀).val) w = t • w := by
+      have h1 := hwker
+      rw [Matrix.sub_mulVec, Matrix.smul_mulVec, Matrix.one_mulVec,
+        sub_eq_zero] at h1
+      exact h1
+    have haw' : Matrix.mulVec ((u g₀).val)
+        (Matrix.mulVec ((u h₁).val) w) =
+        (-t) • Matrix.mulVec ((u h₁).val) w := by
+      rw [Matrix.mulVec_mulVec, hanti, Matrix.neg_mulVec,
+        ← Matrix.mulVec_mulVec, haw, Matrix.mulVec_smul, ← neg_smul]
+    have hans : (u g₀).val - t • 1 ≠ 0 := by
+      intro h0
+      have hax : (u g₀).val = t • 1 := by rwa [sub_eq_zero] at h0
+      apply hAB
+      rw [hax, smul_mul_assoc, one_mul, mul_smul_comm, mul_one]
+    have hw'ne : Matrix.mulVec ((u h₁).val) w ≠ 0 := by
+      intro h0
+      apply hw0
+      have h2 : Matrix.mulVec ((u h₁⁻¹).val)
+          (Matrix.mulVec ((u h₁).val) w) = w := by
+        rw [Matrix.mulVec_mulVec, hinvl, Matrix.one_mulVec]
+      rw [h0, Matrix.mulVec_zero] at h2
+      exact h2.symm
+    intro M hMa hMb
+    have hMw : ∃ c : F, Matrix.mulVec M w = c • w := by
+      apply exists_smul_eq_of_mulVec_eq_zero hans hwker ?_ hw0
+      have hswap : ((u g₀).val - t • 1) * M = M * ((u g₀).val - t • 1) := by
+        rw [sub_mul, mul_sub, smul_mul_assoc, one_mul, mul_smul_comm, mul_one,
+          hMa]
+      rw [Matrix.mulVec_mulVec, hswap, ← Matrix.mulVec_mulVec, hwker,
+        Matrix.mulVec_zero]
+    obtain ⟨α, hα⟩ := hMw
+    refine ⟨α, ?_⟩
+    by_contra hMne
+    have hNne : M - α • 1 ≠ 0 := fun h0 => hMne (by rwa [sub_eq_zero] at h0)
+    have hNw : Matrix.mulVec (M - α • 1) w = 0 := by
+      rw [Matrix.sub_mulVec, hα, Matrix.smul_mulVec, Matrix.one_mulVec,
+        sub_self]
+    have hNw' : Matrix.mulVec (M - α • 1)
+        (Matrix.mulVec ((u h₁).val) w) = 0 := by
+      rw [Matrix.sub_mulVec, Matrix.smul_mulVec, Matrix.one_mulVec,
+        Matrix.mulVec_mulVec, hMb, ← Matrix.mulVec_mulVec, hα,
+        Matrix.mulVec_smul, sub_self]
+    obtain ⟨c, hc⟩ := exists_smul_eq_of_mulVec_eq_zero hNne hNw hNw' hw0
+    have h1 : (-t) • (c • w) = t • (c • w) := by
+      calc (-t) • (c • w)
+          = (-t) • Matrix.mulVec ((u h₁).val) w := by rw [← hc]
+        _ = Matrix.mulVec ((u g₀).val)
+            (Matrix.mulVec ((u h₁).val) w) := haw'.symm
+        _ = Matrix.mulVec ((u g₀).val) (c • w) := by rw [hc]
+        _ = c • Matrix.mulVec ((u g₀).val) w := by rw [Matrix.mulVec_smul]
+        _ = c • (t • w) := by rw [haw]
+        _ = t • (c • w) := smul_comm c t w
+    have h2 : ((-t) - t) • (c • w) = 0 := by
+      rw [sub_smul, h1, sub_self]
+    rcases smul_eq_zero.mp h2 with h3 | h3
+    · have h4 : (2 : F) * t = 0 := by linear_combination -h3
+      rcases mul_eq_zero.mp h4 with h5 | h5
+      · exact h2F h5
+      · exact htne h5
+    · rw [← hc] at h3
+      exact hw'ne h3
+  -- (6) the V₄ classification: every kernel element is a scalar
+  -- multiple of one of {1, a, b, ab}
+  have hV4 : ∀ g : G, θ g = 1 →
+      (∃ c : F, (u g).val = c • (1 : Matrix (Fin 2) (Fin 2) F)) ∨
+      (∃ c : F, (u g).val = c • (u g₀).val) ∨
+      (∃ c : F, (u g).val = c • (u h₁).val) ∨
+      (∃ c : F, (u g).val = c • ((u g₀).val * (u h₁).val)) := by
+    intro g hg
+    rcases hpm g₀ g hg₀ hg with hga | hga <;>
+      rcases hpm h₁ g hh₁ hg with hgb | hgb
+    · exact Or.inl (hcentral _ hga hgb)
+    · -- commutes with a, anticommutes with b: multiple of a
+      have hZb : ((u g).val * (u g₀).val) * (u h₁).val =
+          (u h₁).val * ((u g).val * (u g₀).val) := by
+        rw [mul_assoc, hanti, mul_neg, ← mul_assoc, hgb, neg_mul, neg_neg,
+          mul_assoc]
+      have hZa : ((u g).val * (u g₀).val) * (u g₀).val =
+          (u g₀).val * ((u g).val * (u g₀).val) := by
+        calc ((u g).val * (u g₀).val) * (u g₀).val
+            = (u g).val * ((u g₀).val * (u g₀).val) := by rw [mul_assoc]
+          _ = (-Matrix.det ((u g₀).val)) • ((u g).val * 1) := by
+              rw [hsqa, mul_smul_comm]
+          _ = (-Matrix.det ((u g₀).val)) • (u g).val := by rw [mul_one]
+          _ = (u g₀).val * ((u g).val * (u g₀).val) := by
+              rw [← mul_assoc, ← hga, mul_assoc, hsqa, mul_smul_comm, mul_one]
+      obtain ⟨c, hcz⟩ := hcentral _ hZa hZb
+      have h7 : ((u g).val * (u g₀).val) * (u g₀).val = c • (u g₀).val := by
+        rw [hcz, smul_mul_assoc, one_mul]
+      rw [mul_assoc, hsqa, mul_smul_comm, mul_one] at h7
+      have h8 : (u g).val = (-Matrix.det ((u g₀).val))⁻¹ •
+          (c • (u g₀).val) := by
+        rw [← h7, inv_smul_smul₀ hδa]
+      refine Or.inr (Or.inl ⟨(-Matrix.det ((u g₀).val))⁻¹ * c, ?_⟩)
+      rw [h8, smul_smul]
+    · -- anticommutes with a, commutes with b: multiple of b
+      have hZa : ((u g).val * (u h₁).val) * (u g₀).val =
+          (u g₀).val * ((u g).val * (u h₁).val) := by
+        rw [mul_assoc, hanti', mul_neg, ← mul_assoc, hga, neg_mul, neg_neg,
+          mul_assoc]
+      have hZb : ((u g).val * (u h₁).val) * (u h₁).val =
+          (u h₁).val * ((u g).val * (u h₁).val) := by
+        calc ((u g).val * (u h₁).val) * (u h₁).val
+            = (u g).val * ((u h₁).val * (u h₁).val) := by rw [mul_assoc]
+          _ = (-Matrix.det ((u h₁).val)) • ((u g).val * 1) := by
+              rw [hsqb, mul_smul_comm]
+          _ = (-Matrix.det ((u h₁).val)) • (u g).val := by rw [mul_one]
+          _ = (u h₁).val * ((u g).val * (u h₁).val) := by
+              rw [← mul_assoc, ← hgb, mul_assoc, hsqb, mul_smul_comm, mul_one]
+      obtain ⟨c, hcz⟩ := hcentral _ hZa hZb
+      have h7 : ((u g).val * (u h₁).val) * (u h₁).val = c • (u h₁).val := by
+        rw [hcz, smul_mul_assoc, one_mul]
+      rw [mul_assoc, hsqb, mul_smul_comm, mul_one] at h7
+      have h8 : (u g).val = (-Matrix.det ((u h₁).val))⁻¹ •
+          (c • (u h₁).val) := by
+        rw [← h7, inv_smul_smul₀ hδb]
+      refine Or.inr (Or.inr (Or.inl ⟨(-Matrix.det ((u h₁).val))⁻¹ * c, ?_⟩))
+      rw [h8, smul_smul]
+    · -- anticommutes with both: multiple of ab
+      have hZa : ((u g).val * ((u g₀).val * (u h₁).val)) * (u g₀).val =
+          (u g₀).val * ((u g).val * ((u g₀).val * (u h₁).val)) := by
+        rw [mul_assoc, h_ab_a, mul_neg, ← mul_assoc, hga, neg_mul, neg_neg,
+          mul_assoc]
+      have hgb' : (u h₁).val * (u g).val = -((u g).val * (u h₁).val) := by
+        rw [hgb, neg_neg]
+      have hZb : ((u g).val * ((u g₀).val * (u h₁).val)) * (u h₁).val =
+          (u h₁).val * ((u g).val * ((u g₀).val * (u h₁).val)) := by
+        calc ((u g).val * ((u g₀).val * (u h₁).val)) * (u h₁).val
+            = (u g).val * (((u g₀).val * (u h₁).val) * (u h₁).val) := by
+              rw [mul_assoc]
+          _ = (-Matrix.det ((u h₁).val)) • ((u g).val * (u g₀).val) := by
+              rw [h_abb, mul_smul_comm]
+          _ = -((-Matrix.det ((u h₁).val)) • ((u g₀).val * (u g).val)) := by
+              rw [hga, smul_neg]
+          _ = (u h₁).val * ((u g).val * ((u g₀).val * (u h₁).val)) := by
+              rw [← mul_assoc, hgb', neg_mul, mul_assoc, h_b_ab, mul_neg,
+                neg_neg, h_abb, mul_smul_comm, hga, smul_neg]
+      obtain ⟨c, hcz⟩ := hcentral _ hZa hZb
+      have h7 : ((u g).val * ((u g₀).val * (u h₁).val)) *
+          ((u g₀).val * (u h₁).val) =
+          c • ((u g₀).val * (u h₁).val) := by
+        rw [hcz, smul_mul_assoc, one_mul]
+      rw [mul_assoc, hsqab, mul_smul_comm, mul_one] at h7
+      have h8 : (u g).val = (-Matrix.det ((u g₀).val * (u h₁).val))⁻¹ •
+          (c • ((u g₀).val * (u h₁).val)) := by
+        rw [← h7, inv_smul_smul₀ hδab]
+      refine Or.inr (Or.inr (Or.inr
+        ⟨(-Matrix.det ((u g₀).val * (u h₁).val))⁻¹ * c, ?_⟩))
+      rw [h8, smul_smul]
+  -- (7) the pairing table over the kernel
+  have htable : ∀ g : G, θ g = 1 →
+      ∀ X : Matrix (Fin 2) (Fin 2) F,
+        (X = (u g₀).val ∨ X = (u h₁).val ∨
+          X = (u g₀).val * (u h₁).val) →
+        (u g).val * X = X * (u g).val ∨
+        (u g).val * X = -(X * (u g).val) := by
+    intro g hg X hX
+    rcases hV4 g hg with ⟨c, hc⟩ | ⟨c, hc⟩ | ⟨c, hc⟩ | ⟨c, hc⟩
+    · left
+      rw [hc, smul_mul_assoc, one_mul, mul_smul_comm, mul_one]
+    · rcases hX with rfl | rfl | rfl
+      · left
+        rw [hc, smul_mul_assoc, mul_smul_comm]
+      · right
+        rw [hc, smul_mul_assoc, mul_smul_comm, hanti, smul_neg]
+      · right
+        rw [hc, smul_mul_assoc, mul_smul_comm, h_a_ab, smul_neg]
+    · rcases hX with rfl | rfl | rfl
+      · right
+        rw [hc, smul_mul_assoc, mul_smul_comm, hanti', smul_neg]
+      · left
+        rw [hc, smul_mul_assoc, mul_smul_comm]
+      · right
+        rw [hc, smul_mul_assoc, mul_smul_comm, h_b_ab, smul_neg]
+    · rcases hX with rfl | rfl | rfl
+      · right
+        rw [hc, smul_mul_assoc, mul_smul_comm, h_ab_a, smul_neg]
+      · right
+        rw [hc, smul_mul_assoc, mul_smul_comm, h_ab_b, smul_neg]
+      · left
+        rw [hc, smul_mul_assoc, mul_smul_comm]
+  -- (8) an element outside the kernel
+  obtain ⟨σ₀, hσ₀⟩ : ∃ σ₀ : G, θ σ₀ ≠ 1 := by
+    obtain ⟨σ₁, hσ₁⟩ := hθsurj (Multiplicative.ofAdd (1 : ZMod 2))
+    refine ⟨σ₁, ?_⟩
+    rw [hσ₁]
+    decide
+  -- (9) the conjugation-fixed pivot among {a, b, ab}
+  have hDcase : ∃ f : Matrix (Fin 2) (Fin 2) F,
+      (f = (u g₀).val ∨ f = (u h₁).val ∨
+        f = (u g₀).val * (u h₁).val) ∧
+      ((u σ₀).val * f = f * (u σ₀).val ∨
+        (u σ₀).val * f = -(f * (u σ₀).val)) := by
+    -- un-conjugation and sign extraction helpers
+    have hunconj : ∀ Y Z : Matrix (Fin 2) (Fin 2) F,
+        (u σ₀).val * Y * (u σ₀⁻¹).val = Z →
+        (u σ₀).val * Y = Z * (u σ₀).val := by
+      intro Y Z hYZ
+      have h5 : (u σ₀).val * Y * ((u σ₀⁻¹).val * (u σ₀).val) =
+          Z * (u σ₀).val := by
+        rw [← mul_assoc, hYZ]
+      rwa [hinvl, mul_one] at h5
+    have hsq1 : ∀ e : F, e ^ 2 = 1 → e = 1 ∨ e = -1 := by
+      intro e he
+      have h4 : (e - 1) * (e + 1) = 0 := by linear_combination he
+      rcases mul_eq_zero.mp h4 with h5 | h5
+      · exact Or.inl (sub_eq_zero.mp h5)
+      · exact Or.inr (eq_neg_of_add_eq_zero_left h5)
+    have hsign : ∀ (x : G) (e : F),
+        (u σ₀).val * (u x).val * (u σ₀⁻¹).val = e • (u x).val →
+        (u σ₀).val * (u x).val = (u x).val * (u σ₀).val ∨
+        (u σ₀).val * (u x).val = -((u x).val * (u σ₀).val) := by
+      intro x e hx
+      have h2 : (u σ₀).val * (u x).val = e • ((u x).val * (u σ₀).val) := by
+        have h3 := hunconj ((u x).val) (e • (u x).val) hx
+        rwa [smul_mul_assoc] at h3
+      have he2 : e ^ 2 = 1 := by
+        have hd := congrArg Matrix.det h2
+        rw [Matrix.det_mul, Matrix.det_smul, Fintype.card_fin,
+          Matrix.det_mul] at hd
+        have h4 : (e ^ 2 - 1) * (Matrix.det ((u x).val) *
+            Matrix.det ((u σ₀).val)) = 0 := by
+          linear_combination -hd
+        rcases mul_eq_zero.mp h4 with h5 | h5
+        · exact sub_eq_zero.mp h5
+        · rcases mul_eq_zero.mp h5 with h6 | h6
+          · exact absurd h6 (hdetu x)
+          · exact absurd h6 (hdetu σ₀)
+      rcases hsq1 e he2 with rfl | rfl
+      · left
+        rw [h2, one_smul]
+      · right
+        rw [h2, neg_smul, one_smul]
+    -- conjugation bookkeeping
+    have hθconj : θ (σ₀ * g₀ * σ₀⁻¹) = 1 := by
+      rw [map_mul, map_mul, hg₀, mul_one, map_inv, mul_inv_cancel]
+    have hconjval : (u (σ₀ * g₀ * σ₀⁻¹)).val =
+        (u σ₀).val * (u g₀).val * (u σ₀⁻¹).val := by
+      rw [hmul, hmul]
+    have hθσσ : θ (σ₀ * σ₀) = 1 := by
+      rw [map_mul]
+      exact (by decide : ∀ z : Multiplicative (ZMod 2), z * z = 1) (θ σ₀)
+    have hDDi2 : ((u σ₀).val * (u σ₀).val) *
+        ((u σ₀⁻¹).val * (u σ₀⁻¹).val) = 1 := by
+      rw [mul_assoc, ← mul_assoc ((u σ₀).val) ((u σ₀⁻¹).val) ((u σ₀⁻¹).val),
+        hinvr, one_mul, hinvr]
+    have hDD_a := htable (σ₀ * σ₀) hθσσ ((u g₀).val) (Or.inl rfl)
+    rw [hmul] at hDD_a
+    have hDDa2 : ((u σ₀).val * (u σ₀).val) * (u g₀).val *
+        ((u σ₀⁻¹).val * (u σ₀⁻¹).val) = (u g₀).val ∨
+        ((u σ₀).val * (u σ₀).val) * (u g₀).val *
+        ((u σ₀⁻¹).val * (u σ₀⁻¹).val) = -(u g₀).val := by
+      rcases hDD_a with h4 | h4
+      · left
+        rw [h4, mul_assoc, hDDi2, mul_one]
+      · right
+        rw [h4, neg_mul, mul_assoc, hDDi2, mul_one]
+    have hassoc : (u σ₀).val * ((u σ₀).val * (u g₀).val * (u σ₀⁻¹).val) *
+        (u σ₀⁻¹).val = ((u σ₀).val * (u σ₀).val) * (u g₀).val *
+        ((u σ₀⁻¹).val * (u σ₀⁻¹).val) := by
+      simp only [mul_assoc]
+    have hmult : ((u σ₀).val * (u g₀).val * (u σ₀⁻¹).val) *
+        ((u σ₀).val * (u h₁).val * (u σ₀⁻¹).val) =
+        (u σ₀).val * ((u g₀).val * (u h₁).val) * (u σ₀⁻¹).val := by
+      simp only [mul_assoc]
+      rw [← mul_assoc ((u σ₀⁻¹).val) ((u σ₀).val), hinvl, one_mul]
+    -- the case analysis on where conjugation sends `a`
+    rcases hV4 (σ₀ * g₀ * σ₀⁻¹) hθconj with ⟨c, hc⟩ | ⟨c, hc⟩ | ⟨c, hc⟩ |
+      ⟨c, hc⟩
+    · -- `a` conjugates to a scalar: impossible (`a` would be scalar)
+      exfalso
+      rw [hconjval] at hc
+      have h2 := hunconj ((u g₀).val)
+        (c • (1 : Matrix (Fin 2) (Fin 2) F)) hc
+      rw [smul_mul_assoc, one_mul] at h2
+      have h3 : ((u σ₀⁻¹).val * (u σ₀).val) * (u g₀).val =
+          c • ((u σ₀⁻¹).val * (u σ₀).val) := by
+        rw [mul_assoc, h2, mul_smul_comm]
+      rw [hinvl, one_mul] at h3
+      apply hAB
+      rw [h3, smul_mul_assoc, one_mul, mul_smul_comm, mul_one]
+    · -- `a` conjugates into its own line: the pivot is `a`
+      rw [hconjval] at hc
+      exact ⟨(u g₀).val, Or.inl rfl, hsign g₀ c hc⟩
+    · -- `a` conjugates into the `b`-line: the pivot is `ab`
+      rw [hconjval] at hc
+      have hcne : c ≠ 0 := by
+        intro h0
+        rw [h0, zero_smul] at hc
+        have h4 : (u σ₀).val * (u g₀).val * ((u σ₀⁻¹).val * (u σ₀).val) =
+            0 := by
+          rw [← mul_assoc, hc, zero_mul]
+        rw [hinvl, mul_one] at h4
+        have h5 : ((u σ₀⁻¹).val * (u σ₀).val) * (u g₀).val = 0 := by
+          rw [mul_assoc, h4, mul_zero]
+        rw [hinvl, one_mul] at h5
+        apply hdetu g₀
+        rw [h5]
+        exact Matrix.det_zero
+      have hkey : c • ((u σ₀).val * (u h₁).val * (u σ₀⁻¹).val) =
+          ((u σ₀).val * (u σ₀).val) * (u g₀).val *
+          ((u σ₀⁻¹).val * (u σ₀⁻¹).val) := by
+        rw [← hassoc, hc, mul_smul_comm, smul_mul_assoc]
+      obtain ⟨ε, hε⟩ : ∃ ε : F, (u σ₀).val * (u h₁).val * (u σ₀⁻¹).val =
+          ε • (u g₀).val := by
+        rcases hDDa2 with h4 | h4
+        · refine ⟨c⁻¹, ?_⟩
+          rw [← inv_smul_smul₀ hcne ((u σ₀).val * (u h₁).val *
+            (u σ₀⁻¹).val), hkey, h4]
+        · refine ⟨-c⁻¹, ?_⟩
+          rw [← inv_smul_smul₀ hcne ((u σ₀).val * (u h₁).val *
+            (u σ₀⁻¹).val), hkey, h4, smul_neg, neg_smul]
+      have hconjab : (u σ₀).val * ((u g₀).val * (u h₁).val) *
+          (u σ₀⁻¹).val = (-(c * ε)) • ((u g₀).val * (u h₁).val) := by
+        rw [← hmult, hc, hε, smul_mul_assoc, mul_smul_comm, smul_smul,
+          hanti', smul_neg, neg_smul]
+      have hconjab' : (u σ₀).val * (u (g₀ * h₁)).val * (u σ₀⁻¹).val =
+          (-(c * ε)) • (u (g₀ * h₁)).val := by
+        rw [hmul]
+        exact hconjab
+      have hdi := hsign (g₀ * h₁) (-(c * ε)) hconjab'
+      rw [hmul] at hdi
+      exact ⟨(u g₀).val * (u h₁).val, Or.inr (Or.inr rfl), hdi⟩
+    · -- `a` conjugates into the `ab`-line: the pivot is `b`
+      rw [hconjval] at hc
+      have hcne : c ≠ 0 := by
+        intro h0
+        rw [h0, zero_smul] at hc
+        have h4 : (u σ₀).val * (u g₀).val * ((u σ₀⁻¹).val * (u σ₀).val) =
+            0 := by
+          rw [← mul_assoc, hc, zero_mul]
+        rw [hinvl, mul_one] at h4
+        have h5 : ((u σ₀⁻¹).val * (u σ₀).val) * (u g₀).val = 0 := by
+          rw [mul_assoc, h4, mul_zero]
+        rw [hinvl, one_mul] at h5
+        apply hdetu g₀
+        rw [h5]
+        exact Matrix.det_zero
+      have hkey : c • ((u σ₀).val * ((u g₀).val * (u h₁).val) *
+          (u σ₀⁻¹).val) = ((u σ₀).val * (u σ₀).val) * (u g₀).val *
+          ((u σ₀⁻¹).val * (u σ₀⁻¹).val) := by
+        rw [← hassoc, hc, mul_smul_comm, smul_mul_assoc]
+      obtain ⟨ε, hε⟩ : ∃ ε : F, (u σ₀).val * ((u g₀).val * (u h₁).val) *
+          (u σ₀⁻¹).val = ε • (u g₀).val := by
+        rcases hDDa2 with h4 | h4
+        · refine ⟨c⁻¹, ?_⟩
+          rw [← inv_smul_smul₀ hcne ((u σ₀).val * ((u g₀).val *
+            (u h₁).val) * (u σ₀⁻¹).val), hkey, h4]
+        · refine ⟨-c⁻¹, ?_⟩
+          rw [← inv_smul_smul₀ hcne ((u σ₀).val * ((u g₀).val *
+            (u h₁).val) * (u σ₀⁻¹).val), hkey, h4, smul_neg, neg_smul]
+      have h6 : ((u g₀).val * (u h₁).val) *
+          ((u σ₀).val * (u h₁).val * (u σ₀⁻¹).val) =
+          (c⁻¹ * ε) • (u g₀).val := by
+        have h7 : (c • ((u g₀).val * (u h₁).val)) *
+            ((u σ₀).val * (u h₁).val * (u σ₀⁻¹).val) =
+            ε • (u g₀).val := by
+          rw [← hc, hmult, hε]
+        rw [smul_mul_assoc] at h7
+        rw [← inv_smul_smul₀ hcne (((u g₀).val * (u h₁).val) *
+          ((u σ₀).val * (u h₁).val * (u σ₀⁻¹).val)), h7, smul_smul]
+      have h8 : ((u g₀).val * (u g₀).val) * ((u h₁).val *
+          ((u σ₀).val * (u h₁).val * (u σ₀⁻¹).val)) =
+          (u g₀).val * ((c⁻¹ * ε) • (u g₀).val) := by
+        rw [mul_assoc, ← mul_assoc ((u g₀).val) ((u h₁).val)
+          ((u σ₀).val * (u h₁).val * (u σ₀⁻¹).val), h6]
+      rw [hsqa, smul_mul_assoc, one_mul, mul_smul_comm, hsqa,
+        smul_smul] at h8
+      have h9 : (u h₁).val * ((u σ₀).val * (u h₁).val * (u σ₀⁻¹).val) =
+          ((-Matrix.det ((u g₀).val))⁻¹ * (c⁻¹ * ε *
+            (-Matrix.det ((u g₀).val)))) • 1 := by
+        rw [← inv_smul_smul₀ hδa ((u h₁).val * ((u σ₀).val * (u h₁).val *
+          (u σ₀⁻¹).val)), h8, smul_smul]
+      have h10 : ((u h₁).val * (u h₁).val) *
+          ((u σ₀).val * (u h₁).val * (u σ₀⁻¹).val) =
+          (u h₁).val * (((-Matrix.det ((u g₀).val))⁻¹ * (c⁻¹ * ε *
+            (-Matrix.det ((u g₀).val)))) • 1) := by
+        rw [mul_assoc, h9]
+      rw [hsqb, smul_mul_assoc, one_mul, mul_smul_comm, mul_one] at h10
+      have h11 : (u σ₀).val * (u h₁).val * (u σ₀⁻¹).val =
+          ((-Matrix.det ((u h₁).val))⁻¹ * ((-Matrix.det ((u g₀).val))⁻¹ *
+            (c⁻¹ * ε * (-Matrix.det ((u g₀).val))))) • (u h₁).val := by
+        rw [← inv_smul_smul₀ hδb ((u σ₀).val * (u h₁).val * (u σ₀⁻¹).val),
+          h10, smul_smul]
+      exact ⟨(u h₁).val, Or.inr (Or.inl rfl), hsign h₁ _ h11⟩
+  -- assembly: the pivot has all four required properties
+  obtain ⟨f, hfmem, hDsign⟩ := hDcase
+  refine ⟨f, ?_, ?_, ?_, ?_⟩
+  · rcases hfmem with rfl | rfl | rfl
+    · exact htra
+    · exact htrb
+    · exact htrab
+  · rcases hfmem with rfl | rfl | rfl
+    · exact hdetu g₀
+    · exact hdetu h₁
+    · rw [Matrix.det_mul]
+      exact mul_ne_zero (hdetu g₀) (hdetu h₁)
+  · rcases hfmem with rfl | rfl | rfl
+    · exact ⟨h₁, hanti'⟩
+    · exact ⟨g₀, hanti⟩
+    · exact ⟨g₀, h_a_ab⟩
+  · intro g
+    by_cases hg : θ g = 1
+    · exact htable g hg f hfmem
+    · have hgk : θ (g * σ₀⁻¹) = 1 := by
+        have h1 : ∀ y z : Multiplicative (ZMod 2), y ≠ 1 → z ≠ 1 →
+            y * z⁻¹ = 1 := by decide
+        rw [map_mul, map_inv]
+        exact h1 _ _ hg hσ₀
+      have hgfac : (u g).val = (u (g * σ₀⁻¹)).val * (u σ₀).val := by
+        rw [← hmul, inv_mul_cancel_right]
+      rcases htable (g * σ₀⁻¹) hgk f hfmem with hX | hX <;>
+        rcases hDsign with hD | hD
+      · left
+        rw [hgfac, mul_assoc, hD, ← mul_assoc, hX, mul_assoc]
+      · right
+        rw [hgfac, mul_assoc, hD, mul_neg, neg_inj, ← mul_assoc, hX,
+          mul_assoc]
+      · right
+        rw [hgfac, mul_assoc, hD, ← mul_assoc, hX, neg_mul, mul_assoc]
+      · left
+        rw [hgfac, mul_assoc, hD, mul_neg, ← mul_assoc, hX, neg_mul, neg_neg,
+          mul_assoc]
 
 set_option maxHeartbeats 1000000 in
 /-- **The dihedral dichotomy: a common eigenvector after a possible
