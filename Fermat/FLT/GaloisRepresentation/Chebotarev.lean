@@ -864,13 +864,20 @@ subtraction appear anywhere.
 -/
 
 /-- The `ℝ≥0∞`-valued exponential series `∑ S ^ k / k!` is finite for
-finite `S` (sorry leaf): writing `S = ENNReal.ofReal r`, each term is
-`ENNReal.ofReal (r ^ k / k!)` and the series sums to
-`ENNReal.ofReal (Real.exp r)` by `Real.summable_pow_div_factorial` and
-`ENNReal.ofReal_tsum_of_nonneg`. -/
+finite `S`: each term is `ENNReal.ofReal (S.toReal ^ k / k!)` and the
+series sums to `ENNReal.ofReal (Real.exp S.toReal)` by
+`Real.summable_pow_div_factorial` and `ENNReal.ofReal_tsum_of_nonneg`. -/
 theorem tsum_pow_div_factorial_ne_top (S : ℝ≥0∞) (hS : S ≠ ⊤) :
-    ∑' k : ℕ, S ^ k / (Nat.factorial k : ℝ≥0∞) ≠ ⊤ :=
-  sorry
+    ∑' k : ℕ, S ^ k / (Nat.factorial k : ℝ≥0∞) ≠ ⊤ := by
+  have hterm : ∀ k : ℕ, S ^ k / (Nat.factorial k : ℝ≥0∞) =
+      ENNReal.ofReal (S.toReal ^ k / (Nat.factorial k : ℝ)) := by
+    intro k
+    rw [ENNReal.ofReal_div_of_pos (by exact_mod_cast k.factorial_pos),
+      ENNReal.ofReal_pow ENNReal.toReal_nonneg, ENNReal.ofReal_toReal hS,
+      ENNReal.ofReal_natCast]
+  rw [tsum_congr hterm, ← ENNReal.ofReal_tsum_of_nonneg
+    (fun k => by positivity) (Real.summable_pow_div_factorial S.toReal)]
+  exact ENNReal.ofReal_ne_top
 
 /-- **Exponential bound for sums of products over finite subsets**
 (sorry leaf): for any family `x : ι → ℝ≥0∞`,
@@ -888,12 +895,18 @@ theorem tsum_finset_prod_le_tsum_pow_div_factorial {ι : Type*} (x : ι → ℝ�
 
 open IsDedekindDomain in
 /-- Finiteness of the set of finite places with prescribed residue
-cardinality (sorry leaf): `P ↦ P.asIdeal` embeds it into the finite set
-of ideals of absolute norm `ℓ` (`Ideal.finite_setOf_absNorm_eq`). -/
+cardinality: `P ↦ P.asIdeal` embeds it into the finite set of ideals of
+absolute norm `ℓ` (`Ideal.finite_setOf_absNorm_eq`). -/
 theorem finite_setOf_natCard_quotient_eq (F : Type*) [Field F] [NumberField F]
     (ℓ : ℕ) :
-    {P : HeightOneSpectrum (𝓞 F) | Nat.card (𝓞 F ⧸ P.asIdeal) = ℓ}.Finite :=
-  sorry
+    {P : HeightOneSpectrum (𝓞 F) | Nat.card (𝓞 F ⧸ P.asIdeal) = ℓ}.Finite := by
+  refine Set.Finite.of_finite_image
+    (f := fun P : HeightOneSpectrum (𝓞 F) => P.asIdeal)
+    ((Ideal.finite_setOf_absNorm_eq (S := 𝓞 F) ℓ).subset ?_) ?_
+  · rintro _ ⟨P, hP, rfl⟩
+    simpa [Ideal.absNorm_apply, Submodule.cardQuot_apply] using hP
+  · intro P _ Q _ h
+    exact HeightOneSpectrum.ext h
 
 open IsDedekindDomain in
 /-- **Uniform tail bound for the higher-degree places** (sorry leaf): the
