@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: e68e4f89-102e-4f9f-8119-8fd03437ed31
-  modified: 2026-07-22T18:27:59.615Z
+  modified: 2026-07-23T03:19:33.465Z
 ---
 
 Deyao (2026-07-22, twice in one session): "turn yourself into an orchestrator and dispatch agents", "you are an orchestrator, shouldn't be doing any work, remember that."
@@ -17,3 +17,5 @@ Also (same day, after repeated boundary mistakes): "there's no division of labor
 **How to apply:** In parallel/ultracode mode, the driver does ONLY: enumerate/partition the frontier, write agent prompts with disjoint file ownership, dispatch (Agent), monitor via notifications, answer agents' design questions, integrate returned diffs, delegate verification, update progress bookkeeping, commit/push, and report to Deyao. Any task longer than a one-line command gets dispatched — including [[flt-stop-hook-session-guard]]-style infra fixes. **RESPONSIVENESS (Deyao, 2026-07-22): the driver must never wait on a blocking command — Deyao needs it responsive to talk to at all times.** Anything slow (regenerations, compiles, long queries) runs as a background task or inside an agent; foreground tool calls stay in the seconds range. Before invoking anything, ask: "would this action be acceptable from a cron job, and does it return immediately?" — if either answer is no, dispatch or background it. Related: [[flt-continuous-loop-directives]], [[flt-no-lake-build-trust-mcp]], [[flt-stop-hook-is-a-nudge]].
 
 **Design approval gate (Deyao, 2026-07-23):** "tell me the design first, i need to look at the design and approve it before you go about working on it because your design is not good a lot of the times." Infrastructure/architecture designs are presented to Deyao and approved BEFORE any implementation is dispatched. **Dispatch gate (same day):** "don't spawn subagents until i tell you so later" — subagent spawning is suspended until Deyao re-enables it; standing permission is never assumed across such a stop.
+
+**Dispatch gate LIFTED (Deyao, 2026-07-23, same day):** Deyao specified a concrete dispatch protocol directly (fixed pool of 13 numbered worktrees, ff-only before dispatch, merge-and-leave-alone on completion, no per-agent server/file lifecycle management) — see [[flt-fleet-13-worktree-protocol]]. That protocol IS the required design approval; subagent dispatch is live again under it specifically, not a reversion to the pre-suspension free-form model.

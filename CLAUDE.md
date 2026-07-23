@@ -30,6 +30,32 @@ are disjoint regions, so merges are clean or trivially resolvable at
 integration. Do not serialize a file's independent leaves behind one
 owner out of conflict fear; partition them.
 
+## Fleet dispatch: fixed pool of 13 numbered worktrees
+
+(Deyao, 2026-07-23.) Subagent dispatch runs over a FIXED pool of 13
+worktrees, `~/flt-lean-1` .. `~/flt-lean-13`, each on its own
+same-numbered branch, each with its own `flt-report-server@flt-lean-N`
+systemd instance (the template unit `flt-report-server@.service`,
+`WorkingDirectory=%h/%i`) already running — `lake serve` on FIFOs,
+scoped to that worktree.
+
+- **Max 13 concurrent subagents**, one per worktree, 1:1.
+- **Before dispatch**: pick a FREE worktree (no agent currently owns
+  it) and fast-forward it to main — `git -C ~/flt-lean-N merge
+  --ff-only main`. Do **not** touch `.lake`; that worktree's own
+  `lake serve` instance rebuilds incrementally on its own. (This
+  replaces the earlier per-fanout ZFS-snapshot `.lake` seeding scheme
+  — that was for creating a brand-new worktree per dispatch; this pool
+  is fixed and already warm.)
+- **On agent completion**: the orchestrator merges the agent's branch
+  into main, then leaves the worktree folder alone — no reset, no
+  extra cleanup. It sits until the next dispatch cycle's `--ff-only`
+  picks it up again.
+- **No per-agent server/file lifecycle management**: don't close LSP
+  files, don't build reapers or memory-conservation tooling for this.
+  Memory grows but stays bounded over time — accepted as fine, not a
+  leak to chase.
+
 ## File edits: prefer the Write/Edit tool calls over scripts (soft rule)
 
 (Deyao, 2026-07-22.) Edit files with the harness's Write/Edit tools by

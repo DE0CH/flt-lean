@@ -13,8 +13,9 @@
 - [Progress snapshot via worktree](flt-progress-snapshot-worktree.md) — Deyao 2026-07-22: regenerate PROGRESS.md from committed state in a secondary worktree at every agent-completion/milestone
 - [Stop hook is a nudge](flt-stop-hook-is-a-nudge.md) — Deyao 2026-07-22: automatic back-to-work prompt, not a safety net; fail open, best-effort
 - [Report blocker class](flt-report-blocker-class.md) — Deyao 2026-07-22: every wait/blockage report must name the blocker AND its class: trusted tool (fine) vs Claude automation (defect)
-- [Atomic-snapshot fan-out seeding](flt-worktree-seed-artifacts.md) — Deyao 2026-07-22: seed .lake by atomic copy from the latest ZFS hourly autosnap (.zfs/snapshot); otherwise nothing touches olean files
+- [Fleet dispatch: 13-worktree protocol](flt-fleet-13-worktree-protocol.md) — Deyao 2026-07-23: fixed pool flt-lean-1..13, ff-only before dispatch, merge-and-leave-alone on completion, no .lake seeding, no server/file lifecycle management
 - [Scripts get a server, not MCP](scripts-get-a-server-not-mcp.md) — Deyao: headless scripts that can't use MCP effectively get a thin persistent server; delegate loading/invalidation to standard tooling
 - [Caller-directed script error policy](scripts-crash-dont-fallback.md) — Deyao 2026-07-22: Claude-called scripts crash loudly, no fallbacks; harness/Deyao-called scripts (Stop hook) need reasonable graceful fallbacks
 - [Don't invent — use existing tools](dont-invent-delegate-to-existing-tools.md) — Deyao 2026-07-23: every infra incident traced to a Claude invention; name the existing owner (compiler/LSP/lake/git/fs) before building anything
 - [Spawned resources have owners](spawned-resources-have-owners.md) — Deyao 2026-07-23: pair every spawn with a release at task end; reap agents' workers at integration; outliving a task requires a named new owner
+- [Why-question is not consent](why-question-is-not-consent.md) — Deyao 2026-07-23: a why question is investigation, not consent to a pending action and not a request to go fix the thing
