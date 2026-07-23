@@ -43,28 +43,30 @@ one line per worktree, `<name> free` or `<name> claimed`.
 - **Max 13 concurrent subagents**, one per worktree, 1:1.
 - **FIFO task queue** (Deyao, 2026-07-23): `~/.flt-task-queue`, a
   plain text file — full agent prompts separated by lines consisting
-  exactly of `=== TASK ===`. The orchestrator pushes, reorders, and
-  drops tasks BY HAND-EDITING THE FILE. To dispatch the queue head,
-  spawn an agent whose prompt is the sentinel `{{FLT_QUEUE_POP}}`: the
-  hook pops the top task, allocates a worktree, substitutes
-  `{{FLT_WORKTREE}}` inside the queued prompt, and replaces the Agent
-  call's prompt with the result. While the queue is nonempty, ANY
-  non-sentinel Agent spawn is denied with a reminder (FIFO order is
-  enforced); a pop with the pool full is denied leaving the queue
-  untouched.
-- **Direct dispatch** (queue empty only): put the literal placeholder
-  `{{FLT_WORKTREE}}` in the agent's prompt wherever its worktree path
-  belongs. `.claude/worktree-pool-hook.py` (a `PreToolUse` hook on the
-  `Agent` tool) finds a `free` entry, checks it is git-clean and its
-  branch is an ancestor of main, fast-forwards it to main
-  (`--ff-only`), marks it `claimed`, and substitutes the real path for
-  the placeholder. Never touch `.lake` directly — the worktree's own
-  `lake serve` instance rebuilds incrementally on its own. No free
-  worktree → the hook denies the call, telling the orchestrator to
-  append the task to `~/.flt-task-queue` instead. A claimed worktree
-  that is dirty or not an ancestor of main is not auto-corrected — the
-  hook hard-crashes (traceback to stderr, exit 2, tool call blocked):
-  that state means something beyond allocation went wrong.
+  exactly of `=== TASK ===`. The orchestrator reorders and drops tasks
+  BY HAND-EDITING THE FILE. To dispatch the queue head, spawn an agent
+  whose prompt is the sentinel `{{FLT_QUEUE_POP}}`: the hook pops the
+  top task, allocates a worktree, substitutes `{{FLT_WORKTREE}}`
+  inside the queued prompt, and replaces the Agent call's prompt with
+  the result. A pop with the pool full is denied leaving the queue
+  untouched; a non-fleet spawn (no placeholder) while the queue is
+  nonempty is denied with a dispatch-the-queue-first reminder.
+- **Direct dispatch**: put the literal placeholder `{{FLT_WORKTREE}}`
+  in the agent's prompt wherever its worktree path belongs.
+  `.claude/worktree-pool-hook.py` (a `PreToolUse` hook on the `Agent`
+  tool) finds a `free` entry, checks it is git-clean and its branch is
+  an ancestor of main, fast-forwards it to main (`--ff-only`), marks
+  it `claimed`, and substitutes the real path for the placeholder. If
+  the dispatch cannot run immediately — the queue is nonempty (FIFO)
+  or no worktree is free — the hook AUTO-QUEUES it: the prompt is
+  appended to `~/.flt-task-queue` by the hook itself and the call is
+  denied with a message giving the queue position and the
+  `{{FLT_QUEUE_POP}}` instruction. Never touch `.lake` directly — the
+  worktree's own `lake serve` instance rebuilds incrementally on its
+  own. A claimed worktree that is dirty or not an ancestor of main is
+  not auto-corrected — the hook hard-crashes (traceback to stderr,
+  exit 2, tool call blocked): that state means something beyond
+  allocation went wrong.
 - **On agent completion**: the orchestrator merges the agent's branch
   into main, then hand-edits `~/.flt-worktree-pool` to mark that
   worktree `free` again (no reliable hook fires on "the orchestrator

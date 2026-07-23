@@ -13,12 +13,15 @@ top task, allocates a free worktree, substitutes the worktree path for
 call's prompt with the result.
 
 Rules enforced here:
-- Queue nonempty + spawn prompt is NOT the sentinel -> DENY, reminding
-  the orchestrator to dispatch queued items first (FIFO order).
+- A direct {{FLT_WORKTREE}} dispatch that cannot run immediately
+  (queue nonempty -- FIFO order -- or no free worktree) is AUTO-QUEUED:
+  the hook itself appends the prompt to ~/.flt-task-queue and denies
+  the call with a message saying the task has been queued and that
+  {{FLT_QUEUE_POP}} pops the head once there is capacity.
+- Non-fleet spawn (no placeholder) while the queue is nonempty -> DENY,
+  reminding the orchestrator to dispatch queued items first.
 - Sentinel + empty queue -> DENY (nothing to pop).
-- No free worktree -> DENY; for a direct {{FLT_WORKTREE}} dispatch the
-  message says to append the task to ~/.flt-task-queue instead.
-  A queue pop with no free worktree leaves the queue untouched.
+- A queue pop with no free worktree leaves the queue untouched.
 
 Worktree allocation is unchanged: find a `free` entry in
 ~/.flt-worktree-pool, check it is git-clean and its branch is an
@@ -146,7 +149,19 @@ def main():
 
     queue = read_queue()
 
-    if not is_pop and queue:
+    def auto_queue(reason):
+        queue.append(prompt)
+        write_queue(queue)
+        deny(f"{reason} — this task has been QUEUED (position "
+             f"{len(queue)} in {QUEUE_FILE}). Dispatch the queue head "
+             f"with an Agent spawn whose prompt is {SENTINEL} once there "
+             f"is capacity; hand-edit the file to reprioritize or drop.")
+
+    if is_direct and not is_pop and queue:
+        auto_queue(f"the task queue already has {len(queue)} pending "
+                   f"item(s) (FIFO order)")
+
+    if not is_pop and not is_direct and queue:
         deny(f"the task queue ({QUEUE_FILE}) has {len(queue)} pending "
              f"item(s) — dispatch them first, in FIFO order, by spawning "
              f"an agent whose prompt is the sentinel {SENTINEL} (the hook "
@@ -182,11 +197,7 @@ def main():
         fcntl.flock(f, fcntl.LOCK_EX)
         worktree_path = allocate_worktree(f)
         if worktree_path is None:
-            deny("no free worktree available — PUSH THIS TASK TO THE QUEUE "
-                 f"instead: append the full prompt to {QUEUE_FILE} (tasks "
-                 f"separated by a line `{DELIMITER}`), then dispatch it "
-                 f"later with the {SENTINEL} sentinel once a worktree "
-                 "frees up.")
+            auto_queue("no free worktree available")
     tool_input["prompt"] = tool_input["prompt"].replace(
         PLACEHOLDER, worktree_path)
     emit({
