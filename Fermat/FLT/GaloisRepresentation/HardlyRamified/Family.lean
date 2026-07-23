@@ -7,6 +7,9 @@ module
 
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRepFamily
+-- the modularity interface: the weight-2 eigenform carrier and the
+-- sorried modularity/attachment nodes consumed by the automorphy atoms
+public import Fermat.FLT.Modularity.Interface
 import Mathlib.Algebra.Field.ULift
 import Mathlib.Topology.Algebra.IntermediateField
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
@@ -956,7 +959,8 @@ theorem exists_rat_trace_coeff_of_not_isIrreducible
   rw [hcoeff, hsum, cyclotomicCharacter_adicArithFrob_natCast hq hqp, map_natCast,
     map_neg, map_add, map_one, map_natCast]
 
-/-- **The Hecke field on the irreducible branch** (sorry node): away
+/-- **The Hecke field on the irreducible branch** (PROVEN assembly,
+see the DECOMPOSED note below): away
 from a finite set of places, the TRACE coefficients of the mapped
 Frobenius characteristic polynomials of a hardly ramified `p`-adic
 representation whose base extension to `ℚ̄_p` IS irreducible lie in a
@@ -982,27 +986,91 @@ atomic automorphy sorries whose eventual proofs would each have been
 this whole modularity argument; they are now PROVEN assemblies over
 this single node (algebraicity: elements of a finite extension of `ℚ`
 are algebraic; batch bound: `d = finrank ℚ E`), so the automorphy
-content of the irreducible branch is carried by exactly one sorry. -/
+content of the irreducible branch is carried by exactly one sorry.
+
+DECOMPOSED (2026-07-23, opening the modularity subtree) into a PROVEN
+assembly over the modularity interface
+(`Fermat/FLT/Modularity/Interface.lean`), where the eigenform now has
+an actual carrier on the pin (`Modularity.IsWeightTwoEigenform`, the
+Diamond–Shurman 5.8.5 coefficient characterization on the pin's
+`CuspForm`):
+
+1. `Modularity.exists_weightTwoEigenform_trace_eq_of_isIrreducible`
+   (sorry node) — the modularity input: the Frobenius traces are, away
+   from finitely many places, the `ι`-images of the coefficients of a
+   normalized weight-2 eigenform `f` of some level `N ≥ 1`, for a
+   single embedding `ι : K_f →+* ℚ̄_p` of its Hecke field.
+2. `Modularity.heckeField_finiteDimensional` (sorry node) — the Hecke
+   field `K_f = ℚ({aₙ(f)})` is a number field (Diamond–Shurman §6.5).
+3. The assembly (below, PROVEN): `E` is `ℚ` with the `ι`-images of a
+   finite `ℚ`-spanning set of `K_f` adjoined — finite-dimensional
+   because each generator is integral over `ℚ` (image of an element of
+   a number field under a ring hom commuting with `ℚ`, ring homs out
+   of `ℚ` being unique); every trace is `−ι(a_q) ∈ E` by span
+   induction (the `ℚ`-scalars fall into `E` through the base field). -/
 theorem exists_finiteDimensional_trace_field_of_isIrreducible
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
     (hZinj : Function.Injective (algebraMap ℤ_[p] R))
     (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
     (hρ : IsHardlyRamified hpodd hv ρ)
-    (hint : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
+    (_hint : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
       ((algebraMap R (AlgebraicClosure ℚ_[p])).comp (algebraMap ℤ_[p] R)).IsIntegralElem
         (((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n))
     (K : IntermediateField ℚ_[p] (AlgebraicClosure ℚ_[p]))
-    (hKfd : FiniteDimensional ℚ_[p] K)
-    (hK : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
+    (_hKfd : FiniteDimensional ℚ_[p] K)
+    (_hK : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
       ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n ∈ K)
     (hirr : (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible) :
     ∃ (E : IntermediateField ℚ (AlgebraicClosure ℚ_[p]))
       (_ : FiniteDimensional ℚ E)
       (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
       ∀ v ∉ S,
-        ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 ∈ E :=
-  sorry
+        ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 ∈ E := by
+  classical
+  obtain ⟨N, hN, f, hf, ι, S, hS⟩ :=
+    Modularity.exists_weightTwoEigenform_trace_eq_of_isIrreducible hpodd hv
+      hZinj hRinj hρ hirr
+  haveI : FiniteDimensional ℚ (Modularity.heckeField N f) :=
+    Modularity.heckeField_finiteDimensional hN hf
+  -- a finite `ℚ`-spanning set of the Hecke field
+  obtain ⟨s, hs⟩ : (⊤ : Submodule ℚ (Modularity.heckeField N f)).FG :=
+    Module.finite_def.mp inferInstance
+  -- ring homs out of `ℚ` are unique, so `ι` restricts to the canonical map
+  have hQcomp : algebraMap ℚ (AlgebraicClosure ℚ_[p]) =
+      ι.comp (algebraMap ℚ (Modularity.heckeField N f)) := Subsingleton.elim _ _
+  -- the `ι`-image of the Hecke field is integral over `ℚ`
+  have hint' : ∀ x : Modularity.heckeField N f, IsIntegral ℚ (ι x) := by
+    intro x
+    obtain ⟨P, hPmonic, hPeval⟩ := IsIntegral.of_finite ℚ x
+    refine ⟨P, hPmonic, ?_⟩
+    rw [hQcomp, ← Polynomial.hom_eval₂, hPeval, map_zero]
+  -- every `ι`-image lies in the field the finite spanning set generates
+  have hmem : ∀ x : Modularity.heckeField N f,
+      ι x ∈ IntermediateField.adjoin ℚ (⇑ι '' ↑s) := by
+    intro x
+    have hx : x ∈ Submodule.span ℚ (↑s : Set (Modularity.heckeField N f)) := by
+      rw [hs]; exact Submodule.mem_top
+    induction hx using Submodule.span_induction with
+    | mem y hy => exact IntermediateField.subset_adjoin _ _ ⟨y, hy, rfl⟩
+    | zero => rw [map_zero]; exact zero_mem _
+    | add y z _ _ hy hz => rw [map_add]; exact add_mem hy hz
+    | smul c y _ hy =>
+      rw [Algebra.smul_def, map_mul]
+      refine mul_mem ?_ hy
+      have hc := RingHom.congr_fun hQcomp c
+      rw [RingHom.comp_apply] at hc
+      rw [← hc]
+      exact IntermediateField.algebraMap_mem _ _
+  refine ⟨IntermediateField.adjoin ℚ (⇑ι '' ↑s), ?_, S, ?_⟩
+  · haveI : Finite ↥(⇑ι '' ↑s) := (s.finite_toSet.image _).to_subtype
+    exact IntermediateField.finiteDimensional_adjoin fun x hx => by
+      obtain ⟨y, -, rfl⟩ := hx
+      exact hint' y
+  · intro v hv'
+    obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrumRingOfIntegersRat v
+    rw [hS q hq hv']
+    exact neg_mem (hmem _)
 
 /-- **Algebraicity shadow on the irreducible branch** (PROVEN assembly,
 see the DECOMPOSED note below):
