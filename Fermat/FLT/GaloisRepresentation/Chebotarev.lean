@@ -134,6 +134,7 @@ public import Mathlib.Analysis.Calculus.Deriv.Basic
 import Mathlib.NumberTheory.LSeries.Deriv
 import Mathlib.Analysis.SpecialFunctions.Complex.LogBounds
 import Mathlib.Analysis.SpecialFunctions.Complex.LogDeriv
+import Mathlib.Analysis.SpecialFunctions.Log.Summable
 import Mathlib.Analysis.Complex.LocallyUniformLimit
 import Mathlib.Analysis.Complex.RealDeriv
 import Mathlib.Analysis.Calculus.MeanValue
@@ -1621,26 +1622,116 @@ theorem tsum_rpow_neg_natCard_quotient_prime_and_ne_ne_top
     (fun I => (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s))
 
 open IsDedekindDomain in
+/-- Every finite place of a number field has residue cardinality at
+least `2`: the quotient is a finite nontrivial ring. -/
+theorem two_le_natCard_quotient {F : Type*} [Field F] [NumberField F]
+    (P : HeightOneSpectrum (𝓞 F)) : 2 ≤ Nat.card (𝓞 F ⧸ P.asIdeal) := by
+  haveI : Finite (𝓞 F ⧸ P.asIdeal) :=
+    Ring.HasFiniteQuotients.finiteQuotient P.ne_bot
+  haveI : Nontrivial (𝓞 F ⧸ P.asIdeal) :=
+    Ideal.Quotient.nontrivial_iff.mpr P.isPrime.ne_top
+  exact Finite.one_lt_card
+
+open IsDedekindDomain in
+/-- Real summability of the full place sum `∑_P #(𝓞 F / P)^{-s}` for
+real `s > 1`, transferred from the `ℝ≥0∞`-valued ideal-sum leaf
+`tsum_rpow_neg_absNorm_ne_top` through the injection `P ↦ P.asIdeal`. -/
+theorem summable_rpow_neg_natCard_quotient {F : Type*} [Field F] [NumberField F]
+    {s : ℝ} (hs : 1 < s) : Summable (fun P : HeightOneSpectrum (𝓞 F) =>
+      (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s)) := by
+  have h1 : ∀ P : HeightOneSpectrum (𝓞 F),
+      (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s) =
+        (Ideal.absNorm P.asIdeal : ℝ≥0∞) ^ (-s) := by
+    intro P
+    rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+  have h2 : (∑' P : HeightOneSpectrum (𝓞 F),
+      (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s)) ≠ ⊤ := by
+    refine ne_top_of_le_ne_top (tsum_rpow_neg_absNorm_ne_top F hs) ?_
+    rw [tsum_congr h1]
+    exact ENNReal.tsum_comp_le_tsum_of_injective
+      (f := fun P : HeightOneSpectrum (𝓞 F) =>
+        (⟨P.asIdeal, P.ne_bot⟩ : {I : Ideal (𝓞 F) // I ≠ ⊥}))
+      (fun P Q h => HeightOneSpectrum.ext (congrArg Subtype.val h))
+      (fun I => (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s))
+  have h3 : ∀ P : HeightOneSpectrum (𝓞 F),
+      (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s) =
+        (((Nat.card (𝓞 F ⧸ P.asIdeal) : NNReal) ^ (-s) : NNReal) : ℝ≥0∞) := by
+    intro P
+    rw [ENNReal.coe_rpow_of_ne_zero (by
+        have h4 := two_le_natCard_quotient P
+        exact_mod_cast (by omega : Nat.card (𝓞 F ⧸ P.asIdeal) ≠ 0)),
+      ENNReal.coe_natCast]
+  rw [tsum_congr h3] at h2
+  have h4 := ENNReal.tsum_coe_ne_top_iff_summable.mp h2
+  refine (NNReal.summable_coe.mpr h4).congr ?_
+  intro P
+  rw [NNReal.coe_rpow, NNReal.coe_natCast]
+
+open IsDedekindDomain in
+/-- **Euler product for the `χ`-twisted Dedekind zeta function** (sorry
+leaf): for `1 < re w`, the product of the inverted Euler factors
+`(1 - χ(N P)·N P^{-w})⁻¹` over the finite places of `F` equals the
+absolutely convergent sum of `χ(N I)·N I^{-w}` over the nonzero ideals
+of `𝓞 F`. Pure unique factorization — no counting asymptotics, no
+nonvanishing. Intended proof: mirror mathlib's
+`EulerProduct.eulerProduct_hasProd` (stated there only for `ℕ`), with
+`Ideal (𝓞 F)` in place of `ℕ`: a finite partial product over a finite
+set `S` of places expands as the twisted sum over the ideals whose
+prime factors lie in `S` (geometric series for each factor, then
+multiplicativity of `Ideal.absNorm` and complete multiplicativity of
+`χ ∘ cast` along the `UniqueFactorizationMonoid` structure of the
+nonzero ideals of the Dedekind domain `𝓞 F`), and the difference from
+the full ideal sum is dominated by the tail of the convergent ideal
+norm sum (`tsum_rpow_neg_absNorm_ne_top`). -/
+theorem tprod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum
+    (F : Type*) [Field F] [NumberField F] {ℓ : ℕ} (χ : DirichletCharacter ℂ ℓ)
+    {w : ℂ} (hw : 1 < w.re) :
+    (∏' P : HeightOneSpectrum (𝓞 F),
+        (1 - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w))⁻¹) =
+      ∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥},
+        χ ((Ideal.absNorm I.1 : ℕ) : ZMod ℓ) * (Ideal.absNorm I.1 : ℂ) ^ (-w) :=
+  sorry
+
+open IsDedekindDomain in
+/-- **Norm fibration of the twisted ideal sum** (sorry leaf): grouping
+the nonzero ideals of `𝓞 F` along `Ideal.absNorm` turns the twisted
+ideal sum into the `L`-series of `k ↦ χ(k)·#{I : N(I) = k}`. Intended
+proof: `Equiv.sigmaFiberEquiv` and `Summable.tsum_sigma` fibre the sum
+over `k = N(I)`; each fibre is finite (`Ideal.finite_setOf_absNorm_eq`)
+with summand `χ(k)·k^{-w}` constant on the fibre, so its sum is
+`#{I : N(I) = k} · χ(k)·k^{-w} = LSeries.term _ w k` (the `k = 0` fibre
+is empty on nonzero ideals by `Ideal.absNorm_eq_zero_iff`; absolute
+convergence for `1 < re w` from `tsum_rpow_neg_absNorm_ne_top`). -/
+theorem tsum_dirichletCharacter_mul_cpow_neg_absNorm_eq_LSeries
+    (F : Type*) [Field F] [NumberField F] {ℓ : ℕ} (χ : DirichletCharacter ℂ ℓ)
+    {w : ℂ} (hw : 1 < w.re) :
+    (∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥},
+        χ ((Ideal.absNorm I.1 : ℕ) : ZMod ℓ) * (Ideal.absNorm I.1 : ℂ) ^ (-w)) =
+      LSeries (fun k => χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) w :=
+  sorry
+
+open IsDedekindDomain in
 /-- **Euler product for the `χ`-twisted Dedekind zeta function, in
-exponential form** (sorry leaf): for a number field `F`, a Dirichlet
+exponential form**: for a number field `F`, a Dirichlet
 character `χ mod ℓ` with values in `ℂ`, and complex `w` with
 `1 < re w`, the exponential of the prime log-sum
 `∑_P -log(1 - χ(N P) · N P ^ (-w))` over ALL finite places of `F`
 equals the `L`-series of the coefficient function
 `k ↦ χ(k) · #{I : N(I) = k}` (the `χ`-twisted ideal Dirichlet series;
-same coefficient shape as `NumberField.dedekindZeta`). Pure
-absolute-convergence bookkeeping — no counting asymptotics, no
-nonvanishing: unique factorization of ideals of the Dedekind domain
-`𝓞 F` fibres the norm-grouped ideal sum over finitely supported prime
-exponent vectors. Intended route: `Complex.cexp_tsum_eq_tprod`
-(`Mathlib.Analysis.SpecialFunctions.Log.Summable`) turns the left side
-into `∏_P (1 - χ(N P) N P^{-w})⁻¹`; each factor is the geometric series
-`∑_k (χ(N P) N P^{-w})^k`; the product of these series over `P` is the
-sum of `χ(N I) N I^{-w}` over nonzero ideals `I` (multiplicativity of
-`Ideal.absNorm`, complete multiplicativity of `χ ∘ Nat.cast`, and
-`UniqueFactorizationMonoid` for `Ideal (𝓞 F)`), which regrouped along
-the fibres of `Ideal.absNorm` (`Ideal.finite_setOf_absNorm_eq`,
-`Equiv.sigmaFiberEquiv`) is the right side. -/
+same coefficient shape as `NumberField.dedekindZeta`).
+
+DERIVED from the two strictly shallower sorried leaves above: each
+factor is away from `0` and off the branch cut (`‖χ(N P) N P^{-w}‖ ≤
+N P^{-re w} ≤ 1/2`), so `Complex.log_inv` and
+`Complex.cexp_tsum_eq_tprod` (with the `3/2·N P^{-re w}` log bound and
+`summable_rpow_neg_natCard_quotient`) turn the left side into
+`∏_P (1 - χ(N P) N P^{-w})⁻¹`; the Euler-product leaf
+`tprod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum` identifies
+the product with the twisted ideal sum, and the fibration leaf
+`tsum_dirichletCharacter_mul_cpow_neg_absNorm_eq_LSeries` regroups it
+along `Ideal.absNorm` into the right side. -/
 theorem exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries
     (F : Type*) [Field F] [NumberField F] {ℓ : ℕ} (χ : DirichletCharacter ℂ ℓ)
     {w : ℂ} (hw : 1 < w.re) :
@@ -1648,8 +1739,109 @@ theorem exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries
         -Complex.log (1 - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
           (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w))) =
       LSeries (fun k => χ (k : ZMod ℓ) *
-        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) w :=
-  sorry
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) w := by
+  classical
+  -- factor norms: `‖χ(N P)·N P^{-w}‖ ≤ N P^{-re w} ≤ 1/2`
+  have hzb : ∀ P : HeightOneSpectrum (𝓞 F),
+      ‖χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w)‖ ≤
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-w.re) := by
+    intro P
+    have hNpos : 0 < Nat.card (𝓞 F ⧸ P.asIdeal) := by
+      have h := two_le_natCard_quotient P
+      omega
+    rw [norm_mul, Complex.norm_natCast_cpow_of_pos hNpos, Complex.neg_re]
+    exact mul_le_of_le_one_left (Real.rpow_nonneg (Nat.cast_nonneg _) _)
+      (DirichletCharacter.norm_le_one χ _)
+  have hb : ∀ P : HeightOneSpectrum (𝓞 F),
+      ‖χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w)‖ ≤ 1 / 2 := by
+    intro P
+    refine le_trans (hzb P) ?_
+    have h2N : (2 : ℝ) ≤ (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) := by
+      exact_mod_cast two_le_natCard_quotient P
+    calc (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-w.re)
+        ≤ (2 : ℝ) ^ (-w.re) :=
+          Real.rpow_le_rpow_of_nonpos two_pos h2N (by linarith)
+      _ ≤ (2 : ℝ) ^ (-1 : ℝ) :=
+          (Real.rpow_le_rpow_left_iff one_lt_two).mpr (by linarith)
+      _ = 1 / 2 := by rw [Real.rpow_neg_one]; norm_num
+  -- the factors are nonzero and have positive real part
+  have hne : ∀ P : HeightOneSpectrum (𝓞 F),
+      (1 : ℂ) - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w) ≠ 0 := by
+    intro P h0
+    have h1 := sub_eq_zero.mp h0
+    have h2 := hb P
+    rw [← h1, norm_one] at h2
+    norm_num at h2
+  have hre : ∀ P : HeightOneSpectrum (𝓞 F),
+      0 < ((1 : ℂ) - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w)).re := by
+    intro P
+    have h7 := le_trans (Complex.abs_re_le_norm _) (hb P)
+    have h8 : ((1 : ℂ) - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w)).re =
+        1 - (χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w)).re := by
+      simp [Complex.sub_re, Complex.one_re]
+    rw [h8]
+    have h9 := abs_le.mp h7
+    linarith [h9.2]
+  -- inverting the factors negates the logs
+  have hloginv : ∀ P : HeightOneSpectrum (𝓞 F),
+      Complex.log (((1 : ℂ) - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w))⁻¹) =
+      -Complex.log (1 - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w)) := by
+    intro P
+    refine Complex.log_inv _ ?_
+    intro harg
+    have h10 := Complex.arg_eq_pi_iff.mp harg
+    linarith [hre P, h10.1]
+  -- summability of the negated logs
+  have hlogsum : Summable (fun P : HeightOneSpectrum (𝓞 F) =>
+      -Complex.log (1 - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w))) := by
+    refine Summable.of_norm_bounded
+      ((summable_rpow_neg_natCard_quotient hw).mul_left (3 / 2 : ℝ)) ?_
+    intro P
+    rw [norm_neg]
+    have h6 : ‖-(χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w))‖ ≤ 1 / 2 := by
+      rw [norm_neg]
+      exact hb P
+    calc ‖Complex.log (1 - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w))‖
+        = ‖Complex.log (1 + -(χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w)))‖ := by
+          rw [sub_eq_add_neg]
+      _ ≤ 3 / 2 * ‖-(χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w))‖ :=
+          Complex.norm_log_one_add_half_le_self h6
+      _ = 3 / 2 * ‖χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w)‖ := by rw [norm_neg]
+      _ ≤ 3 / 2 * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-w.re) :=
+          mul_le_mul_of_nonneg_left (hzb P) (by norm_num)
+  -- assemble: exp-log, Euler product, norm fibration
+  calc Complex.exp (∑' P : HeightOneSpectrum (𝓞 F),
+        -Complex.log (1 - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w)))
+      = Complex.exp (∑' P : HeightOneSpectrum (𝓞 F),
+          Complex.log (((1 : ℂ) - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w))⁻¹)) := by
+        rw [tsum_congr hloginv]
+    _ = ∏' P : HeightOneSpectrum (𝓞 F),
+          ((1 : ℂ) - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w))⁻¹ :=
+        Complex.cexp_tsum_eq_tprod (fun P => inv_ne_zero (hne P))
+          (hlogsum.congr fun P => (hloginv P).symm)
+    _ = ∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥},
+          χ ((Ideal.absNorm I.1 : ℕ) : ZMod ℓ) * (Ideal.absNorm I.1 : ℂ) ^ (-w) :=
+        tprod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum F χ hw
+    _ = LSeries (fun k => χ (k : ZMod ℓ) *
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) w :=
+        tsum_dirichletCharacter_mul_cpow_neg_absNorm_eq_LSeries F χ hw
 
 open IsDedekindDomain in
 /-- **Good behaviour of the twisted `L`-series on `[1, 2]`** (sorry
@@ -1762,44 +1954,12 @@ theorem exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le
   obtain ⟨c, C, hc, hLbounds⟩ :=
     exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le hℓ hζ χ hχ
   -- `2 ≤ #(𝓞 F / P)` for every finite place
-  have htwo : ∀ P : HeightOneSpectrum (𝓞 F), 2 ≤ Nat.card (𝓞 F ⧸ P.asIdeal) := by
-    intro P
-    haveI : Finite (𝓞 F ⧸ P.asIdeal) :=
-      Ring.HasFiniteQuotients.finiteQuotient P.ne_bot
-    haveI : Nontrivial (𝓞 F ⧸ P.asIdeal) :=
-      Ideal.Quotient.nontrivial_iff.mpr P.isPrime.ne_top
-    exact Finite.one_lt_card
+  have htwo : ∀ P : HeightOneSpectrum (𝓞 F), 2 ≤ Nat.card (𝓞 F ⧸ P.asIdeal) :=
+    fun P => two_le_natCard_quotient P
   -- summability of the full place sum for every real `s > 1`
   have hAll : ∀ s : ℝ, 1 < s → Summable (fun P : HeightOneSpectrum (𝓞 F) =>
-      (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s)) := by
-    intro s hs
-    have h1 : ∀ P : HeightOneSpectrum (𝓞 F),
-        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s) =
-          (Ideal.absNorm P.asIdeal : ℝ≥0∞) ^ (-s) := by
-      intro P
-      rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
-    have h2 : (∑' P : HeightOneSpectrum (𝓞 F),
-        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s)) ≠ ⊤ := by
-      refine ne_top_of_le_ne_top (tsum_rpow_neg_absNorm_ne_top F hs) ?_
-      rw [tsum_congr h1]
-      exact ENNReal.tsum_comp_le_tsum_of_injective
-        (f := fun P : HeightOneSpectrum (𝓞 F) =>
-          (⟨P.asIdeal, P.ne_bot⟩ : {I : Ideal (𝓞 F) // I ≠ ⊥}))
-        (fun P Q h => HeightOneSpectrum.ext (congrArg Subtype.val h))
-        (fun I => (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s))
-    have h3 : ∀ P : HeightOneSpectrum (𝓞 F),
-        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s) =
-          (((Nat.card (𝓞 F ⧸ P.asIdeal) : NNReal) ^ (-s) : NNReal) : ℝ≥0∞) := by
-      intro P
-      rw [ENNReal.coe_rpow_of_ne_zero (by
-          have h4 := htwo P
-          exact_mod_cast (by omega : Nat.card (𝓞 F ⧸ P.asIdeal) ≠ 0)),
-        ENNReal.coe_natCast]
-    rw [tsum_congr h3] at h2
-    have h4 := ENNReal.tsum_coe_ne_top_iff_summable.mp h2
-    refine (NNReal.summable_coe.mpr h4).congr ?_
-    intro P
-    rw [NNReal.coe_rpow, NNReal.coe_natCast]
+      (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s)) :=
+    fun _ hs => summable_rpow_neg_natCard_quotient hs
   -- summability of the `N(P)⁻¹` sum over the higher-degree places
   have hnp : Summable (fun P : {P : HeightOneSpectrum (𝓞 F) //
       ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
