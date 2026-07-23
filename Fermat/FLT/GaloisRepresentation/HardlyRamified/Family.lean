@@ -147,8 +147,229 @@ theorem charFrob_coeff_isIntegralElem
   refine ⟨P, hPmonic, ?_⟩
   rw [Polynomial.coeff_map, ← Polynomial.hom_eval₂, hPeval, map_zero]
 
-/-- **Algebraicity/finiteness core of the eigensystem stratum** (sorry
-node): away from a finite set of places, the coefficients of the mapped
+/-- Every finite place of `ℚ` is the place of a rational prime (PROVEN):
+the surjectivity half of the primes ↔ places dictionary, needed to
+convert the prime-indexed unramifiedness field of `IsHardlyRamified`
+into the place-indexed unramifiedness that
+`GaloisRepFamily.isCompatible` consumes. (Moved above the eigensystem
+strata 2026-07-23: the coefficient-field assembly consumes it too.) -/
+lemma exists_prime_toHeightOneSpectrumRingOfIntegersRat
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    ∃ (q : ℕ) (hq : q.Prime), v = hq.toHeightOneSpectrumRingOfIntegersRat := by
+  let E := Rat.ringOfIntegersEquiv.symm.heightOneSpectrum
+  obtain ⟨g, hg⟩ := (IsPrincipalIdealRing.principal (E.symm v).asIdeal).principal
+  have hg0 : g ≠ 0 := by
+    rintro rfl
+    exact (E.symm v).ne_bot (by simpa using hg)
+  have hg' : (E.symm v).asIdeal = Ideal.span {g} := hg
+  have hprime : Prime g := (Ideal.span_singleton_prime hg0).mp (hg' ▸ (E.symm v).isPrime)
+  refine ⟨g.natAbs, Int.prime_iff_natAbs_prime.mp hprime, ?_⟩
+  have hweq : E.symm v =
+      (Int.prime_iff_natAbs_prime.mp hprime).toHeightOneSpectrumInt := by
+    ext1
+    show (E.symm v).asIdeal = Ideal.span {(g.natAbs : ℤ)}
+    rw [Int.span_natAbs, hg']
+  have hv : v = E (E.symm v) := (E.apply_symm_apply v).symm
+  rw [hv, hweq]
+  rfl
+
+omit [IsDomain R] [IsTopologicalRing R] [IsLocalRing R] [Module.Finite ℤ_[p] R] in
+/-- **Composite = canonical** (PROVEN): the composite `ℤ_[p] → R → ℚ̄_p`
+of the structure map with any *continuous* coefficient embedding is the
+canonical map `ℤ_[p] → ℚ̄_p`. Indeed `ℕ` is dense in `ℤ_[p]` and both
+sides are continuous ring homomorphisms agreeing on `ℕ` (the structure
+map is continuous because `R` carries the `ℤ_[p]`-module topology).
+This dissolves — for the continuous embeddings the eigensystem strata
+actually receive — the composite-vs-canonical caveat recorded in the
+docstring of `charFrob_coeff_isIntegralElem`. -/
+lemma algebraMap_comp_algebraMap_padicInt
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])] :
+    (algebraMap R (AlgebraicClosure ℚ_[p])).comp (algebraMap ℤ_[p] R) =
+      algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p]) := by
+  have hcontZ : Continuous (algebraMap ℤ_[p] R) := continuous_algebraMap _ _
+  have hcontR : Continuous (algebraMap R (AlgebraicClosure ℚ_[p])) :=
+    continuous_algebraMap _ _
+  have hcontC : Continuous (algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])) :=
+    (continuous_algebraMap ℚ_[p] _).comp continuous_subtype_val
+  exact DFunLike.coe_injective <|
+    PadicInt.denseRange_natCast.equalizer (hcontR.comp hcontZ) hcontC
+      (funext fun n => by simp)
+
+omit [IsDomain R] [IsTopologicalRing R] [IsLocalRing R] in
+/-- **`p`-adic confinement stratum of the eigensystem** (PROVEN): ALL
+Frobenius-charpoly coefficients of `ρ`, pushed into `ℚ̄_p` along a
+continuous coefficient embedding, lie in a single intermediate field
+finite-dimensional over **`ℚ_p`** (not `ℚ`!). Formal content: `R` is
+module-finite over `ℤ_[p]`, so its image in `ℚ̄_p` is spanned over
+`ℤ_[p]` by finitely many `ℤ_[p]`-integral elements, and adjoining those
+to `ℚ_p` gives a finite extension containing the image of `R`, hence
+every coefficient. This is the exact formal complement of the sorried
+trace-field leaf below: over `ℚ_p` the confinement is free; over `ℚ`
+it is automorphy. -/
+theorem exists_finiteDimensional_padic_coeff_field
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])] :
+    ∃ (K : IntermediateField ℚ_[p] (AlgebraicClosure ℚ_[p]))
+      (_ : FiniteDimensional ℚ_[p] K),
+      ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
+        ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n ∈ K := by
+  classical
+  have htow := algebraMap_comp_algebraMap_padicInt (p := p) (R := R)
+  obtain ⟨s, hs⟩ : (⊤ : Submodule ℤ_[p] R).FG := Module.finite_def.mp inferInstance
+  -- the image of `R` consists of `ℤ_[p]`-integral elements
+  have himg : ∀ r : R, IsIntegral ℤ_[p] (algebraMap R (AlgebraicClosure ℚ_[p]) r) := by
+    intro r
+    obtain ⟨P, hPmonic, hPeval⟩ := IsIntegral.of_finite ℤ_[p] r
+    refine ⟨P, hPmonic, ?_⟩
+    rw [← htow, ← Polynomial.hom_eval₂, hPeval, map_zero]
+  refine ⟨IntermediateField.adjoin ℚ_[p]
+      (algebraMap R (AlgebraicClosure ℚ_[p]) '' ↑s), ?_, ?_⟩
+  · -- finite-dimensionality: finitely many integral (hence algebraic) generators
+    haveI : Finite ↥(algebraMap R (AlgebraicClosure ℚ_[p]) '' ↑s) :=
+      (s.finite_toSet.image _).to_subtype
+    exact IntermediateField.finiteDimensional_adjoin fun x hx => by
+      obtain ⟨r, -, rfl⟩ := hx
+      exact (himg r).tower_top
+  · -- membership: the whole image of `R` lies in the adjoined field
+    have hmemR : ∀ r : R, algebraMap R (AlgebraicClosure ℚ_[p]) r ∈
+        IntermediateField.adjoin ℚ_[p]
+          (algebraMap R (AlgebraicClosure ℚ_[p]) '' ↑s) := by
+      intro r
+      have hr : r ∈ Submodule.span ℤ_[p] (↑s : Set R) := by
+        rw [hs]; exact Submodule.mem_top
+      induction hr using Submodule.span_induction with
+      | mem x hx => exact IntermediateField.subset_adjoin _ _ ⟨x, hx, rfl⟩
+      | zero => rw [map_zero]; exact zero_mem _
+      | add x y _ _ hx hy => rw [map_add]; exact add_mem hx hy
+      | smul c x _ hx =>
+        rw [Algebra.smul_def, map_mul]
+        refine mul_mem ?_ hx
+        have hc : algebraMap R (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] R c) =
+            algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p]) c := RingHom.congr_fun htow c
+        rw [hc, IsScalarTower.algebraMap_eq ℤ_[p] ℚ_[p] (AlgebraicClosure ℚ_[p]),
+          RingHom.comp_apply]
+        exact IntermediateField.algebraMap_mem _ _
+    intro v n
+    rw [Polynomial.coeff_map]
+    exact hmemR _
+
+/-- **The `p`-adic cyclotomic character at an arithmetic Frobenius**
+(sorry node, ELEMENTARY — no automorphy content): at a rational prime
+`q ∉ {2, p}` the `p`-adic cyclotomic character takes the value `q` on
+the global image of the arithmetic Frobenius at `q`. This is the
+general-`p` form of the PROVEN `3`-adic lemma
+`cyclotomicCharacter_adicArithFrob` in
+`Fermat.FLT.Deformations.RepresentationTheory.GaloisRep`, whose proof
+(`adicArithFrob_rootsOfUnity_pow` + `modularCyclotomicCharacter.unique`
++ `PadicInt.ext_of_toZModPow`) is `3`-free except for bookkeeping; the
+generalization is a mechanical port (the `q ≠ 2` hypothesis mirrors the
+template's `5 ≤ p` and is discharged by every intended call site).
+Split off from the eigensystem finiteness leaf so that the DETERMINANT
+coefficient of the Frobenius charpolys becomes rational by PROVEN
+bookkeeping (`charFrob_coeff_zero_eq_natCast`) and only the TRACE
+coefficient retains automorphy content. -/
+theorem cyclotomicCharacter_adicArithFrob_natCast
+    {q : ℕ} (hq : q.Prime) (hq2 : q ≠ 2) (hqp : q ≠ p) :
+    ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))
+        (Field.AbsoluteGaloisGroup.adicArithFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat)).toRingEquiv) : ℤ_[p]ˣ) :
+      ℤ_[p]) = (q : ℤ_[p]) :=
+  sorry
+
+omit [IsDomain R] [Module.Finite ℤ_[p] R] [IsModuleTopology ℤ_[p] R] in
+/-- **Rationality of the determinant coefficient** (PROVEN assembly over
+the cyclotomic-Frobenius leaf): away from `2` and `p`, the constant
+coefficient of the mapped Frobenius charpoly of a hardly ramified
+representation is the rational integer `q` — by the
+cyclotomic-determinant condition of `IsHardlyRamified` together with
+`det = (-1)² · coeff 0` for the rank-`2` charpoly, evaluated through
+`cyclotomicCharacter_adicArithFrob_natCast`. Consequence: the only
+coefficient of the Frobenius charpolys carrying automorphy content is
+the trace (`coeff 1`); see the DECOMPOSED note on
+`exists_finiteDimensional_coeff_field`. -/
+lemma charFrob_coeff_zero_eq_natCast
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {q : ℕ} (hq : q.Prime) (hq2 : q ≠ 2) (hqp : q ≠ p) :
+    ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
+      (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 0 =
+      (q : AlgebraicClosure ℚ_[p]) := by
+  have hfinrank : Module.finrank R V = 2 := Module.finrank_eq_of_rank_eq hv
+  -- the constant coefficient of a rank-2 charpoly is the determinant
+  have hdet := LinearMap.det_eq_sign_charpoly_coeff
+    (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat
+      (Field.AbsoluteGaloisGroup.adicArithFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat))
+  rw [hfinrank, neg_one_sq, one_mul] at hdet
+  -- the determinant of the global Frobenius image is `q`, by the
+  -- cyclotomic-determinant condition and the sorried evaluation leaf
+  have hcyclo := hρ.det (Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))
+    (Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat))
+  rw [GaloisRep.det_apply, cyclotomicCharacter_adicArithFrob_natCast hq hq2 hqp,
+    map_natCast] at hcyclo
+  -- bridge the local-Frobenius determinant to the global one (the two
+  -- spellings differ only in the subsingleton `Algebra ℚ _` instance)
+  have hdetq : LinearMap.det (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat
+      (Field.AbsoluteGaloisGroup.adicArithFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat)) = (q : R) := by
+    rw [GaloisRep.toLocal_apply]
+    convert hcyclo using 2
+    congr 1
+    congr 1
+    congr 1
+    exact Subsingleton.elim _ _
+  rw [Polynomial.coeff_map,
+    show ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+      (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat
+        (Field.AbsoluteGaloisGroup.adicArithFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly from rfl,
+    ← hdet, hdetq, map_natCast]
+
+/-- **Trace-field finiteness core of the eigensystem stratum** (sorry
+node): away from a finite set of places, the TRACE coefficient
+(`coeff 1`) of the mapped Frobenius characteristic polynomials of a
+hardly ramified `p`-adic representation lies in a single subfield of
+`ℚ̄_p` finite over `ℚ`. This is the sole surviving automorphy content
+of `exists_finiteDimensional_coeff_field` (see the DECOMPOSED note
+there): the determinant coefficient is PROVEN rational
+(`charFrob_coeff_zero_eq_natCast`) and the coefficients in degrees
+`≥ 2` are `1, 0, 0, …`, but the traces are the Hecke eigenvalues of the
+cuspidal eigenform underlying `ρ`, and their generating a number field
+(the Hecke field) is where automorphy enters. The confinement
+hypotheses `hKfd`/`hK` (discharged at the call site by the PROVEN
+`exists_finiteDimensional_padic_coeff_field`) record the formal half:
+the traces already lie in one finite extension of `ℚ_p`. A finite
+extension of `ℚ_p` contains algebraic-over-`ℚ` subfields of infinite
+degree (e.g. `ℚ(√ℓ : ℓ a square mod p)` inside `ℚ_p` itself), so
+`ℚ`-finiteness is genuinely not formal even given the confinement. -/
+theorem exists_finiteDimensional_trace_field
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (hint : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
+      ((algebraMap R (AlgebraicClosure ℚ_[p])).comp (algebraMap ℤ_[p] R)).IsIntegralElem
+        (((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n))
+    (K : IntermediateField ℚ_[p] (AlgebraicClosure ℚ_[p]))
+    (hKfd : FiniteDimensional ℚ_[p] K)
+    (hK : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
+      ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n ∈ K) :
+    ∃ (E : IntermediateField ℚ (AlgebraicClosure ℚ_[p]))
+      (_ : FiniteDimensional ℚ E)
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ v ∉ S,
+        ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 ∈ E :=
+  sorry
+
+/-- **Algebraicity/finiteness core of the eigensystem stratum** (PROVEN
+assembly, see the DECOMPOSED note below): away from a finite set of
+places, the coefficients of the mapped
 Frobenius characteristic polynomials of a hardly ramified `p`-adic
 representation all lie in a single subfield of `ℚ̄_p` that is **finite
 over `ℚ`**. This is where the automorphy of `ρ` enters: the coefficients
@@ -160,7 +381,30 @@ that the Frobenius traces are the Hecke eigenvalues of a cuspidal
 eigenform, which generate a number field (the Hecke field). The
 number-field/embedding/polynomial *packaging* of this statement is
 proven downstream in `exists_numberField_eigensystem`; this leaf is the
-bare mathematical content in minimal vocabulary. -/
+bare mathematical content in minimal vocabulary.
+
+DECOMPOSED (2026-07-23) into a PROVEN assembly over two sorried leaves
+and two proven strata:
+
+1. `exists_finiteDimensional_padic_coeff_field` (PROVEN) — all
+   coefficients lie in a single subfield finite over `ℚ_p` (formal,
+   from module-finiteness of `R`, via the PROVEN composite-vs-canonical
+   identity `algebraMap_comp_algebraMap_padicInt`).
+2. `charFrob_coeff_zero_eq_natCast` (PROVEN assembly) — the determinant
+   coefficient at the place of `q ∉ {2, p}` is the rational integer
+   `q`, by the cyclotomic-determinant condition of `IsHardlyRamified`;
+   its single sorried input is the ELEMENTARY cyclotomic-Frobenius
+   evaluation `cyclotomicCharacter_adicArithFrob_natCast` (the
+   general-`p` port of the proven `3`-adic lemma).
+3. `exists_finiteDimensional_trace_field` (sorry node) — the TRACE
+   coefficient lands in a number field away from finitely many places:
+   the sole surviving automorphy content (the Hecke field), taking the
+   confinement of stratum 1 as a hypothesis.
+4. The assembly (PROVEN, below): coefficients in degrees `≥ 2` are
+   `1, 0, 0, …` (the mapped charpoly is monic of degree `2`), the
+   degree-`0` coefficient is `q ∈ ℚ ⊆ E` by 2., the degree-`1`
+   coefficient lies in `E` by 3. (fed with 1.), and the exceptional
+   set is `S ∪ {the places over 2 and p}`. -/
 theorem exists_finiteDimensional_coeff_field
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -174,8 +418,53 @@ theorem exists_finiteDimensional_coeff_field
       (_ : FiniteDimensional ℚ E)
       (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
       ∀ v ∉ S, ∀ n : ℕ,
-        ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n ∈ E :=
-  sorry
+        ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n ∈ E := by
+  classical
+  obtain ⟨K, hKfd, hK⟩ := exists_finiteDimensional_padic_coeff_field (p := p) (ρ := ρ)
+  obtain ⟨E, hEfd, S₀, htr⟩ :=
+    exists_finiteDimensional_trace_field hpodd hv hZinj hRinj hρ hint K hKfd hK
+  refine ⟨E, hEfd,
+    insert Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat
+      (insert (hp.out.toHeightOneSpectrumRingOfIntegersRat) S₀),
+    fun v hvS n => ?_⟩
+  obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrumRingOfIntegersRat v
+  -- the mapped charpoly is (the map of) the charpoly of the local Frobenius
+  have hcp : ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+      (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat
+        (Field.AbsoluteGaloisGroup.adicArithFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly := rfl
+  have hdeg : ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
+      (algebraMap R (AlgebraicClosure ℚ_[p]))).natDegree = 2 := by
+    rw [hcp, (LinearMap.charpoly_monic _).natDegree_map, LinearMap.charpoly_natDegree]
+    exact Module.finrank_eq_of_rank_eq hv
+  match n with
+  | 0 =>
+    -- the determinant coefficient is the rational integer `q`
+    have hq2 : q ≠ 2 := by
+      rintro rfl
+      exact hvS (Finset.mem_insert_self _ _)
+    have hqp : q ≠ p := by
+      rintro rfl
+      exact hvS (Finset.mem_insert_of_mem (Finset.mem_insert_self _ _))
+    rw [charFrob_coeff_zero_eq_natCast hpodd hv hρ hq hq2 hqp]
+    exact natCast_mem E q
+  | 1 =>
+    -- the trace coefficient: the sorried automorphy leaf
+    exact htr _ fun h => hvS (Finset.mem_insert_of_mem (Finset.mem_insert_of_mem h))
+  | 2 =>
+    -- the leading coefficient of the mapped monic degree-2 charpoly
+    have hmon : ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
+        (algebraMap R (AlgebraicClosure ℚ_[p]))).Monic := by
+      rw [hcp]
+      exact (LinearMap.charpoly_monic _).map _
+    have h1 := hmon.coeff_natDegree
+    rw [hdeg] at h1
+    rw [h1]
+    exact one_mem E
+  | (m + 3) =>
+    -- coefficients above the degree vanish
+    rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by rw [hdeg]; omega)]
+    exact zero_mem E
 
 /-- **Eigensystem stratum** (PROVEN assembly, see the DECOMPOSED note
 below): the Frobenius characteristic
@@ -316,31 +605,6 @@ lemma isUnramifiedAt_conj {A : Type*} [CommRing A] [TopologicalSpace A]
     ← GaloisRep.toLocal_apply, h1]
   refine LinearMap.ext fun w => ?_
   simp
-
-/-- Every finite place of `ℚ` is the place of a rational prime (PROVEN):
-the surjectivity half of the primes ↔ places dictionary, needed to
-convert the prime-indexed unramifiedness field of `IsHardlyRamified`
-into the place-indexed unramifiedness that
-`GaloisRepFamily.isCompatible` consumes. -/
-lemma exists_prime_toHeightOneSpectrumRingOfIntegersRat
-    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
-    ∃ (q : ℕ) (hq : q.Prime), v = hq.toHeightOneSpectrumRingOfIntegersRat := by
-  let E := Rat.ringOfIntegersEquiv.symm.heightOneSpectrum
-  obtain ⟨g, hg⟩ := (IsPrincipalIdealRing.principal (E.symm v).asIdeal).principal
-  have hg0 : g ≠ 0 := by
-    rintro rfl
-    exact (E.symm v).ne_bot (by simpa using hg)
-  have hg' : (E.symm v).asIdeal = Ideal.span {g} := hg
-  have hprime : Prime g := (Ideal.span_singleton_prime hg0).mp (hg' ▸ (E.symm v).isPrime)
-  refine ⟨g.natAbs, Int.prime_iff_natAbs_prime.mp hprime, ?_⟩
-  have hweq : E.symm v =
-      (Int.prime_iff_natAbs_prime.mp hprime).toHeightOneSpectrumInt := by
-    ext1
-    show (E.symm v).asIdeal = Ideal.span {(g.natAbs : ℤ)}
-    rw [Int.span_natAbs, hg']
-  have hv : v = E (E.symm v) := (E.apply_symm_apply v).symm
-  rw [hv, hweq]
-  rfl
 
 omit [IsDomain R] in
 /-- Away from `2` and `p`, a hardly ramified `p`-adic representation is
@@ -638,10 +902,15 @@ superseded by the hypothesis `hZinj`):
    the spreading stratum (`exists_family_of_eigensystem` — the
    compatible family attached to the eigensystem, i.e.
    Eichler–Shimura/Deligne plus local-global compatibility). AS OF
-   2026-07-23 both strata are PROVEN assemblies; the surviving sorried
-   leaves are `exists_finiteDimensional_coeff_field` (the Hecke-field
-   finiteness core) and `exists_realizations_of_eigensystem` (the
-   `λ`-adic realizations of the eigensystem).
+   2026-07-23 both strata are PROVEN assemblies, and the Hecke-field
+   node `exists_finiteDimensional_coeff_field` is itself a PROVEN
+   assembly (see its DECOMPOSED note); the surviving sorried leaves are
+   `exists_finiteDimensional_trace_field` (the Hecke-field finiteness
+   core, now confined to the TRACE coefficient),
+   `cyclotomicCharacter_adicArithFrob_natCast` (elementary: the
+   general-`p` cyclotomic-character-at-Frobenius evaluation) and
+   `exists_realizations_of_eigensystem` (the `λ`-adic realizations of
+   the eigensystem).
 
 NOTE (elaboration): the final repackaging must be `refine` +
 a deferred `exact` — an anonymous-constructor `exact ⟨…, ψ, r', hψ⟩`
