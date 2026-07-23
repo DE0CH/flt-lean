@@ -25,10 +25,18 @@ distrust right now (this session's own incident — killed agents left
 worktrees dirty, needing manual cleanup — is fresh evidence for that),
 not just paused for pacing reasons.
 
-**How to apply:** Do not dispatch subagents for ANY task right now,
+**How to apply:** Do not dispatch subagents for ANY task,
 regardless of whether it superficially resembles the math-proving fleet
-loop [[flt-fleet-13-worktree-protocol]] was written for. Wait for an
-explicit "use subagents again" (or equivalent) from Deyao before
-dispatching anything. Related: [[flt-orchestrator-role]] (the dispatch
-gate there needs the same correction — its "LIFTED" note is not a
-standing green light independent of this pause).
+loop [[flt-fleet-13-worktree-protocol]] was written for, UNTIL Deyao
+explicitly says so for that specific occasion. Related:
+[[flt-orchestrator-role]] (the dispatch gate there needs the same
+correction — its "LIFTED" note is not a standing green light
+independent of this pause).
+
+**RE-AUTHORIZED, once (Deyao, 2026-07-23, same session): "you are
+approved to use subagents now, use subagents for this task."** This is
+a per-occasion re-approval for the task in flight at the time (bulk
+have/let cleanup across the sweep's 34 files), not a standing reversal
+of the blanket pause — treat each future dispatch as needing its own
+check again, the same way this one did, rather than assuming this
+approval carries forward.
