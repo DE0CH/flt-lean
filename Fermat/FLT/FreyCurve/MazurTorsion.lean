@@ -2261,11 +2261,17 @@ seams:
   forces ordinary reduction, and the connected-étale sequence of
   `E[p]/ℤ_p` then provides the étale-quotient line. Serre Duke 1987,
   §4.1.
-* `exists_etale_line_of_good_of_ordinary` (sorry node — the
-  connected-étale content): at a good ordinary prime `p ≠ 2` (the
-  reduced curve has a nonzero geometric `p`-torsion point), the
-  connected line of the connected-étale sequence of `E[p]/ℤ_p` has
-  inertia-trivial quotient.
+* `exists_etale_line_of_good_of_ordinary` (DERIVED 2026-07-23 from
+  the local leaf below through the PROVEN reduction-agnostic pullback
+  glue `exists_etale_line_of_localTorsionQuotient`): at a good
+  ordinary prime `p ≠ 2` (the reduced curve has a nonzero geometric
+  `p`-torsion point), the connected line of the connected-étale
+  sequence of `E[p]/ℤ_p` has inertia-trivial quotient.
+* `exists_localTorsionQuotient_of_good_ordinary` (sorry node — the
+  surviving local content of the ordinary case, same seam as the
+  PROVEN multiplicative quotients): the local `p`-torsion surjects
+  onto `ℤ/p` inertia-invariantly; the kernel is the formal-group
+  line.
 * `not_inertia_stable_line_of_good_of_supersingular` (sorry node —
   the fundamental-character content): at a good supersingular prime
   `p ≠ 2` (the reduced curve has trivial geometric `p`-torsion), no
@@ -3105,20 +3111,79 @@ noncomputable instance instDecidableEqAlgClosureResidueFieldAtPrimeRat
       (IsLocalRing.ResidueField (Localization.AtPrime v.asIdeal))) :=
   Classical.typeDecidableEq _
 
+open ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
-/-- **The connected-étale line at a good ORDINARY prime** (sorry node,
-cut out of `exists_etale_line_of_good_of_inertia_stable_line`
-2026-07-23 at the ordinary/supersingular dichotomy): for an elliptic
-curve over `ℚ` with good reduction at an odd prime `p` whose reduction
-is ORDINARY — stated as the existence of a nonzero geometric
-`p`-torsion point of the reduced curve `Ẽ/𝔽_p` — there is a line
-`L ⊆ E[p]` (the connected line of the connected-étale sequence of the
-finite flat group scheme `E[p]/ℤ_p`) such that inertia at `p` acts
-trivially on `E[p]/L`: the étale quotient has order `p` (ordinarity)
-and its geometric points are constant over the maximal unramified
-extension. Serre Duke 1987, §4.1; Silverman ATAEC V; the finite-flat
-infrastructure of `Flat.lean` (`torsion_flat_of_good_reduction`) is
+/-- **The local connected-étale torsion quotient at a good ORDINARY
+prime** (sorry node — the surviving local content of the ordinary
+case, cut 2026-07-23 at the same seam as the PROVEN multiplicative
+quotients `exists_localTorsionQuotient_of_split` /
+`_of_nonsplit`): for an elliptic curve over `ℚ` with good ordinary
+reduction at an odd prime `p` (ordinarity stated as the existence of a
+nonzero geometric `p`-torsion point of the reduced curve `Ẽ/𝔽_p`), the
+`p`-torsion of the completed base change over the local algebraic
+closure surjects onto `ℤ/p` invariantly under the local INERTIA: the
+étale quotient of the connected-étale sequence of the finite flat
+group scheme `E[p]/ℤ_p` has order `p` by ordinarity, and its geometric
+points are constant over the maximal unramified extension. The kernel
+is the connected (formal-group) line. Serre Duke 1987, §4.1; Silverman
+ATAEC IV.6, V; the finite-flat infrastructure of `Flat.lean`
+(`torsion_flat_of_good_reduction`, the kernel-of-reduction lemmas) is
 the intended supply line. -/
+theorem WeierstrassCurve.exists_localTorsionQuotient_of_good_ordinary
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime) (hodd : p ≠ 2)
+    [E.HasGoodReduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
+    (hord : ∃ P : ((E.reduction
+        (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))⁄
+        (AlgebraicClosure (IsLocalRing.ResidueField
+          (Localization.AtPrime
+            hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))).Point,
+      P ≠ 0 ∧ (p : ℤ) • P = 0) :
+    ∃ π : AddSubgroup.torsionBy
+        ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ) →+
+        ZMod p,
+      Function.Surjective π ∧
+      ∀ σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat,
+        ∀ (P Q : AddSubgroup.torsionBy
+          ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+            (HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ)),
+          (Q : ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+            (HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat))).Point) =
+            WeierstrassCurve.Affine.Point.map
+              (W' := E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat)))
+              ((σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                  hp.toHeightOneSpectrumRingOfIntegersRat))
+                ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+                  hp.toHeightOneSpectrumRingOfIntegersRat]
+                (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                  hp.toHeightOneSpectrumRingOfIntegersRat)))).toAlgHom
+              (P : ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+                (HeightOneSpectrum.adicCompletion ℚ
+                  hp.toHeightOneSpectrumRingOfIntegersRat))).Point) →
+          π Q = π P :=
+  sorry
+
+open IsDedekindDomain in
+set_option backward.isDefEq.respectTransparency false in
+/-- **The connected-étale line at a good ORDINARY prime** (DERIVED
+2026-07-23 from the local quotient leaf
+`exists_localTorsionQuotient_of_good_ordinary` and the PROVEN
+reduction-agnostic `ℚ̄`-pullback glue
+`exists_etale_line_of_localTorsionQuotient`): for an elliptic curve
+over `ℚ` with good ordinary reduction at an odd prime `p` there is a
+line `L ⊆ E[p]` (the connected line of the connected-étale sequence)
+such that inertia at `p` acts trivially on `E[p]/L`. Serre Duke 1987,
+§4.1; Silverman ATAEC V. -/
 theorem WeierstrassCurve.exists_etale_line_of_good_of_ordinary
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime) (hodd : p ≠ 2)
     [E.HasGoodReduction
@@ -3135,8 +3200,10 @@ theorem WeierstrassCurve.exists_etale_line_of_good_of_ordinary
         ∀ v, L.mkQ (E.galoisRep p hp.pos
             ((Field.absoluteGaloisGroup.map (algebraMap ℚ
               (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-                hp.toHeightOneSpectrumRingOfIntegersRat))) σ) v) = L.mkQ v :=
-  sorry
+                hp.toHeightOneSpectrumRingOfIntegersRat))) σ) v) = L.mkQ v := by
+  obtain ⟨π, hπsurj, hπinv⟩ :=
+    E.exists_localTorsionQuotient_of_good_ordinary hp hodd hord
+  exact E.exists_etale_line_of_localTorsionQuotient hp π hπsurj hπinv
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **No inertia-stable line at a good SUPERSINGULAR prime** (sorry
