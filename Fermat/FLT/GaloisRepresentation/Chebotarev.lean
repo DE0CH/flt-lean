@@ -58,10 +58,12 @@ here. This file provides:
   bounded additive error), in turn PROVEN by Dirichlet-character
   orthogonality (`DirichletCharacter.sum_char_inv_mul_char_eq`, with
   the characters trivial on the image of `Gal(E/F)` cancelling exactly
-  in the difference of two classes) from its own two strictly
-  shallower sorry leaves:
+  in the difference of two classes) from
   `tsum_rpow_neg_natCard_quotient_prime_and_ne_ne_top` (the degree-one
-  prime sum converges for each fixed `s > 1`) and
+  prime sum converges for each fixed `s > 1` — itself PROVEN by
+  injecting the degree-one places into the nonzero ideals, from the
+  full-ideal-sum leaf `tsum_rpow_neg_absNorm_ne_top` of the
+  Dedekind-zeta half) and the one remaining sorry leaf of this half,
   `exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le` (the
   character sum `S_χ(s)` of a Dirichlet character mod `ℓ` nontrivial
   on the image of `Gal(E/F)` is bounded uniformly in `s > 1` — the
@@ -1237,22 +1239,36 @@ theorem exists_algEquiv_map_zeta_eq_pow_natCard
   exact h2
 
 open IsDedekindDomain in
-/-- **Convergence of the degree-one prime sum for `s > 1`** (sorry node)
-— the easy, Euler-side half of the summability bookkeeping: for a number
-field `F` and any `s > 1`, the `ℝ≥0∞`-valued sum `∑ #(𝓞 F / P) ^ (-s)`
-over the finite places `P` of `F` of prime residue cardinality (away
-from any excluded `ℓ`) is finite. Intended proof: at most `[F : ℚ]`
-places of `F` lie over each rational prime `p`
-(`Ideal.sum_ramification_inertia` bounds the number of primes above `p`
-by the degree), and a degree-one place over `p` contributes `p ^ (-s)`,
-so the sum is at most `[F : ℚ] · ∑_p p ^ (-s) ≤ [F : ℚ] · ζ(s) < ∞`
-(`Real.summable_one_div_nat_rpow`). -/
+/-- **Convergence of the degree-one prime sum for `s > 1`** — the easy,
+Euler-side half of the summability bookkeeping: for a number field `F`
+and any `s > 1`, the `ℝ≥0∞`-valued sum `∑ #(𝓞 F / P) ^ (-s)` over the
+finite places `P` of `F` of prime residue cardinality (away from any
+excluded `ℓ`) is finite. DERIVED from the full-ideal-sum leaf
+`tsum_rpow_neg_absNorm_ne_top`: `P ↦ P.asIdeal` injects the degree-one
+places into the nonzero ideals with matching terms
+(`#(𝓞 F / P) = N(P.asIdeal)`), so the prime sum is dominated by the
+ideal sum (`ENNReal.tsum_comp_le_tsum_of_injective`). -/
 theorem tsum_rpow_neg_natCard_quotient_prime_and_ne_ne_top
     (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) {s : ℝ} (hs : 1 < s) :
     (∑' P : {P : HeightOneSpectrum (𝓞 F) //
         (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
-      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) ≠ ⊤ :=
-  sorry
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) ≠ ⊤ := by
+  refine ne_top_of_le_ne_top (tsum_rpow_neg_absNorm_ne_top F hs) ?_
+  have h1 : ∀ P : {P : HeightOneSpectrum (𝓞 F) //
+      (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) =
+      (Ideal.absNorm (P : HeightOneSpectrum (𝓞 F)).asIdeal : ℝ≥0∞) ^ (-s) := by
+    intro P
+    rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+  rw [tsum_congr h1]
+  exact ENNReal.tsum_comp_le_tsum_of_injective
+    (f := fun P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ} =>
+      (⟨(P : HeightOneSpectrum (𝓞 F)).asIdeal,
+        (P : HeightOneSpectrum (𝓞 F)).ne_bot⟩ : {I : Ideal (𝓞 F) // I ≠ ⊥}))
+    (fun P Q h =>
+      Subtype.ext (HeightOneSpectrum.ext (congrArg Subtype.val h)))
+    (fun I => (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s))
 
 open IsDedekindDomain in
 /-- **Boundedness near `s = 1` of the nontrivial Dirichlet character sums
