@@ -104,10 +104,10 @@ theorem exists_conj_cyclotomicCharacter_three :
   -- its image in `Γ ℚ` is the sought involution
   refine ⟨absoluteGaloisGroup.map (algebraMap ℚ ℝ) σ, ?_, ?_⟩
   · rw [← map_mul, hσ2, map_one]
-  · set c : Γ ℚ := absoluteGaloisGroup.map (algebraMap ℚ ℝ) σ with hc
+  · set c : Γ ℚ := absoluteGaloisGroup.map (algebraMap ℚ ℝ) σ
     set x : ℤ_[3] :=
       ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 c.toRingEquiv :
-        ℤ_[3]ˣ) : ℤ_[3]) with hx
+        ℤ_[3]ˣ) : ℤ_[3])
     -- `x² = 1`, so `x = ±1` in the domain `ℤ_[3]`
     have hsq : x * x = 1 := by
       have hmul : (c * c).toRingEquiv = c.toRingEquiv * c.toRingEquiv := rfl
@@ -136,7 +136,6 @@ theorem exists_conj_cyclotomicCharacter_three :
       rw [← absoluteGaloisGroup.lift_map (algebraMap ℚ ℝ) σ ζ]
       exact congrArg _ hfix
     set z : AlgebraicClosure ℝ := AlgebraicClosure.map (algebraMap ℚ ℝ) ζ
-      with hz
     -- `z` is a primitive cube root of unity, hence not real
     have hzprim : IsPrimitiveRoot z 3 :=
       hζ.map_of_injective (AlgebraicClosure.map (algebraMap ℚ ℝ)).injective
@@ -353,9 +352,9 @@ theorem serre_elimination_semidirect {k : Type u} [Finite k] [Field k]
   classical
   obtain ⟨eiso⟩ := hiso
   haveI h3 : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
-  set L := AlgebraicClosure k with hL
+  set L := AlgebraicClosure k
   set σρ : Representation L (Γ ℚ) (L ⊗[k] V) :=
-    Slop.OddRep.baseChange L (MonoidHomClass.toMonoidHom ρ) with hσρ
+    Slop.OddRep.baseChange L (MonoidHomClass.toMonoidHom ρ)
   have hirr : σρ.IsIrreducible := habs
   haveI : Module.Finite L (L ⊗[k] V) := Module.Finite.base_change k L V
   have hfr2 : Module.finrank L (L ⊗[k] V) = 2 := by
@@ -460,7 +459,7 @@ theorem serre_elimination_semidirect {k : Type u} [Finite k] [Field k]
   -- normal elementary abelian `3`-subgroup
   set r : Γ ℚ →* Multiplicative (ZMod t) :=
     (SemidirectProduct.rightHom.comp eiso.toMonoidHom).comp
-      π.rangeRestrict with hr
+      π.rangeRestrict
   -- elements of the kernel cube to a central class
   have hcube : ∀ g : Γ ℚ, g ∈ r.ker → (π g) ^ 3 = 1 := by
     intro g hg
@@ -614,7 +613,7 @@ theorem serre_elimination_semidirect {k : Type u} [Finite k] [Field k]
     have hcommA : ∀ g : Γ ℚ, g ∈ r.ker → (¬ ∃ ν : L, σρ g = ν • 1) →
         ∀ μ : L, (σρ g - μ • 1) ^ 2 = 0 → μ ≠ 0 →
         σρ g * A = A * σρ g := by
-      intro g hg hgns μ hμnil hμne
+      intro g hg hgns μ hμnil _
       set B := σρ g with hB
       -- the commutator acts by a scalar `λ'`
       have hπc : π (g * g₀ * g⁻¹ * g₀⁻¹) = 1 := by
@@ -752,7 +751,7 @@ theorem serre_elimination_semidirect {k : Type u} [Finite k] [Field k]
         -- two square-nilpotent shifts of the same nonscalar operator
         -- have equal parameters
         by_contra hne
-        set B' := σρ g with hB'
+        set B' := σρ g
         have e1 : (B' - μ • 1) ^ 2 =
             B' * B' - (2 * μ) • B' + (μ * μ) • 1 := by
           rw [pow_two]
@@ -1276,7 +1275,6 @@ theorem padic_three_ringHom_pm_one {R : Type*} [CommRing R] [CharP R 3]
       have h1 := hspec.2
       rwa [h0, Nat.cast_zero, sub_zero] at h1
     exact mem_nonunits_iff.mp ((IsLocalRing.mem_maximalIdeal _).mp hmem) (Units.isUnit x)
-  have hlt : PadicInt.zmodRepr (x : ℤ_[3]) < 3 := hspec.1
   have h12 : PadicInt.zmodRepr (x : ℤ_[3]) = 1 ∨ PadicInt.zmodRepr (x : ℤ_[3]) = 2 := by
     omega
   rcases h12 with h | h
@@ -1621,7 +1619,7 @@ theorem exists_kernel_field_of_matrixRange {k : Type u} [Finite k] [Field k]
     Algebra.IsAlgebraic.isSeparable_of_perfectField
   haveI hgalQ : IsGalois ℚ (AlgebraicClosure ℚ) := ⟨⟩
   set K : IntermediateField ℚ (AlgebraicClosure ℚ) :=
-    IntermediateField.fixedField (E := AlgebraicClosure ℚ) u.ker with hKdef
+    IntermediateField.fixedField (E := AlgebraicClosure ℚ) u.ker
   have hfix : K.fixingSubgroup = u.ker :=
     InfiniteGalois.fixingSubgroup_fixedField ⟨u.ker, hclosed⟩
   haveI hfd : FiniteDimensional ℚ K :=
@@ -1673,7 +1671,7 @@ theorem exists_conj_fixingSubgroup_of_not_isTotallyComplex
     push Not at hK
     obtain ⟨w, hw⟩ := hK
     exact ⟨w, (NumberField.InfinitePlace.isReal_or_isComplex w).resolve_right hw⟩
-  set φ : K →+* ℂ := w.embedding with hφdef
+  set φ : K →+* ℂ := w.embedding
   have hφreal : ∀ y : K, (starRingEnd ℂ) (φ y) = φ y := by
     intro y
     have h1 : NumberField.ComplexEmbedding.IsReal φ :=
@@ -1692,9 +1690,8 @@ theorem exists_conj_fixingSubgroup_of_not_isTotallyComplex
       eq_ratCast (φ.comp (algebraMap ℚ K)) q
     rw [h1, ← h2]
     rfl
-  set ψK : AlgebraicClosure ℚ →ₐ[K] ℂ := IsAlgClosed.lift with hψKdef
+  set ψK : AlgebraicClosure ℚ →ₐ[K] ℂ := IsAlgClosed.lift
   set ψ : AlgebraicClosure ℚ →+* ℂ := (ψK.restrictScalars ℚ).toRingHom
-    with hψdef
   have hψK : ∀ y : K, ψ (algebraMap K (AlgebraicClosure ℚ) y) = φ y :=
     fun y => ψK.commutes y
   -- pull complex conjugation back along `ψ` (the image is normal)
@@ -1709,9 +1706,9 @@ theorem exists_conj_fixingSubgroup_of_not_isTotallyComplex
   haveI hacQ : IsAlgClosure ℚ (AlgebraicClosure ℚ) := ⟨inferInstance, halgQ⟩
   haveI hnormQ : Normal ℚ (AlgebraicClosure ℚ) :=
     IsAlgClosure.normal ℚ (AlgebraicClosure ℚ)
-  set γ : ℂ ≃ₐ[ℚ] ℂ := Complex.conjAe.restrictScalars ℚ with hγdef
+  set γ : ℂ ≃ₐ[ℚ] ℂ := Complex.conjAe.restrictScalars ℚ
   set c : (AlgebraicClosure ℚ) ≃ₐ[ℚ] (AlgebraicClosure ℚ) :=
-    AlgEquiv.restrictNormal γ (AlgebraicClosure ℚ) with hcdef
+    AlgEquiv.restrictNormal γ (AlgebraicClosure ℚ)
   have hcomm : ∀ z : AlgebraicClosure ℚ, ψ (c z) = (starRingEnd ℂ) (ψ z) :=
     fun z => AlgEquiv.restrictNormal_commutes γ (AlgebraicClosure ℚ) z
   have hψinj : Function.Injective ψ := ψ.injective
@@ -1732,7 +1729,7 @@ theorem exists_conj_fixingSubgroup_of_not_isTotallyComplex
       rfl
     set t : ℤ_[3] :=
       ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 c.toRingEquiv :
-        ℤ_[3]ˣ) : ℤ_[3]) with htdef
+        ℤ_[3]ˣ) : ℤ_[3])
     have hsq : t * t = 1 := by
       have hmul : (c * c).toRingEquiv = c.toRingEquiv * c.toRingEquiv := rfl
       have hone : ((1 : Γ ℚ).toRingEquiv) = 1 := rfl
@@ -2235,7 +2232,7 @@ theorem mem_inertia_of_dvd_squarefree
   intro y
   rw [Submodule.mem_toAddSubgroup]
   -- the anti-fixed difference in `K`
-  set yK : K := algebraMap (NumberField.RingOfIntegers K) K y with hyKdef
+  set yK : K := algebraMap (NumberField.RingOfIntegers K) K y
   set t : K := σ yK - yK with htdef
   have hσσ : ∀ z : K, σ (σ z) = z := by
     intro z
@@ -2371,7 +2368,7 @@ theorem exists_sqrt_of_quadratic_character_unramified_outside_two_three
     Algebra.IsAlgebraic.isSeparable_of_perfectField
   haveI hgalQ : IsGalois ℚ (AlgebraicClosure ℚ) := ⟨⟩
   set K : IntermediateField ℚ (AlgebraicClosure ℚ) :=
-    IntermediateField.fixedField (E := AlgebraicClosure ℚ) θ.ker with hKdef
+    IntermediateField.fixedField (E := AlgebraicClosure ℚ) θ.ker
   have hfix : K.fixingSubgroup = θ.ker :=
     InfiniteGalois.fixingSubgroup_fixedField ⟨θ.ker, hclosed⟩
   haveI hfd : FiniteDimensional ℚ K :=
@@ -2736,11 +2733,11 @@ theorem serre_elimination_dihedral {k : Type u} [Finite k] [Field k]
     (hcase : ∃ n : ℕ, n ≥ 2 ∧ Nonempty (π.range ≃* DihedralGroup n)) :
     False := by
   classical
-  obtain ⟨n, hn2, ⟨eiso⟩⟩ := hcase
+  obtain ⟨n, _, ⟨eiso⟩⟩ := hcase
   haveI h3 : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
-  set L := AlgebraicClosure k with hL
+  set L := AlgebraicClosure k
   set σρ : Representation L (Γ ℚ) (L ⊗[k] V) :=
-    Slop.OddRep.baseChange L (MonoidHomClass.toMonoidHom ρ) with hσρ
+    Slop.OddRep.baseChange L (MonoidHomClass.toMonoidHom ρ)
   have hirr : σρ.IsIrreducible := habs
   haveI : Module.Finite L (L ⊗[k] V) := Module.Finite.base_change k L V
   have hfr2 : Module.finrank L (L ⊗[k] V) = 2 := by
@@ -3151,7 +3148,7 @@ theorem serre_elimination_noncyclic {k : Type u} [Finite k] [Field k]
         (GL (Fin 2) (GaloisField 3 m) ⧸
           Subgroup.center (GL (Fin 2) (GaloisField 3 m)))))) :
     False := by
-  rcases hcase with h | h | h | h | ⟨m, t, hm, hcop, hdvd, φ, hiso⟩ | h | h
+  rcases hcase with h | h | h | h | ⟨m, t, hm, _, _, φ, hiso⟩ | h | h
   · exact serre_elimination_arith V hV hρ habs b e u hu π hπ (Or.inl h)
   · exact serre_elimination_arith V hV hρ habs b e u hu π hπ (Or.inr (Or.inl h))
   · exact serre_elimination_arith V hV hρ habs b e u hu π hπ
@@ -3219,9 +3216,9 @@ theorem serre_elimination {k : Type u} [Finite k] [Field k]
     -- `2`-dimensional space has a stable line — contradicting absolute
     -- irreducibility.
     classical
-    set L := AlgebraicClosure k with hL
+    set L := AlgebraicClosure k
     set σρ : Representation L (Γ ℚ) (L ⊗[k] V) :=
-      Slop.OddRep.baseChange L (MonoidHomClass.toMonoidHom ρ) with hσρ
+      Slop.OddRep.baseChange L (MonoidHomClass.toMonoidHom ρ)
     have hirr : σρ.IsIrreducible := habs
     -- the image of `π` is the image of `u.range` in the quotient
     have hrange : Subgroup.map
@@ -3355,9 +3352,9 @@ theorem not_isAbsolutelyIrreducible {k : Type u} [Finite k] [Field k]
   let e : AlgebraicClosure k ≃ₐ[ZMod 3] Dickson.K 3 :=
     IsAlgClosure.equiv (ZMod 3) (AlgebraicClosure k) (Dickson.K 3)
   -- the base-changed representation and its matrix form
-  set L := AlgebraicClosure k with hL
+  set L := AlgebraicClosure k
   set σρ : Representation L (Γ ℚ) (L ⊗[k] V) :=
-    Slop.OddRep.baseChange L (MonoidHomClass.toMonoidHom ρ) with hσρ
+    Slop.OddRep.baseChange L (MonoidHomClass.toMonoidHom ρ)
   haveI : Module.Finite L (L ⊗[k] V) := Module.Finite.base_change k L V
   have hfr2 : Module.finrank L (L ⊗[k] V) = 2 := by
     rw [Module.finrank_baseChange]
@@ -3920,10 +3917,8 @@ theorem cyclotomicCharacter_algebraMap_eq_one_of_inertia_two
       (AlgebraicClosure.map (algebraMap ℚ ℚ_[2]) ζ) 3 :=
     hζ.map_of_injective (AlgebraicClosure.map (algebraMap ℚ ℚ_[2])).injective
   set z : AlgebraicClosure ℚ_[2] :=
-    AlgebraicClosure.map (algebraMap ℚ ℚ_[2]) ζ with hz
+    AlgebraicClosure.map (algebraMap ℚ ℚ_[2]) ζ
   have hz3 : z ^ 3 = 1 := hzprim.pow_eq_one
-  have hz0 : z ≠ 0 := fun h0 => one_ne_zero
-    (α := AlgebraicClosure ℚ_[2]) (by rw [← hz3, h0, zero_pow]; norm_num)
   -- roots of unity have valuation `1`
   have hval_of_root : ∀ w : AlgebraicClosure ℚ_[2], w ^ 3 = 1 →
       Valued.v w = 1 := by
@@ -3960,7 +3955,7 @@ theorem cyclotomicCharacter_algebraMap_eq_one_of_inertia_two
     -- the inertia condition: `σ z − z` has valuation `< 1`
     have hdiff := (AddSubgroup.mem_inertia.mp hσ) ⟨z, hzmem⟩
     have hdiffval : Valued.v (σ z - z) < 1 := by
-      set y : Z2bar := σ • (⟨z, hzmem⟩ : Z2bar) - ⟨z, hzmem⟩ with hy
+      set y : Z2bar := σ • (⟨z, hzmem⟩ : Z2bar) - ⟨z, hzmem⟩
       have hy1 : (y : AlgebraicClosure ℚ_[2]) = σ z - z := rfl
       have hnu : ¬IsUnit y := by
         have hmem : y ∈ IsLocalRing.maximalIdeal Z2bar := hdiff
@@ -4169,7 +4164,7 @@ theorem localInertia_two_eq_map_padic
         Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
       IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion _ _ _
     set h0 := Rat.HeightOneSpectrum.adicCompletion.padicEquiv
-      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat with hh0
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat
     have hbij := Rat.HeightOneSpectrum.adicCompletion.padicEquiv_bijOn
       Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat
     have h0int : ∀ x, x ∈ IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers
@@ -4230,7 +4225,7 @@ theorem localInertia_two_eq_map_padic
           rw [hg, AlgebraicClosure.map_algebraMap, hι₃,
             AlgebraicClosure.map_algebraMap]
           congr 1
-          exact E.symm_apply_apply x } with hhcomp
+          exact E.symm_apply_apply x }
     have hbij := Algebra.IsAlgebraic.algHom_bijective hcomp
     intro y
     obtain ⟨x, hx⟩ := hbij.2 y
@@ -4238,18 +4233,18 @@ theorem localInertia_two_eq_map_padic
   set ι₃e : AlgebraicClosure ℚ_[2] ≃+*
       AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
         Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
-    RingEquiv.ofBijective ι₃ ⟨ι₃.injective, hι₃surj⟩ with hι₃e
+    RingEquiv.ofBijective ι₃ ⟨ι₃.injective, hι₃surj⟩
   have hι₃e_apply : ∀ y, ι₃e y = ι₃ y := fun y => rfl
   -- `τ := ι₃⁻¹ ∘ σ ∘ ι₃`, an automorphism over `ℚ_[2]`
   set τ₀ : AlgebraicClosure ℚ_[2] ≃+* AlgebraicClosure ℚ_[2] :=
-    (ι₃e.trans σ.toRingEquiv).trans ι₃e.symm with hτ₀
+    (ι₃e.trans σ.toRingEquiv).trans ι₃e.symm
   have hτ₀_apply : ∀ y, τ₀ y = ι₃e.symm (σ (ι₃e y)) := fun y => rfl
   set τ : Γ ℚ_[2] := AlgEquiv.ofRingEquiv (f := τ₀) (fun x => by
     rw [hτ₀_apply, RingEquiv.symm_apply_eq]
     show σ (ι₃ ((algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2])) x)) =
       ι₃ ((algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2])) x)
     rw [hι₃, AlgebraicClosure.map_algebraMap]
-    exact σ.commutes (E.symm x)) with hτdef
+    exact σ.commutes (E.symm x))
   have hτ_apply : ∀ y, τ y = ι₃e.symm (σ (ι₃e y)) := fun y => rfl
   -- the transport square, by construction
   have hsquare : ∀ y, ι₃ (τ y) = σ (ι₃ y) := by
@@ -4276,14 +4271,14 @@ theorem localInertia_two_eq_map_padic
         Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat :=
       (E.symm : ℚ_[2] →+*
         IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) with hEs
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
     set φ : (PadicInt.subring 2) →+*
         (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
           Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
       RingHom.codRestrict (Es.comp (PadicInt.subring 2).subtype)
         (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
           Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat).toSubring
-        (fun a => hEsymm_int a.1 a.2) with hφ
+        (fun a => hEsymm_int a.1 a.2)
     -- `ι₃` maps `Z2bar` into the integral closure of `𝒪ᵥ₂`
     have hmemIC : ∀ w : AlgebraicClosure ℚ_[2], w ∈ Z2bar →
         IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers
@@ -4362,14 +4357,14 @@ theorem localInertia_two_eq_map_padic
           (AlgebraicClosure
             (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
               Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toSubring
-        (fun z => hmemIC z.1 z.2) with hΦ
+        (fun z => hmemIC z.1 z.2)
     -- transport the inertia condition
     set y : IntegralClosure
         (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
           Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
         (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion
           ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) :=
-      ⟨ι₃ x.1, hmemIC x.1 x.2⟩ with hy
+      ⟨ι₃ x.1, hmemIC x.1 x.2⟩
     have hIC := (AddSubgroup.mem_inertia.mp hσ) y
     rw [Submodule.mem_toAddSubgroup, IsLocalRing.mem_maximalIdeal,
       mem_nonunits_iff] at hIC
@@ -4392,8 +4387,8 @@ theorem localInertia_two_eq_map_padic
   · -- (4) the conjugator, from `Normal.algHomEquivAut`
     set ι₁ := AlgebraicClosure.map ((algebraMap ℚ
       (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) with hι₁
-    set ι₂ := AlgebraicClosure.map (algebraMap ℚ ℚ_[2]) with hι₂
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)))
+    set ι₂ := AlgebraicClosure.map (algebraMap ℚ ℚ_[2])
     letI : Algebra (AlgebraicClosure ℚ)
         (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) :=
@@ -4405,7 +4400,7 @@ theorem localInertia_two_eq_map_padic
     set f : AlgebraicClosure ℚ →ₐ[ℚ]
         AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
-      (ι₃.comp ι₂).toRatAlgHom with hf
+      (ι₃.comp ι₂).toRatAlgHom
     set c : Γ ℚ := (Normal.algHomEquivAut (F := ℚ)
       (K₁ := AlgebraicClosure
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
