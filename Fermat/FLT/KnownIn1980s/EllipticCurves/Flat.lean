@@ -26,6 +26,13 @@ import Mathlib.RingTheory.Etale.Field
 -- assembly of `exists_finite_etale_algebra_form_of_inertia_fixes`
 import Mathlib.RingTheory.TensorProduct.Pi
 import Mathlib.RingTheory.Etale.Pi
+-- étale ⟹ smooth ⟹ flat: the injectivity of `H₀ → K ⊗[R] H₀` for an étale
+-- `R`-form `H₀`, in the canonicity leaf
+-- `range_comp_includeRight_eq_integralClosure_of_etale_form`
+import Mathlib.RingTheory.Smooth.Flat
+-- radicality of `𝔪 H₀` for an unramified `R`-algebra `H₀`
+-- (`Algebra.FormallyUnramified.isRadical_map_isMaximal`), same leaf
+import Mathlib.RingTheory.Unramified.Field
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
 
 /-!
@@ -2655,17 +2662,171 @@ theorem exists_finite_etale_algebra_form_of_inertia_fixes
   exact (Algebra.TensorProduct.piRight R K K H₀).trans
     ((AlgEquiv.piCongrRight fun i => (hEq i).some).trans e.symm)
 
-/-- **Étale algebra forms are the integral closure** (sorry node; the CANONICITY
-half of the Hopf-upgrade leaf — pure commutative algebra over the DVR `R`, no
-Hopf structure): if the finite étale `K`-algebra `HK` admits a finite étale
-`R`-algebra form `H₀`, then the integral closure of `R` in `HK` is itself a
-finite étale `R`-algebra form. Intended proof: a finite étale `R`-algebra is
-normal, hence integrally closed in its total fraction ring `K ⊗[R] H₀ ≅ HK`,
-and every element of `HK` integral over `R` is a fraction of elements of the
-image of `H₀` with denominator invertible in `K`, hence already in the image —
-so the image of `H₀` under `x ↦ e (1 ⊗ x)` IS the integral closure, and the
-form data transports along the induced isomorphism `H₀ ≅ integralClosure R HK`
-(étale forms are canonical). -/
+/-- **The image of a finite étale `R`-form is the integral closure** (PROVEN
+2026-07-23; the workhorse behind the canonicity leaf
+`integralClosure_finite_etale_form_of_etale_algebra_form`, stated separately so
+that the Hopf-order leaf can reuse it on the tensor square): for a finite étale
+`R`-algebra `H₀` and a `K`-algebra equivalence `e : K ⊗[R] H₀ ≃ₐ[K] HK`, the
+image of `H₀` in `HK` under `x ↦ e (1 ⊗ x)` is exactly the integral closure of
+`R` in `HK`. Inclusion `⊆`: `H₀` is module-finite over `R`, hence integral, and
+integrality is preserved by `R`-algebra maps. Inclusion `⊇`: an integral `z` has
+`π ^ k * z` in the image for some `k` (clearing denominators through `e`, `K`
+being the fraction field of the DVR `R`), and `k` descends to zero: if `π * z`
+is the image of `h`, then `h ^ m` lies in `π H₀` (root the integral equation of
+`z` scaled by `π` at `h` and pull back along the injective form map), and
+`π H₀ = 𝔪 H₀` is a RADICAL ideal by unramifiedness of the form
+(`Algebra.FormallyUnramified.isRadical_map_isMaximal` — exactly where étaleness
+enters, and where the `μ_p` counterexample fails), so `h = π * h'` and `z` is
+the image of `h'`, `π` being invertible in the `K`-algebra `HK`. -/
+theorem range_comp_includeRight_eq_integralClosure_of_etale_form
+    (HK : Type*) [CommRing HK] [Algebra K HK] [Algebra R HK]
+    [IsScalarTower R K HK]
+    (H₀ : Type*) [CommRing H₀] [Algebra R H₀] [Module.Finite R H₀]
+    [Algebra.Etale R H₀]
+    (e : (K ⊗[R] H₀) ≃ₐ[K] HK) :
+    ((e.toAlgHom.restrictScalars R).comp
+        (Algebra.TensorProduct.includeRight : H₀ →ₐ[R] K ⊗[R] H₀)).range =
+      integralClosure R HK := by
+  classical
+  set φ : H₀ →ₐ[R] HK :=
+    (e.toAlgHom.restrictScalars R).comp
+      (Algebra.TensorProduct.includeRight : H₀ →ₐ[R] K ⊗[R] H₀) with hφdef
+  -- the form map is injective (`H₀` is flat: étale ⟹ smooth ⟹ flat)
+  have hinj : Function.Injective φ :=
+    e.injective.comp
+      (Algebra.TensorProduct.includeRight_injective (IsFractionRing.injective R K))
+  -- a uniformizer of `R`, invertible in the `K`-algebra `HK`
+  obtain ⟨π, hπ⟩ := IsDiscreteValuationRing.exists_irreducible R
+  have hπ0 : π ≠ 0 := hπ.ne_zero
+  have hπK : IsUnit (algebraMap R HK π) := by
+    rw [IsScalarTower.algebraMap_apply R K HK]
+    exact (isUnit_iff_ne_zero.mpr fun h0 => hπ0
+      ((injective_iff_map_eq_zero _).mp (IsFractionRing.injective R K) π h0)).map
+      (algebraMap K HK)
+  -- the descent step: an integral `z` with `π * z` in the image is in the image
+  have hstep : ∀ z : HK, IsIntegral R z →
+      algebraMap R HK π * z ∈ φ.range → z ∈ φ.range := by
+    intro z hz hmem
+    obtain ⟨h, hh⟩ := hmem
+    replace hh : φ h = algebraMap R HK π * z := hh
+    obtain ⟨p, hpmonic, hp0⟩ := hz
+    -- scale the roots of the integral equation by `π` and evaluate at `h`
+    have hq0 : Polynomial.aeval (algebraMap R HK π * z) (p.scaleRoots π) = 0 :=
+      Polynomial.scaleRoots_aeval_eq_zero hp0
+    rw [← hh, Polynomial.aeval_algHom_apply] at hq0
+    have hqh : Polynomial.aeval h (p.scaleRoots π) = 0 :=
+      hinj (hq0.trans (map_zero φ).symm)
+    -- isolate the leading term: `h ^ m ∈ π H₀`
+    have hpow : h ^ p.natDegree ∈ Ideal.span {algebraMap R H₀ π} := by
+      have hsum := Polynomial.aeval_eq_sum_range (p := p.scaleRoots π) h
+      rw [hqh, Polynomial.natDegree_scaleRoots, Finset.sum_range_succ,
+        Polynomial.coeff_scaleRoots_natDegree, hpmonic.leadingCoeff, one_smul]
+        at hsum
+      have hneg : h ^ p.natDegree =
+          -∑ i ∈ Finset.range p.natDegree, (p.scaleRoots π).coeff i • h ^ i :=
+        eq_neg_of_add_eq_zero_right hsum.symm
+      rw [hneg]
+      refine neg_mem (Ideal.sum_mem _ fun i hi => ?_)
+      rw [Algebra.smul_def]
+      refine Ideal.mem_span_singleton.mpr (Dvd.dvd.mul_right ?_ _)
+      refine map_dvd (algebraMap R H₀) ?_
+      rw [Polynomial.coeff_scaleRoots]
+      exact ((dvd_pow_self π
+        (Nat.sub_ne_zero_of_lt (Finset.mem_range.mp hi))).mul_left _)
+    -- `π H₀ = 𝔪 H₀` is radical because the form is unramified
+    have hrad : (Ideal.span {algebraMap R H₀ π}).IsRadical := by
+      have h1 := Algebra.FormallyUnramified.isRadical_map_isMaximal R H₀
+        (IsLocalRing.maximalIdeal R)
+      rwa [hπ.maximalIdeal_eq, Ideal.map_span, Set.image_singleton] at h1
+    obtain ⟨h', hh'⟩ := Ideal.mem_span_singleton'.mp (hrad ⟨p.natDegree, hpow⟩)
+    -- cancel the (invertible in `HK`) factor `π`
+    refine ⟨h', hπK.mul_left_cancel ?_⟩
+    calc algebraMap R HK π * φ h'
+        = φ (algebraMap R H₀ π * h') := by rw [map_mul, AlgHom.commutes]
+      _ = φ h := by rw [mul_comm, hh']
+      _ = algebraMap R HK π * z := hh
+  -- clearing denominators: every element of `HK` has a `π`-power multiple in the image
+  have hden : ∀ z : HK, ∃ k : ℕ, algebraMap R HK π ^ k * z ∈ φ.range := by
+    have hden0 : ∀ w : K ⊗[R] H₀, ∃ r : R, r ≠ 0 ∧ ∃ h : H₀,
+        algebraMap R (K ⊗[R] H₀) r * w =
+          (Algebra.TensorProduct.includeRight : H₀ →ₐ[R] K ⊗[R] H₀) h := by
+      intro w
+      induction w with
+      | zero => exact ⟨1, one_ne_zero, 0, by simp⟩
+      | tmul k h =>
+        obtain ⟨b, hb⟩ :=
+          IsLocalization.exists_integer_multiple (nonZeroDivisors R) k
+        obtain ⟨s, hs⟩ := hb
+        refine ⟨(b : R), nonZeroDivisors.ne_zero b.2, s • h, ?_⟩
+        have hs' : algebraMap R K (b : R) * k = algebraMap R K s :=
+          (hs.trans (Algebra.smul_def (b : R) k)).symm
+        rw [IsScalarTower.algebraMap_apply R K (K ⊗[R] H₀),
+          Algebra.TensorProduct.algebraMap_apply,
+          Algebra.TensorProduct.tmul_mul_tmul, one_mul,
+          Algebra.algebraMap_self, RingHom.id_apply, hs',
+          Algebra.algebraMap_eq_smul_one, TensorProduct.smul_tmul,
+          Algebra.TensorProduct.includeRight_apply]
+      | add w₁ w₂ ih₁ ih₂ =>
+        obtain ⟨r₁, hr₁, h₁, he₁⟩ := ih₁
+        obtain ⟨r₂, hr₂, h₂, he₂⟩ := ih₂
+        refine ⟨r₁ * r₂, mul_ne_zero hr₁ hr₂,
+          algebraMap R H₀ r₂ * h₁ + algebraMap R H₀ r₁ * h₂, ?_⟩
+        have h1 : (Algebra.TensorProduct.includeRight : H₀ →ₐ[R] K ⊗[R] H₀)
+            (algebraMap R H₀ r₂ * h₁ + algebraMap R H₀ r₁ * h₂) =
+            algebraMap R (K ⊗[R] H₀) r₂ * (algebraMap R (K ⊗[R] H₀) r₁ * w₁) +
+              algebraMap R (K ⊗[R] H₀) r₁ *
+                (algebraMap R (K ⊗[R] H₀) r₂ * w₂) := by
+          rw [map_add, map_mul, map_mul, AlgHom.commutes, AlgHom.commutes,
+            he₁, he₂]
+        rw [h1, map_mul]
+        ring
+    intro z
+    obtain ⟨r, hr, h, hrh⟩ := hden0 (e.symm z)
+    obtain ⟨n, u, hu⟩ := IsDiscreteValuationRing.eq_unit_mul_pow_irreducible hr hπ
+    have he1 : algebraMap R HK r * z = φ h := by
+      have h2 := congrArg e hrh
+      rw [map_mul, e.apply_symm_apply,
+        show e (algebraMap R (K ⊗[R] H₀) r) = algebraMap R HK r from
+          (e.toAlgHom.restrictScalars R).commutes r] at h2
+      exact h2
+    have hval : ((u⁻¹ : Rˣ) : R) * r = π ^ n := by
+      rw [hu, ← mul_assoc, Units.inv_mul, one_mul]
+    refine ⟨n, algebraMap R H₀ ((u⁻¹ : Rˣ) : R) * h, ?_⟩
+    calc φ (algebraMap R H₀ ((u⁻¹ : Rˣ) : R) * h)
+        = algebraMap R HK ((u⁻¹ : Rˣ) : R) * φ h := by
+          rw [map_mul, AlgHom.commutes]
+      _ = algebraMap R HK ((u⁻¹ : Rˣ) : R) * (algebraMap R HK r * z) := by
+          rw [he1]
+      _ = algebraMap R HK (((u⁻¹ : Rˣ) : R) * r) * z := by
+          rw [map_mul, mul_assoc]
+      _ = algebraMap R HK π ^ n * z := by rw [hval, map_pow]
+  -- descend the `π`-power by induction, using integrality of `z` throughout
+  have hall : ∀ k : ℕ, ∀ z : HK, IsIntegral R z →
+      algebraMap R HK π ^ k * z ∈ φ.range → z ∈ φ.range := by
+    intro k
+    induction k with
+    | zero => intro z _ h0; simpa using h0
+    | succ k ih =>
+      intro z hz hk
+      refine ih z hz (hstep _ (((isIntegral_algebraMap (x := π)).pow k).mul hz) ?_)
+      rw [← mul_assoc, ← pow_succ']
+      exact hk
+  -- assemble the two inclusions
+  refine le_antisymm ?_ ?_
+  · rintro x ⟨y, rfl⟩
+    exact (Algebra.IsIntegral.isIntegral y).map φ
+  · intro z hz
+    obtain ⟨k, hk⟩ := hden z
+    exact hall k z hz hk
+
+/-- **Étale algebra forms are the integral closure** (PROVEN 2026-07-23 from the
+range identity `range_comp_includeRight_eq_integralClosure_of_etale_form`; the
+CANONICITY half of the Hopf-upgrade leaf — pure commutative algebra over the DVR
+`R`, no Hopf structure): if the finite étale `K`-algebra `HK` admits a finite
+étale `R`-algebra form `H₀`, then the integral closure of `R` in `HK` is itself
+a finite étale `R`-algebra form. The image of `H₀` under `x ↦ e (1 ⊗ x)` IS the
+integral closure (the range identity), and the form data transports along the
+induced isomorphism `H₀ ≅ integralClosure R HK` (étale forms are canonical). -/
 theorem integralClosure_finite_etale_form_of_etale_algebra_form
     (HK : Type u) [CommRing HK] [Algebra K HK] [Algebra R HK]
     [IsScalarTower R K HK] [Module.Finite K HK] [Algebra.Etale K HK]
@@ -2674,8 +2835,22 @@ theorem integralClosure_finite_etale_form_of_etale_algebra_form
     (e : (K ⊗[R] H₀) ≃ₐ[K] HK) :
     Module.Finite R (integralClosure R HK) ∧
       Algebra.Etale R (integralClosure R HK) ∧
-      Nonempty ((K ⊗[R] (integralClosure R HK)) ≃ₐ[K] HK) :=
-  sorry
+      Nonempty ((K ⊗[R] (integralClosure R HK)) ≃ₐ[K] HK) := by
+  classical
+  set φ : H₀ →ₐ[R] HK :=
+    (e.toAlgHom.restrictScalars R).comp
+      (Algebra.TensorProduct.includeRight : H₀ →ₐ[R] K ⊗[R] H₀) with hφdef
+  have hrange : φ.range = integralClosure R HK :=
+    range_comp_includeRight_eq_integralClosure_of_etale_form R K HK H₀ e
+  have hinj : Function.Injective φ :=
+    e.injective.comp
+      (Algebra.TensorProduct.includeRight_injective (IsFractionRing.injective R K))
+  -- the induced isomorphism `H₀ ≃ₐ[R] integralClosure R HK`
+  let e₀ : H₀ ≃ₐ[R] integralClosure R HK :=
+    (AlgEquiv.ofInjective φ hinj).trans (Subalgebra.equivOfEq _ _ hrange)
+  exact ⟨Module.Finite.equiv e₀.toLinearEquiv, Algebra.Etale.of_equiv e₀,
+    ⟨(Algebra.TensorProduct.congr (AlgEquiv.refl (R := K) (A₁ := K))
+      e₀.symm).trans e⟩⟩
 
 /-- **The integral closure in an étale-formed Hopf algebra is a Hopf order**
 (sorry node; the HOPF half of the Hopf-upgrade leaf): if the integral closure
