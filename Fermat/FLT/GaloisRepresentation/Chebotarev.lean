@@ -955,7 +955,7 @@ theorem tsum_finset_prod_le_tsum_pow_div_factorial {ι : Type*} (x : ι → ℝ�
     simp [Finset.card_map]
   set Φ : (Fin k ↪ ι) →
       ((fun T : Finset ι => T.card) ⁻¹' {k} : Set (Finset ι)) :=
-    fun v => ⟨Finset.univ.map v, hΦmem v⟩ with hΦ
+    fun v => ⟨Finset.univ.map v, hΦmem v⟩
   have hemb : (∑' T : ((fun T : Finset ι => T.card) ⁻¹' {k} : Set (Finset ι)),
       ∏ i ∈ (T : Finset ι), x i) * (Nat.factorial k : ℝ≥0∞) =
       ∑' v : Fin k ↪ ι, ∏ j : Fin k, x (v j) := by
@@ -1205,8 +1205,92 @@ theorem tsum_rpow_neg_absNorm_le_mul_tsum_finset_prod
       (∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥},
           (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-(2 * s))) *
         ∑' T : Finset (HeightOneSpectrum (𝓞 F)),
-          ∏ P ∈ T, (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s) :=
-  sorry
+          ∏ P ∈ T, (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s) := by
+  classical
+  -- every nonzero ideal is a square times a product of distinct primes
+  have hdecomp : ∀ I : Ideal (𝓞 F), I ≠ ⊥ → ∃ J : Ideal (𝓞 F),
+      ∃ T : Finset (HeightOneSpectrum (𝓞 F)),
+      J ≠ ⊥ ∧ I = J ^ 2 * ∏ P ∈ T, P.asIdeal := by
+    intro I
+    refine UniqueFactorizationMonoid.induction_on_prime I ?_ ?_ ?_
+    · exact fun h => absurd Submodule.zero_eq_bot h
+    · intro x hx _
+      refine ⟨⊤, ∅, top_ne_bot, ?_⟩
+      rw [Ideal.isUnit_iff.mp hx]
+      simp [← Ideal.one_eq_top]
+    · intro a p ha hp IH _
+      obtain ⟨J, T, hJ, hIJ⟩ := IH (by rw [← Submodule.zero_eq_bot]; exact ha)
+      have hpbot : p ≠ ⊥ := by rw [← Submodule.zero_eq_bot]; exact hp.ne_zero
+      set 𝔓 : HeightOneSpectrum (𝓞 F) :=
+        ⟨p, Ideal.isPrime_of_prime hp, hpbot⟩
+      by_cases hmem : 𝔓 ∈ T
+      · refine ⟨p * J, T.erase 𝔓, ?_, ?_⟩
+        · rw [← Submodule.zero_eq_bot]
+          exact mul_ne_zero hp.ne_zero
+            (by rw [Submodule.zero_eq_bot]; exact hJ)
+        · rw [hIJ, ← Finset.mul_prod_erase T _ hmem,
+            show 𝔓.asIdeal = p from rfl]
+          ring
+      · refine ⟨J, insert 𝔓 T, hJ, ?_⟩
+        rw [hIJ, Finset.prod_insert hmem, show 𝔓.asIdeal = p from rfl]
+        ring
+  choose Jf Tf hJf hIJf using hdecomp
+  -- the recoverable (hence injective) decomposition map
+  have hφinj : Function.Injective
+      (fun I : {I : Ideal (𝓞 F) // I ≠ ⊥} =>
+        ((⟨Jf I.1 I.2, hJf I.1 I.2⟩ : {I : Ideal (𝓞 F) // I ≠ ⊥}),
+          Tf I.1 I.2)) := by
+    intro I I' h
+    have h1 : Jf I.1 I.2 = Jf I'.1 I'.2 :=
+      congrArg (fun q : {I : Ideal (𝓞 F) // I ≠ ⊥} ×
+        Finset (HeightOneSpectrum (𝓞 F)) => q.1.1) h
+    have h2 : Tf I.1 I.2 = Tf I'.1 I'.2 := congrArg Prod.snd h
+    refine Subtype.ext ?_
+    rw [hIJf I.1 I.2, hIJf I'.1 I'.2, h1, h2]
+  -- the term factors along the decomposition
+  have hterm : ∀ I : {I : Ideal (𝓞 F) // I ≠ ⊥},
+      (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-s) =
+        (Ideal.absNorm (Jf I.1 I.2) : ℝ≥0∞) ^ (-(2 * s)) *
+          ∏ P ∈ Tf I.1 I.2, (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s) := by
+    intro I
+    have habs : (Ideal.absNorm I.1 : ℝ≥0∞) =
+        (Ideal.absNorm (Jf I.1 I.2) : ℝ≥0∞) ^ (2 : ℕ) *
+          ∏ P ∈ Tf I.1 I.2, (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) := by
+      have h1 : Ideal.absNorm I.1 =
+          Ideal.absNorm (Jf I.1 I.2) ^ 2 *
+            ∏ P ∈ Tf I.1 I.2, Ideal.absNorm P.asIdeal := by
+        conv_lhs => rw [hIJf I.1 I.2]
+        rw [map_mul, map_pow, map_prod]
+      rw [h1]
+      push_cast
+      refine congrArg _ (Finset.prod_congr rfl fun P _ => ?_)
+      rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+    rw [habs, ENNReal.mul_rpow_of_ne_top
+      (ENNReal.pow_ne_top (ENNReal.natCast_ne_top _))
+      (ENNReal.prod_lt_top fun P _ => ENNReal.natCast_lt_top _).ne,
+      ENNReal.prod_rpow_of_ne_top fun P _ => ENNReal.natCast_ne_top _]
+    congr 1
+    rw [← ENNReal.rpow_natCast (Ideal.absNorm (Jf I.1 I.2) : ℝ≥0∞) 2,
+      ← ENNReal.rpow_mul,
+      show ((2 : ℕ) : ℝ) * (-s) = -(2 * s) by push_cast; ring]
+  rw [tsum_congr hterm]
+  refine le_trans (ENNReal.tsum_comp_le_tsum_of_injective hφinj
+    (fun q : {I : Ideal (𝓞 F) // I ≠ ⊥} ×
+        Finset (HeightOneSpectrum (𝓞 F)) =>
+      (Ideal.absNorm q.1.1 : ℝ≥0∞) ^ (-(2 * s)) *
+        ∏ P ∈ q.2, (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s))) ?_
+  rw [ENNReal.tsum_prod']
+  refine le_of_eq ?_
+  calc ∑' (J : {I : Ideal (𝓞 F) // I ≠ ⊥})
+        (T : Finset (HeightOneSpectrum (𝓞 F))),
+        (Ideal.absNorm J.1 : ℝ≥0∞) ^ (-(2 * s)) *
+          ∏ P ∈ T, (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s)
+      = ∑' J : {I : Ideal (𝓞 F) // I ≠ ⊥},
+          (Ideal.absNorm J.1 : ℝ≥0∞) ^ (-(2 * s)) *
+          ∑' T : Finset (HeightOneSpectrum (𝓞 F)),
+            ∏ P ∈ T, (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s) :=
+        tsum_congr fun J => ENNReal.tsum_mul_left
+    _ = _ := ENNReal.tsum_mul_right
 
 /-- The `n`-th term of the Dedekind-zeta `L`-series of `F` at real
 `s > 0` is the real number `#{I : N(I) = n} · n ^ (-s)` (both sides
