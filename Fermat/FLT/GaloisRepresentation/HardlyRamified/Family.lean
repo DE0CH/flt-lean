@@ -15,6 +15,9 @@ import Mathlib.LinearAlgebra.Charpoly.BaseChange
 -- Noetherian integrally closed domain in a finite separable extension of its
 -- fraction field (the concrete coefficient rings of the realization stratum)
 import Mathlib.RingTheory.DedekindDomain.IntegralClosure
+-- `PadicInt.compactSpace`: compactness of `ℤ_ℓ`, used to identify the
+-- subspace topology on the concrete rings of integers with the module topology
+import Mathlib.NumberTheory.Padics.ProperSpace
 
 /-!
 # Hardly ramified representations in compatible families
@@ -1251,24 +1254,86 @@ instance instValuationRingIntegralClosurePadicInt :
     rw [← spectralNorm_inv] at h1
     exact .inr (isIntegral_padicInt_of_spectralNorm_le_one h1)
 
-/-- **Module topology on the concrete ring of integers** (sorry node):
-the subspace topology on `IntegralClosure ℤ_ℓ L ⊆ L ⊆ ℚ̄_ℓ` (inherited
-from the spectral norm) is the `ℤ_ℓ`-module topology, for `L/ℚ_ℓ`
-finite. Proof plan (mirrors the PROVEN
+/-- **Compact-Hausdorff criterion for the module topology** (PROVEN,
+general): a topological module, finitely generated over a compact
+topological ring, whose own topology is Hausdorff, carries the module
+topology. The continuous identity map from the (compact — coinduced
+along a surjection `Rⁿ ↠ M` from a compact space,
+`ModuleTopology.eq_coinduced_of_surjective`) module topology to the
+(Hausdorff) given topology is a homeomorphism
+(`Continuous.homeoOfEquivCompactToT2`), so the two topologies agree.
+(The abstraction of steps 3–5 of the PROVEN
 `isModuleTopology_of_isAdic_maximalIdeal` in `Lift.lean`, which lives
-downstream and cannot be imported here): the scalar action
-`ℤ_ℓ × 𝒪_L → 𝒪_L` is continuous for the subspace topology (the
-`ℤ_ℓ → ℚ̄_ℓ` structure map is continuous and multiplication in `ℚ̄_ℓ`
-is continuous), so `moduleTopology ≤ subspace` by `moduleTopology_le`;
-conversely the module topology is compact (coinduced along a surjection
-`ℤ_ℓ^n ↠ 𝒪_L` from a compact space,
-`ModuleTopology.eq_coinduced_of_surjective`, using module-finiteness)
-while the subspace topology is Hausdorff (metric), so the continuous
-identity map is a homeomorphism (`Continuous.homeoOfEquivCompactToT2`)
-and the topologies agree (`IsModuleTopology.of_continuous_id`). -/
+downstream and cannot be imported here; stated over an abstract module
+because instance synthesis at the `IntegralClosure` type synonym is
+unreliable inside tactic blocks — binders sidestep it.) -/
+theorem isModuleTopology_of_compactSpace_t2Space {R M : Type*} [CommRing R]
+    [TopologicalSpace R] [IsTopologicalRing R] [CompactSpace R] [AddCommGroup M]
+    [Module R M] [Module.Finite R M] [TopologicalSpace M] [T2Space M]
+    [ContinuousSMul R M] [ContinuousAdd M] :
+    IsModuleTopology R M := by
+  obtain ⟨n, φ, hφ⟩ := Module.Finite.exists_fin' R M
+  have hcoind : moduleTopology R M = TopologicalSpace.coinduced φ inferInstance :=
+    ModuleTopology.eq_coinduced_of_surjective hφ
+  have hφc : @Continuous (Fin n → R) M _ (moduleTopology R M) φ :=
+    continuous_iff_coinduced_le.mpr (le_of_eq hcoind.symm)
+  have hcompact : @CompactSpace M (moduleTopology R M) :=
+    @Function.Surjective.compactSpace _ _ _ (moduleTopology R M) _ hφc
+      inferInstance hφ
+  have hid : @Continuous M M (moduleTopology R M) _ id :=
+    continuous_id_iff_le.mpr (moduleTopology_le R M)
+  exact IsModuleTopology.of_continuous_id
+    (@Homeomorph.continuous_symm M _ (moduleTopology R M) _
+      (@Continuous.homeoOfEquivCompactToT2 _ _ (moduleTopology R M) _ hcompact
+        ‹T2Space M› (Equiv.refl _) hid))
+
+/-- The structure map `ℤ_ℓ → 𝒪_L` is continuous for the subspace
+topology (PROVEN): through the inclusions into `ℚ̄_ℓ` it is the
+composite of the continuous `ℤ_ℓ ⊆ ℚ_ℓ → ℚ̄_ℓ`. (Stated at the
+underlying `integralClosure` subalgebra.) -/
+theorem continuous_algebraMap_integralClosure_padicInt :
+    Continuous (algebraMap ℤ_[ℓ] (integralClosure ℤ_[ℓ] L)) := by
+  have hcomp : Continuous (algebraMap ℤ_[ℓ] (AlgebraicClosure ℚ_[ℓ])) := by
+    rw [IsScalarTower.algebraMap_eq ℤ_[ℓ] ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])]
+    exact (continuous_algebraMap ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])).comp
+      continuous_subtype_val
+  have halgL : Continuous (algebraMap ℤ_[ℓ] L) := by
+    refine continuous_induced_rng.mpr ?_
+    have heq : ∀ z : ℤ_[ℓ],
+        ((algebraMap ℤ_[ℓ] L z : L) : AlgebraicClosure ℚ_[ℓ]) =
+          algebraMap ℤ_[ℓ] (AlgebraicClosure ℚ_[ℓ]) z := fun z =>
+      (IsScalarTower.algebraMap_apply ℤ_[ℓ] L (AlgebraicClosure ℚ_[ℓ]) z).symm
+    exact hcomp.congr fun z => (heq z).symm
+  refine continuous_induced_rng.mpr ?_
+  exact halgL.congr fun z => rfl
+
+/-- **Module topology on the concrete ring of integers, subtype
+spelling** (PROVEN): the compact-Hausdorff criterion applied to
+`integralClosure ℤ_ℓ L` — the scalar action is continuous
+(`continuous_algebraMap_integralClosure_padicInt`), `ℤ_ℓ` is compact,
+the ring of integers is module-finite over it
+(`IsIntegralClosure.finite`), and the subspace topology is Hausdorff
+(metric). Stated at the underlying subalgebra, where instance synthesis
+is reliable; the type-synonym form below is definitionally the same. -/
+theorem isModuleTopology_integralClosure_subtype_padicInt
+    [FiniteDimensional ℚ_[ℓ] L] :
+    IsModuleTopology ℤ_[ℓ] (integralClosure ℤ_[ℓ] L) := by
+  haveI : ContinuousSMul ℤ_[ℓ] (integralClosure ℤ_[ℓ] L) :=
+    continuousSMul_of_algebraMap ℤ_[ℓ] (integralClosure ℤ_[ℓ] L)
+      (continuous_algebraMap_integralClosure_padicInt L)
+  haveI : Module.Finite ℤ_[ℓ] (integralClosure ℤ_[ℓ] L) :=
+    IsIntegralClosure.finite ℤ_[ℓ] ℚ_[ℓ] L _
+  exact isModuleTopology_of_compactSpace_t2Space
+    (R := ℤ_[ℓ]) (M := integralClosure ℤ_[ℓ] L)
+
+/-- **Module topology on the concrete ring of integers** (PROVEN): the
+subspace topology on `IntegralClosure ℤ_ℓ L ⊆ L ⊆ ℚ̄_ℓ` (inherited
+from the spectral norm) is the `ℤ_ℓ`-module topology, for `L/ℚ_ℓ`
+finite — the subtype-spelling proof transported along the definitional
+equality of the type synonym. -/
 theorem isModuleTopology_integralClosure_padicInt [FiniteDimensional ℚ_[ℓ] L] :
     IsModuleTopology ℤ_[ℓ] (IntegralClosure ℤ_[ℓ] L) :=
-  sorry
+  isModuleTopology_integralClosure_subtype_padicInt L
 
 /-- **Universe/abstraction transport of a concrete realization** (sorry
 node, purely formal — no arithmetic content): a hardly ramified
