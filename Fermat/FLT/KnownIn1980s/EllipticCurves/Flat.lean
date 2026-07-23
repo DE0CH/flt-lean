@@ -2773,20 +2773,132 @@ theorem WeierstrassCurve.algHom_comp_eq_of_torsion_inertia_fixes
       WithConv.toConv φ := h1
   exact WithConv.toConv_injective h2
 
+/-- **Denominator clearing in a base-changed algebra** (PROVEN 2026-07-23; glue
+for the canonicity leaf `range_comp_includeRight_eq_integralClosure_of_etale_form`
+and the Hopf-order multiplication-map bijectivity
+`integralClosureMul_bijective`): every element of `K ⊗[R] B` has a nonzero
+`R`-multiple in the image of `B`, `K` being the fraction field of the domain
+`R` — collect the denominators of the (finitely many) left tensor legs. -/
+theorem exists_ne_zero_algebraMap_mul_eq_includeRight
+    (B : Type*) [CommRing B] [Algebra R B] (w : K ⊗[R] B) :
+    ∃ r : R, r ≠ 0 ∧ ∃ b : B,
+      algebraMap R (K ⊗[R] B) r * w =
+        (Algebra.TensorProduct.includeRight : B →ₐ[R] K ⊗[R] B) b := by
+  induction w with
+  | zero => exact ⟨1, one_ne_zero, 0, by simp⟩
+  | tmul k b =>
+    obtain ⟨c, hc⟩ :=
+      IsLocalization.exists_integer_multiple (nonZeroDivisors R) k
+    obtain ⟨s, hs⟩ := hc
+    refine ⟨(c : R), nonZeroDivisors.ne_zero c.2, s • b, ?_⟩
+    have hs' : algebraMap R K (c : R) * k = algebraMap R K s :=
+      (hs.trans (Algebra.smul_def (c : R) k)).symm
+    rw [IsScalarTower.algebraMap_apply R K (K ⊗[R] B),
+      Algebra.TensorProduct.algebraMap_apply,
+      Algebra.TensorProduct.tmul_mul_tmul, one_mul,
+      Algebra.algebraMap_self, RingHom.id_apply, hs',
+      Algebra.algebraMap_eq_smul_one, TensorProduct.smul_tmul,
+      Algebra.TensorProduct.includeRight_apply]
+  | add w₁ w₂ ih₁ ih₂ =>
+    obtain ⟨r₁, hr₁, b₁, he₁⟩ := ih₁
+    obtain ⟨r₂, hr₂, b₂, he₂⟩ := ih₂
+    refine ⟨r₁ * r₂, mul_ne_zero hr₁ hr₂,
+      algebraMap R B r₂ * b₁ + algebraMap R B r₁ * b₂, ?_⟩
+    have h1 : (Algebra.TensorProduct.includeRight : B →ₐ[R] K ⊗[R] B)
+        (algebraMap R B r₂ * b₁ + algebraMap R B r₁ * b₂) =
+        algebraMap R (K ⊗[R] B) r₂ * (algebraMap R (K ⊗[R] B) r₁ * w₁) +
+          algebraMap R (K ⊗[R] B) r₁ *
+            (algebraMap R (K ⊗[R] B) r₂ * w₂) := by
+      rw [map_add, map_mul, map_mul, AlgHom.commutes, AlgHom.commutes,
+        he₁, he₂]
+    rw [h1, map_mul]
+    ring
+
+/-- **The canonical multiplication map from the base change of the integral
+closure** (glue for the field-extension form leaf below and for the Hopf-order
+leaf): `k ⊗ h ↦ k • h`, as a `K`-algebra homomorphism
+`K ⊗[R] integralClosure R HK →ₐ[K] HK`. Unlike an abstract form equivalence
+from `Nonempty`-data, this CANONICAL map is compatible with the subalgebra
+inclusion by definition, which is what lets the comultiplication, counit and
+antipode corestrict along it in the Hopf-order leaf. -/
+noncomputable def integralClosureMul
+    (HK : Type*) [CommRing HK] [Algebra K HK] [Algebra R HK]
+    [IsScalarTower R K HK] :
+    (K ⊗[R] (integralClosure R HK)) →ₐ[K] HK :=
+  Algebra.TensorProduct.lift (Algebra.ofId K HK) (integralClosure R HK).val
+    fun _ _ => Commute.all _ _
+
+/-- **Injectivity of the canonical multiplication map** (PROVEN 2026-07-23;
+needs no form hypothesis): a kernel element has a nonzero `R`-multiple of the
+form `1 ⊗ h` (denominator clearing), whose image `h` vanishes, and
+multiplication by a nonzero `r : R` is invertible on the `K`-module
+`K ⊗[R] integralClosure R HK`. -/
+theorem integralClosureMul_injective
+    (HK : Type*) [CommRing HK] [Algebra K HK] [Algebra R HK]
+    [IsScalarTower R K HK] :
+    Function.Injective (integralClosureMul R K HK) := by
+  rw [injective_iff_map_eq_zero]
+  intro w hw
+  obtain ⟨r, hr, h, hrh⟩ :=
+    exists_ne_zero_algebraMap_mul_eq_includeRight R K
+      (integralClosure R HK) w
+  -- the image of `h` in `HK` vanishes, so `h = 0`
+  have h3 : integralClosureMul R K HK
+      ((Algebra.TensorProduct.includeRight :
+        _ →ₐ[R] K ⊗[R] (integralClosure R HK)) h) = (h : HK) := by
+    simp [integralClosureMul, Algebra.ofId_apply]
+  have h1 : (h : HK) = 0 := by
+    rw [← h3, ← hrh, map_mul, hw, mul_zero]
+  have h0 : h = 0 := Subtype.ext h1
+  rw [h0, map_zero] at hrh
+  -- multiplication by the nonzero `r` is injective on a `K`-module
+  have hu : IsUnit (algebraMap R (K ⊗[R] (integralClosure R HK)) r) := by
+    rw [IsScalarTower.algebraMap_apply R K (K ⊗[R] (integralClosure R HK))]
+    exact (isUnit_iff_ne_zero.mpr fun hzero => hr
+      ((injective_iff_map_eq_zero _).mp (IsFractionRing.injective R K) r
+        hzero)).map (algebraMap K (K ⊗[R] (integralClosure R HK)))
+  exact (hu.mul_right_eq_zero).mp hrh
+
+/-- **Étaleness of the integral closure under inertia-fixed embeddings** (sorry
+node; the DVR-Galois core of the single-factor leaf, isolated 2026-07-23 — the
+finiteness of the integral closure and the form equivalence via the canonical
+multiplication map are PROVEN in
+`exists_finite_etale_algebra_form_of_inertia_fixes_field`): for a finite
+separable field extension `L/K`, all of whose embeddings into `Kˢᵉᵖ` are fixed
+by every inertia subgroup above `R`, the integral closure of `R` in `L` is
+étale over `R`. Intended proof: finite presentation is Noetherian-automatic
+(the closure is module-finite over `R` by separability); for formal
+étaleness, the closure is flat (torsion-free over the DVR `R`) and it remains
+to see it is unramified: the inertia hypothesis places each embedding
+`L → Kˢᵉᵖ` inside the inertia field of every extension of the valuation of `R`
+to `Kˢᵉᵖ`, so for every prime `𝔮` above `𝔪 = (π)` the extension of complete
+local fields is inertia-trivial, i.e. `e(𝔮/𝔪) = 1` with separable residue
+extension (Neukirch I.9/II.9, Serre *Local Fields* I–II); hence `π` generates
+the maximal ideal at every `𝔮` and `𝔪`-fibre is a finite product of separable
+residue field extensions, which is `Algebra.FormallyUnramified`; finally
+flat + unramified + finitely presented over the DVR is étale (fibrewise
+smoothness of dimension zero). -/
+theorem integralClosure_etale_of_inertia_fixes_field
+    (L : Type u) [Field L] [Algebra K L]
+    [Module.Finite K L] [Algebra.IsSeparable K L]
+    [Algebra R L] [IsScalarTower R K L]
+    (hfix : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ σ ∈ 𝒪.inertiaSubgroup K, ∀ φ : L →ₐ[K] Ksep,
+        (σ : Ksep ≃ₐ[K] Ksep).toAlgHom.comp φ = φ) :
+    Algebra.Etale R (integralClosure R L) :=
+  sorry
+
 /-- **Unramified finite separable field extensions have finite étale `R`-forms**
-(sorry node; the single-factor core of the Galois half of the curve-free
-Hopf-form leaf, isolated 2026-07-23 — the product assembly is proven in
-`exists_finite_etale_algebra_form_of_inertia_fixes`): a finite separable field
-extension `L/K`, all of whose embeddings into `Kˢᵉᵖ` are fixed by every inertia
-subgroup above `R`, admits a finite étale `R`-form. Intended proof: the
-hypothesis places each embedding `L → Kˢᵉᵖ` inside the inertia field of every
-valuation subring above `R`, so `L` is unramified with separable residue
-extension at every prime above the maximal ideal of `R`; take `H₀` to be the
-integral closure of `R` in `L` (transported to `Type u` along an `R`-basis):
-it is finite over `R` (separability + Noetherian normal base, Neukirch I.8/
-Serre *Local Fields* I–II), free (torsion-free finite over a DVR), and étale
-over `R` (finite flat with unramified fibres, by the inertia hypothesis), and
-`K ⊗[R] H₀ → L` is an isomorphism (clearing denominators). -/
+(DECOMPOSED 2026-07-23 into the étaleness core
+`integralClosure_etale_of_inertia_fixes_field`; the finiteness of the integral
+closure — separability over the Noetherian integrally closed `R`
+(`IsIntegralClosure.finite`) — and the form equivalence — bijectivity of the
+canonical multiplication map `K ⊗[R] integralClosure R L → L`, by denominator
+clearing on both sides — are PROVEN in the assembly below): a finite separable
+field extension `L/K`, all of whose embeddings into `Kˢᵉᵖ` are fixed by every
+inertia subgroup above `R`, admits a finite étale `R`-form, namely the
+integral closure of `R` in `L`. -/
 theorem exists_finite_etale_algebra_form_of_inertia_fixes_field
     (L : Type u) [Field L] [Algebra K L]
     [Module.Finite K L] [Algebra.IsSeparable K L]
@@ -2796,8 +2908,34 @@ theorem exists_finite_etale_algebra_form_of_inertia_fixes_field
         (σ : Ksep ≃ₐ[K] Ksep).toAlgHom.comp φ = φ) :
     ∃ (H₀ : Type u) (_ : CommRing H₀) (_ : Algebra R H₀)
       (_ : Module.Finite R H₀) (_ : Algebra.Etale R H₀),
-      Nonempty ((K ⊗[R] H₀) ≃ₐ[K] L) :=
-  sorry
+      Nonempty ((K ⊗[R] H₀) ≃ₐ[K] L) := by
+  letI : Algebra R L := ((algebraMap K L).comp (algebraMap R K)).toAlgebra
+  haveI : IsScalarTower R K L := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  -- finiteness of the integral closure: separability over the Noetherian
+  -- integrally closed base `R`
+  have hfin : Module.Finite R (integralClosure R L) :=
+    IsIntegralClosure.finite R K L (integralClosure R L)
+  -- étaleness: the sorried DVR-Galois core
+  have het : Algebra.Etale R (integralClosure R L) :=
+    integralClosure_etale_of_inertia_fixes_field R K Ksep L hfix
+  -- the canonical multiplication map realizes the form equivalence
+  have hbij : Function.Bijective (integralClosureMul R K L) := by
+    refine ⟨integralClosureMul_injective R K L, fun z => ?_⟩
+    obtain ⟨r, hr, hint⟩ := exists_integral_multiples R K ({z} : Finset L)
+    have hz : IsIntegral R (r • z) := hint z (Finset.mem_singleton_self z)
+    have hr' : algebraMap R K r ≠ 0 := fun h0 => hr
+      ((injective_iff_map_eq_zero _).mp (IsFractionRing.injective R K) r h0)
+    have hrL : algebraMap K L (algebraMap R K r) ≠ 0 :=
+      fun h0 => hr' ((algebraMap K L).injective (h0.trans (map_zero _).symm))
+    refine ⟨(algebraMap R K r)⁻¹ ⊗ₜ ⟨r • z, hz⟩, ?_⟩
+    simp only [integralClosureMul, Algebra.TensorProduct.lift_tmul,
+      Algebra.ofId_apply]
+    rw [map_inv₀]
+    show (algebraMap K L (algebraMap R K r))⁻¹ * (r • z) = z
+    rw [Algebra.smul_def, IsScalarTower.algebraMap_apply R K L,
+      inv_mul_cancel_left₀ hrL]
+  exact ⟨integralClosure R L, inferInstance, inferInstance, hfin, het,
+    ⟨AlgEquiv.ofBijective (integralClosureMul R K L) hbij⟩⟩
 
 /-- **Unramified finite étale `K`-algebras have finite étale `R`-forms**
 (DECOMPOSED 2026-07-23 into the single-field-extension leaf
@@ -2857,47 +2995,6 @@ theorem exists_finite_etale_algebra_form_of_inertia_fixes
   refine ⟨∀ i, H₀ i, inferInstance, inferInstance, hfin, inferInstance, ⟨?_⟩⟩
   exact (Algebra.TensorProduct.piRight R K K H₀).trans
     ((AlgEquiv.piCongrRight fun i => (hEq i).some).trans e.symm)
-
-/-- **Denominator clearing in a base-changed algebra** (PROVEN 2026-07-23; glue
-for the canonicity leaf `range_comp_includeRight_eq_integralClosure_of_etale_form`
-and the Hopf-order multiplication-map bijectivity
-`integralClosureMul_bijective`): every element of `K ⊗[R] B` has a nonzero
-`R`-multiple in the image of `B`, `K` being the fraction field of the domain
-`R` — collect the denominators of the (finitely many) left tensor legs. -/
-theorem exists_ne_zero_algebraMap_mul_eq_includeRight
-    (B : Type*) [CommRing B] [Algebra R B] (w : K ⊗[R] B) :
-    ∃ r : R, r ≠ 0 ∧ ∃ b : B,
-      algebraMap R (K ⊗[R] B) r * w =
-        (Algebra.TensorProduct.includeRight : B →ₐ[R] K ⊗[R] B) b := by
-  induction w with
-  | zero => exact ⟨1, one_ne_zero, 0, by simp⟩
-  | tmul k b =>
-    obtain ⟨c, hc⟩ :=
-      IsLocalization.exists_integer_multiple (nonZeroDivisors R) k
-    obtain ⟨s, hs⟩ := hc
-    refine ⟨(c : R), nonZeroDivisors.ne_zero c.2, s • b, ?_⟩
-    have hs' : algebraMap R K (c : R) * k = algebraMap R K s :=
-      (hs.trans (Algebra.smul_def (c : R) k)).symm
-    rw [IsScalarTower.algebraMap_apply R K (K ⊗[R] B),
-      Algebra.TensorProduct.algebraMap_apply,
-      Algebra.TensorProduct.tmul_mul_tmul, one_mul,
-      Algebra.algebraMap_self, RingHom.id_apply, hs',
-      Algebra.algebraMap_eq_smul_one, TensorProduct.smul_tmul,
-      Algebra.TensorProduct.includeRight_apply]
-  | add w₁ w₂ ih₁ ih₂ =>
-    obtain ⟨r₁, hr₁, b₁, he₁⟩ := ih₁
-    obtain ⟨r₂, hr₂, b₂, he₂⟩ := ih₂
-    refine ⟨r₁ * r₂, mul_ne_zero hr₁ hr₂,
-      algebraMap R B r₂ * b₁ + algebraMap R B r₁ * b₂, ?_⟩
-    have h1 : (Algebra.TensorProduct.includeRight : B →ₐ[R] K ⊗[R] B)
-        (algebraMap R B r₂ * b₁ + algebraMap R B r₁ * b₂) =
-        algebraMap R (K ⊗[R] B) r₂ * (algebraMap R (K ⊗[R] B) r₁ * w₁) +
-          algebraMap R (K ⊗[R] B) r₁ *
-            (algebraMap R (K ⊗[R] B) r₂ * w₂) := by
-      rw [map_add, map_mul, map_mul, AlgHom.commutes, AlgHom.commutes,
-        he₁, he₂]
-    rw [h1, map_mul]
-    ring
 
 /-- **The image of a finite étale `R`-form is the integral closure** (PROVEN
 2026-07-23; the workhorse behind the canonicity leaf
@@ -3057,28 +3154,12 @@ theorem integralClosure_finite_etale_form_of_etale_algebra_form
     ⟨(Algebra.TensorProduct.congr (AlgEquiv.refl (R := K) (A₁ := K))
       e₀.symm).trans e⟩⟩
 
-/-- **The canonical multiplication map from the base change of the integral
-closure** (glue for the Hopf-order leaf): `k ⊗ h ↦ k • h`, as a `K`-algebra
-homomorphism `K ⊗[R] integralClosure R HK →ₐ[K] HK`. Unlike an abstract form
-equivalence from `Nonempty`-data, this CANONICAL map is compatible with the
-subalgebra inclusion by definition, which is what lets the comultiplication,
-counit and antipode corestrict along it. -/
-noncomputable def integralClosureMul
-    (HK : Type*) [CommRing HK] [Algebra K HK] [Algebra R HK]
-    [IsScalarTower R K HK] :
-    (K ⊗[R] (integralClosure R HK)) →ₐ[K] HK :=
-  Algebra.TensorProduct.lift (Algebra.ofId K HK) (integralClosure R HK).val
-    fun _ _ => Commute.all _ _
-
 /-- **Bijectivity of the canonical multiplication map** (PROVEN 2026-07-23):
 if SOME `K`-algebra form equivalence `K ⊗[R] integralClosure R HK ≃ₐ[K] HK`
-exists, then the canonical multiplication map is itself bijective. Injectivity:
-a kernel element has a nonzero `R`-multiple of the form `1 ⊗ h` (denominator
-clearing), whose image `h` vanishes, and multiplication by a nonzero `r : R` is
-invertible on the `K`-module `K ⊗[R] integralClosure R HK`. Surjectivity: `e`
-maps `1 ⊗ h` into the integral closure (integrality is preserved by `R`-algebra
-maps), so `e (k ⊗ h) = k • e (1 ⊗ h)` already lies in the image of the
-canonical map, and the `e (k ⊗ h)` span the target. -/
+exists, then the canonical multiplication map is itself bijective.
+Surjectivity: `e` maps `1 ⊗ h` into the integral closure (integrality is
+preserved by `R`-algebra maps), so `e (k ⊗ h) = k • e (1 ⊗ h)` already lies in
+the image of the canonical map, and the `e (k ⊗ h)` span the target. -/
 theorem integralClosureMul_bijective
     (HK : Type*) [CommRing HK] [Algebra K HK] [Algebra R HK]
     [IsScalarTower R K HK]
@@ -3086,27 +3167,7 @@ theorem integralClosureMul_bijective
     Function.Bijective (integralClosureMul R K HK) := by
   obtain ⟨e⟩ := heq
   constructor
-  · rw [injective_iff_map_eq_zero]
-    intro w hw
-    obtain ⟨r, hr, h, hrh⟩ :=
-      exists_ne_zero_algebraMap_mul_eq_includeRight R K
-        (integralClosure R HK) w
-    -- the image of `h` in `HK` vanishes, so `h = 0`
-    have h3 : integralClosureMul R K HK
-        ((Algebra.TensorProduct.includeRight :
-          _ →ₐ[R] K ⊗[R] (integralClosure R HK)) h) = (h : HK) := by
-      simp [integralClosureMul, Algebra.ofId_apply]
-    have h1 : (h : HK) = 0 := by
-      rw [← h3, ← hrh, map_mul, hw, mul_zero]
-    have h0 : h = 0 := Subtype.ext h1
-    rw [h0, map_zero] at hrh
-    -- multiplication by the nonzero `r` is injective on a `K`-module
-    have hu : IsUnit (algebraMap R (K ⊗[R] (integralClosure R HK)) r) := by
-      rw [IsScalarTower.algebraMap_apply R K (K ⊗[R] (integralClosure R HK))]
-      exact (isUnit_iff_ne_zero.mpr fun hzero => hr
-        ((injective_iff_map_eq_zero _).mp (IsFractionRing.injective R K) r
-          hzero)).map (algebraMap K (K ⊗[R] (integralClosure R HK)))
-    exact (hu.mul_right_eq_zero).mp hrh
+  · exact integralClosureMul_injective R K HK
   · intro z
     suffices h : ∀ w : K ⊗[R] (integralClosure R HK),
         ∃ v, integralClosureMul R K HK v = e w by
