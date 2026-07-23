@@ -230,6 +230,65 @@ lemma equivVariableChange_some {x y : F} (h : (C • W).toAffine.Nonsingular x y
 
 end Point
 
+/-! ### Galois equivariance of the base-changed variable-change isomorphism
+
+For a change of variables `C` defined over the base field `K` and a field extension `Ω/K`, the
+variable change identifies the `Ω`-points of `C • W` with those of `W`, and this identification
+commutes with every `K`-automorphism of `Ω`: the coefficients of the change of variables come
+from `K`, so they are fixed by the Galois action. -/
+
+section BaseChangeGalois
+
+variable {K : Type*} [Field K] (W : WeierstrassCurve K) (C : VariableChange K)
+  (Ω : Type*) [Field Ω] [Algebra K Ω] [DecidableEq Ω] [W.IsElliptic]
+
+namespace Point
+
+/-- The base change to `Ω ⊇ K` of the variable-change isomorphism: the `Ω`-points of `C • W`
+are identified with the `Ω`-points of `W` by `(x, y) ↦ (u²x + r, u³y + u²sx + t)`, with the
+coefficients of `C` viewed in `Ω`. -/
+noncomputable def equivVariableChangeBaseChange :
+    ((C • W)⁄Ω).toAffine.Point ≃+ (W⁄Ω).toAffine.Point :=
+  haveI : (W⁄Ω).IsElliptic := inferInstanceAs (W.map (algebraMap K Ω)).IsElliptic
+  (equivOfEq (show (C • W)⁄Ω = (C.baseChange Ω) • (W⁄Ω) from
+    (map_variableChange (C := C) (W := W) (φ := algebraMap K Ω)).symm)).trans
+    (equivVariableChange (W⁄Ω) (C.baseChange Ω))
+
+/-- The base-changed variable-change isomorphism commutes with the action of `Gal(Ω/K)` on
+points: the coefficients of the change of variables are images of elements of `K`, hence fixed
+by every `K`-automorphism `σ` of `Ω`. -/
+theorem equivVariableChangeBaseChange_galois (σ : Ω ≃ₐ[K] Ω)
+    (P : ((C • W)⁄Ω).toAffine.Point) :
+    equivVariableChangeBaseChange W C Ω (Point.map σ.toAlgHom P) =
+      Point.map σ.toAlgHom (equivVariableChangeBaseChange W C Ω P) := by
+  have hu : σ.toAlgHom ((C.baseChange Ω).u : Ω) = ((C.baseChange Ω).u : Ω) := by
+    simp only [VariableChange.baseChange, VariableChange.map_u, Units.coe_map,
+      MonoidHom.coe_coe]
+    exact σ.toAlgHom.commutes C.u
+  have hr : σ.toAlgHom ((C.baseChange Ω).r) = (C.baseChange Ω).r := by
+    simp only [VariableChange.baseChange, VariableChange.map_r]
+    exact σ.toAlgHom.commutes C.r
+  have hs : σ.toAlgHom ((C.baseChange Ω).s) = (C.baseChange Ω).s := by
+    simp only [VariableChange.baseChange, VariableChange.map_s]
+    exact σ.toAlgHom.commutes C.s
+  have ht : σ.toAlgHom ((C.baseChange Ω).t) = (C.baseChange Ω).t := by
+    simp only [VariableChange.baseChange, VariableChange.map_t]
+    exact σ.toAlgHom.commutes C.t
+  rcases P with _ | ⟨x, y, h⟩
+  · show equivVariableChangeBaseChange W C Ω 0 =
+      Point.map σ.toAlgHom (equivVariableChangeBaseChange W C Ω 0)
+    rw [_root_.map_zero]
+    rfl
+  · simp only [equivVariableChangeBaseChange, AddEquiv.trans_apply, Point.map_some,
+      equivOfEq_some, equivVariableChange_some]
+    refine some_eq_some (W⁄Ω) ?_ ?_
+    · simp only [map_add, map_mul, map_pow, hu, hr]
+    · simp only [map_add, map_mul, map_pow, hu, hs, ht]
+
+end Point
+
+end BaseChangeGalois
+
 end WeierstrassCurve.Affine
 
 end
