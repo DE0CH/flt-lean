@@ -17,14 +17,14 @@ import sys
 PROMPT = (
     "It looks like this command ran `git merge`. If this was an "
     "INTEGRATION merge (an agent/work branch merged into main): this is "
-    "the moment the integration checks run -- (1) run `python3 "
-    "free-floating.py` at the repo root (the floating check pays its "
-    "cone rebuild now, at integration cadence) and resolve or assign any "
-    "floating declarations top-down; (2) mark the agent's worktree back "
-    "to `free` in ~/.flt-worktree-pool; (3) keep progress-entries.json / "
-    "PROGRESS.md current for what the merge changed. If this was NOT an "
-    "integration into main (e.g. a --ff-only worktree advance, or some "
-    "unrelated merge), ignore this reminder."
+    "the moment the integration checks run -- (1) mark the agent's "
+    "worktree back to `free` in ~/.flt-worktree-pool; (2) if the "
+    "just-finished agent was the BOOKKEEPING agent (the combined "
+    "free-floating check + progress-entries.json/PROGRESS.md "
+    "regeneration cycle), remember to dispatch/queue a NEW bookkeeping "
+    "task -- appended to the END of ~/.flt-task-queue like every other "
+    "task. If this was NOT an integration into main (e.g. a --ff-only "
+    "worktree advance, or some unrelated merge), ignore this reminder."
 )
 
 

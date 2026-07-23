@@ -20,12 +20,15 @@ inline at every merge. One combined agent per cycle keeps both current
 at the same cadence and self-paces: the cycle takes as long as it
 takes, and that IS the period.
 
-**How to apply:** maintain ONE bookkeeping dispatch at a time whose
-task is: census → sync progress-entries.json (new/resolved sorried
-decls; wip flags) → regenerate PROGRESS.md (progress-tree.py) →
-free-floating check → resolve/report floaters → commit. When it
-completes: integrate (merge/free) and immediately dispatch the next
-cycle. The orchestrator no longer runs `free-floating.py` inline at
-every merge (the post-merge reminder hook's step 1 is satisfied by
-this cadence); merging/freeing/dispatching arriving agent work remains
-continuous and per-arrival, per [[flt-fleet-13-worktree-protocol]].
+**How to apply:** maintain ONE bookkeeping task in flight (live or
+queued) at a time, whose cycle is: census → sync progress-entries.json
+(new/resolved sorried decls; wip flags) → regenerate PROGRESS.md
+(progress-tree.py) → free-floating check → resolve/report floaters →
+commit. When it completes: integrate (merge/free), then append the
+next bookkeeping task to the END of ~/.flt-task-queue like every other
+task (Deyao, 2026-07-23: no queue-jumping, ordinary FIFO). The
+orchestrator no longer runs `free-floating.py` inline at every merge
+(the post-merge reminder hook now reminds about re-queuing the
+bookkeeping cycle instead); merging/freeing/dispatching arriving agent
+work remains continuous and per-arrival, per
+[[flt-fleet-13-worktree-protocol]].
