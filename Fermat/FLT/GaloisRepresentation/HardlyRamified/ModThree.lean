@@ -2716,25 +2716,158 @@ theorem exists_sqrt_of_quadratic_character_unramified_outside_two_three
       rw [hfix] at hgker
       exact MonoidHom.mem_ker.mp hgker
 
+set_option maxHeartbeats 1000000 in
+/-- **The dihedral dichotomy: a common eigenvector after a possible
+field switch** (sorry node, isolated 2026-07-23 — the SOUND
+replacement for the false "common eigenvector on `ker θ` itself"
+step): the projective-commutativity and trace-zero data of the
+dihedral situation produce a surjective quadratic character `θ'` —
+NOT necessarily `θ` — trivial on the kernel of `ρ`, such that `u`
+restricted to `ker θ'` has a genuine common eigenvector.
+
+Soundness note (recorded 2026-07-23; see the 2026-07-23 decomposition
+commit): `hcomm` only makes `u (ker θ)` projectively abelian, which
+admits the Klein-four sub-case where `u (ker θ)` maps onto an
+irreducible `V₄ ⊂ PGL₂` of anticommuting trace-zero
+involutions-mod-scalars and `ρ|_{ker θ}` has NO stable line; Serre's
+dihedral argument there switches to a different quadratic subfield.
+Hence the eigenvector is asserted only after an allowed switch of the
+quadratic character, and the consumer re-runs the quadratic-field
+classification on `θ'`.
+
+Intended proof: if all `u h`, `h ∈ ker θ`, pairwise commute, a finite
+commuting family over the algebraically closed `Dickson.K 3` has a
+common eigenvector and `θ' = θ` works (`ρ g = 1 → θ g = 1` follows
+from `htr` since `tr 1 = 2 ≠ 0` in characteristic `3`). Otherwise the
+scalar commutator pairing `c` on `ker θ` (well defined by `hcomm`,
+valued in `{±1}` by determinants) is somewhere `-1`: an anticommuting
+pair is trace-zero with scalar squares (Cayley–Hamilton), and
+`π (ker θ)` is then EXACTLY a Klein four-group `{1, a, b, ab}` (an
+element pairing trivially with both `a` and `b` commutes with a
+diagonalizable matrix with distinct eigenvalues and with one swapping
+its eigenlines, hence is scalar; the four sign patterns of
+`(c(·,a), c(·,b))` are realized by `1, a, b, ab`). Conjugation by any
+fixed `σ ∉ ker θ` is an involutive permutation of `{a, b, ab}`
+(`σ² ∈ ker θ` and `A` is abelian), so it fixes one of the three, say
+`f = [f̃]` with `f̃` trace-zero, `f̃² = δ • 1`, `δ ≠ 0`; then EVERY
+`u g` (`g ∈ Γ ℚ`) conjugates `f̃` to `ε g • f̃` with `ε g ∈ {±1}`
+(determinants again), `ε : Γ ℚ →* {±1}` is the switched character —
+surjective because the anticommuting partner of `f` lies in
+`π (ker θ)` and has sign `-1` — and `ker ε` preserves each of the two
+`1`-dimensional eigenlines of the diagonalizable `f̃`: a common
+eigenvector for the SWITCHED quadratic field. -/
+theorem exists_index_two_common_eigenvector {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (π : Γ ℚ →* Dickson.PGL 3)
+    (hπ : ∀ g, π g = QuotientGroup.mk (u g))
+    (θ : Γ ℚ →* Multiplicative (ZMod 2))
+    (hθsurj : Function.Surjective θ)
+    (hcomm : ∀ g h : Γ ℚ, θ g = 1 → θ h = 1 → π g * π h = π h * π g)
+    (htr : ∀ g : Γ ℚ, θ g ≠ 1 →
+      LinearMap.trace k V
+        ((MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V) g) = 0) :
+    ∃ θ' : Γ ℚ →* Multiplicative (ZMod 2),
+      Function.Surjective θ' ∧ (∀ g : Γ ℚ, ρ g = 1 → θ' g = 1) ∧
+      ∃ v : Fin 2 → Dickson.K 3, v ≠ 0 ∧
+        ∀ g : Γ ℚ, θ' g = 1 → ∃ c : Dickson.K 3,
+          Matrix.mulVec ((u g : GL (Fin 2) (Dickson.K 3)) :
+            Matrix (Fin 2) (Fin 2) (Dickson.K 3)) v = c • v := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **The Serre/Tate elimination, dihedral ray-class computation with
+an explicit eigenvector** (sorry node — the per-field
+class-field-theoretic core of the dihedral case, restated 2026-07-23
+with the stable-line datum as an explicit HYPOTHESIS so that the
+statement is sound in the Klein-four sub-case; the character `θ'`
+here is the possibly SWITCHED character produced by
+`exists_index_two_common_eigenvector`, and `K = ℚ(x)`, `x = √d`,
+`d ∈ {-1, 2, -2, 3, -3, 6, -6}` is ITS quadratic field, re-cut by
+`exists_sqrt_of_quadratic_character_unramified_outside_two_three`).
+
+Intended content (Serre's mod-3 analogue, in the style of §5 of the
+Duke 1987 paper, of Tate's 2-adic letter argument), per fixed `d`:
+the common eigenvector `v` of `u` on `ker θ' = Γ_K` defines the
+eigenvalue character `χ : Γ_K → (Dickson.K 3)ˣ`; for `σ ∉ Γ_K` the
+vector `w = u σ • v` is independent of `v` (absolute irreducibility),
+`Γ_K` acts diagonally on the basis `(v, w)` — by `χ` and by the
+conjugate `χ^σ` — and elements outside `Γ_K` act antidiagonally, so
+`ρ ≅ Ind_{Γ_K}^{Γ_ℚ} χ` with `χ ≠ χ^σ` (else a stable line exists,
+contradicting `habs`); the hardly-ramified constraints bound the
+conductor of `χ`: trivial outside primes over `{2, 3}`, at `2` the
+inertia acts through `ρ` by unipotents (cyclotomic determinant is
+unramified at `2` and the tame-at-2 quotient is unramified), and a
+nontrivial unipotent has trace `2 ≠ 0` while antidiagonal elements
+have trace `0`, so inertia at `2` lands in `Γ_K` and fixes both
+eigenlines, forcing `χ` unramified at the primes over `2`; at `3`
+flatness restricts `χ` on inertia to the Raynaud characters of level
+`≤ 2`; the class numbers of the seven fields are
+`1, 1, 1, 1, 1, 1, 2` and the ray class groups of `K` modulo the
+allowed conductors are generated by ramified classes on which
+`χ/χ^σ` is forced to vanish, so `χ = χ^σ` — contradiction. -/
+theorem serre_elimination_dihedral_ray_class_of_eigenvector {k : Type u}
+    [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (habs : Slop.OddRep.IsAbsolutelyIrreducible
+      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V))
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (θ' : Γ ℚ →* Multiplicative (ZMod 2))
+    (hθ'surj : Function.Surjective θ')
+    (htriv' : ∀ g : Γ ℚ, ρ g = 1 → θ' g = 1)
+    (v : Fin 2 → Dickson.K 3) (hv : v ≠ 0)
+    (heig : ∀ g : Γ ℚ, θ' g = 1 → ∃ c : Dickson.K 3,
+      Matrix.mulVec ((u g : GL (Fin 2) (Dickson.K 3)) :
+        Matrix (Fin 2) (Fin 2) (Dickson.K 3)) v = c • v)
+    (d : ℤ)
+    (hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6)
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
+    (hθ'x : ∀ g : Γ ℚ, θ' g = 1 ↔ g x = x) :
+    False := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
 /-- **The Serre/Tate elimination, dihedral ray-class computation**
-(sorry node — the per-field class-field-theoretic core of the
-dihedral case, isolated 2026-07-22 behind the quadratic-field
-classification `exists_sqrt_of_quadratic_character_unramified_outside_two_three`):
-the dihedral situation of `serre_elimination_dihedral_arith`, with the
-quadratic field made explicit as `K = ℚ(x)`, `x = √d`,
-`d ∈ {-1, 2, -2, 3, -3, 6, -6}`, is contradictory. Intended content
-(Serre's mod-3 analogue, in the style of §5 of the Duke 1987 paper,
-of Tate's 2-adic letter argument), per fixed `d`: the trace-zero and
-projective-commutation hypotheses make `ρ` induced from a character
-`χ` of `Γ_K = {g | g x = x}` (`ρ ≅ Ind_{Γ_K}^{Γ_ℚ} χ`, absolutely
-irreducible so `χ ≠ χ^σ` for `σ` the nontrivial coset); the
-hardly-ramified constraints bound the conductor of `χ`: trivial
-outside primes over `{2, 3}`, at `2` the inertia acts unipotently
-(order `1` or `3`), at `3` flatness restricts `χ` on inertia to the
-Raynaud characters of level `≤ 2`; the class numbers of the seven
-fields are `1, 1, 1, 1, 1, 1, 2` and the ray class groups of `K`
-modulo the allowed conductors are generated by ramified classes on
-which `χ/χ^σ` is forced to vanish, so `χ = χ^σ` — contradiction. -/
+(DECOMPOSED 2026-07-23 into the two sorry nodes above — the
+common-eigenvector dichotomy `exists_index_two_common_eigenvector`
+(which may SWITCH the quadratic character, as required by the
+Klein-four projective sub-case where `ρ|_{ker θ}` is irreducible) and
+the eigenvector-explicit per-field ray-class core
+`serre_elimination_dihedral_ray_class_of_eigenvector`; the reduction
+is proven): the dihedral situation of
+`serre_elimination_dihedral_arith`, with the quadratic field made
+explicit, is contradictory. The proven reduction: the dichotomy leaf
+yields a surjective quadratic character `θ'` trivial on `ker ρ` with
+a common eigenvector of `u` on `ker θ'`; `ker θ'` is open (it
+contains the open kernel of `ρ`) and unramified outside `{2, 3}`
+(through `ρ`, exactly as in `serre_elimination_dihedral_arith`), so
+the PROVEN classification
+`exists_sqrt_of_quadratic_character_unramified_outside_two_three`
+re-cuts the possibly different quadratic field `ℚ(√d')`,
+`d' ∈ {-1, ±2, ±3, ±6}`, of `θ'`, and the ray-class leaf applied to
+`θ'` yields the contradiction. The original data `d`, `x`, `hθx` of
+`θ` itself are not consumed: the field switch may abandon them. -/
 theorem serre_elimination_dihedral_ray_class {k : Type u} [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
@@ -2760,11 +2893,54 @@ theorem serre_elimination_dihedral_ray_class {k : Type u} [Finite k] [Field k]
       LinearMap.trace k V
         ((MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V) g) = 0)
     (d : ℤ)
-    (hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6)
-    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
-    (hθx : ∀ g : Γ ℚ, θ g = 1 ↔ g x = x) :
-    False :=
-  sorry
+    (_hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6)
+    (x : AlgebraicClosure ℚ) (_hx : x ^ 2 = (d : AlgebraicClosure ℚ))
+    (_hθx : ∀ g : Γ ℚ, θ g = 1 ↔ g x = x) :
+    False := by
+  classical
+  -- the dichotomy: a common eigenvector after a possible field switch
+  obtain ⟨θ', hθ'surj, htriv', v, hv, heig⟩ :=
+    exists_index_two_common_eigenvector V hV b e u hu π hπ θ hθsurj hcomm htr
+  -- the kernel of `θ'` is open (it contains the open kernel of `ρ`)
+  let Kρ : Subgroup (Γ ℚ) :=
+    { carrier := {g | ρ g = 1}
+      one_mem' := map_one ρ
+      mul_mem' := by
+        intro a a' ha ha'
+        show ρ (a * a') = 1
+        rw [map_mul, ha, ha', mul_one]
+      inv_mem' := by
+        intro a ha
+        show ρ a⁻¹ = 1
+        have h1 : ρ a⁻¹ * ρ a = 1 := by
+          rw [← map_mul, inv_mul_cancel, map_one]
+        rwa [ha, mul_one] at h1 }
+  haveI hfinV : Finite V := Module.finite_of_finite k
+  have hKρ_open : IsOpen (Kρ : Set (Γ ℚ)) :=
+    isOpen_setOf_galoisRep_eq_one ρ hfinV
+  have hker : Kρ ≤ θ'.ker := fun g hg => MonoidHom.mem_ker.mpr (htriv' g hg)
+  have hopen : IsOpen (θ'.ker : Set (Γ ℚ)) :=
+    Subgroup.isOpen_mono hker hKρ_open
+  -- `θ'` is unramified outside `{2, 3}` (through `ρ`)
+  have hunram : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ 3 →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        θ' (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+    intro q hq hq2 hq3 σ hσ
+    apply htriv'
+    have h1 : (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat) σ = 1 :=
+      (hρ.isUnramified q hq ⟨hq2, hq3⟩).localInertiaGroup_le hσ
+    rw [GaloisRep.toLocal_apply] at h1
+    convert h1 using 4
+    exact Subsingleton.elim _ _
+  -- the classification re-cuts the (possibly switched) quadratic field
+  obtain ⟨d', hd', x', hx', hθ'x'⟩ :=
+    exists_sqrt_of_quadratic_character_unramified_outside_two_three
+      θ' hθ'surj hopen hunram
+  -- the per-field ray-class computation on the switched character
+  exact serre_elimination_dihedral_ray_class_of_eigenvector V hV hρ habs
+    b e u hu θ' hθ'surj htriv' v hv heig d' hd' x' hx' hθ'x'
 
 set_option maxHeartbeats 1000000 in
 /-- **The Serre/Tate elimination, dihedral arithmetic** (DECOMPOSED
