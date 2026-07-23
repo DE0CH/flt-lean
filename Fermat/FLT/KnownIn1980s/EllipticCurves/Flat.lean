@@ -675,15 +675,17 @@ core in turn assembled (proven) from a proven dévissage over two characteristic
 kernel-of-reduction leaves — and a pure descent half: an unramified torsion Galois
 module of order invertible in the residue field prolongs to a finite étale (in
 particular finite flat) Hopf algebra over `R`, decomposed further below into the
-Galois-correspondence and prolongation leaves. All assemblies are proven, and the two
+Galois-correspondence and prolongation leaves. All assemblies are proven. The two
 kernel-of-reduction leaves (`kernel_add_abscissa_notMem`,
 `kernel_sub_abscissa_notMem_of_residue_eq`) are PROVEN (2026-07-22), making the
-Néron–Ogg–Shafarevich chain through `torsion_inertia_fixes_of_isUnit` sorry-free; the
-remaining sorries in this subsection are the descent leaves: the curve-independent
-Galois-correspondence core `exists_finiteQuotient_galoisModule_etale_package`, the
-curve-specific finite-quotient leaf `exists_torsion_galois_finiteQuotient` (the two
-halves of the decomposed `exists_torsion_etale_package_over_fractionField`), and the
-prolongation leaf `torsion_flat_of_inertia_fixes_prolong`.
+Néron–Ogg–Shafarevich chain through `torsion_inertia_fixes_of_isUnit` sorry-free;
+`torsion_flat_of_inertia_fixes_prolong` is likewise PROVEN (2026-07-22/23) through
+the flat Hopf-form transport. The remaining sorries in this subsection are the
+descent leaves: the curve-independent Galois-correspondence core
+`exists_finiteQuotient_galoisModule_etale_package`, and the two curve-free halves of
+the decomposed prolongation — `exists_finite_etale_algebra_form_of_inertia_fixes`
+(DVR Galois theory) and `exists_finite_flat_hopf_form_of_etale_algebra_form`
+(integral-closure commutative algebra).
 -/
 
 set_option backward.isDefEq.respectTransparency false in
@@ -1655,23 +1657,261 @@ theorem WeierstrassCurve.exists_torsion_etale_package_over_fractionField
   rw [hf σ φ]
   exact hρ σ (f (Additive.ofMul (WithConv.toConv φ)))
 
-/-- **Unramified implies étale prolongation** (sorry node; the DVR-arithmetic half of
-the étale case — nothing about elliptic curves remains in its intended proof beyond the
-package interface): given the finite étale Hopf `K`-algebra `HK` of the `m`-torsion
-(the leaf above), if every inertia subgroup above `R` acts trivially on `E(Kˢᵉᵖ)[m]`
-and `m` is invertible in `R`, then `HK` prolongs to a finite étale (in particular
-finite flat) Hopf algebra over `R`. Intended proof: take `H` to be the integral closure
-of `R` in `HK` (transported to `Type u` along an `R`-basis): `HK` is a finite product
-of finite separable subextensions of `Kˢᵉᵖ/K`, each split by the splitting field of the
-torsion, which is unramified over `K` by the hypothesis transported through `f`/`hf`
-(its inertia acts trivially on the points of `HK`), so the normalization of `R` in each
-factor is finite étale over `R` (unramified + flat: a DVR normalization in an
-unramified extension is monogenic with separable residue algebra), the natural map
-`K ⊗[R] H → HK` is an isomorphism, and comultiplication preserves integrality because
-`H ⊗[R] H` is the integral closure of `R` in `HK ⊗[K] HK` (étale ⊗ étale is étale, and
-integral closure commutes with the product decomposition). -/
+/-!
+### Shared machinery: flat Hopf `R`-forms and package transport
+
+The three deep leaves of this file (`torsion_flat_of_inertia_fixes_prolong`,
+`torsion_flat_prolong_of_good_reduction_prime_pow`,
+`torsion_flat_of_good_reduction_prime_pow_of_eqChar`) all end by exhibiting a
+finite flat Hopf algebra over `R` together with a Galois-equivariant points
+isomorphism. The two proven lemmas below factor out the shared plumbing:
+`torsion_flat_package_of_flat_hopf_form` produces the final package from a mere
+`R`-FORM of the finite étale Hopf `K`-algebra `HK` of the torsion (a finite
+flat Hopf `R`-algebra `H` with a `K`-bialgebra equivalence
+`K ⊗[R] H ≃ₐc[K] HK`), and `algHom_comp_eq_of_torsion_inertia_fixes` converts
+inertia-triviality on the torsion POINTS into inertia-triviality on the
+`K`-algebra points of `HK`. After this factorization the Hopf-theoretic content
+of both unramified cases (order invertible in `R`, and equal characteristic) is
+concentrated in the single curve-free leaf
+`exists_finite_flat_hopf_form_of_inertia_fixes`, and the mixed-characteristic
+case in the Katz–Mazur form leaf
+`exists_finite_flat_hopf_form_of_good_reduction_prime_pow`.
+-/
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+omit [IsDomain R] [IsDiscreteValuationRing R] [IsFractionRing R K] [E.IsElliptic]
+  [E.HasGoodReduction R] [IsSepClosure K Ksep] in
+/-- **Package transport along a flat Hopf `R`-form** (PROVEN 2026-07-22): if the
+finite étale Hopf `K`-algebra `HK` of the `m`-torsion admits a finite flat Hopf
+`R`-form `H` — a `K`-bialgebra equivalence `K ⊗[R] H ≃ₐc[K] HK` — then the full
+flat-torsion package holds at `m`. Precomposition with the form equivalence is a
+convolution-group isomorphism on `Kˢᵉᵖ`-points
+(`AlgHom.convMul_comp_bialgHom_distrib`), étaleness of the generic fibre
+transports along the underlying `K`-algebra equivalence
+(`Algebra.Etale.of_equiv`), and Galois equivariance is associativity of
+composition. This is the common final step of all three deep leaves of this
+file. -/
+theorem WeierstrassCurve.torsion_flat_package_of_flat_hopf_form
+    (m : ℕ)
+    (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
+    [Module.Finite K HK] [Algebra.Etale K HK]
+    (f : Additive (WithConv (HK →ₐ[K] Ksep)) ≃+
+      AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))
+    (hf : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : HK →ₐ[K] Ksep),
+      (f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
+        Affine.Point.map σ.toAlgHom (f (Additive.ofMul (WithConv.toConv φ))))
+    (H : Type u) [CommRing H] [HopfAlgebra R H]
+    [Module.Finite R H] [Module.Flat R H]
+    (e : (K ⊗[R] H) ≃ₐc[K] HK) :
+    ∃ (H' : Type u) (_ : CommRing H') (_ : HopfAlgebra R H')
+      (_ : Module.Finite R H') (_ : Module.Flat R H')
+      (_ : Algebra.Etale K (K ⊗[R] H'))
+      (g : Additive (WithConv (K ⊗[R] H' →ₐ[K] Ksep)) ≃+
+        AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)),
+      ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : K ⊗[R] H' →ₐ[K] Ksep),
+        (g (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
+          Affine.Point.map σ.toAlgHom (g (Additive.ofMul (WithConv.toConv φ))) := by
+  classical
+  -- étaleness of the generic fibre transports along the form equivalence
+  haveI hEt : Algebra.Etale K (K ⊗[R] H) := Algebra.Etale.of_equiv e.toAlgEquiv.symm
+  -- the two directions of the form equivalence, as bialgebra homomorphisms
+  let ι : HK →ₐc[K] K ⊗[R] H := e.symm.toBialgHom
+  let ι' : (K ⊗[R] H) →ₐc[K] HK := e.toBialgHom
+  -- precomposition with `ι` is a bijection between the `Ksep`-point sets
+  let Φ : ((K ⊗[R] H) →ₐ[K] Ksep) ≃ (HK →ₐ[K] Ksep) :=
+    { toFun := fun ψ => ψ.comp (ι : HK →ₐ[K] K ⊗[R] H)
+      invFun := fun φ => φ.comp (ι' : (K ⊗[R] H) →ₐ[K] HK)
+      left_inv := fun ψ => AlgHom.ext fun x => by
+        show ψ ((ι : HK →ₐ[K] K ⊗[R] H) ((ι' : (K ⊗[R] H) →ₐ[K] HK) x)) = ψ x
+        congr 1
+        exact e.symm_apply_apply x
+      right_inv := fun φ => AlgHom.ext fun x => by
+        show φ ((ι' : (K ⊗[R] H) →ₐ[K] HK) ((ι : HK →ₐ[K] K ⊗[R] H) x)) = φ x
+        congr 1
+        exact e.apply_symm_apply x }
+  -- ... and it is multiplicative for the convolution products
+  have hΦmul : ∀ x y : WithConv ((K ⊗[R] H) →ₐ[K] Ksep),
+      WithConv.toConv (Φ (x * y).ofConv) =
+        WithConv.toConv (Φ x.ofConv) * WithConv.toConv (Φ y.ofConv) := by
+    intro x y
+    have d := AlgHom.convMul_comp_bialgHom_distrib x y ι
+    show WithConv.toConv ((x * y).ofConv.comp (ι : HK →ₐ[K] K ⊗[R] H)) =
+      WithConv.toConv (x.ofConv.comp (ι : HK →ₐ[K] K ⊗[R] H)) *
+        WithConv.toConv (y.ofConv.comp (ι : HK →ₐ[K] K ⊗[R] H))
+    rw [d, WithConv.toConv_ofConv]
+  -- assemble the additive equivalence of point groups
+  let g₀ : Additive (WithConv ((K ⊗[R] H) →ₐ[K] Ksep)) ≃+
+      Additive (WithConv (HK →ₐ[K] Ksep)) :=
+    { toFun := fun x => Additive.ofMul (WithConv.toConv (Φ (Additive.toMul x).ofConv))
+      invFun := fun y => Additive.ofMul (WithConv.toConv (Φ.symm (Additive.toMul y).ofConv))
+      left_inv := fun x => by
+        show Additive.ofMul (WithConv.toConv (Φ.symm
+          (WithConv.ofConv (WithConv.toConv (Φ (Additive.toMul x).ofConv))))) = x
+        rw [WithConv.ofConv_toConv, Equiv.symm_apply_apply, WithConv.toConv_ofConv]
+        rfl
+      right_inv := fun y => by
+        show Additive.ofMul (WithConv.toConv (Φ
+          (WithConv.ofConv (WithConv.toConv (Φ.symm (Additive.toMul y).ofConv))))) = y
+        rw [WithConv.ofConv_toConv, Equiv.apply_symm_apply, WithConv.toConv_ofConv]
+        rfl
+      map_add' := fun x y => by
+        show Additive.ofMul (WithConv.toConv
+            (Φ (Additive.toMul x * Additive.toMul y).ofConv)) = _
+        rw [hΦmul]
+        rfl }
+  refine ⟨H, inferInstance, inferInstance, inferInstance, inferInstance, hEt,
+    g₀.trans f, ?_⟩
+  intro σ ψ
+  have hg₀ : ∀ χ : K ⊗[R] H →ₐ[K] Ksep,
+      g₀ (Additive.ofMul (WithConv.toConv χ)) =
+        Additive.ofMul (WithConv.toConv (χ.comp (ι : HK →ₐ[K] K ⊗[R] H))) :=
+    fun χ => rfl
+  have hassoc : (σ.toAlgHom.comp ψ).comp (ι : HK →ₐ[K] K ⊗[R] H) =
+      σ.toAlgHom.comp (ψ.comp (ι : HK →ₐ[K] K ⊗[R] H)) :=
+    AlgHom.comp_assoc σ.toAlgHom ψ (ι : HK →ₐ[K] K ⊗[R] H)
+  rw [AddEquiv.trans_apply, AddEquiv.trans_apply, hg₀, hg₀, hassoc]
+  exact hf σ (ψ.comp (ι : HK →ₐ[K] K ⊗[R] H))
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+omit [IsDomain R] [IsDiscreteValuationRing R] [IsFractionRing R K] [E.IsElliptic]
+  [E.HasGoodReduction R] [IsSepClosure K Ksep] in
+/-- **From fixed torsion points to fixed algebra points** (PROVEN 2026-07-22):
+through the equivariant points isomorphism `f`, inertia-triviality on the
+`m`-torsion of `E(Kˢᵉᵖ)` forces inertia to fix every `K`-algebra homomorphism
+`HK → Kˢᵉᵖ` — the form in which unramifiedness of `HK` enters the curve-free
+prolongation leaf `exists_finite_flat_hopf_form_of_inertia_fixes`. Injectivity
+of `f` converts `map σ (f φ) = f φ` (the Néron–Ogg–Shafarevich conclusion) into
+`σ ∘ φ = φ`. -/
+theorem WeierstrassCurve.algHom_comp_eq_of_torsion_inertia_fixes
+    (m : ℕ)
+    (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
+    (f : Additive (WithConv (HK →ₐ[K] Ksep)) ≃+
+      AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))
+    (hf : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : HK →ₐ[K] Ksep),
+      (f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
+        Affine.Point.map σ.toAlgHom (f (Additive.ofMul (WithConv.toConv φ))))
+    (hunr : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ σ ∈ 𝒪.inertiaSubgroup K,
+        ∀ P ∈ AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ),
+          Affine.Point.map (σ : Ksep ≃ₐ[K] Ksep).toAlgHom P = P) :
+    ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ σ ∈ 𝒪.inertiaSubgroup K, ∀ φ : HK →ₐ[K] Ksep,
+        (σ : Ksep ≃ₐ[K] Ksep).toAlgHom.comp φ = φ := by
+  intro 𝒪 h𝒪 σ hσ φ
+  have heq : f (Additive.ofMul (WithConv.toConv
+      ((σ : Ksep ≃ₐ[K] Ksep).toAlgHom.comp φ))) =
+      f (Additive.ofMul (WithConv.toConv φ)) := by
+    apply Subtype.ext
+    rw [hf (σ : Ksep ≃ₐ[K] Ksep) φ]
+    exact hunr 𝒪 h𝒪 σ hσ (f (Additive.ofMul (WithConv.toConv φ)))
+      (f (Additive.ofMul (WithConv.toConv φ))).2
+  have h1 := f.injective heq
+  have h2 : WithConv.toConv ((σ : Ksep ≃ₐ[K] Ksep).toAlgHom.comp φ) =
+      WithConv.toConv φ := h1
+  exact WithConv.toConv_injective h2
+
+/-- **Unramified finite étale `K`-algebras have finite étale `R`-forms** (sorry
+node; the GALOIS half of the curve-free Hopf-form leaf — no Hopf structure
+appears at all): a finite étale `K`-algebra `HK`, all of whose `Kˢᵉᵖ`-points
+are fixed by every inertia subgroup above `R`, admits a finite étale `R`-form.
+Intended proof: `HK` is a finite product of finite separable subextensions
+`Lᵢ` of `Kˢᵉᵖ/K` (étale `K`-algebras split by `Kˢᵉᵖ`); the hypothesis places
+each embedding `Lᵢ → Kˢᵉᵖ` inside the inertia field of every valuation subring
+above `R`, so each `Lᵢ` is unramified with separable residue extension at
+every prime above the maximal ideal of `R`. Take `H₀` to be the integral
+closure of `R` in `HK` (transported to `Type u` along an `R`-basis), i.e. the
+product of the normalizations `Rᵢ` of `R` in `Lᵢ`: each `Rᵢ` is finite over
+`R` (separability + Noetherian normal base), free (torsion-free finite over a
+DVR), and étale over `R` (finite flat + unramified fibres, by the inertia
+hypothesis), and `K ⊗[R] H₀ → HK` is an isomorphism (clearing denominators). -/
+theorem exists_finite_etale_algebra_form_of_inertia_fixes
+    (HK : Type u) [CommRing HK] [Algebra K HK]
+    [Module.Finite K HK] [Algebra.Etale K HK]
+    (hfix : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ σ ∈ 𝒪.inertiaSubgroup K, ∀ φ : HK →ₐ[K] Ksep,
+        (σ : Ksep ≃ₐ[K] Ksep).toAlgHom.comp φ = φ) :
+    ∃ (H₀ : Type u) (_ : CommRing H₀) (_ : Algebra R H₀)
+      (_ : Module.Finite R H₀) (_ : Algebra.Etale R H₀),
+      Nonempty ((K ⊗[R] H₀) ≃ₐ[K] HK) :=
+  sorry
+
+/-- **Étale algebra forms of Hopf algebras are Hopf forms** (sorry node; the
+HOPF half of the curve-free Hopf-form leaf — pure commutative algebra over the
+DVR `R`, no Galois theory and no elliptic curve): if the finite étale Hopf
+`K`-algebra `HK` admits a finite étale `R`-ALGEBRA form `H₀`, then it admits a
+finite flat Hopf `R`-form. The key point making this honest: a finite étale
+`R`-algebra is normal, hence integrally closed in its total fraction ring
+`K ⊗[R] H₀ ≅ HK`, hence `H₀` is THE integral closure of `R` in `HK` — étale
+forms are canonical, so Hopf-stability is a property, not extra data. Intended
+proof: comultiplication is a ring homomorphism, so it sends `H₀` (integral over
+`R`) into elements of `HK ⊗[K] HK` integral over `R`, and the integral closure
+of `R` there is `H₀ ⊗[R] H₀` (étale ⊗ étale is étale over the normal base `R`,
+hence normal, hence integrally closed in its total fraction ring, and
+`K ⊗ (H₀ ⊗[R] H₀) ≅ HK ⊗[K] HK`); the counit sends `H₀` into elements of `K`
+integral over `R`, i.e. into `R` (a DVR is integrally closed); the antipode is
+an algebra endomorphism, so it preserves integrality; flatness is freeness of
+a finite torsion-free module over a DVR. The `μ_p` counterexample (whose
+normalization over `ℤ_p` is NOT a Hopf order) does not contradict this: there
+the normalization is not étale over `R`, so it is not an étale algebra form. -/
+theorem exists_finite_flat_hopf_form_of_etale_algebra_form
+    (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
+    [Module.Finite K HK] [Algebra.Etale K HK]
+    (H₀ : Type u) [CommRing H₀] [Algebra R H₀] [Module.Finite R H₀]
+    [Algebra.Etale R H₀]
+    (e : (K ⊗[R] H₀) ≃ₐ[K] HK) :
+    ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
+      (_ : Module.Finite R H) (_ : Module.Flat R H),
+      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) :=
+  sorry
+
+/-- **Unramified finite étale Hopf algebras prolong over a DVR** (DECOMPOSED
+2026-07-23 into the Galois-half leaf
+`exists_finite_etale_algebra_form_of_inertia_fixes` and the commutative-algebra
+Hopf-upgrade leaf `exists_finite_flat_hopf_form_of_etale_algebra_form`; the
+assembly below is proven; curve-free — the Hopf-theoretic core of BOTH
+unramified cases of this file: the order-invertible étale case
+`torsion_flat_of_inertia_fixes_prolong` and the equal-characteristic case
+`torsion_flat_of_good_reduction_prime_pow_of_eqChar`; note that NO
+order-invertibility hypothesis is needed): a finite étale Hopf `K`-algebra
+`HK`, all of whose `Kˢᵉᵖ`-points are fixed by every inertia subgroup above `R`,
+admits a finite flat Hopf `R`-form. The `μ_p` counterexample to flat
+prolongation WITHOUT unramifiedness does not apply: its points are moved by
+inertia. -/
+theorem exists_finite_flat_hopf_form_of_inertia_fixes
+    (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
+    [Module.Finite K HK] [Algebra.Etale K HK]
+    (hfix : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ σ ∈ 𝒪.inertiaSubgroup K, ∀ φ : HK →ₐ[K] Ksep,
+        (σ : Ksep ≃ₐ[K] Ksep).toAlgHom.comp φ = φ) :
+    ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
+      (_ : Module.Finite R H) (_ : Module.Flat R H),
+      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) := by
+  obtain ⟨H₀, iCR, iAlg, iFin, iEt, ⟨e⟩⟩ :=
+    exists_finite_etale_algebra_form_of_inertia_fixes R K Ksep HK hfix
+  letI := iCR; letI := iAlg; letI := iFin; letI := iEt
+  exact exists_finite_flat_hopf_form_of_etale_algebra_form R K HK H₀ e
+
+omit [E.IsElliptic] [E.HasGoodReduction R] in
+/-- **Unramified implies étale prolongation** (DECOMPOSED 2026-07-22 into the
+curve-free Hopf-form leaf `exists_finite_flat_hopf_form_of_inertia_fixes` via the
+proven bridges `algHom_comp_eq_of_torsion_inertia_fixes` and
+`torsion_flat_package_of_flat_hopf_form`; the assembly below is proven — note that
+the invertibility hypothesis `_hm` is NOT needed by the decomposition, which is
+what lets the equal-characteristic case share the same Hopf-form leaf): given the
+finite étale Hopf `K`-algebra `HK` of the `m`-torsion (the leaf above), if every
+inertia subgroup above `R` acts trivially on `E(Kˢᵉᵖ)[m]`, then `HK` prolongs to
+a finite étale (in particular finite flat) Hopf algebra over `R`. See the
+docstring of `exists_finite_flat_hopf_form_of_inertia_fixes` for the intended
+proof of the remaining content (integral closure of `R` in `HK`, étale by
+unramifiedness, Hopf by integrality of the comultiplication). -/
 theorem WeierstrassCurve.torsion_flat_of_inertia_fixes_prolong
-    (m : ℕ) (hm : IsUnit (m : R))
+    (m : ℕ) (_hm : IsUnit (m : R))
     (hunr : ∀ 𝒪 : ValuationSubring Ksep,
       (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
       ∀ σ ∈ 𝒪.inertiaSubgroup K,
@@ -1691,8 +1931,14 @@ theorem WeierstrassCurve.torsion_flat_of_inertia_fixes_prolong
         AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)),
       ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : K ⊗[R] H →ₐ[K] Ksep),
         (g (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
-          Affine.Point.map σ.toAlgHom (g (Additive.ofMul (WithConv.toConv φ))) :=
-  sorry
+          Affine.Point.map σ.toAlgHom (g (Additive.ofMul (WithConv.toConv φ))) := by
+  obtain ⟨H, iCR, iHopf, iFin, iFlat, ⟨e⟩⟩ :=
+    exists_finite_flat_hopf_form_of_inertia_fixes R K Ksep HK
+      (WeierstrassCurve.algHom_comp_eq_of_torsion_inertia_fixes R K E Ksep m HK
+        f hf hunr)
+  letI := iCR; letI := iHopf; letI := iFin; letI := iFlat
+  exact WeierstrassCurve.torsion_flat_package_of_flat_hopf_form R K E Ksep m HK
+    f hf H e
 
 /-- **Unramified implies flat, order invertible in the residue field** (DECOMPOSED
 2026-07-22 into the Galois-correspondence leaf
@@ -2030,28 +2276,61 @@ theorem WeierstrassCurve.torsion_flat_of_good_reduction_mul
   dsimp only
   simp [hfa σ, hfb σ, map_add]
 
-/-- **The Katz–Mazur flat prolongation, mixed characteristic** (sorry node; the
-mathematical core of flatness at `p`): given the finite étale Hopf `K`-algebra `HK` of
-the `p ^ k`-torsion (the shared Galois-correspondence leaf
-`exists_torsion_etale_package_over_fractionField`), when the prime `p` is *not*
-invertible in `R` but nonzero in `K` (so `p` is the residue characteristic and `K` has
-characteristic `0` or prime-to-`p`; for the Frey curve application `R = ℤ_(p)`,
-`K = ℚ`, `k = 1`), `HK` prolongs to a finite FLAT — no longer étale — Hopf algebra over
-`R`. Unlike the unramified case, `H` is NOT the normalization: division polynomials
-cannot produce `H` here (part of the torsion group scheme sits in the kernel of
-reduction, outside the affine chart), and the integral closure of `R` in `HK` is in
-general not a Hopf algebra (for `μ_p` over `ℤ_p` the normalization has a special fibre
-with two connected components of lengths `1` and `p - 1`, which is not a group scheme).
-The intended construction is the schematic one of [Katz–Mazur, *Arithmetic moduli of
-elliptic curves*, Thm 2.3.1]: good reduction makes the minimal Weierstrass equation an
-elliptic scheme `𝓔` over `R`; multiplication by `p ^ k` on `𝓔` is finite locally free
-of degree `p ^ (2k)` — the arithmetic input being that `(Φ n).eval X - ξ * (ΨSq n).eval X`
-is monic of degree `n²` over `R[ξ]` together with the fibrewise coprimality
-`isCoprime_Φ_ΨSq` (proven, `Fermat.FLT.EllipticCurve.PhiPsiCoprime`) — and `H` is the
-affine algebra of its kernel `𝓔[p ^ k]`, glued from the division-polynomial chart and
-a formal-group chart `R[[T]]/([p ^ k](T))` at the origin; the identification of
-`K ⊗[R] H` with `HK` is Cartier's theorem (étaleness of the generic fibre) plus the
-matching of `Kˢᵉᵖ`-points with the torsion. -/
+/-- **The Katz–Mazur flat Hopf form, mixed characteristic** (sorry node; the
+mathematical core of flatness at `p`, stripped by
+`torsion_flat_package_of_flat_hopf_form` of all point bookkeeping — what remains
+is exactly the existence of a finite flat `R`-FORM of the torsion Hopf algebra):
+under the hypotheses of `torsion_flat_prolong_of_good_reduction_prime_pow`, the
+finite étale Hopf `K`-algebra `HK` of the `p ^ k`-torsion admits a finite flat
+Hopf `R`-form. Unlike the unramified case, `H` is NOT the normalization:
+division polynomials cannot produce `H` here (part of the torsion group scheme
+sits in the kernel of reduction, outside the affine chart), and the integral
+closure of `R` in `HK` is in general not a Hopf algebra (for `μ_p` over `ℤ_p`
+the normalization has a special fibre with two connected components of lengths
+`1` and `p - 1`, which is not a group scheme). The intended construction is the
+schematic one of [Katz–Mazur, *Arithmetic moduli of elliptic curves*,
+Thm 2.3.1]: good reduction makes the minimal Weierstrass equation an elliptic
+scheme `𝓔` over `R`; multiplication by `p ^ k` on `𝓔` is finite locally free of
+degree `p ^ (2k)` — the arithmetic input being that
+`(Φ n).eval X - ξ * (ΨSq n).eval X` is monic of degree `n²` over `R[ξ]`
+together with the fibrewise coprimality `isCoprime_Φ_ΨSq` (proven,
+`Fermat.FLT.EllipticCurve.PhiPsiCoprime`) — and `H` is the affine algebra of
+its kernel `𝓔[p ^ k]`, glued from the division-polynomial chart and a
+formal-group chart `R[[T]]/([p ^ k](T))` at the origin; the identification of
+`K ⊗[R] H` with `HK` is Cartier's theorem (étaleness of the generic fibre) plus
+the matching of `Kˢᵉᵖ`-points with the torsion, transported through `f`/`hf`
+(Galois descent: two finite étale `K`-Hopf algebras with equivariantly
+isomorphic point groups are isomorphic). For the Frey curve application
+(`R = ℤ_(p)`, `K = ℚ`, `k = 1`) the same object is more concretely the kernel
+of `[p]` on the good-reduction Weierstrass model; the `k = 1` specialization
+admits no genuine shortcut past the origin chart, because the connected
+component of `𝓔[p]` (where the model is NOT étale) is present for every `k`. -/
+theorem WeierstrassCurve.exists_finite_flat_hopf_form_of_good_reduction_prime_pow
+    (p : ℕ) (hp : p.Prime) (hpu : ¬IsUnit (p : R)) (k : ℕ) (hk : k ≠ 0)
+    (hpK : (p : K) ≠ 0)
+    (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
+    [Module.Finite K HK] [Algebra.Etale K HK]
+    (f : Additive (WithConv (HK →ₐ[K] Ksep)) ≃+
+      AddSubgroup.torsionBy (E⁄Ksep).Point ((p ^ k : ℕ) : ℤ))
+    (hf : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : HK →ₐ[K] Ksep),
+      (f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
+        Affine.Point.map σ.toAlgHom (f (Additive.ofMul (WithConv.toConv φ)))) :
+    ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
+      (_ : Module.Finite R H) (_ : Module.Flat R H),
+      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) :=
+  sorry
+
+/-- **The Katz–Mazur flat prolongation, mixed characteristic** (DECOMPOSED
+2026-07-22 into the flat Hopf-form leaf
+`exists_finite_flat_hopf_form_of_good_reduction_prime_pow` — which carries the
+whole Katz–Mazur 2.3.1 content, see its docstring — and the proven transport
+`torsion_flat_package_of_flat_hopf_form`; the assembly below is proven): given
+the finite étale Hopf `K`-algebra `HK` of the `p ^ k`-torsion (the shared
+Galois-correspondence leaf `exists_torsion_etale_package_over_fractionField`),
+when the prime `p` is *not* invertible in `R` but nonzero in `K` (so `p` is the
+residue characteristic and `K` has characteristic `0` or prime-to-`p`; for the
+Frey curve application `R = ℤ_(p)`, `K = ℚ`, `k = 1`), `HK` prolongs to a
+finite FLAT — no longer étale — Hopf algebra over `R`. -/
 theorem WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow
     (p : ℕ) (hp : p.Prime) (hpu : ¬IsUnit (p : R)) (k : ℕ) (hk : k ≠ 0)
     (hpK : (p : K) ≠ 0)
@@ -2069,21 +2348,285 @@ theorem WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow
         AddSubgroup.torsionBy (E⁄Ksep).Point ((p ^ k : ℕ) : ℤ)),
       ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : K ⊗[R] H →ₐ[K] Ksep),
         (g (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
-          Affine.Point.map σ.toAlgHom (g (Additive.ofMul (WithConv.toConv φ))) :=
+          Affine.Point.map σ.toAlgHom (g (Additive.ofMul (WithConv.toConv φ))) := by
+  obtain ⟨H, iCR, iHopf, iFin, iFlat, ⟨e⟩⟩ :=
+    WeierstrassCurve.exists_finite_flat_hopf_form_of_good_reduction_prime_pow
+      R K E Ksep p hp hpu k hk hpK HK f hf
+  letI := iCR; letI := iHopf; letI := iFin; letI := iFlat
+  exact WeierstrassCurve.torsion_flat_package_of_flat_hopf_form R K E Ksep
+    (p ^ k) HK f hf H e
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+omit [E.IsElliptic] [IsSepClosure K Ksep] [DecidableEq Ksep] in
+/-- **Ordinates are integral once abscissas are** (PROVEN 2026-07-23; the
+`NeZero`-free core of `torsion_ordinate_mem`, needed at the residue
+characteristic where that lemma's `[NeZero (n : ResidueField R)]` hypothesis is
+unavailable — no torsion hypothesis is needed at all): on the minimal model, an
+affine point of `E(Kˢᵉᵖ)` with integral abscissa over a valuation subring `𝒪`
+above `R` has integral ordinate, because `y` satisfies the monic `y`-quadratic
+of the Weierstrass equation, whose coefficients are integral. -/
+theorem WeierstrassCurve.ordinate_mem_of_abscissa_mem
+    (𝒪 : ValuationSubring Ksep)
+    (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    {x y : Ksep} (h : (E⁄Ksep).toAffine.Nonsingular x y)
+    (hx : x ∈ 𝒪) : y ∈ 𝒪 := by
+  classical
+  haveI : E.IsIntegral R := inferInstance
+  obtain ⟨Eint, hEint⟩ := (inferInstance : E.IsIntegral R).integral
+  have hamem : ∀ z : R, algebraMap K Ksep (algebraMap R K z) ∈ 𝒪 := by
+    intro z
+    have hmem : algebraMap R K z ∈ (algebraMap R K).range := ⟨_, rfl⟩
+    rw [← h𝒪] at hmem
+    exact hmem
+  have ha1 : (E⁄Ksep).a₁ ∈ 𝒪 := by
+    rw [show (E⁄Ksep) = ((Eint⁄K)⁄Ksep) from by rw [hEint]]
+    exact hamem _
+  have ha2 : (E⁄Ksep).a₂ ∈ 𝒪 := by
+    rw [show (E⁄Ksep) = ((Eint⁄K)⁄Ksep) from by rw [hEint]]
+    exact hamem _
+  have ha3 : (E⁄Ksep).a₃ ∈ 𝒪 := by
+    rw [show (E⁄Ksep) = ((Eint⁄K)⁄Ksep) from by rw [hEint]]
+    exact hamem _
+  have ha4 : (E⁄Ksep).a₄ ∈ 𝒪 := by
+    rw [show (E⁄Ksep) = ((Eint⁄K)⁄Ksep) from by rw [hEint]]
+    exact hamem _
+  have ha6 : (E⁄Ksep).a₆ ∈ 𝒪 := by
+    rw [show (E⁄Ksep) = ((Eint⁄K)⁄Ksep) from by rw [hEint]]
+    exact hamem _
+  set f : Polynomial Ksep := Polynomial.X ^ 2 +
+    Polynomial.C ((E⁄Ksep).a₁ * x + (E⁄Ksep).a₃) * Polynomial.X -
+    Polynomial.C (x ^ 3 + (E⁄Ksep).a₂ * x ^ 2 + (E⁄Ksep).a₄ * x +
+      (E⁄Ksep).a₆) with hfdef
+  have hd2 : f.natDegree = 2 := by
+    rw [hfdef]
+    compute_degree!
+  have hfne : f ≠ 0 := by
+    intro h0
+    rw [h0, Polynomial.natDegree_zero] at hd2
+    exact two_ne_zero hd2.symm
+  have hroot : f.eval y = 0 := by
+    have heq := (Affine.equation_iff _ _).mp h.1
+    rw [hfdef]
+    simp only [Polynomial.eval_sub, Polynomial.eval_add,
+      Polynomial.eval_mul, Polynomial.eval_pow, Polynomial.eval_C,
+      Polynomial.eval_X]
+    linear_combination heq
+  have hcoeff : ∀ i, f.coeff i ∈ 𝒪 := by
+    intro i
+    rw [hfdef]
+    simp only [Polynomial.coeff_add, Polynomial.coeff_sub,
+      Polynomial.coeff_X_pow, Polynomial.coeff_C_mul,
+      Polynomial.coeff_X, Polynomial.coeff_C]
+    match i with
+    | 0 =>
+      norm_num
+      exact add_mem (neg_mem ha6) (add_mem (neg_mem (mul_mem ha4 hx))
+        (add_mem (neg_mem (mul_mem ha2 (pow_mem hx 2)))
+          (neg_mem (pow_mem hx 3))))
+    | 1 =>
+      norm_num
+      exact add_mem (mul_mem ha1 hx) ha3
+    | 2 =>
+      norm_num
+    | (j + 3) =>
+      norm_num
+      exact zero_mem _
+  have hlc : (f.leadingCoeff)⁻¹ ∈ 𝒪 := by
+    have h1 : f.leadingCoeff = 1 := by
+      rw [Polynomial.leadingCoeff, hd2, hfdef]
+      simp only [Polynomial.coeff_add, Polynomial.coeff_sub,
+        Polynomial.coeff_X_pow, Polynomial.coeff_C_mul,
+        Polynomial.coeff_X, Polynomial.coeff_C]
+      norm_num
+    rw [h1, inv_one]
+    exact one_mem _
+  exact 𝒪.mem_of_root_of_inv_leadingCoeff_mem hfne hcoeff hlc hroot
+
+/-- **The kernel of reduction is `p`-power-torsion-free in equal characteristic
+`p`** (sorry node; the whole surviving elliptic-curve content of the
+equal-characteristic Néron–Ogg–Shafarevich): when `p` vanishes in `K`, a
+nonzero `p ^ k`-torsion point of `E(Kˢᵉᵖ)` cannot lie in the kernel of
+reduction (non-integral abscissa) over a valuation subring `𝒪` above `R`.
+Intended proof: a point with `v(x) < 0` lies in the formal-group chart
+`z = -x/y` with `v(z) > 0`; over an equal-characteristic-`p` base the
+multiplication-by-`p` power series of the formal group of the minimal model
+factors as `[p](T) = g(T^(p^h))` with `h ≥ 1` the height and `g` with unit
+linear coefficient (`[p] = V ∘ Frobeniusʰ`), so `[p]` — hence `[p ^ k]` — is
+injective on the points of the valuation ideal (a domain), and the only
+`p ^ k`-torsion point of the kernel is the origin. Compare the multiplicative
+model: `(1 + z)^(p ^ k) = 1 + z^(p ^ k)` has no nonzero root in a domain of
+characteristic `p`. -/
+theorem WeierstrassCurve.kernel_prime_pow_torsion_of_eqChar
+    (p k : ℕ) (hp : p.Prime) (hpK : (p : K) = 0)
+    (𝒪 : ValuationSubring Ksep)
+    (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    {x y : Ksep} (h : (E⁄Ksep).toAffine.Nonsingular x y)
+    (hx : x ∉ 𝒪)
+    (htor : ((p ^ k : ℕ) : ℤ) • (Affine.Point.some x y h : (E⁄Ksep).Point) = 0) :
+    False :=
   sorry
 
-/-- **The equal-characteristic prime-power case** (sorry node): the flat-torsion
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **Equal-characteristic Néron–Ogg–Shafarevich** (DECOMPOSED 2026-07-23 into
+the kernel-torsion-freeness leaf `kernel_prime_pow_torsion_of_eqChar` — via the
+proven `ordinate_mem_of_abscissa_mem` and the kernel-of-reduction leaf
+`kernel_sub_abscissa_notMem_of_residue_eq`; the assembly below is proven): when
+`p` vanishes in `K` (so `R` is an equal-characteristic-`p` DVR), every inertia
+subgroup above `R` acts trivially on the `p ^ k`-torsion of `E(Kˢᵉᵖ)` — even
+though `p ^ k` is NOT invertible in the residue field. The assembly is simpler
+than the invertible-order dévissage because the kernel of reduction is entirely
+`p`-power-torsion-free here: torsion abscissas are integral (a non-integral
+abscissa would BE a nonzero torsion point of the kernel), ordinates follow by
+the `y`-quadratic, inertia fixes residues, and if `σP ≠ P` then `σP − P` is a
+nonzero `p ^ k`-torsion point of the kernel
+(`kernel_sub_abscissa_notMem_of_residue_eq`) — absurd. This is the statement
+that `E(Kˢᵉᵖ)[p ^ k]` sees only the maximal étale quotient of the torsion group
+scheme, whose points reduce injectively to the residue curve. -/
+theorem WeierstrassCurve.torsion_inertia_fixes_of_eqChar
+    (p k : ℕ) (hp : p.Prime) (hpK : (p : K) = 0)
+    (𝒪 : ValuationSubring Ksep)
+    (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range) :
+    ∀ σ ∈ 𝒪.inertiaSubgroup K,
+      ∀ P ∈ AddSubgroup.torsionBy (E⁄Ksep).Point ((p ^ k : ℕ) : ℤ),
+        Affine.Point.map (σ : Ksep ≃ₐ[K] Ksep).toAlgHom P = P := by
+  classical
+  intro σ hσ P hP
+  haveI : (E⁄Ksep).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap K Ksep)).IsElliptic)
+  -- inertia fixes residues in `𝒪`
+  have hres : ∀ z : 𝒪, IsLocalRing.residue 𝒪 (σ • z) =
+      IsLocalRing.residue 𝒪 z := by
+    intro z
+    rw [IsLocalRing.ResidueField.residue_smul]
+    have h1 := MonoidHom.mem_ker.mp hσ
+    calc (σ : 𝒪.decompositionSubgroup K) • IsLocalRing.residue 𝒪 z
+        = (MulSemiringAction.toRingAut (𝒪.decompositionSubgroup K)
+            (IsLocalRing.ResidueField 𝒪) σ)
+            (IsLocalRing.residue 𝒪 z) := rfl
+      _ = IsLocalRing.residue 𝒪 z := by rw [h1]; rfl
+  have hcoe : ∀ z : 𝒪, ((σ • z : 𝒪) : Ksep) =
+      ((σ : Ksep ≃ₐ[K] Ksep)).toAlgHom (z : Ksep) := fun z => rfl
+  have hPtor : ((p ^ k : ℕ) : ℤ) • P = 0 := hP
+  cases P with
+  | zero => rfl
+  | @some x y h =>
+    have htor : ((p ^ k : ℕ) : ℤ) •
+        (Affine.Point.some x y h : (E⁄Ksep).Point) = 0 := hPtor
+    -- the coordinates are integral: a non-integral abscissa would be a nonzero
+    -- `p ^ k`-torsion point of the kernel of reduction
+    have hxm : x ∈ 𝒪 := by
+      by_contra hx
+      exact WeierstrassCurve.kernel_prime_pow_torsion_of_eqChar R K E Ksep
+        p k hp hpK 𝒪 h𝒪 h hx htor
+    have hym : y ∈ 𝒪 :=
+      WeierstrassCurve.ordinate_mem_of_abscissa_mem R K E Ksep 𝒪 h𝒪 h hxm
+    set σf := ((σ : Ksep ≃ₐ[K] Ksep)).toAlgHom
+    have hns' : (E⁄Ksep).toAffine.Nonsingular (σf x) (σf y) :=
+      (WeierstrassCurve.Affine.baseChange_nonsingular (W := E)
+        σf.injective x y).mpr (show (E⁄Ksep).Nonsingular x y from h)
+    have hmap : Affine.Point.map σf (Affine.Point.some x y h) =
+        (Affine.Point.some (σf x) (σf y) hns' : (E⁄Ksep).Point) :=
+      Affine.Point.map_some _ h
+    rw [hmap]
+    -- the image is torsion
+    have hmaptor : ((p ^ k : ℕ) : ℤ) • (Affine.Point.some (σf x) (σf y) hns' :
+        (E⁄Ksep).Point) = 0 := by
+      rw [← hmap, ← map_zsmul, htor, map_zero]
+    -- memberships and residue congruences for the image coordinates
+    have hσxm : σf x ∈ 𝒪 := by
+      have := hcoe ⟨x, hxm⟩
+      rw [← this]
+      exact Subtype.mem _
+    have hσym : σf y ∈ 𝒪 := by
+      have := hcoe ⟨y, hym⟩
+      rw [← this]
+      exact Subtype.mem _
+    have hrx : IsLocalRing.residue 𝒪 ⟨σf x, hσxm⟩ =
+        IsLocalRing.residue 𝒪 ⟨x, hxm⟩ := by
+      have h2 := hres ⟨x, hxm⟩
+      rwa [show (σ • (⟨x, hxm⟩ : 𝒪)) = ⟨σf x, hσxm⟩ from
+        Subtype.ext (hcoe ⟨x, hxm⟩)] at h2
+    have hry : IsLocalRing.residue 𝒪 ⟨σf y, hσym⟩ =
+        IsLocalRing.residue 𝒪 ⟨y, hym⟩ := by
+      have h2 := hres ⟨y, hym⟩
+      rwa [show (σ • (⟨y, hym⟩ : 𝒪)) = ⟨σf y, hσym⟩ from
+        Subtype.ext (hcoe ⟨y, hym⟩)] at h2
+    -- if `σP ≠ P`, the difference is a nonzero `p ^ k`-torsion point of the
+    -- kernel of reduction — absurd in equal characteristic
+    by_contra hne
+    set D : (E⁄Ksep).Point :=
+      Affine.Point.some (σf x) (σf y) hns' - Affine.Point.some x y h with hDdef
+    have hD0 : D ≠ 0 := sub_ne_zero.mpr hne
+    have hDtor : ((p ^ k : ℕ) : ℤ) • D = 0 := by
+      rw [hDdef, smul_sub, hmaptor, htor, sub_zero]
+    cases hDc : D with
+    | zero => exact absurd hDc hD0
+    | @some x₃ y₃ h₃ =>
+      have hsub : (Affine.Point.some (σf x) (σf y) hns' : (E⁄Ksep).Point) -
+          Affine.Point.some x y h = Affine.Point.some x₃ y₃ h₃ := by
+        rw [← hDdef]
+        exact hDc
+      have hx₃ : x₃ ∉ 𝒪 :=
+        WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq R K E Ksep 𝒪
+          h𝒪 hns' h h₃ hne hσxm hxm hσym hym hrx hry hsub
+      have hDtor' : ((p ^ k : ℕ) : ℤ) •
+          (Affine.Point.some x₃ y₃ h₃ : (E⁄Ksep).Point) = 0 := by
+        rw [← hDc]
+        exact hDtor
+      exact WeierstrassCurve.kernel_prime_pow_torsion_of_eqChar R K E Ksep
+        p k hp hpK 𝒪 h𝒪 h₃ hx₃ hDtor'
+
+/-- **The finite étale torsion package, equal characteristic** (sorry node; the
+Galois-correspondence half of the equal-characteristic case — the sibling of
+`exists_torsion_etale_package_over_fractionField`, whose hypothesis
+`(m : R) ≠ 0` FAILS here since `(p : R) = 0` when `(p : K) = 0`): the
+`p ^ k`-torsion Galois module `E(Kˢᵉᵖ)[p ^ k]` — finite of order at most
+`p ^ k` in equal characteristic (the étale-quotient points; order `p ^ k` for
+ordinary reduction, `1` for supersingular) — is, `Gal(Kˢᵉᵖ/K)`-equivariantly,
+the group of `Kˢᵉᵖ`-points of a finite étale Hopf algebra over `K`. The
+intended proof is the SAME Grothendieck Galois correspondence as in the
+`(m : R) ≠ 0` leaf (equivariant maps `E(Kˢᵉᵖ)[p ^ k] → Kˢᵉᵖ`, evaluation at
+orbit representatives): the correspondence needs only finiteness of the torsion
+and discreteness of the action, both of which hold in every characteristic;
+when either leaf is resolved the other should be aligned with it, ideally by
+generalizing the correspondence to any nonzero `m : ℕ`. (The characteristic
+hypothesis is stated in `R` — equivalent to `(p : K) = 0` through the injective
+`algebraMap R K` — so that the carrier universe `u` stays tied to `R`, exactly
+as in the `(m : R) ≠ 0` sibling.) -/
+theorem WeierstrassCurve.exists_torsion_etale_package_of_eqChar
+    (p k : ℕ) (hp : p.Prime) (hpR : (p : R) = 0) :
+    ∃ (HK : Type u) (_ : CommRing HK) (_ : HopfAlgebra K HK)
+      (_ : Module.Finite K HK) (_ : Algebra.Etale K HK)
+      (f : Additive (WithConv (HK →ₐ[K] Ksep)) ≃+
+        AddSubgroup.torsionBy (E⁄Ksep).Point ((p ^ k : ℕ) : ℤ)),
+      ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : HK →ₐ[K] Ksep),
+        (f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
+          Affine.Point.map σ.toAlgHom (f (Additive.ofMul (WithConv.toConv φ))) :=
+  sorry
+
+/-- **The equal-characteristic prime-power case** (DECOMPOSED 2026-07-22 into
+the equal-characteristic Néron–Ogg–Shafarevich leaf
+`torsion_inertia_fixes_of_eqChar`, the equal-characteristic Galois-correspondence
+leaf `exists_torsion_etale_package_of_eqChar`, and the SHARED curve-free
+Hopf-form leaf `exists_finite_flat_hopf_form_of_inertia_fixes` — whose freedom
+from any order-invertibility hypothesis is exactly what makes it applicable at
+the residue characteristic; the assembly below is proven): the flat-torsion
 package at order `p ^ k` when `p` vanishes in `K` itself (so `R` is an equal-
-characteristic-`p` DVR, e.g. `𝔽_q[[t]]`; NOT the case of the Frey-curve application,
-which has `K = ℚ`). Here `E(Kˢᵉᵖ)[p ^ k]` sees only the maximal étale quotient of the
-`p ^ k`-torsion group scheme — a group of order `p ^ k` (ordinary reduction) or `1`
-(supersingular) — and the intended `H` is the Cartier dual of the schematic closure in
-`𝓔[p ^ k]` of the Cartier dual of that étale quotient, as discussed in the module
-docstring. The étale-quotient Galois module is unramified (its points reduce
-injectively to the residue curve), which is what makes a finite flat — indeed étale —
-prolongation of the étale generic fibre exist even at the residue characteristic. -/
+characteristic-`p` DVR, e.g. `𝔽_q[[t]]`; NOT the case of the Frey-curve
+application, which has `K = ℚ` — the consumer chain
+`torsion_flat_of_good_reduction → isFlatAt_of_hasGoodReduction` only ever
+instantiates mixed characteristic, but this leaf is required for the stated
+generality of the vendored `torsion_flat_of_good_reduction`, and its hypotheses
+are satisfiable (`𝔽_q[[t]]`), so no hypothesis-narrowing or vacuity closure is
+honest here). Here `E(Kˢᵉᵖ)[p ^ k]` sees only the maximal étale quotient of the
+`p ^ k`-torsion group scheme — its Galois module is unramified (reduction is
+injective on its points), so a finite flat — indeed étale — prolongation of the
+étale generic fibre exists even at the residue characteristic, by the same
+normalization construction as the invertible-order case. -/
 theorem WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow_of_eqChar
-    (p : ℕ) (hp : p.Prime) (hpu : ¬IsUnit (p : R)) (k : ℕ) (hk : k ≠ 0)
+    (p : ℕ) (hp : p.Prime) (_hpu : ¬IsUnit (p : R)) (k : ℕ) (_hk : k ≠ 0)
     (hpK : (p : K) = 0) :
     ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
       (_ : Module.Finite R H) (_ : Module.Flat R H)
@@ -2092,8 +2635,22 @@ theorem WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow_of_eqChar
         AddSubgroup.torsionBy (E⁄Ksep).Point ((p ^ k : ℕ) : ℤ)),
       ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : K ⊗[R] H →ₐ[K] Ksep),
         (f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
-          Affine.Point.map σ.toAlgHom (f (Additive.ofMul (WithConv.toConv φ))) :=
-  sorry
+          Affine.Point.map σ.toAlgHom (f (Additive.ofMul (WithConv.toConv φ))) := by
+  have hpR : (p : R) = 0 := by
+    apply IsFractionRing.injective R K
+    rw [map_natCast, map_zero, hpK]
+  obtain ⟨HK, iCR, iHopf, iFin, iEt, f, hf⟩ :=
+    WeierstrassCurve.exists_torsion_etale_package_of_eqChar R K E Ksep p k hp hpR
+  letI := iCR; letI := iHopf; letI := iFin; letI := iEt
+  obtain ⟨H, jCR, jHopf, jFin, jFlat, ⟨e⟩⟩ :=
+    exists_finite_flat_hopf_form_of_inertia_fixes R K Ksep HK
+      (WeierstrassCurve.algHom_comp_eq_of_torsion_inertia_fixes R K E Ksep
+        (p ^ k) HK f hf (fun 𝒪 h𝒪 =>
+          WeierstrassCurve.torsion_inertia_fixes_of_eqChar R K E Ksep p k hp hpK
+            𝒪 h𝒪))
+  letI := jCR; letI := jHopf; letI := jFin; letI := jFlat
+  exact WeierstrassCurve.torsion_flat_package_of_flat_hopf_form R K E Ksep
+    (p ^ k) HK f hf H e
 
 /-- **The residue-characteristic prime-power case** (DECOMPOSED 2026-07-22 along the
 characteristic of `K` into the Katz–Mazur prolongation leaf
