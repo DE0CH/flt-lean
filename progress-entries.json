@@ -1721,5 +1721,21 @@
     "wip": true,
     "text": "`exists_etale_line_of_good_of_inertia_stable_line` — good reduction at odd p + inertia-stable line ⟹ étale line (supersingular excluded via Serre 1972 Prop 12 level-2 fundamental characters; ordinary gives the connected-étale line; needs tame-fundamental-character theory at residue characteristic p — nothing in the repo reaches q = p) — 2026-07-23",
     "parent": "WeierstrassCurve.exists_etale_line_or_no_stable_line_of_good"
+  },
+  {
+    "name": "exists_hardlyRamified_integral_realizations",
+    "fullname": "exists_hardlyRamified_integral_realizations",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
+    "wip": false,
+    "text": "`exists_hardlyRamified_integral_realizations` — integral hardly-ramified realizations at odd ℓ — the sole automorphy content of the proven realization assembly (statement inverted per the soundness audit: the leaf produces the integral model; weight-2 eigensystem vocabulary unstatable on the pin, obstruction recorded) — 2026-07-23",
+    "parent": "exists_realizations_of_eigensystem"
+  },
+  {
+    "name": "exists_realizations_at_two",
+    "fullname": "exists_realizations_at_two",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
+    "wip": false,
+    "text": "`exists_realizations_at_two` — bare 2-adic member matching the shared Pv (no hardly-ramified model demanded at ℓ=2) — 2026-07-23",
+    "parent": "exists_realizations_of_eigensystem"
   }
 ]
