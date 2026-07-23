@@ -3886,22 +3886,64 @@ theorem subCharacter_unramified_at_three_of_quot_ramified
   rw [MonoidHom.mem_ker]
   exact Units.ext hψ1
 
-/-- **The local splitting at `3`** (sorry node — the connected–étale
-half of the Serre swap, isolated 2026-07-23): in the coordinates of
+/-- **The second inertia-stable line at `3`** (sorry node — the
+finite-flat/connected–étale content of the local splitting, isolated
+2026-07-23): a mod-3 hardly ramified representation whose stable line
+`W₀` has quotient character `χ` RAMIFIED at `3` admits a vector
+`v' ∉ W₀` on which the inertia at `3` acts through `χ`. Intended
+content (Raynaud; Serre, Duke 1987, §5.4): flatness (`hρ.isFlat`)
+prolongs the local representation at `3` to a finite flat group
+scheme over `ℤ₃` killed by `3`; its connected–étale sequence has a
+nontrivial étale part (else `V` would be connected with all simple
+subquotients of `μ₃`-type — `e = 1 < 2 = p − 1` — forcing trivial
+inertia-invariants, contradicting the line `W₀`, on which inertia
+acts trivially by `subCharacter_unramified_at_three_of_quot_ramified`)
+and a nontrivial connected part (else `V` would be unramified at `3`,
+contradicting `h3`); the connected part's points then form an
+inertia-stable line on which inertia acts by the mod-3 cyclotomic
+character — which agrees with `χ` on inertia by
+`quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified` — and that
+line is distinct from `W₀` since their inertia actions differ. -/
+theorem exists_inertia_eigenvector_complement_at_three
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (W₀ : Submodule k V) (hW₀fr : Module.finrank k W₀ = 1)
+    (hstable : ∀ g v, v ∈ W₀ → ρ g v ∈ W₀)
+    (ψ : Γ ℚ →* kˣ) (hψ : ∀ g, ∀ v ∈ W₀, ρ g v = (ψ g : k) • v)
+    (χ : Γ ℚ →* kˣ)
+    (hχ : ∀ g v, W₀.mkQ (ρ g v) = (χ g : k) • W₀.mkQ v)
+    (h3 : ¬ (localInertiaGroup
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ≤
+        (χ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker)) :
+    ∃ v' : V, v' ∉ W₀ ∧ ∀ σ ∈ localInertiaGroup
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+      ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) v' =
+        ((χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) : k)) • v' :=
+  sorry
+
+/-- **The local splitting at `3`** (DECOMPOSED 2026-07-23 into the
+sorry node `exists_inertia_eigenvector_complement_at_three` above —
+the finite-flat/connected–étale content; the coordinate reduction is
+proven here): in the coordinates of
 `exists_splitting_scalar_of_quot_ramified`, the extension cocycle `c`
 is a coboundary already on the inertia at `3`: a single scalar `s`
 has `c σ = s·(χ σ − ψ σ)` for every `σ` in the image of the local
-inertia at `3`. Intended content (the local half of Serre's
-`peu ramifié` argument, Duke 1987, §5.4): flatness (`hρ.isFlat`)
-prolongs the local representation at `3` to a finite flat group
-scheme over `ℤ₃` killed by `3`; its connected–étale sequence provides
-an inertia-stable line with unramified quotient, necessarily
-different from `W₀` (whose quotient character is ramified at `3` by
-`h3`), and an inertia-stable line complementary to `W₀` is spanned by
-a vector `v₁ + s•w₀`, which is exactly the coboundary property of `c`
-on the inertia (`ψ` is unramified at `3` there by
-`subCharacter_unramified_at_three_of_quot_ramified`, so on inertia
-`s·(χ σ − ψ σ) = s·(χ σ − 1)`). -/
+inertia at `3`. The proven reduction: the leaf provides `v' ∉ W₀`
+with `ρ σ v' = χ σ • v'` on inertia; writing `v' = a•v₁ + bb•w₀` in
+the adapted basis (`a ≠ 0` since `v' ∉ W₀`) and comparing
+`w₀`-coefficients in the eigenvector equation gives
+`a·c σ + bb·ψ σ − χ σ·bb = 0`, i.e. `c σ = (a⁻¹·bb)·(χ σ − ψ σ)`, so
+`s := a⁻¹·bb` works. -/
 theorem exists_local_splitting_scalar_at_three
     {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
     [TopologicalSpace k] [DiscreteTopology k]
@@ -3933,23 +3975,271 @@ theorem exists_local_splitting_scalar_at_three
               Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) : k) -
           (ψ (Field.absoluteGaloisGroup.map (algebraMap ℚ
             (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) : k)) :=
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) : k)) := by
+  classical
+  -- dimensions
+  have hfr : Module.finrank k V = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
+  have hQ1 : Module.finrank k (V ⧸ W₀) = 1 := by
+    have hsum := Submodule.finrank_quotient_add_finrank W₀
+    omega
+  -- the second inertia-stable line (leaf)
+  obtain ⟨v', hv', heig⟩ := exists_inertia_eigenvector_complement_at_three
+    V hV hρ W₀ hW₀fr hstable ψ hψ χ hχ h3
+  -- every element of `W₀` is a multiple of `w₀`
+  have hspan : ∀ y ∈ W₀, ∃ a : k, y = a • w₀ := by
+    intro y hy
+    have hne : (⟨w₀, hw₀⟩ : W₀) ≠ 0 := fun h =>
+      hw₀ne (by simpa using congrArg Subtype.val h)
+    have h1 : Submodule.span k {(⟨w₀, hw₀⟩ : W₀)} = ⊤ :=
+      (finrank_eq_one_iff_of_nonzero _ hne).mp hW₀fr
+    have h2 : (⟨y, hy⟩ : W₀) ∈ Submodule.span k {(⟨w₀, hw₀⟩ : W₀)} := by
+      rw [h1]
+      exact Submodule.mem_top
+    obtain ⟨a, ha⟩ := Submodule.mem_span_singleton.mp h2
+    exact ⟨a, by simpa using (congrArg Subtype.val ha).symm⟩
+  -- coordinates of `v'` in the adapted basis `{v₁, w₀}`
+  obtain ⟨a, bb, hv'eq⟩ : ∃ a bb : k, v' = a • v₁ + bb • w₀ := by
+    have hv₁ne : W₀.mkQ v₁ ≠ 0 := by
+      intro h0
+      rw [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero] at h0
+      exact hv₁ h0
+    have hspanQ : Submodule.span k {W₀.mkQ v₁} = ⊤ :=
+      (finrank_eq_one_iff_of_nonzero _ hv₁ne).mp hQ1
+    have hmemQ : W₀.mkQ v' ∈ Submodule.span k {W₀.mkQ v₁} := by
+      rw [hspanQ]
+      exact Submodule.mem_top
+    obtain ⟨μ, hμ⟩ := Submodule.mem_span_singleton.mp hmemQ
+    have hvmem : v' - μ • v₁ ∈ W₀ := by
+      have h0 : W₀.mkQ (v' - μ • v₁) = 0 := by
+        rw [map_sub, map_smul, hμ, sub_self]
+      rwa [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero] at h0
+    obtain ⟨bb₀, hbb₀⟩ := hspan _ hvmem
+    refine ⟨μ, bb₀, ?_⟩
+    have h1 : μ • v₁ + (v' - μ • v₁) = v' := by abel
+    rw [hbb₀] at h1
+    exact h1.symm
+  -- the `v₁`-coordinate is nonzero since `v' ∉ W₀`
+  have ha : a ≠ 0 := by
+    intro h0
+    apply hv'
+    rw [hv'eq, h0, zero_smul, zero_add]
+    exact W₀.smul_mem bb hw₀
+  refine ⟨a⁻¹ * bb, ?_⟩
+  intro σ hσ
+  set g' : Γ ℚ := Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ with hg'def
+  have h1 := heig σ hσ
+  rw [← hg'def, hv'eq, map_add (ρ g'), map_smul (ρ g'), map_smul (ρ g'),
+    hc g', hψ g' w₀ hw₀] at h1
+  -- compare `w₀`-coefficients
+  have hcoef : (a * c g' + bb * (ψ g' : k) - (χ g' : k) * bb) • w₀ = 0 := by
+    linear_combination (norm := module) h1
+  rcases smul_eq_zero.mp hcoef with hz | hz
+  · have h2 : a * c g' = bb * ((χ g' : k) - (ψ g' : k)) := by
+      linear_combination hz
+    have h3' : c g' = a⁻¹ * (a * c g') := by
+      rw [← mul_assoc, inv_mul_cancel₀ ha, one_mul]
+    rw [h3', h2]
+    ring
+  · exact absurd hz hw₀ne
+
+/-- **Twisted coboundaries from vanishing on the agreement locus**
+(PROVEN 2026-07-23 — the inflation–restriction/averaging half of the
+global Selmer vanishing, valid over any finite field `k` and any
+group `G`): a `(χ, ψ)`-twisted cocycle `c : G → k` (satisfying
+`c(gh) = χ(h)·c(g) + ψ(g)·c(h)`) that vanishes on the locus
+`{g : ψ g = χ g}` — i.e. on the kernel of the character `η := ψ/χ` —
+is a twisted coboundary `c = t·(χ − ψ)`. Proof: `b := c/χ` is an
+honest `η`-twisted cocycle which, vanishing on `ker η`, factors
+through the FINITE group `η.range ≤ kˣ`; summing the descended
+cocycle identity `B(uv) = B(u) + u·B(v)` over `v` gives
+`N·B(u) = (1 − u)·T` with `T = ∑ B` and `N = |η.range|`, and `N` is
+invertible in `k` because it divides `|kˣ| = |k| − 1`, which is `−1`
+in `k`; hence `b = (T/N)·(1 − η)`, i.e. `c = (T/N)·(χ − ψ)`. This is
+exactly the vanishing of `H¹` of the prime-to-`char k` quotient
+`G/ker η`, done by explicit averaging. -/
+theorem exists_twisted_coboundary_scalar_of_agreement_vanishing
+    {k : Type u} [Finite k] [Field k] {G : Type*} [Group G]
+    (χ ψ : G →* kˣ) (c : G → k)
+    (hcocycle : ∀ g h : G, c (g * h) = (χ h : k) * c g + (ψ g : k) * c h)
+    (h0 : ∀ g : G, (ψ g : k) = (χ g : k) → c g = 0) :
+    ∃ t : k, ∀ g : G, c g = t * ((χ g : k) - (ψ g : k)) := by
+  classical
+  letI : Fintype k := Fintype.ofFinite k
+  -- the untwisted cocycle `b = c/χ` for the character `η = ψ/χ`
+  set η : G →* kˣ := ψ / χ with hηdef
+  set b : G → k := fun g => c g * ((χ g : k))⁻¹ with hbdef
+  have hηval : ∀ g : G, ((η g : kˣ) : k) = (ψ g : k) * ((χ g : k))⁻¹ := by
+    intro g
+    rw [hηdef]
+    simp [div_eq_mul_inv]
+  have hχne : ∀ g : G, ((χ g : k)) ≠ 0 := fun g => Units.ne_zero (χ g)
+  have hbcocycle : ∀ g h : G, b (g * h) = b g + ((η g : kˣ) : k) * b h := by
+    intro g h
+    show c (g * h) * ((χ (g * h) : k))⁻¹ =
+      c g * ((χ g : k))⁻¹ + ((η g : kˣ) : k) * (c h * ((χ h : k))⁻¹)
+    rw [hcocycle g h, hηval g, map_mul, Units.val_mul]
+    field_simp [hχne]
+  have hb0 : ∀ g : G, η g = 1 → b g = 0 := by
+    intro g hg
+    have hψχ : (ψ g : k) = (χ g : k) := by
+      have h1 : ψ g = χ g := by
+        have h2 : ψ g / χ g = 1 := hg
+        exact div_eq_one.mp h2
+      exact congrArg Units.val h1
+    show c g * ((χ g : k))⁻¹ = 0
+    rw [h0 g hψχ, zero_mul]
+  -- `b` is constant on the fibers of `η`
+  have hbwd : ∀ g₁ g₂ : G, η g₁ = η g₂ → b g₁ = b g₂ := by
+    intro g₁ g₂ h
+    have hker : η (g₁⁻¹ * g₂) = 1 := by
+      rw [map_mul, map_inv, h, inv_mul_cancel]
+    have h2 := hbcocycle g₁ (g₁⁻¹ * g₂)
+    rw [mul_inv_cancel_left, hb0 _ hker, mul_zero, add_zero] at h2
+    exact h2.symm
+  -- a section of `η` over its range, and the descended cocycle `B`
+  have hsecex : ∀ u : η.range, ∃ g : G, η g = (u : kˣ) := fun u =>
+    MonoidHom.mem_range.mp u.2
+  choose sec hsec using hsecex
+  set B : η.range → k := fun u => b (sec u) with hBdef
+  have hbB : ∀ g : G, b g = B ⟨η g, ⟨g, rfl⟩⟩ := by
+    intro g
+    exact hbwd g (sec ⟨η g, ⟨g, rfl⟩⟩) (hsec ⟨η g, ⟨g, rfl⟩⟩).symm
+  have hBco : ∀ u v : η.range, B (u * v) = B u + ((u : kˣ) : k) * B v := by
+    intro u v
+    have h1 : η (sec (u * v)) = η (sec u * sec v) := by
+      rw [hsec (u * v), map_mul, hsec u, hsec v, Subgroup.coe_mul]
+    have h2 : B (u * v) = b (sec u * sec v) := hbwd _ _ h1
+    rw [h2, hbcocycle, hsec u]
+  -- average over the finite range of `η`
+  letI : Fintype η.range := Fintype.ofFinite _
+  set T : k := ∑ u : η.range, B u with hTdef
+  set N : ℕ := Fintype.card η.range with hNdef
+  have hNne : ((N : k)) ≠ 0 := by
+    intro hzero
+    have hdvd1 : Nat.card η.range ∣ Nat.card kˣ :=
+      Subgroup.card_subgroup_dvd_card _
+    obtain ⟨m, hm⟩ := hdvd1
+    have hcard : Nat.card kˣ = Fintype.card k - 1 := by
+      rw [Nat.card_eq_fintype_card, Fintype.card_units]
+    have hcast : ((Nat.card kˣ : ℕ) : k) = -1 := by
+      rw [hcard, Nat.cast_sub Fintype.card_pos, Nat.cast_one,
+        FiniteField.cast_card_eq_zero, zero_sub]
+    rw [hm, Nat.cast_mul] at hcast
+    have hz2 : ((Nat.card η.range : ℕ) : k) = 0 := by
+      rw [Nat.card_eq_fintype_card, ← hNdef]
+      exact hzero
+    rw [hz2, zero_mul] at hcast
+    exact one_ne_zero (neg_eq_zero.mp hcast.symm)
+  have hkey : ∀ u : η.range, (N : k) * B u = (1 - ((u : kˣ) : k)) * T := by
+    intro u
+    have h1 : ∑ v : η.range, B (u * v) = T := by
+      rw [hTdef]
+      exact Fintype.sum_equiv (Equiv.mulLeft u) _ _ (fun v => rfl)
+    have h2 : ∑ v : η.range, B (u * v) = N • B u + ((u : kˣ) : k) * T := by
+      calc ∑ v : η.range, B (u * v)
+          = ∑ v : η.range, (B u + ((u : kˣ) : k) * B v) :=
+            Finset.sum_congr rfl fun v _ => hBco u v
+        _ = N • B u + ((u : kˣ) : k) * T := by
+            rw [Finset.sum_add_distrib, Finset.sum_const, Finset.card_univ,
+              ← Finset.mul_sum, hTdef, hNdef]
+    have h3 : T = N • B u + ((u : kˣ) : k) * T := h1.symm.trans h2
+    rw [nsmul_eq_mul] at h3
+    linear_combination -h3
+  refine ⟨(N : k)⁻¹ * T, ?_⟩
+  intro g
+  have h5 := hkey ⟨η g, ⟨g, rfl⟩⟩
+  rw [← hbB g] at h5
+  have h6 : c g = b g * (χ g : k) := by
+    show c g = c g * ((χ g : k))⁻¹ * (χ g : k)
+    field_simp
+  have h7 : ((⟨η g, ⟨g, rfl⟩⟩ : η.range) : kˣ) = η g := rfl
+  rw [h7] at h5
+  have h8 : (N : k) * (b g * (χ g : k)) =
+      (N : k) * (((N : k)⁻¹ * T) * ((χ g : k) - (ψ g : k))) := by
+    have h9 : ((η g : kˣ) : k) * (χ g : k) = (ψ g : k) := by
+      rw [hηval g]
+      field_simp
+    calc (N : k) * (b g * (χ g : k))
+        = ((N : k) * b g) * (χ g : k) := by ring
+      _ = ((1 - ((η g : kˣ) : k)) * T) * (χ g : k) := by rw [h5]
+      _ = T * (χ g : k) - T * (((η g : kˣ) : k) * (χ g : k)) := by ring
+      _ = T * (χ g : k) - T * (ψ g : k) := by rw [h9]
+      _ = (N : k) * (((N : k)⁻¹ * T) * ((χ g : k) - (ψ g : k))) := by
+          field_simp
+  rw [h6]
+  exact mul_left_cancel₀ hNne h8
+
+/-- **The cocycle vanishes on the character-agreement locus** (sorry
+node — the class-field-theory content of the global Selmer vanishing,
+isolated 2026-07-23): the extension cocycle `c` of a mod-3 hardly
+ramified representation, coboundary on the inertia at `3` (`hs`),
+vanishes at every `g` where the two characters agree, `ψ g = χ g` —
+i.e. on the open normal subgroup `H = ker(ψχ⁻¹) = Gal(ℚ̄/F)`, where
+`F` is the finite abelian extension of `ℚ` cut out by `η = ψχ⁻¹`.
+Intended content (Serre, Duke 1987, §5.4): on `H` the function
+`b = c/χ` is a continuous homomorphism `H → (k, +)` (the restriction
+of the class of `c` in `H¹(ℚ, k(ψχ⁻¹))` to `H¹(F, k)`), equivariant
+under conjugation up to the `η`-twist; it cuts out an abelian
+`3`-elementary extension `M/F`, Galois over `ℚ`, unramified outside
+`{2, 3}` (`hρ.isUnramified` through `hc`), split at the primes over
+`3` (`hs`: on inertia at `3` inside `H` the coboundary `s·(χ − ψ)`
+vanishes), and at most tamely ramified at `2` of bounded order
+(`hρ.isTameAtTwo`); the ray-class arithmetic of the small field `F`
+admits no such extension, so `b|_H = 0`. -/
+theorem cocycle_eq_zero_on_agreement_of_local_at_three
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (W₀ : Submodule k V) (hW₀fr : Module.finrank k W₀ = 1)
+    (hstable : ∀ g v, v ∈ W₀ → ρ g v ∈ W₀)
+    (ψ : Γ ℚ →* kˣ) (hψ : ∀ g, ∀ v ∈ W₀, ρ g v = (ψ g : k) • v)
+    (χ : Γ ℚ →* kˣ)
+    (hχ : ∀ g v, W₀.mkQ (ρ g v) = (χ g : k) • W₀.mkQ v)
+    (h3 : ¬ (localInertiaGroup
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ≤
+        (χ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker))
+    (w₀ : V) (hw₀ : w₀ ∈ W₀) (hw₀ne : w₀ ≠ 0)
+    (v₁ : V) (hv₁ : v₁ ∉ W₀)
+    (c : Γ ℚ → k)
+    (hc : ∀ g : Γ ℚ, ρ g v₁ = (χ g : k) • v₁ + c g • w₀)
+    (hcocycle : ∀ g h : Γ ℚ, c (g * h) = (χ h : k) * c g + (ψ g : k) * c h)
+    (s : k)
+    (hs : ∀ σ ∈ localInertiaGroup
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+      c (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) =
+        s * ((χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) : k) -
+          (ψ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) : k))) :
+    ∀ g : Γ ℚ, (ψ g : k) = (χ g : k) → c g = 0 :=
   sorry
 
-/-- **The global Selmer vanishing** (sorry node — the global half of
-the Serre swap, isolated 2026-07-23): a function `c` satisfying the
-twisted cocycle identity `c(gh) = χ(h)·c(g) + ψ(g)·c(h)` attached to
-a mod-3 hardly ramified representation, which is a coboundary on the
-inertia at `3` (with scalar `s`, hypothesis `hs`), is a GLOBAL
-coboundary. Intended content (Serre, Duke 1987, §5.4): the class of
-`c` in `H¹(ℚ, k(ψχ⁻¹))` is unramified outside `{2, 3}`
-(`hρ.isUnramified`), split at `3` (`hs`), and tame quadratic at `2`
-(`hρ.isTameAtTwo`); the Selmer-type subgroup of `H¹(ℚ, k(ψχ⁻¹))` cut
-out by these local conditions vanishes — after subtracting the
-coboundary `t·(χ − ψ)` with `t := s`, restriction to the open kernel
-of `ψ⁻¹χ` turns the class into a homomorphism cutting out an abelian
-`3`-extension unramified outside `{2, 3}` and split at `3`, which the
-ray-class arithmetic of the small fields involved kills. -/
+/-- **The global Selmer vanishing** (DECOMPOSED 2026-07-23 into the
+agreement-locus sorry node
+`cocycle_eq_zero_on_agreement_of_local_at_three` above — the
+class-field-theory content — assembled with the PROVEN averaging
+lemma `exists_twisted_coboundary_scalar_of_agreement_vanishing`): a
+function `c` satisfying the twisted cocycle identity
+`c(gh) = χ(h)·c(g) + ψ(g)·c(h)` attached to a mod-3 hardly ramified
+representation, which is a coboundary on the inertia at `3` (with
+scalar `s`, hypothesis `hs`), is a GLOBAL coboundary. The reduction:
+on the agreement locus `{g : ψ g = χ g}` every coboundary
+`t·(χ − ψ)` vanishes identically, so the class of `c` vanishes iff
+`c` itself vanishes there (restriction to `ker(ψχ⁻¹)` is injective on
+`H¹` because the quotient is finite of order prime to `char k` —
+the averaging lemma); the sorried leaf supplies that vanishing. -/
 theorem splitting_scalar_global_of_local_at_three
     {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
     [TopologicalSpace k] [DiscreteTopology k]
@@ -3985,7 +4275,9 @@ theorem splitting_scalar_global_of_local_at_three
             (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
               Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) : k))) :
     ∃ t : k, ∀ g : Γ ℚ, c g = t * ((χ g : k) - (ψ g : k)) :=
-  sorry
+  exists_twisted_coboundary_scalar_of_agreement_vanishing χ ψ c hcocycle
+    (cocycle_eq_zero_on_agreement_of_local_at_three V hV hρ W₀ hW₀fr
+      hstable ψ hψ χ hχ h3 w₀ hw₀ hw₀ne v₁ hv₁ c hc hcocycle s hs)
 
 /-- **The Serre swap, cocycle form** (DECOMPOSED 2026-07-23 into the
 two sorry nodes above — the connected–étale local splitting
