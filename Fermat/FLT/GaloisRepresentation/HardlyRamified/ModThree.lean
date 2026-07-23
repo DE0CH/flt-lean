@@ -87,6 +87,24 @@ import Mathlib.RingTheory.Etale.Field
 -- irreducibility of `X² + X + 1` over `ℚ₃ᵥ` in the finite-level
 -- inertia leaf.
 import Mathlib.Algebra.Polynomial.SpecificDegree
+-- The Dedekind zeta Dirichlet series (`NumberField.dedekindZeta`) and
+-- the archimedean Euler factors (`Complex.Gamma`, complex powers),
+-- appearing in the STATEMENT of the Hecke-continuation interface
+-- `DedekindContinuation` (hence public).
+public import Mathlib.NumberTheory.NumberField.DedekindZeta
+public import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
+public import Mathlib.Analysis.SpecialFunctions.Pow.Complex
+-- `analyticOrderAt`/`analyticOrderNatAt`, the zero-multiplicity
+-- vocabulary of the continued Dedekind zeta (in the exposed body of
+-- `DedekindContinuation.mult`, hence public).
+public import Mathlib.Analysis.Analytic.Order
+-- Identity-theorem and accumulation-point toolkit for the finiteness
+-- of the horizontal truncations of the zero set (proof-only).
+import Mathlib.Analysis.Analytic.IsolatedZeros
+import Mathlib.Analysis.Complex.CauchyIntegral
+import Mathlib.Analysis.Complex.Norm
+import Mathlib.Topology.ClusterPt
+import Mathlib.Topology.Compactness.Compact
 
 /-!
 # Mod-3 hardly ramified representations
@@ -3164,15 +3182,271 @@ theorem poitouPrimeTerm_nonneg (K : Type*) [Field K] [NumberField K] :
   rw [odlyzkoTestFn]
   exact le_max_right _ _
 
+/-- **The Hecke continuation package for the Dedekind zeta function**
+(interface designed 2026-07-23 as the sound cut of the deep
+explicit-formula leaf `dedekind_explicit_formula_fejer`): the entire
+completed zeta `ξ_K(s) = s(s−1)·Z_K(s)`, where
+`Z_K(s) = |d_K|^{s/2}·Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}·ζ_K(s)` is the completed
+Dedekind zeta function (J. Neukirch, *Algebraic Number Theory*,
+VII (5.10), with `Γ_ℝ(s) = π^{-s/2}Γ(s/2)` and
+`Γ_ℂ(s) = 2·(2π)^{-s}Γ(s)` from VII §4), together with EXACTLY the
+analytic facts consumed by the contour argument of Poitou's
+Propositions 1–3 (G. Poitou, *Sur les petits discriminants*,
+Sém. Delange–Pisot–Poitou 18 (1976/77), exp. 6, pp. 6-01–6-06).
+Field-by-field truth and role:
+
+* `xi`, `differentiable`: `Z_K` is meromorphic with only simple poles
+  at `0` and `1` (Hecke; Neukirch VII (5.10)), so `s(s−1)Z_K(s)` is
+  ENTIRE — carrying `ξ` rather than the meromorphic `Z_K` makes every
+  field a statement about a total function.
+* `eq_of_one_lt_re`: the defining formula on the half-plane of
+  absolute convergence, tying `ξ` to the pin's raw Dirichlet series
+  `NumberField.dedekindZeta`.  By the identity theorem this field
+  determines `xi` uniquely, so all other fields — and any per-instance
+  theorem stated about a `pkg` below — are facts about THE completed
+  zeta, not about an arbitrary choice: the cut cannot smuggle in a
+  degenerate instance.
+* `funcEq`: Hecke's functional equation `Z_K(s) = Z_K(1−s)` (Neukirch
+  VII (5.10)) in `ξ`-form; `(1−s)((1−s)−1) = s(s−1)` makes the two
+  normalizations agree.
+* `conj_symm`: Schwarz reflection `ξ(s̄) = conj (ξ(s))` — true on
+  `re s > 1` since every factor of `eq_of_one_lt_re` has real
+  coefficients, hence everywhere by the identity theorem.  Pairs the
+  zeros `ρ` and `ρ̄` with equal multiplicities in the symmetric
+  truncations of the zero sum.
+* `ne_zero_of_one_lt_re`: Euler-product nonvanishing (Neukirch
+  VII (5.2)) times nonvanishing of `Γ`, of `s(s−1)`, and of powers of
+  positive reals.  (Nonvanishing on the closed boundary line
+  `re s = 1` — de la Vallée Poussin for `ζ_K`, plus the nonzero
+  class-number-formula residue at `s = 1` itself — is deliberately NOT
+  a field: it is derivable from this interface together with the
+  pin's `NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT`, and
+  belongs inside the eventual proof of the zero-sum leaf
+  `DedekindContinuation.fejer_zero_sum_tendsto`.)
+* `growth`: the order-one bound `‖ξ(s)‖ ≤ exp(C·‖s‖·log ‖s‖)` off the
+  disc `‖s‖ < 2` (S. Lang, *Algebraic Number Theory*, XIII §5): by
+  Stirling on the archimedean factors and the trivial bound
+  `|ζ_K(s)| ≤ ζ(re s)^n` on `re s ≥ 2`, extended by `funcEq` and
+  Phragmén–Lindelöf to the intermediate strip.  This single true
+  growth field is what the Jensen-formula zero counting
+  `N(T+1) − N(T) = O(log T)` and Landau's horizontal estimates
+  (Poitou p. 6-02, citing E. Landau, *Algebraische Zahlen*, p. 122)
+  will be built from — mathlib has no Hadamard factorization, so the
+  zero-sum leaf must manufacture those counts from this bound. -/
+structure DedekindContinuation (K : Type*) [Field K] [NumberField K] where
+  /-- The entire completed Dedekind zeta `ξ_K(s) = s(s−1)·Z_K(s)`. -/
+  xi : ℂ → ℂ
+  /-- `ξ_K` is entire (Hecke's theorem, Neukirch VII (5.10)). -/
+  differentiable : Differentiable ℂ xi
+  /-- On `re s > 1` the completed zeta is
+  `s(s−1)·|d_K|^{s/2}·Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}·ζ_K(s)`. -/
+  eq_of_one_lt_re : ∀ s : ℂ, 1 < s.re →
+    xi s = s * (s - 1) * Complex.ofReal |(NumberField.discr K : ℝ)| ^ (s / 2) *
+      ((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+        NumberField.InfinitePlace.nrRealPlaces K *
+      ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+        NumberField.InfinitePlace.nrComplexPlaces K *
+      NumberField.dedekindZeta K s
+  /-- The functional equation `ξ_K(1 − s) = ξ_K(s)`. -/
+  funcEq : ∀ s : ℂ, xi (1 - s) = xi s
+  /-- Schwarz reflection: the Dirichlet coefficients are real. -/
+  conj_symm : ∀ s : ℂ, xi ((starRingEnd ℂ) s) = (starRingEnd ℂ) (xi s)
+  /-- Euler-product nonvanishing on the open half-plane `re s > 1`. -/
+  ne_zero_of_one_lt_re : ∀ s : ℂ, 1 < s.re → xi s ≠ 0
+  /-- `ξ_K` has order one: `‖ξ_K(s)‖ ≤ exp(C·‖s‖·log ‖s‖)` for
+  `‖s‖ ≥ 2`. -/
+  growth : ∃ C : ℝ, 0 < C ∧ ∀ s : ℂ, 2 ≤ ‖s‖ →
+    ‖xi s‖ ≤ Real.exp (C * ‖s‖ * Real.log ‖s‖)
+
+/-- **Hecke's theorem: the continuation package exists** (sorry node,
+stated 2026-07-23 — the first of the two deep analytic leaves of the
+decomposition of `dedekind_explicit_formula_fejer`).  Intended proof:
+Hecke's theta-function argument, in the shape mathlib itself uses to
+continue `riemannZeta` — instantiate the abstract Mellin-transform
+functional-equation machinery `WeakFEPair`/`StrongFEPair` of
+`Mathlib.NumberTheory.LSeries.AbstractFuncEq` at the Hecke theta
+series of the ideal classes of `K`.  Concretely (Neukirch, *Algebraic
+Number Theory*, VII §3–§5): for each ideal class the completed partial
+zeta `Z(𝔎, s)` is the Mellin transform of a theta series
+`f_F(𝔞, t)` satisfying the transformation law `f(1/t) = t^{1/2}·g(t)`
+of Neukirch VII (5.8), so VII (1.4) (= mathlib's `WeakFEPair` main
+theorems) gives continuation to `ℂ ∖ {0, 1}`, the functional equation
+`Z(𝔎, s) = Z(𝔎', 1 − s)`, and the simple-pole data at `0` and `1`
+(residues `±2^r·R/w`); summing over the finitely many classes yields
+`Z_K` (VII (5.10)), and `ξ = s(s−1)Z_K` is entire of order one.
+`eq_of_one_lt_re` is VII §4's computation of the archimedean Euler
+factors; `conj_symm` follows from the real coefficients via the
+identity theorem; `growth` from Stirling estimates plus
+Phragmén–Lindelöf between `re s = −1` and `re s = 2` (S. Lang, *ANT*,
+XIII §5).  The official FLT project takes the downstream discriminant
+bound as a standing axiom (`FLT.Assumptions.Odlyzko`); here Hecke's
+theorem is an honest leaf. -/
+theorem dedekindContinuation_exists (K : Type*) [Field K] [NumberField K] :
+    Nonempty (DedekindContinuation K) := by
+  sorry
+
+open scoped Classical in
+/-- **Zero multiplicity of the continued Dedekind zeta** (definition,
+2026-07-23): the analytic vanishing order `analyticOrderNatAt` of the
+entire completed zeta `ξ_K` at `ρ`, restricted to the open critical
+strip `0 < re ρ < 1`, and `0` outside it.  On the strip the elementary
+factor `s(s−1)·|d_K|^{s/2}·Γ-factors` of `ξ_K` is finite and
+nonvanishing (`Γ` has no zeros; its poles lie at `0, −1, −2, …`, off
+the strip), so this is exactly the multiplicity of `ρ` as a zero of
+the analytically continued `ζ_K` — the `mult` of the Weil–Poitou
+explicit formula. -/
+noncomputable def DedekindContinuation.mult {K : Type*} [Field K] [NumberField K]
+    (pkg : DedekindContinuation K) (ρ : ℂ) : ℕ :=
+  if 0 < ρ.re ∧ ρ.re < 1 then analyticOrderNatAt pkg.xi ρ else 0
+
+/-- **Support of the multiplicity function** (PROVEN 2026-07-23): by
+construction `DedekindContinuation.mult` vanishes off the open
+critical strip. -/
+theorem DedekindContinuation.mult_mem_strip {K : Type*} [Field K] [NumberField K]
+    (pkg : DedekindContinuation K) {ρ : ℂ} (h : pkg.mult ρ ≠ 0) :
+    0 < ρ.re ∧ ρ.re < 1 := by
+  by_contra hcon
+  exact h (by simp [DedekindContinuation.mult, hcon])
+
+/-- **A point of positive multiplicity is a zero of `ξ_K`** (PROVEN
+2026-07-23): `analyticOrderNatAt` vanishes wherever the function does
+not. -/
+theorem DedekindContinuation.xi_eq_zero_of_mult_ne_zero {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K) {ρ : ℂ}
+    (h : pkg.mult ρ ≠ 0) : pkg.xi ρ = 0 := by
+  by_contra hne
+  refine h ?_
+  have h0 : analyticOrderAt pkg.xi ρ = 0 := analyticOrderAt_eq_zero.mpr (Or.inr hne)
+  simp [DedekindContinuation.mult, analyticOrderNatAt, h0]
+
+/-- **Finiteness of the horizontal truncations of the zero set**
+(PROVEN 2026-07-23): the points of positive multiplicity with
+`|im ρ| ≤ T` lie in the closed ball of radius `|T| + 2` (the strip
+truncation is bounded); were they infinite they would accumulate at
+some `z₀` of that compact ball, and the identity theorem for the
+entire `ξ_K` would force `ξ_K ≡ 0`, contradicting the Euler-product
+nonvanishing at `s = 2`.  No boundary-line information enters:
+accumulation at a boundary point of the strip kills an entire function
+just as an interior accumulation point does. -/
+theorem DedekindContinuation.finite_truncation {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K) (T : ℝ) :
+    {ρ : ℂ | pkg.mult ρ ≠ 0 ∧ |ρ.im| ≤ T}.Finite := by
+  by_contra hinf
+  have hsub : {ρ : ℂ | pkg.mult ρ ≠ 0 ∧ |ρ.im| ≤ T} ⊆
+      Metric.closedBall (0 : ℂ) (|T| + 2) := by
+    intro ρ hρ
+    obtain ⟨hre0, hre1⟩ := pkg.mult_mem_strip hρ.1
+    rw [Metric.mem_closedBall, dist_zero_right]
+    calc ‖ρ‖ ≤ |ρ.re| + |ρ.im| := Complex.norm_le_abs_re_add_abs_im ρ
+      _ ≤ 1 + |T| := add_le_add (by rw [abs_of_pos hre0]; linarith)
+          (le_trans hρ.2 (le_abs_self T))
+      _ ≤ |T| + 2 := by linarith
+  obtain ⟨z₀, -, hacc⟩ := Set.Infinite.exists_accPt_of_subset_isCompact hinf
+    (isCompact_closedBall (0 : ℂ) (|T| + 2)) hsub
+  rw [accPt_iff_frequently_nhdsNE] at hacc
+  have hzero : Set.EqOn pkg.xi 0 Set.univ :=
+    ((pkg.differentiable.differentiableOn).analyticOnNhd
+        isOpen_univ).eqOn_zero_of_preconnected_of_frequently_eq_zero
+      isPreconnected_univ (Set.mem_univ z₀)
+      (hacc.mono fun z hz => pkg.xi_eq_zero_of_mult_ne_zero hz.1)
+  exact pkg.ne_zero_of_one_lt_re 2 (by norm_num) (hzero (Set.mem_univ 2))
+
+/-- **Poitou's contour argument at the Fejér test function: the
+symmetric zero-sum truncations converge to the explicit-formula
+value** (sorry node, stated 2026-07-23 — the second of the two deep
+analytic leaves of the decomposition of
+`dedekind_explicit_formula_fejer`, and the honest contour-integral
+core).  For totally complex `K` of degree `n`, with `f = odlyzkoTestFn`
+and `Φ = poitouPhi`,
+
+`Σ_{|im ρ|≤T} mult(ρ)·Re Φ(ρ) →
+   log |d_K| − n(γ + log 4π − ∫₀^∞ (1−f)/sinh x dx) + 4∫₀^∞ f − P`.
+
+Intended proof, following G. Poitou, *Sur les petits discriminants*,
+Sém. Delange–Pisot–Poitou 18 (1976/77), exp. 6:
+
+1. *Preliminaries from the package.*  From `eq_of_one_lt_re` and the
+   pin's residue theorem
+   `NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT` (with
+   `NumberField.dedekindZeta_residue_ne_zero`), derive `ξ(1) ≠ 0` —
+   the pole of `Z_K` at `1` is genuinely simple — and `ξ(0) ≠ 0` by
+   `funcEq`; these make the residues of `Z_K'/Z_K` at `0` and `1`
+   exactly `−1`, producing the `Φ(0) + Φ(1)` term below.  Derive the
+   boundary nonvanishing `ξ(1 + it) ≠ 0` (de la Vallée Poussin's
+   `3-4-1` argument run on `ζ_K` through `eq_of_one_lt_re`; `t = 0` is
+   the previous point), so the zeros counted by `mult` — supported in
+   the OPEN strip — are ALL zeros inside the contour except `0, 1`.
+   From `growth` and Jensen's formula on discs of radius `O(1)`
+   centred on `re s = 2`, derive the Landau counts
+   `#{ρ : |im ρ − T| ≤ 1} = O(log T)` and the partial-fraction bound
+   for `ξ'/ξ` on horizontal segments (E. Landau, *Algebraische
+   Zahlen*, p. 122; Poitou p. 6-02) — mathlib has no Hadamard theory,
+   so this Jensen route is part of this leaf.
+2. *Formula (1), p. 6-01.*  For `T` avoiding zero ordinates, the
+   residue theorem on the rectangle `[−a, 1+a] × [−T, T]` (with
+   `0 < a < 1/2`, say `a = 1/4`) for the function `s ↦ Φ(s)·Z_K'/Z_K(s)`
+   gives `Σ_{|im ρ|<T} mult(ρ)·Φ(ρ) − Φ(0) − Φ(1) = (2πi)^{-1}·∮`,
+   where `Φ = poitouPhi` is entire (`poitouPhi_differentiable`) and
+   bounded on the strip with `Φ(σ+it) = O(1/t²)` uniformly (two
+   integrations by parts against the compactly supported
+   bounded-variation `F = f/cosh(x/2)`).
+3. *Proposition 1, p. 6-02.*  The horizontal edges vanish as
+   `T → ∞` through the Landau-good heights of step 1, since
+   `‖Φ‖_{a,T} = o(1/log T)`.
+4. *Propositions 2–3, pp. 6-02–6-06 (with Lemmes 1–2).*  The vertical
+   edge at `re s = 1 + a` unfolds by `eq_of_one_lt_re` into: the
+   `log |d_K|` term; the ultrametric term
+   `−2 Σ_{𝔭,m} (log N𝔭/N𝔭^{m/2})·F(m·log N𝔭)` from the Dirichlet
+   series of `−ζ_K'/ζ_K` (Euler product for `dedekindZeta`); and the
+   archimedean digamma integrals from `Γ_ℂ'/Γ_ℂ`.  The edge at
+   `re s = −a` mirrors it by `funcEq`.  The digamma integrals reduce
+   through Poitou's formula (5) and Fourier/Plancherel bookkeeping
+   (Lemmes 1–2) to the elementary form of the Théorème.
+5. *Théorème (A. Weil), p. 6-06, formula (6) third form, p. 6-07,
+   specialized to `r₁ = 0`, `F = f/cosh(x/2)`, `F(0) = 1`:*
+   `Σ Φ(ρ) = log|d_K| − n(γ + log 8π)
+      + n∫₀^∞ (1−F)/(2 sinh(x/2)) dx + Φ(0) + Φ(1) − 2Σ_{𝔭,m}(…)`.
+6. *Fejér specialization arithmetic:*  `Φ(0) + Φ(1) = 4∫₀^∞ f`
+   (Remarque, p. 6-07: the `cosh(x/2)` factors cancel);
+   `2·(log N𝔭/N𝔭^{m/2})·F(m log N𝔭)
+      = 4·log N𝔭·f(m log N𝔭)/(1 + N𝔭^m)`, summing to
+   `poitouPrimeTerm K`; and
+   `∫₀^∞ (1−F)/(2 sinh(x/2)) dx = ∫₀^∞ (1−f)/sinh x dx + log 2`
+   (pointwise `(1−F)/(2sinh(x/2)) − (1−f)/sinh x
+      = (cosh(x/2)−1)/sinh x`, whose integral is `log 2`), turning
+   `γ + log 8π` into `γ + log 4π`.  Conjugation symmetry of the zeros
+   (`conj_symm`) makes each truncated sum real, so the complex limit
+   statement descends to the stated real one with `Re Φ`. -/
+theorem DedekindContinuation.fejer_zero_sum_tendsto {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K)
+    (htc : NumberField.IsTotallyComplex K) :
+    Filter.Tendsto (fun T : ℝ =>
+        ∑' ρ : {ρ : ℂ // pkg.mult ρ ≠ 0 ∧ |ρ.im| ≤ T},
+          (pkg.mult ρ.1 : ℝ) * (poitouPhi ρ.1).re)
+      Filter.atTop
+      (nhds (Real.log |(NumberField.discr K : ℝ)| -
+        (Module.finrank ℚ K : ℝ) *
+          (Real.eulerMascheroniConstant + Real.log (4 * Real.pi) -
+            ∫ x in Set.Ioi (0 : ℝ), (1 - odlyzkoTestFn x) / Real.sinh x) +
+        4 * (∫ x in Set.Ioi (0 : ℝ), odlyzkoTestFn x) - poitouPrimeTerm K)) := by
+  sorry
+
 /-- **Weil's explicit formula for the Dedekind zeta function at the
-Fejér–Poitou test function** (sorry node, stated 2026-07-23 — the deep
-analytic leaf of the decomposition of `poitou_explicit_formula_bound`):
+Fejér–Poitou test function** (DECOMPOSED 2026-07-23, assembly PROVEN —
+the analytic leaf of the decomposition of
+`poitou_explicit_formula_bound`, now cut into the Hecke continuation
+package `DedekindContinuation` with its two deep sorried leaves
+`dedekindContinuation_exists` (Hecke's theorem) and
+`DedekindContinuation.fejer_zero_sum_tendsto` (Poitou's contour
+argument), plus the PROVEN glue `DedekindContinuation.mult_mem_strip`
+and `DedekindContinuation.finite_truncation`):
 for a totally complex number field `K` of degree `n` there exist a
-zero-multiplicity function `mult : ℂ → ℕ` — the order of vanishing of
-the analytically continued Dedekind zeta `ζ_K` on the critical strip
+zero-multiplicity function `mult : ℂ → ℕ` — realized here as
+`DedekindContinuation.mult`, the `analyticOrderNatAt` of the continued
+completed zeta `ξ_K` restricted to the critical strip
 `0 < Re ρ < 1` (the pin's `NumberField.dedekindZeta` is only the
-Dirichlet series, so the continuation and its zero data live inside
-this existential), supported on the open strip and finite on every
+Dirichlet series, so the continuation and its zero data come from the
+package), supported on the open strip and finite on every
 horizontal truncation — and a real number `S` — the
 symmetric-truncation limit `lim_{T→∞} Σ_{|Im ρ|≤T} mult(ρ)·Re Φ(ρ)`
 of the zero sum, real because the zeros are conjugation-symmetric with
@@ -3189,11 +3463,12 @@ elementary rewritings `Φ(0) + Φ(1) = 4∫₀^∞ f`,
 `2·(log N𝔭/N𝔭^{m/2})·F(m log N𝔭) = 4·log N𝔭·f(m log N𝔭)/(1 + N𝔭^m)`,
 and `∫₀^∞ (1−F(x))/(2 sinh(x/2)) dx = ∫₀^∞ (1−f(x))/sinh x dx + log 2`
 (which turns `γ + log 8π` into `γ + log 4π`); `F` is admissible by
-Proposition 5's conditions (i)–(iii) for `f`.  The eventual proof must
-carry the analytic continuation and functional equation of the
-completed `Λ_K` and the contour-integral argument of Proposition 1
-(Landau's horizontal estimates) — the material the official FLT
-project axiomatizes away. -/
+Proposition 5's conditions (i)–(iii) for `f`.  The analytic
+continuation and functional equation of the completed zeta now live in
+the sorried leaf `dedekindContinuation_exists`, and the
+contour-integral argument (Landau's horizontal estimates included) in
+the sorried leaf `DedekindContinuation.fejer_zero_sum_tendsto` — the
+material the official FLT project axiomatizes away. -/
 theorem dedekind_explicit_formula_fejer (K : Type*) [Field K] [NumberField K]
     (htc : NumberField.IsTotallyComplex K) :
     ∃ (mult : ℂ → ℕ) (S : ℝ),
@@ -3209,7 +3484,17 @@ theorem dedekind_explicit_formula_fejer (K : Type*) [Field K] [NumberField K]
               ∫ x in Set.Ioi (0 : ℝ), (1 - odlyzkoTestFn x) / Real.sinh x) -
           4 * (∫ x in Set.Ioi (0 : ℝ), odlyzkoTestFn x) +
           (poitouPrimeTerm K + S) := by
-  sorry
+  obtain ⟨pkg⟩ := dedekindContinuation_exists K
+  exact ⟨pkg.mult,
+    Real.log |(NumberField.discr K : ℝ)| -
+      (Module.finrank ℚ K : ℝ) *
+        (Real.eulerMascheroniConstant + Real.log (4 * Real.pi) -
+          ∫ x in Set.Ioi (0 : ℝ), (1 - odlyzkoTestFn x) / Real.sinh x) +
+      4 * (∫ x in Set.Ioi (0 : ℝ), odlyzkoTestFn x) - poitouPrimeTerm K,
+    fun ρ h => pkg.mult_mem_strip h,
+    pkg.finite_truncation,
+    pkg.fejer_zero_sum_tendsto htc,
+    by ring⟩
 
 /-- **`Φ` is entire** (PROVEN 2026-07-23): the integrand
 `x ↦ (f(x)/cosh(x/2))·e^{(s−1/2)x}` of `poitouPhi` is supported in
