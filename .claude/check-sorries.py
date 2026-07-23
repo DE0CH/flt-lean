@@ -348,38 +348,32 @@ def main() -> int:
         "progress without reading the tree.",
         file=sys.stderr,
     )
-    # Free-floating detection (Deyao, 2026-07-18, compiler-verified):
-    # `free-floating.py` asks the Lean compiler for every project
-    # declaration outside the transitive used-constant cone of
-    # `fermat_last_theorem` (a sorried consumer contributes no edges,
-    # so bottom-up material shows here until its consumer's proof
-    # skeleton is written). The hook reads the cache and flags
-    # staleness; regenerating (`python3 free-floating.py`) is part of
-    # the integration workflow, like progress-tree.py.
+    # Free-floating detection (Deyao, 2026-07-18/23, compiler-verified):
+    # the SAME census response above already carries "floating" --
+    # ProgressCensus.lean's runCensus computes every project declaration
+    # outside the transitive used-constant cone of `fermat_last_theorem`
+    # (a sorried consumer contributes no edges, so bottom-up material
+    # shows here until its consumer's proof skeleton is written), via
+    # ImportGraph's Name.transitivelyUsedConstants. No separate
+    # subprocess, no cache file: the language server's own incremental
+    # elaboration is the cache. free-floating.py applies the SAME
+    # keep-list filter for standalone/manual use.
     try:
-        cache_path = os.path.join(fermat, "free-floating.json")
-        cached = json.load(open(cache_path))
-        latest = 0.0
-        for dirpath, _dirs, files in os.walk(
-                os.path.join(fermat, "Fermat")):
-            for name in files:
-                if name.endswith(".lean"):
-                    try:
-                        latest = max(latest, os.path.getmtime(
-                            os.path.join(dirpath, name)))
-                    except OSError:
-                        pass
-        stale = cached.get("key") != str(latest)
-        floating = cached.get("floating", [])
+        keep_path = os.path.join(fermat, "free-floating-keep.json")
+        keep = {}
+        if os.path.exists(keep_path):
+            keep_data = json.load(open(keep_path))
+            keep = {k: v for k, v in keep_data.items()
+                    if not k.startswith("_")}
+        raw = resp.get("floating", [])
+        floating = [f for f in raw if f["name"] not in keep]
         if floating:
             from collections import Counter
             counts = Counter(f["module"] for f in floating)
-            marker = " (STALE cache — rerun `python3 free-floating.py` " \
-                "at the next integration point)" if stale else ""
             print(
                 f"FREE-FLOATING CODE: {len(floating)} project "
                 "declaration(s) are outside the dependency cone of "
-                f"`fermat_last_theorem`{marker}. Free-floating code is "
+                "`fermat_last_theorem`. Free-floating code is "
                 "not allowed: assign an owner to resolve it top-down "
                 "(write the consuming proof skeleton, or delete the "
                 "material after its verified state is committed). "

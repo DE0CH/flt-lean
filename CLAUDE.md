@@ -232,9 +232,19 @@ actually uses it (a sorried body contributes no dependency edges, so
 material built bottom-up for a still-sorried consumer is free-floating
 until the consumer's proof skeleton is written to consume it). Only
 crossings into external libraries are exempt. Free-floating code is
-not allowed: the Stop hook verifies this with the Lean compiler
-through `free-floating.py` (cone BFS over `getUsedConstantsAsSet`)
-and blocks with instructions to commit and delete. Work top-down.
+not allowed: the Stop hook verifies this with the Lean compiler. The
+cone itself is computed inside `ProgressCensus.lean`'s `runCensus` (the
+`"floating"` field of its JSON output, via ImportGraph's
+`Name.transitivelyUsedConstants` — already a vendored transitive
+dependency through mathlib's own lakefile, not a hand-rolled BFS),
+queried through the same resident `flt-report-server` session
+`progress-tree.py`'s census already uses — no separate subprocess, no
+cache file; the language server's own incremental elaboration is the
+cache (warm re-query: fractions of a second; after a real source edit:
+tens of seconds, dominated by re-elaborating what changed).
+`free-floating.py` is a thin standalone entry point over the same
+query, applying only the keep-list filter below. Blocks with
+instructions to commit and delete. Work top-down.
 
 **Deleted free-floating content (2026-07-18): see the deletion commit
 below.** The sweep removed 19 whole modules (the ModThree/Dickson–PGL2
