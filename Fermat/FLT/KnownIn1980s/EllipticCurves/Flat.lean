@@ -795,30 +795,74 @@ theorem WeierstrassCurve.algHom_comp_eq_of_torsion_inertia_fixes
       WithConv.toConv φ := h1
   exact WithConv.toConv_injective h2
 
-/-- **Unramified finite étale Hopf algebras prolong over a DVR** (sorry node;
-curve-free — the Hopf-theoretic core of BOTH unramified cases of this file: the
-order-invertible étale case `torsion_flat_of_inertia_fixes_prolong` and the
-equal-characteristic case
+/-- **Unramified finite étale `K`-algebras have finite étale `R`-forms** (sorry
+node; the GALOIS half of the curve-free Hopf-form leaf — no Hopf structure
+appears at all): a finite étale `K`-algebra `HK`, all of whose `Kˢᵉᵖ`-points
+are fixed by every inertia subgroup above `R`, admits a finite étale `R`-form.
+Intended proof: `HK` is a finite product of finite separable subextensions
+`Lᵢ` of `Kˢᵉᵖ/K` (étale `K`-algebras split by `Kˢᵉᵖ`); the hypothesis places
+each embedding `Lᵢ → Kˢᵉᵖ` inside the inertia field of every valuation subring
+above `R`, so each `Lᵢ` is unramified with separable residue extension at
+every prime above the maximal ideal of `R`. Take `H₀` to be the integral
+closure of `R` in `HK` (transported to `Type u` along an `R`-basis), i.e. the
+product of the normalizations `Rᵢ` of `R` in `Lᵢ`: each `Rᵢ` is finite over
+`R` (separability + Noetherian normal base), free (torsion-free finite over a
+DVR), and étale over `R` (finite flat + unramified fibres, by the inertia
+hypothesis), and `K ⊗[R] H₀ → HK` is an isomorphism (clearing denominators). -/
+theorem exists_finite_etale_algebra_form_of_inertia_fixes
+    (HK : Type u) [CommRing HK] [Algebra K HK]
+    [Module.Finite K HK] [Algebra.Etale K HK]
+    (hfix : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ σ ∈ 𝒪.inertiaSubgroup K, ∀ φ : HK →ₐ[K] Ksep,
+        (σ : Ksep ≃ₐ[K] Ksep).toAlgHom.comp φ = φ) :
+    ∃ (H₀ : Type u) (_ : CommRing H₀) (_ : Algebra R H₀)
+      (_ : Module.Finite R H₀) (_ : Algebra.Etale R H₀),
+      Nonempty ((K ⊗[R] H₀) ≃ₐ[K] HK) :=
+  sorry
+
+/-- **Étale algebra forms of Hopf algebras are Hopf forms** (sorry node; the
+HOPF half of the curve-free Hopf-form leaf — pure commutative algebra over the
+DVR `R`, no Galois theory and no elliptic curve): if the finite étale Hopf
+`K`-algebra `HK` admits a finite étale `R`-ALGEBRA form `H₀`, then it admits a
+finite flat Hopf `R`-form. The key point making this honest: a finite étale
+`R`-algebra is normal, hence integrally closed in its total fraction ring
+`K ⊗[R] H₀ ≅ HK`, hence `H₀` is THE integral closure of `R` in `HK` — étale
+forms are canonical, so Hopf-stability is a property, not extra data. Intended
+proof: comultiplication is a ring homomorphism, so it sends `H₀` (integral over
+`R`) into elements of `HK ⊗[K] HK` integral over `R`, and the integral closure
+of `R` there is `H₀ ⊗[R] H₀` (étale ⊗ étale is étale over the normal base `R`,
+hence normal, hence integrally closed in its total fraction ring, and
+`K ⊗ (H₀ ⊗[R] H₀) ≅ HK ⊗[K] HK`); the counit sends `H₀` into elements of `K`
+integral over `R`, i.e. into `R` (a DVR is integrally closed); the antipode is
+an algebra endomorphism, so it preserves integrality; flatness is freeness of
+a finite torsion-free module over a DVR. The `μ_p` counterexample (whose
+normalization over `ℤ_p` is NOT a Hopf order) does not contradict this: there
+the normalization is not étale over `R`, so it is not an étale algebra form. -/
+theorem exists_finite_flat_hopf_form_of_etale_algebra_form
+    (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
+    [Module.Finite K HK] [Algebra.Etale K HK]
+    (H₀ : Type u) [CommRing H₀] [Algebra R H₀] [Module.Finite R H₀]
+    [Algebra.Etale R H₀]
+    (e : (K ⊗[R] H₀) ≃ₐ[K] HK) :
+    ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
+      (_ : Module.Finite R H) (_ : Module.Flat R H),
+      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) :=
+  sorry
+
+/-- **Unramified finite étale Hopf algebras prolong over a DVR** (DECOMPOSED
+2026-07-23 into the Galois-half leaf
+`exists_finite_etale_algebra_form_of_inertia_fixes` and the commutative-algebra
+Hopf-upgrade leaf `exists_finite_flat_hopf_form_of_etale_algebra_form`; the
+assembly below is proven; curve-free — the Hopf-theoretic core of BOTH
+unramified cases of this file: the order-invertible étale case
+`torsion_flat_of_inertia_fixes_prolong` and the equal-characteristic case
 `torsion_flat_of_good_reduction_prime_pow_of_eqChar`; note that NO
 order-invertibility hypothesis is needed): a finite étale Hopf `K`-algebra
 `HK`, all of whose `Kˢᵉᵖ`-points are fixed by every inertia subgroup above `R`,
-admits a finite flat Hopf `R`-form. Intended proof: `HK` is a finite product of
-finite separable subextensions `Lᵢ` of `Kˢᵉᵖ/K` (étale `K`-algebras split by
-`Kˢᵉᵖ`); the hypothesis places each embedding `Lᵢ → Kˢᵉᵖ` inside the inertia
-field of every valuation subring above `R`, so each `Lᵢ` is unramified with
-separable residue extension at every prime above the maximal ideal of `R`.
-Take `H` to be the integral closure of `R` in `HK` (transported to `Type u`
-along an `R`-basis), i.e. the product of the normalizations `Rᵢ` of `R` in
-`Lᵢ`: each `Rᵢ` is finite over `R` (separability + Noetherian normal base),
-free (torsion-free finite over a DVR), and étale (unramified + flat), and
-`K ⊗[R] H → HK` is an isomorphism (clearing denominators). The Hopf structure
-restricts: comultiplication sends integral elements to elements integral over
-`R` in `HK ⊗[K] HK`, whose integral closure is `H ⊗[R] H` because étale ⊗ étale
-is étale over the normal base `R` (hence normal, hence integrally closed in its
-total fraction ring `HK ⊗[K] HK`); the counit lands in `R` because `R` is
-integrally closed in `K`; the antipode is an algebra endomorphism, so it
-preserves integrality. The `μ_p` counterexample to flat prolongation WITHOUT
-unramifiedness does not apply: its points are moved by inertia. -/
+admits a finite flat Hopf `R`-form. The `μ_p` counterexample to flat
+prolongation WITHOUT unramifiedness does not apply: its points are moved by
+inertia. -/
 theorem exists_finite_flat_hopf_form_of_inertia_fixes
     (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
     [Module.Finite K HK] [Algebra.Etale K HK]
@@ -828,8 +872,11 @@ theorem exists_finite_flat_hopf_form_of_inertia_fixes
         (σ : Ksep ≃ₐ[K] Ksep).toAlgHom.comp φ = φ) :
     ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
       (_ : Module.Finite R H) (_ : Module.Flat R H),
-      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) :=
-  sorry
+      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) := by
+  obtain ⟨H₀, iCR, iAlg, iFin, iEt, ⟨e⟩⟩ :=
+    exists_finite_etale_algebra_form_of_inertia_fixes R K Ksep HK hfix
+  letI := iCR; letI := iAlg; letI := iFin; letI := iEt
+  exact exists_finite_flat_hopf_form_of_etale_algebra_form R K HK H₀ e
 
 omit [E.IsElliptic] [E.HasGoodReduction R] in
 /-- **Unramified implies étale prolongation** (DECOMPOSED 2026-07-22 into the
