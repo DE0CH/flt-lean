@@ -4664,13 +4664,11 @@ set_option maxHeartbeats 2000000 in
 of the split multiplicative case, extracted 2026-07-22 from
 `torsionFlatPackage_of_split_adic`; DERIVED later the same day from the
 explicit model: the skeleton below instantiates `H := KummerAlg 𝒪 p u`
-with its constructed Hopf structure and PROVEN finiteness/freeness,
-leaving the sorried leaves `kummerComul_coassoc`,
-`kummerComul_rTensor_counit`, `kummerComul_lTensor_counit`,
-`kummerAntipode_rTensor`, `kummerAntipode_lTensor`,
-`kummerAlg_etale_adic` and `exists_kummerAlg_pointsEquiv`; no elliptic
-curve appears — the statement is pure Kummer theory of the completed
-local field):
+with its PROVEN Hopf structure (all five axioms), PROVEN
+finiteness/freeness/flatness and PROVEN étale generic fibre
+(`kummerAlg_etale_adic`), leaving as the SINGLE sorried leaf the points
+computation `exists_kummerAlg_pointsEquiv`; no elliptic curve appears —
+the statement is pure Kummer theory of the completed local field):
 given `Q ∈ ℚ_pˆˣ` of valuation `< 1` together with a recentring
 witness `w` making `u = Q·w⁻ᵖ` a UNIT of the completed integers, the
 `p`-torsion of `Ω̂ˣ/Qᶻ` is, Galois-equivariantly, the group of
