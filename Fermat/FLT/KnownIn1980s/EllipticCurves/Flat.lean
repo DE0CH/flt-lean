@@ -3776,28 +3776,58 @@ theorem WeierstrassCurve.exists_hopf_order_of_good_reduction
   sorry
 
 set_option backward.isDefEq.respectTransparency false in
-/-- **Hopf orders are flat Hopf forms** (sorry node; the curve-free STRUCTURE
-half of the decomposed Katz–Mazur existence leaf
-`exists_torsion_flat_model_of_good_reduction_prime_pow` — commutative algebra
-over the DVR `R`, no Galois theory and no elliptic curve): a finitely
-generated `R`-subalgebra `H₀` of a Hopf `K`-algebra `HK`, finite as a
-`K`-module, which spans `HK` over `K` and is closed under counit (into `R`),
-antipode, and comultiplication (into the `R`-span of its pure tensors), is a
-finite flat Hopf `R`-form of `HK`. Intended proof: `H₀` is torsion-free (it
-sits inside a `K`-vector space and `R` injects into `K`) and finitely
-generated over the DVR `R`, hence finite FREE, hence flat; an `R`-basis of
-`H₀` is a `K`-basis of `HK` (it spans by the span hypothesis after clearing
-denominators, and an `R`-independent family in a `K`-vector space is
-`K`-independent over the fraction field), so the base-change algebra map
-`K ⊗[R] H₀ → HK` is bijective, and the induced maps
-`H₀ ⊗[R] H₀ → HK ⊗[K] HK` (and the triple-tensor analogue) are injective
-with image exactly the `R`-span of the pure tensors of `H₀`; the three
-closure hypotheses then corestrict the comultiplication, counit and antipode
-to `H₀`, every Hopf-algebra axiom transfers along the injections, and the
-base-change equivalence is a bialgebra equivalence by construction. The `μ_p`
+/-- **The Hopf corestriction core** (sorry node; the deepest layer of the
+curve-free structure half of the Katz–Mazur decomposition — pure
+transport-of-structure over the DVR `R`): a FREE finite Hopf order whose
+base-change map is bijective is a flat Hopf form. Given that the base-change
+algebra map `K ⊗[R] H₀ → HK`, `k ⊗ h ↦ k • h` (`AlgHom.liftEquiv` applied to
+the inclusion), is bijective, an `R`-basis of `H₀` is a `K`-basis of `HK`, so
+the induced maps `H₀ ⊗[R] H₀ → HK ⊗[K] HK` and the triple-tensor analogue are
+injective with image exactly the `R`-span of the pure tensors of `H₀`
+(expand both factors in the basis with `R`-coefficients); the three closure
+hypotheses then corestrict the comultiplication, the counit (through
+`R ≃ (algebraMap R K).range`) and the antipode to `H₀`; every coalgebra,
+bialgebra and Hopf axiom of the corestricted structure holds because it holds
+in `HK` and the comparison maps are injective; flatness is freeness; and the
+base-change equivalence is a bialgebra equivalence because comultiplication
+on `K ⊗[R] H₀` is the base change of the corestricted comultiplication, which
+agrees with the comultiplication of `HK` through the tensor-square comparison
+map by construction. -/
+theorem exists_flat_hopf_form_of_free_hopf_order
+    (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
+    [Algebra R HK] [IsScalarTower R K HK]
+    (H₀ : Subalgebra R HK)
+    [Module.Finite R H₀] [Module.Free R H₀]
+    (hbij : Function.Bijective (AlgHom.liftEquiv R K H₀ HK H₀.val))
+    (hcounit : ∀ x ∈ H₀, Bialgebra.counitAlgHom K HK x ∈ (algebraMap R K).range)
+    (hantipode : ∀ x ∈ H₀, HopfAlgebra.antipode K x ∈ H₀)
+    (hcomul : ∀ x ∈ H₀, Bialgebra.comulAlgHom K HK x ∈
+      Submodule.span R {z : HK ⊗[K] HK | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K] b = z}) :
+    ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
+      (_ : Module.Finite R H) (_ : Module.Flat R H),
+      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Hopf orders are flat Hopf forms** (DECOMPOSED 2026-07-23 into the
+corestriction core `exists_flat_hopf_form_of_free_hopf_order`; the reduction
+below is PROVEN — the curve-free STRUCTURE half of the decomposed Katz–Mazur
+existence leaf `exists_torsion_flat_model_of_good_reduction_prime_pow`,
+commutative algebra over the DVR `R`, no Galois theory and no elliptic
+curve): a finitely generated `R`-subalgebra `H₀` of a Hopf `K`-algebra `HK`,
+finite as a `K`-module, which spans `HK` over `K` and is closed under counit
+(into `R`), antipode, and comultiplication (into the `R`-span of its pure
+tensors), is a finite flat Hopf `R`-form of `HK`. The proven reduction: `H₀`
+is torsion-free (it sits inside a `K`-vector space and `R` injects into `K`)
+and finitely generated over the DVR `R`, hence finite FREE; an `R`-basis of
+`H₀` is a `K`-basis of `HK` — it spans by the span hypothesis, and it is
+`K`-independent because a `K`-relation clears denominators
+(`IsLocalization.exist_integer_multiples`) to an `R`-relation inside `H₀` —
+so the base-change algebra map `K ⊗[R] H₀ → HK` is bijective (it matches the
+basis equivalence), which is what the corestriction core consumes. The `μ_p`
 counterexample (normalization over `ℤ_p` not a Hopf order) does not
-contradict this: there the COMULTIPLICATION-closure hypothesis fails for the
-normalization. -/
+contradict this statement: there the COMULTIPLICATION-closure hypothesis
+fails for the normalization. -/
 theorem exists_flat_hopf_form_of_hopf_order
     (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
     [Module.Finite K HK] [Algebra R HK] [IsScalarTower R K HK]
@@ -3810,8 +3840,98 @@ theorem exists_flat_hopf_form_of_hopf_order
       Submodule.span R {z : HK ⊗[K] HK | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K] b = z}) :
     ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
       (_ : Module.Finite R H) (_ : Module.Flat R H),
-      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) :=
-  sorry
+      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) := by
+  classical
+  -- `H₀` is a finite `R`-module
+  haveI hfin : Module.Finite R H₀ := Module.Finite.iff_fg.mpr hfg
+  -- `HK` is torsion-free over `K` (a vector space), hence `H₀` over `R`
+  haveI : Module.IsTorsionFree K HK :=
+    ⟨fun k hk x y hxy => by
+      have hk0 : k ≠ 0 := isRegular_iff_ne_zero.mp hk
+      have h : k • x = k • y := hxy
+      calc x = k⁻¹ • (k • x) := by rw [smul_smul, inv_mul_cancel₀ hk0, one_smul]
+        _ = k⁻¹ • (k • y) := by rw [h]
+        _ = y := by rw [smul_smul, inv_mul_cancel₀ hk0, one_smul]⟩
+  haveI : Module.IsTorsionFree R H₀ :=
+    ⟨fun r hr x y hxy => by
+      have hr0 : r ≠ 0 := isRegular_iff_ne_zero.mp hr
+      have hrK : algebraMap R K r ≠ 0 :=
+        fun h0 => hr0 ((injective_iff_map_eq_zero _).mp
+          (IsFractionRing.injective R K) r h0)
+      have hval : algebraMap R K r • (x : HK) = algebraMap R K r • (y : HK) := by
+        rw [algebraMap_smul, algebraMap_smul]
+        exact congrArg Subtype.val hxy
+      exact Subtype.ext ((IsRegular.of_ne_zero hrK).isSMulRegular.eq_iff.mp hval)⟩
+  haveI hfree : Module.Free R H₀ := Module.free_of_finite_type_torsion_free'
+  -- an `R`-basis of `H₀`
+  let b := Module.Free.chooseBasis R H₀
+  -- its image in `HK` is `K`-linearly independent: clear denominators
+  have hli : LinearIndependent K (fun i => (b i : HK)) := by
+    rw [linearIndependent_iff']
+    intro s c hc
+    obtain ⟨d, hd⟩ := IsLocalization.exist_integer_multiples (nonZeroDivisors R) s c
+    have hnum : ∀ i : Module.Free.ChooseBasisIndex R H₀,
+        ∃ r : R, i ∈ s → algebraMap R K r = (d : R) • c i := by
+      intro i
+      by_cases hi : i ∈ s
+      · obtain ⟨r, hr⟩ := hd i hi
+        exact ⟨r, fun _ => hr⟩
+      · exact ⟨0, fun h => absurd h hi⟩
+    choose r hr using hnum
+    have hrel : ∑ i ∈ s, r i • b i = (0 : H₀) := by
+      apply Subtype.ext
+      have h1 : ((∑ i ∈ s, r i • b i : H₀) : HK) = ∑ i ∈ s, r i • (b i : HK) := by
+        rw [AddSubmonoidClass.coe_finsetSum]
+        exact Finset.sum_congr rfl fun i _ => rfl
+      have h2 : ∑ i ∈ s, r i • (b i : HK) = (d : R) • ∑ i ∈ s, c i • (b i : HK) := by
+        rw [Finset.smul_sum]
+        refine Finset.sum_congr rfl fun i hi => ?_
+        rw [← algebraMap_smul K (r i) ((b i : HK)), hr i hi, smul_assoc]
+      rw [h1, h2, hc, smul_zero]
+      rfl
+    intro i hi
+    have hri := linearIndependent_iff'.mp b.linearIndependent s r hrel i hi
+    have hzero : (d : R) • c i = 0 := by rw [← hr i hi, hri, map_zero]
+    have hd0 : algebraMap R K (d : R) ≠ 0 :=
+      IsFractionRing.to_map_ne_zero_of_mem_nonZeroDivisors d.2
+    rw [Algebra.smul_def] at hzero
+    exact (mul_eq_zero.mp hzero).resolve_left hd0
+  -- ... and spans `HK` over `K`
+  have hsp : ⊤ ≤ Submodule.span K (Set.range fun i => (b i : HK)) := by
+    rw [← hspan]
+    refine Submodule.span_le.mpr fun x hx => ?_
+    have hx' : (⟨x, hx⟩ : H₀) ∈ Submodule.span R (Set.range b) := by
+      rw [b.span_eq]
+      trivial
+    have h2 : x ∈ Submodule.map (Subalgebra.toSubmodule H₀).subtype
+        (Submodule.span R (Set.range b)) :=
+      ⟨⟨x, hx⟩, hx', rfl⟩
+    rw [Submodule.map_span] at h2
+    have h3 : (Subalgebra.toSubmodule H₀).subtype '' Set.range b =
+        Set.range fun i => (b i : HK) := by
+      rw [← Set.range_comp]
+      rfl
+    rw [h3] at h2
+    exact Submodule.span_subset_span R K _ h2
+  -- hence the base-change map matches a basis equivalence, so it is bijective
+  let bK := Module.Basis.mk hli hsp
+  have heq : (AlgHom.liftEquiv R K H₀ HK H₀.val).toLinearMap =
+      ↑((b.baseChange K).equiv bK (Equiv.refl _)) := by
+    refine (b.baseChange K).ext fun i => ?_
+    rw [LinearEquiv.coe_coe, Module.Basis.equiv_apply, Equiv.refl_apply,
+      Module.Basis.baseChange_apply]
+    show AlgHom.liftEquiv R K H₀ HK H₀.val ((1 : K) ⊗ₜ[R] b i) = bK i
+    rw [AlgHom.liftEquiv_tmul, one_smul, Module.Basis.mk_apply]
+    rfl
+  have hbij : Function.Bijective (AlgHom.liftEquiv R K H₀ HK H₀.val) := by
+    have hcoe : ⇑(AlgHom.liftEquiv R K H₀ HK H₀.val) =
+        ⇑((b.baseChange K).equiv bK (Equiv.refl _)) := by
+      have h1 := congrArg (fun f : K ⊗[R] H₀ →ₗ[K] HK => ⇑f) heq
+      simpa using h1
+    rw [hcoe]
+    exact ((b.baseChange K).equiv bK (Equiv.refl _)).bijective
+  exact exists_flat_hopf_form_of_free_hopf_order R K HK H₀ hbij hcounit
+    hantipode hcomul
 
 /-- **The Katz–Mazur flat model, mixed characteristic** (DECOMPOSED 2026-07-23
 into the curve leaf `exists_hopf_order_of_good_reduction` — the Katz–Mazur
