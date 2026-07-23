@@ -1000,23 +1000,94 @@ theorem char_eq_one_of_mem_localInertiaGroup_two
       Polynomial.eval_C, Polynomial.eval_one, sub_self, mul_zero] at h
     rwa [mul_self_eq_zero, sub_eq_zero] at h
 
-/-- **The flat dichotomy on inertia at `p`** (sorry node): the
-Raynaud/Fontaine route stage of
-`char_add_char_eq_one_add_cyclotomicCharacter`: for a hardly ramified
-(in particular flat-at-`p`, cyclotomic-determinant) `ρ` whose mapped
-characteristic polynomials split through the pair `χ₁, χ₂`, ONE of the
-two characters is trivial on the (image of the) local inertia at `p`
-— equivalently, against the product identity `χ₁ χ₂ = χ_cyc` (proven
-inline in the consumer), the pair restricted to inertia at `p` is
-`{1, χ_cyc}`. Intended proof: on each finite level `R ⧸ I` the flat
-prolongation provided by `IsHardlyRamified.isFlat` is a finite flat
-group scheme over `ℤ_p`; Raynaud's classification of prolongations
-(resp. Fontaine's ramification bounds) forces the inertia action on a
-stable line and its quotient line to be through the trivial and the
-cyclotomic character, and the matching cannot swap between levels
-(which of `χ₁, χ₂` is the sub-character is a level-independent
-datum); continuity of the characters transports the finite-level
-statement to `R` and then along `R ↪ ℚ̄_p`. -/
+/-- **The flat inertia charpoly at `p`** (sorry node — the
+Raynaud/Fontaine input of the reducible branch, isolated at a single
+inertia element): for a hardly ramified (flat-at-`p`,
+cyclotomic-determinant) `ρ` whose mapped characteristic polynomials
+split through the continuous multiplicative pair `χ₁, χ₂` (the
+reducibility input — needed: without it a supersingular `ρ|_{G_p}`
+is flat with irreducible inertia charpolys, and the conclusion is
+false), the characteristic polynomial of `ρ` at (the image in `G_ℚ`
+of) a local inertia element `σ` at `p` is `(X - χ_cyc(σ))(X - 1)`
+over `R` — the exact `p`-place analogue of the tame-at-two leaf
+`charpoly_eq_of_mem_inertia_two`. Intended proof (Serre, Duke 1987,
+§4.1; Raynaud, prolongements de schémas en groupes de type `(p,…,p)`):
+
+* *Reducibility localizes.* By `hchar` the trace function of
+  `ρ ⊗ ℚ̄_p` is `χ₁ + χ₂`, a sum of continuous characters, so
+  (Brauer–Nesbitt) the semisimplification of `ρ ⊗ ℚ̄_p` restricted to
+  the decomposition group at `p` is `χ₁ ⊕ χ₂` — diagonal characters
+  valued in `ℚ̄_p`. Hence at every open ideal `I ⊆ R` the reduction
+  `(ρ mod I)|_{G_p}` has abelian semisimplification, excluding the
+  level-two (fundamental-characters-of-level-2) branch of Raynaud's
+  classification at every level.
+* *Raynaud at one level.* `hρ.isFlat.cond I` provides a finite flat
+  prolongation of `ρ.baseChange (R ⧸ I)` over `ℤ_p`; since `p` is odd
+  the absolute ramification index is `e = 1 < p - 1`, so Raynaud
+  applies: in the connected-étale sequence of the prolongation the
+  étale part carries trivial inertia action, and the connected part is
+  of multiplicative type (Cartier duality against the étale part,
+  using the cyclotomic determinant of `hρ.det`), with inertia acting
+  through `χ_cyc`; so the inertia charpoly of `ρ mod I` at `σ̃` is
+  `(X - χ_cyc(σ̃))(X - 1) mod I`.
+* *Level passage.* Charpoly coefficients commute with the quotients
+  `R → R ⧸ I`; the open ideals contain a cofinal family of powers of
+  the maximal ideal (`R` carries the `ℤ_p`-module topology and is
+  module-finite local), and `⋂ₙ 𝔪ⁿ = 0` in the Noetherian local
+  domain `R`, so the level-wise identity assembles to the stated
+  identity over `R`. Alternatively a prover may verify the identity
+  after the injective base change along `hRinj ∘ hZinj` into `ℚ̄_p`
+  (injective ring maps are injective on polynomial coefficients),
+  where it reads `(X - χ₁(σ̃))(X - χ₂(σ̃)) = (X - χ_cyc(σ̃))(X - 1)`. -/
+theorem charpoly_eq_of_mem_localInertiaGroup_p
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hcont₁ : Continuous χ₁) (hcont₂ : Continuous χ₂)
+    (hone₁ : χ₁ 1 = 1) (hone₂ : χ₂ 1 = 1)
+    (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
+    (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
+    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+      (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)))
+    (σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+      hp.out.toHeightOneSpectrumRingOfIntegersRat))
+    (hσ : σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat) :
+    (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ)).charpoly =
+      (Polynomial.X - Polynomial.C (algebraMap ℤ_[p] R
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ).toRingEquiv) : ℤ_[p]ˣ) :
+          ℤ_[p]))) *
+      (Polynomial.X - Polynomial.C 1) :=
+  sorry
+
+/-- **The flat dichotomy on inertia at `p`** (PROVEN assembly,
+DECOMPOSED 2026-07-23 over the single sorried leaf
+`charpoly_eq_of_mem_localInertiaGroup_p`): the Raynaud/Fontaine route
+stage of `char_add_char_eq_one_add_cyclotomicCharacter`: for a hardly
+ramified (in particular flat-at-`p`, cyclotomic-determinant) `ρ` whose
+mapped characteristic polynomials split through the pair `χ₁, χ₂`, ONE
+of the two characters is trivial on the (image of the) local inertia
+at `p` — a disjunction of universally-quantified trivialities, stated
+so deliberately to keep pointwise matching out of the statement.
+Assembly, two stages:
+
+* *pointwise dichotomy* (`hdich` below): mapping the charpoly identity
+  of the leaf along `R → ℚ̄_p` against `hchar` and evaluating at `1`
+  (a root of the flat side) gives, at EACH inertia element `σ`,
+  `χ₁(σ̃) = 1 ∨ χ₂(σ̃) = 1` — with the matching free to vary with `σ`;
+* *swap rigidity*: the matching cannot in fact vary — if neither
+  character were identically `1` on inertia, witnesses `σ₁` (where
+  `χ₁ ≠ 1`, hence `χ₂ = 1`) and `σ₂` (where `χ₂ ≠ 1`, hence `χ₁ = 1`)
+  would give, at the inertia element `σ₁ * σ₂` (inertia is a
+  subgroup), `χ₁(σ̃₁σ̃₂) = χ₁(σ̃₁) ≠ 1` and `χ₂(σ̃₁σ̃₂) = χ₂(σ̃₂) ≠ 1`
+  by multiplicativity, contradicting the pointwise dichotomy. This is
+  the level-independence ("which of `χ₁, χ₂` is the sub-character")
+  bookkeeping, done once on characters instead of once per level. -/
 theorem char_eq_one_on_localInertiaGroup_p_or
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -1035,8 +1106,47 @@ theorem char_eq_one_on_localInertiaGroup_p_or
         hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1) ∨
     (∀ σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat,
       χ₂ (Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
-        hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1) :=
-  sorry
+        hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1) := by
+  classical
+  -- pointwise dichotomy: at each inertia element one of the two
+  -- characters is `1` — evaluate the mapped flat charpoly identity at `1`
+  have hdich : ∀ σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat,
+      χ₁ (Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 ∨
+      χ₂ (Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+    intro σ hσ
+    have hB := charpoly_eq_of_mem_localInertiaGroup_p hpodd hv hZinj hRinj hρ χ₁ χ₂
+      hcont₁ hcont₂ hone₁ hone₂ hmul₁ hmul₂ hchar σ hσ
+    have hpoly := hchar (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (HeightOneSpectrum.adicCompletion ℚ hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ)
+    rw [hB] at hpoly
+    simp only [Polynomial.map_mul, Polynomial.map_sub, Polynomial.map_X,
+      Polynomial.map_C] at hpoly
+    have h := congrArg (Polynomial.eval (1 : AlgebraicClosure ℚ_[p])) hpoly
+    simp only [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_X,
+      Polynomial.eval_C, Polynomial.eval_one, map_one, sub_self, mul_zero] at h
+    rcases mul_eq_zero.mp h.symm with h1 | h1
+    · exact Or.inl (sub_eq_zero.mp h1).symm
+    · exact Or.inr (sub_eq_zero.mp h1).symm
+  -- swap rigidity: if neither character dies identically on inertia,
+  -- the product of the two witnesses violates the pointwise dichotomy
+  by_contra hcon
+  push Not at hcon
+  obtain ⟨⟨σ₁, hσ₁, hne₁⟩, σ₂, hσ₂, hne₂⟩ := hcon
+  have h₂σ₁ : χ₂ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ₁) = 1 :=
+    (hdich σ₁ hσ₁).resolve_left hne₁
+  have h₁σ₂ : χ₁ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ₂) = 1 :=
+    (hdich σ₂ hσ₂).resolve_right hne₂
+  rcases hdich (σ₁ * σ₂) (mul_mem hσ₁ hσ₂) with hd | hd
+  · rw [map_mul, hmul₁, h₁σ₂, mul_one] at hd
+    exact hne₁ hd
+  · rw [map_mul, hmul₂, h₂σ₁, one_mul] at hd
+    exact hne₂ hd
 
 /-- **Minkowski: a character unramified everywhere is trivial** (sorry
 node): the final route stage of
