@@ -1679,29 +1679,89 @@ theorem galoisEquivariantEval_injective :
   rw [galoisEquivariantEval_apply, galoisEquivariantEval_apply] at h
   exact (algebraMap (↥L) Ω).injective h
 
-/-- **A point sharing its kernel with an evaluation is an evaluation** (sorry node;
-the orbit-counting half of the points surjectivity): if the kernel of an `Ω`-point
-`φ` of the equivariant-functions algebra equals the kernel of the evaluation at `a`,
-then `φ` is itself an evaluation (at a point of the orbit of `a`). Intended proof:
-let `m` be the common kernel and `F := HK ⧸ m` the residue field, a separable
-extension of `K₀` (`galoisEquivariantAlgebra_exists_separable_annihilator`, as in the
-étale proof). The evaluation at `a` corestricts to the fixed field of the stabilizer
-of `a` (equivariance fixes the entry at `a` under the stabilizer), so
-`finrank K₀ F ≤ finrank K₀ (fixedField (Stab a)) = index (Stab a)` (fundamental
-theorem of Galois theory, tower formula, `IsGalois.card_aut_eq_finrank`). The points
-`eval x` for `x` in the orbit of `a` all have kernel `m` — restriction
-`Gal(Ω/K₀) → Gal(L/K₀)` is surjective (`AlgEquiv.restrictNormalHom_surjective`), so
-by `algEquiv_comp_galoisEquivariantEval` each `eval (ρ g a)` is `σ ∘ eval a` — and
-they are pairwise distinct (`galoisEquivariantEval_injective`), giving
-`index (Stab a) = #orbit` many distinct `K₀`-embeddings `F → Ω` (orbit–stabilizer);
-since a separable extension of degree `d` has exactly `d` embeddings into the
-separably closed `Ω`, these exhaust the embeddings, and `φ`'s factorization through
-`F` is one of them. -/
+/-- **A point sharing its kernel with an evaluation is an evaluation** (PROVEN; the
+Galois-theoretic half of the points surjectivity, counting-free): if the kernel of an
+`Ω`-point `φ` of the equivariant-functions algebra equals the kernel of the
+evaluation at `a`, then `φ` is the evaluation at a point of the orbit of `a`. Proof:
+let `m` be the common kernel — also the kernel of the corestricted evaluation
+`evalL : f ↦ f a` into `L` — and factor both `φ` and `evalL` through the residue
+field `HK ⧸ m` (maximal by Artinian-ness, so a field). The two factorizations make
+`L` and `Ω` algebras over the residue field; `L` is separable over it (tower), so
+`IsSepClosed.lift` extends the `Ω`-factorization to an embedding `σ : L →ₐ[K₀] Ω`
+compatible with the `L`-factorization (by `AlgHom.commutes`). Since `L/K₀` is
+normal, `σ` is an automorphism `g` of `L` followed by the inclusion
+(`Normal.algHomEquivAut`), and the equivariance of the functions in the algebra
+turns `σ ∘ evalL = φ` into `φ = eval (ρ g a)`. -/
 theorem galoisEquivariantEval_of_ker_eq [Finite A] [IsSepClosure K₀ Ω]
     (φ : galoisEquivariantAlgebra L ρ →ₐ[K₀] Ω) (a : A)
     (h : RingHom.ker φ = RingHom.ker (galoisEquivariantEval L ρ a)) :
-    ∃ x : A, galoisEquivariantEval L ρ x = φ :=
-  sorry
+    ∃ x : A, galoisEquivariantEval L ρ x = φ := by
+  classical
+  haveI : IsSepClosed Ω := IsSepClosure.sep_closed K₀
+  -- the evaluation into `L` and its kernel
+  set evalL : galoisEquivariantAlgebra L ρ →ₐ[K₀] L :=
+    (Pi.evalAlgHom K₀ (fun _ : A => L) a).comp (galoisEquivariantAlgebra L ρ).val
+  have hkerL : RingHom.ker (galoisEquivariantEval L ρ a) = RingHom.ker evalL := by
+    ext f
+    rw [RingHom.mem_ker, RingHom.mem_ker]
+    constructor
+    · intro hf
+      apply (algebraMap (↥L) Ω).injective
+      rw [map_zero]
+      exact hf
+    · intro hf
+      show algebraMap L Ω (evalL f) = 0
+      rw [hf, map_zero]
+  set m : Ideal (galoisEquivariantAlgebra L ρ) := RingHom.ker evalL
+  -- `m` is maximal: the algebra is Artinian and `m` is prime
+  haveI : IsArtinianRing (galoisEquivariantAlgebra L ρ) :=
+    isArtinian_of_tower K₀ inferInstance
+  haveI hprime : m.IsPrime := RingHom.ker_isPrime evalL
+  haveI hmax : m.IsMaximal := IsArtinianRing.isMaximal_of_isPrime m
+  letI : Field (galoisEquivariantAlgebra L ρ ⧸ m) := Ideal.Quotient.field m
+  -- factor `φ` and `evalL` through the residue field
+  have hφ0 : ∀ f ∈ m, φ f = 0 := by
+    intro f hf
+    refine RingHom.mem_ker.mp ?_
+    rw [h, hkerL]
+    exact hf
+  have hevL0 : ∀ f ∈ m, evalL f = 0 := fun f hf => RingHom.mem_ker.mp hf
+  set φbar := Ideal.Quotient.liftₐ m φ hφ0
+  set ebar := Ideal.Quotient.liftₐ m evalL hevL0
+  -- `L` and `Ω` as algebras over the residue field, via the two factorizations
+  letI : Algebra (galoisEquivariantAlgebra L ρ ⧸ m) L := ebar.toRingHom.toAlgebra
+  letI : Algebra (galoisEquivariantAlgebra L ρ ⧸ m) Ω := φbar.toRingHom.toAlgebra
+  haveI : IsScalarTower K₀ (galoisEquivariantAlgebra L ρ ⧸ m) L :=
+    IsScalarTower.of_algebraMap_eq fun x => (ebar.commutes x).symm
+  haveI : IsScalarTower K₀ (galoisEquivariantAlgebra L ρ ⧸ m) Ω :=
+    IsScalarTower.of_algebraMap_eq fun x => (φbar.commutes x).symm
+  haveI : Algebra.IsSeparable (galoisEquivariantAlgebra L ρ ⧸ m) L :=
+    Algebra.isSeparable_tower_top_of_isSeparable K₀ _ L
+  -- extend the `Ω`-factorization along `L`
+  set σ0 : L →ₐ[galoisEquivariantAlgebra L ρ ⧸ m] Ω := IsSepClosed.lift
+  set σ : L →ₐ[K₀] Ω := σ0.restrictScalars K₀
+  have hσe : ∀ y, σ (ebar y) = φbar y := by
+    intro y
+    show σ0 (algebraMap (galoisEquivariantAlgebra L ρ ⧸ m) L y) = φbar y
+    rw [AlgHom.commutes]
+    rfl
+  -- since `L/K₀` is normal, the extension is an automorphism followed by inclusion
+  set g : L ≃ₐ[K₀] L := Normal.algHomEquivAut K₀ Ω L σ
+  have hg : ∀ z : L, algebraMap L Ω (g z) = σ z := by
+    intro z
+    have h1 := (Normal.algHomEquivAut K₀ Ω L).symm_apply_apply σ
+    rw [Normal.algHomEquivAut_symm_apply] at h1
+    exact DFunLike.congr_fun h1 z
+  refine ⟨ρ g a, ?_⟩
+  apply AlgHom.ext
+  rintro ⟨f, hf⟩
+  show algebraMap L Ω (f (ρ g a)) = φ ⟨f, hf⟩
+  rw [hf g a, hg]
+  have hea : ebar (Ideal.Quotient.mkₐ K₀ m ⟨f, hf⟩) = f a :=
+    DFunLike.congr_fun (Ideal.Quotient.liftₐ_comp m evalL hevL0) ⟨f, hf⟩
+  calc σ (f a) = σ (ebar (Ideal.Quotient.mkₐ K₀ m ⟨f, hf⟩)) := by rw [hea]
+    _ = φbar (Ideal.Quotient.mkₐ K₀ m ⟨f, hf⟩) := hσe _
+    _ = φ ⟨f, hf⟩ := DFunLike.congr_fun (Ideal.Quotient.liftₐ_comp m φ hφ0) ⟨f, hf⟩
 
 /-- **Surjectivity of the evaluation points** (DECOMPOSED 2026-07-23; assembly
 PROVEN): every `Ω`-point of the equivariant-functions algebra is an evaluation.
