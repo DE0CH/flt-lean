@@ -10,6 +10,10 @@ public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRepFamily
 import Mathlib.Algebra.Field.ULift
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
 import Mathlib.LinearAlgebra.Charpoly.BaseChange
+-- `IsIntegralClosure.finite`: module-finiteness of the integral closure of a
+-- Noetherian integrally closed domain in a finite separable extension of its
+-- fraction field (the concrete coefficient rings of the realization stratum)
+import Mathlib.RingTheory.DedekindDomain.IntegralClosure
 
 /-!
 # Hardly ramified representations in compatible families
@@ -918,8 +922,288 @@ lemma isUnramifiedAt_of_ne (hρ : IsHardlyRamified hpodd hv ρ)
     exact hvp
       ((Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal hq _).mpr (by simp))
 
-/-- **Automorphy core of the realization stratum, odd residue
+section ConcreteCoefficientRing
+
+/- The concrete coefficient rings of the realization stratum: for a
+finite extension `L` of `ℚ_ℓ` inside `ℚ̄_ℓ`, the ring of integers
+`IntegralClosure ℤ_[ℓ] L` (the vendored type synonym for
+`integralClosure`), with the subspace topology inherited from the
+spectral norm on `ℚ̄_ℓ`. The instance layer below equips it with
+everything needed to STATE a hardly ramified representation over it —
+topology, topological ring, local ring (via the spectral-norm
+valuation dichotomy), the `ℤ_ℓ`-algebra structure and the embedding
+into `ℚ̄_ℓ` — and proves module-finiteness over `ℤ_ℓ`
+(`IsIntegralClosure.finite`, using that `ℤ_ℓ` is Noetherian and
+integrally closed with fraction field `ℚ_ℓ`). -/
+
+variable {ℓ : ℕ} [Fact ℓ.Prime] (L : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ]))
+
+/-- The subspace topology on the ring of integers of `L/ℚ_ℓ`, inherited
+through `L ⊆ ℚ̄_ℓ` from the spectral-norm topology (PROVEN glue). -/
+noncomputable instance instTopologicalSpaceIntegralClosurePadicInt :
+    TopologicalSpace (IntegralClosure ℤ_[ℓ] L) :=
+  inferInstanceAs (TopologicalSpace (integralClosure ℤ_[ℓ] L))
+
+/-- The subspace topology makes the ring of integers a topological ring
+(PROVEN glue: the subring instance on the underlying subtype). -/
+instance instIsTopologicalRingIntegralClosurePadicInt :
+    IsTopologicalRing (IntegralClosure ℤ_[ℓ] L) :=
+  inferInstanceAs (IsTopologicalRing (integralClosure ℤ_[ℓ] L))
+
+/-- The coefficient embedding `IntegralClosure ℤ_ℓ L → ℚ̄_ℓ`, the
+composite of the subalgebra inclusion with `L ⊆ ℚ̄_ℓ` (PROVEN glue). -/
+noncomputable instance instAlgebraIntegralClosurePadicIntAlgebraicClosure :
+    Algebra (IntegralClosure ℤ_[ℓ] L) (AlgebraicClosure ℚ_[ℓ]) :=
+  ((algebraMap L (AlgebraicClosure ℚ_[ℓ])).comp
+    (algebraMap (IntegralClosure ℤ_[ℓ] L) L)).toAlgebra
+
+/-- The embedding factors through `L` (PROVEN glue, definitional). -/
+instance instIsScalarTowerIntegralClosureIntermediateFieldAlgebraicClosure :
+    IsScalarTower (IntegralClosure ℤ_[ℓ] L) L (AlgebraicClosure ℚ_[ℓ]) :=
+  IsScalarTower.of_algebraMap_eq fun _ => rfl
+
+/-- `ℤ_ℓ → L → ℚ̄_ℓ` commutes (PROVEN glue: both routes factor through
+`ℚ_ℓ`). -/
+instance instIsScalarTowerPadicIntIntermediateFieldAlgebraicClosure :
+    IsScalarTower ℤ_[ℓ] L (AlgebraicClosure ℚ_[ℓ]) :=
+  IsScalarTower.of_algebraMap_eq fun x => by
+    rw [IsScalarTower.algebraMap_apply ℤ_[ℓ] ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ]) x,
+      IsScalarTower.algebraMap_apply ℤ_[ℓ] ℚ_[ℓ] L x,
+      ← IsScalarTower.algebraMap_apply ℚ_[ℓ] L (AlgebraicClosure ℚ_[ℓ])]
+
+/-- `ℤ_ℓ → IntegralClosure ℤ_ℓ L → ℚ̄_ℓ` commutes (PROVEN glue). -/
+instance instIsScalarTowerPadicIntIntegralClosureAlgebraicClosure :
+    IsScalarTower ℤ_[ℓ] (IntegralClosure ℤ_[ℓ] L) (AlgebraicClosure ℚ_[ℓ]) :=
+  IsScalarTower.of_algebraMap_eq fun x => by
+    rw [IsScalarTower.algebraMap_apply ℤ_[ℓ] L (AlgebraicClosure ℚ_[ℓ]) x]
+    rfl
+
+/-- The coefficient embedding of the concrete ring of integers into
+`ℚ̄_ℓ` is injective (PROVEN glue: a composite of subtype inclusions). -/
+lemma algebraMap_integralClosure_padicInt_injective : Function.Injective
+    (algebraMap (IntegralClosure ℤ_[ℓ] L) (AlgebraicClosure ℚ_[ℓ])) := by
+  have h1 : Function.Injective (algebraMap L (AlgebraicClosure ℚ_[ℓ])) :=
+    (algebraMap L (AlgebraicClosure ℚ_[ℓ])).injective
+  have h2 : Function.Injective (algebraMap (IntegralClosure ℤ_[ℓ] L) L) :=
+    fun x y hxy => Subtype.ext hxy
+  rw [IsScalarTower.algebraMap_eq (IntegralClosure ℤ_[ℓ] L) L (AlgebraicClosure ℚ_[ℓ])]
+  exact h1.comp h2
+
+/-- The type synonym is an integral closure of `ℤ_ℓ` in `L` (PROVEN
+glue: the instance on the underlying subalgebra). -/
+instance instIsIntegralClosureIntegralClosurePadicInt :
+    IsIntegralClosure (IntegralClosure ℤ_[ℓ] L) ℤ_[ℓ] L :=
+  inferInstanceAs (IsIntegralClosure (integralClosure ℤ_[ℓ] L) ℤ_[ℓ] L)
+
+/-- The ring of integers of a finite extension `L/ℚ_ℓ` is module-finite
+over `ℤ_ℓ` (PROVEN: `IsIntegralClosure.finite` — `ℤ_ℓ` is Noetherian
+and integrally closed with fraction field `ℚ_ℓ`, and `L/ℚ_ℓ` is finite
+separable in characteristic zero). -/
+instance instModuleFiniteIntegralClosurePadicInt [FiniteDimensional ℚ_[ℓ] L] :
+    Module.Finite ℤ_[ℓ] (IntegralClosure ℤ_[ℓ] L) :=
+  IsIntegralClosure.finite ℤ_[ℓ] ℚ_[ℓ] L _
+
+/-- **Spectral-norm integrality over `ℤ_ℓ`** (PROVEN): an element of an
+algebraic extension of `ℚ_ℓ` with spectral norm at most `1` is integral
+over `ℤ_ℓ` — its monic minimal polynomial over `ℚ_ℓ` has coefficients
+of norm at most `1`, which lift termwise to `ℤ_ℓ`. (The `ℤ_ℓ`-avatar of
+`isIntegral_of_spectralNorm_le_one` in `AbsoluteGaloisGroup.lean`,
+which is stated for the `Valued.v.integer` subring of an abstractly
+valued base field and so does not directly apply to `ℤ_[ℓ]`.) -/
+lemma isIntegral_padicInt_of_spectralNorm_le_one
+    {M : Type*} [Field M] [Algebra ℚ_[ℓ] M] [Algebra.IsAlgebraic ℚ_[ℓ] M]
+    [Algebra ℤ_[ℓ] M] [IsScalarTower ℤ_[ℓ] ℚ_[ℓ] M]
+    {x : M} (hx : spectralNorm ℚ_[ℓ] M x ≤ 1) : IsIntegral ℤ_[ℓ] x := by
+  have hlift : minpoly ℚ_[ℓ] x ∈ Polynomial.lifts (algebraMap ℤ_[ℓ] ℚ_[ℓ]) := by
+    refine (Polynomial.lifts_iff_coeff_lifts _).mpr fun i => ?_
+    have hterm := (ciSup_le_iff (spectralValueTerms_bddAbove ..)).mp hx i
+    simp only [spectralValueTerms] at hterm
+    split_ifs at hterm with h
+    · conv_rhs at hterm =>
+        rw [← Real.one_rpow (1 / ((minpoly ℚ_[ℓ] x).natDegree - i : ℝ))]
+      rw [Real.rpow_le_rpow_iff (by positivity) (by positivity) (by aesop)] at hterm
+      exact ⟨⟨(minpoly ℚ_[ℓ] x).coeff i, hterm⟩, rfl⟩
+    · obtain h | h := (le_of_not_gt h).eq_or_lt
+      · refine ⟨1, ?_⟩
+        rw [map_one, ← h]
+        exact ((minpoly.monic
+          (Algebra.IsAlgebraic.isAlgebraic x).isIntegral).coeff_natDegree).symm
+      · exact ⟨0, by simp [Polynomial.coeff_eq_zero_of_natDegree_lt h]⟩
+  obtain ⟨P, hP, _, hP'⟩ := Polynomial.lifts_and_degree_eq_and_monic hlift
+    (minpoly.monic (Algebra.IsAlgebraic.isAlgebraic x).isIntegral)
+  refine ⟨P, hP', ?_⟩
+  rw [← Polynomial.aeval_def, ← Polynomial.aeval_map_algebraMap ℚ_[ℓ], hP, minpoly.aeval]
+
+/-- The ring of integers of `L/ℚ_ℓ` is a valuation ring (PROVEN): the
+spectral-norm dichotomy — every element of `L` of spectral norm at most
+`1` is integral over `ℤ_ℓ`, and every element of larger norm has
+integral inverse. (The `ℤ_ℓ`-avatar of `valuationRing_integralClosure`
+in `AbsoluteGaloisGroup.lean`.) With `IsDomain`, this yields the
+`IsLocalRing` instance that `IsHardlyRamified` statements over this
+ring consume. -/
+instance instValuationRingIntegralClosurePadicInt :
+    ValuationRing (IntegralClosure ℤ_[ℓ] L) := by
+  refine ValuationSubring.instValuationRingSubtypeMem
+    ⟨(integralClosure ℤ_[ℓ] L).toSubring, ?_⟩
+  intro x
+  obtain hx | hx := le_total (spectralNorm ℚ_[ℓ] L x) 1
+  · exact .inl (isIntegral_padicInt_of_spectralNorm_le_one hx)
+  · have h1 := inv_le_one_of_one_le₀ hx
+    rw [← spectralNorm_inv] at h1
+    exact .inr (isIntegral_padicInt_of_spectralNorm_le_one h1)
+
+/-- **Module topology on the concrete ring of integers** (sorry node):
+the subspace topology on `IntegralClosure ℤ_ℓ L ⊆ L ⊆ ℚ̄_ℓ` (inherited
+from the spectral norm) is the `ℤ_ℓ`-module topology, for `L/ℚ_ℓ`
+finite. Proof plan (mirrors the PROVEN
+`isModuleTopology_of_isAdic_maximalIdeal` in `Lift.lean`, which lives
+downstream and cannot be imported here): the scalar action
+`ℤ_ℓ × 𝒪_L → 𝒪_L` is continuous for the subspace topology (the
+`ℤ_ℓ → ℚ̄_ℓ` structure map is continuous and multiplication in `ℚ̄_ℓ`
+is continuous), so `moduleTopology ≤ subspace` by `moduleTopology_le`;
+conversely the module topology is compact (coinduced along a surjection
+`ℤ_ℓ^n ↠ 𝒪_L` from a compact space,
+`ModuleTopology.eq_coinduced_of_surjective`, using module-finiteness)
+while the subspace topology is Hausdorff (metric), so the continuous
+identity map is a homeomorphism (`Continuous.homeoOfEquivCompactToT2`)
+and the topologies agree (`IsModuleTopology.of_continuous_id`). -/
+theorem isModuleTopology_integralClosure_padicInt [FiniteDimensional ℚ_[ℓ] L] :
+    IsModuleTopology ℤ_[ℓ] (IntegralClosure ℤ_[ℓ] L) :=
+  sorry
+
+/-- **Universe/abstraction transport of a concrete realization** (sorry
+node, purely formal — no arithmetic content): a hardly ramified
+representation `τ₀` over a coefficient ring `A₀` in `Type 0` carrying
+the full coefficient-ring package (module-finite local topological
+`ℤ_ℓ`-algebra with the module topology, embedded in `ℚ̄_ℓ`), together
+with its framing and its unramified/charpoly-matching behaviour away
+from `T`, transports to the SAME package with the coefficient ring in
+an arbitrary universe `Type u` — the shape demanded by the abstract
+realization telescope. Proof plan: take `A := ULift.{u} A₀` with the
+instances transported along `ULift.ringEquiv` (mathlib provides the
+ring, topology and `IsTopologicalRing` instances; the module structure
+on `W₀` restricts along the equivalence), conjugate `τ₀` by the
+identity-on-elements equivalence of endomorphism monoids (the module
+topologies correspond along the homeomorphic ring equivalence),
+transport `IsHardlyRamified` field by field (`det` via the commuting
+triangle of structure maps, unramifiedness via equality of kernels,
+flatness via `HasFlatProlongationAt.of_equiv`, tameness by composing
+`π` with `ULift.up`), and match Frobenius characteristic polynomials
+via invariance of `LinearMap.charpoly` under the scalar-relabeling
+equivalence. -/
+theorem exists_realization_package_of_concrete (hℓodd : Odd ℓ)
+    {A₀ : Type} [CommRing A₀] [TopologicalSpace A₀] [IsTopologicalRing A₀]
+    [IsLocalRing A₀] [Algebra ℤ_[ℓ] A₀] [Module.Finite ℤ_[ℓ] A₀]
+    [Algebra A₀ (AlgebraicClosure ℚ_[ℓ])]
+    [IsScalarTower ℤ_[ℓ] A₀ (AlgebraicClosure ℚ_[ℓ])]
+    [IsModuleTopology ℤ_[ℓ] A₀]
+    (hA₀inj : Function.Injective (algebraMap A₀ (AlgebraicClosure ℚ_[ℓ])))
+    {W₀ : Type v} [AddCommGroup W₀] [Module A₀ W₀] [Module.Finite A₀ W₀]
+    [Module.Free A₀ W₀]
+    (hW₀ : Module.rank A₀ W₀ = 2) (τ₀ : GaloisRep ℚ A₀ W₀)
+    (r₀ : AlgebraicClosure ℚ_[ℓ] ⊗[A₀] W₀ ≃ₗ[AlgebraicClosure ℚ_[ℓ]]
+      Fin 2 → AlgebraicClosure ℚ_[ℓ])
+    (hτ₀ : IsHardlyRamified hℓodd hW₀ τ₀)
+    (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (Q : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) →
+      Polynomial (AlgebraicClosure ℚ_[ℓ]))
+    (hmatch : ∀ v ∉ T, (ℓ : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal →
+      τ₀.IsUnramifiedAt v ∧
+      (τ₀.charFrob v).map (algebraMap A₀ (AlgebraicClosure ℚ_[ℓ])) = Q v) :
+    ∃ (A : Type u) (_ : CommRing A) (_ : TopologicalSpace A)
+      (_ : IsTopologicalRing A) (_ : IsLocalRing A) (_ : Algebra ℤ_[ℓ] A)
+      (_ : Module.Finite ℤ_[ℓ] A)
+      (_ : Algebra A (AlgebraicClosure ℚ_[ℓ]))
+      (_ : IsScalarTower ℤ_[ℓ] A (AlgebraicClosure ℚ_[ℓ]))
+      (_ : IsModuleTopology ℤ_[ℓ] A)
+      (_ : Function.Injective (algebraMap A (AlgebraicClosure ℚ_[ℓ])))
+      (W : Type v) (_ : AddCommGroup W) (_ : Module A W) (_ : Module.Finite A W)
+      (_ : Module.Free A W) (hW : Module.rank A W = 2)
+      (τ : GaloisRep ℚ A W)
+      (_r : AlgebraicClosure ℚ_[ℓ] ⊗[A] W ≃ₗ[AlgebraicClosure ℚ_[ℓ]]
+        Fin 2 → AlgebraicClosure ℚ_[ℓ]),
+      IsHardlyRamified hℓodd hW τ ∧
+      ∀ v ∉ T, (ℓ : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal →
+        τ.IsUnramifiedAt v ∧
+        (τ.charFrob v).map (algebraMap A (AlgebraicClosure ℚ_[ℓ])) = Q v :=
+  sorry
+
+end ConcreteCoefficientRing
+
+/-- **Automorphy core over concrete rings of integers, odd residue
 characteristics** (sorry node): the eigensystem `(E, S, Pv)` attached
+to a hardly ramified `p`-adic representation is realized *integrally*
+at every odd prime `ℓ` and embedding `φ : E →+* ℚ̄_ℓ`, with the
+coefficient ring CONCRETE: there are a finite extension `L/ℚ_ℓ` inside
+`ℚ̄_ℓ` and a hardly ramified representation `τ` over its ring of
+integers `IntegralClosure ℤ_ℓ L` (with a framing `r` of its base
+extension) which, away from a single finite exceptional set `T` ("the
+level", uniform in `(ℓ, φ)`) and the places over `ℓ`, is unramified
+with Frobenius characteristic polynomials mapping to `(Pv v).map φ`.
+This is Eichler–Shimura/Deligne (the `λ`-adic representations attached
+to the weight-2 eigenform underlying the eigensystem) with the lattice
+argument giving the integral model — the coefficient field of the
+`λ`-adic representation is the finite extension of `ℚ_ℓ` generated by
+the Hecke eigenvalues, and stabilizing a lattice puts the
+representation over its ring of integers, which is exactly
+`IntegralClosure ℤ_ℓ L` — plus local–global compatibility (Carayol,
+Saito) for the unramifiedness and charpoly matching, plus the weight-2
+level-2 analysis showing the model is hardly ramified. Strictly
+shallower than the abstract-coefficient core below (DECOMPOSITION
+2026-07-23): the whole instance telescope of the abstract statement is
+here replaced by the single geometric datum `(L, FiniteDimensional)` —
+the topology, topological-ring, local-ring, `ℤ_ℓ`-algebra,
+module-finiteness and embedding fields are all PROVEN instances of the
+`ConcreteCoefficientRing` layer above, and the universe quantification
+is gone (the transport back to `Type u` is the separate formal leaf
+`exists_realization_package_of_concrete`).
+
+The VOCABULARY OBSTRUCTION and SOUNDNESS AUDIT notes on the abstract
+core below apply verbatim to this leaf: the integral hardly ramified
+model must be produced by the automorphy argument itself (matching
+charpolys outside a finite set do not pin the isomorphism class), and
+no Hecke-eigenform carrier type is statable on this mathlib pin, so
+the leaf keeps the fused Eichler–Shimura + integrality + hardly
+ramified shape. -/
+theorem exists_hardlyRamified_ringOfIntegers_realizations
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {E : Type v} [Field E] [NumberField E] (ψ : E →+* AlgebraicClosure ℚ_[p])
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E)
+    (heig : ∀ v ∉ S,
+      (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) = (Pv v).map ψ) :
+    ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ (ℓ : ℕ) (hℓ : Fact ℓ.Prime) (hℓodd : Odd ℓ)
+        (φ : E →+* AlgebraicClosure ℚ_[ℓ]),
+      ∃ (L : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ]))
+        (_ : FiniteDimensional ℚ_[ℓ] L)
+        (W : Type v) (_ : AddCommGroup W)
+        (_ : Module (IntegralClosure ℤ_[ℓ] L) W)
+        (_ : Module.Finite (IntegralClosure ℤ_[ℓ] L) W)
+        (_ : Module.Free (IntegralClosure ℤ_[ℓ] L) W)
+        (hW : Module.rank (IntegralClosure ℤ_[ℓ] L) W = 2)
+        (τ : GaloisRep ℚ (IntegralClosure ℤ_[ℓ] L) W)
+        (r : AlgebraicClosure ℚ_[ℓ] ⊗[IntegralClosure ℤ_[ℓ] L] W
+          ≃ₗ[AlgebraicClosure ℚ_[ℓ]] Fin 2 → AlgebraicClosure ℚ_[ℓ]),
+        IsHardlyRamified hℓodd hW τ ∧
+        ∀ v ∉ T, (ℓ : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal →
+          τ.IsUnramifiedAt v ∧
+          (τ.charFrob v).map
+              (algebraMap (IntegralClosure ℤ_[ℓ] L) (AlgebraicClosure ℚ_[ℓ])) =
+            (Pv v).map φ :=
+  sorry
+
+/-- **Automorphy core of the realization stratum, odd residue
+characteristics** (DECOMPOSED 2026-07-23 into the concrete automorphy
+leaf `exists_hardlyRamified_ringOfIntegers_realizations`, the formal
+transport leaf `exists_realization_package_of_concrete` and the
+topology leaf `isModuleTopology_integralClosure_padicInt`, glued by the
+PROVEN `ConcreteCoefficientRing` instance layer; the assembly below is
+proven): the eigensystem `(E, S, Pv)` attached
 to a hardly ramified `p`-adic representation is realized *integrally*
 at every odd prime `ℓ` and embedding `φ : E →+* ℚ̄_ℓ`: there is a
 hardly ramified representation `τ` over a module-finite local
@@ -988,7 +1272,7 @@ theorem exists_hardlyRamified_integral_realizations_core
     (heig : ∀ v ∉ S,
       (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) = (Pv v).map ψ) :
     ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
-      ∀ (ℓ : ℕ) (hℓ : Fact ℓ.Prime) (hℓodd : Odd ℓ)
+      ∀ (ℓ : ℕ) (_hℓ : Fact ℓ.Prime) (hℓodd : Odd ℓ)
         (φ : E →+* AlgebraicClosure ℚ_[ℓ]),
       ∃ (A : Type u) (_ : CommRing A) (_ : TopologicalSpace A)
         (_ : IsTopologicalRing A) (_ : IsLocalRing A) (_ : Algebra ℤ_[ℓ] A)
@@ -1000,14 +1284,27 @@ theorem exists_hardlyRamified_integral_realizations_core
         (W : Type v) (_ : AddCommGroup W) (_ : Module A W) (_ : Module.Finite A W)
         (_ : Module.Free A W) (hW : Module.rank A W = 2)
         (τ : GaloisRep ℚ A W)
-        (r : AlgebraicClosure ℚ_[ℓ] ⊗[A] W ≃ₗ[AlgebraicClosure ℚ_[ℓ]]
+        (_r : AlgebraicClosure ℚ_[ℓ] ⊗[A] W ≃ₗ[AlgebraicClosure ℚ_[ℓ]]
           Fin 2 → AlgebraicClosure ℚ_[ℓ]),
         IsHardlyRamified hℓodd hW τ ∧
         ∀ v ∉ T, (ℓ : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal →
           τ.IsUnramifiedAt v ∧
           (τ.charFrob v).map (algebraMap A (AlgebraicClosure ℚ_[ℓ])) =
-            (Pv v).map φ :=
-  sorry
+            (Pv v).map φ := by
+  obtain ⟨T, hT⟩ := exists_hardlyRamified_ringOfIntegers_realizations hpodd hv
+    hZinj hRinj hρ ψ S Pv heig
+  refine ⟨T, ?_⟩
+  intro ℓ hℓ hℓodd φ
+  haveI := hℓ
+  obtain ⟨L, hLfin, W₀, iW1, iW2, iW3, iW4, hW₀, τ₀, r₀, hτ₀, hmatch⟩ :=
+    hT ℓ hℓ hℓodd φ
+  letI := iW1; letI := iW2; letI := iW3; letI := iW4
+  haveI := hLfin
+  haveI : IsModuleTopology ℤ_[ℓ] (IntegralClosure ℤ_[ℓ] L) :=
+    isModuleTopology_integralClosure_padicInt L
+  exact exists_realization_package_of_concrete hℓodd
+    (algebraMap_integralClosure_padicInt_injective L) hW₀ τ₀ r₀ hτ₀ T
+    (fun w => (Pv w).map φ) hmatch
 
 /-- **Automorphy core of the realization stratum, odd residue
 characteristics — full instance package** (PROVEN assembly): the
