@@ -1651,8 +1651,60 @@ theorem exists_hardlyRamified_integral_realizations
   exact ⟨A, iA1, iA2, iA3, iA4, iA5, iA6, iA7, iA8, iA10, iA11, iA12, iA13, hAinj,
     W, iW1, iW2, iW3, iW4, hW, τ, r, hτ, hmatch⟩
 
-/-- **Automorphy core at the even prime, per embedding** (sorry node):
-the eigensystem `(E, S, Pv)` is realized at `λ | 2` at a single given
+/-- **Automorphy atom at the even prime, confined coefficients** (sorry
+node): given ANY finite-dimensional coefficient subfield `K ⊆ ℚ̄_₂` and
+an embedding `φ₀ : E →+* K` of the eigensystem's number field, the
+eigensystem `(E, S, Pv)` is realized over `K` itself: a representation
+`τ : G_ℚ → GL₂(K)`, unramified outside a finite exceptional `T` (which
+absorbs the single place of `ℚ` above `2`) with Frobenius
+characteristic polynomials `(Pv v).map φ₀` there. This is
+Eichler–Shimura/Deligne at `λ | 2` (Diamond–Shurman §9.5–9.6) plus
+local–global compatibility (Carayol/Saito): the `λ`-adic
+representation attached to the weight-2 eigenform underlying the
+eigensystem is defined over the completion `E_λ = ℚ_2(φ₀(E))`, a
+subfield of `K`, and spreading from `E_λ` to `K` is base change along
+an inclusion of finite extensions of `ℚ_2` — `GL₂(E_λ) ⊆ GL₂(K)` is a
+closed continuous embedding, so the universal quantification over `K`
+is standard base-change slack, not extra automorphy content. No
+hardly-ramifiedness demand is made (the notion requires odd residue
+characteristic) and no `ℤ_2`-integral model is demanded — contrast the
+SOUNDNESS AUDIT at `exists_hardlyRamified_integral_realizations_core`,
+where the hardly ramified clause forces the integral model into the
+leaf; at `ℓ = 2` the consumer needs only the bare member, so this atom
+stays at the field level.
+
+DECOMPOSITION AUDIT (2026-07-23): this leaf is
+`exists_realization_at_two_of_embedding_core` below with its entire
+existential coefficient telescope `(K, FiniteDimensional, φ₀, compat)`
+peeled off into hypotheses — the assembly there constructs the
+concrete `K₀ = ℚ_2(φ('' spanning set of E))` and corestricts `φ`
+through it, all PROVEN — so the sorry here carries only the member
+`(T, τ)` and its unramified/charpoly interface. The VOCABULARY
+OBSTRUCTION note on `exists_hardlyRamified_integral_realizations_core`
+applies verbatim: no Hecke-eigenform carrier type is statable on this
+pin, so the leaf keeps the fused Eichler–Shimura + local–global
+shape. -/
+theorem exists_realization_at_two_confined
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {E : Type v} [Field E] [NumberField E] (ψ : E →+* AlgebraicClosure ℚ_[p])
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E)
+    (heig : ∀ v ∉ S,
+      (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) = (Pv v).map ψ)
+    (K : IntermediateField ℚ_[2] (AlgebraicClosure ℚ_[2]))
+    [FiniteDimensional ℚ_[2] K] (φ₀ : E →+* K) :
+    ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+      (τ : GaloisRep ℚ K (Fin 2 → K)),
+      ∀ v ∉ T, τ.IsUnramifiedAt v ∧ τ.charFrob v = (Pv v).map φ₀ :=
+  sorry
+
+/-- **Automorphy core at the even prime, per embedding** (PROVEN
+assembly, see the DECOMPOSED note below): the eigensystem `(E, S, Pv)`
+is realized at `λ | 2` at a single given
 embedding `φ : E →+* ℚ̄_₂` by a representation over a coefficient field
 `K` which is a FINITE-DIMENSIONAL subfield of `ℚ̄_₂` through which `φ`
 factors — the exact output shape of Eichler–Shimura/Deligne: the
@@ -1660,17 +1712,24 @@ factors — the exact output shape of Eichler–Shimura/Deligne: the
 the eigensystem is defined over the completion `E_λ = ℚ_2(φ(E))`, a
 finite extension of `ℚ_2` (Diamond–Shurman §9.5–9.6; Carayol/Saito
 local–global compatibility for the unramifiedness and the charpoly
-matching). No hardly-ramifiedness demand is made (the notion requires
-odd residue characteristic) and no `ℤ_2`-integral model is demanded —
-contrast the SOUNDNESS AUDIT at
-`exists_hardlyRamified_integral_realizations_core`, where the hardly
-ramified clause forces the integral model into the leaf; at `ℓ = 2`
-the consumer needs only the bare member, so this core stays at the
-field level. The exceptional set `T` absorbs the (single!) place of
+matching). The exceptional set `T` absorbs the (single!) place of
 `ℚ` above `2`, so no "away from `2`" proviso appears; the
 finite-dimensionality of `K` over `ℚ_2` is the even-prime counterpart
 of the coefficient confinement demanded by the odd-`ℓ` core's
-module-finite `ℤ_ℓ`-algebra. -/
+module-finite `ℤ_ℓ`-algebra.
+
+DECOMPOSED (2026-07-23) into a PROVEN assembly over one strictly
+shallower sorried leaf, `exists_realization_at_two_confined` above,
+which receives the coefficient pair `(K, φ₀)` as HYPOTHESES: the whole
+existential coefficient telescope is constructed here — `K` is `ℚ_2`
+with the `φ`-images of a finite `ℚ`-spanning set of the number field
+`E` adjoined (finite-dimensional because each generator is integral
+over `ℚ_2`: it is a root of the image of its monic `ℚ`-minimal
+polynomial, ring homs out of `ℚ` being unique), the image of ALL of
+`E` lands in `K` by span induction (the `ℚ`-scalars fall into `K`
+through `ℚ ⊆ ℚ_2`), `φ₀` is the corestriction of `φ`, and the
+compatibility `(φ₀ x : ℚ̄_₂) = φ x` is definitional. Only the confined
+member retains automorphy content. -/
 theorem exists_realization_at_two_of_embedding_core
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -1689,8 +1748,46 @@ theorem exists_realization_at_two_of_embedding_core
       (φ₀ : E →+* K)
       (τ : GaloisRep ℚ K (Fin 2 → K)),
         (∀ x : E, (φ₀ x : AlgebraicClosure ℚ_[2]) = φ x) ∧
-        ∀ v ∉ T, τ.IsUnramifiedAt v ∧ τ.charFrob v = (Pv v).map φ₀ :=
-  sorry
+        ∀ v ∉ T, τ.IsUnramifiedAt v ∧ τ.charFrob v = (Pv v).map φ₀ := by
+  classical
+  -- a finite `ℚ`-spanning set of the number field `E`
+  obtain ⟨s, hs⟩ : (⊤ : Submodule ℚ E).FG := Module.finite_def.mp inferInstance
+  -- ring homs out of `ℚ` are unique, so `φ` restricts to the canonical map
+  have hQcomp : (algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2])).comp (algebraMap ℚ ℚ_[2]) =
+      φ.comp (algebraMap ℚ E) := Subsingleton.elim _ _
+  -- the `φ`-image of `E` is integral over `ℚ_2`
+  have hint : ∀ x : E, IsIntegral ℚ_[2] (φ x) := by
+    intro x
+    obtain ⟨P, hPmonic, hPeval⟩ := IsIntegral.of_finite ℚ x
+    refine ⟨P.map (algebraMap ℚ ℚ_[2]), hPmonic.map _, ?_⟩
+    rw [Polynomial.eval₂_map, hQcomp, ← Polynomial.hom_eval₂, hPeval, map_zero]
+  -- finite-dimensionality: finitely many integral generators
+  have hKfin : FiniteDimensional ℚ_[2]
+      (IntermediateField.adjoin ℚ_[2] (⇑φ '' ↑s)) := by
+    haveI : Finite ↥(⇑φ '' ↑s) := (s.finite_toSet.image _).to_subtype
+    exact IntermediateField.finiteDimensional_adjoin fun x hx => by
+      obtain ⟨y, -, rfl⟩ := hx
+      exact hint y
+  -- the whole image of `E` lies in the adjoined field
+  have hmem : ∀ x : E, φ x ∈ IntermediateField.adjoin ℚ_[2] (⇑φ '' ↑s) := by
+    intro x
+    have hx : x ∈ Submodule.span ℚ (↑s : Set E) := by rw [hs]; exact Submodule.mem_top
+    induction hx using Submodule.span_induction with
+    | mem y hy => exact IntermediateField.subset_adjoin _ _ ⟨y, hy, rfl⟩
+    | zero => rw [map_zero]; exact zero_mem _
+    | add y z _ _ hy hz => rw [map_add]; exact add_mem hy hz
+    | smul c y _ hy =>
+      rw [Algebra.smul_def, map_mul]
+      refine mul_mem ?_ hy
+      have hc := RingHom.congr_fun hQcomp c
+      rw [RingHom.comp_apply, RingHom.comp_apply] at hc
+      rw [← hc]
+      exact IntermediateField.algebraMap_mem _ _
+  haveI := hKfin
+  obtain ⟨T, τ, hT⟩ := exists_realization_at_two_confined hpodd hv hZinj hRinj hρ ψ S Pv
+    heig (IntermediateField.adjoin ℚ_[2] (⇑φ '' ↑s)) (φ.codRestrict _ hmem)
+  exact ⟨T, IntermediateField.adjoin ℚ_[2] (⇑φ '' ↑s), hKfin, φ.codRestrict _ hmem, τ,
+    fun x => rfl, hT⟩
 
 /-- **Per-embedding member at residue characteristic 2** (PROVEN
 assembly, see the DECOMPOSED note below): the eigensystem `(E, S, Pv)`
