@@ -2554,8 +2554,46 @@ theorem norm_LSeries_le_mul_div_of_forall_norm_sum_le {c : ℕ → ℂ} {r C : �
     (hr0 : 0 < r) (hr1 : r < 1) (hC : 0 ≤ C)
     (hbound : ∀ n : ℕ, ‖∑ k ∈ Finset.Icc 1 n, c k‖ ≤ C * (n : ℝ) ^ r)
     {s : ℝ} (hs : 1 < s) (hsum : LSeriesSummable c (s : ℂ)) :
-    ‖LSeries c (s : ℂ)‖ ≤ s * C / (s - r) :=
-  sorry
+    ‖LSeries c (s : ℂ)‖ ≤ s * C / (s - r) := by
+  have hs0 : (0 : ℝ) < s := lt_trans one_pos hs
+  have hsr : (0 : ℝ) < s - r := by linarith
+  have hrs : r < ((s : ℂ)).re := by rw [Complex.ofReal_re]; linarith
+  have hO : (fun n : ℕ => ∑ k ∈ Finset.Icc 1 n, c k) =O[atTop]
+      (fun n : ℕ => (n : ℝ) ^ r) := by
+    refine Asymptotics.IsBigO.of_bound C (Filter.Eventually.of_forall fun n => ?_)
+    rw [Real.norm_of_nonneg (Real.rpow_nonneg (Nat.cast_nonneg n) r)]
+    exact hbound n
+  rw [LSeries_eq_mul_integral c hr0.le hrs hsum hO, norm_mul, Complex.norm_real,
+    Real.norm_of_nonneg hs0.le, mul_div_assoc]
+  refine mul_le_mul_of_nonneg_left ?_ hs0.le
+  -- dominate the integrand
+  have hint : IntegrableOn (fun t : ℝ => C * t ^ (r - s - 1)) (Set.Ioi (1 : ℝ)) :=
+    (integrableOn_Ioi_rpow_of_lt (by linarith) one_pos).const_mul C
+  have hbnd : ∀ t ∈ Set.Ioi (1 : ℝ),
+      ‖(∑ k ∈ Finset.Icc 1 ⌊t⌋₊, c k) * (t : ℂ) ^ (-((s : ℂ) + 1))‖ ≤
+        C * t ^ (r - s - 1) := by
+    intro t ht
+    have ht0 : (0 : ℝ) < t := lt_trans one_pos ht
+    rw [norm_mul, Complex.norm_cpow_eq_rpow_re_of_pos ht0]
+    have h1 : ‖∑ k ∈ Finset.Icc 1 ⌊t⌋₊, c k‖ ≤ C * t ^ r := by
+      refine le_trans (hbound ⌊t⌋₊) ?_
+      exact mul_le_mul_of_nonneg_left
+        (Real.rpow_le_rpow (Nat.cast_nonneg _) (Nat.floor_le ht0.le) hr0.le) hC
+    have h2 : (-((s : ℂ) + 1)).re = -(s + 1) := by simp
+    rw [h2]
+    calc ‖∑ k ∈ Finset.Icc 1 ⌊t⌋₊, c k‖ * t ^ (-(s + 1))
+        ≤ (C * t ^ r) * t ^ (-(s + 1)) :=
+          mul_le_mul_of_nonneg_right h1 (Real.rpow_nonneg ht0.le _)
+      _ = C * t ^ (r - s - 1) := by
+          rw [mul_assoc, ← Real.rpow_add ht0,
+            show r + -(s + 1) = r - s - 1 by ring]
+  refine le_trans (norm_integral_le_of_norm_le hint
+    ((ae_restrict_iff' measurableSet_Ioi).mpr
+      (Filter.Eventually.of_forall hbnd))) ?_
+  rw [MeasureTheory.integral_const_mul, integral_Ioi_rpow_of_lt (by linarith) one_pos,
+    Real.one_rpow]
+  rw [show r - s - 1 + 1 = -(s - r) by ring, div_neg, neg_div, neg_neg,
+    mul_one_div]
 
 open IsDedekindDomain in
 /-- **Power-saving cancellation in the twisted Hecke coefficient sums**
