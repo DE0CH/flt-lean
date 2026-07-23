@@ -8414,7 +8414,7 @@ theorem WeierstrassCurve.isFlatAt_of_hasGoodReduction
   obtain ⟨H, hCR, hHopf, hFin, hFlat, hEt, f, hf⟩ :=
     WeierstrassCurve.torsion_flat_of_good_reduction
       (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ E p
-      (AlgebraicClosure ℚ)
+      (AlgebraicClosure ℚ) (Nat.cast_ne_zero.mpr hp'.ne_zero)
   letI := hCR
   letI := hHopf
   letI := hFin
