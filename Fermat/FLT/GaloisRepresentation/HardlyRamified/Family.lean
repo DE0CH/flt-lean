@@ -501,8 +501,75 @@ lemma charFrob_coeff_zero_eq_natCast
           hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly from rfl,
     ← hdet, hdetq, map_natCast]
 
-/-- **Trace-field finiteness core of the eigensystem stratum** (sorry
-node): away from a finite set of places, the TRACE coefficient
+/-- **Algebraicity shadow of the trace field** (sorry node): away from
+a finite set of places, the TRACE coefficient (`coeff 1`) of the mapped
+Frobenius characteristic polynomials of a hardly ramified `p`-adic
+representation is ALGEBRAIC over `ℚ`. Strictly weaker than the
+Hecke-field statement `exists_finiteDimensional_trace_field`: no bound
+on the degrees and no common field is demanded — even granting
+algebraicity of every trace, they could a priori generate an infinite
+extension of `ℚ` (`ℚ_p` itself contains `√ℓ` for every square `ℓ` mod
+`p`). One of the two orthogonal shadows of the Hecke-field statement
+(the other is `exists_finiteDimensional_trace_span`); their
+conjunction recovers it by PROVEN linear algebra — see the DECOMPOSED
+note on `exists_finiteDimensional_trace_field`. -/
+theorem exists_isAlgebraic_trace_coeff
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (hint : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
+      ((algebraMap R (AlgebraicClosure ℚ_[p])).comp (algebraMap ℤ_[p] R)).IsIntegralElem
+        (((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n))
+    (K : IntermediateField ℚ_[p] (AlgebraicClosure ℚ_[p]))
+    (hKfd : FiniteDimensional ℚ_[p] K)
+    (hK : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
+      ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n ∈ K) :
+    ∃ (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ v ∉ S, IsAlgebraic ℚ
+        (((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1) :=
+  sorry
+
+/-- **Finite-span shadow of the trace field** (sorry node): away from a
+finite set of places, the TRACE coefficients of the mapped Frobenius
+characteristic polynomials of a hardly ramified `p`-adic representation
+all lie in the `ℚ`-LINEAR SPAN of finitely many elements of `ℚ̄_p`.
+Strictly weaker than the Hecke-field statement
+`exists_finiteDimensional_trace_field`: nothing is demanded of the
+spanning elements — no algebraicity over `ℚ`, no field structure — so
+this captures only the finite-generation half of "the traces are the
+Hecke eigenvalues of a single eigenform" (they span a
+finite-dimensional `ℚ`-space, e.g. the Hecke field itself). Note the
+confinement hypotheses `hKfd`/`hK` do NOT give this formally: `K` is
+finite over `ℚ_p`, hence INFINITE-dimensional over `ℚ`. The other
+orthogonal shadow is `exists_isAlgebraic_trace_coeff`; their
+conjunction recovers the Hecke-field statement by PROVEN linear
+algebra — see the DECOMPOSED note on
+`exists_finiteDimensional_trace_field`. -/
+theorem exists_finiteDimensional_trace_span
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (hint : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
+      ((algebraMap R (AlgebraicClosure ℚ_[p])).comp (algebraMap ℤ_[p] R)).IsIntegralElem
+        (((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n))
+    (K : IntermediateField ℚ_[p] (AlgebraicClosure ℚ_[p]))
+    (hKfd : FiniteDimensional ℚ_[p] K)
+    (hK : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
+      ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n ∈ K) :
+    ∃ (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+      (t : Finset (AlgebraicClosure ℚ_[p])),
+      ∀ v ∉ S,
+        ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 ∈
+          Submodule.span ℚ (t : Set (AlgebraicClosure ℚ_[p])) :=
+  sorry
+
+/-- **Trace-field finiteness core of the eigensystem stratum** (PROVEN
+assembly, see the DECOMPOSED note below): away from a finite set of
+places, the TRACE coefficient
 (`coeff 1`) of the mapped Frobenius characteristic polynomials of a
 hardly ramified `p`-adic representation lies in a single subfield of
 `ℚ̄_p` finite over `ℚ`. This is the sole surviving automorphy content
@@ -517,7 +584,27 @@ hypotheses `hKfd`/`hK` (discharged at the call site by the PROVEN
 the traces already lie in one finite extension of `ℚ_p`. A finite
 extension of `ℚ_p` contains algebraic-over-`ℚ` subfields of infinite
 degree (e.g. `ℚ(√ℓ : ℓ a square mod p)` inside `ℚ_p` itself), so
-`ℚ`-finiteness is genuinely not formal even given the confinement. -/
+`ℚ`-finiteness is genuinely not formal even given the confinement.
+
+DECOMPOSED (2026-07-23) into a PROVEN assembly over TWO strictly
+weaker sorried leaves — the two orthogonal shadows of "the traces are
+the Hecke eigenvalues of one eigenform":
+
+1. `exists_isAlgebraic_trace_coeff` (sorry node) — each trace is
+   algebraic over `ℚ` (no degree bound, no common field);
+2. `exists_finiteDimensional_trace_span` (sorry node) — the traces lie
+   in the `ℚ`-linear span of finitely many elements of `ℚ̄_p` (no
+   algebraicity, no field structure).
+
+Neither shadow alone suffices (1. allows infinite compositum of small
+fields; 2. allows transcendental spanning sets), but their conjunction
+is pure linear algebra (the assembly below): intersect the
+finite-dimensional span with the `ℚ`-subalgebra of integral elements —
+a finite-dimensional space every element of which is algebraic — pick
+a finite generating set, and adjoin it to `ℚ`: a finite extension
+(finitely many algebraic generators) containing every trace (each
+trace is an algebraic member of the span, hence of the intersection,
+hence of the span of its generators). -/
 theorem exists_finiteDimensional_trace_field
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -535,8 +622,44 @@ theorem exists_finiteDimensional_trace_field
       (_ : FiniteDimensional ℚ E)
       (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
       ∀ v ∉ S,
-        ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 ∈ E :=
-  sorry
+        ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 ∈ E := by
+  classical
+  obtain ⟨S₁, halg⟩ :=
+    exists_isAlgebraic_trace_coeff hpodd hv hZinj hRinj hρ hint K hKfd hK
+  obtain ⟨S₂, t, hspan⟩ :=
+    exists_finiteDimensional_trace_span hpodd hv hZinj hRinj hρ hint K hKfd hK
+  -- the algebraic part of the span: a finite-dimensional `ℚ`-space all
+  -- of whose elements are algebraic over `ℚ`
+  set M : Submodule ℚ (AlgebraicClosure ℚ_[p]) :=
+    Submodule.span ℚ (t : Set (AlgebraicClosure ℚ_[p])) ⊓
+      Subalgebra.toSubmodule (integralClosure ℚ (AlgebraicClosure ℚ_[p])) with hMdef
+  haveI : FiniteDimensional ℚ M := Submodule.finiteDimensional_of_le inf_le_left
+  obtain ⟨s, hs⟩ : (⊤ : Submodule ℚ M).FG := Module.finite_def.mp inferInstance
+  -- the generators of `M` are finitely many algebraic elements
+  have hgen : ∀ x ∈ ⇑M.subtype '' ↑s, IsIntegral ℚ x := by
+    rintro x ⟨m, -, rfl⟩
+    -- membership in `toSubmodule (integralClosure ℚ _)` is definitionally
+    -- integrality
+    exact (Submodule.mem_inf.mp m.2).2
+  refine ⟨IntermediateField.adjoin ℚ (⇑M.subtype '' ↑s), ?_, S₁ ∪ S₂,
+    fun v hv' => ?_⟩
+  · -- finitely many algebraic generators span a finite extension
+    haveI : Finite ↥(⇑M.subtype '' ↑s) := (s.finite_toSet.image _).to_subtype
+    exact IntermediateField.finiteDimensional_adjoin hgen
+  · -- each trace is an algebraic member of the span, hence in `M`,
+    -- hence in the span of the generators, hence in the adjoined field
+    have hv₁ : v ∉ S₁ := fun h => hv' (Finset.mem_union_left _ h)
+    have hv₂ : v ∉ S₂ := fun h => hv' (Finset.mem_union_right _ h)
+    have hmem : ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1
+        ∈ M := Submodule.mem_inf.mpr ⟨hspan v hv₂,
+      isAlgebraic_iff_isIntegral.mp (halg v hv₁)⟩
+    have hMspan : Submodule.span ℚ (⇑M.subtype '' ↑s) = M := by
+      rw [← Submodule.map_span, hs, Submodule.map_subtype_top]
+    have hle : Submodule.span ℚ (⇑M.subtype '' ↑s) ≤
+        Subalgebra.toSubmodule
+          (IntermediateField.adjoin ℚ (⇑M.subtype '' ↑s)).toSubalgebra :=
+      Submodule.span_le.mpr fun x hx => IntermediateField.subset_adjoin ℚ _ hx
+    exact hle (hMspan.symm ▸ hmem)
 
 /-- **Algebraicity/finiteness core of the eigensystem stratum** (PROVEN
 assembly, see the DECOMPOSED note below): away from a finite set of
@@ -567,10 +690,13 @@ and proven strata:
    and the cyclotomic-Frobenius evaluation
    `cyclotomicCharacter_adicArithFrob_natCast` (PROVEN 2026-07-23 by
    the general-`p` port of the `3`-adic lemma chain).
-3. `exists_finiteDimensional_trace_field` (sorry node) — the TRACE
-   coefficient lands in a number field away from finitely many places:
-   the sole surviving automorphy content (the Hecke field), taking the
-   confinement of stratum 1 as a hypothesis.
+3. `exists_finiteDimensional_trace_field` (as of 2026-07-23 itself a
+   PROVEN assembly over the two orthogonal sorried shadows
+   `exists_isAlgebraic_trace_coeff` and
+   `exists_finiteDimensional_trace_span`; see its DECOMPOSED note) —
+   the TRACE coefficient lands in a number field away from finitely
+   many places: the sole surviving automorphy content (the Hecke
+   field), taking the confinement of stratum 1 as a hypothesis.
 4. The assembly (PROVEN, below): coefficients in degrees `≥ 2` are
    `1, 0, 0, …` (the mapped charpoly is monic of degree `2`), the
    degree-`0` coefficient is `q ∈ ℚ ⊆ E` by 2., the degree-`1`
@@ -835,8 +961,22 @@ the integral model must be produced BY the automorphy leaf, and the
 `(ℓ, φ)` member of `exists_realizations_of_eigensystem` is DERIVED
 from it by the proven base-change/conjugation glue there — i.e. the
 "datum ⇒ member" (Deligne-direction) arrow is the PROVEN half, and
-this leaf is the sole surviving automorphy sorry at odd `ℓ`. -/
-theorem exists_hardlyRamified_integral_realizations
+this leaf is the sole surviving automorphy sorry at odd `ℓ`.
+
+TELESCOPE NOTE (2026-07-23): this is the MINIMAL instance telescope for
+the integral model — of the coefficient-ring package demanded by
+`IsInHardlyRamifiedFamily`, the fields `Module.Free ℤ_[ℓ] A`,
+`IsDomain A` and `ContinuousSMul A ℚ̄_ℓ` are OMITTED here because they
+are formally derivable from the remaining ones (torsion-free + finite
+over the PID `ℤ_[ℓ]` gives freeness; injectivity into the field `ℚ̄_ℓ`
+gives the domain; the module topology makes the `ℤ_[ℓ]`-linear
+coefficient embedding automatically continuous): the derivations are
+the PROVEN assembly `exists_hardlyRamified_integral_realizations`
+below. The fields kept are either statement-relevant
+(`IsTopologicalRing`/`IsLocalRing` are binders of `IsHardlyRamified`
+itself; the topology carries the continuity of `τ`) or genuinely
+pin data (`IsModuleTopology`, the `ℤ_[ℓ]`-structure, the embedding). -/
+theorem exists_hardlyRamified_integral_realizations_core
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
     (hZinj : Function.Injective (algebraMap ℤ_[p] R))
@@ -852,11 +992,10 @@ theorem exists_hardlyRamified_integral_realizations
         (φ : E →+* AlgebraicClosure ℚ_[ℓ]),
       ∃ (A : Type u) (_ : CommRing A) (_ : TopologicalSpace A)
         (_ : IsTopologicalRing A) (_ : IsLocalRing A) (_ : Algebra ℤ_[ℓ] A)
-        (_ : Module.Finite ℤ_[ℓ] A) (_ : Module.Free ℤ_[ℓ] A) (_ : IsDomain A)
+        (_ : Module.Finite ℤ_[ℓ] A)
         (_ : Algebra A (AlgebraicClosure ℚ_[ℓ]))
         (_ : IsScalarTower ℤ_[ℓ] A (AlgebraicClosure ℚ_[ℓ]))
         (_ : IsModuleTopology ℤ_[ℓ] A)
-        (_ : ContinuousSMul A (AlgebraicClosure ℚ_[ℓ]))
         (_ : Function.Injective (algebraMap A (AlgebraicClosure ℚ_[ℓ])))
         (W : Type v) (_ : AddCommGroup W) (_ : Module A W) (_ : Module.Finite A W)
         (_ : Module.Free A W) (hW : Module.rank A W = 2)
@@ -870,8 +1009,122 @@ theorem exists_hardlyRamified_integral_realizations
             (Pv v).map φ :=
   sorry
 
+/-- **Automorphy core of the realization stratum, odd residue
+characteristics — full instance package** (PROVEN assembly): the
+statement of the former sorry node in the shape its consumer
+`exists_realizations_of_eigensystem` uses, DECOMPOSED (2026-07-23)
+into a PROVEN assembly over the strictly shallower
+`exists_hardlyRamified_integral_realizations_core` (see the TELESCOPE
+NOTE there): the three omitted coefficient-ring fields are derived
+here — `Module.Free ℤ_[ℓ] A` from module-finiteness plus
+torsion-freeness (the coefficient embedding into `ℚ̄_ℓ` is injective
+and `ℤ_[ℓ] → ℚ̄_ℓ` is injective, so `ℤ_[ℓ] → A` is injective and `A`
+is torsion-free over the PID `ℤ_[ℓ]`), `IsDomain A` by pulling back
+along the injective embedding into the field `ℚ̄_ℓ`, and
+`ContinuousSMul A ℚ̄_ℓ` because the coefficient embedding is
+`ℤ_[ℓ]`-linear out of the module topology
+(`IsModuleTopology.continuous_of_linearMap`). -/
+theorem exists_hardlyRamified_integral_realizations
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {E : Type v} [Field E] [NumberField E] (ψ : E →+* AlgebraicClosure ℚ_[p])
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E)
+    (heig : ∀ v ∉ S,
+      (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) = (Pv v).map ψ) :
+    ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ (ℓ : ℕ) (_hℓ : Fact ℓ.Prime) (hℓodd : Odd ℓ)
+        (φ : E →+* AlgebraicClosure ℚ_[ℓ]),
+      ∃ (A : Type u) (_ : CommRing A) (_ : TopologicalSpace A)
+        (_ : IsTopologicalRing A) (_ : IsLocalRing A) (_ : Algebra ℤ_[ℓ] A)
+        (_ : Module.Finite ℤ_[ℓ] A) (_ : Module.Free ℤ_[ℓ] A) (_ : IsDomain A)
+        (_ : Algebra A (AlgebraicClosure ℚ_[ℓ]))
+        (_ : IsScalarTower ℤ_[ℓ] A (AlgebraicClosure ℚ_[ℓ]))
+        (_ : IsModuleTopology ℤ_[ℓ] A)
+        (_ : ContinuousSMul A (AlgebraicClosure ℚ_[ℓ]))
+        (_ : Function.Injective (algebraMap A (AlgebraicClosure ℚ_[ℓ])))
+        (W : Type v) (_ : AddCommGroup W) (_ : Module A W) (_ : Module.Finite A W)
+        (_ : Module.Free A W) (hW : Module.rank A W = 2)
+        (τ : GaloisRep ℚ A W)
+        (_r : AlgebraicClosure ℚ_[ℓ] ⊗[A] W ≃ₗ[AlgebraicClosure ℚ_[ℓ]]
+          Fin 2 → AlgebraicClosure ℚ_[ℓ]),
+        IsHardlyRamified hℓodd hW τ ∧
+        ∀ v ∉ T, (ℓ : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal →
+          τ.IsUnramifiedAt v ∧
+          (τ.charFrob v).map (algebraMap A (AlgebraicClosure ℚ_[ℓ])) =
+            (Pv v).map φ := by
+  obtain ⟨T, hT⟩ :=
+    exists_hardlyRamified_integral_realizations_core hpodd hv hZinj hRinj hρ ψ S Pv heig
+  refine ⟨T, ?_⟩
+  intro ℓ hℓ hℓodd φ
+  haveI := hℓ
+  obtain ⟨A, iA1, iA2, iA3, iA4, iA5, iA6, iA10, iA11, iA12, hAinj,
+    W, iW1, iW2, iW3, iW4, hW, τ, r, hτ, hmatch⟩ := hT ℓ hℓ hℓodd φ
+  letI := iA1; letI := iA2; letI := iA3; letI := iA4; letI := iA5; letI := iA6
+  letI := iA10; letI := iA11; letI := iA12
+  -- `ℤ_[ℓ]` embeds into `ℚ̄_ℓ`, hence into `A` through the tower
+  have hZbarinj : Function.Injective (algebraMap ℤ_[ℓ] (AlgebraicClosure ℚ_[ℓ])) := by
+    rw [IsScalarTower.algebraMap_eq ℤ_[ℓ] ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])]
+    exact (algebraMap ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])).injective.comp
+      (FaithfulSMul.algebraMap_injective ℤ_[ℓ] ℚ_[ℓ])
+  have hZAinj : Function.Injective (algebraMap ℤ_[ℓ] A) := by
+    intro x y hxy
+    apply hZbarinj
+    rw [IsScalarTower.algebraMap_eq ℤ_[ℓ] A (AlgebraicClosure ℚ_[ℓ]),
+      RingHom.comp_apply, RingHom.comp_apply, hxy]
+  -- the three derived coefficient-ring fields
+  haveI iA8 : IsDomain A := hAinj.isDomain _
+  haveI : Module.IsTorsionFree ℤ_[ℓ] A :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr hZAinj
+  haveI iA7 : Module.Free ℤ_[ℓ] A := Module.free_of_finite_type_torsion_free'
+  haveI : ContinuousSMul ℤ_[ℓ] (AlgebraicClosure ℚ_[ℓ]) :=
+    continuousSMul_of_algebraMap _ _
+      ((continuous_algebraMap ℚ_[ℓ] _).comp continuous_subtype_val)
+  haveI iA13 : ContinuousSMul A (AlgebraicClosure ℚ_[ℓ]) :=
+    continuousSMul_of_algebraMap _ _
+      (IsModuleTopology.continuous_of_linearMap
+        (IsScalarTower.toAlgHom ℤ_[ℓ] A (AlgebraicClosure ℚ_[ℓ])).toLinearMap)
+  exact ⟨A, iA1, iA2, iA3, iA4, iA5, iA6, iA7, iA8, iA10, iA11, iA12, iA13, hAinj,
+    W, iW1, iW2, iW3, iW4, hW, τ, r, hτ, hmatch⟩
+
+/-- **Per-embedding member at residue characteristic 2** (sorry node):
+the eigensystem `(E, S, Pv)` is realized at the even prime at a SINGLE
+given embedding `φ : E →+* ℚ̄_₂` — there is a 2-dimensional `2`-adic
+representation, unramified away from a finite exceptional set `T`
+(allowed to depend on `φ`) and the places over `2`, whose Frobenius
+characteristic polynomials there are `(Pv v).map φ`. This is
+Eichler–Shimura/Deligne at `λ | 2` plus local–global compatibility for
+the one member; no hardly-ramifiedness demand is made (the notion
+requires odd residue characteristic). Strictly shallower than the
+φ-uniform `exists_realizations_at_two` below: the uniformity of the
+exceptional set over the (finitely many!) embeddings of the number
+field `E` into `ℚ̄_₂` is PROVEN glue there, not automorphy content. -/
+theorem exists_realization_at_two_of_embedding
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {E : Type v} [Field E] [NumberField E] (ψ : E →+* AlgebraicClosure ℚ_[p])
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E)
+    (heig : ∀ v ∉ S,
+      (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) = (Pv v).map ψ)
+    (φ : E →+* AlgebraicClosure ℚ_[2]) :
+    ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+      (m : GaloisRep ℚ (AlgebraicClosure ℚ_[2]) (Fin 2 → AlgebraicClosure ℚ_[2])),
+        ∀ v ∉ T, ((2 : ℕ) : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal →
+          m.IsUnramifiedAt v ∧
+          (m.toLocal v (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly =
+            (Pv v).map φ :=
+  sorry
+
 /-- **Residue characteristic 2 member of the realization stratum**
-(sorry node): the eigensystem `(E, S, Pv)` is realized at the even
+(PROVEN assembly, see the DECOMPOSED note below): the eigensystem
+`(E, S, Pv)` is realized at the even
 prime as well — for each embedding `φ : E →+* ℚ̄_₂` there is a
 2-dimensional `2`-adic representation, unramified away from a finite
 exceptional set `T` (uniform in `φ`) and the places over `2`, whose
@@ -882,7 +1135,20 @@ characteristic), so this is the bare member existence — the reason it
 is a separate leaf from
 `exists_hardlyRamified_integral_realizations`, whose conclusion
 packages the member together with its hardly ramified integral
-model. -/
+model.
+
+DECOMPOSED (2026-07-23) into a PROVEN assembly over one strictly
+shallower sorried leaf: `exists_realization_at_two_of_embedding`
+realizes the eigensystem at each single embedding `φ` with a
+`φ`-dependent exceptional set `T φ`; the assembly (below) removes the
+`φ`-dependence by taking the union of the `T φ` over ALL embeddings —
+a finite union, because a number field has only finitely many ring
+homomorphisms into any field (every `φ : E →+* ℚ̄_₂` is a `ℚ`-algebra
+map by `RingHom.equivRatAlgHom`, and `Finite (E →ₐ[ℚ] ℚ̄_₂)` holds by
+`Finite.algHom` since `E` is finite-dimensional over `ℚ`). The
+uniformity demanded by `GaloisRepFamily.isCompatible` downstream is
+thus proven bookkeeping; only the per-embedding realization retains
+automorphy content. -/
 theorem exists_realizations_at_two
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -900,8 +1166,18 @@ theorem exists_realizations_at_two
         ∀ v ∉ T, ((2 : ℕ) : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal →
           m.IsUnramifiedAt v ∧
           (m.toLocal v (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly =
-            (Pv v).map φ :=
-  sorry
+            (Pv v).map φ := by
+  classical
+  -- the number field `E` has only finitely many embeddings into `ℚ̄_₂`
+  haveI : Finite (E →+* AlgebraicClosure ℚ_[2]) :=
+    Finite.of_equiv (E →ₐ[ℚ] AlgebraicClosure ℚ_[2]) RingHom.equivRatAlgHom.symm
+  haveI := Fintype.ofFinite (E →+* AlgebraicClosure ℚ_[2])
+  -- realize the eigensystem at each embedding separately
+  choose T m hm using fun φ : E →+* AlgebraicClosure ℚ_[2] =>
+    exists_realization_at_two_of_embedding hpodd hv hZinj hRinj hρ ψ S Pv heig φ
+  -- the uniform exceptional set is the finite union of the per-embedding ones
+  refine ⟨Finset.univ.biUnion T, fun φ => ⟨m φ, fun v hvT hv2 =>
+    hm φ v (fun h => hvT (Finset.mem_biUnion.mpr ⟨φ, Finset.mem_univ _, h⟩)) hv2⟩⟩
 
 /-- **Realization stratum of the spreading** (PROVEN assembly, see the
 DECOMPOSED note below): the
@@ -931,14 +1207,18 @@ Brauer–Nesbitt-unsound direction (see the DECOMPOSITION AUDIT on
 DECOMPOSED (2026-07-23) into a PROVEN assembly over two sorried
 leaves, split along residue characteristic:
 
-1. `exists_hardlyRamified_integral_realizations` (sorry node) — at odd
+1. `exists_hardlyRamified_integral_realizations` (as of 2026-07-23 a
+   PROVEN assembly over the minimal-telescope sorried leaf
+   `exists_hardlyRamified_integral_realizations_core`) — at odd
    `ℓ`, the hardly ramified integral model `τ` over `A ↪ ℚ̄_ℓ` with
    the unramifiedness and charpoly matching stated at the integral
    level (with exceptional set `T₁`). The sole automorphy content at
-   odd `ℓ`; see its docstring for the vocabulary obstruction to a
-   further newform-datum split and the Brauer–Nesbitt soundness
-   constraint forcing the model to be produced there.
-2. `exists_realizations_at_two` (sorry node) — the bare member at
+   odd `ℓ`; see the core leaf's docstring for the vocabulary
+   obstruction to a further newform-datum split and the Brauer–Nesbitt
+   soundness constraint forcing the model to be produced there.
+2. `exists_realizations_at_two` (as of 2026-07-23 a PROVEN assembly
+   over the per-embedding sorried leaf
+   `exists_realization_at_two_of_embedding`) — the bare member at
    `ℓ = 2` (with exceptional set `T₂`), where no integral-model demand
    is made.
 3. The assembly (PROVEN, below) takes `T := T₁ ∪ T₂` and derives the
@@ -1239,11 +1519,15 @@ superseded by the hypothesis `hZinj`):
    Eichler–Shimura/Deligne plus local-global compatibility). AS OF
    2026-07-23 both strata are PROVEN assemblies, and the Hecke-field
    node `exists_finiteDimensional_coeff_field` is itself a PROVEN
-   assembly (see its DECOMPOSED note); the surviving sorried leaves are
-   `exists_finiteDimensional_trace_field` (the Hecke-field finiteness
-   core, now confined to the TRACE coefficient) and
-   `exists_realizations_of_eigensystem` (the `λ`-adic realizations of
-   the eigensystem).
+   assembly (see its DECOMPOSED note); the surviving sorried leaves
+   (2026-07-23, after the further decompositions recorded at each
+   node) are `exists_isAlgebraic_trace_coeff` and
+   `exists_finiteDimensional_trace_span` (the two shadows of the
+   Hecke-field finiteness core for the TRACE coefficient),
+   `exists_hardlyRamified_integral_realizations_core` (the `λ`-adic
+   realizations at odd `ℓ`, minimal telescope) and
+   `exists_realization_at_two_of_embedding` (the per-embedding member
+   at `ℓ = 2`).
 
 NOTE (elaboration): the final repackaging must be `refine` +
 a deferred `exact` — an anonymous-constructor `exact ⟨…, ψ, r', hψ⟩`
