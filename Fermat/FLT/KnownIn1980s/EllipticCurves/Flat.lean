@@ -21,6 +21,11 @@ public import Fermat.FLT.EllipticCurve.PhiPsiCoprime
 import Fermat.FLT.EllipticCurve.TorsionCardSep
 import Mathlib.FieldTheory.Normal.Closure
 import Mathlib.RingTheory.Etale.Field
+-- tensor products commute with finite products (`Algebra.TensorProduct.piRight`)
+-- and étale-ness is product-local (`Algebra.FormallyEtale.pi_iff`): the product
+-- assembly of `exists_finite_etale_algebra_form_of_inertia_fixes`
+import Mathlib.RingTheory.TensorProduct.Pi
+import Mathlib.RingTheory.Etale.Pi
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
 
 /-!
@@ -2565,20 +2570,44 @@ theorem WeierstrassCurve.algHom_comp_eq_of_torsion_inertia_fixes
       WithConv.toConv φ := h1
   exact WithConv.toConv_injective h2
 
-/-- **Unramified finite étale `K`-algebras have finite étale `R`-forms** (sorry
-node; the GALOIS half of the curve-free Hopf-form leaf — no Hopf structure
-appears at all): a finite étale `K`-algebra `HK`, all of whose `Kˢᵉᵖ`-points
-are fixed by every inertia subgroup above `R`, admits a finite étale `R`-form.
-Intended proof: `HK` is a finite product of finite separable subextensions
-`Lᵢ` of `Kˢᵉᵖ/K` (étale `K`-algebras split by `Kˢᵉᵖ`); the hypothesis places
-each embedding `Lᵢ → Kˢᵉᵖ` inside the inertia field of every valuation subring
-above `R`, so each `Lᵢ` is unramified with separable residue extension at
-every prime above the maximal ideal of `R`. Take `H₀` to be the integral
-closure of `R` in `HK` (transported to `Type u` along an `R`-basis), i.e. the
-product of the normalizations `Rᵢ` of `R` in `Lᵢ`: each `Rᵢ` is finite over
-`R` (separability + Noetherian normal base), free (torsion-free finite over a
-DVR), and étale over `R` (finite flat + unramified fibres, by the inertia
-hypothesis), and `K ⊗[R] H₀ → HK` is an isomorphism (clearing denominators). -/
+/-- **Unramified finite separable field extensions have finite étale `R`-forms**
+(sorry node; the single-factor core of the Galois half of the curve-free
+Hopf-form leaf, isolated 2026-07-23 — the product assembly is proven in
+`exists_finite_etale_algebra_form_of_inertia_fixes`): a finite separable field
+extension `L/K`, all of whose embeddings into `Kˢᵉᵖ` are fixed by every inertia
+subgroup above `R`, admits a finite étale `R`-form. Intended proof: the
+hypothesis places each embedding `L → Kˢᵉᵖ` inside the inertia field of every
+valuation subring above `R`, so `L` is unramified with separable residue
+extension at every prime above the maximal ideal of `R`; take `H₀` to be the
+integral closure of `R` in `L` (transported to `Type u` along an `R`-basis):
+it is finite over `R` (separability + Noetherian normal base, Neukirch I.8/
+Serre *Local Fields* I–II), free (torsion-free finite over a DVR), and étale
+over `R` (finite flat with unramified fibres, by the inertia hypothesis), and
+`K ⊗[R] H₀ → L` is an isomorphism (clearing denominators). -/
+theorem exists_finite_etale_algebra_form_of_inertia_fixes_field
+    (L : Type u) [Field L] [Algebra K L]
+    [Module.Finite K L] [Algebra.IsSeparable K L]
+    (hfix : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ σ ∈ 𝒪.inertiaSubgroup K, ∀ φ : L →ₐ[K] Ksep,
+        (σ : Ksep ≃ₐ[K] Ksep).toAlgHom.comp φ = φ) :
+    ∃ (H₀ : Type u) (_ : CommRing H₀) (_ : Algebra R H₀)
+      (_ : Module.Finite R H₀) (_ : Algebra.Etale R H₀),
+      Nonempty ((K ⊗[R] H₀) ≃ₐ[K] L) :=
+  sorry
+
+/-- **Unramified finite étale `K`-algebras have finite étale `R`-forms**
+(DECOMPOSED 2026-07-23 into the single-field-extension leaf
+`exists_finite_etale_algebra_form_of_inertia_fixes_field`; the assembly below
+is proven — no Hopf structure appears at all): a finite étale `K`-algebra
+`HK`, all of whose `Kˢᵉᵖ`-points are fixed by every inertia subgroup above
+`R`, admits a finite étale `R`-form. Assembly: `HK` is a finite product of
+finite separable field extensions `Lᵢ` (`Algebra.Etale.iff_exists_algEquiv_prod`);
+the inertia-fixing hypothesis descends to each factor through the (surjective)
+projection `HK → Lᵢ`; the factor leaf produces étale forms `H₀ᵢ`, whose
+product is a finite étale `R`-form of `HK` since the tensor product commutes
+with finite products (`Algebra.TensorProduct.piRight`) and étaleness is a
+product-local property (`Algebra.FormallyEtale.pi_iff`). -/
 theorem exists_finite_etale_algebra_form_of_inertia_fixes
     (HK : Type u) [CommRing HK] [Algebra K HK]
     [Module.Finite K HK] [Algebra.Etale K HK]
@@ -2588,27 +2617,108 @@ theorem exists_finite_etale_algebra_form_of_inertia_fixes
         (σ : Ksep ≃ₐ[K] Ksep).toAlgHom.comp φ = φ) :
     ∃ (H₀ : Type u) (_ : CommRing H₀) (_ : Algebra R H₀)
       (_ : Module.Finite R H₀) (_ : Algebra.Etale R H₀),
-      Nonempty ((K ⊗[R] H₀) ≃ₐ[K] HK) :=
+      Nonempty ((K ⊗[R] H₀) ≃ₐ[K] HK) := by
+  classical
+  -- split `HK` into a finite product of finite separable field extensions
+  obtain ⟨I, hIfin, Ai, iF, iAlgK, e, hAi⟩ :=
+    (Algebra.Etale.iff_exists_algEquiv_prod K HK).mp inferInstance
+  haveI := hIfin
+  letI := iF
+  letI := iAlgK
+  haveI := Fintype.ofFinite I
+  haveI := Classical.decEq I
+  -- each factor acquires an étale `R`-form from the field-extension leaf
+  have hform : ∀ i : I, ∃ (H₀ : Type u) (_ : CommRing H₀) (_ : Algebra R H₀)
+      (_ : Module.Finite R H₀) (_ : Algebra.Etale R H₀),
+      Nonempty ((K ⊗[R] H₀) ≃ₐ[K] Ai i) := by
+    intro i
+    haveI := (hAi i).1
+    haveI := (hAi i).2
+    refine exists_finite_etale_algebra_form_of_inertia_fixes_field R K Ksep
+      (Ai i) ?_
+    -- the inertia-fixing hypothesis descends through the projection `HK → Ai i`
+    intro 𝒪 h𝒪 σ hσ φ
+    have h := hfix 𝒪 h𝒪 σ hσ (φ.comp ((Pi.evalAlgHom K Ai i).comp e.toAlgHom))
+    have hsurj : Function.Surjective ((Pi.evalAlgHom K Ai i).comp e.toAlgHom) :=
+      (Function.surjective_eval i).comp e.surjective
+    refine AlgHom.ext fun x => ?_
+    obtain ⟨y, rfl⟩ := hsurj x
+    exact DFunLike.congr_fun h y
+  choose H₀ iCR iAlg iFin iEt hEq using hform
+  letI := iCR
+  letI := iAlg
+  haveI := iFin
+  haveI := iEt
+  -- the product of the factor forms is an étale `R`-form of `HK`
+  haveI hfin : Module.Finite R (∀ i, H₀ i) := Module.Finite.pi
+  refine ⟨∀ i, H₀ i, inferInstance, inferInstance, hfin, inferInstance, ⟨?_⟩⟩
+  exact (Algebra.TensorProduct.piRight R K K H₀).trans
+    ((AlgEquiv.piCongrRight fun i => (hEq i).some).trans e.symm)
+
+/-- **Étale algebra forms are the integral closure** (sorry node; the CANONICITY
+half of the Hopf-upgrade leaf — pure commutative algebra over the DVR `R`, no
+Hopf structure): if the finite étale `K`-algebra `HK` admits a finite étale
+`R`-algebra form `H₀`, then the integral closure of `R` in `HK` is itself a
+finite étale `R`-algebra form. Intended proof: a finite étale `R`-algebra is
+normal, hence integrally closed in its total fraction ring `K ⊗[R] H₀ ≅ HK`,
+and every element of `HK` integral over `R` is a fraction of elements of the
+image of `H₀` with denominator invertible in `K`, hence already in the image —
+so the image of `H₀` under `x ↦ e (1 ⊗ x)` IS the integral closure, and the
+form data transports along the induced isomorphism `H₀ ≅ integralClosure R HK`
+(étale forms are canonical). -/
+theorem integralClosure_finite_etale_form_of_etale_algebra_form
+    (HK : Type u) [CommRing HK] [Algebra K HK] [Algebra R HK]
+    [IsScalarTower R K HK] [Module.Finite K HK] [Algebra.Etale K HK]
+    (H₀ : Type u) [CommRing H₀] [Algebra R H₀] [Module.Finite R H₀]
+    [Algebra.Etale R H₀]
+    (e : (K ⊗[R] H₀) ≃ₐ[K] HK) :
+    Module.Finite R (integralClosure R HK) ∧
+      Algebra.Etale R (integralClosure R HK) ∧
+      Nonempty ((K ⊗[R] (integralClosure R HK)) ≃ₐ[K] HK) :=
   sorry
 
-/-- **Étale algebra forms of Hopf algebras are Hopf forms** (sorry node; the
-HOPF half of the curve-free Hopf-form leaf — pure commutative algebra over the
-DVR `R`, no Galois theory and no elliptic curve): if the finite étale Hopf
-`K`-algebra `HK` admits a finite étale `R`-ALGEBRA form `H₀`, then it admits a
-finite flat Hopf `R`-form. The key point making this honest: a finite étale
-`R`-algebra is normal, hence integrally closed in its total fraction ring
-`K ⊗[R] H₀ ≅ HK`, hence `H₀` is THE integral closure of `R` in `HK` — étale
-forms are canonical, so Hopf-stability is a property, not extra data. Intended
-proof: comultiplication is a ring homomorphism, so it sends `H₀` (integral over
-`R`) into elements of `HK ⊗[K] HK` integral over `R`, and the integral closure
-of `R` there is `H₀ ⊗[R] H₀` (étale ⊗ étale is étale over the normal base `R`,
-hence normal, hence integrally closed in its total fraction ring, and
-`K ⊗ (H₀ ⊗[R] H₀) ≅ HK ⊗[K] HK`); the counit sends `H₀` into elements of `K`
-integral over `R`, i.e. into `R` (a DVR is integrally closed); the antipode is
-an algebra endomorphism, so it preserves integrality; flatness is freeness of
-a finite torsion-free module over a DVR. The `μ_p` counterexample (whose
-normalization over `ℤ_p` is NOT a Hopf order) does not contradict this: there
-the normalization is not étale over `R`, so it is not an étale algebra form. -/
+/-- **The integral closure in an étale-formed Hopf algebra is a Hopf order**
+(sorry node; the HOPF half of the Hopf-upgrade leaf): if the integral closure
+`H₀ := integralClosure R HK` of `R` in the finite étale Hopf `K`-algebra `HK`
+is a finite étale `R`-algebra form, then `HK` admits a finite flat Hopf
+`R`-form (namely `H₀` itself). Intended proof: comultiplication is a ring
+homomorphism, so it sends `H₀` (integral over `R`) into elements of
+`HK ⊗[K] HK` integral over `R`, and the integral closure of `R` there is the
+image of `H₀ ⊗[R] H₀` (étale ⊗ étale is étale over the normal base `R`, hence
+normal, hence integrally closed in its total fraction ring, and
+`K ⊗ (H₀ ⊗[R] H₀) ≅ HK ⊗[K] HK` — the canonicity leaf
+`integralClosure_finite_etale_form_of_etale_algebra_form` applied to the
+tensor square); the counit sends `H₀` into elements of `K` integral over `R`,
+i.e. into `R` (a DVR is integrally closed); the antipode is an algebra
+endomorphism, so it preserves integrality; the corestricted operations
+satisfy the Hopf axioms because the inclusions `H₀ → HK` and
+`H₀ ⊗[R] H₀ → HK ⊗[K] HK` are injective (`H₀` is finite free over the DVR
+`R`); flatness is freeness of a finite torsion-free module over a DVR. The
+`μ_p` counterexample (whose normalization over `ℤ_p` is NOT a Hopf order)
+does not contradict this: there the normalization is not étale over `R`, so
+the étale-form hypothesis fails. -/
+theorem exists_finite_flat_hopf_form_integralClosure
+    (HK : Type u) [CommRing HK] [HopfAlgebra K HK] [Algebra R HK]
+    [IsScalarTower R K HK] [Module.Finite K HK] [Algebra.Etale K HK]
+    (hfin : Module.Finite R (integralClosure R HK))
+    (het : Algebra.Etale R (integralClosure R HK))
+    (heq : Nonempty ((K ⊗[R] (integralClosure R HK)) ≃ₐ[K] HK)) :
+    ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
+      (_ : Module.Finite R H) (_ : Module.Flat R H),
+      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) :=
+  sorry
+
+/-- **Étale algebra forms of Hopf algebras are Hopf forms** (DECOMPOSED
+2026-07-23 into the canonicity leaf
+`integralClosure_finite_etale_form_of_etale_algebra_form` — étale forms are
+the integral closure — and the Hopf-order leaf
+`exists_finite_flat_hopf_form_integralClosure` — the integral closure is
+comultiplication-stable; the assembly below is proven — pure commutative
+algebra over the DVR `R`, no Galois theory and no elliptic curve): if the
+finite étale Hopf `K`-algebra `HK` admits a finite étale `R`-ALGEBRA form
+`H₀`, then it admits a finite flat Hopf `R`-form. The key point making this
+honest: étale forms are canonical (the canonicity leaf), so Hopf-stability is
+a property, not extra data. -/
 theorem exists_finite_flat_hopf_form_of_etale_algebra_form
     (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
     [Module.Finite K HK] [Algebra.Etale K HK]
@@ -2617,8 +2727,12 @@ theorem exists_finite_flat_hopf_form_of_etale_algebra_form
     (e : (K ⊗[R] H₀) ≃ₐ[K] HK) :
     ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
       (_ : Module.Finite R H) (_ : Module.Flat R H),
-      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) :=
-  sorry
+      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) := by
+  letI : Algebra R HK := ((algebraMap K HK).comp (algebraMap R K)).toAlgebra
+  haveI : IsScalarTower R K HK := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  obtain ⟨hfin, het, heq⟩ :=
+    integralClosure_finite_etale_form_of_etale_algebra_form R K HK H₀ e
+  exact exists_finite_flat_hopf_form_integralClosure R K HK hfin het heq
 
 /-- **Unramified finite étale Hopf algebras prolong over a DVR** (DECOMPOSED
 2026-07-23 into the Galois-half leaf
@@ -3028,35 +3142,90 @@ theorem WeierstrassCurve.torsion_flat_of_good_reduction_mul
   dsimp only
   simp [hfa σ, hfb σ, map_add]
 
-/-- **The Katz–Mazur flat Hopf form, mixed characteristic** (sorry node; the
-mathematical core of flatness at `p`, stripped by
-`torsion_flat_package_of_flat_hopf_form` of all point bookkeeping — what remains
-is exactly the existence of a finite flat `R`-FORM of the torsion Hopf algebra):
-under the hypotheses of `torsion_flat_prolong_of_good_reduction_prime_pow`, the
-finite étale Hopf `K`-algebra `HK` of the `p ^ k`-torsion admits a finite flat
-Hopf `R`-form. Unlike the unramified case, `H` is NOT the normalization:
-division polynomials cannot produce `H` here (part of the torsion group scheme
-sits in the kernel of reduction, outside the affine chart), and the integral
-closure of `R` in `HK` is in general not a Hopf algebra (for `μ_p` over `ℤ_p`
-the normalization has a special fibre with two connected components of lengths
-`1` and `p - 1`, which is not a group scheme). The intended construction is the
-schematic one of [Katz–Mazur, *Arithmetic moduli of elliptic curves*,
-Thm 2.3.1]: good reduction makes the minimal Weierstrass equation an elliptic
-scheme `𝓔` over `R`; multiplication by `p ^ k` on `𝓔` is finite locally free of
-degree `p ^ (2k)` — the arithmetic input being that
-`(Φ n).eval X - ξ * (ΨSq n).eval X` is monic of degree `n²` over `R[ξ]`
-together with the fibrewise coprimality `isCoprime_Φ_ΨSq` (proven,
+set_option backward.isDefEq.respectTransparency false in
+omit [IsDomain R] [IsDiscreteValuationRing R] [E.IsElliptic]
+  [E.HasGoodReduction R] in
+/-- **Grothendieck full faithfulness for torsion points** (sorry node; the
+COMPARISON half of the Katz–Mazur leaf, curve-generic in content): two finite
+étale Hopf `K`-algebras whose `Kˢᵉᵖ`-point groups are `Gal(Kˢᵉᵖ/K)`-equivariantly
+isomorphic to the same `m`-torsion Galois module are isomorphic as Hopf algebras.
+Intended proof: this is the full faithfulness of the Grothendieck
+anti-equivalence between finite étale Hopf `K`-algebras and finite Galois
+modules; concretely, the composite points-bijection
+`(HK₁ →ₐ[K] Kˢᵉᵖ) ≃ (HK₂ →ₐ[K] Kˢᵉᵖ)` is equivariant, so it descends through
+the equivariant-functions construction of the `GaloisEtalePackage` section
+(both algebras embed, via evaluation of points, into the equivariant functions
+on their common point group with values in a splitting subextension `L`, and
+the two images coincide because the point sets match equivariantly). -/
+theorem WeierstrassCurve.exists_bialgEquiv_of_torsion_points_equiv
+    (m : ℕ)
+    (HK₁ : Type*) [CommRing HK₁] [HopfAlgebra K HK₁]
+    [Module.Finite K HK₁] [Algebra.Etale K HK₁]
+    (HK₂ : Type*) [CommRing HK₂] [HopfAlgebra K HK₂]
+    [Module.Finite K HK₂] [Algebra.Etale K HK₂]
+    (f₁ : Additive (WithConv (HK₁ →ₐ[K] Ksep)) ≃+
+      AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))
+    (hf₁ : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : HK₁ →ₐ[K] Ksep),
+      (f₁ (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
+        Affine.Point.map σ.toAlgHom (f₁ (Additive.ofMul (WithConv.toConv φ))))
+    (f₂ : Additive (WithConv (HK₂ →ₐ[K] Ksep)) ≃+
+      AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))
+    (hf₂ : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : HK₂ →ₐ[K] Ksep),
+      (f₂ (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
+        Affine.Point.map σ.toAlgHom (f₂ (Additive.ofMul (WithConv.toConv φ)))) :
+    Nonempty (HK₁ ≃ₐc[K] HK₂) :=
+  sorry
+
+/-- **The Katz–Mazur flat model, mixed characteristic** (sorry node; the
+EXISTENCE half of the Katz–Mazur leaf — the flat-package statement with no
+reference algebra to compare against): when the prime `p` is not invertible in
+`R` but nonzero in `K`, SOME finite flat Hopf `R`-algebra has étale generic
+fibre whose `Kˢᵉᵖ`-points are, `Gal(Kˢᵉᵖ/K)`-equivariantly, the
+`p ^ k`-torsion of `E(Kˢᵉᵖ)`. Unlike the unramified case, `H` is NOT a
+normalization: division polynomials cannot produce `H` here (part of the
+torsion group scheme sits in the kernel of reduction, outside the affine
+chart), and the integral closure of `R` in the torsion algebra is in general
+not a Hopf algebra (for `μ_p` over `ℤ_p` the normalization has a special fibre
+with two connected components of lengths `1` and `p - 1`, which is not a group
+scheme). The intended construction is the schematic one of [Katz–Mazur,
+*Arithmetic moduli of elliptic curves*, Thm 2.3.1]: good reduction makes the
+minimal Weierstrass equation an elliptic scheme `𝓔` over `R`; multiplication
+by `p ^ k` on `𝓔` is finite locally free of degree `p ^ (2k)` — the arithmetic
+input being that `(Φ n).eval X - ξ * (ΨSq n).eval X` is monic of degree `n²`
+over `R[ξ]` together with the fibrewise coprimality `isCoprime_Φ_ΨSq` (proven,
 `Fermat.FLT.EllipticCurve.PhiPsiCoprime`) — and `H` is the affine algebra of
 its kernel `𝓔[p ^ k]`, glued from the division-polynomial chart and a
-formal-group chart `R[[T]]/([p ^ k](T))` at the origin; the identification of
-`K ⊗[R] H` with `HK` is Cartier's theorem (étaleness of the generic fibre) plus
-the matching of `Kˢᵉᵖ`-points with the torsion, transported through `f`/`hf`
-(Galois descent: two finite étale `K`-Hopf algebras with equivariantly
-isomorphic point groups are isomorphic). For the Frey curve application
-(`R = ℤ_(p)`, `K = ℚ`, `k = 1`) the same object is more concretely the kernel
-of `[p]` on the good-reduction Weierstrass model; the `k = 1` specialization
-admits no genuine shortcut past the origin chart, because the connected
-component of `𝓔[p]` (where the model is NOT étale) is present for every `k`. -/
+formal-group chart `R[[T]]/([p ^ k](T))` at the origin; étaleness of the
+generic fibre is Cartier's theorem, and its points match the torsion by the
+division-polynomial dictionary on the affine chart. For the Frey curve
+application (`R = ℤ_(p)`, `K = ℚ`, `k = 1`) the same object is more concretely
+the kernel of `[p]` on the good-reduction Weierstrass model; the `k = 1`
+specialization admits no genuine shortcut past the origin chart, because the
+connected component of `𝓔[p]` (where the model is NOT étale) is present for
+every `k`. -/
+theorem WeierstrassCurve.exists_torsion_flat_model_of_good_reduction_prime_pow
+    (p : ℕ) (hp : p.Prime) (hpu : ¬IsUnit (p : R)) (k : ℕ) (hk : k ≠ 0)
+    (hpK : (p : K) ≠ 0) :
+    ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
+      (_ : Module.Finite R H) (_ : Module.Flat R H)
+      (_ : Algebra.Etale K (K ⊗[R] H))
+      (g : Additive (WithConv (K ⊗[R] H →ₐ[K] Ksep)) ≃+
+        AddSubgroup.torsionBy (E⁄Ksep).Point ((p ^ k : ℕ) : ℤ)),
+      ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : K ⊗[R] H →ₐ[K] Ksep),
+        (g (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
+          Affine.Point.map σ.toAlgHom (g (Additive.ofMul (WithConv.toConv φ))) :=
+  sorry
+
+/-- **The Katz–Mazur flat Hopf form, mixed characteristic** (DECOMPOSED
+2026-07-23 into the existence leaf
+`exists_torsion_flat_model_of_good_reduction_prime_pow` — the Katz–Mazur
+2.3.1 kernel model with equivariant torsion points, see its docstring — and
+the comparison leaf `exists_bialgEquiv_of_torsion_points_equiv` — Grothendieck
+full faithfulness: the given `HK` and the model's generic fibre have
+equivariantly isomorphic point groups, hence are Hopf-isomorphic; the assembly
+below is proven): under the hypotheses of
+`torsion_flat_prolong_of_good_reduction_prime_pow`, the finite étale Hopf
+`K`-algebra `HK` of the `p ^ k`-torsion admits a finite flat Hopf `R`-form. -/
 theorem WeierstrassCurve.exists_finite_flat_hopf_form_of_good_reduction_prime_pow
     (p : ℕ) (hp : p.Prime) (hpu : ¬IsUnit (p : R)) (k : ℕ) (hk : k ≠ 0)
     (hpK : (p : K) ≠ 0)
@@ -3069,8 +3238,18 @@ theorem WeierstrassCurve.exists_finite_flat_hopf_form_of_good_reduction_prime_po
         Affine.Point.map σ.toAlgHom (f (Additive.ofMul (WithConv.toConv φ)))) :
     ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
       (_ : Module.Finite R H) (_ : Module.Flat R H),
-      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) :=
-  sorry
+      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) := by
+  obtain ⟨H, iCR, iHopf, iFin, iFlat, iEt, g, hg⟩ :=
+    WeierstrassCurve.exists_torsion_flat_model_of_good_reduction_prime_pow
+      R K E Ksep p hp hpu k hk hpK
+  letI := iCR
+  letI := iHopf
+  letI := iFin
+  letI := iFlat
+  haveI := iEt
+  exact ⟨H, iCR, iHopf, iFin, iFlat,
+    WeierstrassCurve.exists_bialgEquiv_of_torsion_points_equiv K E Ksep
+      (p ^ k) (K ⊗[R] H) HK g hg f hf⟩
 
 /-- **The Katz–Mazur flat prolongation, mixed characteristic** (DECOMPOSED
 2026-07-22 into the flat Hopf-form leaf
