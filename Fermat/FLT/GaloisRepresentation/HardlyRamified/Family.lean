@@ -1335,6 +1335,287 @@ theorem isModuleTopology_integralClosure_padicInt [FiniteDimensional ℚ_[ℓ] L
     IsModuleTopology ℤ_[ℓ] (IntegralClosure ℤ_[ℓ] L) :=
   isModuleTopology_integralClosure_subtype_padicInt L
 
+/-! #### Universe transport along `ULift` (PROVEN layer)
+
+Helper layer for the formal transport leaf
+`exists_realization_package_of_concrete`: a coefficient ring `A₀ : Type`
+is relabeled as `ULift.{u} A₀`, which acts on the UNCHANGED module `W`
+through `ULift.down` (the instance `ULift.module`), so endomorphisms,
+bases, determinants, characteristic polynomials and Galois
+representations all transport by identity-on-elements relabelings. -/
+
+/-- **Endomorphism relabeling along `ULift`** (PROVEN): an `A₀`-linear
+endomorphism of `W` *is* an `ULift A₀`-linear endomorphism for the
+`ULift.down`-action — the identity on underlying functions, packaged as
+a ring isomorphism of endomorphism rings. -/
+def endULiftRingEquiv (A₀ : Type) [CommRing A₀] (W : Type*) [AddCommGroup W]
+    [Module A₀ W] : Module.End A₀ W ≃+* Module.End (ULift.{u} A₀) W where
+  toFun f :=
+    { toFun := f
+      map_add' := f.map_add'
+      map_smul' := fun a w => f.map_smul' a.down w }
+  invFun g :=
+    { toFun := g
+      map_add' := g.map_add'
+      map_smul' := fun a w => g.map_smul' (ULift.up a) w }
+  left_inv _ := rfl
+  right_inv _ := rfl
+  map_mul' _ _ := rfl
+  map_add' _ _ := rfl
+
+@[simp] lemma endULiftRingEquiv_apply {A₀ : Type} [CommRing A₀] {W : Type*}
+    [AddCommGroup W] [Module A₀ W] (f : Module.End A₀ W) (w : W) :
+    endULiftRingEquiv A₀ W f w = f w := rfl
+
+/-- **Galois-representation relabeling along `ULift`** (PROVEN): a Galois
+representation over `A₀` is one over `ULift A₀` on the same module — the
+composite with the endomorphism relabeling, which is continuous for the
+respective module topologies because it is additive and equivariant over
+the (continuous) ring map `ULift.up`. -/
+noncomputable def galoisRepULift {K : Type*} [Field K] {A₀ : Type} [CommRing A₀]
+    [TopologicalSpace A₀] {W : Type*} [AddCommGroup W] [Module A₀ W]
+    (ρ : GaloisRep K A₀ W) : GaloisRep K (ULift.{u} A₀) W :=
+  letI := moduleTopology A₀ (Module.End A₀ W)
+  letI := moduleTopology (ULift.{u} A₀) (Module.End (ULift.{u} A₀) W)
+  haveI : IsModuleTopology A₀ (Module.End A₀ W) := ⟨rfl⟩
+  haveI : ContinuousAdd (Module.End (ULift.{u} A₀) W) :=
+    ModuleTopology.continuousAdd (ULift.{u} A₀) (Module.End (ULift.{u} A₀) W)
+  haveI : ContinuousSMul (ULift.{u} A₀) (Module.End (ULift.{u} A₀) W) :=
+    ModuleTopology.continuousSMul (ULift.{u} A₀) (Module.End (ULift.{u} A₀) W)
+  ContinuousMonoidHom.comp
+    ⟨(endULiftRingEquiv A₀ W).toRingHom.toMonoidHom,
+      IsModuleTopology.continuous_of_distribMulActionHomₑ
+        (σ := ((ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm.toRingHom.toMonoidHom))
+        continuous_uliftUp
+        { toFun := endULiftRingEquiv A₀ W
+          map_smul' := fun _ _ => rfl
+          map_zero' := rfl
+          map_add' := fun _ _ => rfl }⟩ ρ
+
+@[simp] lemma galoisRepULift_apply {K : Type*} [Field K] {A₀ : Type} [CommRing A₀]
+    [TopologicalSpace A₀] {W : Type*} [AddCommGroup W] [Module A₀ W]
+    (ρ : GaloisRep K A₀ W) (g : Field.absoluteGaloisGroup K) :
+    galoisRepULift ρ g = endULiftRingEquiv A₀ W (ρ g) := rfl
+
+/-- `ULift.up` as an `ULift A₀`-linear equivalence from `A₀` (with the
+`ULift.down`-action) to `ULift A₀` (PROVEN, definitional). -/
+def uliftUpLinearEquiv {A₀ : Type} [CommRing A₀] : A₀ ≃ₗ[ULift.{u} A₀] ULift.{u} A₀ where
+  toFun := ULift.up
+  invFun := ULift.down
+  map_add' _ _ := rfl
+  map_smul' _ _ := rfl
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+/-- Coordinates of the `ULift`-relabeled basis (PROVEN, definitional):
+`Basis.mapCoeffs` along `ULift.up` lifts each coordinate by `ULift.up`. -/
+lemma mapCoeffs_uliftUp_repr {A₀ : Type} [CommRing A₀] {W : Type*} [AddCommGroup W]
+    [Module A₀ W] {ι : Type*} (b : Module.Basis ι A₀ W) (x : W) (i : ι) :
+    (b.mapCoeffs (ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm
+        (fun _ _ => rfl)).repr x i = ULift.up (b.repr x i) :=
+  rfl
+
+/-- The matrix of a relabeled endomorphism in the relabeled basis is the
+entrywise `ULift.up` of the original matrix (PROVEN). -/
+lemma toMatrix_endULiftRingEquiv {A₀ : Type} [CommRing A₀] {W : Type*} [AddCommGroup W]
+    [Module A₀ W] {ι : Type*} [Fintype ι] [DecidableEq ι] (b : Module.Basis ι A₀ W)
+    (f : Module.End A₀ W) :
+    LinearMap.toMatrix
+        (b.mapCoeffs (ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm (fun _ _ => rfl))
+        (b.mapCoeffs (ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm (fun _ _ => rfl))
+        (endULiftRingEquiv A₀ W f)
+      = (LinearMap.toMatrix b b f).map
+          (ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm.toRingHom := by
+  refine Matrix.ext fun i j => ?_
+  rw [Matrix.map_apply, LinearMap.toMatrix_apply, LinearMap.toMatrix_apply,
+    Module.Basis.mapCoeffs_apply]
+  exact mapCoeffs_uliftUp_repr b (f (b j)) i
+
+/-- The determinant of a relabeled endomorphism is the `ULift.up` of the
+original determinant (PROVEN, via the relabeled basis). -/
+lemma det_endULiftRingEquiv {A₀ : Type} [CommRing A₀] {W : Type*} [AddCommGroup W]
+    [Module A₀ W] [Module.Finite A₀ W] [Module.Free A₀ W]
+    (f : Module.End A₀ W) :
+    LinearMap.det (endULiftRingEquiv A₀ W f)
+      = (ULift.up (LinearMap.det f) : ULift.{u} A₀) := by
+  classical
+  show LinearMap.det (endULiftRingEquiv A₀ W f)
+    = (ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm.toRingHom (LinearMap.det f)
+  rw [← LinearMap.det_toMatrix (Module.Free.chooseBasis A₀ W) f, RingHom.map_det,
+    RingHom.mapMatrix_apply,
+    ← toMatrix_endULiftRingEquiv (Module.Free.chooseBasis A₀ W) f,
+    LinearMap.det_toMatrix]
+
+/-- The characteristic polynomial of a relabeled endomorphism is the
+coefficientwise `ULift.up` of the original one (PROVEN, via the relabeled
+basis and `Matrix.charpoly_map`). -/
+lemma charpoly_endULiftRingEquiv {A₀ : Type} [CommRing A₀] {W : Type*} [AddCommGroup W]
+    [Module A₀ W] [Module.Finite A₀ W] [Module.Free A₀ W]
+    [Module.Finite (ULift.{u} A₀) W] [Module.Free (ULift.{u} A₀) W]
+    (f : Module.End A₀ W) :
+    (endULiftRingEquiv A₀ W f).charpoly
+      = f.charpoly.map (ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm.toRingHom := by
+  classical
+  rw [← LinearMap.charpoly_toMatrix f (Module.Free.chooseBasis A₀ W),
+    ← Matrix.charpoly_map,
+    ← toMatrix_endULiftRingEquiv (Module.Free.chooseBasis A₀ W) f,
+    LinearMap.charpoly_toMatrix]
+
+/-- Unramifiedness transports along the `ULift` relabeling (PROVEN: the
+kernels of the local representations coincide). -/
+lemma isUnramifiedAt_galoisRepULift {A₀ : Type} [CommRing A₀] [TopologicalSpace A₀]
+    {W : Type*} [AddCommGroup W] [Module A₀ W] (τ₀ : GaloisRep ℚ A₀ W)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) [τ₀.IsUnramifiedAt v] :
+    (galoisRepULift τ₀).IsUnramifiedAt v := by
+  refine ⟨le_trans (GaloisRep.IsUnramifiedAt.localInertiaGroup_le (ρ := τ₀)) ?_⟩
+  intro σ hσ
+  have h1 : τ₀.toLocal v σ = 1 := hσ
+  show (galoisRepULift τ₀).toLocal v σ = 1
+  rw [GaloisRep.toLocal_apply, galoisRepULift_apply, ← GaloisRep.toLocal_apply, h1,
+    map_one]
+
+/-- Flatness transports along the `ULift` relabeling (PROVEN): open ideals
+of `ULift A₀` pull back to open ideals of `A₀` along the (continuous)
+`ULift.up`, the quotients are isomorphic via `Ideal.quotientEquiv`, and
+the flat-prolongation witness transports through
+`HasFlatProlongationAt.of_equiv` along the induced equivariant
+identification of base-changed spaces (coefficient transport by
+`TensorProduct.congr` plus base-ring relabeling by
+`TensorProduct.equivOfCompatibleSMul`). -/
+lemma isFlatAt_galoisRepULift {A₀ : Type} [CommRing A₀] [TopologicalSpace A₀]
+    [IsTopologicalRing A₀] [IsLocalRing A₀] [IsLocalRing (ULift.{u} A₀)]
+    {W : Type*} [AddCommGroup W] [Module A₀ W] [Module.Finite A₀ W] [Module.Free A₀ W]
+    [Module.Finite (ULift.{u} A₀) W] [Module.Free (ULift.{u} A₀) W]
+    (τ₀ : GaloisRep ℚ A₀ W)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (h : τ₀.IsFlatAt v) : (galoisRepULift τ₀).IsFlatAt v := by
+  constructor
+  intro I hI
+  -- pull the open ideal back to `A₀` along the (continuous) `ULift.up`
+  have hI₀open : IsOpen ((I.comap ((ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm :
+      A₀ ≃+* ULift.{u} A₀) : Ideal A₀) : Set A₀) := by
+    rw [Ideal.coe_comap]
+    exact hI.preimage continuous_uliftUp
+  have h0 := h.cond (I.comap ((ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm :
+    A₀ ≃+* ULift.{u} A₀)) hI₀open
+  -- the induced isomorphism of quotient coefficient rings
+  have hmapI : I = (I.comap ((ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm :
+      A₀ ≃+* ULift.{u} A₀)).map (ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm :=
+    (Ideal.map_comap_of_surjective _
+      (ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm.surjective I).symm
+  let q := Ideal.quotientEquiv _ I (ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm hmapI
+  -- ... as an `A₀`-linear equivalence
+  let qL : (A₀ ⧸ I.comap ((ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm :
+        A₀ ≃+* ULift.{u} A₀)) ≃ₗ[A₀] (ULift.{u} A₀ ⧸ I) :=
+    { q.toAddEquiv with
+      map_smul' := fun c x => by
+        show q (c • x) = c • q x
+        rw [Algebra.smul_def, Algebra.smul_def, map_mul]
+        congr 1 }
+  -- scalar compatibility for the base-ring relabeling of the tensor product
+  haveI : SMulCommClass A₀ (ULift.{u} A₀) (ULift.{u} A₀ ⧸ I) :=
+    ⟨fun a x m => by simp only [Algebra.smul_def]; rw [mul_left_comm]⟩
+  haveI : SMulCommClass A₀ A₀ (ULift.{u} A₀ ⧸ I) :=
+    ⟨fun a b m => by simp only [Algebra.smul_def]; rw [mul_left_comm]⟩
+  haveI : SMulCommClass (ULift.{u} A₀) A₀ (ULift.{u} A₀ ⧸ I) :=
+    ⟨fun x a m => by simp only [Algebra.smul_def]; rw [mul_left_comm]⟩
+  haveI : TensorProduct.CompatibleSMul A₀ (ULift.{u} A₀) (ULift.{u} A₀ ⧸ I) W :=
+    ⟨fun x m w => by
+      have hm : x • m = x.down • m := by
+        rw [Algebra.smul_def, Algebra.smul_def]; rfl
+      rw [hm, show x • w = x.down • w from rfl, TensorProduct.smul_tmul]⟩
+  haveI : TensorProduct.CompatibleSMul (ULift.{u} A₀) A₀ (ULift.{u} A₀ ⧸ I) W :=
+    ⟨fun a m w => by
+      have hm : a • m = ULift.up a • m := by
+        rw [Algebra.smul_def, Algebra.smul_def]; rfl
+      rw [hm, show a • w = ULift.up a • w from rfl, TensorProduct.smul_tmul]⟩
+  -- the equivariant identification of base-changed spaces
+  refine h0.of_equiv _
+    (((TensorProduct.congr qL (LinearEquiv.refl A₀ W)).toAddEquiv).trans
+      (TensorProduct.equivOfCompatibleSMul A₀ (ULift.{u} A₀) A₀
+        (ULift.{u} A₀ ⧸ I) W).symm.toAddEquiv) ?_
+  intro g x
+  show ((TensorProduct.equivOfCompatibleSMul A₀ (ULift.{u} A₀) A₀
+      (ULift.{u} A₀ ⧸ I) W).symm
+        ((TensorProduct.congr qL (LinearEquiv.refl A₀ W))
+          (((τ₀.baseChange (A₀ ⧸ I.comap ((ULift.ringEquiv :
+            ULift.{u} A₀ ≃+* A₀).symm : A₀ ≃+* ULift.{u} A₀))).toLocal v) g x)))
+    = (((galoisRepULift τ₀).baseChange (ULift.{u} A₀ ⧸ I)).toLocal v) g
+        ((TensorProduct.equivOfCompatibleSMul A₀ (ULift.{u} A₀) A₀
+          (ULift.{u} A₀ ⧸ I) W).symm
+            ((TensorProduct.congr qL (LinearEquiv.refl A₀ W)) x))
+  induction x using TensorProduct.induction_on with
+  | zero => simp
+  | add a b ha hb => simp only [map_add, ha, hb]
+  | tmul c w => rfl
+
+/-- **Hardly-ramifiedness transports along the `ULift` relabeling**
+(PROVEN, field by field): the determinant through
+`det_endULiftRingEquiv` and the commuting triangle of structure maps,
+unramifiedness through equality of local kernels, flatness through
+`isFlatAt_galoisRepULift`, and tameness at `2` by lifting the projection
+`π` and conjugating the quotient character by the `ULift.up` linear
+equivalence. -/
+lemma isHardlyRamified_galoisRepULift (hℓodd : Odd ℓ)
+    {A₀ : Type} [CommRing A₀] [TopologicalSpace A₀] [IsTopologicalRing A₀]
+    [IsLocalRing A₀] [Algebra ℤ_[ℓ] A₀] [IsLocalRing (ULift.{u} A₀)]
+    {W : Type v} [AddCommGroup W] [Module A₀ W] [Module.Finite A₀ W]
+    [Module.Free A₀ W]
+    [Module.Finite (ULift.{u} A₀) W] [Module.Free (ULift.{u} A₀) W]
+    {hW : Module.rank A₀ W = 2} (hW' : Module.rank (ULift.{u} A₀) W = 2)
+    {τ₀ : GaloisRep ℚ A₀ W} (hτ₀ : IsHardlyRamified hℓodd hW τ₀) :
+    IsHardlyRamified hℓodd hW' (galoisRepULift τ₀) := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · -- cyclotomic determinant
+    intro g
+    rw [GaloisRep.det_apply, galoisRepULift_apply, det_endULiftRingEquiv,
+      ← GaloisRep.det_apply, hτ₀.det g]
+    rfl
+  · -- unramified outside `2ℓ`
+    intro q hq hq'
+    haveI := hτ₀.isUnramified q hq hq'
+    exact isUnramifiedAt_galoisRepULift τ₀ _
+  · -- flat at `ℓ`
+    exact isFlatAt_galoisRepULift τ₀ _ hτ₀.isFlat
+  · -- tame at `2`
+    obtain ⟨π₀, hπ₀, δ₀, hδ₀⟩ := hτ₀.isTameAtTwo
+    refine ⟨{ toFun := fun w => ULift.up (π₀ w)
+              map_add' := fun x y => by rw [map_add]; rfl
+              map_smul' := fun c w => by
+                show ULift.up (π₀ (c.down • w)) = c • ULift.up (π₀ w)
+                rw [map_smul]
+                rfl },
+      fun a => (hπ₀ a.down).imp fun w hw => by
+        show ULift.up (π₀ w) = a
+        rw [hw],
+      (galoisRepULift δ₀).conj uliftUpLinearEquiv, ?_⟩
+    intro g w
+    obtain ⟨h1, h2, h3⟩ := hδ₀ g w
+    refine ⟨?_, ?_, ?_⟩
+    · -- the projection intertwines the representations
+      show ULift.up (π₀ (τ₀.map (algebraMap ℚ ℚ_[2]) g w))
+        = ((galoisRepULift δ₀).conj uliftUpLinearEquiv) g (ULift.up (π₀ w))
+      rw [h1]
+      rfl
+    · -- the quotient character is unramified
+      intro σ hσ
+      have hδσ : δ₀ σ = 1 := h2 hσ
+      show ((galoisRepULift δ₀).conj uliftUpLinearEquiv) σ = 1
+      rw [GaloisRep.conj_apply, galoisRepULift_apply, hδσ, map_one]
+      refine LinearMap.ext fun x => ?_
+      simp [LinearEquiv.conj_apply]
+    · -- the quotient character squares to one
+      intro g'
+      have hsq := h3 g'
+      calc ((galoisRepULift δ₀).conj uliftUpLinearEquiv) g'
+            * ((galoisRepULift δ₀).conj uliftUpLinearEquiv) g'
+          = ((galoisRepULift δ₀).conj uliftUpLinearEquiv) (g' * g') :=
+            (map_mul _ _ _).symm
+        _ = 1 := by
+            rw [GaloisRep.conj_apply, galoisRepULift_apply, map_mul δ₀, hsq, map_one]
+            refine LinearMap.ext fun x => ?_
+            simp [LinearEquiv.conj_apply]
+
 /-- **Universe/abstraction transport of a concrete realization** (sorry
 node, purely formal — no arithmetic content): a hardly ramified
 representation `τ₀` over a coefficient ring `A₀` in `Type 0` carrying
@@ -1389,8 +1670,79 @@ theorem exists_realization_package_of_concrete (hℓodd : Odd ℓ)
       IsHardlyRamified hℓodd hW τ ∧
       ∀ v ∉ T, (ℓ : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal →
         τ.IsUnramifiedAt v ∧
-        (τ.charFrob v).map (algebraMap A (AlgebraicClosure ℚ_[ℓ])) = Q v :=
-  sorry
+        (τ.charFrob v).map (algebraMap A (AlgebraicClosure ℚ_[ℓ])) = Q v := by
+  classical
+  -- the coefficient-ring package on `ULift.{u} A₀` (the algebra structure is
+  -- mathlib's `ULift.algebra'`, whose scalar action is definitionally the
+  -- `ULift.down`-action — no instance diamond against `ULift.module`)
+  letI algU : Algebra (ULift.{u} A₀) (AlgebraicClosure ℚ_[ℓ]) :=
+    ULift.algebra' A₀ (AlgebraicClosure ℚ_[ℓ])
+  haveI locU : IsLocalRing (ULift.{u} A₀) :=
+    IsLocalRing.of_surjective' (ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm.toRingHom
+      (ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm.surjective
+  haveI finU : Module.Finite ℤ_[ℓ] (ULift.{u} A₀) :=
+    Module.Finite.equiv (ULift.moduleEquiv : ULift.{u} A₀ ≃ₗ[ℤ_[ℓ]] A₀).symm
+  haveI towU : IsScalarTower ℤ_[ℓ] (ULift.{u} A₀) (AlgebraicClosure ℚ_[ℓ]) :=
+    IsScalarTower.of_algebraMap_eq (S := ULift.{u} A₀) fun x =>
+      IsScalarTower.algebraMap_apply ℤ_[ℓ] A₀ (AlgebraicClosure ℚ_[ℓ]) x
+  haveI mtU : IsModuleTopology ℤ_[ℓ] (ULift.{u} A₀) :=
+    IsModuleTopology.iso (R := ℤ_[ℓ])
+      { toLinearEquiv := (ULift.moduleEquiv : ULift.{u} A₀ ≃ₗ[ℤ_[ℓ]] A₀).symm
+        continuous_toFun := continuous_uliftUp
+        continuous_invFun := continuous_uliftDown }
+  have hinjU : Function.Injective
+      (algebraMap (ULift.{u} A₀) (AlgebraicClosure ℚ_[ℓ])) := fun x y hxy =>
+    ULift.down_injective (hA₀inj hxy)
+  -- the module `W₀`, with the coefficients relabeled through `ULift.up`
+  haveI finW : Module.Finite (ULift.{u} A₀) W₀ :=
+    Module.Finite.of_basis ((Module.Free.chooseBasis A₀ W₀).mapCoeffs
+      (ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm fun _ _ => rfl)
+  haveI freeW : Module.Free (ULift.{u} A₀) W₀ :=
+    Module.Free.of_basis ((Module.Free.chooseBasis A₀ W₀).mapCoeffs
+      (ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm fun _ _ => rfl)
+  have hWU : Module.rank (ULift.{u} A₀) W₀ = 2 := by
+    rw [rank_eq_card_basis ((Module.Free.chooseBasis A₀ W₀).mapCoeffs
+        (ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm fun _ _ => rfl),
+      ← rank_eq_card_basis (Module.Free.chooseBasis A₀ W₀), hW₀]
+  -- scalar compatibility for the base-ring relabeling of the framing (the
+  -- `ULift A₀`-actions are definitionally the `ULift.down`-actions)
+  haveI : SMulCommClass A₀ (ULift.{u} A₀) (AlgebraicClosure ℚ_[ℓ]) :=
+    ⟨fun a x m => by
+      change a • x.down • m = x.down • a • m
+      rw [smul_smul, smul_smul, mul_comm]⟩
+  haveI : TensorProduct.CompatibleSMul A₀ (ULift.{u} A₀)
+      (AlgebraicClosure ℚ_[ℓ]) W₀ :=
+    ⟨fun x m w => by
+      change (x.down • m) ⊗ₜ[A₀] w = m ⊗ₜ[A₀] (x.down • w)
+      rw [TensorProduct.smul_tmul]⟩
+  haveI : TensorProduct.CompatibleSMul (ULift.{u} A₀) A₀
+      (AlgebraicClosure ℚ_[ℓ]) W₀ :=
+    ⟨fun a m w => by
+      change ((ULift.up a) • m) ⊗ₜ[ULift.{u} A₀] w
+        = m ⊗ₜ[ULift.{u} A₀] ((ULift.up a) • w)
+      rw [TensorProduct.smul_tmul]⟩
+  refine ⟨ULift.{u} A₀, inferInstance, inferInstance, inferInstance, locU,
+    inferInstance, finU, algU, towU, mtU, hinjU, W₀, inferInstance, inferInstance,
+    finW, freeW, hWU, galoisRepULift τ₀,
+    (TensorProduct.equivOfCompatibleSMul A₀ (ULift.{u} A₀) (AlgebraicClosure ℚ_[ℓ])
+        (AlgebraicClosure ℚ_[ℓ]) W₀) ≪≫ₗ r₀,
+    isHardlyRamified_galoisRepULift hℓodd hWU hτ₀, ?_⟩
+  intro w hwT hwℓ
+  obtain ⟨hunr, hchar⟩ := hmatch w hwT hwℓ
+  haveI := hunr
+  refine ⟨isUnramifiedAt_galoisRepULift τ₀ w, ?_⟩
+  have hcf : (galoisRepULift τ₀ : GaloisRep ℚ (ULift.{u} A₀) W₀).charFrob w
+      = (τ₀.charFrob w).map
+          (ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm.toRingHom := by
+    show ((galoisRepULift τ₀).toLocal w
+        (Field.AbsoluteGaloisGroup.adicArithFrob w)).charpoly = _
+    rw [GaloisRep.toLocal_apply, galoisRepULift_apply, charpoly_endULiftRingEquiv]
+    rfl
+  rw [hcf, Polynomial.map_map,
+    show ((algebraMap (ULift.{u} A₀) (AlgebraicClosure ℚ_[ℓ])).comp
+        (ULift.ringEquiv : ULift.{u} A₀ ≃+* A₀).symm.toRingHom)
+      = algebraMap A₀ (AlgebraicClosure ℚ_[ℓ]) from RingHom.ext fun x => rfl,
+    hchar]
 
 end ConcreteCoefficientRing
 
