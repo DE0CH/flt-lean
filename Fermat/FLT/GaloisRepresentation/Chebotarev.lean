@@ -1946,7 +1946,31 @@ theorem exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le
       hlog).differentiableAt (hU.mem_nhds hw₀U)
   -- its derivative at real `t ∈ (1, 2]` is `L'/L`, hence bounded by `C/c`
   have hderiv : ∀ t : ℝ, 1 < t → t ≤ 2 → ‖deriv 𝒮 (t : ℂ)‖ ≤ C / c := by
-    sorry
+    intro t ht ht2
+    have hVopen : IsOpen {w : ℂ | 1 < w.re} :=
+      isOpen_lt continuous_const Complex.continuous_re
+    have htV : (t : ℂ) ∈ {w : ℂ | 1 < w.re} := by
+      simp only [Set.mem_setOf_eq, Complex.ofReal_re]
+      exact ht
+    -- `exp ∘ 𝒮` and `L` agree near `t`, so their derivatives agree
+    have heq : (fun w => Complex.exp (𝒮 w)) =ᶠ[nhds (t : ℂ)] L :=
+      Filter.eventuallyEq_of_mem (hVopen.mem_nhds htV) fun w hw => hEuler w hw
+    have h2 : HasDerivAt (fun w => Complex.exp (𝒮 w))
+        (Complex.exp (𝒮 (t : ℂ)) * deriv 𝒮 (t : ℂ)) (t : ℂ) :=
+      ((hdiff _ htV).hasDerivAt).cexp
+    have h3 : deriv L (t : ℂ) = Complex.exp (𝒮 (t : ℂ)) * deriv 𝒮 (t : ℂ) :=
+      (heq.deriv_eq).symm.trans h2.deriv
+    obtain ⟨hlow, -, hder⟩ := hLbounds t ht ht2
+    have h4 : c * ‖deriv 𝒮 (t : ℂ)‖ ≤ C := by
+      calc c * ‖deriv 𝒮 (t : ℂ)‖
+          ≤ ‖L (t : ℂ)‖ * ‖deriv 𝒮 (t : ℂ)‖ :=
+            mul_le_mul_of_nonneg_right hlow (norm_nonneg _)
+        _ = ‖Complex.exp (𝒮 (t : ℂ))‖ * ‖deriv 𝒮 (t : ℂ)‖ := by
+            rw [hEuler _ htV]
+        _ = ‖deriv L (t : ℂ)‖ := by rw [h3, norm_mul]
+        _ ≤ C := hder
+    rw [le_div_iff₀ hc, mul_comm]
+    exact h4
   -- mean value inequality on `[s, 3/2]`
   have hnear : ∀ s : ℝ, 1 < s → s ≤ 3 / 2 →
       ‖𝒮 (s : ℂ)‖ ≤ ‖𝒮 ((3 / 2 : ℝ) : ℂ)‖ + C / c * (1 / 2) := by
