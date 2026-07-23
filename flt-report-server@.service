@@ -1,0 +1,53 @@
+# flt-report-server@.service — the resident census/report server for
+# Lean projects, as a systemd USER TEMPLATE unit (Deyao, 2026-07-23):
+# `lake serve` itself IS the server, run per-instance with
+# WorkingDirectory=~/%i — i.e. the instance name IS the folder under
+# the user's home directory that the server roots itself in (and
+# hence searches for .lake in). Each instance gets its own FIFOs,
+# scoped inside its own WorkingDirectory (.report-server/ is relative
+# to WorkingDirectory), so multiple instances never collide. The unit
+# is the SOLE lifecycle mechanism per instance — no wrapper scripts;
+# if an instance fails, fix the unit.
+#
+# Clients (progress-tree.py's run_census; through it `--census` and
+# the Stop hook) open the target instance's FIFOs per query, speak
+# Content-Length-framed JSON-RPC, and exit. The LSP handshake is
+# PROTOCOL, not lifecycle, so it lives in the client: ExecStartPre
+# removes .report-server/state.json (the client-side session marker),
+# and the first client to find the marker absent performs
+# initialize/initialized + didOpen of ProgressCensus.lean itself
+# before querying — so a Restart=on-failure respawn is re-handshaken
+# by whichever client queries next. The one live session keeps
+# ProgressCensus.lean open with all imports loaded; a warm query costs
+# seconds instead of a cold elaboration.
+#
+# ExecStart runs lake serve via sh so both FIFO ends are opened O_RDWR
+# (the <> redirection): the server always counts as its own
+# stdin-writer and stdout-reader, so client connect/disconnect cycles
+# never EOF or SIGPIPE it — and a client's O_WRONLY|O_NONBLOCK open of
+# req.fifo doubles as the liveness probe (ENXIO = no reader = server
+# gone).
+#
+# Install (once):
+#   cp /home/chend/flt-lean/flt-report-server@.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+# Manage an instance rooted at ~/<name> (e.g. ~/flt-lean):
+#   systemctl --user enable --now flt-report-server@<name>
+#   systemctl --user start|stop|restart|status flt-report-server@<name>
+#   journalctl --user -u flt-report-server@<name>      (lake serve stderr)
+# The user manager persists across logouts: linger is enabled for chend
+# (`loginctl enable-linger chend`, verified 2026-07-23).
+
+[Unit]
+Description=FLT progress report server (lake serve on FIFOs) — instance %i
+
+[Service]
+Type=exec
+WorkingDirectory=%h/%i
+Environment=PATH=/home/chend/.elan/bin:/home/chend/homebrew/bin:/usr/local/bin:/usr/bin:/bin
+ExecStartPre=/bin/sh -c 'mkdir -p .report-server && rm -f .report-server/state.json && for f in req resp; do [ -p .report-server/$f.fifo ] || { rm -f .report-server/$f.fifo; mkfifo .report-server/$f.fifo; }; done'
+ExecStart=/bin/sh -c 'exec lake serve -- 0<> .report-server/req.fifo 1<> .report-server/resp.fifo'
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
