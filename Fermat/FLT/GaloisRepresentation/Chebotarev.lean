@@ -2463,8 +2463,70 @@ norm `≤ s` is `∼ κ·s`), by fibering the count over the norm. -/
 theorem sum_card_absNorm_isBigO (F : Type*) [Field F] [NumberField F] :
     (fun n : ℕ => ∑ k ∈ Finset.Icc 1 n,
       (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ)) =O[atTop]
-      (fun n : ℕ => (n : ℝ)) :=
-  sorry
+      (fun n : ℕ => (n : ℝ)) := by
+  classical
+  -- pointwise domination by the count of ideals of norm at most `n`
+  have hle : ∀ n : ℕ, ∑ k ∈ Finset.Icc 1 n,
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ) ≤
+      (Nat.card {I : Ideal (𝓞 F) // (Ideal.absNorm I : ℝ) ≤ (n : ℝ)} : ℝ) := by
+    intro n
+    haveI hfin : ∀ k : ℕ, Finite {I : Ideal (𝓞 F) // Ideal.absNorm I = k} :=
+      fun k => (Ideal.finite_setOf_absNorm_eq k).to_subtype
+    haveI hfin2 : Finite {I : Ideal (𝓞 F) // (Ideal.absNorm I : ℝ) ≤ (n : ℝ)} := by
+      have hset : {I : Ideal (𝓞 F) | (Ideal.absNorm I : ℝ) ≤ (n : ℝ)} =
+          {I : Ideal (𝓞 F) | Ideal.absNorm I ≤ n} := by
+        ext I
+        simp only [Set.mem_setOf_eq]
+        exact Nat.cast_le
+      have hf : {I : Ideal (𝓞 F) | Ideal.absNorm I ≤ n}.Finite :=
+        Ideal.finite_setOf_absNorm_le n
+      rw [← hset] at hf
+      exact hf.to_subtype
+    rw [← Nat.cast_sum]
+    refine Nat.cast_le.mpr ?_
+    -- reindex the sum as the cardinality of a sigma type
+    have hsum : ∑ k ∈ Finset.Icc 1 n,
+        Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} =
+        Nat.card (Σ k : ↥(Finset.Icc 1 n),
+          {I : Ideal (𝓞 F) // Ideal.absNorm I = (k : ℕ)}) := by
+      rw [Nat.card_sigma, ← Finset.sum_coe_sort]
+    rw [hsum]
+    -- and inject it into the ideals of norm at most `n`
+    have hmem : ∀ p : (Σ k : ↥(Finset.Icc 1 n),
+        {I : Ideal (𝓞 F) // Ideal.absNorm I = (k : ℕ)}),
+        (Ideal.absNorm p.2.1 : ℝ) ≤ (n : ℝ) := by
+      intro p
+      rw [p.2.2]
+      exact_mod_cast (Finset.mem_Icc.mp p.1.2).2
+    refine Nat.card_le_card_of_injective (fun p => ⟨p.2.1, hmem p⟩) ?_
+    rintro ⟨⟨k, hk⟩, ⟨I, hI⟩⟩ ⟨⟨k', hk'⟩, ⟨I', hI'⟩⟩ h
+    have hII : I = I' := congrArg Subtype.val h
+    subst hII
+    have hkk : k = k' := by
+      rw [← show Ideal.absNorm I = k from hI, ← show Ideal.absNorm I = k' from hI']
+    subst hkk
+    rfl
+  -- the ideal count is `O(s)` by the counting asymptotics
+  have h2 : (fun s : ℝ =>
+      (Nat.card {I : Ideal (𝓞 F) // (Ideal.absNorm I : ℝ) ≤ s} : ℝ)) =O[atTop]
+      (fun s : ℝ => s) := by
+    have h5 : (fun s : ℝ =>
+        ((Nat.card {I : Ideal (𝓞 F) // (Ideal.absNorm I : ℝ) ≤ s} : ℝ) / s) * s)
+        =O[atTop] (fun s : ℝ => (1 : ℝ) * s) :=
+      ((NumberField.Ideal.tendsto_norm_le_div_atTop F).isBigO_one (F := ℝ)).mul
+        (isBigO_refl _ _)
+    have h4 : (fun s : ℝ =>
+        ((Nat.card {I : Ideal (𝓞 F) // (Ideal.absNorm I : ℝ) ≤ s} : ℝ) / s) * s)
+        =ᶠ[atTop] (fun s : ℝ =>
+          (Nat.card {I : Ideal (𝓞 F) // (Ideal.absNorm I : ℝ) ≤ s} : ℝ)) := by
+      filter_upwards [eventually_gt_atTop (0 : ℝ)] with s hs
+      rw [div_mul_cancel₀ _ hs.ne']
+    exact h5.congr' h4 (Filter.Eventually.of_forall fun s => one_mul s)
+  have h6 := h2.comp_tendsto tendsto_natCast_atTop_atTop
+  refine (Asymptotics.isBigO_of_le _ fun n => ?_).trans h6
+  rw [Real.norm_of_nonneg (Finset.sum_nonneg fun k _ => Nat.cast_nonneg _),
+    Function.comp_apply, Real.norm_of_nonneg (Nat.cast_nonneg _)]
+  exact hle n
 
 /-- **Abel summation transfer of power-saving cancellation to
 log-weighted sums**: if the partial sums of `c` are `O(n^r)` with
