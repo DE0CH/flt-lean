@@ -542,48 +542,226 @@ theorem exists_ringEquiv_of_isUniversal {ρbar : GaloisRep ℚ (ZMod ℓ) V}
   show f (algebraMap ℤ_[ℓ] D.R c) = algebraMap ℤ_[ℓ] D'.R c
   rw [← RingHom.comp_apply, hf.1]
 
-/-- **Mazur representability leaf** (sorry node — the mapping half of
-the representability stratum): the hardly ramified deformation problem
-of an irreducible hardly ramified `ρbar` (`ℓ ≥ 5`) admits a *weakly
-universal* object — a deformation mapping compatibly to every
-deformation. Trace generation is NOT part of this leaf (it is restored
-by the Carayol descent leaf
-`exists_isWeaklyUniversal_isTraceGenerated_of_isWeaklyUniversal`
-below), so any inflation of the universal ring — `R^{univ}[[t]]` with
-the deformation constant in `t`, say — is an admissible witness; the
-leaf is exactly the *existence of maps*.
+/-- **Continuity of the reduction map** (PROVEN, elementary): the
+reduction map `π : D'.R → ℤ/ℓℤ` of a hardly ramified deformation is
+continuous — its kernel is the maximal ideal (`π` is surjective onto
+the prime field), which is open in the maximal-adic topology, so `π`
+is locally constant. (Ingredient of the residual-identification
+vocabulary below: it makes `ℤ/ℓℤ` a topological `D'.R`-algebra, so the
+reduction of `D'.ρ` can be formed by `baseChange`.) -/
+lemma HardlyRamifiedDeformation.continuous_pi
+    {ρbar : GaloisRep ℚ (ZMod ℓ) V}
+    (D' : HardlyRamifiedDeformation hℓOdd ρbar) :
+    letI := D'.commRing; letI := D'.topologicalSpace
+    letI := D'.isTopologicalRing; letI := D'.isLocalRing
+    Continuous D'.π := by
+  letI := D'.commRing; letI := D'.topologicalSpace
+  letI := D'.isTopologicalRing; letI := D'.isLocalRing
+  have hker : RingHom.ker D'.π = IsLocalRing.maximalIdeal D'.R :=
+    IsLocalRing.eq_maximalIdeal
+      (RingHom.ker_isMaximal_of_surjective D'.π
+        (ZMod.ringHom_surjective D'.π))
+  have hopen : IsOpen ((RingHom.ker D'.π : Ideal D'.R) : Set D'.R) := by
+    rw [hker]
+    have h1 := (isAdic_iff.mp D'.isAdic).1 1
+    rwa [pow_one] at h1
+  apply continuous_of_continuousAt_zero D'.π
+  unfold ContinuousAt
+  rw [map_zero, nhds_discrete (ZMod ℓ), Filter.tendsto_pure]
+  filter_upwards [hopen.mem_nhds (Submodule.zero_mem _)] with x hx
+  exact hx
+
+open scoped TensorProduct in
+/-- **Residual identification**: the reduction of `D'.ρ` along the
+reduction map `D'.π` — the base change of `D'.ρ` to `ℤ/ℓℤ`, a
+continuous `D'.R`-algebra via `continuous_pi` — is conjugate to `ρbar`
+itself. This is the datum with which Mazur-style strict-deformation
+universality can be applied to `D'`: the `HardlyRamifiedDeformation`
+category matches `D'` with `ρbar` only through Frobenius characteristic
+polynomials (`charFrob_compat`), and the Chebotarev–Brauer–Nesbitt leaf
+`exists_conj_of_charFrob_eq` upgrades that matching to an actual
+conjugation whenever `ρbar` is irreducible. Bundled as a definition so
+the instance `letI`s live under plain parameters (elaborator
+constraint, cf. `IsTraceDescent`). -/
+def HardlyRamifiedDeformation.IsResidualIdentified
+    {ρbar : GaloisRep ℚ (ZMod ℓ) V}
+    (D' : HardlyRamifiedDeformation hℓOdd ρbar) : Prop :=
+  letI := D'.commRing; letI := D'.topologicalSpace
+  letI := D'.isTopologicalRing; letI := D'.isLocalRing; letI := D'.algebra
+  letI : Algebra D'.R (ZMod ℓ) := D'.π.toAlgebra
+  letI : ContinuousSMul D'.R (ZMod ℓ) :=
+    continuousSMul_of_algebraMap D'.R (ZMod ℓ)
+      (by rw [RingHom.algebraMap_toAlgebra]; exact D'.continuous_pi)
+  ∃ e : ((ZMod ℓ) ⊗[D'.R] (Fin 2 → D'.R)) ≃ₗ[ZMod ℓ] V,
+    (D'.ρ.baseChange (ZMod ℓ)).conj e = ρbar
+
+/-- **Weak universality on residually identified deformations**: `D`
+maps compatibly to every deformation `D'` that comes equipped with a
+residual identification. This is what Mazur-style strict-deformation
+representability produces directly — the classifying map exists for
+deformations whose reduction is identified with `ρbar` — without the
+Chebotarev–Brauer–Nesbitt input, which is exactly what upgrades this
+property to full `IsWeaklyUniversal` in the assembly
+`exists_isWeaklyUniversal`. -/
+def HardlyRamifiedDeformation.IsWeaklyUniversalOnIdentified
+    {ρbar : GaloisRep ℚ (ZMod ℓ) V}
+    (D : HardlyRamifiedDeformation hℓOdd ρbar) : Prop :=
+  letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+  letI := D.isLocalRing; letI := D.algebra
+  ∀ D' : HardlyRamifiedDeformation hℓOdd ρbar,
+    letI := D'.commRing; letI := D'.topologicalSpace
+    letI := D'.isTopologicalRing; letI := D'.isLocalRing; letI := D'.algebra
+    D'.IsResidualIdentified →
+    ∃ f : D.R →+* D'.R,
+      f.comp (algebraMap ℤ_[ℓ] D.R) = algebraMap ℤ_[ℓ] D'.R ∧
+      D'.π.comp f = D.π ∧
+      ∀ q (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+        (D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map f =
+          D'.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat
+
+/-- **Chebotarev–Brauer–Nesbitt conjugacy leaf** (sorry node — the
+identification half of the Mazur representability stratum): a
+continuous mod-`ℓ` representation `τ` of `Gal(ℚ̄/ℚ)` on a 2-dimensional
+space whose Frobenius characteristic polynomials at all primes
+`q ∉ {2, ℓ}` agree with those of an *irreducible* `ρbar` is conjugate
+to `ρbar`.
+
+Mathematical content: by Chebotarev density
+(`dense_conjClasses_globalFrob`) and continuity into the discrete
+endomorphism spaces, the characteristic polynomials of `τ` and `ρbar`
+agree on all of the Galois group; by Brauer–Nesbitt the
+semisimplifications are then isomorphic; `ρbar` is irreducible and
+2-dimensional, so the semisimplification of `τ` is the single
+composition factor `ρbar` of full dimension — i.e. `τ` itself is
+isomorphic to `ρbar`, and an intertwining isomorphism is the required
+conjugation. (The proven machinery of `Chebotarev.lean` — the density
+node, the closed-agreement-set argument of
+`not_isIrreducible_of_charFrob_eq`, and the 2-dimensional
+Brauer–Nesbitt tools of `BrauerNesbitt.lean` — is the intended
+toolkit.) -/
+theorem exists_conj_of_charFrob_eq
+    (hdimV : Module.rank (ZMod ℓ) V = 2)
+    {W : Type*} [AddCommGroup W] [Module (ZMod ℓ) W]
+    [Module.Finite (ZMod ℓ) W] [Module.Free (ZMod ℓ) W]
+    (hdimW : Module.rank (ZMod ℓ) W = 2)
+    {ρbar : GaloisRep ℚ (ZMod ℓ) V} (hirr : ρbar.IsIrreducible)
+    (τ : GaloisRep ℚ (ZMod ℓ) W)
+    (hcf : ∀ q (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat) :
+    ∃ e : W ≃ₗ[ZMod ℓ] V, τ.conj e = ρbar :=
+  sorry
+
+/-- **Strict Mazur representability leaf** (sorry node — the
+representability half of the Mazur stratum): the hardly ramified
+deformation problem of an irreducible hardly ramified `ρbar` (`ℓ ≥ 5`)
+admits a deformation `D` that maps compatibly to every *residually
+identified* deformation `D'` — every `D'` equipped with a conjugation
+of its reduction onto `ρbar`. The Chebotarev–Brauer–Nesbitt matching is
+NOT part of this leaf (it is supplied by `exists_conj_of_charFrob_eq`
+through the proven assembly `exists_isWeaklyUniversal`); this leaf is
+Mazur/Ramakrishna representability proper.
 
 Mathematical content: `ρbar` is odd (its determinant is the mod-`ℓ`
 cyclotomic character, which sends complex conjugation to `−1 ≠ 1` for
 odd `ℓ`), and an odd irreducible 2-dimensional representation over
-`𝔽_ℓ`, `ℓ` odd, is absolutely irreducible (complex conjugation has the
-distinct eigenvalues `±1`). Hence by Schlessinger's criteria / Mazur's
-theorem the framed deformation functor with the hardly ramified local
-conditions — cyclotomic determinant, unramified outside `{2, ℓ}`, flat
-at `ℓ` (a deformation condition by Ramakrishna), tame quadratic quotient
-at `2` — is representable by a complete Noetherian local `ℤ_ℓ`-algebra
-`R^{univ}` with residue field `𝔽_ℓ`: the de Smit–Lenstra
-generators-and-relations construction presents `R^{univ}` as
-`ℤ_ℓ[[x₁,…,x_g]]/I`, the `xᵢ` matrix-entry coordinates of a topological
-generating set of the image, `I` the closed ideal of relations forced by
-continuity and the hardly ramified conditions. A deformation `D'` of
-this category is matched with `ρbar` only through Frobenius
-characteristic polynomials at good primes, so the eventual proof also
-carries a Chebotarev–Brauer–Nesbitt step: the reduction of `D'.ρ` mod
-`ker D'.π` has the Frobenius characteristic polynomials of `ρbar`
-(clause `charFrob_compat`), hence by density and Brauer–Nesbitt is
-isomorphic to the irreducible `ρbar`, which produces the classifying
-map `R^{univ} → D'.R` from strict-deformation universality.
+`𝔽_ℓ`, `ℓ` odd, is absolutely irreducible. Hence by Schlessinger's
+criteria / Mazur's theorem the framed deformation functor with the
+hardly ramified local conditions — cyclotomic determinant, unramified
+outside `{2, ℓ}`, flat at `ℓ` (a deformation condition by Ramakrishna),
+tame quadratic quotient at `2` — is representable by a complete
+Noetherian local `ℤ_ℓ`-algebra `R^{univ}` with residue field `𝔽_ℓ`
+(the de Smit–Lenstra generators-and-relations construction presents
+`R^{univ}` as `ℤ_ℓ[[x₁,…,x_g]]/I`). Given `D'` with a residual
+identification, conjugating the framing carries `D'.ρ` to a strict
+deformation of `ρbar`, whose classifying map `R^{univ} → D'.R` is the
+required compatible homomorphism: compatibility with the reduction
+maps is strictness, and compatibility with `charFrob` is
+conjugation-invariance of characteristic polynomials.
 
 References: Mazur, *Deforming Galois representations*; Ramakrishna,
 *On a variation of Mazur's deformation functor*; de Smit–Lenstra,
 *Explicit construction of universal deformation rings* (Prop. 2.3);
 Böckle's appendix to Khare's Serre-conjecture notes. -/
+theorem exists_isWeaklyUniversalOnIdentified (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ (ZMod ℓ) V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible) :
+    ∃ D : HardlyRamifiedDeformation hℓOdd ρbar,
+      D.IsWeaklyUniversalOnIdentified :=
+  sorry
+
+open scoped TensorProduct in
+/-- **Mazur representability stratum** (DECOMPOSED 2026-07-23 into the
+strict Mazur representability leaf
+`exists_isWeaklyUniversalOnIdentified` — the classifying maps for
+residually identified deformations — and the Chebotarev–Brauer–Nesbitt
+conjugacy leaf `exists_conj_of_charFrob_eq` — which produces the
+residual identification from the `charFrob_compat` matching; the
+assembly below is proven): the hardly ramified deformation problem of
+an irreducible hardly ramified `ρbar` (`ℓ ≥ 5`) admits a *weakly
+universal* object — a deformation mapping compatibly to every
+deformation. Trace generation is NOT part of this node (it is restored
+by the Carayol descent stratum
+`exists_isWeaklyUniversal_isTraceGenerated_of_isWeaklyUniversal`
+below).
+
+The proven glue: given any deformation `D'`, its reduction — the base
+change of `D'.ρ` along the (continuous, by `continuous_pi`) reduction
+map `D'.π` — is a 2-dimensional mod-`ℓ` representation
+(`Module.rank_baseChange`) whose Frobenius characteristic polynomials
+are the reductions of those of `D'.ρ` (`LinearMap.charpoly_baseChange`)
+— i.e., by clause `charFrob_compat`, those of `ρbar`. The
+Chebotarev–Brauer–Nesbitt leaf turns this matching into a residual
+identification, and the strict leaf's classifying map is the required
+compatible homomorphism. -/
 theorem exists_isWeaklyUniversal (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ (ZMod ℓ) V} (h : IsHardlyRamified hℓOdd hdim ρbar)
     (hirr : ρbar.IsIrreducible) :
-    ∃ D : HardlyRamifiedDeformation hℓOdd ρbar, D.IsWeaklyUniversal :=
-  sorry
+    ∃ D : HardlyRamifiedDeformation hℓOdd ρbar, D.IsWeaklyUniversal := by
+  obtain ⟨D, hD⟩ :=
+    exists_isWeaklyUniversalOnIdentified hℓOdd hdim hℓ5 h hirr
+  refine ⟨D, ?_⟩
+  letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+  letI := D.isLocalRing; letI := D.algebra
+  intro D'
+  letI := D'.commRing; letI := D'.topologicalSpace
+  letI := D'.isTopologicalRing; letI := D'.isLocalRing; letI := D'.algebra
+  letI : Algebra D'.R (ZMod ℓ) := D'.π.toAlgebra
+  letI : ContinuousSMul D'.R (ZMod ℓ) :=
+    continuousSMul_of_algebraMap D'.R (ZMod ℓ)
+      (by rw [RingHom.algebraMap_toAlgebra]; exact D'.continuous_pi)
+  -- the reduction is 2-dimensional …
+  have hrankW :
+      Module.rank (ZMod ℓ) ((ZMod ℓ) ⊗[D'.R] (Fin 2 → D'.R)) = 2 := by
+    rw [Module.rank_baseChange, rank_finTwoFun]
+    simp
+  -- … and its Frobenius characteristic polynomials are those of `ρbar`
+  have hcf : ∀ q (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (D'.ρ.baseChange (ZMod ℓ)).charFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat := by
+    intro q hq hq2 hqℓ
+    have hcp : ((D'.ρ.baseChange (ZMod ℓ))
+        (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly =
+        ((D'.ρ (globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly).map
+          (algebraMap D'.R (ZMod ℓ)) := by
+      show ((Module.End.baseChangeHom D'.R (ZMod ℓ) (Fin 2 → D'.R))
+        (D'.ρ (globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat))).charpoly = _
+      rw [show (Module.End.baseChangeHom D'.R (ZMod ℓ) (Fin 2 → D'.R))
+          (D'.ρ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)) =
+        LinearMap.baseChange (ZMod ℓ)
+          (D'.ρ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat))
+        from rfl, LinearMap.charpoly_baseChange]
+    have hred := D'.charFrob_compat q hq hq2 hqℓ
+    show ((D'.ρ.baseChange (ZMod ℓ))
+      (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly = _
+    rw [hcp, RingHom.algebraMap_toAlgebra]
+    exact hred
+  obtain ⟨e, he⟩ := exists_conj_of_charFrob_eq hdim hrankW hirr
+    (D'.ρ.baseChange (ZMod ℓ)) hcf
+  exact hD D' ⟨e, he⟩
 
 /-- **Carayol subring-descent leaf** (sorry node — the genuine content
 of the trace-descent stratum): every hardly ramified deformation `D` of
