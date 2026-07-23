@@ -63,12 +63,21 @@ here. This file provides:
   prime sum converges for each fixed `s > 1` — itself PROVEN by
   injecting the degree-one places into the nonzero ideals, from the
   full-ideal-sum leaf `tsum_rpow_neg_absNorm_ne_top` of the
-  Dedekind-zeta half) and the one remaining sorry leaf of this half,
+  Dedekind-zeta half) and
   `exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le` (the
   character sum `S_χ(s)` of a Dirichlet character mod `ℓ` nontrivial
   on the image of `Gal(E/F)` is bounded uniformly in `s > 1` — the
-  minimal `L(1, χ) ≠ 0` statement); see the leaves' docstrings for the
-  intended proofs and the exact state of the mathlib pin.
+  minimal `L(1, χ) ≠ 0` statement) — itself now PROVEN by an
+  exp/log-plus-mean-value assembly from the two remaining sorry
+  leaves of this half:
+  `exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries`
+  (the Euler product for the `χ`-twisted Dedekind zeta function in
+  exponential form — absolute-convergence bookkeeping only) and
+  `exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le` (the
+  twisted ideal `L`-series and its derivative are bounded, and the
+  series is bounded away from `0`, uniformly on real `(1, 2]` — the
+  continuation-plus-`L(1,χ) ≠ 0` core); see the leaves' docstrings
+  for the intended proofs and the exact state of the mathlib pin.
 
 The remaining pieces of the decomposition (Brauer–Nesbitt for
 2-dimensional mod-`ℓ` representations, the mod-`ℓ` cyclotomic character as
@@ -1689,8 +1698,8 @@ theorem exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le
 
 open IsDedekindDomain in
 /-- **Boundedness near `s = 1` of the nontrivial Dirichlet character sums
-over degree-one primes** (sorry node) — the `L(1, χ) ≠ 0` core of the
-Chebotarev/Dirichlet argument, now stripped of ALL bookkeeping: for a
+over degree-one primes** — the `L(1, χ) ≠ 0` core of the
+Chebotarev/Dirichlet argument, stripped of ALL bookkeeping: for a
 cyclotomic extension `E = F(ζ_ℓ)` (`ℓ` prime) and a Dirichlet character
 `χ mod ℓ` (with values in `ℂ`) that is nontrivial on the image of
 `Gal(E/F)` in `(ZMod ℓ)ˣ` (hypothesis `hχ`, phrased through the Galois
@@ -1698,18 +1707,24 @@ action on `ζ`: some `ρ` acts by an exponent `n` with `χ n ≠ 1`), the sum
 `S_χ(s) = ∑_P χ(N P) · N P ^ (-s)` over the degree-one places of `F`
 away from `ℓ` is bounded uniformly in `s > 1`.
 
-Classical content: `S_χ(s) = log L(s, χ ∘ Frob) + O(1)` near `s = 1`,
-where `L` is the Hecke `L`-series of the character of `Gal(E'/F)`
-(`E' ⊆ E` the fixed field of `ker`) obtained from `χ`; the factorization
-`ζ_{E'}(s) = ∏_ψ L(s, ψ)` over the characters of the abelian group
-`Gal(E'/F)` together with the SIMPLE pole of `ζ_{E'}` and `ζ_F` at
-`s = 1` forces every nontrivial factor to satisfy `L(1, ψ) ≠ 0`, hence
-`log L(s, ψ)` bounded as `s → 1⁺`. For `ψ` nontrivial, making sense of
-`L` near `s = 1` needs a power-saving error term in the per-ideal-class
-counting (Hecke's ray-class lattice-point argument, Lang ANT VI §3,
-VIII §4) — as of 2026-07-23 the deepest ingredient missing from the
-mathlib pin (which has per-class ideal counting only as a plain limit:
-no error term, no Euler product, no Hecke `L`-series). -/
+DERIVED from the two strictly shallower sorried leaves above — the
+Euler-product identity
+`exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries`
+(`exp 𝒮 = L` on `re w > 1`, pure unique-factorization bookkeeping) and
+the good-behaviour leaf
+`exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le`
+(`0 < c ≤ ‖L‖ ≤ C` and `‖L'‖ ≤ C` on real `(1, 2]` — the
+continuation-plus-nonvanishing core; see its docstring for the Hecke
+route and the state of the mathlib pin) — with all glue proven here:
+for `s ≥ 3/2` the sum is dominated termwise by its value at `3/2`; on
+`(1, 3/2]` the full prime log-sum `𝒮` is `ℂ`-differentiable on
+`re w > 1` (Weierstrass, `Complex.differentiableOn_tsum_of_summable_norm`),
+`exp ∘ 𝒮 = L` forces `𝒮' = L'/L`, so `‖𝒮'‖ ≤ C/c` and the mean value
+inequality bounds `𝒮` on `[s, 3/2]` by its value at `3/2` plus `C/(2c)`;
+finally `𝒮 - S_χ` is uniformly bounded by the log-Taylor remainders
+(`≤ ∑ N(P)⁻²`) plus the higher-degree places (`≤ ∑_{N(P) not prime}
+N(P)⁻¹`, the zeta-half tail leaf), the `ℓ`-power norms contributing `0`
+through `χ`. -/
 theorem exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le
     {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
     [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
