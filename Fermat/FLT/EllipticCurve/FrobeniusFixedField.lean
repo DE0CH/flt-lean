@@ -13,10 +13,13 @@ and a curve-point version: a nonsingular point with abscissa in
 lies in `frobFixed q (2ℓ)` (the ordinate solves a quadratic with
 coefficients fixed by `frobℓ`).
 
-This is the toolkit for discharging the `G''`-existence sorry in the
-σ-mirror step of `exists_weilPairing_mu` (WeilPairing.lean): the mirror
-field is `frobFixed q (2ℓf₀)`-shaped, the promised avoided elements
-stay out by the arithmetic helper `d ∣ 2ℓf ∧ ¬ℓ ∣ d → d ∣ 2f`.
+This is the toolkit for the subfield-lattice selections inside
+`exists_weilPairing_mu` (WeilPairing.lean): the σ-mirror `G''`-step
+(mirror field `frobFixed q (2ℓf₀)`-shaped, avoided elements kept out by
+the arithmetic helper `d ∣ 2ℓf ∧ ¬ℓ ∣ d → d ∣ 2f`) and the `hswap`
+mutual-genericity selection (two deep translates at distinct large
+prime levels, transported through `frobFixed_inf` and the period
+dictionary).
 -/
 module
 
@@ -180,24 +183,6 @@ theorem frobFixed_inf (a b : ℕ) :
   ext x
   simp only [Subfield.mem_inf, mem_frobFixed_iff_frobPeriod_dvd q, Nat.dvd_gcd_iff]
 
-theorem frobFixed_le_frobFixed_iff {a b : ℕ} (ha : a ≠ 0) :
-    frobFixed q a ≤ frobFixed q b ↔ a ∣ b := by
-  refine ⟨fun hle => ?_, frobFixed_le_frobFixed q⟩
-  have hsub : frobFixed q a ≤ frobFixed q (Nat.gcd a b) := by
-    rw [← frobFixed_inf]
-    exact le_inf le_rfl hle
-  have hg0 : Nat.gcd a b ≠ 0 := fun h => ha (Nat.eq_zero_of_gcd_eq_zero_left h)
-  have hcard : q ^ a ≤ q ^ Nat.gcd a b := by
-    rw [← card_frobFixedFinset q ha, ← card_frobFixedFinset q hg0]
-    refine Finset.card_le_card fun x hx => ?_
-    rw [mem_frobFixedFinset_iff q hg0]
-    exact hsub ((mem_frobFixedFinset_iff q ha).mp hx)
-  have hle' : a ≤ Nat.gcd a b :=
-    (Nat.pow_le_pow_iff_right (Fact.out (p := q.Prime)).one_lt).mp hcard
-  have hga : Nat.gcd a b = a :=
-    le_antisymm (Nat.gcd_le_left b (Nat.pos_of_ne_zero ha)) hle'
-  exact hga ▸ Nat.gcd_dvd_right a b
-
 /-! ### Fresh elements by counting -/
 
 /-- Fresh-element existence: if `q ^ m + |A| < q ^ n` then `frobFixed q n`
@@ -259,15 +244,6 @@ theorem notMem_frobFixed_two_mul_prime {x : AlgebraicClosure (ZMod q)} {ℓ f : 
     x ∉ frobFixed q (2 * ℓ * f) := fun hmem =>
   hnot <| (mem_frobFixed_iff_frobPeriod_dvd q).mpr <|
     dvd_two_mul_of_prime_not_dvd hℓ ((mem_frobFixed_iff_frobPeriod_dvd q).mp hmem) hnd
-
-/-- A prime `ℓ` beyond the degree of a containing fixed field cannot
-divide the Frobenius period (`ℓ > all fixed degrees` step of the
-σ-mirror plan). -/
-theorem not_dvd_frobPeriod_of_mem {x : AlgebraicClosure (ZMod q)} {N ℓ : ℕ}
-    (hN : N ≠ 0) (hmem : x ∈ frobFixed q N) (hℓ : N < ℓ) :
-    ¬ℓ ∣ frobPeriod q x := fun hdvd =>
-  absurd ((Nat.le_of_dvd (frobPeriod_pos q x) hdvd).trans
-    (frobPeriod_le_of_mem q hN hmem)) (Nat.not_le.mpr hℓ)
 
 /-! ### Quadratic extensions and curve points -/
 
@@ -340,10 +316,5 @@ theorem exists_nonsingular_frobFixed (W : WeierstrassCurve.Affine (AlgebraicClos
       (neg_mem (add_mem (add_mem (add_mem (pow_mem hxℓ 3)
         (mul_mem (h1ℓ ha₂) (pow_mem hxℓ 2))) (mul_mem (h1ℓ ha₄) hxℓ)) (h1ℓ ha₆)))
       hquad⟩
-
-/-- Convenience: images of the prime field are `frob`-fixed. -/
-theorem algebraMap_mem_frobFixed_one (r : ZMod q) :
-    algebraMap (ZMod q) (AlgebraicClosure (ZMod q)) r ∈ frobFixed q 1 := by
-  rw [mem_frobFixed_iff, pow_one, ← map_pow, ZMod.pow_card]
 
 end WeilPairing
