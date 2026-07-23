@@ -835,8 +835,22 @@ the integral model must be produced BY the automorphy leaf, and the
 `(ℓ, φ)` member of `exists_realizations_of_eigensystem` is DERIVED
 from it by the proven base-change/conjugation glue there — i.e. the
 "datum ⇒ member" (Deligne-direction) arrow is the PROVEN half, and
-this leaf is the sole surviving automorphy sorry at odd `ℓ`. -/
-theorem exists_hardlyRamified_integral_realizations
+this leaf is the sole surviving automorphy sorry at odd `ℓ`.
+
+TELESCOPE NOTE (2026-07-23): this is the MINIMAL instance telescope for
+the integral model — of the coefficient-ring package demanded by
+`IsInHardlyRamifiedFamily`, the fields `Module.Free ℤ_[ℓ] A`,
+`IsDomain A` and `ContinuousSMul A ℚ̄_ℓ` are OMITTED here because they
+are formally derivable from the remaining ones (torsion-free + finite
+over the PID `ℤ_[ℓ]` gives freeness; injectivity into the field `ℚ̄_ℓ`
+gives the domain; the module topology makes the `ℤ_[ℓ]`-linear
+coefficient embedding automatically continuous): the derivations are
+the PROVEN assembly `exists_hardlyRamified_integral_realizations`
+below. The fields kept are either statement-relevant
+(`IsTopologicalRing`/`IsLocalRing` are binders of `IsHardlyRamified`
+itself; the topology carries the continuity of `τ`) or genuinely
+pin data (`IsModuleTopology`, the `ℤ_[ℓ]`-structure, the embedding). -/
+theorem exists_hardlyRamified_integral_realizations_core
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
     (hZinj : Function.Injective (algebraMap ℤ_[p] R))
@@ -852,11 +866,10 @@ theorem exists_hardlyRamified_integral_realizations
         (φ : E →+* AlgebraicClosure ℚ_[ℓ]),
       ∃ (A : Type u) (_ : CommRing A) (_ : TopologicalSpace A)
         (_ : IsTopologicalRing A) (_ : IsLocalRing A) (_ : Algebra ℤ_[ℓ] A)
-        (_ : Module.Finite ℤ_[ℓ] A) (_ : Module.Free ℤ_[ℓ] A) (_ : IsDomain A)
+        (_ : Module.Finite ℤ_[ℓ] A)
         (_ : Algebra A (AlgebraicClosure ℚ_[ℓ]))
         (_ : IsScalarTower ℤ_[ℓ] A (AlgebraicClosure ℚ_[ℓ]))
         (_ : IsModuleTopology ℤ_[ℓ] A)
-        (_ : ContinuousSMul A (AlgebraicClosure ℚ_[ℓ]))
         (_ : Function.Injective (algebraMap A (AlgebraicClosure ℚ_[ℓ])))
         (W : Type v) (_ : AddCommGroup W) (_ : Module A W) (_ : Module.Finite A W)
         (_ : Module.Free A W) (hW : Module.rank A W = 2)
@@ -869,6 +882,87 @@ theorem exists_hardlyRamified_integral_realizations
           (τ.charFrob v).map (algebraMap A (AlgebraicClosure ℚ_[ℓ])) =
             (Pv v).map φ :=
   sorry
+
+/-- **Automorphy core of the realization stratum, odd residue
+characteristics — full instance package** (PROVEN assembly): the
+statement of the former sorry node in the shape its consumer
+`exists_realizations_of_eigensystem` uses, DECOMPOSED (2026-07-23)
+into a PROVEN assembly over the strictly shallower
+`exists_hardlyRamified_integral_realizations_core` (see the TELESCOPE
+NOTE there): the three omitted coefficient-ring fields are derived
+here — `Module.Free ℤ_[ℓ] A` from module-finiteness plus
+torsion-freeness (the coefficient embedding into `ℚ̄_ℓ` is injective
+and `ℤ_[ℓ] → ℚ̄_ℓ` is injective, so `ℤ_[ℓ] → A` is injective and `A`
+is torsion-free over the PID `ℤ_[ℓ]`), `IsDomain A` by pulling back
+along the injective embedding into the field `ℚ̄_ℓ`, and
+`ContinuousSMul A ℚ̄_ℓ` because the coefficient embedding is
+`ℤ_[ℓ]`-linear out of the module topology
+(`IsModuleTopology.continuous_of_linearMap`). -/
+theorem exists_hardlyRamified_integral_realizations
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {E : Type v} [Field E] [NumberField E] (ψ : E →+* AlgebraicClosure ℚ_[p])
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E)
+    (heig : ∀ v ∉ S,
+      (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) = (Pv v).map ψ) :
+    ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ (ℓ : ℕ) (_hℓ : Fact ℓ.Prime) (hℓodd : Odd ℓ)
+        (φ : E →+* AlgebraicClosure ℚ_[ℓ]),
+      ∃ (A : Type u) (_ : CommRing A) (_ : TopologicalSpace A)
+        (_ : IsTopologicalRing A) (_ : IsLocalRing A) (_ : Algebra ℤ_[ℓ] A)
+        (_ : Module.Finite ℤ_[ℓ] A) (_ : Module.Free ℤ_[ℓ] A) (_ : IsDomain A)
+        (_ : Algebra A (AlgebraicClosure ℚ_[ℓ]))
+        (_ : IsScalarTower ℤ_[ℓ] A (AlgebraicClosure ℚ_[ℓ]))
+        (_ : IsModuleTopology ℤ_[ℓ] A)
+        (_ : ContinuousSMul A (AlgebraicClosure ℚ_[ℓ]))
+        (_ : Function.Injective (algebraMap A (AlgebraicClosure ℚ_[ℓ])))
+        (W : Type v) (_ : AddCommGroup W) (_ : Module A W) (_ : Module.Finite A W)
+        (_ : Module.Free A W) (hW : Module.rank A W = 2)
+        (τ : GaloisRep ℚ A W)
+        (_r : AlgebraicClosure ℚ_[ℓ] ⊗[A] W ≃ₗ[AlgebraicClosure ℚ_[ℓ]]
+          Fin 2 → AlgebraicClosure ℚ_[ℓ]),
+        IsHardlyRamified hℓodd hW τ ∧
+        ∀ v ∉ T, (ℓ : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal →
+          τ.IsUnramifiedAt v ∧
+          (τ.charFrob v).map (algebraMap A (AlgebraicClosure ℚ_[ℓ])) =
+            (Pv v).map φ := by
+  obtain ⟨T, hT⟩ :=
+    exists_hardlyRamified_integral_realizations_core hpodd hv hZinj hRinj hρ ψ S Pv heig
+  refine ⟨T, ?_⟩
+  intro ℓ hℓ hℓodd φ
+  haveI := hℓ
+  obtain ⟨A, iA1, iA2, iA3, iA4, iA5, iA6, iA10, iA11, iA12, hAinj,
+    W, iW1, iW2, iW3, iW4, hW, τ, r, hτ, hmatch⟩ := hT ℓ hℓ hℓodd φ
+  letI := iA1; letI := iA2; letI := iA3; letI := iA4; letI := iA5; letI := iA6
+  letI := iA10; letI := iA11; letI := iA12
+  -- `ℤ_[ℓ]` embeds into `ℚ̄_ℓ`, hence into `A` through the tower
+  have hZbarinj : Function.Injective (algebraMap ℤ_[ℓ] (AlgebraicClosure ℚ_[ℓ])) := by
+    rw [IsScalarTower.algebraMap_eq ℤ_[ℓ] ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])]
+    exact (algebraMap ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])).injective.comp
+      (FaithfulSMul.algebraMap_injective ℤ_[ℓ] ℚ_[ℓ])
+  have hZAinj : Function.Injective (algebraMap ℤ_[ℓ] A) := by
+    intro x y hxy
+    apply hZbarinj
+    rw [IsScalarTower.algebraMap_eq ℤ_[ℓ] A (AlgebraicClosure ℚ_[ℓ]),
+      RingHom.comp_apply, RingHom.comp_apply, hxy]
+  -- the three derived coefficient-ring fields
+  haveI iA8 : IsDomain A := hAinj.isDomain _
+  haveI : Module.IsTorsionFree ℤ_[ℓ] A :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr hZAinj
+  haveI iA7 : Module.Free ℤ_[ℓ] A := Module.free_of_finite_type_torsion_free'
+  haveI : ContinuousSMul ℤ_[ℓ] (AlgebraicClosure ℚ_[ℓ]) :=
+    continuousSMul_of_algebraMap _ _
+      ((continuous_algebraMap ℚ_[ℓ] _).comp continuous_subtype_val)
+  haveI iA13 : ContinuousSMul A (AlgebraicClosure ℚ_[ℓ]) :=
+    continuousSMul_of_algebraMap _ _
+      (IsModuleTopology.continuous_of_linearMap
+        (IsScalarTower.toAlgHom ℤ_[ℓ] A (AlgebraicClosure ℚ_[ℓ])).toLinearMap)
+  exact ⟨A, iA1, iA2, iA3, iA4, iA5, iA6, iA7, iA8, iA10, iA11, iA12, iA13, hAinj,
+    W, iW1, iW2, iW3, iW4, hW, τ, r, hτ, hmatch⟩
 
 /-- **Per-embedding member at residue characteristic 2** (sorry node):
 the eigensystem `(E, S, Pv)` is realized at the even prime at a SINGLE
