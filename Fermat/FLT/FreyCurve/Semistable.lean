@@ -89,6 +89,12 @@ public import Mathlib.RingTheory.Etale.Pi
 -- finite-factorization glue of `exists_galoisModulePackage`; PUBLIC
 -- because the finite-Galois core leaf is STATED with `IsGalois`
 public import Mathlib.FieldTheory.Galois.Basic
+-- split Galois descent for the twisted constant group scheme: the
+-- normal basis theorem and the Dedekind-matrix inversion feed the
+-- spanning half, tensor finiteness feeds the dimension count
+import Mathlib.FieldTheory.Galois.NormalBasis
+import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
+import Mathlib.RingTheory.TensorProduct.Finite
 
 @[expose] public section
 
@@ -2918,6 +2924,360 @@ def galDescPullback {B C : Type} (actB : (↥L ≃ₐ[K] ↥L) → B → B)
   map_add' _ _ := rfl
   commutes' _ := rfl
 
+/-! ##### Split Galois descent for the equivariant-function algebras
+
+For the finite Galois group `Gal(L/K)` acting on an arbitrary type `B`
+(set-level action), the equivariant subalgebra
+`H_B = galDescSubalgebra K Ω L B act ⊆ (B → L)` satisfies classical
+Galois descent in split form; the pieces proven here feed the sorried
+`galDesc*` leaves below:
+
+* `galDesc_linearIndependent` — a `K`-linearly independent family of
+  equivariant functions stays `L`-linearly independent in `B → L`
+  (minimal-relation argument on the Galois translates of a relation);
+* `galDesc_mem_span` — every function `B → L` is an `L`-linear
+  combination of equivariant functions (average the translates of `f`
+  against a normal basis; the Dedekind matrix `(g (nb j))_{g,j}` is
+  invertible because distinct algebra maps are `L`-linearly
+  independent);
+* `galDesc_finrank` — hence `dim_K H_B = |B|` for finite `B` (the
+  split base-change map `L ⊗[K] H_B → (B → L)` is bijective);
+* `galDescProdHom_bijective` — the tensor-comparison map
+  `H_B ⊗[K] H_C → H_{B×C}` is bijective (injective by linear
+  disjointness, surjective by the dimension count). -/
+
+section GalDescCore
+
+variable {B C : Type}
+
+/-- **Linear disjointness of equivariant functions** (the injectivity
+half of split Galois descent): a `K`-linearly independent family in the
+equivariant subalgebra stays `L`-linearly independent as functions
+`B → L`. Minimal-relation argument: normalize a shortest nontrivial
+`L`-relation to have a coefficient `1`, subtract its Galois translates
+(which are again relations, by equivariance of the functions), conclude
+all coefficients are Galois-fixed, hence in `K` — contradiction. -/
+theorem galDesc_linearIndependent [FiniteDimensional K ↥L] [IsGalois K ↥L]
+    (act : (↥L ≃ₐ[K] ↥L) → B → B) {ι : Type*}
+    {v : ι → ↥(galDescSubalgebra K Ω L B act)} (hv : LinearIndependent K v) :
+    LinearIndependent ↥L fun i => (v i : B → ↥L) := by
+  classical
+  rw [linearIndependent_iff']
+  intro s
+  induction s using Finset.strongInduction with
+  | H s ih =>
+    intro c hc
+    by_contra hne
+    push Not at hne
+    obtain ⟨i₀, hi₀s, hi₀⟩ := hne
+    set c' : ι → ↥L := fun i => (c i₀)⁻¹ * c i with hc'def
+    have hrel : ∑ i ∈ s, c' i • (v i : B → ↥L) = 0 := by
+      have h1 := congrArg (fun f : B → ↥L => (c i₀)⁻¹ • f) hc
+      simpa [Finset.smul_sum, smul_smul, hc'def] using h1
+    have hc'i₀ : c' i₀ = 1 := by
+      simp only [hc'def]
+      exact inv_mul_cancel₀ hi₀
+    have hrelg : ∀ g : ↥L ≃ₐ[K] ↥L,
+        ∑ i ∈ s, g (c' i) • (v i : B → ↥L) = 0 := by
+      intro g
+      have h0 : ∀ b : B, ∑ i ∈ s, c' i * (v i : B → ↥L) (act g⁻¹ b) = 0 := by
+        intro b
+        have h2 := congrFun hrel (act g⁻¹ b)
+        simpa using h2
+      funext b
+      simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, Pi.zero_apply]
+      calc ∑ i ∈ s, g (c' i) * (v i : B → ↥L) b
+          = ∑ i ∈ s, g (c' i) * g ((v i : B → ↥L) (act g⁻¹ b)) := by
+            refine Finset.sum_congr rfl fun i _ => ?_
+            rw [(v i).2 g⁻¹ b, AlgEquiv.aut_inv, AlgEquiv.apply_symm_apply]
+        _ = g (∑ i ∈ s, c' i * (v i : B → ↥L) (act g⁻¹ b)) := by
+            rw [map_sum]
+            exact Finset.sum_congr rfl fun i _ => (map_mul g _ _).symm
+        _ = 0 := by rw [h0 b, map_zero]
+    have hfix : ∀ (g : ↥L ≃ₐ[K] ↥L) (i : ι), i ∈ s → g (c' i) = c' i := by
+      intro g i hi
+      have h3 : ∑ j ∈ s, (g (c' j) - c' j) • (v j : B → ↥L) = 0 := by
+        simp only [sub_smul, Finset.sum_sub_distrib, hrelg g, hrel, sub_zero]
+      have h4 : ∑ j ∈ s.erase i₀, (g (c' j) - c' j) • (v j : B → ↥L) = 0 := by
+        rwa [← Finset.add_sum_erase _ _ hi₀s, hc'i₀, map_one, sub_self, zero_smul,
+          zero_add] at h3
+      have h5 := ih (s.erase i₀) (Finset.erase_ssubset hi₀s) _ h4
+      rcases eq_or_ne i i₀ with rfl | hne'
+      · rw [hc'i₀, map_one]
+      · exact sub_eq_zero.mp (h5 i (Finset.mem_erase.mpr ⟨hne', hi⟩))
+    have hK : ∀ i : ι, ∃ k : K, i ∈ s → algebraMap K ↥L k = c' i := by
+      intro i
+      by_cases hi : i ∈ s
+      · have hmem : c' i ∈ Set.range (algebraMap K ↥L) := by
+          rw [IsGalois.mem_range_algebraMap_iff_fixed]
+          exact fun g => hfix g i hi
+        exact ⟨hmem.choose, fun _ => hmem.choose_spec⟩
+      · exact ⟨0, fun h => absurd h hi⟩
+    choose k hk using hK
+    have hrelK : ∑ i ∈ s, k i • v i = 0 := by
+      have hcoe : ((∑ i ∈ s, k i • v i : ↥(galDescSubalgebra K Ω L B act)) :
+          B → ↥L) = ∑ i ∈ s, c' i • (v i : B → ↥L) := by
+        rw [AddSubmonoidClass.coe_finsetSum]
+        refine Finset.sum_congr rfl fun i hi => ?_
+        rw [SetLike.val_smul, ← hk i hi, algebraMap_smul]
+      exact Subtype.ext (by rw [hcoe, hrel]; rfl)
+    have h6 := linearIndependent_iff'.mp hv s k hrelK i₀ hi₀s
+    rw [← hk i₀ hi₀s, h6, map_zero] at hc'i₀
+    exact zero_ne_one hc'i₀
+
+/-- **Spanning by equivariant functions** (the surjectivity half of
+split Galois descent): every function `B → L` is an `L`-linear
+combination of equivariant ones. For `c : L` the averaged function
+`b ↦ ∑ g, g (c · f (act g⁻¹ b))` is equivariant; running `c` through a
+normal basis of `L/K` and inverting the Dedekind matrix `(g (nb j))`
+recovers `f` itself as a combination of averages. -/
+theorem galDesc_mem_span [FiniteDimensional K ↥L] [IsGalois K ↥L]
+    (act : (↥L ≃ₐ[K] ↥L) → B → B)
+    (hone : ∀ b, act 1 b = b)
+    (hmul : ∀ g₁ g₂ b, act (g₁ * g₂) b = act g₁ (act g₂ b)) (f : B → ↥L) :
+    f ∈ Submodule.span ↥L (galDescSubalgebra K Ω L B act : Set (B → ↥L)) := by
+  classical
+  have havg : ∀ c : ↥L,
+      (fun b => ∑ g : ↥L ≃ₐ[K] ↥L, g (c * f (act g⁻¹ b))) ∈
+        galDescSubalgebra K Ω L B act := by
+    intro c
+    refine (mem_galDescSubalgebra_iff K Ω L).mpr fun g₀ b => ?_
+    have hstep : ∀ g : ↥L ≃ₐ[K] ↥L,
+        (g₀ * g) (c * f (act (g₀ * g)⁻¹ (act g₀ b))) = g₀ (g (c * f (act g⁻¹ b))) := by
+      intro g
+      have hact : act (g₀ * g)⁻¹ (act g₀ b) = act g⁻¹ b := by
+        rw [← hmul, mul_inv_rev, inv_mul_cancel_right]
+      rw [hact, AlgEquiv.mul_apply]
+    calc (fun b => ∑ g : ↥L ≃ₐ[K] ↥L, g (c * f (act g⁻¹ b))) (act g₀ b)
+        = ∑ g : ↥L ≃ₐ[K] ↥L, (g₀ * g) (c * f (act (g₀ * g)⁻¹ (act g₀ b))) :=
+          (Fintype.sum_equiv (Equiv.mulLeft g₀) _ _ fun g => rfl).symm
+      _ = ∑ g : ↥L ≃ₐ[K] ↥L, g₀ (g (c * f (act g⁻¹ b))) :=
+          Finset.sum_congr rfl fun g _ => hstep g
+      _ = g₀ ((fun b => ∑ g : ↥L ≃ₐ[K] ↥L, g (c * f (act g⁻¹ b))) b) :=
+          (map_sum g₀ _ _).symm
+  set nb : Module.Basis (↥L ≃ₐ[K] ↥L) K ↥L := IsGalois.normalBasis K ↥L
+  set M : Matrix (↥L ≃ₐ[K] ↥L) (↥L ≃ₐ[K] ↥L) ↥L :=
+    Matrix.of fun g j => g (nb j) with hM
+  have hMinj : Function.Injective M.vecMul := by
+    have hli : LinearIndependent ↥L
+        fun g : ↥L ≃ₐ[K] ↥L => (g : ↥L →ₐ[K] ↥L).toLinearMap :=
+      (linearIndependent_toLinearMap K ↥L ↥L).comp
+        (fun g : ↥L ≃ₐ[K] ↥L => (g : ↥L →ₐ[K] ↥L))
+        AlgEquiv.coe_toAlgHom_injective
+    have hker : ∀ z : (↥L ≃ₐ[K] ↥L) → ↥L, M.vecMul z = 0 → z = 0 := by
+      intro z hz
+      have hzero : (∑ g : ↥L ≃ₐ[K] ↥L, z g • (g : ↥L →ₐ[K] ↥L).toLinearMap)
+          = (0 : ↥L →ₗ[K] ↥L) := by
+        refine nb.ext fun j => ?_
+        have hj : ∑ g : ↥L ≃ₐ[K] ↥L, z g * g (nb j) = 0 := by
+          have h1 := congrFun hz j
+          simpa [Matrix.vecMul, dotProduct, hM] using h1
+        simpa using hj
+      funext g
+      exact Fintype.linearIndependent_iff.mp hli z hzero g
+    intro x y hxy
+    have hxy' : Matrix.vecMul x M = Matrix.vecMul y M := hxy
+    have hsub := hker (x - y) (by rw [Matrix.sub_vecMul, hxy', sub_self])
+    exact sub_eq_zero.mp hsub
+  obtain ⟨d, hd⟩ := (Matrix.mulVec_surjective_iff_isUnit.mpr
+    (Matrix.vecMul_injective_iff_isUnit.mp hMinj)) (Pi.single 1 1)
+  have hfeq : f = ∑ j : ↥L ≃ₐ[K] ↥L,
+      d j • fun b => ∑ g : ↥L ≃ₐ[K] ↥L, g (nb j * f (act g⁻¹ b)) := by
+    funext b
+    have hpt : ∀ g j : ↥L ≃ₐ[K] ↥L,
+        d j * g (nb j * f (act g⁻¹ b)) = M g j * d j * g (f (act g⁻¹ b)) := by
+      intro g j
+      rw [map_mul, hM, Matrix.of_apply]
+      ring
+    have hRHS : (∑ j : ↥L ≃ₐ[K] ↥L, d j • fun b' =>
+        ∑ g : ↥L ≃ₐ[K] ↥L, g (nb j * f (act g⁻¹ b'))) b
+        = ∑ g : ↥L ≃ₐ[K] ↥L, M.mulVec d g * g (f (act g⁻¹ b)) := by
+      simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+      calc ∑ j : ↥L ≃ₐ[K] ↥L, d j * ∑ g : ↥L ≃ₐ[K] ↥L, g (nb j * f (act g⁻¹ b))
+          = ∑ j : ↥L ≃ₐ[K] ↥L, ∑ g : ↥L ≃ₐ[K] ↥L, d j * g (nb j * f (act g⁻¹ b)) :=
+            Finset.sum_congr rfl fun j _ => Finset.mul_sum _ _ _
+        _ = ∑ g : ↥L ≃ₐ[K] ↥L, ∑ j : ↥L ≃ₐ[K] ↥L, d j * g (nb j * f (act g⁻¹ b)) :=
+            Finset.sum_comm
+        _ = ∑ g : ↥L ≃ₐ[K] ↥L, ∑ j : ↥L ≃ₐ[K] ↥L, M g j * d j * g (f (act g⁻¹ b)) :=
+            Finset.sum_congr rfl fun g _ => Finset.sum_congr rfl fun j _ => hpt g j
+        _ = ∑ g : ↥L ≃ₐ[K] ↥L, (∑ j : ↥L ≃ₐ[K] ↥L, M g j * d j) * g (f (act g⁻¹ b)) :=
+            Finset.sum_congr rfl fun g _ => (Finset.sum_mul _ _ _).symm
+        _ = ∑ g : ↥L ≃ₐ[K] ↥L, M.mulVec d g * g (f (act g⁻¹ b)) := by
+            refine Finset.sum_congr rfl fun g _ => ?_
+            congr 1
+    rw [hRHS, hd]
+    simp [Pi.single_apply, ite_mul, hone]
+  rw [hfeq]
+  exact Submodule.sum_mem _ fun j _ =>
+    Submodule.smul_mem _ _ (Submodule.subset_span (havg (nb j)))
+
+/-- The equivariant subalgebra of a finite `Gal(L/K)`-set is a
+finite-dimensional `K`-space (a subspace of the finite-dimensional
+`B → L`; generic-`act` version of `galDescAlg_finite` below). -/
+theorem galDesc_module_finite [FiniteDimensional K ↥L] [Finite B]
+    (act : (↥L ≃ₐ[K] ↥L) → B → B) :
+    Module.Finite K ↥(galDescSubalgebra K Ω L B act) := by
+  classical
+  haveI := Fintype.ofFinite B
+  haveI : Module.Finite K (B → ↥L) := Module.Finite.pi
+  exact FiniteDimensional.finiteDimensional_submodule
+    (Subalgebra.toSubmodule (galDescSubalgebra K Ω L B act))
+
+/-- **The dimension count of split descent**: the equivariant-function
+algebra of a finite `Gal(L/K)`-set `B` has `K`-dimension `|B|` — the
+split base-change map `θ : L ⊗[K] H_B → (B → L)`, `l ⊗ h ↦ l·h`, is
+bijective (injective by `galDesc_linearIndependent` on a basis,
+surjective by `galDesc_mem_span`), and `dim_L (B → L) = |B|`. -/
+theorem galDesc_finrank [FiniteDimensional K ↥L] [IsGalois K ↥L] [Finite B]
+    (act : (↥L ≃ₐ[K] ↥L) → B → B)
+    (hone : ∀ b, act 1 b = b)
+    (hmul : ∀ g₁ g₂ b, act (g₁ * g₂) b = act g₁ (act g₂ b)) :
+    Module.finrank K ↥(galDescSubalgebra K Ω L B act) = Nat.card B := by
+  classical
+  haveI := Fintype.ofFinite B
+  haveI : Module.Finite K ↥(galDescSubalgebra K Ω L B act) :=
+    galDesc_module_finite K Ω L act
+  set θ : ↥L ⊗[K] ↥(galDescSubalgebra K Ω L B act) →ₗ[↥L] (B → ↥L) :=
+    ((Subalgebra.toSubmodule (galDescSubalgebra K Ω L B act)).subtype).liftBaseChange
+      ↥L with hθ
+  have hinj : Function.Injective θ := by
+    rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
+    intro t ht
+    set β := Module.finBasis K ↥(galDescSubalgebra K Ω L B act)
+    have hLI := galDesc_linearIndependent K Ω L act β.linearIndependent
+    have hcoeff : ∀ i, (β.baseChange ↥L).repr t i = 0 := by
+      have hθt : ∑ i, (β.baseChange ↥L).repr t i • (β i : B → ↥L) = 0 := by
+        have hsum : θ (∑ i, (β.baseChange ↥L).repr t i • β.baseChange ↥L i)
+            = ∑ i, (β.baseChange ↥L).repr t i • (β i : B → ↥L) := by
+          rw [map_sum]
+          refine Finset.sum_congr rfl fun i _ => ?_
+          rw [map_smul, Module.Basis.baseChange_apply, hθ,
+            LinearMap.liftBaseChange_tmul, one_smul]
+          rfl
+        rw [← hsum, Module.Basis.sum_repr, ht]
+      exact fun i => Fintype.linearIndependent_iff.mp hLI _ hθt i
+    rw [← Module.Basis.sum_repr (β.baseChange ↥L) t]
+    simp [hcoeff]
+  have hsurj : Function.Surjective θ := by
+    intro f
+    have hle : Submodule.span ↥L (galDescSubalgebra K Ω L B act : Set (B → ↥L)) ≤
+        LinearMap.range θ := by
+      rw [Submodule.span_le]
+      intro x hx
+      exact ⟨(1 : ↥L) ⊗ₜ[K] ⟨x, hx⟩, by
+        rw [hθ, LinearMap.liftBaseChange_tmul, one_smul]; rfl⟩
+    exact LinearMap.mem_range.mp (hle (galDesc_mem_span K Ω L act hone hmul f))
+  have hfr := (LinearEquiv.ofBijective θ ⟨hinj, hsurj⟩).finrank_eq
+  rw [Module.finrank_baseChange, Module.finrank_pi] at hfr
+  rw [Nat.card_eq_fintype_card]
+  exact hfr
+
+/-- The tensor-comparison map of a pair of `Gal(L/K)`-sets:
+`h ⊗ k ↦ ((b, c) ↦ h b · k c)`, an algebra map into the equivariant
+functions on `B × C` (with the componentwise action). The comparison
+map `galDescTensorHom` of the twisted constant group scheme is its
+instance at `B = C = A`. -/
+noncomputable def galDescProdHom (actB : (↥L ≃ₐ[K] ↥L) → B → B)
+    (actC : (↥L ≃ₐ[K] ↥L) → C → C) :
+    (↥(galDescSubalgebra K Ω L B actB) ⊗[K] ↥(galDescSubalgebra K Ω L C actC))
+      →ₐ[K] ↥(galDescSubalgebra K Ω L (B × C) fun g x => (actB g x.1, actC g x.2)) :=
+  Algebra.TensorProduct.productMap
+    (galDescPullback K Ω L (fun g x => (actB g x.1, actC g x.2)) actB Prod.fst
+      fun _ _ => rfl)
+    (galDescPullback K Ω L (fun g x => (actB g x.1, actC g x.2)) actC Prod.snd
+      fun _ _ => rfl)
+
+theorem galDescProdHom_tmul_apply (actB : (↥L ≃ₐ[K] ↥L) → B → B)
+    (actC : (↥L ≃ₐ[K] ↥L) → C → C)
+    (h : ↥(galDescSubalgebra K Ω L B actB)) (k : ↥(galDescSubalgebra K Ω L C actC))
+    (x : B × C) :
+    (galDescProdHom K Ω L actB actC (h ⊗ₜ[K] k) : (B × C) → ↥L) x
+      = (h : B → ↥L) x.1 * (k : C → ↥L) x.2 := rfl
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **Bijectivity of the tensor-comparison map** (the descent core):
+`H_B ⊗[K] H_C → H_{B×C}` is bijective for finite `Gal(L/K)`-sets.
+Injectivity: expand along a basis of `H_C`; the coefficient functions
+vanish because a `K`-basis of `H_C` stays `L`-linearly independent
+(`galDesc_linearIndependent`). Surjectivity: both sides have
+`K`-dimension `|B|·|C|` (`galDesc_finrank`). -/
+theorem galDescProdHom_bijective [FiniteDimensional K ↥L] [IsGalois K ↥L]
+    [Finite B] [Finite C]
+    (actB : (↥L ≃ₐ[K] ↥L) → B → B) (actC : (↥L ≃ₐ[K] ↥L) → C → C)
+    (honeB : ∀ b, actB 1 b = b)
+    (hmulB : ∀ g₁ g₂ b, actB (g₁ * g₂) b = actB g₁ (actB g₂ b))
+    (honeC : ∀ c, actC 1 c = c)
+    (hmulC : ∀ g₁ g₂ c, actC (g₁ * g₂) c = actC g₁ (actC g₂ c)) :
+    Function.Bijective (galDescProdHom K Ω L actB actC) := by
+  classical
+  haveI : Module.Finite K ↥(galDescSubalgebra K Ω L B actB) :=
+    galDesc_module_finite K Ω L actB
+  haveI : Module.Finite K ↥(galDescSubalgebra K Ω L C actC) :=
+    galDesc_module_finite K Ω L actC
+  haveI : Module.Finite K
+      ↥(galDescSubalgebra K Ω L (B × C) fun g x => (actB g x.1, actC g x.2)) :=
+    galDesc_module_finite K Ω L _
+  have hinj : Function.Injective (galDescProdHom K Ω L actB actC) := by
+    rw [injective_iff_map_eq_zero]
+    intro t ht
+    set γ := Module.finBasis K ↥(galDescSubalgebra K Ω L C actC)
+    obtain ⟨w, rfl⟩ : ∃ w : Fin (Module.finrank K ↥(galDescSubalgebra K Ω L C actC))
+        → ↥(galDescSubalgebra K Ω L B actB), t = ∑ i, w i ⊗ₜ[K] γ i := by
+      clear ht
+      induction t using TensorProduct.induction_on with
+      | zero => exact ⟨0, by simp⟩
+      | tmul h k =>
+        refine ⟨fun i => γ.repr k i • h, ?_⟩
+        conv_lhs => rw [← Module.Basis.sum_repr γ k]
+        rw [TensorProduct.tmul_sum]
+        exact Finset.sum_congr rfl fun i _ => (TensorProduct.smul_tmul _ _ _).symm
+      | add t₁ t₂ h₁ h₂ =>
+        obtain ⟨w₁, rfl⟩ := h₁
+        obtain ⟨w₂, rfl⟩ := h₂
+        refine ⟨w₁ + w₂, ?_⟩
+        rw [← Finset.sum_add_distrib]
+        exact Finset.sum_congr rfl fun i _ => (TensorProduct.add_tmul _ _ _).symm
+    have hLI := galDesc_linearIndependent K Ω L actC γ.linearIndependent
+    have hpt : ∀ (b : B) (cc : C),
+        ∑ i, ((w i : B → ↥L) b) * ((γ i : C → ↥L) cc) = 0 := by
+      intro b cc
+      have h1 := congrArg
+        (fun F : ↥(galDescSubalgebra K Ω L (B × C)
+            fun g x => (actB g x.1, actC g x.2)) => (F : (B × C) → ↥L) (b, cc)) ht
+      simpa [map_sum, galDescProdHom_tmul_apply] using h1
+    have hw : ∀ i, w i = 0 := by
+      intro i
+      apply Subtype.ext
+      funext b
+      have hrel : ∑ j, ((w j : B → ↥L) b) • (γ j : C → ↥L) = 0 := by
+        funext cc
+        simpa using hpt b cc
+      exact Fintype.linearIndependent_iff.mp hLI _ hrel i
+    simp [hw]
+  refine ⟨hinj, ?_⟩
+  have hfr : Module.finrank K
+      (↥(galDescSubalgebra K Ω L B actB) ⊗[K] ↥(galDescSubalgebra K Ω L C actC))
+      = Module.finrank K
+        ↥(galDescSubalgebra K Ω L (B × C) fun g x => (actB g x.1, actC g x.2)) := by
+    rw [Module.finrank_tensorProduct,
+      galDesc_finrank K Ω L actB honeB hmulB,
+      galDesc_finrank K Ω L actC honeC hmulC,
+      galDesc_finrank K Ω L (fun g (x : B × C) => (actB g x.1, actC g x.2))
+        (fun x => by simp [honeB, honeC])
+        (fun g₁ g₂ x => by simp [hmulB, hmulC]),
+      Nat.card_prod]
+  have hsurjlin := (LinearMap.injective_iff_surjective_of_finrank_eq_finrank
+    (K := K)
+    (V := ↥(galDescSubalgebra K Ω L B actB) ⊗[K] ↥(galDescSubalgebra K Ω L C actC))
+    (V₂ := ↥(galDescSubalgebra K Ω L (B × C) fun g x => (actB g x.1, actC g x.2)))
+    hfr (f := (galDescProdHom K Ω L actB actC).toLinearMap)).mp
+    (by simpa using hinj)
+  simpa using hsurjlin
+
+end GalDescCore
+
 variable (A : Type) [AddCommGroup A]
 variable (ρ' : (↥L ≃ₐ[K] ↥L) →* AddMonoid.End A)
 
@@ -2961,17 +3321,20 @@ noncomputable def galDescTensorHom :
       GalDescAlg₂ K Ω L A ρ' :=
   Algebra.TensorProduct.productMap (galDescFst K Ω L A ρ') (galDescSnd K Ω L A ρ')
 
-/-- **Galois descent for the tensor square** (sorry node — the descent
+/-- **Galois descent for the tensor square** (PROVEN — the descent
 core of the finite-quotient package): the comparison map
 `H ⊗[K] H → H₂`, `h₁ ⊗ h₂ ↦ ((a,b) ↦ h₁(a)·h₂(b))`, is bijective. Both
-sides have `K`-dimension `|A|²` (equivariant functions on a finite
-`Gal(L/K)`-set `S` have dimension `|S|`, by evaluation at orbit
-representatives onto `∏_{orbits} Fix(Stab)`), and the map is injective
-by linear disjointness of the evaluations. -/
+sides have `K`-dimension `|A|²` and the map is injective by linear
+disjointness of equivariant functions — the instance at `B = C = A` of
+the split-descent core `galDescProdHom_bijective` above. -/
 theorem galDescTensorHom_bijective [FiniteDimensional K ↥L] [IsGalois K ↥L]
     [Finite A] :
-    Function.Bijective (galDescTensorHom K Ω L A ρ') := by
-  sorry
+    Function.Bijective (galDescTensorHom K Ω L A ρ') :=
+  galDescProdHom_bijective K Ω L (fun g a => ρ' g a) (fun g a => ρ' g a)
+    (fun b => by rw [map_one]; rfl)
+    (fun g₁ g₂ b => by rw [map_mul]; rfl)
+    (fun b => by rw [map_one]; rfl)
+    (fun g₁ g₂ b => by rw [map_mul]; rfl)
 
 variable [FiniteDimensional K ↥L] [IsGalois K ↥L] [Finite A]
 
@@ -3109,13 +3472,17 @@ instance galDescAlg_finite : Module.Finite K (GalDescAlg K Ω L A ρ') := by
   exact FiniteDimensional.finiteDimensional_submodule
     (Subalgebra.toSubmodule (galDescSubalgebra K Ω L A fun g a => ρ' g a))
 
-/-- **Étaleness of the generic fibre** (sorry node — evaluation at
-orbit representatives identifies `H` with a finite product of finite
-subextensions of `L/K`, étale in characteristic zero; the redundant
+/-- **Étaleness of the generic fibre** (PROVEN — the equivariant
+subalgebra is definitionally the `galoisEquivariantAlgebra` of
+`Fermat.FLT.KnownIn1980s.EllipticCurves.Flat`, whose étaleness over the
+base field is proven there via separable annihilators; the redundant
 base change `K ⊗[K] H` transfers along `Algebra.TensorProduct.lid`). -/
 theorem galDescAlg_etale [CharZero K] :
     Algebra.Etale K (K ⊗[K] GalDescAlg K Ω L A ρ') := by
-  sorry
+  haveI : Algebra.Etale K (GalDescAlg K Ω L A ρ') :=
+    galoisEquivariantAlgebra_etale (Ω := Ω) L ρ'
+  exact Algebra.Etale.of_equiv
+    (Algebra.TensorProduct.lid K (GalDescAlg K Ω L A ρ')).symm
 
 /-- Evaluation at a point `a : A`: an `Ω`-point of the twisted constant
 group scheme. -/
@@ -3138,10 +3505,42 @@ separate the orbits (indicator functions) and the points of one orbit
 surjective because a `K`-point of `H ≅ ∏ Fix(Stab)` factors through one
 component field, whose `|orbit|` embeddings into `Ω` are the
 evaluations at the orbit's points (count: `dim_K H = |A|` in the étale
-case). -/
+case). PROVEN — the evaluation family is definitionally the
+`galoisEquivariantEval` family of
+`Fermat.FLT.KnownIn1980s.EllipticCurves.Flat`, whose injectivity
+(separating equivariant functions) and surjectivity (kernel comparison
+plus `IsSepClosed.lift`) are proven there; in characteristic zero the
+algebraic closure is a separable closure, and the redundant base change
+only composes with the `lid` equivalence. -/
 theorem galDescPointT_bijective [CharZero K] [IsAlgClosure K Ω] :
     Function.Bijective (galDescPointT K Ω L A ρ') := by
-  sorry
+  classical
+  haveI : IsAlgClosed Ω := IsAlgClosure.isAlgClosed K
+  haveI : IsSepClosure K Ω := ⟨inferInstance, inferInstance⟩
+  have hbr : galDescPoint K Ω L A ρ' = galoisEquivariantEval (Ω := Ω) L ρ' := by
+    funext a
+    exact AlgHom.ext fun h => (IntermediateField.algebraMap_apply _ _).symm
+  have hbij1 : Function.Bijective (galDescPoint K Ω L A ρ') := by
+    rw [hbr]
+    exact ⟨galoisEquivariantEval_injective L ρ',
+      galoisEquivariantEval_surjective L ρ'⟩
+  have hcompbij : Function.Bijective
+      (fun φ : GalDescAlg K Ω L A ρ' →ₐ[K] Ω =>
+        φ.comp (Algebra.TensorProduct.lid K (GalDescAlg K Ω L A ρ')).toAlgHom) := by
+    constructor
+    · intro φ ψ hφψ
+      apply AlgHom.ext
+      intro x
+      have h1 := congrArg (fun F : (K ⊗[K] GalDescAlg K Ω L A ρ') →ₐ[K] Ω =>
+        F ((Algebra.TensorProduct.lid K (GalDescAlg K Ω L A ρ')).symm x)) hφψ
+      simpa using h1
+    · intro χ
+      refine ⟨χ.comp
+        (Algebra.TensorProduct.lid K (GalDescAlg K Ω L A ρ')).symm.toAlgHom, ?_⟩
+      apply AlgHom.ext
+      intro x
+      simp
+  exact hcompbij.comp hbij1
 
 /-- **Evaluation turns addition into convolution** (sorry node — the
 convolution of `ev_a` and `ev_b` is evaluation of the pulled-back
