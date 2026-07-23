@@ -20,3 +20,4 @@
 - [Spawned resources have owners](spawned-resources-have-owners.md) — Deyao 2026-07-23: pair every spawn with a release at task end; reap agents' workers at integration; outliving a task requires a named new owner
 - [Why-question is not consent](why-question-is-not-consent.md) — Deyao 2026-07-23: a why question is investigation, not consent to a pending action and not a request to go fix the thing
 - [Orchestrator sync-only; async via agents](orchestrator-sync-only-async-via-agents.md) — Deyao 2026-07-23: background Bash banned (source of bugs); slow work = a task queue dispatched to a subagent that runs it synchronously, merged later
+- [Kill recovery: just resume](kill-recovery-just-resume.md) — Deyao 2026-07-23: a kill interrupts only the in-flight call; transcript + worktree ARE the state — resume via SendMessage, never revert or pre-merge
