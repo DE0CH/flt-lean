@@ -1513,7 +1513,80 @@ theorem tsum_rpow_neg_natCard_quotient_prime_and_map_zeta_eq_pow_le_tsum_add
             χ ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ) *
               (((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) :
                 ℝ) : ℂ) := by
-    sorry
+    intro ρ
+    have hunit : IsUnit ((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ) :=
+      (hζ.autToPow F ρ).isUnit
+    symm
+    calc ∑ χ : DirichletCharacter ℂ ℓ,
+          χ ((((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ))⁻¹) *
+            ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+                (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+              χ ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ) *
+                (((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) :
+                  ℝ) : ℂ)
+        = ∑ χ : DirichletCharacter ℂ ℓ,
+            ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+                (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+              χ ((((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ))⁻¹) *
+                (χ ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ) *
+                  (((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) :
+                    ℝ) : ℂ)) :=
+          Finset.sum_congr rfl fun χ _ => tsum_mul_left.symm
+      _ = ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+              (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+            ∑ χ : DirichletCharacter ℂ ℓ,
+              χ ((((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ))⁻¹) *
+                (χ ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ) *
+                  (((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) :
+                    ℝ) : ℂ)) :=
+          (Summable.tsum_finsetSum fun χ _ => (hsumχ χ).mul_left _).symm
+      _ = ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+              (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+            (∑ χ : DirichletCharacter ℂ ℓ,
+              χ ((((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ))⁻¹) *
+                χ ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ)) *
+              (((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) :
+                ℝ) : ℂ) :=
+          tsum_congr fun P => by
+            rw [Finset.sum_mul]
+            exact Finset.sum_congr rfl fun χ _ => (mul_assoc _ _ _).symm
+      _ = ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+              (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+            (if ((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ) =
+                ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ)
+              then ((ℓ.totient : ℕ) : ℂ) else 0) *
+              (((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) :
+                ℝ) : ℂ) :=
+          tsum_congr fun P => by
+            rw [DirichletCharacter.sum_char_inv_mul_char_eq ℂ hunit _]
+      _ = ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+              (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+            ((ℓ.totient : ℕ) : ℂ) *
+              ((if ((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ) =
+                  ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ)
+                then (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)
+                else 0 : ℝ) : ℂ) :=
+          tsum_congr fun P => by
+            by_cases h : ((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ) =
+                ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ)
+            · rw [if_pos h, if_pos h]
+            · rw [if_neg h, if_neg h, zero_mul, Complex.ofReal_zero, mul_zero]
+      _ = ((ℓ.totient : ℕ) : ℂ) *
+            ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+                (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+              ((if ((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ) =
+                  ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ)
+                then (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)
+                else 0 : ℝ) : ℂ) :=
+          tsum_mul_left
+      _ = ((ℓ.totient : ℕ) : ℂ) *
+            ((∑' P : {P : HeightOneSpectrum (𝓞 F) //
+                (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+              (if ((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ) =
+                  ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ)
+                then (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)
+                else 0) : ℝ) : ℂ) := by
+          rw [Complex.ofReal_tsum]
   -- characters trivial on the image of the Galois group drop out of the difference
   have hcancel : ∀ χ : DirichletCharacter ℂ ℓ,
       ¬(∃ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n ∧ χ (n : ZMod ℓ) ≠ 1) →
