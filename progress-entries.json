@@ -1550,7 +1550,7 @@
     "name": "exists_omega_cocycle_coboundary",
     "fullname": "GaloisRepresentation.IsHardlyRamified.exists_omega_cocycle_coboundary",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
-    "wip": true,
+    "wip": false,
     "text": "`exists_omega_cocycle_coboundary` — an a-twisted 1-cocycle mod 𝔪ⁿ⁺² arising as the w₀-defect is a twisted coboundary one level deeper — H¹(ℚ, ω ⊗ 𝔪ⁿ⁺¹/𝔪ⁿ⁺²) with Serre's local conditions vanishes (ℚ(ζ₃) class number 1 + units, Serre Duke §5.4) — 2026-07-22",
     "parent": "GaloisRepresentation.IsHardlyRamified.exists_equivariant_defect_coboundary"
   },
@@ -1558,7 +1558,7 @@
     "name": "trivial_component_hom_vanishes",
     "fullname": "GaloisRepresentation.IsHardlyRamified.trivial_component_hom_vanishes",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
-    "wip": true,
+    "wip": false,
     "text": "`trivial_component_hom_vanishes` — the corrected trivial component (approximate hom Γℚ → 𝔪ⁿ⁺¹/𝔪ⁿ⁺²) vanishes: everywhere-unramified from hardly-ramifiedness, then Minkowski (NumberField.abs_discr_gt_two on the pin; missing bridge = absolute-Galois inertia/discriminant infrastructure) — 2026-07-22",
     "parent": "GaloisRepresentation.IsHardlyRamified.exists_equivariant_defect_coboundary"
   },
@@ -1745,5 +1745,45 @@
     "wip": false,
     "text": "`exists_finiteDimensional_trace_field` — the Hecke-field finiteness core confined to the trace coefficient (ℚ_p-confinement now hypotheses; genuinely non-formal — automorphy enters here; deferred to the automorphy campaign) — 2026-07-23",
     "parent": "exists_finiteDimensional_coeff_field"
+  },
+  {
+    "name": "residual_twist_eq_cyclotomicCharacterModL",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.residual_twist_eq_cyclotomicCharacterModL",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
+    "wip": false,
+    "text": "`residual_twist_eq_cyclotomicCharacterModL` — ā = ω via the determinant identification — 2026-07-23",
+    "parent": "GaloisRepresentation.IsHardlyRamified.exists_omega_cocycle_coboundary"
+  },
+  {
+    "name": "omega_defect_vanishes_on_cyclotomicKernel",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.omega_defect_vanishes_on_cyclotomicKernel",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
+    "wip": false,
+    "text": "`omega_defect_vanishes_on_cyclotomicKernel` — the deep ω-leaf: Kummer / class-number-1 / units over ℚ(ζ₃) — 2026-07-23",
+    "parent": "GaloisRepresentation.IsHardlyRamified.exists_omega_cocycle_coboundary"
+  },
+  {
+    "name": "inertia_eq_bot_of_forall_localInertia_restrictNormalHom",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.inertia_eq_bot_of_forall_localInertia_restrictNormalHom",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
+    "wip": false,
+    "text": "`inertia_eq_bot_of_forall_localInertia_restrictNormalHom` — local inertia surjects onto finite-level inertia — 2026-07-23",
+    "parent": "GaloisRepresentation.IsHardlyRamified.trivial_component_hom_vanishes"
+  },
+  {
+    "name": "hom_vanishes_on_localInertia_at_two",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.hom_vanishes_on_localInertia_at_two",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
+    "wip": false,
+    "text": "`hom_vanishes_on_localInertia_at_two` — 3-torsion homs kill inertia at 2 (local Kronecker–Weber / tame conjugation; ρ-free) — 2026-07-23",
+    "parent": "GaloisRepresentation.IsHardlyRamified.trivial_component_hom_vanishes"
+  },
+  {
+    "name": "trivial_component_vanishes_on_localInertia_at_three",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.trivial_component_vanishes_on_localInertia_at_three",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
+    "wip": false,
+    "text": "`trivial_component_vanishes_on_localInertia_at_three` — Fontaine's flat/peu-ramifié bound at 3 — 2026-07-23",
+    "parent": "GaloisRepresentation.IsHardlyRamified.trivial_component_hom_vanishes"
   }
 ]
