@@ -2729,8 +2729,45 @@ theorem exists_hardlyRamified_integral_realizations
   exact ⟨A, iA1, iA2, iA3, iA4, iA5, iA6, iA7, iA8, iA10, iA11, iA12, iA13, hAinj,
     W, iW1, iW2, iW3, iW4, hW, τ, r, hτ, hmatch⟩
 
-/-- **Automorphy atom at the even prime, generated coefficients** (sorry
-node): given a finite-dimensional coefficient subfield `K ⊆ ℚ̄_₂` which
+/-- **Eisenstein realization at the even prime** (sorry node; the
+REDUCIBLE branch of the `λ ∣ 2` atom below): if the base extension of
+the hardly ramified `ρ` to `ℚ̄_p` is NOT irreducible, its eigensystem
+is realized over any generated coefficient field `K ⊆ ℚ̄_₂` — with no
+modular form involved. The classical route mirrors the odd-`ℓ`
+Eisenstein leaf
+(`exists_hardlyRamified_ringOfIntegers_realizations_of_not_isIrreducible`):
+the reducible eigensystem degenerates to `(X − 1)(X − q)` with RATIONAL
+coefficients away from finitely many places (proven reducibility
+analysis + the Eisenstein character dichotomy + injectivity of `ψ`), so
+`(Pv v).map φ₀ = (X − 1)(X − q)` for the given `φ₀`, and the explicit
+representation `1 ⊕ χ_cyc,2` on `K²` realizes it (unramified outside
+`{2}`, absorbed by `T`; `charFrob v = (X − 1)(X − q)` by the proven
+`cyclotomicCharacter_adicArithFrob_natCast`). See DECOMPOSITION PLAN
+item 5 in `Fermat/FLT/Modularity/Interface.lean`. -/
+theorem exists_realization_at_two_generated_of_not_isIrreducible
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (hred : ¬ (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible)
+    {E : Type v} [Field E] [NumberField E] (ψ : E →+* AlgebraicClosure ℚ_[p])
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E)
+    (heig : ∀ v ∉ S,
+      (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) = (Pv v).map ψ)
+    (K : IntermediateField ℚ_[2] (AlgebraicClosure ℚ_[2]))
+    [FiniteDimensional ℚ_[2] K] (φ₀ : E →+* K)
+    (hgen : K = IntermediateField.adjoin ℚ_[2]
+      (Set.range fun x : E => (φ₀ x : AlgebraicClosure ℚ_[2]))) :
+    ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+      (τ : GaloisRep ℚ K (Fin 2 → K)),
+      ∀ v ∉ T, τ.IsUnramifiedAt v ∧ τ.charFrob v = (Pv v).map φ₀ :=
+  sorry
+
+/-- **Automorphy atom at the even prime, generated coefficients**
+(PROVEN assembly as of 2026-07-23 — see the DECOMPOSED note at the
+end): given a finite-dimensional coefficient subfield `K ⊆ ℚ̄_₂` which
 is EXACTLY the subfield generated over `ℚ_2` by the image of the
 eigensystem's number field under `φ₀ : E →+* K` (the hypothesis
 `hgen`), the eigensystem `(E, S, Pv)` is realized over `K` itself: a
@@ -2759,7 +2796,27 @@ item (3) there records why a minimal interface SHARED with the odd-ℓ
 atom was examined and rejected (no definable carrier; the carrier-free
 version degenerates to the conjunction of the two atoms; this leaf's
 generated-coefficient-field shape is already the zero-slack
-Eichler–Shimura output). -/
+Eichler–Shimura output).
+
+DECOMPOSED (2026-07-23, opening the modularity subtree — superseding
+the "no carrier" conclusion above exactly as at the odd-`ℓ` atom: the
+interface file provides the Diamond–Shurman 5.8.5 carrier
+`Modularity.IsWeightTwoEigenform` as real code) into a PROVEN
+dichotomy assembly over three strictly shallower sorried nodes:
+
+1. `Modularity.exists_weightTwoEigenform_of_isIrreducible` (interface
+   sorry, SHARED with the odd-`ℓ` atom) — the level-2 eigenform behind
+   the eigensystem on the irreducible branch.
+2. `Modularity.exists_realization_at_two_of_weightTwoEigenform`
+   (interface sorry, `ρ`-free) — Eichler–Shimura/Deligne at `λ ∣ 2`
+   for level-2 eigenforms, over exactly the generated coefficient
+   field; also dischargeable via `dim S₂(Γ₀(2)) = 0`.
+3. `exists_realization_at_two_generated_of_not_isIrreducible` (sorry
+   node, above) — the reducible/Eisenstein branch (`1 ⊕ χ_cyc,2` over
+   `K`).
+
+The assembly (below) is the same excluded-middle split on
+irreducibility of `ρ ⊗ ℚ̄_p` as at the odd-`ℓ` atom. -/
 theorem exists_realization_at_two_generated
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -2777,8 +2834,17 @@ theorem exists_realization_at_two_generated
       (Set.range fun x : E => (φ₀ x : AlgebraicClosure ℚ_[2]))) :
     ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
       (τ : GaloisRep ℚ K (Fin 2 → K)),
-      ∀ v ∉ T, τ.IsUnramifiedAt v ∧ τ.charFrob v = (Pv v).map φ₀ :=
-  sorry
+      ∀ v ∉ T, τ.IsUnramifiedAt v ∧ τ.charFrob v = (Pv v).map φ₀ := by
+  by_cases hirr : (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible
+  · -- modular branch: level-2 eigenform existence + attachment at `λ ∣ 2`
+    obtain ⟨f, S', hf, hmatch⟩ :=
+      Modularity.exists_weightTwoEigenform_of_isIrreducible hpodd hv hZinj hRinj
+        hρ hirr ψ S Pv heig
+    exact Modularity.exists_realization_at_two_of_weightTwoEigenform S' Pv hf
+      hmatch K φ₀ hgen
+  · -- Eisenstein branch: the reducible eigensystem is realized explicitly
+    exact exists_realization_at_two_generated_of_not_isIrreducible hpodd hv hZinj
+      hRinj hρ hirr ψ S Pv heig K φ₀ hgen
 
 /-- **Automorphy stratum at the even prime, confined coefficients**
 (PROVEN assembly, see the DECOMPOSED note below): given ANY
