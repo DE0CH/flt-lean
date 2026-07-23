@@ -52,7 +52,7 @@
   "WeierstrassCurve.torsion_flat_of_good_reduction": "✅",
   "FreyCurve.torsion_isFlat_of_multiplicative": "✅",
   "WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction": "✅",
-  "WeierstrassCurve.torsion_flat_of_multiplicative_reduction": "❌",
+  "WeierstrassCurve.torsion_flat_of_multiplicative_reduction": "✅",
   "GaloisRep.isFlatAt_of_dvr_package": "✅✅",
   "GaloisRep.hasFlatProlongationAt_of_dvr_package": "✅✅",
   "GaloisRep.hasFlatProlongationAt_of_hopf_package": "✅✅",
@@ -215,9 +215,9 @@
   "WeierstrassCurve.kernel_add_abscissa_notMem": "✅✅",
   "WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq": "✅✅",
   "WeierstrassCurve.exists_torsion_etale_package_over_fractionField": "✅",
-  "WeierstrassCurve.torsion_flat_of_inertia_fixes_prolong": "❌",
-  "WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow": "❌",
-  "WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow_of_eqChar": "❌",
+  "WeierstrassCurve.torsion_flat_of_inertia_fixes_prolong": "✅",
+  "WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow": "✅",
+  "WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow_of_eqChar": "✅",
   "GaloisRepresentation.IsHardlyRamified.exists_equivariant_defect_coboundary": "✅",
   "WeierstrassCurve.mazur_point_order": "❌",
   "WeierstrassCurve.not_full_four_torsion_rat": "✅✅",
@@ -255,11 +255,11 @@
   "GaloisRepresentation.exists_isWeaklyUniversal_isTraceGenerated_of_isWeaklyUniversal": "❌",
   "GaloisRepresentation.exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated": "❌",
   "GaloisRepresentation.nonempty_ringEquiv_mvPowerSeries_powerSeries": "❌",
-  "exists_kummerTorsionPackage": "✅",
-  "exists_kummerAlg_pointsEquiv": "❌",
-  "GaloisRepresentation.IsHardlyRamified.exists_conj_fixingSubgroup_of_not_isTotallyComplex": "❌",
+  "exists_kummerTorsionPackage": "✅✅",
+  "exists_kummerAlg_pointsEquiv": "✅✅",
+  "GaloisRepresentation.IsHardlyRamified.exists_conj_fixingSubgroup_of_not_isTotallyComplex": "✅✅",
   "GaloisRepresentation.IsHardlyRamified.discr_bound_of_kernel_field": "❌",
-  "GaloisRepresentation.IsHardlyRamified.exists_sqrt_of_quadratic_character_unramified_outside_two_three": "❌",
+  "GaloisRepresentation.IsHardlyRamified.exists_sqrt_of_quadratic_character_unramified_outside_two_three": "✅✅",
   "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral_ray_class": "❌",
   "GaloisRepresentation.IsHardlyRamified.quotCharacter_inertia_three_dichotomy": "❌",
   "GaloisRepresentation.IsHardlyRamified.exists_splitting_scalar_of_quot_ramified": "❌",
@@ -273,7 +273,15 @@
   "GaloisRepresentation.IsHardlyRamified.hom_vanishes_on_localInertia_at_two": "❌",
   "GaloisRepresentation.IsHardlyRamified.trivial_component_vanishes_on_localInertia_at_three": "❌",
   "WeierstrassCurve.exists_quotient_isogeny": "❌",
-  "exists_hopfAlgebra_galoisEquivariantAlgebra": "❌"
+  "exists_hopfAlgebra_galoisEquivariantAlgebra": "❌",
+  "WeierstrassCurve.exists_torsion_etale_package_of_eqChar": "❌",
+  "WeierstrassCurve.kernel_prime_pow_torsion_of_eqChar": "❌",
+  "WeierstrassCurve.exists_finite_flat_hopf_form_of_good_reduction_prime_pow": "❌",
+  "exists_finite_etale_algebra_form_of_inertia_fixes": "❌",
+  "exists_finite_flat_hopf_form_of_etale_algebra_form": "❌",
+  "WeierstrassCurve.torsionFlatPackage_localization_of_packages": "❌",
+  "exists_galoisModulePackage_of_finiteQuotient": "❌",
+  "WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic": "❌"
  },
  "children": {
   "fermatLastTheoremThree": [],
@@ -572,7 +580,10 @@
    "WeierstrassCurve.galoisRep"
   ],
   "WeierstrassCurve.torsion_flat_of_multiplicative_reduction": [
+   "WeierstrassCurve.torsionFlatPackage_localization_of_packages",
+   "WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic",
    "WeierstrassCurve.n_torsion_finite",
+   "exists_galoisModulePackage_of_finiteQuotient",
    "exists_kummerTorsionPackage",
    "WeierstrassCurve.exists_tateEquivSepClosure",
    "exists_unit_qUnit_mul_inv_pow_isUnit"
@@ -893,8 +904,6 @@
    "WeierstrassCurve.tateGluePointAt_eq_zero_iff",
    "isNonarchimedeanLocalField_intermediate",
    "WeierstrassCurve.tateGluePointAt",
-   "TateCurve.bilateralX_map",
-   "TateCurve.bilateralY_map",
    "exists_valuativeRel_sepClosure",
    "WeierstrassCurve.tateGluePointAt_mul",
    "WeierstrassCurve.tateGluePointAt_conj"
@@ -1106,10 +1115,19 @@
    "TorsionCard.smul_surjective",
    "exists_finiteQuotient_galoisModule_etale_package"
   ],
-  "WeierstrassCurve.torsion_flat_of_inertia_fixes_prolong": [],
-  "WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow": [],
+  "WeierstrassCurve.torsion_flat_of_inertia_fixes_prolong": [
+   "exists_finite_etale_algebra_form_of_inertia_fixes",
+   "exists_finite_flat_hopf_form_of_etale_algebra_form"
+  ],
+  "WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow": [
+   "WeierstrassCurve.exists_finite_flat_hopf_form_of_good_reduction_prime_pow"
+  ],
   "WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow_of_eqChar": [
-   "WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq"
+   "WeierstrassCurve.kernel_prime_pow_torsion_of_eqChar",
+   "WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq",
+   "exists_finite_etale_algebra_form_of_inertia_fixes",
+   "exists_finite_flat_hopf_form_of_etale_algebra_form",
+   "WeierstrassCurve.exists_torsion_etale_package_of_eqChar"
   ],
   "GaloisRepresentation.IsHardlyRamified.exists_equivariant_defect_coboundary": [
    "GaloisRepresentation.IsHardlyRamified.exists_omega_cocycle_coboundary",
@@ -1236,7 +1254,9 @@
   "exists_kummerAlg_pointsEquiv": [],
   "GaloisRepresentation.IsHardlyRamified.exists_conj_fixingSubgroup_of_not_isTotallyComplex": [],
   "GaloisRepresentation.IsHardlyRamified.discr_bound_of_kernel_field": [],
-  "GaloisRepresentation.IsHardlyRamified.exists_sqrt_of_quadratic_character_unramified_outside_two_three": [],
+  "GaloisRepresentation.IsHardlyRamified.exists_sqrt_of_quadratic_character_unramified_outside_two_three": [
+   "inertia_eq_bot_of_le_fixingSubgroup"
+  ],
   "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral_ray_class": [],
   "GaloisRepresentation.IsHardlyRamified.quotCharacter_inertia_three_dichotomy": [],
   "GaloisRepresentation.IsHardlyRamified.exists_splitting_scalar_of_quot_ramified": [],
@@ -1252,7 +1272,15 @@
   "GaloisRepresentation.IsHardlyRamified.hom_vanishes_on_localInertia_at_two": [],
   "GaloisRepresentation.IsHardlyRamified.trivial_component_vanishes_on_localInertia_at_three": [],
   "WeierstrassCurve.exists_quotient_isogeny": [],
-  "exists_hopfAlgebra_galoisEquivariantAlgebra": []
+  "exists_hopfAlgebra_galoisEquivariantAlgebra": [],
+  "WeierstrassCurve.exists_torsion_etale_package_of_eqChar": [],
+  "WeierstrassCurve.kernel_prime_pow_torsion_of_eqChar": [],
+  "WeierstrassCurve.exists_finite_flat_hopf_form_of_good_reduction_prime_pow": [],
+  "exists_finite_etale_algebra_form_of_inertia_fixes": [],
+  "exists_finite_flat_hopf_form_of_etale_algebra_form": [],
+  "WeierstrassCurve.torsionFlatPackage_localization_of_packages": [],
+  "exists_galoisModulePackage_of_finiteQuotient": [],
+  "WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic": []
  },
  "roots": [
   "fermat_last_theorem"
@@ -1267,7 +1295,6 @@
   "exists_finite_etale_algebra_form_of_inertia_fixes",
   "exists_finite_flat_hopf_form_of_etale_algebra_form",
   "WeierstrassCurve.torsionFlatPackage_localization_of_packages",
-  "exists_kummerAlg_pointsEquiv",
   "exists_galoisModulePackage_of_finiteQuotient",
   "WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic",
   "WeierstrassCurve.mazur_point_order",
@@ -1279,12 +1306,10 @@
   "GaloisRepresentation.IsHardlyRamified.exists_finiteDimensional_trace_field",
   "GaloisRepresentation.IsHardlyRamified.exists_realizations_at_two",
   "GaloisRepresentation.IsHardlyRamified.quotCharacter_inertia_three_dichotomy",
-  "GaloisRepresentation.IsHardlyRamified.exists_sqrt_of_quadratic_character_unramified_outside_two_three",
   "GaloisRepresentation.IsHardlyRamified.exists_splitting_scalar_of_quot_ramified",
   "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral_ray_class",
   "GaloisRepresentation.IsHardlyRamified.discr_bound_of_kernel_field",
   "GaloisRepresentation.IsHardlyRamified.odlyzko_bound_totallyComplex",
-  "GaloisRepresentation.IsHardlyRamified.exists_conj_fixingSubgroup_of_not_isTotallyComplex",
   "GaloisRepresentation.IsHardlyRamified.inertia_eq_bot_of_forall_localInertia_restrictNormalHom",
   "GaloisRepresentation.IsHardlyRamified.residual_twist_eq_cyclotomicCharacterModL",
   "GaloisRepresentation.IsHardlyRamified.trivial_component_vanishes_on_localInertia_at_three",

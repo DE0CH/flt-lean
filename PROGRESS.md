@@ -32,7 +32,7 @@ Second symbol: `·` normal, `🟪` currently being worked on (from the
 entries file). To add/remove/annotate a node, edit
 `progress-entries.json` and re-run the generator.
 
-**Sorried declarations (compiler-counted): 37** — `infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow`, `exists_weilPairing_mu`, `exists_torsion_etale_package_of_eqChar`, `kernel_prime_pow_torsion_of_eqChar`, `exists_finite_flat_hopf_form_of_good_reduction_prime_pow`, `exists_hopfAlgebra_galoisEquivariantAlgebra`, `exists_finite_etale_algebra_form_of_inertia_fixes`, `exists_finite_flat_hopf_form_of_etale_algebra_form`, `torsionFlatPackage_localization_of_packages`, `exists_kummerAlg_pointsEquiv`, `exists_galoisModulePackage_of_finiteQuotient`, `torsionFlatPackage_of_nonsplit_adic`, `mazur_point_order`, `exists_quotient_isogeny`, `exists_etale_line_of_good_of_inertia_stable_line`, `not_two_twelve_torsion`, `not_two_ten_torsion`, `exists_hardlyRamified_integral_realizations`, `exists_finiteDimensional_trace_field`, `exists_realizations_at_two`, `quotCharacter_inertia_three_dichotomy`, `exists_sqrt_of_quadratic_character_unramified_outside_two_three`, `exists_splitting_scalar_of_quot_ramified`, `serre_elimination_dihedral_ray_class`, `discr_bound_of_kernel_field`, `odlyzko_bound_totallyComplex`, `exists_conj_fixingSubgroup_of_not_isTotallyComplex`, `inertia_eq_bot_of_forall_localInertia_restrictNormalHom`, `residual_twist_eq_cyclotomicCharacterModL`, `trivial_component_vanishes_on_localInertia_at_three`, `omega_defect_vanishes_on_cyclotomicKernel`, `hom_vanishes_on_localInertia_at_two`, `nonempty_ringEquiv_mvPowerSeries_powerSeries`, `exists_isWeaklyUniversal`, `exists_isWeaklyUniversal_isTraceGenerated_of_isWeaklyUniversal`, `moduleFinite_of_isWeaklyUniversal_isTraceGenerated`, `exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated`
+**Sorried declarations (compiler-counted): 34** — `infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow`, `exists_weilPairing_mu`, `exists_torsion_etale_package_of_eqChar`, `kernel_prime_pow_torsion_of_eqChar`, `exists_finite_flat_hopf_form_of_good_reduction_prime_pow`, `exists_hopfAlgebra_galoisEquivariantAlgebra`, `exists_finite_etale_algebra_form_of_inertia_fixes`, `exists_finite_flat_hopf_form_of_etale_algebra_form`, `torsionFlatPackage_localization_of_packages`, `exists_galoisModulePackage_of_finiteQuotient`, `torsionFlatPackage_of_nonsplit_adic`, `mazur_point_order`, `exists_quotient_isogeny`, `exists_etale_line_of_good_of_inertia_stable_line`, `not_two_twelve_torsion`, `not_two_ten_torsion`, `exists_hardlyRamified_integral_realizations`, `exists_finiteDimensional_trace_field`, `exists_realizations_at_two`, `quotCharacter_inertia_three_dichotomy`, `exists_splitting_scalar_of_quot_ramified`, `serre_elimination_dihedral_ray_class`, `discr_bound_of_kernel_field`, `odlyzko_bound_totallyComplex`, `inertia_eq_bot_of_forall_localInertia_restrictNormalHom`, `residual_twist_eq_cyclotomicCharacterModL`, `trivial_component_vanishes_on_localInertia_at_three`, `omega_defect_vanishes_on_cyclotomicKernel`, `hom_vanishes_on_localInertia_at_two`, `nonempty_ringEquiv_mvPowerSeries_powerSeries`, `exists_isWeaklyUniversal`, `exists_isWeaklyUniversal_isTraceGenerated_of_isWeaklyUniversal`, `moduleFinite_of_isWeaklyUniversal_isTraceGenerated`, `exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated`
 
 - ✅· `fermat_last_theorem`
     - ✅· `fermatLastTheoremFor_of_five_le`
@@ -43,7 +43,7 @@ entries file). To add/remove/annotate a node, edit
                         - ✅· `FreyPackage.exists_p_point_of_not_isIrreducible_of_minkowski`
                             - ✅· `FreyPackage.stable_line_dichotomy_of_not_isIrreducible`
                                 - ✅· `FreyPackage.subquotient_character_unramified`
-                                    - ✅🟪 `FreyPackage.subquotient_character_unramified_at_p`
+                                    - ✅· `FreyPackage.subquotient_character_unramified_at_p`
                                         - ✅· `exists_etale_line_of_good_of_stable_line`
                                             - ✅· `exists_etale_line_or_no_stable_line_of_good`
                                                 - ❌🟪 `exists_etale_line_of_good_of_inertia_stable_line`
@@ -54,14 +54,14 @@ entries file). To add/remove/annotate a node, edit
                                                 - ❌🟪 `WeilPairing.exists_weilPairing_mu`
                                     - ✅· `dense_conjClasses_globalFrob`
                                         - ✅· `exists_frobenius_conj_mem_coset`
-                                            - ✅🟪 `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj`
+                                            - ✅· `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj`
                                                 - ✅· `infinite_setOf_isArithFrobAt`
                                                     - ✅· `infinite_setOf_isArithFrobAt_zpowers`
                                                         - ❌🟪 `infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow`
                             - ✅· `FreyPackage.exists_quotient_curve_point`
-                                - ❌· `exists_quotient_isogeny`
+                                - ❌🟪 `exists_quotient_isogeny`
             - ✅· `WeierstrassCurve.mazur_torsion_bound`
-                - ✅🟪 `WeierstrassCurve.mazur_classification`
+                - ✅· `WeierstrassCurve.mazur_classification`
                     - ✅· `det_galoisRep_eq_cyclotomic`
                         - ✅· `det_galoisRep_globalFrob`
                             - ✅· `WeilPairing.det_frobeniusTorsionEnd`
@@ -69,7 +69,7 @@ entries file). To add/remove/annotate a node, edit
                                     - ❌🟪 `WeilPairing.exists_weilPairing_mu`
                         - ✅· `dense_conjClasses_globalFrob`
                             - ✅· `exists_frobenius_conj_mem_coset`
-                                - ✅🟪 `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj`
+                                - ✅· `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj`
                                     - ✅· `infinite_setOf_isArithFrobAt`
                                         - ✅· `infinite_setOf_isArithFrobAt_zpowers`
                                             - ❌🟪 `infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow`
@@ -87,44 +87,52 @@ entries file). To add/remove/annotate a node, edit
                                         - ❌🟪 `WeilPairing.exists_weilPairing_mu`
                             - ✅· `dense_conjClasses_globalFrob`
                                 - ✅· `exists_frobenius_conj_mem_coset`
-                                    - ✅🟪 `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj`
+                                    - ✅· `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj`
                                         - ✅· `infinite_setOf_isArithFrobAt`
                                             - ✅· `infinite_setOf_isArithFrobAt_zpowers`
                                                 - ❌🟪 `infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow`
                 - ✅· `FreyCurve.torsion_isFlat`
                     - ✅· `FreyCurve.torsion_isFlat_of_good`
                         - ✅· `WeierstrassCurve.isFlatAt_of_hasGoodReduction`
-                            - ✅🟪 `torsion_flat_of_good_reduction`
-                                - ✅🟪 `WeierstrassCurve.torsion_flat_of_good_reduction_of_isUnit`
+                            - ✅· `torsion_flat_of_good_reduction`
+                                - ✅· `WeierstrassCurve.torsion_flat_of_good_reduction_of_isUnit`
                                     - ✅· `torsion_flat_of_inertia_fixes`
                                         - ✅· `WeierstrassCurve.exists_torsion_etale_package_over_fractionField`
                                             - ✅· `exists_finiteQuotient_galoisModule_etale_package`
                                                 - ❌🟪 `exists_hopfAlgebra_galoisEquivariantAlgebra`
-                                        - ❌🟪 `WeierstrassCurve.torsion_flat_of_inertia_fixes_prolong`
-                                - ✅🟪 `WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow`
+                                        - ✅· `WeierstrassCurve.torsion_flat_of_inertia_fixes_prolong`
+                                            - ❌🟪 `exists_finite_etale_algebra_form_of_inertia_fixes`
+                                            - ❌🟪 `exists_finite_flat_hopf_form_of_etale_algebra_form`
+                                - ✅· `WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow`
                                     - ✅· `WeierstrassCurve.exists_torsion_etale_package_over_fractionField`
                                         - ✅· `exists_finiteQuotient_galoisModule_etale_package`
                                             - ❌🟪 `exists_hopfAlgebra_galoisEquivariantAlgebra`
-                                    - ❌🟪 `WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow`
-                                    - ❌🟪 `WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow_of_eqChar`
+                                    - ✅· `WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow`
+                                        - ❌🟪 `exists_finite_flat_hopf_form_of_good_reduction_prime_pow`
+                                    - ✅· `WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow_of_eqChar`
+                                        - ❌🟪 `exists_torsion_etale_package_of_eqChar`
+                                        - ❌🟪 `kernel_prime_pow_torsion_of_eqChar`
+                                        - ❌🟪 `exists_finite_etale_algebra_form_of_inertia_fixes`
+                                        - ❌🟪 `exists_finite_flat_hopf_form_of_etale_algebra_form`
                     - ✅· `FreyCurve.torsion_isFlat_of_multiplicative`
                         - ✅· `WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction`
-                            - ❌🟪 `torsion_flat_of_multiplicative_reduction`
-                                - ✅🟪 `exists_kummerTorsionPackage`
-                                    - ❌🟪 `exists_kummerAlg_pointsEquiv`
+                            - ✅· `torsion_flat_of_multiplicative_reduction`
+                                - ❌🟪 `torsionFlatPackage_localization_of_packages`
+                                - ❌🟪 `exists_galoisModulePackage_of_finiteQuotient`
+                                - ❌🟪 `torsionFlatPackage_of_nonsplit_adic`
             - ✅· `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
-                - ✅🟪 `exists_hardlyRamifiedLift`
-                    - ✅🟪 `exists_universal_hardlyRamifiedDeformation`
+                - ✅· `exists_hardlyRamifiedLift`
+                    - ✅· `exists_universal_hardlyRamifiedDeformation`
                         - ✅· `exists_isWeaklyUniversal_isTraceGenerated`
                             - ❌🟪 `exists_isWeaklyUniversal`
                             - ❌🟪 `exists_isWeaklyUniversal_isTraceGenerated_of_isWeaklyUniversal`
-                    - ✅🟪 `moduleFinite_of_isUniversal`
+                    - ✅· `moduleFinite_of_isUniversal`
                         - ✅· `exists_isWeaklyUniversal_isTraceGenerated`
                             - ❌🟪 `exists_isWeaklyUniversal`
                             - ❌🟪 `exists_isWeaklyUniversal_isTraceGenerated_of_isWeaklyUniversal`
                         - ❌🟪 `moduleFinite_of_isWeaklyUniversal_isTraceGenerated`
-                    - ✅🟪 `algebraMap_injective_of_isUniversal`
-                        - ✅🟪 `moduleFinite_of_isUniversal`
+                    - ✅· `algebraMap_injective_of_isUniversal`
+                        - ✅· `moduleFinite_of_isUniversal`
                             - ✅· `exists_isWeaklyUniversal_isTraceGenerated`
                                 - ❌🟪 `exists_isWeaklyUniversal`
                                 - ❌🟪 `exists_isWeaklyUniversal_isTraceGenerated_of_isWeaklyUniversal`
@@ -136,76 +144,70 @@ entries file). To add/remove/annotate a node, edit
                             - ❌🟪 `exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated`
                             - ❌🟪 `nonempty_ringEquiv_mvPowerSeries_powerSeries`
                 - ✅· `residual_charFrob_eq`
-                    - ✅🟪 `IsHardlyRamified.mem_isCompatible`
-                        - ✅🟪 `exists_numberField_eigensystem`
-                            - ✅🟪 `exists_finiteDimensional_coeff_field`
-                                - ❌· `exists_finiteDimensional_trace_field`
-                        - ✅🟪 `exists_family_of_eigensystem`
-                            - ✅🟪 `exists_realizations_of_eigensystem`
-                                - ❌· `exists_hardlyRamified_integral_realizations`
-                                - ❌· `exists_realizations_at_two`
+                    - ✅· `IsHardlyRamified.mem_isCompatible`
+                        - ✅· `exists_numberField_eigensystem`
+                            - ✅· `exists_finiteDimensional_coeff_field`
+                                - ❌🟪 `exists_finiteDimensional_trace_field`
+                        - ✅· `exists_family_of_eigensystem`
+                            - ✅· `exists_realizations_of_eigensystem`
+                                - ❌🟪 `exists_hardlyRamified_integral_realizations`
+                                - ❌🟪 `exists_realizations_at_two`
                     - ✅· `residual_charFrob_eq_of_family`
                         - ✅· `IsHardlyRamified.three_adic`
                             - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular`
                                 - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three`
                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter`
-                                        - ✅🟪 `exists_line_with_unramified_quotCharacter_at_three`
+                                        - ✅· `exists_line_with_unramified_quotCharacter_at_three`
                                             - ✅· `quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified`
-                                                - ❌· `quotCharacter_inertia_three_dichotomy`
+                                                - ❌🟪 `quotCharacter_inertia_three_dichotomy`
                                             - ✅· `exists_line_with_quotCharacter_eq_subCharacter`
-                                                - ❌· `exists_splitting_scalar_of_quot_ramified`
+                                                - ❌🟪 `exists_splitting_scalar_of_quot_ramified`
                                     - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible`
                                         - ✅· `not_isAbsolutelyIrreducible`
                                             - ✅· `serre_elimination`
-                                                - ✅🟪 `serre_elimination_noncyclic`
-                                                    - ✅🟪 `serre_elimination_arith`
-                                                        - ✅🟪 `serre_elimination_dihedral`
-                                                            - ❌🟪 `exists_sqrt_of_quadratic_character_unramified_outside_two_three`
-                                                            - ❌· `serre_elimination_dihedral_ray_class`
-                                                        - ✅🟪 `serre_elimination_alt4`
+                                                - ✅· `serre_elimination_noncyclic`
+                                                    - ✅· `serre_elimination_arith`
+                                                        - ✅· `serre_elimination_dihedral`
+                                                            - ❌🟪 `serre_elimination_dihedral_ray_class`
+                                                        - ✅· `serre_elimination_alt4`
                                                             - ❌🟪 `odlyzko_bound_totallyComplex`
                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
-                                                                    - ❌🟪 `exists_conj_fixingSubgroup_of_not_isTotallyComplex`
-                                                                    - ❌· `discr_bound_of_kernel_field`
-                                                        - ✅🟪 `serre_elimination_sym4`
+                                                                    - ❌🟪 `discr_bound_of_kernel_field`
+                                                        - ✅· `serre_elimination_sym4`
                                                             - ❌🟪 `odlyzko_bound_totallyComplex`
                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
-                                                                    - ❌🟪 `exists_conj_fixingSubgroup_of_not_isTotallyComplex`
-                                                                    - ❌· `discr_bound_of_kernel_field`
-                                                        - ✅🟪 `serre_elimination_alt5`
+                                                                    - ❌🟪 `discr_bound_of_kernel_field`
+                                                        - ✅· `serre_elimination_alt5`
                                                             - ❌🟪 `odlyzko_bound_totallyComplex`
                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
-                                                                    - ❌🟪 `exists_conj_fixingSubgroup_of_not_isTotallyComplex`
-                                                                    - ❌· `discr_bound_of_kernel_field`
-                                                        - ✅🟪 `serre_elimination_psl`
+                                                                    - ❌🟪 `discr_bound_of_kernel_field`
+                                                        - ✅· `serre_elimination_psl`
                                                             - ❌🟪 `odlyzko_bound_totallyComplex`
                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
-                                                                    - ❌🟪 `exists_conj_fixingSubgroup_of_not_isTotallyComplex`
-                                                                    - ❌· `discr_bound_of_kernel_field`
-                                                        - ✅🟪 `serre_elimination_pgl`
+                                                                    - ❌🟪 `discr_bound_of_kernel_field`
+                                                        - ✅· `serre_elimination_pgl`
                                                             - ❌🟪 `odlyzko_bound_totallyComplex`
                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
-                                                                    - ❌🟪 `exists_conj_fixingSubgroup_of_not_isTotallyComplex`
-                                                                    - ❌· `discr_bound_of_kernel_field`
+                                                                    - ❌🟪 `discr_bound_of_kernel_field`
                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient`
-                                    - ✅🟪 `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient`
+                                    - ✅· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient`
                                         - ✅· `exists_equivariant_defect_coboundary`
                                             - ✅· `exists_omega_cocycle_coboundary`
-                                                - ❌· `residual_twist_eq_cyclotomicCharacterModL`
-                                                - ❌· `omega_defect_vanishes_on_cyclotomicKernel`
+                                                - ❌🟪 `residual_twist_eq_cyclotomicCharacterModL`
+                                                - ❌🟪 `omega_defect_vanishes_on_cyclotomicKernel`
                                             - ✅· `trivial_component_hom_vanishes`
-                                                - ❌· `inertia_eq_bot_of_forall_localInertia_restrictNormalHom`
-                                                - ❌· `hom_vanishes_on_localInertia_at_two`
-                                                - ❌· `trivial_component_vanishes_on_localInertia_at_three`
+                                                - ❌🟪 `inertia_eq_bot_of_forall_localInertia_restrictNormalHom`
+                                                - ❌🟪 `hom_vanishes_on_localInertia_at_two`
+                                                - ❌🟪 `trivial_component_vanishes_on_localInertia_at_three`
                 - ✅· `not_isIrreducible_of_charFrob_eq`
                     - ✅· `dense_conjClasses_globalFrob`
                         - ✅· `exists_frobenius_conj_mem_coset`
-                            - ✅🟪 `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj`
+                            - ✅· `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj`
                                 - ✅· `infinite_setOf_isArithFrobAt`
                                     - ✅· `infinite_setOf_isArithFrobAt_zpowers`
                                         - ❌🟪 `infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow`
