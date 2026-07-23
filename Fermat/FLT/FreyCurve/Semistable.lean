@@ -46,6 +46,9 @@ public import Mathlib.RingTheory.DedekindDomain.Dvr
 import Mathlib.RingTheory.Localization.LocalizationLocalization
 import Mathlib.RingTheory.Valuation.Integral
 import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.SplitMultiplicativeReduction
+-- `quadraticTwist` itself, PUBLIC because the unramified-quadratic-descent
+-- leaf of the nonsplit package is STATED with it
+public import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists
 -- the unit-`c₄` Kraus–Laska minimality criterion, for the multiplicative case
 import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 -- the local-field instance package for `adicCompletion ℚ v` (the
@@ -6319,24 +6322,220 @@ open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **The nonsplit twist package** (sorry node — the NONSPLIT-CASE
-local content, hoisted out of `torsion_flat_of_multiplicative_reduction`
-as a standalone leaf; the extra hypotheses `hj` and the global
-multiplicative-reduction instance are available to the prover): if the
-completed base change does NOT have split multiplicative reduction, the
+/-- **The split Kummer package, local form** (PROVEN 2026-07-23 by the
+same assembly as `torsionFlatPackage_of_split_adic` — the proof never
+uses globality of the curve — stated for an arbitrary local curve so
+that it applies to the minimal model of the quadratic twist in the
+nonsplit case). -/
+theorem WeierstrassCurve.torsionFlatPackage_of_split_adic'
+    {p : ℕ} (hp' : p.Prime) [Fact p.Prime]
+    (X : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)) [X.IsElliptic]
+    [hsplit : X.HasSplitMultiplicativeReduction
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] :
+    ∀ (w' : (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)ˣ)
+      (hmem : ((X.qUnit * w'⁻¹ ^ p :
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)ˣ) :
+          HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) ∈
+        HeightOneSpectrum.adicCompletionIntegers ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat),
+      IsUnit (⟨_, hmem⟩ : HeightOneSpectrum.adicCompletionIntegers ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) →
+      WeierstrassCurve.TorsionFlatPackage
+        𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+        X p
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
+  classical
+  intro w' hmem hunit
+  -- the curve-free Kummer package at the recentred Tate parameter
+  obtain ⟨H, i1, i2, i3, i4, i5, f0, hf0⟩ :=
+    exists_kummerTorsionPackage hp' X.qUnit w'
+      (WeierstrassCurve.valuation_q_lt_one X) hmem hunit
+  -- the uniformization witness
+  obtain ⟨e, he⟩ := WeierstrassCurve.exists_tateEquivSepClosure
+    (k := HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)
+    (E := X)
+    (Ω := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))
+  -- the uniformization restricted to the `p`-torsion subgroups
+  let eT : AddSubgroup.torsionBy (Additive
+        ((AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))ˣ ⧸
+        Subgroup.zpowers (Units.map (algebraMap
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+          X.qUnit)))
+        ((p : ℕ) : ℤ) ≃+
+      AddSubgroup.torsionBy (X⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ) :=
+    { toFun := fun x => ⟨e x.1, by
+        have hx : ((p : ℕ) : ℤ) • x.1 = 0 := x.2
+        show ((p : ℕ) : ℤ) • e x.1 = 0
+        rw [← map_zsmul, hx, map_zero]⟩
+      invFun := fun y => ⟨e.symm y.1, by
+        have hy : ((p : ℕ) : ℤ) • y.1 = 0 := y.2
+        show ((p : ℕ) : ℤ) • e.symm y.1 = 0
+        rw [← map_zsmul e.symm ((p : ℕ) : ℤ) y.1, hy, map_zero]⟩
+      left_inv := fun x => Subtype.ext (e.symm_apply_apply x.1)
+      right_inv := fun y => Subtype.ext (e.apply_symm_apply y.1)
+      map_add' := fun x y => Subtype.ext (map_add e x.1 y.1) }
+  refine ⟨H, i1, i2, i3, i4, i5, f0.trans eT, ?_⟩
+  intro σ φ
+  -- a unit representative of the Kummer class of `φ`
+  obtain ⟨u, hu⟩ := QuotientGroup.mk_surjective
+    (Additive.toMul (f0 (Additive.ofMul (WithConv.toConv φ))).1)
+  have hux : ((f0 (Additive.ofMul (WithConv.toConv φ))).1 :
+      Additive ((AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))ˣ ⧸
+        Subgroup.zpowers (Units.map (algebraMap
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+          X.qUnit))) =
+      Additive.ofMul ↑u := by
+    rw [hu, ofMul_toMul]
+  -- Kummer equivariance at the representative
+  have hstep := hf0 σ φ u hux
+  -- unfold the composite at both sides and close with the
+  -- uniformization equivariance
+  show e (f0 (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ)))).1 =
+    WeierstrassCurve.Affine.Point.map σ.toAlgHom
+      (e (f0 (Additive.ofMul (WithConv.toConv φ))).1)
+  rw [hstep, hux]
+  exact (he σ u).symm
+
+open TensorProduct ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Package transport along a variable change** (sorry node — a
+`VariableChange` over the base field induces a Galois-equivariant
+group isomorphism of points over the algebraic closure, so a
+`TorsionFlatPackage` for `C • Y` yields one for `Y` by composing the
+points identification; the Hopf model is unchanged). -/
+theorem WeierstrassCurve.torsionFlatPackage_of_variableChange
+    {p : ℕ} (hp' : p.Prime) [Fact p.Prime]
+    (Y : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))
+    (C : WeierstrassCurve.VariableChange (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)) :
+    WeierstrassCurve.TorsionFlatPackage
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      (C • Y) p
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) →
+    WeierstrassCurve.TorsionFlatPackage
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      Y p
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
+  sorry
+
+open TensorProduct ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Unramified quadratic descent of the torsion package** (sorry node
+— the DESCENT core of the nonsplit case): if `L/ℚ_pˆ` is a quadratic
+separable extension that is UNRAMIFIED (witnessed by a generator `θL`
+that is a root of a monic integral polynomial `Q` with separable
+residue), then a `TorsionFlatPackage` for the quadratic twist
+`X.quadraticTwist L` yields one for `X` itself. Content: over `L` the
+curves are isomorphic (`quadraticTwistPointEquiv`), with Galois actions
+differing by the quadratic character of `L/K`
+(`quadraticTwistPointEquiv_galois`); the descended Hopf model is the
+invariants of `𝒪_L ⊗ H` under the character-twisted involution — a
+finite flat Hopf order because `𝒪_L/𝒪` is unramified (equivalently:
+`2` is invertible since the residue characteristic `p` is odd, so the
+invariants are a direct summand). -/
+theorem WeierstrassCurve.torsionFlatPackage_of_unramified_quadraticTwist
+    {p : ℕ} (hp' : p.Prime) [Fact p.Prime] (hp2 : p ≠ 2)
+    (X : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)) [X.IsElliptic]
+    (L : Type) [Field L]
+    [Algebra (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) L]
+    [Algebra.IsQuadraticExtension (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) L]
+    [Algebra.IsSeparable (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) L]
+    (θL : L)
+    (Q : Polynomial 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat])
+    (hQm : Q.Monic)
+    (hθtop : Algebra.adjoin (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) ({θL} : Set L) = ⊤)
+    (hθQ : Polynomial.aeval θL
+      (Q.map (algebraMap 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))) = 0)
+    (hQsep : (Q.map (IsLocalRing.residue
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat])).Separable) :
+    WeierstrassCurve.TorsionFlatPackage
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      (X.quadraticTwist L) p
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) →
+    WeierstrassCurve.TorsionFlatPackage
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      X p
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
+  sorry
+
+open TensorProduct ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The nonsplit twist package** (DECOMPOSED 2026-07-23 — the
+NONSPLIT-CASE local content, hoisted out of
+`torsion_flat_of_multiplicative_reduction` as a standalone node): the
 quadratic unramified twist to split reduction
 (`exists_quadraticTwist_hasSplitMultiplicativeReduction`) has the same
-`j`-invariant, so the split leaf provides its package; unramified
-quadratic descent of the Hopf model (the twisted form is the invariants
-of the base-changed model under the Galois-twisted involution, a finite
-flat Hopf order because the extension is unramified) yields the package
-for `E` itself. -/
+`j`-invariant, so its minimal model gets the recentring witness
+(`exists_unit_qUnit_mul_inv_pow_isUnit`, via `variableChange_j` and
+`j_quadraticTwist`) and the PROVEN local split package
+`torsionFlatPackage_of_split_adic'`; the package transports back along
+the minimal variable change (sorried leaf
+`torsionFlatPackage_of_variableChange`) and descends along the
+unramified quadratic extension (sorried leaf
+`torsionFlatPackage_of_unramified_quadraticTwist`). -/
 theorem WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp' : p.Prime)
-    [Fact p.Prime] (_hp2 : p ≠ 2)
+    [Fact p.Prime] (hp2 : p ≠ 2)
     [E.HasMultiplicativeReduction
       (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
-    (_hj : (p : ℤ) ∣ padicValRat p E.j) :
+    (hj : (p : ℤ) ∣ padicValRat p E.j) :
     ¬(E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
         hp'.toHeightOneSpectrumRingOfIntegersRat))).HasSplitMultiplicativeReduction
       𝒪[HeightOneSpectrum.adicCompletion ℚ
@@ -6351,7 +6550,76 @@ theorem WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic
       p
       (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
         hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
-  sorry
+  classical
+  intro hns
+  haveI := hasMultiplicativeReduction_adicCompletion hp' E
+  -- the unramified quadratic twist with split reduction, with its
+  -- unramifiedness witness `(θL, Q)`
+  obtain ⟨L, _, _, _, _, hsplit', θL, Q, hQm, hθtop, hθQ, hQsep⟩ :=
+    WeierstrassCurve.exists_quadraticTwist_hasSplitMultiplicativeReduction
+      (E := E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)))
+      (R := 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]) hns
+  set Tw : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) :=
+    (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))).quadraticTwist L
+  set Mt : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) :=
+    Tw.minimal 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]
+  haveI hMtsplit : Mt.HasSplitMultiplicativeReduction
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat] := hsplit'
+  haveI hTwell : Tw.IsElliptic :=
+    inferInstanceAs (((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))).quadraticTwist L).IsElliptic)
+  haveI hMtell : Mt.IsElliptic :=
+    inferInstanceAs (((Tw.exists_isMinimal
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]).choose • Tw).IsElliptic)
+  -- the minimal twist has the SAME rational `j`-image
+  have hMtj : Mt.j = algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) E.j := by
+    have h1 : Mt.j = ((Tw.exists_isMinimal
+        𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]).choose • Tw).j := rfl
+    have h2 : Tw.j = ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))).quadraticTwist L).j := rfl
+    rw [h1, WeierstrassCurve.variableChange_j, h2,
+      WeierstrassCurve.j_quadraticTwist]
+    exact WeierstrassCurve.map_j _ _
+  -- the recentring witness for the minimal twist, from `p ∣ v_p(j)`
+  obtain ⟨w, hmemw, hunitw⟩ :=
+    exists_unit_qUnit_mul_inv_pow_isUnit hp' Mt (p := p) hMtj hj
+  -- the PROVEN local split package for the minimal twist
+  have hMtpkg : WeierstrassCurve.TorsionFlatPackage
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      Mt p
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) :=
+    WeierstrassCurve.torsionFlatPackage_of_split_adic' hp' Mt w hmemw hunitw
+  -- transport along the minimal variable change (sorried leaf)
+  have hTwpkg : WeierstrassCurve.TorsionFlatPackage
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      Tw p
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) :=
+    WeierstrassCurve.torsionFlatPackage_of_variableChange hp' Tw
+      (Tw.exists_isMinimal 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]).choose hMtpkg
+  -- unramified quadratic descent (sorried leaf)
+  exact WeierstrassCurve.torsionFlatPackage_of_unramified_quadraticTwist
+    hp' hp2 (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))) L θL Q hQm hθtop hθQ hQsep
+    hTwpkg
 
 open TensorProduct ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
