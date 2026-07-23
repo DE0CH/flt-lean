@@ -40,8 +40,9 @@ and it is exactly inhabited by the classical normalized eigenforms:
   inhabit it; and
 * conversely every inhabitant IS a normalized full-Hecke eigenform
   (the other direction of 5.8.5), whose good-prime eigensystem arises
-  from a newform of level dividing `N` (the Atkin–Lehner main lemma,
-  Diamond–Shurman Theorem 5.8.3), so the sorried attachment statements
+  from a newform of level dividing `N` — its conductor (Diamond–Shurman
+  Proposition 5.8.4, via Strong Multiplicity One; Galois conjugates of
+  newforms are newforms, Theorem 6.5.4), so the sorried attachment statements
   below quantify only over forms for which the classical theory
   genuinely provides attached Galois representations. The FULL set of
   relations (not just the good-prime ones) is deliberate: good-prime
