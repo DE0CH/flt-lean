@@ -502,7 +502,127 @@ lemma charFrob_coeff_zero_eq_natCast
           hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly from rfl,
     ← hdet, hdetq, map_natCast]
 
-/-- **Algebraicity shadow of the trace field** (sorry node): away from
+/-- **Rational traces on the reducible branch** (sorry node): away from
+a finite set of places, the TRACE coefficient (`coeff 1`) of the mapped
+Frobenius characteristic polynomials of a hardly ramified `p`-adic
+representation whose base extension to `ℚ̄_p` is NOT irreducible is a
+RATIONAL number. This is the Eisenstein/class-field-theory branch of
+the trace shadows — no automorphy enters: a reducible hardly ramified
+representation is an extension of characters `χ₁, χ₂ : G_ℚ → ℚ̄_pˣ`
+with `χ₁χ₂ = χ_cyc`, both unramified outside `{2, p}`; the `p`-adic
+cyclotomic character is unramified at `2` and the
+upper-triangular-with-unramified-quotient condition at `2` puts no
+ramification on the diagonal there; flatness at `p` forces the
+inertia-at-`p` pair `{χ₁|_{I_p}, χ₂|_{I_p}}` to be
+`{1, χ_cyc|_{I_p}}` (Raynaud/Fontaine at the finite levels), so after
+dividing out the matched cyclotomic powers both characters are
+unramified everywhere, hence TRIVIAL (Minkowski: `ℚ` has no nontrivial
+extension unramified everywhere) — `{χ₁, χ₂} = {1, χ_cyc}` exactly,
+and every Frobenius trace away from `{2, p}` is `1 + q ∈ ℚ` (the
+coefficient is `-(1 + q)`; rationality is the recorded shape). Shared
+by BOTH trace shadows (a rational number is algebraic, and it lies in
+the `ℚ`-span of `{1}`): this is the single reducible-branch node of
+the dichotomy decomposition — see the DECOMPOSED notes on
+`exists_isAlgebraic_trace_coeff` and
+`exists_finiteDimensional_trace_span`. -/
+theorem exists_rat_trace_coeff_of_not_isIrreducible
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (hint : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
+      ((algebraMap R (AlgebraicClosure ℚ_[p])).comp (algebraMap ℤ_[p] R)).IsIntegralElem
+        (((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n))
+    (K : IntermediateField ℚ_[p] (AlgebraicClosure ℚ_[p]))
+    (hKfd : FiniteDimensional ℚ_[p] K)
+    (hK : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
+      ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n ∈ K)
+    (hred : ¬ (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible) :
+    ∃ (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ v ∉ S, ∃ r : ℚ,
+        ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 =
+          algebraMap ℚ (AlgebraicClosure ℚ_[p]) r :=
+  sorry
+
+/-- **Algebraicity shadow on the irreducible branch** (sorry node):
+away from a finite set of places, the TRACE coefficient (`coeff 1`) of
+the mapped Frobenius characteristic polynomials of a hardly ramified
+`p`-adic representation whose base extension to `ℚ̄_p` IS irreducible
+is algebraic over `ℚ`. This is the automorphy branch of the
+algebraicity shadow: an irreducible hardly ramified representation is
+attached to a weight-2 cuspidal Hecke eigenform (Wiles–Taylor–Wiles
+modularity lifting when the residual representation is irreducible;
+Skinner–Wiles in the residually reducible case), and its Frobenius
+traces are the Hecke eigenvalues — algebraic numbers. The
+irreducibility hypothesis is genuinely consumed by the
+modularity-lifting arguments (Taylor–Wiles patching requires it), so
+this node is strictly shallower than the undichotomized shadow it was
+split from. The `∃ S` is load-bearing generality: the eventual proof
+may take `S` to be the places dividing the level of ANY eigenform
+attached to `ρ` — no level-lowering is demanded. No degree bound and
+no common field is demanded (that is the orthogonal shadow). -/
+theorem exists_isAlgebraic_trace_coeff_of_isIrreducible
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (hint : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
+      ((algebraMap R (AlgebraicClosure ℚ_[p])).comp (algebraMap ℤ_[p] R)).IsIntegralElem
+        (((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n))
+    (K : IntermediateField ℚ_[p] (AlgebraicClosure ℚ_[p]))
+    (hKfd : FiniteDimensional ℚ_[p] K)
+    (hK : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
+      ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n ∈ K)
+    (hirr : (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible) :
+    ∃ (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ v ∉ S, IsAlgebraic ℚ
+        (((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1) :=
+  sorry
+
+/-- **Bounded-independence shadow on the irreducible branch** (sorry
+node): away from a finite set of places there is a uniform bound `d`
+such that every `ℚ`-linearly independent finite batch of TRACE
+coefficients of the mapped Frobenius characteristic polynomials has at
+most `d` elements. This is the finite-generation half of "the traces
+are the Hecke eigenvalues of a single eigenform" in its weakest batch
+form: the eventual (automorphy) proof takes `d = [E : ℚ]` for the
+Hecke field `E` of an eigenform attached to the (irreducible, hence
+modular) representation — any `d + 1` traces lie in the
+`d`-dimensional `ℚ`-space `ψ(E) ⊆ ℚ̄_p` and are therefore dependent.
+No single common spanning set is demanded here: that packaging of
+`exists_finiteDimensional_trace_span` is PROVEN glue (extract a
+linearly independent subset of the trace set spanning it via
+`exists_linearIndepOn_id_extension`; the cardinality bound forces it
+finite).
+See `exists_isAlgebraic_trace_coeff_of_isIrreducible` for why the
+irreducibility hypothesis strictly shallows the automorphy content
+and why the `∃ S` generality is load-bearing. -/
+theorem exists_linearIndependent_trace_card_le_of_isIrreducible
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (hint : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
+      ((algebraMap R (AlgebraicClosure ℚ_[p])).comp (algebraMap ℤ_[p] R)).IsIntegralElem
+        (((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n))
+    (K : IntermediateField ℚ_[p] (AlgebraicClosure ℚ_[p]))
+    (hKfd : FiniteDimensional ℚ_[p] K)
+    (hK : ∀ (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (n : ℕ),
+      ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n ∈ K)
+    (hirr : (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible) :
+    ∃ (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) (d : ℕ),
+      ∀ t : Finset (AlgebraicClosure ℚ_[p]),
+        (∀ x ∈ t, ∃ v ∉ S,
+          ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 = x) →
+        LinearIndepOn ℚ id (t : Set (AlgebraicClosure ℚ_[p])) →
+        t.card ≤ d :=
+  sorry
+
+/-- **Algebraicity shadow of the trace field** (PROVEN assembly, see
+the DECOMPOSED note below): away from
 a finite set of places, the TRACE coefficient (`coeff 1`) of the mapped
 Frobenius characteristic polynomials of a hardly ramified `p`-adic
 representation is ALGEBRAIC over `ℚ`. Strictly weaker than the
@@ -513,7 +633,24 @@ extension of `ℚ` (`ℚ_p` itself contains `√ℓ` for every square `ℓ` mod
 `p`). One of the two orthogonal shadows of the Hecke-field statement
 (the other is `exists_finiteDimensional_trace_span`); their
 conjunction recovers it by PROVEN linear algebra — see the DECOMPOSED
-note on `exists_finiteDimensional_trace_field`. -/
+note on `exists_finiteDimensional_trace_field`.
+
+DECOMPOSED (2026-07-23) into a PROVEN assembly over the
+reducible/irreducible dichotomy — the actual first move of the
+literature proof (and of the B5/B6 architecture recorded in
+`Reducible.lean`), splitting the class-field-theory content from the
+automorphy content:
+
+1. `exists_rat_trace_coeff_of_not_isIrreducible` (sorry node, SHARED
+   with the span shadow) — if `ρ ⊗ ℚ̄_p` is reducible the traces are
+   outright RATIONAL away from finitely many places (Eisenstein
+   branch: character analysis + Minkowski, no automorphy).
+2. `exists_isAlgebraic_trace_coeff_of_isIrreducible` (sorry node) —
+   the irreducible branch, where modularity lifting applies; the
+   irreducibility hypothesis is what Taylor–Wiles patching consumes.
+3. The assembly (below): case on irreducibility of `ρ ⊗ ℚ̄_p`; on the
+   reducible branch a rational trace is algebraic
+   (`isAlgebraic_algebraMap`). -/
 theorem exists_isAlgebraic_trace_coeff
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -529,10 +666,19 @@ theorem exists_isAlgebraic_trace_coeff
       ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff n ∈ K) :
     ∃ (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
       ∀ v ∉ S, IsAlgebraic ℚ
-        (((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1) :=
-  sorry
+        (((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1) := by
+  by_cases hirr : (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible
+  · exact exists_isAlgebraic_trace_coeff_of_isIrreducible hpodd hv hZinj hRinj hρ hint
+      K hKfd hK hirr
+  · obtain ⟨S, hS⟩ := exists_rat_trace_coeff_of_not_isIrreducible hpodd hv hZinj hRinj hρ
+      hint K hKfd hK hirr
+    refine ⟨S, fun v hv => ?_⟩
+    obtain ⟨r, hr⟩ := hS v hv
+    rw [hr]
+    exact isAlgebraic_algebraMap r
 
-/-- **Finite-span shadow of the trace field** (sorry node): away from a
+/-- **Finite-span shadow of the trace field** (PROVEN assembly, see the
+DECOMPOSED note below): away from a
 finite set of places, the TRACE coefficients of the mapped Frobenius
 characteristic polynomials of a hardly ramified `p`-adic representation
 all lie in the `ℚ`-LINEAR SPAN of finitely many elements of `ℚ̄_p`.
@@ -547,7 +693,27 @@ finite over `ℚ_p`, hence INFINITE-dimensional over `ℚ`. The other
 orthogonal shadow is `exists_isAlgebraic_trace_coeff`; their
 conjunction recovers the Hecke-field statement by PROVEN linear
 algebra — see the DECOMPOSED note on
-`exists_finiteDimensional_trace_field`. -/
+`exists_finiteDimensional_trace_field`.
+
+DECOMPOSED (2026-07-23) into a PROVEN assembly over the same
+reducible/irreducible dichotomy as `exists_isAlgebraic_trace_coeff`
+(see the DECOMPOSED note there), with the common-spanning-set
+packaging additionally moved into proven glue:
+
+1. `exists_rat_trace_coeff_of_not_isIrreducible` (sorry node, SHARED
+   with the algebraicity shadow) — on the reducible branch the traces
+   are rational, hence lie in the `ℚ`-span of `{1}`.
+2. `exists_linearIndependent_trace_card_le_of_isIrreducible` (sorry
+   node) — on the irreducible branch, a uniform cardinality bound `d`
+   on `ℚ`-linearly independent batches of traces (the weakest batch
+   form of "the traces lie in the `[E : ℚ]`-dimensional Hecke
+   field").
+3. The assembly (below): on the irreducible branch, extract via
+   `exists_linearIndepOn_id_extension` a linearly independent subset
+   `b` of the trace set whose span contains every trace; `b` is
+   finite — otherwise it would contain an independent batch of `d + 1`
+   traces (`Set.Infinite.exists_subset_card_eq`), contradicting the
+   bound. -/
 theorem exists_finiteDimensional_trace_span
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -565,8 +731,35 @@ theorem exists_finiteDimensional_trace_span
       (t : Finset (AlgebraicClosure ℚ_[p])),
       ∀ v ∉ S,
         ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 ∈
-          Submodule.span ℚ (t : Set (AlgebraicClosure ℚ_[p])) :=
-  sorry
+          Submodule.span ℚ (t : Set (AlgebraicClosure ℚ_[p])) := by
+  classical
+  by_cases hirr : (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible
+  · obtain ⟨S, d, hcard⟩ := exists_linearIndependent_trace_card_le_of_isIrreducible
+      hpodd hv hZinj hRinj hρ hint K hKfd hK hirr
+    -- the set of traces away from `S`
+    set A : Set (AlgebraicClosure ℚ_[p]) := {x | ∃ v ∉ S,
+      ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 = x}
+      with hAdef
+    -- extract a linearly independent subset of `A` whose span contains `A`
+    obtain ⟨b, hbA, -, hbspan, hbind⟩ :=
+      exists_linearIndepOn_id_extension
+        (linearIndependent_empty ℚ (AlgebraicClosure ℚ_[p])) (Set.empty_subset A)
+    -- `b` is finite: an infinite `b` would contain an independent batch
+    -- of `d + 1` traces, contradicting the cardinality bound
+    have hbfin : b.Finite := by
+      by_contra hbinf
+      obtain ⟨u, hub, hucard⟩ :=
+        Set.Infinite.exists_subset_card_eq hbinf (d + 1)
+      exact absurd (hcard u (fun x hx => hbA (hub hx)) (hbind.mono hub)) (by omega)
+    refine ⟨S, hbfin.toFinset, fun v hv => ?_⟩
+    rw [Set.Finite.coe_toFinset]
+    exact hbspan ⟨v, hv, rfl⟩
+  · obtain ⟨S, hS⟩ := exists_rat_trace_coeff_of_not_isIrreducible hpodd hv hZinj hRinj hρ
+      hint K hKfd hK hirr
+    refine ⟨S, {1}, fun v hv => ?_⟩
+    obtain ⟨r, hr⟩ := hS v hv
+    rw [hr, Algebra.algebraMap_eq_smul_one]
+    exact Submodule.smul_mem _ r (Submodule.subset_span (by simp))
 
 /-- **Trace-field finiteness core of the eigensystem stratum** (PROVEN
 assembly, see the DECOMPOSED note below): away from a finite set of
@@ -588,12 +781,17 @@ degree (e.g. `ℚ(√ℓ : ℓ a square mod p)` inside `ℚ_p` itself), so
 `ℚ`-finiteness is genuinely not formal even given the confinement.
 
 DECOMPOSED (2026-07-23) into a PROVEN assembly over TWO strictly
-weaker sorried leaves — the two orthogonal shadows of "the traces are
+weaker leaves — the two orthogonal shadows of "the traces are
 the Hecke eigenvalues of one eigenform":
 
-1. `exists_isAlgebraic_trace_coeff` (sorry node) — each trace is
+1. `exists_isAlgebraic_trace_coeff` (as of 2026-07-23 itself a PROVEN
+   assembly over the reducible/irreducible dichotomy; see its
+   DECOMPOSED note) — each trace is
    algebraic over `ℚ` (no degree bound, no common field);
-2. `exists_finiteDimensional_trace_span` (sorry node) — the traces lie
+2. `exists_finiteDimensional_trace_span` (as of 2026-07-23 itself a
+   PROVEN assembly over the same dichotomy plus the
+   `exists_linearIndependent` span-packaging glue; see its DECOMPOSED
+   note) — the traces lie
    in the `ℚ`-linear span of finitely many elements of `ℚ̄_p` (no
    algebraicity, no field structure).
 
@@ -1604,8 +1802,10 @@ superseded by the hypothesis `hZinj`):
    node `exists_finiteDimensional_coeff_field` is itself a PROVEN
    assembly (see its DECOMPOSED note); the surviving sorried leaves
    (2026-07-23, after the further decompositions recorded at each
-   node) are `exists_isAlgebraic_trace_coeff` and
-   `exists_finiteDimensional_trace_span` (the two shadows of the
+   node) are `exists_rat_trace_coeff_of_not_isIrreducible`,
+   `exists_isAlgebraic_trace_coeff_of_isIrreducible` and
+   `exists_linearIndependent_trace_card_le_of_isIrreducible` (the
+   reducible/irreducible dichotomy under the two shadows of the
    Hecke-field finiteness core for the TRACE coefficient),
    `exists_hardlyRamified_integral_realizations_core` (the `λ`-adic
    realizations at odd `ℓ`, minimal telescope) and
