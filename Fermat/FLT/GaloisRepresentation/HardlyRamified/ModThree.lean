@@ -2046,9 +2046,287 @@ theorem serre_elimination_exceptional {k : Type u} [Finite k] [Field k]
     exists_hardlyRamified_number_field V hV hρ habs b e u hu π hπ hcase
   exact absurd hdisc (not_le.mpr (odlyzko_bound_totallyComplex K htc hdeg))
 
-/-- **Quadratic fields ramified only at `2` and `3`** (sorry node —
-the Kronecker/Minkowski-style classification input of the dihedral
-elimination, stated 2026-07-22): a surjective quadratic character
+/-- **The quadratic generator of a degree-2 Galois number field**
+(PROVEN 2026-07-23 — the Kummer-theoretic half of the quadratic-field
+classification): a degree-2 Galois subfield `K ⊆ ℚᵃˡᵍ` has a
+two-element automorphism group `{1, σ}` and contains an irrational
+element `x` with `σ x = −x` and `x² = d` for a SQUAREFREE integer `d`.
+Construction: `α − σ α` is a nonzero anti-fixed irrational for any
+irrational `α` (which exists since `[K : ℚ] = 2 > 1`); its square is
+Galois-invariant, hence a nonzero rational `r`; scaling by
+`den(r)/b` for `n = num(r)·den(r) = b²·a` with `a` squarefree
+(`Nat.sq_mul_squarefree`) makes the square the squarefree integer
+`d = ±a`. -/
+theorem exists_quadratic_generator
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    [IsGalois ℚ K] (hrank : Module.finrank ℚ K = 2) :
+    ∃ (σ : K ≃ₐ[ℚ] K) (x : K) (d : ℤ), σ ≠ 1 ∧ σ * σ = 1 ∧
+      (∀ g : K ≃ₐ[ℚ] K, g = 1 ∨ g = σ) ∧ σ x = -x ∧
+      x ∉ (⊥ : IntermediateField ℚ K) ∧ Squarefree d ∧ x ^ 2 = (d : K) := by
+  classical
+  have hcard : Nat.card (K ≃ₐ[ℚ] K) = 2 :=
+    (IsGalois.card_aut_eq_finrank ℚ K).trans hrank
+  haveI : Finite (K ≃ₐ[ℚ] K) := Nat.finite_of_card_ne_zero (by omega)
+  haveI : Nontrivial (K ≃ₐ[ℚ] K) :=
+    Finite.one_lt_card_iff_nontrivial.mp (by omega)
+  obtain ⟨σ, hσ⟩ := exists_ne (1 : K ≃ₐ[ℚ] K)
+  have hσ2 : σ * σ = 1 := by
+    have h : σ ^ Nat.card (K ≃ₐ[ℚ] K) = 1 := pow_card_eq_one'
+    rwa [hcard, pow_two] at h
+  -- the automorphism group is exactly `{1, σ}`
+  have huniv : ∀ g : K ≃ₐ[ℚ] K, g = 1 ∨ g = σ := by
+    intro g
+    by_contra hg
+    push Not at hg
+    have h1 : ({1, σ, g} : Finset (K ≃ₐ[ℚ] K)).card = 3 := by
+      rw [Finset.card_insert_of_notMem (by
+        simp only [Finset.mem_insert, Finset.mem_singleton]
+        push Not
+        exact ⟨fun h => hσ h.symm, fun h => hg.1 h.symm⟩)]
+      rw [Finset.card_insert_of_notMem (by
+        simp only [Finset.mem_singleton]
+        exact fun h => hg.2 h.symm)]
+      rw [Finset.card_singleton]
+    have h3 := Finset.card_le_card
+      (Finset.subset_univ ({1, σ, g} : Finset (K ≃ₐ[ℚ] K)))
+    rw [h1, Finset.card_univ, ← Nat.card_eq_fintype_card, hcard] at h3
+    omega
+  -- an irrational element of `K`
+  obtain ⟨α, hα⟩ : ∃ α : K, α ∉ (⊥ : IntermediateField ℚ K) := by
+    by_contra h
+    push Not at h
+    have hbot : (⊥ : IntermediateField ℚ K) = ⊤ :=
+      eq_top_iff.mpr fun y _ => h y
+    have h1 := IntermediateField.bot_eq_top_iff_finrank_eq_one.mp hbot
+    omega
+  -- the anti-fixed element `α − σ α`
+  set x₁ : K := α - σ α with hx₁def
+  have hσσ : ∀ z : K, σ (σ z) = z := by
+    intro z
+    have h := congrArg (fun g : K ≃ₐ[ℚ] K => g z) hσ2
+    simpa [AlgEquiv.mul_apply] using h
+  have hx₁σ : σ x₁ = -x₁ := by
+    rw [hx₁def, map_sub, hσσ]
+    ring
+  have hx₁0 : x₁ ≠ 0 := by
+    intro h0
+    have hσα : σ α = α := (sub_eq_zero.mp (hx₁def ▸ h0)).symm
+    have hfixα : ∀ g : K ≃ₐ[ℚ] K, g • α = α := by
+      intro g
+      rcases huniv g with rfl | rfl
+      · rfl
+      · exact hσα
+    obtain ⟨r, hr⟩ := Algebra.IsInvariant.isInvariant (A := ℚ)
+      (G := K ≃ₐ[ℚ] K) α hfixα
+    exact hα (IntermediateField.mem_bot.mpr ⟨r, hr⟩)
+  have hx₁bot : x₁ ∉ (⊥ : IntermediateField ℚ K) := by
+    intro hmem
+    obtain ⟨r, hr⟩ := IntermediateField.mem_bot.mp hmem
+    have h1 : σ x₁ = x₁ := by rw [← hr]; exact σ.commutes r
+    rw [hx₁σ] at h1
+    have h2 : x₁ + x₁ = 0 := add_eq_zero_iff_eq_neg.mpr h1.symm
+    rw [← two_mul] at h2
+    rcases mul_eq_zero.mp h2 with h3 | h3
+    · exact two_ne_zero h3
+    · exact hx₁0 h3
+  -- its square is a nonzero rational
+  have hfixsq : ∀ g : K ≃ₐ[ℚ] K, g • (x₁ ^ 2) = x₁ ^ 2 := by
+    intro g
+    rcases huniv g with rfl | hgσ
+    · rfl
+    · rw [hgσ]
+      show σ (x₁ ^ 2) = x₁ ^ 2
+      rw [map_pow, hx₁σ]
+      ring
+  obtain ⟨r, hr⟩ := Algebra.IsInvariant.isInvariant (A := ℚ)
+    (G := K ≃ₐ[ℚ] K) (x₁ ^ 2) hfixsq
+  have hr0 : r ≠ 0 := by
+    intro h
+    rw [h, map_zero] at hr
+    exact pow_ne_zero 2 hx₁0 hr.symm
+  -- extract a squarefree integer from `num(r)·den(r)`
+  have hn0 : r.num * (r.den : ℤ) ≠ 0 :=
+    mul_ne_zero (Rat.num_ne_zero.mpr hr0) (by exact_mod_cast r.den_nz)
+  obtain ⟨a, b, hab, hasq⟩ := Nat.sq_mul_squarefree (r.num * (r.den : ℤ)).natAbs
+  have hb0 : b ≠ 0 := by
+    rintro rfl
+    rw [show ((0 : ℕ) ^ 2 * a) = 0 by ring] at hab
+    exact hn0 (Int.natAbs_eq_zero.mp hab.symm)
+  obtain ⟨d, hdsq, hbd⟩ : ∃ d : ℤ, Squarefree d ∧
+      (b : ℤ) ^ 2 * d = r.num * (r.den : ℤ) := by
+    rcases Int.natAbs_eq (r.num * (r.den : ℤ)) with h | h
+    · refine ⟨(a : ℤ), Int.squarefree_natCast.mpr hasq, ?_⟩
+      rw [h, ← hab]
+      push_cast
+      ring
+    · refine ⟨-(a : ℤ), ?_, ?_⟩
+      · intro z hz
+        exact (Int.squarefree_natCast.mpr hasq) z (dvd_neg.mp hz)
+      · rw [h, ← hab]
+        push_cast
+        ring
+  -- the scaled generator
+  set c₀ : ℚ := (r.den : ℚ) / (b : ℚ) with hc₀def
+  have hbq : ((b : ℕ) : ℚ) ≠ 0 := by exact_mod_cast hb0
+  have hdenq : ((r.den : ℕ) : ℚ) ≠ 0 := by exact_mod_cast r.den_nz
+  have hc₀0 : c₀ ≠ 0 := div_ne_zero hdenq hbq
+  refine ⟨σ, algebraMap ℚ K c₀ * x₁, d, hσ, hσ2, huniv, ?_, ?_, hdsq, ?_⟩
+  · rw [map_mul, AlgEquiv.commutes, hx₁σ]
+    ring
+  · intro hmem
+    apply hx₁bot
+    have h1 : x₁ = algebraMap ℚ K c₀⁻¹ * (algebraMap ℚ K c₀ * x₁) := by
+      rw [← mul_assoc, ← map_mul, inv_mul_cancel₀ hc₀0, map_one, one_mul]
+    rw [h1]
+    exact mul_mem (IntermediateField.algebraMap_mem _ c₀⁻¹) hmem
+  · rw [mul_pow, ← map_pow, ← hr, ← map_mul]
+    have hkey : c₀ ^ 2 * r = (d : ℚ) := by
+      have hnum : (r.num : ℚ) = r * ((r.den : ℕ) : ℚ) :=
+        (div_eq_iff hdenq).mp (Rat.num_div_den r)
+      have hbdq : ((b : ℕ) : ℚ) ^ 2 * (d : ℚ) =
+          (r.num : ℚ) * ((r.den : ℕ) : ℚ) := by
+        exact_mod_cast congrArg (fun z : ℤ => (z : ℚ)) hbd
+      apply mul_left_cancel₀ (pow_ne_zero 2 hbq)
+      have hbc : ((b : ℕ) : ℚ) * c₀ = ((r.den : ℕ) : ℚ) := by
+        rw [hc₀def]
+        field_simp
+      calc ((b : ℕ) : ℚ) ^ 2 * (c₀ ^ 2 * r)
+          = (((b : ℕ) : ℚ) * c₀) ^ 2 * r := by ring
+        _ = ((r.den : ℕ) : ℚ) ^ 2 * r := by rw [hbc]
+        _ = (r.num : ℚ) * ((r.den : ℕ) : ℚ) := by rw [hnum]; ring
+        _ = ((b : ℕ) : ℚ) ^ 2 * (d : ℚ) := hbdq.symm
+    rw [hkey]
+    exact map_intCast (algebraMap ℚ K) d
+set_option backward.isDefEq.respectTransparency false in
+/-- **Ramified inertia at a prime dividing the radicand** (PROVEN
+2026-07-23 — the ramification half of the quadratic-field
+classification): in the setting of `exists_quadratic_generator`
+(`Gal(K/ℚ) = {1, σ}`, `x² = d ∈ ℤ` squarefree, `σ x = −x`), for any
+prime `q ∣ d` and any prime `Q` of `𝓞 K` above `q`, the nontrivial
+automorphism `σ` lies in the inertia subgroup of `Q`. Argument, for
+`y ∈ 𝓞 K` with `t = σ y − y`: both `t²` and `t·x` are Galois-invariant
+(σ negates both `t` and `x`) integral elements, hence rational
+integers `s` and `m` with `m² = d·s`; `q ∣ d` squarefree forces
+`q ∣ s` (`q ∣ m²` ⇒ `q ∣ m` ⇒ `q² ∣ d·s` ⇒ `q ∣ (d/q)·s`, and
+`q ∤ d/q`); so `t² = s ∈ q·𝓞K ⊆ Q` and `t ∈ Q` by primality. -/
+theorem mem_inertia_of_dvd_squarefree
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    [IsGalois ℚ K] (σ : K ≃ₐ[ℚ] K) (hσ2 : σ * σ = 1)
+    (huniv : ∀ g : K ≃ₐ[ℚ] K, g = 1 ∨ g = σ)
+    (x : K) (hxσ : σ x = -x) {d : ℤ} (hdsq : Squarefree d)
+    (hx2 : x ^ 2 = (d : K)) {q : ℕ} (hq : q.Prime) (hqd : (q : ℤ) ∣ d)
+    (Q : Ideal (NumberField.RingOfIntegers K)) [Q.IsPrime]
+    (hQmem : ((q : ℕ) : NumberField.RingOfIntegers K) ∈ Q) :
+    σ ∈ Q.inertia (K ≃ₐ[ℚ] K) := by
+  classical
+  have hqZ : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
+  -- `d = q·d'` with `q ∤ d'` (squarefreeness)
+  obtain ⟨d', hdd'⟩ := hqd
+  have hqd' : ¬ (q : ℤ) ∣ d' := by
+    rintro ⟨e, he⟩
+    exact hqZ.not_unit (hdsq (q : ℤ) ⟨e, by rw [hdd', he]; ring⟩)
+  -- `x` is integral (its square is)
+  have hxint : IsIntegral ℤ x := by
+    refine IsIntegral.of_pow (n := 2) (by norm_num) ?_
+    rw [hx2, (eq_intCast (algebraMap ℤ K) d).symm]
+    exact isIntegral_algebraMap
+  rw [show Q.inertia (K ≃ₐ[ℚ] K) = Q.toAddSubgroup.inertia (K ≃ₐ[ℚ] K)
+    from rfl, AddSubgroup.mem_inertia]
+  intro y
+  rw [Submodule.mem_toAddSubgroup]
+  -- the anti-fixed difference in `K`
+  set yK : K := algebraMap (NumberField.RingOfIntegers K) K y with hyKdef
+  set t : K := σ yK - yK with htdef
+  have hσσ : ∀ z : K, σ (σ z) = z := by
+    intro z
+    have h := congrArg (fun g : K ≃ₐ[ℚ] K => g z) hσ2
+    simpa [AlgEquiv.mul_apply] using h
+  have htσ : σ t = -t := by
+    rw [htdef, map_sub, hσσ]
+    ring
+  have hyint : IsIntegral ℤ yK := y.2
+  have htint : IsIntegral ℤ t :=
+    (hyint.map (σ.toAlgHom.restrictScalars ℤ)).sub hyint
+  -- `t²` is a rational integer
+  obtain ⟨s, hs⟩ : ∃ s : ℤ, (s : K) = t ^ 2 := by
+    have hfixsq : ∀ g : K ≃ₐ[ℚ] K, g • (t ^ 2) = t ^ 2 := by
+      intro g
+      rcases huniv g with rfl | hgσ
+      · rfl
+      · rw [hgσ]
+        show σ (t ^ 2) = t ^ 2
+        rw [map_pow, htσ]
+        ring
+    obtain ⟨s₀, hs₀⟩ := Algebra.IsInvariant.isInvariant (A := ℚ)
+      (G := K ≃ₐ[ℚ] K) (t ^ 2) hfixsq
+    have hs₀int : IsIntegral ℤ s₀ := by
+      rw [← isIntegral_algebraMap_iff (algebraMap ℚ K).injective, hs₀]
+      exact htint.pow 2
+    obtain ⟨s, hsz⟩ := IsIntegrallyClosed.isIntegral_iff.mp hs₀int
+    refine ⟨s, ?_⟩
+    rw [show ((s : ℤ) : K) = algebraMap ℚ K ((s : ℤ) : ℚ) from
+      (map_intCast (algebraMap ℚ K) s).symm,
+      show ((s : ℤ) : ℚ) = algebraMap ℤ ℚ s from rfl, hsz, hs₀]
+  -- `t·x` is a rational integer
+  obtain ⟨m, hm⟩ : ∃ m : ℤ, (m : K) = t * x := by
+    have hfixm : ∀ g : K ≃ₐ[ℚ] K, g • (t * x) = t * x := by
+      intro g
+      rcases huniv g with rfl | hgσ
+      · rfl
+      · rw [hgσ]
+        show σ (t * x) = t * x
+        rw [map_mul, htσ, hxσ]
+        ring
+    obtain ⟨m₀, hm₀⟩ := Algebra.IsInvariant.isInvariant (A := ℚ)
+      (G := K ≃ₐ[ℚ] K) (t * x) hfixm
+    have hm₀int : IsIntegral ℤ m₀ := by
+      rw [← isIntegral_algebraMap_iff (algebraMap ℚ K).injective, hm₀]
+      exact htint.mul hxint
+    obtain ⟨m, hmz⟩ := IsIntegrallyClosed.isIntegral_iff.mp hm₀int
+    refine ⟨m, ?_⟩
+    rw [show ((m : ℤ) : K) = algebraMap ℚ K ((m : ℤ) : ℚ) from
+      (map_intCast (algebraMap ℚ K) m).symm,
+      show ((m : ℤ) : ℚ) = algebraMap ℤ ℚ m from rfl, hmz, hm₀]
+  -- the norm relation `m² = d·s`, and `q ∣ s`
+  have hrel : m ^ 2 = d * s := by
+    have h1 : ((m ^ 2 : ℤ) : K) = ((d * s : ℤ) : K) := by
+      push_cast
+      rw [hm, hs, mul_pow, hx2]
+      ring
+    exact_mod_cast h1
+  obtain ⟨s', hs'⟩ : (q : ℤ) ∣ s := by
+    have hqm : (q : ℤ) ∣ m := hqZ.dvd_of_dvd_pow (n := 2)
+      ⟨d' * s, by rw [hrel, hdd']; ring⟩
+    obtain ⟨m', hm'⟩ := hqm
+    have hq0 : ((q : ℕ) : ℤ) ≠ 0 := by exact_mod_cast hq.ne_zero
+    have h3 : (q : ℤ) * m' ^ 2 = d' * s := by
+      apply mul_left_cancel₀ hq0
+      have h4 := hrel
+      rw [hm', hdd'] at h4
+      linear_combination h4
+    rcases hqZ.dvd_mul.mp ⟨m' ^ 2, h3.symm⟩ with h5 | h5
+    · exact absurd h5 hqd'
+    · exact h5
+  -- conclude: `t² = q·s'` lands in `Q`, hence so does `t`
+  have hT2 : (σ • y - y) * (σ • y - y) =
+      ((q : ℕ) : NumberField.RingOfIntegers K) *
+        ((s' : ℤ) : NumberField.RingOfIntegers K) := by
+    have hgoal : t * t = ((q : ℕ) : K) * ((s' : ℤ) : K) := by
+      rw [← pow_two, ← hs, hs']
+      push_cast
+      ring
+    apply NumberField.RingOfIntegers.ext
+    push_cast
+    exact hgoal
+  have hmul : (σ • y - y) * (σ • y - y) ∈ Q := by
+    rw [hT2]
+    exact Ideal.mul_mem_right _ Q hQmem
+  rcases Ideal.IsPrime.mem_or_mem ‹Q.IsPrime› hmul with h | h <;> exact h
+
+/-- **Quadratic fields ramified only at `2` and `3`** (PROVEN
+2026-07-23 from the two leaves above — the Kronecker/Minkowski-style
+classification input of the dihedral elimination): a surjective
+quadratic character
 `θ : Γ ℚ → ℤ/2` with open kernel that is unramified outside `{2, 3}`
 (the local inertia group at every prime `q ∉ {2, 3}` dies in the
 restriction of `θ` to `Γ ℚ_q`) cuts out one of the seven quadratic
@@ -2077,8 +2355,196 @@ theorem exists_sqrt_of_quadratic_character_unramified_outside_two_three
     ∃ d : ℤ,
       (d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6) ∧
       ∃ x : AlgebraicClosure ℚ, x ^ 2 = (d : AlgebraicClosure ℚ) ∧
-        ∀ g : Γ ℚ, θ g = 1 ↔ g x = x :=
-  sorry
+        ∀ g : Γ ℚ, θ g = 1 ↔ g x = x := by
+  classical
+  -- the fixed field of `ker θ` is a degree-2 Galois number field
+  haveI hnorm : θ.ker.Normal := θ.normal_ker
+  have hclosed : IsClosed (θ.ker : Set (Γ ℚ)) :=
+    Subgroup.isClosed_of_isOpen θ.ker hopen
+  haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) :=
+    AlgebraicClosure.isAlgebraic ℚ
+  haveI hacQ : IsAlgClosure ℚ (AlgebraicClosure ℚ) :=
+    ⟨inferInstance, halgQ⟩
+  haveI hnormQ : Normal ℚ (AlgebraicClosure ℚ) :=
+    IsAlgClosure.normal ℚ (AlgebraicClosure ℚ)
+  haveI hsepQ : Algebra.IsSeparable ℚ (AlgebraicClosure ℚ) :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI hgalQ : IsGalois ℚ (AlgebraicClosure ℚ) := ⟨⟩
+  set K : IntermediateField ℚ (AlgebraicClosure ℚ) :=
+    IntermediateField.fixedField (E := AlgebraicClosure ℚ) θ.ker with hKdef
+  have hfix : K.fixingSubgroup = θ.ker :=
+    InfiniteGalois.fixingSubgroup_fixedField ⟨θ.ker, hclosed⟩
+  haveI hfd : FiniteDimensional ℚ K :=
+    (InfiniteGalois.isOpen_iff_finite K).mp (by rw [hfix]; exact hopen)
+  haveI hgalK : IsGalois ℚ K := (InfiniteGalois.normal_iff_isGalois K).mp
+    (by rw [hfix]; exact hnorm)
+  haveI : NumberField K := ⟨⟩
+  have hrank : Module.finrank ℚ K = 2 := by
+    have e1 : (Γ ℚ) ⧸ θ.ker ≃* ((IntermediateField.fixedField
+        ((⟨θ.ker, hclosed⟩ : ClosedSubgroup (Γ ℚ)) : Subgroup (Γ ℚ))) ≃ₐ[ℚ]
+          (IntermediateField.fixedField
+            ((⟨θ.ker, hclosed⟩ : ClosedSubgroup (Γ ℚ)) : Subgroup (Γ ℚ)))) :=
+      InfiniteGalois.normalAutEquivQuotient ⟨θ.ker, hclosed⟩
+    have e2 : (Γ ℚ) ⧸ θ.ker ≃* Multiplicative (ZMod 2) :=
+      QuotientGroup.quotientKerEquivOfSurjective θ hθsurj
+    have hcard1 : Nat.card (K ≃ₐ[ℚ] K) = Module.finrank ℚ K :=
+      IsGalois.card_aut_eq_finrank ℚ K
+    have h2 : Nat.card (Multiplicative (ZMod 2)) = 2 := by
+      simp [Nat.card_eq_fintype_card]
+    rw [← hcard1]
+    exact (((Nat.card_congr e1.toEquiv).symm).trans
+      (Nat.card_congr e2.toEquiv)).trans h2
+  -- the quadratic generator `x` with `x² = d` squarefree
+  obtain ⟨σ, x, d, hσ1, hσ2, huniv, hxσ, hxbot, hdsq, hx2⟩ :=
+    exists_quadratic_generator K hrank
+  -- no prime `q ∉ {2, 3}` divides `d`
+  have hprime : ∀ p : ℕ, p.Prime → p ≠ 2 → p ≠ 3 → ¬ ((p : ℤ) ∣ d) := by
+    intro p hp hp2 hp3 hpd
+    -- the local inertia image at `p` fixes `K`
+    have hle : Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+        (localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat)
+        ≤ K.fixingSubgroup := by
+      rintro g ⟨τ, hτ, rfl⟩
+      rw [hfix]
+      exact MonoidHom.mem_ker.mpr (hunram p hp hp2 hp3 τ hτ)
+    -- a prime of `𝓞 K` above `p`
+    haveI := IsIntegralClosure.isIntegral_algebra ℤ
+      (A := NumberField.RingOfIntegers K) K
+    have hpZ : Prime ((p : ℤ)) := Nat.prime_iff_prime_int.mp hp
+    haveI hPspan : (Ideal.span {((p : ℤ))} : Ideal ℤ).IsPrime :=
+      (Ideal.span_singleton_prime (by exact_mod_cast hp.ne_zero)).mpr hpZ
+    have hker : RingHom.ker (algebraMap ℤ (NumberField.RingOfIntegers K)) ≤
+        Ideal.span {((p : ℤ))} := by
+      intro z hz
+      have hz0 : algebraMap ℤ (NumberField.RingOfIntegers K) z = 0 := hz
+      have hzK : algebraMap ℤ K z = 0 := by
+        rw [IsScalarTower.algebraMap_eq ℤ (NumberField.RingOfIntegers K) K,
+          RingHom.comp_apply, hz0, map_zero]
+      have hz' : (z : ℤ) = 0 := by
+        exact_mod_cast (by simpa using hzK : ((z : ℤ) : K) = 0)
+      rw [hz']
+      exact Ideal.zero_mem _
+    obtain ⟨Q, hQprime, hQcomap⟩ :=
+      Ideal.exists_ideal_over_prime_of_isIntegral_of_isDomain
+        (S := NumberField.RingOfIntegers K) (Ideal.span {((p : ℤ))}) hker
+    haveI := hQprime
+    have hpQ : ((p : ℕ) : NumberField.RingOfIntegers K) ∈ Q := by
+      have hmem : ((p : ℤ)) ∈ Ideal.span {((p : ℤ))} := Ideal.subset_span rfl
+      rw [← hQcomap] at hmem
+      simpa using Ideal.mem_comap.mp hmem
+    -- trivial inertia (the dictionary) vs. nontrivial inertia (the leaf)
+    have hbot : Q.inertia (K ≃ₐ[ℚ] K) = ⊥ :=
+      inertia_eq_bot_of_le_fixingSubgroup K hp hle Q hpQ
+    have hmem : σ ∈ Q.inertia (K ≃ₐ[ℚ] K) :=
+      mem_inertia_of_dvd_squarefree K σ hσ2 huniv x hxσ hdsq hx2 hp hpd Q hpQ
+    rw [hbot] at hmem
+    exact hσ1 (Subgroup.mem_bot.mp hmem)
+  -- enumeration: `d` squarefree with prime divisors in `{2,3}`, `d ≠ 1`
+  have hd7 : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6 := by
+    have hd0 : d ≠ 0 := hdsq.ne_zero
+    have hd1 : d ≠ 1 := by
+      intro h
+      rw [h] at hx2
+      have h0 : (x - 1) * (x + 1) = 0 := by
+        push_cast at hx2
+        linear_combination hx2
+      rcases mul_eq_zero.mp h0 with h1 | h1
+      · exact hxbot (by rw [sub_eq_zero.mp h1]; exact one_mem _)
+      · exact hxbot (by
+          rw [eq_neg_of_add_eq_zero_left h1]
+          exact neg_mem (one_mem _))
+    set n : ℕ := d.natAbs with hn
+    have hsub : n.primeFactors ⊆ ({2, 3} : Finset ℕ) := by
+      intro p hp
+      rw [Nat.mem_primeFactors] at hp
+      obtain ⟨hpp, hpd, -⟩ := hp
+      rw [Finset.mem_insert, Finset.mem_singleton]
+      by_contra hne
+      push Not at hne
+      refine hprime p hpp hne.1 hne.2 ?_
+      exact dvd_trans (Int.natCast_dvd_natCast.mpr hpd)
+        (Int.natAbs_dvd.mpr dvd_rfl)
+    have hdvd6 : n ∣ 6 := by
+      have hsqf : Squarefree n := Int.squarefree_natAbs.mpr hdsq
+      calc n = ∏ p ∈ n.primeFactors, p :=
+            (Nat.prod_primeFactors_of_squarefree hsqf).symm
+        _ ∣ ∏ p ∈ ({2, 3} : Finset ℕ), p :=
+            Finset.prod_dvd_prod_of_subset _ _ _ hsub
+        _ = 6 := by decide
+    have habs : n = 1 ∨ n = 2 ∨ n = 3 ∨ n = 6 := by
+      have h1 : 0 < n := Int.natAbs_pos.mpr hd0
+      have h6 : n ≤ 6 := Nat.le_of_dvd (by norm_num) hdvd6
+      interval_cases n <;> revert hdvd6 <;> decide
+    have heq : d = (n : ℤ) ∨ d = -(n : ℤ) := Int.natAbs_eq d
+    rcases habs with h | h | h | h <;> rw [h] at heq <;> omega
+  -- packaging: the square root in `ℚᵃˡᵍ` and the character dictionary
+  refine ⟨d, hd7, (x : AlgebraicClosure ℚ), ?_, ?_⟩
+  · have h1 := congrArg (algebraMap K (AlgebraicClosure ℚ)) hx2
+    rw [map_pow, map_intCast] at h1
+    exact h1
+  · intro g
+    constructor
+    · intro hg
+      have hgker : g ∈ K.fixingSubgroup := by
+        rw [hfix]
+        exact MonoidHom.mem_ker.mpr hg
+      exact (K.mem_fixingSubgroup_iff g).mp hgker
+        (x : AlgebraicClosure ℚ) x.2
+    · intro hgx
+      -- `K = ℚ(x)`, so fixing `x` fixes `K` pointwise
+      have hxQ : IsIntegral ℚ ((x : AlgebraicClosure ℚ)) :=
+        Algebra.IsIntegral.isIntegral _
+      haveI : FiniteDimensional ℚ
+          (IntermediateField.adjoin ℚ {(x : AlgebraicClosure ℚ)}) :=
+        IntermediateField.adjoin.finiteDimensional hxQ
+      have hadj : IntermediateField.adjoin ℚ {(x : AlgebraicClosure ℚ)} = K := by
+        have hle : IntermediateField.adjoin ℚ {(x : AlgebraicClosure ℚ)} ≤ K :=
+          IntermediateField.adjoin_le_iff.mpr (by
+            intro z hz
+            rw [Set.mem_singleton_iff] at hz
+            rw [hz]
+            exact x.2)
+        refine IntermediateField.eq_of_le_of_finrank_le hle ?_
+        rw [hrank]
+        have hne1 : Module.finrank ℚ
+            (IntermediateField.adjoin ℚ {(x : AlgebraicClosure ℚ)}) ≠ 1 := by
+          rw [Ne, IntermediateField.finrank_eq_one_iff]
+          intro hbot
+          have hxmem : (x : AlgebraicClosure ℚ) ∈
+              IntermediateField.adjoin ℚ {(x : AlgebraicClosure ℚ)} :=
+            IntermediateField.mem_adjoin_simple_self ℚ _
+          rw [hbot, IntermediateField.mem_bot] at hxmem
+          obtain ⟨r, hr⟩ := hxmem
+          apply hxbot
+          rw [IntermediateField.mem_bot]
+          refine ⟨r, ?_⟩
+          apply Subtype.ext
+          rw [← hr]
+          exact (IsScalarTower.algebraMap_apply ℚ K (AlgebraicClosure ℚ) r).symm
+        have hpos : 0 < Module.finrank ℚ
+            (IntermediateField.adjoin ℚ {(x : AlgebraicClosure ℚ)}) :=
+          Module.finrank_pos
+        omega
+      have hfixadj : ∀ z ∈ IntermediateField.adjoin ℚ
+          {(x : AlgebraicClosure ℚ)}, g z = z := by
+        intro z hz
+        induction hz using IntermediateField.adjoin_induction with
+        | mem u hu =>
+          rw [Set.mem_singleton_iff] at hu
+          rw [hu]
+          exact hgx
+        | algebraMap r => exact g.commutes r
+        | add a b _ _ ha hb => rw [map_add, ha, hb]
+        | mul a b _ _ ha hb => rw [map_mul, ha, hb]
+        | inv a _ ha => rw [map_inv₀, ha]
+      have hgker : g ∈ K.fixingSubgroup := by
+        rw [← hadj]
+        exact ((IntermediateField.adjoin ℚ
+          {(x : AlgebraicClosure ℚ)}).mem_fixingSubgroup_iff g).mpr hfixadj
+      rw [hfix] at hgker
+      exact MonoidHom.mem_ker.mp hgker
 
 /-- **The Serre/Tate elimination, dihedral ray-class computation**
 (sorry node — the per-field class-field-theoretic core of the
