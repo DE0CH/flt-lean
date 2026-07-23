@@ -29,6 +29,16 @@ import Mathlib.RingTheory.RootsOfUnity.AlgebraicallyClosed
 -- for the exceptional Serre-elimination cases.
 public import Mathlib.NumberTheory.NumberField.Discriminant.Basic
 public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
+-- `differentIdeal` and `NumberField.not_dvd_discr_iff_forall_mem`
+-- (a prime not dividing the discriminant ⇔ unramified above it), for
+-- the discriminant leaves of the kernel field.
+public import Mathlib.NumberTheory.NumberField.Discriminant.Different
+-- `Ideal.card_inertia_eq_ramificationIdxIn` and the `ramificationIdxIn`
+-- dictionary, for the inertia-to-ramification-index conversion in the
+-- tame-at-`2` discriminant exponent glue.
+public import Mathlib.NumberTheory.RamificationInertia.Galois
+-- `Ideal.ramificationIdx'_eq_ramificationIdx`, same conversion.
+public import Mathlib.RingTheory.RamificationInertia.Ramification
 -- `LinearMap.trace`, for the trace-zero interface of the dihedral case.
 public import Mathlib.LinearAlgebra.Trace
 -- The vendored Dickson `SL₂`/`PSL₂` toolkit (elementary generation,
@@ -1849,19 +1859,17 @@ theorem isTotallyComplex_of_kernel_field {k : Type u} [Finite k] [Field k]
   rw [hcker, map_one, Units.val_one, hcχ, map_neg, map_one] at hdet_val
   exact h2ne (by linear_combination hdet_val)
 
-/-- **Unramifiedness of the kernel field outside `{2, 3}`** (sorry
-node, isolated 2026-07-23 from `discr_bound_of_kernel_field`): the
-number field cut out by the kernel of the matrix form of a mod-3
-hardly ramified representation is unramified at every prime
-`p ∉ {2, 3}`, stated as `p ∤ d_K`. Intended proof: at `p ∉ {2, 3}`
-the representation is unramified (`hρ.isUnramified`), so the local
+/-- **Unramifiedness of the kernel field outside `{2, 3}`** (PROVEN
+2026-07-23): the number field cut out by the kernel of the matrix
+form of a mod-3 hardly ramified representation is unramified at every
+prime `p ∉ {2, 3}`, stated as `p ∤ d_K`. Proof: at `p ∉ {2, 3}` the
+representation is unramified (`hρ.isUnramified`), so the local
 inertia at `p` lands in `ker ρ ≤ ker u = K.fixingSubgroup` (the
 matrix transport `htriv` of `exists_kernel_field_of_matrixRange`); by
-the finite-level descent of
-`ramificationIdx_eq_one_of_inertia_le_fixingSubgroup` every prime of
-`K` over `p` is unramified, and an everywhere-unramified prime does
-not divide the discriminant
-(`NumberField.not_dvd_discr_iff_isUnramifiedIn`). -/
+the inertia dictionary `isUnramifiedAt_of_inertia_le_fixingSubgroup`
+of `MazurTorsion` every prime of `𝓞 K` over `p` is unramified, and an
+everywhere-unramified prime does not divide the discriminant
+(`NumberField.not_dvd_discr_iff_forall_mem`). -/
 theorem kernel_field_not_dvd_discr {k : Type u} [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
@@ -1879,21 +1887,183 @@ theorem kernel_field_not_dvd_discr {k : Type u} [Finite k] [Field k]
     (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
     [IsGalois ℚ K] (hfix : K.fixingSubgroup = u.ker)
     (p : ℕ) (hp : p.Prime) (hp2 : p ≠ 2) (hp3 : p ≠ 3) :
-    ¬ ((p : ℤ) ∣ NumberField.discr K) :=
+    ¬ ((p : ℤ) ∣ NumberField.discr K) := by
+  classical
+  -- the matrix transport of the identity: `ker ρ ≤ ker u`
+  have htriv : ∀ g : Γ ℚ, ρ g = 1 → u g = 1 := by
+    intro g hg
+    apply Units.ext
+    rw [Units.val_one, hu g]
+    have h1 : (Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g =
+        ((MonoidHomClass.toMonoidHom ρ :
+          Representation k (Γ ℚ) V) g).baseChange (AlgebraicClosure k) := rfl
+    have h2 : (MonoidHomClass.toMonoidHom ρ :
+        Representation k (Γ ℚ) V) g = 1 := hg
+    rw [h1, h2, Module.End.one_eq_id, LinearMap.baseChange_id,
+      ← Module.End.one_eq_id, LinearMap.toMatrix_one,
+      Matrix.map_one _ (map_zero e) (map_one e)]
+  -- the local inertia image at `p` kills `u` (through `hρ.isUnramified`)
+  have hunram : ∀ σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat,
+      u (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+    intro σ hσ
+    apply htriv
+    have h1 : (ρ.toLocal hp.toHeightOneSpectrumRingOfIntegersRat) σ = 1 :=
+      (hρ.isUnramified p hp ⟨hp2, hp3⟩).localInertiaGroup_le hσ
+    rw [GaloisRep.toLocal_apply] at h1
+    convert h1 using 4
+    exact Subsingleton.elim _ _
+  -- … so the mapped local inertia fixes `K`
+  have hle : Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+      (localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat)
+      ≤ K.fixingSubgroup := by
+    rintro g ⟨σ, hσ, rfl⟩
+    rw [hfix]
+    exact MonoidHom.mem_ker.mpr (hunram σ hσ)
+  -- every prime of `𝓞 K` over `p` is unramified, so `p ∤ d_K`
+  have hpZ : Prime ((p : ℤ)) := Nat.prime_iff_prime_int.mp hp
+  rw [NumberField.not_dvd_discr_iff_forall_mem K
+    (NumberField.RingOfIntegers K) hpZ]
+  intro P hP hmem
+  haveI := hP
+  exact isUnramifiedAt_of_inertia_le_fixingSubgroup K hp hle P
+    (by exact_mod_cast hmem)
+
+/-- **The discriminant exponent from per-prime different-exponent
+bounds** (sorry node, isolated 2026-07-23 from the two discriminant
+exponent leaves below): for a number field `K`, a rational prime `p`
+and weights `a, b`, if every prime `Q` of `𝓞 K` over `p` satisfies
+`a·d_Q ≤ b·e_Q` for its different exponent `d_Q` — stated
+multiplicity-free: every `d` with `Q^d ∣ 𝔡_{K/ℚ}` has
+`a·d ≤ b·e(Q∣p)` — then `a·v_p(d_K) ≤ b·[K:ℚ]`. Intended proof (norm
+bookkeeping, no new arithmetic): `N(𝔡_{K/ℚ}) = |d_K|`
+(`NumberField.absNorm_differentIdeal`), so
+`v_p(d_K) = Σ_{Q∣p} f_Q·d_Q` by multiplicativity of `Ideal.absNorm`
+along the factorization of the different into primes, whence
+`a·v_p(d_K) = Σ_{Q∣p} f_Q·(a·d_Q) ≤ b·Σ_{Q∣p} f_Q·e_Q = b·[K:ℚ]`
+(`Ideal.sum_ramification_inertia`). -/
+theorem discr_factorization_le_of_forall_differentIdeal_pow_dvd
+    (K : Type*) [Field K] [NumberField K] (p : ℕ) (hp : p.Prime) (a b : ℕ)
+    (h : ∀ Q : Ideal (NumberField.RingOfIntegers K), Q.IsPrime →
+      ((p : NumberField.RingOfIntegers K) ∈ Q) → ∀ d : ℕ,
+      Q ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K) →
+      a * d ≤ b * Ideal.ramificationIdx' (Ideal.span {(p : ℤ)}) Q) :
+    a * (NumberField.discr K).natAbs.factorization p ≤
+      b * Module.finrank ℚ K :=
   sorry
 
-/-- **The tame discriminant exponent at `2`** (sorry node, isolated
-2026-07-23 from `discr_bound_of_kernel_field`): the `2`-adic
-valuation of the discriminant of the kernel field of a mod-3 hardly
-ramified representation is at most `(2/3)·[K:ℚ]`, stated integrally
-as `3·v₂(d_K) ≤ 2·[K:ℚ]`. Intended content: at `2` the inertia acts
-through the unipotent upper-triangular subgroup (the quotient
-character `δ` of `hρ.isTameAtTwo` is unramified, and the determinant
-`χ₃` is unramified at `2`), and the image of the wild (pro-2) inertia
-in the order-3 unipotent group is trivial, so the inertia image at
-`2` is cyclic of order `e ∈ {1, 3}` and tame; the different exponent
-of a tame local extension is `e − 1` per ramification-degree unit,
-giving `v₂(d_K) = (1 − 1/e)·[K:ℚ] ≤ (2/3)·[K:ℚ]`. -/
+/-- **The tame different bound** (sorry node, isolated 2026-07-23 from
+the tame-at-`2` exponent leaf below; Serre, *Corps Locaux* III §6
+Prop. 13 / Neukirch III.2.6): if the ramification index `e = e(Q∣p)`
+of a prime `Q` of `𝓞 K` over the rational prime `p` is not divisible
+by `p` (tame ramification — the residue extension is an extension of
+finite fields, hence automatically separable), then the different
+exponent of `Q` is exactly `e − 1`; the upper half is stated here:
+`Q^e ∤ 𝔡_{K/ℚ}`. Intended proof: localize at `Q`; in the tame local
+extension the trace of `𝔪^{1−e}` lands in the base ring because the
+residue trace is surjective (`e` prime to the residue
+characteristic), so `𝔪^{1−e} ⊆ 𝔡⁻¹`. Mathlib has the matching lower
+half (`pow_sub_one_dvd_differentIdeal`). -/
+theorem not_pow_ramificationIdx_dvd_differentIdeal
+    (K : Type*) [Field K] [NumberField K] (p : ℕ) (hp : p.Prime)
+    (Q : Ideal (NumberField.RingOfIntegers K)) (hQ : Q.IsPrime)
+    (hmem : (p : NumberField.RingOfIntegers K) ∈ Q)
+    (htame : ¬ (p ∣ Ideal.ramificationIdx' (Ideal.span {(p : ℤ)}) Q)) :
+    ¬ Q ^ Ideal.ramificationIdx' (Ideal.span {(p : ℤ)}) Q ∣
+      differentIdeal ℤ (NumberField.RingOfIntegers K) :=
+  sorry
+
+/-- **The inertia order at `2` divides `3`** (sorry node, isolated
+2026-07-23 from the tame-at-`2` exponent leaf below — its
+representation-theoretic core): the ideal-inertia subgroup in
+`Gal(K/ℚ)` of any prime `Q` of `𝓞 K` above `2` has order dividing
+`3`. Intended content: by `hρ.isTameAtTwo` the local representation
+at `2` is upper triangular with unramified quotient character `δ`,
+and the determinant `χ₃` is unramified at `2`, so the image of the
+local inertia at `2` under `u` lands in the unipotent
+upper-triangular subgroup of `GL₂(𝔽̄₃)` — an elementary abelian
+`3`-group; the wild (pro-`2`) inertia maps into that `3`-group
+trivially and the tame quotient is procyclic, so the image is cyclic
+of exponent `3`, i.e. of order `1` or `3`; the ideal-inertia of `Q`
+in `Gal(K/ℚ) ≃ Γ ℚ / ker u` is (a conjugate of) that image, by the
+`MazurTorsion` local-to-global inertia transport. -/
+theorem kernel_field_inertia_card_at_two_dvd_three {k : Type u} [Finite k]
+    [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    [IsGalois ℚ K] (hfix : K.fixingSubgroup = u.ker)
+    (Q : Ideal (NumberField.RingOfIntegers K)) (hQ : Q.IsPrime)
+    (hmem : ((2 : ℕ) : NumberField.RingOfIntegers K) ∈ Q) :
+    Nat.card (Q.inertia (K ≃ₐ[ℚ] K)) ∣ 3 :=
+  sorry
+
+/-- **The Fontaine different bound at `3`** (sorry node, isolated
+2026-07-23 from the Fontaine-at-`3` exponent leaf below — its full
+arithmetic core, per prime): the different exponent `d_Q` of any
+prime `Q` of `𝓞 K` above `3` in the kernel field of a mod-3 hardly
+ramified representation satisfies `2·d_Q ≤ 3·e(Q∣3)`. Intended
+content: flatness (`hρ.isFlat`) prolongs the local representation at
+`3` to a finite flat group scheme over `ℤ₃` killed by `3`, and
+Fontaine's ramification bound (the upper-numbering ramification of
+`ℚ₃(V)/ℚ₃` vanishes above `1 + 1/(3−1) = 3/2`) bounds the different
+exponent of the local field cut out by (a subquotient of) `V` by
+`(3/2)·e` per prime; `K` is fixed by `ker u ⊇ ker ρ̄`, so its
+completion at `Q` sits inside `ℚ₃(V)` and inherits the bound.
+(Fontaine, *Il n'y a pas de variété abélienne sur ℤ*, Invent. Math.
+81 (1985), Thm. A; Moon–Taguchi, Doc. Math. 2003, §2.) -/
+theorem kernel_field_differentIdeal_exponent_at_three {k : Type u} [Finite k]
+    [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    [IsGalois ℚ K] (hfix : K.fixingSubgroup = u.ker)
+    (Q : Ideal (NumberField.RingOfIntegers K)) (hQ : Q.IsPrime)
+    (hmem : ((3 : ℕ) : NumberField.RingOfIntegers K) ∈ Q) (d : ℕ)
+    (hd : Q ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
+    2 * d ≤ 3 * Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q :=
+  sorry
+
+/-- **The tame discriminant exponent at `2`** (DECOMPOSED 2026-07-23
+into the three sorry nodes above — the norm bookkeeping
+`discr_factorization_le_of_forall_differentIdeal_pow_dvd`, the tame
+different bound `not_pow_ramificationIdx_dvd_differentIdeal` and the
+inertia-order leaf `kernel_field_inertia_card_at_two_dvd_three`; the
+per-prime glue is proven here): the `2`-adic valuation of the
+discriminant of the kernel field of a mod-3 hardly ramified
+representation is at most `(2/3)·[K:ℚ]`, stated integrally as
+`3·v₂(d_K) ≤ 2·[K:ℚ]`. The proven reduction: at any prime `Q` over
+`2` the ideal-inertia has order `e ∣ 3` (the inertia leaf, converted
+to `e(Q∣2)` by mathlib's inertia dictionary), so the ramification is
+tame (`2 ∤ e`) and the different exponent is `d_Q ≤ e − 1`; the
+arithmetic `3·(e−1) ≤ 2·e` for `e ≤ 3` and the norm bookkeeping
+close. -/
 theorem kernel_field_discr_two_exponent {k : Type u} [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
@@ -1911,11 +2081,94 @@ theorem kernel_field_discr_two_exponent {k : Type u} [Finite k] [Field k]
     (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
     [IsGalois ℚ K] (hfix : K.fixingSubgroup = u.ker) :
     3 * (NumberField.discr K).natAbs.factorization 2 ≤
-      2 * Module.finrank ℚ K :=
-  sorry
+      2 * Module.finrank ℚ K := by
+  classical
+  refine discr_factorization_le_of_forall_differentIdeal_pow_dvd K 2
+    Nat.prime_two 3 2 ?_
+  intro Q hQprime hQmem d hd
+  haveI := hQprime
+  -- the instance pack of the inertia dictionary (as in `MazurTorsion`)
+  haveI := IsIntegralClosure.isIntegral_algebra ℤ
+    (A := NumberField.RingOfIntegers K) K
+  have hqZ : Prime (((2 : ℕ) : ℤ)) := Nat.prime_iff_prime_int.mp Nat.prime_two
+  have hne : (Ideal.span {((2 : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    norm_num
+  haveI hsp : (Ideal.span {((2 : ℕ) : ℤ)} : Ideal ℤ).IsPrime :=
+    (Ideal.span_singleton_prime (by norm_num)).mpr hqZ
+  haveI hlies : Q.LiesOver (Ideal.span {((2 : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff hQprime.ne_top hqZ).mpr (by exact_mod_cast hQmem)
+  haveI hfinq : Finite (ℤ ⧸ (Ideal.span {((2 : ℕ) : ℤ)} : Ideal ℤ)) :=
+    Ring.HasFiniteQuotients.finiteQuotient hne
+  haveI hmaxZ : (Ideal.span {((2 : ℕ) : ℤ)} : Ideal ℤ).IsMaximal :=
+    hsp.isMaximal_of_ne_bot hne
+  have hsurjZ : Function.Surjective
+      (algebraMap (ℤ ⧸ (Ideal.span {((2 : ℕ) : ℤ)} : Ideal ℤ))
+        ((Ideal.span {((2 : ℕ) : ℤ)} : Ideal ℤ).ResidueField)) :=
+    IsFractionRing.surjective_iff_isField.mpr
+      ((Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp hmaxZ)
+  haveI : Finite ((Ideal.span {((2 : ℕ) : ℤ)} : Ideal ℤ).ResidueField) :=
+    Finite.of_surjective _ hsurjZ
+  -- `Gal(K/ℚ)` is a Galois group of `𝓞 K` over `ℤ` (the assembly of
+  -- `differentIdeal_eq_top_of_forall_inertia_eq_bot`, against the
+  -- vendored action instance)
+  haveI : IsGaloisGroup (K ≃ₐ[ℚ] K) ℤ (NumberField.RingOfIntegers K) := by
+    refine ⟨inferInstance, inferInstance, ?_⟩
+    constructor
+    intro x hx
+    -- the underlying field element is Galois-fixed, hence rational
+    have hfixL : ∀ g : K ≃ₐ[ℚ] K, g (x : K) = (x : K) := fun g =>
+      congrArg (algebraMap (NumberField.RingOfIntegers K) K) (hx g)
+    have hbot : (x : K) ∈ (⊥ : IntermediateField ℚ K) :=
+      (IsGalois.mem_bot_iff_fixed _).mpr hfixL
+    obtain ⟨q, hq⟩ := IntermediateField.mem_bot.mp hbot
+    -- the rational number is integral over `ℤ`, hence an integer
+    have hqint : IsIntegral ℤ q := by
+      rw [← isIntegral_algebraMap_iff (B := K)
+        (algebraMap ℚ K).injective, hq]
+      exact x.2
+    obtain ⟨m, hm⟩ := IsIntegrallyClosed.isIntegral_iff.mp hqint
+    refine ⟨m, NumberField.RingOfIntegers.ext ?_⟩
+    show algebraMap (NumberField.RingOfIntegers K) K
+      (algebraMap ℤ (NumberField.RingOfIntegers K) m) = (x : K)
+    rw [← hq, ← hm,
+      ← IsScalarTower.algebraMap_apply ℤ (NumberField.RingOfIntegers K) K,
+      ← IsScalarTower.algebraMap_apply ℤ ℚ K]
+  -- `e(Q∣2) = |I(Q)|` divides `3`
+  have hcard := Ideal.card_inertia_eq_ramificationIdxIn
+    (G := (K ≃ₐ[ℚ] K)) (Ideal.span {((2 : ℕ) : ℤ)}) Q
+  have hIdvd : Nat.card (Q.inertia (K ≃ₐ[ℚ] K)) ∣ 3 :=
+    kernel_field_inertia_card_at_two_dvd_three V hV hρ b e u hu K hfix
+      Q hQprime hQmem
+  have he3 : Ideal.ramificationIdx' (Ideal.span {((2 : ℕ) : ℤ)}) Q ∣ 3 := by
+    rw [Ideal.ramificationIdx'_eq_ramificationIdx
+        (Ideal.span {((2 : ℕ) : ℤ)}) Q hne,
+      ← Ideal.ramificationIdxIn_eq_ramificationIdx
+        (Ideal.span {((2 : ℕ) : ℤ)}) Q (K ≃ₐ[ℚ] K), ← hcard]
+    exact hIdvd
+  -- the tame bound: `d < e`
+  have htame : ¬ ((2 : ℕ) ∣ Ideal.ramificationIdx'
+      (Ideal.span {((2 : ℕ) : ℤ)}) Q) := by
+    intro h2
+    have h23 : (2 : ℕ) ∣ 3 := h2.trans he3
+    norm_num at h23
+  have hnot := not_pow_ramificationIdx_dvd_differentIdeal K 2 Nat.prime_two
+    Q hQprime hQmem htame
+  have hdlt : d < Ideal.ramificationIdx' (Ideal.span {((2 : ℕ) : ℤ)}) Q := by
+    by_contra hge
+    push Not at hge
+    exact hnot ((pow_dvd_pow Q hge).trans hd)
+  -- arithmetic: `3·d ≤ 3·(e−1) ≤ 2·e` since `e ≤ 3`
+  have hele : Ideal.ramificationIdx' (Ideal.span {((2 : ℕ) : ℤ)}) Q ≤ 3 :=
+    Nat.le_of_dvd (by norm_num) he3
+  omega
 
-/-- **The Fontaine discriminant exponent at `3`** (sorry node,
-isolated 2026-07-23 from `discr_bound_of_kernel_field`): the `3`-adic
+/-- **The Fontaine discriminant exponent at `3`** (DECOMPOSED
+2026-07-23 into the two sorry nodes above — the norm bookkeeping
+`discr_factorization_le_of_forall_differentIdeal_pow_dvd` and the
+per-prime Fontaine bound
+`kernel_field_differentIdeal_exponent_at_three`; the assembly is
+proven here): the `3`-adic
 valuation of the discriminant of the kernel field of a mod-3 hardly
 ramified representation is at most `(3/2)·[K:ℚ]`, stated integrally
 as `2·v₃(d_K) ≤ 3·[K:ℚ]`. Intended content: flatness (`hρ.isFlat`)
@@ -1944,8 +2197,12 @@ theorem kernel_field_discr_three_exponent {k : Type u} [Finite k] [Field k]
     (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
     [IsGalois ℚ K] (hfix : K.fixingSubgroup = u.ker) :
     2 * (NumberField.discr K).natAbs.factorization 3 ≤
-      3 * Module.finrank ℚ K :=
-  sorry
+      3 * Module.finrank ℚ K := by
+  refine discr_factorization_le_of_forall_differentIdeal_pow_dvd K 3
+    Nat.prime_three 2 3 ?_
+  intro Q hQprime hQmem d hd
+  exact kernel_field_differentIdeal_exponent_at_three V hV hρ b e u hu K hfix
+    Q hQprime hQmem d hd
 
 /-- **The discriminant bound of the kernel field** (DECOMPOSED
 2026-07-23 into the three sorry nodes above — the
