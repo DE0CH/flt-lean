@@ -2827,9 +2827,119 @@ les petits discriminants*, Sém. Delange–Pisot–Poitou 18 (1976/77),
 exp. 6, inequality (8) and Proposition 5, p. 6-08). -/
 noncomputable def odlyzkoTestFn (x : ℝ) : ℝ := max (1 - |x| / 6) 0
 
+/-- **The Poitou–Mellin transform of the Fejér test function**
+(introduced 2026-07-23 for the decomposition of
+`poitou_explicit_formula_bound`): the pairing
+`Φ(s) = ∫_ℝ (f(x)/cosh(x/2))·e^{(s−1/2)x} dx` with `f = odlyzkoTestFn`,
+i.e. the Mellin transform (2) of G. Poitou, *Sur les petits
+discriminants*, Sém. Delange–Pisot–Poitou 18 (1976/77), exp. 6, at the
+test function `F = f/cosh(x/2)` of its Proposition 5.  Since `f` is
+supported in `[-6, 6]`, `Φ` is entire and bounded on every vertical
+strip; on the boundary lines `Re s ∈ {0, 1}` of the critical strip its
+real part is the nonnegative Fejér transform
+`∫ f(x)·cos(tx) dx = 2·sin²(3t)/(3t²)`. -/
+noncomputable def poitouPhi (s : ℂ) : ℂ :=
+  ∫ x : ℝ, ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+    Complex.exp ((s - 1 / 2) * (x : ℂ))
+
+/-- **The prime-ideal term of Poitou's explicit formula at the Fejér
+test function** (introduced 2026-07-23):
+`4·Σ_{𝔭, m≥1} log N𝔭 · f(m·log N𝔭)/(1 + N𝔭^m)` over the nonzero prime
+ideals `𝔭` of `𝒪_K`, with `f = odlyzkoTestFn` — the ultrametric term
+`(4/n)·Σ_{𝔭,m} …` of inequality (8) of Poitou (exp. 6, p. 6-08)
+multiplied by `n`.  Every summand is nonnegative
+(`poitouPrimeTerm_nonneg` below), which is what legitimizes dropping
+this term in the bound; since `f` vanishes beyond `6`, only the
+finitely many pairs with `N𝔭^m < e⁶ = 403.42…` contribute. -/
+noncomputable def poitouPrimeTerm (K : Type*) [Field K] [NumberField K] : ℝ :=
+  4 * ∑' (P : {P : Ideal (NumberField.RingOfIntegers K) // P.IsPrime ∧ P ≠ ⊥})
+      (m : ℕ),
+    Real.log (Ideal.absNorm P.1) / (1 + (Ideal.absNorm P.1 : ℝ) ^ (m + 1)) *
+      odlyzkoTestFn (((m : ℝ) + 1) * Real.log (Ideal.absNorm P.1))
+
+/-- **Nonnegativity of the prime-ideal term** (PROVEN 2026-07-23):
+every summand of `poitouPrimeTerm` is a product of nonnegatives
+(`log N𝔭 ≥ 0`, a positive denominator, and `odlyzkoTestFn ≥ 0`), so
+the sum is nonnegative — `tsum` of a nonnegative family is nonnegative
+whether or not it converges.  This is the legitimacy of dropping the
+ultrametric term of Poitou's inequality (8). -/
+theorem poitouPrimeTerm_nonneg (K : Type*) [Field K] [NumberField K] :
+    0 ≤ poitouPrimeTerm K := by
+  refine mul_nonneg (by norm_num) (tsum_nonneg fun P => tsum_nonneg fun m => ?_)
+  refine mul_nonneg (div_nonneg (Real.log_natCast_nonneg _) (by positivity)) ?_
+  rw [odlyzkoTestFn]
+  exact le_max_right _ _
+
+/-- **Weil's explicit formula for the Dedekind zeta function at the
+Fejér–Poitou test function** (sorry node, stated 2026-07-23 — the deep
+analytic leaf of the decomposition of `poitou_explicit_formula_bound`):
+for a totally complex number field `K` of degree `n` there exist a
+zero-multiplicity function `mult : ℂ → ℕ` — the order of vanishing of
+the analytically continued Dedekind zeta `ζ_K` on the critical strip
+`0 < Re ρ < 1` (the pin's `NumberField.dedekindZeta` is only the
+Dirichlet series, so the continuation and its zero data live inside
+this existential), supported on the open strip and finite on every
+horizontal truncation — and a real number `S` — the
+symmetric-truncation limit `lim_{T→∞} Σ_{|Im ρ|≤T} mult(ρ)·Re Φ(ρ)`
+of the zero sum, real because the zeros are conjugation-symmetric with
+equal multiplicities — such that
+
+`log |d_K| = n(γ + log 4π − ∫₀^∞ (1−f)/sinh x dx) − 4∫₀^∞ f + (P + S)`
+
+with `f = odlyzkoTestFn`, `Φ = poitouPhi`, `P = poitouPrimeTerm K`.
+This is the Théorème (A. Weil) of G. Poitou, *Sur les petits
+discriminants*, Sém. Delange–Pisot–Poitou 18 (1976/77), exp. 6
+(Propositions 1–3; formula (6), third form) evaluated at the test
+function `F = f/cosh(x/2)` and specialized to `r₁ = 0`, after the
+elementary rewritings `Φ(0) + Φ(1) = 4∫₀^∞ f`,
+`2·(log N𝔭/N𝔭^{m/2})·F(m log N𝔭) = 4·log N𝔭·f(m log N𝔭)/(1 + N𝔭^m)`,
+and `∫₀^∞ (1−F(x))/(2 sinh(x/2)) dx = ∫₀^∞ (1−f(x))/sinh x dx + log 2`
+(which turns `γ + log 8π` into `γ + log 4π`); `F` is admissible by
+Proposition 5's conditions (i)–(iii) for `f`.  The eventual proof must
+carry the analytic continuation and functional equation of the
+completed `Λ_K` and the contour-integral argument of Proposition 1
+(Landau's horizontal estimates) — the material the official FLT
+project axiomatizes away. -/
+theorem dedekind_explicit_formula_fejer (K : Type*) [Field K] [NumberField K]
+    (htc : NumberField.IsTotallyComplex K) :
+    ∃ (mult : ℂ → ℕ) (S : ℝ),
+      (∀ ρ, mult ρ ≠ 0 → 0 < ρ.re ∧ ρ.re < 1) ∧
+      (∀ T : ℝ, {ρ : ℂ | mult ρ ≠ 0 ∧ |ρ.im| ≤ T}.Finite) ∧
+      Filter.Tendsto (fun T : ℝ =>
+          ∑' ρ : {ρ : ℂ // mult ρ ≠ 0 ∧ |ρ.im| ≤ T},
+            (mult ρ.1 : ℝ) * (poitouPhi ρ.1).re)
+        Filter.atTop (nhds S) ∧
+      Real.log |(NumberField.discr K : ℝ)| =
+        (Module.finrank ℚ K : ℝ) *
+            (Real.eulerMascheroniConstant + Real.log (4 * Real.pi) -
+              ∫ x in Set.Ioi (0 : ℝ), (1 - odlyzkoTestFn x) / Real.sinh x) -
+          4 * (∫ x in Set.Ioi (0 : ℝ), odlyzkoTestFn x) +
+          (poitouPrimeTerm K + S) := by
+  sorry
+
+/-- **Positivity of `Re Φ` on the closed critical strip** (sorry node,
+stated 2026-07-23):
+`Re Φ(σ+it) = ∫_ℝ (f(x)/cosh(x/2))·cosh((σ−1/2)x)·cos(tx) dx ≥ 0` for
+`0 ≤ σ ≤ 1`, `f = odlyzkoTestFn`.  On the boundary lines `σ ∈ {0, 1}`
+this is the Fejér positivity `∫ f(x)·cos(tx) dx = 2·sin²(3t)/(3t²) ≥ 0`
+(`f` is `1/6` times the autocorrelation `χ_{[-3,3]} ⋆ χ_{[-3,3]}`); the
+interior follows by the maximum principle — Phragmén–Lindelöf on the
+vertical strip applied to `exp(−Φ)`, with `Φ` entire (`f` has compact
+support) and bounded on the strip (`|e^{(s−1/2)x}| ≤ e³` on
+`[-6,6] × [0,1]`).  This is the positivity step of Proposition 5 of
+Poitou (exp. 6, p. 6-08): the unconditional replacement for GRH,
+turning condition (iv) (Fejér: `f̂ ≥ 0`) into `Re Φ(ρ) ≥ 0` at every
+nontrivial zero `ρ`. -/
+theorem poitouPhi_re_nonneg (s : ℂ) (h0 : 0 ≤ s.re) (h1 : s.re ≤ 1) :
+    0 ≤ (poitouPhi s).re := by
+  sorry
+
 /-- **Poitou's unconditional explicit-formula inequality at the Fejér
-test function** (sorry node — THE analytic input of the Serre/Tate
-elimination, stated 2026-07-23): for a totally complex number field
+test function** (DECOMPOSED 2026-07-23 into the deep explicit-formula
+leaf `dedekind_explicit_formula_fejer`, the strip-positivity leaf
+`poitouPhi_re_nonneg`, and the PROVEN `poitouPrimeTerm_nonneg`; the
+assembly below is proven — drop the zero term, truncation by
+truncation, and the prime term): for a totally complex number field
 `K` of degree `n`,
 
 `n·(γ + log 4π − ∫₀^∞ (1 − f x)/sinh x dx) − 4·∫₀^∞ f ≤ log |d_K|`
@@ -2844,13 +2954,10 @@ since `odlyzkoTestFn ≥ 0`.  The admissibility conditions of
 Proposition 5 hold for `odlyzkoTestFn`: `f 0 = 1`, `∫₀^∞ f` converges
 (compact support), `f/cosh(x/2)` and `(1 − f x)/x` are of bounded
 variation, and the Fourier transform `t ↦ 6·(sin (3t)/(3t))²` is
-nonnegative (Fejér).  The eventual proof must formalize Weil's
-explicit formula for the Dedekind zeta function (functional equation
-+ Hadamard product; Poitou §1, Propositions 1–3 and the Théorème
-(A. Weil) there); note the official FLT project takes the analogous
-statement as a standing AXIOM (`FLT.Assumptions.Odlyzko`, tracking
-issue #458) — here it must be proven.  Numerically the left side at
-`n = 48` is `log (11.56…ⁿ/e¹²)`, far above the needed
+nonnegative (Fejér).  Note the official FLT project takes the
+analogous statement as a standing AXIOM (`FLT.Assumptions.Odlyzko`,
+tracking issue #458) — here it must be proven.  Numerically the left
+side at `n = 48` is `log (11.56…ⁿ/e¹²)`, far above the needed
 `log 8.25ⁿ`. -/
 theorem poitou_explicit_formula_bound (K : Type*) [Field K] [NumberField K]
     (htc : NumberField.IsTotallyComplex K) :
@@ -2858,8 +2965,17 @@ theorem poitou_explicit_formula_bound (K : Type*) [Field K] [NumberField K]
         (Real.eulerMascheroniConstant + Real.log (4 * Real.pi) -
           ∫ x in Set.Ioi (0 : ℝ), (1 - odlyzkoTestFn x) / Real.sinh x) -
       4 * ∫ x in Set.Ioi (0 : ℝ), odlyzkoTestFn x ≤
-      Real.log |(NumberField.discr K : ℝ)| :=
-  sorry
+      Real.log |(NumberField.discr K : ℝ)| := by
+  obtain ⟨mult, S, hstrip, -, htend, heq⟩ :=
+    dedekind_explicit_formula_fejer K htc
+  have hP : (0 : ℝ) ≤ poitouPrimeTerm K := poitouPrimeTerm_nonneg K
+  have hS : (0 : ℝ) ≤ S :=
+    ge_of_tendsto' htend fun T =>
+      tsum_nonneg fun ρ =>
+        mul_nonneg (Nat.cast_nonneg _)
+          (poitouPhi_re_nonneg ρ.1 (hstrip ρ.1 ρ.2.1).1.le
+            (hstrip ρ.1 ρ.2.1).2.le)
+  linarith [heq, hP, hS]
 
 /-- **Numeric bound on the archimedean integral of the Fejér–Poitou
 decomposition** (PROVEN 2026-07-23):
