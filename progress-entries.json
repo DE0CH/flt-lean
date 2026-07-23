@@ -1606,7 +1606,7 @@
     "name": "exists_finiteQuotient_galoisModule_etale_package",
     "fullname": "exists_finiteQuotient_galoisModule_etale_package",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
-    "wip": true,
+    "wip": false,
     "text": "`exists_finiteQuotient_galoisModule_etale_package` — the curve-independent Grothendieck Galois correspondence for a finite abelian group with finite-Galois-quotient action (Small.{u} formulation); statement deliberately aligned with Semistable's exists_galoisModulePackage_of_finiteQuotient so one proof serves both (docstring records the deltas) — 2026-07-23",
     "parent": "WeierstrassCurve.exists_torsion_etale_package_over_fractionField"
   },
@@ -1793,5 +1793,13 @@
     "wip": false,
     "text": "`exists_quotient_isogeny` — the curve-independent Vélu core (Vélu 1971 / AEC III.4.12): finite Galois-stable subgroup ⟹ quotient elliptic curve + equivariant hom with the prescribed kernel; no isogeny material on the pin or in the reference project; successor task = a Vélu/isogeny mini-theory feeding this one statement (fake-decomposition warning recorded) — 2026-07-23",
     "parent": "WeierstrassCurve.exists_quotient_curve_point"
+  },
+  {
+    "name": "exists_hopfAlgebra_galoisEquivariantAlgebra",
+    "fullname": "exists_hopfAlgebra_galoisEquivariantAlgebra",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+    "wip": true,
+    "text": "`exists_hopfAlgebra_galoisEquivariantAlgebra` — the surviving Hopf/descent stratum of the proven Grothendieck-correspondence assembly: Type-u carrier with HopfAlgebra structure equivalent to the equivariant algebra, convolution = evaluation-at-sum (comultiplication via the descent identification HK ⊗ HK ≅ equivariant(A × A → L); existential bundling avoids the WithConv instance diamond — design note in docstring) — 2026-07-23",
+    "parent": "exists_finiteQuotient_galoisModule_etale_package"
   }
 ]
