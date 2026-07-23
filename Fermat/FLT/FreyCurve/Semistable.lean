@@ -2858,13 +2858,333 @@ def WeierstrassCurve.TorsionFlatPackage
         WeierstrassCurve.Affine.Point.map σ.toAlgHom
           (f (Additive.ofMul (WithConv.toConv φ)))
 
+/-! #### The twisted constant group scheme of a finite Galois module
+
+For a finite Galois extension `L/K` inside `Ω` and a finite abelian
+group `A` with an action `ρ' : Gal(L/K) →* End A`, the twisted constant
+group scheme attached to `ρ'` has Hopf algebra of functions the
+`K`-algebra of `Gal(L/K)`-equivariant functions `A → L`. The DATA
+(subalgebra, pullback structure maps, comultiplication through the
+tensor-comparison isomorphism, counit through the fixed-field
+identification, antipode) is constructed here; the AXIOMS and the
+points computation are the sorried `galDesc*` leaves. -/
+
+section GaloisDescentHopf
+
+open TensorProduct
+
+variable (K : Type) [Field K] (Ω : Type) [Field Ω] [Algebra K Ω]
+variable (L : IntermediateField K Ω)
+
+/-- The `K`-subalgebra of `Gal(L/K)`-equivariant functions `B → L`, for
+an arbitrary (set-level) action `act` of the Galois group on `B`:
+`h (act g b) = g (h b)`. -/
+def galDescSubalgebra (B : Type) (act : (↥L ≃ₐ[K] ↥L) → B → B) :
+    Subalgebra K (B → ↥L) where
+  carrier := {h | ∀ (g : ↥L ≃ₐ[K] ↥L) (b : B), h (act g b) = g (h b)}
+  mul_mem' := fun {x y} hx hy g b => by
+    simp only [Pi.mul_apply, map_mul, hx g b, hy g b]
+  one_mem' := fun g b => by simp only [Pi.one_apply, map_one]
+  add_mem' := fun {x y} hx hy g b => by
+    simp only [Pi.add_apply, map_add, hx g b, hy g b]
+  zero_mem' := fun g b => by simp only [Pi.zero_apply, map_zero]
+  algebraMap_mem' := fun k g b => by
+    simp only [Pi.algebraMap_apply, AlgEquiv.commutes]
+
+/-- Membership in the equivariant subalgebra, unfolded. -/
+theorem mem_galDescSubalgebra_iff {B : Type} {act : (↥L ≃ₐ[K] ↥L) → B → B}
+    {h : B → ↥L} :
+    h ∈ galDescSubalgebra K Ω L B act ↔ ∀ g b, h (act g b) = g (h b) :=
+  Iff.rfl
+
+/-- Pullback of equivariant functions along an equivariant map of
+`Gal(L/K)`-sets: precomposition with `φ : B → C` carries equivariant
+functions on `C` to equivariant functions on `B`, as a `K`-algebra
+homomorphism. -/
+def galDescPullback {B C : Type} (actB : (↥L ≃ₐ[K] ↥L) → B → B)
+    (actC : (↥L ≃ₐ[K] ↥L) → C → C) (φ : B → C)
+    (hφ : ∀ g b, φ (actB g b) = actC g (φ b)) :
+    ↥(galDescSubalgebra K Ω L C actC) →ₐ[K] ↥(galDescSubalgebra K Ω L B actB) where
+  toFun h := ⟨fun b => (h : C → ↥L) (φ b), fun g b => by
+    show (h : C → ↥L) (φ (actB g b)) = g ((h : C → ↥L) (φ b))
+    rw [hφ g b]
+    exact h.2 g (φ b)⟩
+  map_one' := rfl
+  map_mul' _ _ := rfl
+  map_zero' := rfl
+  map_add' _ _ := rfl
+  commutes' _ := rfl
+
+variable (A : Type) [AddCommGroup A]
+variable (ρ' : (↥L ≃ₐ[K] ↥L) →* AddMonoid.End A)
+
+/-- The carrier of the twisted constant group scheme's Hopf algebra:
+`Gal(L/K)`-equivariant functions `A → L`. -/
+abbrev GalDescAlg : Type :=
+  ↥(galDescSubalgebra K Ω L A fun g a => ρ' g a)
+
+/-- Equivariant functions on `A × A` (with the diagonal action), the
+target of the tensor-comparison isomorphism. -/
+abbrev GalDescAlg₂ : Type :=
+  ↥(galDescSubalgebra K Ω L (A × A) fun g x => (ρ' g x.1, ρ' g x.2))
+
+/-- Pullback along the first projection `A × A → A`. -/
+def galDescFst : GalDescAlg K Ω L A ρ' →ₐ[K] GalDescAlg₂ K Ω L A ρ' :=
+  galDescPullback K Ω L (fun g x => (ρ' g x.1, ρ' g x.2)) (fun g a => ρ' g a)
+    Prod.fst (fun _ _ => rfl)
+
+/-- Pullback along the second projection `A × A → A`. -/
+def galDescSnd : GalDescAlg K Ω L A ρ' →ₐ[K] GalDescAlg₂ K Ω L A ρ' :=
+  galDescPullback K Ω L (fun g x => (ρ' g x.1, ρ' g x.2)) (fun g a => ρ' g a)
+    Prod.snd (fun _ _ => rfl)
+
+/-- Pullback along the addition `A × A → A` — the group law of the
+twisted constant group scheme, before identification of the tensor
+square. -/
+def galDescAdd : GalDescAlg K Ω L A ρ' →ₐ[K] GalDescAlg₂ K Ω L A ρ' :=
+  galDescPullback K Ω L (fun g x => (ρ' g x.1, ρ' g x.2)) (fun g a => ρ' g a)
+    (fun x => x.1 + x.2) (fun g x => (map_add (ρ' g) x.1 x.2).symm)
+
+/-- Pullback along the negation `A → A` — the antipode of the twisted
+constant group scheme. -/
+def galDescAntipode : GalDescAlg K Ω L A ρ' →ₐ[K] GalDescAlg K Ω L A ρ' :=
+  galDescPullback K Ω L (fun g a => ρ' g a) (fun g a => ρ' g a)
+    (fun a => -a) (fun g a => (map_neg (ρ' g) a).symm)
+
+/-- The tensor-comparison map `H ⊗[K] H → H₂`: `h₁ ⊗ h₂` acts as the
+two-variable function `(a, b) ↦ h₁(a)·h₂(b)`. -/
+noncomputable def galDescTensorHom :
+    (GalDescAlg K Ω L A ρ') ⊗[K] (GalDescAlg K Ω L A ρ') →ₐ[K]
+      GalDescAlg₂ K Ω L A ρ' :=
+  Algebra.TensorProduct.productMap (galDescFst K Ω L A ρ') (galDescSnd K Ω L A ρ')
+
+/-- **Galois descent for the tensor square** (sorry node — the descent
+core of the finite-quotient package): the comparison map
+`H ⊗[K] H → H₂`, `h₁ ⊗ h₂ ↦ ((a,b) ↦ h₁(a)·h₂(b))`, is bijective. Both
+sides have `K`-dimension `|A|²` (equivariant functions on a finite
+`Gal(L/K)`-set `S` have dimension `|S|`, by evaluation at orbit
+representatives onto `∏_{orbits} Fix(Stab)`), and the map is injective
+by linear disjointness of the evaluations. -/
+theorem galDescTensorHom_bijective [FiniteDimensional K ↥L] [IsGalois K ↥L]
+    [Finite A] :
+    Function.Bijective (galDescTensorHom K Ω L A ρ') := by
+  sorry
+
+variable [FiniteDimensional K ↥L] [IsGalois K ↥L] [Finite A]
+
+/-- The tensor-comparison isomorphism `H ⊗[K] H ≃ H₂` (from the sorried
+bijectivity leaf). -/
+noncomputable def galDescTensorEquiv :
+    ((GalDescAlg K Ω L A ρ') ⊗[K] (GalDescAlg K Ω L A ρ')) ≃ₐ[K]
+      GalDescAlg₂ K Ω L A ρ' :=
+  AlgEquiv.ofBijective (galDescTensorHom K Ω L A ρ')
+    (galDescTensorHom_bijective K Ω L A ρ')
+
+/-- The comultiplication of the twisted constant group scheme: pull
+back along the addition, then identify the equivariant functions on
+`A × A` with the tensor square. -/
+noncomputable def galDescComul :
+    GalDescAlg K Ω L A ρ' →ₐ[K]
+      (GalDescAlg K Ω L A ρ') ⊗[K] (GalDescAlg K Ω L A ρ') :=
+  ((galDescTensorEquiv K Ω L A ρ').symm.toAlgHom).comp (galDescAdd K Ω L A ρ')
+
+omit [Finite A] in
+/-- The value at `0` of an equivariant function is Galois-fixed, hence
+lies in the base field (PROVEN — `IsGalois.mem_range_algebraMap_iff_fixed`). -/
+theorem galDesc_apply_zero_mem_range (h : GalDescAlg K Ω L A ρ') :
+    (h : A → ↥L) 0 ∈ Set.range (algebraMap K ↥L) := by
+  rw [IsGalois.mem_range_algebraMap_iff_fixed]
+  intro g
+  have h2 := h.2 g 0
+  simp only [map_zero] at h2
+  exact h2.symm
+
+/-- The counit of the twisted constant group scheme: evaluation at the
+identity point `0 ∈ A`, landing in `K` by the fixed-field
+identification. -/
+noncomputable def galDescCounit : GalDescAlg K Ω L A ρ' →ₐ[K] K where
+  toFun h := (galDesc_apply_zero_mem_range K Ω L A ρ' h).choose
+  map_one' := by
+    apply (algebraMap K ↥L).injective
+    rw [(galDesc_apply_zero_mem_range K Ω L A ρ' 1).choose_spec, map_one]
+    rfl
+  map_mul' x y := by
+    apply (algebraMap K ↥L).injective
+    rw [map_mul, (galDesc_apply_zero_mem_range K Ω L A ρ' (x * y)).choose_spec,
+      (galDesc_apply_zero_mem_range K Ω L A ρ' x).choose_spec,
+      (galDesc_apply_zero_mem_range K Ω L A ρ' y).choose_spec]
+    rfl
+  map_zero' := by
+    apply (algebraMap K ↥L).injective
+    rw [(galDesc_apply_zero_mem_range K Ω L A ρ' 0).choose_spec, map_zero]
+    rfl
+  map_add' x y := by
+    apply (algebraMap K ↥L).injective
+    rw [map_add, (galDesc_apply_zero_mem_range K Ω L A ρ' (x + y)).choose_spec,
+      (galDesc_apply_zero_mem_range K Ω L A ρ' x).choose_spec,
+      (galDesc_apply_zero_mem_range K Ω L A ρ' y).choose_spec]
+    rfl
+  commutes' r := by
+    apply (algebraMap K ↥L).injective
+    rw [(galDesc_apply_zero_mem_range K Ω L A ρ'
+      (algebraMap K (GalDescAlg K Ω L A ρ') r)).choose_spec]
+    rfl
+
+/-- **Coassociativity of the twisted comultiplication** (sorry node —
+after composing with the injective tensor comparison into functions on
+`A × A × A`, both sides are pullback along `(a,b,c) ↦ a+b+c`). -/
+theorem galDescComul_coassoc :
+    (Algebra.TensorProduct.assoc K K K (GalDescAlg K Ω L A ρ')
+      (GalDescAlg K Ω L A ρ') (GalDescAlg K Ω L A ρ')).toAlgHom.comp
+      ((Algebra.TensorProduct.map (galDescComul K Ω L A ρ')
+        (AlgHom.id K (GalDescAlg K Ω L A ρ'))).comp (galDescComul K Ω L A ρ')) =
+    (Algebra.TensorProduct.map (AlgHom.id K (GalDescAlg K Ω L A ρ'))
+      (galDescComul K Ω L A ρ')).comp (galDescComul K Ω L A ρ') := by
+  sorry
+
+/-- **Left counit axiom for the twisted comultiplication** (sorry node
+— evaluation of the first tensor factor at `0` collapses the pullback
+along addition to the identity). -/
+theorem galDescComul_rTensor_counit :
+    (Algebra.TensorProduct.map (galDescCounit K Ω L A ρ')
+      (AlgHom.id K (GalDescAlg K Ω L A ρ'))).comp (galDescComul K Ω L A ρ') =
+    ((Algebra.TensorProduct.lid K (GalDescAlg K Ω L A ρ')).symm :
+      GalDescAlg K Ω L A ρ' →ₐ[K] K ⊗[K] GalDescAlg K Ω L A ρ') := by
+  sorry
+
+/-- **Right counit axiom for the twisted comultiplication** (sorry node
+— symmetric to the left axiom). -/
+theorem galDescComul_lTensor_counit :
+    (Algebra.TensorProduct.map (AlgHom.id K (GalDescAlg K Ω L A ρ'))
+      (galDescCounit K Ω L A ρ')).comp (galDescComul K Ω L A ρ') =
+    ((Algebra.TensorProduct.rid K K (GalDescAlg K Ω L A ρ')).symm :
+      GalDescAlg K Ω L A ρ' →ₐ[K] GalDescAlg K Ω L A ρ' ⊗[K] K) := by
+  sorry
+
+/-- The bialgebra structure of the twisted constant group scheme; the
+axioms are the three sorried leaves above. -/
+noncomputable instance galDescBialgebra : Bialgebra K (GalDescAlg K Ω L A ρ') :=
+  Bialgebra.ofAlgHom (galDescComul K Ω L A ρ') (galDescCounit K Ω L A ρ')
+    (galDescComul_coassoc K Ω L A ρ')
+    (galDescComul_rTensor_counit K Ω L A ρ')
+    (galDescComul_lTensor_counit K Ω L A ρ')
+
+/-- **Left antipode axiom** (sorry node — after the tensor comparison,
+`m ∘ (S ⊗ id) ∘ Δ` is pullback along `a ↦ (-a) + a = 0`, the unit of
+the convolution). -/
+theorem galDesc_mul_antipode_rTensor_comul :
+    ((Algebra.TensorProduct.lift (galDescAntipode K Ω L A ρ')
+      (AlgHom.id K (GalDescAlg K Ω L A ρ')) fun _ => Commute.all _).comp
+      (Bialgebra.comulAlgHom K (GalDescAlg K Ω L A ρ'))) =
+    (Algebra.ofId K (GalDescAlg K Ω L A ρ')).comp
+      (Bialgebra.counitAlgHom K (GalDescAlg K Ω L A ρ')) := by
+  sorry
+
+/-- **Right antipode axiom** (sorry node — symmetric to the left
+axiom). -/
+theorem galDesc_mul_antipode_lTensor_comul :
+    (Algebra.TensorProduct.lift (AlgHom.id K (GalDescAlg K Ω L A ρ'))
+      (galDescAntipode K Ω L A ρ') fun _ _ => Commute.all _ _).comp
+      (Bialgebra.comulAlgHom K (GalDescAlg K Ω L A ρ')) =
+    (Algebra.ofId K (GalDescAlg K Ω L A ρ')).comp
+      (Bialgebra.counitAlgHom K (GalDescAlg K Ω L A ρ')) := by
+  sorry
+
+/-- The Hopf structure of the twisted constant group scheme: the
+antipode is pullback along negation; the axioms are the two sorried
+leaves above. -/
+noncomputable instance galDescHopfAlgebra :
+    HopfAlgebra K (GalDescAlg K Ω L A ρ') :=
+  HopfAlgebra.ofAlgHom (galDescAntipode K Ω L A ρ')
+    (galDesc_mul_antipode_rTensor_comul K Ω L A ρ')
+    (galDesc_mul_antipode_lTensor_comul K Ω L A ρ')
+
+/-- The equivariant function algebra is finite-dimensional over `K`
+(PROVEN — a subspace of the finite-dimensional `A → L`). -/
+instance galDescAlg_finite : Module.Finite K (GalDescAlg K Ω L A ρ') := by
+  haveI : Module.Finite K (A → ↥L) := Module.Finite.pi
+  exact FiniteDimensional.finiteDimensional_submodule
+    (Subalgebra.toSubmodule (galDescSubalgebra K Ω L A fun g a => ρ' g a))
+
+/-- **Étaleness of the generic fibre** (sorry node — evaluation at
+orbit representatives identifies `H` with a finite product of finite
+subextensions of `L/K`, étale in characteristic zero; the redundant
+base change `K ⊗[K] H` transfers along `Algebra.TensorProduct.lid`). -/
+theorem galDescAlg_etale [CharZero K] :
+    Algebra.Etale K (K ⊗[K] GalDescAlg K Ω L A ρ') := by
+  sorry
+
+/-- Evaluation at a point `a : A`: an `Ω`-point of the twisted constant
+group scheme. -/
+noncomputable def galDescPoint (a : A) : GalDescAlg K Ω L A ρ' →ₐ[K] Ω :=
+  (L.val.comp (Pi.evalAlgHom K (fun _ : A => ↥L) a)).comp
+    (galDescSubalgebra K Ω L A fun g a => ρ' g a).val
+
+/-- Evaluation at `a : A` through the redundant base change
+`K ⊗[K] H`. -/
+noncomputable def galDescPointT (a : A) :
+    (K ⊗[K] GalDescAlg K Ω L A ρ') →ₐ[K] Ω :=
+  (galDescPoint K Ω L A ρ' a).comp
+    (Algebra.TensorProduct.lid K (GalDescAlg K Ω L A ρ')).toAlgHom
+
+/-- **The points of the twisted constant group scheme** (sorry node —
+the Galois-sets side of the correspondence): evaluation is a bijection
+from `A` onto the `Ω`-points. Injective because equivariant functions
+separate the orbits (indicator functions) and the points of one orbit
+(a generator of `Fix(Stab)` moved by every non-stabilizing `g`);
+surjective because a `K`-point of `H ≅ ∏ Fix(Stab)` factors through one
+component field, whose `|orbit|` embeddings into `Ω` are the
+evaluations at the orbit's points (count: `dim_K H = |A|` in the étale
+case). -/
+theorem galDescPointT_bijective [CharZero K] [IsAlgClosure K Ω] :
+    Function.Bijective (galDescPointT K Ω L A ρ') := by
+  sorry
+
+/-- **Evaluation turns addition into convolution** (sorry node — the
+convolution of `ev_a` and `ev_b` is evaluation of the pulled-back
+addition at `(a, b)`, i.e. `ev_{a+b}`, through the tensor-comparison
+isomorphism). -/
+theorem galDescPointT_conv (a b : A) :
+    WithConv.toConv (galDescPointT K Ω L A ρ' (a + b)) =
+      WithConv.toConv (galDescPointT K Ω L A ρ' a) *
+        WithConv.toConv (galDescPointT K Ω L A ρ' b) := by
+  sorry
+
+omit [FiniteDimensional K ↥L] [Finite A] in
+/-- **Galois equivariance of evaluation** (PROVEN — `σ ∘ ev_a` is
+evaluation at `ρ'(σ|_L) a`, by equivariance of the functions and
+`AlgEquiv.restrictNormal_commutes`). -/
+theorem galDescPointT_equivariant (σ : Ω ≃ₐ[K] Ω) (a : A) :
+    (σ.toAlgHom).comp (galDescPointT K Ω L A ρ' a) =
+      galDescPointT K Ω L A ρ'
+        (ρ' (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ) a) := by
+  have hcore : (σ.toAlgHom).comp (galDescPoint K Ω L A ρ' a) =
+      galDescPoint K Ω L A ρ'
+        (ρ' (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ) a) := by
+    apply AlgHom.ext
+    intro h
+    show σ (((h : A → ↥L) a : ↥L) : Ω) =
+      (((h : A → ↥L) (ρ' (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ) a) :
+        ↥L) : Ω)
+    rw [h.2 (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ) a]
+    exact (AlgEquiv.restrictNormal_commutes σ ↥L ((h : A → ↥L) a)).symm
+  show (σ.toAlgHom.comp (galDescPoint K Ω L A ρ' a)).comp
+      (Algebra.TensorProduct.lid K (GalDescAlg K Ω L A ρ')).toAlgHom =
+    galDescPointT K Ω L A ρ'
+      (ρ' (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ) a)
+  rw [hcore]
+  rfl
+
+end GaloisDescentHopf
+
 open TensorProduct in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 /-- **The finite-étale package of a discrete Galois module over a
-characteristic-zero field** (sorry node — the étale-algebras/Galois-sets
-correspondence, WITH group structure; the only curve-independent leaf of
+characteristic-zero field** (DECOMPOSED 2026-07-23 into the `galDesc*`
+leaves above — the étale-algebras/Galois-sets correspondence, WITH group
+structure; the only curve-independent leaf of
 the peu-ramifiée decomposition): for a finite abelian group `A` with an
 action of `Gal(Ω/K)` that is *discrete* (every point is fixed by the
 fixing subgroup of some finite subextension), there is a finite étale
@@ -2879,7 +3199,17 @@ identification of `H ⊗[K] H` with the equivariant functions on `A × A`;
 the `Ω`-points of `H` are the evaluations at the elements of `A`,
 equivariantly by construction. Stated with the redundant base change
 `K ⊗[K] H` to match the component shape of
-`WeierstrassCurve.TorsionFlatPackage` verbatim. -/
+`WeierstrassCurve.TorsionFlatPackage` verbatim.
+
+The assembly below instantiates `H := GalDescAlg K Ω L A ρ'` (the
+equivariant-function model above, with its Hopf structure REAL CODE and
+its axioms/points the sorried leaves `galDescTensorHom_bijective`,
+`galDescComul_coassoc`, `galDescComul_rTensor_counit`,
+`galDescComul_lTensor_counit`, `galDesc_mul_antipode_rTensor_comul`,
+`galDesc_mul_antipode_lTensor_comul`, `galDescAlg_etale`,
+`galDescPointT_bijective`, `galDescPointT_conv`; equivariance of
+evaluation is PROVEN) and wraps the evaluation bijection into the
+required `AddEquiv`. -/
 theorem exists_galoisModulePackage_of_finiteQuotient
     (K : Type) [Field K] [CharZero K]
     (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
@@ -2894,7 +3224,51 @@ theorem exists_galoisModulePackage_of_finiteQuotient
         f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
           ρ' (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ)
             (f (Additive.ofMul (WithConv.toConv φ))) := by
-  sorry
+  classical
+  have hbij := galDescPointT_bijective K Ω L A ρ'
+  let e0 : A ≃ ((K ⊗[K] GalDescAlg K Ω L A ρ') →ₐ[K] Ω) :=
+    Equiv.ofBijective _ hbij
+  have he0 : ∀ a : A, e0 a = galDescPointT K Ω L A ρ' a := fun _ => rfl
+  let f : Additive (WithConv ((K ⊗[K] GalDescAlg K Ω L A ρ') →ₐ[K] Ω)) ≃+ A :=
+    { toFun := fun x => e0.symm (WithConv.ofConv (Additive.toMul x))
+      invFun := fun a => Additive.ofMul (WithConv.toConv (e0 a))
+      left_inv := fun x => by
+        show Additive.ofMul (WithConv.toConv
+          (e0 (e0.symm (WithConv.ofConv (Additive.toMul x))))) = x
+        rw [Equiv.apply_symm_apply]
+        rfl
+      right_inv := fun a => e0.symm_apply_apply a
+      map_add' := fun x y => by
+        apply e0.injective
+        rw [Equiv.apply_symm_apply]
+        have h := galDescPointT_conv K Ω L A ρ'
+          (e0.symm (WithConv.ofConv (Additive.toMul x)))
+          (e0.symm (WithConv.ofConv (Additive.toMul y)))
+        have h2 := congrArg WithConv.ofConv h
+        rw [WithConv.ofConv_toConv] at h2
+        show WithConv.ofConv (Additive.toMul (x + y)) =
+          galDescPointT K Ω L A ρ'
+            (e0.symm (WithConv.ofConv (Additive.toMul x)) +
+              e0.symm (WithConv.ofConv (Additive.toMul y)))
+        rw [h2,
+          show galDescPointT K Ω L A ρ'
+              (e0.symm (WithConv.ofConv (Additive.toMul x))) =
+            WithConv.ofConv (Additive.toMul x) from e0.apply_symm_apply _,
+          show galDescPointT K Ω L A ρ'
+              (e0.symm (WithConv.ofConv (Additive.toMul y))) =
+            WithConv.ofConv (Additive.toMul y) from e0.apply_symm_apply _]
+        rfl }
+  refine ⟨GalDescAlg K Ω L A ρ', inferInstance, inferInstance, inferInstance,
+    inferInstance, galDescAlg_etale K Ω L A ρ', f, ?_⟩
+  intro σ φ
+  show e0.symm (σ.toAlgHom.comp φ) =
+    ρ' (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ) (e0.symm φ)
+  apply e0.injective
+  rw [Equiv.apply_symm_apply]
+  have h := galDescPointT_equivariant K Ω L A ρ' σ (e0.symm φ)
+  rw [show galDescPointT K Ω L A ρ' (e0.symm φ) = φ from e0.apply_symm_apply φ] at h
+  rw [he0]
+  exact h
 
 open TensorProduct in
 set_option backward.isDefEq.respectTransparency false in
