@@ -263,6 +263,76 @@ Decomposition advice: write hleg3 as the odd/2 case split now, close the odd
 branch, and leave `p = 2` as a named sorried sub-have
 (`have hleg3_two : p = 2 → ∀ x, e x x = 1`), consumed by the split.
 
+**STATUS UPDATE (2026-07-23).** The `p = 2` case is now the top-level
+sorry node `weilValueProp_self_of_two` (WeilPairing.lean, right after
+`end FrobeniusTransport`): any admissible value `z` of a self-pair at
+`p = 2` is `1`, with uniqueness `huniq` passed as a hypothesis (the
+μ-theorem instantiates it with `huniqval`), so the prover may either
+consume the given witness (c-i) or build its own setup (c-ii). The
+skeleton is in place down to a single sorried leaf: after the (c-i)
+line-square assembly (witness destructured, 2-torsion relation, both
+`aP·XClass x_P = c·ℓ²` factorizations through the extracted
+`MillerEngine` lemmas `coordRing_isUnit_constant` /
+`coordRing_line_span` / `coordRing_evalEval_XClass`, evaluation at the
+four points, cancellation of the `x• − x_P` factors), the residual
+sorry is `hkey` — ONE polynomial identity in the twelve configuration
+scalars (see below), to be closed from the five curve equations, the
+2-torsion relation, and the two collinearity systems.
+
+**The (c-i) identity is CAS-VERIFIED (chord AND tangent branches).**
+With `⊖P = P`, `aP·X_{xP} = c₁ℓ₁²` (ℓ₁ through `PS, ⊖S`, third point
+`P`), `aQ·X_{xP} = c₂ℓ₂²` (ℓ₂ through `QR, ⊖R`, third point `P`), the
+value equation reduces `z = 1` to
+
+```
+ℓ₁(QR)²·ℓ₂(S)²·(x_PS−x_R)²·(x_R−x_P)(x_PS−x_P)
+  = ℓ₁(R)²·ℓ₂(PS)²·(x_QR−x_S)²·(x_QR−x_P)(x_S−x_P)
+```
+
+modulo the five curve equations, the 2-torsion relation
+`2y_P = −a₁x_P − a₃`, and the addition/collinearity relations for
+`PS = P⊕S`, `QR = P⊕R`.
+
+**Attack plan for the residual `hkey` leaf** (the in-context scalar
+relations that suffice; derivations of (1)-(4) are case-split-free):
+
+1. `L₁² + a₁L₁ − a₂ − x_PS − x_S = x_P` — `hthird₁.1` with mathlib's
+   `addX` UNFOLDED (it is definitionally `L² + a₁L − a₂ − x₁ − x₂`).
+2. `L₂² + a₁L₂ − a₂ − x_QR − x_R = x_P` — `hthird₂.1`.
+3. `ℓ₁(P) = 0`, i.e. `y_P = L₁(x_P−x_PS) + y_PS`: from `hthird₂.2`
+   (`addY = negY(addX)(line-y at addX) = y_P`) + the 2-torsion
+   relation `h2t` (`negY x_P y_P = y_P`) via `negY_negY` — NO
+   chord/tangent split needed.
+4. `ℓ₂(P) = 0` — same.
+5. `ℓ₁(⊖S) = 0`, i.e. `y_PS + L₁(x_S−x_PS) = negY x_S y_S` — needs
+   the `slope` case split: chord (`x_PS ≠ x_S`) by `slope_of_X_ne`;
+   tangent (`x_PS = x_S` forces `PS = ⊖S` via `hPne`, so
+   `y_PS = negY x_S y_S` and the `L₁`-term vanishes).
+6. `ℓ₂(⊖R) = 0` — same.
+7. The curve equations (`equation_iff` at `S, R, PS, QR, P`) and the
+   2-torsion relation as polynomial identities.
+
+Then `hkey` is one `linear_combination`/`field_simp` grind from
+(1)-(7) (per the CAS verification it balances exactly; if the direct
+ideal-membership search stalls, substitute (5)/(6) to eliminate
+`y_PS, y_QR`, (1) to eliminate `x_P`, (3) to eliminate `y_P`, and
+grind the two `slope` branches separately against `E(S), E(R)` and
+the substituted `E(PS), E(QR)` — this mirrors the verified numeric
+computation exactly).
+
+Verified numerically on 1500 random on-curve
+configurations over seven prime fields (q = 2003 … 10⁶+3), value
+always exactly 1, chord case; AND on 380 degenerate configurations
+(`2S = P` tangent-S, `2R = P` tangent-R, both-tangent) across 20
+prime fields — so the identity holds uniformly across mathlib
+`slope`'s branches and the Lean proof needs only the case split that
+`slope`'s definition already dictates. No tame-symbol sign correction
+is needed. (Full symbolic reduction in sympy blows up —
+Schwartz–Zippel sampling on the constraint variety is the
+verification.) Nonvanishing of every divided factor `x_• − x_P` is
+exactly the setup's F-avoidances (`x_S, x_PS ∉ F ∋ x_P`;
+`x_R, x_QR ∉ F' ≥ F`).
+
 ## 4. hleg4 — `∀ x, x ≠ 0 → ∃ y, e x y ≠ 1` (nondegeneracy)
 
 **This is the deepest leg** — the only one whose classical proof
@@ -360,6 +430,29 @@ leg3 uniform). L4-7: the big one, comparable to `hgenfac` itself. L4-8..9:
 days once the rest exists. Overall this is the critical-path kernel of the
 whole μ-node; recommend giving `hglobal` its own named module/subtree
 immediately (progress-entries item), and NOT blocking legs 1,2,3,5,6 on it.
+
+**STATUS UPDATE (2026-07-23).** The reduction (A) is fully in place and
+sorry-free inside the μ-theorem (`hleg4` = `pairing_trivial_of_radical`
++ the rank-2 computation + `hglobal`); `hglobal` itself is discharged
+in-proof by `by_contra` + `TorsionCard.card_torsionBy` (`p² > 1`)
+against the NEW top-level sorry node
+`weilValueProp_all_one_torsion_trivial` (WeilPairing.lean, right after
+`end FrobeniusTransport`): hypotheses `huniq` (uniqueness of admissible
+values, instantiated with `huniqval`) and
+`hall : ∀ v w, weilValueProp q Wbar p v w 1`, conclusion `x = 0` for
+every p-torsion `x`. Its skeleton reduces through
+`Point.toClass_eq_zero` to the single sorried leaf
+`hclass : Point.toClass x.val = 0` — the L4-9 landing point for BOTH
+dichotomy branches (`χ ≡ 1` ⟹ principality; `χ(κ₀) ≠ 1` ⟹ `hall`
+contradiction ⟹ anything). The L4-1..8 machinery goes inside
+`hclass`'s proof; being a top-level context (no in-proof engine haves),
+the needed engine facts must be re-derived as top-level lemmas or
+extracted from the μ-proof — the `MillerEngine` section
+(`coordRing_isUnit_constant`, `coordRing_line_span`,
+`coordRing_evalEval_XClass`, extracted 2026-07-23, instantiating the
+μ-proof's `hCunits`/`hline`/`hevvert`) is the start of that extraction;
+continue it (e.g. `hgen`, `hpoints`, `hker`, `hoffdiv`) as `hclass`'s
+proof consumes them.
 
 ## 5. hleg5 — `∀ x y, (e x y) ^ p = 1`
 
