@@ -68,16 +68,25 @@ here. This file provides:
   character sum `S_χ(s)` of a Dirichlet character mod `ℓ` nontrivial
   on the image of `Gal(E/F)` is bounded uniformly in `s > 1` — the
   minimal `L(1, χ) ≠ 0` statement) — itself now PROVEN by an
-  exp/log-plus-mean-value assembly from the two remaining sorry
-  leaves of this half:
+  exp/log-plus-mean-value assembly from
   `exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries`
   (the Euler product for the `χ`-twisted Dedekind zeta function in
-  exponential form — absolute-convergence bookkeeping only) and
-  `exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le` (the
-  twisted ideal `L`-series and its derivative are bounded, and the
-  series is bounded away from `0`, uniformly on real `(1, 2]` — the
-  continuation-plus-`L(1,χ) ≠ 0` core); see the leaves' docstrings
-  for the intended proofs and the exact state of the mathlib pin.
+  exponential form — itself PROVEN, through the proven norm-fibration
+  `tsum_dirichletCharacter_mul_cpow_neg_absNorm_eq_LSeries`, from the
+  sorry leaf
+  `tprod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum`, the
+  ideal-theoretic Euler product: pure unique factorization) and
+  `exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le` (good
+  behaviour of the twisted ideal `L`-series on `(1, 2]` — itself
+  PROVEN, with the away-from-`1` positivity supplied by the Euler
+  identity, from the two sorry leaves
+  `exists_forall_norm_LSeries_le_and_norm_deriv_le` (uniform bounds
+  for `L` and `L'`: the analytic-continuation half, needing the
+  power-saving Hecke count) and
+  `exists_forall_le_norm_LSeries_near_one` (`L` bounded away from `0`
+  just right of `1`: the `L(1,χ) ≠ 0` half)); see the leaves'
+  docstrings for the intended proofs and the exact state of the
+  mathlib pin.
 
 The remaining pieces of the decomposition (Brauer–Nesbitt for
 2-dimensional mod-`ℓ` representations, the mod-`ℓ` cyclotomic character as
