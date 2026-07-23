@@ -43,15 +43,21 @@ here. This file provides:
   (unboundedness as `s → 1⁺` of the Dirichlet sum over the degree-one
   primes of a number field in a prescribed cyclotomic congruence
   class — Dirichlet's theorem over an arbitrary number-field base),
-  itself PROVEN by Deuring's-route bookkeeping from the TWO remaining
-  sorry leaves of this module:
+  itself PROVEN by Deuring's-route bookkeeping from
   `exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne` (the
-  Dedekind-zeta half: the full degree-one prime sum diverges as
-  `s → 1⁺`) and
+  Dedekind-zeta half, a remaining sorry leaf: the full degree-one prime
+  sum diverges as `s → 1⁺`) and
   `tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add` (the
   `L`-function half: the congruence class of `τ` carries the full sum
-  up to `ℓ ×` and a bounded error); see their docstrings for the
-  intended proofs and the exact state of the mathlib pin.
+  up to `ℓ ×` and a bounded error) — the latter now itself PROVEN by
+  Frobenius bookkeeping (`exists_algEquiv_map_zeta_eq_pow_natCard`
+  covers the degree-one primes by the `≤ ℓ` congruence classes) from
+  the remaining pairwise-comparison sorry leaf
+  `tsum_rpow_neg_natCard_quotient_prime_and_map_zeta_eq_pow_le_tsum_add`
+  (any two congruence classes carry the same sum up to a uniformly
+  bounded additive error — the `L(1, χ) ≠ 0` content); see the leaves'
+  docstrings for the intended proofs and the exact state of the
+  mathlib pin.
 
 The remaining pieces of the decomposition (Brauer–Nesbitt for
 2-dimensional mod-`ℓ` representations, the mod-`ℓ` cyclotomic character as
@@ -862,36 +868,214 @@ theorem exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne
       (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) :=
   sorry
 
+/-- The Galois group of a Galois extension of number fields acts
+faithfully on the ring of integers: two automorphisms agreeing on `𝓞 E`
+agree on `E = Frac(𝓞 E)`. -/
+instance {F E : Type*} [Field F] [Field E] [NumberField E] [Algebra F E] :
+    FaithfulSMul (E ≃ₐ[F] E) (𝓞 E) where
+  eq_of_smul_eq_smul {σ τ} h := by
+    refine AlgEquiv.ext fun e => ?_
+    obtain ⟨x, y, _, rfl⟩ := IsFractionRing.div_surjective (A := 𝓞 E) e
+    have hcoe : ∀ (g : E ≃ₐ[F] E) (a : 𝓞 E),
+        g (algebraMap (𝓞 E) E a) = algebraMap (𝓞 E) E (g • a) := fun _ _ => rfl
+    rw [map_div₀, map_div₀, hcoe σ x, hcoe σ y, hcoe τ x, hcoe τ y, h x, h y]
+
+/-- The fixed points of the Galois action on `𝓞 E` are exactly the image
+of `𝓞 F`, for a Galois extension `E/F` of number fields (general form of
+the intermediate-field instance above). -/
+instance {F E : Type*} [Field F] [Field E] [NumberField E] [Algebra F E]
+    [IsGalois F E] : Algebra.IsInvariant (𝓞 F) (𝓞 E) (E ≃ₐ[F] E) where
+  isInvariant x hx := by
+    have hfixE : ∀ e : E ≃ₐ[F] E, e • (x : E) = (x : E) := fun e =>
+      congrArg (algebraMap (𝓞 E) E) (hx e)
+    obtain ⟨y, hy⟩ := Algebra.IsInvariant.isInvariant (A := F)
+      (G := E ≃ₐ[F] E) (x : E) hfixE
+    have hyint : IsIntegral ℤ y := by
+      rw [← isIntegral_algebraMap_iff (B := E) (algebraMap F E).injective, hy]
+      exact x.2
+    exact ⟨⟨y, hyint⟩, NumberField.RingOfIntegers.ext hy⟩
+
+/-- The Galois group of a Galois extension of number fields is a Galois
+group for the extension of rings of integers (with respect to the ambient
+project action on `𝓞 E`). -/
+instance {F E : Type*} [Field F] [Field E] [NumberField E] [Algebra F E]
+    [IsGalois F E] : IsGaloisGroup (E ≃ₐ[F] E) (𝓞 F) (𝓞 E) where
+  faithful := inferInstance
+  commutes := inferInstance
+  isInvariant := inferInstance
+
+open IsDedekindDomain in
+/-- **Frobenius existence at degree-one primes, cyclotomic form**: for a
+cyclotomic extension `E = F(ζ_ℓ)` of a number field `F` (`ℓ` prime) and
+any finite place `P` of `F` with prime residue cardinality different
+from `ℓ`, some `σ ∈ Gal(E/F)` acts on `ζ` by `ζ ↦ ζ ^ #(𝓞 F / P)`. This
+is the "`#(𝓞 F / P) mod ℓ` lies in the image of `Gal(E/F)` in
+`(ZMod ℓ)ˣ`" step of Deuring's route: at any prime `Q` of `𝓞 E` above
+`P` an arithmetic Frobenius exists
+(`IsArithFrobAt.exists_of_isInvariant`), and it acts on the `ℓ`-th root
+of unity `ζ` exactly by `ζ ↦ ζ ^ #(𝓞 F / P)`
+(`AlgHom.IsArithFrobAt.apply_of_pow_eq_one`), because `ℓ` is invertible
+modulo `Q` (`#(𝓞 F / P)` is a prime different from `ℓ`) — the same
+argument as in the proof of `infinite_setOf_isArithFrobAt_zpowers`,
+without the descent to a fixed field. -/
+theorem exists_algEquiv_map_zeta_eq_pow_natCard
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (P : HeightOneSpectrum (𝓞 F))
+    (hcard : (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime)
+    (hne : Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ) :
+    ∃ σ : E ≃ₐ[F] E, σ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal) := by
+  classical
+  haveI : NeZero ℓ := ⟨hℓ.pos.ne'⟩
+  haveI : IsGalois F E := IsCyclotomicExtension.isGalois {ℓ} F E
+  haveI : FiniteDimensional F E := IsCyclotomicExtension.finiteDimensional {ℓ} F E
+  haveI : Module.Finite (𝓞 F) (𝓞 E) :=
+    Module.Finite.of_restrictScalars_finite ℤ (𝓞 F) (𝓞 E)
+  -- a prime of `𝓞 E` over `P`, with finite residue field
+  obtain ⟨⟨Q, hQp, hQo⟩⟩ := Ideal.nonempty_primesOver (S := 𝓞 E) P.asIdeal
+  haveI := hQp
+  haveI := hQo
+  have hQunder : Q.under (𝓞 F) = P.asIdeal := hQo.over.symm
+  have hQne : Q ≠ ⊥ := by
+    intro h
+    apply P.ne_bot
+    rw [hQo.over, h, Ideal.under_def]
+    exact Ideal.comap_bot_of_injective _
+      (FaithfulSMul.algebraMap_injective (𝓞 F) (𝓞 E))
+  haveI : Finite (𝓞 E ⧸ Q) := Ring.HasFiniteQuotients.finiteQuotient hQne
+  -- a Frobenius element at `Q` over `F`
+  obtain ⟨σQ, hσQ⟩ :=
+    IsArithFrobAt.exists_of_isInvariant (𝓞 F) (E ≃ₐ[F] E) Q
+  -- `ζ` as an algebraic integer
+  have hζint : IsIntegral ℤ ζ := by
+    refine IsIntegral.of_pow hℓ.pos ?_
+    rw [hζ.pow_eq_one]
+    exact isIntegral_one
+  set ζO : 𝓞 E := ⟨ζ, hζint⟩
+  -- `ℓ` is invertible modulo `Q`
+  have hℓQ : ((ℓ : ℕ) : 𝓞 E) ∉ Q := by
+    intro hmem
+    have h1 : ((ℓ : ℕ) : 𝓞 F) ∈ P.asIdeal := by
+      rw [← hQunder, Ideal.under_def, Ideal.mem_comap, map_natCast]
+      exact hmem
+    haveI : Finite (𝓞 F ⧸ P.asIdeal) :=
+      Nat.finite_of_card_ne_zero hcard.ne_zero
+    haveI := Fintype.ofFinite (𝓞 F ⧸ P.asIdeal)
+    have h2 : ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : 𝓞 F ⧸ P.asIdeal) = 0 := by
+      rw [Nat.card_eq_fintype_card]
+      exact Nat.cast_card_eq_zero _
+    have h3 : ((ℓ : ℕ) : 𝓞 F ⧸ P.asIdeal) = 0 := by
+      rw [← map_natCast (Ideal.Quotient.mk P.asIdeal),
+        Ideal.Quotient.eq_zero_iff_mem]
+      exact h1
+    have hco : IsCoprime (Nat.card (𝓞 F ⧸ P.asIdeal) : ℤ) (ℓ : ℤ) :=
+      Int.isCoprime_iff_gcd_eq_one.mpr
+        (by
+          rw [Int.gcd_natCast_natCast]
+          exact (Nat.coprime_primes hcard hℓ).mpr hne)
+    obtain ⟨u, v, huv⟩ := hco
+    have h4 : (1 : 𝓞 F ⧸ P.asIdeal) = 0 := by
+      calc (1 : 𝓞 F ⧸ P.asIdeal)
+          = ((u * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℤ) + v * (ℓ : ℤ) : ℤ) :
+            𝓞 F ⧸ P.asIdeal) := by rw [huv, Int.cast_one]
+        _ = (u : 𝓞 F ⧸ P.asIdeal) *
+              ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : 𝓞 F ⧸ P.asIdeal) +
+            (v : 𝓞 F ⧸ P.asIdeal) * ((ℓ : ℕ) : 𝓞 F ⧸ P.asIdeal) := by
+            rw [Int.cast_add, Int.cast_mul, Int.cast_mul, Int.cast_natCast,
+              Int.cast_natCast]
+        _ = 0 := by rw [h2, h3, mul_zero, mul_zero, add_zero]
+    exact one_ne_zero h4
+  -- the Frobenius acts on `ζ` exactly by `ζ ↦ ζ ^ #(𝓞 F / P)`
+  have hζOpow : ζO ^ ℓ = 1 := by
+    apply NumberField.RingOfIntegers.ext
+    show algebraMap (𝓞 E) E (ζO ^ ℓ) = algebraMap (𝓞 E) E 1
+    rw [map_pow, map_one]
+    show ζ ^ ℓ = 1
+    exact hζ.pow_eq_one
+  have hσQζ : σQ • ζO = ζO ^ Nat.card (𝓞 F ⧸ P.asIdeal) := by
+    have h1 := hσQ.apply_of_pow_eq_one hζOpow hℓQ
+    rw [hQunder] at h1
+    exact h1
+  refine ⟨σQ, ?_⟩
+  have h2 : (algebraMap (𝓞 E) E) (σQ • ζO) =
+      (algebraMap (𝓞 E) E) (ζO ^ Nat.card (𝓞 F ⧸ P.asIdeal)) :=
+    congrArg _ hσQζ
+  rw [map_pow] at h2
+  have h3 : (algebraMap (𝓞 E) E) (σQ • ζO) = σQ ζ := rfl
+  have h4 : (algebraMap (𝓞 E) E) ζO = ζ := rfl
+  rw [h3, h4] at h2
+  exact h2
+
+open IsDedekindDomain in
+/-- **Pairwise comparison of cyclotomic congruence classes of degree-one
+primes** (sorry node) — the `L`-function core of Deuring's route: for a
+cyclotomic extension `E = F(ζ_ℓ)` (`ℓ` prime) and ANY `σ, τ ∈ Gal(E/F)`,
+the degree-one prime sum over the congruence class of `σ` (the places
+with `σ ζ = ζ ^ #(𝓞 F / P)`) exceeds that over the class of `τ` by an
+error bounded uniformly in `s > 1`. Both sums are `ℝ≥0∞`-valued, so no
+summability side conditions appear, and the bounded error is additive —
+no `ENNReal` subtraction. All the Frobenius bookkeeping has been
+stripped off (see `tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add`
+for how this leaf is consumed): what remains is pure equidistribution
+between two congruence classes.
+
+Intended proof: with `H = Gal(E/F) ⊆ (ZMod ℓ)ˣ` (via the action on `ζ`,
+`IsPrimitiveRoot.autToPow`) and `a, b ∈ H` the exponents of `σ, τ`, both
+sums are finite for fixed `s > 1` (at most `[F : ℚ]` primes above each
+rational prime `p`, each with `#(𝓞 F / P) ≥ p`), so the claim is a
+real-valued one. Orthogonality for the Dirichlet characters `χ mod ℓ`
+gives `(ℓ - 1) · ∑_{class of a} = ∑_χ χ(a)⁻¹ S_χ(s)` with
+`S_χ(s) = ∑_P χ(N P) N P ^ (-s)` over the degree-one `P` away from `ℓ`
+(every such `P` has `N P mod ℓ ∈ H` by
+`exists_algEquiv_map_zeta_eq_pow_natCard`, so characters trivial on `H`
+contribute `S_χ = S_1` with `χ(a) = 1`); subtracting the same identity
+for `b` leaves `(ℓ - 1) (∑_{class a} - ∑_{class b}) =
+∑_{χ nontrivial on H} (χ(a)⁻¹ - χ(b)⁻¹) S_χ(s)`, and each `χ`
+nontrivial on `H` has `S_χ` bounded as `s → 1⁺` — the `L(1, χ) ≠ 0`
+content, classically from the factorization `ζ_E(s) = ∏_ψ L(s, ψ)` over
+the characters `ψ` of `H` (up to finitely many Euler factors) and the
+SIMPLE pole of `ζ_E` at `s = 1` (for `ψ` nontrivial the partial sums of
+the coefficients of `L(s, ψ)` need a power-saving error term — Hecke's
+ray-class lattice-point count, Lang ANT VI §3 — to make sense of
+`L(1, ψ)`; this is the deepest missing mathlib ingredient: as of
+2026-07-23 the pin has per-class ideal counting only as a plain limit,
+no power-saving error term, no Euler product, no Hecke L-series). -/
+theorem tsum_rpow_neg_natCard_quotient_prime_and_map_zeta_eq_pow_le_tsum_add
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (σ τ : E ≃ₐ[F] E) :
+    ∃ B : ℝ≥0∞, B ≠ ⊤ ∧ ∀ s : ℝ, 1 < s →
+      (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          σ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) ≤
+      (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          τ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) + B :=
+  sorry
+
 open IsDedekindDomain in
 /-- **Equidistribution of degree-one primes over the cyclotomic
-congruence classes** (sorry node) — the `L`-function half of Deuring's
-route: for a cyclotomic extension `E = F(ζ_ℓ)` (`ℓ` prime) and ANY
-`τ ∈ Gal(E/F)`, the full degree-one prime sum away from `ℓ` is
-carried, up to an error bounded uniformly in `s > 1`, by `ℓ` times the
-sub-sum over the congruence class of `τ` (the places with
-`τ ζ = ζ ^ #(𝓞 F / P)`). Both sums are `ℝ≥0∞`-valued, so no
-summability side conditions appear, and the bounded error is additive
-— no `ENNReal` subtraction.
+congruence classes** — the `L`-function half of Deuring's route: for a
+cyclotomic extension `E = F(ζ_ℓ)` (`ℓ` prime) and ANY `τ ∈ Gal(E/F)`,
+the full degree-one prime sum away from `ℓ` is carried, up to an error
+bounded uniformly in `s > 1`, by `ℓ` times the sub-sum over the
+congruence class of `τ` (the places with `τ ζ = ζ ^ #(𝓞 F / P)`). Both
+sums are `ℝ≥0∞`-valued, so no summability side conditions appear, and
+the bounded error is additive — no `ENNReal` subtraction.
 
-Intended proof: with `H = Gal(E/F) ⊆ (ZMod ℓ)ˣ` (via the action on
-`ζ`) and `a` the exponent of `τ`, every degree-one `P` with
-`#(𝓞 F / P) ≠ ℓ` has `#(𝓞 F / P) mod ℓ ∈ H` (a Frobenius at any prime
-`Q` of `𝓞 E` above `P` exists by `IsArithFrobAt.exists_of_isInvariant`
-and acts on `ζ` by `ζ ↦ ζ ^ #(𝓞 F / P)` by
-`AlgHom.IsArithFrobAt.apply_of_pow_eq_one`, as in the proof of
-`infinite_setOf_isArithFrobAt_zpowers`); orthogonality for the
-Dirichlet characters `χ mod ℓ` then gives `(ℓ - 1) · ∑_{class of a} =
-∑_χ χ(a)⁻¹ S_χ(s)` with `S_χ(s) = ∑_P χ(N P) N P ^ (-s)`; the
-`m = (ℓ - 1)/|H| ≥ 1` characters trivial on `H` each contribute
-`S_χ = S_1` exactly (and `χ(a) = 1` since `a ∈ H`), while each `χ`
-nontrivial on `H` has `S_χ` bounded as `s → 1⁺` — the `L(1, χ) ≠ 0`
-content, classically from the factorization `ζ_E(s) = ∏_ψ L(s, ψ)`
-over the characters `ψ` of `H` (up to finitely many Euler factors) and
-the SIMPLE pole of `ζ_E` at `s = 1` (for `ψ` nontrivial the partial
-sums of the coefficients of `L(s, ψ)` need a power-saving error term —
-Hecke's ray-class lattice-point count, Lang ANT VI §3 — to make sense
-of `L(1, ψ)`; this is the deepest missing mathlib ingredient). Hence
-`S_1 ≤ (ℓ/m) · ∑_{class} + bounded ≤ ℓ · ∑_{class} + bounded`. -/
+DERIVED from the pairwise-comparison leaf
+`tsum_rpow_neg_natCard_quotient_prime_and_map_zeta_eq_pow_le_tsum_add`
+(the remaining analytic sorry node; see its docstring) by Frobenius
+bookkeeping, all proven: every degree-one `P` with `#(𝓞 F / P) ≠ ℓ`
+lies in the congruence class of some `σ ∈ Gal(E/F)`
+(`exists_algEquiv_map_zeta_eq_pow_natCard`), so the full sum is at most
+`∑_{σ ∈ Gal(E/F)}` of the class sums (`ENNReal.tsum_iUnion_le` —
+subadditivity suffices, no disjointness needed for an upper bound);
+each class sum is at most the class sum of `τ` plus a bounded error
+(the leaf), and there are at most `#(ZMod ℓ)ˣ = ℓ - 1 ≤ ℓ` classes
+(`IsPrimitiveRoot.autToPow_injective`). -/
 theorem tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add
     {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
     [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
@@ -903,8 +1087,77 @@ theorem tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add
       (ℓ : ℝ≥0∞) * (∑' P : {P : HeightOneSpectrum (𝓞 F) //
           (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
           τ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)},
-        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) + B :=
-  sorry
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) + B := by
+  classical
+  haveI : NeZero ℓ := ⟨hℓ.pos.ne'⟩
+  haveI : FiniteDimensional F E := IsCyclotomicExtension.finiteDimensional {ℓ} F E
+  -- the pairwise-comparison leaf, applied to each congruence class
+  have hcompare := fun σ : E ≃ₐ[F] E =>
+    tsum_rpow_neg_natCard_quotient_prime_and_map_zeta_eq_pow_le_tsum_add
+      hℓ hζ σ τ
+  choose Bf hBfne hBfle using hcompare
+  refine ⟨∑ σ : E ≃ₐ[F] E, Bf σ,
+    ENNReal.sum_ne_top.mpr fun σ _ => hBfne σ, ?_⟩
+  intro s hs
+  -- the Galois group has at most `ℓ` elements
+  have hcardGal : (Fintype.card (E ≃ₐ[F] E) : ℝ≥0∞) ≤ (ℓ : ℝ≥0∞) := by
+    have h1 : Fintype.card (E ≃ₐ[F] E) ≤ ℓ :=
+      calc Fintype.card (E ≃ₐ[F] E)
+          ≤ Fintype.card (ZMod ℓ)ˣ :=
+            Fintype.card_le_of_injective _ (hζ.autToPow_injective F)
+        _ = Nat.totient ℓ := ZMod.card_units_eq_totient ℓ
+        _ ≤ ℓ := Nat.totient_le ℓ
+    exact_mod_cast h1
+  -- Frobenius existence: the degree-one primes are covered by the classes
+  have hcover : {P : HeightOneSpectrum (𝓞 F) |
+      (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+      Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ} ⊆
+      ⋃ σ : E ≃ₐ[F] E, {P : HeightOneSpectrum (𝓞 F) |
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        σ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)} := by
+    rintro P ⟨hP, hPne⟩
+    obtain ⟨σ, hσ⟩ := exists_algEquiv_map_zeta_eq_pow_natCard hℓ hζ P hP hPne
+    exact Set.mem_iUnion.mpr ⟨σ, hP, hσ⟩
+  calc (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s))
+      ≤ ∑' P : (⋃ σ : E ≃ₐ[F] E, {P : HeightOneSpectrum (𝓞 F) |
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          σ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)}),
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) :=
+        ENNReal.tsum_mono_subtype
+          (fun P : HeightOneSpectrum (𝓞 F) =>
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s)) hcover
+    _ ≤ ∑ σ : E ≃ₐ[F] E, ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          σ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) :=
+        ENNReal.tsum_iUnion_le
+          (fun P : HeightOneSpectrum (𝓞 F) =>
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s))
+          (fun σ : E ≃ₐ[F] E => {P : HeightOneSpectrum (𝓞 F) |
+            (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+            σ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)})
+    _ ≤ ∑ σ : E ≃ₐ[F] E, ((∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          τ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) +
+          Bf σ) :=
+        Finset.sum_le_sum fun σ _ => hBfle σ s hs
+    _ = Fintype.card (E ≃ₐ[F] E) •
+          (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+            (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+            τ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)},
+          (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) +
+          ∑ σ : E ≃ₐ[F] E, Bf σ := by
+        rw [Finset.sum_add_distrib, Finset.sum_const, Finset.card_univ]
+    _ ≤ (ℓ : ℝ≥0∞) * (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          τ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) +
+          ∑ σ : E ≃ₐ[F] E, Bf σ := by
+        rw [nsmul_eq_mul]
+        gcongr
 
 open IsDedekindDomain in
 /-- **Divergence of the Dirichlet sum over a cyclotomic congruence class
@@ -1327,42 +1580,6 @@ theorem infinite_setOf_isArithFrobAt_zpowers
       have h6 := hfrob' (algebraMap (𝓞 E) (𝓞 N) x)
       rw [hQunder] at h6
       exact h6
-
-/-- The Galois group of a Galois extension of number fields acts
-faithfully on the ring of integers: two automorphisms agreeing on `𝓞 E`
-agree on `E = Frac(𝓞 E)`. -/
-instance {F E : Type*} [Field F] [Field E] [NumberField E] [Algebra F E] :
-    FaithfulSMul (E ≃ₐ[F] E) (𝓞 E) where
-  eq_of_smul_eq_smul {σ τ} h := by
-    refine AlgEquiv.ext fun e => ?_
-    obtain ⟨x, y, _, rfl⟩ := IsFractionRing.div_surjective (A := 𝓞 E) e
-    have hcoe : ∀ (g : E ≃ₐ[F] E) (a : 𝓞 E),
-        g (algebraMap (𝓞 E) E a) = algebraMap (𝓞 E) E (g • a) := fun _ _ => rfl
-    rw [map_div₀, map_div₀, hcoe σ x, hcoe σ y, hcoe τ x, hcoe τ y, h x, h y]
-
-/-- The fixed points of the Galois action on `𝓞 E` are exactly the image
-of `𝓞 F`, for a Galois extension `E/F` of number fields (general form of
-the intermediate-field instance above). -/
-instance {F E : Type*} [Field F] [Field E] [NumberField E] [Algebra F E]
-    [IsGalois F E] : Algebra.IsInvariant (𝓞 F) (𝓞 E) (E ≃ₐ[F] E) where
-  isInvariant x hx := by
-    have hfixE : ∀ e : E ≃ₐ[F] E, e • (x : E) = (x : E) := fun e =>
-      congrArg (algebraMap (𝓞 E) E) (hx e)
-    obtain ⟨y, hy⟩ := Algebra.IsInvariant.isInvariant (A := F)
-      (G := E ≃ₐ[F] E) (x : E) hfixE
-    have hyint : IsIntegral ℤ y := by
-      rw [← isIntegral_algebraMap_iff (B := E) (algebraMap F E).injective, hy]
-      exact x.2
-    exact ⟨⟨y, hyint⟩, NumberField.RingOfIntegers.ext hy⟩
-
-/-- The Galois group of a Galois extension of number fields is a Galois
-group for the extension of rings of integers (with respect to the ambient
-project action on `𝓞 E`). -/
-instance {F E : Type*} [Field F] [Field E] [NumberField E] [Algebra F E]
-    [IsGalois F E] : IsGaloisGroup (E ≃ₐ[F] E) (𝓞 F) (𝓞 E) where
-  faithful := inferInstance
-  commutes := inferInstance
-  isInvariant := inferInstance
 
 open IsDedekindDomain in
 /-- **Finiteness of ramified places**: for a finite Galois extension `E/F`
