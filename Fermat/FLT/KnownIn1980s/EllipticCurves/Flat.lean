@@ -3145,22 +3145,62 @@ theorem exists_algEquiv_of_algHom_equiv
     ∃ e : B ≃ₐ[K] A, ∀ φ : A →ₐ[K] Ksep, g φ = φ.comp e.toAlgHom :=
   sorry
 
-/-- **Grothendieck full faithfulness, Hopf upgrade** (sorry node; curve-free —
-the coalgebra-compatibility core of the comparison leaf
+set_option backward.isDefEq.respectTransparency false in
+omit [DecidableEq Ksep] in
+/-- **Points separate a finite étale algebra** (PROVEN 2026-07-23; glue for the
+Hopf-upgrade leaf `exists_bialgEquiv_of_algEquiv_conv`): an element of a finite
+étale `K`-algebra killed by every `Kˢᵉᵖ`-point is zero. The algebra is reduced
+(unramified over a field) and Artinian, so a nonzero element avoids some prime;
+that prime is maximal, its residue field is a finite unramified — hence
+separable — extension of `K`, which embeds into `Kˢᵉᵖ`, and the composite
+point does not kill the element. -/
+theorem eq_zero_of_forall_algHom_eq_zero
+    (A : Type*) [CommRing A] [Algebra K A] [Module.Finite K A] [Algebra.Etale K A]
+    (x : A) (hx : ∀ φ : A →ₐ[K] Ksep, φ x = 0) : x = 0 := by
+  classical
+  haveI : IsSepClosed Ksep := IsSepClosure.sep_closed K
+  haveI : IsReduced A := Algebra.FormallyUnramified.isReduced_of_field K A
+  haveI : IsArtinianRing A := IsArtinianRing.of_finite K A
+  by_contra hx0
+  have hnil : x ∉ nilradical A := by
+    rw [nilradical_eq_zero]
+    simpa using hx0
+  obtain ⟨p, hp, hxp⟩ : ∃ p : Ideal A, Ideal.IsPrime p ∧ x ∉ p := by
+    by_contra hall
+    push Not at hall
+    exact hnil (nilradical_eq_sInf A ▸ Submodule.mem_sInf.mpr
+      fun q hq => hall q hq)
+  haveI : Ideal.IsPrime p := hp
+  haveI : Ideal.IsMaximal p := IsArtinianRing.isMaximal_of_isPrime p
+  letI : Field (A ⧸ p) := Ideal.Quotient.field p
+  haveI : Algebra.IsSeparable K (A ⧸ p) :=
+    Algebra.FormallyUnramified.isSeparable K (A ⧸ p)
+  have hcontra := hx ((IsSepClosed.lift : (A ⧸ p) →ₐ[K] Ksep).comp
+    (Ideal.Quotient.mkₐ K p))
+  rw [AlgHom.comp_apply] at hcontra
+  have hker : Ideal.Quotient.mkₐ K p x = 0 :=
+    (IsSepClosed.lift : (A ⧸ p) →ₐ[K] Ksep).toRingHom.injective
+      (by simpa using hcontra)
+  exact hxp (by rwa [Ideal.Quotient.mkₐ_eq_mk, Ideal.Quotient.eq_zero_iff_mem] at hker)
+
+omit [DecidableEq Ksep] in
+/-- **Grothendieck full faithfulness, Hopf upgrade** (PROVEN 2026-07-23;
+curve-free — the coalgebra-compatibility core of the comparison leaf
 `exists_bialgEquiv_of_torsion_points_equiv`): a `K`-algebra isomorphism of
 finite étale Hopf `K`-algebras whose composition action on `Kˢᵉᵖ`-points
 respects the convolution unit (`hone`) and the convolution product (`hmul`) is
 automatically compatible with the comultiplications and counits, so the two
-Hopf algebras are isomorphic as bialgebras. Intended proof: points separate a
-finite étale `K`-algebra (`A ⊗[K] Kˢᵉᵖ` is split étale, so the joint kernel of
-all `φ : A →ₐ[K] Kˢᵉᵖ` is trivial), and the `Kˢᵉᵖ`-points of `HK₂ ⊗[K] HK₂`
-are exactly the pairs `Algebra.TensorProduct.lift φ ψ` of points of `HK₂`
-(`Algebra.TensorProduct.liftEquiv`, images commute in the commutative `Kˢᵉᵖ`);
-testing `comul ∘ e` against `(e ⊗ e) ∘ comul` on such a pair is, after
-unfolding `WithConv.AlgHom.convMul_def`, exactly the hypothesis `hmul`, and
-testing the counits against the unique point of `K` is `hone`; conclude with
-`BialgEquiv` built on `e.symm`. (The antipode needs no separate check: `≃ₐc`
-is a bialgebra equivalence, and antipodes are automatically preserved.) -/
+Hopf algebras are isomorphic as bialgebras. Proof: points separate a finite
+étale `K`-algebra (`eq_zero_of_forall_algHom_eq_zero`, applied to
+`HK₂ ⊗[K] HK₂`, which is finite étale by base change and transitivity), every
+point of `HK₂ ⊗[K] HK₂` is the `Algebra.TensorProduct.lift` of its two
+restrictions (images commute in the commutative `Kˢᵉᵖ`); testing `comul ∘ e⁻¹`
+against `(e⁻¹ ⊗ e⁻¹) ∘ comul` on such a point is, after unfolding
+`AlgHom.convMul_apply`, exactly the hypothesis `hmul` transported
+through `e⁻¹`, and testing the counits is `hone`; conclude with
+`BialgEquiv.ofAlgEquiv` on `e.symm`. (The antipode needs no separate check:
+`≃ₐc` is a bialgebra equivalence, and antipodes are automatically
+preserved.) -/
 theorem exists_bialgEquiv_of_algEquiv_conv
     (HK₁ : Type*) [CommRing HK₁] [HopfAlgebra K HK₁]
     [Module.Finite K HK₁] [Algebra.Etale K HK₁]
@@ -3173,8 +3213,116 @@ theorem exists_bialgEquiv_of_algEquiv_conv
       ((WithConv.toConv φ * WithConv.toConv ψ).ofConv).comp e.toAlgHom =
         (WithConv.toConv (φ.comp e.toAlgHom) *
           WithConv.toConv (ψ.comp e.toAlgHom)).ofConv) :
-    Nonempty (HK₁ ≃ₐc[K] HK₂) :=
-  sorry
+    Nonempty (HK₁ ≃ₐc[K] HK₂) := by
+  classical
+  -- the underlying algebra isomorphism of the bialgebra equivalence
+  set f : HK₁ ≃ₐ[K] HK₂ := e.symm with hf
+  have hfe : (f.toAlgHom).comp e.toAlgHom = AlgHom.id K HK₂ := by
+    apply AlgHom.ext
+    intro b
+    simp [hf]
+  -- composing a point of `HK₂` back through `e` then `f` is the identity
+  have hcomp_fe : ∀ χ : HK₂ →ₐ[K] Ksep,
+      (χ.comp f.toAlgHom).comp e.toAlgHom = χ := by
+    intro χ
+    rw [AlgHom.comp_assoc, hfe, AlgHom.comp_id]
+  -- the `e.symm`-transport of `hmul`
+  have hmul' : ∀ φ ψ : HK₂ →ₐ[K] Ksep,
+      (WithConv.toConv (φ.comp f.toAlgHom) *
+        WithConv.toConv (ψ.comp f.toAlgHom)).ofConv =
+        ((WithConv.toConv φ * WithConv.toConv ψ).ofConv).comp f.toAlgHom := by
+    intro φ ψ
+    have h1 := hmul (φ.comp f.toAlgHom) (ψ.comp f.toAlgHom)
+    rw [hcomp_fe φ, hcomp_fe ψ] at h1
+    calc (WithConv.toConv (φ.comp f.toAlgHom) *
+        WithConv.toConv (ψ.comp f.toAlgHom)).ofConv
+        = (((WithConv.toConv (φ.comp f.toAlgHom) *
+            WithConv.toConv (ψ.comp f.toAlgHom)).ofConv).comp e.toAlgHom).comp
+              f.toAlgHom := by
+          rw [AlgHom.comp_assoc]
+          rw [show e.toAlgHom.comp f.toAlgHom = AlgHom.id K HK₁ from
+            AlgHom.ext fun a => by simp [hf]]
+          rw [AlgHom.comp_id]
+      _ = ((WithConv.toConv φ * WithConv.toConv ψ).ofConv).comp f.toAlgHom := by
+          rw [h1]
+  -- étale-ness and finiteness of `HK₂ ⊗[K] HK₂`
+  haveI hEt2 : Algebra.Etale K (HK₂ ⊗[K] HK₂) :=
+    Algebra.Etale.comp K HK₂ (HK₂ ⊗[K] HK₂)
+  -- counit compatibility, from `hone` and injectivity of `K → Kˢᵉᵖ`
+  have hcounit : (Bialgebra.counitAlgHom K HK₂).comp (f : HK₁ →ₐ[K] HK₂) =
+      Bialgebra.counitAlgHom K HK₁ := by
+    apply AlgHom.ext
+    intro a
+    have h1 := AlgHom.congr_fun hone (f a)
+    have h2 : ((1 : WithConv (HK₁ →ₐ[K] Ksep)).ofConv).comp e.toAlgHom (f a) =
+        algebraMap K Ksep (Coalgebra.counit (e (f a))) := rfl
+    have h3 : ((1 : WithConv (HK₂ →ₐ[K] Ksep)).ofConv) (f a) =
+        algebraMap K Ksep (Coalgebra.counit (f a)) := rfl
+    rw [h2, h3] at h1
+    have h4 : e (f a) = a := by simp [hf]
+    rw [h4] at h1
+    exact ((algebraMap K Ksep).injective h1).symm
+  -- comultiplication compatibility, tested against all points of `HK₂ ⊗ HK₂`
+  have hcomul : (Algebra.TensorProduct.map (f : HK₁ →ₐ[K] HK₂)
+      (f : HK₁ →ₐ[K] HK₂)).comp (Bialgebra.comulAlgHom K HK₁) =
+      (Bialgebra.comulAlgHom K HK₂).comp (f : HK₁ →ₐ[K] HK₂) := by
+    apply AlgHom.ext
+    intro a
+    -- separation: it suffices to test against every point `χ`
+    have hsep := eq_zero_of_forall_algHom_eq_zero K Ksep (HK₂ ⊗[K] HK₂)
+      ((Algebra.TensorProduct.map (f : HK₁ →ₐ[K] HK₂)
+          (f : HK₁ →ₐ[K] HK₂)).comp (Bialgebra.comulAlgHom K HK₁) a -
+        (Bialgebra.comulAlgHom K HK₂).comp (f : HK₁ →ₐ[K] HK₂) a)
+    rw [sub_eq_zero] at hsep
+    apply hsep
+    intro χ
+    rw [map_sub, sub_eq_zero]
+    -- decompose the point `χ` into its two restrictions
+    set φ := χ.comp Algebra.TensorProduct.includeLeft with hφ
+    set ψ := χ.comp (Algebra.TensorProduct.includeRight :
+      HK₂ →ₐ[K] HK₂ ⊗[K] HK₂) with hψ
+    have hχ : χ = Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _ := by
+      apply Algebra.TensorProduct.ext
+      · apply AlgHom.ext
+        intro b
+        simp [hφ]
+      · apply AlgHom.ext
+        intro b
+        simp [hψ]
+    -- the left side is the convolution of the transported points, at `a`
+    have hleft : χ ((Algebra.TensorProduct.map (f : HK₁ →ₐ[K] HK₂)
+        (f : HK₁ →ₐ[K] HK₂)).comp (Bialgebra.comulAlgHom K HK₁) a) =
+        ((WithConv.toConv (φ.comp f.toAlgHom) *
+          WithConv.toConv (ψ.comp f.toAlgHom)).ofConv) a := by
+      rw [hχ]
+      have hlift : (Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _).comp
+          ((Algebra.TensorProduct.map (f : HK₁ →ₐ[K] HK₂)
+            (f : HK₁ →ₐ[K] HK₂))) =
+          Algebra.TensorProduct.lift (φ.comp f.toAlgHom) (ψ.comp f.toAlgHom)
+            (fun _ _ => Commute.all _ _) := by
+        apply Algebra.TensorProduct.ext
+        · apply AlgHom.ext
+          intro b
+          simp
+        · apply AlgHom.ext
+          intro b
+          simp
+      rw [AlgHom.comp_apply, ← AlgHom.comp_apply (Algebra.TensorProduct.lift φ ψ _),
+        hlift]
+      rw [AlgHom.convMul_apply]
+      rfl
+    -- the right side is the convolution of the original points, at `f a`
+    have hright : χ ((Bialgebra.comulAlgHom K HK₂).comp (f : HK₁ →ₐ[K] HK₂) a) =
+        (((WithConv.toConv φ * WithConv.toConv ψ).ofConv).comp f.toAlgHom) a := by
+      rw [hχ]
+      rw [AlgHom.comp_apply]
+      rw [show (Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _)
+          ((Bialgebra.comulAlgHom K HK₂) ((f : HK₁ →ₐ[K] HK₂) a)) =
+        ((WithConv.toConv φ * WithConv.toConv ψ).ofConv) ((f : HK₁ →ₐ[K] HK₂) a) from
+          (AlgHom.convMul_apply _ _ _).symm]
+      rfl
+    rw [hleft, hright, hmul' φ ψ]
+  exact ⟨BialgEquiv.ofAlgEquiv f hcounit hcomul⟩
 
 set_option backward.isDefEq.respectTransparency false in
 omit [IsDomain R] [IsDiscreteValuationRing R] [E.IsElliptic]
@@ -3273,22 +3421,62 @@ torsion group scheme sits in the kernel of reduction, outside the affine
 chart), and the integral closure of `R` in the torsion algebra is in general
 not a Hopf algebra (for `μ_p` over `ℤ_p` the normalization has a special fibre
 with two connected components of lengths `1` and `p - 1`, which is not a group
-scheme). The intended construction is the schematic one of [Katz–Mazur,
-*Arithmetic moduli of elliptic curves*, Thm 2.3.1]: good reduction makes the
-minimal Weierstrass equation an elliptic scheme `𝓔` over `R`; multiplication
-by `p ^ k` on `𝓔` is finite locally free of degree `p ^ (2k)` — the arithmetic
-input being that `(Φ n).eval X - ξ * (ΨSq n).eval X` is monic of degree `n²`
-over `R[ξ]` together with the fibrewise coprimality `isCoprime_Φ_ΨSq` (proven,
-`Fermat.FLT.EllipticCurve.PhiPsiCoprime`) — and `H` is the affine algebra of
-its kernel `𝓔[p ^ k]`, glued from the division-polynomial chart and a
-formal-group chart `R[[T]]/([p ^ k](T))` at the origin; étaleness of the
-generic fibre is Cartier's theorem, and its points match the torsion by the
-division-polynomial dictionary on the affine chart. For the Frey curve
-application (`R = ℤ_(p)`, `K = ℚ`, `k = 1`) the same object is more concretely
-the kernel of `[p]` on the good-reduction Weierstrass model; the `k = 1`
-specialization admits no genuine shortcut past the origin chart, because the
-connected component of `𝓔[p]` (where the model is NOT étale) is present for
-every `k`. -/
+scheme). The mathematical content is [Katz–Mazur, *Arithmetic moduli of
+elliptic curves*, Thm 2.3.1]: `H` is the affine algebra of the kernel
+`𝓔[p ^ k]` of multiplication by `p ^ k` on the elliptic scheme `𝓔` of the
+minimal (good-reduction) Weierstrass equation.
+
+SCHEME-FREE CONSTRUCTION ROADMAP (worked out 2026-07-23, for the next owner —
+a Hopf-ORDER presentation of the same object; `𝓔[p ^ k]` is flat, so it is
+the schematic closure of its generic fibre, so `H` is the image of the
+functions on any affine open `U ⊇ 𝓔[p ^ k]` inside the étale generic-fibre
+algebra):
+
+1. Carrier. Realize the generic fibre concretely as the
+   `Gal(L/K)`-equivariant functions `V → L` of the `GaloisEtalePackage`
+   section, `V := E(Kˢᵉᵖ)[p ^ k]` (finite by `torsion_finite_of_ne_zero`),
+   `L` a finite Galois splitting subextension.
+2. Avoiding denominator. Choose `h ∈ R[X]` monic of degree `d ≥ 2` whose
+   reduction is coprime to the reduced affine-torsion locus: `h(x(P))` is a
+   unit of the valuation ring for every torsion point `P` with integral
+   abscissa (possible because the residue field admits irreducibles of
+   arbitrarily large degree avoiding the finitely many torsion abscissa
+   residues; for non-integral abscissas `v(h(x(P))) = d·v(x(P)) < 0`
+   automatically). Then `U := 𝓔 ∖ V(h ∘ x)` contains the whole kernel,
+   including the origin.
+3. Generators. `H` := the `R`-subalgebra of equivariant functions generated
+   by the finitely many `g_{a,b} : P ↦ x(P)^a y(P)^b / h(x(P))^m` (with
+   `2a + 3b ≤ 2dm`, `b ≤ 1`, value `0`-or-limit at `P = 0`; these are the
+   monomial sections of `Γ(U)` restricted to the kernel). Each `g_{a,b}` has
+   integral values at every point (choice of `h`), hence is integral over
+   `R`: `H` is module-finite; it is torsion-free inside a `K`-space, hence
+   FREE over the DVR `R`: finite flat.
+4. Spanning. `K · H` is a `K`-subalgebra of the étale algebra separating the
+   `Kˢᵉᵖ`-points (the `g_{a,b}` separate affine torsion points from each
+   other and from the origin), and a separating subalgebra of a finite étale
+   algebra is everything (both are étale — subalgebras of separable algebras
+   are separable — so `dim = #points` on both sides, restriction of points is
+   injective by separation and surjective by integrality lifting).
+5. Hopf-closure — THE Katz–Mazur core: `Δ g_{a,b} ∈ H ⊗[R] H`, i.e. the
+   two-variable functions `(P, Q) ↦ g_{a,b}(P + Q)` are `R`-polynomial in
+   `g_{a',b'}(P), g_{a'',b''}(Q)`. This is the integrality of the addition
+   law relative to `h` on the kernel — the point where the division-polynomial
+   arithmetic enters: the addition formulas have denominators
+   `(x(P) - x(Q))²` resp. `ψ²`, controlled on the torsion locus by the monic
+   `(Φ n).eval X - ξ * (ΨSq n).eval X` (degree `n²` over `R[ξ]`) and the
+   fibrewise coprimality `isCoprime_Φ_ΨSq` (proven,
+   `Fermat.FLT.EllipticCurve.PhiPsiCoprime`). Counit and antipode closure are
+   immediate (`ε g = g(0) ∈ R`, `S g = g ∘ (-1)` is again a generator up to
+   the curve relation). Étaleness of the generic fibre is by construction
+   (step 4 identifies it with the étale package); the points identification
+   and its equivariance are the evaluation dictionary of the
+   `GaloisEtalePackage` section.
+
+For the Frey curve application (`R = ℤ_(p)`, `K = ℚ`, `k = 1`) the same
+object is the kernel of `[p]` on the good-reduction Weierstrass model; the
+`k = 1` specialization admits no genuine shortcut past the origin chart,
+because the connected component of `𝓔[p]` (where the model is NOT étale) is
+present for every `k`. -/
 theorem WeierstrassCurve.exists_torsion_flat_model_of_good_reduction_prime_pow
     (p : ℕ) (hp : p.Prime) (hpu : ¬IsUnit (p : R)) (k : ℕ) (hk : k ≠ 0)
     (hpK : (p : K) ≠ 0) :
