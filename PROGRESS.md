@@ -32,7 +32,7 @@ Second symbol: `·` normal, `🟪` currently being worked on (from the
 entries file). To add/remove/annotate a node, edit
 `progress-entries.json` and re-run the generator.
 
-**Sorried declarations (compiler-counted): 34** — `infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow`, `exists_weilPairing_mu`, `exists_torsion_etale_package_of_eqChar`, `kernel_prime_pow_torsion_of_eqChar`, `exists_finite_flat_hopf_form_of_good_reduction_prime_pow`, `exists_hopfAlgebra_galoisEquivariantAlgebra`, `exists_finite_etale_algebra_form_of_inertia_fixes`, `exists_finite_flat_hopf_form_of_etale_algebra_form`, `torsionFlatPackage_localization_of_packages`, `exists_galoisModulePackage_of_finiteQuotient`, `torsionFlatPackage_of_nonsplit_adic`, `mazur_point_order`, `exists_quotient_isogeny`, `exists_etale_line_of_good_of_inertia_stable_line`, `not_two_twelve_torsion`, `not_two_ten_torsion`, `exists_hardlyRamified_integral_realizations`, `exists_finiteDimensional_trace_field`, `exists_realizations_at_two`, `quotCharacter_inertia_three_dichotomy`, `exists_splitting_scalar_of_quot_ramified`, `serre_elimination_dihedral_ray_class`, `discr_bound_of_kernel_field`, `odlyzko_bound_totallyComplex`, `inertia_eq_bot_of_forall_localInertia_restrictNormalHom`, `residual_twist_eq_cyclotomicCharacterModL`, `trivial_component_vanishes_on_localInertia_at_three`, `omega_defect_vanishes_on_cyclotomicKernel`, `hom_vanishes_on_localInertia_at_two`, `nonempty_ringEquiv_mvPowerSeries_powerSeries`, `exists_isWeaklyUniversal`, `exists_isWeaklyUniversal_isTraceGenerated_of_isWeaklyUniversal`, `moduleFinite_of_isWeaklyUniversal_isTraceGenerated`, `exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated`
+**Sorried declarations (compiler-counted): 35** — `tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add`, `exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne`, `exists_weilPairing_mu`, `exists_torsion_etale_package_of_eqChar`, `kernel_prime_pow_torsion_of_eqChar`, `exists_finite_flat_hopf_form_of_good_reduction_prime_pow`, `exists_hopfAlgebra_galoisEquivariantAlgebra`, `exists_finite_etale_algebra_form_of_inertia_fixes`, `exists_finite_flat_hopf_form_of_etale_algebra_form`, `torsionFlatPackage_localization_of_packages`, `exists_galoisModulePackage_of_finiteQuotient`, `torsionFlatPackage_of_nonsplit_adic`, `mazur_point_order`, `exists_quotient_isogeny`, `exists_etale_line_of_good_of_inertia_stable_line`, `not_two_twelve_torsion`, `not_two_ten_torsion`, `exists_hardlyRamified_integral_realizations`, `exists_finiteDimensional_trace_field`, `exists_realizations_at_two`, `quotCharacter_inertia_three_dichotomy`, `exists_splitting_scalar_of_quot_ramified`, `serre_elimination_dihedral_ray_class`, `discr_bound_of_kernel_field`, `odlyzko_bound_totallyComplex`, `inertia_eq_bot_of_forall_localInertia_restrictNormalHom`, `residual_twist_eq_cyclotomicCharacterModL`, `trivial_component_vanishes_on_localInertia_at_three`, `omega_defect_vanishes_on_cyclotomicKernel`, `hom_vanishes_on_localInertia_at_two`, `nonempty_ringEquiv_mvPowerSeries_powerSeries`, `exists_isWeaklyUniversal`, `exists_isWeaklyUniversal_isTraceGenerated_of_isWeaklyUniversal`, `moduleFinite_of_isWeaklyUniversal_isTraceGenerated`, `exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated`
 
 - ✅· `fermat_last_theorem`
     - ✅· `fermatLastTheoremFor_of_five_le`
@@ -57,7 +57,9 @@ entries file). To add/remove/annotate a node, edit
                                             - ✅· `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj`
                                                 - ✅· `infinite_setOf_isArithFrobAt`
                                                     - ✅· `infinite_setOf_isArithFrobAt_zpowers`
-                                                        - ❌🟪 `infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow`
+                                                        - ✅· `infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow`
+                                                            - ❌🟪 `exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne`
+                                                            - ❌🟪 `tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add`
                             - ✅· `FreyPackage.exists_quotient_curve_point`
                                 - ❌🟪 `exists_quotient_isogeny`
             - ✅· `WeierstrassCurve.mazur_torsion_bound`
@@ -72,7 +74,9 @@ entries file). To add/remove/annotate a node, edit
                                 - ✅· `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj`
                                     - ✅· `infinite_setOf_isArithFrobAt`
                                         - ✅· `infinite_setOf_isArithFrobAt_zpowers`
-                                            - ❌🟪 `infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow`
+                                            - ✅· `infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow`
+                                                - ❌🟪 `exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne`
+                                                - ❌🟪 `tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add`
                     - ❌🟪 `mazur_point_order`
                     - ❌🟪 `not_two_ten_torsion`
                     - ❌🟪 `not_two_twelve_torsion`
@@ -90,7 +94,9 @@ entries file). To add/remove/annotate a node, edit
                                     - ✅· `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj`
                                         - ✅· `infinite_setOf_isArithFrobAt`
                                             - ✅· `infinite_setOf_isArithFrobAt_zpowers`
-                                                - ❌🟪 `infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow`
+                                                - ✅· `infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow`
+                                                    - ❌🟪 `exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne`
+                                                    - ❌🟪 `tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add`
                 - ✅· `FreyCurve.torsion_isFlat`
                     - ✅· `FreyCurve.torsion_isFlat_of_good`
                         - ✅· `WeierstrassCurve.isFlatAt_of_hasGoodReduction`
@@ -210,7 +216,9 @@ entries file). To add/remove/annotate a node, edit
                             - ✅· `GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj`
                                 - ✅· `infinite_setOf_isArithFrobAt`
                                     - ✅· `infinite_setOf_isArithFrobAt_zpowers`
-                                        - ❌🟪 `infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow`
+                                        - ✅· `infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow`
+                                            - ❌🟪 `exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne`
+                                            - ❌🟪 `tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add`
 
 ## Canonical frontier (2026-07-16, session 4 close — audit-verified)
 

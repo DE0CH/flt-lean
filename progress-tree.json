@@ -250,7 +250,7 @@
   "GaloisRepresentation.IsHardlyRamified.exists_finiteDimensional_coeff_field": "✅",
   "GaloisRepresentation.IsHardlyRamified.exists_realizations_of_eigensystem": "✅",
   "exists_finiteQuotient_galoisModule_etale_package": "✅",
-  "GaloisRepresentation.infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow": "❌",
+  "GaloisRepresentation.infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow": "✅",
   "GaloisRepresentation.exists_isWeaklyUniversal": "❌",
   "GaloisRepresentation.exists_isWeaklyUniversal_isTraceGenerated_of_isWeaklyUniversal": "❌",
   "GaloisRepresentation.exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated": "❌",
@@ -281,7 +281,9 @@
   "exists_finite_flat_hopf_form_of_etale_algebra_form": "❌",
   "WeierstrassCurve.torsionFlatPackage_localization_of_packages": "❌",
   "exists_galoisModulePackage_of_finiteQuotient": "❌",
-  "WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic": "❌"
+  "WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic": "❌",
+  "GaloisRepresentation.exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne": "❌",
+  "GaloisRepresentation.tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add": "❌"
  },
  "children": {
   "fermatLastTheoremThree": [],
@@ -1243,7 +1245,10 @@
   "exists_finiteQuotient_galoisModule_etale_package": [
    "exists_hopfAlgebra_galoisEquivariantAlgebra"
   ],
-  "GaloisRepresentation.infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow": [],
+  "GaloisRepresentation.infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow": [
+   "GaloisRepresentation.exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne",
+   "GaloisRepresentation.tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add"
+  ],
   "GaloisRepresentation.exists_isWeaklyUniversal": [],
   "GaloisRepresentation.exists_isWeaklyUniversal_isTraceGenerated_of_isWeaklyUniversal": [],
   "GaloisRepresentation.exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated": [],
@@ -1280,13 +1285,16 @@
   "exists_finite_flat_hopf_form_of_etale_algebra_form": [],
   "WeierstrassCurve.torsionFlatPackage_localization_of_packages": [],
   "exists_galoisModulePackage_of_finiteQuotient": [],
-  "WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic": []
+  "WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic": [],
+  "GaloisRepresentation.exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne": [],
+  "GaloisRepresentation.tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add": []
  },
  "roots": [
   "fermat_last_theorem"
  ],
  "sorried": [
-  "GaloisRepresentation.infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow",
+  "GaloisRepresentation.tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add",
+  "GaloisRepresentation.exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne",
   "WeilPairing.exists_weilPairing_mu",
   "WeierstrassCurve.exists_torsion_etale_package_of_eqChar",
   "WeierstrassCurve.kernel_prime_pow_torsion_of_eqChar",

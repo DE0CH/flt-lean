@@ -1583,7 +1583,6 @@
   "name": "infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow",
   "fullname": "GaloisRepresentation.infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow",
   "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
-  "wip": true,
   "text": "`infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow` \u2014 the sole surviving analytic core after the PROVEN field-crossing reduction: for E = F(\u03b6_\u2113) cyclotomic over a number field F, infinitely many degree-one places of F with residue characteristic in a prescribed class mod \u2113 (pure prime counting; pin has the Dedekind-zeta pole, lacks Euler products/Hecke L-functions \u2014 route in the docstring) \u2014 2026-07-23",
   "parent": "GaloisRepresentation.infinite_setOf_isArithFrobAt_zpowers"
  },
@@ -1823,6 +1822,20 @@
   "module": "Fermat.FLT.FreyCurve.Semistable",
   "name": "torsionFlatPackage_of_nonsplit_adic",
   "text": "torsion flat package in the nonsplit adic case",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne",
+  "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
+  "name": "exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne",
+  "text": "divergence of the degree-one prime sum away from \u2113 (Dedekind zeta at s\u21921\u207a)",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add",
+  "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
+  "name": "tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add",
+  "text": "prime sum bounded by \u2113\u00b7(congruence-class sum) + O(1) via character orthogonality",
   "wip": true
  }
 ]
