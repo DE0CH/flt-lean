@@ -1644,33 +1644,137 @@ theorem exists_kernel_field_of_matrixRange {k : Type u} [Finite k] [Field k]
   rw [← hcard1]
   exact ((Nat.card_congr e1.toEquiv).symm).trans (Nat.card_congr e2.toEquiv)
 
-/-- **Complex conjugation at a real place** (sorry node — the
-embedding plumbing of the oddness argument, isolated 2026-07-23; a
-`ρ`-free statement about number fields): a subfield `K ⊆ ℚᵃˡᵍ` that
-is NOT totally complex admits an element `c ∈ Γ ℚ` fixing `K`
-pointwise on which the 3-adic cyclotomic character is `−1`. Intended
-proof: a real infinite place of `K` is induced by an embedding
-`φ : K → ℝ ⊆ ℂ`; extend `φ` to `φ̄ : ℚᵃˡᵍ → ℂ` (`IsAlgClosed.lift`
-over the algebraic extension `K ⊆ ℚᵃˡᵍ`); complex conjugation
-restricts to the (normal) image `φ̄(ℚᵃˡᵍ)`, and its pullback
-`c := φ̄⁻¹ ∘ conj ∘ φ̄ ∈ Γ ℚ` fixes `K` pointwise (`φ(K) ⊆ ℝ`) and is
-an involution moving the primitive cube roots of unity (they are not
-real), so `χ₃(c)² = 1` and `χ₃(c) ≠ 1` in the domain `ℤ_[3]`, forcing
-`χ₃(c) = −1` — the argument of `exists_conj_cyclotomicCharacter_three`
-relative to the place. -/
+/-- **Complex conjugation at a real place** (PROVEN 2026-07-23 — the
+embedding plumbing of the oddness argument; a `ρ`-free statement about
+number fields): a subfield `K ⊆ ℚᵃˡᵍ` that is NOT totally complex
+admits an element `c ∈ Γ ℚ` fixing `K` pointwise on which the 3-adic
+cyclotomic character is `−1`. Proof: a real infinite place of `K` is
+induced by a real embedding `φ : K → ℂ`; extend `φ` to `ψ : ℚᵃˡᵍ → ℂ`
+THROUGH `K` (`IsAlgClosed.lift` over the algebraic extension
+`K ⊆ ℚᵃˡᵍ`); complex conjugation restricts along `ψ` to the (normal)
+image (`AlgEquiv.restrictNormal` with the `ψ`-algebra structure on
+`ℂ`), giving `c ∈ Γ ℚ` with `ψ ∘ c = conj ∘ ψ`; `c` fixes `K`
+pointwise (`ψ(K) = φ(K) ⊆ ℝ`) and is an involution fixing no
+primitive cube root of unity (they are not real), so `χ₃(c)² = 1` and
+`χ₃(c) ≠ 1` in the domain `ℤ_[3]`, forcing `χ₃(c) = −1` — the
+argument of `exists_conj_cyclotomicCharacter_three` relative to the
+place. -/
 theorem exists_conj_fixingSubgroup_of_not_isTotallyComplex
     (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
     (hK : ¬ NumberField.IsTotallyComplex K) :
     ∃ c : Γ ℚ, c ∈ K.fixingSubgroup ∧
       ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 c.toRingEquiv :
-        ℤ_[3]ˣ) : ℤ_[3]) = -1 :=
-  sorry
+        ℤ_[3]ˣ) : ℤ_[3]) = -1 := by
+  haveI h3 : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
+  classical
+  -- a real infinite place of `K` gives a real complex embedding
+  obtain ⟨w, hw⟩ : ∃ w : NumberField.InfinitePlace K, w.IsReal := by
+    rw [NumberField.isTotallyComplex_iff] at hK
+    push Not at hK
+    obtain ⟨w, hw⟩ := hK
+    exact ⟨w, (NumberField.InfinitePlace.isReal_or_isComplex w).resolve_right hw⟩
+  set φ : K →+* ℂ := w.embedding with hφdef
+  have hφreal : ∀ y : K, (starRingEnd ℂ) (φ y) = φ y := by
+    intro y
+    have h1 : NumberField.ComplexEmbedding.IsReal φ :=
+      NumberField.InfinitePlace.isReal_iff.mp hw
+    exact RingHom.congr_fun (NumberField.ComplexEmbedding.isReal_iff.mp h1) y
+  -- extend `φ` to `ψ : ℚᵃˡᵍ → ℂ` THROUGH `K` (`IsAlgClosed.lift`)
+  haveI : IsAlgClosed ℂ := Complex.isAlgClosed
+  letI : Algebra K ℂ := φ.toAlgebra
+  haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) :=
+    AlgebraicClosure.isAlgebraic ℚ
+  haveI halgK : Algebra.IsAlgebraic K (AlgebraicClosure ℚ) :=
+    Algebra.IsAlgebraic.tower_top (K := ℚ) K
+  haveI : IsScalarTower ℚ K ℂ := IsScalarTower.of_algebraMap_eq fun q => by
+    have h1 : algebraMap ℚ ℂ q = (q : ℂ) := eq_ratCast _ q
+    have h2 : φ (algebraMap ℚ K q) = (q : ℂ) :=
+      eq_ratCast (φ.comp (algebraMap ℚ K)) q
+    rw [h1, ← h2]
+    rfl
+  set ψK : AlgebraicClosure ℚ →ₐ[K] ℂ := IsAlgClosed.lift with hψKdef
+  set ψ : AlgebraicClosure ℚ →+* ℂ := (ψK.restrictScalars ℚ).toRingHom
+    with hψdef
+  have hψK : ∀ y : K, ψ (algebraMap K (AlgebraicClosure ℚ) y) = φ y :=
+    fun y => ψK.commutes y
+  -- pull complex conjugation back along `ψ` (the image is normal)
+  letI : Algebra (AlgebraicClosure ℚ) ℂ := ψ.toAlgebra
+  haveI : IsScalarTower ℚ (AlgebraicClosure ℚ) ℂ :=
+    IsScalarTower.of_algebraMap_eq fun q => by
+      have h1 : algebraMap ℚ ℂ q = (q : ℂ) := eq_ratCast _ q
+      have h2 : ψ (algebraMap ℚ (AlgebraicClosure ℚ) q) = (q : ℂ) :=
+        eq_ratCast (ψ.comp (algebraMap ℚ (AlgebraicClosure ℚ))) q
+      rw [h1, ← h2]
+      rfl
+  haveI hacQ : IsAlgClosure ℚ (AlgebraicClosure ℚ) := ⟨inferInstance, halgQ⟩
+  haveI hnormQ : Normal ℚ (AlgebraicClosure ℚ) :=
+    IsAlgClosure.normal ℚ (AlgebraicClosure ℚ)
+  set γ : ℂ ≃ₐ[ℚ] ℂ := Complex.conjAe.restrictScalars ℚ with hγdef
+  set c : (AlgebraicClosure ℚ) ≃ₐ[ℚ] (AlgebraicClosure ℚ) :=
+    AlgEquiv.restrictNormal γ (AlgebraicClosure ℚ) with hcdef
+  have hcomm : ∀ z : AlgebraicClosure ℚ, ψ (c z) = (starRingEnd ℂ) (ψ z) :=
+    fun z => AlgEquiv.restrictNormal_commutes γ (AlgebraicClosure ℚ) z
+  have hψinj : Function.Injective ψ := ψ.injective
+  refine ⟨c, ?_, ?_⟩
+  · -- `c` fixes `K` pointwise: `ψ` maps `K` into `ℝ`
+    intro y
+    apply hψinj
+    show ψ (c (algebraMap K (AlgebraicClosure ℚ) y)) =
+      ψ (algebraMap K (AlgebraicClosure ℚ) y)
+    rw [hcomm, hψK, hφreal]
+  · -- `χ₃(c) = −1`: `c` is an involution moving the cube roots of unity
+    have hc2 : c * c = 1 := by
+      refine AlgEquiv.ext fun z => ?_
+      apply hψinj
+      show ψ (c (c z)) = ψ ((1 : (AlgebraicClosure ℚ) ≃ₐ[ℚ]
+        (AlgebraicClosure ℚ)) z)
+      rw [hcomm, hcomm, Complex.conj_conj]
+      rfl
+    set t : ℤ_[3] :=
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 c.toRingEquiv :
+        ℤ_[3]ˣ) : ℤ_[3]) with htdef
+    have hsq : t * t = 1 := by
+      have hmul : (c * c).toRingEquiv = c.toRingEquiv * c.toRingEquiv := rfl
+      have hone : ((1 : Γ ℚ).toRingEquiv) = 1 := rfl
+      have h := congrArg (fun g => ((cyclotomicCharacter
+        (AlgebraicClosure ℚ) 3 g : ℤ_[3]ˣ) : ℤ_[3]))
+        (hmul.symm.trans (((by rw [hc2]; rfl :
+          (c * c).toRingEquiv = (1 : Γ ℚ).toRingEquiv)).trans hone))
+      simpa [map_mul] using h
+    rcases mul_self_eq_one_iff.mp hsq with ht1 | htm1
+    swap
+    · exact htm1
+    -- rule out `t = 1`: `c` would fix a primitive cube root of unity
+    exfalso
+    obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot
+      (AlgebraicClosure ℚ) 3
+    have hfix : c.toRingEquiv ζ = ζ := by
+      have hspec := cyclotomicCharacter.spec 3 (n := 1) c.toRingEquiv ζ
+        (by rw [pow_one]; exact hζ.pow_eq_one)
+      rw [hspec, show (cyclotomicCharacter (AlgebraicClosure ℚ) 3
+        c.toRingEquiv).val = t from rfl, ht1, map_one]
+      rw [show ((1 : ZMod (3 ^ 1)).val) = 1 from rfl, pow_one]
+    -- so `ψ ζ` is a REAL primitive cube root of unity in `ℂ`
+    set z : ℂ := ψ ζ with hzdef
+    have hzconj : (starRingEnd ℂ) z = z := by
+      rw [hzdef, ← hcomm, show c ζ = c.toRingEquiv ζ from rfl, hfix]
+    have hzprim : IsPrimitiveRoot z 3 := hζ.map_of_injective hψinj
+    have hzre : ((z.re : ℝ) : ℂ) = z := Complex.conj_eq_iff_re.mp hzconj
+    have hz3 : z ^ 3 = 1 := hzprim.pow_eq_one
+    have hre3 : (z.re : ℝ) ^ 3 = 1 := by
+      have h1 : (((z.re : ℝ) ^ 3 : ℝ) : ℂ) = ((1 : ℝ) : ℂ) := by
+        push_cast
+        rw [hzre, hz3]
+      exact_mod_cast h1
+    have hre1 : (z.re : ℝ) = 1 := by
+      nlinarith [sq_nonneg (z.re - 1), sq_nonneg (z.re + 1)]
+    exact hzprim.ne_one (by norm_num) (by rw [← hzre, hre1]; norm_num)
 
 set_option backward.isDefEq.respectTransparency false in
-/-- **The kernel field is totally complex** (DECOMPOSED 2026-07-23
-into the conjugation-at-a-real-place sorry node
-`exists_conj_fixingSubgroup_of_not_isTotallyComplex` above; the
-determinant bookkeeping is proven): the number field cut out by the
+/-- **The kernel field is totally complex** (PROVEN 2026-07-23 — via
+the conjugation-at-a-real-place leaf
+`exists_conj_fixingSubgroup_of_not_isTotallyComplex` above, now
+itself proven): the number field cut out by the
 kernel of the matrix form of a mod-3 hardly ramified representation
 has no real place. The proven reduction: were `K` not totally
 complex, the leaf would produce `c ∈ fixingSubgroup K = ker u` with
