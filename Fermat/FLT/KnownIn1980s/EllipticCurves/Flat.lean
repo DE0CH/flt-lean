@@ -3805,8 +3805,83 @@ theorem exists_flat_hopf_form_of_free_hopf_order
       Submodule.span R {z : HK ⊗[K] HK | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K] b = z}) :
     ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
       (_ : Module.Finite R H) (_ : Module.Flat R H),
-      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) :=
-  sorry
+      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) := by
+  classical
+  -- the base-change equivalence of algebras
+  let μe : (K ⊗[R] H₀) ≃ₐ[K] HK :=
+    AlgEquiv.ofBijective (AlgHom.liftEquiv R K H₀ HK H₀.val) hbij
+  -- the tensor-square comparison map into the `K`-side tensor square
+  let j2 : H₀ ⊗[R] H₀ →ₗ[R] HK ⊗[K] HK :=
+    TensorProduct.lift (LinearMap.mk₂ R (fun x y => (x : HK) ⊗ₜ[K] (y : HK))
+      (fun x x' y => by simp [TensorProduct.add_tmul])
+      (fun r x y => by simp [TensorProduct.smul_tmul'])
+      (fun x y y' => by simp [TensorProduct.tmul_add])
+      (fun r x y => by simp [TensorProduct.tmul_smul]))
+  -- the `R`-span of pure tensors of `H₀` is the range of `j2`
+  have hj2range : Submodule.span R
+      {z : HK ⊗[K] HK | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K] b = z} ≤
+      LinearMap.range j2 := by
+    rw [Submodule.span_le]
+    rintro z ⟨a, ha, b', hb', rfl⟩
+    exact ⟨(⟨a, ha⟩ : H₀) ⊗ₜ[R] (⟨b', hb'⟩ : H₀), rfl⟩
+  have hj2inj : Function.Injective j2 := by
+    sorry
+  -- comultiplication corestricts to `H₀` through `j2`
+  let e2 : (H₀ ⊗[R] H₀) ≃ₗ[R] LinearMap.range j2 := LinearEquiv.ofInjective j2 hj2inj
+  have hmem2 : ∀ x : H₀, ((Coalgebra.comul (R := K)).restrictScalars R ∘ₗ
+      H₀.val.toLinearMap) x ∈ LinearMap.range j2 :=
+    fun x => hj2range (by simpa using hcomul x x.2)
+  let comul₀ : H₀ →ₗ[R] H₀ ⊗[R] H₀ :=
+    e2.symm.toLinearMap ∘ₗ LinearMap.codRestrict (LinearMap.range j2)
+      ((Coalgebra.comul (R := K)).restrictScalars R ∘ₗ H₀.val.toLinearMap) hmem2
+  -- the counit corestricts to `R`
+  have hmemR : ∀ x : H₀, ((Coalgebra.counit (R := K)).restrictScalars R ∘ₗ
+      H₀.val.toLinearMap) x ∈ LinearMap.range (Algebra.linearMap R K) := by
+    intro x
+    obtain ⟨r, hr⟩ := hcounit x x.2
+    exact ⟨r, by simpa using hr⟩
+  let eR : R ≃ₗ[R] LinearMap.range (Algebra.linearMap R K) :=
+    LinearEquiv.ofInjective (Algebra.linearMap R K) (IsFractionRing.injective R K)
+  let counit₀ : H₀ →ₗ[R] R :=
+    eR.symm.toLinearMap ∘ₗ LinearMap.codRestrict (LinearMap.range (Algebra.linearMap R K))
+      ((Coalgebra.counit (R := K)).restrictScalars R ∘ₗ H₀.val.toLinearMap) hmemR
+  -- the antipode corestricts to `H₀`
+  let antipode₀ : H₀ →ₗ[R] H₀ :=
+    LinearMap.codRestrict (Subalgebra.toSubmodule H₀)
+      ((HopfAlgebra.antipode K : HK →ₗ[K] HK).restrictScalars R ∘ₗ H₀.val.toLinearMap)
+      (fun x => hantipode x x.2)
+  -- the corestricted structure is a Hopf algebra: every axiom transfers along
+  -- the injective comparison maps
+  letI instCo : Coalgebra R H₀ :=
+    { comul := comul₀
+      counit := counit₀
+      coassoc := by
+        sorry
+      rTensor_counit_comp_comul := by
+        sorry
+      lTensor_counit_comp_comul := by
+        sorry }
+  letI instBi : Bialgebra R H₀ := Bialgebra.mk' R H₀
+    (by sorry)
+    (fun {a b} => by sorry)
+    (by sorry)
+    (fun {a b} => by sorry)
+  letI instHopf : HopfAlgebra R H₀ :=
+    { antipode := antipode₀
+      mul_antipode_rTensor_comul := by
+        sorry
+      mul_antipode_lTensor_comul := by
+        sorry }
+  -- the base-change equivalence respects the corestricted Hopf structure
+  have hO1 : (Bialgebra.counitAlgHom K HK).comp (μe : (K ⊗[R] H₀) →ₐ[K] HK) =
+      Bialgebra.counitAlgHom K (K ⊗[R] H₀) := by
+    sorry
+  have hO2 : (Algebra.TensorProduct.map (μe : (K ⊗[R] H₀) →ₐ[K] HK)
+      (μe : (K ⊗[R] H₀) →ₐ[K] HK)).comp (Bialgebra.comulAlgHom K (K ⊗[R] H₀)) =
+      (Bialgebra.comulAlgHom K HK).comp (μe : (K ⊗[R] H₀) →ₐ[K] HK) := by
+    sorry
+  exact ⟨H₀, inferInstance, instHopf, inferInstance, inferInstance,
+    ⟨BialgEquiv.ofAlgEquiv μe hO1 hO2⟩⟩
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Hopf orders are flat Hopf forms** (DECOMPOSED 2026-07-23 into the
