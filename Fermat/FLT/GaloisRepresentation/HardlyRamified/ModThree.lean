@@ -1849,31 +1849,115 @@ theorem isTotallyComplex_of_kernel_field {k : Type u} [Finite k] [Field k]
   rw [hcker, map_one, Units.val_one, hcχ, map_neg, map_one] at hdet_val
   exact h2ne (by linear_combination hdet_val)
 
-/-- **The discriminant bound of the kernel field** (sorry node — the
-ramification-theoretic core of the field cut, isolated 2026-07-23):
-the number field cut out by the kernel of the matrix form of a mod-3
-hardly ramified representation has root discriminant at most
-`2^{2/3}·3^{3/2} = 314928^{1/6} = 8.2497…`, stated integrally as
-`|d_K|⁶ ≤ 314928^{[K:ℚ]}`. Intended content: at a prime `p ∉ {2,3}`
-the representation is unramified (`hρ.isUnramified`), so `K/ℚ` is
-unramified at `p`; at `2` the inertia acts through the unipotent
-upper-triangular subgroup (the quotient character `δ` of
-`hρ.isTameAtTwo` is unramified and `χ₃` is unramified at `2`), and
-the tame quotient of the local inertia is procyclic, so the inertia
-image at `2` is cyclic of order `1` or `3` and tame, giving a local
-different exponent `≤ (e−1)/e ≤ 2/3` per unit degree; at `3`
-flatness (`hρ.isFlat`) prolongs the local representation to a finite
-flat group scheme over `ℤ₃` killed by `3`, and Fontaine's
-ramification bound (the upper-numbering ramification of `ℚ₃(V)/ℚ₃`
-vanishes above `1 + 1/(3−1) = 3/2`) gives a different exponent
-`≤ 3/2` per unit degree — attained by the peu-ramifié case
-`ℚ₃(ζ₃, u^{1/3})`, which is why the bound is stated with `≤`.
-Multiplying, `|d_K| ≤ (2^{2/3}·3^{3/2})^{[K:ℚ]}`, i.e. the stated
-sixth-power form. (Fontaine, *Il n'y a pas de variété abélienne sur
-ℤ*, Invent. Math. 81 (1985); Serre's and Tate's letters on
-mod-3/mod-2 representations unramified outside small sets;
-Moon–Taguchi, *Refinement of Tate's discriminant bound…*, Doc. Math.
-2003.) -/
+/-- **Unramifiedness of the kernel field outside `{2, 3}`** (sorry
+node, isolated 2026-07-23 from `discr_bound_of_kernel_field`): the
+number field cut out by the kernel of the matrix form of a mod-3
+hardly ramified representation is unramified at every prime
+`p ∉ {2, 3}`, stated as `p ∤ d_K`. Intended proof: at `p ∉ {2, 3}`
+the representation is unramified (`hρ.isUnramified`), so the local
+inertia at `p` lands in `ker ρ ≤ ker u = K.fixingSubgroup` (the
+matrix transport `htriv` of `exists_kernel_field_of_matrixRange`); by
+the finite-level descent of
+`ramificationIdx_eq_one_of_inertia_le_fixingSubgroup` every prime of
+`K` over `p` is unramified, and an everywhere-unramified prime does
+not divide the discriminant
+(`NumberField.not_dvd_discr_iff_isUnramifiedIn`). -/
+theorem kernel_field_not_dvd_discr {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    [IsGalois ℚ K] (hfix : K.fixingSubgroup = u.ker)
+    (p : ℕ) (hp : p.Prime) (hp2 : p ≠ 2) (hp3 : p ≠ 3) :
+    ¬ ((p : ℤ) ∣ NumberField.discr K) :=
+  sorry
+
+/-- **The tame discriminant exponent at `2`** (sorry node, isolated
+2026-07-23 from `discr_bound_of_kernel_field`): the `2`-adic
+valuation of the discriminant of the kernel field of a mod-3 hardly
+ramified representation is at most `(2/3)·[K:ℚ]`, stated integrally
+as `3·v₂(d_K) ≤ 2·[K:ℚ]`. Intended content: at `2` the inertia acts
+through the unipotent upper-triangular subgroup (the quotient
+character `δ` of `hρ.isTameAtTwo` is unramified, and the determinant
+`χ₃` is unramified at `2`), and the image of the wild (pro-2) inertia
+in the order-3 unipotent group is trivial, so the inertia image at
+`2` is cyclic of order `e ∈ {1, 3}` and tame; the different exponent
+of a tame local extension is `e − 1` per ramification-degree unit,
+giving `v₂(d_K) = (1 − 1/e)·[K:ℚ] ≤ (2/3)·[K:ℚ]`. -/
+theorem kernel_field_discr_two_exponent {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    [IsGalois ℚ K] (hfix : K.fixingSubgroup = u.ker) :
+    3 * (NumberField.discr K).natAbs.factorization 2 ≤
+      2 * Module.finrank ℚ K :=
+  sorry
+
+/-- **The Fontaine discriminant exponent at `3`** (sorry node,
+isolated 2026-07-23 from `discr_bound_of_kernel_field`): the `3`-adic
+valuation of the discriminant of the kernel field of a mod-3 hardly
+ramified representation is at most `(3/2)·[K:ℚ]`, stated integrally
+as `2·v₃(d_K) ≤ 3·[K:ℚ]`. Intended content: flatness (`hρ.isFlat`)
+prolongs the local representation at `3` to a finite flat group
+scheme over `ℤ₃` killed by `3`, and Fontaine's ramification bound
+(the upper-numbering ramification of `ℚ₃(V)/ℚ₃` vanishes above
+`1 + 1/(3−1) = 3/2`) bounds the different exponent by `3/2` per unit
+degree — attained by the peu-ramifié case `ℚ₃(ζ₃, u^{1/3})`, which is
+why the bound is stated with `≤`. (Fontaine, *Il n'y a pas de variété
+abélienne sur ℤ*, Invent. Math. 81 (1985); Moon–Taguchi, *Refinement
+of Tate's discriminant bound…*, Doc. Math. 2003.) -/
+theorem kernel_field_discr_three_exponent {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    [IsGalois ℚ K] (hfix : K.fixingSubgroup = u.ker) :
+    2 * (NumberField.discr K).natAbs.factorization 3 ≤
+      3 * Module.finrank ℚ K :=
+  sorry
+
+/-- **The discriminant bound of the kernel field** (DECOMPOSED
+2026-07-23 into the three sorry nodes above — the
+unramified-outside-`{2,3}` leaf `kernel_field_not_dvd_discr`, the
+tame-at-`2` exponent leaf `kernel_field_discr_two_exponent` and the
+Fontaine-at-`3` exponent leaf `kernel_field_discr_three_exponent`;
+the factorization assembly `|d_K| = 2^{v₂}·3^{v₃}` and the exponent
+arithmetic are proven here): the number field cut out by the kernel
+of the matrix form of a mod-3 hardly ramified representation has root
+discriminant at most `2^{2/3}·3^{3/2} = 314928^{1/6} = 8.2497…`,
+stated integrally as `|d_K|⁶ ≤ 314928^{[K:ℚ]}` (note
+`314928 = 2⁴·3⁹`, matching the two exponent leaves). -/
 theorem discr_bound_of_kernel_field {k : Type u} [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
@@ -1890,8 +1974,58 @@ theorem discr_bound_of_kernel_field {k : Type u} [Finite k] [Field k]
         (MonoidHomClass.toMonoidHom ρ)) g)).map e)
     (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
     [IsGalois ℚ K] (hfix : K.fixingSubgroup = u.ker) :
-    |NumberField.discr K| ^ 6 ≤ 314928 ^ Module.finrank ℚ K :=
-  sorry
+    |NumberField.discr K| ^ 6 ≤ 314928 ^ Module.finrank ℚ K := by
+  classical
+  have hD0 : NumberField.discr K ≠ 0 := NumberField.discr_ne_zero K
+  have hN0 : (NumberField.discr K).natAbs ≠ 0 := Int.natAbs_ne_zero.mpr hD0
+  -- every prime factor of `|d_K|` is `2` or `3`
+  have hfac : ∀ q : ℕ, q.Prime → q ∣ (NumberField.discr K).natAbs →
+      q = 2 ∨ q = 3 := by
+    intro q hq hqN
+    by_contra hne
+    push Not at hne
+    refine kernel_field_not_dvd_discr V hV hρ b e u hu K hfix
+      q hq hne.1 hne.2 ?_
+    have h1 : (((NumberField.discr K).natAbs : ℤ)) ∣ NumberField.discr K := by
+      rw [Int.natCast_natAbs]
+      exact (abs_dvd _ _).mpr dvd_rfl
+    exact dvd_trans (Int.natCast_dvd_natCast.mpr hqN) h1
+  -- the factorization `|d_K| = 2^{v₂}·3^{v₃}`
+  have hsupp : (NumberField.discr K).natAbs.factorization.support ⊆
+      ({2, 3} : Finset ℕ) := by
+    intro q hq
+    rw [Nat.support_factorization] at hq
+    rcases hfac q (Nat.prime_of_mem_primeFactors hq)
+      (Nat.dvd_of_mem_primeFactors hq) with h | h <;> simp [h]
+  have hNeq : (NumberField.discr K).natAbs =
+      2 ^ (NumberField.discr K).natAbs.factorization 2 *
+        3 ^ (NumberField.discr K).natAbs.factorization 3 := by
+    conv_lhs => rw [← Nat.prod_factorization_pow_eq_self hN0]
+    rw [Finsupp.prod_of_support_subset _ hsupp (· ^ ·)
+      (fun i _ => pow_zero i), Finset.prod_pair (by norm_num : (2 : ℕ) ≠ 3)]
+  -- the two exponent leaves
+  have h2exp := kernel_field_discr_two_exponent V hV hρ b e u hu K hfix
+  have h3exp := kernel_field_discr_three_exponent V hV hρ b e u hu K hfix
+  -- assemble in `ℕ`
+  have key : (NumberField.discr K).natAbs ^ 6 ≤
+      314928 ^ Module.finrank ℚ K := by
+    calc (NumberField.discr K).natAbs ^ 6
+        = 2 ^ ((NumberField.discr K).natAbs.factorization 2 * 6) *
+          3 ^ ((NumberField.discr K).natAbs.factorization 3 * 6) := by
+          conv_lhs => rw [hNeq]
+          rw [mul_pow, ← pow_mul, ← pow_mul]
+      _ ≤ 2 ^ (4 * Module.finrank ℚ K) * 3 ^ (9 * Module.finrank ℚ K) :=
+          Nat.mul_le_mul
+            (Nat.pow_le_pow_right (by norm_num) (by omega))
+            (Nat.pow_le_pow_right (by norm_num) (by omega))
+      _ = 314928 ^ Module.finrank ℚ K := by
+          rw [show (314928 : ℕ) = 2 ^ 4 * 3 ^ 9 by norm_num, mul_pow,
+            ← pow_mul, ← pow_mul]
+  -- back to `ℤ`
+  have habs : |NumberField.discr K| =
+      (((NumberField.discr K).natAbs : ℤ)) := (Int.natCast_natAbs _).symm
+  rw [habs]
+  exact_mod_cast key
 
 /-- **The hardly ramified number field, from a degree bound**
 (DECOMPOSED 2026-07-23 into the three sorry nodes above — the
@@ -1996,11 +2130,50 @@ discriminant is increasing in the degree, exceeds `10.3` at degree
 (Minkowski's bound alone, asymptotically `πe²/4 = 5.803…`, does NOT
 suffice for this statement — the eventual proof must formalize an
 explicit-formula bound of Odlyzko/Poitou type.) -/
+theorem odlyzko_rootDiscr_totallyComplex (K : Type*) [Field K] [NumberField K]
+    (htc : NumberField.IsTotallyComplex K)
+    (hdeg : 48 ≤ Module.finrank ℚ K) :
+    (33 : ℤ) ^ Module.finrank ℚ K ≤
+      4 ^ Module.finrank ℚ K * |NumberField.discr K| :=
+  sorry
+
+/-- **The Odlyzko discriminant bound, sixth-power form** (DECOMPOSED
+2026-07-23 into the root-discriminant sorry node
+`odlyzko_rootDiscr_totallyComplex` above; the integer arithmetic
+`(33/4)⁶ = 315299.79… > 314928` is proven here): a totally complex
+number field of degree `n ≥ 48` has root discriminant strictly
+greater than `2^{2/3}·3^{3/2} = 314928^{1/6} = 8.2497…`, stated
+integrally as `314928^n < |d_K|⁶`. -/
 theorem odlyzko_bound_totallyComplex (K : Type*) [Field K] [NumberField K]
     (htc : NumberField.IsTotallyComplex K)
     (hdeg : 48 ≤ Module.finrank ℚ K) :
-    (314928 : ℤ) ^ Module.finrank ℚ K < |NumberField.discr K| ^ 6 :=
-  sorry
+    (314928 : ℤ) ^ Module.finrank ℚ K < |NumberField.discr K| ^ 6 := by
+  have h1 := odlyzko_rootDiscr_totallyComplex K htc hdeg
+  have hn0 : Module.finrank ℚ K ≠ 0 := by omega
+  -- sixth power of the root-discriminant bound
+  have h6 : ((33 : ℤ) ^ Module.finrank ℚ K) ^ 6 ≤
+      (4 ^ Module.finrank ℚ K * |NumberField.discr K|) ^ 6 :=
+    pow_le_pow_left₀ (by positivity) h1 6
+  -- strict comparison of the bases: `314928·4⁶ < 33⁶`
+  have hlt : ((314928 : ℤ) * 4 ^ 6) ^ Module.finrank ℚ K <
+      ((33 : ℤ) ^ 6) ^ Module.finrank ℚ K :=
+    pow_lt_pow_left₀ (by norm_num) (by positivity) hn0
+  -- combine and cancel the positive factor `(4^n)⁶`
+  have hmain : ((4 : ℤ) ^ Module.finrank ℚ K) ^ 6 *
+        (314928 : ℤ) ^ Module.finrank ℚ K <
+      ((4 : ℤ) ^ Module.finrank ℚ K) ^ 6 * |NumberField.discr K| ^ 6 := by
+    calc ((4 : ℤ) ^ Module.finrank ℚ K) ^ 6 *
+          (314928 : ℤ) ^ Module.finrank ℚ K
+        = ((314928 : ℤ) * 4 ^ 6) ^ Module.finrank ℚ K := by
+          rw [mul_pow, ← pow_mul, ← pow_mul, Nat.mul_comm]
+          exact mul_comm _ _
+      _ < ((33 : ℤ) ^ 6) ^ Module.finrank ℚ K := hlt
+      _ = ((33 : ℤ) ^ Module.finrank ℚ K) ^ 6 := by
+          rw [← pow_mul, ← pow_mul, Nat.mul_comm]
+      _ ≤ (4 ^ Module.finrank ℚ K * |NumberField.discr K|) ^ 6 := h6
+      _ = ((4 : ℤ) ^ Module.finrank ℚ K) ^ 6 * |NumberField.discr K| ^ 6 := by
+          ring
+  exact lt_of_mul_lt_mul_left hmain (by positivity)
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The Serre/Tate elimination, exceptional cases** (DERIVED
@@ -3483,21 +3656,100 @@ theorem mod_three_reducible {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k
   exact not_isAbsolutelyIrreducible V hV hρ
     ((OddRep.isIrreducible_iff_isAbsolutelyIrreducible ρ' heig).mp hirr)
 
-/-- **The Oort–Tate/Raynaud dichotomy at `3`** (sorry node — the
-local flatness classification, isolated 2026-07-23): the quotient
-character `χ` of a stable line of a mod-3 hardly ramified
-representation, restricted to the inertia at `3`, is either TRIVIAL
-or the mod-3 CYCLOTOMIC character — nothing else can occur. Content:
-flatness (`hρ.isFlat`) prolongs the local representation at `3` to a
-finite flat group scheme over `ℤ₃` killed by `3`, and the stable line
-makes it an extension of order-`3` group schemes (the scheme-theoretic
-closure of the generic-fiber subgroup); by Oort–Tate/Raynaud, an
-order-`3` group scheme over `ℤ₃` is `ℤ/3`, `μ₃`, or (for `3 ≡ −1`,
-not here) nothing further at level one — its inertial character is
-`ε^a` with `a ∈ {0, 1}` for the level-one fundamental character `ε`,
-which on the inertia equals the mod-3 cyclotomic character (Raynaud,
-*Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102 (1974), 3.3.2;
-Serre, Duke 1987, §2.8 prop. 8). -/
+/-- **Order two on the inertia at `3`** (sorry node, isolated
+2026-07-23 from `quotCharacter_inertia_three_dichotomy`): the
+quotient character `χ` of a stable line of a mod-3 hardly ramified
+representation SQUARES TO `1` on the inertia at `3`. Intended proof
+(no flatness needed — pure local structure): `χ` is continuous (it is
+the matrix coefficient of the continuous `ρ` on the quotient line
+`V/W₀`, and `ρ` has open kernel since `V` is finite), so `χ` kills
+the wild inertia at `3` (a continuous map from a pro-3 group to the
+prime-to-3 finite group `kˣ` is trivial); on the tame quotient the
+Frobenius conjugation relation `φσφ⁻¹ ≡ σ³ (mod wild)` and the fact
+that `χ` is defined on the WHOLE local Galois group (not merely on
+inertia) force `χ(σ) = χ(φσφ⁻¹) = χ(σ³) = χ(σ)³`, whence
+`χ(σ)² = 1` in the unit group `kˣ`. Equivalently: by local class
+field theory the abelianized inertia at `3` is `ℤ₃ˣ`, whose
+prime-to-3 quotient is `𝔽₃ˣ = {±1}`. -/
+theorem quotCharacter_inertia_three_sq_one
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (W₀ : Submodule k V) (hW₀fr : Module.finrank k W₀ = 1)
+    (hstable : ∀ g v, v ∈ W₀ → ρ g v ∈ W₀)
+    (ψ : Γ ℚ →* kˣ) (hψ : ∀ g, ∀ v ∈ W₀, ρ g v = (ψ g : k) • v)
+    (χ : Γ ℚ →* kˣ)
+    (hχ : ∀ g v, W₀.mkQ (ρ g v) = (χ g : k) • W₀.mkQ v) :
+    ∀ g ∈ localInertiaGroup
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+      (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) g)) ^ 2 = 1 :=
+  sorry
+
+/-- **The unique quadratic quotient of the inertia at `3`** (sorry
+node, isolated 2026-07-23 from
+`quotCharacter_inertia_three_dichotomy`): a quotient character `χ` of
+a stable line of a mod-3 hardly ramified representation whose square
+is trivial on the inertia at `3` is, on that inertia, either TRIVIAL
+or the mod-3 CYCLOTOMIC character. Intended content: `χ` is
+continuous and kills the wild inertia (pro-3, mapping to the
+prime-to-3 group `kˣ`), so it factors through the tame quotient,
+which is procyclic (`≅ ∏_{ℓ≠3} ℤ_ℓ`); a procyclic group has AT MOST
+ONE quotient of order `2`, and the mod-3 cyclotomic character is a
+surjection from the inertia at `3` onto `{±1}` (the ramification of
+`3` in `ℚ(ζ₃)`), realizing that unique quotient; hence a character
+that is quadratic on inertia agrees there with a power `ε^a`,
+`a ∈ {0, 1}`, of the mod-3 cyclotomic character `ε`. -/
+theorem quotCharacter_inertia_three_dichotomy_of_sq_one
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (W₀ : Submodule k V) (hW₀fr : Module.finrank k W₀ = 1)
+    (hstable : ∀ g v, v ∈ W₀ → ρ g v ∈ W₀)
+    (ψ : Γ ℚ →* kˣ) (hψ : ∀ g, ∀ v ∈ W₀, ρ g v = (ψ g : k) • v)
+    (χ : Γ ℚ →* kˣ)
+    (hχ : ∀ g v, W₀.mkQ (ρ g v) = (χ g : k) • W₀.mkQ v)
+    (hsq : ∀ g ∈ localInertiaGroup
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+      (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) g)) ^ 2 = 1) :
+    (localInertiaGroup
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ≤
+      (χ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) ∨
+    (∀ g ∈ localInertiaGroup
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+      ((χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) g) : k)) =
+        algebraMap ℤ_[3] k (cyclotomicCharacter (AlgebraicClosure ℚ) 3
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))
+                g).toRingEquiv))) :=
+  sorry
+
+/-- **The Oort–Tate/Raynaud dichotomy at `3`** (DECOMPOSED 2026-07-23
+into the two sorry nodes above — the order-two leaf
+`quotCharacter_inertia_three_sq_one` (Frobenius conjugation on the
+tame quotient; no flatness needed since `χ` is GLOBAL, unlike the
+level-2 fundamental characters of Serre's §2.8 prop. 8 setting) and
+the unique-quadratic-quotient leaf
+`quotCharacter_inertia_three_dichotomy_of_sq_one`; the assembly is
+proven): the quotient character `χ` of a stable line of a mod-3
+hardly ramified representation, restricted to the inertia at `3`, is
+either TRIVIAL or the mod-3 CYCLOTOMIC character — nothing else can
+occur. (Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF
+102 (1974), 3.3.2; Serre, Duke 1987, §2.8 prop. 8.) -/
 theorem quotCharacter_inertia_three_dichotomy
     {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
     [TopologicalSpace k] [DiscreteTopology k]
@@ -3525,7 +3777,9 @@ theorem quotCharacter_inertia_three_dichotomy
             (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
               Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))
                 g).toRingEquiv))) :=
-  sorry
+  quotCharacter_inertia_three_dichotomy_of_sq_one V hV hρ W₀ hW₀fr hstable
+    ψ hψ χ hχ
+    (quotCharacter_inertia_three_sq_one V hV hρ W₀ hW₀fr hstable ψ hψ χ hχ)
 
 /-- **Raynaud's inertia characters at `3`** (DECOMPOSED 2026-07-23
 into the dichotomy sorry node `quotCharacter_inertia_three_dichotomy`
@@ -3632,24 +3886,118 @@ theorem subCharacter_unramified_at_three_of_quot_ramified
   rw [MonoidHom.mem_ker]
   exact Units.ext hψ1
 
-/-- **The Serre swap, cocycle form** (sorry node — the global
-splitting content in explicit coordinates, isolated 2026-07-23): with
-a basis adapted to the ramified-quotient situation — `w₀` spanning the
-stable line `W₀` and `v₁` a complement vector — the extension cocycle
-`c` (defined by `ρ g v₁ = χ g • v₁ + c g • w₀`) is a coboundary:
-there is a single scalar `t` with `c g = t·(χ g − ψ g)` for all `g`.
-This is exactly the vanishing of the class of the extension
-`0 → ψ → V → χ → 0` in `H¹(ℚ, k(ψχ⁻¹))` (the function
-`g ↦ c g / (ψ g)` is a `1`-cocycle for the `ψ⁻¹χ`-twisted action, and
-`t` is the element whose twisted coboundary it is). Intended content
-(Serre's `peu ramifié` argument, Duke 1987, §5.4): locally at `3` the
-connected–étale sequence of the flat prolongation provides a stable
-line with unramified quotient, necessarily different from `W₀` (whose
-quotient character is ramified at `3` by `h3`), so the extension
-splits locally at `3`; globally the class lies in the Selmer-type
-subgroup of `H¹(ℚ, k(ψχ⁻¹))` of classes unramified outside `{2, 3}`,
-flat (peu ramifié) at `3` and tame quadratic at `2`, and this group
-vanishes. -/
+/-- **The local splitting at `3`** (sorry node — the connected–étale
+half of the Serre swap, isolated 2026-07-23): in the coordinates of
+`exists_splitting_scalar_of_quot_ramified`, the extension cocycle `c`
+is a coboundary already on the inertia at `3`: a single scalar `s`
+has `c σ = s·(χ σ − ψ σ)` for every `σ` in the image of the local
+inertia at `3`. Intended content (the local half of Serre's
+`peu ramifié` argument, Duke 1987, §5.4): flatness (`hρ.isFlat`)
+prolongs the local representation at `3` to a finite flat group
+scheme over `ℤ₃` killed by `3`; its connected–étale sequence provides
+an inertia-stable line with unramified quotient, necessarily
+different from `W₀` (whose quotient character is ramified at `3` by
+`h3`), and an inertia-stable line complementary to `W₀` is spanned by
+a vector `v₁ + s•w₀`, which is exactly the coboundary property of `c`
+on the inertia (`ψ` is unramified at `3` there by
+`subCharacter_unramified_at_three_of_quot_ramified`, so on inertia
+`s·(χ σ − ψ σ) = s·(χ σ − 1)`). -/
+theorem exists_local_splitting_scalar_at_three
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (W₀ : Submodule k V) (hW₀fr : Module.finrank k W₀ = 1)
+    (hstable : ∀ g v, v ∈ W₀ → ρ g v ∈ W₀)
+    (ψ : Γ ℚ →* kˣ) (hψ : ∀ g, ∀ v ∈ W₀, ρ g v = (ψ g : k) • v)
+    (χ : Γ ℚ →* kˣ)
+    (hχ : ∀ g v, W₀.mkQ (ρ g v) = (χ g : k) • W₀.mkQ v)
+    (h3 : ¬ (localInertiaGroup
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ≤
+        (χ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker))
+    (w₀ : V) (hw₀ : w₀ ∈ W₀) (hw₀ne : w₀ ≠ 0)
+    (v₁ : V) (hv₁ : v₁ ∉ W₀)
+    (c : Γ ℚ → k)
+    (hc : ∀ g : Γ ℚ, ρ g v₁ = (χ g : k) • v₁ + c g • w₀) :
+    ∃ s : k, ∀ σ ∈ localInertiaGroup
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+      c (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) =
+        s * ((χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) : k) -
+          (ψ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) : k)) :=
+  sorry
+
+/-- **The global Selmer vanishing** (sorry node — the global half of
+the Serre swap, isolated 2026-07-23): a function `c` satisfying the
+twisted cocycle identity `c(gh) = χ(h)·c(g) + ψ(g)·c(h)` attached to
+a mod-3 hardly ramified representation, which is a coboundary on the
+inertia at `3` (with scalar `s`, hypothesis `hs`), is a GLOBAL
+coboundary. Intended content (Serre, Duke 1987, §5.4): the class of
+`c` in `H¹(ℚ, k(ψχ⁻¹))` is unramified outside `{2, 3}`
+(`hρ.isUnramified`), split at `3` (`hs`), and tame quadratic at `2`
+(`hρ.isTameAtTwo`); the Selmer-type subgroup of `H¹(ℚ, k(ψχ⁻¹))` cut
+out by these local conditions vanishes — after subtracting the
+coboundary `t·(χ − ψ)` with `t := s`, restriction to the open kernel
+of `ψ⁻¹χ` turns the class into a homomorphism cutting out an abelian
+`3`-extension unramified outside `{2, 3}` and split at `3`, which the
+ray-class arithmetic of the small fields involved kills. -/
+theorem splitting_scalar_global_of_local_at_three
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (W₀ : Submodule k V) (hW₀fr : Module.finrank k W₀ = 1)
+    (hstable : ∀ g v, v ∈ W₀ → ρ g v ∈ W₀)
+    (ψ : Γ ℚ →* kˣ) (hψ : ∀ g, ∀ v ∈ W₀, ρ g v = (ψ g : k) • v)
+    (χ : Γ ℚ →* kˣ)
+    (hχ : ∀ g v, W₀.mkQ (ρ g v) = (χ g : k) • W₀.mkQ v)
+    (h3 : ¬ (localInertiaGroup
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ≤
+        (χ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker))
+    (w₀ : V) (hw₀ : w₀ ∈ W₀) (hw₀ne : w₀ ≠ 0)
+    (v₁ : V) (hv₁ : v₁ ∉ W₀)
+    (c : Γ ℚ → k)
+    (hc : ∀ g : Γ ℚ, ρ g v₁ = (χ g : k) • v₁ + c g • w₀)
+    (hcocycle : ∀ g h : Γ ℚ, c (g * h) = (χ h : k) * c g + (ψ g : k) * c h)
+    (s : k)
+    (hs : ∀ σ ∈ localInertiaGroup
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+      c (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) =
+        s * ((χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) : k) -
+          (ψ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) : k))) :
+    ∃ t : k, ∀ g : Γ ℚ, c g = t * ((χ g : k) - (ψ g : k)) :=
+  sorry
+
+/-- **The Serre swap, cocycle form** (DECOMPOSED 2026-07-23 into the
+two sorry nodes above — the connected–étale local splitting
+`exists_local_splitting_scalar_at_three` and the global Selmer
+vanishing `splitting_scalar_global_of_local_at_three`; the cocycle
+identity `c(gh) = χ(h)·c(g) + ψ(g)·c(h)` is proven here as glue):
+with a basis adapted to the ramified-quotient situation — `w₀`
+spanning the stable line `W₀` and `v₁` a complement vector — the
+extension cocycle `c` (defined by `ρ g v₁ = χ g • v₁ + c g • w₀`) is
+a coboundary: there is a single scalar `t` with `c g = t·(χ g − ψ g)`
+for all `g`. This is exactly the vanishing of the class of the
+extension `0 → ψ → V → χ → 0` in `H¹(ℚ, k(ψχ⁻¹))`. -/
 theorem exists_splitting_scalar_of_quot_ramified
     {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
     [TopologicalSpace k] [DiscreteTopology k]
@@ -3671,8 +4019,29 @@ theorem exists_splitting_scalar_of_quot_ramified
     (v₁ : V) (hv₁ : v₁ ∉ W₀)
     (c : Γ ℚ → k)
     (hc : ∀ g : Γ ℚ, ρ g v₁ = (χ g : k) • v₁ + c g • w₀) :
-    ∃ t : k, ∀ g : Γ ℚ, c g = t * ((χ g : k) - (ψ g : k)) :=
-  sorry
+    ∃ t : k, ∀ g : Γ ℚ, c g = t * ((χ g : k) - (ψ g : k)) := by
+  classical
+  -- the twisted cocycle identity for `c` (proven glue)
+  have hcocycle : ∀ g h : Γ ℚ, c (g * h) = (χ h : k) * c g + (ψ g : k) * c h := by
+    intro g h
+    have h1 : ρ (g * h) v₁ = ρ g (ρ h v₁) := by
+      rw [map_mul ρ g h]
+      rfl
+    have hval : ((χ (g * h) : k)) = (χ g : k) * (χ h : k) := by
+      rw [map_mul, Units.val_mul]
+    rw [hc (g * h), hc h, map_add (ρ g), map_smul (ρ g), map_smul (ρ g),
+      hc g, hψ g w₀ hw₀, hval] at h1
+    have hcoef : (c (g * h) - ((χ h : k) * c g + (ψ g : k) * c h)) • w₀ = 0 := by
+      linear_combination (norm := module) h1
+    rcases smul_eq_zero.mp hcoef with h0 | h0
+    · exact sub_eq_zero.mp h0
+    · exact absurd h0 hw₀ne
+  -- the local splitting at `3` (leaf)
+  obtain ⟨s, hs⟩ := exists_local_splitting_scalar_at_three V hV hρ W₀ hW₀fr
+    hstable ψ hψ χ hχ h3 w₀ hw₀ hw₀ne v₁ hv₁ c hc
+  -- the global Selmer vanishing (leaf)
+  exact splitting_scalar_global_of_local_at_three V hV hρ W₀ hW₀fr
+    hstable ψ hψ χ hχ h3 w₀ hw₀ hw₀ne v₁ hv₁ c hc hcocycle s hs
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The Serre swap: the second stable line** (DECOMPOSED 2026-07-23
