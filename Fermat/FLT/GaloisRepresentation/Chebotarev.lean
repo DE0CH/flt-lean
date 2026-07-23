@@ -2006,7 +2006,161 @@ theorem exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le
   -- log-Taylor remainders cost `CR`, the higher-degree places `Cnp`,
   -- and the places with `N(P) ∈ {ℓ, ℓ², …}` vanish under `χ`
   have htail : ∀ s : ℝ, 1 < s → ‖𝒮 (s : ℂ) - Sχ s‖ ≤ CR + Cnp := by
-    sorry
+    intro s hs
+    haveI : Fact (1 < ℓ) := ⟨hℓ.one_lt⟩
+    -- the summands of `𝒮` at real `s`, in real-rpow form
+    set z : HeightOneSpectrum (𝓞 F) → ℂ := fun P =>
+      χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (((Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) : ℝ) : ℂ) with hzdef
+    have hcast : ∀ P : HeightOneSpectrum (𝓞 F),
+        χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)) = z P := by
+      intro P
+      rw [hzdef]
+      congr 1
+      rw [Complex.ofReal_cpow (Nat.cast_nonneg _) (-s), Complex.ofReal_neg,
+        Complex.ofReal_natCast]
+    have hzsum : Summable z := by
+      refine Summable.of_norm_bounded (hAll s hs) ?_
+      intro P
+      exact hterm s P
+    -- `𝒮 s` as the log-sum over `z`
+    have h𝒮s : 𝒮 (s : ℂ) =
+        ∑' P : HeightOneSpectrum (𝓞 F), -Complex.log (1 - z P) := by
+      refine tsum_congr fun P => ?_
+      rw [hcast P]
+    -- `Sχ s` as the indicator sum of `z` over the degree-one places
+    set T : Set (HeightOneSpectrum (𝓞 F)) :=
+      {P | (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ} with hTdef
+    have hSχs : Sχ s = ∑' P : HeightOneSpectrum (𝓞 F), Set.indicator T z P :=
+      tsum_subtype T z
+    -- summability of the log factors and the indicator
+    have hlogsum : Summable
+        (fun P : HeightOneSpectrum (𝓞 F) => -Complex.log (1 - z P)) := by
+      refine Summable.of_norm_bounded ((hAll s hs).mul_left (3 / 2 : ℝ)) ?_
+      intro P
+      have h6 : ‖-(z P)‖ ≤ 1 / 2 := by
+        rw [norm_neg]
+        exact le_trans (hterm s P) (hhalf P s hs.le)
+      rw [norm_neg]
+      calc ‖Complex.log (1 - z P)‖
+          = ‖Complex.log (1 + -(z P))‖ := by rw [sub_eq_add_neg]
+        _ ≤ 3 / 2 * ‖-(z P)‖ := Complex.norm_log_one_add_half_le_self h6
+        _ = 3 / 2 * ‖z P‖ := by rw [norm_neg]
+        _ ≤ 3 / 2 * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) :=
+            mul_le_mul_of_nonneg_left (hterm s P) (by norm_num)
+    have hindsum : Summable (Set.indicator T z) := hzsum.indicator T
+    -- the difference as a single sum
+    have hdiffsum : 𝒮 (s : ℂ) - Sχ s =
+        ∑' P : HeightOneSpectrum (𝓞 F),
+          (-Complex.log (1 - z P) - Set.indicator T z P) := by
+      rw [h𝒮s, hSχs]
+      exact (hlogsum.tsum_sub hindsum).symm
+    -- the termwise bound
+    set b : HeightOneSpectrum (𝓞 F) → ℝ := fun P =>
+      (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-(2 : ℝ)) +
+        Set.indicator
+          {P : HeightOneSpectrum (𝓞 F) | ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime}
+          (fun P => (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-(1 : ℝ))) P with hbdef
+    have hnp' : Summable ((fun P : HeightOneSpectrum (𝓞 F) =>
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-(1 : ℝ))) ∘
+        ((↑) : {P : HeightOneSpectrum (𝓞 F) //
+          ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} → HeightOneSpectrum (𝓞 F))) := hnp
+    have hind1 : Summable (Set.indicator
+        {P : HeightOneSpectrum (𝓞 F) | ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime}
+        (fun P => (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-(1 : ℝ)))) :=
+      summable_subtype_iff_indicator.mp hnp'
+    have hbsum : Summable b := (hAll 2 (by norm_num)).add hind1
+    have hpoint : ∀ P : HeightOneSpectrum (𝓞 F),
+        ‖-Complex.log (1 - z P) - Set.indicator T z P‖ ≤ b P := by
+      intro P
+      have hz12 : ‖z P‖ ≤ 1 / 2 := le_trans (hterm s P) (hhalf P s hs.le)
+      have hN1 : (1 : ℝ) < (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) := by
+        have h3 := htwo P
+        exact_mod_cast (by omega : 1 < Nat.card (𝓞 F ⧸ P.asIdeal))
+      have hind_nonneg : 0 ≤ Set.indicator
+          {P : HeightOneSpectrum (𝓞 F) | ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime}
+          (fun P => (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-(1 : ℝ))) P :=
+        Set.indicator_apply_nonneg fun _ =>
+          Real.rpow_nonneg (Nat.cast_nonneg _) _
+      -- log-Taylor remainder bound
+      have hrem : ‖-Complex.log (1 - z P) - z P‖ ≤
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-(2 : ℝ)) := by
+        have h7 : ‖-(z P)‖ < 1 := by rw [norm_neg]; linarith
+        have h8 := Complex.norm_log_one_add_sub_self_le h7
+        have h9 : -Complex.log (1 - z P) - z P =
+            -(Complex.log (1 + -(z P)) - -(z P)) := by
+          rw [sub_eq_add_neg (1 : ℂ) (z P)]
+          ring
+        rw [h9, norm_neg]
+        refine le_trans h8 ?_
+        rw [norm_neg]
+        -- `‖z‖² (1-‖z‖)⁻¹ / 2 ≤ ‖z‖² ≤ N^{-s}·N^{-s} = N^{-2s} ≤ N^{-2}`
+        have h10 : (1 - ‖z P‖)⁻¹ ≤ 2 := by
+          rw [inv_le_comm₀ (by linarith) two_pos]
+          linarith
+        have h11 : ‖z P‖ ^ 2 * (1 - ‖z P‖)⁻¹ / 2 ≤ ‖z P‖ ^ 2 := by
+          calc ‖z P‖ ^ 2 * (1 - ‖z P‖)⁻¹ / 2 ≤ ‖z P‖ ^ 2 * 2 / 2 := by
+                gcongr
+            _ = ‖z P‖ ^ 2 := by ring
+        refine le_trans h11 ?_
+        calc ‖z P‖ ^ 2
+            ≤ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s)) ^ 2 := by
+              have h12 := hterm s P
+              have h13 := norm_nonneg (z P)
+              nlinarith
+          _ = (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s + -s) := by
+              rw [Real.rpow_add (by linarith : (0:ℝ) <
+                (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ))]
+              ring
+          _ ≤ (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-(2 : ℝ)) :=
+              (Real.rpow_le_rpow_left_iff hN1).mpr (by linarith)
+      by_cases hPT : P ∈ T
+      · -- degree-one place away from `ℓ`: only the Taylor remainder remains
+        rw [Set.indicator_of_mem hPT]
+        refine le_trans hrem ?_
+        rw [hbdef]
+        exact le_add_of_nonneg_right hind_nonneg
+      · rw [Set.indicator_of_notMem hPT, sub_zero]
+        by_cases hprime : (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime
+        · -- residue cardinality `ℓ`: the character kills the factor
+          have hNℓ : Nat.card (𝓞 F ⧸ P.asIdeal) = ℓ := by
+            by_contra hne
+            exact hPT ⟨hprime, hne⟩
+          have hz0 : z P = 0 := by
+            rw [hzdef]
+            simp only [hNℓ, ZMod.natCast_self]
+            rw [MulChar.map_nonunit χ not_isUnit_zero, zero_mul]
+          rw [hz0, sub_zero, Complex.log_one, neg_zero, norm_zero, hbdef]
+          exact add_nonneg (Real.rpow_nonneg (Nat.cast_nonneg _) _) hind_nonneg
+        · -- higher-degree place: remainder plus first-order term
+          have hmem : P ∈ {P : HeightOneSpectrum (𝓞 F) |
+              ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} := hprime
+          calc ‖-Complex.log (1 - z P)‖
+              = ‖(-Complex.log (1 - z P) - z P) + z P‖ := by
+                rw [sub_add_cancel]
+            _ ≤ ‖-Complex.log (1 - z P) - z P‖ + ‖z P‖ := norm_add_le _ _
+            _ ≤ (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-(2 : ℝ)) +
+                (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-(1 : ℝ)) := by
+                refine add_le_add hrem (le_trans (hterm s P) ?_)
+                exact (Real.rpow_le_rpow_left_iff hN1).mpr (by linarith)
+            _ = b P := by
+                rw [hbdef]
+                congr 1
+                exact (Set.indicator_of_mem hmem
+                  (fun P => (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-(1 : ℝ)))).symm
+    -- assemble
+    calc ‖𝒮 (s : ℂ) - Sχ s‖
+        = ‖∑' P : HeightOneSpectrum (𝓞 F),
+            (-Complex.log (1 - z P) - Set.indicator T z P)‖ := by rw [hdiffsum]
+      _ ≤ ∑' P : HeightOneSpectrum (𝓞 F), b P :=
+          tsum_of_norm_bounded hbsum.hasSum hpoint
+      _ = CR + Cnp := by
+          rw [hbdef]
+          rw [(hAll 2 (by norm_num)).tsum_add hind1]
+          congr 1
+          exact (tsum_subtype _ _).symm
   -- assemble the uniform bound
   refine ⟨max B₀ ((CR + Cnp) + (‖𝒮 ((3 / 2 : ℝ) : ℂ)‖ + C / c * (1 / 2))), ?_⟩
   intro s hs
