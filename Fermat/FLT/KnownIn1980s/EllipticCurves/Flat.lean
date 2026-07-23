@@ -21,6 +21,9 @@ public import Fermat.FLT.EllipticCurve.PhiPsiCoprime
 import Fermat.FLT.EllipticCurve.TorsionCardSep
 import Mathlib.FieldTheory.Normal.Closure
 import Mathlib.RingTheory.Etale.Field
+-- infinite Galois theory (`InfiniteGalois.mem_range_algebraMap_iff_fixed`):
+-- Speiser's lemma at the infinite level in the `EtaleGrothendieck` section
+import Mathlib.FieldTheory.Galois.Infinite
 -- tensor products commute with finite products (`Algebra.TensorProduct.piRight`)
 -- and étale-ness is product-local (`Algebra.FormallyEtale.pi_iff`): the product
 -- assembly of `exists_finite_etale_algebra_form_of_inertia_fixes`
@@ -3118,37 +3121,11 @@ theorem WeierstrassCurve.torsion_flat_of_good_reduction_mul
   dsimp only
   simp [hfa σ, hfb σ, map_add]
 
-/-- **Grothendieck full faithfulness, algebra half** (sorry node; curve-free —
-the descent core of the comparison leaf
-`exists_bialgEquiv_of_torsion_points_equiv`): a `Gal(Kˢᵉᵖ/K)`-equivariant
-bijection between the `Kˢᵉᵖ`-points of two finite étale `K`-algebras is induced
-by composition with a (unique, but only existence is stated) `K`-algebra
-isomorphism. This is the full faithfulness of the Grothendieck
-anti-equivalence between finite étale `K`-algebras and finite discrete Galois
-sets. Intended proof, aligned with the `GaloisEtalePackage` section above:
-choose a finite Galois subextension `L` of `Kˢᵉᵖ` splitting both `A` and `B`
-(a compositum of the finitely many images of the finitely many points); the
-evaluation maps `A → (A →ₐ[K] Kˢᵉᵖ) → L` and `B → (B →ₐ[K] Kˢᵉᵖ) → L` land in
-the `Gal(L/K)`-equivariant functions and are isomorphisms onto them (the
-étale-algebra Gelfand transform: injective because points separate a finite
-étale algebra, surjective by the dimension count
-`dim A = #points = dim (equivariant functions)`); conjugating the second by
-the equivariant bijection `g` of the point sets identifies the two
-equivariant-function algebras, and the composite `B ≃ A` induces `g` by
-construction. -/
-theorem exists_algEquiv_of_algHom_equiv
-    (A : Type*) [CommRing A] [Algebra K A] [Module.Finite K A] [Algebra.Etale K A]
-    (B : Type*) [CommRing B] [Algebra K B] [Module.Finite K B] [Algebra.Etale K B]
-    (g : (A →ₐ[K] Ksep) ≃ (B →ₐ[K] Ksep))
-    (hg : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : A →ₐ[K] Ksep),
-      g (σ.toAlgHom.comp φ) = σ.toAlgHom.comp (g φ)) :
-    ∃ e : B ≃ₐ[K] A, ∀ φ : A →ₐ[K] Ksep, g φ = φ.comp e.toAlgHom :=
-  sorry
-
 set_option backward.isDefEq.respectTransparency false in
 omit [DecidableEq Ksep] in
 /-- **Points separate a finite étale algebra** (PROVEN 2026-07-23; glue for the
-Hopf-upgrade leaf `exists_bialgEquiv_of_algEquiv_conv`): an element of a finite
+Hopf-upgrade leaf `exists_bialgEquiv_of_algEquiv_conv` and for the
+`EtaleGrothendieck` section below): an element of a finite
 étale `K`-algebra killed by every `Kˢᵉᵖ`-point is zero. The algebra is reduced
 (unramified over a field) and Artinian, so a nonzero element avoids some prime;
 that prime is maximal, its residue field is a finite unramified — hence
@@ -3182,6 +3159,303 @@ theorem eq_zero_of_forall_algHom_eq_zero
     (IsSepClosed.lift : (A ⧸ p) →ₐ[K] Ksep).toRingHom.injective
       (by simpa using hcontra)
   exact hxp (by rwa [Ideal.Quotient.mkₐ_eq_mk, Ideal.Quotient.eq_zero_iff_mem] at hker)
+
+/-!
+### The Gelfand transform onto equivariant functions at the infinite level
+
+Support for `exists_algEquiv_of_algHom_equiv` below. For a finite étale
+`K`-algebra `A`, the Gelfand transform `a ↦ (φ ↦ φ a)` maps `A` into the
+`Gal(Kˢᵉᵖ/K)`-equivariant functions `(A →ₐ[K] Kˢᵉᵖ) → Kˢᵉᵖ`; it is injective by
+the separation lemma `eq_zero_of_forall_algHom_eq_zero` (below) and surjective
+by a dimension squeeze that needs NO point counting and no finite splitting
+level: a `K`-linearly independent family of equivariant functions is
+automatically `Kˢᵉᵖ`-linearly independent (Speiser's lemma, the minimal-relation
+argument of split Galois descent run for the full group `Gal(Kˢᵉᵖ/K)`, with
+`InfiniteGalois.mem_range_algebraMap_iff_fixed` supplying "fixed by all of
+`Gal(Kˢᵉᵖ/K)` means in `K`"), so an equivariant function outside the image of
+the Gelfand transform would produce `dim_K A + 1` many `Kˢᵉᵖ`-independent
+vectors inside the function space on the points, whose `Kˢᵉᵖ`-dimension
+`#points` is at most `dim_K A` by `card_algHom_le_finrank`.
+-/
+
+section EtaleGrothendieck
+
+variable {S : Type*}
+
+omit [DecidableEq Ksep] in
+/-- **Speiser's lemma at the infinite level** (PROVEN; the descent half of the
+Gelfand identification feeding `exists_algEquiv_of_algHom_equiv`): a family of
+`Gal(Kˢᵉᵖ/K)`-equivariant functions on a `Gal(Kˢᵉᵖ/K)`-set `S` that is linearly
+independent over `K` is linearly independent over `Kˢᵉᵖ`. Minimal-relation
+argument: normalize a shortest nontrivial `Kˢᵉᵖ`-relation to have a coefficient
+`1`, subtract its Galois translates (again relations, by equivariance of the
+functions), conclude by strong induction that all coefficients are fixed by
+`Gal(Kˢᵉᵖ/K)`, hence lie in `K` (`Kˢᵉᵖ/K` is Galois, being a separable
+closure) — contradicting `K`-independence. No group laws of the action and no
+finiteness of `S` are needed. -/
+theorem linearIndependent_sepClosure_of_equivariant
+    (act : (Ksep ≃ₐ[K] Ksep) → S → S) {ι : Type*} {v : ι → S → Ksep}
+    (hmem : ∀ (i : ι) (σ : Ksep ≃ₐ[K] Ksep) (s : S), v i (act σ s) = σ (v i s))
+    (hv : LinearIndependent K v) : LinearIndependent Ksep v := by
+  classical
+  rw [linearIndependent_iff']
+  intro s
+  induction s using Finset.strongInduction with
+  | H s ih =>
+    intro c hc
+    by_contra hne
+    push Not at hne
+    obtain ⟨i₀, hi₀s, hi₀⟩ := hne
+    set c' : ι → Ksep := fun i => (c i₀)⁻¹ * c i with hc'def
+    have hrel : ∑ i ∈ s, c' i • v i = 0 := by
+      have h1 := congrArg (fun f : S → Ksep => (c i₀)⁻¹ • f) hc
+      simpa [Finset.smul_sum, smul_smul, hc'def] using h1
+    have hc'i₀ : c' i₀ = 1 := by
+      simp only [hc'def]
+      exact inv_mul_cancel₀ hi₀
+    have hrelg : ∀ σ : Ksep ≃ₐ[K] Ksep, ∑ i ∈ s, σ (c' i) • v i = 0 := by
+      intro σ
+      have h0 : ∀ b : S, ∑ i ∈ s, c' i * v i (act σ⁻¹ b) = 0 := by
+        intro b
+        have h2 := congrFun hrel (act σ⁻¹ b)
+        simpa using h2
+      funext b
+      simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, Pi.zero_apply]
+      calc ∑ i ∈ s, σ (c' i) * v i b
+          = ∑ i ∈ s, σ (c' i) * σ (v i (act σ⁻¹ b)) := by
+            refine Finset.sum_congr rfl fun i _ => ?_
+            rw [hmem i σ⁻¹ b, AlgEquiv.aut_inv, AlgEquiv.apply_symm_apply]
+        _ = σ (∑ i ∈ s, c' i * v i (act σ⁻¹ b)) := by
+            rw [map_sum]
+            exact Finset.sum_congr rfl fun i _ => (map_mul σ _ _).symm
+        _ = 0 := by rw [h0 b, map_zero]
+    have hfix : ∀ (σ : Ksep ≃ₐ[K] Ksep) (i : ι), i ∈ s → σ (c' i) = c' i := by
+      intro σ i hi
+      have h3 : ∑ j ∈ s, (σ (c' j) - c' j) • v j = 0 := by
+        simp only [sub_smul, Finset.sum_sub_distrib, hrelg σ, hrel, sub_zero]
+      have h4 : ∑ j ∈ s.erase i₀, (σ (c' j) - c' j) • v j = 0 := by
+        rwa [← Finset.add_sum_erase _ _ hi₀s, hc'i₀, map_one, sub_self, zero_smul,
+          zero_add] at h3
+      have h5 := ih (s.erase i₀) (Finset.erase_ssubset hi₀s) _ h4
+      rcases eq_or_ne i i₀ with rfl | hne'
+      · rw [hc'i₀, map_one]
+      · exact sub_eq_zero.mp (h5 i (Finset.mem_erase.mpr ⟨hne', hi⟩))
+    have hK : ∀ i : ι, ∃ k : K, i ∈ s → algebraMap K Ksep k = c' i := by
+      intro i
+      by_cases hi : i ∈ s
+      · have hmem' : c' i ∈ Set.range (algebraMap K Ksep) := by
+          rw [InfiniteGalois.mem_range_algebraMap_iff_fixed]
+          exact fun σ => hfix σ i hi
+        exact ⟨hmem'.choose, fun _ => hmem'.choose_spec⟩
+      · exact ⟨0, fun h => absurd h hi⟩
+    choose k hk using hK
+    have hrelK : ∑ i ∈ s, k i • v i = 0 := by
+      have hcoe : ∑ i ∈ s, k i • v i = ∑ i ∈ s, c' i • v i := by
+        refine Finset.sum_congr rfl fun i hi => ?_
+        rw [← hk i hi, algebraMap_smul]
+      rw [hcoe, hrel]
+    have h6 := linearIndependent_iff'.mp hv s k hrelK i₀ hi₀s
+    rw [← hk i₀ hi₀s, h6, map_zero] at hc'i₀
+    exact zero_ne_one hc'i₀
+
+omit [DecidableEq Ksep] in
+/-- **The equivariant-functions algebra on a `Gal(Kˢᵉᵖ/K)`-set** (glue for
+`exists_algEquiv_of_algHom_equiv`): the `K`-subalgebra of functions `S → Kˢᵉᵖ`
+commuting with the Galois action `act` — the infinite-level counterpart of
+`galoisEquivariantAlgebra` for a set-level action. -/
+def sepPointsEquivariantSubalgebra (act : (Ksep ≃ₐ[K] Ksep) → S → S) :
+    Subalgebra K (S → Ksep) where
+  carrier := {F | ∀ (σ : Ksep ≃ₐ[K] Ksep) (s : S), F (act σ s) = σ (F s)}
+  mul_mem' := fun hf hg σ s => by simp only [Pi.mul_apply, map_mul, hf σ s, hg σ s]
+  one_mem' := fun σ s => by simp only [Pi.one_apply, map_one]
+  add_mem' := fun hf hg σ s => by simp only [Pi.add_apply, map_add, hf σ s, hg σ s]
+  zero_mem' := fun σ s => by simp only [Pi.zero_apply, map_zero]
+  algebraMap_mem' := fun r σ s => by
+    simp only [Pi.algebraMap_apply, AlgEquiv.commutes]
+
+omit [IsSepClosure K Ksep] [DecidableEq Ksep] in
+/-- Membership in the equivariant subalgebra, unfolded. -/
+theorem mem_sepPointsEquivariantSubalgebra_iff {act : (Ksep ≃ₐ[K] Ksep) → S → S}
+    {F : S → Ksep} :
+    F ∈ sepPointsEquivariantSubalgebra K Ksep act ↔
+      ∀ (σ : Ksep ≃ₐ[K] Ksep) (s : S), F (act σ s) = σ (F s) :=
+  Iff.rfl
+
+set_option backward.isDefEq.respectTransparency false in
+omit [DecidableEq Ksep] in
+/-- **Gelfand surjectivity for finite étale algebras** (PROVEN; the descent core
+of `exists_algEquiv_of_algHom_equiv`): every `Gal(Kˢᵉᵖ/K)`-equivariant function
+on the `Kˢᵉᵖ`-points of a finite étale `K`-algebra is evaluation at an element.
+Proof by dimension squeeze: were `F` outside the image of the (injective, by
+separation) Gelfand transform, adjoining it to the image of a basis would give
+`dim_K A + 1` many `K`-independent equivariant functions, `Kˢᵉᵖ`-independent by
+Speiser's lemma, inside a function space of `Kˢᵉᵖ`-dimension
+`#(A →ₐ[K] Kˢᵉᵖ) ≤ dim_K A` (`card_algHom_le_finrank`). -/
+theorem exists_eval_eq_of_equivariant
+    (A : Type*) [CommRing A] [Algebra K A] [Module.Finite K A] [Algebra.Etale K A]
+    (F : (A →ₐ[K] Ksep) → Ksep)
+    (hF : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : A →ₐ[K] Ksep),
+      F (σ.toAlgHom.comp φ) = σ (F φ)) :
+    ∃ a : A, ∀ φ : A →ₐ[K] Ksep, φ a = F φ := by
+  classical
+  haveI : Finite (A →ₐ[K] Ksep) := Finite.algHom K A Ksep
+  haveI := Fintype.ofFinite (A →ₐ[K] Ksep)
+  let ε : A →ₐ[K] ((A →ₐ[K] Ksep) → Ksep) := AlgHom.pi (fun φ => φ)
+  have hεinj : Function.Injective ε := by
+    intro x y hxy
+    have hzero : x - y = 0 := by
+      refine eq_zero_of_forall_algHom_eq_zero K Ksep A _ fun φ => ?_
+      rw [map_sub, sub_eq_zero]
+      exact congrFun hxy φ
+    exact sub_eq_zero.mp hzero
+  by_contra hnot
+  push Not at hnot
+  have hFnot : F ∉ Submodule.span K
+      (Set.range fun i => ε (Module.finBasis K A i)) := by
+    intro hFmem
+    have hrange : Submodule.span K (Set.range fun i => ε (Module.finBasis K A i)) =
+        LinearMap.range ε.toLinearMap := by
+      have h1 : (Set.range fun i => ε (Module.finBasis K A i)) =
+          ε.toLinearMap '' Set.range (Module.finBasis K A) := by
+        rw [← Set.range_comp]
+        rfl
+      rw [h1, Submodule.span_image, Module.Basis.span_eq, Submodule.map_top]
+    rw [hrange] at hFmem
+    obtain ⟨a, ha⟩ := hFmem
+    obtain ⟨φ, hφ⟩ := hnot a
+    exact hφ (congrFun ha φ)
+  have hvind : LinearIndependent K fun i => ε (Module.finBasis K A i) :=
+    (Module.finBasis K A).linearIndependent.map' ε.toLinearMap
+      (LinearMap.ker_eq_bot.mpr hεinj)
+  have hopt : LinearIndependent K
+      (fun o => Option.casesOn' o F fun i => ε (Module.finBasis K A i)) :=
+    hvind.option hFnot
+  have hΩ : LinearIndependent Ksep
+      (fun o => Option.casesOn' o F fun i => ε (Module.finBasis K A i)) := by
+    refine linearIndependent_sepClosure_of_equivariant K Ksep
+      (fun σ φ => σ.toAlgHom.comp φ) ?_ hopt
+    intro o σ φ
+    cases o with
+    | none => exact hF σ φ
+    | some i => rfl
+  have hcard := hΩ.fintype_card_le_finrank
+  rw [Module.finrank_pi, Fintype.card_option, Fintype.card_fin] at hcard
+  have hle := card_algHom_le_finrank K A Ksep
+  rw [Nat.card_eq_fintype_card] at hle
+  omega
+
+set_option backward.isDefEq.respectTransparency false in
+omit [DecidableEq Ksep] in
+/-- **One direction of Grothendieck full faithfulness** (PROVEN; glue for
+`exists_algEquiv_of_algHom_equiv`): an equivariant map `t` from the
+`Kˢᵉᵖ`-points of a finite étale `K`-algebra `A` to the points of any `K`-algebra
+`B` is induced by an algebra homomorphism `B →ₐ[K] A`. The homomorphism is the
+composite of `b ↦ (φ ↦ t φ b)` (landing in the equivariant functions on the
+points of `A`) with the inverse of the Gelfand transform of `A`, an isomorphism
+onto the equivariant functions by separation and
+`exists_eval_eq_of_equivariant`. -/
+theorem exists_algHom_of_algHom_map
+    (A : Type*) [CommRing A] [Algebra K A] [Module.Finite K A] [Algebra.Etale K A]
+    (B : Type*) [CommRing B] [Algebra K B]
+    (t : (A →ₐ[K] Ksep) → (B →ₐ[K] Ksep))
+    (ht : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : A →ₐ[K] Ksep),
+      t (σ.toAlgHom.comp φ) = σ.toAlgHom.comp (t φ)) :
+    ∃ e₀ : B →ₐ[K] A, ∀ (φ : A →ₐ[K] Ksep) (b : B), φ (e₀ b) = t φ b := by
+  classical
+  let act : (Ksep ≃ₐ[K] Ksep) → (A →ₐ[K] Ksep) → (A →ₐ[K] Ksep) :=
+    fun σ φ => σ.toAlgHom.comp φ
+  let ε : A →ₐ[K] ((A →ₐ[K] Ksep) → Ksep) := AlgHom.pi (fun φ => φ)
+  have hεmem : ∀ a : A, ε a ∈ sepPointsEquivariantSubalgebra K Ksep act :=
+    fun a => (mem_sepPointsEquivariantSubalgebra_iff K Ksep).mpr fun σ φ => rfl
+  have hεbij : Function.Bijective
+      (ε.codRestrict (sepPointsEquivariantSubalgebra K Ksep act) hεmem) := by
+    constructor
+    · intro x y hxy
+      have hxy' : ∀ φ : A →ₐ[K] Ksep, φ x = φ y := fun φ =>
+        congrFun (congrArg Subtype.val hxy) φ
+      have hzero : x - y = 0 := by
+        refine eq_zero_of_forall_algHom_eq_zero K Ksep A _ fun φ => ?_
+        rw [map_sub, sub_eq_zero]
+        exact hxy' φ
+      exact sub_eq_zero.mp hzero
+    · rintro ⟨F, hF⟩
+      obtain ⟨a, ha⟩ := exists_eval_eq_of_equivariant K Ksep A F
+        ((mem_sepPointsEquivariantSubalgebra_iff K Ksep).mp hF)
+      exact ⟨a, Subtype.ext (funext fun φ => ha φ)⟩
+  let εe : A ≃ₐ[K] (sepPointsEquivariantSubalgebra K Ksep act) :=
+    AlgEquiv.ofBijective
+      (ε.codRestrict (sepPointsEquivariantSubalgebra K Ksep act) hεmem) hεbij
+  let T : B →ₐ[K] ((A →ₐ[K] Ksep) → Ksep) := AlgHom.pi (fun φ => t φ)
+  have hTmem : ∀ b : B, T b ∈ sepPointsEquivariantSubalgebra K Ksep act := by
+    intro b
+    refine (mem_sepPointsEquivariantSubalgebra_iff K Ksep).mpr fun σ φ => ?_
+    show (t (σ.toAlgHom.comp φ)) b = σ ((t φ) b)
+    rw [ht σ φ]
+    rfl
+  refine ⟨εe.symm.toAlgHom.comp
+    (T.codRestrict (sepPointsEquivariantSubalgebra K Ksep act) hTmem), ?_⟩
+  intro φ b
+  have h1 : εe (εe.symm
+      (T.codRestrict (sepPointsEquivariantSubalgebra K Ksep act) hTmem b)) =
+      T.codRestrict (sepPointsEquivariantSubalgebra K Ksep act) hTmem b :=
+    εe.apply_symm_apply _
+  exact congrFun (congrArg Subtype.val h1) φ
+
+end EtaleGrothendieck
+
+set_option backward.isDefEq.respectTransparency false in
+omit [DecidableEq Ksep] in
+/-- **Grothendieck full faithfulness, algebra half** (PROVEN 2026-07-23;
+curve-free — the descent core of the comparison leaf
+`exists_bialgEquiv_of_torsion_points_equiv`): a `Gal(Kˢᵉᵖ/K)`-equivariant
+bijection between the `Kˢᵉᵖ`-points of two finite étale `K`-algebras is induced
+by composition with a (unique, but only existence is stated) `K`-algebra
+isomorphism. This is the full faithfulness of the Grothendieck
+anti-equivalence between finite étale `K`-algebras and finite discrete Galois
+sets. Proof, via the `EtaleGrothendieck` section above: the two directions of
+the bijection induce (`exists_algHom_of_algHom_map`, the Gelfand transform onto
+the equivariant functions of the point set — injective by separation,
+surjective by Speiser independence plus `card_algHom_le_finrank`, with no point
+counting) algebra homomorphisms `e₀ : B →ₐ[K] A` and `e₁ : A →ₐ[K] B` acting
+on points as `g` and `g.symm` respectively; the composites act on points as the
+identity, hence are the identity by separation
+(`eq_zero_of_forall_algHom_eq_zero`), and `AlgEquiv.ofAlgHom` assembles the
+isomorphism. -/
+theorem exists_algEquiv_of_algHom_equiv
+    (A : Type*) [CommRing A] [Algebra K A] [Module.Finite K A] [Algebra.Etale K A]
+    (B : Type*) [CommRing B] [Algebra K B] [Module.Finite K B] [Algebra.Etale K B]
+    (g : (A →ₐ[K] Ksep) ≃ (B →ₐ[K] Ksep))
+    (hg : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : A →ₐ[K] Ksep),
+      g (σ.toAlgHom.comp φ) = σ.toAlgHom.comp (g φ)) :
+    ∃ e : B ≃ₐ[K] A, ∀ φ : A →ₐ[K] Ksep, g φ = φ.comp e.toAlgHom := by
+  classical
+  have hgsymm : ∀ (σ : Ksep ≃ₐ[K] Ksep) (ψ : B →ₐ[K] Ksep),
+      g.symm (σ.toAlgHom.comp ψ) = σ.toAlgHom.comp (g.symm ψ) := by
+    intro σ ψ
+    apply g.injective
+    rw [Equiv.apply_symm_apply, hg σ (g.symm ψ), Equiv.apply_symm_apply]
+  obtain ⟨e₀, he₀⟩ := exists_algHom_of_algHom_map K Ksep A B (fun φ => g φ)
+    (fun σ φ => hg σ φ)
+  obtain ⟨e₁, he₁⟩ := exists_algHom_of_algHom_map K Ksep B A (fun ψ => g.symm ψ)
+    (fun σ ψ => hgsymm σ ψ)
+  have h1 : e₀.comp e₁ = AlgHom.id K A := by
+    apply AlgHom.ext
+    intro a
+    have hzero : e₀ (e₁ a) - a = 0 := by
+      refine eq_zero_of_forall_algHom_eq_zero K Ksep A _ fun φ => ?_
+      rw [map_sub, sub_eq_zero, he₀ φ (e₁ a), he₁ (g φ) a, Equiv.symm_apply_apply]
+    have h := sub_eq_zero.mp hzero
+    simpa using h
+  have h2 : e₁.comp e₀ = AlgHom.id K B := by
+    apply AlgHom.ext
+    intro b
+    have hzero : e₁ (e₀ b) - b = 0 := by
+      refine eq_zero_of_forall_algHom_eq_zero K Ksep B _ fun ψ => ?_
+      rw [map_sub, sub_eq_zero, he₁ ψ (e₀ b), he₀ (g.symm ψ) b, Equiv.apply_symm_apply]
+    have h := sub_eq_zero.mp hzero
+    simpa using h
+  refine ⟨AlgEquiv.ofAlgHom e₀ e₁ h1 h2, fun φ => AlgHom.ext fun b => ?_⟩
+  exact (he₀ φ b).symm
 
 omit [DecidableEq Ksep] in
 /-- **Grothendieck full faithfulness, Hopf upgrade** (PROVEN 2026-07-23;
