@@ -2348,16 +2348,52 @@ theorem inertia_card_dvd_of_map_localInertiaGroup_card_dvd
     Nat.card (Q.inertia (K ≃ₐ[ℚ] K)) ∣ n :=
   inertia_card_dvd_of_card_map_localInertiaGroup_dvd K u hfix hq Q hQ hmem n hn
 
-/-- **Cube-triviality of the local inertia image at `2`** (sorry node,
-isolated 2026-07-23 as the purely REPRESENTATION-THEORETIC half of the
-inertia-image-order leaf below): every element of the local inertia at
-`2` maps under the matrix form `u` to an element of `GL₂(𝔽̄₃)` whose
-cube is `1`. Intended content: by `hρ.isTameAtTwo` the local
-representation at `2` is an extension of the unramified character `δ`
-by `δ⁻¹·χ₃` (the determinant is `χ₃`, unramified at `2`), so every
-inertia element acts by a unipotent matrix fixing the stable flag; a
-unipotent element of `GL₂` in characteristic `3` has cube `1`
-(`(1+N)³ = 1+N³ = 1` for `N` nilpotent, `3 = 0`). -/
+/-- **Unipotence of the local inertia image at `2`** (sorry node,
+isolated 2026-07-24 as the purely REPRESENTATION-THEORETIC content of
+the cube-triviality glue below): every element of the local inertia at
+`2` maps under the matrix form `u` to a UNIPOTENT element of
+`GL₂(𝔽̄₃)`, stated as `(g − 1)² = 0` at the matrix level. Intended
+content (Serre §4.1): by `hρ.isTameAtTwo` the local representation at
+`2` is an extension of the unramified character `δ` by `δ⁻¹·χ₃`; on
+inertia `δ = 1` (unramifiedness) and `det = χ₃ = 1` (`3 ≠ 2`, the
+`3`-adic cyclotomic character is unramified at `2`), so an inertia
+element acts by a triangular matrix with both diagonal entries `1` in
+the basis adapted to the stable line — i.e. `g − 1` is strictly
+triangular, `(g − 1)² = 0`. Bridging input: `isTameAtTwo` is stated
+over `Γ ℚ_[2]` with the `Z2bar`-inertia, while the conclusion is over
+`Γ ℚ₂ᵥ` (`ℚ₂ᵥ` the adic completion at `2`); transport along
+`Rat.HeightOneSpectrum.adicCompletion.padicEquiv`. -/
+theorem map_localInertiaGroup_at_two_sub_one_sq_eq_zero {k : Type u} [Finite k]
+    [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e) :
+    ∀ σ ∈ localInertiaGroup Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+      (((u (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) :
+        GL (Fin 2) (Dickson.K 3)) :
+        Matrix (Fin 2) (Fin 2) (Dickson.K 3)) - 1) ^ 2 = 0 :=
+  sorry
+
+/-- **Cube-triviality of the local inertia image at `2`** (DECOMPOSED
+2026-07-24 — the unipotence content is the sorry node
+`map_localInertiaGroup_at_two_sub_one_sq_eq_zero` above; the
+characteristic-`3` computation is proven here): every element of the
+local inertia at `2` maps under the matrix form `u` to an element of
+`GL₂(𝔽̄₃)` whose cube is `1`.  Glue: for `N := g − 1` with `N² = 0`,
+`g³ = (N + 1)³ = N³ + 3N² + 3N + 1 = 1` since `3 = 0` in
+characteristic `3` and `N³ = N²·N = 0`. -/
 theorem map_localInertiaGroup_at_two_pow_three_eq_one {k : Type u} [Finite k]
     [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
@@ -2376,8 +2412,23 @@ theorem map_localInertiaGroup_at_two_pow_three_eq_one {k : Type u} [Finite k]
     ∀ σ ∈ localInertiaGroup Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
       (u (Field.absoluteGaloisGroup.map (algebraMap ℚ
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ)) ^ 3 = 1 :=
-  sorry
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ)) ^ 3 = 1 := by
+  intro σ hσ
+  have hN := map_localInertiaGroup_at_two_sub_one_sq_eq_zero V hV hρ b e u hu σ hσ
+  apply Units.ext
+  rw [Units.val_pow_eq_pow_val, Units.val_one]
+  set M : Matrix (Fin 2) (Fin 2) (Dickson.K 3) :=
+    ((u (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) :
+      GL (Fin 2) (Dickson.K 3)) : Matrix (Fin 2) (Fin 2) (Dickson.K 3)) with hMdef
+  have h3 : (3 : Matrix (Fin 2) (Fin 2) (Dickson.K 3)) = 0 := by
+    exact_mod_cast CharP.cast_eq_zero (Matrix (Fin 2) (Fin 2) (Dickson.K 3)) 3
+  have hcube : (M - 1) ^ 3 = 0 := by
+    rw [pow_succ, hN, zero_mul]
+  calc M ^ 3
+      = (M - 1) ^ 3 + 3 * (M - 1) ^ 2 + 3 * (M - 1) + 1 := by noncomm_ring
+    _ = 1 := by rw [hcube, h3]; simp
 
 /-- **The procyclic-tame-inertia generator at `2`** (sorry node,
 isolated 2026-07-23 as the purely LOCAL-STRUCTURE half of the
