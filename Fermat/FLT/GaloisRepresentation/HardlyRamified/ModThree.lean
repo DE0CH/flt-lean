@@ -68,6 +68,14 @@ import Mathlib.NumberTheory.Padics.RingHoms
 import Mathlib.LinearAlgebra.Charpoly.BaseChange
 -- `Set.ncard_pair`, for the two-element determinant image.
 import Mathlib.Data.Set.Card
+-- `Ideal.sum_ramification_inertia` (the fundamental identity
+-- `Σ e·f = [K:ℚ]`), `Ideal.absNorm_eq_pow_inertiaDeg'` and the
+-- `normalizedFactors` bookkeeping, for the discriminant-exponent
+-- norm accounting of the kernel field.
+import Mathlib.NumberTheory.RamificationInertia.Basic
+-- `Algebra.FormallyEtale.of_isSeparable`, for the Cohen-style
+-- multiplicative section in the tame different bound.
+import Mathlib.RingTheory.Etale.Field
 
 /-!
 # Mod-3 hardly ramified representations
@@ -1947,6 +1955,7 @@ theorem kernel_field_not_dvd_discr {k : Type u} [Finite k] [Field k]
   exact isUnramifiedAt_of_inertia_le_fixingSubgroup K hp hle P
     (by exact_mod_cast hmem)
 
+open UniqueFactorizationMonoid in
 /-- **The discriminant exponent from per-prime different-exponent
 bounds** (sorry node, isolated 2026-07-23 from the two discriminant
 exponent leaves below): for a number field `K`, a rational prime `p`
@@ -1959,7 +1968,13 @@ bookkeeping, no new arithmetic): `N(𝔡_{K/ℚ}) = |d_K|`
 `v_p(d_K) = Σ_{Q∣p} f_Q·d_Q` by multiplicativity of `Ideal.absNorm`
 along the factorization of the different into primes, whence
 `a·v_p(d_K) = Σ_{Q∣p} f_Q·(a·d_Q) ≤ b·Σ_{Q∣p} f_Q·e_Q = b·[K:ℚ]`
-(`Ideal.sum_ramification_inertia`). -/
+(`Ideal.sum_ramification_inertia`). PROVEN 2026-07-23 along exactly
+that route: the different is factored into `normalizedFactors`, the
+norm is pushed through the product (`map_prod`), `Nat.factorization`
+distributes over it, primes not over `p` contribute `0`
+(`Ideal.exists_isMaximal_dvd_of_dvd_absNorm'`), primes over `p`
+contribute `d_Q·f_Q` (`Ideal.absNorm_eq_pow_inertiaDeg'`), and the
+per-prime hypothesis plus `Ideal.sum_ramification_inertia` close. -/
 theorem discr_factorization_le_of_forall_differentIdeal_pow_dvd
     (K : Type*) [Field K] [NumberField K] (p : ℕ) (hp : p.Prime) (a b : ℕ)
     (h : ∀ Q : Ideal (NumberField.RingOfIntegers K), Q.IsPrime →
@@ -1967,44 +1982,414 @@ theorem discr_factorization_le_of_forall_differentIdeal_pow_dvd
       Q ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K) →
       a * d ≤ b * Ideal.ramificationIdx' (Ideal.span {(p : ℤ)}) Q) :
     a * (NumberField.discr K).natAbs.factorization p ≤
-      b * Module.finrank ℚ K :=
-  sorry
+      b * Module.finrank ℚ K := by
+  classical
+  set R := NumberField.RingOfIntegers K with hRdef
+  set D := differentIdeal ℤ R with hDdef
+  have hD0 : D ≠ 0 := by
+    rw [hDdef, Submodule.zero_eq_bot]
+    exact differentIdeal_ne_bot
+  have hnorm : Ideal.absNorm D = (NumberField.discr K).natAbs :=
+    NumberField.absNorm_differentIdeal K R
+  rw [← hnorm]
+  -- the factorization of the different into primes
+  have hDprod : D = ∏ Q ∈ (normalizedFactors D).toFinset,
+      Q ^ (normalizedFactors D).count Q := by
+    conv_lhs => rw [← associated_iff_eq.mp (prod_normalizedFactors hD0)]
+    exact Finset.prod_multiset_count _
+  have hQprime : ∀ Q ∈ (normalizedFactors D).toFinset, Prime Q := fun Q hQ =>
+    prime_of_normalized_factor Q (Multiset.mem_toFinset.mp hQ)
+  have habs0 : ∀ Q ∈ (normalizedFactors D).toFinset,
+      Ideal.absNorm Q ≠ 0 := fun Q hQ => by
+    rw [Ne, Ideal.absNorm_eq_zero_iff, ← Ideal.zero_eq_bot]
+    exact (hQprime Q hQ).ne_zero
+  -- multiplicativity of the norm along the factorization
+  have hnormD : Ideal.absNorm D = ∏ Q ∈ (normalizedFactors D).toFinset,
+      Ideal.absNorm Q ^ (normalizedFactors D).count Q := by
+    conv_lhs => rw [hDprod]
+    rw [map_prod]
+    exact Finset.prod_congr rfl fun Q _ => map_pow _ _ _
+  -- the `p`-adic valuation of the norm, term by term
+  have hfact : (Ideal.absNorm D).factorization p
+      = ∑ Q ∈ (normalizedFactors D).toFinset,
+        (normalizedFactors D).count Q * (Ideal.absNorm Q).factorization p := by
+    rw [hnormD, Nat.factorization_prod (fun Q hQ => pow_ne_zero _ (habs0 Q hQ)),
+      Finset.sum_apply']
+    exact Finset.sum_congr rfl fun Q hQ => by
+      rw [Nat.factorization_pow, Finsupp.smul_apply, smul_eq_mul]
+  -- primes not containing `p` contribute nothing
+  have hmem_of_ne : ∀ Q ∈ (normalizedFactors D).toFinset,
+      (normalizedFactors D).count Q * (Ideal.absNorm Q).factorization p ≠ 0 →
+      ((p : ℕ) : R) ∈ Q := by
+    intro Q hQF hne
+    by_contra hpnot
+    apply hne
+    rw [Nat.mul_eq_zero]
+    right
+    by_contra hne2
+    have hdvd : p ∣ Ideal.absNorm Q := Nat.dvd_of_factorization_pos hne2
+    obtain ⟨P, hPmax, hPunder, hPdvd⟩ :=
+      Ideal.exists_isMaximal_dvd_of_dvd_absNorm' hp Q hdvd
+    have hQpr : Q.IsPrime := Ideal.isPrime_of_prime (hQprime Q hQF)
+    have hQ0 : Q ≠ ⊥ := by
+      rw [← Ideal.zero_eq_bot]
+      exact (hQprime Q hQF).ne_zero
+    have hQP : Q = P := (hQpr.isMaximal hQ0).eq_of_le hPmax.ne_top
+      (Ideal.le_of_dvd hPdvd)
+    apply hpnot
+    have hmemP : algebraMap ℤ R ((p : ℕ) : ℤ) ∈ P := by
+      have hu : ((p : ℕ) : ℤ) ∈ P.under ℤ := by
+        rw [hPunder]
+        exact Ideal.mem_span_singleton_self _
+      exact hu
+    rw [map_natCast] at hmemP
+    rw [hQP]
+    exact hmemP
+  have hsum : (Ideal.absNorm D).factorization p =
+      ∑ Q ∈ (normalizedFactors D).toFinset.filter (fun Q => ((p : ℕ) : R) ∈ Q),
+        (normalizedFactors D).count Q * (Ideal.absNorm Q).factorization p := by
+    rw [hfact]
+    exact (Finset.sum_filter_of_ne hmem_of_ne).symm
+  -- the setup at `p`
+  have hpZ : Prime ((p : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hp
+  have hspan0 : (Ideal.span {((p : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hp.ne_zero
+  haveI hspanMax : (Ideal.span {((p : ℕ) : ℤ)} : Ideal ℤ).IsMaximal :=
+    (((Ideal.span_singleton_prime (by exact_mod_cast hp.ne_zero)).mpr
+      hpZ).isMaximal hspan0)
+  have hmain := Ideal.sum_ramification_inertia R ℚ K hspan0
+  -- the per-prime bound
+  have hle : ∀ Q ∈ (normalizedFactors D).toFinset.filter
+      (fun Q => ((p : ℕ) : R) ∈ Q),
+      a * ((normalizedFactors D).count Q * (Ideal.absNorm Q).factorization p) ≤
+      b * (Ideal.ramificationIdx' (Ideal.span {((p : ℕ) : ℤ)}) Q *
+        Ideal.inertiaDeg' (Ideal.span {((p : ℕ) : ℤ)}) Q) := by
+    intro Q hQ
+    obtain ⟨hQF, hpQ⟩ := Finset.mem_filter.mp hQ
+    have hQpr : Q.IsPrime := Ideal.isPrime_of_prime (hQprime Q hQF)
+    haveI := hQpr
+    haveI hlies : Q.LiesOver (Ideal.span {((p : ℕ) : ℤ)}) :=
+      (Ideal.liesOver_span_iff hQpr.ne_top hpZ).mpr (by exact_mod_cast hpQ)
+    have hf : (Ideal.absNorm Q).factorization p =
+        Ideal.inertiaDeg' (Ideal.span {((p : ℕ) : ℤ)}) Q := by
+      rw [Ideal.absNorm_eq_pow_inertiaDeg' Q hp, hp.factorization_pow,
+        Finsupp.single_eq_same]
+    have hdvd : Q ^ (normalizedFactors D).count Q ∣ D := by
+      conv_rhs => rw [hDprod]
+      exact Finset.dvd_prod_of_mem _ hQF
+    have hcntle : a * (normalizedFactors D).count Q ≤
+        b * Ideal.ramificationIdx' (Ideal.span {((p : ℕ) : ℤ)}) Q :=
+      h Q hQpr hpQ ((normalizedFactors D).count Q) hdvd
+    calc a * ((normalizedFactors D).count Q * (Ideal.absNorm Q).factorization p)
+        = (a * (normalizedFactors D).count Q) *
+          (Ideal.absNorm Q).factorization p := by ring
+      _ ≤ (b * Ideal.ramificationIdx' (Ideal.span {((p : ℕ) : ℤ)}) Q) *
+          (Ideal.absNorm Q).factorization p :=
+        Nat.mul_le_mul_right _ hcntle
+      _ = b * (Ideal.ramificationIdx' (Ideal.span {((p : ℕ) : ℤ)}) Q *
+          Ideal.inertiaDeg' (Ideal.span {((p : ℕ) : ℤ)}) Q) := by
+        rw [hf]; ring
+  have hsub : (normalizedFactors D).toFinset.filter
+      (fun Q => ((p : ℕ) : R) ∈ Q) ⊆
+      IsDedekindDomain.primesOverFinset (Ideal.span {((p : ℕ) : ℤ)}) R := by
+    intro Q hQ
+    obtain ⟨hQF, hpQ⟩ := Finset.mem_filter.mp hQ
+    have hQpr : Q.IsPrime := Ideal.isPrime_of_prime (hQprime Q hQF)
+    rw [IsDedekindDomain.mem_primesOverFinset_iff hspan0]
+    exact ⟨hQpr, (Ideal.liesOver_span_iff hQpr.ne_top hpZ).mpr
+      (by exact_mod_cast hpQ)⟩
+  rw [hsum, Finset.mul_sum]
+  calc ∑ Q ∈ (normalizedFactors D).toFinset.filter
+        (fun Q => ((p : ℕ) : R) ∈ Q),
+        a * ((normalizedFactors D).count Q * (Ideal.absNorm Q).factorization p)
+      ≤ ∑ Q ∈ (normalizedFactors D).toFinset.filter
+        (fun Q => ((p : ℕ) : R) ∈ Q),
+        b * (Ideal.ramificationIdx' (Ideal.span {((p : ℕ) : ℤ)}) Q *
+          Ideal.inertiaDeg' (Ideal.span {((p : ℕ) : ℤ)}) Q) :=
+      Finset.sum_le_sum hle
+    _ ≤ ∑ Q ∈ IsDedekindDomain.primesOverFinset
+          (Ideal.span {((p : ℕ) : ℤ)}) R,
+        b * (Ideal.ramificationIdx' (Ideal.span {((p : ℕ) : ℤ)}) Q *
+          Ideal.inertiaDeg' (Ideal.span {((p : ℕ) : ℤ)}) Q) :=
+      Finset.sum_le_sum_of_subset hsub
+    _ = b * Module.finrank ℚ K := by rw [← Finset.mul_sum, hmain]
 
-/-- **The tame different bound** (sorry node, isolated 2026-07-23 from
-the tame-at-`2` exponent leaf below; Serre, *Corps Locaux* III §6
-Prop. 13 / Neukirch III.2.6): if the ramification index `e = e(Q∣p)`
-of a prime `Q` of `𝓞 K` over the rational prime `p` is not divisible
-by `p` (tame ramification — the residue extension is an extension of
-finite fields, hence automatically separable), then the different
-exponent of `Q` is exactly `e − 1`; the upper half is stated here:
-`Q^e ∤ 𝔡_{K/ℚ}`. Intended proof: localize at `Q`; in the tame local
-extension the trace of `𝔪^{1−e}` lands in the base ring because the
-residue trace is surjective (`e` prime to the residue
-characteristic), so `𝔪^{1−e} ⊆ 𝔡⁻¹`. Mathlib has the matching lower
-half (`pow_sub_one_dvd_differentIdeal`). -/
+open Module in
+/-- **Nonvanishing of the trace form of a tame local algebra** (PROVEN
+2026-07-23; the residue-theoretic core of the tame different bound
+below): the trace form of a finite local algebra `C` over a field `F`
+is nonzero as soon as the residue extension is separable and the
+residue-field dimension of `C` is invertible in `F` (the tame case).
+Proof: a Cohen-style multiplicative section `C ⧸ m →ₐ[F] C` (formal
+smoothness of the separable residue extension against the nilpotent
+maximal ideal, `Algebra.FormallySmooth.lift`) turns `C` into a
+`C ⧸ m`-vector space, and transitivity of the trace evaluates the
+trace of a residue scalar `y` as `n • Tr_{(C⧸m)/F}(y)` with
+`n = dim_{C⧸m} C`, nonzero for suitable `y` because the separable
+residue trace is nonzero (`Algebra.trace_ne_zero`). -/
+lemma exists_trace_ne_zero_of_isNilpotent
+    (F C : Type*) [Field F] [CommRing C] [Algebra F C] [Module.Finite F C]
+    (m : Ideal C) (hm : IsNilpotent m) [hmax : m.IsMaximal]
+    [Algebra.IsSeparable F (C ⧸ m)]
+    (hd : ∀ n : ℕ, finrank F C = finrank F (C ⧸ m) * n → (n : F) ≠ 0) :
+    ∃ w : C, Algebra.trace F C w ≠ 0 := by
+  classical
+  letI : Field (C ⧸ m) := Ideal.Quotient.field m
+  haveI : Module.Finite F (C ⧸ m) :=
+    Module.Finite.of_surjective (Ideal.Quotient.mkₐ F m).toLinearMap
+      Ideal.Quotient.mk_surjective
+  obtain ⟨y, hy⟩ : ∃ y : C ⧸ m, Algebra.trace F (C ⧸ m) y ≠ 0 := by
+    simpa [LinearMap.ext_iff] using Algebra.trace_ne_zero F (C ⧸ m)
+  -- the Cohen multiplicative section
+  haveI : Algebra.FormallySmooth F (C ⧸ m) := by
+    haveI := Algebra.FormallyEtale.of_isSeparable F (C ⧸ m)
+    infer_instance
+  let σ : (C ⧸ m) →ₐ[F] C :=
+    Algebra.FormallySmooth.lift m hm (AlgHom.id F (C ⧸ m))
+  letI : Algebra (C ⧸ m) C := σ.toAlgebra
+  haveI : IsScalarTower F (C ⧸ m) C :=
+    IsScalarTower.of_algebraMap_eq' σ.comp_algebraMap.symm
+  haveI : Module.Finite (C ⧸ m) C :=
+    Module.Finite.of_restrictScalars_finite F _ _
+  refine ⟨algebraMap (C ⧸ m) C y, fun h0 => ?_⟩
+  rw [← Algebra.trace_trace (S := C ⧸ m), Algebra.trace_algebraMap,
+    map_nsmul, nsmul_eq_mul] at h0
+  rcases mul_eq_zero.mp h0 with h1 | h1
+  · exact hd _ (Module.finrank_mul_finrank F (C ⧸ m) C).symm h1
+  · exact hy h1
+
+open UniqueFactorizationMonoid in
+/-- **The tame different bound** (PROVEN 2026-07-23; Serre, *Corps
+Locaux* III §6 Prop. 13 / Neukirch III.2.6): if the ramification index
+`e = e(Q∣p)` of a prime `Q` of `𝓞 K` over the rational prime `p` is
+not divisible by `p` (tame ramification — the residue extension is an
+extension of finite fields, hence automatically separable), then the
+different exponent of `Q` is at most `e − 1`, stated as `Q^e ∤ 𝔡_{K/ℚ}`
+(mathlib has the matching lower half `pow_sub_one_dvd_differentIdeal`).
+Proof: write `pO_K = Q^e · J` exactly (`Ideal.eq_prime_pow_mul_coprime`
+plus the `normalizedFactors`-count characterization of `e`); the trace
+form of the tame factor `O_K ⧸ Q^e` over `𝔽_p` is nonzero
+(`exists_trace_ne_zero_of_isNilpotent`, with `dim = e·f` by
+`Ideal.Factors.finrank_pow_ramificationIdx` and `p ∤ e`), so the CRT
+lift of a trace-nonzero element supported on the `Q^e`-component has
+`intTrace ∉ (p)`, and `not_dvd_differentIdeal_of_intTrace_not_mem`
+closes. -/
 theorem not_pow_ramificationIdx_dvd_differentIdeal
     (K : Type*) [Field K] [NumberField K] (p : ℕ) (hp : p.Prime)
     (Q : Ideal (NumberField.RingOfIntegers K)) (hQ : Q.IsPrime)
     (hmem : (p : NumberField.RingOfIntegers K) ∈ Q)
     (htame : ¬ (p ∣ Ideal.ramificationIdx' (Ideal.span {(p : ℤ)}) Q)) :
     ¬ Q ^ Ideal.ramificationIdx' (Ideal.span {(p : ℤ)}) Q ∣
-      differentIdeal ℤ (NumberField.RingOfIntegers K) :=
+      differentIdeal ℤ (NumberField.RingOfIntegers K) := by
+  classical
+  set R := NumberField.RingOfIntegers K with hRdef
+  haveI := hQ
+  -- the setup at `p`
+  have hpZ : Prime ((p : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hp
+  have hspan0 : (Ideal.span {((p : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hp.ne_zero
+  haveI hspanMax : (Ideal.span {((p : ℕ) : ℤ)} : Ideal ℤ).IsMaximal :=
+    (((Ideal.span_singleton_prime (by exact_mod_cast hp.ne_zero)).mpr
+      hpZ).isMaximal hspan0)
+  haveI hlies : Q.LiesOver (Ideal.span {((p : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff hQ.ne_top hpZ).mpr (by exact_mod_cast hmem)
+  have hmap0 : (Ideal.span {((p : ℕ) : ℤ)}).map (algebraMap ℤ R) ≠ ⊥ :=
+    Ideal.map_ne_bot_of_ne_bot hspan0
+  have hQ0 : Q ≠ ⊥ := ne_bot_of_le_ne_bot hmap0
+    (Ideal.map_le_of_le_comap (Q.over_def (Ideal.span {((p : ℕ) : ℤ)})).le)
+  haveI hQmax : Q.IsMaximal := hQ.isMaximal hQ0
+  set e := Ideal.ramificationIdx' (Ideal.span {((p : ℕ) : ℤ)}) Q with hedef
+  have he0 : e ≠ 0 :=
+    Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver Q hspan0
+  -- the exact factorization `map p = Q ^ e * J` with `Q ⊔ J = ⊤`
+  obtain ⟨J, hsup, hfac⟩ := Ideal.eq_prime_pow_mul_coprime hmap0 Q
+  rw [← Ideal.IsDedekindDomain.ramificationIdx'_eq_normalizedFactors_count
+    hmap0 hQ hQ0, ← hedef] at hfac
+  have hcop : IsCoprime (Q ^ e) J :=
+    (Ideal.isCoprime_iff_sup_eq.mpr hsup).pow_left
+  -- residue-quotient algebra structures
+  letI : Algebra (ℤ ⧸ Ideal.span {((p : ℕ) : ℤ)}) (R ⧸ Q ^ e) :=
+    Ideal.Quotient.algebraQuotientOfLEComap
+      (Ideal.map_le_iff_le_comap.mp (Ideal.le_of_dvd ⟨J, hfac⟩))
+  letI : Algebra (ℤ ⧸ Ideal.span {((p : ℕ) : ℤ)}) (R ⧸ J) :=
+    Ideal.Quotient.algebraQuotientOfLEComap
+      (Ideal.map_le_iff_le_comap.mp (Ideal.le_of_dvd
+        ⟨Q ^ e, hfac.trans (mul_comm _ _)⟩))
+  -- the CRT decomposition of `R ⧸ pR`
+  letI ε : (R ⧸ (Ideal.span {((p : ℕ) : ℤ)}).map (algebraMap ℤ R))
+      ≃ₐ[ℤ ⧸ Ideal.span {((p : ℕ) : ℤ)}] ((R ⧸ Q ^ e) × R ⧸ J) :=
+    { __ := (Ideal.quotEquivOfEq hfac).trans
+        (Ideal.quotientMulEquivQuotientProd (Q ^ e) J hcop),
+      commutes' := Quotient.ind fun _ => rfl }
+  -- the maximal ideal of `R ⧸ Q ^ e` and its residue field
+  set m : Ideal (R ⧸ Q ^ e) := Q.map (Ideal.Quotient.mk (Q ^ e)) with hmdef
+  have hnilp : IsNilpotent m := ⟨e, by
+    rw [hmdef, ← Ideal.map_pow, Ideal.zero_eq_bot, Ideal.map_quotient_self]⟩
+  letI ε₂ : ((R ⧸ Q ^ e) ⧸ m) ≃+* R ⧸ Q :=
+    DoubleQuot.quotQuotEquivQuotOfLE (Ideal.pow_le_self he0)
+  haveI hmmax : m.IsMaximal := Ideal.Quotient.maximal_of_isField m
+    (ε₂.toMulEquiv.isField
+      ((Ideal.Quotient.maximal_ideal_iff_isField_quotient Q).mp hQmax))
+  letI ε₂ₐ : ((R ⧸ Q ^ e) ⧸ m) ≃ₐ[ℤ ⧸ Ideal.span {((p : ℕ) : ℤ)}] (R ⧸ Q) :=
+    { __ := ε₂,
+      commutes' := fun x => by
+        obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective x
+        rfl }
+  haveI hsep : Algebra.IsSeparable (ℤ ⧸ Ideal.span {((p : ℕ) : ℤ)})
+      ((R ⧸ Q ^ e) ⧸ m) := by
+    letI : Field (ℤ ⧸ Ideal.span {((p : ℕ) : ℤ)}) := Ideal.Quotient.field _
+    letI : Field (R ⧸ Q) := Ideal.Quotient.field Q
+    haveI : Finite (ℤ ⧸ Ideal.span {((p : ℕ) : ℤ)}) :=
+      Ring.HasFiniteQuotients.finiteQuotient hspan0
+    haveI : Module.Finite ℤ (R ⧸ Q) :=
+      Module.Finite.of_surjective (Ideal.Quotient.mkₐ ℤ Q).toLinearMap
+        Ideal.Quotient.mk_surjective
+    haveI : Module.Finite (ℤ ⧸ Ideal.span {((p : ℕ) : ℤ)}) (R ⧸ Q) :=
+      Module.Finite.of_restrictScalars_finite ℤ _ _
+    haveI : Algebra.IsAlgebraic (ℤ ⧸ Ideal.span {((p : ℕ) : ℤ)}) (R ⧸ Q) :=
+      Algebra.IsAlgebraic.of_finite _ _
+    exact AlgEquiv.Algebra.isSeparable ε₂ₐ.symm
+  -- the dimension bookkeeping: `dim_F (R ⧸ Q^e) = e * f`, `dim_F κ = f`
+  have hQmemF : Q ∈ (factors ((Ideal.span {((p : ℕ) : ℤ)}).map
+      (algebraMap ℤ R))).toFinset := by
+    rw [Multiset.mem_toFinset, factors_eq_normalizedFactors, ← Multiset.count_pos,
+      ← Ideal.IsDedekindDomain.ramificationIdx'_eq_normalizedFactors_count hmap0 hQ hQ0]
+    exact Nat.pos_of_ne_zero he0
+  have hEF : Module.finrank (ℤ ⧸ Ideal.span {((p : ℕ) : ℤ)}) (R ⧸ Q ^ e) =
+      e * Ideal.inertiaDeg' (Ideal.span {((p : ℕ) : ℤ)}) Q :=
+    Ideal.Factors.finrank_pow_ramificationIdx
+      (Ideal.span {((p : ℕ) : ℤ)}) ⟨Q, hQmemF⟩
+  have hkap : Module.finrank (ℤ ⧸ Ideal.span {((p : ℕ) : ℤ)}) ((R ⧸ Q ^ e) ⧸ m) =
+      Ideal.inertiaDeg' (Ideal.span {((p : ℕ) : ℤ)}) Q := by
+    rw [Ideal.inertiaDeg'_algebraMap]
+    exact ε₂ₐ.toLinearEquiv.finrank_eq
+  have hf0 : Ideal.inertiaDeg' (Ideal.span {((p : ℕ) : ℤ)}) Q ≠ 0 :=
+    Ideal.inertiaDeg'_ne_zero _ _
+  -- the tame trace element on `R ⧸ Q ^ e`
+  letI : Field (ℤ ⧸ Ideal.span {((p : ℕ) : ℤ)}) := Ideal.Quotient.field _
+  haveI : Module.Finite ℤ (R ⧸ Q ^ e) :=
+    Module.Finite.of_surjective (Ideal.Quotient.mkₐ ℤ (Q ^ e)).toLinearMap
+      Ideal.Quotient.mk_surjective
+  haveI : Module.Finite (ℤ ⧸ Ideal.span {((p : ℕ) : ℤ)}) (R ⧸ Q ^ e) :=
+    Module.Finite.of_restrictScalars_finite ℤ _ _
+  obtain ⟨w, hw⟩ := exists_trace_ne_zero_of_isNilpotent
+    (ℤ ⧸ Ideal.span {((p : ℕ) : ℤ)}) (R ⧸ Q ^ e) m hnilp
+    (fun n hn => by
+      rw [hEF, hkap, mul_comm e] at hn
+      have hne : n = e := Nat.eq_of_mul_eq_mul_left
+        (Nat.pos_of_ne_zero hf0) hn.symm
+      rw [hne]
+      intro h0
+      apply htame
+      have hzero : (Ideal.Quotient.mk (Ideal.span {((p : ℕ) : ℤ)}))
+          ((e : ℕ) : ℤ) = 0 := by
+        rw [map_natCast]
+        exact h0
+      rw [Ideal.Quotient.eq_zero_iff_mem, Ideal.mem_span_singleton] at hzero
+      exact_mod_cast hzero)
+  -- the CRT lift of `(w, 0)` and its trace
+  obtain ⟨y, hy⟩ := Ideal.Quotient.mk_surjective (ε.symm (w, 0))
+  refine not_dvd_differentIdeal_of_intTrace_not_mem ℤ (Q ^ e) J hfac.symm
+    y ?_ ?_
+  · have h2 := congr((ε $hy).2)
+    simp only [AlgEquiv.apply_symm_apply] at h2
+    simpa [ε, Ideal.Quotient.eq_zero_iff_mem,
+      Ideal.quotientMulEquivQuotientProd] using h2
+  · haveI : Module.Finite ℤ (R ⧸ J) :=
+      Module.Finite.of_surjective (Ideal.Quotient.mkₐ ℤ J).toLinearMap
+        Ideal.Quotient.mk_surjective
+    haveI : Module.Finite (ℤ ⧸ Ideal.span {((p : ℕ) : ℤ)}) (R ⧸ J) :=
+      Module.Finite.of_restrictScalars_finite ℤ _ _
+    rw [← Ideal.Quotient.eq_zero_iff_mem,
+      ← Algebra.trace_quotient_eq_of_isDedekindDomain, hy,
+      Algebra.trace_eq_of_algEquiv ε.symm (w, 0),
+      Algebra.trace_prod_apply]
+    simpa using hw
+
+/-- **The quantitative local-to-global inertia transport** (sorry
+node, isolated 2026-07-23 as one of the two halves of the
+inertia-order leaf below; the strengthening of `MazurTorsion`'s
+`exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup` from
+"image trivial ⇒ inertia trivial" to "inertia order divides the image
+order"): for a Galois number field `K = (ker u)^fix` and a prime `Q`
+of `𝓞 K` over `q`, the order of the ideal-inertia subgroup of
+`Gal(K/ℚ)` at `Q` divides any multiple `n` of the order of the image
+under `u` of the local inertia at `q`. Intended proof (no
+representation content — `u` is just a group homomorphism cutting out
+`K`): the restriction `Γ ℚ → Gal(K/ℚ)` has kernel
+`K.fixingSubgroup = ker u`, so the image of the mapped local inertia
+in `Gal(K/ℚ)` has the same order as its image under `u`; the
+Minkowski-style embedding `ι : K → M := ℚ_q(ι K)` of
+`exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup` transports
+the local ramification of `M/ℚ_q` — bounded by the index data of the
+local inertia acting through `u` — onto the ideal-inertia of a
+distinguished prime `Q₀`, and Galois conjugacy of the primes over `q`
+(`Nat.card` of conjugate inertia subgroups agree) moves the bound to
+`Q`. -/
+theorem inertia_card_dvd_of_map_localInertiaGroup_card_dvd
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    [IsGalois ℚ K]
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hfix : K.fixingSubgroup = u.ker)
+    {q : ℕ} (hq : q.Prime)
+    (Q : Ideal (NumberField.RingOfIntegers K)) (hQ : Q.IsPrime)
+    (hmem : ((q : ℕ) : NumberField.RingOfIntegers K) ∈ Q)
+    (n : ℕ)
+    (hn : Nat.card (Subgroup.map u
+      (Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+        (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat))) ∣ n) :
+    Nat.card (Q.inertia (K ≃ₐ[ℚ] K)) ∣ n :=
   sorry
 
-/-- **The inertia order at `2` divides `3`** (sorry node, isolated
-2026-07-23 from the tame-at-`2` exponent leaf below — its
-representation-theoretic core): the ideal-inertia subgroup in
-`Gal(K/ℚ)` of any prime `Q` of `𝓞 K` above `2` has order dividing
-`3`. Intended content: by `hρ.isTameAtTwo` the local representation
-at `2` is upper triangular with unramified quotient character `δ`,
-and the determinant `χ₃` is unramified at `2`, so the image of the
-local inertia at `2` under `u` lands in the unipotent
-upper-triangular subgroup of `GL₂(𝔽̄₃)` — an elementary abelian
-`3`-group; the wild (pro-`2`) inertia maps into that `3`-group
-trivially and the tame quotient is procyclic, so the image is cyclic
-of exponent `3`, i.e. of order `1` or `3`; the ideal-inertia of `Q`
-in `Gal(K/ℚ) ≃ Γ ℚ / ker u` is (a conjugate of) that image, by the
-`MazurTorsion` local-to-global inertia transport. -/
+/-- **The local inertia image at `2` has order dividing `3`** (sorry
+node, isolated 2026-07-23 as the representation-theoretic half of the
+inertia-order leaf below; no ideal theory): the image under the
+matrix form `u` of the local inertia at `2` is a subgroup of
+`GL₂(𝔽̄₃)` of order dividing `3`. Intended content: by
+`hρ.isTameAtTwo` the local representation at `2` is upper triangular
+with unramified quotient character `δ` (so `δ = 1` on inertia), and
+the determinant `χ₃` is unramified at `2` (so `det = 1` on inertia);
+hence every inertia element maps to a unipotent matrix fixing the
+common flag — an element of the one-parameter group `(𝔽̄₃, +)`, of
+cube `1`. Cyclicity (order `1` or `3`, not merely exponent `3`): the
+wild inertia at `2` is pro-`2`, so its image in the `3`-group is
+trivial, and the image factors through the procyclic tame quotient —
+a topologically monogenic group, whose finite exponent-`3` quotients
+have order dividing `3`. -/
+theorem card_map_localInertiaGroup_at_two_dvd_three {k : Type u} [Finite k]
+    [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e) :
+    Nat.card (Subgroup.map u
+      (Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+        (localInertiaGroup Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) ∣ 3 :=
+  sorry
+
+/-- **The inertia order at `2` divides `3`** (DECOMPOSED 2026-07-23
+into the two sorry nodes above — the quantitative local-to-global
+transport `inertia_card_dvd_of_map_localInertiaGroup_card_dvd` (pure
+algebraic number theory) and the representation-theoretic image bound
+`card_map_localInertiaGroup_at_two_dvd_three` (pure local
+representation theory); the glue is proven here): the ideal-inertia
+subgroup in `Gal(K/ℚ)` of any prime `Q` of `𝓞 K` above `2` has order
+dividing `3`. -/
 theorem kernel_field_inertia_card_at_two_dvd_three {k : Type u} [Finite k]
     [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
@@ -2025,22 +2410,60 @@ theorem kernel_field_inertia_card_at_two_dvd_three {k : Type u} [Finite k]
     (Q : Ideal (NumberField.RingOfIntegers K)) (hQ : Q.IsPrime)
     (hmem : ((2 : ℕ) : NumberField.RingOfIntegers K) ∈ Q) :
     Nat.card (Q.inertia (K ≃ₐ[ℚ] K)) ∣ 3 :=
+  inertia_card_dvd_of_map_localInertiaGroup_card_dvd K u hfix
+    Nat.prime_two Q hQ hmem 3
+    (card_map_localInertiaGroup_at_two_dvd_three V hV hρ b e u hu)
+
+/-- **The Fontaine different bound at `3`, wild case** (sorry node,
+isolated 2026-07-23 as the residual core of the Fontaine-at-`3`
+per-prime leaf below after the tame case was closed by the proven
+tame different bound `not_pow_ramificationIdx_dvd_differentIdeal`):
+for a prime `Q` of `𝓞 K` above `3` with `3 ∣ e(Q∣3)` (wild
+ramification), the different exponent `d_Q` satisfies
+`2·d_Q ≤ 3·e(Q∣3)`. Intended content: flatness (`hρ.isFlat`)
+prolongs the local representation at `3` to a finite flat group
+scheme over `ℤ₃` killed by `3`, and Fontaine's ramification bound
+(the upper-numbering ramification of `ℚ₃(V)/ℚ₃` vanishes above
+`1 + 1/(3−1) = 3/2`) bounds the different exponent of the local
+field cut out by (a subquotient of) `V` by `(3/2)·e` per prime; `K`
+is fixed by `ker u ⊇ ker ρ̄`, so its completion at `Q` sits inside
+`ℚ₃(V)` and inherits the bound. (Fontaine, *Il n'y a pas de variété
+abélienne sur ℤ*, Invent. Math. 81 (1985), Thm. A; Moon–Taguchi,
+Doc. Math. 2003, §2.) -/
+theorem kernel_field_differentIdeal_exponent_at_three_wild {k : Type u}
+    [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    [IsGalois ℚ K] (hfix : K.fixingSubgroup = u.ker)
+    (Q : Ideal (NumberField.RingOfIntegers K)) (hQ : Q.IsPrime)
+    (hmem : ((3 : ℕ) : NumberField.RingOfIntegers K) ∈ Q) (d : ℕ)
+    (hd : Q ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K))
+    (hwild : (3 : ℕ) ∣ Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q) :
+    2 * d ≤ 3 * Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q :=
   sorry
 
-/-- **The Fontaine different bound at `3`** (sorry node, isolated
-2026-07-23 from the Fontaine-at-`3` exponent leaf below — its full
-arithmetic core, per prime): the different exponent `d_Q` of any
-prime `Q` of `𝓞 K` above `3` in the kernel field of a mod-3 hardly
-ramified representation satisfies `2·d_Q ≤ 3·e(Q∣3)`. Intended
-content: flatness (`hρ.isFlat`) prolongs the local representation at
-`3` to a finite flat group scheme over `ℤ₃` killed by `3`, and
-Fontaine's ramification bound (the upper-numbering ramification of
-`ℚ₃(V)/ℚ₃` vanishes above `1 + 1/(3−1) = 3/2`) bounds the different
-exponent of the local field cut out by (a subquotient of) `V` by
-`(3/2)·e` per prime; `K` is fixed by `ker u ⊇ ker ρ̄`, so its
-completion at `Q` sits inside `ℚ₃(V)` and inherits the bound.
-(Fontaine, *Il n'y a pas de variété abélienne sur ℤ*, Invent. Math.
-81 (1985), Thm. A; Moon–Taguchi, Doc. Math. 2003, §2.) -/
+/-- **The Fontaine different bound at `3`** (DECOMPOSED 2026-07-23:
+the tame case `3 ∤ e(Q∣3)` is PROVEN here from the tame different
+bound `not_pow_ramificationIdx_dvd_differentIdeal` — `d ≤ e − 1`
+gives `2·d ≤ 2·e − 2 ≤ 3·e` outright — leaving the wild case
+`3 ∣ e(Q∣3)` as the single sorry node above,
+`kernel_field_differentIdeal_exponent_at_three_wild`, which is where
+the flatness input `hρ.isFlat` and Fontaine's ramification bound
+genuinely enter): the different exponent `d_Q` of any prime `Q` of
+`𝓞 K` above `3` in the kernel field of a mod-3 hardly ramified
+representation satisfies `2·d_Q ≤ 3·e(Q∣3)`. -/
 theorem kernel_field_differentIdeal_exponent_at_three {k : Type u} [Finite k]
     [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
@@ -2061,8 +2484,18 @@ theorem kernel_field_differentIdeal_exponent_at_three {k : Type u} [Finite k]
     (Q : Ideal (NumberField.RingOfIntegers K)) (hQ : Q.IsPrime)
     (hmem : ((3 : ℕ) : NumberField.RingOfIntegers K) ∈ Q) (d : ℕ)
     (hd : Q ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
-    2 * d ≤ 3 * Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q :=
-  sorry
+    2 * d ≤ 3 * Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q := by
+  by_cases hwild : (3 : ℕ) ∣ Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q
+  · exact kernel_field_differentIdeal_exponent_at_three_wild V hV hρ b e u hu
+      K hfix Q hQ hmem d hd hwild
+  · -- tame at `3`: the different exponent is at most `e − 1`
+    have hnot := not_pow_ramificationIdx_dvd_differentIdeal K 3 Nat.prime_three
+      Q hQ hmem hwild
+    have hdlt : d < Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q := by
+      by_contra hge
+      push Not at hge
+      exact hnot ((pow_dvd_pow Q hge).trans hd)
+    omega
 
 /-- **The tame discriminant exponent at `2`** (DECOMPOSED 2026-07-23
 into the three sorry nodes above — the norm bookkeeping
