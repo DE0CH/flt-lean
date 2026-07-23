@@ -3117,19 +3117,86 @@ theorem WeierstrassCurve.baseChange_ordinate_mem_of_abscissa_mem
     exact one_mem _
   exact 𝒪.mem_of_root_of_inv_leadingCoeff_mem hfne hcoeff hlc hroot
 
+set_option backward.isDefEq.respectTransparency false in
+omit [E.IsElliptic] [IsSepClosure K Ksep] in
+/-- **The kernel of reduction is closed under natural multiples** (PROVEN
+2026-07-23; glue for the prime-power dévissage of the equal-characteristic
+kernel-torsion leaf): any affine natural multiple of an affine point of
+`E(Kˢᵉᵖ)` with non-integral abscissa again has non-integral abscissa — by
+induction from the kernel-addition closure `kernel_add_abscissa_notMem`, since
+`(n + 1) • P = n • P + P` and the zero multiple cannot be affine. -/
+theorem WeierstrassCurve.kernel_nsmul_abscissa_notMem
+    (𝒪 : ValuationSubring Ksep)
+    (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    {x y : Ksep} (h : (E⁄Ksep).toAffine.Nonsingular x y) (hx : x ∉ 𝒪)
+    (n : ℕ) {x' y' : Ksep} (h' : (E⁄Ksep).toAffine.Nonsingular x' y')
+    (heq : (n : ℤ) • (Affine.Point.some x y h : (E⁄Ksep).Point) =
+      Affine.Point.some x' y' h') :
+    x' ∉ 𝒪 := by
+  induction n generalizing x' y' with
+  | zero =>
+    rw [Nat.cast_zero, zero_smul] at heq
+    exact absurd heq.symm (Affine.Point.some_ne_zero h')
+  | succ n ih =>
+    have hsplit : ((n + 1 : ℕ) : ℤ) • (Affine.Point.some x y h : (E⁄Ksep).Point) =
+        ((n : ℕ) : ℤ) • (Affine.Point.some x y h : (E⁄Ksep).Point) +
+          Affine.Point.some x y h := by
+      push_cast
+      rw [add_smul, one_smul]
+    cases hQ : ((n : ℕ) : ℤ) • (Affine.Point.some x y h : (E⁄Ksep).Point) with
+    | zero =>
+      rw [hsplit, hQ, show (Affine.Point.zero : (E⁄Ksep).Point) = 0 from rfl,
+        zero_add] at heq
+      injection heq with hX hY
+      exact hX ▸ hx
+    | @some xn yn hn =>
+      have hxn : xn ∉ 𝒪 := ih hn hQ
+      rw [hsplit, hQ] at heq
+      exact WeierstrassCurve.kernel_add_abscissa_notMem R K E Ksep 𝒪 h𝒪
+        hn h h' hxn hx heq
+
+/-- **The kernel of reduction has no `p`-torsion in equal characteristic `p`**
+(sorry node; the prime-order core of the equal-characteristic
+Néron–Ogg–Shafarevich, to which the prime-power case
+`kernel_prime_pow_torsion_of_eqChar` reduces by the kernel-multiples closure
+`kernel_nsmul_abscissa_notMem`): when `p` vanishes in `K`, a nonzero point of
+`E(Kˢᵉᵖ)` killed by the PRIME `p` cannot lie in the kernel of reduction
+(non-integral abscissa) over a valuation subring `𝒪` above `R`. Intended
+proof (Silverman *AEC* IV.7/VII.2, characteristic-`p` formal groups): a kernel
+point lies in the formal-group chart `z = -x/y` with `v(z) > 0`; over a base
+of equal characteristic `p` the multiplication-by-`p` power series of the
+formal group of the minimal model has zero derivative (`[p]* ω = p ω = 0`),
+hence is a power series in `T^p` — `[p](T) = g(T^p)` — so a nonzero kernel
+point `z` with `[p](z) = 0` would make `z` purely inseparable over the
+completed base, while `z` is separably rational; this is the mechanism by
+which separably-rational `p`-torsion escapes the kernel (formalizing it needs
+either the completion of the finite subextension carrying the point, or the
+Wronskian route: the identity `Φ_p'·ΨSq_p − Φ_p·ΨSq_p' = p·(…) = 0` in
+characteristic `p` together with the Bézout coprimality `isCoprime_Φ_ΨSq`
+forces `Φ_p = F(X^p)` and `ΨSq_p = G(X^p)`, from which non-integral roots of
+`ΨSq_p` are excluded by a valuation count against the étale-quotient
+torsion). -/
+theorem WeierstrassCurve.kernel_prime_torsion_of_eqChar
+    (p : ℕ) (hp : p.Prime) (hpK : (p : K) = 0)
+    (𝒪 : ValuationSubring Ksep)
+    (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    {x y : Ksep} (h : (E⁄Ksep).toAffine.Nonsingular x y)
+    (hx : x ∉ 𝒪)
+    (htor : ((p : ℕ) : ℤ) • (Affine.Point.some x y h : (E⁄Ksep).Point) = 0) :
+    False :=
+  sorry
+
 /-- **The kernel of reduction is `p`-power-torsion-free in equal characteristic
-`p`** (sorry node; the whole surviving elliptic-curve content of the
-equal-characteristic Néron–Ogg–Shafarevich): when `p` vanishes in `K`, a
-nonzero `p ^ k`-torsion point of `E(Kˢᵉᵖ)` cannot lie in the kernel of
-reduction (non-integral abscissa) over a valuation subring `𝒪` above `R`.
-Intended proof: a point with `v(x) < 0` lies in the formal-group chart
-`z = -x/y` with `v(z) > 0`; over an equal-characteristic-`p` base the
-multiplication-by-`p` power series of the formal group of the minimal model
-factors as `[p](T) = g(T^(p^h))` with `h ≥ 1` the height and `g` with unit
-linear coefficient (`[p] = V ∘ Frobeniusʰ`), so `[p]` — hence `[p ^ k]` — is
-injective on the points of the valuation ideal (a domain), and the only
-`p ^ k`-torsion point of the kernel is the origin. Compare the multiplicative
-model: `(1 + z)^(p ^ k) = 1 + z^(p ^ k)` has no nonzero root in a domain of
+`p`** (DECOMPOSED 2026-07-23 into the prime-order core
+`kernel_prime_torsion_of_eqChar` — see its docstring for the surviving
+formal-group content — via the proven kernel-multiples closure
+`kernel_nsmul_abscissa_notMem`; the dévissage below is proven): when `p`
+vanishes in `K`, a nonzero `p ^ k`-torsion point of `E(Kˢᵉᵖ)` cannot lie in
+the kernel of reduction (non-integral abscissa) over a valuation subring `𝒪`
+above `R`. Dévissage: `Q := p ^ k • P` is either zero — inductively absurd —
+or a nonzero affine point of the kernel (multiples closure) killed by `p`
+itself, absurd by the prime-order core. Compare the multiplicative model:
+`(1 + z)^(p ^ k) = 1 + z^(p ^ k)` has no nonzero root in a domain of
 characteristic `p`. -/
 theorem WeierstrassCurve.kernel_prime_pow_torsion_of_eqChar
     (p k : ℕ) (hp : p.Prime) (hpK : (p : K) = 0)
@@ -3138,8 +3205,27 @@ theorem WeierstrassCurve.kernel_prime_pow_torsion_of_eqChar
     {x y : Ksep} (h : (E⁄Ksep).toAffine.Nonsingular x y)
     (hx : x ∉ 𝒪)
     (htor : ((p ^ k : ℕ) : ℤ) • (Affine.Point.some x y h : (E⁄Ksep).Point) = 0) :
-    False :=
-  sorry
+    False := by
+  induction k generalizing x y with
+  | zero =>
+    rw [pow_zero, Nat.cast_one, one_smul] at htor
+    exact Affine.Point.some_ne_zero h htor
+  | succ k ih =>
+    cases hQ : ((p ^ k : ℕ) : ℤ) • (Affine.Point.some x y h : (E⁄Ksep).Point) with
+    | zero => exact ih h hx hQ
+    | @some x' y' h' =>
+      have hx' : x' ∉ 𝒪 :=
+        WeierstrassCurve.kernel_nsmul_abscissa_notMem R K E Ksep 𝒪 h𝒪 h hx
+          (p ^ k) h' hQ
+      have htor' : ((p : ℕ) : ℤ) •
+          (Affine.Point.some x' y' h' : (E⁄Ksep).Point) = 0 := by
+        rw [← hQ, ← mul_smul,
+          show ((p : ℕ) : ℤ) * ((p ^ k : ℕ) : ℤ) = ((p ^ (k + 1) : ℕ) : ℤ) from by
+            push_cast
+            ring]
+        exact htor
+      exact WeierstrassCurve.kernel_prime_torsion_of_eqChar R K E Ksep p hp hpK
+        𝒪 h𝒪 h' hx' htor'
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
