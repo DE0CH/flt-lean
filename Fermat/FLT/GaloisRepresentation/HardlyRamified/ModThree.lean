@@ -53,6 +53,9 @@ import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 import Mathlib.Analysis.Real.Pi.Bounds
 import Mathlib.Analysis.Complex.ExponentialBounds
+-- Phragmén–Lindelöf on the vertical strip, for the interior positivity
+-- of `Re Φ` in the Poitou explicit-formula decomposition (proof-only).
+import Mathlib.Analysis.Complex.PhragmenLindelof
 -- `LinearMap.trace`, for the trace-zero interface of the dihedral case.
 public import Mathlib.LinearAlgebra.Trace
 -- The vendored Dickson `SL₂`/`PSL₂` toolkit (elementary generation,
@@ -2831,9 +2834,570 @@ les petits discriminants*, Sém. Delange–Pisot–Poitou 18 (1976/77),
 exp. 6, inequality (8) and Proposition 5, p. 6-08). -/
 noncomputable def odlyzkoTestFn (x : ℝ) : ℝ := max (1 - |x| / 6) 0
 
+/-- **The Poitou–Mellin transform of the Fejér test function**
+(introduced 2026-07-23 for the decomposition of
+`poitou_explicit_formula_bound`): the pairing
+`Φ(s) = ∫_ℝ (f(x)/cosh(x/2))·e^{(s−1/2)x} dx` with `f = odlyzkoTestFn`,
+i.e. the Mellin transform (2) of G. Poitou, *Sur les petits
+discriminants*, Sém. Delange–Pisot–Poitou 18 (1976/77), exp. 6, at the
+test function `F = f/cosh(x/2)` of its Proposition 5.  Since `f` is
+supported in `[-6, 6]`, `Φ` is entire and bounded on every vertical
+strip; on the boundary lines `Re s ∈ {0, 1}` of the critical strip its
+real part is the nonnegative Fejér transform
+`∫ f(x)·cos(tx) dx = 2·sin²(3t)/(3t²)`. -/
+noncomputable def poitouPhi (s : ℂ) : ℂ :=
+  ∫ x : ℝ, ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+    Complex.exp ((s - 1 / 2) * (x : ℂ))
+
+/-- **The prime-ideal term of Poitou's explicit formula at the Fejér
+test function** (introduced 2026-07-23):
+`4·Σ_{𝔭, m≥1} log N𝔭 · f(m·log N𝔭)/(1 + N𝔭^m)` over the nonzero prime
+ideals `𝔭` of `𝒪_K`, with `f = odlyzkoTestFn` — the ultrametric term
+`(4/n)·Σ_{𝔭,m} …` of inequality (8) of Poitou (exp. 6, p. 6-08)
+multiplied by `n`.  Every summand is nonnegative
+(`poitouPrimeTerm_nonneg` below), which is what legitimizes dropping
+this term in the bound; since `f` vanishes beyond `6`, only the
+finitely many pairs with `N𝔭^m < e⁶ = 403.42…` contribute. -/
+noncomputable def poitouPrimeTerm (K : Type*) [Field K] [NumberField K] : ℝ :=
+  4 * ∑' (P : {P : Ideal (NumberField.RingOfIntegers K) // P.IsPrime ∧ P ≠ ⊥})
+      (m : ℕ),
+    Real.log (Ideal.absNorm P.1) / (1 + (Ideal.absNorm P.1 : ℝ) ^ (m + 1)) *
+      odlyzkoTestFn (((m : ℝ) + 1) * Real.log (Ideal.absNorm P.1))
+
+/-- **Nonnegativity of the prime-ideal term** (PROVEN 2026-07-23):
+every summand of `poitouPrimeTerm` is a product of nonnegatives
+(`log N𝔭 ≥ 0`, a positive denominator, and `odlyzkoTestFn ≥ 0`), so
+the sum is nonnegative — `tsum` of a nonnegative family is nonnegative
+whether or not it converges.  This is the legitimacy of dropping the
+ultrametric term of Poitou's inequality (8). -/
+theorem poitouPrimeTerm_nonneg (K : Type*) [Field K] [NumberField K] :
+    0 ≤ poitouPrimeTerm K := by
+  refine mul_nonneg (by norm_num) (tsum_nonneg fun P => tsum_nonneg fun m => ?_)
+  refine mul_nonneg (div_nonneg (Real.log_natCast_nonneg _) (by positivity)) ?_
+  rw [odlyzkoTestFn]
+  exact le_max_right _ _
+
+/-- **Weil's explicit formula for the Dedekind zeta function at the
+Fejér–Poitou test function** (sorry node, stated 2026-07-23 — the deep
+analytic leaf of the decomposition of `poitou_explicit_formula_bound`):
+for a totally complex number field `K` of degree `n` there exist a
+zero-multiplicity function `mult : ℂ → ℕ` — the order of vanishing of
+the analytically continued Dedekind zeta `ζ_K` on the critical strip
+`0 < Re ρ < 1` (the pin's `NumberField.dedekindZeta` is only the
+Dirichlet series, so the continuation and its zero data live inside
+this existential), supported on the open strip and finite on every
+horizontal truncation — and a real number `S` — the
+symmetric-truncation limit `lim_{T→∞} Σ_{|Im ρ|≤T} mult(ρ)·Re Φ(ρ)`
+of the zero sum, real because the zeros are conjugation-symmetric with
+equal multiplicities — such that
+
+`log |d_K| = n(γ + log 4π − ∫₀^∞ (1−f)/sinh x dx) − 4∫₀^∞ f + (P + S)`
+
+with `f = odlyzkoTestFn`, `Φ = poitouPhi`, `P = poitouPrimeTerm K`.
+This is the Théorème (A. Weil) of G. Poitou, *Sur les petits
+discriminants*, Sém. Delange–Pisot–Poitou 18 (1976/77), exp. 6
+(Propositions 1–3; formula (6), third form) evaluated at the test
+function `F = f/cosh(x/2)` and specialized to `r₁ = 0`, after the
+elementary rewritings `Φ(0) + Φ(1) = 4∫₀^∞ f`,
+`2·(log N𝔭/N𝔭^{m/2})·F(m log N𝔭) = 4·log N𝔭·f(m log N𝔭)/(1 + N𝔭^m)`,
+and `∫₀^∞ (1−F(x))/(2 sinh(x/2)) dx = ∫₀^∞ (1−f(x))/sinh x dx + log 2`
+(which turns `γ + log 8π` into `γ + log 4π`); `F` is admissible by
+Proposition 5's conditions (i)–(iii) for `f`.  The eventual proof must
+carry the analytic continuation and functional equation of the
+completed `Λ_K` and the contour-integral argument of Proposition 1
+(Landau's horizontal estimates) — the material the official FLT
+project axiomatizes away. -/
+theorem dedekind_explicit_formula_fejer (K : Type*) [Field K] [NumberField K]
+    (htc : NumberField.IsTotallyComplex K) :
+    ∃ (mult : ℂ → ℕ) (S : ℝ),
+      (∀ ρ, mult ρ ≠ 0 → 0 < ρ.re ∧ ρ.re < 1) ∧
+      (∀ T : ℝ, {ρ : ℂ | mult ρ ≠ 0 ∧ |ρ.im| ≤ T}.Finite) ∧
+      Filter.Tendsto (fun T : ℝ =>
+          ∑' ρ : {ρ : ℂ // mult ρ ≠ 0 ∧ |ρ.im| ≤ T},
+            (mult ρ.1 : ℝ) * (poitouPhi ρ.1).re)
+        Filter.atTop (nhds S) ∧
+      Real.log |(NumberField.discr K : ℝ)| =
+        (Module.finrank ℚ K : ℝ) *
+            (Real.eulerMascheroniConstant + Real.log (4 * Real.pi) -
+              ∫ x in Set.Ioi (0 : ℝ), (1 - odlyzkoTestFn x) / Real.sinh x) -
+          4 * (∫ x in Set.Ioi (0 : ℝ), odlyzkoTestFn x) +
+          (poitouPrimeTerm K + S) := by
+  sorry
+
+/-- **`Φ` is entire** (PROVEN 2026-07-23): the integrand
+`x ↦ (f(x)/cosh(x/2))·e^{(s−1/2)x}` of `poitouPhi` is supported in
+`[-6, 6]` and dominated there, locally uniformly in `s` — on the ball
+`‖s − s₀‖ < 1` by the integrable majorant
+`𝟙_{[-6,6]}·6·e^{6(‖s₀‖+2)}` — so differentiation under the integral
+sign (`hasDerivAt_integral_of_dominated_loc_of_deriv_le`) applies at
+every `s₀ ∈ ℂ`. -/
+theorem poitouPhi_differentiable : Differentiable ℂ poitouPhi := by
+  intro s₀
+  have hfcont : Continuous odlyzkoTestFn := by
+    rw [show odlyzkoTestFn = fun x : ℝ => max (1 - |x| / 6) 0 from rfl]
+    exact (continuous_const.sub (continuous_abs.div_const 6)).max continuous_const
+  have hfle : ∀ x : ℝ, 0 ≤ odlyzkoTestFn x ∧ odlyzkoTestFn x ≤ 1 := by
+    intro x
+    constructor
+    · rw [odlyzkoTestFn]; exact le_max_right _ _
+    · rw [odlyzkoTestFn]
+      exact max_le (by have := abs_nonneg x; linarith) zero_le_one
+  have hf0 : ∀ x : ℝ, 6 < |x| → odlyzkoTestFn x = 0 := by
+    intro x hx
+    rw [odlyzkoTestFn]
+    exact max_eq_right (by linarith)
+  have hFcont : Continuous (fun x : ℝ => odlyzkoTestFn x / Real.cosh (x / 2)) :=
+    hfcont.div (Real.continuous_cosh.comp (continuous_id.div_const 2))
+      fun x => (Real.cosh_pos _).ne'
+  have hFsupp : HasCompactSupport
+      (fun x : ℝ => odlyzkoTestFn x / Real.cosh (x / 2)) := by
+    refine HasCompactSupport.intro (isCompact_Icc (a := (-6 : ℝ)) (b := 6)) ?_
+    intro x hx
+    simp only [Set.mem_Icc, not_and_or, not_le] at hx
+    have h6 : 6 < |x| := by
+      rcases hx with h | h
+      · have := neg_abs_le x; linarith
+      · have := le_abs_self x; linarith
+    rw [hf0 x h6, zero_div]
+  set F : ℂ → ℝ → ℂ := fun s x =>
+    ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+      Complex.exp ((s - 1 / 2) * (x : ℂ))
+  set F' : ℂ → ℝ → ℂ := fun s x =>
+    ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+      ((x : ℂ) * Complex.exp ((s - 1 / 2) * (x : ℂ))) with hF'
+  have hFscont : ∀ s : ℂ, Continuous (F s) := fun s =>
+    (Complex.continuous_ofReal.comp hFcont).mul
+      (Complex.continuous_exp.comp (continuous_const.mul Complex.continuous_ofReal))
+  have hF_meas : ∀ᶠ s in nhds s₀,
+      MeasureTheory.AEStronglyMeasurable (F s) MeasureTheory.volume :=
+    Filter.Eventually.of_forall fun s => (hFscont s).aestronglyMeasurable
+  have hF_int : MeasureTheory.Integrable (F s₀) :=
+    (hFscont s₀).integrable_of_hasCompactSupport
+      ((hFsupp.comp_left (g := Complex.ofReal) Complex.ofReal_zero).mul_right)
+  have hF'_meas : MeasureTheory.AEStronglyMeasurable (F' s₀)
+      MeasureTheory.volume :=
+    ((Complex.continuous_ofReal.comp hFcont).mul
+      (Complex.continuous_ofReal.mul (Complex.continuous_exp.comp
+        (continuous_const.mul Complex.continuous_ofReal)))).aestronglyMeasurable
+  have h_bound : ∀ᵐ x : ℝ ∂MeasureTheory.volume, ∀ s ∈ Metric.ball s₀ 1,
+      ‖F' s x‖ ≤ Set.indicator (Set.Icc (-6 : ℝ) 6)
+        (fun _ => 6 * Real.exp (6 * (‖s₀‖ + 2))) x := by
+    refine Filter.Eventually.of_forall fun x => fun s hs => ?_
+    rw [hF']
+    simp only []
+    rw [norm_mul, norm_mul, Complex.norm_real, Real.norm_eq_abs,
+      Complex.norm_exp, Complex.norm_real, Real.norm_eq_abs]
+    rcases le_or_gt |x| 6 with hx | hx
+    · rw [Set.indicator_of_mem (Set.mem_Icc.mpr (abs_le.mp hx))]
+      have hquot : |odlyzkoTestFn x / Real.cosh (x / 2)| ≤ 1 := by
+        rw [abs_of_nonneg (div_nonneg (hfle x).1 (Real.cosh_pos (x := x / 2)).le)]
+        exact div_le_one_of_le₀
+          (le_trans (hfle x).2 (Real.one_le_cosh (x / 2))) (Real.cosh_pos _).le
+      have hre : ((s - 1 / 2) * (x : ℂ)).re = (s.re - 1 / 2) * x := by
+        have h12 : ((1 : ℂ) / 2) = ((1 / 2 : ℝ) : ℂ) := by push_cast; ring
+        simp [h12, Complex.mul_re, Complex.sub_re, Complex.ofReal_re,
+          Complex.ofReal_im]
+      rw [hre]
+      have hsre : |s.re - 1 / 2| ≤ ‖s₀‖ + 2 := by
+        have h1 : |s.re| ≤ ‖s‖ := Complex.abs_re_le_norm s
+        have h2 : ‖s‖ ≤ ‖s₀‖ + 1 := by
+          have := Metric.mem_ball.mp hs
+          have h3 : ‖s - s₀‖ < 1 := by rwa [← dist_eq_norm]
+          calc ‖s‖ = ‖s₀ + (s - s₀)‖ := by ring_nf
+            _ ≤ ‖s₀‖ + ‖s - s₀‖ := norm_add_le _ _
+            _ ≤ ‖s₀‖ + 1 := by linarith
+        have h4 : |s.re - 1 / 2| ≤ |s.re| + 1 / 2 := by
+          calc |s.re - 1 / 2| ≤ |s.re| + |(1 : ℝ) / 2| := abs_sub _ _
+            _ = |s.re| + 1 / 2 := by norm_num
+        linarith
+      have hexp : Real.exp ((s.re - 1 / 2) * x) ≤ Real.exp (6 * (‖s₀‖ + 2)) := by
+        refine Real.exp_le_exp.mpr (le_trans (le_abs_self _) ?_)
+        rw [abs_mul]
+        calc |s.re - 1 / 2| * |x| ≤ (‖s₀‖ + 2) * 6 :=
+              mul_le_mul hsre hx (abs_nonneg _) (by positivity)
+          _ = 6 * (‖s₀‖ + 2) := by ring
+      calc |odlyzkoTestFn x / Real.cosh (x / 2)| *
+            (|x| * Real.exp ((s.re - 1 / 2) * x)) ≤
+          1 * (6 * Real.exp (6 * (‖s₀‖ + 2))) := by
+            refine mul_le_mul hquot ?_ (by positivity) zero_le_one
+            exact mul_le_mul hx hexp (Real.exp_pos _).le (by norm_num)
+        _ = 6 * Real.exp (6 * (‖s₀‖ + 2)) := one_mul _
+    · rw [hf0 x hx, Set.indicator_of_notMem (by
+        simp only [Set.mem_Icc, not_and_or, not_le]
+        rcases lt_abs.mp hx with h | h
+        · exact Or.inr h
+        · exact Or.inl (by linarith))]
+      simp
+  have bound_int : MeasureTheory.Integrable
+      (Set.indicator (Set.Icc (-6 : ℝ) 6)
+        (fun _ => 6 * Real.exp (6 * (‖s₀‖ + 2)))) := by
+    rw [MeasureTheory.integrable_indicator_iff measurableSet_Icc]
+    exact MeasureTheory.integrableOn_const measure_Icc_lt_top.ne
+  have h_diff : ∀ᵐ x : ℝ ∂MeasureTheory.volume, ∀ s ∈ Metric.ball s₀ 1,
+      HasDerivAt (F · x) (F' s x) s := by
+    refine Filter.Eventually.of_forall fun x => fun s _ => ?_
+    have hlin : HasDerivAt (fun s : ℂ => (s - 1 / 2) * (x : ℂ)) (x : ℂ) s := by
+      simpa using ((hasDerivAt_id s).sub_const ((1 : ℂ) / 2)).mul_const (x : ℂ)
+    have hexp : HasDerivAt (fun s : ℂ => Complex.exp ((s - 1 / 2) * (x : ℂ)))
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) * (x : ℂ)) s :=
+      (Complex.hasDerivAt_exp ((s - 1 / 2) * (x : ℂ))).comp s hlin
+    have hD := hexp.const_mul
+      ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ)
+    have heq : ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) * (x : ℂ)) = F' s x := by
+      rw [hF']
+      ring
+    exact heq ▸ hD
+  have main := hasDerivAt_integral_of_dominated_loc_of_deriv_le
+    (Metric.ball_mem_nhds s₀ one_pos) hF_meas hF_int hF'_meas h_bound
+    bound_int h_diff
+  exact main.2.differentiableAt
+
+/-- **`Φ` is bounded on the closed critical strip** (PROVEN
+2026-07-23): for `0 ≤ Re z ≤ 1` the integrand of `poitouPhi` is
+bounded by `e³` on its support `[-6, 6]` (`0 ≤ f ≤ 1`, `cosh ≥ 1`,
+`|(Re z − 1/2)·x| ≤ 3`), whence `‖Φ(z)‖ ≤ 12·e³`.  This is the
+boundedness input of the Phragmén–Lindelöf step below. -/
+theorem poitouPhi_norm_le (z : ℂ) (h0 : 0 ≤ z.re) (h1 : z.re ≤ 1) :
+    ‖poitouPhi z‖ ≤ 12 * Real.exp 3 := by
+  rw [poitouPhi]
+  have hfle : ∀ x : ℝ, 0 ≤ odlyzkoTestFn x ∧ odlyzkoTestFn x ≤ 1 := by
+    intro x
+    constructor
+    · rw [odlyzkoTestFn]; exact le_max_right _ _
+    · rw [odlyzkoTestFn]
+      exact max_le (by have := abs_nonneg x; linarith) zero_le_one
+  have hbound : ∀ x : ℝ,
+      ‖((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+          Complex.exp ((z - 1 / 2) * (x : ℂ))‖ ≤
+        Set.indicator (Set.Icc (-6 : ℝ) 6) (fun _ => Real.exp 3) x := by
+    intro x
+    rw [norm_mul, Complex.norm_real, Real.norm_eq_abs, Complex.norm_exp]
+    have h12 : ((1 : ℂ) / 2) = ((1 / 2 : ℝ) : ℂ) := by push_cast; ring
+    have hre : ((z - 1 / 2) * (x : ℂ)).re = (z.re - 1 / 2) * x := by
+      simp [h12, Complex.mul_re, Complex.sub_re, Complex.ofReal_re,
+        Complex.ofReal_im]
+    rw [hre]
+    rcases le_or_gt |x| 6 with hx | hx
+    · rw [Set.indicator_of_mem (Set.mem_Icc.mpr (abs_le.mp hx))]
+      have hquot : |odlyzkoTestFn x / Real.cosh (x / 2)| ≤ 1 := by
+        rw [abs_of_nonneg (div_nonneg (hfle x).1 (Real.cosh_pos (x := x / 2)).le)]
+        exact div_le_one_of_le₀
+          (le_trans (hfle x).2 (Real.one_le_cosh (x / 2))) (Real.cosh_pos _).le
+      have hexp : Real.exp ((z.re - 1 / 2) * x) ≤ Real.exp 3 := by
+        refine Real.exp_le_exp.mpr (le_trans (le_abs_self _) ?_)
+        rw [abs_mul]
+        have h2 : |z.re - 1 / 2| ≤ 1 / 2 := abs_le.mpr ⟨by linarith, by linarith⟩
+        calc |z.re - 1 / 2| * |x| ≤ 1 / 2 * 6 :=
+              mul_le_mul h2 hx (abs_nonneg _) (by norm_num)
+          _ = 3 := by norm_num
+      calc |odlyzkoTestFn x / Real.cosh (x / 2)| * Real.exp ((z.re - 1 / 2) * x)
+          ≤ 1 * Real.exp 3 :=
+            mul_le_mul hquot hexp (Real.exp_pos _).le zero_le_one
+        _ = Real.exp 3 := one_mul _
+    · have hf0 : odlyzkoTestFn x = 0 := by
+        rw [odlyzkoTestFn]
+        exact max_eq_right (by linarith)
+      rw [hf0, Set.indicator_of_notMem (by
+        simp only [Set.mem_Icc, not_and_or, not_le]
+        rcases lt_abs.mp hx with h | h
+        · exact Or.inr h
+        · exact Or.inl (by linarith))]
+      simp
+  have hgint : MeasureTheory.Integrable
+      (Set.indicator (Set.Icc (-6 : ℝ) 6) fun _ => Real.exp 3) := by
+    rw [MeasureTheory.integrable_indicator_iff measurableSet_Icc]
+    exact MeasureTheory.integrableOn_const measure_Icc_lt_top.ne
+  refine le_trans (MeasureTheory.norm_integral_le_of_norm_le hgint
+    (Filter.Eventually.of_forall hbound)) ?_
+  rw [MeasureTheory.integral_indicator_const _ measurableSet_Icc, smul_eq_mul]
+  have hvol : MeasureTheory.volume.real (Set.Icc (-6 : ℝ) 6) = 12 := by
+    rw [MeasureTheory.measureReal_def, Real.volume_Icc,
+      ENNReal.toReal_ofReal (by norm_num : (0 : ℝ) ≤ 6 - -6)]
+    norm_num
+  rw [hvol]
+
+/-- **Fejér positivity of the cosine transform of the test function**
+(PROVEN 2026-07-23): `∫_ℝ f(x)·cos(tx) dx = (1 − cos 6t)/(3t²) ≥ 0`
+for `t ≠ 0` (and `= 6 ≥ 0` at `t = 0`), `f = odlyzkoTestFn` — the
+triangle is `1/6` times the autocorrelation `χ_{[-3,3]} ⋆ χ_{[-3,3]}`,
+so its Fourier transform `6·(sin 3t/3t)²` is nonnegative.  Proof: the
+integral localizes to `[-6, 6]`, folds onto `[0, 6]` by evenness, and
+there `y ↦ (1 − y/6)·sin(ty)/t − cos(ty)/(6t²)` is an explicit
+antiderivative, so FTC evaluates the integral to
+`(1 − cos 6t)/(6t²)` per half. -/
+theorem integral_odlyzkoTestFn_mul_cos_nonneg (t : ℝ) :
+    0 ≤ ∫ x : ℝ, odlyzkoTestFn x * Real.cos (t * x) := by
+  rcases eq_or_ne t 0 with ht | ht
+  · refine MeasureTheory.integral_nonneg fun x => ?_
+    rw [ht]
+    simp only [zero_mul, Real.cos_zero, mul_one]
+    rw [odlyzkoTestFn]
+    exact le_max_right _ _
+  -- reduce to the interval integral on [-6, 6]
+  have hcongr : ∀ x : ℝ, odlyzkoTestFn x * Real.cos (t * x) =
+      (Set.Ioc (-6 : ℝ) 6).indicator
+        (fun y => (1 - |y| / 6) * Real.cos (t * y)) x := by
+    intro x
+    rcases le_or_gt |x| 6 with hx | hx
+    · rcases eq_or_lt_of_le (neg_le_of_abs_le hx) with hx6 | hx6
+      · rw [Set.indicator_of_notMem (by simp [← hx6])]
+        rw [odlyzkoTestFn, ← hx6]
+        norm_num
+      · rw [Set.indicator_of_mem (Set.mem_Ioc.mpr ⟨hx6, le_of_abs_le hx⟩),
+          odlyzkoTestFn, max_eq_left (by linarith)]
+    · rw [Set.indicator_of_notMem (by
+        simp only [Set.mem_Ioc, not_and_or, not_lt, not_le]
+        rcases lt_abs.mp hx with h | h
+        · exact Or.inr h
+        · exact Or.inl (by linarith)),
+        odlyzkoTestFn, max_eq_right (by linarith)]
+      exact zero_mul _
+  rw [MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall hcongr),
+    MeasureTheory.integral_indicator measurableSet_Ioc,
+    ← intervalIntegral.integral_of_le (by norm_num : (-6 : ℝ) ≤ 6)]
+  -- split at 0 and fold the negative half by evenness
+  have hcont : Continuous fun y : ℝ => (1 - |y| / 6) * Real.cos (t * y) :=
+    (continuous_const.sub (continuous_abs.div_const 6)).mul
+      (Real.continuous_cos.comp (continuous_const.mul continuous_id))
+  have hsplit : (∫ y in (-6 : ℝ)..6, (1 - |y| / 6) * Real.cos (t * y)) =
+      (∫ y in (-6 : ℝ)..0, (1 - |y| / 6) * Real.cos (t * y)) +
+        ∫ y in (0 : ℝ)..6, (1 - |y| / 6) * Real.cos (t * y) :=
+    (intervalIntegral.integral_add_adjacent_intervals
+      (hcont.intervalIntegrable _ _) (hcont.intervalIntegrable _ _)).symm
+  have hfold : (∫ y in (-6 : ℝ)..0, (1 - |y| / 6) * Real.cos (t * y)) =
+      ∫ y in (0 : ℝ)..6, (1 - |y| / 6) * Real.cos (t * y) := by
+    have hneg : (∫ y in (0 : ℝ)..6,
+        (1 - |(-y)| / 6) * Real.cos (t * (-y))) =
+        ∫ y in (-6 : ℝ)..0, (1 - |y| / 6) * Real.cos (t * y) := by
+      simpa using intervalIntegral.integral_comp_neg
+        (f := fun y => (1 - |y| / 6) * Real.cos (t * y)) (a := 0) (b := 6)
+    rw [← hneg]
+    congr 1
+    funext y
+    rw [abs_neg, mul_neg, Real.cos_neg]
+  -- the explicit antiderivative on [0, 6]
+  have hkey : (∫ y in (0 : ℝ)..6, (1 - |y| / 6) * Real.cos (t * y)) =
+      (1 - Real.cos (6 * t)) / (6 * t ^ 2) := by
+    have habs : (∫ y in (0 : ℝ)..6, (1 - |y| / 6) * Real.cos (t * y)) =
+        ∫ y in (0 : ℝ)..6, (1 - y / 6) * Real.cos (t * y) := by
+      refine intervalIntegral.integral_congr fun y hy => ?_
+      rw [Set.uIcc_of_le (by norm_num : (0 : ℝ) ≤ 6)] at hy
+      rw [abs_of_nonneg hy.1]
+    rw [habs]
+    have hG : ∀ y ∈ Set.uIcc (0 : ℝ) 6,
+        HasDerivAt (fun y => (1 - y / 6) * (Real.sin (t * y) / t) -
+          Real.cos (t * y) / (6 * t ^ 2))
+          ((1 - y / 6) * Real.cos (t * y)) y := by
+      intro y _
+      have hlin : HasDerivAt (fun y : ℝ => t * y) t y := by
+        simpa using (hasDerivAt_id y).const_mul t
+      have hsin : HasDerivAt (fun y : ℝ => Real.sin (t * y))
+          (Real.cos (t * y) * t) y := (Real.hasDerivAt_sin (t * y)).comp y hlin
+      have hcos : HasDerivAt (fun y : ℝ => Real.cos (t * y))
+          (-Real.sin (t * y) * t) y := (Real.hasDerivAt_cos (t * y)).comp y hlin
+      have h1 : HasDerivAt (fun y : ℝ => 1 - y / 6) (-(1 / 6)) y := by
+        simpa using ((hasDerivAt_id y).div_const 6).const_sub 1
+      have hD := (h1.mul (hsin.div_const t)).sub ((hcos.div_const (6 * t ^ 2)))
+      have heq : -(1 / 6) * (Real.sin (t * y) / t) +
+          (1 - y / 6) * (Real.cos (t * y) * t / t) -
+          -Real.sin (t * y) * t / (6 * t ^ 2) =
+          (1 - y / 6) * Real.cos (t * y) := by
+        field_simp
+        ring
+      exact heq ▸ hD
+    rw [intervalIntegral.integral_eq_sub_of_hasDerivAt hG
+      (((continuous_const.sub (continuous_id.div_const 6)).mul
+        (Real.continuous_cos.comp
+          (continuous_const.mul continuous_id))).intervalIntegrable _ _)]
+    rw [mul_zero, Real.sin_zero, Real.cos_zero]
+    field_simp
+    ring
+  rw [hsplit, hfold, hkey]
+  have hc1 : Real.cos (6 * t) ≤ 1 := Real.cos_le_one _
+  have ht2 : (0 : ℝ) < 6 * t ^ 2 := by positivity
+  have h0 : (0 : ℝ) ≤ (1 - Real.cos (6 * t)) / (6 * t ^ 2) :=
+    div_nonneg (by linarith) ht2.le
+  linarith
+
+/-- **Nonnegativity of `Re Φ` on the boundary lines of the critical
+strip** (PROVEN 2026-07-23, consuming the Fejér leaf
+`integral_odlyzkoTestFn_mul_cos_nonneg`): for `Re z ∈ {0, 1}`,
+`Re Φ(z) = ∫_ℝ (f(x)/cosh(x/2))·e^{∓x/2}·cos((Im z)·x) dx`; the two
+sign choices give equal integrals (substituting `x ↦ −x`; the
+integrand data are even), and their sum is
+`∫_ℝ (f/cosh(x/2))·(e^{x/2}+e^{−x/2})·cos dx = 2∫_ℝ f(x)·cos(tx) dx
+≥ 0` by Fejér.  This is condition (iv) of Poitou's Proposition 5
+evaluated on the boundary of the strip. -/
+theorem poitouPhi_re_nonneg_boundary (z : ℂ) (hz : z.re = 0 ∨ z.re = 1) :
+    0 ≤ (poitouPhi z).re := by
+  have hfcont : Continuous odlyzkoTestFn := by
+    rw [show odlyzkoTestFn = fun x : ℝ => max (1 - |x| / 6) 0 from rfl]
+    exact (continuous_const.sub (continuous_abs.div_const 6)).max continuous_const
+  have hfsupp : HasCompactSupport odlyzkoTestFn := by
+    refine HasCompactSupport.intro (isCompact_Icc (a := (-6 : ℝ)) (b := 6)) ?_
+    intro x hx
+    simp only [Set.mem_Icc, not_and_or, not_le] at hx
+    rw [odlyzkoTestFn]
+    refine max_eq_right ?_
+    rcases hx with h | h
+    · have := neg_abs_le x; linarith
+    · have := le_abs_self x; linarith
+  have hFcont : Continuous (fun x : ℝ => odlyzkoTestFn x / Real.cosh (x / 2)) :=
+    hfcont.div (Real.continuous_cosh.comp (continuous_id.div_const 2))
+      fun x => (Real.cosh_pos _).ne'
+  have hFsupp : HasCompactSupport
+      (fun x : ℝ => odlyzkoTestFn x / Real.cosh (x / 2)) := by
+    have hEq : (fun x : ℝ => odlyzkoTestFn x / Real.cosh (x / 2)) =
+        odlyzkoTestFn * fun x => (Real.cosh (x / 2))⁻¹ := by
+      funext x
+      rw [Pi.mul_apply, div_eq_mul_inv]
+    rw [hEq]
+    exact hfsupp.mul_right
+  set c : ℝ := z.im with hc
+  have hIcont : ∀ e : ℝ, Continuous fun x : ℝ =>
+      odlyzkoTestFn x / Real.cosh (x / 2) *
+        (Real.exp (e * x) * Real.cos (c * x)) := fun e =>
+    hFcont.mul ((Real.continuous_exp.comp (continuous_const.mul continuous_id)).mul
+      (Real.continuous_cos.comp (continuous_const.mul continuous_id)))
+  have hIint : ∀ e : ℝ, MeasureTheory.Integrable fun x : ℝ =>
+      odlyzkoTestFn x / Real.cosh (x / 2) *
+        (Real.exp (e * x) * Real.cos (c * x)) := fun e =>
+    (hIcont e).integrable_of_hasCompactSupport hFsupp.mul_right
+  have hint : MeasureTheory.Integrable (fun x : ℝ =>
+      ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+        Complex.exp ((z - 1 / 2) * (x : ℂ))) := by
+    refine Continuous.integrable_of_hasCompactSupport
+      ((Complex.continuous_ofReal.comp hFcont).mul
+        (Complex.continuous_exp.comp (continuous_const.mul
+          Complex.continuous_ofReal))) ?_
+    exact (hFsupp.comp_left (g := Complex.ofReal) Complex.ofReal_zero).mul_right
+  have hre_eq : (poitouPhi z).re = ∫ x : ℝ,
+      odlyzkoTestFn x / Real.cosh (x / 2) *
+        (Real.exp ((z.re - 1 / 2) * x) * Real.cos (c * x)) := by
+    rw [poitouPhi, ← RCLike.re_to_complex, ← integral_re hint]
+    refine MeasureTheory.integral_congr_ae
+      (Filter.Eventually.of_forall fun x => ?_)
+    have h12 : ((1 : ℂ) / 2) = ((1 / 2 : ℝ) : ℂ) := by push_cast; ring
+    simp only [RCLike.re_to_complex, Complex.re_ofReal_mul, Complex.exp_re]
+    congr 2
+    · simp [h12, Complex.mul_re, Complex.sub_re, Complex.ofReal_re,
+        Complex.ofReal_im]
+    · simp [h12, Complex.mul_im, Complex.sub_im, Complex.ofReal_re,
+        Complex.ofReal_im, hc]
+  have hIsymm : (∫ x : ℝ, odlyzkoTestFn x / Real.cosh (x / 2) *
+        (Real.exp (-(1 / 2) * x) * Real.cos (c * x))) =
+      ∫ x : ℝ, odlyzkoTestFn x / Real.cosh (x / 2) *
+        (Real.exp (1 / 2 * x) * Real.cos (c * x)) := by
+    rw [← MeasureTheory.integral_neg_eq_self
+      (fun x : ℝ => odlyzkoTestFn x / Real.cosh (x / 2) *
+        (Real.exp (1 / 2 * x) * Real.cos (c * x))) MeasureTheory.volume]
+    refine MeasureTheory.integral_congr_ae
+      (Filter.Eventually.of_forall fun x => ?_)
+    simp only [odlyzkoTestFn, abs_neg, neg_div, Real.cosh_neg, mul_neg,
+      Real.cos_neg, neg_mul]
+  have hIadd : (∫ x : ℝ, odlyzkoTestFn x / Real.cosh (x / 2) *
+        (Real.exp (-(1 / 2) * x) * Real.cos (c * x))) +
+      (∫ x : ℝ, odlyzkoTestFn x / Real.cosh (x / 2) *
+        (Real.exp (1 / 2 * x) * Real.cos (c * x))) =
+      2 * ∫ x : ℝ, odlyzkoTestFn x * Real.cos (c * x) := by
+    rw [← MeasureTheory.integral_add (hIint (-(1 / 2))) (hIint (1 / 2)),
+      ← MeasureTheory.integral_const_mul]
+    refine MeasureTheory.integral_congr_ae
+      (Filter.Eventually.of_forall fun x => ?_)
+    have hch : Real.cosh (x / 2) ≠ 0 := (Real.cosh_pos _).ne'
+    have hcosh2 : Real.exp (-(1 / 2) * x) + Real.exp (1 / 2 * x) =
+        2 * Real.cosh (x / 2) := by
+      rw [Real.cosh_eq]
+      have h1 : -(1 / 2 : ℝ) * x = -(x / 2) := by ring
+      have h2 : (1 / 2 : ℝ) * x = x / 2 := by ring
+      rw [h1, h2]
+      ring
+    calc odlyzkoTestFn x / Real.cosh (x / 2) *
+          (Real.exp (-(1 / 2) * x) * Real.cos (c * x)) +
+        odlyzkoTestFn x / Real.cosh (x / 2) *
+          (Real.exp (1 / 2 * x) * Real.cos (c * x)) =
+        odlyzkoTestFn x / Real.cosh (x / 2) * Real.cos (c * x) *
+          (Real.exp (-(1 / 2) * x) + Real.exp (1 / 2 * x)) := by ring
+      _ = odlyzkoTestFn x / Real.cosh (x / 2) * Real.cos (c * x) *
+          (2 * Real.cosh (x / 2)) := by rw [hcosh2]
+      _ = 2 * (odlyzkoTestFn x * Real.cos (c * x)) := by
+          field_simp
+  have hFejer := integral_odlyzkoTestFn_mul_cos_nonneg c
+  rcases hz with h0 | h1
+  · have hcase : (poitouPhi z).re = ∫ x : ℝ,
+        odlyzkoTestFn x / Real.cosh (x / 2) *
+          (Real.exp (-(1 / 2) * x) * Real.cos (c * x)) := by
+      rw [hre_eq]
+      refine MeasureTheory.integral_congr_ae
+        (Filter.Eventually.of_forall fun x => ?_)
+      rw [h0]
+      norm_num
+    rw [hcase]
+    linarith [hIsymm, hIadd, hFejer]
+  · have hcase : (poitouPhi z).re = ∫ x : ℝ,
+        odlyzkoTestFn x / Real.cosh (x / 2) *
+          (Real.exp (1 / 2 * x) * Real.cos (c * x)) := by
+      rw [hre_eq]
+      refine MeasureTheory.integral_congr_ae
+        (Filter.Eventually.of_forall fun x => ?_)
+      rw [h1]
+      norm_num
+    rw [hcase]
+    linarith [hIsymm, hIadd, hFejer]
+
+/-- **Positivity of `Re Φ` on the closed critical strip** (PROVEN
+2026-07-23, assembled from the PROVEN entirety `poitouPhi_differentiable`,
+strip bound `poitouPhi_norm_le`, and boundary positivity
+`poitouPhi_re_nonneg_boundary`):
+`Re Φ(s) ≥ 0` for `0 ≤ Re s ≤ 1`.  The interior follows from the
+boundary by the maximum principle: Phragmén–Lindelöf on the vertical
+strip (`PhragmenLindelof.vertical_strip`) applied to `exp(−Φ)`, which
+is entire, bounded on the strip by `exp(12·e³)` (so any admissible
+growth budget works), and of norm `exp(−Re Φ) ≤ 1` on the boundary
+lines.  This is the positivity step of Proposition 5 of Poitou
+(exp. 6, p. 6-08): the unconditional replacement for GRH, turning
+condition (iv) (Fejér: `f̂ ≥ 0`) into `Re Φ(ρ) ≥ 0` at every
+nontrivial zero `ρ`. -/
+theorem poitouPhi_re_nonneg (s : ℂ) (h0 : 0 ≤ s.re) (h1 : s.re ≤ 1) :
+    0 ≤ (poitouPhi s).re := by
+  have key : ‖Complex.exp (-poitouPhi s)‖ ≤ 1 := by
+    refine PhragmenLindelof.vertical_strip (a := 0) (b := 1) (C := 1)
+      (f := fun z => Complex.exp (-poitouPhi z))
+      poitouPhi_differentiable.neg.cexp.diffContOnCl ?_ ?_ ?_ h0 h1
+    · refine ⟨1, by rw [sub_zero, div_one]; linarith [Real.pi_gt_three],
+        12 * Real.exp 3, Asymptotics.IsBigO.of_bound' ?_⟩
+      have hmem : ∀ᶠ w : ℂ in
+          Filter.comap (_root_.abs ∘ Complex.im) Filter.atTop ⊓
+            Filter.principal (Complex.re ⁻¹' Set.Ioo 0 1),
+          w ∈ Complex.re ⁻¹' Set.Ioo (0 : ℝ) 1 :=
+        Filter.eventually_inf_principal.mpr
+          (Filter.Eventually.of_forall fun w hw => hw)
+      filter_upwards [hmem] with w hw
+      simp only [Set.mem_preimage, Set.mem_Ioo] at hw
+      rw [Complex.norm_exp, Complex.neg_re, Real.norm_eq_abs,
+        abs_of_pos (Real.exp_pos _), Real.exp_le_exp]
+      refine le_trans (le_trans (neg_le_abs _) (Complex.abs_re_le_norm _)) ?_
+      refine le_trans (poitouPhi_norm_le w hw.1.le hw.2.le) ?_
+      exact le_mul_of_one_le_right (by positivity)
+        (Real.one_le_exp (by positivity))
+    · intro w hw
+      rw [Complex.norm_exp, Complex.neg_re]
+      exact Real.exp_le_one_iff.mpr
+        (neg_nonpos.mpr (poitouPhi_re_nonneg_boundary w (Or.inl hw)))
+    · intro w hw
+      rw [Complex.norm_exp, Complex.neg_re]
+      exact Real.exp_le_one_iff.mpr
+        (neg_nonpos.mpr (poitouPhi_re_nonneg_boundary w (Or.inr hw)))
+  rw [Complex.norm_exp, Complex.neg_re, Real.exp_le_one_iff] at key
+  linarith
+
 /-- **Poitou's unconditional explicit-formula inequality at the Fejér
-test function** (sorry node — THE analytic input of the Serre/Tate
-elimination, stated 2026-07-23): for a totally complex number field
+test function** (DECOMPOSED 2026-07-23 into the deep explicit-formula
+leaf `dedekind_explicit_formula_fejer`, the strip-positivity leaf
+`poitouPhi_re_nonneg`, and the PROVEN `poitouPrimeTerm_nonneg`; the
+assembly below is proven — drop the zero term, truncation by
+truncation, and the prime term): for a totally complex number field
 `K` of degree `n`,
 
 `n·(γ + log 4π − ∫₀^∞ (1 − f x)/sinh x dx) − 4·∫₀^∞ f ≤ log |d_K|`
@@ -2848,13 +3412,10 @@ since `odlyzkoTestFn ≥ 0`.  The admissibility conditions of
 Proposition 5 hold for `odlyzkoTestFn`: `f 0 = 1`, `∫₀^∞ f` converges
 (compact support), `f/cosh(x/2)` and `(1 − f x)/x` are of bounded
 variation, and the Fourier transform `t ↦ 6·(sin (3t)/(3t))²` is
-nonnegative (Fejér).  The eventual proof must formalize Weil's
-explicit formula for the Dedekind zeta function (functional equation
-+ Hadamard product; Poitou §1, Propositions 1–3 and the Théorème
-(A. Weil) there); note the official FLT project takes the analogous
-statement as a standing AXIOM (`FLT.Assumptions.Odlyzko`, tracking
-issue #458) — here it must be proven.  Numerically the left side at
-`n = 48` is `log (11.56…ⁿ/e¹²)`, far above the needed
+nonnegative (Fejér).  Note the official FLT project takes the
+analogous statement as a standing AXIOM (`FLT.Assumptions.Odlyzko`,
+tracking issue #458) — here it must be proven.  Numerically the left
+side at `n = 48` is `log (11.56…ⁿ/e¹²)`, far above the needed
 `log 8.25ⁿ`. -/
 theorem poitou_explicit_formula_bound (K : Type*) [Field K] [NumberField K]
     (htc : NumberField.IsTotallyComplex K) :
@@ -2862,8 +3423,17 @@ theorem poitou_explicit_formula_bound (K : Type*) [Field K] [NumberField K]
         (Real.eulerMascheroniConstant + Real.log (4 * Real.pi) -
           ∫ x in Set.Ioi (0 : ℝ), (1 - odlyzkoTestFn x) / Real.sinh x) -
       4 * ∫ x in Set.Ioi (0 : ℝ), odlyzkoTestFn x ≤
-      Real.log |(NumberField.discr K : ℝ)| :=
-  sorry
+      Real.log |(NumberField.discr K : ℝ)| := by
+  obtain ⟨mult, S, hstrip, -, htend, heq⟩ :=
+    dedekind_explicit_formula_fejer K htc
+  have hP : (0 : ℝ) ≤ poitouPrimeTerm K := poitouPrimeTerm_nonneg K
+  have hS : (0 : ℝ) ≤ S :=
+    ge_of_tendsto' htend fun T =>
+      tsum_nonneg fun ρ =>
+        mul_nonneg (Nat.cast_nonneg _)
+          (poitouPhi_re_nonneg ρ.1 (hstrip ρ.1 ρ.2.1).1.le
+            (hstrip ρ.1 ρ.2.1).2.le)
+  linarith [heq, hP, hS]
 
 /-- **Numeric bound on the archimedean integral of the Fejér–Poitou
 decomposition** (PROVEN 2026-07-23):
