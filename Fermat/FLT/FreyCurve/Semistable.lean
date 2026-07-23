@@ -8799,9 +8799,198 @@ theorem exists_hopfOrder_of_adic_bialgEquiv
           hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) (K := ℚ)
         (Coalgebra.counit (R := ℚ) x) (fun w => by rw [huniq w]; exact h7)
     exact ⟨r, hr⟩
-  -- ANTIPODE leaf (sorry node): the antipode preserves `H₀`
+  -- ANTIPODE (PROVEN): the antipode preserves `H₀` — the comparison
+  -- map intertwines the antipodes (both composites are convolution
+  -- inverses of `Ψ`, and inverses in the convolution monoid are
+  -- unique), and the base-change antipodes preserve
+  -- `includeRight`-images
   have hantipode : ∀ x ∈ H₀, HopfAlgebra.antipode ℚ x ∈ H₀ := by
-    sorry
+    -- the flipped antipode cancel law on the target
+    have hidS : WithConv.toConv (AlgHom.id (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ((HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl)) *
+        WithConv.toConv (HopfAlgebra.antipodeAlgHom
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ((HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+            ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl)) = 1 := by
+      apply WithConv.ofConv_injective
+      apply AlgHom.toLinearMap_injective
+      apply WithConv.toConv_injective
+      rw [AlgHom.toLinearMap_convMul, AlgHom.toLinearMap_convOne,
+        HopfAlgebra.toLinearMap_antipodeAlgHom, AlgHom.toLinearMap_id]
+      exact LinearMap.id_mul_antipode
+    -- postcomposing the convolution unit with the comparison map
+    have hpost1 : Ψ.comp ((1 : WithConv (((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[ℚ] Hg)
+        →ₐ[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+        ((HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[ℚ] Hg))).ofConv) =
+        (1 : WithConv (((HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[ℚ] Hg)
+          →ₐ[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]
+          ((HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+            ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl))).ofConv := by
+      refine AlgHom.ext fun z => ?_
+      rw [AlgHom.comp_apply, AlgHom.convOne_apply, AlgHom.convOne_apply]
+      exact Ψ.commutes _
+    -- precomposing the convolution unit with the comparison map
+    have hpre1 : ((1 : WithConv (((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl)
+        →ₐ[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+        ((HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl))).ofConv).comp
+        (ψ.toBialgHom : ((HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[ℚ] Hg)
+          →ₐ[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]
+          ((HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+            ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl)) =
+        (1 : WithConv (((HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[ℚ] Hg)
+          →ₐ[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]
+          ((HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+            ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl))).ofConv := by
+      refine AlgHom.ext fun z => ?_
+      rw [AlgHom.comp_apply, AlgHom.convOne_apply, AlgHom.convOne_apply]
+      exact congrArg _ (CoalgHomClass.counit_comp_apply ψ.toBialgHom z)
+    -- `Ψ ∘ S` is a left convolution inverse of `Ψ`
+    have hab : WithConv.toConv (Ψ.comp (HopfAlgebra.antipodeAlgHom
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ((HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[ℚ] Hg))) *
+        WithConv.toConv Ψ = 1 := by
+      have h1 := AlgHom.comp_convMul_distrib Ψ
+        (WithConv.toConv (HopfAlgebra.antipodeAlgHom
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ((HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[ℚ] Hg)))
+        (WithConv.toConv (AlgHom.id (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ((HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[ℚ] Hg)))
+      rw [AlgHom.antipode_id_cancel, hpost1] at h1
+      have h2 := congrArg WithConv.toConv h1
+      rw [WithConv.toConv_ofConv, WithConv.toConv_ofConv,
+        WithConv.ofConv_toConv, WithConv.ofConv_toConv, AlgHom.comp_id] at h2
+      exact h2.symm
+    -- `S ∘ Ψ` is a right convolution inverse of `Ψ`
+    have hbc : WithConv.toConv Ψ *
+        WithConv.toConv ((HopfAlgebra.antipodeAlgHom
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ((HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+            ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl)).comp Ψ) = 1 := by
+      have h1 := AlgHom.convMul_comp_bialgHom_distrib
+        (WithConv.toConv (AlgHom.id (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ((HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+            ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl)))
+        (WithConv.toConv (HopfAlgebra.antipodeAlgHom
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ((HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+            ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl)))
+        ψ.toBialgHom
+      rw [hidS, hpre1] at h1
+      have h2 := congrArg WithConv.toConv h1
+      rw [WithConv.toConv_ofConv, WithConv.toConv_ofConv,
+        WithConv.ofConv_toConv, WithConv.ofConv_toConv, AlgHom.id_comp] at h2
+      exact h2.symm
+    -- uniqueness of convolution inverses: `Ψ` intertwines the antipodes
+    have key : Ψ.comp (HopfAlgebra.antipodeAlgHom
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ((HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[ℚ] Hg)) =
+        (HopfAlgebra.antipodeAlgHom (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ((HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl)).comp Ψ :=
+      WithConv.toConv_injective (left_inv_eq_right_inv hab hbc)
+    have hnat : ∀ y : ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[ℚ] Hg),
+        Ψ (HopfAlgebra.antipode (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) y) =
+        HopfAlgebra.antipode (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) (Ψ y) := fun y =>
+      congrArg (fun F : ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[ℚ] Hg)
+        →ₐ[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+        ((HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl) => F y) key
+    intro x hx
+    obtain ⟨h, hh⟩ := hx
+    have hh' : Algebra.TensorProduct.includeRight
+        (R := 𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat])
+        (A := HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) (B := Hl) h =
+        Ψ (Algebra.TensorProduct.includeRight x) := hh
+    -- the base-change antipodes act through the right tensor factor
+    have hincS : Algebra.TensorProduct.includeRight (R := ℚ)
+        (A := HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) (B := Hg)
+        (HopfAlgebra.antipode ℚ x) = HopfAlgebra.antipode
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (Algebra.TensorProduct.includeRight (R := ℚ)
+          (A := HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) (B := Hg) x) := by
+      rw [Algebra.TensorProduct.includeRight_apply,
+        Algebra.TensorProduct.includeRight_apply,
+        TensorProduct.antipode_def,
+        TensorProduct.AlgebraTensorModule.map_tmul, HopfAlgebra.antipode_one]
+    have hTincS : HopfAlgebra.antipode (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (Algebra.TensorProduct.includeRight
+          (R := 𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat])
+          (A := HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) (B := Hl) h) =
+        Algebra.TensorProduct.includeRight
+        (HopfAlgebra.antipode 𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat] h) := by
+      rw [Algebra.TensorProduct.includeRight_apply,
+        Algebra.TensorProduct.includeRight_apply,
+        TensorProduct.antipode_def,
+        TensorProduct.AlgebraTensorModule.map_tmul, HopfAlgebra.antipode_one]
+    show Ψ (Algebra.TensorProduct.includeRight
+      (HopfAlgebra.antipode ℚ x)) ∈ Λ
+    rw [hincS, hnat (Algebra.TensorProduct.includeRight x), ← hh', hTincS]
+    exact ⟨_, rfl⟩
   -- the abstract Hopf-order construction (sorried leaf)
   exact exists_hopfOrder_of_latticeClosure hp' Hg H₀ hfin hfull hcomul
     hcounit hantipode
