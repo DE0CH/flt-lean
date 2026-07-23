@@ -33,6 +33,13 @@ import Mathlib.RingTheory.Smooth.Flat
 -- radicality of `𝔪 H₀` for an unramified `R`-algebra `H₀`
 -- (`Algebra.FormallyUnramified.isRadical_map_isMaximal`), same leaf
 import Mathlib.RingTheory.Unramified.Field
+-- ring/algebra structure on `Shrink` and the `coassoc_simps` normalization set:
+-- the universe-transport leaf `exists_hopfAlgebra_small_copy`
+import Mathlib.Algebra.Algebra.Shrink
+import Mathlib.RingTheory.Coalgebra.CoassocSimps
+-- `HopfAlgebra.antipodeAlgHom` (the antipode of a commutative Hopf algebra is
+-- an algebra homomorphism), same leaf
+import Mathlib.RingTheory.HopfAlgebra.Convolution
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
 
 /-!
@@ -1852,23 +1859,212 @@ theorem exists_hopfAlgebra_galoisHopfCarrier [Finite A] :
   sorry
 
 universe v in
-/-- **Hopf algebras have Hopf-algebra copies in every admissible universe** (sorry
-node; pure transfer of structure, curve-free and Galois-free — the universe half of
-the equivariant-functions package): a Hopf algebra `B` over `K₁` that is `v`-small
-as a type admits a `Type v` copy: a commutative ring `C` in `Type v` with a
-`K₁`-Hopf-algebra structure, an algebra equivalence `ê : C ≃ₐ[K₁] B`, and a
+/-- **Hopf algebras have Hopf-algebra copies in every admissible universe** (PROVEN
+2026-07-23; pure transfer of structure, curve-free and Galois-free — the universe
+half of the equivariant-functions package): a Hopf algebra `B` over `K₁` that is
+`v`-small as a type admits a `Type v` copy: a commutative ring `C` in `Type v` with
+a `K₁`-Hopf-algebra structure, an algebra equivalence `ê : C ≃ₐ[K₁] B`, and a
 bialgebra homomorphism `êc` witnessing that `ê` respects the comultiplications.
-Intended proof: `C := Shrink.{v} B` with the ring and algebra structure transported
-along `equivShrink` (`Shrink.instCommRing`, `Shrink.instAlgebra`, `Shrink.algEquiv`),
-the comultiplication `(ê ⊗ ê).symm ∘ Δ_B ∘ ê`, counit `ε_B ∘ ê`, antipode
-`ê.symm ∘ S_B ∘ ê`; each Hopf axiom is the corresponding axiom of `B` conjugated by
-`ê` (`Algebra.TensorProduct.congr` supplies the tensor legs), and the
-bialgebra-homomorphism property of `ê` then holds by construction. -/
+Proof: `C := Shrink.{v} B` with the ring and algebra structure transported along
+`equivShrink` (`Shrink.instCommRing`, `Shrink.instAlgebra`, `Shrink.algEquiv`),
+the comultiplication `(ê⁻¹ ⊗ ê⁻¹) ∘ Δ_B ∘ ê`, counit `ε_B ∘ ê`, antipode
+`ê⁻¹ ∘ S_B ∘ ê` (all through `Bialgebra.ofAlgHom`/`HopfAlgebra.ofAlgHom`); the
+coalgebra axioms are the axioms of `B` conjugated by `ê`, checked at the linear
+level after cancelling along the surjection `ê.symm` (the `coassoc_simps`
+normalization set does the tensor bookkeeping); the antipode axioms are conjugated
+at the algebra-homomorphism level (`HopfAlgebra.antipodeAlgHom`,
+`mul_antipode_rTensor_comul`/`lTensor`); the bialgebra-homomorphism property of
+`ê` holds by construction. -/
 theorem exists_hopfAlgebra_small_copy {K₁ : Type*} [CommSemiring K₁]
     {B : Type*} [CommRing B] [HopfAlgebra K₁ B] [Small.{v} B] :
     ∃ (C : Type v) (_ : CommRing C) (_ : HopfAlgebra K₁ C) (ê : C ≃ₐ[K₁] B)
-      (êc : C →ₐc[K₁] B), (êc : C →ₐ[K₁] B) = ê.toAlgHom :=
-  sorry
+      (êc : C →ₐc[K₁] B), (êc : C →ₐ[K₁] B) = ê.toAlgHom := by
+  classical
+  -- the `Type v` copy with its transported ring and algebra structure
+  let ê : Shrink.{v} B ≃ₐ[K₁] B := Shrink.algEquiv K₁ B
+  -- the transported comultiplication, counit and antipode, as algebra maps
+  let Δ : Shrink.{v} B →ₐ[K₁] Shrink.{v} B ⊗[K₁] Shrink.{v} B :=
+    (Algebra.TensorProduct.map ê.symm.toAlgHom ê.symm.toAlgHom).comp
+      ((Bialgebra.comulAlgHom K₁ B).comp ê.toAlgHom)
+  let ε : Shrink.{v} B →ₐ[K₁] K₁ :=
+    (Bialgebra.counitAlgHom K₁ B).comp ê.toAlgHom
+  let S : Shrink.{v} B →ₐ[K₁] Shrink.{v} B :=
+    ê.symm.toAlgHom.comp ((HopfAlgebra.antipodeAlgHom K₁ B).comp ê.toAlgHom)
+  -- cancellation identities for the two directions of the copy equivalence
+  have hmm' : ê.toLinearMap ∘ₗ ê.symm.toLinearMap = LinearMap.id := by
+    ext x; simp
+  -- the structure maps, precomposed with the (surjective) inverse direction
+  have hΔ : Δ.toLinearMap ∘ₗ ê.symm.toLinearMap =
+      TensorProduct.map ê.symm.toLinearMap ê.symm.toLinearMap ∘ₗ
+        Coalgebra.comul := by
+    simp only [Δ, AlgHom.comp_toLinearMap, Algebra.TensorProduct.toLinearMap_map,
+      TensorProduct.AlgebraTensorModule.map_eq, AlgEquiv.toAlgHom_toLinearMap,
+      Bialgebra.toLinearMap_comulAlgHom, LinearMap.comp_assoc, hmm',
+      LinearMap.comp_id]
+  have hε : ε.toLinearMap ∘ₗ ê.symm.toLinearMap = Coalgebra.counit := by
+    simp only [ε, AlgHom.comp_toLinearMap, AlgEquiv.toAlgHom_toLinearMap,
+      Bialgebra.toLinearMap_counitAlgHom, LinearMap.comp_assoc, hmm',
+      LinearMap.comp_id]
+  -- the coalgebra axioms, conjugated: reduce along the surjection `ê.symm`
+  have hsurj : Function.Surjective ê.symm.toLinearMap := ê.symm.surjective
+  have h_coassoc :
+      (Algebra.TensorProduct.assoc K₁ K₁ K₁ (Shrink.{v} B) (Shrink.{v} B)
+          (Shrink.{v} B)).toAlgHom.comp
+        ((Algebra.TensorProduct.map Δ (AlgHom.id K₁ (Shrink.{v} B))).comp Δ) =
+      (Algebra.TensorProduct.map (AlgHom.id K₁ (Shrink.{v} B)) Δ).comp Δ := by
+    apply AlgHom.toLinearMap_injective
+    refine (LinearMap.cancel_right hsurj).mp ?_
+    simp only [coassoc_simps, AlgHom.comp_toLinearMap,
+      Algebra.TensorProduct.toLinearMap_map, AlgHom.toLinearMap_id,
+      AlgEquiv.toAlgHom_toLinearMap, Algebra.TensorProduct.assoc_toLinearEquiv,
+      hΔ]
+  have h_rTensor :
+      (Algebra.TensorProduct.map ε (AlgHom.id K₁ (Shrink.{v} B))).comp Δ =
+        ((Algebra.TensorProduct.lid K₁ (Shrink.{v} B)).symm :
+          Shrink.{v} B →ₐ[K₁] K₁ ⊗[K₁] Shrink.{v} B) := by
+    apply AlgHom.toLinearMap_injective
+    refine (LinearMap.cancel_right hsurj).mp ?_
+    simp only [coassoc_simps, AlgHom.comp_toLinearMap,
+      Algebra.TensorProduct.toLinearMap_map, AlgHom.toLinearMap_id,
+      AlgEquiv.toAlgHom_toLinearMap, hΔ, hε]
+    rw [CoassocSimps.map_counit_comp_comul_left]
+    rfl
+  have h_lTensor :
+      (Algebra.TensorProduct.map (AlgHom.id K₁ (Shrink.{v} B)) ε).comp Δ =
+        ((Algebra.TensorProduct.rid K₁ K₁ (Shrink.{v} B)).symm :
+          Shrink.{v} B →ₐ[K₁] Shrink.{v} B ⊗[K₁] K₁) := by
+    apply AlgHom.toLinearMap_injective
+    refine (LinearMap.cancel_right hsurj).mp ?_
+    simp only [coassoc_simps, AlgHom.comp_toLinearMap,
+      Algebra.TensorProduct.toLinearMap_map, AlgHom.toLinearMap_id,
+      AlgEquiv.toAlgHom_toLinearMap, hΔ, hε]
+    rw [CoassocSimps.map_counit_comp_comul_right]
+    rfl
+  letI instBi : Bialgebra K₁ (Shrink.{v} B) :=
+    Bialgebra.ofAlgHom Δ ε h_coassoc h_rTensor h_lTensor
+  -- the structure maps of the new instance are the transported ones
+  have hcomul_new : Bialgebra.comulAlgHom K₁ (Shrink.{v} B) = Δ :=
+    AlgHom.toLinearMap_injective rfl
+  have hcounit_new : Bialgebra.counitAlgHom K₁ (Shrink.{v} B) = ε :=
+    AlgHom.toLinearMap_injective rfl
+  -- multiplicativity of the copy inverse against the tensor multiplication
+  have hmul : (Algebra.TensorProduct.lmul' K₁ (S := Shrink.{v} B)).comp
+      (Algebra.TensorProduct.map ê.symm.toAlgHom ê.symm.toAlgHom) =
+      ê.symm.toAlgHom.comp (Algebra.TensorProduct.lmul' K₁) := by
+    ext <;> simp
+  -- the structure maps, conjugated at the algebra-homomorphism level
+  have hΔa : Δ.comp ê.symm.toAlgHom =
+      (Algebra.TensorProduct.map ê.symm.toAlgHom ê.symm.toAlgHom).comp
+        (Bialgebra.comulAlgHom K₁ B) :=
+    AlgHom.toLinearMap_injective (by
+      simpa only [AlgHom.comp_toLinearMap, AlgEquiv.toAlgHom_toLinearMap,
+        Bialgebra.toLinearMap_comulAlgHom, Algebra.TensorProduct.toLinearMap_map,
+        TensorProduct.AlgebraTensorModule.map_eq] using hΔ)
+  have hSa : S.comp ê.symm.toAlgHom =
+      ê.symm.toAlgHom.comp (HopfAlgebra.antipodeAlgHom K₁ B) := by
+    apply AlgHom.ext
+    intro b
+    show ê.symm (HopfAlgebra.antipodeAlgHom K₁ B (ê (ê.symm b))) = _
+    rw [ê.apply_symm_apply]
+    rfl
+  have hεa : ε.comp ê.symm.toAlgHom = Bialgebra.counitAlgHom K₁ B := by
+    apply AlgHom.ext
+    intro b
+    show Bialgebra.counitAlgHom K₁ B (ê (ê.symm b)) = _
+    rw [ê.apply_symm_apply]
+  -- the two `map` conjugation identities for the antipode legs
+  have hmapS : (Algebra.TensorProduct.map S (AlgHom.id K₁ (Shrink.{v} B))).comp
+      (Algebra.TensorProduct.map ê.symm.toAlgHom ê.symm.toAlgHom) =
+      (Algebra.TensorProduct.map ê.symm.toAlgHom ê.symm.toAlgHom).comp
+        (Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom K₁ B)
+          (AlgHom.id K₁ B)) := by
+    rw [← Algebra.TensorProduct.map_comp, ← Algebra.TensorProduct.map_comp, hSa,
+      AlgHom.comp_id, AlgHom.id_comp]
+  have hmapS' : (Algebra.TensorProduct.map (AlgHom.id K₁ (Shrink.{v} B)) S).comp
+      (Algebra.TensorProduct.map ê.symm.toAlgHom ê.symm.toAlgHom) =
+      (Algebra.TensorProduct.map ê.symm.toAlgHom ê.symm.toAlgHom).comp
+        (Algebra.TensorProduct.map (AlgHom.id K₁ B)
+          (HopfAlgebra.antipodeAlgHom K₁ B)) := by
+    rw [← Algebra.TensorProduct.map_comp, ← Algebra.TensorProduct.map_comp, hSa,
+      AlgHom.comp_id, AlgHom.id_comp]
+  -- the antipode axioms of `B`, in `lmul' ∘ map` form
+  have hB1 : (Algebra.TensorProduct.lmul' K₁ (S := B)).comp
+      ((Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom K₁ B)
+        (AlgHom.id K₁ B)).comp (Bialgebra.comulAlgHom K₁ B)) =
+      (Algebra.ofId K₁ B).comp (Bialgebra.counitAlgHom K₁ B) := by
+    apply AlgHom.toLinearMap_injective
+    simp only [AlgHom.comp_toLinearMap, Algebra.TensorProduct.lmul'_toLinearMap,
+      Algebra.TensorProduct.toLinearMap_map,
+      TensorProduct.AlgebraTensorModule.map_eq,
+      HopfAlgebra.toLinearMap_antipodeAlgHom, AlgHom.toLinearMap_id,
+      Bialgebra.toLinearMap_comulAlgHom, Bialgebra.toLinearMap_counitAlgHom]
+    rw [← LinearMap.rTensor_def]
+    exact HopfAlgebra.mul_antipode_rTensor_comul
+  have hB2 : (Algebra.TensorProduct.lmul' K₁ (S := B)).comp
+      ((Algebra.TensorProduct.map (AlgHom.id K₁ B)
+        (HopfAlgebra.antipodeAlgHom K₁ B)).comp (Bialgebra.comulAlgHom K₁ B)) =
+      (Algebra.ofId K₁ B).comp (Bialgebra.counitAlgHom K₁ B) := by
+    apply AlgHom.toLinearMap_injective
+    simp only [AlgHom.comp_toLinearMap, Algebra.TensorProduct.lmul'_toLinearMap,
+      Algebra.TensorProduct.toLinearMap_map,
+      TensorProduct.AlgebraTensorModule.map_eq,
+      HopfAlgebra.toLinearMap_antipodeAlgHom, AlgHom.toLinearMap_id,
+      Bialgebra.toLinearMap_comulAlgHom, Bialgebra.toLinearMap_counitAlgHom]
+    rw [← LinearMap.lTensor_def]
+    exact HopfAlgebra.mul_antipode_lTensor_comul
+  -- the antipode axioms for the copy, by conjugation
+  have h_S1 : (Algebra.TensorProduct.lift S (AlgHom.id K₁ (Shrink.{v} B))
+        fun _ => Commute.all _).comp (Bialgebra.comulAlgHom K₁ (Shrink.{v} B)) =
+      (Algebra.ofId K₁ (Shrink.{v} B)).comp
+        (Bialgebra.counitAlgHom K₁ (Shrink.{v} B)) := by
+    rw [← Algebra.TensorProduct.lmul'_comp_map, hcomul_new, hcounit_new]
+    refine (AlgHom.cancel_right (f := ê.symm.toAlgHom)
+      (show Function.Surjective ⇑ê.symm.toAlgHom from ê.symm.surjective)).mp ?_
+    rw [AlgHom.comp_assoc, AlgHom.comp_assoc, hΔa, ← AlgHom.comp_assoc _ _
+      (Bialgebra.comulAlgHom K₁ B), hmapS, AlgHom.comp_assoc _ _
+      (Bialgebra.comulAlgHom K₁ B), ← AlgHom.comp_assoc, hmul,
+      AlgHom.comp_assoc, hB1, AlgHom.comp_assoc, hεa]
+    apply AlgHom.ext
+    intro b
+    show ê.symm (algebraMap K₁ B (Bialgebra.counitAlgHom K₁ B b)) = _
+    rw [AlgEquiv.commutes]
+    rfl
+  have h_S2 : (Algebra.TensorProduct.lift (AlgHom.id K₁ (Shrink.{v} B)) S
+        fun _ _ => Commute.all _ _).comp
+        (Bialgebra.comulAlgHom K₁ (Shrink.{v} B)) =
+      (Algebra.ofId K₁ (Shrink.{v} B)).comp
+        (Bialgebra.counitAlgHom K₁ (Shrink.{v} B)) := by
+    rw [← Algebra.TensorProduct.lmul'_comp_map, hcomul_new, hcounit_new]
+    refine (AlgHom.cancel_right (f := ê.symm.toAlgHom)
+      (show Function.Surjective ⇑ê.symm.toAlgHom from ê.symm.surjective)).mp ?_
+    rw [AlgHom.comp_assoc, AlgHom.comp_assoc, hΔa, ← AlgHom.comp_assoc _ _
+      (Bialgebra.comulAlgHom K₁ B), hmapS', AlgHom.comp_assoc _ _
+      (Bialgebra.comulAlgHom K₁ B), ← AlgHom.comp_assoc, hmul,
+      AlgHom.comp_assoc, hB2, AlgHom.comp_assoc, hεa]
+    apply AlgHom.ext
+    intro b
+    show ê.symm (algebraMap K₁ B (Bialgebra.counitAlgHom K₁ B b)) = _
+    rw [AlgEquiv.commutes]
+    rfl
+  letI instHopf : HopfAlgebra K₁ (Shrink.{v} B) :=
+    HopfAlgebra.ofAlgHom S h_S1 h_S2
+  -- the copy equivalence respects the comultiplications by construction
+  refine ⟨Shrink.{v} B, inferInstance, instHopf, ê,
+    BialgHom.ofAlgHom ê.toAlgHom ?_ ?_, ?_⟩
+  · rw [hcounit_new]
+  · rw [hcomul_new]
+    have hcomp : ê.toAlgHom.comp ê.symm.toAlgHom = AlgHom.id K₁ B :=
+      AlgHom.ext fun b => ê.apply_symm_apply b
+    have hmapinv : (Algebra.TensorProduct.map ê.toAlgHom ê.toAlgHom).comp
+        (Algebra.TensorProduct.map ê.symm.toAlgHom ê.symm.toAlgHom) =
+        AlgHom.id K₁ (B ⊗[K₁] B) := by
+      rw [← Algebra.TensorProduct.map_comp, hcomp, Algebra.TensorProduct.map_id]
+    show (Algebra.TensorProduct.map ê.toAlgHom ê.toAlgHom).comp
+        ((Algebra.TensorProduct.map ê.symm.toAlgHom ê.symm.toAlgHom).comp
+          ((Bialgebra.comulAlgHom K₁ B).comp ê.toAlgHom)) =
+      (Bialgebra.comulAlgHom K₁ B).comp ê.toAlgHom
+    rw [← AlgHom.comp_assoc, hmapinv, AlgHom.id_comp]
+  · rfl
 
 /-- **The Hopf-algebra structure on a `u`-small carrier of the equivariant-functions
 algebra** (DECOMPOSED 2026-07-23 into the canonical-universe package leaf
