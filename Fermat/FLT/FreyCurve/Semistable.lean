@@ -46,6 +46,9 @@ public import Mathlib.RingTheory.DedekindDomain.Dvr
 import Mathlib.RingTheory.Localization.LocalizationLocalization
 import Mathlib.RingTheory.Valuation.Integral
 import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.SplitMultiplicativeReduction
+-- `quadraticTwist` itself, PUBLIC because the unramified-quadratic-descent
+-- leaf of the nonsplit package is STATED with it
+public import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists
 -- the unit-`c₄` Kraus–Laska minimality criterion, for the multiplicative case
 import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 -- the local-field instance package for `adicCompletion ℚ v` (the
@@ -2858,13 +2861,333 @@ def WeierstrassCurve.TorsionFlatPackage
         WeierstrassCurve.Affine.Point.map σ.toAlgHom
           (f (Additive.ofMul (WithConv.toConv φ)))
 
+/-! #### The twisted constant group scheme of a finite Galois module
+
+For a finite Galois extension `L/K` inside `Ω` and a finite abelian
+group `A` with an action `ρ' : Gal(L/K) →* End A`, the twisted constant
+group scheme attached to `ρ'` has Hopf algebra of functions the
+`K`-algebra of `Gal(L/K)`-equivariant functions `A → L`. The DATA
+(subalgebra, pullback structure maps, comultiplication through the
+tensor-comparison isomorphism, counit through the fixed-field
+identification, antipode) is constructed here; the AXIOMS and the
+points computation are the sorried `galDesc*` leaves. -/
+
+section GaloisDescentHopf
+
+open TensorProduct
+
+variable (K : Type) [Field K] (Ω : Type) [Field Ω] [Algebra K Ω]
+variable (L : IntermediateField K Ω)
+
+/-- The `K`-subalgebra of `Gal(L/K)`-equivariant functions `B → L`, for
+an arbitrary (set-level) action `act` of the Galois group on `B`:
+`h (act g b) = g (h b)`. -/
+def galDescSubalgebra (B : Type) (act : (↥L ≃ₐ[K] ↥L) → B → B) :
+    Subalgebra K (B → ↥L) where
+  carrier := {h | ∀ (g : ↥L ≃ₐ[K] ↥L) (b : B), h (act g b) = g (h b)}
+  mul_mem' := fun {x y} hx hy g b => by
+    simp only [Pi.mul_apply, map_mul, hx g b, hy g b]
+  one_mem' := fun g b => by simp only [Pi.one_apply, map_one]
+  add_mem' := fun {x y} hx hy g b => by
+    simp only [Pi.add_apply, map_add, hx g b, hy g b]
+  zero_mem' := fun g b => by simp only [Pi.zero_apply, map_zero]
+  algebraMap_mem' := fun k g b => by
+    simp only [Pi.algebraMap_apply, AlgEquiv.commutes]
+
+/-- Membership in the equivariant subalgebra, unfolded. -/
+theorem mem_galDescSubalgebra_iff {B : Type} {act : (↥L ≃ₐ[K] ↥L) → B → B}
+    {h : B → ↥L} :
+    h ∈ galDescSubalgebra K Ω L B act ↔ ∀ g b, h (act g b) = g (h b) :=
+  Iff.rfl
+
+/-- Pullback of equivariant functions along an equivariant map of
+`Gal(L/K)`-sets: precomposition with `φ : B → C` carries equivariant
+functions on `C` to equivariant functions on `B`, as a `K`-algebra
+homomorphism. -/
+def galDescPullback {B C : Type} (actB : (↥L ≃ₐ[K] ↥L) → B → B)
+    (actC : (↥L ≃ₐ[K] ↥L) → C → C) (φ : B → C)
+    (hφ : ∀ g b, φ (actB g b) = actC g (φ b)) :
+    ↥(galDescSubalgebra K Ω L C actC) →ₐ[K] ↥(galDescSubalgebra K Ω L B actB) where
+  toFun h := ⟨fun b => (h : C → ↥L) (φ b), fun g b => by
+    show (h : C → ↥L) (φ (actB g b)) = g ((h : C → ↥L) (φ b))
+    rw [hφ g b]
+    exact h.2 g (φ b)⟩
+  map_one' := rfl
+  map_mul' _ _ := rfl
+  map_zero' := rfl
+  map_add' _ _ := rfl
+  commutes' _ := rfl
+
+variable (A : Type) [AddCommGroup A]
+variable (ρ' : (↥L ≃ₐ[K] ↥L) →* AddMonoid.End A)
+
+/-- The carrier of the twisted constant group scheme's Hopf algebra:
+`Gal(L/K)`-equivariant functions `A → L`. -/
+abbrev GalDescAlg : Type :=
+  ↥(galDescSubalgebra K Ω L A fun g a => ρ' g a)
+
+/-- Equivariant functions on `A × A` (with the diagonal action), the
+target of the tensor-comparison isomorphism. -/
+abbrev GalDescAlg₂ : Type :=
+  ↥(galDescSubalgebra K Ω L (A × A) fun g x => (ρ' g x.1, ρ' g x.2))
+
+/-- Pullback along the first projection `A × A → A`. -/
+def galDescFst : GalDescAlg K Ω L A ρ' →ₐ[K] GalDescAlg₂ K Ω L A ρ' :=
+  galDescPullback K Ω L (fun g x => (ρ' g x.1, ρ' g x.2)) (fun g a => ρ' g a)
+    Prod.fst (fun _ _ => rfl)
+
+/-- Pullback along the second projection `A × A → A`. -/
+def galDescSnd : GalDescAlg K Ω L A ρ' →ₐ[K] GalDescAlg₂ K Ω L A ρ' :=
+  galDescPullback K Ω L (fun g x => (ρ' g x.1, ρ' g x.2)) (fun g a => ρ' g a)
+    Prod.snd (fun _ _ => rfl)
+
+/-- Pullback along the addition `A × A → A` — the group law of the
+twisted constant group scheme, before identification of the tensor
+square. -/
+def galDescAdd : GalDescAlg K Ω L A ρ' →ₐ[K] GalDescAlg₂ K Ω L A ρ' :=
+  galDescPullback K Ω L (fun g x => (ρ' g x.1, ρ' g x.2)) (fun g a => ρ' g a)
+    (fun x => x.1 + x.2) (fun g x => (map_add (ρ' g) x.1 x.2).symm)
+
+/-- Pullback along the negation `A → A` — the antipode of the twisted
+constant group scheme. -/
+def galDescAntipode : GalDescAlg K Ω L A ρ' →ₐ[K] GalDescAlg K Ω L A ρ' :=
+  galDescPullback K Ω L (fun g a => ρ' g a) (fun g a => ρ' g a)
+    (fun a => -a) (fun g a => (map_neg (ρ' g) a).symm)
+
+/-- The tensor-comparison map `H ⊗[K] H → H₂`: `h₁ ⊗ h₂` acts as the
+two-variable function `(a, b) ↦ h₁(a)·h₂(b)`. -/
+noncomputable def galDescTensorHom :
+    (GalDescAlg K Ω L A ρ') ⊗[K] (GalDescAlg K Ω L A ρ') →ₐ[K]
+      GalDescAlg₂ K Ω L A ρ' :=
+  Algebra.TensorProduct.productMap (galDescFst K Ω L A ρ') (galDescSnd K Ω L A ρ')
+
+/-- **Galois descent for the tensor square** (sorry node — the descent
+core of the finite-quotient package): the comparison map
+`H ⊗[K] H → H₂`, `h₁ ⊗ h₂ ↦ ((a,b) ↦ h₁(a)·h₂(b))`, is bijective. Both
+sides have `K`-dimension `|A|²` (equivariant functions on a finite
+`Gal(L/K)`-set `S` have dimension `|S|`, by evaluation at orbit
+representatives onto `∏_{orbits} Fix(Stab)`), and the map is injective
+by linear disjointness of the evaluations. -/
+theorem galDescTensorHom_bijective [FiniteDimensional K ↥L] [IsGalois K ↥L]
+    [Finite A] :
+    Function.Bijective (galDescTensorHom K Ω L A ρ') := by
+  sorry
+
+variable [FiniteDimensional K ↥L] [IsGalois K ↥L] [Finite A]
+
+/-- The tensor-comparison isomorphism `H ⊗[K] H ≃ H₂` (from the sorried
+bijectivity leaf). -/
+noncomputable def galDescTensorEquiv :
+    ((GalDescAlg K Ω L A ρ') ⊗[K] (GalDescAlg K Ω L A ρ')) ≃ₐ[K]
+      GalDescAlg₂ K Ω L A ρ' :=
+  AlgEquiv.ofBijective (galDescTensorHom K Ω L A ρ')
+    (galDescTensorHom_bijective K Ω L A ρ')
+
+/-- The comultiplication of the twisted constant group scheme: pull
+back along the addition, then identify the equivariant functions on
+`A × A` with the tensor square. -/
+noncomputable def galDescComul :
+    GalDescAlg K Ω L A ρ' →ₐ[K]
+      (GalDescAlg K Ω L A ρ') ⊗[K] (GalDescAlg K Ω L A ρ') :=
+  ((galDescTensorEquiv K Ω L A ρ').symm.toAlgHom).comp (galDescAdd K Ω L A ρ')
+
+omit [Finite A] in
+/-- The value at `0` of an equivariant function is Galois-fixed, hence
+lies in the base field (PROVEN — `IsGalois.mem_range_algebraMap_iff_fixed`). -/
+theorem galDesc_apply_zero_mem_range (h : GalDescAlg K Ω L A ρ') :
+    (h : A → ↥L) 0 ∈ Set.range (algebraMap K ↥L) := by
+  rw [IsGalois.mem_range_algebraMap_iff_fixed]
+  intro g
+  have h2 := h.2 g 0
+  simp only [map_zero] at h2
+  exact h2.symm
+
+/-- The counit of the twisted constant group scheme: evaluation at the
+identity point `0 ∈ A`, landing in `K` by the fixed-field
+identification. -/
+noncomputable def galDescCounit : GalDescAlg K Ω L A ρ' →ₐ[K] K where
+  toFun h := (galDesc_apply_zero_mem_range K Ω L A ρ' h).choose
+  map_one' := by
+    apply (algebraMap K ↥L).injective
+    rw [(galDesc_apply_zero_mem_range K Ω L A ρ' 1).choose_spec, map_one]
+    rfl
+  map_mul' x y := by
+    apply (algebraMap K ↥L).injective
+    rw [map_mul, (galDesc_apply_zero_mem_range K Ω L A ρ' (x * y)).choose_spec,
+      (galDesc_apply_zero_mem_range K Ω L A ρ' x).choose_spec,
+      (galDesc_apply_zero_mem_range K Ω L A ρ' y).choose_spec]
+    rfl
+  map_zero' := by
+    apply (algebraMap K ↥L).injective
+    rw [(galDesc_apply_zero_mem_range K Ω L A ρ' 0).choose_spec, map_zero]
+    rfl
+  map_add' x y := by
+    apply (algebraMap K ↥L).injective
+    rw [map_add, (galDesc_apply_zero_mem_range K Ω L A ρ' (x + y)).choose_spec,
+      (galDesc_apply_zero_mem_range K Ω L A ρ' x).choose_spec,
+      (galDesc_apply_zero_mem_range K Ω L A ρ' y).choose_spec]
+    rfl
+  commutes' r := by
+    apply (algebraMap K ↥L).injective
+    rw [(galDesc_apply_zero_mem_range K Ω L A ρ'
+      (algebraMap K (GalDescAlg K Ω L A ρ') r)).choose_spec]
+    rfl
+
+/-- **Coassociativity of the twisted comultiplication** (sorry node —
+after composing with the injective tensor comparison into functions on
+`A × A × A`, both sides are pullback along `(a,b,c) ↦ a+b+c`). -/
+theorem galDescComul_coassoc :
+    (Algebra.TensorProduct.assoc K K K (GalDescAlg K Ω L A ρ')
+      (GalDescAlg K Ω L A ρ') (GalDescAlg K Ω L A ρ')).toAlgHom.comp
+      ((Algebra.TensorProduct.map (galDescComul K Ω L A ρ')
+        (AlgHom.id K (GalDescAlg K Ω L A ρ'))).comp (galDescComul K Ω L A ρ')) =
+    (Algebra.TensorProduct.map (AlgHom.id K (GalDescAlg K Ω L A ρ'))
+      (galDescComul K Ω L A ρ')).comp (galDescComul K Ω L A ρ') := by
+  sorry
+
+/-- **Left counit axiom for the twisted comultiplication** (sorry node
+— evaluation of the first tensor factor at `0` collapses the pullback
+along addition to the identity). -/
+theorem galDescComul_rTensor_counit :
+    (Algebra.TensorProduct.map (galDescCounit K Ω L A ρ')
+      (AlgHom.id K (GalDescAlg K Ω L A ρ'))).comp (galDescComul K Ω L A ρ') =
+    ((Algebra.TensorProduct.lid K (GalDescAlg K Ω L A ρ')).symm :
+      GalDescAlg K Ω L A ρ' →ₐ[K] K ⊗[K] GalDescAlg K Ω L A ρ') := by
+  sorry
+
+/-- **Right counit axiom for the twisted comultiplication** (sorry node
+— symmetric to the left axiom). -/
+theorem galDescComul_lTensor_counit :
+    (Algebra.TensorProduct.map (AlgHom.id K (GalDescAlg K Ω L A ρ'))
+      (galDescCounit K Ω L A ρ')).comp (galDescComul K Ω L A ρ') =
+    ((Algebra.TensorProduct.rid K K (GalDescAlg K Ω L A ρ')).symm :
+      GalDescAlg K Ω L A ρ' →ₐ[K] GalDescAlg K Ω L A ρ' ⊗[K] K) := by
+  sorry
+
+/-- The bialgebra structure of the twisted constant group scheme; the
+axioms are the three sorried leaves above. -/
+noncomputable instance galDescBialgebra : Bialgebra K (GalDescAlg K Ω L A ρ') :=
+  Bialgebra.ofAlgHom (galDescComul K Ω L A ρ') (galDescCounit K Ω L A ρ')
+    (galDescComul_coassoc K Ω L A ρ')
+    (galDescComul_rTensor_counit K Ω L A ρ')
+    (galDescComul_lTensor_counit K Ω L A ρ')
+
+/-- **Left antipode axiom** (sorry node — after the tensor comparison,
+`m ∘ (S ⊗ id) ∘ Δ` is pullback along `a ↦ (-a) + a = 0`, the unit of
+the convolution). -/
+theorem galDesc_mul_antipode_rTensor_comul :
+    ((Algebra.TensorProduct.lift (galDescAntipode K Ω L A ρ')
+      (AlgHom.id K (GalDescAlg K Ω L A ρ')) fun _ => Commute.all _).comp
+      (Bialgebra.comulAlgHom K (GalDescAlg K Ω L A ρ'))) =
+    (Algebra.ofId K (GalDescAlg K Ω L A ρ')).comp
+      (Bialgebra.counitAlgHom K (GalDescAlg K Ω L A ρ')) := by
+  sorry
+
+/-- **Right antipode axiom** (sorry node — symmetric to the left
+axiom). -/
+theorem galDesc_mul_antipode_lTensor_comul :
+    (Algebra.TensorProduct.lift (AlgHom.id K (GalDescAlg K Ω L A ρ'))
+      (galDescAntipode K Ω L A ρ') fun _ _ => Commute.all _ _).comp
+      (Bialgebra.comulAlgHom K (GalDescAlg K Ω L A ρ')) =
+    (Algebra.ofId K (GalDescAlg K Ω L A ρ')).comp
+      (Bialgebra.counitAlgHom K (GalDescAlg K Ω L A ρ')) := by
+  sorry
+
+/-- The Hopf structure of the twisted constant group scheme: the
+antipode is pullback along negation; the axioms are the two sorried
+leaves above. -/
+noncomputable instance galDescHopfAlgebra :
+    HopfAlgebra K (GalDescAlg K Ω L A ρ') :=
+  HopfAlgebra.ofAlgHom (galDescAntipode K Ω L A ρ')
+    (galDesc_mul_antipode_rTensor_comul K Ω L A ρ')
+    (galDesc_mul_antipode_lTensor_comul K Ω L A ρ')
+
+/-- The equivariant function algebra is finite-dimensional over `K`
+(PROVEN — a subspace of the finite-dimensional `A → L`). -/
+instance galDescAlg_finite : Module.Finite K (GalDescAlg K Ω L A ρ') := by
+  haveI : Module.Finite K (A → ↥L) := Module.Finite.pi
+  exact FiniteDimensional.finiteDimensional_submodule
+    (Subalgebra.toSubmodule (galDescSubalgebra K Ω L A fun g a => ρ' g a))
+
+/-- **Étaleness of the generic fibre** (sorry node — evaluation at
+orbit representatives identifies `H` with a finite product of finite
+subextensions of `L/K`, étale in characteristic zero; the redundant
+base change `K ⊗[K] H` transfers along `Algebra.TensorProduct.lid`). -/
+theorem galDescAlg_etale [CharZero K] :
+    Algebra.Etale K (K ⊗[K] GalDescAlg K Ω L A ρ') := by
+  sorry
+
+/-- Evaluation at a point `a : A`: an `Ω`-point of the twisted constant
+group scheme. -/
+noncomputable def galDescPoint (a : A) : GalDescAlg K Ω L A ρ' →ₐ[K] Ω :=
+  (L.val.comp (Pi.evalAlgHom K (fun _ : A => ↥L) a)).comp
+    (galDescSubalgebra K Ω L A fun g a => ρ' g a).val
+
+/-- Evaluation at `a : A` through the redundant base change
+`K ⊗[K] H`. -/
+noncomputable def galDescPointT (a : A) :
+    (K ⊗[K] GalDescAlg K Ω L A ρ') →ₐ[K] Ω :=
+  (galDescPoint K Ω L A ρ' a).comp
+    (Algebra.TensorProduct.lid K (GalDescAlg K Ω L A ρ')).toAlgHom
+
+/-- **The points of the twisted constant group scheme** (sorry node —
+the Galois-sets side of the correspondence): evaluation is a bijection
+from `A` onto the `Ω`-points. Injective because equivariant functions
+separate the orbits (indicator functions) and the points of one orbit
+(a generator of `Fix(Stab)` moved by every non-stabilizing `g`);
+surjective because a `K`-point of `H ≅ ∏ Fix(Stab)` factors through one
+component field, whose `|orbit|` embeddings into `Ω` are the
+evaluations at the orbit's points (count: `dim_K H = |A|` in the étale
+case). -/
+theorem galDescPointT_bijective [CharZero K] [IsAlgClosure K Ω] :
+    Function.Bijective (galDescPointT K Ω L A ρ') := by
+  sorry
+
+/-- **Evaluation turns addition into convolution** (sorry node — the
+convolution of `ev_a` and `ev_b` is evaluation of the pulled-back
+addition at `(a, b)`, i.e. `ev_{a+b}`, through the tensor-comparison
+isomorphism). -/
+theorem galDescPointT_conv (a b : A) :
+    WithConv.toConv (galDescPointT K Ω L A ρ' (a + b)) =
+      WithConv.toConv (galDescPointT K Ω L A ρ' a) *
+        WithConv.toConv (galDescPointT K Ω L A ρ' b) := by
+  sorry
+
+omit [FiniteDimensional K ↥L] [Finite A] in
+/-- **Galois equivariance of evaluation** (PROVEN — `σ ∘ ev_a` is
+evaluation at `ρ'(σ|_L) a`, by equivariance of the functions and
+`AlgEquiv.restrictNormal_commutes`). -/
+theorem galDescPointT_equivariant (σ : Ω ≃ₐ[K] Ω) (a : A) :
+    (σ.toAlgHom).comp (galDescPointT K Ω L A ρ' a) =
+      galDescPointT K Ω L A ρ'
+        (ρ' (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ) a) := by
+  have hcore : (σ.toAlgHom).comp (galDescPoint K Ω L A ρ' a) =
+      galDescPoint K Ω L A ρ'
+        (ρ' (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ) a) := by
+    apply AlgHom.ext
+    intro h
+    show σ (((h : A → ↥L) a : ↥L) : Ω) =
+      (((h : A → ↥L) (ρ' (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ) a) :
+        ↥L) : Ω)
+    rw [h.2 (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ) a]
+    exact (AlgEquiv.restrictNormal_commutes σ ↥L ((h : A → ↥L) a)).symm
+  show (σ.toAlgHom.comp (galDescPoint K Ω L A ρ' a)).comp
+      (Algebra.TensorProduct.lid K (GalDescAlg K Ω L A ρ')).toAlgHom =
+    galDescPointT K Ω L A ρ'
+      (ρ' (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ) a)
+  rw [hcore]
+  rfl
+
+end GaloisDescentHopf
+
 open TensorProduct in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 /-- **The finite-étale package of a discrete Galois module over a
-characteristic-zero field** (sorry node — the étale-algebras/Galois-sets
-correspondence, WITH group structure; the only curve-independent leaf of
+characteristic-zero field** (DECOMPOSED 2026-07-23 into the `galDesc*`
+leaves above — the étale-algebras/Galois-sets correspondence, WITH group
+structure; the only curve-independent leaf of
 the peu-ramifiée decomposition): for a finite abelian group `A` with an
 action of `Gal(Ω/K)` that is *discrete* (every point is fixed by the
 fixing subgroup of some finite subextension), there is a finite étale
@@ -2879,7 +3202,17 @@ identification of `H ⊗[K] H` with the equivariant functions on `A × A`;
 the `Ω`-points of `H` are the evaluations at the elements of `A`,
 equivariantly by construction. Stated with the redundant base change
 `K ⊗[K] H` to match the component shape of
-`WeierstrassCurve.TorsionFlatPackage` verbatim. -/
+`WeierstrassCurve.TorsionFlatPackage` verbatim.
+
+The assembly below instantiates `H := GalDescAlg K Ω L A ρ'` (the
+equivariant-function model above, with its Hopf structure REAL CODE and
+its axioms/points the sorried leaves `galDescTensorHom_bijective`,
+`galDescComul_coassoc`, `galDescComul_rTensor_counit`,
+`galDescComul_lTensor_counit`, `galDesc_mul_antipode_rTensor_comul`,
+`galDesc_mul_antipode_lTensor_comul`, `galDescAlg_etale`,
+`galDescPointT_bijective`, `galDescPointT_conv`; equivariance of
+evaluation is PROVEN) and wraps the evaluation bijection into the
+required `AddEquiv`. -/
 theorem exists_galoisModulePackage_of_finiteQuotient
     (K : Type) [Field K] [CharZero K]
     (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
@@ -2894,7 +3227,51 @@ theorem exists_galoisModulePackage_of_finiteQuotient
         f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
           ρ' (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ)
             (f (Additive.ofMul (WithConv.toConv φ))) := by
-  sorry
+  classical
+  have hbij := galDescPointT_bijective K Ω L A ρ'
+  let e0 : A ≃ ((K ⊗[K] GalDescAlg K Ω L A ρ') →ₐ[K] Ω) :=
+    Equiv.ofBijective _ hbij
+  have he0 : ∀ a : A, e0 a = galDescPointT K Ω L A ρ' a := fun _ => rfl
+  let f : Additive (WithConv ((K ⊗[K] GalDescAlg K Ω L A ρ') →ₐ[K] Ω)) ≃+ A :=
+    { toFun := fun x => e0.symm (WithConv.ofConv (Additive.toMul x))
+      invFun := fun a => Additive.ofMul (WithConv.toConv (e0 a))
+      left_inv := fun x => by
+        show Additive.ofMul (WithConv.toConv
+          (e0 (e0.symm (WithConv.ofConv (Additive.toMul x))))) = x
+        rw [Equiv.apply_symm_apply]
+        rfl
+      right_inv := fun a => e0.symm_apply_apply a
+      map_add' := fun x y => by
+        apply e0.injective
+        rw [Equiv.apply_symm_apply]
+        have h := galDescPointT_conv K Ω L A ρ'
+          (e0.symm (WithConv.ofConv (Additive.toMul x)))
+          (e0.symm (WithConv.ofConv (Additive.toMul y)))
+        have h2 := congrArg WithConv.ofConv h
+        rw [WithConv.ofConv_toConv] at h2
+        show WithConv.ofConv (Additive.toMul (x + y)) =
+          galDescPointT K Ω L A ρ'
+            (e0.symm (WithConv.ofConv (Additive.toMul x)) +
+              e0.symm (WithConv.ofConv (Additive.toMul y)))
+        rw [h2,
+          show galDescPointT K Ω L A ρ'
+              (e0.symm (WithConv.ofConv (Additive.toMul x))) =
+            WithConv.ofConv (Additive.toMul x) from e0.apply_symm_apply _,
+          show galDescPointT K Ω L A ρ'
+              (e0.symm (WithConv.ofConv (Additive.toMul y))) =
+            WithConv.ofConv (Additive.toMul y) from e0.apply_symm_apply _]
+        rfl }
+  refine ⟨GalDescAlg K Ω L A ρ', inferInstance, inferInstance, inferInstance,
+    inferInstance, galDescAlg_etale K Ω L A ρ', f, ?_⟩
+  intro σ φ
+  show e0.symm (σ.toAlgHom.comp φ) =
+    ρ' (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ω) L σ) (e0.symm φ)
+  apply e0.injective
+  rw [Equiv.apply_symm_apply]
+  have h := galDescPointT_equivariant K Ω L A ρ' σ (e0.symm φ)
+  rw [show galDescPointT K Ω L A ρ' (e0.symm φ) = φ from e0.apply_symm_apply φ] at h
+  rw [he0]
+  exact h
 
 open TensorProduct in
 set_option backward.isDefEq.respectTransparency false in
@@ -5945,24 +6322,220 @@ open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **The nonsplit twist package** (sorry node — the NONSPLIT-CASE
-local content, hoisted out of `torsion_flat_of_multiplicative_reduction`
-as a standalone leaf; the extra hypotheses `hj` and the global
-multiplicative-reduction instance are available to the prover): if the
-completed base change does NOT have split multiplicative reduction, the
+/-- **The split Kummer package, local form** (PROVEN 2026-07-23 by the
+same assembly as `torsionFlatPackage_of_split_adic` — the proof never
+uses globality of the curve — stated for an arbitrary local curve so
+that it applies to the minimal model of the quadratic twist in the
+nonsplit case). -/
+theorem WeierstrassCurve.torsionFlatPackage_of_split_adic'
+    {p : ℕ} (hp' : p.Prime) [Fact p.Prime]
+    (X : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)) [X.IsElliptic]
+    [hsplit : X.HasSplitMultiplicativeReduction
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] :
+    ∀ (w' : (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)ˣ)
+      (hmem : ((X.qUnit * w'⁻¹ ^ p :
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)ˣ) :
+          HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) ∈
+        HeightOneSpectrum.adicCompletionIntegers ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat),
+      IsUnit (⟨_, hmem⟩ : HeightOneSpectrum.adicCompletionIntegers ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) →
+      WeierstrassCurve.TorsionFlatPackage
+        𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+        X p
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
+  classical
+  intro w' hmem hunit
+  -- the curve-free Kummer package at the recentred Tate parameter
+  obtain ⟨H, i1, i2, i3, i4, i5, f0, hf0⟩ :=
+    exists_kummerTorsionPackage hp' X.qUnit w'
+      (WeierstrassCurve.valuation_q_lt_one X) hmem hunit
+  -- the uniformization witness
+  obtain ⟨e, he⟩ := WeierstrassCurve.exists_tateEquivSepClosure
+    (k := HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)
+    (E := X)
+    (Ω := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))
+  -- the uniformization restricted to the `p`-torsion subgroups
+  let eT : AddSubgroup.torsionBy (Additive
+        ((AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))ˣ ⧸
+        Subgroup.zpowers (Units.map (algebraMap
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+          X.qUnit)))
+        ((p : ℕ) : ℤ) ≃+
+      AddSubgroup.torsionBy (X⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ) :=
+    { toFun := fun x => ⟨e x.1, by
+        have hx : ((p : ℕ) : ℤ) • x.1 = 0 := x.2
+        show ((p : ℕ) : ℤ) • e x.1 = 0
+        rw [← map_zsmul, hx, map_zero]⟩
+      invFun := fun y => ⟨e.symm y.1, by
+        have hy : ((p : ℕ) : ℤ) • y.1 = 0 := y.2
+        show ((p : ℕ) : ℤ) • e.symm y.1 = 0
+        rw [← map_zsmul e.symm ((p : ℕ) : ℤ) y.1, hy, map_zero]⟩
+      left_inv := fun x => Subtype.ext (e.symm_apply_apply x.1)
+      right_inv := fun y => Subtype.ext (e.apply_symm_apply y.1)
+      map_add' := fun x y => Subtype.ext (map_add e x.1 y.1) }
+  refine ⟨H, i1, i2, i3, i4, i5, f0.trans eT, ?_⟩
+  intro σ φ
+  -- a unit representative of the Kummer class of `φ`
+  obtain ⟨u, hu⟩ := QuotientGroup.mk_surjective
+    (Additive.toMul (f0 (Additive.ofMul (WithConv.toConv φ))).1)
+  have hux : ((f0 (Additive.ofMul (WithConv.toConv φ))).1 :
+      Additive ((AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))ˣ ⧸
+        Subgroup.zpowers (Units.map (algebraMap
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+          X.qUnit))) =
+      Additive.ofMul ↑u := by
+    rw [hu, ofMul_toMul]
+  -- Kummer equivariance at the representative
+  have hstep := hf0 σ φ u hux
+  -- unfold the composite at both sides and close with the
+  -- uniformization equivariance
+  show e (f0 (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ)))).1 =
+    WeierstrassCurve.Affine.Point.map σ.toAlgHom
+      (e (f0 (Additive.ofMul (WithConv.toConv φ))).1)
+  rw [hstep, hux]
+  exact (he σ u).symm
+
+open TensorProduct ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Package transport along a variable change** (sorry node — a
+`VariableChange` over the base field induces a Galois-equivariant
+group isomorphism of points over the algebraic closure, so a
+`TorsionFlatPackage` for `C • Y` yields one for `Y` by composing the
+points identification; the Hopf model is unchanged). -/
+theorem WeierstrassCurve.torsionFlatPackage_of_variableChange
+    {p : ℕ} (hp' : p.Prime) [Fact p.Prime]
+    (Y : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))
+    (C : WeierstrassCurve.VariableChange (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)) :
+    WeierstrassCurve.TorsionFlatPackage
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      (C • Y) p
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) →
+    WeierstrassCurve.TorsionFlatPackage
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      Y p
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
+  sorry
+
+open TensorProduct ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Unramified quadratic descent of the torsion package** (sorry node
+— the DESCENT core of the nonsplit case): if `L/ℚ_pˆ` is a quadratic
+separable extension that is UNRAMIFIED (witnessed by a generator `θL`
+that is a root of a monic integral polynomial `Q` with separable
+residue), then a `TorsionFlatPackage` for the quadratic twist
+`X.quadraticTwist L` yields one for `X` itself. Content: over `L` the
+curves are isomorphic (`quadraticTwistPointEquiv`), with Galois actions
+differing by the quadratic character of `L/K`
+(`quadraticTwistPointEquiv_galois`); the descended Hopf model is the
+invariants of `𝒪_L ⊗ H` under the character-twisted involution — a
+finite flat Hopf order because `𝒪_L/𝒪` is unramified (equivalently:
+`2` is invertible since the residue characteristic `p` is odd, so the
+invariants are a direct summand). -/
+theorem WeierstrassCurve.torsionFlatPackage_of_unramified_quadraticTwist
+    {p : ℕ} (hp' : p.Prime) [Fact p.Prime] (hp2 : p ≠ 2)
+    (X : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)) [X.IsElliptic]
+    (L : Type) [Field L]
+    [Algebra (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) L]
+    [Algebra.IsQuadraticExtension (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) L]
+    [Algebra.IsSeparable (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) L]
+    (θL : L)
+    (Q : Polynomial 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat])
+    (hQm : Q.Monic)
+    (hθtop : Algebra.adjoin (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) ({θL} : Set L) = ⊤)
+    (hθQ : Polynomial.aeval θL
+      (Q.map (algebraMap 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))) = 0)
+    (hQsep : (Q.map (IsLocalRing.residue
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat])).Separable) :
+    WeierstrassCurve.TorsionFlatPackage
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      (X.quadraticTwist L) p
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) →
+    WeierstrassCurve.TorsionFlatPackage
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      X p
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
+  sorry
+
+open TensorProduct ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The nonsplit twist package** (DECOMPOSED 2026-07-23 — the
+NONSPLIT-CASE local content, hoisted out of
+`torsion_flat_of_multiplicative_reduction` as a standalone node): the
 quadratic unramified twist to split reduction
 (`exists_quadraticTwist_hasSplitMultiplicativeReduction`) has the same
-`j`-invariant, so the split leaf provides its package; unramified
-quadratic descent of the Hopf model (the twisted form is the invariants
-of the base-changed model under the Galois-twisted involution, a finite
-flat Hopf order because the extension is unramified) yields the package
-for `E` itself. -/
+`j`-invariant, so its minimal model gets the recentring witness
+(`exists_unit_qUnit_mul_inv_pow_isUnit`, via `variableChange_j` and
+`j_quadraticTwist`) and the PROVEN local split package
+`torsionFlatPackage_of_split_adic'`; the package transports back along
+the minimal variable change (sorried leaf
+`torsionFlatPackage_of_variableChange`) and descends along the
+unramified quadratic extension (sorried leaf
+`torsionFlatPackage_of_unramified_quadraticTwist`). -/
 theorem WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp' : p.Prime)
-    [Fact p.Prime] (_hp2 : p ≠ 2)
+    [Fact p.Prime] (hp2 : p ≠ 2)
     [E.HasMultiplicativeReduction
       (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
-    (_hj : (p : ℤ) ∣ padicValRat p E.j) :
+    (hj : (p : ℤ) ∣ padicValRat p E.j) :
     ¬(E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
         hp'.toHeightOneSpectrumRingOfIntegersRat))).HasSplitMultiplicativeReduction
       𝒪[HeightOneSpectrum.adicCompletion ℚ
@@ -5977,7 +6550,76 @@ theorem WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic
       p
       (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
         hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
-  sorry
+  classical
+  intro hns
+  haveI := hasMultiplicativeReduction_adicCompletion hp' E
+  -- the unramified quadratic twist with split reduction, with its
+  -- unramifiedness witness `(θL, Q)`
+  obtain ⟨L, _, _, _, _, hsplit', θL, Q, hQm, hθtop, hθQ, hQsep⟩ :=
+    WeierstrassCurve.exists_quadraticTwist_hasSplitMultiplicativeReduction
+      (E := E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)))
+      (R := 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]) hns
+  set Tw : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) :=
+    (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))).quadraticTwist L
+  set Mt : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) :=
+    Tw.minimal 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]
+  haveI hMtsplit : Mt.HasSplitMultiplicativeReduction
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat] := hsplit'
+  haveI hTwell : Tw.IsElliptic :=
+    inferInstanceAs (((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))).quadraticTwist L).IsElliptic)
+  haveI hMtell : Mt.IsElliptic :=
+    inferInstanceAs (((Tw.exists_isMinimal
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]).choose • Tw).IsElliptic)
+  -- the minimal twist has the SAME rational `j`-image
+  have hMtj : Mt.j = algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) E.j := by
+    have h1 : Mt.j = ((Tw.exists_isMinimal
+        𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]).choose • Tw).j := rfl
+    have h2 : Tw.j = ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))).quadraticTwist L).j := rfl
+    rw [h1, WeierstrassCurve.variableChange_j, h2,
+      WeierstrassCurve.j_quadraticTwist]
+    exact WeierstrassCurve.map_j _ _
+  -- the recentring witness for the minimal twist, from `p ∣ v_p(j)`
+  obtain ⟨w, hmemw, hunitw⟩ :=
+    exists_unit_qUnit_mul_inv_pow_isUnit hp' Mt (p := p) hMtj hj
+  -- the PROVEN local split package for the minimal twist
+  have hMtpkg : WeierstrassCurve.TorsionFlatPackage
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      Mt p
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) :=
+    WeierstrassCurve.torsionFlatPackage_of_split_adic' hp' Mt w hmemw hunitw
+  -- transport along the minimal variable change (sorried leaf)
+  have hTwpkg : WeierstrassCurve.TorsionFlatPackage
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      Tw p
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) :=
+    WeierstrassCurve.torsionFlatPackage_of_variableChange hp' Tw
+      (Tw.exists_isMinimal 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]).choose hMtpkg
+  -- unramified quadratic descent (sorried leaf)
+  exact WeierstrassCurve.torsionFlatPackage_of_unramified_quadraticTwist
+    hp' hp2 (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))) L θL Q hQm hθtop hθQ hQsep
+    hTwpkg
 
 open TensorProduct ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
