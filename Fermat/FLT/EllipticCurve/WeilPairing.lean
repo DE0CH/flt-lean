@@ -3484,6 +3484,72 @@ theorem weilValueProp_frobenius_transport (Wbar : WeierstrassCurve (ZMod q)) [Wb
 
 end FrobeniusTransport
 
+/-- **`p = 2` alternation core** (sorry node — Silverman AEC III.8.1(b)
+in the residual case `p = 2`, where skew-symmetry `z² = 1` says
+nothing): every admissible Miller value of a self-pair of `2`-torsion
+points is `1`.  Attack plan on record in HLEG-NOTES.md §3(c): for an
+affine `2`-torsion representative `P` we have `⊖P = P`, so
+`XYIdeal_neg_mul` gives `I_P² = span {XClass x_P}`, and the line
+through a translate pair with third point `P` factors both Miller
+generators into explicit line squares; substituted into the value
+equation, the value becomes an explicit square which the curve
+equation, the `2`-torsion relation `2y_P = −a₁x_P − a₃`, and the
+addition formulas force to `1` (CAS-verify the identity before
+formalizing).  Alternatively, the `[p]`-pullback machinery of the
+nondegeneracy descent (HLEG-NOTES.md §4(B), stages L4-4..7) gives the
+uniform Silverman III.8.1(b) proof; `huniq` (instantiated in the
+μ-theorem with its in-proof `huniqval`) lets the proof exhibit its own
+admissible setup with value `1` instead of consuming the given
+witness. -/
+theorem weilValueProp_self_of_two (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
+    (p : ℕ) [Fact p.Prime] (hqp : q ≠ p) (hp2 : p = 2)
+    (huniq : ∀ (v w : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p)
+      (z₁ z₂ : (AlgebraicClosure (ZMod q))ˣ),
+      weilValueProp q Wbar p v w z₁ → weilValueProp q Wbar p v w z₂ →
+      z₁ = z₂)
+    (x : (Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p)
+    (z : (AlgebraicClosure (ZMod q))ˣ)
+    (hz : weilValueProp q Wbar p x x z) : z = 1 := by
+  sorry
+
+/-- **Nondegeneracy descent core** (sorry node — Silverman AEC
+III.8.1(c), the `g = h∘[p]` descent; staged plan L4-1..9 on record in
+HLEG-NOTES.md §4(B)): if `1` is an admissible Miller value for every
+pair of `p`-torsion points, then the whole `p`-torsion group is
+trivial.  Since the `p`-torsion has `p² > 1` elements, contrapositively
+some pair carries a nontrivial value — the single global input to
+nondegeneracy (`hleg4` of the μ-theorem, through
+`pairing_trivial_of_radical`).  Sketch: for `x ≠ 0` with affine
+representative `P`, pick `T'` with `p•T' = P`
+(`TorsionCard.smul_surjective`, L4-1); build `g` with
+`div g = Σ_{κ ∈ E[p]} (T'⊕κ) − (κ)` by multiset zero-sum principality
+(L4-3), so `f_P∘[p] = c·g^p` (L4-7); the translation character
+`χ(κ) = (g∘τ_κ)/g` is a constant and a homomorphism `E[p] → μ_p`
+(L4-8); if `χ ≡ 1` then `g` descends through the fixed field of the
+translation action (`Fix(E[p]) = [p]^*K`, L4-5/6) to `g = h∘[p]`,
+forcing `div h = (P⊕S) − (S)` and hence — `toClass` injectivity —
+`P = O`, a contradiction; if `χ(κ₀) ≠ 1`, the discrete bridge lemma
+(Silverman Ex. 3.16(c)) evaluates an admissible setup for `(κ₀, ·)`
+to `χ(κ₀)^{±1} ≠ 1`, contradicting `hall` through `huniq`
+(instantiated in the μ-theorem with its in-proof `huniqval`). -/
+theorem weilValueProp_all_one_torsion_trivial (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
+    (p : ℕ) [Fact p.Prime] (hqp : q ≠ p)
+    (huniq : ∀ (v w : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p)
+      (z₁ z₂ : (AlgebraicClosure (ZMod q))ˣ),
+      weilValueProp q Wbar p v w z₁ → weilValueProp q Wbar p v w z₂ →
+      z₁ = z₂)
+    (hall : ∀ v w : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p,
+      weilValueProp q Wbar p v w 1)
+    (x : (Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p) : x = 0 := by
+  sorry
+
 /-- **Radical-triviality reduction** for a multiplicative pairing on a
 `2`-dimensional space over `ZMod p`: if a nonzero vector `x` pairs
 trivially with everything, then — by bilinearity, alternation, and the
@@ -12143,13 +12209,15 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
         rw [mul_assoc, hEA, hEB]
       exact mul_right_cancel₀ hLA0 (by rw [hz2, one_mul])
     -- the `p = 2` case: alternation is NOT implied by `z² = z^p = 1`
-    -- when `p = 2`; it needs the 2-torsion geometry — `⊖P = P`, so
-    -- `I_P² = span{XClass x_P}` (`XYIdeal_neg_mul`) factors both Miller
-    -- generators into line squares, making the value an explicit square
-    -- that the curve/addition relations force to `1`; alternatively the
-    -- `[p]`-pullback machinery of leg 4. See HLEG-NOTES.md §3(c).
+    -- when `p = 2`; it needs the 2-torsion geometry, externalized as
+    -- the top-level sorry node `weilValueProp_self_of_two` (line-square
+    -- factorization via `XYIdeal_neg_mul`, or the `[p]`-pullback
+    -- machinery of leg 4; see HLEG-NOTES.md §3(c)); the value `e x x`
+    -- is pinned by its own admissibility witness `hespec`
     have htwo : p = 2 → ∀ x, e x x = 1 := by
-      sorry
+      intro hp2 x
+      exact weilValueProp_self_of_two q Wbar p hqp hp2 huniqval x
+        (e x x) (hespec x x)
     intro x
     rcases eq_or_ne p 2 with h2 | hne
     · exact htwo h2 x
@@ -12159,14 +12227,40 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
         rw [hk', pow_succ, pow_mul, pow_two, hswap x, one_pow, one_mul]
       exact hzz.symm.trans (hleg5 x x)
   have hleg4 : ∀ x, x ≠ 0 → ∃ y, e x y ≠ 1 := by
-    -- global nontriviality — THE descent core (Silverman III.8.1(c):
-    -- assuming `e ≡ 1`, the auxiliary function `g` with
-    -- `div g = Σ_κ (T'⊕κ) − (κ)` descends through the fixed field of
-    -- the `E[p]`-translation action to `g = h∘[p]`, forcing the point
-    -- ideal of any `P ≠ O` to be principal — contradiction with
-    -- `toClass` injectivity). See HLEG-NOTES.md §4(B).
+    -- global nontriviality — THE descent core (Silverman III.8.1(c)),
+    -- externalized as the top-level sorry node
+    -- `weilValueProp_all_one_torsion_trivial`: assuming `e ≡ 1`, every
+    -- pair admits the value `1`, so the descent forces the whole
+    -- `p`-torsion to vanish — absurd, since it has `p² > 1` elements
+    -- (`TorsionCard.card_torsionBy`). See HLEG-NOTES.md §4(B).
     have hglobal : ∃ u v, e u v ≠ 1 := by
-      sorry
+      by_contra hcon
+      push Not at hcon
+      have hall : ∀ v w, IsWeilValue v w 1 := by
+        intro v w
+        have h := hespec v w
+        rwa [hcon v w] at h
+      have htriv : ∀ y : ((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion p), y = 0 := fun y =>
+        weilValueProp_all_one_torsion_trivial q Wbar p hqp huniqval
+          hall y
+      haveI : CharP (AlgebraicClosure (ZMod q)) q :=
+        charP_of_injective_algebraMap
+          (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+      have hcard2 : Nat.card ((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion p) = p ^ 2 :=
+        TorsionCard.card_torsionBy _ p
+          (CharP.cast_ne_zero_of_ne_of_prime
+            (R := AlgebraicClosure (ZMod q)) (Fact.out : p.Prime) hqp)
+      have hone : Nat.card ((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion p) = 1 := by
+        haveI : Subsingleton ((Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q)))).nTorsion p) :=
+          ⟨fun a b => (htriv a).trans (htriv b).symm⟩
+        exact Nat.card_of_subsingleton 0
+      have hpp : p ^ 2 = 1 := hcard2.symm.trans hone
+      have h2le := (Fact.out : p.Prime).two_le
+      nlinarith [hpp, h2le]
     -- the radical reduction on the rank-2 torsion space
     haveI : CharP (AlgebraicClosure (ZMod q)) q :=
       charP_of_injective_algebraMap
