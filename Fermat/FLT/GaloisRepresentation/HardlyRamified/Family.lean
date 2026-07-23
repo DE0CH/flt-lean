@@ -1780,7 +1780,14 @@ model must be produced by the automorphy argument itself (matching
 charpolys outside a finite set do not pin the isomorphism class), and
 no Hecke-eigenform carrier type is statable on this mathlib pin, so
 the leaf keeps the fused Eichler–Shimura + integrality + hardly
-ramified shape. -/
+ramified shape. RE-AUDIT (2026-07-23, fresh against the actual pin —
+see the refreshed VOCABULARY OBSTRUCTION below for the details): the
+obstruction stands; the pin's only new Hecke material is
+`Mathlib.NumberTheory.HeckeRing.Defs` (abstract double-coset modules,
+no ring product, no action on modular forms), and the reference
+project's `IsAutomorphicOfLevel` interface is confirmed unvendorable
+and non-restating (totally-real-`F` quaternionic shape, ≈22.8k-line
+closure with sorried definitions). -/
 theorem exists_hardlyRamified_ringOfIntegers_realizations
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -1847,6 +1854,35 @@ reference FLT project states the datum as an `ℤ_p`-algebra hom
 `AutomorphicForm/QuaternionAlgebra` tower is absent from both the
 mathlib pin and the vendored subset, so that interface cannot be
 vendored as a leaf statement here.
+
+RE-AUDIT (2026-07-23, against the actual pin and reference tree,
+refreshing the above): (1) the pin has gained exactly one Hecke item,
+`Mathlib.NumberTheory.HeckeRing.Defs` — abstract Hecke-triple
+double-coset modules ONLY; the convolution product/ring structure of
+its "later files" is not in the pin (nothing imports it), and grep
+confirms zero hits for Hecke operators on modular forms, newforms,
+Atkin–Lehner, eigenforms, or attached Galois representations. (2) The
+reference `IsAutomorphicOfLevel` remains unvendorable AND would not
+restate these leaves even if vendored: its transitive FLT-internal
+closure is 122 files / ≈22.8k lines (quaternionic automorphic forms,
+Fujisaki finiteness, adelic Haar measure), it contains sorried
+members (including a sorried `IsQuaternionAlgebra (E ⊗[F] D)`
+instance inside its own interface layer), and it is stated for
+totally real `F` with `2 < [F(ζ_p):F]` — the quaternionic shape the
+reference project reaches from `ℚ` only through the (sorried)
+`cyclic_base_change`; our leaves are the classical `ℚ`-level
+Eichler–Shimura statements, so bridging would ADD Jacquet–Langlands/
+base-change content, not remove any. (3) A minimal SHARED interface
+for this leaf and `exists_realization_at_two_generated` was examined
+and rejected as unsound-or-empty: a "newform datum" carrier has no
+definable type (and a sorried opaque `Prop` definition is not a
+legitimate leaf — `sorry` may only replace proofs of stated goals),
+while a carrier-free shared statement necessarily degenerates to the
+literal conjunction of the two atoms — the Brauer–Nesbitt trap below blocks
+the only genuine factorization ("bare member matching `Pv`, then
+upgrade to a hardly ramified integral model"), and at `λ | 2` the
+generated coefficient field is already the exact Eichler–Shimura
+output shape with zero slack. The two atoms stay fused and separate.
 
 SOUNDNESS AUDIT (2026-07-23, why the hardly ramified model is fused
 with the member existence instead of derived from it): the tempting
@@ -2026,7 +2062,14 @@ ramified clause forces the integral model into the leaf; at `ℓ = 2`
 the consumer needs only the bare member, so this atom stays at the
 field level. The VOCABULARY OBSTRUCTION note there applies verbatim:
 no Hecke-eigenform carrier type is statable on this pin, so the leaf
-keeps the fused Eichler–Shimura + local–global shape. -/
+keeps the fused Eichler–Shimura + local–global shape. RE-AUDIT
+(2026-07-23): confirmed against the actual pin — see the refreshed
+RE-AUDIT note at `exists_hardlyRamified_integral_realizations_core`;
+item (3) there records why a minimal interface SHARED with the odd-ℓ
+atom was examined and rejected (no definable carrier; the carrier-free
+version degenerates to the conjunction of the two atoms; this leaf's
+generated-coefficient-field shape is already the zero-slack
+Eichler–Shimura output). -/
 theorem exists_realization_at_two_generated
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
