@@ -52,12 +52,21 @@ here. This file provides:
   up to `ℓ ×` and a bounded error) — the latter now itself PROVEN by
   Frobenius bookkeeping (`exists_algEquiv_map_zeta_eq_pow_natCard`
   covers the degree-one primes by the `≤ ℓ` congruence classes) from
-  the remaining pairwise-comparison sorry leaf
+  the pairwise-comparison statement
   `tsum_rpow_neg_natCard_quotient_prime_and_map_zeta_eq_pow_le_tsum_add`
   (any two congruence classes carry the same sum up to a uniformly
-  bounded additive error — the `L(1, χ) ≠ 0` content); see the leaves'
-  docstrings for the intended proofs and the exact state of the
-  mathlib pin.
+  bounded additive error), in turn PROVEN by Dirichlet-character
+  orthogonality (`DirichletCharacter.sum_char_inv_mul_char_eq`, with
+  the characters trivial on the image of `Gal(E/F)` cancelling exactly
+  in the difference of two classes) from its own two strictly
+  shallower sorry leaves:
+  `tsum_rpow_neg_natCard_quotient_prime_and_ne_ne_top` (the degree-one
+  prime sum converges for each fixed `s > 1`) and
+  `exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le` (the
+  character sum `S_χ(s)` of a Dirichlet character mod `ℓ` nontrivial
+  on the image of `Gal(E/F)` is bounded uniformly in `s > 1` — the
+  minimal `L(1, χ) ≠ 0` statement); see the leaves' docstrings for the
+  intended proofs and the exact state of the mathlib pin.
 
 The remaining pieces of the decomposition (Brauer–Nesbitt for
 2-dimensional mod-`ℓ` representations, the mod-`ℓ` cyclotomic character as
