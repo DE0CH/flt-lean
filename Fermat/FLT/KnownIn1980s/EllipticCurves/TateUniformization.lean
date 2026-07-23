@@ -100,10 +100,7 @@ theorem coeffRingToRatFunc_injective :
   intro x hx
   obtain ⟨⟨a, s⟩, hmk⟩ := IsLocalization.mk'_surjective
     (Submonoid.powers (Polynomial.X * (1 - Polynomial.X) : Polynomial ℚ)) x
-  obtain ⟨n, hn⟩ := s.2
-  have hs : coeffRingToRatFunc (algebraMap (Polynomial ℚ) CoeffRing s.1) =
-      algebraMap (Polynomial ℚ) (RatFunc ℚ) s.1 :=
-    coeffRingToRatFunc_algebraMap s.1
+  obtain ⟨_, _⟩ := s.2
   -- clear the denominator: `x·s = a` in `CoeffRing`
   have hxs : x * algebraMap (Polynomial ℚ) CoeffRing s.1 =
       algebraMap (Polynomial ℚ) CoeffRing a := by
@@ -687,8 +684,8 @@ theorem evalA_XA_map (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
   have hsumk : Summable fk := summable_evalA_XA u₀ q₀ h0 h1 hu hq
   have hsuml : Summable fl := summable_evalA_XA (algebraMap k l u₀)
     (algebraMap k l q₀) h0' h1' hu' hq'
-  set a : k := ∑' n, fk n with hadef
-  set a' : l := ∑' n, fl n with ha'def
+  set a : k := ∑' n, fk n
+  set a' : l := ∑' n, fl n
   rw [show evalA u₀ q₀ h0 h1 XA = a from rfl,
     show evalA (algebraMap k l u₀) (algebraMap k l q₀) h0' h1' XA = a' from rfl]
   rw [← sub_eq_zero]
@@ -696,7 +693,7 @@ theorem evalA_XA_map (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
   obtain ⟨N, hN⟩ := exists_pow_valuation_lt (algebraMap k l w) hw'
     (Units.mk0 (valuation l (algebraMap k l a - a'))
       ((valuation l).ne_zero_iff.mpr hcon))
-  set N' : ℕ := max N 1 with hN'def
+  set N' : ℕ := max N 1
   have hN'1 : 1 ≤ N' := le_max_right N 1
   have hN' : valuation l (algebraMap k l w) ^ N' <
       valuation l (algebraMap k l a - a') :=
@@ -812,8 +809,8 @@ theorem evalA_YA_map (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
   have hsumk : Summable fk := summable_evalA_YA u₀ q₀ h0 h1 hu hq
   have hsuml : Summable fl := summable_evalA_YA (algebraMap k l u₀)
     (algebraMap k l q₀) h0' h1' hu' hq'
-  set a : k := ∑' n, fk n with hadef
-  set a' : l := ∑' n, fl n with ha'def
+  set a : k := ∑' n, fk n
+  set a' : l := ∑' n, fl n
   rw [show evalA u₀ q₀ h0 h1 YA = a from rfl,
     show evalA (algebraMap k l u₀) (algebraMap k l q₀) h0' h1' YA = a' from rfl]
   rw [← sub_eq_zero]
@@ -821,7 +818,7 @@ theorem evalA_YA_map (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
   obtain ⟨N, hN⟩ := exists_pow_valuation_lt (algebraMap k l w) hw'
     (Units.mk0 (valuation l (algebraMap k l a - a'))
       ((valuation l).ne_zero_iff.mpr hcon))
-  set N' : ℕ := max N 1 with hN'def
+  set N' : ℕ := max N 1
   have hN'1 : 1 ≤ N' := le_max_right N 1
   have hN' : valuation l (algebraMap k l w) ^ N' <
       valuation l (algebraMap k l a - a') :=
@@ -1190,7 +1187,7 @@ theorem exists_zpow_mul_mem_annulus (q : k) (hq0 : q ≠ 0)
     have hex : ∃ N : ℕ, (valuation k q) ^ N < valuation k u :=
       exists_pow_valuation_lt q hq (Units.mk0 _ hvu0)
     classical
-    set N₀ := Nat.find hex with hN₀def
+    set N₀ := Nat.find hex
     have hN₀ : (valuation k q) ^ N₀ < valuation k u := Nat.find_spec hex
     have hN₀pos : N₀ ≠ 0 := by
       intro h0
@@ -1216,7 +1213,7 @@ theorem exists_zpow_mul_mem_annulus (q : k) (hq0 : q ≠ 0)
       rw [mul_inv_cancel₀ hvu0] at h1
       exact h1.le
     classical
-    set M₀ := Nat.find hex with hM₀def
+    set M₀ := Nat.find hex
     have hM₀ : valuation k u * (valuation k q) ^ M₀ ≤ 1 := Nat.find_spec hex
     have hM₀pos : M₀ ≠ 0 := by
       intro h0
@@ -1579,9 +1576,6 @@ omit [CharZero k] in
 `∑ xⁿ = (1-x)⁻¹` — telescoping against the shift, no norm needed. -/
 theorem tsum_geometric_nonarch (x : k) (hx : valuation k x < 1) :
     (∑' n : ℕ, x ^ n) = (1 - x)⁻¹ := by
-  have hxne : x ≠ 1 := by
-    rintro rfl
-    simp at hx
   have hsum := summable_geometric_nonarch x hx
   have h0 := hsum.tsum_eq_zero_add
   rw [pow_zero] at h0
@@ -1999,12 +1993,6 @@ theorem lambert_kernel_inv (v : k) (hv : v ≠ 0) :
   rcases eq_or_ne v 1 with rfl | hv1
   · simp
   · have h1 : (1 - v) ≠ 0 := sub_ne_zero.mpr (Ne.symm hv1)
-    have h2 : (1 - v⁻¹) ≠ 0 := by
-      intro h0
-      have : v⁻¹ = 1 := by linear_combination -h0
-      exact hv1 (by
-        have := congrArg (v * ·) this
-        simpa [mul_inv_cancel₀ hv] using this.symm)
     field_simp
     ring
 
@@ -2071,7 +2059,6 @@ theorem bilateralX_shift (u₀ q₀ : k) (h0 : u₀ ≠ 0) (hq0 : q₀ ≠ 0)
       _ = valuation k (q₀ * u₀) := one_mul _
       _ < 1 := hqu
   have hS1 := summable_lambert_terms u₀ q₀ hq1 hqu
-  have hS2 := summable_lambert_terms (q₀ * u₀) q₀ hq1 hq2u
   have hS3 := summable_lambert_terms u₀⁻¹ q₀ hq1 hquinv
   -- the shifted-inverse family: its shift is the `u₀⁻¹`-family
   have hS4 : Summable (fun m : ℕ+ ↦
@@ -2207,8 +2194,8 @@ theorem tsum_choose_two_geometric_nonarch (x : k)
     rw [hcast, sum_range_add_one_eq_choose]
   have hv2 := tsum_add_one_mul_geometric_nonarch x hx
   have hv1 := tsum_geometric_nonarch x hx
-  set f : ℕ → k := fun n ↦ ((n : k) + 1) * x ^ n with hfdef
-  set g : ℕ → k := fun n ↦ x ^ n with hgdef
+  set f : ℕ → k := fun n ↦ ((n : k) + 1) * x ^ n
+  set g : ℕ → k := fun n ↦ x ^ n
   have hkey := Summable.tsum_mul_tsum_eq_tsum_sum_antidiagonal (A := ℕ)
     hplus hgeom (summable_mul_prod hplus hgeom)
   rw [hv2, hv1] at hkey
@@ -2608,12 +2595,6 @@ omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZ
 theorem y_kernel_succ_inv (v : k) (hv : v ≠ 0) (hv1 : v ≠ 1) :
     v⁻¹ / (1 - v⁻¹) ^ 3 = -(v ^ 2 / (1 - v) ^ 3) := by
   have h1 : (1 - v) ≠ 0 := sub_ne_zero.mpr (Ne.symm hv1)
-  have h2 : (1 - v⁻¹) ≠ 0 := by
-    intro h0
-    have hinv : v⁻¹ = 1 := by linear_combination -h0
-    exact hv1 (by
-      have := congrArg (v * ·) hinv
-      simpa [mul_inv_cancel₀ hv] using this.symm)
   field_simp
   ring
 
@@ -2623,12 +2604,6 @@ omit [TopologicalSpace k] [ValuativeRel k] [IsNonarchimedeanLocalField k] [CharZ
 theorem y_constant_inv (u : k) (hu : u ≠ 0) (hu1 : u ≠ 1) :
     (u⁻¹) ^ 2 / (1 - u⁻¹) ^ 3 = -(u ^ 2 / (1 - u) ^ 3) - u / (1 - u) ^ 2 := by
   have h1 : (1 - u) ≠ 0 := sub_ne_zero.mpr (Ne.symm hu1)
-  have h2 : (1 - u⁻¹) ≠ 0 := by
-    intro h0
-    have hinv : u⁻¹ = 1 := by linear_combination -h0
-    exact hu1 (by
-      have := congrArg (u * ·) hinv
-      simpa [mul_inv_cancel₀ hu] using this.symm)
   field_simp
   ring
 
@@ -3530,16 +3505,6 @@ theorem exists_transcendental_quarter_half :
   have hpsval : LiouvilleNumber.partialSum 2 2 = 5/4 := by
     rw [LiouvilleNumber.partialSum]
     norm_num [Finset.sum_range_succ, Nat.factorial]
-  have hL_lb : (5/4 : ℝ) < L := by
-    rw [hLdef, ← hps, hpsval]
-    linarith
-  have hL_ub : L < 21/16 := by
-    have h16 : LiouvilleNumber.remainder 2 2 < 1/16 := by
-      have := hrem_lt
-      norm_num [Nat.factorial] at this
-      linarith
-    rw [hLdef, ← hps, hpsval]
-    linarith
   haveI : Algebra.IsAlgebraic ℤ ℚ :=
     (IsFractionRing.comap_isAlgebraic_iff (A := ℤ) (K := ℚ) (C := ℚ)).mpr
       inferInstance
@@ -3708,10 +3673,9 @@ theorem chordX_ratFunc₂ :
   obtain ⟨u₀, hu₀t, hu₀l, hu₀h⟩ := exists_transcendental_quarter_half
   letI : Algebra (RatFunc ℚ) ℂ := (Blueprint.evalAtHom u₀ hu₀t).toAlgebra
   obtain ⟨v₀, hv₀t, hv₀l, hv₀h⟩ := exists_transcendental_pair u₀ hu₀t
-  set H : RatFunc (RatFunc ℚ) →+* ℂ := substHom v₀ hv₀t with hHdef
+  set H : RatFunc (RatFunc ℚ) →+* ℂ := substHom v₀ hv₀t
   have hHinj : Function.Injective H := H.injective
   have hu₀0 : (0 : ℝ) < ‖u₀‖ := lt_trans (by norm_num) hu₀l
-  have hv₀0 : (0 : ℝ) < ‖v₀‖ := lt_trans (by norm_num) hv₀l
   have hu₀ne : u₀ ≠ 0 := norm_pos_iff.mp hu₀0
   have huv_l : (1/8 : ℝ) < ‖u₀ * v₀‖ := by
     rw [norm_mul]
@@ -3771,7 +3735,7 @@ theorem chordX_ratFunc₂ :
   -- the six coefficient-sequence identifications and sums
   have hseq : ∀ (em : RatFunc ℚ →+* RatFunc (RatFunc ℚ)) (t : ℂ)
       (ht : Transcendental ℚ t)
-      (hcomp : H.comp em = Blueprint.evalAtHom t ht)
+      (_ : H.comp em = Blueprint.evalAtHom t ht)
       (F : PowerSeries (RatFunc ℚ)) (n : ℕ),
       H (PowerSeries.coeff n (PowerSeries.map em F))
         = Blueprint.evalAt t (PowerSeries.coeff n F) := by
@@ -3885,10 +3849,9 @@ theorem chordY_ratFunc₂ :
   obtain ⟨u₀, hu₀t, hu₀l, hu₀h⟩ := exists_transcendental_quarter_half
   letI : Algebra (RatFunc ℚ) ℂ := (Blueprint.evalAtHom u₀ hu₀t).toAlgebra
   obtain ⟨v₀, hv₀t, hv₀l, hv₀h⟩ := exists_transcendental_pair u₀ hu₀t
-  set H : RatFunc (RatFunc ℚ) →+* ℂ := substHom v₀ hv₀t with hHdef
+  set H : RatFunc (RatFunc ℚ) →+* ℂ := substHom v₀ hv₀t
   have hHinj : Function.Injective H := H.injective
   have hu₀0 : (0 : ℝ) < ‖u₀‖ := lt_trans (by norm_num) hu₀l
-  have hv₀0 : (0 : ℝ) < ‖v₀‖ := lt_trans (by norm_num) hv₀l
   have hu₀ne : u₀ ≠ 0 := norm_pos_iff.mp hu₀0
   have huv_l : (1/8 : ℝ) < ‖u₀ * v₀‖ := by
     rw [norm_mul]
@@ -3948,7 +3911,7 @@ theorem chordY_ratFunc₂ :
   -- the six coefficient-sequence identifications and sums
   have hseq : ∀ (em : RatFunc ℚ →+* RatFunc (RatFunc ℚ)) (t : ℂ)
       (ht : Transcendental ℚ t)
-      (hcomp : H.comp em = Blueprint.evalAtHom t ht)
+      (_ : H.comp em = Blueprint.evalAtHom t ht)
       (F : PowerSeries (RatFunc ℚ)) (n : ℕ),
       H (PowerSeries.coeff n (PowerSeries.map em F))
         = Blueprint.evalAt t (PowerSeries.coeff n F) := by
@@ -4058,7 +4021,7 @@ theorem chordX_formal :
   apply hinj
   have hb : ∀ (sl : CoeffRing →+* CoeffRing₂)
       (em : RatFunc ℚ →+* RatFunc (RatFunc ℚ))
-      (hcomp : coeffRing₂ToRatFunc.comp sl = em.comp coeffRingToRatFunc)
+      (_ : coeffRing₂ToRatFunc.comp sl = em.comp coeffRingToRatFunc)
       (F : PowerSeries CoeffRing),
       (PowerSeries.map coeffRing₂ToRatFunc) ((PowerSeries.map sl) F)
         = PowerSeries.map em (PowerSeries.map coeffRingToRatFunc F) := by
@@ -4090,7 +4053,7 @@ theorem chordY_formal :
   apply hinj
   have hb : ∀ (sl : CoeffRing →+* CoeffRing₂)
       (em : RatFunc ℚ →+* RatFunc (RatFunc ℚ))
-      (hcomp : coeffRing₂ToRatFunc.comp sl = em.comp coeffRingToRatFunc)
+      (_ : coeffRing₂ToRatFunc.comp sl = em.comp coeffRingToRatFunc)
       (F : PowerSeries CoeffRing),
       (PowerSeries.map coeffRing₂ToRatFunc) ((PowerSeries.map sl) F)
         = PowerSeries.map em (PowerSeries.map coeffRingToRatFunc F) := by
@@ -4384,12 +4347,12 @@ theorem evalA_chordX_of_formal
       coeffRingEval (u₀ * v₀) hw0 hne1 (PowerSeries.coeff n F) :=
     fun F n => by
     rw [PowerSeries.coeff_map, ← RingHom.comp_apply, hbw]
-  set E₂ := coeffRingEval₂ u₀ v₀ hu0 hu1 hv0 hv1 hne1 with hE₂def
-  set uX := PowerSeries.map uSlot XA with huX
-  set vX := PowerSeries.map vSlot XA with hvX
-  set wX := PowerSeries.map uvSlot XA with hwX
-  set uY := PowerSeries.map uSlot YA with huY
-  set vY := PowerSeries.map vSlot YA with hvY
+  set E₂ := coeffRingEval₂ u₀ v₀ hu0 hu1 hv0 hv1 hne1
+  set uX := PowerSeries.map uSlot XA
+  set vX := PowerSeries.map vSlot XA
+  set wX := PowerSeries.map uvSlot XA
+  set uY := PowerSeries.map uSlot YA
+  set vY := PowerSeries.map vSlot YA
   -- transported to the two-variable evaluation
   have sXu : Summable fun n : ℕ ↦ E₂ (PowerSeries.coeff n uX) * q₀ ^ n :=
     hXu.congr fun n => by rw [hsequ]
@@ -4531,13 +4494,13 @@ theorem evalA_chordY_of_formal
       coeffRingEval (u₀ * v₀) hw0 hne1 (PowerSeries.coeff n F) :=
     fun F n => by
     rw [PowerSeries.coeff_map, ← RingHom.comp_apply, hbw]
-  set E₂ := coeffRingEval₂ u₀ v₀ hu0 hu1 hv0 hv1 hne1 with hE₂def
-  set uX := PowerSeries.map uSlot XA with huX
-  set vX := PowerSeries.map vSlot XA with hvX
-  set wX := PowerSeries.map uvSlot XA with hwX
-  set uY := PowerSeries.map uSlot YA with huY
-  set vY := PowerSeries.map vSlot YA with hvY
-  set wY := PowerSeries.map uvSlot YA with hwY
+  set E₂ := coeffRingEval₂ u₀ v₀ hu0 hu1 hv0 hv1 hne1
+  set uX := PowerSeries.map uSlot XA
+  set vX := PowerSeries.map vSlot XA
+  set wX := PowerSeries.map uvSlot XA
+  set uY := PowerSeries.map uSlot YA
+  set vY := PowerSeries.map vSlot YA
+  set wY := PowerSeries.map uvSlot YA
   have sXu : Summable fun n : ℕ ↦ E₂ (PowerSeries.coeff n uX) * q₀ ^ n :=
     hXu.congr fun n => by rw [hsequ]
   have sXv : Summable fun n : ℕ ↦ E₂ (PowerSeries.coeff n vX) * q₀ ^ n :=
@@ -5104,9 +5067,6 @@ theorem bilateral_chordX_cleared_shifted (u₀ v₀ q₀ : k)
   have hXw_eq : bilateralX (u₀ * v₀) q₀ = bilateralX (u₀ * v₀') q₀ := by
     rw [← hqw]
     exact bilateralX_shift (u₀ * v₀') q₀ hw0 hq0 hq1 hqwlt hq2w
-  have hYw_eq : bilateralY (u₀ * v₀) q₀ = bilateralY (u₀ * v₀') q₀ := by
-    rw [← hqw]
-    exact bilateralY_shift (u₀ * v₀') q₀ hw0 hw1 hq0 hq1 hqwlt hq2w
   rw [hXv_eq, hYv_eq, hXw_eq,
     ← evalA_XA_eq_bilateralX u₀ q₀ hu0 hu1 huhigh hq1 hulow,
     ← evalA_XA_eq_bilateralX_ext v₀' q₀ hv'0 hv'1 hq1 hv'gt1 hqv'lt,
@@ -5997,7 +5957,7 @@ theorem exists_annulus_bilateralX_eq_of_one_le (q₀ : k) (hq0 : q₀ ≠ 0)
   have htail : ∀ u : k, valuation k u = 1 → u ≠ 1 →
       valuation k (bilateralX u q₀ - u / (1 - u) ^ 2) ≤
         valuation k q₀ := by
-    intro u hu hu1
+    intro u hu _
     have huinv : valuation k u⁻¹ = 1 := by
       rw [map_inv₀, hu, inv_one]
     have hqu : valuation k (q₀ * u) < 1 := by
@@ -6198,7 +6158,7 @@ theorem exists_annulus_bilateralX_eq_of_one_le (q₀ : k) (hq0 : q₀ ≠ 0)
   have htailY : ∀ u : k, valuation k u = 1 → u ≠ 1 →
       valuation k (bilateralY u q₀ - u ^ 2 / (1 - u) ^ 3) ≤
         valuation k q₀ := by
-    intro u hu hu1
+    intro u hu _
     have huinv : valuation k u⁻¹ = 1 := by
       rw [map_inv₀, hu, inv_one]
     have hqu : valuation k (q₀ * u) < 1 := by
@@ -6840,8 +6800,6 @@ theorem exists_annulus_bilateralX_eq_of_one_le (q₀ : k) (hq0 : q₀ ≠ 0)
   have hfix : F ustar = ustar := by
     by_contra hne
     have hΔ0 : F ustar - ustar ≠ 0 := sub_ne_zero_of_ne hne
-    have hΔv : valuation k (F ustar - ustar) ≠ 0 :=
-      (Valuation.ne_zero_iff _).mpr hΔ0
     obtain ⟨N, hN⟩ := Filter.eventually_atTop.mp
       (hconv (F ustar - ustar) hΔ0)
     have h1 : valuation k (seq N - ustar) <
@@ -7439,7 +7397,7 @@ theorem exists_annulus_bilateralX_eq_of_lt_one (q₀ : k) (hq0 : q₀ ≠ 0)
     have hGval : ∀ u : k, valuation k u = valuation k x →
         valuation k (bilateralX u q₀ - u) ≤ Mx := by
       intro u hu
-      obtain ⟨hu0, hu1, h1u, hqu, hquinv⟩ := hshell u hu
+      obtain ⟨-, -, h1u, hqu, hquinv⟩ := hshell u hu
       have h1u0 : (1 : k) - u ≠ 0 := by
         intro hz
         rw [hz, map_zero] at h1u
@@ -7561,8 +7519,8 @@ theorem exists_annulus_bilateralX_eq_of_lt_one (q₀ : k) (hq0 : q₀ ≠ 0)
         valuation k ((bilateralX u q₀ - u) - (bilateralX v q₀ - v)) ≤
           ρ * valuation k (u - v) := by
       intro u v hu hv
-      obtain ⟨hu0, hu1, h1u, hqu, hquinv⟩ := hshell u hu
-      obtain ⟨hv0, hv1, h1v, hqv, hqvinv⟩ := hshell v hv
+      obtain ⟨hu0, -, h1u, -, -⟩ := hshell u hu
+      obtain ⟨hv0, -, h1v, hqv, hqvinv⟩ := hshell v hv
       have h1u0 : (1 : k) - u ≠ 0 := hone_sub_ne' u (hu ▸ hx)
       have h1v0 : (1 : k) - v ≠ 0 := hone_sub_ne' v (hv ▸ hx)
       have hinvdiff : valuation k (u⁻¹ - v⁻¹) =
@@ -8141,7 +8099,6 @@ theorem exists_annulus_bilateralX_eq_of_lt_one (q₀ : k) (hq0 : q₀ ≠ 0)
           -((q₀ ^ (m : ℕ) * u⁻¹) ^ 2 /
             (1 - q₀ ^ (m : ℕ) * u⁻¹) ^ 3) := by
         intro m
-        have h0 := hone_sub_ne'' _ (hsm2 m)
         field_simp
         ring
       have hlead : u / (1 - u) ^ 2 + u ^ 2 / (1 - u) ^ 3 =
@@ -8320,8 +8277,6 @@ theorem exists_annulus_bilateralX_eq_of_lt_one (q₀ : k) (hq0 : q₀ ≠ 0)
       intro u v hu hv
       obtain ⟨hu0, hult, hqu, hquinv⟩ := hwin u hu
       obtain ⟨hv0, hvlt, hqv, hqvinv⟩ := hwin v hv
-      have hquinv1 : valuation k (q₀ * u⁻¹) < 1 := by
-        rw [hquinv]; exact hylt1
       have hqvinv1 : valuation k (q₀ * v⁻¹) < 1 := by
         rw [hqvinv]; exact hylt1
       have h1u0 : (1 : k) - u ≠ 0 := hone_sub_ne'' u hult
@@ -8364,12 +8319,6 @@ theorem exists_annulus_bilateralX_eq_of_lt_one (q₀ : k) (hq0 : q₀ ≠ 0)
               mul_le_mul_left (hqpow_le m) _
           _ = valuation k (q₀ * v⁻¹) := by rw [map_mul, map_inv₀]
           _ = valuation k y := hqvinv
-      have hinvdiffB : valuation k (u⁻¹ - v⁻¹) =
-          valuation k (u - v) / (valuation k y * valuation k y) := by
-        have he : u⁻¹ - v⁻¹ = (v - u) / (u * v) := by
-          field_simp
-        rw [he, map_div₀, map_mul, hu, hv,
-          show v - u = -(u - v) from by ring, Valuation.map_neg]
       -- leading difference
       have hlead : valuation k
           ((u / (1 - u) ^ 3 - u) - (v / (1 - v) ^ 3 - v)) ≤
@@ -9078,8 +9027,6 @@ theorem pointMapQuot_surjective [DecidableEq k] (q : kˣ)
         obtain ⟨hXv, hYv⟩ := bilateral_negY_of_mul_trivial u v (q : k)
           hu0 hu1 hv0 hq0 hq hulow huhigh htriv
         have huv : valuation k u ≠ 0 := (Valuation.ne_zero_iff _).mpr hu0
-        have hupos : (0 : ValueGroupWithZero k) < valuation k u :=
-          zero_lt_iff.mpr huv
         have huinvpos : (0 : ValueGroupWithZero k) < (valuation k u)⁻¹ :=
           zero_lt_iff.mpr (inv_ne_zero huv)
         have hvval : valuation k v =
