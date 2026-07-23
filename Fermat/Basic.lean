@@ -26,8 +26,3 @@ theorem fermat_last_theorem : FermatLastTheorem := by
     · exact absurd hp (by decide)
   · exact fermatLastTheoremFor_of_five_le p hp (le_of_not_gt hlt)
 
-/-- Fermat's Last Theorem, unfolded to its explicit `∀`-statement. -/
-theorem fermat_last_theorem_explicit :
-    ∀ n : ℕ, 2 < n →
-      ∀ a b c : ℕ, a ≠ 0 → b ≠ 0 → c ≠ 0 → a ^ n + b ^ n ≠ c ^ n :=
-  fun n hn => fermat_last_theorem n hn

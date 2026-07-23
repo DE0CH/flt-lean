@@ -17,7 +17,6 @@
  "WeierstrassCurve.negVariableChange_u": "consumed by proofs in the same/adjacent module whose EXPORTED bodies hide the edge (module-system opaque exports); deletion broke the build",
  "WeierstrassCurve.negVariableChange_smul_self": "consumed by proofs in the same/adjacent module whose EXPORTED bodies hide the edge (module-system opaque exports); deletion broke the build",
  "\u00abcommand#assert_no_sorry_\u00bb": "the sorry-gate elaboration command itself (SorryGate.lean) \u2014 the loop's backbone; commands never appear in term cones",
- "fermat_last_theorem_explicit": "the human-readable unfolded restatement of the root; consumes the root and sits above it \u2014 the project's goal statement, not bottom-up accumulation",
  "GaloisRep.IsFlatAt.cond": "class-field projection sharing source lines with the cone IsFlatAt class definition",
  "IsLocalRing.maximalIdeal_le": "dependency of the keep-listed DVR instance cluster (AdicValuation)",
  "ValuativeExtension.valuation_algebraMap_lt_one": "class-6: used by TateCurveBaseChange cone/kept proofs whose exported bodies hide the edge",
