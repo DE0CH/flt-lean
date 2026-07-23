@@ -72,21 +72,35 @@ here. This file provides:
   `exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries`
   (the Euler product for the `χ`-twisted Dedekind zeta function in
   exponential form — itself PROVEN, through the proven norm-fibration
-  `tsum_dirichletCharacter_mul_cpow_neg_absNorm_eq_LSeries`, from the
-  sorry leaf
+  `tsum_dirichletCharacter_mul_cpow_neg_absNorm_eq_LSeries` and
   `tprod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum`, the
-  ideal-theoretic Euler product: pure unique factorization) and
+  ideal-theoretic Euler product, now also PROVEN — pure unique
+  factorization, mirroring mathlib's `ℕ`-indexed machinery on the
+  ideal monoid; see its docstring) and
   `exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le` (good
   behaviour of the twisted ideal `L`-series on `(1, 2]` — itself
   PROVEN, with the away-from-`1` positivity supplied by the Euler
-  identity, from the two sorry leaves
+  identity, from
   `exists_forall_norm_LSeries_le_and_norm_deriv_le` (uniform bounds
-  for `L` and `L'`: the analytic-continuation half, needing the
-  power-saving Hecke count) and
+  for `L` and `L'`: the analytic-continuation half — now itself
+  DERIVED, through the PROVEN transfer lemmas
+  `norm_LSeries_le_mul_div_of_forall_norm_sum_le` (integral
+  representation), `exists_forall_norm_sum_log_mul_le_rpow` (Abel
+  summation) and `sum_card_absNorm_isBigO` (linear coefficient
+  growth), from the single sorried counting core
+  `exists_forall_norm_sum_dirichletCharacter_mul_card_absNorm_le_rpow`,
+  the power-saving Weber–Landau Hecke count) and
   `exists_forall_le_norm_LSeries_near_one` (`L` bounded away from `0`
-  just right of `1`: the `L(1,χ) ≠ 0` half)); see the leaves'
-  docstrings for the intended proofs and the exact state of the
-  mathlib pin.
+  just right of `1`: the `L(1,χ) ≠ 0` half — now itself DERIVED,
+  through the PROVEN dominated-convergence continuation
+  `tendsto_LSeries_nhdsGT_one_of_forall_norm_sum_le` and
+  `lSeriesSummable_dirichletCharacter_mul_card`, from the same
+  counting core plus the sorried arithmetic core
+  `integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero`,
+  the nonvanishing of the continued value at `1` by the classical
+  zeta-factorization argument)); the L-function half thus rests on
+  exactly TWO deep sorried cores; see their docstrings for the
+  intended proofs and the exact state of the mathlib pin.
 
 The remaining pieces of the decomposition (Brauer–Nesbitt for
 2-dimensional mod-`ℓ` representations, the mod-`ℓ` cyclotomic character as
@@ -1851,21 +1865,313 @@ theorem summable_rpow_neg_natCard_quotient {F : Type*} [Field F] [NumberField F]
   rw [NNReal.coe_rpow, NNReal.coe_natCast]
 
 open IsDedekindDomain in
-/-- **Euler product for the `χ`-twisted Dedekind zeta function** (sorry
-leaf): for `1 < re w`, the product of the inverted Euler factors
+/-- Every ideal of a Dedekind domain other than `⊥` and `⊤` is divisible
+by some height-one prime: pick an irreducible factor in the unique
+factorization monoid of ideals. -/
+theorem exists_heightOneSpectrum_dvd {R : Type*} [CommRing R] [IsDedekindDomain R]
+    {I : Ideal R} (h0 : I ≠ ⊥) (h1 : I ≠ ⊤) :
+    ∃ Q : HeightOneSpectrum R, Q.asIdeal ∣ I := by
+  obtain ⟨i, hirr, hdvd⟩ := WfDvdMonoid.exists_irreducible_factor
+    (fun h => h1 (Ideal.isUnit_iff.mp h)) (by rwa [Ideal.zero_eq_bot])
+  exact ⟨HeightOneSpectrum.ofPrime
+    (UniqueFactorizationMonoid.irreducible_iff_prime.mp hirr), hdvd⟩
+
+open IsDedekindDomain in
+/-- Uniqueness of the `P`-power decomposition `I = P^e · J` with `P ∤ J`
+in the ideal monoid of a Dedekind domain. -/
+theorem eq_and_eq_of_pow_mul_eq_pow_mul {R : Type*} [CommRing R] [IsDedekindDomain R]
+    (P₀ : HeightOneSpectrum R) {e e' : ℕ} {J J' : Ideal R}
+    (hJ : ¬P₀.asIdeal ∣ J) (hJ' : ¬P₀.asIdeal ∣ J')
+    (h : P₀.asIdeal ^ e * J = P₀.asIdeal ^ e' * J') : e = e' ∧ J = J' := by
+  have hPne : P₀.asIdeal ≠ 0 := by rw [Ideal.zero_eq_bot]; exact P₀.ne_bot
+  have key : ∀ {a a' : ℕ} {B B' : Ideal R}, a ≤ a' → ¬P₀.asIdeal ∣ B →
+      P₀.asIdeal ^ a * B = P₀.asIdeal ^ a' * B' → a = a' ∧ B = B' := by
+    intro a a' B B' hle hB hEq
+    have h1 : P₀.asIdeal ^ a * B = P₀.asIdeal ^ a * (P₀.asIdeal ^ (a' - a) * B') := by
+      rw [← mul_assoc, ← pow_add, Nat.add_sub_cancel' hle]
+      exact hEq
+    have h2 : B = P₀.asIdeal ^ (a' - a) * B' :=
+      mul_left_cancel₀ (pow_ne_zero a hPne) h1
+    have h3 : a' - a = 0 := by
+      by_contra h4
+      apply hB
+      rw [h2]
+      exact dvd_mul_of_dvd_left (dvd_pow_self _ h4) B'
+    refine ⟨by omega, ?_⟩
+    rw [h3, pow_zero, one_mul] at h2
+    exact h2
+  rcases le_total e e' with hle | hle
+  · exact key hle hJ h
+  · obtain ⟨h1, h2⟩ := key hle hJ' h.symm
+    exact ⟨h1.symm, h2.symm⟩
+
+/-- Complete multiplicativity in the `ℕ`-argument of the twisted power
+term `k ↦ χ(k)·k^{-w}` (for `w ≠ 0`; at `k = 0` both sides vanish). -/
+theorem dirichletCharacter_mul_cpow_natCast_mul {ℓ : ℕ} (χ : DirichletCharacter ℂ ℓ)
+    {w : ℂ} (hw : w ≠ 0) (m n : ℕ) :
+    χ ((m * n : ℕ) : ZMod ℓ) * ((m * n : ℕ) : ℂ) ^ (-w) =
+      (χ (m : ZMod ℓ) * (m : ℂ) ^ (-w)) * (χ (n : ZMod ℓ) * (n : ℂ) ^ (-w)) := by
+  have hw' : -w ≠ 0 := neg_ne_zero.mpr hw
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · simp only [Nat.zero_mul, Nat.cast_zero, Complex.zero_cpow hw']
+    ring
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp only [Nat.mul_zero, Nat.cast_zero, Complex.zero_cpow hw']
+    ring
+  have hcast : ((m * n : ℕ) : ℂ) = ((m : ℝ) : ℂ) * ((n : ℝ) : ℂ) := by
+    push_cast
+    ring
+  have hcpow : ((m * n : ℕ) : ℂ) ^ (-w) = (m : ℂ) ^ (-w) * (n : ℂ) ^ (-w) := by
+    rw [hcast,
+      Complex.mul_cpow_ofReal_nonneg (Nat.cast_nonneg m) (Nat.cast_nonneg n)]
+    norm_cast
+  rw [Nat.cast_mul, map_mul, hcpow]
+  ring
+
+/-- Iterated form of `dirichletCharacter_mul_cpow_natCast_mul`: the
+twisted power term at `m ^ e * n` splits off the `e`-th power of the
+term at `m`. -/
+theorem dirichletCharacter_mul_cpow_natCast_pow_mul {ℓ : ℕ}
+    (χ : DirichletCharacter ℂ ℓ) {w : ℂ} (hw : w ≠ 0) (m n e : ℕ) :
+    χ ((m ^ e * n : ℕ) : ZMod ℓ) * ((m ^ e * n : ℕ) : ℂ) ^ (-w) =
+      (χ (m : ZMod ℓ) * (m : ℂ) ^ (-w)) ^ e *
+        (χ (n : ZMod ℓ) * (n : ℂ) ^ (-w)) := by
+  induction e with
+  | zero => rw [pow_zero, one_mul, pow_zero, one_mul]
+  | succ e ih =>
+      have h1 : m ^ (e + 1) * n = m * (m ^ e * n) := by ring
+      rw [h1, dirichletCharacter_mul_cpow_natCast_mul χ hw m (m ^ e * n), ih,
+        pow_succ]
+      ring
+
+open IsDedekindDomain in
+/-- Norm summability of the twisted ideal sum for `1 < re w`,
+transferred from the `ℝ≥0∞`-valued full-ideal-sum leaf
+`tsum_rpow_neg_absNorm_ne_top`. -/
+theorem summable_norm_dirichletCharacter_mul_cpow_neg_absNorm
+    (F : Type*) [Field F] [NumberField F] {ℓ : ℕ} (χ : DirichletCharacter ℂ ℓ)
+    {w : ℂ} (hw : 1 < w.re) :
+    Summable (fun I : {I : Ideal (𝓞 F) // I ≠ ⊥} =>
+      ‖χ ((Ideal.absNorm I.1 : ℕ) : ZMod ℓ) * (Ideal.absNorm I.1 : ℂ) ^ (-w)‖) := by
+  have habs : Summable (fun I : {I : Ideal (𝓞 F) // I ≠ ⊥} =>
+      (Ideal.absNorm I.1 : ℝ) ^ (-w.re)) := by
+    have h2 := tsum_rpow_neg_absNorm_ne_top F hw
+    have h3 : ∀ I : {I : Ideal (𝓞 F) // I ≠ ⊥},
+        (Ideal.absNorm I.1 : ℝ≥0∞) ^ (-w.re) =
+          (((Ideal.absNorm I.1 : NNReal) ^ (-w.re) : NNReal) : ℝ≥0∞) := by
+      intro I
+      rw [ENNReal.coe_rpow_of_ne_zero (by
+          exact_mod_cast (fun h => I.2 (Ideal.absNorm_eq_zero_iff.mp h) :
+            Ideal.absNorm I.1 ≠ 0)),
+        ENNReal.coe_natCast]
+    rw [tsum_congr h3] at h2
+    have h4 := ENNReal.tsum_coe_ne_top_iff_summable.mp h2
+    refine (NNReal.summable_coe.mpr h4).congr ?_
+    intro I
+    rw [NNReal.coe_rpow, NNReal.coe_natCast]
+  refine Summable.of_nonneg_of_le (fun _ => norm_nonneg _) (fun I => ?_) habs
+  have hNpos : 0 < Ideal.absNorm I.1 :=
+    Nat.pos_of_ne_zero fun h => I.2 (Ideal.absNorm_eq_zero_iff.mp h)
+  rw [norm_mul, Complex.norm_natCast_cpow_of_pos hNpos, Complex.neg_re]
+  exact mul_le_of_le_one_left (Real.rpow_nonneg (Nat.cast_nonneg _) _)
+    (DirichletCharacter.norm_le_one χ _)
+
+open IsDedekindDomain in
+/-- **Finite-level Euler product over the ideals of `𝓞 F`**: for a
+finite set `S` of finite places, the product of the inverted Euler
+factors at the places in `S` equals the twisted ideal sum restricted to
+the ideals all of whose prime divisors lie in `S`. This is the
+ideal-monoid mirror of mathlib's
+`EulerProduct.prod_filter_prime_geometric_eq_tsum_factoredNumbers`,
+proven by induction on `S` along the unique `P`-power decomposition of
+the `S`-factored ideals. -/
+theorem prod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum_factored
+    (F : Type*) [Field F] [NumberField F] {ℓ : ℕ} (χ : DirichletCharacter ℂ ℓ)
+    {w : ℂ} (hw : 1 < w.re) (S : Finset (HeightOneSpectrum (𝓞 F))) :
+    (∏ P ∈ S, (1 - χ ((Ideal.absNorm P.asIdeal : ℕ) : ZMod ℓ) *
+        (Ideal.absNorm P.asIdeal : ℂ) ^ (-w))⁻¹) =
+      ∑' I : {I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+          ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S},
+        χ ((Ideal.absNorm I.1.1 : ℕ) : ZMod ℓ) * (Ideal.absNorm I.1.1 : ℂ) ^ (-w) := by
+  classical
+  have hw0 : w ≠ 0 := fun h => by rw [h, Complex.zero_re] at hw; linarith
+  have hTop : (⊤ : Ideal (𝓞 F)) ≠ ⊥ := by
+    intro h
+    exact one_ne_zero (Ideal.mem_bot.mp (h ▸ Submodule.mem_top (x := (1 : 𝓞 F))))
+  induction S using Finset.induction_on with
+  | empty =>
+      have hset : {I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+          ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 →
+            Q ∈ (∅ : Finset (HeightOneSpectrum (𝓞 F)))} =
+          {(⟨⊤, hTop⟩ : {I : Ideal (𝓞 F) // I ≠ ⊥})} := by
+        ext I
+        simp only [Set.mem_setOf_eq, Set.mem_singleton_iff]
+        constructor
+        · intro hI
+          by_contra hne
+          have hItop : I.1 ≠ ⊤ := fun h => hne (Subtype.ext h)
+          obtain ⟨Q, hQ⟩ := exists_heightOneSpectrum_dvd I.2 hItop
+          exact absurd (hI Q hQ) (Finset.notMem_empty Q)
+        · rintro rfl Q hQ
+          exact absurd (top_le_iff.mp (Ideal.le_of_dvd hQ)) Q.isPrime.ne_top
+      rw [Finset.prod_empty, hset,
+        tsum_singleton (⟨⊤, hTop⟩ : {I : Ideal (𝓞 F) // I ≠ ⊥})
+          (fun J => χ ((Ideal.absNorm J.1 : ℕ) : ZMod ℓ) *
+            (Ideal.absNorm J.1 : ℂ) ^ (-w))]
+      simp [Ideal.absNorm_top, Complex.one_cpow]
+  | @insert P₀ S hP₀ ih =>
+      -- the Euler factor at `P₀` has norm `< 1`
+      have hN2 : 2 ≤ Ideal.absNorm P₀.asIdeal := by
+        rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+        exact two_le_natCard_quotient P₀
+      have hnormlt : ‖χ ((Ideal.absNorm P₀.asIdeal : ℕ) : ZMod ℓ) *
+          (Ideal.absNorm P₀.asIdeal : ℂ) ^ (-w)‖ < 1 := by
+        have hNpos : 0 < Ideal.absNorm P₀.asIdeal := by omega
+        rw [norm_mul, Complex.norm_natCast_cpow_of_pos hNpos, Complex.neg_re]
+        calc ‖χ ((Ideal.absNorm P₀.asIdeal : ℕ) : ZMod ℓ)‖ *
+              (Ideal.absNorm P₀.asIdeal : ℝ) ^ (-w.re)
+            ≤ (Ideal.absNorm P₀.asIdeal : ℝ) ^ (-w.re) :=
+              mul_le_of_le_one_left (Real.rpow_nonneg (Nat.cast_nonneg _) _)
+                (DirichletCharacter.norm_le_one χ _)
+          _ < 1 := Real.rpow_lt_one_of_one_lt_of_neg
+              (by exact_mod_cast Nat.lt_of_lt_of_le Nat.one_lt_two hN2)
+              (by linarith)
+      have hPne0 : P₀.asIdeal ≠ 0 := fun h => P₀.ne_bot (h.trans Ideal.zero_eq_bot)
+      have hPnotdvdmem : ∀ J : {I : Ideal (𝓞 F) // I ≠ ⊥},
+          (∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ J.1 → Q ∈ S) →
+          ¬P₀.asIdeal ∣ J.1 := fun J hJ hdvd => hP₀ (hJ P₀ hdvd)
+      -- the unique `P₀`-power decomposition of the `insert P₀ S`-factored ideals
+      have hmapmem : ∀ (e : ℕ) (J : {I : Ideal (𝓞 F) // I ≠ ⊥}),
+          (∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ J.1 → Q ∈ S) →
+          (P₀.asIdeal ^ e * J.1 ≠ ⊥ ∧
+            ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ P₀.asIdeal ^ e * J.1 →
+              Q ∈ insert P₀ S) := by
+        intro e J hJ
+        constructor
+        · exact fun h => mul_ne_zero (pow_ne_zero e hPne0)
+            (fun hh => J.2 (hh.trans Ideal.zero_eq_bot))
+            (h.trans Ideal.zero_eq_bot.symm)
+        · intro Q hQ
+          rcases (Q.prime.dvd_mul).mp hQ with h | h
+          · have hQP : Q.asIdeal ∣ P₀.asIdeal := Q.prime.dvd_of_dvd_pow h
+            have hle : P₀.asIdeal ≤ Q.asIdeal := Ideal.le_of_dvd hQP
+            have hQeq : Q = P₀ := HeightOneSpectrum.ext
+              (P₀.isMaximal.eq_of_le Q.isPrime.ne_top hle).symm
+            rw [hQeq]
+            exact Finset.mem_insert_self P₀ S
+          · exact Finset.mem_insert_of_mem (hJ Q h)
+      let f : ℕ × ↥{I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+          ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S} →
+          ↥{I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+            ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ insert P₀ S} :=
+        fun p => ⟨⟨P₀.asIdeal ^ p.1 * p.2.1.1, (hmapmem p.1 p.2.1 p.2.2).1⟩,
+          (hmapmem p.1 p.2.1 p.2.2).2⟩
+      have hbij : Function.Bijective f := by
+        constructor
+        · rintro ⟨e, J⟩ ⟨e', J'⟩ hEq
+          have h1 : P₀.asIdeal ^ e * J.1.1 = P₀.asIdeal ^ e' * J'.1.1 :=
+            congrArg (fun x => x.1.1) hEq
+          obtain ⟨h2, h3⟩ := eq_and_eq_of_pow_mul_eq_pow_mul P₀
+            (hPnotdvdmem J.1 J.2) (hPnotdvdmem J'.1 J'.2) h1
+          exact Prod.ext h2 (Subtype.ext (Subtype.ext h3))
+        · rintro ⟨⟨I, hI0⟩, hImem⟩
+          obtain ⟨e, J, hJdvd, hIeq⟩ := WfDvdMonoid.max_power_factor
+            (fun h => hI0 (h.trans Ideal.zero_eq_bot)) P₀.irreducible
+          have hJ0 : J ≠ ⊥ := by
+            intro h
+            apply hI0
+            rw [hIeq, h, Ideal.mul_bot]
+          have hJmem : ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ J → Q ∈ S := by
+            intro Q hQ
+            have hQI : Q.asIdeal ∣ I := by
+              rw [hIeq]
+              exact hQ.mul_left _
+            rcases Finset.mem_insert.mp (hImem Q hQI) with h | h
+            · rw [h] at hQ
+              exact absurd hQ hJdvd
+            · exact h
+          exact ⟨⟨e, ⟨⟨J, hJ0⟩, hJmem⟩⟩, Subtype.ext (Subtype.ext hIeq.symm)⟩
+      -- the twisted term is completely multiplicative along the decomposition
+      have hgf : ∀ p : ℕ × ↥{I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+          ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S},
+          χ ((Ideal.absNorm (f p).1.1 : ℕ) : ZMod ℓ) *
+            (Ideal.absNorm (f p).1.1 : ℂ) ^ (-w) =
+          (χ ((Ideal.absNorm P₀.asIdeal : ℕ) : ZMod ℓ) *
+            (Ideal.absNorm P₀.asIdeal : ℂ) ^ (-w)) ^ p.1 *
+          (χ ((Ideal.absNorm p.2.1.1 : ℕ) : ZMod ℓ) *
+            (Ideal.absNorm p.2.1.1 : ℂ) ^ (-w)) := by
+        rintro ⟨e, J⟩
+        show χ ((Ideal.absNorm (P₀.asIdeal ^ e * J.1.1) : ℕ) : ZMod ℓ) *
+            (Ideal.absNorm (P₀.asIdeal ^ e * J.1.1) : ℂ) ^ (-w) = _
+        rw [map_mul, map_pow]
+        exact dirichletCharacter_mul_cpow_natCast_pow_mul χ hw0 _ _ e
+      -- summability inputs for the product of the two series
+      have hgeom : Summable (fun e : ℕ =>
+          ‖(χ ((Ideal.absNorm P₀.asIdeal : ℕ) : ZMod ℓ) *
+            (Ideal.absNorm P₀.asIdeal : ℂ) ^ (-w)) ^ e‖) :=
+        (summable_geometric_of_lt_one (norm_nonneg _) hnormlt).congr
+          fun e => (norm_pow _ _).symm
+      have hsubnorm : Summable (fun I : ↥{I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+          ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S} =>
+          ‖χ ((Ideal.absNorm I.1.1 : ℕ) : ZMod ℓ) *
+            (Ideal.absNorm I.1.1 : ℂ) ^ (-w)‖) :=
+        (summable_norm_dirichletCharacter_mul_cpow_neg_absNorm F χ hw).subtype _
+      -- the insert-step reindexing along the decomposition
+      have hstep : (∑' I : {I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+            ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ insert P₀ S},
+          χ ((Ideal.absNorm I.1.1 : ℕ) : ZMod ℓ) *
+            (Ideal.absNorm I.1.1 : ℂ) ^ (-w)) =
+          (∑' e : ℕ, (χ ((Ideal.absNorm P₀.asIdeal : ℕ) : ZMod ℓ) *
+            (Ideal.absNorm P₀.asIdeal : ℂ) ^ (-w)) ^ e) *
+          ∑' I : {I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+            ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S},
+          χ ((Ideal.absNorm I.1.1 : ℕ) : ZMod ℓ) *
+            (Ideal.absNorm I.1.1 : ℂ) ^ (-w) := by
+        calc (∑' I : {I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+              ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ insert P₀ S},
+            χ ((Ideal.absNorm I.1.1 : ℕ) : ZMod ℓ) *
+              (Ideal.absNorm I.1.1 : ℂ) ^ (-w))
+            = ∑' p : ℕ × ↥{I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+                ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S},
+              χ ((Ideal.absNorm (f p).1.1 : ℕ) : ZMod ℓ) *
+                (Ideal.absNorm (f p).1.1 : ℂ) ^ (-w) :=
+              ((Equiv.ofBijective f hbij).tsum_eq _).symm
+          _ = ∑' p : ℕ × ↥{I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+                ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S},
+              (χ ((Ideal.absNorm P₀.asIdeal : ℕ) : ZMod ℓ) *
+                (Ideal.absNorm P₀.asIdeal : ℂ) ^ (-w)) ^ p.1 *
+              (χ ((Ideal.absNorm p.2.1.1 : ℕ) : ZMod ℓ) *
+                (Ideal.absNorm p.2.1.1 : ℂ) ^ (-w)) := tsum_congr hgf
+          _ = (∑' e : ℕ, (χ ((Ideal.absNorm P₀.asIdeal : ℕ) : ZMod ℓ) *
+                (Ideal.absNorm P₀.asIdeal : ℂ) ^ (-w)) ^ e) *
+              ∑' I : {I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+                ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S},
+              χ ((Ideal.absNorm I.1.1 : ℕ) : ZMod ℓ) *
+                (Ideal.absNorm I.1.1 : ℂ) ^ (-w) :=
+              (tsum_mul_tsum_of_summable_norm hgeom hsubnorm).symm
+      rw [Finset.prod_insert hP₀, ih, ← tsum_geometric_of_norm_lt_one hnormlt]
+      exact hstep.symm
+
+open IsDedekindDomain in
+/-- **Euler product for the `χ`-twisted Dedekind zeta function**: for
+`1 < re w`, the product of the inverted Euler factors
 `(1 - χ(N P)·N P^{-w})⁻¹` over the finite places of `F` equals the
 absolutely convergent sum of `χ(N I)·N I^{-w}` over the nonzero ideals
 of `𝓞 F`. Pure unique factorization — no counting asymptotics, no
-nonvanishing. Intended proof: mirror mathlib's
-`EulerProduct.eulerProduct_hasProd` (stated there only for `ℕ`), with
-`Ideal (𝓞 F)` in place of `ℕ`: a finite partial product over a finite
-set `S` of places expands as the twisted sum over the ideals whose
-prime factors lie in `S` (geometric series for each factor, then
-multiplicativity of `Ideal.absNorm` and complete multiplicativity of
-`χ ∘ cast` along the `UniqueFactorizationMonoid` structure of the
-nonzero ideals of the Dedekind domain `𝓞 F`), and the difference from
-the full ideal sum is dominated by the tail of the convergent ideal
-norm sum (`tsum_rpow_neg_absNorm_ne_top`). -/
+nonvanishing. PROVEN, mirroring mathlib's
+`EulerProduct.eulerProduct_hasProd` (stated there only for `ℕ`) with
+`Ideal (𝓞 F)` in place of `ℕ`: the finite-level identity
+`prod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum_factored`
+expands a partial product over a finite set `S` of places as the
+twisted sum over the `S`-factored ideals (geometric series for each
+factor, then the unique `P`-power decomposition
+`eq_and_eq_of_pow_mul_eq_pow_mul` and complete multiplicativity
+`dirichletCharacter_mul_cpow_natCast_pow_mul` along `Ideal.absNorm`),
+and the difference from the full ideal sum is killed along the net of
+finite `S` by `Summable.tsum_vanishing` for the absolutely convergent
+twisted ideal sum
+(`summable_norm_dirichletCharacter_mul_cpow_neg_absNorm`, from the
+full-ideal-sum leaf `tsum_rpow_neg_absNorm_ne_top`). -/
 theorem tprod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum
     (F : Type*) [Field F] [NumberField F] {ℓ : ℕ} (χ : DirichletCharacter ℂ ℓ)
     {w : ℂ} (hw : 1 < w.re) :
@@ -1873,8 +2179,52 @@ theorem tprod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum
         (1 - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
           (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w))⁻¹) =
       ∑' I : {I : Ideal (𝓞 F) // I ≠ ⊥},
-        χ ((Ideal.absNorm I.1 : ℕ) : ZMod ℓ) * (Ideal.absNorm I.1 : ℂ) ^ (-w) :=
-  sorry
+        χ ((Ideal.absNorm I.1 : ℕ) : ZMod ℓ) * (Ideal.absNorm I.1 : ℂ) ^ (-w) := by
+  classical
+  -- replace the residue cardinalities by absolute norms in the factors
+  have hfac : ∀ P : HeightOneSpectrum (𝓞 F),
+      (1 - χ ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-w))⁻¹ =
+      (1 - χ ((Ideal.absNorm P.asIdeal : ℕ) : ZMod ℓ) *
+        (Ideal.absNorm P.asIdeal : ℂ) ^ (-w))⁻¹ := by
+    intro P
+    rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+  rw [tprod_congr hfac]
+  -- the twisted ideal sum is (absolutely) summable
+  have hsummable : Summable (fun I : {I : Ideal (𝓞 F) // I ≠ ⊥} =>
+      χ ((Ideal.absNorm I.1 : ℕ) : ZMod ℓ) * (Ideal.absNorm I.1 : ℂ) ^ (-w)) :=
+    (summable_norm_dirichletCharacter_mul_cpow_neg_absNorm F χ hw).of_norm
+  -- `HasProd` towards the full twisted ideal sum
+  refine HasProd.tprod_eq ?_
+  rw [HasProd, SummationFilter.unconditional, Metric.tendsto_atTop]
+  intro ε hε
+  -- tail control: a finite set of ideals capturing the sum up to `ε`
+  obtain ⟨T₀, hT₀⟩ := hsummable.tsum_vanishing (Metric.ball_mem_nhds 0 hε)
+  refine ⟨T₀.biUnion (fun I =>
+    (Ideal.finite_factors (fun h => I.2 (h.trans Ideal.zero_eq_bot))).toFinset),
+    fun S hS => ?_⟩
+  -- every ideal in `T₀` is `S`-factored
+  have hT₀sub : ∀ I ∈ T₀, ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S := by
+    intro I hI Q hQ
+    refine hS (Finset.mem_biUnion.mpr ⟨I, hI, ?_⟩)
+    rw [Set.Finite.mem_toFinset]
+    exact hQ
+  -- hence the complement of the `S`-factored ideals is disjoint from `T₀`
+  have hdisj : Disjoint ({I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+      ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S}ᶜ) (↑T₀ : Set _) := by
+    rw [Set.disjoint_left]
+    intro I hIc hIT
+    exact hIc (fun Q hQ => hT₀sub I hIT Q hQ)
+  have htail := hT₀ _ hdisj
+  rw [mem_ball_zero_iff] at htail
+  -- split the full sum along the `S`-factored ideals
+  have hkey := hsummable.tsum_subtype_add_tsum_subtype_compl
+    {I : {I : Ideal (𝓞 F) // I ≠ ⊥} |
+      ∀ Q : HeightOneSpectrum (𝓞 F), Q.asIdeal ∣ I.1 → Q ∈ S}
+  have hprodS := prod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum_factored
+    F χ hw S
+  rw [dist_eq_norm, hprodS, ← hkey, sub_add_cancel_left, norm_neg]
+  exact htail
 
 open IsDedekindDomain in
 /-- **Norm fibration of the twisted ideal sum**: grouping
@@ -2117,22 +2467,327 @@ theorem exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries
           (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) w :=
         tsum_dirichletCharacter_mul_cpow_neg_absNorm_eq_LSeries F χ hw
 
+open Filter Asymptotics in
+/-- **Linear growth of the ideal-count coefficient sums**: the partial
+sums of `k ↦ #{I : N(I) = k}` are `O(n)`. Derived from mathlib's
+equidistribution-free ideal counting
+`NumberField.Ideal.tendsto_norm_le_div_atTop` (the count of ideals of
+norm `≤ s` is `∼ κ·s`), by fibering the count over the norm. -/
+theorem sum_card_absNorm_isBigO (F : Type*) [Field F] [NumberField F] :
+    (fun n : ℕ => ∑ k ∈ Finset.Icc 1 n,
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ)) =O[atTop]
+      (fun n : ℕ => (n : ℝ)) := by
+  classical
+  -- pointwise domination by the count of ideals of norm at most `n`
+  have hle : ∀ n : ℕ, ∑ k ∈ Finset.Icc 1 n,
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ) ≤
+      (Nat.card {I : Ideal (𝓞 F) // (Ideal.absNorm I : ℝ) ≤ (n : ℝ)} : ℝ) := by
+    intro n
+    haveI hfin : ∀ k : ℕ, Finite {I : Ideal (𝓞 F) // Ideal.absNorm I = k} :=
+      fun k => (Ideal.finite_setOf_absNorm_eq k).to_subtype
+    haveI hfin2 : Finite {I : Ideal (𝓞 F) // (Ideal.absNorm I : ℝ) ≤ (n : ℝ)} := by
+      have hset : {I : Ideal (𝓞 F) | (Ideal.absNorm I : ℝ) ≤ (n : ℝ)} =
+          {I : Ideal (𝓞 F) | Ideal.absNorm I ≤ n} := by
+        ext I
+        simp only [Set.mem_setOf_eq]
+        exact Nat.cast_le
+      have hf : {I : Ideal (𝓞 F) | Ideal.absNorm I ≤ n}.Finite :=
+        Ideal.finite_setOf_absNorm_le n
+      rw [← hset] at hf
+      exact hf.to_subtype
+    rw [← Nat.cast_sum]
+    refine Nat.cast_le.mpr ?_
+    -- reindex the sum as the cardinality of a sigma type
+    have hsum : ∑ k ∈ Finset.Icc 1 n,
+        Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} =
+        Nat.card (Σ k : ↥(Finset.Icc 1 n),
+          {I : Ideal (𝓞 F) // Ideal.absNorm I = (k : ℕ)}) := by
+      rw [Nat.card_sigma, ← Finset.sum_coe_sort]
+    rw [hsum]
+    -- and inject it into the ideals of norm at most `n`
+    have hmem : ∀ p : (Σ k : ↥(Finset.Icc 1 n),
+        {I : Ideal (𝓞 F) // Ideal.absNorm I = (k : ℕ)}),
+        (Ideal.absNorm p.2.1 : ℝ) ≤ (n : ℝ) := by
+      intro p
+      rw [p.2.2]
+      exact_mod_cast (Finset.mem_Icc.mp p.1.2).2
+    refine Nat.card_le_card_of_injective (fun p => ⟨p.2.1, hmem p⟩) ?_
+    rintro ⟨⟨k, hk⟩, ⟨I, hI⟩⟩ ⟨⟨k', hk'⟩, ⟨I', hI'⟩⟩ h
+    have hII : I = I' := congrArg Subtype.val h
+    subst hII
+    have hkk : k = k' := by
+      rw [← show Ideal.absNorm I = k from hI, ← show Ideal.absNorm I = k' from hI']
+    subst hkk
+    rfl
+  -- the ideal count is `O(s)` by the counting asymptotics
+  have h2 : (fun s : ℝ =>
+      (Nat.card {I : Ideal (𝓞 F) // (Ideal.absNorm I : ℝ) ≤ s} : ℝ)) =O[atTop]
+      (fun s : ℝ => s) := by
+    have h5 : (fun s : ℝ =>
+        ((Nat.card {I : Ideal (𝓞 F) // (Ideal.absNorm I : ℝ) ≤ s} : ℝ) / s) * s)
+        =O[atTop] (fun s : ℝ => (1 : ℝ) * s) :=
+      ((NumberField.Ideal.tendsto_norm_le_div_atTop F).isBigO_one (F := ℝ)).mul
+        (isBigO_refl _ _)
+    have h4 : (fun s : ℝ =>
+        ((Nat.card {I : Ideal (𝓞 F) // (Ideal.absNorm I : ℝ) ≤ s} : ℝ) / s) * s)
+        =ᶠ[atTop] (fun s : ℝ =>
+          (Nat.card {I : Ideal (𝓞 F) // (Ideal.absNorm I : ℝ) ≤ s} : ℝ)) := by
+      filter_upwards [eventually_gt_atTop (0 : ℝ)] with s hs
+      rw [div_mul_cancel₀ _ hs.ne']
+    exact h5.congr' h4 (Filter.Eventually.of_forall fun s => one_mul s)
+  have h6 := h2.comp_tendsto tendsto_natCast_atTop_atTop
+  refine (Asymptotics.isBigO_of_le _ fun n => ?_).trans h6
+  rw [Real.norm_of_nonneg (Finset.sum_nonneg fun k _ => Nat.cast_nonneg _),
+    Function.comp_apply, Real.norm_of_nonneg (Nat.cast_nonneg _)]
+  exact hle n
+
+/-- **Abel summation transfer of power-saving cancellation to
+log-weighted sums**: if the partial sums of `c` are `O(n^r)` with
+`r < 1`, then the partial sums of `k ↦ log k · c k` are `O(n^{r'})` for
+`r' = (1+r)/2`, with an explicit constant. Proven by Abel summation
+(`sum_mul_eq_sub_integral_mul₀'`) against `t ↦ log t`, the bound
+`log t ≤ t^{r'-r}/(r'-r)`, and `∫_1^n t^{r-1} ≤ n^r/r`. -/
+theorem exists_forall_norm_sum_log_mul_le_rpow {c : ℕ → ℂ} {r C : ℝ}
+    (hr0 : 0 < r) (hr1 : r < 1) (hC : 0 ≤ C) (hc0 : c 0 = 0)
+    (hbound : ∀ n : ℕ, ‖∑ k ∈ Finset.Icc 1 n, c k‖ ≤ C * (n : ℝ) ^ r) :
+    ∃ D : ℝ, 0 ≤ D ∧ ∀ n : ℕ,
+      ‖∑ k ∈ Finset.Icc 1 n, Complex.log (k : ℂ) * c k‖ ≤
+        D * (n : ℝ) ^ ((1 + r) / 2) := by
+  have hδ : 0 < (1 + r) / 2 - r := by linarith
+  refine ⟨C / ((1 + r) / 2 - r) + C / r, by positivity, fun n => ?_⟩
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · rw [show Finset.Icc 1 0 = (∅ : Finset ℕ) by rfl, Finset.sum_empty, norm_zero,
+      Nat.cast_zero, Real.zero_rpow (by positivity), mul_zero]
+  have hn1 : (1 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
+  have hn0 : (0 : ℝ) < (n : ℝ) := by linarith
+  -- the `Icc 0` sums shed their `k = 0` term
+  have hsplit : Finset.Icc 0 n = insert 0 (Finset.Icc 1 n) := by
+    ext k
+    simp only [Finset.mem_Icc, Finset.mem_insert]
+    omega
+  have hshift : ∀ m : ℕ, ∑ k ∈ Finset.Icc 0 m, c k = ∑ k ∈ Finset.Icc 1 m, c k := by
+    intro m
+    have hsplit' : Finset.Icc 0 m = insert 0 (Finset.Icc 1 m) := by
+      ext k
+      simp only [Finset.mem_Icc, Finset.mem_insert]
+      omega
+    rw [hsplit', Finset.sum_insert (by simp), hc0, zero_add]
+  -- differentiability and derivative of the (complexified) logarithm
+  have hlogD : ∀ t ∈ Set.Icc (1 : ℝ) (n : ℝ), DifferentiableAt ℝ
+      (fun t : ℝ => ((Real.log t : ℝ) : ℂ)) t := by
+    intro t ht
+    have ht0 : t ≠ 0 := by
+      have := ht.1
+      intro h
+      rw [h] at this
+      linarith
+    exact ((Real.hasDerivAt_log ht0).ofReal_comp).differentiableAt
+  have hderiv : ∀ t ∈ Set.Icc (1 : ℝ) (n : ℝ),
+      deriv (fun t : ℝ => ((Real.log t : ℝ) : ℂ)) t = ((t⁻¹ : ℝ) : ℂ) := by
+    intro t ht
+    have ht0 : t ≠ 0 := by
+      have := ht.1
+      intro h
+      rw [h] at this
+      linarith
+    exact ((Real.hasDerivAt_log ht0).ofReal_comp).deriv
+  have hinvint : MeasureTheory.IntegrableOn
+      (fun t : ℝ => ((t⁻¹ : ℝ) : ℂ)) (Set.Icc (1 : ℝ) (n : ℝ)) := by
+    refine (Complex.continuous_ofReal.comp_continuousOn ?_).integrableOn_Icc
+    refine continuousOn_id.inv₀ fun t ht => ?_
+    intro h
+    rw [id_eq] at h
+    rw [h] at ht
+    exact absurd ht.1 (by norm_num)
+  have hint : MeasureTheory.IntegrableOn
+      (deriv (fun t : ℝ => ((Real.log t : ℝ) : ℂ))) (Set.Icc (1 : ℝ) (n : ℝ)) :=
+    hinvint.congr_fun (fun t ht => (hderiv t ht).symm) measurableSet_Icc
+  -- Abel summation against `log`
+  have habel := sum_mul_eq_sub_integral_mul₀'
+    (f := fun t : ℝ => ((Real.log t : ℝ) : ℂ)) c hc0 n hlogD hint
+  -- pass from `Icc 0` to `Icc 1` and from `Real.log` to `Complex.log`
+  have hlhs : ∑ k ∈ Finset.Icc 0 n, ((Real.log (k : ℝ) : ℝ) : ℂ) * c k =
+      ∑ k ∈ Finset.Icc 1 n, Complex.log (k : ℂ) * c k := by
+    rw [hsplit, Finset.sum_insert (by simp), hc0, mul_zero, zero_add]
+    refine Finset.sum_congr rfl fun k hk => ?_
+    rw [Complex.ofReal_log (Nat.cast_nonneg k)]
+    norm_num
+  rw [hlhs, hshift n] at habel
+  rw [habel]
+  -- bound the two terms
+  have hterm1 : ‖((Real.log (n : ℝ) : ℝ) : ℂ) * ∑ k ∈ Finset.Icc 1 n, c k‖ ≤
+      C / ((1 + r) / 2 - r) * (n : ℝ) ^ ((1 + r) / 2) := by
+    rw [norm_mul, Complex.norm_real,
+      Real.norm_of_nonneg (Real.log_nonneg hn1)]
+    calc Real.log (n : ℝ) * ‖∑ k ∈ Finset.Icc 1 n, c k‖
+        ≤ ((n : ℝ) ^ ((1 + r) / 2 - r) / ((1 + r) / 2 - r)) * (C * (n : ℝ) ^ r) := by
+          refine mul_le_mul (Real.log_le_rpow_div (Nat.cast_nonneg n) hδ)
+            (hbound n) (norm_nonneg _) (by positivity)
+      _ = C / ((1 + r) / 2 - r) * (n : ℝ) ^ ((1 + r) / 2) := by
+          rw [div_mul_eq_mul_div,
+            show (n : ℝ) ^ ((1 + r) / 2 - r) * (C * (n : ℝ) ^ r) =
+              C * ((n : ℝ) ^ r * (n : ℝ) ^ ((1 + r) / 2 - r)) by ring,
+            ← Real.rpow_add hn0,
+            show r + ((1 + r) / 2 - r) = (1 + r) / 2 by ring]
+          ring
+  have hterm2 : ‖∫ t in Set.Ioc (1 : ℝ) (n : ℝ),
+      deriv (fun t : ℝ => ((Real.log t : ℝ) : ℂ)) t *
+        ∑ k ∈ Finset.Icc 0 ⌊t⌋₊, c k‖ ≤ C / r * (n : ℝ) ^ ((1 + r) / 2) := by
+    have hdom : MeasureTheory.IntegrableOn
+        (fun t : ℝ => C * t ^ (r - 1)) (Set.Ioc (1 : ℝ) (n : ℝ)) := by
+      have hcont : ContinuousOn (fun t : ℝ => C * t ^ (r - 1))
+          (Set.Icc (1 : ℝ) (n : ℝ)) := by
+        refine ContinuousOn.mul continuousOn_const ?_
+        refine continuousOn_id.rpow_const fun t ht => Or.inl ?_
+        intro h
+        rw [id_eq] at h
+        rw [h] at ht
+        exact absurd ht.1 (by norm_num)
+      exact hcont.integrableOn_Icc.mono_set Set.Ioc_subset_Icc_self
+    have hbnd : ∀ t ∈ Set.Ioc (1 : ℝ) (n : ℝ),
+        ‖deriv (fun t : ℝ => ((Real.log t : ℝ) : ℂ)) t *
+          ∑ k ∈ Finset.Icc 0 ⌊t⌋₊, c k‖ ≤ C * t ^ (r - 1) := by
+      intro t ht
+      have ht1 : (1 : ℝ) < t := ht.1
+      have ht0 : (0 : ℝ) < t := lt_trans one_pos ht1
+      rw [norm_mul, hderiv t ⟨le_of_lt ht1, ht.2⟩, Complex.norm_real,
+        Real.norm_of_nonneg (inv_nonneg.mpr ht0.le), hshift ⌊t⌋₊]
+      calc t⁻¹ * ‖∑ k ∈ Finset.Icc 1 ⌊t⌋₊, c k‖
+          ≤ t⁻¹ * (C * t ^ r) := by
+            refine mul_le_mul_of_nonneg_left ?_ (inv_nonneg.mpr ht0.le)
+            refine le_trans (hbound ⌊t⌋₊) ?_
+            exact mul_le_mul_of_nonneg_left
+              (Real.rpow_le_rpow (Nat.cast_nonneg _) (Nat.floor_le ht0.le) hr0.le)
+              hC
+        _ = C * t ^ (r - 1) := by
+            rw [← Real.rpow_neg_one t, mul_comm (t ^ (-1 : ℝ)) _, mul_assoc,
+              ← Real.rpow_add ht0, show r + -1 = r - 1 by ring]
+    refine le_trans (MeasureTheory.norm_integral_le_of_norm_le hdom
+      ((MeasureTheory.ae_restrict_iff' measurableSet_Ioc).mpr
+        (Filter.Eventually.of_forall hbnd))) ?_
+    rw [← intervalIntegral.integral_of_le hn1,
+      intervalIntegral.integral_const_mul,
+      integral_rpow (Or.inl (by linarith : (-1 : ℝ) < r - 1)),
+      show r - 1 + 1 = r by ring, Real.one_rpow]
+    calc C * (((n : ℝ) ^ r - 1) / r) ≤ C * ((n : ℝ) ^ r / r) := by
+          refine mul_le_mul_of_nonneg_left ?_ hC
+          gcongr
+          linarith
+      _ ≤ C / r * (n : ℝ) ^ ((1 + r) / 2) := by
+          rw [show C * ((n : ℝ) ^ r / r) = C / r * (n : ℝ) ^ r by ring]
+          refine mul_le_mul_of_nonneg_left ?_ (by positivity)
+          exact Real.rpow_le_rpow_of_exponent_le hn1 (by linarith)
+  calc ‖((Real.log (n : ℝ) : ℝ) : ℂ) * ∑ k ∈ Finset.Icc 1 n, c k -
+        ∫ t in Set.Ioc (1 : ℝ) (n : ℝ),
+          deriv (fun t : ℝ => ((Real.log t : ℝ) : ℂ)) t *
+            ∑ k ∈ Finset.Icc 0 ⌊t⌋₊, c k‖
+      ≤ ‖((Real.log (n : ℝ) : ℝ) : ℂ) * ∑ k ∈ Finset.Icc 1 n, c k‖ +
+        ‖∫ t in Set.Ioc (1 : ℝ) (n : ℝ),
+          deriv (fun t : ℝ => ((Real.log t : ℝ) : ℂ)) t *
+            ∑ k ∈ Finset.Icc 0 ⌊t⌋₊, c k‖ := norm_sub_le _ _
+    _ ≤ C / ((1 + r) / 2 - r) * (n : ℝ) ^ ((1 + r) / 2) +
+        C / r * (n : ℝ) ^ ((1 + r) / 2) := add_le_add hterm1 hterm2
+    _ = (C / ((1 + r) / 2 - r) + C / r) * (n : ℝ) ^ ((1 + r) / 2) := by ring
+
+open Filter Asymptotics MeasureTheory in
+/-- **Uniform bound for an `L`-series with power-saving coefficient
+cancellation**: if the partial sums of `c` are `≤ C·n^r` with
+`0 < r < 1`, then for real `s > 1` the `L`-series of `c` is bounded by
+`s·C/(s-r)`. Via the integral representation `LSeries_eq_mul_integral`
+(`L(s) = s·∫_{t>1} A(⌊t⌋)·t^{-s-1}`) and the dominated bound
+`‖A(⌊t⌋)‖·t^{-s-1} ≤ C·t^{r-s-1}` with
+`∫_{t>1} t^{r-s-1} = 1/(s-r)`. -/
+theorem norm_LSeries_le_mul_div_of_forall_norm_sum_le {c : ℕ → ℂ} {r C : ℝ}
+    (hr0 : 0 < r) (hr1 : r < 1) (hC : 0 ≤ C)
+    (hbound : ∀ n : ℕ, ‖∑ k ∈ Finset.Icc 1 n, c k‖ ≤ C * (n : ℝ) ^ r)
+    {s : ℝ} (hs : 1 < s) (hsum : LSeriesSummable c (s : ℂ)) :
+    ‖LSeries c (s : ℂ)‖ ≤ s * C / (s - r) := by
+  have hs0 : (0 : ℝ) < s := lt_trans one_pos hs
+  have hsr : (0 : ℝ) < s - r := by linarith
+  have hrs : r < ((s : ℂ)).re := by rw [Complex.ofReal_re]; linarith
+  have hO : (fun n : ℕ => ∑ k ∈ Finset.Icc 1 n, c k) =O[atTop]
+      (fun n : ℕ => (n : ℝ) ^ r) := by
+    refine Asymptotics.IsBigO.of_bound C (Filter.Eventually.of_forall fun n => ?_)
+    rw [Real.norm_of_nonneg (Real.rpow_nonneg (Nat.cast_nonneg n) r)]
+    exact hbound n
+  rw [LSeries_eq_mul_integral c hr0.le hrs hsum hO, norm_mul, Complex.norm_real,
+    Real.norm_of_nonneg hs0.le, mul_div_assoc]
+  refine mul_le_mul_of_nonneg_left ?_ hs0.le
+  -- dominate the integrand
+  have hint : IntegrableOn (fun t : ℝ => C * t ^ (r - s - 1)) (Set.Ioi (1 : ℝ)) :=
+    (integrableOn_Ioi_rpow_of_lt (by linarith) one_pos).const_mul C
+  have hbnd : ∀ t ∈ Set.Ioi (1 : ℝ),
+      ‖(∑ k ∈ Finset.Icc 1 ⌊t⌋₊, c k) * (t : ℂ) ^ (-((s : ℂ) + 1))‖ ≤
+        C * t ^ (r - s - 1) := by
+    intro t ht
+    have ht0 : (0 : ℝ) < t := lt_trans one_pos ht
+    rw [norm_mul, Complex.norm_cpow_eq_rpow_re_of_pos ht0]
+    have h1 : ‖∑ k ∈ Finset.Icc 1 ⌊t⌋₊, c k‖ ≤ C * t ^ r := by
+      refine le_trans (hbound ⌊t⌋₊) ?_
+      exact mul_le_mul_of_nonneg_left
+        (Real.rpow_le_rpow (Nat.cast_nonneg _) (Nat.floor_le ht0.le) hr0.le) hC
+    have h2 : (-((s : ℂ) + 1)).re = -(s + 1) := by simp
+    rw [h2]
+    calc ‖∑ k ∈ Finset.Icc 1 ⌊t⌋₊, c k‖ * t ^ (-(s + 1))
+        ≤ (C * t ^ r) * t ^ (-(s + 1)) :=
+          mul_le_mul_of_nonneg_right h1 (Real.rpow_nonneg ht0.le _)
+      _ = C * t ^ (r - s - 1) := by
+          rw [mul_assoc, ← Real.rpow_add ht0,
+            show r + -(s + 1) = r - s - 1 by ring]
+  refine le_trans (norm_integral_le_of_norm_le hint
+    ((ae_restrict_iff' measurableSet_Ioi).mpr
+      (Filter.Eventually.of_forall hbnd))) ?_
+  rw [MeasureTheory.integral_const_mul, integral_Ioi_rpow_of_lt (by linarith) one_pos,
+    Real.one_rpow]
+  rw [show r - s - 1 + 1 = -(s - r) by ring, div_neg, neg_div, neg_neg,
+    mul_one_div]
+
+open IsDedekindDomain in
+/-- **Power-saving cancellation in the twisted Hecke coefficient sums**
+(sorry leaf) — THE deep counting input of the analytic-continuation
+half, isolated: for `χ mod ℓ` nontrivial on the image of `Gal(E/F)`
+(hypothesis `hχ`), the partial sums
+`∑_{k ≤ n} χ(k)·#{I : N(I) = k}` are bounded by `C·n^r` for some
+`r < 1`. This is the classical Weber–Landau ideal counting with error
+term: `#{I : N(I) ≤ x, [I] = 𝔠} = κ₀·x + O(x^{1-1/d})` uniformly over
+classes `𝔠` of the ray-type invariant `(class group, N mod ℓ)`, so the
+character sum telescopes to the error terms since `χ` averages to zero
+over the norm-residues hit by each fixed class — the nontriviality
+`hχ` on the image of `Gal(E/F)` (which is generated by the Frobenius
+norm-residues `N P mod ℓ`) is exactly what makes the main terms cancel.
+The mathlib pin has the leading term
+(`NumberField.Ideal.tendsto_norm_le_and_mk_eq_div_atTop`) but no error
+term; the lattice-point counting with Lipschitz-boundary error is the
+missing ingredient. -/
+theorem exists_forall_norm_sum_dirichletCharacter_mul_card_absNorm_le_rpow
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (χ : DirichletCharacter ℂ ℓ)
+    (hχ : ∃ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n ∧ χ (n : ZMod ℓ) ≠ 1) :
+    ∃ r C : ℝ, 0 < r ∧ r < 1 ∧ 0 ≤ C ∧ ∀ n : ℕ,
+      ‖∑ k ∈ Finset.Icc 1 n, χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)‖ ≤
+        C * (n : ℝ) ^ r :=
+  sorry
+
 open IsDedekindDomain in
 /-- **Uniform upper bounds for the twisted `L`-series and its derivative
-on `(1, 2]`** (sorry leaf) — the analytic-continuation half of the good
-behaviour of `L(s, χ)`, isolated from any nonvanishing: for `χ mod ℓ`
-nontrivial on the image of `Gal(E/F)` (hypothesis `hχ`), the twisted
-ideal `L`-series and its derivative are bounded uniformly on real
-`s ∈ (1, 2]`. Intended proof: the Hecke-counting cancellation
-`‖∑_{k ≤ n} χ(k)·#{I : N(I) = k}‖ = O(n^r)` for some `r < 1` (the
-power-saving per-norm-class ideal count, the pin's missing deep
-ingredient) feeds `LSeries_eq_mul_integral`
-(`Mathlib.NumberTheory.LSeries.SumCoeff`): for real `s > 1`,
-`L(s) = s·∫_{t > 1} A(⌊t⌋)·t^{-s-1}` with `‖A(⌊t⌋)‖ ≤ C·t^r`, so
-`‖L(s)‖ ≤ 2·C/(1 - r)` uniformly; `deriv L = -LSeries (log·f)`
-(`LSeries_deriv`), and discrete Abel summation turns the same
-cancellation into `∑_{k ≤ n} log k · χ(k)·#{I} = O(n^{r'})` for any
-`r < r' < 1`, giving the same integral bound for the derivative. -/
+on `(1, 2]`** — the analytic-continuation half of the good behaviour of
+`L(s, χ)`, isolated from any nonvanishing: for `χ mod ℓ` nontrivial on
+the image of `Gal(E/F)` (hypothesis `hχ`), the twisted ideal `L`-series
+and its derivative are bounded uniformly on real `s ∈ (1, 2]`.
+
+DERIVED from the single sorried counting core
+`exists_forall_norm_sum_dirichletCharacter_mul_card_absNorm_le_rpow`
+(the power-saving Hecke cancellation `‖∑_{k ≤ n} χ(k)·#{I : N(I) =
+k}‖ ≤ C·n^r`, `r < 1`) through three PROVEN transfer lemmas:
+`norm_LSeries_le_mul_div_of_forall_norm_sum_le` (integral
+representation `LSeries_eq_mul_integral` + dominated bound gives
+`‖L(s)‖ ≤ s·C/(s-r) ≤ 2C/(1-r)`), `LSeries_deriv`/`logMul` with
+`exists_forall_norm_sum_log_mul_le_rpow` (Abel summation transfers the
+cancellation to the log-weighted sums with exponent `r' = (1+r)/2`),
+and `sum_card_absNorm_isBigO` (linear norm-coefficient growth, giving
+summability and the abscissa bound `≤ 1`). -/
 theorem exists_forall_norm_LSeries_le_and_norm_deriv_le
     {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
     [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
@@ -2142,26 +2797,246 @@ theorem exists_forall_norm_LSeries_le_and_norm_deriv_le
       ‖LSeries (fun k => χ (k : ZMod ℓ) *
           (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) s‖ ≤ C ∧
       ‖deriv (LSeries (fun k => χ (k : ZMod ℓ) *
-          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ))) s‖ ≤ C :=
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ))) s‖ ≤ C := by
+  classical
+  obtain ⟨r, C, hr0, hr1, hC, hbound⟩ :=
+    exists_forall_norm_sum_dirichletCharacter_mul_card_absNorm_le_rpow
+      hℓ hζ χ hχ
+  haveI : Fact (1 < ℓ) := ⟨hℓ.one_lt⟩
+  have hc0 : (fun k : ℕ => χ (k : ZMod ℓ) *
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) 0 = 0 := by
+    simp only [Nat.cast_zero]
+    rw [MulChar.map_nonunit χ not_isUnit_zero, zero_mul]
+  obtain ⟨D, hD, hlogbound⟩ :=
+    exists_forall_norm_sum_log_mul_le_rpow hr0 hr1 hC hc0 hbound
+  -- the norm-coefficient sums grow linearly
+  have hOnorm : (fun n : ℕ => ∑ k ∈ Finset.Icc 1 n,
+      ‖χ (k : ZMod ℓ) * (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)‖)
+      =O[Filter.atTop] (fun n : ℕ => (n : ℝ) ^ (1 : ℝ)) := by
+    have h1 : ∀ n : ℕ, ‖∑ k ∈ Finset.Icc 1 n, ‖χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)‖‖ ≤
+        ‖∑ k ∈ Finset.Icc 1 n,
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ)‖ := by
+      intro n
+      rw [Real.norm_of_nonneg (Finset.sum_nonneg fun k _ => norm_nonneg _),
+        Real.norm_of_nonneg (Finset.sum_nonneg fun k _ => Nat.cast_nonneg _)]
+      refine Finset.sum_le_sum fun k _ => ?_
+      rw [norm_mul, Complex.norm_natCast]
+      exact mul_le_of_le_one_left (Nat.cast_nonneg _)
+        (DirichletCharacter.norm_le_one χ _)
+    refine (Asymptotics.isBigO_of_le _ h1).trans
+      ((sum_card_absNorm_isBigO F).trans
+        (Asymptotics.isBigO_of_le _ fun n => ?_))
+    rw [Real.rpow_one]
+  -- summability on `re > 1` and abscissa control
+  have hsummable : ∀ s : ℝ, 1 < s → LSeriesSummable (fun k : ℕ => χ (k : ZMod ℓ) *
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ) := by
+    intro s hs
+    refine LSeriesSummable_of_sum_norm_bigO hOnorm zero_le_one ?_
+    rw [Complex.ofReal_re]
+    exact hs
+  have habs : LSeries.abscissaOfAbsConv (fun k : ℕ => χ (k : ZMod ℓ) *
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) ≤ (1 : ℝ) :=
+    LSeries.abscissaOfAbsConv_le_of_forall_lt_LSeriesSummable
+      fun y hy => hsummable y hy
+  have hr'0 : 0 < (1 + r) / 2 := by linarith
+  have hr'1 : (1 + r) / 2 < 1 := by linarith
+  refine ⟨max (2 * C / (1 - r)) (2 * D / (1 - (1 + r) / 2)),
+    fun s hs1 hs2 => ?_⟩
+  have hs0 : (0 : ℝ) < s := lt_trans one_pos hs1
+  have habs_lt : LSeries.abscissaOfAbsConv (fun k : ℕ => χ (k : ZMod ℓ) *
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) < (s : ℂ).re := by
+    refine lt_of_le_of_lt habs ?_
+    rw [Complex.ofReal_re]
+    exact_mod_cast hs1
+  constructor
+  · calc ‖LSeries (fun k : ℕ => χ (k : ZMod ℓ) *
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖
+        ≤ s * C / (s - r) :=
+          norm_LSeries_le_mul_div_of_forall_norm_sum_le hr0 hr1 hC hbound hs1
+            (hsummable s hs1)
+      _ ≤ 2 * C / (1 - r) := by gcongr
+      _ ≤ max (2 * C / (1 - r)) (2 * D / (1 - (1 + r) / 2)) := le_max_left _ _
+  · rw [LSeries_deriv habs_lt, norm_neg]
+    have hlogsum : LSeriesSummable (LSeries.logMul (fun k : ℕ => χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ))) (s : ℂ) :=
+      LSeriesSummable_logMul_of_lt_re habs_lt
+    have hlogbound' : ∀ n : ℕ, ‖∑ k ∈ Finset.Icc 1 n,
+        (LSeries.logMul (fun k : ℕ => χ (k : ZMod ℓ) *
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ))) k‖ ≤
+        D * (n : ℝ) ^ ((1 + r) / 2) := hlogbound
+    calc ‖LSeries (LSeries.logMul (fun k : ℕ => χ (k : ZMod ℓ) *
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ))) (s : ℂ)‖
+        ≤ s * D / (s - (1 + r) / 2) :=
+          norm_LSeries_le_mul_div_of_forall_norm_sum_le hr'0 hr'1 hD hlogbound'
+            hs1 hlogsum
+      _ ≤ 2 * D / (1 - (1 + r) / 2) := by gcongr
+      _ ≤ max (2 * C / (1 - r)) (2 * D / (1 - (1 + r) / 2)) := le_max_right _ _
+
+open Filter Asymptotics in
+/-- Absolute convergence of the twisted ideal `L`-series for real
+`s > 1`, from the linear growth of the coefficient sums
+(`sum_card_absNorm_isBigO`). -/
+theorem lSeriesSummable_dirichletCharacter_mul_card
+    (F : Type*) [Field F] [NumberField F] {ℓ : ℕ} (χ : DirichletCharacter ℂ ℓ)
+    {s : ℝ} (hs : 1 < s) :
+    LSeriesSummable (fun k : ℕ => χ (k : ZMod ℓ) *
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ) := by
+  have hOnorm : (fun n : ℕ => ∑ k ∈ Finset.Icc 1 n,
+      ‖χ (k : ZMod ℓ) * (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)‖)
+      =O[atTop] (fun n : ℕ => (n : ℝ) ^ (1 : ℝ)) := by
+    have h1 : ∀ n : ℕ, ‖∑ k ∈ Finset.Icc 1 n, ‖χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)‖‖ ≤
+        ‖∑ k ∈ Finset.Icc 1 n,
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ)‖ := by
+      intro n
+      rw [Real.norm_of_nonneg (Finset.sum_nonneg fun k _ => norm_nonneg _),
+        Real.norm_of_nonneg (Finset.sum_nonneg fun k _ => Nat.cast_nonneg _)]
+      refine Finset.sum_le_sum fun k _ => ?_
+      rw [norm_mul, Complex.norm_natCast]
+      exact mul_le_of_le_one_left (Nat.cast_nonneg _)
+        (DirichletCharacter.norm_le_one χ _)
+    refine (Asymptotics.isBigO_of_le _ h1).trans
+      ((sum_card_absNorm_isBigO F).trans
+        (Asymptotics.isBigO_of_le _ fun n => ?_))
+    rw [Real.rpow_one]
+  refine LSeriesSummable_of_sum_norm_bigO hOnorm zero_le_one ?_
+  rw [Complex.ofReal_re]
+  exact hs
+
+open Filter MeasureTheory in
+/-- **Right continuation of an `L`-series with power-saving coefficient
+cancellation to `s = 1`**: if the partial sums of `c` are `≤ C·n^r`
+with `0 < r < 1` and the `L`-series converges for real `s > 1`, then as
+`s → 1⁺` the `L`-series tends to the extended value
+`∫_{t > 1} A(⌊t⌋)·t^{-2}`. Via the integral representation on `(1, ∞)`
+and dominated convergence with the `s`-independent dominator
+`C·t^{r-2}`. -/
+theorem tendsto_LSeries_nhdsGT_one_of_forall_norm_sum_le {c : ℕ → ℂ} {r C : ℝ}
+    (hr0 : 0 < r) (hr1 : r < 1) (hC : 0 ≤ C)
+    (hbound : ∀ n : ℕ, ‖∑ k ∈ Finset.Icc 1 n, c k‖ ≤ C * (n : ℝ) ^ r)
+    (hsum : ∀ s : ℝ, 1 < s → LSeriesSummable c (s : ℂ)) :
+    Tendsto (fun s : ℝ => LSeries c (s : ℂ)) (nhdsWithin 1 (Set.Ioi 1))
+      (nhds (∫ t in Set.Ioi (1 : ℝ),
+        (∑ k ∈ Finset.Icc 1 ⌊t⌋₊, c k) * (t : ℂ) ^ (-(2 : ℂ)))) := by
+  have hO : (fun n : ℕ => ∑ k ∈ Finset.Icc 1 n, c k) =O[atTop]
+      (fun n : ℕ => (n : ℝ) ^ r) := by
+    refine Asymptotics.IsBigO.of_bound C (Filter.Eventually.of_forall fun n => ?_)
+    rw [Real.norm_of_nonneg (Real.rpow_nonneg (Nat.cast_nonneg n) r)]
+    exact hbound n
+  -- the integral representation holds on the filter
+  have heq : ∀ᶠ s : ℝ in nhdsWithin 1 (Set.Ioi 1),
+      (s : ℂ) * ∫ t in Set.Ioi (1 : ℝ),
+        (∑ k ∈ Finset.Icc 1 ⌊t⌋₊, c k) * (t : ℂ) ^ (-((s : ℂ) + 1)) =
+      LSeries c (s : ℂ) := by
+    filter_upwards [self_mem_nhdsWithin] with s hs
+    have hs1 : (1 : ℝ) < s := hs
+    exact (LSeries_eq_mul_integral c hr0.le
+      (by rw [Complex.ofReal_re]; linarith) (hsum s hs1) hO).symm
+  -- dominated convergence for the integral factor
+  have hDCT : Tendsto (fun s : ℝ => ∫ t in Set.Ioi (1 : ℝ),
+      (∑ k ∈ Finset.Icc 1 ⌊t⌋₊, c k) * (t : ℂ) ^ (-((s : ℂ) + 1)))
+      (nhdsWithin 1 (Set.Ioi 1))
+      (nhds (∫ t in Set.Ioi (1 : ℝ),
+        (∑ k ∈ Finset.Icc 1 ⌊t⌋₊, c k) * (t : ℂ) ^ (-(2 : ℂ)))) := by
+    refine tendsto_integral_filter_of_dominated_convergence
+      (fun t => C * t ^ (r - 2)) ?_ ?_ ?_ ?_
+    · -- a.e.-strong measurability of each integrand
+      refine Filter.Eventually.of_forall fun s => ?_
+      refine AEStronglyMeasurable.mul ?_ ?_
+      · exact ((Measurable.of_discrete
+            (f := fun n : ℕ => ∑ k ∈ Finset.Icc 1 n, c k)).comp
+          (Nat.measurable_floor (R := ℝ))).aestronglyMeasurable
+      · refine (ContinuousOn.aestronglyMeasurable ?_ measurableSet_Ioi)
+        intro t ht
+        have ht0 : (0 : ℝ) < t := lt_trans one_pos ht
+        exact ((continuousAt_cpow_const
+          (Complex.ofReal_mem_slitPlane.mpr ht0)).comp
+            Complex.continuous_ofReal.continuousAt).continuousWithinAt
+    · -- uniform dominated bound near `1⁺`
+      filter_upwards [self_mem_nhdsWithin] with s hs
+      have hs1 : (1 : ℝ) < s := hs
+      refine (ae_restrict_iff' measurableSet_Ioi).mpr
+        (Filter.Eventually.of_forall fun t ht => ?_)
+      have ht1 : (1 : ℝ) < t := ht
+      have ht0 : (0 : ℝ) < t := lt_trans one_pos ht1
+      rw [norm_mul, Complex.norm_cpow_eq_rpow_re_of_pos ht0]
+      have h2 : (-((s : ℂ) + 1)).re = -(s + 1) := by simp
+      rw [h2]
+      calc ‖∑ k ∈ Finset.Icc 1 ⌊t⌋₊, c k‖ * t ^ (-(s + 1))
+          ≤ (C * t ^ r) * t ^ (-(2 : ℝ)) := by
+            refine mul_le_mul ?_ ?_ (Real.rpow_nonneg ht0.le _) (by positivity)
+            · refine le_trans (hbound ⌊t⌋₊) ?_
+              exact mul_le_mul_of_nonneg_left
+                (Real.rpow_le_rpow (Nat.cast_nonneg _) (Nat.floor_le ht0.le)
+                  hr0.le) hC
+            · exact Real.rpow_le_rpow_of_exponent_le ht1.le (by linarith)
+        _ = C * t ^ (r - 2) := by
+            rw [mul_assoc, ← Real.rpow_add ht0, show r + -2 = r - 2 by ring]
+    · exact (integrableOn_Ioi_rpow_of_lt (by linarith) one_pos).const_mul C
+    · -- pointwise convergence of the integrand
+      refine (ae_restrict_iff' measurableSet_Ioi).mpr
+        (Filter.Eventually.of_forall fun t ht => ?_)
+      have ht1 : (1 : ℝ) < t := ht
+      have htne : ((t : ℝ) : ℂ) ≠ 0 := by
+        exact_mod_cast (lt_trans one_pos ht1).ne'
+      refine Filter.Tendsto.const_mul _ ?_
+      have hc : Continuous fun s : ℝ => ((t : ℝ) : ℂ) ^ (-((s : ℂ) + 1)) := by
+        refine Continuous.const_cpow ?_ (Or.inl htne)
+        continuity
+      have h3 := hc.tendsto (1 : ℝ)
+      have hval : (-((((1 : ℝ) : ℂ)) + 1)) = (-2 : ℂ) := by norm_num
+      rw [hval] at h3
+      exact h3.mono_left nhdsWithin_le_nhds
+  -- assemble: `s → 1` and `∫ → ∫`
+  have hcoe : Tendsto (fun s : ℝ => (s : ℂ)) (nhdsWithin 1 (Set.Ioi 1))
+      (nhds ((1 : ℝ) : ℂ)) :=
+    (Complex.continuous_ofReal.tendsto 1).mono_left nhdsWithin_le_nhds
+  have hmul := hcoe.mul hDCT
+  rw [Complex.ofReal_one, one_mul] at hmul
+  exact hmul.congr' heq
+
+open IsDedekindDomain in
+/-- **Nonvanishing of the continued twisted `L`-value at `s = 1`**
+(sorry leaf) — the arithmetic core of `L(1, χ) ≠ 0`, isolated from all
+continuation analysis: the extended value
+`∫_{t > 1} A(⌊t⌋)·t^{-2}` of the twisted ideal `L`-series at `s = 1`
+(`A(n) = ∑_{k ≤ n} χ(k)·#{I : N(I) = k}`, the continuation supplied by
+`tendsto_LSeries_nhdsGT_one_of_forall_norm_sum_le`) is nonzero, for
+`χ mod ℓ` nontrivial on the image of `Gal(E/F)`. Intended proof: the
+classical factorization argument over the fixed field `E'` of
+`ker(χ|_{Gal(E/F)})`: `ζ_{E'}(s) = ζ_F(s)·∏_ψ L(s, ψ)·(finitely many
+ramified Euler corrections)`; were the continued value `0`, the simple
+pole of `ζ_F` at `1` (`NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT`,
+`NumberField.dedekindZeta_residue_pos`, both in the pin) would be
+cancelled by the zero, keeping `ζ_{E'}` bounded as `s → 1⁺`,
+contradicting its own divergence (the zeta-half divergence machinery
+proven in this file: `exists_one_lt_lt_tsum_rpow_neg_absNorm`). -/
+theorem integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (χ : DirichletCharacter ℂ ℓ)
+    (hχ : ∃ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n ∧ χ (n : ZMod ℓ) ≠ 1) :
+    (∫ t in Set.Ioi (1 : ℝ),
+      (∑ k ∈ Finset.Icc 1 ⌊t⌋₊, χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) *
+      (t : ℂ) ^ (-(2 : ℂ))) ≠ 0 :=
   sorry
 
 open IsDedekindDomain in
 /-- **The twisted `L`-series is bounded away from `0` just right of
-`s = 1`** (sorry leaf) — the `L(1, χ) ≠ 0` half of the good behaviour,
-isolated on an interval `(1, 1 + η]`: away from `1` the Euler identity
-`L = exp 𝒮` already keeps `L` away from `0`, so ONLY the approach to
-`s = 1` is deep. Intended proof: with the Hecke-counting cancellation
-(see `exists_forall_norm_LSeries_le_and_norm_deriv_le`) the integral
-representation `L(s) = s·∫_{t > 1} A(⌊t⌋)·t^{-s-1}` extends `L`
-continuously to `s = 1` by dominated convergence (dominator
-`C·t^{r-2}`), so it suffices that the continued value
-`L(1) = ∫_{t > 1} A(⌊t⌋)·t^{-2} ≠ 0`; by the classical factorization
-argument over the fixed field `E'` of `ker(χ|_{Gal(E/F)})` (simple
-poles of `ζ_{E'}` and `ζ_F`,
-`NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT` and
-`NumberField.dedekindZeta_residue_pos`, both in the pin), a zero of the
-continued `L` at `1` would keep `ζ_{E'}(s) = ζ_F(s)·∏_ψ L(s, ψ)·(finite
-corrections)` bounded as `s → 1⁺` while it must diverge. -/
+`s = 1`** — the `L(1, χ) ≠ 0` half of the good behaviour, isolated on
+an interval `(1, 1 + η]`. DERIVED from two strictly shallower leaves:
+the continuation
+`tendsto_LSeries_nhdsGT_one_of_forall_norm_sum_le` (PROVEN: the
+integral representation extends `L` continuously to `s = 1` by
+dominated convergence, dominator `C·t^{r-2}`, given the power-saving
+cancellation `exists_forall_norm_sum_dirichletCharacter_mul_card_absNorm_le_rpow`)
+and the sorried arithmetic core
+`integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero` (the
+continued value `L(1) = ∫_{t > 1} A(⌊t⌋)·t^{-2}` is nonzero — the
+classical zeta-factorization argument; see its docstring). With those,
+the lower bound `‖L(1)‖/2` holds on some `(1, 1 + η]` by continuity. -/
 theorem exists_forall_le_norm_LSeries_near_one
     {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
     [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
@@ -2169,8 +3044,36 @@ theorem exists_forall_le_norm_LSeries_near_one
     (hχ : ∃ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n ∧ χ (n : ZMod ℓ) ≠ 1) :
     ∃ η c : ℝ, 0 < η ∧ 0 < c ∧ ∀ s : ℝ, 1 < s → s ≤ 1 + η →
       c ≤ ‖LSeries (fun k => χ (k : ZMod ℓ) *
-          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) s‖ :=
-  sorry
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) s‖ := by
+  classical
+  obtain ⟨r, C, hr0, hr1, hC, hbound⟩ :=
+    exists_forall_norm_sum_dirichletCharacter_mul_card_absNorm_le_rpow
+      hℓ hζ χ hχ
+  -- the continued value at `s = 1` and its nonvanishing
+  have hL1ne := integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero
+    hℓ hζ χ hχ
+  have hL1pos : 0 < ‖∫ t in Set.Ioi (1 : ℝ),
+      (∑ k ∈ Finset.Icc 1 ⌊t⌋₊, χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) *
+      (t : ℂ) ^ (-(2 : ℂ))‖ := norm_pos_iff.mpr hL1ne
+  -- continuation to `1⁺`
+  have htend := tendsto_LSeries_nhdsGT_one_of_forall_norm_sum_le hr0 hr1 hC
+    hbound (fun s hs => lSeriesSummable_dirichletCharacter_mul_card F χ hs)
+  -- eventually the norm exceeds half the limit norm
+  have hev : ∀ᶠ s : ℝ in nhdsWithin 1 (Set.Ioi 1),
+      ‖∫ t in Set.Ioi (1 : ℝ),
+        (∑ k ∈ Finset.Icc 1 ⌊t⌋₊, χ (k : ZMod ℓ) *
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) *
+        (t : ℂ) ^ (-(2 : ℂ))‖ / 2 ≤
+      ‖LSeries (fun k : ℕ => χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖ := by
+    refine htend.norm.eventually ?_
+    filter_upwards [lt_mem_nhds (half_lt_self hL1pos)] with x hx
+    exact hx.le
+  obtain ⟨u, hu, hIoc⟩ := mem_nhdsGT_iff_exists_Ioc_subset.mp hev
+  refine ⟨u - 1, _, by linarith [Set.mem_Ioi.mp hu], half_pos hL1pos,
+    fun s hs1 hs2 => ?_⟩
+  exact hIoc ⟨hs1, by linarith⟩
 
 open IsDedekindDomain in
 /-- **Good behaviour of the twisted `L`-series on `[1, 2]`** —
