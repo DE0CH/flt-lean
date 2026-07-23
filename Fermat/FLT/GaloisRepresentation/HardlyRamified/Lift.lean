@@ -24,7 +24,9 @@ Lecture 4):
   `exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated`,
   and two pure commutative-algebra leaves
   `isNoetherianRing_mvPowerSeries` and
-  `le_height_maximalIdeal_mvPowerSeries` feeding the PROVEN Krull glue
+  `exists_isPrime_chain_mvPowerSeries` (the latter feeding the PROVEN
+  height bound `le_height_maximalIdeal_mvPowerSeries`) feeding the
+  PROVEN Krull glue
   `exists_isPrime_lt_maximalIdeal_of_mvPowerSeries_presentation`)
   plus PROVEN commutative-algebra glue: quotient
   `R` by a prime lying over `(0) ⊆ ℤ_ℓ` and specialize (the
@@ -749,17 +751,53 @@ theorem isNoetherianRing_mvPowerSeries {R : Type*} [CommRing R]
     IsNoetherianRing (MvPowerSeries (Fin g) R) :=
   sorry
 
-/-- **Height of the maximal ideal of `ℤ_ℓ[[x₁,…,x_g]]`** (sorry node,
-pure commutative algebra): at least `g`. Provable from the strict chain
-of primes `(0) ⊂ (x₁) ⊂ (x₁,x₂) ⊂ ⋯ ⊂ (x₁,…,x_g) ≤ 𝔪` — each
-quotient is a power series ring over the domain `ℤ_ℓ` in the remaining
-variables, hence a domain, so each `(x₁,…,xᵢ)` is prime. (The height is
-in fact `g + 1`, the chain extending to `𝔪 = (ℓ, x₁,…,x_g)` on top,
-but `g` is all the Krull glue below needs.) -/
+/-- **Prime chain in `ℤ_ℓ[[x₁,…,x_g]]`** (sorry node, pure commutative
+algebra): a strictly increasing chain of `g + 1` primes inside the
+maximal ideal. The intended chain is
+`(0) ⊂ (x₁) ⊂ (x₁,x₂) ⊂ ⋯ ⊂ (x₁,…,x_g)`: each `(x₁,…,xᵢ)` is the
+kernel of the kill-variables substitution
+`ℤ_ℓ[[x₁,…,x_g]] → ℤ_ℓ[[x_{i+1},…,x_g]]` (`MvPowerSeries.subst`,
+`x_j ↦ 0` for `j ≤ i`, `x_j ↦ x_j` for `j > i`; the kernel is the span
+by splitting each monomial at its least killed variable), and the
+target is a power series ring over the domain `ℤ_ℓ`, hence a domain
+(`MvPowerSeries.NoZeroDivisors`), so the kernel is prime; strictness is
+`x_{i+1} ∈ (x₁,…,x_{i+1}) \ (x₁,…,xᵢ)`, and the top link consists of
+non-units. -/
+theorem exists_isPrime_chain_mvPowerSeries (g : ℕ) :
+    ∃ c : Fin (g + 1) → Ideal (MvPowerSeries (Fin g) ℤ_[ℓ]),
+      StrictMono c ∧ (∀ i, (c i).IsPrime) ∧
+      c (Fin.last g) ≤
+        IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) ℤ_[ℓ]) :=
+  sorry
+
+/-- **Height of the maximal ideal of `ℤ_ℓ[[x₁,…,x_g]]`** (PROVEN
+2026-07-23 modulo the prime-chain leaf above): at least `g`. Walking up
+the chain raises the height by at least one per strict link
+(`Ideal.height_add_one_le_of_lt_of_isPrime`), and the height is
+monotone in the ideal (`Ideal.height_mono`). (The height is in fact
+`g + 1`, the chain extending to `𝔪 = (ℓ, x₁,…,x_g)` on top, but `g`
+is all the Krull glue below needs.) -/
 theorem le_height_maximalIdeal_mvPowerSeries (g : ℕ) :
     (g : ℕ∞) ≤
-      (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) ℤ_[ℓ])).height :=
-  sorry
+      (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) ℤ_[ℓ])).height := by
+  obtain ⟨c, hmono, hprime, hle⟩ :=
+    exists_isPrime_chain_mvPowerSeries (ℓ := ℓ) g
+  have hstep : ∀ i : Fin (g + 1), ((i : ℕ) : ℕ∞) ≤ (c i).height := by
+    intro i
+    induction i using Fin.induction with
+    | zero => simp
+    | succ j ih =>
+      haveI := hprime j.castSucc
+      haveI := hprime j.succ
+      have hlt := Ideal.height_add_one_le_of_lt_of_isPrime
+        (hmono (Fin.castSucc_lt_succ (i := j)))
+      have hcast : ((j.succ : ℕ) : ℕ∞) = ((j.castSucc : ℕ) : ℕ∞) + 1 := by
+        simp
+      rw [hcast]
+      exact le_trans (add_le_add ih le_rfl) hlt
+  have hlast := hstep (Fin.last g)
+  rw [Fin.val_last] at hlast
+  exact hlast.trans (Ideal.height_mono hle)
 
 /-- **Krull glue for the presentation stratum** (PROVEN 2026-07-23
 modulo the two commutative-algebra leaves above — no arithmetic
