@@ -10,6 +10,10 @@ public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 -- openness, the Minkowski triviality, the generic unramifiedness
 -- bridge) used by the derivation of `mod_three_of_stable_line`.
 public import Fermat.FLT.FreyCurve.MazurTorsion
+-- The PROVEN quantitative local-to-global inertia transport
+-- (`inertia_card_dvd_of_card_map_localInertiaGroup_dvd`), consumed by
+-- `inertia_card_dvd_of_map_localInertiaGroup_card_dvd`.
+import Fermat.FLT.FreyCurve.InertiaCardTransport
 -- Irreducible ↔ absolutely irreducible given a 1-dimensional fixed space
 -- (complex conjugation), used by the derivation of `mod_three_reducible`.
 public import Fermat.FLT.KnownIn1980s.RepresentationTheory.OddAbsIrred
@@ -2308,26 +2312,25 @@ theorem not_pow_ramificationIdx_dvd_differentIdeal
       Algebra.trace_prod_apply]
     simpa using hw
 
-/-- **The quantitative local-to-global inertia transport** (sorry
-node, isolated 2026-07-23 as one of the two halves of the
-inertia-order leaf below; the strengthening of `MazurTorsion`'s
+/-- **The quantitative local-to-global inertia transport** (PROVEN
+2026-07-23 — the strengthening of `MazurTorsion`'s
 `exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup` from
 "image trivial ⇒ inertia trivial" to "inertia order divides the image
 order"): for a Galois number field `K = (ker u)^fix` and a prime `Q`
 of `𝓞 K` over `q`, the order of the ideal-inertia subgroup of
 `Gal(K/ℚ)` at `Q` divides any multiple `n` of the order of the image
-under `u` of the local inertia at `q`. Intended proof (no
-representation content — `u` is just a group homomorphism cutting out
-`K`): the restriction `Γ ℚ → Gal(K/ℚ)` has kernel
-`K.fixingSubgroup = ker u`, so the image of the mapped local inertia
-in `Gal(K/ℚ)` has the same order as its image under `u`; the
-Minkowski-style embedding `ι : K → M := ℚ_q(ι K)` of
-`exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup` transports
-the local ramification of `M/ℚ_q` — bounded by the index data of the
-local inertia acting through `u` — onto the ideal-inertia of a
-distinguished prime `Q₀`, and Galois conjugacy of the primes over `q`
-(`Nat.card` of conjugate inertia subgroups agree) moves the bound to
-`Q`. -/
+under `u` of the local inertia at `q`. Immediate from the general
+transport theorem `inertia_card_dvd_of_card_map_localInertiaGroup_dvd`
+of `Fermat.FLT.FreyCurve.InertiaCardTransport` (proven there with `u`
+an arbitrary group homomorphism cutting out `K`): the restriction
+`π : Γ ℚ → Gal(K/ℚ)` has kernel `K.fixingSubgroup = ker u`, so
+`#π(I_q) = #u(I_q)`; the fixed field `K'` of `H := π(I_q)` is fixed
+pointwise by `I_q`, so the Minkowski embedding gives a prime of
+`𝓞 K'` over `q` of ramification index `1`; a prime `Q₀` of `𝓞 K`
+above it then has `e(Q₀|q) = e(Q₀|Q₀') = #I_{Gal(K/K')}(Q₀) ∣
+#Gal(K/K') = #H` (tower multiplicativity plus Lagrange), and
+prime-independence of the inertia order in the Galois extension `K/ℚ`
+(`Ideal.card_inertia_eq_ramificationIdxIn`) moves the bound to `Q`. -/
 theorem inertia_card_dvd_of_map_localInertiaGroup_card_dvd
     (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
     [IsGalois ℚ K]
@@ -2343,23 +2346,85 @@ theorem inertia_card_dvd_of_map_localInertiaGroup_card_dvd
           hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
         (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat))) ∣ n) :
     Nat.card (Q.inertia (K ≃ₐ[ℚ] K)) ∣ n :=
+  inertia_card_dvd_of_card_map_localInertiaGroup_dvd K u hfix hq Q hQ hmem n hn
+
+/-- **Cube-triviality of the local inertia image at `2`** (sorry node,
+isolated 2026-07-23 as the purely REPRESENTATION-THEORETIC half of the
+inertia-image-order leaf below): every element of the local inertia at
+`2` maps under the matrix form `u` to an element of `GL₂(𝔽̄₃)` whose
+cube is `1`. Intended content: by `hρ.isTameAtTwo` the local
+representation at `2` is an extension of the unramified character `δ`
+by `δ⁻¹·χ₃` (the determinant is `χ₃`, unramified at `2`), so every
+inertia element acts by a unipotent matrix fixing the stable flag; a
+unipotent element of `GL₂` in characteristic `3` has cube `1`
+(`(1+N)³ = 1+N³ = 1` for `N` nilpotent, `3 = 0`). -/
+theorem map_localInertiaGroup_at_two_pow_three_eq_one {k : Type u} [Finite k]
+    [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e) :
+    ∀ σ ∈ localInertiaGroup Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+      (u (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ)) ^ 3 = 1 :=
   sorry
 
-/-- **The local inertia image at `2` has order dividing `3`** (sorry
-node, isolated 2026-07-23 as the representation-theoretic half of the
-inertia-order leaf below; no ideal theory): the image under the
-matrix form `u` of the local inertia at `2` is a subgroup of
-`GL₂(𝔽̄₃)` of order dividing `3`. Intended content: by
-`hρ.isTameAtTwo` the local representation at `2` is upper triangular
-with unramified quotient character `δ` (so `δ = 1` on inertia), and
-the determinant `χ₃` is unramified at `2` (so `det = 1` on inertia);
-hence every inertia element maps to a unipotent matrix fixing the
-common flag — an element of the one-parameter group `(𝔽̄₃, +)`, of
-cube `1`. Cyclicity (order `1` or `3`, not merely exponent `3`): the
-wild inertia at `2` is pro-`2`, so its image in the `3`-group is
-trivial, and the image factors through the procyclic tame quotient —
-a topologically monogenic group, whose finite exponent-`3` quotients
-have order dividing `3`. -/
+/-- **The procyclic-tame-inertia generator at `2`** (sorry node,
+isolated 2026-07-23 as the purely LOCAL-STRUCTURE half of the
+inertia-image-order leaf below — the analogue at `q = 2` of the
+`q = 3` leaf `exists_localInertia_three_generator`, with the abelian
+target replaced by an arbitrary group and the `3`-torsion-freeness by
+the cube-triviality hypothesis `hcube`): for a homomorphism `u` of
+`Γ ℚ` with open kernel whose values on the mapped local inertia at
+`2` all cube to `1`, the image of the local inertia at `2` is
+generated by a single element. Intended proof (Serre, *Corps Locaux*
+IV): the open kernel cuts out a finite Galois level at which the
+image of the full local inertia is the finite-level inertia group
+`I`; the wild part `P ⊴ I` is a `2`-group whose image consists of
+elements of `2`-power order which also cube to `1` (`hcube`), hence
+is trivial; the tame quotient `I/P` is (pro)cyclic, so the image of
+`I`, a quotient of the finite cyclic group `I/P`, is generated by
+the image of one element. -/
+theorem exists_localInertia_two_generator_of_cube_one {G' : Type*} [Group G']
+    (u : Γ ℚ →* G') (hopen : IsOpen (u.ker : Set (Γ ℚ)))
+    (hcube : ∀ σ ∈ localInertiaGroup
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+      (u (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ)) ^ 3 = 1) :
+    ∃ t ∈ localInertiaGroup Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+      ∀ σ ∈ localInertiaGroup
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+        ∃ m : ℕ, u (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) =
+          (u (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) t)) ^ m :=
+  sorry
+
+/-- **The local inertia image at `2` has order dividing `3`**
+(DECOMPOSED 2026-07-23 into the two sorry nodes above — the
+representation-theoretic cube-triviality
+`map_localInertiaGroup_at_two_pow_three_eq_one` and the
+local-structure generator leaf
+`exists_localInertia_two_generator_of_cube_one`; the glue is proven
+here): the image under the matrix form `u` of the local inertia at
+`2` is a subgroup of `GL₂(𝔽̄₃)` of order dividing `3`.  Glue: `ker u`
+is open (`ker ρ ≤ ker u` by `hu`, and `ker ρ` is open by continuity
+and finiteness of `V`), so the generator leaf applies: the image is
+contained in `⟨a⟩` for `a` the image of the generator `t`, and
+`#⟨a⟩ = orderOf a ∣ 3` since `a³ = 1` by the cube-triviality leaf. -/
 theorem card_map_localInertiaGroup_at_two_dvd_three {k : Type u} [Finite k]
     [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
@@ -2379,8 +2444,75 @@ theorem card_map_localInertiaGroup_at_two_dvd_three {k : Type u} [Finite k]
       (Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
-        (localInertiaGroup Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) ∣ 3 :=
-  sorry
+        (localInertiaGroup Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) ∣ 3 := by
+  classical
+  haveI hfinV : Finite V := Module.finite_of_finite k
+  -- `ker u` is open: `ker ρ ≤ ker u` and `ker ρ` is open
+  have htriv : ∀ g : Γ ℚ, ρ g = 1 → u g = 1 := by
+    intro g hg
+    apply Units.ext
+    rw [Units.val_one, hu g]
+    have h1 : (Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g =
+        ((MonoidHomClass.toMonoidHom ρ :
+          Representation k (Γ ℚ) V) g).baseChange (AlgebraicClosure k) := rfl
+    have h2 : (MonoidHomClass.toMonoidHom ρ :
+        Representation k (Γ ℚ) V) g = 1 := hg
+    rw [h1, h2, Module.End.one_eq_id, LinearMap.baseChange_id,
+      ← Module.End.one_eq_id, LinearMap.toMatrix_one,
+      Matrix.map_one _ (map_zero e) (map_one e)]
+  let Kρ : Subgroup (Γ ℚ) :=
+    { carrier := {g | ρ g = 1}
+      one_mem' := map_one ρ
+      mul_mem' := by
+        intro a b ha hb
+        show ρ (a * b) = 1
+        rw [map_mul, ha, hb, mul_one]
+      inv_mem' := by
+        intro a ha
+        show ρ a⁻¹ = 1
+        have h1 : ρ a⁻¹ * ρ a = 1 := by
+          rw [← map_mul, inv_mul_cancel, map_one]
+        rwa [ha, mul_one] at h1 }
+  have hKρ_open : IsOpen (Kρ : Set (Γ ℚ)) :=
+    isOpen_setOf_galoisRep_eq_one ρ hfinV
+  have hker : Kρ ≤ u.ker := fun g hg => MonoidHom.mem_ker.mpr (htriv g hg)
+  have hopen : IsOpen (u.ker : Set (Γ ℚ)) :=
+    Subgroup.isOpen_mono hker hKρ_open
+  -- the cube-triviality and the generator
+  have hcube := map_localInertiaGroup_at_two_pow_three_eq_one V hV hρ b e u hu
+  obtain ⟨t, htmem, hgen⟩ :=
+    exists_localInertia_two_generator_of_cube_one u hopen hcube
+  set a : GL (Fin 2) (Dickson.K 3) :=
+    u (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) t)
+  -- the image subgroup is contained in `⟨a⟩`
+  have hS : Subgroup.map u
+      (Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+        (localInertiaGroup Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) ≤
+      Subgroup.zpowers a := by
+    rintro x hx
+    rw [Subgroup.mem_map] at hx
+    obtain ⟨y, hy, rfl⟩ := hx
+    rw [Subgroup.mem_map] at hy
+    obtain ⟨σ, hσ, rfl⟩ := hy
+    obtain ⟨m, hm⟩ := hgen σ hσ
+    have hm' : u ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom σ) =
+        a ^ m := hm
+    refine Subgroup.mem_zpowers_iff.mpr ⟨(m : ℤ), ?_⟩
+    rw [zpow_natCast]
+    exact hm'.symm
+  -- `#⟨a⟩ = orderOf a ∣ 3` since `a³ = 1`
+  have ha3 : a ^ 3 = 1 := hcube t htmem
+  have hcard : Nat.card (Subgroup.zpowers a) ∣ 3 := by
+    rw [Nat.card_zpowers]
+    exact orderOf_dvd_of_pow_eq_one ha3
+  exact (Subgroup.card_dvd_of_le hS).trans hcard
 
 /-- **The inertia order at `2` divides `3`** (DECOMPOSED 2026-07-23
 into the two sorry nodes above — the quantitative local-to-global
@@ -2414,22 +2546,81 @@ theorem kernel_field_inertia_card_at_two_dvd_three {k : Type u} [Finite k]
     Nat.prime_two Q hQ hmem 3
     (card_map_localInertiaGroup_at_two_dvd_three V hV hρ b e u hu)
 
-/-- **The Fontaine different bound at `3`, wild case** (sorry node,
-isolated 2026-07-23 as the residual core of the Fontaine-at-`3`
-per-prime leaf below after the tame case was closed by the proven
-tame different bound `not_pow_ramificationIdx_dvd_differentIdeal`):
-for a prime `Q` of `𝓞 K` above `3` with `3 ∣ e(Q∣3)` (wild
-ramification), the different exponent `d_Q` satisfies
-`2·d_Q ≤ 3·e(Q∣3)`. Intended content: flatness (`hρ.isFlat`)
-prolongs the local representation at `3` to a finite flat group
-scheme over `ℤ₃` killed by `3`, and Fontaine's ramification bound
-(the upper-numbering ramification of `ℚ₃(V)/ℚ₃` vanishes above
-`1 + 1/(3−1) = 3/2`) bounds the different exponent of the local
-field cut out by (a subquotient of) `V` by `(3/2)·e` per prime; `K`
-is fixed by `ker u ⊇ ker ρ̄`, so its completion at `Q` sits inside
-`ℚ₃(V)` and inherits the bound. (Fontaine, *Il n'y a pas de variété
-abélienne sur ℤ*, Invent. Math. 81 (1985), Thm. A; Moon–Taguchi,
-Doc. Math. 2003, §2.) -/
+section DifferentTransport
+
+open scoped Pointwise
+
+/-- **Automorphism-invariance of the different ideal** (sorry node,
+isolated 2026-07-23 as the ideal-theoretic transport input to the
+Fontaine-at-`3` conjugacy reduction below): a `ℚ`-automorphism of a
+number field `F` fixes the different ideal `𝔡_{F/ℚ}` (as an ideal of
+`𝓞 F`, under the pointwise action). Intended proof: the different is
+defined through the trace dual of `𝓞 F` in `F`, and the trace form is
+invariant under any `ℤ`-algebra automorphism
+(`Algebra.trace_eq_of_algEquiv`), so the automorphism permutes the
+trace-dual lattice and hence fixes its inverse ideal. -/
+theorem smul_differentIdeal {F : Type*} [Field F] [NumberField F]
+    (σ : F ≃ₐ[ℚ] F) :
+    σ • differentIdeal ℤ (NumberField.RingOfIntegers F) =
+      differentIdeal ℤ (NumberField.RingOfIntegers F) :=
+  sorry
+
+/-- **The Fontaine bound at a distinguished prime over `3`** (sorry
+node, isolated 2026-07-23 as the residual local core of the
+Fontaine-at-`3` wild leaf after the conjugacy reduction below): SOME
+prime `Q₀` of `𝓞 K` above `3` satisfies the different-exponent bound
+`2·d ≤ 3·e(Q₀|3)` for every `d` with `Q₀^d ∣ 𝔡_{K/ℚ}`. Intended
+content: for the distinguished prime cut out by the chosen embedding
+`ℚᵃˡᵍ → ℚ₃ᵃˡᵍ` (as in `exists_prime_over_not_mem_sq_of_le_fixingSubgroup`
+of `InertiaCardTransport`), the completion of `K` at `Q₀` is the local
+field `M = ℚ₃(ι K)`, which is cut out by (a subquotient of) the flat
+local representation `V|_{G_ℚ₃}` (`hρ.isFlat`, via `hfix`); Fontaine's
+ramification bound for finite flat group schemes over `ℤ₃` killed by
+`3` (Fontaine 1985, Thm. A; Moon–Taguchi 2003, §2: the upper-numbering
+ramification of `ℚ₃(V)/ℚ₃` vanishes above `1 + 1/(3−1) = 3/2`) bounds
+the different exponent by `d_{M/ℚ₃} < e·(1 + 1/2)`, i.e. `2d ≤ 3e`.
+In the tame case `3 ∤ e` the bound already follows from the PROVEN
+tame different bound `not_pow_ramificationIdx_dvd_differentIdeal`
+(`d ≤ e − 1`), so only the wild case is genuinely deep. -/
+theorem exists_prime_over_three_differentIdeal_exponent_bound {k : Type u}
+    [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    [IsGalois ℚ K] (hfix : K.fixingSubgroup = u.ker) :
+    ∃ (Q₀ : Ideal (NumberField.RingOfIntegers K)) (_ : Q₀.IsPrime)
+      (_ : ((3 : ℕ) : NumberField.RingOfIntegers K) ∈ Q₀),
+      ∀ d : ℕ, Q₀ ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K) →
+        2 * d ≤ 3 * Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q₀ :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The Fontaine different bound at `3`, wild case** (DECOMPOSED
+2026-07-23 into the two sorry nodes above — the distinguished-prime
+bound `exists_prime_over_three_differentIdeal_exponent_bound` (where
+the flatness input `hρ.isFlat` and Fontaine's ramification bound
+genuinely live) and the different-invariance `smul_differentIdeal`;
+the conjugacy-transport glue is proven here): for a prime `Q` of
+`𝓞 K` above `3` with `3 ∣ e(Q∣3)` (wild ramification), the different
+exponent `d_Q` satisfies `2·d_Q ≤ 3·e(Q∣3)`.  Glue: `Gal(K/ℚ)` moves
+`Q` to the distinguished prime `Q₀` (transitivity on primes over `3`),
+the divisibility `Q^d ∣ 𝔡` transports along the pointwise action
+because `σ • 𝔡 = 𝔡`, and the ramification indices agree by
+prime-independence in the Galois extension `K/ℚ`
+(`Ideal.ramificationIdx_eq_of_isGaloisGroup`).  The wild hypothesis
+is not needed by the transport (the distinguished-prime leaf covers
+the tame case through the proven tame bound). -/
 theorem kernel_field_differentIdeal_exponent_at_three_wild {k : Type u}
     [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
@@ -2450,9 +2641,52 @@ theorem kernel_field_differentIdeal_exponent_at_three_wild {k : Type u}
     (Q : Ideal (NumberField.RingOfIntegers K)) (hQ : Q.IsPrime)
     (hmem : ((3 : ℕ) : NumberField.RingOfIntegers K) ∈ Q) (d : ℕ)
     (hd : Q ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K))
-    (hwild : (3 : ℕ) ∣ Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q) :
-    2 * d ≤ 3 * Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q :=
-  sorry
+    (_hwild : (3 : ℕ) ∣ Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q) :
+    2 * d ≤ 3 * Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q := by
+  classical
+  obtain ⟨Q₀, hQ₀p, hQ₀mem, hbound⟩ :=
+    exists_prime_over_three_differentIdeal_exponent_bound V hV hρ b e u hu K hfix
+  haveI := hQ
+  haveI := hQ₀p
+  -- instance pack at `3`
+  have hqZ : Prime ((3 : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp Nat.prime_three
+  have hqne : (Ideal.span {((3 : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast Nat.prime_three.ne_zero
+  haveI hsp : (Ideal.span {((3 : ℕ) : ℤ)} : Ideal ℤ).IsPrime :=
+    (Ideal.span_singleton_prime (by exact_mod_cast Nat.prime_three.ne_zero)).mpr hqZ
+  haveI hliesQ : Q.LiesOver (Ideal.span {((3 : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff hQ.ne_top hqZ).mpr (by exact_mod_cast hmem)
+  haveI hliesQ₀ : Q₀.LiesOver (Ideal.span {((3 : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff hQ₀p.ne_top hqZ).mpr (by exact_mod_cast hQ₀mem)
+  haveI := IsGaloisGroup.of_isFractionRing (K ≃ₐ[ℚ] K) ℤ
+    (NumberField.RingOfIntegers K) ℚ ↥K
+  -- transitivity: some `σ` moves `Q` to `Q₀`
+  obtain ⟨σ, hσ⟩ := Ideal.exists_smul_eq_of_isGaloisGroup
+    (Ideal.span {((3 : ℕ) : ℤ)}) Q Q₀ (K ≃ₐ[ℚ] K)
+  -- transport the divisibility along `σ`
+  obtain ⟨c, hc⟩ := hd
+  have hdvd₀ : Q₀ ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K) := by
+    refine ⟨σ • c, ?_⟩
+    calc differentIdeal ℤ (NumberField.RingOfIntegers K)
+        = σ • differentIdeal ℤ (NumberField.RingOfIntegers K) :=
+          (smul_differentIdeal σ).symm
+      _ = σ • (Q ^ d * c) := by rw [← hc]
+      _ = (σ • Q) ^ d * σ • c := by rw [smul_mul', smul_pow']
+      _ = Q₀ ^ d * σ • c := by rw [hσ]
+  -- the ramification indices agree (prime-independence in Galois `K/ℚ`)
+  have he : Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q₀ =
+      Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q := by
+    rw [Ideal.ramificationIdx'_eq_ramificationIdx (Ideal.span {((3 : ℕ) : ℤ)})
+      Q₀ hqne,
+      Ideal.ramificationIdx'_eq_ramificationIdx (Ideal.span {((3 : ℕ) : ℤ)})
+      Q hqne]
+    exact Ideal.ramificationIdx_eq_of_isGaloisGroup
+      (Ideal.span {((3 : ℕ) : ℤ)}) Q₀ Q (K ≃ₐ[ℚ] K)
+  have hb := hbound d hdvd₀
+  rwa [he] at hb
+
+end DifferentTransport
 
 /-- **The Fontaine different bound at `3`** (DECOMPOSED 2026-07-23:
 the tame case `3 ∤ e(Q∣3)` is PROVEN here from the tame different
