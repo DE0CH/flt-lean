@@ -1365,28 +1365,93 @@ theorem finrank_eq_one_of_differentIdeal_eq_top
   norm_num at h2
 
 open NumberField in
-/-- **Everywhere-trivial inertia gives trivial different ideal** (sorry
-node — the ramification stratum): for a finite Galois subextension
+/-- **Everywhere-trivial inertia gives trivial different ideal** (PROVEN
+2026-07-23 — the ramification stratum): for a finite Galois subextension
 `L/ℚ` of `ℚ̄`, if every nonzero prime of `𝓞 L` has trivial inertia in
 `Gal(L/ℚ)`, then the different ideal of `𝓞 L` over `ℤ` is the unit
-ideal. Route: a prime `Q` dividing the different is ramified
+ideal. A prime `Q` dividing the different would be ramified
 (`dvd_differentIdeal_iff`, over the separable fraction-field extension
-`ℚ ⊆ L` in characteristic zero); its ramification index is the order of
+in characteristic zero); but its ramification index is the order of
 its inertia group (`Ideal.card_inertia_eq_ramificationIdxIn` together
-with `Ideal.ramificationIdxIn_eq_ramificationIdx`, applied to the
-`Gal(L/ℚ)`-action on `𝓞 L` over `ℤ` — fixed points `ℤ` via
-`Rat.ringOfIntegersEquiv` and the `Algebra.IsInvariant` instance of the
-Chebotarev module), which is `1` by hypothesis — a contradiction; a
-nonzero ideal of the Dedekind domain `𝓞 L` (the different is nonzero,
-`differentIdeal_ne_bot`) with no prime divisor is the unit ideal
-(`Ideal.exists_le_maximal` and `Ideal.dvd_iff_le`). -/
+with `Ideal.ramificationIdxIn_eq_ramificationIdx` and
+`Ideal.ramificationIdx_eq_one_iff`, applied to the `Gal(L/ℚ)`-action
+on `𝓞 L` over `ℤ` — the `IsGaloisGroup` instance is assembled here,
+with invariants computed through `IsGalois.mem_bot_iff_fixed` and
+`IsIntegrallyClosed.isIntegral_iff`), which is `1` by hypothesis. The
+different ideal is nonzero (`differentIdeal_ne_bot`), so having no
+prime divisor it is the unit ideal. -/
 theorem differentIdeal_eq_top_of_forall_inertia_eq_bot
     (L : IntermediateField ℚ (AlgebraicClosure ℚ))
     [FiniteDimensional ℚ L] [Normal ℚ L]
     (h : ∀ Q : Ideal (𝓞 L), Q.IsPrime → Q ≠ ⊥ →
       Q.inertia (L ≃ₐ[ℚ] L) = ⊥) :
     differentIdeal ℤ (𝓞 L) = ⊤ := by
-  sorry
+  classical
+  by_contra hne
+  -- a maximal (hence prime, nonzero) divisor of the different ideal
+  obtain ⟨Q, hQmax, hQle⟩ := Ideal.exists_le_maximal _ hne
+  haveI hQprime : Q.IsPrime := hQmax.isPrime
+  have hQne : Q ≠ ⊥ := by
+    intro h0
+    rw [h0, le_bot_iff] at hQle
+    exact differentIdeal_ne_bot hQle
+  -- the fraction-field extension is separable (characteristic zero)
+  letI : Algebra (FractionRing ℤ) (FractionRing (𝓞 L)) :=
+    FractionRing.liftAlgebra _ _
+  haveI hsep : Algebra.IsSeparable (FractionRing ℤ) (FractionRing (𝓞 L)) := by
+    refine Algebra.IsSeparable.of_equiv_equiv
+      (FractionRing.algEquiv ℤ ℚ).symm.toRingEquiv
+      (FractionRing.algEquiv (𝓞 L) L).symm.toRingEquiv ?_
+    ext x
+    exact IsFractionRing.algEquiv_commutes (FractionRing.algEquiv ℤ ℚ).symm
+      (FractionRing.algEquiv (𝓞 L) L).symm x
+  -- `Q` divides the different ideal, so it must be ramified …
+  have hdvd : Q ∣ differentIdeal ℤ (𝓞 L) := Ideal.dvd_iff_le.mpr hQle
+  rw [dvd_differentIdeal_iff] at hdvd
+  refine hdvd ?_
+  -- … but its ramification index is the order of its trivial inertia group
+  have hp0 : Q.under ℤ ≠ ⊥ := mt Ideal.eq_bot_of_comap_eq_bot hQne
+  haveI : (Q.under ℤ).IsPrime := Ideal.IsPrime.under ℤ Q
+  -- the residue field of `ℤ` under `Q` is finite, hence perfect
+  obtain ⟨z, hz⟩ := (IsPrincipalIdealRing.principal (Q.under ℤ)).principal
+  have hzne : z ≠ 0 := by
+    rintro rfl
+    apply hp0
+    rw [hz]
+    exact Ideal.span_singleton_eq_bot.mpr rfl
+  haveI : NeZero z.natAbs := ⟨Int.natAbs_ne_zero.mpr hzne⟩
+  haveI : Finite (ℤ ⧸ Q.under ℤ) := by
+    rw [hz]
+    exact Finite.of_equiv _ (Int.quotientSpanEquivZMod z).symm.toEquiv
+  -- `Gal(L/ℚ)` is a Galois group of `𝓞 L` over `ℤ` (invariants transfer
+  -- from `𝓞 ℚ` along `Rat.ringOfIntegersEquiv`)
+  haveI : IsGaloisGroup (L ≃ₐ[ℚ] L) ℤ (𝓞 L) := by
+    refine ⟨inferInstance, inferInstance, ?_⟩
+    constructor
+    intro x hx
+    -- the underlying field element is Galois-fixed, hence rational
+    have hfixL : ∀ e : L ≃ₐ[ℚ] L, e (x : L) = (x : L) := fun e =>
+      congrArg (algebraMap (𝓞 L) L) (hx e)
+    haveI : IsGalois ℚ L := ⟨⟩
+    have hbot : (x : L) ∈ (⊥ : IntermediateField ℚ L) :=
+      (IsGalois.mem_bot_iff_fixed _).mpr hfixL
+    obtain ⟨q, hq⟩ := IntermediateField.mem_bot.mp hbot
+    -- the rational number is integral over `ℤ`, hence an integer
+    have hqint : IsIntegral ℤ q := by
+      rw [← isIntegral_algebraMap_iff (B := L)
+        (algebraMap ℚ L).injective, hq]
+      exact x.2
+    obtain ⟨m, hm⟩ := IsIntegrallyClosed.isIntegral_iff.mp hqint
+    refine ⟨m, NumberField.RingOfIntegers.ext ?_⟩
+    show algebraMap (𝓞 L) L (algebraMap ℤ (𝓞 L) m) = (x : L)
+    rw [← hq, ← hm, ← IsScalarTower.algebraMap_apply ℤ (𝓞 L) L,
+      ← IsScalarTower.algebraMap_apply ℤ ℚ L]
+  have hcard := Ideal.card_inertia_eq_ramificationIdxIn
+    (G := L ≃ₐ[ℚ] L) (Q.under ℤ) Q
+  rw [Ideal.ramificationIdxIn_eq_ramificationIdx (Q.under ℤ) Q (L ≃ₐ[ℚ] L)]
+    at hcard
+  rw [← Ideal.ramificationIdx_eq_one_iff, ← hcard, h Q hQprime hQne,
+    Subgroup.card_bot]
 
 open NumberField in
 /-- **Local inertia covers finite-level inertia** (sorry node — the
