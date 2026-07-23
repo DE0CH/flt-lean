@@ -80,14 +80,27 @@ here. This file provides:
   `exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le` (good
   behaviour of the twisted ideal `L`-series on `(1, 2]` — itself
   PROVEN, with the away-from-`1` positivity supplied by the Euler
-  identity, from the two sorry leaves
+  identity, from
   `exists_forall_norm_LSeries_le_and_norm_deriv_le` (uniform bounds
-  for `L` and `L'`: the analytic-continuation half, needing the
-  power-saving Hecke count) and
+  for `L` and `L'`: the analytic-continuation half — now itself
+  DERIVED, through the PROVEN transfer lemmas
+  `norm_LSeries_le_mul_div_of_forall_norm_sum_le` (integral
+  representation), `exists_forall_norm_sum_log_mul_le_rpow` (Abel
+  summation) and `sum_card_absNorm_isBigO` (linear coefficient
+  growth), from the single sorried counting core
+  `exists_forall_norm_sum_dirichletCharacter_mul_card_absNorm_le_rpow`,
+  the power-saving Weber–Landau Hecke count) and
   `exists_forall_le_norm_LSeries_near_one` (`L` bounded away from `0`
-  just right of `1`: the `L(1,χ) ≠ 0` half)); see the leaves'
-  docstrings for the intended proofs and the exact state of the
-  mathlib pin.
+  just right of `1`: the `L(1,χ) ≠ 0` half — now itself DERIVED,
+  through the PROVEN dominated-convergence continuation
+  `tendsto_LSeries_nhdsGT_one_of_forall_norm_sum_le` and
+  `lSeriesSummable_dirichletCharacter_mul_card`, from the same
+  counting core plus the sorried arithmetic core
+  `integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero`,
+  the nonvanishing of the continued value at `1` by the classical
+  zeta-factorization argument)); the L-function half thus rests on
+  exactly TWO deep sorried cores; see their docstrings for the
+  intended proofs and the exact state of the mathlib pin.
 
 The remaining pieces of the decomposition (Brauer–Nesbitt for
 2-dimensional mod-`ℓ` representations, the mod-`ℓ` cyclotomic character as
@@ -2759,20 +2772,22 @@ theorem exists_forall_norm_sum_dirichletCharacter_mul_card_absNorm_le_rpow
 
 open IsDedekindDomain in
 /-- **Uniform upper bounds for the twisted `L`-series and its derivative
-on `(1, 2]`** (sorry leaf) — the analytic-continuation half of the good
-behaviour of `L(s, χ)`, isolated from any nonvanishing: for `χ mod ℓ`
-nontrivial on the image of `Gal(E/F)` (hypothesis `hχ`), the twisted
-ideal `L`-series and its derivative are bounded uniformly on real
-`s ∈ (1, 2]`. Intended proof: the Hecke-counting cancellation
-`‖∑_{k ≤ n} χ(k)·#{I : N(I) = k}‖ = O(n^r)` for some `r < 1` (the
-power-saving per-norm-class ideal count, the pin's missing deep
-ingredient) feeds `LSeries_eq_mul_integral`
-(`Mathlib.NumberTheory.LSeries.SumCoeff`): for real `s > 1`,
-`L(s) = s·∫_{t > 1} A(⌊t⌋)·t^{-s-1}` with `‖A(⌊t⌋)‖ ≤ C·t^r`, so
-`‖L(s)‖ ≤ 2·C/(1 - r)` uniformly; `deriv L = -LSeries (log·f)`
-(`LSeries_deriv`), and discrete Abel summation turns the same
-cancellation into `∑_{k ≤ n} log k · χ(k)·#{I} = O(n^{r'})` for any
-`r < r' < 1`, giving the same integral bound for the derivative. -/
+on `(1, 2]`** — the analytic-continuation half of the good behaviour of
+`L(s, χ)`, isolated from any nonvanishing: for `χ mod ℓ` nontrivial on
+the image of `Gal(E/F)` (hypothesis `hχ`), the twisted ideal `L`-series
+and its derivative are bounded uniformly on real `s ∈ (1, 2]`.
+
+DERIVED from the single sorried counting core
+`exists_forall_norm_sum_dirichletCharacter_mul_card_absNorm_le_rpow`
+(the power-saving Hecke cancellation `‖∑_{k ≤ n} χ(k)·#{I : N(I) =
+k}‖ ≤ C·n^r`, `r < 1`) through three PROVEN transfer lemmas:
+`norm_LSeries_le_mul_div_of_forall_norm_sum_le` (integral
+representation `LSeries_eq_mul_integral` + dominated bound gives
+`‖L(s)‖ ≤ s·C/(s-r) ≤ 2C/(1-r)`), `LSeries_deriv`/`logMul` with
+`exists_forall_norm_sum_log_mul_le_rpow` (Abel summation transfers the
+cancellation to the log-weighted sums with exponent `r' = (1+r)/2`),
+and `sum_card_absNorm_isBigO` (linear norm-coefficient growth, giving
+summability and the abscissa bound `≤ 1`). -/
 theorem exists_forall_norm_LSeries_le_and_norm_deriv_le
     {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
     [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
@@ -2858,23 +2873,170 @@ theorem exists_forall_norm_LSeries_le_and_norm_deriv_le
       _ ≤ 2 * D / (1 - (1 + r) / 2) := by gcongr
       _ ≤ max (2 * C / (1 - r)) (2 * D / (1 - (1 + r) / 2)) := le_max_right _ _
 
+open Filter Asymptotics in
+/-- Absolute convergence of the twisted ideal `L`-series for real
+`s > 1`, from the linear growth of the coefficient sums
+(`sum_card_absNorm_isBigO`). -/
+theorem lSeriesSummable_dirichletCharacter_mul_card
+    (F : Type*) [Field F] [NumberField F] {ℓ : ℕ} (χ : DirichletCharacter ℂ ℓ)
+    {s : ℝ} (hs : 1 < s) :
+    LSeriesSummable (fun k : ℕ => χ (k : ZMod ℓ) *
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ) := by
+  have hOnorm : (fun n : ℕ => ∑ k ∈ Finset.Icc 1 n,
+      ‖χ (k : ZMod ℓ) * (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)‖)
+      =O[atTop] (fun n : ℕ => (n : ℝ) ^ (1 : ℝ)) := by
+    have h1 : ∀ n : ℕ, ‖∑ k ∈ Finset.Icc 1 n, ‖χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)‖‖ ≤
+        ‖∑ k ∈ Finset.Icc 1 n,
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ)‖ := by
+      intro n
+      rw [Real.norm_of_nonneg (Finset.sum_nonneg fun k _ => norm_nonneg _),
+        Real.norm_of_nonneg (Finset.sum_nonneg fun k _ => Nat.cast_nonneg _)]
+      refine Finset.sum_le_sum fun k _ => ?_
+      rw [norm_mul, Complex.norm_natCast]
+      exact mul_le_of_le_one_left (Nat.cast_nonneg _)
+        (DirichletCharacter.norm_le_one χ _)
+    refine (Asymptotics.isBigO_of_le _ h1).trans
+      ((sum_card_absNorm_isBigO F).trans
+        (Asymptotics.isBigO_of_le _ fun n => ?_))
+    rw [Real.rpow_one]
+  refine LSeriesSummable_of_sum_norm_bigO hOnorm zero_le_one ?_
+  rw [Complex.ofReal_re]
+  exact hs
+
+open Filter MeasureTheory in
+/-- **Right continuation of an `L`-series with power-saving coefficient
+cancellation to `s = 1`**: if the partial sums of `c` are `≤ C·n^r`
+with `0 < r < 1` and the `L`-series converges for real `s > 1`, then as
+`s → 1⁺` the `L`-series tends to the extended value
+`∫_{t > 1} A(⌊t⌋)·t^{-2}`. Via the integral representation on `(1, ∞)`
+and dominated convergence with the `s`-independent dominator
+`C·t^{r-2}`. -/
+theorem tendsto_LSeries_nhdsGT_one_of_forall_norm_sum_le {c : ℕ → ℂ} {r C : ℝ}
+    (hr0 : 0 < r) (hr1 : r < 1) (hC : 0 ≤ C)
+    (hbound : ∀ n : ℕ, ‖∑ k ∈ Finset.Icc 1 n, c k‖ ≤ C * (n : ℝ) ^ r)
+    (hsum : ∀ s : ℝ, 1 < s → LSeriesSummable c (s : ℂ)) :
+    Tendsto (fun s : ℝ => LSeries c (s : ℂ)) (nhdsWithin 1 (Set.Ioi 1))
+      (nhds (∫ t in Set.Ioi (1 : ℝ),
+        (∑ k ∈ Finset.Icc 1 ⌊t⌋₊, c k) * (t : ℂ) ^ (-(2 : ℂ)))) := by
+  have hO : (fun n : ℕ => ∑ k ∈ Finset.Icc 1 n, c k) =O[atTop]
+      (fun n : ℕ => (n : ℝ) ^ r) := by
+    refine Asymptotics.IsBigO.of_bound C (Filter.Eventually.of_forall fun n => ?_)
+    rw [Real.norm_of_nonneg (Real.rpow_nonneg (Nat.cast_nonneg n) r)]
+    exact hbound n
+  -- the integral representation holds on the filter
+  have heq : ∀ᶠ s : ℝ in nhdsWithin 1 (Set.Ioi 1),
+      (s : ℂ) * ∫ t in Set.Ioi (1 : ℝ),
+        (∑ k ∈ Finset.Icc 1 ⌊t⌋₊, c k) * (t : ℂ) ^ (-((s : ℂ) + 1)) =
+      LSeries c (s : ℂ) := by
+    filter_upwards [self_mem_nhdsWithin] with s hs
+    have hs1 : (1 : ℝ) < s := hs
+    exact (LSeries_eq_mul_integral c hr0.le
+      (by rw [Complex.ofReal_re]; linarith) (hsum s hs1) hO).symm
+  -- dominated convergence for the integral factor
+  have hDCT : Tendsto (fun s : ℝ => ∫ t in Set.Ioi (1 : ℝ),
+      (∑ k ∈ Finset.Icc 1 ⌊t⌋₊, c k) * (t : ℂ) ^ (-((s : ℂ) + 1)))
+      (nhdsWithin 1 (Set.Ioi 1))
+      (nhds (∫ t in Set.Ioi (1 : ℝ),
+        (∑ k ∈ Finset.Icc 1 ⌊t⌋₊, c k) * (t : ℂ) ^ (-(2 : ℂ)))) := by
+    refine tendsto_integral_filter_of_dominated_convergence
+      (fun t => C * t ^ (r - 2)) ?_ ?_ ?_ ?_
+    · -- a.e.-strong measurability of each integrand
+      refine Filter.Eventually.of_forall fun s => ?_
+      refine AEStronglyMeasurable.mul ?_ ?_
+      · exact ((Measurable.of_discrete
+            (f := fun n : ℕ => ∑ k ∈ Finset.Icc 1 n, c k)).comp
+          (Nat.measurable_floor (R := ℝ))).aestronglyMeasurable
+      · refine (ContinuousOn.aestronglyMeasurable ?_ measurableSet_Ioi)
+        intro t ht
+        have ht0 : (0 : ℝ) < t := lt_trans one_pos ht
+        exact ((continuousAt_cpow_const
+          (Complex.ofReal_mem_slitPlane.mpr ht0)).comp
+            Complex.continuous_ofReal.continuousAt).continuousWithinAt
+    · -- uniform dominated bound near `1⁺`
+      filter_upwards [self_mem_nhdsWithin] with s hs
+      have hs1 : (1 : ℝ) < s := hs
+      refine (ae_restrict_iff' measurableSet_Ioi).mpr
+        (Filter.Eventually.of_forall fun t ht => ?_)
+      have ht1 : (1 : ℝ) < t := ht
+      have ht0 : (0 : ℝ) < t := lt_trans one_pos ht1
+      rw [norm_mul, Complex.norm_cpow_eq_rpow_re_of_pos ht0]
+      have h2 : (-((s : ℂ) + 1)).re = -(s + 1) := by simp
+      rw [h2]
+      calc ‖∑ k ∈ Finset.Icc 1 ⌊t⌋₊, c k‖ * t ^ (-(s + 1))
+          ≤ (C * t ^ r) * t ^ (-(2 : ℝ)) := by
+            refine mul_le_mul ?_ ?_ (Real.rpow_nonneg ht0.le _) (by positivity)
+            · refine le_trans (hbound ⌊t⌋₊) ?_
+              exact mul_le_mul_of_nonneg_left
+                (Real.rpow_le_rpow (Nat.cast_nonneg _) (Nat.floor_le ht0.le)
+                  hr0.le) hC
+            · exact Real.rpow_le_rpow_of_exponent_le ht1.le (by linarith)
+        _ = C * t ^ (r - 2) := by
+            rw [mul_assoc, ← Real.rpow_add ht0, show r + -2 = r - 2 by ring]
+    · exact (integrableOn_Ioi_rpow_of_lt (by linarith) one_pos).const_mul C
+    · -- pointwise convergence of the integrand
+      refine (ae_restrict_iff' measurableSet_Ioi).mpr
+        (Filter.Eventually.of_forall fun t ht => ?_)
+      have ht1 : (1 : ℝ) < t := ht
+      have htne : ((t : ℝ) : ℂ) ≠ 0 := by
+        exact_mod_cast (lt_trans one_pos ht1).ne'
+      refine Filter.Tendsto.const_mul _ ?_
+      have hc : Continuous fun s : ℝ => ((t : ℝ) : ℂ) ^ (-((s : ℂ) + 1)) := by
+        refine Continuous.const_cpow ?_ (Or.inl htne)
+        continuity
+      have h3 := hc.tendsto (1 : ℝ)
+      have hval : (-((((1 : ℝ) : ℂ)) + 1)) = (-2 : ℂ) := by norm_num
+      rw [hval] at h3
+      exact h3.mono_left nhdsWithin_le_nhds
+  -- assemble: `s → 1` and `∫ → ∫`
+  have hcoe : Tendsto (fun s : ℝ => (s : ℂ)) (nhdsWithin 1 (Set.Ioi 1))
+      (nhds ((1 : ℝ) : ℂ)) :=
+    (Complex.continuous_ofReal.tendsto 1).mono_left nhdsWithin_le_nhds
+  have hmul := hcoe.mul hDCT
+  rw [Complex.ofReal_one, one_mul] at hmul
+  exact hmul.congr' heq
+
+open IsDedekindDomain in
+/-- **Nonvanishing of the continued twisted `L`-value at `s = 1`**
+(sorry leaf) — the arithmetic core of `L(1, χ) ≠ 0`, isolated from all
+continuation analysis: the extended value
+`∫_{t > 1} A(⌊t⌋)·t^{-2}` of the twisted ideal `L`-series at `s = 1`
+(`A(n) = ∑_{k ≤ n} χ(k)·#{I : N(I) = k}`, the continuation supplied by
+`tendsto_LSeries_nhdsGT_one_of_forall_norm_sum_le`) is nonzero, for
+`χ mod ℓ` nontrivial on the image of `Gal(E/F)`. Intended proof: the
+classical factorization argument over the fixed field `E'` of
+`ker(χ|_{Gal(E/F)})`: `ζ_{E'}(s) = ζ_F(s)·∏_ψ L(s, ψ)·(finitely many
+ramified Euler corrections)`; were the continued value `0`, the simple
+pole of `ζ_F` at `1` (`NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT`,
+`NumberField.dedekindZeta_residue_pos`, both in the pin) would be
+cancelled by the zero, keeping `ζ_{E'}` bounded as `s → 1⁺`,
+contradicting its own divergence (the zeta-half divergence machinery
+proven in this file: `exists_one_lt_lt_tsum_rpow_neg_absNorm`). -/
+theorem integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (χ : DirichletCharacter ℂ ℓ)
+    (hχ : ∃ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n ∧ χ (n : ZMod ℓ) ≠ 1) :
+    (∫ t in Set.Ioi (1 : ℝ),
+      (∑ k ∈ Finset.Icc 1 ⌊t⌋₊, χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) *
+      (t : ℂ) ^ (-(2 : ℂ))) ≠ 0 :=
+  sorry
+
 open IsDedekindDomain in
 /-- **The twisted `L`-series is bounded away from `0` just right of
-`s = 1`** (sorry leaf) — the `L(1, χ) ≠ 0` half of the good behaviour,
-isolated on an interval `(1, 1 + η]`: away from `1` the Euler identity
-`L = exp 𝒮` already keeps `L` away from `0`, so ONLY the approach to
-`s = 1` is deep. Intended proof: with the Hecke-counting cancellation
-(see `exists_forall_norm_LSeries_le_and_norm_deriv_le`) the integral
-representation `L(s) = s·∫_{t > 1} A(⌊t⌋)·t^{-s-1}` extends `L`
-continuously to `s = 1` by dominated convergence (dominator
-`C·t^{r-2}`), so it suffices that the continued value
-`L(1) = ∫_{t > 1} A(⌊t⌋)·t^{-2} ≠ 0`; by the classical factorization
-argument over the fixed field `E'` of `ker(χ|_{Gal(E/F)})` (simple
-poles of `ζ_{E'}` and `ζ_F`,
-`NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT` and
-`NumberField.dedekindZeta_residue_pos`, both in the pin), a zero of the
-continued `L` at `1` would keep `ζ_{E'}(s) = ζ_F(s)·∏_ψ L(s, ψ)·(finite
-corrections)` bounded as `s → 1⁺` while it must diverge. -/
+`s = 1`** — the `L(1, χ) ≠ 0` half of the good behaviour, isolated on
+an interval `(1, 1 + η]`. DERIVED from two strictly shallower leaves:
+the continuation
+`tendsto_LSeries_nhdsGT_one_of_forall_norm_sum_le` (PROVEN: the
+integral representation extends `L` continuously to `s = 1` by
+dominated convergence, dominator `C·t^{r-2}`, given the power-saving
+cancellation `exists_forall_norm_sum_dirichletCharacter_mul_card_absNorm_le_rpow`)
+and the sorried arithmetic core
+`integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero` (the
+continued value `L(1) = ∫_{t > 1} A(⌊t⌋)·t^{-2}` is nonzero — the
+classical zeta-factorization argument; see its docstring). With those,
+the lower bound `‖L(1)‖/2` holds on some `(1, 1 + η]` by continuity. -/
 theorem exists_forall_le_norm_LSeries_near_one
     {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
     [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
@@ -2882,8 +3044,36 @@ theorem exists_forall_le_norm_LSeries_near_one
     (hχ : ∃ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n ∧ χ (n : ZMod ℓ) ≠ 1) :
     ∃ η c : ℝ, 0 < η ∧ 0 < c ∧ ∀ s : ℝ, 1 < s → s ≤ 1 + η →
       c ≤ ‖LSeries (fun k => χ (k : ZMod ℓ) *
-          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) s‖ :=
-  sorry
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) s‖ := by
+  classical
+  obtain ⟨r, C, hr0, hr1, hC, hbound⟩ :=
+    exists_forall_norm_sum_dirichletCharacter_mul_card_absNorm_le_rpow
+      hℓ hζ χ hχ
+  -- the continued value at `s = 1` and its nonvanishing
+  have hL1ne := integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero
+    hℓ hζ χ hχ
+  have hL1pos : 0 < ‖∫ t in Set.Ioi (1 : ℝ),
+      (∑ k ∈ Finset.Icc 1 ⌊t⌋₊, χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) *
+      (t : ℂ) ^ (-(2 : ℂ))‖ := norm_pos_iff.mpr hL1ne
+  -- continuation to `1⁺`
+  have htend := tendsto_LSeries_nhdsGT_one_of_forall_norm_sum_le hr0 hr1 hC
+    hbound (fun s hs => lSeriesSummable_dirichletCharacter_mul_card F χ hs)
+  -- eventually the norm exceeds half the limit norm
+  have hev : ∀ᶠ s : ℝ in nhdsWithin 1 (Set.Ioi 1),
+      ‖∫ t in Set.Ioi (1 : ℝ),
+        (∑ k ∈ Finset.Icc 1 ⌊t⌋₊, χ (k : ZMod ℓ) *
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) *
+        (t : ℂ) ^ (-(2 : ℂ))‖ / 2 ≤
+      ‖LSeries (fun k : ℕ => χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖ := by
+    refine htend.norm.eventually ?_
+    filter_upwards [lt_mem_nhds (half_lt_self hL1pos)] with x hx
+    exact hx.le
+  obtain ⟨u, hu, hIoc⟩ := mem_nhdsGT_iff_exists_Ioc_subset.mp hev
+  refine ⟨u - 1, _, by linarith [Set.mem_Ioi.mp hu], half_pos hL1pos,
+    fun s hs1 hs2 => ?_⟩
+  exact hIoc ⟨hs1, by linarith⟩
 
 open IsDedekindDomain in
 /-- **Good behaviour of the twisted `L`-series on `[1, 2]`** —
