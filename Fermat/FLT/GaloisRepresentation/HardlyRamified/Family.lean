@@ -645,7 +645,7 @@ theorem exists_char_charpoly_map_eq_of_not_isIrreducible
     rw [Module.finrank_baseChange]
     exact Module.finrank_eq_of_rank_eq hv
   haveI hMnt : Nontrivial (AlgebraicClosure ℚ_[p] ⊗[R] V) :=
-    (Module.finrank_pos_iff (R := AlgebraicClosure ℚ_[p])).mp (by omega)
+    (Module.finrank_pos_iff (R := AlgebraicClosure ℚ_[p])).mp (by rw [hfrM]; norm_num)
   -- extract a proper invariant subspace from reducibility
   obtain ⟨W, hWbot, hWtop⟩ :
       ∃ W : Subrepresentation σ.toRepresentation, W ≠ ⊥ ∧ W ≠ ⊤ := by
@@ -667,10 +667,12 @@ theorem exists_char_charpoly_map_eq_of_not_isIrreducible
     have h2 : Module.finrank (AlgebraicClosure ℚ_[p]) W.toSubmodule <
         Module.finrank (AlgebraicClosure ℚ_[p]) (AlgebraicClosure ℚ_[p] ⊗[R] V) :=
       Submodule.finrank_lt fun h => hWtop (Subrepresentation.toSubmodule_injective h)
-    omega
+    rw [hfrM] at h2
+    exact Nat.le_antisymm (Nat.lt_succ_iff.mp h2) (Nat.one_le_iff_ne_zero.mpr h1)
   have hQfr : Module.finrank (AlgebraicClosure ℚ_[p])
       ((AlgebraicClosure ℚ_[p] ⊗[R] V) ⧸ W.toSubmodule) = 1 := by
     have hq := Submodule.finrank_quotient_add_finrank W.toSubmodule
+    rw [hfrM, hWfr] at hq
     omega
   -- every vector space is free (the instance is not picked up through the
   -- import closure here, so record it by hand for the line and its quotient)
@@ -863,29 +865,36 @@ theorem char_add_char_eq_one_add_cyclotomicCharacter
         ((cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv : ℤ_[p]ˣ) : ℤ_[p]) :=
   sorry
 
-/-- **Rational traces on the reducible branch** (sorry node): away from
+/-- **Rational traces on the reducible branch** (PROVEN assembly, see
+the DECOMPOSED note below): away from
 a finite set of places, the TRACE coefficient (`coeff 1`) of the mapped
 Frobenius characteristic polynomials of a hardly ramified `p`-adic
 representation whose base extension to `ℚ̄_p` is NOT irreducible is a
 RATIONAL number. This is the Eisenstein/class-field-theory branch of
-the trace shadows — no automorphy enters: a reducible hardly ramified
-representation is an extension of characters `χ₁, χ₂ : G_ℚ → ℚ̄_pˣ`
-with `χ₁χ₂ = χ_cyc`, both unramified outside `{2, p}`; the `p`-adic
-cyclotomic character is unramified at `2` and the
-upper-triangular-with-unramified-quotient condition at `2` puts no
-ramification on the diagonal there; flatness at `p` forces the
-inertia-at-`p` pair `{χ₁|_{I_p}, χ₂|_{I_p}}` to be
-`{1, χ_cyc|_{I_p}}` (Raynaud/Fontaine at the finite levels), so after
-dividing out the matched cyclotomic powers both characters are
-unramified everywhere, hence TRIVIAL (Minkowski: `ℚ` has no nontrivial
-extension unramified everywhere) — `{χ₁, χ₂} = {1, χ_cyc}` exactly,
-and every Frobenius trace away from `{2, p}` is `1 + q ∈ ℚ` (the
-coefficient is `-(1 + q)`; rationality is the recorded shape). Shared
+the trace shadows — no automorphy enters. Shared
 by BOTH trace shadows (a rational number is algebraic, and it lies in
 the `ℚ`-span of `{1}`): this is the single reducible-branch node of
 the dichotomy decomposition — see the DECOMPOSED notes on
 `exists_isAlgebraic_trace_coeff` and
-`exists_finiteDimensional_trace_span`. -/
+`exists_finiteDimensional_trace_span`.
+
+DECOMPOSED (2026-07-23) into a PROVEN assembly over ONE sorried leaf
+and proven linear algebra:
+
+1. `exists_char_charpoly_map_eq_of_not_isIrreducible` (PROVEN) — the
+   reducible base change carries a pair of continuous multiplicative
+   diagonal characters `χ₁, χ₂` splitting every mapped charpoly as
+   `(X - χ₁ g)(X - χ₂ g)` (invariant line + block-triangular charpoly
+   infrastructure, built here).
+2. `char_add_char_eq_one_add_cyclotomicCharacter` (sorry node) — the
+   Eisenstein core: for such a pair, `χ₁ + χ₂ = 1 + χ_cyc` pointwise
+   (inertia analysis away from `{2, p}` and at `2`, Raynaud/Fontaine
+   flatness at `p`, Minkowski; see its docstring for the full route).
+3. The assembly (below): at the place of a prime `q ≠ p`, the trace
+   coefficient of the split quadratic is `-(χ₁ + χ₂)` at the
+   arithmetic Frobenius, which by 2. and the PROVEN
+   `cyclotomicCharacter_adicArithFrob_natCast` is the rational
+   `-(1 + q)`; the exceptional set is the single place over `p`. -/
 theorem exists_rat_trace_coeff_of_not_isIrreducible
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -903,8 +912,49 @@ theorem exists_rat_trace_coeff_of_not_isIrreducible
     ∃ (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
       ∀ v ∉ S, ∃ r : ℚ,
         ((ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 =
-          algebraMap ℚ (AlgebraicClosure ℚ_[p]) r :=
-  sorry
+          algebraMap ℚ (AlgebraicClosure ℚ_[p]) r := by
+  classical
+  obtain ⟨χ₁, χ₂, hcont₁, hcont₂, hone₁, hone₂, hmul₁, hmul₂, hchar⟩ :=
+    exists_char_charpoly_map_eq_of_not_isIrreducible hv hred
+  have hsum := char_add_char_eq_one_add_cyclotomicCharacter hpodd hv hZinj hRinj hρ
+    χ₁ χ₂ hcont₁ hcont₂ hone₁ hone₂ hmul₁ hmul₂ hchar
+  refine ⟨{hp.out.toHeightOneSpectrumRingOfIntegersRat}, fun v hvS => ?_⟩
+  obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrumRingOfIntegersRat v
+  have hqp : q ≠ p := by
+    rintro rfl
+    exact hvS (Finset.mem_singleton_self _)
+  refine ⟨-(1 + q), ?_⟩
+  -- identify the mapped Frobenius charpoly with the mapped charpoly of the
+  -- global Frobenius image, in the spelling of the PROVEN cyclotomic
+  -- evaluation (the two spellings differ only in the subsingleton
+  -- `Algebra ℚ _` instance)
+  have hcp : ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+      (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))
+        (Field.AbsoluteGaloisGroup.adicArithFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat))).charpoly := by
+    rw [show ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+      (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat
+        (Field.AbsoluteGaloisGroup.adicArithFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly from rfl,
+      GaloisRep.toLocal_apply]
+    congr 1
+    congr 1
+    congr 1
+    congr 1
+    exact Subsingleton.elim _ _
+  rw [hcp, hchar]
+  -- the trace coefficient of the split quadratic
+  have hcoeff : ∀ a b : AlgebraicClosure ℚ_[p],
+      ((Polynomial.X - Polynomial.C a) * (Polynomial.X - Polynomial.C b)).coeff 1 =
+        -(a + b) := by
+    intro a b
+    rw [show (Polynomial.X - Polynomial.C a) * (Polynomial.X - Polynomial.C b) =
+      Polynomial.X ^ 2 - (Polynomial.C a + Polynomial.C b) * Polynomial.X +
+        Polynomial.C a * Polynomial.C b by ring]
+    simp
+  rw [hcoeff, hsum, cyclotomicCharacter_adicArithFrob_natCast hq hqp, map_natCast,
+    map_neg, map_add, map_one, map_natCast]
 
 /-- **Algebraicity shadow on the irreducible branch** (sorry node):
 away from a finite set of places, the TRACE coefficient (`coeff 1`) of
