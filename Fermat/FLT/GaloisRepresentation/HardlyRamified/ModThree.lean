@@ -1561,7 +1561,7 @@ theorem exists_kernel_field_of_matrixRange {k : Type u} [Finite k] [Field k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
-    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (_hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
     (b : Module.Basis (Fin 2) (AlgebraicClosure k)
       ((AlgebraicClosure k) ⊗[k] V))
     (e : AlgebraicClosure k ≃+* Dickson.K 3)
@@ -1572,8 +1572,77 @@ theorem exists_kernel_field_of_matrixRange {k : Type u} [Finite k] [Field k]
         (MonoidHomClass.toMonoidHom ρ)) g)).map e) :
     ∃ (K : IntermediateField ℚ (AlgebraicClosure ℚ)) (_ : NumberField K),
       IsGalois ℚ K ∧ K.fixingSubgroup = u.ker ∧
-      Module.finrank ℚ K = Nat.card u.range :=
-  sorry
+      Module.finrank ℚ K = Nat.card u.range := by
+  classical
+  haveI hfinV : Finite V := Module.finite_of_finite k
+  -- `ker ρ ≤ ker u`: the matrix transport of the identity is the identity
+  have htriv : ∀ g : Γ ℚ, ρ g = 1 → u g = 1 := by
+    intro g hg
+    apply Units.ext
+    rw [Units.val_one, hu g]
+    have h1 : (Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g =
+        ((MonoidHomClass.toMonoidHom ρ :
+          Representation k (Γ ℚ) V) g).baseChange (AlgebraicClosure k) := rfl
+    have h2 : (MonoidHomClass.toMonoidHom ρ :
+        Representation k (Γ ℚ) V) g = 1 := hg
+    rw [h1, h2, Module.End.one_eq_id, LinearMap.baseChange_id,
+      ← Module.End.one_eq_id, LinearMap.toMatrix_one,
+      Matrix.map_one _ (map_zero e) (map_one e)]
+  -- `ker u` is an open (hence closed) normal subgroup
+  let Kρ : Subgroup (Γ ℚ) :=
+    { carrier := {g | ρ g = 1}
+      one_mem' := map_one ρ
+      mul_mem' := by
+        intro a b ha hb
+        show ρ (a * b) = 1
+        rw [map_mul, ha, hb, mul_one]
+      inv_mem' := by
+        intro a ha
+        show ρ a⁻¹ = 1
+        have h1 : ρ a⁻¹ * ρ a = 1 := by
+          rw [← map_mul, inv_mul_cancel, map_one]
+        rwa [ha, mul_one] at h1 }
+  have hKρ_open : IsOpen (Kρ : Set (Γ ℚ)) :=
+    isOpen_setOf_galoisRep_eq_one ρ hfinV
+  have hker : Kρ ≤ u.ker := fun g hg => MonoidHom.mem_ker.mpr (htriv g hg)
+  have hopen : IsOpen (u.ker : Set (Γ ℚ)) :=
+    Subgroup.isOpen_mono hker hKρ_open
+  have hclosed : IsClosed (u.ker : Set (Γ ℚ)) :=
+    Subgroup.isClosed_of_isOpen u.ker hopen
+  -- the fixed field of `ker u`
+  haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) :=
+    AlgebraicClosure.isAlgebraic ℚ
+  haveI hacQ : IsAlgClosure ℚ (AlgebraicClosure ℚ) :=
+    ⟨inferInstance, halgQ⟩
+  haveI hnormQ : Normal ℚ (AlgebraicClosure ℚ) :=
+    IsAlgClosure.normal ℚ (AlgebraicClosure ℚ)
+  haveI hsepQ : Algebra.IsSeparable ℚ (AlgebraicClosure ℚ) :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI hgalQ : IsGalois ℚ (AlgebraicClosure ℚ) := ⟨⟩
+  set K : IntermediateField ℚ (AlgebraicClosure ℚ) :=
+    IntermediateField.fixedField (E := AlgebraicClosure ℚ) u.ker with hKdef
+  have hfix : K.fixingSubgroup = u.ker :=
+    InfiniteGalois.fixingSubgroup_fixedField ⟨u.ker, hclosed⟩
+  haveI hfd : FiniteDimensional ℚ K :=
+    (InfiniteGalois.isOpen_iff_finite K).mp (by rw [hfix]; exact hopen)
+  haveI hnorm : u.ker.Normal := u.normal_ker
+  haveI hgalK : IsGalois ℚ K := (InfiniteGalois.normal_iff_isGalois K).mp
+    (by rw [hfix]; exact hnorm)
+  haveI : NumberField K := ⟨⟩
+  -- the degree: `[K : ℚ] = #Gal(K/ℚ) = #(Γ ℚ / ker u) = #u.range`
+  have e1 : (Γ ℚ) ⧸ u.ker ≃* ((IntermediateField.fixedField
+      ((⟨u.ker, hclosed⟩ : ClosedSubgroup (Γ ℚ)) : Subgroup (Γ ℚ))) ≃ₐ[ℚ]
+        (IntermediateField.fixedField
+          ((⟨u.ker, hclosed⟩ : ClosedSubgroup (Γ ℚ)) : Subgroup (Γ ℚ)))) :=
+    InfiniteGalois.normalAutEquivQuotient ⟨u.ker, hclosed⟩
+  have e2 : (Γ ℚ) ⧸ u.ker ≃* u.range :=
+    QuotientGroup.quotientKerEquivRange u
+  have hcard1 : Nat.card (K ≃ₐ[ℚ] K) = Module.finrank ℚ K :=
+    IsGalois.card_aut_eq_finrank ℚ K
+  refine ⟨K, inferInstance, inferInstance, hfix, ?_⟩
+  rw [← hcard1]
+  exact ((Nat.card_congr e1.toEquiv).symm).trans (Nat.card_congr e2.toEquiv)
 
 /-- **The kernel field is totally complex** (sorry node — the oddness
 input of the field cut, isolated 2026-07-23): the number field cut
