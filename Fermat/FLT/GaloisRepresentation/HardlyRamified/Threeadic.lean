@@ -958,8 +958,98 @@ theorem exists_cyclotomicCharacterModL_three_ne_one :
   · exact hqne (by linarith [sub_eq_zero.mp h])
   · nlinarith [sq_nonneg (2 * q + 1)]
 
-/-- **The residual twist is the mod-3 cyclotomic character** (sorry node
-— the determinant identification; Serre, Duke 1987, §5.4): along the
+/-- **Mod-3 reduction of the 3-adic cyclotomic character, kernel case**
+(PROVEN 2026-07-23 — the reduction compatibility): on the kernel of the
+mod-3 cyclotomic character the 3-adic cyclotomic character is
+`≡ 1 mod 3`. Route: `cyclotomicCharacter.toZModPow` (at level `3¹`)
+identifies the reduction of the 3-adic character with
+`modularCyclotomicCharacter`, which is `cyclotomicCharacterModL 3`
+(definitional); the hypothesis makes that reduction `1`, and
+`PadicInt.ker_toZModPow` converts the vanishing of `χ - 1` into
+span-membership. -/
+theorem cyclotomicCharacter_sub_one_mem_span_three (g : Γ ℚ)
+    (hg : cyclotomicCharacterModL 3 g = 1) :
+    ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 g.toRingEquiv :
+      ℤ_[3]ˣ) : ℤ_[3]) - 1 ∈ Ideal.span ({(3 : ℤ_[3])} : Set ℤ_[3]) := by
+  have hker : ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 g.toRingEquiv :
+      ℤ_[3]ˣ) : ℤ_[3]) - 1 ∈
+      RingHom.ker (PadicInt.toZModPow (p := 3) 1) := by
+    rw [RingHom.mem_ker, map_sub, map_one, sub_eq_zero,
+      cyclotomicCharacter.toZModPow]
+    have h2 : modularCyclotomicCharacter (AlgebraicClosure ℚ)
+        (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ)
+          (3 ^ 1))
+        g.toRingEquiv = cyclotomicCharacterModL 3 g := rfl
+    rw [h2, hg]
+    rfl
+  rwa [PadicInt.ker_toZModPow, pow_one] at hker
+
+/-- **Mod-3 reduction of the 3-adic cyclotomic character, non-kernel
+case** (PROVEN 2026-07-23 — the reduction compatibility): off the
+kernel of the mod-3 cyclotomic character — where the character takes
+its only other value `-1` in `(ZMod 3)ˣ` — the 3-adic cyclotomic
+character is `≡ -1 mod 3`. Same route as the kernel case, with the
+two-element group `(ZMod 3)ˣ` forcing the value `-1`. -/
+theorem cyclotomicCharacter_add_one_mem_span_three (g : Γ ℚ)
+    (hg : cyclotomicCharacterModL 3 g ≠ 1) :
+    ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 g.toRingEquiv :
+      ℤ_[3]ˣ) : ℤ_[3]) + 1 ∈ Ideal.span ({(3 : ℤ_[3])} : Set ℤ_[3]) := by
+  have hcases : ∀ u : (ZMod 3)ˣ, u = 1 ∨ u = -1 := by decide
+  have hneg : cyclotomicCharacterModL 3 g = -1 :=
+    (hcases _).resolve_left hg
+  have hker : ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 g.toRingEquiv :
+      ℤ_[3]ˣ) : ℤ_[3]) + 1 ∈
+      RingHom.ker (PadicInt.toZModPow (p := 3) 1) := by
+    rw [RingHom.mem_ker, map_add, map_one, cyclotomicCharacter.toZModPow]
+    have h2 : modularCyclotomicCharacter (AlgebraicClosure ℚ)
+        (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ)
+          (3 ^ 1))
+        g.toRingEquiv = cyclotomicCharacterModL 3 g := rfl
+    rw [h2, hneg]
+    decide
+  rwa [PadicInt.ker_toZModPow, pow_one] at hker
+
+/-- **The residual determinant is the diagonal entry** (sorry node — the
+determinant computation of the triangular reduction): along the
+residually adapted pair `(w₀, v₀)` — with `w₀` residually spanning the
+line `ker π` and the quotient character trivial (`hπequiv`) — the
+determinant of `ρ g` is residually the diagonal entry `a g`. Route:
+`(w₀, v₀)` is an `R`-basis of `V` (residually independent by
+`hv₀`/`hw₀ne`, hence a basis by the Nakayama argument of
+`exists_residual_adapted_basis`); in the base-changed basis the matrix
+of `(ρ.baseChange kk) g` is triangular with diagonal `(ā g, 1)` (the
+`1` from `hπequiv`), so `LinearMap.det_baseChange` computes the
+reduction of `det (ρ g)` as `ā g`, and `ker (algebraMap R kk) = 𝔪`
+(kernel of a surjection onto a field over the local `R`) converts the
+residual identity into membership. -/
+theorem det_sub_residual_a_mem_maximalIdeal
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (w₀ : V) (hw₀π : π ((1 : kk) ⊗ₜ[R] w₀) = 0)
+    (hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0)
+    (a : Γ ℚ → R)
+    (ha : ∀ g : Γ ℚ, ρ g w₀ - a g • w₀ ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V))
+    (g : Γ ℚ) :
+    ρ.det g - a g ∈ IsLocalRing.maximalIdeal R := by
+  sorry
+
+/-- **The residual twist is the mod-3 cyclotomic character** (DERIVED
+2026-07-23 from the three leaves above — the determinant identification;
+Serre, Duke 1987, §5.4): along the
 residually adapted pair `(w₀, v₀)`, the reduction of `ρ` is triangular
 with trivial quotient character (`hπequiv`), so its determinant is
 residually the diagonal entry `a`; but the determinant is the 3-adic
@@ -1000,7 +1090,33 @@ theorem residual_twist_eq_cyclotomicCharacterModL
       a g - 1 ∈ IsLocalRing.maximalIdeal R) ∧
     (cyclotomicCharacterModL 3 g ≠ 1 →
       a g + 1 ∈ IsLocalRing.maximalIdeal R) := by
-  sorry
+  -- the determinant is residually the diagonal entry `a`
+  have hdet_a : ρ.det g - a g ∈ IsLocalRing.maximalIdeal R :=
+    det_sub_residual_a_mem_maximalIdeal V hV kk hsurj π hπsurj hπequiv
+      v₀ hv₀ w₀ hw₀π hw₀ne a ha g
+  -- span-membership in `ℤ₃` transports into the maximal ideal of `R`
+  have htrans : ∀ x : ℤ_[3], x ∈ Ideal.span ({(3 : ℤ_[3])} : Set ℤ_[3]) →
+      algebraMap ℤ_[3] R x ∈ IsLocalRing.maximalIdeal R := by
+    intro x hx
+    obtain ⟨y, hy⟩ := Ideal.mem_span_singleton'.mp hx
+    have h3 : algebraMap ℤ_[3] R (3 : ℤ_[3]) = (3 : R) := by
+      rw [show (3 : ℤ_[3]) = ((3 : ℕ) : ℤ_[3]) by norm_cast, map_natCast]
+      norm_cast
+    rw [← hy, map_mul, h3]
+    exact Ideal.mul_mem_left _ _ three_mem_maximalIdeal
+  constructor
+  · intro h1
+    have hchi := htrans _ (cyclotomicCharacter_sub_one_mem_span_three g h1)
+    rw [map_sub, map_one, ← hρ.det g] at hchi
+    have heq : a g - 1 = (ρ.det g - 1) - (ρ.det g - a g) := by ring
+    rw [heq]
+    exact Ideal.sub_mem _ hchi hdet_a
+  · intro h1
+    have hchi := htrans _ (cyclotomicCharacter_add_one_mem_span_three g h1)
+    rw [map_add, map_one, ← hρ.det g] at hchi
+    have heq : a g + 1 = (ρ.det g + 1) - (ρ.det g - a g) := by ring
+    rw [heq]
+    exact Ideal.sub_mem _ hchi hdet_a
 
 /-- **The ω-defect dies on the cyclotomic kernel** (sorry node — the
 arithmetic core of the ω-component; Serre, Duke 1987, §5.4,
@@ -1416,9 +1532,11 @@ theorem differentIdeal_eq_top_of_forall_inertia_eq_bot
   rw [← Ideal.ramificationIdx_eq_one_iff, ← hcard, h Q hQprime hQne,
     Subgroup.card_bot]
 
+set_option backward.isDefEq.respectTransparency false in
 open NumberField in
-/-- **Local inertia covers finite-level inertia** (sorry node — the
-decomposition stratum): for a finite Galois subextension `L/ℚ` of `ℚ̄`
+/-- **Local inertia covers finite-level inertia** (PROVEN 2026-07-23 —
+the decomposition stratum, derived from MazurTorsion's
+`inertia_eq_bot_of_le_fixingSubgroup` with `τ = 1`): for a finite Galois subextension `L/ℚ` of `ℚ̄`
 and a nonzero prime `Q` of `𝓞 L`, if the conjugates of the images in
 `Γ ℚ` of all the local inertia subgroups restrict trivially to `L`,
 then the inertia group of `Q` in `Gal(L/ℚ)` is trivial. Content: the
@@ -1442,7 +1560,60 @@ theorem inertia_eq_bot_of_forall_localInertia_restrictNormalHom
           σ * τ⁻¹) = 1)
     (Q : Ideal (𝓞 L)) (hQp : Q.IsPrime) (hQ : Q ≠ ⊥) :
     Q.inertia (L ≃ₐ[ℚ] L) = ⊥ := by
-  sorry
+  classical
+  haveI := hQp
+  haveI : NumberField L := ⟨⟩
+  haveI : IsGalois ℚ L := ⟨⟩
+  -- the rational prime under `Q`
+  have hp0 : Q.under ℤ ≠ ⊥ := mt Ideal.eq_bot_of_comap_eq_bot hQ
+  haveI : (Q.under ℤ).IsPrime := Ideal.IsPrime.under ℤ Q
+  obtain ⟨z, hz⟩ := (IsPrincipalIdealRing.principal (Q.under ℤ)).principal
+  have hzne : z ≠ 0 := by
+    rintro rfl
+    apply hp0
+    rw [hz]
+    exact Ideal.span_singleton_eq_bot.mpr rfl
+  have hzprime : Prime z := by
+    have hp := ‹(Q.under ℤ).IsPrime›
+    rw [hz] at hp
+    exact (Ideal.span_singleton_prime hzne).mp hp
+  have hq : z.natAbs.Prime := Int.prime_iff_natAbs_prime.mp hzprime
+  -- `q ∈ Q` for the positive generator `q = z.natAbs`
+  have hzmem : z ∈ Q.under ℤ := hz ▸ Ideal.mem_span_singleton_self z
+  have hnatmem : ((z.natAbs : ℤ)) ∈ Q.under ℤ := by
+    have habs : ((z.natAbs : ℤ)) = z ∨ ((z.natAbs : ℤ)) = -z := by omega
+    rcases habs with h | h
+    · rwa [h]
+    · rw [h]
+      exact (Ideal.under ℤ Q).neg_mem hzmem
+  have hQmem : ((z.natAbs : ℕ) : 𝓞 L) ∈ Q := by
+    rw [← map_natCast (algebraMap ℤ (𝓞 L)) z.natAbs]
+    exact Ideal.mem_comap.mp hnatmem
+  -- reduce to the MazurTorsion transport node: the image of the local
+  -- inertia at `q` fixes `L` pointwise (the `τ = 1` case of `hloc`)
+  refine inertia_eq_bot_of_le_fixingSubgroup L hq ?_ Q hQmem
+  have hle' : Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+      (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat)
+      ≤ L.fixingSubgroup := by
+    rintro g ⟨σ, hσ, rfl⟩
+    have h1 := hloc hq.toHeightOneSpectrumRingOfIntegersRat σ 1 hσ
+    rw [one_mul, inv_one, mul_one] at h1
+    have hcoe : (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom σ =
+        Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ := rfl
+    rw [← IntermediateField.restrictNormalHom_ker L, MonoidHom.mem_ker, hcoe]
+    exact h1
+  -- bridge the divergent `Algebra ℚ` spellings (MazurTorsion's statement
+  -- was elaborated with `DivisionRing.toRatAlgebra`; this file boosts the
+  -- canonical instances) — all `Algebra ℚ` structures are equal
+  convert hle' using 2
+  congr!
+  exact Subsingleton.elim _ _
 
 open NumberField in
 /-- **Homomorphisms of `Γ ℚ` trivial on all local inertia are trivial**
@@ -1615,17 +1786,37 @@ theorem isOpen_setOf_forall_sub_mem_pow_smul
   rw [htr]
   exact (continuous_sub_right _).isOpen_preimage _ hIk
 
-/-- **Approximate homomorphisms die on inertia at `2`** (sorry node —
-the tame stratum): a function `T` on `Γ ℚ` with values in `𝔪ⁿ⁺¹` which
-is a homomorphism modulo `𝔪ⁿ⁺²` and has open congruence kernel kills
-the local inertia at `2`. Content (local Kronecker–Weber / tame
-conjugation): modulo `𝔪ⁿ⁺²` the target is a `3`-torsion group
-(`3 ∈ 𝔪`, `three_mem_maximalIdeal`), and the abelianized inertia of
-`ℚ₂` is `ℤ₂ˣ`, a pro-`2` group: the wild part is pro-`2` and dies by
-continuity; a tame generator `t` satisfies `F t F⁻¹ = t²·(wild)` for an
-arithmetic Frobenius `F` (`Field.AbsoluteGaloisGroup.adicArithFrob`),
-so its image `x` in the abelian `3`-torsion quotient satisfies
-`x = 2x`, i.e. `x = 0` (`2 ≡ -1 mod 3` is invertible). No hypothesis on
+/-- **Exponent-3 characters of `Γ ℚ` die on inertia at `2`** (sorry node
+— the tame stratum, group form): a homomorphism `φ` from `Γ ℚ` to an
+abelian group of exponent `3` with open kernel kills the image of the
+local inertia at `2`. Content (local Kronecker–Weber / tame
+conjugation): the wild inertia of `ℚ₂` is pro-`2` and dies in the
+finite `3`-torsion quotient by continuity; a tame generator `t`
+satisfies `F t F⁻¹ = t²·(wild)` for an arithmetic Frobenius `F`
+(`Field.AbsoluteGaloisGroup.adicArithFrob`), so — `φ` being defined on
+all of `Γ ℚ` with abelian target — `φ(t) = φ(F t F⁻¹) = φ(t)²`, i.e.
+`φ(t)⁻¹ = 1` in the exponent-3 group. -/
+theorem threeTorsion_monoidHom_vanishes_on_localInertia_at_two
+    {A : Type*} [CommGroup A] (φ : (Γ ℚ) →* A)
+    (hopen : IsOpen ((φ.ker : Subgroup (Γ ℚ)) : Set (Γ ℚ)))
+    (h3 : ∀ x : Γ ℚ, φ x ^ 3 = 1)
+    (σ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+    (hσ : σ ∈ localInertiaGroup
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :
+    φ (Field.absoluteGaloisGroup.map
+      (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+  sorry
+
+/-- **Approximate homomorphisms die on inertia at `2`** (DERIVED
+2026-07-23 from the group-form leaf above — the tame stratum): a
+function `T` on `Γ ℚ` with values in `𝔪ⁿ⁺¹` which is a homomorphism
+modulo `𝔪ⁿ⁺²` and has open congruence kernel kills the local inertia
+at `2`. Modulo `𝔪ⁿ⁺²` the function is an honest homomorphism into the
+additive group of `R ⧸ 𝔪ⁿ⁺²` whose image is `3`-torsion (`3 ∈ 𝔪`,
+`three_mem_maximalIdeal`, so `3·T g ∈ 𝔪·𝔪ⁿ⁺¹ = 𝔪ⁿ⁺²`) with open
+kernel (`hTopen`); the group-form leaf applies. No hypothesis on
 `ρ` is needed — this is a fact about `Γ ℚ₂` and `3`-torsion targets. -/
 theorem hom_vanishes_on_localInertia_at_two
     {R : Type u} [CommRing R]
@@ -1646,7 +1837,66 @@ theorem hom_vanishes_on_localInertia_at_two
       (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
         Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) ∈
       IsLocalRing.maximalIdeal R ^ (n + 2) := by
-  sorry
+  classical
+  -- `T 1` is already congruent to `0`
+  have hT1 : T 1 ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+    have h := hThom 1 1
+    rw [mul_one, show T 1 - (T 1 + T 1) = -(T 1) by ring] at h
+    exact neg_mem_iff.mp h
+  -- the induced honest homomorphism into the additive group of `R ⧸ 𝔪ⁿ⁺²`
+  let φ : (Γ ℚ) →* Multiplicative
+      (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) :=
+    { toFun := fun g => Multiplicative.ofAdd
+        (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R ^ (n + 2)) (T g))
+      map_one' := by
+        have h0 : Ideal.Quotient.mk
+            (IsLocalRing.maximalIdeal R ^ (n + 2)) (T 1) = 0 :=
+          Ideal.Quotient.eq_zero_iff_mem.mpr hT1
+        simp only [h0, ofAdd_zero]
+      map_mul' := fun g h => by
+        have h0 : Ideal.Quotient.mk (IsLocalRing.maximalIdeal R ^ (n + 2))
+            (T (g * h) - (T g + T h)) = 0 :=
+          Ideal.Quotient.eq_zero_iff_mem.mpr (hThom g h)
+        rw [map_sub, map_add, sub_eq_zero] at h0
+        simpa [← ofAdd_add] using congrArg Multiplicative.ofAdd h0 }
+  -- membership in the kernel is the congruence condition
+  have hφker : ∀ g : Γ ℚ, φ g = 1 ↔
+      T g ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+    intro g
+    rw [show φ g = Multiplicative.ofAdd
+        (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R ^ (n + 2)) (T g))
+        from rfl,
+      ofAdd_eq_one, Ideal.Quotient.eq_zero_iff_mem]
+  -- the kernel is open
+  have hopen : IsOpen ((φ.ker : Subgroup (Γ ℚ)) : Set (Γ ℚ)) := by
+    have hset : ((φ.ker : Subgroup (Γ ℚ)) : Set (Γ ℚ)) =
+        {g : Γ ℚ | T g ∈ IsLocalRing.maximalIdeal R ^ (n + 2)} := by
+      ext g
+      simp only [SetLike.mem_coe, MonoidHom.mem_ker, Set.mem_setOf_eq,
+        hφker g]
+    rw [hset]
+    exact hTopen
+  -- the image is `3`-torsion: `3·T g ∈ 𝔪·𝔪ⁿ⁺¹ = 𝔪ⁿ⁺²`
+  have h3 : ∀ x : Γ ℚ, φ x ^ 3 = 1 := by
+    intro x
+    have hmem : (3 : ℕ) • T x ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+      rw [nsmul_eq_mul]
+      have h1 : ((3 : ℕ) : R) * T x ∈
+          IsLocalRing.maximalIdeal R * IsLocalRing.maximalIdeal R ^ (n + 1) :=
+        Ideal.mul_mem_mul
+          (by rw [Nat.cast_ofNat]; exact three_mem_maximalIdeal) (hT x)
+      rwa [← pow_succ'] at h1
+    have h0 : (3 : ℕ) • (Ideal.Quotient.mk
+        (IsLocalRing.maximalIdeal R ^ (n + 2)) (T x)) = 0 := by
+      rw [← map_nsmul]
+      exact Ideal.Quotient.eq_zero_iff_mem.mpr hmem
+    rw [show φ x = Multiplicative.ofAdd
+        (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R ^ (n + 2)) (T x))
+        from rfl,
+      ← ofAdd_nsmul, h0, ofAdd_zero]
+  -- the group-form leaf kills the inertia image
+  exact (hφker _).mp
+    (threeTorsion_monoidHom_vanishes_on_localInertia_at_two φ hopen h3 σ hσ)
 
 /-- **The corrected trivial component dies on inertia at `3`** (sorry
 node — the flat stratum; Fontaine): for `σ` in the local inertia at
