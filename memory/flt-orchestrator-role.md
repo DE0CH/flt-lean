@@ -18,4 +18,4 @@ Also (same day, after repeated boundary mistakes): "there's no division of labor
 
 **Design approval gate (Deyao, 2026-07-23):** "tell me the design first, i need to look at the design and approve it before you go about working on it because your design is not good a lot of the times." Infrastructure/architecture designs are presented to Deyao and approved BEFORE any implementation is dispatched. **Dispatch gate (same day):** "don't spawn subagents until i tell you so later" — subagent spawning is suspended until Deyao re-enables it; standing permission is never assumed across such a stop.
 
-**Dispatch gate LIFTED (Deyao, 2026-07-23, same day):** subagent dispatch is live again, under the protocol in [[flt-fleet-13-worktree-protocol]].
+**Dispatch gate still down (Deyao, 2026-07-23, later same day):** the gate was briefly lifted under [[flt-fleet-13-worktree-protocol]], then re-suspended — see [[subagent-dispatch-suspended-until-told]]. Deyao: "fleet is buggy from experience." Do not treat the fleet protocol's existence as standing authorization to dispatch.

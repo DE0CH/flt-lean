@@ -19,4 +19,4 @@
 - [Don't invent — use existing tools](dont-invent-delegate-to-existing-tools.md) — Deyao 2026-07-23: every infra incident traced to a Claude invention; name the existing owner (compiler/LSP/lake/git/fs) before building anything
 - [Spawned resources have owners](spawned-resources-have-owners.md) — Deyao 2026-07-23: pair every spawn with a release at task end; reap agents' workers at integration; outliving a task requires a named new owner
 - [Why-question is not consent](why-question-is-not-consent.md) — Deyao 2026-07-23: a why question is investigation, not consent to a pending action and not a request to go fix the thing
-- [Fleet dispatch scoped to math, not blanket](fleet-dispatch-scoped-to-math-not-blanket.md) — Deyao 2026-07-23: the 13-worktree protocol authorizes dispatch for the math-proving loop specifically, not any task that happens to reuse the same pool mechanism
+- [Subagent dispatch suspended until told](subagent-dispatch-suspended-until-told.md) — Deyao 2026-07-23: blanket pause on ALL subagent dispatch, not scoped by task type, until Deyao explicitly re-authorizes it
