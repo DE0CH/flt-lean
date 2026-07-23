@@ -37,20 +37,28 @@ worktrees, `~/flt-lean-1` .. `~/flt-lean-13`, each on its own
 same-numbered branch, each with its own `flt-report-server@flt-lean-N`
 systemd instance (the template unit `flt-report-server@.service`,
 `WorkingDirectory=%h/%i`) already running — `lake serve` on FIFOs,
-scoped to that worktree.
+scoped to that worktree. Live allocation state: `~/.flt-worktree-pool`,
+one line per worktree, `<name> free` or `<name> claimed`.
 
 - **Max 13 concurrent subagents**, one per worktree, 1:1.
-- **Before dispatch**: pick a FREE worktree (no agent currently owns
-  it) and fast-forward it to main — `git -C ~/flt-lean-N merge
-  --ff-only main`. Do **not** touch `.lake`; that worktree's own
-  `lake serve` instance rebuilds incrementally on its own. (This
-  replaces the earlier per-fanout ZFS-snapshot `.lake` seeding scheme
-  — that was for creating a brand-new worktree per dispatch; this pool
-  is fixed and already warm.)
+- **Dispatch**: put the literal placeholder `{{FLT_WORKTREE}}` in the
+  agent's prompt wherever its worktree path belongs.
+  `.claude/worktree-pool-hook.py` (a `PreToolUse` hook on the `Agent`
+  tool) finds a `free` entry, checks it is git-clean and its branch is
+  an ancestor of main, fast-forwards it to main (`--ff-only`), marks it
+  `claimed`, and substitutes the real path for the placeholder. Never
+  touch `.lake` directly — the worktree's own `lake serve` instance
+  rebuilds incrementally on its own. No free worktree → the hook denies
+  the tool call. A claimed worktree that is dirty or not an ancestor of
+  main is not auto-corrected — the hook hard-crashes (traceback to
+  stderr, exit 2, tool call blocked): that state means something beyond
+  allocation went wrong.
 - **On agent completion**: the orchestrator merges the agent's branch
-  into main, then leaves the worktree folder alone — no reset, no
-  extra cleanup. It sits until the next dispatch cycle's `--ff-only`
-  picks it up again.
+  into main, then hand-edits `~/.flt-worktree-pool` to mark that
+  worktree `free` again (no reliable hook fires on "the orchestrator
+  finished merging" — `git merge` is just a Bash call among many, so
+  this step is the orchestrator's explicit responsibility). Otherwise
+  leave the worktree folder alone.
 - **No per-agent server/file lifecycle management**: don't close LSP
   files, don't build reapers or memory-conservation tooling for this.
   Memory grows but stays bounded over time — accepted as fine, not a
