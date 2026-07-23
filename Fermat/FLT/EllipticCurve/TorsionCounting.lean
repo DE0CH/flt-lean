@@ -169,7 +169,7 @@ theorem nonempty_torsionBy_addEquiv_pi_zmod {A : Type*} [AddCommGroup A] {n : �
     (h : ∀ d : ℕ, d ∣ n → Nat.card (torsionBy ℤ A d) = d ^ r) :
     Nonempty (torsionBy ℤ A n ≃+ (Fin r → ZMod n)) := by
   classical
-  set T := torsionBy ℤ A (n : ℤ) with hT
+  set T := torsionBy ℤ A (n : ℤ)
   -- Step 1: `T` is finite.
   have hTcard : Nat.card T = n ^ r := h n dvd_rfl
   have hTfin : Finite T := Nat.finite_of_card_ne_zero (by
@@ -271,7 +271,7 @@ theorem nonempty_torsionBy_addEquiv_pi_zmod {A : Type*} [AddCommGroup A] {n : �
     have hin : i0 ∈ S := Finset.mem_filter.mpr ⟨Finset.mem_univ _, rfl, hei0⟩
     by_contra hne
     have hlt : e i0 < n.factorization (p i0) := lt_of_le_of_ne (hle' i0 hin) hne
-    have hcontra : ∑ i ∈ S, e i < ∑ i ∈ S, n.factorization (p i0) :=
+    have hcontra : ∑ i ∈ S, e i < ∑ _i ∈ S, n.factorization (p i0) :=
       Finset.sum_lt_sum (fun i hi => hle' i hi) ⟨i0, hin, hlt⟩
     rw [hsum, Finset.sum_const, smul_eq_mul, hScard] at hcontra
     exact lt_irrefl _ hcontra

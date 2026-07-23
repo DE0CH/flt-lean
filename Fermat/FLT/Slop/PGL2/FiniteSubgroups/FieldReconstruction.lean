@@ -235,7 +235,7 @@ theorem p_subgroup_fixing_infinity_translations
         (isPGroup_orderOf_eq_prime p H hH_p ⟨g, hg⟩ (fun h ↦ hg_one (congrArg Subtype.val h)))).imp fun b hb ↦ hb.2
   have h_image : (fun b ↦ translationPGL p b) '' translationSet p H = (H : Set (PGLOf (K p))) := by
     ext g
-    refine ⟨fun ⟨x, hx, hg⟩ ↦ hg ▸ hx, fun hg ↦ ?_⟩
+    refine ⟨fun ⟨_, hx, hg⟩ ↦ hg ▸ hx, fun hg ↦ ?_⟩
     obtain ⟨b, hb⟩ := h_translation_set g hg
     exact ⟨b, show translationPGL p b ∈ H from hb ▸ hg, hb.symm⟩
   refine ⟨h_translation_set, by
@@ -1035,7 +1035,7 @@ theorem finite_subgroup_eq_roots_of_unity
     (_hS_inv : ∀ a ∈ S, a⁻¹ ∈ S)
     (hS_ne_zero : ∀ a ∈ S, a ≠ 0) :
     ∀ c : K p, c ^ n = 1 → c ≠ 0 → c ∈ S := by
-  intro c hc hc_ne
+  intro c hc _hc_ne
   have h0 : (0 : K p) ∉ S := fun h0 ↦ hS_ne_zero 0 h0 rfl
   have h_pow : ∀ a ∈ S, a ^ n = 1 := fun a ha ↦
     have h_image : Finset.image (a * ·) S = S :=
@@ -1378,7 +1378,7 @@ theorem normDilationParam_image_card
             ext x
             simp only [Finset.mem_coe, Set.Finite.mem_toFinset]
           exact (congrArg Set.ncard h_coe).trans (Set.ncard_coe_finset (Set.toFinite S).toFinset)
-      _ = ∑ y ∈ (Set.toFinite S).toFinset, Nat.card (P : Subgroup G) := by
+      _ = ∑ _y ∈ (Set.toFinite S).toFinset, Nat.card (P : Subgroup G) := by
           simp only [Finset.sum_const, smul_eq_mul]
       _ = ∑ y ∈ (Set.toFinite S).toFinset, Set.ncard {g : (Subgroup.normalizer ((P : Subgroup G) : Set G)) | normDilationParam p G hG_p P hP_fix g = y} := by
           apply Finset.sum_congr rfl
