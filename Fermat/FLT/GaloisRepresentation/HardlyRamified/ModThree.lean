@@ -2842,18 +2842,57 @@ theorem mod_three_reducible {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k
   exact not_isAbsolutelyIrreducible V hV hρ
     ((OddRep.isIrreducible_iff_isAbsolutelyIrreducible ρ' heig).mp hirr)
 
-/-- **Raynaud's inertia characters at `3`** (sorry node — the local
-flatness content): if the quotient character `χ` of a stable line of
-a mod-3 hardly ramified representation is RAMIFIED at `3`, then on
-the inertia at `3` it EQUALS the mod-3 cyclotomic character. Content:
-flatness (`IsFlatAt` at `3`) prolongs the local representation at `3`
-to a finite flat group scheme over `ℤ₃` killed by `3`, and the stable
-line makes it an extension of order-`3` group schemes; by Oort–Tate /
-Raynaud, the characters by which the inertia at `3` acts on the two
-subquotients are powers `ε^a`, `a ∈ {0, 1}`, of the level-one
-fundamental character `ε` (= the mod-3 cyclotomic character on
-inertia); so a RAMIFIED subquotient character restricted to inertia
-is exactly `ε`. -/
+/-- **The Oort–Tate/Raynaud dichotomy at `3`** (sorry node — the
+local flatness classification, isolated 2026-07-23): the quotient
+character `χ` of a stable line of a mod-3 hardly ramified
+representation, restricted to the inertia at `3`, is either TRIVIAL
+or the mod-3 CYCLOTOMIC character — nothing else can occur. Content:
+flatness (`hρ.isFlat`) prolongs the local representation at `3` to a
+finite flat group scheme over `ℤ₃` killed by `3`, and the stable line
+makes it an extension of order-`3` group schemes (the scheme-theoretic
+closure of the generic-fiber subgroup); by Oort–Tate/Raynaud, an
+order-`3` group scheme over `ℤ₃` is `ℤ/3`, `μ₃`, or (for `3 ≡ −1`,
+not here) nothing further at level one — its inertial character is
+`ε^a` with `a ∈ {0, 1}` for the level-one fundamental character `ε`,
+which on the inertia equals the mod-3 cyclotomic character (Raynaud,
+*Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102 (1974), 3.3.2;
+Serre, Duke 1987, §2.8 prop. 8). -/
+theorem quotCharacter_inertia_three_dichotomy
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (W₀ : Submodule k V) (hW₀fr : Module.finrank k W₀ = 1)
+    (hstable : ∀ g v, v ∈ W₀ → ρ g v ∈ W₀)
+    (ψ : Γ ℚ →* kˣ) (hψ : ∀ g, ∀ v ∈ W₀, ρ g v = (ψ g : k) • v)
+    (χ : Γ ℚ →* kˣ)
+    (hχ : ∀ g v, W₀.mkQ (ρ g v) = (χ g : k) • W₀.mkQ v) :
+    (localInertiaGroup
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ≤
+      (χ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) ∨
+    (∀ g ∈ localInertiaGroup
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+      ((χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) g) : k)) =
+        algebraMap ℤ_[3] k (cyclotomicCharacter (AlgebraicClosure ℚ) 3
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))
+                g).toRingEquiv))) :=
+  sorry
+
+/-- **Raynaud's inertia characters at `3`** (DECOMPOSED 2026-07-23
+into the dichotomy sorry node `quotCharacter_inertia_three_dichotomy`
+above; the reduction is proven): if the quotient character `χ` of a
+stable line of a mod-3 hardly ramified representation is RAMIFIED at
+`3`, then on the inertia at `3` it EQUALS the mod-3 cyclotomic
+character — the ramifiedness hypothesis excludes the trivial branch
+of the Oort–Tate/Raynaud dichotomy. -/
 theorem quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified
     {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
     [TopologicalSpace k] [DiscreteTopology k]
@@ -2880,8 +2919,11 @@ theorem quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified
           ((Field.absoluteGaloisGroup.map (algebraMap ℚ
             (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
               Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))
-                g).toRingEquiv)) :=
-  sorry
+                g).toRingEquiv)) := by
+  rcases quotCharacter_inertia_three_dichotomy V hV hρ W₀ hW₀fr hstable
+    ψ hψ χ hχ with h | h
+  · exact absurd h h3
+  · exact h
 
 /-- **The Raynaud dichotomy at `3`** (DECOMPOSED 2026-07-22 into the
 sorry node `quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified`
