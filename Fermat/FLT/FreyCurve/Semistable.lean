@@ -3276,6 +3276,60 @@ theorem galDescProdHom_bijective [FiniteDimensional K ↥L] [IsGalois K ↥L]
     (by simpa using hinj)
   simpa using hsurjlin
 
+/-- Postcomposition with an algebra map distributes over
+`Algebra.TensorProduct.lift` into a commutative target (toolkit for the
+Hopf-axiom computations below). -/
+theorem galDesc_comp_lift {R A₁ A₂ S T : Type*} [CommSemiring R]
+    [Semiring A₁] [Algebra R A₁] [Semiring A₂] [Algebra R A₂]
+    [CommSemiring S] [Algebra R S] [CommSemiring T] [Algebra R T]
+    (φ : S →ₐ[R] T) (f : A₁ →ₐ[R] S) (g : A₂ →ₐ[R] S) :
+    φ.comp (Algebra.TensorProduct.lift f g fun _ _ => Commute.all _ _)
+      = Algebra.TensorProduct.lift (φ.comp f) (φ.comp g)
+          fun _ _ => Commute.all _ _ :=
+  Algebra.TensorProduct.ext' fun x y => by
+    simp [Algebra.TensorProduct.lift_tmul]
+
+/-- The lift of three algebra maps into a commutative target regroups
+along the associator (toolkit for the coassociativity leaf below). -/
+theorem galDesc_lift_assoc {R A₁ A₂ A₃ S : Type*} [CommSemiring R]
+    [Semiring A₁] [Algebra R A₁] [Semiring A₂] [Algebra R A₂]
+    [Semiring A₃] [Algebra R A₃] [CommSemiring S] [Algebra R S]
+    (f : A₁ →ₐ[R] S) (g : A₂ →ₐ[R] S) (h : A₃ →ₐ[R] S) :
+    (Algebra.TensorProduct.lift f
+        (Algebra.TensorProduct.lift g h fun _ _ => Commute.all _ _)
+        fun _ _ => Commute.all _ _).comp
+      (Algebra.TensorProduct.assoc R R R A₁ A₂ A₃).toAlgHom
+      = Algebra.TensorProduct.lift
+          (Algebra.TensorProduct.lift f g fun _ _ => Commute.all _ _) h
+          fun _ _ => Commute.all _ _ := by
+  apply Algebra.TensorProduct.ext'
+  intro u c
+  induction u using TensorProduct.induction_on with
+  | zero => simp [TensorProduct.zero_tmul]
+  | tmul x y =>
+    simp [Algebra.TensorProduct.assoc_tmul, Algebra.TensorProduct.lift_tmul,
+      mul_assoc]
+  | add u₁ u₂ h₁ h₂ =>
+    rw [TensorProduct.add_tmul, map_add, map_add, h₁, h₂]
+
+/-- Evaluation of an equivariant function at a point of `B`, valued in
+`L` — the separating functional for the Hopf-axiom computations. -/
+def galDescEvalL (act : (↥L ≃ₐ[K] ↥L) → B → B) (b : B) :
+    ↥(galDescSubalgebra K Ω L B act) →ₐ[K] ↥L :=
+  (Pi.evalAlgHom K (fun _ : B => ↥L) b).comp (galDescSubalgebra K Ω L B act).val
+
+/-- Evaluating the tensor-comparison map at a point of `B × C` is the
+lift of the two evaluations. -/
+theorem galDescEvalL_comp_prodHom (actB : (↥L ≃ₐ[K] ↥L) → B → B)
+    (actC : (↥L ≃ₐ[K] ↥L) → C → C) (b : B) (c : C) :
+    (galDescEvalL K Ω L (fun g x => (actB g x.1, actC g x.2)) (b, c)).comp
+        (galDescProdHom K Ω L actB actC)
+      = Algebra.TensorProduct.lift (galDescEvalL K Ω L actB b)
+          (galDescEvalL K Ω L actC c) fun _ _ => Commute.all _ _ :=
+  Algebra.TensorProduct.ext' fun h k => by
+    rw [Algebra.TensorProduct.lift_tmul]
+    exact galDescProdHom_tmul_apply K Ω L actB actC h k (b, c)
+
 end GalDescCore
 
 variable (A : Type) [AddCommGroup A]
@@ -3354,6 +3408,117 @@ noncomputable def galDescComul :
       (GalDescAlg K Ω L A ρ') ⊗[K] (GalDescAlg K Ω L A ρ') :=
   ((galDescTensorEquiv K Ω L A ρ').symm.toAlgHom).comp (galDescAdd K Ω L A ρ')
 
+/-- The tensor comparison inverts the comultiplication back to the
+pullback along the addition: `μ ∘ Δ = add*`. -/
+theorem galDescTensorHom_comp_comul :
+    (galDescTensorHom K Ω L A ρ').comp (galDescComul K Ω L A ρ')
+      = galDescAdd K Ω L A ρ' :=
+  AlgHom.ext fun h =>
+    (galDescTensorEquiv K Ω L A ρ').apply_symm_apply (galDescAdd K Ω L A ρ' h)
+
+/-- **Evaluations compose with the comultiplication as addition of the
+evaluation points**: `(ev_x ⊗ ev_y) ∘ Δ = ev_{x+y}` — the computational
+heart of all remaining Hopf-axiom leaves. -/
+theorem galDesc_lift_evalL_comp_comul (x y : A) :
+    (Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) x)
+        (galDescEvalL K Ω L (fun g a => ρ' g a) y)
+        fun _ _ => Commute.all _ _).comp (galDescComul K Ω L A ρ')
+      = galDescEvalL K Ω L (fun g a => ρ' g a) (x + y) := by
+  have h1 : Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) x)
+      (galDescEvalL K Ω L (fun g a => ρ' g a) y) (fun _ _ => Commute.all _ _)
+      = (galDescEvalL K Ω L (fun g x => (ρ' g x.1, ρ' g x.2)) (x, y)).comp
+          (galDescTensorHom K Ω L A ρ') :=
+    (galDescEvalL_comp_prodHom K Ω L (fun g a => ρ' g a)
+      (fun g a => ρ' g a) x y).symm
+  rw [h1, AlgHom.comp_assoc, galDescTensorHom_comp_comul]
+  exact AlgHom.ext fun h => rfl
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- Elements of the triple tensor `H ⊗ (H ⊗ H)` are separated by the
+triple evaluations `ev_a ⊗ (ev_b ⊗ ev_c)`: the comparison maps into the
+equivariant functions on `A × (A × A)` are injective, and equivariant
+functions are separated pointwise. -/
+theorem galDescTensor₃_ext
+    {x y : GalDescAlg K Ω L A ρ' ⊗[K]
+      (GalDescAlg K Ω L A ρ' ⊗[K] GalDescAlg K Ω L A ρ')}
+    (hxy : ∀ a b c : A,
+      Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) a)
+        (Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) b)
+          (galDescEvalL K Ω L (fun g a => ρ' g a) c) fun _ _ => Commute.all _ _)
+        (fun _ _ => Commute.all _ _) x
+      = Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) a)
+        (Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) b)
+          (galDescEvalL K Ω L (fun g a => ρ' g a) c) fun _ _ => Commute.all _ _)
+        (fun _ _ => Commute.all _ _) y) :
+    x = y := by
+  classical
+  have hval : ∀ (t : GalDescAlg K Ω L A ρ' ⊗[K]
+      (GalDescAlg K Ω L A ρ' ⊗[K] GalDescAlg K Ω L A ρ')) (a b c : A),
+      (galDescProdHom K Ω L (fun g a => ρ' g a) (fun g x => (ρ' g x.1, ρ' g x.2))
+        ((Algebra.TensorProduct.map (AlgHom.id K (GalDescAlg K Ω L A ρ'))
+          (galDescTensorHom K Ω L A ρ')) t) : A × (A × A) → ↥L) (a, (b, c))
+      = Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) a)
+        (Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) b)
+          (galDescEvalL K Ω L (fun g a => ρ' g a) c) fun _ _ => Commute.all _ _)
+        (fun _ _ => Commute.all _ _) t := by
+    intro t a b c
+    induction t using TensorProduct.induction_on with
+    | zero => simp
+    | tmul h u =>
+      have hE : ((galDescTensorHom K Ω L A ρ' u : GalDescAlg₂ K Ω L A ρ') :
+          A × A → ↥L) (b, c)
+          = Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) b)
+            (galDescEvalL K Ω L (fun g a => ρ' g a) c)
+            (fun _ _ => Commute.all _ _) u :=
+        DFunLike.congr_fun (galDescEvalL_comp_prodHom K Ω L (fun g a => ρ' g a)
+          (fun g a => ρ' g a) b c) u
+      calc (galDescProdHom K Ω L (fun g a => ρ' g a)
+            (fun g x => (ρ' g x.1, ρ' g x.2))
+            ((Algebra.TensorProduct.map (AlgHom.id K (GalDescAlg K Ω L A ρ'))
+              (galDescTensorHom K Ω L A ρ')) (h ⊗ₜ[K] u)) : A × (A × A) → ↥L)
+            (a, (b, c))
+          = (h : A → ↥L) a *
+              ((galDescTensorHom K Ω L A ρ' u : GalDescAlg₂ K Ω L A ρ') :
+                A × A → ↥L) (b, c) := rfl
+        _ = (h : A → ↥L) a *
+              Algebra.TensorProduct.lift
+                (galDescEvalL K Ω L (fun g a => ρ' g a) b)
+                (galDescEvalL K Ω L (fun g a => ρ' g a) c)
+                (fun _ _ => Commute.all _ _) u := by rw [hE]
+        _ = Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) a)
+              (Algebra.TensorProduct.lift
+                (galDescEvalL K Ω L (fun g a => ρ' g a) b)
+                (galDescEvalL K Ω L (fun g a => ρ' g a) c)
+                fun _ _ => Commute.all _ _)
+              (fun _ _ => Commute.all _ _) (h ⊗ₜ[K] u) := by
+            rw [Algebra.TensorProduct.lift_tmul]
+            rfl
+    | add t₁ t₂ ih₁ ih₂ =>
+      simp [map_add, ih₁, ih₂]
+  have hmapinj : Function.Injective
+      ⇑(Algebra.TensorProduct.map (AlgHom.id K (GalDescAlg K Ω L A ρ'))
+        (galDescTensorHom K Ω L A ρ')) := by
+    have h1 := Module.Flat.lTensor_preserves_injective_linearMap
+      (M := GalDescAlg K Ω L A ρ') (galDescTensorHom K Ω L A ρ').toLinearMap
+      (galDescTensorHom_bijective K Ω L A ρ').injective
+    exact h1
+  have hprodinj := (galDescProdHom_bijective K Ω L (fun g a => ρ' g a)
+    (fun g x => (ρ' g x.1, ρ' g x.2))
+    (fun b => by rw [map_one]; rfl)
+    (fun g₁ g₂ b => by rw [map_mul]; rfl)
+    (fun p => by rw [map_one]; rfl)
+    (fun g₁ g₂ p => by rw [map_mul]; rfl)).injective
+  apply hmapinj
+  apply hprodinj
+  apply Subtype.ext
+  funext p
+  obtain ⟨a, bc⟩ := p
+  obtain ⟨b, c⟩ := bc
+  rw [hval x a b c, hval y a b c]
+  exact hxy a b c
+
 omit [Finite A] in
 /-- The value at `0` of an equivariant function is Galois-fixed, hence
 lies in the base field (PROVEN — `IsGalois.mem_range_algebraMap_iff_fixed`). -/
@@ -3396,9 +3561,20 @@ noncomputable def galDescCounit : GalDescAlg K Ω L A ρ' →ₐ[K] K where
       (algebraMap K (GalDescAlg K Ω L A ρ') r)).choose_spec]
     rfl
 
-/-- **Coassociativity of the twisted comultiplication** (sorry node —
+omit [Finite A] in
+/-- The defining property of the counit: its image in `L` is the value
+of the equivariant function at `0`. -/
+theorem galDescCounit_algebraMap (h : GalDescAlg K Ω L A ρ') :
+    algebraMap K ↥L (galDescCounit K Ω L A ρ' h) = (h : A → ↥L) 0 :=
+  (galDesc_apply_zero_mem_range K Ω L A ρ' h).choose_spec
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Coassociativity of the twisted comultiplication** (PROVEN —
 after composing with the injective tensor comparison into functions on
-`A × A × A`, both sides are pullback along `(a,b,c) ↦ a+b+c`). -/
+`A × (A × A)`, both sides are pullback along `(a,b,c) ↦ a+b+c`;
+elementwise, all triple evaluations agree by `add_assoc`). -/
 theorem galDescComul_coassoc :
     (Algebra.TensorProduct.assoc K K K (GalDescAlg K Ω L A ρ')
       (GalDescAlg K Ω L A ρ') (GalDescAlg K Ω L A ρ')).toAlgHom.comp
@@ -3406,26 +3582,162 @@ theorem galDescComul_coassoc :
         (AlgHom.id K (GalDescAlg K Ω L A ρ'))).comp (galDescComul K Ω L A ρ')) =
     (Algebra.TensorProduct.map (AlgHom.id K (GalDescAlg K Ω L A ρ'))
       (galDescComul K Ω L A ρ')).comp (galDescComul K Ω L A ρ') := by
-  sorry
+  classical
+  apply AlgHom.ext
+  intro h
+  apply galDescTensor₃_ext K Ω L A ρ'
+  intro a b c
+  simp only [AlgHom.coe_comp, Function.comp_apply]
+  have hΔ : ∀ (x y : A) (t : GalDescAlg K Ω L A ρ'),
+      Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) x)
+        (galDescEvalL K Ω L (fun g a => ρ' g a) y) (fun _ _ => Commute.all _ _)
+        (galDescComul K Ω L A ρ' t) = (t : A → ↥L) (x + y) := by
+    intro x y t
+    exact DFunLike.congr_fun (galDesc_lift_evalL_comp_comul K Ω L A ρ' x y) t
+  have h1 := DFunLike.congr_fun (galDesc_lift_assoc
+    (galDescEvalL K Ω L (fun g a => ρ' g a) a)
+    (galDescEvalL K Ω L (fun g a => ρ' g a) b)
+    (galDescEvalL K Ω L (fun g a => ρ' g a) c))
+    ((Algebra.TensorProduct.map (galDescComul K Ω L A ρ')
+      (AlgHom.id K (GalDescAlg K Ω L A ρ'))) (galDescComul K Ω L A ρ' h))
+  simp only [AlgHom.coe_comp, Function.comp_apply] at h1
+  rw [h1]
+  have hleft : ∀ u : GalDescAlg K Ω L A ρ' ⊗[K] GalDescAlg K Ω L A ρ',
+      Algebra.TensorProduct.lift
+        (Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) a)
+          (galDescEvalL K Ω L (fun g a => ρ' g a) b) fun _ _ => Commute.all _ _)
+        (galDescEvalL K Ω L (fun g a => ρ' g a) c) (fun _ _ => Commute.all _ _)
+        ((Algebra.TensorProduct.map (galDescComul K Ω L A ρ')
+          (AlgHom.id K (GalDescAlg K Ω L A ρ'))) u)
+      = Algebra.TensorProduct.lift
+          (galDescEvalL K Ω L (fun g a => ρ' g a) (a + b))
+          (galDescEvalL K Ω L (fun g a => ρ' g a) c)
+          (fun _ _ => Commute.all _ _) u := by
+    intro u
+    induction u using TensorProduct.induction_on with
+    | zero => simp
+    | tmul p q =>
+      simp only [Algebra.TensorProduct.map_tmul, Algebra.TensorProduct.lift_tmul,
+        AlgHom.coe_id, id_eq]
+      rw [hΔ a b p]
+      rfl
+    | add u₁ u₂ ih₁ ih₂ => simp only [map_add, ih₁, ih₂]
+  have hright : ∀ u : GalDescAlg K Ω L A ρ' ⊗[K] GalDescAlg K Ω L A ρ',
+      Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) a)
+        (Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) b)
+          (galDescEvalL K Ω L (fun g a => ρ' g a) c) fun _ _ => Commute.all _ _)
+        (fun _ _ => Commute.all _ _)
+        ((Algebra.TensorProduct.map (AlgHom.id K (GalDescAlg K Ω L A ρ'))
+          (galDescComul K Ω L A ρ')) u)
+      = Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) a)
+          (galDescEvalL K Ω L (fun g a => ρ' g a) (b + c))
+          (fun _ _ => Commute.all _ _) u := by
+    intro u
+    induction u using TensorProduct.induction_on with
+    | zero => simp
+    | tmul p q =>
+      simp only [Algebra.TensorProduct.map_tmul, Algebra.TensorProduct.lift_tmul,
+        AlgHom.coe_id, id_eq]
+      rw [hΔ b c q]
+      rfl
+    | add u₁ u₂ ih₁ ih₂ => simp only [map_add, ih₁, ih₂]
+  rw [hleft (galDescComul K Ω L A ρ' h), hright (galDescComul K Ω L A ρ' h),
+    hΔ (a + b) c h, hΔ a (b + c) h, add_assoc]
 
-/-- **Left counit axiom for the twisted comultiplication** (sorry node
-— evaluation of the first tensor factor at `0` collapses the pullback
-along addition to the identity). -/
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Left counit axiom for the twisted comultiplication** (PROVEN —
+evaluation of the first tensor factor at `0` collapses the pullback
+along addition to the identity: pointwise, `h (0 + z) = h z`). -/
 theorem galDescComul_rTensor_counit :
     (Algebra.TensorProduct.map (galDescCounit K Ω L A ρ')
       (AlgHom.id K (GalDescAlg K Ω L A ρ'))).comp (galDescComul K Ω L A ρ') =
     ((Algebra.TensorProduct.lid K (GalDescAlg K Ω L A ρ')).symm :
       GalDescAlg K Ω L A ρ' →ₐ[K] K ⊗[K] GalDescAlg K Ω L A ρ') := by
-  sorry
+  classical
+  apply AlgHom.ext
+  intro h
+  apply (Algebra.TensorProduct.lid K (GalDescAlg K Ω L A ρ')).injective
+  show (Algebra.TensorProduct.lid K (GalDescAlg K Ω L A ρ'))
+      ((Algebra.TensorProduct.map (galDescCounit K Ω L A ρ')
+        (AlgHom.id K (GalDescAlg K Ω L A ρ'))) (galDescComul K Ω L A ρ' h))
+    = (Algebra.TensorProduct.lid K (GalDescAlg K Ω L A ρ'))
+      ((Algebra.TensorProduct.lid K (GalDescAlg K Ω L A ρ')).symm h)
+  rw [AlgEquiv.apply_symm_apply]
+  apply Subtype.ext
+  funext z
+  have hΔ : ∀ (x y : A) (t : GalDescAlg K Ω L A ρ'),
+      Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) x)
+        (galDescEvalL K Ω L (fun g a => ρ' g a) y) (fun _ _ => Commute.all _ _)
+        (galDescComul K Ω L A ρ' t) = (t : A → ↥L) (x + y) := by
+    intro x y t
+    exact DFunLike.congr_fun (galDesc_lift_evalL_comp_comul K Ω L A ρ' x y) t
+  have hval : ∀ u : GalDescAlg K Ω L A ρ' ⊗[K] GalDescAlg K Ω L A ρ',
+      ((Algebra.TensorProduct.lid K (GalDescAlg K Ω L A ρ'))
+        ((Algebra.TensorProduct.map (galDescCounit K Ω L A ρ')
+          (AlgHom.id K (GalDescAlg K Ω L A ρ'))) u) : A → ↥L) z
+      = Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) 0)
+          (galDescEvalL K Ω L (fun g a => ρ' g a) z)
+          (fun _ _ => Commute.all _ _) u := by
+    intro u
+    induction u using TensorProduct.induction_on with
+    | zero => simp
+    | tmul p q =>
+      simp only [Algebra.TensorProduct.map_tmul, Algebra.TensorProduct.lid_tmul,
+        AlgHom.coe_id, id_eq, Algebra.TensorProduct.lift_tmul]
+      rw [SetLike.val_smul, Pi.smul_apply, Algebra.smul_def,
+        galDescCounit_algebraMap]
+      rfl
+    | add u₁ u₂ ih₁ ih₂ => simp [map_add, ih₁, ih₂]
+  rw [hval (galDescComul K Ω L A ρ' h), hΔ 0 z h, zero_add]
 
-/-- **Right counit axiom for the twisted comultiplication** (sorry node
-— symmetric to the left axiom). -/
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Right counit axiom for the twisted comultiplication** (PROVEN —
+symmetric to the left axiom: pointwise, `h (z + 0) = h z`). -/
 theorem galDescComul_lTensor_counit :
     (Algebra.TensorProduct.map (AlgHom.id K (GalDescAlg K Ω L A ρ'))
       (galDescCounit K Ω L A ρ')).comp (galDescComul K Ω L A ρ') =
     ((Algebra.TensorProduct.rid K K (GalDescAlg K Ω L A ρ')).symm :
       GalDescAlg K Ω L A ρ' →ₐ[K] GalDescAlg K Ω L A ρ' ⊗[K] K) := by
-  sorry
+  classical
+  apply AlgHom.ext
+  intro h
+  apply (Algebra.TensorProduct.rid K K (GalDescAlg K Ω L A ρ')).injective
+  show (Algebra.TensorProduct.rid K K (GalDescAlg K Ω L A ρ'))
+      ((Algebra.TensorProduct.map (AlgHom.id K (GalDescAlg K Ω L A ρ'))
+        (galDescCounit K Ω L A ρ')) (galDescComul K Ω L A ρ' h))
+    = (Algebra.TensorProduct.rid K K (GalDescAlg K Ω L A ρ'))
+      ((Algebra.TensorProduct.rid K K (GalDescAlg K Ω L A ρ')).symm h)
+  rw [AlgEquiv.apply_symm_apply]
+  apply Subtype.ext
+  funext z
+  have hΔ : ∀ (x y : A) (t : GalDescAlg K Ω L A ρ'),
+      Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) x)
+        (galDescEvalL K Ω L (fun g a => ρ' g a) y) (fun _ _ => Commute.all _ _)
+        (galDescComul K Ω L A ρ' t) = (t : A → ↥L) (x + y) := by
+    intro x y t
+    exact DFunLike.congr_fun (galDesc_lift_evalL_comp_comul K Ω L A ρ' x y) t
+  have hval : ∀ u : GalDescAlg K Ω L A ρ' ⊗[K] GalDescAlg K Ω L A ρ',
+      ((Algebra.TensorProduct.rid K K (GalDescAlg K Ω L A ρ'))
+        ((Algebra.TensorProduct.map (AlgHom.id K (GalDescAlg K Ω L A ρ'))
+          (galDescCounit K Ω L A ρ')) u) : A → ↥L) z
+      = Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) z)
+          (galDescEvalL K Ω L (fun g a => ρ' g a) 0)
+          (fun _ _ => Commute.all _ _) u := by
+    intro u
+    induction u using TensorProduct.induction_on with
+    | zero => simp
+    | tmul p q =>
+      simp only [Algebra.TensorProduct.map_tmul, Algebra.TensorProduct.rid_tmul,
+        AlgHom.coe_id, id_eq, Algebra.TensorProduct.lift_tmul]
+      rw [SetLike.val_smul, Pi.smul_apply, Algebra.smul_def,
+        galDescCounit_algebraMap]
+      exact mul_comm _ _
+    | add u₁ u₂ ih₁ ih₂ => simp [map_add, ih₁, ih₂]
+  rw [hval (galDescComul K Ω L A ρ' h), hΔ z 0 h, add_zero]
 
 /-- The bialgebra structure of the twisted constant group scheme; the
 axioms are the three sorried leaves above. -/
@@ -3435,26 +3747,98 @@ noncomputable instance galDescBialgebra : Bialgebra K (GalDescAlg K Ω L A ρ') 
     (galDescComul_rTensor_counit K Ω L A ρ')
     (galDescComul_lTensor_counit K Ω L A ρ')
 
-/-- **Left antipode axiom** (sorry node — after the tensor comparison,
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Left antipode axiom** (PROVEN — after the tensor comparison,
 `m ∘ (S ⊗ id) ∘ Δ` is pullback along `a ↦ (-a) + a = 0`, the unit of
-the convolution). -/
+the convolution; pointwise, `h (-z + z) = h 0`). -/
 theorem galDesc_mul_antipode_rTensor_comul :
     ((Algebra.TensorProduct.lift (galDescAntipode K Ω L A ρ')
       (AlgHom.id K (GalDescAlg K Ω L A ρ')) fun _ => Commute.all _).comp
       (Bialgebra.comulAlgHom K (GalDescAlg K Ω L A ρ'))) =
     (Algebra.ofId K (GalDescAlg K Ω L A ρ')).comp
       (Bialgebra.counitAlgHom K (GalDescAlg K Ω L A ρ')) := by
-  sorry
+  classical
+  apply AlgHom.ext
+  intro h
+  apply Subtype.ext
+  funext z
+  have hΔ : ∀ (x y : A) (t : GalDescAlg K Ω L A ρ'),
+      Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) x)
+        (galDescEvalL K Ω L (fun g a => ρ' g a) y) (fun _ _ => Commute.all _ _)
+        (galDescComul K Ω L A ρ' t) = (t : A → ↥L) (x + y) := by
+    intro x y t
+    exact DFunLike.congr_fun (galDesc_lift_evalL_comp_comul K Ω L A ρ' x y) t
+  have hval : ∀ u : GalDescAlg K Ω L A ρ' ⊗[K] GalDescAlg K Ω L A ρ',
+      ((Algebra.TensorProduct.lift (galDescAntipode K Ω L A ρ')
+        (AlgHom.id K (GalDescAlg K Ω L A ρ')) fun _ => Commute.all _) u
+        : A → ↥L) z
+      = Algebra.TensorProduct.lift
+          (galDescEvalL K Ω L (fun g a => ρ' g a) (-z))
+          (galDescEvalL K Ω L (fun g a => ρ' g a) z)
+          (fun _ _ => Commute.all _ _) u := by
+    intro u
+    induction u using TensorProduct.induction_on with
+    | zero => simp
+    | tmul p q =>
+      simp only [Algebra.TensorProduct.lift_tmul, AlgHom.coe_id, id_eq]
+      rw [MulMemClass.coe_mul, Pi.mul_apply]
+      rfl
+    | add u₁ u₂ ih₁ ih₂ => simp [map_add, ih₁, ih₂]
+  show ((Algebra.TensorProduct.lift (galDescAntipode K Ω L A ρ')
+      (AlgHom.id K (GalDescAlg K Ω L A ρ')) fun _ => Commute.all _)
+      (galDescComul K Ω L A ρ' h) : A → ↥L) z
+    = ((Algebra.ofId K (GalDescAlg K Ω L A ρ'))
+      (galDescCounit K Ω L A ρ' h) : A → ↥L) z
+  rw [hval (galDescComul K Ω L A ρ' h), hΔ (-z) z h, neg_add_cancel]
+  exact (galDescCounit_algebraMap K Ω L A ρ' h).symm
 
-/-- **Right antipode axiom** (sorry node — symmetric to the left
-axiom). -/
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Right antipode axiom** (PROVEN — symmetric to the left axiom:
+pointwise, `h (z + -z) = h 0`). -/
 theorem galDesc_mul_antipode_lTensor_comul :
     (Algebra.TensorProduct.lift (AlgHom.id K (GalDescAlg K Ω L A ρ'))
       (galDescAntipode K Ω L A ρ') fun _ _ => Commute.all _ _).comp
       (Bialgebra.comulAlgHom K (GalDescAlg K Ω L A ρ')) =
     (Algebra.ofId K (GalDescAlg K Ω L A ρ')).comp
       (Bialgebra.counitAlgHom K (GalDescAlg K Ω L A ρ')) := by
-  sorry
+  classical
+  apply AlgHom.ext
+  intro h
+  apply Subtype.ext
+  funext z
+  have hΔ : ∀ (x y : A) (t : GalDescAlg K Ω L A ρ'),
+      Algebra.TensorProduct.lift (galDescEvalL K Ω L (fun g a => ρ' g a) x)
+        (galDescEvalL K Ω L (fun g a => ρ' g a) y) (fun _ _ => Commute.all _ _)
+        (galDescComul K Ω L A ρ' t) = (t : A → ↥L) (x + y) := by
+    intro x y t
+    exact DFunLike.congr_fun (galDesc_lift_evalL_comp_comul K Ω L A ρ' x y) t
+  have hval : ∀ u : GalDescAlg K Ω L A ρ' ⊗[K] GalDescAlg K Ω L A ρ',
+      ((Algebra.TensorProduct.lift (AlgHom.id K (GalDescAlg K Ω L A ρ'))
+        (galDescAntipode K Ω L A ρ') fun _ _ => Commute.all _ _) u
+        : A → ↥L) z
+      = Algebra.TensorProduct.lift
+          (galDescEvalL K Ω L (fun g a => ρ' g a) z)
+          (galDescEvalL K Ω L (fun g a => ρ' g a) (-z))
+          (fun _ _ => Commute.all _ _) u := by
+    intro u
+    induction u using TensorProduct.induction_on with
+    | zero => simp
+    | tmul p q =>
+      simp only [Algebra.TensorProduct.lift_tmul, AlgHom.coe_id, id_eq]
+      rw [MulMemClass.coe_mul, Pi.mul_apply]
+      rfl
+    | add u₁ u₂ ih₁ ih₂ => simp [map_add, ih₁, ih₂]
+  show ((Algebra.TensorProduct.lift (AlgHom.id K (GalDescAlg K Ω L A ρ'))
+      (galDescAntipode K Ω L A ρ') fun _ _ => Commute.all _ _)
+      (galDescComul K Ω L A ρ' h) : A → ↥L) z
+    = ((Algebra.ofId K (GalDescAlg K Ω L A ρ'))
+      (galDescCounit K Ω L A ρ' h) : A → ↥L) z
+  rw [hval (galDescComul K Ω L A ρ' h), hΔ z (-z) h, add_neg_cancel]
+  exact (galDescCounit_algebraMap K Ω L A ρ' h).symm
 
 /-- The Hopf structure of the twisted constant group scheme: the
 antipode is pullback along negation; the axioms are the two sorried
@@ -3542,15 +3926,90 @@ theorem galDescPointT_bijective [CharZero K] [IsAlgClosure K Ω] :
       simp
   exact hcompbij.comp hbij1
 
-/-- **Evaluation turns addition into convolution** (sorry node — the
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Evaluation turns addition into convolution** (PROVEN — the
 convolution of `ev_a` and `ev_b` is evaluation of the pulled-back
 addition at `(a, b)`, i.e. `ev_{a+b}`, through the tensor-comparison
-isomorphism). -/
+isomorphism: `(ev_a ⊗ ev_b) ∘ Δ = ev_{a+b}` transported along the
+redundant base change, whose comultiplication acts on `r ⊗ h` through
+`Δ h` and the middle four-term exchange). -/
 theorem galDescPointT_conv (a b : A) :
     WithConv.toConv (galDescPointT K Ω L A ρ' (a + b)) =
       WithConv.toConv (galDescPointT K Ω L A ρ' a) *
         WithConv.toConv (galDescPointT K Ω L A ρ' b) := by
-  sorry
+  classical
+  have hptΔ : (Algebra.TensorProduct.lift (galDescPoint K Ω L A ρ' a)
+      (galDescPoint K Ω L A ρ' b) fun _ _ => Commute.all _ _).comp
+      (galDescComul K Ω L A ρ') = galDescPoint K Ω L A ρ' (a + b) := by
+    have h5 : Algebra.TensorProduct.lift (galDescPoint K Ω L A ρ' a)
+        (galDescPoint K Ω L A ρ' b) (fun _ _ => Commute.all _ _)
+        = L.val.comp (Algebra.TensorProduct.lift
+            (galDescEvalL K Ω L (fun g a => ρ' g a) a)
+            (galDescEvalL K Ω L (fun g a => ρ' g a) b)
+            fun _ _ => Commute.all _ _) :=
+      (galDesc_comp_lift L.val (galDescEvalL K Ω L (fun g a => ρ' g a) a)
+        (galDescEvalL K Ω L (fun g a => ρ' g a) b)).symm
+    rw [h5, AlgHom.comp_assoc, galDesc_lift_evalL_comp_comul]
+    exact AlgHom.ext fun h => rfl
+  have hmain : galDescPointT K Ω L A ρ' (a + b)
+      = (Algebra.TensorProduct.lmul' K (S := Ω)).comp
+        ((Algebra.TensorProduct.map (galDescPointT K Ω L A ρ' a)
+          (galDescPointT K Ω L A ρ' b)).comp
+          (Bialgebra.comulAlgHom K (K ⊗[K] GalDescAlg K Ω L A ρ'))) := by
+    apply Algebra.TensorProduct.ext'
+    intro r h
+    have hcomul : (Bialgebra.comulAlgHom K (K ⊗[K] GalDescAlg K Ω L A ρ'))
+        (r ⊗ₜ[K] h)
+        = TensorProduct.AlgebraTensorModule.tensorTensorTensorComm K K K K K K
+            (GalDescAlg K Ω L A ρ') (GalDescAlg K Ω L A ρ')
+            (((1 : K) ⊗ₜ[K] r) ⊗ₜ[K] galDescComul K Ω L A ρ' h) := by
+      rw [show (Bialgebra.comulAlgHom K (K ⊗[K] GalDescAlg K Ω L A ρ'))
+          (r ⊗ₜ[K] h) = Coalgebra.comul (R := K) (r ⊗ₜ[K] h) from rfl,
+        TensorProduct.comul_tmul]
+      rfl
+    have httc : ∀ u : GalDescAlg K Ω L A ρ' ⊗[K] GalDescAlg K Ω L A ρ',
+        (Algebra.TensorProduct.lmul' K (S := Ω))
+          ((Algebra.TensorProduct.map (galDescPointT K Ω L A ρ' a)
+            (galDescPointT K Ω L A ρ' b))
+            (TensorProduct.AlgebraTensorModule.tensorTensorTensorComm K K K K K K
+              (GalDescAlg K Ω L A ρ') (GalDescAlg K Ω L A ρ')
+              (((1 : K) ⊗ₜ[K] r) ⊗ₜ[K] u)))
+        = algebraMap K Ω r *
+            Algebra.TensorProduct.lift (galDescPoint K Ω L A ρ' a)
+              (galDescPoint K Ω L A ρ' b) (fun _ _ => Commute.all _ _) u := by
+      intro u
+      induction u using TensorProduct.induction_on with
+      | zero => simp
+      | tmul p q =>
+        rw [TensorProduct.AlgebraTensorModule.tensorTensorTensorComm_tmul,
+          Algebra.TensorProduct.map_tmul, Algebra.TensorProduct.lmul'_apply_tmul,
+          Algebra.TensorProduct.lift_tmul]
+        have hpa : galDescPointT K Ω L A ρ' a ((1 : K) ⊗ₜ[K] p)
+            = galDescPoint K Ω L A ρ' a p := by
+          simp [galDescPointT]
+        have hpb : galDescPointT K Ω L A ρ' b (r ⊗ₜ[K] q)
+            = algebraMap K Ω r * galDescPoint K Ω L A ρ' b q := by
+          simp [galDescPointT, Algebra.TensorProduct.lid_tmul, Algebra.smul_def]
+        rw [hpa, hpb]
+        ring
+      | add u₁ u₂ ih₁ ih₂ =>
+        simp only [TensorProduct.tmul_add, map_add, ih₁, ih₂]
+        ring
+    show galDescPointT K Ω L A ρ' (a + b) (r ⊗ₜ[K] h)
+      = (Algebra.TensorProduct.lmul' K (S := Ω))
+        ((Algebra.TensorProduct.map (galDescPointT K Ω L A ρ' a)
+          (galDescPointT K Ω L A ρ' b))
+          ((Bialgebra.comulAlgHom K (K ⊗[K] GalDescAlg K Ω L A ρ'))
+            (r ⊗ₜ[K] h)))
+    rw [hcomul, httc (galDescComul K Ω L A ρ' h)]
+    have hfin := DFunLike.congr_fun hptΔ h
+    simp only [AlgHom.coe_comp, Function.comp_apply] at hfin
+    rw [hfin]
+    simp [galDescPointT, Algebra.TensorProduct.lid_tmul, Algebra.smul_def]
+  rw [AlgHom.convMul_def]
+  exact congrArg WithConv.toConv hmain
 
 omit [FiniteDimensional K ↥L] [Finite A] in
 /-- **Galois equivariance of evaluation** (PROVEN — `σ ∘ ev_a` is
