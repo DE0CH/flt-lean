@@ -94,41 +94,6 @@ theorem exists_residue_package {R : Type u} [CommRing R]
       IsOpen ((IsLocalRing.maximalIdeal R : Ideal R) : Set R) ∧
       RingHom.ker (algebraMap R kk) = IsLocalRing.maximalIdeal R ∧
       Module.rank kk (kk ⊗[R] V) = 2 := by
-  -- `3` is in the maximal ideal of `ℤ₃`
-  have h3Z : (3 : ℤ_[3]) ∈ IsLocalRing.maximalIdeal ℤ_[3] := by
-    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff,
-      PadicInt.not_isUnit_iff]
-    have h : ‖((3 : ℕ) : ℤ_[3])‖ = ((3 : ℕ) : ℝ)⁻¹ := PadicInt.norm_p
-    have h2 : ((3 : ℕ) : ℤ_[3]) = (3 : ℤ_[3]) := by norm_cast
-    rw [h2] at h
-    rw [h]
-    norm_num
-  -- `3` is not a unit in `R`: otherwise `R = 3R` and Nakayama over `ℤ₃`
-  -- forces `R = 0`, contradicting nontriviality of the local ring.
-  have h3mem : (3 : R) ∈ IsLocalRing.maximalIdeal R := by
-    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
-    intro h3u
-    have h3R : (algebraMap ℤ_[3] R) 3 = (3 : R) := by
-      rw [show (3 : ℤ_[3]) = ((3 : ℕ) : ℤ_[3]) by norm_cast, map_natCast]
-      norm_cast
-    have htop : (⊤ : Submodule ℤ_[3] R) ≤
-        (IsLocalRing.maximalIdeal ℤ_[3]) • (⊤ : Submodule ℤ_[3] R) := by
-      intro r _
-      obtain ⟨u, hu⟩ := h3u.exists_right_inv
-      have hr : r = (3 : ℤ_[3]) • (u * r) := by
-        rw [Algebra.smul_def, h3R, ← mul_assoc, hu, one_mul]
-      rw [hr]
-      exact Submodule.smul_mem_smul h3Z trivial
-    have hbot : (⊤ : Submodule ℤ_[3] R) = ⊥ :=
-      Submodule.eq_bot_of_le_smul_of_le_jacobson_bot
-        (IsLocalRing.maximalIdeal ℤ_[3]) ⊤
-        (Module.finite_def.mp inferInstance) htop
-        (IsLocalRing.maximalIdeal_le_jacobson ⊥)
-    have h01 : (1 : R) = 0 := by
-      have hmem : (1 : R) ∈ (⊤ : Submodule ℤ_[3] R) := trivial
-      rw [hbot, Submodule.mem_bot] at hmem
-      exact hmem
-    exact one_ne_zero h01
   -- `R` is a Noetherian ring (module-finite over the Noetherian `ℤ₃`)
   haveI hNoeth : IsNoetherianRing R := IsNoetherianRing.of_finite ℤ_[3] R
   -- `R` is compact Hausdorff: transport along a `ℤ₃`-basis, since linear
@@ -172,7 +137,7 @@ theorem exists_residue_package {R : Type u} [CommRing R]
       ext r
       simp
     rw [this]
-    refine isOpen_biUnion fun y hy => ?_
+    refine isOpen_biUnion fun y _ => ?_
     obtain ⟨r₀, hr₀⟩ : ∃ r₀ : R,
         algebraMap R (IsLocalRing.ResidueField R) r₀ = y := by
       rw [IsLocalRing.ResidueField.algebraMap_eq]
@@ -230,10 +195,9 @@ theorem hasFlatProlongationAt_of_subsingleton {A' : Type*} [CommRing A']
     ρ'.HasFlatProlongationAt
       Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat := by
   classical
-  set v := Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat with hv
-  set Kv := IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v with hKv
+  set v := Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+  set Kv := IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v
   set Ov := IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v
-    with hOv
   -- every `Kᵥ`-algebra map out of `Kᵥ ⊗[𝒪ᵥ] 𝒪ᵥ ≅ Kᵥ` is the canonical one
   haveI hsub : Subsingleton (Kv ⊗[Ov] Ov →ₐ[Kv] AlgebraicClosure Kv) := by
     constructor
@@ -259,9 +223,9 @@ theorem hasFlatProlongationAt_of_subsingleton {A' : Type*} [CommRing A']
   · -- the zero equivariant map into the subsingleton space
     exact
       { toFun := fun _ => 0
-        map_smul' := fun g x => (smul_zero g).symm
+        map_smul' := fun g _ => (smul_zero g).symm
         map_zero' := rfl
-        map_add' := fun a b => (add_zero (0 : M')).symm }
+        map_add' := fun _ _ => (add_zero (0 : M')).symm }
   · constructor
     · intro a b _
       exact Subsingleton.elim a b
@@ -735,7 +699,6 @@ theorem exists_residual_adapted_basis {R : Type u} [CommRing R]
   have hfinrank : Module.finrank R V = 2 :=
     Module.finrank_eq_of_rank_eq (by rw [hV]; norm_num)
   set bF : Module.Basis (Fin 2) R V := Module.finBasisOfFinrankEq R V hfinrank
-    with hbF
   set T : V →ₗ[R] V :=
     (LinearMap.toSpanSingleton R V w₀).comp (bF.coord 0) +
       (LinearMap.toSpanSingleton R V v₀).comp (bF.coord 1) with hT
@@ -1320,7 +1283,7 @@ theorem exists_prime_eq_toHeightOneSpectrumRingOfIntegersRat
       v = hp.toHeightOneSpectrumRingOfIntegersRat := by
   classical
   set w : IsDedekindDomain.HeightOneSpectrum ℤ :=
-    (Rat.ringOfIntegersEquiv.symm.heightOneSpectrum).symm v with hwdef
+    (Rat.ringOfIntegersEquiv.symm.heightOneSpectrum).symm v
   obtain ⟨q, hq⟩ := (IsPrincipalIdealRing.principal w.asIdeal).principal
   have hqne : q ≠ 0 := by
     intro h0
@@ -1514,7 +1477,6 @@ theorem monoidHom_eq_one_of_forall_localInertia
   set L : IntermediateField ℚ (AlgebraicClosure ℚ) :=
     IntermediateField.fixedField
       (φ.ker : Subgroup ((AlgebraicClosure ℚ) ≃ₐ[ℚ] (AlgebraicClosure ℚ)))
-    with hLdef
   have hfix : L.fixingSubgroup = φ.ker :=
     InfiniteGalois.fixingSubgroup_fixedField ⟨φ.ker, hclosed⟩
   haveI hfd : FiniteDimensional ℚ L :=
@@ -1630,7 +1592,7 @@ theorem isOpen_setOf_forall_sub_mem_pow_smul
         have h1 := hg i j
         rw [map_sub, Finsupp.sub_apply]
         exact h1
-      set D : V →ₗ[R] V := (ρ g : V →ₗ[R] V) - LinearMap.id with hD
+      set D : V →ₗ[R] V := (ρ g : V →ₗ[R] V) - LinearMap.id
       have happly : ∀ v, D v = ρ g v - v := fun v => rfl
       have hx : ρ g x - x = ∑ i, b.repr x i • (ρ g (b i) - b i) :=
         calc ρ g x - x
@@ -1862,7 +1824,7 @@ theorem trivial_component_hom_vanishes
           abel
         rw [hsplit]
         exact Submodule.neg_mem _
-          (apply_mem_smul_top (ρ g⁻¹ : V →ₗ[R] V) (hg x)) } with hUdef
+          (apply_mem_smul_top (ρ g⁻¹ : V →ₗ[R] V) (hg x)) }
   have hUopen : IsOpen (U : Set (Γ ℚ)) :=
     isOpen_setOf_forall_sub_mem_pow_smul V ρ (n + 2)
   have hUle : U ≤ φ.ker := by
@@ -2523,7 +2485,7 @@ theorem exists_global_triangular_of_residual_trivial_quotient
     obtain ⟨e₁, he₁⟩ := hπRsurj 1
     haveI : IsNoetherianRing R := IsNoetherianRing.of_finite ℤ_[3] R
     haveI : IsNoetherian R V := isNoetherian_of_isNoetherianRing_of_finite R V
-    set N : Submodule R V := LinearMap.ker πR with hN
+    set N : Submodule R V := LinearMap.ker πR
     -- the projection of `V` onto the kernel, along `e₁`
     let prV : V →ₗ[R] V :=
       LinearMap.id - (LinearMap.toSpanSingleton R V e₁).comp πR
@@ -2580,7 +2542,7 @@ theorem exists_global_triangular_of_residual_trivial_quotient
     · rw [Module.Basis.reindex_apply, Equiv.symm_swap, Equiv.swap_apply_right,
         hb'0]
       exact he₁
-  obtain ⟨b, hkerspan, hb1⟩ := hB
+  obtain ⟨b, hkerspan, _⟩ := hB
   -- `b 0` lies in the kernel
   have hb0 : πR (b 0) = 0 := by
     have hmem : b 0 ∈ LinearMap.ker πR := by
