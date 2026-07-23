@@ -138,7 +138,7 @@ theorem exists_valuativeRel_sepClosure :
         exact inv_le_one_of_one_le₀ hx
       exact Or.inr (isIntegral_of_spectralNorm_le_one h1)
   set B : ValuationSubring Ω :=
-    ⟨(integralClosure 𝒪[k] Ω).toSubring, hdicho⟩ with hBdef
+    ⟨(integralClosure 𝒪[k] Ω).toSubring, hdicho⟩
   letI vΩ : ValuativeRel Ω := ValuativeRel.ofValuation B.valuation
   -- membership bridge: a base-field element lands in `B` iff it is a
   -- `k`-integer (integral closedness of the DVR `𝒪[k]`)
@@ -284,23 +284,6 @@ theorem locallyCompactSpace_intermediate
       exact Valued.toNormedField.norm_le_one_iff.mpr
         ((minpoly 𝒪[k] x).coeff n).2
     · exact isIntegral_of_spectralNorm_le_one
-  -- the strict version, via multiplicativity of the inverse
-  have hBmem_lt : ∀ x : Ω, x ≠ 0 →
-      (x ∈ integralClosure 𝒪[k] Ω ∧ x⁻¹ ∉ integralClosure 𝒪[k] Ω ↔
-        spectralNorm k Ω x < 1) := by
-    intro x hx0
-    rw [hBmem, hBmem, spectralNorm_inv]
-    constructor
-    · rintro ⟨h1, h2⟩
-      rcases lt_or_eq_of_le h1 with h | h
-      · exact h
-      · exact absurd (by rw [h, inv_one]) h2
-    · intro h
-      refine ⟨le_of_lt h, ?_⟩
-      intro hinv
-      have hpos : 0 < spectralNorm k Ω x :=
-        spectralNorm_zero_lt hx0 (Algebra.IsAlgebraic.isAlgebraic x)
-      exact absurd h (not_lt.mpr ((inv_le_one₀ hpos).mp hinv))
   -- a strictly-small base element
   obtain ⟨γπ, hγπ0, hγπ1⟩ := ValuativeRel.IsNontrivial.exists_lt_one (R := k)
   obtain ⟨p, hp⟩ := ValuativeRel.valuation_surjective (K := k) γπ
@@ -634,7 +617,7 @@ theorem WeierstrassCurve.tateGluePointAt_inclusion [CharZero k] (q : kˣ)
   letI : Algebra L L' := (IntermediateField.inclusion h).toRingHom.toAlgebra
   haveI hLL' : ValuativeExtension L L' := ⟨fun a b => Iff.rfl⟩
   -- images of `q` and valuation transfer along `L → L'`
-  set qv : L := ((Units.map (algebraMap k L).toMonoidHom q : Lˣ) : L) with hqv
+  set qv : L := ((Units.map (algebraMap k L).toMonoidHom q : Lˣ) : L)
   set qv' : L' := ((Units.map (algebraMap k L').toMonoidHom q : L'ˣ) : L')
     with hqv'
   have hq_incl : algebraMap L L' qv = qv' := by
@@ -823,8 +806,8 @@ theorem WeierstrassCurve.tateGluePointAt_conj [CharZero k] (q : kˣ)
         σ.toAlgHom (tateGluePointAt Ω q hq v hv L u) =
       tateGluePointAt Ω q hq v hv (L.map σ.toAlgHom)
         (Units.map (IntermediateField.intermediateFieldMap σ L).toAlgHom.toRingHom.toMonoidHom u) := by
-  set Lσ := L.map σ.toAlgHom with hLσdef
-  set gmap := (IntermediateField.intermediateFieldMap σ L).toAlgHom with hgmap
+  set Lσ := L.map σ.toAlgHom
+  set gmap := (IntermediateField.intermediateFieldMap σ L).toAlgHom
   -- instances at `L` and `Lσ`
   letI : ValuativeRel L := @ValuativeRel.comap L Ω _ _ v L.val.toRingHom
   letI : TopologicalSpace L := ValuativeRel.topologicalSpace L
@@ -846,7 +829,7 @@ theorem WeierstrassCurve.tateGluePointAt_conj [CharZero k] (q : kˣ)
   haveI hLLσ : ValuativeExtension L Lσ :=
     ⟨fun a b => hσinv σ (L.val a) (L.val b)⟩
   -- images of `q` and valuation transfer along `L → Lσ`
-  set qv : L := ((Units.map (algebraMap k L).toMonoidHom q : Lˣ) : L) with hqv
+  set qv : L := ((Units.map (algebraMap k L).toMonoidHom q : Lˣ) : L)
   set qv' : Lσ := ((Units.map (algebraMap k Lσ).toMonoidHom q : Lσˣ) : Lσ)
     with hqv'
   have hq_incl : algebraMap L Lσ qv = qv' := by
@@ -1130,39 +1113,6 @@ theorem WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel
         WeierstrassCurve.Affine.Point.map (W' := tateCurve ((q : k) : k))
             σ.toAlgHom (φ (Additive.ofMul u)) =
           φ (Additive.ofMul (Units.map σ.toAlgHom.toRingHom.toMonoidHom u))) := by
-  -- The naturality of the fundamental-annulus bilateral coordinates under a
-  -- valuative extension of nonarchimedean local fields (PROVEN in
-  -- `TateUniformization.lean`: `coeffRingEval_map`, `evalA_XA_map`,
-  -- `evalA_YA_map`, `bilateralX_map`, `bilateralY_map`), packaged as the
-  -- coordinate-pair fact the gluing needs to check well-definedness of the
-  -- glued point map independently of the chosen finite subextension.
-  have hnat : ∀ {l : Type uΩ} [Field l] [ValuativeRel l] [TopologicalSpace l]
-      [IsNonarchimedeanLocalField l] [CharZero l] [Algebra k l]
-      [ValuativeExtension k l] (u₀ q₀ : k) (h0 : u₀ ≠ 0) (h1 : u₀ ≠ 1)
-      (hu : valuation k u₀ ≤ 1) (hq1 : valuation k q₀ < 1)
-      (hqu : valuation k q₀ < valuation k u₀)
-      (h0' : algebraMap k l u₀ ≠ 0) (h1' : algebraMap k l u₀ ≠ 1)
-      (hu' : valuation l (algebraMap k l u₀) ≤ 1)
-      (hq1' : valuation l (algebraMap k l q₀) < 1)
-      (hqu' : valuation l (algebraMap k l q₀) < valuation l (algebraMap k l u₀)),
-      algebraMap k l (TateCurve.bilateralX u₀ q₀) =
-        TateCurve.bilateralX (algebraMap k l u₀) (algebraMap k l q₀) ∧
-      algebraMap k l (TateCurve.bilateralY u₀ q₀) =
-        TateCurve.bilateralY (algebraMap k l u₀) (algebraMap k l q₀) :=
-    fun {l} _ _ _ _ _ _ _ u₀ q₀ h0 h1 hu hq1 hqu h0' h1' hu' hq1' hqu' =>
-      ⟨TateCurve.bilateralX_map u₀ q₀ h0 h1 hu hq1 hqu h0' h1' hu' hq1' hqu',
-       TateCurve.bilateralY_map u₀ q₀ h0 h1 hu hq1 hqu h0' h1' hu' hq1' hqu'⟩
-  -- The Tate curve itself is functorial in a valuative extension (PROVEN,
-  -- `TateCurve.tateCurve_map`), so the base-changed curve
-  -- `(tateCurve q₀).map (algebraMap k l)` used to type the eventual
-  -- `WeierstrassCurve.Affine.Point.map` in the gluing construction is
-  -- identified with `tateCurve (algebraMap k l q₀)` directly.
-  have hcurve : ∀ {l : Type uΩ} [Field l] [ValuativeRel l] [TopologicalSpace l]
-      [IsNonarchimedeanLocalField l] [CharZero l] [Algebra k l]
-      [ValuativeExtension k l] (q₀ : k) (hq0 : valuation k q₀ < 1),
-      (WeierstrassCurve.tateCurve q₀).map (algebraMap k l) =
-        WeierstrassCurve.tateCurve (algebraMap k l q₀) :=
-    fun {l} _ _ _ _ _ _ _ q₀ hq0 => TateCurve.tateCurve_map q₀ hq0
   -- The valuative structure of `Ω` and the local-field structure of each
   -- finite subextension (the two prerequisite leaves above): every element
   -- of `Ωˣ` and every point of `E_q(Ω)` lives in some finite intermediate
@@ -1178,10 +1128,6 @@ theorem WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel
       @ValuativeExtension k L _ _ _
         (@ValuativeRel.comap L Ω _ _ vΩ L.val.toRingHom) _ :=
     fun L => valuativeExtension_comap (k := k) Ω vΩ hvΩ L
-  have hLΩ : ∀ L : IntermediateField k Ω,
-      @ValuativeExtension L Ω _ _
-        (@ValuativeRel.comap L Ω _ _ vΩ L.val.toRingHom) vΩ _ :=
-    fun L => valuativeExtension_comap_val (k := k) Ω vΩ L
   classical
   haveI : CharZero Ω :=
     charZero_of_injective_algebraMap (algebraMap k Ω).injective
@@ -1234,7 +1180,7 @@ theorem WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel
     haveI := hfdAdj (u : Ω)
     haveI := hfdAdj (w : Ω)
     set L := IntermediateField.adjoin k {(u : Ω)} ⊔
-      IntermediateField.adjoin k {(w : Ω)} with hLdef
+      IntermediateField.adjoin k {(w : Ω)}
     haveI : FiniteDimensional k L := IntermediateField.finiteDimensional_sup _ _
     have humem : (u : Ω) ∈ L :=
       le_sup_left (α := IntermediateField k Ω)
@@ -1257,7 +1203,7 @@ theorem WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel
       u ∈ Subgroup.zpowers (Units.map (algebraMap k Ω).toMonoidHom q) := by
     intro u
     haveI := hfdAdj (u : Ω)
-    set L := IntermediateField.adjoin k {(u : Ω)} with hLdef
+    set L := IntermediateField.adjoin k {(u : Ω)}
     rw [hΦat L inferInstance u (IntermediateField.mem_adjoin_simple_self k _),
       tateGluePointAt_eq_zero_iff]
     -- transfer `q`-power membership along the injective inclusion
@@ -1293,7 +1239,7 @@ theorem WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel
         Φ (Units.map σ.toAlgHom.toRingHom.toMonoidHom u) := by
     intro σ u
     haveI := hfdAdj (u : Ω)
-    set L := IntermediateField.adjoin k {(u : Ω)} with hLdef
+    set L := IntermediateField.adjoin k {(u : Ω)}
     haveI : FiniteDimensional k (L.map σ.toAlgHom) :=
       LinearEquiv.finiteDimensional
         (IntermediateField.intermediateFieldMap σ L).toLinearEquiv
@@ -1318,7 +1264,7 @@ theorem WeierstrassCurve.exists_tateCurveHomSepClosure_of_finiteLevel
       haveI := hfdAdj x
       haveI := hfdAdj y
       set L := IntermediateField.adjoin k {x} ⊔
-        IntermediateField.adjoin k {y} with hLdef
+        IntermediateField.adjoin k {y}
       haveI : FiniteDimensional k L :=
         IntermediateField.finiteDimensional_sup _ _
       have hxL : x ∈ L :=
@@ -1770,7 +1716,7 @@ theorem WeierstrassCurve.exists_tateTorsionQuotient
       intro h0
       rw [h0, zero_pow hp] at hxpow
       exact hq0 hxpow.symm
-    set xu : Ωˣ := Units.mk0 x hx0 with hxu
+    set xu : Ωˣ := Units.mk0 x hx0
     have hxupow : xu ^ p = E.qUnitSepClosure Ω ^ (1 : ℤ) := by
       apply Units.ext
       rw [Units.val_pow_eq_pow_val, Units.val_zpow_eq_zpow_val, zpow_one]
