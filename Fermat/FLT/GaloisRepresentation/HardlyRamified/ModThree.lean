@@ -2716,6 +2716,74 @@ theorem exists_sqrt_of_quadratic_character_unramified_outside_two_three
       rw [hfix] at hgker
       exact MonoidHom.mem_ker.mp hgker
 
+/-- **One-dimensionality of the kernel of a nonzero singular `2 × 2`
+matrix** (helper, PROVEN 2026-07-23): two vectors annihilated by a
+nonzero `2 × 2` matrix are proportional (a nonzero one spans the
+kernel). Used by the dihedral dichotomy to convert "commutes with a
+nonscalar matrix" into "preserves its eigenline": if the cross-product
+of the two kernel vectors were nonzero they would form a basis
+annihilated by the matrix, forcing it to vanish. -/
+theorem exists_smul_eq_of_mulVec_eq_zero {F : Type*} [Field F]
+    {M : Matrix (Fin 2) (Fin 2) F} (hM : M ≠ 0)
+    {v w : Fin 2 → F} (hv : Matrix.mulVec M v = 0)
+    (hw : Matrix.mulVec M w = 0) (hv0 : v ≠ 0) :
+    ∃ c : F, w = c • v := by
+  classical
+  by_cases hcross : v 0 * w 1 - v 1 * w 0 = 0
+  · -- proportional: divide by a nonzero coordinate of `v`
+    have hvi : v 0 ≠ 0 ∨ v 1 ≠ 0 := by
+      by_contra hcon
+      push Not at hcon
+      refine hv0 (funext fun i => ?_)
+      fin_cases i
+      · exact hcon.1
+      · exact hcon.2
+    rcases hvi with h0 | h1
+    · refine ⟨w 0 / v 0, funext fun i => ?_⟩
+      fin_cases i
+      · exact (div_mul_cancel₀ (w 0) h0).symm
+      · show w 1 = w 0 / v 0 * v 1
+        field_simp
+        linear_combination hcross
+    · refine ⟨w 1 / v 1, funext fun i => ?_⟩
+      fin_cases i
+      · show w 0 = w 1 / v 1 * v 0
+        field_simp
+        linear_combination -hcross
+      · exact (div_mul_cancel₀ (w 1) h1).symm
+  · -- `(v, w)` would be a basis annihilated by `M`
+    exfalso
+    apply hM
+    have hdetN : (Matrix.of ![![v 0, w 0], ![v 1, w 1]]).det ≠ 0 := by
+      rw [Matrix.det_fin_two]
+      intro h
+      exact hcross (by
+        simp only [Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero,
+          Matrix.cons_val_one] at h
+        linear_combination h)
+    have hMN : M * Matrix.of ![![v 0, w 0], ![v 1, w 1]] = 0 := by
+      ext i j
+      fin_cases j
+      · have hvi := congrFun hv i
+        rw [Matrix.mulVec_apply_eq_sum, Fin.sum_univ_two] at hvi
+        simp only [Matrix.mul_apply, Fin.sum_univ_two, Matrix.of_apply,
+          Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one,
+          Matrix.zero_apply]
+        simpa using hvi
+      · have hwi := congrFun hw i
+        rw [Matrix.mulVec_apply_eq_sum, Fin.sum_univ_two] at hwi
+        simp only [Matrix.mul_apply, Fin.sum_univ_two, Matrix.of_apply,
+          Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one,
+          Matrix.zero_apply]
+        simpa using hwi
+    have hN := Matrix.mul_nonsing_inv (Matrix.of ![![v 0, w 0], ![v 1, w 1]])
+      (isUnit_iff_ne_zero.mpr hdetN)
+    calc M = M * (Matrix.of ![![v 0, w 0], ![v 1, w 1]] *
+          (Matrix.of ![![v 0, w 0], ![v 1, w 1]])⁻¹) := by rw [hN, mul_one]
+      _ = M * Matrix.of ![![v 0, w 0], ![v 1, w 1]] *
+          (Matrix.of ![![v 0, w 0], ![v 1, w 1]])⁻¹ := by rw [mul_assoc]
+      _ = 0 := by rw [hMN, zero_mul]
+
 set_option maxHeartbeats 1000000 in
 /-- **The dihedral dichotomy: a common eigenvector after a possible
 field switch** (sorry node, isolated 2026-07-23 — the SOUND
@@ -2783,7 +2851,217 @@ theorem exists_index_two_common_eigenvector {k : Type u} [Finite k] [Field k]
         ∀ g : Γ ℚ, θ' g = 1 → ∃ c : Dickson.K 3,
           Matrix.mulVec ((u g : GL (Fin 2) (Dickson.K 3)) :
             Matrix (Fin 2) (Fin 2) (Dickson.K 3)) v = c • v := by
-  sorry
+  classical
+  by_cases hA : ∀ g h' : Γ ℚ, θ g = 1 → θ h' = 1 →
+      (u g).val * (u h').val = (u h').val * (u g).val
+  · -- the honestly commuting case: `θ' = θ` works
+    have h3k : (3 : k) = 0 := three_eq_zero_of_finite_padicIntThree_algebra
+    have h2k : (2 : k) ≠ 0 := fun h =>
+      one_ne_zero (α := k) (by linear_combination h3k - h)
+    have hfr : Module.finrank k V = 2 :=
+      Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
+    have htriv : ∀ g : Γ ℚ, ρ g = 1 → θ g = 1 := by
+      intro g hg
+      by_contra hne
+      have h0 := htr g hne
+      have h1 : (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V) g = 1 := hg
+      rw [h1, LinearMap.trace_one, hfr] at h0
+      exact h2k (by exact_mod_cast h0)
+    refine ⟨θ, hθsurj, htriv, ?_⟩
+    by_cases hsc : ∀ h' : Γ ℚ, θ h' = 1 → ∃ c : Dickson.K 3,
+        (u h').val = c • (1 : Matrix (Fin 2) (Fin 2) (Dickson.K 3))
+    · -- every kernel matrix is scalar: any nonzero vector is common
+      refine ⟨![1, 0], fun h => one_ne_zero (α := Dickson.K 3)
+        (by simpa using congrFun h 0), ?_⟩
+      intro g hg
+      obtain ⟨c, hc⟩ := hsc g hg
+      refine ⟨c, ?_⟩
+      rw [hc, Matrix.smul_mulVec, Matrix.one_mulVec]
+    · -- some kernel matrix is nonscalar: its eigenline is common
+      push Not at hsc
+      obtain ⟨h₀, hh₀, hns⟩ := hsc
+      obtain ⟨s, hsev⟩ :=
+        Module.End.exists_eigenvalue (Matrix.mulVecLin (u h₀).val)
+      obtain ⟨v, hv⟩ := hsev.exists_hasEigenvector
+      have hfv : Matrix.mulVec (u h₀).val v = s • v := by
+        have h1 := Module.End.mem_eigenspace_iff.mp hv.1
+        rwa [Matrix.mulVecLin_apply] at h1
+      have hM0 : (u h₀).val - s • 1 ≠ 0 := by
+        intro h0
+        exact hns s (by rwa [sub_eq_zero] at h0)
+      have hvker : Matrix.mulVec ((u h₀).val - s • 1) v = 0 := by
+        rw [Matrix.sub_mulVec, hfv, Matrix.smul_mulVec, Matrix.one_mulVec, sub_self]
+      refine ⟨v, hv.2, ?_⟩
+      intro g hg
+      have hcg := hA g h₀ hg hh₀
+      have hswap : ((u h₀).val - s • 1) * (u g).val =
+          (u g).val * ((u h₀).val - s • 1) := by
+        rw [sub_mul, mul_sub, smul_mul_assoc, one_mul, mul_smul_comm, mul_one, hcg]
+      have hwker : Matrix.mulVec ((u h₀).val - s • 1)
+          (Matrix.mulVec (u g).val v) = 0 := by
+        rw [Matrix.mulVec_mulVec, hswap, ← Matrix.mulVec_mulVec, hvker,
+          Matrix.mulVec_zero]
+      exact exists_smul_eq_of_mulVec_eq_zero hM0 hvker hwker hv.2
+  · -- the Klein-four case: switch to the sign character of a fixed
+    -- trace-zero involution-mod-scalars
+    haveI : CharP (Dickson.K 3) 3 :=
+      charP_of_injective_algebraMap
+        (algebraMap (ZMod 3) (Dickson.K 3)).injective 3
+    have h2F : (2 : Dickson.K 3) ≠ 0 := by
+      intro h
+      have h3 := (CharP.cast_eq_zero_iff (Dickson.K 3) 3 2).mp h
+      norm_num at h3
+    -- `u` of a `ρ`-kernel element is the identity matrix
+    have huone : ∀ g : Γ ℚ, ρ g = 1 → (u g).val = 1 := by
+      intro g hg
+      have h2 : (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V) g = 1 := hg
+      have h1 : (Slop.OddRep.baseChange (AlgebraicClosure k)
+          (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V)) g = 1 := by
+        have h3 : (Slop.OddRep.baseChange (AlgebraicClosure k)
+            (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V)) g =
+            ((MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V) g).baseChange
+              (AlgebraicClosure k) := rfl
+        rw [h3, h2, Module.End.one_eq_id, LinearMap.baseChange_id]
+        rfl
+      rw [hu g, h1, LinearMap.toMatrix_one]
+      exact Matrix.map_one e (map_zero e) (map_one e)
+    -- the Klein-four analysis: a trace-zero anticommuting-pair member,
+    -- conjugation-fixed up to sign by the whole image
+    have hklein : ∃ f : Matrix (Fin 2) (Fin 2) (Dickson.K 3),
+        Matrix.trace f = 0 ∧ Matrix.det f ≠ 0 ∧
+        (∃ p : Γ ℚ, (u p).val * f = -(f * (u p).val)) ∧
+        ∀ g : Γ ℚ, (u g).val * f = f * (u g).val ∨
+          (u g).val * f = -(f * (u g).val) := by
+      sorry
+    obtain ⟨f, htr0, hdetf, ⟨p, hp⟩, hdich⟩ := hklein
+    -- commuting and anticommuting with `f` are mutually exclusive
+    have hexcl : ∀ g : Γ ℚ, (u g).val * f = f * (u g).val →
+        (u g).val * f = -(f * (u g).val) → False := by
+      intro g h1 h2
+      have h3 : f * (u g).val = -(f * (u g).val) := h1.symm.trans h2
+      have h5 : f * (u g).val = 0 := by
+        have h6 : (2 : Dickson.K 3) • (f * (u g).val) = 0 := by
+          rw [two_smul]
+          exact add_eq_zero_iff_eq_neg.mpr h3
+        rcases smul_eq_zero.mp h6 with h7 | h7
+        · exact absurd h7 h2F
+        · exact h7
+      have h7 : Matrix.det (f * (u g).val) = 0 := by
+        rw [h5]
+        exact Matrix.det_zero
+      rw [Matrix.det_mul] at h7
+      rcases mul_eq_zero.mp h7 with h8 | h8
+      · exact hdetf h8
+      · exact ((Matrix.isUnit_iff_isUnit_det (u g).val).mp (u g).isUnit).ne_zero h8
+    -- Cayley–Hamilton for the trace-zero `f`: `f² = (-det f) • 1`
+    have hCH : f * f = (-Matrix.det f) • (1 : Matrix (Fin 2) (Fin 2) (Dickson.K 3)) := by
+      have hCH0 := Matrix.aeval_self_charpoly f
+      rw [Matrix.charpoly_fin_two, map_add, map_sub, map_pow, Polynomial.aeval_X,
+        map_mul, Polynomial.aeval_C, htr0, map_zero, zero_mul, sub_zero,
+        Polynomial.aeval_C, Algebra.algebraMap_eq_smul_one] at hCH0
+      rw [← sq, neg_smul]
+      exact eq_neg_of_add_eq_zero_left hCH0
+    -- a square root of `-det f` and a singular translate of `f`
+    obtain ⟨s, hs2⟩ :=
+      IsAlgClosed.exists_pow_nat_eq (-Matrix.det f) (n := 2) (by norm_num)
+    have hfact : (f - s • 1) * (f + s • 1) = 0 := by
+      have h1 : (f - s • 1) * (f + s • 1) =
+          f * f - (s * s) • (1 : Matrix (Fin 2) (Fin 2) (Dickson.K 3)) := by
+        simp only [mul_add, sub_mul, smul_mul_assoc, mul_smul_comm, one_mul,
+          mul_one, smul_sub, smul_smul]
+        abel
+      rw [h1, hCH, ← hs2, sq, sub_self]
+    have hdet0 : Matrix.det (f - s • 1) = 0 ∨ Matrix.det (f + s • 1) = 0 := by
+      have h1 : Matrix.det (f - s • 1) * Matrix.det (f + s • 1) = 0 := by
+        rw [← Matrix.det_mul, hfact]
+        exact Matrix.det_zero
+      exact mul_eq_zero.mp h1
+    obtain ⟨t, htdet⟩ : ∃ t : Dickson.K 3, Matrix.det (f - t • 1) = 0 := by
+      rcases hdet0 with h1 | h1
+      · exact ⟨s, h1⟩
+      · refine ⟨-s, ?_⟩
+        rw [neg_smul, sub_neg_eq_add]
+        exact h1
+    obtain ⟨v, hv0, hvker⟩ := Matrix.exists_mulVec_eq_zero_iff.mpr htdet
+    -- `f` is nonscalar (it has an anticommuting partner)
+    have hfns : f - t • 1 ≠ 0 := by
+      intro h0
+      have hf : f = t • 1 := by rwa [sub_eq_zero] at h0
+      apply hexcl p ?_ hp
+      rw [hf, mul_smul_comm, mul_one, smul_mul_assoc, one_mul]
+    -- multiplicativity data for the sign of conjugation on `f`
+    have hmulval : ∀ g h' : Γ ℚ, (u (g * h')).val = (u g).val * (u h').val := by
+      intro g h'
+      rw [map_mul]
+      rfl
+    have hcc : ∀ g h' : Γ ℚ, (u g).val * f = f * (u g).val →
+        (u h').val * f = f * (u h').val →
+        (u (g * h')).val * f = f * (u (g * h')).val := by
+      intro g h' hg hh'
+      rw [hmulval, mul_assoc, hh', ← mul_assoc, hg, mul_assoc]
+    have hca : ∀ g h' : Γ ℚ, (u g).val * f = f * (u g).val →
+        (u h').val * f = -(f * (u h').val) →
+        (u (g * h')).val * f = -(f * (u (g * h')).val) := by
+      intro g h' hg hh'
+      rw [hmulval, mul_assoc, hh', mul_neg, neg_inj, ← mul_assoc, hg, mul_assoc]
+    have hac : ∀ g h' : Γ ℚ, (u g).val * f = -(f * (u g).val) →
+        (u h').val * f = f * (u h').val →
+        (u (g * h')).val * f = -(f * (u (g * h')).val) := by
+      intro g h' hg hh'
+      rw [hmulval, mul_assoc, hh', ← mul_assoc, hg, neg_mul, mul_assoc]
+    have haa : ∀ g h' : Γ ℚ, (u g).val * f = -(f * (u g).val) →
+        (u h').val * f = -(f * (u h').val) →
+        (u (g * h')).val * f = f * (u (g * h')).val := by
+      intro g h' hg hh'
+      rw [hmulval, mul_assoc, hh', mul_neg, ← mul_assoc, hg, neg_mul, neg_neg,
+        mul_assoc]
+    -- the switched character: the sign of conjugation on `f`
+    let θ' : Γ ℚ →* Multiplicative (ZMod 2) :=
+      { toFun := fun g => if (u g).val * f = f * (u g).val then 1
+          else Multiplicative.ofAdd (1 : ZMod 2)
+        map_one' := by
+          have h1 : (u 1).val = 1 := by rw [map_one]; rfl
+          rw [h1, one_mul, mul_one]
+          exact if_pos rfl
+        map_mul' := by
+          intro g h'
+          rcases hdich g with hg | hg <;> rcases hdich h' with hh' | hh'
+          · rw [if_pos hg, if_pos hh', if_pos (hcc g h' hg hh'), one_mul]
+          · rw [if_pos hg, if_neg fun hc => hexcl h' hc hh',
+              if_neg fun hc => hexcl (g * h') hc (hca g h' hg hh'), one_mul]
+          · rw [if_neg fun hc => hexcl g hc hg, if_pos hh',
+              if_neg fun hc => hexcl (g * h') hc (hac g h' hg hh'), mul_one]
+          · rw [if_neg fun hc => hexcl g hc hg,
+              if_neg fun hc => hexcl h' hc hh',
+              if_pos (haa g h' hg hh')]
+            decide }
+    have hθ'apply : ∀ g : Γ ℚ, θ' g =
+        if (u g).val * f = f * (u g).val then 1
+        else Multiplicative.ofAdd (1 : ZMod 2) := fun g => rfl
+    have hω : Multiplicative.ofAdd (1 : ZMod 2) ≠ 1 := by decide
+    have hy2 : ∀ y : Multiplicative (ZMod 2),
+        y = 1 ∨ y = Multiplicative.ofAdd (1 : ZMod 2) := by decide
+    have hsurj' : Function.Surjective θ' := by
+      intro y
+      rcases hy2 y with rfl | rfl
+      · exact ⟨1, map_one θ'⟩
+      · refine ⟨p, ?_⟩
+        rw [hθ'apply p, if_neg fun hc => hexcl p hc hp]
+    have htriv'' : ∀ g : Γ ℚ, ρ g = 1 → θ' g = 1 := by
+      intro g hg
+      rw [hθ'apply g, if_pos (by rw [huone g hg, one_mul, mul_one])]
+    refine ⟨θ', hsurj', htriv'', v, hv0, ?_⟩
+    intro g hg
+    have hcg : (u g).val * f = f * (u g).val := by
+      by_contra hc
+      rw [hθ'apply g, if_neg hc] at hg
+      exact hω hg
+    have hswap : (f - t • 1) * (u g).val = (u g).val * (f - t • 1) := by
+      rw [sub_mul, mul_sub, smul_mul_assoc, one_mul, mul_smul_comm, mul_one, hcg]
+    have hwker : Matrix.mulVec (f - t • 1) (Matrix.mulVec (u g).val v) = 0 := by
+      rw [Matrix.mulVec_mulVec, hswap, ← Matrix.mulVec_mulVec, hvker,
+        Matrix.mulVec_zero]
+    exact exists_smul_eq_of_mulVec_eq_zero hfns hvker hwker hv0
 
 set_option maxHeartbeats 1000000 in
 /-- **The Serre/Tate elimination, dihedral ray-class computation with
