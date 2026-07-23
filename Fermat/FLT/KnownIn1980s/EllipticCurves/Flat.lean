@@ -1955,6 +1955,148 @@ theorem WeierstrassCurve.torsion_finite (m : ℕ) (hm : (m : R) ≠ 0) :
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
 omit [IsDomain R] [IsDiscreteValuationRing R] [E.HasGoodReduction R] in
+/-- **The `m`-torsion is finite for every `m ≠ 0`, in every characteristic** (PROVEN
+2026-07-23; the characteristic-free strengthening of `torsion_finite`, unlocking the
+equal-characteristic Galois-correspondence leaf
+`exists_torsion_etale_package_of_eqChar`, whose order `p ^ k` VANISHES in `R`): the
+division polynomial `ΨSq m` is a nonzero polynomial — were it identically zero, the
+torsion dictionary (`TorsionCard.smul_some_eq_zero_iff`) would make every affine point
+of `E(Kˢᵉᵖ)` an `m`-torsion point, in particular the `q² > 1` points of `q`-torsion
+for an auxiliary prime `q` exceeding both `m` and the characteristic
+(`TorsionCard.card_torsionBy`), whose nonzero members would then be killed by the
+coprime pair `m`, `q` — so the nonzero `m`-torsion points inject, via the same
+dictionary, into (roots of `ΨSq m`) × (roots of the monic `y`-quadratic), a finite
+set. -/
+theorem WeierstrassCurve.torsion_finite_of_ne_zero (m : ℕ) (hm : m ≠ 0) :
+    Finite (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) := by
+  classical
+  haveI : IsSepClosed Ksep := IsSepClosure.sep_closed K
+  haveI : (E⁄Ksep).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap K Ksep)).IsElliptic)
+  have hmZ : (m : ℤ) ≠ 0 := by exact_mod_cast hm
+  -- step 1: the division polynomial `ΨSq m` is nonzero
+  have hΨne : (E⁄Ksep).ΨSq (m : ℤ) ≠ 0 := by
+    intro hΨ0
+    -- an auxiliary prime `q` exceeding `m` and the characteristic
+    obtain ⟨q, hqle, hq⟩ := Nat.exists_infinite_primes (max m (ringChar Ksep) + 1)
+    have hqm : m < q := lt_of_lt_of_le (Nat.lt_succ_of_le (le_max_left _ _)) hqle
+    have hqchar : ringChar Ksep < q :=
+      lt_of_lt_of_le (Nat.lt_succ_of_le (le_max_right _ _)) hqle
+    have hqK : (q : Ksep) ≠ 0 := by
+      intro h0
+      rcases hq.eq_one_or_self_of_dvd (ringChar Ksep) ((ringChar.spec Ksep q).mp h0)
+        with h1 | h1
+      · exact CharP.char_ne_one Ksep (ringChar Ksep) h1
+      · exact absurd h1 hqchar.ne
+    -- the `q`-torsion has `q² > 1` points, so it has a nonzero point
+    have hcard := TorsionCard.card_torsionBy (E.map (algebraMap K Ksep)) q hqK
+    have h1 : 1 < Nat.card
+        (Submodule.torsionBy ℤ ((E.map (algebraMap K Ksep))⁄Ksep).Point q) := by
+      rw [hcard]
+      nlinarith [hq.two_le]
+    haveI : Finite
+        (Submodule.torsionBy ℤ ((E.map (algebraMap K Ksep))⁄Ksep).Point q) :=
+      (Nat.card_pos_iff.mp (lt_trans one_pos h1)).2
+    haveI := Finite.one_lt_card_iff_nontrivial.mp h1
+    obtain ⟨Q, hQne⟩ :=
+      exists_ne (0 : Submodule.torsionBy ℤ ((E.map (algebraMap K Ksep))⁄Ksep).Point q)
+    have hqtor : ((q : ℕ) : ℤ) • (Q : ((E.map (algebraMap K Ksep))⁄Ksep).Point) = 0 :=
+      (Submodule.mem_torsionBy_iff _ _).mp Q.2
+    -- the vanishing of `ΨSq m` makes `Q` an `m`-torsion point by the dictionary
+    have hmtor : (m : ℤ) • (Q : ((E.map (algebraMap K Ksep))⁄Ksep).Point) = 0 := by
+      cases hQval : (Q : ((E.map (algebraMap K Ksep))⁄Ksep).Point) with
+      | zero => exact smul_zero _
+      | @some x y h =>
+        refine (TorsionCard.smul_some_eq_zero_iff (E.map (algebraMap K Ksep))
+          hmZ h).mpr ?_
+        rw [show ((E.map (algebraMap K Ksep))⁄Ksep).ΨSq (m : ℤ)
+          = (E⁄Ksep).ΨSq (m : ℤ) from rfl, hΨ0, Polynomial.eval_zero]
+    -- Bézout at the coprime pair `m`, `q` kills `Q`
+    have hcop : IsCoprime (m : ℤ) (q : ℤ) := by
+      rw [Int.isCoprime_iff_gcd_eq_one]
+      exact_mod_cast (hq.coprime_iff_not_dvd.mpr
+        (Nat.not_dvd_of_pos_of_lt (Nat.pos_of_ne_zero hm) hqm)).symm
+    obtain ⟨a, b, hab⟩ := hcop
+    refine hQne (Subtype.ext ?_)
+    calc (Q : ((E.map (algebraMap K Ksep))⁄Ksep).Point)
+        = (1 : ℤ) • (Q : ((E.map (algebraMap K Ksep))⁄Ksep).Point) :=
+          (one_smul _ _).symm
+      _ = (a * (m : ℤ) + b * (q : ℤ)) •
+          (Q : ((E.map (algebraMap K Ksep))⁄Ksep).Point) := by rw [hab]
+      _ = a • ((m : ℤ) • (Q : ((E.map (algebraMap K Ksep))⁄Ksep).Point)) +
+          b • (((q : ℕ) : ℤ) • (Q : ((E.map (algebraMap K Ksep))⁄Ksep).Point)) := by
+          rw [add_smul, mul_smul, mul_smul]
+      _ = 0 := by rw [hmtor, hqtor, smul_zero, smul_zero, add_zero]
+  -- step 2: nonzero torsion points inject into (roots of `ΨSq m`) × (`y`-quadratic roots)
+  have hYfin : ∀ x : Ksep, {y : Ksep | (E⁄Ksep).toAffine.Equation x y}.Finite := by
+    intro x
+    set f : Polynomial Ksep := Polynomial.X ^ 2 +
+      Polynomial.C ((E⁄Ksep).a₁ * x + (E⁄Ksep).a₃) * Polynomial.X -
+      Polynomial.C (x ^ 3 + (E⁄Ksep).a₂ * x ^ 2 + (E⁄Ksep).a₄ * x + (E⁄Ksep).a₆)
+      with hfdef
+    have hd2 : f.natDegree = 2 := by
+      rw [hfdef]
+      compute_degree!
+    have hfne : f ≠ 0 := by
+      intro h0
+      rw [h0, Polynomial.natDegree_zero] at hd2
+      exact two_ne_zero hd2.symm
+    refine (Polynomial.finite_setOf_isRoot hfne).subset ?_
+    intro y hy
+    have heq := (WeierstrassCurve.Affine.equation_iff x y).mp hy
+    show f.eval y = 0
+    rw [hfdef]
+    simp only [Polynomial.eval_sub, Polynomial.eval_add, Polynomial.eval_mul,
+      Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X]
+    linear_combination heq
+  have hSfin : {x : Ksep | ((E⁄Ksep).ΨSq (m : ℤ)).IsRoot x}.Finite :=
+    Polynomial.finite_setOf_isRoot hΨne
+  have hTfin : (⋃ x ∈ {x : Ksep | ((E⁄Ksep).ΨSq (m : ℤ)).IsRoot x},
+      ({x} ×ˢ {y : Ksep | (E⁄Ksep).toAffine.Equation x y})).Finite :=
+    hSfin.biUnion fun x _ => (Set.finite_singleton x).prod (hYfin x)
+  have hcarrier : ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+      Set (E⁄Ksep).Point).Finite := by
+    let F : (E⁄Ksep).Point → Option (Ksep × Ksep) := fun P =>
+      match P with
+      | .zero => none
+      | .some x y _ => some (x, y)
+    have hinj : Function.Injective F := by
+      intro P P' hPP'
+      cases P with
+      | zero =>
+        cases P' with
+        | zero => rfl
+        | @some x' y' h' => injection hPP'
+      | @some x y h =>
+        cases P' with
+        | zero => injection hPP'
+        | @some x' y' h' =>
+          injection hPP' with hpair
+          injection hpair with hx hy
+          subst hx
+          subst hy
+          rfl
+    have himg : F '' (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ⊆
+        insert none (Option.some ''
+          (⋃ x ∈ {x : Ksep | ((E⁄Ksep).ΨSq (m : ℤ)).IsRoot x},
+            ({x} ×ˢ {y : Ksep | (E⁄Ksep).toAffine.Equation x y}))) := by
+      rintro _ ⟨P, hP, rfl⟩
+      cases P with
+      | zero => exact Set.mem_insert _ _
+      | @some x y h =>
+        refine Set.mem_insert_of_mem _ ⟨(x, y), ?_, rfl⟩
+        have htor : (m : ℤ) • (Affine.Point.some x y h : (E⁄Ksep).Point) = 0 :=
+          (Submodule.mem_torsionBy_iff _ _).mp hP
+        have hroot : ((E⁄Ksep).ΨSq (m : ℤ)).IsRoot x :=
+          (TorsionCard.smul_some_eq_zero_iff (E.map (algebraMap K Ksep)) hmZ h).mp htor
+        exact Set.mem_biUnion hroot ⟨rfl, h.1⟩
+    exact Set.Finite.of_finite_image
+      (((hTfin.image _).insert none).subset himg) hinj.injOn
+  exact hcarrier.to_subtype
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+omit [IsDomain R] [IsDiscreteValuationRing R] [E.HasGoodReduction R] in
 /-- **The torsion Galois action factors through a finite Galois quotient** (PROVEN
 2026-07-22; the curve-specific half of the torsion-package decomposition —
 everything about elliptic curves in it is the finiteness and Galois-stability of the
