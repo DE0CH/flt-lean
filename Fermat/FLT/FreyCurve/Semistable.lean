@@ -95,6 +95,12 @@ public import Mathlib.FieldTheory.Galois.Basic
 import Mathlib.FieldTheory.Galois.NormalBasis
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Mathlib.RingTheory.TensorProduct.Finite
+-- the valuation restricted to its canonical value group and the
+-- valuation-ball neighbourhood basis, consumed by the density argument
+-- of the Hopf-order lattice helpers (the `hfin`/`hcomul` legs of
+-- `exists_hopfOrder_of_adic_bialgEquiv`)
+import Mathlib.RingTheory.Valuation.Basic
+import Mathlib.Topology.Algebra.Valued.ValuationTopology
 
 @[expose] public section
 
@@ -8191,6 +8197,1288 @@ theorem exists_hopfOrder_of_latticeClosure
           ≃ₐc[ℚ] (ℚ ⊗[ℚ] Hg)) := by
   sorry
 
+open WithZero in
+set_option maxHeartbeats 400000 in
+/-- W1: in `ℤᵐ⁰`, below some positive threshold, multiplication by a fixed
+`C` stays below `1`. -/
+theorem exists_pos_forall_mul_lt_one (C : ℤᵐ⁰) :
+    ∃ γ : ℤᵐ⁰, 0 < γ ∧ ∀ e : ℤᵐ⁰, e < γ → e * C < 1 := by
+  rcases eq_or_ne C 0 with hC | hC
+  · exact ⟨1, zero_lt_one, fun e _ => by rw [hC, mul_zero]; exact zero_lt_one⟩
+  · refine ⟨C⁻¹, ?_, fun e he => ?_⟩
+    · exact zero_lt_iff.mpr (inv_ne_zero hC)
+    · calc e * C < C⁻¹ * C :=
+            mul_lt_mul_of_pos_right he (zero_lt_iff.mpr hC)
+        _ = 1 := inv_mul_cancel₀ hC
+
+open WithZero in
+set_option maxHeartbeats 400000 in
+/-- W2: powers of a nonzero value `< 1` in `ℤᵐ⁰` eventually clear any fixed
+value `C` down to `≤ 1`. -/
+theorem exists_pow_mul_le_one {V : ℤᵐ⁰} (C : ℤᵐ⁰) (hV1 : V < 1) (hV0 : V ≠ 0) :
+    ∃ n : ℕ, V ^ n * C ≤ 1 := by
+  rcases eq_or_ne C 0 with hC | hC
+  · exact ⟨0, by rw [hC, mul_zero]; exact zero_le_one⟩
+  obtain ⟨a, ha⟩ := WithZero.ne_zero_iff_exists.mp hC
+  obtain ⟨b, hb⟩ := WithZero.ne_zero_iff_exists.mp hV0
+  have hblt : b < 1 := by
+    rw [← WithZero.coe_lt_coe, hb]
+    exact lt_of_lt_of_le hV1 (le_of_eq WithZero.coe_one.symm)
+  have h0 : Multiplicative.toAdd b < (0 : ℤ) := by
+    have := Multiplicative.toAdd_lt.mpr hblt
+    simpa using this
+  have hk : Multiplicative.toAdd b ≤ -1 := by
+    simpa [zero_sub] using Int.le_sub_one_of_lt h0
+  refine ⟨(Multiplicative.toAdd a).toNat, ?_⟩
+  rw [← hb, ← ha, ← WithZero.coe_pow, ← WithZero.coe_mul, ← WithZero.coe_one,
+    WithZero.coe_le_coe, ← Multiplicative.toAdd_le, toAdd_mul,
+    toAdd_pow, toAdd_one, nsmul_eq_mul]
+  have hself : Multiplicative.toAdd a ≤ ((Multiplicative.toAdd a).toNat : ℤ) :=
+    Int.self_le_toNat (Multiplicative.toAdd a)
+  have hnn : (0 : ℤ) ≤ (((Multiplicative.toAdd a).toNat : ℕ) : ℤ) :=
+    Int.natCast_nonneg _
+  calc (((Multiplicative.toAdd a).toNat : ℕ) : ℤ) * Multiplicative.toAdd b +
+        Multiplicative.toAdd a
+      ≤ (((Multiplicative.toAdd a).toNat : ℕ) : ℤ) * (-1) +
+        (((Multiplicative.toAdd a).toNat : ℕ) : ℤ) :=
+        add_le_add (mul_le_mul_of_nonneg_left hk hnn) hself
+    _ = 0 := by ring
+
+open ValuativeRel WithZero in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- W3: the completed valuation of the prime `p` at its own place is
+strictly below `1` (and nonzero): `p` generates the maximal ideal of the
+local field `ℚ_pˆ`. -/
+theorem valued_algebraMap_prime_lt_one {p : ℕ} (hp' : p.Prime) [Fact p.Prime] :
+    (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+      (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ((p : ℕ) : ℚ)) < 1 ∧
+    (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+      (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ((p : ℕ) : ℚ)) ≠ 0 := by
+  constructor
+  · rw [valued_algebraMap_adicCompletion_eq hp']
+    rw [show (((p : ℕ) : ℚ)) = algebraMap (NumberField.RingOfIntegers ℚ) ℚ
+        (((p : ℕ) : NumberField.RingOfIntegers ℚ)) from (map_natCast _ _).symm,
+      IsDedekindDomain.HeightOneSpectrum.valuation_of_algebraMap,
+      IsDedekindDomain.HeightOneSpectrum.intValuation_lt_one_iff_mem,
+      Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal hp',
+      map_natCast]
+  · rw [valued_algebraMap_adicCompletion_eq hp']
+    simp only [ne_eq, map_eq_zero, Nat.cast_eq_zero]
+    exact hp'.ne_zero
+
+open ValuativeRel WithZero in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- W4: density of `ℚ` in its completion at `v_p`, in valuation form:
+any completion element is approximated by rationals to within the
+valuation of any element of nonzero valuation. -/
+theorem exists_valued_sub_algebraMap_lt {p : ℕ} (hp' : p.Prime) [Fact p.Prime]
+    (k t : HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)
+    (ht : (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰) t ≠ 0) :
+    ∃ q : ℚ, (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+      (k - algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) q) <
+      (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰) t := by
+  have hdense := IsDedekindDomain.HeightOneSpectrum.denseRange_algebraMap
+    (K := ℚ) (v := hp'.toHeightOneSpectrumRingOfIntegersRat)
+  have ht' : (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰).restrict t ≠ 0 := by
+    rw [ne_eq, Valuation.restrict_eq_zero_iff]
+    exact ht
+  have hball : {y : HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat |
+      (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰).restrict (y - k) <
+        (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰).restrict t} ∈
+      nhds k := by
+    rw [Valued.mem_nhds]
+    exact ⟨Units.mk0 _ ht', subset_rfl⟩
+  obtain ⟨y, hyball, hyrange⟩ :=
+    mem_closure_iff_nhds.mp (hdense k) _ hball
+  obtain ⟨q, hq⟩ := hyrange
+  refine ⟨q, ?_⟩
+  have hbridge : algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) q = y := by
+    rw [← hq]
+    exact RingHom.congr_fun (Subsingleton.elim _ _) q
+  rw [hbridge, Valuation.map_sub_swap]
+  simp only [Set.mem_setOf_eq] at hyball
+  rw [Valuation.restrict_lt_iff] at hyball
+  exact hyball
+
+open ValuativeRel WithZero in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- W5: a rational number that is integral in the completion at `v_p` lies
+in the localization `ℤ_(p)` (extracted from the counit argument of
+`exists_hopfOrder_of_adic_bialgEquiv`). -/
+theorem exists_algebraMap_localization_eq_of_valued_le_one {p : ℕ}
+    (hp' : p.Prime) [Fact p.Prime] (q : ℚ)
+    (hq : (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+      (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) q) ≤ 1) :
+    ∃ r : Localization.AtPrime
+        hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal,
+      algebraMap (Localization.AtPrime
+        hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ r = q := by
+  have h5 : hp'.toHeightOneSpectrumRingOfIntegersRat.valuation ℚ q ≤ 1 := by
+    rwa [valued_algebraMap_adicCompletion_eq hp'] at hq
+  have h7 : (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)).valuation ℚ q ≤ 1 :=
+    (Valuation.isEquiv_iff_val_le_one.mp
+      (isEquiv_valuation_maximalIdeal_localization hp')).mp h5
+  have huniq : ∀ w : HeightOneSpectrum (Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal),
+      w = IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime
+        hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) := by
+    intro w
+    refine IsDedekindDomain.HeightOneSpectrum.ext ?_
+    exact IsLocalRing.eq_maximalIdeal (IsPrime.to_maximal_ideal w.ne_bot)
+  exact IsDedekindDomain.HeightOneSpectrum.mem_integers_of_valuation_le_one
+    (R := Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) (K := ℚ)
+    q (fun w => by rw [huniq w]; exact h7)
+
+open TensorProduct ValuativeRel WithZero in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- W6: **the lattice-intersection submodule is finitely generated** — any
+`ℤ_(p)`-submodule of `Hg` whose elements map into the `𝒪`-lattice
+`1 ⊗ Hl` under the comparison equivalence has `p`-power-bounded
+coordinates with respect to a `ℚ`-basis of `Hg`, hence lies in a
+finitely generated `ℤ_(p)`-submodule; `ℤ_(p)` is Noetherian. -/
+theorem fg_of_le_adicLattice {p : ℕ} (hp' : p.Prime) [Fact p.Prime]
+    (Hg : Type) [AddCommGroup Hg] [Module ℚ Hg] [Module.Finite ℚ Hg]
+    [Module (Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) Hg]
+    [IsScalarTower (Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ Hg]
+    (Hl : Type) [AddCommGroup Hl]
+    [Module 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] Hl]
+    [Module.Finite 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] Hl]
+    (ψK : ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[ℚ] Hg)
+      ≃ₗ[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl))
+    (S : Submodule (Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) Hg)
+    (hS : ∀ x ∈ S, ∃ h : Hl, ψK ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x) =
+      (1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] h) :
+    S.FG := by
+  classical
+  -- the `ℚ`-basis of `Hg` and its base change to the completion
+  let b := Module.finBasis ℚ Hg
+  let bK := b.baseChange (HeightOneSpectrum.adicCompletion ℚ
+    hp'.toHeightOneSpectrumRingOfIntegersRat)
+  -- a finite generating set of the local module
+  obtain ⟨s, hs⟩ := Module.Finite.fg_top
+    (R := 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]) (M := Hl)
+  -- the uniform coordinate bound over the generators
+  set C : ℤᵐ⁰ := s.sup (fun h => Finset.univ.sup (fun i =>
+    (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+      (bK.repr (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] h)) i))) with hC
+  -- every pulled-back lattice element has coordinates bounded by `C`
+  have hbound : ∀ h : Hl, ∀ i,
+      (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+        (bK.repr (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] h)) i) ≤ C := by
+    intro h i
+    have hmem : h ∈ Submodule.span 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat] (s : Set Hl) := by
+      rw [hs]; exact Submodule.mem_top
+    obtain ⟨f, hf⟩ := Submodule.mem_span_finset.mp hmem
+    -- expand `1 ⊗ h` over the generators
+    have hexp : (1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] h =
+        ∑ j ∈ s, (algebraMap 𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) (f j)) •
+          ((1 : HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+            ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]] j) := by
+      rw [← hf.2, TensorProduct.tmul_sum]
+      refine Finset.sum_congr rfl (fun j _ => ?_)
+      rw [TensorProduct.tmul_smul, algebraMap_smul]
+    have hco : bK.repr (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] h)) i =
+        ∑ j ∈ s, (algebraMap 𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) (f j)) *
+          (bK.repr (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+            ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]] j)) i) := by
+      rw [hexp, map_sum, map_sum, Finsupp.finsetSum_apply]
+      refine Finset.sum_congr rfl (fun j _ => ?_)
+      rw [map_smul, map_smul, Finsupp.smul_apply, smul_eq_mul]
+    rw [hco]
+    -- the valuation of the sum is bounded by the sup bound
+    refine Valuation.map_sum_le _ (fun j hj => ?_)
+    have h1 : (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+        (algebraMap 𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) (f j)) ≤ 1 := by
+      have h2 := mem_adicCompletionIntegers_of_mem_integer hp' (f j).2
+      rw [IsDedekindDomain.HeightOneSpectrum.mem_adicCompletionIntegers] at h2
+      exact h2
+    have h3 : (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+        (bK.repr (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] j)) i) ≤ C := by
+      rw [hC]
+      calc (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+            (bK.repr (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat)
+              ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat]] j)) i)
+          ≤ Finset.univ.sup (fun i' =>
+              (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+                (bK.repr (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+                  hp'.toHeightOneSpectrumRingOfIntegersRat)
+                  ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+                    hp'.toHeightOneSpectrumRingOfIntegersRat]] j)) i')) :=
+            Finset.le_sup (f := fun i' =>
+              (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+                (bK.repr (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+                  hp'.toHeightOneSpectrumRingOfIntegersRat)
+                  ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+                    hp'.toHeightOneSpectrumRingOfIntegersRat]] j)) i'))
+              (Finset.mem_univ i)
+        _ ≤ s.sup (fun h => Finset.univ.sup (fun i' =>
+              (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+                (bK.repr (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+                  hp'.toHeightOneSpectrumRingOfIntegersRat)
+                  ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+                    hp'.toHeightOneSpectrumRingOfIntegersRat]] h)) i'))) :=
+            Finset.le_sup (f := fun h => Finset.univ.sup (fun i' =>
+              (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+                (bK.repr (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+                  hp'.toHeightOneSpectrumRingOfIntegersRat)
+                  ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+                    hp'.toHeightOneSpectrumRingOfIntegersRat]] h)) i'))) hj
+    rw [map_mul]
+    calc (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+          (algebraMap 𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]
+            (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat) (f j)) *
+          (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+          (bK.repr (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+            ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]] j)) i)
+        ≤ 1 * C := mul_le_mul' h1 h3
+      _ = C := one_mul C
+  -- clear the bound by a power of `p`
+  obtain ⟨hplt, hpne⟩ := valued_algebraMap_prime_lt_one hp'
+  obtain ⟨n, hn⟩ := exists_pow_mul_le_one C hplt hpne
+  -- the containing finitely generated submodule
+  have hle : S ≤ Submodule.span (Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)
+      (Set.range (fun i => ((((p : ℕ) : ℚ)^n)⁻¹) • b i)) := by
+    intro x hx
+    obtain ⟨h, hψ⟩ := hS x hx
+    -- the rational coordinates of `x`
+    have hco : ∀ i, algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) (b.repr x i) =
+        bK.repr (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] h)) i := by
+      intro i
+      rw [← hψ, LinearEquiv.symm_apply_apply, Module.Basis.baseChange_repr_tmul,
+        Algebra.smul_def, mul_one]
+    -- each scaled coordinate is `p`-integral, hence in `ℤ_(p)`
+    have hint : ∀ i, ∃ r : Localization.AtPrime
+        hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal,
+        algebraMap (Localization.AtPrime
+          hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ r =
+        ((p : ℕ) : ℚ)^n * b.repr x i := by
+      intro i
+      refine exists_algebraMap_localization_eq_of_valued_le_one hp' _ ?_
+      rw [map_mul, map_pow, Valuation.map_mul, Valuation.map_pow, hco i]
+      exact le_trans (mul_le_mul' (le_refl _) (hbound h i)) hn
+    choose r hr using hint
+    -- rewrite `x` as an `ℤ_(p)`-combination of the scaled basis
+    have hxeq : x = ∑ i, r i • ((((p : ℕ) : ℚ)^n)⁻¹ • b i) := by
+      have hb := Module.Basis.sum_repr b x
+      rw [← hb]
+      refine Finset.sum_congr rfl (fun i _ => ?_)
+      rw [← algebraMap_smul (R := Localization.AtPrime
+          hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) (A := ℚ) (M := Hg),
+        smul_smul, hr i]
+      congr 1
+      have hpn : (((p : ℕ) : ℚ)^n) ≠ 0 :=
+        pow_ne_zero n (Nat.cast_ne_zero.mpr hp'.ne_zero)
+      rw [mul_right_comm, mul_inv_cancel₀ hpn, one_mul]
+    rw [hxeq]
+    exact Submodule.sum_mem _ (fun i _ => Submodule.smul_mem _ _
+      (Submodule.subset_span ⟨i, rfl⟩))
+  -- conclude by Noetherianity of `ℤ_(p)`
+  have hfg : (Submodule.span (Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)
+      (Set.range (fun i => ((((p : ℕ) : ℚ)^n)⁻¹) • b i))).FG :=
+    Submodule.fg_span (Set.finite_range _)
+  haveI := isNoetherian_of_fg_of_noetherian _ hfg
+  have hmap : S = Submodule.map (Submodule.span (Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)
+      (Set.range (fun i => ((((p : ℕ) : ℚ)^n)⁻¹) • b i))).subtype
+      (Submodule.comap (Submodule.span (Localization.AtPrime
+        hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)
+        (Set.range (fun i => ((((p : ℕ) : ℚ)^n)⁻¹) • b i))).subtype S) := by
+    rw [Submodule.map_comap_subtype]
+    exact (inf_eq_right.mpr hle).symm
+  rw [hmap]
+  exact Submodule.FG.map _ (IsNoetherian.noetherian _)
+
+open TensorProduct ValuativeRel WithZero in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- W7: **the `𝒪`-lattice is spanned by the lattice intersection** — every
+element `1 ⊗ h` of the `𝒪`-lattice inside `K ⊗[𝒪] Hl` lies in the
+`𝒪`-span of the comparison images `ψ(1 ⊗ x)` of the rational lattice
+intersection `{x : Hg | ψ(1 ⊗ x) ∈ 1 ⊗ Hl}`. Density of `ℚ` in the
+completion approximates the coordinates of `ψ⁻¹(1 ⊗ h)` by rationals to
+within a `p`-power tolerance, leaving an error in `𝓂 · (1 ⊗ Hl)`;
+Nakayama (the lattice is module-finite over the local ring `𝒪`)
+converts `Λ ⊆ N + 𝓂Λ` into `Λ ⊆ N`. -/
+theorem tmul_mem_span_adicLatticeIntersection {p : ℕ} (hp' : p.Prime)
+    [Fact p.Prime]
+    (Hg : Type) [AddCommGroup Hg] [Module ℚ Hg] [Module.Finite ℚ Hg]
+    (Hl : Type) [AddCommGroup Hl]
+    [Module 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] Hl]
+    [Module.Finite 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] Hl]
+    (ψK : ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[ℚ] Hg)
+      ≃ₗ[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl))
+    (h : Hl) :
+    ((1 : HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)
+      ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] h) ∈
+    Submodule.span 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      ((fun x : Hg => ψK ((1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x)) ''
+        {x : Hg | ∃ h' : Hl, ψK ((1 : HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x) =
+          (1 : HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+            ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]] h'}) := by
+  classical
+  -- the `𝒪`-lattice `1 ⊗ Hl` as a finitely generated submodule
+  set inc : Hl →ₗ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]]
+      ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl) :=
+    TensorProduct.mk 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) Hl 1 with hinc
+  set Lmod := LinearMap.range inc with hLmod
+  have hLfg : Lmod.FG := by
+    rw [hLmod, LinearMap.range_eq_map]
+    exact Submodule.FG.map _ Module.Finite.fg_top
+  -- the target span
+  set N := Submodule.span 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]
+    ((fun x : Hg => ψK ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x)) ''
+      {x : Hg | ∃ h' : Hl, ψK ((1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x) =
+        (1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] h'}) with hNdef
+  -- the `ℚ`-basis of `Hg` and its base change
+  let b := Module.finBasis ℚ Hg
+  let bK := b.baseChange (HeightOneSpectrum.adicCompletion ℚ
+    hp'.toHeightOneSpectrumRingOfIntegersRat)
+  -- the `Valued`/canonical valuation dictionary
+  have hKeq : (ValuativeRel.valuation (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)).IsEquiv
+      (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰) :=
+    ValuativeRel.isEquiv _ _
+  -- claim A: small scalars push any fixed vector into `𝓂 • Lmod`
+  have claimA : ∀ z : (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)
+      ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl,
+      ∃ γ : ℤᵐ⁰, 0 < γ ∧ ∀ c : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat,
+        (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰) c < γ →
+        c • z ∈ (𝓂[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat] :
+          Ideal 𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]) • Lmod := by
+    intro z
+    induction z using TensorProduct.induction_on with
+    | zero =>
+      exact ⟨1, zero_lt_one, fun c _ => by
+        rw [smul_zero]; exact Submodule.zero_mem _⟩
+    | tmul k hl =>
+      obtain ⟨γ, hγpos, hγ⟩ := exists_pos_forall_mul_lt_one
+        ((Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰) k)
+      refine ⟨γ, hγpos, fun c hc => ?_⟩
+      have heq : c • (k ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] hl) =
+          (c * k) • ((1 : HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+            ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]] hl) := by
+        rw [smul_tmul', smul_tmul', smul_eq_mul, smul_eq_mul, mul_one]
+      rw [heq]
+      have hlt1 : (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰) (c * k) < 1 := by
+        rw [map_mul]
+        exact hγ _ hc
+      have hO : c * k ∈ 𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat] := by
+        rw [Valuation.mem_integer_iff]
+        exact (Valuation.isEquiv_iff_val_le_one.mp hKeq).mpr (le_of_lt hlt1)
+      have hM : (⟨c * k, hO⟩ : 𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]) ∈
+          𝓂[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat] := by
+        rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff,
+          Valuation.Integer.not_isUnit_iff_valuation_lt_one]
+        exact (Valuation.isEquiv_iff_val_lt_one.mp hKeq).mpr hlt1
+      have halg : algebraMap 𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (⟨c * k, hO⟩ : 𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]) = c * k := rfl
+      have hsm : (c * k) • ((1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] hl) =
+          (⟨c * k, hO⟩ : 𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]) •
+          ((1 : HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+            ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]] hl) := by
+        have h5 := algebraMap_smul (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (⟨c * k, hO⟩ : 𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat])
+          ((1 : HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+            ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]] hl)
+        rw [halg] at h5
+        exact h5.symm
+      rw [hsm]
+      exact Submodule.smul_mem_smul hM ⟨hl, rfl⟩
+    | add z₁ z₂ ih₁ ih₂ =>
+      obtain ⟨γ₁, h1p, h1⟩ := ih₁
+      obtain ⟨γ₂, h2p, h2⟩ := ih₂
+      refine ⟨min γ₁ γ₂, lt_min h1p h2p, fun c hc => ?_⟩
+      rw [smul_add]
+      exact Submodule.add_mem _
+        (h1 c (lt_of_lt_of_le hc (min_le_left _ _)))
+        (h2 c (lt_of_lt_of_le hc (min_le_right _ _)))
+  -- claim B: uniformly small coordinates push basis combinations into
+  -- `𝓂 • Lmod`
+  have claimB : ∃ γ : ℤᵐ⁰, 0 < γ ∧
+      ∀ ε : Fin (Module.finrank ℚ Hg) → HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat,
+      (∀ i, (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰) (ε i) < γ) →
+      (∑ i, ε i • ψK (bK i)) ∈
+        (𝓂[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat] :
+          Ideal 𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]) • Lmod := by
+    choose γf hγfpos hγf using fun i : Fin (Module.finrank ℚ Hg) =>
+      claimA (ψK (bK i))
+    rcases isEmpty_or_nonempty (Fin (Module.finrank ℚ Hg)) with hem | hne
+    · refine ⟨1, zero_lt_one, fun ε _ => ?_⟩
+      rw [Finset.univ_eq_empty, Finset.sum_empty]
+      exact Submodule.zero_mem _
+    · refine ⟨Finset.univ.inf' Finset.univ_nonempty γf, ?_, fun ε hε => ?_⟩
+      · rw [Finset.lt_inf'_iff]
+        exact fun i _ => hγfpos i
+      · exact Submodule.sum_mem _ (fun i _ => hγf i (ε i)
+          (lt_of_lt_of_le (hε i) (Finset.inf'_le _ (Finset.mem_univ i))))
+  -- the core inclusion `Λ ≤ N ⊔ 𝓂Λ` by rational approximation
+  have hcore : Lmod ≤ N ⊔ (𝓂[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] :
+      Ideal 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]) • Lmod := by
+    rintro z ⟨h', rfl⟩
+    obtain ⟨γ, hγpos, hγ⟩ := claimB
+    -- a `p`-power below the tolerance `γ`
+    obtain ⟨hplt, hpne⟩ := valued_algebraMap_prime_lt_one hp'
+    obtain ⟨n, hn⟩ := exists_pow_mul_le_one γ⁻¹ hplt hpne
+    have hγ0 : γ ≠ 0 := ne_of_gt hγpos
+    have htle : (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+        ((algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ((p : ℕ) : ℚ)) ^ n) ≤
+        γ := by
+      rw [map_pow]
+      calc (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+            (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat) ((p : ℕ) : ℚ)) ^ n
+          = (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+              (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat) ((p : ℕ) : ℚ)) ^ n *
+              (γ⁻¹ * γ) := by rw [inv_mul_cancel₀ hγ0, mul_one]
+        _ = ((Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+              (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat) ((p : ℕ) : ℚ)) ^ n *
+              γ⁻¹) * γ := by rw [mul_assoc]
+        _ ≤ 1 * γ := mul_le_mul' hn (le_refl γ)
+        _ = γ := one_mul γ
+    have htne : (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+        ((algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ((p : ℕ) : ℚ)) ^ n) ≠
+        0 := by
+      rw [map_pow]
+      exact pow_ne_zero n hpne
+    -- rational approximations of the coordinates of `ψ⁻¹(1 ⊗ h')`
+    have happrox : ∀ i, ∃ q : ℚ,
+        (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+          (bK.repr (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+            ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]] h')) i -
+            algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat) q) <
+        (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+          ((algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) ((p : ℕ) : ℚ)) ^ n) :=
+      fun i => exists_valued_sub_algebraMap_lt hp' _ _ htne
+    choose q hq using happrox
+    -- the rational approximation vector
+    set x : Hg := ∑ i, q i • b i with hx
+    -- its image under the comparison map
+    have hψx : ψK ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x) =
+        ∑ i, algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) (q i) • ψK (bK i) := by
+      rw [hx, TensorProduct.tmul_sum, map_sum]
+      refine Finset.sum_congr rfl (fun i _ => ?_)
+      rw [TensorProduct.tmul_smul, ← Module.Basis.baseChange_apply
+        (S := HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) b i,
+        ← algebraMap_smul (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) (q i) (bK i), map_smul]
+    -- the expansion of `ψ⁻¹(1 ⊗ h')` over the base-changed basis
+    have hu : ψK (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] h')) =
+        ∑ i, bK.repr (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] h')) i • ψK (bK i) := by
+      conv_lhs => rw [← Module.Basis.sum_repr bK
+        (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] h'))]
+      rw [map_sum]
+      exact Finset.sum_congr rfl (fun i _ => by rw [map_smul])
+    -- the error term
+    have herr : ∑ i, (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) (q i) -
+        bK.repr (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] h')) i) • ψK (bK i) =
+        ψK ((1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x) -
+        (1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] h' := by
+      rw [show ∑ i, (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) (q i) -
+          bK.repr (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+            ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]] h')) i) • ψK (bK i) =
+          ∑ i, (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) (q i) • ψK (bK i) -
+            bK.repr (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat)
+              ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat]] h')) i • ψK (bK i))
+          from Finset.sum_congr rfl (fun i _ =>
+            sub_smul (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat) (q i))
+              (bK.repr (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat)
+                ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+                  hp'.toHeightOneSpectrumRingOfIntegersRat]] h')) i)
+              (ψK (bK i))),
+        Finset.sum_sub_distrib, ← hψx, ← hu, LinearEquiv.apply_symm_apply]
+    -- the error lies in `𝓂 • Lmod`
+    have herrmem : ψK ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x) -
+        (1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] h' ∈
+        (𝓂[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat] :
+          Ideal 𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]) • Lmod := by
+      rw [← herr]
+      refine hγ _ (fun i => ?_)
+      calc (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+            (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat) (q i) -
+            bK.repr (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat)
+              ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat]] h')) i)
+          = (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+              (bK.repr (ψK.symm ((1 : HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat)
+                ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+                  hp'.toHeightOneSpectrumRingOfIntegersRat]] h')) i -
+              algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat) (q i)) :=
+            Valuation.map_sub_swap _ _ _
+        _ < (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat) ℤᵐ⁰)
+              ((algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat)
+                ((p : ℕ) : ℚ)) ^ n) := hq i
+        _ ≤ γ := htle
+    -- the approximation lands in the lattice intersection
+    have hxmem : ∃ h'' : Hl, ψK ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x) =
+        (1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] h'' := by
+      have h2 : ψK ((1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x) -
+          (1 : HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+            ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]] h' ∈ Lmod :=
+        Submodule.smul_le_right herrmem
+      obtain ⟨he, hhe⟩ := h2
+      refine ⟨h' + he, ?_⟩
+      have h3 : inc (h' + he) = inc h' + inc he := map_add _ _ _
+      have h4 : inc h' = (1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] h' := rfl
+      show _ = inc (h' + he)
+      rw [h3, h4, hhe]
+      abel
+    -- assemble: `1 ⊗ h' = ψ(1 ⊗ x) - error`
+    have hxN : ψK ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x) ∈ N := by
+      rw [hNdef]
+      exact Submodule.subset_span ⟨x, hxmem, rfl⟩
+    have hfinal : inc h' = ψK ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x) -
+        (ψK ((1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x) -
+        (1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] h') :=
+      (sub_sub_cancel _ _).symm
+    rw [hfinal]
+    exact Submodule.sub_mem _ (Submodule.mem_sup_left hxN)
+      (Submodule.mem_sup_right herrmem)
+  -- Nakayama: `Λ ≤ N`
+  have hjac : (𝓂[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] :
+      Ideal 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]) ≤
+      Ideal.jacobson ⊥ :=
+    le_of_eq (IsLocalRing.jacobson_eq_maximalIdeal ⊥ bot_ne_top).symm
+  have hle : Lmod ≤ N :=
+    Submodule.le_of_le_smul_of_le_jacobson_bot hLfg hjac hcore
+  exact hle ⟨h, rfl⟩
+
+open TensorProduct ValuativeRel in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- W8: **comultiplication closure of the lattice intersection** — for the
+`ℤ_(p)`-subalgebra `H₀ = {x : Hg | ψ(1 ⊗ x) ∈ 1 ⊗ Hl}` of a
+finite-dimensional `ℚ`-Hopf algebra cut out by a `ℚ_pˆ`-bialgebra
+comparison `ψ` with a finite `𝒪`-Hopf algebra `Hl`, the comultiplication
+of `Hg` maps `H₀` into the additive closure of split tensors of
+`H₀`-elements. A free `ℤ_(p)`-basis of `H₀` (finite + torsion-free over
+the DVR) is a `ℚ`-basis of `Hg` (fullness) whose `ψ`-image spans the
+`𝒪`-lattice (the density/Nakayama lemma
+`tmul_mem_span_adicLatticeIntersection`); `ψ ⊗ ψ` matches the two
+comultiplications, so the coordinates of `comul x` in the doubled basis
+are `𝒪`-integral rationals, i.e. lie in `ℤ_(p)`. -/
+theorem comul_mem_closure_of_adicLattice {p : ℕ} (hp' : p.Prime)
+    [Fact p.Prime]
+    (Hg : Type) [CommRing Hg] [HopfAlgebra ℚ Hg] [Module.Finite ℚ Hg]
+    [Algebra (Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) Hg]
+    [IsScalarTower (Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ Hg]
+    (Hl : Type) [CommRing Hl]
+    [HopfAlgebra 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] Hl]
+    [Module.Finite 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] Hl]
+    (ψ : ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[ℚ] Hg)
+      ≃ₐc[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl))
+    (H₀ : Subalgebra (Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) Hg)
+    (hmem : ∀ x : Hg, x ∈ H₀ ↔ ∃ h : Hl,
+      ψ ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x) =
+      (1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] h)
+    (hfin : Module.Finite (Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H₀)
+    (hfull : ∀ x : Hg, ∃ r : Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal, r ≠ 0 ∧ r • x ∈ H₀) :
+    ∀ x ∈ H₀, Coalgebra.comul (R := ℚ) x ∈
+      AddSubmonoid.closure (Set.image2 (fun a b : Hg => a ⊗ₜ[ℚ] b)
+        (H₀ : Set Hg) (H₀ : Set Hg)) := by
+  classical
+  haveI := hfin
+  -- torsion-freeness of `H₀` over the DVR `ℤ_(p)`
+  haveI hNZD : NoZeroSMulDivisors (Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H₀ := by
+    refine ⟨fun {c y} hcy => ?_⟩
+    rcases eq_or_ne c 0 with hc | hc
+    · exact Or.inl hc
+    · right
+      have h2 := congrArg (Subtype.val : H₀ → Hg) hcy
+      rw [SetLike.val_smul, ZeroMemClass.coe_zero,
+        ← algebraMap_smul (R := Localization.AtPrime
+          hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ c (y : Hg)] at h2
+      have h3 : algebraMap (Localization.AtPrime
+          hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ c ≠ 0 :=
+        fun h0 => hc (IsFractionRing.injective (Localization.AtPrime
+          hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ
+          (by rw [h0, map_zero]))
+      have h4 : (y : Hg) = 0 := by
+        rcases smul_eq_zero.mp h2 with h | h
+        · exact absurd h h3
+        · exact h
+      exact Subtype.ext h4
+  -- the free `ℤ_(p)`-basis of `H₀`
+  let f := Module.Free.chooseBasis (Localization.AtPrime
+    hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H₀
+  let fHg : Module.Free.ChooseBasisIndex (Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H₀ → Hg :=
+    fun i => (f i : Hg)
+  -- it is `ℚ`-linearly independent in `Hg`
+  have hLIR : LinearIndependent (Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) fHg := by
+    have h1 := f.linearIndependent
+    have h2 := h1.map' (Subalgebra.val H₀).toLinearMap
+      (LinearMap.ker_eq_bot.mpr Subtype.coe_injective)
+    exact h2
+  have hLIQ : LinearIndependent ℚ fHg :=
+    (LinearIndependent.iff_fractionRing (R := Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) (K := ℚ)).mp hLIR
+  -- it spans `Hg` over `ℚ` (fullness)
+  have hspanQ : ⊤ ≤ Submodule.span ℚ (Set.range fHg) := by
+    intro xx _
+    obtain ⟨rr, hrne, hrx⟩ := hfull xx
+    have h1 : rr • xx ∈ Submodule.span (Localization.AtPrime
+        hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)
+        (Set.range fHg) := by
+      have hy := Module.Basis.sum_repr f (⟨rr • xx, hrx⟩ : H₀)
+      have h2 := congrArg (Subtype.val : H₀ → Hg) hy
+      simp only [AddSubmonoidClass.coe_finsetSum, SetLike.val_smul] at h2
+      rw [← h2]
+      exact Submodule.sum_mem _ (fun i _ => Submodule.smul_mem _ _
+        (Submodule.subset_span ⟨i, rfl⟩))
+    have h3 : rr • xx ∈ Submodule.span ℚ (Set.range fHg) :=
+      Submodule.span_subset_span (R := Localization.AtPrime
+        hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) (S := ℚ)
+        (s := Set.range fHg) h1
+    have halgr : algebraMap (Localization.AtPrime
+        hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ rr ≠ 0 :=
+      fun h0 => hrne (IsFractionRing.injective (Localization.AtPrime
+        hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ
+        (by rw [h0, map_zero]))
+    have h4 : xx = (algebraMap (Localization.AtPrime
+        hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ rr)⁻¹ •
+        (rr • xx) := by
+      rw [← algebraMap_smul (R := Localization.AtPrime
+        hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ rr xx,
+        inv_smul_smul₀ halgr]
+    rw [h4]
+    exact Submodule.smul_mem _ _ h3
+  -- the induced `ℚ`-basis of `Hg` with values in `H₀`
+  let bHg : Module.Basis (Module.Free.ChooseBasisIndex (Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H₀) ℚ Hg :=
+    Module.Basis.mk hLIQ hspanQ
+  have hbval : ∀ i, bHg i = fHg i := fun i => Module.Basis.mk_apply hLIQ hspanQ i
+  have hbmem : ∀ i, bHg i ∈ H₀ := fun i => by rw [hbval i]; exact (f i).2
+  -- the comparison map as a linear equivalence
+  let ψL : ((HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[ℚ] Hg)
+      ≃ₗ[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl) :=
+    ψ.toCoalgEquiv.toLinearEquiv
+  have hψL : ∀ z, ψL z = ψ z := fun z => rfl
+  -- the transported basis of the local base change
+  let bKK := bHg.baseChange (HeightOneSpectrum.adicCompletion ℚ
+    hp'.toHeightOneSpectrumRingOfIntegersRat)
+  let tL := bKK.map ψL
+  have htL : ∀ i, tL i = ψ ((1 : HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] bHg i) := fun i => by
+    rw [Module.Basis.map_apply, Module.Basis.baseChange_apply]
+    exact hψL _
+  -- `ℤ_(p)`-scalars are `𝒪`-integral in the completion
+  have hint : ∀ r : Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal,
+      algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (algebraMap (Localization.AtPrime
+          hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ r) ∈
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat] := by
+    intro r
+    have h0 := algebraMap_localization_mem_adicCompletionIntegers
+      hp'.toHeightOneSpectrumRingOfIntegersRat r
+    have hpt : algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (algebraMap (Localization.AtPrime
+          hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ r) =
+        @algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) _ _
+          (HeightOneSpectrum.instAlgebraAdicCompletion
+            (NumberField.RingOfIntegers ℚ) ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (algebraMap (Localization.AtPrime
+            hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ r) :=
+      RingHom.congr_fun (Subsingleton.elim _ _) _
+    rw [hpt]
+    exact mem_integer_of_mem_adicCompletionIntegers hp' h0
+  -- every `H₀`-element pushes into the `𝒪`-span of the transported basis
+  have hH₀span : ∀ x' : Hg, x' ∈ H₀ →
+      ψ ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x') ∈
+      Submodule.span 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat] (Set.range tL) := by
+    intro x' hx'
+    -- expand `x'` over the free basis of `H₀`
+    have hy := Module.Basis.sum_repr f (⟨x', hx'⟩ : H₀)
+    have h2 := congrArg (Subtype.val : H₀ → Hg) hy
+    simp only [AddSubmonoidClass.coe_finsetSum, SetLike.val_smul] at h2
+    -- push the expansion through `1 ⊗ ·` and `ψ`
+    have h3 : ψ ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x') =
+        ∑ i, (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (algebraMap (Localization.AtPrime
+            hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ
+            (f.repr (⟨x', hx'⟩ : H₀) i))) • tL i := by
+      conv_lhs => rw [← h2]
+      rw [TensorProduct.tmul_sum, map_sum]
+      refine Finset.sum_congr rfl (fun i _ => ?_)
+      rw [← algebraMap_smul (R := Localization.AtPrime
+          hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ
+          (f.repr (⟨x', hx'⟩ : H₀) i) ((f i : Hg)),
+        TensorProduct.tmul_smul,
+        ← algebraMap_smul (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (algebraMap (Localization.AtPrime
+            hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ
+            (f.repr (⟨x', hx'⟩ : H₀) i)), map_smul, htL i, hbval i]
+    rw [h3]
+    refine Submodule.sum_mem _ (fun i _ => ?_)
+    have h5 : (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (algebraMap (Localization.AtPrime
+          hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ
+          (f.repr (⟨x', hx'⟩ : H₀) i))) • tL i =
+        (⟨_, hint (f.repr (⟨x', hx'⟩ : H₀) i)⟩ :
+          𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]) • tL i := by
+      have h6 := algebraMap_smul (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (⟨_, hint (f.repr (⟨x', hx'⟩ : H₀) i)⟩ :
+          𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]) (tL i)
+      exact h6.symm
+    rw [h5]
+    exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, rfl⟩)
+  -- coordinates of `𝒪`-span elements are `𝒪`-integral
+  have hcoordspan : ∀ z ∈ Submodule.span
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat] (Set.range tL),
+      ∀ i, ∃ o : 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat],
+      algebraMap 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) o = tL.repr z i := by
+    intro z hz
+    induction hz using Submodule.span_induction with
+    | mem z hzmem =>
+      obtain ⟨j, rfl⟩ := hzmem
+      intro i
+      refine ⟨if j = i then 1 else 0, ?_⟩
+      rw [Module.Basis.repr_self, Finsupp.single_apply]
+      split_ifs with hij
+      · exact map_one _
+      · exact map_zero _
+    | zero =>
+      intro i
+      exact ⟨0, by rw [map_zero, map_zero, Finsupp.zero_apply]⟩
+    | add z₁ z₂ _ _ ih₁ ih₂ =>
+      intro i
+      obtain ⟨o₁, ho₁⟩ := ih₁ i
+      obtain ⟨o₂, ho₂⟩ := ih₂ i
+      exact ⟨o₁ + o₂, by rw [map_add, map_add, Finsupp.add_apply, ho₁, ho₂]⟩
+    | smul a z _ ih =>
+      intro i
+      obtain ⟨o, ho⟩ := ih i
+      refine ⟨a * o, ?_⟩
+      have h1 : tL.repr (a • z) i =
+          algebraMap 𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]
+            (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat) a * tL.repr z i := by
+        rw [← algebraMap_smul (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) a z, map_smul,
+          Finsupp.smul_apply, smul_eq_mul]
+      rw [h1, map_mul, ho]
+  -- coordinates of lattice elements are `𝒪`-integral
+  have hcoordΛ : ∀ hl : Hl, ∀ i,
+      ∃ o : 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat],
+      algebraMap 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) o =
+      tL.repr ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] hl) i := by
+    intro hl
+    refine hcoordspan _ ?_
+    have h77 := tmul_mem_span_adicLatticeIntersection hp' Hg Hl ψL hl
+    refine Submodule.span_le.mpr ?_ h77
+    rintro _ ⟨x', hx', rfl⟩
+    obtain ⟨h', hh'⟩ := hx'
+    have hx'H : x' ∈ H₀ := (hmem x').mpr ⟨h', by rw [← hψL]; exact hh'⟩
+    have := hH₀span x' hx'H
+    rw [← hψL] at this
+    exact this
+  -- the doubled basis and the split-lattice tensor set
+  let tL2 := tL.tensorProduct tL
+  let latticeSet : Set (((HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)
+      ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl)
+      ⊗[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl)) :=
+    Set.image2 (fun a b => a ⊗ₜ[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat] b)
+      (Set.range fun hl : Hl => (1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] hl)
+      (Set.range fun hl : Hl => (1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] hl)
+  -- coordinates of split-lattice-tensor sums are `𝒪`-integral
+  have hcoordD : ∀ w ∈ AddSubmonoid.closure latticeSet,
+      ∀ z, ∃ o : 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat],
+      algebraMap 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) o = tL2.repr w z := by
+    intro w hw
+    induction hw using AddSubmonoid.closure_induction with
+    | mem w hwmem =>
+      obtain ⟨u₁, hu₁, u₂, hu₂, rfl⟩ := hwmem
+      obtain ⟨h₁, rfl⟩ := hu₁
+      obtain ⟨h₂, rfl⟩ := hu₂
+      rintro ⟨i, j⟩
+      obtain ⟨o₁, ho₁⟩ := hcoordΛ h₁ i
+      obtain ⟨o₂, ho₂⟩ := hcoordΛ h₂ j
+      refine ⟨o₂ * o₁, ?_⟩
+      rw [Module.Basis.tensorProduct_repr_tmul_apply, smul_eq_mul, map_mul,
+        ho₁, ho₂]
+    | zero =>
+      intro z
+      exact ⟨0, by rw [map_zero, map_zero, Finsupp.zero_apply]⟩
+    | add w₁ w₂ _ _ ih₁ ih₂ =>
+      intro z
+      obtain ⟨o₁, ho₁⟩ := ih₁ z
+      obtain ⟨o₂, ho₂⟩ := ih₂ z
+      exact ⟨o₁ + o₂, by rw [map_add, map_add, Finsupp.add_apply, ho₁, ho₂]⟩
+  -- the main chase
+  intro x hx
+  obtain ⟨hl, hh⟩ := (hmem x).mp hx
+  -- (a) the comultiplication of the lattice element lies in the closure
+  have hWD : Coalgebra.comul (R := HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)
+      ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] hl) ∈
+      AddSubmonoid.closure latticeSet := by
+    have hcm := congr($(Bialgebra.TensorProduct.comul_eq_algHom_toLinearMap
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) Hl)
+      ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] hl))
+    rw [hcm]
+    simp only [AlgHom.toLinearMap_apply, AlgHom.comp_apply,
+      Algebra.TensorProduct.map_tmul, map_one]
+    have hgen : ∀ w : Hl ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] Hl,
+        (Algebra.TensorProduct.tensorTensorTensorComm
+          𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) Hl Hl).toAlgHom
+          ((1 : (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+            ⊗[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]
+            (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat))
+            ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]] w) ∈
+        AddSubmonoid.closure latticeSet := by
+      intro w
+      induction w using TensorProduct.induction_on with
+      | zero =>
+        rw [TensorProduct.tmul_zero, map_zero]
+        exact AddSubmonoid.zero_mem _
+      | tmul h1 h2 =>
+        exact AddSubmonoid.subset_closure
+          (Set.mem_image2_of_mem ⟨h1, rfl⟩ ⟨h2, rfl⟩)
+      | add w₁ w₂ ih₁ ih₂ =>
+        rw [TensorProduct.tmul_add, map_add]
+        exact AddSubmonoid.add_mem _ ih₁ ih₂
+    exact hgen _
+  -- (b) the `ℚ`-coordinates of `comul x` in the doubled basis
+  set q2 := (bHg.tensorProduct bHg).repr (Coalgebra.comul (R := ℚ) x) with hq2
+  have hcomulx : Coalgebra.comul (R := ℚ) x =
+      ∑ z, q2 z • (bHg z.1 ⊗ₜ[ℚ] bHg z.2) := by
+    conv_lhs => rw [← Module.Basis.sum_repr (bHg.tensorProduct bHg)
+      (Coalgebra.comul (R := ℚ) x)]
+    exact Finset.sum_congr rfl (fun z _ => by
+      rw [Module.Basis.tensorProduct_apply'])
+  -- (c) the comultiplication of `1 ⊗ x` in split form
+  have hcomul1x : Coalgebra.comul (R := HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)
+      ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x) =
+      ∑ z, algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) (q2 z) •
+        (((1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] bHg z.1)
+        ⊗ₜ[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+        ((1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] bHg z.2)) := by
+    have hcm := congr($(Bialgebra.TensorProduct.comul_eq_algHom_toLinearMap
+      ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) Hg)
+      ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x))
+    rw [hcm]
+    simp only [AlgHom.toLinearMap_apply, AlgHom.comp_apply,
+      Algebra.TensorProduct.map_tmul, map_one]
+    have hca : Bialgebra.comulAlgHom ℚ Hg x = Coalgebra.comul (R := ℚ) x :=
+      rfl
+    rw [hca, hcomulx, TensorProduct.tmul_sum, map_sum]
+    refine Finset.sum_congr rfl (fun z _ => ?_)
+    rw [TensorProduct.tmul_smul,
+      ← algebraMap_smul (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) (q2 z), map_smul]
+    rfl
+  -- (d) transfer along `ψ ⊗ ψ`
+  have hcompat := CoalgHomClass.map_comp_comul_apply ψ
+    ((1 : HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x)
+  have hW2 : Coalgebra.comul (R := HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)
+      (ψ ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x)) =
+      ∑ z, algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) (q2 z) • tL2 z := by
+    rw [← hcompat, hcomul1x, map_sum]
+    refine Finset.sum_congr rfl (fun z _ => ?_)
+    rw [map_smul, TensorProduct.map_tmul, Module.Basis.tensorProduct_apply',
+      htL z.1, htL z.2]
+    rfl
+  -- (e) the coordinates of the transported comultiplication
+  have hcoords : ∀ z, tL2.repr (Coalgebra.comul
+      (R := HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      (ψ ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x))) z =
+      algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) (q2 z) := by
+    intro z'
+    rw [hW2, map_sum, Finsupp.finsetSum_apply]
+    have h1 : ∀ z, (tL2.repr (algebraMap ℚ (HeightOneSpectrum.adicCompletion
+        ℚ hp'.toHeightOneSpectrumRingOfIntegersRat) (q2 z) • tL2 z)) z' =
+        if z = z' then algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) (q2 z) else 0 := by
+      intro z
+      rw [map_smul, Finsupp.smul_apply, Module.Basis.repr_self,
+        Finsupp.single_apply, smul_eq_mul, mul_ite, mul_one, mul_zero]
+    rw [Finset.sum_congr rfl (fun z _ => h1 z),
+      Finset.sum_ite_eq' Finset.univ z' (fun z =>
+        algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) (q2 z))]
+    exact if_pos (Finset.mem_univ z')
+  -- (f) the coordinates are integral, hence lie in `ℤ_(p)`
+  have hrat : ∀ z, ∃ r : Localization.AtPrime
+      hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal,
+      algebraMap (Localization.AtPrime
+        hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ r = q2 z := by
+    intro z
+    obtain ⟨o, ho⟩ := hcoordD (Coalgebra.comul
+      (R := HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      (ψ ((1 : HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x)))
+      (by rw [hh]; exact hWD) z
+    refine exists_algebraMap_localization_eq_of_valued_le_one hp' _ ?_
+    rw [show algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) (q2 z) =
+        algebraMap 𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) o from
+      by rw [ho, hcoords z]]
+    have h2 := mem_adicCompletionIntegers_of_mem_integer hp' o.2
+    rw [IsDedekindDomain.HeightOneSpectrum.mem_adicCompletionIntegers] at h2
+    exact h2
+  choose r hr using hrat
+  -- (g) assembly
+  rw [hcomulx]
+  refine AddSubmonoid.sum_mem _ (fun z _ => ?_)
+  have hterm : q2 z • (bHg z.1 ⊗ₜ[ℚ] bHg z.2) =
+      (r z • bHg z.1) ⊗ₜ[ℚ] bHg z.2 := by
+    rw [smul_tmul', ← hr z, algebraMap_smul]
+  rw [hterm]
+  exact AddSubmonoid.subset_closure (Set.mem_image2_of_mem
+    (Subalgebra.smul_mem H₀ (hbmem z.1) (r z)) (hbmem z.2))
+
 open TensorProduct ValuativeRel IsDedekindDomain in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -8378,13 +9666,20 @@ theorem exists_hopfOrder_of_adic_bialgEquiv
         rw [map_zero, map_zero]
         exact Λ.zero_mem
       algebraMap_mem' := halg }
-  -- FINITENESS leaf (sorry node): `H₀` is finite over the DVR `ℤ_(p)`
-  -- (a torsion-free `ℤ_(p)`-submodule of `Hg` commensurable with a
-  -- lattice: it embeds into the finite `𝒪`-module `Hl` after clearing
-  -- denominators)
+  -- FINITENESS (PROVEN): `H₀` is finite over the DVR `ℤ_(p)` — its
+  -- elements have `p`-power-bounded coordinates with respect to a
+  -- `ℚ`-basis of `Hg` (the coordinate-bounding half of
+  -- `fg_of_le_adicLattice`), so `H₀` sits inside a finitely generated
+  -- `ℤ_(p)`-submodule, and `ℤ_(p)` is Noetherian
   have hfin : Module.Finite (Localization.AtPrime
       hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) H₀ := by
-    sorry
+    have hfg : (Subalgebra.toSubmodule H₀).FG := by
+      refine fg_of_le_adicLattice hp' Hg Hl ψ.toLinearEquiv
+        (Subalgebra.toSubmodule H₀) ?_
+      intro x hx
+      obtain ⟨h, hh⟩ := hx
+      exact ⟨h, hh.symm⟩
+    exact Module.Finite.iff_fg.mpr hfg
   -- FULLNESS (PROVEN): every element of `Hg` has a nonzero
   -- `ℤ_(p)`-multiple in `H₀` — clear denominators by a `p`-power,
   -- since `p` is strictly inside the unit disc of the completion and
@@ -8684,13 +9979,20 @@ theorem exists_hopfOrder_of_adic_bialgEquiv
         rw [hstep1, hstep2, map_pow, map_natCast, map_pow]
       rw [hscal]
       exact hn
-  -- COMULTIPLICATION leaf (sorry node): `Δ(H₀)` lies in the additive
-  -- span of split tensors of `H₀`-elements (`ψ` matches the two
-  -- comultiplications and `Hl` is a Hopf `𝒪`-algebra)
+  -- COMULTIPLICATION (PROVEN): `Δ(H₀)` lies in the additive span of
+  -- split tensors of `H₀`-elements — the free-basis/Nakayama argument
+  -- of `comul_mem_closure_of_adicLattice`, consuming the finiteness and
+  -- fullness just established
   have hcomul : ∀ x ∈ H₀, Coalgebra.comul (R := ℚ) x ∈
       AddSubmonoid.closure (Set.image2 (fun a b : Hg => a ⊗ₜ[ℚ] b)
         (H₀ : Set Hg) (H₀ : Set Hg)) := by
-    sorry
+    refine comul_mem_closure_of_adicLattice hp' Hg Hl ψ H₀ ?_ hfin hfull
+    intro x
+    constructor
+    · rintro ⟨h, hh⟩
+      exact ⟨h, hh.symm⟩
+    · rintro ⟨h, hh⟩
+      exact ⟨h, hh.symm⟩
   -- COUNIT (PROVEN): counit values on `H₀` are integral — the
   -- comparison map preserves counits, the lattice's counit values are
   -- `𝒪`-integral, and a rational that is integral in the completion
