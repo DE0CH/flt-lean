@@ -1310,7 +1310,7 @@
     "name": "WeierstrassCurve.kernel_add_abscissa_notMem",
     "fullname": "WeierstrassCurve.kernel_add_abscissa_notMem",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
-    "wip": true,
+    "wip": false,
     "text": "`WeierstrassCurve.kernel_add_abscissa_notMem` — kernel of reduction closed under addition (formal-group valuation estimate; Silverman AEC VII.2.1-2 shape) — leaf of the proven NOS dévissage (2026-07-22)",
     "parent": "WeierstrassCurve.torsion_inertia_fixes_of_prime_pow_isUnit"
   },
@@ -1318,7 +1318,7 @@
     "name": "WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq",
     "fullname": "WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
-    "wip": true,
+    "wip": false,
     "text": "`WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq` — congruent distinct integral points differ by a kernel element (chord-slope/duplication estimate; Δ-unit Bézout for the ordinate-flip case) — leaf of the proven NOS dévissage (2026-07-22)",
     "parent": "WeierstrassCurve.torsion_inertia_fixes_of_prime_pow_isUnit"
   },
@@ -1326,7 +1326,7 @@
     "name": "WeierstrassCurve.exists_torsion_etale_package_over_fractionField",
     "fullname": "WeierstrassCurve.exists_torsion_etale_package_over_fractionField",
     "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
-    "wip": true,
+    "wip": false,
     "text": "`WeierstrassCurve.exists_torsion_etale_package_over_fractionField` — finite étale K-Hopf package of the m-torsion via the Grothendieck Galois correspondence (universe-honest); shared shape with Semistable's exists_galoisModulePackage_of_finiteQuotient — align later (2026-07-22)",
     "parent": "WeierstrassCurve.torsion_flat_of_inertia_fixes"
   },
@@ -1601,5 +1601,13 @@
     "wip": true,
     "text": "`exists_realizations_of_eigensystem` — λ-adic realizations per (ℓ,φ) matching the shared Pv outside a uniform finite set, hardly-ramified integral model at odd ℓ (Eichler–Shimura/Deligne + Carayol/Saito; anchor direction deliberately excluded per the refuted split) — 2026-07-23",
     "parent": "exists_family_of_eigensystem"
+  },
+  {
+    "name": "exists_finiteQuotient_galoisModule_etale_package",
+    "fullname": "WeierstrassCurve.exists_finiteQuotient_galoisModule_etale_package",
+    "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+    "wip": true,
+    "text": "`exists_finiteQuotient_galoisModule_etale_package` — the curve-independent Grothendieck Galois correspondence for a finite abelian group with finite-Galois-quotient action (Small.{u} formulation); statement deliberately aligned with Semistable's exists_galoisModulePackage_of_finiteQuotient so one proof serves both (docstring records the deltas) — 2026-07-23",
+    "parent": "WeierstrassCurve.exists_torsion_etale_package_over_fractionField"
   }
 ]
