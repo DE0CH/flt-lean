@@ -1446,7 +1446,57 @@ theorem tsum_rpow_neg_natCard_quotient_prime_and_map_zeta_eq_pow_le_tsum_add
             ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ)
           then (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)
           else 0) := by
-    sorry
+    intro ρ
+    calc (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+            (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+            ρ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)},
+          (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s))
+        = ∑' P : HeightOneSpectrum (𝓞 F),
+            Set.indicator {P : HeightOneSpectrum (𝓞 F) |
+                (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+                ρ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)}
+              (fun P => (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s)) P :=
+          tsum_subtype {P : HeightOneSpectrum (𝓞 F) |
+              (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+              ρ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)}
+            (fun P => (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s))
+      _ = ∑' P : HeightOneSpectrum (𝓞 F),
+            Set.indicator {P : HeightOneSpectrum (𝓞 F) |
+                (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+                Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ}
+              (fun P => if ((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ) =
+                  ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ)
+                then (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) else 0) P := by
+          refine tsum_congr fun P => ?_
+          rw [Set.indicator_apply, Set.indicator_apply]
+          by_cases h1 : P ∈ {P : HeightOneSpectrum (𝓞 F) |
+              (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+              ρ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)}
+          · rw [if_pos h1,
+              if_pos (show P ∈ {P : HeightOneSpectrum (𝓞 F) |
+                  (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+                  Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ} from
+                ⟨h1.1, hclassne ρ P h1.2⟩),
+              if_pos ((hcond ρ _).mp h1.2)]
+          · rw [if_neg h1]
+            by_cases h2 : P ∈ {P : HeightOneSpectrum (𝓞 F) |
+                (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+                Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ}
+            · rw [if_pos h2,
+                if_neg fun hcontra => h1 ⟨h2.1, (hcond ρ _).mpr hcontra⟩]
+            · rw [if_neg h2]
+      _ = ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+            (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+          (if ((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ) =
+              ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ)
+            then (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)
+            else 0) :=
+          (tsum_subtype {P : HeightOneSpectrum (𝓞 F) |
+              (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+              Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ}
+            (fun P => if ((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ) =
+                ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ)
+              then (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) else 0)).symm
   -- orthogonality: `φ(ℓ) ×` the indicator sum is the character-average
   have hkey : ∀ ρ : E ≃ₐ[F] E,
       ((ℓ.totient : ℕ) : ℂ) *
