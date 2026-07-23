@@ -1227,7 +1227,242 @@ theorem residual_twist_eq_cyclotomicCharacterModL
     rw [heq]
     exact Ideal.sub_mem _ hchi hdet_a
 
-/-- **The ω-defect dies on the cyclotomic kernel** (sorry node — the
+/-- **Openness of the congruence subgroup** (PROVEN 2026-07-23 — the
+continuity stratum): the set of `g ∈ Γ ℚ` acting trivially modulo `𝔪ᵏ`
+is open. `ρ` is continuous into `End V` with the `R`-module topology;
+along a basis of `V` the congruence condition is a finite intersection
+of conditions "matrix entry lies in a translate of `𝔪ᵏ`", each an open
+condition: the entry functionals are `R`-linear hence continuous
+(`IsModuleTopology.continuous_of_linearMap`), and `𝔪ᵏ ⊆ R` is open by
+`IsLocalRing.isOpen_maximalIdeal_pow` (`R` is a compact Hausdorff
+Noetherian topological ring — transport along a `ℤ₃`-basis). -/
+theorem isOpen_setOf_forall_sub_mem_pow_smul
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (ρ : GaloisRep ℚ R V) (k : ℕ) :
+    IsOpen {g : Γ ℚ | ∀ x : V, ρ g x - x ∈
+      (IsLocalRing.maximalIdeal R ^ k) • (⊤ : Submodule R V)} := by
+  classical
+  letI := moduleTopology R (Module.End R V)
+  haveI : IsModuleTopology R (Module.End R V) := ⟨rfl⟩
+  -- `R` is a compact Hausdorff Noetherian topological ring, so `𝔪ᵏ` is
+  -- open (`IsLocalRing.isOpen_maximalIdeal_pow`)
+  haveI hNoeth : IsNoetherianRing R := IsNoetherianRing.of_finite ℤ_[3] R
+  let eR : R ≃ₗ[ℤ_[3]] (Module.Free.ChooseBasisIndex ℤ_[3] R → ℤ_[3]) :=
+    (Module.Free.chooseBasis ℤ_[3] R).equivFun
+  have hcont₁ : Continuous eR :=
+    IsModuleTopology.continuous_of_linearMap eR.toLinearMap
+  have hcont₂ : Continuous eR.symm :=
+    IsModuleTopology.continuous_of_linearMap eR.symm.toLinearMap
+  let homR : R ≃ₜ (Module.Free.ChooseBasisIndex ℤ_[3] R → ℤ_[3]) :=
+    { toEquiv := eR.toEquiv
+      continuous_toFun := hcont₁
+      continuous_invFun := hcont₂ }
+  haveI : CompactSpace R := homR.symm.compactSpace
+  haveI : T2Space R := homR.symm.symm.isEmbedding.t2Space
+  have hIk : IsOpen ((IsLocalRing.maximalIdeal R ^ k : Ideal R) : Set R) :=
+    IsLocalRing.isOpen_maximalIdeal_pow R k
+  -- coordinates along a basis of `V` detect the congruence condition
+  let b := Module.Free.chooseBasis R V
+  have hmem : ∀ y : V,
+      y ∈ (IsLocalRing.maximalIdeal R ^ k) • (⊤ : Submodule R V)
+      ↔ ∀ j, b.repr y j ∈ IsLocalRing.maximalIdeal R ^ k := by
+    intro y
+    constructor
+    · intro hy j
+      refine Submodule.smul_induction_on hy (fun r hr v _ => ?_)
+        fun v w hv hw => ?_
+      · rw [map_smul, Finsupp.smul_apply, smul_eq_mul]
+        exact Ideal.mul_mem_right _ _ hr
+      · rw [map_add, Finsupp.add_apply]
+        exact Ideal.add_mem _ hv hw
+    · intro hy
+      have hrepr := b.sum_repr y
+      rw [← hrepr]
+      exact Submodule.sum_mem _ fun j _ =>
+        Submodule.smul_mem_smul (hy j) trivial
+  -- the congruence set is the `ρ`-preimage of an open set of matrix type
+  have hset : {g : Γ ℚ | ∀ x : V, ρ g x - x ∈
+        (IsLocalRing.maximalIdeal R ^ k) • (⊤ : Submodule R V)}
+      = ⇑ρ ⁻¹' (⋂ (i) (j),
+          ((b.coord j).comp (LinearMap.applyₗ (b i))) ⁻¹'
+            {r : R | r - b.repr (b i) j ∈
+              IsLocalRing.maximalIdeal R ^ k}) := by
+    ext g
+    simp only [Set.mem_setOf_eq, Set.mem_preimage, Set.mem_iInter,
+      LinearMap.comp_apply, LinearMap.applyₗ_apply_apply,
+      Module.Basis.coord_apply]
+    constructor
+    · intro hg i j
+      have h1 := (hmem _).mp (hg (b i)) j
+      rwa [map_sub, Finsupp.sub_apply] at h1
+    · intro hg x
+      have hbase : ∀ i, ρ g (b i) - b i ∈
+          (IsLocalRing.maximalIdeal R ^ k) • (⊤ : Submodule R V) := by
+        intro i
+        rw [hmem]
+        intro j
+        have h1 := hg i j
+        rw [map_sub, Finsupp.sub_apply]
+        exact h1
+      set D : V →ₗ[R] V := (ρ g : V →ₗ[R] V) - LinearMap.id
+      have happly : ∀ v, D v = ρ g v - v := fun v => rfl
+      have hx : ρ g x - x = ∑ i, b.repr x i • (ρ g (b i) - b i) :=
+        calc ρ g x - x
+            = D x := (happly x).symm
+          _ = D (∑ i, b.repr x i • b i) := by rw [Module.Basis.sum_repr]
+          _ = ∑ i, b.repr x i • (D (b i)) := by
+              rw [map_sum]
+              simp_rw [map_smul]
+          _ = ∑ i, b.repr x i • (ρ g (b i) - b i) := by simp_rw [happly]
+      rw [hx]
+      exact Submodule.sum_mem _ fun i _ =>
+        Submodule.smul_mem _ _ (hbase i)
+  rw [hset]
+  refine (ContinuousMonoidHom.continuous_toFun ρ).isOpen_preimage _ ?_
+  refine isOpen_iInter_of_finite fun i => isOpen_iInter_of_finite fun j => ?_
+  refine (IsModuleTopology.continuous_of_linearMap _).isOpen_preimage _ ?_
+  have htr : {r : R | r - b.repr (b i) j ∈ IsLocalRing.maximalIdeal R ^ k}
+      = (fun r : R => r - b.repr (b i) j) ⁻¹'
+        ((IsLocalRing.maximalIdeal R ^ k : Ideal R) : Set R) := rfl
+  rw [htr]
+  exact (continuous_sub_right _).isOpen_preimage _ hIk
+
+/-- **Linear functionals preserve ideal filtrations** (helper, proven):
+an `R`-linear functional maps `J • ⊤` into `J`. -/
+theorem linearMap_apply_mem_of_mem_smul_top {R : Type u} [CommRing R]
+    {V : Type v} [AddCommGroup V] [Module R V]
+    (f : V →ₗ[R] R) {J : Ideal R} {x : V}
+    (hx : x ∈ J • (⊤ : Submodule R V)) : f x ∈ J := by
+  refine Submodule.smul_induction_on hx (fun r hr v _ => ?_)
+    fun y z hy hz => ?_
+  · rw [map_smul, smul_eq_mul]
+    exact Ideal.mul_mem_right _ _ hr
+  · rw [map_add]
+    exact Ideal.add_mem _ hy hz
+
+
+/-- **The ω-defect dies on the local inertia at `3`** (sorry node — the
+Fontaine stratum of the ω-component; Mazur, *Eisenstein ideal*, and
+Serre's peu-ramifié analysis): for `σ` in the local inertia at `3`
+whose image lies in the cyclotomic kernel, the defect
+`d σ = f (ρ σ w₀) - f σ w₀` lands in `𝔪ⁿ⁺²`. Content: modulo `𝔪ⁿ⁺²`
+the `w₀ → v₀` corner of `ρ` on the congruence-graded piece is the
+generic-fibre class of an extension of the multiplicative-type part
+(`μ₃`-type, the residual `ω`-line `w₀`) by the étale-type part (the
+trivial quotient `v₀`) inside the finite flat prolongation of
+`ρ.baseChange (R ⧸ 𝔪ⁿ⁺²)` at `3` (`hρ.isFlat`, at the open ideal
+`𝔪ⁿ⁺²`); over `ℤ₃` every finite flat extension of `μ₃`-type by
+étale-type has trivial connected-étale corner (`Ext¹_{ℤ₃-flat}(μ₃, ℤ/3)
+= 0`: the connected component of the extension maps isomorphically to
+`μ₃`, splitting it), so the class dies on inertia. -/
+theorem omega_defect_vanishes_on_localInertia_at_three
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (w₀ : V) (hw₀π : π ((1 : kk) ⊗ₜ[R] w₀) = 0)
+    (hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0)
+    (a : Γ ℚ → R)
+    (ha : ∀ g : Γ ℚ, ρ g w₀ - a g • w₀ ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V))
+    (n : ℕ) (f : V →ₗ[R] R)
+    (hf : ∀ (g : Γ ℚ) (v : V),
+      f (ρ g v) - f v ∈ IsLocalRing.maximalIdeal R ^ (n + 1))
+    (hfv₀ : f v₀ ∉ IsLocalRing.maximalIdeal R)
+    (σ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))
+    (hσ : σ ∈ localInertiaGroup
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+    (hσω : cyclotomicCharacterModL 3 (Field.absoluteGaloisGroup.map
+      (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1) :
+    f (ρ (Field.absoluteGaloisGroup.map
+      (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) w₀)
+      - f w₀ ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+  sorry
+
+/-- **The global Kummer core over `ℚ(ζ₃)`** (sorry node — Serre's unit
+computation, Duke 1987, §5.4, `sources/serre1987duke.txt`): an
+approximate homomorphism `d` on the cyclotomic kernel `ker ω ≤ Γ ℚ`
+valued in `𝔪ⁿ⁺¹` — a homomorphism modulo `𝔪ⁿ⁺²` on the kernel,
+`ω`-ANTI-equivariant under conjugation from outside the kernel
+(`hdconj`: conjugating by `τ` with `ω τ = -1` negates `d` mod `𝔪ⁿ⁺²`),
+killed by an open normal subgroup, killed by the local inertia at every
+prime `p ∉ {2, 3}`, and killed by the cyclotomic-kernel part of the
+local inertia at `3` — vanishes modulo `𝔪ⁿ⁺²` on the whole kernel.
+Route: modulo `𝔪ⁿ⁺²` the map is a continuous character of
+`Γ_{ℚ(ζ₃)}` into a `3`-elementary target (`3 ∈ 𝔪`), cutting out an
+abelian exponent-`3` extension `N/ℚ(ζ₃)` unramified outside the places
+over `2` and `3` and unramified over `3`; Kummer theory over
+`ℚ(ζ₃)` (class number `1`) puts its radical in the group generated by
+the units `±ζ₃`, `λ = 1 - ζ₃` and `2` modulo cubes; the
+anti-equivariance forces the radical into the `ω`-eigenspace of
+`Gal(ℚ(ζ₃)/ℚ)`, which the classes of `2` (τ-fixed) and `λ`
+(`τλ ≡ λ·unit` with `[τλ] = [λ] + 2[ζ₃] ≠ -[λ]` unless `[λ] = 0`)
+do not meet — only `[ζ₃]` survives; and `ℚ(ζ₃, ∛ζ₃) = ℚ(ζ₉)` is
+ramified at `3`, excluded by the unramified-over-`3` condition. Hence
+`N = ℚ(ζ₃)` and `d` dies on the kernel. NO local condition at `2` is
+required: the eigenspace argument kills the `2`-radical globally. -/
+theorem cyclotomicKernel_defect_vanishes_of_local_conditions
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (n : ℕ) (d : Γ ℚ → R)
+    (hd1 : ∀ g : Γ ℚ, d g ∈ IsLocalRing.maximalIdeal R ^ (n + 1))
+    (hdhom : ∀ g h : Γ ℚ, cyclotomicCharacterModL 3 g = 1 →
+      cyclotomicCharacterModL 3 h = 1 →
+      d (g * h) - (d g + d h) ∈ IsLocalRing.maximalIdeal R ^ (n + 2))
+    (hdconj : ∀ τ g : Γ ℚ, cyclotomicCharacterModL 3 τ ≠ 1 →
+      cyclotomicCharacterModL 3 g = 1 →
+      d (τ * g * τ⁻¹) + d g ∈ IsLocalRing.maximalIdeal R ^ (n + 2))
+    (U : Subgroup (Γ ℚ)) (hUopen : IsOpen (U : Set (Γ ℚ)))
+    (hUnormal : U.Normal)
+    (hUd : ∀ u ∈ U, d u ∈ IsLocalRing.maximalIdeal R ^ (n + 2))
+    (hunr : ∀ (p : ℕ) (hp : p.Prime), p ≠ 2 → p ≠ 3 →
+      ∀ σ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat),
+        σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat →
+        d (Field.absoluteGaloisGroup.map
+          (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat)) σ) ∈
+          IsLocalRing.maximalIdeal R ^ (n + 2))
+    (hthree : ∀ σ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat),
+      σ ∈ localInertiaGroup
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat →
+      cyclotomicCharacterModL 3 (Field.absoluteGaloisGroup.map
+        (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 →
+      d (Field.absoluteGaloisGroup.map
+        (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) ∈
+        IsLocalRing.maximalIdeal R ^ (n + 2))
+    (g : Γ ℚ) (hg : cyclotomicCharacterModL 3 g = 1) :
+    d g ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The ω-defect dies on the cyclotomic kernel** (DERIVED 2026-07-23
+from the Fontaine stratum at `3` and the global Kummer core — the
 arithmetic core of the ω-component; Serre, Duke 1987, §5.4,
 `sources/serre1987duke-ocr.txt`): the restriction of the defect
 `d : g ↦ f (ρ g w₀) - f w₀` to the kernel of the mod-3 cyclotomic
@@ -1266,7 +1501,7 @@ theorem omega_defect_vanishes_on_cyclotomicKernel
     (a : Γ ℚ → R)
     (ha : ∀ g : Γ ℚ, ρ g w₀ - a g • w₀ ∈
       (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V))
-    (hamul : ∀ g h : Γ ℚ,
+    (_hamul : ∀ g h : Γ ℚ,
       a (g * h) - a g * a h ∈ IsLocalRing.maximalIdeal R)
     (n : ℕ) (f : V →ₗ[R] R)
     (hf : ∀ (g : Γ ℚ) (v : V),
@@ -1278,7 +1513,151 @@ theorem omega_defect_vanishes_on_cyclotomicKernel
         ∈ IsLocalRing.maximalIdeal R ^ (n + 2))
     (g : Γ ℚ) (hg : cyclotomicCharacterModL 3 g = 1) :
     f (ρ g w₀) - f w₀ ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
-  sorry
+  classical
+  -- the residual identification of the twist with `ω`
+  have hid := fun g' => residual_twist_eq_cyclotomicCharacterModL V hV hρ kk
+    hsurj π hπsurj hπequiv v₀ hv₀ w₀ hw₀π hw₀ne a ha g'
+  -- the defect
+  set d : Γ ℚ → R := fun g' => f (ρ g' w₀) - f w₀ with hddef
+  -- (i) values in `𝔪ⁿ⁺¹`
+  have hd1 : ∀ g' : Γ ℚ, d g' ∈ IsLocalRing.maximalIdeal R ^ (n + 1) :=
+    fun g' => hf g' w₀
+  -- (ii) homomorphism modulo `𝔪ⁿ⁺²` on the cyclotomic kernel
+  have hdhom : ∀ g' h : Γ ℚ, cyclotomicCharacterModL 3 g' = 1 →
+      cyclotomicCharacterModL 3 h = 1 →
+      d (g' * h) - (d g' + d h) ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+    intro g' h _ hh
+    have h1 := hcoc g' h
+    have h2 : (a h - 1) * d g' ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+      have h3 := Ideal.mul_mem_mul ((hid h).1 hh) (hd1 g')
+      rwa [← pow_succ'] at h3
+    have heq : d (g' * h) - (d g' + d h)
+        = (d (g' * h) - (a h * d g' + d h)) + (a h - 1) * d g' := by
+      rw [hddef]; ring
+    rw [heq]
+    exact Submodule.add_mem _ h1 h2
+  -- (iii) `ω`-anti-equivariance under outside conjugation
+  have hdconj : ∀ τ g' : Γ ℚ, cyclotomicCharacterModL 3 τ ≠ 1 →
+      cyclotomicCharacterModL 3 g' = 1 →
+      d (τ * g' * τ⁻¹) + d g' ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+    intro τ g' hτ hg'
+    -- the two cocycle identities
+    have hA := hcoc τ g'
+    have hB := hcoc (τ * g' * τ⁻¹) τ
+    rw [inv_mul_cancel_right] at hB
+    -- the small products
+    have hC : (a g' - 1) * d τ ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+      have h3 := Ideal.mul_mem_mul ((hid g').1 hg') (hd1 τ)
+      rwa [← pow_succ'] at h3
+    have hE : (a τ + 1) * d (τ * g' * τ⁻¹) ∈
+        IsLocalRing.maximalIdeal R ^ (n + 2) := by
+      have h3 := Ideal.mul_mem_mul ((hid τ).2 hτ) (hd1 (τ * g' * τ⁻¹))
+      rwa [← pow_succ'] at h3
+    -- assemble
+    have heq : d (τ * g' * τ⁻¹) + d g'
+        = (a τ + 1) * d (τ * g' * τ⁻¹)
+          - (d (τ * g') - (a g' * d τ + d g'))
+          + (d (τ * g') - (a τ * d (τ * g' * τ⁻¹) + d τ))
+          - (a g' - 1) * d τ := by
+      rw [hddef]; ring
+    rw [heq]
+    exact Submodule.sub_mem _ (Submodule.add_mem _
+      (Submodule.sub_mem _ hE hA) hB) hC
+  -- (iv) the open normal congruence subgroup at level `n + 2`
+  set U : Subgroup (Γ ℚ) :=
+    { carrier := {g' : Γ ℚ | ∀ x : V, ρ g' x - x ∈
+        (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V)}
+      one_mem' := fun x => by
+        rw [map_one, Module.End.one_apply, sub_self]
+        exact Submodule.zero_mem _
+      mul_mem' := fun {g'} {h} hg' hh x => by
+        have hsplit : ρ (g' * h) x - x
+            = (ρ g') ((ρ h) x - x) + ((ρ g') x - x) := by
+          rw [show ρ (g' * h) x = ρ g' (ρ h x) from by rw [map_mul]; rfl,
+            map_sub]
+          abel
+        rw [hsplit]
+        exact Submodule.add_mem _
+          (apply_mem_smul_top (ρ g' : V →ₗ[R] V) (hh x)) (hg' x)
+      inv_mem' := fun {g'} hg' x => by
+        have hfixx : (ρ g'⁻¹) ((ρ g') x) = x := by
+          rw [show (ρ g'⁻¹) ((ρ g') x) = ((ρ g'⁻¹) * (ρ g')) x from rfl,
+            ← map_mul, inv_mul_cancel, map_one, Module.End.one_apply]
+        have hsplit : ρ g'⁻¹ x - x = -((ρ g'⁻¹) ((ρ g') x - x)) := by
+          rw [map_sub, hfixx]
+          abel
+        rw [hsplit]
+        exact Submodule.neg_mem _
+          (apply_mem_smul_top (ρ g'⁻¹ : V →ₗ[R] V) (hg' x)) }
+  have hUopen : IsOpen (U : Set (Γ ℚ)) :=
+    isOpen_setOf_forall_sub_mem_pow_smul V ρ (n + 2)
+  have hUnormal : U.Normal := by
+    constructor
+    intro u hu τ x
+    have hconj : ρ (τ * u * τ⁻¹) x - x
+        = (ρ τ) ((ρ u) ((ρ τ⁻¹) x) - (ρ τ⁻¹) x) := by
+      have h1 : ρ (τ * u * τ⁻¹) x = ρ τ (ρ u (ρ τ⁻¹ x)) := by
+        rw [show (τ * u * τ⁻¹ : Γ ℚ) = τ * (u * τ⁻¹) from by group,
+          map_mul, map_mul]
+        rfl
+      have h2 : (ρ τ) ((ρ τ⁻¹) x) = x := by
+        rw [show (ρ τ) ((ρ τ⁻¹) x) = ((ρ τ) * (ρ τ⁻¹)) x from rfl,
+          ← map_mul, mul_inv_cancel, map_one, Module.End.one_apply]
+      rw [h1, map_sub, h2]
+    rw [hconj]
+    exact apply_mem_smul_top (ρ τ : V →ₗ[R] V) (hu ((ρ τ⁻¹) x))
+  have hUd : ∀ u ∈ U, d u ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+    intro u hu
+    replace hu : ∀ x : V, ρ u x - x ∈
+        (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V) := hu
+    show f (ρ u w₀) - f w₀ ∈ IsLocalRing.maximalIdeal R ^ (n + 2)
+    rw [← map_sub]
+    exact linearMap_apply_mem_of_mem_smul_top f (hu w₀)
+  -- (v) vanishing on inertia outside `{2, 3}`
+  have hunr : ∀ (p : ℕ) (hp : p.Prime), p ≠ 2 → p ≠ 3 →
+      ∀ σ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat),
+        σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat →
+        d (Field.absoluteGaloisGroup.map
+          (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat)) σ) ∈
+          IsLocalRing.maximalIdeal R ^ (n + 2) := by
+    intro p hp hp2 hp3 σ hσ
+    haveI hunramified : ρ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat :=
+      hρ.isUnramified p hp ⟨hp2, hp3⟩
+    have hone : (ρ.toLocal hp.toHeightOneSpectrumRingOfIntegersRat) σ = 1 := by
+      have hker := GaloisRep.IsUnramifiedAt.localInertiaGroup_le
+        (ρ := ρ) (v := hp.toHeightOneSpectrumRingOfIntegersRat) hσ
+      simpa [GaloisRep.ker, MonoidHom.mem_ker] using hker
+    have hone' : ρ (Field.absoluteGaloisGroup.map
+        (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+      rw [GaloisRep.toLocal_apply] at hone
+      exact hone
+    show f (ρ (Field.absoluteGaloisGroup.map
+      (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) σ) w₀) - f w₀ ∈
+      IsLocalRing.maximalIdeal R ^ (n + 2)
+    rw [hone', Module.End.one_apply, sub_self]
+    exact Submodule.zero_mem _
+  -- (vi) the Fontaine stratum at `3`
+  have hthree : ∀ σ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat),
+      σ ∈ localInertiaGroup
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat →
+      cyclotomicCharacterModL 3 (Field.absoluteGaloisGroup.map
+        (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 →
+      d (Field.absoluteGaloisGroup.map
+        (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) ∈
+        IsLocalRing.maximalIdeal R ^ (n + 2) := by
+    intro σ hσ hσω
+    exact omega_defect_vanishes_on_localInertia_at_three V hV hρ kk hsurj
+      π hπsurj hπequiv v₀ hv₀ w₀ hw₀π hw₀ne a ha n f hf hfv₀ σ hσ hσω
+  -- the global Kummer core closes the node
+  exact cyclotomicKernel_defect_vanishes_of_local_conditions n d hd1 hdhom
+    hdconj U hUopen hUnormal hUd hunr hthree g hg
 
 /-- **The ω-twisted cocycle vanishing** (sorry node — the arithmetic core
 of the ω-component; Serre, Duke 1987, §5.4,
@@ -1483,19 +1862,6 @@ theorem exists_omega_component_coboundary
     rwa [← pow_succ'] at h2
   exact exists_omega_cocycle_coboundary V hV hρ kk hsurj π hπsurj hπequiv
     v₀ hv₀ w₀ hw₀π hw₀ne a ha hamul n f hf hfv₀ hcoc
-
-/-- **Linear functionals preserve ideal filtrations** (helper, proven):
-an `R`-linear functional maps `J • ⊤` into `J`. -/
-theorem linearMap_apply_mem_of_mem_smul_top {R : Type u} [CommRing R]
-    {V : Type v} [AddCommGroup V] [Module R V]
-    (f : V →ₗ[R] R) {J : Ideal R} {x : V}
-    (hx : x ∈ J • (⊤ : Submodule R V)) : f x ∈ J := by
-  refine Submodule.smul_induction_on hx (fun r hr v _ => ?_)
-    fun y z hy hz => ?_
-  · rw [map_smul, smul_eq_mul]
-    exact Ideal.mul_mem_right _ _ hr
-  · rw [map_add]
-    exact Ideal.add_mem _ hy hz
 
 open NumberField in
 /-- **Classification of the finite places of `ℚ`** (helper, proven):
@@ -1789,111 +2155,6 @@ theorem monoidHom_eq_one_of_forall_localInertia
     rw [← hfix, hbot, IntermediateField.fixingSubgroup_bot]
     exact Subgroup.mem_top g
   exact φ.mem_ker.mp hker
-
-/-- **Openness of the congruence subgroup** (PROVEN 2026-07-23 — the
-continuity stratum): the set of `g ∈ Γ ℚ` acting trivially modulo `𝔪ᵏ`
-is open. `ρ` is continuous into `End V` with the `R`-module topology;
-along a basis of `V` the congruence condition is a finite intersection
-of conditions "matrix entry lies in a translate of `𝔪ᵏ`", each an open
-condition: the entry functionals are `R`-linear hence continuous
-(`IsModuleTopology.continuous_of_linearMap`), and `𝔪ᵏ ⊆ R` is open by
-`IsLocalRing.isOpen_maximalIdeal_pow` (`R` is a compact Hausdorff
-Noetherian topological ring — transport along a `ℤ₃`-basis). -/
-theorem isOpen_setOf_forall_sub_mem_pow_smul
-    {R : Type u} [CommRing R]
-    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
-    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
-    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
-    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
-    [Module.Free R V]
-    (ρ : GaloisRep ℚ R V) (k : ℕ) :
-    IsOpen {g : Γ ℚ | ∀ x : V, ρ g x - x ∈
-      (IsLocalRing.maximalIdeal R ^ k) • (⊤ : Submodule R V)} := by
-  classical
-  letI := moduleTopology R (Module.End R V)
-  haveI : IsModuleTopology R (Module.End R V) := ⟨rfl⟩
-  -- `R` is a compact Hausdorff Noetherian topological ring, so `𝔪ᵏ` is
-  -- open (`IsLocalRing.isOpen_maximalIdeal_pow`)
-  haveI hNoeth : IsNoetherianRing R := IsNoetherianRing.of_finite ℤ_[3] R
-  let eR : R ≃ₗ[ℤ_[3]] (Module.Free.ChooseBasisIndex ℤ_[3] R → ℤ_[3]) :=
-    (Module.Free.chooseBasis ℤ_[3] R).equivFun
-  have hcont₁ : Continuous eR :=
-    IsModuleTopology.continuous_of_linearMap eR.toLinearMap
-  have hcont₂ : Continuous eR.symm :=
-    IsModuleTopology.continuous_of_linearMap eR.symm.toLinearMap
-  let homR : R ≃ₜ (Module.Free.ChooseBasisIndex ℤ_[3] R → ℤ_[3]) :=
-    { toEquiv := eR.toEquiv
-      continuous_toFun := hcont₁
-      continuous_invFun := hcont₂ }
-  haveI : CompactSpace R := homR.symm.compactSpace
-  haveI : T2Space R := homR.symm.symm.isEmbedding.t2Space
-  have hIk : IsOpen ((IsLocalRing.maximalIdeal R ^ k : Ideal R) : Set R) :=
-    IsLocalRing.isOpen_maximalIdeal_pow R k
-  -- coordinates along a basis of `V` detect the congruence condition
-  let b := Module.Free.chooseBasis R V
-  have hmem : ∀ y : V,
-      y ∈ (IsLocalRing.maximalIdeal R ^ k) • (⊤ : Submodule R V)
-      ↔ ∀ j, b.repr y j ∈ IsLocalRing.maximalIdeal R ^ k := by
-    intro y
-    constructor
-    · intro hy j
-      refine Submodule.smul_induction_on hy (fun r hr v _ => ?_)
-        fun v w hv hw => ?_
-      · rw [map_smul, Finsupp.smul_apply, smul_eq_mul]
-        exact Ideal.mul_mem_right _ _ hr
-      · rw [map_add, Finsupp.add_apply]
-        exact Ideal.add_mem _ hv hw
-    · intro hy
-      have hrepr := b.sum_repr y
-      rw [← hrepr]
-      exact Submodule.sum_mem _ fun j _ =>
-        Submodule.smul_mem_smul (hy j) trivial
-  -- the congruence set is the `ρ`-preimage of an open set of matrix type
-  have hset : {g : Γ ℚ | ∀ x : V, ρ g x - x ∈
-        (IsLocalRing.maximalIdeal R ^ k) • (⊤ : Submodule R V)}
-      = ⇑ρ ⁻¹' (⋂ (i) (j),
-          ((b.coord j).comp (LinearMap.applyₗ (b i))) ⁻¹'
-            {r : R | r - b.repr (b i) j ∈
-              IsLocalRing.maximalIdeal R ^ k}) := by
-    ext g
-    simp only [Set.mem_setOf_eq, Set.mem_preimage, Set.mem_iInter,
-      LinearMap.comp_apply, LinearMap.applyₗ_apply_apply,
-      Module.Basis.coord_apply]
-    constructor
-    · intro hg i j
-      have h1 := (hmem _).mp (hg (b i)) j
-      rwa [map_sub, Finsupp.sub_apply] at h1
-    · intro hg x
-      have hbase : ∀ i, ρ g (b i) - b i ∈
-          (IsLocalRing.maximalIdeal R ^ k) • (⊤ : Submodule R V) := by
-        intro i
-        rw [hmem]
-        intro j
-        have h1 := hg i j
-        rw [map_sub, Finsupp.sub_apply]
-        exact h1
-      set D : V →ₗ[R] V := (ρ g : V →ₗ[R] V) - LinearMap.id
-      have happly : ∀ v, D v = ρ g v - v := fun v => rfl
-      have hx : ρ g x - x = ∑ i, b.repr x i • (ρ g (b i) - b i) :=
-        calc ρ g x - x
-            = D x := (happly x).symm
-          _ = D (∑ i, b.repr x i • b i) := by rw [Module.Basis.sum_repr]
-          _ = ∑ i, b.repr x i • (D (b i)) := by
-              rw [map_sum]
-              simp_rw [map_smul]
-          _ = ∑ i, b.repr x i • (ρ g (b i) - b i) := by simp_rw [happly]
-      rw [hx]
-      exact Submodule.sum_mem _ fun i _ =>
-        Submodule.smul_mem _ _ (hbase i)
-  rw [hset]
-  refine (ContinuousMonoidHom.continuous_toFun ρ).isOpen_preimage _ ?_
-  refine isOpen_iInter_of_finite fun i => isOpen_iInter_of_finite fun j => ?_
-  refine (IsModuleTopology.continuous_of_linearMap _).isOpen_preimage _ ?_
-  have htr : {r : R | r - b.repr (b i) j ∈ IsLocalRing.maximalIdeal R ^ k}
-      = (fun r : R => r - b.repr (b i) j) ⁻¹'
-        ((IsLocalRing.maximalIdeal R ^ k : Ideal R) : Set R) := rfl
-  rw [htr]
-  exact (continuous_sub_right _).isOpen_preimage _ hIk
 
 open NumberField in
 set_option backward.isDefEq.respectTransparency false in
