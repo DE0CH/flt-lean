@@ -77,6 +77,11 @@ import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
 import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 public import Mathlib.RingTheory.Bialgebra.Convolution
 public import Mathlib.RingTheory.HopfAlgebra.TensorProduct
+-- standard étale pairs and finite products of étale algebras, consumed
+-- by the étale-generic-fibre proof of the Kummer Hopf algebra; PUBLIC
+-- because the presentation equivalence is STATED with the pair's Ring
+public import Mathlib.RingTheory.Etale.StandardEtale
+public import Mathlib.RingTheory.Etale.Pi
 -- finite Galois theory (`normalClosure`, `IsGalois`), consumed by the
 -- finite-factorization glue of `exists_galoisModulePackage`; PUBLIC
 -- because the finite-Galois core leaf is STATED with `IsGalois`
@@ -4338,17 +4343,182 @@ noncomputable instance kummerHopfAlgebra [NeZero p] :
 
 end KummerHopf
 
+/-! #### The generic fibre of the Kummer algebra is étale
+
+Over a characteristic-zero field `K` containing the coefficient ring
+`O`, each Kummer component base-changes to the standard étale algebra
+of the pair `⟨xᵖ − uⁱ, 1⟩` — the Bézout condition
+`f'·(d·x) − f·(d·p) = 1`, `d = (p·uⁱ)⁻¹`, is witnessed explicitly —
+and the tensor product distributes over the finite product. -/
+
+section KummerEtale
+
+open Polynomial
+
+variable (O : Type) [CommRing O] (K : Type) [Field K] [CharZero K] [Algebra O K]
+variable (p : ℕ) [NeZero p] (u : Oˣ)
+
+/-- The standard étale presentation `⟨xᵖ − uⁱ, 1⟩` of the generic fibre
+of a Kummer component (PROVEN — explicit Bézout witness). -/
+noncomputable def kummerStdPair (i : ZMod p) : StandardEtalePair K where
+  f := (Polynomial.X : Polynomial K) ^ p -
+    Polynomial.C (algebraMap O K ((u : O) ^ i.val))
+  monic_f := Polynomial.monic_X_pow_sub_C _ (NeZero.ne p)
+  g := 1
+  cond := by
+    have hc0 : algebraMap O K ((u : O) ^ i.val) ≠ 0 :=
+      (((u ^ i.val).isUnit.map (algebraMap O K)).ne_zero)
+    have hp0 : ((p : K)) ≠ 0 := Nat.cast_ne_zero.mpr (NeZero.ne p)
+    have hpc : (p : K) * algebraMap O K ((u : O) ^ i.val) ≠ 0 :=
+      mul_ne_zero hp0 hc0
+    refine ⟨Polynomial.C (((p : K) * algebraMap O K ((u : O) ^ i.val))⁻¹) *
+      Polynomial.X,
+      -(Polynomial.C (((p : K) * algebraMap O K ((u : O) ^ i.val))⁻¹) *
+        Polynomial.C (p : K)),
+      1, ?_⟩
+    have h1 : Polynomial.derivative ((Polynomial.X : Polynomial K) ^ p -
+        Polynomial.C (algebraMap O K ((u : O) ^ i.val))) =
+        Polynomial.C ((p : ℕ) : K) * Polynomial.X ^ (p - 1) := by
+      rw [Polynomial.derivative_sub, Polynomial.derivative_C, sub_zero,
+        Polynomial.derivative_X_pow]
+    rw [h1]
+    have h2 : (Polynomial.X : Polynomial K) ^ p =
+        Polynomial.X ^ (p - 1) * Polynomial.X := by
+      rw [← pow_succ, Nat.sub_add_cancel (Nat.one_le_iff_ne_zero.mpr
+        (NeZero.ne p))]
+    rw [h2]
+    have h4 : (Polynomial.C (((p : K) * algebraMap O K ((u : O) ^ i.val))⁻¹) *
+        Polynomial.C (p : K) *
+        Polynomial.C (algebraMap O K ((u : O) ^ i.val)) : Polynomial K) = 1 := by
+      rw [← Polynomial.C_mul, ← Polynomial.C_mul, mul_assoc,
+        inv_mul_cancel₀ hpc, Polynomial.C_1]
+    linear_combination h4
+
+noncomputable local instance kummerStdPairAlgebra (i : ZMod p) :
+    Algebra O ((kummerStdPair O K p u i).Ring) :=
+  ((algebraMap K ((kummerStdPair O K p u i).Ring)).comp
+    (algebraMap O K)).toAlgebra
+
+local instance kummerStdPairTower (i : ZMod p) :
+    IsScalarTower O K ((kummerStdPair O K p u i).Ring) :=
+  IsScalarTower.of_algebraMap_eq fun _ => rfl
+
+/-- The defining relation of the pair's `X` in `O`-coefficients
+(PROVEN): the input to the component-side lift. -/
+theorem kummerStdPair_relation (i : ZMod p) :
+    ((Polynomial.X : Polynomial O) ^ p -
+      Polynomial.C ((u : O) ^ i.val)).eval₂
+      (Algebra.ofId O ((kummerStdPair O K p u i).Ring))
+      ((kummerStdPair O K p u i).X) = 0 := by
+  rw [Polynomial.eval₂_sub, Polynomial.eval₂_pow, Polynomial.eval₂_X,
+    Polynomial.eval₂_C, sub_eq_zero]
+  have h1 : Polynomial.aeval ((kummerStdPair O K p u i).X)
+      (kummerStdPair O K p u i).f = 0 :=
+    (kummerStdPair O K p u i).hasMap_X.1
+  rw [show (kummerStdPair O K p u i).f =
+      (Polynomial.X : Polynomial K) ^ p -
+        Polynomial.C (algebraMap O K ((u : O) ^ i.val)) from rfl] at h1
+  simp only [map_sub, map_pow, Polynomial.aeval_X, Polynomial.aeval_C,
+    sub_eq_zero] at h1
+  rw [h1, ← map_pow, ← map_pow, ← IsScalarTower.algebraMap_apply O K]
+  rfl
+
+/-- The `O`-algebra map from a Kummer component to the standard étale
+model, sending the root to the pair's `X` (PROVEN data). -/
+noncomputable def kummerStdPairComponentHom (i : ZMod p) :
+    KummerComponent O p u i →ₐ[O] (kummerStdPair O K p u i).Ring :=
+  AdjoinRoot.liftAlgHom _ (Algebra.ofId O ((kummerStdPair O K p u i).Ring))
+    ((kummerStdPair O K p u i).X) (kummerStdPair_relation O K p u i)
+
+/-- The base-changed root satisfies the pair's equations (PROVEN). -/
+theorem kummerStdPair_hasMap (i : ZMod p) :
+    (kummerStdPair O K p u i).HasMap
+      (TensorProduct.tmul O (1 : K) (kummerRoot O p u i)) := by
+  constructor
+  · rw [show (kummerStdPair O K p u i).f =
+      (Polynomial.X : Polynomial K) ^ p -
+        Polynomial.C (algebraMap O K ((u : O) ^ i.val)) from rfl]
+    simp only [map_sub, map_pow, Polynomial.aeval_X, Polynomial.aeval_C,
+      sub_eq_zero]
+    rw [Algebra.TensorProduct.tmul_pow, one_pow, kummerRoot_pow_p,
+      ← Algebra.TensorProduct.algebraMap_apply',
+      IsScalarTower.algebraMap_apply O K]
+    conv_rhs => rw [← map_pow, ← map_pow]
+  · rw [show (kummerStdPair O K p u i).g = 1 from rfl, map_one]
+    exact isUnit_one
+
+/-- **The generic fibre of a Kummer component is standard étale**
+(PROVEN — the two universal-property lifts are mutually inverse). -/
+noncomputable def kummerStdPairEquiv (i : ZMod p) :
+    (kummerStdPair O K p u i).Ring ≃ₐ[K]
+      TensorProduct O K (KummerComponent O p u i) := by
+  refine AlgEquiv.ofAlgHom
+    ((kummerStdPair O K p u i).lift
+      (TensorProduct.tmul O (1 : K) (kummerRoot O p u i))
+      (kummerStdPair_hasMap O K p u i))
+    (Algebra.TensorProduct.lift (Algebra.ofId K _)
+      (kummerStdPairComponentHom O K p u i) fun _ _ => Commute.all _ _)
+    ?_ ?_
+  · -- `lift ∘ tensorLift = id` on the tensor product
+    have hcomp : (((kummerStdPair O K p u i).lift
+        (TensorProduct.tmul O (1 : K) (kummerRoot O p u i))
+        (kummerStdPair_hasMap O K p u i)).restrictScalars O).comp
+        (kummerStdPairComponentHom O K p u i) =
+        Algebra.TensorProduct.includeRight := by
+      refine AdjoinRoot.algHom_ext ?_
+      rw [AlgHom.comp_apply]
+      rw [show (kummerStdPairComponentHom O K p u i)
+        (AdjoinRoot.root _) = (kummerStdPair O K p u i).X from
+        AdjoinRoot.liftAlgHom_root _ _ _ _]
+      exact (kummerStdPair O K p u i).lift_X
+        (TensorProduct.tmul O (1 : K) (kummerRoot O p u i))
+        (kummerStdPair_hasMap O K p u i)
+    refine Algebra.TensorProduct.ext' fun a b => ?_
+    rw [AlgHom.comp_apply, Algebra.TensorProduct.lift_tmul, map_mul,
+      AlgHom.id_apply]
+    have hb : ((kummerStdPair O K p u i).lift
+        (TensorProduct.tmul O (1 : K) (kummerRoot O p u i))
+        (kummerStdPair_hasMap O K p u i))
+        ((kummerStdPairComponentHom O K p u i) b) =
+        TensorProduct.tmul O (1 : K) b := by
+      have := congrArg (fun φ => φ b) hcomp
+      simpa using this
+    rw [hb]
+    have ha : ((kummerStdPair O K p u i).lift
+        (TensorProduct.tmul O (1 : K) (kummerRoot O p u i))
+        (kummerStdPair_hasMap O K p u i)) ((Algebra.ofId K _) a) =
+        TensorProduct.tmul O a 1 := by
+      rw [Algebra.ofId_apply, AlgHom.commutes]
+      rfl
+    rw [ha, Algebra.TensorProduct.tmul_mul_tmul, mul_one, one_mul]
+  · -- `tensorLift ∘ lift = id` on the standard étale model
+    refine StandardEtalePair.hom_ext ?_
+    rw [AlgHom.comp_apply, StandardEtalePair.lift_X,
+      Algebra.TensorProduct.lift_tmul, map_one, one_mul, AlgHom.id_apply]
+    exact AdjoinRoot.liftAlgHom_root _ _ _ _
+
+/-- **The generic fibre of the Kummer algebra is étale** (PROVEN —
+étale for each standard-étale factor, stable under finite products and
+transport along the tensor-product distribution). -/
+theorem kummerAlg_etale :
+    Algebra.Etale K (TensorProduct O K (KummerAlg O p u)) := by
+  haveI he : ∀ i : ZMod p,
+      Algebra.Etale K (TensorProduct O K (KummerComponent O p u i)) :=
+    fun i => Algebra.Etale.of_equiv (kummerStdPairEquiv O K p u i)
+  exact Algebra.Etale.of_equiv
+    (Algebra.TensorProduct.piRight O K K (KummerComponent O p u)).symm
+
+end KummerEtale
+
 open TensorProduct ValuativeRel IsDedekindDomain in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **Étale generic fibre of the Kummer algebra** (sorry node — over
-the characteristic-zero fraction field the Kummer algebra is a finite
-product of quotients `K[x]/(xᵖ − uⁱ)` by separable polynomials
-(`uⁱ` is a unit, so nonzero, and `char K = 0`): distribute the tensor
-through the product (`Algebra.TensorProduct.piRight`), base-change each
-`AdjoinRoot`, and apply the étaleness criterion over fields
-(`Mathlib.RingTheory.Etale.Field`). -/
+/-- **Étale generic fibre of the Kummer algebra** (DERIVED 2026-07-23
+from the generic `kummerAlg_etale`: over the characteristic-zero
+completed field each Kummer component base-changes to the standard
+étale algebra of the pair `⟨xᵖ − uⁱ, 1⟩`, and étaleness passes through
+the finite product and the tensor distribution). -/
 theorem kummerAlg_etale_adic {p : ℕ} (hp' : p.Prime) [Fact p.Prime]
     (u : (𝒪[HeightOneSpectrum.adicCompletion ℚ
       hp'.toHeightOneSpectrumRingOfIntegersRat])ˣ) :
@@ -4361,7 +4531,17 @@ theorem kummerAlg_etale_adic {p : ℕ} (hp' : p.Prime) [Fact p.Prime]
           hp'.toHeightOneSpectrumRingOfIntegersRat]]
         (KummerAlg 𝒪[HeightOneSpectrum.adicCompletion ℚ
           hp'.toHeightOneSpectrumRingOfIntegersRat] p u)) := by
-  sorry
+  haveI : NeZero p := ⟨hp'.ne_zero⟩
+  haveI : CharZero (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) :=
+    charZero_of_injective_algebraMap
+      ((algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)).injective)
+  exact kummerAlg_etale
+    𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]
+    (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) p u
 
 open TensorProduct ValuativeRel IsDedekindDomain in
 set_option backward.isDefEq.respectTransparency false in
