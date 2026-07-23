@@ -3590,12 +3590,95 @@ theorem kummer_lTensor_kill [NeZero p] (i : ZMod p) {j : ZMod p} (hj : j ≠ 0)
       kummerCounit_single_of_ne R p u hj, TensorProduct.tmul_zero]
   | add s t hs ht => rw [map_add, map_add, hs, ht, add_zero]
 
-/-- **Coassociativity of the Kummer comultiplication** (sorry node —
-pure algebra on the explicit model: both sides classify the associative
-triple group law `(i,s)·(j,t)·(k,v)`; both are algebra maps out of a
-finite product of monogenic algebras, so it suffices to chase the root
-of each component through the two composites and compare carries,
-`ε_{i,j+k} + ε_{j,k} = ε_{i+j,k} + ε_{i,j}` in every case split). -/
+/-- The defining relation between values and carries of `ZMod`
+addition (PROVEN): `a.val + b.val = (a+b).val + p·carry(a,b)`. -/
+theorem kummer_val_add_carry [NeZero p] (a b : ZMod p) :
+    a.val + b.val = (a + b).val +
+      p * (if a.val + b.val < p then 0 else 1) := by
+  rw [ZMod.val_add]
+  by_cases h : a.val + b.val < p
+  · rw [if_pos h, Nat.mod_eq_of_lt h, Nat.mul_zero, Nat.add_zero]
+  · rw [if_neg h, Nat.mul_one]
+    have ha : a.val < p := ZMod.val_lt a
+    have hb : b.val < p := ZMod.val_lt b
+    rw [Nat.mod_eq_sub_mod (le_of_not_gt h), Nat.mod_eq_of_lt (by omega)]
+    omega
+
+/-- **The carry cocycle identity** (PROVEN — both sides count the
+`p`-overflows of `α.val + β.val + γ.val`): the coassociativity of the
+Kummer comultiplication reduces to this. -/
+theorem kummer_carry_assoc [NeZero p] (α β γ : ZMod p) :
+    ((if (α + β).val + γ.val < p then 0 else 1) +
+      (if α.val + β.val < p then 0 else 1) : ℕ) =
+    (if α.val + (β + γ).val < p then 0 else 1) +
+      (if β.val + γ.val < p then 0 else 1) := by
+  have h1 := kummer_val_add_carry p (α + β) γ
+  have h2 := kummer_val_add_carry p α β
+  have h3 := kummer_val_add_carry p α (β + γ)
+  have h4 := kummer_val_add_carry p β γ
+  have hassoc : (α + β + γ).val = (α + (β + γ)).val := by rw [add_assoc]
+  have hp : 0 < p := Nat.pos_of_ne_zero (NeZero.ne p)
+  -- combine the four relations and cancel `p`
+  refine Nat.eq_of_mul_eq_mul_left hp ?_
+  rw [Nat.mul_add, Nat.mul_add]
+  omega
+
+/-- The comultiplication on a one-component element, collapsed to the
+single sum over the second index (PROVEN — the inner sum survives only
+at `i = c − j`, where the component evaluation is the `kummerCast`
+transport). -/
+theorem kummerComul_single [NeZero p] (c : ZMod p)
+    (a : KummerComponent R p u c) :
+    kummerComul R p u (Pi.single c a) =
+      ∑ j : ZMod p,
+        (TensorProduct.map (LinearMap.single R (KummerComponent R p u) (c - j))
+          (LinearMap.single R (KummerComponent R p u) j))
+        (kummerComulComponent R p u (c - j) j
+          (kummerCast R p u (sub_add_cancel c j).symm a)) := by
+  classical
+  rw [kummerComul_apply_eq_sum]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  refine (Finset.sum_eq_single (c - j) (fun i _ hi => ?_)
+    (fun hmem => absurd (Finset.mem_univ _) hmem)).trans ?_
+  · by_cases hij : i + j = c
+    · exact absurd (eq_sub_of_add_eq hij) hi
+    · rw [Pi.single_eq_of_ne hij, map_zero, map_zero]
+  · rw [kummerSingle_apply_of_eq R p u (sub_add_cancel c j).symm]
+
+/-- The comultiplication on a one-component unit, fully evaluated
+(PROVEN): `Δ(e_c) = ∑ⱼ e_{c−j} ⊗ e_j`. -/
+theorem kummerComul_single_one_eq [NeZero p] (c : ZMod p) :
+    kummerComul R p u (Pi.single c 1) =
+      ∑ j : ZMod p, TensorProduct.tmul R
+        (Pi.single (c - j) 1 : KummerAlg R p u)
+        (Pi.single j 1 : KummerAlg R p u) := by
+  rw [kummerComul_single]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [map_one, map_one, Algebra.TensorProduct.one_def, TensorProduct.map_tmul]
+  rfl
+
+/-- The comultiplication on a one-component root, fully evaluated
+(PROVEN): `Δ(single_c x) = ∑ⱼ u^{−carry} • (single_{c−j} x ⊗ single_j x)`. -/
+theorem kummerComul_single_root_eq [NeZero p] (c : ZMod p) :
+    kummerComul R p u (Pi.single c (kummerRoot R p u c)) =
+      ∑ j : ZMod p,
+        (((u⁻¹ : Rˣ) : R) ^ (if (c - j).val + j.val < p then 0 else 1)) •
+        TensorProduct.tmul R
+          (Pi.single (c - j) (kummerRoot R p u (c - j)) : KummerAlg R p u)
+          (Pi.single j (kummerRoot R p u j) : KummerAlg R p u) := by
+  rw [kummerComul_single]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [kummerCast_root, kummerComulComponent_root, kummerComulRoot, mul_comm,
+    ← Algebra.smul_def, map_smul, TensorProduct.map_tmul]
+  rfl
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **Coassociativity of the Kummer comultiplication** (PROVEN
+2026-07-22 — pure algebra on the explicit model: on generators both
+sides expand to triple sums of one-component blocks; the reindexing
+`(j, j') ↦ (j' + j, j)` matches them up, with the scalar bookkeeping
+reducing to the carry cocycle identity `kummer_carry_assoc`). -/
 theorem kummerComul_coassoc [NeZero p] :
     (Algebra.TensorProduct.assoc R R R (KummerAlg R p u) (KummerAlg R p u)
         (KummerAlg R p u)).toAlgHom.comp
@@ -3603,7 +3686,138 @@ theorem kummerComul_coassoc [NeZero p] :
         (AlgHom.id R (KummerAlg R p u))).comp (kummerComul R p u))
       = (Algebra.TensorProduct.map (AlgHom.id R (KummerAlg R p u))
         (kummerComul R p u)).comp (kummerComul R p u) := by
-  sorry
+  classical
+  refine kummerAlg_algHom_ext R p u
+    (B := TensorProduct R (KummerAlg R p u)
+      (TensorProduct R (KummerAlg R p u) (KummerAlg R p u)))
+    (fun c => ?_) (fun c => ?_)
+  · -- generator `e_c`
+    rw [AlgHom.comp_apply, AlgHom.comp_apply, AlgHom.comp_apply,
+      kummerComul_single_one_eq, map_sum, map_sum, map_sum]
+    have hL : ∀ j : ZMod p,
+        (Algebra.TensorProduct.assoc R R R (KummerAlg R p u) (KummerAlg R p u)
+          (KummerAlg R p u)).toAlgHom
+          ((Algebra.TensorProduct.map (kummerComul R p u)
+            (AlgHom.id R (KummerAlg R p u)))
+            (TensorProduct.tmul R (Pi.single (c - j) 1) (Pi.single j 1))) =
+        ∑ j' : ZMod p, TensorProduct.tmul R
+          (Pi.single (c - j - j') 1 : KummerAlg R p u)
+          (TensorProduct.tmul R (Pi.single j' 1 : KummerAlg R p u)
+            (Pi.single j 1 : KummerAlg R p u)) := by
+      intro j
+      rw [Algebra.TensorProduct.map_tmul, AlgHom.id_apply,
+        kummerComul_single_one_eq, TensorProduct.sum_tmul, map_sum]
+      refine Finset.sum_congr rfl fun j' _ => ?_
+      rw [AlgEquiv.coe_toAlgHom]
+      exact Algebra.TensorProduct.assoc_tmul (R := R) (S := R) (T := R)
+        (A := KummerAlg R p u) (C := KummerAlg R p u) (D := KummerAlg R p u)
+        _ _ _
+    have hR : ∀ j : ZMod p,
+        (Algebra.TensorProduct.map (AlgHom.id R (KummerAlg R p u))
+          (kummerComul R p u))
+          (TensorProduct.tmul R (Pi.single (c - j) 1) (Pi.single j 1)) =
+        ∑ j' : ZMod p, TensorProduct.tmul R
+          (Pi.single (c - j) 1 : KummerAlg R p u)
+          (TensorProduct.tmul R (Pi.single (j - j') 1 : KummerAlg R p u)
+            (Pi.single j' 1 : KummerAlg R p u)) := by
+      intro j
+      rw [Algebra.TensorProduct.map_tmul, AlgHom.id_apply,
+        kummerComul_single_one_eq, TensorProduct.tmul_sum]
+    rw [Finset.sum_congr rfl fun j _ => hL j,
+      Finset.sum_congr rfl fun j _ => hR j,
+      ← Finset.sum_product', ← Finset.sum_product', Finset.univ_product_univ]
+    refine Fintype.sum_equiv
+      ⟨fun x => (x.2 + x.1, x.1), fun y => (y.2, y.1 - y.2),
+        fun x => Prod.ext rfl (add_sub_cancel_right _ _),
+        fun y => Prod.ext (sub_add_cancel _ _) rfl⟩ _ _ fun x => ?_
+    obtain ⟨J, J'⟩ := x
+    show TensorProduct.tmul R (Pi.single (c - J - J') 1 : KummerAlg R p u)
+        (TensorProduct.tmul R (Pi.single J' 1 : KummerAlg R p u)
+          (Pi.single J 1 : KummerAlg R p u)) =
+      TensorProduct.tmul R (Pi.single (c - (J' + J)) 1 : KummerAlg R p u)
+        (TensorProduct.tmul R (Pi.single (J' + J - J) 1 : KummerAlg R p u)
+          (Pi.single J 1 : KummerAlg R p u))
+    have h2 : c - (J' + J) = c - J - J' := by ring
+    rw [h2, add_sub_cancel_right]
+  · -- generator `single_c root`
+    rw [AlgHom.comp_apply, AlgHom.comp_apply, AlgHom.comp_apply,
+      kummerComul_single_root_eq, map_sum, map_sum, map_sum]
+    have hL : ∀ j : ZMod p,
+        (Algebra.TensorProduct.assoc R R R (KummerAlg R p u) (KummerAlg R p u)
+          (KummerAlg R p u)).toAlgHom
+          ((Algebra.TensorProduct.map (kummerComul R p u)
+            (AlgHom.id R (KummerAlg R p u)))
+            ((((u⁻¹ : Rˣ) : R) ^ (if (c - j).val + j.val < p then 0 else 1)) •
+              TensorProduct.tmul R
+                (Pi.single (c - j) (kummerRoot R p u (c - j)))
+                (Pi.single j (kummerRoot R p u j)))) =
+        ∑ j' : ZMod p,
+          (((u⁻¹ : Rˣ) : R) ^ ((if (c - j).val + j.val < p then 0 else 1) +
+            (if (c - j - j').val + j'.val < p then 0 else 1))) •
+          TensorProduct.tmul R
+            (Pi.single (c - j - j') (kummerRoot R p u (c - j - j')) :
+              KummerAlg R p u)
+            (TensorProduct.tmul R
+              (Pi.single j' (kummerRoot R p u j') : KummerAlg R p u)
+              (Pi.single j (kummerRoot R p u j) : KummerAlg R p u)) := by
+      intro j
+      rw [map_smul, Algebra.TensorProduct.map_tmul, AlgHom.id_apply,
+        kummerComul_single_root_eq, TensorProduct.sum_tmul, map_smul, map_sum,
+        Finset.smul_sum]
+      refine Finset.sum_congr rfl fun j' _ => ?_
+      rw [← TensorProduct.smul_tmul', map_smul, AlgEquiv.coe_toAlgHom,
+        Algebra.TensorProduct.assoc_tmul, smul_smul, ← pow_add]
+    have hR : ∀ j : ZMod p,
+        (Algebra.TensorProduct.map (AlgHom.id R (KummerAlg R p u))
+          (kummerComul R p u))
+          ((((u⁻¹ : Rˣ) : R) ^ (if (c - j).val + j.val < p then 0 else 1)) •
+            TensorProduct.tmul R
+              (Pi.single (c - j) (kummerRoot R p u (c - j)))
+              (Pi.single j (kummerRoot R p u j))) =
+        ∑ j' : ZMod p,
+          (((u⁻¹ : Rˣ) : R) ^ ((if (c - j).val + j.val < p then 0 else 1) +
+            (if (j - j').val + j'.val < p then 0 else 1))) •
+          TensorProduct.tmul R
+            (Pi.single (c - j) (kummerRoot R p u (c - j)) : KummerAlg R p u)
+            (TensorProduct.tmul R
+              (Pi.single (j - j') (kummerRoot R p u (j - j')) : KummerAlg R p u)
+              (Pi.single j' (kummerRoot R p u j') : KummerAlg R p u)) := by
+      intro j
+      rw [map_smul, Algebra.TensorProduct.map_tmul, AlgHom.id_apply,
+        kummerComul_single_root_eq, TensorProduct.tmul_sum, Finset.smul_sum]
+      refine Finset.sum_congr rfl fun j' _ => ?_
+      rw [TensorProduct.tmul_smul, smul_smul, ← pow_add]
+    rw [Finset.sum_congr rfl fun j _ => hL j,
+      Finset.sum_congr rfl fun j _ => hR j,
+      ← Finset.sum_product', ← Finset.sum_product', Finset.univ_product_univ]
+    refine Fintype.sum_equiv
+      ⟨fun x => (x.2 + x.1, x.1), fun y => (y.2, y.1 - y.2),
+        fun x => Prod.ext rfl (add_sub_cancel_right _ _),
+        fun y => Prod.ext (sub_add_cancel _ _) rfl⟩ _ _ fun x => ?_
+    obtain ⟨J, J'⟩ := x
+    show (((u⁻¹ : Rˣ) : R) ^ ((if (c - J).val + J.val < p then 0 else 1) +
+        (if (c - J - J').val + J'.val < p then 0 else 1))) •
+        TensorProduct.tmul R
+          (Pi.single (c - J - J') (kummerRoot R p u (c - J - J')) :
+            KummerAlg R p u)
+          (TensorProduct.tmul R
+            (Pi.single J' (kummerRoot R p u J') : KummerAlg R p u)
+            (Pi.single J (kummerRoot R p u J) : KummerAlg R p u)) =
+      (((u⁻¹ : Rˣ) : R) ^ ((if (c - (J' + J)).val + (J' + J).val < p then 0
+          else 1) +
+        (if (J' + J - J).val + J.val < p then 0 else 1))) •
+        TensorProduct.tmul R
+          (Pi.single (c - (J' + J)) (kummerRoot R p u (c - (J' + J))) :
+            KummerAlg R p u)
+          (TensorProduct.tmul R
+            (Pi.single (J' + J - J) (kummerRoot R p u (J' + J - J)) :
+              KummerAlg R p u)
+            (Pi.single J (kummerRoot R p u J) : KummerAlg R p u))
+    have h2 : c - (J' + J) = c - J - J' := by ring
+    rw [h2, add_sub_cancel_right]
+    have hcarry := kummer_carry_assoc p (c - J - J') J' J
+    rw [sub_add_cancel] at hcarry
+    rw [hcarry]
 
 /-- **Left counit axiom for the Kummer bialgebra** (PROVEN 2026-07-22
 — `(ε ⊗ id) ∘ Δ = lid⁻¹`: on the generators, the double block sum of
