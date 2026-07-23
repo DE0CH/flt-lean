@@ -3821,28 +3821,71 @@ theorem exists_localInertia_three_generator {A : Type*} [CommGroup A]
               Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) t)) ^ m := by
   sorry
 
-/-- **The inertia at `3` moves the cube roots of unity** (sorry node,
-isolated 2026-07-23 — the ramification witness of the dichotomy: it
-realizes the nontrivial quadratic character of the tame inertia at `3`
-as the mod-3 cyclotomic character): some element of the local inertia
-group at `3` fixes no primitive cube root of unity. Content: `3`
-ramifies in `ℚ(ζ₃) = ℚ(√−3)`. Intended proof, all ingredients
-present: `ζ₃ ∉ ℚ₃ᵥ` (a root of `X² + X + 1` gives a square root of
-`−3`, whose valuation would be half the odd valuation of `3` —
-transport through
-`Rat.HeightOneSpectrum.adicCompletion.padicEquiv` as in
-`localInertia_two_eq_map_padic`), so `N = ℚ₃ᵥ(ζ₃)` is a quadratic
-Galois extension whose nontrivial automorphism `τ` swaps the two
-primitive cube roots; `τ` lies in the finite-level inertia of `N`
-(for integral `y` and `s = τ y − y`, both `s²` and `s·(2ζ₃+1)` are
-`τ`-invariant hence in `𝒪ᵥ`, with `(s·(2ζ₃+1))² = −3·s²`, and
-`𝔪ᵥ = (3)` prime forces `s² ∈ 3𝒪ᵥ ⊆ 𝔪` — the local analogue of
-`mem_inertia_of_dvd_squarefree`); the compactness lifting
+/-- **The ramified quadratic extension `ℚ₃ᵥ(ζ₃)` at finite level**
+(sorry node, isolated 2026-07-23 — the finite-level content of the
+ramification witness below; everything profinite is already assembled
+on top of it): there are a finite Galois subextension `N` of the
+algebraic closure of the `3`-adic completion, a primitive cube root
+`ζ ∈ N`, and an automorphism `τ` of `N` with `τ ζ = ζ²` lying in the
+finite-level inertia (trivial action modulo the maximal ideal of the
+integral closure of `𝒪ᵥ` in `N`). Intended proof: `ζ ∉ ℚ₃ᵥ` — else
+`x = 2ζ + 1 ∈ ℚ₃ᵥ` has `x² = −3`, and `𝔪ᵥ = (3)`
+(`maximalIdeal_adicCompletionIntegers_eq_span`) gives `x ∈ 𝒪ᵥ`
+(integrally closed), `x ∈ 𝔪ᵥ`, `x = 3y`, `3y² = −1`, so `−1 ∈ 𝔪ᵥ`,
+absurd — hence `N := ℚ₃ᵥ⟮ζ⟯` is quadratic (minpoly `X² + X + 1`,
+irreducible as a rootless quadratic) and Galois (both roots `ζ, ζ²`
+lie in `N`); its automorphism group is `{1, τ}` with `τ ζ = ζ²`
+(`IsGalois.card_aut_eq_finrank`); and `τ` is inertial: for integral
+`y` with `s = τ y − y` one has `τ s = −s`, so `s²` and `s·(2ζ+1)` are
+Galois-invariant integral elements of `ℚ₃ᵥ`, hence in `𝒪ᵥ`, with
+`(s·(2ζ+1))² = −3 s²`; primality of `𝔪ᵥ = (3)` then forces
+`s² ∈ 3𝒪ᵥ ⊆ 𝔪(IntegralClosure)`, and `s ∈ 𝔪` since the maximal
+ideal of the (local) integral closure is prime — the local analogue
+of the proven `mem_inertia_of_dvd_squarefree`. -/
+theorem exists_finite_level_inertia_swap_three :
+    ∃ (N : IntermediateField
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)))
+      (τ : N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] N)
+      (ζ : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))
+      (hζN : ζ ∈ N),
+      FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N ∧
+      IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N ∧
+      IsPrimitiveRoot ζ 3 ∧
+      ((τ ⟨ζ, hζN⟩ : N) : AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) = ζ ^ 2 ∧
+      τ ∈ (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
+        (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] N) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **The inertia at `3` moves the cube roots of unity** (DECOMPOSED
+2026-07-23 into the finite-level leaf
+`exists_finite_level_inertia_swap_three` above; the profinite
+assembly is proven): some element of the local inertia group at `3`
+fixes no primitive cube root of unity — `3` ramifies in
+`ℚ(ζ₃) = ℚ(√−3)`, and this witness realizes the nontrivial quadratic
+character of the tame inertia at `3` as the mod-3 cyclotomic
+character. Assembly: the compactness lifting
 `exists_mem_localInertiaGroup_restrictNormalHom_eq` produces
-`σ ∈ localInertiaGroup` restricting to `τ` on `N`; and `σ` fixes no
-primitive cube root of `ℚᵃˡᵍ`, since by
-`Field.absoluteGaloisGroup.lift_map` such a root embeds onto one of
-the two primitive roots living in `N`, which `σ` swaps. -/
+`σ ∈ localInertiaGroup` restricting on `N = ℚ₃ᵥ(ζ₃)` to the
+finite-level inertia automorphism `τ` with `τ ζ = ζ²`; any primitive
+cube root of `ℚᵃˡᵍ` embeds (by
+`Field.absoluteGaloisGroup.lift_map`) onto `ζ` or `ζ²` in the local
+closure, and `σ` moves both (`σ ζ = ζ²` by
+`AlgEquiv.restrictNormal_commutes`, hence `σ ζ² = ζ⁴ = ζ`). -/
 theorem exists_localInertia_three_not_fix_primitiveRoot :
     ∃ σ ∈ localInertiaGroup
         Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
@@ -3850,7 +3893,60 @@ theorem exists_localInertia_three_not_fix_primitiveRoot :
         Field.absoluteGaloisGroup.map (algebraMap ℚ
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
             Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ ζ ≠ ζ := by
-  sorry
+  classical
+  obtain ⟨N, τ, ζc, hζN, hfd, hgal, hζcprim, hτζ, hτin⟩ :=
+    exists_finite_level_inertia_swap_three
+  haveI := hfd
+  haveI := hgal
+  obtain ⟨σ, hσmem, hσres⟩ :=
+    exists_mem_localInertiaGroup_restrictNormalHom_eq
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat N τ hτin
+  refine ⟨σ, hσmem, ?_⟩
+  intro ζ hζ hfix
+  -- transport the fixed point through the closure embedding
+  set ι := AlgebraicClosure.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) with hιdef
+  have hσι : σ (ι ζ) = ι ζ := by
+    rw [← Field.absoluteGaloisGroup.lift_map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ ζ, hfix]
+  -- `σ` sends `ζc` to `ζc²` (restriction to `N` is `τ`)
+  have hσζc : σ ζc = ζc ^ 2 := by
+    have hcomm := AlgEquiv.restrictNormal_commutes σ N ⟨ζc, hζN⟩
+    rw [show σ.restrictNormal N = τ from hσres] at hcomm
+    rw [show (algebraMap N (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)))
+        (⟨ζc, hζN⟩ : N) = ζc from rfl] at hcomm
+    rw [← hcomm]
+    exact hτζ
+  -- the embedded root is `ζc` or `ζc²`, and `σ` moves both
+  have hιζ3 : (ι ζ) ^ 3 = 1 := by
+    rw [← map_pow, hζ.pow_eq_one, map_one]
+  obtain ⟨i, hi3, hiζ⟩ := hζcprim.eq_pow_of_pow_eq_one hιζ3
+  have hιprim : IsPrimitiveRoot (ι ζ) 3 :=
+    hζ.map_of_injective (RingHom.injective ι)
+  interval_cases i
+  · -- `ι ζ = 1` contradicts primitivity
+    rw [pow_zero] at hiζ
+    exact hιprim.ne_one (by norm_num) hiζ.symm
+  · -- `ι ζ = ζc`, but `σ ζc = ζc² ≠ ζc`
+    rw [pow_one] at hiζ
+    rw [← hiζ, hσζc] at hσι
+    have h21 : (2 : ℕ) = 1 :=
+      hζcprim.pow_inj (by norm_num) (by norm_num)
+        (by rw [pow_one]; exact hσι)
+    exact absurd h21 (by norm_num)
+  · -- `ι ζ = ζc²`, but `σ ζc² = ζc⁴ = ζc ≠ ζc²`
+    rw [← hiζ] at hσι
+    rw [map_pow, hσζc, ← pow_mul] at hσι
+    have hζc4 : ζc ^ (2 * 2) = ζc ^ 1 := by
+      have h34 : ζc ^ (2 * 2) = ζc ^ 3 * ζc ^ 1 := by ring
+      rw [h34, hζcprim.pow_eq_one, one_mul]
+    rw [hζc4] at hσι
+    exact absurd (hζcprim.pow_inj (by norm_num) (by norm_num) hσι)
+      (by norm_num)
 
 /-- **Order two on the inertia at `3`** (DECOMPOSED 2026-07-23 into
 the tame-generator leaf `exists_localInertia_three_generator` above;
