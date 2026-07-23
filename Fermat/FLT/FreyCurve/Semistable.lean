@@ -80,6 +80,15 @@ import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
 import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 public import Mathlib.RingTheory.Bialgebra.Convolution
 public import Mathlib.RingTheory.HopfAlgebra.TensorProduct
+-- `HopfAlgebra.antipodeAlgHom`, in the (public) body of `latticeAntipode`
+public import Mathlib.RingTheory.HopfAlgebra.Convolution
+-- `Bialgebra.TensorProduct.lid`, the generic-fibre side of the
+-- lattice Hopf-order identification
+import Mathlib.RingTheory.Bialgebra.TensorProduct
+-- free-of-torsion-free over a PID, for the lattice Hopf order
+import Mathlib.LinearAlgebra.FreeModule.PID
+-- `LinearIndependent.iff_fractionRing`, for the lattice comparison maps
+import Mathlib.RingTheory.Localization.Module
 -- standard étale pairs and finite products of étale algebras, consumed
 -- by the étale-generic-fibre proof of the Kummer Hopf algebra; PUBLIC
 -- because the presentation equivalence is STATED with the pair's Ring
@@ -8135,13 +8144,255 @@ theorem WeierstrassCurve.exists_adic_bialgEquiv_of_torsion_packages
       hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[ℚ] Hg)
     (fl.trans fgl.symm) hθeq
 
+section LatticeHopfOrder
+
+/-! ### The abstract Hopf-order construction (2026-07-24)
+
+Support for `exists_hopfOrder_of_latticeClosure` below: an `R`-subalgebra
+`H₀` of a `K`-Hopf algebra `Hg` (`R` a PID with fraction field `K`) that is
+finite, full, and closed under the costructure maps carries a corestricted
+Hopf structure. The costructure maps are REAL CODE (corestrictions along the
+injective comparison maps); the injectivity of the comparisons and the
+inherited Hopf axioms are the sorried leaves. -/
+
+open TensorProduct
+
+variable (R K Hg : Type) [CommRing R] [Field K] [Algebra R K]
+  [CommRing Hg] [HopfAlgebra K Hg] [Algebra R Hg] [IsScalarTower R K Hg]
+  (H₀ : Subalgebra R Hg)
+
+/-- The canonical `R`-algebra map `H₀ ⊗[R] H₀ → Hg ⊗[K] Hg` from the tensor
+square of an `R`-order `H₀` inside the `K`-Hopf algebra `Hg` into the tensor
+square of the generic fibre, sending `a ⊗ b` to `a ⊗ b`. -/
+noncomputable def latticeTensorSquareIncl : (↥H₀ ⊗[R] ↥H₀) →ₐ[R] (Hg ⊗[K] Hg) :=
+  Algebra.TensorProduct.lift
+    (((Algebra.TensorProduct.includeLeft (S := K)).restrictScalars R).comp H₀.val)
+    ((Algebra.TensorProduct.includeRight.restrictScalars R).comp H₀.val)
+    (fun _ _ => Commute.all _ _)
+
+@[simp] lemma latticeTensorSquareIncl_tmul (a b : ↥H₀) :
+    latticeTensorSquareIncl R K Hg H₀ (a ⊗ₜ[R] b) = (a : Hg) ⊗ₜ[K] (b : Hg) := by
+  simp [latticeTensorSquareIncl, Algebra.TensorProduct.lift_tmul,
+    Algebra.TensorProduct.tmul_mul_tmul]
+
+/-- SORRY LEAF: the tensor-square comparison of a finite order over a PID with
+fraction field `K` is injective (freeness of `H₀` from finite + torsion-free
+over the PID; a basis of `H₀` stays `K`-linearly independent in `Hg` by
+`LinearIndependent.iff_fractionRing`, hence so does the family of its pair
+tensors, to which the map sends the basis of `H₀ ⊗[R] H₀`). -/
+lemma latticeTensorSquareIncl_injective [IsDomain R] [IsPrincipalIdealRing R]
+    [IsFractionRing R K] (hfin : Module.Finite R ↥H₀) :
+    Function.Injective (latticeTensorSquareIncl R K Hg H₀) := by
+  sorry
+
+/-- The base-change comparison `K ⊗[R] H₀ → Hg`, `q ⊗ a ↦ q • a`. -/
+noncomputable def latticeBaseChange : (K ⊗[R] ↥H₀) →ₐ[K] Hg :=
+  Algebra.TensorProduct.lift (Algebra.ofId K Hg) H₀.val (fun _ _ => Commute.all _ _)
+
+@[simp] lemma latticeBaseChange_tmul (q : K) (a : ↥H₀) :
+    latticeBaseChange R K Hg H₀ (q ⊗ₜ[R] a) = q • (a : Hg) := by
+  simp [latticeBaseChange, Algebra.TensorProduct.lift_tmul, Algebra.ofId_apply,
+    Algebra.smul_def]
+
+/-- Fullness of the order makes the base-change comparison surjective:
+clear the denominator of `x` by a nonzero `r` with `r • x ∈ H₀`. -/
+lemma latticeBaseChange_surjective [IsDomain R] [IsFractionRing R K]
+    (hfull : ∀ x : Hg, ∃ r : R, r ≠ 0 ∧ r • x ∈ H₀) :
+    Function.Surjective (latticeBaseChange R K Hg H₀) := by
+  intro y
+  obtain ⟨r, hr0, hry⟩ := hfull y
+  have hu : algebraMap R K r ≠ 0 := fun h =>
+    hr0 (IsFractionRing.injective R K (h.trans (map_zero _).symm))
+  refine ⟨(algebraMap R K r)⁻¹ ⊗ₜ[R] ⟨r • y, hry⟩, ?_⟩
+  rw [latticeBaseChange_tmul]
+  show (algebraMap R K r)⁻¹ • (r • y) = y
+  rw [← algebraMap_smul K r y, smul_smul, inv_mul_cancel₀ hu, one_smul]
+
+/-- SORRY LEAF: the base-change comparison of a finite order over a PID with
+fraction field `K` is injective (an `R`-basis of the free module `H₀` gives a
+`K`-basis `1 ⊗ bᵢ` of `K ⊗[R] H₀`; its image `bᵢ` in `Hg` is `K`-linearly
+independent by `LinearIndependent.iff_fractionRing`). -/
+lemma latticeBaseChange_injective [IsDomain R] [IsPrincipalIdealRing R]
+    [IsFractionRing R K] (hfin : Module.Finite R ↥H₀) :
+    Function.Injective (latticeBaseChange R K Hg H₀) := by
+  sorry
+
+/-- The comultiplication of the order: the generic-fibre comultiplication
+corestricted along the (injective) tensor-square comparison, using the
+comultiplication-closure hypothesis on `H₀`. -/
+noncomputable def latticeComul [IsDomain R] [IsPrincipalIdealRing R]
+    [IsFractionRing R K] (hfin : Module.Finite R ↥H₀)
+    (hcomul : ∀ x ∈ H₀, Coalgebra.comul (R := K) x ∈
+      AddSubmonoid.closure (Set.image2 (fun a b : Hg => a ⊗ₜ[K] b)
+        (H₀ : Set Hg) (H₀ : Set Hg))) :
+    ↥H₀ →ₐ[R] (↥H₀ ⊗[R] ↥H₀) :=
+  (AlgEquiv.ofInjective _
+      (latticeTensorSquareIncl_injective R K Hg H₀ hfin)).symm.toAlgHom.comp
+    ((((Bialgebra.comulAlgHom K Hg).restrictScalars R).comp H₀.val).codRestrict
+      (latticeTensorSquareIncl R K Hg H₀).range (fun x => by
+        have hsub : AddSubmonoid.closure (Set.image2 (fun a b : Hg => a ⊗ₜ[K] b)
+            (H₀ : Set Hg) (H₀ : Set Hg)) ≤
+            (latticeTensorSquareIncl R K Hg H₀).range.toSubsemiring.toAddSubmonoid := by
+          refine AddSubmonoid.closure_le.mpr ?_
+          rintro _ ⟨a, ha, b, hb, rfl⟩
+          exact ⟨(⟨a, ha⟩ : ↥H₀) ⊗ₜ[R] (⟨b, hb⟩ : ↥H₀),
+            latticeTensorSquareIncl_tmul R K Hg H₀ _ _⟩
+        exact hsub (hcomul x.1 x.2)))
+
+/-- Defining property of `latticeComul`: it is the restriction of the
+generic-fibre comultiplication. -/
+lemma latticeTensorSquareIncl_latticeComul [IsDomain R] [IsPrincipalIdealRing R]
+    [IsFractionRing R K] (hfin : Module.Finite R ↥H₀)
+    (hcomul : ∀ x ∈ H₀, Coalgebra.comul (R := K) x ∈
+      AddSubmonoid.closure (Set.image2 (fun a b : Hg => a ⊗ₜ[K] b)
+        (H₀ : Set Hg) (H₀ : Set Hg))) (x : ↥H₀) :
+    latticeTensorSquareIncl R K Hg H₀ (latticeComul R K Hg H₀ hfin hcomul x) =
+      Coalgebra.comul (R := K) (x : Hg) := by
+  set f := latticeTensorSquareIncl R K Hg H₀
+  set hinj := latticeTensorSquareIncl_injective R K Hg H₀ hfin
+  show f ((AlgEquiv.ofInjective f hinj).symm _) = _
+  have h1 : ∀ y : (f.range : Subalgebra R (Hg ⊗[K] Hg)),
+      f ((AlgEquiv.ofInjective f hinj).symm y) = (y : Hg ⊗[K] Hg) := by
+    intro y
+    conv_rhs => rw [← (AlgEquiv.ofInjective f hinj).apply_symm_apply y]
+    rfl
+  rw [h1]
+  rfl
+
+/-- The counit of the order: the generic-fibre counit corestricted along the
+(injective) structure map `R → K`, using the counit-integrality hypothesis. -/
+noncomputable def latticeCounit [IsDomain R] [IsFractionRing R K]
+    (hcounit : ∀ x ∈ H₀, Coalgebra.counit (R := K) x ∈
+      Set.range (algebraMap R K)) :
+    ↥H₀ →ₐ[R] R :=
+  (AlgEquiv.ofInjective (Algebra.ofId R K)
+      (IsFractionRing.injective R K)).symm.toAlgHom.comp
+    ((((Bialgebra.counitAlgHom K Hg).restrictScalars R).comp H₀.val).codRestrict
+      (Algebra.ofId R K).range (fun x => by
+        obtain ⟨r, hr⟩ := hcounit x.1 x.2
+        exact ⟨r, hr⟩))
+
+/-- Defining property of `latticeCounit`: it is the restriction of the
+generic-fibre counit. -/
+lemma algebraMap_latticeCounit [IsDomain R] [IsFractionRing R K]
+    (hcounit : ∀ x ∈ H₀, Coalgebra.counit (R := K) x ∈
+      Set.range (algebraMap R K)) (x : ↥H₀) :
+    algebraMap R K (latticeCounit R K Hg H₀ hcounit x) =
+      Coalgebra.counit (R := K) (x : Hg) := by
+  set f := Algebra.ofId R K
+  set hinj := IsFractionRing.injective R K
+  show f ((AlgEquiv.ofInjective f hinj).symm _) = _
+  have h1 : ∀ y : (f.range : Subalgebra R K),
+      f ((AlgEquiv.ofInjective f hinj).symm y) = (y : K) := by
+    intro y
+    conv_rhs => rw [← (AlgEquiv.ofInjective f hinj).apply_symm_apply y]
+    rfl
+  rw [h1]
+  rfl
+
+/-- The antipode of the order: the generic-fibre antipode corestricted to `H₀`
+using the antipode-stability hypothesis. -/
+noncomputable def latticeAntipode
+    (hantipode : ∀ x ∈ H₀, HopfAlgebra.antipode K x ∈ H₀) :
+    ↥H₀ →ₐ[R] ↥H₀ :=
+  (((HopfAlgebra.antipodeAlgHom K Hg).restrictScalars R).comp H₀.val).codRestrict
+    H₀ (fun x => hantipode x.1 x.2)
+
+@[simp] lemma latticeAntipode_coe
+    (hantipode : ∀ x ∈ H₀, HopfAlgebra.antipode K x ∈ H₀) (x : ↥H₀) :
+    (latticeAntipode R K Hg H₀ hantipode x : Hg) =
+      HopfAlgebra.antipode K (x : Hg) :=
+  rfl
+
+/-- **The Hopf order from a closed full lattice, abstract form**: an
+`R`-subalgebra `H₀` of a `K`-Hopf algebra `Hg` (`R` a PID with fraction field
+`K`) that is finite over `R`, full, and closed under comultiplication, counit
+and antipode is (with its corestricted costructure) a finite flat `R`-Hopf
+algebra with generic fibre `Hg` as a `K`-bialgebra. -/
+theorem exists_hopfOrder_of_latticeClosure_abstract [IsDomain R]
+    [IsPrincipalIdealRing R] [IsFractionRing R K]
+    (hfin : Module.Finite R ↥H₀)
+    (hfull : ∀ x : Hg, ∃ r : R, r ≠ 0 ∧ r • x ∈ H₀)
+    (hcomul : ∀ x ∈ H₀, Coalgebra.comul (R := K) x ∈
+      AddSubmonoid.closure (Set.image2 (fun a b : Hg => a ⊗ₜ[K] b)
+        (H₀ : Set Hg) (H₀ : Set Hg)))
+    (hcounit : ∀ x ∈ H₀, Coalgebra.counit (R := K) x ∈
+      Set.range (algebraMap R K))
+    (hantipode : ∀ x ∈ H₀, HopfAlgebra.antipode K x ∈ H₀) :
+    ∃ (H : Type) (_ : CommRing H) (_ : HopfAlgebra R H)
+      (_ : Module.Finite R H) (_ : Module.Flat R H),
+      Nonempty ((K ⊗[R] H) ≃ₐc[K] Hg) := by
+  classical
+  -- torsion-freeness of the order, through the generic fibre
+  haveI hnz : NoZeroSMulDivisors R Hg := by
+    refine ⟨fun {r x} h => ?_⟩
+    rcases eq_or_ne r 0 with hr | hr
+    · exact Or.inl hr
+    · refine Or.inr ?_
+      have hu : algebraMap R K r ≠ 0 := fun h0 =>
+        hr (IsFractionRing.injective R K (h0.trans (map_zero _).symm))
+      have h' : algebraMap R K r • x = 0 := by
+        rw [algebraMap_smul K r x]; exact h
+      exact (smul_eq_zero.mp h').resolve_left hu
+  haveI : NoZeroSMulDivisors R ↥H₀ :=
+    Function.Injective.noZeroSMulDivisors (Subtype.val : ↥H₀ → Hg)
+      Subtype.val_injective rfl (fun _ _ => rfl)
+  haveI := hfin
+  haveI hfree : Module.Free R ↥H₀ := Module.free_of_finite_type_torsion_free'
+  haveI hflat : Module.Flat R ↥H₀ := inferInstance
+  -- the corestricted costructure
+  set Δ := latticeComul R K Hg H₀ hfin hcomul with hΔdef
+  set ε := latticeCounit R K Hg H₀ hcounit with hεdef
+  -- the coalgebra axioms, inherited from the generic fibre through the
+  -- injective comparisons (SORRY LEAVES)
+  have h_coassoc : (Algebra.TensorProduct.assoc R R R ↥H₀ ↥H₀ ↥H₀).toAlgHom.comp
+      ((Algebra.TensorProduct.map Δ (AlgHom.id R ↥H₀)).comp Δ) =
+      (Algebra.TensorProduct.map (AlgHom.id R ↥H₀) Δ).comp Δ := by
+    sorry
+  have h_rTensor : (Algebra.TensorProduct.map ε (AlgHom.id R ↥H₀)).comp Δ =
+      (Algebra.TensorProduct.lid R ↥H₀).symm := by
+    sorry
+  have h_lTensor : (Algebra.TensorProduct.map (AlgHom.id R ↥H₀) ε).comp Δ =
+      (Algebra.TensorProduct.rid R R ↥H₀).symm := by
+    sorry
+  letI instBi : Bialgebra R ↥H₀ := Bialgebra.ofAlgHom Δ ε h_coassoc h_rTensor h_lTensor
+  -- the antipode axioms (SORRY LEAVES)
+  have h_anti_r : ((Algebra.TensorProduct.lift (latticeAntipode R K Hg H₀ hantipode)
+        (AlgHom.id R ↥H₀) fun _ _ => Commute.all _ _).comp
+        (Bialgebra.comulAlgHom R ↥H₀)) =
+      (Algebra.ofId R ↥H₀).comp (Bialgebra.counitAlgHom R ↥H₀) := by
+    sorry
+  have h_anti_l : ((Algebra.TensorProduct.lift (AlgHom.id R ↥H₀)
+        (latticeAntipode R K Hg H₀ hantipode) fun _ _ => Commute.all _ _).comp
+        (Bialgebra.comulAlgHom R ↥H₀)) =
+      (Algebra.ofId R ↥H₀).comp (Bialgebra.counitAlgHom R ↥H₀) := by
+    sorry
+  letI instHopf : HopfAlgebra R ↥H₀ :=
+    HopfAlgebra.ofAlgHom (latticeAntipode R K Hg H₀ hantipode) h_anti_r h_anti_l
+  -- the generic-fibre identification
+  have hbij : Function.Bijective (latticeBaseChange R K Hg H₀) :=
+    ⟨latticeBaseChange_injective R K Hg H₀ hfin,
+      latticeBaseChange_surjective R K Hg H₀ hfull⟩
+  refine ⟨↥H₀, inferInstance, instHopf, hfin, hflat, ⟨?_⟩⟩
+  refine BialgEquiv.ofAlgEquiv
+    (AlgEquiv.ofBijective (latticeBaseChange R K Hg H₀) hbij) ?_ ?_
+  · -- counit compatibility (SORRY LEAF)
+    sorry
+  · -- comultiplication compatibility (SORRY LEAF)
+    sorry
+
+end LatticeHopfOrder
+
 open TensorProduct in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **The Hopf order from a closed full lattice** (sorry node — the
-abstract half of the lattice intersection, free of the comparison
-isomorphism and of the completion): an `ℤ_(p)`-subalgebra `H₀ ⊆ Hg` of
+/-- **The Hopf order from a closed full lattice** (DECOMPOSED 2026-07-24
+into the `LatticeHopfOrder` section above — the costructure corestrictions
+are REAL CODE, the injectivity of the comparison maps and the inherited
+Hopf axioms are the sorried leaves; the étale transport and the
+generic-fibre identification are PROVEN glue here): an
+`ℤ_(p)`-subalgebra `H₀ ⊆ Hg` of
 a finite-dimensional étale `ℚ`-Hopf algebra that is finite over
 `ℤ_(p)`, FULL (every element of `Hg` has a nonzero `ℤ_(p)`-multiple
 in `H₀`), and closed under the costructure maps (comultiplication
@@ -8189,7 +8440,19 @@ theorem exists_hopfOrder_of_latticeClosure
         ((ℚ ⊗[Localization.AtPrime
             hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal] H)
           ≃ₐc[ℚ] (ℚ ⊗[ℚ] Hg)) := by
-  sorry
+  classical
+  obtain ⟨H, cRing, hopf, fin, flat, ⟨e⟩⟩ :=
+    exists_hopfOrder_of_latticeClosure_abstract
+      (Localization.AtPrime hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)
+      ℚ Hg H₀ hfin hfull hcomul hcounit hantipode
+  letI := cRing
+  letI := hopf
+  letI := fin
+  letI := flat
+  refine ⟨H, cRing, hopf, fin, flat, ?_,
+    ⟨e.trans (Bialgebra.TensorProduct.lid ℚ Hg).symm⟩⟩
+  exact Algebra.Etale.of_equiv
+    ((e.trans (Bialgebra.TensorProduct.lid ℚ Hg).symm).symm.toAlgEquiv)
 
 open TensorProduct ValuativeRel IsDedekindDomain in
 set_option backward.isDefEq.respectTransparency false in
