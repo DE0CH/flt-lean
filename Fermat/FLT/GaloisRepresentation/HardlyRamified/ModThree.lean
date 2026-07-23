@@ -3133,25 +3133,484 @@ theorem exists_sqrt_of_quadratic_character_unramified_outside_two_three
       rw [hfix] at hgker
       exact MonoidHom.mem_ker.mp hgker
 
+/-- **One-dimensionality of the kernel of a nonzero singular `2 × 2`
+matrix** (helper, PROVEN 2026-07-23): two vectors annihilated by a
+nonzero `2 × 2` matrix are proportional (a nonzero one spans the
+kernel). Used by the dihedral dichotomy to convert "commutes with a
+nonscalar matrix" into "preserves its eigenline": if the cross-product
+of the two kernel vectors were nonzero they would form a basis
+annihilated by the matrix, forcing it to vanish. -/
+theorem exists_smul_eq_of_mulVec_eq_zero {F : Type*} [Field F]
+    {M : Matrix (Fin 2) (Fin 2) F} (hM : M ≠ 0)
+    {v w : Fin 2 → F} (hv : Matrix.mulVec M v = 0)
+    (hw : Matrix.mulVec M w = 0) (hv0 : v ≠ 0) :
+    ∃ c : F, w = c • v := by
+  classical
+  by_cases hcross : v 0 * w 1 - v 1 * w 0 = 0
+  · -- proportional: divide by a nonzero coordinate of `v`
+    have hvi : v 0 ≠ 0 ∨ v 1 ≠ 0 := by
+      by_contra hcon
+      push Not at hcon
+      refine hv0 (funext fun i => ?_)
+      fin_cases i
+      · exact hcon.1
+      · exact hcon.2
+    rcases hvi with h0 | h1
+    · refine ⟨w 0 / v 0, funext fun i => ?_⟩
+      fin_cases i
+      · exact (div_mul_cancel₀ (w 0) h0).symm
+      · show w 1 = w 0 / v 0 * v 1
+        field_simp
+        linear_combination hcross
+    · refine ⟨w 1 / v 1, funext fun i => ?_⟩
+      fin_cases i
+      · show w 0 = w 1 / v 1 * v 0
+        field_simp
+        linear_combination -hcross
+      · exact (div_mul_cancel₀ (w 1) h1).symm
+  · -- `(v, w)` would be a basis annihilated by `M`
+    exfalso
+    apply hM
+    have hdetN : (Matrix.of ![![v 0, w 0], ![v 1, w 1]]).det ≠ 0 := by
+      rw [Matrix.det_fin_two]
+      intro h
+      exact hcross (by
+        simp only [Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero,
+          Matrix.cons_val_one] at h
+        linear_combination h)
+    have hMN : M * Matrix.of ![![v 0, w 0], ![v 1, w 1]] = 0 := by
+      ext i j
+      fin_cases j
+      · have hvi := congrFun hv i
+        rw [Matrix.mulVec_apply_eq_sum, Fin.sum_univ_two] at hvi
+        simp only [Matrix.mul_apply, Fin.sum_univ_two, Matrix.of_apply,
+          Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one,
+          Matrix.zero_apply]
+        simpa using hvi
+      · have hwi := congrFun hw i
+        rw [Matrix.mulVec_apply_eq_sum, Fin.sum_univ_two] at hwi
+        simp only [Matrix.mul_apply, Fin.sum_univ_two, Matrix.of_apply,
+          Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one,
+          Matrix.zero_apply]
+        simpa using hwi
+    have hN := Matrix.mul_nonsing_inv (Matrix.of ![![v 0, w 0], ![v 1, w 1]])
+      (isUnit_iff_ne_zero.mpr hdetN)
+    calc M = M * (Matrix.of ![![v 0, w 0], ![v 1, w 1]] *
+          (Matrix.of ![![v 0, w 0], ![v 1, w 1]])⁻¹) := by rw [hN, mul_one]
+      _ = M * Matrix.of ![![v 0, w 0], ![v 1, w 1]] *
+          (Matrix.of ![![v 0, w 0], ![v 1, w 1]])⁻¹ := by rw [mul_assoc]
+      _ = 0 := by rw [hMN, zero_mul]
+
+/-- **The Klein-four pivot** (sorry node, isolated 2026-07-23 — the
+group/matrix-theoretic core of the dihedral dichotomy, needing no
+Galois-theoretic context): let `u : G → GL₂(F)` (`F` algebraically
+closed, `2 ≠ 0`) be a representation whose composition with the
+projection `π` to `PGL₂(F)` is abelian on the kernel of a surjective
+quadratic character `θ`, but which does NOT honestly commute on that
+kernel. Then there is a trace-zero invertible `f` — a member of the
+Klein four-group configuration — that anticommutes with some `u p`
+and commutes-or-anticommutes with EVERY `u g`, `g ∈ G` (not only the
+kernel!): the pivot whose `±1` conjugation-sign character is the
+switched quadratic character of the dihedral argument.
+
+Intended proof (recorded 2026-07-23). (1) By `hπ` and the scalar
+characterization of the center of `GL₂`
+(`Matrix.GeneralLinearGroup.mem_center_iff_val_mem_range_scalar`),
+`hcomm` gives for kernel elements `g, h`:
+`u h · u g = a • (u g · u h)` with `a² = 1` by determinants, so `±1`:
+the commutator pairing. (2) A noncommuting kernel pair `g₀, h₁`
+therefore ANTIcommutes: `a := u g₀`, `b := u h₁`, `ab = -(ba)`; both
+have trace `0` (conjugating by the partner negates the trace) and
+scalar squares `a² = (-det a) • 1` (Cayley–Hamilton). (3) Any matrix
+commuting with both `a` and `b` is scalar (it preserves the two
+eigenlines of `a`, which `b` swaps) — via the eigen-machinery and
+`exists_smul_eq_of_mulVec_eq_zero`. (4) Hence every kernel element is
+a scalar multiple of one of `{1, a, b, ab}`: multiply by the inverse
+of the member with the matching sign pattern against `(a, b)` and
+apply (3). (5) For `σ ∉ ker θ`, `D := u σ`: `σ²  ∈ ker θ`, so
+conjugation by `D²` fixes each of the lines `F·a`, `F·b`, `F·(ab)`
+(conjugation by any of `{1, a, b, ab}` does, by the pairing table).
+If `D a D⁻¹ ∈ F·a`, take `f := a`. If `D a D⁻¹ = c • b`, then
+`D b D⁻¹ = (ε/c) • a` (apply conjugation twice), so
+`D (ab) D⁻¹ ∈ F·(ab)`: take `f := ab`. If `D a D⁻¹ = c • (ab)`,
+then `D (ab) D⁻¹ ∈ F·a` and `D b D⁻¹ = D (a⁻¹·ab) D⁻¹ ∈ F·b⁻¹ = F·b`
+(`b⁻¹ = (1/det b?) hmm — b⁻¹ = δ_b⁻¹ • b` since `b² = δ_b • 1`):
+take `f := b`. (6) The global dichotomy for `f`: kernel elements are
+scalar multiples of `{1, a, b, ab}`, which commute-or-anticommute
+with `f` by the pairing table; an element `g ∉ ker θ` factors as
+`(g σ⁻¹) · σ` with `g σ⁻¹ ∈ ker θ`, and `D f D⁻¹ = ±f` (determinant
+squares again), so the sign multiplies through. -/
+theorem exists_klein_pivot_of_noncommuting_kernel {F : Type*} [Field F]
+    [IsAlgClosed F] (h2F : (2 : F) ≠ 0) {G : Type*} [Group G]
+    (u : G →* GL (Fin 2) F)
+    (π : G →* Matrix.ProjGenLinGroup (Fin 2) F)
+    (hπ : ∀ g, π g = QuotientGroup.mk (u g))
+    (θ : G →* Multiplicative (ZMod 2))
+    (hθsurj : Function.Surjective θ)
+    (hcomm : ∀ g h : G, θ g = 1 → θ h = 1 → π g * π h = π h * π g)
+    (hA : ¬∀ g h' : G, θ g = 1 → θ h' = 1 →
+      (u g).val * (u h').val = (u h').val * (u g).val) :
+    ∃ f : Matrix (Fin 2) (Fin 2) F,
+      Matrix.trace f = 0 ∧ Matrix.det f ≠ 0 ∧
+      (∃ p : G, (u p).val * f = -(f * (u p).val)) ∧
+      ∀ g : G, (u g).val * f = f * (u g).val ∨
+        (u g).val * f = -(f * (u g).val) := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **The dihedral dichotomy: a common eigenvector after a possible
+field switch** (DERIVED 2026-07-23 from the Klein-four pivot
+`exists_klein_pivot_of_noncommuting_kernel` above — the reduction is
+PROVEN, and this is the SOUND replacement for the false "common
+eigenvector on `ker θ` itself" step): the projective-commutativity
+and trace-zero data of the dihedral situation produce a surjective
+quadratic character `θ'` — NOT necessarily `θ` — trivial on the
+kernel of `ρ`, such that `u` restricted to `ker θ'` has a genuine
+common eigenvector.
+
+Soundness note (recorded 2026-07-23; see the 2026-07-23 decomposition
+commit): `hcomm` only makes `u (ker θ)` projectively abelian, which
+admits the Klein-four sub-case where `u (ker θ)` maps onto an
+irreducible `V₄ ⊂ PGL₂` of anticommuting trace-zero
+involutions-mod-scalars and `ρ|_{ker θ}` has NO stable line; Serre's
+dihedral argument there switches to a different quadratic subfield.
+Hence the eigenvector is asserted only after an allowed switch of the
+quadratic character, and the consumer re-runs the quadratic-field
+classification on `θ'`.
+
+The proven reduction: if all `u h`, `h ∈ ker θ`, pairwise commute,
+`θ' = θ` works — `ρ g = 1 → θ g = 1` follows from `htr` since
+`tr 1 = 2 ≠ 0` in characteristic `3`, and a commuting family over the
+algebraically closed `Dickson.K 3` shares an eigenline (all-scalar
+case: any vector; otherwise the eigenline of a nonscalar member,
+one-dimensional by `exists_smul_eq_of_mulVec_eq_zero`). Otherwise the
+pivot leaf yields a trace-zero invertible `f` anticommuting with some
+`u p` and commuting-or-anticommuting with every `u g`; the `±1`-sign
+of conjugation on `f` is a `MonoidHom` `θ' : Γ ℚ →* ℤ/2` (the four
+sign-composition cases are proven by explicit rewriting), surjective
+via `p`, trivial on `ker ρ` (`u g = 1` there), and elements of
+`ker θ'` commute with `f` honestly, hence preserve the eigenline of
+`f` cut out by a root of `det (f - t • 1)` (Cayley–Hamilton
+`f² = (-det f) • 1` and a square root of `-det f`): a common
+eigenvector for the SWITCHED quadratic field. -/
+theorem exists_index_two_common_eigenvector {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (π : Γ ℚ →* Dickson.PGL 3)
+    (hπ : ∀ g, π g = QuotientGroup.mk (u g))
+    (θ : Γ ℚ →* Multiplicative (ZMod 2))
+    (hθsurj : Function.Surjective θ)
+    (hcomm : ∀ g h : Γ ℚ, θ g = 1 → θ h = 1 → π g * π h = π h * π g)
+    (htr : ∀ g : Γ ℚ, θ g ≠ 1 →
+      LinearMap.trace k V
+        ((MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V) g) = 0) :
+    ∃ θ' : Γ ℚ →* Multiplicative (ZMod 2),
+      Function.Surjective θ' ∧ (∀ g : Γ ℚ, ρ g = 1 → θ' g = 1) ∧
+      ∃ v : Fin 2 → Dickson.K 3, v ≠ 0 ∧
+        ∀ g : Γ ℚ, θ' g = 1 → ∃ c : Dickson.K 3,
+          Matrix.mulVec ((u g : GL (Fin 2) (Dickson.K 3)) :
+            Matrix (Fin 2) (Fin 2) (Dickson.K 3)) v = c • v := by
+  classical
+  by_cases hA : ∀ g h' : Γ ℚ, θ g = 1 → θ h' = 1 →
+      (u g).val * (u h').val = (u h').val * (u g).val
+  · -- the honestly commuting case: `θ' = θ` works
+    have h3k : (3 : k) = 0 := three_eq_zero_of_finite_padicIntThree_algebra
+    have h2k : (2 : k) ≠ 0 := fun h =>
+      one_ne_zero (α := k) (by linear_combination h3k - h)
+    have hfr : Module.finrank k V = 2 :=
+      Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
+    have htriv : ∀ g : Γ ℚ, ρ g = 1 → θ g = 1 := by
+      intro g hg
+      by_contra hne
+      have h0 := htr g hne
+      have h1 : (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V) g = 1 := hg
+      rw [h1, LinearMap.trace_one, hfr] at h0
+      exact h2k (by exact_mod_cast h0)
+    refine ⟨θ, hθsurj, htriv, ?_⟩
+    by_cases hsc : ∀ h' : Γ ℚ, θ h' = 1 → ∃ c : Dickson.K 3,
+        (u h').val = c • (1 : Matrix (Fin 2) (Fin 2) (Dickson.K 3))
+    · -- every kernel matrix is scalar: any nonzero vector is common
+      refine ⟨![1, 0], fun h => one_ne_zero (α := Dickson.K 3)
+        (by simpa using congrFun h 0), ?_⟩
+      intro g hg
+      obtain ⟨c, hc⟩ := hsc g hg
+      refine ⟨c, ?_⟩
+      rw [hc, Matrix.smul_mulVec, Matrix.one_mulVec]
+    · -- some kernel matrix is nonscalar: its eigenline is common
+      push Not at hsc
+      obtain ⟨h₀, hh₀, hns⟩ := hsc
+      obtain ⟨s, hsev⟩ :=
+        Module.End.exists_eigenvalue (Matrix.mulVecLin (u h₀).val)
+      obtain ⟨v, hv⟩ := hsev.exists_hasEigenvector
+      have hfv : Matrix.mulVec (u h₀).val v = s • v := by
+        have h1 := Module.End.mem_eigenspace_iff.mp hv.1
+        rwa [Matrix.mulVecLin_apply] at h1
+      have hM0 : (u h₀).val - s • 1 ≠ 0 := by
+        intro h0
+        exact hns s (by rwa [sub_eq_zero] at h0)
+      have hvker : Matrix.mulVec ((u h₀).val - s • 1) v = 0 := by
+        rw [Matrix.sub_mulVec, hfv, Matrix.smul_mulVec, Matrix.one_mulVec, sub_self]
+      refine ⟨v, hv.2, ?_⟩
+      intro g hg
+      have hcg := hA g h₀ hg hh₀
+      have hswap : ((u h₀).val - s • 1) * (u g).val =
+          (u g).val * ((u h₀).val - s • 1) := by
+        rw [sub_mul, mul_sub, smul_mul_assoc, one_mul, mul_smul_comm, mul_one, hcg]
+      have hwker : Matrix.mulVec ((u h₀).val - s • 1)
+          (Matrix.mulVec (u g).val v) = 0 := by
+        rw [Matrix.mulVec_mulVec, hswap, ← Matrix.mulVec_mulVec, hvker,
+          Matrix.mulVec_zero]
+      exact exists_smul_eq_of_mulVec_eq_zero hM0 hvker hwker hv.2
+  · -- the Klein-four case: switch to the sign character of a fixed
+    -- trace-zero involution-mod-scalars
+    haveI : CharP (Dickson.K 3) 3 :=
+      charP_of_injective_algebraMap
+        (algebraMap (ZMod 3) (Dickson.K 3)).injective 3
+    have h2F : (2 : Dickson.K 3) ≠ 0 := by
+      intro h
+      have h3 := (CharP.cast_eq_zero_iff (Dickson.K 3) 3 2).mp h
+      norm_num at h3
+    -- `u` of a `ρ`-kernel element is the identity matrix
+    have huone : ∀ g : Γ ℚ, ρ g = 1 → (u g).val = 1 := by
+      intro g hg
+      have h2 : (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V) g = 1 := hg
+      have h1 : (Slop.OddRep.baseChange (AlgebraicClosure k)
+          (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V)) g = 1 := by
+        have h3 : (Slop.OddRep.baseChange (AlgebraicClosure k)
+            (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V)) g =
+            ((MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V) g).baseChange
+              (AlgebraicClosure k) := rfl
+        rw [h3, h2, Module.End.one_eq_id, LinearMap.baseChange_id]
+        rfl
+      rw [hu g, h1, LinearMap.toMatrix_one]
+      exact Matrix.map_one e (map_zero e) (map_one e)
+    -- the Klein-four analysis: a trace-zero anticommuting-pair member,
+    -- conjugation-fixed up to sign by the whole image
+    have hklein :=
+      exists_klein_pivot_of_noncommuting_kernel h2F u π hπ θ hθsurj hcomm hA
+    obtain ⟨f, htr0, hdetf, ⟨p, hp⟩, hdich⟩ := hklein
+    -- commuting and anticommuting with `f` are mutually exclusive
+    have hexcl : ∀ g : Γ ℚ, (u g).val * f = f * (u g).val →
+        (u g).val * f = -(f * (u g).val) → False := by
+      intro g h1 h2
+      have h3 : f * (u g).val = -(f * (u g).val) := h1.symm.trans h2
+      have h5 : f * (u g).val = 0 := by
+        have h6 : (2 : Dickson.K 3) • (f * (u g).val) = 0 := by
+          rw [two_smul]
+          exact add_eq_zero_iff_eq_neg.mpr h3
+        rcases smul_eq_zero.mp h6 with h7 | h7
+        · exact absurd h7 h2F
+        · exact h7
+      have h7 : Matrix.det (f * (u g).val) = 0 := by
+        rw [h5]
+        exact Matrix.det_zero
+      rw [Matrix.det_mul] at h7
+      rcases mul_eq_zero.mp h7 with h8 | h8
+      · exact hdetf h8
+      · exact ((Matrix.isUnit_iff_isUnit_det (u g).val).mp (u g).isUnit).ne_zero h8
+    -- Cayley–Hamilton for the trace-zero `f`: `f² = (-det f) • 1`
+    have hCH : f * f = (-Matrix.det f) • (1 : Matrix (Fin 2) (Fin 2) (Dickson.K 3)) := by
+      have hCH0 := Matrix.aeval_self_charpoly f
+      rw [Matrix.charpoly_fin_two, map_add, map_sub, map_pow, Polynomial.aeval_X,
+        map_mul, Polynomial.aeval_C, htr0, map_zero, zero_mul, sub_zero,
+        Polynomial.aeval_C, Algebra.algebraMap_eq_smul_one] at hCH0
+      rw [← sq, neg_smul]
+      exact eq_neg_of_add_eq_zero_left hCH0
+    -- a square root of `-det f` and a singular translate of `f`
+    obtain ⟨s, hs2⟩ :=
+      IsAlgClosed.exists_pow_nat_eq (-Matrix.det f) (n := 2) (by norm_num)
+    have hfact : (f - s • 1) * (f + s • 1) = 0 := by
+      have h1 : (f - s • 1) * (f + s • 1) =
+          f * f - (s * s) • (1 : Matrix (Fin 2) (Fin 2) (Dickson.K 3)) := by
+        simp only [mul_add, sub_mul, smul_mul_assoc, mul_smul_comm, one_mul,
+          mul_one, smul_sub, smul_smul]
+        abel
+      rw [h1, hCH, ← hs2, sq, sub_self]
+    have hdet0 : Matrix.det (f - s • 1) = 0 ∨ Matrix.det (f + s • 1) = 0 := by
+      have h1 : Matrix.det (f - s • 1) * Matrix.det (f + s • 1) = 0 := by
+        rw [← Matrix.det_mul, hfact]
+        exact Matrix.det_zero
+      exact mul_eq_zero.mp h1
+    obtain ⟨t, htdet⟩ : ∃ t : Dickson.K 3, Matrix.det (f - t • 1) = 0 := by
+      rcases hdet0 with h1 | h1
+      · exact ⟨s, h1⟩
+      · refine ⟨-s, ?_⟩
+        rw [neg_smul, sub_neg_eq_add]
+        exact h1
+    obtain ⟨v, hv0, hvker⟩ := Matrix.exists_mulVec_eq_zero_iff.mpr htdet
+    -- `f` is nonscalar (it has an anticommuting partner)
+    have hfns : f - t • 1 ≠ 0 := by
+      intro h0
+      have hf : f = t • 1 := by rwa [sub_eq_zero] at h0
+      apply hexcl p ?_ hp
+      rw [hf, mul_smul_comm, mul_one, smul_mul_assoc, one_mul]
+    -- multiplicativity data for the sign of conjugation on `f`
+    have hmulval : ∀ g h' : Γ ℚ, (u (g * h')).val = (u g).val * (u h').val := by
+      intro g h'
+      rw [map_mul]
+      rfl
+    have hcc : ∀ g h' : Γ ℚ, (u g).val * f = f * (u g).val →
+        (u h').val * f = f * (u h').val →
+        (u (g * h')).val * f = f * (u (g * h')).val := by
+      intro g h' hg hh'
+      rw [hmulval, mul_assoc, hh', ← mul_assoc, hg, mul_assoc]
+    have hca : ∀ g h' : Γ ℚ, (u g).val * f = f * (u g).val →
+        (u h').val * f = -(f * (u h').val) →
+        (u (g * h')).val * f = -(f * (u (g * h')).val) := by
+      intro g h' hg hh'
+      rw [hmulval, mul_assoc, hh', mul_neg, neg_inj, ← mul_assoc, hg, mul_assoc]
+    have hac : ∀ g h' : Γ ℚ, (u g).val * f = -(f * (u g).val) →
+        (u h').val * f = f * (u h').val →
+        (u (g * h')).val * f = -(f * (u (g * h')).val) := by
+      intro g h' hg hh'
+      rw [hmulval, mul_assoc, hh', ← mul_assoc, hg, neg_mul, mul_assoc]
+    have haa : ∀ g h' : Γ ℚ, (u g).val * f = -(f * (u g).val) →
+        (u h').val * f = -(f * (u h').val) →
+        (u (g * h')).val * f = f * (u (g * h')).val := by
+      intro g h' hg hh'
+      rw [hmulval, mul_assoc, hh', mul_neg, ← mul_assoc, hg, neg_mul, neg_neg,
+        mul_assoc]
+    -- the switched character: the sign of conjugation on `f`
+    let θ' : Γ ℚ →* Multiplicative (ZMod 2) :=
+      { toFun := fun g => if (u g).val * f = f * (u g).val then 1
+          else Multiplicative.ofAdd (1 : ZMod 2)
+        map_one' := by
+          have h1 : (u 1).val = 1 := by rw [map_one]; rfl
+          rw [h1, one_mul, mul_one]
+          exact if_pos rfl
+        map_mul' := by
+          intro g h'
+          rcases hdich g with hg | hg <;> rcases hdich h' with hh' | hh'
+          · rw [if_pos hg, if_pos hh', if_pos (hcc g h' hg hh'), one_mul]
+          · rw [if_pos hg, if_neg fun hc => hexcl h' hc hh',
+              if_neg fun hc => hexcl (g * h') hc (hca g h' hg hh'), one_mul]
+          · rw [if_neg fun hc => hexcl g hc hg, if_pos hh',
+              if_neg fun hc => hexcl (g * h') hc (hac g h' hg hh'), mul_one]
+          · rw [if_neg fun hc => hexcl g hc hg,
+              if_neg fun hc => hexcl h' hc hh',
+              if_pos (haa g h' hg hh')]
+            decide }
+    have hθ'apply : ∀ g : Γ ℚ, θ' g =
+        if (u g).val * f = f * (u g).val then 1
+        else Multiplicative.ofAdd (1 : ZMod 2) := fun g => rfl
+    have hω : Multiplicative.ofAdd (1 : ZMod 2) ≠ 1 := by decide
+    have hy2 : ∀ y : Multiplicative (ZMod 2),
+        y = 1 ∨ y = Multiplicative.ofAdd (1 : ZMod 2) := by decide
+    have hsurj' : Function.Surjective θ' := by
+      intro y
+      rcases hy2 y with rfl | rfl
+      · exact ⟨1, map_one θ'⟩
+      · refine ⟨p, ?_⟩
+        rw [hθ'apply p, if_neg fun hc => hexcl p hc hp]
+    have htriv'' : ∀ g : Γ ℚ, ρ g = 1 → θ' g = 1 := by
+      intro g hg
+      rw [hθ'apply g, if_pos (by rw [huone g hg, one_mul, mul_one])]
+    refine ⟨θ', hsurj', htriv'', v, hv0, ?_⟩
+    intro g hg
+    have hcg : (u g).val * f = f * (u g).val := by
+      by_contra hc
+      rw [hθ'apply g, if_neg hc] at hg
+      exact hω hg
+    have hswap : (f - t • 1) * (u g).val = (u g).val * (f - t • 1) := by
+      rw [sub_mul, mul_sub, smul_mul_assoc, one_mul, mul_smul_comm, mul_one, hcg]
+    have hwker : Matrix.mulVec (f - t • 1) (Matrix.mulVec (u g).val v) = 0 := by
+      rw [Matrix.mulVec_mulVec, hswap, ← Matrix.mulVec_mulVec, hvker,
+        Matrix.mulVec_zero]
+    exact exists_smul_eq_of_mulVec_eq_zero hfns hvker hwker hv0
+
+set_option maxHeartbeats 1000000 in
+/-- **The Serre/Tate elimination, dihedral ray-class computation with
+an explicit eigenvector** (sorry node — the per-field
+class-field-theoretic core of the dihedral case, restated 2026-07-23
+with the stable-line datum as an explicit HYPOTHESIS so that the
+statement is sound in the Klein-four sub-case; the character `θ'`
+here is the possibly SWITCHED character produced by
+`exists_index_two_common_eigenvector`, and `K = ℚ(x)`, `x = √d`,
+`d ∈ {-1, 2, -2, 3, -3, 6, -6}` is ITS quadratic field, re-cut by
+`exists_sqrt_of_quadratic_character_unramified_outside_two_three`).
+
+Intended content (Serre's mod-3 analogue, in the style of §5 of the
+Duke 1987 paper, of Tate's 2-adic letter argument), per fixed `d`:
+the common eigenvector `v` of `u` on `ker θ' = Γ_K` defines the
+eigenvalue character `χ : Γ_K → (Dickson.K 3)ˣ`; for `σ ∉ Γ_K` the
+vector `w = u σ • v` is independent of `v` (absolute irreducibility),
+`Γ_K` acts diagonally on the basis `(v, w)` — by `χ` and by the
+conjugate `χ^σ` — and elements outside `Γ_K` act antidiagonally, so
+`ρ ≅ Ind_{Γ_K}^{Γ_ℚ} χ` with `χ ≠ χ^σ` (else a stable line exists,
+contradicting `habs`); the hardly-ramified constraints bound the
+conductor of `χ`: trivial outside primes over `{2, 3}`, at `2` the
+inertia acts through `ρ` by unipotents (cyclotomic determinant is
+unramified at `2` and the tame-at-2 quotient is unramified), and a
+nontrivial unipotent has trace `2 ≠ 0` while antidiagonal elements
+have trace `0`, so inertia at `2` lands in `Γ_K` and fixes both
+eigenlines, forcing `χ` unramified at the primes over `2`; at `3`
+flatness restricts `χ` on inertia to the Raynaud characters of level
+`≤ 2`; the class numbers of the seven fields are
+`1, 1, 1, 1, 1, 1, 2` and the ray class groups of `K` modulo the
+allowed conductors are generated by ramified classes on which
+`χ/χ^σ` is forced to vanish, so `χ = χ^σ` — contradiction. -/
+theorem serre_elimination_dihedral_ray_class_of_eigenvector {k : Type u}
+    [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (habs : Slop.OddRep.IsAbsolutelyIrreducible
+      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V))
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (θ' : Γ ℚ →* Multiplicative (ZMod 2))
+    (hθ'surj : Function.Surjective θ')
+    (htriv' : ∀ g : Γ ℚ, ρ g = 1 → θ' g = 1)
+    (v : Fin 2 → Dickson.K 3) (hv : v ≠ 0)
+    (heig : ∀ g : Γ ℚ, θ' g = 1 → ∃ c : Dickson.K 3,
+      Matrix.mulVec ((u g : GL (Fin 2) (Dickson.K 3)) :
+        Matrix (Fin 2) (Fin 2) (Dickson.K 3)) v = c • v)
+    (d : ℤ)
+    (hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6)
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
+    (hθ'x : ∀ g : Γ ℚ, θ' g = 1 ↔ g x = x) :
+    False := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
 /-- **The Serre/Tate elimination, dihedral ray-class computation**
-(sorry node — the per-field class-field-theoretic core of the
-dihedral case, isolated 2026-07-22 behind the quadratic-field
-classification `exists_sqrt_of_quadratic_character_unramified_outside_two_three`):
-the dihedral situation of `serre_elimination_dihedral_arith`, with the
-quadratic field made explicit as `K = ℚ(x)`, `x = √d`,
-`d ∈ {-1, 2, -2, 3, -3, 6, -6}`, is contradictory. Intended content
-(Serre's mod-3 analogue, in the style of §5 of the Duke 1987 paper,
-of Tate's 2-adic letter argument), per fixed `d`: the trace-zero and
-projective-commutation hypotheses make `ρ` induced from a character
-`χ` of `Γ_K = {g | g x = x}` (`ρ ≅ Ind_{Γ_K}^{Γ_ℚ} χ`, absolutely
-irreducible so `χ ≠ χ^σ` for `σ` the nontrivial coset); the
-hardly-ramified constraints bound the conductor of `χ`: trivial
-outside primes over `{2, 3}`, at `2` the inertia acts unipotently
-(order `1` or `3`), at `3` flatness restricts `χ` on inertia to the
-Raynaud characters of level `≤ 2`; the class numbers of the seven
-fields are `1, 1, 1, 1, 1, 1, 2` and the ray class groups of `K`
-modulo the allowed conductors are generated by ramified classes on
-which `χ/χ^σ` is forced to vanish, so `χ = χ^σ` — contradiction. -/
+(DECOMPOSED 2026-07-23 into the two sorry nodes above — the
+common-eigenvector dichotomy `exists_index_two_common_eigenvector`
+(which may SWITCH the quadratic character, as required by the
+Klein-four projective sub-case where `ρ|_{ker θ}` is irreducible) and
+the eigenvector-explicit per-field ray-class core
+`serre_elimination_dihedral_ray_class_of_eigenvector`; the reduction
+is proven): the dihedral situation of
+`serre_elimination_dihedral_arith`, with the quadratic field made
+explicit, is contradictory. The proven reduction: the dichotomy leaf
+yields a surjective quadratic character `θ'` trivial on `ker ρ` with
+a common eigenvector of `u` on `ker θ'`; `ker θ'` is open (it
+contains the open kernel of `ρ`) and unramified outside `{2, 3}`
+(through `ρ`, exactly as in `serre_elimination_dihedral_arith`), so
+the PROVEN classification
+`exists_sqrt_of_quadratic_character_unramified_outside_two_three`
+re-cuts the possibly different quadratic field `ℚ(√d')`,
+`d' ∈ {-1, ±2, ±3, ±6}`, of `θ'`, and the ray-class leaf applied to
+`θ'` yields the contradiction. The original data `d`, `x`, `hθx` of
+`θ` itself are not consumed: the field switch may abandon them. -/
 theorem serre_elimination_dihedral_ray_class {k : Type u} [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
@@ -3177,11 +3636,54 @@ theorem serre_elimination_dihedral_ray_class {k : Type u} [Finite k] [Field k]
       LinearMap.trace k V
         ((MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V) g) = 0)
     (d : ℤ)
-    (hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6)
-    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
-    (hθx : ∀ g : Γ ℚ, θ g = 1 ↔ g x = x) :
-    False :=
-  sorry
+    (_hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6)
+    (x : AlgebraicClosure ℚ) (_hx : x ^ 2 = (d : AlgebraicClosure ℚ))
+    (_hθx : ∀ g : Γ ℚ, θ g = 1 ↔ g x = x) :
+    False := by
+  classical
+  -- the dichotomy: a common eigenvector after a possible field switch
+  obtain ⟨θ', hθ'surj, htriv', v, hv, heig⟩ :=
+    exists_index_two_common_eigenvector V hV b e u hu π hπ θ hθsurj hcomm htr
+  -- the kernel of `θ'` is open (it contains the open kernel of `ρ`)
+  let Kρ : Subgroup (Γ ℚ) :=
+    { carrier := {g | ρ g = 1}
+      one_mem' := map_one ρ
+      mul_mem' := by
+        intro a a' ha ha'
+        show ρ (a * a') = 1
+        rw [map_mul, ha, ha', mul_one]
+      inv_mem' := by
+        intro a ha
+        show ρ a⁻¹ = 1
+        have h1 : ρ a⁻¹ * ρ a = 1 := by
+          rw [← map_mul, inv_mul_cancel, map_one]
+        rwa [ha, mul_one] at h1 }
+  haveI hfinV : Finite V := Module.finite_of_finite k
+  have hKρ_open : IsOpen (Kρ : Set (Γ ℚ)) :=
+    isOpen_setOf_galoisRep_eq_one ρ hfinV
+  have hker : Kρ ≤ θ'.ker := fun g hg => MonoidHom.mem_ker.mpr (htriv' g hg)
+  have hopen : IsOpen (θ'.ker : Set (Γ ℚ)) :=
+    Subgroup.isOpen_mono hker hKρ_open
+  -- `θ'` is unramified outside `{2, 3}` (through `ρ`)
+  have hunram : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ 3 →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        θ' (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+    intro q hq hq2 hq3 σ hσ
+    apply htriv'
+    have h1 : (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat) σ = 1 :=
+      (hρ.isUnramified q hq ⟨hq2, hq3⟩).localInertiaGroup_le hσ
+    rw [GaloisRep.toLocal_apply] at h1
+    convert h1 using 4
+    exact Subsingleton.elim _ _
+  -- the classification re-cuts the (possibly switched) quadratic field
+  obtain ⟨d', hd', x', hx', hθ'x'⟩ :=
+    exists_sqrt_of_quadratic_character_unramified_outside_two_three
+      θ' hθ'surj hopen hunram
+  -- the per-field ray-class computation on the switched character
+  exact serre_elimination_dihedral_ray_class_of_eigenvector V hV hρ habs
+    b e u hu θ' hθ'surj htriv' v hv heig d' hd' x' hx' hθ'x'
 
 set_option maxHeartbeats 1000000 in
 /-- **The Serre/Tate elimination, dihedral arithmetic** (DECOMPOSED
