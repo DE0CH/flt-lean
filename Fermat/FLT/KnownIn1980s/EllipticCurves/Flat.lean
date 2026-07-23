@@ -43,6 +43,12 @@ public import Mathlib.RingTheory.HopfAlgebra.Convolution
 -- `IsGalois.normalBasis`: the Dedekind-matrix inversion step of the
 -- Galois-descent core `galoisEquivariant_mem_span`
 import Mathlib.FieldTheory.Galois.NormalBasis
+-- flat + unramified + finitely presented ⟹ étale
+-- (`Algebra.Etale.of_formallyUnramified_of_flat`): the assembly of
+-- `integralClosure_etale_of_inertia_fixes_field`
+import Mathlib.RingTheory.Smooth.Fiber
+-- torsion-free ⟹ flat over a Dedekind domain: the same assembly
+import Mathlib.RingTheory.Flat.TorsionFree
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
 
 /-!
@@ -4135,25 +4141,47 @@ theorem integralClosureMul_injective
         hzero)).map (algebraMap K (K ⊗[R] (integralClosure R HK)))
   exact (hu.mul_right_eq_zero).mp hrh
 
-/-- **Étaleness of the integral closure under inertia-fixed embeddings** (sorry
-node; the DVR-Galois core of the single-factor leaf, isolated 2026-07-23 — the
-finiteness of the integral closure and the form equivalence via the canonical
-multiplication map are PROVEN in
-`exists_finite_etale_algebra_form_of_inertia_fixes_field`): for a finite
-separable field extension `L/K`, all of whose embeddings into `Kˢᵉᵖ` are fixed
-by every inertia subgroup above `R`, the integral closure of `R` in `L` is
-étale over `R`. Intended proof: finite presentation is Noetherian-automatic
-(the closure is module-finite over `R` by separability); for formal
-étaleness, the closure is flat (torsion-free over the DVR `R`) and it remains
-to see it is unramified: the inertia hypothesis places each embedding
-`L → Kˢᵉᵖ` inside the inertia field of every extension of the valuation of `R`
-to `Kˢᵉᵖ`, so for every prime `𝔮` above `𝔪 = (π)` the extension of complete
-local fields is inertia-trivial, i.e. `e(𝔮/𝔪) = 1` with separable residue
+/-- **Unramifiedness of the integral closure under inertia-fixed embeddings**
+(sorry node; the pure ramification-theoretic content of the DVR-Galois core,
+isolated 2026-07-24 — the étale upgrade from unramifiedness is PROVEN in
+`integralClosure_etale_of_inertia_fixes_field` below): for a finite separable
+field extension `L/K`, all of whose embeddings into `Kˢᵉᵖ` are fixed by every
+inertia subgroup above `R`, the integral closure of `R` in `L` is formally
+unramified over `R`. Intended proof: the inertia hypothesis places each
+embedding `L → Kˢᵉᵖ` inside the inertia field of every extension of the
+valuation of `R` to `Kˢᵉᵖ`, so for every prime `𝔮` above `𝔪 = (π)` the local
+extension is inertia-trivial, i.e. `e(𝔮/𝔪) = 1` with separable residue
 extension (Neukirch I.9/II.9, Serre *Local Fields* I–II); hence `π` generates
-the maximal ideal at every `𝔮` and `𝔪`-fibre is a finite product of separable
-residue field extensions, which is `Algebra.FormallyUnramified`; finally
-flat + unramified + finitely presented over the DVR is étale (fibrewise
-smoothness of dimension zero). -/
+the maximal ideal at every `𝔮` and the `𝔪`-fibre
+`integralClosure R L ⧸ 𝔪 (integralClosure R L)` is a finite product of finite
+separable residue field extensions, which is formally unramified over the
+residue field of `R`; unramifiedness then descends along the fibre
+(`Algebra.FormallyUnramified` is a fibrewise condition for module-finite
+algebras — the Kähler differentials are a finite module, so vanishing is
+detected modulo `𝔪` by Nakayama). -/
+theorem integralClosure_formallyUnramified_of_inertia_fixes_field
+    (L : Type u) [Field L] [Algebra K L]
+    [Module.Finite K L] [Algebra.IsSeparable K L]
+    [Algebra R L] [IsScalarTower R K L]
+    (hfix : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ σ ∈ 𝒪.inertiaSubgroup K, ∀ φ : L →ₐ[K] Ksep,
+        (σ : Ksep ≃ₐ[K] Ksep).toAlgHom.comp φ = φ) :
+    Algebra.FormallyUnramified R (integralClosure R L) :=
+  sorry
+
+/-- **Étaleness of the integral closure under inertia-fixed embeddings**
+(DECOMPOSED 2026-07-24 into the ramification-theoretic core
+`integralClosure_formallyUnramified_of_inertia_fixes_field`; the assembly
+below is PROVEN): for a finite separable field extension `L/K`, all of whose
+embeddings into `Kˢᵉᵖ` are fixed by every inertia subgroup above `R`, the
+integral closure of `R` in `L` is étale over `R`. Assembly: finite
+presentation is Noetherian-automatic (the closure is module-finite over `R`
+by separability, `IsIntegralClosure.finite`); the closure is torsion-free
+(it embeds in the field `L`, into which `R` injects), hence flat over the
+Dedekind domain `R`; and flat + unramified + finitely presented is étale
+(`Algebra.Etale.of_formallyUnramified_of_flat` — fibrewise smoothness of
+dimension zero). -/
 theorem integralClosure_etale_of_inertia_fixes_field
     (L : Type u) [Field L] [Algebra K L]
     [Module.Finite K L] [Algebra.IsSeparable K L]
@@ -4162,8 +4190,25 @@ theorem integralClosure_etale_of_inertia_fixes_field
       (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
       ∀ σ ∈ 𝒪.inertiaSubgroup K, ∀ φ : L →ₐ[K] Ksep,
         (σ : Ksep ≃ₐ[K] Ksep).toAlgHom.comp φ = φ) :
-    Algebra.Etale R (integralClosure R L) :=
-  sorry
+    Algebra.Etale R (integralClosure R L) := by
+  -- module-finiteness, hence finite presentation over the Noetherian `R`
+  haveI hfin : Module.Finite R (integralClosure R L) :=
+    IsIntegralClosure.finite R K L (integralClosure R L)
+  haveI hfp : Algebra.FinitePresentation R (integralClosure R L) :=
+    Algebra.FinitePresentation.of_finiteType.mp inferInstance
+  -- torsion-freeness: the closure embeds in `L`, into which `R` injects
+  have hinjL : Function.Injective (algebraMap R L) := by
+    rw [IsScalarTower.algebraMap_eq R K L]
+    exact (algebraMap K L).injective.comp (IsFractionRing.injective R K)
+  haveI hnz : Module.IsTorsionFree R (integralClosure R L) :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr
+      fun a b hab => hinjL (congrArg Subtype.val hab)
+  -- flatness over the Dedekind domain `R`
+  haveI hflat : Module.Flat R (integralClosure R L) := inferInstance
+  -- unramifiedness: the sorried ramification-theoretic core
+  haveI := integralClosure_formallyUnramified_of_inertia_fixes_field R K Ksep
+    L hfix
+  exact Algebra.Etale.of_formallyUnramified_of_flat
 
 /-- **Unramified finite separable field extensions have finite étale `R`-forms**
 (DECOMPOSED 2026-07-23 into the étaleness core
