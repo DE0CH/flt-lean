@@ -3118,21 +3118,78 @@ theorem WeierstrassCurve.torsion_flat_of_good_reduction_mul
   dsimp only
   simp [hfa σ, hfb σ, map_add]
 
+/-- **Grothendieck full faithfulness, algebra half** (sorry node; curve-free —
+the descent core of the comparison leaf
+`exists_bialgEquiv_of_torsion_points_equiv`): a `Gal(Kˢᵉᵖ/K)`-equivariant
+bijection between the `Kˢᵉᵖ`-points of two finite étale `K`-algebras is induced
+by composition with a (unique, but only existence is stated) `K`-algebra
+isomorphism. This is the full faithfulness of the Grothendieck
+anti-equivalence between finite étale `K`-algebras and finite discrete Galois
+sets. Intended proof, aligned with the `GaloisEtalePackage` section above:
+choose a finite Galois subextension `L` of `Kˢᵉᵖ` splitting both `A` and `B`
+(a compositum of the finitely many images of the finitely many points); the
+evaluation maps `A → (A →ₐ[K] Kˢᵉᵖ) → L` and `B → (B →ₐ[K] Kˢᵉᵖ) → L` land in
+the `Gal(L/K)`-equivariant functions and are isomorphisms onto them (the
+étale-algebra Gelfand transform: injective because points separate a finite
+étale algebra, surjective by the dimension count
+`dim A = #points = dim (equivariant functions)`); conjugating the second by
+the equivariant bijection `g` of the point sets identifies the two
+equivariant-function algebras, and the composite `B ≃ A` induces `g` by
+construction. -/
+theorem exists_algEquiv_of_algHom_equiv
+    (A : Type*) [CommRing A] [Algebra K A] [Module.Finite K A] [Algebra.Etale K A]
+    (B : Type*) [CommRing B] [Algebra K B] [Module.Finite K B] [Algebra.Etale K B]
+    (g : (A →ₐ[K] Ksep) ≃ (B →ₐ[K] Ksep))
+    (hg : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : A →ₐ[K] Ksep),
+      g (σ.toAlgHom.comp φ) = σ.toAlgHom.comp (g φ)) :
+    ∃ e : B ≃ₐ[K] A, ∀ φ : A →ₐ[K] Ksep, g φ = φ.comp e.toAlgHom :=
+  sorry
+
+/-- **Grothendieck full faithfulness, Hopf upgrade** (sorry node; curve-free —
+the coalgebra-compatibility core of the comparison leaf
+`exists_bialgEquiv_of_torsion_points_equiv`): a `K`-algebra isomorphism of
+finite étale Hopf `K`-algebras whose composition action on `Kˢᵉᵖ`-points
+respects the convolution unit (`hone`) and the convolution product (`hmul`) is
+automatically compatible with the comultiplications and counits, so the two
+Hopf algebras are isomorphic as bialgebras. Intended proof: points separate a
+finite étale `K`-algebra (`A ⊗[K] Kˢᵉᵖ` is split étale, so the joint kernel of
+all `φ : A →ₐ[K] Kˢᵉᵖ` is trivial), and the `Kˢᵉᵖ`-points of `HK₂ ⊗[K] HK₂`
+are exactly the pairs `Algebra.TensorProduct.lift φ ψ` of points of `HK₂`
+(`Algebra.TensorProduct.liftEquiv`, images commute in the commutative `Kˢᵉᵖ`);
+testing `comul ∘ e` against `(e ⊗ e) ∘ comul` on such a pair is, after
+unfolding `WithConv.AlgHom.convMul_def`, exactly the hypothesis `hmul`, and
+testing the counits against the unique point of `K` is `hone`; conclude with
+`BialgEquiv` built on `e.symm`. (The antipode needs no separate check: `≃ₐc`
+is a bialgebra equivalence, and antipodes are automatically preserved.) -/
+theorem exists_bialgEquiv_of_algEquiv_conv
+    (HK₁ : Type*) [CommRing HK₁] [HopfAlgebra K HK₁]
+    [Module.Finite K HK₁] [Algebra.Etale K HK₁]
+    (HK₂ : Type*) [CommRing HK₂] [HopfAlgebra K HK₂]
+    [Module.Finite K HK₂] [Algebra.Etale K HK₂]
+    (e : HK₂ ≃ₐ[K] HK₁)
+    (hone : ((1 : WithConv (HK₁ →ₐ[K] Ksep)).ofConv).comp e.toAlgHom =
+      (1 : WithConv (HK₂ →ₐ[K] Ksep)).ofConv)
+    (hmul : ∀ φ ψ : HK₁ →ₐ[K] Ksep,
+      ((WithConv.toConv φ * WithConv.toConv ψ).ofConv).comp e.toAlgHom =
+        (WithConv.toConv (φ.comp e.toAlgHom) *
+          WithConv.toConv (ψ.comp e.toAlgHom)).ofConv) :
+    Nonempty (HK₁ ≃ₐc[K] HK₂) :=
+  sorry
+
 set_option backward.isDefEq.respectTransparency false in
 omit [IsDomain R] [IsDiscreteValuationRing R] [E.IsElliptic]
   [E.HasGoodReduction R] in
-/-- **Grothendieck full faithfulness for torsion points** (sorry node; the
-COMPARISON half of the Katz–Mazur leaf, curve-generic in content): two finite
+/-- **Grothendieck full faithfulness for torsion points** (DECOMPOSED
+2026-07-23 into the two curve-free leaves above — the algebra-level full
+faithfulness `exists_algEquiv_of_algHom_equiv` and the Hopf upgrade
+`exists_bialgEquiv_of_algEquiv_conv`; the assembly below is proven): two finite
 étale Hopf `K`-algebras whose `Kˢᵉᵖ`-point groups are `Gal(Kˢᵉᵖ/K)`-equivariantly
 isomorphic to the same `m`-torsion Galois module are isomorphic as Hopf algebras.
-Intended proof: this is the full faithfulness of the Grothendieck
-anti-equivalence between finite étale Hopf `K`-algebras and finite Galois
-modules; concretely, the composite points-bijection
-`(HK₁ →ₐ[K] Kˢᵉᵖ) ≃ (HK₂ →ₐ[K] Kˢᵉᵖ)` is equivariant, so it descends through
-the equivariant-functions construction of the `GaloisEtalePackage` section
-(both algebras embed, via evaluation of points, into the equivariant functions
-on their common point group with values in a splitting subextension `L`, and
-the two images coincide because the point sets match equivariantly). -/
+The assembly composes the two point-group identifications into an equivariant
+convolution-monoid isomorphism `g` of the point sets, obtains from the algebra
+leaf an algebra isomorphism inducing `g` by composition, and feeds the
+multiplicativity and unitality of `g` (inherited from the additivity of `f₁`
+and `f₂`) to the Hopf-upgrade leaf. -/
 theorem WeierstrassCurve.exists_bialgEquiv_of_torsion_points_equiv
     (m : ℕ)
     (HK₁ : Type*) [CommRing HK₁] [HopfAlgebra K HK₁]
@@ -3149,8 +3206,61 @@ theorem WeierstrassCurve.exists_bialgEquiv_of_torsion_points_equiv
     (hf₂ : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : HK₂ →ₐ[K] Ksep),
       (f₂ (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
         Affine.Point.map σ.toAlgHom (f₂ (Additive.ofMul (WithConv.toConv φ)))) :
-    Nonempty (HK₁ ≃ₐc[K] HK₂) :=
-  sorry
+    Nonempty (HK₁ ≃ₐc[K] HK₂) := by
+  classical
+  -- the composite point-group identification, as a bijection of plain point sets
+  set gAdd : Additive (WithConv (HK₁ →ₐ[K] Ksep)) ≃+
+      Additive (WithConv (HK₂ →ₐ[K] Ksep)) := f₁.trans f₂.symm with hgAdd
+  let g : (HK₁ →ₐ[K] Ksep) ≃ (HK₂ →ₐ[K] Ksep) :=
+    ((WithConv.equiv (HK₁ →ₐ[K] Ksep)).symm.trans
+      (Additive.ofMul.trans (gAdd.toEquiv.trans
+        (Additive.toMul.trans (WithConv.equiv (HK₂ →ₐ[K] Ksep))))))
+  have gdef : ∀ φ : HK₁ →ₐ[K] Ksep,
+      g φ = (Additive.toMul (gAdd (Additive.ofMul (WithConv.toConv φ)))).ofConv :=
+    fun _ => rfl
+  -- `g` intertwines the two identifications with the torsion module
+  have hkey : ∀ φ : HK₁ →ₐ[K] Ksep,
+      f₂ (Additive.ofMul (WithConv.toConv (g φ))) =
+        f₁ (Additive.ofMul (WithConv.toConv φ)) := by
+    intro φ
+    rw [gdef, WithConv.toConv_ofConv, ofMul_toMul, hgAdd,
+      AddEquiv.trans_apply, AddEquiv.apply_symm_apply]
+  -- equivariance of `g`, from the equivariance of `f₁` and `f₂`
+  have hgequi : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : HK₁ →ₐ[K] Ksep),
+      g (σ.toAlgHom.comp φ) = σ.toAlgHom.comp (g φ) := by
+    intro σ φ
+    have h1 : f₂ (Additive.ofMul (WithConv.toConv (g (σ.toAlgHom.comp φ)))) =
+        f₂ (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp (g φ)))) := by
+      apply Subtype.ext
+      calc (f₂ (Additive.ofMul (WithConv.toConv (g (σ.toAlgHom.comp φ)))) :
+          (E⁄Ksep).Point)
+          = (f₁ (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) :
+              (E⁄Ksep).Point) := by rw [hkey]
+        _ = Affine.Point.map σ.toAlgHom
+              (f₁ (Additive.ofMul (WithConv.toConv φ))) := hf₁ σ φ
+        _ = Affine.Point.map σ.toAlgHom
+              (f₂ (Additive.ofMul (WithConv.toConv (g φ)))) := by rw [hkey]
+        _ = (f₂ (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp (g φ)))) :
+              (E⁄Ksep).Point) := (hf₂ σ (g φ)).symm
+    exact WithConv.toConv_injective (Additive.ofMul.injective (f₂.injective h1))
+  obtain ⟨e, he⟩ := exists_algEquiv_of_algHom_equiv K Ksep HK₁ HK₂ g hgequi
+  -- unitality of `g`, from `gAdd 0 = 0`
+  have hone : ((1 : WithConv (HK₁ →ₐ[K] Ksep)).ofConv).comp e.toAlgHom =
+      (1 : WithConv (HK₂ →ₐ[K] Ksep)).ofConv := by
+    rw [← he, gdef, WithConv.toConv_ofConv]
+    rw [show Additive.ofMul (1 : WithConv (HK₁ →ₐ[K] Ksep)) =
+      (0 : Additive (WithConv (HK₁ →ₐ[K] Ksep))) from rfl, map_zero]
+    rfl
+  -- multiplicativity of `g`, from the additivity of `gAdd`
+  have hmul : ∀ φ ψ : HK₁ →ₐ[K] Ksep,
+      ((WithConv.toConv φ * WithConv.toConv ψ).ofConv).comp e.toAlgHom =
+        (WithConv.toConv (φ.comp e.toAlgHom) *
+          WithConv.toConv (ψ.comp e.toAlgHom)).ofConv := by
+    intro φ ψ
+    have h₃ := (he ((WithConv.toConv φ * WithConv.toConv ψ).ofConv)).symm
+    rw [← he φ, ← he ψ, h₃]
+    simp only [gdef, WithConv.toConv_ofConv, ofMul_mul, map_add, toMul_add]
+  exact exists_bialgEquiv_of_algEquiv_conv K Ksep HK₁ HK₂ e hone hmul
 
 /-- **The Katz–Mazur flat model, mixed characteristic** (sorry node; the
 EXISTENCE half of the Katz–Mazur leaf — the flat-package statement with no
