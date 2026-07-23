@@ -1974,7 +1974,34 @@ theorem exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le
   -- mean value inequality on `[s, 3/2]`
   have hnear : ∀ s : ℝ, 1 < s → s ≤ 3 / 2 →
       ‖𝒮 (s : ℂ)‖ ≤ ‖𝒮 ((3 / 2 : ℝ) : ℂ)‖ + C / c * (1 / 2) := by
-    sorry
+    intro s hs hs32
+    have hC0 : 0 ≤ C := le_trans (norm_nonneg _)
+      (hLbounds 2 (by norm_num) le_rfl).2.1
+    have hg : ∀ x ∈ Set.Icc s (3 / 2 : ℝ),
+        HasDerivWithinAt (fun u : ℝ => 𝒮 (u : ℂ)) (deriv 𝒮 ((x : ℝ) : ℂ))
+          (Set.Icc s (3 / 2 : ℝ)) x := by
+      intro x hx
+      have hx1 : 1 < x := lt_of_lt_of_le hs hx.1
+      have hxV : ((x : ℝ) : ℂ) ∈ {w : ℂ | 1 < w.re} := by
+        simp only [Set.mem_setOf_eq, Complex.ofReal_re]
+        exact hx1
+      exact ((hdiff _ hxV).hasDerivAt).comp_ofReal.hasDerivWithinAt
+    have hbound : ∀ x ∈ Set.Ico s (3 / 2 : ℝ), ‖deriv 𝒮 ((x : ℝ) : ℂ)‖ ≤ C / c := by
+      intro x hx
+      exact hderiv x (lt_of_lt_of_le hs hx.1) (le_trans hx.2.le (by norm_num))
+    have h1 := norm_image_sub_le_of_norm_deriv_le_segment' hg hbound (3 / 2 : ℝ)
+      (Set.right_mem_Icc.mpr hs32)
+    calc ‖𝒮 (s : ℂ)‖
+        = ‖𝒮 ((3 / 2 : ℝ) : ℂ) - (𝒮 ((3 / 2 : ℝ) : ℂ) - 𝒮 (s : ℂ))‖ := by
+          rw [sub_sub_cancel]
+      _ ≤ ‖𝒮 ((3 / 2 : ℝ) : ℂ)‖ + ‖𝒮 ((3 / 2 : ℝ) : ℂ) - 𝒮 (s : ℂ)‖ :=
+          norm_sub_le _ _
+      _ ≤ ‖𝒮 ((3 / 2 : ℝ) : ℂ)‖ + C / c * (3 / 2 - s) := by
+          gcongr
+      _ ≤ ‖𝒮 ((3 / 2 : ℝ) : ℂ)‖ + C / c * (1 / 2) := by
+          have h2 : (0 : ℝ) ≤ C / c := div_nonneg hC0 hc.le
+          have h3 : (3 / 2 : ℝ) - s ≤ 1 / 2 := by linarith
+          gcongr
   -- uniform comparison of `𝒮` with the degree-one character sum: the
   -- log-Taylor remainders cost `CR`, the higher-degree places `Cnp`,
   -- and the places with `N(P) ∈ {ℓ, ℓ², …}` vanish under `χ`
