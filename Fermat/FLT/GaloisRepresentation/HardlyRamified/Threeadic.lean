@@ -2568,19 +2568,90 @@ theorem hom_vanishes_on_localInertia_at_two
   exact (hφker _).mp
     (threeTorsion_monoidHom_vanishes_on_localInertia_at_two φ hopen h3 σ hσ)
 
-/-- **The corrected trivial component dies on inertia at `3`** (sorry
-node — the flat stratum; Fontaine): for `σ` in the local inertia at
-`3`, the corrected trivial component
-`T : g ↦ (f (ρ g v₀) - f v₀) + c g * s` lands in `𝔪ⁿ⁺²`. This is the
-peu-ramifié input: modulo `𝔪ⁿ⁺²` the corrected defect along the
-trivial-quotient direction is a homomorphism cutting out a
-`3`-elementary abelian extension, and the flatness of `ρ` at `3`
-(`hρ.isFlat`, through the congruence filtration of the flat
-prolongation) forces the extension of the trivial character by itself
-inside the corresponding graded piece to be finite flat over `ℤ₃`,
-hence unramified (Fontaine's bound: a finite flat elementary
-`3`-group scheme extension of `μ`-type by étale-type over `ℤ₃` has
-étale trivial-by-trivial graded piece). -/
+/-- **The flat-prolongation core of the trivial component at `3`**
+(sorry node — the Fontaine stratum at one congruence level): given the
+finite flat prolongation of `ρ.baseChange (R ⧸ 𝔪ⁿ⁺²)` at `3`
+(hypothesis `hflat` — the single-level consequence of `hρ.isFlat` at
+the open ideal `𝔪ⁿ⁺²`), and the corrected trivial component
+`T : g ↦ (f (ρ g v₀) - f v₀) + c g * s` — an honest homomorphism
+modulo `𝔪ⁿ⁺²` (hypothesis `hThom`, PROVEN by the consumer from the
+ω-correction `hsA` and the residual multiplicativity `hcmul`) with
+values in `𝔪ⁿ⁺¹` — the value of `T` at the image of a local inertia
+element at `3` lands in `𝔪ⁿ⁺²`. Content (Fontaine/Raynaud, residue
+characteristic `3 > 2`): the trivial-by-trivial graded piece of the
+connected-étale sequence of the flat model is étale — an extension of
+étale-type by étale-type finite flat group schemes over `ℤ₃` is étale
+(its connected component meets neither the sub nor, mapping to a
+connected subscheme of an étale quotient, survives the quotient) — so
+inertia acts trivially on the corner that `T` measures. -/
+theorem flat_prolongation_trivial_component_vanishes
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (w₀ : V) (hw₀π : π ((1 : kk) ⊗ₜ[R] w₀) = 0)
+    (hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0)
+    (a : Γ ℚ → R)
+    (ha : ∀ g : Γ ℚ, ρ g w₀ - a g • w₀ ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V))
+    (c : Γ ℚ → R)
+    (hc : ∀ g : Γ ℚ, ρ g v₀ - (v₀ + c g • w₀) ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V))
+    (n : ℕ) (f : V →ₗ[R] R)
+    (hf : ∀ (g : Γ ℚ) (v : V),
+      f (ρ g v) - f v ∈ IsLocalRing.maximalIdeal R ^ (n + 1))
+    (hfv₀ : f v₀ ∉ IsLocalRing.maximalIdeal R)
+    (s : R) (hs : s ∈ IsLocalRing.maximalIdeal R ^ (n + 1))
+    (hsA : ∀ g : Γ ℚ,
+      (f (ρ g w₀) - f w₀) + (a g - 1) * s ∈
+        IsLocalRing.maximalIdeal R ^ (n + 2))
+    (hT1 : ∀ g : Γ ℚ, (f (ρ g v₀) - f v₀) + c g * s ∈
+      IsLocalRing.maximalIdeal R ^ (n + 1))
+    (hThom : ∀ g h : Γ ℚ,
+      ((f (ρ (g * h) v₀) - f v₀) + c (g * h) * s)
+        - (((f (ρ g v₀) - f v₀) + c g * s)
+          + ((f (ρ h v₀) - f v₀) + c h * s))
+        ∈ IsLocalRing.maximalIdeal R ^ (n + 2))
+    (hflat : (ρ.baseChange
+        (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).HasFlatProlongationAt
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+    (σ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))
+    (hσ : σ ∈ localInertiaGroup
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) :
+    (f (ρ (Field.absoluteGaloisGroup.map
+        (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) v₀)
+      - f v₀)
+      + c (Field.absoluteGaloisGroup.map
+        (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) * s ∈
+      IsLocalRing.maximalIdeal R ^ (n + 2) := by
+  sorry
+
+/-- **The corrected trivial component dies on inertia at `3`** (DERIVED
+2026-07-23 from the single-level flat-prolongation core — the flat
+stratum; Fontaine): for `σ` in the local inertia at `3`, the corrected
+trivial component `T : g ↦ (f (ρ g v₀) - f v₀) + c g * s` lands in
+`𝔪ⁿ⁺²`. The glue derives the homomorphism property of `T` modulo
+`𝔪ⁿ⁺²` (the twist term of the cocycle identity is cancelled by the
+ω-correction `hsA` against the residual multiplicativity `hcmul`),
+proves `𝔪ⁿ⁺²` is OPEN (`IsLocalRing.isOpen_maximalIdeal_pow` after
+transporting compactness along a `ℤ₃`-basis), extracts the finite flat
+prolongation of `ρ.baseChange (R ⧸ 𝔪ⁿ⁺²)` at `3` from `hρ.isFlat`,
+and hands everything to the core. -/
 theorem trivial_component_vanishes_on_localInertia_at_three
     {R : Type u} [CommRing R]
     [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
@@ -2628,7 +2699,66 @@ theorem trivial_component_vanishes_on_localInertia_at_three
         (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) * s ∈
       IsLocalRing.maximalIdeal R ^ (n + 2) := by
-  sorry
+  classical
+  -- values of the corrected trivial component in `𝔪ⁿ⁺¹`
+  have hT1 : ∀ g : Γ ℚ, (f (ρ g v₀) - f v₀) + c g * s ∈
+      IsLocalRing.maximalIdeal R ^ (n + 1) := fun g =>
+    Submodule.add_mem _ (hf g v₀) (Ideal.mul_mem_left _ _ hs)
+  -- the corrected trivial component is a homomorphism modulo `𝔪ⁿ⁺²`
+  have hThom : ∀ g h : Γ ℚ,
+      ((f (ρ (g * h) v₀) - f v₀) + c (g * h) * s)
+        - (((f (ρ g v₀) - f v₀) + c g * s)
+          + ((f (ρ h v₀) - f v₀) + c h * s))
+        ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+    intro g h
+    have hsplit : ((f (ρ (g * h) v₀) - f v₀) + c (g * h) * s)
+          - (((f (ρ g v₀) - f v₀) + c g * s)
+            + ((f (ρ h v₀) - f v₀) + c h * s))
+        = c h * ((f (ρ g w₀) - f w₀) + (a g - 1) * s)
+          + (((f.comp (ρ g : V →ₗ[R] V)) - f) (ρ h v₀ - (v₀ + c h • w₀))
+            + (c (g * h) - (c g + a g * c h)) * s) := by
+      rw [show ρ (g * h) v₀ = ρ g (ρ h v₀) from by rw [map_mul]; rfl]
+      simp only [LinearMap.sub_apply, LinearMap.comp_apply, map_sub,
+        map_add, map_smul, smul_eq_mul]
+      ring
+    rw [hsplit]
+    refine Submodule.add_mem _ (Ideal.mul_mem_left _ _ (hsA g))
+      (Submodule.add_mem _ ?_ ?_)
+    · have hDv : ∀ v : V,
+          ((f.comp (ρ g : V →ₗ[R] V)) - f) v
+            ∈ IsLocalRing.maximalIdeal R ^ (n + 1) := by
+        intro v
+        simpa only [LinearMap.sub_apply, LinearMap.comp_apply] using hf g v
+      have h2 := linearMap_apply_mem_mul_of_forall_mem _ hDv (hc h)
+      rwa [← pow_succ'] at h2
+    · have h2 := Ideal.mul_mem_mul (hcmul g h) hs
+      rwa [← pow_succ'] at h2
+  -- `𝔪ⁿ⁺²` is open: transport compactness along a `ℤ₃`-basis
+  haveI hNoeth : IsNoetherianRing R := IsNoetherianRing.of_finite ℤ_[3] R
+  let eR : R ≃ₗ[ℤ_[3]] (Module.Free.ChooseBasisIndex ℤ_[3] R → ℤ_[3]) :=
+    (Module.Free.chooseBasis ℤ_[3] R).equivFun
+  have hcont₁ : Continuous eR :=
+    IsModuleTopology.continuous_of_linearMap eR.toLinearMap
+  have hcont₂ : Continuous eR.symm :=
+    IsModuleTopology.continuous_of_linearMap eR.symm.toLinearMap
+  let homR : R ≃ₜ (Module.Free.ChooseBasisIndex ℤ_[3] R → ℤ_[3]) :=
+    { toEquiv := eR.toEquiv
+      continuous_toFun := hcont₁
+      continuous_invFun := hcont₂ }
+  haveI : CompactSpace R := homR.symm.compactSpace
+  haveI : T2Space R := homR.symm.symm.isEmbedding.t2Space
+  have hIopen : IsOpen
+      ((IsLocalRing.maximalIdeal R ^ (n + 2) : Ideal R) : Set R) :=
+    IsLocalRing.isOpen_maximalIdeal_pow R (n + 2)
+  -- the finite flat prolongation at the congruence level `n + 2`
+  have hflat : (ρ.baseChange
+      (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).HasFlatProlongationAt
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat :=
+    hρ.isFlat.cond (IsLocalRing.maximalIdeal R ^ (n + 2)) hIopen
+  -- the single-level core closes the node
+  exact flat_prolongation_trivial_component_vanishes V hV hρ kk hsurj π
+    hπsurj hπequiv v₀ hv₀ w₀ hw₀π hw₀ne a ha c hc n f hf hfv₀ s hs hsA
+    hT1 hThom hflat σ hσ
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The approximate-homomorphism vanishing** (DERIVED 2026-07-23 —
