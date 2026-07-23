@@ -11629,7 +11629,339 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
     -- whence `z² = 1` (see HLEG-NOTES.md §3(a); the mutual-genericity
     -- selection runs through the Frobenius-fixed-subfield lattice)
     have hswap : ∀ x, e x x * e x x = 1 := by
-      sorry
+      -- Two admissible setups for the pair `(x, x)` built from two
+      -- mutually generic deep translates `R₂`, `R₃` (Frobenius levels
+      -- `ℓ₂ ≠ ℓ₃`, two large primes beyond the `P`-degree) SHARING the
+      -- two Miller generators `a₂, a₃`: the two value equations have
+      -- identical atoms with the two sides exchanged, whence `z² = 1`.
+      -- See HLEG-NOTES.md §3(a).  The selection below is real code; the
+      -- residual sorry `hswapkey` is the witness packaging (build the
+      -- two `IsWeilValue` witnesses on this configuration, pin the
+      -- value with `heuniq`, nonvanishing by `hoffdiv`/`hevvert`).
+      intro x
+      rcases hcx : x.val with _ | ⟨xP, yP, hP₀⟩
+      · rw [hdegval x x (Or.inl (hcx.trans
+          WeierstrassCurve.Affine.Point.zero_def.symm)), one_mul]
+      have hP : Wb.toAffine.Nonsingular xP yP := hP₀
+      have hvp : (p : ℤ) • (WeierstrassCurve.Affine.Point.some xP yP hP :
+          Wb.toAffine.Point) = 0 := by
+        have h := (Submodule.mem_torsionBy_iff _ _).mp x.2
+        rw [hcx] at h
+        exact h
+      -- the base field `F := K(2m)`, `m` the canonical doubled-slot
+      -- `P`-degree of the `IsWeilValue` promise
+      set m : ℕ := Nat.lcm (Nat.lcm (frobPeriod q xP) (frobPeriod q yP))
+        (Nat.lcm (frobPeriod q xP) (frobPeriod q yP)) with hmdef
+      have hm0 : m ≠ 0 := by
+        rw [hmdef]
+        exact Nat.lcm_ne_zero
+          (Nat.lcm_ne_zero (frobPeriod_pos q xP).ne' (frobPeriod_pos q yP).ne')
+          (Nat.lcm_ne_zero (frobPeriod_pos q xP).ne' (frobPeriod_pos q yP).ne')
+      have h2m0 : 2 * m ≠ 0 := Nat.mul_ne_zero two_ne_zero hm0
+      have h4m0 : 2 * (2 * m) ≠ 0 := Nat.mul_ne_zero two_ne_zero h2m0
+      have hmdvd : Nat.lcm (frobPeriod q xP) (frobPeriod q yP) ∣ m := by
+        rw [hmdef]
+        exact Nat.dvd_lcm_left _ _
+      have hxPF : xP ∈ frobFixed q (2 * m) :=
+        (mem_frobFixed_iff_frobPeriod_dvd q).mpr
+          (Dvd.dvd.mul_left ((Nat.dvd_lcm_left _ _).trans hmdvd) 2)
+      have hyPF : yP ∈ frobFixed q (2 * m) :=
+        (mem_frobFixed_iff_frobPeriod_dvd q).mpr
+          (Dvd.dvd.mul_left ((Nat.dvd_lcm_right _ _).trans hmdvd) 2)
+      have hnegP : Wb.toAffine.Nonsingular xP (Wb.toAffine.negY xP yP) :=
+        (WeierstrassCurve.Affine.nonsingular_neg xP yP).mpr hP
+      -- the two prime levels: beyond `2·(2m)` and `q`, and distinct
+      obtain ⟨ℓ₂, hℓ₂p, hℓ₂gt, hℓ₂pow⟩ :=
+        exists_prime_lt_pow q (max (2 * (2 * m)) q)
+      have h4mℓ₂ : 2 * (2 * m) < ℓ₂ := lt_of_le_of_lt (le_max_left _ _) hℓ₂gt
+      obtain ⟨ℓ₃, hℓ₃p, hℓ₃gt, hℓ₃pow⟩ :=
+        exists_prime_lt_pow q (max (max (2 * (2 * m)) q) ℓ₂)
+      have h4mℓ₃ : 2 * (2 * m) < ℓ₃ :=
+        lt_of_le_of_lt ((le_max_left _ _).trans (le_max_left _ _)) hℓ₃gt
+      have hcop : Nat.Coprime ℓ₂ ℓ₃ := (Nat.coprime_primes hℓ₂p hℓ₃p).mpr
+        (Nat.ne_of_lt (lt_of_le_of_lt (le_max_right _ _) hℓ₃gt))
+      -- the deep translate `R₂` at level `ℓ₂`
+      obtain ⟨xR₂, yR₂, hR₂, hxR₂ℓ, hxR₂1, -, hyR₂2ℓ⟩ :=
+        exists_nonsingular_frobFixed q Wb.toAffine
+          (fun x' y' h' =>
+            (WeierstrassCurve.Affine.equation_iff_nonsingular).mp h')
+          (haF _).1 (haF _).2.1 (haF _).2.2.1 (haF _).2.2.2.1 (haF _).2.2.2.2
+          hℓ₂p ∅ (by simpa using lt_of_le_of_lt (le_max_right _ _) hℓ₂pow)
+      have hper₂ : frobPeriod q xR₂ = ℓ₂ :=
+        frobPeriod_eq_prime q hℓ₂p hxR₂ℓ hxR₂1
+      have hxR₂F : xR₂ ∉ frobFixed q (2 * m) := fun hmem =>
+        absurd (frobPeriod_le_of_mem q h2m0 hmem) (by rw [hper₂]; omega)
+      have hxR₂F'A : xR₂ ∈ frobFixed q (2 * m * ℓ₂) :=
+        frobFixed_le_frobFixed q (dvd_mul_left ℓ₂ (2 * m)) hxR₂ℓ
+      have hyR₂F'A : yR₂ ∈ frobFixed q (2 * m * ℓ₂) :=
+        frobFixed_le_frobFixed q ⟨m, by ring⟩ hyR₂2ℓ
+      have hFleF'A : frobFixed q (2 * m) ≤ frobFixed q (2 * m * ℓ₂) :=
+        frobFixed_le_frobFixed q ⟨ℓ₂, rfl⟩
+      -- `P ⊕ R₂`, with explicit coordinates
+      have hne₂ : ¬(xP = xR₂ ∧ yP = Wb.toAffine.negY xR₂ yR₂) := fun hcon =>
+        hxR₂F (hcon.1 ▸ hxPF)
+      set xP₂ : AlgebraicClosure (ZMod q) :=
+        Wb.toAffine.addX xP xR₂ (Wb.toAffine.slope xP xR₂ yP yR₂) with hxP₂def
+      set yP₂ : AlgebraicClosure (ZMod q) :=
+        Wb.toAffine.addY xP xR₂ yP (Wb.toAffine.slope xP xR₂ yP yR₂) with hyP₂def
+      have hP₂ : Wb.toAffine.Nonsingular xP₂ yP₂ :=
+        WeierstrassCurve.Affine.nonsingular_add hP hR₂ hne₂
+      have hcP₂ : WeierstrassCurve.Affine.Point.some xP yP hP +
+          WeierstrassCurve.Affine.Point.some xR₂ yR₂ hR₂ =
+          WeierstrassCurve.Affine.Point.some xP₂ yP₂ hP₂ :=
+        WeierstrassCurve.Affine.Point.add_some (h₁ := hP) (h₂ := hR₂) hne₂
+      have hslope₂ : Wb.toAffine.slope xP xR₂ yP yR₂ ∈
+          frobFixed q (2 * m * ℓ₂) :=
+        hslopeF _ _ _ _ _ (hFleF'A hxPF) hxR₂F'A (hFleF'A hyPF) hyR₂F'A
+      have hxP₂F'A : xP₂ ∈ frobFixed q (2 * m * ℓ₂) := by
+        rw [hxP₂def]
+        exact haddXF _ _ _ _ (hFleF'A hxPF) hxR₂F'A hslope₂
+      have hyP₂F'A : yP₂ ∈ frobFixed q (2 * m * ℓ₂) := by
+        rw [hyP₂def]
+        exact haddYF _ _ _ _ _ (hFleF'A hxPF) hxR₂F'A (hFleF'A hyPF) hslope₂
+      -- `x(P⊕R₂) ∉ F`: otherwise `R₂ = ⊖P ⊕ (P⊕R₂)` would have abscissa
+      -- in `K(2·2m)`, contradicting its Frobenius period `ℓ₂ > 2·(2m)`
+      have hxP₂F : xP₂ ∉ frobFixed q (2 * m) := by
+        intro hmem
+        have hyquad : yP₂ ^ 2 + (Wb.toAffine.a₁ * xP₂ + Wb.toAffine.a₃) *
+            yP₂ + -(xP₂ ^ 3 + Wb.toAffine.a₂ * xP₂ ^ 2 +
+              Wb.toAffine.a₄ * xP₂ + Wb.toAffine.a₆) = 0 := by
+          have heq := (Wb.toAffine.equation_iff xP₂ yP₂).mp hP₂.left
+          linear_combination heq
+        have hyP₂4m : yP₂ ∈ frobFixed q (2 * (2 * m)) :=
+          mem_frobFixed_two_mul_of_quadratic q
+            (add_mem (mul_mem (haF _).1 hmem) (haF _).2.2.1)
+            (neg_mem (add_mem (add_mem (add_mem (pow_mem hmem 3)
+              (mul_mem (haF _).2.1 (pow_mem hmem 2)))
+              (mul_mem (haF _).2.2.2.1 hmem)) (haF _).2.2.2.2))
+            hyquad
+        have hK4 : frobFixed q (2 * m) ≤ frobFixed q (2 * (2 * m)) :=
+          frobFixed_le_frobFixed q ⟨2, by ring⟩
+        have hR₂eq : WeierstrassCurve.Affine.Point.some xP
+            (Wb.toAffine.negY xP yP) hnegP +
+            WeierstrassCurve.Affine.Point.some xP₂ yP₂ hP₂ =
+            WeierstrassCurve.Affine.Point.some xR₂ yR₂ hR₂ := by
+          rw [show (WeierstrassCurve.Affine.Point.some xP
+              (Wb.toAffine.negY xP yP) hnegP : Wb.toAffine.Point) =
+              -(WeierstrassCurve.Affine.Point.some xP yP hP) from
+              (WeierstrassCurve.Affine.Point.neg_some hP).symm,
+            ← hcP₂, neg_add_cancel_left]
+        have hne' : ¬(xP = xP₂ ∧ Wb.toAffine.negY xP yP =
+            Wb.toAffine.negY xP₂ yP₂) := by
+          intro hcon
+          rw [WeierstrassCurve.Affine.Point.add_of_Y_eq hcon.1 hcon.2]
+            at hR₂eq
+          exact WeierstrassCurve.Affine.Point.some_ne_zero hR₂ hR₂eq.symm
+        rw [WeierstrassCurve.Affine.Point.add_some (h₁ := hnegP) (h₂ := hP₂)
+          hne'] at hR₂eq
+        injection hR₂eq with hxR₂eq hyR₂eq
+        have hbound : xR₂ ∈ frobFixed q (2 * (2 * m)) := by
+          rw [← hxR₂eq]
+          exact haddXF _ _ _ _ (hK4 hxPF) (hK4 hmem)
+            (hslopeF _ _ _ _ _ (hK4 hxPF) (hK4 hmem)
+              (hnegYF _ _ _ (hK4 hxPF) (hK4 hyPF)) hyP₂4m)
+        exact absurd (frobPeriod_le_of_mem q h4m0 hbound)
+          (by rw [hper₂]; omega)
+      -- the deep translate `R₃` at level `ℓ₃`, mirror of the above
+      have hqpow₃ : q + (∅ : Finset (AlgebraicClosure (ZMod q))).card <
+          q ^ ℓ₃ := by
+        simpa using lt_of_le_of_lt
+          ((le_max_right _ _).trans (le_max_left _ _)) hℓ₃pow
+      obtain ⟨xR₃, yR₃, hR₃, hxR₃ℓ, hxR₃1, -, hyR₃2ℓ⟩ :=
+        exists_nonsingular_frobFixed q Wb.toAffine
+          (fun x' y' h' =>
+            (WeierstrassCurve.Affine.equation_iff_nonsingular).mp h')
+          (haF _).1 (haF _).2.1 (haF _).2.2.1 (haF _).2.2.2.1 (haF _).2.2.2.2
+          hℓ₃p ∅ hqpow₃
+      have hper₃ : frobPeriod q xR₃ = ℓ₃ :=
+        frobPeriod_eq_prime q hℓ₃p hxR₃ℓ hxR₃1
+      have hxR₃F : xR₃ ∉ frobFixed q (2 * m) := fun hmem =>
+        absurd (frobPeriod_le_of_mem q h2m0 hmem) (by rw [hper₃]; omega)
+      have hxR₃F'B : xR₃ ∈ frobFixed q (2 * m * ℓ₃) :=
+        frobFixed_le_frobFixed q (dvd_mul_left ℓ₃ (2 * m)) hxR₃ℓ
+      have hyR₃F'B : yR₃ ∈ frobFixed q (2 * m * ℓ₃) :=
+        frobFixed_le_frobFixed q ⟨m, by ring⟩ hyR₃2ℓ
+      have hFleF'B : frobFixed q (2 * m) ≤ frobFixed q (2 * m * ℓ₃) :=
+        frobFixed_le_frobFixed q ⟨ℓ₃, rfl⟩
+      have hne₃ : ¬(xP = xR₃ ∧ yP = Wb.toAffine.negY xR₃ yR₃) := fun hcon =>
+        hxR₃F (hcon.1 ▸ hxPF)
+      set xP₃ : AlgebraicClosure (ZMod q) :=
+        Wb.toAffine.addX xP xR₃ (Wb.toAffine.slope xP xR₃ yP yR₃) with hxP₃def
+      set yP₃ : AlgebraicClosure (ZMod q) :=
+        Wb.toAffine.addY xP xR₃ yP (Wb.toAffine.slope xP xR₃ yP yR₃) with hyP₃def
+      have hP₃ : Wb.toAffine.Nonsingular xP₃ yP₃ :=
+        WeierstrassCurve.Affine.nonsingular_add hP hR₃ hne₃
+      have hcP₃ : WeierstrassCurve.Affine.Point.some xP yP hP +
+          WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃ =
+          WeierstrassCurve.Affine.Point.some xP₃ yP₃ hP₃ :=
+        WeierstrassCurve.Affine.Point.add_some (h₁ := hP) (h₂ := hR₃) hne₃
+      have hslope₃ : Wb.toAffine.slope xP xR₃ yP yR₃ ∈
+          frobFixed q (2 * m * ℓ₃) :=
+        hslopeF _ _ _ _ _ (hFleF'B hxPF) hxR₃F'B (hFleF'B hyPF) hyR₃F'B
+      have hxP₃F'B : xP₃ ∈ frobFixed q (2 * m * ℓ₃) := by
+        rw [hxP₃def]
+        exact haddXF _ _ _ _ (hFleF'B hxPF) hxR₃F'B hslope₃
+      have hyP₃F'B : yP₃ ∈ frobFixed q (2 * m * ℓ₃) := by
+        rw [hyP₃def]
+        exact haddYF _ _ _ _ _ (hFleF'B hxPF) hxR₃F'B (hFleF'B hyPF) hslope₃
+      have hxP₃F : xP₃ ∉ frobFixed q (2 * m) := by
+        intro hmem
+        have hyquad : yP₃ ^ 2 + (Wb.toAffine.a₁ * xP₃ + Wb.toAffine.a₃) *
+            yP₃ + -(xP₃ ^ 3 + Wb.toAffine.a₂ * xP₃ ^ 2 +
+              Wb.toAffine.a₄ * xP₃ + Wb.toAffine.a₆) = 0 := by
+          have heq := (Wb.toAffine.equation_iff xP₃ yP₃).mp hP₃.left
+          linear_combination heq
+        have hyP₃4m : yP₃ ∈ frobFixed q (2 * (2 * m)) :=
+          mem_frobFixed_two_mul_of_quadratic q
+            (add_mem (mul_mem (haF _).1 hmem) (haF _).2.2.1)
+            (neg_mem (add_mem (add_mem (add_mem (pow_mem hmem 3)
+              (mul_mem (haF _).2.1 (pow_mem hmem 2)))
+              (mul_mem (haF _).2.2.2.1 hmem)) (haF _).2.2.2.2))
+            hyquad
+        have hK4 : frobFixed q (2 * m) ≤ frobFixed q (2 * (2 * m)) :=
+          frobFixed_le_frobFixed q ⟨2, by ring⟩
+        have hR₃eq : WeierstrassCurve.Affine.Point.some xP
+            (Wb.toAffine.negY xP yP) hnegP +
+            WeierstrassCurve.Affine.Point.some xP₃ yP₃ hP₃ =
+            WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃ := by
+          rw [show (WeierstrassCurve.Affine.Point.some xP
+              (Wb.toAffine.negY xP yP) hnegP : Wb.toAffine.Point) =
+              -(WeierstrassCurve.Affine.Point.some xP yP hP) from
+              (WeierstrassCurve.Affine.Point.neg_some hP).symm,
+            ← hcP₃, neg_add_cancel_left]
+        have hne' : ¬(xP = xP₃ ∧ Wb.toAffine.negY xP yP =
+            Wb.toAffine.negY xP₃ yP₃) := by
+          intro hcon
+          rw [WeierstrassCurve.Affine.Point.add_of_Y_eq hcon.1 hcon.2]
+            at hR₃eq
+          exact WeierstrassCurve.Affine.Point.some_ne_zero hR₃ hR₃eq.symm
+        rw [WeierstrassCurve.Affine.Point.add_some (h₁ := hnegP) (h₂ := hP₃)
+          hne'] at hR₃eq
+        injection hR₃eq with hxR₃eq hyR₃eq
+        have hbound : xR₃ ∈ frobFixed q (2 * (2 * m)) := by
+          rw [← hxR₃eq]
+          exact haddXF _ _ _ _ (hK4 hxPF) (hK4 hmem)
+            (hslopeF _ _ _ _ _ (hK4 hxPF) (hK4 hmem)
+              (hnegYF _ _ _ (hK4 hxPF) (hK4 hyPF)) hyP₃4m)
+        exact absurd (frobPeriod_le_of_mem q h4m0 hbound)
+          (by rw [hper₃]; omega)
+      -- the lattice transports: `K(2mℓ₂) ⊓ K(2mℓ₃) = K(2m)` since
+      -- `ℓ₂, ℓ₃` are distinct primes
+      have hgcd : Nat.gcd (2 * m * ℓ₂) (2 * m * ℓ₃) = 2 * m := by
+        rw [Nat.gcd_mul_left, Nat.Coprime.gcd_eq_one hcop, mul_one]
+      have hinfF : ∀ a : AlgebraicClosure (ZMod q),
+          a ∈ frobFixed q (2 * m * ℓ₂) → a ∈ frobFixed q (2 * m * ℓ₃) →
+          a ∈ frobFixed q (2 * m) := by
+        intro a h2 h3
+        have hmem := Subfield.mem_inf.mpr ⟨h2, h3⟩
+        rw [frobFixed_inf, hgcd] at hmem
+        exact hmem
+      have hxR₃nF'A : xR₃ ∉ frobFixed q (2 * m * ℓ₂) := fun h =>
+        hxR₃F (hinfF _ h hxR₃F'B)
+      have hxP₃nF'A : xP₃ ∉ frobFixed q (2 * m * ℓ₂) := fun h =>
+        hxP₃F (hinfF _ h hxP₃F'B)
+      have hxR₂nF'B : xR₂ ∉ frobFixed q (2 * m * ℓ₃) := fun h =>
+        hxR₂F (hinfF _ hxR₂F'A h)
+      have hxP₂nF'B : xP₂ ∉ frobFixed q (2 * m * ℓ₃) := fun h =>
+        hxP₂F (hinfF _ hxP₂F'A h)
+      -- the two SHARED Miller generators
+      have hR₂neg : Wb.toAffine.Nonsingular xR₂ (Wb.toAffine.negY xR₂ yR₂) :=
+        (WeierstrassCurve.Affine.nonsingular_neg xR₂ yR₂).mpr hR₂
+      have htor₂ : (p : ℤ) • (WeierstrassCurve.Affine.Point.some xP₂ yP₂ hP₂ +
+          WeierstrassCurve.Affine.Point.some xR₂
+            (Wb.toAffine.negY xR₂ yR₂) hR₂neg : Wb.toAffine.Point) = 0 := by
+        rw [show (WeierstrassCurve.Affine.Point.some xR₂
+            (Wb.toAffine.negY xR₂ yR₂) hR₂neg : Wb.toAffine.Point) =
+            -(WeierstrassCurve.Affine.Point.some xR₂ yR₂ hR₂) from
+            (WeierstrassCurve.Affine.Point.neg_some hR₂).symm,
+          ← hcP₂, add_neg_cancel_right]
+        exact hvp
+      obtain ⟨a₂, ha₂⟩ := hmill2 xP₂ yP₂ xR₂ (Wb.toAffine.negY xR₂ yR₂)
+        hP₂ hR₂neg htor₂
+      have hR₃neg : Wb.toAffine.Nonsingular xR₃ (Wb.toAffine.negY xR₃ yR₃) :=
+        (WeierstrassCurve.Affine.nonsingular_neg xR₃ yR₃).mpr hR₃
+      have htor₃ : (p : ℤ) • (WeierstrassCurve.Affine.Point.some xP₃ yP₃ hP₃ +
+          WeierstrassCurve.Affine.Point.some xR₃
+            (Wb.toAffine.negY xR₃ yR₃) hR₃neg : Wb.toAffine.Point) = 0 := by
+        rw [show (WeierstrassCurve.Affine.Point.some xR₃
+            (Wb.toAffine.negY xR₃ yR₃) hR₃neg : Wb.toAffine.Point) =
+            -(WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃) from
+            (WeierstrassCurve.Affine.Point.neg_some hR₃).symm,
+          ← hcP₃, add_neg_cancel_right]
+        exact hvp
+      obtain ⟨a₃, ha₃⟩ := hmill2 xP₃ yP₃ xR₃ (Wb.toAffine.negY xR₃ yR₃)
+        hP₃ hR₃neg htor₃
+      -- the eight shared atoms of the two (side-exchanged) value equations
+      set LA : AlgebraicClosure (ZMod q) :=
+        AdjoinRoot.evalEval hP₃.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+              xR₂) ^ p) *
+          AdjoinRoot.evalEval hR₃.left a₂ *
+          AdjoinRoot.evalEval hR₂.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+              xR₃) ^ p) *
+          AdjoinRoot.evalEval hP₂.left a₃
+      set RA : AlgebraicClosure (ZMod q) :=
+        AdjoinRoot.evalEval hP₃.left a₂ *
+          AdjoinRoot.evalEval hR₃.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+              xR₂) ^ p) *
+          AdjoinRoot.evalEval hR₂.left a₃ *
+          AdjoinRoot.evalEval hP₂.left
+            ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
+              xR₃) ^ p)
+      -- THE RESIDUAL PACKAGING LEAF (sorry): setup A takes S-slot
+      -- `(R₂, P⊕R₂, a₂)` in `F' := K(2mℓ₂)` and R-slot `(R₃, P⊕R₃, a₃)`
+      -- off `K(2mℓ₂)`; setup B swaps the roles (`F' := K(2mℓ₃)`); both
+      -- are admissible for `(x, x)` over `F := K(2m)` by the pack below,
+      -- and `heuniq` pins `e x x` to both cross-ratios, whose atom
+      -- products are `LA`/`RA` with the sides exchanged
+      have hswapkey :
+          (Ideal.span {a₂} =
+              WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+                xP₂ (Polynomial.C yP₂) ^ p *
+              WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+                xR₂ (Polynomial.C (Wb.toAffine.negY xR₂ yR₂)) ^ p) ∧
+          (Ideal.span {a₃} =
+              WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+                xP₃ (Polynomial.C yP₃) ^ p *
+              WeierstrassCurve.Affine.CoordinateRing.XYIdeal Wb.toAffine
+                xR₃ (Polynomial.C (Wb.toAffine.negY xR₃ yR₃)) ^ p) ∧
+          (WeierstrassCurve.Affine.Point.some xP yP hP +
+              WeierstrassCurve.Affine.Point.some xR₂ yR₂ hR₂ =
+            WeierstrassCurve.Affine.Point.some xP₂ yP₂ hP₂) ∧
+          (WeierstrassCurve.Affine.Point.some xP yP hP +
+              WeierstrassCurve.Affine.Point.some xR₃ yR₃ hR₃ =
+            WeierstrassCurve.Affine.Point.some xP₃ yP₃ hP₃) ∧
+          x.val = WeierstrassCurve.Affine.Point.some xP yP hP ∧
+          xR₂ ∈ frobFixed q (2 * m * ℓ₂) ∧
+          yR₂ ∈ frobFixed q (2 * m * ℓ₂) ∧
+          xP₂ ∈ frobFixed q (2 * m * ℓ₂) ∧
+          yP₂ ∈ frobFixed q (2 * m * ℓ₂) ∧
+          xR₃ ∈ frobFixed q (2 * m * ℓ₃) ∧
+          yR₃ ∈ frobFixed q (2 * m * ℓ₃) ∧
+          xP₃ ∈ frobFixed q (2 * m * ℓ₃) ∧
+          yP₃ ∈ frobFixed q (2 * m * ℓ₃) ∧
+          xR₂ ∉ frobFixed q (2 * m) ∧ xP₂ ∉ frobFixed q (2 * m) ∧
+          xR₃ ∉ frobFixed q (2 * m) ∧ xP₃ ∉ frobFixed q (2 * m) ∧
+          xR₃ ∉ frobFixed q (2 * m * ℓ₂) ∧ xP₃ ∉ frobFixed q (2 * m * ℓ₂) ∧
+          xR₂ ∉ frobFixed q (2 * m * ℓ₃) ∧ xP₂ ∉ frobFixed q (2 * m * ℓ₃) →
+          LA ≠ 0 ∧
+          (e x x : AlgebraicClosure (ZMod q)) * LA = RA ∧
+          (e x x : AlgebraicClosure (ZMod q)) * RA = LA := by
+        sorry
+      obtain ⟨hLA0, hEA, hEB⟩ := hswapkey ⟨ha₂, ha₃, hcP₂, hcP₃, hcx,
+        hxR₂F'A, hyR₂F'A, hxP₂F'A, hyP₂F'A,
+        hxR₃F'B, hyR₃F'B, hxP₃F'B, hyP₃F'B,
+        hxR₂F, hxP₂F, hxR₃F, hxP₃F,
+        hxR₃nF'A, hxP₃nF'A, hxR₂nF'B, hxP₂nF'B⟩
+      -- assembly: `z·LA = RA` and `z·RA = LA` force `z² = 1`
+      refine Units.ext ?_
+      rw [Units.val_mul, Units.val_one]
+      have hz2 : (e x x : AlgebraicClosure (ZMod q)) *
+          (e x x : AlgebraicClosure (ZMod q)) * LA = LA := by
+        rw [mul_assoc, hEA, hEB]
+      exact mul_right_cancel₀ hLA0 (by rw [hz2, one_mul])
     -- the `p = 2` case: alternation is NOT implied by `z² = z^p = 1`
     -- when `p = 2`; it needs the 2-torsion geometry — `⊖P = P`, so
     -- `I_P² = span{XClass x_P}` (`XYIdeal_neg_mul`) factors both Miller
