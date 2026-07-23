@@ -4716,37 +4716,403 @@ theorem exists_index_two_common_eigenvector {k : Type u} [Finite k] [Field k]
         Matrix.mulVec_zero]
     exact exists_smul_eq_of_mulVec_eq_zero hfns hvker hwker hv0
 
+/-- **Coordinates from a non-proportional pair** (PROVEN 2026-07-23 —
+elementary 2×2 linear algebra for the induced-structure glue of the
+dihedral ray-class decomposition): if `v ≠ 0` and `w` is not a scalar
+multiple of `v`, then every vector of `Fin 2 → F` is a linear
+combination of `v` and `w`. Cramer-style explicit coefficients over
+the nonzero cross-determinant `v 0 * w 1 - v 1 * w 0`. -/
+theorem exists_smul_add_smul_of_not_proportional {F : Type*} [Field F]
+    {v w : Fin 2 → F} (hv : v ≠ 0)
+    (hnp : ¬ ∃ c : F, w = c • v) (x : Fin 2 → F) :
+    ∃ α β : F, x = α • v + β • w := by
+  classical
+  have hcross : v 0 * w 1 - v 1 * w 0 ≠ 0 := by
+    intro h
+    apply hnp
+    have hvi : v 0 ≠ 0 ∨ v 1 ≠ 0 := by
+      by_contra hcon
+      push Not at hcon
+      refine hv (funext fun i => ?_)
+      fin_cases i
+      · exact hcon.1
+      · exact hcon.2
+    rcases hvi with h0 | h1
+    · refine ⟨w 0 / v 0, funext fun i => ?_⟩
+      fin_cases i
+      · exact (div_mul_cancel₀ (w 0) h0).symm
+      · show w 1 = w 0 / v 0 * v 1
+        field_simp
+        linear_combination h
+    · refine ⟨w 1 / v 1, funext fun i => ?_⟩
+      fin_cases i
+      · show w 0 = w 1 / v 1 * v 0
+        field_simp
+        linear_combination -h
+      · exact (div_mul_cancel₀ (w 1) h1).symm
+  refine ⟨(x 0 * w 1 - x 1 * w 0) / (v 0 * w 1 - v 1 * w 0),
+    (v 0 * x 1 - v 1 * x 0) / (v 0 * w 1 - v 1 * w 0),
+    funext fun i => ?_⟩
+  fin_cases i
+  · show x 0 = (x 0 * w 1 - x 1 * w 0) / (v 0 * w 1 - v 1 * w 0) * v 0 +
+      (v 0 * x 1 - v 1 * x 0) / (v 0 * w 1 - v 1 * w 0) * w 0
+    rw [div_mul_eq_mul_div, div_mul_eq_mul_div, ← add_div,
+      eq_div_iff hcross]
+    ring
+  · show x 1 = (x 0 * w 1 - x 1 * w 0) / (v 0 * w 1 - v 1 * w 0) * v 1 +
+      (v 0 * x 1 - v 1 * x 0) / (v 0 * w 1 - v 1 * w 0) * w 1
+    rw [div_mul_eq_mul_div, div_mul_eq_mul_div, ← add_div,
+      eq_div_iff hcross]
+    ring
+
+set_option maxHeartbeats 1000000 in
+/-- **No common eigenvector under absolute irreducibility** (PROVEN
+2026-07-23 — the transport bridge for the induced-structure glue of
+the dihedral ray-class decomposition): if every matrix `u g` of the
+transported representation has the SAME eigenvector `v ≠ 0` over
+`Dickson.K 3`, then the vector of `(AlgebraicClosure k) ⊗ V` with
+`e`-preimage coordinates `v` in the basis `b` spans a stable line,
+contradicting absolute irreducibility (`isIrreducible_iff_forall`
+plus `finrank_span_singleton = 1 ≠ 2`). -/
+theorem no_common_eigenvector_of_absolutelyIrreducible {k : Type u}
+    [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (habs : Slop.OddRep.IsAbsolutelyIrreducible
+      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V))
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (v : Fin 2 → Dickson.K 3) (hv : v ≠ 0)
+    (hall : ∀ g : Γ ℚ, ∃ c : Dickson.K 3,
+      Matrix.mulVec ((u g : GL (Fin 2) (Dickson.K 3)) :
+        Matrix (Fin 2) (Fin 2) (Dickson.K 3)) v = c • v) :
+    False := by
+  classical
+  set L := AlgebraicClosure k with hLdef
+  set σρ : Representation L (Γ ℚ) (L ⊗[k] V) :=
+    Slop.OddRep.baseChange L (MonoidHomClass.toMonoidHom ρ) with hσρdef
+  have hirr : σρ.IsIrreducible := habs
+  haveI : Module.Finite L (L ⊗[k] V) := Module.Finite.base_change k L V
+  have hfr2 : Module.finrank L (L ⊗[k] V) = 2 := by
+    rw [Module.finrank_baseChange]
+    exact Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
+  obtain ⟨-, hsub⟩ := (Slop.OddRep.isIrreducible_iff_forall σρ).mp hirr
+  -- the vector of `L ⊗ V` with `e`-preimage coordinates `v`
+  set v'' : Fin 2 → L := fun i => e.symm (v i) with hv''def
+  set v' : L ⊗[k] V := b.equivFun.symm v'' with hv'def
+  have hreprv' : ⇑(b.repr v') = v'' := by
+    have h1 : b.equivFun v' = v'' := by
+      rw [hv'def, LinearEquiv.apply_symm_apply]
+    exact h1
+  have hv'0 : v' ≠ 0 := by
+    intro h0
+    apply hv
+    have h1 : v'' = 0 := by
+      rw [← hreprv', h0, map_zero]
+      rfl
+    funext i
+    have h2 : e.symm (v i) = 0 := congrFun h1 i
+    have h3 := congrArg e h2
+    rwa [RingEquiv.apply_symm_apply, map_zero] at h3
+  -- every `σρ g` scales `v'`
+  have hstab : ∀ g : Γ ℚ, ∃ c' : L, σρ g v' = c' • v' := by
+    intro g
+    obtain ⟨c, hc⟩ := hall g
+    refine ⟨e.symm c, ?_⟩
+    have hcoord : ∀ i,
+        Matrix.mulVec (LinearMap.toMatrix b b (σρ g)) (⇑(b.repr v')) i =
+        e.symm c * v'' i := by
+      intro i
+      have hterm : ∀ j, LinearMap.toMatrix b b (σρ g) i j * (b.repr v') j =
+          e.symm (((u g : GL (Fin 2) (Dickson.K 3)) :
+            Matrix (Fin 2) (Fin 2) (Dickson.K 3)) i j * v j) := by
+        intro j
+        rw [map_mul]
+        congr 1
+        · rw [hu g, Matrix.map_apply]
+          exact (RingEquiv.symm_apply_apply e _).symm
+        · exact congrFun hreprv' j
+      calc Matrix.mulVec (LinearMap.toMatrix b b (σρ g)) (⇑(b.repr v')) i
+          = ∑ j, LinearMap.toMatrix b b (σρ g) i j * (b.repr v') j :=
+            Matrix.mulVec_apply_eq_sum _ _ _
+        _ = ∑ j, e.symm (((u g : GL (Fin 2) (Dickson.K 3)) :
+              Matrix (Fin 2) (Fin 2) (Dickson.K 3)) i j * v j) :=
+            Finset.sum_congr rfl fun j _ => hterm j
+        _ = e.symm (∑ j, ((u g : GL (Fin 2) (Dickson.K 3)) :
+              Matrix (Fin 2) (Fin 2) (Dickson.K 3)) i j * v j) :=
+            (map_sum e.symm _ _).symm
+        _ = e.symm ((Matrix.mulVec ((u g : GL (Fin 2) (Dickson.K 3)) :
+              Matrix (Fin 2) (Fin 2) (Dickson.K 3)) v) i) := by
+            rw [Matrix.mulVec_apply_eq_sum]
+        _ = e.symm ((c • v) i) := by rw [hc]
+        _ = e.symm (c * v i) := rfl
+        _ = e.symm c * e.symm (v i) := map_mul e.symm _ _
+        _ = e.symm c * v'' i := rfl
+    apply b.repr.injective
+    apply DFunLike.coe_injective
+    rw [← LinearMap.toMatrix_mulVec_repr b b (σρ g) v', map_smul]
+    funext i
+    rw [hcoord i, Finsupp.smul_apply,
+      show (b.repr v') i = v'' i from congrFun hreprv' i, smul_eq_mul]
+  -- the stable line contradicts irreducibility
+  have hWinv : ∀ g : Γ ℚ, ∀ x ∈ Submodule.span L {v'},
+      σρ g x ∈ Submodule.span L {v'} := by
+    intro g x hx
+    rw [Submodule.mem_span_singleton] at hx
+    obtain ⟨a, rfl⟩ := hx
+    obtain ⟨c', hc'⟩ := hstab g
+    rw [map_smul, hc', Submodule.mem_span_singleton]
+    exact ⟨a * c', by rw [smul_smul]⟩
+  rcases hsub (Submodule.span L {v'}) hWinv with hW | hW
+  · apply hv'0
+    have h1 : v' ∈ Submodule.span L {v'} :=
+      Submodule.mem_span_singleton_self v'
+    rw [hW] at h1
+    exact (Submodule.mem_bot L).mp h1
+  · have h1 : Module.finrank L (Submodule.span L {v'}) = 1 :=
+      finrank_span_singleton hv'0
+    rw [hW, finrank_top, hfr2] at h1
+    omega
+
+set_option maxHeartbeats 1000000 in
+/-- **The induced eigenvalue character is unramified at `2`** (sorry
+node, isolated 2026-07-23 — the local-at-`2` half of the dihedral
+ray-class core, independent of the at-`3`/ray-class arithmetic): the
+inertia at `2` lands in `H := ker θ'` and in the kernel of the
+eigenvalue character `χ₀`.
+
+Intended content: by `hρ.det` the determinant of `ρ` is the mod-3
+cyclotomic character, trivial on the inertia at `2`
+(`cyclotomicCharacter_algebraMap_eq_one_of_inertia_two` after the
+bridge `localInertia_two_eq_map_padic` — both PROVEN but stated
+LATER in this file, so move or re-derive them when resolving this
+node), and by `hρ.isTameAtTwo` the local representation at `2` is an
+extension of an unramified quadratic character `δ` by `det/δ`, so
+the inertia at `2` acts through `u` by matrices with both
+eigenvalues `1` (unipotent up to conjugation). A nontrivial
+unipotent has trace `2 = -1 ≠ 0` in characteristic `3`; but a matrix
+of an element OUTSIDE `H` maps the line `K·v` to the independent
+line `K·(u σ₀ ·ᵥ v)` (`hindep`) and back — antidiagonally in the
+basis `(v, u σ₀ ·ᵥ v)` — so it has trace `0`; and `u ι = 1` forces
+`ρ ι = 1` through the faithful base change (`hu`), hence `θ' ι = 1`
+(`htriv'`). So the inertia at `2` lies in `H`; there its matrices
+have `v` as an eigenvector (`hχ₀`) with eigenvalue `χ₀`, and the
+only eigenvalue of a unipotent is `1`. -/
+theorem induced_character_unramified_at_two {k : Type u}
+    [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (θ' : Γ ℚ →* Multiplicative (ZMod 2))
+    (htriv' : ∀ g : Γ ℚ, ρ g = 1 → θ' g = 1)
+    (v : Fin 2 → Dickson.K 3) (hv : v ≠ 0)
+    (σ₀ : Γ ℚ) (hσ₀ : θ' σ₀ ≠ 1)
+    (χ₀ : Γ ℚ → Dickson.K 3)
+    (hχ₀ : ∀ g : Γ ℚ, θ' g = 1 →
+      Matrix.mulVec ((u g : GL (Fin 2) (Dickson.K 3)) :
+        Matrix (Fin 2) (Fin 2) (Dickson.K 3)) v = χ₀ g • v)
+    (hindep : ¬ ∃ c : Dickson.K 3,
+      Matrix.mulVec ((u σ₀ : GL (Fin 2) (Dickson.K 3)) :
+        Matrix (Fin 2) (Fin 2) (Dickson.K 3)) v = c • v) :
+    ∀ σ ∈ localInertiaGroup
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+      θ' (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 ∧
+      χ₀ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **The dihedral ray-class computation given unramifiedness at `2`**
+(sorry node, isolated 2026-07-23 — the at-`3`/ray-class half of the
+dihedral core: the at-`2` local analysis is the separate sorry node
+`induced_character_unramified_at_two` above, consumed here as the
+hypothesis `h2unr`).
+
+Intended content (Serre's mod-3 analogue, Duke 1987 §5, of Tate's
+2-adic letter argument, per fixed `d`). At `3`: `ρ|_{G_3}` is flat
+(`hρ.isFlat`); Raynaud's classification over the
+at-worst-quadratically-ramified completions of `ℚ(√d)` above `3`
+(`e ≤ 2 = 3 - 1`) bounds `χ₀` on the inertia at `3` to the
+fundamental characters of level `≤ 2`, so the ratio
+`ν := χ₀/χ₀^{σ₀}` has bounded conductor above `3` and — by `h2unr`,
+`hχunr` and the openness of `ker χ₀` through `hχker` — is unramified
+everywhere else. Ray class, per field: `ν` is a finite-order
+character of `Γ_{ℚ(√d)}` with `ν^{σ₀} = ν⁻¹` (anti-equivariance from
+`hχmul` across the induced structure); the class numbers of the
+seven fields `ℚ(√-1), ℚ(√±2), ℚ(√±3), ℚ(√±6)` are
+`1, 1, 1, 1, 1, 1, 2`, and the ray class groups modulo the allowed
+conductor above `3` are generated by ramified classes on which the
+anti-equivariant `ν` is forced to vanish; so `ν = 1`, contradicting
+`hne`. -/
+theorem dihedral_induced_ray_class_of_two_unramified {k : Type u}
+    [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (habs : Slop.OddRep.IsAbsolutelyIrreducible
+      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V))
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (θ' : Γ ℚ →* Multiplicative (ZMod 2))
+    (hθ'surj : Function.Surjective θ')
+    (htriv' : ∀ g : Γ ℚ, ρ g = 1 → θ' g = 1)
+    (v : Fin 2 → Dickson.K 3) (hv : v ≠ 0)
+    (d : ℤ)
+    (hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6)
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
+    (hθ'x : ∀ g : Γ ℚ, θ' g = 1 ↔ g x = x)
+    (σ₀ : Γ ℚ) (hσ₀ : θ' σ₀ ≠ 1)
+    (χ₀ : Γ ℚ → Dickson.K 3)
+    (hχ₀ : ∀ g : Γ ℚ, θ' g = 1 →
+      Matrix.mulVec ((u g : GL (Fin 2) (Dickson.K 3)) :
+        Matrix (Fin 2) (Fin 2) (Dickson.K 3)) v = χ₀ g • v)
+    (hχne0 : ∀ g : Γ ℚ, θ' g = 1 → χ₀ g ≠ 0)
+    (hχmul : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 →
+      χ₀ (g * h) = χ₀ g * χ₀ h)
+    (hχker : ∀ g : Γ ℚ, ρ g = 1 → χ₀ g = 1)
+    (hχunr : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ 3 →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        χ₀ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1)
+    (hindep : ¬ ∃ c : Dickson.K 3,
+      Matrix.mulVec ((u σ₀ : GL (Fin 2) (Dickson.K 3)) :
+        Matrix (Fin 2) (Fin 2) (Dickson.K 3)) v = c • v)
+    (h2unr : ∀ σ ∈ localInertiaGroup
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+      θ' (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 ∧
+      χ₀ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1)
+    (hne : ¬ ∀ g : Γ ℚ, θ' g = 1 → χ₀ g = χ₀ (σ₀⁻¹ * g * σ₀)) :
+    False := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **The dihedral ray-class core for the induced eigenvalue
+character** (DECOMPOSED 2026-07-23 into the two sorry nodes above —
+the local-at-`2` unipotence analysis
+`induced_character_unramified_at_two` and the at-`3`/ray-class
+computation `dihedral_induced_ray_class_of_two_unramified`; the
+assembly is proven): the per-field class-field-theoretic core of the
+dihedral case, with the whole induced-representation step hoisted
+into PROVEN hypotheses — `χ₀` is the eigenvalue character of the
+common eigenline `K·v` of `u` on `H := ker θ' = Γ_{ℚ(√d)}`,
+multiplicative (`hχmul`), nonvanishing (`hχne0`), trivial on `ker ρ`
+(`hχker`, so its kernel is OPEN), trivial on the inertia of every
+prime `q ∉ {2, 3}` (`hχunr`); the second line `K·(u σ₀ ·ᵥ v)` is
+independent (`hindep`); and `hne` says that `χ₀` differs from its
+`σ₀`-conjugate on `H`, i.e. `ρ ≅ Ind_H^{Γ_ℚ} χ₀` genuinely
+dihedrally. -/
+theorem dihedral_induced_character_ray_class {k : Type u}
+    [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (habs : Slop.OddRep.IsAbsolutelyIrreducible
+      (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V))
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (θ' : Γ ℚ →* Multiplicative (ZMod 2))
+    (hθ'surj : Function.Surjective θ')
+    (htriv' : ∀ g : Γ ℚ, ρ g = 1 → θ' g = 1)
+    (v : Fin 2 → Dickson.K 3) (hv : v ≠ 0)
+    (d : ℤ)
+    (hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6)
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
+    (hθ'x : ∀ g : Γ ℚ, θ' g = 1 ↔ g x = x)
+    (σ₀ : Γ ℚ) (hσ₀ : θ' σ₀ ≠ 1)
+    (χ₀ : Γ ℚ → Dickson.K 3)
+    (hχ₀ : ∀ g : Γ ℚ, θ' g = 1 →
+      Matrix.mulVec ((u g : GL (Fin 2) (Dickson.K 3)) :
+        Matrix (Fin 2) (Fin 2) (Dickson.K 3)) v = χ₀ g • v)
+    (hχne0 : ∀ g : Γ ℚ, θ' g = 1 → χ₀ g ≠ 0)
+    (hχmul : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 →
+      χ₀ (g * h) = χ₀ g * χ₀ h)
+    (hχker : ∀ g : Γ ℚ, ρ g = 1 → χ₀ g = 1)
+    (hχunr : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ 3 →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        χ₀ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1)
+    (hindep : ¬ ∃ c : Dickson.K 3,
+      Matrix.mulVec ((u σ₀ : GL (Fin 2) (Dickson.K 3)) :
+        Matrix (Fin 2) (Fin 2) (Dickson.K 3)) v = c • v)
+    (hne : ¬ ∀ g : Γ ℚ, θ' g = 1 → χ₀ g = χ₀ (σ₀⁻¹ * g * σ₀)) :
+    False :=
+  dihedral_induced_ray_class_of_two_unramified V hV hρ habs b e u hu θ'
+    hθ'surj htriv' v hv d hd x hx hθ'x σ₀ hσ₀ χ₀ hχ₀ hχne0 hχmul hχker
+    hχunr hindep
+    (induced_character_unramified_at_two V hV hρ b e u hu θ' htriv' v hv
+      σ₀ hσ₀ χ₀ hχ₀ hindep)
+    hne
+
 set_option maxHeartbeats 1000000 in
 /-- **The Serre/Tate elimination, dihedral ray-class computation with
-an explicit eigenvector** (sorry node — the per-field
-class-field-theoretic core of the dihedral case, restated 2026-07-23
-with the stable-line datum as an explicit HYPOTHESIS so that the
-statement is sound in the Klein-four sub-case; the character `θ'`
-here is the possibly SWITCHED character produced by
+an explicit eigenvector** (DECOMPOSED 2026-07-23 into the ray-class
+core sorry node `dihedral_induced_character_ray_class` above — the
+whole induced-representation step is PROVEN here as glue; the
+character `θ'` is the possibly SWITCHED character produced by
 `exists_index_two_common_eigenvector`, and `K = ℚ(x)`, `x = √d`,
 `d ∈ {-1, 2, -2, 3, -3, 6, -6}` is ITS quadratic field, re-cut by
 `exists_sqrt_of_quadratic_character_unramified_outside_two_three`).
 
-Intended content (Serre's mod-3 analogue, in the style of §5 of the
-Duke 1987 paper, of Tate's 2-adic letter argument), per fixed `d`:
-the common eigenvector `v` of `u` on `ker θ' = Γ_K` defines the
-eigenvalue character `χ : Γ_K → (Dickson.K 3)ˣ`; for `σ ∉ Γ_K` the
-vector `w = u σ • v` is independent of `v` (absolute irreducibility),
-`Γ_K` acts diagonally on the basis `(v, w)` — by `χ` and by the
-conjugate `χ^σ` — and elements outside `Γ_K` act antidiagonally, so
-`ρ ≅ Ind_{Γ_K}^{Γ_ℚ} χ` with `χ ≠ χ^σ` (else a stable line exists,
-contradicting `habs`); the hardly-ramified constraints bound the
-conductor of `χ`: trivial outside primes over `{2, 3}`, at `2` the
-inertia acts through `ρ` by unipotents (cyclotomic determinant is
-unramified at `2` and the tame-at-2 quotient is unramified), and a
-nontrivial unipotent has trace `2 ≠ 0` while antidiagonal elements
-have trace `0`, so inertia at `2` lands in `Γ_K` and fixes both
-eigenlines, forcing `χ` unramified at the primes over `2`; at `3`
-flatness restricts `χ` on inertia to the Raynaud characters of level
-`≤ 2`; the class numbers of the seven fields are
-`1, 1, 1, 1, 1, 1, 2` and the ray class groups of `K` modulo the
-allowed conductors are generated by ramified classes on which
-`χ/χ^σ` is forced to vanish, so `χ = χ^σ` — contradiction. -/
+The proven reduction: pick `σ₀ ∉ H := ker θ'` (`hθ'surj`); the
+eigenvalue function `χ₀` on `H` is extracted from `heig` by choice
+(unique since `v ≠ 0`); it is multiplicative and nonvanishing on `H`
+because `u` is; it is trivial on `ker ρ` (`u` descends through the
+faithful base change), hence — through `hρ.isUnramified`, with the
+`Rat.subsingleton_ringHom` `convert` bridge — trivial on the inertia
+of every prime `q ∉ {2, 3}`. The vector `w := u σ₀ ·ᵥ v` is NOT
+proportional to `v`: otherwise `K·v` would be a common eigenline for
+ALL of `u` (split `g` by `θ' g`), transported by
+`no_common_eigenvector_of_absolutelyIrreducible` into a stable line
+of the base change, contradicting `habs`. And `χ₀` differs from its
+`σ₀`-conjugate on `H`: were they equal, `H` would act by the scalars
+`χ₀` on the plane spanned by `v` and `w`
+(`exists_smul_add_smul_of_not_proportional`), so ANY eigenvector `y`
+of `u σ₀` would again be a common eigenvector for all of `u` — the
+same contradiction. The sorried leaf consumes exactly this induced
+structure. -/
 theorem serre_elimination_dihedral_ray_class_of_eigenvector {k : Type u}
     [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
@@ -4776,7 +5142,178 @@ theorem serre_elimination_dihedral_ray_class_of_eigenvector {k : Type u}
     (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
     (hθ'x : ∀ g : Γ ℚ, θ' g = 1 ↔ g x = x) :
     False := by
-  sorry
+  classical
+  -- an element outside the kernel of `θ'`, and value bookkeeping
+  obtain ⟨σ₀, hσ₀eq⟩ := hθ'surj (Multiplicative.ofAdd (1 : ZMod 2))
+  have hσ₀ : θ' σ₀ ≠ 1 := by
+    rw [hσ₀eq]
+    decide
+  have hy2 : ∀ y : Multiplicative (ZMod 2),
+      y = 1 ∨ y = Multiplicative.ofAdd (1 : ZMod 2) := by decide
+  have hmulval : ∀ g h' : Γ ℚ, (u (g * h')).val = (u g).val * (u h').val := by
+    intro g h'
+    rw [map_mul]
+    rfl
+  -- the eigenvalue function of the common eigenline
+  choose! χ₀ hχ₀ using heig
+  have hχ₀' : ∀ g : Γ ℚ, θ' g = 1 →
+      Matrix.mulVec (u g).val v = χ₀ g • v := fun g hg => hχ₀ g hg
+  have huniq : ∀ c c' : Dickson.K 3, c • v = c' • v → c = c' := by
+    intro c c' hcc
+    have h1 : (c - c') • v = 0 := by rw [sub_smul, hcc, sub_self]
+    rcases smul_eq_zero.mp h1 with h | h
+    · exact sub_eq_zero.mp h
+    · exact absurd h hv
+  -- `u` of a `ρ`-kernel element is the identity matrix
+  have huone : ∀ g : Γ ℚ, ρ g = 1 → (u g).val = 1 := by
+    intro g hg
+    have h2 : (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V) g = 1 := hg
+    have h1 : (Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V)) g = 1 := by
+      have h3 : (Slop.OddRep.baseChange (AlgebraicClosure k)
+          (MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V)) g =
+          ((MonoidHomClass.toMonoidHom ρ : Representation k (Γ ℚ) V) g).baseChange
+            (AlgebraicClosure k) := rfl
+      rw [h3, h2, Module.End.one_eq_id, LinearMap.baseChange_id]
+      rfl
+    rw [hu g, h1, LinearMap.toMatrix_one]
+    exact Matrix.map_one e (map_zero e) (map_one e)
+  -- the kernel carrier: `χ₀` is trivial on `ker ρ`
+  have hχker : ∀ g : Γ ℚ, ρ g = 1 → χ₀ g = 1 := by
+    intro g hg
+    have h1 := hχ₀' g (htriv' g hg)
+    rw [huone g hg, Matrix.one_mulVec] at h1
+    exact huniq (χ₀ g) 1 (by rw [one_smul, ← h1])
+  -- unramified outside `{2, 3}` through `ρ`
+  have hχunr : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ 3 →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        χ₀ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+    intro q hq hq2 hq3 σ hσ
+    apply hχker
+    have h1 : (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat) σ = 1 :=
+      (hρ.isUnramified q hq ⟨hq2, hq3⟩).localInertiaGroup_le hσ
+    rw [GaloisRep.toLocal_apply] at h1
+    convert h1 using 4
+    exact Subsingleton.elim _ _
+  -- nonvanishing on the kernel
+  have hχne0 : ∀ g : Γ ℚ, θ' g = 1 → χ₀ g ≠ 0 := by
+    intro g hg h0
+    apply hv
+    have h1 : Matrix.mulVec (u g⁻¹).val (Matrix.mulVec (u g).val v) = v := by
+      rw [Matrix.mulVec_mulVec, ← hmulval, inv_mul_cancel,
+        show (u (1 : Γ ℚ)).val = 1 by rw [map_one]; rfl]
+      exact Matrix.one_mulVec v
+    rw [hχ₀' g hg, h0, zero_smul, Matrix.mulVec_zero] at h1
+    exact h1.symm
+  -- multiplicativity on the kernel
+  have hχmul : ∀ g h' : Γ ℚ, θ' g = 1 → θ' h' = 1 →
+      χ₀ (g * h') = χ₀ g * χ₀ h' := by
+    intro g h' hg hh'
+    have hgh' : θ' (g * h') = 1 := by rw [map_mul, hg, hh', mul_one]
+    apply huniq
+    rw [← hχ₀' (g * h') hgh', hmulval, ← Matrix.mulVec_mulVec,
+      hχ₀' h' hh', Matrix.mulVec_smul, hχ₀' g hg, smul_smul,
+      mul_comm (χ₀ g) (χ₀ h')]
+  -- `u σ₀ ·ᵥ v` is not proportional to `v` (absolute irreducibility)
+  have hindep : ¬ ∃ c : Dickson.K 3, Matrix.mulVec (u σ₀).val v = c • v := by
+    rintro ⟨c, hcw⟩
+    apply no_common_eigenvector_of_absolutelyIrreducible V hV habs b e u hu v hv
+    intro g
+    by_cases hg : θ' g = 1
+    · exact ⟨χ₀ g, hχ₀ g hg⟩
+    · have hgω : θ' g = Multiplicative.ofAdd (1 : ZMod 2) := by
+        rcases hy2 (θ' g) with h | h
+        · exact absurd h hg
+        · exact h
+      have hker1 : θ' (σ₀⁻¹ * g) = 1 := by
+        rw [map_mul, map_inv, hσ₀eq, hgω]
+        decide
+      refine ⟨χ₀ (σ₀⁻¹ * g) * c, ?_⟩
+      show Matrix.mulVec (u g).val v = (χ₀ (σ₀⁻¹ * g) * c) • v
+      have hsplit : g = σ₀ * (σ₀⁻¹ * g) := by
+        rw [← mul_assoc, mul_inv_cancel, one_mul]
+      calc Matrix.mulVec (u g).val v
+          = Matrix.mulVec (u (σ₀ * (σ₀⁻¹ * g))).val v := by rw [← hsplit]
+        _ = Matrix.mulVec (u σ₀).val
+            (Matrix.mulVec (u (σ₀⁻¹ * g)).val v) := by
+            rw [hmulval, ← Matrix.mulVec_mulVec]
+        _ = Matrix.mulVec (u σ₀).val (χ₀ (σ₀⁻¹ * g) • v) := by
+            rw [hχ₀' _ hker1]
+        _ = χ₀ (σ₀⁻¹ * g) • Matrix.mulVec (u σ₀).val v :=
+            Matrix.mulVec_smul _ _ _
+        _ = χ₀ (σ₀⁻¹ * g) • (c • v) := by rw [hcw]
+        _ = (χ₀ (σ₀⁻¹ * g) * c) • v := by rw [smul_smul]
+  -- `χ₀` differs from its `σ₀`-conjugate on the kernel
+  have hne : ¬ ∀ g : Γ ℚ, θ' g = 1 → χ₀ g = χ₀ (σ₀⁻¹ * g * σ₀) := by
+    intro hconj
+    -- kernel elements act by the scalar `χ₀` on EVERY vector
+    have hkerscal : ∀ h' : Γ ℚ, θ' h' = 1 → ∀ x' : Fin 2 → Dickson.K 3,
+        Matrix.mulVec (u h').val x' = χ₀ h' • x' := by
+      intro h' hh' x'
+      obtain ⟨α, β, hx'⟩ := exists_smul_add_smul_of_not_proportional hv hindep x'
+      have hconjker : θ' (σ₀⁻¹ * h' * σ₀) = 1 := by
+        rw [map_mul, map_mul, map_inv, hh', mul_one, inv_mul_cancel]
+      have hw : Matrix.mulVec (u h').val (Matrix.mulVec (u σ₀).val v) =
+          χ₀ h' • Matrix.mulVec (u σ₀).val v := by
+        have hsplit : h' * σ₀ = σ₀ * (σ₀⁻¹ * h' * σ₀) := by
+          rw [← mul_assoc, ← mul_assoc, mul_inv_cancel, one_mul]
+        calc Matrix.mulVec (u h').val (Matrix.mulVec (u σ₀).val v)
+            = Matrix.mulVec (u (h' * σ₀)).val v := by
+              rw [hmulval, Matrix.mulVec_mulVec]
+          _ = Matrix.mulVec (u (σ₀ * (σ₀⁻¹ * h' * σ₀))).val v := by
+              rw [← hsplit]
+          _ = Matrix.mulVec (u σ₀).val
+              (Matrix.mulVec (u (σ₀⁻¹ * h' * σ₀)).val v) := by
+              rw [hmulval, ← Matrix.mulVec_mulVec]
+          _ = Matrix.mulVec (u σ₀).val (χ₀ (σ₀⁻¹ * h' * σ₀) • v) := by
+              rw [hχ₀' _ hconjker]
+          _ = χ₀ (σ₀⁻¹ * h' * σ₀) • Matrix.mulVec (u σ₀).val v :=
+              Matrix.mulVec_smul _ _ _
+          _ = χ₀ h' • Matrix.mulVec (u σ₀).val v := by
+              rw [← hconj h' hh']
+      rw [hx', Matrix.mulVec_add, Matrix.mulVec_smul, Matrix.mulVec_smul,
+        hχ₀' h' hh', hw]
+      module
+    -- any eigenvector of `u σ₀` is then a common eigenvector
+    obtain ⟨s, hsev⟩ :=
+      Module.End.exists_eigenvalue (Matrix.mulVecLin (u σ₀).val)
+    obtain ⟨y, hy⟩ := hsev.exists_hasEigenvector
+    have hyv : Matrix.mulVec (u σ₀).val y = s • y := by
+      have h1 := Module.End.mem_eigenspace_iff.mp hy.1
+      rwa [Matrix.mulVecLin_apply] at h1
+    apply no_common_eigenvector_of_absolutelyIrreducible V hV habs b e u hu
+      y hy.2
+    intro g
+    by_cases hg : θ' g = 1
+    · exact ⟨χ₀ g, hkerscal g hg y⟩
+    · have hgω : θ' g = Multiplicative.ofAdd (1 : ZMod 2) := by
+        rcases hy2 (θ' g) with h | h
+        · exact absurd h hg
+        · exact h
+      have hker2 : θ' (g * σ₀⁻¹) = 1 := by
+        rw [map_mul, map_inv, hσ₀eq, hgω]
+        decide
+      refine ⟨χ₀ (g * σ₀⁻¹) * s, ?_⟩
+      show Matrix.mulVec (u g).val y = (χ₀ (g * σ₀⁻¹) * s) • y
+      have hsplit : g = g * σ₀⁻¹ * σ₀ := by
+        rw [mul_assoc, inv_mul_cancel, mul_one]
+      calc Matrix.mulVec (u g).val y
+          = Matrix.mulVec (u (g * σ₀⁻¹ * σ₀)).val y := by rw [← hsplit]
+        _ = Matrix.mulVec (u (g * σ₀⁻¹)).val
+            (Matrix.mulVec (u σ₀).val y) := by
+            rw [hmulval, ← Matrix.mulVec_mulVec]
+        _ = Matrix.mulVec (u (g * σ₀⁻¹)).val (s • y) := by rw [hyv]
+        _ = s • Matrix.mulVec (u (g * σ₀⁻¹)).val y :=
+            Matrix.mulVec_smul _ _ _
+        _ = s • (χ₀ (g * σ₀⁻¹) • y) := by rw [hkerscal _ hker2 y]
+        _ = (χ₀ (g * σ₀⁻¹) * s) • y := by
+            rw [smul_smul, mul_comm s (χ₀ (g * σ₀⁻¹))]
+  -- the ray-class core (sorried leaf)
+  exact dihedral_induced_character_ray_class V hV hρ habs b e u hu θ' hθ'surj
+    htriv' v hv d hd x hx hθ'x σ₀ hσ₀ χ₀ hχ₀ hχne0 hχmul hχker hχunr hindep
+    hne
 
 set_option maxHeartbeats 1000000 in
 /-- **The Serre/Tate elimination, dihedral ray-class computation**
@@ -7438,23 +7975,126 @@ theorem exists_twisted_coboundary_scalar_of_agreement_vanishing
   rw [h6]
   exact mul_left_cancel₀ hNne h8
 
-/-- **The cocycle vanishes on the character-agreement locus** (sorry
-node — the class-field-theory content of the global Selmer vanishing,
-isolated 2026-07-23): the extension cocycle `c` of a mod-3 hardly
+/-- **The agreement homomorphism is killed by ray-class arithmetic**
+(sorry node, isolated 2026-07-23 — the class-field-theory core of the
+global Selmer vanishing, restated from
+`cocycle_eq_zero_on_agreement_of_local_at_three` with every derivable
+piece of local bookkeeping hoisted into PROVEN hypotheses: the kernel
+carrier `hker` — so `c` and the agreement locus factor through the
+FINITE quotient by the open subgroup `ker ρ` —, the vanishing `hunr`
+of `ψ - 1`, `χ - 1` and `c` on the inertia of every prime
+`q ∉ {2, 3}`, the vanishing `h3z` of `c` on the inertia at `3` inside
+the agreement locus, and the twisted conjugation equivariance
+`hconj`).
+
+Intended content (Serre, Duke 1987, §5.4, mod-3 analogue): on the
+agreement subgroup `H = {g | ψ g = χ g} = ker(ψχ⁻¹) = Γ_F` the
+function `b := c/χ` is, by `hcocycle`, an additive character
+`H → (k, +)`; by `hconj` it is `η := ψχ⁻¹`-equivariant under
+conjugation; it cuts out an abelian `3`-elementary extension `M/F`,
+Galois over `ℚ`. Identification of `F`: `χ` is unramified at `2`
+(the tame dichotomy `quotCharacter_inertia_two_ker` applied to the
+stable line `W₀` — stated LATER in this file, so reprove or move it
+when resolving this node), hence so is `ψ = det/χ` since the
+determinant is cyclotomic (`hρ.det` +
+`cyclotomicCharacter_algebraMap_eq_one_of_inertia_two`); both are
+unramified outside `{2, 3}` (`hunr`); and at `3` the quotient
+character `χ` is RAMIFIED (`h3`) with `χ = ω` on inertia while `ψ`
+is unramified there (the sibling at-3 leaves), so `η` is a character
+ramified only at `3` whose inertia image has order `2`. Since `ℚ`
+admits no unramified extension (Minkowski,
+`minkowski_character_trivial`), either `η = 1` and `F = ℚ`, or
+`F = ℚ(√-3)`, the quadratic field of conductor `3`. The extension
+`M/F` is unramified outside `2` (`hunr` + `h3z` with the
+`hconj`-conjugates covering all primes over `3`), split at the primes
+over `3`, and automatically TAME at `2`: its degree is a `3`-power
+while the residue characteristic is `2`, so the conductor exponent at
+each prime over `2` is at most `1`. The ray-class arithmetic kills
+`M`: for `F = ℚ` the ray class field of conductor `2^k∞` is the
+`2`-power-degree cyclotomic tower, with no `3`-part; for
+`F = ℚ(√-3)` — class number `1`, `2` inert — the ray class group of
+conductor `(2)` is `(𝒪/2)ˣ/⟨image of 𝒪ˣ⟩ = 𝔽₄ˣ/⟨ζ₆ mod 2⟩ = 1`.
+Hence `M = F` and `b` vanishes on `H`. -/
+theorem agreement_cocycle_eq_zero_ray_class
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (W₀ : Submodule k V) (hW₀fr : Module.finrank k W₀ = 1)
+    (hstable : ∀ g v, v ∈ W₀ → ρ g v ∈ W₀)
+    (ψ : Γ ℚ →* kˣ) (hψ : ∀ g, ∀ v ∈ W₀, ρ g v = (ψ g : k) • v)
+    (χ : Γ ℚ →* kˣ)
+    (hχ : ∀ g v, W₀.mkQ (ρ g v) = (χ g : k) • W₀.mkQ v)
+    (h3 : ¬ (localInertiaGroup
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ≤
+        (χ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker))
+    (w₀ : V) (hw₀ : w₀ ∈ W₀) (hw₀ne : w₀ ≠ 0)
+    (v₁ : V) (hv₁ : v₁ ∉ W₀)
+    (c : Γ ℚ → k)
+    (hc : ∀ g : Γ ℚ, ρ g v₁ = (χ g : k) • v₁ + c g • w₀)
+    (hcocycle : ∀ g h : Γ ℚ, c (g * h) = (χ h : k) * c g + (ψ g : k) * c h)
+    (s : k)
+    (hs : ∀ σ ∈ localInertiaGroup
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+      c (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) =
+        s * ((χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) : k) -
+          (ψ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) : k)))
+    (hker : ∀ g : Γ ℚ, ρ g = 1 →
+      (ψ g : k) = 1 ∧ (χ g : k) = 1 ∧ c g = 0)
+    (hunr : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ 3 →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        (ψ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) : k) = 1 ∧
+        (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) : k) = 1 ∧
+        c (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 0)
+    (h3z : ∀ σ ∈ localInertiaGroup
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+      (ψ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) : k) =
+        (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) : k) →
+      c (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) = 0)
+    (hconj : ∀ g h : Γ ℚ, (ψ h : k) = (χ h : k) →
+      (χ g : k) * c (g * h * g⁻¹) = (ψ g : k) * c h) :
+    ∀ g : Γ ℚ, (ψ g : k) = (χ g : k) → c g = 0 := by
+  sorry
+
+/-- **The cocycle vanishes on the character-agreement locus**
+(DECOMPOSED 2026-07-23 into the ray-class core sorry node
+`agreement_cocycle_eq_zero_ray_class` above — the local bookkeeping
+is PROVEN here as glue): the extension cocycle `c` of a mod-3 hardly
 ramified representation, coboundary on the inertia at `3` (`hs`),
 vanishes at every `g` where the two characters agree, `ψ g = χ g` —
 i.e. on the open normal subgroup `H = ker(ψχ⁻¹) = Gal(ℚ̄/F)`, where
 `F` is the finite abelian extension of `ℚ` cut out by `η = ψχ⁻¹`.
-Intended content (Serre, Duke 1987, §5.4): on `H` the function
-`b = c/χ` is a continuous homomorphism `H → (k, +)` (the restriction
-of the class of `c` in `H¹(ℚ, k(ψχ⁻¹))` to `H¹(F, k)`), equivariant
-under conjugation up to the `η`-twist; it cuts out an abelian
-`3`-elementary extension `M/F`, Galois over `ℚ`, unramified outside
-`{2, 3}` (`hρ.isUnramified` through `hc`), split at the primes over
-`3` (`hs`: on inertia at `3` inside `H` the coboundary `s·(χ − ψ)`
-vanishes), and at most tamely ramified at `2` of bounded order
-(`hρ.isTameAtTwo`); the ray-class arithmetic of the small field `F`
-admits no such extension, so `b|_H = 0`. -/
+The proven reduction: on `ker ρ`, the identity `ρ g v₁ = v₁` forces
+`χ g = 1` (else `v₁ ∈ W₀`), then `c g = 0` (`w₀ ≠ 0`), and
+`ρ g w₀ = w₀` forces `ψ g = 1` — the kernel carrier; through
+`hρ.isUnramified` (with the `Rat.subsingleton_ringHom` `convert`
+bridge) this kills `ψ - 1`, `χ - 1` and `c` on the inertia of every
+prime `q ∉ {2, 3}`; on the inertia at `3` the coboundary hypothesis
+`hs` vanishes on the agreement locus; and the twisted conjugation
+equivariance `χ(g)·c(ghg⁻¹) = ψ(g)·c(h)` for `h ∈ H` follows from
+two applications of the cocycle identity and commutativity of `kˣ`. -/
 theorem cocycle_eq_zero_on_agreement_of_local_at_three
     {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
     [TopologicalSpace k] [DiscreteTopology k]
@@ -7489,8 +8129,99 @@ theorem cocycle_eq_zero_on_agreement_of_local_at_three
           (ψ (Field.absoluteGaloisGroup.map (algebraMap ℚ
             (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
               Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) : k))) :
-    ∀ g : Γ ℚ, (ψ g : k) = (χ g : k) → c g = 0 :=
-  sorry
+    ∀ g : Γ ℚ, (ψ g : k) = (χ g : k) → c g = 0 := by
+  classical
+  -- the kernel carrier: `ψ`, `χ` and `c` are trivial on `ker ρ`
+  have hker : ∀ g : Γ ℚ, ρ g = 1 →
+      (ψ g : k) = 1 ∧ (χ g : k) = 1 ∧ c g = 0 := by
+    intro g hg
+    have hgv : ∀ y : V, ρ g y = y := by
+      intro y
+      rw [hg]
+      rfl
+    have hψ1 : (ψ g : k) = 1 := by
+      have h1 : (ψ g : k) • w₀ = w₀ := by
+        rw [← hψ g w₀ hw₀]
+        exact hgv w₀
+      have h2 : ((ψ g : k) - 1) • w₀ = 0 := by
+        rw [sub_smul, one_smul, h1, sub_self]
+      rcases smul_eq_zero.mp h2 with h | h
+      · exact sub_eq_zero.mp h
+      · exact absurd h hw₀ne
+    have hχ1 : (χ g : k) = 1 := by
+      by_contra hne1
+      apply hv₁
+      have h1 : (χ g : k) • v₁ + c g • w₀ = v₁ := by
+        rw [← hc g]
+        exact hgv v₁
+      have h3 : (1 - (χ g : k)) • v₁ = c g • w₀ := by
+        rw [sub_smul, one_smul]
+        linear_combination (norm := module) -h1
+      have h4 : v₁ = ((1 - (χ g : k))⁻¹ * c g) • w₀ := by
+        rw [mul_smul, ← h3, smul_smul,
+          inv_mul_cancel₀ (sub_ne_zero.mpr (Ne.symm hne1)), one_smul]
+      rw [h4]
+      exact Submodule.smul_mem W₀ _ hw₀
+    refine ⟨hψ1, hχ1, ?_⟩
+    have h1 : (χ g : k) • v₁ + c g • w₀ = v₁ := by
+      rw [← hc g]
+      exact hgv v₁
+    rw [hχ1, one_smul] at h1
+    have h2 : c g • w₀ = 0 := by
+      linear_combination (norm := module) h1
+    rcases smul_eq_zero.mp h2 with h | h
+    · exact h
+    · exact absurd h hw₀ne
+  -- vanishing on the inertia of every prime outside `{2, 3}`
+  have hunr : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ 3 →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        (ψ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) : k) = 1 ∧
+        (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) : k) = 1 ∧
+        c (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 0 := by
+    intro q hq hq2 hq3 σ hσ
+    apply hker
+    have h1 : (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat) σ = 1 :=
+      (hρ.isUnramified q hq ⟨hq2, hq3⟩).localInertiaGroup_le hσ
+    rw [GaloisRep.toLocal_apply] at h1
+    convert h1 using 4
+    exact Subsingleton.elim _ _
+  -- vanishing on the inertia at `3` inside the agreement locus
+  have h3z : ∀ σ ∈ localInertiaGroup
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+      (ψ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) : k) =
+        (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) : k) →
+      c (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) = 0 := by
+    intro σ hσ hag
+    rw [hs σ hσ, hag, sub_self, mul_zero]
+  -- the twisted conjugation equivariance
+  have hconj : ∀ g h : Γ ℚ, (ψ h : k) = (χ h : k) →
+      (χ g : k) * c (g * h * g⁻¹) = (ψ g : k) * c h := by
+    intro g h hh
+    have h1 := hcocycle (g * h * g⁻¹) g
+    rw [inv_mul_cancel_right] at h1
+    have h2 := hcocycle g h
+    have hψc : (ψ (g * h * g⁻¹) : k) = (ψ h : k) := by
+      have h3' : ψ (g * h * g⁻¹) = ψ h := by
+        rw [map_mul, map_mul, map_inv, mul_comm (ψ g) (ψ h), mul_assoc,
+          mul_inv_cancel, mul_one]
+      rw [h3']
+    rw [hψc] at h1
+    linear_combination h2 - h1 - c g * hh
+  -- the ray-class core (sorried leaf)
+  exact agreement_cocycle_eq_zero_ray_class V hV hρ W₀ hW₀fr hstable ψ hψ
+    χ hχ h3 w₀ hw₀ hw₀ne v₁ hv₁ c hc hcocycle s hs hker hunr h3z hconj
 
 /-- **The global Selmer vanishing** (DECOMPOSED 2026-07-23 into the
 agreement-locus sorry node
