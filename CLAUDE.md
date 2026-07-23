@@ -299,9 +299,13 @@ standard Co-Authored-By and Claude-Session lines.
 server exposing exactly two tools — `diagnostics(file_path)` and
 `build(clean=False)` — talking directly over one `flt-report-server`
 instance's FIFOs (the same Content-Length-framed JSON-RPC protocol as
-`progress-tree.py`'s report-server client). It takes `--project-path`
-as an argument rather than doing any root-detection: the argument IS
-the routing.
+`progress-tree.py`'s report-server client). It takes `--socket-dir` —
+the target instance's `.report-server` directory (holding
+`req.fifo`/`resp.fifo`/`lock`/`state.json`) — as an argument rather than
+doing any root-detection: the argument IS the routing, not a project
+path to derive it from (the project path, needed for `build`'s cwd and
+for resolving relative `file_path` args, is just `--socket-dir`'s
+parent).
 
 `lake serve` is single-rooted for its whole process lifetime (verified
 empirically via an isolated toy-project test) — a server rooted at one
@@ -311,8 +315,8 @@ different worktree. So there is one `report-mcp.py` process, and one
 (main + `flt-lean-1..13`), each independently rooted. `.mcp.json`
 registers all 14 as separate entries (`report-flt-lean`,
 `report-flt-lean-1` .. `report-flt-lean-13`), each pointing
-`--project-path` at its matching worktree. An agent working in
-`flt-lean-N` uses the `report-flt-lean-N` entry.
+`--socket-dir` at its matching worktree's `.report-server`. An agent
+working in `flt-lean-N` uses the `report-flt-lean-N` entry.
 
 `diagnostics` syncs the file with on-disk content (`didOpen` the first
 time, `didChange` after) and blocks on `textDocument/waitForDiagnostics`

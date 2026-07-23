@@ -4,10 +4,13 @@ flt-report-server instance's FIFOs (Deyao 2026-07-23: "just make mcp
 accept an argument about where the server socket is, then start 13
 servers in .mcp").
 
-One process per worktree, selected via --project-path; .mcp.json wires
-one server entry per worktree onto the matching flt-report-server@<name>
-instance. No root-detection, no multi-project logic — the argument IS
-the routing.
+One process per worktree, selected via --socket-dir (the instance's
+.report-server directory, holding req.fifo/resp.fifo/lock/state.json —
+the argument IS the routing, not a project path to derive it from);
+.mcp.json wires one server entry per worktree onto the matching
+flt-report-server@<name> instance. The project path (for `build`'s cwd
+and for resolving relative file_path args) is just --socket-dir's
+parent directory.
 """
 import argparse
 import fcntl
@@ -29,9 +32,9 @@ class PipeLsp:
     stream.
     """
 
-    def __init__(self, project_path):
-        self.project_path = project_path
-        self.dir = os.path.join(project_path, ".report-server")
+    def __init__(self, socket_dir):
+        self.dir = socket_dir
+        self.project_path = os.path.dirname(socket_dir)
         self.req_fifo = os.path.join(self.dir, "req.fifo")
         self.resp_fifo = os.path.join(self.dir, "resp.fifo")
         self.lock_file = os.path.join(self.dir, "lock")
@@ -189,11 +192,12 @@ class PipeLsp:
             return self.diags.get(uri, [])
 
 
-def build_mcp(project_path):
+def build_mcp(socket_dir):
     from mcp.server.fastmcp import FastMCP
 
+    project_path = os.path.dirname(socket_dir)
     mcp = FastMCP(f"report-lsp-{os.path.basename(project_path)}")
-    lsp = PipeLsp(project_path)
+    lsp = PipeLsp(socket_dir)
 
     @mcp.tool()
     def diagnostics(file_path: str) -> dict:
@@ -229,6 +233,11 @@ def build_mcp(project_path):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--project-path", required=True)
+    ap.add_argument(
+        "--socket-dir",
+        required=True,
+        help="the flt-report-server instance's .report-server directory "
+        "(holds req.fifo/resp.fifo/lock/state.json)",
+    )
     args = ap.parse_args()
-    build_mcp(os.path.abspath(args.project_path)).run()
+    build_mcp(os.path.abspath(args.socket_dir)).run()
