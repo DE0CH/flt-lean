@@ -65,6 +65,16 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "mcp__report-flt-lean.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/unused-binding-check.py\"",
+            "timeout": 120
+          }
+        ]
       }
     ],
     "Stop": [
