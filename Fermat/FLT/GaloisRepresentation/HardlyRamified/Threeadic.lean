@@ -1548,14 +1548,15 @@ theorem monoidHom_eq_one_of_forall_localInertia
     exact Subgroup.mem_top g
   exact φ.mem_ker.mp hker
 
-/-- **Openness of the congruence subgroup** (sorry node — the continuity
-stratum): the set of `g ∈ Γ ℚ` acting trivially modulo `𝔪ᵏ` is open.
-Route: `ρ` is continuous into `End V` with the `R`-module topology; the
-congruence condition is a union of translates of the subgroup
-`𝔪ᵏ • ⊤ ⊆ End V`, which is open because it contains `3ᵏ • ⊤` and
-`End V` is topologically a finite free `ℤ₃`-module (transitivity of the
-module topology along `ℤ₃ → R → End V`, then coordinates: `3ᵏℤ₃` is
-open in `ℤ₃`, e.g. by `PadicInt.norm_le_pow_iff_mem_span_pow`). -/
+/-- **Openness of the congruence subgroup** (PROVEN 2026-07-23 — the
+continuity stratum): the set of `g ∈ Γ ℚ` acting trivially modulo `𝔪ᵏ`
+is open. `ρ` is continuous into `End V` with the `R`-module topology;
+along a basis of `V` the congruence condition is a finite intersection
+of conditions "matrix entry lies in a translate of `𝔪ᵏ`", each an open
+condition: the entry functionals are `R`-linear hence continuous
+(`IsModuleTopology.continuous_of_linearMap`), and `𝔪ᵏ ⊆ R` is open by
+`IsLocalRing.isOpen_maximalIdeal_pow` (`R` is a compact Hausdorff
+Noetherian topological ring — transport along a `ℤ₃`-basis). -/
 theorem isOpen_setOf_forall_sub_mem_pow_smul
     {R : Type u} [CommRing R]
     [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
@@ -1566,7 +1567,91 @@ theorem isOpen_setOf_forall_sub_mem_pow_smul
     (ρ : GaloisRep ℚ R V) (k : ℕ) :
     IsOpen {g : Γ ℚ | ∀ x : V, ρ g x - x ∈
       (IsLocalRing.maximalIdeal R ^ k) • (⊤ : Submodule R V)} := by
-  sorry
+  classical
+  letI := moduleTopology R (Module.End R V)
+  haveI : IsModuleTopology R (Module.End R V) := ⟨rfl⟩
+  -- `R` is a compact Hausdorff Noetherian topological ring, so `𝔪ᵏ` is
+  -- open (`IsLocalRing.isOpen_maximalIdeal_pow`)
+  haveI hNoeth : IsNoetherianRing R := IsNoetherianRing.of_finite ℤ_[3] R
+  let eR : R ≃ₗ[ℤ_[3]] (Module.Free.ChooseBasisIndex ℤ_[3] R → ℤ_[3]) :=
+    (Module.Free.chooseBasis ℤ_[3] R).equivFun
+  have hcont₁ : Continuous eR :=
+    IsModuleTopology.continuous_of_linearMap eR.toLinearMap
+  have hcont₂ : Continuous eR.symm :=
+    IsModuleTopology.continuous_of_linearMap eR.symm.toLinearMap
+  let homR : R ≃ₜ (Module.Free.ChooseBasisIndex ℤ_[3] R → ℤ_[3]) :=
+    { toEquiv := eR.toEquiv
+      continuous_toFun := hcont₁
+      continuous_invFun := hcont₂ }
+  haveI : CompactSpace R := homR.symm.compactSpace
+  haveI : T2Space R := homR.symm.symm.isEmbedding.t2Space
+  have hIk : IsOpen ((IsLocalRing.maximalIdeal R ^ k : Ideal R) : Set R) :=
+    IsLocalRing.isOpen_maximalIdeal_pow R k
+  -- coordinates along a basis of `V` detect the congruence condition
+  let b := Module.Free.chooseBasis R V
+  have hmem : ∀ y : V,
+      y ∈ (IsLocalRing.maximalIdeal R ^ k) • (⊤ : Submodule R V)
+      ↔ ∀ j, b.repr y j ∈ IsLocalRing.maximalIdeal R ^ k := by
+    intro y
+    constructor
+    · intro hy j
+      refine Submodule.smul_induction_on hy (fun r hr v _ => ?_)
+        fun v w hv hw => ?_
+      · rw [map_smul, Finsupp.smul_apply, smul_eq_mul]
+        exact Ideal.mul_mem_right _ _ hr
+      · rw [map_add, Finsupp.add_apply]
+        exact Ideal.add_mem _ hv hw
+    · intro hy
+      have hrepr := b.sum_repr y
+      rw [← hrepr]
+      exact Submodule.sum_mem _ fun j _ =>
+        Submodule.smul_mem_smul (hy j) trivial
+  -- the congruence set is the `ρ`-preimage of an open set of matrix type
+  have hset : {g : Γ ℚ | ∀ x : V, ρ g x - x ∈
+        (IsLocalRing.maximalIdeal R ^ k) • (⊤ : Submodule R V)}
+      = ⇑ρ ⁻¹' (⋂ (i) (j),
+          ((b.coord j).comp (LinearMap.applyₗ (b i))) ⁻¹'
+            {r : R | r - b.repr (b i) j ∈
+              IsLocalRing.maximalIdeal R ^ k}) := by
+    ext g
+    simp only [Set.mem_setOf_eq, Set.mem_preimage, Set.mem_iInter,
+      LinearMap.comp_apply, LinearMap.applyₗ_apply_apply,
+      Module.Basis.coord_apply]
+    constructor
+    · intro hg i j
+      have h1 := (hmem _).mp (hg (b i)) j
+      rwa [map_sub, Finsupp.sub_apply] at h1
+    · intro hg x
+      have hbase : ∀ i, ρ g (b i) - b i ∈
+          (IsLocalRing.maximalIdeal R ^ k) • (⊤ : Submodule R V) := by
+        intro i
+        rw [hmem]
+        intro j
+        have h1 := hg i j
+        rw [map_sub, Finsupp.sub_apply]
+        exact h1
+      set D : V →ₗ[R] V := (ρ g : V →ₗ[R] V) - LinearMap.id with hD
+      have happly : ∀ v, D v = ρ g v - v := fun v => rfl
+      have hx : ρ g x - x = ∑ i, b.repr x i • (ρ g (b i) - b i) :=
+        calc ρ g x - x
+            = D x := (happly x).symm
+          _ = D (∑ i, b.repr x i • b i) := by rw [Module.Basis.sum_repr]
+          _ = ∑ i, b.repr x i • (D (b i)) := by
+              rw [map_sum]
+              simp_rw [map_smul]
+          _ = ∑ i, b.repr x i • (ρ g (b i) - b i) := by simp_rw [happly]
+      rw [hx]
+      exact Submodule.sum_mem _ fun i _ =>
+        Submodule.smul_mem _ _ (hbase i)
+  rw [hset]
+  refine (ContinuousMonoidHom.continuous_toFun ρ).isOpen_preimage _ ?_
+  refine isOpen_iInter_of_finite fun i => isOpen_iInter_of_finite fun j => ?_
+  refine (IsModuleTopology.continuous_of_linearMap _).isOpen_preimage _ ?_
+  have htr : {r : R | r - b.repr (b i) j ∈ IsLocalRing.maximalIdeal R ^ k}
+      = (fun r : R => r - b.repr (b i) j) ⁻¹'
+        ((IsLocalRing.maximalIdeal R ^ k : Ideal R) : Set R) := rfl
+  rw [htr]
+  exact (continuous_sub_right _).isOpen_preimage _ hIk
 
 /-- **Approximate homomorphisms die on inertia at `2`** (sorry node —
 the tame stratum): a function `T` on `Γ ℚ` with values in `𝔪ⁿ⁺¹` which
