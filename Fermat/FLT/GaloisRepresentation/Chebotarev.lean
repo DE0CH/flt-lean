@@ -915,8 +915,98 @@ for any injection with image `T`), and the sum over ALL functions
 `k! · ∑_{#T = k} ∏_{T} x ≤ (∑ x)^k`. -/
 theorem tsum_finset_prod_le_tsum_pow_div_factorial {ι : Type*} (x : ι → ℝ≥0∞) :
     ∑' T : Finset ι, ∏ i ∈ T, x i ≤
-      ∑' k : ℕ, (∑' i : ι, x i) ^ k / (Nat.factorial k : ℝ≥0∞) :=
-  sorry
+      ∑' k : ℕ, (∑' i : ι, x i) ^ k / (Nat.factorial k : ℝ≥0∞) := by
+  classical
+  -- the `k`-th power of the sum is the sum over all `k`-tuples
+  have hpow : ∀ k : ℕ, (∑' i : ι, x i) ^ k =
+      ∑' v : Fin k → ι, ∏ j : Fin k, x (v j) := by
+    intro k
+    induction k with
+    | zero =>
+      rw [pow_zero, tsum_eq_single (default : Fin 0 → ι) (fun b hb =>
+        absurd (Subsingleton.elim b default) hb)]
+      simp
+    | succ n ih =>
+      rw [← (Fin.consEquiv (fun _ : Fin (n + 1) => ι)).tsum_eq
+        (fun v : Fin (n + 1) → ι => ∏ j, x (v j))]
+      calc (∑' i : ι, x i) ^ (n + 1)
+          = (∑' i : ι, x i) * (∑' i : ι, x i) ^ n := pow_succ' _ _
+        _ = ∑' i : ι, x i * ∑' v : Fin n → ι, ∏ j : Fin n, x (v j) := by
+            rw [ih, ENNReal.tsum_mul_right]
+        _ = ∑' p : ι × (Fin n → ι), ∏ j : Fin (n + 1),
+              x ((Fin.consEquiv (fun _ : Fin (n + 1) => ι)) p j) := by
+            rw [ENNReal.tsum_prod']
+            refine tsum_congr fun a => ?_
+            rw [← ENNReal.tsum_mul_left]
+            refine tsum_congr fun v => ?_
+            rw [Fin.prod_univ_succ]
+            simp [Fin.consEquiv]
+  -- fibre the left side over the cardinality
+  rw [← ENNReal.tsum_fiberwise (fun T : Finset ι => ∏ i ∈ T, x i)
+    (fun T : Finset ι => T.card)]
+  refine ENNReal.tsum_le_tsum fun k => ?_
+  rw [ENNReal.le_div_iff_mul_le
+    (Or.inl (by exact_mod_cast k.factorial_ne_zero))
+    (Or.inl (ENNReal.natCast_ne_top _)), hpow k]
+  -- the embeddings of `Fin k`, fibered over their image
+  have hΦmem : ∀ v : Fin k ↪ ι, Finset.univ.map v ∈
+      ((fun T : Finset ι => T.card) ⁻¹' {k} : Set (Finset ι)) := by
+    intro v
+    simp [Finset.card_map]
+  set Φ : (Fin k ↪ ι) →
+      ((fun T : Finset ι => T.card) ⁻¹' {k} : Set (Finset ι)) :=
+    fun v => ⟨Finset.univ.map v, hΦmem v⟩ with hΦ
+  have hemb : (∑' T : ((fun T : Finset ι => T.card) ⁻¹' {k} : Set (Finset ι)),
+      ∏ i ∈ (T : Finset ι), x i) * (Nat.factorial k : ℝ≥0∞) =
+      ∑' v : Fin k ↪ ι, ∏ j : Fin k, x (v j) := by
+    rw [← ENNReal.tsum_fiberwise (fun v : Fin k ↪ ι => ∏ j : Fin k, x (v j)) Φ,
+      ← ENNReal.tsum_mul_right]
+    refine tsum_congr fun T => ?_
+    -- each fiber element has product `∏_{i ∈ T} x i`
+    have hconst : ∀ w : ↥(Φ ⁻¹' {T}),
+        (∏ j : Fin k, x (w.1 j)) = ∏ i ∈ (T : Finset ι), x i := by
+      intro w
+      have huniv : Finset.univ.map w.1 = (T : Finset ι) :=
+        congrArg Subtype.val w.2
+      rw [← huniv, Finset.prod_map]
+    -- the fiber is equivalent to the embeddings into `↥T`, of which
+    -- there are exactly `k!`
+    have e : ↥(Φ ⁻¹' {T}) ≃ (Fin k ↪ ↥(T : Finset ι)) :=
+      { toFun := fun w =>
+          ⟨fun j => ⟨w.1 j, by
+            have huniv : Finset.univ.map w.1 = (T : Finset ι) :=
+              congrArg Subtype.val w.2
+            rw [← huniv]
+            exact Finset.mem_map_of_mem _ (Finset.mem_univ j)⟩,
+          fun a b hab => w.1.injective (congrArg Subtype.val hab)⟩
+        invFun := fun w =>
+          ⟨⟨fun j => (w j : ι),
+            fun a b hab => w.injective (Subtype.ext hab)⟩, by
+            have hsub : Finset.univ.map
+                (⟨fun j => (w j : ι), fun a b hab =>
+                  w.injective (Subtype.ext hab)⟩ : Fin k ↪ ι) ⊆
+                (T : Finset ι) := by
+              intro i hi
+              obtain ⟨j, -, rfl⟩ := Finset.mem_map.mp hi
+              exact (w j).2
+            refine Subtype.ext (Finset.eq_of_subset_of_card_le hsub ?_)
+            rw [Finset.card_map, Finset.card_univ, Fintype.card_fin]
+            exact le_of_eq T.2⟩
+        left_inv := fun w => Subtype.ext (DFunLike.ext _ _ fun j => rfl)
+        right_inv := fun w => DFunLike.ext _ _ fun j => Subtype.ext rfl }
+    haveI : Finite ↥(Φ ⁻¹' {T}) := Finite.of_equiv _ e.symm
+    rw [tsum_congr hconst, ENNReal.tsum_const, ENat.card_eq_coe_natCard,
+      Nat.card_congr e, Nat.card_eq_fintype_card, Fintype.card_embedding_eq,
+      Fintype.card_fin, Fintype.card_coe,
+      show (T : Finset ι).card = k from T.2, Nat.descFactorial_self, mul_comm]
+    norm_cast
+  calc (∑' T : ((fun T : Finset ι => T.card) ⁻¹' {k} : Set (Finset ι)),
+        ∏ i ∈ (T : Finset ι), x i) * (Nat.factorial k : ℝ≥0∞)
+      = ∑' v : Fin k ↪ ι, ∏ j : Fin k, x (v j) := hemb
+    _ ≤ ∑' v : Fin k → ι, ∏ j : Fin k, x (v j) :=
+        ENNReal.tsum_comp_le_tsum_of_injective
+          (f := fun v : Fin k ↪ ι => (v : Fin k → ι))
+          DFunLike.coe_injective (fun u => ∏ j : Fin k, x (u j))
 
 open IsDedekindDomain in
 /-- Finiteness of the set of finite places with prescribed residue
