@@ -679,30 +679,218 @@ theorem finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated
     Finite (D.R ⧸ Ideal.span {(ℓ : D.R)}) :=
   sorry
 
-/-- **Completeness bootstrap** (sorry node, pure commutative algebra —
-no arithmetic content): a Noetherian local `ℤ_ℓ`-algebra `R`, separated
-for its maximal-adic topology, with residue characteristic `ℓ` (it maps
-to `ℤ/ℓℤ`) and finite modulo `ℓ`, is finite as a `ℤ_ℓ`-module.
+/-- **Completeness bootstrap** (PROVEN 2026-07-23, pure commutative
+algebra — no arithmetic content): a Noetherian local `ℤ_ℓ`-algebra `R`,
+separated for its maximal-adic topology, with residue characteristic
+`ℓ` (it maps to `ℤ/ℓℤ`) and finite modulo `ℓ`, is finite as a
+`ℤ_ℓ`-module.
 
-Proof sketch (standard: Mazur, *Deforming Galois representations*,
-§1.1; Matsumura, Thm. 8.4): `ℓ` lies in the maximal ideal (it dies
-under the reduction map, whose kernel is the maximal ideal of the local
-ring, `π` being surjective onto the prime field `ℤ/ℓℤ`), so
-`ℓ^t R ⊆ 𝔪^t`. Choose representatives `x₁, …, x_s ∈ R` of the finitely
-many classes of `R/(ℓ)`; every `r ∈ R` unwinds as `r = Σ_j ℓ^j a_j`
-with each `a_j` among the `xᵢ`, the coordinatewise partial sums of the
-resulting `ℤ_ℓ`-coefficients converge in the complete `ℤ_ℓ`, and adic
-separatedness identifies `r` with the limit combination — so the `xᵢ`
-generate `R` as a `ℤ_ℓ`-module. (Noetherianness is kept in the
-hypotheses to match the literature statements; it is available at the
-sole use site.) -/
+Proof (standard: Mazur, *Deforming Galois representations*, §1.1;
+Matsumura, Thm. 8.4): `ℓ` lies in the maximal ideal (it dies under the
+reduction map, whose kernel is the maximal ideal of the local ring, `π`
+being surjective onto the prime field `ℤ/ℓℤ`), so `ℓ^t R ⊆ 𝔪^t`.
+Choose representatives `x₁, …, x_s ∈ R` of the finitely many classes of
+`R/(ℓ)`; every `r ∈ R` unwinds as `r = Σ_j ℓ^j a_j` with each `a_j`
+among the `xᵢ`, the coordinatewise partial sums of the resulting
+`ℤ_ℓ`-coefficients converge in the complete `ℤ_ℓ` (`IsPrecomplete`,
+purely algebraically), and adic separatedness identifies `r` with the
+limit combination — so the `xᵢ` generate `R` as a `ℤ_ℓ`-module.
+
+(The `IsNoetherianRing` hypothesis is DELIBERATELY retained although
+this proof does not consume it: it keeps the statement aligned with the
+literature form of the bootstrap, and its sole use site — the
+finiteness-stratum assembly `moduleFinite_of_isWeaklyUniversal_...`
+below — discharges it with the `isNoetherianRing` field of
+`HardlyRamifiedDeformation`, which keeps that structure field inside
+the root theorem's dependency cone. Do not remove it.) -/
 theorem moduleFinite_of_finite_quotient_span {R : Type*} [CommRing R]
     [IsLocalRing R] [Algebra ℤ_[ℓ] R] [IsNoetherianRing R]
     [IsHausdorff (IsLocalRing.maximalIdeal R) R]
     (π : R →+* ZMod ℓ)
     (hfin : Finite (R ⧸ Ideal.span {(ℓ : R)})) :
-    Module.Finite ℤ_[ℓ] R :=
-  sorry
+    Module.Finite ℤ_[ℓ] R := by
+  classical
+  -- `ℓ` lies in the maximal ideal: it dies under the reduction map, whose
+  -- kernel is the maximal ideal
+  have hker : RingHom.ker π = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.eq_maximalIdeal
+      (RingHom.ker_isMaximal_of_surjective π (ZMod.ringHom_surjective π))
+  have hℓm : (ℓ : R) ∈ IsLocalRing.maximalIdeal R := by
+    rw [← hker, RingHom.mem_ker, map_natCast, ZMod.natCast_self]
+  haveI := hfin
+  haveI : Fintype (R ⧸ Ideal.span {(ℓ : R)}) := Fintype.ofFinite _
+  -- a set-theoretic section of the reduction onto the finite quotient
+  let s : (R ⧸ Ideal.span {(ℓ : R)}) → R :=
+    Function.surjInv Ideal.Quotient.mk_surjective
+  have hs : ∀ q, Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (s q) = q :=
+    fun q => Function.surjInv_eq Ideal.Quotient.mk_surjective q
+  -- division step: subtracting the representative of the class leaves a
+  -- multiple of `ℓ`
+  have hstep : ∀ x : R, ∃ c : R,
+      x - s (Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) x) = (ℓ : R) * c := by
+    intro x
+    have hx : x - s (Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) x) ∈
+        Ideal.span {(ℓ : R)} := by
+      rw [← Ideal.Quotient.eq]
+      exact (hs _).symm
+    obtain ⟨c, hc⟩ := Ideal.mem_span_singleton'.mp hx
+    exact ⟨c, by rw [← hc, mul_comm]⟩
+  choose step hstepEq using hstep
+  -- the `ℤ_ℓ`-span of the representatives is everything: unwind an
+  -- arbitrary element into `ℓ`-adic digits, converge the coefficients in
+  -- the complete `ℤ_ℓ`, and identify by adic separatedness
+  have hspan : Submodule.span ℤ_[ℓ] (Set.range s) = ⊤ := by
+    rw [Submodule.eq_top_iff']
+    intro r
+    -- remainders of the iterated division
+    let rem : ℕ → R := fun t =>
+      Nat.rec (motive := fun _ => R) r (fun _ prev => step prev) t
+    have hremS : ∀ t, rem (t + 1) = step (rem t) := fun _ => rfl
+    -- partial coefficient sums, one per representative
+    set c : ℕ → (R ⧸ Ideal.span {(ℓ : R)}) → ℤ_[ℓ] := fun t q =>
+      ∑ j ∈ Finset.range t,
+        if Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j) = q
+        then (ℓ : ℤ_[ℓ]) ^ j else 0 with hcdef
+    -- the partial sums are Cauchy for the `ℓ`-adic filtration of `ℤ_ℓ`
+    have hcauchy : ∀ q, ∀ {a b : ℕ}, a ≤ b →
+        c a q ≡ c b q [SMOD
+          (IsLocalRing.maximalIdeal ℤ_[ℓ] ^ a • ⊤ :
+            Submodule ℤ_[ℓ] ℤ_[ℓ])] := by
+      intro q a b hab
+      rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top]
+      have hsplit : c b q - c a q = ∑ j ∈ Finset.Ico a b,
+          (if Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j) = q
+           then (ℓ : ℤ_[ℓ]) ^ j else 0) := by
+        simp only [hcdef]
+        rw [← Finset.sum_range_add_sum_Ico _ hab]
+        ring
+      have hmem : ∑ j ∈ Finset.Ico a b,
+          (if Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j) = q
+           then (ℓ : ℤ_[ℓ]) ^ j else 0) ∈
+          (IsLocalRing.maximalIdeal ℤ_[ℓ] ^ a : Ideal ℤ_[ℓ]) := by
+        refine Submodule.sum_mem _ fun j hj => ?_
+        rw [Finset.mem_Ico] at hj
+        rw [PadicInt.maximalIdeal_eq_span_p, Ideal.span_singleton_pow]
+        split_ifs
+        · exact Ideal.mem_span_singleton.mpr (pow_dvd_pow _ hj.1)
+        · exact Submodule.zero_mem _
+      have hflip : c a q - c b q = -(c b q - c a q) := by ring
+      rw [hflip, hsplit]
+      exact neg_mem hmem
+    -- converge the coefficients in the complete `ℤ_ℓ`
+    have hex : ∀ q, ∃ Lq : ℤ_[ℓ], ∀ t, c t q ≡ Lq [SMOD
+        (IsLocalRing.maximalIdeal ℤ_[ℓ] ^ t • ⊤ :
+          Submodule ℤ_[ℓ] ℤ_[ℓ])] :=
+      fun q => IsPrecomplete.prec inferInstance
+        (fun {a b} hab => hcauchy q hab)
+    choose L hL using hex
+    -- the finite-stage identity: `r` is the digit combination plus an
+    -- `ℓ^t`-divisible remainder
+    have hA : ∀ t, r = (∑ j ∈ Finset.range t, (ℓ : R) ^ j *
+        s (Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j))) +
+        (ℓ : R) ^ t * rem t := by
+      intro t
+      induction t with
+      | zero =>
+        rw [Finset.sum_range_zero, pow_zero, one_mul, zero_add]
+        rfl
+      | succ t ih =>
+        have hdiv : rem t =
+            s (Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem t)) +
+              (ℓ : R) * rem (t + 1) := by
+          have h1 := hstepEq (rem t)
+          rw [← hremS t] at h1
+          rw [← h1]
+          ring
+        calc r = (∑ j ∈ Finset.range t, (ℓ : R) ^ j *
+              s (Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j))) +
+              (ℓ : R) ^ t * rem t := ih
+          _ = (∑ j ∈ Finset.range (t + 1), (ℓ : R) ^ j *
+              s (Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j))) +
+              (ℓ : R) ^ (t + 1) * rem (t + 1) := by
+            conv_lhs => rw [hdiv]
+            rw [Finset.sum_range_succ]
+            ring
+    -- regroup the digit combination by representative
+    have hB : ∀ t, (∑ j ∈ Finset.range t, (ℓ : R) ^ j *
+        s (Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j))) =
+        ∑ q, algebraMap ℤ_[ℓ] R (c t q) * s q := by
+      intro t
+      have hterm : ∀ q, algebraMap ℤ_[ℓ] R (c t q) * s q =
+          ∑ j ∈ Finset.range t,
+            (if Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j) = q
+             then (ℓ : R) ^ j * s q else 0) := by
+        intro q
+        simp only [hcdef]
+        rw [map_sum, Finset.sum_mul]
+        refine Finset.sum_congr rfl fun j _ => ?_
+        split_ifs
+        · rw [map_pow, map_natCast]
+        · rw [map_zero, zero_mul]
+      refine Eq.symm ?_
+      calc ∑ q, algebraMap ℤ_[ℓ] R (c t q) * s q
+          = ∑ q, ∑ j ∈ Finset.range t,
+              (if Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j) = q
+               then (ℓ : R) ^ j * s q else 0) :=
+            Finset.sum_congr rfl fun q _ => hterm q
+        _ = ∑ j ∈ Finset.range t, ∑ q,
+              (if Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j) = q
+               then (ℓ : R) ^ j * s q else 0) :=
+            Finset.sum_comm
+        _ = ∑ j ∈ Finset.range t, (ℓ : R) ^ j *
+              s (Ideal.Quotient.mk (Ideal.span {(ℓ : R)}) (rem j)) := by
+            refine Finset.sum_congr rfl fun j _ => ?_
+            rw [Finset.sum_ite_eq]
+            simp
+    -- the limit combination differs from `r` by an element of every power
+    -- of the maximal ideal …
+    have hsmul : ∑ q, L q • s q = ∑ q, algebraMap ℤ_[ℓ] R (L q) * s q :=
+      Finset.sum_congr rfl fun q _ => Algebra.smul_def _ _
+    have hmemt : ∀ t : ℕ, r - ∑ q, L q • s q ∈
+        (IsLocalRing.maximalIdeal R ^ t : Ideal R) := by
+      intro t
+      have hsub : r - ∑ q, L q • s q =
+          (ℓ : R) ^ t * rem t +
+          ∑ q, algebraMap ℤ_[ℓ] R (c t q - L q) * s q := by
+        calc r - ∑ q, L q • s q
+            = ((∑ q, algebraMap ℤ_[ℓ] R (c t q) * s q) +
+                (ℓ : R) ^ t * rem t) -
+                ∑ q, algebraMap ℤ_[ℓ] R (L q) * s q := by
+              rw [← hB t, ← hA t, hsmul]
+          _ = (ℓ : R) ^ t * rem t +
+              ∑ q, (algebraMap ℤ_[ℓ] R (c t q) * s q -
+                algebraMap ℤ_[ℓ] R (L q) * s q) := by
+              rw [Finset.sum_sub_distrib]
+              ring
+          _ = (ℓ : R) ^ t * rem t +
+              ∑ q, algebraMap ℤ_[ℓ] R (c t q - L q) * s q := by
+              refine congrArg (fun z => (ℓ : R) ^ t * rem t + z) ?_
+              exact Finset.sum_congr rfl fun q _ => by
+                rw [map_sub, sub_mul]
+      rw [hsub]
+      refine Submodule.add_mem _ ?_ ?_
+      · exact Ideal.mul_mem_right _ _ (Ideal.pow_mem_pow hℓm t)
+      · refine Submodule.sum_mem _ fun q _ => ?_
+        have hLqt := hL q t
+        rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top,
+          PadicInt.maximalIdeal_eq_span_p, Ideal.span_singleton_pow,
+          Ideal.mem_span_singleton] at hLqt
+        obtain ⟨d, hd⟩ := hLqt
+        rw [hd, map_mul, map_pow, map_natCast, mul_assoc]
+        exact Ideal.mul_mem_right _ _ (Ideal.pow_mem_pow hℓm t)
+    -- … hence vanishes by adic separatedness
+    have hzero : r - ∑ q, L q • s q = 0 := by
+      refine IsHausdorff.haus (inferInstance :
+        IsHausdorff (IsLocalRing.maximalIdeal R) R) _ fun t => ?_
+      rw [SModEq.zero, smul_eq_mul, Ideal.mul_top]
+      exact hmemt t
+    rw [sub_eq_zero.mp hzero]
+    exact Submodule.sum_mem _ fun q _ =>
+      Submodule.smul_mem _ _ (Submodule.subset_span ⟨q, rfl⟩)
+  -- conclude module finiteness from the finite generating set
+  exact Module.finite_def.mpr
+    ⟨(Set.finite_range s).toFinset, by
+      rw [Set.Finite.coe_toFinset]; exact hspan⟩
 
 /-- **Finiteness leaf** (DECOMPOSED 2026-07-23 into the mod-`ℓ`
 finiteness leaf `finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated`
