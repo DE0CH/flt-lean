@@ -2365,8 +2365,11 @@ characteristic where that lemma's `[NeZero (n : ResidueField R)]` hypothesis is
 unavailable — no torsion hypothesis is needed at all): on the minimal model, an
 affine point of `E(Kˢᵉᵖ)` with integral abscissa over a valuation subring `𝒪`
 above `R` has integral ordinate, because `y` satisfies the monic `y`-quadratic
-of the Weierstrass equation, whose coefficients are integral. -/
-theorem WeierstrassCurve.ordinate_mem_of_abscissa_mem
+of the Weierstrass equation, whose coefficients are integral. (Named with the
+`baseChange_` prefix to distinguish it from the general valuation-subring lemma
+`WeierstrassCurve.ordinate_mem_of_abscissa_mem` proven earlier in this file, of
+which this is the minimal-model specialization.) -/
+theorem WeierstrassCurve.baseChange_ordinate_mem_of_abscissa_mem
     (𝒪 : ValuationSubring Ksep)
     (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
     {x y : Ksep} (h : (E⁄Ksep).toAffine.Nonsingular x y)
@@ -2471,7 +2474,7 @@ set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
 /-- **Equal-characteristic Néron–Ogg–Shafarevich** (DECOMPOSED 2026-07-23 into
 the kernel-torsion-freeness leaf `kernel_prime_pow_torsion_of_eqChar` — via the
-proven `ordinate_mem_of_abscissa_mem` and the kernel-of-reduction leaf
+proven `baseChange_ordinate_mem_of_abscissa_mem` and the kernel-of-reduction leaf
 `kernel_sub_abscissa_notMem_of_residue_eq`; the assembly below is proven): when
 `p` vanishes in `K` (so `R` is an equal-characteristic-`p` DVR), every inertia
 subgroup above `R` acts trivially on the `p ^ k`-torsion of `E(Kˢᵉᵖ)` — even
@@ -2521,7 +2524,7 @@ theorem WeierstrassCurve.torsion_inertia_fixes_of_eqChar
       exact WeierstrassCurve.kernel_prime_pow_torsion_of_eqChar R K E Ksep
         p k hp hpK 𝒪 h𝒪 h hx htor
     have hym : y ∈ 𝒪 :=
-      WeierstrassCurve.ordinate_mem_of_abscissa_mem R K E Ksep 𝒪 h𝒪 h hxm
+      WeierstrassCurve.baseChange_ordinate_mem_of_abscissa_mem R K E Ksep 𝒪 h𝒪 h hxm
     set σf := ((σ : Ksep ≃ₐ[K] Ksep)).toAlgHom
     have hns' : (E⁄Ksep).toAffine.Nonsingular (σf x) (σf y) :=
       (WeierstrassCurve.Affine.baseChange_nonsingular (W := E)
