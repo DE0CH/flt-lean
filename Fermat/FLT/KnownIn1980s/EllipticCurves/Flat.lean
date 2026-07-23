@@ -20,6 +20,7 @@ public import Mathlib.RingTheory.Polynomial.Resultant.Basic
 public import Fermat.FLT.EllipticCurve.PhiPsiCoprime
 import Fermat.FLT.EllipticCurve.TorsionCardSep
 import Mathlib.FieldTheory.Normal.Closure
+import Mathlib.RingTheory.Etale.Field
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
 
 /-!
@@ -1396,8 +1397,454 @@ theorem WeierstrassCurve.torsion_inertia_fixes_of_isUnit
       _ = (v * ((m' : ℕ) : ℤ)) • P + (u * ((p ^ k : ℕ) : ℤ)) • P := by rw [f1, f2]
       _ = P := hsplit
 
+/-!
+### The Grothendieck Galois correspondence for a finite-quotient Galois module
+
+The curve-independent core `exists_finiteQuotient_galoisModule_etale_package` below is
+attacked by the classical construction: for a finite abelian group `A` with an action
+`ρ` of the finite Galois group `Gal(L/K₀)`, the functions algebra is the `K₀`-algebra
+of equivariant maps `A → L` (`galoisEquivariantAlgebra`). PROVEN here: it is finite
+over `K₀` (a subspace of the finite-dimensional `A → L`); it is étale over `K₀` (every
+element is annihilated by a squarefree product of separable minimal polynomials, so
+every residue field of this — automatically Artinian and reduced — algebra is a
+separable extension of `K₀`, and a finite product of separable extensions is formally
+étale by `Algebra.FormallyEtale` machinery); the evaluation `Ω`-points at distinct
+elements of `A` are distinct, because equivariant functions separate the elements of
+`A` (on distinct orbits: an orbit indicator valued in the fixed field of the
+stabilizer; within one orbit: a fixed-field element moved by the connecting
+automorphism, which exists by the fundamental theorem of Galois theory
+`IntermediateField.fixingSubgroup_fixedField`); and the Galois equivariance of
+evaluation. The remaining SORRIED leaves are `galoisEquivariantEval_surjective` and
+`exists_hopfAlgebra_galoisEquivariantAlgebra` (see their docstrings); the
+assembly of the package from the two leaves is proven.
+-/
+
+section GaloisEtalePackage
+
+variable {K₀ : Type*} [Field K₀]
+variable {Ω : Type*} [Field Ω] [Algebra K₀ Ω]
+variable {A : Type*} [AddCommGroup A]
+variable (L : IntermediateField K₀ Ω) [FiniteDimensional K₀ L] [IsGalois K₀ L]
+variable (ρ : (L ≃ₐ[K₀] L) →* AddMonoid.End A)
+
+/-- **The equivariant-functions algebra** of a `Gal(L/K₀)`-module `A`: the
+`K₀`-subalgebra of `A → L` of functions `f` with `f (ρ g a) = g (f a)` — the functions
+algebra of the form of the constant group scheme on `A` twisted by `ρ`, realized inside
+its split form `A → L`. -/
+def galoisEquivariantAlgebra : Subalgebra K₀ (A → L) where
+  carrier := {f | ∀ (g : L ≃ₐ[K₀] L) (a : A), f (ρ g a) = g (f a)}
+  mul_mem' := fun hf hg g a => by
+    simp only [Pi.mul_apply, map_mul, hf g a, hg g a]
+  one_mem' := fun g a => by simp only [Pi.one_apply, map_one]
+  add_mem' := fun hf hg g a => by
+    simp only [Pi.add_apply, map_add, hf g a, hg g a]
+  zero_mem' := fun g a => by simp only [Pi.zero_apply, map_zero]
+  algebraMap_mem' := fun r g a => by
+    simp only [Pi.algebraMap_apply, AlgEquiv.commutes]
+
+/-- **Evaluation at an element of `A`**: the `Ω`-point of the equivariant-functions
+algebra given by evaluating at `a` and embedding `L` into `Ω`. (Glue for the package
+assembly; the injectivity is proven below, the surjectivity is the sorried leaf
+`galoisEquivariantEval_surjective`.) -/
+def galoisEquivariantEval (a : A) : galoisEquivariantAlgebra L ρ →ₐ[K₀] Ω :=
+  (IsScalarTower.toAlgHom K₀ L Ω).comp
+    ((Pi.evalAlgHom K₀ (fun _ : A => L) a).comp (galoisEquivariantAlgebra L ρ).val)
+
+omit [FiniteDimensional K₀ ↥L] [IsGalois K₀ ↥L] in
+theorem galoisEquivariantEval_apply (a : A) (f : galoisEquivariantAlgebra L ρ) :
+    galoisEquivariantEval L ρ a f = algebraMap L Ω ((f : A → L) a) := rfl
+
+omit [FiniteDimensional K₀ ↥L] in
+/-- **Galois equivariance of evaluation** (PROVEN; glue for the package assembly):
+postcomposing the evaluation at `a` with `σ : Gal(Ω/K₀)` is the evaluation at the image
+of `a` under the restriction of `σ` to `L`, because the entries of an equivariant
+function transform by the very same rule. -/
+theorem algEquiv_comp_galoisEquivariantEval (σ : Ω ≃ₐ[K₀] Ω) (a : A) :
+    σ.toAlgHom.comp (galoisEquivariantEval L ρ a) =
+      galoisEquivariantEval L ρ
+        (ρ (AlgEquiv.restrictNormalHom (F := K₀) (K₁ := Ω) L σ) a) := by
+  apply AlgHom.ext
+  rintro ⟨f, hf⟩
+  show σ (algebraMap L Ω (f a)) =
+    algebraMap L Ω (f (ρ (AlgEquiv.restrictNormalHom (F := K₀) (K₁ := Ω) L σ) a))
+  rw [hf, IntermediateField.algebraMap_apply, IntermediateField.algebraMap_apply,
+    AlgEquiv.restrictNormalHom_apply]
+
+instance galoisEquivariantAlgebra_finite [Finite A] :
+    Module.Finite K₀ (galoisEquivariantAlgebra L ρ) := by
+  haveI := Fintype.ofFinite A
+  haveI : Module.Finite K₀ (A → L) := Module.Finite.pi
+  infer_instance
+
+instance galoisEquivariantAlgebra_isReduced :
+    IsReduced (galoisEquivariantAlgebra L ρ) :=
+  ⟨fun x hx => by
+    obtain ⟨n, hn⟩ := hx
+    have h0 : (x : A → L) ^ n = 0 := by
+      simpa using congrArg Subtype.val hn
+    have hz := IsReduced.eq_zero (x : A → L) ⟨n, h0⟩
+    exact Subtype.ext (by simpa using hz)⟩
+
+omit [FiniteDimensional K₀ ↥L] in
+/-- **A separable annihilator for every equivariant function** (PROVEN; feeds the
+étale-ness of the equivariant-functions algebra): the product of the distinct minimal
+polynomials of the (finitely many) entries — distinct monic irreducibles are coprime,
+so the product of these separable polynomials is separable, and it kills every entry,
+hence the function. -/
+theorem galoisEquivariantAlgebra_exists_separable_annihilator [Finite A]
+    (x : galoisEquivariantAlgebra L ρ) :
+    ∃ P : Polynomial K₀, P.Separable ∧ Polynomial.aeval x P = 0 := by
+  classical
+  haveI := Fintype.ofFinite A
+  have hint : ∀ a : A, IsIntegral K₀ ((x : A → L) a) := fun a =>
+    Algebra.IsIntegral.isIntegral _
+  set T : Finset (Polynomial K₀) :=
+    Finset.image (fun a => minpoly K₀ ((x : A → L) a)) Finset.univ with hT
+  refine ⟨T.prod id, ?_, ?_⟩
+  · refine Polynomial.separable_prod' ?_ ?_
+    · intro p hp q hq hpq
+      rw [hT] at hp hq
+      obtain ⟨a, -, rfl⟩ := Finset.mem_image.mp hp
+      obtain ⟨b, -, rfl⟩ := Finset.mem_image.mp hq
+      refine (minpoly.irreducible (hint a)).coprime_iff_not_dvd.mpr fun hdvd => hpq ?_
+      exact Polynomial.eq_of_monic_of_associated (minpoly.monic (hint a))
+        (minpoly.monic (hint b))
+        ((minpoly.irreducible (hint a)).associated_of_dvd
+          (minpoly.irreducible (hint b)) hdvd)
+    · intro p hp
+      rw [hT] at hp
+      obtain ⟨a, -, rfl⟩ := Finset.mem_image.mp hp
+      exact Algebra.IsSeparable.isSeparable K₀ ((x : A → L) a)
+  · have hval : (galoisEquivariantAlgebra L ρ).val (Polynomial.aeval x (T.prod id)) = 0 := by
+      rw [← Polynomial.aeval_algHom_apply]
+      funext a
+      show Pi.evalAlgHom K₀ (fun _ : A => L) a (Polynomial.aeval
+        ((galoisEquivariantAlgebra L ρ).val x) (T.prod id)) = 0
+      rw [← Polynomial.aeval_algHom_apply, map_prod]
+      refine Finset.prod_eq_zero (i := minpoly K₀ ((x : A → L) a)) ?_ (minpoly.aeval _ _)
+      rw [hT]
+      exact Finset.mem_image_of_mem _ (Finset.mem_univ a)
+    exact Subtype.ext hval
+
+/-- **The equivariant-functions algebra is formally étale** (PROVEN): it is a finite
+reduced algebra over the field `K₀`, hence an Artinian ring, hence a finite product of
+its residue fields; each residue field is generated by images of elements annihilated
+by separable polynomials (the annihilator lemma above), hence is a separable extension
+of `K₀`; and a finite product of separable extensions is formally étale. -/
+theorem galoisEquivariantAlgebra_formallyEtale [Finite A] :
+    Algebra.FormallyEtale K₀ (galoisEquivariantAlgebra L ρ) := by
+  classical
+  haveI : IsArtinianRing (galoisEquivariantAlgebra L ρ) :=
+    isArtinian_of_tower K₀ inferInstance
+  have hsep : ∀ m : MaximalSpectrum (galoisEquivariantAlgebra L ρ),
+      Algebra.IsSeparable K₀ (↥(galoisEquivariantAlgebra L ρ) ⧸ m.asIdeal) := by
+    intro m
+    constructor
+    intro y
+    obtain ⟨x, rfl⟩ := Ideal.Quotient.mkₐ_surjective K₀ m.asIdeal y
+    obtain ⟨P, hPsep, hP0⟩ :=
+      galoisEquivariantAlgebra_exists_separable_annihilator L ρ x
+    have h0 : Polynomial.aeval (Ideal.Quotient.mkₐ K₀ m.asIdeal x) P = 0 := by
+      rw [Polynomial.aeval_algHom_apply, hP0, map_zero]
+    exact hPsep.of_dvd (minpoly.dvd K₀ _ h0)
+  rw [Algebra.FormallyEtale.iff_of_equiv
+    ((IsArtinianRing.equivPi _).restrictScalars K₀), Algebra.FormallyEtale.pi_iff]
+  intro m
+  letI := Ideal.Quotient.field m.asIdeal
+  haveI := hsep m
+  exact Algebra.FormallyEtale.of_isSeparable K₀ _
+
+/-- **The equivariant-functions algebra is étale** (PROVEN): formally étale by the
+theorem above, and finitely presented because it is module-finite over the Noetherian
+field `K₀`. -/
+theorem galoisEquivariantAlgebra_etale [Finite A] :
+    Algebra.Etale K₀ (galoisEquivariantAlgebra L ρ) := by
+  haveI := galoisEquivariantAlgebra_formallyEtale L ρ
+  exact ⟨inferInstance, Algebra.FinitePresentation.of_finiteType.mp inferInstance⟩
+
+omit [IsGalois K₀ ↥L] in
+/-- **Equivariant functions separate the elements of `A`** (PROVEN; the injectivity
+half of the points bijection): on distinct orbits, an orbit indicator valued in the
+fixed field of the stabilizer separates; within one orbit, some element of the fixed
+field of the stabilizer is moved by the connecting automorphism — else that
+automorphism would lie in the fixing subgroup of the fixed field, which is the
+stabilizer itself by the fundamental theorem of Galois theory
+(`IntermediateField.fixingSubgroup_fixedField`). -/
+theorem galoisEquivariantAlgebra_separates {a b : A} (hab : a ≠ b) :
+    ∃ f ∈ galoisEquivariantAlgebra L ρ, f a ≠ f b := by
+  classical
+  have hmulapp : ∀ (φ ψ : AddMonoid.End A) (x : A), (φ * ψ) x = φ (ψ x) :=
+    fun _ _ _ => rfl
+  have hcancel : ∀ (g : L ≃ₐ[K₀] L) (x : A), ρ g⁻¹ (ρ g x) = x := by
+    intro g x
+    rw [← hmulapp, ← map_mul, inv_mul_cancel, map_one, AddMonoid.End.one_apply]
+  set Stab : Subgroup (L ≃ₐ[K₀] L) :=
+    { carrier := {g | ρ g a = a}
+      one_mem' := by simp only [Set.mem_setOf_eq, map_one, AddMonoid.End.one_apply]
+      mul_mem' := by
+        intro g h hg hh
+        simp only [Set.mem_setOf_eq] at hg hh ⊢
+        rw [map_mul, hmulapp, hh, hg]
+      inv_mem' := by
+        intro g hg
+        simp only [Set.mem_setOf_eq] at hg ⊢
+        conv_lhs => rw [← hg]
+        exact hcancel g a } with hStab
+  have hStabMem : ∀ g : L ≃ₐ[K₀] L, g ∈ Stab ↔ ρ g a = a := fun g => Iff.rfl
+  -- an equivariant function supported on the orbit of `a`, with prescribed
+  -- stabilizer-fixed value on the orbit
+  have hfun : ∀ c : L, c ∈ IntermediateField.fixedField Stab →
+      ∃ f ∈ galoisEquivariantAlgebra L ρ,
+        (∀ g : L ≃ₐ[K₀] L, f (ρ g a) = g c) ∧
+          ∀ x : A, (¬∃ g : L ≃ₐ[K₀] L, ρ g a = x) → f x = 0 := by
+    intro c hc
+    rw [IntermediateField.mem_fixedField_iff] at hc
+    have hval : ∀ g₁ g₂ : L ≃ₐ[K₀] L, ρ g₁ a = ρ g₂ a → g₁ c = g₂ c := by
+      intro g₁ g₂ h12
+      have hmem : g₂⁻¹ * g₁ ∈ Stab := by
+        rw [hStabMem, map_mul, hmulapp, h12]
+        exact hcancel g₂ a
+      have hfix := hc _ hmem
+      rw [AlgEquiv.mul_apply] at hfix
+      have h2 := congrArg g₂ hfix
+      rwa [AlgEquiv.aut_inv, AlgEquiv.apply_symm_apply] at h2
+    refine ⟨fun x => if h : ∃ g : L ≃ₐ[K₀] L, ρ g a = x then h.choose c else 0,
+      ?_, ?_, ?_⟩
+    · intro g₀ x
+      show (if h : ∃ g : L ≃ₐ[K₀] L, ρ g a = ρ g₀ x then h.choose c else 0) =
+        g₀ (if h : ∃ g : L ≃ₐ[K₀] L, ρ g a = x then h.choose c else 0)
+      by_cases hx : ∃ g : L ≃ₐ[K₀] L, ρ g a = x
+      · have hgx : ∃ g : L ≃ₐ[K₀] L, ρ g a = ρ g₀ x :=
+          ⟨g₀ * hx.choose, by rw [map_mul, hmulapp, hx.choose_spec]⟩
+        rw [dif_pos hx, dif_pos hgx]
+        have heq : ρ hgx.choose a = ρ (g₀ * hx.choose) a := by
+          rw [hgx.choose_spec, map_mul, hmulapp, hx.choose_spec]
+        rw [hval _ _ heq, AlgEquiv.mul_apply]
+      · have hgx : ¬∃ g : L ≃ₐ[K₀] L, ρ g a = ρ g₀ x := by
+          rintro ⟨g, hg⟩
+          refine hx ⟨g₀⁻¹ * g, ?_⟩
+          rw [map_mul, hmulapp, hg]
+          exact hcancel g₀ x
+        rw [dif_neg hx, dif_neg hgx, map_zero]
+    · intro g
+      show (if h : ∃ g' : L ≃ₐ[K₀] L, ρ g' a = ρ g a then h.choose c else 0) = g c
+      have hg : ∃ g' : L ≃ₐ[K₀] L, ρ g' a = ρ g a := ⟨g, rfl⟩
+      rw [dif_pos hg]
+      exact hval _ _ hg.choose_spec
+    · intro x hx
+      show (if h : ∃ g : L ≃ₐ[K₀] L, ρ g a = x then h.choose c else 0) = 0
+      rw [dif_neg hx]
+  have hone : ρ (1 : L ≃ₐ[K₀] L) a = a := by
+    rw [map_one, AddMonoid.End.one_apply]
+  by_cases horb : ∃ g : L ≃ₐ[K₀] L, ρ g a = b
+  · obtain ⟨g₀, hg₀⟩ := horb
+    have hg₀Stab : g₀ ∉ Stab := fun hmem =>
+      hab (((hStabMem g₀).mp hmem).symm.trans hg₀)
+    have hex : ∃ c ∈ IntermediateField.fixedField Stab, g₀ c ≠ c := by
+      by_contra hall
+      refine hg₀Stab ?_
+      rw [← IntermediateField.fixingSubgroup_fixedField Stab]
+      refine (IntermediateField.mem_fixingSubgroup_iff _ _).mpr ?_
+      intro y hy
+      by_contra hne
+      exact hall ⟨y, hy, hne⟩
+    obtain ⟨c, hcmem, hgc⟩ := hex
+    obtain ⟨f, hfmem, hforb, -⟩ := hfun c hcmem
+    refine ⟨f, hfmem, ?_⟩
+    have hfa : f a = c := by
+      have h1 := hforb 1
+      rw [hone] at h1
+      simpa using h1
+    have hfb : f b = g₀ c := by rw [← hg₀]; exact hforb g₀
+    rw [hfa, hfb]
+    exact fun h => hgc h.symm
+  · obtain ⟨f, hfmem, hforb, hoff⟩ := hfun 1 (one_mem _)
+    refine ⟨f, hfmem, ?_⟩
+    have hfa : f a = 1 := by
+      have h1 := hforb 1
+      rw [hone] at h1
+      simpa using h1
+    have hfb : f b = 0 := hoff b horb
+    rw [hfa, hfb]
+    exact one_ne_zero
+
+omit [IsGalois K₀ ↥L] in
+/-- **Injectivity of the evaluation points** (PROVEN): evaluations at distinct
+elements of `A` differ on a separating equivariant function. -/
+theorem galoisEquivariantEval_injective :
+    Function.Injective (galoisEquivariantEval L ρ) := by
+  intro a b hab
+  by_contra hne
+  obtain ⟨f, hfmem, hfab⟩ := galoisEquivariantAlgebra_separates L ρ hne
+  apply hfab
+  have h := DFunLike.congr_fun hab (⟨f, hfmem⟩ : galoisEquivariantAlgebra L ρ)
+  rw [galoisEquivariantEval_apply, galoisEquivariantEval_apply] at h
+  exact (algebraMap (↥L) Ω).injective h
+
+/-- **A point sharing its kernel with an evaluation is an evaluation** (PROVEN; the
+Galois-theoretic half of the points surjectivity, counting-free): if the kernel of an
+`Ω`-point `φ` of the equivariant-functions algebra equals the kernel of the
+evaluation at `a`, then `φ` is the evaluation at a point of the orbit of `a`. Proof:
+let `m` be the common kernel — also the kernel of the corestricted evaluation
+`evalL : f ↦ f a` into `L` — and factor both `φ` and `evalL` through the residue
+field `HK ⧸ m` (maximal by Artinian-ness, so a field). The two factorizations make
+`L` and `Ω` algebras over the residue field; `L` is separable over it (tower), so
+`IsSepClosed.lift` extends the `Ω`-factorization to an embedding `σ : L →ₐ[K₀] Ω`
+compatible with the `L`-factorization (by `AlgHom.commutes`). Since `L/K₀` is
+normal, `σ` is an automorphism `g` of `L` followed by the inclusion
+(`Normal.algHomEquivAut`), and the equivariance of the functions in the algebra
+turns `σ ∘ evalL = φ` into `φ = eval (ρ g a)`. -/
+theorem galoisEquivariantEval_of_ker_eq [Finite A] [IsSepClosure K₀ Ω]
+    (φ : galoisEquivariantAlgebra L ρ →ₐ[K₀] Ω) (a : A)
+    (h : RingHom.ker φ = RingHom.ker (galoisEquivariantEval L ρ a)) :
+    ∃ x : A, galoisEquivariantEval L ρ x = φ := by
+  classical
+  haveI : IsSepClosed Ω := IsSepClosure.sep_closed K₀
+  -- the evaluation into `L` and its kernel
+  set evalL : galoisEquivariantAlgebra L ρ →ₐ[K₀] L :=
+    (Pi.evalAlgHom K₀ (fun _ : A => L) a).comp (galoisEquivariantAlgebra L ρ).val
+  have hkerL : RingHom.ker (galoisEquivariantEval L ρ a) = RingHom.ker evalL := by
+    ext f
+    rw [RingHom.mem_ker, RingHom.mem_ker]
+    constructor
+    · intro hf
+      apply (algebraMap (↥L) Ω).injective
+      rw [map_zero]
+      exact hf
+    · intro hf
+      show algebraMap L Ω (evalL f) = 0
+      rw [hf, map_zero]
+  set m : Ideal (galoisEquivariantAlgebra L ρ) := RingHom.ker evalL
+  -- `m` is maximal: the algebra is Artinian and `m` is prime
+  haveI : IsArtinianRing (galoisEquivariantAlgebra L ρ) :=
+    isArtinian_of_tower K₀ inferInstance
+  haveI hprime : m.IsPrime := RingHom.ker_isPrime evalL
+  haveI hmax : m.IsMaximal := IsArtinianRing.isMaximal_of_isPrime m
+  letI : Field (galoisEquivariantAlgebra L ρ ⧸ m) := Ideal.Quotient.field m
+  -- factor `φ` and `evalL` through the residue field
+  have hφ0 : ∀ f ∈ m, φ f = 0 := by
+    intro f hf
+    refine RingHom.mem_ker.mp ?_
+    rw [h, hkerL]
+    exact hf
+  have hevL0 : ∀ f ∈ m, evalL f = 0 := fun f hf => RingHom.mem_ker.mp hf
+  set φbar := Ideal.Quotient.liftₐ m φ hφ0
+  set ebar := Ideal.Quotient.liftₐ m evalL hevL0
+  -- `L` and `Ω` as algebras over the residue field, via the two factorizations
+  letI : Algebra (galoisEquivariantAlgebra L ρ ⧸ m) L := ebar.toRingHom.toAlgebra
+  letI : Algebra (galoisEquivariantAlgebra L ρ ⧸ m) Ω := φbar.toRingHom.toAlgebra
+  haveI : IsScalarTower K₀ (galoisEquivariantAlgebra L ρ ⧸ m) L :=
+    IsScalarTower.of_algebraMap_eq fun x => (ebar.commutes x).symm
+  haveI : IsScalarTower K₀ (galoisEquivariantAlgebra L ρ ⧸ m) Ω :=
+    IsScalarTower.of_algebraMap_eq fun x => (φbar.commutes x).symm
+  haveI : Algebra.IsSeparable (galoisEquivariantAlgebra L ρ ⧸ m) L :=
+    Algebra.isSeparable_tower_top_of_isSeparable K₀ _ L
+  -- extend the `Ω`-factorization along `L`
+  set σ0 : L →ₐ[galoisEquivariantAlgebra L ρ ⧸ m] Ω := IsSepClosed.lift
+  set σ : L →ₐ[K₀] Ω := σ0.restrictScalars K₀
+  have hσe : ∀ y, σ (ebar y) = φbar y := by
+    intro y
+    show σ0 (algebraMap (galoisEquivariantAlgebra L ρ ⧸ m) L y) = φbar y
+    rw [AlgHom.commutes]
+    rfl
+  -- since `L/K₀` is normal, the extension is an automorphism followed by inclusion
+  set g : L ≃ₐ[K₀] L := Normal.algHomEquivAut K₀ Ω L σ
+  have hg : ∀ z : L, algebraMap L Ω (g z) = σ z := by
+    intro z
+    have h1 := (Normal.algHomEquivAut K₀ Ω L).symm_apply_apply σ
+    rw [Normal.algHomEquivAut_symm_apply] at h1
+    exact DFunLike.congr_fun h1 z
+  refine ⟨ρ g a, ?_⟩
+  apply AlgHom.ext
+  rintro ⟨f, hf⟩
+  show algebraMap L Ω (f (ρ g a)) = φ ⟨f, hf⟩
+  rw [hf g a, hg]
+  have hea : ebar (Ideal.Quotient.mkₐ K₀ m ⟨f, hf⟩) = f a :=
+    DFunLike.congr_fun (Ideal.Quotient.liftₐ_comp m evalL hevL0) ⟨f, hf⟩
+  calc σ (f a) = σ (ebar (Ideal.Quotient.mkₐ K₀ m ⟨f, hf⟩)) := by rw [hea]
+    _ = φbar (Ideal.Quotient.mkₐ K₀ m ⟨f, hf⟩) := hσe _
+    _ = φ ⟨f, hf⟩ := DFunLike.congr_fun (Ideal.Quotient.liftₐ_comp m φ hφ0) ⟨f, hf⟩
+
+/-- **Surjectivity of the evaluation points** (DECOMPOSED 2026-07-23; assembly
+PROVEN): every `Ω`-point of the equivariant-functions algebra is an evaluation.
+The kernels of the evaluations intersect to zero (a function vanishing at every
+point of `A` is zero), so their product lands in the prime kernel of any given
+point `φ`, which therefore contains — and by maximality (the algebra is Artinian)
+equals — the kernel of some evaluation; the sorried leaf
+`galoisEquivariantEval_of_ker_eq` upgrades the kernel equality to an equality of
+points along the orbit of the evaluation base point. -/
+theorem galoisEquivariantEval_surjective [Finite A] [IsSepClosure K₀ Ω] :
+    Function.Surjective (galoisEquivariantEval L ρ) := by
+  classical
+  haveI := Fintype.ofFinite A
+  intro φ
+  -- the kernels of the evaluations intersect to zero
+  have hbot : (Finset.univ.inf fun a : A =>
+      RingHom.ker (galoisEquivariantEval L ρ a)) = ⊥ := by
+    refine eq_bot_iff.mpr fun f hf => ?_
+    have hzero : ∀ a : A, (f : A → L) a = 0 := by
+      intro a
+      have hle : (Finset.univ.inf fun a : A =>
+          RingHom.ker (galoisEquivariantEval L ρ a)) ≤
+          RingHom.ker (galoisEquivariantEval L ρ a) :=
+        Finset.inf_le (Finset.mem_univ a)
+      have hfa : galoisEquivariantEval L ρ a f = 0 := RingHom.mem_ker.mp (hle hf)
+      rw [galoisEquivariantEval_apply] at hfa
+      exact (algebraMap (↥L) Ω).injective (by rw [hfa, map_zero])
+    have hf0 : f = 0 := Subtype.ext (funext hzero)
+    rw [hf0]
+    exact (Submodule.mem_bot _).mpr rfl
+  -- the product of the kernels lands in the kernel of `φ`
+  have hprod : (∏ a ∈ Finset.univ, RingHom.ker (galoisEquivariantEval L ρ (a : A)))
+      ≤ RingHom.ker φ :=
+    le_trans (le_trans Ideal.prod_le_inf (le_of_eq hbot)) bot_le
+  haveI hprime : (RingHom.ker φ).IsPrime := RingHom.ker_isPrime φ
+  obtain ⟨a₀, -, ha₀⟩ := (Ideal.IsPrime.prod_le hprime).mp hprod
+  -- upgrade the containment to an equality by maximality
+  haveI : IsArtinianRing (galoisEquivariantAlgebra L ρ) :=
+    isArtinian_of_tower K₀ inferInstance
+  haveI hp₀ : (RingHom.ker (galoisEquivariantEval L ρ a₀)).IsPrime :=
+    RingHom.ker_isPrime _
+  have hmax : (RingHom.ker (galoisEquivariantEval L ρ a₀)).IsMaximal :=
+    IsArtinianRing.isMaximal_of_isPrime _
+  exact galoisEquivariantEval_of_ker_eq L ρ φ a₀
+    (hmax.eq_of_le hprime.ne_top ha₀).symm
+
+/-- **The Hopf-algebra structure on a `u`-small carrier of the equivariant-functions
+algebra** (sorry node; the comultiplication half of the package): a `Type u` copy of
+the equivariant-functions algebra carrying a `K₀`-Hopf-algebra structure for which the
+convolution product of evaluation points is the evaluation at the sum. Intended proof:
+the comultiplication is the pullback of the addition `A × A → A` through the descent
+identification of `galoisEquivariantAlgebra L ρ ⊗[K₀] galoisEquivariantAlgebra L ρ`
+with the equivariant functions on `A × A` (the tensor square of the descent
+isomorphism of `galoisEquivariantEval_surjective`'s docstring), the counit is
+evaluation at `0 : A`, and the antipode is the pullback of negation; the required
+convolution identity is then the computation
+`(eval a ⊛ eval b) f = (eval a ⊗ eval b) (Δ f) = f (a + b)` holding by construction.
+For the carrier: the algebra itself is `u`-small — it embeds into `A → L` with `A`
+finite and `L` finite-dimensional over the `u`-small `K₀` (`Basis.equivFun` +
+`small_Pi` + `small_subtype`) — so the structure can be transported to
+`Shrink.{u}` along `Shrink.algEquiv`, and the carrier together with its instances is
+existentially bound here precisely so that the transported (rather than canonical)
+instances can be supplied without a diamond. -/
+theorem exists_hopfAlgebra_galoisEquivariantAlgebra [Finite A] [Small.{u} K₀] :
+    ∃ (HK : Type u) (_ : CommRing HK) (_ : HopfAlgebra K₀ HK)
+      (e : HK ≃ₐ[K₀] galoisEquivariantAlgebra L ρ),
+      ∀ a b : A,
+        WithConv.toConv ((galoisEquivariantEval L ρ a).comp e.toAlgHom) *
+          WithConv.toConv ((galoisEquivariantEval L ρ b).comp e.toAlgHom) =
+        WithConv.toConv ((galoisEquivariantEval L ρ (a + b)).comp e.toAlgHom) :=
+  sorry
+
+end GaloisEtalePackage
+
 /-- **The finite-étale package of a finite-quotient Galois module, small carrier**
-(sorry node; the curve-independent core of the torsion-package decomposition — the
+(DECOMPOSED 2026-07-23 into the Grothendieck construction of the section above —
+equivariant-functions algebra, finiteness, étale-ness, injectivity and equivariance of
+evaluation all PROVEN — plus the two sorried leaves `galoisEquivariantEval_surjective`
+(descent/point-count) and `exists_hopfAlgebra_galoisEquivariantAlgebra`
+(comultiplication); the assembly below is proven. Originally: the curve-independent
+core of the torsion-package decomposition — the
 separable-closure counterpart of the structurally parallel sorry node
 `exists_galoisModulePackage_of_finiteQuotient` in `Fermat.FLT.FreyCurve.Semistable`
 (downstream, hence not importable here); when either node is proven the other should
@@ -1431,8 +1878,57 @@ theorem exists_finiteQuotient_galoisModule_etale_package
       ∀ (σ : Ω ≃ₐ[K₀] Ω) (φ : HK →ₐ[K₀] Ω),
         f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
           ρ (AlgEquiv.restrictNormalHom (F := K₀) (K₁ := Ω) L σ)
-            (f (Additive.ofMul (WithConv.toConv φ))) :=
-  sorry
+            (f (Additive.ofMul (WithConv.toConv φ))) := by
+  classical
+  obtain ⟨HK, instCR, instHopf, e, hconv⟩ :=
+    exists_hopfAlgebra_galoisEquivariantAlgebra (Ω := Ω) L ρ
+  letI := instCR
+  letI := instHopf
+  haveI := galoisEquivariantAlgebra_etale (Ω := Ω) L ρ
+  haveI hfin : Module.Finite K₀ HK := Module.Finite.equiv e.symm.toLinearEquiv
+  haveI het : Algebra.Etale K₀ HK := Algebra.Etale.of_equiv e.symm
+  -- the composite-with-`e` evaluations and their bijectivity
+  have hcompsymm : ∀ ψ : galoisEquivariantAlgebra L ρ →ₐ[K₀] Ω,
+      (ψ.comp e.toAlgHom).comp e.symm.toAlgHom = ψ :=
+    fun ψ => AlgHom.ext fun x => by simp
+  have hbij : Function.Bijective (fun a : A =>
+      (galoisEquivariantEval L ρ a).comp e.toAlgHom) := by
+    constructor
+    · intro a b hab
+      apply galoisEquivariantEval_injective L ρ
+      have h2 := congrArg (fun ψ : _ →ₐ[K₀] Ω => ψ.comp e.symm.toAlgHom) hab
+      simpa only [hcompsymm] using h2
+    · intro φ
+      obtain ⟨a, ha⟩ := galoisEquivariantEval_surjective L ρ
+        (φ.comp e.symm.toAlgHom)
+      refine ⟨a, ?_⟩
+      show (galoisEquivariantEval L ρ a).comp e.toAlgHom = φ
+      rw [ha]
+      exact AlgHom.ext fun x => by simp
+  -- the points equivalence, additively
+  set e₂ : A ≃ Additive (WithConv (HK →ₐ[K₀] Ω)) :=
+    (Equiv.ofBijective _ hbij).trans ((WithConv.equiv _).symm.trans Additive.ofMul)
+    with he₂
+  have hmap : ∀ x y : A, e₂ (x + y) = e₂ x + e₂ y := by
+    intro x y
+    show Additive.ofMul (WithConv.toConv ((galoisEquivariantEval L ρ (x + y)).comp
+        e.toAlgHom)) =
+      Additive.ofMul (WithConv.toConv ((galoisEquivariantEval L ρ x).comp e.toAlgHom)) +
+      Additive.ofMul (WithConv.toConv ((galoisEquivariantEval L ρ y).comp e.toAlgHom))
+    rw [← ofMul_mul]
+    exact congrArg Additive.ofMul (hconv x y).symm
+  have key : ∀ y : A, (AddEquiv.mk' e₂ hmap).symm
+      (Additive.ofMul (WithConv.toConv ((galoisEquivariantEval L ρ y).comp
+        e.toAlgHom))) = y := fun y =>
+    (AddEquiv.mk' e₂ hmap).symm_apply_apply y
+  refine ⟨HK, instCR, instHopf, hfin, het, (AddEquiv.mk' e₂ hmap).symm, ?_⟩
+  intro σ φ
+  obtain ⟨x, hx⟩ := hbij.2 φ
+  have hx' : (galoisEquivariantEval L ρ x).comp e.toAlgHom = φ := hx
+  have hσ : σ.toAlgHom.comp φ = (galoisEquivariantEval L ρ
+      (ρ (AlgEquiv.restrictNormalHom (F := K₀) (K₁ := Ω) L σ) x)).comp e.toAlgHom := by
+    rw [← hx', ← AlgHom.comp_assoc, algEquiv_comp_galoisEquivariantEval]
+  rw [hσ, key, ← hx', key]
 
 set_option backward.isDefEq.respectTransparency false in
 omit [IsDomain R] [IsDiscreteValuationRing R] [E.HasGoodReduction R] in
