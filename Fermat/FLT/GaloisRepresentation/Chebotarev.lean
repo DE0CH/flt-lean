@@ -100,6 +100,8 @@ import Mathlib.Topology.Baire.Lemmas
 import Mathlib.Topology.Baire.LocallyCompactRegular
 import Mathlib.RingTheory.Ideal.GoingUp
 public import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
+public import Mathlib.NumberTheory.DirichletCharacter.Orthogonality
+public import Mathlib.NumberTheory.DirichletCharacter.Bounds
 
 @[expose] public section
 
@@ -1007,39 +1009,84 @@ theorem exists_algEquiv_map_zeta_eq_pow_natCard
   exact h2
 
 open IsDedekindDomain in
-/-- **Pairwise comparison of cyclotomic congruence classes of degree-one
-primes** (sorry node) — the `L`-function core of Deuring's route: for a
-cyclotomic extension `E = F(ζ_ℓ)` (`ℓ` prime) and ANY `σ, τ ∈ Gal(E/F)`,
-the degree-one prime sum over the congruence class of `σ` (the places
-with `σ ζ = ζ ^ #(𝓞 F / P)`) exceeds that over the class of `τ` by an
-error bounded uniformly in `s > 1`. Both sums are `ℝ≥0∞`-valued, so no
-summability side conditions appear, and the bounded error is additive —
-no `ENNReal` subtraction. All the Frobenius bookkeeping has been
-stripped off (see `tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add`
-for how this leaf is consumed): what remains is pure equidistribution
-between two congruence classes.
+/-- **Convergence of the degree-one prime sum for `s > 1`** (sorry node)
+— the easy, Euler-side half of the summability bookkeeping: for a number
+field `F` and any `s > 1`, the `ℝ≥0∞`-valued sum `∑ #(𝓞 F / P) ^ (-s)`
+over the finite places `P` of `F` of prime residue cardinality (away
+from any excluded `ℓ`) is finite. Intended proof: at most `[F : ℚ]`
+places of `F` lie over each rational prime `p`
+(`Ideal.sum_ramification_inertia` bounds the number of primes above `p`
+by the degree), and a degree-one place over `p` contributes `p ^ (-s)`,
+so the sum is at most `[F : ℚ] · ∑_p p ^ (-s) ≤ [F : ℚ] · ζ(s) < ∞`
+(`Real.summable_one_div_nat_rpow`). -/
+theorem tsum_rpow_neg_natCard_quotient_prime_and_ne_ne_top
+    (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) {s : ℝ} (hs : 1 < s) :
+    (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) ≠ ⊤ :=
+  sorry
 
-Intended proof: with `H = Gal(E/F) ⊆ (ZMod ℓ)ˣ` (via the action on `ζ`,
-`IsPrimitiveRoot.autToPow`) and `a, b ∈ H` the exponents of `σ, τ`, both
-sums are finite for fixed `s > 1` (at most `[F : ℚ]` primes above each
-rational prime `p`, each with `#(𝓞 F / P) ≥ p`), so the claim is a
-real-valued one. Orthogonality for the Dirichlet characters `χ mod ℓ`
-gives `(ℓ - 1) · ∑_{class of a} = ∑_χ χ(a)⁻¹ S_χ(s)` with
-`S_χ(s) = ∑_P χ(N P) N P ^ (-s)` over the degree-one `P` away from `ℓ`
-(every such `P` has `N P mod ℓ ∈ H` by
-`exists_algEquiv_map_zeta_eq_pow_natCard`, so characters trivial on `H`
-contribute `S_χ = S_1` with `χ(a) = 1`); subtracting the same identity
-for `b` leaves `(ℓ - 1) (∑_{class a} - ∑_{class b}) =
-∑_{χ nontrivial on H} (χ(a)⁻¹ - χ(b)⁻¹) S_χ(s)`, and each `χ`
-nontrivial on `H` has `S_χ` bounded as `s → 1⁺` — the `L(1, χ) ≠ 0`
-content, classically from the factorization `ζ_E(s) = ∏_ψ L(s, ψ)` over
-the characters `ψ` of `H` (up to finitely many Euler factors) and the
-SIMPLE pole of `ζ_E` at `s = 1` (for `ψ` nontrivial the partial sums of
-the coefficients of `L(s, ψ)` need a power-saving error term — Hecke's
-ray-class lattice-point count, Lang ANT VI §3 — to make sense of
-`L(1, ψ)`; this is the deepest missing mathlib ingredient: as of
-2026-07-23 the pin has per-class ideal counting only as a plain limit,
-no power-saving error term, no Euler product, no Hecke L-series). -/
+open IsDedekindDomain in
+/-- **Boundedness near `s = 1` of the nontrivial Dirichlet character sums
+over degree-one primes** (sorry node) — the `L(1, χ) ≠ 0` core of the
+Chebotarev/Dirichlet argument, now stripped of ALL bookkeeping: for a
+cyclotomic extension `E = F(ζ_ℓ)` (`ℓ` prime) and a Dirichlet character
+`χ mod ℓ` (with values in `ℂ`) that is nontrivial on the image of
+`Gal(E/F)` in `(ZMod ℓ)ˣ` (hypothesis `hχ`, phrased through the Galois
+action on `ζ`: some `ρ` acts by an exponent `n` with `χ n ≠ 1`), the sum
+`S_χ(s) = ∑_P χ(N P) · N P ^ (-s)` over the degree-one places of `F`
+away from `ℓ` is bounded uniformly in `s > 1`.
+
+Classical content: `S_χ(s) = log L(s, χ ∘ Frob) + O(1)` near `s = 1`,
+where `L` is the Hecke `L`-series of the character of `Gal(E'/F)`
+(`E' ⊆ E` the fixed field of `ker`) obtained from `χ`; the factorization
+`ζ_{E'}(s) = ∏_ψ L(s, ψ)` over the characters of the abelian group
+`Gal(E'/F)` together with the SIMPLE pole of `ζ_{E'}` and `ζ_F` at
+`s = 1` forces every nontrivial factor to satisfy `L(1, ψ) ≠ 0`, hence
+`log L(s, ψ)` bounded as `s → 1⁺`. For `ψ` nontrivial, making sense of
+`L` near `s = 1` needs a power-saving error term in the per-ideal-class
+counting (Hecke's ray-class lattice-point argument, Lang ANT VI §3,
+VIII §4) — as of 2026-07-23 the deepest ingredient missing from the
+mathlib pin (which has per-class ideal counting only as a plain limit:
+no error term, no Euler product, no Hecke `L`-series). -/
+theorem exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (χ : DirichletCharacter ℂ ℓ)
+    (hχ : ∃ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n ∧ χ (n : ZMod ℓ) ≠ 1) :
+    ∃ B : ℝ, ∀ s : ℝ, 1 < s →
+      ‖∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        χ ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ) *
+          (((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) : ℝ) :
+            ℂ)‖ ≤ B :=
+  sorry
+
+open IsDedekindDomain in
+/-- **Pairwise comparison of cyclotomic congruence classes of degree-one
+primes** — the `L`-function core of Deuring's route: for a cyclotomic
+extension `E = F(ζ_ℓ)` (`ℓ` prime) and ANY `σ, τ ∈ Gal(E/F)`, the
+degree-one prime sum over the congruence class of `σ` (the places with
+`σ ζ = ζ ^ #(𝓞 F / P)`) exceeds that over the class of `τ` by an error
+bounded uniformly in `s > 1`. Both sums are `ℝ≥0∞`-valued, so no
+summability side conditions appear, and the bounded error is additive —
+no `ENNReal` subtraction.
+
+DERIVED from the two strictly shallower sorried leaves above by
+character orthogonality, all bookkeeping proven here: by
+`tsum_rpow_neg_natCard_quotient_prime_and_ne_ne_top` the sums are finite
+for fixed `s > 1`, so the claim is real-valued; the congruence class of
+`ρ` is cut out of the degree-one primes by the condition
+`N P ≡ autToPow ρ (mod ℓ)` (`IsPrimitiveRoot.autToPow_spec`), and the
+second orthogonality relation for the Dirichlet characters mod `ℓ`
+(`DirichletCharacter.sum_char_inv_mul_char_eq`, available in the pin
+since `ℂ` has enough roots of unity) expresses `φ(ℓ) · ∑_{class ρ}` as
+`∑_χ χ(a_ρ)⁻¹ S_χ(s)` with `a_ρ = autToPow ρ`; in the difference
+`φ(ℓ) (∑_{class σ} - ∑_{class τ})` every character TRIVIAL on the image
+of `Gal(E/F)` cancels exactly (`χ(a_σ)⁻¹ = χ(a_τ)⁻¹ = 1` — this is
+where the unbounded `S_χ = S_1`-type terms disappear), and each
+remaining character sum is uniformly bounded by the deep leaf
+`exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le`. -/
 theorem tsum_rpow_neg_natCard_quotient_prime_and_map_zeta_eq_pow_le_tsum_add
     {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
     [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
@@ -1052,8 +1099,204 @@ theorem tsum_rpow_neg_natCard_quotient_prime_and_map_zeta_eq_pow_le_tsum_add
       (∑' P : {P : HeightOneSpectrum (𝓞 F) //
           (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
           τ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)},
-        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) + B :=
-  sorry
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) + B := by
+  classical
+  haveI : NeZero ℓ := ⟨hℓ.pos.ne'⟩
+  -- the congruence-class condition forces the residue characteristic away from `ℓ`
+  have hclassne : ∀ (ρ : E ≃ₐ[F] E) (P : HeightOneSpectrum (𝓞 F)),
+      ρ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal) → Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ := by
+    intro ρ P hρ hcontra
+    rw [hcontra, hζ.pow_eq_one] at hρ
+    exact hζ.ne_one hℓ.one_lt (ρ.injective (hρ.trans (map_one ρ).symm))
+  -- the congruence-class condition, read in `ZMod ℓ` through `autToPow`
+  have hcond : ∀ (ρ : E ≃ₐ[F] E) (m : ℕ),
+      ρ ζ = ζ ^ m ↔ ((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ) = (m : ZMod ℓ) := by
+    have hford : IsOfFinOrder ζ :=
+      isOfFinOrder_iff_pow_eq_one.mpr ⟨ℓ, hℓ.pos, hζ.pow_eq_one⟩
+    intro ρ m
+    have hspec := hζ.autToPow_spec F ρ
+    constructor
+    · intro h
+      have h1 : ζ ^ ((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ).val = ζ ^ m := by
+        rw [hspec, h]
+      have h2 := hford.pow_eq_pow_iff_modEq.mp h1
+      rw [← hζ.eq_orderOf] at h2
+      have h3 := (ZMod.natCast_eq_natCast_iff _ _ _).mpr h2
+      rwa [ZMod.natCast_val, ZMod.cast_id] at h3
+    · intro h
+      have h2 : ((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ).val ≡ m [MOD ℓ] := by
+        rw [← ZMod.natCast_eq_natCast_iff, ZMod.natCast_val, ZMod.cast_id]
+        exact h
+      rw [← hspec]
+      exact hford.pow_eq_pow_iff_modEq.mpr (hζ.eq_orderOf ▸ h2)
+  -- the deep leaf, with a bound chosen uniformly for every character
+  have hbdd : ∀ χ : DirichletCharacter ℂ ℓ, ∃ B : ℝ,
+      (∃ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n ∧ χ (n : ZMod ℓ) ≠ 1) →
+      ∀ s : ℝ, 1 < s →
+        ‖∑' P : {P : HeightOneSpectrum (𝓞 F) //
+            (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+          χ ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ) *
+            (((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) : ℝ) :
+              ℂ)‖ ≤ B := by
+    intro χ
+    by_cases h : ∃ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n ∧ χ (n : ZMod ℓ) ≠ 1
+    · obtain ⟨B, hB⟩ :=
+        exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le hℓ hζ χ h
+      exact ⟨B, fun _ => hB⟩
+    · exact ⟨0, fun hc => absurd hc h⟩
+  choose Bc hBc using hbdd
+  refine ⟨ENNReal.ofReal
+      ((∑ χ : DirichletCharacter ℂ ℓ, |Bc χ| * 2) / (ℓ.totient : ℝ)),
+    ENNReal.ofReal_ne_top, ?_⟩
+  intro s hs
+  -- the real degree-one family is summable (transfer from the finiteness leaf)
+  have hsum : Summable (fun P : {P : HeightOneSpectrum (𝓞 F) //
+      (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ} =>
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)) := by
+    have h1 := tsum_rpow_neg_natCard_quotient_prime_and_ne_ne_top F ℓ hs
+    have h2 : ∀ P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) =
+        (((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : NNReal) ^ (-s) :
+          NNReal) : ℝ≥0∞) := by
+      intro P
+      rw [ENNReal.coe_rpow_of_ne_zero (by exact_mod_cast P.2.1.ne_zero),
+        ENNReal.coe_natCast]
+    rw [tsum_congr h2] at h1
+    have h3 := ENNReal.tsum_coe_ne_top_iff_summable.mp h1
+    refine (NNReal.summable_coe.mpr h3).congr ?_
+    intro P
+    rw [NNReal.coe_rpow, NNReal.coe_natCast]
+  -- the complex character families are dominated by the real family
+  have hsumχ : ∀ χ : DirichletCharacter ℂ ℓ,
+      Summable (fun P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ} =>
+        χ ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ) *
+          (((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) : ℝ) :
+            ℂ)) := by
+    intro χ
+    refine Summable.of_norm_bounded hsum ?_
+    intro P
+    rw [norm_mul, Complex.norm_real, Real.norm_eq_abs,
+      abs_of_nonneg (Real.rpow_nonneg (Nat.cast_nonneg _) _)]
+    calc ‖χ ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ)‖ *
+          (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)
+        ≤ 1 * (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) := by
+          gcongr
+          exact χ.norm_le_one _
+      _ = (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) :=
+          one_mul _
+  -- the `ℝ≥0∞`-valued class sums are finite
+  have hSne : ∀ ρ : E ≃ₐ[F] E,
+      (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ρ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) ≠ ⊤ := by
+    intro ρ
+    refine ne_top_of_le_ne_top
+      (tsum_rpow_neg_natCard_quotient_prime_and_ne_ne_top F ℓ hs) ?_
+    exact ENNReal.tsum_mono_subtype
+      (fun P : HeightOneSpectrum (𝓞 F) =>
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s))
+      (fun P hP => ⟨hP.1, hclassne ρ P hP.2⟩)
+  -- their `toReal` is the real class sum
+  have htoReal : ∀ ρ : E ≃ₐ[F] E,
+      (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ρ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)).toReal =
+      ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ρ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) := by
+    intro ρ
+    rw [ENNReal.tsum_toReal_eq (fun P => by
+      refine ENNReal.rpow_ne_top_of_ne_zero ?_ (ENNReal.natCast_ne_top _)
+      exact_mod_cast P.2.1.ne_zero)]
+    exact tsum_congr fun P => by
+      rw [← ENNReal.toReal_rpow, ENNReal.toReal_natCast]
+  -- the real class sum, as an indicator sum over all degree-one places
+  have hindic : ∀ ρ : E ≃ₐ[F] E,
+      (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ρ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)) =
+      ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        (if ((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ) =
+            ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ)
+          then (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)
+          else 0) := by
+    sorry
+  -- orthogonality: `φ(ℓ) ×` the indicator sum is the character-average
+  have hkey : ∀ ρ : E ≃ₐ[F] E,
+      ((ℓ.totient : ℕ) : ℂ) *
+        ((∑' P : {P : HeightOneSpectrum (𝓞 F) //
+            (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+          (if ((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ) =
+              ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ)
+            then (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)
+            else 0) : ℝ) : ℂ) =
+      ∑ χ : DirichletCharacter ℂ ℓ,
+        χ ((((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ))⁻¹) *
+          ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+              (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+            χ ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ) *
+              (((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) :
+                ℝ) : ℂ) := by
+    sorry
+  -- characters trivial on the image of the Galois group drop out of the difference
+  have hcancel : ∀ χ : DirichletCharacter ℂ ℓ,
+      ¬(∃ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n ∧ χ (n : ZMod ℓ) ≠ 1) →
+      ∀ ρ : E ≃ₐ[F] E, χ ((((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ))⁻¹) = 1 := by
+    intro χ hχ ρ
+    push Not at hχ
+    have h1 : ∀ ρ' : E ≃ₐ[F] E,
+        χ ((hζ.autToPow F ρ' : (ZMod ℓ)ˣ) : ZMod ℓ) = 1 := by
+      intro ρ'
+      have h2 := hχ ρ' ((hζ.autToPow F ρ' : (ZMod ℓ)ˣ) : ZMod ℓ).val
+        (hζ.autToPow_spec F ρ').symm
+      rwa [ZMod.natCast_val, ZMod.cast_id] at h2
+    have h3 : (((hζ.autToPow F ρ : (ZMod ℓ)ˣ) : ZMod ℓ))⁻¹ =
+        (((hζ.autToPow F ρ)⁻¹ : (ZMod ℓ)ˣ) : ZMod ℓ) :=
+      ZMod.inv_coe_unit _
+    rw [h3, ← map_inv (hζ.autToPow F) ρ]
+    exact h1 ρ⁻¹
+  -- the real comparison, from the difference of the two orthogonality identities
+  have hreal :
+      (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        (if ((hζ.autToPow F σ : (ZMod ℓ)ˣ) : ZMod ℓ) =
+            ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ)
+          then (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)
+          else 0)) ≤
+      (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        (if ((hζ.autToPow F τ : (ZMod ℓ)ˣ) : ZMod ℓ) =
+            ((Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ)
+          then (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)
+          else 0)) +
+      (∑ χ : DirichletCharacter ℂ ℓ, |Bc χ| * 2) / (ℓ.totient : ℝ) := by
+    sorry
+  -- assemble: back to `ℝ≥0∞`
+  have hofReal : ∀ ρ : E ≃ₐ[F] E,
+      (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ρ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) =
+      ENNReal.ofReal
+        (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+            (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+            ρ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)},
+          (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)) := by
+    intro ρ
+    rw [← htoReal ρ, ENNReal.ofReal_toReal (hSne ρ)]
+  rw [hofReal σ, hofReal τ, ← ENNReal.ofReal_add
+    (tsum_nonneg fun P => Real.rpow_nonneg (Nat.cast_nonneg _) _)
+    (div_nonneg (Finset.sum_nonneg fun χ _ => by positivity) (Nat.cast_nonneg _))]
+  refine ENNReal.ofReal_le_ofReal ?_
+  rw [hindic σ, hindic τ]
+  exact hreal
 
 open IsDedekindDomain in
 /-- **Equidistribution of degree-one primes over the cyclotomic
