@@ -1585,5 +1585,21 @@
     "wip": true,
     "text": "`exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated` — Krull dimension ≥ 1 of the constructed universal ring (Böckle presentation bound g−r ≥ 1) — 2026-07-22",
     "parent": "algebraMap_injective_of_isUniversal"
+  },
+  {
+    "name": "exists_finiteDimensional_coeff_field",
+    "fullname": "exists_finiteDimensional_coeff_field",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
+    "wip": true,
+    "text": "`exists_finiteDimensional_coeff_field` — Hecke-field finiteness core: away from finitely many places, all mapped charpoly coefficients lie in one FiniteDimensional-over-ℚ intermediate field of ℚ̄_p — 2026-07-23",
+    "parent": "exists_numberField_eigensystem"
+  },
+  {
+    "name": "exists_realizations_of_eigensystem",
+    "fullname": "exists_realizations_of_eigensystem",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
+    "wip": true,
+    "text": "`exists_realizations_of_eigensystem` — λ-adic realizations per (ℓ,φ) matching the shared Pv outside a uniform finite set, hardly-ramified integral model at odd ℓ (Eichler–Shimura/Deligne + Carayol/Saito; anchor direction deliberately excluded per the refuted split) — 2026-07-23",
+    "parent": "exists_family_of_eigensystem"
   }
 ]
