@@ -870,8 +870,41 @@ theorem exists_hardlyRamified_integral_realizations
             (Pv v).map φ :=
   sorry
 
+/-- **Per-embedding member at residue characteristic 2** (sorry node):
+the eigensystem `(E, S, Pv)` is realized at the even prime at a SINGLE
+given embedding `φ : E →+* ℚ̄_₂` — there is a 2-dimensional `2`-adic
+representation, unramified away from a finite exceptional set `T`
+(allowed to depend on `φ`) and the places over `2`, whose Frobenius
+characteristic polynomials there are `(Pv v).map φ`. This is
+Eichler–Shimura/Deligne at `λ | 2` plus local–global compatibility for
+the one member; no hardly-ramifiedness demand is made (the notion
+requires odd residue characteristic). Strictly shallower than the
+φ-uniform `exists_realizations_at_two` below: the uniformity of the
+exceptional set over the (finitely many!) embeddings of the number
+field `E` into `ℚ̄_₂` is PROVEN glue there, not automorphy content. -/
+theorem exists_realization_at_two_of_embedding
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {E : Type v} [Field E] [NumberField E] (ψ : E →+* AlgebraicClosure ℚ_[p])
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E)
+    (heig : ∀ v ∉ S,
+      (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) = (Pv v).map ψ)
+    (φ : E →+* AlgebraicClosure ℚ_[2]) :
+    ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+      (m : GaloisRep ℚ (AlgebraicClosure ℚ_[2]) (Fin 2 → AlgebraicClosure ℚ_[2])),
+        ∀ v ∉ T, ((2 : ℕ) : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal →
+          m.IsUnramifiedAt v ∧
+          (m.toLocal v (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly =
+            (Pv v).map φ :=
+  sorry
+
 /-- **Residue characteristic 2 member of the realization stratum**
-(sorry node): the eigensystem `(E, S, Pv)` is realized at the even
+(PROVEN assembly, see the DECOMPOSED note below): the eigensystem
+`(E, S, Pv)` is realized at the even
 prime as well — for each embedding `φ : E →+* ℚ̄_₂` there is a
 2-dimensional `2`-adic representation, unramified away from a finite
 exceptional set `T` (uniform in `φ`) and the places over `2`, whose
@@ -882,7 +915,20 @@ characteristic), so this is the bare member existence — the reason it
 is a separate leaf from
 `exists_hardlyRamified_integral_realizations`, whose conclusion
 packages the member together with its hardly ramified integral
-model. -/
+model.
+
+DECOMPOSED (2026-07-23) into a PROVEN assembly over one strictly
+shallower sorried leaf: `exists_realization_at_two_of_embedding`
+realizes the eigensystem at each single embedding `φ` with a
+`φ`-dependent exceptional set `T φ`; the assembly (below) removes the
+`φ`-dependence by taking the union of the `T φ` over ALL embeddings —
+a finite union, because a number field has only finitely many ring
+homomorphisms into any field (every `φ : E →+* ℚ̄_₂` is a `ℚ`-algebra
+map by `RingHom.equivRatAlgHom`, and `Finite (E →ₐ[ℚ] ℚ̄_₂)` holds by
+`Finite.algHom` since `E` is finite-dimensional over `ℚ`). The
+uniformity demanded by `GaloisRepFamily.isCompatible` downstream is
+thus proven bookkeeping; only the per-embedding realization retains
+automorphy content. -/
 theorem exists_realizations_at_two
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -900,8 +946,18 @@ theorem exists_realizations_at_two
         ∀ v ∉ T, ((2 : ℕ) : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal →
           m.IsUnramifiedAt v ∧
           (m.toLocal v (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly =
-            (Pv v).map φ :=
-  sorry
+            (Pv v).map φ := by
+  classical
+  -- the number field `E` has only finitely many embeddings into `ℚ̄_₂`
+  haveI : Finite (E →+* AlgebraicClosure ℚ_[2]) :=
+    Finite.of_equiv (E →ₐ[ℚ] AlgebraicClosure ℚ_[2]) RingHom.equivRatAlgHom.symm
+  haveI := Fintype.ofFinite (E →+* AlgebraicClosure ℚ_[2])
+  -- realize the eigensystem at each embedding separately
+  choose T m hm using fun φ : E →+* AlgebraicClosure ℚ_[2] =>
+    exists_realization_at_two_of_embedding hpodd hv hZinj hRinj hρ ψ S Pv heig φ
+  -- the uniform exceptional set is the finite union of the per-embedding ones
+  refine ⟨Finset.univ.biUnion T, fun φ => ⟨m φ, fun v hvT hv2 =>
+    hm φ v (fun h => hvT (Finset.mem_biUnion.mpr ⟨φ, Finset.mem_univ _, h⟩)) hv2⟩⟩
 
 /-- **Realization stratum of the spreading** (PROVEN assembly, see the
 DECOMPOSED note below): the
