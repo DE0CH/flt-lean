@@ -2611,27 +2611,6 @@ theorem WeierstrassCurve.exists_torsion_galois_finiteQuotient_of_finite
     rw [hact_coe, key _ _ hfix P]
 
 set_option backward.isDefEq.respectTransparency false in
-omit [IsDomain R] [IsDiscreteValuationRing R] [Algebra R K] [IsFractionRing R K]
-  [E.HasGoodReduction R] in
-/-- **The torsion Galois action factors through a finite Galois quotient** (PROVEN
-2026-07-22; since 2026-07-23 a wrapper around the finiteness form
-`exists_torsion_galois_finiteQuotient_of_finite`, supplying the finiteness of the
-torsion via `torsion_finite_of_ne_zero`). -/
-theorem WeierstrassCurve.exists_torsion_galois_finiteQuotient
-    (m : ℕ) (hm : (m : R) ≠ 0) :
-    ∃ (L : IntermediateField K Ksep) (_ : FiniteDimensional K L) (_ : IsGalois K L)
-      (ρ : (L ≃ₐ[K] L) →*
-        AddMonoid.End (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))),
-      ∀ (σ : Ksep ≃ₐ[K] Ksep)
-        (P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)),
-        ((ρ (AlgEquiv.restrictNormalHom (F := K) (K₁ := Ksep) L σ) P :
-            AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) : (E⁄Ksep).Point) =
-          Affine.Point.map σ.toAlgHom (P : (E⁄Ksep).Point) :=
-  WeierstrassCurve.exists_torsion_galois_finiteQuotient_of_finite K E Ksep m
-    (WeierstrassCurve.torsion_finite_of_ne_zero K E Ksep m fun h0 => hm (by
-      rw [h0, Nat.cast_zero]))
-
-set_option backward.isDefEq.respectTransparency false in
 omit [IsDomain R] [IsDiscreteValuationRing R] [E.IsElliptic] [E.HasGoodReduction R] in
 include R in
 /-- **The finite étale Hopf package of the torsion, finiteness form** (DECOMPOSED
