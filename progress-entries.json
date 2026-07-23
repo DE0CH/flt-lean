@@ -1769,20 +1769,6 @@
   "parent": "exists_finiteQuotient_galoisModule_etale_package"
  },
  {
-  "fullname": "WeierstrassCurve.exists_torsion_etale_package_of_eqChar",
-  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
-  "name": "exists_torsion_etale_package_of_eqChar",
-  "text": "torsion \u00e9tale package in equal characteristic",
-  "wip": true
- },
- {
-  "fullname": "WeierstrassCurve.kernel_prime_pow_torsion_of_eqChar",
-  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
-  "name": "kernel_prime_pow_torsion_of_eqChar",
-  "text": "prime-power torsion kernel in equal characteristic",
-  "wip": true
- },
- {
   "fullname": "WeierstrassCurve.exists_finite_flat_hopf_form_of_good_reduction_prime_pow",
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
   "name": "exists_finite_flat_hopf_form_of_good_reduction_prime_pow",
