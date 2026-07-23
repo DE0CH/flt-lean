@@ -1462,7 +1462,7 @@
     "name": "exists_hardlyRamified_number_field_of_card",
     "fullname": "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field_of_card",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-    "wip": true,
+    "wip": false,
     "text": "`exists_hardlyRamified_number_field_of_card` — field cut by ker ρ: totally complex, degree = |image| ≥ 48, |d_K|⁶ ≤ 314928^[K:ℚ] (Fontaine at 3, tame at 2) — strictly smaller successor of the proven 48-bound glue (2026-07-22)",
     "parent": "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field"
   },
@@ -1478,7 +1478,7 @@
     "name": "quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified",
     "fullname": "GaloisRepresentation.IsHardlyRamified.quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-    "wip": true,
+    "wip": false,
     "text": "`quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified` — Oort–Tate/Raynaud at 3: the quotient character on inertia at 3 in the ramified case",
     "parent": "GaloisRepresentation.IsHardlyRamified.exists_line_with_unramified_quotCharacter_at_three"
   },
@@ -1486,7 +1486,7 @@
     "name": "exists_line_with_quotCharacter_eq_subCharacter",
     "fullname": "GaloisRepresentation.IsHardlyRamified.exists_line_with_quotCharacter_eq_subCharacter",
     "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-    "wip": true,
+    "wip": false,
     "text": "`exists_line_with_quotCharacter_eq_subCharacter` — the Serre swap / peu-ramifié Selmer vanishing line",
     "parent": "GaloisRepresentation.IsHardlyRamified.exists_line_with_unramified_quotCharacter_at_three"
   },
@@ -1665,5 +1665,53 @@
     "wip": true,
     "text": "`exists_kummerAlg_pointsEquiv` — the Ω̂-points of the explicit Kummer model are the p-torsion of Ωˣ/Qᶻ, equivariantly (product-factoring into a field + StandardEtalePair.homEquiv + the (i,t)↦[wⁱt] valuation argument, recorded) — 2026-07-23",
     "parent": "exists_kummerTorsionPackage"
+  },
+  {
+    "name": "exists_conj_fixingSubgroup_of_not_isTotallyComplex",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.exists_conj_fixingSubgroup_of_not_isTotallyComplex",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+    "wip": true,
+    "text": "`exists_conj_fixingSubgroup_of_not_isTotallyComplex` — ρ-free embedding plumbing: a real place yields a conjugation fixing the kernel field with χ₃ = −1 (repo's absoluteGaloisGroup.map arbitrary-embedding caveat documented) — 2026-07-23",
+    "parent": "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field_of_card"
+  },
+  {
+    "name": "discr_bound_of_kernel_field",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.discr_bound_of_kernel_field",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+    "wip": false,
+    "text": "`discr_bound_of_kernel_field` — Fontaine-at-3/tame-at-2 discriminant bound of the kernel field (conductor-discriminant vocabulary absent from mathlib) — 2026-07-23",
+    "parent": "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field_of_card"
+  },
+  {
+    "name": "exists_sqrt_of_quadratic_character_unramified_outside_two_three",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.exists_sqrt_of_quadratic_character_unramified_outside_two_three",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+    "wip": true,
+    "text": "`exists_sqrt_of_quadratic_character_unramified_outside_two_three` — quadratic fields ramified only in {2,3}: the character cuts ℚ(√d), d ∈ {−1,±2,±3,±6} — self-contained number theory — 2026-07-23",
+    "parent": "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral_arith"
+  },
+  {
+    "name": "serre_elimination_dihedral_ray_class",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral_ray_class",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+    "wip": false,
+    "text": "`serre_elimination_dihedral_ray_class` — per-field induced-character/ray-class core over d ∈ {−1,±2,±3,±6} (no ray class groups on the pin) — 2026-07-23",
+    "parent": "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral_arith"
+  },
+  {
+    "name": "quotCharacter_inertia_three_dichotomy",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.quotCharacter_inertia_three_dichotomy",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+    "wip": false,
+    "text": "`quotCharacter_inertia_three_dichotomy` — Oort–Tate for order-3 group schemes over ℤ₃: χ on inertia trivial or cyclotomic — 2026-07-23",
+    "parent": "GaloisRepresentation.IsHardlyRamified.quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified"
+  },
+  {
+    "name": "exists_splitting_scalar_of_quot_ramified",
+    "fullname": "GaloisRepresentation.IsHardlyRamified.exists_splitting_scalar_of_quot_ramified",
+    "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+    "wip": false,
+    "text": "`exists_splitting_scalar_of_quot_ramified` — peu-ramifié cocycle vanishing: the extension cocycle is a coboundary c g = t·(χ g − ψ g) (H¹ Selmer vanishing, Serre Duke §5.4) — 2026-07-23",
+    "parent": "GaloisRepresentation.IsHardlyRamified.exists_line_with_quotCharacter_eq_subCharacter"
   }
 ]
