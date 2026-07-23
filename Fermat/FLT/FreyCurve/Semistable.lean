@@ -4510,6 +4510,907 @@ theorem kummerAlg_etale :
 
 end KummerEtale
 
+/-! #### The `Ω`-points of the Kummer algebra
+
+For a field extension `Ω` of the fraction field `K`, an `Ω`-point of
+the generic fibre of the Kummer algebra is a component index `i`
+together with a `p`-th root of `uⁱ` in `Ω`: a `K`-algebra map out of
+the product factors through exactly one component (its values on the
+component idempotents are orthogonal idempotents of the field `Ω`
+summing to `1`), and on that component it is evaluation at a root of
+`xᵖ − uⁱ`. Under the convolution product of the Hopf structure the
+points compose by the carry law `(i,s)·(j,t) = (i+j, s·t·u^{−ε})`;
+with a recentring witness `u = Q·w⁻ᵖ` the assignment `(i,t) ↦ [wⁱ·t]`
+is a Galois-equivariant isomorphism onto the `p`-torsion of
+`Ωˣ/Qᶻ`. -/
+
+section KummerPoints
+
+variable (R : Type) [CommRing R] (K : Type) [Field K] [Algebra R K]
+variable (Ω : Type) [Field Ω] [Algebra K Ω] [Algebra R Ω] [IsScalarTower R K Ω]
+variable (p : ℕ) [NeZero p] (u : Rˣ)
+
+/-- Evaluation of the `i`-th Kummer component at a `p`-th root `t` of
+`uⁱ` in `Ω` (PROVEN data): the `R`-algebra map classifying the point. -/
+noncomputable def kummerComponentPointEval (i : ZMod p) (t : Ω)
+    (ht : t ^ p = algebraMap R Ω ((u : R) ^ i.val)) :
+    KummerComponent R p u i →ₐ[R] Ω :=
+  AdjoinRoot.liftAlgHom _ (Algebra.ofId R Ω) t (by
+    rw [Polynomial.eval₂_sub, Polynomial.eval₂_pow, Polynomial.eval₂_X,
+      Polynomial.eval₂_C, sub_eq_zero, ht]
+    rfl)
+
+omit [NeZero p] in
+/-- The component evaluation on the adjoined root (PROVEN). -/
+theorem kummerComponentPointEval_root (i : ZMod p) (t : Ω)
+    (ht : t ^ p = algebraMap R Ω ((u : R) ^ i.val)) :
+    kummerComponentPointEval R Ω p u i t ht (kummerRoot R p u i) = t :=
+  AdjoinRoot.liftAlgHom_root _ _ _ _
+
+/-- The `Ω`-point of the generic fibre of the Kummer algebra attached
+to a component index `i` and a `p`-th root `t` of `uⁱ` (PROVEN data):
+project to the `i`-th component and evaluate at `t`. -/
+noncomputable def kummerPointHom (i : ZMod p) (t : Ω)
+    (ht : t ^ p = algebraMap R Ω ((u : R) ^ i.val)) :
+    TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω :=
+  Algebra.TensorProduct.lift (Algebra.ofId K Ω)
+    ((kummerComponentPointEval R Ω p u i t ht).comp
+      (Pi.evalAlgHom R (KummerComponent R p u) i))
+    fun _ _ => Commute.all _ _
+
+omit [NeZero p] in
+/-- The point `(i, t)` on a tensor `1 ⊗ h` (PROVEN — the master value
+formula): evaluate the `i`-th coordinate of `h` at `t`. -/
+theorem kummerPointHom_tmul_one (i : ZMod p) (t : Ω)
+    (ht : t ^ p = algebraMap R Ω ((u : R) ^ i.val)) (h : KummerAlg R p u) :
+    kummerPointHom R K Ω p u i t ht (TensorProduct.tmul R (1 : K) h) =
+      kummerComponentPointEval R Ω p u i t ht (h i) := by
+  rw [kummerPointHom, Algebra.TensorProduct.lift_tmul, map_one, one_mul]
+  rfl
+
+omit [NeZero p] in
+/-- The point `(i, t)` on the component idempotents (PROVEN):
+`φ(eⱼ) = δᵢⱼ`. -/
+theorem kummerPointHom_single_one (i j : ZMod p) (t : Ω)
+    (ht : t ^ p = algebraMap R Ω ((u : R) ^ i.val)) :
+    kummerPointHom R K Ω p u i t ht
+        (TensorProduct.tmul R (1 : K) (Pi.single j 1 : KummerAlg R p u)) =
+      if j = i then 1 else 0 := by
+  rw [kummerPointHom_tmul_one]
+  by_cases h : j = i
+  · subst h
+    rw [Pi.single_eq_same, map_one, if_pos rfl]
+  · rw [Pi.single_eq_of_ne (Ne.symm h), map_zero, if_neg h]
+
+omit [NeZero p] in
+/-- The point `(i, t)` on the component roots (PROVEN):
+`φ(single j x) = δᵢⱼ·t`. -/
+theorem kummerPointHom_single_root (i j : ZMod p) (t : Ω)
+    (ht : t ^ p = algebraMap R Ω ((u : R) ^ i.val)) :
+    kummerPointHom R K Ω p u i t ht
+        (TensorProduct.tmul R (1 : K)
+          (Pi.single j (kummerRoot R p u j) : KummerAlg R p u)) =
+      if j = i then t else 0 := by
+  rw [kummerPointHom_tmul_one]
+  by_cases h : j = i
+  · subst h
+    rw [Pi.single_eq_same, if_pos rfl]
+    exact kummerComponentPointEval_root R Ω p u j t ht
+  · rw [Pi.single_eq_of_ne (Ne.symm h), map_zero, if_neg h]
+
+/-- **Extensionality for `Ω`-points** (PROVEN): two `K`-algebra maps
+out of the generic fibre of the Kummer algebra agree as soon as they
+agree on the component idempotents and the component roots. -/
+theorem kummerPointHom_ext
+    {φ ψ : TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω}
+    (hone : ∀ i : ZMod p,
+      φ (TensorProduct.tmul R (1 : K) (Pi.single i 1 : KummerAlg R p u)) =
+      ψ (TensorProduct.tmul R (1 : K) (Pi.single i 1 : KummerAlg R p u)))
+    (hroot : ∀ i : ZMod p,
+      φ (TensorProduct.tmul R (1 : K)
+        (Pi.single i (kummerRoot R p u i) : KummerAlg R p u)) =
+      ψ (TensorProduct.tmul R (1 : K)
+        (Pi.single i (kummerRoot R p u i) : KummerAlg R p u))) :
+    φ = ψ := by
+  have hrest : (φ.restrictScalars R).comp
+      (Algebra.TensorProduct.includeRight :
+        KummerAlg R p u →ₐ[R] TensorProduct R K (KummerAlg R p u)) =
+      (ψ.restrictScalars R).comp
+        (Algebra.TensorProduct.includeRight :
+          KummerAlg R p u →ₐ[R] TensorProduct R K (KummerAlg R p u)) :=
+    kummerAlg_algHom_ext R p u (fun i => hone i) (fun i => hroot i)
+  refine Algebra.TensorProduct.ext' fun a b => ?_
+  have h1 : (TensorProduct.tmul R a b : TensorProduct R K (KummerAlg R p u)) =
+      a • TensorProduct.tmul R (1 : K) b := by
+    rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+  have h2 : φ (TensorProduct.tmul R (1 : K) b) =
+      ψ (TensorProduct.tmul R (1 : K) b) := by
+    have h3 := congrArg (fun χ : KummerAlg R p u →ₐ[R] Ω => χ b) hrest
+    simpa using h3
+  rw [h1, map_smul, map_smul, h2]
+
+set_option maxHeartbeats 1000000 in
+/-- **Every `Ω`-point is a component-root evaluation** (PROVEN): the
+values of `φ` on the component idempotents are orthogonal idempotents
+of the field `Ω` summing to `1`, so exactly one of them equals `1`;
+`φ` is the evaluation of that component at its root value. -/
+theorem exists_kummerPointHom_eq
+    (φ : TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω) :
+    ∃ (i : ZMod p) (t : Ω) (ht : t ^ p = algebraMap R Ω ((u : R) ^ i.val)),
+      φ = kummerPointHom R K Ω p u i t ht := by
+  classical
+  -- the idempotent values
+  have horth : ∀ j k : ZMod p, j ≠ k →
+      φ (TensorProduct.tmul R (1 : K) (Pi.single j 1 : KummerAlg R p u)) *
+      φ (TensorProduct.tmul R (1 : K) (Pi.single k 1 : KummerAlg R p u)) = 0 := by
+    intro j k hjk
+    rw [← map_mul, Algebra.TensorProduct.tmul_mul_tmul, one_mul]
+    have hz : (Pi.single j 1 * Pi.single k 1 : KummerAlg R p u) = 0 := by
+      funext l
+      rw [Pi.mul_apply, Pi.zero_apply]
+      by_cases hl : l = j
+      · subst hl
+        rw [Pi.single_eq_of_ne hjk, mul_zero]
+      · rw [Pi.single_eq_of_ne hl, zero_mul]
+    rw [hz, TensorProduct.tmul_zero, map_zero]
+  have hsum : ∑ j : ZMod p,
+      φ (TensorProduct.tmul R (1 : K) (Pi.single j 1 : KummerAlg R p u)) = 1 := by
+    have h1 : (1 : KummerAlg R p u) = ∑ j : ZMod p, Pi.single j 1 := by
+      funext l
+      rw [Finset.sum_apply,
+        Finset.sum_eq_single l
+          (fun j _ hj => Pi.single_eq_of_ne (Ne.symm hj) 1)
+          (fun hl => absurd (Finset.mem_univ l) hl),
+        Pi.single_eq_same]
+      rfl
+    calc ∑ j : ZMod p,
+        φ (TensorProduct.tmul R (1 : K) (Pi.single j 1 : KummerAlg R p u))
+        = φ (TensorProduct.tmul R (1 : K)
+            (∑ j : ZMod p, (Pi.single j 1 : KummerAlg R p u))) := by
+          rw [TensorProduct.tmul_sum, map_sum]
+      _ = 1 := by
+          rw [← h1, ← Algebra.TensorProduct.one_def, map_one]
+  have h01 : ∀ j : ZMod p,
+      φ (TensorProduct.tmul R (1 : K) (Pi.single j 1 : KummerAlg R p u)) = 0 ∨
+      φ (TensorProduct.tmul R (1 : K) (Pi.single j 1 : KummerAlg R p u)) = 1 := by
+    intro j
+    have hidem :
+        φ (TensorProduct.tmul R (1 : K) (Pi.single j 1 : KummerAlg R p u)) *
+        φ (TensorProduct.tmul R (1 : K) (Pi.single j 1 : KummerAlg R p u)) =
+        φ (TensorProduct.tmul R (1 : K) (Pi.single j 1 : KummerAlg R p u)) := by
+      rw [← map_mul, Algebra.TensorProduct.tmul_mul_tmul, one_mul]
+      congr 1
+      congr 1
+      funext l
+      rw [Pi.mul_apply]
+      by_cases hl : l = j
+      · subst hl
+        rw [Pi.single_eq_same, one_mul]
+      · rw [Pi.single_eq_of_ne hl, zero_mul]
+    have hfac :
+        φ (TensorProduct.tmul R (1 : K) (Pi.single j 1 : KummerAlg R p u)) *
+        (φ (TensorProduct.tmul R (1 : K) (Pi.single j 1 : KummerAlg R p u)) - 1) = 0 := by
+      rw [mul_sub, hidem, mul_one, sub_self]
+    rcases mul_eq_zero.mp hfac with h | h
+    · exact Or.inl h
+    · exact Or.inr (sub_eq_zero.mp h)
+  have hexists : ∃ i : ZMod p,
+      φ (TensorProduct.tmul R (1 : K) (Pi.single i 1 : KummerAlg R p u)) = 1 := by
+    by_contra hno
+    push Not at hno
+    have hall : ∀ j : ZMod p,
+        φ (TensorProduct.tmul R (1 : K) (Pi.single j 1 : KummerAlg R p u)) = 0 :=
+      fun j => (h01 j).resolve_right (hno j)
+    rw [Finset.sum_congr rfl (fun j _ => hall j), Finset.sum_const_zero] at hsum
+    exact zero_ne_one hsum
+  obtain ⟨i, hei⟩ := hexists
+  have hzero : ∀ j : ZMod p, j ≠ i →
+      φ (TensorProduct.tmul R (1 : K) (Pi.single j 1 : KummerAlg R p u)) = 0 := by
+    intro j hj
+    rcases h01 j with h | h
+    · exact h
+    · exfalso
+      have hcontra := horth j i hj
+      rw [h, hei, one_mul] at hcontra
+      exact one_ne_zero hcontra
+  -- the root value
+  have hroot0 : ∀ j : ZMod p, j ≠ i →
+      φ (TensorProduct.tmul R (1 : K)
+        (Pi.single j (kummerRoot R p u j) : KummerAlg R p u)) = 0 := by
+    intro j hj
+    have hsplit : (Pi.single j (kummerRoot R p u j) : KummerAlg R p u) =
+        Pi.single j 1 * Pi.single j (kummerRoot R p u j) := by
+      funext l
+      rw [Pi.mul_apply]
+      by_cases hl : l = j
+      · subst hl
+        rw [Pi.single_eq_same, Pi.single_eq_same, one_mul]
+      · rw [Pi.single_eq_of_ne hl, Pi.single_eq_of_ne hl, zero_mul]
+    rw [hsplit,
+      show TensorProduct.tmul R (1 : K)
+          (Pi.single j 1 * Pi.single j (kummerRoot R p u j) : KummerAlg R p u) =
+        TensorProduct.tmul R (1 : K) (Pi.single j 1 : KummerAlg R p u) *
+        TensorProduct.tmul R (1 : K)
+          (Pi.single j (kummerRoot R p u j) : KummerAlg R p u) from by
+        rw [Algebra.TensorProduct.tmul_mul_tmul, one_mul],
+      map_mul, hzero j hj, zero_mul]
+  have ht : (φ (TensorProduct.tmul R (1 : K)
+      (Pi.single i (kummerRoot R p u i) : KummerAlg R p u))) ^ p =
+      algebraMap R Ω ((u : R) ^ i.val) := by
+    have hsp : (Pi.single i (kummerRoot R p u i) : KummerAlg R p u) ^ p =
+        Pi.single i (kummerRoot R p u i ^ p) := by
+      funext l
+      rw [Pi.pow_apply]
+      by_cases hl : l = i
+      · subst hl
+        rw [Pi.single_eq_same, Pi.single_eq_same]
+      · rw [Pi.single_eq_of_ne hl, Pi.single_eq_of_ne hl,
+          zero_pow (NeZero.ne p)]
+    have hsm : (Pi.single i (algebraMap R (KummerComponent R p u i)
+        ((u : R) ^ i.val)) : KummerAlg R p u) =
+        ((u : R) ^ i.val) • (Pi.single i 1 : KummerAlg R p u) := by
+      rw [Algebra.algebraMap_eq_smul_one, Pi.single_smul]
+    calc (φ (TensorProduct.tmul R (1 : K)
+        (Pi.single i (kummerRoot R p u i) : KummerAlg R p u))) ^ p
+        = φ ((TensorProduct.tmul R (1 : K)
+            (Pi.single i (kummerRoot R p u i) : KummerAlg R p u)) ^ p) :=
+          (map_pow φ _ p).symm
+      _ = φ (TensorProduct.tmul R (1 : K)
+            ((Pi.single i (kummerRoot R p u i) : KummerAlg R p u) ^ p)) := by
+          rw [Algebra.TensorProduct.tmul_pow, one_pow]
+      _ = φ (TensorProduct.tmul R (1 : K)
+            (((u : R) ^ i.val) • (Pi.single i 1 : KummerAlg R p u))) := by
+          rw [hsp, kummerRoot_pow_p, hsm]
+      _ = algebraMap R Ω ((u : R) ^ i.val) := by
+          rw [TensorProduct.tmul_smul,
+            ← algebraMap_smul K ((u : R) ^ i.val), map_smul, hei,
+            Algebra.smul_def, mul_one]
+          exact (IsScalarTower.algebraMap_apply R K Ω ((u : R) ^ i.val)).symm
+  refine ⟨i, _, ht, ?_⟩
+  refine kummerPointHom_ext R K Ω p u (fun j => ?_) (fun j => ?_)
+  · rw [kummerPointHom_single_one]
+    by_cases h : j = i
+    · subst h
+      rw [if_pos rfl, hei]
+    · rw [if_neg h, hzero j h]
+  · rw [kummerPointHom_single_root]
+    by_cases h : j = i
+    · subst h
+      rw [if_pos rfl]
+    · rw [if_neg h, hroot0 j h]
+
+omit [NeZero p] in
+/-- The point data is determined by the point (PROVEN — read off the
+generator values). -/
+theorem kummerPointHom_inj {i i' : ZMod p} {t t' : Ω}
+    {ht : t ^ p = algebraMap R Ω ((u : R) ^ i.val)}
+    {ht' : t' ^ p = algebraMap R Ω ((u : R) ^ i'.val)}
+    (h : kummerPointHom R K Ω p u i t ht = kummerPointHom R K Ω p u i' t' ht') :
+    i = i' ∧ t = t' := by
+  have h1 := congrArg
+    (fun χ : TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω =>
+      χ (TensorProduct.tmul R (1 : K) (Pi.single i 1 : KummerAlg R p u))) h
+  rw [kummerPointHom_single_one, kummerPointHom_single_one, if_pos rfl] at h1
+  have hii : i = i' := by
+    by_contra hne
+    rw [if_neg hne] at h1
+    exact one_ne_zero h1
+  subst hii
+  refine ⟨rfl, ?_⟩
+  have h2 := congrArg
+    (fun χ : TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω =>
+      χ (TensorProduct.tmul R (1 : K)
+        (Pi.single i (kummerRoot R p u i) : KummerAlg R p u))) h
+  rwa [kummerPointHom_single_root, kummerPointHom_single_root,
+    if_pos rfl, if_pos rfl] at h2
+
+/-- The carried product root is a `p`-th root of `u^{(i+j).val}`
+(PROVEN — the units-level carry identity). -/
+theorem kummerPointMul_relation (i j : ZMod p) (s t : Ω)
+    (hs : s ^ p = algebraMap R Ω ((u : R) ^ i.val))
+    (ht : t ^ p = algebraMap R Ω ((u : R) ^ j.val)) :
+    (s * t * algebraMap R Ω (((u⁻¹ : Rˣ) : R) ^
+        (if i.val + j.val < p then 0 else 1))) ^ p =
+      algebraMap R Ω ((u : R) ^ (i + j).val) := by
+  rw [mul_pow, mul_pow, hs, ht, ← map_pow, ← pow_mul, ← map_mul, ← map_mul]
+  congr 1
+  have hU : (u ^ i.val * u ^ j.val *
+      u⁻¹ ^ ((if i.val + j.val < p then 0 else 1) * p) : Rˣ) =
+      u ^ (i + j).val := by
+    have hc := kummer_val_add_carry p i j
+    by_cases hlt : i.val + j.val < p
+    · rw [if_pos hlt] at hc ⊢
+      rw [Nat.mul_zero, Nat.add_zero] at hc
+      rw [Nat.zero_mul, pow_zero, mul_one, ← pow_add, hc]
+    · rw [if_neg hlt] at hc ⊢
+      rw [Nat.mul_one] at hc
+      rw [Nat.one_mul, ← pow_add, hc, pow_add, mul_assoc, inv_pow,
+        mul_inv_cancel, mul_one]
+  have hR := congrArg (Units.val) hU
+  simpa only [Units.val_mul, Units.val_pow_eq_pow_val] using hR
+
+omit [NeZero p] in
+/-- The point `(i, t)` on a scaled component root (PROVEN):
+`φ(single j (r·x)) = δᵢⱼ·r̄·t`. -/
+theorem kummerPointHom_single_smul_root (i j : ZMod p) (r : R) (t : Ω)
+    (ht : t ^ p = algebraMap R Ω ((u : R) ^ i.val)) :
+    kummerPointHom R K Ω p u i t ht
+        (TensorProduct.tmul R (1 : K)
+          (Pi.single j (r • kummerRoot R p u j) : KummerAlg R p u)) =
+      if j = i then algebraMap R Ω r * t else 0 := by
+  rw [kummerPointHom_tmul_one]
+  by_cases h : j = i
+  · subst h
+    rw [Pi.single_eq_same, if_pos rfl, map_smul,
+      kummerComponentPointEval_root, Algebra.smul_def]
+  · rw [Pi.single_eq_of_ne (Ne.symm h), map_zero, if_neg h]
+
+set_option maxHeartbeats 1000000 in
+/-- The base-changed comultiplication on a one-component idempotent
+(PROVEN): `Δ(1 ⊗ e_c) = ∑ⱼ (1 ⊗ e_{c−j}) ⊗ (1 ⊗ e_j)`. -/
+theorem kummerBaseComul_single_one (c : ZMod p) :
+    Coalgebra.comul (R := K)
+        (TensorProduct.tmul R (1 : K) (Pi.single c 1 : KummerAlg R p u)) =
+      ∑ j : ZMod p,
+        TensorProduct.tmul K
+          (TensorProduct.tmul R (1 : K)
+            (Pi.single (c - j) 1 : KummerAlg R p u))
+          (TensorProduct.tmul R (1 : K)
+            (Pi.single j 1 : KummerAlg R p u)) := by
+  rw [TensorProduct.comul_tmul, CommSemiring.comul_apply,
+    show Coalgebra.comul (R := R) (Pi.single c 1 : KummerAlg R p u) =
+      kummerComul R p u (Pi.single c 1) from rfl,
+    kummerComul_single_one_eq, TensorProduct.tmul_sum, map_sum]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rfl
+
+set_option maxHeartbeats 1000000 in
+/-- The base-changed comultiplication on a one-component root (PROVEN):
+`Δ(1 ⊗ single_c x) = ∑ⱼ (1 ⊗ single_{c−j}(u^{−ε}·x)) ⊗ (1 ⊗ single_j x)`
+with the carry scalar folded into the left leg. -/
+theorem kummerBaseComul_single_root (c : ZMod p) :
+    Coalgebra.comul (R := K)
+        (TensorProduct.tmul R (1 : K)
+          (Pi.single c (kummerRoot R p u c) : KummerAlg R p u)) =
+      ∑ j : ZMod p,
+        TensorProduct.tmul K
+          (TensorProduct.tmul R (1 : K)
+            (Pi.single (c - j)
+              ((((u⁻¹ : Rˣ) : R) ^
+                (if (c - j).val + j.val < p then 0 else 1)) •
+                kummerRoot R p u (c - j)) : KummerAlg R p u))
+          (TensorProduct.tmul R (1 : K)
+            (Pi.single j (kummerRoot R p u j) : KummerAlg R p u)) := by
+  rw [TensorProduct.comul_tmul, CommSemiring.comul_apply,
+    show Coalgebra.comul (R := R)
+        (Pi.single c (kummerRoot R p u c) : KummerAlg R p u) =
+      kummerComul R p u (Pi.single c (kummerRoot R p u c)) from rfl,
+    kummerComul_single_root_eq]
+  have hterm : ∀ j : ZMod p,
+      ((((u⁻¹ : Rˣ) : R) ^ (if (c - j).val + j.val < p then 0 else 1)) •
+        TensorProduct.tmul R
+          (Pi.single (c - j) (kummerRoot R p u (c - j)) : KummerAlg R p u)
+          (Pi.single j (kummerRoot R p u j) : KummerAlg R p u)) =
+      TensorProduct.tmul R
+        (Pi.single (c - j)
+          ((((u⁻¹ : Rˣ) : R) ^
+            (if (c - j).val + j.val < p then 0 else 1)) •
+            kummerRoot R p u (c - j)) : KummerAlg R p u)
+        (Pi.single j (kummerRoot R p u j) : KummerAlg R p u) := by
+    intro j
+    rw [TensorProduct.smul_tmul', Pi.single_smul]
+  rw [Finset.sum_congr rfl fun j _ => hterm j, TensorProduct.tmul_sum, map_sum]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rfl
+
+set_option maxHeartbeats 1000000 in
+/-- **The convolution identity is the identity point `(0, 1)`**
+(PROVEN — the counit of the base change evaluates the identity
+point). -/
+theorem kummerPointHom_conv_one :
+    (1 : WithConv (TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω)) =
+      WithConv.toConv (kummerPointHom R K Ω p u 0 1 (by
+        rw [one_pow, ZMod.val_zero, pow_zero, map_one])) := by
+  apply WithConv.ext
+  refine kummerPointHom_ext R K Ω p u (fun c => ?_) (fun c => ?_)
+  · rw [AlgHom.convOne_apply, TensorProduct.counit_tmul,
+      CommSemiring.counit_apply,
+      show Coalgebra.counit (R := R) (Pi.single c 1 : KummerAlg R p u) =
+        kummerCounit R p u (Pi.single c 1) from rfl,
+      kummerPointHom_single_one]
+    by_cases hc : c = 0
+    · subst hc
+      rw [kummerCounit_single_zero_one, if_pos rfl, one_smul, map_one]
+    · rw [kummerCounit_single_of_ne R p u hc, if_neg hc, zero_smul, map_zero]
+  · rw [AlgHom.convOne_apply, TensorProduct.counit_tmul,
+      CommSemiring.counit_apply,
+      show Coalgebra.counit (R := R)
+          (Pi.single c (kummerRoot R p u c) : KummerAlg R p u) =
+        kummerCounit R p u (Pi.single c (kummerRoot R p u c)) from rfl,
+      kummerPointHom_single_root]
+    by_cases hc : c = 0
+    · subst hc
+      rw [kummerCounit_single_zero_root, if_pos rfl, one_smul, map_one]
+    · rw [kummerCounit_single_of_ne R p u hc, if_neg hc, zero_smul, map_zero]
+
+set_option maxHeartbeats 2000000 in
+/-- **The convolution product of two points is the carried point
+product** (PROVEN — evaluate both sides on the component idempotents
+and roots through the base-changed comultiplication): the explicit
+model realizes the group law `(i,s)·(j,t) = (i+j, s·t·u^{−ε})`. -/
+theorem kummerPointHom_conv_mul (i j : ZMod p) (s t : Ω)
+    (hs : s ^ p = algebraMap R Ω ((u : R) ^ i.val))
+    (ht : t ^ p = algebraMap R Ω ((u : R) ^ j.val)) :
+    WithConv.toConv (kummerPointHom R K Ω p u i s hs) *
+      WithConv.toConv (kummerPointHom R K Ω p u j t ht) =
+      WithConv.toConv (kummerPointHom R K Ω p u (i + j)
+        (s * t * algebraMap R Ω (((u⁻¹ : Rˣ) : R) ^
+          (if i.val + j.val < p then 0 else 1)))
+        (kummerPointMul_relation R Ω p u i j s t hs ht)) := by
+  apply WithConv.ext
+  refine kummerPointHom_ext R K Ω p u (fun c => ?_) (fun c => ?_)
+  · -- the component idempotents
+    rw [AlgHom.convMul_apply, kummerBaseComul_single_one, map_sum,
+      Finset.sum_congr rfl (fun j' _ => by
+        rw [Algebra.TensorProduct.lift_tmul, kummerPointHom_single_one,
+          kummerPointHom_single_one]),
+      Finset.sum_eq_single j
+        (fun j' _ hj' => by rw [if_neg hj', mul_zero])
+        (fun hj => absurd (Finset.mem_univ j) hj),
+      if_pos rfl, mul_one, kummerPointHom_single_one]
+    by_cases hc : c = i + j
+    · subst hc
+      rw [if_pos (add_sub_cancel_right i j), if_pos rfl]
+    · rw [if_neg (fun h : c - j = i => hc (sub_eq_iff_eq_add.mp h)),
+        if_neg hc]
+  · -- the component roots
+    rw [AlgHom.convMul_apply, kummerBaseComul_single_root, map_sum,
+      Finset.sum_congr rfl (fun j' _ => by
+        rw [Algebra.TensorProduct.lift_tmul,
+          kummerPointHom_single_smul_root, kummerPointHom_single_root]),
+      Finset.sum_eq_single j
+        (fun j' _ hj' => by rw [if_neg hj', mul_zero])
+        (fun hj => absurd (Finset.mem_univ j) hj),
+      if_pos rfl, kummerPointHom_single_root]
+    by_cases hc : c = i + j
+    · subst hc
+      rw [add_sub_cancel_right, if_pos rfl, if_pos rfl]
+      ring
+    · rw [if_neg (fun h : c - j = i => hc (sub_eq_iff_eq_add.mp h)),
+        zero_mul, if_neg hc]
+
+/-- Composition with a Galois automorphism transports the point
+`(i, t)` to `(i, σt)` (PROVEN — `σ` fixes the generator values' index
+structure and moves the root value). -/
+theorem kummerPointHom_comp_algEquiv (σ : Ω ≃ₐ[K] Ω) (i : ZMod p) (t : Ω)
+    (ht : t ^ p = algebraMap R Ω ((u : R) ^ i.val)) :
+    σ.toAlgHom.comp (kummerPointHom R K Ω p u i t ht) =
+      kummerPointHom R K Ω p u i (σ t) (by
+        rw [← map_pow, ht, IsScalarTower.algebraMap_apply R K Ω]
+        exact σ.commutes _) := by
+  refine kummerPointHom_ext R K Ω p u (fun j => ?_) (fun j => ?_)
+  · rw [AlgHom.comp_apply, kummerPointHom_single_one,
+      kummerPointHom_single_one, apply_ite σ.toAlgHom, map_one, map_zero]
+  · rw [AlgHom.comp_apply, kummerPointHom_single_root,
+      kummerPointHom_single_root, apply_ite σ.toAlgHom, map_zero]
+    rfl
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **The points of the Kummer algebra are the `p`-torsion of `Ωˣ/Qᶻ`**
+(PROVEN for any field extension `Ω/K` and recentring witness
+`u = Q·w⁻ᵖ` with `Q` of infinite order): the classification of the
+points, the carry group law of the convolution product, and the
+assignment `(i,t) ↦ [wⁱ·t]` assemble into a group isomorphism onto the
+`p`-torsion of `Ωˣ/Qᶻ`, equivariant for every `K`-automorphism of `Ω`
+(stated through unit representatives). -/
+theorem exists_kummerPointsEquiv (Q w : Kˣ)
+    (hQ : ∀ n : ℤ, Q ^ n = 1 → n = 0)
+    (hu : algebraMap R K ((u : Rˣ) : R) = ((Q * w⁻¹ ^ p : Kˣ) : K)) :
+    ∃ (f : Additive (WithConv (TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω)) ≃+
+        AddSubgroup.torsionBy (Additive (Ωˣ ⧸ Subgroup.zpowers
+          (Units.map (algebraMap K Ω).toMonoidHom Q))) ((p : ℕ) : ℤ)),
+      ∀ (σ : Ω ≃ₐ[K] Ω)
+        (φ : TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω) (u' : Ωˣ),
+        ((f (Additive.ofMul (WithConv.toConv φ)) :
+            AddSubgroup.torsionBy (Additive (Ωˣ ⧸ Subgroup.zpowers
+              (Units.map (algebraMap K Ω).toMonoidHom Q))) ((p : ℕ) : ℤ)) :
+          Additive (Ωˣ ⧸ Subgroup.zpowers
+            (Units.map (algebraMap K Ω).toMonoidHom Q))) =
+          Additive.ofMul ↑u' →
+        ((f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) :
+            AddSubgroup.torsionBy (Additive (Ωˣ ⧸ Subgroup.zpowers
+              (Units.map (algebraMap K Ω).toMonoidHom Q))) ((p : ℕ) : ℤ)) :
+          Additive (Ωˣ ⧸ Subgroup.zpowers
+            (Units.map (algebraMap K Ω).toMonoidHom Q))) =
+          Additive.ofMul
+            ↑(Units.map σ.toAlgHom.toRingHom.toMonoidHom u') := by
+  classical
+  -- images of the recentring data in `Ωˣ`
+  set Qb : Ωˣ := Units.map (algebraMap K Ω).toMonoidHom Q with hQb_def
+  set wb : Ωˣ := Units.map (algebraMap K Ω).toMonoidHom w with hwb_def
+  set ub : Ωˣ := Units.map (algebraMap R Ω).toMonoidHom u with hub_def
+  -- the recentring identity in `Ωˣ`
+  have hubQ : ub = Qb * wb⁻¹ ^ p := by
+    apply Units.ext
+    show algebraMap R Ω ((u : Rˣ) : R) = ((Qb * wb⁻¹ ^ p : Ωˣ) : Ω)
+    rw [IsScalarTower.algebraMap_apply R K Ω, hu, Units.val_mul,
+      Units.val_pow_eq_pow_val, Units.val_inv_eq_inv_val, map_mul, map_pow,
+      map_inv₀, Units.val_mul, Units.val_pow_eq_pow_val,
+      Units.val_inv_eq_inv_val]
+    rfl
+  have hwp : wb ^ p * ub = Qb := by
+    rw [hubQ, mul_comm Qb (wb⁻¹ ^ p), ← mul_assoc, ← mul_pow,
+      mul_inv_cancel, one_pow, one_mul]
+  -- `Q` has infinite order in `Ωˣ`
+  have hQb_inf : ∀ n : ℤ, Qb ^ n = 1 → n = 0 := by
+    intro n hn
+    refine hQ n (Units.ext ?_)
+    have h1 : ((Q ^ n : Kˣ) : K) = 1 := by
+      apply (algebraMap K Ω).injective
+      rw [map_one]
+      calc algebraMap K Ω ((Q ^ n : Kˣ) : K)
+          = ((Units.map (algebraMap K Ω).toMonoidHom (Q ^ n) : Ωˣ) : Ω) := rfl
+        _ = ((Qb ^ n : Ωˣ) : Ω) := by rw [map_zpow]
+        _ = 1 := by rw [hn, Units.val_one]
+    rw [Units.val_one]
+    exact h1
+  -- point data of every hom, by the classification
+  have hclass := fun φ : TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω =>
+    exists_kummerPointHom_eq R K Ω p u φ
+  choose idx rt hrt heq using hclass
+  have hne : ∀ φ, rt φ ≠ 0 := by
+    intro φ h0
+    have h1 := hrt φ
+    rw [h0, zero_pow (NeZero.ne p)] at h1
+    exact (IsUnit.map (algebraMap R Ω)
+      (u.isUnit.pow (idx φ).val)).ne_zero h1.symm
+  -- the unit attached to a point, and its `p`-th power
+  set U : (TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω) → Ωˣ := fun φ =>
+    wb ^ (idx φ).val * Units.mk0 (rt φ) (hne φ) with hU_def
+  have hUp : ∀ φ, U φ ^ p = Qb ^ (idx φ).val := by
+    intro φ
+    have hmk : (Units.mk0 (rt φ) (hne φ)) ^ p = ub ^ (idx φ).val := by
+      apply Units.ext
+      show rt φ ^ p = ((ub ^ (idx φ).val : Ωˣ) : Ω)
+      rw [Units.val_pow_eq_pow_val, hrt φ, map_pow]
+      rfl
+    rw [hU_def]
+    show (wb ^ (idx φ).val * Units.mk0 (rt φ) (hne φ)) ^ p = Qb ^ (idx φ).val
+    rw [mul_pow, hmk, ← pow_mul, mul_comm (idx φ).val p, pow_mul, ← mul_pow,
+      hwp]
+  -- the class map to `Ωˣ/Qᶻ`
+  set cl : (TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω) →
+      Ωˣ ⧸ Subgroup.zpowers Qb := fun φ => QuotientGroup.mk (U φ) with hcl_def
+  have hcl_torsion : ∀ φ, ((p : ℕ) : ℤ) • Additive.ofMul (cl φ) = 0 := by
+    intro φ
+    have h1 : cl φ ^ (p : ℕ) = 1 := by
+      rw [hcl_def]
+      show (QuotientGroup.mk (U φ) : Ωˣ ⧸ Subgroup.zpowers Qb) ^ (p : ℕ) = 1
+      have h2 : (QuotientGroup.mk (U φ ^ p) :
+          Ωˣ ⧸ Subgroup.zpowers Qb) = 1 := by
+        rw [hUp φ, QuotientGroup.eq_one_iff]
+        exact Subgroup.pow_mem _ (Subgroup.mem_zpowers Qb) (idx φ).val
+      exact h2
+    rw [← ofMul_zpow, zpow_natCast, h1]
+    rfl
+  -- the point data of a convolution product
+  have hdata_mul : ∀ a b :
+      WithConv (TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω),
+      idx ((a * b).ofConv) = idx a.ofConv + idx b.ofConv ∧
+      rt ((a * b).ofConv) = rt a.ofConv * rt b.ofConv *
+        algebraMap R Ω (((u⁻¹ : Rˣ) : R) ^
+          (if (idx a.ofConv).val + (idx b.ofConv).val < p then 0 else 1)) := by
+    intro a b
+    have hab : a * b = WithConv.toConv (kummerPointHom R K Ω p u
+        (idx a.ofConv + idx b.ofConv)
+        (rt a.ofConv * rt b.ofConv * algebraMap R Ω (((u⁻¹ : Rˣ) : R) ^
+          (if (idx a.ofConv).val + (idx b.ofConv).val < p then 0 else 1)))
+        (kummerPointMul_relation R Ω p u _ _ _ _ (hrt a.ofConv)
+          (hrt b.ofConv))) := by
+      conv_lhs => rw [← WithConv.toConv_ofConv a, ← WithConv.toConv_ofConv b,
+        heq a.ofConv, heq b.ofConv]
+      exact kummerPointHom_conv_mul R K Ω p u _ _ _ _ (hrt a.ofConv)
+        (hrt b.ofConv)
+    have h3 : (a * b).ofConv = kummerPointHom R K Ω p u
+        (idx a.ofConv + idx b.ofConv)
+        (rt a.ofConv * rt b.ofConv * algebraMap R Ω (((u⁻¹ : Rˣ) : R) ^
+          (if (idx a.ofConv).val + (idx b.ofConv).val < p then 0 else 1)))
+        (kummerPointMul_relation R Ω p u _ _ _ _ (hrt a.ofConv)
+          (hrt b.ofConv)) := by
+      rw [hab]
+    exact kummerPointHom_inj R K Ω p u
+      (((heq ((a * b).ofConv)).symm.trans h3))
+  -- the inverse image of `u` as a unit value
+  have hui : algebraMap R Ω ((u⁻¹ : Rˣ) : R) = (((ub : Ωˣ) : Ω))⁻¹ := by
+    rw [← Units.val_inv_eq_inv_val]
+    rfl
+  -- multiplicativity of the class map through the carry
+  have hcl_mul : ∀ a b :
+      WithConv (TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω),
+      cl ((a * b).ofConv) = cl a.ofConv * cl b.ofConv := by
+    intro a b
+    obtain ⟨hi, hr⟩ := hdata_mul a b
+    have hval := kummer_val_add_carry p (idx a.ofConv) (idx b.ofConv)
+    -- the carried unit identity
+    have hmk : Units.mk0 (rt ((a * b).ofConv)) (hne ((a * b).ofConv)) =
+        Units.mk0 (rt a.ofConv) (hne a.ofConv) *
+          Units.mk0 (rt b.ofConv) (hne b.ofConv) *
+        ub⁻¹ ^ (if (idx a.ofConv).val + (idx b.ofConv).val < p
+          then 0 else 1) := by
+      apply Units.ext
+      show rt ((a * b).ofConv) = _
+      rw [Units.val_mul, Units.val_mul, Units.val_pow_eq_pow_val,
+        Units.val_inv_eq_inv_val, hr, map_pow, hui]
+      rfl
+    have hUab : U ((a * b).ofConv) *
+        Qb ^ (if (idx a.ofConv).val + (idx b.ofConv).val < p then 0 else 1) =
+        U a.ofConv * U b.ofConv := by
+      rw [hU_def]
+      show wb ^ (idx ((a * b).ofConv)).val *
+          Units.mk0 (rt ((a * b).ofConv)) (hne ((a * b).ofConv)) * Qb ^ _ =
+        (wb ^ (idx a.ofConv).val * Units.mk0 (rt a.ofConv) (hne a.ofConv)) *
+        (wb ^ (idx b.ofConv).val * Units.mk0 (rt b.ofConv) (hne b.ofConv))
+      rw [hmk, hi]
+      by_cases hlt : (idx a.ofConv).val + (idx b.ofConv).val < p
+      · rw [if_pos hlt, Nat.mul_zero, Nat.add_zero] at hval
+        rw [if_pos hlt, pow_zero, pow_zero, mul_one, mul_one]
+        conv_rhs => rw [mul_mul_mul_comm, ← pow_add, hval]
+      · rw [if_neg hlt, Nat.mul_one] at hval
+        rw [if_neg hlt, pow_one, pow_one]
+        conv_rhs => rw [mul_mul_mul_comm, ← pow_add, hval]
+        rw [pow_add, ← hwp, mul_mul_mul_comm, inv_mul_cancel_right]
+    rw [hcl_def]
+    show (QuotientGroup.mk (U ((a * b).ofConv)) :
+        Ωˣ ⧸ Subgroup.zpowers Qb) =
+      QuotientGroup.mk (U a.ofConv) * QuotientGroup.mk (U b.ofConv)
+    rw [← QuotientGroup.mk_mul, ← hUab]
+    apply (QuotientGroup.eq).mpr
+    rw [inv_mul_cancel_left]
+    exact Subgroup.pow_mem _ (Subgroup.mem_zpowers Qb) _
+  -- the class map is injective on points
+  have hcl_inj : ∀ φ ψ : TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω,
+      cl φ = cl ψ → φ = ψ := by
+    intro φ ψ hcl
+    have h2 : (U φ)⁻¹ * U ψ ∈ Subgroup.zpowers Qb := (QuotientGroup.eq).mp hcl
+    obtain ⟨m, hm⟩ := Subgroup.mem_zpowers_iff.mp h2
+    have hUeq : U ψ = U φ * Qb ^ m := by
+      rw [hm, mul_inv_cancel_left]
+    have h3 : Qb ^ (((idx ψ).val : ℤ)) =
+        Qb ^ ((((idx φ).val : ℕ) : ℤ) + m * (p : ℤ)) := by
+      rw [zpow_natCast, ← hUp ψ, hUeq, mul_pow, hUp φ, zpow_add,
+        zpow_natCast, zpow_mul, zpow_natCast]
+    have h4 : Qb ^ ((((idx ψ).val : ℕ) : ℤ) -
+        ((((idx φ).val : ℕ) : ℤ) + m * (p : ℤ))) = 1 := by
+      rw [zpow_sub, h3, mul_inv_cancel]
+    have h5 := hQb_inf _ h4
+    have hival_lt : (((idx ψ).val : ℕ) : ℤ) < (p : ℤ) := by
+      exact_mod_cast ZMod.val_lt (idx ψ)
+    have hival_lt' : (((idx φ).val : ℕ) : ℤ) < (p : ℤ) := by
+      exact_mod_cast ZMod.val_lt (idx φ)
+    have hival_nonneg : (0 : ℤ) ≤ (((idx ψ).val : ℕ) : ℤ) :=
+      Int.natCast_nonneg _
+    have hival_nonneg' : (0 : ℤ) ≤ (((idx φ).val : ℕ) : ℤ) :=
+      Int.natCast_nonneg _
+    have hppos : (0 : ℤ) < (p : ℤ) := by
+      exact_mod_cast Nat.pos_of_ne_zero (NeZero.ne p)
+    have hm0 : m = 0 := by
+      rcases lt_trichotomy m 0 with h | h | h
+      · nlinarith
+      · exact h
+      · nlinarith
+    have hidx : idx ψ = idx φ := by
+      rw [hm0, zero_mul, add_zero] at h5
+      have h6 : (idx ψ).val = (idx φ).val := by omega
+      have h7 : (((idx ψ).val : ℕ) : ZMod p) = (((idx φ).val : ℕ) : ZMod p) := by
+        rw [h6]
+      rwa [ZMod.natCast_val, ZMod.natCast_val, ZMod.cast_id, ZMod.cast_id]
+        at h7
+    have hUeq' : U ψ = U φ := by
+      rw [hUeq, hm0, zpow_zero, mul_one]
+    have hrt_eq : rt ψ = rt φ := by
+      have h7 := congrArg (fun z : Ωˣ => (z : Ω)) hUeq'
+      simp only [hU_def] at h7
+      rw [hidx, Units.val_mul, Units.val_mul, Units.val_pow_eq_pow_val,
+        Units.val_mk0, Units.val_mk0] at h7
+      exact mul_left_cancel₀
+        (pow_ne_zero _ (Units.ne_zero wb)) h7
+    have hpteq : kummerPointHom R K Ω p u (idx φ) (rt φ) (hrt φ) =
+        kummerPointHom R K Ω p u (idx ψ) (rt ψ) (hrt ψ) := by
+      refine kummerPointHom_ext R K Ω p u (fun j => ?_) (fun j => ?_)
+      · rw [kummerPointHom_single_one, kummerPointHom_single_one, hidx]
+      · rw [kummerPointHom_single_root, kummerPointHom_single_root, hidx,
+          hrt_eq]
+    rw [heq φ, heq ψ, hpteq]
+  -- the identity point has trivial class
+  have hcl_one : cl ((1 : WithConv
+      (TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω)).ofConv) = 1 := by
+    have hone : ((1 : WithConv
+        (TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω)).ofConv) =
+        kummerPointHom R K Ω p u 0 1 (by
+          rw [one_pow, ZMod.val_zero, pow_zero, map_one]) := by
+      rw [kummerPointHom_conv_one R K Ω p u]
+    have hd := kummerPointHom_inj R K Ω p u ((heq _).symm.trans hone)
+    have hU1 : U ((1 : WithConv
+        (TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω)).ofConv) = 1 := by
+      simp only [hU_def]
+      rw [hd.1, ZMod.val_zero, pow_zero, one_mul]
+      apply Units.ext
+      rw [Units.val_mk0, hd.2, Units.val_one]
+    rw [hcl_def]
+    show (QuotientGroup.mk (U ((1 : WithConv
+        (TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω)).ofConv)) :
+      Ωˣ ⧸ Subgroup.zpowers Qb) = 1
+    rw [hU1]
+    rfl
+  -- the additive hom to the torsion subgroup
+  set F : Additive (WithConv (TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω)) →+
+      AddSubgroup.torsionBy (Additive (Ωˣ ⧸ Subgroup.zpowers Qb))
+        ((p : ℕ) : ℤ) :=
+    { toFun := fun x => ⟨Additive.ofMul (cl (Additive.toMul x).ofConv),
+        hcl_torsion (Additive.toMul x).ofConv⟩
+      map_zero' := Subtype.ext (by
+        show Additive.ofMul (cl ((1 : WithConv
+          (TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω)).ofConv)) = 0
+        rw [hcl_one]
+        exact ofMul_one)
+      map_add' := fun a b => Subtype.ext (congrArg Additive.ofMul
+        (hcl_mul (Additive.toMul a) (Additive.toMul b))) } with hF_def
+  -- injectivity, through the point classification
+  have hFinj : Function.Injective F := by
+    intro x y hxy
+    have h1 : cl (Additive.toMul x).ofConv = cl (Additive.toMul y).ofConv := by
+      have h2 := congrArg (fun z : AddSubgroup.torsionBy
+          (Additive (Ωˣ ⧸ Subgroup.zpowers Qb)) ((p : ℕ) : ℤ) =>
+        (z : Additive (Ωˣ ⧸ Subgroup.zpowers Qb))) hxy
+      exact Additive.ofMul.injective h2
+    have h3 := hcl_inj _ _ h1
+    have h4 : Additive.toMul x = Additive.toMul y := by
+      rw [← WithConv.toConv_ofConv (Additive.toMul x),
+        ← WithConv.toConv_ofConv (Additive.toMul y), h3]
+    exact Additive.toMul.injective h4
+  -- surjectivity: recentre a torsion class to a point
+  have hFsurj : Function.Surjective F := by
+    rintro ⟨x, hx⟩
+    obtain ⟨v, hv⟩ := QuotientGroup.mk_surjective (Additive.toMul x)
+    have hxp : Additive.toMul x ^ (p : ℕ) = 1 := by
+      have h1 : ((p : ℕ) : ℤ) • x = 0 := hx
+      have h2 := congrArg Additive.toMul h1
+      rw [toMul_zsmul, zpow_natCast] at h2
+      exact h2
+    have h3 : v ^ (p : ℕ) ∈ Subgroup.zpowers Qb := by
+      rw [← QuotientGroup.eq_one_iff]
+      show (QuotientGroup.mk (v ^ (p : ℕ)) : Ωˣ ⧸ Subgroup.zpowers Qb) = 1
+      rw [QuotientGroup.mk_pow, hv]
+      exact hxp
+    obtain ⟨a, ha⟩ := Subgroup.mem_zpowers_iff.mp h3
+    set i : ZMod p := ((a : ℤ) : ZMod p) with hi_def
+    have hival : ((i.val : ℕ) : ℤ) = a % (p : ℤ) := by
+      rw [hi_def]
+      exact ZMod.val_intCast a
+    have hdiv : (p : ℤ) * (a / (p : ℤ)) + ((i.val : ℕ) : ℤ) = a := by
+      rw [hival]
+      exact Int.mul_ediv_add_emod a (p : ℤ)
+    set m : ℤ := a / (p : ℤ) with hm_def
+    set tu : Ωˣ := v * (wb ^ i.val)⁻¹ * (Qb ^ m)⁻¹ with htu_def
+    have htu_p : tu ^ (p : ℕ) = ub ^ i.val := by
+      have hz : Qb ^ a * (Qb ^ ((p : ℤ) * m))⁻¹ = Qb ^ ((i.val : ℕ) : ℤ) := by
+        rw [← zpow_neg, ← zpow_add]
+        congr 1
+        linarith [hdiv]
+      calc tu ^ (p : ℕ)
+          = v ^ (p : ℕ) * ((wb ^ i.val)⁻¹) ^ (p : ℕ) *
+            ((Qb ^ m)⁻¹) ^ (p : ℕ) := by
+            rw [htu_def, mul_pow, mul_pow]
+        _ = Qb ^ a * (wb ^ (i.val * p))⁻¹ * (Qb ^ ((p : ℤ) * m))⁻¹ := by
+            rw [← ha, inv_pow, ← pow_mul, inv_pow,
+              ← zpow_natCast (Qb ^ m) p, ← zpow_mul, mul_comm m (p : ℤ)]
+        _ = Qb ^ ((i.val : ℕ) : ℤ) * (wb ^ (i.val * p))⁻¹ := by
+            rw [mul_right_comm, hz]
+        _ = ub ^ i.val := by
+            rw [zpow_natCast, hubQ, mul_pow, inv_pow, inv_pow, ← pow_mul,
+              Nat.mul_comm p i.val]
+    have htu_el : ((tu : Ωˣ) : Ω) ^ p = algebraMap R Ω ((u : R) ^ i.val) := by
+      have h5 : (((tu ^ (p : ℕ) : Ωˣ)) : Ω) = ((ub ^ i.val : Ωˣ) : Ω) :=
+        congrArg Units.val htu_p
+      rw [Units.val_pow_eq_pow_val, Units.val_pow_eq_pow_val] at h5
+      rw [h5, map_pow]
+      rfl
+    refine ⟨Additive.ofMul (WithConv.toConv
+      (kummerPointHom R K Ω p u i ((tu : Ωˣ) : Ω) htu_el)), ?_⟩
+    apply Subtype.ext
+    show Additive.ofMul (cl (kummerPointHom R K Ω p u i ((tu : Ωˣ) : Ω)
+      htu_el)) = x
+    have hd := kummerPointHom_inj R K Ω p u
+      (heq (kummerPointHom R K Ω p u i ((tu : Ωˣ) : Ω) htu_el))
+    have hUψ : U (kummerPointHom R K Ω p u i ((tu : Ωˣ) : Ω) htu_el) =
+        v * (Qb ^ m)⁻¹ := by
+      have hmk0 : Units.mk0
+          (rt (kummerPointHom R K Ω p u i ((tu : Ωˣ) : Ω) htu_el))
+          (hne (kummerPointHom R K Ω p u i ((tu : Ωˣ) : Ω) htu_el)) = tu :=
+        Units.ext hd.2.symm
+      simp only [hU_def]
+      rw [hmk0, ← hd.1, htu_def]
+      have hcomm : v * (wb ^ i.val)⁻¹ * (Qb ^ m)⁻¹ =
+          (wb ^ i.val)⁻¹ * (v * (Qb ^ m)⁻¹) := by
+        rw [mul_comm v ((wb ^ i.val)⁻¹), mul_assoc]
+      rw [hcomm, mul_inv_cancel_left]
+    have hclψ : cl (kummerPointHom R K Ω p u i ((tu : Ωˣ) : Ω) htu_el) =
+        Additive.toMul x := by
+      rw [hcl_def]
+      show (QuotientGroup.mk (U (kummerPointHom R K Ω p u i ((tu : Ωˣ) : Ω)
+        htu_el)) : Ωˣ ⧸ Subgroup.zpowers Qb) = Additive.toMul x
+      rw [hUψ, ← hv]
+      apply (QuotientGroup.eq).mpr
+      have h6 : (v * (Qb ^ m)⁻¹)⁻¹ * v = Qb ^ m := by
+        rw [mul_inv_rev, inv_inv, mul_assoc, inv_mul_cancel, mul_one]
+      rw [h6]
+      exact Subgroup.zpow_mem _ (Subgroup.mem_zpowers Qb) m
+    rw [hclψ]
+    exact ofMul_toMul x
+  -- Galois automorphisms fix the recentring data and move the root value
+  have hSfix : ∀ (σ : Ω ≃ₐ[K] Ω) (k : Kˣ),
+      Units.map σ.toAlgHom.toRingHom.toMonoidHom
+        (Units.map (algebraMap K Ω).toMonoidHom k) =
+      Units.map (algebraMap K Ω).toMonoidHom k := by
+    intro σ k
+    apply Units.ext
+    show σ.toAlgHom (algebraMap K Ω (k : K)) = algebraMap K Ω (k : K)
+    exact σ.toAlgHom.commutes _
+  have hSU : ∀ (σ : Ω ≃ₐ[K] Ω)
+      (φ : TensorProduct R K (KummerAlg R p u) →ₐ[K] Ω),
+      Units.map σ.toAlgHom.toRingHom.toMonoidHom (U φ) =
+        U (σ.toAlgHom.comp φ) := by
+    intro σ φ
+    have hcomp : σ.toAlgHom.comp φ = kummerPointHom R K Ω p u (idx φ)
+        (σ (rt φ)) (by
+          rw [← map_pow, hrt φ, IsScalarTower.algebraMap_apply R K Ω]
+          exact σ.commutes _) := by
+      conv_lhs => rw [heq φ]
+      exact kummerPointHom_comp_algEquiv R K Ω p u σ (idx φ) (rt φ) (hrt φ)
+    have hd := kummerPointHom_inj R K Ω p u
+      ((heq (σ.toAlgHom.comp φ)).symm.trans hcomp)
+    apply Units.ext
+    simp only [hU_def]
+    show σ.toAlgHom (((wb ^ (idx φ).val * Units.mk0 (rt φ) (hne φ) :
+        Ωˣ)) : Ω) =
+      ((wb ^ (idx (σ.toAlgHom.comp φ)).val *
+        Units.mk0 (rt (σ.toAlgHom.comp φ)) (hne (σ.toAlgHom.comp φ)) :
+        Ωˣ) : Ω)
+    rw [Units.val_mul, Units.val_mul, map_mul, Units.val_pow_eq_pow_val,
+      Units.val_pow_eq_pow_val, map_pow, hd.1, Units.val_mk0, Units.val_mk0]
+    congr 1
+    · congr 1
+      exact σ.toAlgHom.commutes (w : K)
+    · show σ.toAlgHom (rt φ) = rt (σ.toAlgHom.comp φ)
+      rw [hd.2]
+      rfl
+  -- assemble the equivalence and its equivariance
+  refine ⟨AddEquiv.ofBijective F ⟨hFinj, hFsurj⟩, ?_⟩
+  intro σ φ u' hrep
+  have h1 : Additive.ofMul (cl φ) = Additive.ofMul
+      ((QuotientGroup.mk u' : Ωˣ ⧸ Subgroup.zpowers Qb)) := hrep
+  have hclφ : cl φ = QuotientGroup.mk u' := Additive.ofMul.injective h1
+  have h2 : (U φ)⁻¹ * u' ∈ Subgroup.zpowers Qb := by
+    apply (QuotientGroup.eq).mp
+    exact hclφ
+  obtain ⟨m, hm⟩ := Subgroup.mem_zpowers_iff.mp h2
+  have hu' : u' = U φ * Qb ^ m := by
+    rw [hm, mul_inv_cancel_left]
+  have hgoal : cl (σ.toAlgHom.comp φ) = QuotientGroup.mk
+      (Units.map σ.toAlgHom.toRingHom.toMonoidHom u') := by
+    rw [hu', map_mul, map_zpow, hSU σ φ, hSfix σ Q, hcl_def]
+    show (QuotientGroup.mk (U (σ.toAlgHom.comp φ)) :
+        Ωˣ ⧸ Subgroup.zpowers Qb) =
+      QuotientGroup.mk (U (σ.toAlgHom.comp φ) * Qb ^ m)
+    apply (QuotientGroup.eq).mpr
+    rw [inv_mul_cancel_left]
+    exact Subgroup.zpow_mem _ (Subgroup.mem_zpowers Qb) m
+  exact congrArg Additive.ofMul hgoal
+
+end KummerPoints
+
 open TensorProduct ValuativeRel IsDedekindDomain in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -4654,7 +5555,45 @@ theorem exists_kummerAlg_pointsEquiv {p : ℕ} (hp' : p.Prime) [Fact p.Prime]
                 hp'.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom Q))) =
           Additive.ofMul
             ↑(Units.map σ.toAlgHom.toRingHom.toMonoidHom u') := by
-  sorry
+  haveI : NeZero p := ⟨hp'.ne_zero⟩
+  -- `Q` has infinite order: its valuation is strictly below `1`
+  have hQinf : ∀ n : ℤ, Q ^ n = 1 → n = 0 := by
+    intro n hn
+    by_contra hn0
+    have hv1 : (ValuativeRel.valuation (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat))
+        ((Q : (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)ˣ) :
+          HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) ^ n = 1 := by
+      have h2 : ((Q ^ n : (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)ˣ) :
+          HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) = 1 := by
+        rw [hn, Units.val_one]
+      have h3 := congrArg (ValuativeRel.valuation
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)) h2
+      rw [map_one, Units.val_zpow_eq_zpow_val, map_zpow₀] at h3
+      exact h3
+    rcases lt_trichotomy n 0 with hneg | h0 | hpos
+    · obtain ⟨k, hk⟩ : ∃ k : ℕ, n = -(k : ℤ) := ⟨n.natAbs, by omega⟩
+      have hk0 : k ≠ 0 := by omega
+      rw [hk, zpow_neg, zpow_natCast, inv_eq_one] at hv1
+      exact absurd hv1 (ne_of_lt (pow_lt_one₀ zero_le _hQ hk0))
+    · exact hn0 h0
+    · obtain ⟨k, hk⟩ : ∃ k : ℕ, n = (k : ℤ) := ⟨n.natAbs, by omega⟩
+      have hk0 : k ≠ 0 := by omega
+      rw [hk, zpow_natCast] at hv1
+      exact absurd hv1 (ne_of_lt (pow_lt_one₀ zero_le _hQ hk0))
+  exact exists_kummerPointsEquiv
+    𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]
+    (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)
+    (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))
+    p u Q w hQinf _hu
 
 open TensorProduct ValuativeRel IsDedekindDomain in
 set_option backward.isDefEq.respectTransparency false in
