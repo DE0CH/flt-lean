@@ -724,7 +724,7 @@ theorem WeierstrassCurve.torsion_abscissa_residue_ne
       if_neg (Nat.not_even_iff_odd.mpr hodd), mul_one,
       Polynomial.eval_pow] at hΨ
     exact pow_eq_zero_iff two_ne_zero |>.mp hΨ
-  set φ := WeierstrassCurve.RtoO R k ksep 𝒪 h𝒪 with hφdef
+  set φ := WeierstrassCurve.RtoO R k ksep 𝒪 h𝒪
   set f₀ : Polynomial 𝒪 :=
     ((WeierstrassCurve.integralModel R E).preΨ' n).map φ with hf₀def
   have hcomp : (𝒪.subtype).comp φ =
@@ -751,7 +751,7 @@ theorem WeierstrassCurve.torsion_abscissa_residue_ne
           (Polynomial.eval_map_apply _ _).symm
       _ = ((E⁄ksep).preΨ' n).eval x := by rw [hf₀K]; rfl
       _ = 0 := hroot h ht
-  set ψ := IsLocalRing.ResidueField.map φ with hψdef
+  set ψ := IsLocalRing.ResidueField.map φ
   set Ered := (E.reduction R).map ψ with hEreddef
   haveI hredell : (E.reduction R).IsElliptic :=
     (WeierstrassCurve.hasGoodReduction_iff_isElliptic_reduction R).mp
@@ -858,14 +858,14 @@ theorem WeierstrassCurve.torsion_ordinate_eq_of_residue_eq
     apply NeZero.ne ((n : IsLocalRing.ResidueField R))
     have : n = 0 := by exact_mod_cast h0
     rw [this, Nat.cast_zero]
-  set φ := WeierstrassCurve.RtoO R k ksep 𝒪 h𝒪 with hφdef
+  set φ := WeierstrassCurve.RtoO R k ksep 𝒪 h𝒪
   have hcomp : (𝒪.subtype).comp φ =
       (algebraMap k ksep).comp (algebraMap R k) := by
     ext r
     exact WeierstrassCurve.RtoO_coe R k ksep 𝒪 h𝒪 r
   have hEE : ((WeierstrassCurve.integralModel R E)⁄k) = E :=
     WeierstrassCurve.baseChange_integralModel_eq R E
-  set ψr := IsLocalRing.ResidueField.map φ with hψdef
+  set ψr := IsLocalRing.ResidueField.map φ
   set Ered := (E.reduction R).map ψr with hEreddef
   haveI hredell : (E.reduction R).IsElliptic :=
     (WeierstrassCurve.hasGoodReduction_iff_isElliptic_reduction R).mp
@@ -1024,7 +1024,7 @@ theorem WeierstrassCurve.torsion_unramified_of_good_reduction
       h𝒪 h htor
     have hym := WeierstrassCurve.torsion_ordinate_mem R k E n ksep 𝒪
       h𝒪 h htor
-    set σf := ((σ : ksep ≃ₐ[k] ksep)).toAlgHom with hσfdef
+    set σf := ((σ : ksep ≃ₐ[k] ksep)).toAlgHom
     rw [Affine.Point.map_some]
     have hns' : (E⁄ksep).toAffine.Nonsingular (σf x) (σf y) :=
       (WeierstrassCurve.Affine.baseChange_nonsingular (W := E)

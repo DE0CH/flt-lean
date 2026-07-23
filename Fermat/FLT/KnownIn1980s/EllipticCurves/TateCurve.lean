@@ -785,26 +785,6 @@ theorem WeierstrassCurve.isElliptic_tateCurve_and_j :
     exact hq0 ((valuation k).zero_iff.mp hvΔ.symm)
   haveI hell : (tateCurve E.q).IsElliptic := ⟨isUnit_iff_ne_zero.mpr hΔne⟩
   refine ⟨hell, ?_⟩
-  -- `c₄` is a unit
-  have hc₄eq : (tateCurve E.q).c₄ = 1 - 48 * tateA₄ E.q := by
-    simp only [tateCurve, WeierstrassCurve.c₄, WeierstrassCurve.b₂,
-      WeierstrassCurve.b₄]
-    ring
-  have h48v : valuation k (48 : k) ≤ 1 := by
-    exact_mod_cast valuation_intCast_le_one (R := k) 48
-  have h48 : valuation k (48 * tateA₄ E.q) < 1 := by
-    rw [map_mul]
-    calc valuation k (48 : k) * valuation k (tateA₄ E.q)
-        ≤ 1 * valuation k (tateA₄ E.q) := mul_le_mul' h48v le_rfl
-      _ = valuation k (tateA₄ E.q) := one_mul _
-      _ < 1 := valuation_tateA₄_lt_one E.q hq
-  have hc₄K : valuation k (tateCurve E.q).c₄ = 1 := by
-    rw [hc₄eq]
-    exact Valuation.map_one_sub_of_lt (valuation k) h48
-  have hc₄ne : (tateCurve E.q).c₄ ≠ 0 := by
-    intro h0
-    rw [h0, map_zero] at hc₄K
-    exact zero_ne_one hc₄K
   -- the value of `jInv` at `E.q` is `j(E_q)⁻¹`
   have hcc₄3 : PowerSeries.constantCoeff (TateCurve.c₄Formal ^ 3) = 1 := by
     rw [map_pow, TateCurve.constantCoeff_c₄Formal, one_pow]
@@ -828,11 +808,6 @@ theorem WeierstrassCurve.isElliptic_tateCurve_and_j :
       TateCurve.constantCoeff_jInvReverse,
       TateCurve.jInv_subst_jInvReverse, TateCurve.evalInt_X]
   -- conclude by inverting
-  have hjEne : E.j ≠ 0 := by
-    intro h0
-    have h1 := E.one_lt_valuation_j
-    rw [h0, map_zero] at h1
-    exact absurd h1 (not_lt.mpr zero_le)
   have hkey : ((tateCurve E.q).j)⁻¹ = (E.j)⁻¹ := by
     rw [← hjinv, hcomp]
   exact inv_injective hkey
@@ -887,7 +862,7 @@ theorem WeierstrassCurve.isSquare_neg_c₄_mul_c₆_of_split
   classical
   set I : WeierstrassCurve 𝒪[k] := E.integralModel 𝒪[k] with hIdef
   set φ : 𝒪[k] →+* IsLocalRing.ResidueField 𝒪[k] :=
-    algebraMap 𝒪[k] (IsLocalRing.ResidueField 𝒪[k]) with hφdef
+    algebraMap 𝒪[k] (IsLocalRing.ResidueField 𝒪[k])
   -- it suffices to produce a square root of `-(I.c₄ * I.c₆)` in `𝒪[k]`
   suffices hcore : IsSquare (-(I.c₄ * I.c₆)) by
     obtain ⟨a, ha⟩ := hcore
@@ -1089,8 +1064,8 @@ theorem WeierstrassCurve.isSquare_of_scaled_split
     [i₂ : ((⟨0, 0, 0, w ^ 2 * A, w ^ 3 * B⟩ :
         WeierstrassCurve k).minimal 𝒪[k]).HasSplitMultiplicativeReduction 𝒪[k]] :
     IsSquare w := by
-  set S : WeierstrassCurve k := ⟨0, 0, 0, A, B⟩ with hSdef
-  set S' : WeierstrassCurve k := ⟨0, 0, 0, w ^ 2 * A, w ^ 3 * B⟩ with hS'def
+  set S : WeierstrassCurve k := ⟨0, 0, 0, A, B⟩
+  set S' : WeierstrassCurve k := ⟨0, 0, 0, w ^ 2 * A, w ^ 3 * B⟩
   -- the square class of `-c₄c₆` transfers from a variable change
   have htrans : ∀ (T : VariableChange k) (W : WeierstrassCurve k),
       IsSquare (-((T • W).c₄ * (T • W).c₆)) → IsSquare (-(W.c₄ * W.c₆)) := by

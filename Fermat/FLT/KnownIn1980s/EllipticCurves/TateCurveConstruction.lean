@@ -1983,15 +1983,11 @@ private theorem analyticAt_addRelXFn_neg_w (L : PeriodPair) (w : ℂ)
       (L.analyticOnNhd_weierstrassP c hc).continuousAt
     have hP' : ContinuousAt ℘'[L] c :=
       (L.analyticOnNhd_derivWeierstrassP c hc).continuousAt
-    have hAc : ContinuousAt
-        (fun x => ℘[L - (c + w)] (x + w) - 1 / (c + w) ^ 2) c :=
-      hA.continuousAt
     fun_prop
   have hrawΦ : ∀ᶠ x in 𝓝[≠] c, addRelXRaw L w x = Φ x := by
     rw [eventually_nhdsWithin_iff]
-    filter_upwards [hev1, hev2] with x hx1 hx2 hxc
+    filter_upwards [hev1, hev2] with x _ hx2 hxc
     have hxc' : x ≠ c := by simpa using hxc
-    have hxw := hx2 hxc'
     -- the local decomposition of `℘(x + w)`
     have hdecP : ℘[L] (x + w) = ((x - c) ^ 2)⁻¹ +
         (℘[L - (c + w)] (x + w) - 1 / (c + w) ^ 2) := by
@@ -2037,7 +2033,7 @@ private theorem analyticAt_addRelXFn_neg_w (L : PeriodPair) (w : ℂ)
     have hcshift : ContinuousAt (fun y : ℂ => y + w) x := by fun_prop
     filter_upwards [L.isClosed_lattice.isOpen_compl.mem_nhds hx1,
       hcshift.preimage_mem_nhds
-        (L.isClosed_lattice.isOpen_compl.mem_nhds (hx2 hxc'))] with y hy1 hy2
+        (L.isClosed_lattice.isOpen_compl.mem_nhds (hx2 hxc'))] with y _ hy2
     rcases eq_or_ne y c with rfl | hyc
     · exact absurd hcw hy2
     · rw [Function.update_of_ne hyc]
@@ -2091,7 +2087,7 @@ private lemma analyticAt_addRelXFn (L : PeriodPair) (w : ℂ)
       have hcshift : ContinuousAt (fun y : ℂ => y + w) x := by fun_prop
       filter_upwards [L.isClosed_lattice.isOpen_compl.mem_nhds hx.1,
         hcshift.preimage_mem_nhds
-          (L.isClosed_lattice.isOpen_compl.mem_nhds hx.2)] with y hy1 hy2
+          (L.isClosed_lattice.isOpen_compl.mem_nhds hx.2)] with y hy1 _
       rcases eq_or_ne y z with rfl | hyz
       · exact absurd hz hy1
       · rw [Function.update_of_ne hyz]

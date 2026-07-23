@@ -766,7 +766,7 @@ theorem psi_tracking_prev_zero {n : ℤ} (hn : 1 < n) {x y : k}
   have hval : ∀ m : ℤ, ((E⁄k).ψ m).evalEval x y =
       normEDS ((E⁄k).ψ₂.evalEval x y) (((E⁄k).Ψ₃).eval x)
         (((E⁄k).preΨ₄).eval x) m := fun m => evalEval_ψ_normEDS E m x y
-  set bv := (E⁄k).ψ₂.evalEval x y with hbv_def
+  set bv := (E⁄k).ψ₂.evalEval x y
   set cv := ((E⁄k).Ψ₃).eval x with hcv_def
   set dv := ((E⁄k).preΨ₄).eval x with hdv_def
   have hbv : ((E⁄k).ψ 2).evalEval x y = bv := by rw [hval 2, normEDS_two]
@@ -876,7 +876,7 @@ theorem psi_tracking_prev2_zero {n : ℤ} (hn : 2 < n) {x y : k}
   have hval : ∀ m : ℤ, ((E⁄k).ψ m).evalEval x y =
       normEDS ((E⁄k).ψ₂.evalEval x y) (((E⁄k).Ψ₃).eval x)
         (((E⁄k).preΨ₄).eval x) m := fun m => evalEval_ψ_normEDS E m x y
-  set bv := (E⁄k).ψ₂.evalEval x y with hbv_def
+  set bv := (E⁄k).ψ₂.evalEval x y
   set cv := ((E⁄k).Ψ₃).eval x with hcv_def
   set dv := ((E⁄k).preΨ₄).eval x with hdv_def
   have hbv : ((E⁄k).ψ 2).evalEval x y = bv := by rw [hval 2, normEDS_two]
@@ -1604,7 +1604,7 @@ theorem exists_root_of_derivative_ne_zero [IsSepClosed k]
         obtain ⟨G, hG⟩ := ih fun q hq => hm q (Multiset.mem_cons_of_mem hq)
         exact ⟨g * G, by rw [map_mul, hg, hG, Multiset.prod_cons]⟩
     obtain ⟨u, hu⟩ := UniqueFactorizationMonoid.factors_prod hf0
-    obtain ⟨c, hcu, hc⟩ := Polynomial.isUnit_iff.mp u.isUnit
+    obtain ⟨c, _, hc⟩ := Polynomial.isUnit_iff.mp u.isUnit
     obtain ⟨G, hG⟩ := hprodmem (UniqueFactorizationMonoid.factors f) hmem
     have hfexp : Polynomial.expand k p (G * Polynomial.C c) = f := by
       rw [map_mul, hG, Polynomial.expand_C, hc, hu]
@@ -1620,7 +1620,7 @@ theorem exists_root_of_derivative_ne_zero [IsSepClosed k]
     haveI := CharP.charP_to_charZero k
     have hfu : ¬IsUnit f := by
       intro hu
-      obtain ⟨c, hcu, hc⟩ := Polynomial.isUnit_iff.mp hu
+      obtain ⟨c, _, hc⟩ := Polynomial.isUnit_iff.mp hu
       exact hf (by rw [← hc, Polynomial.derivative_C])
     obtain ⟨q, hq, hqf⟩ := WfDvdMonoid.exists_irreducible_factor hfu hf0
     exact hnosep q hq hqf hq.separable
@@ -1771,7 +1771,6 @@ theorem smul_surjective [IsSepClosed k] {n : ℕ} (hn : (n : k) ≠ 0) :
   classical
   have hn0 : n ≠ 0 := fun h => hn (by simp [h])
   have hnZ : (n : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr hn0
-  have hnk : (((n : ℤ) : ℤ) : k) ≠ 0 := by exact_mod_cast hn
   haveI : (E⁄k).IsElliptic :=
     inferInstanceAs ((E.map (algebraMap k k)).IsElliptic)
   -- points with equal coordinates are equal
@@ -1826,19 +1825,12 @@ identity `(∂Q)² - 4Q = C (Ψ₂Sq α) = 0`, the derivative vanishes at
 `y₀`, so `y₀` is `negY`-fixed) and `p`-torsion (by the dictionary),
 hence trivial as `gcd(2, p) = 1` — contradicting that it is affine. -/
 theorem isCoprime_Ψ₂Sq_preΨ' {p : ℕ} (hp : p.Prime) (hodd : Odd p)
-    (hpk : (p : k) ≠ 0) :
+    (_hpk : (p : k) ≠ 0) :
     IsCoprime ((E⁄k).Ψ₂Sq) ((E⁄k).preΨ' p) := by
   classical
   by_contra hnc
   rw [← EuclideanDomain.gcd_isUnit_iff] at hnc
   -- the would-be common divisor has a root over the algebraic closure
-  have hpre0 : (E⁄k).preΨ' p ≠ 0 := by
-    intro h0
-    refine WeierstrassCurve.coeff_preΨ'_ne_zero (W := (E⁄k)) hpk ?_
-    rw [h0, Polynomial.coeff_zero]
-  have hg0 : EuclideanDomain.gcd ((E⁄k).Ψ₂Sq) ((E⁄k).preΨ' p) ≠ 0 := by
-    intro h0
-    exact hpre0 (EuclideanDomain.gcd_eq_zero_iff.mp h0).2
   have hgdeg : (EuclideanDomain.gcd ((E⁄k).Ψ₂Sq) ((E⁄k).preΨ' p)).degree ≠ 0 := by
     intro h0
     exact hnc (Polynomial.isUnit_iff_degree_eq_zero.mpr h0)
