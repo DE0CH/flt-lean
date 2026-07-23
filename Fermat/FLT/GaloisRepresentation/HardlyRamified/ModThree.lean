@@ -1538,41 +1538,128 @@ theorem card_matrixRange_ge_of_exceptional {k : Type u} [Finite k] [Field k]
   have hval := congrArg (fun w : u.range => (w : GL (Fin 2) (Dickson.K 3))) hcontra
   simpa using hval
 
-/-- **The hardly ramified number field, from a degree bound** (sorry
-node — the field-cutting and ramification-bound content of the
-Serre/Tate elimination, stated 2026-07-22): a mod-3 hardly ramified
-representation whose `𝔽̄₃`-matrix image `u.range` has at least `48`
-elements cuts out a number field `K` (the fixed field of
-`ker ρ = ker u` inside `ℚᵃˡᵍ`) that is totally complex, has degree
-`≥ 48`, and has root discriminant at most `2^{2/3}·3^{3/2} =
-314928^{1/6} = 8.2497…`, stated integrally as
-`|d_K|⁶ ≤ 314928^{[K:ℚ]}`.
+/-- **The kernel field of the matrix image** (sorry node — the
+Galois-correspondence bookkeeping of the field cut, isolated
+2026-07-23): the matrix form `u` of a mod-3 hardly ramified
+representation cuts out a finite Galois number field `K` inside
+`ℚᵃˡᵍ` — the fixed field of `ker u` — with
+`Gal(K/ℚ) ≃ Γ ℚ / ker u ≃ u.range`, recorded by
+`K.fixingSubgroup = u.ker` and `[K : ℚ] = #u.range`. Intended proof
+(pure infinite-Galois bookkeeping, as in
+`open_normal_subgroup_eq_top_of_inertia_le`): `ker ρ ≤ ker u` (`hu`
+sends `ρ g = 1` to the identity matrix), and `ker ρ` is open
+(`isOpen_setOf_galoisRep_eq_one`, `V` finite), so `ker u` is an open
+(hence closed) normal subgroup; `K := fixedField (ker u)` recovers
+`fixingSubgroup K = ker u` by the infinite Galois correspondence
+(`InfiniteGalois.fixingSubgroup_fixedField`), is finite-dimensional
+(`isOpen_iff_finite`) and Galois (`normal_iff_isGalois`); and
+`[K : ℚ] = #(K ≃ₐ[ℚ] K)` (`IsGalois.card_aut_eq_finrank`)
+`= #(Γ ℚ / ker u)` (restriction to `K` is surjective with kernel
+`fixingSubgroup K`) `= #u.range` (first isomorphism theorem). -/
+theorem exists_kernel_field_of_matrixRange {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e) :
+    ∃ (K : IntermediateField ℚ (AlgebraicClosure ℚ)) (_ : NumberField K),
+      IsGalois ℚ K ∧ K.fixingSubgroup = u.ker ∧
+      Module.finrank ℚ K = Nat.card u.range :=
+  sorry
 
-Content of the individual conclusions:
-* *Field*: `ker ρ` is open (`ρ` is continuous with finite image since
-  `V` is finite), so its fixed field is a finite Galois extension of
-  `ℚ` with group `≃ ρ.range ≃ u.range` (the base change and matrix
-  transport `hu` are faithful), of degree `Nat.card u.range ≥ 48`.
-* *Totally complex*: complex conjugation acts with determinant
-  `χ₃(c) = −1 ≠ 1` (`2 ≠ 0` in char `3`), hence nontrivially.
-* *Root discriminant*: at a prime `p ∉ {2,3}` the representation is
-  unramified (`hρ.isUnramified`); at `2` the inertia acts through the
-  unipotent upper-triangular subgroup (the quotient character `δ` is
-  unramified and `χ₃` is unramified at `2`), and the tame quotient of
-  the local inertia is procyclic, so the inertia image at `2` is
-  cyclic of order `1` or `3` and tame, giving a local different
-  exponent `≤ (e−1)/e ≤ 2/3` per unit degree; at `3` flatness
-  (`hρ.isFlat`) prolongs the local representation to a finite flat
-  group scheme over `ℤ₃` killed by `3`, and Fontaine's ramification
-  bound (the upper-numbering ramification of `ℚ₃(V)/ℚ₃` vanishes
-  above `1 + 1/(3−1) = 3/2`) gives a different exponent `≤ 3/2` per
-  unit degree — attained by the peu-ramifié case `ℚ₃(ζ₃, u^{1/3})`,
-  which is why the bound is stated with `≤`. Multiplying,
-  `|d_K| ≤ (2^{2/3}·3^{3/2})^{[K:ℚ]}`, i.e. the stated sixth-power
-  form. (Fontaine, *Il n'y a pas de variété abélienne sur ℤ*, Invent.
-  Math. 81 (1985); Serre's and Tate's letters on mod-3/mod-2
-  representations unramified outside small sets; Moon–Taguchi,
-  *Refinement of Tate's discriminant bound…*, Doc. Math. 2003.) -/
+/-- **The kernel field is totally complex** (sorry node — the oddness
+input of the field cut, isolated 2026-07-23): the number field cut
+out by the kernel of the matrix form of a mod-3 hardly ramified
+representation has no real place. Intended content: a real place of
+`K` extends to an embedding `ℚᵃˡᵍ → ℂ` under which the restriction of
+complex conjugation is an element `c ∈ Γ ℚ` fixing `K` pointwise,
+i.e. `c ∈ fixingSubgroup K = ker u`; but the determinant of `u c` is
+the image in `Dickson.K 3` of `χ₃(c) = −1` (`hρ.det` transported
+along `hu`, as in the two-element determinant image argument of
+`card_matrixRange_ge_of_exceptional`), and `−1 ≠ 1` in characteristic
+`3`, so `u c ≠ 1` — contradiction. -/
+theorem isTotallyComplex_of_kernel_field {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    [IsGalois ℚ K] (hfix : K.fixingSubgroup = u.ker) :
+    NumberField.IsTotallyComplex K :=
+  sorry
+
+/-- **The discriminant bound of the kernel field** (sorry node — the
+ramification-theoretic core of the field cut, isolated 2026-07-23):
+the number field cut out by the kernel of the matrix form of a mod-3
+hardly ramified representation has root discriminant at most
+`2^{2/3}·3^{3/2} = 314928^{1/6} = 8.2497…`, stated integrally as
+`|d_K|⁶ ≤ 314928^{[K:ℚ]}`. Intended content: at a prime `p ∉ {2,3}`
+the representation is unramified (`hρ.isUnramified`), so `K/ℚ` is
+unramified at `p`; at `2` the inertia acts through the unipotent
+upper-triangular subgroup (the quotient character `δ` of
+`hρ.isTameAtTwo` is unramified and `χ₃` is unramified at `2`), and
+the tame quotient of the local inertia is procyclic, so the inertia
+image at `2` is cyclic of order `1` or `3` and tame, giving a local
+different exponent `≤ (e−1)/e ≤ 2/3` per unit degree; at `3`
+flatness (`hρ.isFlat`) prolongs the local representation to a finite
+flat group scheme over `ℤ₃` killed by `3`, and Fontaine's
+ramification bound (the upper-numbering ramification of `ℚ₃(V)/ℚ₃`
+vanishes above `1 + 1/(3−1) = 3/2`) gives a different exponent
+`≤ 3/2` per unit degree — attained by the peu-ramifié case
+`ℚ₃(ζ₃, u^{1/3})`, which is why the bound is stated with `≤`.
+Multiplying, `|d_K| ≤ (2^{2/3}·3^{3/2})^{[K:ℚ]}`, i.e. the stated
+sixth-power form. (Fontaine, *Il n'y a pas de variété abélienne sur
+ℤ*, Invent. Math. 81 (1985); Serre's and Tate's letters on
+mod-3/mod-2 representations unramified outside small sets;
+Moon–Taguchi, *Refinement of Tate's discriminant bound…*, Doc. Math.
+2003.) -/
+theorem discr_bound_of_kernel_field {k : Type u} [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    [IsGalois ℚ K] (hfix : K.fixingSubgroup = u.ker) :
+    |NumberField.discr K| ^ 6 ≤ 314928 ^ Module.finrank ℚ K :=
+  sorry
+
+/-- **The hardly ramified number field, from a degree bound**
+(DECOMPOSED 2026-07-23 into the three sorry nodes above — the
+Galois-correspondence field cut `exists_kernel_field_of_matrixRange`,
+the oddness/totally-complex leaf `isTotallyComplex_of_kernel_field`,
+and the Fontaine/tame discriminant leaf `discr_bound_of_kernel_field`;
+the assembly is proven): a mod-3 hardly ramified representation whose
+`𝔽̄₃`-matrix image `u.range` has at least `48` elements cuts out a
+number field `K` (the fixed field of `ker u` inside `ℚᵃˡᵍ`) that is
+totally complex, has degree `≥ 48` (the degree equals `#u.range`),
+and has root discriminant at most `2^{2/3}·3^{3/2} = 314928^{1/6} =
+8.2497…`, stated integrally as `|d_K|⁶ ≤ 314928^{[K:ℚ]}`. -/
 theorem exists_hardlyRamified_number_field_of_card {k : Type u} [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
     (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
@@ -1591,8 +1678,15 @@ theorem exists_hardlyRamified_number_field_of_card {k : Type u} [Finite k] [Fiel
     ∃ (K : IntermediateField ℚ (AlgebraicClosure ℚ)) (_ : NumberField K),
       NumberField.IsTotallyComplex K ∧
       48 ≤ Module.finrank ℚ K ∧
-      |NumberField.discr K| ^ 6 ≤ 314928 ^ Module.finrank ℚ K :=
-  sorry
+      |NumberField.discr K| ^ 6 ≤ 314928 ^ Module.finrank ℚ K := by
+  obtain ⟨K, hNF, hgal, hfix, hdeg⟩ :=
+    exists_kernel_field_of_matrixRange V hV hρ b e u hu
+  haveI := hNF
+  haveI := hgal
+  exact ⟨K, hNF,
+    isTotallyComplex_of_kernel_field V hV hρ b e u hu K hfix,
+    hdeg ▸ hcard,
+    discr_bound_of_kernel_field V hV hρ b e u hu K hfix⟩
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The hardly ramified number field** (DECOMPOSED 2026-07-22 into
