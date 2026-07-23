@@ -1679,20 +1679,74 @@ theorem galoisEquivariantEval_injective :
   rw [galoisEquivariantEval_apply, galoisEquivariantEval_apply] at h
   exact (algebraMap (↥L) Ω).injective h
 
-/-- **Surjectivity of the evaluation points** (sorry node; the descent half of the
-points bijection): every `Ω`-point of the equivariant-functions algebra is an
-evaluation. Intended proof: the natural `L`-algebra map
-`L ⊗[K₀] galoisEquivariantAlgebra L ρ → (A → L)`, `l ⊗ f ↦ l • f`, is an isomorphism
-(Galois descent for the vector space `A → L` with its semilinear `Gal(L/K₀)`-action;
-injectivity is linear independence of automorphisms, surjectivity is the normal basis
-theorem/Speiser's `H¹(Gal, GL) = 1`), so `galoisEquivariantAlgebra L ρ` has
-`K₀`-dimension `#A`; an étale algebra of `K₀`-dimension `#A` has exactly `#A`
-`Ω`-points over the separably closed `Ω` (count points of the product of its residue
-fields, each contributing its degree by separability), and the evaluation points are
-already `#A` distinct ones (`galoisEquivariantEval_injective`), hence exhaust them. -/
-theorem galoisEquivariantEval_surjective [Finite A] [IsSepClosure K₀ Ω] :
-    Function.Surjective (galoisEquivariantEval L ρ) :=
+/-- **A point sharing its kernel with an evaluation is an evaluation** (sorry node;
+the orbit-counting half of the points surjectivity): if the kernel of an `Ω`-point
+`φ` of the equivariant-functions algebra equals the kernel of the evaluation at `a`,
+then `φ` is itself an evaluation (at a point of the orbit of `a`). Intended proof:
+let `m` be the common kernel and `F := HK ⧸ m` the residue field, a separable
+extension of `K₀` (`galoisEquivariantAlgebra_exists_separable_annihilator`, as in the
+étale proof). The evaluation at `a` corestricts to the fixed field of the stabilizer
+of `a` (equivariance fixes the entry at `a` under the stabilizer), so
+`finrank K₀ F ≤ finrank K₀ (fixedField (Stab a)) = index (Stab a)` (fundamental
+theorem of Galois theory, tower formula, `IsGalois.card_aut_eq_finrank`). The points
+`eval x` for `x` in the orbit of `a` all have kernel `m` — restriction
+`Gal(Ω/K₀) → Gal(L/K₀)` is surjective (`AlgEquiv.restrictNormalHom_surjective`), so
+by `algEquiv_comp_galoisEquivariantEval` each `eval (ρ g a)` is `σ ∘ eval a` — and
+they are pairwise distinct (`galoisEquivariantEval_injective`), giving
+`index (Stab a) = #orbit` many distinct `K₀`-embeddings `F → Ω` (orbit–stabilizer);
+since a separable extension of degree `d` has exactly `d` embeddings into the
+separably closed `Ω`, these exhaust the embeddings, and `φ`'s factorization through
+`F` is one of them. -/
+theorem galoisEquivariantEval_of_ker_eq [Finite A] [IsSepClosure K₀ Ω]
+    (φ : galoisEquivariantAlgebra L ρ →ₐ[K₀] Ω) (a : A)
+    (h : RingHom.ker φ = RingHom.ker (galoisEquivariantEval L ρ a)) :
+    ∃ x : A, galoisEquivariantEval L ρ x = φ :=
   sorry
+
+/-- **Surjectivity of the evaluation points** (DECOMPOSED 2026-07-23; assembly
+PROVEN): every `Ω`-point of the equivariant-functions algebra is an evaluation.
+The kernels of the evaluations intersect to zero (a function vanishing at every
+point of `A` is zero), so their product lands in the prime kernel of any given
+point `φ`, which therefore contains — and by maximality (the algebra is Artinian)
+equals — the kernel of some evaluation; the sorried leaf
+`galoisEquivariantEval_of_ker_eq` upgrades the kernel equality to an equality of
+points along the orbit of the evaluation base point. -/
+theorem galoisEquivariantEval_surjective [Finite A] [IsSepClosure K₀ Ω] :
+    Function.Surjective (galoisEquivariantEval L ρ) := by
+  classical
+  haveI := Fintype.ofFinite A
+  intro φ
+  -- the kernels of the evaluations intersect to zero
+  have hbot : (Finset.univ.inf fun a : A =>
+      RingHom.ker (galoisEquivariantEval L ρ a)) = ⊥ := by
+    refine eq_bot_iff.mpr fun f hf => ?_
+    have hzero : ∀ a : A, (f : A → L) a = 0 := by
+      intro a
+      have hle : (Finset.univ.inf fun a : A =>
+          RingHom.ker (galoisEquivariantEval L ρ a)) ≤
+          RingHom.ker (galoisEquivariantEval L ρ a) :=
+        Finset.inf_le (Finset.mem_univ a)
+      have hfa : galoisEquivariantEval L ρ a f = 0 := RingHom.mem_ker.mp (hle hf)
+      rw [galoisEquivariantEval_apply] at hfa
+      exact (algebraMap (↥L) Ω).injective (by rw [hfa, map_zero])
+    have hf0 : f = 0 := Subtype.ext (funext hzero)
+    rw [hf0]
+    exact (Submodule.mem_bot _).mpr rfl
+  -- the product of the kernels lands in the kernel of `φ`
+  have hprod : (∏ a ∈ Finset.univ, RingHom.ker (galoisEquivariantEval L ρ (a : A)))
+      ≤ RingHom.ker φ :=
+    le_trans (le_trans Ideal.prod_le_inf (le_of_eq hbot)) bot_le
+  haveI hprime : (RingHom.ker φ).IsPrime := RingHom.ker_isPrime φ
+  obtain ⟨a₀, -, ha₀⟩ := (Ideal.IsPrime.prod_le hprime).mp hprod
+  -- upgrade the containment to an equality by maximality
+  haveI : IsArtinianRing (galoisEquivariantAlgebra L ρ) :=
+    isArtinian_of_tower K₀ inferInstance
+  haveI hp₀ : (RingHom.ker (galoisEquivariantEval L ρ a₀)).IsPrime :=
+    RingHom.ker_isPrime _
+  have hmax : (RingHom.ker (galoisEquivariantEval L ρ a₀)).IsMaximal :=
+    IsArtinianRing.isMaximal_of_isPrime _
+  exact galoisEquivariantEval_of_ker_eq L ρ φ a₀
+    (hmax.eq_of_le hprime.ne_top ha₀).symm
 
 /-- **The Hopf-algebra structure on a `u`-small carrier of the equivariant-functions
 algebra** (sorry node; the comultiplication half of the package): a `Type u` copy of
