@@ -779,9 +779,9 @@ theorem WeierstrassCurve.val_tangent_numerator_eq_one
       = 1 := by
   classical
   haveI : E.IsIntegral R := inferInstance
-  set φ := WeierstrassCurve.RtoO R K Ksep 𝒪 h𝒪 with hφdef
-  set ψm := IsLocalRing.ResidueField.map φ with hψmdef
-  set Ered := (E.reduction R).map ψm with hEreddef
+  set φ := WeierstrassCurve.RtoO R K Ksep 𝒪 h𝒪
+  set ψm := IsLocalRing.ResidueField.map φ
+  set Ered := (E.reduction R).map ψm
   haveI hredell : (E.reduction R).IsElliptic :=
     (WeierstrassCurve.hasGoodReduction_iff_isElliptic_reduction R).mp inferInstance
   haveI : Ered.IsElliptic := inferInstanceAs (((E.reduction R).map ψm).IsElliptic)
@@ -1027,14 +1027,6 @@ theorem WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq
             · exact 𝒪.val_mul_lt_one_of_mem_of_lt ha₂ hvxx'
           rw [herr, 𝒪.valuation.map_add_eq_of_lt_left
             (by rw [Valuation.map_neg, hN₂]; exact hverr), Valuation.map_neg, hN₂]
-        have hy12 : y₁ ≠ y₂ := by
-          intro h
-          rw [h, sub_self, zero_mul] at hGid
-          rcases mul_eq_zero.mp hGid.symm with h0 | h0
-          · exact hxx (sub_eq_zero.mp h0).symm
-          · rw [h] at hGval
-            rw [h0, map_zero] at hGval
-            exact zero_ne_one hGval
         have hLG : L * (y₁ - y₂)
             = -((E⁄Ksep).a₁ * y₁ - (x₂ ^ 2 + x₂ * x₁ + x₁ ^ 2)
               - (E⁄Ksep).a₂ * (x₂ + x₁) - (E⁄Ksep).a₄) := by
@@ -1133,7 +1125,7 @@ theorem WeierstrassCurve.torsion_eq_of_residue_eq_of_prime_pow_deep
       injection hSeq with e1 e2
       rw [← e1]
       exact hxT
-    | succ n hn ih =>
+    | succ n _ ih =>
       intro xS yS hS hSeq
       have hstep : ((n : ℤ) + 1) • T = (n : ℤ) • T + T := by
         rw [add_smul, one_smul]
@@ -1152,7 +1144,7 @@ theorem WeierstrassCurve.torsion_eq_of_residue_eq_of_prime_pow_deep
           hn3 hT3 hS hxn hxT hSeq
   -- the multiplication tower: the last nonzero `p`-power multiple of `T`
   have hex : ∃ j : ℕ, ((p ^ j : ℕ) : ℤ) • T = 0 := ⟨k, hTtor⟩
-  set j₁ := Nat.find hex with hj₁def
+  set j₁ := Nat.find hex
   have hj₁spec : ((p ^ j₁ : ℕ) : ℤ) • T = 0 := Nat.find_spec hex
   have hj₁0 : j₁ ≠ 0 := by
     intro h0
@@ -1274,7 +1266,7 @@ theorem WeierstrassCurve.torsion_inertia_fixes_of_prime_pow_isUnit
         h𝒪 h htor
       have hym := WeierstrassCurve.torsion_ordinate_mem R K E (p ^ k) Ksep 𝒪
         h𝒪 h htor
-      set σf := ((σ : Ksep ≃ₐ[K] Ksep)).toAlgHom with hσfdef
+      set σf := ((σ : Ksep ≃ₐ[K] Ksep)).toAlgHom
       rw [Affine.Point.map_some]
       have hns' : (E⁄Ksep).toAffine.Nonsingular (σf x) (σf y) :=
         (WeierstrassCurve.Affine.baseChange_nonsingular (W := E)
@@ -1589,7 +1581,7 @@ theorem galoisEquivariantAlgebra_separates {a b : A} (hab : a ≠ b) :
         intro g hg
         simp only [Set.mem_setOf_eq] at hg ⊢
         conv_lhs => rw [← hg]
-        exact hcancel g a } with hStab
+        exact hcancel g a }
   have hStabMem : ∀ g : L ≃ₐ[K₀] L, g ∈ Stab ↔ ρ g a = a := fun g => Iff.rfl
   -- an equivariant function supported on the orbit of `a`, with prescribed
   -- stabilizer-fixed value on the orbit
@@ -1908,7 +1900,6 @@ theorem exists_finiteQuotient_galoisModule_etale_package
   -- the points equivalence, additively
   set e₂ : A ≃ Additive (WithConv (HK →ₐ[K₀] Ω)) :=
     (Equiv.ofBijective _ hbij).trans ((WithConv.equiv _).symm.trans Additive.ofMul)
-    with he₂
   have hmap : ∀ x y : A, e₂ (x + y) = e₂ x + e₂ y := by
     intro x y
     show Additive.ofMul (WithConv.toConv ((galoisEquivariantEval L ρ (x + y)).comp
@@ -2000,15 +1991,15 @@ theorem WeierstrassCurve.exists_torsion_galois_finiteQuotient
       rw [hpcsdef]
       simp only [hP]
       exact (Set.finite_singleton y).insert x
-  set S : Set Ksep := ⋃ P, pcs P with hSdef
+  set S : Set Ksep := ⋃ P, pcs P
   have hSfin : S.Finite := Set.finite_iUnion hpcs_fin
   haveI : Finite ↥S := hSfin.to_subtype
   -- its adjunction and the normal closure of that
-  set L₀ := IntermediateField.adjoin K S with hL₀def
+  set L₀ := IntermediateField.adjoin K S
   haveI : FiniteDimensional K ↥L₀ :=
     IntermediateField.finiteDimensional_adjoin fun x _ =>
       (Algebra.IsSeparable.isSeparable K x).isIntegral
-  set L := IntermediateField.normalClosure K ↥L₀ Ksep with hLdef
+  set L := IntermediateField.normalClosure K ↥L₀ Ksep
   haveI : Algebra.IsSeparable K ↥L :=
     Algebra.isSeparable_tower_bot_of_isSeparable K ↥L Ksep
   haveI hGalL : IsGalois K ↥L := ⟨⟩
@@ -2049,7 +2040,7 @@ theorem WeierstrassCurve.exists_torsion_galois_finiteQuotient
       AddMonoid.End (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) := fun σ =>
     { toFun := fun P => ⟨Affine.Point.map σ.toAlgHom (P : (E⁄Ksep).Point), hmemT σ P⟩
       map_zero' := Subtype.ext (by exact rfl)
-      map_add' := fun P Q => Subtype.ext (by exact map_add _ _ _) } with hactdef
+      map_add' := fun P Q => Subtype.ext (by exact map_add _ _ _) }
   have hact_coe : ∀ (σ : Ksep ≃ₐ[K] Ksep)
       (P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)),
       ((act σ P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) : (E⁄Ksep).Point)
