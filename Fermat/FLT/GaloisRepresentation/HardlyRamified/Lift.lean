@@ -746,21 +746,141 @@ theorem exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated
       RingHom.ker φ = Ideal.span (Set.range f) :=
   sorry
 
-/-- **Variable-splitting isomorphism for power series** (sorry node,
-pure commutative algebra — the missing mathlib bridge between
-multivariate power series in `n + 1` variables and single-variable
-power series over multivariate power series in `n` variables):
-separating one variable. Provable by reindexing coefficients along the
-equivalence `(Fin (n + 1) →₀ ℕ) ≃ ℕ × (Fin n →₀ ℕ)` (split off the
-last exponent), multiplicativity being the Cauchy-product
-rearrangement of the convolution over split monomials. Stated over an
-arbitrary commutative base ring: both consumers below induct with a
+/-- Auxiliary for the variable-splitting isomorphism: `Finsupp.tail` is
+additive. -/
+lemma finsupp_tail_add {n : ℕ} (p q : Fin (n + 1) →₀ ℕ) :
+    Finsupp.tail (p + q) = Finsupp.tail p + Finsupp.tail q :=
+  Finsupp.ext fun i => by simp [Finsupp.tail_apply]
+
+/-- Auxiliary for the variable-splitting isomorphism: `Finsupp.cons` is
+additive. -/
+lemma finsupp_cons_add_cons {n : ℕ} (a b : ℕ) (s t : Fin n →₀ ℕ) :
+    Finsupp.cons a s + Finsupp.cons b t = Finsupp.cons (a + b) (s + t) :=
+  Finsupp.ext fun i => by
+    induction i using Fin.cases with
+    | zero => simp
+    | succ j => simp
+
+/-- Auxiliary for the variable-splitting isomorphism: a sum over the
+antidiagonal of `Finsupp.cons k m` is an iterated sum over the
+antidiagonals of `k` and of `m` — the monomial-splitting rearrangement
+underlying the Cauchy-product compatibility. -/
+lemma sum_antidiagonal_cons {S : Type*} [AddCommMonoid S] {n : ℕ} (k : ℕ)
+    (m : Fin n →₀ ℕ)
+    (F : (Fin (n + 1) →₀ ℕ) × (Fin (n + 1) →₀ ℕ) → S) :
+    ∑ p ∈ Finset.antidiagonal (Finsupp.cons k m), F p =
+      ∑ ij ∈ Finset.antidiagonal k, ∑ ab ∈ Finset.antidiagonal m,
+        F (Finsupp.cons ij.1 ab.1, Finsupp.cons ij.2 ab.2) := by
+  calc ∑ p ∈ Finset.antidiagonal (Finsupp.cons k m), F p
+      = ∑ x ∈ Finset.antidiagonal k ×ˢ Finset.antidiagonal m,
+          F (Finsupp.cons x.1.1 x.2.1, Finsupp.cons x.1.2 x.2.2) := ?_
+    _ = ∑ ij ∈ Finset.antidiagonal k, ∑ ab ∈ Finset.antidiagonal m,
+          F (Finsupp.cons ij.1 ab.1, Finsupp.cons ij.2 ab.2) :=
+        Finset.sum_product' (Finset.antidiagonal k) (Finset.antidiagonal m)
+          (fun ij ab => F (Finsupp.cons ij.1 ab.1, Finsupp.cons ij.2 ab.2))
+  refine Finset.sum_nbij'
+    (i := fun p => ((p.1 0, p.2 0), (Finsupp.tail p.1, Finsupp.tail p.2)))
+    (j := fun x => (Finsupp.cons x.1.1 x.2.1, Finsupp.cons x.1.2 x.2.2))
+    ?_ ?_ ?_ ?_ ?_
+  · rintro ⟨p, q⟩ hp
+    rw [Finset.mem_antidiagonal] at hp
+    rw [Finset.mem_product, Finset.mem_antidiagonal, Finset.mem_antidiagonal]
+    refine ⟨?_, ?_⟩
+    · have h0 := DFunLike.congr_fun hp 0
+      simpa using h0
+    · rw [← finsupp_tail_add, hp, Finsupp.tail_cons]
+  · rintro ⟨⟨i, j⟩, a, b⟩ hx
+    rw [Finset.mem_product, Finset.mem_antidiagonal,
+      Finset.mem_antidiagonal] at hx
+    rw [Finset.mem_antidiagonal]
+    show Finsupp.cons i a + Finsupp.cons j b = Finsupp.cons k m
+    rw [finsupp_cons_add_cons, hx.1, hx.2]
+  · rintro ⟨p, q⟩ -
+    simp
+  · rintro ⟨⟨i, j⟩, a, b⟩ -
+    simp
+  · rintro ⟨p, q⟩ -
+    simp
+
+/-- Auxiliary for the variable-splitting isomorphism: the splitting map
+itself, carrying `f ∈ R[[x₀,…,x_n]]` to the single-variable power series
+in `x₀` whose `k`-th coefficient is the `n`-variable series of
+`x₀`-degree-`k` coefficients of `f`. -/
+noncomputable def mvPowerSeriesSplit {R : Type*} [CommRing R] (n : ℕ)
+    (f : MvPowerSeries (Fin (n + 1)) R) :
+    PowerSeries (MvPowerSeries (Fin n) R) :=
+  PowerSeries.mk fun k =>
+    (fun m => MvPowerSeries.coeff (Finsupp.cons k m) f :
+      MvPowerSeries (Fin n) R)
+
+/-- Auxiliary: coefficient formula for `mvPowerSeriesSplit`. -/
+lemma coeff_coeff_mvPowerSeriesSplit {R : Type*} [CommRing R] (n : ℕ)
+    (f : MvPowerSeries (Fin (n + 1)) R) (k : ℕ) (m : Fin n →₀ ℕ) :
+    MvPowerSeries.coeff m (PowerSeries.coeff k (mvPowerSeriesSplit n f)) =
+      MvPowerSeries.coeff (Finsupp.cons k m) f := by
+  rw [mvPowerSeriesSplit, PowerSeries.coeff_mk]
+  rfl
+
+/-- Auxiliary for the variable-splitting isomorphism: the merging map,
+inverse to `mvPowerSeriesSplit`. -/
+noncomputable def mvPowerSeriesUnsplit {R : Type*} [CommRing R] (n : ℕ)
+    (G : PowerSeries (MvPowerSeries (Fin n) R)) :
+    MvPowerSeries (Fin (n + 1)) R :=
+  (fun p => MvPowerSeries.coeff (Finsupp.tail p)
+      (PowerSeries.coeff (p 0) G) :
+    MvPowerSeries (Fin (n + 1)) R)
+
+/-- Auxiliary: coefficient formula for `mvPowerSeriesUnsplit`. -/
+lemma coeff_mvPowerSeriesUnsplit {R : Type*} [CommRing R] (n : ℕ)
+    (G : PowerSeries (MvPowerSeries (Fin n) R)) (p : Fin (n + 1) →₀ ℕ) :
+    MvPowerSeries.coeff p (mvPowerSeriesUnsplit n G) =
+      MvPowerSeries.coeff (Finsupp.tail p) (PowerSeries.coeff (p 0) G) :=
+  rfl
+
+/-- **Variable-splitting isomorphism for power series** (PROVEN
+2026-07-23, pure commutative algebra — the missing mathlib bridge
+between multivariate power series in `n + 1` variables and
+single-variable power series over multivariate power series in `n`
+variables): separating one variable. Proven by reindexing coefficients
+along `Finsupp.cons`/`Finsupp.tail` (split off the exponent of `x₀`),
+multiplicativity being the Cauchy-product rearrangement of the
+convolution over split monomials (`sum_antidiagonal_cons`). Stated over
+an arbitrary commutative base ring: both consumers below induct with a
 changing base. -/
 theorem nonempty_ringEquiv_mvPowerSeries_powerSeries {R : Type*}
     [CommRing R] (n : ℕ) :
     Nonempty (MvPowerSeries (Fin (n + 1)) R ≃+*
-      PowerSeries (MvPowerSeries (Fin n) R)) :=
-  sorry
+      PowerSeries (MvPowerSeries (Fin n) R)) := by
+  refine ⟨{
+    toFun := mvPowerSeriesSplit n
+    invFun := mvPowerSeriesUnsplit n
+    left_inv := fun f => ?_
+    right_inv := fun G => ?_
+    map_mul' := fun f g => ?_
+    map_add' := fun f g => ?_ }⟩
+  · -- left inverse: recombine the split exponents
+    refine MvPowerSeries.ext fun p => ?_
+    rw [coeff_mvPowerSeriesUnsplit, coeff_coeff_mvPowerSeriesSplit,
+      Finsupp.cons_tail]
+  · -- right inverse: split the recombined exponents
+    refine PowerSeries.ext fun k => ?_
+    refine MvPowerSeries.ext fun m => ?_
+    rw [coeff_coeff_mvPowerSeriesSplit, coeff_mvPowerSeriesUnsplit,
+      Finsupp.tail_cons, Finsupp.cons_zero]
+  · -- multiplicativity: the Cauchy product rearranges over split monomials
+    classical
+    refine PowerSeries.ext fun k => ?_
+    refine MvPowerSeries.ext fun m => ?_
+    rw [coeff_coeff_mvPowerSeriesSplit, MvPowerSeries.coeff_mul,
+      PowerSeries.coeff_mul, map_sum]
+    simp only [MvPowerSeries.coeff_mul, coeff_coeff_mvPowerSeriesSplit]
+    exact sum_antidiagonal_cons k m fun p =>
+      MvPowerSeries.coeff p.1 f * MvPowerSeries.coeff p.2 g
+  · -- additivity: coefficientwise
+    refine PowerSeries.ext fun k => ?_
+    refine MvPowerSeries.ext fun m => ?_
+    rw [coeff_coeff_mvPowerSeriesSplit, map_add, map_add, map_add,
+      coeff_coeff_mvPowerSeriesSplit, coeff_coeff_mvPowerSeriesSplit]
 
 /-- **Noetherianness of multivariate power series** (PROVEN 2026-07-23
 modulo the variable-splitting leaf above — a mathlib gap: the
