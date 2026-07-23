@@ -47,7 +47,7 @@ theorem Field.exists_monic_irreducible_adjoinRoot_algEquiv (k k' : Type*) [Field
     [Algebra k k'] [FiniteDimensional k k'] [Algebra.IsSeparable k k'] :
     ∃ p : k[X], p.Monic ∧ p.Separable ∧ Irreducible p ∧ p.natDegree = Module.finrank k k' ∧
       Nonempty (AdjoinRoot p ≃ₐ[k] k') := by
-  set pb := powerBasisOfFiniteOfSeparable k k' with hpb
+  set pb := powerBasisOfFiniteOfSeparable k k'
   have hint : IsIntegral k pb.gen := Algebra.IsIntegral.isIntegral pb.gen
   exact ⟨minpoly k pb.gen, minpoly.monic hint, Algebra.IsSeparable.isSeparable k pb.gen,
     minpoly.irreducible hint, by rw [pb.natDegree_minpoly, pb.finrank],

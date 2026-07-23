@@ -207,7 +207,6 @@ theorem cross_two {R : Type*} [CommRing R] (W : WeierstrassCurve R)
           Polynomial.C W.b₈ * W.ΨSq n ^ 4) := by
   set σ : MvPolynomial (Fin 5) ℤ →+* R :=
     MvPolynomial.eval₂Hom (Int.castRingHom R) ![W.a₁, W.a₂, W.a₃, W.a₄, W.a₆]
-    with hσ
   have hmap : Wuniv.map σ = W := by
     simp only [Wuniv, WeierstrassCurve.map, MvPolynomial.eval₂Hom_X', σ]
     rfl

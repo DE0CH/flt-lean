@@ -203,7 +203,7 @@ noncomputable def WeierstrassCurve.galoisRep {K : Type u} [Field K] [CharZero K]
         | some x y h => exact (Set.finite_singleton y).insert x
       -- the (finite) set of coordinates of all `n`-torsion points
       set S : Set (AlgebraicClosure K) :=
-        ⋃ P : (E.map (algebraMap K (AlgebraicClosure K))).nTorsion n, coords P.1 with hSdef
+        ⋃ P : (E.map (algebraMap K (AlgebraicClosure K))).nTorsion n, coords P.1
       have hSFin : S.Finite := Set.finite_iUnion fun P => hcoordsFin P.1
       haveI := hSFin.to_subtype
       haveI : FiniteDimensional K (IntermediateField.adjoin K S) :=

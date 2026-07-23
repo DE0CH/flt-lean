@@ -29,7 +29,7 @@ theorem sq_sub_trace_mul_self_add_norm {A B : Type*} [CommRing A] [Nontrivial A]
     [Algebra A B] [Module.Free A B] [Module.Finite A B] (h2 : Module.finrank A B = 2) (θ : B) :
     θ ^ 2 - algebraMap A B (Algebra.trace A B θ) * θ + algebraMap A B (Algebra.norm A θ) = 0 := by
   classical
-  set b : Module.Basis (Fin 2) A B := Module.finBasisOfFinrankEq A B h2 with hb
+  set b : Module.Basis (Fin 2) A B := Module.finBasisOfFinrankEq A B h2
   have hcp : (Algebra.lmul A B θ).charpoly
       = Polynomial.X ^ 2 - Polynomial.C (Algebra.trace A B θ) * Polynomial.X
         + Polynomial.C (Algebra.norm A θ) := by

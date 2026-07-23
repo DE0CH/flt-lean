@@ -167,7 +167,7 @@ instance isNontrivialAdicCompletionRat :
   obtain ⟨π, hmem, hne⟩ := Submodule.exists_mem_ne_zero_of_ne_bot v.ne_bot
   set x : HeightOneSpectrum.adicCompletion ℚ v :=
     algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v)
-      (algebraMap (NumberField.RingOfIntegers ℚ) ℚ π) with hx
+      (algebraMap (NumberField.RingOfIntegers ℚ) ℚ π)
   have hveq : (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ v)
       ℤᵐ⁰) x =
       v.valuation ℚ (algebraMap (NumberField.RingOfIntegers ℚ) ℚ π) :=

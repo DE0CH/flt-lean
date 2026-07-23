@@ -277,10 +277,6 @@ theorem exists_finite_subfield_conjugate (G : Subgroup (PGLOf (K p))) [Finite G]
 
   let L : Subfield (K p) := Subfield.closure (⋃ g ∈ S, Set.range (fun ij : Fin 2 × Fin 2 ↦ g.val ij.1 ij.2))
 
-  have hL_fin : Finite L := by
-    apply finite_of_closure_finite
-    exact Set.Finite.biUnion (Finset.finite_toSet S) (fun _ _ ↦ Set.finite_range _)
-
   have hL_mem : ∀ g ∈ S, ∀ i j, g.val i j ∈ L := fun g hg i j ↦
     Subfield.subset_closure (Set.mem_iUnion₂.mpr ⟨g, hg, Set.mem_range_self (i, j)⟩)
 

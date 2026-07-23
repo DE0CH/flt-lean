@@ -35,7 +35,7 @@ abstract value group of higher rank need not be archimedean, and the statement w
 false. -/
 theorem exists_pow_valuation_lt [IsRankLeOne R] (q : R) (hq : valuation R q < 1)
     (γ : (ValueGroupWithZero R)ˣ) : ∃ N : ℕ, valuation R q ^ N < γ := by
-  rcases eq_or_ne (valuation R q) 0 with h0 | h0
+  rcases eq_or_ne (valuation R q) 0 with h0 | _
   · exact ⟨1, by simp [h0]⟩
   · obtain ⟨s⟩ := IsRankLeOne.nonempty (R := R)
     obtain ⟨N, hN⟩ := exists_pow_lt_of_lt_one
