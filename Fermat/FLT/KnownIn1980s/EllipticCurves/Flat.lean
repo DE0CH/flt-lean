@@ -21,6 +21,11 @@ public import Fermat.FLT.EllipticCurve.PhiPsiCoprime
 import Fermat.FLT.EllipticCurve.TorsionCardSep
 import Mathlib.FieldTheory.Normal.Closure
 import Mathlib.RingTheory.Etale.Field
+-- tensor products commute with finite products (`Algebra.TensorProduct.piRight`)
+-- and étale-ness is product-local (`Algebra.FormallyEtale.pi_iff`): the product
+-- assembly of `exists_finite_etale_algebra_form_of_inertia_fixes`
+import Mathlib.RingTheory.TensorProduct.Pi
+import Mathlib.RingTheory.Etale.Pi
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
 
 /-!
@@ -2565,20 +2570,44 @@ theorem WeierstrassCurve.algHom_comp_eq_of_torsion_inertia_fixes
       WithConv.toConv φ := h1
   exact WithConv.toConv_injective h2
 
-/-- **Unramified finite étale `K`-algebras have finite étale `R`-forms** (sorry
-node; the GALOIS half of the curve-free Hopf-form leaf — no Hopf structure
-appears at all): a finite étale `K`-algebra `HK`, all of whose `Kˢᵉᵖ`-points
-are fixed by every inertia subgroup above `R`, admits a finite étale `R`-form.
-Intended proof: `HK` is a finite product of finite separable subextensions
-`Lᵢ` of `Kˢᵉᵖ/K` (étale `K`-algebras split by `Kˢᵉᵖ`); the hypothesis places
-each embedding `Lᵢ → Kˢᵉᵖ` inside the inertia field of every valuation subring
-above `R`, so each `Lᵢ` is unramified with separable residue extension at
-every prime above the maximal ideal of `R`. Take `H₀` to be the integral
-closure of `R` in `HK` (transported to `Type u` along an `R`-basis), i.e. the
-product of the normalizations `Rᵢ` of `R` in `Lᵢ`: each `Rᵢ` is finite over
-`R` (separability + Noetherian normal base), free (torsion-free finite over a
-DVR), and étale over `R` (finite flat + unramified fibres, by the inertia
-hypothesis), and `K ⊗[R] H₀ → HK` is an isomorphism (clearing denominators). -/
+/-- **Unramified finite separable field extensions have finite étale `R`-forms**
+(sorry node; the single-factor core of the Galois half of the curve-free
+Hopf-form leaf, isolated 2026-07-23 — the product assembly is proven in
+`exists_finite_etale_algebra_form_of_inertia_fixes`): a finite separable field
+extension `L/K`, all of whose embeddings into `Kˢᵉᵖ` are fixed by every inertia
+subgroup above `R`, admits a finite étale `R`-form. Intended proof: the
+hypothesis places each embedding `L → Kˢᵉᵖ` inside the inertia field of every
+valuation subring above `R`, so `L` is unramified with separable residue
+extension at every prime above the maximal ideal of `R`; take `H₀` to be the
+integral closure of `R` in `L` (transported to `Type u` along an `R`-basis):
+it is finite over `R` (separability + Noetherian normal base, Neukirch I.8/
+Serre *Local Fields* I–II), free (torsion-free finite over a DVR), and étale
+over `R` (finite flat with unramified fibres, by the inertia hypothesis), and
+`K ⊗[R] H₀ → L` is an isomorphism (clearing denominators). -/
+theorem exists_finite_etale_algebra_form_of_inertia_fixes_field
+    (L : Type u) [Field L] [Algebra K L]
+    [Module.Finite K L] [Algebra.IsSeparable K L]
+    (hfix : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ σ ∈ 𝒪.inertiaSubgroup K, ∀ φ : L →ₐ[K] Ksep,
+        (σ : Ksep ≃ₐ[K] Ksep).toAlgHom.comp φ = φ) :
+    ∃ (H₀ : Type u) (_ : CommRing H₀) (_ : Algebra R H₀)
+      (_ : Module.Finite R H₀) (_ : Algebra.Etale R H₀),
+      Nonempty ((K ⊗[R] H₀) ≃ₐ[K] L) :=
+  sorry
+
+/-- **Unramified finite étale `K`-algebras have finite étale `R`-forms**
+(DECOMPOSED 2026-07-23 into the single-field-extension leaf
+`exists_finite_etale_algebra_form_of_inertia_fixes_field`; the assembly below
+is proven — no Hopf structure appears at all): a finite étale `K`-algebra
+`HK`, all of whose `Kˢᵉᵖ`-points are fixed by every inertia subgroup above
+`R`, admits a finite étale `R`-form. Assembly: `HK` is a finite product of
+finite separable field extensions `Lᵢ` (`Algebra.Etale.iff_exists_algEquiv_prod`);
+the inertia-fixing hypothesis descends to each factor through the (surjective)
+projection `HK → Lᵢ`; the factor leaf produces étale forms `H₀ᵢ`, whose
+product is a finite étale `R`-form of `HK` since the tensor product commutes
+with finite products (`Algebra.TensorProduct.piRight`) and étaleness is a
+product-local property (`Algebra.FormallyEtale.pi_iff`). -/
 theorem exists_finite_etale_algebra_form_of_inertia_fixes
     (HK : Type u) [CommRing HK] [Algebra K HK]
     [Module.Finite K HK] [Algebra.Etale K HK]
@@ -2588,8 +2617,43 @@ theorem exists_finite_etale_algebra_form_of_inertia_fixes
         (σ : Ksep ≃ₐ[K] Ksep).toAlgHom.comp φ = φ) :
     ∃ (H₀ : Type u) (_ : CommRing H₀) (_ : Algebra R H₀)
       (_ : Module.Finite R H₀) (_ : Algebra.Etale R H₀),
-      Nonempty ((K ⊗[R] H₀) ≃ₐ[K] HK) :=
-  sorry
+      Nonempty ((K ⊗[R] H₀) ≃ₐ[K] HK) := by
+  classical
+  -- split `HK` into a finite product of finite separable field extensions
+  obtain ⟨I, hIfin, Ai, iF, iAlgK, e, hAi⟩ :=
+    (Algebra.Etale.iff_exists_algEquiv_prod K HK).mp inferInstance
+  haveI := hIfin
+  letI := iF
+  letI := iAlgK
+  haveI := Fintype.ofFinite I
+  haveI := Classical.decEq I
+  -- each factor acquires an étale `R`-form from the field-extension leaf
+  have hform : ∀ i : I, ∃ (H₀ : Type u) (_ : CommRing H₀) (_ : Algebra R H₀)
+      (_ : Module.Finite R H₀) (_ : Algebra.Etale R H₀),
+      Nonempty ((K ⊗[R] H₀) ≃ₐ[K] Ai i) := by
+    intro i
+    haveI := (hAi i).1
+    haveI := (hAi i).2
+    refine exists_finite_etale_algebra_form_of_inertia_fixes_field R K Ksep
+      (Ai i) ?_
+    -- the inertia-fixing hypothesis descends through the projection `HK → Ai i`
+    intro 𝒪 h𝒪 σ hσ φ
+    have h := hfix 𝒪 h𝒪 σ hσ (φ.comp ((Pi.evalAlgHom K Ai i).comp e.toAlgHom))
+    have hsurj : Function.Surjective ((Pi.evalAlgHom K Ai i).comp e.toAlgHom) :=
+      (Function.surjective_eval i).comp e.surjective
+    refine AlgHom.ext fun x => ?_
+    obtain ⟨y, rfl⟩ := hsurj x
+    exact DFunLike.congr_fun h y
+  choose H₀ iCR iAlg iFin iEt hEq using hform
+  letI := iCR
+  letI := iAlg
+  haveI := iFin
+  haveI := iEt
+  -- the product of the factor forms is an étale `R`-form of `HK`
+  haveI hfin : Module.Finite R (∀ i, H₀ i) := Module.Finite.pi
+  refine ⟨∀ i, H₀ i, inferInstance, inferInstance, hfin, inferInstance, ⟨?_⟩⟩
+  exact (Algebra.TensorProduct.piRight R K K H₀).trans
+    ((AlgEquiv.piCongrRight fun i => (hEq i).some).trans e.symm)
 
 /-- **Étale algebra forms of Hopf algebras are Hopf forms** (sorry node; the
 HOPF half of the curve-free Hopf-form leaf — pure commutative algebra over the
