@@ -8691,11 +8691,114 @@ theorem exists_hopfOrder_of_adic_bialgEquiv
       AddSubmonoid.closure (Set.image2 (fun a b : Hg => a ⊗ₜ[ℚ] b)
         (H₀ : Set Hg) (H₀ : Set Hg)) := by
     sorry
-  -- COUNIT leaf (sorry node): counit values on `H₀` are integral
+  -- COUNIT (PROVEN): counit values on `H₀` are integral — the
+  -- comparison map preserves counits, the lattice's counit values are
+  -- `𝒪`-integral, and a rational that is integral in the completion
+  -- lies in `ℤ_(p)` (`mem_integers_of_valuation_le_one` at the DVR,
+  -- whose unique height-one prime is its maximal ideal)
   have hcounit : ∀ x ∈ H₀, Coalgebra.counit (R := ℚ) x ∈
       Set.range (algebraMap (Localization.AtPrime
         hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ) := by
-    sorry
+    intro x hx
+    obtain ⟨h, hh⟩ := hx
+    -- the comparison map preserves the `ℚ_pˆ`-linear counits
+    have h1 : Coalgebra.counit (R := HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (Ψ (Algebra.TensorProduct.includeRight x)) =
+        Coalgebra.counit (R := HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (Algebra.TensorProduct.includeRight (R := ℚ)
+          (A := HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) (B := Hg) x) :=
+      CoalgHomClass.counit_comp_apply ψ.toBialgHom
+        (Algebra.TensorProduct.includeRight x)
+    -- the counit of the base change on `1 ⊗ x` is the scalar `ε(x)`
+    have h2 : Coalgebra.counit (R := HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (Algebra.TensorProduct.includeRight (R := ℚ)
+          (A := HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) (B := Hg) x) =
+        algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (Coalgebra.counit (R := ℚ) x) := by
+      rw [Algebra.TensorProduct.includeRight_apply,
+        congr($(Bialgebra.TensorProduct.counit_eq_algHom_toLinearMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) Hg)
+        ((1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗ₜ[ℚ] x))]
+      simp
+    -- the counit of the lattice element is `𝒪`-integral
+    have h3 : Coalgebra.counit (R := HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (Algebra.TensorProduct.includeRight
+          (R := 𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat])
+          (A := HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) (B := Hl) h) =
+        algebraMap 𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (Coalgebra.counit (R := 𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]) h) := by
+      rw [Algebra.TensorProduct.includeRight_apply,
+        congr($(Bialgebra.TensorProduct.counit_eq_algHom_toLinearMap
+        𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) Hl)
+        ((1 : HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          ⊗ₜ[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] h))]
+      simp [Algebra.algebraMap_eq_smul_one]
+    -- hence the rational `ε(x)` is integral in the completion
+    have hh' : Algebra.TensorProduct.includeRight
+        (R := 𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat])
+        (A := HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) (B := Hl) h =
+        Ψ (Algebra.TensorProduct.includeRight x) := hh
+    have h4 : algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (Coalgebra.counit (R := ℚ) x) ∈
+        𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat] := by
+      rw [← h2, ← h1, ← hh', h3]
+      exact SetLike.coe_mem _
+    -- transfer to the `v_p`-adic valuation of `ℚ`
+    have h5 : hp'.toHeightOneSpectrumRingOfIntegersRat.valuation ℚ
+        (Coalgebra.counit (R := ℚ) x) ≤ 1 := by
+      have h6 := mem_adicCompletionIntegers_of_mem_integer hp' h4
+      rw [IsDedekindDomain.HeightOneSpectrum.mem_adicCompletionIntegers,
+        valued_algebraMap_adicCompletion_eq hp'] at h6
+      exact h6
+    -- transfer to the maximal-ideal valuation of the DVR `ℤ_(p)`
+    have h7 : (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime
+        hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal)).valuation ℚ
+        (Coalgebra.counit (R := ℚ) x) ≤ 1 :=
+      (Valuation.isEquiv_iff_val_le_one.mp
+        (isEquiv_valuation_maximalIdeal_localization hp')).mp h5
+    -- the DVR has a unique height-one prime
+    have huniq : ∀ w : HeightOneSpectrum (Localization.AtPrime
+        hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal),
+        w = IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime
+          hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) := by
+      intro w
+      refine IsDedekindDomain.HeightOneSpectrum.ext ?_
+      exact IsLocalRing.eq_maximalIdeal (IsPrime.to_maximal_ideal w.ne_bot)
+    -- conclude by the fraction-field integrality criterion
+    obtain ⟨r, hr⟩ :=
+      IsDedekindDomain.HeightOneSpectrum.mem_integers_of_valuation_le_one
+        (R := Localization.AtPrime
+          hp'.toHeightOneSpectrumRingOfIntegersRat.asIdeal) (K := ℚ)
+        (Coalgebra.counit (R := ℚ) x) (fun w => by rw [huniq w]; exact h7)
+    exact ⟨r, hr⟩
   -- ANTIPODE leaf (sorry node): the antipode preserves `H₀`
   have hantipode : ∀ x ∈ H₀, HopfAlgebra.antipode ℚ x ∈ H₀ := by
     sorry
