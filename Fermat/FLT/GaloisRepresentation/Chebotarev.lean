@@ -102,6 +102,9 @@ import Mathlib.RingTheory.Ideal.GoingUp
 public import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
 public import Mathlib.RingTheory.Ideal.Norm.AbsNorm
 public import Mathlib.NumberTheory.NumberField.DedekindZeta
+import Mathlib.NumberTheory.RamificationInertia.Basic
+import Mathlib.FieldTheory.Finite.Basic
+import Mathlib.RingTheory.PrincipalIdealDomain
 public import Mathlib.NumberTheory.DirichletCharacter.Orthogonality
 public import Mathlib.NumberTheory.DirichletCharacter.Bounds
 
@@ -923,8 +926,159 @@ theorem tsum_not_prime_natCard_rpow_neg_one_ne_top
     ∑' P : {P : HeightOneSpectrum (𝓞 F) //
         ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime},
       (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
-        (-(1 : ℝ)) ≠ ⊤ :=
-  sorry
+        (-(1 : ℝ)) ≠ ⊤ := by
+  classical
+  -- per-place data: the residue characteristic is prime, and its square
+  -- is at most the residue cardinality (the residue degree is `≥ 2`)
+  have hdata : ∀ P : {P : HeightOneSpectrum (𝓞 F) //
+      ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime},
+      (ringChar (𝓞 F ⧸ P.1.asIdeal)).Prime ∧
+        ringChar (𝓞 F ⧸ P.1.asIdeal) ^ 2 ≤ Nat.card (𝓞 F ⧸ P.1.asIdeal) := by
+    rintro ⟨P, hnp⟩
+    have hcard0 : Nat.card (𝓞 F ⧸ P.asIdeal) ≠ 0 := by
+      have h1 : Ideal.absNorm P.asIdeal ≠ 0 := fun h =>
+        P.ne_bot (Ideal.absNorm_eq_zero_iff.mp h)
+      rwa [Ideal.absNorm_apply, Submodule.cardQuot_apply] at h1
+    haveI hfin : Finite (𝓞 F ⧸ P.asIdeal) := (Nat.card_ne_zero.mp hcard0).2
+    haveI := P.isPrime.isMaximal P.ne_bot
+    have hCharP := ringChar.charP (𝓞 F ⧸ P.asIdeal)
+    haveI := Ideal.Quotient.field P.asIdeal
+    haveI := Fintype.ofFinite (𝓞 F ⧸ P.asIdeal)
+    obtain ⟨f, hp, hcard⟩ := @FiniteField.card (𝓞 F ⧸ P.asIdeal)
+      (Ideal.Quotient.field P.asIdeal) _
+      (ringChar (𝓞 F ⧸ P.asIdeal)) hCharP
+    simp only [Nat.card_eq_fintype_card] at hnp ⊢
+    refine ⟨hp, ?_⟩
+    rcases Nat.lt_or_ge (f : ℕ) 2 with hf | hf
+    · exfalso
+      have hf1 : (f : ℕ) = 1 := by have := f.pos; omega
+      apply hnp
+      rw [hcard, hf1, pow_one]
+      exact hp
+    · rw [hcard]
+      exact Nat.pow_le_pow_right hp.pos hf
+  -- termwise bound by the inverse square of the residue characteristic
+  have hbound : ∀ P : {P : HeightOneSpectrum (𝓞 F) //
+      ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime},
+      (Nat.card (𝓞 F ⧸ P.1.asIdeal) : ℝ≥0∞) ^ (-(1 : ℝ)) ≤
+        ((ringChar (𝓞 F ⧸ P.1.asIdeal) : ℝ≥0∞) ^ (2 : ℕ))⁻¹ := by
+    intro P
+    rw [ENNReal.rpow_neg_one]
+    refine ENNReal.inv_le_inv' ?_
+    calc (ringChar (𝓞 F ⧸ P.1.asIdeal) : ℝ≥0∞) ^ (2 : ℕ)
+        = ((ringChar (𝓞 F ⧸ P.1.asIdeal) ^ 2 : ℕ) : ℝ≥0∞) := by push_cast; rfl
+      _ ≤ (Nat.card (𝓞 F ⧸ P.1.asIdeal) : ℝ≥0∞) :=
+          Nat.cast_le.mpr (hdata P).2
+  refine ne_top_of_le_ne_top ?_ (ENNReal.tsum_le_tsum hbound)
+  -- group by the residue characteristic
+  rw [← ENNReal.tsum_fiberwise
+    (fun P : {P : HeightOneSpectrum (𝓞 F) //
+      ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+      ((ringChar (𝓞 F ⧸ P.1.asIdeal) : ℝ≥0∞) ^ (2 : ℕ))⁻¹)
+    (fun P => ringChar (𝓞 F ⧸ P.1.asIdeal))]
+  -- each fiber has at most `[F : ℚ]` elements, and vanishes off primes
+  have hfiber : ∀ p : ℕ,
+      (∑' P : ((fun P : {P : HeightOneSpectrum (𝓞 F) //
+          ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+          ringChar (𝓞 F ⧸ P.1.asIdeal)) ⁻¹' {p}),
+        ((ringChar (𝓞 F ⧸ P.1.1.asIdeal) : ℝ≥0∞) ^ (2 : ℕ))⁻¹) ≤
+      (Module.finrank ℚ F : ℝ≥0∞) * ENNReal.ofReal (1 / (p : ℝ) ^ 2) := by
+    intro p
+    by_cases hp : p.Prime
+    · -- inject the fiber into the primes over `p`
+      set 𝔭 : Ideal ℤ := Ideal.span {(p : ℤ)} with h𝔭
+      have h𝔭0 : 𝔭 ≠ ⊥ := by
+        rw [h𝔭, Ne, Ideal.span_singleton_eq_bot]
+        exact_mod_cast hp.ne_zero
+      haveI h𝔭max : 𝔭.IsMaximal := by
+        rw [h𝔭]
+        exact PrincipalIdealRing.isMaximal_of_irreducible
+          (Nat.prime_iff_prime_int.mp hp).irreducible
+      have hmem : ∀ P : ((fun P : {P : HeightOneSpectrum (𝓞 F) //
+          ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+          ringChar (𝓞 F ⧸ P.1.asIdeal)) ⁻¹' {p}),
+          P.1.1.asIdeal ∈ IsDedekindDomain.primesOverFinset 𝔭 (𝓞 F) := by
+        intro P
+        rw [IsDedekindDomain.mem_primesOverFinset_iff h𝔭0]
+        refine ⟨P.1.1.isPrime, ⟨?_⟩⟩
+        have hchar : ringChar (𝓞 F ⧸ P.1.1.asIdeal) = p := P.2
+        have hle : 𝔭 ≤ P.1.1.asIdeal.under ℤ := by
+          rw [h𝔭, Ideal.span_le, Set.singleton_subset_iff, SetLike.mem_coe,
+            Ideal.under, Ideal.mem_comap]
+          have hdvd : ringChar (𝓞 F ⧸ P.1.1.asIdeal) ∣ p := by
+            rw [hchar]
+          have h0 : ((p : ℕ) : 𝓞 F ⧸ P.1.1.asIdeal) = 0 :=
+            (CharP.cast_eq_zero_iff _ (ringChar _) p).mpr hdvd
+          rw [← Ideal.Quotient.eq_zero_iff_mem]
+          push_cast
+          rw [map_natCast]
+          exact h0
+        have hne : P.1.1.asIdeal.under ℤ ≠ ⊤ := by
+          intro htop
+          apply P.1.1.isPrime.ne_top
+          rw [Ideal.eq_top_iff_one] at htop ⊢
+          have := Ideal.mem_comap.mp htop
+          simpa using this
+        exact h𝔭max.eq_of_le hne hle
+      have hinj : Function.Injective
+          (fun P : ((fun P : {P : HeightOneSpectrum (𝓞 F) //
+            ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+            ringChar (𝓞 F ⧸ P.1.asIdeal)) ⁻¹' {p}) =>
+            (⟨P.1.1.asIdeal, hmem P⟩ :
+              {I : Ideal (𝓞 F) //
+                I ∈ IsDedekindDomain.primesOverFinset 𝔭 (𝓞 F)})) := by
+        intro P Q h
+        exact Subtype.ext (Subtype.ext (HeightOneSpectrum.ext
+          (congrArg Subtype.val h)))
+      haveI : Finite ((fun P : {P : HeightOneSpectrum (𝓞 F) //
+          ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+          ringChar (𝓞 F ⧸ P.1.asIdeal)) ⁻¹' {p}) :=
+        Finite.of_injective _ hinj
+      calc (∑' P : ((fun P : {P : HeightOneSpectrum (𝓞 F) //
+              ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+              ringChar (𝓞 F ⧸ P.1.asIdeal)) ⁻¹' {p}),
+            ((ringChar (𝓞 F ⧸ P.1.1.asIdeal) : ℝ≥0∞) ^ (2 : ℕ))⁻¹)
+          = ∑' _P : ((fun P : {P : HeightOneSpectrum (𝓞 F) //
+              ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+              ringChar (𝓞 F ⧸ P.1.asIdeal)) ⁻¹' {p}),
+            (((p : ℝ≥0∞)) ^ (2 : ℕ))⁻¹ :=
+            tsum_congr fun P : ((fun P : {P : HeightOneSpectrum (𝓞 F) //
+                ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+                ringChar (𝓞 F ⧸ P.1.asIdeal)) ⁻¹' {p}) => by
+              rw [show ringChar (𝓞 F ⧸ P.1.1.asIdeal) = p from P.2]
+        _ = ENat.card ((fun P : {P : HeightOneSpectrum (𝓞 F) //
+              ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+              ringChar (𝓞 F ⧸ P.1.asIdeal)) ⁻¹' {p}) *
+            (((p : ℝ≥0∞)) ^ (2 : ℕ))⁻¹ := ENNReal.tsum_const _
+        _ ≤ (Module.finrank ℚ F : ℝ≥0∞) * (((p : ℝ≥0∞)) ^ (2 : ℕ))⁻¹ := by
+            gcongr
+            rw [ENat.card_eq_coe_natCard]
+            have hcardle : Nat.card ((fun P : {P : HeightOneSpectrum (𝓞 F) //
+                ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+                ringChar (𝓞 F ⧸ P.1.asIdeal)) ⁻¹' {p}) ≤
+                Module.finrank ℚ F := by
+              refine le_trans (Nat.card_le_card_of_injective _ hinj) ?_
+              rw [Nat.card_eq_fintype_card, Fintype.card_coe]
+              exact Ideal.card_primesOverFinset_le_finrank (𝓞 F) ℚ F h𝔭0
+            exact_mod_cast hcardle
+        _ = (Module.finrank ℚ F : ℝ≥0∞) * ENNReal.ofReal (1 / (p : ℝ) ^ 2) := by
+            congr 1
+            rw [ENNReal.ofReal_div_of_pos
+                (by exact_mod_cast pow_pos hp.pos 2),
+              ENNReal.ofReal_one, ENNReal.ofReal_pow (by positivity),
+              ENNReal.ofReal_natCast, one_div]
+    · -- the fiber over a non-prime is empty
+      have hzero : ∀ P : ((fun P : {P : HeightOneSpectrum (𝓞 F) //
+          ¬ (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime} =>
+          ringChar (𝓞 F ⧸ P.1.asIdeal)) ⁻¹' {p}),
+          ((ringChar (𝓞 F ⧸ P.1.1.asIdeal) : ℝ≥0∞) ^ (2 : ℕ))⁻¹ = 0 :=
+        fun P => (hp (P.2 ▸ (hdata P.1).1)).elim
+      rw [ENNReal.tsum_eq_zero.mpr hzero]
+      positivity
+  refine ne_top_of_le_ne_top ?_ (ENNReal.tsum_le_tsum hfiber)
+  rw [ENNReal.tsum_mul_left, ← ENNReal.ofReal_tsum_of_nonneg
+    (fun n => by positivity) (Real.summable_one_div_nat_pow.mpr one_lt_two)]
+  exact ENNReal.mul_ne_top (ENNReal.natCast_ne_top _) ENNReal.ofReal_ne_top
 
 open IsDedekindDomain in
 /-- **Square-times-squarefree decomposition** (sorry leaf): every
