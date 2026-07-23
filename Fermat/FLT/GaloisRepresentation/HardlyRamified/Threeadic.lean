@@ -1895,16 +1895,179 @@ theorem isOpen_setOf_forall_sub_mem_pow_smul
   rw [htr]
   exact (continuous_sub_right _).isOpen_preimage _ hIk
 
-/-- **Exponent-3 characters of `Γ ℚ` die on inertia at `2`** (sorry node
-— the tame stratum, group form): a homomorphism `φ` from `Γ ℚ` to an
+open NumberField in
+set_option backward.isDefEq.respectTransparency false in
+/-- **Local inertia restricts into finite-level inertia** (PROVEN
+2026-07-23 — helper for the tame stratum): for a finite normal
+subextension `N/Kᵥ` of `Kᵥᵃˡᵍ` and `σ` in the full local inertia
+group, the restriction of `σ` to `N` lies in the inertia subgroup of
+the maximal ideal of `𝒪_N = IntegralClosure 𝒪ᵥ N` inside
+`Gal(N/Kᵥ)`. Same two ingredients as the intermediate-level
+restriction lemma of `LocalInertiaFixedField`
+(`restrictNormalHom_mem_inertia_intermediate`):
+`AlgEquiv.restrictNormal_commutes` transports the difference into the
+big integral closure, where it lies in `𝔪` by the DEFINING property of
+`localInertiaGroup`, and maximal-ideal membership descends along the
+integral-closure inclusion because `𝒪_N` is local. -/
+theorem restrictNormalHom_mem_inertia_of_mem_localInertiaGroup
+    {K : Type*} [Field K] [NumberField K]
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+    (N : IntermediateField
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
+    [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
+    [Normal (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
+    (σ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+    (hσ : σ ∈ localInertiaGroup v) :
+    AlgEquiv.restrictNormalHom N σ ∈
+      (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)).inertia
+      (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N) := by
+  -- the integral closure of `𝒪ᵥ` in `N` maps into the big integral closure
+  letI : Algebra
+      (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) :=
+    ((algebraMap N (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))).comp
+      (algebraMap (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N) N)).toAlgebra
+  letI : Algebra
+      (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)
+      (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) :=
+    (RingHom.codRestrict
+      (algebraMap (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
+      (integralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
+      (fun x => (Algebra.IsIntegral.isIntegral
+          (R := IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) x).map
+        ((IsScalarTower.toAlgHom (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+            N (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))).comp
+          (IsScalarTower.toAlgHom (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+            (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)
+            N)))).toAlgebra
+  rw [AddSubgroup.mem_inertia]
+  intro x
+  -- transport the difference into the big integral closure
+  have hcomm : algebraMap
+      (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)
+      (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
+      ((AlgEquiv.restrictNormalHom N σ) • x - x) =
+      σ • (algebraMap
+          (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)
+          (IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+            (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) x) -
+        algebraMap
+          (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)
+          (IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+            (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) x := by
+    rw [map_sub]
+    congr 1
+    apply Subtype.ext
+    show algebraMap N (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+        (algebraMap (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)
+          N ((AlgEquiv.restrictNormalHom N σ) • x)) =
+      σ • (algebraMap N
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+        (algebraMap (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N) N x))
+    exact AlgEquiv.restrictNormal_commutes σ N
+      (algebraMap (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N) N x)
+  have hbig : algebraMap
+      (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)
+      (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
+      ((AlgEquiv.restrictNormalHom N σ) • x - x) ∈
+      IsLocalRing.maximalIdeal
+        (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))) := by
+    rw [hcomm]
+    exact hσ _
+  -- descend the membership along the local inclusion
+  have hproper : (IsLocalRing.maximalIdeal
+      (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))).comap
+      (algebraMap
+        (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)
+        (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))) ≠ ⊤ := by
+    intro htop
+    have h1 : (1 : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N) ∈
+        (IsLocalRing.maximalIdeal
+          (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+            (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))).comap
+        (algebraMap
+          (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)
+          (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+            (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))) :=
+      htop ▸ Submodule.mem_top
+    rw [Ideal.mem_comap, map_one] at h1
+    exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+      (Ideal.eq_top_of_isUnit_mem _ h1 isUnit_one)
+  rw [Submodule.mem_toAddSubgroup]
+  exact IsLocalRing.le_maximalIdeal hproper (Ideal.mem_comap.mpr hbig)
+
+open NumberField in
+/-- **Finite-level tame core at `2`** (sorry node — the arithmetic
+content of the tame stratum): a finite Galois subextension `N/ℚ₂` of
+`ℚ₂ᵃˡᵍ` whose Galois group is abelian of exponent `3` is unramified —
+the inertia subgroup of the maximal ideal of `𝒪_N` is trivial.
+Route: `|G| = 3^k` (Cauchy), so `e = |I|` (finite-level `|I| = e`,
+`card_inertia_finite_level`) is a power of `3`, odd — the extension is
+tamely ramified. For `t ∈ I` and a uniformizer `ϖ` of the DVR `𝒪_N`,
+write `t(ϖ) = ϖ·u_t`; the residue `θ(t) = ū_t ∈ k_Nˣ` satisfies
+`θ(F t F⁻¹) = θ(t)²` for an arithmetic Frobenius `F` at `𝔪_N`
+(`IsArithFrobAt.exists_of_isInvariant`; the residue cardinality of
+`𝒪ᵥ` at `2` is `2`, `natCard_residue_quotient_toHeightOneSpectrum`);
+commutativity gives `θ(t) = θ(t)²`, so `θ(t) = 1`, i.e.
+`t(ϖ) ≡ ϖ mod 𝔪²`. Then `t = 1`: otherwise, over the fixed field
+`T = N^⟨t⟩` the extension is totally ramified of degree `3`
+(`card_inertia_intermediate`), so `N = T(ϖ)`, and with
+`a := t(ϖ) - ϖ ≠ 0` of valuation `j ≥ 2` one has `t(a) ≡ a mod 𝔪^{j+1}`
+and hence `ϖ = t³(ϖ) ≡ ϖ + 3a mod 𝔪^{j+1}`; since `3` is a unit in
+`𝒪_N` (residue characteristic `2`), `a ∈ 𝔪^{j+1}` — contradiction. -/
+theorem finiteLevel_inertia_eq_bot_of_exponent_three_at_two
+    (N : IntermediateField
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)))
+    [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N]
+    [IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N]
+    (hcomm : ∀ g h : (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat] N),
+      g * h = h * g)
+    (h3 : ∀ g : (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat] N),
+      g ^ 3 = 1) :
+    (IsLocalRing.maximalIdeal (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
+      (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat] N) = ⊥ := by
+  sorry
+
+/-- **Exponent-3 characters of `Γ ℚ` die on inertia at `2`** (DERIVED
+2026-07-23 from the finite-level tame core and the restriction helper —
+the tame stratum, group form): a homomorphism `φ` from `Γ ℚ` to an
 abelian group of exponent `3` with open kernel kills the image of the
-local inertia at `2`. Content (local Kronecker–Weber / tame
-conjugation): the wild inertia of `ℚ₂` is pro-`2` and dies in the
-finite `3`-torsion quotient by continuity; a tame generator `t`
-satisfies `F t F⁻¹ = t²·(wild)` for an arithmetic Frobenius `F`
-(`Field.AbsoluteGaloisGroup.adicArithFrob`), so — `φ` being defined on
-all of `Γ ℚ` with abelian target — `φ(t) = φ(F t F⁻¹) = φ(t)²`, i.e.
-`φ(t)⁻¹ = 1` in the exponent-3 group. -/
+local inertia at `2`. The composite `ψ = φ ∘ map` on `Γ ℚ₂` has open
+normal kernel, cutting out a finite Galois subextension `N/ℚ₂`
+(`InfiniteGalois.fixingSubgroup_fixedField`); lifting elements of
+`Gal(N/ℚ₂)` along the restriction and pushing the relations through
+`ψ` shows `Gal(N/ℚ₂)` is abelian of exponent `3` (the target `A` is),
+so the finite-level tame core makes `N/ℚ₂` unramified; the restriction
+of `σ` lies in the finite-level inertia (the restriction helper),
+hence is trivial, i.e. `σ` fixes `N`, i.e. `ψ σ = 1`. -/
 theorem threeTorsion_monoidHom_vanishes_on_localInertia_at_two
     {A : Type*} [CommGroup A] (φ : (Γ ℚ) →* A)
     (hopen : IsOpen ((φ.ker : Subgroup (Γ ℚ)) : Set (Γ ℚ)))
@@ -1916,7 +2079,144 @@ theorem threeTorsion_monoidHom_vanishes_on_localInertia_at_two
     φ (Field.absoluteGaloisGroup.map
       (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
         Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
-  sorry
+  classical
+  -- the composite character of `Γ ℚ₂`
+  set ψ : (Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) →* A :=
+    φ.comp (Field.absoluteGaloisGroup.map
+      (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+    with hψdef
+  show ψ σ = 1
+  -- its kernel is open, normal, closed
+  have hψopen : IsOpen ((ψ.ker : Subgroup _) : Set (Γ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) := by
+    have hpre : ((ψ.ker : Subgroup _) : Set (Γ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) =
+        (Field.absoluteGaloisGroup.map
+          (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) ⁻¹'
+          ((φ.ker : Subgroup (Γ ℚ)) : Set (Γ ℚ)) := by
+      ext g
+      simp only [SetLike.mem_coe, MonoidHom.mem_ker, Set.mem_preimage, hψdef,
+        MonoidHom.coe_comp, Function.comp_apply]
+      rfl
+    rw [hpre]
+    exact (ContinuousMonoidHom.continuous_toFun _).isOpen_preimage _ hopen
+  have hψnormal : (ψ.ker).Normal := ψ.normal_ker
+  have hψclosed : IsClosed ((ψ.ker : Subgroup _) : Set (Γ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) :=
+    Subgroup.isClosed_of_isOpen _ hψopen
+  -- ambient Galois instances over `ℚ₂`
+  haveI : Algebra.IsIntegral
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) :=
+    Algebra.IsAlgebraic.isIntegral
+  haveI : IsGalois
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) := ⟨⟩
+  -- the finite Galois subextension cut out by the kernel
+  set L : IntermediateField
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) :=
+    IntermediateField.fixedField
+      (ψ.ker : Subgroup
+        ((AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) ≃ₐ[
+          IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat]
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))))
+  have hfix : L.fixingSubgroup = ψ.ker :=
+    InfiniteGalois.fixingSubgroup_fixedField ⟨ψ.ker, hψclosed⟩
+  haveI hfd : FiniteDimensional
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) L :=
+    (InfiniteGalois.isOpen_iff_finite L).mp (by rw [hfix]; exact hψopen)
+  haveI hgal : IsGalois
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) L :=
+    (InfiniteGalois.normal_iff_isGalois L).mp (by rw [hfix]; exact hψnormal)
+  haveI : Normal
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) L :=
+    hgal.to_normal
+  -- membership in `ψ.ker` is detected by the restriction to `L`
+  have hdetect : ∀ g : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat),
+      (AlgEquiv.restrictNormalHom L g = 1 ↔ ψ g = 1) := by
+    intro g
+    constructor
+    · intro hg
+      have hmem : g ∈ L.fixingSubgroup := by
+        rw [← IntermediateField.restrictNormalHom_ker L]
+        exact MonoidHom.mem_ker.mpr hg
+      rw [hfix] at hmem
+      exact MonoidHom.mem_ker.mp hmem
+    · intro hg
+      have hmem : g ∈ L.fixingSubgroup := by
+        rw [hfix]
+        exact MonoidHom.mem_ker.mpr hg
+      rw [← IntermediateField.restrictNormalHom_ker L] at hmem
+      exact MonoidHom.mem_ker.mp hmem
+  -- relations transfer to `Gal(L/ℚ₂)` along lifts
+  have hsurj : ∀ g : (L ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat] L),
+      ∃ g' : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat),
+      AlgEquiv.restrictNormalHom L g' = g := fun g =>
+    AlgEquiv.restrictNormalHom_surjective
+      (F := IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (K₁ := L)
+      (E := AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) g
+  have hLcomm : ∀ g h : (L ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat] L), g * h = h * g := by
+    intro g h
+    obtain ⟨g', rfl⟩ := hsurj g
+    obtain ⟨h', rfl⟩ := hsurj h
+    have hcommutator : ψ (g' * h' * (g'⁻¹ * h'⁻¹)) = 1 := by
+      rw [map_mul, map_mul, map_mul, map_inv, map_inv]
+      have : ψ g' * ψ h' * ((ψ g')⁻¹ * (ψ h')⁻¹) = 1 := by
+        rw [mul_comm (ψ g') (ψ h'), mul_assoc, ← mul_assoc (ψ g'),
+          mul_inv_cancel, one_mul, mul_inv_cancel]
+      exact this
+    have h1 := (hdetect _).mpr hcommutator
+    rw [map_mul, map_mul, map_mul, map_inv, map_inv] at h1
+    have h2 : (AlgEquiv.restrictNormalHom L g') * (AlgEquiv.restrictNormalHom L h')
+        = ((AlgEquiv.restrictNormalHom L h') * (AlgEquiv.restrictNormalHom L g')) := by
+      have h3 := congrArg (· * ((AlgEquiv.restrictNormalHom L h') *
+        (AlgEquiv.restrictNormalHom L g'))) h1
+      simpa [mul_assoc] using h3
+    exact h2
+  have hL3 : ∀ g : (L ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat] L), g ^ 3 = 1 := by
+    intro g
+    obtain ⟨g', rfl⟩ := hsurj g
+    have hcube : ψ (g' ^ 3) = 1 := by
+      rw [map_pow]
+      exact h3 (Field.absoluteGaloisGroup.map
+        (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) g')
+    have h1 := (hdetect _).mpr hcube
+    rwa [map_pow] at h1
+  -- the finite-level tame core: `L/ℚ₂` is unramified
+  have hbot := finiteLevel_inertia_eq_bot_of_exponent_three_at_two L hLcomm hL3
+  -- the restriction of `σ` is a finite-level inertia element, hence trivial
+  have hmem := restrictNormalHom_mem_inertia_of_mem_localInertiaGroup
+    Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat L σ hσ
+  rw [hbot, Subgroup.mem_bot] at hmem
+  exact (hdetect σ).mp hmem
 
 /-- **Approximate homomorphisms die on inertia at `2`** (DERIVED
 2026-07-23 from the group-form leaf above — the tame stratum): a
