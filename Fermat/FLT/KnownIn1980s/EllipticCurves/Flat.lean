@@ -4477,37 +4477,103 @@ theorem integralClosureMul_bijective
       obtain ⟨v₂, hv₂⟩ := ih₂
       exact ⟨v₁ + v₂, by rw [map_add, map_add, hv₁, hv₂]⟩
 
-/-- **The Hopf-order structure on the integral closure** (sorry node; the
-corestriction core of the Hopf half of the Hopf-upgrade leaf, isolated
-2026-07-23 — the canonical multiplication map, its bijectivity and the final
-assembly are PROVEN): if the integral closure `H₀ := integralClosure R HK` of
-the DVR `R` in the finite étale Hopf `K`-algebra `HK` is finite étale over `R`
-and the canonical multiplication map `μ : K ⊗[R] H₀ → HK` is bijective, then
-`H₀` carries an `R`-Hopf-algebra structure whose base change is `HK` as a
-`K`-bialgebra. Intended proof: comultiplication is a ring homomorphism, so it
-sends `H₀` (integral over `R`) into elements of `HK ⊗[K] HK` integral over `R`;
-the integral closure of `R` there is the image of `H₀ ⊗[R] H₀` under
-`τ := e₂ ∘ (1 ⊗ ·)`, where `e₂ : K ⊗[R] (H₀ ⊗[R] H₀) ≃ HK ⊗[K] HK` is the
-base-change comparison (`Algebra.TensorProduct.assoc`/`cancelBaseChange`
-composed with `congr μ μ`) and the range identity is the canonicity workhorse
-`range_comp_includeRight_eq_integralClosure_of_etale_form` applied to the
-tensor square (`H₀ ⊗[R] H₀` is finite étale: étale is stable under base change
-and composition); so the comultiplication corestricts along the injective `τ`
-(injectivity: flatness of `H₀ ⊗[R] H₀`). The counit sends `H₀` into elements
-of `K` integral over `R`, i.e. into `R` (`IsIntegrallyClosed R`, `R` a DVR);
-the antipode is an algebra endomorphism of `HK`, so it preserves the integral
-closure. The corestricted operations satisfy the Hopf axioms because `τ` and
-its double/triple analogues are injective, and `μ` becomes a bialgebra
-equivalence because its compatibility with `τ` holds by construction. The
-`μ_p` counterexample (whose normalization over `ℤ_p` is NOT a Hopf order) does
-not contradict this: there the normalization is not étale over `R`, so the
-étale hypothesis fails. NOTE the conclusion carries its own abstract carrier
-`H` with ALL instances existential rather than a Hopf structure on
-`integralClosure R HK` itself: the carrier has canonical `CommRing`/`Algebra`
-instances, and an existentially bound Hopf structure on it cannot state the
-`≃ₐc` conclusion without an instance diamond (the same probe-verified
-obstruction as for `GaloisHopfCarrier`); the intended `H` is a structureless
-copy of the integral closure. -/
+/-- **The corestricted Hopf structure maps of the integral closure** (sorry
+node; the pure corestriction content of the Hopf-order leaf, isolated
+2026-07-24 — the instance packaging, flatness and the upgrade of the
+canonical multiplication map to a bialgebra equivalence are PROVEN in the
+assembly `exists_hopfAlgebra_integralClosure_of_mul_bijective` below): granted
+bijectivity of the canonical multiplication map, the integral closure
+`H₀ := integralClosure R HK` carries comultiplication, counit and antipode
+over `R` that are compatible with the Hopf structure maps of `HK` through the
+subalgebra inclusion `ι` and the canonical comparison
+`j := productMap (includeLeft ∘ ι) (includeRight ∘ ι) :
+H₀ ⊗[R] H₀ →ₐ[R] HK ⊗[K] HK`, and satisfy the Hopf-algebra axioms. Intended
+proof: comultiplication is a ring homomorphism, so it sends `H₀` (integral
+over `R`) into elements of `HK ⊗[K] HK` integral over `R`; the integral
+closure of `R` there is exactly the range of `j` — identify `j` with
+`e₂ ∘ includeRight` for the base-change comparison
+`e₂ : K ⊗[R] (H₀ ⊗[R] H₀) ≃ HK ⊗[K] HK`
+(`Algebra.TensorProduct.assoc`/`cancelBaseChange` composed with `congr μ μ`)
+and apply the canonicity workhorse
+`range_comp_includeRight_eq_integralClosure_of_etale_form` to the tensor
+square (`H₀ ⊗[R] H₀` is finite étale over `R`: étale is stable under base
+change and composition, finiteness under tensor products); so the
+comultiplication corestricts along the injective `j` (injectivity: flatness
+of `H₀ ⊗[R] H₀` over `R` and injectivity of `R → K`). The counit sends `H₀`
+into elements of `K` integral over `R`, i.e. into `R` (`IsIntegrallyClosed R`,
+`R` a DVR); the antipode is an algebra endomorphism of `HK`, so it preserves
+the integral closure and corestricts along the injective `ι`. The
+corestricted operations inherit the five Hopf-algebra axioms from those of
+`HK` after composing with `j`, `ι` and their double/triple-tensor analogues,
+which are injective for the same flatness reason; the `μ_p` counterexample
+(whose normalization over `ℤ_p` is NOT a Hopf order) does not contradict
+this: there the normalization is not étale over `R`. -/
+theorem exists_hopfAlgebraMaps_integralClosure_of_mul_bijective
+    (HK : Type u) [CommRing HK] [HopfAlgebra K HK] [Algebra R HK]
+    [IsScalarTower R K HK] [Module.Finite K HK] [Algebra.Etale K HK]
+    (hfin : Module.Finite R (integralClosure R HK))
+    (het : Algebra.Etale R (integralClosure R HK))
+    (hbij : Function.Bijective (integralClosureMul R K HK)) :
+    ∃ (Δ₀ : integralClosure R HK →ₐ[R]
+        (integralClosure R HK) ⊗[R] (integralClosure R HK))
+      (ε₀ : integralClosure R HK →ₐ[R] R)
+      (S₀ : integralClosure R HK →ₐ[R] integralClosure R HK),
+      (Algebra.TensorProduct.productMap
+          (((Algebra.TensorProduct.includeLeft :
+              HK →ₐ[K] HK ⊗[K] HK).restrictScalars R).comp
+            (integralClosure R HK).val)
+          (((Algebra.TensorProduct.includeRight :
+              HK →ₐ[K] HK ⊗[K] HK).restrictScalars R).comp
+            (integralClosure R HK).val)).comp Δ₀
+        = ((Bialgebra.comulAlgHom K HK).restrictScalars R).comp
+            (integralClosure R HK).val ∧
+      (Algebra.ofId R K).comp ε₀
+        = ((Bialgebra.counitAlgHom K HK).restrictScalars R).comp
+            (integralClosure R HK).val ∧
+      (integralClosure R HK).val.comp S₀
+        = ((HopfAlgebra.antipodeAlgHom K HK).restrictScalars R).comp
+            (integralClosure R HK).val ∧
+      (Algebra.TensorProduct.assoc R R R (integralClosure R HK)
+          (integralClosure R HK) (integralClosure R HK)).toAlgHom.comp
+          ((Algebra.TensorProduct.map Δ₀
+            (AlgHom.id R (integralClosure R HK))).comp Δ₀)
+        = (Algebra.TensorProduct.map (AlgHom.id R (integralClosure R HK))
+            Δ₀).comp Δ₀ ∧
+      (Algebra.TensorProduct.map ε₀
+          (AlgHom.id R (integralClosure R HK))).comp Δ₀
+        = ((Algebra.TensorProduct.lid R (integralClosure R HK)).symm :
+            integralClosure R HK →ₐ[R] R ⊗[R] integralClosure R HK) ∧
+      (Algebra.TensorProduct.map (AlgHom.id R (integralClosure R HK))
+          ε₀).comp Δ₀
+        = ((Algebra.TensorProduct.rid R R (integralClosure R HK)).symm :
+            integralClosure R HK →ₐ[R] integralClosure R HK ⊗[R] R) ∧
+      (Algebra.TensorProduct.lift S₀ (AlgHom.id R (integralClosure R HK))
+          fun _ => Commute.all _).comp Δ₀
+        = (Algebra.ofId R (integralClosure R HK)).comp ε₀ ∧
+      (Algebra.TensorProduct.lift (AlgHom.id R (integralClosure R HK)) S₀
+          fun _ _ => Commute.all _ _).comp Δ₀
+        = (Algebra.ofId R (integralClosure R HK)).comp ε₀ :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The Hopf-order structure on the integral closure** (DECOMPOSED
+2026-07-24 into the corestriction core
+`exists_hopfAlgebraMaps_integralClosure_of_mul_bijective` — the structure
+maps, their compatibilities and the Hopf axioms; the assembly below is
+PROVEN): if the integral closure `H₀ := integralClosure R HK` of the DVR `R`
+in the finite étale Hopf `K`-algebra `HK` is finite étale over `R` and the
+canonical multiplication map `μ : K ⊗[R] H₀ → HK` is bijective, then `HK`
+admits a finite flat Hopf `R`-form. The witness carrier is `H₀` itself with
+its canonical ring and algebra instances (legitimate because `H` is
+existentially bound — the probe-verified diamond only obstructs FIXING the
+canonically-instanced carrier in the statement); the Hopf structure is the
+`Bialgebra.ofAlgHom`/`HopfAlgebra.ofAlgHom` mixin package of the corestricted
+maps; flatness is étale ⟹ smooth ⟹ flat; and the canonical multiplication
+map upgrades to a bialgebra equivalence `K ⊗[R] H₀ ≃ₐc[K] HK` by
+`BialgEquiv.ofAlgEquiv`, whose counit/comultiplication compatibilities reduce
+on pure tensors to the corestriction compatibilities. -/
 theorem exists_hopfAlgebra_integralClosure_of_mul_bijective
     (HK : Type u) [CommRing HK] [HopfAlgebra K HK] [Algebra R HK]
     [IsScalarTower R K HK] [Module.Finite K HK] [Algebra.Etale K HK]
@@ -4516,8 +4582,116 @@ theorem exists_hopfAlgebra_integralClosure_of_mul_bijective
     (hbij : Function.Bijective (integralClosureMul R K HK)) :
     ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
       (_ : Module.Finite R H) (_ : Module.Flat R H),
-      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) :=
-  sorry
+      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) := by
+  classical
+  obtain ⟨Δ₀, ε₀, S₀, hc1, hc2, hc3, hco, hrT, hlT, hS1, hS2⟩ :=
+    exists_hopfAlgebraMaps_integralClosure_of_mul_bijective R K HK hfin het hbij
+  -- the Hopf-algebra mixin package on the canonically-instanced closure
+  letI instBi : Bialgebra R (integralClosure R HK) :=
+    Bialgebra.ofAlgHom Δ₀ ε₀ hco hrT hlT
+  have hcomul_new : Bialgebra.comulAlgHom R (integralClosure R HK) = Δ₀ :=
+    AlgHom.toLinearMap_injective rfl
+  have hcounit_new : Bialgebra.counitAlgHom R (integralClosure R HK) = ε₀ :=
+    AlgHom.toLinearMap_injective rfl
+  letI instHopf : HopfAlgebra R (integralClosure R HK) :=
+    HopfAlgebra.ofAlgHom S₀
+      (by rw [hcomul_new, hcounit_new]; exact hS1)
+      (by rw [hcomul_new, hcounit_new]; exact hS2)
+  -- flatness: étale ⟹ smooth ⟹ flat
+  haveI := het
+  haveI : Algebra.Smooth R (integralClosure R HK) := inferInstance
+  haveI hflat : Module.Flat R (integralClosure R HK) := inferInstance
+  -- the canonical multiplication map as an algebra equivalence
+  set e : (K ⊗[R] (integralClosure R HK)) ≃ₐ[K] HK :=
+    AlgEquiv.ofBijective (integralClosureMul R K HK) hbij with hedef
+  have he_tmul : ∀ (k : K) (h : integralClosure R HK),
+      e (k ⊗ₜ[R] h) = algebraMap K HK k * (integralClosure R HK).val h := by
+    intro k h
+    rw [hedef]
+    simp [integralClosureMul, Algebra.TensorProduct.lift_tmul, Algebra.ofId_apply]
+  -- the counit compatibility of the base change
+  have hcounit_comp : (Bialgebra.counitAlgHom K HK).comp (e : _ →ₐ[K] HK)
+      = Bialgebra.counitAlgHom K (K ⊗[R] (integralClosure R HK)) := by
+    apply Algebra.TensorProduct.ext'
+    intro k h
+    have h2 := DFunLike.congr_fun hc2 h
+    simp only [AlgHom.coe_comp, AlgHom.coe_restrictScalars', Function.comp_apply,
+      Algebra.ofId_apply] at h2
+    show Bialgebra.counitAlgHom K HK (e (k ⊗ₜ[R] h)) = _
+    rw [he_tmul, map_mul, AlgHom.commutes, ← h2]
+    show algebraMap K K k * algebraMap R K (ε₀ h)
+      = Bialgebra.counitAlgHom K (K ⊗[R] (integralClosure R HK)) (k ⊗ₜ[R] h)
+    rw [show Bialgebra.counitAlgHom K (K ⊗[R] (integralClosure R HK)) (k ⊗ₜ[R] h)
+        = Coalgebra.counit (R := K) (k ⊗ₜ[R] h) from rfl,
+      TensorProduct.counit_tmul]
+    rw [show Coalgebra.counit (R := R) h = ε₀ h from rfl,
+      Algebra.algebraMap_self, RingHom.id_apply, Algebra.smul_def,
+      show CoalgebraStruct.counit (R := K) (A := K) k = k from rfl]
+    ring
+  -- the comultiplication compatibility of the base change
+  have hcomul_comp : (Algebra.TensorProduct.map (e : _ →ₐ[K] HK)
+        (e : _ →ₐ[K] HK)).comp
+        (Bialgebra.comulAlgHom K (K ⊗[R] (integralClosure R HK)))
+      = (Bialgebra.comulAlgHom K HK).comp (e : _ →ₐ[K] HK) := by
+    set j : (integralClosure R HK) ⊗[R] (integralClosure R HK) →ₐ[R]
+        HK ⊗[K] HK :=
+      Algebra.TensorProduct.productMap
+        (((Algebra.TensorProduct.includeLeft :
+            HK →ₐ[K] HK ⊗[K] HK).restrictScalars R).comp
+          (integralClosure R HK).val)
+        (((Algebra.TensorProduct.includeRight :
+            HK →ₐ[K] HK ⊗[K] HK).restrictScalars R).comp
+          (integralClosure R HK).val) with hjdef
+    apply Algebra.TensorProduct.ext'
+    intro k h
+    -- the comultiplication of the base change on a pure tensor
+    have hbase : (Bialgebra.comulAlgHom K (K ⊗[R] (integralClosure R HK)))
+        (k ⊗ₜ[R] h)
+        = TensorProduct.AlgebraTensorModule.tensorTensorTensorComm R K R K K K
+            (integralClosure R HK) (integralClosure R HK)
+            (((1 : K) ⊗ₜ[K] k) ⊗ₜ[R] (Δ₀ h)) := by
+      rw [show (Bialgebra.comulAlgHom K (K ⊗[R] (integralClosure R HK)))
+          (k ⊗ₜ[R] h) = Coalgebra.comul (R := K) (k ⊗ₜ[R] h) from rfl,
+        TensorProduct.comul_tmul]
+      rfl
+    -- the two sides on the split pieces, by induction over `Δ₀ h`
+    have hLHS : ∀ u : (integralClosure R HK) ⊗[R] (integralClosure R HK),
+        (Algebra.TensorProduct.map (e : _ →ₐ[K] HK) (e : _ →ₐ[K] HK))
+          (TensorProduct.AlgebraTensorModule.tensorTensorTensorComm R K R K K K
+            (integralClosure R HK) (integralClosure R HK)
+            (((1 : K) ⊗ₜ[K] k) ⊗ₜ[R] u))
+        = algebraMap K (HK ⊗[K] HK) k * j u := by
+      intro u
+      induction u using TensorProduct.induction_on with
+      | zero => simp
+      | tmul p q =>
+        rw [TensorProduct.AlgebraTensorModule.tensorTensorTensorComm_tmul,
+          Algebra.TensorProduct.map_tmul]
+        show (e ((1 : K) ⊗ₜ[R] p)) ⊗ₜ[K] (e (k ⊗ₜ[R] q)) = _
+        rw [he_tmul, he_tmul, hjdef,
+          Algebra.TensorProduct.productMap_apply_tmul]
+        simp only [AlgHom.coe_comp, AlgHom.coe_restrictScalars',
+          Function.comp_apply, Algebra.TensorProduct.includeLeft_apply,
+          Algebra.TensorProduct.includeRight_apply, map_one, one_mul]
+        simp only [Algebra.TensorProduct.tmul_mul_tmul, one_mul, mul_one,
+          ← Algebra.smul_def, TensorProduct.tmul_smul,
+          TensorProduct.smul_tmul']
+      | add u₁ u₂ ih₁ ih₂ =>
+        rw [TensorProduct.tmul_add, map_add, map_add, ih₁, ih₂, map_add,
+          mul_add]
+    have hRHS : (Bialgebra.comulAlgHom K HK) (e (k ⊗ₜ[R] h))
+        = algebraMap K (HK ⊗[K] HK) k * j (Δ₀ h) := by
+      have h1 := DFunLike.congr_fun hc1 h
+      simp only [AlgHom.coe_comp, AlgHom.coe_restrictScalars',
+        Function.comp_apply] at h1
+      rw [he_tmul, map_mul, AlgHom.commutes, h1]
+    show (Algebra.TensorProduct.map (e : _ →ₐ[K] HK) (e : _ →ₐ[K] HK))
+        ((Bialgebra.comulAlgHom K (K ⊗[R] (integralClosure R HK)))
+          (k ⊗ₜ[R] h))
+      = (Bialgebra.comulAlgHom K HK) (e (k ⊗ₜ[R] h))
+    rw [hbase, hLHS (Δ₀ h), hRHS]
+  exact ⟨integralClosure R HK, inferInstance, instHopf, hfin, hflat,
+    ⟨BialgEquiv.ofAlgEquiv e hcounit_comp hcomul_comp⟩⟩
 
 /-- **The integral closure in an étale-formed Hopf algebra is a Hopf order**
 (DECOMPOSED 2026-07-23 into the bijectivity of the canonical multiplication
