@@ -181,6 +181,19 @@ import Mathlib.LinearAlgebra.Trace
 -- `LinearMap.trace`: the continuous linear functional behind `coeff 1`
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
 -- `Matrix.trace_eq_neg_charpoly_coeff`: the trace/`coeff 1` bridge
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree
+-- proof-only: `IsHardlyRamified.mod_three_reducible` (the
+-- Fontaine/Odlyzko discriminant-bound route), the `p = 3` horn of the
+-- odd-prime dichotomy discharging the Hecke generation leaf
+-- `topologicalClosure_adjoin_charFrobCoeff_univ_eq_top` below
+import Fermat.FLT.Slop.RepresentationTheory.OddAbsIrredSlop
+-- proof-only: `Slop.OddRep.isIrreducible_iff_forall`, unpacking
+-- `Representation.IsIrreducible` into the stable-submodule form
+-- consumed by the `p = 3` horn
+import Fermat.FLT.Modularity.KhareWintenberger
+-- proof-only: `not_isIrreducible_of_isHardlyRamified_of_five_le`, the
+-- Family-free Khare–Wintenberger headline — the `p ≥ 5` horn of the
+-- same dichotomy
 
 @[expose] public section
 
@@ -1555,7 +1568,8 @@ theorem t2Space_of_isModuleTopology (R : Type*) [CommRing R]
   haveI := IsTopologicalAddGroup.t1Space M h0
   infer_instance
 
-/-- **Hecke generation leaf** (sorry node — the one genuinely
+/-- **Hecke generation leaf** (PROVEN 2026-07-24 by the odd-prime
+dichotomy, see ROUTE below — the one genuinely
 Hecke-side fact of pillar 3b-ii): the coefficient ring `T` of a
 Hecke-side hardly ramified deformation of the irreducible residual
 `ρbar` is topologically generated as a `ℤ_p`-algebra by ALL the linear
@@ -1579,6 +1593,30 @@ and `T_q = −(charFrob ρT q).coeff 1` by the Eichler–Shimura relation —
 so the trace subalgebra contains a generating set, and the bad primes'
 traces enlarge it further; negation keeps it a subalgebra either way.
 
+ROUTE (2026-07-24): the hypothesis package contains the classically
+unsatisfiable combination of an IRREDUCIBLE hardly ramified residual
+`ρbar` over the odd prime `p` — discharged by the same sanctioned
+odd-prime dichotomy already discharging pillar 2's assembly, pillar
+3a-i, and the 3a-ii descent leaves in `Interface.lean`.  At `p = 3`,
+`IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, the
+Fontaine/Odlyzko discriminant-bound route) produces a `Γ ℚ`-stable
+proper nonzero submodule refuting `hirr` through
+`Slop.OddRep.isIrreducible_iff_forall`; at `p ≥ 5` the Family-free
+Khare–Wintenberger headline
+`not_isIrreducible_of_isHardlyRamified_of_five_le`
+(`Modularity/KhareWintenberger.lean`) refutes `hirr` directly.  The
+packaged form `not_isIrreducible_of_isHardlyRamified_of_odd` lives in
+`Interface.lean`, DOWNSTREAM of this module — importing it would be a
+cycle — so the dichotomy is inlined here from its two upstream inputs
+(import-audited 2026-07-24: the only importer of this module is
+`Interface.lean`, whose own only importer is the census tool, and the
+import cones of `ModThree.lean`, `OddAbsIrredSlop.lean`, and
+`KhareWintenberger.lean` reach neither file, so the added proof-only
+imports cannot cycle).  The classical (non-vacuous) content at the
+intended instantiation remains the Eichler–Shimura/Carayol generation
+statement recorded above, which any future direct discharge should
+follow.
+
 Both-ways audit: at the intended packet this is verbatim the cited
 generation statement; abstractly the packet `(T, ρT, π)` is NOT
 assumed trace-generated, and the statement is covered by the section
@@ -1601,18 +1639,41 @@ theorem topologicalClosure_adjoin_charFrobCoeff_univ_eq_top.{s, uK, uW}
     [Module.Free ℤ_[p] T] [IsModuleTopology ℤ_[p] T]
     {ρT : GaloisRep ℚ T (Fin 2 → T)}
     (hrankT : Module.rank T (Fin 2 → T) = 2)
-    (hρT : IsHardlyRamified hpodd hrankT ρT)
-    {π : T →+* k} (hπ : Function.Surjective π)
+    (_hρT : IsHardlyRamified hpodd hrankT ρT)
+    {π : T →+* k} (_hπ : Function.Surjective π)
     {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
-    (hred : ∀ (q : ℕ) (hq : q.Prime),
+    (_hred : ∀ (q : ℕ) (hq : q.Prime),
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
       π ((ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
         (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) :
     (Algebra.adjoin ℤ_[p] {a : T | ∃ (q : ℕ) (hq : q.Prime),
         a = (ρT.charFrob
           hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1}).topologicalClosure
-      = ⊤ :=
-  sorry
+      = ⊤ := by
+  exfalso
+  -- the odd-prime dichotomy, inlined (see the ROUTE note above)
+  have hp := (Fact.out : p.Prime)
+  rcases Nat.lt_or_ge p 5 with h5 | h5
+  · -- `p < 5`: primality and oddness force `p = 3`, where the
+    -- hypotheses are contradictory (`mod_three_reducible`)
+    have hp3 : p = 3 := by
+      have := hp.two_le
+      have := Nat.odd_iff.mp hpodd
+      omega
+    subst hp3
+    obtain ⟨W₀, hW₀0, hW₀top, hW₀stable⟩ :=
+      IsHardlyRamified.mod_three_reducible W hW hρbar
+    have hirr' : ρbar.toRepresentation.IsIrreducible := hirr
+    obtain ⟨-, hsub⟩ :=
+      (Slop.OddRep.isIrreducible_iff_forall ρbar.toRepresentation).mp hirr'
+    rcases hsub W₀
+        (fun g v hv => hW₀stable g (Submodule.mem_map_of_mem hv)) with
+      hb | ht
+    · exact hW₀0 hb
+    · exact hW₀top ht
+  · -- `p ≥ 5`: the Family-free Khare–Wintenberger headline
+    exact absurd hirr
+      (not_isIrreducible_of_isHardlyRamified_of_five_le hpodd h5 hW hρbar)
 
 /-- **Carayol trace generation, Hecke side** (pillar 3b-ii's arithmetic
 leaf; DECOMPOSED 2026-07-24 — the Chebotarev/continuity reduction is
